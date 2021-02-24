@@ -1,4 +1,3 @@
-import { useMutation, useQuery } from '@apollo/client';
 import Table from '@material-ui/core/Table';
 import IconButton from '@material-ui/core/IconButton';
 import Input from '@material-ui/core/Input';
@@ -13,7 +12,7 @@ import Visibility from '@material-ui/icons/Visibility';
 import VisibilityOff from '@material-ui/icons/VisibilityOff';
 import { distanceInWords } from 'date-fns';
 import * as React from 'react';
-import { DEPLOYMENT_KEY_QUERIES } from '@pixie/api';
+import { useDeploymentKeys } from '@pixie/api-react';
 import {
   AdminTooltip, StyledTableCell, StyledTableHeaderCell,
   StyledLeftTableCell, StyledRightTableCell,
@@ -48,7 +47,7 @@ export const DeploymentKeyRow = ({ deploymentKey }) => {
   const [open, setOpen] = React.useState<boolean>(false);
   const [anchorEl, setAnchorEl] = React.useState(null);
 
-  const [deleteDeployKey] = useMutation(DEPLOYMENT_KEY_QUERIES.DELETE_DEPLOYMENT_KEY);
+  const [{ deleteDeploymentKey }] = useDeploymentKeys();
 
   const openMenu = React.useCallback((event) => {
     setOpen(true);
@@ -112,7 +111,7 @@ export const DeploymentKeyRow = ({ deploymentKey }) => {
           <MenuItem
             key='delete'
             alignItems='center'
-            onClick={() => deleteDeployKey({ variables: { id: deploymentKey.id } })}
+            onClick={() => deleteDeploymentKey(deploymentKey.id)}
           >
             <KeyListItemIcon className={classes.copyBtn}>
               <Delete />
@@ -127,7 +126,8 @@ export const DeploymentKeyRow = ({ deploymentKey }) => {
 
 export const DeploymentKeysTable = () => {
   const classes = UseKeyListStyles();
-  const { loading, error, data } = useQuery(DEPLOYMENT_KEY_QUERIES.LIST_DEPLOYMENT_KEYS, { pollInterval: 2000 });
+  const [{ deploymentKeys: rawDeploymentKeys }, loading, error] = useDeploymentKeys();
+
   if (loading) {
     return <div className={classes.error}>Loading...</div>;
   }
@@ -135,7 +135,7 @@ export const DeploymentKeysTable = () => {
     return <div className={classes.error}>{error.toString()}</div>;
   }
 
-  const deploymentKeys = (data?.deploymentKeys || []).map((key) => formatDeploymentKey(key));
+  const deploymentKeys = (rawDeploymentKeys ?? []).map((key) => formatDeploymentKey(key));
   return (
     <>
       <Table>

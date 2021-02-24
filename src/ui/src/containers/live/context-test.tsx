@@ -8,13 +8,13 @@ import { withLiveViewContext } from 'containers/live/context';
 import { render } from 'enzyme';
 import { Router } from 'react-router';
 import history from 'utils/pl-history';
-import { MockedProvider as MockApolloProvider } from '@apollo/client/testing';
 import { ScriptsContext } from 'containers/App/scripts-context';
 import { ClusterContext } from 'common/cluster-context';
 import { LIVE_CONTEXT_DEFAULTS } from 'testing/mocks/live-context-mock';
 import { ThemeProvider } from '@material-ui/core/styles';
 import { VizierGRPCClientContext } from 'common/vizier-grpc-client-context';
 import { SnackbarContext } from '@pixie/components';
+import { MockPixieAPIContextProvider } from '@pixie/api-react';
 
 /**
  * Replaces all of the jest.fn() values with expect.any() in the mock defaults of a context.
@@ -59,7 +59,7 @@ describe('Live aggregate context', () => {
     render(
       <Router history={history}>
         <ThemeProvider theme={LIVE_CONTEXT_DEFAULTS.theme}>
-          <MockApolloProvider {...LIVE_CONTEXT_DEFAULTS.apollo}>
+          <MockPixieAPIContextProvider>
             <VizierGRPCClientContext.Provider value={LIVE_CONTEXT_DEFAULTS.vizier}>
               <ClusterContext.Provider value={LIVE_CONTEXT_DEFAULTS.cluster}>
                 <ScriptsContext.Provider value={LIVE_CONTEXT_DEFAULTS.scripts}>
@@ -69,7 +69,7 @@ describe('Live aggregate context', () => {
                 </ScriptsContext.Provider>
               </ClusterContext.Provider>
             </VizierGRPCClientContext.Provider>
-          </MockApolloProvider>
+          </MockPixieAPIContextProvider>
         </ThemeProvider>
       </Router>);
   });

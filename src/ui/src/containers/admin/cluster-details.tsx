@@ -7,8 +7,6 @@ import { useHistory, useParams } from 'react-router';
 import { Link } from 'react-router-dom';
 import { dataFromProto } from 'utils/result-data-utils';
 
-import { useQuery } from '@apollo/client';
-
 import { Theme, withStyles } from '@material-ui/core/styles';
 import MaterialBreadcrumbs from '@material-ui/core/Breadcrumbs';
 import IconButton from '@material-ui/core/IconButton';
@@ -21,7 +19,8 @@ import TableRow from '@material-ui/core/TableRow';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 
-import { ExecutionStateUpdate, CLUSTER_QUERIES, GQLClusterStatus as ClusterStatus } from '@pixie/api';
+import { ExecutionStateUpdate, GQLClusterStatus as ClusterStatus, GQLPodStatus as PodStatus } from '@pixie/api';
+import { useListClusters, useClusterControlPlanePods } from '@pixie/api-react';
 import { BehaviorSubject } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
 import {
@@ -198,7 +197,7 @@ const AgentsTable = () => {
 
 const formatPodStatus = ({
   name, status, message, reason, containers, events,
-}) => ({
+}: PodStatus) => ({
   name,
   status,
   message,
@@ -325,11 +324,11 @@ const ExpandablePodRow = withStyles((theme: Theme) => ({
 });
 
 const ControlPlanePodsTable = ({ selectedClusterName }) => {
-  const { loading, data } = useQuery(CLUSTER_QUERIES.GET_CLUSTER_CONTROL_PLANE_PODS);
+  const [clusters, loading] = useClusterControlPlanePods();
   if (loading) {
-    return <div>Loading</div>;
+    return <div>Loading...</div>;
   }
-  const cluster = data?.clusters.find((c) => c.clusterName === selectedClusterName);
+  const cluster = clusters?.find((c) => c.clusterName === selectedClusterName);
   if (!cluster) {
     return (
       <div>
@@ -362,16 +361,16 @@ const ControlPlanePodsTable = ({ selectedClusterName }) => {
 
 const ClusterDetailsNavigation = ({ selectedClusterName }) => {
   const history = useHistory();
-  const { loading, data } = useQuery(CLUSTER_QUERIES.LIST_CLUSTERS);
+  const [clusters, loading] = useClusterControlPlanePods();
 
-  if (loading) {
+  if (loading || !clusters) {
     return (<div>Loading...</div>);
   }
   // Cluster always goes first in breadcrumbs.
   const clusterPrettyNameToFullName = {};
   let selectedClusterPrettyName = 'unknown cluster';
 
-  data.clusters.forEach(({ prettyClusterName, clusterName }) => {
+  clusters.forEach(({ prettyClusterName, clusterName }) => {
     clusterPrettyNameToFullName[prettyClusterName] = clusterName;
     if (clusterName === selectedClusterName) {
       selectedClusterPrettyName = prettyClusterName;
@@ -384,7 +383,7 @@ const ClusterDetailsNavigation = ({ selectedClusterName }) => {
     selectable: true,
     omitKey: true,
     // eslint-disable-next-line
-    getListItems: async () => (data.clusters.filter((c) => c.status !== ClusterStatus.CS_DISCONNECTED)
+    getListItems: async () => (clusters.filter((c) => c.status !== ClusterStatus.CS_DISCONNECTED)
       .map((c) => ({ value: c.prettyClusterName }))
     ),
     onSelect: (input) => {
@@ -416,7 +415,7 @@ export const ClusterDetails = withStyles((theme: Theme) => ({
   const clusterName = decodeURIComponent(name);
 
   const [tab, setTab] = React.useState('agents');
-  const { loading, error, data } = useQuery(CLUSTER_QUERIES.LIST_CLUSTERS, { pollInterval: AGENTS_POLL_INTERVAL });
+  const [clusters, loading, error] = useListClusters();
 
   if (loading) {
     return <div className={classes.error}>Loading...</div>;
@@ -424,11 +423,11 @@ export const ClusterDetails = withStyles((theme: Theme) => ({
   if (error) {
     return <div className={classes.error}>{error.toString()}</div>;
   }
-  if (!data || !data.clusters) {
+  if (!clusters) {
     return <div className={classes.error}>No clusters found.</div>;
   }
 
-  const cluster = data.clusters.find((c) => c.clusterName === clusterName);
+  const cluster = clusters.find((c) => c.clusterName === clusterName);
   if (!cluster) {
     return (
       <>

@@ -1,7 +1,6 @@
 import AnnounceKit from 'announcekit-react';
 import * as React from 'react';
 
-import { useQuery } from '@apollo/client';
 import Drawer from '@material-ui/core/Drawer';
 import {
   createStyles, fade, withStyles, Theme,
@@ -18,7 +17,6 @@ import MenuItem from '@material-ui/core/MenuItem';
 import Tooltip from '@material-ui/core/Tooltip';
 
 import { Link } from 'react-router-dom';
-import { USER_QUERIES } from '@pixie/api';
 
 import { ClusterContext } from 'common/cluster-context';
 import UserContext from 'common/user-context';
@@ -38,7 +36,7 @@ import { LiveShortcutsContext } from 'containers/live/shortcuts';
 import { SidebarContext } from 'context/sidebar-context';
 import { LiveTourContext, LiveTourDialog } from 'containers/App/live-tour';
 import ExploreIcon from '@material-ui/icons/Explore';
-import { useSetting } from 'common/use-setting';
+import { useSetting, useUserInfo } from '@pixie/api-react';
 import { LayoutContext } from 'context/layout-context';
 import { Button } from '@material-ui/core';
 
@@ -200,7 +198,7 @@ const StyledListItemIcon = withStyles(() => createStyles({
 }))(ListItemIcon);
 
 const ProfileItem = ({
-  classes, data, setSidebarOpen,
+  classes, userInfo, setSidebarOpen,
 }) => {
   const [open, setOpen] = React.useState<boolean>(false);
   const { setTourOpen } = React.useContext(LiveTourContext);
@@ -252,10 +250,10 @@ const ProfileItem = ({
   let picture = '';
   let email = '';
   let id = '';
-  if (data?.user) {
+  if (userInfo) {
     ({
       name, picture, email, id,
-    } = data.user);
+    } = userInfo);
   }
 
   React.useEffect(() => {
@@ -360,7 +358,7 @@ const SideBar = ({ classes }) => {
 
   const { selectedClusterName } = React.useContext(ClusterContext);
   const { user } = React.useContext(UserContext);
-  const { data } = useQuery(USER_QUERIES.GET_USER_INFO, { fetchPolicy: 'network-only' });
+  const [userInfo] = useUserInfo();
 
   const navItems = React.useMemo(() => (
     [{
@@ -445,7 +443,7 @@ const SideBar = ({ classes }) => {
               </ListItem>
             </Tooltip>
           )}
-          <ProfileItem classes={classes} data={data} setSidebarOpen={setSidebarOpen} />
+          <ProfileItem classes={classes} userInfo={userInfo} setSidebarOpen={setSidebarOpen} />
         </List>
       </Drawer>
     </>

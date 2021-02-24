@@ -1,9 +1,7 @@
 import * as React from 'react';
 import { PropsWithChildren } from 'react';
 import { Theme, ThemeProvider } from '@material-ui/core/styles';
-import { GQLClusterStatus as ClusterStatus } from '@pixie/api';
 import { DARK_THEME } from '@pixie/components';
-import { MockedProvider as MockApolloProvider, MockedProviderProps as MockApolloProps } from '@apollo/client/testing';
 import { LayoutContext, LayoutContextProps } from 'context/layout-context';
 import { LiveTourContext, LiveTourContextProps } from 'containers/App/live-tour';
 import { ResultsContext, ResultsContextProps } from 'context/results-context';
@@ -12,10 +10,11 @@ import { ScriptsContext, ScriptsContextProps } from 'containers/App/scripts-cont
 import { LiveViewPage } from 'containers/live-widgets/utils/live-view-params';
 import { ClusterContext, ClusterContextProps } from 'common/cluster-context';
 import VizierGRPCClientContext, { VizierGRPCClientContextProps } from 'common/vizier-grpc-client-context';
+import { GQLClusterStatus as ClusterStatus } from '@pixie/api';
+import { MockPixieAPIContextProvider } from '@pixie/api-react';
 
 interface MockProps {
   theme?: Theme;
-  apollo?: MockApolloProps;
   vizier?: VizierGRPCClientContextProps;
   layout?: LayoutContextProps;
   liveTour?: LiveTourContextProps;
@@ -27,7 +26,6 @@ interface MockProps {
 
 export const LIVE_CONTEXT_DEFAULTS: Required<MockProps> = {
   theme: DARK_THEME,
-  apollo: {},
   vizier: {
     client: null,
     healthy: true,
@@ -86,7 +84,7 @@ export const LIVE_CONTEXT_DEFAULTS: Required<MockProps> = {
   },
   scripts: {
     scripts: new Map(),
-    promise: Promise.resolve(new Map()),
+    loading: false,
   },
   cluster: {
     selectedCluster: '',
@@ -110,7 +108,7 @@ type CompType = React.FC<PropsWithChildren<MockProps>>;
  */
 export const MockLiveContextProvider: CompType = ({ children, ...props }) => (
   <ThemeProvider theme={get(props, 'theme')}>
-    <MockApolloProvider {...get(props, 'apollo')}>
+    <MockPixieAPIContextProvider>
       <VizierGRPCClientContext.Provider value={get(props, 'vizier')}>
         <LayoutContext.Provider value={get(props, 'layout')}>
           <LiveTourContext.Provider value={get(props, 'liveTour')}>
@@ -126,6 +124,6 @@ export const MockLiveContextProvider: CompType = ({ children, ...props }) => (
           </LiveTourContext.Provider>
         </LayoutContext.Provider>
       </VizierGRPCClientContext.Provider>
-    </MockApolloProvider>
+    </MockPixieAPIContextProvider>
   </ThemeProvider>
 );

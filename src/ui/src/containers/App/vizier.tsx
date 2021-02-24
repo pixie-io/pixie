@@ -12,10 +12,10 @@ import { Redirect, Route, Switch } from 'react-router-dom';
 import { useParams, useLocation } from 'react-router';
 import * as QueryString from 'query-string';
 
-import { useQuery } from '@apollo/client';
 import { createStyles, makeStyles } from '@material-ui/core/styles';
 import { useLDClient } from 'launchdarkly-react-client-sdk';
-import { CLUSTER_QUERIES, USER_QUERIES, GQLClusterStatus as ClusterStatus } from '@pixie/api';
+import { GQLClusterInfo as Cluster, GQLClusterStatus as ClusterStatus } from '@pixie/api';
+import { useListClusters, useUserInfo } from '@pixie/api-react';
 import { scriptToEntityURL } from 'containers/live-widgets/utils/live-view-params';
 import { LIVE_VIEW_SCRIPT_ID_KEY, useSessionStorage } from 'common/storage';
 import { DeployInstructions } from './deploy-instructions';
@@ -35,17 +35,17 @@ const useStyles = makeStyles(() => createStyles({
 
 const ClusterBanner = () => {
   const classes = useStyles();
-  const { loading, error, data } = useQuery(USER_QUERIES.GET_USER_INFO, { fetchPolicy: 'network-only' });
+  const [user, loading, error] = useUserInfo();
 
   if (loading || error) {
     return null;
   }
 
-  if (data.user.email.split('@')[1] === 'pixie.support') {
+  if (user?.email.split('@')[1] === 'pixie.support') {
     return (
       <div className={classes.banner}>
         {
-          `You are viewing clusters for an external org: ${data.user.orgName}`
+          `You are viewing clusters for an external org: ${user.orgName}`
         }
       </div>
     );
@@ -55,15 +55,11 @@ const ClusterBanner = () => {
 };
 
 const useSelectedCluster = () => {
+  const [clusters, loading, error] = useListClusters();
   const { selectedCluster } = React.useContext(ClusterContext);
-  const { loading, error, data } = useQuery(
-    CLUSTER_QUERIES.LIST_CLUSTERS,
-    { pollInterval: 2500, fetchPolicy: 'network-only' },
-  );
-  const clusters = data?.clusters || [];
-  const cluster = clusters.find((c) => c.id === selectedCluster);
+  const cluster = clusters?.find((c) => c.id === selectedCluster);
   return {
-    loading, cluster, numClusters: clusters.length, error,
+    loading, cluster, numClusters: clusters?.length, error,
   };
 };
 
@@ -142,15 +138,12 @@ export default function WithClusterBanner() {
   const showSnackbar = useSnackbar();
 
   const [clusterId, setClusterId] = storage.useSessionStorage(storage.CLUSTER_ID_KEY, '');
-  const { loading, error, data } = useQuery(
-    CLUSTER_QUERIES.LIST_CLUSTERS,
-    { pollInterval: 2500, fetchPolicy: 'network-only' },
-  );
-  const userQuery = useQuery(USER_QUERIES.GET_USER_INFO, { fetchPolicy: 'network-only' });
+  const [clusters, loadingClusters, clusterError] = useListClusters();
+  const [user, loadingUser, userError] = useUserInfo();
+
   const ldClient = useLDClient();
 
-  const clusters = data?.clusters || [];
-  const cluster = (clusterId && clusters.find((c) => c.id === clusterId)) || selectCluster(clusters);
+  const cluster: Cluster = (clusterId && clusters?.find((c) => c.id === clusterId)) || selectCluster(clusters ?? []);
 
   const context = React.useMemo(() => ({
     selectedCluster: clusterId,
@@ -165,8 +158,8 @@ export default function WithClusterBanner() {
     },
   }), [clusterId, cluster?.clusterName, cluster?.prettyClusterName, cluster?.clusterUID, setClusterId, clusters]);
 
-  const userEmail = userQuery.data?.user.email;
-  const userOrg = userQuery.data?.user.orgName;
+  const userEmail = user?.email;
+  const userOrg = user?.orgName;
 
   const userContext = React.useMemo(() => ({
     user: {
@@ -187,9 +180,9 @@ export default function WithClusterBanner() {
     }
   }, [ldClient, userEmail, userOrg]);
 
-  if (loading || userQuery.loading) { return <div>Loading...</div>; }
+  if (loadingClusters || loadingUser) { return <div>Loading...</div>; }
 
-  const errMsg = error?.message || userQuery.error?.message;
+  const errMsg = clusterError?.message || userError?.message;
   if (errMsg) {
     // This is an error with pixie cloud, it is probably not relevant to the user.
     // Show a generic error message instead.

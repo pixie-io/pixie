@@ -16,7 +16,7 @@ type LoadScriptState = 'unloaded' | 'url-loaded' | 'url-skipped' | 'context-load
 
 export function ScriptLoader() {
   const [loadState, setLoadState] = React.useState<LoadScriptState>('unloaded');
-  const { promise: scriptPromise } = React.useContext(ScriptsContext);
+  const { scripts, loading: loadingScripts } = React.useContext(ScriptsContext);
   const {
     pxl, vis, args, id, liveViewPage, setScript, execute, parseVisOrShowError, argsForVisOrShowError,
   } = React.useContext(ScriptContext);
@@ -50,75 +50,76 @@ export function ScriptLoader() {
     // TODO(nserrino): refactor this legacy code to reduce duplication with ScriptContext.
     // (matchLiveViewEntity et al).
     const subscription = urlParams.onChange.subscribe((urlInfo) => {
+      if (loadingScripts) return;
+
       const { pathname } = urlInfo;
       const urlArgs = urlInfo.args;
       const urlScriptId = urlInfo.scriptId;
-      scriptPromise.then((scripts) => {
-        let entityPage;
-        let entityParams;
 
-        // default live view page should be px/cluster.
-        if ((pathname === '/live' || pathname === '/') && !pxl) {
-          entityPage = LiveViewPage.Cluster;
-          entityParams = {};
-        } else {
-          const entity = matchLiveViewEntity(pathname);
-          entityPage = entity.page;
-          entityParams = entity.params;
-        }
+      let entityPage;
+      let entityParams;
 
-        const selectedId = entityPage === LiveViewPage.Default ? urlScriptId : LiveViewPageScriptIds.get(entityPage);
+      // default live view page should be px/cluster.
+      if ((pathname === '/live' || pathname === '/') && !pxl) {
+        entityPage = LiveViewPage.Cluster;
+        entityParams = {};
+      } else {
+        const entity = matchLiveViewEntity(pathname);
+        entityPage = entity.page;
+        entityParams = entity.params;
+      }
 
-        if (!scripts.has(selectedId)) {
-          setLoadState((state) => {
-            if (state !== 'unloaded') {
-              return state;
-            }
-            return 'url-skipped';
-          });
-          return;
-        }
+      const selectedId = entityPage === LiveViewPage.Default ? urlScriptId : LiveViewPageScriptIds.get(entityPage);
 
-        const script = scripts.get(selectedId);
-        const parsedVis = parseVisOrShowError(script.vis);
-        const parsedArgs = argsForVis(parsedVis, { ...urlArgs, ...entityParams }, selectedId);
-        if (!parsedVis && !parsedArgs) {
-          return;
-        }
-
-        const execArgs = {
-          liveViewPage: entityPage,
-          pxl: script.code,
-          vis: parsedVis,
-          args: parsedArgs,
-          id: selectedId,
-          skipURLUpdate: true,
-        };
-        clearResults();
-        setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);
-
-        // Use this hack because otherwise args are not set when you first load a page.
-        if (!argsForVisOrShowError(parsedVis, { ...urlArgs, ...entityParams }, selectedId)) {
-          return;
-        }
-        // The Scratch Pad script starts with just comments and no code. Running that would be an error.
-        if (script.id === SCRATCH_SCRIPT.id) return;
-
-        if (!containsMutation(execArgs.pxl)) {
-          ref.current.execute(execArgs);
-        }
+      if (!scripts.has(selectedId)) {
         setLoadState((state) => {
           if (state !== 'unloaded') {
             return state;
           }
-          return 'url-loaded';
+          return 'url-skipped';
         });
+        return;
+      }
+
+      const script = scripts.get(selectedId);
+      const parsedVis = parseVisOrShowError(script.vis);
+      const parsedArgs = argsForVis(parsedVis, { ...urlArgs, ...entityParams }, selectedId);
+      if (!parsedVis && !parsedArgs) {
+        return;
+      }
+
+      const execArgs = {
+        liveViewPage: entityPage,
+        pxl: script.code,
+        vis: parsedVis,
+        args: parsedArgs,
+        id: selectedId,
+        skipURLUpdate: true,
+      };
+      clearResults();
+      setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);
+
+      // Use this hack because otherwise args are not set when you first load a page.
+      if (!argsForVisOrShowError(parsedVis, { ...urlArgs, ...entityParams }, selectedId)) {
+        return;
+      }
+      // The Scratch Pad script starts with just comments and no code. Running that would be an error.
+      if (script.id === SCRATCH_SCRIPT.id) return;
+
+      if (!containsMutation(execArgs.pxl)) {
+        ref.current.execute(execArgs);
+      }
+      setLoadState((state) => {
+        if (state !== 'unloaded') {
+          return state;
+        }
+        return 'url-loaded';
       });
     });
     return () => {
       subscription.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scriptPromise]);
+  }, [scripts, loadingScripts]);
   return null;
 }

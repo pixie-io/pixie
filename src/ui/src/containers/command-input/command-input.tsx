@@ -1,10 +1,9 @@
 import {
-  CommandAutocomplete, TabSuggestion,
+  CommandAutocomplete,
   TabStop, PixieCommandIcon, PixieCommandHint,
 } from '@pixie/components';
 import { ScriptsContext } from 'containers/App/scripts-context';
 import * as React from 'react';
-import { useApolloClient } from '@apollo/client';
 import { ClusterContext } from 'common/cluster-context';
 
 import {
@@ -14,8 +13,10 @@ import Card from '@material-ui/core/Card';
 import Modal from '@material-ui/core/Modal';
 
 import { ScriptContext, ExecuteArguments } from 'context/script-context';
-import { containsMutation, AUTOCOMPLETE_QUERIES } from '@pixie/api';
+import { containsMutation, GQLTabSuggestion } from '@pixie/api';
 import { entityPageForScriptId } from 'containers/live-widgets/utils/live-view-params';
+import { useAutocomplete } from '@pixie/api-react';
+import { TabSuggestion } from '@pixie/components/src';
 import { ParseFormatStringToTabStops } from './autocomplete-parser';
 import { entityTypeToString } from './autocomplete-utils';
 
@@ -89,7 +90,7 @@ const useStyles = makeStyles(() => (createStyles({
 const CommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
   const classes = useStyles();
   const [tabStops, setTabStops] = React.useState<Array<TabStop>>([]);
-  const [tabSuggestions, setTabSuggestions] = React.useState<Array<TabSuggestion>>([]);
+  const [tabSuggestions, setTabSuggestions] = React.useState<Array<GQLTabSuggestion>>([]);
   const [isValid, setIsValid] = React.useState(false);
   const { selectedClusterUID } = React.useContext(ClusterContext);
 
@@ -99,7 +100,7 @@ const CommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
   const { scripts } = React.useContext(ScriptsContext);
   const [currentInput] = React.useState({} as CurrentInput);
 
-  const client = useApolloClient();
+  const runAutocomplete = useAutocomplete(selectedClusterUID);
   const onChange = React.useCallback((input, cursor, action, updatedTabStops) => {
     if (updatedTabStops !== null) {
       setTabStops(updatedTabStops);
@@ -107,40 +108,32 @@ const CommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
     }
     currentInput.text = input;
 
-    return client.query({
-      query: AUTOCOMPLETE_QUERIES.AUTOCOMPLETE,
-      fetchPolicy: 'network-only',
-      variables: {
-        input,
-        cursor,
-        action: action === 'SELECT' ? 'AAT_SELECT' : 'AAT_EDIT',
-        clusterUID: selectedClusterUID,
-      },
-    }).then(({ data }) => {
-      if (input === currentInput.text) {
-        setIsValid(data.autocomplete.isExecutable);
-        setTabStops(ParseFormatStringToTabStops(data.autocomplete.formattedInput));
-        const completions = data.autocomplete.tabSuggestions.map((s) => {
-          const suggestions = s.suggestions.map((suggestion, i) => ({
-            type: 'item',
-            id: suggestion.name + i,
-            title: suggestion.name,
-            itemType: entityTypeToString(suggestion.kind),
-            description: suggestion.description,
-            highlights: suggestion.matchedIndexes,
-            state: suggestion.state,
-          }));
+    return runAutocomplete(input, cursor, action).then((result) => {
+      if (input !== currentInput.text) return;
+      setIsValid(result.isExecutable);
+      setTabStops(ParseFormatStringToTabStops(result.formattedInput));
+      const completions = result.tabSuggestions.map((s) => {
+        const suggestions = s.suggestions.map((suggestion, i) => ({
+          type: 'item',
+          id: suggestion.name + i,
+          title: suggestion.name,
+          itemType: entityTypeToString(suggestion.kind),
+          description: suggestion.description,
+          highlights: suggestion.matchedIndexes,
+          state: suggestion.state,
+        }));
 
-          return {
-            index: s.tabIndex,
-            executableAfterSelect: s.executableAfterSelect,
-            suggestions,
-          };
-        });
-        setTabSuggestions(completions);
-      }
+        return {
+          index: s.tabIndex,
+          executableAfterSelect: s.executableAfterSelect,
+          suggestions,
+        };
+      });
+      setTabSuggestions(completions);
     });
-  }, [client, selectedClusterUID, currentInput]);
+    // selectedClusterUID is watched to avoid stale results
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runAutocomplete, selectedClusterUID, currentInput]);
 
   // Make an API call to get a list of initial suggestions when the command input is first loaded.
   React.useEffect(() => {
@@ -181,6 +174,9 @@ const CommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabStops, isValid, execute, onClose, scripts]);
 
+  const convertedSuggestions: TabSuggestion[] = tabSuggestions
+    .map((s) => ({ index: s.tabIndex, ...s } as TabSuggestion));
+
   return (
     <Modal open={open} onClose={onClose} BackdropProps={{}}>
       <Card className={classes.card}>
@@ -188,7 +184,7 @@ const CommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
           className={classes.input}
           onSubmit={onSubmit}
           onChange={onChange}
-          completions={tabSuggestions}
+          completions={convertedSuggestions}
           tabStops={tabStops}
           placeholder='Type a script or entity...'
           isValid={isValid}

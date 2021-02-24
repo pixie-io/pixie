@@ -1,5 +1,4 @@
 import { StatusCell, StatusGroup } from '@pixie/components';
-import { useQuery } from '@apollo/client';
 import { Theme, withStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
 import Table from '@material-ui/core/Table';
@@ -9,7 +8,7 @@ import TableRow from '@material-ui/core/TableRow';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { GaugeLevel } from 'utils/metric-thresholds';
-import { CLUSTER_QUERIES } from '@pixie/api';
+import { useListClusters } from '@pixie/api-react';
 import {
   AdminTooltip, clusterStatusGroup, convertHeartbeatMS, getClusterDetailsURL,
   StyledTableCell, StyledTableHeaderCell, StyledLeftTableCell, StyledRightTableCell,
@@ -101,8 +100,6 @@ export function formatClusters(clusterInfos): ClusterDisplay[] {
     });
 }
 
-const CLUSTERS_POLL_INTERVAL = 2500;
-
 export const ClustersTable = withStyles((theme: Theme) => ({
   low: {
     color: theme.palette.error.main,
@@ -117,18 +114,18 @@ export const ClustersTable = withStyles((theme: Theme) => ({
     padding: theme.spacing(1),
   },
 }))(({ classes }: any) => {
-  const { loading, error, data } = useQuery(CLUSTER_QUERIES.LIST_CLUSTERS, { pollInterval: CLUSTERS_POLL_INTERVAL });
+  const [clustersRaw, loading, error] = useListClusters();
   if (loading) {
     return <div className={classes.error}>Loading...</div>;
   }
   if (error) {
     return <div className={classes.error}>{error.toString()}</div>;
   }
-  if (!data || !data.clusters) {
+  if (!clustersRaw) {
     return <div className={classes.error}>No clusters found.</div>;
   }
 
-  const clusters = formatClusters(data.clusters);
+  const clusters = formatClusters(clustersRaw);
 
   return (
     <Table>

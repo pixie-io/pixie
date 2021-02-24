@@ -1,13 +1,7 @@
-import { GQLClusterStatus as ClusterStatus } from '@pixie/api';
-
-interface ClusterInfo {
-  id: string;
-  clusterName: string;
-  status: string;
-}
+import { GQLClusterStatus as ClusterStatus, GQLClusterInfo as Cluster } from '@pixie/api';
 
 // Selects based on cluster status and tiebreaks by cluster name.
-export function selectCluster(clusters: ClusterInfo[]): ClusterInfo {
+export function selectCluster(clusters: Cluster[]): Cluster {
   if (clusters.length === 0) {
     return null;
   }

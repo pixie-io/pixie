@@ -1,6 +1,5 @@
 import * as React from 'react';
 
-import { useMutation } from '@apollo/client';
 import {
   createStyles,
   withStyles,
@@ -16,7 +15,7 @@ import { APIKeysTable } from 'containers/admin/api-keys';
 import { ClustersTable } from 'containers/admin/clusters-list';
 import { StyledTab, StyledTabs } from 'containers/admin/utils';
 import { scrollbarStyles } from '@pixie/components';
-import { API_KEY_QUERIES, DEPLOYMENT_KEY_QUERIES } from '@pixie/api';
+import { useAPIKeys, useDeploymentKeys } from '@pixie/api-react';
 
 export const AdminOverview = withStyles((theme: Theme) => createStyles({
   createButton: {
@@ -42,8 +41,8 @@ export const AdminOverview = withStyles((theme: Theme) => createStyles({
     paddingBottom: '1px', // Prevent an incorrect height calculation that shows a second scrollbar
   },
 }))(({ classes }: WithStyles) => {
-  const [createDeployKey] = useMutation(DEPLOYMENT_KEY_QUERIES.CREATE_DEPLOYMENT_KEY);
-  const [createAPIKey] = useMutation(API_KEY_QUERIES.CREATE_API_KEY);
+  const [{ createDeploymentKey }] = useDeploymentKeys();
+  const [{ createAPIKey }] = useAPIKeys();
   const [tab, setTab] = React.useState('clusters');
 
   return (
@@ -60,7 +59,7 @@ export const AdminOverview = withStyles((theme: Theme) => createStyles({
         {tab === 'deployment-keys'
           && (
           <Button
-            onClick={() => createDeployKey()}
+            onClick={() => createDeploymentKey()}
             className={classes.createButton}
             variant='outlined'
             startIcon={<Add />}

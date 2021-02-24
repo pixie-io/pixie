@@ -1,12 +1,10 @@
 import * as React from 'react';
 import { GetPxScripts, Script } from 'utils/script-bundle';
-import { USER_QUERIES } from '@pixie/api';
-
-import { useApolloClient } from '@apollo/client';
+import { useUserInfo } from '@pixie/api-react';
 
 export interface ScriptsContextProps {
   scripts: Map<string, Script>;
-  promise: Promise<Map<string, Script>>;
+  loading: boolean;
 }
 
 export const ScriptsContext = React.createContext<ScriptsContextProps>(null);
@@ -24,25 +22,27 @@ export const SCRATCH_SCRIPT: Script = {
 };
 
 export const ScriptsContextProvider = (props) => {
-  const client = useApolloClient();
+  const [user, loading, error] = useUserInfo();
   const [scripts, setScripts] = React.useState<Map<string, Script>>(new Map([['initial', {} as Script]]));
 
-  const promise = React.useMemo(() => client.query({ query: USER_QUERIES.GET_USER_INFO, fetchPolicy: 'network-only' })
-    .then((result) => {
-      const orgName = result?.data?.user.orgName;
-      return GetPxScripts(orgName);
-    })
-    .then((scriptsList) => new Map<string, Script>(scriptsList.map((script) => [script.id, script]))), [client]);
+  // Lets us know if there is a pending setScripts. If there is, we're technically still loading for one more render.
+  let nextScripts = scripts;
 
   React.useEffect(() => {
-    // Do this only once.
-    promise.then((availableScripts) => {
+    if (!user || loading || error) return;
+    GetPxScripts(user.orgName).then((list) => {
+      const availableScripts = new Map<string, Script>(list.map((script) => [script.id, script]));
       availableScripts.set(SCRATCH_SCRIPT.id, SCRATCH_SCRIPT);
       setScripts(availableScripts);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      nextScripts = availableScripts;
     });
-  }, [promise]);
+    // Monitoring the user's ID and their org rather than the whole object, to avoid excess renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, user?.orgName, loading, error]);
 
-  const context = React.useMemo(() => ({ scripts, promise }), [scripts, promise]);
+  const reallyLoading = loading || nextScripts !== scripts;
+  const context = React.useMemo(() => ({ scripts, loading: reallyLoading }), [scripts, reallyLoading]);
 
   return (
     <ScriptsContext.Provider value={context}>

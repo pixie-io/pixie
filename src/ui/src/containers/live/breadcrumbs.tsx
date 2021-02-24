@@ -3,7 +3,8 @@ import * as React from 'react';
 import {
   createStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
-import { useQuery, useApolloClient } from '@apollo/client';
+import { GQLClusterStatus as ClusterStatus, containsMutation } from '@pixie/api';
+import { useListClusters, useAutocompleteFieldSuggester } from '@pixie/api-react';
 
 import {
   Breadcrumbs, BreadcrumbOptions,
@@ -16,14 +17,8 @@ import {
 import { SCRATCH_SCRIPT, ScriptsContext } from 'containers/App/scripts-context';
 import { ScriptContext } from 'context/script-context';
 import { entityPageForScriptId, optionallyGetNamespace } from 'containers/live-widgets/utils/live-view-params';
-import { EntityType, pxTypetoEntityType, entityStatusGroup } from 'containers/command-input/autocomplete-utils';
+import { pxTypeToEntityType, entityStatusGroup } from 'containers/command-input/autocomplete-utils';
 import { clusterStatusGroup } from 'containers/admin/utils';
-import {
-  containsMutation,
-  CLUSTER_QUERIES,
-  AUTOCOMPLETE_QUERIES,
-  GQLClusterStatus as ClusterStatus,
-} from '@pixie/api';
 import ExecuteScriptButton from './execute-button';
 import { Variable } from './vis';
 
@@ -68,7 +63,7 @@ const styles = (({ shape, palette, spacing }: Theme) => createStyles({
 }));
 
 const LiveViewBreadcrumbs = ({ classes }) => {
-  const { loading, data } = useQuery(CLUSTER_QUERIES.LIST_CLUSTERS);
+  const [clusters, loading, error] = useListClusters();
   const { selectedCluster, setCluster, selectedClusterUID } = React.useContext(ClusterContext);
   const { scripts } = React.useContext(ScriptsContext);
 
@@ -76,21 +71,11 @@ const LiveViewBreadcrumbs = ({ classes }) => {
     vis, pxl, args, id, liveViewPage, setArgs, execute, setScript, parseVisOrShowError, argsForVisOrShowError,
   } = React.useContext(ScriptContext);
 
-  const client = useApolloClient();
-  const getCompletions = React.useCallback((newInput: string, kind: EntityType) => (client.query({
-    query: AUTOCOMPLETE_QUERIES.FIELD,
-    fetchPolicy: 'network-only',
-    variables: {
-      input: newInput,
-      kind,
-      clusterUID: selectedClusterUID,
-    },
-  })
-  ), [client, selectedClusterUID]);
+  const getCompletions = useAutocompleteFieldSuggester(selectedClusterUID);
 
   const scriptIds = React.useMemo(() => [...scripts.keys()], [scripts]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const clusterIds = React.useMemo(() => data?.clusters.map((c) => c.id), [data?.clusters]);
+  const clusterIds = React.useMemo(() => clusters?.map((c) => c.id), [clusters]);
 
   type MemoCrumbs = { entityBreadcrumbs: BreadcrumbOptions[]; argBreadcrumbs: BreadcrumbOptions[] };
   const { entityBreadcrumbs, argBreadcrumbs }: MemoCrumbs = React.useMemo(() => {
@@ -98,11 +83,13 @@ const LiveViewBreadcrumbs = ({ classes }) => {
     const entityBreadcrumbs: BreadcrumbOptions[] = [];
     // eslint-disable-next-line no-shadow
     const argBreadcrumbs: BreadcrumbOptions[] = [];
-    if (loading) return { entityBreadcrumbs, argBreadcrumbs };
+
+    if (loading || !clusters || error) return { entityBreadcrumbs, argBreadcrumbs };
+
     // Cluster always goes first in breadcrumbs.
-    const clusterName = data.clusters.find((c) => c.id === selectedCluster)?.prettyClusterName || 'unknown cluster';
+    const clusterName = clusters.find((c) => c.id === selectedCluster)?.prettyClusterName || 'unknown cluster';
     const clusterNameToID: Record<string, string> = {};
-    data.clusters.forEach((c) => {
+    clusters.forEach((c) => {
       clusterNameToID[c.prettyClusterName] = c.id;
     });
     entityBreadcrumbs.push({
@@ -110,7 +97,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
       value: clusterName,
       selectable: true,
       // eslint-disable-next-line
-      getListItems: async (input) => (data.clusters.filter((c) => c.status !== ClusterStatus.CS_DISCONNECTED
+      getListItems: async (input) => (clusters.filter((c) => c.status !== ClusterStatus.CS_DISCONNECTED
               && c.prettyClusterName.includes(input))
         .map((c) => ({ value: c.prettyClusterName, icon: <StatusCell statusGroup={clusterStatusGroup(c.status)} /> }))
       ),
@@ -164,14 +151,14 @@ const LiveViewBreadcrumbs = ({ classes }) => {
         argProps.requireCompletion = true;
       }
 
-      const entityType = pxTypetoEntityType(argTypes[argName]);
+      const entityType = pxTypeToEntityType(argTypes[argName]);
       if (entityType !== 'AEK_UNKNOWN') {
-        argProps.getListItems = async (input) => (getCompletions(input, entityType)
-          .then((results) => (results.data.autocompleteField.map((suggestion) => ({
+        argProps.getListItems = async (input) => (
+          (await getCompletions(input, entityType)).map((suggestion) => ({
             value: suggestion.name,
             description: suggestion.description,
             icon: <StatusCell statusGroup={entityStatusGroup(suggestion.state)} />,
-          })))));
+          })));
       }
 
       // TODO(michelle): Ideally we should just be able to use the entityType to determine whether the

@@ -8,7 +8,6 @@ import { DOMAIN_NAME } from 'containers/constants';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 
-import { useQuery } from '@apollo/client';
 import IconButton from '@material-ui/core/IconButton';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
@@ -17,7 +16,7 @@ import {
   createStyles, makeStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
 import { useContext } from 'react';
-import { USER_QUERIES } from '@pixie/api';
+import { useUserInfo } from '@pixie/api-react';
 import { LiveShortcutsContext } from '../live/shortcuts';
 
 const useStyles = makeStyles((theme: Theme) => ({
@@ -75,12 +74,12 @@ const ProfileMenu = (props: { className?: string }) => {
     setAnchorEl(null);
   }, []);
 
-  const { loading, error, data } = useQuery(USER_QUERIES.GET_USER_INFO, { fetchPolicy: 'network-only' });
+  const [user, loading, error] = useUserInfo();
 
-  if (loading || error || !data.user) {
+  if (loading || error || !user) {
     return null;
   }
-  const { user } = data;
+
   return (
     <>
       <IconButton onClick={openMenu} className={props.className || ''}>

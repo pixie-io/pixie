@@ -1,8 +1,8 @@
-import { CloudClientContext } from 'context/app-context';
 import * as React from 'react';
 import { operation } from 'retry';
 import { isDev } from 'utils/env';
 
+import { PixieAPIContext } from '@pixie/api-react';
 import { VizierGRPCClient, CloudClient, GQLClusterStatus as ClusterStatus } from '@pixie/api';
 
 export interface VizierGRPCClientContextProps {
@@ -38,7 +38,14 @@ export const VizierGRPCClientProvider = (props: Props) => {
   const {
     children, passthroughEnabled, clusterID, clusterStatus,
   } = props;
-  const cloudClient = React.useContext(CloudClientContext);
+  // TEMPORARY workaround so we can make the architectural changes needed to fix this properly.
+  // The issue is that CloudClient gets imported from dist here, but the object we're referencing was imported from src.
+  // Although it's the exact same interface, TypeScript sees that it came from two different sources and that it has
+  // private properties. It then assumes this is a problem and the interfaces might differ, so it's a compilation error.
+  // We suppress this (for now) to work around it.
+  // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+  // @ts-ignore
+  const cloudClient: CloudClient = React.useContext(PixieAPIContext).getCloudGQLClientForAdapterLibrary();
   const [client, setClient] = React.useState<VizierGRPCClient>(null);
   const [loading, setLoading] = React.useState(true);
 

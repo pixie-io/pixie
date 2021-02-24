@@ -1,4 +1,3 @@
-import { useMutation, useQuery } from '@apollo/client';
 import Table from '@material-ui/core/Table';
 import IconButton from '@material-ui/core/IconButton';
 import Input from '@material-ui/core/Input';
@@ -13,7 +12,7 @@ import Visibility from '@material-ui/icons/Visibility';
 import VisibilityOff from '@material-ui/icons/VisibilityOff';
 import { distanceInWords } from 'date-fns';
 import * as React from 'react';
-import { API_KEY_QUERIES } from '@pixie/api';
+import { useAPIKeys } from '@pixie/api-react';
 import {
   AdminTooltip, StyledTableCell, StyledTableHeaderCell,
   StyledLeftTableCell, StyledRightTableCell,
@@ -48,7 +47,7 @@ export const APIKeyRow = ({ apiKey }) => {
   const [open, setOpen] = React.useState<boolean>(false);
   const [anchorEl, setAnchorEl] = React.useState(null);
 
-  const [deleteAPIKey] = useMutation(API_KEY_QUERIES.DELETE_API_KEY);
+  const [{ deleteAPIKey }] = useAPIKeys();
 
   const openMenu = React.useCallback((event) => {
     setOpen(true);
@@ -112,7 +111,7 @@ export const APIKeyRow = ({ apiKey }) => {
           <MenuItem
             key='delete'
             alignItems='center'
-            onClick={() => deleteAPIKey({ variables: { id: apiKey.id } })}
+            onClick={() => deleteAPIKey(apiKey.id)}
           >
             <KeyListItemIcon className={classes.copyBtn}>
               <Delete />
@@ -127,7 +126,7 @@ export const APIKeyRow = ({ apiKey }) => {
 
 export const APIKeysTable = () => {
   const classes = UseKeyListStyles();
-  const { loading, error, data } = useQuery(API_KEY_QUERIES.LIST_API_KEYS, { pollInterval: 2000 });
+  const [{ apiKeys: apiKeysRaw }, loading, error] = useAPIKeys();
   if (loading) {
     return <div className={classes.error}>Loading...</div>;
   }
@@ -135,7 +134,7 @@ export const APIKeysTable = () => {
     return <div className={classes.error}>{error.toString()}</div>;
   }
 
-  const apiKeys = (data?.apiKeys || []).map((key) => formatAPIKey(key));
+  const apiKeys = (apiKeysRaw ?? []).map((key) => formatAPIKey(key));
   return (
     <>
       <Table>
