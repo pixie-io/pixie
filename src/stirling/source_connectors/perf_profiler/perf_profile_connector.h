@@ -63,7 +63,13 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   void CreateRecords(const uint64_t timestamp_ns, ebpf::BPFStackTable* stack_traces,
                      ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo, DataTable* data_table);
 
+  // StackTraceHisto: SymbolicStackTrace => observation-count
+  // StackTraceIDMap: SymbolicStackTrace => stack-trace-id
   using StackTraceHisto = absl::flat_hash_map<SymbolicStackTrace, uint64_t>;
+  using StackTraceIDMap = absl::flat_hash_map<SymbolicStackTrace, uint64_t>;
+
+  uint64_t SymbolicStackTradeID(const SymbolicStackTrace& symbolic_stack_trace);
+
   StackTraceHisto AggregateStackTraces(ebpf::BPFStackTable* stack_traces,
                                        ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo);
 
@@ -77,7 +83,14 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   std::unique_ptr<ebpf::BPFArrayTable<uint64_t> > profiler_state_;
 
   // Number of read & clear ops completed:
-  uint64_t read_and_clear_count_;
+  uint64_t read_and_clear_count_ = 0;
+
+  // Tracks the next stack-trace-id to be assigned;
+  // incremented by 1 for each such assignment.
+  uint64_t next_stack_trace_id_ = 0;
+
+  // Tracks unique stack trace ids, for the lifetime of Stirling:
+  StackTraceIDMap stack_trace_ids_;
 
   // kSamplingPeriodMillis: the time interval in between stack trace samples.
   // kTargetPushPeriodMillis: time interval between "push events".

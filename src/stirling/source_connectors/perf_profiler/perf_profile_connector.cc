@@ -15,7 +15,7 @@ namespace pl {
 namespace stirling {
 
 PerfProfileConnector::PerfProfileConnector(std::string_view source_name)
-    : SourceConnector(source_name, kTables), read_and_clear_count_(0) {}
+    : SourceConnector(source_name, kTables) {}
 
 Status PerfProfileConnector::InitImpl() {
   const size_t ncpus = get_nprocs_conf();
@@ -123,6 +123,19 @@ void PerfProfileConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_
   DCHECK_EQ(push_count, read_and_clear_count_) << "stack trace handshake protocol out of sync.";
 }
 
+uint64_t PerfProfileConnector::SymbolicStackTradeID(
+    const SymbolicStackTrace& symbolic_stack_trace) {
+  const auto it = stack_trace_ids_.find(symbolic_stack_trace);
+
+  if (it != stack_trace_ids_.end()) {
+    const uint64_t stack_trace_id = it->second;
+    return stack_trace_id;
+  } else {
+    stack_trace_ids_[symbolic_stack_trace] = next_stack_trace_id_;
+    return next_stack_trace_id_++;
+  }
+}
+
 PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces(
     ebpf::BPFStackTable* stack_traces, ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo) {
   // TODO(jps): switch from using get_table_offline() to directly stepping through
@@ -139,6 +152,17 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
     std::string stack_trace_str = FoldedStackTraceString(stack_traces, stack_trace_key);
     SymbolicStackTrace symbolic_stack_trace = {upid, std::move(stack_trace_str)};
     symbolic_histogram[symbolic_stack_trace] += count;
+
+    // TODO(jps): If we see a perf. issue with having two maps keyed by symbolic-stack-trace,
+    // refactor such that creating/finding symoblic-stack-trace-id and count aggregation
+    // are both done here, in AggregateStackTraces().
+    // One possible implementation:
+    // make the histogram a map from "symbolic-track-trace" => "count & stack-trace-id"
+    // e.g.:
+    // ... auto& count_and_id = symbolic_histogram[symbolic_stack_trace];
+    // ... count_and_id.id = id;
+    // ... count_and_id.count += count;
+    // alternate impl. is a map from "stack-trace-id" => "count & symbolic-stack-trace"
   }
 
   VLOG(1) << "PerfProfileConnector::AggregateStackTraces(): cum_sum_count: " << cum_sum_count;
@@ -158,19 +182,18 @@ void PerfProfileConnector::CreateRecords(const uint64_t timestamp_ns,
   // for example, consider the following two stack traces from BPF:
   // p0, p1, p2 => main;qux;baz   # both p2 & p3 point into baz.
   // p0, p1, p3 => main;qux;baz
+
   StackTraceHisto symbolic_histogram = AggregateStackTraces(stack_traces, histo);
 
   for (const auto& [symbolic_stack_trace, count] : symbolic_histogram) {
     DataTable::RecordBuilder<&kStackTraceTable> r(data_table, timestamp_ns);
 
-    // TODO(jps/oazizi): Add logic to create stack_trace-id; track by SymbolicStackTrace.
-    uint64_t stack_trace_id = 0;
+    const uint64_t stack_trace_id = SymbolicStackTradeID(symbolic_stack_trace);
 
     r.Append<r.ColIndex("time_")>(timestamp_ns);
     r.Append<r.ColIndex("upid")>(symbolic_stack_trace.upid.value());
     r.Append<r.ColIndex("stack_trace_id")>(stack_trace_id);
-    r.Append<r.ColIndex("stack_trace"), kMaxStackTraceSize>(
-        std::move(symbolic_stack_trace.stack_trace_str));
+    r.Append<r.ColIndex("stack_trace"), kMaxStackTraceSize>(symbolic_stack_trace.stack_trace_str);
     r.Append<r.ColIndex("count")>(count);
   }
 }
