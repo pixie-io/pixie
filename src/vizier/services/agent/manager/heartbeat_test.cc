@@ -152,25 +152,6 @@ class HeartbeatMessageHandlerTest : public ::testing::Test {
   std::filesystem::path sysfs_path_;
 };
 
-TEST_F(HeartbeatMessageHandlerTest, InitialHeartbeatTimeout) {
-  dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
-  EXPECT_EQ(1, nats_conn_->published_msgs().size());
-  auto hb = nats_conn_->published_msgs()[0].heartbeat();
-  EXPECT_EQ(0, hb.sequence_number());
-
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::seconds(6));
-  dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
-
-  // If no ack received, hb manager should resend the same heartbeat.
-  EXPECT_EQ(2, nats_conn_->published_msgs().size());
-  hb = nats_conn_->published_msgs()[1].heartbeat();
-  EXPECT_EQ(0, hb.sequence_number());
-
-  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(5 * 5000 + 1));
-  ASSERT_DEATH(dispatcher_->Run(event::Dispatcher::RunType::NonBlock),
-               "Timeout waiting for heartbeat ACK for seq_num=0");
-}
-
 TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeat) {
   auto start_time_nanos = time_to_nanos(start_monotonic_time_);
   md::UPID upid(1, 2, start_time_nanos);

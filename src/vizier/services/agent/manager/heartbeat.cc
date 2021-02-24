@@ -100,11 +100,6 @@ Status HeartbeatMessageHandler::SendHeartbeatInternal() {
 void HeartbeatMessageHandler::HeartbeatWatchdog() {
   if (heartbeat_info_.last_ackd_seq_num < heartbeat_info_.last_sent_seq_num) {
     auto diff = time_source_.MonotonicTime() - heartbeat_info_.last_heartbeat_send_time_;
-
-    if (diff > kHeartbeatRetryCount * kHeartbeatWaitMillis) {
-      LOG(FATAL) << "Timeout waiting for heartbeat ACK for seq_num="
-                 << heartbeat_info_.last_sent_seq_num;
-    }
     if (diff > kHeartbeatWaitMillis) {
       LOG(ERROR) << "Still waiting for heartbeat ACK for seq_num="
                  << heartbeat_info_.last_sent_seq_num;
