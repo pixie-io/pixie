@@ -72,10 +72,11 @@ def summary_redis_let(start: str, pod: px.Pod):
         traffic for each database Pods talk to.
     '''
     df = redis_let_per_pod(start, pod, ['timestamp', k8s_object, 'remote_addr'])
-    df.requesting_entity_id = px.ip_to_pod_id(df.remote_addr)
-    df.requesting_entity = px.pod_id_to_pod_name(df.requesting_entity_id)
-    summary_df = summarize_LET(df, [k8s_object, 'requesting_entity'])
-    return summary_df[[k8s_object, 'requesting_entity', 'request_throughput', 'latency', 'total_requests']]
+    df.source_id = px.ip_to_pod_id(df.remote_addr)
+    df.source = px.pod_id_to_pod_name(df.source_id)
+    summary_df = summarize_LET(df, ['pod', 'source'])
+    summary_df.redis_pod = summary_df.pod
+    return summary_df[['redis_pod', 'source', 'request_throughput', 'latency', 'total_requests']]
 
 
 def latency_histogram(start: str, pod: px.Pod):
