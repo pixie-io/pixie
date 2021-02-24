@@ -353,7 +353,10 @@ func (m *K8sMetadataHandler) GetUpdatesForIP(ip string, from int64, to int64) ([
 
 // GetServiceCIDR returns the service CIDR for the current cluster.
 func (m *K8sMetadataHandler) GetServiceCIDR() string {
-	return m.state.ServiceCIDR.String()
+	if m.state.ServiceCIDR != nil {
+		return m.state.ServiceCIDR.String()
+	}
+	return ""
 }
 
 // GetPodCIDRs returns the PodCIDRs for the cluster.
