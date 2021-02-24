@@ -106,6 +106,7 @@ require (
 	k8s.io/klog v1.0.0
 	k8s.io/kube-openapi v0.0.0-20200204173128-addea2498afe // indirect
 	k8s.io/kubectl v0.18.2
+	sigs.k8s.io/yaml v1.2.0
 )
 
 replace (

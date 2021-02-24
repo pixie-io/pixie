@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
@@ -28,6 +29,45 @@ const (
 	prodSentryDSN = "https://a8a635734bb840799befb63190e904e0@o324879.ingest.sentry.io/5203506"
 	devSentryDSN  = "https://8e4acf22871543f1aa143a93a5216a16@o324879.ingest.sentry.io/5203508"
 )
+
+// VizierTmplValues are the template values that can be used to fill out templated Vizier YAMLs.
+type VizierTmplValues struct {
+	DeployKey         string
+	CustomAnnotations string
+}
+
+// VizierTmplValuesToMap converts the vizier template values to a map which can be used to fill out a template.
+func VizierTmplValuesToMap(tmplValues *VizierTmplValues) *map[string]interface{} {
+	return &map[string]interface{}{
+		"DeployKey":         tmplValues.DeployKey,
+		"CustomAnnotations": tmplValues.CustomAnnotations,
+	}
+}
+
+// These are template options that should be applied to each resource in the Vizier YAMLs, such as annotations and labels.
+var globalTemplateOptions = []*K8sTemplateOptions{
+	&K8sTemplateOptions{
+		Patch:       `{"metadata": { "annotations": { "__PL_ANNOTATION_KEY__": "__PL_ANNOTATION_VALUE__"} } }`,
+		Placeholder: "__PL_ANNOTATION_KEY__: __PL_ANNOTATION_VALUE__",
+		TemplateValue: `{{range $element := split "," .Values.CustomAnnotations -}}
+    {{ $kv := split "=" $element -}}
+    {{if eq (len $kv) 2 -}}
+    {{ index $kv 0}}: "{{ index $kv 1}}"
+    {{- end}}
+    {{end}}`,
+	},
+	&K8sTemplateOptions{
+		TemplateMatcher: TemplateScopeMatcher,
+		Patch:           `{"spec": { "template": { "metadata": { "annotations": { "__PL_SPEC_ANNOTATION_KEY__": "__PL_SPEC_ANNOTATION_VALUE__"} } } } }`,
+		Placeholder:     "__PL_SPEC_ANNOTATION_KEY__: __PL_SPEC_ANNOTATION_VALUE__",
+		TemplateValue: `{{range $element := split "," .Values.CustomAnnotations -}}
+        {{ $kv := split "=" $element -}}
+        {{if eq (len $kv) 2 -}}
+        {{ index $kv 0}}: "{{ index $kv 1}}"
+        {{- end}}
+        {{end}}`,
+	},
+}
 
 func downloadFile(url string) (io.ReadCloser, error) {
 	// Get the data
@@ -96,23 +136,21 @@ type YAMLOptions struct {
 	UseEtcdOperator     bool
 	Labels              string
 	LabelMap            map[string]string
-	Annotations         string
-	AnnotationMap       map[string]string
 }
 
 // GenerateTemplatedDeployYAMLs generates the YAMLs that should be run when deploying Pixie.
-func GenerateTemplatedDeployYAMLs(conn *grpc.ClientConn, authToken string, versionStr string, inputVersion string, yamlOpts *YAMLOptions) ([]*YAMLFile, error) {
-	nsYAML, err := generateNamespaceYAML(yamlOpts)
+func GenerateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, conn *grpc.ClientConn, authToken string, versionStr string, inputVersion string, yamlOpts *YAMLOptions) ([]*YAMLFile, error) {
+	nsYAML, err := generateNamespaceYAML(clientset, yamlOpts)
 	if err != nil {
 		return nil, err
 	}
 
-	secretsYAML, err := generateSecretsYAML(yamlOpts, versionStr, inputVersion)
+	secretsYAML, err := generateSecretsYAML(clientset, yamlOpts, versionStr, inputVersion)
 	if err != nil {
 		return nil, err
 	}
 
-	vzYAML, err := generateBootstrapYAML(conn, authToken, versionStr)
+	vzYAML, err := generateBootstrapYAML(clientset, conn, authToken, versionStr)
 	if err != nil {
 		return nil, err
 	}
@@ -128,25 +166,34 @@ func GenerateTemplatedDeployYAMLs(conn *grpc.ClientConn, authToken string, versi
 		},
 		&YAMLFile{
 			Name: "bootstrap",
-			YAML: vzYAML[vizierBootstrapYAMLPath],
+			YAML: vzYAML,
 		},
 	}, nil
 }
 
 // generateNamespaceYAML creates the YAML for the namespace Pixie is deployed in.
-func generateNamespaceYAML(yamlOpts *YAMLOptions) (string, error) {
+func generateNamespaceYAML(clientset *kubernetes.Clientset, yamlOpts *YAMLOptions) (string, error) {
 	ns := &v1.Namespace{}
 	ns.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Namespace"))
 	ns.Name = yamlOpts.NS
 	ns.Labels = yamlOpts.LabelMap
-	ns.Annotations = yamlOpts.AnnotationMap
 
-	return k8s.ConvertResourceToYAML(ns)
+	origYAML, err := k8s.ConvertResourceToYAML(ns)
+	if err != nil {
+		return "", err
+	}
+
+	nsYAML, err := TemplatizeK8sYAML(clientset, origYAML, globalTemplateOptions)
+	if err != nil {
+		return "", err
+	}
+
+	return nsYAML, nil
 }
 
 // generateSecretsYAML creates the YAML for Pixie secrets.
-func generateSecretsYAML(yamlOpts *YAMLOptions, versionStr string, inputVersion string) (string, error) {
-	dockerSecret, err := k8s.CreateDockerConfigJSONSecret(yamlOpts.NS, yamlOpts.ImagePullSecretName, yamlOpts.ImagePullCreds, yamlOpts.LabelMap, yamlOpts.AnnotationMap)
+func generateSecretsYAML(clientset *kubernetes.Clientset, yamlOpts *YAMLOptions, versionStr string, inputVersion string) (string, error) {
+	dockerSecret, err := k8s.CreateDockerConfigJSONSecret(yamlOpts.NS, yamlOpts.ImagePullSecretName, yamlOpts.ImagePullCreds, yamlOpts.LabelMap, nil)
 	if err != nil {
 		return "", err
 	}
@@ -160,10 +207,41 @@ func generateSecretsYAML(yamlOpts *YAMLOptions, versionStr string, inputVersion 
 		return "", err
 	}
 
-	return concatYAMLs(dYaml, csYAMLs), nil
+	origYAML := concatYAMLs(dYaml, csYAMLs)
+
+	// Fill in configmaps.
+	secretsYAML, err := TemplatizeK8sYAML(clientset, origYAML, append([]*K8sTemplateOptions{
+		&K8sTemplateOptions{
+			TemplateMatcher: GenerateResourceNameMatcherFn("pl-deploy-secrets"),
+			Patch:           `{"stringData": { "deploy-key": "__PL_DEPLOY_KEY__"} }`,
+			Placeholder:     "__PL_DEPLOY_KEY__",
+			TemplateValue:   `{{ .Values.DeployKey | required "...." }}`,
+		},
+		&K8sTemplateOptions{
+			TemplateMatcher: GenerateResourceNameMatcherFn("pl-cluster-config"),
+			Patch:           `{"data": { "PL_CUSTOM_ANNOTATIONS": "__PL_CUSTOM_ANNOTATIONS__"} }`,
+			Placeholder:     "__PL_CUSTOM_ANNOTATIONS__",
+			TemplateValue:   `"{{ .Values.CustomAnnotations }}"`,
+		},
+	}, globalTemplateOptions...))
+	if err != nil {
+		return "", err
+	}
+
+	return secretsYAML, nil
 }
 
 // generateBootstrapYAML creates the YAML for the Pixie bootstrap resources.
-func generateBootstrapYAML(conn *grpc.ClientConn, authToken string, versionStr string) (map[string]string, error) {
-	return FetchVizierYAMLMap(conn, authToken, versionStr)
+func generateBootstrapYAML(clientset *kubernetes.Clientset, conn *grpc.ClientConn, authToken string, versionStr string) (string, error) {
+	vzMap, err := FetchVizierYAMLMap(conn, authToken, versionStr)
+	if err != nil {
+		return "", nil
+	}
+
+	vzBootstrapYAML, err := TemplatizeK8sYAML(clientset, vzMap[vizierBootstrapYAMLPath], globalTemplateOptions)
+	if err != nil {
+		return "", err
+	}
+
+	return vzBootstrapYAML, nil
 }

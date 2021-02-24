@@ -65,7 +65,6 @@ func LoadClusterSecrets(clientset *kubernetes.Clientset, cloudAddr string, deplo
 		DevCloudNS:      devCloudNamespace,
 		UseEtcdOperator: false,
 		Labels:          "",
-		Annotations:     "",
 	}
 	yamls, err := artifacts.GenerateClusterSecretYAMLs(yamlOpts, deployKey, sentryDSN, "")
 	if err != nil {

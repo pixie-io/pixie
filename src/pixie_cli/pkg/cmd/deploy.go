@@ -241,14 +241,12 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 			os.Exit(1)
 		}
 	}
-	annotationMap := make(map[string]string)
 	if customAnnotations != "" {
-		am, err := k8s.KeyValueStringToMap(customAnnotations)
+		_, err := k8s.KeyValueStringToMap(customAnnotations)
 		if err != nil {
 			utils.Error("--annotations must be specified through the following format: annotation1=value1,annotation2=value2")
 			os.Exit(1)
 		}
-		annotationMap = am
 	}
 
 	if deployKey == "" && extractPath != "" {
@@ -316,11 +314,9 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		defer deleteDeployKey(cloudAddr, uuid.FromStringOrNil(deployKeyID))
 	}
 
-	var kubeConfig *rest.Config
-	kubeConfig = nil
-	if extractPath == "" { // Only require kubeconfig when directly deploying from CLI.
-		kubeConfig = k8s.GetConfig()
-	}
+	kubeConfig := k8s.GetConfig()
+
+	clientset := k8s.GetClientset(kubeConfig)
 
 	var credsData string
 	if credsFile == "" {
@@ -345,17 +341,16 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		UseEtcdOperator:     useEtcdOperator,
 		Labels:              customLabels,
 		LabelMap:            labelMap,
-		Annotations:         customAnnotations,
-		AnnotationMap:       annotationMap,
 	}
 
 	yamlArgs := &artifacts.YAMLTmplArguments{
-		Values: &artifacts.YAMLTmplValues{
-			DeployKey: deployKey,
-		},
+		Values: artifacts.VizierTmplValuesToMap(&artifacts.VizierTmplValues{
+			DeployKey:         deployKey,
+			CustomAnnotations: customAnnotations,
+		}),
 	}
 
-	templatedYAMLs, err := artifacts.GenerateTemplatedDeployYAMLs(cloudConn, creds.Token, versionString, inputVersionStr, yamlOpts)
+	templatedYAMLs, err := artifacts.GenerateTemplatedDeployYAMLs(clientset, cloudConn, creds.Token, versionString, inputVersionStr, yamlOpts)
 	if err != nil {
 		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 		log.WithError(err).Fatal("failed to generate deployment YAMLs")
@@ -404,7 +399,6 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	clientset := k8s.GetClientset(kubeConfig)
 	od := k8s.ObjectDeleter{
 		Namespace:  namespace,
 		Clientset:  clientset,

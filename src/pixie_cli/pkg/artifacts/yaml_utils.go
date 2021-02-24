@@ -3,11 +3,25 @@ package artifacts
 import (
 	"archive/tar"
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path"
+	"strings"
 	"text/template"
+
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
+	"k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/restmapper"
+	"k8s.io/kubectl/pkg/scheme"
+	k8syaml "sigs.k8s.io/yaml"
 )
 
 // ExtractYAMLFormat represents the types of formats we can extract YAMLs to.
@@ -22,16 +36,12 @@ const (
 	MultiFileExtractYAMLFormat
 )
 
-// YAMLTmplValues are the values we can substitue into our YAMLs.
-// TODO(michelle): We can probably just use a map[string]interface{} instead of
-// explicitly defining all template-able values. This cleanup will come in a followup diff.
-type YAMLTmplValues struct {
-	DeployKey string
-}
+var nonNamespacedTypes = []string{"podsecuritypolicies", "namespaces", "clusterrolebindings", "clusterroles"}
+var templateTypes = []string{"daemonsets", "deployments", "statefulsets"}
 
 // YAMLTmplArguments is a wrapper around YAMLTmplValues.
 type YAMLTmplArguments struct {
-	Values *YAMLTmplValues
+	Values *map[string]interface{}
 }
 
 // YAMLFile is a YAML associated with a name.
@@ -75,9 +85,15 @@ func required(str string, value string) (string, error) {
 	return "", errors.New("Value is required")
 }
 
+func split(s string, d string) []string {
+	arr := strings.Split(d, s)
+	return arr
+}
+
 func executeTemplate(tmplValues *YAMLTmplArguments, tmplStr string) (string, error) {
 	funcMap := template.FuncMap{
 		"required": required,
+		"split":    split,
 	}
 
 	tmpl, err := template.New("yaml").Funcs(funcMap).Parse(tmplStr)
@@ -143,4 +159,165 @@ func ExtractYAMLs(yamls []*YAMLFile, extractPath string, yamlDir string, format 
 		}
 	}
 	return nil
+}
+
+// TemplateMatchFn is a function used to determine whether or not the given resource should have the template applied.
+type TemplateMatchFn func(obj map[string]interface{}, resourceType string) bool
+
+// GenerateResourceNameMatcherFn creates a matcher function for matching the resource if the resource's name matches matchValue.
+func GenerateResourceNameMatcherFn(expectedName string) TemplateMatchFn {
+	fn := func(obj map[string]interface{}, resourceType string) bool {
+		if md, ok := obj["metadata"]; ok {
+			if name, nameOk := md.(map[string]interface{})["name"]; nameOk {
+				if name == expectedName {
+					return true
+				}
+			}
+		}
+		return false
+	}
+	return fn
+}
+
+// NamespaceScopeMatcher matches the resource if the resource is contained within a namespace.
+func NamespaceScopeMatcher(obj map[string]interface{}, resourceType string) bool {
+	for _, r := range nonNamespacedTypes {
+		if resourceType == r {
+			return false
+		}
+	}
+	return true
+}
+
+// TemplateScopeMatcher matches the resource definition contains a template for deploying other resources.
+func TemplateScopeMatcher(obj map[string]interface{}, resourceType string) bool {
+	for _, r := range templateTypes {
+		if resourceType == r {
+			return true
+		}
+	}
+	return false
+}
+
+// K8sTemplateOptions specifies how the templated YAML should be constructed, by specifying selectors for which resources should
+// contain the template, how the placeholder should be patched in, and what that placeholder should be replaced with.
+type K8sTemplateOptions struct {
+	// TemplateMatcher is a function that returns whether or not the template should be applied to the resource.
+	TemplateMatcher TemplateMatchFn
+	// The JSON that should be patched in, with the placeholder values.
+	Patch string
+	// Placeholder is the string in the YAML which should be replaced with the template value.
+	Placeholder string
+	// TemplateValue is the template string that should replace the placeholder.
+	TemplateValue string
+}
+
+// Adds the placeholder to the object's JSON, by doing a strategic merge. The strategic merge will handle whether or not
+// the patch should replace or add, depending on the K8s object schema.
+func addPlaceholder(opt *K8sTemplateOptions, gvk schema.GroupVersionKind, originalJSON []byte) ([]byte, error) {
+	creatorObj, err := scheme.Scheme.New(gvk)
+	if err != nil {
+		return nil, fmt.Errorf("strategic merge patch is not supported for %s", gvk.String())
+	}
+	patchedJSON, err := strategicpatch.StrategicMergePatch(originalJSON, []byte(opt.Patch), creatorObj)
+	if err != nil {
+		return nil, err
+	}
+
+	return patchedJSON, nil
+}
+
+func addPlaceholders(rm meta.RESTMapper, decodedYAML *yaml.YAMLOrJSONDecoder, tmplOpts []*K8sTemplateOptions) (string, error) {
+	// Read resource into JSON.
+	ext := runtime.RawExtension{}
+	err := decodedYAML.Decode(&ext)
+	if err != nil {
+		return "", err
+	}
+
+	_, gvk, err := unstructured.UnstructuredJSONScheme.Decode(ext.Raw, nil, nil)
+	if err != nil {
+		return "", err
+	}
+
+	mapping, err := rm.RESTMapping(gvk.GroupKind(), gvk.Version)
+	if err != nil {
+		return "", err
+	}
+	k8sRes := mapping.Resource
+
+	// Decode object into readable struct.
+	var unstructuredOrig unstructured.Unstructured
+	unstructuredOrig.Object = make(map[string]interface{})
+	var unstructBlob interface{}
+
+	err = json.Unmarshal(ext.Raw, &unstructBlob)
+	if err != nil {
+		return "", err
+	}
+	unstructuredOrig.Object = unstructBlob.(map[string]interface{})
+
+	// Add placeholders to the object.
+	currJSON := ext.Raw
+	for _, opt := range tmplOpts {
+		if opt.TemplateMatcher != nil && !opt.TemplateMatcher(unstructuredOrig.Object, k8sRes.Resource) {
+			continue
+		}
+
+		currJSON, err = addPlaceholder(opt, *gvk, currJSON)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	// Convert back to YAML.
+	y, err := k8syaml.JSONToYAML(currJSON)
+	if err != nil {
+		return "", err
+	}
+
+	return string(y), nil
+}
+
+// TemplatizeK8sYAML takes a K8s YAML and templatizes the provided fields.
+func TemplatizeK8sYAML(clientset *kubernetes.Clientset, inputYAML string, tmplOpts []*K8sTemplateOptions) (string, error) {
+	// Read the YAML into K8s resources.
+	yamlReader := strings.NewReader(inputYAML)
+
+	decodedYAML := yaml.NewYAMLOrJSONDecoder(yamlReader, 4096)
+	discoveryClient := clientset.Discovery()
+
+	apiGroupResources, err := restmapper.GetAPIGroupResources(discoveryClient)
+	if err != nil {
+		return "", err
+	}
+	rm := restmapper.NewDiscoveryRESTMapper(apiGroupResources)
+
+	templatedYAMLs := make([]string, 0)
+
+	for { // Loop through all objects in the YAML and add placeholders.
+		placeholderYAML, err := addPlaceholders(rm, decodedYAML, tmplOpts)
+		if err != nil && err == io.EOF {
+			break
+		} else if err != nil {
+			return "", err
+		}
+
+		templatedYAMLs = append(templatedYAMLs, placeholderYAML)
+	}
+	// Concat the YAMLs.
+	combinedYAML := ""
+	for _, y := range templatedYAMLs {
+		combinedYAML = concatYAMLs(combinedYAML, y)
+	}
+
+	// Replace all placeholders with their template values.
+	replacedStrings := make([]string, 0)
+	for _, opt := range tmplOpts {
+		replacedStrings = append(replacedStrings, []string{opt.Placeholder, opt.TemplateValue}...)
+	}
+
+	r := strings.NewReplacer(replacedStrings...)
+
+	return r.Replace(combinedYAML), nil
 }

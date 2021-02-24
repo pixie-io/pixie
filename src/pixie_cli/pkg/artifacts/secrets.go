@@ -25,15 +25,12 @@ metadata:
   namespace: pl
   labels:
     __PL_CUSTOM_LABEL_STRING__
-  annotations:
-    __PL_CUSTOM_ANNOTATION_STRING__
 ---
 apiVersion: v1
 data:
   PL_ETCD_OPERATOR_ENABLED: "__PL_ETCD_OPERATOR_ENABLED__"
   PL_MD_ETCD_SERVER: __PL_MD_ETCD_SERVER__
   PL_CUSTOM_LABELS: "__PL_CUSTOM_LABELS__"
-  PL_CUSTOM_ANNOTATIONS: "__PL_CUSTOM_ANNOTATIONS__"
 kind: ConfigMap
 metadata:
   creationTimestamp: null
@@ -41,8 +38,6 @@ metadata:
   namespace: pl
   labels:
     __PL_CUSTOM_LABEL_STRING__
-  annotations:
-    __PL_CUSTOM_ANNOTATION_STRING__
 ---
 apiVersion: v1
 stringData:
@@ -54,8 +49,6 @@ metadata:
   namespace: pl
   labels:
     __PL_CUSTOM_LABEL_STRING__
-  annotations:
-    __PL_CUSTOM_ANNOTATION_STRING__
 ---
 apiVersion: v1
 data:
@@ -67,14 +60,10 @@ metadata:
   labels:
     component: vizier
     __PL_CUSTOM_LABEL_STRING__
-  annotations:
-    __PL_CUSTOM_ANNOTATION_STRING__
   name: pl-cloud-connector-bootstrap-config
   namespace: pl
 ---
 apiVersion: v1
-stringData:
-  deploy-key: {{ .Values.DeployKey | required "...." }}
 kind: Secret
 metadata:
   creationTimestamp: null
@@ -82,8 +71,6 @@ metadata:
   namespace: pl
   labels:
     __PL_CUSTOM_LABEL_STRING__
-  annotations:
-    __PL_CUSTOM_ANNOTATION_STRING__
 `
 
 func getK8sVersion(kubeConfig *rest.Config) (string, error) {
@@ -140,14 +127,6 @@ func GenerateClusterSecretYAMLs(yamlOpts *YAMLOptions, deployKey string, sentryD
 		}
 	}
 
-	annotationString := ""
-	am := yamlOpts.AnnotationMap
-	if am != nil {
-		for k, v := range am {
-			annotationString += fmt.Sprintf("%s: \"%s\"\n    ", k, v)
-		}
-	}
-
 	// Perform substitutions.
 	r := strings.NewReplacer(
 		"__PL_CLOUD_ADDR__", cloudAddr,
@@ -158,9 +137,7 @@ func GenerateClusterSecretYAMLs(yamlOpts *YAMLOptions, deployKey string, sentryD
 		"__PL_SENTRY_DSN__", sentryDSN,
 		"__PL_BOOTSTRAP_VERSION__", version,
 		"__PL_CUSTOM_LABELS__", yamlOpts.Labels,
-		"__PL_CUSTOM_ANNOTATIONS__", yamlOpts.Annotations,
 		"__PL_CUSTOM_LABEL_STRING__", labelString,
-		"__PL_CUSTOM_ANNOTATION_STRING__", annotationString,
 	)
 	return r.Replace(secretsYAML), nil
 }
