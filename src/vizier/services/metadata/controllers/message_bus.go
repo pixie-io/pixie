@@ -24,14 +24,12 @@ type MessageBusController struct {
 	isLeader      *bool
 	listeners     map[string]TopicListener // Map from topic to its listener.
 	subscriptions []*nats.Subscription
-
-	statsHandler *StatsHandler
 }
 
 // NewMessageBusController creates a new controller for handling NATS messages.
 func NewMessageBusController(conn *nats.Conn, agentManager AgentManager,
 	tracepointManager *TracepointManager, mdStore MetadataStore, newMdHandler *K8sMetadataHandler,
-	statsHandler *StatsHandler, isLeader *bool) (*MessageBusController, error) {
+	isLeader *bool) (*MessageBusController, error) {
 	ch := make(chan *nats.Msg, 8192)
 	listeners := make(map[string]TopicListener)
 	subscriptions := make([]*nats.Subscription, 0)
@@ -42,7 +40,6 @@ func NewMessageBusController(conn *nats.Conn, agentManager AgentManager,
 		ch:            ch,
 		listeners:     listeners,
 		subscriptions: subscriptions,
-		statsHandler:  statsHandler,
 	}
 
 	mc.registerListeners(agentManager, tracepointManager, mdStore, newMdHandler)
@@ -84,7 +81,7 @@ func (mc *MessageBusController) handleMessages() {
 
 func (mc *MessageBusController) registerListeners(agentManager AgentManager, tracepointManager *TracepointManager, mdStore MetadataStore, newMdHandler *K8sMetadataHandler) error {
 	// Register AgentTopicListener.
-	atl, err := NewAgentTopicListener(agentManager, tracepointManager, mdStore, mc.sendMessage, mc.statsHandler)
+	atl, err := NewAgentTopicListener(agentManager, tracepointManager, mdStore, mc.sendMessage)
 	if err != nil {
 		return err
 	}

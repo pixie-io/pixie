@@ -186,11 +186,6 @@ func main() {
 
 	newEtcdDataStore := etcd.New(etcdClient)
 
-	// Create a stats handler to track internal metadata statistics.
-	// TODO(PP-2458): pass the stats handler to the k8sMetadataHandler
-	// and make sure we gather stats.
-	statsHandler := controllers.NewStatsHandler()
-
 	k8sMds := controllers.NewMetadataDatastore(newEtcdDataStore)
 	// Listen for K8s metadata updates.
 	updateCh := make(chan *controllers.K8sResourceMessage)
@@ -207,7 +202,7 @@ func main() {
 	defer tracepointMgr.Close()
 
 	mc, err := controllers.NewMessageBusController(nc, agtMgr, tracepointMgr, mds,
-		mdh, statsHandler, &isLeader)
+		mdh, &isLeader)
 
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to message bus")
@@ -241,5 +236,4 @@ func main() {
 
 	s.Start()
 	s.StopOnInterrupt()
-	statsHandler.Stop()
 }

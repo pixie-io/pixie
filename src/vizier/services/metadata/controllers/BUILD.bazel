@@ -17,7 +17,6 @@ go_library(
         "metadata_topic_listener.go",
         "mock.go",
         "server.go",
-        "stats.go",
         "tracepoint.go",
         "tracepoint_store.go",
     ],
