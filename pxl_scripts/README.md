@@ -40,6 +40,7 @@ Visualize these in three separate time series charts.
 - px/[psql_data](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/psql_data): Shows a sample of PostgreSQL request in the cluster.
 - px/[psql_stats](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/psql_stats): This live view calculates the latency, error rate, and throughput of a pod's PostgreSQL requests.
 - px/[redis_data](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/redis_data): Shows a sample of Redis messages in the cluster. WARNING: Redis tracing is a beta feature. This script is for demonstration purposes only.
+- px/[redis_flow_graph](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/redis_flow_graph): Graph of Redis messages in the cluster, with latency stats.
 - px/[schemas](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/schemas): Get all the table schemas available in the system
 - px/[service](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/service): This script gets an overview of an individual service, summarizing its request statistics.
 - px/[service_edge_stats](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/service_edge_stats): Gets service latency, error rate and throughput according to another service. Edit the requestor filter to the name of the incoming service you want to filter by.
