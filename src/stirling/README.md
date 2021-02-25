@@ -43,7 +43,7 @@ We use [BCC](https://github.com/iovisor/bcc) to write the BPF C code and manage 
 For each of these BPF based `source_connectors`, there should be at least two subdirectories:
 
 - `bcc_bpf`: Contains all the BPF code that is compiled by BCC. This code is licensed differently than the rest of Stirling and is intentionally kept isolated. No code outside the directory should `#include` or link to the code in this directory. All data transfers are done through BPF maps or buffers, data structures for which are described in `bcc_bpf_intf`.
-- `bcc_bpf_intf`: Contains public data structures that are used to transport data out from the kernel to user-space. The headers in this file are typically `#include`d by both the BPF code and our user-space C++ code. 
+- `bcc_bpf_intf`: Contains public data structures that are used to transport data out from the kernel to user-space. The headers in this file are typically `#include`d by both the BPF code and our user-space C++ code.
 
 ## Building & Testing
 
@@ -125,15 +125,3 @@ The standard deploy will install some prerequisites. It only needs to be run onc
 
 You can then deploy a development version based on your local changes using `skaffold`:
 `skaffold run -p opt -f skaffold/skaffold_vizier.yaml`
-
-
-
-
-
-
-
-
-
-
-
-
