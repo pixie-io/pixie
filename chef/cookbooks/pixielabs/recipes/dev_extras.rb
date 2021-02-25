@@ -34,6 +34,11 @@ remote_file '/opt/pixielabs/bin/kubectl' do
   checksum node['kubectl']['sha256']
 end
 
+execute 'update gcloud' do
+  command 'gcloud components update'
+  action :run
+end
+
 execute 'install gcloud::beta' do
   command 'gcloud components install beta'
   action :run
