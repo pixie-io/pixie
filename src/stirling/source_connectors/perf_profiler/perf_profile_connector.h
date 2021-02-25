@@ -18,6 +18,7 @@ namespace stirling {
 class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrapper {
  public:
   static constexpr auto kTables = MakeArray(kStackTraceTable);
+  static constexpr uint32_t kPerfProfileTableNum = TableNum(kTables, kStackTraceTable);
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new PerfProfileConnector(name));
