@@ -43,7 +43,7 @@ spec:
         - name: PL_MAX_EXPECTED_CLOCK_SKEW
           value: "2000"
         - name: PL_RENEW_PERIOD
-          value: "1000"
+          value: "5000"
         envFrom:
         - configMapRef:
             name: pl-cloud-config
