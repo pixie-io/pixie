@@ -1,0 +1,33 @@
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = [
+            "**/*_test.cc",
+        ],
+    ),
+    hdrs = glob(["*.h"]),
+    deps = [
+        "//src/common/system:cc_library",
+        "//src/stirling/bpf_tools:cc_library",
+        "//src/stirling/utils/task_struct_offset_resolver/bcc_bpf:task_struct_mem_read",
+        "//src/stirling/utils/task_struct_offset_resolver/bcc_bpf_intf:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "task_struct_offset_resolver_bpf_test",
+    srcs = ["task_struct_offset_resolver_bpf_test.cc"],
+    tags = [
+        # TODO(oazizi): Enable this test.
+        #               It fails on Jenkins because start_time and start_boottime are the same.
+        "manual",
+        "requires_bpf",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)

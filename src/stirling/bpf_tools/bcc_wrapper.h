@@ -69,7 +69,8 @@ struct KProbeSpec {
 struct UProbeSpec {
   // The canonical path to the binary to which this uprobe is attached.
   std::filesystem::path binary_path;
-  // Exact one of symbol and address must be specified.
+
+  // Exactly one of symbol and address must be specified.
   std::string symbol;
   uint64_t address = 0;
 
