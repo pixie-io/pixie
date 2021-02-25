@@ -106,7 +106,7 @@ func executeTemplate(tmplValues *YAMLTmplArguments, tmplStr string) (string, err
 // ExtractYAMLs writes the generated YAMLs to a tar at the given path in the given format.
 func ExtractYAMLs(yamls []*YAMLFile, extractPath string, yamlDir string, format ExtractYAMLFormat) error {
 	writeYAML := func(w *tar.Writer, name string, contents string) error {
-		if err := w.WriteHeader(&tar.Header{Name: name, Size: int64(len(contents)), Mode: 511}); err != nil {
+		if err := w.WriteHeader(&tar.Header{Name: name, Size: int64(len(contents)), Mode: 0777}); err != nil {
 			return err
 		}
 		if _, err := w.Write([]byte(contents)); err != nil {
