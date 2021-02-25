@@ -3129,20 +3129,6 @@ go_repository(
 )
 
 go_repository(
-    name = "com_github_masterminds_semver",
-    importpath = "github.com/Masterminds/semver",
-    sum = "h1:H65muMkzWKEuNDnfl9d70GUjFniHKHRbFPGBuZ3QEww=",
-    version = "v1.5.0",
-)
-
-go_repository(
-    name = "com_github_masterminds_sprig",
-    importpath = "github.com/Masterminds/sprig",
-    sum = "h1:z4yfnGrZ7netVz+0EDJ0Wi+5VZCSYp4Z0m2dk6cEM60=",
-    version = "v2.22.0+incompatible",
-)
-
-go_repository(
     name = "com_github_mitchellh_copystructure",
     importpath = "github.com/mitchellh/copystructure",
     sum = "h1:Bp6x9R1Wn16SIz3OfeDr0b7RnCG2OB66Y7PQyC/cvq4=",

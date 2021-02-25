@@ -14,7 +14,7 @@ go_library(
         "//src/pixie_cli/pkg/utils:go_default_library",
         "//src/shared/version/go:go_default_library",
         "//src/utils/shared/k8s:go_default_library",
-        "@com_github_masterminds_sprig//:go_default_library",
+        "@com_github_masterminds_sprig_v3//:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/api/meta:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1/unstructured:go_default_library",
