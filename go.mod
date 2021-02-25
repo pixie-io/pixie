@@ -5,6 +5,10 @@ go 1.13
 require (
 	cloud.google.com/go v0.44.3
 	github.com/EvilSuperstars/go-cidrman v0.0.0-20190607145828-28e79e32899a
+	github.com/Masterminds/goutils v1.1.1 // indirect
+	github.com/Masterminds/semver v1.5.0 // indirect
+	github.com/Masterminds/sprig v2.22.0+incompatible
+	github.com/Masterminds/sprig/v3 v3.2.2 // indirect
 	github.com/Microsoft/go-winio v0.4.16 // indirect
 	github.com/PuerkitoBio/goquery v1.6.0
 	github.com/ajstarks/svgo v0.0.0-20181006003313-6ce6a3bcf6cd // indirect
@@ -39,6 +43,7 @@ require (
 	github.com/golang/protobuf v1.4.2
 	github.com/google/go-cmp v0.5.0 // indirect
 	github.com/google/go-github/v32 v32.1.0
+	github.com/google/uuid v1.2.0 // indirect
 	github.com/googleapis/gnostic v0.2.0 // indirect
 	github.com/googleapis/google-cloud-go-testing v0.0.0-20191008195207-8e1d251e947d
 	github.com/gorilla/handlers v1.4.2
@@ -46,8 +51,8 @@ require (
 	github.com/gorilla/sessions v1.1.3
 	github.com/graph-gophers/graphql-go v0.0.0-20190225005345-3e8838d4614c
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
+	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/ianlancetaylor/cgosymbolizer v0.0.0-20200424224625-be1b05b0b279
-	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jackc/pgx v3.5.0+incompatible
@@ -56,6 +61,7 @@ require (
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/lib/pq v1.3.0
 	github.com/mattn/go-runewidth v0.0.9
+	github.com/mitchellh/copystructure v1.1.1 // indirect
 	github.com/moby/term v0.0.0-20201216013528-df9cb8a40635 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/nats-io/jwt v1.2.2 // indirect
@@ -73,10 +79,9 @@ require (
 	github.com/sahilm/fuzzy v0.1.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/segmentio/backo-go v0.0.0-20160424052352-204274ad699c // indirect
-	github.com/shopspring/decimal v0.0.0-20190905144223-a36b5d85f337 // indirect
 	github.com/sirupsen/logrus v1.7.0
 	github.com/skratchdot/open-golang v0.0.0-20190402232053-79abb63cd66e
-	github.com/spf13/cast v1.3.0
+	github.com/spf13/cast v1.3.1
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.4.0
@@ -85,7 +90,7 @@ require (
 	github.com/vbauerster/mpb/v4 v4.11.0
 	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
 	github.com/zenazn/goji v0.9.1-0.20160507202103-64eb34159fe5
-	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad // indirect
+	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83 // indirect
 	golang.org/x/net v0.0.0-20210119194325-5f4716e94777
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9

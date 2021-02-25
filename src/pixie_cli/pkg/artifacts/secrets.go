@@ -6,7 +6,6 @@ import (
 	"k8s.io/client-go/rest"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 
 	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
@@ -14,30 +13,18 @@ import (
 
 const secretsYAML string = `
 apiVersion: v1
-data:
-  PL_CLOUD_ADDR: "__PL_CLOUD_ADDR__"
-  PL_CLUSTER_NAME: "__PL_CLUSTER_NAME__"
-  PL_UPDATE_CLOUD_ADDR: __PL_UPDATE_CLOUD_ADDR__
 kind: ConfigMap
 metadata:
   creationTimestamp: null
   name: pl-cloud-config
   namespace: pl
-  labels:
-    __PL_CUSTOM_LABEL_STRING__
 ---
 apiVersion: v1
-data:
-  PL_ETCD_OPERATOR_ENABLED: "__PL_ETCD_OPERATOR_ENABLED__"
-  PL_MD_ETCD_SERVER: __PL_MD_ETCD_SERVER__
-  PL_CUSTOM_LABELS: "__PL_CUSTOM_LABELS__"
 kind: ConfigMap
 metadata:
   creationTimestamp: null
   name: pl-cluster-config
   namespace: pl
-  labels:
-    __PL_CUSTOM_LABEL_STRING__
 ---
 apiVersion: v1
 stringData:
@@ -47,19 +34,15 @@ metadata:
   creationTimestamp: null
   name: pl-cluster-secrets
   namespace: pl
-  labels:
-    __PL_CUSTOM_LABEL_STRING__
 ---
 apiVersion: v1
 data:
   PL_BOOTSTRAP_MODE: "true"
-  PL_BOOTSTRAP_VERSION: "__PL_BOOTSTRAP_VERSION__"
 kind: ConfigMap
 metadata:
   creationTimestamp: null
   labels:
     component: vizier
-    __PL_CUSTOM_LABEL_STRING__
   name: pl-cloud-connector-bootstrap-config
   namespace: pl
 ---
@@ -69,8 +52,6 @@ metadata:
   creationTimestamp: null
   name: pl-deploy-secrets
   namespace: pl
-  labels:
-    __PL_CUSTOM_LABEL_STRING__
 `
 
 func getK8sVersion(kubeConfig *rest.Config) (string, error) {
@@ -95,49 +76,32 @@ func getCurrentCluster() string {
 	return out.String()
 }
 
-// GenerateClusterSecretYAMLs generates YAMLs for the cluster secrets.
-func GenerateClusterSecretYAMLs(yamlOpts *YAMLOptions, deployKey string, sentryDSN string, version string) (string, error) {
+// SetConfigValues sets the values for the template, based on the user-provided flags.
+func SetConfigValues(kubeconfig *rest.Config, tmplValues *VizierTmplValues, cloudAddr string, devCloudNS string) {
+	yamlCloudAddr := cloudAddr
+	updateCloudAddr := cloudAddr
 	// devCloudNamespace implies we are running in a dev enivironment and we should attach to
 	// vzconn in that namespace.
-	cloudAddr := yamlOpts.CloudAddr
-	updateCloudAddr := yamlOpts.CloudAddr
-	devCloudNamespace := yamlOpts.DevCloudNS
-
-	if devCloudNamespace != "" {
-		cloudAddr = fmt.Sprintf("vzconn-service.%s.svc.cluster.local:51600", devCloudNamespace)
-		updateCloudAddr = fmt.Sprintf("api-service.%s.svc.cluster.local:51200", devCloudNamespace)
+	if devCloudNS != "" {
+		yamlCloudAddr = fmt.Sprintf("vzconn-service.%s.svc.cluster.local:51600", devCloudNS)
+		updateCloudAddr = fmt.Sprintf("api-service.%s.svc.cluster.local:51200", devCloudNS)
 	}
+
+	tmplValues.CloudAddr = yamlCloudAddr
+	tmplValues.CloudUpdateAddr = updateCloudAddr
 
 	clusterName := ""
-
-	if yamlOpts.KubeConfig != nil { // Only record cluster name if we are deploying directly to the current cluster.
+	if kubeconfig != nil { // Only record cluster name if we are deploying directly to the current cluster.
 		clusterName = getCurrentCluster()
 	}
+	tmplValues.ClusterName = clusterName
+}
 
-	etcdAddr := "https://etcd.pl.svc:2379"
-	if yamlOpts.UseEtcdOperator {
-		etcdAddr = "https://pl-etcd-client.pl.svc:2379"
-	}
-
-	labelString := ""
-	lm := yamlOpts.LabelMap
-	if lm != nil {
-		for k, v := range lm {
-			labelString += fmt.Sprintf("%s: \"%s\"\n    ", k, v)
-		}
-	}
-
+// GenerateClusterSecretYAMLs generates YAMLs for the cluster secrets.
+func GenerateClusterSecretYAMLs(sentryDSN string) (string, error) {
 	// Perform substitutions.
 	r := strings.NewReplacer(
-		"__PL_CLOUD_ADDR__", cloudAddr,
-		"__PL_CLUSTER_NAME__", clusterName,
-		"__PL_UPDATE_CLOUD_ADDR__", updateCloudAddr,
-		"__PL_ETCD_OPERATOR_ENABLED__", strconv.FormatBool(yamlOpts.UseEtcdOperator),
-		"__PL_MD_ETCD_SERVER__", etcdAddr,
 		"__PL_SENTRY_DSN__", sentryDSN,
-		"__PL_BOOTSTRAP_VERSION__", version,
-		"__PL_CUSTOM_LABELS__", yamlOpts.Labels,
-		"__PL_CUSTOM_LABEL_STRING__", labelString,
 	)
 	return r.Replace(secretsYAML), nil
 }

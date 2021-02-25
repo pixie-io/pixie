@@ -11,7 +11,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
@@ -34,6 +33,12 @@ const (
 type VizierTmplValues struct {
 	DeployKey         string
 	CustomAnnotations string
+	CustomLabels      string
+	CloudAddr         string
+	ClusterName       string
+	CloudUpdateAddr   string
+	UseEtcdOperator   bool
+	BootstrapVersion  string
 }
 
 // VizierTmplValuesToMap converts the vizier template values to a map which can be used to fill out a template.
@@ -41,6 +46,12 @@ func VizierTmplValuesToMap(tmplValues *VizierTmplValues) *map[string]interface{}
 	return &map[string]interface{}{
 		"DeployKey":         tmplValues.DeployKey,
 		"CustomAnnotations": tmplValues.CustomAnnotations,
+		"CustomLabels":      tmplValues.CustomLabels,
+		"CloudAddr":         tmplValues.CloudAddr,
+		"ClusterName":       tmplValues.ClusterName,
+		"CloudUpdateAddr":   tmplValues.CloudUpdateAddr,
+		"UseEtcdOperator":   tmplValues.UseEtcdOperator,
+		"BootstrapVersion":  tmplValues.BootstrapVersion,
 	}
 }
 
@@ -49,23 +60,44 @@ var globalTemplateOptions = []*K8sTemplateOptions{
 	&K8sTemplateOptions{
 		Patch:       `{"metadata": { "annotations": { "__PL_ANNOTATION_KEY__": "__PL_ANNOTATION_VALUE__"} } }`,
 		Placeholder: "__PL_ANNOTATION_KEY__: __PL_ANNOTATION_VALUE__",
-		TemplateValue: `{{range $element := split "," .Values.CustomAnnotations -}}
+		TemplateValue: `{{if .Values.CustomAnnotations}}{{range $element := split "," .Values.CustomAnnotations -}}
     {{ $kv := split "=" $element -}}
     {{if eq (len $kv) 2 -}}
-    {{ index $kv 0}}: "{{ index $kv 1}}"
+    {{ $kv._0 }}: "{{ $kv._1 }}"
     {{- end}}
-    {{end}}`,
+    {{end}}{{end}}`,
 	},
 	&K8sTemplateOptions{
 		TemplateMatcher: TemplateScopeMatcher,
 		Patch:           `{"spec": { "template": { "metadata": { "annotations": { "__PL_SPEC_ANNOTATION_KEY__": "__PL_SPEC_ANNOTATION_VALUE__"} } } } }`,
 		Placeholder:     "__PL_SPEC_ANNOTATION_KEY__: __PL_SPEC_ANNOTATION_VALUE__",
-		TemplateValue: `{{range $element := split "," .Values.CustomAnnotations -}}
+		TemplateValue: `{{if .Values.CustomAnnotations}}{{range $element := split "," .Values.CustomAnnotations -}}
         {{ $kv := split "=" $element -}}
         {{if eq (len $kv) 2 -}}
-        {{ index $kv 0}}: "{{ index $kv 1}}"
+        {{ $kv._0 }}: "{{ $kv._1 }}"
         {{- end}}
-        {{end}}`,
+        {{end}}{{end}}`,
+	},
+	&K8sTemplateOptions{
+		Patch:       `{"metadata": { "labels": { "__PL_LABEL_KEY__": "__PL_LABEL_VALUE__"} } }`,
+		Placeholder: "__PL_LABEL_KEY__: __PL_LABEL_VALUE__",
+		TemplateValue: `{{if .Values.CustomLabels}}{{range $element := split "," .Values.CustomLabels -}}
+    {{ $kv := split "=" $element -}}
+    {{if eq (len $kv) 2 -}}
+    {{ $kv._0 }}: "{{ $kv._1 }}"
+    {{- end}}
+    {{end}}{{end}}`,
+	},
+	&K8sTemplateOptions{
+		TemplateMatcher: TemplateScopeMatcher,
+		Patch:           `{"spec": { "template": { "metadata": { "labels": { "__PL_SPEC_LABEL_KEY__": "__PL_SPEC_LABEL_VALUE__"} } } } }`,
+		Placeholder:     "__PL_SPEC_LABEL_KEY__: __PL_SPEC_LABEL_VALUE__",
+		TemplateValue: `{{if .Values.CustomLabels}}{{range $element := split "," .Values.CustomLabels -}}
+        {{ $kv := split "=" $element -}}
+        {{if eq (len $kv) 2 -}}
+        {{ $kv._0 }}: "{{ $kv._1 }}"
+        {{- end}}
+        {{end}}{{end}}`,
 	},
 }
 
@@ -125,27 +157,14 @@ func getSentryDSN(vizierVersion string) string {
 	return prodSentryDSN
 }
 
-// YAMLOptions are used for generating Pixie YAMLs. As we introduce templates, more of these will be moved to the template scheme.
-type YAMLOptions struct {
-	NS                  string
-	CloudAddr           string
-	ImagePullSecretName string
-	ImagePullCreds      string
-	DevCloudNS          string
-	KubeConfig          *rest.Config
-	UseEtcdOperator     bool
-	Labels              string
-	LabelMap            map[string]string
-}
-
 // GenerateTemplatedDeployYAMLs generates the YAMLs that should be run when deploying Pixie.
-func GenerateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, conn *grpc.ClientConn, authToken string, versionStr string, inputVersion string, yamlOpts *YAMLOptions) ([]*YAMLFile, error) {
-	nsYAML, err := generateNamespaceYAML(clientset, yamlOpts)
+func GenerateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, conn *grpc.ClientConn, authToken string, versionStr string, ns string, imagePullSecretName string, imagePullCreds string) ([]*YAMLFile, error) {
+	nsYAML, err := generateNamespaceYAML(clientset, ns)
 	if err != nil {
 		return nil, err
 	}
 
-	secretsYAML, err := generateSecretsYAML(clientset, yamlOpts, versionStr, inputVersion)
+	secretsYAML, err := GenerateSecretsYAML(clientset, ns, imagePullSecretName, imagePullCreds, versionStr)
 	if err != nil {
 		return nil, err
 	}
@@ -172,11 +191,10 @@ func GenerateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, conn *grpc.Cl
 }
 
 // generateNamespaceYAML creates the YAML for the namespace Pixie is deployed in.
-func generateNamespaceYAML(clientset *kubernetes.Clientset, yamlOpts *YAMLOptions) (string, error) {
+func generateNamespaceYAML(clientset *kubernetes.Clientset, namespace string) (string, error) {
 	ns := &v1.Namespace{}
 	ns.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Namespace"))
-	ns.Name = yamlOpts.NS
-	ns.Labels = yamlOpts.LabelMap
+	ns.Name = namespace
 
 	origYAML, err := k8s.ConvertResourceToYAML(ns)
 	if err != nil {
@@ -191,9 +209,9 @@ func generateNamespaceYAML(clientset *kubernetes.Clientset, yamlOpts *YAMLOption
 	return nsYAML, nil
 }
 
-// generateSecretsYAML creates the YAML for Pixie secrets.
-func generateSecretsYAML(clientset *kubernetes.Clientset, yamlOpts *YAMLOptions, versionStr string, inputVersion string) (string, error) {
-	dockerSecret, err := k8s.CreateDockerConfigJSONSecret(yamlOpts.NS, yamlOpts.ImagePullSecretName, yamlOpts.ImagePullCreds, yamlOpts.LabelMap, nil)
+// GenerateSecretsYAML creates the YAML for Pixie secrets.
+func GenerateSecretsYAML(clientset *kubernetes.Clientset, ns string, imagePullSecretName string, imagePullCreds string, versionStr string) (string, error) {
+	dockerSecret, err := k8s.CreateDockerConfigJSONSecret(ns, imagePullSecretName, imagePullCreds)
 	if err != nil {
 		return "", err
 	}
@@ -202,7 +220,7 @@ func generateSecretsYAML(clientset *kubernetes.Clientset, yamlOpts *YAMLOptions,
 		return "", err
 	}
 
-	csYAMLs, err := GenerateClusterSecretYAMLs(yamlOpts, "", getSentryDSN(versionStr), inputVersion)
+	csYAMLs, err := GenerateClusterSecretYAMLs(getSentryDSN(versionStr))
 	if err != nil {
 		return "", err
 	}
@@ -222,6 +240,48 @@ func generateSecretsYAML(clientset *kubernetes.Clientset, yamlOpts *YAMLOptions,
 			Patch:           `{"data": { "PL_CUSTOM_ANNOTATIONS": "__PL_CUSTOM_ANNOTATIONS__"} }`,
 			Placeholder:     "__PL_CUSTOM_ANNOTATIONS__",
 			TemplateValue:   `"{{ .Values.CustomAnnotations }}"`,
+		},
+		&K8sTemplateOptions{
+			TemplateMatcher: GenerateResourceNameMatcherFn("pl-cluster-config"),
+			Patch:           `{"data": { "PL_CUSTOM_LABELS": "__PL_CUSTOM_LABELS__"} }`,
+			Placeholder:     "__PL_CUSTOM_LABELS__",
+			TemplateValue:   `"{{ .Values.CustomLabels }}"`,
+		},
+		&K8sTemplateOptions{
+			TemplateMatcher: GenerateResourceNameMatcherFn("pl-cloud-config"),
+			Patch:           `{"data": { "PL_CLOUD_ADDR": "__PL_CLOUD_ADDR__"} }`,
+			Placeholder:     "__PL_CLOUD_ADDR__",
+			TemplateValue:   `{{ if .Values.CloudAddr }}"{{ .Values.CloudAddr }}"{{ else }}"withpixie.ai:443"{{ end }}`,
+		},
+		&K8sTemplateOptions{
+			TemplateMatcher: GenerateResourceNameMatcherFn("pl-cloud-config"),
+			Patch:           `{"data": { "PL_UPDATE_CLOUD_ADDR": "__PL_UPDATE_CLOUD_ADDR__"} }`,
+			Placeholder:     "__PL_UPDATE_CLOUD_ADDR__",
+			TemplateValue:   `{{ if .Values.CloudUpdateAddr }}"{{ .Values.CloudUpdateAddr }}"{{ else }}"withpixie.ai:443"{{ end }}`,
+		},
+		&K8sTemplateOptions{
+			TemplateMatcher: GenerateResourceNameMatcherFn("pl-cloud-config"),
+			Patch:           `{"data": { "PL_CLUSTER_NAME": "__PL_CLUSTER_NAME__"} }`,
+			Placeholder:     "__PL_CLUSTER_NAME__",
+			TemplateValue:   `"{{ .Values.ClusterName }}"`,
+		},
+		&K8sTemplateOptions{
+			TemplateMatcher: GenerateResourceNameMatcherFn("pl-cluster-config"),
+			Patch:           `{"data": { "PL_ETCD_OPERATOR_ENABLED": "__PL_ETCD_OPERATOR_ENABLED__"} }`,
+			Placeholder:     "__PL_ETCD_OPERATOR_ENABLED__",
+			TemplateValue:   `{{ if .Values.UseEtcdOperator }}"true"{{else}}"false"{{end}}`,
+		},
+		&K8sTemplateOptions{
+			TemplateMatcher: GenerateResourceNameMatcherFn("pl-cluster-config"),
+			Patch:           `{"data": { "PL_MD_ETCD_SERVER": "__PL_MD_ETCD_SERVER__"} }`,
+			Placeholder:     "__PL_MD_ETCD_SERVER__",
+			TemplateValue:   `{{ if .Values.UseEtcdOperator }}"https://pl-etcd-client.pl.svc:2379"{{else}}"https://etcd.pl.svc:2379"{{end}}`,
+		},
+		&K8sTemplateOptions{
+			TemplateMatcher: GenerateResourceNameMatcherFn("pl-cloud-connector-bootstrap-config"),
+			Patch:           `{"data": { "PL_BOOTSTRAP_VERSION": "__PL_BOOTSTRAP_VERSION__"} }`,
+			Placeholder:     "__PL_BOOTSTRAP_VERSION__",
+			TemplateValue:   `"{{.Values.BootstrapVersion}}"`,
 		},
 	}, globalTemplateOptions...))
 	if err != nil {

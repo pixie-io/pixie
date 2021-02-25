@@ -281,7 +281,6 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	namespace, _ := cmd.Flags().GetString("namespace")
 	credsFile, _ := cmd.Flags().GetString("credentials_file")
 	devCloudNS := viper.GetString("dev_cloud_namespace")
-
 	cloudAddr := viper.GetString("cloud_addr")
 
 	// Get grpc connection to cloud.
@@ -315,7 +314,6 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	}
 
 	kubeConfig := k8s.GetConfig()
-
 	clientset := k8s.GetClientset(kubeConfig)
 
 	var credsData string
@@ -330,33 +328,28 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 		log.WithError(err).Fatal("Could not get auth token")
 	}
+
 	utils.Infof("Generating YAMLs for Pixie")
-	yamlOpts := &artifacts.YAMLOptions{
-		NS:                  namespace,
-		CloudAddr:           cloudAddr,
-		ImagePullSecretName: secretName,
-		ImagePullCreds:      credsData,
-		DevCloudNS:          devCloudNS,
-		KubeConfig:          kubeConfig,
-		UseEtcdOperator:     useEtcdOperator,
-		Labels:              customLabels,
-		LabelMap:            labelMap,
-	}
-
-	yamlArgs := &artifacts.YAMLTmplArguments{
-		Values: artifacts.VizierTmplValuesToMap(&artifacts.VizierTmplValues{
-			DeployKey:         deployKey,
-			CustomAnnotations: customAnnotations,
-		}),
-	}
-
-	templatedYAMLs, err := artifacts.GenerateTemplatedDeployYAMLs(clientset, cloudConn, creds.Token, versionString, inputVersionStr, yamlOpts)
+	templatedYAMLs, err := artifacts.GenerateTemplatedDeployYAMLs(clientset, cloudConn, creds.Token, versionString, namespace, secretName, credsData)
 	if err != nil {
 		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 		log.WithError(err).Fatal("failed to generate deployment YAMLs")
 	}
 
 	// TODO(michelle): Add a CLI option to write out just the templated Helm YAML files. This will be used in the Vizier release build.
+
+	// Fill in template values.
+	tmplValues := &artifacts.VizierTmplValues{
+		DeployKey:         deployKey,
+		CustomAnnotations: customAnnotations,
+		CustomLabels:      customLabels,
+		UseEtcdOperator:   useEtcdOperator,
+		BootstrapVersion:  inputVersionStr,
+	}
+	artifacts.SetConfigValues(kubeConfig, tmplValues, cloudAddr, devCloudNS)
+	yamlArgs := &artifacts.YAMLTmplArguments{
+		Values: artifacts.VizierTmplValuesToMap(tmplValues),
+	}
 
 	yamls, err := artifacts.ExecuteTemplatedYAMLs(templatedYAMLs, yamlArgs)
 	if err != nil {

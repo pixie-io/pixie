@@ -58,18 +58,25 @@ func LoadClusterSecrets(clientset *kubernetes.Clientset, cloudAddr string, deplo
 	_ = k8s.DeleteConfigMap(clientset, "pl-cloud-config", "pl")
 	k8s.DeleteSecret(clientset, namespace, "pl-cluster-secrets")
 
-	yamlOpts := &artifacts.YAMLOptions{
-		NS:              namespace,
-		CloudAddr:       cloudAddr,
-		KubeConfig:      kubeConfig,
-		DevCloudNS:      devCloudNamespace,
-		UseEtcdOperator: false,
-		Labels:          "",
-	}
-	yamls, err := artifacts.GenerateClusterSecretYAMLs(yamlOpts, deployKey, sentryDSN, "")
+	templatedYAML, err := artifacts.GenerateSecretsYAML(clientset, namespace, "", "", "")
 	if err != nil {
 		return err
 	}
 
-	return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(yamls), false, nil, nil)
+	// Fill in template values.
+	tmplValues := &artifacts.VizierTmplValues{
+		DeployKey: deployKey,
+	}
+
+	artifacts.SetConfigValues(kubeConfig, tmplValues, cloudAddr, devCloudNamespace)
+
+	yamlArgs := &artifacts.YAMLTmplArguments{
+		Values: artifacts.VizierTmplValuesToMap(tmplValues),
+	}
+	yamls, err := artifacts.ExecuteTemplatedYAMLs([]*artifacts.YAMLFile{&artifacts.YAMLFile{YAML: templatedYAML}}, yamlArgs)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to fill in templated deployment YAMLs")
+	}
+
+	return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(yamls[0].YAML), false, nil, nil)
 }

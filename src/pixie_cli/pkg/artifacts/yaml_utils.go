@@ -12,6 +12,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/Masterminds/sprig"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -85,16 +86,9 @@ func required(str string, value string) (string, error) {
 	return "", errors.New("Value is required")
 }
 
-func split(s string, d string) []string {
-	arr := strings.Split(d, s)
-	return arr
-}
-
 func executeTemplate(tmplValues *YAMLTmplArguments, tmplStr string) (string, error) {
-	funcMap := template.FuncMap{
-		"required": required,
-		"split":    split,
-	}
+	funcMap := sprig.TxtFuncMap()
+	funcMap["required"] = required
 
 	tmpl, err := template.New("yaml").Funcs(funcMap).Parse(tmplStr)
 	if err != nil {

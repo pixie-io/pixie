@@ -167,8 +167,8 @@ go_repository(
 go_repository(
     name = "com_github_google_uuid",
     importpath = "github.com/google/uuid",
-    sum = "h1:Gkbcsh/GbpXz7lPftLA3P6TYMwjCLYm83jiFQZF/3gY=",
-    version = "v1.1.1",
+    sum = "h1:qJYtXnJRWmpe7m/3XlyhrsLrEURqHRM2kxzoxXqyUDs=",
+    version = "v1.2.0",
 )
 
 go_repository(
@@ -251,8 +251,8 @@ go_repository(
 go_repository(
     name = "com_github_spf13_cast",
     importpath = "github.com/spf13/cast",
-    sum = "h1:oget//CVOEoFewqQxwr0Ej5yjygnqGkvggSE/gB35Q8=",
-    version = "v1.3.0",
+    sum = "h1:nFm6S0SMdyzrzcmThSipiEubIDy8WEXKNZ0UOgiRpng=",
+    version = "v1.3.1",
 )
 
 go_repository(
@@ -335,8 +335,8 @@ go_repository(
 go_repository(
     name = "org_golang_x_crypto",
     importpath = "golang.org/x/crypto",
-    sum = "h1:DN0cp81fZ3njFcrLCytUHRSUkqBjfTo4Tx9RJTWs0EY=",
-    version = "v0.0.0-20201221181555-eec23a3978ad",
+    sum = "h1:/ZScEX8SfEmUGRHs0gxpqteO5nfNW6axyZbBdw9A12g=",
+    version = "v0.0.0-20210220033148-5ea612d1eb83",
 )
 
 go_repository(
@@ -744,8 +744,8 @@ go_repository(
 go_repository(
     name = "com_github_imdario_mergo",
     importpath = "github.com/imdario/mergo",
-    sum = "h1:Y+UAYTZ7gDEuOfhxKWy+dvb5dRQ6rJjFSdX2HZY1/gI=",
-    version = "v0.3.7",
+    sum = "h1:3tnifQM4i+fbajXKBHXWEH+KvNHqojZ778UH75j3bGA=",
+    version = "v0.3.11",
 )
 
 go_repository(
@@ -1320,8 +1320,8 @@ go_repository(
 go_repository(
     name = "com_github_shopspring_decimal",
     importpath = "github.com/shopspring/decimal",
-    sum = "h1:Da9XEUfFxgyDOqUfwgoTDcWzmnlOnCGi6i4iPS+8Fbw=",
-    version = "v0.0.0-20190905144223-a36b5d85f337",
+    sum = "h1:abSATXmQEYyShuxI4/vyW3tV1MrKAJzCZ/0zLUXYbsQ=",
+    version = "v1.2.0",
 )
 
 go_repository(
@@ -3112,4 +3112,60 @@ go_repository(
     importpath = "gotest.tools/v3",
     sum = "h1:kG1BFyqVHuQoVQiR1bWGnfz/fmHvvuiSPIV7rvl360E=",
     version = "v3.0.2",
+)
+
+go_repository(
+    name = "com_github_huandu_xstrings",
+    importpath = "github.com/huandu/xstrings",
+    sum = "h1:L18LIDzqlW6xN2rEkpdV8+oL/IXWJ1APd+vsdYy4Wdw=",
+    version = "v1.3.2",
+)
+
+go_repository(
+    name = "com_github_masterminds_goutils",
+    importpath = "github.com/Masterminds/goutils",
+    sum = "h1:5nUrii3FMTL5diU80unEVvNevw1nH4+ZV4DSLVJLSYI=",
+    version = "v1.1.1",
+)
+
+go_repository(
+    name = "com_github_masterminds_semver",
+    importpath = "github.com/Masterminds/semver",
+    sum = "h1:H65muMkzWKEuNDnfl9d70GUjFniHKHRbFPGBuZ3QEww=",
+    version = "v1.5.0",
+)
+
+go_repository(
+    name = "com_github_masterminds_sprig",
+    importpath = "github.com/Masterminds/sprig",
+    sum = "h1:z4yfnGrZ7netVz+0EDJ0Wi+5VZCSYp4Z0m2dk6cEM60=",
+    version = "v2.22.0+incompatible",
+)
+
+go_repository(
+    name = "com_github_mitchellh_copystructure",
+    importpath = "github.com/mitchellh/copystructure",
+    sum = "h1:Bp6x9R1Wn16SIz3OfeDr0b7RnCG2OB66Y7PQyC/cvq4=",
+    version = "v1.1.1",
+)
+
+go_repository(
+    name = "com_github_mitchellh_reflectwalk",
+    importpath = "github.com/mitchellh/reflectwalk",
+    sum = "h1:FVzMWA5RllMAKIdUSC8mdWo3XtwoecrH79BY70sEEpE=",
+    version = "v1.0.1",
+)
+
+go_repository(
+    name = "com_github_masterminds_semver_v3",
+    importpath = "github.com/Masterminds/semver/v3",
+    sum = "h1:hLg3sBzpNErnxhQtUy/mmLR2I9foDujNK030IGemrRc=",
+    version = "v3.1.1",
+)
+
+go_repository(
+    name = "com_github_masterminds_sprig_v3",
+    importpath = "github.com/Masterminds/sprig/v3",
+    sum = "h1:17jRggJu518dr3QaafizSXOjKYp94wKfABxUmyxvxX8=",
+    version = "v3.2.2",
 )
