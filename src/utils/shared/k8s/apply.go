@@ -56,6 +56,10 @@ func ApplyYAML(clientset *kubernetes.Clientset, config *rest.Config, namespace s
 // KeyValueStringToMap converts a user-inputted label string (label1=value,label2=value2) into a string map.
 func KeyValueStringToMap(labels string) (map[string]string, error) {
 	labelMap := make(map[string]string)
+	if labels == "" {
+		return labelMap, nil
+	}
+
 	splitString := strings.Split(labels, ",")
 	for _, labelPair := range splitString {
 		splitLabel := strings.Split(labelPair, "=")
