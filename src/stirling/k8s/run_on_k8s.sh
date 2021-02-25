@@ -100,7 +100,7 @@ for pod in $pods; do
   node_name="$(kubectl get pod "${pod}" -n "${NAMESPACE}" -o=custom-columns=:.spec.nodeName | xargs)"
   filename="${LOGDIR}/log$timestamp.$pod.${node_name}"
   kubectl logs -n "${NAMESPACE}" "$pod" > "$filename"
-  echo "$filename"
+  echo "${scriptdir}/$filename"
 done
 
 echo ""
