@@ -224,12 +224,8 @@ Status StirlingImpl::CreateSourceConnectors() {
   auto sources = registry_->sources();
   for (const auto& [name, registry_element] : sources) {
     Status s = AddSource(registry_element.create_source_fn(name));
-
-    if (!s.ok()) {
-      LOG(WARNING) << absl::Substitute("Source Connector (registry name=$0) not instantiated",
-                                       name);
-      LOG(WARNING) << s.status().ToString();
-    }
+    LOG_IF(DFATAL, !s.ok()) << absl::Substitute(
+        "Source Connector (registry name=$0) not instantiated, error: $1", name, s.ToString());
   }
   return Status::OK();
 }
