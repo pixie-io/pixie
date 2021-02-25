@@ -550,6 +550,7 @@ void ConnectionTracker::CheckTracker() {
 }
 
 DataStream* ConnectionTracker::req_data() {
+  DCHECK_NE(traffic_class_.role, kRoleUnknown);
   switch (traffic_class_.role) {
     case kRoleClient:
       return &send_data_;
@@ -561,6 +562,7 @@ DataStream* ConnectionTracker::req_data() {
 }
 
 DataStream* ConnectionTracker::resp_data() {
+  DCHECK_NE(traffic_class_.role, kRoleUnknown);
   switch (traffic_class_.role) {
     case kRoleClient:
       return &recv_data_;

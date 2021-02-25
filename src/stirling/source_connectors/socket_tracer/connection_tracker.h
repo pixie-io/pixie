@@ -522,11 +522,11 @@ class ConnectionTracker : NotCopyMoveable {
   template <typename TFrameType>
   void DataStreamsToFrames() {
     DataStream* resp_data_ptr = resp_data();
-    DCHECK(resp_data_ptr != nullptr);
+    DCHECK_NE(resp_data_ptr, nullptr);
     resp_data_ptr->template ProcessBytesToFrames<TFrameType>(MessageType::kResponse);
 
     DataStream* req_data_ptr = req_data();
-    DCHECK(req_data_ptr != nullptr);
+    DCHECK_NE(req_data_ptr, nullptr);
     req_data_ptr->template ProcessBytesToFrames<TFrameType>(MessageType::kRequest);
   }
 
