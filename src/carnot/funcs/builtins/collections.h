@@ -11,7 +11,6 @@ namespace builtins {
  */
 void RegisterCollectionOpsOrDie(udf::Registry* registry);
 
-// TODO(zasgar): PL-419 Replace this when we add support for structs.
 template <typename TArg>
 class AnyUDA : public udf::UDA {
  public:

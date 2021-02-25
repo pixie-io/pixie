@@ -1,5 +1,6 @@
 #include "src/carnot/funcs/builtins/builtins.h"
 #include "src/carnot/funcs/builtins/collections.h"
+#include "src/carnot/funcs/builtins/conditionals.h"
 #include "src/carnot/funcs/builtins/json_ops.h"
 #include "src/carnot/funcs/builtins/math_ops.h"
 #include "src/carnot/funcs/builtins/math_sketches.h"
@@ -14,6 +15,7 @@ namespace builtins {
 
 void RegisterBuiltinsOrDie(udf::Registry* registry) {
   RegisterCollectionOpsOrDie(registry);
+  RegisterConditionalOpsOrDie(registry);
   RegisterMathOpsOrDie(registry);
   RegisterMathSketchesOrDie(registry);
   RegisterJSONOpsOrDie(registry);
