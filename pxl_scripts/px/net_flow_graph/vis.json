@@ -3,8 +3,7 @@
     {
       "name": "namespace",
       "type": "PX_NAMESPACE",
-      "description": "The namespace to filter on",
-      "defaultValue": "pl"
+      "description": "The namespace to filter on"
     },
     {
       "name": "start",

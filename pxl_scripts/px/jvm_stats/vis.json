@@ -9,7 +9,7 @@
     {
       "name": "node_name",
       "type": "PX_STRING",
-      "description": "The full/partial hostname to fitler by",
+      "description": "The full/partial hostname to filter by",
       "defaultValue": ""
     },
     {
