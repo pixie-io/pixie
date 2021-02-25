@@ -114,3 +114,24 @@ end
 file '/tmp/gsutil.tar.gz' do
   action :delete
 end
+
+remote_file '/tmp/helm.tar.gz' do
+  source node['helm']['download_path']
+  mode 0755
+  checksum node['helm']['sha256']
+end
+
+directory '/tmp/helm' do
+  owner 'root'
+  group root_group
+  mode '0755'
+  action :create
+end
+
+execute 'install helm' do
+  command 'tar xfz /tmp/helm.tar.gz -C /opt/pixielabs/bin --strip-components 1'
+end
+
+file '/tmp/helm.tar.gz' do
+  action :delete
+end
