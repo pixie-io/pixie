@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"time"
 
@@ -12,15 +11,14 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 	"gopkg.in/segmentio/analytics-go.v3"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/auth"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/components"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxconfig"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/update"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/vizier"
 	version "pixielabs.ai/pixielabs/src/shared/version/go"
 	utils2 "pixielabs.ai/pixielabs/src/utils"
 )
@@ -84,18 +82,24 @@ var VizierUpdateCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 
-		clusterInfo, err := getClusterForUpgrade(cloudConn, clusterID)
+		if clusterID == uuid.Nil {
+			clusterID, err = vizier.GetCurrentOrFirstHealthyVizier(cloudAddr)
+			if err != nil {
+				utils.WithError(err).Error("Failed to select cluster")
+				os.Exit(1)
+			}
+		}
+		clusterInfo, err := vizier.GetVizierInfo(cloudAddr, clusterID)
 		if err != nil {
-			// Keep this as a log.Fatal() as opposed to using the cliLog, because it
-			// is an unexpected error that Sentry should catch.
-			log.WithError(err).Fatal("Failed to fetch cluster information")
+			utils.WithError(err).Errorf("Failed to get info for cluster: %s", clusterID.String())
+			os.Exit(1)
 		}
 
-		clusterID = utils2.UUIDFromProtoOrNil(clusterInfo.ID)
-		status := clusterInfo.Status
-		if status == cloudapipb.CS_DISCONNECTED {
-			utils.Errorf("Cluster must be connected to update. status=%v", status)
-			os.Exit(1)
+		utils.Infof("Updating Pixie on the following cluster: %s", clusterInfo.ClusterName)
+		clusterOk := components.YNPrompt("Is the cluster correct?", true)
+		if !clusterOk {
+			utils.Error("Cluster is not correct. Aborting.")
+			return
 		}
 
 		if len(versionString) == 0 {
@@ -123,7 +127,7 @@ var VizierUpdateCmd = &cobra.Command{
 			Properties: analytics.NewProperties().
 				Set("cloud_addr", cloudAddr).
 				Set("cluster_id", utils2.UUIDFromProtoOrNil(clusterInfo.ID)).
-				Set("cluster_status", status.String()),
+				Set("cluster_status", clusterInfo.Status.String()),
 		})
 
 		utils.Infof("Updating to version: %s", versionString)
@@ -131,10 +135,10 @@ var VizierUpdateCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
 		updateJobs := []utils.Task{
-			newTaskWrapper("Initiating Update", func() error {
+			newTaskWrapper("Initiating update", func() error {
 				return initiateUpdate(ctx, cloudConn, clusterID, versionString, redeployEtcd)
 			}),
-			newTaskWrapper("Wait for update", func() error {
+			newTaskWrapper("Wait for update to complete (this may take a few minutes)", func() error {
 				timer := time.NewTicker(5 * time.Second)
 				timeout := time.NewTimer(5 * time.Minute)
 				defer timer.Stop()
@@ -142,7 +146,7 @@ var VizierUpdateCmd = &cobra.Command{
 				for {
 					select {
 					case <-timer.C:
-						clusterInfo, err := getClusterForUpgrade(cloudConn, clusterID)
+						clusterInfo, err := vizier.GetVizierInfo(cloudAddr, clusterID)
 						if err != nil {
 							return err
 						}
@@ -245,32 +249,4 @@ func mustInstallVersion(u *update.CLIUpdater, v string) {
 		panic(err)
 	}
 	utils.Info("Update completed successfully")
-}
-
-func getClusterForUpgrade(conn *grpc.ClientConn, c uuid.UUID) (*cloudapipb.ClusterInfo, error) {
-	client := cloudapipb.NewVizierClusterInfoClient(conn)
-
-	creds, err := auth.MustLoadDefaultCredentials()
-	if err != nil {
-		return nil, err
-	}
-	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
-		fmt.Sprintf("bearer %s", creds.Token))
-	resp, err := client.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{})
-	if err != nil {
-		return nil, err
-	}
-	if len(resp.Clusters) == 0 {
-		return nil, errors.New("no clusters available")
-	}
-	if c == uuid.Nil {
-		return resp.Clusters[0], nil
-	}
-	// Try to find the cluster by ID.
-	for _, cluster := range resp.Clusters {
-		if utils2.UUIDFromProtoOrNil(cluster.ID) == c {
-			return cluster, nil
-		}
-	}
-	return nil, errors.New("selected cluster not found")
 }

@@ -69,7 +69,7 @@ var LiveCmd = &cobra.Command{
 		selectedCluster, _ := cmd.Flags().GetString("cluster")
 		clusterUUID := uuid.FromStringOrNil(selectedCluster)
 		if !allClusters && clusterUUID == uuid.Nil {
-			clusterUUID, err = vizier.FirstHealthyVizier(cloudAddr)
+			clusterUUID, err = vizier.GetCurrentOrFirstHealthyVizier(cloudAddr)
 			if err != nil {
 				utils.WithError(err).Error("Could not fetch healthy vizier")
 				os.Exit(1)

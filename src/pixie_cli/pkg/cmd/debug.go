@@ -48,7 +48,7 @@ var DebugLogCmd = &cobra.Command{
 		container, _ := cmd.Flags().GetString("container")
 
 		if clusterID == uuid.Nil {
-			clusterID, err = vizier.FirstHealthyVizier(cloudAddr)
+			clusterID, err = vizier.GetCurrentOrFirstHealthyVizier(cloudAddr)
 			if err != nil {
 				cliLog.WithError(err).Error("Could not fetch healthy vizier")
 				os.Exit(1)
