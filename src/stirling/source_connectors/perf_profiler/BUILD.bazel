@@ -8,6 +8,7 @@ pl_cc_library(
         ["*.cc"],
         exclude = [
             "**/*_test.cc",
+            "predictable_stack_traces_app.cc",
         ],
     ),
     hdrs = glob(["*.h"]),
@@ -18,6 +19,17 @@ pl_cc_library(
         "//src/stirling/source_connectors/perf_profiler/bcc_bpf_intf:cc_library",
         "//src/stirling/utils:cc_library",
     ],
+)
+
+# We build predictable_stack_traces_app with clang++ regardless of the bazel config.
+# This is test data, so we want deterministic debug symbols.
+genrule(
+    name = "predictable_stack_traces_app",
+    srcs = ["predictable_stack_traces_app.cc"],
+    outs = ["predictable_stack_traces_app"],
+    # -O0: Disables optimization which in turn disables inlining.
+    # -g: Produces dwarf information.
+    cmd = "clang++ -O0 -g -o $@ $<",
 )
 
 pl_cc_test(
