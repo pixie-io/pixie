@@ -32,10 +32,11 @@ Status SearchForAttachedProbes(const char* file_path, std::string_view marker,
       std::string probe = std::move(split[0]);
 
       // Note that a probe looks like the following:
-      //     p:kprobes/your_favorite_probe_name_here __x64_sys_connect
+      //     [p|r]:kprobes/your_favorite_probe_name_here __x64_sys_connect
       // Perform a quick (but not thorough) sanity check that we have the right format.
-      if ((probe[0] != 'p' && probe[0] != 'r') || probe[1] != ':') {
-        return error::Internal("Unexpected probe string: $0", probe);
+      // Detailed format: https://www.kernel.org/doc/html/latest/trace/kprobetrace.html.
+      if (probe[0] != 'p' && probe[0] != 'r') {
+        continue;
       }
 
       leaked_probes->push_back(std::move(probe));
@@ -55,14 +56,20 @@ Status RemoveProbes(const char* file_path, std::vector<std::string> probes) {
 
   std::vector<std::string> errors;
   for (auto& probe : probes) {
-    // Here we modify first character, which is normally 'p' or 'r' to '-'.
-    // This indicates that the probe should be removed.
-    probe[0] = '-';
-    VLOG(1) << absl::Substitute("Writing $0", probe);
+    std::vector<std::string_view> parts = absl::StrSplit(probe, absl::MaxSplits(':', 1));
+    if (parts.size() != 2) {
+      VLOG(1) << "Unexpected probe string format";
+      continue;
+    }
 
-    if (write(fd, probe.data(), probe.size()) < 0) {
-      return error::System("Failed to write to file: $0 [errno=$1 message=$2]", file_path, errno,
-                           std::strerror(errno));
+    std::string delete_probe = absl::StrCat("-:", parts[1]);
+    VLOG(1) << absl::Substitute("Writing $0", delete_probe);
+
+    if (write(fd, delete_probe.data(), delete_probe.size()) < 0) {
+      // TODO(yzhao): Avoid spamming customers' PEM logs. Switch this back to LOG(ERROR) after
+      // initial rollout.
+      VLOG(1) << absl::Substitute("Failed to write '$0' to file: $1 [errno=$2 message=$3]",
+                                  delete_probe, file_path, errno, std::strerror(errno));
     }
     // Note that even if write succeeds, it doesn't confirm that the probe was properly removed.
     // We can only confirm that we wrote to the file.
