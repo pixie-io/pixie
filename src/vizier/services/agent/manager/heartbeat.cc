@@ -117,10 +117,11 @@ Status HeartbeatMessageHandler::HandleMessage(std::unique_ptr<messages::VizierMe
   heartbeat_latency_moving_average_ =
       kHbLatencyDecay * heartbeat_latency_moving_average_ + (1 - kHbLatencyDecay) * time_delta;
 
-  LOG_EVERY_N(INFO, 20) << absl::StrFormat(
+  LOG_EVERY_N(INFO, 60) << absl::StrFormat(
       "Heartbeat ACK latency moving average: %d ms",
       std::chrono::duration_cast<std::chrono::milliseconds>(heartbeat_latency_moving_average_)
           .count());
+
   if (ack.has_update_info()) {
     CIDRBlock service_cidr;
     Status s = ParseCIDRBlock(ack.update_info().service_cidr(), &service_cidr);
