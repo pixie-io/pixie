@@ -14,9 +14,8 @@
 # Perf buffers and perf events are assigned file descriptors,
 # so hopefully the kernel gets rid of them when the process dies, right?
 
-# TODO(oazizi): Expose these as arguments, if necessary
-# Amount of time we give the executable to start up and deploy kprobes.
-Tstart=3
+# TODO(oazizi): Switch to looking for the "Probes successfully deployed" message.
+Tstart=10
 
 # Amount of time after start, after which we kill the executable.
 Tkill=3
@@ -60,10 +59,16 @@ function test() {
     fi
     pid=$!
     echo "Program PID: $pid"
+    pixie_probe_tag=__pixie__$pid
 
     sleep $Tstart
-    num_probes=$(cat /sys/kernel/debug/tracing/kprobe_events | grep bcc_$pid | wc -l)
+    num_probes=$(grep -c $pixie_probe_tag /sys/kernel/debug/tracing/kprobe_events)
     echo "Number of probes while running: $num_probes"
+
+    if [ "$num_probes" -eq 0 ]; then
+      echo "Test FAILED: Expecting kprobes to be deployed. Test infra cannot be trusted."
+      return 1
+    fi
 
     # Delayed kill
     sh -c "sleep $Tkill && kill -$signal $pid" &
@@ -71,7 +76,7 @@ function test() {
     # Wait for process to terminate.
     wait $pid
 
-    num_probes=$(cat /sys/kernel/debug/tracing/kprobe_events | grep bcc_$pid | wc -l)
+    num_probes=$(grep -c $pixie_probe_tag /sys/kernel/debug/tracing/kprobe_events)
     echo "Final number of probes: $num_probes"
 
     if [ "$num_probes" -ne 0 ]; then
@@ -83,6 +88,16 @@ function test() {
     num_passed=$((num_passed+1))
     return 0
 }
+
+echo "Running a test with KILL, which should leak probes. This is test infra sanity check."
+test KILL
+if [ $num_passed -eq 1 ]; then
+  echo "Test appears broken. KILL should cause probes to leak."
+fi
+
+# Reset the test stats.
+num_tests=0
+num_passed=0
 
 test TERM
 test HUP

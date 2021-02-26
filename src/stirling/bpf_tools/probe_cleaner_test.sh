@@ -21,9 +21,10 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 # Amount of time we give the executable to start up and deploy kprobes.
-Tsleep=3
+# TODO(oazizi): Switch to looking for the "Probes successfully deployed" message.
+Tsleep=10
 
-# The marker we are looking for in probes to kill.
+# The marker we are looking for in identifying probes to kill.
 marker="__pixie__"
 
 function test_setup() {

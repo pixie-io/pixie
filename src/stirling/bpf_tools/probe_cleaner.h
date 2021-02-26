@@ -9,6 +9,8 @@ namespace pl {
 namespace stirling {
 namespace utils {
 
+static constexpr char kPixieBPFProbeMarker[] = "__pixie__";
+
 /**
  * Reads sysfs to create a list of currently deployed probes with the specified marker in the name.
  *
@@ -42,7 +44,7 @@ Status RemoveProbes(const char* file_path, std::vector<std::string> probes);
  * @return error if issues accessing sysfs, or if there are still probes leftover after the cleanup
  * process.
  */
-Status CleanProbes(std::string_view marker);
+Status CleanProbes(std::string_view marker = kPixieBPFProbeMarker);
 
 }  // namespace utils
 }  // namespace stirling

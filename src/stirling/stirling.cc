@@ -210,8 +210,7 @@ Status StirlingImpl::Init() {
   system::LogSystemInfo();
 
   // Clean up any probes from a previous instance.
-  static constexpr char kPixieBPFProbeMarker[] = "__pixie__";
-  Status s = utils::CleanProbes(kPixieBPFProbeMarker);
+  Status s = utils::CleanProbes();
   LOG_IF(WARNING, !s.ok()) << absl::Substitute("Kprobe Cleaner failed. Message $0", s.msg());
   PL_RETURN_IF_ERROR(CreateSourceConnectors());
   return Status::OK();
