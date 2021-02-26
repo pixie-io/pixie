@@ -36,5 +36,11 @@ constexpr auto kStackTraceTable = DataTableSchema(
 );
 // clang-format on
 
+constexpr int kStackTraceTimeIdx = kStackTraceTable.ColIndex("time_");
+constexpr int kStackTraceUPIDIdx = kStackTraceTable.ColIndex("upid");
+constexpr int kStackTraceStackTraceIDIdx = kStackTraceTable.ColIndex("stack_trace_id");
+constexpr int kStackTraceStackTraceStrIdx = kStackTraceTable.ColIndex("stack_trace");
+constexpr int kStackTraceCountIdx = kStackTraceTable.ColIndex("count");
+
 }  // namespace stirling
 }  // namespace pl
