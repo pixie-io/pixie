@@ -65,14 +65,11 @@ final class ESLintLinter extends ArcanistExternalLinter {
   }
 
   public function getVersion() {
-    list($err, $stdout, $stderr) = exec_manual('%C -v', $this->getExecutableCommand());
-
-    $matches = array();
-    if (preg_match('/^v(\d\.\d\.\d)$/', $stdout, $matches)) {
-      return $matches[1];
-    } else {
-      return false;
-    }
+    // Pixie specific patch. We `yarn install` to run eslint, so just
+    // asking for a version is expensive. Since we don't have a version
+    // check in this Linter anyway, just return a static version that will
+    // not be used for anything.
+    return '6.8.0';
   }
 
   protected function getMandatoryFlags() {
