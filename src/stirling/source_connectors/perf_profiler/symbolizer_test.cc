@@ -10,7 +10,7 @@ namespace stirling {
 namespace stack_traces {
 
 TEST(Symbolizer, Basic) {
-  std::vector<std::string> user_symbols = {"Run()", "Foo()"};
+  std::vector<std::string> user_symbols = {"Foo()", "Run()"};
   std::vector<std::string> kernel_symbols = {"syscall_helper", "syscall"};
 
   std::string folded_stack_trace = FoldedStackTraceString(user_symbols, kernel_symbols);

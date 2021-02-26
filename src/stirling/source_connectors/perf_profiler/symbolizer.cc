@@ -18,13 +18,13 @@ std::string FoldedStackTraceString(const std::vector<std::string>& user_symbols,
 
   std::string out;
 
-  for (const auto& user_symbol : user_symbols) {
-    absl::StrAppend(&out, user_symbol);
+  // Note that symbols are added in reverse order because of how BCC populates
+  // symbols from get_stack_symbol().
+  for (auto iter = user_symbols.rbegin(); iter != user_symbols.rend(); ++iter) {
+    absl::StrAppend(&out, *iter);
     out += kSeparator;
   }
 
-  // Note that kernel symbols are added in reverse order. This is how BCC does it,
-  // so apparently  kernel symbols are populated in reverse order by BPF/BCC.
   for (auto iter = kernel_symbols.rbegin(); iter != kernel_symbols.rend(); ++iter) {
     // Add "_[k]" suffix to all the symbols in the kernel stack trace:
     absl::StrAppend(&out, *iter, "_[k]");
