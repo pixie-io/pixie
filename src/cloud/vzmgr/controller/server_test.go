@@ -84,25 +84,25 @@ func loadTestData(t *testing.T, db *sqlx.DB) {
 	db.MustExec(insertCluster, testNonAuthOrgID, "323e4567-e89b-12d3-a456-426655440003", testProjectName, "", "", "non_auth_2")
 
 	insertClusterInfo := `INSERT INTO vizier_cluster_info(vizier_cluster_id, status, address, jwt_signing_key, last_heartbeat,
-						  passthrough_enabled, vizier_version, control_plane_pod_statuses, num_nodes, num_instrumented_nodes)
-						  VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+						  passthrough_enabled, auto_update_enabled, vizier_version, control_plane_pod_statuses, num_nodes, num_instrumented_nodes)
+						  VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
 	db.MustExec(insertClusterInfo, "123e4567-e89b-12d3-a456-426655440000", "UNKNOWN", "addr0",
-		"key0", "2011-05-16 15:36:38", true, "", testPodStatuses, 10, 8)
+		"key0", "2011-05-16 15:36:38", true, false, "", testPodStatuses, 10, 8)
 	db.MustExec(insertClusterInfo, "123e4567-e89b-12d3-a456-426655440001", "HEALTHY", "addr1",
 		"\\xc30d04070302c5374a5098262b6d7bd23f01822f741dbebaa680b922b55fd16eb985aeb09505f8fc4a36f0e11ebb8e18f01f684146c761e2234a81e50c21bca2907ea37736f2d9a5834997f4dd9e288c",
-		"2011-05-17 15:36:38", false, "vzVers", "{}", 12, 9)
+		"2011-05-17 15:36:38", false, true, "vzVers", "{}", 12, 9)
 	db.MustExec(insertClusterInfo, "123e4567-e89b-12d3-a456-426655440002", "UNHEALTHY", "addr2", "key2", "2011-05-18 15:36:38",
-		true, "", "{}", 4, 4)
+		true, false, "", "{}", 4, 4)
 	db.MustExec(insertClusterInfo, testDisconnectedClusterEmptyUID, "DISCONNECTED", "addr3", "key3", "2011-05-19 15:36:38",
-		false, "", "{}", 3, 2)
+		false, true, "", "{}", 3, 2)
 	db.MustExec(insertClusterInfo, testExistingCluster, "DISCONNECTED", "addr3", "key3", "2011-05-19 15:36:38",
-		false, "", "{}", 5, 4)
+		false, true, "", "{}", 5, 4)
 	db.MustExec(insertClusterInfo, testExistingClusterActive, "UNHEALTHY", "addr3", "key3", "2011-05-19 15:36:38",
-		false, "", "{}", 10, 4)
+		false, true, "", "{}", 10, 4)
 	db.MustExec(insertClusterInfo, "223e4567-e89b-12d3-a456-426655440003", "HEALTHY", "addr3", "key3", "2011-05-19 15:36:38",
-		true, "", "{}", 2, 0)
+		true, true, "", "{}", 2, 0)
 	db.MustExec(insertClusterInfo, "323e4567-e89b-12d3-a456-426655440003", "HEALTHY", "addr3", "key3", "2011-05-19 15:36:38",
-		false, "", "{}", 4, 2)
+		false, true, "", "{}", 4, 2)
 
 	db.MustExec(`UPDATE vizier_cluster SET cluster_name=NULL WHERE id=$1`, testDisconnectedClusterEmptyUID)
 }
@@ -197,6 +197,7 @@ func TestServer_GetVizierInfo(t *testing.T) {
 	assert.Equal(t, resp.Status, cvmsgspb.VZ_ST_HEALTHY)
 	assert.Greater(t, resp.LastHeartbeatNs, int64(0))
 	assert.Equal(t, resp.Config.PassthroughEnabled, false)
+	assert.Equal(t, resp.Config.AutoUpdateEnabled, true)
 	assert.Equal(t, "vzVers", resp.VizierVersion)
 	assert.Equal(t, "cVers", resp.ClusterVersion)
 	assert.Equal(t, "healthy_cluster", resp.ClusterName)
@@ -255,8 +256,9 @@ func TestServer_UpdateVizierConfig(t *testing.T) {
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
 	s := controller.New(db, "test", mockDNSClient, nil, nil)
+	vzIDpb := utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001")
 	resp, err := s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
-		VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+		VizierID: vzIDpb,
 		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
 			PassthroughEnabled: &types.BoolValue{Value: true},
 		},
@@ -265,10 +267,26 @@ func TestServer_UpdateVizierConfig(t *testing.T) {
 	require.NotNil(t, resp)
 
 	// Check that the value was actually updated.
-	infoResp, err := s.GetVizierInfo(CreateTestContext(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
+	infoResp, err := s.GetVizierInfo(CreateTestContext(), vzIDpb)
 	require.Nil(t, err)
 	require.NotNil(t, infoResp)
 	assert.Equal(t, infoResp.Config.PassthroughEnabled, true)
+
+	resp, err = s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
+		VizierID: vzIDpb,
+		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
+			AutoUpdateEnabled: &types.BoolValue{Value: false},
+		},
+	})
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+
+	// Check that the value was actually updated.
+	infoResp, err = s.GetVizierInfo(CreateTestContext(), vzIDpb)
+	require.Nil(t, err)
+	require.NotNil(t, infoResp)
+	assert.Equal(t, infoResp.Config.PassthroughEnabled, true)
+	assert.Equal(t, infoResp.Config.AutoUpdateEnabled, false)
 }
 
 func TestServer_UpdateVizierConfig_WrongOrg(t *testing.T) {

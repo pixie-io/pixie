@@ -152,6 +152,7 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 			LastHeartbeatNs: int64(1305646598000000000),
 			Config: &cvmsgspb.VizierConfig{
 				PassthroughEnabled: false,
+				AutoUpdateEnabled:  true,
 			},
 			VizierVersion:  "1.2.3",
 			ClusterUID:     "a UID",
@@ -235,6 +236,7 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 	assert.Equal(t, cluster.Status, cloudapipb.CS_HEALTHY)
 	assert.Equal(t, cluster.LastHeartbeatNs, int64(1305646598000000000))
 	assert.Equal(t, cluster.Config.PassthroughEnabled, false)
+	assert.Equal(t, cluster.Config.AutoUpdateEnabled, true)
 	assert.Equal(t, "1.2.3", cluster.VizierVersion)
 	assert.Equal(t, "a UID", cluster.ClusterUID)
 	assert.Equal(t, "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar-3", cluster.ClusterName)
@@ -271,6 +273,7 @@ func TestVizierClusterInfo_GetClusterInfoDuplicates(t *testing.T) {
 			LastHeartbeatNs: int64(1305646598000000000),
 			Config: &cvmsgspb.VizierConfig{
 				PassthroughEnabled: false,
+				AutoUpdateEnabled:  true,
 			},
 			VizierVersion:        "1.2.3",
 			ClusterUID:           "a UID",
@@ -285,6 +288,7 @@ func TestVizierClusterInfo_GetClusterInfoDuplicates(t *testing.T) {
 				LastHeartbeatNs: int64(1305646598000000000),
 				Config: &cvmsgspb.VizierConfig{
 					PassthroughEnabled: false,
+					AutoUpdateEnabled:  true,
 				},
 				VizierVersion:        "1.2.3",
 				ClusterUID:           "a UID2",
@@ -328,6 +332,7 @@ func TestVizierClusterInfo_GetClusterInfoWithID(t *testing.T) {
 			LastHeartbeatNs: int64(1305646598000000000),
 			Config: &cvmsgspb.VizierConfig{
 				PassthroughEnabled: false,
+				AutoUpdateEnabled:  true,
 			},
 			VizierVersion:  "1.2.3",
 			ClusterUID:     "a UID",
@@ -352,6 +357,7 @@ func TestVizierClusterInfo_GetClusterInfoWithID(t *testing.T) {
 	assert.Equal(t, cluster.Status, cloudapipb.CS_HEALTHY)
 	assert.Equal(t, cluster.LastHeartbeatNs, int64(1305646598000000000))
 	assert.Equal(t, cluster.Config.PassthroughEnabled, false)
+	assert.Equal(t, cluster.Config.AutoUpdateEnabled, true)
 }
 
 func TestVizierClusterInfo_UpdateClusterVizierConfig(t *testing.T) {
@@ -369,6 +375,7 @@ func TestVizierClusterInfo_UpdateClusterVizierConfig(t *testing.T) {
 		VizierID: clusterID,
 		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
 			PassthroughEnabled: &types.BoolValue{Value: true},
+			AutoUpdateEnabled:  &types.BoolValue{Value: false},
 		},
 	}
 
@@ -382,6 +389,7 @@ func TestVizierClusterInfo_UpdateClusterVizierConfig(t *testing.T) {
 		ID: clusterID,
 		ConfigUpdate: &cloudapipb.VizierConfigUpdate{
 			PassthroughEnabled: &types.BoolValue{Value: true},
+			AutoUpdateEnabled:  &types.BoolValue{Value: false},
 		},
 	})
 

@@ -306,6 +306,7 @@ type VizierInfo struct {
 	Status                  vizierStatus `db:"status"`
 	LastHeartbeat           *int64       `db:"last_heartbeat"`
 	PassthroughEnabled      bool         `db:"passthrough_enabled"`
+	AutoUpdateEnabled       bool         `db:"auto_update_enabled"`
 	ClusterUID              *string      `db:"cluster_uid"`
 	ClusterName             *string      `db:"cluster_name"`
 	ClusterVersion          *string      `db:"cluster_version"`
@@ -346,6 +347,7 @@ func vizierInfoToProto(vzInfo VizierInfo) *cvmsgspb.VizierInfo {
 		LastHeartbeatNs: lastHearbeat,
 		Config: &cvmsgspb.VizierConfig{
 			PassthroughEnabled: vzInfo.PassthroughEnabled,
+			AutoUpdateEnabled:  vzInfo.AutoUpdateEnabled,
 		},
 		ClusterUID:              clusterUID,
 		ClusterName:             clusterName,
@@ -369,7 +371,7 @@ func (s *Server) GetVizierInfos(ctx context.Context, req *vzmgrpb.GetVizierInfos
 
 	strQuery := `SELECT i.vizier_cluster_id, c.cluster_uid, c.cluster_name, c.cluster_version, i.vizier_version, c.org_id,
 			  i.status, (EXTRACT(EPOCH FROM age(now(), i.last_heartbeat))*1E9)::bigint as last_heartbeat,
-              i.passthrough_enabled, i.control_plane_pod_statuses, num_nodes, num_instrumented_nodes
+              i.passthrough_enabled, i.auto_update_enabled, i.control_plane_pod_statuses, num_nodes, num_instrumented_nodes
               from vizier_cluster_info as i, vizier_cluster as c
               WHERE i.vizier_cluster_id=c.id AND i.vizier_cluster_id IN (?) AND c.org_id='%s'`
 	strQuery = fmt.Sprintf(strQuery, orgIDstr)
@@ -419,7 +421,7 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 
 	query := `SELECT i.vizier_cluster_id, c.cluster_uid, c.cluster_name, c.cluster_version, i.vizier_version,
 			  i.status, (EXTRACT(EPOCH FROM age(now(), i.last_heartbeat))*1E9)::bigint as last_heartbeat,
-              i.passthrough_enabled, i.control_plane_pod_statuses, num_nodes, num_instrumented_nodes
+              i.passthrough_enabled, i.auto_update_enabled, i.control_plane_pod_statuses, num_nodes, num_instrumented_nodes
               from vizier_cluster_info as i, vizier_cluster as c
               WHERE i.vizier_cluster_id=$1 AND i.vizier_cluster_id=c.id`
 	vzInfo := VizierInfo{}
@@ -456,11 +458,12 @@ func (s *Server) getVizierConfig(ctx context.Context, vizierIDPb *uuidpb.UUID) (
 	vizierID := utils.UUIDFromProtoOrNil(vizierIDPb)
 
 	query := `
-		SELECT passthrough_enabled
+		SELECT passthrough_enabled, auto_update_enabled
 		FROM vizier_cluster_info
 		WHERE vizier_cluster_id = $1`
 	var val struct {
 		PassthroughEnabled bool `db:"passthrough_enabled"`
+		AutoUpdateEnabled  bool `db:"auto_update_enabled"`
 	}
 
 	err := s.db.Get(&val, query, vizierID)
@@ -472,6 +475,7 @@ func (s *Server) getVizierConfig(ctx context.Context, vizierIDPb *uuidpb.UUID) (
 	}
 	return &cvmsgspb.VizierConfig{
 		PassthroughEnabled: val.PassthroughEnabled,
+		AutoUpdateEnabled:  val.AutoUpdateEnabled,
 	}, nil
 }
 
@@ -483,17 +487,33 @@ func (s *Server) UpdateVizierConfig(ctx context.Context, req *cvmsgspb.UpdateViz
 
 	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
 
-	if req.ConfigUpdate == nil || req.ConfigUpdate.PassthroughEnabled == nil {
+	if req.ConfigUpdate == nil {
 		return &cvmsgspb.UpdateVizierConfigResponse{}, nil
 	}
-	passthroughEnabled := req.ConfigUpdate.PassthroughEnabled.Value
+
+	currentConfig, err := s.getVizierConfig(ctx, req.VizierID)
+	if err != nil {
+		return nil, err
+	}
+
+	ptEnabled := currentConfig.PassthroughEnabled
+	auEnabled := currentConfig.AutoUpdateEnabled
+
+	if req.ConfigUpdate.PassthroughEnabled != nil {
+		ptEnabled = req.ConfigUpdate.PassthroughEnabled.Value
+	}
+
+	if req.ConfigUpdate.AutoUpdateEnabled != nil {
+		auEnabled = req.ConfigUpdate.AutoUpdateEnabled.Value
+	}
 
 	query := `
     UPDATE vizier_cluster_info
-    SET passthrough_enabled = $1
-    WHERE vizier_cluster_id = $2`
+    SET passthrough_enabled = $1,
+        auto_update_enabled = $2
+    WHERE vizier_cluster_id = $3`
 
-	res, err := s.db.Exec(query, passthroughEnabled, vizierID)
+	res, err := s.db.Exec(query, ptEnabled, auEnabled, vizierID)
 	if err != nil {
 		return nil, err
 	}
@@ -501,14 +521,17 @@ func (s *Server) UpdateVizierConfig(ctx context.Context, req *cvmsgspb.UpdateViz
 		return nil, status.Error(codes.NotFound, "no such cluster")
 	}
 
-	anyMsg, err := types.MarshalAny(&cvmsgspb.VizierConfig{
-		PassthroughEnabled: passthroughEnabled,
-	})
-	if err != nil {
-		log.WithError(err).Error("Could not marshal proto to any")
+	if req.ConfigUpdate.PassthroughEnabled != nil {
+		passthroughEnabled := req.ConfigUpdate.PassthroughEnabled.Value
+		anyMsg, err := types.MarshalAny(&cvmsgspb.VizierConfig{
+			PassthroughEnabled: passthroughEnabled,
+		})
+		if err != nil {
+			log.WithError(err).Error("Could not marshal proto to any")
+		}
+		// Tell certmgr about the vizier config
+		s.sendNATSMessage("sslVizierConfigResp", anyMsg, vizierID)
 	}
-	// Tell certmgr about the vizier config
-	s.sendNATSMessage("sslVizierConfigResp", anyMsg, vizierID)
 
 	return &cvmsgspb.UpdateVizierConfigResponse{}, nil
 }

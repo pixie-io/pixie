@@ -280,6 +280,7 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 			LastHeartbeatNs: vzInfo.LastHeartbeatNs,
 			Config: &cloudapipb.VizierConfig{
 				PassthroughEnabled: vzInfo.Config.PassthroughEnabled,
+				AutoUpdateEnabled:  vzInfo.Config.AutoUpdateEnabled,
 			},
 			ClusterUID:              vzInfo.ClusterUID,
 			ClusterName:             vzInfo.ClusterName,
@@ -332,6 +333,7 @@ func (v *VizierClusterInfo) UpdateClusterVizierConfig(ctx context.Context, req *
 		VizierID: req.ID,
 		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
 			PassthroughEnabled: req.ConfigUpdate.PassthroughEnabled,
+			AutoUpdateEnabled:  req.ConfigUpdate.AutoUpdateEnabled,
 		},
 	})
 	if err != nil {
@@ -347,6 +349,7 @@ func (v *VizierClusterInfo) UpdateClusterConfig(ctx context.Context, req *public
 		ID: req.ID,
 		ConfigUpdate: &cloudapipb.VizierConfigUpdate{
 			PassthroughEnabled: req.ConfigUpdate.PassthroughEnabled,
+			AutoUpdateEnabled:  req.ConfigUpdate.AutoUpdateEnabled,
 		},
 	})
 
@@ -394,6 +397,7 @@ func (v *VizierClusterInfo) GetCluster(ctx context.Context, req *public_cloudapi
 			LastHeartbeatNs: c.LastHeartbeatNs,
 			Config: &public_cloudapipb.ClusterConfig{
 				PassthroughEnabled: c.Config.PassthroughEnabled,
+				AutoUpdateEnabled:  c.Config.AutoUpdateEnabled,
 			},
 			ClusterName:          c.ClusterName,
 			ClusterVersion:       c.ClusterVersion,

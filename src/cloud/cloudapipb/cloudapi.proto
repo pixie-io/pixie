@@ -162,10 +162,12 @@ service VizierClusterInfo {
 
 message VizierConfig {
     bool passthrough_enabled = 1;
+    bool auto_update_enabled = 2;
 }
 
 message VizierConfigUpdate {
     google.protobuf.BoolValue passthrough_enabled = 1;
+    google.protobuf.BoolValue auto_update_enabled = 2;
 }
 
 message GetClusterInfoRequest {

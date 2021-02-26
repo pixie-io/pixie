@@ -35,6 +35,8 @@ service ClusterManager {
 message ClusterConfig {
     // True if passthrough is enabled, false if direct-mode is enabled.
     bool passthrough_enabled = 1;
+    // True if autoUpdate is enabled (default), false if it is disabled.
+    bool auto_update_enabled = 2;
 }
 
 // Contains the cluster info to update for this cluster.
@@ -42,6 +44,8 @@ message ClusterConfigUpdate {
     // The new value for whether the cluster uses passthrough or direct mode.
     // Changing this will propagate the change to Pixie running in your cluster.
     google.protobuf.BoolValue passthrough_enabled = 1;
+    // The value for whether auto updates are enabled for the cluster.
+    google.protobuf.BoolValue auto_update_enabled = 2;
 }
 
 // Request message for the GetCluster call.
