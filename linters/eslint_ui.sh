@@ -7,8 +7,7 @@ eslint=./node_modules/.bin/eslint
 
 cd "${uipath}"
 if [[ ! -x "${eslint}" ]]; then
-    yarn install
+    yarn install 1>/dev/null 2>/dev/null
 fi
-
 
 "${eslint}" "$@"
