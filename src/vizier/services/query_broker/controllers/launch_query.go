@@ -24,6 +24,10 @@ func getAgentTopicFromUUID(agentID uuid.UUID) string {
 
 // LaunchQuery launches a query by sending query fragments to relevant agents.
 func LaunchQuery(queryID uuid.UUID, natsConn *nats.Conn, planMap map[uuid.UUID]*planpb.Plan, analyze bool) error {
+	if len(planMap) == 0 {
+		return fmt.Errorf("Received no agent plans for query %s", queryID.String())
+	}
+
 	queryIDPB := utils.ProtoFromUUID(queryID)
 	// Accumulate failures.
 	errs := make(chan error)

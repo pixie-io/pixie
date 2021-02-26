@@ -115,3 +115,25 @@ func TestLaunchQuery(t *testing.T) {
 	assert.Equal(t, planPB2, pb.Msg.(*messages.VizierMessage_ExecuteQueryRequest).ExecuteQueryRequest.Plan)
 	assert.Equal(t, queryUUIDPb, pb.Msg.(*messages.VizierMessage_ExecuteQueryRequest).ExecuteQueryRequest.QueryID)
 }
+
+func TestLaunchQueryNoPlans(t *testing.T) {
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
+
+	nc, err := nats.Connect(testingutils.GetNATSURL(port))
+	if err != nil {
+		t.Fatal("Could not connect to NATS.")
+	}
+
+	queryUUID, err := uuid.FromString(queryIDStr)
+	if err != nil {
+		t.Fatal("Could not parse UUID.")
+	}
+
+	planMap := make(map[uuid.UUID]*planpb.Plan)
+
+	err = controllers.LaunchQuery(queryUUID, nc, planMap, false)
+
+	assert.NotNil(t, err)
+	assert.Regexp(t, fmt.Sprintf("Received no agent plans for query %s", queryIDStr), err)
+}
