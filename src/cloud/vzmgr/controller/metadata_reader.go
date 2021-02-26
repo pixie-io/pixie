@@ -49,7 +49,6 @@ type VizierState struct {
 
 func (vz *VizierState) stop() {
 	vz.once.Do(func() {
-		close(vz.liveCh)
 		close(vz.quitCh)
 		if vz.liveSub != nil {
 			vz.liveSub.Unsubscribe()
