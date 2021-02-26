@@ -1050,8 +1050,11 @@ def vizierReleaseBuilders = [:]
 vizierReleaseBuilders['Build & Push Artifacts'] = {
   WithSourceCodeK8s {
     container('pxbuild') {
-      sh './ci/vizier_build_release.sh'
-      stash name: 'versions', includes: 'src/utils/artifacts/artifact_db_updater/VERSIONS.json'
+      withKubeConfig([credentialsId: K8S_PROD_CREDS,
+              serverUrl: K8S_PROD_CLUSTER, namespace: 'default']) {
+        sh './ci/vizier_build_release.sh'
+        stash name: 'versions', includes: 'src/utils/artifacts/artifact_db_updater/VERSIONS.json'
+      }
     }
   }
 }

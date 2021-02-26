@@ -29,3 +29,8 @@ yamls_tar="${repo_path}/bazel-bin/k8s/vizier/vizier_yamls.tar"
 sha256sum "${yamls_tar}" | awk '{print $1}' > sha
 gsutil cp "${yamls_tar}" "${output_path}/vizier_yamls.tar"
 gsutil cp sha "${output_path}/vizier_yamls.tar.sha256"
+
+# Update helm chart if it is a release.
+if [[ $public == "True" ]]; then
+  ./ci/helm_build_release.sh "${release_tag}" "${yamls_tar}"
+fi
