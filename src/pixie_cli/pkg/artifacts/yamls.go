@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 
 	"google.golang.org/grpc"
@@ -159,6 +160,30 @@ func getSentryDSN(vizierVersion string) string {
 
 // GenerateTemplatedDeployYAMLs generates the YAMLs that should be run when deploying Pixie.
 func GenerateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, conn *grpc.ClientConn, authToken string, versionStr string, ns string, imagePullSecretName string, imagePullCreds string) ([]*YAMLFile, error) {
+	yamlMap, err := FetchVizierYAMLMap(conn, authToken, versionStr)
+	if err != nil {
+		return nil, err
+	}
+
+	return generateTemplatedDeployYAMLs(clientset, yamlMap, versionStr, ns, imagePullSecretName, imagePullCreds)
+}
+
+// GenerateTemplatedDeployYAMLsWithTar generates the YAMLs that should be run when deploying Pixie using the provided tar file.
+func GenerateTemplatedDeployYAMLsWithTar(clientset *kubernetes.Clientset, tarPath string, versionStr string, ns string) ([]*YAMLFile, error) {
+	file, err := os.Open(tarPath)
+	if err != nil {
+		return nil, err
+	}
+
+	yamlMap, err := utils.ReadTarFileFromReader(file)
+	if err != nil {
+		return nil, err
+	}
+
+	return generateTemplatedDeployYAMLs(clientset, yamlMap, versionStr, ns, "", "")
+}
+
+func generateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string, versionStr string, ns string, imagePullSecretName string, imagePullCreds string) ([]*YAMLFile, error) {
 	nsYAML, err := generateNamespaceYAML(clientset, ns)
 	if err != nil {
 		return nil, err
@@ -169,7 +194,7 @@ func GenerateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, conn *grpc.Cl
 		return nil, err
 	}
 
-	vzYAML, err := generateBootstrapYAML(clientset, conn, authToken, versionStr)
+	vzYAML, err := generateBootstrapYAML(clientset, yamlMap)
 	if err != nil {
 		return nil, err
 	}
@@ -211,13 +236,19 @@ func generateNamespaceYAML(clientset *kubernetes.Clientset, namespace string) (s
 
 // GenerateSecretsYAML creates the YAML for Pixie secrets.
 func GenerateSecretsYAML(clientset *kubernetes.Clientset, ns string, imagePullSecretName string, imagePullCreds string, versionStr string) (string, error) {
-	dockerSecret, err := k8s.CreateDockerConfigJSONSecret(ns, imagePullSecretName, imagePullCreds)
-	if err != nil {
-		return "", err
-	}
-	dYaml, err := k8s.ConvertResourceToYAML(dockerSecret)
-	if err != nil {
-		return "", err
+	dockerYAML := ""
+
+	// Only add docker image secrets if specified.
+	if imagePullCreds != "" {
+		dockerSecret, err := k8s.CreateDockerConfigJSONSecret(ns, imagePullSecretName, imagePullCreds)
+		if err != nil {
+			return "", err
+		}
+		dYaml, err := k8s.ConvertResourceToYAML(dockerSecret)
+		if err != nil {
+			return "", err
+		}
+		dockerYAML = dYaml
 	}
 
 	csYAMLs, err := GenerateClusterSecretYAMLs(getSentryDSN(versionStr))
@@ -225,7 +256,7 @@ func GenerateSecretsYAML(clientset *kubernetes.Clientset, ns string, imagePullSe
 		return "", err
 	}
 
-	origYAML := concatYAMLs(dYaml, csYAMLs)
+	origYAML := concatYAMLs(dockerYAML, csYAMLs)
 
 	// Fill in configmaps.
 	secretsYAML, err := TemplatizeK8sYAML(clientset, origYAML, append([]*K8sTemplateOptions{
@@ -292,13 +323,8 @@ func GenerateSecretsYAML(clientset *kubernetes.Clientset, ns string, imagePullSe
 }
 
 // generateBootstrapYAML creates the YAML for the Pixie bootstrap resources.
-func generateBootstrapYAML(clientset *kubernetes.Clientset, conn *grpc.ClientConn, authToken string, versionStr string) (string, error) {
-	vzMap, err := FetchVizierYAMLMap(conn, authToken, versionStr)
-	if err != nil {
-		return "", nil
-	}
-
-	vzBootstrapYAML, err := TemplatizeK8sYAML(clientset, vzMap[vizierBootstrapYAMLPath], globalTemplateOptions)
+func generateBootstrapYAML(clientset *kubernetes.Clientset, yamlMap map[string]string) (string, error) {
+	vzBootstrapYAML, err := TemplatizeK8sYAML(clientset, yamlMap[vizierBootstrapYAMLPath], globalTemplateOptions)
 	if err != nil {
 		return "", err
 	}

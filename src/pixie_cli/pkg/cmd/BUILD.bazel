@@ -15,6 +15,7 @@ go_library(
         "demo.go",
         "deploy.go",
         "deployment_key.go",
+        "generate_yamls.go",
         "get.go",
         "live.go",
         "load_cluster_secrets.go",

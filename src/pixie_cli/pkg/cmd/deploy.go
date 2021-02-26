@@ -336,8 +336,6 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		log.WithError(err).Fatal("failed to generate deployment YAMLs")
 	}
 
-	// TODO(michelle): Add a CLI option to write out just the templated Helm YAML files. This will be used in the Vizier release build.
-
 	// Fill in template values.
 	tmplValues := &artifacts.VizierTmplValues{
 		DeployKey:         deployKey,
