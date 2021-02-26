@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"os"
+	"strconv"
 
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
@@ -15,10 +16,69 @@ import (
 	"pixielabs.ai/pixielabs/src/utils"
 )
 
-// ConfigCmd is the command for geting/updating the cluster config.
+func init() {
+	ConfigCmd.PersistentFlags().StringP("cluster_id", "c", "", "The ID of the cluster to get/update the config for")
+
+	UpdateConfigCmd.Flags().StringP("passthrough", "t", "", "Whether pasthrough should be enabled")
+	viper.BindPFlag("passthrough", UpdateConfigCmd.Flags().Lookup("passthrough"))
+	UpdateConfigCmd.Flags().StringP("auto_update", "u", "", "Whether auto-updates should be enabled")
+	viper.BindPFlag("auto_update", UpdateConfigCmd.Flags().Lookup("auto_update"))
+
+	ConfigCmd.AddCommand(GetConfigCmd)
+	ConfigCmd.AddCommand(UpdateConfigCmd)
+}
+
+// ConfigCmd is the "config" command for geting/updating the cluster config.
 var ConfigCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Get/update the current cluster config",
+}
+
+// GetConfigCmd is the "config get" command.
+var GetConfigCmd = &cobra.Command{
+	Use:   "get",
+	Short: "Get the config for a cluster",
+	Run: func(cmd *cobra.Command, args []string) {
+		// Check cluster ID.
+		clusterID, _ := cmd.Flags().GetString("cluster_id")
+		if clusterID == "" {
+			cliLog.Error("Need to specify cluster ID in flags: --cluster_id=<cluster-id>")
+			return
+		}
+		clusterUUID, err := uuid.FromString(clusterID)
+		if err != nil {
+			cliLog.Errorf("Invalid cluster ID: %s\n", err.Error())
+			return
+		}
+
+		cloudAddr := viper.GetString("cloud_addr")
+		l, err := vizier.NewLister(cloudAddr)
+		if err != nil {
+			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
+			log.WithError(err).Fatal("Failed to create Vizier lister")
+		}
+
+		vzInfo, err := l.GetVizierInfo(clusterUUID)
+		if err != nil {
+			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
+			log.WithError(err).Fatal("Failed to get Vizier info")
+		}
+
+		if len(vzInfo) == 0 {
+			cliLog.Errorf("Invalid cluster ID: %s", clusterID)
+			os.Exit(1)
+		}
+
+		cliLog.Infof("%s: %t", "PassthroughEnabled", vzInfo[0].Config.PassthroughEnabled)
+		cliLog.Infof("%s: %t", "AutoUpdateEnabled", vzInfo[0].Config.AutoUpdateEnabled)
+		return
+	},
+}
+
+// UpdateConfigCmd is the "config update" command.
+var UpdateConfigCmd = &cobra.Command{
+	Use:   "update",
+	Short: "Update the config for a cluster",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Check cluster ID.
 		clusterID, _ := cmd.Flags().GetString("cluster_id")
@@ -40,43 +100,33 @@ var ConfigCmd = &cobra.Command{
 			log.WithError(err).Fatal("Failed to create Vizier lister")
 		}
 
-		vzInfo, err := l.GetVizierInfo(clusterUUID)
-		if err != nil {
-			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
-			log.WithError(err).Fatal("Failed to get Vizier info")
-		}
-
-		if len(vzInfo) == 0 {
-			cliLog.Errorf("Invalid cluster ID: %s", clusterID)
-			os.Exit(1)
-		}
-
-		update, _ := cmd.Flags().GetBool("update")
-		if !update {
-			// Update not specified. User just wants to get the config.
-			cliLog.Infof("%s: %t", "PassthroughEnabled", vzInfo[0].Config.PassthroughEnabled)
-			return
-		}
-
 		ptEnabled, _ := cmd.Flags().GetString("passthrough")
-		if ptEnabled == "" {
-			return // No config setting specified for passthrough.
+		auEnabled, _ := cmd.Flags().GetString("auto_update")
+
+		if ptEnabled == "" && auEnabled == "" {
+			return // No config settings specified.
 		}
 
-		if ptEnabled != "true" && ptEnabled != "false" {
-			cliLog.Infof("Invalid option specified for passthrough: %s. Expected (true|false)", ptEnabled)
-			return
+		update := &cloudapipb.VizierConfigUpdate{}
+
+		if ptEnabled != "" {
+			if pt, err := strconv.ParseBool(ptEnabled); err == nil {
+				update.PassthroughEnabled = &types.BoolValue{Value: pt}
+			} else {
+				cliLog.Errorf("Invalid value provided for passthrough: %s", err.Error())
+			}
+		}
+		if auEnabled != "" {
+			if au, err := strconv.ParseBool(auEnabled); err == nil {
+				update.AutoUpdateEnabled = &types.BoolValue{Value: au}
+			} else {
+				cliLog.Errorf("Invalid value provided for auto_update: %s", err.Error())
+			}
 		}
 
 		req := &cloudapipb.UpdateClusterVizierConfigRequest{
-			ID: clusterIDPb,
-			ConfigUpdate: &cloudapipb.VizierConfigUpdate{
-				PassthroughEnabled: &types.BoolValue{Value: true},
-			},
-		}
-
-		if ptEnabled == "false" {
-			req.ConfigUpdate.PassthroughEnabled.Value = false
+			ID:           clusterIDPb,
+			ConfigUpdate: update,
 		}
 
 		err = l.UpdateVizierConfig(req)
@@ -85,13 +135,4 @@ var ConfigCmd = &cobra.Command{
 		}
 		cliLog.Info("Successfully updated config")
 	},
-}
-
-func init() {
-	ConfigCmd.Flags().BoolP("update", "u", false, "Whether to update the config")
-	viper.BindPFlag("update", ConfigCmd.Flags().Lookup("update"))
-	ConfigCmd.Flags().StringP("passthrough", "t", "", "Whether pasthrough should be enabled")
-	viper.BindPFlag("passthrough", ConfigCmd.Flags().Lookup("passthrough"))
-	ConfigCmd.Flags().StringP("cluster_id", "c", "", "The ID of the cluster")
-	viper.BindPFlag("cluster_id", ConfigCmd.Flags().Lookup("cluster_id"))
 }
