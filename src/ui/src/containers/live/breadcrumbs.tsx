@@ -145,7 +145,11 @@ const LiveViewBreadcrumbs = ({ classes }) => {
         placeholder: variable?.description,
       };
 
-      if (variable && variable.validValues && variable.validValues.length) {
+      if (variable && typeof variable.defaultValue === 'undefined') {
+        argProps.title += '*';
+      }
+
+      if (variable?.validValues?.length) {
         argProps.getListItems = async (input) => (variable.validValues
           .filter((suggestion) => input === '' || suggestion.indexOf(input) >= 0)
           .map((suggestion) => ({
