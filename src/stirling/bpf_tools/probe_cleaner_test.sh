@@ -8,7 +8,7 @@
 
 if [ -z "$1" ]; then
     stirling_wrapper_bin=$(bazel info bazel-bin)/src/stirling/binaries/stirling_wrapper
-    probe_cleaner_bin=$(bazel info bazel-bin)/src/stirling/utils/probe_cleaner_standalone
+    probe_cleaner_bin=$(bazel info bazel-bin)/src/stirling/bpf_tools/probe_cleaner_standalone
 else
     stirling_wrapper_bin=$1
     probe_cleaner_bin=$2
@@ -20,28 +20,34 @@ if [[ $EUID -ne 0 ]]; then
    exit
 fi
 
-# Amount of time we give the executable to start up and deploy kprobes.
-# TODO(oazizi): Switch to looking for the "Probes successfully deployed" message.
-Tsleep=10
-
 # The marker we are looking for in identifying probes to kill.
 marker="__pixie__"
 
 function test_setup() {
-    $stirling_wrapper_bin > /dev/null &
+    # Create a temporary file. Then open it, and remove the file.
+    # This trick makes sure no garbage is left after the test exits.
+    # The file is accessed in the rest of the script not by its name,
+    # but rather by fd (e.g. `&3`).
+    tmpfile=$(mktemp)
+    exec 3> "$tmpfile" # FD for writing.
+    exec 4< "$tmpfile" # FD for reading.
+    rm "$tmpfile"
+
+    $stirling_wrapper_bin 2>&3 > /dev/null &
     if [ $? -ne 0 ]; then
         echo "Test setup failed: Cannot run program"
         return 1
     fi
     pid=$!
 
-    # Delayed kill
-    sh -c "sleep $Tsleep && kill -KILL $pid" &
+    # Wait for the kprobes to deploy, by looking for the "Probes successfully deployed" message.
+    tail -f -n +1 <&4 | sed '/Probes successfully deployed/ q'
 
-    # Wait for process to terminate.
+    # This kill will cause the probes to leak.
+    kill -KILL $pid
     wait $pid
 
-    num_probes=$(cat /sys/kernel/debug/tracing/kprobe_events | grep $marker | wc -l)
+    num_probes=$(grep -c $marker /sys/kernel/debug/tracing/kprobe_events)
     echo "Number of leaked probes: $num_probes"
 
     if [ "$num_probes" -eq 0 ]; then
@@ -57,7 +63,7 @@ function test() {
         return 1
     fi
 
-    num_probes=$(cat /sys/kernel/debug/tracing/kprobe_events | grep $marker | wc -l)
+    num_probes=$(grep -c $marker /sys/kernel/debug/tracing/kprobe_events)
     echo "Number of leaked probes: $num_probes"
 
     if [ "$num_probes" -ne 0 ]; then

@@ -14,9 +14,6 @@
 # Perf buffers and perf events are assigned file descriptors,
 # so hopefully the kernel gets rid of them when the process dies, right?
 
-# TODO(oazizi): Switch to looking for the "Probes successfully deployed" message.
-Tstart=10
-
 # Amount of time after start, after which we kill the executable.
 Tkill=3
 
@@ -52,7 +49,16 @@ function test() {
     echo "---------------"
     echo "Testing $signal"
 
-    $test_cmd > /dev/null &
+    # Create a temporary file. Then open it, and remove the file.
+    # This trick makes sure no garbage is left after the test exits.
+    # The file is accessed in the rest of the script not by its name,
+    # but rather by fd (e.g. `&3`).
+    tmpfile=$(mktemp)
+    exec 3> "$tmpfile" # FD for writing.
+    exec 4< "$tmpfile" # FD for reading.
+    rm "$tmpfile"
+
+    $test_cmd 2>&3 > /dev/null &
     if [ $? -ne 0 ]; then
         echo "FAILED: Cannot run program"
         return 1
@@ -61,7 +67,9 @@ function test() {
     echo "Program PID: $pid"
     pixie_probe_tag=__pixie__$pid
 
-    sleep $Tstart
+    # Wait for the kprobes to deploy, by looking for the "Probes successfully deployed" message.
+    tail -f -n +1 <&4 | sed '/Probes successfully deployed/ q'
+
     num_probes=$(grep -c $pixie_probe_tag /sys/kernel/debug/tracing/kprobe_events)
     echo "Number of probes while running: $num_probes"
 

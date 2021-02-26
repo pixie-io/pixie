@@ -54,3 +54,22 @@ pl_cc_test(
         "//src/stirling/obj_tools/testdata:dummy_exe_fixture",
     ],
 )
+
+sh_test(
+    name = "probe_cleaner_test",
+    srcs = ["probe_cleaner_test.sh"],
+    args = [
+        "$(location //src/stirling/binaries:stirling_wrapper)",
+        "$(location //src/stirling/bpf_tools:probe_cleaner_standalone)",
+    ],
+    data = [
+        "//src/stirling/binaries:stirling_wrapper",
+        "//src/stirling/bpf_tools:probe_cleaner_standalone",
+    ],
+    flaky = True,
+    tags = [
+        "exclusive",
+        "requires_bpf",
+    ],
+    deps = ["//src/stirling/scripts:sh_library"],
+)

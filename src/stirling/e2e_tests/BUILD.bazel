@@ -39,7 +39,6 @@ pl_cc_test(
     ],
 )
 
-# TODO(oazizi): Currently test needs to be run manually with sudo.
 sh_test(
     name = "stirling_wrapper_kprobe_leak_test",
     srcs = ["stirling_wrapper_kprobe_leak_test.sh"],
