@@ -50,50 +50,95 @@ uint64_t pl_nsec_to_clock_t(uint64_t x) {
   return x / (NSEC_PER_SEC / USER_HZ);
 }
 
+// A helper class for populating the TaskStructOffsets struct.
+// Maintains some state to detect invalid/ambiguous cases.
+class TaskStructOffsetsManager {
+ public:
+  explicit TaskStructOffsetsManager(TaskStructOffsets* offsets) : offsets_(offsets) {}
+
+  Status SetRealStartTimeOffset(uint64_t offset) {
+    if (offsets_->real_start_time_offset != 0) {
+      const uint64_t prev_word_offset = offset - sizeof(uint64_t);
+      // Check if we had one previous match, and that match was the previous word,
+      // if so, this second match is the one we're looking for. Why?
+      // Linux task struct has two time fields which appear back-to-back:
+      //   u64 start_time; // Monotonic time in nsecs
+      //   u64 start_boottime; // Boot based time in nsecs
+      // If the machine has never been suspended, then these two times will not match.
+      // In such cases, we may see a duplicate, and we want to take the second value.
+      if (num_start_time_matches_ == 1 && offsets_->real_start_time_offset == prev_word_offset) {
+        // This is the expected duplicate. Nothing to do here.
+      } else {
+        return error::Internal(
+            "Location of real_start_time is ambiguous. Found multiple possible offsets. "
+            "[previous=$0 current=$1]",
+            offsets_->real_start_time_offset, offset);
+      }
+    }
+    offsets_->real_start_time_offset = offset;
+    ++num_start_time_matches_;
+    return Status::OK();
+  }
+
+  Status SetGroupLeaderOffset(uint64_t offset) {
+    if (offsets_->group_leader_offset != 0) {
+      return error::Internal(
+          "Location of group_leader is ambiguous. Found multiple possible offsets. "
+          "[previous=$0 current=$1]",
+          offsets_->group_leader_offset, offset);
+    }
+    offsets_->group_leader_offset = offset;
+    return Status::OK();
+  }
+
+  Status CheckPopulated() {
+    if (offsets_->real_start_time_offset == 0) {
+      return error::Internal("Could not find offset for real_start_time/start_boottime.");
+    }
+
+    if (offsets_->group_leader_offset == 0) {
+      return error::Internal("Could not find offset for group_leader.");
+    }
+
+    return Status::OK();
+  }
+
+ private:
+  TaskStructOffsets* offsets_;
+  int num_start_time_matches_ = 0;
+};
+
 // Analyze the raw buffer for the proc pid start time and the task struct address.
 //  - proc_pid_start_time is used to look for the real_start_time/start_boottime member.
 //    Note that the name of the member changed across linux versions.
 //  - task_struct_addr is used to look for a pointer to self, indicating the group_leader member.
 //    This works since we are tracing a single-threaded program, so the main thread's leader is
 //    itself.
-StatusOr<TaskStructOffsets> Analyze(const struct buf& buf, const uint64_t proc_pid_start_time,
-                                    const uint64_t task_struct_addr) {
+StatusOr<TaskStructOffsets> ScanBufferForFields(const struct buf& buf,
+                                                const uint64_t proc_pid_start_time,
+                                                const uint64_t task_struct_addr) {
   VLOG(1) << absl::Substitute("task_struct_address = $0", task_struct_addr);
   VLOG(1) << absl::Substitute("/proc/self/stat:start_time = $0", proc_pid_start_time);
 
   TaskStructOffsets task_struct_offsets;
 
+  TaskStructOffsetsManager offsets_manager(&task_struct_offsets);
+
   for (const auto& [idx, val] : Enumerate(buf.u64words)) {
     int current_offset = idx * sizeof(uint64_t);
+
     if (pl_nsec_to_clock_t(val) == proc_pid_start_time) {
       VLOG(1) << absl::Substitute("[offset = $0] Found real_start_time", current_offset);
-      if (task_struct_offsets.real_start_time != 0) {
-        return error::Internal(
-            "Location of real_start_time is ambiguous. Found multiple possible offsets. "
-            "[previous=$0 current=$1]",
-            task_struct_offsets.real_start_time, current_offset);
-      }
-      task_struct_offsets.real_start_time = current_offset;
+      PL_RETURN_IF_ERROR(offsets_manager.SetRealStartTimeOffset(current_offset));
     }
+
     if (val == task_struct_addr) {
       VLOG(1) << absl::Substitute("[offset = $0] Found group_leader.", current_offset);
-      if (task_struct_offsets.group_leader != 0) {
-        return error::Internal(
-            "Location of group_leader is ambiguous. Found multiple possible offsets. [previous=$0 "
-            "current=$1]",
-            task_struct_offsets.group_leader, current_offset);
-      }
-      task_struct_offsets.group_leader = current_offset;
+      PL_RETURN_IF_ERROR(offsets_manager.SetGroupLeaderOffset(current_offset));
     }
   }
 
-  if (task_struct_offsets.real_start_time == 0) {
-    return error::Internal("Could not find offset for real_start_time/start_boottime.");
-  }
-
-  if (task_struct_offsets.group_leader == 0) {
-    return error::Internal("Could not find offset for group_leader.");
-  }
+  PL_RETURN_IF_ERROR(offsets_manager.CheckPopulated());
 
   return task_struct_offsets;
 }
@@ -158,7 +203,7 @@ StatusOr<TaskStructOffsets> ResolveTaskStructOffsetsCore() {
   }
 
   // Analyze the raw data buffer for the patterns we are looking for.
-  return Analyze(buf, proc_pid_start_time, task_struct_addr);
+  return ScanBufferForFields(buf, proc_pid_start_time, task_struct_addr);
 }
 
 namespace {

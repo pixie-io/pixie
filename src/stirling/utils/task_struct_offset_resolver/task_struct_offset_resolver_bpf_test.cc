@@ -19,8 +19,8 @@ void ResolveTaskStructOffsetsCoreThread(std::promise<StatusOr<TaskStructOffsets>
 TEST(ResolveTaskStructOffsets, CoreAsMainThread) {
   ASSERT_OK_AND_ASSIGN(TaskStructOffsets offsets, ResolveTaskStructOffsetsCore());
 
-  EXPECT_NE(offsets.real_start_time, 0);
-  EXPECT_NE(offsets.group_leader, 0);
+  EXPECT_NE(offsets.real_start_time_offset, 0);
+  EXPECT_NE(offsets.group_leader_offset, 0);
 }
 
 // Demonstrates that core logic breaks down when run inside a thread.
@@ -40,8 +40,8 @@ TEST(ResolveTaskStructOffsets, CoreAsWorkerThread) {
 TEST(ResolveTaskStructOffsets, AsSubProcess) {
   ASSERT_OK_AND_ASSIGN(TaskStructOffsets offsets, ResolveTaskStructOffsets());
 
-  EXPECT_NE(offsets.real_start_time, 0);
-  EXPECT_NE(offsets.group_leader, 0);
+  EXPECT_NE(offsets.real_start_time_offset, 0);
+  EXPECT_NE(offsets.group_leader_offset, 0);
 }
 
 }  // namespace utils

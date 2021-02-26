@@ -9,15 +9,17 @@ namespace stirling {
 namespace utils {
 
 struct TaskStructOffsets {
-  uint64_t real_start_time = 0;
-  uint64_t group_leader = 0;
+  uint64_t real_start_time_offset = 0;
+  uint64_t group_leader_offset = 0;
 
   std::string ToString() {
-    return absl::Substitute("{real_start_time=$0, group_leader=$1}", real_start_time, group_leader);
+    return absl::Substitute("{real_start_time=$0, group_leader=$1}", real_start_time_offset,
+                            group_leader_offset);
   }
 
   bool operator==(const TaskStructOffsets& other) const {
-    return real_start_time == other.real_start_time && group_leader == other.group_leader;
+    return real_start_time_offset == other.real_start_time_offset &&
+           group_leader_offset == other.group_leader_offset;
   }
 };
 

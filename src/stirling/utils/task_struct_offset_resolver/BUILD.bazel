@@ -21,9 +21,6 @@ pl_cc_test(
     name = "task_struct_offset_resolver_bpf_test",
     srcs = ["task_struct_offset_resolver_bpf_test.cc"],
     tags = [
-        # TODO(oazizi): Enable this test.
-        #               It fails on Jenkins because start_time and start_boottime are the same.
-        "manual",
         "requires_bpf",
     ],
     deps = [
