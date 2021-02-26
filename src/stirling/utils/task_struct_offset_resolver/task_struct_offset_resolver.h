@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "src/common/base/base.h"
 
 namespace pl {
@@ -9,6 +11,14 @@ namespace utils {
 struct TaskStructOffsets {
   uint64_t real_start_time = 0;
   uint64_t group_leader = 0;
+
+  std::string ToString() {
+    return absl::Substitute("{real_start_time=$0, group_leader=$1}", real_start_time, group_leader);
+  }
+
+  bool operator==(const TaskStructOffsets& other) const {
+    return real_start_time == other.real_start_time && group_leader == other.group_leader;
+  }
 };
 
 /**
@@ -30,6 +40,12 @@ struct TaskStructOffsets {
  * This works because the leader of a task with a single thread is itself.
  */
 StatusOr<TaskStructOffsets> ResolveTaskStructOffsets();
+
+/**
+ * The core logic for ResolveTaskStructOffsets.
+ * This is exposed for testing purposes only.
+ */
+StatusOr<TaskStructOffsets> ResolveTaskStructOffsetsCore();
 
 }  // namespace utils
 }  // namespace stirling

@@ -1,5 +1,8 @@
 #include <gtest/gtest.h>
 
+#include <future>
+#include <thread>
+
 #include "src/common/base/test_utils.h"
 #include "src/stirling/utils/task_struct_offset_resolver/task_struct_offset_resolver.h"
 
@@ -7,7 +10,34 @@ namespace pl {
 namespace stirling {
 namespace utils {
 
-TEST(ResolveTaskStructOffsets, Basic) {
+// Wrap ResolveTaskStructOffsets in a thread, to test how it works in a threaded environment.
+void ResolveTaskStructOffsetsCoreThread(std::promise<StatusOr<TaskStructOffsets>> result) {
+  result.set_value(ResolveTaskStructOffsetsCore());
+}
+
+// Tests the core logic. Must be run as main thread (which is the case for gtest).
+TEST(ResolveTaskStructOffsets, CoreAsMainThread) {
+  ASSERT_OK_AND_ASSIGN(TaskStructOffsets offsets, ResolveTaskStructOffsetsCore());
+
+  EXPECT_NE(offsets.real_start_time, 0);
+  EXPECT_NE(offsets.group_leader, 0);
+}
+
+// Demonstrates that core logic breaks down when run inside a thread.
+TEST(ResolveTaskStructOffsets, CoreAsWorkerThread) {
+  std::promise<StatusOr<TaskStructOffsets>> result_promise;
+  std::future<StatusOr<TaskStructOffsets>> result_future = result_promise.get_future();
+  std::thread thread(&ResolveTaskStructOffsetsCoreThread, std::move(result_promise));
+
+  // The way we find the group_leader means the resolver won't work unless it is the main thread.
+  EXPECT_NOT_OK(result_future.get());
+
+  ASSERT_TRUE(thread.joinable());
+  thread.join();
+}
+
+// Test ResolveTaskStructOffsets when run as a subprocess.
+TEST(ResolveTaskStructOffsets, AsSubProcess) {
   ASSERT_OK_AND_ASSIGN(TaskStructOffsets offsets, ResolveTaskStructOffsets());
 
   EXPECT_NE(offsets.real_start_time, 0);

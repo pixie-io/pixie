@@ -89,7 +89,7 @@ StatusOr<TaskStructOffsets> Analyze(const struct buf& buf, const uint64_t proc_p
 
 }  // namespace
 
-StatusOr<TaskStructOffsets> ResolveTaskStructOffsets() {
+StatusOr<TaskStructOffsets> ResolveTaskStructOffsetsCore() {
   // Get the PID's start time from /proc.
   // TODO(oazizi): This only works if run as the main thread of a process.
   //               Fix to support threaded environments.
@@ -147,6 +147,54 @@ StatusOr<TaskStructOffsets> ResolveTaskStructOffsets() {
 
   // Analyze the raw data buffer for the patterns we are looking for.
   return Analyze(buf, proc_pid_start_time, task_struct_addr);
+}
+
+StatusOr<TaskStructOffsets> ResolveTaskStructOffsets() {
+  const TaskStructOffsets kSentinelValue;
+
+  // Create pipe descriptors.
+  int fd[2];
+  pipe(fd);
+
+  pid_t childpid = fork();
+  if (childpid != 0) {
+    // Parent process: Wait for results from child.
+
+    // Blocking read data from child.
+    TaskStructOffsets result;
+    read(fd[0], &result, sizeof(result));
+
+    // We can't transfer StatusOr through the pipe,
+    // so we have to check manually.
+    if (result == kSentinelValue) {
+      return error::Internal(
+          "Resolution failed in subprocess. Check subprocess logs for the error.");
+    }
+
+    close(fd[0]);
+    close(fd[1]);
+
+    return result;
+  } else {
+    // Child process: Run ResolveTaskStructOffsets(),
+    // and send the result to the parent through pipes.
+
+    // On error, we send kSentinelValue.
+    StatusOr<TaskStructOffsets> result_status = ResolveTaskStructOffsetsCore();
+
+    LOG_IF(ERROR, !result_status.ok()) << result_status.ToString();
+
+    TaskStructOffsets result = result_status.ValueOr(kSentinelValue);
+
+    // Send the value on the write-descriptor:
+    write(fd[1], &result, sizeof(result));
+
+    // Close FDs.
+    close(fd[0]);
+    close(fd[1]);
+
+    exit(0);
+  }
 }
 
 }  // namespace utils
