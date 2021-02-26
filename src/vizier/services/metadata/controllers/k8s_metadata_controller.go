@@ -116,10 +116,15 @@ func (mc *K8sMetadataController) Start(mds K8sMetadataStore) error {
 
 // Start syncs the state stored in the datastore with what is currently running in k8s.
 func (mc *K8sMetadataController) syncAndWatch(mds K8sMetadataStore, quitCh chan struct{}, wg *sync.WaitGroup) error {
-	storedUpdates, err := mds.FetchFullResourceUpdates(0, 0)
+	lastUpdate, err := mds.GetUpdateVersion(KelvinUpdateTopic)
 	if err != nil {
 		return err
 	}
+	storedUpdates, err := mds.FetchFullResourceUpdates(0, lastUpdate)
+	if err != nil {
+		return err
+	}
+
 	for _, w := range mc.watchers {
 		err := w.Sync(storedUpdates)
 		if err != nil {
