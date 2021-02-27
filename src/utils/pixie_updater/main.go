@@ -18,12 +18,12 @@ import (
 )
 
 const (
-	etcdYAMLPath            = "./yamls/vizier_deps/etcd_prod.yaml"
-	etcdOperatorYAMLPath    = "./yamls/vizier_deps/etcd_operator_prod.yaml"
-	vizierYAMLPath          = "./yamls/vizier/vizier_prod.yaml"
-	vizierBootstrapYAMLPath = "./yamls/vizier/vizier_bootstrap_prod.yaml"
-	natsYAMLPath            = "./yamls/vizier_deps/nats_prod.yaml"
-	deleteTimeout           = 10 * time.Minute
+	etcdOperatorYAMLPath          = "./yamls/vizier_deps/etcd_operator_prod.yaml"
+	vizierYAMLPath                = "./yamls/vizier/vizier_prod.yaml"
+	vizierMetadataPersistYAMLPath = "./yamls/vizier/vizier_metadata_persist_prod.yaml"
+	vizierBootstrapYAMLPath       = "./yamls/vizier/vizier_bootstrap_prod.yaml"
+	natsYAMLPath                  = "./yamls/vizier_deps/nats_prod.yaml"
+	deleteTimeout                 = 10 * time.Minute
 )
 
 func init() {
@@ -140,10 +140,8 @@ func main() {
 		}
 	}
 
-	etcdPath := etcdYAMLPath
-	if viper.GetBool("etcd_operator_enabled") {
-		etcdPath = etcdOperatorYAMLPath
-	}
+	// Whether to deply etcd operator or persistent volume.
+	etcdOperatorEnabled := viper.GetBool("etcd_operator_enabled")
 
 	// If in bootstrap mode, deploy NATS and etcd.
 	if viper.GetBool("bootstrap_mode") {
@@ -154,10 +152,30 @@ func main() {
 			log.WithError(err).Fatalf("Failed to deploy NATS")
 		}
 
-		log.Info("Deploying etcd")
-		err = retryDeploy(clientset, kubeConfig, "pl", yamlMap[etcdPath], labels, annotations)
-		if err != nil {
-			log.WithError(err).Fatalf("Failed to deploy etcd")
+		if etcdOperatorEnabled {
+			log.Info("Deploying etcd operator")
+			err = retryDeploy(clientset, kubeConfig, "pl", yamlMap[etcdOperatorYAMLPath], labels, annotations)
+			if err != nil {
+				log.WithError(err).Fatalf("Failed to deploy etcd operator")
+			}
+		}
+	}
+
+	// Delete StatefulSet, if present.
+	_, err = od.DeleteByLabel("app=pl-monitoring", "StatefulSet")
+	if err != nil {
+		if isTimeoutError(err) {
+			log.WithError(err).Error("Existing etcd taking longer to terminate than timeout")
+		} else {
+			log.WithError(err).Error("Could not delete existing etc")
+		}
+	}
+	_, err = od.DeleteByLabel("app=pl-monitoring", "PersistentVolumeClaim")
+	if err != nil {
+		if isTimeoutError(err) {
+			log.WithError(err).Error("Existing etcd pvc taking longer to terminate than timeout")
+		} else {
+			log.WithError(err).Error("Could not delete etcd pvc")
 		}
 	}
 
@@ -165,7 +183,7 @@ func main() {
 	if viper.GetBool("redeploy_etcd") {
 		log.Info("Redeploying etcd")
 
-		if viper.GetBool("etcd_operator_enabled") {
+		if etcdOperatorEnabled {
 			// This deletes the pl-etcd instance and clears out any existing etcd data.
 			// Deleting the etcd instance does not delete the etcd-operator, but the operator is
 			// robust to a new etcd instance starting up.
@@ -184,32 +202,23 @@ func main() {
 			if err != nil {
 				log.WithError(err).Error("Failed to delete old pl-etcd pods")
 			}
-		} else {
-			_, err = od.DeleteByLabel("app=pl-monitoring", "StatefulSet")
-			if err != nil {
-				if isTimeoutError(err) {
-					log.WithError(err).Error("Existing etcd taking longer to terminate than timeout")
-				} else {
-					log.WithError(err).Fatal("Could not delete existing etc")
-				}
-			}
-			_, err = od.DeleteByLabel("app=pl-monitoring", "PersistentVolumeClaim")
-			if err != nil {
-				if isTimeoutError(err) {
-					log.WithError(err).Error("Existing etcd pvc taking longer to terminate than timeout")
-				} else {
-					log.WithError(err).Fatal("Could not delete etcd pvc")
-				}
-			}
-		}
 
-		err = retryDeploy(clientset, kubeConfig, "pl", yamlMap[etcdPath], labels, annotations)
-		if err != nil {
-			log.WithError(err).Fatalf("Failed to redeploy etcd")
+			// Retry deploy of etcd operator if flag is enabled.
+			err = retryDeploy(clientset, kubeConfig, "pl", yamlMap[etcdOperatorYAMLPath], labels, annotations)
+			if err != nil {
+				log.WithError(err).Fatalf("Failed to redeploy etcd operator.")
+			}
+		} else {
+
 		}
 	}
 
-	err = k8s.ApplyYAML(clientset, kubeConfig, "pl", strings.NewReader(yamlMap[vizierYAMLPath]), true, labels, annotations)
+	vizierPath := vizierMetadataPersistYAMLPath
+	if etcdOperatorEnabled {
+		vizierPath = vizierYAMLPath
+	}
+
+	err = k8s.ApplyYAML(clientset, kubeConfig, "pl", strings.NewReader(yamlMap[vizierPath]), true, labels, annotations)
 	if err != nil {
 		log.WithError(err).Fatalf("Failed to install vizier")
 	}

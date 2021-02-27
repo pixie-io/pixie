@@ -6,6 +6,9 @@ metadata:
 spec:
   template:
     spec:
+      initContainers:
+      - $patch: delete
+        name: etcd-wait
       containers:
       - name: app
         volumeMounts:

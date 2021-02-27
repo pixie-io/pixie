@@ -33,7 +33,6 @@ spec:
           value: ""
         - name: PROTOCOL
           value: "http"
-      initContainers:
       - name: etcd-wait
         image: gcr.io/pixie-prod/pixie-prod-artifacts/curl:1.0
         # yamllint disable

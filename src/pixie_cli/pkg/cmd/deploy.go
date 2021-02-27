@@ -409,11 +409,18 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	utils.Infof("Found %v nodes", numNodes)
 
-	// Validate correct number of default storage classes. TODO(vjain): use returned
-	// boolean to determine deployment.
-	_, err = validateNumDefaultStorageClasses(clientset)
+	// Validate correct number of default storage classes.
+	defaultStorageExists, err := validateNumDefaultStorageClasses(clientset)
 	if err != nil {
 		utils.Error("Error checking default storage classes: " + err.Error())
+	}
+
+	// useEtcdOperator is true then deploy operator. Otherwise: If defaultStorageExists, then
+	// go for persistent storage version.
+	if !useEtcdOperator {
+		if !defaultStorageExists {
+			useEtcdOperator = true
+		}
 	}
 
 	namespaceJob := newTaskWrapper("Creating namespace", func() error {
