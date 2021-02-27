@@ -570,7 +570,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			updatedClusterStatus:      "",
 			expectedClusterAddress:    "",
 			status:                    cvmsgspb.VZ_ST_UPDATING,
-			checkVersion:              true,
+			checkVersion:              false,
 		},
 		{
 			name:                      "bootstrap vizier",

@@ -749,13 +749,14 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	}
 
 	// Fetch previous status.
-	statusQuery := `SELECT i.status, i.vizier_version, c.cluster_name, c.cluster_version, c.org_id from vizier_cluster_info AS i INNER JOIN vizier_cluster as c ON c.id = i.vizier_cluster_id WHERE i.vizier_cluster_id=$1`
+	statusQuery := `SELECT i.status, i.vizier_version, c.cluster_name, c.cluster_version, c.org_id, i.auto_update_enabled from vizier_cluster_info AS i INNER JOIN vizier_cluster as c ON c.id = i.vizier_cluster_id WHERE i.vizier_cluster_id=$1`
 	var prevInfo struct {
-		Status         string    `db:"status"`
-		Version        string    `db:"vizier_version"`
-		ClusterVersion string    `db:"cluster_version"`
-		ClusterName    string    `db:"cluster_name"`
-		OrgID          uuid.UUID `db:"org_id"`
+		Status            string    `db:"status"`
+		Version           string    `db:"vizier_version"`
+		ClusterVersion    string    `db:"cluster_version"`
+		ClusterName       string    `db:"cluster_name"`
+		OrgID             uuid.UUID `db:"org_id"`
+		AutoUpdateEnabled bool      `db:"auto_update_enabled"`
 	}
 	rows, err := s.db.Queryx(statusQuery, vizierID)
 	if err != nil {
@@ -828,7 +829,7 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	}
 
 	if !req.BootstrapMode {
-		if !s.updater.VersionUpToDate(prevInfo.Version) {
+		if prevInfo.AutoUpdateEnabled && !s.updater.VersionUpToDate(prevInfo.Version) {
 			s.updater.AddToUpdateQueue(vizierID)
 		}
 		return
