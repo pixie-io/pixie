@@ -313,12 +313,9 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
   // TODO(oazizi): Once we have more confidence that the ECHECK below doesn't fire, restructure this
   // code so it only calls InferHTTP2Role when the current role is Unknown.
   EndpointRole role = InferHTTP2Role(write_event, hdr);
-  if (traffic_class_.role == kRoleUnknown) {
-    traffic_class_.role = role;
-
-    if (ShouldExportToConnStats()) {
-      ExportInitialConnStats();
-    }
+  bool role_changed = SetRole(role);
+  if (role_changed && ShouldExportToConnStats()) {
+    ExportInitialConnStats();
   } else {
     if (!(role == kRoleUnknown || role == traffic_class_.role)) {
       LOG_FIRST_N(ERROR, 10) << absl::Substitute(
@@ -502,6 +499,9 @@ bool ConnectionTracker::SetRole(EndpointRole role) {
   }
 
   if (role != kRoleUnknown) {
+    CONN_TRACE(1) << absl::Substitute("Role updated $0 -> $1]",
+                                      magic_enum::enum_name(traffic_class_.role),
+                                      magic_enum::enum_name(role));
     traffic_class_.role = role;
     return true;
   }
@@ -971,12 +971,7 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   }
 
   EndpointRole inferred_role = TranslateRole(socket_info.role);
-
-  if (traffic_class_.role == kRoleUnknown && inferred_role != kRoleUnknown) {
-    traffic_class_.role = inferred_role;
-    CONN_TRACE(1) << absl::Substitute("Role updated [kRoleUnknown -> $0]",
-                                      magic_enum::enum_name(traffic_class_.role));
-  }
+  SetRole(inferred_role);
 
   CONN_TRACE(1) << absl::Substitute("Inferred connection dest=$0:$1",
                                     open_info_.remote_addr.AddrStr(),
