@@ -1,5 +1,7 @@
 #include "src/stirling/utils/task_struct_offset_resolver/task_struct_offset_resolver.h"
 
+#include <poll.h>
+
 #include <memory>
 #include <string>
 
@@ -159,6 +161,40 @@ StatusOr<TaskStructOffsets> ResolveTaskStructOffsetsCore() {
   return Analyze(buf, proc_pid_start_time, task_struct_addr);
 }
 
+namespace {
+Status ReadFromChild(int fd, TaskStructOffsets* result) {
+  // We don't expect to fail to receive data from the child,
+  // but use poll to make sure we don't block indefinitely.
+  struct pollfd fds;
+  fds.fd = fd;
+  fds.events = POLLIN;
+
+  constexpr int kTimeoutMillis = 5000;
+  int retval = poll(&fds, 1, kTimeoutMillis);
+  if (retval == -1) {
+    return error::Internal("Failed to receive data from child.");
+  }
+
+  retval = read(fd, result, sizeof(*result));
+  if (retval != sizeof(*result)) {
+    return error::Internal("Failed to receive data from child.");
+  }
+
+  return Status::OK();
+}
+
+Status WriteToParent(int fd, const TaskStructOffsets& result) {
+  ssize_t bytes_written = write(fd, &result, sizeof(result));
+
+  // We don't expect this to happen on this pipe, but check just in case.
+  if (bytes_written != sizeof(result)) {
+    return error::Internal("Failed to write data to parent.");
+  }
+
+  return Status::OK();
+}
+}  // namespace
+
 StatusOr<TaskStructOffsets> ResolveTaskStructOffsets() {
   const TaskStructOffsets kSentinelValue;
 
@@ -166,13 +202,14 @@ StatusOr<TaskStructOffsets> ResolveTaskStructOffsets() {
   int fd[2];
   pipe(fd);
 
-  pid_t childpid = fork();
-  if (childpid != 0) {
+  pid_t child_pid = fork();
+  if (child_pid != 0) {
     // Parent process: Wait for results from child.
 
     // Blocking read data from child.
     TaskStructOffsets result;
-    read(fd[0], &result, sizeof(result));
+
+    PL_RETURN_IF_ERROR(ReadFromChild(fd[0], &result));
 
     // We can't transfer StatusOr through the pipe,
     // so we have to check manually.
@@ -196,8 +233,9 @@ StatusOr<TaskStructOffsets> ResolveTaskStructOffsets() {
 
     TaskStructOffsets result = result_status.ValueOr(kSentinelValue);
 
-    // Send the value on the write-descriptor:
-    write(fd[1], &result, sizeof(result));
+    // Send the value on the write-descriptor.
+    Status s = WriteToParent(fd[1], result);
+    LOG_IF(ERROR, !s.ok()) << s.ToString();
 
     // Close FDs.
     close(fd[0]);
