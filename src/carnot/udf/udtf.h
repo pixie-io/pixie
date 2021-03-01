@@ -463,7 +463,7 @@ struct UDTFChecker {
                 "Output relation function has incorrect signature");
 
   // Check that Executor exists and returns the executor type.
-  static_assert(TR::HasExecutorFn(), "UDTF must have an Exectuor() func");
+  static_assert(TR::HasExecutorFn(), "UDTF must have an Executor() func");
   static_assert(TR::HasCorrectExectorFnReturnType(), "Executor() must return UDTFSourceExecutor");
   // Check that NextRecord exists and is well formed.
   static_assert(

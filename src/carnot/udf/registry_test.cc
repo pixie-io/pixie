@@ -202,12 +202,14 @@ scalar_udfs {
   exec_arg_types: FLOAT64
   exec_arg_types: FLOAT64
   return_type: FLOAT64
+  executor: UDF_ALL
 }
 scalar_udfs {
   name: "scalar1"
   exec_arg_types: BOOLEAN
   exec_arg_types: INT64
   return_type: INT64
+  executor: UDF_ALL
 }
 )";
 
@@ -395,6 +397,7 @@ scalar_udfs {
   exec_arg_types: BOOLEAN
   exec_arg_types: INT64
   return_type: INT64
+  executor: UDF_ALL
 }
 semantic_type_rules {
   name: "scalar1"

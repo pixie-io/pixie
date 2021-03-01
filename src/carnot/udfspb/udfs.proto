@@ -22,6 +22,14 @@ message UDASpec {
   bool supports_partial = 5;
 }
 
+// The places that the UDF can execute.
+enum UDFSourceExecutor {
+  UDF_UNSPECIFIED = 0;
+  UDF_ALL = 1;
+  UDF_PEM = 2;
+  UDF_KELVIN = 3;
+}
+
 // ScalarUDFSpec stores the specification of a single UDF.
 message ScalarUDFSpec {
   // The name of the function.
@@ -33,6 +41,8 @@ message ScalarUDFSpec {
   repeated pl.types.DataType exec_arg_types = 3;
   // The return type of the exec function.
   pl.types.DataType return_type = 4;
+  // Which agents the UDF should execute on.
+  UDFSourceExecutor executor = 5;
 }
 
 // UDFInfo stores all the registered UDF/UDAs in the system.

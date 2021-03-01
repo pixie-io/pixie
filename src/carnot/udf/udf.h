@@ -13,6 +13,7 @@
 #include <functional>
 
 #include "src/carnot/udf/base.h"
+#include "src/carnot/udfspb/udfs.pb.h"
 #include "src/common/base/base.h"
 #include "src/shared/metadata/metadata_state.h"
 #include "src/shared/types/column_wrapper.h"
@@ -95,7 +96,7 @@ template <typename T>
 struct has_udf_init_fn<T, std::void_t<decltype(&T::Init)>> : std::true_type {
   static_assert(
       IsValidInitFn(&T::Init),
-      "If an init functions exists it must have the form: Status Init(FunctionContext*, ...)");
+      "If an init function exists, it must have the form: Status Init(FunctionContext*, ...)");
 };
 
 /**
@@ -123,6 +124,39 @@ template <typename ReturnType, typename TUDF, typename... Types>
 static constexpr bool IsValidExecFunc(ReturnType (TUDF::*)(FunctionContext*, Types...)) {
   return true;
 }
+
+// SFINAE test for Executor fn.
+template <typename T, typename = void>
+struct has_udf_executor_fn : std::false_type {};
+
+template <typename T>
+struct has_udf_executor_fn<T, std::void_t<decltype(&T::Executor)>> : std::true_type {
+  static_assert(
+      IsValidExecutorFn(&T::Executor),
+      "If an executor function exists, it must have the form: UDFSourceExecutor Executor()");
+};
+
+/**
+ * Checks to see if a valid looking Executor function exists.
+ */
+template <typename ReturnType, typename TUDF>
+static constexpr bool IsExecutorFn(ReturnType (TUDF::*)()) {
+  return false;
+}
+
+template <typename TUDF>
+static constexpr bool IsValidExecutorFn(udfspb::UDFSourceExecutor (TUDF::*)()) {
+  return true;
+}
+
+template <typename T, typename = void>
+struct check_executor_fn {};
+
+template <typename T>
+struct check_executor_fn<T, typename std::enable_if_t<has_udf_executor_fn<T>::value>> {
+  static_assert(IsValidExecutorFn(&T::Init),
+                "must have a valid Executor fn, in form: UDFSourceExecutor Executor()");
+};
 
 template <typename ReturnType, typename TUDF, typename... Types>
 static constexpr std::array<types::DataType, sizeof...(Types)> GetArgumentTypesHelper(
@@ -171,6 +205,11 @@ class ScalarUDFTraits {
    */
   static constexpr bool HasInit() { return has_udf_init_fn<T>::value; }
 
+  /**
+   * Returns the executor type of this UDF.
+   */
+  static constexpr bool HasExecutor() { return has_udf_executor_fn<T>::value; }
+
  private:
   struct check_valid_udf {
     static_assert(std::is_base_of_v<ScalarUDF, T>, "UDF must be derived from ScalarUDF");
@@ -179,6 +218,7 @@ class ScalarUDFTraits {
 
    private:
     static constexpr check_init_fn<T> check_init_{};
+    static constexpr check_executor_fn<T> check_executor_{};
   } check_;
 };
 

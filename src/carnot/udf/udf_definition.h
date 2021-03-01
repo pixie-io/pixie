@@ -80,6 +80,12 @@ class ScalarUDFDefinition : public UDFDefinition {
 
     make_fn_ = ScalarUDFWrapper<TUDF>::Make;
 
+    if constexpr (ScalarUDFTraits<TUDF>::HasExecutor()) {
+      executor_ = TUDF::Executor();
+    } else {
+      executor_ = udfspb::UDFSourceExecutor::UDF_ALL;
+    }
+
     return Status::OK();
   }
 
@@ -105,6 +111,7 @@ class ScalarUDFDefinition : public UDFDefinition {
    */
   types::DataType exec_return_type() const { return exec_return_type_; }
   const std::vector<types::DataType>& exec_arguments() const { return exec_arguments_; }
+  udfspb::UDFSourceExecutor executor() const { return executor_; }
 
   const std::vector<types::DataType>& RegistryArgTypes() override { return exec_arguments_; }
   size_t Arity() const { return exec_arguments_.size(); }
@@ -113,6 +120,7 @@ class ScalarUDFDefinition : public UDFDefinition {
  private:
   std::vector<types::DataType> exec_arguments_;
   types::DataType exec_return_type_;
+  udfspb::UDFSourceExecutor executor_;
   std::function<std::unique_ptr<ScalarUDF>()> make_fn_;
   std::function<Status(ScalarUDF*, FunctionContext* ctx,
                        const std::vector<const types::ColumnWrapper*>& inputs,

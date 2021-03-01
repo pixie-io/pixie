@@ -48,6 +48,7 @@ void Registry::ToProto(const ScalarUDFDefinition& def, udfspb::ScalarUDFSpec* sp
   *spec->mutable_exec_arg_types() = {exec_arguments.begin(), exec_arguments.end()};
   spec->set_return_type(def.exec_return_type());
   spec->set_name(def.name());
+  spec->set_executor(def.executor());
 }
 
 void Registry::ToProto(const UDADefinition& def, udfspb::UDASpec* spec) {
