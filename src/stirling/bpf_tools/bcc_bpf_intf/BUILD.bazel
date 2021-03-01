@@ -3,6 +3,8 @@ package(default_visibility = [
     "//src/stirling:__subpackages__",
 ])
 
+load("//bazel:pl_build_system.bzl", "pl_cc_library")
+
 filegroup(
     name = "dummy_system_headers",
     srcs = glob([
@@ -13,4 +15,10 @@ filegroup(
 filegroup(
     name = "headers",
     srcs = glob(["*.h"]),
+)
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = [],
+    hdrs = [":headers"],
 )

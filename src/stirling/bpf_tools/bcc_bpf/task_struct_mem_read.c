@@ -1,6 +1,6 @@
 // LINT_C_FILE: Do not remove this line. It ensures cpplint treats this as a C file.
 
-#include "src/stirling/utils/task_struct_offset_resolver/bcc_bpf_intf/types.h"
+#include "src/stirling/bpf_tools/bcc_bpf_intf/types.h"
 
 // Map that holds a copy of the raw memory of the task struct.
 BPF_ARRAY(task_struct_buf, struct buf, 1);

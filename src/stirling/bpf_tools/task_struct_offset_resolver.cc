@@ -1,4 +1,4 @@
-#include "src/stirling/utils/task_struct_offset_resolver/task_struct_offset_resolver.h"
+#include "src/stirling/bpf_tools/task_struct_offset_resolver.h"
 
 #include <poll.h>
 
@@ -11,7 +11,7 @@
 #include "src/stirling/bpf_tools/macros.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
-#include "src/stirling/utils/task_struct_offset_resolver/bcc_bpf_intf/types.h"
+#include "src/stirling/bpf_tools/bcc_bpf_intf/types.h"
 
 // Creates a string_view to the BPF code loaded into memory.
 BPF_SRC_STRVIEW(bcc_script, task_struct_mem_read);
