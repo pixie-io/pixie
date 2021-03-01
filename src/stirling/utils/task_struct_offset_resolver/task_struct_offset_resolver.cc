@@ -14,12 +14,21 @@
 // Creates a string_view to the BPF code loaded into memory.
 BPF_SRC_STRVIEW(bcc_script, task_struct_mem_read);
 
+// Define NO_OPT_ATTR that specifies that function should not be optimized away.
+// Used on StirlingProbeTrigger below.
+// Note that the attributes are different depending on the compiler.
+#if defined(__clang__)
+#define NO_OPT_ATTR __attribute__((noinline, optnone))
+#elif defined(__GNUC__) || defined(__GNUG__)
+#define NO_OPT_ATTR __attribute__((noinline, optimize("O0")))
+#endif
+
 // A function which we will uprobe on, to trigger our BPF code.
 // The function itself is irrelevant.
 // However, it must not be optimized away.
 // We also leave this outside of any namespaces so it has a simple symbol name.
 extern "C" {
-__attribute__((noinline, optnone)) int StirlingProbeTrigger(int x) { return x; }
+NO_OPT_ATTR int StirlingProbeTrigger(int x) { return x; }
 }
 
 namespace pl {
@@ -111,6 +120,7 @@ StatusOr<TaskStructOffsets> ResolveTaskStructOffsetsCore() {
   uint64_t symbol_addr = reinterpret_cast<uint64_t>(&StirlingProbeTrigger);
 
   UProbeSpec uprobe{.binary_path = self_path,
+                    .symbol = {},  // Keep GCC happy.
                     .address = symbol_addr,
                     .attach_type = BPFProbeAttachType::kEntry,
                     .probe_fn = "task_struct_probe"};
