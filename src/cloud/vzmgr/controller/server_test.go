@@ -78,7 +78,7 @@ func loadTestData(t *testing.T, db *sqlx.DB) {
 	db.MustExec(insertCluster, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440001", testProjectName, "cUID", "cVers", "healthy_cluster")
 	db.MustExec(insertCluster, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440002", testProjectName, "", "", "unhealthy_cluster")
 	db.MustExec(insertCluster, testAuthOrgID, testDisconnectedClusterEmptyUID, testProjectName, "", "", "disconnected_cluster")
-	db.MustExec(insertCluster, testAuthOrgID, testExistingCluster, testProjectName, "existing_cluster", "", "test-cluster")
+	db.MustExec(insertCluster, testAuthOrgID, testExistingCluster, testProjectName, "existing_cluster", "", "test_cluster_1234")
 	db.MustExec(insertCluster, testAuthOrgID, testExistingClusterActive, testProjectName, "my_other_cluster", "", "existing_cluster")
 	db.MustExec(insertCluster, testNonAuthOrgID, "223e4567-e89b-12d3-a456-426655440003", testProjectName, "", "", "non_auth_1")
 	db.MustExec(insertCluster, testNonAuthOrgID, "323e4567-e89b-12d3-a456-426655440003", testProjectName, "", "", "non_auth_2")
@@ -1014,19 +1014,64 @@ func TestServer_ProvisionOrClaimVizier(t *testing.T) {
 	assert.Equal(t, testDisconnectedClusterEmptyUID, clusterID.String())
 }
 
-func TestServer_ProvisionOrClaimVizier_WithExistingUID(t *testing.T) {
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+func TestServer_ProvisionOrClaimVizierWIthExistingUID(t *testing.T) {
+	tests := []struct {
+		name         string
+		inputName    string
+		expectedName string
+	}{
+		{
+			name:         "same name",
+			inputName:    "test_cluster_1234",
+			expectedName: "test_cluster_1234",
+		},
+		{
+			name:         "same name no prefix",
+			inputName:    "test_cluster",
+			expectedName: "test_cluster_1234",
+		},
+		{
+			name:         "no input name",
+			inputName:    "",
+			expectedName: "test_cluster_1234",
+		},
+		{
+			name:         "new name",
+			inputName:    "new_name",
+			expectedName: "new_name",
+		},
+		{
+			name:         "name with spaces",
+			inputName:    "test_cluster_1234        ",
+			expectedName: "test_cluster_1234",
+		},
+	}
 
-	s := controller.New(db, "test", nil, nil, nil)
-	userID := uuid.NewV4()
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			db, teardown := setupTestDB(t)
+			defer teardown()
+			loadTestData(t, db)
 
-	// This should select the existing cluster with the same UID.
-	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "existing_cluster", "", "1.1")
-	assert.Nil(t, err)
-	// Should select the disconnected cluster.
-	assert.Equal(t, testExistingCluster, clusterID.String())
+			s := controller.New(db, "test", nil, nil, nil)
+			userID := uuid.NewV4()
+
+			// This should select the existing cluster with the same UID.
+			clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "existing_cluster", test.inputName, "1.1")
+			assert.Nil(t, err)
+			// Should select the disconnected cluster.
+			assert.Equal(t, testExistingCluster, clusterID.String())
+
+			// Check cluster name.
+			var clusterInfo struct {
+				ClusterName *string `db:"cluster_name"`
+			}
+			nameQuery := `SELECT cluster_name from vizier_cluster WHERE id=$1`
+			err = db.Get(&clusterInfo, nameQuery, clusterID)
+			assert.Nil(t, err)
+			assert.Equal(t, *clusterInfo.ClusterName, test.expectedName)
+		})
+	}
 }
 
 func TestServer_ProvisionOrClaimVizier_WithExistingActiveUID(t *testing.T) {
@@ -1065,7 +1110,7 @@ func TestServer_ProvisionOrClaimVizier_WithExistingName(t *testing.T) {
 	userID := uuid.NewV4()
 
 	// This should select the existing cluster with the same UID.
-	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "some_cluster", "test-cluster\n", "1.1")
+	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "some_cluster", "test_cluster_1234\n", "1.1")
 	assert.Nil(t, err)
 	// Should select the disconnected cluster.
 	assert.Equal(t, testDisconnectedClusterEmptyUID, clusterID.String())
@@ -1077,6 +1122,6 @@ func TestServer_ProvisionOrClaimVizier_WithExistingName(t *testing.T) {
 	nameQuery := `SELECT cluster_name, cluster_version from vizier_cluster WHERE id=$1`
 	err = db.Get(&clusterInfo, nameQuery, clusterID)
 	assert.Nil(t, err)
-	assert.True(t, strings.HasPrefix(*clusterInfo.ClusterName, "test-cluster_"))
+	assert.True(t, strings.HasPrefix(*clusterInfo.ClusterName, "test_cluster_1234_"))
 	assert.Equal(t, "1.1", *clusterInfo.ClusterVersion)
 }

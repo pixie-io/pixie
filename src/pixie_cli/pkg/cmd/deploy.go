@@ -145,6 +145,9 @@ func init() {
 	DeployCmd.Flags().StringP("annotations", "t", "", "Custom annotations to apply to Pixie resources")
 	viper.BindPFlag("annotations", DeployCmd.Flags().Lookup("annotations"))
 
+	DeployCmd.Flags().StringP("cluster_name", "u", "", "The name for your cluster. Otherwise, the name will be taken from the current kubeconfig.")
+	viper.BindPFlag("cluster_name", DeployCmd.Flags().Lookup("cluster_name"))
+
 	// Super secret flags for Pixies.
 	DeployCmd.Flags().MarkHidden("namespace")
 	DeployCmd.Flags().MarkHidden("dev_cloud_namespace")
@@ -344,7 +347,9 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		UseEtcdOperator:   useEtcdOperator,
 		BootstrapVersion:  inputVersionStr,
 	}
-	artifacts.SetConfigValues(kubeConfig, tmplValues, cloudAddr, devCloudNS)
+
+	clusterName, _ := cmd.Flags().GetString("cluster_name")
+	artifacts.SetConfigValues(kubeConfig, tmplValues, cloudAddr, devCloudNS, clusterName)
 	yamlArgs := &artifacts.YAMLTmplArguments{
 		Values: artifacts.VizierTmplValuesToMap(tmplValues),
 	}

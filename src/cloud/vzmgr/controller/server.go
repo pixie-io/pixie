@@ -977,19 +977,7 @@ func findVizierWithEmptyUID(ctx context.Context, tx *sqlx.Tx, orgID uuid.UUID) (
 	return uuid.Nil, vizierStatus(cvmsgspb.VZ_ST_UNKNOWN), nil
 }
 
-func setClusterNameIfNull(ctx context.Context, tx *sqlx.Tx, clusterID uuid.UUID, generateName func(i int) string) error {
-	var existingName *string
-
-	query := `SELECT cluster_name from vizier_cluster WHERE id=$1`
-	err := tx.QueryRowxContext(ctx, query, clusterID).Scan(&existingName)
-	if err != nil {
-		return err
-	}
-
-	if existingName != nil {
-		return nil
-	}
-
+func setClusterName(ctx context.Context, tx *sqlx.Tx, clusterID uuid.UUID, generateName func(i int) string) error {
 	// Retry a few times until we find a name that doesn't collide.
 	finalName := ""
 	for rc := 0; rc < 10; rc++ {
@@ -1008,8 +996,8 @@ func setClusterNameIfNull(ctx context.Context, tx *sqlx.Tx, clusterID uuid.UUID,
 		return errors.New("Could not find a unique cluster name")
 	}
 
-	query = `UPDATE vizier_cluster SET cluster_name=$1 WHERE id=$2`
-	_, err = tx.ExecContext(ctx, query, finalName, clusterID)
+	query := `UPDATE vizier_cluster SET cluster_name=$1 WHERE id=$2`
+	_, err := tx.ExecContext(ctx, query, finalName, clusterID)
 
 	return err
 }
@@ -1024,12 +1012,13 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 	defer tx.Rollback()
 
 	var clusterID uuid.UUID
+	inputName := strings.TrimSpace(clusterName)
 
 	generateRandomName := func(i int) string {
 		return namesgenerator.GetRandomName(i)
 	}
 	generateFromGivenName := func(i int) string {
-		name := strings.TrimSpace(clusterName)
+		name := inputName
 		if i > 0 {
 			randName := make([]byte, 4)
 			_, err = rand.Read(randName)
@@ -1042,12 +1031,46 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 	}
 
 	assignNameAndCommit := func() (uuid.UUID, error) {
+		// Check if cluster already has a name.
+		var existingName *string
+
+		query := `SELECT cluster_name from vizier_cluster WHERE id=$1`
+		err := tx.QueryRowxContext(ctx, query, clusterID).Scan(&existingName)
+		if err != nil {
+			return uuid.Nil, vzerrors.ErrInternalDB
+		}
+
+		if existingName != nil {
+			// No input name specified, so no need to change cluster name.
+			if inputName == "" {
+				return clusterID, nil
+			}
+
+			// The existing name is already the same as the input name, or a derivation
+			// of the input name. This check is not perfect, as it only checks if the input
+			// name matches everything before the "_" in the existingName.
+			// For example, if the user named their cluster "test_abcd", then tried
+			// to rename it to "test", this would count as a match. This is because we
+			// cannot distinguish between randomly generated names and actual-unaltered names.
+			dbName := *existingName
+			if inputName == dbName {
+				return clusterID, nil
+			}
+			prefixIndex := strings.LastIndex(dbName, "_")
+			if prefixIndex != -1 {
+				dbName = dbName[:prefixIndex]
+			}
+			if inputName == dbName {
+				return clusterID, nil
+			}
+		}
+
 		generateNameFunc := generateRandomName
-		if clusterName != "" {
+		if inputName != "" {
 			generateNameFunc = generateFromGivenName
 		}
 
-		if err := setClusterNameIfNull(ctx, tx, clusterID, generateNameFunc); err != nil {
+		if err := setClusterName(ctx, tx, clusterID, generateNameFunc); err != nil {
 			return uuid.Nil, vzerrors.ErrInternalDB
 		}
 

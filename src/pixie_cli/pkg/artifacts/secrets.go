@@ -77,7 +77,7 @@ func getCurrentCluster() string {
 }
 
 // SetConfigValues sets the values for the template, based on the user-provided flags.
-func SetConfigValues(kubeconfig *rest.Config, tmplValues *VizierTmplValues, cloudAddr string, devCloudNS string) {
+func SetConfigValues(kubeconfig *rest.Config, tmplValues *VizierTmplValues, cloudAddr, devCloudNS, clusterName string) {
 	yamlCloudAddr := cloudAddr
 	updateCloudAddr := cloudAddr
 	// devCloudNamespace implies we are running in a dev enivironment and we should attach to
@@ -90,8 +90,7 @@ func SetConfigValues(kubeconfig *rest.Config, tmplValues *VizierTmplValues, clou
 	tmplValues.CloudAddr = yamlCloudAddr
 	tmplValues.CloudUpdateAddr = updateCloudAddr
 
-	clusterName := ""
-	if kubeconfig != nil { // Only record cluster name if we are deploying directly to the current cluster.
+	if clusterName == "" && kubeconfig != nil { // Only record cluster name if we are deploying directly to the current cluster.
 		clusterName = getCurrentCluster()
 	}
 	tmplValues.ClusterName = clusterName
