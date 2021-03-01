@@ -429,7 +429,7 @@ func (m *AgentManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err
 	if err != nil {
 		log.WithError(err).Fatal("Failed to get agent")
 	} else if resp != nil {
-		return 0, errors.New("Agent already exists")
+		return resp.ASID, nil
 	}
 
 	// Get ASID for the new agent.

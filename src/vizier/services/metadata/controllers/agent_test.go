@@ -201,8 +201,9 @@ func TestRegisterExistingAgent(t *testing.T) {
 		LastHeartbeatNS: 1,
 		CreateTimeNS:    4,
 	}
-	_, err = agtMgr.RegisterAgent(agentInfo)
-	assert.NotNil(t, err)
+	id, err := agtMgr.RegisterAgent(agentInfo)
+	assert.Nil(t, err)
+	assert.Equal(t, uint32(123), id)
 
 	// Check that correct agent info is in ads.
 	agent, err := ads.GetAgent(u)
