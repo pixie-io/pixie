@@ -200,7 +200,10 @@ StatusOr<TaskStructOffsets> ResolveTaskStructOffsets() {
 
   // Create pipe descriptors.
   int fd[2];
-  pipe(fd);
+  int retval = pipe(fd);
+  if (retval == -1) {
+    return error::Internal("Resolution failed. Unable to create pipe: $0", std::strerror(errno));
+  }
 
   pid_t child_pid = fork();
   if (child_pid != 0) {
