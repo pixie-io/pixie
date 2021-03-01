@@ -54,7 +54,7 @@ build:
 deploy:
   kustomize:
     paths:
-    - k8s/vizier/dev
+    - k8s/vizier/persistent_metadata
 profiles:
 - name: minikube
   patches:
