@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -87,9 +88,12 @@ var GetViziersCmd = &cobra.Command{
 			log.WithError(err).Fatalln("Failed to get vizier information")
 		}
 
+		sort.Slice(vzs, func(i, j int) bool { return vzs[i].ClusterName < vzs[j].ClusterName })
+
 		w := components.CreateStreamWriter(format, os.Stdout)
 		defer w.Finish()
 		w.SetHeader("viziers", []string{"ClusterName", "ID", "K8s Version", "Vizier Version", "Status", "LastHeartbeat", "Passthrough"})
+
 		for _, vz := range vzs {
 			passthrough := false
 			if vz.Config != nil {
