@@ -15,6 +15,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
 // Contents in this file are copied and modified from
@@ -82,6 +83,11 @@ func GetConfig() *rest.Config {
 	}
 
 	return config
+}
+
+// GetClientAPIConfig gets the config used for reading the current kube contexts.
+func GetClientAPIConfig() *clientcmdapi.Config {
+	return clientcmd.GetConfigFromFileOrDie(*kubeconfig)
 }
 
 func homeDir() string {

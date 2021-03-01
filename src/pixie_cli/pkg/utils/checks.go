@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"regexp"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -18,10 +19,88 @@ const (
 	kernelMinVersion  = "4.14.0"
 )
 
+// ClusterType represents all possible types of a K8s cluster.
+type ClusterType int
+
+const (
+	// ClusterTypeUnknown is an unknown cluster type.
+	ClusterTypeUnknown ClusterType = iota
+	// ClusterTypeGKE is a GKE cluster.
+	ClusterTypeGKE
+	// ClusterTypeEKS is an EKS cluster.
+	ClusterTypeEKS
+	// ClusterTypeKind is a kind cluster.
+	ClusterTypeKind
+	// ClusterTypeDockerDesktop is a Docker for Desktop cluster.
+	ClusterTypeDockerDesktop
+	// ClusterTypeMinikubeKVM2 is a minikube cluster running with the kvm2 driver.
+	ClusterTypeMinikubeKVM2
+	// ClusterTypeMinikubeHyperkit is a minikube cluster running with the hyperkit driver.
+	ClusterTypeMinikubeHyperkit
+	// ClusterTypeMinikubeOther is a minikube cluster running with a driver not specified in
+	// the other enums.
+	ClusterTypeMinikubeOther
+)
+
+var allowedClusterTypes = []ClusterType{ClusterTypeGKE, ClusterTypeEKS, ClusterTypeMinikubeKVM2, ClusterTypeMinikubeHyperkit}
+
+// detectClusterType gets the cluster type of the cluster for the current kube config context.
+func detectClusterType() ClusterType {
+	kubeConfig := k8s.GetConfig()
+	kubeAPIConfig := k8s.GetClientAPIConfig()
+	currentContext := kubeAPIConfig.CurrentContext
+
+	// Check if it is a kind cluster.
+	result, err := exec.Command("/bin/sh", "-c", fmt.Sprintf(`kind get clusters | grep "^$(echo "%s" | sed -e "s/^kind-//g")$"`, currentContext)).Output()
+	if err == nil {
+		return ClusterTypeKind
+	}
+
+	// Check if it a docker-for-desktop cluster.
+	s := strings.Trim(currentContext, " \n")
+	if s == "docker-desktop" {
+		return ClusterTypeDockerDesktop
+	}
+
+	// Check if it a minikube cluster.
+	result, err = exec.Command("/bin/sh", "-c", fmt.Sprintf(`minikube profile list | grep " %s "| cut -f3 -d'|'`, currentContext)).Output()
+	if err == nil {
+		s := strings.Trim(string(result), " \n")
+		// err not nil, means command failed and either minikube is not installed or not used.
+		if s == "hyperkit" {
+			return ClusterTypeMinikubeHyperkit
+		} else if s == "kvm2" {
+			return ClusterTypeMinikubeKVM2
+		}
+		return ClusterTypeMinikubeOther
+	}
+
+	// Check if it is an eks/gke cluster. This is done by checking if the version string is in the format of "v1.15.12-gke.2" or "v1.15.11-eks-af3caf".
+	discoveryClient := k8s.GetDiscoveryClient(kubeConfig)
+	version, err := discoveryClient.ServerVersion()
+	if err != nil {
+		return ClusterTypeUnknown
+	}
+	sp := strings.Split(version.GitVersion, "-")
+	if len(sp) > 1 {
+		matchGke, _ := regexp.Match(`gke\..*`, []byte(sp[1]))
+		if matchGke {
+			return ClusterTypeGKE
+		}
+		matchEks, _ := regexp.Match(`eks-.*`, []byte(sp[1]))
+		if matchEks {
+			return ClusterTypeEKS
+		}
+	}
+
+	return ClusterTypeUnknown
+}
+
 var (
 	kernelVersionCheck = NamedCheck(fmt.Sprintf("Kernel version > %s", kernelMinVersion), func() error {
 		kubeConfig := k8s.GetConfig()
 		clientset := k8s.GetClientset(kubeConfig)
+
 		nodes, err := clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 		if err != nil {
 			return err
@@ -39,24 +118,18 @@ var (
 		return nil
 	})
 	clusterTypeIsSupported = NamedCheck("Cluster type is supported", func() error {
-		// We don't support kind.
-		result, err := exec.Command("/bin/sh", "-c", `kind get clusters | grep "^$(kubectl config current-context | sed -e "s/^kind-//g")$"`).Output()
-		if err == nil {
-			// err not nil, means command failed and either kind is not installed or not used.
-			if len(result) > 0 {
-				return fmt.Errorf("We don't currently support Kind clusters. Support coming soon! ")
-			}
-		}
+		clusterType := detectClusterType()
 
-		result, err = exec.Command("/bin/sh", "-c", `minikube profile list | grep " $(kubectl config current-context) "| cut -f3 -d'|'`).Output()
-		if err == nil {
-			s := strings.Trim(string(result), " \n")
-			// err not nil, means command failed and either minikube is not installed or not used.
-			if s == "docker" {
-				return fmt.Errorf("Docker driver is not supported with minikube. Support coming soon! Please use kvm2/HyperKit instead. ")
-			}
+		switch clusterType {
+		case ClusterTypeKind:
+			return fmt.Errorf("We don't currently support Kind clusters. To create a test cluster to try out Pixie, use minikube instead.  ")
+		case ClusterTypeDockerDesktop:
+			return fmt.Errorf("Docker for desktop is not supported. To create a test cluster to try out Pixie, use minikube instead.  ")
+		case ClusterTypeMinikubeOther:
+			return fmt.Errorf("Unrecognized minikube driver. Please use kvm2/HyperKit instead.  ")
+		default:
+			return nil
 		}
-		return nil
 	})
 	k8sVersionCheck = NamedCheck(fmt.Sprintf("K8s version > %s", k8sMinVersion), func() error {
 		kubeConfig := k8s.GetConfig()
@@ -114,6 +187,17 @@ var (
 		}
 		return nil
 	})
+	// allowListClusterCheck verifies whether the cluster is in the list of known supported types.
+	allowListClusterCheck = NamedCheck("Cluster type is in list of known supported types", func() error {
+		clusterType := detectClusterType()
+		for _, c := range allowedClusterTypes {
+			if c == clusterType {
+				return nil
+			}
+		}
+
+		return errors.New("Cluster type is not in list of known supported cluster types. Please see: https://docs.pixielabs.ai/installing-pixie/requirements/")
+	})
 )
 
 // DefaultClusterChecks is a list of cluster that are performed by default.
@@ -123,4 +207,9 @@ var DefaultClusterChecks = []Checker{
 	k8sVersionCheck,
 	hasKubectlCheck,
 	userCanCreateNamespace,
+}
+
+// ExtraClusterChecks is a list of checks for the cluster that are not required for deployment, but are highly recommended.
+var ExtraClusterChecks = []Checker{
+	allowListClusterCheck,
 }

@@ -75,7 +75,6 @@ func (j jobAdapter) Run() error {
 // RunClusterChecks will run a list of checks and print out their results.
 // The first error is returned, but we continue to run all checks.
 func RunClusterChecks(checks []Checker) error {
-	fmt.Printf("\nRunning Cluster Checks:\n")
 	jobs := make([]Task, len(checks))
 	for i, check := range checks {
 		jobs[i] = checkWrapper(check)
@@ -86,5 +85,11 @@ func RunClusterChecks(checks []Checker) error {
 
 // RunDefaultClusterChecks runs the default configured checks.
 func RunDefaultClusterChecks() error {
+	fmt.Printf("\nRunning Cluster Checks:\n")
 	return RunClusterChecks(DefaultClusterChecks)
+}
+
+// RunExtraClusterChecks runs the extra configured checks.
+func RunExtraClusterChecks() error {
+	return RunClusterChecks(ExtraClusterChecks)
 }

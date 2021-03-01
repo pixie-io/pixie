@@ -276,8 +276,17 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		}
 
 		if checkOnly {
-			log.Info("All Checks Passed!")
+			log.Info("All Required Checks Passed!")
 			os.Exit(0)
+		}
+
+		err = utils.RunExtraClusterChecks()
+		if err != nil {
+			clusterOk := components.YNPrompt("Some cluster checks failed. Pixie may not work properly on your cluster. Continue with deploy?", true)
+			if !clusterOk {
+				utils.Error("Deploy cancelled. Aborting...")
+				return
+			}
 		}
 	}
 
