@@ -31,7 +31,7 @@ class AnyUDA : public udf::UDA {
   TArg Finalize(FunctionContext*) { return val_; }
 
   static udf::InfRuleVec SemanticInferenceRules() {
-    return {udf::InheritTypeFromArgs<AnyUDA>::Create({types::ST_NONE})};
+    return {udf::InheritTypeFromArgs<AnyUDA>::CreateGeneric()};
   }
 
   static udf::UDADocBuilder Doc() {

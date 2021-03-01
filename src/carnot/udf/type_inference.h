@@ -144,6 +144,7 @@ class InheritTypeFromArgs : public InferenceRule {
       std::vector<types::SemanticType> types_to_match) {
     return Create(types_to_match, {});
   }
+
   /**
    * @param types_to_match specifies which set of types the UDF should be allowed to inherit from
    * the arg types.
@@ -176,6 +177,25 @@ class InheritTypeFromArgs : public InferenceRule {
     return std::make_shared<InheritTypeFromArgs<TUDF>>(types_to_match, arg_indices);
   }
 
+  static std::shared_ptr<InheritTypeFromArgs<TUDF>> CreateGeneric() {
+    return CreateGeneric(absl::flat_hash_set<int>({}));
+  }
+
+  /**
+   * @param arg_indices specifies which indices of the arguments have to match the type, in order
+   * for the output to be of that type. If the arg indices are empty then all the input args must
+   * have that type.
+   *
+   * Creates to inherit output semantic type from the input columns. While `Create` does a similar
+   * thing, it requires that specific semantic types be specified. `CreateGeneric` will work for any
+   * semantic type, including new ones that are added in the future. It should be used in the subset
+   * of cases where the semantic type should always be propagated if the args match.
+   */
+  static std::shared_ptr<InheritTypeFromArgs<TUDF>> CreateGeneric(
+      absl::flat_hash_set<int> arg_indices) {
+    return std::make_shared<InheritTypeFromArgs<TUDF>>(GetAllSemanticTypes(), arg_indices);
+  }
+
   explicit InheritTypeFromArgs(std::vector<types::SemanticType> types_to_match)
       : InheritTypeFromArgs(types_to_match, {}) {}
   InheritTypeFromArgs(std::vector<types::SemanticType> types_to_match,
@@ -197,6 +217,16 @@ class InheritTypeFromArgs : public InferenceRule {
   std::vector<ExplicitRulePtr> explicit_rules() { return rules_; }
 
  private:
+  static std::vector<types::SemanticType> GetAllSemanticTypes() {
+    std::vector<types::SemanticType> types;
+    for (int i = types::SemanticType_MIN; i <= types::SemanticType_MAX; ++i) {
+      if (types::SemanticType_IsValid(i)) {
+        types.push_back(static_cast<types::SemanticType>(i));
+      }
+    }
+    return types;
+  }
+
   std::vector<ExplicitRulePtr> rules_;
 };
 

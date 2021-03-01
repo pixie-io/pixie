@@ -25,6 +25,11 @@ class SelectUDF : public udf::ScalarUDF {
     return v2;
   }
 
+  static udf::InfRuleVec SemanticInferenceRules() {
+    // Match the 1st and 2nd arg.
+    return {udf::InheritTypeFromArgs<SelectUDF>::CreateGeneric({1, 2})};
+  }
+
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Selects value based on the first argument.")
         .Example(R"doc(
