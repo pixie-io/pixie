@@ -398,8 +398,8 @@ go_repository(
 go_repository(
     name = "com_github_gomodule_redigo",
     importpath = "github.com/gomodule/redigo",
-    sum = "h1:K/R+8tc58AaqLkqG2Ol3Qk+DR/TlNuhuh457pBFPtt0=",
-    version = "v2.0.0+incompatible",
+    sum = "h1:y0Wmhvml7cGnzPa9nocn/fMraMH/lMDdeG+rkx4VgYY=",
+    version = "v1.7.1-0.20190724094224-574c33c3df38",
 )
 
 go_repository(
@@ -2901,13 +2901,6 @@ go_repository(
     importpath = "github.com/ianlancetaylor/cgosymbolizer",
     sum = "h1:IpTHAzWv1pKDDWeJDY5VOHvqc2T9d3C8cPKEf2VPqHE=",
     version = "v0.0.0-20200424224625-be1b05b0b279",
-)
-
-go_repository(
-    name = "com_github_boj_redistore",
-    importpath = "github.com/boj/redistore",
-    sum = "h1:RmdPFa+slIr4SCBg4st/l/vZWVe9QJKMXGO60Bxbe04=",
-    version = "v0.0.0-20180917114910-cd5dcc76aeff",
 )
 
 go_repository(

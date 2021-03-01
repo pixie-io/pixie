@@ -16,7 +16,6 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.2
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
-	github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/cockroachdb/apd v1.1.0 // indirect
