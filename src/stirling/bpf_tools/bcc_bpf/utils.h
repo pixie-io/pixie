@@ -1,3 +1,5 @@
+// LINT_C_FILE: Do not remove this line. It ensures cpplint treats this as a C file.
+
 #pragma once
 
 // TODO(yzhao): According to https://github.com/cilium/cilium/blob/master/Documentation/bpf.rst
@@ -43,14 +45,53 @@ static __inline uint64_t pl_nsec_to_clock_t(uint64_t x) {
   return div_u64(x, NSEC_PER_SEC / USER_HZ);
 }
 
+// Returns the group_leader offset.
+// If GROUP_LEADER_OFFSET_OVERRIDE is defined, it is returned.
+// Otherwise, the value is obtained from the definition of header structs.
+// The override is important for the case when we don't have an exact header match.
+// See user-space TaskStructOffsetsResolver.
+static __inline uint64_t task_struct_group_leader_offset() {
+#ifdef GROUP_LEADER_OFFSET_OVERRIDE
+  return GROUP_LEADER_OFFSET_OVERRIDE;
+#else
+  return offsetof(struct task_struct, group_leader);
+#endif
+}
+
+// Returns the real_start_time/start_boottime offset.
+// If START_BOOTTIME_OFFSET_OVERRIDE is defined, it is returned.
+// Otherwise, the value is obtained from the definition of header structs.
+// The override is important for the case when we don't have an exact header match.
+// See user-space TaskStructOffsetsResolver.
+static __inline uint64_t task_struct_start_boottime_offset() {
+  // Find the start_boottime of the current task.
+#ifdef START_BOOTTIME_OFFSET_OVERRIDE
+  return START_BOOTTIME_OFFSET_OVERRIDE;
+#else
+#if LINUX_VERSION_CODE >= 328960
+  return offsetof(struct task_struct, start_boottime);
+#else
+  // Before Linux 5.5, the start_boottime was called real_start_time.
+  return offsetof(struct task_struct, real_start_time);
+#endif
+#endif
+}
+
+// Effectively returns:
+//   task->group_leader->start_boottime;  // Before Linux 5.5
+//   task->group_leader->real_start_time; // Linux 5.5+
 static __inline uint64_t get_tgid_start_time() {
   struct task_struct* task = (struct task_struct*)bpf_get_current_task();
-  // Linux 5.5 renames the variable to start_boottime.
-#if LINUX_VERSION_CODE >= 328960
-  uint64_t start_boottime = task->group_leader->start_boottime;
-#else
-  uint64_t start_boottime = task->group_leader->real_start_time;
-#endif
+
+  uint64_t group_leader_offset = task_struct_group_leader_offset();
+  struct task_struct* group_leader_ptr;
+  bpf_probe_read(&group_leader_ptr, sizeof(struct task_struct*),
+                 (uint8_t*)task + group_leader_offset);
+
+  uint64_t start_boottime_offset = task_struct_start_boottime_offset();
+  uint64_t start_boottime = 0;
+  bpf_probe_read(&start_boottime, sizeof(uint64_t),
+                 (uint8_t*)group_leader_ptr + start_boottime_offset);
 
   return pl_nsec_to_clock_t(start_boottime);
 }
