@@ -16,7 +16,6 @@ def redis_data(start: str, num_head: int):
     # Calculate source and destination entities. 
     df = add_source_dest_columns(df, start)
 
-    # TODO: move this above add_source_dest_columns() after bug is fixed. 
     # Restrict number of results.
     df = df.head(num_head)
 
