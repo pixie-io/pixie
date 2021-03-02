@@ -32,16 +32,25 @@ MATCHER_P(ColWrapperSizeIs, size, absl::Substitute("is a ColumnWrapper having $0
 
 MATCHER(ColWrapperIsEmpty, "is an empty ColumnWrapper") { return arg->Empty(); }
 
-inline std::vector<size_t> FindRecordIdxMatchesPID(const types::ColumnWrapperRecordBatch& record,
-                                                   int upid_column_idx, int pid) {
+inline std::vector<size_t> FindRecordIdxMatchesPIDs(const types::ColumnWrapperRecordBatch& record,
+                                                    int upid_column_idx,
+                                                    const std::vector<int>& pids) {
   std::vector<size_t> res;
+
   for (size_t i = 0; i < record[upid_column_idx]->Size(); ++i) {
     md::UPID upid(record[upid_column_idx]->Get<types::UInt128Value>(i).val);
-    if (upid.pid() == static_cast<uint64_t>(pid)) {
-      res.push_back(i);
+    for (const int pid : pids) {
+      if (upid.pid() == static_cast<uint64_t>(pid)) {
+        res.push_back(i);
+      }
     }
   }
   return res;
+}
+
+inline std::vector<size_t> FindRecordIdxMatchesPID(const types::ColumnWrapperRecordBatch& record,
+                                                   int upid_column_idx, int pid) {
+  return FindRecordIdxMatchesPIDs(record, upid_column_idx, {pid});
 }
 
 inline std::shared_ptr<types::ColumnWrapper> SelectColumnWrapperRows(
