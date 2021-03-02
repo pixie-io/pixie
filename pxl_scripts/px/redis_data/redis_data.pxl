@@ -8,28 +8,30 @@ This script traces all Redis data on the cluster.
 
 import px
 
+
 def redis_data(start: str, num_head: int):
 
     # redis_events.beta is a beta table, which is subject to change.
     df = px.DataFrame(table='redis_events.beta', start_time=start)
 
-    # Calculate source and destination entities. 
+    # Calculate source and destination entities.
     df = add_source_dest_columns(df, start)
 
     # Restrict number of results.
     df = df.head(num_head)
 
-    return df['time_', 'source', 'destination', 'remote_port', 'cmd', 
-            'cmd_args', 'resp', 'latency_ns']
+    return df['time_', 'source', 'destination', 'remote_port', 'cmd',
+              'cmd_args', 'resp', 'latency_ns']
+
 
 def add_source_dest_columns(df, start: str):
-    ''' Add request source and destination columns to protocol datasource table. 
+    ''' Add request source and destination columns to protocol datasource table.
 
-    @df: The input *_events table which should contain a `trace_role`, 
+    @df: The input *_events table which should contain a `trace_role`,
     `upid`, and `remote_addr` column.
 
     Returns: Returns a DataFrame containing columns for the source
-    and destination entity for the protocol request. 
+    and destination entity for the protocol request.
     '''
     # Replace UPID with pod.
     df.pod = df.ctx['pod']
@@ -46,11 +48,11 @@ def add_source_dest_columns(df, start: str):
     # For client-side tracing (trace_role==1), server-side traceing (trace_role==2).
     df.server_side_tracing = df.trace_role == 2
 
-    # Set source and destination based on trace_role. 
+    # Set source and destination based on trace_role.
     df.destination = px.select(df.server_side_tracing, df.pod, df.remote_addr_name)
     df.source = px.select(df.server_side_tracing, df.remote_addr_name, df.pod)
 
-    df = df.drop(['server_side_tracing', 'remote_addr_pod_name', 'is_remote_addr_pod', 
+    df = df.drop(['server_side_tracing', 'remote_addr_pod_name', 'is_remote_addr_pod',
                   'remote_addr_name'])
 
     return df
