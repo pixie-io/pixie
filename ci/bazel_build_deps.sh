@@ -16,6 +16,7 @@ commit_range=${commit_range:-$(git merge-base origin/main HEAD)".."}
 
 ui_excludes="except //src/ui/..."
 bpf_excludes="except attr('tags', 'requires_bpf', //...)"
+darwin_excludes="except attr('goos', 'darwin', //...)"
 default_excludes="except attr('tags', 'manual', //...) \
   except //third_party/... \
   except //experimental/... \
@@ -78,9 +79,7 @@ done
 #     bazel_{buildables, tests}_bpf
 #     bazel_{buildables, tests}_bpf_sanitizer
 
-buildables_kind="kind(.*_binary, //...) ${default_excludes}"
-tests_kind="kind(test, //...) ${default_excludes}"
-
+# Check poison patterns and trigger a full build if necessary.
 if [ "${all_targets}" = "false" ]; then
   for file in $(git diff --name-only "${commit_range}" ); do
     for pat in "${poison_patterns[@]}"; do
@@ -93,6 +92,7 @@ if [ "${all_targets}" = "false" ]; then
   done
 fi
 
+# Determine the targets.
 if [ "${all_targets}" = "false" ]; then
   # Get a list of the current files in package form by querying Bazel.
   # This step is safe to run without looking at specific configs
@@ -103,50 +103,61 @@ if [ "${all_targets}" = "false" ]; then
     files+=($(bazel query --noshow_progress "$file" || true))
   done
 
-  buildables_kind="kind(.*_binary, rdeps(${target_pattern}, set(${files[*]}))) ${default_excludes}"
-  tests_kind="kind(test, rdeps(${target_pattern}, set(${files[*]}))) ${default_excludes}"
+  targets="rdeps(${target_pattern}, set(${files[*]}))"
+else
+  targets="//..."
 fi
 
+buildables="kind(.*_binary, ${targets}) union kind(.*_library, ${targets}) ${default_excludes}"
+tests="kind(test, ${targets}) ${default_excludes}"
 
-# Clang:opt
-${bazel_query} "${buildables_kind} ${bpf_excludes}" > bazel_buildables_clang_opt
-${bazel_query} "${tests_kind} ${bpf_excludes}" > bazel_tests_clang_opt
+cc_buildables="kind(cc_.*, ${buildables})"
+cc_tests="kind(cc_.*, ${tests})"
+
+go_buildables="kind(go_.*, ${buildables})"
+go_tests="kind(go_.*, ${tests})"
+
+bpf_buildables="attr('tags', 'requires_bpf', ${buildables})"
+bpf_tests="attr('tags', 'requires_bpf', ${tests})"
+
+cc_bpf_buildables="kind(cc_.*, ${bpf_buildables})"
+cc_bpf_tests="kind(cc_.*, ${bpf_tests})"
+
+
+# Clang:opt (includes non-cc targets: go targets, //src/ui/..., etc.)
+${bazel_query} "${buildables} ${bpf_excludes}" > bazel_buildables_clang_opt
+${bazel_query} "${tests} ${bpf_excludes}" > bazel_tests_clang_opt
 
 # Clang:dbg
-${bazel_query} "kind(cc_binary, ${buildables_kind}) ${ui_excludes} ${bpf_excludes}" > bazel_buildables_clang_dbg
-${bazel_query} "kind(cc_test, ${tests_kind}) ${ui_excludes} ${bpf_excludes}" > bazel_tests_clang_dbg
+${bazel_query} "${cc_buildables} ${bpf_excludes}" > bazel_buildables_clang_dbg
+${bazel_query} "${cc_tests} ${bpf_excludes}" > bazel_tests_clang_dbg
 
 # GCC:opt
-${bazel_query} "kind(cc_binary, ${buildables_kind}) ${ui_excludes} ${bpf_excludes}" > bazel_buildables_gcc_opt
-${bazel_query} "kind(cc_test, ${tests_kind}) ${ui_excludes} ${bpf_excludes}" > bazel_tests_gcc_opt
+${bazel_query} "${cc_buildables} ${bpf_excludes}" > bazel_buildables_gcc_opt
+${bazel_query} "${cc_tests} ${bpf_excludes}" > bazel_tests_gcc_opt
 
 # Sanitizer (Limit to C++ only).
-${bazel_query} "kind(cc_binary, ${buildables_kind}) ${ui_excludes} ${bpf_excludes} \
-  ${sanitizer_only}" > bazel_buildables_sanitizer
-${bazel_query} "kind(cc_test, ${tests_kind}) ${ui_excludes} ${bpf_excludes} \
-  ${sanitizer_only}" > bazel_tests_sanitizer
+${bazel_query} "${cc_buildables} ${bpf_excludes} ${sanitizer_only}" > bazel_buildables_sanitizer
+${bazel_query} "${cc_tests} ${bpf_excludes} ${sanitizer_only}" > bazel_tests_sanitizer
 
 # BPF.
-${bazel_query} "attr('tags', 'requires_bpf', ${buildables_kind})" > bazel_buildables_bpf
-${bazel_query} "attr('tags', 'requires_bpf', ${tests_kind})" > bazel_tests_bpf
+${bazel_query} "${bpf_buildables}" > bazel_buildables_bpf
+${bazel_query} "${bpf_tests}" > bazel_tests_bpf
 
-# BPF Sanitizer (C/C++ Only).
-${bazel_query} "kind(cc_binary, attr('tags', 'requires_bpf', ${buildables_kind})) \
-  ${sanitizer_only}" > bazel_buildables_bpf_sanitizer
-${bazel_query} "kind(cc_test, attr('tags', 'requires_bpf', ${tests_kind})) \
-  ${sanitizer_only}" > bazel_tests_bpf_sanitizer
+# BPF Sanitizer (C/C++ Only, excludes shell tests).
+${bazel_query} "${cc_bpf_buildables} ${sanitizer_only}" > bazel_buildables_bpf_sanitizer
+${bazel_query} "${cc_bpf_tests} ${sanitizer_only}" > bazel_tests_bpf_sanitizer
 
 # Should we run clang-tidy?
-${bazel_query} "kind(cc_binary, ${buildables_kind})" > bazel_buildables_clang_tidy
-${bazel_query} "kind(cc_test, ${tests_kind})" > bazel_tests_clang_tidy
+${bazel_query} "${cc_buildables}" > bazel_buildables_clang_tidy
+${bazel_query} "${cc_tests}" > bazel_tests_clang_tidy
 
 # Should we run golang race detection?
-${bazel_query} "kind(go_binary, ${buildables_kind}) ${ui_excludes} ${bpf_excludes}" > bazel_buildables_go_race
-${bazel_query} "kind(go_test, ${tests_kind}) ${ui_excludes} ${bpf_excludes}" > bazel_tests_go_race
+${bazel_query} "${go_buildables} ${darwin_excludes}" > bazel_buildables_go_race
+${bazel_query} "${go_tests} ${darwin_excludes}" > bazel_tests_go_race
 
 # Should we run doxygen?
-bazel_buildables_cc=$(${bazel_query} "kind(cc_binary, ${buildables_kind})")
-bazel_tests_cc=$(${bazel_query} "kind(cc_binary, ${buildables_kind})")
-if [ "${all_targets}" = "true" ] || [[ -z $bazel_buildables_cc ]] || [[ -z $bazel_tests_cc ]]; then
+bazel_cc_touched=$(${bazel_query} "${cc_buildables} union ${cc_tests}")
+if [ "${all_targets}" = "true" ] || [[ -z $bazel_cc_touched ]]; then
   touch run_doxygen
 fi

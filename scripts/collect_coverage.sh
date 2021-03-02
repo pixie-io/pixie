@@ -1,10 +1,8 @@
-#!/bin/bash
+#!/bin/bash -ex
 
 # We use GCC for building coverage code.
 export CC=gcc
 export CXX=g++
-
-set -ex
 
 # We can consider adding this file to our repo if needed.
 CODECOV_VERSION="db834f033a450a75a315e72ae8490393c9b19181"
