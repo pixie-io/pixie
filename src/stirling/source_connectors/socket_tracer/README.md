@@ -25,5 +25,6 @@ The first step of debugging these issues is to verify the network IO behavior wi
   strace with `sudo apt-get install strace`
 
   ```shell
-  sudo strace --no-abbrev --attach=PID --string-limit=STRSIZE --trace=SYSCALL 2>&1 | grep PATTERN
+  # -f is critical as it allows tracing all threads of a process.
+  sudo strace -f --no-abbrev --attach=PID --string-limit=STRSIZE --trace=SYSCALL 2>&1 | grep PATTERN
   ```
