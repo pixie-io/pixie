@@ -13,6 +13,9 @@
 namespace pl {
 
 Status SubProcess::Start(const std::vector<std::string>& args, bool stderr_to_stdout) {
+  DCHECK(!started_);
+  started_ = true;
+
   std::vector<char*> exec_args;
   exec_args.reserve(args.size() + 1);
   for (const std::string& arg : args) {
