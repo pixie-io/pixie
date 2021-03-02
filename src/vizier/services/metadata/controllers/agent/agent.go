@@ -1,14 +1,14 @@
-package controllers
+package agent
 
 import (
 	"errors"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
+
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	types "pixielabs.ai/pixielabs/src/shared/types/go"
 	"pixielabs.ai/pixielabs/src/utils"
@@ -16,15 +16,12 @@ import (
 	metadata_servicepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
+	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
 )
 
-// AgentExpirationTimeout is the amount of time that we should wait to receive a heartbeat
-// from an agent before marking it as unhealthy.
-const AgentExpirationTimeout time.Duration = 1 * time.Minute
-
-// AgentStore is the interface that a persistent datastore needs to implement for tracking
+// Store is the interface that a persistent datastore needs to implement for tracking
 // agent data.
-type AgentStore interface {
+type Store interface {
 	CreateAgent(agentID uuid.UUID, a *agentpb.Agent) error
 	GetAgent(agentID uuid.UUID) (*agentpb.Agent, error)
 	UpdateAgent(agentID uuid.UUID, a *agentpb.Agent) error
@@ -48,14 +45,20 @@ type AgentStore interface {
 	GetAgentIDForHostnamePair(hnPair *HostnameIPPair) (string, error)
 }
 
-// AgentUpdate describes the update info for a given agent.
-type AgentUpdate struct {
+// CIDRInfoProvider is an interface that provides CIDRInfo for a given agent.
+type CIDRInfoProvider interface {
+	GetServiceCIDR() string
+	GetPodCIDRs() []string
+}
+
+// Update describes the update info for a given agent.
+type Update struct {
 	UpdateInfo *messagespb.AgentUpdateInfo
 	AgentID    uuid.UUID
 }
 
-// AgentManager handles any agent updates and requests.
-type AgentManager interface {
+// Manager handles any agent updates and requests.
+type Manager interface {
 	// RegisterAgent registers a new agent.
 	RegisterAgent(info *agentpb.Agent) (uint32, error)
 
@@ -74,14 +77,14 @@ type AgentManager interface {
 	MessageAgents(agentIDs []uuid.UUID, msg []byte) error
 	MessageActiveAgents(msg []byte) error
 
-	ApplyAgentUpdate(update *AgentUpdate) error
+	ApplyAgentUpdate(update *Update) error
 
 	// NewAgentUpdateCursor creates a unique ID for an agent update tracking cursor.
 	// It, when used with GetAgentUpdates, can be used by clients of the agent manager
 	// to get the initial agent state and track updates as deltas to that state.
 	NewAgentUpdateCursor() uuid.UUID
 
-	// DeleteAgentUpdateCursor deletes a cursor from the AgentManager so that it no longer
+	// DeleteAgentUpdateCursor deletes a cursor from the Manager so that it no longer
 	// tracks updates.
 	DeleteAgentUpdateCursor(cursorID uuid.UUID)
 
@@ -104,16 +107,16 @@ type AgentManager interface {
 	GetPodCIDRs() []string
 }
 
-// AgentUpdateTracker stores the updates (in order) for agents for GetAgentUpdates.
-type AgentUpdateTracker struct {
+// agentUpdateTracker stores the updates (in order) for agents for GetAgentUpdates.
+type agentUpdateTracker struct {
 	updates             []*metadata_servicepb.AgentUpdate
 	schemaUpdated       bool
 	hasReadInitialState bool
 }
 
-// newAgentUpdateTracker creates an AgentUpdateTracker in the default state.
-func newAgentUpdateTracker() *AgentUpdateTracker {
-	return &AgentUpdateTracker{
+// newAgentUpdateTracker creates an agentUpdateTracker in the default state.
+func newAgentUpdateTracker() *agentUpdateTracker {
+	return &agentUpdateTracker{
 		updates:             []*metadata_servicepb.AgentUpdate{},
 		schemaUpdated:       false,
 		hasReadInitialState: false,
@@ -121,40 +124,40 @@ func newAgentUpdateTracker() *AgentUpdateTracker {
 }
 
 // clearUpdates clears the agent tracker's current update state.
-func (a *AgentUpdateTracker) clearUpdates() {
+func (a *agentUpdateTracker) clearUpdates() {
 	a.updates = []*metadata_servicepb.AgentUpdate{}
 	a.schemaUpdated = false
 }
 
-// AgentManagerImpl is an implementation for AgentManager which talks to the metadata store.
-type AgentManagerImpl struct {
+// ManagerImpl is an implementation for Manager which talks to the metadata store.
+type ManagerImpl struct {
 	clock    utils.Clock
-	agtStore AgentStore
-	k8sMdh   *K8sMetadataHandler
+	agtStore Store
+	cidr     CIDRInfoProvider
 	conn     *nats.Conn
 
 	// The agent manager may have multiple clients requesting updates to the current agent state
 	// compared to the state they last saw. This map keeps all of the various trackers (per client)
-	agentUpdateTrackers map[uuid.UUID]*AgentUpdateTracker
+	agentUpdateTrackers map[uuid.UUID]*agentUpdateTracker
 	// Protects agentUpdateTrackers.
 	agentUpdateTrackersMutex sync.Mutex
 }
 
-// NewAgentManagerWithClock creates a new agent manager with a clock.
-func NewAgentManagerWithClock(agtStore AgentStore, k8sMdh *K8sMetadataHandler, conn *nats.Conn, clock utils.Clock) *AgentManagerImpl {
-	agentManager := &AgentManagerImpl{
+// NewManagerWithClock creates a new agent manager with a clock.
+func NewManagerWithClock(agtStore Store, cidr CIDRInfoProvider, conn *nats.Conn, clock utils.Clock) *ManagerImpl {
+	Manager := &ManagerImpl{
 		clock:               clock,
 		agtStore:            agtStore,
-		k8sMdh:              k8sMdh,
+		cidr:                cidr,
 		conn:                conn,
-		agentUpdateTrackers: make(map[uuid.UUID]*AgentUpdateTracker),
+		agentUpdateTrackers: make(map[uuid.UUID]*agentUpdateTracker),
 	}
 
-	return agentManager
+	return Manager
 }
 
 // NewAgentUpdateCursor creates a new cursor that keeps track of agent state over time.
-func (m *AgentManagerImpl) NewAgentUpdateCursor() uuid.UUID {
+func (m *ManagerImpl) NewAgentUpdateCursor() uuid.UUID {
 	m.agentUpdateTrackersMutex.Lock()
 	defer m.agentUpdateTrackersMutex.Unlock()
 	cursor := uuid.NewV4()
@@ -164,7 +167,7 @@ func (m *AgentManagerImpl) NewAgentUpdateCursor() uuid.UUID {
 
 // DeleteAgentUpdateCursor deletes a created cursor so that it no longer needs to keep
 // track of agent updates when it's not used anymore.
-func (m *AgentManagerImpl) DeleteAgentUpdateCursor(cursorID uuid.UUID) {
+func (m *ManagerImpl) DeleteAgentUpdateCursor(cursorID uuid.UUID) {
 	m.agentUpdateTrackersMutex.Lock()
 	defer m.agentUpdateTrackersMutex.Unlock()
 	delete(m.agentUpdateTrackers, cursorID)
@@ -173,7 +176,7 @@ func (m *AgentManagerImpl) DeleteAgentUpdateCursor(cursorID uuid.UUID) {
 // A helper function for all cases where we call m.agtStore.UpdateSchemas
 // This should be called instead of m.agtStore.UpdateSchemas in order to make sure that the agent
 // schema update is tracked in the our agent state change tracker (updatedAgents).
-func (m *AgentManagerImpl) updateAgentSchemaWrapper(agentID uuid.UUID, schema []*storepb.TableInfo) error {
+func (m *ManagerImpl) updateAgentSchemaWrapper(agentID uuid.UUID, schema []*storepb.TableInfo) error {
 	// Note: Metadata store state must be updated before the agent tracker state is updated, otherwise the
 	// update may be missed by the agent tracker when reading the initial agent state.
 	// We cannot lock the entire call to `updateAgentSchemaWrapper`, which would allow for perfect consistency,
@@ -198,7 +201,7 @@ func (m *AgentManagerImpl) updateAgentSchemaWrapper(agentID uuid.UUID, schema []
 // A helper function for all cases where we call m.agtStore.DeleteAgent.
 // This should be called instead of agtStore.DeleteAgent in order to make sure that the agent
 // deletion is tracked in the our agent state change tracker (updatedAgents).
-func (m *AgentManagerImpl) deleteAgentWrapper(agentID uuid.UUID) error {
+func (m *ManagerImpl) deleteAgentWrapper(agentID uuid.UUID) error {
 	// Note: Metadata store state must be updated before the agent tracker state is updated, otherwise the
 	// update may be missed by the agent tracker when reading the initial agent state.
 	// We cannot lock the entire call to `deleteAgentWrapper`, which would allow for perfect consistency,
@@ -232,7 +235,7 @@ func (m *AgentManagerImpl) deleteAgentWrapper(agentID uuid.UUID) error {
 // A helper function for all cases where we call m.agtStore.CreateAgent.
 // This should be called instead of agtStore.CreateAgent in order to make sure that the agent
 // creation is tracked in the our agent state change tracker (updatedAgents).
-func (m *AgentManagerImpl) createAgentWrapper(agentID uuid.UUID, agentInfo *agentpb.Agent) error {
+func (m *ManagerImpl) createAgentWrapper(agentID uuid.UUID, agentInfo *agentpb.Agent) error {
 	// Note: Metadata store state must be updated before the agent tracker state is updated, otherwise the
 	// update may be missed by the agent tracker when reading the initial agent state.
 	// We cannot lock the entire call to `createAgentWrapper`, which would allow for perfect consistency,
@@ -266,7 +269,7 @@ func (m *AgentManagerImpl) createAgentWrapper(agentID uuid.UUID, agentInfo *agen
 // A helper function for all cases where we call m.agtStore.CreateAgent.
 // This should be called instead of agtStore.CreateAgent in order to make sure that the agent
 // update is tracked in the our agent state change tracker (updatedAgents).
-func (m *AgentManagerImpl) updateAgentWrapper(agentID uuid.UUID, agentInfo *agentpb.Agent) error {
+func (m *ManagerImpl) updateAgentWrapper(agentID uuid.UUID, agentInfo *agentpb.Agent) error {
 	// Note: Metadata store state must be updated before the agent tracker state is updated, otherwise the
 	// update may be missed by the agent tracker when reading the initial agent state.
 	// We cannot lock the entire call to `updateAgentWrapper`, which would allow for perfect consistency,
@@ -300,7 +303,7 @@ func (m *AgentManagerImpl) updateAgentWrapper(agentID uuid.UUID, agentInfo *agen
 // A helper function for all cases where we call m.agtStore.UpdateAgentDataInfo.
 // This should be called instead of agtStore.UpdateAgentDataInfo in order to make sure that the agent
 // update is tracked in the our agent state change tracker (updatedAgents).
-func (m *AgentManagerImpl) updateAgentDataInfoWrapper(agentID uuid.UUID, agentDataInfo *messagespb.AgentDataInfo) error {
+func (m *ManagerImpl) updateAgentDataInfoWrapper(agentID uuid.UUID, agentDataInfo *messagespb.AgentDataInfo) error {
 	// Note: Metadata store state must be updated before the agent tracker state is updated, otherwise the
 	// update may be missed by the agent tracker when reading the initial agent state.
 	// We cannot lock the entire call to `updateAgentDataInfoWrapper`, which would allow for perfect consistency,
@@ -332,7 +335,7 @@ func (m *AgentManagerImpl) updateAgentDataInfoWrapper(agentID uuid.UUID, agentDa
 }
 
 // ApplyAgentUpdate updates the metadata store with the information from the agent update.
-func (m *AgentManagerImpl) ApplyAgentUpdate(update *AgentUpdate) error {
+func (m *ManagerImpl) ApplyAgentUpdate(update *Update) error {
 	resp, err := m.agtStore.GetAgent(update.AgentID)
 	if err != nil {
 		log.WithError(err).Error("Failed to get agent")
@@ -363,7 +366,7 @@ func (m *AgentManagerImpl) ApplyAgentUpdate(update *AgentUpdate) error {
 	return m.updateAgentSchemaWrapper(update.AgentID, update.UpdateInfo.Schema)
 }
 
-func (m *AgentManagerImpl) handleCreatedProcesses(processes []*metadatapb.ProcessCreated) error {
+func (m *ManagerImpl) handleCreatedProcesses(processes []*metadatapb.ProcessCreated) error {
 	if processes == nil || len(processes) == 0 {
 		return nil
 	}
@@ -383,7 +386,7 @@ func (m *AgentManagerImpl) handleCreatedProcesses(processes []*metadatapb.Proces
 	return m.agtStore.UpdateProcesses(processInfos)
 }
 
-func (m *AgentManagerImpl) handleTerminatedProcesses(processes []*metadatapb.ProcessTerminated) error {
+func (m *ManagerImpl) handleTerminatedProcesses(processes []*metadatapb.ProcessTerminated) error {
 	if processes == nil || len(processes) == 0 {
 		return nil
 	}
@@ -410,16 +413,16 @@ func (m *AgentManagerImpl) handleTerminatedProcesses(processes []*metadatapb.Pro
 	return m.agtStore.UpdateProcesses(updatedProcesses)
 }
 
-// NewAgentManager creates a new agent manager.
+// NewManager creates a new agent manager.
 // TODO (vihang/michelle): Figure out a better solution than passing in the k8s controller.
-// We need the k8sMDh to get CIDR info right now.
-func NewAgentManager(agtStore AgentStore, k8sMdh *K8sMetadataHandler, conn *nats.Conn) *AgentManagerImpl {
+// We need the cidr to get CIDR info right now.
+func NewManager(agtStore Store, cidr CIDRInfoProvider, conn *nats.Conn) *ManagerImpl {
 	clock := utils.SystemClock{}
-	return NewAgentManagerWithClock(agtStore, k8sMdh, conn, clock)
+	return NewManagerWithClock(agtStore, cidr, conn, clock)
 }
 
 // RegisterAgent creates a new agent.
-func (m *AgentManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err error) {
+func (m *ManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err error) {
 	info := agent.Info
 
 	// Check if agent already exists.
@@ -455,7 +458,7 @@ func (m *AgentManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err
 }
 
 // DeleteAgent deletes the agent with the given ID.
-func (m *AgentManagerImpl) DeleteAgent(agentID uuid.UUID) error {
+func (m *ManagerImpl) DeleteAgent(agentID uuid.UUID) error {
 	err := m.deleteAgentWrapper(agentID)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to delete agent from etcd")
@@ -465,7 +468,7 @@ func (m *AgentManagerImpl) DeleteAgent(agentID uuid.UUID) error {
 }
 
 // UpdateHeartbeat updates the agent heartbeat with the current time.
-func (m *AgentManagerImpl) UpdateHeartbeat(agentID uuid.UUID) error {
+func (m *ManagerImpl) UpdateHeartbeat(agentID uuid.UUID) error {
 	// Get current AgentData.
 	agent, err := m.agtStore.GetAgent(agentID)
 	if err != nil {
@@ -487,14 +490,14 @@ func (m *AgentManagerImpl) UpdateHeartbeat(agentID uuid.UUID) error {
 }
 
 // UpdateAgent updates agent info, such as schema.
-func (m *AgentManagerImpl) UpdateAgent(info *agentpb.Agent) error {
+func (m *ManagerImpl) UpdateAgent(info *agentpb.Agent) error {
 	// TODO(michelle): Implement once we figure out how the agent info (schemas, etc) looks.
 	// Make sure to add any updates to the agent updates list.
 	return nil
 }
 
 // GetActiveAgents gets all of the current active agents.
-func (m *AgentManagerImpl) GetActiveAgents() ([]*agentpb.Agent, error) {
+func (m *ManagerImpl) GetActiveAgents() ([]*agentpb.Agent, error) {
 	var agents []*agentpb.Agent
 
 	agentPbs, err := m.agtStore.GetAgents()
@@ -506,11 +509,11 @@ func (m *AgentManagerImpl) GetActiveAgents() ([]*agentpb.Agent, error) {
 }
 
 // MessageAgents sends the message to the given agentIDs.
-func (m *AgentManagerImpl) MessageAgents(agentIDs []uuid.UUID, msg []byte) error {
+func (m *ManagerImpl) MessageAgents(agentIDs []uuid.UUID, msg []byte) error {
 	// Send request to all agents.
 	var errs []error
 	for _, agentID := range agentIDs {
-		topic := GetAgentTopicFromUUID(agentID)
+		topic := messagebus.AgentUUIDTopic(agentID)
 
 		err := m.conn.Publish(topic, msg)
 		if err != nil {
@@ -527,7 +530,7 @@ func (m *AgentManagerImpl) MessageAgents(agentIDs []uuid.UUID, msg []byte) error
 }
 
 // MessageActiveAgents sends the message to all active agents.
-func (m *AgentManagerImpl) MessageActiveAgents(msg []byte) error {
+func (m *ManagerImpl) MessageActiveAgents(msg []byte) error {
 	agents, err := m.GetActiveAgents()
 	if err != nil {
 		return err
@@ -542,7 +545,7 @@ func (m *AgentManagerImpl) MessageActiveAgents(msg []byte) error {
 }
 
 // UpdateConfig updates the config key and value for the specified agent.
-func (m *AgentManagerImpl) UpdateConfig(ns string, podName string, key string, value string) error {
+func (m *ManagerImpl) UpdateConfig(ns string, podName string, key string, value string) error {
 	// Find the agent ID for the agent with the given name.
 	agentID, err := m.agtStore.GetAgentIDFromPodName(podName)
 	if err != nil || agentID == "" {
@@ -566,7 +569,7 @@ func (m *AgentManagerImpl) UpdateConfig(ns string, podName string, key string, v
 	if err != nil {
 		return err
 	}
-	topic := GetAgentTopicFromUUID(uuid.FromStringOrNil(agentID))
+	topic := messagebus.AgentTopic(agentID)
 	err = m.conn.Publish(topic, msg)
 	if err != nil {
 		return err
@@ -577,7 +580,7 @@ func (m *AgentManagerImpl) UpdateConfig(ns string, podName string, key string, v
 // GetAgentUpdates returns the latest agent status since the last call to GetAgentUpdates().
 // if the input cursor has never read the initial state before, the full initial agent state is read out.
 // Afterwards, the changes to the agent state are read out as a delta to the previous state.
-func (m *AgentManagerImpl) GetAgentUpdates(cursorID uuid.UUID) ([]*metadata_servicepb.AgentUpdate,
+func (m *ManagerImpl) GetAgentUpdates(cursorID uuid.UUID) ([]*metadata_servicepb.AgentUpdate,
 	*storepb.ComputedSchema, error) {
 
 	schemaUpdated := false
@@ -598,11 +601,11 @@ func (m *AgentManagerImpl) GetAgentUpdates(cursorID uuid.UUID) ([]*metadata_serv
 
 		tracker, present := m.agentUpdateTrackers[cursorID]
 		if !present {
-			err = fmt.Errorf("Agent update cursor %s is not present in AgentManager", cursorID.String())
+			err = fmt.Errorf("Agent update cursor %s is not present in Manager", cursorID.String())
 			return
 		}
 		if tracker == nil {
-			err = fmt.Errorf("Agent update cursor %s is nil in AgentManager", cursorID.String())
+			err = fmt.Errorf("Agent update cursor %s is nil in Manager", cursorID.String())
 			return
 		}
 
@@ -665,21 +668,21 @@ func (m *AgentManagerImpl) GetAgentUpdates(cursorID uuid.UUID) ([]*metadata_serv
 }
 
 // GetComputedSchema gets the computed schemas
-func (m *AgentManagerImpl) GetComputedSchema() (*storepb.ComputedSchema, error) {
+func (m *ManagerImpl) GetComputedSchema() (*storepb.ComputedSchema, error) {
 	return m.agtStore.GetComputedSchema()
 }
 
 // GetAgentIDForHostnamePair gets the agent for the given hostnamePair, if it exists.
-func (m *AgentManagerImpl) GetAgentIDForHostnamePair(hnPair *HostnameIPPair) (string, error) {
+func (m *ManagerImpl) GetAgentIDForHostnamePair(hnPair *HostnameIPPair) (string, error) {
 	return m.agtStore.GetAgentIDForHostnamePair(hnPair)
 }
 
 // GetServiceCIDR returns the service CIDR for the current cluster.
-func (m *AgentManagerImpl) GetServiceCIDR() string {
-	return m.k8sMdh.GetServiceCIDR()
+func (m *ManagerImpl) GetServiceCIDR() string {
+	return m.cidr.GetServiceCIDR()
 }
 
 // GetPodCIDRs returns the PodCIDRs for the cluster.
-func (m *AgentManagerImpl) GetPodCIDRs() []string {
-	return m.k8sMdh.GetPodCIDRs()
+func (m *ManagerImpl) GetPodCIDRs() []string {
+	return m.cidr.GetPodCIDRs()
 }

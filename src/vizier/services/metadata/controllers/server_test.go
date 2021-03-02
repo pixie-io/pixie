@@ -9,16 +9,16 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/grpc"
-	grpc_metadata "google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/test/bufconn"
-
 	"github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc"
+	grpc_metadata "google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/test/bufconn"
+
 	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	distributedpb "pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
@@ -32,8 +32,10 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
-	mock_controllers "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
+	mock_agent "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint"
+	mock_tracepoint "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
@@ -83,7 +85,7 @@ func TestGetAgentInfo(t *testing.T) {
 	// Set up mock.
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockAgtMgr := mock_agent.NewMockManager(ctrl)
 
 	agent1IDStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 	u1, err := uuid.FromString(agent1IDStr)
@@ -167,7 +169,7 @@ func TestGetAgentInfoGetActiveAgentsFailed(t *testing.T) {
 	// Set up mock.
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockAgtMgr := mock_agent.NewMockManager(ctrl)
 
 	mockAgtMgr.
 		EXPECT().
@@ -196,7 +198,7 @@ func TestGetSchemas(t *testing.T) {
 	// Set up mock.
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockAgtMgr := mock_agent.NewMockManager(ctrl)
 
 	tableInfos := testTableInfos()
 
@@ -244,10 +246,10 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 	// Set up mock.
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
+	mockAgtMgr := mock_agent.NewMockManager(ctrl)
+	mockTracepointStore := mock_tracepoint.NewMockStore(ctrl)
 
-	tracepointMgr := controllers.NewTracepointManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
+	tracepointMgr := tracepoint.NewManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
 
 	program := &logicalpb.TracepointDeployment{
 		Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
@@ -353,10 +355,10 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 	// Set up mock.
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
+	mockAgtMgr := mock_agent.NewMockManager(ctrl)
+	mockTracepointStore := mock_tracepoint.NewMockStore(ctrl)
 
-	tracepointMgr := controllers.NewTracepointManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
+	tracepointMgr := tracepoint.NewManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
 
 	program := &logicalpb.TracepointDeployment{
 		Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
@@ -588,10 +590,10 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 			// Set up mock.
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
-			mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-			mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
+			mockAgtMgr := mock_agent.NewMockManager(ctrl)
+			mockTracepointStore := mock_tracepoint.NewMockStore(ctrl)
 
-			tracepointMgr := controllers.NewTracepointManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
+			tracepointMgr := tracepoint.NewManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
 
 			program := &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
@@ -669,10 +671,10 @@ func Test_Server_RemoveTracepoint(t *testing.T) {
 	// Set up mock.
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
+	mockAgtMgr := mock_agent.NewMockManager(ctrl)
+	mockTracepointStore := mock_tracepoint.NewMockStore(ctrl)
 
-	tracepointMgr := controllers.NewTracepointManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
+	tracepointMgr := tracepoint.NewManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
 
 	tpID1 := uuid.NewV4()
 	tpID2 := uuid.NewV4()
@@ -721,7 +723,7 @@ func TestGetAgentUpdates(t *testing.T) {
 	// Set up mock.
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockAgtMgr := mock_agent.NewMockManager(ctrl)
 
 	agent1IDStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 	u1, err := uuid.FromString(agent1IDStr)
@@ -1021,9 +1023,9 @@ func Test_Server_UpdateConfig(t *testing.T) {
 	// Set up mock.
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
-	tracepointMgr := controllers.NewTracepointManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
+	mockAgtMgr := mock_agent.NewMockManager(ctrl)
+	mockTracepointStore := mock_tracepoint.NewMockStore(ctrl)
+	tracepointMgr := tracepoint.NewManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
 
 	mockAgtMgr.
 		EXPECT().

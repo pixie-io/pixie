@@ -18,6 +18,8 @@ import (
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 	"pixielabs.ai/pixielabs/src/utils"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
@@ -30,10 +32,10 @@ const UnhealthyAgentThreshold = 30 * time.Second
 
 // Server defines an gRPC server type.
 type Server struct {
-	env               metadataenv.MetadataEnv
-	agentManager      AgentManager
-	tracepointManager *TracepointManager
-	clock             utils.Clock
+	env    metadataenv.MetadataEnv
+	agtMgr agent.Manager
+	tpMgr  *tracepoint.Manager
+	clock  utils.Clock
 	// The current cursor that is actively running the GetAgentsUpdate stream. Only one GetAgentsUpdate
 	// stream should be running at a time.
 	getAgentsCursor uuid.UUID
@@ -42,20 +44,20 @@ type Server struct {
 
 // NewServerWithClock creates a new server with a clock and the ability to configure the chunk size and
 // update period of the GetAgentUpdates handler.
-func NewServerWithClock(env metadataenv.MetadataEnv, agtMgr AgentManager, tracepointManager *TracepointManager,
+func NewServerWithClock(env metadataenv.MetadataEnv, agtMgr agent.Manager, tpMgr *tracepoint.Manager,
 	clock utils.Clock) (*Server, error) {
 	return &Server{
-		env:               env,
-		agentManager:      agtMgr,
-		clock:             clock,
-		tracepointManager: tracepointManager,
+		env:    env,
+		agtMgr: agtMgr,
+		clock:  clock,
+		tpMgr:  tpMgr,
 	}, nil
 }
 
 // NewServer creates GRPC handlers.
-func NewServer(env metadataenv.MetadataEnv, agtMgr AgentManager, tracepointManager *TracepointManager) (*Server, error) {
+func NewServer(env metadataenv.MetadataEnv, agtMgr agent.Manager, tpMgr *tracepoint.Manager) (*Server, error) {
 	clock := utils.SystemClock{}
-	return NewServerWithClock(env, agtMgr, tracepointManager, clock)
+	return NewServerWithClock(env, agtMgr, tpMgr, clock)
 }
 
 func convertToRelationMap(computedSchema *storepb.ComputedSchema) (*schemapb.Schema, error) {
@@ -117,7 +119,7 @@ func convertToSchemaInfo(computedSchema *storepb.ComputedSchema) ([]*distributed
 
 // GetSchemas returns the schemas in the system.
 func (s *Server) GetSchemas(ctx context.Context, req *metadatapb.SchemaRequest) (*metadatapb.SchemaResponse, error) {
-	computedSchema, err := s.agentManager.GetComputedSchema()
+	computedSchema, err := s.agtMgr.GetComputedSchema()
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +135,7 @@ func (s *Server) GetSchemas(ctx context.Context, req *metadatapb.SchemaRequest) 
 
 // GetAgentInfo returns information about registered agents.
 func (s *Server) GetAgentInfo(ctx context.Context, req *metadatapb.AgentInfoRequest) (*metadatapb.AgentInfoResponse, error) {
-	agents, err := s.agentManager.GetActiveAgents()
+	agents, err := s.agtMgr.GetActiveAgents()
 	if err != nil {
 		return nil, err
 	}
@@ -142,15 +144,15 @@ func (s *Server) GetAgentInfo(ctx context.Context, req *metadatapb.AgentInfoRequ
 
 	// Populate AgentInfoResponse.
 	agentResponses := make([]*metadatapb.AgentMetadata, 0)
-	for _, agent := range agents {
+	for _, agt := range agents {
 		state := agentpb.AGENT_STATE_HEALTHY
-		timeSinceLastHb := currentTime.Sub(time.Unix(0, agent.LastHeartbeatNS))
+		timeSinceLastHb := currentTime.Sub(time.Unix(0, agt.LastHeartbeatNS))
 		if timeSinceLastHb > UnhealthyAgentThreshold {
 			state = agentpb.AGENT_STATE_UNRESPONSIVE
 		}
 
 		resp := metadatapb.AgentMetadata{
-			Agent: agent,
+			Agent: agt,
 			Status: &agentpb.AgentStatus{
 				NSSinceLastHeartbeat: timeSinceLastHb.Nanoseconds(),
 				State:                state,
@@ -183,8 +185,8 @@ func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metada
 		return status.Error(codes.Internal, fmt.Sprintf("Failed to parse duration: %+v", err))
 	}
 
-	cursor := s.agentManager.NewAgentUpdateCursor()
-	defer s.agentManager.DeleteAgentUpdateCursor(cursor)
+	cursor := s.agtMgr.NewAgentUpdateCursor()
+	defer s.agtMgr.DeleteAgentUpdateCursor(cursor)
 
 	// This is a temporary hack. We're seeing a bug where the grpc streamServer is unable to
 	// detect that a stream has hit an HTTP2 timeout. This enforces that old, inactive
@@ -203,8 +205,8 @@ func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metada
 			return nil
 		}
 
-		updates, newComputedSchema, err := s.agentManager.GetAgentUpdates(cursor)
-		if err == errNoComputedSchemas {
+		updates, newComputedSchema, err := s.agtMgr.GetAgentUpdates(cursor)
+		if err == agent.ErrNoComputedSchemas {
 			// We need to wait until we have computed schemas
 			time.Sleep(agentUpdatePeriod)
 			continue
@@ -299,11 +301,11 @@ func (s *Server) RegisterTracepoint(ctx context.Context, req *metadatapb.Registe
 		if err != nil {
 			return nil, err
 		}
-		tracepointID, err := s.tracepointManager.CreateTracepoint(tp.Name, tp.TracepointDeployment, ttl)
-		if err != nil && err != ErrTracepointAlreadyExists {
+		tracepointID, err := s.tpMgr.CreateTracepoint(tp.Name, tp.TracepointDeployment, ttl)
+		if err != nil && err != tracepoint.ErrTracepointAlreadyExists {
 			return nil, err
 		}
-		if err == ErrTracepointAlreadyExists {
+		if err == tracepoint.ErrTracepointAlreadyExists {
 			responses[i] = &metadatapb.RegisterTracepointResponse_TracepointStatus{
 				ID: utils.ProtoFromUUID(*tracepointID),
 				Status: &statuspb.Status{
@@ -323,17 +325,17 @@ func (s *Server) RegisterTracepoint(ctx context.Context, req *metadatapb.Registe
 		}
 
 		// Get all agents currently running.
-		agents, err := s.agentManager.GetActiveAgents()
+		agents, err := s.agtMgr.GetActiveAgents()
 		if err != nil {
 			return nil, err
 		}
 		agentIDs := make([]uuid.UUID, len(agents))
-		for i, agent := range agents {
-			agentIDs[i] = utils.UUIDFromProtoOrNil(agent.Info.AgentID)
+		for i, agt := range agents {
+			agentIDs[i] = utils.UUIDFromProtoOrNil(agt.Info.AgentID)
 		}
 
 		// Register tracepoint on all agents.
-		err = s.tracepointManager.RegisterTracepoint(agentIDs, *tracepointID, tp.TracepointDeployment)
+		err = s.tpMgr.RegisterTracepoint(agentIDs, *tracepointID, tp.TracepointDeployment)
 		if err != nil {
 			return nil, err
 		}
@@ -359,9 +361,9 @@ func (s *Server) GetTracepointInfo(ctx context.Context, req *metadatapb.GetTrace
 			ids[i] = utils.UUIDFromProtoOrNil(id)
 		}
 
-		tracepointInfos, err = s.tracepointManager.GetTracepointsForIDs(ids)
+		tracepointInfos, err = s.tpMgr.GetTracepointsForIDs(ids)
 	} else {
-		tracepointInfos, err = s.tracepointManager.GetAllTracepoints()
+		tracepointInfos, err = s.tpMgr.GetAllTracepoints()
 	}
 
 	if err != nil {
@@ -370,8 +372,8 @@ func (s *Server) GetTracepointInfo(ctx context.Context, req *metadatapb.GetTrace
 
 	tracepointState := make([]*metadatapb.GetTracepointInfoResponse_TracepointState, len(tracepointInfos))
 
-	for i, tracepoint := range tracepointInfos {
-		if tracepoint == nil { // TracepointDeployment does not exist.
+	for i, tp := range tracepointInfos {
+		if tp == nil { // TracepointDeployment does not exist.
 			tracepointState[i] = &metadatapb.GetTracepointInfoResponse_TracepointState{
 				ID:    req.IDs[i],
 				State: statuspb.UNKNOWN_STATE,
@@ -381,26 +383,26 @@ func (s *Server) GetTracepointInfo(ctx context.Context, req *metadatapb.GetTrace
 			}
 			continue
 		}
-		tUUID := utils.UUIDFromProtoOrNil(tracepoint.ID)
+		tUUID := utils.UUIDFromProtoOrNil(tp.ID)
 
-		tracepointStates, err := s.tracepointManager.GetTracepointStates(tUUID)
+		tracepointStates, err := s.tpMgr.GetTracepointStates(tUUID)
 		if err != nil {
 			return nil, err
 		}
 
 		state, statuses := getTracepointStateFromAgentTracepointStates(tracepointStates)
 
-		schemas := make([]string, len(tracepoint.Tracepoint.Tracepoints))
-		for i, tracepoint := range tracepoint.Tracepoint.Tracepoints {
-			schemas[i] = tracepoint.TableName
+		schemas := make([]string, len(tp.Tracepoint.Tracepoints))
+		for i, t := range tp.Tracepoint.Tracepoints {
+			schemas[i] = t.TableName
 		}
 
 		tracepointState[i] = &metadatapb.GetTracepointInfoResponse_TracepointState{
-			ID:            tracepoint.ID,
+			ID:            tp.ID,
 			State:         state,
 			Statuses:      statuses,
-			Name:          tracepoint.Name,
-			ExpectedState: tracepoint.ExpectedState,
+			Name:          tp.Name,
+			ExpectedState: tp.ExpectedState,
 			SchemaNames:   schemas,
 		}
 	}
@@ -460,7 +462,7 @@ func getTracepointStateFromAgentTracepointStates(agentStates []*storepb.AgentTra
 
 // RemoveTracepoint is a request to evict the given tracepoint on all agents.
 func (s *Server) RemoveTracepoint(ctx context.Context, req *metadatapb.RemoveTracepointRequest) (*metadatapb.RemoveTracepointResponse, error) {
-	err := s.tracepointManager.RemoveTracepoints(req.Names)
+	err := s.tpMgr.RemoveTracepoints(req.Names)
 	if err != nil {
 		return nil, err
 	}
@@ -479,7 +481,7 @@ func (s *Server) UpdateConfig(ctx context.Context, req *metadatapb.UpdateConfigR
 		return nil, errors.New("Incorrectly formatted pod name. Must be of the form '<ns>/<podName>'")
 	}
 
-	err := s.agentManager.UpdateConfig(splitName[0], splitName[1], req.Key, req.Value)
+	err := s.agtMgr.UpdateConfig(splitName[0], splitName[1], req.Key, req.Value)
 	if err != nil {
 		return nil, err
 	}

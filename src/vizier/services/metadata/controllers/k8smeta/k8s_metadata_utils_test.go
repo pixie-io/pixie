@@ -1,4 +1,4 @@
-package controllers
+package k8smeta
 
 import (
 	"testing"

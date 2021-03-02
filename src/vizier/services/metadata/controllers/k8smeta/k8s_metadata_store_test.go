@@ -1,4 +1,4 @@
-package controllers
+package k8smeta
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/pebbledb"
 )
 
-func setupMDSTest(t *testing.T) (*pebbledb.DataStore, *MetadataDatastore, func() error) {
+func setupMDSTest(t *testing.T) (*pebbledb.DataStore, *Datastore, func() error) {
 	memFS := vfs.NewMem()
 	c, err := pebble.Open("test", &pebble.Options{
 		FS: memFS,
@@ -29,13 +29,13 @@ func setupMDSTest(t *testing.T) (*pebbledb.DataStore, *MetadataDatastore, func()
 	}
 
 	db := pebbledb.New(c, 3*time.Second)
-	ts := NewMetadataDatastore(db)
+	ts := NewDatastore(db)
 	cleanup := db.Close
 
 	return db, ts, cleanup
 }
 
-func TestMetadataDatastore_AddFullResourceUpdate(t *testing.T) {
+func TestDatastore_AddFullResourceUpdate(t *testing.T) {
 	db, mds, cleanup := setupMDSTest(t)
 	defer cleanup()
 
@@ -72,7 +72,7 @@ func TestMetadataDatastore_AddFullResourceUpdate(t *testing.T) {
 	assert.Equal(t, update, savedResourceUpdatePb)
 }
 
-func TestMetadataDatastore_FetchFullResourceUpdates(t *testing.T) {
+func TestDatastore_FetchFullResourceUpdates(t *testing.T) {
 	db, mds, cleanup := setupMDSTest(t)
 	defer cleanup()
 
@@ -134,7 +134,7 @@ func TestMetadataDatastore_FetchFullResourceUpdates(t *testing.T) {
 	assert.Equal(t, update2, updates[1])
 }
 
-func TestMetadataDatastore_AddResourceUpdateForTopic(t *testing.T) {
+func TestDatastore_AddResourceUpdateForTopic(t *testing.T) {
 	db, mds, cleanup := setupMDSTest(t)
 	defer cleanup()
 
@@ -163,7 +163,7 @@ func TestMetadataDatastore_AddResourceUpdateForTopic(t *testing.T) {
 	assert.Equal(t, update, savedResourceUpdatePb)
 }
 
-func TestMetadataDatastore_AddResourceUpdate(t *testing.T) {
+func TestDatastore_AddResourceUpdate(t *testing.T) {
 	db, mds, cleanup := setupMDSTest(t)
 	defer cleanup()
 
@@ -192,7 +192,7 @@ func TestMetadataDatastore_AddResourceUpdate(t *testing.T) {
 	assert.Equal(t, update, savedResourceUpdatePb)
 }
 
-func TestMetadataDatastore_FetchResourceUpdates(t *testing.T) {
+func TestDatastore_FetchResourceUpdates(t *testing.T) {
 	tests := []struct {
 		name                  string
 		from                  int
@@ -283,7 +283,7 @@ func TestMetadataDatastore_FetchResourceUpdates(t *testing.T) {
 	}
 }
 
-func TestMetadataDatastore_GetUpdateVersion(t *testing.T) {
+func TestDatastore_GetUpdateVersion(t *testing.T) {
 	db, mds, cleanup := setupMDSTest(t)
 	defer cleanup()
 
@@ -293,7 +293,7 @@ func TestMetadataDatastore_GetUpdateVersion(t *testing.T) {
 	assert.Equal(t, int64(57), version)
 }
 
-func TestMetadataDatastore_SetUpdateVersion(t *testing.T) {
+func TestDatastore_SetUpdateVersion(t *testing.T) {
 	db, mds, cleanup := setupMDSTest(t)
 	defer cleanup()
 

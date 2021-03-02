@@ -5,4 +5,5 @@ go_library(
     srcs = ["topic.go"],
     importpath = "pixielabs.ai/pixielabs/src/vizier/utils/messagebus",
     visibility = ["//visibility:public"],
+    deps = ["@com_github_satori_go_uuid//:go_default_library"],
 )

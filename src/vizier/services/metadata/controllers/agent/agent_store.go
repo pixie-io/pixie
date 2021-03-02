@@ -1,4 +1,4 @@
-package controllers
+package agent
 
 import (
 	"errors"
@@ -12,6 +12,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
+
 	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/shared/k8s"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
@@ -30,7 +31,8 @@ const (
 	computedSchemaKey   = "/computedSchema"
 )
 
-var errNoComputedSchemas = errors.New("Could not find any computed schemas")
+// ErrNoComputedSchemas is an error indicating the lack of computedSchemas.
+var ErrNoComputedSchemas = errors.New("Could not find any computed schemas")
 
 // HostnameIPPair is a unique identifies for a K8s node.
 type HostnameIPPair struct {
@@ -38,17 +40,17 @@ type HostnameIPPair struct {
 	IP       string
 }
 
-// AgentDatastore implements the AgentStore interface on a given Datastore.
-type AgentDatastore struct {
+// Datastore implements the Store interface on a given Datastore.
+type Datastore struct {
 	ds             datastore.MultiGetterSetterDeleterCloser
 	expiryDuration time.Duration
 
 	asidMu sync.Mutex
 }
 
-// NewAgentDatastore wraps the datastore in a Agentstore
-func NewAgentDatastore(ds datastore.MultiGetterSetterDeleterCloser, expiryDuration time.Duration) *AgentDatastore {
-	return &AgentDatastore{ds: ds, expiryDuration: expiryDuration}
+// NewDatastore wraps the datastore in a Store
+func NewDatastore(ds datastore.MultiGetterSetterDeleterCloser, expiryDuration time.Duration) *Datastore {
+	return &Datastore{ds: ds, expiryDuration: expiryDuration}
 }
 
 func getAgentKey(agentID uuid.UUID) string {
@@ -76,7 +78,7 @@ func getProcessKey(upid string) string {
 }
 
 // CreateAgent creates a new agent.
-func (a *AgentDatastore) CreateAgent(agentID uuid.UUID, agt *agentpb.Agent) error {
+func (a *Datastore) CreateAgent(agentID uuid.UUID, agt *agentpb.Agent) error {
 	i, err := agt.Marshal()
 	if err != nil {
 		return errors.New("Unable to marshal agent protobuf: " + err.Error())
@@ -104,7 +106,7 @@ func (a *AgentDatastore) CreateAgent(agentID uuid.UUID, agt *agentpb.Agent) erro
 }
 
 // GetAgent gets the agent info for the agent with the given id.
-func (a *AgentDatastore) GetAgent(agentID uuid.UUID) (*agentpb.Agent, error) {
+func (a *Datastore) GetAgent(agentID uuid.UUID) (*agentpb.Agent, error) {
 	resp, err := a.ds.Get(getAgentKey(agentID))
 	if err != nil {
 		return nil, err
@@ -121,7 +123,7 @@ func (a *AgentDatastore) GetAgent(agentID uuid.UUID) (*agentpb.Agent, error) {
 }
 
 // UpdateAgent updates the agent info for the agent with the given ID.
-func (a *AgentDatastore) UpdateAgent(agentID uuid.UUID, agt *agentpb.Agent) error {
+func (a *Datastore) UpdateAgent(agentID uuid.UUID, agt *agentpb.Agent) error {
 	i, err := agt.Marshal()
 	if err != nil {
 		return errors.New("Unable to marshal agent protobuf: " + err.Error())
@@ -131,7 +133,7 @@ func (a *AgentDatastore) UpdateAgent(agentID uuid.UUID, agt *agentpb.Agent) erro
 }
 
 // DeleteAgent deletes the agent with the given ID.
-func (a *AgentDatastore) DeleteAgent(agentID uuid.UUID) error {
+func (a *Datastore) DeleteAgent(agentID uuid.UUID) error {
 	resp, err := a.ds.Get(getAgentKey(agentID))
 	if err != nil {
 		return err
@@ -179,7 +181,7 @@ func (a *AgentDatastore) DeleteAgent(agentID uuid.UUID) error {
 }
 
 // GetAgents gets all of the current active agents.
-func (a *AgentDatastore) GetAgents() ([]*agentpb.Agent, error) {
+func (a *Datastore) GetAgents() ([]*agentpb.Agent, error) {
 	var agents []*agentpb.Agent
 
 	keys, vals, err := a.ds.GetWithPrefix(agentKeyPrefix)
@@ -205,7 +207,7 @@ func (a *AgentDatastore) GetAgents() ([]*agentpb.Agent, error) {
 }
 
 // GetASID gets the next assignable ASID.
-func (a *AgentDatastore) GetASID() (uint32, error) {
+func (a *Datastore) GetASID() (uint32, error) {
 	a.asidMu.Lock()
 	defer a.asidMu.Unlock()
 	asid := "1" // Starting ASID.
@@ -232,7 +234,7 @@ func (a *AgentDatastore) GetASID() (uint32, error) {
 }
 
 // GetAgentIDFromPodName gets the agent ID for the agent with the given name.
-func (a *AgentDatastore) GetAgentIDFromPodName(podName string) (string, error) {
+func (a *Datastore) GetAgentIDFromPodName(podName string) (string, error) {
 	id, err := a.ds.Get(getPodNameToAgentIDKey(podName))
 	if err != nil {
 		return "", err
@@ -246,7 +248,7 @@ func (a *AgentDatastore) GetAgentIDFromPodName(podName string) (string, error) {
 }
 
 // GetAgentsDataInfo returns all of the information about data tables that each agent has.
-func (a *AgentDatastore) GetAgentsDataInfo() (map[uuid.UUID]*messagespb.AgentDataInfo, error) {
+func (a *Datastore) GetAgentsDataInfo() (map[uuid.UUID]*messagespb.AgentDataInfo, error) {
 	dataInfos := make(map[uuid.UUID]*messagespb.AgentDataInfo)
 
 	keys, vals, err := a.ds.GetWithPrefix(agentDataInfoPrefix)
@@ -276,7 +278,7 @@ func (a *AgentDatastore) GetAgentsDataInfo() (map[uuid.UUID]*messagespb.AgentDat
 }
 
 // UpdateAgentDataInfo updates the information about data tables that a particular agent has.
-func (a *AgentDatastore) UpdateAgentDataInfo(agentID uuid.UUID, dataInfo *messagespb.AgentDataInfo) error {
+func (a *Datastore) UpdateAgentDataInfo(agentID uuid.UUID, dataInfo *messagespb.AgentDataInfo) error {
 	i, err := dataInfo.Marshal()
 	if err != nil {
 		return errors.New("Unable to marshal agent data info protobuf: " + err.Error())
@@ -286,13 +288,13 @@ func (a *AgentDatastore) UpdateAgentDataInfo(agentID uuid.UUID, dataInfo *messag
 }
 
 // GetComputedSchema returns the raw CombinedComputedSchema.
-func (a *AgentDatastore) GetComputedSchema() (*storepb.ComputedSchema, error) {
+func (a *Datastore) GetComputedSchema() (*storepb.ComputedSchema, error) {
 	cSchemas, err := a.ds.Get(computedSchemaKey)
 	if err != nil {
 		return nil, err
 	}
 	if cSchemas == nil {
-		return nil, errNoComputedSchemas
+		return nil, ErrNoComputedSchemas
 	}
 
 	computedSchemaPb := &storepb.ComputedSchema{}
@@ -330,7 +332,7 @@ func deleteAgentFromComputed(computedSchemaPb *storepb.ComputedSchema, tableName
 	if len(agents.AgentID) == 1 {
 		// A check to make sure the only element is the agent to delete. ideally would be a DCHECK.
 		if !agents.AgentID[0].Equal(agentIDPb) {
-			return fmt.Errorf("Agent marked for deletion not found in list of agents for %s", agentIDPb, tableName)
+			return fmt.Errorf("Agent %v marked for deletion not found in list of agents for %s", agentIDPb, tableName)
 		}
 		return deleteTableFromComputed(computedSchemaPb, tableName)
 	}
@@ -357,10 +359,10 @@ func deleteAgentFromComputed(computedSchemaPb *storepb.ComputedSchema, tableName
 }
 
 // UpdateSchemas updates the given schemas in the metadata store.
-func (a *AgentDatastore) UpdateSchemas(agentID uuid.UUID, schemas []*storepb.TableInfo) error {
+func (a *Datastore) UpdateSchemas(agentID uuid.UUID, schemas []*storepb.TableInfo) error {
 	computedSchemaPb, err := a.GetComputedSchema()
 	// If there are no computed schemas, that means we have yet to set one.
-	if err == errNoComputedSchemas {
+	if err == ErrNoComputedSchemas {
 		// Reset error as this is not actually an error.
 		err = nil
 	}
@@ -462,7 +464,7 @@ func (a *AgentDatastore) UpdateSchemas(agentID uuid.UUID, schemas []*storepb.Tab
 
 // PruneComputedSchema cleans any dead agents from the computed schema. This is a temporary fix, to address a larger
 // consistency and race-condition problem that will be addressed by the upcoming extensive refactor of the metadata service.
-func (a *AgentDatastore) PruneComputedSchema() error {
+func (a *Datastore) PruneComputedSchema() error {
 	// Fetch all existing agents.
 	agents, err := a.GetAgents()
 	if err != nil {
@@ -470,14 +472,14 @@ func (a *AgentDatastore) PruneComputedSchema() error {
 	}
 	// Make a map from the agent IDs.
 	existingAgents := make(map[uuid.UUID]bool)
-	for _, agent := range agents {
-		existingAgents[utils.UUIDFromProtoOrNil(agent.Info.AgentID)] = true
+	for _, agt := range agents {
+		existingAgents[utils.UUIDFromProtoOrNil(agt.Info.AgentID)] = true
 	}
 
 	// Fetch current computed schema.
 	computedSchemaPb, err := a.GetComputedSchema()
 	// If there are no computed schemas, that means we don't have to do anything.
-	if err == errNoComputedSchemas || computedSchemaPb == nil {
+	if err == ErrNoComputedSchemas || computedSchemaPb == nil {
 		return nil
 	}
 	if err != nil {
@@ -531,7 +533,7 @@ func (a *AgentDatastore) PruneComputedSchema() error {
 }
 
 // GetProcesses gets the process infos for the given process upids.
-func (a *AgentDatastore) GetProcesses(upids []*types.UInt128) ([]*metadatapb.ProcessInfo, error) {
+func (a *Datastore) GetProcesses(upids []*types.UInt128) ([]*metadatapb.ProcessInfo, error) {
 	processes := make([]*metadatapb.ProcessInfo, len(upids))
 
 	for i, upid := range upids {
@@ -556,7 +558,7 @@ func (a *AgentDatastore) GetProcesses(upids []*types.UInt128) ([]*metadatapb.Pro
 }
 
 // UpdateProcesses updates the given processes in the metadata store.
-func (a *AgentDatastore) UpdateProcesses(processes []*metadatapb.ProcessInfo) error {
+func (a *Datastore) UpdateProcesses(processes []*metadatapb.ProcessInfo) error {
 	for _, processPb := range processes {
 		process, err := processPb.Marshal()
 		if err != nil {
@@ -576,7 +578,7 @@ func (a *AgentDatastore) UpdateProcesses(processes []*metadatapb.ProcessInfo) er
 }
 
 // GetAgentIDForHostnamePair gets the agent for the given hostnamePair, if it exists.
-func (a *AgentDatastore) GetAgentIDForHostnamePair(hnPair *HostnameIPPair) (string, error) {
+func (a *Datastore) GetAgentIDForHostnamePair(hnPair *HostnameIPPair) (string, error) {
 	id, err := a.ds.Get(getHostnamePairAgentKey(hnPair))
 	if err != nil {
 		return "", err

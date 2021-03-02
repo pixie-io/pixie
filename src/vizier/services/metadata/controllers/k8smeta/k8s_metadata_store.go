@@ -1,4 +1,4 @@
-package controllers
+package k8smeta
 
 import (
 	"errors"
@@ -22,14 +22,14 @@ const (
 	unscopedTopic = "unscoped"
 )
 
-// MetadataDatastore implements the K8sMetadataStore interface on a given Datastore.
-type MetadataDatastore struct {
+// Datastore implements the Store interface on a given Datastore.
+type Datastore struct {
 	ds datastore.MultiGetterSetterDeleterCloser
 }
 
-// NewMetadataDatastore wraps the datastore in a metadata store.
-func NewMetadataDatastore(ds datastore.MultiGetterSetterDeleterCloser) *MetadataDatastore {
-	return &MetadataDatastore{ds}
+// NewDatastore wraps the datastore in a metadata store.
+func NewDatastore(ds datastore.MultiGetterSetterDeleterCloser) *Datastore {
+	return &Datastore{ds}
 }
 
 func getFullResourceUpdateKey(version int64) string {
@@ -53,7 +53,7 @@ func resourceUpdateKeyToUpdateVersion(key string) (int64, error) {
 }
 
 // AddResourceUpdateForTopic stores the given resource with its associated updateVersion for 24h.
-func (m *MetadataDatastore) AddResourceUpdateForTopic(updateVersion int64, topic string, resource *storepb.K8SResourceUpdate) error {
+func (m *Datastore) AddResourceUpdateForTopic(updateVersion int64, topic string, resource *storepb.K8SResourceUpdate) error {
 	val, err := resource.Marshal()
 	if err != nil {
 		return err
@@ -63,12 +63,12 @@ func (m *MetadataDatastore) AddResourceUpdateForTopic(updateVersion int64, topic
 }
 
 // AddResourceUpdate stores a resource update that is applicable to all topics.
-func (m *MetadataDatastore) AddResourceUpdate(updateVersion int64, resource *storepb.K8SResourceUpdate) error {
+func (m *Datastore) AddResourceUpdate(updateVersion int64, resource *storepb.K8SResourceUpdate) error {
 	return m.AddResourceUpdateForTopic(updateVersion, unscopedTopic, resource)
 }
 
 // AddFullResourceUpdate stores full resource update with the given update version.
-func (m *MetadataDatastore) AddFullResourceUpdate(updateVersion int64, resource *storepb.K8SResource) error {
+func (m *Datastore) AddFullResourceUpdate(updateVersion int64, resource *storepb.K8SResource) error {
 	val, err := resource.Marshal()
 	if err != nil {
 		return err
@@ -79,7 +79,7 @@ func (m *MetadataDatastore) AddFullResourceUpdate(updateVersion int64, resource 
 
 // FetchResourceUpdates gets the resource updates from the `from` update version, to the `to`
 // update version (exclusive).
-func (m *MetadataDatastore) FetchResourceUpdates(topic string, from int64, to int64) ([]*storepb.K8SResourceUpdate, error) {
+func (m *Datastore) FetchResourceUpdates(topic string, from int64, to int64) ([]*storepb.K8SResourceUpdate, error) {
 	// Fetch updates specific to the topic.
 	tKeys, tValues, err := m.ds.GetWithRange(getTopicResourceUpdateKey(topic, from), getTopicResourceUpdateKey(topic, to))
 	if err != nil {
@@ -150,7 +150,7 @@ func (m *MetadataDatastore) FetchResourceUpdates(topic string, from int64, to in
 
 // FetchFullResourceUpdates gets the full resource updates from the `from` update version, to the `to`
 // update version (exclusive).
-func (m *MetadataDatastore) FetchFullResourceUpdates(from int64, to int64) ([]*storepb.K8SResource, error) {
+func (m *Datastore) FetchFullResourceUpdates(from int64, to int64) ([]*storepb.K8SResource, error) {
 	// Fetch updates specific to the topic.
 	_, vals, err := m.ds.GetWithRange(getFullResourceUpdateKey(from), getFullResourceUpdateKey(to))
 	if err != nil {
@@ -171,7 +171,7 @@ func (m *MetadataDatastore) FetchFullResourceUpdates(from int64, to int64) ([]*s
 }
 
 // GetUpdateVersion gets the last update version sent on a topic.
-func (m *MetadataDatastore) GetUpdateVersion(topic string) (int64, error) {
+func (m *Datastore) GetUpdateVersion(topic string) (int64, error) {
 	val, err := m.ds.Get(getTopicVersionKey(topic))
 	if err != nil {
 		return 0, err
@@ -185,7 +185,7 @@ func (m *MetadataDatastore) GetUpdateVersion(topic string) (int64, error) {
 }
 
 // SetUpdateVersion sets the last update version sent on a topic.
-func (m *MetadataDatastore) SetUpdateVersion(topic string, uv int64) error {
+func (m *Datastore) SetUpdateVersion(topic string, uv int64) error {
 	s := strconv.FormatInt(uv, 10)
 
 	return m.ds.Set(getTopicVersionKey(topic), s)

@@ -1,4 +1,4 @@
-package controllers_test
+package k8smeta_test
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/k8smeta"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 )
@@ -183,14 +183,14 @@ func (s *InMemoryStore) SetUpdateVersion(topic string, uv int64) error {
 	return nil
 }
 
-func TestK8sMetadataHandler_GetUpdatesForIP(t *testing.T) {
+func TestHandler_GetUpdatesForIP(t *testing.T) {
 	mds := &InMemoryStore{
 		ResourceStoreByTopic: make(map[string]ResourceStore),
 		RVStore:              map[string]int64{},
 	}
 
 	// Populate resource store.
-	mds.RVStore[controllers.KelvinUpdateTopic] = 6
+	mds.RVStore[k8smeta.KelvinUpdateTopic] = 6
 
 	nsUpdate := &metadatapb.ResourceUpdate{
 		UpdateVersion: 2,
@@ -221,7 +221,7 @@ func TestK8sMetadataHandler_GetUpdatesForIP(t *testing.T) {
 			},
 		},
 	}
-	mds.AddResourceUpdateForTopic(4, controllers.KelvinUpdateTopic, &storepb.K8SResourceUpdate{
+	mds.AddResourceUpdateForTopic(4, k8smeta.KelvinUpdateTopic, &storepb.K8SResourceUpdate{
 		Update: svcUpdateKelvin,
 	})
 
@@ -269,7 +269,7 @@ func TestK8sMetadataHandler_GetUpdatesForIP(t *testing.T) {
 		Message:        "container state message",
 		Reason:         "container state reason",
 	}
-	mds.AddResourceUpdateForTopic(5, controllers.KelvinUpdateTopic, &storepb.K8SResourceUpdate{
+	mds.AddResourceUpdateForTopic(5, k8smeta.KelvinUpdateTopic, &storepb.K8SResourceUpdate{
 		Update: &metadatapb.ResourceUpdate{
 			UpdateVersion: 5,
 			Update: &metadatapb.ResourceUpdate_ContainerUpdate{
@@ -317,11 +317,11 @@ func TestK8sMetadataHandler_GetUpdatesForIP(t *testing.T) {
 			},
 		},
 	}
-	mds.AddResourceUpdateForTopic(6, controllers.KelvinUpdateTopic, pu)
+	mds.AddResourceUpdateForTopic(6, k8smeta.KelvinUpdateTopic, pu)
 	mds.AddResourceUpdateForTopic(6, "127.0.0.1", pu)
 
-	updateCh := make(chan *controllers.K8sResourceMessage)
-	mdh := controllers.NewK8sMetadataHandler(updateCh, mds, nil)
+	updateCh := make(chan *k8smeta.K8sResourceMessage)
+	mdh := k8smeta.NewHandler(updateCh, mds, nil)
 	defer mdh.Stop()
 	updates, err := mdh.GetUpdatesForIP("", 0, 0)
 	assert.Nil(t, err)
@@ -352,15 +352,15 @@ func TestK8sMetadataHandler_GetUpdatesForIP(t *testing.T) {
 	assert.Equal(t, nsUpdate, updates[0])
 }
 
-func TestK8sMetadataHandler_ProcessUpdates(t *testing.T) {
-	updateCh := make(chan *controllers.K8sResourceMessage)
+func TestHandler_ProcessUpdates(t *testing.T) {
+	updateCh := make(chan *k8smeta.K8sResourceMessage)
 
 	mds := &InMemoryStore{
 		ResourceStoreByTopic: make(map[string]ResourceStore),
 		RVStore:              map[string]int64{},
 		FullResourceStore:    make(map[int64]*storepb.K8SResource),
 	}
-	mds.RVStore[controllers.KelvinUpdateTopic] = 3
+	mds.RVStore[k8smeta.KelvinUpdateTopic] = 3
 
 	natsPort, natsCleanup := testingutils.StartNATS(t)
 	nc, err := nats.Connect(testingutils.GetNATSURL(natsPort))
@@ -369,7 +369,7 @@ func TestK8sMetadataHandler_ProcessUpdates(t *testing.T) {
 	}
 	defer natsCleanup()
 
-	mdh := controllers.NewK8sMetadataHandler(updateCh, mds, nc)
+	mdh := k8smeta.NewHandler(updateCh, mds, nc)
 	defer mdh.Stop()
 
 	expectedMsg := &messages.VizierMessage{
@@ -394,7 +394,7 @@ func TestK8sMetadataHandler_ProcessUpdates(t *testing.T) {
 	// We should expect a message to be sent out to the kelvin topic and 127.0.0.1
 	var wg sync.WaitGroup
 	wg.Add(1)
-	nc.Subscribe(fmt.Sprintf("%s/%s", controllers.K8sMetadataUpdateChannel, controllers.KelvinUpdateTopic), func(msg *nats.Msg) {
+	nc.Subscribe(fmt.Sprintf("%s/%s", k8smeta.K8sMetadataUpdateChannel, k8smeta.KelvinUpdateTopic), func(msg *nats.Msg) {
 		m := &messages.VizierMessage{}
 		err := proto.Unmarshal(msg.Data, m)
 		assert.Nil(t, err)
@@ -404,7 +404,7 @@ func TestK8sMetadataHandler_ProcessUpdates(t *testing.T) {
 		wg.Done()
 	})
 	wg.Add(1)
-	nc.Subscribe(fmt.Sprintf("%s/127.0.0.1", controllers.K8sMetadataUpdateChannel), func(msg *nats.Msg) {
+	nc.Subscribe(fmt.Sprintf("%s/127.0.0.1", k8smeta.K8sMetadataUpdateChannel), func(msg *nats.Msg) {
 		m := &messages.VizierMessage{}
 		err := proto.Unmarshal(msg.Data, m)
 		assert.Nil(t, err)
@@ -418,20 +418,20 @@ func TestK8sMetadataHandler_ProcessUpdates(t *testing.T) {
 	// This will increment the current resource version to 4, so the next update should have a resource version of 5.
 	node := createNodeObject()
 	node.GetNode().Metadata.DeletionTimestampNS = 0
-	updateCh <- &controllers.K8sResourceMessage{
+	updateCh <- &k8smeta.K8sResourceMessage{
 		Object:     node,
 		ObjectType: "nodes",
 	}
 
 	o := createNamespaceObject()
-	updateCh <- &controllers.K8sResourceMessage{
+	updateCh <- &k8smeta.K8sResourceMessage{
 		Object:     o,
 		ObjectType: "namespaces",
 	}
 
 	wg.Wait()
 
-	assert.Equal(t, int64(5), mds.RVStore[controllers.KelvinUpdateTopic])
+	assert.Equal(t, int64(5), mds.RVStore[k8smeta.KelvinUpdateTopic])
 
 	// Full resource updates should be stored.
 	assert.Equal(t, &storepb.K8SResource{
@@ -510,7 +510,7 @@ func TestEndpointsUpdateProcessor_SetDeleted(t *testing.T) {
 	// Construct endpoints object.
 	o := createEndpointsObject()
 
-	p := controllers.EndpointsUpdateProcessor{}
+	p := k8smeta.EndpointsUpdateProcessor{}
 	p.SetDeleted(o)
 	assert.Equal(t, int64(6), o.GetEndpoints().Metadata.DeletionTimestampNS)
 
@@ -523,10 +523,10 @@ func TestEndpointsUpdateProcessor_ValidateUpdate(t *testing.T) {
 	// Construct endpoints object.
 	o := createEndpointsObject()
 
-	state := &controllers.ProcessorState{
+	state := &k8smeta.ProcessorState{
 		LeaderMsgs: make(map[string]*metadatapb.Endpoints),
 	}
-	p := controllers.EndpointsUpdateProcessor{}
+	p := k8smeta.EndpointsUpdateProcessor{}
 	resp := p.ValidateUpdate(o, state)
 	assert.True(t, resp)
 
@@ -540,7 +540,7 @@ func TestEndpointsUpdateProcessor_GetStoredProtos(t *testing.T) {
 	// Construct endpoints object.
 	o := createEndpointsObject()
 
-	p := controllers.EndpointsUpdateProcessor{}
+	p := k8smeta.EndpointsUpdateProcessor{}
 
 	expectedPb := &metadatapb.Endpoints{}
 	if err := proto.UnmarshalText(testutils.EndpointsPb, expectedPb); err != nil {
@@ -574,8 +574,8 @@ func TestEndpointsUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 		},
 	})
 
-	storedProtos := []*controllers.StoredUpdate{
-		&controllers.StoredUpdate{
+	storedProtos := []*k8smeta.StoredUpdate{
+		&k8smeta.StoredUpdate{
 			Update: &storepb.K8SResource{
 				Resource: &storepb.K8SResource_Endpoints{
 					Endpoints: expectedPb,
@@ -585,18 +585,18 @@ func TestEndpointsUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 		},
 	}
 
-	state := &controllers.ProcessorState{
+	state := &k8smeta.ProcessorState{
 		PodToIP: map[string]string{
 			"pl/another-pod": "127.0.0.2",
 			"pl/pod-name":    "127.0.0.1",
 			"pl/other-pod":   "127.0.0.1",
 		},
 	}
-	p := controllers.EndpointsUpdateProcessor{}
+	p := k8smeta.EndpointsUpdateProcessor{}
 	updates := p.GetUpdatesToSend(storedProtos, state)
 	assert.Equal(t, 3, len(updates))
 
-	assert.Contains(t, updates, &controllers.OutgoingUpdate{
+	assert.Contains(t, updates, &k8smeta.OutgoingUpdate{
 		Update: &metadatapb.ResourceUpdate{
 			UpdateVersion: 2,
 			Update: &metadatapb.ResourceUpdate_ServiceUpdate{
@@ -614,7 +614,7 @@ func TestEndpointsUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 		Topics: []string{"127.0.0.1"},
 	})
 
-	assert.Contains(t, updates, &controllers.OutgoingUpdate{
+	assert.Contains(t, updates, &k8smeta.OutgoingUpdate{
 		Update: &metadatapb.ResourceUpdate{
 			UpdateVersion: 2,
 			Update: &metadatapb.ResourceUpdate_ServiceUpdate{
@@ -632,7 +632,7 @@ func TestEndpointsUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 		Topics: []string{"127.0.0.2"},
 	})
 
-	assert.Contains(t, updates, &controllers.OutgoingUpdate{
+	assert.Contains(t, updates, &k8smeta.OutgoingUpdate{
 		Update: &metadatapb.ResourceUpdate{
 			UpdateVersion: 2,
 			Update: &metadatapb.ResourceUpdate_ServiceUpdate{
@@ -647,7 +647,7 @@ func TestEndpointsUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 				},
 			},
 		},
-		Topics: []string{controllers.KelvinUpdateTopic},
+		Topics: []string{k8smeta.KelvinUpdateTopic},
 	})
 }
 
@@ -655,7 +655,7 @@ func TestServiceUpdateProcessor(t *testing.T) {
 	// Construct service object.
 	o := createServiceObject()
 
-	p := controllers.ServiceUpdateProcessor{}
+	p := k8smeta.ServiceUpdateProcessor{}
 	p.SetDeleted(o)
 	assert.Equal(t, int64(6), o.GetService().Metadata.DeletionTimestampNS)
 
@@ -668,8 +668,8 @@ func TestServiceUpdateProcessor_ValidateUpdate(t *testing.T) {
 	// Construct service object.
 	o := createServiceObject()
 
-	state := &controllers.ProcessorState{}
-	p := controllers.ServiceUpdateProcessor{}
+	state := &k8smeta.ProcessorState{}
+	p := k8smeta.ServiceUpdateProcessor{}
 	resp := p.ValidateUpdate(o, state)
 	assert.True(t, resp)
 }
@@ -679,8 +679,8 @@ func TestServiceUpdateProcessor_ServiceCIDRs(t *testing.T) {
 	o := createServiceObject()
 	o.GetService().Spec.ClusterIP = "10.64.3.1"
 
-	state := &controllers.ProcessorState{}
-	p := controllers.ServiceUpdateProcessor{}
+	state := &k8smeta.ProcessorState{}
+	p := k8smeta.ServiceUpdateProcessor{}
 	resp := p.ValidateUpdate(o, state)
 	assert.True(t, resp)
 	assert.Equal(t, "10.64.3.1/32", state.ServiceCIDR.String())
@@ -714,7 +714,7 @@ func TestServiceUpdateProcessor_GetStoredProtos(t *testing.T) {
 	// Construct service object.
 	o := createServiceObject()
 
-	p := controllers.ServiceUpdateProcessor{}
+	p := k8smeta.ServiceUpdateProcessor{}
 
 	expectedPb := &metadatapb.Service{}
 	if err := proto.UnmarshalText(testutils.ServicePb, expectedPb); err != nil {
@@ -739,8 +739,8 @@ func TestServiceUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	storedProtos := []*controllers.StoredUpdate{
-		&controllers.StoredUpdate{
+	storedProtos := []*k8smeta.StoredUpdate{
+		&k8smeta.StoredUpdate{
 			Update: &storepb.K8SResource{
 				Resource: &storepb.K8SResource_Service{
 					Service: expectedPb,
@@ -750,8 +750,8 @@ func TestServiceUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 		},
 	}
 
-	state := &controllers.ProcessorState{}
-	p := controllers.ServiceUpdateProcessor{}
+	state := &k8smeta.ProcessorState{}
+	p := k8smeta.ServiceUpdateProcessor{}
 	updates := p.GetUpdatesToSend(storedProtos, state)
 	assert.Equal(t, 0, len(updates))
 }
@@ -760,7 +760,7 @@ func TestPodUpdateProcessor_SetDeleted(t *testing.T) {
 	// Construct pod object.
 	o := createPodObject()
 
-	p := controllers.PodUpdateProcessor{}
+	p := k8smeta.PodUpdateProcessor{}
 	p.SetDeleted(o)
 	assert.Equal(t, int64(6), o.GetPod().Metadata.DeletionTimestampNS)
 
@@ -777,8 +777,8 @@ func TestPodUpdateProcessor_ValidateUpdate(t *testing.T) {
 	o := createPodObject()
 	o.GetPod().Status.PodIP = "127.0.0.1"
 
-	state := &controllers.ProcessorState{PodToIP: make(map[string]string)}
-	p := controllers.PodUpdateProcessor{}
+	state := &k8smeta.ProcessorState{PodToIP: make(map[string]string)}
+	p := k8smeta.PodUpdateProcessor{}
 	resp := p.ValidateUpdate(o, state)
 	assert.True(t, resp)
 
@@ -798,7 +798,7 @@ func TestPodUpdateProcessor_GetStoredProtos(t *testing.T) {
 	// Construct pod object.
 	o := createPodObject()
 
-	p := controllers.PodUpdateProcessor{}
+	p := k8smeta.PodUpdateProcessor{}
 
 	expectedPb := &metadatapb.Pod{}
 	if err := proto.UnmarshalText(testutils.PodPbWithContainers, expectedPb); err != nil {
@@ -846,8 +846,8 @@ func TestPodUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 		Message:        "container state message",
 		Reason:         "container state reason",
 	}
-	storedProtos := []*controllers.StoredUpdate{
-		&controllers.StoredUpdate{
+	storedProtos := []*k8smeta.StoredUpdate{
+		&k8smeta.StoredUpdate{
 			Update: &storepb.K8SResource{
 				Resource: &storepb.K8SResource_Container{
 					Container: containerUpdate,
@@ -855,7 +855,7 @@ func TestPodUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 			},
 			UpdateVersion: 2,
 		},
-		&controllers.StoredUpdate{
+		&k8smeta.StoredUpdate{
 			Update: &storepb.K8SResource{
 				Resource: &storepb.K8SResource_Pod{
 					Pod: podUpdate,
@@ -865,23 +865,23 @@ func TestPodUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 		},
 	}
 
-	state := &controllers.ProcessorState{}
-	p := controllers.PodUpdateProcessor{}
+	state := &k8smeta.ProcessorState{}
+	p := k8smeta.PodUpdateProcessor{}
 	updates := p.GetUpdatesToSend(storedProtos, state)
 	assert.Equal(t, 2, len(updates))
 
-	cu := &controllers.OutgoingUpdate{
+	cu := &k8smeta.OutgoingUpdate{
 		Update: &metadatapb.ResourceUpdate{
 			UpdateVersion: 2,
 			Update: &metadatapb.ResourceUpdate_ContainerUpdate{
 				ContainerUpdate: containerUpdate,
 			},
 		},
-		Topics: []string{controllers.KelvinUpdateTopic, "127.0.0.5"},
+		Topics: []string{k8smeta.KelvinUpdateTopic, "127.0.0.5"},
 	}
 	assert.Contains(t, updates, cu)
 
-	pu := &controllers.OutgoingUpdate{
+	pu := &k8smeta.OutgoingUpdate{
 		Update: &metadatapb.ResourceUpdate{
 			UpdateVersion: 3,
 			Update: &metadatapb.ResourceUpdate_PodUpdate{
@@ -910,7 +910,7 @@ func TestPodUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 				},
 			},
 		},
-		Topics: []string{controllers.KelvinUpdateTopic, "127.0.0.5"},
+		Topics: []string{k8smeta.KelvinUpdateTopic, "127.0.0.5"},
 	}
 	assert.Contains(t, updates, pu)
 }
@@ -919,7 +919,7 @@ func TestNodeUpdateProcessor_SetDeleted(t *testing.T) {
 	// Construct pod object.
 	o := createNodeObject()
 
-	p := controllers.NodeUpdateProcessor{}
+	p := k8smeta.NodeUpdateProcessor{}
 	p.SetDeleted(o)
 	assert.Equal(t, int64(6), o.GetNode().Metadata.DeletionTimestampNS)
 
@@ -932,8 +932,8 @@ func TestNodeUpdateProcessor_ValidateUpdate(t *testing.T) {
 	// Construct node object.
 	o := createNodeObject()
 
-	state := &controllers.ProcessorState{NodeToIP: make(map[string]string)}
-	p := controllers.NodeUpdateProcessor{}
+	state := &k8smeta.ProcessorState{NodeToIP: make(map[string]string)}
+	p := k8smeta.NodeUpdateProcessor{}
 	resp := p.ValidateUpdate(o, state)
 	assert.True(t, resp)
 	assert.Equal(t, 0, len(state.NodeToIP))
@@ -949,7 +949,7 @@ func TestNodeUpdateProcessor_GetStoredProtos(t *testing.T) {
 	// Construct node object.
 	o := createNodeObject()
 
-	p := controllers.NodeUpdateProcessor{}
+	p := k8smeta.NodeUpdateProcessor{}
 	// Check that the generated store proto matches expected.
 	updates := p.GetStoredProtos(o)
 	assert.Equal(t, 1, len(updates))
@@ -991,8 +991,8 @@ func TestNodeUpdateProcessor_GetStoredProtos(t *testing.T) {
 
 func TestNodeUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 	// Construct node object.
-	storedProtos := []*controllers.StoredUpdate{
-		&controllers.StoredUpdate{
+	storedProtos := []*k8smeta.StoredUpdate{
+		&k8smeta.StoredUpdate{
 			Update: &storepb.K8SResource{
 				Resource: &storepb.K8SResource_Node{
 					Node: &metadatapb.Node{
@@ -1030,8 +1030,8 @@ func TestNodeUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 		},
 	}
 
-	state := &controllers.ProcessorState{}
-	p := controllers.NodeUpdateProcessor{}
+	state := &k8smeta.ProcessorState{}
+	p := k8smeta.NodeUpdateProcessor{}
 	updates := p.GetUpdatesToSend(storedProtos, state)
 	assert.Equal(t, 0, len(updates))
 }
@@ -1040,7 +1040,7 @@ func TestNamespaceUpdateProcessor_SetDeleted(t *testing.T) {
 	// Construct namespace object.
 	o := createNamespaceObject()
 
-	p := controllers.NamespaceUpdateProcessor{}
+	p := k8smeta.NamespaceUpdateProcessor{}
 	p.SetDeleted(o)
 	assert.Equal(t, int64(6), o.GetNamespace().Metadata.DeletionTimestampNS)
 
@@ -1053,8 +1053,8 @@ func TestNamespaceUpdateProcessor_ValidateUpdate(t *testing.T) {
 	// Construct namespace object.
 	o := createNamespaceObject()
 
-	state := &controllers.ProcessorState{}
-	p := controllers.NamespaceUpdateProcessor{}
+	state := &k8smeta.ProcessorState{}
+	p := k8smeta.NamespaceUpdateProcessor{}
 	resp := p.ValidateUpdate(o, state)
 	assert.True(t, resp)
 }
@@ -1063,7 +1063,7 @@ func TestNamespaceUpdateProcessor_GetStoredProtos(t *testing.T) {
 	// Construct namespace object.
 	o := createNamespaceObject()
 
-	p := controllers.NamespaceUpdateProcessor{}
+	p := k8smeta.NamespaceUpdateProcessor{}
 
 	// Check that the generated store proto matches expected.
 	updates := p.GetStoredProtos(o)
@@ -1099,8 +1099,8 @@ func TestNamespaceUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	storedProtos := []*controllers.StoredUpdate{
-		&controllers.StoredUpdate{
+	storedProtos := []*k8smeta.StoredUpdate{
+		&k8smeta.StoredUpdate{
 			Update: &storepb.K8SResource{
 				Resource: &storepb.K8SResource_Namespace{
 					Namespace: &metadatapb.Namespace{
@@ -1126,15 +1126,15 @@ func TestNamespaceUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 		},
 	}
 
-	state := &controllers.ProcessorState{NodeToIP: map[string]string{
+	state := &k8smeta.ProcessorState{NodeToIP: map[string]string{
 		"node-1": "127.0.0.1",
 		"node-2": "127.0.0.2",
 	}}
-	p := controllers.NamespaceUpdateProcessor{}
+	p := k8smeta.NamespaceUpdateProcessor{}
 	updates := p.GetUpdatesToSend(storedProtos, state)
 	assert.Equal(t, 1, len(updates))
 
-	nsUpdate := &controllers.OutgoingUpdate{
+	nsUpdate := &k8smeta.OutgoingUpdate{
 		Update: &metadatapb.ResourceUpdate{
 			UpdateVersion: 2,
 			Update: &metadatapb.ResourceUpdate_NamespaceUpdate{
@@ -1146,10 +1146,10 @@ func TestNamespaceUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 				},
 			},
 		},
-		Topics: []string{controllers.KelvinUpdateTopic, "127.0.0.1", "127.0.0.2"},
+		Topics: []string{k8smeta.KelvinUpdateTopic, "127.0.0.1", "127.0.0.2"},
 	}
 	assert.Equal(t, nsUpdate.Update, updates[0].Update)
-	assert.Contains(t, updates[0].Topics, controllers.KelvinUpdateTopic)
+	assert.Contains(t, updates[0].Topics, k8smeta.KelvinUpdateTopic)
 	assert.Contains(t, updates[0].Topics, "127.0.0.1")
 	assert.Contains(t, updates[0].Topics, "127.0.0.2")
 }

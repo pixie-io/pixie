@@ -3,7 +3,13 @@ package controllers
 import (
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
+
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/k8smeta"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint"
 )
+
+const updateAgentTopic = "UpdateAgent"
 
 // TopicListener handles NATS messages for a specific topic.
 type TopicListener interface {
@@ -27,8 +33,8 @@ type MessageBusController struct {
 }
 
 // NewMessageBusController creates a new controller for handling NATS messages.
-func NewMessageBusController(conn *nats.Conn, agentManager AgentManager,
-	tracepointManager *TracepointManager, newMdHandler *K8sMetadataHandler,
+func NewMessageBusController(conn *nats.Conn, agtMgr agent.Manager,
+	tpMgr *tracepoint.Manager, k8smetaHandler *k8smeta.Handler,
 	isLeader *bool) (*MessageBusController, error) {
 	ch := make(chan *nats.Msg, 8192)
 	listeners := make(map[string]TopicListener)
@@ -42,7 +48,7 @@ func NewMessageBusController(conn *nats.Conn, agentManager AgentManager,
 		subscriptions: subscriptions,
 	}
 
-	mc.registerListeners(agentManager, tracepointManager, newMdHandler)
+	mc.registerListeners(agtMgr, tpMgr, k8smetaHandler)
 
 	// Start listening to messages.
 	go mc.handleMessages()
@@ -59,7 +65,7 @@ func (mc *MessageBusController) handleMessages() {
 
 		if !mc.wasLeader && *mc.isLeader {
 			// Gained leadership!
-			mc.listeners[UpdateAgentTopic].Initialize()
+			mc.listeners[updateAgentTopic].Initialize()
 		}
 
 		mc.wasLeader = *mc.isLeader
@@ -79,27 +85,27 @@ func (mc *MessageBusController) handleMessages() {
 	}
 }
 
-func (mc *MessageBusController) registerListeners(agentManager AgentManager, tracepointManager *TracepointManager, newMdHandler *K8sMetadataHandler) error {
+func (mc *MessageBusController) registerListeners(agtMgr agent.Manager, tpMgr *tracepoint.Manager, k8smetaHandler *k8smeta.Handler) error {
 	// Register AgentTopicListener.
-	atl, err := NewAgentTopicListener(agentManager, tracepointManager, mc.sendMessage)
+	atl, err := NewAgentTopicListener(agtMgr, tpMgr, mc.sendMessage)
 	if err != nil {
 		return err
 	}
-	err = mc.registerListener(UpdateAgentTopic, atl)
+	err = mc.registerListener(updateAgentTopic, atl)
 	if err != nil {
 		return err
 	}
 
 	// Register MetadataTopicListener.
-	ml, err := NewMetadataTopicListener(newMdHandler, mc.sendMessage)
+	ml, err := k8smeta.NewMetadataTopicListener(k8smetaHandler, mc.sendMessage)
 	if err != nil {
 		return err
 	}
-	err = mc.registerListener(MetadataRequestSubscribeTopic, ml)
+	err = mc.registerListener(k8smeta.MetadataRequestSubscribeTopic, ml)
 	if err != nil {
 		return err
 	}
-	err = mc.registerListener(MissingMetadataRequestTopic, ml)
+	err = mc.registerListener(k8smeta.MissingMetadataRequestTopic, ml)
 	if err != nil {
 		return err
 	}

@@ -1,4 +1,4 @@
-package controllers
+package tracepoint
 
 import (
 	"os"
@@ -18,7 +18,7 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/pebbledb"
 )
 
-func setupTest(t *testing.T) (*pebbledb.DataStore, *TracepointDatastore, func() error) {
+func setupTest(t *testing.T) (*pebbledb.DataStore, *Datastore, func() error) {
 	memFS := vfs.NewMem()
 	c, err := pebble.Open("test", &pebble.Options{
 		FS: memFS,
@@ -29,7 +29,7 @@ func setupTest(t *testing.T) (*pebbledb.DataStore, *TracepointDatastore, func() 
 	}
 
 	db := pebbledb.New(c, 3*time.Second)
-	ts := NewTracepointDatastore(db)
+	ts := NewDatastore(db)
 	cleanup := db.Close
 
 	return db, ts, cleanup

@@ -1,8 +1,9 @@
-package controllers
+package k8smeta
 
 import (
 	"fmt"
 	"net"
+	"path"
 	"reflect"
 	"strings"
 	"sync"
@@ -27,6 +28,14 @@ const KelvinUpdateTopic = "all"
 
 // K8sMetadataUpdateChannel is the channel where metadata updates are sent.
 const K8sMetadataUpdateChannel = "K8sUpdates"
+
+// getK8sUpdateChannel returns the channel for sending updates.
+func getK8sUpdateChannel(topic string) string {
+	if topic == "" {
+		topic = KelvinUpdateTopic
+	}
+	return path.Join(K8sMetadataUpdateChannel, topic)
+}
 
 // MetadataUpdatesTopic is the channel which the listener publishes metadata updates to.
 var MetadataUpdatesTopic = messagebus.V2CTopic("DurableMetadataUpdates")
@@ -55,8 +64,8 @@ type StoredUpdate struct {
 	UpdateVersion int64
 }
 
-// K8sMetadataStore handles storing and fetching any data related to K8s resources.
-type K8sMetadataStore interface {
+// Store handles storing and fetching any data related to K8s resources.
+type Store interface {
 	// AddResourceUpdateForTopic stores the given resource with its associated updateVersion for 24h.
 	AddResourceUpdateForTopic(updateVersion int64, topic string, resource *storepb.K8SResourceUpdate) error
 	// AddResourceUpdate stores a resource update that is applicable to all topics.
@@ -107,13 +116,13 @@ type ProcessorState struct {
 	PodToIP map[string]string
 }
 
-// K8sMetadataHandler handles any incoming k8s updates. It saves the update to the store for persistence, and
+// Handler handles any incoming k8s updates. It saves the update to the store for persistence, and
 // also sends the update to the relevant IP channel.
-type K8sMetadataHandler struct {
+type Handler struct {
 	// The channel in which incoming k8s updates are sent to.
 	updateCh <-chan *K8sResourceMessage
 	// The store where k8s resources are stored.
-	mds K8sMetadataStore
+	mds Store
 	// The NATS connection on which to send messages on.
 	conn *nats.Conn
 	// Done channel, to stop processing metadata updates.
@@ -126,13 +135,13 @@ type K8sMetadataHandler struct {
 	once  sync.Once
 }
 
-// NewK8sMetadataHandler creates a new K8sMetadataHandler.
-func NewK8sMetadataHandler(updateCh <-chan *K8sResourceMessage, mds K8sMetadataStore, conn *nats.Conn) *K8sMetadataHandler {
+// NewHandler creates a new Handler.
+func NewHandler(updateCh <-chan *K8sResourceMessage, mds Store, conn *nats.Conn) *Handler {
 	done := make(chan struct{})
 	leaderMsgs := make(map[string]*metadatapb.Endpoints)
 	handlerMap := make(map[string]UpdateProcessor)
 	state := ProcessorState{LeaderMsgs: leaderMsgs, PodCIDRs: make([]string, 0), NodeToIP: make(map[string]string), PodToIP: make(map[string]string)}
-	mh := &K8sMetadataHandler{updateCh: updateCh, mds: mds, conn: conn, done: done, processHandlerMap: handlerMap, state: state}
+	mh := &Handler{updateCh: updateCh, mds: mds, conn: conn, done: done, processHandlerMap: handlerMap, state: state}
 
 	// Register update processors.
 	mh.processHandlerMap["endpoints"] = &EndpointsUpdateProcessor{}
@@ -145,7 +154,7 @@ func NewK8sMetadataHandler(updateCh <-chan *K8sResourceMessage, mds K8sMetadataS
 	return mh
 }
 
-func (m *K8sMetadataHandler) mustGetCurrentUpdateVersion() int64 {
+func (m *Handler) mustGetCurrentUpdateVersion() int64 {
 	// Get the current update version. We can't send any updates until we have the current update version,
 	// so should keep retrying with an exponential backoff.
 	var currRV int64
@@ -166,7 +175,7 @@ func (m *K8sMetadataHandler) mustGetCurrentUpdateVersion() int64 {
 	return currRV
 }
 
-func (m *K8sMetadataHandler) processUpdates() {
+func (m *Handler) processUpdates() {
 	currUV := m.mustGetCurrentUpdateVersion()
 	for {
 		select {
@@ -263,14 +272,7 @@ func (m *K8sMetadataHandler) processUpdates() {
 	}
 }
 
-func getK8sUpdateChannel(topic string) string {
-	if topic == "" {
-		topic = KelvinUpdateTopic
-	}
-	return fmt.Sprintf("%s/%s", K8sMetadataUpdateChannel, topic)
-}
-
-func (m *K8sMetadataHandler) sendUpdate(update *metadatapb.ResourceUpdate, topic string) error {
+func (m *Handler) sendUpdate(update *metadatapb.ResourceUpdate, topic string) error {
 	channel := getK8sUpdateChannel(topic)
 
 	msg := &messages.VizierMessage{
@@ -319,7 +321,7 @@ func (m *K8sMetadataHandler) sendUpdate(update *metadatapb.ResourceUpdate, topic
 }
 
 // GetUpdatesForIP gets all known resource updates for the IP in the given range.
-func (m *K8sMetadataHandler) GetUpdatesForIP(ip string, from int64, to int64) ([]*metadatapb.ResourceUpdate, error) {
+func (m *Handler) GetUpdatesForIP(ip string, from int64, to int64) ([]*metadatapb.ResourceUpdate, error) {
 	if ip == "" { // If no IP is specified, caller is asking for all updates.
 		ip = KelvinUpdateTopic
 	}
@@ -352,7 +354,7 @@ func (m *K8sMetadataHandler) GetUpdatesForIP(ip string, from int64, to int64) ([
 }
 
 // GetServiceCIDR returns the service CIDR for the current cluster.
-func (m *K8sMetadataHandler) GetServiceCIDR() string {
+func (m *Handler) GetServiceCIDR() string {
 	if m.state.ServiceCIDR != nil {
 		return m.state.ServiceCIDR.String()
 	}
@@ -360,7 +362,7 @@ func (m *K8sMetadataHandler) GetServiceCIDR() string {
 }
 
 // GetPodCIDRs returns the PodCIDRs for the cluster.
-func (m *K8sMetadataHandler) GetPodCIDRs() []string {
+func (m *Handler) GetPodCIDRs() []string {
 	return m.state.PodCIDRs
 }
 
@@ -885,7 +887,7 @@ func getResourceUpdateFromPod(pod *metadatapb.Pod, uv int64) *metadatapb.Resourc
 }
 
 // Stop stops processing incoming k8s metadata updates.
-func (m *K8sMetadataHandler) Stop() {
+func (m *Handler) Stop() {
 	m.once.Do(func() {
 		close(m.done)
 	})

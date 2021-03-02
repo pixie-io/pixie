@@ -2,17 +2,14 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "go_default_library",
-    srcs = [
-        "mock_agent.gen.go",
-        "mock_tracepoint.gen.go",
-    ],
-    importpath = "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock",
+    srcs = ["mock_agent.gen.go"],
+    importpath = "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent/mock",
     visibility = ["//visibility:public"],
     deps = [
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
         "//src/shared/types/go:go_default_library",
         "//src/vizier/messages/messagespb:messages_pl_go_proto",
-        "//src/vizier/services/metadata/controllers:go_default_library",
+        "//src/vizier/services/metadata/controllers/agent:go_default_library",
         "//src/vizier/services/metadata/metadatapb:service_pl_go_proto",
         "//src/vizier/services/metadata/storepb:store_pl_go_proto",
         "//src/vizier/services/shared/agentpb:agent_pl_go_proto",

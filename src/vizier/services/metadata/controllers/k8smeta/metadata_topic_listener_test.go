@@ -1,4 +1,4 @@
-package controllers
+package k8smeta
 
 import (
 	"math"
@@ -95,7 +95,7 @@ func TestMetadataTopicListener_GetUpdatesInBatches(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mds := &FakeStore{}
 			updateCh := make(chan *K8sResourceMessage)
-			mdh := NewK8sMetadataHandler(updateCh, mds, nil)
+			mdh := NewHandler(updateCh, mds, nil)
 			mdTL, err := NewMetadataTopicListener(mdh, func(topic string, b []byte) error {
 				return nil
 			})
@@ -134,7 +134,7 @@ func TestMetadataTopicListener_GetUpdatesInBatches(t *testing.T) {
 func TestMetadataTopicListener_ProcessAgentMessage(t *testing.T) {
 	mds := &FakeStore{}
 	updateCh := make(chan *K8sResourceMessage)
-	mdh := NewK8sMetadataHandler(updateCh, mds, nil)
+	mdh := NewHandler(updateCh, mds, nil)
 
 	sentUpdates := make([]*messages.VizierMessage, 0)
 	mdTL, err := NewMetadataTopicListener(mdh, func(topic string, b []byte) error {

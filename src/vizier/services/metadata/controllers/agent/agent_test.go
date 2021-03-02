@@ -1,4 +1,4 @@
-package controllers_test
+package agent_test
 
 import (
 	"os"
@@ -22,14 +22,14 @@ import (
 	utils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/pebbledb"
 )
 
-func setupAgentManager(t *testing.T) (controllers.AgentStore, controllers.AgentManager, *nats.Conn, func()) {
+func setupManager(t *testing.T) (agent.Store, agent.Manager, *nats.Conn, func()) {
 	// Setup NATS.
 	natsPort, natsCleanup := testingutils.StartNATS(t)
 	nc, err := nats.Connect(testingutils.GetNATSURL(natsPort))
@@ -47,7 +47,7 @@ func setupAgentManager(t *testing.T) (controllers.AgentStore, controllers.AgentM
 	}
 
 	db := pebbledb.New(c, 3*time.Second)
-	ads := controllers.NewAgentDatastore(db, 1*time.Minute)
+	ads := agent.NewDatastore(db, 1*time.Minute)
 
 	cleanupFn := func() {
 		natsCleanup()
@@ -59,12 +59,12 @@ func setupAgentManager(t *testing.T) (controllers.AgentStore, controllers.AgentM
 	createAgentInADS(t, testutils.UnhealthyKelvinAgentUUID, ads, testutils.UnhealthyKelvinAgentInfo)
 
 	clock := testingutils.NewTestClock(time.Unix(0, testutils.ClockNowNS))
-	agtMgr := controllers.NewAgentManagerWithClock(ads, nil, nc, clock)
+	agtMgr := agent.NewManagerWithClock(ads, nil, nc, clock)
 
 	return ads, agtMgr, nc, cleanupFn
 }
 
-func createAgentInADS(t *testing.T, agentID string, ads controllers.AgentStore, agentPb string) {
+func createAgentInADS(t *testing.T, agentID string, ads agent.Store, agentPb string) {
 	info := new(agentpb.Agent)
 	if err := proto.UnmarshalText(agentPb, info); err != nil {
 		t.Fatalf("Cannot Unmarshal protobuf for %s", agentID)
@@ -87,7 +87,7 @@ func createAgentInADS(t *testing.T, agentID string, ads controllers.AgentStore, 
 }
 
 func TestRegisterAgent(t *testing.T) {
-	ads, agtMgr, _, cleanup := setupAgentManager(t)
+	ads, agtMgr, _, cleanup := setupManager(t)
 	defer cleanup()
 
 	u, err := uuid.FromString(testutils.NewAgentUUID)
@@ -116,25 +116,25 @@ func TestRegisterAgent(t *testing.T) {
 	assert.Equal(t, uint32(1), id)
 
 	// Check that agent exists now.
-	agent, err := ads.GetAgent(u)
+	agt, err := ads.GetAgent(u)
 	assert.Nil(t, err)
-	assert.NotNil(t, agent)
+	assert.NotNil(t, agt)
 
-	assert.Equal(t, int64(testutils.ClockNowNS), agent.LastHeartbeatNS)
-	assert.Equal(t, int64(testutils.ClockNowNS), agent.CreateTimeNS)
-	uid, err := utils.UUIDFromProto(agent.Info.AgentID)
+	assert.Equal(t, int64(testutils.ClockNowNS), agt.LastHeartbeatNS)
+	assert.Equal(t, int64(testutils.ClockNowNS), agt.CreateTimeNS)
+	uid, err := utils.UUIDFromProto(agt.Info.AgentID)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, testutils.NewAgentUUID, uid.String())
-	assert.Equal(t, "localhost", agent.Info.HostInfo.Hostname)
-	assert.Equal(t, uint32(1), agent.ASID)
+	assert.Equal(t, "localhost", agt.Info.HostInfo.Hostname)
+	assert.Equal(t, uint32(1), agt.ASID)
 
-	hostnameID, err := ads.GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"", "127.0.0.4"})
+	hostnameID, err := ads.GetAgentIDForHostnamePair(&agent.HostnameIPPair{"", "127.0.0.4"})
 	assert.Nil(t, err)
 	assert.Equal(t, testutils.NewAgentUUID, hostnameID)
 }
 
 func TestRegisterKelvinAgent(t *testing.T) {
-	ads, agtMgr, _, cleanup := setupAgentManager(t)
+	ads, agtMgr, _, cleanup := setupManager(t)
 	defer cleanup()
 
 	u, err := uuid.FromString(testutils.KelvinAgentUUID)
@@ -163,25 +163,25 @@ func TestRegisterKelvinAgent(t *testing.T) {
 	assert.Equal(t, uint32(1), id)
 
 	// Check that agent exists now.
-	agent, err := ads.GetAgent(u)
+	agt, err := ads.GetAgent(u)
 	assert.Nil(t, err)
-	assert.NotNil(t, agent)
+	assert.NotNil(t, agt)
 
-	assert.Equal(t, int64(testutils.ClockNowNS), agent.LastHeartbeatNS)
-	assert.Equal(t, int64(testutils.ClockNowNS), agent.CreateTimeNS)
-	uid, err := utils.UUIDFromProto(agent.Info.AgentID)
+	assert.Equal(t, int64(testutils.ClockNowNS), agt.LastHeartbeatNS)
+	assert.Equal(t, int64(testutils.ClockNowNS), agt.CreateTimeNS)
+	uid, err := utils.UUIDFromProto(agt.Info.AgentID)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, testutils.KelvinAgentUUID, uid.String())
-	assert.Equal(t, "test", agent.Info.HostInfo.Hostname)
-	assert.Equal(t, uint32(1), agent.ASID)
+	assert.Equal(t, "test", agt.Info.HostInfo.Hostname)
+	assert.Equal(t, uint32(1), agt.ASID)
 
-	hostnameID, err := ads.GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"test", "127.0.0.3"})
+	hostnameID, err := ads.GetAgentIDForHostnamePair(&agent.HostnameIPPair{"test", "127.0.0.3"})
 	assert.Nil(t, err)
 	assert.Equal(t, testutils.KelvinAgentUUID, hostnameID)
 }
 
 func TestRegisterExistingAgent(t *testing.T) {
-	ads, agtMgr, _, cleanup := setupAgentManager(t)
+	ads, agtMgr, _, cleanup := setupManager(t)
 	defer cleanup()
 
 	u, err := uuid.FromString(testutils.ExistingAgentUUID)
@@ -206,20 +206,20 @@ func TestRegisterExistingAgent(t *testing.T) {
 	assert.Equal(t, uint32(123), id)
 
 	// Check that correct agent info is in ads.
-	agent, err := ads.GetAgent(u)
+	agt, err := ads.GetAgent(u)
 	assert.Nil(t, err)
-	assert.NotNil(t, agent)
-	assert.Equal(t, int64(testutils.HealthyAgentLastHeartbeatNS), agent.LastHeartbeatNS) // 70 seconds in NS.
-	assert.Equal(t, int64(0), agent.CreateTimeNS)
-	uid, err := utils.UUIDFromProto(agent.Info.AgentID)
+	assert.NotNil(t, agt)
+	assert.Equal(t, int64(testutils.HealthyAgentLastHeartbeatNS), agt.LastHeartbeatNS) // 70 seconds in NS.
+	assert.Equal(t, int64(0), agt.CreateTimeNS)
+	uid, err := utils.UUIDFromProto(agt.Info.AgentID)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, testutils.ExistingAgentUUID, uid.String())
-	assert.Equal(t, "testhost", agent.Info.HostInfo.Hostname)
-	assert.Equal(t, uint32(123), agent.ASID)
+	assert.Equal(t, "testhost", agt.Info.HostInfo.Hostname)
+	assert.Equal(t, uint32(123), agt.ASID)
 }
 
 func TestUpdateHeartbeat(t *testing.T) {
-	ads, agtMgr, _, cleanup := setupAgentManager(t)
+	ads, agtMgr, _, cleanup := setupManager(t)
 	defer cleanup()
 
 	u, err := uuid.FromString(testutils.ExistingAgentUUID)
@@ -231,20 +231,20 @@ func TestUpdateHeartbeat(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Check that correct agent info is in etcd.
-	agent, err := ads.GetAgent(u)
+	agt, err := ads.GetAgent(u)
 	assert.Nil(t, err)
-	assert.NotNil(t, agent)
+	assert.NotNil(t, agt)
 
-	assert.Equal(t, int64(testutils.ClockNowNS), agent.LastHeartbeatNS)
-	assert.Equal(t, int64(0), agent.CreateTimeNS)
-	uid, err := utils.UUIDFromProto(agent.Info.AgentID)
+	assert.Equal(t, int64(testutils.ClockNowNS), agt.LastHeartbeatNS)
+	assert.Equal(t, int64(0), agt.CreateTimeNS)
+	uid, err := utils.UUIDFromProto(agt.Info.AgentID)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, testutils.ExistingAgentUUID, uid.String())
-	assert.Equal(t, "testhost", agent.Info.HostInfo.Hostname)
+	assert.Equal(t, "testhost", agt.Info.HostInfo.Hostname)
 }
 
 func TestUpdateHeartbeatForNonExistingAgent(t *testing.T) {
-	_, agtMgr, _, cleanup := setupAgentManager(t)
+	_, agtMgr, _, cleanup := setupManager(t)
 	defer cleanup()
 
 	u, err := uuid.FromString(testutils.NewAgentUUID)
@@ -257,7 +257,7 @@ func TestUpdateHeartbeatForNonExistingAgent(t *testing.T) {
 }
 
 func TestUpdateAgentDelete(t *testing.T) {
-	ads, agtMgr, _, cleanup := setupAgentManager(t)
+	ads, agtMgr, _, cleanup := setupManager(t)
 	defer cleanup()
 
 	u, err := uuid.FromString(testutils.UnhealthyAgentUUID)
@@ -277,17 +277,17 @@ func TestUpdateAgentDelete(t *testing.T) {
 	agents, err := ads.GetAgents()
 	assert.Equal(t, 1, len(agents))
 
-	agent, err := ads.GetAgent(u)
+	agt, err := ads.GetAgent(u)
 	assert.Nil(t, err)
-	assert.Nil(t, agent)
+	assert.Nil(t, agt)
 
-	hostnameID, err := ads.GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"", "127.0.0.2"})
+	hostnameID, err := ads.GetAgentIDForHostnamePair(&agent.HostnameIPPair{"", "127.0.0.2"})
 	assert.Nil(t, err)
 	assert.Equal(t, "", hostnameID)
 }
 
 func TestGetActiveAgents(t *testing.T) {
-	_, agtMgr, _, cleanup := setupAgentManager(t)
+	_, agtMgr, _, cleanup := setupManager(t)
 	defer cleanup()
 
 	agents, err := agtMgr.GetActiveAgents()
@@ -349,7 +349,7 @@ func TestGetActiveAgents(t *testing.T) {
 }
 
 func TestApplyUpdates(t *testing.T) {
-	ads, agtMgr, _, cleanup := setupAgentManager(t)
+	ads, agtMgr, _, cleanup := setupManager(t)
 	defer cleanup()
 
 	u, err := uuid.FromString(testutils.ExistingAgentUUID)
@@ -412,7 +412,7 @@ func TestApplyUpdates(t *testing.T) {
 		Data:           expectedDataInfo,
 	}
 
-	agentUpdate := controllers.AgentUpdate{
+	agentUpdate := agent.Update{
 		UpdateInfo: update,
 		AgentID:    u,
 	}
@@ -445,7 +445,7 @@ func TestApplyUpdates(t *testing.T) {
 }
 
 func TestApplyUpdatesDeleted(t *testing.T) {
-	ads, agtMgr, _, cleanup := setupAgentManager(t)
+	ads, agtMgr, _, cleanup := setupManager(t)
 	defer cleanup()
 
 	u, err := uuid.FromString(testutils.NewAgentUUID)
@@ -508,7 +508,7 @@ func TestApplyUpdatesDeleted(t *testing.T) {
 		Data:           expectedDataInfo,
 	}
 
-	agentUpdate := controllers.AgentUpdate{
+	agentUpdate := agent.Update{
 		UpdateInfo: update,
 		AgentID:    u,
 	}
@@ -540,7 +540,7 @@ func TestApplyUpdatesDeleted(t *testing.T) {
 }
 
 func TestAgentTerminatedProcesses(t *testing.T) {
-	ads, agtMgr, _, cleanup := setupAgentManager(t)
+	ads, agtMgr, _, cleanup := setupManager(t)
 	defer cleanup()
 
 	u, err := uuid.FromString(testutils.ExistingAgentUUID)
@@ -601,7 +601,7 @@ func TestAgentTerminatedProcesses(t *testing.T) {
 		ProcessCreated: createdProcesses,
 	}
 
-	agentUpdate := controllers.AgentUpdate{
+	agentUpdate := agent.Update{
 		UpdateInfo: update,
 		AgentID:    u,
 	}
@@ -613,7 +613,7 @@ func TestAgentTerminatedProcesses(t *testing.T) {
 		ProcessTerminated: terminatedProcesses,
 	}
 
-	agentUpdate = controllers.AgentUpdate{
+	agentUpdate = agent.Update{
 		UpdateInfo: update,
 		AgentID:    u,
 	}
@@ -639,7 +639,7 @@ func TestAgentTerminatedProcesses(t *testing.T) {
 }
 
 func TestAgent_GetAgentUpdate(t *testing.T) {
-	_, agtMgr, _, cleanup := setupAgentManager(t)
+	_, agtMgr, _, cleanup := setupManager(t)
 	defer cleanup()
 
 	agUUID0, err := uuid.FromString(testutils.UnhealthyKelvinAgentUUID)
@@ -694,7 +694,7 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 		},
 	}
 
-	// Register a new agent.
+	// Register a new agt.
 	_, err = agtMgr.RegisterAgent(newAgentInfo)
 	assert.Equal(t, nil, err)
 
@@ -704,7 +704,7 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 	}
 
 	// Update data info on agent #2.
-	agentUpdate := controllers.AgentUpdate{
+	agentUpdate := agent.Update{
 		UpdateInfo: &messagespb.AgentUpdateInfo{
 			Schema:           []*storepb.TableInfo{schema2},
 			ProcessCreated:   []*k8s_metadatapb.ProcessCreated{},
@@ -725,7 +725,7 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 	assert.Equal(t, oldAgentDataInfo, updates[1].GetDataInfo())
 	assert.Equal(t, 2, len(schema.Tables))
 
-	// Update the heartbeat of an agent.
+	// Update the heartbeat of an agt.
 	err = agtMgr.UpdateHeartbeat(agUUID2)
 	assert.Nil(t, err)
 
@@ -754,7 +754,7 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 }
 
 func TestAgent_UpdateConfig(t *testing.T) {
-	_, agtMgr, nc, cleanup := setupAgentManager(t)
+	_, agtMgr, nc, cleanup := setupManager(t)
 	defer cleanup()
 
 	var wg sync.WaitGroup

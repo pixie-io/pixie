@@ -7,20 +7,12 @@ import (
 
 	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
+
 	"pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/utils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
+	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
 )
-
-const agentTopicPrefix = "Agent"
-
-func getAgentTopic(agentID string) string {
-	return fmt.Sprintf("%s/%s", agentTopicPrefix, agentID)
-}
-
-func getAgentTopicFromUUID(agentID uuid.UUID) string {
-	return getAgentTopic(agentID.String())
-}
 
 // LaunchQuery launches a query by sending query fragments to relevant agents.
 func LaunchQuery(queryID uuid.UUID, natsConn *nats.Conn, planMap map[uuid.UUID]*planpb.Plan, analyze bool) error {
@@ -48,7 +40,7 @@ func LaunchQuery(queryID uuid.UUID, natsConn *nats.Conn, planMap map[uuid.UUID]*
 				},
 			},
 		}
-		agentTopic := getAgentTopicFromUUID(agentID)
+		agentTopic := messagebus.AgentUUIDTopic(agentID)
 		msgAsBytes, err := msg.Marshal()
 		if err != nil {
 			errs <- err

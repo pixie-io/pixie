@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"reflect"
 	"sync"
 	"time"
@@ -10,25 +9,19 @@ import (
 	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
+
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	"pixielabs.ai/pixielabs/src/utils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
+	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
 )
 
-// UpdateAgentTopic is the NATS topic over which agent updates are sent.
-const UpdateAgentTopic = "UpdateAgent"
-const agentTopicPrefix = "Agent"
-
-// GetAgentTopicFromUUID gets the agent topic given the agent's ID in UUID format.
-func GetAgentTopicFromUUID(agentID uuid.UUID) string {
-	return GetAgentTopic(agentID.String())
-}
-
-// GetAgentTopic gets the agent topic given the agent's ID in string format.
-func GetAgentTopic(agentID string) string {
-	return fmt.Sprintf("%s/%s", agentTopicPrefix, agentID)
-}
+const (
+	agentExpirationTimeout = 1 * time.Minute
+)
 
 type concurrentAgentMap struct {
 	unsafeMap map[uuid.UUID]*AgentHandler
@@ -67,10 +60,10 @@ func (c *concurrentAgentMap) delete(agentID uuid.UUID) {
 
 // AgentTopicListener is responsible for listening to and handling messages on the agent topic.
 type AgentTopicListener struct {
-	clock             utils.Clock
-	agentManager      AgentManager
-	tracepointManager *TracepointManager
-	sendMessage       SendMessageFn
+	clock       utils.Clock
+	agtMgr      agent.Manager
+	tpMgr       *tracepoint.Manager
+	sendMessage SendMessageFn
 
 	// Map from agent ID -> the agentHandler that's responsible for handling that particular
 	// agent's messages.
@@ -79,11 +72,11 @@ type AgentTopicListener struct {
 
 // AgentHandler is responsible for handling messages for a specific agent.
 type AgentHandler struct {
-	id                uuid.UUID
-	clock             utils.Clock
-	agentManager      AgentManager
-	tracepointManager *TracepointManager
-	atl               *AgentTopicListener
+	id     uuid.UUID
+	clock  utils.Clock
+	agtMgr agent.Manager
+	tpMgr  *tracepoint.Manager
+	atl    *AgentTopicListener
 
 	MsgChannel chan *nats.Msg
 	quitCh     chan struct{}
@@ -93,21 +86,21 @@ type AgentHandler struct {
 }
 
 // NewAgentTopicListener creates a new agent topic listener.
-func NewAgentTopicListener(agentManager AgentManager, tracepointManager *TracepointManager,
+func NewAgentTopicListener(agtMgr agent.Manager, tpMgr *tracepoint.Manager,
 	sendMsgFn SendMessageFn) (*AgentTopicListener, error) {
 	clock := utils.SystemClock{}
-	return NewAgentTopicListenerWithClock(agentManager, tracepointManager, sendMsgFn, clock)
+	return NewAgentTopicListenerWithClock(agtMgr, tpMgr, sendMsgFn, clock)
 }
 
 // NewAgentTopicListenerWithClock creates a new agent topic listener with a clock.
-func NewAgentTopicListenerWithClock(agentManager AgentManager, tracepointManager *TracepointManager,
+func NewAgentTopicListenerWithClock(agtMgr agent.Manager, tpMgr *tracepoint.Manager,
 	sendMsgFn SendMessageFn, clock utils.Clock) (*AgentTopicListener, error) {
 	atl := &AgentTopicListener{
-		clock:             clock,
-		agentManager:      agentManager,
-		tracepointManager: tracepointManager,
-		sendMessage:       sendMsgFn,
-		agentMap:          &concurrentAgentMap{unsafeMap: make(map[uuid.UUID]*AgentHandler)},
+		clock:       clock,
+		agtMgr:      agtMgr,
+		tpMgr:       tpMgr,
+		sendMessage: sendMsgFn,
+		agentMap:    &concurrentAgentMap{unsafeMap: make(map[uuid.UUID]*AgentHandler)},
 	}
 
 	// Initialize map with existing agents.
@@ -121,13 +114,13 @@ func NewAgentTopicListenerWithClock(agentManager AgentManager, tracepointManager
 
 // Initialize loads in the current agent state into the agent topic listener.
 func (a *AgentTopicListener) Initialize() error {
-	agents, err := a.agentManager.GetActiveAgents()
+	agents, err := a.agtMgr.GetActiveAgents()
 	if err != nil {
 		return err
 	}
 
-	for _, agent := range agents {
-		agentID, err := utils.UUIDFromProto(agent.Info.AgentID)
+	for _, agt := range agents {
+		agentID, err := utils.UUIDFromProto(agt.Info.AgentID)
 		if err != nil {
 			return err
 		}
@@ -168,7 +161,7 @@ func (a *AgentTopicListener) HandleMessage(msg *nats.Msg) error {
 
 // SendMessageToAgent sends the given message to the agent over the NATS agent channel.
 func (a *AgentTopicListener) SendMessageToAgent(agentID uuid.UUID, msg messages.VizierMessage) error {
-	topic := GetAgentTopicFromUUID(agentID)
+	topic := messagebus.AgentUUIDTopic(agentID)
 	b, err := msg.Marshal()
 	if err != nil {
 		return err
@@ -185,13 +178,13 @@ func (a *AgentTopicListener) createAgentHandler(agentID uuid.UUID) *AgentHandler
 	}
 
 	newAgentHandler := &AgentHandler{
-		id:                agentID,
-		clock:             a.clock,
-		agentManager:      a.agentManager,
-		tracepointManager: a.tracepointManager,
-		atl:               a,
-		MsgChannel:        make(chan *nats.Msg, 10),
-		quitCh:            make(chan struct{}),
+		id:         agentID,
+		clock:      a.clock,
+		agtMgr:     a.agtMgr,
+		tpMgr:      a.tpMgr,
+		atl:        a,
+		MsgChannel: make(chan *nats.Msg, 10),
+		quitCh:     make(chan struct{}),
 	}
 	a.agentMap.write(agentID, newAgentHandler)
 	go newAgentHandler.processMessages()
@@ -279,7 +272,7 @@ func (a *AgentTopicListener) onAgentTracepointMessage(pbMessage *messages.Tracep
 }
 
 func (a *AgentTopicListener) onAgentTracepointInfoUpdate(m *messages.TracepointInfoUpdate) {
-	err := a.tracepointManager.UpdateAgentTracepointStatus(m.ID, m.AgentID, m.State, m.Status)
+	err := a.tpMgr.UpdateAgentTracepointStatus(m.ID, m.AgentID, m.State, m.Status)
 	if err != nil {
 		log.WithError(err).Error("Could not update agent tracepoint status")
 	}
@@ -301,7 +294,7 @@ func (ah *AgentHandler) processMessages() {
 	ah.wg.Add(1)
 
 	defer ah.stop()
-	timer := time.NewTimer(AgentExpirationTimeout)
+	timer := time.NewTimer(agentExpirationTimeout)
 	for {
 		select {
 		case <-ah.quitCh: // Prioritize the quitChannel.
@@ -315,7 +308,7 @@ func (ah *AgentHandler) processMessages() {
 			log.WithField("agentID", ah.id.String()).Info("Quit called on agent handler, deleting agent")
 			return
 		case msg := <-ah.MsgChannel:
-			if !timer.Reset(AgentExpirationTimeout) {
+			if !timer.Reset(agentExpirationTimeout) {
 				<-timer.C
 				continue
 			}
@@ -349,7 +342,7 @@ func (ah *AgentHandler) onAgentRegisterRequest(m *messages.RegisterAgentRequest)
 	if !m.Info.Capabilities.CollectsData {
 		hostname = m.Info.HostInfo.Hostname
 	}
-	hostnameAgID, err := ah.agentManager.GetAgentIDForHostnamePair(&HostnameIPPair{hostname, m.Info.HostInfo.HostIP})
+	hostnameAgID, err := ah.agtMgr.GetAgentIDForHostnamePair(&agent.HostnameIPPair{hostname, m.Info.HostInfo.HostIP})
 	if err != nil {
 		log.WithError(err).Error("Failed to get agent hostname")
 	}
@@ -369,7 +362,7 @@ func (ah *AgentHandler) onAgentRegisterRequest(m *messages.RegisterAgentRequest)
 		CreateTimeNS:    ah.clock.Now().UnixNano(),
 	}
 
-	asid, err := ah.agentManager.RegisterAgent(agentInfo)
+	asid, err := ah.agtMgr.RegisterAgent(agentInfo)
 	if err != nil {
 		log.WithError(err).Error("Could not create agent.")
 		return
@@ -390,7 +383,7 @@ func (ah *AgentHandler) onAgentRegisterRequest(m *messages.RegisterAgentRequest)
 
 	go func() {
 		// Register all tracepoints on new agent.
-		tracepoints, err := ah.tracepointManager.GetAllTracepoints()
+		tracepoints, err := ah.tpMgr.GetAllTracepoints()
 		if err != nil {
 			log.WithError(err).Error("Could not get all tracepoints")
 			return
@@ -398,9 +391,9 @@ func (ah *AgentHandler) onAgentRegisterRequest(m *messages.RegisterAgentRequest)
 
 		agentIDs := []uuid.UUID{agentID}
 
-		for _, tracepoint := range tracepoints {
-			if tracepoint.ExpectedState != statuspb.TERMINATED_STATE {
-				err = ah.tracepointManager.RegisterTracepoint(agentIDs, utils.UUIDFromProtoOrNil(tracepoint.ID), tracepoint.Tracepoint)
+		for _, tp := range tracepoints {
+			if tp.ExpectedState != statuspb.TERMINATED_STATE {
+				err = ah.tpMgr.RegisterTracepoint(agentIDs, utils.UUIDFromProtoOrNil(tp.ID), tp.Tracepoint)
 				if err != nil {
 					log.WithError(err).Error("Failed to send RegisterTracepoint request")
 				}
@@ -413,7 +406,7 @@ func (ah *AgentHandler) onAgentHeartbeat(m *messages.Heartbeat) {
 	agentID := ah.id
 
 	// Update agent's heartbeat in agent manager.
-	err := ah.agentManager.UpdateHeartbeat(agentID)
+	err := ah.agtMgr.UpdateHeartbeat(agentID)
 	if err != nil {
 		log.WithError(err).Error("Could not update agent heartbeat.")
 		resp := messages.VizierMessage{
@@ -433,8 +426,8 @@ func (ah *AgentHandler) onAgentHeartbeat(m *messages.Heartbeat) {
 			HeartbeatAck: &messages.HeartbeatAck{
 				Time: ah.clock.Now().UnixNano(),
 				UpdateInfo: &messages.MetadataUpdateInfo{
-					ServiceCIDR: ah.agentManager.GetServiceCIDR(),
-					PodCIDRs:    ah.agentManager.GetPodCIDRs(),
+					ServiceCIDR: ah.agtMgr.GetServiceCIDR(),
+					PodCIDRs:    ah.agtMgr.GetPodCIDRs(),
 				},
 				SequenceNumber: m.SequenceNumber,
 			},
@@ -448,16 +441,16 @@ func (ah *AgentHandler) onAgentHeartbeat(m *messages.Heartbeat) {
 
 	// Apply agent's container/schema updates.
 	if m.UpdateInfo != nil {
-		ah.agentManager.ApplyAgentUpdate(&AgentUpdate{AgentID: agentID, UpdateInfo: m.UpdateInfo})
+		ah.agtMgr.ApplyAgentUpdate(&agent.Update{AgentID: agentID, UpdateInfo: m.UpdateInfo})
 	}
 }
 
 func (ah *AgentHandler) stop() {
 	defer ah.wg.Done()
 
-	ah.agentManager.DeleteAgent(ah.id)
+	ah.agtMgr.DeleteAgent(ah.id)
 	ah.atl.deleteAgent(ah.id)
-	ah.tracepointManager.DeleteAgent(ah.id)
+	ah.tpMgr.DeleteAgent(ah.id)
 	close(ah.MsgChannel)
 }
 

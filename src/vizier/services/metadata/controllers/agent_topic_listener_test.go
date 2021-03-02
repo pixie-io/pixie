@@ -11,6 +11,7 @@ import (
 	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
+
 	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
@@ -18,17 +19,20 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
-	mock_controllers "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent"
+	mock_agent "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint"
+	mock_tracepoint "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint/mock"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
-func setup(t *testing.T, sendMsgFn func(topic string, b []byte) error) (*controllers.AgentTopicListener, *mock_controllers.MockAgentManager, *mock_controllers.MockTracepointStore, func()) {
+func setup(t *testing.T, sendMsgFn func(topic string, b []byte) error) (*controllers.AgentTopicListener, *mock_agent.MockManager, *mock_tracepoint.MockStore, func()) {
 	ctrl := gomock.NewController(t)
 
-	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
-	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
+	mockAgtMgr := mock_agent.NewMockManager(ctrl)
+	mockTracepointStore := mock_tracepoint.NewMockStore(ctrl)
 
 	// Load some existing agents.
 	mockAgtMgr.
@@ -54,7 +58,7 @@ func setup(t *testing.T, sendMsgFn func(topic string, b []byte) error) (*control
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
 
-	tracepointMgr := controllers.NewTracepointManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
+	tracepointMgr := tracepoint.NewManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
 	atl, _ := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, tracepointMgr, sendMsgFn, clock)
 
 	cleanup := func() {
@@ -104,7 +108,7 @@ func TestAgentRegisterRequest(t *testing.T) {
 
 	mockAgtMgr.
 		EXPECT().
-		GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"", "127.0.0.1"}).
+		GetAgentIDForHostnamePair(&agent.HostnameIPPair{"", "127.0.0.1"}).
 		Return("", nil)
 
 	mockTracepointStore.
@@ -178,7 +182,7 @@ func TestKelvinRegisterRequest(t *testing.T) {
 
 	mockAgtMgr.
 		EXPECT().
-		GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"test-host", "127.0.0.1"}).
+		GetAgentIDForHostnamePair(&agent.HostnameIPPair{"test-host", "127.0.0.1"}).
 		Return("", nil)
 
 	mockTracepointStore.
@@ -267,7 +271,7 @@ func TestAgentCreateFailed(t *testing.T) {
 
 	mockAgtMgr.
 		EXPECT().
-		GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"test-host", "127.0.0.1"}).
+		GetAgentIDForHostnamePair(&agent.HostnameIPPair{"test-host", "127.0.0.1"}).
 		Return("", nil)
 
 	mockAgtMgr.
@@ -340,8 +344,8 @@ func TestAgentHeartbeat(t *testing.T) {
 
 	mockAgtMgr.
 		EXPECT().
-		ApplyAgentUpdate(&controllers.AgentUpdate{AgentID: uuid.FromStringOrNil(uuidStr), UpdateInfo: agentUpdatePb}).
-		DoAndReturn(func(msg *controllers.AgentUpdate) error {
+		ApplyAgentUpdate(&agent.Update{AgentID: uuid.FromStringOrNil(uuidStr), UpdateInfo: agentUpdatePb}).
+		DoAndReturn(func(msg *agent.Update) error {
 			wg.Done()
 			return nil
 		})

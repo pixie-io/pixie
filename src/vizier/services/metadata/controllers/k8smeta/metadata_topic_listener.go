@@ -1,4 +1,4 @@
-package controllers
+package k8smeta
 
 import (
 	"math"
@@ -8,6 +8,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
+
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
@@ -26,10 +27,13 @@ var (
 const subscriberName = "cloud"
 const batchSize = 24
 
+// SendMessageFn is the function the TopicListener uses to publish messages back to NATS.
+type SendMessageFn func(string, []byte) error
+
 // MetadataTopicListener is responsible for listening to and handling messages on the metadata update topic.
 type MetadataTopicListener struct {
 	sendMessage SendMessageFn
-	newMh       *K8sMetadataHandler
+	newMh       *Handler
 	msgCh       chan *nats.Msg
 
 	once   sync.Once
@@ -37,7 +41,7 @@ type MetadataTopicListener struct {
 }
 
 // NewMetadataTopicListener creates a new metadata topic listener.
-func NewMetadataTopicListener(newMdHandler *K8sMetadataHandler, sendMsgFn SendMessageFn) (*MetadataTopicListener, error) {
+func NewMetadataTopicListener(newMdHandler *Handler, sendMsgFn SendMessageFn) (*MetadataTopicListener, error) {
 	m := &MetadataTopicListener{
 		sendMessage: sendMsgFn,
 		newMh:       newMdHandler,

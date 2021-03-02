@@ -22,6 +22,9 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services/server"
 	version "pixielabs.ai/pixielabs/src/shared/version/go"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/k8smeta"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	"pixielabs.ai/pixielabs/src/vizier/utils/datastore"
@@ -171,15 +174,16 @@ func main() {
 	}
 	defer dataStore.Close()
 
-	k8sMds := controllers.NewMetadataDatastore(dataStore)
+	k8sMds := k8smeta.NewDatastore(dataStore)
 	// Listen for K8s metadata updates.
-	updateCh := make(chan *controllers.K8sResourceMessage)
-	mdh := controllers.NewK8sMetadataHandler(updateCh, k8sMds, nc)
+	updateCh := make(chan *k8smeta.K8sResourceMessage)
+	mdh := k8smeta.NewHandler(updateCh, k8sMds, nc)
 
-	k8sMc, err := controllers.NewK8sMetadataController(k8sMds, updateCh)
+	k8sMc, err := k8smeta.NewController(k8sMds, updateCh)
 	defer k8sMc.Stop()
-	ads := controllers.NewAgentDatastore(dataStore, 24*time.Hour)
-	agtMgr := controllers.NewAgentManager(ads, mdh, nc)
+
+	ads := agent.NewDatastore(dataStore, 24*time.Hour)
+	agtMgr := agent.NewManager(ads, mdh, nc)
 
 	schemaQuitCh := make(chan struct{})
 	defer close(schemaQuitCh)
@@ -199,9 +203,9 @@ func main() {
 		}
 	}()
 
-	tds := controllers.NewTracepointDatastore(dataStore)
+	tds := tracepoint.NewDatastore(dataStore)
 	// Initialize tracepoint handler.
-	tracepointMgr := controllers.NewTracepointManager(tds, agtMgr, 30*time.Second)
+	tracepointMgr := tracepoint.NewManager(tds, agtMgr, 30*time.Second)
 	defer tracepointMgr.Close()
 
 	mc, err := controllers.NewMessageBusController(nc, agtMgr, tracepointMgr,

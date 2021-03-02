@@ -1,4 +1,4 @@
-package controllers
+package tracepoint
 
 import (
 	"path"
@@ -21,14 +21,14 @@ const (
 	tracepointNamesPrefix  = "/tracepointName/"
 )
 
-// TracepointDatastore implements the TracepointStore interface on a given Datastore.
-type TracepointDatastore struct {
+// Datastore implements the TracepointStore interface on a given Datastore.
+type Datastore struct {
 	ds datastore.MultiGetterSetterDeleterCloser
 }
 
-// NewTracepointDatastore wraps the datastore in a tracepointstore
-func NewTracepointDatastore(ds datastore.MultiGetterSetterDeleterCloser) *TracepointDatastore {
-	return &TracepointDatastore{ds: ds}
+// NewDatastore wraps the datastore in a tracepointstore
+func NewDatastore(ds datastore.MultiGetterSetterDeleterCloser) *Datastore {
+	return &Datastore{ds: ds}
 }
 
 func getTracepointWithNameKey(tracepointName string) string {
@@ -52,7 +52,7 @@ func getTracepointTTLKey(tracepointID uuid.UUID) string {
 }
 
 // GetTracepointsWithNames gets which tracepoint is associated with the given name.
-func (t *TracepointDatastore) GetTracepointsWithNames(tracepointNames []string) ([]*uuid.UUID, error) {
+func (t *Datastore) GetTracepointsWithNames(tracepointNames []string) ([]*uuid.UUID, error) {
 	keys := make([]string, len(tracepointNames))
 	for i, n := range tracepointNames {
 		keys[i] = getTracepointWithNameKey(n)
@@ -80,7 +80,7 @@ func (t *TracepointDatastore) GetTracepointsWithNames(tracepointNames []string) 
 }
 
 // SetTracepointWithName associates the tracepoint with the given name with the one with the provided ID.
-func (t *TracepointDatastore) SetTracepointWithName(tracepointName string, tracepointID uuid.UUID) error {
+func (t *Datastore) SetTracepointWithName(tracepointName string, tracepointID uuid.UUID) error {
 	tracepointIDpb := utils.ProtoFromUUID(tracepointID)
 	val, err := tracepointIDpb.Marshal()
 	if err != nil {
@@ -92,7 +92,7 @@ func (t *TracepointDatastore) SetTracepointWithName(tracepointName string, trace
 }
 
 // UpsertTracepoint updates or creates a new tracepoint entry in the store.
-func (t *TracepointDatastore) UpsertTracepoint(tracepointID uuid.UUID, tracepointInfo *storepb.TracepointInfo) error {
+func (t *Datastore) UpsertTracepoint(tracepointID uuid.UUID, tracepointInfo *storepb.TracepointInfo) error {
 	val, err := tracepointInfo.Marshal()
 	if err != nil {
 		return err
@@ -103,14 +103,14 @@ func (t *TracepointDatastore) UpsertTracepoint(tracepointID uuid.UUID, tracepoin
 }
 
 // DeleteTracepoint deletes the tracepoint from the store.
-func (t *TracepointDatastore) DeleteTracepoint(tracepointID uuid.UUID) error {
+func (t *Datastore) DeleteTracepoint(tracepointID uuid.UUID) error {
 	t.ds.DeleteAll([]string{getTracepointKey(tracepointID)})
 
 	return t.ds.DeleteWithPrefix(getTracepointStatesKey(tracepointID))
 }
 
 // GetTracepoint gets the tracepoint info from the store, if it exists.
-func (t *TracepointDatastore) GetTracepoint(tracepointID uuid.UUID) (*storepb.TracepointInfo, error) {
+func (t *Datastore) GetTracepoint(tracepointID uuid.UUID) (*storepb.TracepointInfo, error) {
 	resp, err := t.ds.Get(getTracepointKey(tracepointID))
 	if err != nil {
 		return nil, err
@@ -128,7 +128,7 @@ func (t *TracepointDatastore) GetTracepoint(tracepointID uuid.UUID) (*storepb.Tr
 }
 
 // GetTracepoints gets all of the tracepoints in the store.
-func (t *TracepointDatastore) GetTracepoints() ([]*storepb.TracepointInfo, error) {
+func (t *Datastore) GetTracepoints() ([]*storepb.TracepointInfo, error) {
 	_, vals, err := t.ds.GetWithPrefix(tracepointsPrefix)
 	if err != nil {
 		return nil, err
@@ -144,7 +144,7 @@ func (t *TracepointDatastore) GetTracepoints() ([]*storepb.TracepointInfo, error
 }
 
 // GetTracepointsForIDs gets all of the tracepoints with the given it.ds.
-func (t *TracepointDatastore) GetTracepointsForIDs(ids []uuid.UUID) ([]*storepb.TracepointInfo, error) {
+func (t *Datastore) GetTracepointsForIDs(ids []uuid.UUID) ([]*storepb.TracepointInfo, error) {
 	keys := make([]string, len(ids))
 	for i, id := range ids {
 		keys[i] = getTracepointKey(id)
@@ -169,7 +169,7 @@ func (t *TracepointDatastore) GetTracepointsForIDs(ids []uuid.UUID) ([]*storepb.
 }
 
 // UpdateTracepointState updates the agent tracepoint state in the store.
-func (t *TracepointDatastore) UpdateTracepointState(state *storepb.AgentTracepointStatus) error {
+func (t *Datastore) UpdateTracepointState(state *storepb.AgentTracepointStatus) error {
 	val, err := state.Marshal()
 	if err != nil {
 		return err
@@ -182,7 +182,7 @@ func (t *TracepointDatastore) UpdateTracepointState(state *storepb.AgentTracepoi
 }
 
 // GetTracepointStates gets all the agentTracepoint states for the given tracepoint.
-func (t *TracepointDatastore) GetTracepointStates(tracepointID uuid.UUID) ([]*storepb.AgentTracepointStatus, error) {
+func (t *Datastore) GetTracepointStates(tracepointID uuid.UUID) ([]*storepb.AgentTracepointStatus, error) {
 	_, vals, err := t.ds.GetWithPrefix(getTracepointStatesKey(tracepointID))
 	if err != nil {
 		return nil, err
@@ -199,7 +199,7 @@ func (t *TracepointDatastore) GetTracepointStates(tracepointID uuid.UUID) ([]*st
 
 // SetTracepointTTL creates a key in the datastore with the given TTL. This represents the amount of time
 // that the given tracepoint should be persisted before terminating.
-func (t *TracepointDatastore) SetTracepointTTL(tracepointID uuid.UUID, ttl time.Duration) error {
+func (t *Datastore) SetTracepointTTL(tracepointID uuid.UUID, ttl time.Duration) error {
 	expiresAt := time.Now().Add(ttl)
 	encodedExpiry, err := expiresAt.MarshalBinary()
 	if err != nil {
@@ -210,7 +210,7 @@ func (t *TracepointDatastore) SetTracepointTTL(tracepointID uuid.UUID, ttl time.
 
 // DeleteTracepointTTLs deletes the key in the datastore for the given tracepoint TTLs.
 // This is done as a single transaction, so if any deletes fail, they all fail.
-func (t *TracepointDatastore) DeleteTracepointTTLs(ids []uuid.UUID) error {
+func (t *Datastore) DeleteTracepointTTLs(ids []uuid.UUID) error {
 	keys := make([]string, len(ids))
 	for i, id := range ids {
 		keys[i] = getTracepointTTLKey(id)
@@ -222,7 +222,7 @@ func (t *TracepointDatastore) DeleteTracepointTTLs(ids []uuid.UUID) error {
 // DeleteTracepointsForAgent deletes the tracepoints for a given agent.
 // Note this only purges the combo tracepointID+agentID keys. Said
 // tracepoints might still be valid and deployed on other agents.
-func (t *TracepointDatastore) DeleteTracepointsForAgent(agentID uuid.UUID) error {
+func (t *Datastore) DeleteTracepointsForAgent(agentID uuid.UUID) error {
 	tps, err := t.GetTracepoints()
 	if err != nil {
 		return err
@@ -237,7 +237,7 @@ func (t *TracepointDatastore) DeleteTracepointsForAgent(agentID uuid.UUID) error
 }
 
 // GetTracepointTTLs gets the tracepoints which still have existing TTLs.
-func (t *TracepointDatastore) GetTracepointTTLs() ([]uuid.UUID, []time.Time, error) {
+func (t *Datastore) GetTracepointTTLs() ([]uuid.UUID, []time.Time, error) {
 	keys, vals, err := t.ds.GetWithPrefix(tracepointTTLsPrefix)
 	if err != nil {
 		return nil, nil, err

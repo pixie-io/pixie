@@ -37,6 +37,7 @@ go_library(
         "//src/vizier/services/query_broker/querybrokerenv:go_default_library",
         "//src/vizier/services/query_broker/querybrokerpb:service_pl_go_proto",
         "//src/vizier/services/query_broker/tracker:go_default_library",
+        "//src/vizier/utils/messagebus:go_default_library",
         "@com_github_dustin_go_humanize//:go_default_library",
         "@com_github_emicklei_dot//:go_default_library",
         "@com_github_gogo_protobuf//proto:go_default_library",

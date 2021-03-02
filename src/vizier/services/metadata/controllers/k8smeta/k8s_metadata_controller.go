@@ -1,4 +1,4 @@
-package controllers
+package k8smeta
 
 import (
 	"sync"
@@ -23,17 +23,17 @@ var (
 	kubeProxyPodPrefix = "kube-proxy"
 )
 
-// K8sMetadataController listens to any metadata updates from the K8s API and forwards them
+// Controller listens to any metadata updates from the K8s API and forwards them
 // to a channel where it can be processed.
-type K8sMetadataController struct {
+type Controller struct {
 	quitCh   chan struct{}
 	updateCh chan *K8sResourceMessage
 	once     sync.Once
-	watchers []MetadataWatcher
+	watchers []watcher
 }
 
-// MetadataWatcher watches a k8s resource type and forwards the updates to the given update channel.
-type MetadataWatcher interface {
+// watcher watches a k8s resource type and forwards the updates to the given update channel.
+type watcher interface {
 	Sync(storedUpdates []*storepb.K8SResource) error
 	StartWatcher(chan struct{}, *sync.WaitGroup)
 }
@@ -44,8 +44,8 @@ func listObject(resource string, clientset *kubernetes.Clientset) (runtime.Objec
 	return watcher.List(opts)
 }
 
-// NewK8sMetadataController creates a new K8sMetadataController.
-func NewK8sMetadataController(mds K8sMetadataStore, updateCh chan *K8sResourceMessage) (*K8sMetadataController, error) {
+// NewController creates a new Controller.
+func NewController(mds Store, updateCh chan *K8sResourceMessage) (*Controller, error) {
 	// There is a specific config for services running in the cluster.
 	kubeConfig, err := rest.InClusterConfig()
 	if err != nil {
@@ -64,7 +64,7 @@ func NewK8sMetadataController(mds K8sMetadataStore, updateCh chan *K8sResourceMe
 	// The resource types we watch the K8s API for. These types are in a specific order:
 	// for example, nodes and namespaces must be synced before pods, since nodes/namespaces
 	// contain pods.
-	watchers := []MetadataWatcher{
+	watchers := []watcher{
 		NewNodeWatcher("nodes", updateCh, clientset),
 		NewNamespaceWatcher("namespaces", updateCh, clientset),
 		NewPodWatcher("pods", updateCh, clientset),
@@ -72,7 +72,7 @@ func NewK8sMetadataController(mds K8sMetadataStore, updateCh chan *K8sResourceMe
 		NewServiceWatcher("services", updateCh, clientset),
 	}
 
-	mc := &K8sMetadataController{quitCh: quitCh, updateCh: updateCh, watchers: watchers}
+	mc := &Controller{quitCh: quitCh, updateCh: updateCh, watchers: watchers}
 
 	go mc.Start(mds)
 
@@ -81,7 +81,7 @@ func NewK8sMetadataController(mds K8sMetadataStore, updateCh chan *K8sResourceMe
 
 // Start starts the k8s watcher. Every 12h, it will resync such that the updates from the
 // last 24h will always contain updates from currently running resources.
-func (mc *K8sMetadataController) Start(mds K8sMetadataStore) error {
+func (mc *Controller) Start(mds Store) error {
 	// Run initial sync and watch.
 	watcherQuitCh := make(chan struct{})
 	var wg sync.WaitGroup
@@ -115,7 +115,7 @@ func (mc *K8sMetadataController) Start(mds K8sMetadataStore) error {
 }
 
 // Start syncs the state stored in the datastore with what is currently running in k8s.
-func (mc *K8sMetadataController) syncAndWatch(mds K8sMetadataStore, quitCh chan struct{}, wg *sync.WaitGroup) error {
+func (mc *Controller) syncAndWatch(mds Store, quitCh chan struct{}, wg *sync.WaitGroup) error {
 	lastUpdate, err := mds.GetUpdateVersion(KelvinUpdateTopic)
 	if err != nil {
 		return err
@@ -138,7 +138,7 @@ func (mc *K8sMetadataController) syncAndWatch(mds K8sMetadataStore, quitCh chan 
 }
 
 // Stop stops all K8s watchers.
-func (mc *K8sMetadataController) Stop() {
+func (mc *Controller) Stop() {
 	mc.once.Do(func() {
 		close(mc.quitCh)
 	})
