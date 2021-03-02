@@ -101,7 +101,6 @@ func (s *Server) handleMessageBus() {
 	for {
 		select {
 		case msg := <-s.natsCh:
-			log.WithField("message", msg).Info("Got NATS message")
 			// Get topic.
 			splitTopic := strings.Split(msg.Subject, ".")
 			topic := splitTopic[len(splitTopic)-1]

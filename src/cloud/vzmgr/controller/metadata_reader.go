@@ -416,7 +416,7 @@ func (m *MetadataReader) applyMetadataUpdate(vzState *VizierState, update *metad
 	log.
 		WithField("topic", fmt.Sprintf("%s.%s", indexerMetadataTopic, vzState.k8sUID)).
 		WithField("rv", update.UpdateVersion).
-		Info("Publishing metadata update to indexer")
+		Trace("Publishing metadata update to indexer")
 
 	err = m.sc.Publish(fmt.Sprintf("%s.%s", indexerMetadataTopic, vzState.k8sUID), b)
 	if err != nil {
