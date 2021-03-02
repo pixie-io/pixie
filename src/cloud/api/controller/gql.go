@@ -6,7 +6,7 @@ import (
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/relay"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/schema"
-	"pixielabs.ai/pixielabs/src/cloud/api/controller/unauthenticated_schema"
+	unauthenticatedschema "pixielabs.ai/pixielabs/src/cloud/api/controller/unauthenticated_schema"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
 )

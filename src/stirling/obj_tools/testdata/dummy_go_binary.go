@@ -84,9 +84,9 @@ func (v *Vertex) CrossScale(v2 Vertex, f float64) {
 }
 
 func MixedArgTypes(i1 int, b1 bool, b2 BoolWrapper, i2 int, i3 int, b3 bool) (int, BoolWrapper) {
-        sum := 0
-        for i := 0; i < i1*10000000; i++ {
-		sum += (i*sum) % 33377
+	sum := 0
+	for i := 0; i < i1*10000000; i++ {
+		sum += (i * sum) % 33377
 	}
 	if b1 && (b2.B0 || b2.B3) && b3 {
 		return 7, BoolWrapper{true, false, true, false}
@@ -97,7 +97,7 @@ func MixedArgTypes(i1 int, b1 bool, b2 BoolWrapper, i2 int, i3 int, b3 bool) (in
 // Function using named return values. Used to demonstrate tracing works with named return values.
 func NamedRetvals(i1 int, b1 bool, b2 BoolWrapper, i2 int, i3 int, b3 bool) (int_out int, bw_out BoolWrapper) {
 	if b1 && (b2.B0 || b2.B3) && b3 {
-	    int_out = 7
+		int_out = 7
 		bw_out = BoolWrapper{true, false, true, false}
 		return
 	}
@@ -160,13 +160,13 @@ func main() {
 			rand.Intn(100),
 			rand.Intn(100),
 			rand.Intn(2) == 0))
-        fmt.Println(NamedRetvals(
-                    rand.Intn(100),
-                    rand.Intn(2) == 0,
-                    BoolWrapper{rand.Intn(2) == 0, rand.Intn(2) == 0, rand.Intn(2) == 0, rand.Intn(2) == 0},
-                    rand.Intn(100),
-                    rand.Intn(100),
-                    rand.Intn(2) == 0))
+		fmt.Println(NamedRetvals(
+			rand.Intn(100),
+			rand.Intn(2) == 0,
+			BoolWrapper{rand.Intn(2) == 0, rand.Intn(2) == 0, rand.Intn(2) == 0, rand.Intn(2) == 0},
+			rand.Intn(100),
+			rand.Intn(100),
+			rand.Intn(2) == 0))
 		fmt.Println(GoHasNamedReturns())
 
 		a := 5

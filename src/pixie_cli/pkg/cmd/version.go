@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"pixielabs.ai/pixielabs/src/shared/version/go"
+	version "pixielabs.ai/pixielabs/src/shared/version/go"
 )
 
 // VersionCmd is the "version" command.

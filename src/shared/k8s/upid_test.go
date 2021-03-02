@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"pixielabs.ai/pixielabs/src/shared/k8s"
-	"pixielabs.ai/pixielabs/src/shared/types/go"
+	types "pixielabs.ai/pixielabs/src/shared/types/go"
 )
 
 func TestUPID(t *testing.T) {

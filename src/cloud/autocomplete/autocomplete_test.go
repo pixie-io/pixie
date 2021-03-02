@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
-	"pixielabs.ai/pixielabs/src/cloud/autocomplete/mock"
+	mock_autocomplete "pixielabs.ai/pixielabs/src/cloud/autocomplete/mock"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 )
 

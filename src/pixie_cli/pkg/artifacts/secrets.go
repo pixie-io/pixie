@@ -3,10 +3,11 @@ package artifacts
 import (
 	"bytes"
 	"fmt"
-	"k8s.io/client-go/rest"
 	"os"
 	"os/exec"
 	"strings"
+
+	"k8s.io/client-go/rest"
 
 	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 )

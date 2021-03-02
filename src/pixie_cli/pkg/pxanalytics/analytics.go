@@ -6,7 +6,7 @@ import (
 
 	uuid "github.com/satori/go.uuid"
 	"gopkg.in/segmentio/analytics-go.v3"
-	"pixielabs.ai/pixielabs/src/shared/version/go"
+	version "pixielabs.ai/pixielabs/src/shared/version/go"
 )
 
 const (
