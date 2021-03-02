@@ -233,38 +233,38 @@ const testMissingArgDef: Vis = {
 
 describe('validateVis', () => {
   it('accepts valid vis', () => {
-    expect(validateVis(testVisNoVars, {})).toBeNull();
-    expect(validateVis(testVisWithGlobalFuncs, {})).toBeNull();
-    expect(validateVis(testVisWithVars, {})).toBeNull();
+    expect(validateVis(testVisNoVars, {})).toEqual([]);
+    expect(validateVis(testVisWithGlobalFuncs, {})).toEqual([]);
+    expect(validateVis(testVisWithVars, {})).toEqual([]);
   });
   it('errors on missing global func', () => {
     // Do object unpacking to make unexpected behavior render more informatively.
-    expect({ ...validateVis(testVisWithMissingGlobalFuncDef, {}) }).toEqual(expect.objectContaining({
+    expect(validateVis(testVisWithMissingGlobalFuncDef, {})).toEqual([expect.objectContaining({
       errType: 'vis',
-      details: [expect.stringMatching(/globalFunc "LET" referenced by "latency" not found/)],
-    }));
+      details: expect.stringMatching(/globalFunc "LET" referenced by "latency" not found/),
+    })]);
   });
   it('errors on including global func and func def', () => {
     // Do object unpacking to make unexpected behavior render more informatively.
-    expect({ ...validateVis(testVisWithGlobalFuncAndDefinedFunc, {}) }).toEqual(expect.objectContaining({
+    expect(validateVis(testVisWithGlobalFuncAndDefinedFunc, {})).toEqual([expect.objectContaining({
       errType: 'vis',
-      details: [expect.stringMatching(/"latency" may only have one of "func" and "globalFuncOutputName"/)],
-    }));
+      details: expect.stringMatching(/"latency" may only have one of "func" and "globalFuncOutputName"/),
+    })]);
   });
 
   it('errors on referencing a missing variable', () => {
     // Do object unpacking to make unexpected behavior render more informatively.
-    expect({ ...validateVis(testMissingVarVis, {}) }).toEqual(expect.objectContaining({
+    expect(validateVis(testMissingVarVis, {})).toEqual([expect.objectContaining({
       errType: 'vis',
       details: [expect.stringMatching(/Arg "foo" of "get_latency\(\)" references undefined variable "nonexistant"/)],
-    }));
+    })]);
   });
 
   it('errors when a func arg does not have a value or variable reference', () => {
     // Do object unpacking to make unexpected behavior render more informatively.
-    expect({ ...validateVis(testMissingArgDef, {}) }).toEqual(expect.objectContaining({
+    expect(validateVis(testMissingArgDef, {})).toEqual([expect.objectContaining({
       errType: 'vis',
       details: [expect.stringMatching(/Arg "foo" of "get_latency\(\)" needs either a value or a variable reference/)],
-    }));
+    })]);
   });
 });

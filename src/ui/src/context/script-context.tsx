@@ -8,7 +8,7 @@ import {
 import ClientContext from 'common/vizier-grpc-client-context';
 import {
   VizierQueryError, GRPCStatusCode, BatchDataUpdate, VizierTable as Table,
-  containsMutation, isStreaming,
+  containsMutation, isStreaming, VizierQueryFunc,
 } from '@pixie/api';
 
 import * as React from 'react';
@@ -251,6 +251,17 @@ const ScriptContextProvider = (props) => {
   const execute = (execArgs: ExecuteArguments) => {
     cancelExecution?.();
 
+    let queryFuncs: VizierQueryFunc[];
+    try {
+      queryFuncs = getQueryFuncs(execArgs.vis, execArgs.args);
+    } catch (e) {
+      showSnackbar({
+        message: e.message,
+        autoHideDuration: 5000,
+      });
+      return;
+    }
+
     if (!healthy || !client) {
       // TODO(philkuz): Maybe link to the admin page to show what is wrong.
       showSnackbar({
@@ -279,11 +290,13 @@ const ScriptContextProvider = (props) => {
     try {
       // Make sure vis has proper references.
       if (execArgs.vis) {
-        // validateVis errors out on null vis arguments.
-        const visErr = validateVis(execArgs.vis, execArgs.args);
-        if (visErr) {
+        // validateVis yields errors if the spec has incorrectly defined variables, or if their values are invalid.
+        const visErrors = validateVis(execArgs.vis, execArgs.args);
+        if (visErrors.length) {
+          let message = visErrors.slice(0, 2).map((err) => err.message).join('\n');
+          if (visErrors.length > 2) message += `\n...and ${visErrors.length - 2} more`;
           showSnackbar({
-            message: 'Invalid Vis spec',
+            message: `Invalid or violated vis spec:\n${message}`,
             autoHideDuration: 5000,
           });
           return;
@@ -413,7 +426,7 @@ const ScriptContextProvider = (props) => {
 
           client.executeScript(
             execArgs.pxl,
-            getQueryFuncs(execArgs.vis, execArgs.args),
+            queryFuncs,
             mutation,
           ).subscribe((update) => {
             switch (update.event.type) {
@@ -491,7 +504,7 @@ const ScriptContextProvider = (props) => {
     } else {
       client.executeScript(
         execArgs.pxl,
-        getQueryFuncs(execArgs.vis, execArgs.args),
+        queryFuncs,
         mutation,
       ).subscribe((update) => {
         switch (update.event.type) {

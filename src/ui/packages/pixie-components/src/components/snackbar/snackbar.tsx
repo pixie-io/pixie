@@ -31,8 +31,15 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
+const useSnackbarStyles = makeStyles(createStyles({
+  message: {
+    whiteSpace: 'pre-wrap',
+  },
+}));
+
 export const SnackbarProvider: React.FC = (props) => {
   const classes = useStyles();
+  const snackbarClasses = useSnackbarStyles();
   const [state, setState] = React.useState<SnackbarState>({
     opened: false,
     message: '',
@@ -96,7 +103,7 @@ export const SnackbarProvider: React.FC = (props) => {
         {props.children}
       </SnackbarContext.Provider>
       <Snackbar
-        ContentProps={{ className: classes.snackbar }}
+        ContentProps={{ className: classes.snackbar, classes: snackbarClasses }}
         open={state.opened}
         onClose={hideSnackbar}
         message={state.message}

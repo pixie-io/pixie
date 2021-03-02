@@ -1,6 +1,9 @@
-import { VizierQueryError, VizierQueryArg, VizierQueryFunc } from '@pixie/api';
+import {
+  VizierQueryError, VizierQueryArg, VizierQueryFunc, GRPCStatusCode,
+} from '@pixie/api';
 import { ArgTypeMap, getArgTypesForVis } from 'utils/args-utils';
 
+import { Status } from 'types/generated/vizierapi_pb';
 import { ChartPosition } from './layout';
 
 // TODO(nserrino): Replace these with proto when the UI receives protobuf from the script manager
@@ -142,17 +145,31 @@ function preprocessVariables(variableValues: VariableValues, argTypes: ArgTypeMa
 }
 
 // This should only be called by table grpc client, and it will reject the returned promise
-// when executeScript() is called with an invalid Vis spec.
+// when executeScript() is called with an invalid Vis spec or if that spec is violated.
 export function getQueryFuncs(vis: Vis, variableValues: VariableValues): VizierQueryFunc[] {
   const defaults = {};
   if (!vis) {
     return [];
   }
+  const missingRequiredArgs: string[] = [];
+
   vis.variables.forEach((v) => {
     if (typeof v.defaultValue === 'string') {
       defaults[v.name] = v.defaultValue;
+    } else if (typeof v.defaultValue === 'undefined' && !String(variableValues[v.name] ?? '').trim()) {
+      missingRequiredArgs.push(v.name);
     }
   });
+
+  if (missingRequiredArgs.length) {
+    const message = `Specify missing argument(s): ${missingRequiredArgs.join(', ')}`;
+    const status = new Status().setCode(GRPCStatusCode.InvalidArgument);
+    status.setMessage(message);
+    const err = new VizierQueryError('execution', '', status);
+    err.message = message;
+    throw err;
+  }
+
   const unprocessedValsOrDefaults = {
     ...defaults,
     ...variableValues,
@@ -186,9 +203,9 @@ export function toJSON(vis: Vis) {
 }
 
 // Validate Vis makes sure vis is correctly specified or throws an error.
-export function validateVis(vis: Vis, variableValues: VariableValues): VizierQueryError {
+export function validateVis(vis: Vis, variableValues: VariableValues): VizierQueryError[] {
   if (!vis) {
-    return new VizierQueryError('vis', 'null vis object unhandled');
+    return [new VizierQueryError('vis', 'null vis object unhandled')];
   }
   const globalFuncNames = new Set();
   vis.globalFuncs.forEach((globalFunc) => {
@@ -201,10 +218,12 @@ export function validateVis(vis: Vis, variableValues: VariableValues): VizierQue
   vis.widgets.forEach((widget) => {
     if (widget.globalFuncOutputName) {
       if (widget.func) {
-        errors.push(`"${widget.name}" may only have one of "func" and "globalFuncOutputName"`);
+        errors.push(new VizierQueryError('vis',
+          `"${widget.name}" may only have one of "func" and "globalFuncOutputName"`));
       }
       if (!globalFuncNames.has(widget.globalFuncOutputName)) {
-        errors.push(`globalFunc "${widget.globalFuncOutputName}" referenced by "${widget.name}" not found`);
+        errors.push(new VizierQueryError('vis',
+          `globalFunc "${widget.globalFuncOutputName}" referenced by "${widget.name}" not found`));
       }
     }
   });
@@ -214,17 +233,8 @@ export function validateVis(vis: Vis, variableValues: VariableValues): VizierQue
   try {
     getQueryFuncs(vis, variableValues);
   } catch (error) {
-    const { details } = error as VizierQueryError;
-    if (Array.isArray(details)) {
-      errors.push(...details);
-    } else if (typeof details === 'string') {
-      errors.push(details);
-    }
+    errors.push(error as VizierQueryError);
   }
 
-  if (errors.length > 0) {
-    return new VizierQueryError('vis', errors);
-  }
-
-  return null;
+  return errors;
 }
