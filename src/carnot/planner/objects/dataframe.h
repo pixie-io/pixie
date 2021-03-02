@@ -91,7 +91,7 @@ class Dataframe : public QLObject {
   Pixie engine (Carnot) thus cannot be directly accessed during compilation.
 
   The expression can be a scalar value, a column from the same dataframe, or a
-  [UDF](/pxl/udf) function call. The syntax can be either `df['colname'] = expr`
+  [UDF](/reference/pxl/udf) function call. The syntax can be either `df['colname'] = expr`
   or `df.colname = expr`, the second option is simply syntactic sugar. The first
   form is slightly more expressive as you can set column names with spaces.
 
@@ -177,7 +177,7 @@ class Dataframe : public QLObject {
 
   Filters for the rows in the DataFrame that match the boolean condition. Will error
   out if you don't pass in a boolean expression. The functions available are defined in
-  [UDFs](/pxl/udf).
+  [UDFs](/reference/pxl/udf).
 
   Examples:
     df = px.DataFrame('http_events')
@@ -207,7 +207,7 @@ class Dataframe : public QLObject {
 
   Each aggregate expression is simply the aggregate function applied to a column, formatted
   as `<out_col_name>=("<column_name>", <function>)`. A list of functions are available in the
-  [UDA docs](/pxl/udf)
+  [UDA docs](/reference/pxl/udf)
 
   Examples:
     # Group by UPID and calculate maximum user time for the each
