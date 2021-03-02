@@ -18,7 +18,7 @@ phutil_register_library_map(array(
   'xmap' => array(
     'ArcanistGoFmtLinter' => 'ArcanistLinter',
     'ArcanistGoTestResultParser' => 'ArcanistTestResultParser',
-    'ArcanistGoVetLinter' => 'ArcanistExternalLinter',
+    'ArcanistGoVetLinter' => 'ArcanistLinter',
     'GoTestEngine' => 'ArcanistUnitTestEngine',
   ),
 ));

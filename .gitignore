@@ -53,8 +53,8 @@ user.bazelrc
 # A cache directory to be use by Bazel.
 .bazel-cache
 
-# Arc unit test cache
-linters/.phutil_module-cache
+# Arc liberate cache
+.phutil_module_cache
 
 # Ignore Skaffold Build Directory
 skaffold_build/
