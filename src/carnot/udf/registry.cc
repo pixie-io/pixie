@@ -46,6 +46,7 @@ udfspb::UDFInfo Registry::ToProto() {
 void Registry::ToProto(const ScalarUDFDefinition& def, udfspb::ScalarUDFSpec* spec) {
   const auto& exec_arguments = def.exec_arguments();
   *spec->mutable_exec_arg_types() = {exec_arguments.begin(), exec_arguments.end()};
+  spec->set_executor(def.executor());
   spec->set_return_type(def.exec_return_type());
   spec->set_name(def.name());
   spec->set_executor(def.executor());

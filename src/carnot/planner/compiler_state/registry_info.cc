@@ -69,6 +69,8 @@ Status RegistryInfo::Init(const udfspb::UDFInfo& info) {
 
     auto key = RegistryKey(udf.name(), arg_types);
     udf_map_[key] = udf.return_type();
+    udf_executor_map_[key] = udf.executor();
+
     // Add udf to funcs_.
     if (funcs_.contains(udf.name())) {
       PL_ASSIGN_OR_RETURN(auto type, GetUDFExecType(udf.name()));
@@ -123,16 +125,29 @@ StatusOr<bool> RegistryInfo::DoesUDASupportPartial(std::string name,
   return uda->second;
 }
 
+Status FormatMissingUDFError(std::string name, std::vector<types::DataType> exec_arg_types) {
+  std::vector<std::string> arg_data_type_strs;
+  for (const types::DataType& arg_data_type : exec_arg_types) {
+    arg_data_type_strs.push_back(types::DataType_Name(arg_data_type));
+  }
+  return error::InvalidArgument("Could not find UDF '$0' with arguments [$1].", name,
+                                absl::StrJoin(arg_data_type_strs, ","));
+}
+
 StatusOr<types::DataType> RegistryInfo::GetUDFDataType(
     std::string name, std::vector<types::DataType> exec_arg_types) {
   auto udf = udf_map_.find(RegistryKey(name, exec_arg_types));
   if (udf == udf_map_.end()) {
-    std::vector<std::string> arg_data_type_strs;
-    for (const types::DataType& arg_data_type : exec_arg_types) {
-      arg_data_type_strs.push_back(types::DataType_Name(arg_data_type));
-    }
-    return error::InvalidArgument("Could not find UDF '$0' with arguments [$1].", name,
-                                  absl::StrJoin(arg_data_type_strs, ","));
+    return FormatMissingUDFError(name, exec_arg_types);
+  }
+  return udf->second;
+}
+
+StatusOr<udfspb::UDFSourceExecutor> RegistryInfo::GetUDFSourceExecutor(
+    std::string name, std::vector<types::DataType> exec_arg_types) {
+  auto udf = udf_executor_map_.find(RegistryKey(name, exec_arg_types));
+  if (udf == udf_executor_map_.end()) {
+    return FormatMissingUDFError(name, exec_arg_types);
   }
   return udf->second;
 }

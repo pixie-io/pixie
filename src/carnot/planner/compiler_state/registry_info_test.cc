@@ -30,12 +30,14 @@ scalar_udfs {
   exec_arg_types: FLOAT64
   exec_arg_types: FLOAT64
   return_type: FLOAT64
+  executor: UDF_ALL
 }
 scalar_udfs {
   name: "scalar1"
   exec_arg_types: BOOLEAN
   exec_arg_types: INT64
   return_type: INT64
+  executor: UDF_KELVIN
 }
 udtfs {
   name: "OpenNetworkConnections"
@@ -106,6 +108,23 @@ TEST(RegistryInfo, basic) {
 
   ASSERT_EQ(info.udtfs().size(), 1);
   EXPECT_EQ(info.udtfs()[0].name(), "OpenNetworkConnections");
+}
+
+TEST(RegistryInfo, udf_executor) {
+  auto info = RegistryInfo();
+  udfspb::UDFInfo info_pb;
+  google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
+  EXPECT_OK(info.Init(info_pb));
+
+  EXPECT_EQ(udfspb::UDF_ALL, info.GetUDFSourceExecutor("add", std::vector<types::DataType>(
+                                                                  {types::FLOAT64, types::FLOAT64}))
+                                 .ConsumeValueOrDie());
+  EXPECT_EQ(udfspb::UDF_KELVIN,
+            info.GetUDFSourceExecutor("scalar1",
+                                      std::vector<types::DataType>({types::BOOLEAN, types::INT64}))
+                .ConsumeValueOrDie());
+  EXPECT_NOT_OK(info.GetUDFSourceExecutor(
+      "scalar1", std::vector<types::DataType>({types::FLOAT64, types::FLOAT64})));
 }
 
 TEST(RegistryInfo, semantic_types) {
