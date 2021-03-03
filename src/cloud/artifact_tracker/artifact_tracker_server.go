@@ -4,30 +4,28 @@ import (
 	"context"
 	"io/ioutil"
 	"net/http"
-
-	"github.com/spf13/viper"
-
-	"github.com/jmoiron/sqlx"
-	"github.com/spf13/pflag"
-
-	"golang.org/x/oauth2/jwt"
-
-	"golang.org/x/oauth2/google"
-	"pixielabs.ai/pixielabs/src/shared/services/pg"
+	_ "net/http/pprof"
 
 	"cloud.google.com/go/storage"
 	"github.com/golang-migrate/migrate"
 	"github.com/golang-migrate/migrate/database/postgres"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/googleapis/google-cloud-go-testing/storage/stiface"
+	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
+	"golang.org/x/oauth2/google"
+	"golang.org/x/oauth2/jwt"
 	"google.golang.org/api/option"
+
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerenv"
 	atpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/controller"
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/schema"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
+	"pixielabs.ai/pixielabs/src/shared/services/pg"
 	"pixielabs.ai/pixielabs/src/shared/services/server"
 )
 
@@ -85,6 +83,8 @@ func main() {
 	services.SetupServiceLogging()
 
 	mux := http.NewServeMux()
+	// This handles all the pprof endpoints.
+	mux.Handle("/debug/", http.DefaultServeMux)
 	healthz.RegisterDefaultChecks(mux)
 
 	ctx := context.Background()

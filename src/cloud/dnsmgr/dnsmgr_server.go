@@ -2,21 +2,22 @@ package main
 
 import (
 	"net/http"
+	_ "net/http/pprof"
 
 	"github.com/golang-migrate/migrate"
 	"github.com/golang-migrate/migrate/database/postgres"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+
 	"pixielabs.ai/pixielabs/src/cloud/dnsmgr/controller"
 	"pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrenv"
 	dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
 	"pixielabs.ai/pixielabs/src/cloud/dnsmgr/schema"
-	"pixielabs.ai/pixielabs/src/shared/services/pg"
-
-	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
+	"pixielabs.ai/pixielabs/src/shared/services/pg"
 	"pixielabs.ai/pixielabs/src/shared/services/server"
 )
 
@@ -34,6 +35,8 @@ func main() {
 	services.SetupServiceLogging()
 
 	mux := http.NewServeMux()
+	// This handles all the pprof endpoints.
+	mux.Handle("/debug/", http.DefaultServeMux)
 	healthz.RegisterDefaultChecks(mux)
 
 	db := pg.MustConnectDefaultPostgresDB()

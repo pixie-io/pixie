@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	_ "net/http/pprof"
 
 	"github.com/golang-migrate/migrate"
 	"github.com/golang-migrate/migrate/database/postgres"
@@ -62,6 +63,8 @@ func main() {
 	services.SetupServiceLogging()
 
 	mux := http.NewServeMux()
+	// This handles all the pprof endpoints.
+	mux.Handle("/debug/", http.DefaultServeMux)
 	healthz.RegisterDefaultChecks(mux)
 
 	cfg := controllers.NewAuth0Config()

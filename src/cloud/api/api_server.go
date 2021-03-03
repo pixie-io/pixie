@@ -5,31 +5,31 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 	"time"
 
-	"github.com/nats-io/nats.go"
-	"github.com/spf13/viper"
-
 	"github.com/gorilla/handlers"
+	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
+
 	public_cloudapipb "pixielabs.ai/pixielabs/src/api/public/cloudapipb"
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
+	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
+	"pixielabs.ai/pixielabs/src/cloud/api/controller"
 	"pixielabs.ai/pixielabs/src/cloud/api/ptproxy"
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
-	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
-
-	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
-	"pixielabs.ai/pixielabs/src/cloud/api/controller"
 	"pixielabs.ai/pixielabs/src/cloud/shared/esutils"
+	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	svcEnv "pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/handler"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/server"
+	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
 const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-core.json"
@@ -122,6 +122,8 @@ func main() {
 		fmt.Fprintf(w, "OK")
 	})))
 
+	// This handles all the pprof endpoints.
+	mux.Handle("/debug/", http.DefaultServeMux)
 	healthz.RegisterDefaultChecks(mux)
 
 	// API service needs to convert any cookies into an augmented token in bearer auth.

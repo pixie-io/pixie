@@ -38,7 +38,6 @@ func RegisterPingEndpoint(mux mux) {
 func RegisterDefaultChecks(mux mux, checks ...Checker) {
 	RegisterPingEndpoint(mux)
 	InstallPathHandler(mux, "/healthz", checks...)
-
 }
 
 // healthzCheck implements Checker on an arbitrary name and check function.

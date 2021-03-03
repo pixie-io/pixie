@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	_ "net/http/pprof"
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/stan.go"
@@ -15,6 +16,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+
 	"pixielabs.ai/pixielabs/src/cloud/indexer/controllers"
 	"pixielabs.ai/pixielabs/src/cloud/indexer/md"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
@@ -115,6 +117,8 @@ func main() {
 	services.SetupServiceLogging()
 
 	mux := http.NewServeMux()
+	// This handles all the pprof endpoints.
+	mux.Handle("/debug/", http.DefaultServeMux)
 	healthz.RegisterDefaultChecks(mux)
 
 	s := server.NewPLServer(env.New(), mux)

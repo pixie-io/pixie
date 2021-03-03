@@ -2,20 +2,21 @@ package main
 
 import (
 	"net/http"
+	_ "net/http/pprof"
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/stan.go"
 	uuid "github.com/satori/go.uuid"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/bridge"
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
-	"pixielabs.ai/pixielabs/src/shared/services/env"
-
-	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/src/shared/services"
+	"pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/server"
 )
@@ -66,6 +67,8 @@ func main() {
 	services.SetupServiceLogging()
 
 	mux := http.NewServeMux()
+	// This handles all the pprof endpoints.
+	mux.Handle("/debug/", http.DefaultServeMux)
 	healthz.RegisterDefaultChecks(mux)
 	// VZConn is the backend for a GCLB and that health checks on "/" instead of the regular health check endpoint.
 	healthz.InstallPathHandler(mux, "/")
