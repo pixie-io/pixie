@@ -713,6 +713,28 @@ export namespace RequestGraph {
   }
 }
 
+export class StackTraceFlameGraph extends jspb.Message {
+  getStacktraceColumn(): string;
+  setStacktraceColumn(value: string): StackTraceFlameGraph;
+
+  getCountColumn(): string;
+  setCountColumn(value: string): StackTraceFlameGraph;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): StackTraceFlameGraph.AsObject;
+  static toObject(includeInstance: boolean, msg: StackTraceFlameGraph): StackTraceFlameGraph.AsObject;
+  static serializeBinaryToWriter(message: StackTraceFlameGraph, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): StackTraceFlameGraph;
+  static deserializeBinaryFromReader(message: StackTraceFlameGraph, reader: jspb.BinaryReader): StackTraceFlameGraph;
+}
+
+export namespace StackTraceFlameGraph {
+  export type AsObject = {
+    stacktraceColumn: string,
+    countColumn: string,
+  }
+}
+
 export enum PXType { 
   PX_UNKNOWN = 0,
   PX_BOOLEAN = 1,
