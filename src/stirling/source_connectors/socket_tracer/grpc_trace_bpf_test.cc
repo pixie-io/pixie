@@ -87,10 +87,6 @@ class GRPCTraceGoTest : public ::testing::Test {
   }
 
   void InitSocketTraceConnector() {
-    // Force disable protobuf parsing to output the binary protobuf in record batch.
-    // Also ensure test remain passing when the default changes.
-    FLAGS_stirling_enable_parsing_protobufs = false;
-
     // TODO(yzhao): We have to install probes after starting server. Otherwise we will run into
     // failures when detaching them. This might be relevant to probes are inherited by child process
     // when fork() and execvp().
@@ -174,8 +170,9 @@ TEST_P(GRPCTraceTest, CaptureRPCTraceRecord) {
   EXPECT_EQ(0, record_batch[kHTTPMinorVersionIdx]->Get<types::Int64Value>(idx).val);
   EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kGRPC),
             record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(idx).val);
-  EXPECT_THAT(GetHelloReply(record_batch, idx),
-              EqualsProto(R"proto(message: "Hello PixieLabs")proto"));
+
+  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(idx).string(),
+            R"(1: "Hello PixieLabs")");
 }
 
 INSTANTIATE_TEST_SUITE_P(SecurityModeTest, GRPCTraceTest, ::testing::Values(true, false));

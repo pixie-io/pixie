@@ -35,8 +35,6 @@
 #include "src/stirling/utils/linux_headers.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
-DEFINE_bool(stirling_enable_parsing_protobufs, true,
-            "If true, parses binary protobufs captured in gRPC messages.");
 DEFINE_int32(test_only_socket_trace_target_pid, kTraceAllTGIDs, "The process to trace.");
 // TODO(yzhao): If we ever need to write all events from different perf buffers, then we need either
 // write to different files for individual perf buffers, or create a protobuf message with an oneof
@@ -557,8 +555,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
 
   std::string path = req_stream->headers.ValueByKey(protocols::http2::headers::kPath);
 
-  if (FLAGS_stirling_enable_parsing_protobufs &&
-      (req_stream->HasGRPCContentType() || resp_stream->HasGRPCContentType())) {
+  if ((req_stream->HasGRPCContentType() || resp_stream->HasGRPCContentType())) {
     MethodInputOutput rpc = grpc_desc_db_.GetMethodInputOutput(::pl::grpc::MethodPath(path));
     req_stream->data = ParsePB(req_stream->data, rpc.input.get());
     resp_stream->data = ParsePB(resp_stream->data, rpc.output.get());
