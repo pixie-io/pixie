@@ -106,7 +106,9 @@ final class ESLintLinter extends ArcanistExternalLinter {
   public function willLintPaths(array $paths) {
     if (!empty($paths) && !empty($this->setup_script)) {
       // Call the setup script to yarn install!
-      execx($this->setup_script);
+      $future = new ExecFuture($this->setup_script);
+      $future->setCWD($this->getProjectRoot());
+      $future->resolvex();
     }
 
     return parent::willLintPaths($paths);
