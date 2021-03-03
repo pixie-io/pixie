@@ -1,11 +1,9 @@
 // Package bridge connects data between the vizier NATS domain and cloud nats domain by using a GRPC channel. Each Vizier
 // gets a dedicated subset of nats domain in the from v2c.<shard_id>.<cluster_id>.* and c2v.<shard_id>.<cluster_id>.*.
-// v2c = vizier to cloud messages, c2v = cloud to vizier messages. The shard ID is determined by hashing the cluster_id
-// and it is fixed to be values between 000 and 100.
+// v2c = vizier to cloud messages, c2v = cloud to vizier messages. The shard ID is determined by the first byte
+// of the clusterID and is between 0x00 and 0xff.
 //
 // This package has the cloud counterpart to Vizier's cloud_connector/bridge component.
-//
-// TODO(zasgar/michelle): shards should be 00-99, will change shortly.
 package bridge
 
 import (
