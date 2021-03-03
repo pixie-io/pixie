@@ -37,62 +37,6 @@ BlockingSplitNodeIDGroups DistributedSplitter::GetSplitGroups(
   return node_groups;
 }
 
-bool DistributedSplitter::ExecutesOnDataStores(const udfspb::UDTFSourceExecutor& executor) {
-  return executor == udfspb::UDTF_ALL_AGENTS || executor == udfspb::UDTF_ALL_PEM ||
-         executor == udfspb::UDTF_SUBSET_PEM;
-}
-
-bool DistributedSplitter::ExecutesOnRemoteProcessors(const udfspb::UDTFSourceExecutor& executor) {
-  return executor == udfspb::UDTF_ALL_AGENTS || executor == udfspb::UDTF_ALL_KELVIN ||
-         executor == udfspb::UDTF_ONE_KELVIN || executor == udfspb::UDTF_SUBSET_KELVIN;
-}
-
-bool DistributedSplitter::RunsOnDataStores(const std::vector<OperatorIR*> sources) {
-  for (auto* s : sources) {
-    if (Match(s, UDTFSource())) {
-      auto udtf_op = static_cast<UDTFSourceIR*>(s);
-
-      if (ExecutesOnDataStores(udtf_op->udtf_spec().executor())) {
-        return true;
-      }
-    }
-    if (Match(s, MemorySource())) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool DistributedSplitter::RunsOnRemoteProcessors(const std::vector<OperatorIR*> sources) {
-  for (auto* s : sources) {
-    if (Match(s, UDTFSource())) {
-      auto udtf_op = static_cast<UDTFSourceIR*>(s);
-
-      if (ExecutesOnRemoteProcessors(udtf_op->udtf_spec().executor())) {
-        return true;
-      }
-    }
-    if (Match(s, MemorySource())) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool DistributedSplitter::IsSourceOnKelvin(OperatorIR* source_op) {
-  DCHECK(source_op->IsSource());
-  if (!Match(source_op, UDTFSource())) {
-    return false;
-  }
-  UDTFSourceIR* udtf = static_cast<UDTFSourceIR*>(source_op);
-  const auto& spec = udtf->udtf_spec();
-  // Fail in Debug w/ ALL_KELVIN, SUBSET_KELVIN, and ALL_AGENTS
-  DCHECK(spec.executor() != udfspb::UDTF_ALL_KELVIN) << "All kelvin execution not supported";
-  DCHECK(spec.executor() != udfspb::UDTF_ALL_AGENTS) << "All agents execution not supported";
-  DCHECK(spec.executor() != udfspb::UDTF_SUBSET_KELVIN) << "Subset kelvin execution not supported";
-  return ExecutesOnRemoteProcessors(spec.executor());
-}
-
 absl::flat_hash_map<int64_t, bool> DistributedSplitter::GetKelvinNodes(
     const IR* logical_plan, const std::vector<int64_t>& source_ids) {
   // TODO(philkuz)  update on_kelvin to actually be on_data_processor and flip bools around.

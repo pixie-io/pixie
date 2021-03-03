@@ -126,11 +126,6 @@ class DistributedSplitter : public NotCopyable {
       const IR* logical_plan, const absl::flat_hash_map<int64_t, bool>& on_kelvin,
       const std::vector<int64_t>& sources);
 
-  bool ExecutesOnDataStores(const udfspb::UDTFSourceExecutor& executor);
-  bool ExecutesOnRemoteProcessors(const udfspb::UDTFSourceExecutor& executor);
-  bool RunsOnDataStores(const std::vector<OperatorIR*> sources);
-  bool RunsOnRemoteProcessors(const std::vector<OperatorIR*> sources);
-  bool IsSourceOnKelvin(OperatorIR* source_op);
   StatusOr<std::unique_ptr<IR>> CreateGRPCBridgePlan(
       const IR* logical_plan, const absl::flat_hash_map<int64_t, bool>& on_kelvin,
       const std::vector<int64_t>& sources);
