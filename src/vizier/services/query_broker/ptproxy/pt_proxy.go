@@ -192,7 +192,7 @@ func (s *PassThroughProxy) runRequest(reqState *RequestState, msg *cvmsgspb.C2VA
 		}
 		if err != nil {
 			log.WithError(err).Error("Got a stream read error")
-			v2cResp := formatStatusMessage(reqState.requestID, codes.Internal, "stream read error")
+			v2cResp := formatStatusMessage(reqState.requestID, status.Code(err), err.Error())
 
 			s.sendMessage(reqState.requestID, v2cResp)
 			return

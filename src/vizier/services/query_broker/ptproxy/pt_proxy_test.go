@@ -168,8 +168,8 @@ func TestPassThroughProxy(t *testing.T) {
 					RequestID: "2",
 					Msg: &cvmsgspb.V2CAPIStreamResponse_Status{
 						Status: &public_vizierapipb.Status{
-							Code:    int32(codes.Internal),
-							Message: "stream read error",
+							Code:    int32(codes.Unknown),
+							Message: "rpc error: code = Unknown desc = Failed",
 						},
 					},
 				},
