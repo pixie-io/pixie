@@ -312,7 +312,7 @@ message V2CMessage {
     string vizier_id = 1 [(gogoproto.customname) = "VizierID"];
     // This is the ID of K8s cluster as known to K8s. If this changes, we know
     // that the cluster has been updated.
-    string cluster_uid = 2 [(gogoproto.customname) = "VizierID"];
+    string cluster_uid = 2 [(gogoproto.customname) = "ClusterUID"];
     // This is an opaque monotonically increasing number that updates for each restart of cloud connector.
     int64 session_id = 3;
     google.protobuf.Any msg = 4;
