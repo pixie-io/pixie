@@ -23,6 +23,10 @@ deploy_stirling_pod: stirling-pod.yaml.tmpl create_namespace create_image_pull_s
 deploy_stirling_daemonset: stirling-daemonset.yaml.tmpl create_namespace create_image_pull_secret  ## Deploys stirling as a daemonset on all nodes.
 	cat $< | $(EVAL_TMPL) | $(KUBECTL) apply -f -
 
+.PHONY: deploy_stirling_profiler_pod
+deploy_stirling_profiler_pod: stirling-profiler-pod.yaml.tmpl create_namespace create_image_pull_secret ## Deploy Stirling as a pod on a single node.
+	cat $< | $(EVAL_TMPL) | $(KUBECTL) apply -f -
+
 .PHONY: delete_stirling_pod
 delete_stirling_pod: stirling-pod.yaml.tmpl ## Delete the previously deployed Stirling pod.
 	cat $< | $(EVAL_TMPL) | $(KUBECTL) delete -f -
@@ -30,3 +34,8 @@ delete_stirling_pod: stirling-pod.yaml.tmpl ## Delete the previously deployed St
 .PHONY: delete_stirling_daemonset
 delete_stirling_daemonset: stirling-daemonset.yaml.tmpl ## Delete the previously deployed Stirling daemonset.
 	cat $< | $(EVAL_TMPL) | $(KUBECTL) delete -f -
+
+.PHONY: delete_stirling_profiler_pod
+delete_stirling_profiler_pod: stirling-profiler-pod.yaml.tmpl ## Delete the previously deployed Stirling pod.
+	cat $< | $(EVAL_TMPL) | $(KUBECTL) delete -f -
+

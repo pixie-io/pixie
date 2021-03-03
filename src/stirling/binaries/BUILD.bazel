@@ -28,22 +28,6 @@ pl_cc_binary(
     ],
 )
 
-pl_cc_binary(
-    name = "stirling_dt",
-    srcs = ["stirling_dt.cc"],
-    deps = [
-        "//src/stirling:cc_library",
-    ],
-)
-
-pl_cc_binary(
-    name = "stirling_profiler",
-    srcs = ["stirling_profiler.cc"],
-    deps = [
-        "//src/stirling:cc_library",
-    ],
-)
-
 cc_image(
     name = "stirling_wrapper_image",
     base = "//:pl_cc_bpf_debug_image",
@@ -56,5 +40,51 @@ container_push(
     image = ":stirling_wrapper_image",
     registry = "gcr.io",
     repository = "pl-dev-infra/stirling_wrapper",
+    tag = "{BUILD_USER}",
+)
+
+pl_cc_binary(
+    name = "stirling_dt",
+    srcs = ["stirling_dt.cc"],
+    deps = [
+        "//src/stirling:cc_library",
+    ],
+)
+
+cc_image(
+    name = "stirling_dt_image",
+    base = "//:pl_cc_bpf_debug_image",
+    binary = ":stirling_dt",
+)
+
+container_push(
+    name = "push_stirling_dt_image",
+    format = "Docker",
+    image = ":stirling_dt_image",
+    registry = "gcr.io",
+    repository = "pl-dev-infra/stirling_dt",
+    tag = "{BUILD_USER}",
+)
+
+pl_cc_binary(
+    name = "stirling_profiler",
+    srcs = ["stirling_profiler.cc"],
+    deps = [
+        "//src/stirling:cc_library",
+    ],
+)
+
+cc_image(
+    name = "stirling_profiler_image",
+    base = "//:pl_cc_bpf_debug_image",
+    binary = ":stirling_profiler",
+)
+
+container_push(
+    name = "push_stirling_profiler_image",
+    format = "Docker",
+    image = ":stirling_profiler_image",
+    registry = "gcr.io",
+    repository = "pl-dev-infra/stirling_profiler",
     tag = "{BUILD_USER}",
 )
