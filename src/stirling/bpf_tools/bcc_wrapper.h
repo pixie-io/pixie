@@ -30,6 +30,7 @@
 #include "src/stirling/obj_tools/elf_tools.h"
 
 DECLARE_uint32(stirling_bpf_perf_buffer_page_count);
+DECLARE_bool(stirling_always_infer_task_struct_offsets);
 
 namespace pl {
 namespace stirling {
@@ -159,10 +160,15 @@ class BCCWrapper {
 
   /**
    * Compiles the BPF code.
+   * @param bpf_program The BPF code to compile.
    * @param cflags compiler flags.
-   * @return error if no root access, or code could not be compiled.
+   * @param requires_linux_headers Search for local headers, or attempt installation of
+   *                               packaged headers if available.
+   * @return error if no root access, code could not be compiled, or required linux headers are not
+   *               available.
    */
-  Status InitBPFProgram(std::string_view bpf_program, const std::vector<std::string>& cflags = {});
+  Status InitBPFProgram(std::string_view bpf_program, std::vector<std::string> cflags = {},
+                        bool requires_linux_headers = true);
 
   /**
    * Attach a single kprobe.
@@ -271,7 +277,7 @@ class BCCWrapper {
   static size_t num_attached_perf_events() { return num_attached_perf_events_; }
 
  private:
-  FRIEND_TEST(BCCWrapperTest, DetachUProbe);
+  FRIEND_TEST(BCCWrapperUProbeTest, DetachUProbe);
 
   Status DetachKProbe(const KProbeSpec& probe);
   Status DetachUProbe(const UProbeSpec& probe);

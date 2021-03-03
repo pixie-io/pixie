@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "src/common/base/base.h"
 #include "src/common/system/proc_parser.h"
@@ -173,7 +174,11 @@ StatusOr<TaskStructOffsets> ResolveTaskStructOffsetsCore() {
                     .probe_fn = "task_struct_probe"};
 
   // Deploy the BPF program.
-  PL_RETURN_IF_ERROR(bcc->InitBPFProgram(bcc_script));
+  std::vector<std::string> cflags;
+  // Important! Must tell BCCWrapper that we don't need linux headers, otherwise we may
+  // enter an infinite loop if BCCWrapper tries to run the TaskStructOffsetsResolver again.
+  bool requires_linux_headers = false;
+  PL_RETURN_IF_ERROR(bcc->InitBPFProgram(bcc_script, cflags, requires_linux_headers));
   PL_RETURN_IF_ERROR(bcc->AttachUProbe(uprobe));
 
   // Trigger our uprobe.

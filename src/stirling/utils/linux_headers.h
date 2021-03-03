@@ -118,6 +118,11 @@ StatusOr<PackagedLinuxHeadersSpec> FindClosestPackagedLinuxHeaders(
 
 Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir);
 
+// After headers are installed, this variable is set to true.
+// Future calls to InstallPackagedLinuxHeaders() will not re-install the headers,
+// but this variable lets us know the headers were installed on the filesystem.
+inline bool g_packaged_headers_installed = false;
+
 enum class LinuxHeaderStrategy {
   // Search for linux Linux headers are already accessible (must be running directly on host).
   kSearchLocalHeaders,

@@ -17,6 +17,7 @@
 #include "src/common/base/base.h"
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/system.h"
+#include "src/stirling/bpf_tools/task_struct_offset_resolver.h"
 #include "src/stirling/obj_tools/elf_tools.h"
 #include "src/stirling/utils/linux_headers.h"
 
@@ -30,6 +31,10 @@
 // that should be OK for our current beta customers.
 DEFINE_uint32(stirling_bpf_perf_buffer_page_count, 256,
               "The size of the perf buffers, in number of memory pages.");
+
+DEFINE_bool(
+    stirling_always_infer_task_struct_offsets, false,
+    "When true, run the task_struct offset resolver even when local/host headers are found.");
 
 namespace pl {
 namespace stirling {
@@ -68,23 +73,63 @@ Status MountDebugFS() {
   return Status::OK();
 }
 
-Status BCCWrapper::InitBPFProgram(std::string_view bpf_program,
-                                  const std::vector<std::string>& cflags) {
+StatusOr<utils::TaskStructOffsets> ResolveTaskStructOffsets() {
+  constexpr int kNumAttempts = 3;
+
+  StatusOr<utils::TaskStructOffsets> offsets_status;
+  for (int attempt = 0; attempt < kNumAttempts; ++attempt) {
+    offsets_status = utils::ResolveTaskStructOffsets();
+    if (offsets_status.ok()) {
+      break;
+    }
+  }
+  return offsets_status;
+}
+
+Status BCCWrapper::InitBPFProgram(std::string_view bpf_program, std::vector<std::string> cflags,
+                                  bool requires_linux_headers) {
+  using utils::TaskStructOffsets;
+
   if (!IsRoot()) {
     return error::PermissionDenied("BCC currently only supported as the root user.");
   }
 
-  // This function will setup linux headers for BPF code deployment.
-  // If another BCCWrapper has already run this function, it will just return the same location
-  // as the previous one.
-  // Note: Could also put this in Stirling Init() function, but then some tests which use
-  //       BCCWrapper (e.g. connector_bpf_tests), would have to make sure to call this function.
-  //       Thus, it is deemed to be better here.
-  PL_ASSIGN_OR_RETURN(const std::filesystem::path sys_headers_dir,
-                      utils::FindOrInstallLinuxHeaders({utils::kDefaultHeaderSearchOrder}));
+  if (requires_linux_headers) {
+    // This function will setup linux headers for BPF code deployment.
+    // If another BCCWrapper has already run this function, it will just return the same location
+    // as the previous one.
+    // Note: Could also put this in Stirling Init() function, but then some tests which use
+    //       BCCWrapper (e.g. connector_bpf_tests), would have to make sure to call this function.
+    //       Thus, it is deemed to be better here.
+    PL_ASSIGN_OR_RETURN(const std::filesystem::path sys_headers_dir,
+                        utils::FindOrInstallLinuxHeaders({utils::kDefaultHeaderSearchOrder}));
 
-  LOG(INFO) << absl::Substitute("Using linux headers found at $0 for BCC runtime.",
-                                sys_headers_dir.string());
+    LOG(INFO) << absl::Substitute("Using linux headers found at $0 for BCC runtime.",
+                                  sys_headers_dir.string());
+
+    // When using packaged Linux headers, there is a good chance that the `struct task_struct`
+    // is not a perfect match with the version on the host OS (despite our best efforts to account
+    // for the kernel config). In such cases, try to resolve the location of the fields we care
+    // about, and send them in as an override to the BPF code.
+    // Note that if we found local host headers, then we do not typically do this step, because
+    // we trust the locally installed headers to be a perfect match.
+    // There is a flag to force the task struct fields resolution, in case we don't trust the
+    // local headers, and for testing purposes.
+    bool potentially_mismatched_headers = utils::g_packaged_headers_installed;
+    if (potentially_mismatched_headers || FLAGS_stirling_always_infer_task_struct_offsets) {
+      LOG(INFO) << "Resolving task_struct offsets.";
+
+      PL_ASSIGN_OR_RETURN(TaskStructOffsets offsets, ResolveTaskStructOffsets());
+
+      LOG(INFO) << absl::Substitute("Task struct offsets: group_leader=$0 real_start_time=$1",
+                                    offsets.group_leader_offset, offsets.real_start_time_offset);
+
+      cflags.push_back(
+          absl::Substitute("-DGROUP_LEADER_OFFSET_OVERRIDE=$0", offsets.group_leader_offset));
+      cflags.push_back(
+          absl::Substitute("-DSTART_BOOTTIME_OFFSET_OVERRIDE=$0", offsets.real_start_time_offset));
+    }
+  }
 
   PL_RETURN_IF_ERROR(MountDebugFS());
 

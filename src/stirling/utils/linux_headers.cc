@@ -456,6 +456,7 @@ Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir)
   PL_RETURN_IF_ERROR(fs::CreateSymlinkIfNotExists(packaged_headers.path, lib_modules_build_dir));
   LOG(INFO) << absl::Substitute("Successfully installed packaged copy of headers at $0",
                                 lib_modules_build_dir.string());
+  g_packaged_headers_installed = true;
   return Status::OK();
 }
 

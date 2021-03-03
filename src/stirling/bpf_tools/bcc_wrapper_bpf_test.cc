@@ -13,19 +13,39 @@ namespace bpf_tools {
 using ::pl::testing::BazelBinTestFilePath;
 using ::pl::testing::TempDir;
 
-class BCCWrapperTest : public ::testing::Test {
+constexpr char kBCCProgram[] = R"BCC(
+  int foo(struct pt_regs* ctx) {
+    return 0;
+  }
+)BCC";
+
+TEST(BCCWrapperTest, InitDefault) {
+  // This will look for Linux Headers using the default strategy,
+  // but since packaged headers are not included and PL_HOST_ENV is not defined,
+  // it essentially boils down to a local headers search.
+  // If the test host doesn't have Linux headers, we expect this test to fail.
+  BCCWrapper bcc_wrapper;
+  ASSERT_OK(bcc_wrapper.InitBPFProgram(kBCCProgram));
+}
+
+TEST(BCCWrapperTest, InitWithTaskStructOffsetsResolver) {
+  // Force the TaskStructOffsetsResolver to run, so we can test
+  // that it doesn't lead to an infinite recursion.
+  FLAGS_stirling_always_infer_task_struct_offsets = true;
+
+  BCCWrapper bcc_wrapper;
+  ASSERT_OK(bcc_wrapper.InitBPFProgram(kBCCProgram));
+}
+
+class BCCWrapperUProbeTest : public ::testing::Test {
  protected:
-  inline static const obj_tools::DummyExeFixture kDummyExeFixture;
   static constexpr char kSymbol[] = "CanYouFindThis";
-  static constexpr char kBCC[] = R"BCC(
-      int foo(struct pt_regs* ctx) {
-        return 0;
-      }
-  )BCC";
 
   void SetUp() override {
-    ASSERT_OK(bcc_wrapper_.InitBPFProgram(kBCC));
-    // Copy to temp directory so we can remove it to simulate non-existent file.
+    ASSERT_OK(bcc_wrapper_.InitBPFProgram(kBCCProgram));
+
+    // Copy dummy_exe to temp directory so we can remove it to simulate non-existent file.
+    const obj_tools::DummyExeFixture kDummyExeFixture;
     dummy_exe_path_ = temp_dir_.path() / "dummy_exe";
     ASSERT_OK(fs::Copy(kDummyExeFixture.Path(), dummy_exe_path_));
   }
@@ -35,7 +55,7 @@ class BCCWrapperTest : public ::testing::Test {
   std::filesystem::path dummy_exe_path_;
 };
 
-TEST_F(BCCWrapperTest, DetachUProbe) {
+TEST_F(BCCWrapperUProbeTest, DetachUProbe) {
   UProbeSpec spec = {
       .binary_path = dummy_exe_path_,
       .symbol = kSymbol,
