@@ -748,6 +748,10 @@ message MissingK8sMetadataRequest {
   int64 from_update_version = 3;
   // The ending range of the update versions to fetch. Exclusive.
   int64 to_update_version = 2;
+  // An optional custom topic to use when responding to the missing request.
+  // This is currently only respected by the vizier<->cloud communication and
+  // not used for vizier<->agent communication.
+  string custom_topic = 4;
 }
 
 // The response to a request for missing k8s updates. The response to a single

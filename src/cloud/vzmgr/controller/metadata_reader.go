@@ -336,9 +336,22 @@ func (m *MetadataReader) getMissingUpdates(from, to int64, vzState *VizierState)
 		WithField("to", to).
 		Info("Making request for missing metadata updates")
 
+	defer func() {
+		log.
+			WithField("vizier", vzState.id.String()).
+			WithField("vizier.updateVersion", vzState.updateVersion).
+			WithField("from", from).
+			WithField("to", to).
+			Info("Completed missing metadata updates")
+	}()
+
+	topic := uuid.NewV4().String()
+	missingResponseTopic := fmt.Sprintf("%s:%s", metadataResponseTopic, topic)
+
 	mdReq := &metadatapb.MissingK8SMetadataRequest{
 		FromUpdateVersion: from,
 		ToUpdateVersion:   to,
+		CustomTopic:       topic,
 	}
 	reqBytes, err := wrapMetadataRequest(vzState.id, mdReq)
 	if err != nil {
@@ -347,7 +360,7 @@ func (m *MetadataReader) getMissingUpdates(from, to int64, vzState *VizierState)
 
 	// Subscribe to topic that the response will be sent on.
 	subCh := make(chan *nats.Msg, 1024)
-	sub, err := m.nc.ChanSubscribe(vzshard.V2CTopic(metadataResponseTopic, vzState.id), subCh)
+	sub, err := m.nc.ChanSubscribe(vzshard.V2CTopic(missingResponseTopic, vzState.id), subCh)
 	defer sub.Unsubscribe()
 
 	pubTopic := vzshard.C2VTopic(metadataRequestTopic, vzState.id)

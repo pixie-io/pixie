@@ -1,6 +1,7 @@
 package k8smeta
 
 import (
+	"fmt"
 	"math"
 	"sync"
 
@@ -18,8 +19,8 @@ import (
 var (
 	// MetadataRequestSubscribeTopic is the channel which the listener is subscribed to for metadata requests.
 	MetadataRequestSubscribeTopic = messagebus.C2VTopic("MetadataRequest")
-	// MetadataResponseTopic is the channel which the listener uses to responsd to metadata requests.
-	MetadataResponseTopic = messagebus.V2CTopic("MetadataResponse")
+	// metadataResponseTopic is the channel which the listener uses to responsd to metadata requests.
+	metadataResponseTopic = "MetadataResponse"
 	// MissingMetadataRequestTopic is the channel which the listener should listen to missing metadata update requests on.
 	MissingMetadataRequestTopic = "MissingMetadataRequests"
 )
@@ -190,6 +191,11 @@ func (m *MetadataTopicListener) processCloudMessage(msg *nats.Msg) error {
 		return err
 	}
 
+	log.
+		WithField("from", req.FromUpdateVersion).
+		WithField("to", req.ToUpdateVersion).
+		Info("Got request for missing metadata updates")
+
 	batches, firstAvailable, lastAvailable, err := m.getUpdatesInBatches(req.FromUpdateVersion, req.ToUpdateVersion, req.Selector)
 	if err != nil {
 		return err
@@ -214,7 +220,9 @@ func (m *MetadataTopicListener) processCloudMessage(msg *nats.Msg) error {
 			return err
 		}
 
-		err = m.sendMessage(MetadataResponseTopic, b)
+		missingResponseTopic := fmt.Sprintf("%s:%s", metadataResponseTopic, req.CustomTopic)
+
+		err = m.sendMessage(messagebus.V2CTopic(missingResponseTopic), b)
 		if err != nil {
 			return err
 		}

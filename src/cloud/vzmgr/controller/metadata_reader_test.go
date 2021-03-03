@@ -1,6 +1,7 @@
 package controller_test
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -192,6 +193,8 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 					assert.Equal(t, test.metadataRequests[batch].to, req.ToUpdateVersion)
 					assert.Equal(t, test.metadataRequests[batch].from, req.FromUpdateVersion)
 
+					responseTopic := fmt.Sprintf("%s:%s", "MetadataResponse", req.CustomTopic)
+
 					// Send response.
 					for _, r := range test.metadataRequests[batch].responses {
 						anyUpdates, err := types.MarshalAny(r)
@@ -201,7 +204,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 						}
 						b, err := v2cMsg.Marshal()
 						assert.Nil(t, err)
-						nc.Publish(vzshard.V2CTopic("MetadataResponse", vzID), b)
+						nc.Publish(vzshard.V2CTopic(responseTopic, vzID), b)
 					}
 
 					batch++
