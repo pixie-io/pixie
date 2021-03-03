@@ -35,9 +35,8 @@
 #include "src/stirling/utils/linux_headers.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
-DEFINE_bool(stirling_enable_parsing_protobufs, false,
-            "If true, parses binary protobufs captured in gRPC messages. "
-            "As of 2019-07, the parser can only handle protobufs defined in Hipster Shop.");
+DEFINE_bool(stirling_enable_parsing_protobufs, true,
+            "If true, parses binary protobufs captured in gRPC messages.");
 DEFINE_int32(test_only_socket_trace_target_pid, kTraceAllTGIDs, "The process to trace.");
 // TODO(yzhao): If we ever need to write all events from different perf buffers, then we need either
 // write to different files for individual perf buffers, or create a protobuf message with an oneof

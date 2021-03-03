@@ -67,8 +67,6 @@ class HTTP2TraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing 
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
     // Note that this step will make an access to docker hub to download the HTTP image.
     PL_CHECK_OK(server_.Run(60, {}));
-
-    FLAGS_stirling_enable_parsing_protobufs = true;
   }
 
   GRPCServerContainer server_;
@@ -189,8 +187,6 @@ class ProductCatalogServiceTraceTest
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
     // Note that this step will make an access to docker hub to  download the HTTP image.
     PL_CHECK_OK(server_.Run(60, {}));
-
-    FLAGS_stirling_enable_parsing_protobufs = true;
   }
 
   ProductCatalogService server_;
