@@ -153,6 +153,7 @@
       "type": "eslint",
       "bin": "./linters/eslint_ui.sh",
       "eslint.config": ".eslintrc.json",
+      "eslint.setup": "./linters/eslint_setup.sh",
       "include": [
         "(^src/ui/.*\\.(tsx|ts|js)$)"
       ]
