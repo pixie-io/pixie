@@ -1,8 +1,6 @@
 // This must be the first include.
 #include "src/stirling/bpf_tools/bcc_bpf/stubs.h"
 
-#include <linux/sched.h>  // NOLINT
-
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf/protocol_inference.h"
 

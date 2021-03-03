@@ -3,7 +3,6 @@
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 
 #include <linux/perf_event.h>
-#include <linux/sched.h>
 #include <sys/mount.h>
 
 #include <unistd.h>

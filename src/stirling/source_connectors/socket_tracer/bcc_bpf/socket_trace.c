@@ -3,7 +3,6 @@
 #include <linux/errno.h>
 #include <linux/in6.h>
 #include <linux/ptrace.h>
-#include <linux/sched.h>
 #include <linux/socket.h>
 
 #define socklen_t size_t
