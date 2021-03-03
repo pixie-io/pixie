@@ -23,8 +23,10 @@ pl_cc_library(
 
 # We build predictable_stack_traces_app with clang++ regardless of the bazel config.
 # This is test data, so we want deterministic debug symbols.
+# _genrule suffix is to avoid a bazel warning:
+# target 'predictable_stack_traces_app' is both a rule and a file.
 genrule(
-    name = "predictable_stack_traces_app",
+    name = "predictable_stack_traces_app_genrule",
     srcs = ["predictable_stack_traces_app.cc"],
     outs = ["predictable_stack_traces_app"],
     # -O0: Disables optimization which in turn disables inlining.
