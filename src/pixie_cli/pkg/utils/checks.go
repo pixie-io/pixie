@@ -71,8 +71,9 @@ func detectClusterType() ClusterType {
 			return ClusterTypeMinikubeHyperkit
 		} else if s == "kvm2" {
 			return ClusterTypeMinikubeKVM2
+		} else if s != "" {
+			return ClusterTypeMinikubeOther
 		}
-		return ClusterTypeMinikubeOther
 	}
 
 	// Check if it is an eks/gke cluster. This is done by checking if the version string is in the format of "v1.15.12-gke.2" or "v1.15.11-eks-af3caf".
