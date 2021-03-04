@@ -9,7 +9,8 @@
     {
       "name": "namespace",
       "type": "PX_NAMESPACE",
-      "description": "The namespace to filter on."
+      "description": "The namespace to filter on.",
+      "defaultValue": "default"
     },
     {
       "name": "from_entity_filter",

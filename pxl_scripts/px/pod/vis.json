@@ -9,7 +9,8 @@
     {
       "name": "pod",
       "type": "PX_POD",
-      "description": "The pod name to filter on. Format: <ns>/<pod_name>"
+      "description": "The pod name to filter on. Format: <ns>/<pod_name>",
+      "defaultValue": ""
     }
   ],
   "globalFuncs": [

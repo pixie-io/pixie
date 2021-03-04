@@ -9,7 +9,8 @@
     {
       "name": "query_name_filter",
       "type": "PX_STRING",
-      "description": "The partial query name used to filter the DNS requests by (e.g. your.domain.name)."
+      "description": "The partial query name used to filter the DNS requests by.",
+      "defaultValue": "your.domain.name"
     }
   ],
   "globalFuncs": [

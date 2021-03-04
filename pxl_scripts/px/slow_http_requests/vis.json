@@ -9,7 +9,9 @@
     {
       "name": "namespace",
       "type": "PX_NAMESPACE",
-      "description": "The name of the namespace to get stats for."    }
+      "description": "The name of the namespace to get stats for.",
+      "defaultValue": "default"
+    }
   ],
   "widgets": [
     {

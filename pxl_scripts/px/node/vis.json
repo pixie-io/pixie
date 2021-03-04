@@ -9,7 +9,8 @@
     {
       "name": "node",
       "type": "PX_NODE",
-      "description": "The node name to filter on"
+      "description": "The node name to filter on",
+      "defaultValue": ""
     },
     {
       "name": "groupby",

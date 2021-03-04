@@ -9,7 +9,8 @@
     {
       "name": "service",
       "type": "PX_SERVICE",
-      "description": "The name of the service to get stats for. Format: ns/svc_name"
+      "description": "The name of the service to get stats for. Format: ns/svc_name",
+      "defaultValue": ""
     }
   ],
   "globalFuncs": [
