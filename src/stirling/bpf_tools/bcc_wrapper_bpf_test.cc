@@ -129,8 +129,7 @@ TEST(BCCWrapperTest, GetTGIDStartTime) {
   // Trigger our uprobe.
   BCCWrapperTestProbeTrigger();
 
-  auto tgid_start_time_output =
-      bcc_wrapper.bpf().get_array_table<uint64_t>("tgid_start_time_output");
+  auto tgid_start_time_output = bcc_wrapper.GetArrayTable<uint64_t>("tgid_start_time_output");
   uint64_t proc_pid_start_time;
   ASSERT_EQ(tgid_start_time_output.get_value(0, proc_pid_start_time).code(), 0);
 

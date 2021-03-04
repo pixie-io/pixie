@@ -1,19 +1,8 @@
 #pragma once
 
-#include <bcc/BPF.h>
-// Including bcc/BPF.h creates some conflicts with llvm.
-// So must remove this stray define for things to work.
-#ifdef STT_GNU_IFUNC
-#undef STT_GNU_IFUNC
-#endif
-
-// Including bcc/BPF.h creates some conflicts with our own code.
-#ifdef DECLARE_ERROR
-#undef DECLARE_ERROR
-#endif
-
 #include <string>
 
+#include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 
 namespace pl {
@@ -21,9 +10,9 @@ namespace stirling {
 
 class ConnInfoMapManager {
  public:
-  explicit ConnInfoMapManager(ebpf::BPF* bpf)
-      : conn_info_map_(bpf->get_hash_table<uint64_t, struct conn_info_t>("conn_info_map")),
-        conn_disabled_map_(bpf->get_hash_table<uint64_t, uint64_t>("conn_disabled_map")) {}
+  explicit ConnInfoMapManager(bpf_tools::BCCWrapper* bcc)
+      : conn_info_map_(bcc->GetHashTable<uint64_t, struct conn_info_t>("conn_info_map")),
+        conn_disabled_map_(bcc->GetHashTable<uint64_t, uint64_t>("conn_disabled_map")) {}
 
   void ReleaseResources(struct conn_id_t conn_id) {
     uint64_t key = id(conn_id);

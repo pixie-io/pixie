@@ -184,7 +184,7 @@ Status SocketTraceConnector::InitImpl() {
     socket_info_mgr_ = s.ConsumeValueOrDie();
   }
 
-  conn_info_map_mgr_ = std::make_shared<ConnInfoMapManager>(&bpf());
+  conn_info_map_mgr_ = std::make_shared<ConnInfoMapManager>(this);
   ConnectionTracker::SetConnInfoMapManager(conn_info_map_mgr_);
 
   uprobe_mgr_.Init(protocol_transfer_specs_[kProtocolHTTP2].enabled,
@@ -315,17 +315,17 @@ Status UpdatePerCPUArrayValue(int idx, TValueType val, ebpf::BPFPercpuArrayTable
 
 Status SocketTraceConnector::UpdateBPFProtocolTraceRole(TrafficProtocol protocol,
                                                         uint64_t role_mask) {
-  auto control_map_handle = bpf().get_percpu_array_table<uint64_t>(kControlMapName);
+  auto control_map_handle = GetPerCPUArrayTable<uint64_t>(kControlMapName);
   return UpdatePerCPUArrayValue(static_cast<int>(protocol), role_mask, &control_map_handle);
 }
 
 Status SocketTraceConnector::TestOnlySetTargetPID(int64_t pid) {
-  auto control_map_handle = bpf().get_percpu_array_table<int64_t>(kControlValuesArrayName);
+  auto control_map_handle = GetPerCPUArrayTable<int64_t>(kControlValuesArrayName);
   return UpdatePerCPUArrayValue(kTargetTGIDIndex, pid, &control_map_handle);
 }
 
 Status SocketTraceConnector::DisableSelfTracing() {
-  auto control_map_handle = bpf().get_percpu_array_table<int64_t>(kControlValuesArrayName);
+  auto control_map_handle = GetPerCPUArrayTable<int64_t>(kControlValuesArrayName);
   int64_t self_pid = getpid();
   return UpdatePerCPUArrayValue(kStirlingTGIDIndex, self_pid, &control_map_handle);
 }

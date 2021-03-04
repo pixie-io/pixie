@@ -273,6 +273,25 @@ class BCCWrapper {
    */
   void Stop();
 
+  template <typename TKeyType, typename TValueType>
+  ebpf::BPFHashTable<TKeyType, TValueType> GetHashTable(const std::string& table_name) {
+    return bpf_.get_hash_table<TKeyType, TValueType>(table_name);
+  }
+
+  template <typename TValueType>
+  ebpf::BPFArrayTable<TValueType> GetArrayTable(const std::string& table_name) {
+    return bpf_.get_array_table<TValueType>(table_name);
+  }
+
+  ebpf::BPFStackTable GetStackTable(const std::string& table_name) {
+    return bpf_.get_stack_table(table_name);
+  }
+
+  template <typename TValueType>
+  ebpf::BPFPercpuArrayTable<TValueType> GetPerCPUArrayTable(const std::string& table_name) {
+    return bpf_.get_percpu_array_table<TValueType>(table_name);
+  }
+
   /**
    * Provide access to the BPF instance, for direct access.
    * Eventually, this should go away, and everything should

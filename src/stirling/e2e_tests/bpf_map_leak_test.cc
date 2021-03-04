@@ -67,7 +67,7 @@ TEST_F(BPFMapLeakTest, unclosed_connection) {
   DataTable data_table(kHTTPTable);
   auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.get());
   ebpf::BPFHashTable<uint64_t, struct conn_info_t> conn_info_map =
-      socket_trace_connector->bpf().get_hash_table<uint64_t, struct conn_info_t>("conn_info_map");
+      socket_trace_connector->GetHashTable<uint64_t, struct conn_info_t>("conn_info_map");
   std::vector<std::pair<uint64_t, struct conn_info_t>> entries;
 
   // Confirm that the leaked BPF map entry exists.

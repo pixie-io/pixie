@@ -178,9 +178,8 @@ StatusOr<TaskStructOffsets> ResolveTaskStructOffsetsCore() {
   uint64_t task_struct_addr;
   {
     // TODO(oazizi): Find systematic way to convert ebpf::StatusTuple to pl::Status.
-    ebpf::StatusTuple bpf_status = bcc->bpf()
-                                       .get_array_table<uint64_t>("task_struct_address_map")
-                                       .get_value(0, task_struct_addr);
+    ebpf::StatusTuple bpf_status =
+        bcc->GetArrayTable<uint64_t>("task_struct_address_map").get_value(0, task_struct_addr);
     if (bpf_status.code() != 0) {
       return error::Internal("Failed to read task_struct_address_map");
     }
@@ -191,7 +190,7 @@ StatusOr<TaskStructOffsets> ResolveTaskStructOffsetsCore() {
   {
     // TODO(oazizi): Find systematic way to convert ebpf::StatusTuple to pl::Status.
     ebpf::StatusTuple bpf_status =
-        bcc->bpf().get_array_table<struct buf>("task_struct_buf").get_value(0, buf);
+        bcc->GetArrayTable<struct buf>("task_struct_buf").get_value(0, buf);
     if (bpf_status.code() != 0) {
       return error::Internal("Failed to read task_struct_buf");
     }

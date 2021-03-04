@@ -31,7 +31,7 @@ void PIDRuntimeConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t
   // TODO(kgandhi): PL-452 There is an extra copy when calling get_table_offline. We should extract
   // the key when it is a struct from the BPFHASHTable directly.
   std::vector<std::pair<uint16_t, pidruntime_val_t>> items =
-      bpf().get_hash_table<uint16_t, pidruntime_val_t>("pid_cpu_time").get_table_offline();
+      GetHashTable<uint16_t, pidruntime_val_t>("pid_cpu_time").get_table_offline();
 
   for (auto& item : items) {
     // TODO(kgandhi): PL-460 Consider using other types of BPF tables to avoid a searching through

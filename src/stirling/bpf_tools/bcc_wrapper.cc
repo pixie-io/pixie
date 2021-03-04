@@ -158,7 +158,7 @@ Status BCCWrapper::AttachUProbe(const UProbeSpec& probe) {
   DCHECK((probe.symbol.empty() && probe.address != 0) ||
          (!probe.symbol.empty() && probe.address == 0))
       << "Exactly one of 'symbol' and 'address' must be specified.";
-  PL_RETURN_IF_ERROR(bpf().attach_uprobe(
+  PL_RETURN_IF_ERROR(bpf_.attach_uprobe(
       probe.binary_path, probe.symbol, std::string(probe.probe_fn), probe.address,
       static_cast<bpf_probe_attach_type>(probe.attach_type), probe.pid));
   uprobes_.push_back(probe);
@@ -206,8 +206,8 @@ Status BCCWrapper::AttachSamplingProbes(const ArrayView<SamplingProbeSpec>& prob
 // TODO(PL-1294): This can fail in rare cases. See the cited issue. Find the root cause.
 Status BCCWrapper::DetachKProbe(const KProbeSpec& probe) {
   VLOG(1) << "Detaching kprobe: " << probe.ToString();
-  PL_RETURN_IF_ERROR(bpf().detach_kprobe(bpf_.get_syscall_fnname(std::string(probe.kernel_fn)),
-                                         static_cast<bpf_probe_attach_type>(probe.attach_type)));
+  PL_RETURN_IF_ERROR(bpf_.detach_kprobe(bpf_.get_syscall_fnname(std::string(probe.kernel_fn)),
+                                        static_cast<bpf_probe_attach_type>(probe.attach_type)));
   --num_attached_kprobes_;
   return Status::OK();
 }
@@ -216,9 +216,9 @@ Status BCCWrapper::DetachUProbe(const UProbeSpec& probe) {
   VLOG(1) << "Detaching uprobe " << probe.ToString();
 
   if (fs::Exists(probe.binary_path).ok()) {
-    PL_RETURN_IF_ERROR(bpf().detach_uprobe(probe.binary_path, probe.symbol, probe.address,
-                                           static_cast<bpf_probe_attach_type>(probe.attach_type),
-                                           probe.pid));
+    PL_RETURN_IF_ERROR(bpf_.detach_uprobe(probe.binary_path, probe.symbol, probe.address,
+                                          static_cast<bpf_probe_attach_type>(probe.attach_type),
+                                          probe.pid));
   }
   --num_attached_uprobes_;
   return Status::OK();
@@ -312,7 +312,7 @@ void BCCWrapper::DetachPerfEvents() {
 }
 
 void BCCWrapper::PollPerfBuffer(std::string_view perf_buffer_name, int timeout_ms) {
-  auto perf_buffer = bpf().get_perf_buffer(std::string(perf_buffer_name));
+  auto perf_buffer = bpf_.get_perf_buffer(std::string(perf_buffer_name));
   if (perf_buffer != nullptr) {
     perf_buffer->poll(timeout_ms);
   }

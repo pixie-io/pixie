@@ -29,14 +29,14 @@ Status PerfProfileConnector::InitImpl() {
   PL_RETURN_IF_ERROR(InitBPFProgram(profiler_bcc_script, defines));
   PL_RETURN_IF_ERROR(AttachSamplingProbes(kProbeSpecs));
 
-  stack_traces_a_ = std::make_unique<ebpf::BPFStackTable>(bpf().get_stack_table("stack_traces_a"));
-  stack_traces_b_ = std::make_unique<ebpf::BPFStackTable>(bpf().get_stack_table("stack_traces_b"));
+  stack_traces_a_ = std::make_unique<ebpf::BPFStackTable>(GetStackTable("stack_traces_a"));
+  stack_traces_b_ = std::make_unique<ebpf::BPFStackTable>(GetStackTable("stack_traces_b"));
   histogram_a_ = std::make_unique<ebpf::BPFHashTable<stack_trace_key_t, uint64_t>>(
-      bpf().get_hash_table<stack_trace_key_t, uint64_t>("histogram_a"));
+      GetHashTable<stack_trace_key_t, uint64_t>("histogram_a"));
   histogram_b_ = std::make_unique<ebpf::BPFHashTable<stack_trace_key_t, uint64_t>>(
-      bpf().get_hash_table<stack_trace_key_t, uint64_t>("histogram_b"));
-  profiler_state_ = std::make_unique<ebpf::BPFArrayTable<uint64_t>>(
-      bpf().get_array_table<uint64_t>("profiler_state"));
+      GetHashTable<stack_trace_key_t, uint64_t>("histogram_b"));
+  profiler_state_ =
+      std::make_unique<ebpf::BPFArrayTable<uint64_t>>(GetArrayTable<uint64_t>("profiler_state"));
 
   LOG(INFO) << "PerfProfiler: Stack trace profiling sampling probe successfully deployed.";
   return Status::OK();
