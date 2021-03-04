@@ -130,7 +130,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
 
       const argProps = {
         title: argName,
-        value: argVal.toString(),
+        value: argVal?.toString(),
         selectable: true,
         allowTyping: true,
         onSelect: (newVal) => {
