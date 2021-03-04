@@ -23,7 +23,7 @@ package_online_boutique:
 	tar -czf $(ARTIFACTS_DIR)/px-online-boutique.tar.gz -C $(ARTIFACTS_DIR)/tmp/online_boutique_manifests .
 
 .PHONY: package_demo_apps
-package_demo_apps: 
+package_demo_apps:
 	rm -rf $(ARTIFACTS_DIR)
 	mkdir -p $(ARTIFACTS_DIR)
 	mkdir -p $(ARTIFACTS_DIR)/tmp
@@ -33,15 +33,15 @@ package_demo_apps:
 
 update_bundle: package_demo_apps
 # Requires prod access to update.
-	gsutil -h "Cache-Control:no-cachle,max-age=0" \
+	gsutil -h "Cache-Control:no-cache,max-age=0" \
                -h "Content-Type:application/json" \
                cp $(PWD)/manifest.json $(PREFIX)/manifest.json
 
-	gsutil -h "Cache-Control:no-cachle,max-age=0" \
+	gsutil -h "Cache-Control:no-cache,max-age=0" \
                -h "Content-Type:application/gzip" \
                cp $(ARTIFACTS_DIR)/px-sock-shop.tar.gz $(PREFIX)/px-sock-shop.tar.gz
 
-	gsutil -h "Cache-Control:no-cachle,max-age=0" \
+	gsutil -h "Cache-Control:no-cache,max-age=0" \
                -h "Content-Type:application/gzip" \
                cp $(ARTIFACTS_DIR)/px-online-boutique.tar.gz $(PREFIX)/px-online-boutique.tar.gz
 
