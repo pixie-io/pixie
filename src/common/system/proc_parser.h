@@ -125,7 +125,7 @@ class ProcParser {
   /**
    * Returns the /proc/<pid>/exe
    */
-  std::string GetExePath(int32_t pid) const;
+  StatusOr<std::string> GetExePath(int32_t pid) const;
 
   /**
    * Parses /proc/<pid>/io files.

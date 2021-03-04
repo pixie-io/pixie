@@ -65,8 +65,9 @@ Status SubProcess::Start(const std::vector<std::string>& args, bool stderr_to_st
     // interact with it.
     system::ProcParser proc_parser(system::Config::GetInstance());
 
-    // Wait until the exe path changed.
-    while (proc_parser.GetExePath(child_pid_) == proc_parser.GetExePath(getpid())) {
+    // Wait until the exe path changes.
+    PL_ASSIGN_OR_RETURN(std::filesystem::path parent_exe_path, proc_parser.GetExePath(getpid()));
+    while (proc_parser.GetExePath(child_pid_).ValueOr({}) == parent_exe_path) {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 

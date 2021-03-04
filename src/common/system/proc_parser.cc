@@ -427,9 +427,9 @@ std::string ProcParser::GetPIDCmdline(int32_t pid) const {
   return cmdline;
 }
 
-std::string ProcParser::GetExePath(int32_t pid) const {
+StatusOr<std::string> ProcParser::GetExePath(int32_t pid) const {
   auto exe_path = std::filesystem::path(proc_base_path_) / std::to_string(pid) / "exe";
-  return fs::ReadSymlink(exe_path).ValueOr({});
+  return fs::ReadSymlink(exe_path);
 }
 
 StatusOr<int64_t> ProcParser::GetPIDStartTimeTicks(int32_t pid) const {

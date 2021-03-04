@@ -134,24 +134,24 @@ StatusOr<TaskStructOffsets> ScanBufferForFields(const struct buf& buf,
   return task_struct_offsets;
 }
 
-}  // namespace
-
-StatusOr<TaskStructOffsets> ResolveTaskStructOffsetsCore() {
-  // Get the PID's start time from /proc.
-  // TODO(oazizi): This only works if run as the main thread of a process.
-  //               Fix to support threaded environments.
-  PL_ASSIGN_OR_RETURN(uint64_t proc_pid_start_time,
-                      ::pl::system::GetPIDStartTimeTicks("/proc/self"));
-
-  auto bcc = std::make_unique<pl::stirling::bpf_tools::BCCWrapper>();
-
+StatusOr<std::filesystem::path> GetSelfPath() {
   const system::Config& sysconfig = system::Config::GetInstance();
   ::pl::system::ProcParser proc_parser(sysconfig);
-  std::filesystem::path self_path = proc_parser.GetExePath(getpid());
+  PL_ASSIGN_OR_RETURN(std::filesystem::path self_path, proc_parser.GetExePath(getpid()));
   PL_ASSIGN_OR_RETURN(std::unique_ptr<FilePathResolver> fp_resolver,
                       FilePathResolver::Create(getpid()));
   PL_ASSIGN_OR_RETURN(self_path, fp_resolver->ResolvePath(self_path));
-  self_path = sysconfig.ToHostPath(self_path);
+  return sysconfig.ToHostPath(self_path);
+}
+
+}  // namespace
+
+StatusOr<TaskStructOffsets> ResolveTaskStructOffsetsCore() {
+  // Get the PID start time from /proc.
+  PL_ASSIGN_OR_RETURN(uint64_t proc_pid_start_time,
+                      ::pl::system::GetPIDStartTimeTicks("/proc/self"));
+
+  PL_ASSIGN_OR_RETURN(std::filesystem::path self_path, GetSelfPath());
 
   // Use address instead of symbol to specify this probe,
   // so that even if debug symbols are stripped, the uprobe can still attach.
@@ -164,6 +164,7 @@ StatusOr<TaskStructOffsets> ResolveTaskStructOffsetsCore() {
                     .probe_fn = "task_struct_probe"};
 
   // Deploy the BPF program.
+  auto bcc = std::make_unique<pl::stirling::bpf_tools::BCCWrapper>();
   std::vector<std::string> cflags;
   // Important! Must tell BCCWrapper that we don't need linux headers, otherwise we may
   // enter an infinite loop if BCCWrapper tries to run the TaskStructOffsetsResolver again.

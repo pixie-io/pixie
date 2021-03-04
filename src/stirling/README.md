@@ -101,7 +101,7 @@ To make sure Stirling runs properly in a container environment, the following fl
 
 *   `--privileged`: BPF requires root permissions.
 *   `--volume=/sys:/sys`: Required for BPF probes to function correctly.
-*   `--pid=host`: Uses host's PID namespace. Without this, Stirling's calls to `getpid()`` won't be correctly resolved.
+*   `--pid=host`: Uses host's PID namespace. Without this, Stirling's calls to `getpid()` won't be correctly resolved.
     Also used in tests to easily find the target PID and ensure it's same as what BPF sees. This is used inside `Jenkinsfile`.
 *   `--volume=/:/host`: Make the entire host file system to `/host` inside container. Stirling needs
     this to access all of the data files on the host. One of them is the system headers, which is
