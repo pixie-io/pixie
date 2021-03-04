@@ -41,7 +41,6 @@ go_test(
     ],
     embed = [":go_default_library"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/cloud/auth/authenv:go_default_library",
         "//src/cloud/auth/controllers/mock:go_default_library",
         "//src/cloud/auth/proto:auth_go_proto",

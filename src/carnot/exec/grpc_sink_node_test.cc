@@ -69,7 +69,9 @@ class GRPCSinkNodeTest : public ::testing::Test {
 constexpr char kExpectedInternalInitialization[] = R"proto(
 address: "localhost:1234"
 query_id {
-  data: "$0"
+  high_bits: $0
+  low_bits: $1
+  deprecated_data: "$2"
 }
 query_result {
   initiate_result_stream: true
@@ -80,7 +82,9 @@ query_result {
 constexpr char kExpectedInteralResult0[] = R"proto(
 address: "localhost:1234"
 query_id {
-  data: "$0"
+  high_bits: $0
+  low_bits: $1
+  deprecated_data: "$2"
 }
 query_result {
   row_batch {
@@ -96,7 +100,9 @@ query_result {
 constexpr char kExpectedInteralResult1[] = R"proto(
 address: "localhost:1234"
 query_id {
-  data: "$0"
+  high_bits: $0
+  low_bits: $1
+  deprecated_data: "$2"
 }
 query_result {
   row_batch {
@@ -114,7 +120,9 @@ query_result {
 constexpr char kExpectedInteralResult2[] = R"proto(
 address: "localhost:1234"
 query_id {
-  data: "$0"
+  high_bits: $0
+  low_bits: $1
+  deprecated_data: "$2"
 }
 query_result {
   row_batch {
@@ -146,10 +154,14 @@ TEST_F(GRPCSinkNodeTest, internal_result) {
 
   std::vector<TransferResultChunkRequest> actual_protos(4);
   std::vector<std::string> expected_protos = {
-      absl::Substitute(kExpectedInternalInitialization, exec_state_->query_id().str()),
-      absl::Substitute(kExpectedInteralResult0, exec_state_->query_id().str()),
-      absl::Substitute(kExpectedInteralResult1, exec_state_->query_id().str()),
-      absl::Substitute(kExpectedInteralResult2, exec_state_->query_id().str()),
+      absl::Substitute(kExpectedInternalInitialization, exec_state_->query_id().ab,
+                       exec_state_->query_id().cd, exec_state_->query_id().str()),
+      absl::Substitute(kExpectedInteralResult0, exec_state_->query_id().ab,
+                       exec_state_->query_id().cd, exec_state_->query_id().str()),
+      absl::Substitute(kExpectedInteralResult1, exec_state_->query_id().ab,
+                       exec_state_->query_id().cd, exec_state_->query_id().str()),
+      absl::Substitute(kExpectedInteralResult2, exec_state_->query_id().ab,
+                       exec_state_->query_id().cd, exec_state_->query_id().str()),
   };
 
   auto writer = new grpc::testing::MockClientWriter<TransferResultChunkRequest>();
@@ -189,7 +201,9 @@ TEST_F(GRPCSinkNodeTest, internal_result) {
 constexpr char kExpectedExternalInitialization[] = R"proto(
 address: "localhost:1234"
 query_id {
-  data: "$0"
+  high_bits: $0
+  low_bits: $1
+  deprecated_data: "$2"
 }
 query_result {
   initiate_result_stream: true
@@ -200,7 +214,9 @@ query_result {
 constexpr char kExpectedExteralResult0[] = R"proto(
 address: "localhost:1234"
 query_id {
-  data: "$0"
+  high_bits: $0
+  low_bits: $1
+  deprecated_data: "$2"
 }
 query_result {
   row_batch {
@@ -216,7 +232,9 @@ query_result {
 constexpr char kExpectedExteralResult1[] = R"proto(
 address: "localhost:1234"
 query_id {
-  data: "$0"
+  high_bits: $0
+  low_bits: $1
+  deprecated_data: "$2"
 }
 query_result {
   row_batch {
@@ -234,7 +252,9 @@ query_result {
 constexpr char kExpectedExteralResult2[] = R"proto(
 address: "localhost:1234"
 query_id {
-  data: "$0"
+  high_bits: $0
+  low_bits: $1
+  deprecated_data: "$2"
 }
 query_result {
   row_batch {
@@ -266,10 +286,14 @@ TEST_F(GRPCSinkNodeTest, external_result) {
 
   std::vector<TransferResultChunkRequest> actual_protos(4);
   std::vector<std::string> expected_protos = {
-      absl::Substitute(kExpectedExternalInitialization, exec_state_->query_id().str()),
-      absl::Substitute(kExpectedExteralResult0, exec_state_->query_id().str()),
-      absl::Substitute(kExpectedExteralResult1, exec_state_->query_id().str()),
-      absl::Substitute(kExpectedExteralResult2, exec_state_->query_id().str()),
+      absl::Substitute(kExpectedExternalInitialization, exec_state_->query_id().ab,
+                       exec_state_->query_id().cd, exec_state_->query_id().str()),
+      absl::Substitute(kExpectedExteralResult0, exec_state_->query_id().ab,
+                       exec_state_->query_id().cd, exec_state_->query_id().str()),
+      absl::Substitute(kExpectedExteralResult1, exec_state_->query_id().ab,
+                       exec_state_->query_id().cd, exec_state_->query_id().str()),
+      absl::Substitute(kExpectedExteralResult2, exec_state_->query_id().ab,
+                       exec_state_->query_id().cd, exec_state_->query_id().str()),
   };
 
   auto writer = new grpc::testing::MockClientWriter<TransferResultChunkRequest>();

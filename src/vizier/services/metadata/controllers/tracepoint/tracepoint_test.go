@@ -563,7 +563,7 @@ func TestTTLExpiration(t *testing.T) {
 		proto.Unmarshal(msg, vzMsg)
 		req := vzMsg.GetTracepointMessage().GetRemoveTracepointRequest()
 		assert.NotNil(t, req)
-		seenDeletions = append(seenDeletions, string(req.ID.Data))
+		seenDeletions = append(seenDeletions, utils.ProtoToUUIDStr(req.ID))
 
 		wg.Done()
 		return nil

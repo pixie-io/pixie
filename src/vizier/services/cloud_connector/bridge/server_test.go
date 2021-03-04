@@ -283,7 +283,7 @@ func TestNATSGRPCBridgeTest_CorrectRegistrationFlow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not unmarshal: %+v", err)
 	}
-	assert.Equal(t, string(registerMsg.VizierID.Data), ts.vzID.String())
+	assert.Equal(t, utils.ProtoToUUIDStr(registerMsg.VizierID), ts.vzID.String())
 	assert.Equal(t, registerMsg.JwtKey, ts.jwt)
 	assert.Equal(t, registerMsg.Address, "foobar")
 	assert.Equal(t, "test-cluster", registerMsg.ClusterInfo.ClusterName)

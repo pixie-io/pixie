@@ -14,7 +14,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/cloud/auth/authenv"
 	"pixielabs.ai/pixielabs/src/cloud/auth/controllers"
 	mock_controllers "pixielabs.ai/pixielabs/src/cloud/auth/controllers/mock"
@@ -35,7 +34,9 @@ func TestServer_LoginNewUser(t *testing.T) {
 	defer ctrl.Finish()
 
 	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	orgPb := pbutils.ProtoFromUUIDStrOrNil(orgID)
 	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	userPb := pbutils.ProtoFromUUIDStrOrNil(userID)
 
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
@@ -49,7 +50,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 	}
 
 	fakeOrgInfo := &profilepb.OrgInfo{
-		ID:      &uuidpb.UUID{Data: []byte(orgID)},
+		ID:      orgPb,
 		OrgName: "testOrg",
 	}
 	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfo, nil)
@@ -77,7 +78,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 
 	mockProfile.EXPECT().
 		CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
-			OrgID:     &uuidpb.UUID{Data: []byte(orgID)},
+			OrgID:     orgPb,
 			Username:  "abc@gmail.com",
 			FirstName: "first",
 			LastName:  "last",
@@ -87,7 +88,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 
 	mockProfile.EXPECT().
 		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
-			ID:             &uuidpb.UUID{Data: []byte(userID)},
+			ID:             userPb,
 			ProfilePicture: "something",
 		}).
 		Return(nil, nil)
@@ -275,9 +276,11 @@ func TestServer_LoginNewUser_SupportUser(t *testing.T) {
 	defer ctrl.Finish()
 
 	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	orgPb := pbutils.ProtoFromUUIDStrOrNil(orgID)
+
 	userID := uuid.FromStringOrNil("")
 	fakeOrgInfo := &profilepb.OrgInfo{
-		ID: &uuidpb.UUID{Data: []byte(orgID)},
+		ID: orgPb,
 	}
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
@@ -357,6 +360,7 @@ func TestServer_LoginNewUser_CreateUserFailed(t *testing.T) {
 	defer ctrl.Finish()
 
 	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	orgPb := pbutils.ProtoFromUUIDStrOrNil(orgID)
 
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
@@ -369,7 +373,7 @@ func TestServer_LoginNewUser_CreateUserFailed(t *testing.T) {
 	}
 
 	fakeOrgInfo := &profilepb.OrgInfo{
-		ID: &uuidpb.UUID{Data: []byte(orgID)},
+		ID: orgPb,
 	}
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
 
@@ -381,7 +385,7 @@ func TestServer_LoginNewUser_CreateUserFailed(t *testing.T) {
 
 	mockProfile.EXPECT().
 		CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
-			OrgID:     &uuidpb.UUID{Data: []byte(orgID)},
+			OrgID:     orgPb,
 			Username:  "abc@gmail.com",
 			FirstName: "first",
 			LastName:  "last",
@@ -429,6 +433,9 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 	defer ctrl.Finish()
 
 	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	orgPb := pbutils.ProtoFromUUIDStrOrNil(orgID)
+	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	userPb := pbutils.ProtoFromUUIDStrOrNil(userID)
 
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
@@ -436,25 +443,25 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 
 	fakeUserInfo1 := &controllers.UserInfo{
 		Email:    "abc@gmail.com",
-		PLUserID: "pluserid",
-		PLOrgID:  "plorgid",
+		PLUserID: userID,
+		PLOrgID:  orgID,
 	}
 
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo1, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockProfile.EXPECT().
-		GetUser(gomock.Any(), &uuidpb.UUID{Data: []byte("pluserid")}).
+		GetUser(gomock.Any(), userPb).
 		Return(nil, nil)
 	fakeOrgInfo := &profilepb.OrgInfo{
-		ID: &uuidpb.UUID{Data: []byte(orgID)},
+		ID: orgPb,
 	}
 	mockProfile.EXPECT().
 		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@gmail.com"}).
 		Return(fakeOrgInfo, nil)
 	mockProfile.EXPECT().
 		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
-			ID:             &uuidpb.UUID{Data: []byte("pluserid")},
+			ID:             userPb,
 			ProfilePicture: "",
 		}).
 		Return(nil, nil)
@@ -474,7 +481,7 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 	assert.False(t, resp.UserCreated)
-	verifyToken(t, resp.Token, "pluserid", "plorgid", resp.ExpiresAt, "jwtkey")
+	verifyToken(t, resp.Token, userID, orgID, resp.ExpiresAt, "jwtkey")
 }
 
 func TestServer_Login_HasOldPLUserID(t *testing.T) {
@@ -482,7 +489,9 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 	defer ctrl.Finish()
 
 	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	orgPb := pbutils.ProtoFromUUIDStrOrNil(orgID)
 	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	userPb := pbutils.ProtoFromUUIDStrOrNil(userID)
 
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
@@ -492,8 +501,8 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 		Email:     "abc@gmail.com",
 		FirstName: "first",
 		LastName:  "last",
-		PLUserID:  "pluserid",
-		PLOrgID:   "plorgid",
+		PLUserID:  userID,
+		PLOrgID:   orgID,
 	}
 
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo1, nil)
@@ -512,11 +521,11 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockProfile.EXPECT().
-		GetUser(gomock.Any(), &uuidpb.UUID{Data: []byte("pluserid")}).
+		GetUser(gomock.Any(), userPb).
 		Return(nil, errors.New("Could not find user"))
 
 	fakeOrgInfo := &profilepb.OrgInfo{
-		ID: &uuidpb.UUID{Data: []byte(orgID)},
+		ID: orgPb,
 	}
 
 	mockProfile.EXPECT().
@@ -525,17 +534,17 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 
 	mockProfile.EXPECT().
 		CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
-			OrgID:     &uuidpb.UUID{Data: []byte(orgID)},
+			OrgID:     orgPb,
 			Username:  "abc@gmail.com",
 			FirstName: "first",
 			LastName:  "last",
 			Email:     "abc@gmail.com",
 		}).
-		Return(&uuidpb.UUID{Data: []byte(userID)}, nil)
+		Return(userPb, nil)
 
 	mockProfile.EXPECT().
 		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
-			ID:             &uuidpb.UUID{Data: []byte(userID)},
+			ID:             userPb,
 			ProfilePicture: "",
 		}).
 		Return(nil, nil)
@@ -893,6 +902,8 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 	defer ctrl.Finish()
 
 	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	orgPb := pbutils.ProtoFromUUIDStrOrNil(orgID)
+
 	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
 
 	// Setup expectations for the mocks.
@@ -929,7 +940,7 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 		Return(nil, errors.New("user does not exist"))
 
 	fakeOrgInfo := &profilepb.OrgInfo{
-		ID: &uuidpb.UUID{Data: []byte(orgID)},
+		ID: orgPb,
 	}
 
 	mockProfile.EXPECT().
@@ -937,7 +948,7 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 		Return(fakeOrgInfo, nil)
 
 	mockProfile.EXPECT().CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
-		OrgID:     &uuidpb.UUID{Data: []byte(orgID)},
+		OrgID:     orgPb,
 		Username:  "abc@gmail.com",
 		FirstName: "first",
 		LastName:  "last",
@@ -972,7 +983,10 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 	defer ctrl.Finish()
 
 	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	orgPb := pbutils.ProtoFromUUIDStrOrNil(orgID)
+
 	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	userPb := pbutils.ProtoFromUUIDStrOrNil(userID)
 
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
@@ -1023,8 +1037,8 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 		},
 	}).
 		Return(&profilepb.CreateOrgAndUserResponse{
-			OrgID:  &uuidpb.UUID{Data: []byte(orgID)},
-			UserID: &uuidpb.UUID{Data: []byte(userID)},
+			OrgID:  orgPb,
+			UserID: userPb,
 		}, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")

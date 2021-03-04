@@ -34,8 +34,7 @@ pl_cc_binary(
     testonly = 1,
     srcs = ["uuid_benchmark.cc"],
     deps = [
-        ":cc_library",
-        "//src/api/public/uuidpb:uuid_pl_cc_proto",
+        "@com_github_rlyeh_sole//:sole",
         "@com_google_benchmark//:benchmark_main",
     ],
 )

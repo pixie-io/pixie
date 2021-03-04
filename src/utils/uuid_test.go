@@ -1,6 +1,7 @@
 package utils_test
 
 import (
+	"encoding/binary"
 	"testing"
 
 	"github.com/gofrs/uuid"
@@ -10,60 +11,74 @@ import (
 	"pixielabs.ai/pixielabs/src/utils"
 )
 
+const uuidStr = "ea8aa095-697f-49f1-b127-d50e5b6e2645"
+const hi uint64 = 0xea8aa095697f49f1
+const lo uint64 = 0xb127d50e5b6e2645
+
+var enc = binary.BigEndian
+
 func TestProtoFromUUID_BaseCaseValidUUID(t *testing.T) {
-	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 	u, _ := uuid.FromString(uuidStr)
 	proto := utils.ProtoFromUUID(u)
-	expected := []byte(uuidStr)
-	assert.Equal(t, expected,
-		proto.Data, "must have correct value")
-}
 
-func TestProtoFromUUID_NilUUID(t *testing.T) {
-	u := uuid.Nil
-
-	proto := utils.ProtoFromUUID(u)
-	assert.Equal(t, []byte(uuid.Nil.String()),
-		proto.Data, "must have correct value")
+	assert.Equal(t, hi, proto.HighBits)
+	assert.Equal(t, lo, proto.LowBits)
 }
 
 func TestProtoFromUUIDStrOrNil_ValidUUID(t *testing.T) {
-	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 	proto := utils.ProtoFromUUIDStrOrNil(uuidStr)
-	assert.Equal(t, []byte(uuid.FromStringOrNil(uuidStr).String()),
-		proto.Data, "must have correct value")
+	assert.Equal(t, hi, proto.HighBits)
+	assert.Equal(t, lo, proto.LowBits)
 }
 
 func TestProtoFromUUIDStrOrNil_InValidUUID(t *testing.T) {
-	// Missing first char.
-	uuidStr := "1285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+	// The 1 is removed from 4th segment b127.
+	uuidStr := "ea8aa095-697f-49f1-b27-d50e5b6e2645"
 	proto := utils.ProtoFromUUIDStrOrNil(uuidStr)
-	assert.Equal(t, []byte(uuid.Nil.String()),
-		proto.Data, "must have nil value")
+
+	assert.Equal(t, uint64(0), proto.HighBits)
+	assert.Equal(t, uint64(0), proto.LowBits)
 }
 
-func TestUUIDFromProto_BaseCaseValidUUID(t *testing.T) {
-	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+func TestUUIDFromProto_DeprecatedStrValidUUID(t *testing.T) {
 	proto := &pb.UUID{
-		Data: []byte(uuidStr),
+		DeprecatedData: []byte(uuidStr),
 	}
 
 	u, err := utils.UUIDFromProto(proto)
 	assert.Nil(t, err, "must not have an error")
-	assert.Equal(t, uuidStr,
-		u.String(), "must have correct value")
+	assert.Equal(t, uuidStr, u.String(), "must have correct value")
+
+	wire, err := proto.Marshal()
+	assert.Nil(t, err)
+	t.Logf("Wire Size for Old Format: %d bytes", len(wire))
+}
+
+func TestUUIDFromProto_BitsValidUUID(t *testing.T) {
+	proto := &pb.UUID{
+		HighBits: hi,
+		LowBits:  lo,
+	}
+
+	u, err := utils.UUIDFromProto(proto)
+	assert.Nil(t, err, "must not have an error")
+	assert.Equal(t, uuidStr, u.String(), "must have correct value")
+
+	wire, err := proto.Marshal()
+	assert.Nil(t, err)
+	t.Logf("Wire Size for New Format: %d bytes", len(wire))
 }
 
 func TestUUIDFromProto_EmptyUUID(t *testing.T) {
 	proto := &pb.UUID{}
 	_, err := utils.UUIDFromProto(proto)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "incorrect UUID length")
+	assert.Contains(t, err.Error(), "neither data nor high_bits/low_bits are set in proto")
 }
 
 func TestUUIDFromProto_ZeroUUID(t *testing.T) {
 	proto := &pb.UUID{
-		Data: []byte(uuid.Nil.String()),
+		DeprecatedData: []byte(uuid.Nil.String()),
 	}
 	u, err := utils.UUIDFromProto(proto)
 	assert.Nil(t, err, "must not have an error")
@@ -71,24 +86,33 @@ func TestUUIDFromProto_ZeroUUID(t *testing.T) {
 		u.String(), "must have correct value")
 }
 
-func TestUUIDFromProtoOrNil_ValidUUID(t *testing.T) {
-	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-	proto := &pb.UUID{
-		Data: []byte(uuidStr),
+func BenchmarkUUIDFromString(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		uuid.FromString(uuidStr)
 	}
-
-	u := utils.UUIDFromProtoOrNil(proto)
-	assert.Equal(t, uuidStr,
-		u.String(), "must have correct value")
 }
 
-func TestUUIDFromProtoOrNil_InValidUUID(t *testing.T) {
-	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c6ac"
-	proto := &pb.UUID{
-		Data: []byte(uuidStr),
+func BenchmarkUUIDFromBytes(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		data := make([]byte, 16)
+		enc.PutUint64(data[0:], hi)
+		enc.PutUint64(data[8:], lo)
+		uuid.FromBytes(data)
 	}
+}
 
-	u := utils.UUIDFromProtoOrNil(proto)
-	assert.Equal(t, uuid.Nil.String(),
-		u.String(), "must have nil value")
+func BenchmarkUUIDToString(b *testing.B) {
+	u := uuid.Must(uuid.NewV4())
+	for i := 0; i < b.N; i++ {
+		_ = u.String()
+	}
+}
+
+func BenchmarkUUIDToBytes(b *testing.B) {
+	u := uuid.Must(uuid.NewV4())
+	for i := 0; i < b.N; i++ {
+		data := u.Bytes()
+		enc.Uint64(data[0:8])
+		enc.Uint64(data[8:16])
+	}
 }

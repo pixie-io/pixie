@@ -5,8 +5,8 @@ import (
 
 	"pixielabs.ai/pixielabs/src/api/go/pxapi/errdefs"
 	cloudapipb "pixielabs.ai/pixielabs/src/api/public/cloudapipb"
-	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
+	"pixielabs.ai/pixielabs/src/utils"
 )
 
 // VizierStatus stores the enumeration of all vizier statuses.
@@ -59,7 +59,7 @@ func (c *Client) ListViziers(ctx context.Context) ([]*VizierInfo, error) {
 	for _, v := range res.Clusters {
 		viziers = append(viziers, &VizierInfo{
 			Name:         v.ClusterName,
-			ID:           string(v.ID.Data),
+			ID:           utils.ProtoToUUIDStr(v.ID),
 			Version:      v.VizierVersion,
 			Status:       clusterStatusToVizierStatus(v.Status),
 			DirectAccess: !v.Config.PassthroughEnabled,
@@ -72,9 +72,7 @@ func (c *Client) ListViziers(ctx context.Context) ([]*VizierInfo, error) {
 // GetVizierInfo gets info about the given clusterID.
 func (c *Client) GetVizierInfo(ctx context.Context, clusterID string) (*VizierInfo, error) {
 	req := &cloudapipb.GetClusterRequest{
-		ID: &uuidpb.UUID{
-			Data: []byte(clusterID),
-		},
+		ID: utils.ProtoFromUUIDStrOrNil(clusterID),
 	}
 	res, err := c.cmClient.GetCluster(c.cloudCtxWithMD(ctx), req)
 	if err != nil {
@@ -89,7 +87,7 @@ func (c *Client) GetVizierInfo(ctx context.Context, clusterID string) (*VizierIn
 
 	return &VizierInfo{
 		Name:         v.ClusterName,
-		ID:           string(v.ID.Data),
+		ID:           utils.ProtoToUUIDStr(v.ID),
 		Version:      v.VizierVersion,
 		Status:       clusterStatusToVizierStatus(v.Status),
 		DirectAccess: !v.Config.PassthroughEnabled,
@@ -99,9 +97,7 @@ func (c *Client) GetVizierInfo(ctx context.Context, clusterID string) (*VizierIn
 // getConnectionInfo gets the connection info for a cluster using direct mode.
 func (c *Client) getConnectionInfo(ctx context.Context, clusterID string) (*cloudapipb.GetClusterConnectionResponse, error) {
 	req := &cloudapipb.GetClusterConnectionRequest{
-		ID: &uuidpb.UUID{
-			Data: []byte(clusterID),
-		},
+		ID: utils.ProtoFromUUIDStrOrNil(clusterID),
 	}
 	return c.cmClient.GetClusterConnection(c.cloudCtxWithMD(ctx), req)
 }

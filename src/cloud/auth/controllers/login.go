@@ -92,7 +92,8 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 
 	// A user can exist in the AuthProvider, but not the profile service. If that's the case, we want to create a new user.
 	if !newUser {
-		_, err := pc.GetUser(ctx, &uuidpb.UUID{Data: []byte(userInfo.PLUserID)})
+		upb := pbutils.ProtoFromUUIDStrOrNil(userInfo.PLUserID)
+		_, err := pc.GetUser(ctx, upb)
 		if err != nil {
 			newUser = true
 		}
@@ -117,10 +118,8 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 	}
 
 	// Update user's profile photo.
-	_, err = pc.UpdateUser(ctx, &profilepb.UpdateUserRequest{
-		ID:             &uuidpb.UUID{Data: []byte(userInfo.PLUserID)},
-		ProfilePicture: userInfo.Picture,
-	})
+	upb := pbutils.ProtoFromUUIDStrOrNil(userInfo.PLUserID)
+	_, err = pc.UpdateUser(ctx, &profilepb.UpdateUserRequest{ID: upb, ProfilePicture: userInfo.Picture})
 	if err != nil {
 		return nil, err
 	}

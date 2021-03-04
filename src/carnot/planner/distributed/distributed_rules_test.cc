@@ -341,10 +341,10 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnAllAgentsFilterOnAgentUIDKeepAgent
   // Should only run on one kelvin.
   EXPECT_EQ(udtf_spec.executor(), udfspb::UDTF_ALL_AGENTS);
   auto carnot_info = logical_state_.distributed_state().carnot_info()[2];
+  ASSERT_OK_AND_ASSIGN(sole::uuid uuid, ParseUUID(carnot_info.agent_id()));
 
   // Sub-plan 1 should not be deleted.
-  auto udtf_src =
-      MakeUDTFSource(udtf_spec, {{"agent_uid", MakeString(carnot_info.agent_id().data())}});
+  auto udtf_src = MakeUDTFSource(udtf_spec, {{"agent_uid", MakeString(uuid.str())}});
   auto grpc_sink = MakeGRPCSink(udtf_src, 123);
   auto udtf_src_id = udtf_src->id();
   auto grpc_sink_id = grpc_sink->id();
@@ -359,8 +359,6 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnAllAgentsFilterOnAgentUIDKeepAgent
 
   // Should be a kelvin.
   ASSERT_TRUE(!IsPEM(carnot_info));
-
-  ASSERT_OK_AND_ASSIGN(sole::uuid uuid, ParseUUID(carnot_info.agent_id()));
   PruneUnavailableSourcesRule rule(uuid_to_id_map_[uuid], carnot_info, {});
 
   auto rule_or_s = rule.Execute(graph.get());

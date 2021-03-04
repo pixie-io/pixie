@@ -1,7 +1,6 @@
 from typing import List, Any
 from src.api.python.pxapi import vpb
 from src.api.python import pxapi
-from src.api.public.uuidpb import uuid_pb2 as uuidpb
 
 import grpc
 
@@ -167,8 +166,3 @@ async def iterate_and_pass(table_sub: pxapi.TableSub) -> None:
     async for _ in table_sub:
         pass
 
-
-def create_uuid_pb(id_str: str) -> uuidpb.UUID:
-    return uuidpb.UUID(
-        data=id_str.encode('utf-8'),
-    )

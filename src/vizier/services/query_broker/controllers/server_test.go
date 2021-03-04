@@ -32,7 +32,8 @@ info {
 	agent {
 		info {
 			agent_id {
-				data: "21285cdd1de94ab1ae6a0ba08c8c676c"
+				high_bits: 0x21285cdd1de94ab1
+				low_bits: 0xae6a0ba08c8c676c
 			}
 			host_info {
 				hostname: "test_host"
@@ -52,7 +53,8 @@ info {
 const getAgentTableMetadataResponse = `
 metadata_by_agent {
 	agent_id {
-		data: "21285cdd1de94ab1ae6a0ba08c8c676c"
+		high_bits: 0x21285cdd1de94ab1
+		low_bits: 0xae6a0ba08c8c676c
 	}
 	schema {
 		relation_map {
@@ -83,7 +85,8 @@ schema_info {
 			}
 	}
 	agent_list {
-		data: "21285cdd1de94ab1ae6a0ba08c8c676c"
+		high_bits: 0x21285cdd1de94ab1
+		low_bits: 0xae6a0ba08c8c676c
 	}
 }
 `
@@ -129,7 +132,8 @@ distributed_state: {
 	carnot_info: {
 		query_broker_address: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 		agent_id {
-			data:  "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+			high_bits:  0x21285cdd1de94ab1
+			low_bits: 0xae6a0ba08c8c676c
 		}
 		has_data_store: true
 		processes_data: true
@@ -151,7 +155,8 @@ distributed_state: {
 				}
 		}
 		agent_list {
-			data: "21285cdd1de94ab1ae6a0ba08c8c676c"
+			high_bits: 0x21285cdd1de94ab1
+			low_bits: 0xae6a0ba08c8c676c
 		}
 	}
 }
@@ -169,7 +174,8 @@ info {
 	agent {
 		info {
 			agent_id {
-				data: "21285cdd1de94ab1ae6a0ba08c8c676c"
+				high_bits: 0x21285cdd1de94ab1
+				low_bits: 0xae6a0ba08c8c676c
 			}
 			host_info {
 				hostname: "test_host"
@@ -188,7 +194,8 @@ info {
 	agent {
 		info {
 			agent_id {
-				data: "31285cdd1de94ab1ae6a0ba08c8c676c"
+				high_bits: 0x31285cdd1de94ab1
+				low_bits: 0xae6a0ba08c8c676c
 			}
 			host_info {
 				hostname: "another_host"
@@ -207,7 +214,8 @@ info {
 
 const responseByAgent = `
 agent_id {
-	data: "21285cdd1de94ab1ae6a0ba08c8c676c"
+	high_bits: 0x21285cdd1de94ab1
+	low_bits: 0xae6a0ba08c8c676c
 }
 response {
 	query_result {

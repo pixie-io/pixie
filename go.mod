@@ -77,7 +77,7 @@ require (
 	github.com/rivo/tview v0.0.0-20200404204604-ca37f83cb2e7
 	github.com/rivo/uniseg v0.1.0
 	github.com/sahilm/fuzzy v0.1.0
-	github.com/satori/go.uuid v1.2.0 // indirectq
+	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/segmentio/backo-go v0.0.0-20160424052352-204274ad699c // indirect
 	github.com/sirupsen/logrus v1.7.0
 	github.com/skratchdot/open-golang v0.0.0-20190402232053-79abb63cd66e

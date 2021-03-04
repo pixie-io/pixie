@@ -30,7 +30,8 @@ constexpr char kOnePEMOneKelvinDistributedState[] = R"proto(
 carnot_info {
   query_broker_address: "pem"
   agent_id {
-    data: "00000001-0000-0000-0000-000000000001"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000001
   }
   has_grpc_server: false
   has_data_store: true
@@ -43,7 +44,8 @@ carnot_info {
 carnot_info {
   query_broker_address: "kelvin"
   agent_id {
-    data: "00000001-0000-0000-0000-000000000002"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000002
   }
   grpc_address: "1111"
   has_grpc_server: true
@@ -72,10 +74,12 @@ schema_info {
     }
   }
   agent_list {
-    data: "00000001-0000-0000-0000-000000000001"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000001
   }
   agent_list {
-    data: "00000001-0000-0000-0000-000000000002"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000002
   }
 }
 )proto";

@@ -58,7 +58,7 @@ func TestServer_CreateUser(t *testing.T) {
 			name:      "invalid orgid",
 			makesCall: false,
 			userInfo: &profile.CreateUserRequest{
-				OrgID:     &uuidpb.UUID{Data: []byte("1234")},
+				OrgID:     &uuidpb.UUID{},
 				Username:  "foobar",
 				FirstName: "foo",
 				LastName:  "bar",

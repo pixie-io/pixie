@@ -8,14 +8,6 @@ import data
 from data import vpb
 import test_utils as utils
 
-cluster_uuid1 = "10000000-0000-0000-0000-000000000001"
-cluster_uuid2 = "10000000-0000-0000-0000-000000000002"
-
-table_id1 = "20000000-0000-0000-0000-000000000001"
-table_id2 = "20000000-0000-0000-0000-000000000002"
-table_id3 = "20000000-0000-0000-0000-000000000003"
-table_id4 = "20000000-0000-0000-0000-000000000004"
-
 
 class TestData(unittest.TestCase):
     def setUp(self) -> None:

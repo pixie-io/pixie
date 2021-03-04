@@ -6,17 +6,19 @@
 
 namespace pl {
 
-// TODO(zasgar): We need to optimize UUID to just send raw bytes instead of the string.
 /**
  * Parses a proto message into sole::uuid.
  * @param uuid_proto
  * @return proto message
  */
 inline StatusOr<sole::uuid> ParseUUID(const pl::uuidpb::UUID& uuid_proto) {
-  if (uuid_proto.data().size() != 36) {
-    return error::InvalidArgument("Malformed UUID: $0", uuid_proto.data());
+  if (uuid_proto.high_bits() != 0 && uuid_proto.low_bits() != 0) {
+    return sole::rebuild(uuid_proto.high_bits(), uuid_proto.low_bits());
   }
-  return sole::rebuild(uuid_proto.data());
+  if (uuid_proto.deprecated_data().size() != 36) {
+    return error::InvalidArgument("Malformed UUID: $0", uuid_proto.deprecated_data());
+  }
+  return sole::rebuild(uuid_proto.deprecated_data());
 }
 
 /**
@@ -25,7 +27,9 @@ inline StatusOr<sole::uuid> ParseUUID(const pl::uuidpb::UUID& uuid_proto) {
  * @param uuid_proto
  */
 inline void ToProto(const sole::uuid& uuid, pl::uuidpb::UUID* uuid_proto) {
-  *(uuid_proto->mutable_data()) = uuid.str();
+  uuid_proto->set_high_bits(uuid.ab);
+  uuid_proto->set_low_bits(uuid.cd);
+  *(uuid_proto->mutable_deprecated_data()) = uuid.str();
 }
 
 inline void ClearUUID(sole::uuid* uuid) {

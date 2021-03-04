@@ -1,34 +1,75 @@
 package utils
 
 import (
+	"encoding/binary"
+	"errors"
+
 	"github.com/gofrs/uuid"
 
 	pb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 )
 
+var enc = binary.BigEndian
+
 // UUIDFromProto converts a proto message to uuid.
 func UUIDFromProto(pb *pb.UUID) (uuid.UUID, error) {
-	return uuid.FromString(string(pb.Data))
+	if pb == nil {
+		return uuid.Nil, errors.New("nil proto given")
+	}
+	if pb.HighBits != 0 && pb.LowBits != 0 {
+		b := make([]byte, 16)
+		enc.PutUint64(b[0:], pb.HighBits)
+		enc.PutUint64(b[8:], pb.LowBits)
+		return uuid.FromBytes(b)
+	}
+	if pb.DeprecatedData != nil {
+		return uuid.FromString(string(pb.DeprecatedData))
+	}
+	return uuid.Nil, errors.New("neither data nor high_bits/low_bits are set in proto")
 }
 
 // UUIDFromProtoOrNil converts a proto message to uuid if error sets to nil uuid.
 func UUIDFromProtoOrNil(pb *pb.UUID) uuid.UUID {
-	if pb == nil {
-		return uuid.Nil
-	}
-	return uuid.FromStringOrNil(string(pb.Data))
+	u, _ := UUIDFromProto(pb)
+	return u
 }
 
 // ProtoFromUUID converts a UUID to proto.
 func ProtoFromUUID(u uuid.UUID) *pb.UUID {
+	data := u.Bytes()
 	p := &pb.UUID{
-		Data: []byte(u.String()),
+		HighBits:       enc.Uint64(data[0:8]),
+		LowBits:        enc.Uint64(data[8:16]),
+		DeprecatedData: []byte(u.String()),
 	}
 	return p
 }
 
 // ProtoFromUUIDStrOrNil generates proto from string representation of a UUID (nil value is used if parsing fails).
 func ProtoFromUUIDStrOrNil(u string) *pb.UUID {
-	uid := uuid.FromStringOrNil(u)
-	return ProtoFromUUID(uid)
+	return ProtoFromUUID(uuid.FromStringOrNil(u))
+}
+
+// ProtoToUUIDStr generates an expensive string representation of a UUID proto.
+func ProtoToUUIDStr(pb *pb.UUID) string {
+	return UUIDFromProtoOrNil(pb).String()
+}
+
+// IsNilUUID tells you if the given UUID is nil.
+func IsNilUUID(u uuid.UUID) bool {
+	return u == uuid.Nil
+}
+
+// IsNilUUIDProto tells you if the given UUID is nil.
+func IsNilUUIDProto(pb *pb.UUID) bool {
+	if pb == nil {
+		return true
+	}
+	if pb.HighBits != 0 && pb.LowBits != 0 {
+		return false
+	}
+	if pb.DeprecatedData != nil {
+		return uuid.FromStringOrNil(string(pb.DeprecatedData)) == uuid.Nil
+	}
+	return true
 }

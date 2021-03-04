@@ -26,7 +26,9 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type UUID struct {
-	Data []byte `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	DeprecatedData []byte `protobuf:"bytes,1,opt,name=deprecated_data,json=deprecatedData,proto3" json:"deprecated_data,omitempty"`
+	HighBits       uint64 `protobuf:"varint,2,opt,name=high_bits,json=highBits,proto3" json:"high_bits,omitempty"`
+	LowBits        uint64 `protobuf:"varint,3,opt,name=low_bits,json=lowBits,proto3" json:"low_bits,omitempty"`
 }
 
 func (m *UUID) Reset()      { *m = UUID{} }
@@ -61,11 +63,25 @@ func (m *UUID) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_UUID proto.InternalMessageInfo
 
-func (m *UUID) GetData() []byte {
+func (m *UUID) GetDeprecatedData() []byte {
 	if m != nil {
-		return m.Data
+		return m.DeprecatedData
 	}
 	return nil
+}
+
+func (m *UUID) GetHighBits() uint64 {
+	if m != nil {
+		return m.HighBits
+	}
+	return 0
+}
+
+func (m *UUID) GetLowBits() uint64 {
+	if m != nil {
+		return m.LowBits
+	}
+	return 0
 }
 
 func init() {
@@ -75,19 +91,22 @@ func init() {
 func init() { proto.RegisterFile("src/api/public/uuidpb/uuid.proto", fileDescriptor_fb3ce78605299c5a) }
 
 var fileDescriptor_fb3ce78605299c5a = []byte{
-	// 178 bytes of a gzipped FileDescriptorProto
+	// 239 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0x28, 0x2e, 0x4a, 0xd6,
 	0x4f, 0x2c, 0xc8, 0xd4, 0x2f, 0x28, 0x4d, 0xca, 0xc9, 0x4c, 0xd6, 0x2f, 0x2d, 0xcd, 0x4c, 0x29,
 	0x48, 0x02, 0x53, 0x7a, 0x05, 0x45, 0xf9, 0x25, 0xf9, 0x42, 0x9c, 0x05, 0x39, 0x7a, 0x10, 0x51,
-	0x25, 0x29, 0x2e, 0x96, 0xd0, 0x50, 0x4f, 0x17, 0x21, 0x21, 0x2e, 0x96, 0x94, 0xc4, 0x92, 0x44,
-	0x09, 0x46, 0x05, 0x46, 0x0d, 0x9e, 0x20, 0x30, 0xdb, 0x29, 0xf3, 0xc2, 0x43, 0x39, 0x86, 0x1b,
-	0x0f, 0xe5, 0x18, 0x3e, 0x3c, 0x94, 0x63, 0x6c, 0x78, 0x24, 0xc7, 0xb8, 0xe2, 0x91, 0x1c, 0xe3,
-	0x89, 0x47, 0x72, 0x8c, 0x17, 0x1e, 0xc9, 0x31, 0x3e, 0x78, 0x24, 0xc7, 0xf8, 0xe2, 0x91, 0x1c,
-	0xc3, 0x87, 0x47, 0x72, 0x8c, 0x13, 0x1e, 0xcb, 0x31, 0x5c, 0x78, 0x2c, 0xc7, 0x70, 0xe3, 0xb1,
-	0x1c, 0x43, 0x94, 0x71, 0x41, 0x66, 0x45, 0x66, 0x6a, 0x4e, 0x62, 0x52, 0xb1, 0x5e, 0x62, 0xa6,
-	0x3e, 0x9c, 0xa3, 0x0f, 0x72, 0x15, 0xd4, 0x45, 0x20, 0xc7, 0x41, 0xec, 0xb7, 0x86, 0x50, 0x49,
-	0x6c, 0x60, 0x87, 0x19, 0x03, 0x02, 0x00, 0x00, 0xff, 0xff, 0xbb, 0x6e, 0xeb, 0x21, 0xbc, 0x00,
-	0x00, 0x00,
+	0xa5, 0x74, 0x2e, 0x96, 0xd0, 0x50, 0x4f, 0x17, 0x21, 0x75, 0x2e, 0xfe, 0x94, 0xd4, 0x82, 0xa2,
+	0xd4, 0xe4, 0xc4, 0x92, 0xd4, 0x94, 0xf8, 0x94, 0xc4, 0x92, 0x44, 0x09, 0x46, 0x05, 0x46, 0x0d,
+	0x9e, 0x20, 0x3e, 0x84, 0xb0, 0x4b, 0x62, 0x49, 0xa2, 0x90, 0x34, 0x17, 0x67, 0x46, 0x66, 0x7a,
+	0x46, 0x7c, 0x52, 0x66, 0x49, 0xb1, 0x04, 0x93, 0x02, 0xa3, 0x06, 0x4b, 0x10, 0x07, 0x48, 0xc0,
+	0x29, 0xb3, 0xa4, 0x58, 0x48, 0x92, 0x8b, 0x23, 0x27, 0xbf, 0x1c, 0x22, 0xc7, 0x0c, 0x96, 0x63,
+	0xcf, 0xc9, 0x2f, 0x07, 0x49, 0x39, 0x65, 0x5e, 0x78, 0x28, 0xc7, 0x70, 0xe3, 0xa1, 0x1c, 0xc3,
+	0x87, 0x87, 0x72, 0x8c, 0x0d, 0x8f, 0xe4, 0x18, 0x57, 0x3c, 0x92, 0x63, 0x3c, 0xf1, 0x48, 0x8e,
+	0xf1, 0xc2, 0x23, 0x39, 0xc6, 0x07, 0x8f, 0xe4, 0x18, 0x5f, 0x3c, 0x92, 0x63, 0xf8, 0xf0, 0x48,
+	0x8e, 0x71, 0xc2, 0x63, 0x39, 0x86, 0x0b, 0x8f, 0xe5, 0x18, 0x6e, 0x3c, 0x96, 0x63, 0x88, 0x32,
+	0x2e, 0xc8, 0xac, 0xc8, 0x4c, 0xcd, 0x49, 0x4c, 0x2a, 0xd6, 0x4b, 0xcc, 0xd4, 0x87, 0x73, 0xf4,
+	0x41, 0x5e, 0x84, 0x7a, 0x0f, 0xe4, 0x53, 0x88, 0x67, 0xac, 0x21, 0x54, 0x12, 0x1b, 0xd8, 0x97,
+	0xc6, 0x80, 0x00, 0x00, 0x00, 0xff, 0xff, 0xb1, 0x5e, 0xc5, 0xae, 0x09, 0x01, 0x00, 0x00,
 }
 
 func (this *UUID) Equal(that interface{}) bool {
@@ -109,7 +128,13 @@ func (this *UUID) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if !bytes.Equal(this.Data, that1.Data) {
+	if !bytes.Equal(this.DeprecatedData, that1.DeprecatedData) {
+		return false
+	}
+	if this.HighBits != that1.HighBits {
+		return false
+	}
+	if this.LowBits != that1.LowBits {
 		return false
 	}
 	return true
@@ -118,9 +143,11 @@ func (this *UUID) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 5)
+	s := make([]string, 0, 7)
 	s = append(s, "&uuidpb.UUID{")
-	s = append(s, "Data: "+fmt.Sprintf("%#v", this.Data)+",\n")
+	s = append(s, "DeprecatedData: "+fmt.Sprintf("%#v", this.DeprecatedData)+",\n")
+	s = append(s, "HighBits: "+fmt.Sprintf("%#v", this.HighBits)+",\n")
+	s = append(s, "LowBits: "+fmt.Sprintf("%#v", this.LowBits)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -152,10 +179,20 @@ func (m *UUID) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.Data) > 0 {
-		i -= len(m.Data)
-		copy(dAtA[i:], m.Data)
-		i = encodeVarintUuid(dAtA, i, uint64(len(m.Data)))
+	if m.LowBits != 0 {
+		i = encodeVarintUuid(dAtA, i, uint64(m.LowBits))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.HighBits != 0 {
+		i = encodeVarintUuid(dAtA, i, uint64(m.HighBits))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.DeprecatedData) > 0 {
+		i -= len(m.DeprecatedData)
+		copy(dAtA[i:], m.DeprecatedData)
+		i = encodeVarintUuid(dAtA, i, uint64(len(m.DeprecatedData)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -179,9 +216,15 @@ func (m *UUID) Size() (n int) {
 	}
 	var l int
 	_ = l
-	l = len(m.Data)
+	l = len(m.DeprecatedData)
 	if l > 0 {
 		n += 1 + l + sovUuid(uint64(l))
+	}
+	if m.HighBits != 0 {
+		n += 1 + sovUuid(uint64(m.HighBits))
+	}
+	if m.LowBits != 0 {
+		n += 1 + sovUuid(uint64(m.LowBits))
 	}
 	return n
 }
@@ -197,7 +240,9 @@ func (this *UUID) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&UUID{`,
-		`Data:` + fmt.Sprintf("%v", this.Data) + `,`,
+		`DeprecatedData:` + fmt.Sprintf("%v", this.DeprecatedData) + `,`,
+		`HighBits:` + fmt.Sprintf("%v", this.HighBits) + `,`,
+		`LowBits:` + fmt.Sprintf("%v", this.LowBits) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -241,7 +286,7 @@ func (m *UUID) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field DeprecatedData", wireType)
 			}
 			var byteLen int
 			for shift := uint(0); ; shift += 7 {
@@ -268,11 +313,49 @@ func (m *UUID) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Data = append(m.Data[:0], dAtA[iNdEx:postIndex]...)
-			if m.Data == nil {
-				m.Data = []byte{}
+			m.DeprecatedData = append(m.DeprecatedData[:0], dAtA[iNdEx:postIndex]...)
+			if m.DeprecatedData == nil {
+				m.DeprecatedData = []byte{}
 			}
 			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HighBits", wireType)
+			}
+			m.HighBits = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUuid
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.HighBits |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LowBits", wireType)
+			}
+			m.LowBits = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowUuid
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.LowBits |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipUuid(dAtA[iNdEx:])

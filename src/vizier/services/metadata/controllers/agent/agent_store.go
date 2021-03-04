@@ -198,7 +198,7 @@ func (a *Datastore) GetAgents() ([]*agentpb.Agent, error) {
 
 		pb := &agentpb.Agent{}
 		proto.Unmarshal(vals[i], pb)
-		if pb.Info != nil && len(pb.Info.AgentID.Data) > 0 {
+		if pb.Info != nil && !utils.IsNilUUIDProto(pb.Info.AgentID) {
 			agents = append(agents, pb)
 		}
 	}

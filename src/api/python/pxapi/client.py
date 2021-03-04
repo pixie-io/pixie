@@ -11,7 +11,6 @@ from src.api.public.vizierapipb import vizierapi_pb2_grpc
 from src.api.public.cloudapipb import cloudapi_pb2 as cpb
 from src.api.public.cloudapipb import cloudapi_pb2_grpc
 
-from src.api.public.uuidpb import uuid_pb2 as uuidpb
 from .data import (
     _TableStream,
     RowGenerator,
@@ -22,6 +21,11 @@ from .data import (
 
 from .errors import (
     build_pxl_exception,
+)
+
+from .utils import (
+    uuid_pb_from_string,
+    uuid_pb_to_string,
 )
 
 
@@ -505,7 +509,7 @@ class Client:
                 continue
             healthy_clusters.append(
                 Cluster(
-                    cluster_id=c.id.data.decode('utf-8'),
+                    cluster_id=uuid_pb_to_string(c.id),
                     cluster_info=c,
                 )
             )
@@ -514,8 +518,7 @@ class Client:
 
     def _get_cluster_info(self, cluster_id: ClusterID) -> cpb.ClusterInfo:
         request = cpb.GetClusterRequest(
-            id=uuidpb.UUID(
-                data=cluster_id.encode('utf-8'))
+            id=uuid_pb_from_string(cluster_id)
         )
         return self._get_cluster(request)[0]
 
@@ -526,8 +529,7 @@ class Client:
         channel = self._get_cloud_channel()
         stub = cloudapi_pb2_grpc.ClusterManagerStub(channel)
         request = cpb.GetClusterConnectionRequest(
-            id=uuidpb.UUID(
-                data=cluster_id.encode('utf-8'))
+            id=uuid_pb_from_string(cluster_id)
         )
         response = stub.GetClusterConnection(request, metadata=[
             ("pixie-api-key", self._token),

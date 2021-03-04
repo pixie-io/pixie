@@ -108,13 +108,13 @@ func TestTracepointStore_GetTracepoints(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(tracepoints))
 
-	ids := make([][]byte, len(tracepoints))
+	ids := make([]string, len(tracepoints))
 	for i, tp := range tracepoints {
-		ids[i] = tp.ID.Data
+		ids[i] = utils.ProtoToUUIDStr(tp.ID)
 	}
 
-	assert.Contains(t, ids, s1.ID.Data)
-	assert.Contains(t, ids, s2.ID.Data)
+	assert.Contains(t, ids, utils.ProtoToUUIDStr(s1.ID))
+	assert.Contains(t, ids, utils.ProtoToUUIDStr(s2.ID))
 }
 
 func TestTracepointStore_GetTracepointsForIDs(t *testing.T) {
@@ -149,19 +149,16 @@ func TestTracepointStore_GetTracepointsForIDs(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(tracepoints))
 
-	ids := make([][]byte, len(tracepoints))
+	ids := make([]string, len(tracepoints))
 	for i, tp := range tracepoints {
-		if tp == nil || tp.ID == nil || tp.ID.Data == nil {
+		if tp == nil || tp.ID == nil {
 			continue
 		}
-		ids[i] = tp.ID.Data
+		ids[i] = utils.ProtoToUUIDStr(tp.ID)
 	}
 
-	var nilData []byte
-
-	assert.Contains(t, ids, s1.ID.Data)
-	assert.Contains(t, ids, s2.ID.Data)
-	assert.Contains(t, ids, nilData)
+	assert.Contains(t, ids, utils.ProtoToUUIDStr(s1.ID))
+	assert.Contains(t, ids, utils.ProtoToUUIDStr(s2.ID))
 }
 
 func TestTracepointStore_UpdateTracepointState(t *testing.T) {
@@ -224,13 +221,13 @@ func TestTracepointStore_GetTracepointStates(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(tracepoints))
 
-	agentIDs := make([][]byte, len(tracepoints))
+	agentIDs := make([]string, len(tracepoints))
 	for i, tp := range tracepoints {
-		agentIDs[i] = tp.AgentID.Data
+		agentIDs[i] = utils.ProtoToUUIDStr(tp.AgentID)
 	}
 
-	assert.Contains(t, agentIDs, s1.AgentID.Data)
-	assert.Contains(t, agentIDs, s2.AgentID.Data)
+	assert.Contains(t, agentIDs, utils.ProtoToUUIDStr(s1.AgentID))
+	assert.Contains(t, agentIDs, utils.ProtoToUUIDStr(s2.AgentID))
 }
 
 func TestTracepointStore_SetTracepointWithName(t *testing.T) {

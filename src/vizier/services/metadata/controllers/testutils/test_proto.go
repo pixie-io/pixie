@@ -26,7 +26,9 @@ var UnhealthyKelvinAgentUUID = "5ba7b810-9dad-11d1-80b4-00c04fd430c8"
 var ExistingAgentInfo = `
 info {
   agent_id {
-    data: "7ba7b8109dad11d180b400c04fd430c8"
+    deprecated_data: "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
+    high_bits: 0x7ba7b8109dad11d1
+    low_bits: 0x80b400c04fd430c8
   }
   host_info {
     hostname: "testhost"
@@ -47,7 +49,9 @@ asid: 123
 var PurgedAgentInfo = `
 info {
   agent_id {
-    data: "4ba7b8109dad11d180b400c04fd430c8"
+    deprecated_data: "4ba7b810-9dad-11d1-80b4-00c04fd430c8"
+    high_bits: 0x4ba7b8109dad11d1
+    low_bits: 0x80b400c04fd430c8
   }
   host_info {
     hostname: "purged"
@@ -67,7 +71,9 @@ asid: 159
 var UnhealthyAgentInfo = `
 info {
   agent_id {
-    data: "8ba7b8109dad11d180b400c04fd430c8"
+    deprecated_data: "8ba7b810-9dad-11d1-80b4-00c04fd430c8"
+    high_bits: 0x8ba7b8109dad11d1
+    low_bits: 0x80b400c04fd430c8
   }
   host_info {
     hostname: "anotherhost"
@@ -86,7 +92,9 @@ asid: 456
 var UnhealthyKelvinAgentInfo = `
 info {
   agent_id {
-    data: "5ba7b8109dad11d180b400c04fd430c8"
+    deprecated_data: "5ba7b810-9dad-11d1-80b4-00c04fd430c8"
+    high_bits: 0x5ba7b8109dad11d1
+    low_bits: 0x80b400c04fd430c8
   }
   host_info {
     hostname: "abcd"
@@ -108,7 +116,9 @@ const Agent1StatusPB = `
 agent {
   info {
     agent_id {
-      data: "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+      deprecated_data: "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+      high_bits: 0x11285cdd1de94ab1
+      low_bits: 0xae6a0ba08c8c676c
     }
     host_info {
       hostname: "test_host"
@@ -128,7 +138,9 @@ const Agent2StatusPB = `
 agent {
   info {
     agent_id {
-      data: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+      deprecated_data: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+      high_bits: 0x21285cdd1de94ab1
+      low_bits: 0xae6a0ba08c8c676c
     }
     host_info {
       hostname: "another_host"
@@ -311,7 +323,9 @@ var RegisterAgentRequestPB = `
 register_agent_request {
   info {
     agent_id {
-      data: "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+      deprecated_data: "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+      high_bits: 0x6ba7b8109dad11d1
+      low_bits: 0x80b400c04fd430c8
     }
     host_info {
       hostname: "test-host"
@@ -326,7 +340,9 @@ var ReregisterPurgedAgentRequestPB = `
 register_agent_request {
   info {
     agent_id {
-      data: "4ba7b810-9dad-11d1-80b4-00c04fd430c8"
+      deprecated_data: "4ba7b810-9dad-11d1-80b4-00c04fd430c8"
+      high_bits: 0x4ba7b8109dad11d1
+      low_bits: 0x80b400c04fd430c8
     }
     host_info {
       hostname: "purged"
@@ -342,7 +358,9 @@ var RegisterKelvinRequestPB = `
 register_agent_request {
   info {
     agent_id {
-      data: "9ba7b810-9dad-11d1-80b4-00c04fd430c8"
+      deprecated_data: "9ba7b810-9dad-11d1-80b4-00c04fd430c8"
+      high_bits: 0x9ba7b8109dad11d1
+      low_bits: 0x80b400c04fd430c8
     }
     host_info {
       hostname: "test-host"
@@ -360,7 +378,6 @@ var InvalidRegisterAgentRequestPB = `
 register_agent_request {
   info {
     agent_id {
-      data: "zzy"
     }
     host_info {
       hostname: "test-host"
@@ -389,7 +406,9 @@ var HeartbeatPB = `
 heartbeat {
   time: 1,
   agent_id: {
-    data: "5ba7b810-9dad-11d1-80b4-00c04fd430c8"
+    deprecated_data: "5ba7b810-9dad-11d1-80b4-00c04fd430c8"
+    high_bits: 0x5ba7b8109dad11d1
+    low_bits: 0x80b400c04fd430c8
   }
   update_info {
     process_created {

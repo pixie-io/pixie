@@ -584,7 +584,8 @@ TEST_F(CoordinatorTest, prune_agent_on_pem_udtf) {
 constexpr char kExtraPEM[] = R"carnotinfo(
 query_broker_address: "pem5"
 agent_id {
-  data: "00000001-0000-0000-0000-000000000005"
+  high_bits: 0x0000000100000000
+  low_bits: 0x0000000000000005
 }
 has_grpc_server: false
 has_data_store: true

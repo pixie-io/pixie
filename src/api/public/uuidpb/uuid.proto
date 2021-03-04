@@ -5,6 +5,15 @@ package pl.uuidpb;
 option go_package = "pixielabs.ai/pixielabs/src/public/api/uuidpb;uuidpb";
 
 message UUID {
-  // The UUID stored as bytes (no-hyphens).
-  bytes data = 1;
+  // DEPRECATED. DO NOT USE.
+  // THIS WILL BE REMOVED IN A FUTURE RELEASE.
+  // The UUID stringified as xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx and then stored as bytes.
+  bytes deprecated_data = 1;
+
+  // Big ending style encoding similar to what a UUID Variant 1 would do.
+  // For example, 00112233-4455-6677-8899-aabbccddeeff should get encoded as:
+  // high_bits: 0x0011223344556677
+  // low_bits:  0x8899aabbccddeeff
+  uint64 high_bits = 2;
+  uint64 low_bits = 3;
 }

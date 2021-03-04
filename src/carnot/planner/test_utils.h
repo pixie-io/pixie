@@ -289,7 +289,8 @@ relation_map {
 constexpr char kPEMCarnotInfoTpl[] = R"proto(
 query_broker_address: "$0"
 agent_id: {
-  data: "$3"
+  high_bits: $3
+  low_bits: $4
 }
 has_grpc_server: false
 has_data_store: true
@@ -302,7 +303,8 @@ $2
 constexpr char kKelvinCarnotInfoTpl[] = R"proto(
 query_broker_address: "$0"
 agent_id: {
-  data: "$3"
+  high_bits: $3
+  low_bits: $4
 }
 grpc_address: "$1"
 has_grpc_server: true
@@ -432,13 +434,15 @@ std::string MakeTableInfoStr(const std::string& table_name, const std::string& t
 
 std::string MakePEMCarnotInfo(const std::string& agent_name, const std::string& agent_id,
                               uint32_t asid, const std::vector<std::string>& table_info) {
+  sole::uuid uuid = sole::rebuild(agent_id);
   return absl::Substitute(kPEMCarnotInfoTpl, agent_name, asid, absl::StrJoin(table_info, "\n"),
-                          agent_id);
+                          uuid.ab, uuid.cd);
 }
 
 std::string MakeKelvinCarnotInfo(const std::string& kelvin_name, const std::string& agent_id,
                                  const std::string& grpc_address, uint32_t asid) {
-  return absl::Substitute(kKelvinCarnotInfoTpl, kelvin_name, grpc_address, asid, agent_id);
+  sole::uuid uuid = sole::rebuild(agent_id);
+  return absl::Substitute(kKelvinCarnotInfoTpl, kelvin_name, grpc_address, asid, uuid.ab, uuid.cd);
 }
 
 std::string MakeDistributedState(const std::vector<std::string>& carnot_info_strs) {
@@ -818,10 +822,12 @@ qb_address_to_plan {
     plan_options {
     }
     incoming_agent_ids {
-      data: "00000001-0000-0000-0000-000000000001"
+      high_bits: 0x0000000100000000
+      low_bits: 0x0000000000000001
     }
     incoming_agent_ids {
-      data: "00000001-0000-0000-0000-000000000002"
+      high_bits: 0x0000000100000000
+      low_bits: 0x0000000000000002
     }
   }
 }
@@ -967,7 +973,8 @@ constexpr char kThreePEMsOneKelvinDistributedState[] = R"proto(
 carnot_info {
   query_broker_address: "pem1"
   agent_id {
-    data: "00000001-0000-0000-0000-000000000001"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000001
   }
   has_grpc_server: false
   has_data_store: true
@@ -981,7 +988,8 @@ carnot_info {
 carnot_info {
   query_broker_address: "pem2"
   agent_id {
-    data: "00000001-0000-0000-0000-000000000002"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000002
   }
   has_grpc_server: false
   has_data_store: true
@@ -995,7 +1003,8 @@ carnot_info {
 carnot_info {
   query_broker_address: "pem3"
   agent_id {
-    data: "00000001-0000-0000-0000-000000000003"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000003
   }
   has_grpc_server: false
   has_data_store: true
@@ -1009,7 +1018,8 @@ carnot_info {
 carnot_info {
   query_broker_address: "kelvin"
   agent_id {
-    data: "00000001-0000-0000-0000-000000000004"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000004
   }
   grpc_address: "1111"
   has_grpc_server: true
@@ -1039,13 +1049,16 @@ schema_info {
     }
   }
   agent_list {
-    data: "00000001-0000-0000-0000-000000000001"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000001
   }
   agent_list {
-    data: "00000001-0000-0000-0000-000000000002"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000002
   }
   agent_list {
-    data: "00000001-0000-0000-0000-000000000003"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000003
   }
 }
 schema_info {
@@ -1063,13 +1076,16 @@ schema_info {
     }
   }
   agent_list {
-    data: "00000001-0000-0000-0000-000000000001"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000001
   }
   agent_list {
-    data: "00000001-0000-0000-0000-000000000002"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000002
   }
   agent_list {
-    data: "00000001-0000-0000-0000-000000000003"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000003
   }
 }
 schema_info {
@@ -1087,13 +1103,16 @@ schema_info {
     }
   }
   agent_list {
-    data: "00000001-0000-0000-0000-000000000001"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000001
   }
   agent_list {
-    data: "00000001-0000-0000-0000-000000000002"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000002
   }
   agent_list {
-    data: "00000001-0000-0000-0000-000000000003"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000003
   }
 }
 schema_info {
@@ -1111,7 +1130,8 @@ schema_info {
     }
   }
   agent_list {
-    data: "00000001-0000-0000-0000-000000000001"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000001
   }
 }
 )proto";
@@ -1119,7 +1139,8 @@ schema_info {
 constexpr char kOnePEMOneKelvinDistributedState[] = R"proto(
 carnot_info {
   agent_id {
-    data: "00000001-0000-0000-0000-000000000001"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000001
   }
   query_broker_address: "pem"
   has_grpc_server: false
@@ -1130,7 +1151,8 @@ carnot_info {
 }
 carnot_info {
   agent_id {
-    data: "00000001-0000-0000-0000-000000000002"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000002
   }
   query_broker_address: "kelvin"
   grpc_address: "1111"
@@ -1161,7 +1183,8 @@ schema_info {
     }
   }
   agent_list {
-    data: "00000001-0000-0000-0000-000000000001"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000001
   }
 }
 )proto";
@@ -1169,7 +1192,8 @@ schema_info {
 constexpr char kOnePEMThreeKelvinsDistributedState[] = R"proto(
 carnot_info {
   agent_id {
-    data: "00000001-0000-0000-0000-000000000001"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000001
   }
   query_broker_address: "pem"
   has_grpc_server: false
@@ -1180,7 +1204,8 @@ carnot_info {
 }
 carnot_info {
   agent_id {
-    data: "00000001-0000-0000-0000-000000000002"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000002
   }
   query_broker_address: "kelvin1"
   grpc_address: "1111"
@@ -1193,7 +1218,8 @@ carnot_info {
 }
 carnot_info {
   agent_id {
-    data: "00000001-0000-0000-0000-000000000003"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000003
   }
   query_broker_address: "kelvin2"
   grpc_address: "1112"
@@ -1206,7 +1232,8 @@ carnot_info {
 }
 carnot_info {
   agent_id {
-    data: "00000001-0000-0000-0000-000000000004"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000004
   }
   query_broker_address: "kelvin3"
   grpc_address: "1113"
@@ -1237,7 +1264,8 @@ schema_info {
     }
   }
   agent_list {
-    data: "00000001-0000-0000-0000-000000000001"
+    high_bits: 0x0000000100000000
+    low_bits: 0x0000000000000001
   }
 }
 )proto";

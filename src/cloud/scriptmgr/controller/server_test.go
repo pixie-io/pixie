@@ -16,10 +16,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/controller"
 	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb"
 	pl_vispb "pixielabs.ai/pixielabs/src/shared/vispb"
+	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 
@@ -160,11 +160,9 @@ func TestScriptMgr_GetLiveViewContents(t *testing.T) {
 			s := controller.NewServer(bundleBucket, bundlePath, c)
 			ctx := context.Background()
 
-			ID := uuid.NewV5(s.SeedUUID, tc.liveViewName)
+			id := uuid.NewV5(s.SeedUUID, tc.liveViewName)
 			req := &scriptmgrpb.GetLiveViewContentsReq{
-				LiveViewID: &uuidpb.UUID{
-					Data: ID.Bytes(),
-				},
+				LiveViewID: utils.ProtoFromUUID(id),
 			}
 
 			resp, err := s.GetLiveViewContents(ctx, req)
@@ -186,9 +184,7 @@ func TestScriptMgr_GetLiveViewContents(t *testing.T) {
 
 			expectedResp := &scriptmgrpb.GetLiveViewContentsResp{
 				Metadata: &scriptmgrpb.LiveViewMetadata{
-					ID: &uuidpb.UUID{
-						Data: ID.Bytes(),
-					},
+					ID:   utils.ProtoFromUUID(id),
 					Name: tc.liveViewName,
 					Desc: fmt.Sprintf("%s desc", tc.liveViewName),
 				},
@@ -284,17 +280,13 @@ func TestScriptMgr_GetScriptContents(t *testing.T) {
 			c := mustSetupFakeBucket(t, testBundle)
 			s := controller.NewServer(bundleBucket, bundlePath, c)
 			ctx := context.Background()
-			ID := uuid.NewV5(s.SeedUUID, tc.scriptName)
+			id := uuid.NewV5(s.SeedUUID, tc.scriptName)
 			req := &scriptmgrpb.GetScriptContentsReq{
-				ScriptID: &uuidpb.UUID{
-					Data: ID.Bytes(),
-				},
+				ScriptID: utils.ProtoFromUUID(id),
 			}
 			expectedResp := &scriptmgrpb.GetScriptContentsResp{
 				Metadata: &scriptmgrpb.ScriptMetadata{
-					ID: &uuidpb.UUID{
-						Data: ID.Bytes(),
-					},
+					ID:          utils.ProtoFromUUID(id),
 					Name:        tc.scriptName,
 					Desc:        fmt.Sprintf("%s desc", tc.scriptName),
 					HasLiveView: false,
