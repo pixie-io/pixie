@@ -58,8 +58,8 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "connection_tracker_test",
-    srcs = ["connection_tracker_test.cc"],
+    name = "conn_tracker_test",
+    srcs = ["conn_tracker_test.cc"],
     deps = [
         ":cc_library",
         "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
@@ -77,8 +77,8 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "connection_tracker_http2_test",
-    srcs = ["connection_tracker_http2_test.cc"],
+    name = "conn_tracker_http2_test",
+    srcs = ["conn_tracker_http2_test.cc"],
     deps = [
         ":cc_library",
         "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
@@ -86,8 +86,8 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "connection_stats_test",
-    srcs = ["connection_stats_test.cc"],
+    name = "conn_stats_test",
+    srcs = ["conn_stats_test.cc"],
     deps = [
         ":cc_library",
         "//src/stirling/source_connectors/socket_tracer/testing:cc_library",

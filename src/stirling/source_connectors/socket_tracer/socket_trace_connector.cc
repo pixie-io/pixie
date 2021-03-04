@@ -26,7 +26,7 @@
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/go_grpc_types.hpp"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
-#include "src/stirling/source_connectors/socket_tracer/connection_stats.h"
+#include "src/stirling/source_connectors/socket_tracer/conn_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/proto/sock_event.pb.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/event_parser.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/utils.h"

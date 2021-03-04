@@ -34,9 +34,9 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 
 #include "src/stirling/core/source_connector.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
+#include "src/stirling/source_connectors/socket_tracer/conn_stats.h"
+#include "src/stirling/source_connectors/socket_tracer/conn_tracker.h"
 #include "src/stirling/source_connectors/socket_tracer/conn_trackers_manager.h"
-#include "src/stirling/source_connectors/socket_tracer/connection_stats.h"
-#include "src/stirling/source_connectors/socket_tracer/connection_tracker.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_bpf_tables.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_tables.h"
 #include "src/stirling/source_connectors/socket_tracer/uprobe_manager.h"

@@ -6,7 +6,7 @@
 #include <set>
 #include <string>
 
-#include "src/stirling/source_connectors/socket_tracer/connection_tracker.h"
+#include "src/stirling/source_connectors/socket_tracer/conn_tracker.h"
 
 namespace pl {
 namespace stirling {

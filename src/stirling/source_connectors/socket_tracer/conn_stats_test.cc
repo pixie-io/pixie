@@ -1,4 +1,4 @@
-#include "src/stirling/source_connectors/socket_tracer/connection_stats.h"
+#include "src/stirling/source_connectors/socket_tracer/conn_stats.h"
 
 #include <memory>
 

@@ -37,7 +37,7 @@ DECLARE_int64(stirling_check_proc_for_conn_close);
 namespace pl {
 namespace stirling {
 
-// Forward declaration to avoid circular include of connection_stats.h and connection_tracker.h.
+// Forward declaration to avoid circular include of conn_stats.h and conn_tracker.h.
 class ConnectionStats;
 class ConnTrackersManager;
 

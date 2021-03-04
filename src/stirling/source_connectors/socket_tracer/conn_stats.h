@@ -10,7 +10,7 @@
 #include "src/shared/upid/upid.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/go_grpc_types.hpp"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
-#include "src/stirling/source_connectors/socket_tracer/connection_tracker.h"
+#include "src/stirling/source_connectors/socket_tracer/conn_tracker.h"
 
 namespace pl {
 namespace stirling {

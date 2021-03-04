@@ -1,4 +1,4 @@
-#include "src/stirling/source_connectors/socket_tracer/connection_tracker.h"
+#include "src/stirling/source_connectors/socket_tracer/conn_tracker.h"
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -18,8 +18,8 @@
 #include "src/common/system/socket_info.h"
 #include "src/common/system/system.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/go_grpc_types.hpp"
+#include "src/stirling/source_connectors/socket_tracer/conn_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/conn_trackers_manager.h"
-#include "src/stirling/source_connectors/socket_tracer/connection_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/cql/stitcher.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/cql/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/stitcher.h"

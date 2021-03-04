@@ -1,4 +1,4 @@
-#include "src/stirling/source_connectors/socket_tracer/connection_tracker.h"
+#include "src/stirling/source_connectors/socket_tracer/conn_tracker.h"
 
 #include <tuple>
 
@@ -9,7 +9,7 @@
 #include <magic_enum.hpp>
 
 #include "src/common/base/test_utils.h"
-#include "src/stirling/source_connectors/socket_tracer/connection_stats.h"
+#include "src/stirling/source_connectors/socket_tracer/conn_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/test_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/event_generator.h"
 
