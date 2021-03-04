@@ -42,6 +42,7 @@ stirling_flags="--privileged
                 -v /sys:/sys
                 -v /var/lib/docker:/var/lib/docker
                 --pid=host
+                --network=host
                 --env PL_HOST_PATH=/host"
 
 # Disable quoting check to use stirling_flags, otherwise the flag values are treated as one string.
