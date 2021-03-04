@@ -457,6 +457,7 @@ type fakeResultForwarder struct {
 
 	// Variables to set/use for TransferResultChunk testing.
 	ClientStreamClosed   bool
+	ClientStreamError    error
 	ReceivedAgentResults []*carnotpb.TransferResultChunkRequest
 }
 
@@ -489,14 +490,15 @@ func (f *fakeResultForwarder) StreamResults(ctx context.Context, queryID uuid.UU
 // ForwardQueryResult forwards the agent result to the client result stream.
 func (f *fakeResultForwarder) ForwardQueryResult(msg *carnotpb.TransferResultChunkRequest) error {
 	if f.ClientStreamClosed {
-		return fmt.Errorf("Client stream for query has been closed")
+		return f.ClientStreamError
 	}
 	f.ReceivedAgentResults = append(f.ReceivedAgentResults, msg)
 	return nil
 }
 
 // CloseQueryResultStream closes both the client and agent side streams if either side terminates.
-func (f *fakeResultForwarder) OptionallyCancelClientStream(queryID uuid.UUID) {
+func (f *fakeResultForwarder) OptionallyCancelClientStream(queryID uuid.UUID, err error) {
+	f.ClientStreamError = err
 	f.ClientStreamClosed = true
 }
 
@@ -1117,15 +1119,17 @@ func TestTransferResultChunk_AgentClosedPrematurely(t *testing.T) {
 		},
 	}
 
+	errorMsg := fmt.Sprintf(
+		"agent stream was unexpectedly closed for table %s of query %s before the results completed",
+		"output_table_1", queryID.String(),
+	)
+
 	srv.EXPECT().Context().Return(&testingutils.MockContext{}).AnyTimes()
 	srv.EXPECT().Recv().Return(msg1, nil)
 	srv.EXPECT().Recv().Return(nil, io.EOF)
 	srv.EXPECT().SendAndClose(&carnotpb.TransferResultChunkResponse{
 		Success: false,
-		Message: fmt.Sprintf(
-			"agent stream was unxpectedly closed for table %s of query %s before the results completed",
-			"output_table_1", queryID.String(),
-		),
+		Message: errorMsg,
 	}).Return(nil)
 
 	assert.False(t, rf.ClientStreamClosed)
@@ -1137,6 +1141,8 @@ func TestTransferResultChunk_AgentClosedPrematurely(t *testing.T) {
 	}
 
 	assert.True(t, rf.ClientStreamClosed)
+	assert.NotNil(t, rf.ClientStreamError)
+	assert.Equal(t, rf.ClientStreamError.Error(), errorMsg)
 	assert.Equal(t, 1, len(rf.ReceivedAgentResults))
 	assert.Equal(t, msg1, rf.ReceivedAgentResults[0])
 }
@@ -1203,7 +1209,7 @@ func TestTransferResultChunk_AgentStreamFailed(t *testing.T) {
 	srv.EXPECT().Recv().Return(nil, fmt.Errorf("Agent error"))
 	srv.EXPECT().SendAndClose(&carnotpb.TransferResultChunkResponse{
 		Success: false,
-		Message: "Error reading TransferResultChunk stream: Agent error",
+		Message: "Agent error",
 	}).Return(nil)
 
 	assert.False(t, rf.ClientStreamClosed)
@@ -1213,6 +1219,8 @@ func TestTransferResultChunk_AgentStreamFailed(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.True(t, rf.ClientStreamClosed)
+	assert.NotNil(t, rf.ClientStreamError)
+	assert.Equal(t, rf.ClientStreamError.Error(), "Agent error")
 	assert.Equal(t, 1, len(rf.ReceivedAgentResults))
 	assert.Equal(t, msg1, rf.ReceivedAgentResults[0])
 }
@@ -1242,6 +1250,7 @@ func TestTransferResultChunk_ClientStreamCancelled(t *testing.T) {
 	}
 	rf := fakeResultForwarder{
 		ClientStreamClosed: true,
+		ClientStreamError:  fmt.Errorf("An error"),
 	}
 
 	// Set up server.
@@ -1280,7 +1289,7 @@ func TestTransferResultChunk_ClientStreamCancelled(t *testing.T) {
 	srv.EXPECT().Recv().Return(msg1, nil)
 	srv.EXPECT().SendAndClose(&carnotpb.TransferResultChunkResponse{
 		Success: false,
-		Message: "Client stream for query has been closed",
+		Message: "An error",
 	}).Return(nil)
 
 	assert.Equal(t, 0, len(rf.ReceivedAgentResults))
@@ -1289,5 +1298,6 @@ func TestTransferResultChunk_ClientStreamCancelled(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.True(t, rf.ClientStreamClosed)
+	assert.NotNil(t, rf.ClientStreamError)
 	assert.Equal(t, 0, len(rf.ReceivedAgentResults))
 }

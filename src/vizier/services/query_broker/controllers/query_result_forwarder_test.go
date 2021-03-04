@@ -226,15 +226,15 @@ func TestStreamResultsAgentCancel(t *testing.T) {
 	_, in0 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, false)
 	assert.Nil(t, f.ForwardQueryResult(makeInitiateTableRequest(queryID, "foo")))
 	assert.Nil(t, f.ForwardQueryResult(in0))
-	f.OptionallyCancelClientStream(queryID)
+	f.OptionallyCancelClientStream(queryID, fmt.Errorf("An error 1"))
 	// Make sure it's safe to call cancel twice.
-	f.OptionallyCancelClientStream(queryID)
+	f.OptionallyCancelClientStream(queryID, fmt.Errorf("An error 2"))
 
 	wg.Wait()
 
 	assert.Equal(t, 1, len(results))
 	assert.NotNil(t, err)
-	assert.Equal(t, fmt.Errorf("Client stream cancelled for query %s", queryID.String()), err)
+	assert.Equal(t, fmt.Errorf("An error 1"), err)
 }
 
 func TestStreamResultsClientContextCancel(t *testing.T) {
@@ -419,11 +419,11 @@ func TestStreamResultsWrongQueryID(t *testing.T) {
 	assert.Nil(t, f.ForwardQueryResult(makeInitiateTableRequest(queryID, "foo")))
 	assert.Nil(t, f.ForwardQueryResult(goodInput))
 	assert.NotNil(t, f.ForwardQueryResult(badInput))
-	f.OptionallyCancelClientStream(queryID)
+	f.OptionallyCancelClientStream(queryID, fmt.Errorf("An error"))
 	wg.Wait()
 
 	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(), fmt.Sprintf("Client stream cancelled for query %s", queryID.String()))
+	assert.Equal(t, err.Error(), fmt.Sprintf("An error"))
 	assert.Equal(t, 1, len(results))
 	assert.Equal(t, queryID.String(), results[0].QueryID)
 	assert.Equal(t, expected0, results[0].GetData().Batch)
@@ -516,7 +516,8 @@ func TestStreamResultsNeverInitializedTable(t *testing.T) {
 	assert.Nil(t, f.ForwardQueryResult(in0))
 	wg.Wait()
 
-	assert.Equal(t, err.Error(), fmt.Sprintf("Client stream cancelled for query %s", queryID.String()))
+	assert.Equal(t, err.Error(), fmt.Sprintf("Query %s failed to initialize all result tables "+
+		"within the deadline, missing: bar", queryID.String()))
 	assert.Equal(t, 1, len(results))
 	assert.Equal(t, queryID.String(), results[0].QueryID)
 	assert.Equal(t, expected0, results[0].GetData().Batch)

@@ -468,7 +468,8 @@ func (s *Server) TransferResultChunk(srv carnotpb.ResultSinkService_TransferResu
 				// Stop the client stream, if it still exists in the result forwarder.
 				// It may have already been cancelled before this point.
 				log.Errorf("TransferResultChunk cancelling client stream for query %s", queryID.String())
-				s.resultForwarder.OptionallyCancelClientStream(queryID)
+				clientStreamErr := fmt.Errorf(message)
+				s.resultForwarder.OptionallyCancelClientStream(queryID, clientStreamErr)
 			}
 		}
 		return err
@@ -478,7 +479,7 @@ func (s *Server) TransferResultChunk(srv carnotpb.ResultSinkService_TransferResu
 		if tableName != "" && !sentEos {
 			// Send an error and cancel the query if the stream is closed unexpectedly.
 			return sendAndClose( /*success*/ false, fmt.Sprintf(
-				"agent stream was unxpectedly closed for table %s of query %s before the results completed",
+				"agent stream was unexpectedly closed for table %s of query %s before the results completed",
 				tableName, queryID.String(),
 			))
 		}
@@ -496,8 +497,14 @@ func (s *Server) TransferResultChunk(srv carnotpb.ResultSinkService_TransferResu
 				return handleAgentStreamClosed()
 			}
 			if err != nil {
-				return sendAndClose( /*success*/ false, fmt.Sprintf(
-					"Error reading TransferResultChunk stream: %s", err.Error()))
+				if s, ok := status.FromError(err); ok {
+					if s.Code() == codes.Unavailable {
+						return sendAndClose( /*success*/ false,
+							fmt.Sprintf("Agent stream disconnected for query %s", queryID.String()))
+					}
+				}
+
+				return sendAndClose( /*success*/ false, err.Error())
 			}
 
 			qid, err := utils.UUIDFromProto(msg.QueryID)

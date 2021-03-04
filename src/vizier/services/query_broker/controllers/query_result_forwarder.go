@@ -78,8 +78,9 @@ func (s *concurrentSet) size() int {
 // It can be modified and accessed by multiple agent streams and a single client stream.
 type activeQuery struct {
 	// Signal to cancel the client stream for this query.
-	cancelClientStreamCh chan struct{}
-	cancelOnce           sync.Once
+	cancelClientStreamCh    chan struct{}
+	cancelClientStreamError error
+	cancelOnce              sync.Once
 
 	queryResultCh chan *carnotpb.TransferResultChunkRequest
 	tableIDMap    map[string]string
@@ -124,8 +125,9 @@ func newActiveQuery(tableIDMap map[string]string) *activeQuery {
 	return aq
 }
 
-func (a *activeQuery) signalCancelClientStream() {
+func (a *activeQuery) signalCancelClientStream(err error) {
 	a.cancelOnce.Do(func() {
+		a.cancelClientStreamError = err
 		close(a.cancelClientStreamCh)
 	})
 }
@@ -206,7 +208,7 @@ type QueryResultForwarder interface {
 	ForwardQueryResult(msg *carnotpb.TransferResultChunkRequest) error
 	// Send a signal to cancel the query (both sides of the stream should be cancelled).
 	// It is safe to call this function multiple times.
-	OptionallyCancelClientStream(queryID uuid.UUID)
+	OptionallyCancelClientStream(queryID uuid.UUID, err error)
 }
 
 // QueryResultForwarderImpl implements the QueryResultForwarder interface.
@@ -270,7 +272,7 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 
 	ctx, cancel := context.WithCancel(ctx)
 	cancelStreamReturnErr := func(err error) error {
-		activeQuery.signalCancelClientStream()
+		activeQuery.signalCancelClientStream(err)
 		cancel()
 		return err
 	}
@@ -286,9 +288,10 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 				return
 			case <-time.After(f.resultSinkInitializationTimeout):
 				missingSinks := activeQuery.uninitializedTables.values()
-				log.Infof("Query %s failed to initialize all result tables within the deadline, missing: %s",
+				err := fmt.Errorf("Query %s failed to initialize all result tables within the deadline, missing: %s",
 					queryID.String(), strings.Join(missingSinks, ", "))
-				activeQuery.signalCancelClientStream()
+				log.Info(err.Error())
+				activeQuery.signalCancelClientStream(err)
 				return
 			}
 		}
@@ -299,12 +302,11 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 		case <-ctx.Done():
 			// Client side stream is cancelled.
 			// Subsequent calls to ForwardQueryResult should fail for this query.
-			activeQuery.signalCancelClientStream()
+			activeQuery.signalCancelClientStream(nil)
 			return nil
 
 		case <-activeQuery.cancelClientStreamCh:
-			return cancelStreamReturnErr(
-				fmt.Errorf("Client stream cancelled for query %s", queryID.String()))
+			return cancelStreamReturnErr(activeQuery.cancelClientStreamError)
 
 		case msg := <-activeQuery.queryResultCh:
 			// Stream the agent stream result to the client stream.
@@ -374,7 +376,7 @@ func (f *QueryResultForwarderImpl) ForwardQueryResult(msg *carnotpb.TransferResu
 
 // OptionallyCancelClientStream signals to StreamResults that the client stream should be
 // cancelled. It is triggered by the handler for the agent streams.
-func (f *QueryResultForwarderImpl) OptionallyCancelClientStream(queryID uuid.UUID) {
+func (f *QueryResultForwarderImpl) OptionallyCancelClientStream(queryID uuid.UUID, err error) {
 	f.activeQueriesMutex.Lock()
 	activeQuery, present := f.activeQueries[queryID]
 	f.activeQueriesMutex.Unlock()
@@ -384,5 +386,5 @@ func (f *QueryResultForwarderImpl) OptionallyCancelClientStream(queryID uuid.UUI
 		return
 	}
 	// Cancel the client stream if it hasn't already been cancelled.
-	activeQuery.signalCancelClientStream()
+	activeQuery.signalCancelClientStream(err)
 }
