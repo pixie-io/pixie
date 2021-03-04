@@ -3,8 +3,29 @@
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 
 #include "src/common/fs/fs_wrapper.h"
+#include "src/common/system/system.h"
 #include "src/common/testing/testing.h"
+#include "src/stirling/bpf_tools/macros.h"
 #include "src/stirling/obj_tools/testdata/dummy_exe_fixture.h"
+
+// Define NO_OPT_ATTR that specifies that function should not be optimized away.
+// Used on StirlingProbeTrigger below.
+// Note that the attributes are different depending on the compiler.
+#if defined(__clang__)
+#define NO_OPT_ATTR __attribute__((noinline, optnone))
+#elif defined(__GNUC__) || defined(__GNUG__)
+#define NO_OPT_ATTR __attribute__((noinline, optimize("O0")))
+#endif
+
+// A function which we will uprobe on, to trigger our BPF code.
+// The function itself is irrelevant.
+// However, it must not be optimized away.
+// We declare this with C linkage (extern "C") so it has a simple symbol name.
+extern "C" {
+NO_OPT_ATTR void BCCWrapperTestProbeTrigger() { return; }
+}
+
+BPF_SRC_STRVIEW(get_tgid_start_time_bcc_script, get_tgid_start_time);
 
 namespace pl {
 namespace stirling {
@@ -19,6 +40,22 @@ constexpr char kBCCProgram[] = R"BCC(
   }
 )BCC";
 
+class DummyExeWrapper {
+ public:
+  DummyExeWrapper() {
+    // Copy dummy_exe to temp directory so we can remove it to simulate non-existent file.
+    const obj_tools::DummyExeFixture kDummyExeFixture;
+    dummy_exe_path_ = temp_dir_.path() / "dummy_exe";
+    PL_CHECK_OK(fs::Copy(kDummyExeFixture.Path(), dummy_exe_path_));
+  }
+
+  std::filesystem::path& path() { return dummy_exe_path_; }
+
+ private:
+  TempDir temp_dir_;
+  std::filesystem::path dummy_exe_path_;
+};
+
 TEST(BCCWrapperTest, InitDefault) {
   // This will look for Linux Headers using the default strategy,
   // but since packaged headers are not included and PL_HOST_ENV is not defined,
@@ -31,54 +68,83 @@ TEST(BCCWrapperTest, InitDefault) {
 TEST(BCCWrapperTest, InitWithTaskStructOffsetsResolver) {
   // Force the TaskStructOffsetsResolver to run, so we can test
   // that it doesn't lead to an infinite recursion.
+  // The expected call stack is:
+  //   BCCWrapper::InitBPFProgram
+  //   TaskStructOffsetsResolver
+  //   BCCWrapper::InitBPFProgram
+  //   <end> (The second instance of BCCWrapper shouldn't call TaskStructOffsetsResolver again.)
   FLAGS_stirling_always_infer_task_struct_offsets = true;
 
   BCCWrapper bcc_wrapper;
   ASSERT_OK(bcc_wrapper.InitBPFProgram(kBCCProgram));
 }
 
-class BCCWrapperUProbeTest : public ::testing::Test {
- protected:
-  static constexpr char kSymbol[] = "CanYouFindThis";
+TEST(BCCWrapperTest, DetachUProbe) {
+  DummyExeWrapper dummy_exe;
 
-  void SetUp() override {
-    ASSERT_OK(bcc_wrapper_.InitBPFProgram(kBCCProgram));
+  BCCWrapper bcc_wrapper;
+  ASSERT_OK(bcc_wrapper.InitBPFProgram(kBCCProgram));
 
-    // Copy dummy_exe to temp directory so we can remove it to simulate non-existent file.
-    const obj_tools::DummyExeFixture kDummyExeFixture;
-    dummy_exe_path_ = temp_dir_.path() / "dummy_exe";
-    ASSERT_OK(fs::Copy(kDummyExeFixture.Path(), dummy_exe_path_));
-  }
-
-  BCCWrapper bcc_wrapper_;
-  TempDir temp_dir_;
-  std::filesystem::path dummy_exe_path_;
-};
-
-TEST_F(BCCWrapperUProbeTest, DetachUProbe) {
   UProbeSpec spec = {
-      .binary_path = dummy_exe_path_,
-      .symbol = kSymbol,
+      .binary_path = dummy_exe.path(),
+      .symbol = "CanYouFindThis",
       .probe_fn = "foo",
   };
 
   {
-    ASSERT_OK(bcc_wrapper_.AttachUProbe(spec));
-    EXPECT_EQ(1, bcc_wrapper_.num_attached_probes());
+    ASSERT_OK(bcc_wrapper.AttachUProbe(spec));
+    EXPECT_EQ(1, bcc_wrapper.num_attached_probes());
 
-    ASSERT_OK(bcc_wrapper_.DetachUProbe(spec));
-    EXPECT_EQ(0, bcc_wrapper_.num_attached_probes());
+    ASSERT_OK(bcc_wrapper.DetachUProbe(spec));
+    EXPECT_EQ(0, bcc_wrapper.num_attached_probes());
   }
 
   {
-    ASSERT_OK(bcc_wrapper_.AttachUProbe(spec));
-    EXPECT_EQ(1, bcc_wrapper_.num_attached_probes());
+    ASSERT_OK(bcc_wrapper.AttachUProbe(spec));
+    EXPECT_EQ(1, bcc_wrapper.num_attached_probes());
 
     // Remove the binary.
-    ASSERT_OK(fs::Remove(dummy_exe_path_));
-    ASSERT_OK(bcc_wrapper_.DetachUProbe(spec));
-    EXPECT_EQ(0, bcc_wrapper_.num_attached_probes());
+    ASSERT_OK(fs::Remove(dummy_exe.path()));
+    ASSERT_OK(bcc_wrapper.DetachUProbe(spec));
+    EXPECT_EQ(0, bcc_wrapper.num_attached_probes());
   }
+}
+
+TEST(BCCWrapperTest, GetTGIDStartTime) {
+  // Force the TaskStructOffsetsResolver to run,
+  // since we're trying to check that it correctly gets the task_struct offsets.
+  FLAGS_stirling_always_infer_task_struct_offsets = true;
+
+  BCCWrapper bcc_wrapper;
+  ASSERT_OK(bcc_wrapper.InitBPFProgram(get_tgid_start_time_bcc_script));
+
+  // Get the PID start time from /proc.
+  ASSERT_OK_AND_ASSIGN(uint64_t expected_proc_pid_start_time,
+                       ::pl::system::GetPIDStartTimeTicks("/proc/self"));
+
+  ASSERT_OK_AND_ASSIGN(std::filesystem::path self_path, fs::ReadSymlink("/proc/self/exe"));
+
+  // Use address instead of symbol to specify this probe,
+  // so that even if debug symbols are stripped, the uprobe can still attach.
+  uint64_t symbol_addr = reinterpret_cast<uint64_t>(&BCCWrapperTestProbeTrigger);
+
+  UProbeSpec uprobe{.binary_path = self_path,
+                    .symbol = {},  // Keep GCC happy.
+                    .address = symbol_addr,
+                    .attach_type = BPFProbeAttachType::kEntry,
+                    .probe_fn = "probe_tgid_start_time"};
+
+  ASSERT_OK(bcc_wrapper.AttachUProbe(uprobe));
+
+  // Trigger our uprobe.
+  BCCWrapperTestProbeTrigger();
+
+  auto tgid_start_time_output =
+      bcc_wrapper.bpf().get_array_table<uint64_t>("tgid_start_time_output");
+  uint64_t proc_pid_start_time;
+  ASSERT_EQ(tgid_start_time_output.get_value(0, proc_pid_start_time).code(), 0);
+
+  EXPECT_EQ(proc_pid_start_time, expected_proc_pid_start_time);
 }
 
 }  // namespace bpf_tools
