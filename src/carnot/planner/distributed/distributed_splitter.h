@@ -90,15 +90,16 @@ class DistributedSplitter : public NotCopyable {
    */
   StatusOr<std::unique_ptr<BlockingSplitPlan>> SplitKelvinAndAgents(const IR* logical_plan);
 
-  static StatusOr<std::unique_ptr<DistributedSplitter>> Create(bool support_partial_agg) {
+  static StatusOr<std::unique_ptr<DistributedSplitter>> Create(CompilerState* compiler_state,
+                                                               bool support_partial_agg) {
     std::unique_ptr<DistributedSplitter> splitter =
-        std::unique_ptr<DistributedSplitter>(new DistributedSplitter());
+        std::unique_ptr<DistributedSplitter>(new DistributedSplitter(compiler_state));
     PL_RETURN_IF_ERROR(splitter->Init(support_partial_agg));
     return splitter;
   }
 
  private:
-  DistributedSplitter() {}
+  explicit DistributedSplitter(CompilerState* compiler_state) : compiler_state_(compiler_state) {}
   Status Init(bool support_partial_agg) {
     if (support_partial_agg) {
       partial_operator_mgrs_.push_back(std::make_unique<AggOperatorMgr>());
@@ -292,6 +293,7 @@ class DistributedSplitter : public NotCopyable {
 
   int64_t grpc_id_counter_ = 0;
   std::vector<std::unique_ptr<PartialOperatorMgr>> partial_operator_mgrs_;
+  CompilerState* compiler_state_ = nullptr;
 };
 }  // namespace distributed
 }  // namespace planner

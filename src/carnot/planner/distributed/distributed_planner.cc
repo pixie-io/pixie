@@ -50,10 +50,10 @@ Status StitchPlan(DistributedPlan* distributed_plan) {
 }
 
 StatusOr<std::unique_ptr<DistributedPlan>> DistributedPlanner::Plan(
-    const distributedpb::DistributedState& distributed_state, CompilerState*,
+    const distributedpb::DistributedState& distributed_state, CompilerState* compiler_state,
     const IR* logical_plan) {
   PL_ASSIGN_OR_RETURN(std::unique_ptr<Coordinator> coordinator,
-                      Coordinator::Create(distributed_state));
+                      Coordinator::Create(compiler_state, distributed_state));
 
   PL_ASSIGN_OR_RETURN(std::unique_ptr<DistributedPlan> distributed_plan,
                       coordinator->Coordinate(logical_plan));

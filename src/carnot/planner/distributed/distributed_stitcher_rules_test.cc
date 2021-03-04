@@ -49,7 +49,7 @@ class StitcherTest : public DistributedRulesTest {
   }
 
   std::unique_ptr<DistributedPlan> MakeDistributedPlan(const distributedpb::DistributedState& ps) {
-    auto coordinator = Coordinator::Create(ps).ConsumeValueOrDie();
+    auto coordinator = Coordinator::Create(compiler_state_.get(), ps).ConsumeValueOrDie();
 
     MakeSourceSinkGraph();
 

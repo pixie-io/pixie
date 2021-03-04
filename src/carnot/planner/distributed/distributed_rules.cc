@@ -272,7 +272,10 @@ StatusOr<UDFCheckerResult> CheckScalarFuncExecutor(
       return res;
     }
     types::DataType t = arg->EvaluatedDataType();
-    DCHECK(t != types::DataType::DATA_TYPE_UNKNOWN);
+    if (t == types::DataType::DATA_TYPE_UNKNOWN) {
+      return error::Internal("Type of arg $0 to func '$1' is not resolved", arg->DebugString(),
+                             func->func_name());
+    }
     children_data_types.push_back(t);
   }
 

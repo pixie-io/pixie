@@ -1799,7 +1799,8 @@ class DistributedRulesTest : public OperatorTests {
     // Create a CompilerState obj using the relation map and grabbing the current time.
 
     std::unique_ptr<distributed::Coordinator> coordinator =
-        distributed::Coordinator::Create(distributed_state).ConsumeValueOrDie();
+        distributed::Coordinator::Create(compiler_state_.get(), distributed_state)
+            .ConsumeValueOrDie();
 
     std::shared_ptr<IR> single_node_plan = CompileSingleNodePlan(query);
 
@@ -1862,7 +1863,8 @@ class DistributedRulesTest : public OperatorTests {
       std::string_view query) {
     auto ps = ThreeAgentOneKelvinStateWithMetadataInfo();
 
-    auto coordinator = distributed::Coordinator::Create(ps).ConsumeValueOrDie();
+    auto coordinator =
+        distributed::Coordinator::Create(compiler_state_.get(), ps).ConsumeValueOrDie();
     compiler::Compiler compiler;
     auto graph =
         compiler.CompileToIR(std::string(query), compiler_state_.get()).ConsumeValueOrDie();
@@ -1912,7 +1914,8 @@ class DistributedRulesTest : public OperatorTests {
    */
   std::unique_ptr<distributed::BlockingSplitPlan> SplitPlan(IR* logical_plan) {
     std::unique_ptr<distributed::DistributedSplitter> splitter =
-        distributed::DistributedSplitter::Create(/* support_partial_agg */ false)
+        distributed::DistributedSplitter::Create(compiler_state_.get(),
+                                                 /* support_partial_agg */ false)
             .ConsumeValueOrDie();
     return splitter->SplitKelvinAndAgents(logical_plan).ConsumeValueOrDie();
   }

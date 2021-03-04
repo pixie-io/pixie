@@ -4,11 +4,20 @@
 #include <utility>
 #include <vector>
 
+#include "src/carnot/planner/distributed/distributed_rules.h"
 #include "src/carnot/planner/distributed/distributed_splitter.h"
 namespace pl {
 namespace carnot {
 namespace planner {
 namespace distributed {
+
+StatusOr<bool> OperatorRunsOnKelvin(CompilerState* compiler_state, OperatorIR* op) {
+  // If the operator contains Kelvin-only UDFs, or is a blocking operator, we should
+  // schedule this node to run on a Kelvin.
+  PL_ASSIGN_OR_RETURN(bool runs_on_pem,
+                      ScalarUDFsRunOnPEMRule::OperatorUDFsRunOnPEM(compiler_state, op));
+  return !runs_on_pem || op->IsBlocking();
+}
 
 BlockingSplitNodeIDGroups DistributedSplitter::GetSplitGroups(
     const IR* graph, const absl::flat_hash_map<int64_t, bool>& on_kelvin) {
@@ -96,6 +105,14 @@ StatusOr<std::unique_ptr<BlockingSplitPlan>> DistributedSplitter::SplitKelvinAnd
   PL_RETURN_IF_ERROR(pem_plan->Prune(nodes.after_blocking_nodes));
   // Removes all of the nodes that are not on Kelvin.
   PL_RETURN_IF_ERROR(kelvin_plan->Prune(nodes.before_blocking_nodes));
+
+  // Will error out if a Kelvin-only UDF has been scheduled on the PEM portion of the plan.
+  ScalarUDFsRunOnPEMRule pem_rule(compiler_state_);
+  PL_RETURN_IF_ERROR(pem_rule.Execute(pem_plan.get()));
+
+  // Will error out if a PEM-only UDF has been scheduled on the Kelvin portion of the plan.
+  ScalarUDFsRunOnKelvinRule kelvin_rule(compiler_state_);
+  PL_RETURN_IF_ERROR(kelvin_rule.Execute(kelvin_plan.get()));
 
   auto split_plan = std::make_unique<BlockingSplitPlan>();
   split_plan->after_blocking = std::move(kelvin_plan);

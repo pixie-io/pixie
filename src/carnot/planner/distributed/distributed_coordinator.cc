@@ -23,14 +23,15 @@ namespace planner {
 namespace distributed {
 
 StatusOr<std::unique_ptr<Coordinator>> Coordinator::Create(
-    const distributedpb::DistributedState& distributed_state) {
+    CompilerState* compiler_state, const distributedpb::DistributedState& distributed_state) {
   std::unique_ptr<Coordinator> coordinator(new CoordinatorImpl());
-  PL_RETURN_IF_ERROR(coordinator->Init(distributed_state));
+  PL_RETURN_IF_ERROR(coordinator->Init(compiler_state, distributed_state));
   return coordinator;
 }
 
-Status Coordinator::Init(const distributedpb::DistributedState& distributed_state) {
-  return InitImpl(distributed_state);
+Status Coordinator::Init(CompilerState* compiler_state,
+                         const distributedpb::DistributedState& distributed_state) {
+  return InitImpl(compiler_state, distributed_state);
 }
 
 Status Coordinator::ProcessConfig(const CarnotInfo& carnot_info) {
@@ -41,7 +42,9 @@ StatusOr<std::unique_ptr<DistributedPlan>> Coordinator::Coordinate(const IR* log
   return CoordinateImpl(logical_plan);
 }
 
-Status CoordinatorImpl::InitImpl(const distributedpb::DistributedState& distributed_state) {
+Status CoordinatorImpl::InitImpl(CompilerState* compiler_state,
+                                 const distributedpb::DistributedState& distributed_state) {
+  compiler_state_ = compiler_state;
   distributed_state_ = &distributed_state;
   for (int64_t i = 0; i < distributed_state.carnot_info_size(); ++i) {
     PL_RETURN_IF_ERROR(ProcessConfig(distributed_state.carnot_info()[i]));
@@ -199,8 +202,9 @@ StatusOr<AgentToPlanMap> GetUniquePEMPlans(IR* query, DistributedPlan* plan,
 
 StatusOr<std::unique_ptr<DistributedPlan>> CoordinatorImpl::CoordinateImpl(const IR* logical_plan) {
   // TODO(zasgar) set support_partial_agg to true to enable partial aggs.
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<DistributedSplitter> splitter,
-                      DistributedSplitter::Create(/* support_partial_agg */ false));
+  PL_ASSIGN_OR_RETURN(
+      std::unique_ptr<DistributedSplitter> splitter,
+      DistributedSplitter::Create(compiler_state_, /* support_partial_agg */ false));
   PL_ASSIGN_OR_RETURN(std::unique_ptr<BlockingSplitPlan> split_plan,
                       splitter->SplitKelvinAndAgents(logical_plan));
   auto distributed_plan = std::make_unique<DistributedPlan>();

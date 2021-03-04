@@ -71,7 +71,7 @@ class CoordinatorTest : public testutils::DistributedRulesTest {
 
 TEST_F(CoordinatorTest, one_pem_one_kelvin) {
   auto ps = LoadDistributedStatePb(kOnePEMOneKelvinDistributedState);
-  auto coordinator = Coordinator::Create(ps).ConsumeValueOrDie();
+  auto coordinator = Coordinator::Create(compiler_state_.get(), ps).ConsumeValueOrDie();
 
   MakeGraph();
   auto physical_plan = coordinator->Coordinate(graph.get()).ConsumeValueOrDie();
@@ -95,7 +95,7 @@ TEST_F(CoordinatorTest, one_pem_one_kelvin) {
 
 TEST_F(CoordinatorTest, three_pems_one_kelvin) {
   auto ps = LoadDistributedStatePb(kThreePEMsOneKelvinDistributedState);
-  auto coordinator = Coordinator::Create(ps).ConsumeValueOrDie();
+  auto coordinator = Coordinator::Create(compiler_state_.get(), ps).ConsumeValueOrDie();
 
   MakeGraph();
   auto physical_plan = coordinator->Coordinate(graph.get()).ConsumeValueOrDie();
@@ -124,7 +124,7 @@ TEST_F(CoordinatorTest, three_pems_one_kelvin) {
 
 TEST_F(CoordinatorTest, one_pem_three_kelvin) {
   auto ps = LoadDistributedStatePb(kOnePEMThreeKelvinsDistributedState);
-  auto coordinator = Coordinator::Create(ps).ConsumeValueOrDie();
+  auto coordinator = Coordinator::Create(compiler_state_.get(), ps).ConsumeValueOrDie();
 
   MakeGraph();
 
@@ -170,7 +170,7 @@ carnot_info {
 
 TEST_F(CoordinatorTest, bad_pem_spec) {
   auto ps = LoadDistributedStatePb(kBadAgentSpecificationState);
-  auto coordinator_status = Coordinator::Create(ps);
+  auto coordinator_status = Coordinator::Create(compiler_state_.get(), ps);
 
   ASSERT_NOT_OK(coordinator_status);
   EXPECT_EQ(coordinator_status.status().msg(),
@@ -201,7 +201,7 @@ carnot_info {
 
 TEST_F(CoordinatorTest, bad_kelvin_spec) {
   auto ps = LoadDistributedStatePb(kBadKelvinSpecificationState);
-  auto coordinator_status = Coordinator::Create(ps);
+  auto coordinator_status = Coordinator::Create(compiler_state_.get(), ps);
 
   ASSERT_NOT_OK(coordinator_status);
   EXPECT_EQ(coordinator_status.status().msg(),
@@ -598,7 +598,7 @@ TEST_F(CoordinatorTest, delete_dependent_nodes) {
   // We add an extra PEM that doesn't have an entry in the schema table.
   EXPECT_TRUE(google::protobuf::TextFormat::MergeFromString(kExtraPEM, ps.add_carnot_info()));
 
-  auto coordinator = Coordinator::Create(ps).ConsumeValueOrDie();
+  auto coordinator = Coordinator::Create(compiler_state_.get(), ps).ConsumeValueOrDie();
   compiler::Compiler compiler;
   auto graph = compiler.CompileToIR(testutils::kDependentRemovableOpsQuery, compiler_state_.get())
                    .ConsumeValueOrDie();

@@ -12,6 +12,7 @@
 #include "src/carnot/planner/distributed/distributed_splitter.h"
 #include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planner/rules/rules.h"
+#include "src/carnot/planner/test_utils.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 
 namespace pl {
@@ -25,6 +26,9 @@ using ::testing::UnorderedElementsAreArray;
 class SplitterTest : public OperatorTests {
  protected:
   void SetUpImpl() override {
+    info_ = std::make_unique<RegistryInfo>();
+    ASSERT_OK(info_->Init(testutils::UDFInfoWithTestUDTF()));
+
     auto rel_map = std::make_unique<RelationMap>();
     cpu_relation = table_store::schema::Relation(
         std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
@@ -73,11 +77,13 @@ class SplitterTest : public OperatorTests {
 
 TEST_F(SplitterTest, blocking_agg_test) {
   auto mem_src = MakeMemSource(MakeRelation());
-  auto agg = MakeBlockingAgg(mem_src, {MakeColumn("count", 0)},
-                             {{"mean", MakeMeanFunc(MakeColumn("count", 0))}});
+  auto agg = MakeBlockingAgg(
+      mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
+      {{"mean", MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64))}});
   auto sink = MakeMemSink(agg, "out");
 
-  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ false);
+  auto splitter_or_s =
+      DistributedSplitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
   std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
@@ -107,9 +113,9 @@ TEST_F(SplitterTest, blocking_agg_test) {
 
 TEST_F(SplitterTest, partial_agg_test) {
   auto mem_src = MakeMemSource(MakeRelation());
-  auto count_col = MakeColumn("count", 0);
+  auto count_col = MakeColumn("count", 0, types::DataType::INT64);
   count_col->ResolveColumnType(types::INT64);
-  auto mean_func = MakeMeanFunc(MakeColumn("count", 0));
+  auto mean_func = MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64));
   mean_func->SetSupportsPartial(true);
   auto agg = MakeBlockingAgg(mem_src, {count_col}, {{"mean", mean_func}});
 
@@ -117,7 +123,8 @@ TEST_F(SplitterTest, partial_agg_test) {
   ASSERT_OK(agg->SetRelation(relation));
   MakeMemSink(agg, "out");
 
-  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ true);
+  auto splitter_or_s =
+      DistributedSplitter::Create(compiler_state_.get(), /* perform_partial_agg */ true);
   ASSERT_OK(splitter_or_s);
   std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
@@ -176,7 +183,8 @@ TEST_F(SplitterTest, limit_test) {
   auto sink = MakeMemSink(limit, "out");
   EXPECT_TRUE(limit->IsRelationInit());
 
-  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ false);
+  auto splitter_or_s =
+      DistributedSplitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
   std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
@@ -221,7 +229,8 @@ TEST_F(SplitterTest, limit_test_pem_only) {
   auto sink = MakeMemSink(limit, "out");
   EXPECT_TRUE(limit->IsRelationInit());
 
-  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ false);
+  auto splitter_or_s =
+      DistributedSplitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
   std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
@@ -261,7 +270,8 @@ TEST_F(SplitterTest, sink_only_test) {
   EXPECT_OK(map2->SetRelation(MakeRelation()));
   auto sink = MakeMemSink(map2, "out");
 
-  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ false);
+  auto splitter_or_s =
+      DistributedSplitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
   std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
@@ -287,14 +297,16 @@ TEST_F(SplitterTest, sink_only_test) {
 // Test to see whether splitting works when sandwiched between two separate ops.
 TEST_F(SplitterTest, sandwich_test) {
   auto mem_src = MakeMemSource(MakeRelation());
-  auto map = MakeMap(mem_src, {{"count", MakeColumn("count", 0)}});
+  auto map = MakeMap(mem_src, {{"count", MakeColumn("count", 0, types::DataType::INT64)}});
   EXPECT_OK(map->SetRelation(MakeRelation()));
-  auto agg = MakeBlockingAgg(map, {MakeColumn("count", 0)},
-                             {{"mean", MakeMeanFunc(MakeColumn("count", 0))}});
-  auto map2 = MakeMap(agg, {{"count", MakeColumn("count", 0)}});
+  auto agg = MakeBlockingAgg(
+      map, {MakeColumn("count", 0, types::DataType::INT64)},
+      {{"mean", MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64))}});
+  auto map2 = MakeMap(agg, {{"count", MakeColumn("count", 0, types::DataType::INT64)}});
   MakeMemSink(map2, "out");
 
-  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ false);
+  auto splitter_or_s =
+      DistributedSplitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
   std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
@@ -321,13 +333,16 @@ TEST_F(SplitterTest, sandwich_test) {
 
 TEST_F(SplitterTest, first_blocking_node_test) {
   auto mem_src = MakeMemSource(MakeRelation());
-  auto agg = MakeBlockingAgg(mem_src, {MakeColumn("count", 0)},
-                             {{"mean", MakeMeanFunc(MakeColumn("cpu0", 0))}});
-  auto agg2 = MakeBlockingAgg(agg, {MakeColumn("count", 0)},
-                              {{"mean2", MakeMeanFunc(MakeColumn("mean", 0))}});
+  auto agg = MakeBlockingAgg(
+      mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
+      {{"mean", MakeMeanFuncWithFloatType(MakeColumn("cpu0", 0, types::DataType::INT64))}});
+  auto agg2 = MakeBlockingAgg(
+      agg, {MakeColumn("count", 0, types::DataType::INT64)},
+      {{"mean2", MakeMeanFuncWithFloatType(MakeColumn("mean", 0, types::DataType::FLOAT64))}});
   MakeMemSink(agg2, "out");
 
-  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ false);
+  auto splitter_or_s =
+      DistributedSplitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
   std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
@@ -368,7 +383,8 @@ TEST_F(SplitterTest, union_operator) {
     EXPECT_MATCH(union_parent, MemorySource());
   }
 
-  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ false);
+  auto splitter_or_s =
+      DistributedSplitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
   std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
@@ -417,17 +433,20 @@ TEST_F(SplitterTest, union_operator) {
  */
 TEST_F(SplitterTest, two_blocking_children) {
   auto mem_src = MakeMemSource(MakeRelation());
-  auto blocking_agg1 = MakeBlockingAgg(mem_src, {MakeColumn("count", 0)},
-                                       {{"cpu0_mean", MakeMeanFunc(MakeColumn("cpu0", 0))}});
+  auto blocking_agg1 = MakeBlockingAgg(
+      mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
+      {{"cpu0_mean", MakeMeanFuncWithFloatType(MakeColumn("cpu0", 0, types::DataType::INT64))}});
   MakeMemSink(blocking_agg1, "out1");
 
-  auto blocking_agg2 = MakeBlockingAgg(mem_src, {MakeColumn("count", 0)},
-                                       {{"cpu1_mean", MakeMeanFunc(MakeColumn("cpu1", 0))}});
+  auto blocking_agg2 = MakeBlockingAgg(
+      mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
+      {{"cpu1_mean", MakeMeanFuncWithFloatType(MakeColumn("cpu1", 0, types::DataType::INT64))}});
   MakeMemSink(blocking_agg2, "out2");
 
   EXPECT_EQ(mem_src->Children().size(), 2);
 
-  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ false);
+  auto splitter_or_s =
+      DistributedSplitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
   std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
@@ -478,8 +497,9 @@ TEST_F(SplitterTest, two_blocking_children) {
  */
 TEST_F(SplitterTest, agg_join_children) {
   auto mem_src = MakeMemSource(MakeRelation());
-  auto blocking_agg = MakeBlockingAgg(mem_src, {MakeColumn("count", 0)},
-                                      {{"cpu0_mean", MakeMeanFunc(MakeColumn("cpu0", 0))}});
+  auto blocking_agg = MakeBlockingAgg(
+      mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
+      {{"cpu0_mean", MakeMeanFuncWithFloatType(MakeColumn("cpu0", 0, types::DataType::INT64))}});
   auto join = MakeJoin({mem_src, blocking_agg}, "inner", MakeRelation(),
                        Relation({types::INT64, types::FLOAT64}, {"count", "cpu0_mean"}), {"count"},
                        {"count"});
@@ -487,7 +507,8 @@ TEST_F(SplitterTest, agg_join_children) {
 
   EXPECT_EQ(mem_src->Children().size(), 2);
 
-  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ false);
+  auto splitter_or_s =
+      DistributedSplitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
   std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
 
@@ -527,7 +548,8 @@ TEST_F(SplitterTest, simple_split_test) {
   EXPECT_OK(map1->SetRelation(MakeRelation()));
   auto mem_sink = MakeMemSink(map1, "out");
 
-  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ false);
+  auto splitter_or_s =
+      DistributedSplitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
   std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
@@ -559,7 +581,8 @@ TEST_F(SplitterTest, two_paths) {
   EXPECT_OK(map2->SetRelation(MakeRelation()));
   auto mem_sink2 = MakeMemSink(map2, "out");
 
-  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ false);
+  auto splitter_or_s =
+      DistributedSplitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
   std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
@@ -619,7 +642,8 @@ TEST_F(SplitterTest, UDTFOnSubsetOfPEMs) {
   auto udtf = MakeUDTFSource(udtf_spec, {{"upid", MakeString(upid_value)}});
   auto sink = MakeMemSink(udtf, "out");
 
-  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ false);
+  auto splitter_or_s =
+      DistributedSplitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
   ASSERT_OK(splitter_or_s);
   std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
@@ -674,18 +698,21 @@ TEST_F(SplitterTest, MultipleBranchedIdenticalDepths) {
   // Branch 1.
   auto map1 = MakeMap(mem_src, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
   EXPECT_OK(map1->SetRelation(MakeRelation()));
-  auto agg1 = MakeBlockingAgg(map1, {MakeColumn("count", 0)},
-                              {{"mean", MakeMeanFunc(MakeColumn("col0", 0))}});
+  auto agg1 = MakeBlockingAgg(
+      map1, {MakeColumn("count", 0, types::DataType::INT64)},
+      {{"mean", MakeMeanFuncWithFloatType(MakeColumn("col0", 0, types::DataType::INT64))}});
   MakeMemSink(agg1, "out1");
 
   // Branch 2.
   auto map2 = MakeMap(mem_src, {{"col2", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
   EXPECT_OK(map2->SetRelation(MakeRelation()));
-  auto agg2 = MakeBlockingAgg(map2, {MakeColumn("count", 0)},
-                              {{"mean", MakeMeanFunc(MakeColumn("count", 0))}});
+  auto agg2 = MakeBlockingAgg(
+      map2, {MakeColumn("count", 0, types::DataType::INT64)},
+      {{"mean", MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64))}});
   MakeMemSink(agg2, "out2");
 
-  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ true);
+  auto splitter_or_s =
+      DistributedSplitter::Create(compiler_state_.get(), /* perform_partial_agg */ true);
   ASSERT_OK(splitter_or_s);
   std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
@@ -734,7 +761,7 @@ TEST_F(SplitterTest, MultipleBranchedIdenticalDepths) {
  *        |
  *    GRPCSink(1)
  *
- *   GRPCSource(1)
+ *   GRPCSource(1)MultipleBranched
  *   /           \
  * Map         BlockingAgg
  *  |             |
@@ -746,15 +773,18 @@ TEST_F(SplitterTest, MultipleBranchedDifferentBlockingDepths) {
   auto mem_src = MakeMemSource(MakeRelation());
   auto map1 = MakeMap(mem_src, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
   EXPECT_OK(map1->SetRelation(MakeRelation()));
-  auto agg1 = MakeBlockingAgg(map1, {MakeColumn("count", 0)},
-                              {{"mean", MakeMeanFunc(MakeColumn("col0", 0))}});
+  auto agg1 = MakeBlockingAgg(
+      map1, {MakeColumn("count", 0, types::DataType::INT64)},
+      {{"mean", MakeMeanFuncWithFloatType(MakeColumn("col0", 0, types::DataType::INT64))}});
   MakeMemSink(agg1, "out1");
 
-  auto agg2 = MakeBlockingAgg(mem_src, {MakeColumn("count", 0)},
-                              {{"mean", MakeMeanFunc(MakeColumn("count", 0))}});
+  auto agg2 = MakeBlockingAgg(
+      mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
+      {{"mean", MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64))}});
   MakeMemSink(agg2, "out2");
 
-  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ true);
+  auto splitter_or_s =
+      DistributedSplitter::Create(compiler_state_.get(), /* perform_partial_agg */ true);
   ASSERT_OK(splitter_or_s);
   std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
@@ -822,24 +852,29 @@ TEST_F(SplitterTest, MultipleBranchesAndSparseFilter) {
       {"upid", "time_", "count", "cpu0"});
   auto mem_src = MakeMemSource(relation);
   // Makes a sparse filter.
-  auto metadata_fn = MakeFunc("upid_to_service_name", {MakeColumn("upid", 0)});
+  auto metadata_fn =
+      MakeFunc("upid_to_service_name", {MakeColumn("upid", 0, types::DataType::UINT128)},
+               types::DataType::STRING);
   metadata_fn->set_annotations(ExpressionIR::Annotations{MetadataType::SERVICE_NAME});
   auto filter = MakeFilter(mem_src, MakeEqualsFunc(metadata_fn, MakeString("pl/agent1")));
   EXPECT_OK(filter->SetRelation(relation));
-  auto map =
-      MakeMap(filter, {{"time_", MakeColumn("time_", 0)}, {"count", MakeColumn("count", 0)}});
+  auto map = MakeMap(filter, {{"time_", MakeColumn("time_", 0)},
+                              {"count", MakeColumn("count", 0, types::DataType::INT64)}});
   EXPECT_OK(map->SetRelation(
       table_store::schema::Relation({types::TIME64NS, types::INT64}, {"time_", "count"})));
   MakeMemSink(map, "out1");
 
-  auto agg1 = MakeBlockingAgg(filter, {MakeColumn("count", 0)},
-                              {{"countelms", MakeCountFunc(MakeColumn("count", 0))}});
+  auto agg1 = MakeBlockingAgg(
+      filter, {MakeColumn("count", 0, types::DataType::INT64)},
+      {{"countelms", MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64))}});
   MakeMemSink(agg1, "out2");
 
-  auto agg2 = MakeBlockingAgg(mem_src, {}, {{"countelms", MakeCountFunc(MakeColumn("count", 0))}});
+  auto agg2 = MakeBlockingAgg(
+      mem_src, {}, {{"countelms", MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64))}});
   MakeMemSink(agg2, "out3");
 
-  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ true);
+  auto splitter_or_s =
+      DistributedSplitter::Create(compiler_state_.get(), /* perform_partial_agg */ true);
   ASSERT_OK(splitter_or_s);
   std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
@@ -964,14 +999,17 @@ TEST_F(SplitterTest, branch_where_children_must_be_on_pem) {
       {types::UINT128, types::TIME64NS, types::INT64, types::DataType::FLOAT64},
       {"upid", "time_", "count", "cpu0"});
   auto mem_src = MakeMemSource(relation);
-  auto random_map = MakeMap(mem_src, {{"cpu++", MakeAddFunc(MakeColumn("cpu0", 0), MakeInt(1))}},
-                            /*keep_input_columns*/ true);
+  auto random_map = MakeMap(
+      mem_src, {{"cpu++", MakeAddFunc(MakeColumn("cpu0", 0, types::DataType::INT64), MakeInt(1))}},
+      /*keep_input_columns*/ true);
 
   EXPECT_OK(random_map->SetRelation(Relation(
       {types::UINT128, types::TIME64NS, types::INT64, types::DataType::FLOAT64, types::FLOAT64},
       {"upid", "time_", "count", "cpu0", "cpu++"})));
   // Makes a sparse filter.
-  auto metadata_fn1 = MakeFunc("upid_to_service_name", {MakeColumn("upid", 0)});
+  auto metadata_fn1 =
+      MakeFunc("upid_to_service_name", {MakeColumn("upid", 0, types::DataType::UINT128)},
+               types::DataType::STRING);
   metadata_fn1->set_annotations(ExpressionIR::Annotations{MetadataType::SERVICE_NAME});
   auto map1 = MakeMap(random_map,
                       {{"equals_service", MakeEqualsFunc(metadata_fn1, MakeString("pl/agent1"))}},
@@ -983,30 +1021,35 @@ TEST_F(SplitterTest, branch_where_children_must_be_on_pem) {
                                  {"upid", "time_", "count", "cpu0", "cpu++", "equals_service"})));
 
   // agg1 should partial.
-  auto count_col_agg1 = MakeColumn("count", 0);
+  auto count_col_agg1 = MakeColumn("count", 0, types::DataType::INT64);
   count_col_agg1->ResolveColumnType(types::INT64);
-  auto agg1 = MakeBlockingAgg(map1, {count_col_agg1},
-                              {{"countelms", MakeCountFunc(MakeColumn("count", 0))}});
+  auto agg1 = MakeBlockingAgg(
+      map1, {count_col_agg1},
+      {{"countelms", MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64))}});
   MakeMemSink(agg1, "out2");
 
   // agg2 should not partial.
-  auto agg2_count_fn = MakeCountFunc(MakeColumn("count", 0));
+  auto agg2_count_fn = MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64));
   agg2_count_fn->SetSupportsPartial(false);
   auto agg2 = MakeBlockingAgg(mem_src, {}, {{"countelms", agg2_count_fn}});
   MakeMemSink(agg2, "out3");
 
-  auto metadata_fn2 = MakeFunc("upid_to_pod_name", {MakeColumn("upid", 0)});
+  auto metadata_fn2 =
+      MakeFunc("upid_to_pod_name", {MakeColumn("upid", 0, types::DataType::UINT128)},
+               types::DataType::STRING);
   metadata_fn2->set_annotations(ExpressionIR::Annotations{MetadataType::POD_NAME});
 
-  auto map2 = MakeMap(map1, {{"pod", metadata_fn2}, {"count", MakeColumn("count", 0)}},
-                      /*keep_input_columns*/ true);
+  auto map2 = MakeMap(
+      map1, {{"pod", metadata_fn2}, {"count", MakeColumn("count", 0, types::DataType::INT64)}},
+      /*keep_input_columns*/ true);
   EXPECT_OK(map2->SetRelation(
       Relation({types::UINT128, types::TIME64NS, types::DataType::FLOAT64, types::FLOAT64,
                 types::BOOLEAN, types::STRING, types::INT64},
                {"upid", "time_", "cpu0", "cpu++", "equals_service", "pod", "count"})));
   MakeMemSink(map2, "out1");
 
-  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ true);
+  auto splitter_or_s =
+      DistributedSplitter::Create(compiler_state_.get(), /* perform_partial_agg */ true);
   ASSERT_OK(splitter_or_s);
   std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
@@ -1115,7 +1158,7 @@ TEST_F(SplitterTest, branch_where_children_must_be_on_pem) {
  * - - - - - - - -  - - - - - - - - - - - -
  *     GRPCSource(1)           GRPCSource(3)
  *      /        \                  |
- *  Agg(1)      RandomMap(2)      Agg(2)
+ *  Agg(1)      RandomMap(2)      Agg(2)rest_can
  *     |             |              |
  *    Sink          Sink           Sink
  */
@@ -1124,14 +1167,17 @@ TEST_F(SplitterTest, branch_where_single_node_must_be_on_pem_the_rest_can_recurs
       {types::UINT128, types::TIME64NS, types::INT64, types::DataType::FLOAT64},
       {"upid", "time_", "count", "cpu0"});
   auto mem_src = MakeMemSource(relation);
-  auto random_map1 = MakeMap(mem_src, {{"cpu++", MakeAddFunc(MakeColumn("cpu0", 0), MakeInt(1))}},
-                             /*keep_input_columns*/ true);
+  auto random_map1 = MakeMap(
+      mem_src, {{"cpu++", MakeAddFunc(MakeColumn("cpu0", 0, types::DataType::INT64), MakeInt(1))}},
+      /*keep_input_columns*/ true);
 
   EXPECT_OK(random_map1->SetRelation(Relation(
       {types::UINT128, types::TIME64NS, types::INT64, types::DataType::FLOAT64, types::FLOAT64},
       {"upid", "time_", "count", "cpu0", "cpu++"})));
   // Makes a sparse filter.
-  auto metadata_fn1 = MakeFunc("upid_to_service_name", {MakeColumn("upid", 0)});
+  auto metadata_fn1 =
+      MakeFunc("upid_to_service_name", {MakeColumn("upid", 0, types::DataType::UINT128)},
+               types::DataType::STRING);
   metadata_fn1->set_annotations(ExpressionIR::Annotations{MetadataType::SERVICE_NAME});
   auto pem_map1 = MakeMap(
       random_map1, {{"equals_service", MakeEqualsFunc(metadata_fn1, MakeString("pl/agent1"))}},
@@ -1143,29 +1189,32 @@ TEST_F(SplitterTest, branch_where_single_node_must_be_on_pem_the_rest_can_recurs
                {"upid", "time_", "count", "cpu0", "cpu++", "equals_service"})));
 
   // agg1 should partial.
-  auto count_col_agg1 = MakeColumn("count", 0);
+  auto count_col_agg1 = MakeColumn("count", 0, types::DataType::INT64);
   count_col_agg1->ResolveColumnType(types::INT64);
-  auto agg1 = MakeBlockingAgg(pem_map1, {count_col_agg1},
-                              {{"countelms", MakeCountFunc(MakeColumn("count", 0))}});
+  auto agg1 = MakeBlockingAgg(
+      pem_map1, {count_col_agg1},
+      {{"countelms", MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64))}});
   MakeMemSink(agg1, "out2");
 
   // agg2 should not partial.
-  auto agg2_count_fn = MakeCountFunc(MakeColumn("count", 0));
+  auto agg2_count_fn = MakeCountFunc(MakeColumn("count", 0, types::DataType::INT64));
   agg2_count_fn->SetSupportsPartial(false);
   auto agg2 = MakeBlockingAgg(mem_src, {}, {{"countelms", agg2_count_fn}});
   MakeMemSink(agg2, "out3");
 
-  auto random_map2 = MakeMap(pem_map1,
-                             {{"count++", MakeAddFunc(MakeColumn("count", 0), MakeInt(1))},
-                              {"count", MakeColumn("count", 0)}},
-                             /*keep_input_columns*/ true);
+  auto random_map2 =
+      MakeMap(pem_map1,
+              {{"count++", MakeAddFunc(MakeColumn("count", 0, types::DataType::INT64), MakeInt(1))},
+               {"count", MakeColumn("count", 0, types::DataType::INT64)}},
+              /*keep_input_columns*/ true);
   EXPECT_OK(random_map2->SetRelation(
       Relation({types::UINT128, types::TIME64NS, types::DataType::FLOAT64, types::FLOAT64,
                 types::BOOLEAN, types::INT64, types::INT64},
                {"upid", "time_", "cpu0", "cpu++", "equals_service", "count++", "count"})));
   MakeMemSink(random_map2, "out1");
 
-  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ true);
+  auto splitter_or_s =
+      DistributedSplitter::Create(compiler_state_.get(), /* perform_partial_agg */ true);
   ASSERT_OK(splitter_or_s);
   std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
@@ -1229,6 +1278,56 @@ TEST_F(SplitterTest, branch_where_single_node_must_be_on_pem_the_rest_can_recurs
   ASSERT_EQ(new_agg2->Children().size(), 1);
   EXPECT_MATCH(new_agg2->Children()[0], MemorySink());
 }
+
+TEST_F(SplitterTest, errors_if_pem_func_on_kelvin) {
+  auto mem_src = MakeMemSource(MakeRelation());
+  auto agg = MakeBlockingAgg(
+      mem_src, {MakeColumn("count", 0, types::DataType::INT64)},
+      {{"mean", MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64))}});
+  auto pem_only_map =
+      MakeMap(agg, {{"pem_only", MakeFunc("pem_only", {})}}, /*keep_input_columns*/ false);
+  MakeMemSink(pem_only_map, "out");
+
+  auto splitter_or_s =
+      DistributedSplitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
+  ASSERT_OK(splitter_or_s);
+  std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
+  auto s = splitter->SplitKelvinAndAgents(graph.get());
+  ASSERT_NOT_OK(s);
+  EXPECT_THAT(
+      s.status(),
+      HasCompilerError(
+          "UDF 'pem_only' must execute before blocking nodes such as limit, agg, and join."));
+}
+
+TEST_F(SplitterTest, errors_if_kelvin_func_on_pem) {
+  auto mem_src = MakeMemSource(MakeRelation());
+  auto kelvin_only_map = MakeMap(mem_src, {{"kelvin_only", MakeFunc("kelvin_only", {})}},
+                                 /*keep_input_columns*/ false);
+
+  table_store::schema::Relation relation1({types::INT64, types::FLOAT64}, {"count", "mean"});
+  ASSERT_OK(kelvin_only_map->SetRelation(relation1));
+
+  auto agg = MakeBlockingAgg(
+      kelvin_only_map, {MakeColumn("count", 0, types::DataType::INT64)},
+      {{"mean", MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64))}});
+  table_store::schema::Relation relation2({types::INT64, types::FLOAT64}, {"count", "mean"});
+  ASSERT_OK(agg->SetRelation(relation2));
+
+  MakeMemSink(agg, "out");
+
+  auto splitter_or_s =
+      DistributedSplitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
+  ASSERT_OK(splitter_or_s);
+  std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
+  auto s = splitter->SplitKelvinAndAgents(graph.get());
+  ASSERT_NOT_OK(s);
+  EXPECT_THAT(
+      s.status(),
+      HasCompilerError(
+          "UDF 'kelvin_only' must execute after blocking nodes such as limit, agg, and join."));
+}
+
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot

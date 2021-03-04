@@ -29,7 +29,7 @@ class Coordinator : public NotCopyable {
  public:
   virtual ~Coordinator() = default;
   static StatusOr<std::unique_ptr<Coordinator>> Create(
-      const distributedpb::DistributedState& distributed_state);
+      CompilerState* compiler_state, const distributedpb::DistributedState& distributed_state);
 
   /**
    * @brief Using the physical state and the current plan, assembles a proto Distributed Plan. This
@@ -39,12 +39,14 @@ class Coordinator : public NotCopyable {
    */
   StatusOr<std::unique_ptr<DistributedPlan>> Coordinate(const IR* logical_plan);
 
-  Status Init(const distributedpb::DistributedState& distributed_state);
+  Status Init(CompilerState* compiler_state,
+              const distributedpb::DistributedState& distributed_state);
 
  protected:
   Status ProcessConfig(const CarnotInfo& carnot_info);
 
-  virtual Status InitImpl(const distributedpb::DistributedState& distributed_state) = 0;
+  virtual Status InitImpl(CompilerState* compiler_state,
+                          const distributedpb::DistributedState& distributed_state) = 0;
 
   /**
    * @brief Implementation of the Coordinate function. Using the phyiscal state and the plan, should
@@ -65,7 +67,8 @@ class Coordinator : public NotCopyable {
 class CoordinatorImpl : public Coordinator {
  protected:
   StatusOr<std::unique_ptr<DistributedPlan>> CoordinateImpl(const IR* logical_plan) override;
-  Status InitImpl(const distributedpb::DistributedState& distributed_state) override;
+  Status InitImpl(CompilerState* compiler_state,
+                  const distributedpb::DistributedState& distributed_state) override;
   Status ProcessConfigImpl(const CarnotInfo& carnot_info) override;
 
  private:
@@ -105,6 +108,8 @@ class CoordinatorImpl : public Coordinator {
   std::vector<CarnotInfo> remote_processor_nodes_;
   // The distributed state object.
   const distributedpb::DistributedState* distributed_state_ = nullptr;
+  // The compiler state.
+  CompilerState* compiler_state_ = nullptr;
 };
 
 }  // namespace distributed

@@ -555,6 +555,13 @@ class OperatorTests : public ::testing::Test {
   }
 
   ColumnIR* MakeColumn(const std::string& name, int64_t parent_op_idx,
+                       const types::DataType& type) {
+    ColumnIR* column = MakeColumn(name, parent_op_idx);
+    column->ResolveColumnType(type);
+    return column;
+  }
+
+  ColumnIR* MakeColumn(const std::string& name, int64_t parent_op_idx,
                        const table_store::schema::Relation& relation) {
     ColumnIR* column = MakeColumn(name, parent_op_idx);
     column->ResolveColumnType(relation);
@@ -605,6 +612,14 @@ class OperatorTests : public ::testing::Test {
         .ConsumeValueOrDie();
   }
 
+  FuncIR* MakeFunc(const std::string& name, const std::vector<ExpressionIR*>& args,
+                   const types::DataType& output_type) {
+    auto res = graph->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", name}, args)
+                   .ConsumeValueOrDie();
+    res->SetOutputDataType(output_type);
+    return res;
+  }
+
   FuncIR* MakeAndFunc(ExpressionIR* left, ExpressionIR* right) {
     return graph
         ->CreateNode<FuncIR>(ast, FuncIR::op_map.find("and")->second,
@@ -631,6 +646,16 @@ class OperatorTests : public ::testing::Test {
                              std::vector<ExpressionIR*>({value}))
         .ConsumeValueOrDie();
   }
+
+  FuncIR* MakeMeanFuncWithFloatType(ExpressionIR* value) {
+    auto res = graph
+                   ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "mean"},
+                                        std::vector<ExpressionIR*>({value}))
+                   .ConsumeValueOrDie();
+    res->SetOutputDataType(types::DataType::FLOAT64);
+    return res;
+  }
+
   FuncIR* MakeMeanFunc() {
     return graph
         ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "mean"},
