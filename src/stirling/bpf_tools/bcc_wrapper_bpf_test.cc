@@ -8,18 +8,8 @@
 #include "src/stirling/bpf_tools/macros.h"
 #include "src/stirling/obj_tools/testdata/dummy_exe_fixture.h"
 
-// Define NO_OPT_ATTR that specifies that function should not be optimized away.
-// Used on StirlingProbeTrigger below.
-// Note that the attributes are different depending on the compiler.
-#if defined(__clang__)
-#define NO_OPT_ATTR __attribute__((noinline, optnone))
-#elif defined(__GNUC__) || defined(__GNUG__)
-#define NO_OPT_ATTR __attribute__((noinline, optimize("O0")))
-#endif
-
 // A function which we will uprobe on, to trigger our BPF code.
-// The function itself is irrelevant.
-// However, it must not be optimized away.
+// The function itself is irrelevant, but it must not be optimized away.
 // We declare this with C linkage (extern "C") so it has a simple symbol name.
 extern "C" {
 NO_OPT_ATTR void BCCWrapperTestProbeTrigger() { return; }

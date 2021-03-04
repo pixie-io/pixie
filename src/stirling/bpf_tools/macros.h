@@ -15,5 +15,14 @@ namespace stirling {
 // See 'pl_bpf_cc_resource' bazel rule to see how these are generated.
 #define BPF_SRC_STRVIEW(varname, build_label) OBJ_STRVIEW(varname, _binary_##build_label##_bpf_src);
 
+// Define NO_OPT_ATTR that specifies that function should not be optimized away.
+// Typically used on dummy probe triggers.
+// Note that the attributes are different depending on the compiler.
+#if defined(__clang__)
+#define NO_OPT_ATTR __attribute__((noinline, optnone))
+#elif defined(__GNUC__) || defined(__GNUG__)
+#define NO_OPT_ATTR __attribute__((noinline, optimize("O0")))
+#endif
+
 }  // namespace stirling
 }  // namespace pl
