@@ -36,6 +36,14 @@ pl_cc_binary(
     ],
 )
 
+pl_cc_binary(
+    name = "stirling_profiler",
+    srcs = ["stirling_profiler.cc"],
+    deps = [
+        "//src/stirling:cc_library",
+    ],
+)
+
 cc_image(
     name = "stirling_wrapper_image",
     base = "//:pl_cc_bpf_debug_image",

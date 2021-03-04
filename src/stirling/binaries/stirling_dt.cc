@@ -16,25 +16,28 @@
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dynamic_tracer.h"
 #include "src/stirling/stirling.h"
 
-using pl::Status;
-using pl::StatusOr;
+using ::pl::ProcessStatsMonitor;
 
-using pl::stirling::IndexPublication;
-using pl::stirling::PrintRecordBatch;
-using pl::stirling::SourceRegistry;
-using pl::stirling::Stirling;
-using pl::stirling::stirlingpb::Publish;
-using pl::stirling::stirlingpb::Subscribe;
+using ::pl::Status;
+using ::pl::StatusOr;
+
+using ::pl::stirling::IndexPublication;
+using ::pl::stirling::PrintRecordBatch;
+using ::pl::stirling::SourceRegistry;
+using ::pl::stirling::Stirling;
+using ::pl::stirling::stirlingpb::InfoClass;
+using ::pl::stirling::stirlingpb::Publish;
+using ::pl::stirling::stirlingpb::Subscribe;
 using DynamicTracepointDeployment =
-    pl::stirling::dynamic_tracing::ir::logical::TracepointDeployment;
+    ::pl::stirling::dynamic_tracing::ir::logical::TracepointDeployment;
 
-using pl::types::ColumnWrapperRecordBatch;
-using pl::types::TabletID;
+using ::pl::types::ColumnWrapperRecordBatch;
+using ::pl::types::TabletID;
 
 // Put this in global space, so we can kill it in the signal handler.
 Stirling* g_stirling = nullptr;
-pl::ProcessStatsMonitor* g_process_stats_monitor = nullptr;
-absl::flat_hash_map<uint64_t, ::pl::stirling::stirlingpb::InfoClass> g_table_info_map;
+ProcessStatsMonitor* g_process_stats_monitor = nullptr;
+absl::flat_hash_map<uint64_t, InfoClass> g_table_info_map;
 absl::base_internal::SpinLock g_callback_state_lock;
 
 Status StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
@@ -46,7 +49,7 @@ Status StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
   if (iter == g_table_info_map.end()) {
     return pl::error::Internal("Encountered unknown table id $0", table_id);
   }
-  const pl::stirling::stirlingpb::InfoClass& table_info = iter->second;
+  const InfoClass& table_info = iter->second;
 
   PrintRecordBatch(table_info.schema().name(), table_info.schema(), *record_batch);
 
@@ -149,7 +152,7 @@ int main(int argc, char** argv) {
   stirling->RegisterDataPushCallback(StirlingWrapperCallback);
 
   // Start measuring process stats after init.
-  pl::ProcessStatsMonitor process_stats_monitor;
+  ProcessStatsMonitor process_stats_monitor;
   g_process_stats_monitor = &process_stats_monitor;
 
   LOG(INFO) << "Trace spec:\n" << trace_program.text;
@@ -177,7 +180,7 @@ int main(int argc, char** argv) {
   std::thread run_thread = std::thread(&Stirling::Run, stirling.get());
 
   // Wait for the thread to return.
-  // This should never happen unless --timeout_secs is specified.
+  // This should never happen.
   run_thread.join();
 
   return 0;

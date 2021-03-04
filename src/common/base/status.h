@@ -141,6 +141,14 @@ inline Status StatusAdapter<pl::statuspb::Status>(const pl::statuspb::Status& s)
 // The argument expression is guaranteed to be evaluated exactly once.
 #define PL_RETURN_IF_ERROR(__status) PL_RETURN_IF_ERROR_IMPL(PL_UNIQUE_NAME(__status__), __status)
 
+#define PL_EXIT_IF_ERROR(__status)  \
+  {                                 \
+    if (!__status.ok()) {           \
+      LOG(ERROR) << __status.msg(); \
+      exit(1);                      \
+    }                               \
+  }
+
 #define PL_CHECK_OK_PREPEND(to_call, msg)             \
   do {                                                \
     auto _s = (to_call);                              \
