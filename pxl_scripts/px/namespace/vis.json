@@ -9,8 +9,7 @@
     {
       "name": "namespace",
       "type": "PX_NAMESPACE",
-      "description": "The name of the namespace.",
-      "defaultValue": "default"
+      "description": "The name of the namespace."
     }
   ],
   "widgets": [

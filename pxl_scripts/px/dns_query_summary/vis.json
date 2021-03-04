@@ -9,8 +9,7 @@
     {
       "name": "namespace",
       "type": "PX_STRING",
-      "description": "The namespace to query.",
-      "defaultValue": "kube-system"
+      "description": "The namespace to query."
     },
     {
       "name": "pod_filter",
