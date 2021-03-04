@@ -4,7 +4,7 @@
 #include <thread>
 
 #include "src/common/base/test_utils.h"
-#include "src/stirling/bpf_tools/task_struct_offset_resolver.h"
+#include "src/stirling/bpf_tools/task_struct_resolver.h"
 
 namespace pl {
 namespace stirling {

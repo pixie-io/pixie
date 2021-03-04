@@ -51,7 +51,7 @@ static __inline uint64_t pl_nsec_to_clock_t(uint64_t x) {
 // If GROUP_LEADER_OFFSET_OVERRIDE is defined, it is returned.
 // Otherwise, the value is obtained from the definition of header structs.
 // The override is important for the case when we don't have an exact header match.
-// See user-space TaskStructOffsetsResolver.
+// See user-space TaskStructResolver.
 static __inline uint64_t task_struct_group_leader_offset() {
 #ifdef GROUP_LEADER_OFFSET_OVERRIDE
   return GROUP_LEADER_OFFSET_OVERRIDE;
@@ -64,7 +64,7 @@ static __inline uint64_t task_struct_group_leader_offset() {
 // If START_BOOTTIME_OFFSET_OVERRIDE is defined, it is returned.
 // Otherwise, the value is obtained from the definition of header structs.
 // The override is important for the case when we don't have an exact header match.
-// See user-space TaskStructOffsetsResolver.
+// See user-space TaskStructResolver.
 static __inline uint64_t task_struct_start_boottime_offset() {
   // Find the start_boottime of the current task.
 #ifdef START_BOOTTIME_OFFSET_OVERRIDE

@@ -55,14 +55,14 @@ TEST(BCCWrapperTest, InitDefault) {
   ASSERT_OK(bcc_wrapper.InitBPFProgram(kBCCProgram));
 }
 
-TEST(BCCWrapperTest, InitWithTaskStructOffsetsResolver) {
-  // Force the TaskStructOffsetsResolver to run, so we can test
+TEST(BCCWrapperTest, InitWithTaskStructResolver) {
+  // Force the TaskStructResolver to run, so we can test
   // that it doesn't lead to an infinite recursion.
   // The expected call stack is:
   //   BCCWrapper::InitBPFProgram
-  //   TaskStructOffsetsResolver
+  //   TaskStructResolver
   //   BCCWrapper::InitBPFProgram
-  //   <end> (The second instance of BCCWrapper shouldn't call TaskStructOffsetsResolver again.)
+  //   <end> (The second instance of BCCWrapper shouldn't call TaskStructResolver again.)
   FLAGS_stirling_always_infer_task_struct_offsets = true;
 
   BCCWrapper bcc_wrapper;
@@ -101,7 +101,7 @@ TEST(BCCWrapperTest, DetachUProbe) {
 }
 
 TEST(BCCWrapperTest, GetTGIDStartTime) {
-  // Force the TaskStructOffsetsResolver to run,
+  // Force the TaskStructResolver to run,
   // since we're trying to check that it correctly gets the task_struct offsets.
   FLAGS_stirling_always_infer_task_struct_offsets = true;
 

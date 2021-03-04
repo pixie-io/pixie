@@ -17,7 +17,7 @@
 #include "src/common/base/base.h"
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/system.h"
-#include "src/stirling/bpf_tools/task_struct_offset_resolver.h"
+#include "src/stirling/bpf_tools/task_struct_resolver.h"
 #include "src/stirling/obj_tools/elf_tools.h"
 #include "src/stirling/utils/linux_headers.h"
 

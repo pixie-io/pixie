@@ -1,4 +1,4 @@
-#include "src/stirling/bpf_tools/task_struct_offset_resolver.h"
+#include "src/stirling/bpf_tools/task_struct_resolver.h"
 
 #include <poll.h>
 
@@ -167,7 +167,7 @@ StatusOr<TaskStructOffsets> ResolveTaskStructOffsetsCore() {
   auto bcc = std::make_unique<pl::stirling::bpf_tools::BCCWrapper>();
   std::vector<std::string> cflags;
   // Important! Must tell BCCWrapper that we don't need linux headers, otherwise we may
-  // enter an infinite loop if BCCWrapper tries to run the TaskStructOffsetsResolver again.
+  // enter an infinite loop if BCCWrapper tries to run the TaskStructResolver again.
   bool requires_linux_headers = false;
   PL_RETURN_IF_ERROR(bcc->InitBPFProgram(bcc_script, cflags, requires_linux_headers));
   PL_RETURN_IF_ERROR(bcc->AttachUProbe(uprobe));
