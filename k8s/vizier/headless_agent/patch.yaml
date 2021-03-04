@@ -12,4 +12,3 @@ spec:
         args:
         - "--disable_SSL=true"
         - "--nats_url="
-        - "--stirling_enable_parsing_protobufs=true"

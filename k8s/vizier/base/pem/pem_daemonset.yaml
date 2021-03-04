@@ -45,7 +45,7 @@ spec:
       containers:
       - name: pem
         image: gcr.io/pl-dev-infra/vizier/pem_image:latest
-        args: ["--stirling_enable_parsing_protobufs=true"]
+        args: []
         env:
         - name: TCMALLOC_SAMPLE_PARAMETER
           value: "1048576"
