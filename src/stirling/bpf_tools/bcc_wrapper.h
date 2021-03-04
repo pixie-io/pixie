@@ -33,6 +33,19 @@ DECLARE_uint32(stirling_bpf_perf_buffer_page_count);
 DECLARE_bool(stirling_always_infer_task_struct_offsets);
 
 namespace pl {
+/*
+ * Status adapter for ebpf::StatusTuple.
+ */
+template <>
+inline Status StatusAdapter<ebpf::StatusTuple>(const ebpf::StatusTuple& s) noexcept {
+  if (s.ok()) {
+    return Status::OK();
+  }
+  return Status(statuspb::INTERNAL, s.msg());
+}
+}  // namespace pl
+
+namespace pl {
 namespace stirling {
 namespace bpf_tools {
 

@@ -143,12 +143,9 @@ Status BCCWrapper::InitBPFProgram(std::string_view bpf_program, std::vector<std:
 Status BCCWrapper::AttachKProbe(const KProbeSpec& probe) {
   VLOG(1) << "Deploying kprobe: " << probe.ToString();
   DCHECK(probe.attach_type != BPFProbeAttachType::kReturnInsts);
-  ebpf::StatusTuple attach_status = bpf_.attach_kprobe(
+  PL_RETURN_IF_ERROR(bpf_.attach_kprobe(
       bpf_.get_syscall_fnname(std::string(probe.kernel_fn)), std::string(probe.probe_fn),
-      0 /* offset */, static_cast<bpf_probe_attach_type>(probe.attach_type), kKprobeMaxActive);
-  if (attach_status.code() != 0) {
-    return error::Internal("Failed to attach kprobe: $0", probe.ToString());
-  }
+      0 /* offset */, static_cast<bpf_probe_attach_type>(probe.attach_type), kKprobeMaxActive));
   kprobes_.push_back(probe);
   ++num_attached_kprobes_;
   return Status::OK();
@@ -161,12 +158,9 @@ Status BCCWrapper::AttachUProbe(const UProbeSpec& probe) {
   DCHECK((probe.symbol.empty() && probe.address != 0) ||
          (!probe.symbol.empty() && probe.address == 0))
       << "Exactly one of 'symbol' and 'address' must be specified.";
-  ebpf::StatusTuple attach_status = bpf().attach_uprobe(
+  PL_RETURN_IF_ERROR(bpf().attach_uprobe(
       probe.binary_path, probe.symbol, std::string(probe.probe_fn), probe.address,
-      static_cast<bpf_probe_attach_type>(probe.attach_type), probe.pid);
-  if (attach_status.code() != 0) {
-    return error::Internal("Failed to attach uprobe: $0", probe.ToString());
-  }
+      static_cast<bpf_probe_attach_type>(probe.attach_type), probe.pid));
   uprobes_.push_back(probe);
   ++num_attached_uprobes_;
   return Status::OK();
@@ -212,14 +206,8 @@ Status BCCWrapper::AttachSamplingProbes(const ArrayView<SamplingProbeSpec>& prob
 // TODO(PL-1294): This can fail in rare cases. See the cited issue. Find the root cause.
 Status BCCWrapper::DetachKProbe(const KProbeSpec& probe) {
   VLOG(1) << "Detaching kprobe: " << probe.ToString();
-  ebpf::StatusTuple detach_status =
-      bpf().detach_kprobe(bpf_.get_syscall_fnname(std::string(probe.kernel_fn)),
-                          static_cast<bpf_probe_attach_type>(probe.attach_type));
-
-  if (detach_status.code() != 0) {
-    return error::Internal("Failed to detach kprobe: $0, error message: $1", probe.ToString(),
-                           detach_status.msg());
-  }
+  PL_RETURN_IF_ERROR(bpf().detach_kprobe(bpf_.get_syscall_fnname(std::string(probe.kernel_fn)),
+                                         static_cast<bpf_probe_attach_type>(probe.attach_type)));
   --num_attached_kprobes_;
   return Status::OK();
 }
@@ -228,14 +216,9 @@ Status BCCWrapper::DetachUProbe(const UProbeSpec& probe) {
   VLOG(1) << "Detaching uprobe " << probe.ToString();
 
   if (fs::Exists(probe.binary_path).ok()) {
-    ebpf::StatusTuple detach_status =
-        bpf().detach_uprobe(probe.binary_path, probe.symbol, probe.address,
-                            static_cast<bpf_probe_attach_type>(probe.attach_type), probe.pid);
-
-    if (detach_status.code() != 0) {
-      return error::Internal("Failed to detach uprobe $0, error message: $1", probe.ToString(),
-                             detach_status.msg());
-    }
+    PL_RETURN_IF_ERROR(bpf().detach_uprobe(probe.binary_path, probe.symbol, probe.address,
+                                           static_cast<bpf_probe_attach_type>(probe.attach_type),
+                                           probe.pid));
   }
   --num_attached_uprobes_;
   return Status::OK();
@@ -259,13 +242,9 @@ void BCCWrapper::DetachUProbes() {
 
 Status BCCWrapper::OpenPerfBuffer(const PerfBufferSpec& perf_buffer, void* cb_cookie) {
   VLOG(1) << "Opening perf buffer: " << perf_buffer.name;
-  ebpf::StatusTuple open_status = bpf_.open_perf_buffer(
-      std::string(perf_buffer.name), perf_buffer.probe_output_fn, perf_buffer.probe_loss_fn,
-      cb_cookie, FLAGS_stirling_bpf_perf_buffer_page_count);
-  if (open_status.code() != 0) {
-    return error::Internal("Failed to open perf buffer: $0, error message: $1", perf_buffer.name,
-                           open_status.msg());
-  }
+  PL_RETURN_IF_ERROR(bpf_.open_perf_buffer(std::string(perf_buffer.name),
+                                           perf_buffer.probe_output_fn, perf_buffer.probe_loss_fn,
+                                           cb_cookie, FLAGS_stirling_bpf_perf_buffer_page_count));
   perf_buffers_.push_back(perf_buffer);
   ++num_open_perf_buffers_;
   return Status::OK();
@@ -280,11 +259,7 @@ Status BCCWrapper::OpenPerfBuffers(const ArrayView<PerfBufferSpec>& perf_buffers
 
 Status BCCWrapper::ClosePerfBuffer(const PerfBufferSpec& perf_buffer) {
   VLOG(1) << "Closing perf buffer: " << perf_buffer.name;
-  ebpf::StatusTuple close_status = bpf_.close_perf_buffer(std::string(perf_buffer.name));
-  if (close_status.code() != 0) {
-    return error::Internal("Failed to close perf buffer: $0, error message: $1", perf_buffer.name,
-                           close_status.msg());
-  }
+  PL_RETURN_IF_ERROR(bpf_.close_perf_buffer(std::string(perf_buffer.name)));
   --num_open_perf_buffers_;
   return Status::OK();
 }
@@ -300,12 +275,9 @@ void BCCWrapper::ClosePerfBuffers() {
 Status BCCWrapper::AttachPerfEvent(const PerfEventSpec& perf_event) {
   VLOG(1) << absl::Substitute("Attaching perf event:\n   type=$0\n   probe_fn=$1",
                               magic_enum::enum_name(perf_event.type), perf_event.probe_fn);
-  auto attach_res =
-      bpf_.attach_perf_event(perf_event.type, perf_event.config, std::string(perf_event.probe_fn),
-                             perf_event.sample_period, perf_event.sample_freq);
-  if (attach_res.code() != 0) {
-    return error::Internal("Unable to attach perf event, error message $0", attach_res.msg());
-  }
+  PL_RETURN_IF_ERROR(bpf_.attach_perf_event(perf_event.type, perf_event.config,
+                                            std::string(perf_event.probe_fn),
+                                            perf_event.sample_period, perf_event.sample_freq));
   perf_events_.push_back(perf_event);
   ++num_attached_perf_events_;
   return Status::OK();
@@ -321,10 +293,7 @@ Status BCCWrapper::AttachPerfEvents(const ArrayView<PerfEventSpec>& perf_events)
 Status BCCWrapper::DetachPerfEvent(const PerfEventSpec& perf_event) {
   VLOG(1) << absl::Substitute("Detaching perf event:\n   type=$0\n   probe_fn=$1",
                               magic_enum::enum_name(perf_event.type), perf_event.probe_fn);
-  auto detach_res = bpf_.detach_perf_event(perf_event.type, perf_event.config);
-  if (detach_res.code() != 0) {
-    return error::Internal("Unable to detach perf event, error_message $0", detach_res.msg());
-  }
+  PL_RETURN_IF_ERROR(bpf_.detach_perf_event(perf_event.type, perf_event.config));
   --num_attached_perf_events_;
   return Status::OK();
 }
