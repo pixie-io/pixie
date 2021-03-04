@@ -116,3 +116,12 @@ pl_cc_binary(
         # "@org_tensorflow//tensorflow/lite:tflite_with_xnnpack",
     ],
 )
+
+pl_cc_test(
+    name = "request_path_ops_test",
+    srcs = ["request_path_ops_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/udf:udf_testutils",
+    ],
+)
