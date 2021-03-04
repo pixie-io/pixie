@@ -936,6 +936,20 @@ def buildScriptForNightlyTestRegression = {
     stage('Pre-Build') {
       parallel(preBuild)
     }
+    stage('Build & Push to Stirling Perf') {
+      WithSourceCodeK8s {
+        container('pxbuild') {
+          withKubeConfig([credentialsId: 'stirling-cluster-creds',
+                          serverUrl: 'https://stirling.internal.corp.pixielabs.ai',
+                          namespace: 'pl']) {
+            sh """
+            skaffold run --profile=opt --filename=skaffold/skaffold_vizier.yaml \
+            --label=commit=\$(git rev-parse HEAD) --cache-artifacts=false
+            """
+          }
+        }
+      }
+    }
     stage('Testing') {
       parallel(regressionBuilders)
     }
