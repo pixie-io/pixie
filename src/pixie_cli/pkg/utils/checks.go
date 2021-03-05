@@ -29,6 +29,8 @@ const (
 	ClusterTypeGKE
 	// ClusterTypeEKS is an EKS cluster.
 	ClusterTypeEKS
+	// ClusterTypeAKS is an AKS cluster.
+	ClusterTypeAKS
 	// ClusterTypeKind is a kind cluster.
 	ClusterTypeKind
 	// ClusterTypeDockerDesktop is a Docker for Desktop cluster.
@@ -42,13 +44,18 @@ const (
 	ClusterTypeMinikubeOther
 )
 
-var allowedClusterTypes = []ClusterType{ClusterTypeGKE, ClusterTypeEKS, ClusterTypeMinikubeKVM2, ClusterTypeMinikubeHyperkit}
+var allowedClusterTypes = []ClusterType{ClusterTypeGKE, ClusterTypeEKS, ClusterTypeAKS, ClusterTypeMinikubeKVM2, ClusterTypeMinikubeHyperkit}
 
 // detectClusterType gets the cluster type of the cluster for the current kube config context.
 func detectClusterType() ClusterType {
 	kubeConfig := k8s.GetConfig()
 	kubeAPIConfig := k8s.GetClientAPIConfig()
 	currentContext := kubeAPIConfig.CurrentContext
+	// Get the actual cluster name. The currentContext is currently the context namespace, which usually
+	// matches the cluster name, but does not for AKS.
+	if n, ok := kubeAPIConfig.Contexts[currentContext]; ok {
+		currentContext = n.Cluster
+	}
 
 	// Check if it is a kind cluster.
 	result, err := exec.Command("/bin/sh", "-c", fmt.Sprintf(`kind get clusters | grep "^$(echo "%s" | sed -e "s/^kind-//g")$"`, currentContext)).Output()
@@ -73,6 +80,14 @@ func detectClusterType() ClusterType {
 			return ClusterTypeMinikubeKVM2
 		} else if s != "" {
 			return ClusterTypeMinikubeOther
+		}
+	}
+
+	// Check if it is an aks cluster.
+	result, err = exec.Command("/bin/sh", "-c", fmt.Sprintf(`az aks list | grep '"name": "%s"'`, currentContext)).Output()
+	if err == nil {
+		if len(string(result)) > 0 {
+			return ClusterTypeAKS
 		}
 	}
 
