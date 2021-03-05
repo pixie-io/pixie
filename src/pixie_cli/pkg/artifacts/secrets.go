@@ -1,10 +1,7 @@
 package artifacts
 
 import (
-	"bytes"
 	"fmt"
-	"os"
-	"os/exec"
 	"strings"
 
 	"k8s.io/client-go/rest"
@@ -64,21 +61,8 @@ func getK8sVersion(kubeConfig *rest.Config) (string, error) {
 	return version.GitVersion, nil
 }
 
-func getCurrentCluster() string {
-	kcmd := exec.Command("kubectl", "config", "current-context")
-	var out bytes.Buffer
-	kcmd.Stdout = &out
-	kcmd.Stderr = os.Stderr
-	err := kcmd.Run()
-
-	if err != nil {
-		return ""
-	}
-	return out.String()
-}
-
 // SetConfigValues sets the values for the template, based on the user-provided flags.
-func SetConfigValues(kubeconfig *rest.Config, tmplValues *VizierTmplValues, cloudAddr, devCloudNS, clusterName string) {
+func SetConfigValues(currentCluster string, tmplValues *VizierTmplValues, cloudAddr, devCloudNS, clusterName string) {
 	yamlCloudAddr := cloudAddr
 	updateCloudAddr := cloudAddr
 	// devCloudNamespace implies we are running in a dev enivironment and we should attach to
@@ -91,8 +75,8 @@ func SetConfigValues(kubeconfig *rest.Config, tmplValues *VizierTmplValues, clou
 	tmplValues.CloudAddr = yamlCloudAddr
 	tmplValues.CloudUpdateAddr = updateCloudAddr
 
-	if clusterName == "" && kubeconfig != nil { // Only record cluster name if we are deploying directly to the current cluster.
-		clusterName = getCurrentCluster()
+	if clusterName == "" { // Only record cluster name if we are deploying directly to the current cluster.
+		clusterName = currentCluster
 	}
 	tmplValues.ClusterName = clusterName
 }

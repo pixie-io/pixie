@@ -177,7 +177,8 @@ func deleteCmd(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	currentCluster := getCurrentCluster()
+	kubeAPIConfig := k8s.GetClientAPIConfig()
+	currentCluster := kubeAPIConfig.CurrentContext
 	utils.Infof("Deleting demo app %s from the following cluster: %s", appName, currentCluster)
 	clusterOk := components.YNPrompt("Is the cluster correct?", true)
 	if !clusterOk {
@@ -235,7 +236,8 @@ func deployCmd(cmd *cobra.Command, args []string) {
 		log.WithError(err).Fatal("Could not download demo yaml apps for app '%s'", appName)
 	}
 
-	currentCluster := getCurrentCluster()
+	kubeAPIConfig := k8s.GetClientAPIConfig()
+	currentCluster := kubeAPIConfig.CurrentContext
 	utils.Infof("Deploying demo app %s to the following cluster: %s", appName, currentCluster)
 	clusterOk := components.YNPrompt("Is the cluster correct?", true)
 	if !clusterOk {

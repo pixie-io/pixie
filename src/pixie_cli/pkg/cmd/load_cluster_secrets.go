@@ -67,8 +67,8 @@ func LoadClusterSecrets(clientset *kubernetes.Clientset, cloudAddr string, deplo
 	tmplValues := &artifacts.VizierTmplValues{
 		DeployKey: deployKey,
 	}
-
-	artifacts.SetConfigValues(kubeConfig, tmplValues, cloudAddr, devCloudNamespace, "")
+	kubeAPIConfig := k8s.GetClientAPIConfig()
+	artifacts.SetConfigValues(kubeAPIConfig.CurrentContext, tmplValues, cloudAddr, devCloudNamespace, "")
 
 	yamlArgs := &artifacts.YAMLTmplArguments{
 		Values: artifacts.VizierTmplValuesToMap(tmplValues),

@@ -1,14 +1,12 @@
 package cmd
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -326,6 +324,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	}
 
 	kubeConfig := k8s.GetConfig()
+	kubeAPIConfig := k8s.GetClientAPIConfig()
 	clientset := k8s.GetClientset(kubeConfig)
 
 	var credsData string
@@ -358,7 +357,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	}
 
 	clusterName, _ := cmd.Flags().GetString("cluster_name")
-	artifacts.SetConfigValues(kubeConfig, tmplValues, cloudAddr, devCloudNS, clusterName)
+	artifacts.SetConfigValues(kubeAPIConfig.CurrentContext, tmplValues, cloudAddr, devCloudNS, clusterName)
 	yamlArgs := &artifacts.YAMLTmplArguments{
 		Values: artifacts.VizierTmplValuesToMap(tmplValues),
 	}
@@ -396,7 +395,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 			Set("cloud_addr", cloudAddr),
 	})
 
-	currentCluster := getCurrentCluster()
+	currentCluster := kubeAPIConfig.CurrentContext
 	utils.Infof("Deploying Pixie to the following cluster: %s", currentCluster)
 	clusterOk := components.YNPrompt("Is the cluster correct?", true)
 	if !clusterOk {
@@ -565,20 +564,6 @@ func waitForHealthCheck(cloudAddr string, clusterID uuid.UUID, clientset *kubern
 		UserId: pxconfig.Cfg().UniqueClientID,
 		Event:  "Deploy Healthcheck Passed",
 	})
-}
-
-func getCurrentCluster() string {
-	kcmd := exec.Command("kubectl", "config", "current-context")
-	var out bytes.Buffer
-	kcmd.Stdout = &out
-	kcmd.Stderr = os.Stderr
-	err := kcmd.Run()
-
-	if err != nil {
-		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
-		log.WithError(err).Fatal("Error getting current kubernetes cluster")
-	}
-	return out.String()
 }
 
 func waitForCluster(ctx context.Context, conn *grpc.ClientConn, clusterID uuid.UUID) error {
