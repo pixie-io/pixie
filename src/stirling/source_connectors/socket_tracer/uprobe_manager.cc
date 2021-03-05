@@ -35,13 +35,13 @@ void UProbeManager::Init(bool enable_http2_tracing, bool disable_self_probing) {
   cfg_disable_self_probing_ = disable_self_probing;
 
   openssl_symaddrs_map_ = UserSpaceManagedBPFMap<uint32_t, struct openssl_symaddrs_t>::Create(
-      &bcc_->bpf(), "openssl_symaddrs_map");
+      bcc_, "openssl_symaddrs_map");
   go_common_symaddrs_map_ = UserSpaceManagedBPFMap<uint32_t, struct go_common_symaddrs_t>::Create(
-      &bcc_->bpf(), "go_common_symaddrs_map");
+      bcc_, "go_common_symaddrs_map");
   go_http2_symaddrs_map_ = UserSpaceManagedBPFMap<uint32_t, struct go_http2_symaddrs_t>::Create(
-      &bcc_->bpf(), "http2_symaddrs_map");
+      bcc_, "http2_symaddrs_map");
   go_tls_symaddrs_map_ = UserSpaceManagedBPFMap<uint32_t, struct go_tls_symaddrs_t>::Create(
-      &bcc_->bpf(), "go_tls_symaddrs_map");
+      bcc_, "go_tls_symaddrs_map");
 }
 
 void UProbeManager::NotifyMMapEvent(upid_t upid) { upids_with_mmap_.insert(upid); }

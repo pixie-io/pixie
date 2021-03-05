@@ -39,9 +39,9 @@ struct UProbeTmpl {
 template <typename TKeyType, typename TValueType>
 class UserSpaceManagedBPFMap {
  public:
-  static std::unique_ptr<UserSpaceManagedBPFMap> Create(ebpf::BPF* bpf,
+  static std::unique_ptr<UserSpaceManagedBPFMap> Create(bpf_tools::BCCWrapper* bcc,
                                                         const std::string& map_name) {
-    return std::unique_ptr<UserSpaceManagedBPFMap>(new UserSpaceManagedBPFMap(bpf, map_name));
+    return std::unique_ptr<UserSpaceManagedBPFMap>(new UserSpaceManagedBPFMap(bcc, map_name));
   }
 
   void UpdateValue(TKeyType key, TValueType value) {
@@ -61,9 +61,9 @@ class UserSpaceManagedBPFMap {
   }
 
  private:
-  UserSpaceManagedBPFMap(ebpf::BPF* bpf, const std::string& map_name)
+  UserSpaceManagedBPFMap(bpf_tools::BCCWrapper* bcc, const std::string& map_name)
       : map_(std::make_unique<ebpf::BPFHashTable<TKeyType, TValueType> >(
-            bpf->get_hash_table<TKeyType, TValueType>(map_name))) {}
+            bcc->GetHashTable<TKeyType, TValueType>(map_name))) {}
 
   std::unique_ptr<ebpf::BPFHashTable<TKeyType, TValueType> > map_;
   absl::flat_hash_set<TKeyType> shadow_keys_;

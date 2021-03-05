@@ -292,16 +292,6 @@ class BCCWrapper {
     return bpf_.get_percpu_array_table<TValueType>(table_name);
   }
 
-  /**
-   * Provide access to the BPF instance, for direct access.
-   * Eventually, this should go away, and everything should
-   * go through the API in the rest of this class.
-   *
-   * @return reference to the underlying BPF instance.
-   */
-  // TODO(oazizi): Try to get rid of this function, since it bypasses the wrapper.
-  ebpf::BPF& bpf() { return bpf_; }
-
   // These are static counters of attached/open probes across all instances.
   // It is meant for verification that we have cleaned-up all resources in tests.
   static size_t num_attached_probes() { return num_attached_kprobes_ + num_attached_uprobes_; }
