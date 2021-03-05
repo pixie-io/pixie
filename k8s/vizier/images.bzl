@@ -31,11 +31,11 @@ def generate_vizier_yamls(name, srcs, out, image_map, public, **kwargs):
         cp -aL k8s/vizier $$T
 
         # Update the bundle versions.
-        pushd $$T/vizier/prod
+        pushd $$T/vizier/etcd_metadata
         {0}
         popd
 
-        kustomize build $$T/vizier/prod -o $@
+        kustomize build $$T/vizier/etcd_metadata -o $@
         """.format(merged_edits),
     )
 

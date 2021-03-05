@@ -20,9 +20,8 @@ resources:
 - certmgr_service.yaml
 - kelvin_deployment.yaml
 - kelvin_service.yaml
-- metadata_deployment.yaml
-- metadata_service.yaml
 - metadata_role.yaml
+- metadata_service.yaml
 - node_view_cluster_role.yaml
 - proxy_deployment.yaml
 - proxy_service.yaml

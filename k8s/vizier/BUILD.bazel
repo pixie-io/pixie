@@ -18,17 +18,17 @@ VIZIER_IMAGE_MAP = {
 }
 
 generate_vizier_yamls(
-    name = "private_vizier_prod",
+    name = "private_vizier_etcd_metadata_prod",
     srcs = glob(["**/*.yaml"]),
-    out = "private_vizier_prod.yaml",
+    out = "private_vizier_etcd_metadata_prod.yaml",
     image_map = VIZIER_IMAGE_MAP,
     public = False,
 )
 
 generate_vizier_yamls(
-    name = "public_vizier_prod",
+    name = "public_vizier_etcd_metadata_prod",
     srcs = glob(["**/*.yaml"]),
-    out = "public_vizier_prod.yaml",
+    out = "public_vizier_etcd_metadata_prod.yaml",
     image_map = VIZIER_IMAGE_MAP,
     public = True,
 )
@@ -97,8 +97,8 @@ pkg_tar(
             ":public": ["//k8s/vizier:public_vizier_bootstrap_prod.yaml"],
         }) +
         select({
-            "//conditions:default": ["//k8s/vizier:private_vizier_prod.yaml"],
-            ":public": ["//k8s/vizier:public_vizier_prod.yaml"],
+            "//conditions:default": ["//k8s/vizier:private_vizier_etcd_metadata_prod.yaml"],
+            ":public": ["//k8s/vizier:public_vizier_etcd_metadata_prod.yaml"],
         }) +
         select({
             "//conditions:default": ["//k8s/vizier:private_vizier_metadata_persist_prod.yaml"],
@@ -112,8 +112,8 @@ pkg_tar(
     remap_paths = {
         "/vizier/private_vizier_bootstrap_prod.yaml": "vizier/vizier_bootstrap_prod.yaml",
         "/vizier/public_vizier_bootstrap_prod.yaml": "vizier/vizier_bootstrap_prod.yaml",
-        "/vizier/private_vizier_prod.yaml": "vizier/vizier_prod.yaml",
-        "/vizier/public_vizier_prod.yaml": "vizier/vizier_prod.yaml",
+        "/vizier/private_vizier_etcd_metadata_prod.yaml": "vizier/vizier_etcd_metadata_prod.yaml",
+        "/vizier/public_vizier_etcd_metadata_prod.yaml": "vizier/vizier_etcd_metadata_prod.yaml",
         "/vizier/private_vizier_metadata_persist_prod.yaml": "vizier/vizier_metadata_persist_prod.yaml",
         "/vizier/public_vizier_metadata_persist_prod.yaml": "vizier/vizier_metadata_persist_prod.yaml",
     },

@@ -1,0 +1,88 @@
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: vizier-metadata
+spec:
+  serviceName: vizier-metadata
+  replicas: 1
+  selector:
+    matchLabels:
+      name: vizier-metadata
+  template:
+    metadata:
+      labels:
+        name: vizier-metadata
+        plane: control
+    spec:
+      initContainers:
+      - name: nats-wait
+        image: gcr.io/pixie-prod/pixie-prod-artifacts/curl:1.0
+        # yamllint disable
+        command: ['sh', '-c', 'set -xe;
+          URL="${PROTOCOL}://${SERVICE_NAME}:${SERVICE_PORT}${HEALTH_PATH}";
+          until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
+            echo "waiting for ${URL}";
+            sleep 2;
+          done;']
+        env:
+        - name: SERVICE_NAME
+          value: "pl-nats-mgmt"
+        - name: SERVICE_PORT
+          value: "8222"
+        - name: HEALTH_PATH
+          value: ""
+        - name: PROTOCOL
+          value: "http"
+      containers:
+      - name: app
+        image: gcr.io/pl-dev-infra/vizier/metadata_server_image:latest
+        env:
+        - name: PL_JWT_SIGNING_KEY
+          valueFrom:
+            secretKeyRef:
+              key: jwt-signing-key
+              name: pl-cluster-secrets
+        - name: PL_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: PL_MAX_EXPECTED_CLOCK_SKEW
+          value: "2000"
+        - name: PL_RENEW_PERIOD
+          value: "5000"
+        envFrom:
+        - configMapRef:
+            name: pl-tls-config
+        - configMapRef:
+            name: pl-cluster-config
+            optional: true
+        volumeMounts:
+        - mountPath: /certs
+          name: certs
+        - mountPath: /metadata
+          name: metadata-volume
+        livenessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 50400
+          initialDelaySeconds: 120
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 50400
+          initialDelaySeconds: 30
+          failureThreshold: 5
+          periodSeconds: 10
+      imagePullSecrets:
+      - name: pl-image-secret
+      volumes:
+      - name: certs
+        secret:
+          secretName: service-tls-certs
+      - name: metadata-volume
+        persistentVolumeClaim:
+          claimName: metadata-pv-claim

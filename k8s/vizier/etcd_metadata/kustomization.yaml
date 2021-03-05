@@ -8,8 +8,7 @@ commonLabels:
 patches:
 - path: patch_sentry.yaml
   target:
-    kind: StatefulSet
+    kind: Deployment
 resources:
 - ../base
-- metadata_statefulset.yaml
-- metadata_claim.yaml
+- metadata_deployment.yaml
