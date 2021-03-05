@@ -19,6 +19,9 @@
 DEFINE_bool(stirling_rescan_for_dlopen, false,
             "If enabled, Stirling will use mmap tracing information to rescan binaries for delay "
             "loaded libraries like OpenSSL");
+DEFINE_double(stirling_rescan_exp_backoff_factor, 2.0,
+              "Exponential backoff factor used in decided how often to rescan binaries for "
+              "dynamically loaded libraries");
 
 namespace pl {
 namespace stirling {
@@ -455,6 +458,9 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
 }
 
 absl::flat_hash_set<md::UPID> UProbeManager::PIDsToRescanForUProbes() {
+  // Count number of calls to this function.
+  ++rescan_counter_;
+
   // Get the ASID, using an entry from proc_tracker.
   if (proc_tracker_.upids().empty()) {
     return {};
@@ -466,7 +472,30 @@ absl::flat_hash_set<md::UPID> UProbeManager::PIDsToRescanForUProbes() {
     md::UPID upid(asid, pid.pid, pid.start_time_ticks);
 
     if (proc_tracker_.upids().contains(upid) && !proc_tracker_.new_upids().contains(upid)) {
-      upids_to_rescan.insert(upid);
+      // Filter out upids_to_rescan based on a backoff that is tracked per UPID.
+      // Each UPID has a modulus, which defines the periodicity at which it can rescan.
+      // This periodicity is used in a modulo operation, hence the term modulus.
+      constexpr int kInitialModulus = 1;
+      constexpr int kMaximumModulus = 1 << 12;
+      const double kBackoffFactor = FLAGS_stirling_rescan_exp_backoff_factor;
+
+      // NOLINTNEXTLINE: whitespace/braces
+      auto [iter, success] = backoff_map_.emplace(upid, kInitialModulus);
+      int& modulus = iter->second;
+      DCHECK_NE(modulus, 0) << success;
+
+      // Each PID has a backoff period that exponentially grows since the last attempted rescan.
+      // The simple version would be:
+      //   if (rescan_counter_ % modulus  == 0)
+      // But this could cause a bunch of pids to be added to the rescan list in the same iteration.
+      // Jitter this by comparing to the modulus to the pid:
+      //   if ((rescan_counter_ % modulus) == (upid.pid() % modulus))
+      if ((rescan_counter_ % modulus) == static_cast<int>(upid.pid() % modulus)) {
+        upids_to_rescan.insert(upid);
+
+        // Increase backoff period according to an exponential back-off.
+        modulus = std::min(static_cast<int>(modulus * kBackoffFactor), kMaximumModulus);
+      }
     }
   }
 

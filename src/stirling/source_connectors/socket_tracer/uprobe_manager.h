@@ -18,6 +18,7 @@
 #include "src/stirling/utils/proc_tracker.h"
 
 DECLARE_bool(stirling_rescan_for_dlopen);
+DECLARE_double(stirling_rescan_exp_backoff_factor);
 
 namespace pl {
 namespace stirling {
@@ -334,6 +335,14 @@ class UProbeManager {
   LazyLoadedFPResolver fp_resolver_;
 
   absl::flat_hash_set<upid_t, UPIDHashFn> upids_with_mmap_;
+
+  // Count the number of times PIDsToRescanForUProbes() has been called.
+  int rescan_counter_ = 0;
+
+  // Map of UPIDs to the periodicity at which they are allowed to be rescanned.
+  // The backoff value starts at 1 (meaning they can be scanned every iteration),
+  // and exponentially grows every time nothing new is found.
+  absl::flat_hash_map<md::UPID, int> backoff_map_;
 
   // Records the binaries that have uprobes attached, so we don't try to probe them again.
   // TODO(oazizi): How should these sets be cleaned up of old binaries, once they are deleted?

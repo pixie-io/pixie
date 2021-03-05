@@ -91,6 +91,7 @@ Commercial support is available at
 
 TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
   FLAGS_stirling_rescan_for_dlopen = true;
+  FLAGS_stirling_rescan_exp_backoff_factor = 1.0;
 
   // Note that stirling is deployed before starting this test.
 
@@ -119,9 +120,8 @@ TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
     // without OpenSSL.
     // Then we make multiple requests:
     //  - The first request will load the OpenSSL library, but won't be traced since the uprobes
-    //  won't be deployed yet.
-    //    This should cause the OpenSSL library to be dynamically loaded and then tracing should
-    //    begin.
+    //    won't be deployed yet. This should cause the OpenSSL library to be dynamically loaded and
+    //    then tracing should begin.
     //  - The subsequent requests should come after the uprobes are deployed and should be traced.
     std::string rb_script = R"(
           require 'net/http'
@@ -170,8 +170,8 @@ TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
       std::string req_path = record_batch[kHTTPReqPathIdx]->Get<types::StringValue>(i);
       std::string req_body = record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(i);
       std::string resp_body = record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(i);
-      LOG(INFO) << absl::Substitute("$0 req_path=$1 req_body=$2 resp_body=$3", pid, req_path,
-                                    req_body, resp_body);
+      VLOG(1) << absl::Substitute("$0 req_path=$1 req_body=$2 resp_body=$3", pid, req_path,
+                                  req_body, resp_body);
     }
 
     http::Record expected_record;
