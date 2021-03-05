@@ -134,7 +134,7 @@ Status BCCWrapper::InitBPFProgram(std::string_view bpf_program, std::vector<std:
   PL_RETURN_IF_ERROR(MountDebugFS());
 
   auto init_res = bpf_.init(std::string(bpf_program), cflags);
-  if (init_res.code() != 0) {
+  if (!init_res.ok()) {
     return error::Internal("Unable to initialize BCC BPF program: $0", init_res.msg());
   }
   return Status::OK();

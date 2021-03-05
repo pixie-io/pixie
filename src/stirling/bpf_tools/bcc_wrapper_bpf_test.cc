@@ -131,7 +131,7 @@ TEST(BCCWrapperTest, GetTGIDStartTime) {
 
   auto tgid_start_time_output = bcc_wrapper.GetArrayTable<uint64_t>("tgid_start_time_output");
   uint64_t proc_pid_start_time;
-  ASSERT_EQ(tgid_start_time_output.get_value(0, proc_pid_start_time).code(), 0);
+  ASSERT_TRUE(tgid_start_time_output.get_value(0, proc_pid_start_time).ok());
 
   EXPECT_EQ(proc_pid_start_time, expected_proc_pid_start_time);
 }

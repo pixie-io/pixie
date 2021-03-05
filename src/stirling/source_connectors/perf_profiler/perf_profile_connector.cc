@@ -71,7 +71,7 @@ void PerfProfileConnector::ProcessBPFStackTraces(ConnectorContext* ctx, DataTabl
   // TODO(jps): stop tracking these status codes, or, write a wrapper for PL_RETURN_IF_ERROR.
   uint64_t timestamp_ns;
   const ebpf::StatusTuple rd_status = profiler_state_->get_value(kTimeStampIdx, timestamp_ns);
-  LOG_IF(ERROR, rd_status.code() != 0) << "Error reading profiler_state_";
+  LOG_IF(ERROR, !rd_status.ok()) << "Error reading profiler_state_";
 
   // Read BPF stack traces & histogram, build records, incorporate records to data table.
   CreateRecords(timestamp_ns, stack_traces.get(), histo.get(), ctx, data_table);
@@ -83,17 +83,14 @@ void PerfProfileConnector::ProcessBPFStackTraces(ConnectorContext* ctx, DataTabl
   //
   // TODO(jps): create a wrapper for ebpf status tuple and use PL_RETURN_IF_ERROR.
   stack_traces->clear_table_non_atomic();
-  ebpf::StatusTuple histo_clear_status = histo->clear_table_non_atomic();
-
-  LOG_IF(ERROR, histo_clear_status.code() != 0) << "Failed to clear profiler histogram BPF table.";
+  const ebpf::StatusTuple histo_clear_status = histo->clear_table_non_atomic();
+  LOG_IF(ERROR, !histo_clear_status.ok()) << "Failed to clear profiler histogram BPF table.";
 
   // update the "read & clear count":
   // TODO(jps): do we really need to track these status codes?
   const ebpf::StatusTuple wr_status =
       profiler_state_->update_value(kUserReadAndClearCountIdx, read_and_clear_count_);
-  if (wr_status.code() != 0) {
-    LOG(ERROR) << "Error writing profiler_state_";
-  }
+  LOG_IF(ERROR, !wr_status.ok()) << "Error writing profiler_state_";
 }
 
 void PerfProfileConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
@@ -106,9 +103,7 @@ void PerfProfileConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
 
   // TODO(jps): stop tracking these status codes, or, write a wrapper for PL_RETURN_IF_ERROR.
   const ebpf::StatusTuple rd_status = profiler_state_->get_value(kBPFPushCountIdx, push_count);
-  if (rd_status.code() != 0) {
-    LOG(ERROR) << "Error reading profiler_state_";
-  }
+  LOG_IF(ERROR, !rd_status.ok()) << "Error reading profiler_state_";
 
   if (push_count > read_and_clear_count_) {
     // BPF side incremented the push_count, initiating a push event.

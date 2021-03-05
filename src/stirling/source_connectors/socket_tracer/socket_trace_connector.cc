@@ -306,7 +306,7 @@ template <typename TValueType>
 Status UpdatePerCPUArrayValue(int idx, TValueType val, ebpf::BPFPercpuArrayTable<TValueType>* arr) {
   std::vector<TValueType> values(bpf_tools::BCCWrapper::kCPUCount, val);
   auto update_res = arr->update_value(idx, values);
-  if (update_res.code() != 0) {
+  if (!update_res.ok()) {
     return error::Internal(absl::Substitute("Failed to set value on index: $0, error message: $1",
                                             idx, update_res.msg()));
   }

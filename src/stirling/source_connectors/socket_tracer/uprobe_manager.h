@@ -47,7 +47,7 @@ class UserSpaceManagedBPFMap {
 
   void UpdateValue(TKeyType key, TValueType value) {
     ebpf::StatusTuple s = map_->update_value(key, value);
-    if (s.code() == 0) {
+    if (s.ok()) {
       shadow_keys_.insert(key);
     } else {
       LOG(WARNING) << absl::StrCat("Could not update BPF map. Message=", s.msg());

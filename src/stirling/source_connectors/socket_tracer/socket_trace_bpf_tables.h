@@ -26,18 +26,18 @@ class ConnInfoMapManager {
     // Then the connection would have to be re-discovered by BPF.
 
     struct conn_info_t conn_info_tmp;
-    if (conn_info_map_.get_value(key, conn_info_tmp).code() == 0) {
+    if (conn_info_map_.get_value(key, conn_info_tmp).ok()) {
       // Make sure we're accessing the same generation/timestamp ID of connection tracker.
       if (conn_info_tmp.conn_id.tsid == conn_id.tsid) {
         VLOG(2) << absl::Substitute("$0 Removing conn_info_map.", conn_str);
-        if (conn_info_map_.remove_value(key).code() != 0) {
+        if (!conn_info_map_.remove_value(key).ok()) {
           VLOG(1) << absl::Substitute("$0 Removing conn_info_map entry failed.", conn_str);
         }
       }
     }
 
     uint64_t tsid;
-    if (conn_disabled_map_.get_value(key, tsid).code() == 0) {
+    if (conn_disabled_map_.get_value(key, tsid).ok()) {
       if (tsid <= conn_id.tsid) {
         conn_disabled_map_.remove_value(key);
       }
@@ -47,7 +47,7 @@ class ConnInfoMapManager {
   void Disable(struct conn_id_t conn_id) {
     uint64_t key = id(conn_id);
 
-    if (conn_disabled_map_.update_value(key, conn_id.tsid).code() != 0) {
+    if (!conn_disabled_map_.update_value(key, conn_id.tsid).ok()) {
       VLOG(1) << absl::Substitute("$0 Updating conn_disable_map entry failed.", ToString(conn_id));
     }
   }
