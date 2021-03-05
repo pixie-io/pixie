@@ -272,7 +272,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   std::shared_ptr<ConnInfoMapManager> conn_info_map_mgr_;
 
   UProbeManager uprobe_mgr_;
-  std::atomic<int> num_deploy_uprobes_threads_ = 0;
 
   FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);
   FRIEND_TEST(SocketTraceConnectorTest, NoEvents);
