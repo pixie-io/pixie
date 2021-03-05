@@ -306,7 +306,7 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 			return nil
 
 		case <-activeQuery.cancelClientStreamCh:
-			return cancelStreamReturnErr(activeQuery.cancelClientStreamError)
+			return activeQuery.cancelClientStreamError
 
 		case msg := <-activeQuery.queryResultCh:
 			// Stream the agent stream result to the client stream.

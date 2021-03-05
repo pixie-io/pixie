@@ -1120,7 +1120,7 @@ func TestTransferResultChunk_AgentClosedPrematurely(t *testing.T) {
 	}
 
 	errorMsg := fmt.Sprintf(
-		"agent stream was unexpectedly closed for table %s of query %s before the results completed",
+		"Agent stream was unexpectedly closed for table %s of query %s before the results completed",
 		"output_table_1", queryID.String(),
 	)
 
