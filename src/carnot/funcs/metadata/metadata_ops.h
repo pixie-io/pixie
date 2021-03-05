@@ -107,9 +107,9 @@ class PodNameToPodIDUDF : public ScalarUDF {
 
     auto pod_name_view = std::make_pair(name_parts[0], name_parts[1]);
     auto pod_id = md->k8s_metadata_state().PodIDByName(pod_name_view);
-
     return pod_id;
   }
+
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Get the id of a pod from its name.")
         .Details("Gets the kubernetes ID for the pod from its name.")
@@ -126,7 +126,7 @@ class PodNameToPodIPUDF : public ScalarUDF {
     StringValue pod_id = PodNameToPodIDUDF::GetPodID(md, pod_name);
     const pl::md::PodInfo* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
     if (pod_info == nullptr) {
-      return 0;
+      return "";
     }
     return pod_info->pod_ip();
   }
@@ -1022,19 +1022,21 @@ inline std::string PodPhaseToString(const pl::md::PodPhase& pod_phase) {
 }
 
 inline types::StringValue PodInfoToPodStatus(const pl::md::PodInfo* pod_info) {
-  std::string phase = "";
+  std::string phase = PodPhaseToString(md::PodPhase::kUnknown);
   std::string msg = "";
   std::string reason = "";
+  bool ready_condition = false;
+
   if (pod_info != nullptr) {
     phase = PodPhaseToString(pod_info->phase());
     msg = pod_info->phase_message();
     reason = pod_info->phase_reason();
-  }
 
-  auto pod_conditions = pod_info->conditions();
-  auto ready_status = pod_conditions.find(md::PodConditionType::kReady);
-  bool ready_condition = ready_status != pod_conditions.end() &&
-                         (ready_status->second == md::PodConditionStatus::kTrue);
+    auto pod_conditions = pod_info->conditions();
+    auto ready_status = pod_conditions.find(md::PodConditionType::kReady);
+    ready_condition = ready_status != pod_conditions.end() &&
+                      (ready_status->second == md::PodConditionStatus::kTrue);
+  }
 
   rapidjson::Document d;
   d.SetObject();
@@ -1184,7 +1186,7 @@ class ContainerIDToContainerStatusUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
     auto container_info = md->k8s_metadata_state().ContainerInfoByID(container_id);
 
-    std::string state = "";
+    std::string state = ContainerStateToString(md::ContainerState::kUnknown);
     std::string msg = "";
     std::string reason = "";
     if (container_info != nullptr) {

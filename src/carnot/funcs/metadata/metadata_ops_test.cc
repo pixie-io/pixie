@@ -80,6 +80,7 @@ TEST_F(MetadataOpsTest, pod_id_to_pod_name_test) {
   auto udf_tester = pl::carnot::udf::UDFTester<PodIDToPodNameUDF>(std::move(function_ctx));
   udf_tester.ForInput("1_uid").Expect("pl/running_pod");
   udf_tester.ForInput("2_uid").Expect("pl/terminating_pod");
+  udf_tester.ForInput("missing").Expect("");
 }
 
 TEST_F(MetadataOpsTest, pod_name_to_pod_id_test) {
@@ -87,6 +88,7 @@ TEST_F(MetadataOpsTest, pod_name_to_pod_id_test) {
   auto udf_tester = pl::carnot::udf::UDFTester<PodNameToPodIDUDF>(std::move(function_ctx));
   udf_tester.ForInput("pl/running_pod").Expect("1_uid");
   udf_tester.ForInput("pl/terminating_pod").Expect("2_uid");
+  udf_tester.ForInput("pl/missing").Expect("");
 }
 
 TEST_F(MetadataOpsTest, upid_to_pod_id_test) {
@@ -222,6 +224,7 @@ TEST_F(MetadataOpsTest, service_id_to_service_name_test) {
   auto udf_tester = pl::carnot::udf::UDFTester<ServiceIDToServiceNameUDF>(std::move(function_ctx));
   udf_tester.ForInput("3_uid").Expect("pl/running_service");
   udf_tester.ForInput("4_uid").Expect("pl/terminating_service");
+  udf_tester.ForInput("nonexistent").Expect("");
 }
 
 TEST_F(MetadataOpsTest, service_name_to_service_id_test) {
@@ -230,6 +233,8 @@ TEST_F(MetadataOpsTest, service_name_to_service_id_test) {
   udf_tester.ForInput("pl/running_service").Expect("3_uid");
   // Terminating service has not yet terminated.
   udf_tester.ForInput("pl/terminating_service").Expect("4_uid");
+  udf_tester.ForInput("pl/nonexistent").Expect("");
+  udf_tester.ForInput("bad_format").Expect("");
 }
 
 TEST_F(MetadataOpsTest, upid_to_service_id_test_multiple_services) {
@@ -315,7 +320,7 @@ TEST_F(MetadataOpsTest, pod_id_to_start_time) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   // 1_uid is the Pod id for the currently running pod.
   EXPECT_EQ(udf.Exec(function_ctx.get(), "1_uid").val, 5);
-  // 1234567_uid is a nonexistant Pod id, should return 0.
+  // 1234567_uid is a nonexistent Pod id, should return 0.
   EXPECT_EQ(udf.Exec(function_ctx.get(), "1234567_uid").val, 0);
 }
 
@@ -327,7 +332,7 @@ TEST_F(MetadataOpsTest, pod_id_to_stop_time) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   // 2_uid is the Pod id for a terminating pod.
   EXPECT_EQ(udf.Exec(function_ctx.get(), "2_uid").val, 15);
-  // 1234567_uid is a nonexistant Pod id, should return 0.
+  // 1234567_uid is a nonexistent Pod id, should return 0.
   EXPECT_EQ(udf.Exec(function_ctx.get(), "1234567_uid").val, 0);
 }
 
@@ -336,7 +341,7 @@ TEST_F(MetadataOpsTest, pod_name_to_start_time) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   // pl/running_pod is the Pod name for the currently running pod.
   EXPECT_EQ(udf.Exec(function_ctx.get(), "pl/running_pod").val, 5);
-  // pl/blah is a nonexistant Pod, should return 0.
+  // pl/blah is a nonexistent Pod, should return 0.
   EXPECT_EQ(udf.Exec(function_ctx.get(), "pl/blah").val, 0);
 }
 
@@ -358,6 +363,7 @@ TEST_F(MetadataOpsTest, container_name_to_container_id_test) {
       pl::carnot::udf::UDFTester<ContainerNameToContainerIDUDF>(std::move(function_ctx));
   udf_tester.ForInput("running_container").Expect("pod1_container_1");
   udf_tester.ForInput("terminating_container").Expect("pod2_container_1");
+  udf_tester.ForInput("nonexistent_container").Expect("");
 }
 
 TEST_F(MetadataOpsTest, container_id_to_start_time) {
@@ -365,7 +371,7 @@ TEST_F(MetadataOpsTest, container_id_to_start_time) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   // pod1_container_1 is the container id for the currently running container.
   EXPECT_EQ(udf.Exec(function_ctx.get(), "pod1_container_1").val, 6);
-  // pod1_container_987654 is a nonexistant container id, should return 0.
+  // pod1_container_987654 is a nonexistent container id, should return 0.
   EXPECT_EQ(udf.Exec(function_ctx.get(), "pod1_container_987654").val, 0);
 }
 
@@ -377,7 +383,7 @@ TEST_F(MetadataOpsTest, container_id_to_stop_time) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   // pod2_container_1 is the container id for a terminated container.
   EXPECT_EQ(udf.Exec(function_ctx.get(), "pod2_container_1").val, 14);
-  // pod1_container_987654 is a nonexistant container id, should return 0.
+  // pod1_container_987654 is a nonexistent container id, should return 0.
   EXPECT_EQ(udf.Exec(function_ctx.get(), "pod1_container_987654").val, 0);
 }
 
@@ -386,7 +392,7 @@ TEST_F(MetadataOpsTest, container_name_to_start_time) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   // running_container is the container name for the currently running container.
   EXPECT_EQ(udf.Exec(function_ctx.get(), "running_container").val, 6);
-  // blah_container is a nonexistant container, should return 0.
+  // blah_container is a nonexistent container, should return 0.
   EXPECT_EQ(udf.Exec(function_ctx.get(), "blah_container").val, 0);
 }
 
@@ -398,7 +404,7 @@ TEST_F(MetadataOpsTest, container_name_to_stop_time) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   // terminating_container is the container name for a terminated container.
   EXPECT_EQ(udf.Exec(function_ctx.get(), "terminating_container").val, 14);
-  // blah_container is a nonexistant container, should return 0.
+  // blah_container is a nonexistent container, should return 0.
   EXPECT_EQ(udf.Exec(function_ctx.get(), "blah_container").val, 0);
 }
 
@@ -411,6 +417,7 @@ TEST_F(MetadataOpsTest, pod_name_to_pod_status) {
   // 1_uid is the Pod id for the currently running pod.
   auto running_res = status_udf.Exec(function_ctx.get(), "pl/running_pod");
   auto failed_res = status_udf.Exec(function_ctx.get(), "pl/terminating_pod");
+  auto missing_res = status_udf.Exec(function_ctx.get(), "pl/nonexistent");
 
   rapidjson::Document running;
   running.Parse(running_res.data());
@@ -425,6 +432,13 @@ TEST_F(MetadataOpsTest, pod_name_to_pod_status) {
   EXPECT_EQ("Failed message terminated", std::string(failed["message"].GetString()));
   EXPECT_EQ("Failed reason terminated", std::string(failed["reason"].GetString()));
   EXPECT_EQ(false, failed["ready"].GetBool());
+
+  rapidjson::Document missing;
+  missing.Parse(missing_res.data());
+  EXPECT_EQ("Unknown", std::string(missing["phase"].GetString()));
+  EXPECT_EQ("", std::string(missing["message"].GetString()));
+  EXPECT_EQ("", std::string(missing["reason"].GetString()));
+  EXPECT_EQ(false, missing["ready"].GetBool());
 }
 
 TEST_F(MetadataOpsTest, pod_name_to_pod_ip) {
@@ -432,6 +446,8 @@ TEST_F(MetadataOpsTest, pod_name_to_pod_ip) {
   auto udf_tester = pl::carnot::udf::UDFTester<PodNameToPodIPUDF>(std::move(function_ctx));
   udf_tester.ForInput("pl/running_pod").Expect("1.1.1.1");
   udf_tester.ForInput("pl/terminating_pod").Expect("");
+  // udf_tester.ForInput("bad_format").Expect("");
+  udf_tester.ForInput("pl/nonexistent").Expect("");
 }
 
 TEST_F(MetadataOpsTest, container_id_to_container_status) {
@@ -442,6 +458,7 @@ TEST_F(MetadataOpsTest, container_id_to_container_status) {
 
   auto running_res = status_udf.Exec(function_ctx.get(), "pod1_container_1");
   auto terminating_res = status_udf.Exec(function_ctx.get(), "pod2_container_1");
+  auto missing_res = status_udf.Exec(function_ctx.get(), "does_not_exist");
 
   rapidjson::Document running;
   running.Parse(running_res.data());
@@ -454,6 +471,12 @@ TEST_F(MetadataOpsTest, container_id_to_container_status) {
   EXPECT_EQ("Terminated", std::string(terminating["state"].GetString()));
   EXPECT_EQ("Terminating message pending", std::string(terminating["message"].GetString()));
   EXPECT_EQ("Terminating reason pending", std::string(terminating["reason"].GetString()));
+
+  rapidjson::Document missing;
+  missing.Parse(missing_res.data());
+  EXPECT_EQ("Unknown", std::string(missing["state"].GetString()));
+  EXPECT_EQ("", std::string(missing["message"].GetString()));
+  EXPECT_EQ("", std::string(missing["reason"].GetString()));
 }
 
 TEST_F(MetadataOpsTest, upid_to_cmdline) {
@@ -464,6 +487,8 @@ TEST_F(MetadataOpsTest, upid_to_cmdline) {
   EXPECT_EQ(udf.Exec(function_ctx.get(), upid1.value()), "test");
   auto upid2 = md::UPID(123, 567, 468);
   EXPECT_EQ(udf.Exec(function_ctx.get(), upid2.value()), "cmdline");
+  auto upid3 = md::UPID(111, 222, 333);
+  EXPECT_EQ(udf.Exec(function_ctx.get(), upid3.value()), "");
 }
 
 TEST_F(MetadataOpsTest, hostname) {
@@ -478,6 +503,7 @@ TEST_F(MetadataOpsTest, pod_ip) {
 
   PodIPToPodIDUDF udf;
   EXPECT_EQ(udf.Exec(function_ctx.get(), "1.1.1.1"), "1_uid");
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "1.2.1.2"), "");
 }
 
 TEST_F(MetadataOpsTest, pod_ip_to_service_id_test) {
@@ -485,6 +511,7 @@ TEST_F(MetadataOpsTest, pod_ip_to_service_id_test) {
   PodIPToServiceIDUDF udf;
   EXPECT_EQ(udf.Exec(function_ctx.get(), "1.1.1.1"), "3_uid");
   EXPECT_EQ(udf.Exec(function_ctx.get(), "1.1.1.10"), "");
+  EXPECT_EQ(udf.Exec(function_ctx.get(), "1.2.1.2"), "");
 }
 
 TEST_F(MetadataOpsTest, upid_to_qos) {
@@ -508,6 +535,8 @@ TEST_F(MetadataOpsTest, upid_to_pod_status) {
   auto running_res = udf.Exec(function_ctx.get(), upid1);
   auto upid2 = types::UInt128Value(528280977975, 468);
   auto failed_res = std::string(udf.Exec(function_ctx.get(), upid2));
+  auto upid3 = types::UInt128Value(528280866988, 111);
+  auto missing_res = std::string(udf.Exec(function_ctx.get(), upid3));
 
   rapidjson::Document running;
   running.Parse(running_res.data());
@@ -520,6 +549,13 @@ TEST_F(MetadataOpsTest, upid_to_pod_status) {
   EXPECT_EQ("Failed", std::string(failed["phase"].GetString()));
   EXPECT_EQ("Failed message terminated", std::string(failed["message"].GetString()));
   EXPECT_EQ("Failed reason terminated", std::string(failed["reason"].GetString()));
+
+  rapidjson::Document missing;
+  missing.Parse(missing_res.data());
+  EXPECT_EQ("Unknown", std::string(missing["phase"].GetString()));
+  EXPECT_EQ("", std::string(missing["message"].GetString()));
+  EXPECT_EQ("", std::string(missing["reason"].GetString()));
+  EXPECT_EQ(false, missing["ready"].GetBool());
 }
 
 TEST_F(MetadataOpsTest, pod_id_to_namespace_test) {
@@ -527,6 +563,7 @@ TEST_F(MetadataOpsTest, pod_id_to_namespace_test) {
   auto udf_tester = pl::carnot::udf::UDFTester<PodIDToNamespaceUDF>(std::move(function_ctx));
   udf_tester.ForInput("1_uid").Expect("pl");
   udf_tester.ForInput("2_uid").Expect("pl");
+  udf_tester.ForInput("dne").Expect("");
 }
 
 TEST_F(MetadataOpsTest, pod_name_to_namespace_test) {
@@ -534,12 +571,14 @@ TEST_F(MetadataOpsTest, pod_name_to_namespace_test) {
   auto udf_tester = pl::carnot::udf::UDFTester<PodNameToNamespaceUDF>(std::move(function_ctx));
   udf_tester.ForInput("pl/running_pod").Expect("pl");
   udf_tester.ForInput("px-sock-shop/terminating_pod").Expect("px-sock-shop");
+  udf_tester.ForInput("badlyformed").Expect("");
 }
 
 TEST_F(MetadataOpsTest, service_name_to_namespace_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
   auto udf_tester = pl::carnot::udf::UDFTester<ServiceNameToNamespaceUDF>(std::move(function_ctx));
   udf_tester.ForInput("pl/orders").Expect("pl");
+  udf_tester.ForInput("badlyformed").Expect("");
   udf_tester.ForInput("").Expect("");
 }
 
