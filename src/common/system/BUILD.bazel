@@ -64,15 +64,32 @@ pl_cc_test(
     ],
 )
 
-# This test requires root.
-# To run manually:
-#  bazel build //src/common/system:socket_info_namespace_test
-#  sudo ./bazel-bin/src/common/system/socket_info_namespace_test
+# This test requires root. To run locally:
+#  sudo_bazel_run.sh //src/common/system:socket_info_namespace_test
 pl_cc_test(
     name = "socket_info_namespace_test",
     # Downloads a container, so run-time can be higher than other tests.
     timeout = "moderate",
     srcs = ["socket_info_namespace_test.cc"],
+    tags = [
+        # This test requires root to call setns().
+        # This tag prevents the test from running on local dev machines.
+        "requires_root",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/exec:cc_library",
+        "//src/common/testing/test_utils:cc_library",
+    ],
+)
+
+# This test requires root. To run locally:
+#  sudo_bazel_run.sh //src/common/system:scoped_namespace_test
+pl_cc_test(
+    name = "scoped_namespace_test",
+    # Downloads a container, so run-time can be higher than other tests.
+    timeout = "moderate",
+    srcs = ["scoped_namespace_test.cc"],
     tags = [
         # This test requires root to call setns().
         # This tag prevents the test from running on local dev machines.
