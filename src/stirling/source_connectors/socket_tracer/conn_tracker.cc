@@ -640,7 +640,7 @@ void ConnectionTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs)
       }
 
       if (cluster_cidrs.empty()) {
-        Disable("No client-side tracing: Internal CIDR not specified.");
+        CONN_TRACE(2) << "State not updated: MDS has not provided cluster CIDRs yet.";
         break;
       }
 
@@ -650,16 +650,14 @@ void ConnectionTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs)
       }
 
       if (open_info_.remote_addr.family == SockAddrFamily::kUnspecified) {
-        // Don't disable because we are still trying to resolve the remote endpoint.
+        CONN_TRACE(2) << "State not updated: socket info resolution is still in progress.";
         // If resolution fails, then conn_resolution_failed_ will get set, and
-        // this tracker should become disabled.
+        // this tracker should be disabled, see above.
         break;
       }
 
       if (open_info_.remote_addr.family == SockAddrFamily::kUnix) {
-        // Never perform client-side tracing on Unix socket.
-        // For sockets like Unix sockets, the server is always also local, we'll trace it there.
-        Disable("No client-side tracing: Unix socket.");
+        Disable("No client-side tracing: Unix socket, data will be traced on server side.");
         break;
       }
 
@@ -677,6 +675,7 @@ void ConnectionTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs)
     case EndpointRole::kRoleUnknown:
       if (conn_resolution_failed_) {
         // TODO(yzhao): Incorporate parsing to detect message type, and back fill the role.
+        // This is useful for Redis, for which eBPF protocol resolution cannot detect message type.
         Disable("Could not determine role for traffic because connection resolution failed.");
       } else {
         CONN_TRACE(2)

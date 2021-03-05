@@ -441,8 +441,8 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForIntraClusterRemoteEndpoint) {
   EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
 }
 
-// Tests that client-side tracing is disabled if no cluster CIDR is specified.
-TEST_F(ConnectionTrackerTest, TrackerDisabledForClientSideTracingWithNoCIDR) {
+// Tests that ConnTrcker state is not updated when no cluster CIDR is specified.
+TEST_F(ConnectionTrackerTest, TrackerCollectingForClientSideTracingWithNoCIDR) {
   testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn();
   testing::SetIPv4RemoteAddr(&conn, "1.2.3.4");
@@ -451,8 +451,8 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForClientSideTracingWithNoCIDR) {
   tracker.AddControlEvent(conn);
   tracker.SetProtocol(kProtocolHTTP);
   tracker.SetRole(kRoleClient);
-  tracker.IterationPreTick({}, /*proc_parser*/ nullptr, /*connections*/ nullptr);
-  EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
+  tracker.IterationPreTick(/*cluster_cidrs*/ {}, /*proc_parser*/ nullptr, /*connections*/ nullptr);
+  EXPECT_EQ(ConnectionTracker::State::kCollecting, tracker.state());
 }
 
 // Tests that tracker state is kDisabled if the remote address is Unix domain socket.
