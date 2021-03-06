@@ -315,7 +315,7 @@ func wrapMetadataRequest(vizierID uuid.UUID, req *metadatapb.MissingK8SMetadataR
 }
 
 func (m *MetadataReader) processVizierUpdate(update *metadatapb.ResourceUpdate, vzState *VizierState) error {
-	if update.UpdateVersion < vzState.updateVersion {
+	if update.UpdateVersion <= vzState.updateVersion {
 		// Old update, drop.
 		return nil
 	}
