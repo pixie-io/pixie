@@ -1279,6 +1279,56 @@ TEST_F(SplitterTest, branch_where_single_node_must_be_on_pem_the_rest_can_recurs
   EXPECT_MATCH(new_agg2->Children()[0], MemorySink());
 }
 
+TEST_F(SplitterTest, schedule_kelvin_only_func_on_kelvin) {
+  auto mem_src = MakeMemSource(MakeRelation());
+  auto kelvin_only_map = MakeMap(mem_src, {{"kelvin_only", MakeFunc("kelvin_only", {})}},
+                                 /*keep_input_columns*/ false);
+
+  table_store::schema::Relation relation1({types::INT64, types::FLOAT64}, {"count", "mean"});
+  ASSERT_OK(kelvin_only_map->SetRelation(relation1));
+
+  auto agg = MakeBlockingAgg(
+      kelvin_only_map, {MakeColumn("count", 0, types::DataType::INT64)},
+      {{"mean", MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64))}});
+  table_store::schema::Relation relation2({types::INT64, types::FLOAT64}, {"count", "mean"});
+  ASSERT_OK(agg->SetRelation(relation2));
+
+  auto sink = MakeMemSink(agg, "out");
+
+  auto splitter_or_s =
+      DistributedSplitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
+  ASSERT_OK(splitter_or_s);
+  std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
+
+  std::unique_ptr<BlockingSplitPlan> split_plan =
+      splitter->SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
+
+  auto before_blocking = split_plan->before_blocking.get();
+  auto after_blocking = split_plan->after_blocking.get();
+
+  // Verify the resultant graph.
+  MemorySourceIR* new_mem_src = GetEquivalentInNewPlan(before_blocking, mem_src);
+  ASSERT_EQ(new_mem_src->Children().size(), 1UL);
+  OperatorIR* mem_src_child = new_mem_src->Children()[0];
+  ASSERT_TRUE(Match(mem_src_child, GRPCSink()))
+      << "Expected GRPCSink, got " << mem_src_child->type_string();
+  GRPCSinkIR* grpc_sink = static_cast<GRPCSinkIR*>(mem_src_child);
+
+  OperatorIR* new_map = GetEquivalentInNewPlan(after_blocking, kelvin_only_map);
+  OperatorIR* map_parent = new_map->parents()[0];
+  ASSERT_TRUE(Match(map_parent, GRPCSourceGroup()))
+      << "Expected GRPCSourceGroup, got " << map_parent->type_string();
+  GRPCSourceGroupIR* grpc_source_group = static_cast<GRPCSourceGroupIR*>(map_parent);
+  EXPECT_EQ(grpc_sink->destination_id(), grpc_source_group->source_id());
+
+  OperatorIR* new_agg = GetEquivalentInNewPlan(after_blocking, agg);
+  OperatorIR* agg_parent = new_agg->parents()[0];
+  EXPECT_EQ(new_map, agg_parent);
+
+  OperatorIR* sink_parent = GetEquivalentInNewPlan(after_blocking, sink)->parents()[0];
+  EXPECT_EQ(sink_parent, new_agg);
+}
+
 TEST_F(SplitterTest, errors_if_pem_func_on_kelvin) {
   auto mem_src = MakeMemSource(MakeRelation());
   auto agg = MakeBlockingAgg(
@@ -1298,34 +1348,6 @@ TEST_F(SplitterTest, errors_if_pem_func_on_kelvin) {
       s.status(),
       HasCompilerError(
           "UDF 'pem_only' must execute before blocking nodes such as limit, agg, and join."));
-}
-
-TEST_F(SplitterTest, errors_if_kelvin_func_on_pem) {
-  auto mem_src = MakeMemSource(MakeRelation());
-  auto kelvin_only_map = MakeMap(mem_src, {{"kelvin_only", MakeFunc("kelvin_only", {})}},
-                                 /*keep_input_columns*/ false);
-
-  table_store::schema::Relation relation1({types::INT64, types::FLOAT64}, {"count", "mean"});
-  ASSERT_OK(kelvin_only_map->SetRelation(relation1));
-
-  auto agg = MakeBlockingAgg(
-      kelvin_only_map, {MakeColumn("count", 0, types::DataType::INT64)},
-      {{"mean", MakeMeanFuncWithFloatType(MakeColumn("count", 0, types::DataType::INT64))}});
-  table_store::schema::Relation relation2({types::INT64, types::FLOAT64}, {"count", "mean"});
-  ASSERT_OK(agg->SetRelation(relation2));
-
-  MakeMemSink(agg, "out");
-
-  auto splitter_or_s =
-      DistributedSplitter::Create(compiler_state_.get(), /* perform_partial_agg */ false);
-  ASSERT_OK(splitter_or_s);
-  std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
-  auto s = splitter->SplitKelvinAndAgents(graph.get());
-  ASSERT_NOT_OK(s);
-  EXPECT_THAT(
-      s.status(),
-      HasCompilerError(
-          "UDF 'kelvin_only' must execute after blocking nodes such as limit, agg, and join."));
 }
 
 }  // namespace distributed

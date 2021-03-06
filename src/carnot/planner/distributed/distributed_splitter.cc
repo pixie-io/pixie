@@ -11,12 +11,20 @@ namespace carnot {
 namespace planner {
 namespace distributed {
 
-StatusOr<bool> OperatorRunsOnKelvin(CompilerState* compiler_state, OperatorIR* op) {
-  // If the operator contains Kelvin-only UDFs, or is a blocking operator, we should
+StatusOr<bool> OperatorMustRunOnKelvin(CompilerState* compiler_state, OperatorIR* op) {
+  // If the operator can't run on a PEM, or is a blocking operator, we should
   // schedule this node to run on a Kelvin.
   PL_ASSIGN_OR_RETURN(bool runs_on_pem,
                       ScalarUDFsRunOnPEMRule::OperatorUDFsRunOnPEM(compiler_state, op));
   return !runs_on_pem || op->IsBlocking();
+}
+
+StatusOr<bool> OperatorCanRunOnPEM(CompilerState* compiler_state, OperatorIR* op) {
+  // If the operator can't run on a Kelvin, and is not a blocking operator, we can
+  // schedule this node to run on a PEM.
+  PL_ASSIGN_OR_RETURN(bool runs_on_pem,
+                      ScalarUDFsRunOnPEMRule::OperatorUDFsRunOnPEM(compiler_state, op));
+  return runs_on_pem && !op->IsBlocking();
 }
 
 BlockingSplitNodeIDGroups DistributedSplitter::GetSplitGroups(
@@ -46,7 +54,7 @@ BlockingSplitNodeIDGroups DistributedSplitter::GetSplitGroups(
   return node_groups;
 }
 
-absl::flat_hash_map<int64_t, bool> DistributedSplitter::GetKelvinNodes(
+StatusOr<absl::flat_hash_map<int64_t, bool>> DistributedSplitter::GetKelvinNodes(
     const IR* logical_plan, const std::vector<int64_t>& source_ids) {
   // TODO(philkuz)  update on_kelvin to actually be on_data_processor and flip bools around.
   absl::flat_hash_map<int64_t, bool> on_kelvin;
@@ -76,8 +84,10 @@ absl::flat_hash_map<int64_t, bool> DistributedSplitter::GetKelvinNodes(
       if (on_kelvin.contains(child_op->id()) && on_kelvin[child_op->id()]) {
         continue;
       }
-      // A child is on kelvin if this parent is on Kelvin or if it is a blocking node.
-      on_kelvin[child_op->id()] = is_parent_on_kelvin || child_op->IsBlocking();
+      // A child is on kelvin if this parent is on Kelvin or if it is a node that must run on
+      // Kelvin.
+      PL_ASSIGN_OR_RETURN(bool node_on_kelvin, OperatorMustRunOnKelvin(compiler_state_, child_op));
+      on_kelvin[child_op->id()] = is_parent_on_kelvin || node_on_kelvin;
       child_q.push(child_op);
     }
   }
@@ -93,7 +103,7 @@ StatusOr<std::unique_ptr<BlockingSplitPlan>> DistributedSplitter::SplitKelvinAnd
     source_ids.push_back(src->id());
   }
 
-  absl::flat_hash_map<int64_t, bool> on_kelvin = GetKelvinNodes(logical_plan, source_ids);
+  PL_ASSIGN_OR_RETURN(auto on_kelvin, GetKelvinNodes(logical_plan, source_ids));
   PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> grpc_bridge_plan,
                       CreateGRPCBridgePlan(logical_plan, on_kelvin, source_ids));
 
@@ -244,7 +254,7 @@ void DistributedSplitter::ConstructGRPCBridgeTree(
   }
 }
 
-void DistributedSplitter::ExtractBridgesFromGRPCBridgeTree(
+Status DistributedSplitter::ExtractBridgesFromGRPCBridgeTree(
     const GRPCBridgeTree& bridge_node,
     absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>>* new_grpc_bridges,
     const absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>>& old_grpc_bridges) {
@@ -255,11 +265,17 @@ void DistributedSplitter::ExtractBridgesFromGRPCBridgeTree(
     // We insert the bridge before the first blocking node or branching of the source
     // subgraph.
     auto op = bridge_node.starting_op;
-    while (op->Children().size() == 1 && !op->Children()[0]->IsBlocking()) {
+
+    while (op->Children().size() == 1) {
+      PL_ASSIGN_OR_RETURN(bool on_pem, OperatorCanRunOnPEM(compiler_state_, op->Children()[0]));
+      if (!on_pem) {
+        break;
+      }
       op = op->Children()[0];
     }
+
     (*new_grpc_bridges)[op] = op->Children();
-    return;
+    return Status::OK();
   }
 
   // Otherwise, all of the original bridges assigned to this bridge_node are preserved.
@@ -269,11 +285,14 @@ void DistributedSplitter::ExtractBridgesFromGRPCBridgeTree(
   // And then run through the child bridge nodes, which will either have it's own partial operator
   // or will just create a grpc bridge around the blob.
   for (const auto& child_bridge_node : bridge_node.children) {
-    ExtractBridgesFromGRPCBridgeTree(child_bridge_node, new_grpc_bridges, old_grpc_bridges);
+    PL_RETURN_IF_ERROR(
+        ExtractBridgesFromGRPCBridgeTree(child_bridge_node, new_grpc_bridges, old_grpc_bridges));
   }
+  return Status::OK();
 }
 
-absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>> DistributedSplitter::ConsolidateEdges(
+StatusOr<absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>>>
+DistributedSplitter::ConsolidateEdges(
     const IR* logical_plan,
     const absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>>& grpc_bridges) {
   absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>> new_grpc_bridges;
@@ -284,7 +303,8 @@ absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>> DistributedSplitter::
     bridge_tree.starting_op = src;
     ConstructGRPCBridgeTree(src, &bridge_tree, grpc_bridges);
     // Consolidate GRPCBridges using the tree structure.
-    ExtractBridgesFromGRPCBridgeTree(bridge_tree, &new_grpc_bridges, grpc_bridges);
+    PL_RETURN_IF_ERROR(
+        ExtractBridgesFromGRPCBridgeTree(bridge_tree, &new_grpc_bridges, grpc_bridges));
   }
 
   return new_grpc_bridges;
@@ -411,7 +431,7 @@ StatusOr<std::unique_ptr<IR>> DistributedSplitter::CreateGRPCBridgePlan(
   absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>> edges_to_break =
       GetEdgesToBreak(grpc_bridge_plan.get(), on_kelvin, sources);
 
-  edges_to_break = ConsolidateEdges(grpc_bridge_plan.get(), edges_to_break);
+  PL_ASSIGN_OR_RETURN(edges_to_break, ConsolidateEdges(grpc_bridge_plan.get(), edges_to_break));
   for (const auto& [parent, children] : edges_to_break) {
     PL_RETURN_IF_ERROR(InsertGRPCBridge(grpc_bridge_plan.get(), parent, children));
   }

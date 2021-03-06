@@ -121,8 +121,8 @@ class DistributedSplitter : public NotCopyable {
   BlockingSplitNodeIDGroups GetSplitGroups(const IR* logical_plan,
                                            const absl::flat_hash_map<int64_t, bool>& on_kelvin);
 
-  absl::flat_hash_map<int64_t, bool> GetKelvinNodes(const IR* logical_plan,
-                                                    const std::vector<int64_t>& source_ids);
+  StatusOr<absl::flat_hash_map<int64_t, bool>> GetKelvinNodes(
+      const IR* logical_plan, const std::vector<int64_t>& source_ids);
   absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>> GetEdgesToBreak(
       const IR* logical_plan, const absl::flat_hash_map<int64_t, bool>& on_kelvin,
       const std::vector<int64_t>& sources);
@@ -134,7 +134,7 @@ class DistributedSplitter : public NotCopyable {
   StatusOr<GRPCSourceGroupIR*> CreateGRPCSourceGroup(OperatorIR* parent_op, int64_t grpc_id);
   Status InsertGRPCBridge(IR* plan, OperatorIR* parent, const std::vector<OperatorIR*>& parents);
   PartialOperatorMgr* GetPartialOperatorMgr(OperatorIR* op) const;
-  absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>> ConsolidateEdges(
+  StatusOr<absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>>> ConsolidateEdges(
       const IR* logical_plan,
       const absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>>& edges);
 
@@ -246,7 +246,7 @@ class DistributedSplitter : public NotCopyable {
    * @param new_grpc_bridges The new, consolidated bridges.
    * @param old_grpc_bridges The original GRPC bridges to consolidate.
    */
-  void ExtractBridgesFromGRPCBridgeTree(
+  Status ExtractBridgesFromGRPCBridgeTree(
       const GRPCBridgeTree& blob,
       absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>>* new_grpc_bridges,
       const absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>>& old_grpc_bridges);
