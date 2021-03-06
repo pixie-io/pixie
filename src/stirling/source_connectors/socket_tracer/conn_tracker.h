@@ -26,6 +26,7 @@
 
 DECLARE_bool(enable_unix_domain_sockets);
 DECLARE_int64(stirling_conn_trace_pid);
+DECLARE_int64(stirling_conn_trace_fd);
 DECLARE_bool(stirling_conn_disable_to_bpf);
 DECLARE_int64(stirling_check_proc_for_conn_close);
 

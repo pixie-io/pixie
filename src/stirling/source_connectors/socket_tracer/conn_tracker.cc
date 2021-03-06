@@ -33,7 +33,9 @@ DEFINE_bool(enable_unix_domain_sockets, false, "Whether Unix domain sockets are 
 DEFINE_uint32(stirling_http2_stream_id_gap_threshold, 100,
               "If a stream ID jumps by this many spots or more, an error is assumed and the entire "
               "connection info is cleared.");
-DEFINE_int64(stirling_conn_trace_pid, -1, "Trace activity on this pid.");
+constexpr int64_t kUnsetPIDFD = -1;
+DEFINE_int64(stirling_conn_trace_pid, kUnsetPIDFD, "Trace activity on this pid.");
+DEFINE_int64(stirling_conn_trace_fd, kUnsetPIDFD, "Trace activity on this fd.");
 DEFINE_bool(
     stirling_conn_disable_to_bpf, true,
     "Send information about connection tracking disablement to BPF, so it can stop sending data.");
@@ -142,7 +144,7 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
 
   UpdateDataStats(*event);
 
-  CONN_TRACE(1) << absl::Substitute(
+  CONN_TRACE(2) << absl::Substitute(
       "data=$0 [length=$1]", BytesToString<bytes_format::HexAsciiMix>(event->msg.substr(0, 10)),
       event->msg.size());
 
@@ -204,7 +206,7 @@ protocols::http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_i
 
     // If going too far backwards, something is likely wrong. Reset everything for now.
     if (new_entries_count > FLAGS_stirling_http2_stream_id_gap_threshold) {
-      CONN_TRACE(1) << absl::Substitute(
+      CONN_TRACE(2) << absl::Substitute(
           "Encountered a stream ID $0 that is too far from the last known stream ID $1. Resetting "
           "all streams on this connection.",
           stream_id, oldest_active_stream_id + streams_deque.size() * 2);
@@ -226,7 +228,7 @@ protocols::http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_i
     // If we are to grow by more than some threshold, then something appears wrong.
     // Reset everything for now.
     if (new_size - streams_deque.size() > FLAGS_stirling_http2_stream_id_gap_threshold) {
-      CONN_TRACE(1) << absl::Substitute(
+      CONN_TRACE(2) << absl::Substitute(
           "Encountered a stream ID $0 that is too far from the last known stream ID $1. Resetting "
           "all streams on this connection",
           stream_id, oldest_active_stream_id + streams_deque.size() * 2);
@@ -244,7 +246,7 @@ protocols::http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_i
   if (stream.consumed) {
     // Don't expect this to happen, but log it just in case.
     // If http2/stitcher.cc uses std::move on consumption, this would indicate an issue.
-    CONN_TRACE(1) << "Trying to access a consumed stream.";
+    CONN_TRACE(2) << "Trying to access a consumed stream.";
   }
 
   protocols::http2::HalfStream* half_stream_ptr = write_event ? &stream.send : &stream.recv;
@@ -273,8 +275,9 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
     return;
   }
 
-  CONN_TRACE(1) << absl::Substitute("stream_id=$0 end_stream=$1 header=$2:$3", hdr->attr.stream_id,
-                                    hdr->attr.end_stream, hdr->name, hdr->value);
+  CONN_TRACE(2) << absl::Substitute(
+      "HTTP2 header event received: stream_id=$0 end_stream=$1 header=$2:$3", hdr->attr.stream_id,
+      hdr->attr.end_stream, hdr->name, hdr->value);
 
   if (conn_id_.fd == 0) {
     Disable(
@@ -363,8 +366,8 @@ void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
   }
 
   CONN_TRACE(1) << absl::Substitute(
-      "stream_id=$0 end_stream=$1 data=$2 ...", data->attr.stream_id, data->attr.end_stream,
-      BytesToString<bytes_format::HexAsciiMix>(data->payload.substr(0, 10)));
+      "HTTP data event received: stream_id=$0 end_stream=$1 data=$2 ...", data->attr.stream_id,
+      data->attr.end_stream, BytesToString<bytes_format::HexAsciiMix>(data->payload.substr(0, 10)));
 
   if (conn_id_.fd == 0) {
     Disable(
@@ -479,7 +482,10 @@ void ConnectionTracker::SetConnID(struct conn_id_t conn_id) {
   conn_id_ = conn_id;
 
   if (conn_id_.upid.pid == FLAGS_stirling_conn_trace_pid) {
-    SetDebugTrace(2);
+    if (FLAGS_stirling_conn_trace_fd == kUnsetPIDFD ||
+        conn_id_.fd == FLAGS_stirling_conn_trace_fd) {
+      SetDebugTrace(2);
+    }
   }
 }
 
@@ -487,7 +493,7 @@ bool ConnectionTracker::SetRole(EndpointRole role) {
   // Don't allow changing active role, unless it is from unknown to something else.
   if (traffic_class_.role != kRoleUnknown) {
     if (role != kRoleUnknown && traffic_class_.role != role) {
-      CONN_TRACE(1) << absl::Substitute(
+      CONN_TRACE(2) << absl::Substitute(
           "Not allowed to change the role of an active ConnectionTracker: $0, old role: $1, new "
           "role: $2",
           ToString(conn_id_), magic_enum::enum_name(traffic_class_.role),
@@ -519,7 +525,7 @@ bool ConnectionTracker::SetProtocol(TrafficProtocol protocol) {
 
   // Changing the active protocol of a connection tracker is not allowed.
   if (traffic_class_.protocol != kProtocolUnknown) {
-    CONN_TRACE(1) << absl::Substitute(
+    CONN_TRACE(2) << absl::Substitute(
         "Not allowed to change the protocol of an active ConnectionTracker: $0->$1",
         magic_enum::enum_name(traffic_class_.protocol), magic_enum::enum_name(protocol));
     return false;
@@ -530,6 +536,8 @@ bool ConnectionTracker::SetProtocol(TrafficProtocol protocol) {
   if (manager_ != nullptr) {
     manager_->UpdateProtocol(this, old_protocol);
   }
+  CONN_TRACE(1) << absl::Substitute("Protocol changed: $0->$1", magic_enum::enum_name(old_protocol),
+                                    magic_enum::enum_name(protocol));
   return true;
 }
 
@@ -796,7 +804,7 @@ void ConnectionTracker::CheckProcForConnClose() {
                                   "fd" / std::to_string(conn_id().fd);
 
   if (!fs::Exists(fd_file).ok()) {
-    CONN_TRACE(1) << "Connection is closed. Marking for death";
+    CONN_TRACE(1) << "Socket file descriptor of the connection is closed. Marking for death";
     MarkForDeath(0);
   }
 }
@@ -926,12 +934,13 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
 
   std::optional<std::string_view> fd_link_opt = conn_resolver_->InferFDLink(last_update_timestamp_);
   if (!fd_link_opt.has_value()) {
-    // This is not a conn resolution failure. We just need more time to figure out the right link.
+    CONN_TRACE(2) << "FD link info not available yet. Need more time determine the fd link and "
+                     "resolve the connection.";
     return;
   }
 
   // At this point we have something like "socket:[32431]" or "/dev/null" or "pipe:[2342]"
-  // Next we extract the inode number, if it is a socket type..
+  // Next we extract the inode number, if it is a socket type.
   auto socket_inode_num_status = fs::ExtractInodeNum(fs::kSocketInodePrefix, fd_link_opt.value());
 
   // After resolving the FD, it may turn out to be non-socket data.
