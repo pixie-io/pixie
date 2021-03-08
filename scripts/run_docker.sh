@@ -48,7 +48,6 @@ stirling_flags="--privileged
 # Disable quoting check to use stirling_flags, otherwise the flag values are treated as one string.
 # shellcheck disable=SC2086
 docker run --rm -it \
-       --network=host \
        ${stirling_flags} \
        -v /var/run/docker.sock:/var/run/docker.sock \
        -v "$HOME/.config:/root/.config" \

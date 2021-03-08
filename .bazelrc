@@ -1,9 +1,9 @@
 # Global bazelrc file, see https://docs.bazel.build/versions/master/guide.html#bazelrc.
 
 # This is to flush bazel cache for new version of clang/gcc.
-build --action_env=CLANG_COMPILER_VERSION=11.0_1
-build:clang --action_env=CC=/opt/clang-11.0/bin/clang
-build:clang --action_env=CXX=/opt/clang-11.0/bin/clang++
+build --action_env=CLANG_COMPILER_VERSION=11.1_0
+build:clang --action_env=CC=/opt/clang-11.1/bin/clang
+build:clang --action_env=CXX=/opt/clang-11.1/bin/clang++
 
 # Get version information into the build.
 build --workspace_status_command=bazel/get_workspace_status
@@ -54,8 +54,8 @@ build:libc++ --action_env=CXXFLAGS=-stdlib=libc++
 build:libc++ --action_env=LDFLAGS=-stdlib=libc++
 build:libc++ --action_env=BAZEL_CXXOPTS=-std=c++17:-stdlib=libc++
 build:libc++ --action_env=BAZEL_LINKLIBS=-l%:libc++.a:-l%:libc++abi.a:-lm
-build:libc++ --action_env=CC=/opt/clang-11.0-libc++/bin/clang
-build:libc++ --action_env=CXX=/opt/clang-11.0-libc++/bin/clang++
+build:libc++ --action_env=CC=/opt/clang-11.1-libc++/bin/clang
+build:libc++ --action_env=CXX=/opt/clang-11.1-libc++/bin/clang++
 build:libc++ --define use_libcpp=1
 # TODO(zasgar): Remove this in next diff.
 build:libc++ --copt -D_LIBCPP_NO_EXPERIMENTAL_DEPRECATION_WARNING_FILESYSTEM
@@ -104,7 +104,7 @@ build:asan --test_env=ASAN_OPTIONS=handle_abort=1:allow_addr2line=true
 build:asan --test_env=UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1
 build:asan --define tcmalloc=disabled
 # Clang-10 requires additional linkopts to make sure ubsan is linked in correctly.
-build:asan --linkopt=-L/opt/clang-11.0/lib/clang/11.0.0/lib/linux
+build:asan --linkopt=-L/opt/clang-11.1/lib/clang/11.1.0/lib/linux
 build:asan --linkopt=-l:libclang_rt.ubsan_standalone-x86_64.a
 build:asan --linkopt=-l:libclang_rt.ubsan_standalone_cxx-x86_64.a
 
