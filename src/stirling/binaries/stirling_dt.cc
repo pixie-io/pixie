@@ -1,6 +1,7 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
+#include <csignal>
 #include <ctime>
 #include <iomanip>
 #include <thread>
