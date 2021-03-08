@@ -24,7 +24,7 @@ deploy_stirling_daemonset: stirling-daemonset.yaml.tmpl create_namespace create_
 	cat $< | $(EVAL_TMPL) | $(KUBECTL) apply -f -
 
 .PHONY: deploy_stirling_profiler_pod
-deploy_stirling_profiler_pod: stirling-profiler-pod.yaml.tmpl create_namespace create_image_pull_secret ## Deploy Stirling as a pod on a single node.
+deploy_stirling_profiler_pod: stirling-profiler-pod.yaml.tmpl create_namespace create_image_pull_secret delete_stirling_profiler_pod ## Deploy Stirling profiler as a pod on a single node.
 	cat $< | $(EVAL_TMPL) | $(KUBECTL) apply -f -
 
 .PHONY: delete_stirling_pod

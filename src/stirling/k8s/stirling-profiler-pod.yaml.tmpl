@@ -13,7 +13,7 @@ spec:
   containers:
   - name: stirling-profiler
     image: gcr.io/pl-dev-infra/stirling_profiler:{{USER}}
-    args: ["--pid=1805020"]
+    args: ["625612"]
     imagePullPolicy: Always
     resources:
       limits:
@@ -38,6 +38,7 @@ spec:
     - name: PL_HOST_PATH
       value: "/host"
   hostNetwork: true
+  hostPID: true
   dnsPolicy: ClusterFirstWithHostNet
   terminationGracePeriodSeconds: 30
   restartPolicy: Never
