@@ -97,7 +97,7 @@ func detectClusterType() ClusterType {
 	if err != nil {
 		return ClusterTypeUnknown
 	}
-	sp := strings.Split(version.GitVersion, "-")
+	sp := strings.SplitN(version.GitVersion, "-", 2)
 	if len(sp) > 1 {
 		matchGke, _ := regexp.Match(`gke\..*`, []byte(sp[1]))
 		if matchGke {
