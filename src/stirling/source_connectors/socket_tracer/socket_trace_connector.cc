@@ -11,6 +11,7 @@
 #include <absl/strings/match.h>
 #include <google/protobuf/empty.pb.h>
 #include <google/protobuf/text_format.h>
+#include <google/protobuf/util/delimited_message_util.h>
 #include <google/protobuf/util/json_util.h>
 #include <magic_enum.hpp>
 
@@ -18,7 +19,6 @@
 #include "src/common/base/utils.h"
 #include "src/common/grpcutils/utils.h"
 #include "src/common/json/json.h"
-#include "src/common/protobufs/recordio.h"
 #include "src/common/system/socket_info.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/stirling/bpf_tools/macros.h"
@@ -741,6 +741,7 @@ void SocketDataEventToPB(const SocketDataEvent& event, sockeventpb::SocketDataEv
 
 void SocketTraceConnector::WriteDataEvent(const SocketDataEvent& event) {
   using ::google::protobuf::TextFormat;
+  using ::google::protobuf::util::SerializeDelimitedToOstream;
 
   DCHECK(perf_buffer_events_output_stream_ != nullptr);
 
@@ -756,7 +757,7 @@ void SocketTraceConnector::WriteDataEvent(const SocketDataEvent& event) {
       *perf_buffer_events_output_stream_ << text << std::flush;
       break;
     case OutputFormat::kBin:
-      rio::SerializeToStream(pb, perf_buffer_events_output_stream_.get());
+      SerializeDelimitedToOstream(pb, perf_buffer_events_output_stream_.get());
       *perf_buffer_events_output_stream_ << std::flush;
       break;
   }
