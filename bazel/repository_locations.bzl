@@ -127,11 +127,6 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "farmhash-2f0e005b81e296fa6963e395626137cf729b710c",
         urls = ["https://github.com/google/farmhash/archive/2f0e005b81e296fa6963e395626137cf729b710c.tar.gz"],
     ),
-    com_github_cpp_taskflow = dict(
-        sha256 = "6aee0c20156380d762dd9774ba6bc7d30647d4bec03def2bba4fefef966c3e45",
-        strip_prefix = "cpp-taskflow-3c996b520500e0694a26fca743046c54d8ac26cc",
-        urls = ["https://github.com/cpp-taskflow/cpp-taskflow/archive/3c996b520500e0694a26fca743046c54d8ac26cc.tar.gz"],
-    ),
     com_github_tencent_rapidjson = dict(
         sha256 = "4a34a0c21794f067afca6c9809971f0bd77a1d1834c4dc53bdd09e4ab4d05ce4",
         strip_prefix = "rapidjson-f56928de85d56add3ca6ae7cf7f119a42ee1585b",

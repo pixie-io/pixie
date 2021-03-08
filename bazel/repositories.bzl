@@ -74,7 +74,6 @@ def _cc_deps():
 
     _repo_impl("com_google_double_conversion", build_file = "//third_party:double_conversion.BUILD")
     _repo_impl("com_github_rlyeh_sole", build_file = "//third_party:sole.BUILD")
-    _repo_impl("com_github_cpp_taskflow", build_file = "//third_party:cpp_taskflow.BUILD")
     _repo_impl("com_github_tencent_rapidjson", build_file = "//third_party:rapidjson.BUILD")
     _repo_impl("com_github_ariafallah_csv_parser", build_file = "//third_party:csv_parser.BUILD")
     _repo_impl("com_github_cameron314_concurrentqueue", build_file = "//third_party:concurrentqueue.BUILD")
