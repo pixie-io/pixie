@@ -1,16 +1,5 @@
 workspace(name = "pl")
 
-# local_repository() has to be called before any load() statements.
-#
-# third_party/protobuf is a git submodule since we customize protobuf parsing for message type
-# inference. It's not used by rules_proto, or others.
-#
-# TODO(yzhao): Patch third_party/protobuf.
-local_repository(
-    name = "com_google_protobuf",
-    path = "third_party/protobuf",
-)
-
 load("//:workspace.bzl", "check_min_bazel_version")
 
 check_min_bazel_version("3.7.1")

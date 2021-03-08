@@ -102,6 +102,11 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "double-conversion-4199ef3d456ed0549e5665cf4186f0ee6210db3b",
         urls = ["https://github.com/google/double-conversion/archive/4199ef3d456ed0549e5665cf4186f0ee6210db3b.tar.gz"],
     ),
+    com_google_protobuf = dict(
+        sha256 = "bc3dbf1f09dba1b2eb3f2f70352ee97b9049066c9040ce0c9b67fb3294e91e4b",
+        strip_prefix = "protobuf-3.15.5",
+        urls = ["https://github.com/protocolbuffers/protobuf/archive/v3.15.5.tar.gz"],
+    ),
     com_intel_tbb = dict(
         sha256 = "ebc4f6aa47972daed1f7bf71d100ae5bf6931c2e3144cf299c8cc7d041dca2f3",
         strip_prefix = "oneTBB-2020.3",

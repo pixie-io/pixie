@@ -28,8 +28,8 @@ def _repo_impl(name, **kwargs):
     )
 
 # For bazel repos do not require customization.
-def _bazel_repo(name):
-    _repo_impl(name)
+def _bazel_repo(name, **kwargs):
+    _repo_impl(name, **kwargs)
 
 # With a predefined "include all files" BUILD file for a non-Bazel repo.
 def _include_all_repo(name, **kwargs):
@@ -56,6 +56,7 @@ def _com_github_threadstacks():
     )
 
 def _cc_deps():
+    _bazel_repo("com_google_protobuf", patches = ["//third_party:protobuf.patch"], patch_args = ["-p1"])
     _bazel_repo("com_google_benchmark")
     _bazel_repo("com_google_googletest")
     _bazel_repo("com_github_gflags_gflags")
