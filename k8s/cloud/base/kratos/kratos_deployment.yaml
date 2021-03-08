@@ -44,8 +44,10 @@ spec:
           value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
         - name: LOG_LEVEL
           value: trace
+        - name: PL_WORK_DOMAIN
+          value: work.$(PL_DOMAIN_NAME)
         - name: PL_OAUTH_DOMAIN
-          value: oauth.$(PL_DOMAIN_NAME)
+          value: $(PL_WORK_DOMAIN)/oauth
         - name: FRONTEND_URL
           value: https://$(PL_OAUTH_DOMAIN)
         - name: ADMIN_URL
@@ -58,9 +60,10 @@ spec:
           value: $(ADMIN_URL)/
         - name: SELFSERVICE_DEFAULT_BROWSER_RETURN_URL
           value: $(FRONTEND_URL)/
-        # TODO this might not work.
+        - name: HYDRA_LOGIN_URL
+          value: https://$(PL_WORK_DOMAIN)/api/auth/oauth/login
         - name: SELFSERVICE_WHITELISTED_RETURN_URLS
-          value: $(FRONTEND_URL)/,$(FRONTEND_URL)/auth/hydra/login
+          value: $(FRONTEND_URL)/,$(HYDRA_LOGIN_URL)
         - name: SELFSERVICE_FLOWS_SETTINGS_UI_URL
           value: $(FRONTEND_URL)/settings
         - name: SELFSERVICE_FLOWS_VERIFICATION_UI_URL
