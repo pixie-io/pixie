@@ -1,22 +1,21 @@
 package server_test
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"testing"
 
-	"pixielabs.ai/pixielabs/src/shared/services/server"
-
-	env2 "pixielabs.ai/pixielabs/src/shared/services/env"
-	ping "pixielabs.ai/pixielabs/src/shared/services/testproto"
-
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+
+	env2 "pixielabs.ai/pixielabs/src/shared/services/env"
+	"pixielabs.ai/pixielabs/src/shared/services/server"
+	ping "pixielabs.ai/pixielabs/src/shared/services/testproto"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 

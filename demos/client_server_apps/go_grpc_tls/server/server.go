@@ -1,12 +1,13 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"log"
 
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+
 	pb "pixielabs.ai/pixielabs/src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto"
 )
 

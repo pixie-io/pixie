@@ -1,20 +1,20 @@
 package server
 
 import (
+	"context"
 	"time"
-
-	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
-	"pixielabs.ai/pixielabs/src/shared/services/env"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
+	"pixielabs.ai/pixielabs/src/shared/services/env"
 )
 
 var logrusEntry *log.Entry
