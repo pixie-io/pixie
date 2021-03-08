@@ -25,7 +25,6 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 
 #include <absl/synchronization/mutex.h>
 
-#include "demos/applications/hipster_shop/reflection.h"
 #include "src/common/grpcutils/service_descriptor_database.h"
 #include "src/common/system/socket_info.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
@@ -185,10 +184,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   // Only sample the head of the body, to save space.
   inline static constexpr size_t kMaxBodyBytes = 512;
-
-  // TODO(yzhao): We will remove this once finalized the mechanism of lazy protobuf parse.
-  inline static ::pl::grpc::ServiceDescriptorDatabase grpc_desc_db_{
-      demos::hipster_shop::GetFileDescriptorSet()};
 
   explicit SocketTraceConnector(std::string_view source_name);
 

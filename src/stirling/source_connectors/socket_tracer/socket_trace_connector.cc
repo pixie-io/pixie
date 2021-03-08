@@ -552,9 +552,10 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   std::string path = req_stream->headers.ValueByKey(protocols::http2::headers::kPath);
 
   if ((req_stream->HasGRPCContentType() || resp_stream->HasGRPCContentType())) {
-    MethodInputOutput rpc = grpc_desc_db_.GetMethodInputOutput(::pl::grpc::MethodPath(path));
-    req_stream->data = ParsePB(req_stream->data, rpc.input.get());
-    resp_stream->data = ParsePB(resp_stream->data, rpc.output.get());
+    // TODO(yzhao): Support reflection to get message types instead of empty message.
+    ::google::protobuf::Empty empty_message;
+    req_stream->data = ParsePB(req_stream->data, &empty_message);
+    resp_stream->data = ParsePB(resp_stream->data, &empty_message);
   }
 
   DataTable::RecordBuilder<&kHTTPTable> r(data_table, resp_stream->timestamp_ns);

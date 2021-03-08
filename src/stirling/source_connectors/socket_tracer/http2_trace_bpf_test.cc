@@ -25,7 +25,6 @@ using ::pl::stirling::testing::ToRecordVector;
 using ::testing::Gt;
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
-using ::testing::UnorderedElementsAre;
 
 //-----------------------------------------------------------------------------
 // Test Stimulus: Server and Client
@@ -237,60 +236,69 @@ TEST_F(ProductCatalogServiceTraceTest, Basic) {
     expected_record1.req.body = R"()";
     expected_record1.resp.resp_status = 200;
     expected_record1.resp.resp_message = "OK";
-    expected_record1.resp.body = R"(products {
-  id: "OLJCESPC7Z"
-  name: "Vintage Typewriter"
-  description: "This typewriter looks good in your living room."
-  picture: "/static/img/products/typewriter.jpg"
-  price_usd {
-    currency_code: "USD"
-    units: 67
-    nanos: 990000000
+    expected_record1.resp.body = R"(1 {
+  1: "OLJCESPC7Z"
+  2: "Vintage Typewriter"
+  3: "This typewriter looks good in your living room."
+  4: "/static/img/products/typewriter.jpg"
+  5 {
+    1: "USD"
+    2: 67
+    3: 990000000
   }
-  categories: "vintage"
+  6: "vintage"
 }
-products {
-  id: "66VCHSJNUP"
-  name: "Vintage Camera Lens"
-  description: "You won\'t have a camera to use it and it probably doesn\'t work anyway."
-  picture: "/static/img/products/camera-lens.jpg"
-  price_usd {
-    currency_code: "U... [TRUNCATED])";
+1 {
+  1: "66VCHSJNUP"
+  2: "Vintage Camera Lens"
+  3: "You won\'t have a camera to use it and it probably doesn\'t work anyway."
+  4: "/static/img/products/camera-lens.jpg"
+  5 {
+    1: "USD"
+    2: 12
+    3: 490000000
+  }
+  6: "photography"
+  6: "vintage"
+}
+1 {
+  1: "1YMWWN1N4O"
+  2: "Home Barista... [TRUNCATED])";
 
     http::Record expected_record2 = {};
     expected_record2.req.req_path = "/hipstershop.ProductCatalogService/GetProduct";
     expected_record2.req.req_method = "POST";
-    expected_record2.req.body = R"(id: "OLJCESPC7Z")";
+    expected_record2.req.body = R"(1: "OLJCESPC7Z")";
     expected_record2.resp.resp_status = 200;
     expected_record2.resp.resp_message = "OK";
-    expected_record2.resp.body = R"(id: "OLJCESPC7Z"
-name: "Vintage Typewriter"
-description: "This typewriter looks good in your living room."
-picture: "/static/img/products/typewriter.jpg"
-price_usd {
-  currency_code: "USD"
-  units: 67
-  nanos: 990000000
+    expected_record2.resp.body = R"(1: "OLJCESPC7Z"
+2: "Vintage Typewriter"
+3: "This typewriter looks good in your living room."
+4: "/static/img/products/typewriter.jpg"
+5 {
+  1: "USD"
+  2: 67
+  3: 990000000
 }
-categories: "vintage")";
+6: "vintage")";
 
     http::Record expected_record3 = {};
     expected_record3.req.req_path = "/hipstershop.ProductCatalogService/SearchProducts";
     expected_record3.req.req_method = "POST";
-    expected_record3.req.body = R"(query: "typewriter")";
+    expected_record3.req.body = R"(1: "typewriter")";
     expected_record3.resp.resp_status = 200;
     expected_record3.resp.resp_message = "OK";
-    expected_record3.resp.body = R"(results {
-  id: "OLJCESPC7Z"
-  name: "Vintage Typewriter"
-  description: "This typewriter looks good in your living room."
-  picture: "/static/img/products/typewriter.jpg"
-  price_usd {
-    currency_code: "USD"
-    units: 67
-    nanos: 990000000
+    expected_record3.resp.body = R"(1 {
+  1: "OLJCESPC7Z"
+  2: "Vintage Typewriter"
+  3: "This typewriter looks good in your living room."
+  4: "/static/img/products/typewriter.jpg"
+  5 {
+    1: "USD"
+    2: 67
+    3: 990000000
   }
-  categories: "vintage"
+  6: "vintage"
 })";
 
     EXPECT_THAT(records, Contains(EqHTTPRecord(expected_record1)));

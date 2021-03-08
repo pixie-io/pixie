@@ -64,13 +64,12 @@ Status PBWireToText(std::string_view message, PBTextFormat fmt, google::protobuf
 }
 
 std::string ParsePB(std::string_view str, Message* pb) {
-  std::string text;
-  Status s;
   Empty empty;
   if (pb == nullptr) {
     pb = &empty;
   }
-  s = PBWireToText(str, PBTextFormat::kText, pb, &text);
+  std::string text;
+  Status s = PBWireToText(str, PBTextFormat::kText, pb, &text);
   VLOG_IF(1, !s.ok()) << absl::Substitute("$0; original data in hex format: $1", s.ToString(),
                                           BytesToString<bytes_format::Hex>(str));
   absl::StripTrailingAsciiWhitespace(&text);
