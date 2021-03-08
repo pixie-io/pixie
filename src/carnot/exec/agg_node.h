@@ -6,8 +6,6 @@
 #include <utility>
 #include <vector>
 
-#include <libcuckoo/cuckoohash_map.hh>
-
 #include "src/carnot/exec/exec_node.h"
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/exec/expression_evaluator.h"

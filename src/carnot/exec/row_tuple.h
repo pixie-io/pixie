@@ -16,7 +16,6 @@
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
 #include <absl/strings/substitute.h>
-#include <libcuckoo/cuckoohash_map.hh>
 
 #include "src/common/base/base.h"
 #include "src/common/base/hash_utils.h"
@@ -220,9 +219,6 @@ struct RowTuplePtrHasher {
 struct RowTuplePtrEq {
   bool operator()(const RowTuple* k1, const RowTuple* k2) const { return *k1 == *k2; }
 };
-
-template <class T>
-using RowTupleHashMap = cuckoohash_map<RowTuple*, T, RowTuplePtrHasher, RowTuplePtrEq>;
 
 template <class T>
 using AbslRowTupleHashMap = absl::flat_hash_map<RowTuple*, T, RowTuplePtrHasher, RowTuplePtrEq>;
