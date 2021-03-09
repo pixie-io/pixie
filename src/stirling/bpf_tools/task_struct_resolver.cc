@@ -211,7 +211,7 @@ Status ReadFromChild(int fd, TaskStructOffsets* result) {
 
   constexpr int kTimeoutMillis = 5000;
   int retval = poll(&fds, 1, kTimeoutMillis);
-  if (retval == -1) {
+  if (retval <= 0) {
     return error::Internal("Failed to receive data from child.");
   }
 
@@ -251,7 +251,6 @@ StatusOr<TaskStructOffsets> ResolveTaskStructOffsets() {
 
     // Blocking read data from child.
     TaskStructOffsets result;
-
     PL_RETURN_IF_ERROR(ReadFromChild(fd[0], &result));
 
     // We can't transfer StatusOr through the pipe,
