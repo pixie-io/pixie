@@ -2,7 +2,7 @@ workspace(name = "pl")
 
 load("//:workspace.bzl", "check_min_bazel_version")
 
-check_min_bazel_version("3.7.1")
+check_min_bazel_version("4.0.0")
 
 load("//bazel:repositories.bzl", "pl_deps")
 
@@ -15,15 +15,6 @@ pl_deps()
 # - go_rules_dependencies
 # - apple_rules_dependencies (must come after grpc_deps)
 # ...
-
-# This has to be after pl_deps(), as the bazel_skylib declared inside protobuf_deps() is older than
-# what is needed in our repo. But bazel will pick this older version if protobuf_deps() is called
-# before pl_deps(). See https://github.com/bazelbuild/bazel/issues/6664.
-#
-# TODO(yzhao): As of 2019-09 nested WORKSPACE file is ignored by bazel.
-# https://github.com/bazelbuild/bazel/issues/5325 and
-# https://bazel.build/designs/2016/09/19/recursive-ws-parsing.html.
-# Once that's fixed, we should be able to remove this.
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 
 protobuf_deps()

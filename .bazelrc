@@ -1,4 +1,9 @@
 # Global bazelrc file, see https://docs.bazel.build/versions/master/guide.html#bazelrc.
+build --incompatible_restrict_string_escapes=false
+build --incompatible_require_linker_input_cc_api=false
+
+query --incompatible_restrict_string_escapes=false
+query --incompatible_require_linker_input_cc_api=false
 
 # This is to flush bazel cache for new version of clang/gcc.
 build --action_env=CLANG_COMPILER_VERSION=11.1_0
