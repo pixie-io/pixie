@@ -8,16 +8,11 @@ REPOSITORY_LOCATIONS = dict(
         # Run the following command when upgrading Golang version:
         # scripts/sudo_bazel_run.sh //src/stirling/source_connectors/socket_tracer:http2_trace_bpf_test
         #
-        # TODO(yzhao): Investigate adding automatic tests when upgrading Golang build toolchain.
-        # Today ci/bazel_build_deps.sh does the target search for diffs. It uses bazel query,
-        # but cannot look at the content changes. One idea is to have 2 repository_locations.bzl
-        # file, one for each language tool chains, and let the language rules declare deps on
-        # that .bzl file.
-        sha256 = "7904dbecbaffd068651916dce77ff3437679f9d20e1a7956bff43826e7645fcc",
+        sha256 = "7c10271940c6bce577d51a075ae77728964db285dac0a46614a7934dc34303e6",
         urls = [
             "https://mirror.bazel.build/github.com/bazelbuild/rules_go" +
-            "/releases/download/v0.25.1/rules_go-v0.25.1.tar.gz",
-            "https://github.com/bazelbuild/rules_go/releases/download/v0.25.1/rules_go-v0.25.1.tar.gz",
+            "/releases/download/v0.26.0/rules_go-v0.26.0.tar.gz",
+            "https://github.com/bazelbuild/rules_go/releases/download/v0.26.0/rules_go-v0.26.0.tar.gz",
         ],
     ),
     io_bazel_rules_k8s = dict(

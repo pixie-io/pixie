@@ -186,15 +186,14 @@ TEST(ElfGolangItableTest, ExtractInterfaceTypes) {
                UnorderedElementsAre(
                    Field(&IntfImplTypeInfo::type_name, "main.IntStruct"),
                    Field(&IntfImplTypeInfo::type_name, "*errors.errorString"),
-                   Field(&IntfImplTypeInfo::type_name, "*os.PathError"),
+                   Field(&IntfImplTypeInfo::type_name, "*io/fs.PathError"),
                    Field(&IntfImplTypeInfo::type_name, "*internal/poll.DeadlineExceededError"),
                    Field(&IntfImplTypeInfo::type_name, "runtime.errorString"),
                    Field(&IntfImplTypeInfo::type_name, "syscall.Errno"))),
           Pair("sort.Interface", UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name,
                                                             "*internal/fmtsort.SortedMap"))),
-          Pair("math/rand.Source",
-               UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name, "*math/rand.lockedSource"),
-                                    Field(&IntfImplTypeInfo::type_name, "*math/rand.rngSource"))),
+          Pair("math/rand.Source", UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name,
+                                                              "*math/rand.lockedSource"))),
           Pair("io.Writer", UnorderedElementsAre(Field(&IntfImplTypeInfo::type_name, "*os.File"))),
           Pair("internal/reflectlite.Type",
                UnorderedElementsAre(
