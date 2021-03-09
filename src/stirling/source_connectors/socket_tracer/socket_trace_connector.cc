@@ -517,7 +517,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_resp_latency_ns")>(
       CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));
 #ifndef NDEBUG
-  r.Append<r.ColIndex("px_info_")>(std::move(record.px_info));
+  r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
 #endif
 }
 
@@ -583,7 +583,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_resp_latency_ns")>(
       CalculateLatency(req_stream->timestamp_ns, resp_stream->timestamp_ns));
 #ifndef NDEBUG
-  r.Append<r.ColIndex("px_info_")>("");
+  r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
 #endif
 }
 
@@ -607,7 +607,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("latency_ns")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 #ifndef NDEBUG
-  r.Append<r.ColIndex("px_info_")>(std::move(entry.px_info));
+  r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
 #endif
 }
 
@@ -631,7 +631,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("latency_ns")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 #ifndef NDEBUG
-  r.Append<r.ColIndex("px_info_")>("");
+  r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
 #endif
 }
 
@@ -655,7 +655,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("latency_ns")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 #ifndef NDEBUG
-  r.Append<r.ColIndex("px_info_")>("");
+  r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
 #endif
 }
 
@@ -677,7 +677,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("latency_ns")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 #ifndef NDEBUG
-  r.Append<r.ColIndex("px_info_")>("");
+  r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
 #endif
 }
 
@@ -700,7 +700,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("latency_ns")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 #ifndef NDEBUG
-  r.Append<r.ColIndex("px_info_")>("");
+  r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
 #endif
 }
 
