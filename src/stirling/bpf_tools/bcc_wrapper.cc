@@ -86,7 +86,7 @@ StatusOr<utils::TaskStructOffsets> ResolveTaskStructOffsets() {
   return offsets_status;
 }
 
-StatusOr<utils::TaskStructOffsets> TaskStructOffsets() {
+StatusOr<utils::TaskStructOffsets> GetTaskStructOffsets() {
   // Defaults to zero offsets, which tells BPF not to use the offset overrides.
   // If the values are changed (as they are if ResolveTaskStructOffsets() is run),
   // then the non-zero values will be used in BPF.
@@ -110,7 +110,7 @@ StatusOr<utils::TaskStructOffsets> TaskStructOffsets() {
                                   offsets.group_leader_offset, offsets.real_start_time_offset);
   }
 
-  return Status::OK();
+  return offsets;
 }
 
 Status BCCWrapper::InitBPFProgram(std::string_view bpf_program, std::vector<std::string> cflags,
@@ -150,7 +150,7 @@ Status BCCWrapper::InitBPFProgram(std::string_view bpf_program, std::vector<std:
         kernel_version.code() >= kLinux5p5VersionCode ? "start_boottime" : "real_start_time";
 
     // When there are mismatched headers, this determines offsets for required task_struct members.
-    TaskStructOffsets offsets = TaskStructOffsets();
+    PL_ASSIGN_OR_RETURN(TaskStructOffsets offsets, GetTaskStructOffsets());
 
     cflags.push_back(absl::Substitute("-DSTART_BOOTTIME_VARNAME=$0", boottime_varname));
     cflags.push_back(
