@@ -2,7 +2,6 @@ package pxapi
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -91,6 +90,9 @@ func (s *ScriptResults) Stream() error {
 }
 
 func (s *ScriptResults) handleGRPCMsg(ctx context.Context, resp *vizierapipb.ExecuteScriptResponse) error {
+	if err := errdefs.ParseStatus(resp.Status); err != nil {
+		return err
+	}
 	switch v := resp.Result.(type) {
 	case *vizierapipb.ExecuteScriptResponse_MetaData:
 		return s.handleTableMetadata(ctx, v)
@@ -123,7 +125,6 @@ func (s *ScriptResults) run() error {
 		if resp == nil {
 			return nil
 		}
-
 		if err := s.handleGRPCMsg(ctx, resp); err != nil {
 			return err
 		}
@@ -261,7 +262,6 @@ func extractDataFromCol(colData []*vizierapipb.Column, rowIdx, colIdx int64, row
 	case *vizierapipb.Column_Time64NsData:
 		dCasted, ok := row[colIdx].(*types.Time64NSValue)
 		if !ok {
-			fmt.Printf("Here %+v", row[colIdx].Type())
 			return errdefs.ErrInternalMismatchedType
 		}
 		dCasted.ScanInt64(colTyped.Time64NsData.Data[rowIdx])

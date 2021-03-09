@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 
 	"pixielabs.ai/pixielabs/src/api/go/pxapi"
+	"pixielabs.ai/pixielabs/src/api/go/pxapi/errdefs"
 	"pixielabs.ai/pixielabs/src/api/go/pxapi/types"
 )
 
@@ -72,13 +72,17 @@ func main() {
 	}
 
 	resultSet, err := vz.ExecuteScript(ctx, pxl, tm)
-	if err != nil && err != io.EOF {
+	if err != nil {
 		panic(err)
 	}
 
 	defer resultSet.Close()
 	if err := resultSet.Stream(); err != nil {
-		fmt.Printf("Got error : %+v, while streaming\n", err)
+		if errdefs.IsCompilationError(err) {
+			fmt.Printf("Got compiler error: \n %s\n", err.Error())
+		} else {
+			fmt.Printf("Got error : %+v, while streaming\n", err)
+		}
 	}
 
 	stats := resultSet.Stats()

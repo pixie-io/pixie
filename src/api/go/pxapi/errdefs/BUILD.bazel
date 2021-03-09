@@ -1,12 +1,34 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
     srcs = [
+        "compiler.go",
         "doc.go",
         "err.go",
+        "parsers.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/api/go/pxapi/errdefs",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
+        "@org_golang_google_grpc//codes:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["err_test.go"],
+    embed = [":go_default_library"],
+)
+
+filegroup(
+    name = "errors_group",
+    srcs = glob(
+        [
+            "*.go",
+        ],
+    ),
     visibility = ["//visibility:public"],
 )
 
