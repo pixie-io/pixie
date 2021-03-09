@@ -367,11 +367,22 @@ def bazelCICmd(String name, String targetConfig='clang', String targetCompilatio
   warnError('Bazel command failed') {
     def buildableFile = "bazel_buildables_${targetsSuffix}"
     def testFile = "bazel_tests_${targetsSuffix}"
-    if (runBazelCmd("build ${bazelRunExtraArgs} -c ${targetCompilationMode} --config=${targetConfig} --target_pattern_file ${buildableFile}") != 0) {
-      throw new Exception('Bazel run failed')
-    }
-    if (runBazelCmd("test ${bazelRunExtraArgs} -c ${targetCompilationMode} --config=${targetConfig} --target_pattern_file ${testFile}") != 0) {
-      throw new Exception('Bazel test failed')
+
+    def args = "-c ${targetCompilationMode} --config=${targetConfig} --build_metadata=COMMIT_SHA=\$(git rev-parse HEAD) ${bazelRunExtraArgs}"
+
+    withCredentials([
+      string(
+        credentialsId: 'buildbuddy-api-key',
+        variable: 'BUILDBUDDY_API_KEY')
+    ]) {
+      def bbAPIArg = '--remote_header=x-buildbuddy-api-key=${BUILDBUDDY_API_KEY}'
+
+      if (runBazelCmd("build ${args} ${bbAPIArg} --target_pattern_file ${buildableFile}") != 0) {
+        throw new Exception('Bazel run failed')
+      }
+      if (runBazelCmd("test ${args} ${bbAPIArg} --target_pattern_file ${testFile}") != 0) {
+        throw new Exception('Bazel test failed')
+      }
     }
   }
   createBazelStash("${name}-testlogs")
@@ -623,7 +634,7 @@ def dockerArgsForBPFTest = '--privileged --pid=host -v /:/host -v /sys:/sys --en
 def buildAndTestBPFOpt = {
   WithSourceCodeAndTargetsDocker {
     dockerStep(dockerArgsForBPFTest, {
-      bazelCICmd('build-bpf', 'bpf', 'opt', 'bpf')
+      bazelCICmd('build-bpf', 'bpf', 'opt', 'bpf', '--bes_backend=grpcs://bb-grpc.corp.pixielabs.ai --remote_cache=grpcs://bb-grpc.corp.pixielabs.ai')
     })
   }
 }
