@@ -10,7 +10,6 @@ import {
   PixieCommandIcon, StatusCell,
 } from '@pixie/components';
 import { ClusterContext } from 'common/cluster-context';
-import { CLUSTER_STATUS_DISCONNECTED } from 'common/vizier-grpc-client-context';
 import {
   getArgTypesForVis, getArgVariableMap,
 } from 'utils/args-utils';
@@ -19,7 +18,12 @@ import { ScriptContext } from 'context/script-context';
 import { entityPageForScriptId, optionallyGetNamespace } from 'containers/live-widgets/utils/live-view-params';
 import { EntityType, pxTypetoEntityType, entityStatusGroup } from 'containers/command-input/autocomplete-utils';
 import { clusterStatusGroup } from 'containers/admin/utils';
-import { containsMutation, CLUSTER_QUERIES, AUTOCOMPLETE_QUERIES } from '@pixie/api';
+import {
+  containsMutation,
+  CLUSTER_QUERIES,
+  AUTOCOMPLETE_QUERIES,
+  GQLClusterStatus as ClusterStatus,
+} from '@pixie/api';
 import ExecuteScriptButton from './execute-button';
 import { Variable } from './vis';
 
@@ -106,7 +110,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
       value: clusterName,
       selectable: true,
       // eslint-disable-next-line
-      getListItems: async (input) => (data.clusters.filter((c) => c.status !== CLUSTER_STATUS_DISCONNECTED
+      getListItems: async (input) => (data.clusters.filter((c) => c.status !== ClusterStatus.CS_DISCONNECTED
               && c.prettyClusterName.includes(input))
         .map((c) => ({ value: c.prettyClusterName, icon: <StatusCell statusGroup={clusterStatusGroup(c.status)} /> }))
       ),

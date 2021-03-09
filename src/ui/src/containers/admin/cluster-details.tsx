@@ -1,8 +1,6 @@
 import * as React from 'react';
 
-import ClientContext, {
-  VizierGRPCClientProvider, CLUSTER_STATUS_DISCONNECTED,
-} from 'common/vizier-grpc-client-context';
+import ClientContext, { VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
 import { Breadcrumbs, StatusCell, StatusGroup } from '@pixie/components';
 import { distanceInWords } from 'date-fns';
 import { useHistory, useParams } from 'react-router';
@@ -23,7 +21,7 @@ import TableRow from '@material-ui/core/TableRow';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 
-import { ExecutionStateUpdate, CLUSTER_QUERIES } from '@pixie/api';
+import { ExecutionStateUpdate, CLUSTER_QUERIES, GQLClusterStatus as ClusterStatus } from '@pixie/api';
 import { BehaviorSubject } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
 import {
@@ -386,7 +384,7 @@ const ClusterDetailsNavigation = ({ selectedClusterName }) => {
     selectable: true,
     omitKey: true,
     // eslint-disable-next-line
-    getListItems: async () => (data.clusters.filter((c) => c.status !== CLUSTER_STATUS_DISCONNECTED)
+    getListItems: async () => (data.clusters.filter((c) => c.status !== ClusterStatus.CS_DISCONNECTED)
       .map((c) => ({ value: c.prettyClusterName }))
     ),
     onSelect: (input) => {

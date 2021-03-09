@@ -1,12 +1,4 @@
-import {
-  CLUSTER_STATUS_CONNECTED,
-  CLUSTER_STATUS_DISCONNECTED,
-  CLUSTER_STATUS_HEALTHY,
-  CLUSTER_STATUS_UNHEALTHY,
-  CLUSTER_STATUS_UNKNOWN,
-  CLUSTER_STATUS_UPDATE_FAILED,
-  CLUSTER_STATUS_UPDATING,
-} from '../../common/vizier-grpc-client-context';
+import { GQLClusterStatus as ClusterStatus } from '@pixie/api';
 
 interface ClusterInfo {
   id: string;
@@ -22,13 +14,13 @@ export function selectCluster(clusters: ClusterInfo[]): ClusterInfo {
   // Buckets cluster states by desirability for selection.
   // 0 = most prioritized.
   const clusterStatusMap = {
-    [CLUSTER_STATUS_UNKNOWN]: 3,
-    [CLUSTER_STATUS_HEALTHY]: 0,
-    [CLUSTER_STATUS_UNHEALTHY]: 2,
-    [CLUSTER_STATUS_DISCONNECTED]: 3,
-    [CLUSTER_STATUS_UPDATING]: 1,
-    [CLUSTER_STATUS_CONNECTED]: 1,
-    [CLUSTER_STATUS_UPDATE_FAILED]: 2,
+    [ClusterStatus.CS_UNKNOWN]: 3,
+    [ClusterStatus.CS_HEALTHY]: 0,
+    [ClusterStatus.CS_UNHEALTHY]: 2,
+    [ClusterStatus.CS_DISCONNECTED]: 3,
+    [ClusterStatus.CS_UPDATING]: 1,
+    [ClusterStatus.CS_CONNECTED]: 1,
+    [ClusterStatus.CS_UPDATE_FAILED]: 2,
   };
   const defaultStatusValue = 3;
   // Copy over in case clusters is read only.
@@ -44,5 +36,5 @@ export function selectCluster(clusters: ClusterInfo[]): ClusterInfo {
       return 1;
     }
     return cluster1.clusterName < cluster2.clusterName ? -1 : 1;
-  })[0]
+  })[0];
 }

@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { PropsWithChildren } from 'react';
 import { Theme, ThemeProvider } from '@material-ui/core/styles';
+import { GQLClusterStatus as ClusterStatus } from '@pixie/api';
 import { DARK_THEME } from '@pixie/components';
 import { MockedProvider as MockApolloProvider, MockedProviderProps as MockApolloProps } from '@apollo/client/testing';
 import { LayoutContext, LayoutContextProps } from 'context/layout-context';
@@ -10,10 +11,7 @@ import { ScriptContext, ScriptContextProps } from 'context/script-context';
 import { ScriptsContext, ScriptsContextProps } from 'containers/App/scripts-context';
 import { LiveViewPage } from 'containers/live-widgets/utils/live-view-params';
 import { ClusterContext, ClusterContextProps } from 'common/cluster-context';
-import VizierGRPCClientContext, {
-  CLUSTER_STATUS_HEALTHY,
-  VizierGRPCClientContextProps,
-} from 'common/vizier-grpc-client-context';
+import VizierGRPCClientContext, { VizierGRPCClientContextProps } from 'common/vizier-grpc-client-context';
 
 interface MockProps {
   theme?: Theme;
@@ -34,7 +32,7 @@ export const LIVE_CONTEXT_DEFAULTS: Required<MockProps> = {
     client: null,
     healthy: true,
     loading: false,
-    clusterStatus: CLUSTER_STATUS_HEALTHY,
+    clusterStatus: ClusterStatus.CS_HEALTHY,
   },
   layout: {
     editorSplitsSizes: [40, 60],

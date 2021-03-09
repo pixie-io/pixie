@@ -1,5 +1,6 @@
+import { GQLClusterStatus as ClusterStatus } from '@pixie/api';
 import { scrollbarStyles, EditIcon } from '@pixie/components';
-import VizierGRPCClientContext, { ClusterStatus, CLUSTER_STATUS_DISCONNECTED } from 'common/vizier-grpc-client-context';
+import VizierGRPCClientContext from 'common/vizier-grpc-client-context';
 import { ClusterContext } from 'common/cluster-context';
 import MoveIcon from '@material-ui/icons/OpenWith';
 import { ClusterInstructions } from 'containers/App/deploy-instructions';
@@ -151,7 +152,7 @@ const ClusterLoadingComponent = (props: ClusterLoadingProps) => {
 
   const actionMsg = React.useMemo(
     (): JSX.Element => {
-      if (props.clusterStatus === CLUSTER_STATUS_DISCONNECTED) {
+      if (props.clusterStatus === ClusterStatus.CS_DISCONNECTED) {
         return (<div>Please redeploy Pixie to the cluster or choose another cluster.</div>);
       }
 

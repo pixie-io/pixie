@@ -1,7 +1,7 @@
 import { ClusterContext } from 'common/cluster-context';
 import UserContext from 'common/user-context';
 import * as storage from 'common/storage';
-import { ClusterStatus, VizierGRPCClientProvider, CLUSTER_STATUS_UNKNOWN } from 'common/vizier-grpc-client-context';
+import { VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
 import { useSnackbar } from '@pixie/components';
 import AdminView from 'pages/admin/admin';
 import CreditsView from 'pages/credits/credits';
@@ -15,7 +15,7 @@ import * as QueryString from 'query-string';
 import { useQuery } from '@apollo/client';
 import { createStyles, makeStyles } from '@material-ui/core/styles';
 import { useLDClient } from 'launchdarkly-react-client-sdk';
-import { CLUSTER_QUERIES, USER_QUERIES } from '@pixie/api';
+import { CLUSTER_QUERIES, USER_QUERIES, GQLClusterStatus as ClusterStatus } from '@pixie/api';
 import { scriptToEntityURL } from 'containers/live-widgets/utils/live-view-params';
 import { LIVE_VIEW_SCRIPT_ID_KEY, useSessionStorage } from 'common/storage';
 import { DeployInstructions } from './deploy-instructions';
@@ -123,13 +123,13 @@ const Vizier = () => {
     return <DeployInstructions />;
   }
 
-  const status: ClusterStatus = cluster?.status || CLUSTER_STATUS_UNKNOWN;
+  const status: ClusterStatus = cluster?.status || ClusterStatus.CS_UNKNOWN;
 
   return (
     <VizierGRPCClientProvider
       clusterID={cluster.id}
       passthroughEnabled={cluster.vizierConfig.passthroughEnabled}
-      clusterStatus={errMsg ? CLUSTER_STATUS_UNKNOWN : status}
+      clusterStatus={errMsg ? ClusterStatus.CS_UNKNOWN : status}
     >
       <ScriptsContextProvider>
         <LiveView />

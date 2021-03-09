@@ -3,24 +3,7 @@ import * as React from 'react';
 import { operation } from 'retry';
 import { isDev } from 'utils/env';
 
-import { VizierGRPCClient, CloudClient } from '@pixie/api';
-
-export const CLUSTER_STATUS_UNKNOWN = 'CS_UNKNOWN';
-export const CLUSTER_STATUS_HEALTHY = 'CS_HEALTHY';
-export const CLUSTER_STATUS_UNHEALTHY = 'CS_UNHEALTHY';
-export const CLUSTER_STATUS_DISCONNECTED = 'CS_DISCONNECTED';
-export const CLUSTER_STATUS_UPDATING = 'CS_UPDATING';
-export const CLUSTER_STATUS_CONNECTED = 'CS_CONNECTED';
-export const CLUSTER_STATUS_UPDATE_FAILED = 'CS_UPDATE_FAILED';
-
-export type ClusterStatus =
-  typeof CLUSTER_STATUS_UNKNOWN |
-  typeof CLUSTER_STATUS_HEALTHY |
-  typeof CLUSTER_STATUS_UNHEALTHY |
-  typeof CLUSTER_STATUS_DISCONNECTED |
-  typeof CLUSTER_STATUS_UPDATING |
-  typeof CLUSTER_STATUS_CONNECTED |
-  typeof CLUSTER_STATUS_UPDATE_FAILED;
+import { VizierGRPCClient, CloudClient, GQLClusterStatus as ClusterStatus } from '@pixie/api';
 
 export interface VizierGRPCClientContextProps {
   client: VizierGRPCClient | null;
@@ -59,7 +42,7 @@ export const VizierGRPCClientProvider = (props: Props) => {
   const [client, setClient] = React.useState<VizierGRPCClient>(null);
   const [loading, setLoading] = React.useState(true);
 
-  const healthy = client && clusterStatus === CLUSTER_STATUS_HEALTHY;
+  const healthy = client && clusterStatus === ClusterStatus.CS_HEALTHY;
 
   React.useEffect(() => {
     // Everytime the clusterID changes, we enter a loading state until we
@@ -72,7 +55,7 @@ export const VizierGRPCClientProvider = (props: Props) => {
     let subscriptionPromise = Promise.resolve();
     const retryOp = operation({ forever: true, randomize: true });
     // TODO might need to remove this.
-    if (clusterStatus !== CLUSTER_STATUS_HEALTHY) {
+    if (clusterStatus !== ClusterStatus.CS_HEALTHY) {
       retryOp.stop();
       if (currentSubscription) {
         currentSubscription.unsubscribe();

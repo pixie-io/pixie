@@ -5,6 +5,7 @@ import svgr from '@svgr/rollup';
 import typescript from 'rollup-plugin-typescript2';
 import url from '@rollup/plugin-url';
 
+import copy from 'rollup-plugin-copy';
 import pkg from './package.json';
 
 export default {
@@ -33,6 +34,11 @@ export default {
       useTsconfigDeclarationDir: true,
     }),
     commonjs(),
+    copy({
+      targets: [
+        { src: 'src/types/schema.d.ts', dest: 'dist/types' },
+      ],
+    }),
   ],
   onwarn(warning, warn) {
     // In >=99.99% of cases, calling 'eval' is not a wise decision. JSPB apparently ran into one of the exceptions.

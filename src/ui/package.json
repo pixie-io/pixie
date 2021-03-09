@@ -77,6 +77,7 @@
     "raw-loader": "^4.0.0",
     "react-dev-utils": "^5.0.1",
     "react-hot-loader": "^4.3.4",
+    "rimraf": "^3.0.2",
     "shelljs": "^0.8.2",
     "style-loader": "^0.22.1",
     "ts-jest": "26.4.4",
@@ -183,6 +184,7 @@
   "scripts": {
     "build_dev": "webpack --mode=development --stats=verbose --progress",
     "build_prod": "webpack --mode=production",
+    "clean": "rimraf dist packages/*/dist",
     "dev": "concurrently -c green.dim,magenta.dim,yellow.dim,cyan.dim -n components,api,api-react,ui \"yarn workspace @pixie/components start\" \"yarn workspace @pixie/api start\" \"yarn workspace @pixie/api-react start\" \"webpack serve --mode=development --hot\"",
     "test": "jest",
     "coverage": "jest --coverage",
