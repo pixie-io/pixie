@@ -13,6 +13,16 @@
 #define NSEC_PER_SEC 1000000000L
 #define USER_HZ 100
 
+#define GROUP_LEADER_OFFSET_OVERRIDE 0
+#define START_BOOTTIME_OFFSET_OVERRIDE 0
+
+#if LINUX_VERSION_CODE >= 328960
+#define START_BOOTTIME_VARNAME start_boottime
+#else
+// Before Linux 5.5, the start_boottime was called real_start_time.
+#define START_BOOTTIME_VARNAME real_start_time
+#endif
+
 // Kernel headers do not make this available.
 struct task_struct {
   struct task_struct* group_leader;

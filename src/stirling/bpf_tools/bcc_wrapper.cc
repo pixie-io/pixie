@@ -86,6 +86,33 @@ StatusOr<utils::TaskStructOffsets> ResolveTaskStructOffsets() {
   return offsets_status;
 }
 
+StatusOr<utils::TaskStructOffsets> TaskStructOffsets() {
+  // Defaults to zero offsets, which tells BPF not to use the offset overrides.
+  // If the values are changed (as they are if ResolveTaskStructOffsets() is run),
+  // then the non-zero values will be used in BPF.
+  utils::TaskStructOffsets offsets;
+
+  // When using packaged Linux headers, there is a good chance that the `struct task_struct`
+  // is not a perfect match with the version on the host OS (despite our best efforts to account
+  // for the kernel config). In such cases, try to resolve the location of the fields we care
+  // about, and send them in as an override to the BPF code.
+  // Note that if we found local host headers, then we do not typically do this step, because
+  // we trust the locally installed headers to be a perfect match.
+  // There is a flag to force the task struct fields resolution, in case we don't trust the
+  // local headers, and for testing purposes.
+  bool potentially_mismatched_headers = utils::g_packaged_headers_installed;
+  if (potentially_mismatched_headers || FLAGS_stirling_always_infer_task_struct_offsets) {
+    LOG(INFO) << "Resolving task_struct offsets.";
+
+    PL_ASSIGN_OR_RETURN(offsets, ResolveTaskStructOffsets());
+
+    LOG(INFO) << absl::Substitute("Task struct offsets: group_leader=$0 real_start_time=$1",
+                                  offsets.group_leader_offset, offsets.real_start_time_offset);
+  }
+
+  return Status::OK();
+}
+
 Status BCCWrapper::InitBPFProgram(std::string_view bpf_program, std::vector<std::string> cflags,
                                   bool requires_linux_headers) {
   using utils::TaskStructOffsets;
@@ -95,6 +122,8 @@ Status BCCWrapper::InitBPFProgram(std::string_view bpf_program, std::vector<std:
   }
 
   if (requires_linux_headers) {
+    PL_ASSIGN_OR_RETURN(utils::KernelVersion kernel_version, utils::GetKernelVersion());
+
     // This function will setup linux headers for BPF code deployment.
     // If another BCCWrapper has already run this function, it will just return the same location
     // as the previous one.
@@ -107,28 +136,27 @@ Status BCCWrapper::InitBPFProgram(std::string_view bpf_program, std::vector<std:
     LOG(INFO) << absl::Substitute("Using linux headers found at $0 for BCC runtime.",
                                   sys_headers_dir.string());
 
-    // When using packaged Linux headers, there is a good chance that the `struct task_struct`
-    // is not a perfect match with the version on the host OS (despite our best efforts to account
-    // for the kernel config). In such cases, try to resolve the location of the fields we care
-    // about, and send them in as an override to the BPF code.
-    // Note that if we found local host headers, then we do not typically do this step, because
-    // we trust the locally installed headers to be a perfect match.
-    // There is a flag to force the task struct fields resolution, in case we don't trust the
-    // local headers, and for testing purposes.
-    bool potentially_mismatched_headers = utils::g_packaged_headers_installed;
-    if (potentially_mismatched_headers || FLAGS_stirling_always_infer_task_struct_offsets) {
-      LOG(INFO) << "Resolving task_struct offsets.";
+    // When Linux headers are requested, the BPF code requires various defines to compile:
+    //  - START_BOOTTIME_VARNAME: The name of the task_struct variable containing the boottime.
+    //                            Prior to Linux 5.5, it was called real_start_time.
+    //                            Linux 5.5+ calls it start_boottime.
+    //  - GROUP_LEADER_OFFSET_OVERRIDE: When non-zero, this tells BPF how to access
+    //                                  task_struct->group_leader via offsets.
+    //  - START_BOOTTIME_OFFSET_OVERRIDE: When non-zero, this tells BPF how to access
+    //                                    task_struct->start_boottime via offsets.
 
-      PL_ASSIGN_OR_RETURN(TaskStructOffsets offsets, ResolveTaskStructOffsets());
+    constexpr uint32_t kLinux5p5VersionCode = 328960;
+    std::string_view boottime_varname =
+        kernel_version.code() >= kLinux5p5VersionCode ? "start_boottime" : "real_start_time";
 
-      LOG(INFO) << absl::Substitute("Task struct offsets: group_leader=$0 real_start_time=$1",
-                                    offsets.group_leader_offset, offsets.real_start_time_offset);
+    // When there are mismatched headers, this determines offsets for required task_struct members.
+    TaskStructOffsets offsets = TaskStructOffsets();
 
-      cflags.push_back(
-          absl::Substitute("-DGROUP_LEADER_OFFSET_OVERRIDE=$0", offsets.group_leader_offset));
-      cflags.push_back(
-          absl::Substitute("-DSTART_BOOTTIME_OFFSET_OVERRIDE=$0", offsets.real_start_time_offset));
-    }
+    cflags.push_back(absl::Substitute("-DSTART_BOOTTIME_VARNAME=$0", boottime_varname));
+    cflags.push_back(
+        absl::Substitute("-DGROUP_LEADER_OFFSET_OVERRIDE=$0", offsets.group_leader_offset));
+    cflags.push_back(
+        absl::Substitute("-DSTART_BOOTTIME_OFFSET_OVERRIDE=$0", offsets.real_start_time_offset));
   }
 
   PL_RETURN_IF_ERROR(MountDebugFS());

@@ -143,11 +143,7 @@ Status SocketTraceConnector::InitImpl() {
         "timestamps in a way that matches how /proc/stat does it");
   }
 
-  PL_ASSIGN_OR_RETURN(utils::KernelVersion kernel_version, utils::GetKernelVersion());
-  std::string linux_header_macro =
-      absl::Substitute("-DLINUX_VERSION_CODE=$0", kernel_version.code());
-
-  PL_RETURN_IF_ERROR(InitBPFProgram(socket_trace_bcc_script, {std::move(linux_header_macro)}));
+  PL_RETURN_IF_ERROR(InitBPFProgram(socket_trace_bcc_script));
   PL_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
   LOG(INFO) << absl::Substitute("Number of kprobes deployed = $0", kProbeSpecs.size());
   LOG(INFO) << "Probes successfully deployed.";

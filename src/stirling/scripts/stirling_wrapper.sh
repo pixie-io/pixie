@@ -8,7 +8,10 @@ script_dir=$(dirname "$0")
 # shellcheck source=./src/stirling/scripts/utils.sh
 source "$script_dir"/utils.sh
 
-bazel build //src/stirling/binaries:stirling_wrapper
+# Pass in flags like `-c opt` here if you like.
+flags=""
 
-cmd=$(bazel info bazel-bin)/src/stirling/binaries/stirling_wrapper
+bazel build $flags //src/stirling/binaries:stirling_wrapper
+
+cmd=$(bazel info $flags bazel-bin)/src/stirling/binaries/stirling_wrapper
 run_prompt_sudo "$cmd" "$@"

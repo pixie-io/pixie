@@ -53,11 +53,11 @@ static __inline uint64_t pl_nsec_to_clock_t(uint64_t x) {
 // The override is important for the case when we don't have an exact header match.
 // See user-space TaskStructResolver.
 static __inline uint64_t task_struct_group_leader_offset() {
-#ifdef GROUP_LEADER_OFFSET_OVERRIDE
-  return GROUP_LEADER_OFFSET_OVERRIDE;
-#else
-  return offsetof(struct task_struct, group_leader);
-#endif
+  if (GROUP_LEADER_OFFSET_OVERRIDE != 0) {
+    return GROUP_LEADER_OFFSET_OVERRIDE;
+  } else {
+    return offsetof(struct task_struct, group_leader);
+  }
 }
 
 // Returns the real_start_time/start_boottime offset.
@@ -67,16 +67,11 @@ static __inline uint64_t task_struct_group_leader_offset() {
 // See user-space TaskStructResolver.
 static __inline uint64_t task_struct_start_boottime_offset() {
   // Find the start_boottime of the current task.
-#ifdef START_BOOTTIME_OFFSET_OVERRIDE
-  return START_BOOTTIME_OFFSET_OVERRIDE;
-#else
-#if LINUX_VERSION_CODE >= 328960
-  return offsetof(struct task_struct, start_boottime);
-#else
-  // Before Linux 5.5, the start_boottime was called real_start_time.
-  return offsetof(struct task_struct, real_start_time);
-#endif
-#endif
+  if (START_BOOTTIME_OFFSET_OVERRIDE != 0) {
+    return START_BOOTTIME_OFFSET_OVERRIDE;
+  } else {
+    return offsetof(struct task_struct, START_BOOTTIME_VARNAME);
+  }
 }
 
 // Effectively returns:
