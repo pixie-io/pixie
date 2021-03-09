@@ -465,7 +465,7 @@ const absl::flat_hash_map<std::string_view, CmdArgs> kCmdList = {
     // Additional commands used in Redis sentinel mode.
     {"SENTINEL", {"SENTINEL"}},
     // Synchronous replication: http://antirez.com/news/58
-    {"REPLCONF ACK", {"REPLCONF ACK"}},
+    {"REPLCONF ACK", {"REPLCONF ACK", "offset"}},
 };
 
 std::optional<const CmdArgs*> GetCmdAndArgs(std::string_view payload) {
