@@ -31,13 +31,3 @@ filegroup(
     ),
     visibility = ["//visibility:public"],
 )
-
-filegroup(
-    name = "errors_group",
-    srcs = glob(
-        [
-            "*.go",
-        ],
-    ),
-    visibility = ["//visibility:public"],
-)
