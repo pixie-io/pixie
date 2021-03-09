@@ -1,4 +1,4 @@
-#include "src/stirling/bpf_tools/bcc_bpf/utils.h"
+#include "src/stirling/bpf_tools/bcc_bpf/task_struct_utils.h"
 
 BPF_ARRAY(tgid_start_time_output, uint64_t, 1);
 

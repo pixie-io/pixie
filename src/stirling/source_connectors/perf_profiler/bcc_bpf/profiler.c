@@ -2,6 +2,7 @@
 
 #include <linux/bpf_perf_event.h>
 
+#include "src/stirling/bpf_tools/bcc_bpf/task_struct_utils.h"
 #include "src/stirling/bpf_tools/bcc_bpf/utils.h"
 #include "src/stirling/source_connectors/perf_profiler/bcc_bpf_intf/stack_event.h"
 
