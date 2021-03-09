@@ -4,8 +4,6 @@ package testutils
 
 // AgentInfo
 
-// ClockNowNS is the now time to use for the test clocks.
-const ClockNowNS = 1e9 * 70 // 70s in NS. This is slightly greater than the expiration time for the unhealthy agent.
 // HealthyAgentLastHeartbeatNS is the last heartbeat of the healthy agent.
 const HealthyAgentLastHeartbeatNS = 1e9 * 65 // 65 seconds in NS. This is slightly less than the current time.
 
@@ -96,12 +94,10 @@ agent {
       host_ip: "127.0.0.1"
     }
   }
-  last_heartbeat_ns: 10
   create_time_ns: 5
   asid: 123
 }
 status {
-  ns_since_last_heartbeat: 60
   state: 1
 }
 `
@@ -118,12 +114,10 @@ agent {
       host_ip: "127.0.0.1"
     }
   }
-  last_heartbeat_ns: 20
   create_time_ns: 0
   asid: 456
 }
 status {
-  ns_since_last_heartbeat: 50
   state: 1
 }
 `
@@ -376,7 +370,6 @@ update_agent_request {
 // HeartbeatAckPB is a protobuf for a heartbeat ack.
 var HeartbeatAckPB = `
 heartbeat_ack {
-  time: 10
   update_info {
     service_cidr: "10.64.4.0/22"
     pod_cidrs: "10.64.4.0/21"

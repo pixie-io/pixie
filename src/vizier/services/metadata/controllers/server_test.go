@@ -101,9 +101,12 @@ func TestGetAgentInfo(t *testing.T) {
 	}
 	u2pb := utils.ProtoFromUUID(u2)
 
+	now := time.Now()
+
 	agents := []*agentpb.Agent{
 		&agentpb.Agent{
-			LastHeartbeatNS: 10,
+			// Push the heartbeat into the past (past the UnhealthyAgentThreshold) to make this look unhealthy!
+			LastHeartbeatNS: now.Add(-controllers.UnhealthyAgentThreshold).UnixNano(),
 			CreateTimeNS:    5,
 			Info: &agentpb.AgentInfo{
 				AgentID: u1pb,
@@ -115,7 +118,8 @@ func TestGetAgentInfo(t *testing.T) {
 			ASID: 123,
 		},
 		&agentpb.Agent{
-			LastHeartbeatNS: 20,
+			// Push the heartbeat into the future to make this look healthy!
+			LastHeartbeatNS: now.Add(10 * controllers.UnhealthyAgentThreshold).UnixNano(),
 			CreateTimeNS:    0,
 			Info: &agentpb.AgentInfo{
 				AgentID: u2pb,
@@ -139,9 +143,7 @@ func TestGetAgentInfo(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	clock := testingutils.NewTestClock(time.Unix(30, 11))
-
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, nil, clock)
+	s := controllers.NewServer(env, mockAgtMgr, nil)
 
 	req := metadatapb.AgentInfoRequest{}
 
@@ -154,14 +156,18 @@ func TestGetAgentInfo(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	agentResp.Status.State = agentpb.AGENT_STATE_UNRESPONSIVE
-	agentResp.Status.NSSinceLastHeartbeat = 30*1e9 + 1 // (30s [UnhealthyAgentThreshold] + 11ns [time clock advanced] - 10ns [agent1 LastHeartBeatNS])
+	assert.Greater(t, resp.Info[0].Status.NSSinceLastHeartbeat, controllers.UnhealthyAgentThreshold.Nanoseconds())
+	resp.Info[0].Status.NSSinceLastHeartbeat = 0
+	resp.Info[0].Agent.LastHeartbeatNS = 0
 	assert.Equal(t, agentResp, resp.Info[0])
 
 	agentResp = new(metadatapb.AgentMetadata)
 	if err = proto.UnmarshalText(testutils.Agent2StatusPB, agentResp); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
-	agentResp.Status.NSSinceLastHeartbeat = 30*1e9 - 9 // (30s [UnhealthyAgentThreshold] + 11ns  [time clock advanced] - 20ns [agent2 LastHeartBeatNS])
+	assert.Less(t, resp.Info[0].Status.NSSinceLastHeartbeat, controllers.UnhealthyAgentThreshold.Nanoseconds())
+	resp.Info[1].Status.NSSinceLastHeartbeat = 0
+	resp.Info[1].Agent.LastHeartbeatNS = 0
 	assert.Equal(t, agentResp, resp.Info[1])
 }
 
@@ -182,9 +188,7 @@ func TestGetAgentInfoGetActiveAgentsFailed(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	clock := testingutils.NewTestClock(time.Unix(0, 70))
-
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, nil, clock)
+	s := controllers.NewServer(env, mockAgtMgr, nil)
 
 	req := metadatapb.AgentInfoRequest{}
 
@@ -213,9 +217,7 @@ func TestGetSchemas(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	clock := testingutils.NewTestClock(time.Unix(0, 70))
-
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, nil, clock)
+	s := controllers.NewServer(env, mockAgtMgr, nil)
 
 	req := metadatapb.SchemaRequest{}
 
@@ -323,9 +325,7 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	clock := testingutils.NewTestClock(time.Unix(0, 70))
-
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, clock)
+	s := controllers.NewServer(env, mockAgtMgr, tracepointMgr)
 
 	reqs := []*metadatapb.RegisterTracepointRequest_TracepointRequest{
 		&metadatapb.RegisterTracepointRequest_TracepointRequest{
@@ -450,9 +450,7 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	clock := testingutils.NewTestClock(time.Unix(0, 70))
-
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, clock)
+	s := controllers.NewServer(env, mockAgtMgr, tracepointMgr)
 
 	reqs := []*metadatapb.RegisterTracepointRequest_TracepointRequest{
 		&metadatapb.RegisterTracepointRequest_TracepointRequest{
@@ -637,9 +635,7 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 				t.Fatal("Failed to create api environment.")
 			}
 
-			clock := testingutils.NewTestClock(time.Unix(0, 70))
-
-			s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, clock)
+			s := controllers.NewServer(env, mockAgtMgr, tracepointMgr)
 			req := metadatapb.GetTracepointInfoRequest{
 				IDs: []*uuidpb.UUID{utils.ProtoFromUUID(tID)},
 			}
@@ -697,9 +693,7 @@ func Test_Server_RemoveTracepoint(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	clock := testingutils.NewTestClock(time.Unix(0, 70))
-
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, clock)
+	s := controllers.NewServer(env, mockAgtMgr, tracepointMgr)
 
 	req := metadatapb.RemoveTracepointRequest{
 		Names: []string{"test1", "test2"},
@@ -882,12 +876,11 @@ func TestGetAgentUpdates(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	clock := testingutils.NewTestClock(time.Unix(0, 70))
-	svr, err := controllers.NewServerWithClock(mdEnv, mockAgtMgr, nil, clock)
+	srv := controllers.NewServer(mdEnv, mockAgtMgr, nil)
 
 	env := env2.New()
 	s := server.CreateGRPCServer(env, &server.GRPCServerOptions{})
-	metadatapb.RegisterMetadataServiceServer(s, svr)
+	metadatapb.RegisterMetadataServiceServer(s, srv)
 	lis := bufconn.Listen(1024 * 1024)
 
 	go func() {
@@ -1038,9 +1031,7 @@ func Test_Server_UpdateConfig(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	clock := testingutils.NewTestClock(time.Unix(0, 70))
-
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, clock)
+	s := controllers.NewServer(env, mockAgtMgr, tracepointMgr)
 
 	req := metadatapb.UpdateConfigRequest{
 		AgentPodName: "pl/pem-1234",

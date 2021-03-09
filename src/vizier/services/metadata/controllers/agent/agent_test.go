@@ -58,8 +58,7 @@ func setupManager(t *testing.T) (agent.Store, agent.Manager, *nats.Conn, func())
 	createAgentInADS(t, testutils.UnhealthyAgentUUID, ads, testutils.UnhealthyAgentInfo)
 	createAgentInADS(t, testutils.UnhealthyKelvinAgentUUID, ads, testutils.UnhealthyKelvinAgentInfo)
 
-	clock := testingutils.NewTestClock(time.Unix(0, testutils.ClockNowNS))
-	agtMgr := agent.NewManagerWithClock(ads, nil, nc, clock)
+	agtMgr := agent.NewManager(ads, nil, nc)
 
 	return ads, agtMgr, nc, cleanupFn
 }
@@ -107,10 +106,9 @@ func TestRegisterAgent(t *testing.T) {
 				CollectsData: true,
 			},
 		},
-		LastHeartbeatNS: 1,
-		CreateTimeNS:    4,
 	}
 
+	now := time.Now().UnixNano()
 	id, err := agtMgr.RegisterAgent(agentInfo)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, uint32(1), id)
@@ -120,8 +118,8 @@ func TestRegisterAgent(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, agt)
 
-	assert.Equal(t, int64(testutils.ClockNowNS), agt.LastHeartbeatNS)
-	assert.Equal(t, int64(testutils.ClockNowNS), agt.CreateTimeNS)
+	assert.Greater(t, agt.LastHeartbeatNS, now)
+	assert.Greater(t, agt.CreateTimeNS, now)
 	uid, err := utils.UUIDFromProto(agt.Info.AgentID)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, testutils.NewAgentUUID, uid.String())
@@ -154,8 +152,6 @@ func TestRegisterKelvinAgent(t *testing.T) {
 				CollectsData: false,
 			},
 		},
-		LastHeartbeatNS: 1,
-		CreateTimeNS:    4,
 	}
 
 	id, err := agtMgr.RegisterAgent(agentInfo)
@@ -166,14 +162,6 @@ func TestRegisterKelvinAgent(t *testing.T) {
 	agt, err := ads.GetAgent(u)
 	assert.Nil(t, err)
 	assert.NotNil(t, agt)
-
-	assert.Equal(t, int64(testutils.ClockNowNS), agt.LastHeartbeatNS)
-	assert.Equal(t, int64(testutils.ClockNowNS), agt.CreateTimeNS)
-	uid, err := utils.UUIDFromProto(agt.Info.AgentID)
-	assert.Equal(t, nil, err)
-	assert.Equal(t, testutils.KelvinAgentUUID, uid.String())
-	assert.Equal(t, "test", agt.Info.HostInfo.Hostname)
-	assert.Equal(t, uint32(1), agt.ASID)
 
 	hostnameID, err := ads.GetAgentIDForHostnamePair(&agent.HostnameIPPair{"test", "127.0.0.3"})
 	assert.Nil(t, err)
@@ -227,6 +215,7 @@ func TestUpdateHeartbeat(t *testing.T) {
 		t.Fatal("Could not generate UUID.")
 	}
 
+	now := time.Now().UnixNano()
 	err = agtMgr.UpdateHeartbeat(u)
 	assert.Nil(t, err)
 
@@ -235,7 +224,7 @@ func TestUpdateHeartbeat(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, agt)
 
-	assert.Equal(t, int64(testutils.ClockNowNS), agt.LastHeartbeatNS)
+	assert.Greater(t, agt.LastHeartbeatNS, now)
 	assert.Equal(t, int64(0), agt.CreateTimeNS)
 	uid, err := utils.UUIDFromProto(agt.Info.AgentID)
 	assert.Equal(t, nil, err)

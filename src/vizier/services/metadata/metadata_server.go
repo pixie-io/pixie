@@ -224,11 +224,7 @@ func main() {
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
 
-	svr, err := controllers.NewServer(env, agtMgr, tracepointMgr)
-	if err != nil {
-		log.WithError(err).Fatal("Failed to initialize GRPC server funcs")
-	}
-
+	svr := controllers.NewServer(env, agtMgr, tracepointMgr)
 	log.Info("Metadata Server: " + version.GetVersion().ToString())
 
 	// We bump up the max message size because agent metadata may be larger than 4MB. This is a

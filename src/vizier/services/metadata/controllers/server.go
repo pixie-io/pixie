@@ -35,29 +35,19 @@ type Server struct {
 	env    metadataenv.MetadataEnv
 	agtMgr agent.Manager
 	tpMgr  *tracepoint.Manager
-	clock  utils.Clock
 	// The current cursor that is actively running the GetAgentsUpdate stream. Only one GetAgentsUpdate
 	// stream should be running at a time.
 	getAgentsCursor uuid.UUID
 	mu              sync.Mutex
 }
 
-// NewServerWithClock creates a new server with a clock and the ability to configure the chunk size and
-// update period of the GetAgentUpdates handler.
-func NewServerWithClock(env metadataenv.MetadataEnv, agtMgr agent.Manager, tpMgr *tracepoint.Manager,
-	clock utils.Clock) (*Server, error) {
+// NewServer creates GRPC handlers.
+func NewServer(env metadataenv.MetadataEnv, agtMgr agent.Manager, tpMgr *tracepoint.Manager) *Server {
 	return &Server{
 		env:    env,
 		agtMgr: agtMgr,
-		clock:  clock,
 		tpMgr:  tpMgr,
-	}, nil
-}
-
-// NewServer creates GRPC handlers.
-func NewServer(env metadataenv.MetadataEnv, agtMgr agent.Manager, tpMgr *tracepoint.Manager) (*Server, error) {
-	clock := utils.SystemClock{}
-	return NewServerWithClock(env, agtMgr, tpMgr, clock)
+	}
 }
 
 func convertToRelationMap(computedSchema *storepb.ComputedSchema) (*schemapb.Schema, error) {
@@ -140,7 +130,7 @@ func (s *Server) GetAgentInfo(ctx context.Context, req *metadatapb.AgentInfoRequ
 		return nil, err
 	}
 
-	currentTime := s.clock.Now()
+	currentTime := time.Now()
 
 	// Populate AgentInfoResponse.
 	agentResponses := make([]*metadatapb.AgentMetadata, 0)

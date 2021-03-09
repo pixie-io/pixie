@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
@@ -131,7 +132,6 @@ func (a *agentUpdateTracker) clearUpdates() {
 
 // ManagerImpl is an implementation for Manager which talks to the metadata store.
 type ManagerImpl struct {
-	clock    utils.Clock
 	agtStore Store
 	cidr     CIDRInfoProvider
 	conn     *nats.Conn
@@ -143,10 +143,11 @@ type ManagerImpl struct {
 	agentUpdateTrackersMutex sync.Mutex
 }
 
-// NewManagerWithClock creates a new agent manager with a clock.
-func NewManagerWithClock(agtStore Store, cidr CIDRInfoProvider, conn *nats.Conn, clock utils.Clock) *ManagerImpl {
+// NewManager creates a new agent manager.
+// TODO (vihang/michelle): Figure out a better solution than passing in the k8s controller.
+// We need the cidr to get CIDR info right now.
+func NewManager(agtStore Store, cidr CIDRInfoProvider, conn *nats.Conn) *ManagerImpl {
 	Manager := &ManagerImpl{
-		clock:               clock,
 		agtStore:            agtStore,
 		cidr:                cidr,
 		conn:                conn,
@@ -413,14 +414,6 @@ func (m *ManagerImpl) handleTerminatedProcesses(processes []*metadatapb.ProcessT
 	return m.agtStore.UpdateProcesses(updatedProcesses)
 }
 
-// NewManager creates a new agent manager.
-// TODO (vihang/michelle): Figure out a better solution than passing in the k8s controller.
-// We need the cidr to get CIDR info right now.
-func NewManager(agtStore Store, cidr CIDRInfoProvider, conn *nats.Conn) *ManagerImpl {
-	clock := utils.SystemClock{}
-	return NewManagerWithClock(agtStore, cidr, conn, clock)
-}
-
 // RegisterAgent creates a new agent.
 func (m *ManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err error) {
 	info := agent.Info
@@ -443,8 +436,8 @@ func (m *ManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err erro
 
 	infoPb := &agentpb.Agent{
 		Info:            info,
-		CreateTimeNS:    m.clock.Now().UnixNano(),
-		LastHeartbeatNS: m.clock.Now().UnixNano(),
+		CreateTimeNS:    time.Now().UnixNano(),
+		LastHeartbeatNS: time.Now().UnixNano(),
 		ASID:            asid,
 	}
 
@@ -479,7 +472,7 @@ func (m *ManagerImpl) UpdateHeartbeat(agentID uuid.UUID) error {
 	}
 
 	// Update LastHeartbeatNS in AgentData.
-	agent.LastHeartbeatNS = m.clock.Now().UnixNano()
+	agent.LastHeartbeatNS = time.Now().UnixNano()
 
 	err = m.updateAgentWrapper(agentID, agent)
 	if err != nil {

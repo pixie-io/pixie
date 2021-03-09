@@ -60,7 +60,6 @@ func (c *concurrentAgentMap) delete(agentID uuid.UUID) {
 
 // AgentTopicListener is responsible for listening to and handling messages on the agent topic.
 type AgentTopicListener struct {
-	clock       utils.Clock
 	agtMgr      agent.Manager
 	tpMgr       *tracepoint.Manager
 	sendMessage SendMessageFn
@@ -73,7 +72,6 @@ type AgentTopicListener struct {
 // AgentHandler is responsible for handling messages for a specific agent.
 type AgentHandler struct {
 	id     uuid.UUID
-	clock  utils.Clock
 	agtMgr agent.Manager
 	tpMgr  *tracepoint.Manager
 	atl    *AgentTopicListener
@@ -88,15 +86,8 @@ type AgentHandler struct {
 // NewAgentTopicListener creates a new agent topic listener.
 func NewAgentTopicListener(agtMgr agent.Manager, tpMgr *tracepoint.Manager,
 	sendMsgFn SendMessageFn) (*AgentTopicListener, error) {
-	clock := utils.SystemClock{}
-	return NewAgentTopicListenerWithClock(agtMgr, tpMgr, sendMsgFn, clock)
-}
 
-// NewAgentTopicListenerWithClock creates a new agent topic listener with a clock.
-func NewAgentTopicListenerWithClock(agtMgr agent.Manager, tpMgr *tracepoint.Manager,
-	sendMsgFn SendMessageFn, clock utils.Clock) (*AgentTopicListener, error) {
 	atl := &AgentTopicListener{
-		clock:       clock,
 		agtMgr:      agtMgr,
 		tpMgr:       tpMgr,
 		sendMessage: sendMsgFn,
@@ -179,7 +170,6 @@ func (a *AgentTopicListener) createAgentHandler(agentID uuid.UUID) *AgentHandler
 
 	newAgentHandler := &AgentHandler{
 		id:         agentID,
-		clock:      a.clock,
 		agtMgr:     a.agtMgr,
 		tpMgr:      a.tpMgr,
 		atl:        a,
@@ -358,8 +348,8 @@ func (ah *AgentHandler) onAgentRegisterRequest(m *messages.RegisterAgentRequest)
 	// Create agent in agent manager.
 	agentInfo := &agentpb.Agent{
 		Info:            m.Info,
-		LastHeartbeatNS: ah.clock.Now().UnixNano(),
-		CreateTimeNS:    ah.clock.Now().UnixNano(),
+		LastHeartbeatNS: time.Now().UnixNano(),
+		CreateTimeNS:    time.Now().UnixNano(),
 	}
 
 	asid, err := ah.agtMgr.RegisterAgent(agentInfo)
@@ -424,7 +414,7 @@ func (ah *AgentHandler) onAgentHeartbeat(m *messages.Heartbeat) {
 	resp := messages.VizierMessage{
 		Msg: &messages.VizierMessage_HeartbeatAck{
 			HeartbeatAck: &messages.HeartbeatAck{
-				Time: ah.clock.Now().UnixNano(),
+				Time: time.Now().UnixNano(),
 				UpdateInfo: &messages.MetadataUpdateInfo{
 					ServiceCIDR: ah.agtMgr.GetServiceCIDR(),
 					PodCIDRs:    ah.agtMgr.GetPodCIDRs(),

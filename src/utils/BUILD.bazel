@@ -4,7 +4,6 @@ load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 go_library(
     name = "go_default_library",
     srcs = [
-        "clock.go",
         "clutils.go",
         "erroraccumulator.go",
         "genutils.go",

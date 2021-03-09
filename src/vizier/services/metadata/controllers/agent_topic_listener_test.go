@@ -16,7 +16,6 @@ import (
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/utils"
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent"
@@ -56,10 +55,8 @@ func setup(t *testing.T, sendMsgFn func(topic string, b []byte) error) (*control
 			},
 		}, nil)
 
-	clock := testingutils.NewTestClock(time.Unix(0, 10))
-
 	tracepointMgr := tracepoint.NewManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
-	atl, _ := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, tracepointMgr, sendMsgFn, clock)
+	atl, _ := controllers.NewAgentTopicListener(mockAgtMgr, tracepointMgr, sendMsgFn)
 
 	cleanup := func() {
 		ctrl.Finish()
@@ -102,13 +99,11 @@ func TestAgentRegisterRequest(t *testing.T) {
 				CollectsData: true,
 			},
 		},
-		LastHeartbeatNS: 10,
-		CreateTimeNS:    10,
 	}
 
 	mockAgtMgr.
 		EXPECT().
-		GetAgentIDForHostnamePair(&agent.HostnameIPPair{"", "127.0.0.1"}).
+		GetAgentIDForHostnamePair(&agent.HostnameIPPair{Hostname: "", IP: "127.0.0.1"}).
 		Return("", nil)
 
 	mockTracepointStore.
@@ -128,10 +123,16 @@ func TestAgentRegisterRequest(t *testing.T) {
 	}
 	reqPb, err := req.Marshal()
 
+	now := time.Now().UnixNano()
 	mockAgtMgr.
 		EXPECT().
-		RegisterAgent(agentInfo).
+		RegisterAgent(gomock.Any()).
 		DoAndReturn(func(info *agentpb.Agent) (uint32, error) {
+			assert.Greater(t, info.LastHeartbeatNS, now)
+			assert.Greater(t, info.CreateTimeNS, now)
+			info.LastHeartbeatNS = 0
+			info.CreateTimeNS = 0
+			assert.Equal(t, agentInfo, info)
 			return uint32(1), nil
 		})
 
@@ -176,13 +177,11 @@ func TestKelvinRegisterRequest(t *testing.T) {
 				CollectsData: false,
 			},
 		},
-		LastHeartbeatNS: 10,
-		CreateTimeNS:    10,
 	}
 
 	mockAgtMgr.
 		EXPECT().
-		GetAgentIDForHostnamePair(&agent.HostnameIPPair{"test-host", "127.0.0.1"}).
+		GetAgentIDForHostnamePair(&agent.HostnameIPPair{Hostname: "test-host", IP: "127.0.0.1"}).
 		Return("", nil)
 
 	mockTracepointStore.
@@ -199,10 +198,16 @@ func TestKelvinRegisterRequest(t *testing.T) {
 	}
 	reqPb, err := req.Marshal()
 
+	now := time.Now().UnixNano()
 	mockAgtMgr.
 		EXPECT().
-		RegisterAgent(agentInfo).
+		RegisterAgent(gomock.Any()).
 		DoAndReturn(func(info *agentpb.Agent) (uint32, error) {
+			assert.Greater(t, info.LastHeartbeatNS, now)
+			assert.Greater(t, info.CreateTimeNS, now)
+			info.LastHeartbeatNS = 0
+			info.CreateTimeNS = 0
+			assert.Equal(t, agentInfo, info)
 			return uint32(1), nil
 		})
 
@@ -217,8 +222,7 @@ func TestKelvinRegisterRequest(t *testing.T) {
 func TestAgentRegisterRequestInvalidUUID(t *testing.T) {
 	// Set up mock.
 	atl, _, _, cleanup := setup(t, func(topic string, b []byte) error {
-		// This function should never be called.
-		assert.Equal(t, true, false)
+		assert.Fail(t, "SendMsg shouldn't be called")
 		return nil
 	})
 	defer cleanup()
@@ -237,10 +241,8 @@ func TestAgentRegisterRequestInvalidUUID(t *testing.T) {
 
 func TestAgentCreateFailed(t *testing.T) {
 	var wg sync.WaitGroup
-	wg.Add(1)
 	atl, mockAgtMgr, _, cleanup := setup(t, func(topic string, b []byte) error {
-		// This function should never be called.
-		assert.Equal(t, true, false)
+		assert.Fail(t, "SendMsg shouldn't be called")
 		return nil
 	})
 	defer cleanup()
@@ -256,8 +258,6 @@ func TestAgentCreateFailed(t *testing.T) {
 				CollectsData: false,
 			},
 		},
-		LastHeartbeatNS: 10,
-		CreateTimeNS:    10,
 	}
 
 	req := new(messages.VizierMessage)
@@ -271,13 +271,20 @@ func TestAgentCreateFailed(t *testing.T) {
 
 	mockAgtMgr.
 		EXPECT().
-		GetAgentIDForHostnamePair(&agent.HostnameIPPair{"test-host", "127.0.0.1"}).
+		GetAgentIDForHostnamePair(&agent.HostnameIPPair{Hostname: "test-host", IP: "127.0.0.1"}).
 		Return("", nil)
 
+	wg.Add(1)
+	now := time.Now().UnixNano()
 	mockAgtMgr.
 		EXPECT().
-		RegisterAgent(agentInfo).
+		RegisterAgent(gomock.Any()).
 		DoAndReturn(func(info *agentpb.Agent) (uint32, error) {
+			assert.Greater(t, info.LastHeartbeatNS, now)
+			assert.Greater(t, info.CreateTimeNS, now)
+			info.LastHeartbeatNS = 0
+			info.CreateTimeNS = 0
+			assert.Equal(t, agentInfo, info)
 			wg.Done()
 			return uint32(0), errors.New("could not create agent")
 		})
@@ -287,7 +294,7 @@ func TestAgentCreateFailed(t *testing.T) {
 	err = atl.HandleMessage(&msg)
 	assert.Nil(t, err)
 
-	defer wg.Wait()
+	wg.Wait()
 }
 
 func TestAgentHeartbeat(t *testing.T) {
@@ -305,12 +312,20 @@ func TestAgentHeartbeat(t *testing.T) {
 	if err := proto.UnmarshalText(testutils.HeartbeatAckPB, resp); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
-	respPb, err := resp.Marshal()
+
+	now := time.Now().UnixNano()
 
 	// Set up mock.
 	var wg sync.WaitGroup
 	atl, mockAgtMgr, _, cleanup := setup(t, func(topic string, b []byte) error {
-		assert.Equal(t, respPb, b)
+		msg := messages.VizierMessage{}
+		if err := proto.Unmarshal(b, &msg); err != nil {
+			t.Fatal("Cannot Unmarshal protobuf.")
+		}
+		// Don't assert on exact timing.
+		assert.Greater(t, msg.Msg.(*messages.VizierMessage_HeartbeatAck).HeartbeatAck.Time, now)
+		msg.Msg.(*messages.VizierMessage_HeartbeatAck).HeartbeatAck.Time = 0
+		assert.Equal(t, *resp, msg)
 		assert.Equal(t, "Agent/"+uuidStr, topic)
 		wg.Done()
 		return nil
@@ -438,8 +453,7 @@ func TestHeartbeatNonExisting(t *testing.T) {
 func TestEmptyMessage(t *testing.T) {
 	// Set up mock.
 	atl, _, _, cleanup := setup(t, func(topic string, b []byte) error {
-		// This function should never be called.
-		assert.Equal(t, true, false)
+		assert.Fail(t, "SendMsg shouldn't be called")
 		return nil
 	})
 	defer cleanup()
@@ -455,8 +469,7 @@ func TestEmptyMessage(t *testing.T) {
 func TestUnhandledMessage(t *testing.T) {
 	// Set up mock.
 	atl, _, _, cleanup := setup(t, func(topic string, b []byte) error {
-		// This function should never be called.
-		assert.Equal(t, true, false)
+		assert.Fail(t, "SendMsg shouldn't be called")
 		return nil
 	})
 	defer cleanup()
