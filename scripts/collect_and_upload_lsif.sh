@@ -53,6 +53,10 @@ upload_to_sourcegraph() {
 
 pushd "$(bazel info workspace)"
 
+# lsif-go has a loadPackage stage which seems to fail when it encounters a cgo import.
+# Explicitly calling go mod download fixes this.
+go mod download
+
 LSIF_GO_OUT="go.dump.lsif"
 /opt/pixielabs/bin/lsif-go \
   --verbose \

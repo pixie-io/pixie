@@ -90,9 +90,9 @@ if node[:platform] == 'ubuntu'
     '4bf9cf9756bc2b117eccbd4bb259a8187066833bf9babf9086577907563bbaec'
 
   default['lsif-go']['download_path'] =
-    'https://github.com/sourcegraph/lsif-go/releases/download/v1.2.0/src_linux_amd64'
+    'https://github.com/sourcegraph/lsif-go/releases/download/v1.3.0/src_linux_amd64'
   default['lsif-go']['sha256']            =
-    '35902e7dd483ca5961d866de143e0cadf73b7e55a25ca45db64cfafa6025e8bd'
+    '82eb998370b05d2d9c05664f7270599ddcef676c1d211274a5e04ffddf6ac024'
 
   default['gsutil']['download_path'] = 'https://storage.googleapis.com/pub/gsutil_4.54.tar.gz'
   default['gsutil']['sha256']        = 'a6698479af8dc26e2ed809102e9e5d813f475bca44ce7007ed4e25ee79a3289c'
@@ -164,9 +164,9 @@ elsif node[:platform] == 'mac_os_x'
     '6d3ff2d9222b90248ca8311f6ffbcd050a3a7484fd94b71f49ecf2866a38b315'
 
   default['lsif-go']['download_path'] =
-    'https://github.com/sourcegraph/lsif-go/releases/download/v1.2.0/src_darwin_amd64'
+    'https://github.com/sourcegraph/lsif-go/releases/download/v1.3.0/src_darwin_amd64'
   default['lsif-go']['sha256']            =
-    'b0b07e806ae39e0a8494bfd51a41027671d28e67f122ed3a26958ae07337a337'
+    'a8ad2b7169763978a63605ac854473998729ba7c497dd39bed01b57a294bd32a'
 
   default['gsutil']['download_path'] = 'https://storage.googleapis.com/pub/gsutil_4.54.tar.gz'
   default['gsutil']['sha256']        = 'a6698479af8dc26e2ed809102e9e5d813f475bca44ce7007ed4e25ee79a3289c'
