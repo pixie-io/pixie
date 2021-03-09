@@ -43,10 +43,10 @@ Status PerfProfileConnector::InitImpl() {
 }
 
 Status PerfProfileConnector::StopImpl() {
-  // Must call Stop() after attach_uprobes_thread_ has joined,
+  // Must call Close() after attach_uprobes_thread_ has joined,
   // otherwise the two threads will cause concurrent accesses to BCC,
   // that will cause races and undefined behavior.
-  bpf_tools::BCCWrapper::Stop();
+  Close();
   return Status::OK();
 }
 

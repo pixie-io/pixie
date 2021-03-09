@@ -168,7 +168,7 @@ class BCCWrapper {
   ~BCCWrapper() {
     // Not really required, because BPF destructor handles these.
     // But we do it anyways out of paranoia.
-    Stop();
+    Close();
   }
 
   /**
@@ -271,7 +271,7 @@ class BCCWrapper {
   /**
    * Detaches all probes, and closes all perf buffers that are open.
    */
-  void Stop();
+  void Close();
 
   template <typename TKeyType, typename TValueType>
   ebpf::BPFHashTable<TKeyType, TValueType> GetHashTable(const std::string& table_name) {

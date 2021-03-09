@@ -32,6 +32,7 @@ using ::pl::system::TCPSocket;
 using ::pl::types::ColumnWrapper;
 using ::pl::types::ColumnWrapperRecordBatch;
 using ::testing::Each;
+using ::testing::ElementsAre;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::Pair;
@@ -86,6 +87,19 @@ struct SocketTraceBPFTestParams {
   SyscallPair syscall_pair;
   uint64_t trace_role;
 };
+
+// Returns a list of the messages of the input data events.
+std::vector<std::string> GetMsgFromEvents(
+    const std::map<size_t, std::unique_ptr<SocketDataEvent>>& events) {
+  std::vector<std::string> data;
+  data.reserve(events.size());
+
+  for (const auto& [offset, event_uptr] : events) {
+    data.push_back(event_uptr->msg);
+  }
+
+  return data;
+}
 
 class SocketTraceBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ true> {};
 
@@ -409,44 +423,37 @@ TEST_F(SocketTraceBPFTest, UDPSendToRecvFrom) {
 TEST_F(SocketTraceBPFTest, UDPSendMsgRecvMsg) {
   using ::pl::system::UDPSocket;
 
-  ConfigureBPFCapture(TrafficProtocol::kProtocolHTTP, kRoleClient);
+  ConfigureBPFCapture(TrafficProtocol::kProtocolHTTP, kRoleClient | kRoleServer);
 
   // Run a UDP-based client-server system.
-  {
-    UDPSocket server;
-    server.BindAndListen();
+  UDPSocket server;
+  server.BindAndListen();
 
-    UDPSocket client;
-    std::string recv_data;
+  UDPSocket client;
+  std::string recv_data;
 
-    ASSERT_EQ(client.SendMsg(kHTTPReqMsg1, server.sockaddr()), kHTTPReqMsg1.size());
-    struct sockaddr_in server_remote = server.RecvMsg(&recv_data);
-    ASSERT_NE(server_remote.sin_addr.s_addr, 0);
-    ASSERT_NE(server_remote.sin_port, 0);
-    EXPECT_EQ(recv_data, kHTTPReqMsg1);
+  ASSERT_EQ(client.SendMsg(kHTTPReqMsg1, server.sockaddr()), kHTTPReqMsg1.size());
+  struct sockaddr_in client_sockaddr = server.RecvMsg(&recv_data);
+  ASSERT_NE(client_sockaddr.sin_addr.s_addr, 0);
+  ASSERT_NE(client_sockaddr.sin_port, 0);
+  EXPECT_EQ(recv_data, kHTTPReqMsg1);
 
-    ASSERT_EQ(server.SendMsg(kHTTPRespMsg1, server_remote), kHTTPRespMsg1.size());
-    struct sockaddr_in client_remote = client.RecvMsg(&recv_data);
-    ASSERT_EQ(client_remote.sin_addr.s_addr, server.addr().s_addr);
-    ASSERT_EQ(client_remote.sin_port, server.port());
-    EXPECT_EQ(recv_data, kHTTPRespMsg1);
+  ASSERT_EQ(server.SendMsg(kHTTPRespMsg1, client_sockaddr), kHTTPRespMsg1.size());
+  struct sockaddr_in client_remote = client.RecvMsg(&recv_data);
+  ASSERT_EQ(client_remote.sin_addr.s_addr, server.addr().s_addr);
+  ASSERT_EQ(client_remote.sin_port, server.port());
+  EXPECT_EQ(recv_data, kHTTPRespMsg1);
 
-    client.Close();
-    server.Close();
-  }
+  source_->PollPerfBuffers();
 
-  DataTable data_table(kHTTPTable);
-  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
-  ASSERT_FALSE(tablets.empty());
-  types::ColumnWrapperRecordBatch records =
-      FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, getpid());
+  ASSERT_OK_AND_ASSIGN(const ConnectionTracker* tracker,
+                       source_->GetConnectionTracker(getpid(), client.sockfd()));
+  ASSERT_NE(tracker, nullptr);
+  EXPECT_THAT(GetMsgFromEvents(tracker->send_data().events()), ElementsAre(kHTTPReqMsg1));
+  EXPECT_THAT(GetMsgFromEvents(tracker->recv_data().events()), ElementsAre(kHTTPRespMsg1));
 
-  ASSERT_THAT(records, Each(ColWrapperSizeIs(1)));
-
-  EXPECT_EQ(200, records[kHTTPRespStatusIdx]->Get<types::Int64Value>(0).val);
-  EXPECT_THAT(std::string(records[kHTTPRespBodyIdx]->Get<types::StringValue>(0)), StrEq(""));
-  EXPECT_THAT(std::string(records[kHTTPRespMessageIdx]->Get<types::StringValue>(0)), StrEq("OK"));
+  client.Close();
+  server.Close();
 }
 
 TEST_F(SocketTraceBPFTest, UDPSendMMsgRecvMMsg) {

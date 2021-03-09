@@ -35,7 +35,7 @@ class UDPSocket {
   ssize_t SendMMsg(std::string_view data, const struct sockaddr_in& dst, int flags = 0) const;
 
   /**
-   * Receives data from the socket, returns a UDPSocket with information about the sender.
+   * Receives data from the socket, returns the remote address from which the data is received.
    */
   struct sockaddr_in RecvFrom(std::string* data, int flags = 0) const;
   struct sockaddr_in RecvMsg(std::string* data, int flags = 0) const;

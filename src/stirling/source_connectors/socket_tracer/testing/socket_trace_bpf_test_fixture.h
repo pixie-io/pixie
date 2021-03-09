@@ -19,8 +19,9 @@ class SocketTraceBPFTest : public ::testing::Test {
  protected:
   void SetUp() override {
     FLAGS_stirling_disable_self_tracing = false;
+    auto source_connector = SocketTraceConnector::Create("socket_trace_connector");
 
-    source_ = SocketTraceConnector::Create("socket_trace_connector");
+    source_.reset(dynamic_cast<SocketTraceConnector*>(source_connector.release()));
     ASSERT_OK(source_->Init());
 
     RefreshContext();
@@ -60,7 +61,7 @@ class SocketTraceBPFTest : public ::testing::Test {
   static constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
   static constexpr int kMySQLTableNum = SocketTraceConnector::kMySQLTableNum;
 
-  std::unique_ptr<SourceConnector> source_;
+  std::unique_ptr<SocketTraceConnector> source_;
   std::unique_ptr<StandaloneContext> ctx_;
 };
 

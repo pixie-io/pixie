@@ -352,7 +352,7 @@ void BCCWrapper::PollPerfBuffers(int timeout_ms) {
   }
 }
 
-void BCCWrapper::Stop() {
+void BCCWrapper::Close() {
   DetachPerfEvents();
   ClosePerfBuffers();
   DetachKProbes();

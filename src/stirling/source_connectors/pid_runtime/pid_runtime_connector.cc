@@ -19,7 +19,7 @@ Status PIDRuntimeConnector::InitImpl() {
 }
 
 Status PIDRuntimeConnector::StopImpl() {
-  BCCWrapper::Stop();
+  Close();
   return Status::OK();
 }
 
