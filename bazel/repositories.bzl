@@ -77,7 +77,6 @@ def _cc_deps():
     _repo_impl("com_github_tencent_rapidjson", build_file = "//third_party:rapidjson.BUILD")
     _repo_impl("com_github_ariafallah_csv_parser", build_file = "//third_party:csv_parser.BUILD")
     _repo_impl("com_github_cameron314_concurrentqueue", build_file = "//third_party:concurrentqueue.BUILD")
-    _repo_impl("com_github_skystrife_cpptoml", build_file = "//third_party:cpptoml.BUILD")
     _repo_impl("com_github_arun11299_cpp_jwt", build_file = "//third_party:cpp_jwt.BUILD")
     _repo_impl("com_github_cyan4973_xxhash", build_file = "//third_party:xxhash.BUILD")
     _repo_impl("com_github_nlohmann_json", build_file = "//third_party:nlohmann_json.BUILD")

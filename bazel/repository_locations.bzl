@@ -172,11 +172,6 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "nghttp2-ee4431344511886efc66395a38b9bf5dddd7151b",
         urls = ["https://github.com/nghttp2/nghttp2/archive/ee4431344511886efc66395a38b9bf5dddd7151b.tar.gz"],
     ),
-    com_github_skystrife_cpptoml = dict(
-        sha256 = "7bd5ce29434cc24ed8fc87093f031124cd33a84858b309855a0b5dc3f72e0bd5",
-        strip_prefix = "cpptoml-fededad7169e538ca47e11a9ee9251bc361a9a65",
-        urls = ["https://github.com/skystrife/cpptoml/archive/fededad7169e538ca47e11a9ee9251bc361a9a65.tar.gz"],
-    ),
     com_github_neargye_magic_enum = dict(
         sha256 = "4fe6627407a656d0d73879c0346b251ccdcfb718c37bef5410ba172c7c7d5f9a",
         strip_prefix = "magic_enum-0.7.0",
