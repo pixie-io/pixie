@@ -4,7 +4,6 @@
 
 #include "src/stirling/bpf_tools/bcc_bpf/utils.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/common.h"
-#include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/grpc.h"
 
 static __inline enum MessageType infer_http_message(const char* buf, size_t count) {
   // Smallest HTTP response is 17 characters:
