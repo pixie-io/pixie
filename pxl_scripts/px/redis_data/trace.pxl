@@ -15,7 +15,7 @@ def redis_data(start: str, num_head: int):
 
     # Replace UPID with pod.
     df.pod = df.ctx['pod']
-    
+   
     # Remove some columns.
     df = df.drop(['upid', 'trace_role'])
 
