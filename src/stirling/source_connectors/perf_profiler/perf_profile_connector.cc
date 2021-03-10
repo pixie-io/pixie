@@ -73,6 +73,8 @@ void PerfProfileConnector::ProcessBPFStackTraces(ConnectorContext* ctx, DataTabl
   const ebpf::StatusTuple rd_status = profiler_state_->get_value(kTimeStampIdx, timestamp_ns);
   LOG_IF(ERROR, !rd_status.ok()) << "Error reading profiler_state_";
 
+  timestamp_ns += ClockRealTimeOffset();
+
   // Read BPF stack traces & histogram, build records, incorporate records to data table.
   CreateRecords(timestamp_ns, stack_traces.get(), histo.get(), ctx, data_table);
 
