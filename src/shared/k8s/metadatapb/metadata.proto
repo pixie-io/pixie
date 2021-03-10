@@ -514,6 +514,12 @@ message PodUpdate {
   string reason = 15;
 }
 
+enum ContainerType {
+  CONTAINER_TYPE_UNKNOWN = 0;
+  CONTAINER_TYPE_DOCKER = 1;
+  CONTAINER_TYPE_CRIO = 2;
+}
+
 // ContainerUpdate contains information about running containers.
 message ContainerUpdate {
   // CID is the unique container ID.
@@ -543,6 +549,8 @@ message ContainerUpdate {
   string message = 9;
   // A brief CamelCase message indicating details about why the container is in this state.
   string reason = 10;
+  // The type of the container.
+  ContainerType container_type = 11;
 }
 
 // ServiceUpdate contains information about running services.

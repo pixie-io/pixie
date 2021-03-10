@@ -36,7 +36,7 @@ class CGroupMetadataReader : public NotCopyable {
    * errors when files fail to read because they have been deleted while the read was in progress.
    */
   virtual Status ReadPIDs(PodQOSClass qos_class, std::string_view pod_id,
-                          std::string_view container_id,
+                          std::string_view container_id, ContainerType container_type,
                           absl::flat_hash_set<uint32_t>* pid_set) const;
 
   virtual bool PodDirExists(const PodInfo& pod_info) const;
@@ -47,7 +47,7 @@ class CGroupMetadataReader : public NotCopyable {
   std::string CGroupPodDirPath(PodQOSClass qos_class, std::string_view pod_id) const;
 
   std::string CGroupProcFilePath(PodQOSClass qos_class, std::string_view pod_id,
-                                 std::string_view container_id) const;
+                                 std::string_view container_id, ContainerType container_type) const;
 
   std::string cgroup_kubepod_guaranteed_path_template_;
   std::string cgroup_kubepod_besteffort_path_template_;

@@ -171,6 +171,7 @@ Status ProcessPIDUpdates(
       continue;
     }
     const PodInfo* pod_info = k8s_md_state->PodInfoByID(pod_id);
+
     if (pod_info->stop_time_ns() != 0) {
       VLOG(1) << absl::Substitute("Found a running container in a deleted pod [cid=$0, pod_id=$1]",
                                   cid, pod_id);
@@ -179,7 +180,8 @@ Status ProcessPIDUpdates(
     }
 
     absl::flat_hash_set<uint32_t> cgroups_active_pids;
-    Status s = md_reader->ReadPIDs(pod_info->qos_class(), pod_id, cid, &cgroups_active_pids);
+    Status s = md_reader->ReadPIDs(pod_info->qos_class(), pod_id, cid, cinfo->type(),
+                                   &cgroups_active_pids);
     if (!s.ok()) {
       // Container probably died, we will eventually get a message from MDS and everything in that
       // container will be marked dead.
@@ -199,7 +201,6 @@ Status ProcessPIDUpdates(
       }
       continue;
     }
-
     absl::flat_hash_set<UPID> cgroups_active_upids;
     // We convert all the cgroup_active_pids to the UPIDs so that we can easily convert and check.
     for (uint32_t pid : cgroups_active_pids) {

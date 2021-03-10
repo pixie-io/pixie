@@ -24,6 +24,9 @@ namespace md {
 // This is a sample used by a standard kubernetes deployment:
 // /sys/fs/cgroup/cpu,cpuacct/kubepods.slice/kubepods-pod8dbc5577_d0e2_4706_8787_57d52c03ddf2.slice/
 //        docker-14011c7d92a9e513dfd69211da0413dbf319a5e45a02b354ba6e98e10272542d.scope/cgroup.procs
+// This is a sample used by an OpenShift deployment:
+// /sys/fs/cgroup/cpu,cpuacct/kubepods.slice/kubepods-pod8dbc5577_d0e2_4706_8787_57d52c03ddf2.slice/
+//        crio-14011c7d92a9e513dfd69211da0413dbf319a5e45a02b354ba6e98e10272542d.scope/cgroup.procs
 
 void CGroupMetadataReader::InitPathTemplates(std::string_view sysfs_path) {
   // Note that as we create these templates, we often substitute in unresolved parameters by using
@@ -56,7 +59,7 @@ void CGroupMetadataReader::InitPathTemplates(std::string_view sysfs_path) {
     cgroup_kubepod_burstable_path_template_ =
         absl::Substitute("$0/kubepods-burstable.slice/kubepods-burstable-pod$1.slice",
                          cgroup_kubepods_base_path, "$0");
-    container_template_ = "/docker-$0.scope/$1";
+    container_template_ = "/$2-$0.scope/$1";
     cgroup_kubepod_convert_dashes_ = true;
     return;
   }
@@ -93,26 +96,40 @@ std::string CGroupMetadataReader::CGroupPodDirPath(PodQOSClass qos_class,
 }
 
 std::string CGroupMetadataReader::CGroupProcFilePath(PodQOSClass qos_class, std::string_view pod_id,
-                                                     std::string_view container_id) const {
+                                                     std::string_view container_id,
+                                                     ContainerType container_type) const {
   constexpr std::string_view kPidFile = "cgroup.procs";
 
   // TODO(oazizi): Might be better to inline code from CGroupPodDirPath for performance reasons
   // (avoid string copies and perform a single absl::Substitute).
+  std::string containerType;
+  switch (container_type) {
+    case ContainerType::kCRIO:
+      containerType = "crio";
+      break;
+    case ContainerType::kDocker:
+      containerType = "docker";
+      break;
+    default:
+      // By default, assume any unknown container type is a docker image, to account
+      // for older ContainerUpdates which may not have a type.
+      containerType = "docker";
+  }
   return absl::StrCat(CGroupPodDirPath(qos_class, pod_id),
-                      absl::Substitute(container_template_, container_id, kPidFile));
+                      absl::Substitute(container_template_, container_id, kPidFile, containerType));
 }
 
 // TODO(zasgar/michelle): Reconcile this code with cgroup manager. We should delete the cgroup
 // manager version of the code after the transition to the new metadata scheme is complete.
 Status CGroupMetadataReader::ReadPIDs(PodQOSClass qos_class, std::string_view pod_id,
-                                      std::string_view container_id,
+                                      std::string_view container_id, ContainerType container_type,
                                       absl::flat_hash_set<uint32_t>* pid_set) const {
   CHECK(pid_set != nullptr);
 
   // The container files need to be recursively read and the PID needs be merge across all
   // containers.
 
-  auto fpath = CGroupProcFilePath(qos_class, pod_id, container_id);
+  auto fpath = CGroupProcFilePath(qos_class, pod_id, container_id, container_type);
   std::ifstream ifs(fpath);
   if (!ifs) {
     // This might not be a real error since the pod could have disappeared.

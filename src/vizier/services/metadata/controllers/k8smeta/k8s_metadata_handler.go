@@ -778,16 +778,27 @@ func (p *NamespaceUpdateProcessor) GetUpdatesToSend(storedUpdates []*StoredUpdat
 	}
 }
 
-func formatContainerID(cid string) string {
+func formatContainerID(cid string) (metadatapb.ContainerType, string) {
 	// Strip prefixes like docker:// or containerd://
 	tokens := strings.SplitN(cid, "://", 2)
 	if len(tokens) != 2 {
 		if cid != "" {
 			log.Info("Container ID is not in the expected format: " + cid)
 		}
-		return cid
+		return metadatapb.CONTAINER_TYPE_UNKNOWN, cid
 	}
-	return tokens[1]
+
+	// Always assume docker by default.
+	containerType := metadatapb.CONTAINER_TYPE_DOCKER
+	switch tokens[0] {
+	case "cri-o":
+		containerType = metadatapb.CONTAINER_TYPE_CRIO
+	case "docker":
+		containerType = metadatapb.CONTAINER_TYPE_DOCKER
+	default:
+	}
+
+	return containerType, tokens[1]
 }
 
 // GetContainerUpdatesFromPod gets the container updates for the given pod.
@@ -795,8 +806,9 @@ func GetContainerUpdatesFromPod(pod *metadatapb.Pod) []*metadatapb.ContainerUpda
 	updates := make([]*metadatapb.ContainerUpdate, len(pod.Status.ContainerStatuses))
 
 	for i, s := range pod.Status.ContainerStatuses {
+		cType, cID := formatContainerID(s.ContainerID)
 		updates[i] = &metadatapb.ContainerUpdate{
-			CID:              formatContainerID(s.ContainerID),
+			CID:              cID,
 			Name:             s.Name,
 			StartTimestampNS: s.StartTimestampNS,
 			StopTimestampNS:  s.StopTimestampNS,
@@ -806,6 +818,7 @@ func GetContainerUpdatesFromPod(pod *metadatapb.Pod) []*metadatapb.ContainerUpda
 			ContainerState:   s.ContainerState,
 			Message:          s.Message,
 			Reason:           s.Reason,
+			ContainerType:    cType,
 		}
 	}
 	return updates
@@ -848,7 +861,8 @@ func getResourceUpdateFromPod(pod *metadatapb.Pod, uv int64) *metadatapb.Resourc
 	var containerNames []string
 	if pod.Status.ContainerStatuses != nil {
 		for _, s := range pod.Status.ContainerStatuses {
-			containerIDs = append(containerIDs, formatContainerID(s.ContainerID))
+			_, cID := formatContainerID(s.ContainerID)
+			containerIDs = append(containerIDs, cID)
 			containerNames = append(containerNames, s.Name)
 		}
 	}

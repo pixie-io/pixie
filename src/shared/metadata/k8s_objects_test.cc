@@ -87,7 +87,8 @@ TEST(PodInfo, clone) {
 
 TEST(ContainerInfo, pod_id) {
   ContainerInfo cinfo("container1", "containername", ContainerState::kRunning,
-                      "container state message", "container state reason", 128 /*start_time*/);
+                      ContainerType::kDocker, "container state message", "container state reason",
+                      128 /*start_time*/);
 
   EXPECT_EQ("", cinfo.pod_id());
   cinfo.set_pod_id("pod1");
@@ -96,7 +97,8 @@ TEST(ContainerInfo, pod_id) {
 
 TEST(ContainerInfo, debug_string) {
   ContainerInfo cinfo("container1", "containername", ContainerState::kRunning,
-                      "container state message", "container state reason", 128);
+                      ContainerType::kDocker, "container state message", "container state reason",
+                      128);
   for (int i = 0; i < 5; ++i) {
     EXPECT_EQ(absl::Substitute("$0<Container:cid=container1:name=containername:pod_id=:state=R>",
                                Indent(i)),
@@ -109,7 +111,8 @@ TEST(ContainerInfo, debug_string) {
 
 TEST(ContainerInfo, add_delete_pids) {
   ContainerInfo cinfo("container1", "containername", ContainerState::kRunning,
-                      "container state message", "container state reason", 128 /*start_time*/);
+                      ContainerType::kDocker, "container state message", "container state reason",
+                      128 /*start_time*/);
   cinfo.set_pod_id("pod1");
 
   cinfo.AddUPID(UPID(1, 1, 123));
@@ -129,7 +132,8 @@ TEST(ContainerInfo, add_delete_pids) {
 
 TEST(ContainerInfo, deactive_non_existing_pid_ignored) {
   ContainerInfo cinfo("container1", "containername", ContainerState::kRunning,
-                      "container state message", "container state reason", 128 /*start_time*/);
+                      ContainerType::kDocker, "container state message", "container state reason",
+                      128 /*start_time*/);
   cinfo.set_pod_id("pod1");
   cinfo.DeactivateUPID(UPID(1, 3, 123));
 
@@ -139,7 +143,8 @@ TEST(ContainerInfo, deactive_non_existing_pid_ignored) {
 
 TEST(ContainerInfo, clone) {
   ContainerInfo orig("container1", "containername", ContainerState::kRunning,
-                     "container state message", "container state reason", 128 /*start_time*/);
+                     ContainerType::kDocker, "container state message", "container state reason",
+                     128 /*start_time*/);
   orig.set_pod_id("pod1");
 
   orig.AddUPID(UPID(1, 0, 123));
@@ -154,6 +159,7 @@ TEST(ContainerInfo, clone) {
   EXPECT_EQ(cloned->start_time_ns(), orig.start_time_ns());
   EXPECT_EQ(cloned->stop_time_ns(), orig.stop_time_ns());
   EXPECT_EQ(cloned->state(), orig.state());
+  EXPECT_EQ(cloned->type(), orig.type());
   EXPECT_EQ(cloned->state_message(), orig.state_message());
   EXPECT_EQ(cloned->state_reason(), orig.state_reason());
 }

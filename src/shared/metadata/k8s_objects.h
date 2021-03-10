@@ -178,7 +178,21 @@ inline PodConditions ConvertToPodConditions(
   return conditions;
 }
 
+enum class ContainerType : uint8_t { kUnknown = 0, kDocker, kCRIO };
+
 enum class ContainerState : uint8_t { kUnknown = 0, kRunning, kTerminated, kWaiting };
+
+inline ContainerType ConvertToContainerType(pl::shared::k8s::metadatapb::ContainerType pb_enum) {
+  using state_pb = pl::shared::k8s::metadatapb::ContainerType;
+  switch (pb_enum) {
+    case state_pb::CONTAINER_TYPE_DOCKER:
+      return ContainerType::kDocker;
+    case state_pb::CONTAINER_TYPE_CRIO:
+      return ContainerType::kCRIO;
+    default:
+      return ContainerType::kUnknown;
+  }
+}
 
 inline ContainerState ConvertToContainerState(pl::shared::k8s::metadatapb::ContainerState pb_enum) {
   using state_pb = pl::shared::k8s::metadatapb::ContainerState;
@@ -300,12 +314,13 @@ class PodInfo : public K8sMetadataObject {
 class ContainerInfo {
  public:
   ContainerInfo() = delete;
-  ContainerInfo(CID cid, std::string_view name, ContainerState state,
+  ContainerInfo(CID cid, std::string_view name, ContainerState state, ContainerType type,
                 std::string_view state_message, std::string_view state_reason,
                 int64_t start_time_ns, int64_t stop_time_ns = 0)
       : cid_(std::move(cid)),
         name_(std::string(name)),
         state_(state),
+        type_(type),
         state_message_(state_message),
         state_reason_(state_reason),
         start_time_ns_(start_time_ns),
@@ -314,12 +329,14 @@ class ContainerInfo {
   explicit ContainerInfo(const pl::shared::k8s::metadatapb::ContainerUpdate& container_update_info)
       : ContainerInfo(container_update_info.cid(), container_update_info.name(),
                       ConvertToContainerState(container_update_info.container_state()),
+                      ConvertToContainerType(container_update_info.container_type()),
                       container_update_info.message(), container_update_info.reason(),
                       container_update_info.start_timestamp_ns(),
                       container_update_info.stop_timestamp_ns()) {}
 
   const CID& cid() const { return cid_; }
   const std::string& name() const { return name_; }
+  ContainerType type() const { return type_; }
 
   void set_pod_id(std::string_view pod_id) { pod_id_ = pod_id; }
   const UID& pod_id() const { return pod_id_; }
@@ -394,6 +411,10 @@ class ContainerInfo {
    * Current state of the container, such as RUNNING, WAITING.
    */
   ContainerState state_;
+  /**
+   * Type of the container, such as DOCKER, CRIO.
+   */
+  ContainerType type_;
   // The message for why the container is in its current state.
   std::string state_message_;
   // A more detailed message for why the container is in its current state.

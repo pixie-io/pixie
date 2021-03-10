@@ -36,6 +36,7 @@ constexpr char kUpdate1_0Pbtxt[] = R"(
     container_state: CONTAINER_STATE_RUNNING
     message: "running message"
     reason: "running reason"
+    container_type: CONTAINER_TYPE_DOCKER
   }
 )";
 
@@ -71,6 +72,7 @@ constexpr char kUpdate2_0Pbtxt[] = R"(
     container_state: CONTAINER_STATE_WAITING
     message: "waiting message"
     reason: "waiting reason"
+    container_type: CONTAINER_TYPE_DOCKER
   }
 )";
 
@@ -105,8 +107,9 @@ constexpr char kUpdate2_2Pbtxt[] = R"(
 class FakePIDData : public MockCGroupMetadataReader {
  public:
   Status ReadPIDs(PodQOSClass qos, std::string_view pod_id, std::string_view container_id,
-                  absl::flat_hash_set<uint32_t>* pid_set) const override {
-    if (qos == PodQOSClass::kBurstable && pod_id == "pod_id1" && container_id == "container_id1") {
+                  ContainerType type, absl::flat_hash_set<uint32_t>* pid_set) const override {
+    if (qos == PodQOSClass::kBurstable && pod_id == "pod_id1" && container_id == "container_id1" &&
+        type == ContainerType::kDocker) {
       *pid_set = {100, 200};
       return Status::OK();
     }

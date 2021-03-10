@@ -15,9 +15,9 @@ class MockCGroupMetadataReader : public CGroupMetadataReader {
   MockCGroupMetadataReader() : CGroupMetadataReader(system::Config::GetInstance()) {}
   ~MockCGroupMetadataReader() override = default;
 
-  MOCK_CONST_METHOD4(ReadPIDs,
-                     Status(PodQOSClass qos_class, std::string_view pod_id,
-                            std::string_view container_id, absl::flat_hash_set<uint32_t>* pid_set));
+  MOCK_CONST_METHOD5(ReadPIDs, Status(PodQOSClass qos_class, std::string_view pod_id,
+                                      std::string_view container_id, ContainerType container_type,
+                                      absl::flat_hash_set<uint32_t>* pid_set));
   MOCK_CONST_METHOD1(ReadPIDStartTime, int64_t(uint32_t pid));
   MOCK_CONST_METHOD1(ReadPIDCmdline, std::string(uint32_t pid));
   MOCK_CONST_METHOD1(PodDirExists, bool(const PodInfo& pod_info));

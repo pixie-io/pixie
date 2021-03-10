@@ -819,6 +819,7 @@ func TestPodUpdateProcessor_GetStoredProtos(t *testing.T) {
 				ContainerState: metadatapb.CONTAINER_STATE_WAITING,
 				Message:        "container state message",
 				Reason:         "container state reason",
+				ContainerType:  metadatapb.CONTAINER_TYPE_DOCKER,
 			},
 		},
 	})
