@@ -287,7 +287,7 @@ var RegisterAgentRequestPB = `
 register_agent_request {
   info {
     agent_id {
-      data: "11285cdd1de94ab1ae6a0ba08c8c676c"
+      data: "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
     }
     host_info {
       hostname: "test-host"
@@ -302,7 +302,7 @@ var RegisterKelvinRequestPB = `
 register_agent_request {
   info {
     agent_id {
-      data: "11285cdd1de94ab1ae6a0ba08c8c676c"
+      data: "9ba7b810-9dad-11d1-80b4-00c04fd430c8"
     }
     host_info {
       hostname: "test-host"
@@ -320,39 +320,7 @@ var InvalidRegisterAgentRequestPB = `
 register_agent_request {
   info {
     agent_id {
-      data: "11285cdd1de94ab1ae6a0ba08c8c676c11285cdd1de94ab1ae6a0ba08c8c676c"
-    }
-    host_info {
-      hostname: "test-host"
-      host_ip: "127.0.0.1"
-    }
-  }
-}
-`
-
-// UpdateAgentRequest
-
-// UpdateAgentRequestPB is the protobuf for an update agent request.
-var UpdateAgentRequestPB = `
-update_agent_request {
-  info {
-    agent_id {
-      data: "11285cdd1de94ab1ae6a0ba08c8c676c"
-    }
-    host_info {
-      hostname: "test-host"
-      host_ip: "127.0.0.1"
-    }
-  }
-}
-`
-
-// InvalidUpdateAgentRequestPB is an invalid protobuf for an update agent request.
-var InvalidUpdateAgentRequestPB = `
-update_agent_request {
-  info {
-    agent_id {
-      data: "11285cdd1de94ab1ae6a0ba08c8c676c11285cdd1de94ab1ae6a0ba08c8c676c"
+      data: "zzy"
     }
     host_info {
       hostname: "test-host"
@@ -381,22 +349,12 @@ var HeartbeatPB = `
 heartbeat {
   time: 1,
   agent_id: {
-    data: "11285cdd1de94ab1ae6a0ba08c8c676c"
+    data: "5ba7b810-9dad-11d1-80b4-00c04fd430c8"
   }
   update_info {
     process_created {
       pid: 1
     }
-  }
-}
-`
-
-// InvalidHeartbeatPB is an invalid protobuf for a heartbeat.
-var InvalidHeartbeatPB = `
-heartbeat {
-  time: 1,
-  agent_id: {
-    data: "11285cdd1de94ab1ae6a0ba08c8c676c"
   }
 }
 `
