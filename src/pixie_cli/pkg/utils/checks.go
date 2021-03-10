@@ -142,7 +142,7 @@ var (
 		case ClusterTypeDockerDesktop:
 			return fmt.Errorf("Docker for desktop is not supported. To create a test cluster to try out Pixie, use minikube instead.  ")
 		case ClusterTypeMinikubeOther:
-			return fmt.Errorf("Unrecognized minikube driver. Please use kvm2/HyperKit instead.  ")
+			return fmt.Errorf("Unrecognized minikube driver. Please use kvm2 or HyperKit instead.  ")
 		default:
 			return nil
 		}
