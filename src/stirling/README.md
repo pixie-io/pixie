@@ -80,6 +80,23 @@ $PIXIE_ROOT/scripts/run_docker.sh
 bazel test --config=bpf //path/to:test
 ```
 
+### BCC breakage because of Clang upgrade with chef.
+
+BCC, as part of Stirling, links a complete Clang. That Clang stack is from chef-managed host Clang stack.
+Because of bazel caching, conflicting Clang artifacts might get linked into Stirling inadvertently.
+That could result into confusing build failure or runtime crash in PEM/Stirling.
+For example, BPF tests, stirling_wrapper, or PEM might crash.
+
+Usually the fix is to clean up the caches, following the steps below:
+```shell
+# Remove more cached artifacts, and shutdown bazel
+bazel clean --expunge && bazel shutdown
+
+# `bazel clean --expunge` can't remove files that may have been made while running bazel in a container,
+# so perform a deeper clean.
+sudo rm -rf ~/.cache/bazel
+```
+
 ## Stirling Wrapper
 
 `stirling_wrapper` is a stand-alone version of Stirling that one can run locally. It does not require the rest of the PEM, or even k8s. It will collect the data from its sources and print the results directly to STDOUT.
