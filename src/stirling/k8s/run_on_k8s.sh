@@ -1,28 +1,35 @@
 #!/bin/bash -e
 
 usage() {
-  echo "This script runs stirling_wrapper on GKE for a specified amount of time."
-  echo "It then collects logs and deletes the stirling_wrapper pods."
-  echo ""
-  echo "Usage: $0 [<duration>]"
-  exit
+  echo "This script runs stirling_wrapper on a K8s cluster for a specified amount of time."
+  echo "It then collects and opens the logs, and deletes the stirling_wrapper pods."
+  echo
+  echo "Usage: $0 [<duration>] [--open_logs]"
+  exit 1
 }
 
 parse_args() {
   # Set default values.
+  OPEN_LOGS=false
   T=30 # Time spent running stirling on the cluster.
 
-  # Grab arguments.
-  if [ $# -gt 0 ]; then
-    T=$1
-  fi
-
-  # Make sure the time argument is a number.
-  # This will also cause usage to be printed if -h or any flag is passed in.
-  re='^[0-9]+$'
-  if ! [[ $T =~ $re ]] ; then
-    usage
-  fi
+  # TODO(yzhao): Might need to switch to getopt() if more flags are added.
+  while [ $# -gt 0 ]; do
+  case $1 in
+      --open_logs)
+      OPEN_LOGS=true
+      shift
+      ;;
+      *)
+      re='^[0-9]+$'
+      if ! [[ $1 =~ $re ]] ; then
+        exit 1
+      fi
+      T=$1
+      shift
+      ;;
+  esac
+  done
 }
 
 # Script execution starts here
@@ -98,9 +105,12 @@ timestamp=$(date +%s)
 for pod in $pods; do
   # xargs removes the leading and trailing white spaces.
   node_name="$(kubectl get pod "${pod}" -n "${NAMESPACE}" -o=custom-columns=:.spec.nodeName | xargs)"
-  filename="${LOGDIR}/log$timestamp.$pod.${node_name}"
-  kubectl logs -n "${NAMESPACE}" "$pod" > "$filename"
-  echo "${scriptdir}/$filename"
+  filename="${LOGDIR}/log$timestamp.${pod}.${node_name}"
+  kubectl logs -n "${NAMESPACE}" "${pod}" > "${filename}"
+  echo "${scriptdir}/${filename}"
+  if [[ "${OPEN_LOGS}" == true ]]; then
+    less "${filename}"
+  fi
 done
 
 echo ""
