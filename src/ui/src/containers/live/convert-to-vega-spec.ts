@@ -38,6 +38,7 @@ const VEGA_SCHEMA = '$schema';
 export const TIMESERIES_CHART_TYPE = 'pixielabs.ai/pl.vispb.TimeseriesChart';
 export const BAR_CHART_TYPE = 'pixielabs.ai/pl.vispb.BarChart';
 export const HISTOGRAM_CHART_TYPE = 'pixielabs.ai/pl.vispb.HistogramChart';
+export const FLAMEGRAPH_CHART_TYPE = 'pixielabs.ai/pl.vispb.StacktraceFlameGraph';
 
 export const COLOR_SCALE = 'color';
 const HOVER_LINE_OPACITY = 0.75;
@@ -82,6 +83,11 @@ interface Timeseries {
 
 interface TimeseriesDisplay extends WidgetDisplay, DisplayWithLabels {
   readonly timeseries: Timeseries[];
+}
+
+interface StacktraceFlameGraphDisplay extends WidgetDisplay {
+  readonly stacktraceColumn: string;
+  readonly countColumn: string;
 }
 
 type PatchedMark = Mark & { propEventsToOverlapped?: boolean };
@@ -138,6 +144,8 @@ export interface VegaSpecWithProps {
   hasLegend: boolean;
   legendColumnName: string;
   error?: Error;
+  preprocess?: (data: Array<{}>) => Array<{}>;
+  showTooltips?: boolean;
 }
 
 export function wrapFormatFn(fn: (data: number) => DataWithUnits) {
@@ -158,7 +166,8 @@ function registerVegaFormatFunctions() {
 
 registerVegaFormatFunctions();
 
-export type ChartDisplay = TimeseriesDisplay | BarDisplay | VegaDisplay | HistogramDisplay;
+export type ChartDisplay = TimeseriesDisplay | BarDisplay | VegaDisplay | HistogramDisplay |
+StacktraceFlameGraphDisplay;
 
 function convertWidgetDisplayToSpecWithErrors(
   display: ChartDisplay,
@@ -177,6 +186,12 @@ function convertWidgetDisplayToSpecWithErrors(
         source,
         theme,
         relation,
+      );
+    case FLAMEGRAPH_CHART_TYPE:
+      return convertToStacktraceFlameGraph(
+        display as StacktraceFlameGraphDisplay,
+        source,
+        theme,
       );
     case VEGA_CHART_TYPE:
       return convertToVegaChart(display as VegaDisplay);
@@ -1832,6 +1847,199 @@ function hydrateSpecWithTheme(spec: VgSpec, theme: Theme) {
     shape: {
       stroke: theme.palette.graph.primary,
     },
+  };
+}
+
+const STACKTRACE_LABEL_PX = 9;
+function convertToStacktraceFlameGraph(
+  display: StacktraceFlameGraphDisplay,
+  source: string, theme: Theme): VegaSpecWithProps {
+  if (!display.stacktraceColumn) {
+    throw new Error('StacktraceFlamegraph must have an entry for property stacktraceColumn');
+  }
+  if (!display.countColumn) {
+    throw new Error('StacktraceFlamegraph must have an entry for property countColumn');
+  }
+
+  const spec = { ...BASE_SPEC, style: 'cell' };
+  addAutosize(spec);
+  addWidthHeightSignals(spec);
+
+  // Add data and transforms.
+  const baseDataSrc = addDataSource(spec, { name: source });
+  addDataSource(spec, {
+    name: TRANSFORMED_DATA_SOURCE_NAME,
+    source: baseDataSrc.name,
+    transform: [
+      // Filter out any stacktraces that are not ancestors or descendents of the selected stacktrace.
+      {
+        type: 'filter',
+        expr: 'indexof(selectedTrace, datum.fullPath) === 0 || indexof(datum.fullPath, selectedTrace) === 0',
+      },
+      // The width of the ancestors stacktraces should be weighted based on the selected stacktrace.
+      // For example, if the parent stacktrace has 1000 samples, but the selected stacktrace only has 1 sample,
+      // the selected stacktrace rect should not be much smaller than the parent stacktrace.
+      {
+        type: 'formula',
+        as: 'weightedCount',
+        expr: 'indexof(selectedTrace, datum.fullPath) === 0 ? selectedTraceCount : datum.count',
+      },
+      // Tranform the data into a hierarchical tree structure that can be consumed by Vega.
+      {
+        type: 'stratify',
+        key: 'fullPath',
+        parentKey: 'parent',
+      },
+      // Generates the layout for an adjacency diagram.
+      {
+        type: 'partition',
+        field: 'weightedCount',
+        sort: { field: 'count' },
+        size: [{ signal: 'width' }, { signal: 'height' }],
+      },
+      // Flips the y-axis, as the partition transform actually creates an icicle chart.
+      {
+        type: 'formula',
+        expr: '-datum.y0 + height',
+        as: 'y0',
+      },
+      {
+        type: 'formula',
+        expr: '-datum.y1 + height',
+        as: 'y1',
+      },
+      // Truncate name based on width and height of rect. These are just estimates on font size widths/heights, since
+      // Vega's "limit" field for text marks is a static number.
+      {
+        type: 'formula',
+        as: 'displayedName',
+        expr: `(datum.y0 - datum.y1) > ${STACKTRACE_LABEL_PX} && (datum.x1 - datum.x0) > ${STACKTRACE_LABEL_PX} ? 
+          truncate(datum.name, (datum.x1 - datum.x0)/(${STACKTRACE_LABEL_PX})) : ""`,
+      },
+    ],
+  });
+
+  // Add signals for selecting traces.
+  addSignal(spec,
+    {
+      name: 'selectedTrace',
+      value: 'all',
+      on: [{ events: 'rect:mousedown', update: 'datum.fullPath' }],
+    },
+  );
+  addSignal(spec,
+    {
+      name: 'selectedTraceCount',
+      value: 1,
+      on: [{ events: 'rect:mousedown', update: 'datum.count' }],
+    },
+  );
+
+  // Add rectangles for each stacktrace.
+  addMark(spec, {
+    type: 'rect',
+    name: 'stacktrace_rect',
+    from: { data: TRANSFORMED_DATA_SOURCE_NAME },
+    encode: {
+      enter: {
+        fill: { scale: 'color', field: 'name' },
+        tooltip: {
+          // Tooltip shows: "stacktraceName, X samples"
+          signal: 'datum.name + (datum.count ? ", " + datum.count + " samples" : "")',
+        },
+      },
+      update: {
+        x: { field: 'x0' },
+        x2: { field: 'x1' },
+        y: { field: 'y0' },
+        y2: { field: 'y1' },
+        strokeWidth: { value: theme.spacing(0.15) },
+        stroke: { value: theme.palette.background.six },
+        zindex: { value: 0 },
+        fillOpacity: [
+          // Ancestors of the selected stacktrace should have lower opacity.
+          {
+            test: 'indexof(selectedTrace, datum.fullPath) === 0 && selectedTrace != datum.fullPath',
+            value: 0.5,
+          },
+          { value: 1 },
+        ],
+      },
+      hover: {
+        stroke: { value: theme.palette.common.white },
+        strokeWidth: { value: theme.spacing(0.3) },
+        zindex: { value: 1 },
+      },
+      exit: {},
+    },
+  });
+  // Add labels to the rects.
+  addMark(spec, {
+    type: 'text',
+    interactive: false,
+    from: { data: TRANSFORMED_DATA_SOURCE_NAME },
+    encode: {
+      enter: {
+        baseline: { value: 'bottom' },
+        fontSize: { value: STACKTRACE_LABEL_PX },
+        text: { field: 'displayedName' },
+        dx: { value: theme.spacing(1) },
+        dy: { value: -1 * theme.spacing(0.3) },
+      },
+      update: {
+        x: { field: 'x0' },
+        y: { field: 'y0' },
+        text: { field: 'displayedName' },
+      },
+    },
+  });
+
+  // Color the rectangles based on name, so each stacktrace is a different color.
+  addScale(spec, {
+    name: 'color',
+    type: 'ordinal',
+    domain: { data: TRANSFORMED_DATA_SOURCE_NAME, field: 'name' },
+    range: 'category',
+  });
+
+  const preprocess = (data: Array<{}>): Array<{}> => {
+    const nodeMap = {
+      all: {
+        fullPath: 'all',
+        name: 'all',
+        count: 0,
+        parent: null,
+      },
+    };
+
+    for (const n of data) {
+      const splitStack = n[display.stacktraceColumn].split(';');
+      let currPath = 'all';
+      for (const s of splitStack) {
+        const path = `${currPath};${s}`;
+        if (!nodeMap[path]) {
+          nodeMap[path] = {
+            parent: currPath,
+            fullPath: path,
+            name: s,
+            count: 0,
+          };
+        }
+        nodeMap[path].count += n[display.countColumn];
+        currPath = path;
+      }
+
+      nodeMap.all.count += n[display.countColumn];
+    }
+    return Object.values(nodeMap);
+  };
+
+  return {
+    spec,
+    hasLegend: false,
+    legendColumnName: '',
+    preprocess,
+    showTooltips: true,
   };
 }
 

@@ -104,7 +104,7 @@ const Vega = React.memo((props: VegaProps) => {
     data: inputData, tableName, display, relation,
   } = props;
   const {
-    spec, hasLegend, legendColumnName, error,
+    spec, hasLegend, legendColumnName, error, preprocess, showTooltips,
   } = React.useMemo(() => convertWidgetDisplayToVegaSpec(display, tableName, theme, relation),
     [display, tableName, theme, relation]);
 
@@ -112,7 +112,13 @@ const Vega = React.memo((props: VegaProps) => {
 
   const cleanedInputData = React.useMemo(() => cleanInputData(relation, inputData), [relation, inputData]);
 
-  const data = React.useMemo(() => ({ [tableName]: cleanedInputData }), [tableName, cleanedInputData]);
+  const data = React.useMemo(() => {
+    if (preprocess == null) {
+      return { [tableName]: cleanedInputData };
+    }
+
+    return { [tableName]: preprocess(cleanedInputData) };
+  }, [preprocess, tableName, cleanedInputData]);
 
   const {
     setHoverTime,
@@ -227,7 +233,9 @@ const Vega = React.memo((props: VegaProps) => {
 
   const onNewView = React.useCallback((view: View) => {
     // Disable default tooltip handling in vega.
-    view.tooltip(noop);
+    if (!showTooltips) {
+      view.tooltip(noop);
+    }
 
     // Add listener for changes to the legend data. If the data changes we rebuild our hash map cache of the data.
     view.addDataListener(HOVER_PIVOT_TRANSFORM, (name, value) => {
@@ -241,7 +249,7 @@ const Vega = React.memo((props: VegaProps) => {
     // Width listener only kicks in on width changes, so we have to update on new view as well.
     setVegaOrigin(view.origin());
     setCurrentView(view);
-  }, []);
+  }, [showTooltips]);
 
   // This effect sets the hover initial state to be the last time value.
   React.useEffect(() => {

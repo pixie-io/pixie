@@ -936,3 +936,61 @@ describe('vega chart', () => {
     );
   });
 });
+
+describe('simple stacktraceFlameGraph', () => {
+  const input = {
+    '@type': 'pixielabs.ai/pl.vispb.StacktraceFlameGraph',
+    stacktraceColumn: 'stacktraces',
+    countColumn: 'counts',
+  };
+
+  const inputData = [
+    {
+      stacktraces: 'st1;st2;st3',
+      counts: 1,
+    },
+    {
+      stacktraces: 'st1;st4',
+      counts: 2,
+    },
+    {
+      stacktraces: 'st2;st4',
+      counts: 1,
+    },
+    {
+      stacktraces: 'st2;st4;st5',
+      counts: 3,
+    },
+  ];
+  const { preprocess } = convertWidgetDisplayToVegaSpec(input, 'mysource', DARK_THEME);
+  it('preprocesses data correctly', () => {
+    const processedData = preprocess(inputData);
+    expect(processedData.length).toEqual(8);
+    expect(processedData).toEqual(expect.arrayContaining([
+      {
+        fullPath: 'all', name: 'all', count: 7, parent: null,
+      },
+      {
+        fullPath: 'all;st1', name: 'st1', count: 3, parent: 'all',
+      },
+      {
+        fullPath: 'all;st1;st2', name: 'st2', count: 1, parent: 'all;st1',
+      },
+      {
+        fullPath: 'all;st1;st2;st3', name: 'st3', count: 1, parent: 'all;st1;st2',
+      },
+      {
+        fullPath: 'all;st1;st4', name: 'st4', count: 2, parent: 'all;st1',
+      },
+      {
+        fullPath: 'all;st2', name: 'st2', count: 4, parent: 'all',
+      },
+      {
+        fullPath: 'all;st2;st4', name: 'st4', count: 4, parent: 'all;st2',
+      },
+      {
+        fullPath: 'all;st2;st4;st5', name: 'st5', count: 3, parent: 'all;st2;st4',
+      },
+    ]));
+  });
+});
