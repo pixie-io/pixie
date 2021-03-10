@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc/status"
 	"gopkg.in/segmentio/analytics-go.v3"
 	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
+	"pixielabs.ai/pixielabs/src/cloud/api/idprovider"
 	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	commonenv "pixielabs.ai/pixielabs/src/shared/services/env"
@@ -29,6 +30,21 @@ import (
 func GetServiceCredentials(signingKey string) (string, error) {
 	claims := utils.GenerateJWTForService("AuthService")
 	return utils.SignJWTClaims(claims, signingKey)
+}
+
+// AuthOAuthLoginHandler handles logins for OSS oauth support.
+func AuthOAuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request) error {
+	apiEnv, ok := env.(apienv.APIEnv)
+	if !ok {
+		return handler.NewStatusError(http.StatusInternalServerError, "failed to get environment")
+	}
+
+	oa := apiEnv.IdentityProviderClient()
+	session, err := apiEnv.CookieStore().Get(r, idprovider.IDProviderSessionKey)
+	if err != nil {
+		return &handler.StatusError{Code: http.StatusInternalServerError, Err: err}
+	}
+	return oa.HandleLogin(session, w, r)
 }
 
 // AuthSignupHandler make requests to the authpb service and sets session cookies.

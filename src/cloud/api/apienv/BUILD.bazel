@@ -13,6 +13,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/cloud/api/apienv",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/cloud/api/idprovider:go_default_library",
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
         "//src/cloud/auth/proto:auth_go_proto",
         "//src/cloud/profile/profilepb:service_go_proto",

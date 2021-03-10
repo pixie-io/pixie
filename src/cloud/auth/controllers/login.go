@@ -90,7 +90,7 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 	// If user does not exist in Auth0, then create a new user if specified.
 	newUser := userInfo.AppMetadata == nil || userInfo.AppMetadata[s.a.GetClientID()] == nil || userInfo.AppMetadata[s.a.GetClientID()].PLUserID == ""
 
-	// If user exists in Auth0, but not in the profile service, create a new user.
+	// A user can exist in auth0, but not the profile service. If that's the case, we want to create a new user.
 	if !newUser {
 		_, err := pc.GetUser(ctx, &uuidpb.UUID{Data: []byte(userInfo.AppMetadata[s.a.GetClientID()].PLUserID)})
 		if err != nil {
@@ -103,6 +103,7 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 		return nil, status.Error(codes.PermissionDenied, "user not found, please register.")
 	}
 
+	// Users can login without registering if their org already exists. If org doesn't exist, they must complete sign up flow.
 	orgInfo, err := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: domainName})
 	if err != nil || orgInfo == nil {
 		return nil, status.Error(codes.InvalidArgument, "organization not found, please register.")

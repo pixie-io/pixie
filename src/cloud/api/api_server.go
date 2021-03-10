@@ -18,6 +18,7 @@ import (
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller"
+	"pixielabs.ai/pixielabs/src/cloud/api/idprovider"
 	"pixielabs.ai/pixielabs/src/cloud/api/ptproxy"
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
@@ -83,7 +84,12 @@ func main() {
 		log.WithError(err).Fatal("Failed to init API key client")
 	}
 
-	env, err := apienv.New(ac, pc, vk, ak, vc, at)
+	oa, err := idprovider.NewHydraKratosClient()
+	if err != nil {
+		log.WithError(err).Fatal("Failed to init Hydra + Kratos idprovider client")
+	}
+
+	env, err := apienv.New(ac, pc, vk, ak, vc, at, oa)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create api environment")
 	}
@@ -115,6 +121,7 @@ func main() {
 	mux.Handle("/api/auth/signup", handler.New(env, controller.AuthSignupHandler))
 	mux.Handle("/api/auth/login", handler.New(env, controller.AuthLoginHandler))
 	mux.Handle("/api/auth/logout", handler.New(env, controller.AuthLogoutHandler))
+	mux.Handle("/api/auth/oauth/login", handler.New(env, controller.AuthOAuthLoginHandler))
 	// This is an unauthenticated path that will check and validate if a particular domain
 	// is available for registration. This need to be unauthenticated because we need to check this before
 	// the user registers.

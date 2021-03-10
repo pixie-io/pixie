@@ -67,7 +67,7 @@ spec:
         - name: URLS_CONSENT
           value: $(FRONTEND_URL)/auth/hydra/consent
         - name: URLS_LOGIN
-          value: $(FRONTEND_URL)/auth/hydra/login
+          value: https://$(PL_DOMAIN_NAME)/api/auth/oauth/login
         - name: URLS_LOGOUT
           value: $(FRONTEND_URL)/logout
         - name: URLS_SELF_PUBLIC

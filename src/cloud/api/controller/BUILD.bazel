@@ -26,6 +26,7 @@ go_library(
         "//src/cloud/api/apienv:go_default_library",
         "//src/cloud/api/controller/schema:go_default_library",
         "//src/cloud/api/controller/unauthenticated_schema:go_default_library",
+        "//src/cloud/api/idprovider:go_default_library",
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
         "//src/cloud/auth/proto:auth_go_proto",
         "//src/cloud/autocomplete:go_default_library",

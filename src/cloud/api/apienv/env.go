@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"pixielabs.ai/pixielabs/src/cloud/api/idprovider"
 	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
@@ -27,31 +28,33 @@ type APIEnv interface {
 	VZDeploymentKeyClient() vzmgrpb.VZDeploymentKeyServiceClient
 	APIKeyClient() authpb.APIKeyServiceClient
 	ArtifactTrackerClient() artifacttrackerpb.ArtifactTrackerClient
+	IdentityProviderClient() idprovider.Client
 }
 
 // Impl is an implementation of the APIEnv interface.
 type Impl struct {
 	*env.BaseEnv
-	cookieStore           sessions.Store
-	authClient            authpb.AuthServiceClient
-	profileClient         profilepb.ProfileServiceClient
-	vzDeployKeyClient     vzmgrpb.VZDeploymentKeyServiceClient
-	apiKeyClient          authpb.APIKeyServiceClient
-	vzMgrClient           vzmgrpb.VZMgrServiceClient
-	artifactTrackerClient artifacttrackerpb.ArtifactTrackerClient
+	cookieStore            sessions.Store
+	authClient             authpb.AuthServiceClient
+	profileClient          profilepb.ProfileServiceClient
+	vzDeployKeyClient      vzmgrpb.VZDeploymentKeyServiceClient
+	apiKeyClient           authpb.APIKeyServiceClient
+	vzMgrClient            vzmgrpb.VZMgrServiceClient
+	artifactTrackerClient  artifacttrackerpb.ArtifactTrackerClient
+	identityProviderClient idprovider.Client
 }
 
 // New creates a new api env.
 func New(ac authpb.AuthServiceClient, pc profilepb.ProfileServiceClient,
 	vk vzmgrpb.VZDeploymentKeyServiceClient, ak authpb.APIKeyServiceClient, vc vzmgrpb.VZMgrServiceClient,
-	at artifacttrackerpb.ArtifactTrackerClient) (APIEnv, error) {
+	at artifacttrackerpb.ArtifactTrackerClient, oa idprovider.Client) (APIEnv, error) {
 	sessionKey := viper.GetString("session_key")
 	if len(sessionKey) == 0 {
 		return nil, errors.New("session_key is required for cookie store")
 	}
 
 	sessionStore := sessions.NewCookieStore([]byte(sessionKey))
-	return &Impl{env.New(), sessionStore, ac, pc, vk, ak, vc, at}, nil
+	return &Impl{env.New(), sessionStore, ac, pc, vk, ak, vc, at, oa}, nil
 }
 
 // CookieStore returns the CookieStore from the environment.
@@ -87,4 +90,9 @@ func (e *Impl) VZMgrClient() vzmgrpb.VZMgrServiceClient {
 // ArtifactTrackerClient returns an artifact tracker client.
 func (e *Impl) ArtifactTrackerClient() artifacttrackerpb.ArtifactTrackerClient {
 	return e.artifactTrackerClient
+}
+
+// IdentityProviderClient returns a client that interfaces with an identity provider.
+func (e *Impl) IdentityProviderClient() idprovider.Client {
+	return e.identityProviderClient
 }

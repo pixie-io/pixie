@@ -33,11 +33,12 @@ require (
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/gdamore/tcell v1.3.0
 	github.com/getsentry/sentry-go v0.5.1
+	github.com/go-openapi/runtime v0.19.26
+	github.com/go-openapi/strfmt v0.20.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang-migrate/migrate v3.5.4+incompatible
 	github.com/golang/mock v1.5.0
 	github.com/golang/protobuf v1.4.2
-	github.com/google/go-cmp v0.5.0 // indirect
 	github.com/google/go-github/v32 v32.1.0
 	github.com/google/uuid v1.2.0 // indirect
 	github.com/googleapis/gnostic v0.2.0 // indirect
@@ -68,6 +69,8 @@ require (
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/olivere/elastic/v7 v7.0.12
 	github.com/ory/dockertest/v3 v3.6.3
+	github.com/ory/hydra-client-go v1.9.2
+	github.com/ory/kratos-client-go v0.5.4-alpha.1
 	github.com/phayes/freeport v0.0.0-20171002181615-b8543db493a5
 	github.com/prometheus/client_golang v1.0.0
 	github.com/rivo/tview v0.0.0-20200404204604-ca37f83cb2e7
@@ -117,4 +120,7 @@ replace (
 	// See this issue: https://github.com/etcd-io/etcd/pull/11564
 	// When etcd is fixed, it should be upgraded and this statement removed.
 	github.com/coreos/etcd v3.3.18+incompatible => github.com/coreos/etcd v3.3.4+incompatible
+	github.com/go-openapi/analysis => github.com/go-openapi/analysis v0.19.5
+	github.com/go-openapi/loads => github.com/go-openapi/loads v0.19.0
+	github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.3
 )

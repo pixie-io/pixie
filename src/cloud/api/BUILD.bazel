@@ -12,6 +12,7 @@ go_library(
         "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
         "//src/cloud/api/apienv:go_default_library",
         "//src/cloud/api/controller:go_default_library",
+        "//src/cloud/api/idprovider:go_default_library",
         "//src/cloud/api/ptproxy:go_default_library",
         "//src/cloud/autocomplete:go_default_library",
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",

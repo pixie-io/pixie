@@ -78,7 +78,7 @@ func CreateTestAPIEnv(t *testing.T) (apienv.APIEnv, *MockAPIClients, func()) {
 	mockVzDeployKey := mock_vzmgrpb.NewMockVZDeploymentKeyServiceClient(ctrl)
 	mockAPIKey := mock_auth.NewMockAPIKeyServiceClient(ctrl)
 	mockArtifactTrackerClient := mock_artifacttrackerpb.NewMockArtifactTrackerClient(ctrl)
-	apiEnv, err := apienv.New(mockAuthClient, mockProfileClient, mockVzDeployKey, mockAPIKey, mockVzMgrClient, mockArtifactTrackerClient)
+	apiEnv, err := apienv.New(mockAuthClient, mockProfileClient, mockVzDeployKey, mockAPIKey, mockVzMgrClient, mockArtifactTrackerClient, nil)
 	if err != nil {
 		t.Fatal("failed to init api env")
 	}
