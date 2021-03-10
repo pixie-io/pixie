@@ -27,6 +27,7 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   Status InitImpl() override;
   Status StopImpl() override;
   void TransferDataImpl(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table) override;
+  static constexpr uint64_t BPFSamplingPeriodMillis() { return kSamplingPeriodMillis; }
 
  private:
   // SymbolicStackTrace identifies a particular stack trace by:

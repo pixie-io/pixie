@@ -23,10 +23,8 @@ pl_cc_library(
 
 # We build predictable_stack_traces_app with clang++ regardless of the bazel config.
 # This is test data, so we want deterministic debug symbols.
-# _genrule suffix is to avoid a bazel warning:
-# target 'predictable_stack_traces_app' is both a rule and a file.
 genrule(
-    name = "predictable_stack_traces_app_genrule",
+    name = "predictable_stack_traces_app_cpp",
     srcs = ["predictable_stack_traces_app.cc"],
     outs = ["predictable_stack_traces_app"],
     # -O0: Disables optimization which in turn disables inlining.
@@ -38,4 +36,22 @@ pl_cc_test(
     name = "symbolizer_test",
     srcs = ["symbolizer_test.cc"],
     deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "perf_profiler_test",
+    timeout = "moderate",
+    srcs = ["perf_profiler_test.cc"],
+    data = [":predictable_stack_traces_app_cpp"],
+    tags = [
+        "exclusive",
+        "no_asan",
+        "requires_bpf",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/exec:cc_library",
+        "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
 )
