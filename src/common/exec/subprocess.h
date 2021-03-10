@@ -12,7 +12,7 @@
 namespace pl {
 
 /**
- * @brief A simple class to fork and exec a binary command.
+ * A simple class to fork and exec a binary command.
  * Inherit from NotCopyMoveable because copying a SubProcess instance
  * after starting will kill the sub-process (because of the requirements
  * in the parent pid branch in the Start() method).

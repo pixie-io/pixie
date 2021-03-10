@@ -1,3 +1,5 @@
+#include "src/common/system/proc_parser.h"
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -7,7 +9,6 @@
 
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/config_mock.h"
-#include "src/common/system/proc_parser.h"
 #include "src/common/testing/test_environment.h"
 #include "src/common/testing/testing.h"
 

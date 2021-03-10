@@ -525,7 +525,7 @@ StatusOr<int64_t> GetPIDStartTimeTicks(const std::filesystem::path& proc_pid_pat
 
   std::string line;
   if (!std::getline(ifs, line)) {
-    return error::Internal("Could get line from file $0", fpath);
+    return error::Internal("Could not get line from file $0", fpath);
   }
 
   std::vector<std::string_view> split = absl::StrSplit(line, " ", absl::SkipWhitespace());
