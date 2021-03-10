@@ -1,7 +1,5 @@
 // LINT_C_FILE: Do not remove this line. It ensures cpplint treats this as a C file.
 
-#include <linux/ptrace.h>
-
 #include "src/stirling/source_connectors/pid_runtime/bcc_bpf_intf/pidruntime.h"
 
 BPF_HASH(pid_cpu_time, uint16_t, struct pidruntime_val_t);

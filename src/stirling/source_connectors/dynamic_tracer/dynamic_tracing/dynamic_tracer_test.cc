@@ -221,15 +221,8 @@ tracepoints {
 )";
 
 const std::vector<std::string> kExpectedBCC = {
-    "#include <linux/ptrace.h>",
     "#include <linux/sched.h>",
-    "#ifndef __inline",
-    "#ifdef SUPPORT_BPF2BPF_CALL",
-    "#define __inline",
-    "#else",
     "#define __inline inline __attribute__((__always_inline__))",
-    "#endif",
-    "#endif",
     "static __inline uint64_t pl_nsec_to_clock_t(uint64_t x) {",
     "return div_u64(x, NSEC_PER_SEC / USER_HZ);",
     "}",

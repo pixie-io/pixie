@@ -849,22 +849,13 @@ StatusOr<std::vector<std::string>> GenArray(const PerCPUArray& array) {
 
 std::vector<std::string> GenIncludes() {
   return {
-      "#include <linux/ptrace.h>",
       // For struct task_struct.
       "#include <linux/sched.h>",
   };
 }
 
 std::vector<std::string> GenMacros() {
-  return {
-      "#ifndef __inline",
-      "#ifdef SUPPORT_BPF2BPF_CALL",
-      "#define __inline",
-      "#else",
-      "#define __inline inline __attribute__((__always_inline__))",
-      "#endif",
-      "#endif",
-  };
+  return {"#define __inline inline __attribute__((__always_inline__))"};
 }
 
 std::vector<std::string> GenNsecToClock() {
