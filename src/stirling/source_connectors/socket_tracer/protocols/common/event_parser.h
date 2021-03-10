@@ -29,7 +29,9 @@ struct FrameBase {
 
   virtual ~FrameBase() = default;
 
-  std::string ToString() const { return "FrameBase placeholder for subclasses"; }
+  std::string ToString() const {
+    return absl::Substitute("timestamp_ns=$0 byte_size=$1", timestamp_ns, ByteSize());
+  }
 };
 
 // Represents a precise position in a sequence of data chunks.

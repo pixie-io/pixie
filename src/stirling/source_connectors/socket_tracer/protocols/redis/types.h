@@ -22,10 +22,11 @@ struct Message : public FrameBase {
   // clients.
   bool is_published_message = false;
 
-  size_t ByteSize() const override { return payload.size(); }
+  size_t ByteSize() const override { return payload.size() + command.size(); }
 
   std::string ToString() const {
-    return absl::Substitute("payload=[$0] command=$1", payload, command);
+    return absl::Substitute("base=[$0] payload=[$1] command=$2", FrameBase::ToString(), payload,
+                            command);
   }
 };
 
