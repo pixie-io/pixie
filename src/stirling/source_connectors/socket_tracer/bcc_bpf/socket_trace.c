@@ -160,7 +160,7 @@ static __inline void init_conn_id(uint32_t tgid, uint32_t fd, struct conn_id_t* 
 // Be careful calling this function. The automatic creation of BPF map entries can result in a
 // BPF map leak if called on unwanted probes.
 // How do we make sure we don't leak then? ConnInfoMapManager.ReleaseResources() will clean-up
-// the relevant map entries every time a ConnectionTracker is destroyed.
+// the relevant map entries every time a ConnTracker is destroyed.
 static __inline struct conn_info_t* get_or_create_conn_info(uint32_t tgid, uint32_t fd) {
   uint64_t tgid_fd = gen_tgid_fd(tgid, fd);
   struct conn_info_t new_conn_info = {};
@@ -609,7 +609,7 @@ static __inline void process_syscall_accept(struct pt_regs* ctx, uint64_t id,
 // Note that even if we record address changes, the sequence above will
 // not be correct for the last sendmsg in the sequence above.
 //
-// Problem is our ConnectionTracker model is not suitable for UDP, where there is no connection.
+// Problem is our ConnTracker model is not suitable for UDP, where there is no connection.
 // For a TCP server, accept() sets the remote address, and all messages on that socket are to/from
 // that remote address. For a UDP server, there is no such thing. Every datagram has an address
 // specified with it. If we try to record and submit the "connection", then it may not be the right

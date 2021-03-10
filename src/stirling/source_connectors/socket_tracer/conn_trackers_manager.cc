@@ -15,7 +15,7 @@ uint64_t GetConnMapKey(uint32_t pid, uint32_t fd) {
 
 }  // namespace
 
-void ConnTrackersManager::UpdateProtocol(pl::stirling::ConnectionTracker* tracker,
+void ConnTrackersManager::UpdateProtocol(pl::stirling::ConnTracker* tracker,
                                          std::optional<TrafficProtocol> old_protocol) {
   // If the tracker is ReadyForDestruction(), then it should not be a member of any protocol list.
   if (tracker->ReadyForDestruction()) {
@@ -51,12 +51,12 @@ void ConnTrackersManager::UpdateProtocol(pl::stirling::ConnectionTracker* tracke
   DebugChecks();
 }
 
-ConnectionTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t conn_id) {
+ConnTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t conn_id) {
   const uint64_t conn_map_key = GetConnMapKey(conn_id.upid.pid, conn_id.fd);
   DCHECK_NE(conn_map_key, 0) << "Connection map key cannot be 0, pid must be wrong";
 
   auto& conn_trackers = connection_trackers_[conn_map_key];
-  ConnectionTracker& conn_tracker = conn_trackers[conn_id.tsid];
+  ConnTracker& conn_tracker = conn_trackers[conn_id.tsid];
 
   // If conn_trackers[conn_id.tsid] does not exist, a new one will be created in the map.
   // New trackers always have TSID == 0, while BPF should never generate a TSID of zero,
@@ -92,8 +92,7 @@ ConnectionTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t 
   return conn_tracker;
 }
 
-StatusOr<const ConnectionTracker*> ConnTrackersManager::GetConnectionTracker(uint32_t pid,
-                                                                             uint32_t fd) const {
+StatusOr<const ConnTracker*> ConnTrackersManager::GetConnTracker(uint32_t pid, uint32_t fd) const {
   const uint64_t conn_map_key = GetConnMapKey(pid, fd);
 
   auto tracker_set_it = connection_trackers_.find(conn_map_key);
@@ -154,11 +153,11 @@ void ConnTrackersManager::CleanupTrackers() {
 
 Status ConnTrackersManager::TestOnlyCheckConsistency() const {
   // A set used for looking for duplicate trackers.
-  std::set<ConnectionTracker*> trackers_set;
+  std::set<ConnTracker*> trackers_set;
 
   for (const auto& [protocol, conn_trackers_list] : conn_trackers_by_protocol_) {
     for (auto iter = conn_trackers_list.begin(); iter != conn_trackers_list.end(); ++iter) {
-      ConnectionTracker* tracker = *iter;
+      ConnTracker* tracker = *iter;
 
       // Check that tracker exists in connection_trackers_ (i.e. that the pointer is valid).
       // If the pointer is not valid, this will likely cause a crash or ASAN error.
@@ -205,7 +204,7 @@ std::string ConnTrackersManager::DebugInfo() const {
                                      conn_trackers_list.size()));
 
     for (auto iter = conn_trackers_list.begin(); iter != conn_trackers_list.end(); ++iter) {
-      ConnectionTracker* tracker = *iter;
+      ConnTracker* tracker = *iter;
 
       absl::StrAppend(&out,
                       absl::Substitute(
@@ -225,7 +224,7 @@ std::string ConnTrackersManager::DebugInfo() const {
 //-----------------------------------------------------------------------------
 
 ConnTrackersManager::TrackersList::TrackersListIterator::TrackersListIterator(
-    std::list<ConnectionTracker*>* trackers, std::list<ConnectionTracker*>::iterator iter,
+    std::list<ConnTracker*>* trackers, std::list<ConnTracker*>::iterator iter,
     ConnTrackersManager* conn_trackers_manager)
     : trackers_(trackers), iter_(iter), conn_trackers_manager_(conn_trackers_manager) {}
 
@@ -234,8 +233,8 @@ bool ConnTrackersManager::TrackersList::TrackersListIterator::operator!=(
   return other.iter_ != this->iter_;
 }
 
-ConnectionTracker* ConnTrackersManager::TrackersList::TrackersListIterator::operator*() {
-  ConnectionTracker* tracker = *iter_;
+ConnTracker* ConnTrackersManager::TrackersList::TrackersListIterator::operator*() {
+  ConnTracker* tracker = *iter_;
   // Since a tracker can only become ready for destruction in a previous iteration via operator++,
   // and because operator++ would remove such trackers,  we don't expect to see any trackers are
   // ReadyForDestruction here.

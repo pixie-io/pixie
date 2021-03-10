@@ -16,13 +16,13 @@ using ::testing::Pair;
 using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
 
-class ConnectionTrackerHTTP2Test : public ::testing::Test {
+class ConnTrackerHTTP2Test : public ::testing::Test {
  protected:
   testing::RealClock real_clock_;
 };
 
-TEST_F(ConnectionTrackerHTTP2Test, BasicData) {
-  ConnectionTracker tracker;
+TEST_F(ConnTrackerHTTP2Test, BasicData) {
+  ConnTracker tracker;
 
   const conn_id_t kConnID = {
       .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .tsid = 0};
@@ -43,8 +43,8 @@ TEST_F(ConnectionTrackerHTTP2Test, BasicData) {
   EXPECT_EQ(records[0].recv.data, "Response");
 }
 
-TEST_F(ConnectionTrackerHTTP2Test, BasicHeader) {
-  ConnectionTracker tracker;
+TEST_F(ConnTrackerHTTP2Test, BasicHeader) {
+  ConnTracker tracker;
 
   const conn_id_t kConnID = {
       .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .tsid = 0};
@@ -71,8 +71,8 @@ TEST_F(ConnectionTrackerHTTP2Test, BasicHeader) {
   EXPECT_THAT(records[0].recv.headers, UnorderedElementsAre(Pair(":status", "200")));
 }
 
-TEST_F(ConnectionTrackerHTTP2Test, MultipleDataFrames) {
-  ConnectionTracker tracker;
+TEST_F(ConnTrackerHTTP2Test, MultipleDataFrames) {
+  ConnTracker tracker;
 
   const conn_id_t kConnID = {
       .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .tsid = 0};
@@ -99,8 +99,8 @@ TEST_F(ConnectionTrackerHTTP2Test, MultipleDataFrames) {
   EXPECT_EQ(records[0].recv.data, "Response");
 }
 
-TEST_F(ConnectionTrackerHTTP2Test, MixedHeadersAndData) {
-  ConnectionTracker tracker;
+TEST_F(ConnTrackerHTTP2Test, MixedHeadersAndData) {
+  ConnTracker tracker;
 
   const conn_id_t kConnID = {
       .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .tsid = 0};
@@ -148,8 +148,8 @@ TEST_F(ConnectionTrackerHTTP2Test, MixedHeadersAndData) {
 }
 
 // This test models capturing data mid-stream, where we may have missed the request headers.
-TEST_F(ConnectionTrackerHTTP2Test, MidStreamCapture) {
-  ConnectionTracker tracker;
+TEST_F(ConnTrackerHTTP2Test, MidStreamCapture) {
+  ConnTracker tracker;
 
   const conn_id_t kConnID = {
       .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .tsid = 0};
@@ -191,8 +191,8 @@ TEST_F(ConnectionTrackerHTTP2Test, MidStreamCapture) {
 // which is usually indicative of something erroneous.
 // With uprobes, in particular, it implies we failed to get the net.Conn data,
 // which could be because we have currently hard-coded dwarf info values.
-TEST_F(ConnectionTrackerHTTP2Test, ZeroFD) {
-  ConnectionTracker tracker;
+TEST_F(ConnTrackerHTTP2Test, ZeroFD) {
+  ConnTracker tracker;
 
   const conn_id_t kConnID = {
       .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 0, .tsid = 3};
@@ -233,8 +233,8 @@ TEST_F(ConnectionTrackerHTTP2Test, ZeroFD) {
   EXPECT_TRUE(records.empty());
 }
 
-TEST_F(ConnectionTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterBreachingSizeLimit) {
-  ConnectionTracker tracker;
+TEST_F(ConnTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterBreachingSizeLimit) {
+  ConnTracker tracker;
 
   const conn_id_t kConnID = {
       .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .tsid = 0};
@@ -259,8 +259,8 @@ TEST_F(ConnectionTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterBreachingSizeLimit)
   EXPECT_THAT(tracker.http2_recv_streams(), ::testing::IsEmpty());
 }
 
-TEST_F(ConnectionTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterExpiration) {
-  ConnectionTracker tracker;
+TEST_F(ConnTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterExpiration) {
+  ConnTracker tracker;
 
   const conn_id_t kConnID = {
       .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .tsid = 0};
@@ -286,8 +286,8 @@ TEST_F(ConnectionTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterExpiration) {
   EXPECT_THAT(tracker.http2_recv_streams(), ::testing::IsEmpty());
 }
 
-TEST_F(ConnectionTrackerHTTP2Test, StreamIDJumpAhead) {
-  ConnectionTracker tracker;
+TEST_F(ConnTrackerHTTP2Test, StreamIDJumpAhead) {
+  ConnTracker tracker;
 
   // The first stream is ordinary.
   {
@@ -367,8 +367,8 @@ TEST_F(ConnectionTrackerHTTP2Test, StreamIDJumpAhead) {
   EXPECT_THAT(records[0].recv.headers, UnorderedElementsAre(Pair(":status", "200")));
 }
 
-TEST_F(ConnectionTrackerHTTP2Test, StreamIDJumpBack) {
-  ConnectionTracker tracker;
+TEST_F(ConnTrackerHTTP2Test, StreamIDJumpBack) {
+  ConnTracker tracker;
 
   // The first stream is ordinary.
   {

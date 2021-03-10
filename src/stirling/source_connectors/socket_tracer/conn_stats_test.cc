@@ -17,10 +17,10 @@ using ::testing::Pair;
 using ::testing::SizeIs;
 
 TEST(HashTest, CanBeUsedInFlatHashMap) {
-  absl::flat_hash_map<ConnectionStats::AggKey, int> map;
+  absl::flat_hash_map<ConnStats::AggKey, int> map;
   EXPECT_THAT(map, IsEmpty());
 
-  ConnectionStats::AggKey key = {
+  ConnStats::AggKey key = {
       .upid = {.tgid = 1, .start_time_ticks = 2},
       .remote_addr = "test",
       .remote_port = 12345,
@@ -31,7 +31,7 @@ TEST(HashTest, CanBeUsedInFlatHashMap) {
   map[key] = 2;
   EXPECT_THAT(map, SizeIs(1));
 
-  ConnectionStats::AggKey key_diff_upid = key;
+  ConnStats::AggKey key_diff_upid = key;
   key_diff_upid.upid = {.tgid = 1, .start_time_ticks = 3},
 
   map[key_diff_upid] = 1;
@@ -40,31 +40,30 @@ TEST(HashTest, CanBeUsedInFlatHashMap) {
   EXPECT_THAT(map, SizeIs(2));
 }
 
-class ConnectionStatsTest : public ::testing::Test {
+class ConnStatsTest : public ::testing::Test {
  protected:
-  ConnectionStatsTest() : event_gen_(&mock_clock_) { tracker_.set_conn_stats(&conn_stats_); }
+  ConnStatsTest() : event_gen_(&mock_clock_) { tracker_.set_conn_stats(&conn_stats_); }
 
-  ConnectionStats conn_stats_;
-  ConnectionTracker tracker_;
+  ConnStats conn_stats_;
+  ConnTracker tracker_;
 
   testing::MockClock mock_clock_;
   testing::EventGenerator event_gen_;
 };
 
 auto AggKeyIs(int tgid, std::string_view remote_addr) {
-  return AllOf(Field(&ConnectionStats::AggKey::upid, Field(&upid_t::tgid, tgid)),
-               Field(&ConnectionStats::AggKey::remote_addr, remote_addr));
+  return AllOf(Field(&ConnStats::AggKey::upid, Field(&upid_t::tgid, tgid)),
+               Field(&ConnStats::AggKey::remote_addr, remote_addr));
 }
 
 auto StatsIs(int open, int close, int sent, int recv) {
-  return AllOf(Field(&ConnectionStats::Stats::conn_open, open),
-               Field(&ConnectionStats::Stats::conn_close, close),
-               Field(&ConnectionStats::Stats::bytes_sent, sent),
-               Field(&ConnectionStats::Stats::bytes_recv, recv));
+  return AllOf(
+      Field(&ConnStats::Stats::conn_open, open), Field(&ConnStats::Stats::conn_close, close),
+      Field(&ConnStats::Stats::bytes_sent, sent), Field(&ConnStats::Stats::bytes_recv, recv));
 }
 
-// Tests that aggregated records for client side events are correctly put into ConnectionStats.
-TEST_F(ConnectionStatsTest, ClientSizeAggregationRecord) {
+// Tests that aggregated records for client side events are correctly put into ConnStats.
+TEST_F(ConnStatsTest, ClientSizeAggregationRecord) {
   struct socket_control_event_t conn = event_gen_.InitConn(kRoleClient);
   auto* sockaddr = reinterpret_cast<struct sockaddr_in*>(&conn.open.addr);
   sockaddr->sin_family = AF_INET;
@@ -114,8 +113,8 @@ TEST_F(ConnectionStatsTest, ClientSizeAggregationRecord) {
               ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 1, 6, 9))));
 }
 
-// Tests that aggregated records for server side events are correctly put into ConnectionStats.
-TEST_F(ConnectionStatsTest, ServerSizeAggregationRecord) {
+// Tests that aggregated records for server side events are correctly put into ConnStats.
+TEST_F(ConnStatsTest, ServerSizeAggregationRecord) {
   struct socket_control_event_t conn = event_gen_.InitConn(kRoleServer);
   auto* sockaddr = reinterpret_cast<struct sockaddr_in*>(&conn.open.addr);
   sockaddr->sin_family = AF_INET;
@@ -166,7 +165,7 @@ TEST_F(ConnectionStatsTest, ServerSizeAggregationRecord) {
 }
 
 // Tests that any connection trackers with no remote endpoint do not report conn stats events.
-TEST_F(ConnectionStatsTest, NoEventsIfNoRemoteAddr) {
+TEST_F(ConnStatsTest, NoEventsIfNoRemoteAddr) {
   auto frame1 = event_gen_.InitSendEvent(kProtocolHTTP, kRoleClient, "foo");
 
   tracker_.AddDataEvent(std::move(frame1));
@@ -174,8 +173,8 @@ TEST_F(ConnectionStatsTest, NoEventsIfNoRemoteAddr) {
   EXPECT_THAT(conn_stats_.mutable_agg_stats(), IsEmpty());
 }
 
-// Tests that disabled ConnectionTracker still reports data.
-TEST_F(ConnectionStatsTest, DisabledConnectionTracker) {
+// Tests that disabled ConnTracker still reports data.
+TEST_F(ConnStatsTest, DisabledConnTracker) {
   struct socket_control_event_t conn = event_gen_.InitConn();
   auto* sockaddr = reinterpret_cast<struct sockaddr_in*>(&conn.open.addr);
   sockaddr->sin_family = AF_INET;

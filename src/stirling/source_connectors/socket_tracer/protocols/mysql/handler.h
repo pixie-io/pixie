@@ -44,7 +44,7 @@ StatusOr<ParseState> HandleStmtExecuteRequest(const Packet& req_packet,
 
 /**
  * StmtClose request contains the stmt_id of the prepare stmt to close. It simply deletes
- * the prepare stmt from the map (state of ConnectionTracker).
+ * the prepare stmt from the map (state of ConnTracker).
  */
 StatusOr<ParseState> HandleStmtCloseRequest(const Packet& req_packet,
                                             std::map<int, PreparedStatement>* prepare_map,

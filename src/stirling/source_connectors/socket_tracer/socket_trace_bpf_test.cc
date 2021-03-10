@@ -446,8 +446,8 @@ TEST_F(SocketTraceBPFTest, UDPSendMsgRecvMsg) {
 
   source_->PollPerfBuffers();
 
-  ASSERT_OK_AND_ASSIGN(const ConnectionTracker* tracker,
-                       source_->GetConnectionTracker(getpid(), client.sockfd()));
+  ASSERT_OK_AND_ASSIGN(const ConnTracker* tracker,
+                       source_->GetConnTracker(getpid(), client.sockfd()));
   ASSERT_NE(tracker, nullptr);
   EXPECT_THAT(GetMsgFromEvents(tracker->send_data().events()), ElementsAre(kHTTPReqMsg1));
   EXPECT_THAT(GetMsgFromEvents(tracker->recv_data().events()), ElementsAre(kHTTPRespMsg1));
@@ -574,45 +574,45 @@ int GetTargetRecordsCount(DataTable* data_table, int32_t pid) {
   return res;
 }
 
-uint64_t GetConnStats(const ConnectionTracker& tracker, ConnectionTracker::Stats::Key key) {
+uint64_t GetConnStats(const ConnTracker& tracker, ConnTracker::Stats::Key key) {
   return tracker.stats().Get(key);
 }
 
-uint64_t GetBytesSentTransferred(const ConnectionTracker& tracker) {
-  return GetConnStats(tracker, ConnectionTracker::Stats::Key::kBytesSentTransferred);
+uint64_t GetBytesSentTransferred(const ConnTracker& tracker) {
+  return GetConnStats(tracker, ConnTracker::Stats::Key::kBytesSentTransferred);
 }
 
-uint64_t GetBytesRecvTransferred(const ConnectionTracker& tracker) {
-  return GetConnStats(tracker, ConnectionTracker::Stats::Key::kBytesRecvTransferred);
+uint64_t GetBytesRecvTransferred(const ConnTracker& tracker) {
+  return GetConnStats(tracker, ConnTracker::Stats::Key::kBytesRecvTransferred);
 }
 
-uint64_t GetBytesSent(const ConnectionTracker& tracker) {
-  return GetConnStats(tracker, ConnectionTracker::Stats::Key::kBytesSent);
+uint64_t GetBytesSent(const ConnTracker& tracker) {
+  return GetConnStats(tracker, ConnTracker::Stats::Key::kBytesSent);
 }
 
-uint64_t GetBytesRecv(const ConnectionTracker& tracker) {
-  return GetConnStats(tracker, ConnectionTracker::Stats::Key::kBytesRecv);
+uint64_t GetBytesRecv(const ConnTracker& tracker) {
+  return GetConnStats(tracker, ConnTracker::Stats::Key::kBytesRecv);
 }
 
-uint64_t GetDataEventSent(const ConnectionTracker& tracker) {
-  return GetConnStats(tracker, ConnectionTracker::Stats::Key::kDataEventSent);
+uint64_t GetDataEventSent(const ConnTracker& tracker) {
+  return GetConnStats(tracker, ConnTracker::Stats::Key::kDataEventSent);
 }
 
-uint64_t GetDataEventRecv(const ConnectionTracker& tracker) {
-  return GetConnStats(tracker, ConnectionTracker::Stats::Key::kDataEventRecv);
+uint64_t GetDataEventRecv(const ConnTracker& tracker) {
+  return GetConnStats(tracker, ConnTracker::Stats::Key::kDataEventRecv);
 }
 
-uint64_t GetValidRecords(const ConnectionTracker& tracker) {
-  return GetConnStats(tracker, ConnectionTracker::Stats::Key::kValidRecords);
+uint64_t GetValidRecords(const ConnTracker& tracker) {
+  return GetConnStats(tracker, ConnTracker::Stats::Key::kValidRecords);
 }
 
-uint64_t GetInvalidRecords(const ConnectionTracker& tracker) {
-  return GetConnStats(tracker, ConnectionTracker::Stats::Key::kInvalidRecords);
+uint64_t GetInvalidRecords(const ConnTracker& tracker) {
+  return GetConnStats(tracker, ConnTracker::Stats::Key::kInvalidRecords);
 }
 
-// Tests that connection stats are updated after ConnectionTracker is disabled because of being
+// Tests that connection stats are updated after ConnTracker is disabled because of being
 // a client.
-TEST_F(SocketTraceServerSideBPFTest, ConnStatsUpdatedAfterConnectionTrackerDisabled) {
+TEST_F(SocketTraceServerSideBPFTest, ConnStatsUpdatedAfterConnTrackerDisabled) {
   auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.get());
 
   ConfigureBPFCapture(kProtocolHTTP, kRoleClient | kRoleServer);
@@ -639,11 +639,10 @@ TEST_F(SocketTraceServerSideBPFTest, ConnStatsUpdatedAfterConnectionTrackerDisab
   sleep(1);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
-  ASSERT_OK_AND_ASSIGN(const ConnectionTracker* client_side_tracker,
-                       socket_trace_connector->GetConnectionTracker(getpid(), client.sockfd()));
-  ASSERT_OK_AND_ASSIGN(
-      const ConnectionTracker* server_side_tracker,
-      socket_trace_connector->GetConnectionTracker(getpid(), server_endpoint->sockfd()));
+  ASSERT_OK_AND_ASSIGN(const ConnTracker* client_side_tracker,
+                       socket_trace_connector->GetConnTracker(getpid(), client.sockfd()));
+  ASSERT_OK_AND_ASSIGN(const ConnTracker* server_side_tracker,
+                       socket_trace_connector->GetConnTracker(getpid(), server_endpoint->sockfd()));
 
   EXPECT_EQ(GetBytesSent(*client_side_tracker), kHTTPReqMsg1.size());
   EXPECT_EQ(GetBytesSentTransferred(*client_side_tracker), kHTTPReqMsg1.size());

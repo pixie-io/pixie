@@ -65,7 +65,7 @@ struct HTTP2DataEvent {
   }
 
   go_grpc_data_event_t::data_attr_t attr;
-  // TODO(oazizi/yzhao): payload will be copied into ConnectionTracker/DataStream's internal buffer.
+  // TODO(oazizi/yzhao): payload will be copied into ConnTracker/DataStream's internal buffer.
   // It appears we should use string_view here.
   std::string payload;
 };

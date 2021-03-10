@@ -51,7 +51,7 @@ class DataStream : NotCopyMoveable {
            std::holds_alternative<std::deque<TFrameType>>(frames_))
         << absl::Substitute(
                "Must hold the default std::monostate, or the same type as requested. "
-               "I.e., ConnectionTracker cannot change the type it holds during runtime. $0 -> $1",
+               "I.e., ConnTracker cannot change the type it holds during runtime. $0 -> $1",
                frames_.index(), typeid(TFrameType).name());
     if (std::holds_alternative<std::monostate>(frames_)) {
       // Reset the type to the expected type.
@@ -69,7 +69,7 @@ class DataStream : NotCopyMoveable {
   const std::deque<TFrameType>& Frames() const {
     DCHECK(std::holds_alternative<std::deque<TFrameType>>(frames_)) << absl::Substitute(
         "Must hold the same type as requested. "
-        "I.e., ConnectionTracker cannot change the type it holds during runtime. $0 -> $1",
+        "I.e., ConnTracker cannot change the type it holds during runtime. $0 -> $1",
         frames_.index(), typeid(TFrameType).name());
     return std::get<std::deque<TFrameType>>(frames_);
   }
@@ -258,7 +258,7 @@ class DataStream : NotCopyMoveable {
   // std::get<> will succeed only for the first type variant, if the variant has not been
   // initialized after definition.
   //
-  // Additionally, ConnectionTracker must not switch type during runtime, which indicates serious
+  // Additionally, ConnTracker must not switch type during runtime, which indicates serious
   // bug, so we add std::monostate as the default type. And switch to the right time in runtime.
   protocols::FrameDequeVariant frames_;
 

@@ -16,11 +16,11 @@ namespace pl {
 namespace stirling {
 
 /**
- * Records the aggregated stats on all ConnectionTracker objects.
+ * Records the aggregated stats on all ConnTracker objects.
  *
- * The APIs mirrors ConnectionTracker.
+ * The APIs mirrors ConnTracker.
  */
-class ConnectionStats {
+class ConnStats {
  public:
   // AggKey ideally should be unique to individual service instances. Such that the aggregated
   // metrics from an AggKey reflects a service instance, which then indicates the load on that
@@ -75,9 +75,9 @@ class ConnectionStats {
 
   auto& mutable_agg_stats() { return agg_stats_; }
 
-  void AddConnOpenEvent(const ConnectionTracker& tracker);
-  void AddConnCloseEvent(const ConnectionTracker& tracker);
-  void AddDataEvent(const ConnectionTracker& tracker, const SocketDataEvent& event);
+  void AddConnOpenEvent(const ConnTracker& tracker);
+  void AddConnCloseEvent(const ConnTracker& tracker);
+  void AddDataEvent(const ConnTracker& tracker, const SocketDataEvent& event);
 
   void RecordData(const struct upid_t& upid, const struct traffic_class_t& traffic_class,
                   TrafficDirection direction, const SockAddr& remote_endpoint, size_t size);

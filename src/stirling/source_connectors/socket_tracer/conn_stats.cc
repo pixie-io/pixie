@@ -9,8 +9,8 @@ namespace stirling {
 
 namespace {
 
-ConnectionStats::AggKey BuildAggKey(const upid_t& upid, const traffic_class_t& traffic_class,
-                                    const SockAddr& remote_endpoint) {
+ConnStats::AggKey BuildAggKey(const upid_t& upid, const traffic_class_t& traffic_class,
+                              const SockAddr& remote_endpoint) {
   // Both local UPID and remote endpoint must be fully specified.
   DCHECK_NE(upid.pid, 0);
   DCHECK_NE(upid.start_time_ticks, 0);
@@ -27,7 +27,7 @@ ConnectionStats::AggKey BuildAggKey(const upid_t& upid, const traffic_class_t& t
 
 }  // namespace
 
-void ConnectionStats::AddConnOpenEvent(const ConnectionTracker& tracker) {
+void ConnStats::AddConnOpenEvent(const ConnTracker& tracker) {
   const conn_id_t& conn_id = tracker.conn_id();
   const traffic_class_t& tcls = tracker.traffic_class();
   const SockAddr& remote_endpoint = tracker.remote_endpoint();
@@ -36,7 +36,7 @@ void ConnectionStats::AddConnOpenEvent(const ConnectionTracker& tracker) {
   RecordConn(conn_id, tcls, remote_endpoint, is_open);
 }
 
-void ConnectionStats::AddConnCloseEvent(const ConnectionTracker& tracker) {
+void ConnStats::AddConnCloseEvent(const ConnTracker& tracker) {
   const conn_id_t& conn_id = tracker.conn_id();
   const traffic_class_t& tcls = tracker.traffic_class();
   const SockAddr& remote_endpoint = tracker.remote_endpoint();
@@ -45,7 +45,7 @@ void ConnectionStats::AddConnCloseEvent(const ConnectionTracker& tracker) {
   RecordConn(conn_id, tcls, remote_endpoint, is_open);
 }
 
-void ConnectionStats::AddDataEvent(const ConnectionTracker& tracker, const SocketDataEvent& event) {
+void ConnStats::AddDataEvent(const ConnTracker& tracker, const SocketDataEvent& event) {
   const upid_t& upid = event.attr.conn_id.upid;
   const traffic_class_t& tcls = tracker.traffic_class();
   const TrafficDirection dir = event.attr.direction;
@@ -55,9 +55,9 @@ void ConnectionStats::AddDataEvent(const ConnectionTracker& tracker, const Socke
   RecordData(upid, tcls, dir, remote_endpoint, size);
 }
 
-void ConnectionStats::RecordConn(const struct conn_id_t& conn_id,
-                                 const struct traffic_class_t& traffic_class,
-                                 const SockAddr& remote_endpoint, bool is_open) {
+void ConnStats::RecordConn(const struct conn_id_t& conn_id,
+                           const struct traffic_class_t& traffic_class,
+                           const SockAddr& remote_endpoint, bool is_open) {
   AggKey key = BuildAggKey(conn_id.upid, traffic_class, remote_endpoint);
 
   auto& stats = agg_stats_[key];
@@ -72,10 +72,9 @@ void ConnectionStats::RecordConn(const struct conn_id_t& conn_id,
   }
 }
 
-void ConnectionStats::RecordData(const struct upid_t& upid,
-                                 const struct traffic_class_t& traffic_class,
-                                 TrafficDirection direction, const SockAddr& remote_endpoint,
-                                 size_t size) {
+void ConnStats::RecordData(const struct upid_t& upid, const struct traffic_class_t& traffic_class,
+                           TrafficDirection direction, const SockAddr& remote_endpoint,
+                           size_t size) {
   AggKey key = BuildAggKey(upid, traffic_class, remote_endpoint);
   auto& stats = agg_stats_[key];
 

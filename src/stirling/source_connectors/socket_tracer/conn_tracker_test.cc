@@ -35,15 +35,15 @@ using testing::kHTTPResp2;
 using testing::kHTTPUpgradeReq;
 using testing::kHTTPUpgradeResp;
 
-class ConnectionTrackerTest : public ::testing::Test {
+class ConnTrackerTest : public ::testing::Test {
  protected:
-  ConnectionTrackerTest() : event_gen_(&real_clock_) {}
+  ConnTrackerTest() : event_gen_(&real_clock_) {}
 
   testing::RealClock real_clock_;
   testing::EventGenerator event_gen_;
 };
 
-TEST_F(ConnectionTrackerTest, timestamp_test) {
+TEST_F(ConnTrackerTest, timestamp_test) {
   // Use mock clock to get precise timestamps.
   testing::MockClock mock_clock;
   testing::EventGenerator event_gen(&mock_clock);
@@ -56,7 +56,7 @@ TEST_F(ConnectionTrackerTest, timestamp_test) {
   std::unique_ptr<SocketDataEvent> event5 = event_gen.InitRecvEvent<kProtocolHTTP>("event5");
   struct socket_control_event_t close_event = event_gen.InitClose();
 
-  ConnectionTracker tracker;
+  ConnTracker tracker;
   EXPECT_EQ(0, tracker.last_bpf_timestamp_ns());
   tracker.AddControlEvent(conn);
   EXPECT_EQ(1, tracker.last_bpf_timestamp_ns());
@@ -76,7 +76,7 @@ TEST_F(ConnectionTrackerTest, timestamp_test) {
   EXPECT_EQ(8, tracker.last_bpf_timestamp_ns());
 }
 
-TEST_F(ConnectionTrackerTest, ReqRespMatchingSimple) {
+TEST_F(ConnTrackerTest, ReqRespMatchingSimple) {
   testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn();
   std::unique_ptr<SocketDataEvent> req0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
@@ -87,7 +87,7 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSimple) {
   std::unique_ptr<SocketDataEvent> resp2 = event_gen.InitRecvEvent<kProtocolHTTP>(kHTTPResp2);
   struct socket_control_event_t close_event = event_gen.InitClose();
 
-  ConnectionTracker tracker;
+  ConnTracker tracker;
   tracker.AddControlEvent(conn);
   tracker.AddDataEvent(std::move(req0));
   tracker.AddDataEvent(std::move(resp0));
@@ -111,7 +111,7 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSimple) {
   EXPECT_EQ(records[2].resp.body, "bar");
 }
 
-TEST_F(ConnectionTrackerTest, DISABLED_ReqRespMatchingPipelined) {
+TEST_F(ConnTrackerTest, DISABLED_ReqRespMatchingPipelined) {
   testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn();
   std::unique_ptr<SocketDataEvent> req0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
@@ -122,7 +122,7 @@ TEST_F(ConnectionTrackerTest, DISABLED_ReqRespMatchingPipelined) {
   std::unique_ptr<SocketDataEvent> resp2 = event_gen.InitRecvEvent<kProtocolHTTP>(kHTTPResp2);
   struct socket_control_event_t close_event = event_gen.InitClose();
 
-  ConnectionTracker tracker;
+  ConnTracker tracker;
   tracker.AddControlEvent(conn);
   tracker.AddDataEvent(std::move(req0));
   tracker.AddDataEvent(std::move(req1));
@@ -146,7 +146,7 @@ TEST_F(ConnectionTrackerTest, DISABLED_ReqRespMatchingPipelined) {
   EXPECT_EQ(records[2].resp.body, "bar");
 }
 
-TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingRequest) {
+TEST_F(ConnTrackerTest, ReqRespMatchingSerializedMissingRequest) {
   testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn();
   std::unique_ptr<SocketDataEvent> req0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
@@ -157,7 +157,7 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingRequest) {
   std::unique_ptr<SocketDataEvent> resp2 = event_gen.InitRecvEvent<kProtocolHTTP>(kHTTPResp2);
   struct socket_control_event_t close_event = event_gen.InitClose();
 
-  ConnectionTracker tracker;
+  ConnTracker tracker;
   tracker.AddControlEvent(conn);
   tracker.AddDataEvent(std::move(req0));
   tracker.AddDataEvent(std::move(resp0));
@@ -178,7 +178,7 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingRequest) {
   EXPECT_EQ(records[1].resp.body, "bar");
 }
 
-TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingResponse) {
+TEST_F(ConnTrackerTest, ReqRespMatchingSerializedMissingResponse) {
   testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn();
   std::unique_ptr<SocketDataEvent> req0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
@@ -189,7 +189,7 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingResponse) {
   std::unique_ptr<SocketDataEvent> resp2 = event_gen.InitRecvEvent<kProtocolHTTP>(kHTTPResp2);
   struct socket_control_event_t close_event = event_gen.InitClose();
 
-  ConnectionTracker tracker;
+  ConnTracker tracker;
   tracker.AddControlEvent(conn);
   tracker.AddDataEvent(std::move(req0));
   tracker.AddDataEvent(std::move(resp0));
@@ -210,7 +210,7 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingResponse) {
   EXPECT_EQ(records[1].resp.body, "bar");
 }
 
-TEST_F(ConnectionTrackerTest, TrackerDisable) {
+TEST_F(ConnTrackerTest, TrackerDisable) {
   testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn();
   std::unique_ptr<SocketDataEvent> req0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
@@ -225,7 +225,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisable) {
       event_gen.InitRecvEvent<kProtocolHTTP>("good-bye to you too");
   struct socket_control_event_t close_event = event_gen.InitClose();
 
-  ConnectionTracker tracker;
+  ConnTracker tracker;
   std::vector<http::Record> records;
 
   tracker.AddControlEvent(conn);
@@ -261,7 +261,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisable) {
   ASSERT_TRUE(tracker.IsZombie());
 }
 
-TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
+TEST_F(ConnTrackerTest, TrackerHTTP101Disable) {
   testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn();
   std::unique_ptr<SocketDataEvent> req0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
@@ -275,7 +275,7 @@ TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
       event_gen.InitRecvEvent<kProtocolHTTP>("good-bye to you too");
   struct socket_control_event_t close_event = event_gen.InitClose();
 
-  ConnectionTracker tracker;
+  ConnTracker tracker;
   std::vector<http::Record> records;
 
   tracker.AddControlEvent(conn);
@@ -323,40 +323,40 @@ TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
 }
 
 TEST(StatsTest, Increment) {
-  ConnectionTracker::Stats stats;
+  ConnTracker::Stats stats;
 
-  EXPECT_EQ(0, stats.Get(ConnectionTracker::Stats::Key::kDataEventSent));
+  EXPECT_EQ(0, stats.Get(ConnTracker::Stats::Key::kDataEventSent));
 
-  stats.Increment(ConnectionTracker::Stats::Key::kDataEventSent);
-  EXPECT_EQ(1, stats.Get(ConnectionTracker::Stats::Key::kDataEventSent));
+  stats.Increment(ConnTracker::Stats::Key::kDataEventSent);
+  EXPECT_EQ(1, stats.Get(ConnTracker::Stats::Key::kDataEventSent));
 
-  stats.Increment(ConnectionTracker::Stats::Key::kDataEventSent, 5);
-  EXPECT_EQ(6, stats.Get(ConnectionTracker::Stats::Key::kDataEventSent));
+  stats.Increment(ConnTracker::Stats::Key::kDataEventSent, 5);
+  EXPECT_EQ(6, stats.Get(ConnTracker::Stats::Key::kDataEventSent));
 }
 
-TEST_F(ConnectionTrackerTest, DataEventsChangesCounter) {
+TEST_F(ConnTrackerTest, DataEventsChangesCounter) {
   auto frame0 = event_gen_.InitRecvEvent<kProtocolHTTP>(kHTTPReq0);
   auto frame1 = event_gen_.InitSendEvent<kProtocolHTTP>(kHTTPResp0);
 
-  ConnectionTracker tracker;
+  ConnTracker tracker;
 
-  EXPECT_EQ(0, tracker.stats().Get(ConnectionTracker::Stats::Key::kBytesRecv));
-  EXPECT_EQ(0, tracker.stats().Get(ConnectionTracker::Stats::Key::kBytesSent));
+  EXPECT_EQ(0, tracker.stats().Get(ConnTracker::Stats::Key::kBytesRecv));
+  EXPECT_EQ(0, tracker.stats().Get(ConnTracker::Stats::Key::kBytesSent));
 
   tracker.AddDataEvent(std::move(frame0));
   tracker.AddDataEvent(std::move(frame1));
 
-  EXPECT_EQ(kHTTPReq0.size(), tracker.stats().Get(ConnectionTracker::Stats::Key::kBytesRecv));
-  EXPECT_EQ(kHTTPResp0.size(), tracker.stats().Get(ConnectionTracker::Stats::Key::kBytesSent));
+  EXPECT_EQ(kHTTPReq0.size(), tracker.stats().Get(ConnTracker::Stats::Key::kBytesRecv));
+  EXPECT_EQ(kHTTPResp0.size(), tracker.stats().Get(ConnTracker::Stats::Key::kBytesSent));
 }
 
-TEST_F(ConnectionTrackerTest, HTTPStuckEventsAreRemoved) {
+TEST_F(ConnTrackerTest, HTTPStuckEventsAreRemoved) {
   // Use incomplete data to make it stuck.
   testing::EventGenerator event_gen(&real_clock_);
   auto data0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(0, 10));
   auto data1 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(10, 10));
 
-  ConnectionTracker tracker;
+  ConnTracker tracker;
 
   tracker.AddDataEvent(std::move(data0));
   tracker.ProcessToRecords<http::ProtocolTraits>();
@@ -376,14 +376,14 @@ TEST_F(ConnectionTrackerTest, HTTPStuckEventsAreRemoved) {
   EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
 }
 
-TEST_F(ConnectionTrackerTest, HTTPMessagesErasedAfterExpiration) {
+TEST_F(ConnTrackerTest, HTTPMessagesErasedAfterExpiration) {
   testing::EventGenerator event_gen(&real_clock_);
   auto frame0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
   auto frame1 = event_gen.InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
   auto frame2 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
   auto frame3 = event_gen.InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
 
-  ConnectionTracker tracker;
+  ConnTracker tracker;
 
   FLAGS_messages_size_limit_bytes = 10000;
   FLAGS_messages_expiration_duration_secs = 10000;
@@ -401,12 +401,12 @@ TEST_F(ConnectionTrackerTest, HTTPMessagesErasedAfterExpiration) {
   // without waiting for the requests.
 }
 
-TEST_F(ConnectionTrackerTest, MySQLMessagesErasedAfterExpiration) {
+TEST_F(ConnTrackerTest, MySQLMessagesErasedAfterExpiration) {
   testing::EventGenerator event_gen(&real_clock_);
   auto msg0 =
       event_gen.InitSendEvent<kProtocolMySQL>(mysql::testutils::GenRawPacket(0, "\x03SELECT"));
 
-  ConnectionTracker tracker;
+  ConnTracker tracker;
 
   FLAGS_messages_size_limit_bytes = 10000;
   FLAGS_messages_expiration_duration_secs = 10000;
@@ -422,7 +422,7 @@ TEST_F(ConnectionTrackerTest, MySQLMessagesErasedAfterExpiration) {
 }
 
 // Tests that tracker state is kDisabled if the remote address is in the cluster's CIDR range.
-TEST_F(ConnectionTrackerTest, TrackerDisabledForIntraClusterRemoteEndpoint) {
+TEST_F(ConnTrackerTest, TrackerDisabledForIntraClusterRemoteEndpoint) {
   testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn();
 
@@ -433,30 +433,30 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForIntraClusterRemoteEndpoint) {
   ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
   std::vector cidrs = {cidr};
 
-  ConnectionTracker tracker;
+  ConnTracker tracker;
   tracker.AddControlEvent(conn);
   tracker.SetProtocol(kProtocolHTTP);
   tracker.SetRole(kRoleClient);
   tracker.IterationPreTick(cidrs, /*proc_parser*/ nullptr, /*connections*/ nullptr);
-  EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
+  EXPECT_EQ(ConnTracker::State::kDisabled, tracker.state());
 }
 
 // Tests that ConnTrcker state is not updated when no cluster CIDR is specified.
-TEST_F(ConnectionTrackerTest, TrackerCollectingForClientSideTracingWithNoCIDR) {
+TEST_F(ConnTrackerTest, TrackerCollectingForClientSideTracingWithNoCIDR) {
   testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn();
   testing::SetIPv4RemoteAddr(&conn, "1.2.3.4");
 
-  ConnectionTracker tracker;
+  ConnTracker tracker;
   tracker.AddControlEvent(conn);
   tracker.SetProtocol(kProtocolHTTP);
   tracker.SetRole(kRoleClient);
   tracker.IterationPreTick(/*cluster_cidrs*/ {}, /*proc_parser*/ nullptr, /*connections*/ nullptr);
-  EXPECT_EQ(ConnectionTracker::State::kCollecting, tracker.state());
+  EXPECT_EQ(ConnTracker::State::kCollecting, tracker.state());
 }
 
 // Tests that tracker state is kDisabled if the remote address is Unix domain socket.
-TEST_F(ConnectionTrackerTest, TrackerDisabledForUnixDomainSocket) {
+TEST_F(ConnTrackerTest, TrackerDisabledForUnixDomainSocket) {
   testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn();
   conn.open.addr.sin6_family = AF_UNIX;
@@ -465,14 +465,14 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForUnixDomainSocket) {
   ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
   std::vector cidrs = {cidr};
 
-  ConnectionTracker tracker;
+  ConnTracker tracker;
   tracker.AddControlEvent(conn);
   tracker.IterationPreTick(cidrs, /*proc_parser*/ nullptr, /*connections*/ nullptr);
-  EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
+  EXPECT_EQ(ConnTracker::State::kDisabled, tracker.state());
 }
 
 // Tests that tracker state is kDisabled if the remote address is kOther (non-IP, non-Unix).
-TEST_F(ConnectionTrackerTest, TrackerDisabledForOtherSockAddrFamily) {
+TEST_F(ConnTrackerTest, TrackerDisabledForOtherSockAddrFamily) {
   testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn();
   // Any non-IP family works for testing purposes.
@@ -482,14 +482,14 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForOtherSockAddrFamily) {
   ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
   std::vector cidrs = {cidr};
 
-  ConnectionTracker tracker;
+  ConnTracker tracker;
   tracker.AddControlEvent(conn);
   tracker.IterationPreTick(cidrs, /*proc_parser*/ nullptr, /*connections*/ nullptr);
-  EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
+  EXPECT_EQ(ConnTracker::State::kDisabled, tracker.state());
 }
 
 // Tests that tracker is disabled after mapping the addresses from IPv4 to IPv6.
-TEST_F(ConnectionTrackerTest, TrackerDisabledAfterMapping) {
+TEST_F(ConnTrackerTest, TrackerDisabledAfterMapping) {
   {
     testing::EventGenerator event_gen(&real_clock_);
     struct socket_control_event_t conn = event_gen.InitConn();
@@ -498,12 +498,12 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledAfterMapping) {
     CIDRBlock cidr;
     ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
 
-    ConnectionTracker tracker;
+    ConnTracker tracker;
     tracker.AddControlEvent(conn);
     tracker.SetProtocol(kProtocolHTTP);
     tracker.SetRole(kRoleClient);
     tracker.IterationPreTick({cidr}, /*proc_parser*/ nullptr, /*connections*/ nullptr);
-    EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state())
+    EXPECT_EQ(ConnTracker::State::kDisabled, tracker.state())
         << "Got: " << magic_enum::enum_name(tracker.state());
   }
   {
@@ -514,17 +514,17 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledAfterMapping) {
     CIDRBlock cidr;
     ASSERT_OK(ParseCIDRBlock("::ffff:1.2.3.4/120", &cidr));
 
-    ConnectionTracker tracker;
+    ConnTracker tracker;
     tracker.AddControlEvent(conn);
     tracker.SetProtocol(kProtocolHTTP);
     tracker.SetRole(kRoleClient);
     tracker.IterationPreTick({cidr}, /*proc_parser*/ nullptr, /*connections*/ nullptr);
-    EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state())
+    EXPECT_EQ(ConnTracker::State::kDisabled, tracker.state())
         << "Got: " << magic_enum::enum_name(tracker.state());
   }
 }
 
-TEST_F(ConnectionTrackerTest, DisabledDueToParsingFailureRate) {
+TEST_F(ConnTrackerTest, DisabledDueToParsingFailureRate) {
   using mysql::testutils::GenErr;
   using mysql::testutils::GenRawPacket;
 
@@ -551,7 +551,7 @@ TEST_F(ConnectionTrackerTest, DisabledDueToParsingFailureRate) {
       GenRawPacket(0, "\xaa 0xaa is not a valid MySQL command"));
   auto resp_frame6 = event_gen.InitRecvEvent<kProtocolMySQL>(GenRawPacket(1, ""));
 
-  ConnectionTracker tracker;
+  ConnTracker tracker;
   std::vector<mysql::Record> records;
 
   tracker.AddDataEvent(std::move(req_frame0));
@@ -560,7 +560,7 @@ TEST_F(ConnectionTrackerTest, DisabledDueToParsingFailureRate) {
   records = tracker.ProcessToRecords<mysql::ProtocolTraits>();
   tracker.IterationPostTick();
 
-  EXPECT_EQ(tracker.state(), ConnectionTracker::State::kCollecting);
+  EXPECT_EQ(tracker.state(), ConnTracker::State::kCollecting);
   EXPECT_EQ(records.size(), 0);
 
   tracker.AddDataEvent(std::move(req_frame1));
@@ -568,7 +568,7 @@ TEST_F(ConnectionTrackerTest, DisabledDueToParsingFailureRate) {
   records = tracker.ProcessToRecords<mysql::ProtocolTraits>();
   tracker.IterationPostTick();
 
-  EXPECT_EQ(tracker.state(), ConnectionTracker::State::kCollecting);
+  EXPECT_EQ(tracker.state(), ConnTracker::State::kCollecting);
   EXPECT_EQ(records.size(), 0);
 
   tracker.AddDataEvent(std::move(req_frame2));
@@ -576,7 +576,7 @@ TEST_F(ConnectionTrackerTest, DisabledDueToParsingFailureRate) {
   records = tracker.ProcessToRecords<mysql::ProtocolTraits>();
   tracker.IterationPostTick();
 
-  EXPECT_EQ(tracker.state(), ConnectionTracker::State::kCollecting);
+  EXPECT_EQ(tracker.state(), ConnTracker::State::kCollecting);
   EXPECT_EQ(records.size(), 0);
 
   tracker.AddDataEvent(std::move(req_frame3));
@@ -584,7 +584,7 @@ TEST_F(ConnectionTrackerTest, DisabledDueToParsingFailureRate) {
   records = tracker.ProcessToRecords<mysql::ProtocolTraits>();
   tracker.IterationPostTick();
 
-  EXPECT_EQ(tracker.state(), ConnectionTracker::State::kCollecting);
+  EXPECT_EQ(tracker.state(), ConnTracker::State::kCollecting);
   EXPECT_EQ(records.size(), 0);
 
   tracker.AddDataEvent(std::move(req_frame4));
@@ -592,7 +592,7 @@ TEST_F(ConnectionTrackerTest, DisabledDueToParsingFailureRate) {
   records = tracker.ProcessToRecords<mysql::ProtocolTraits>();
   tracker.IterationPostTick();
 
-  EXPECT_EQ(tracker.state(), ConnectionTracker::State::kCollecting);
+  EXPECT_EQ(tracker.state(), ConnTracker::State::kCollecting);
   EXPECT_EQ(records.size(), 0);
 
   // This request should push the error rate above the brink.
@@ -601,11 +601,11 @@ TEST_F(ConnectionTrackerTest, DisabledDueToParsingFailureRate) {
   records = tracker.ProcessToRecords<mysql::ProtocolTraits>();
   tracker.IterationPostTick();
 
-  EXPECT_EQ(tracker.state(), ConnectionTracker::State::kDisabled);
+  EXPECT_EQ(tracker.state(), ConnTracker::State::kDisabled);
   EXPECT_EQ(records.size(), 0);
 }
 
-TEST_F(ConnectionTrackerTest, DisabledDueToStitchingFailureRate) {
+TEST_F(ConnTrackerTest, DisabledDueToStitchingFailureRate) {
   using mysql::testutils::GenErr;
   using mysql::testutils::GenRawPacket;
 
@@ -625,7 +625,7 @@ TEST_F(ConnectionTrackerTest, DisabledDueToStitchingFailureRate) {
   auto req_frame6 = event_gen.InitSendEvent<kProtocolMySQL>(GenRawPacket(0, "\x03 G"));
   auto resp_frame6 = event_gen.InitRecvEvent<kProtocolMySQL>(GenRawPacket(1, ""));
 
-  ConnectionTracker tracker;
+  ConnTracker tracker;
   std::vector<mysql::Record> records;
 
   tracker.AddDataEvent(std::move(req_frame0));
@@ -642,7 +642,7 @@ TEST_F(ConnectionTrackerTest, DisabledDueToStitchingFailureRate) {
   records = tracker.ProcessToRecords<mysql::ProtocolTraits>();
   tracker.IterationPostTick();
 
-  EXPECT_EQ(tracker.state(), ConnectionTracker::State::kCollecting);
+  EXPECT_EQ(tracker.state(), ConnTracker::State::kCollecting);
   EXPECT_EQ(records.size(), 0);
 
   // This request should push the error rate above the brink.
@@ -651,39 +651,38 @@ TEST_F(ConnectionTrackerTest, DisabledDueToStitchingFailureRate) {
   records = tracker.ProcessToRecords<mysql::ProtocolTraits>();
   tracker.IterationPostTick();
 
-  EXPECT_EQ(tracker.state(), ConnectionTracker::State::kDisabled);
+  EXPECT_EQ(tracker.state(), ConnTracker::State::kDisabled);
   EXPECT_EQ(tracker.disable_reason(),
             "Connection does not appear to produce valid records of protocol kProtocolMySQL");
   EXPECT_EQ(records.size(), 0);
 }
 
 auto AggKeyIs(int tgid, std::string remote_addr) {
-  return AllOf(Field(&ConnectionStats::AggKey::upid, Field(&upid_t::tgid, tgid)),
-               Field(&ConnectionStats::AggKey::remote_addr, remote_addr));
+  return AllOf(Field(&ConnStats::AggKey::upid, Field(&upid_t::tgid, tgid)),
+               Field(&ConnStats::AggKey::remote_addr, remote_addr));
 }
 
 auto StatsIs(int open, int close, int sent, int recv) {
-  return AllOf(Field(&ConnectionStats::Stats::conn_open, open),
-               Field(&ConnectionStats::Stats::conn_close, close),
-               Field(&ConnectionStats::Stats::bytes_sent, sent),
-               Field(&ConnectionStats::Stats::bytes_recv, recv));
+  return AllOf(
+      Field(&ConnStats::Stats::conn_open, open), Field(&ConnStats::Stats::conn_close, close),
+      Field(&ConnStats::Stats::bytes_sent, sent), Field(&ConnStats::Stats::bytes_recv, recv));
 }
 
 // Test cases for protocols and roles are enumerated to avoid uncertainty in the handling in all of
 // the combinations of protocols and roles; as the handling of protocols and roles is quite
 // complicated.
-class ConnectionTrackerStatsTest
-    : public ConnectionTrackerTest,
+class ConnTrackerStatsTest
+    : public ConnTrackerTest,
       public ::testing::WithParamInterface<std::tuple<TrafficProtocol, EndpointRole>> {
  protected:
   void SetUp() override { tracker_.set_conn_stats(&conn_stats_); }
 
-  ConnectionStats conn_stats_;
-  ConnectionTracker tracker_;
+  ConnStats conn_stats_;
+  ConnTracker tracker_;
 };
 
-// Tests that ConnectionTracker accepts conn_open, data, and conn_close events.
-TEST_P(ConnectionTrackerStatsTest, ConnOpenDataCloseSequence) {
+// Tests that ConnTracker accepts conn_open, data, and conn_close events.
+TEST_P(ConnTrackerStatsTest, ConnOpenDataCloseSequence) {
   TrafficProtocol protocol;
   EndpointRole role;
 
@@ -716,8 +715,8 @@ TEST_P(ConnectionTrackerStatsTest, ConnOpenDataCloseSequence) {
               UnorderedElementsAre(Pair(AggKeyIs(12345, "0.0.0.0"), StatsIs(1, 1, 4, 4))));
 }
 
-// Tests that ConnectionTracker accepts data and conn_close events.
-TEST_P(ConnectionTrackerStatsTest, NoConnOpen) {
+// Tests that ConnTracker accepts data and conn_close events.
+TEST_P(ConnTrackerStatsTest, NoConnOpen) {
   TrafficProtocol protocol;
   EndpointRole role;
 
@@ -748,7 +747,7 @@ TEST_P(ConnectionTrackerStatsTest, NoConnOpen) {
 }
 
 // Tests that receiving conn_open and conn_close before any data event results into correct stats.
-TEST_P(ConnectionTrackerStatsTest, OnlyDataEvents) {
+TEST_P(ConnTrackerStatsTest, OnlyDataEvents) {
   TrafficProtocol protocol;
   EndpointRole role;
 
@@ -780,7 +779,7 @@ TEST_P(ConnectionTrackerStatsTest, OnlyDataEvents) {
 
 // Only instantiate tests for a partial list of protocols. As the code for computing the stats for
 // different protocols are the same.
-INSTANTIATE_TEST_SUITE_P(AllProtocols, ConnectionTrackerStatsTest,
+INSTANTIATE_TEST_SUITE_P(AllProtocols, ConnTrackerStatsTest,
                          ::testing::Combine(::testing::Values(kProtocolUnknown, kProtocolHTTP,
                                                               kProtocolMySQL, kProtocolCQL,
                                                               kProtocolPGSQL, kProtocolDNS),

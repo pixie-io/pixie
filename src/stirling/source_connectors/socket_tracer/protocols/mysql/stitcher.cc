@@ -172,7 +172,7 @@ RecordsWithErrorCount<Record> ProcessMySQLPackets(std::deque<Packet>* req_packet
   //     We are still in a good state, and this is not considered an error.
   //  3) Error: An unexpected packet that indicates we have lost sync on the connection.
   //     This is communicated through the StatusOr mechanism.
-  //     Recovery is the responsibility of the caller (i.e. ConnectionTracker).
+  //     Recovery is the responsibility of the caller (i.e. ConnTracker).
   while (!req_packets->empty()) {
     Packet& req_packet = req_packets->front();
 

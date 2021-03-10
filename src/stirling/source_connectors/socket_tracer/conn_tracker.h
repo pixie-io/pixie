@@ -39,7 +39,7 @@ namespace pl {
 namespace stirling {
 
 // Forward declaration to avoid circular include of conn_stats.h and conn_tracker.h.
-class ConnectionStats;
+class ConnStats;
 class ConnTrackersManager;
 
 /**
@@ -68,7 +68,7 @@ struct SocketClose {
  *
  * Data is extracted from a connection tracker and pushed out, as the data becomes parseable.
  */
-class ConnectionTracker : NotCopyMoveable {
+class ConnTracker : NotCopyMoveable {
  public:
   struct Stats {
     enum class Key {
@@ -111,8 +111,8 @@ class ConnectionTracker : NotCopyMoveable {
   static constexpr std::chrono::seconds kDefaultInactivityDuration{300};
 
   /**
-   * @brief Number of TransferData() (i.e. PerfBuffer read) calls during which a ConnectionTracker
-   * persists after it has been marked for death. We keep ConnectionTrackers alive to catch
+   * @brief Number of TransferData() (i.e. PerfBuffer read) calls during which a ConnTracker
+   * persists after it has been marked for death. We keep ConnTrackers alive to catch
    * late-arriving events, and for debug purposes.
    *
    * Note that an event may arrive appear to up to 1 iteration late.
@@ -128,11 +128,11 @@ class ConnectionTracker : NotCopyMoveable {
    */
   static constexpr int64_t kDeathCountdownIters = 3;
 
-  ConnectionTracker() = default;
+  ConnTracker() = default;
 
-  ~ConnectionTracker();
+  ~ConnTracker();
 
-  void set_conn_stats(ConnectionStats* conn_stats) { conn_stats_ = conn_stats; }
+  void set_conn_stats(ConnStats* conn_stats) { conn_stats_ = conn_stats; }
 
   /**
    * @brief Registers a BPF connection control event into the tracker.
@@ -339,7 +339,7 @@ class ConnectionTracker : NotCopyMoveable {
   bool AllEventsReceived() const;
 
   /**
-   * @brief Marks the ConnectionTracker for death.
+   * @brief Marks the ConnTracker for death.
    *
    * This indicates that the tracker should not receive any further events,
    * otherwise an warning or error will be produced.
@@ -354,8 +354,8 @@ class ConnectionTracker : NotCopyMoveable {
   bool IsZombie() const;
 
   /**
-   * @brief Whether this ConnectionTracker can be destroyed.
-   * @return true if this ConnectionTracker is a candidate for destruction.
+   * @brief Whether this ConnTracker can be destroyed.
+   * @return true if this ConnTracker is a candidate for destruction.
    */
   bool ReadyForDestruction() const;
 
@@ -500,7 +500,7 @@ class ConnectionTracker : NotCopyMoveable {
   // The duration after which a connection is deemed to be inactive.
   inline static std::chrono::seconds inactivity_duration_ = kDefaultInactivityDuration;
 
-  // conn_info_map_mgr_ is used to release BPF map resources when a ConnectionTracker is destroyed.
+  // conn_info_map_mgr_ is used to release BPF map resources when a ConnTracker is destroyed.
   // It is a safety net, since BPF should release the resources as long as the close() syscall is
   // made. Note that since there is only one global BPF map, this is a static/global structure.
   inline static std::shared_ptr<ConnInfoMapManager> conn_info_map_mgr_;
@@ -587,7 +587,7 @@ class ConnectionTracker : NotCopyMoveable {
 
   // The timestamp of the last update on this connection which alters the states.
   //
-  // Recorded as the latest touch time on the ConnectionTracker.
+  // Recorded as the latest touch time on the ConnTracker.
   // Currently using steady clock, so cannot be used meaningfully for logging real times.
   // This can be changed in the future if required.
   std::chrono::time_point<std::chrono::steady_clock> last_update_timestamp_;
@@ -605,7 +605,7 @@ class ConnectionTracker : NotCopyMoveable {
   // Iterations before the tracker can be killed.
   int32_t death_countdown_ = -1;
 
-  ConnectionStats* conn_stats_ = nullptr;
+  ConnStats* conn_stats_ = nullptr;
 
   Stats stats_;
 
@@ -626,11 +626,11 @@ class ConnectionTracker : NotCopyMoveable {
   std::any protocol_state_;
 
   template <typename TProtocolTraits>
-  friend std::string DebugString(const ConnectionTracker& c, std::string_view prefix);
+  friend std::string DebugString(const ConnTracker& c, std::string_view prefix);
 
   // A back pointer to the list in ConnTrackersManager where this tracker is stored.
   // This member variable is managed completely by ConnTrackersManager.
-  std::optional<std::list<ConnectionTracker*>::iterator> back_pointer_;
+  std::optional<std::list<ConnTracker*>::iterator> back_pointer_;
 
   // A pointer to the conn trackers manager, used for notifying a protocol change.
   ConnTrackersManager* manager_ = nullptr;
@@ -643,10 +643,10 @@ class ConnectionTracker : NotCopyMoveable {
 // See https://en.cppreference.com/w/cpp/language/member_template
 template <>
 std::vector<protocols::http2::Record>
-ConnectionTracker::ProcessToRecords<protocols::http2::ProtocolTraits>();
+ConnTracker::ProcessToRecords<protocols::http2::ProtocolTraits>();
 
 template <typename TProtocolTraits>
-std::string DebugString(const ConnectionTracker& c, std::string_view prefix) {
+std::string DebugString(const ConnTracker& c, std::string_view prefix) {
   using TFrameType = typename TProtocolTraits::frame_type;
 
   std::string info;

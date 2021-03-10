@@ -331,7 +331,7 @@ TEST_F(DataStreamTest, CannotSwitchType) {
 
 #if DCHECK_IS_ON()
   EXPECT_DEATH(stream.ProcessBytesToFrames<mysql::Packet>(MessageType::kRequest),
-               "ConnectionTracker cannot change the type it holds during runtime");
+               "ConnTracker cannot change the type it holds during runtime");
 #else
   EXPECT_THROW(stream.ProcessBytesToFrames<mysql::Packet>(MessageType::kRequest), std::exception);
 #endif

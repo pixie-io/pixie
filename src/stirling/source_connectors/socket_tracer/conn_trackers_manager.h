@@ -12,7 +12,7 @@ namespace pl {
 namespace stirling {
 
 /**
- * ConnTrackersManager is a container that keeps track of all ConnectionTrackers.
+ * ConnTrackersManager is a container that keeps track of all ConnTrackers.
  * Interface designed for two primary operations:
  *  1) Insertion of events indexed by conn_id (PID+FD+TSID) as they arrive from BPF.
  *  2) Iteration through trackers by protocols.
@@ -23,7 +23,7 @@ class ConnTrackersManager {
    * Get a connection tracker for the specified conn_id. If a tracker does not exist,
    * one will be created and returned.
    */
-  ConnectionTracker& GetOrCreateConnTracker(struct conn_id_t conn_id);
+  ConnTracker& GetOrCreateConnTracker(struct conn_id_t conn_id);
 
   /**
    * A TrackersList consists of a list of trackers.
@@ -35,7 +35,7 @@ class ConnTrackersManager {
    *     conn_trackers_mgr.ConnTrackersForProtocol(kProtocolHTTP);
    *
    * for (auto iter = http_conn_trackers.begin(); iter != http_conn_trackers.end(); ++iter) {
-   *   ConnectionTracker* tracker = *iter;
+   *   ConnTracker* tracker = *iter;
    *
    *   // Relevant actions on tracker go here.
    * }
@@ -52,18 +52,18 @@ class ConnTrackersManager {
      public:
       bool operator!=(const TrackersListIterator& other);
 
-      ConnectionTracker* operator*();
+      ConnTracker* operator*();
 
       // Prefix increment operator.
       TrackersListIterator operator++();
 
      private:
-      TrackersListIterator(std::list<ConnectionTracker*>* trackers,
-                           std::list<ConnectionTracker*>::iterator iter,
+      TrackersListIterator(std::list<ConnTracker*>* trackers,
+                           std::list<ConnTracker*>::iterator iter,
                            ConnTrackersManager* conn_trackers_manager);
 
-      std::list<ConnectionTracker*>* trackers_;
-      std::list<ConnectionTracker*>::iterator iter_;
+      std::list<ConnTracker*>* trackers_;
+      std::list<ConnTracker*>::iterator iter_;
       ConnTrackersManager* conn_trackers_manager_;
 
       friend class TrackersList;
@@ -76,10 +76,10 @@ class ConnTrackersManager {
     TrackersListIterator end() { return TrackersListIterator(list_, list_->end(), conn_trackers_); }
 
    private:
-    TrackersList(std::list<ConnectionTracker*>* list, ConnTrackersManager* conn_trackers)
+    TrackersList(std::list<ConnTracker*>* list, ConnTrackersManager* conn_trackers)
         : list_(list), conn_trackers_(conn_trackers) {}
 
-    std::list<ConnectionTracker*>* list_;
+    std::list<ConnTracker*>* list_;
     ConnTrackersManager* conn_trackers_;
 
     friend class ConnTrackersManager;
@@ -96,13 +96,13 @@ class ConnTrackersManager {
    * Returns the latest generation of a connection tracker for the given pid and fd.
    * If there is no tracker for {pid, fd}, returns error::NotFound.
    */
-  StatusOr<const ConnectionTracker*> GetConnectionTracker(uint32_t pid, uint32_t fd) const;
+  StatusOr<const ConnTracker*> GetConnTracker(uint32_t pid, uint32_t fd) const;
 
   /**
    * If a connection tracker has its protocol changed, then one must manually call this function.
    * TODO(oazizi): Find a cleaner/more automatic way that can avoid this call altogether.
    */
-  void UpdateProtocol(ConnectionTracker* tracker, std::optional<TrafficProtocol> old_protocol);
+  void UpdateProtocol(ConnTracker* tracker, std::optional<TrafficProtocol> old_protocol);
 
   /**
    * Deletes trackers that are ReadyForDestruction().
@@ -134,13 +134,13 @@ class ConnTrackersManager {
   // Note that the inner map cannot be a vector, because there is no guaranteed order
   // in which events are read from perf buffers.
   // Inner map could be a priority_queue, but benchmarks showed better performance with a std::map.
-  absl::flat_hash_map<uint64_t, std::map<uint64_t, ConnectionTracker> > connection_trackers_;
+  absl::flat_hash_map<uint64_t, std::map<uint64_t, ConnTracker> > connection_trackers_;
 
   // A set of lists of pointers to all the contained trackers, organized by protocol
   // This is for easy access to the trackers during TransferData().
   // Key is protocol.
   // TODO(jps): Convert to vector?
-  absl::flat_hash_map<TrafficProtocol, std::list<ConnectionTracker*> > conn_trackers_by_protocol_;
+  absl::flat_hash_map<TrafficProtocol, std::list<ConnTracker*> > conn_trackers_by_protocol_;
 
   // Keep track of total number of trackers, and other counts.
   // Used to check for consistency.

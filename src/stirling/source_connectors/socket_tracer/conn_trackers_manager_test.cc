@@ -28,7 +28,7 @@ class ConnTrackersManagerTest : public ::testing::Test {
         trackers_.ConnTrackersForProtocol(protocol);
 
     for (auto iter = conn_trackers_list.begin(); iter != conn_trackers_list.end(); ++iter) {
-      ConnectionTracker* tracker = *iter;
+      ConnTracker* tracker = *iter;
       if (probability_dist_(rng_) < mark_for_death_probabilty) {
         tracker->MarkForDeath(death_countdown);
       }
@@ -37,7 +37,7 @@ class ConnTrackersManagerTest : public ::testing::Test {
 
   void TrackerEvent(struct conn_id_t conn_id, TrafficProtocol protocol) {
     VLOG(1) << "TrackerEvent";
-    ConnectionTracker& tracker = trackers_.GetOrCreateConnTracker(conn_id);
+    ConnTracker& tracker = trackers_.GetOrCreateConnTracker(conn_id);
     tracker.SetConnID(conn_id);
     tracker.SetProtocol(protocol);
   }
@@ -59,8 +59,8 @@ TEST_F(ConnTrackersManagerTest, Fuzz) {
 
     // Randomly pick an action to take.
     //  1) TrackerEvent: proxy of a single BPF event from PollPerfBuffers that could change the
-    //  ConnectionTracker state (including protocol). 2) TransferStreamsProxy: proxy of
-    //  TransferStreams(), which processes all the ConnectionTrackers for a given protocol.
+    //  ConnTracker state (including protocol). 2) TransferStreamsProxy: proxy of
+    //  TransferStreams(), which processes all the ConnTrackers for a given protocol.
     //      - This can result in a tracker getting into the ReadyForDestruction state.
     //  3) CleanupTrackers: proxy of CleanupTrackers(), which runs periodically in Stirling.
     // This is a proxy of what happens in a real Stirling implementation.

@@ -102,12 +102,12 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   Status DisableSelfTracing();
 
   /**
-   * Gets a pointer to the most recent ConnectionTracker for the given pid and fd.
+   * Gets a pointer to the most recent ConnTracker for the given pid and fd.
    *
-   * @return Pointer to the ConnectionTracker, or error::NotFound if it does not exist.
+   * @return Pointer to the ConnTracker, or error::NotFound if it does not exist.
    */
-  StatusOr<const ConnectionTracker*> GetConnectionTracker(uint32_t pid, uint32_t fd) const {
-    return conn_trackers_.GetConnectionTracker(pid, fd);
+  StatusOr<const ConnTracker*> GetConnTracker(uint32_t pid, uint32_t fd) const {
+    return conn_trackers_.GetConnTracker(pid, fd);
   }
 
  private:
@@ -201,13 +201,13 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   // Transfer of messages to the data table.
   void TransferStreams(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table);
-  void TransferConnectionStats(ConnectorContext* ctx, DataTable* data_table);
+  void TransferConnStats(ConnectorContext* ctx, DataTable* data_table);
 
   template <typename TProtocolTraits>
-  void TransferStream(ConnectorContext* ctx, ConnectionTracker* tracker, DataTable* data_table);
+  void TransferStream(ConnectorContext* ctx, ConnTracker* tracker, DataTable* data_table);
 
   template <typename TRecordType>
-  static void AppendMessage(ConnectorContext* ctx, const ConnectionTracker& conn_tracker,
+  static void AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
                             TRecordType record, DataTable* data_table);
 
   std::thread RunDeployUProbesThread(const absl::flat_hash_set<md::UPID>& pids);
@@ -222,13 +222,13 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   ConnTrackersManager conn_trackers_;
 
-  ConnectionStats connection_stats_;
+  ConnStats connection_stats_;
 
   struct TransferSpec {
     bool enabled = false;
     uint32_t table_num = 0;
     std::vector<EndpointRole> trace_roles;
-    std::function<void(SocketTraceConnector&, ConnectorContext*, ConnectionTracker*, DataTable*)>
+    std::function<void(SocketTraceConnector&, ConnectorContext*, ConnTracker*, DataTable*)>
         transfer_fn = nullptr;
   };
 

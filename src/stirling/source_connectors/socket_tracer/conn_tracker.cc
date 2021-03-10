@@ -51,16 +51,16 @@ constexpr double kParseFailureRateThreshold = 0.4;
 constexpr double kStitchFailureRateThreshold = 0.5;
 
 //--------------------------------------------------------------
-// ConnectionTracker
+// ConnTracker
 //--------------------------------------------------------------
 
-ConnectionTracker::~ConnectionTracker() {
+ConnTracker::~ConnTracker() {
   if (conn_info_map_mgr_ != nullptr) {
     conn_info_map_mgr_->ReleaseResources(conn_id_);
   }
 }
 
-void ConnectionTracker::AddControlEvent(const socket_control_event_t& event) {
+void ConnTracker::AddControlEvent(const socket_control_event_t& event) {
   switch (event.type) {
     case kConnOpen:
       AddConnOpenEvent(event.open);
@@ -73,7 +73,7 @@ void ConnectionTracker::AddControlEvent(const socket_control_event_t& event) {
   }
 }
 
-void ConnectionTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
+void ConnTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
   if (open_info_.timestamp_ns != 0) {
     LOG_FIRST_N(WARNING, 20) << absl::Substitute("[PL-985] Clobbering existing ConnOpenEvent $0.",
                                                  ToString(conn_event.conn_id));
@@ -101,7 +101,7 @@ void ConnectionTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
   }
 }
 
-void ConnectionTracker::AddConnCloseEvent(const close_event_t& close_event) {
+void ConnTracker::AddConnCloseEvent(const close_event_t& close_event) {
   if (close_info_.timestamp_ns != 0) {
     LOG_FIRST_N(ERROR, 20) << absl::Substitute("Clobbering existing ConnCloseEvent $0.",
                                                ToString(close_event.conn_id));
@@ -122,7 +122,7 @@ void ConnectionTracker::AddConnCloseEvent(const close_event_t& close_event) {
   MarkForDeath();
 }
 
-void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
+void ConnTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   // Make sure update conn_id traffic_class before exporting stats, which uses these fields.
   SetConnID(event->attr.conn_id);
   bool role_changed = SetRole(event->attr.traffic_class.role);
@@ -138,7 +138,7 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
 
   // Only export metric to conn_stats_ after remote_endpoint has been resolved.
   if (ShouldExportToConnStats()) {
-    // Export stats to ConnectionStats object.
+    // Export stats to ConnStats object.
     conn_stats_->AddDataEvent(*this, *event);
   }
 
@@ -149,7 +149,7 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
       event->msg.size());
 
   // TODO(yzhao): Change to let userspace resolve the connection type and signal back to BPF.
-  // Then we need at least one data event to let ConnectionTracker know the field descriptor.
+  // Then we need at least one data event to let ConnTracker know the field descriptor.
   if (event->attr.traffic_class.protocol == kProtocolUnknown) {
     return;
   }
@@ -173,8 +173,7 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   }
 }
 
-protocols::http2::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id,
-                                                               bool write_event) {
+protocols::http2::HalfStream* ConnTracker::HalfStreamPtr(uint32_t stream_id, bool write_event) {
   // Client-initiated streams have odd stream IDs.
   // Server-initiated streams have even stream IDs.
   // https://tools.ietf.org/html/rfc7540#section-5.1.1
@@ -267,7 +266,7 @@ EndpointRole InferHTTP2Role(bool write_event, const std::unique_ptr<HTTP2HeaderE
   return kRoleUnknown;
 }
 
-void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
+void ConnTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
   SetConnID(hdr->attr.conn_id);
   SetProtocol(kProtocolHTTP2);
 
@@ -322,9 +321,8 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
   } else {
     if (!(role == kRoleUnknown || role == traffic_class_.role)) {
       LOG_FIRST_N(ERROR, 10) << absl::Substitute(
-          "The role of an active ConnectionTracker was changed: $0 role: $1 -> $2",
-          ToString(conn_id_), magic_enum::enum_name(traffic_class_.role),
-          magic_enum::enum_name(role));
+          "The role of an active ConnTracker was changed: $0 role: $1 -> $2", ToString(conn_id_),
+          magic_enum::enum_name(traffic_class_.role), magic_enum::enum_name(role));
     }
   }
 
@@ -357,7 +355,7 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
   half_stream_ptr->UpdateTimestamp(hdr->attr.timestamp_ns);
 }
 
-void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
+void ConnTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
   SetConnID(data->attr.conn_id);
   SetProtocol(kProtocolHTTP2);
 
@@ -422,7 +420,7 @@ void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
 
 template <>
 std::vector<protocols::http2::Record>
-ConnectionTracker::ProcessToRecords<protocols::http2::ProtocolTraits>() {
+ConnTracker::ProcessToRecords<protocols::http2::ProtocolTraits>() {
   // TODO(oazizi): ECHECK that raw events are empty.
 
   protocols::RecordsWithErrorCount<protocols::http2::Record> result;
@@ -438,14 +436,14 @@ ConnectionTracker::ProcessToRecords<protocols::http2::ProtocolTraits>() {
   return std::move(result.records);
 }
 
-void ConnectionTracker::Reset() {
+void ConnTracker::Reset() {
   send_data_.Reset();
   recv_data_.Reset();
 
   protocol_state_.reset();
 }
 
-void ConnectionTracker::Disable(std::string_view reason) {
+void ConnTracker::Disable(std::string_view reason) {
   if (state_ != State::kDisabled) {
     if (conn_info_map_mgr_ != nullptr && FLAGS_stirling_conn_disable_to_bpf) {
       conn_info_map_mgr_->Disable(conn_id_);
@@ -461,13 +459,13 @@ void ConnectionTracker::Disable(std::string_view reason) {
   Reset();
 }
 
-bool ConnectionTracker::AllEventsReceived() const {
+bool ConnTracker::AllEventsReceived() const {
   return close_info_.timestamp_ns != 0 &&
          stats_.Get(Stats::Key::kBytesSent) == close_info_.send_bytes &&
          stats_.Get(Stats::Key::kBytesRecv) == close_info_.recv_bytes;
 }
 
-void ConnectionTracker::SetConnID(struct conn_id_t conn_id) {
+void ConnTracker::SetConnID(struct conn_id_t conn_id) {
   DCHECK(conn_id_.upid.pid == 0 || conn_id_.upid.pid == conn_id.upid.pid) << absl::Substitute(
       "Mismatched conn info: tracker=$0 event=$1", ToString(conn_id_), ToString(conn_id));
   DCHECK(conn_id_.fd == 0 || conn_id_.fd == conn_id.fd) << absl::Substitute(
@@ -489,12 +487,12 @@ void ConnectionTracker::SetConnID(struct conn_id_t conn_id) {
   }
 }
 
-bool ConnectionTracker::SetRole(EndpointRole role) {
+bool ConnTracker::SetRole(EndpointRole role) {
   // Don't allow changing active role, unless it is from unknown to something else.
   if (traffic_class_.role != kRoleUnknown) {
     if (role != kRoleUnknown && traffic_class_.role != role) {
       CONN_TRACE(2) << absl::Substitute(
-          "Not allowed to change the role of an active ConnectionTracker: $0, old role: $1, new "
+          "Not allowed to change the role of an active ConnTracker: $0, old role: $1, new "
           "role: $2",
           ToString(conn_id_), magic_enum::enum_name(traffic_class_.role),
           magic_enum::enum_name(role));
@@ -517,7 +515,7 @@ bool ConnectionTracker::SetRole(EndpointRole role) {
 }
 
 // Returns false if protocol change was not allowed.
-bool ConnectionTracker::SetProtocol(TrafficProtocol protocol) {
+bool ConnTracker::SetProtocol(TrafficProtocol protocol) {
   // No change, so we're all good.
   if (traffic_class_.protocol == protocol) {
     return true;
@@ -526,7 +524,7 @@ bool ConnectionTracker::SetProtocol(TrafficProtocol protocol) {
   // Changing the active protocol of a connection tracker is not allowed.
   if (traffic_class_.protocol != kProtocolUnknown) {
     CONN_TRACE(2) << absl::Substitute(
-        "Not allowed to change the protocol of an active ConnectionTracker: $0->$1",
+        "Not allowed to change the protocol of an active ConnTracker: $0->$1",
         magic_enum::enum_name(traffic_class_.protocol), magic_enum::enum_name(protocol));
     return false;
   }
@@ -541,7 +539,7 @@ bool ConnectionTracker::SetProtocol(TrafficProtocol protocol) {
   return true;
 }
 
-void ConnectionTracker::UpdateTimestamps(uint64_t bpf_timestamp) {
+void ConnTracker::UpdateTimestamps(uint64_t bpf_timestamp) {
   last_bpf_timestamp_ns_ = std::max(last_bpf_timestamp_ns_, bpf_timestamp);
 
   last_update_timestamp_ = std::chrono::steady_clock::now();
@@ -549,7 +547,7 @@ void ConnectionTracker::UpdateTimestamps(uint64_t bpf_timestamp) {
   idle_iteration_ = false;
 }
 
-void ConnectionTracker::CheckTracker() {
+void ConnTracker::CheckTracker() {
   if (death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1) {
     LOG_FIRST_N(WARNING, 10) << absl::Substitute(
         "Did not expect new event more than 1 sampling iteration after Close. Connection=$0.",
@@ -557,7 +555,7 @@ void ConnectionTracker::CheckTracker() {
   }
 }
 
-DataStream* ConnectionTracker::req_data() {
+DataStream* ConnTracker::req_data() {
   DCHECK_NE(traffic_class_.role, kRoleUnknown);
   switch (traffic_class_.role) {
     case kRoleClient:
@@ -569,7 +567,7 @@ DataStream* ConnectionTracker::req_data() {
   }
 }
 
-DataStream* ConnectionTracker::resp_data() {
+DataStream* ConnTracker::resp_data() {
   DCHECK_NE(traffic_class_.role, kRoleUnknown);
   switch (traffic_class_.role) {
     case kRoleClient:
@@ -581,7 +579,7 @@ DataStream* ConnectionTracker::resp_data() {
   }
 }
 
-void ConnectionTracker::MarkForDeath(int32_t countdown) {
+void ConnTracker::MarkForDeath(int32_t countdown) {
   DCHECK_GE(countdown, 0);
 
   // Only send the first time MarkForDeath is called (death_countdown == -1).
@@ -599,15 +597,15 @@ void ConnectionTracker::MarkForDeath(int32_t countdown) {
   }
 }
 
-bool ConnectionTracker::IsZombie() const { return death_countdown_ >= 0; }
+bool ConnTracker::IsZombie() const { return death_countdown_ >= 0; }
 
-bool ConnectionTracker::ReadyForDestruction() const {
+bool ConnTracker::ReadyForDestruction() const {
   // We delay destruction time by a few iterations.
   // See also MarkForDeath().
   return death_countdown_ == 0;
 }
 
-bool ConnectionTracker::IsRemoteAddrInCluster(const std::vector<CIDRBlock>& cluster_cidrs) {
+bool ConnTracker::IsRemoteAddrInCluster(const std::vector<CIDRBlock>& cluster_cidrs) {
   PL_ASSIGN_OR(InetAddr remote_addr, open_info_.remote_addr.ToInetAddr(), return false);
 
   for (const auto& cluster_cidr : cluster_cidrs) {
@@ -618,7 +616,7 @@ bool ConnectionTracker::IsRemoteAddrInCluster(const std::vector<CIDRBlock>& clus
   return false;
 }
 
-void ConnectionTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs) {
+void ConnTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs) {
   // Don't handle anything but IP or Unix domain sockets.
   if (open_info_.remote_addr.family == SockAddrFamily::kOther) {
     Disable("Unhandled socket address family");
@@ -693,7 +691,7 @@ void ConnectionTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs)
   }
 }
 
-void ConnectionTracker::UpdateDataStats(const SocketDataEvent& event) {
+void ConnTracker::UpdateDataStats(const SocketDataEvent& event) {
   switch (event.attr.direction) {
     case TrafficDirection::kEgress: {
       stats_.Increment(Stats::Key::kDataEventSent, 1);
@@ -708,7 +706,7 @@ void ConnectionTracker::UpdateDataStats(const SocketDataEvent& event) {
   }
 }
 
-bool ConnectionTracker::ShouldExportToConnStats() const {
+bool ConnTracker::ShouldExportToConnStats() const {
   if (conn_stats_ == nullptr) {
     return false;
   }
@@ -720,7 +718,7 @@ bool ConnectionTracker::ShouldExportToConnStats() const {
   return endpoint_resolved && role_resolved;
 }
 
-void ConnectionTracker::ExportInitialConnStats() {
+void ConnTracker::ExportInitialConnStats() {
   conn_stats_->AddConnOpenEvent(*this);
 
   conn_stats_->RecordData(conn_id_.upid, traffic_class_, kEgress, remote_endpoint(),
@@ -729,9 +727,9 @@ void ConnectionTracker::ExportInitialConnStats() {
                           stats_.Get(Stats::Key::kBytesRecv));
 }
 
-void ConnectionTracker::IterationPreTick(const std::vector<CIDRBlock>& cluster_cidrs,
-                                         system::ProcParser* proc_parser,
-                                         system::SocketInfoManager* socket_info_mgr) {
+void ConnTracker::IterationPreTick(const std::vector<CIDRBlock>& cluster_cidrs,
+                                   system::ProcParser* proc_parser,
+                                   system::SocketInfoManager* socket_info_mgr) {
   // Assume no activity. This flag will be flipped if there is any activity during the iteration.
   idle_iteration_ = true;
 
@@ -748,7 +746,7 @@ void ConnectionTracker::IterationPreTick(const std::vector<CIDRBlock>& cluster_c
 
     // TODO(oazizi): If connection resolves to SockAddr type "Other",
     //               we should mark the state in BPF to Other too, so BPF stops tracing.
-    //               We should also mark the ConnectionTracker for death.
+    //               We should also mark the ConnTracker for death.
 
     // If the address was successfully resolved, then send the connect information to conn stats.
     if (ShouldExportToConnStats()) {
@@ -759,7 +757,7 @@ void ConnectionTracker::IterationPreTick(const std::vector<CIDRBlock>& cluster_c
   UpdateState(cluster_cidrs);
 }
 
-void ConnectionTracker::IterationPostTick() {
+void ConnTracker::IterationPostTick() {
   if (death_countdown_ > 0) {
     death_countdown_--;
   }
@@ -798,7 +796,7 @@ void ConnectionTracker::IterationPostTick() {
   }
 }
 
-void ConnectionTracker::CheckProcForConnClose() {
+void ConnTracker::CheckProcForConnClose() {
   const auto& sysconfig = system::Config::GetInstance();
   std::filesystem::path fd_file = sysconfig.proc_path() / std::to_string(conn_id().upid.pid) /
                                   "fd" / std::to_string(conn_id().fd);
@@ -809,7 +807,7 @@ void ConnectionTracker::CheckProcForConnClose() {
   }
 }
 
-void ConnectionTracker::HandleInactivity() {
+void ConnTracker::HandleInactivity() {
   idle_iteration_count_ = (idle_iteration_) ? idle_iteration_count_ + 1 : 0;
 
   // If the tracker is already marked for death, then no need to do anything.
@@ -842,7 +840,7 @@ void ConnectionTracker::HandleInactivity() {
   }
 }
 
-double ConnectionTracker::StitchFailureRate() const {
+double ConnTracker::StitchFailureRate() const {
   int total_attempts =
       stats_.Get(Stats::Key::kInvalidRecords) + stats_.Get(Stats::Key::kValidRecords);
 
@@ -893,8 +891,8 @@ EndpointRole TranslateRole(system::ClientServerRole role) {
 
 }  // namespace
 
-void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
-                                      system::SocketInfoManager* socket_info_mgr) {
+void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
+                                system::SocketInfoManager* socket_info_mgr) {
   DCHECK(proc_parser != nullptr);
   DCHECK(socket_info_mgr != nullptr);
 
@@ -967,7 +965,7 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   }
   const system::SocketInfo& socket_info = *socket_info_status.ValueOrDie();
 
-  // Success! Now copy the inferred socket information into the ConnectionTracker.
+  // Success! Now copy the inferred socket information into the ConnTracker.
 
   Status s = ParseSocketInfoRemoteAddr(socket_info, &open_info_.remote_addr);
   if (!s.ok()) {

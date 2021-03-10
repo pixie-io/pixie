@@ -31,7 +31,7 @@ using BPFMapLeakTest = SocketTraceBPFTest<>;
 
 TEST_F(BPFMapLeakTest, unclosed_connection) {
   const int kInactivitySeconds = 10;
-  ConnectionTracker::set_inactivity_duration(std::chrono::seconds(kInactivitySeconds));
+  ConnTracker::set_inactivity_duration(std::chrono::seconds(kInactivitySeconds));
 
   // Create and run the server with a leaky FD.
   std::filesystem::path server_path = BazelBinTestFilePath(kServerPath);

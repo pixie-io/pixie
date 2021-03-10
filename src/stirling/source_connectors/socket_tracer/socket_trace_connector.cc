@@ -181,7 +181,7 @@ Status SocketTraceConnector::InitImpl() {
   }
 
   conn_info_map_mgr_ = std::make_shared<ConnInfoMapManager>(this);
-  ConnectionTracker::SetConnInfoMapManager(conn_info_map_mgr_);
+  ConnTracker::SetConnInfoMapManager(conn_info_map_mgr_);
 
   uprobe_mgr_.Init(protocol_transfer_specs_[kProtocolHTTP2].enabled,
                    FLAGS_stirling_disable_self_tracing);
@@ -290,7 +290,7 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
   if (table_num == kConnStatsTableNum) {
     // Connection stats table does not follow the convention of tables for data streams.
     // So we handle it separately.
-    TransferConnectionStats(ctx, data_table);
+    TransferConnStats(ctx, data_table);
   } else {
     data_table->SetConsumeRecordsCutoffTime(perf_buffer_drain_time_);
 
@@ -419,7 +419,7 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
     WriteDataEvent(*event);
   }
 
-  ConnectionTracker& tracker = conn_trackers_.GetOrCreateConnTracker(event->attr.conn_id);
+  ConnTracker& tracker = conn_trackers_.GetOrCreateConnTracker(event->attr.conn_id);
   tracker.set_conn_stats(&connection_stats_);
 
   tracker.AddDataEvent(std::move(event));
@@ -430,7 +430,7 @@ void SocketTraceConnector::AcceptControlEvent(socket_control_event_t event) {
   event.open.timestamp_ns += ClockRealTimeOffset();
 
   // conn_id is a common field of open & close.
-  ConnectionTracker& tracker = conn_trackers_.GetOrCreateConnTracker(event.open.conn_id);
+  ConnTracker& tracker = conn_trackers_.GetOrCreateConnTracker(event.open.conn_id);
   tracker.set_conn_stats(&connection_stats_);
 
   tracker.AddControlEvent(event);
@@ -439,7 +439,7 @@ void SocketTraceConnector::AcceptControlEvent(socket_control_event_t event) {
 void SocketTraceConnector::AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> event) {
   event->attr.timestamp_ns += ClockRealTimeOffset();
 
-  ConnectionTracker& tracker = conn_trackers_.GetOrCreateConnTracker(event->attr.conn_id);
+  ConnTracker& tracker = conn_trackers_.GetOrCreateConnTracker(event->attr.conn_id);
   tracker.set_conn_stats(&connection_stats_);
 
   tracker.AddHTTP2Header(std::move(event));
@@ -448,7 +448,7 @@ void SocketTraceConnector::AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> e
 void SocketTraceConnector::AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event) {
   event->attr.timestamp_ns += ClockRealTimeOffset();
 
-  ConnectionTracker& tracker = conn_trackers_.GetOrCreateConnTracker(event->attr.conn_id);
+  ConnTracker& tracker = conn_trackers_.GetOrCreateConnTracker(event->attr.conn_id);
   tracker.set_conn_stats(&connection_stats_);
 
   tracker.AddHTTP2Data(std::move(event));
@@ -474,8 +474,7 @@ int64_t CalculateLatency(int64_t req_timestamp_ns, int64_t resp_timestamp_ns) {
 }  // namespace
 
 template <>
-void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
-                                         const ConnectionTracker& conn_tracker,
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
                                          protocols::http::Record record, DataTable* data_table) {
   protocols::http::Message& req_message = record.req;
   protocols::http::Message& resp_message = record.resp;
@@ -522,8 +521,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
 }
 
 template <>
-void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
-                                         const ConnectionTracker& conn_tracker,
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
                                          protocols::http2::Record record, DataTable* data_table) {
   using ::pl::grpc::MethodInputOutput;
   using ::pl::stirling::grpc::ParsePB;
@@ -589,8 +587,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
 }
 
 template <>
-void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
-                                         const ConnectionTracker& conn_tracker,
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
                                          protocols::mysql::Record entry, DataTable* data_table) {
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
@@ -613,8 +610,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
 }
 
 template <>
-void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
-                                         const ConnectionTracker& conn_tracker,
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
                                          protocols::cass::Record entry, DataTable* data_table) {
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
@@ -637,8 +633,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
 }
 
 template <>
-void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
-                                         const ConnectionTracker& conn_tracker,
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
                                          protocols::dns::Record entry, DataTable* data_table) {
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
@@ -661,8 +656,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
 }
 
 template <>
-void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
-                                         const ConnectionTracker& conn_tracker,
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
                                          protocols::pgsql::Record entry, DataTable* data_table) {
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
@@ -683,8 +677,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
 }
 
 template <>
-void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
-                                         const ConnectionTracker& conn_tracker,
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
                                          protocols::redis::Record entry, DataTable* data_table) {
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
@@ -785,7 +778,7 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
         conn_trackers_.ConnTrackersForProtocol(protocol.value());
 
     for (auto iter = conn_trackers_list.begin(); iter != conn_trackers_list.end(); ++iter) {
-      ConnectionTracker* tracker = *iter;
+      ConnTracker* tracker = *iter;
 
       VLOG(1) << absl::Substitute("Connection conn_id=$0 protocol=$1 state=$2\n",
                                   ToString(tracker->conn_id()),
@@ -804,13 +797,13 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
 }
 
 template <typename TProtocolTraits>
-void SocketTraceConnector::TransferStream(ConnectorContext* ctx, ConnectionTracker* tracker,
+void SocketTraceConnector::TransferStream(ConnectorContext* ctx, ConnTracker* tracker,
                                           DataTable* data_table) {
   VLOG(3) << absl::StrCat("Connection\n", DebugString<TProtocolTraits>(*tracker, ""));
 
-  if (tracker->state() == ConnectionTracker::State::kTransferring) {
+  if (tracker->state() == ConnTracker::State::kTransferring) {
     // ProcessToRecords() parses raw events and produces messages in format that are expected by
-    // table store. But those messages are not cached inside ConnectionTracker.
+    // table store. But those messages are not cached inside ConnTracker.
     //
     // TODO(yzhao): Consider caching produced messages if they are not transferred.
     auto result = tracker->ProcessToRecords<TProtocolTraits>();
@@ -820,7 +813,7 @@ void SocketTraceConnector::TransferStream(ConnectorContext* ctx, ConnectionTrack
   }
 }
 
-void SocketTraceConnector::TransferConnectionStats(ConnectorContext* ctx, DataTable* data_table) {
+void SocketTraceConnector::TransferConnStats(ConnectorContext* ctx, DataTable* data_table) {
   namespace idx = ::pl::stirling::conn_stats_idx;
 
   absl::flat_hash_set<md::UPID> upids = ctx->GetUPIDs();
