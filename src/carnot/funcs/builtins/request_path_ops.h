@@ -191,10 +191,16 @@ class RequestPathClusteringPredictUDF : public udf::ScalarUDF {
  public:
   StringValue Exec(FunctionContext*, StringValue request_path_str,
                    StringValue serialized_clustering) {
+    if (!clustering_init_) {
+      clustering_ = RequestPathClustering::FromJSON(serialized_clustering);
+      clustering_init_ = true;
+    }
     auto request_path = RequestPath(request_path_str);
-    auto clustering = RequestPathClustering::FromJSON(serialized_clustering);
-    return clustering.Predict(request_path).ToString();
+    return clustering_.Predict(request_path).ToString();
   }
+
+  RequestPathClustering clustering_;
+  bool clustering_init_ = false;
 };
 
 class RequestPathClusteringFitUDA : public udf::UDA {
