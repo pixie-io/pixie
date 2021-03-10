@@ -34,6 +34,8 @@ const streamingMetadataTopic = "DurableMetadataUpdates"
 // The topic on which to write updates to.
 const indexerMetadataTopic = "MetadataIndex"
 
+const missingMetadataTimeout = 2 * time.Minute
+
 // VizierState contains all state necessary to process metadata updates for the given vizier.
 type VizierState struct {
 	id            uuid.UUID // The Vizier's ID.
@@ -369,6 +371,7 @@ func (m *MetadataReader) getMissingUpdates(from, to int64, vzState *VizierState)
 		return err
 	}
 
+	t := time.NewTimer(missingMetadataTimeout)
 	for {
 		select {
 		case <-m.quitCh:
@@ -411,7 +414,15 @@ func (m *MetadataReader) getMissingUpdates(from, to int64, vzState *VizierState)
 			if lastUpdate.UpdateVersion == updatesResponse.LastUpdateAvailable {
 				return nil
 			}
-		case <-time.After(20 * time.Minute):
+
+			// If we get here, we got some messages on NATS but not all the missing updates,
+			// reset the timer and wait for more messages on NATS.
+			// Timer resets should only be invoked on stopped/expired timers with drained channels.
+			if !t.Stop() {
+				<-t.C
+			}
+			t.Reset(missingMetadataTimeout)
+		case <-t.C:
 			// Our previous request shouldn't have gotten lost on NATS, so if there is a subscriber for the metadata
 			// requests we shouldn't actually need to resend the request.
 			return nil
