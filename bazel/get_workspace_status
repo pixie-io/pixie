@@ -44,7 +44,6 @@ else
     tree_status="Modified"
 fi
 
-echo "BUILD_SCM_STATUS ${tree_status}"
 echo "STABLE_BUILD_SCM_STATUS ${tree_status}"
 
 # Use 0.0.0-dev for all dev build versions. We don't have a version number that is
