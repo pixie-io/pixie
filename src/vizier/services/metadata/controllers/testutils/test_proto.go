@@ -10,6 +10,9 @@ var NewAgentUUID = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 // ExistingAgentUUID is the UUID of an agent that already exists and is healthy.
 var ExistingAgentUUID = "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
 
+// PurgedAgentUUID is the UUID of an agent that already exists but was purged from ADS.
+var PurgedAgentUUID = "4ba7b810-9dad-11d1-80b4-00c04fd430c8"
+
 // UnhealthyAgentUUID is the UUID of an agent that exists but is unhealthy.
 var UnhealthyAgentUUID = "8ba7b810-9dad-11d1-80b4-00c04fd430c8"
 
@@ -37,6 +40,27 @@ info {
 create_time_ns: 0
 last_heartbeat_ns: 65000000000
 asid: 123
+`
+
+// PurgedAgentInfo is the agent info for an agent that exists but timed out of agent manager.
+// This agent will try to reregister.
+var PurgedAgentInfo = `
+info {
+  agent_id {
+    data: "4ba7b8109dad11d180b400c04fd430c8"
+  }
+  host_info {
+    hostname: "purged"
+    host_ip: "127.0.10.1"
+    pod_name: "pem2-existing"
+  }
+  capabilities {
+    collects_data: true
+  }
+}
+create_time_ns: 65000000000
+last_heartbeat_ns: 65000000300
+asid: 159
 `
 
 // UnhealthyAgentInfo is the agent info for the unhealthy agent.
@@ -294,6 +318,22 @@ register_agent_request {
       host_ip: "127.0.0.1"
     }
   }
+}
+`
+
+// ReregisterPurgedAgentRequestPB is the protobuf for a reregister agent request.
+var ReregisterPurgedAgentRequestPB = `
+register_agent_request {
+  info {
+    agent_id {
+      data: "4ba7b810-9dad-11d1-80b4-00c04fd430c8"
+    }
+    host_info {
+      hostname: "purged"
+      host_ip: "127.0.10.1"
+    }
+  }
+  asid: 159
 }
 `
 

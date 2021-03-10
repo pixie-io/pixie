@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
@@ -415,11 +416,9 @@ func (m *ManagerImpl) handleTerminatedProcesses(processes []*metadatapb.ProcessT
 }
 
 // RegisterAgent creates a new agent.
-func (m *ManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err error) {
-	info := agent.Info
-
+func (m *ManagerImpl) RegisterAgent(agent *agentpb.Agent) (uint32, error) {
 	// Check if agent already exists.
-	aUUID := utils.UUIDFromProtoOrNil(info.AgentID)
+	aUUID := utils.UUIDFromProtoOrNil(agent.Info.AgentID)
 
 	resp, err := m.agtStore.GetAgent(aUUID)
 	if err != nil {
@@ -428,26 +427,27 @@ func (m *ManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err erro
 		return resp.ASID, nil
 	}
 
-	// Get ASID for the new agent.
-	asid, err = m.agtStore.GetASID()
-	if err != nil {
-		return 0, err
-	}
+	agent = proto.Clone(agent).(*agentpb.Agent)
 
-	infoPb := &agentpb.Agent{
-		Info:            info,
-		CreateTimeNS:    time.Now().UnixNano(),
-		LastHeartbeatNS: time.Now().UnixNano(),
-		ASID:            asid,
+	if agent.ASID == 0 {
+		// Must be a new agent.
+		// Get ASID to assign to this agent.
+		asid, err := m.agtStore.GetASID()
+		if err != nil {
+			return 0, err
+		}
+		agent.ASID = asid
+		agent.CreateTimeNS = time.Now().UnixNano()
+		agent.LastHeartbeatNS = time.Now().UnixNano()
 	}
 
 	// Add this agent to the updated agents list.
-	err = m.createAgentWrapper(aUUID, infoPb)
+	err = m.createAgentWrapper(aUUID, agent)
 	if err != nil {
 		return 0, err
 	}
 
-	return asid, nil
+	return agent.ASID, nil
 }
 
 // DeleteAgent deletes the agent with the given ID.

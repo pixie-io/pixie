@@ -193,6 +193,27 @@ func TestRegisterExistingAgent(t *testing.T) {
 	assert.Equal(t, agentInfo, agt)
 }
 
+func TestReregisterPurgedAgent(t *testing.T) {
+	ads, agtMgr, _, cleanup := setupManager(t)
+	defer cleanup()
+
+	agentInfo := new(agentpb.Agent)
+	if err := proto.UnmarshalText(testutils.PurgedAgentInfo, agentInfo); err != nil {
+		t.Fatalf("Cannot Unmarshal protobuf for purged agent")
+	}
+
+	id, err := agtMgr.RegisterAgent(agentInfo)
+	assert.NoError(t, err)
+	assert.Equal(t, agentInfo.ASID, id)
+
+	// Check that correct agent info is in ads.
+	uid, err := utils.UUIDFromProto(agentInfo.Info.AgentID)
+	assert.NoError(t, err)
+	agt, err := ads.GetAgent(uid)
+	assert.NoError(t, err)
+	assert.Equal(t, agentInfo, agt)
+}
+
 func TestUpdateHeartbeat(t *testing.T) {
 	ads, agtMgr, _, cleanup := setupManager(t)
 	defer cleanup()

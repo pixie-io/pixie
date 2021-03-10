@@ -225,6 +225,84 @@ func TestKelvinRegisterRequest(t *testing.T) {
 	defer wg.Wait()
 }
 
+func TestAgentReRegisterRequest(t *testing.T) {
+	u, err := uuid.FromString(testutils.PurgedAgentUUID)
+	if err != nil {
+		t.Fatal("Could not generate UUID.")
+	}
+
+	sendMsg := assertSendMessageCalledWith(t, "Agent/"+testutils.PurgedAgentUUID,
+		messages.VizierMessage{
+			Msg: &messages.VizierMessage_RegisterAgentResponse{
+				RegisterAgentResponse: &messages.RegisterAgentResponse{
+					ASID: 159,
+				},
+			},
+		})
+
+	// Set up mock.
+	var wg sync.WaitGroup
+	wg.Add(1)
+	atl, mockAgtMgr, mockTracepointStore, cleanup := setup(t, sendMsg)
+	defer cleanup()
+
+	agentInfo := &agentpb.Agent{
+		Info: &agentpb.AgentInfo{
+			HostInfo: &agentpb.HostInfo{
+				Hostname: "purged",
+				HostIP:   "127.0.10.1",
+			},
+			AgentID: utils.ProtoFromUUID(u),
+			Capabilities: &agentpb.AgentCapabilities{
+				CollectsData: true,
+			},
+		},
+		ASID: 159,
+	}
+
+	mockAgtMgr.
+		EXPECT().
+		GetAgentIDForHostnamePair(&agent.HostnameIPPair{Hostname: "", IP: "127.0.10.1"}).
+		Return("", nil)
+
+	mockTracepointStore.
+		EXPECT().
+		GetTracepoints().
+		DoAndReturn(func() ([]*storepb.TracepointInfo, error) {
+			wg.Done()
+			return nil, nil
+		})
+
+	req := new(messages.VizierMessage)
+	if err := proto.UnmarshalText(testutils.ReregisterPurgedAgentRequestPB, req); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	req.GetRegisterAgentRequest().Info.Capabilities = &agentpb.AgentCapabilities{
+		CollectsData: true,
+	}
+	reqPb, err := req.Marshal()
+
+	now := time.Now().UnixNano()
+	mockAgtMgr.
+		EXPECT().
+		RegisterAgent(gomock.Any()).
+		DoAndReturn(func(info *agentpb.Agent) (uint32, error) {
+			assert.Greater(t, info.LastHeartbeatNS, now)
+			assert.Greater(t, info.CreateTimeNS, now)
+			info.LastHeartbeatNS = 0
+			info.CreateTimeNS = 0
+			assert.Equal(t, agentInfo, info)
+			return agentInfo.ASID, nil
+		})
+
+	msg := nats.Msg{}
+	msg.Data = reqPb
+	err = atl.HandleMessage(&msg)
+	assert.Nil(t, err)
+
+	defer wg.Wait()
+}
+
 func TestAgentRegisterRequestInvalidUUID(t *testing.T) {
 	// Set up mock.
 	atl, _, _, cleanup := setup(t, assertSendMessageUncalled(t))

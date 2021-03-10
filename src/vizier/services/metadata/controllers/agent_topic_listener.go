@@ -332,7 +332,10 @@ func (ah *AgentHandler) onAgentRegisterRequest(m *messages.RegisterAgentRequest)
 	if !m.Info.Capabilities.CollectsData {
 		hostname = m.Info.HostInfo.Hostname
 	}
-	hostnameAgID, err := ah.agtMgr.GetAgentIDForHostnamePair(&agent.HostnameIPPair{hostname, m.Info.HostInfo.HostIP})
+	hostnameAgID, err := ah.agtMgr.GetAgentIDForHostnamePair(&agent.HostnameIPPair{
+		Hostname: hostname,
+		IP:       m.Info.HostInfo.HostIP,
+	})
 	if err != nil {
 		log.WithError(err).Error("Failed to get agent hostname")
 	}
@@ -350,6 +353,8 @@ func (ah *AgentHandler) onAgentRegisterRequest(m *messages.RegisterAgentRequest)
 		Info:            m.Info,
 		LastHeartbeatNS: time.Now().UnixNano(),
 		CreateTimeNS:    time.Now().UnixNano(),
+		// This will be set if this is an agent trying to reregister.
+		ASID: m.ASID,
 	}
 
 	asid, err := ah.agtMgr.RegisterAgent(agentInfo)
