@@ -13,7 +13,6 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
-	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	distributedpb "pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	bloomfilterpb "pixielabs.ai/pixielabs/src/shared/bloomfilterpb"
 	k8s_metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
@@ -110,24 +109,24 @@ func TestRegisterAgent(t *testing.T) {
 
 	now := time.Now().UnixNano()
 	id, err := agtMgr.RegisterAgent(agentInfo)
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
 	assert.Equal(t, uint32(1), id)
 
 	// Check that agent exists now.
 	agt, err := ads.GetAgent(u)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, agt)
 
 	assert.Greater(t, agt.LastHeartbeatNS, now)
 	assert.Greater(t, agt.CreateTimeNS, now)
-	uid, err := utils.UUIDFromProto(agt.Info.AgentID)
-	assert.Equal(t, nil, err)
-	assert.Equal(t, testutils.NewAgentUUID, uid.String())
-	assert.Equal(t, "localhost", agt.Info.HostInfo.Hostname)
+	agt.LastHeartbeatNS = 0
+	agt.CreateTimeNS = 0
 	assert.Equal(t, uint32(1), agt.ASID)
+	agt.ASID = 0
+	assert.Equal(t, agt, agentInfo)
 
 	hostnameID, err := ads.GetAgentIDForHostnamePair(&agent.HostnameIPPair{"", "127.0.0.4"})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, testutils.NewAgentUUID, hostnameID)
 }
 
@@ -155,16 +154,16 @@ func TestRegisterKelvinAgent(t *testing.T) {
 	}
 
 	id, err := agtMgr.RegisterAgent(agentInfo)
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
 	assert.Equal(t, uint32(1), id)
 
 	// Check that agent exists now.
 	agt, err := ads.GetAgent(u)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, agt)
 
 	hostnameID, err := ads.GetAgentIDForHostnamePair(&agent.HostnameIPPair{"test", "127.0.0.3"})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, testutils.KelvinAgentUUID, hostnameID)
 }
 
@@ -172,38 +171,26 @@ func TestRegisterExistingAgent(t *testing.T) {
 	ads, agtMgr, _, cleanup := setupManager(t)
 	defer cleanup()
 
-	u, err := uuid.FromString(testutils.ExistingAgentUUID)
-	if err != nil {
-		t.Fatal("Could not generate UUID.")
+	agentInfo := new(agentpb.Agent)
+	if err := proto.UnmarshalText(testutils.ExistingAgentInfo, agentInfo); err != nil {
+		t.Fatalf("Cannot Unmarshal protobuf for existing agent")
 	}
-	upb := utils.ProtoFromUUID(u)
 
-	agentInfo := &agentpb.Agent{
-		Info: &agentpb.AgentInfo{
-			HostInfo: &agentpb.HostInfo{
-				Hostname: "localhost",
-				HostIP:   "127.0.0.1",
-			},
-			AgentID: upb,
-		},
-		LastHeartbeatNS: 1,
-		CreateTimeNS:    4,
-	}
-	id, err := agtMgr.RegisterAgent(agentInfo)
-	assert.Nil(t, err)
-	assert.Equal(t, uint32(123), id)
+	// Erase the ASID so this looks like a fresh registration not a re-registration.
+	info := proto.Clone(agentInfo).(*agentpb.Agent)
+	info.ASID = 0
+
+	id, err := agtMgr.RegisterAgent(info)
+	assert.NoError(t, err)
+	// We should get back the known ASID for this agent.
+	assert.Equal(t, agentInfo.ASID, id)
 
 	// Check that correct agent info is in ads.
-	agt, err := ads.GetAgent(u)
-	assert.Nil(t, err)
-	assert.NotNil(t, agt)
-	assert.Equal(t, int64(testutils.HealthyAgentLastHeartbeatNS), agt.LastHeartbeatNS) // 70 seconds in NS.
-	assert.Equal(t, int64(0), agt.CreateTimeNS)
-	uid, err := utils.UUIDFromProto(agt.Info.AgentID)
-	assert.Equal(t, nil, err)
-	assert.Equal(t, testutils.ExistingAgentUUID, uid.String())
-	assert.Equal(t, "testhost", agt.Info.HostInfo.Hostname)
-	assert.Equal(t, uint32(123), agt.ASID)
+	uid, err := utils.UUIDFromProto(agentInfo.Info.AgentID)
+	assert.NoError(t, err)
+	agt, err := ads.GetAgent(uid)
+	assert.NoError(t, err)
+	assert.Equal(t, agentInfo, agt)
 }
 
 func TestUpdateHeartbeat(t *testing.T) {
@@ -217,19 +204,14 @@ func TestUpdateHeartbeat(t *testing.T) {
 
 	now := time.Now().UnixNano()
 	err = agtMgr.UpdateHeartbeat(u)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
-	// Check that correct agent info is in etcd.
+	// Check that correct agent info is in ads.
 	agt, err := ads.GetAgent(u)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, agt)
 
 	assert.Greater(t, agt.LastHeartbeatNS, now)
-	assert.Equal(t, int64(0), agt.CreateTimeNS)
-	uid, err := utils.UUIDFromProto(agt.Info.AgentID)
-	assert.Equal(t, nil, err)
-	assert.Equal(t, testutils.ExistingAgentUUID, uid.String())
-	assert.Equal(t, "testhost", agt.Info.HostInfo.Hostname)
 }
 
 func TestUpdateHeartbeatForNonExistingAgent(t *testing.T) {
@@ -259,19 +241,19 @@ func TestUpdateAgentDelete(t *testing.T) {
 	}
 
 	err = agtMgr.DeleteAgent(u)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	err = agtMgr.DeleteAgent(u2)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	agents, err := ads.GetAgents()
-	assert.Equal(t, 1, len(agents))
+	assert.Len(t, agents, 1)
 
 	agt, err := ads.GetAgent(u)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Nil(t, agt)
 
 	hostnameID, err := ads.GetAgentIDForHostnamePair(&agent.HostnameIPPair{"", "127.0.0.2"})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, "", hostnameID)
 }
 
@@ -280,61 +262,27 @@ func TestGetActiveAgents(t *testing.T) {
 	defer cleanup()
 
 	agents, err := agtMgr.GetActiveAgents()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
-	assert.Equal(t, 3, len(agents))
+	assert.Len(t, agents, 3)
 
-	agent0Info := &agentpb.Agent{
-		LastHeartbeatNS: 0,
-		CreateTimeNS:    0,
-		Info: &agentpb.AgentInfo{
-			AgentID: &uuidpb.UUID{Data: []byte("5ba7b8109dad11d180b400c04fd430c8")},
-			HostInfo: &agentpb.HostInfo{
-				Hostname: "abcd",
-				HostIP:   "127.0.0.3",
-			},
-			Capabilities: &agentpb.AgentCapabilities{
-				CollectsData: false,
-			},
-		},
-		ASID: 789,
+	agentInfo := new(agentpb.Agent)
+	if err := proto.UnmarshalText(testutils.ExistingAgentInfo, agentInfo); err != nil {
+		t.Fatalf("Cannot Unmarshal protobuf for existing agent")
 	}
-	assert.Equal(t, agent0Info, agents[0])
+	assert.Contains(t, agents, agentInfo)
 
-	agent1Info := &agentpb.Agent{
-		LastHeartbeatNS: testutils.HealthyAgentLastHeartbeatNS,
-		CreateTimeNS:    0,
-		Info: &agentpb.AgentInfo{
-			AgentID: &uuidpb.UUID{Data: []byte("7ba7b8109dad11d180b400c04fd430c8")},
-			HostInfo: &agentpb.HostInfo{
-				PodName:  "pem-existing",
-				Hostname: "testhost",
-				HostIP:   "127.0.0.1",
-			},
-			Capabilities: &agentpb.AgentCapabilities{
-				CollectsData: true,
-			},
-		},
-		ASID: 123,
+	agentInfo = new(agentpb.Agent)
+	if err = proto.UnmarshalText(testutils.UnhealthyAgentInfo, agentInfo); err != nil {
+		t.Fatalf("Cannot Unmarshal protobuf for unhealthy agent")
 	}
-	assert.Equal(t, agent1Info, agents[1])
+	assert.Contains(t, agents, agentInfo)
 
-	agent2Info := &agentpb.Agent{
-		LastHeartbeatNS: 0,
-		CreateTimeNS:    0,
-		Info: &agentpb.AgentInfo{
-			AgentID: &uuidpb.UUID{Data: []byte("8ba7b8109dad11d180b400c04fd430c8")},
-			HostInfo: &agentpb.HostInfo{
-				Hostname: "anotherhost",
-				HostIP:   "127.0.0.2",
-			},
-			Capabilities: &agentpb.AgentCapabilities{
-				CollectsData: true,
-			},
-		},
-		ASID: 456,
+	agentInfo = new(agentpb.Agent)
+	if err = proto.UnmarshalText(testutils.UnhealthyKelvinAgentInfo, agentInfo); err != nil {
+		t.Fatalf("Cannot Unmarshal protobuf for unhelathy kelvin agent")
 	}
-	assert.Equal(t, agent2Info, agents[2])
+	assert.Contains(t, agents, agentInfo)
 }
 
 func TestApplyUpdates(t *testing.T) {
@@ -419,14 +367,14 @@ func TestApplyUpdates(t *testing.T) {
 	}
 
 	pInfos, err := ads.GetProcesses([]*types.UInt128{upid1, upid2})
-	assert.Nil(t, err)
-	assert.Equal(t, 2, len(pInfos))
+	assert.NoError(t, err)
+	assert.Len(t, pInfos, 2)
 
 	assert.Equal(t, cProcessInfo[0], pInfos[0])
 	assert.Equal(t, cProcessInfo[1], pInfos[1])
 
 	dataInfos, err := ads.GetAgentsDataInfo()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, dataInfos)
 	dataInfo, present := dataInfos[u]
 	assert.True(t, present)
@@ -515,14 +463,14 @@ func TestApplyUpdatesDeleted(t *testing.T) {
 	}
 
 	pInfos, err := ads.GetProcesses([]*types.UInt128{upid1, upid2})
-	assert.Nil(t, err)
-	assert.Equal(t, 2, len(pInfos))
+	assert.NoError(t, err)
+	assert.Len(t, pInfos, 2)
 
 	assert.Nil(t, pInfos[0])
 	assert.Nil(t, pInfos[1])
 
 	dataInfos, err := ads.GetAgentsDataInfo()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, dataInfos)
 	_, present := dataInfos[u]
 	assert.False(t, present)
@@ -620,8 +568,8 @@ func TestAgentTerminatedProcesses(t *testing.T) {
 	}
 
 	pInfos, err := ads.GetProcesses([]*types.UInt128{upid1, upid2})
-	assert.Nil(t, err)
-	assert.Equal(t, 2, len(pInfos))
+	assert.NoError(t, err)
+	assert.Len(t, pInfos, 2)
 
 	assert.Equal(t, updatedInfo[0], pInfos[0])
 	assert.Equal(t, updatedInfo[1], pInfos[1])
@@ -632,28 +580,28 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 	defer cleanup()
 
 	agUUID0, err := uuid.FromString(testutils.UnhealthyKelvinAgentUUID)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	agUUID1, err := uuid.FromString(testutils.UnhealthyAgentUUID)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	agUUID2, err := uuid.FromString(testutils.ExistingAgentUUID)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	agUUID3, err := uuid.FromString(testutils.NewAgentUUID)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	// Read the initial agent state.
 	cursor := agtMgr.NewAgentUpdateCursor()
 	updates, schema, err := agtMgr.GetAgentUpdates(cursor)
-	assert.Nil(t, err)
-	assert.Equal(t, 3, len(updates))
+	assert.NoError(t, err)
+	assert.Len(t, updates, 3)
 	assert.Equal(t, agUUID0, utils.UUIDFromProtoOrNil(updates[0].AgentID))
 	assert.NotNil(t, updates[0].GetAgent())
 	assert.Equal(t, agUUID2, utils.UUIDFromProtoOrNil(updates[1].AgentID))
 	assert.NotNil(t, updates[1].GetAgent())
 	assert.Equal(t, agUUID1, utils.UUIDFromProtoOrNil(updates[2].AgentID))
 	assert.NotNil(t, updates[2].GetAgent())
-	assert.Equal(t, 1, len(schema.Tables))
-	assert.Equal(t, 1, len(schema.TableNameToAgentIDs))
-	assert.Equal(t, 3, len(schema.TableNameToAgentIDs["a_table"].AgentID))
+	assert.Len(t, schema.Tables, 1)
+	assert.Len(t, schema.TableNameToAgentIDs, 1)
+	assert.Len(t, schema.TableNameToAgentIDs["a_table"].AgentID, 3)
 
 	newAgentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -685,7 +633,7 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 
 	// Register a new agt.
 	_, err = agtMgr.RegisterAgent(newAgentInfo)
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
 
 	schema2 := new(storepb.TableInfo)
 	if err := proto.UnmarshalText(testutils.SchemaInfo2PB, schema2); err != nil {
@@ -706,29 +654,29 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 
 	// Check results of first call to GetAgentUpdates.
 	updates, schema, err = agtMgr.GetAgentUpdates(cursor)
-	assert.Nil(t, err)
-	assert.Equal(t, 2, len(updates))
+	assert.NoError(t, err)
+	assert.Len(t, updates, 2)
 	assert.Equal(t, agUUID3, utils.UUIDFromProtoOrNil(updates[0].AgentID))
 	assert.Equal(t, newAgentInfo.Info, updates[0].GetAgent().Info)
 	assert.Equal(t, agUUID2, utils.UUIDFromProtoOrNil(updates[1].AgentID))
 	assert.Equal(t, oldAgentDataInfo, updates[1].GetDataInfo())
-	assert.Equal(t, 2, len(schema.Tables))
+	assert.Len(t, schema.Tables, 2)
 
 	// Update the heartbeat of an agt.
 	err = agtMgr.UpdateHeartbeat(agUUID2)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	// Now expire it
 	err = agtMgr.DeleteAgent(agUUID0)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	err = agtMgr.DeleteAgent(agUUID1)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	// Check results of second call to GetAgentUpdates.
 	updates, schema, err = agtMgr.GetAgentUpdates(cursor)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Nil(t, schema)
-	assert.Equal(t, 3, len(updates))
+	assert.Len(t, updates, 3)
 	assert.Equal(t, agUUID2, utils.UUIDFromProtoOrNil(updates[0].AgentID))
 	assert.NotNil(t, updates[0].GetAgent())
 	assert.Equal(t, agUUID0, utils.UUIDFromProtoOrNil(updates[1].AgentID))
@@ -758,11 +706,11 @@ func TestAgent_UpdateConfig(t *testing.T) {
 		assert.Equal(t, "true", req.Value)
 		wg.Done()
 	})
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	defer adsub.Unsubscribe()
 
 	err = agtMgr.UpdateConfig("pl", "pem-existing", "gprof", "true")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	defer wg.Wait()
 }

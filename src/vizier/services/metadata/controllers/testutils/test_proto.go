@@ -4,9 +4,6 @@ package testutils
 
 // AgentInfo
 
-// HealthyAgentLastHeartbeatNS is the last heartbeat of the healthy agent.
-const HealthyAgentLastHeartbeatNS = 1e9 * 65 // 65 seconds in NS. This is slightly less than the current time.
-
 // NewAgentUUID is the UUID of the agent that doesn't yet exist.
 var NewAgentUUID = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 

@@ -33,7 +33,6 @@ go_test(
     srcs = ["agent_test.go"],
     embed = [":go_default_library"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
         "//src/shared/bloomfilterpb:bloomfilter_pl_go_proto",
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
