@@ -18,6 +18,7 @@ import (
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"
+	"pixielabs.ai/pixielabs/src/shared/vispb"
 	pbutils "pixielabs.ai/pixielabs/src/utils"
 )
 
@@ -177,13 +178,11 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 		for _, s := range br.GetScripts() {
 			scripts = append(scripts, s.ScriptName)
 			scriptArgMap[s.ScriptName] = make([]cloudapipb.AutocompleteEntityKind, 0)
-			for _, a := range s.ComputedArgs() {
+			for _, a := range s.Vis.Variables {
 				aKind := cloudapipb.AEK_UNKNOWN
-				// The args aren't typed yet, so we assume the type from the name.
-				if strings.Index(a.Name, "pod") != -1 {
+				if a.Type == pl_vispb.PX_POD {
 					aKind = cloudapipb.AEK_POD
-				}
-				if strings.Index(a.Name, "svc") != -1 || strings.Index(a.Name, "service") != -1 {
+				} else if a.Type == pl_vispb.PX_SERVICE {
 					aKind = cloudapipb.AEK_SVC
 				}
 

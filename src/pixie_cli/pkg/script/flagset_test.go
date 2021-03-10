@@ -8,8 +8,8 @@ import (
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
 )
 
-func setupTest() script.FlagSet {
-	flags := script.NewFlagSet()
+func setupTest() *script.FlagSet {
+	flags := script.NewFlagSet("px/cluster")
 
 	def1 := "abc"
 	def2 := "def"

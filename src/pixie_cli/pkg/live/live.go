@@ -331,7 +331,7 @@ func (v *View) updateScriptInfoView() {
 
 	fmt.Fprintf(v.infoView, "%s : %s", withAccent("Script"),
 		v.s.execScript.ScriptName)
-	args := v.s.execScript.ComputedArgs()
+	args := v.s.execScript.Args
 	if len(args) > 0 {
 		for _, arg := range args {
 			fmt.Fprintf(v.infoView, " --%s=%s ", withAccent(arg.Name), arg.Value)

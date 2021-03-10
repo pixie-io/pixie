@@ -10,15 +10,16 @@ import (
 // FlagSet is a wrapper around flag.FlagSet, because the latter
 // does not support required args without a default value.
 type FlagSet struct {
-	baseFlagSet flag.FlagSet
+	baseFlagSet *flag.FlagSet
 	// Keeps track of which args have values (whether it is a default value or a passed in value)
 	// Used to differentiate between an unset arg and an arg that has an empty default value.
 	argHasValue map[string]bool
 }
 
 // NewFlagSet creates a new FlagSet.
-func NewFlagSet() FlagSet {
-	return FlagSet{
+func NewFlagSet(scriptName string) *FlagSet {
+	return &FlagSet{
+		baseFlagSet: flag.NewFlagSet(scriptName, flag.ContinueOnError),
 		argHasValue: make(map[string]bool),
 	}
 }

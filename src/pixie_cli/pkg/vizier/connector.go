@@ -155,9 +155,14 @@ func GetFuncsToExecute(script *script.ExecutableScript) ([]*public_vizierapipb.E
 	}
 	// Accumulate the global function definitions.
 	execFuncs := []*public_vizierapipb.ExecuteScriptRequest_FuncToExecute{}
+	computedArgs, err := script.ComputedArgs()
+	if err != nil {
+		return nil, err
+	}
+
 	if script.Vis.GlobalFuncs != nil {
 		for _, f := range script.Vis.GlobalFuncs {
-			execFunc, err := makeFuncToExecute(f.Func, script.ComputedArgs(), f.OutputName)
+			execFunc, err := makeFuncToExecute(f.Func, computedArgs, f.OutputName)
 			if err != nil {
 				return []*public_vizierapipb.ExecuteScriptRequest_FuncToExecute{}, err
 			}
@@ -176,7 +181,7 @@ func GetFuncsToExecute(script *script.ExecutableScript) ([]*public_vizierapipb.E
 			continue
 		}
 
-		execFunc, err := makeFuncToExecute(f, script.ComputedArgs(), w.Name)
+		execFunc, err := makeFuncToExecute(f, computedArgs, w.Name)
 		if err != nil {
 			return []*public_vizierapipb.ExecuteScriptRequest_FuncToExecute{}, err
 		}

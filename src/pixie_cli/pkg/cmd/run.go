@@ -103,6 +103,8 @@ func createNewCobraCommand() *cobra.Command {
 
 			var execScript *script.ExecutableScript
 			scriptFile, _ := cmd.Flags().GetString("file")
+			var scriptArgs []string
+
 			if scriptFile == "" {
 				if len(args) == 0 {
 					cliLog.Error("Expected script_name with script args.")
@@ -110,19 +112,25 @@ func createNewCobraCommand() *cobra.Command {
 				}
 				scriptName := args[0]
 				execScript = br.MustGetScript(scriptName)
-				fs := execScript.GetFlagSet()
-
-				if fs != nil {
-					if err := fs.Parse(args[1:]); err != nil {
-						cliLog.WithError(err).Error("Failed to parse script flags")
-						os.Exit(1)
-					}
-					execScript.UpdateFlags(fs)
-				}
+				scriptArgs = args[1:]
 			} else {
 				execScript, err = loadScriptFromFile(scriptFile)
 				if err != nil {
 					cliLog.WithError(err).Error("Failed to get query string")
+					os.Exit(1)
+				}
+				scriptArgs = args
+			}
+
+			fs := execScript.GetFlagSet()
+			if fs != nil {
+				if err := fs.Parse(scriptArgs); err != nil {
+					cliLog.WithError(err).Error("Failed to parse script flags")
+					os.Exit(1)
+				}
+				err := execScript.UpdateFlags(fs)
+				if err != nil {
+					cliLog.WithError(err).Error("Error parsing script flags")
 					os.Exit(1)
 				}
 			}

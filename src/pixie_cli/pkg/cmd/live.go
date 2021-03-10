@@ -38,25 +38,36 @@ var LiveCmd = &cobra.Command{
 		var execScript *script.ExecutableScript
 		var err error
 		scriptFile, _ := cmd.Flags().GetString("file")
-		if len(args) > 0 {
+		var scriptArgs []string
+
+		if scriptFile == "" {
+			if len(args) == 0 {
+				utils.Error("Expected script_name with script args.")
+				os.Exit(1)
+			}
 			scriptName := args[0]
 			execScript = br.MustGetScript(scriptName)
-			fs := execScript.GetFlagSet()
-
-			if fs != nil {
-				if err := fs.Parse(args[1:]); err != nil {
-					utils.WithError(err).Error("Failed to parse script flags")
-					os.Exit(1)
-				}
-				execScript.UpdateFlags(fs)
-			}
-		} else if len(scriptFile) > 0 {
+			scriptArgs = args[1:]
+		} else {
 			execScript, err = loadScriptFromFile(scriptFile)
 			if err != nil {
-				log.WithError(err).Fatal("Failed to get query string")
+				utils.WithError(err).Error("Failed to get query string")
+				os.Exit(1)
 			}
-			// Add custom script to bundle reader so we can access it later.
-			br.AddScript(execScript)
+			scriptArgs = args
+		}
+
+		fs := execScript.GetFlagSet()
+		if fs != nil {
+			if err := fs.Parse(scriptArgs); err != nil {
+				utils.WithError(err).Error("Failed to parse script flags")
+				os.Exit(1)
+			}
+			err := execScript.UpdateFlags(fs)
+			if err != nil {
+				utils.WithError(err).Error("Error parsing script flags")
+				os.Exit(1)
+			}
 		}
 
 		cloudConn, err := utils.GetCloudClientConnection(cloudAddr)

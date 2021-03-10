@@ -1,7 +1,6 @@
 package script
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"net/url"
@@ -55,8 +54,7 @@ func (e ExecutableScript) LiveViewLink(clusterID *string) string {
 
 	q := u.Query()
 	q.Add("script", e.ScriptName)
-	args := e.ComputedArgs()
-	for _, arg := range args {
+	for _, arg := range e.Args {
 		q.Add(arg.Name, arg.Value)
 	}
 	u.RawQuery = q.Encode()
@@ -74,52 +72,55 @@ func ParseVisSpec(specJSON string) (*vispb.Vis, error) {
 }
 
 // UpdateFlags updates the flags based on the passed in flag set.
-func (e *ExecutableScript) UpdateFlags(fs *flag.FlagSet) {
+func (e *ExecutableScript) UpdateFlags(fs *FlagSet) error {
 	if e.Args == nil {
 		e.Args = make(map[string]Arg, 0)
 	}
 	if e.Vis == nil {
-		return
+		return nil
 	}
 	if len(e.Vis.Variables) == 0 {
-		return
+		return nil
 	}
 
 	for _, v := range e.Vis.Variables {
-		f := fs.Lookup(v.Name)
-		if f == nil {
-			e.Args[v.Name] = Arg{v.Name, v.DefaultValue.Value}
-		} else {
-			e.Args[v.Name] = Arg{v.Name, f.Value.String()}
+		val, err := fs.Lookup(v.Name)
+		if err != nil {
+			return err
 		}
+		e.Args[v.Name] = Arg{v.Name, val}
 	}
+	return nil
 }
 
-// ComputedArgs returns the args with defaults computed.
-func (e *ExecutableScript) ComputedArgs() []Arg {
+// ComputedArgs returns the args as an array.
+func (e *ExecutableScript) ComputedArgs() ([]Arg, error) {
 	args := make([]Arg, 0)
 	if e.Vis == nil || len(e.Vis.Variables) == 0 {
-		return args
+		return args, nil
 	}
 	for _, v := range e.Vis.Variables {
 		arg, ok := e.Args[v.Name]
-		if ok {
-			args = append(args, arg)
-		} else {
-			args = append(args, Arg{v.Name, v.DefaultValue.Value})
+		if !ok {
+			return nil, fmt.Errorf("Argument %s not found", v.Name)
 		}
+		args = append(args, arg)
 	}
-	return args
+	return args, nil
 }
 
 // GetFlagSet returns the flagset for this script based on the variables.
-func (e *ExecutableScript) GetFlagSet() *flag.FlagSet {
+func (e *ExecutableScript) GetFlagSet() *FlagSet {
 	if e.Vis == nil || len(e.Vis.Variables) == 0 {
 		return nil
 	}
-	fs := flag.NewFlagSet(e.ScriptName, flag.ContinueOnError)
+	fs := NewFlagSet(e.ScriptName)
 	for _, v := range e.Vis.Variables {
-		fs.String(v.Name, v.DefaultValue.Value, fmt.Sprintf("Type: %s", v.Type))
+		var defaultValue *string
+		if v.DefaultValue != nil {
+			defaultValue = &v.DefaultValue.Value
+		}
+		fs.String(v.Name, defaultValue, fmt.Sprintf("Type: %s", v.Type))
 	}
 	return fs
 }

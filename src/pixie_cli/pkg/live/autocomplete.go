@@ -131,10 +131,10 @@ func (m *autocompleteModal) validateScriptAndArgs(s string) (*script.ExecutableS
 	if err != nil {
 		return nil, err
 	}
-	if len(fs.Args()) != 0 {
-		return nil, errors.New("extra unknown args provided")
+	err = es.UpdateFlags(fs)
+	if err != nil {
+		return nil, err
 	}
-	es.UpdateFlags(fs)
 	return es, nil
 }
 
@@ -314,9 +314,16 @@ func (f *fuzzyAutocompleter) GetSuggestions(input string, cursor int, action clo
 	for _, arg := range es.Vis.Variables {
 		name := fmt.Sprintf("--%s", arg.Name)
 		argNames = append(argNames, name)
+		var defaultValue string
+		if arg.DefaultValue == nil {
+			defaultValue = "<none>"
+		} else {
+			defaultValue = arg.DefaultValue.Value
+		}
+
 		allSuggestionsMap[name] = suggestion{
 			name:           name,
-			desc:           fmt.Sprintf("Description : %s, \n\nDefault :%s", arg.Description, arg.DefaultValue),
+			desc:           fmt.Sprintf("Description: %s\n\nDefault: %s", arg.Description, defaultValue),
 			matchedIndexes: nil,
 		}
 	}

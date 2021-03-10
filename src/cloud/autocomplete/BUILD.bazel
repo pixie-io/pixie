@@ -18,6 +18,7 @@ go_library(
         "//src/cloud/profile/profilepb:service_go_proto",
         "//src/pixie_cli/pkg/script:go_default_library",
         "//src/shared/services/utils:go_default_library",
+        "//src/shared/vispb:vis_pl_go_proto",
         "//src/utils:go_default_library",
         "@com_github_olivere_elastic_v7//:go_default_library",
         "@com_github_sahilm_fuzzy//:go_default_library",
