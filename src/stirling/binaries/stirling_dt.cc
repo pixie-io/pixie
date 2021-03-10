@@ -1,13 +1,8 @@
-#include <sys/syscall.h>
-#include <unistd.h>
-
 #include <csignal>
-#include <ctime>
-#include <iomanip>
+#include <iostream>
 #include <thread>
 
 #include <absl/base/internal/spinlock.h>
-#include <absl/strings/str_split.h>
 #include <google/protobuf/text_format.h>
 
 #include "src/common/base/base.h"

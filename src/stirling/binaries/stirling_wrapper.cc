@@ -1,9 +1,5 @@
-#include <sys/syscall.h>
-#include <unistd.h>
-#define gettid() syscall(SYS_gettid)
-
-#include <ctime>
-#include <iomanip>
+#include <csignal>
+#include <iostream>
 #include <thread>
 
 #include <absl/base/internal/spinlock.h>
@@ -251,7 +247,7 @@ int main(int argc, char** argv) {
     ::pl::profiler::Heap::StartProfiler("stirling_heap");
   }
 
-  LOG(INFO) << "Stirling Wrapper PID: " << getpid() << " TID: " << gettid();
+  LOG(INFO) << "Stirling Wrapper PID: " << getpid();
 
   if (!FLAGS_trace.empty()) {
     // In dynamic tracing mode, don't load any other sources.

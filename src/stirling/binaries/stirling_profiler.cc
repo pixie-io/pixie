@@ -1,6 +1,5 @@
-#include <unistd.h>
-
 #include <csignal>
+#include <iostream>
 #include <thread>
 
 #include "src/common/base/base.h"
