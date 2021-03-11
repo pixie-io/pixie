@@ -68,8 +68,8 @@ func main() {
 	healthz.RegisterDefaultChecks(mux)
 
 	cfg := controllers.NewAuth0Config()
-	a := controllers.NewAuth0Connector(cfg)
-	if err := a.Init(); err != nil {
+	a, err := controllers.NewAuth0Connector(cfg)
+	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize Auth0")
 	}
 

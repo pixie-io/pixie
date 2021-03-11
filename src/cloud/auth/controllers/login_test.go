@@ -42,11 +42,10 @@ func TestServer_LoginNewUser(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return(userID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		AppMetadata: nil,
-		Email:       "abc@gmail.com",
-		FirstName:   "first",
-		LastName:    "last",
-		Picture:     "something",
+		Email:     "abc@gmail.com",
+		FirstName: "first",
+		LastName:  "last",
+		Picture:   "something",
 	}
 
 	fakeOrgInfo := &profilepb.OrgInfo{
@@ -59,18 +58,14 @@ func TestServer_LoginNewUser(t *testing.T) {
 
 	// Add PL UserID to the response of the second call.
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
-		UserID:      userID,
-		AppMetadata: make(map[string]*controllers.UserMetadata),
-		Email:       "abc@gmail.com",
-		FirstName:   "first",
-		LastName:    "last",
-		Picture:     "something",
+		Email:     "abc@gmail.com",
+		FirstName: "first",
+		LastName:  "last",
+		Picture:   "something",
 	}
 	a.EXPECT().SetPLMetadata(userID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
-		fakeUserInfoSecondRequest.AppMetadata["foo"] = &controllers.UserMetadata{
-			PLUserID: plid,
-			PLOrgID:  plorgid,
-		}
+		fakeUserInfoSecondRequest.PLUserID = plid
+		fakeUserInfoSecondRequest.PLOrgID = plorgid
 	}).Return(nil)
 	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfoSecondRequest, nil)
 
@@ -117,7 +112,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 	assert.Equal(t, resp.UserInfo.Email, "abc@gmail.com")
 	assert.Equal(t, resp.OrgInfo.OrgID, orgID)
 	assert.Equal(t, resp.OrgInfo.OrgName, "testOrg")
-	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata["foo"].PLUserID, fakeUserInfoSecondRequest.AppMetadata["foo"].PLOrgID, resp.ExpiresAt, "jwtkey")
+	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.PLUserID, fakeUserInfoSecondRequest.PLOrgID, resp.ExpiresAt, "jwtkey")
 }
 
 func TestServer_LoginNewUser_NoAutoCreate(t *testing.T) {
@@ -129,10 +124,9 @@ func TestServer_LoginNewUser_NoAutoCreate(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		AppMetadata: nil,
-		Email:       "abc@gmail.com",
-		FirstName:   "first",
-		LastName:    "last",
+		Email:     "abc@gmail.com",
+		FirstName: "first",
+		LastName:  "last",
 	}
 
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
@@ -159,10 +153,9 @@ func TestServer_Login_OrgNameSpecified(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		AppMetadata: nil,
-		Email:       "abc@gmail.com",
-		FirstName:   "first",
-		LastName:    "last",
+		Email:     "abc@gmail.com",
+		FirstName: "first",
+		LastName:  "last",
 	}
 
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
@@ -192,10 +185,9 @@ func TestServer_Login_MissingOrgError(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		AppMetadata: nil,
-		Email:       "abc@gmail.com",
-		FirstName:   "first",
-		LastName:    "last",
+		Email:     "abc@gmail.com",
+		FirstName: "first",
+		LastName:  "last",
 	}
 
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
@@ -226,10 +218,9 @@ func TestServer_LoginNewUser_InvalidEmail(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		AppMetadata: nil,
-		Email:       "abc.com",
-		FirstName:   "first",
-		LastName:    "last",
+		Email:     "abc.com",
+		FirstName: "first",
+		LastName:  "last",
 	}
 
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
@@ -256,10 +247,9 @@ func TestServer_LoginNewUser_SupportUserNoOrg(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		AppMetadata: nil,
-		Email:       "test@pixie.support",
-		FirstName:   "first",
-		LastName:    "last",
+		Email:     "test@pixie.support",
+		FirstName: "first",
+		LastName:  "last",
 	}
 
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
@@ -294,10 +284,9 @@ func TestServer_LoginNewUser_SupportUser(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		AppMetadata: nil,
-		Email:       "test@pixie.support",
-		FirstName:   "first",
-		LastName:    "last",
+		Email:     "test@pixie.support",
+		FirstName: "first",
+		LastName:  "last",
 	}
 
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
@@ -339,10 +328,9 @@ func TestServer_LoginNewUser_InvalidOrg(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		AppMetadata: nil,
-		Email:       "abc@gmail.com",
-		FirstName:   "first",
-		LastName:    "last",
+		Email:     "abc@gmail.com",
+		FirstName: "first",
+		LastName:  "last",
 	}
 
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
@@ -375,10 +363,9 @@ func TestServer_LoginNewUser_CreateUserFailed(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		AppMetadata: nil,
-		Email:       "abc@gmail.com",
-		FirstName:   "first",
-		LastName:    "last",
+		Email:     "abc@gmail.com",
+		FirstName: "first",
+		LastName:  "last",
 	}
 
 	fakeOrgInfo := &profilepb.OrgInfo{
@@ -447,18 +434,12 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
-	appMetadata := make(map[string]*controllers.UserMetadata)
-	appMetadata["foo"] = &controllers.UserMetadata{
+	fakeUserInfo1 := &controllers.UserInfo{
+		Email:    "abc@gmail.com",
 		PLUserID: "pluserid",
 		PLOrgID:  "plorgid",
 	}
 
-	fakeUserInfo1 := &controllers.UserInfo{
-		AppMetadata: appMetadata,
-		Email:       "abc@gmail.com",
-	}
-
-	a.EXPECT().GetClientID().Return("foo").MinTimes(1)
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo1, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
@@ -507,34 +488,25 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
-	appMetadata := make(map[string]*controllers.UserMetadata)
-	appMetadata["foo"] = &controllers.UserMetadata{
-		PLUserID: "pluserid",
-		PLOrgID:  "plorgid",
-	}
-
 	fakeUserInfo1 := &controllers.UserInfo{
-		AppMetadata: appMetadata,
-		Email:       "abc@gmail.com",
-		FirstName:   "first",
-		LastName:    "last",
+		Email:     "abc@gmail.com",
+		FirstName: "first",
+		LastName:  "last",
+		PLUserID:  "pluserid",
+		PLOrgID:   "plorgid",
 	}
 
-	a.EXPECT().GetClientID().Return("foo").MinTimes(1)
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo1, nil)
 
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
-		AppMetadata: make(map[string]*controllers.UserMetadata),
-		Email:       "abc@gmail.com",
-		FirstName:   "first",
-		LastName:    "last",
+		Email:     "abc@gmail.com",
+		FirstName: "first",
+		LastName:  "last",
 	}
 
 	a.EXPECT().SetPLMetadata("userid", gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
-		fakeUserInfoSecondRequest.AppMetadata["foo"] = &controllers.UserMetadata{
-			PLUserID: plid,
-			PLOrgID:  plorgid,
-		}
+		fakeUserInfoSecondRequest.PLUserID = plid
+		fakeUserInfoSecondRequest.PLOrgID = plorgid
 	}).Return(nil)
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfoSecondRequest, nil)
 
@@ -928,10 +900,9 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		AppMetadata: nil,
-		Email:       "abc@gmail.com",
-		FirstName:   "first",
-		LastName:    "last",
+		Email:     "abc@gmail.com",
+		FirstName: "first",
+		LastName:  "last",
 	}
 
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
@@ -940,16 +911,14 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 	a.EXPECT().GetClientID().Return("foo").AnyTimes()
 
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
-		AppMetadata: make(map[string]*controllers.UserMetadata),
-		Email:       "abc@gmail.com",
-		FirstName:   "first",
-		LastName:    "last",
+		Email:     "abc@gmail.com",
+		FirstName: "first",
+		LastName:  "last",
 	}
 	a.EXPECT().SetPLMetadata("userid", gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
-		fakeUserInfoSecondRequest.AppMetadata["foo"] = &controllers.UserMetadata{
-			PLUserID: plid,
-			PLOrgID:  plorgid,
-		}
+		fakeUserInfoSecondRequest.PLUserID = plid
+		fakeUserInfoSecondRequest.PLOrgID = plorgid
+
 	}).Return(nil)
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfoSecondRequest, nil)
 
@@ -994,7 +963,7 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 	assert.Equal(t, resp.UserInfo.FirstName, "first")
 	assert.Equal(t, resp.UserInfo.LastName, "last")
 	assert.Equal(t, resp.UserInfo.Email, "abc@gmail.com")
-	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata["foo"].PLUserID, fakeUserInfoSecondRequest.AppMetadata["foo"].PLOrgID, resp.ExpiresAt, "jwtkey")
+	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.PLUserID, fakeUserInfoSecondRequest.PLOrgID, resp.ExpiresAt, "jwtkey")
 
 }
 
@@ -1010,10 +979,9 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		AppMetadata: nil,
-		Email:       "abc@gmail.com",
-		FirstName:   "first",
-		LastName:    "last",
+		Email:     "abc@gmail.com",
+		FirstName: "first",
+		LastName:  "last",
 	}
 
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
@@ -1022,16 +990,13 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 	a.EXPECT().GetClientID().Return("foo").AnyTimes()
 
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
-		AppMetadata: make(map[string]*controllers.UserMetadata),
-		Email:       "abc@gmail.com",
-		FirstName:   "first",
-		LastName:    "last",
+		Email:     "abc@gmail.com",
+		FirstName: "first",
+		LastName:  "last",
 	}
 	a.EXPECT().SetPLMetadata("userid", gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
-		fakeUserInfoSecondRequest.AppMetadata["foo"] = &controllers.UserMetadata{
-			PLUserID: plid,
-			PLOrgID:  plorgid,
-		}
+		fakeUserInfoSecondRequest.PLUserID = plid
+		fakeUserInfoSecondRequest.PLOrgID = plorgid
 	}).Return(nil)
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfoSecondRequest, nil)
 
@@ -1081,7 +1046,7 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 	assert.Equal(t, resp.UserInfo.FirstName, "first")
 	assert.Equal(t, resp.UserInfo.LastName, "last")
 	assert.Equal(t, resp.UserInfo.Email, "abc@gmail.com")
-	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata["foo"].PLUserID, fakeUserInfoSecondRequest.AppMetadata["foo"].PLOrgID, resp.ExpiresAt, "jwtkey")
+	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.PLUserID, fakeUserInfoSecondRequest.PLOrgID, resp.ExpiresAt, "jwtkey")
 }
 
 func TestServer_Signup_CreateUserOrgFailed(t *testing.T) {
@@ -1093,10 +1058,9 @@ func TestServer_Signup_CreateUserOrgFailed(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		AppMetadata: nil,
-		Email:       "abc@gmail.com",
-		FirstName:   "first",
-		LastName:    "last",
+		Email:     "abc@gmail.com",
+		FirstName: "first",
+		LastName:  "last",
 	}
 
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
@@ -1146,10 +1110,9 @@ func TestServer_Signup_UserAlreadyExists(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		AppMetadata: nil,
-		Email:       "abc@gmail.com",
-		FirstName:   "first",
-		LastName:    "last",
+		Email:     "abc@gmail.com",
+		FirstName: "first",
+		LastName:  "last",
 	}
 
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)

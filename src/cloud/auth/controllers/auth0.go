@@ -19,31 +19,49 @@ func init() {
 	pflag.String("auth0_client_secret", "", "Auth0 client secret")
 }
 
-// UserMetadata is a part of the Auth0 response.
-type UserMetadata struct {
+// UserInfo contains all the info about a user. It's not tied to any AuthProvider.
+type UserInfo struct {
+	Email     string
+	FirstName string
+	LastName  string
+	Name      string
+	Picture   string
+	PLUserID  string
+	PLOrgID   string
+}
+
+func transformAuth0UserInfoToUserInfo(auth0 *auth0UserInfo, clientID string) (*UserInfo, error) {
+	// If user does not exist in Auth0, then create a new user if specified.
+	u := &UserInfo{
+		Email:     auth0.Email,
+		FirstName: auth0.FirstName,
+		LastName:  auth0.LastName,
+		Name:      auth0.Name,
+		Picture:   auth0.Picture,
+	}
+	if !(auth0.AppMetadata == nil || auth0.AppMetadata[clientID] == nil) {
+		u.PLUserID = auth0.AppMetadata[clientID].PLUserID
+		u.PLOrgID = auth0.AppMetadata[clientID].PLOrgID
+	}
+	return u, nil
+}
+
+// auth0UserMetadata is a part of the Auth0 response.
+type auth0UserMetadata struct {
 	PLUserID string `json:"pl_user_id,omitempty"`
 	PLOrgID  string `json:"pl_org_id,omitempty"`
 }
 
-// UserInfo tracks the returned auth0 info.
-type UserInfo struct {
-	Email       string                   `json:",omitempty"`
-	FirstName   string                   `json:"given_name,omitempty"`
-	LastName    string                   `json:"family_name,omitempty"`
-	UserID      string                   `json:"user_id,omitempty"`
-	Name        string                   `json:",omitempty"`
-	Picture     string                   `json:",omitempty"`
-	Sub         string                   `json:"sub,omitempty"`
-	AppMetadata map[string]*UserMetadata `json:"app_metadata,omitempty"`
-}
-
-// Auth0Connector defines an interface we use to access information from Auth0.
-type Auth0Connector interface {
-	Init() error
-	GetUserIDFromToken(token string) (string, error)
-	GetUserInfo(userID string) (*UserInfo, error)
-	SetPLMetadata(userID, plOrgID, plUserID string) error
-	GetClientID() string
+// auth0UserInfo tracks the returned auth0 info.
+type auth0UserInfo struct {
+	Email       string                        `json:",omitempty"`
+	FirstName   string                        `json:"given_name,omitempty"`
+	LastName    string                        `json:"family_name,omitempty"`
+	UserID      string                        `json:"user_id,omitempty"`
+	Name        string                        `json:",omitempty"`
+	Picture     string                        `json:",omitempty"`
+	Sub         string                        `json:"sub,omitempty"`
+	AppMetadata map[string]*auth0UserMetadata `json:"app_metadata,omitempty"`
 }
 
 // Auth0Config is the config data required for Auth0.
@@ -70,17 +88,23 @@ func NewAuth0Config() Auth0Config {
 	return cfg
 }
 
-type auth0ConnectorImpl struct {
+// Auth0Connector implements the AuthProvider interface for Auth0.
+type Auth0Connector struct {
 	cfg             Auth0Config
 	managementToken string
 }
 
 // NewAuth0Connector provides an implementation of an Auth0Connector.
-func NewAuth0Connector(cfg Auth0Config) Auth0Connector {
-	return &auth0ConnectorImpl{cfg: cfg}
+func NewAuth0Connector(cfg Auth0Config) (*Auth0Connector, error) {
+	ac := &Auth0Connector{cfg: cfg}
+	err := ac.init()
+	if err != nil {
+		return nil, err
+	}
+	return ac, nil
 }
 
-func (a *auth0ConnectorImpl) Init() error {
+func (a *Auth0Connector) init() error {
 	if a.cfg.Auth0ClientID == "" {
 		return errors.New("auth0 Client ID missing")
 	}
@@ -92,7 +116,8 @@ func (a *auth0ConnectorImpl) Init() error {
 	return nil
 }
 
-func (a *auth0ConnectorImpl) GetUserIDFromToken(token string) (string, error) {
+// GetUserIDFromToken returns the UserID for the particular token.
+func (a *Auth0Connector) GetUserIDFromToken(token string) (string, error) {
 	client := &http.Client{}
 
 	req, err := http.NewRequest("GET", a.cfg.Auth0UserInfoEndpoint, nil)
@@ -127,7 +152,7 @@ func (a *auth0ConnectorImpl) GetUserIDFromToken(token string) (string, error) {
 	return userInfo.Sub, nil
 }
 
-func (a *auth0ConnectorImpl) getManagementToken() (string, error) {
+func (a *Auth0Connector) getManagementToken() (string, error) {
 	payload := map[string]interface{}{
 		"grant_type":    "client_credentials",
 		"client_id":     a.cfg.Auth0ClientID,
@@ -176,7 +201,8 @@ func (a *auth0ConnectorImpl) getManagementToken() (string, error) {
 	return tokenInfo.AccessToken, nil
 }
 
-func (a *auth0ConnectorImpl) GetUserInfo(userID string) (*UserInfo, error) {
+// GetUserInfo returns the UserInfo for this userID.
+func (a *Auth0Connector) GetUserInfo(userID string) (*UserInfo, error) {
 	getPath := fmt.Sprintf("%s/users/%s", a.cfg.Auth0MgmtAPI, userID)
 
 	client := &http.Client{}
@@ -208,25 +234,23 @@ func (a *auth0ConnectorImpl) GetUserInfo(userID string) (*UserInfo, error) {
 		return nil, err
 	}
 
-	userInfo := &UserInfo{}
+	userInfo := &auth0UserInfo{}
 	if err = json.Unmarshal(body, userInfo); err != nil {
 		return nil, err
 	}
-	return userInfo, nil
+
+	return transformAuth0UserInfoToUserInfo(userInfo, a.cfg.Auth0ClientID)
 }
 
-func (a *auth0ConnectorImpl) GetClientID() string {
-	return a.cfg.Auth0ClientID
-}
-
-func (a *auth0ConnectorImpl) SetPLMetadata(userID, plOrgID, plUserID string) error {
-	appMetadata := make(map[string]*UserMetadata)
-	appMetadata[a.cfg.Auth0ClientID] = &UserMetadata{
+// SetPLMetadata sets the pixielabs related metadata in the auth0 client.
+func (a *Auth0Connector) SetPLMetadata(userID, plOrgID, plUserID string) error {
+	appMetadata := make(map[string]*auth0UserMetadata)
+	appMetadata[a.cfg.Auth0ClientID] = &auth0UserMetadata{
 		PLUserID: plUserID,
 		PLOrgID:  plOrgID,
 	}
 
-	userInfo := &UserInfo{
+	userInfo := &auth0UserInfo{
 		AppMetadata: appMetadata,
 	}
 

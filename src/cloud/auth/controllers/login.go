@@ -47,15 +47,15 @@ func (s *Server) getUserInfoFromToken(accessToken string) (string, *UserInfo, er
 	return userID, userInfo, nil
 }
 
-func (s *Server) updateAuth0User(auth0UserID string, orgID string, userID string) (*UserInfo, error) {
+func (s *Server) updateAuthProviderUser(authUserID string, orgID string, userID string) (*UserInfo, error) {
 	// Write user and org info to Auth0.
-	err := s.a.SetPLMetadata(auth0UserID, orgID, userID)
+	err := s.a.SetPLMetadata(authUserID, orgID, userID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to set user ID")
 	}
 
 	// Read updated user info.
-	userInfo, err := s.a.GetUserInfo(auth0UserID)
+	userInfo, err := s.a.GetUserInfo(authUserID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to read updated user info")
 	}
@@ -87,12 +87,12 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 
 	pc := s.env.ProfileClient()
 
-	// If user does not exist in Auth0, then create a new user if specified.
-	newUser := userInfo.AppMetadata == nil || userInfo.AppMetadata[s.a.GetClientID()] == nil || userInfo.AppMetadata[s.a.GetClientID()].PLUserID == ""
+	// If user does not exist in the AuthProvider, then create a new user if specified.
+	newUser := userInfo.PLUserID == ""
 
 	// A user can exist in auth0, but not the profile service. If that's the case, we want to create a new user.
 	if !newUser {
-		_, err := pc.GetUser(ctx, &uuidpb.UUID{Data: []byte(userInfo.AppMetadata[s.a.GetClientID()].PLUserID)})
+		_, err := pc.GetUser(ctx, &uuidpb.UUID{Data: []byte(userInfo.PLUserID)})
 		if err != nil {
 			newUser = true
 		}
@@ -117,17 +117,20 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 	}
 
 	// Update user's profile photo.
-	_, err = pc.UpdateUser(ctx, &profilepb.UpdateUserRequest{ID: &uuidpb.UUID{Data: []byte(userInfo.AppMetadata[s.a.GetClientID()].PLUserID)}, ProfilePicture: userInfo.Picture})
+	_, err = pc.UpdateUser(ctx, &profilepb.UpdateUserRequest{
+		ID:             &uuidpb.UUID{Data: []byte(userInfo.PLUserID)},
+		ProfilePicture: userInfo.Picture,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	token, expiresAt, err := generateJWTTokenForUser(userInfo, s.env.JWTSigningKey(), s.a.GetClientID())
+	token, expiresAt, err := generateJWTTokenForUser(userInfo, s.env.JWTSigningKey())
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to generate token")
 	}
 
-	userID = userInfo.AppMetadata[s.a.GetClientID()].PLUserID
+	userID = userInfo.PLUserID
 
 	return &pb.LoginReply{
 		Token:       token,
@@ -214,12 +217,12 @@ func (s *Server) Signup(ctx context.Context, in *pb.SignupRequest) (*pb.SignupRe
 		return nil, err
 	}
 
-	token, expiresAt, err := generateJWTTokenForUser(userInfo, s.env.JWTSigningKey(), s.a.GetClientID())
+	token, expiresAt, err := generateJWTTokenForUser(userInfo, s.env.JWTSigningKey())
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to generate token")
 	}
 
-	userID = userInfo.AppMetadata[s.a.GetClientID()].PLUserID
+	userID = userInfo.PLUserID
 
 	return &pb.SignupReply{
 		Token:      token,
@@ -283,7 +286,7 @@ func (s *Server) createUserAndOptionallyOrg(ctx context.Context, domainName stri
 		userIDpb = resp.UserID
 	}
 
-	userInfo, err = s.updateAuth0User(userID, pbutils.UUIDFromProtoOrNil(orgID).String(), pbutils.UUIDFromProtoOrNil(userIDpb).String())
+	userInfo, err = s.updateAuthProviderUser(userID, pbutils.UUIDFromProtoOrNil(orgID).String(), pbutils.UUIDFromProtoOrNil(userIDpb).String())
 	return userInfo, orgID, err
 }
 
@@ -391,10 +394,9 @@ func (s *Server) GetAugmentedToken(
 	return resp, nil
 }
 
-func generateJWTTokenForUser(userInfo *UserInfo, signingKey string, clientID string) (string, time.Time, error) {
+func generateJWTTokenForUser(userInfo *UserInfo, signingKey string) (string, time.Time, error) {
 	expiresAt := time.Now().Add(RefreshTokenValidDuration)
-	clientMetadata := userInfo.AppMetadata[clientID]
-	claims := utils.GenerateJWTForUser(clientMetadata.PLUserID, clientMetadata.PLOrgID, userInfo.Email, expiresAt)
+	claims := utils.GenerateJWTForUser(userInfo.PLUserID, userInfo.PLOrgID, userInfo.Email, expiresAt)
 	token, err := utils.SignJWTClaims(claims, signingKey)
 
 	return token, expiresAt, err

@@ -42,8 +42,7 @@ func TestAuth0ConnectorImpl_Init_MissingSecret(t *testing.T) {
 
 	viper.Set("auth0_client_secret", "")
 	auth0Cfg := controllers.NewAuth0Config()
-	c := controllers.NewAuth0Connector(auth0Cfg)
-	err := c.Init()
+	_, err := controllers.NewAuth0Connector(auth0Cfg)
 
 	assert.EqualError(t, err, "auth0 Client secret missing")
 }
@@ -54,8 +53,7 @@ func TestAuth0ConnectorImpl_Init_MissingClientID(t *testing.T) {
 
 	viper.Set("auth0_client_id", "")
 	auth0Cfg := controllers.NewAuth0Config()
-	c := controllers.NewAuth0Connector(auth0Cfg)
-	err := c.Init()
+	_, err := controllers.NewAuth0Connector(auth0Cfg)
 
 	assert.EqualError(t, err, "auth0 Client ID missing")
 }
@@ -74,7 +72,8 @@ func TestAuth0ConnectorImpl_GetUserIDFromToken(t *testing.T) {
 	defer cleanup()
 
 	cfg := controllers.NewAuth0Config()
-	c := controllers.NewAuth0Connector(cfg)
+	c, err := controllers.NewAuth0Connector(cfg)
+	assert.Nil(t, err)
 
 	userID, err := c.GetUserIDFromToken("abcd")
 	assert.Equal(t, 1, callCount)
@@ -92,9 +91,10 @@ func TestAuth0ConnectorImpl_GetUserIDFromToken_BadStatus(t *testing.T) {
 	defer cleanup()
 
 	cfg := controllers.NewAuth0Config()
-	c := controllers.NewAuth0Connector(cfg)
+	c, err := controllers.NewAuth0Connector(cfg)
+	assert.Nil(t, err)
 
-	_, err := c.GetUserIDFromToken("abcd")
+	_, err = c.GetUserIDFromToken("abcd")
 	assert.EqualError(t, err, "bad response from auth0")
 }
 
@@ -108,9 +108,10 @@ func TestAuth0ConnectorImpl_GetUserIDFromToken_BadResponse(t *testing.T) {
 	defer cleanup()
 
 	cfg := controllers.NewAuth0Config()
-	c := controllers.NewAuth0Connector(cfg)
+	c, err := controllers.NewAuth0Connector(cfg)
+	assert.Nil(t, err)
 
-	_, err := c.GetUserIDFromToken("abcd")
+	_, err = c.GetUserIDFromToken("abcd")
 	assert.NotNil(t, err)
 }
 
@@ -130,7 +131,8 @@ func TestAuth0ConnectorImpl_GetUserInfoUnauthorizedToken(t *testing.T) {
 	defer cleanup()
 
 	cfg := controllers.NewAuth0Config()
-	c := controllers.NewAuth0Connector(cfg)
+	c, err := controllers.NewAuth0Connector(cfg)
+	assert.Nil(t, err)
 
 	userInfo, err := c.GetUserInfo("abcd")
 	assert.NotNil(t, err)
@@ -169,7 +171,8 @@ func TestAuth0ConnectorImpl_GetUserInfo(t *testing.T) {
 	defer cleanup()
 
 	cfg := controllers.NewAuth0Config()
-	c := controllers.NewAuth0Connector(cfg)
+	c, err := controllers.NewAuth0Connector(cfg)
+	assert.Nil(t, err)
 
 	userInfo, err := c.GetUserInfo("abcd")
 	assert.Equal(t, 2, callCount)
@@ -177,8 +180,7 @@ func TestAuth0ConnectorImpl_GetUserInfo(t *testing.T) {
 	assert.Equal(t, "testuser@test.com", userInfo.Email)
 	assert.Equal(t, "Test User", userInfo.Name)
 	assert.Equal(t, "picture.jpg", userInfo.Picture)
-	assert.Equal(t, "test_sub", userInfo.Sub)
-	assert.Equal(t, "test_pl_user_id", userInfo.AppMetadata["foo"].PLUserID)
+	assert.Equal(t, "test_pl_user_id", userInfo.PLUserID)
 }
 
 func TestAuth0ConnectorImpl_GetUserInfo_BadResponse(t *testing.T) {
@@ -198,9 +200,10 @@ func TestAuth0ConnectorImpl_GetUserInfo_BadResponse(t *testing.T) {
 	defer cleanup()
 
 	cfg := controllers.NewAuth0Config()
-	c := controllers.NewAuth0Connector(cfg)
+	c, err := controllers.NewAuth0Connector(cfg)
+	assert.Nil(t, err)
 
-	_, err := c.GetUserInfo("abcd")
+	_, err = c.GetUserInfo("abcd")
 	assert.Equal(t, 2, callCount)
 	assert.NotNil(t, err)
 }
@@ -233,9 +236,10 @@ func TestAuth0ConnectorImpl_SetPLMetadata(t *testing.T) {
 	defer cleanup()
 
 	cfg := controllers.NewAuth0Config()
-	c := controllers.NewAuth0Connector(cfg)
+	c, err := controllers.NewAuth0Connector(cfg)
+	assert.Nil(t, err)
 
-	err := c.SetPLMetadata("abcd", "test_pl_org_id", "test_pl_user_id")
+	err = c.SetPLMetadata("abcd", "test_pl_org_id", "test_pl_user_id")
 	assert.Equal(t, 2, callCount)
 	assert.Nil(t, err)
 }
