@@ -69,7 +69,7 @@ export const DEPLOYMENT_KEY_QUERIES = {
     }
   `,
 
-  DELETE_DEPLOY_KEY: gql`
+  DELETE_DEPLOYMENT_KEY: gql`
     mutation deleteKey($id: ID!) {
       DeleteDeploymentKey(id: $id)
     }

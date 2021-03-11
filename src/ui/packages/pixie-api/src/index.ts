@@ -1,4 +1,8 @@
-export { PixieAPIClient, PixieAPIClientOptions, ClusterConfig } from './api';
+export {
+  PixieAPIClient, PixieAPIClientAbstract, ClusterConfig,
+} from './api';
+
+export { PixieAPIClientOptions } from './types/client-options';
 
 /**
  * NOTE: Unless you are authoring a framework-specific library (such as @pixie/api-react), these should be ignored.
@@ -32,6 +36,9 @@ export {
   VizierQueryFunc,
   VizierQueryResult,
 } from './vizier-grpc-client';
+
+// TODO(nick): Create @pixie/api-react/testing as its own package by doing the same trick that Apollo does.
+export * from './testing';
 
 /* Generated types begin (types are generated but these exports are manually updated) */
 

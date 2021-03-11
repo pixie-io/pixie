@@ -1,32 +1,16 @@
-import { ExecutionStateUpdate, VizierGRPCClient, VizierQueryFunc } from 'vizier-grpc-client';
+/* eslint-disable max-classes-per-file */
+
+import {
+  ExecutionStateUpdate,
+  VizierGRPCClient,
+  VizierQueryFunc,
+} from 'vizier-grpc-client';
 import { CloudClient } from 'cloud-gql-client';
 import { Observable, from } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
+import { PixieAPIClientOptions } from 'types/client-options';
 import { Status } from 'types/generated/vizierapi_pb';
 import { containsMutation } from 'utils/pxl';
-
-/**
- * Options object to pass as the `options` argument to @link{PixieAPIClient#create}.
- */
-export interface PixieAPIClientOptions {
-  /**
-   * The domain name to connect to. An HTTPS protocol is assumed and cannot be overridden.
-   * By default, it points to the public Pixie Cloud instance.
-   * @default withpixie.ai
-   */
-  host?: string;
-  /**
-   * The URI after the domain that prefixes all GraphQL queries.
-   * For self hosted instances, this will usually remain default unless Pixie's HTTP routes are hidden behind nginx etc.
-   * @default /api/graphql
-   */
-  gqlRootPath?: string;
-  /**
-   * A method to invoke when an API request is denied due to a lack of authorization.
-   * @default noop
-   */
-  onUnauthorized?: (errorMessage?: string) => void;
-}
 
 /**
  * When calling `PixieAPIClient.create`, this specifies which clusters to connect to, and any special configuration for
@@ -45,20 +29,31 @@ export interface ClusterConfig {
   attachCredentials?: boolean;
 }
 
+export abstract class PixieAPIClientAbstract {
+  static readonly DEFAULT_OPTIONS: Required<PixieAPIClientOptions>;
+
+  readonly options: Required<PixieAPIClientOptions>;
+
+  abstract health(cluster: string|ClusterConfig): Observable<Status>;
+
+  abstract executeScript(
+    cluster: string|ClusterConfig,
+    script: string,
+    funcs?: VizierQueryFunc[],
+  ): Observable<ExecutionStateUpdate>;
+}
+
 /**
  * API client library for [Pixie](https://pixielabs.ai).
  * See the [documentation](https://docs.pixielabs.ai/reference/api/overview/) for a complete reference.
  */
-export class PixieAPIClient {
+export class PixieAPIClient extends PixieAPIClientAbstract {
   /**
-   * By default, a new Pixie API Client will assume the following:
-   * - It is connecting to the public instance of Pixie Cloud
-   * - A direct connection will work and no passthrough is required
-   * - Logging to the JS console is sufficient for error reporting
+   * By default, a new Pixie API Client assumes a matching origin between the UI and API, that a direct connection is
+   * sufficient on the current network, and that authentication is being checked elsewhere.
    */
   static readonly DEFAULT_OPTIONS: Required<PixieAPIClientOptions> = Object.freeze({
-    host: 'withpixie.ai',
-    gqlRootPath: '/api/graphql',
+    uri: `${window.location.origin}/api` || 'https://work.withpixie.ai/api',
     onUnauthorized: () => {},
   });
 
@@ -70,34 +65,25 @@ export class PixieAPIClient {
    * Builds an API client to speak to Pixie's gRPC and GraphQL backends. The former connects to specific clusters;
    * the latter connects to Pixie Cloud.
    *
-   * @param authToken API token. Can be obtained in the web UI in the admin area, or by running `px api-key create`.
-   * @param clusters List of clusters to which this client will be sending script execution and health check requests.
    * @param options Set these to change the client's behavior or to listen for authorization errors.
    */
   static async create(
-    authToken: string,
-    clusters: ClusterConfig[],
     options: PixieAPIClientOptions = {},
   ): Promise<PixieAPIClient> {
-    const client = new PixieAPIClient(authToken, clusters, { ...PixieAPIClient.DEFAULT_OPTIONS, ...options });
+    const client = new PixieAPIClient({ ...PixieAPIClient.DEFAULT_OPTIONS, ...options });
     return client.init();
   }
 
   private constructor(
-    readonly authToken: string,
-    readonly clusters: ClusterConfig[],
     readonly options: Required<PixieAPIClientOptions>,
-  ) {}
+  ) {
+    super();
+  }
 
   private async init(): Promise<PixieAPIClient> {
-    this.gqlClient = new CloudClient(this.options.onUnauthorized);
+    this.gqlClient = new CloudClient(this.options);
     await this.gqlClient.getGraphQLPersist();
     this.clusterConnections = new Map();
-
-    for (const cluster of this.clusters) {
-      // eslint-disable-next-line no-await-in-loop
-      await this.createVizierClient(cluster);
-    }
 
     return this;
   }
@@ -111,6 +97,14 @@ export class PixieAPIClient {
       cluster.id,
       cluster.attachCredentials ?? false,
     );
+
+    /*
+     * TODO(nick): Port in the `retry` logic from VizierGRPCClientContext. It should show loading state and keep no more
+     *  than two of these connected at a time (due to the HTTP concurrent connections limitation per host).
+     *  VizierGRPCClientContext also provides health state and executeScript; we already do that here.
+     *  The actual context in the consumer, then, would only need to track the cluster ID instead of the client details.
+     */
+
     // Note that this doesn't currently clean up clients that haven't been used in a while, so a particularly long
     // user session could hold onto a large number of stale connections. A simple page refresh drops them all.
     // If this becomes a problem, limit the number of clients and rotate out those that haven't been used in a while.
@@ -137,10 +131,11 @@ export class PixieAPIClient {
   /**
    * Creates a stream that listens for the health of the cluster and the API client's connection to it.
    * This is an Observable, so don't forget to unsubscribe when you're done with it.
-   * @param clusterID Which cluster to use - this must be one that was specified in PixieAPIClient.create().
+   * @param cluster Which cluster to use. Either just its ID, or a full config. If that cluster has previously been
+   *        connected in this session, that connection will be reused without changing its configuration.
    */
-  health(clusterID: string): Observable<Status> {
-    return from(this.getClusterClient(clusterID))
+  health(cluster: string|ClusterConfig): Observable<Status> {
+    return from(this.getClusterClient(cluster))
       .pipe(switchMap((client) => client.health()));
   }
 
@@ -154,24 +149,31 @@ export class PixieAPIClient {
    * - data
    * - stats
    *
-   * @param clusterID Which cluster to use - this must be one that was specified in PixieAPIClient.create().
+   * @param cluster Which cluster to use. Either just its ID, or a full config. If that cluster has previously been
+   *        connected in this session, that connection will be reused without changing its configuration.
    * @param script The source code of the script to be compiled and executed; whitespace and all.
    * @param funcs Descriptions of which functions in the script to run, and what to do with their output.
    */
-  executeScript(clusterID: string, script: string, funcs: VizierQueryFunc[] = []): Observable<ExecutionStateUpdate> {
+  executeScript(
+    cluster: string|ClusterConfig,
+    script: string, funcs: VizierQueryFunc[] = [],
+  ): Observable<ExecutionStateUpdate> {
     const hasMutation = containsMutation(script);
-    return from(this.getClusterClient(clusterID))
+    return from(this.getClusterClient(cluster))
       .pipe(switchMap((client) => client.executeScript(script, funcs, hasMutation)));
   }
 
-  /*
-   * TODO(nick): Future changes to pull code out to, and to polish, `@pixie/api`. In order:
-   * - Need to copy over src/cloud/api/controller/schema.d.ts and have Arcanist verify that happens, as with proto defs.
-   * - Wrap all GQL endpoints can be wrapped directly in this class.
-   * - Do the same for `@pixie/api-react`.
-   * - Change all UI code that invokes the API to use `api.ts` to do it.
-   * - Create test wrappers for the new API and move all existing tests to use that.
-   * - Pull logic for some endpoints, like executeScript, up into the API code (anything that every consumer would need)
-   * - Documentation, documentation, documentation!
+  /**
+   * Implementation detail for adapters like @pixie/api-react.
+   * Do not use directly unless writing such an adapter.
+   *
+   * Provides the internal CloudClient, which has a graphQL property.
+   * That property is an ApolloClient, with which GraphQL queries can be run directly.
+   * TODO(nick): Once VizierGRPCClientContext logic moves, only provide the ApolloClient itself.
+   *
+   * @internal
    */
+  getCloudGQLClientForAdapterLibrary() {
+    return this.gqlClient;
+  }
 }

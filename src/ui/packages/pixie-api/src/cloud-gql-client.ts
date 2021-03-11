@@ -5,12 +5,13 @@ import {
   ApolloLink,
   createHttpLink,
   ServerError,
-} from '@apollo/client';
+} from '@apollo/client/core';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 import { persistCache } from 'apollo3-cache-persist';
 import { CLUSTER_QUERIES } from 'gql-queries';
 import { fetch } from 'whatwg-fetch';
+import { PixieAPIClientOptions } from 'types/client-options';
 
 // Apollo link that adds cookies in the request.
 const cloudAuthLink = setContext((_, { headers }) => ({
@@ -21,7 +22,7 @@ const cloudAuthLink = setContext((_, { headers }) => ({
 }));
 
 // Apollo link that redirects to login page on HTTP status 401.
-const loginRedirectLink = (on401: (errorMessage: string) => void) => onError(({ networkError }) => {
+const loginRedirectLink = (on401: (errorMessage?: string) => void) => onError(({ networkError }) => {
   if (!!networkError && (networkError as ServerError).statusCode === 401) {
     on401(networkError.message);
   }
@@ -45,7 +46,7 @@ export class CloudClient {
 
   private loaded = false;
 
-  constructor(private readonly onUnauthorized: (errorMessage: string) => void) {
+  constructor(opts: PixieAPIClientOptions) {
     this.cache = new InMemoryCache({
       typePolicies: {
         AutocompleteResult: {
@@ -54,11 +55,12 @@ export class CloudClient {
       },
     });
     this.graphQL = new ApolloClient({
+      connectToDevTools: process?.env && process.env.NODE_ENV === 'development',
       cache: this.cache,
       link: ApolloLink.from([
         cloudAuthLink,
-        loginRedirectLink(onUnauthorized),
-        createHttpLink({ uri: '/api/graphql', fetch }),
+        loginRedirectLink(opts.onUnauthorized ?? (() => {})),
+        createHttpLink({ uri: `${opts.uri}/graphql`, fetch }),
       ]),
     });
 

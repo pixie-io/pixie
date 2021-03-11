@@ -47,9 +47,12 @@ const RedirectWithArgs = (props) => {
 export class App extends React.Component {
   // eslint-disable-next-line react/state-in-constructor
   state = {
-    cloudClient: new CloudClient(() => {
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      redirect('/login', { no_cache: 'true' });
+    cloudClient: new CloudClient({
+      uri: `${window.location.origin}/api`,
+      onUnauthorized: () => {
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        redirect('/login', { no_cache: 'true' });
+      },
     }),
     gqlClient: null,
     authenticated: false,

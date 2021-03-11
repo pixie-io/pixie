@@ -135,6 +135,12 @@ function getExecutionErrors(errList: ErrorDetails[]): string[] {
 
 const HEALTH_CHECK_TIMEOUT = 10000; // 10 seconds
 
+/**
+ * Client for gRPC connections to individual Vizier clusters.
+ * See CloudGQLClient for the GraphQL client that works with shared data.
+ * Should not be used directly - PixieAPIClient exposes wrappers around both this and CloudGQLClient,
+ * which smooth out bumps in things like error handling. Prefer using that if you can.
+ */
 export class VizierGRPCClient {
   private readonly client: VizierServiceClient;
 
@@ -148,6 +154,10 @@ export class VizierGRPCClient {
     withDevTools(this.client);
   }
 
+  /**
+   * Monitors the health of both Pixie instrumentation on a cluster, and this client's connection to it.
+   * The returned Observable watches
+   */
   health(): Observable<Status> {
     const headers = {
       ...(this.attachCreds ? {} : { Authorization: `BEARER ${this.token}` }),

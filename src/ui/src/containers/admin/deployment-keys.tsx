@@ -48,7 +48,7 @@ export const DeploymentKeyRow = ({ deploymentKey }) => {
   const [open, setOpen] = React.useState<boolean>(false);
   const [anchorEl, setAnchorEl] = React.useState(null);
 
-  const [deleteDeployKey] = useMutation(DEPLOYMENT_KEY_QUERIES.DELETE_DEPLOY_KEY);
+  const [deleteDeployKey] = useMutation(DEPLOYMENT_KEY_QUERIES.DELETE_DEPLOYMENT_KEY);
 
   const openMenu = React.useCallback((event) => {
     setOpen(true);

@@ -4,9 +4,9 @@
     "paths": {
       "*": [
         "*",
-        "../packages/pixie-components/src/*",
-        "../packages/pixie-api/src/*",
-        "../packages/pixie-api-react/src/*"
+        "../packages/pixie-components/dist/*",
+        "../packages/pixie-api/dist/*",
+        "../packages/pixie-api-react/dist/*"
       ]
     },
     "outDir": "./dist/",

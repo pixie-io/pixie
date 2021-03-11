@@ -182,8 +182,9 @@
     "node": ">=10.0.0"
   },
   "scripts": {
+    "build_deps": "concurrently -m 1 -c gray.dim,green.dim,magenta.dim,yellow.dim -n clean,components,api,api-react \"rimraf packages/*/dist\" \"yarn workspace @pixie/components build\" \"yarn workspace @pixie/api build\" \"yarn workspace @pixie/api-react build\"",
     "build_dev": "webpack --mode=development --stats=verbose --progress",
-    "build_prod": "webpack --mode=production",
+    "build_prod": "concurrently -m 1 \"rimraf dist\" \"yarn build_deps\" \"webpack --mode=production\"",
     "clean": "rimraf dist packages/*/dist",
     "dev": "concurrently -c green.dim,magenta.dim,yellow.dim,cyan.dim -n components,api,api-react,ui \"yarn workspace @pixie/components start\" \"yarn workspace @pixie/api start\" \"yarn workspace @pixie/api-react start\" \"webpack serve --mode=development --hot\"",
     "test": "jest",

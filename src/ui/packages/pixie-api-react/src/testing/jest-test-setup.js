@@ -15,17 +15,7 @@ const localStorageMock = (() => {
   };
 })();
 
-const analyticsMock = (() => ({
-  page: () => { },
-}))();
-
-const mockPixieFlags = {
-  AUTH0_DOMAIN: '', AUTH0_CLIENT_ID: '', DOMAIN_NAME: '', SEGMENT_UI_WRITE_KEY: '', LD_CLIENT_ID: '',
-};
-
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });
-Object.defineProperty(window, 'analytics', { value: analyticsMock });
-Object.defineProperty(window, '__PIXIE_FLAGS__', { value: mockPixieFlags });
 
 // This prevents console errors about the use of useLayoutEffect on the server
 jest.mock('react', () => ({
