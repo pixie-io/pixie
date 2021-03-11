@@ -1432,10 +1432,7 @@ func (m *QueryTimingInfo) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthQueryResults
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthQueryResults
 			}
 			if (iNdEx + skippy) > l {
@@ -1559,10 +1556,7 @@ func (m *QueryExecutionStats) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthQueryResults
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthQueryResults
 			}
 			if (iNdEx + skippy) > l {
@@ -1851,7 +1845,7 @@ func (m *OperatorExecutionStats) Unmarshal(dAtA []byte) error {
 					if err != nil {
 						return err
 					}
-					if skippy < 0 {
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
 						return ErrInvalidLengthQueryResults
 					}
 					if (iNdEx + skippy) > postIndex {
@@ -1978,7 +1972,7 @@ func (m *OperatorExecutionStats) Unmarshal(dAtA []byte) error {
 					if err != nil {
 						return err
 					}
-					if skippy < 0 {
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
 						return ErrInvalidLengthQueryResults
 					}
 					if (iNdEx + skippy) > postIndex {
@@ -1995,10 +1989,7 @@ func (m *OperatorExecutionStats) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthQueryResults
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthQueryResults
 			}
 			if (iNdEx + skippy) > l {
@@ -2175,10 +2166,7 @@ func (m *AgentExecutionStats) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthQueryResults
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthQueryResults
 			}
 			if (iNdEx + skippy) > l {
@@ -2368,10 +2356,7 @@ func (m *QueryResult) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthQueryResults
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthQueryResults
 			}
 			if (iNdEx + skippy) > l {

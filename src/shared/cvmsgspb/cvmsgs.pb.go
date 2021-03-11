@@ -5930,10 +5930,7 @@ func (m *RegisterVizierRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCvmsgs
 			}
 			if (iNdEx + skippy) > l {
@@ -6111,10 +6108,7 @@ func (m *VizierClusterInfo) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCvmsgs
 			}
 			if (iNdEx + skippy) > l {
@@ -6183,10 +6177,7 @@ func (m *RegisterVizierAck) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCvmsgs
 			}
 			if (iNdEx + skippy) > l {
@@ -6473,7 +6464,7 @@ func (m *VizierHeartbeat) Unmarshal(dAtA []byte) error {
 					if err != nil {
 						return err
 					}
-					if skippy < 0 {
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
 						return ErrInvalidLengthCvmsgs
 					}
 					if (iNdEx + skippy) > postIndex {
@@ -6618,10 +6609,7 @@ func (m *VizierHeartbeat) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCvmsgs
 			}
 			if (iNdEx + skippy) > l {
@@ -6890,10 +6878,7 @@ func (m *PodStatus) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCvmsgs
 			}
 			if (iNdEx + skippy) > l {
@@ -7047,10 +7032,7 @@ func (m *K8SEvent) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCvmsgs
 			}
 			if (iNdEx + skippy) > l {
@@ -7251,10 +7233,7 @@ func (m *ContainerStatus) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCvmsgs
 			}
 			if (iNdEx + skippy) > l {
@@ -7393,10 +7372,7 @@ func (m *VizierHeartbeatAck) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCvmsgs
 			}
 			if (iNdEx + skippy) > l {
@@ -7486,10 +7462,7 @@ func (m *VizierConfig) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCvmsgs
 			}
 			if (iNdEx + skippy) > l {
@@ -7611,10 +7584,7 @@ func (m *VizierConfigUpdate) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCvmsgs
 			}
 			if (iNdEx + skippy) > l {
@@ -8014,7 +7984,7 @@ func (m *VizierInfo) Unmarshal(dAtA []byte) error {
 					if err != nil {
 						return err
 					}
-					if skippy < 0 {
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
 						return ErrInvalidLengthCvmsgs
 					}
 					if (iNdEx + skippy) > postIndex {
@@ -8069,10 +8039,7 @@ func (m *VizierInfo) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCvmsgs
 			}
 			if (iNdEx + skippy) > l {
@@ -8194,10 +8161,7 @@ func (m *UpdateVizierConfigRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCvmsgs
 			}
 			if (iNdEx + skippy) > l {
@@ -8247,10 +8211,7 @@ func (m *UpdateVizierConfigResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCvmsgs
 			}
 			if (iNdEx + skippy) > l {
@@ -8420,10 +8381,7 @@ func (m *UpdateOrInstallVizierRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCvmsgs
 			}
 			if (iNdEx + skippy) > l {
@@ -8493,10 +8451,7 @@ func (m *UpdateOrInstallVizierResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCvmsgs
 			}
 			if (iNdEx + skippy) > l {
@@ -8610,10 +8565,7 @@ func (m *VizierConnectionInfo) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCvmsgs
 			}
 			if (iNdEx + skippy) > l {
@@ -8699,10 +8651,7 @@ func (m *VizierSSLCertRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCvmsgs
 			}
 			if (iNdEx + skippy) > l {
@@ -8816,10 +8765,7 @@ func (m *VizierSSLCertResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCvmsgs
 			}
 			if (iNdEx + skippy) > l {
@@ -8903,10 +8849,7 @@ func (m *VLogMessage) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCvmsgs
 			}
 			if (iNdEx + skippy) > l {
@@ -9160,10 +9103,7 @@ func (m *C2VAPIStreamRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCvmsgs
 			}
 			if (iNdEx + skippy) > l {
@@ -9213,10 +9153,7 @@ func (m *C2VAPIStreamCancel) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCvmsgs
 			}
 			if (iNdEx + skippy) > l {
@@ -9438,10 +9375,7 @@ func (m *V2CAPIStreamResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCvmsgs
 			}
 			if (iNdEx + skippy) > l {
@@ -9610,10 +9544,7 @@ func (m *V2CMessage) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCvmsgs
 			}
 			if (iNdEx + skippy) > l {
@@ -9731,10 +9662,7 @@ func (m *C2VMessage) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCvmsgs
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCvmsgs
 			}
 			if (iNdEx + skippy) > l {

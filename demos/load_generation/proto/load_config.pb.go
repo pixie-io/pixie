@@ -724,10 +724,7 @@ func (m *LocustConfigFile) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthLoadConfig
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthLoadConfig
 			}
 			if (iNdEx + skippy) > l {
@@ -868,10 +865,7 @@ func (m *LocustPhaseConfig) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthLoadConfig
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthLoadConfig
 			}
 			if (iNdEx + skippy) > l {
@@ -1010,10 +1004,7 @@ func (m *UserType) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthLoadConfig
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthLoadConfig
 			}
 			if (iNdEx + skippy) > l {

@@ -1332,10 +1332,7 @@ func (m *FuncArgsSpec) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthScripts
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthScripts
 			}
 			if (iNdEx + skippy) > l {
@@ -1487,10 +1484,7 @@ func (m *FuncArgsSpec_Arg) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthScripts
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthScripts
 			}
 			if (iNdEx + skippy) > l {
@@ -1572,10 +1566,7 @@ func (m *VisSpec) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthScripts
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthScripts
 			}
 			if (iNdEx + skippy) > l {
@@ -1735,7 +1726,7 @@ func (m *VisFuncsInfo) Unmarshal(dAtA []byte) error {
 					if err != nil {
 						return err
 					}
-					if skippy < 0 {
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
 						return ErrInvalidLengthScripts
 					}
 					if (iNdEx + skippy) > postIndex {
@@ -1864,7 +1855,7 @@ func (m *VisFuncsInfo) Unmarshal(dAtA []byte) error {
 					if err != nil {
 						return err
 					}
-					if skippy < 0 {
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
 						return ErrInvalidLengthScripts
 					}
 					if (iNdEx + skippy) > postIndex {
@@ -1993,7 +1984,7 @@ func (m *VisFuncsInfo) Unmarshal(dAtA []byte) error {
 					if err != nil {
 						return err
 					}
-					if skippy < 0 {
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
 						return ErrInvalidLengthScripts
 					}
 					if (iNdEx + skippy) > postIndex {
@@ -2010,10 +2001,7 @@ func (m *VisFuncsInfo) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthScripts
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthScripts
 			}
 			if (iNdEx + skippy) > l {
@@ -2135,10 +2123,7 @@ func (m *VisFuncsInfoResult) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthScripts
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthScripts
 			}
 			if (iNdEx + skippy) > l {
@@ -2260,10 +2245,7 @@ func (m *MainFuncSpecResult) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthScripts
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthScripts
 			}
 			if (iNdEx + skippy) > l {

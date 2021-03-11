@@ -2250,10 +2250,7 @@ func (m *MetadataInfo) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthDistributedPlan
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthDistributedPlan
 			}
 			if (iNdEx + skippy) > l {
@@ -2604,10 +2601,7 @@ func (m *CarnotInfo) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthDistributedPlan
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthDistributedPlan
 			}
 			if (iNdEx + skippy) > l {
@@ -2753,10 +2747,7 @@ func (m *TableInfo) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthDistributedPlan
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthDistributedPlan
 			}
 			if (iNdEx + skippy) > l {
@@ -2908,10 +2899,7 @@ func (m *SchemaInfo) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthDistributedPlan
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthDistributedPlan
 			}
 			if (iNdEx + skippy) > l {
@@ -3029,10 +3017,7 @@ func (m *DistributedState) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthDistributedPlan
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthDistributedPlan
 			}
 			if (iNdEx + skippy) > l {
@@ -3194,7 +3179,7 @@ func (m *DistributedPlan) Unmarshal(dAtA []byte) error {
 					if err != nil {
 						return err
 					}
-					if skippy < 0 {
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
 						return ErrInvalidLengthDistributedPlan
 					}
 					if (iNdEx + skippy) > postIndex {
@@ -3307,7 +3292,7 @@ func (m *DistributedPlan) Unmarshal(dAtA []byte) error {
 					if err != nil {
 						return err
 					}
-					if skippy < 0 {
+					if (skippy < 0) || (iNdEx+skippy) < 0 {
 						return ErrInvalidLengthDistributedPlan
 					}
 					if (iNdEx + skippy) > postIndex {
@@ -3360,10 +3345,7 @@ func (m *DistributedPlan) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthDistributedPlan
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthDistributedPlan
 			}
 			if (iNdEx + skippy) > l {
@@ -3549,10 +3531,7 @@ func (m *LogicalPlannerState) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthDistributedPlan
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthDistributedPlan
 			}
 			if (iNdEx + skippy) > l {
@@ -3674,10 +3653,7 @@ func (m *LogicalPlannerResult) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthDistributedPlan
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthDistributedPlan
 			}
 			if (iNdEx + skippy) > l {

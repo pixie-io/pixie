@@ -1659,10 +1659,7 @@ func (m *TransferResultChunkRequest) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCarnot
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCarnot
 			}
 			if (iNdEx + skippy) > l {
@@ -1820,10 +1817,7 @@ func (m *TransferResultChunkRequest_SinkResult) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCarnot
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCarnot
 			}
 			if (iNdEx + skippy) > l {
@@ -1943,10 +1937,7 @@ func (m *TransferResultChunkRequest_QueryExecutionAndTimingInfo) Unmarshal(dAtA 
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCarnot
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCarnot
 			}
 			if (iNdEx + skippy) > l {
@@ -2048,10 +2039,7 @@ func (m *TransferResultChunkResponse) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCarnot
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCarnot
 			}
 			if (iNdEx + skippy) > l {

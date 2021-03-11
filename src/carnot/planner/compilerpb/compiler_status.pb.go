@@ -937,10 +937,7 @@ func (m *LineColError) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCompilerStatus
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCompilerStatus
 			}
 			if (iNdEx + skippy) > l {
@@ -1025,10 +1022,7 @@ func (m *CompilerError) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCompilerStatus
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCompilerStatus
 			}
 			if (iNdEx + skippy) > l {
@@ -1150,10 +1144,7 @@ func (m *CompilerResult) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCompilerStatus
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCompilerStatus
 			}
 			if (iNdEx + skippy) > l {
@@ -1237,10 +1228,7 @@ func (m *CompilerErrorGroup) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthCompilerStatus
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthCompilerStatus
 			}
 			if (iNdEx + skippy) > l {
