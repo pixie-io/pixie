@@ -1,5 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+
 genrule(
     name = "nats_prod",
     srcs = glob(["**/*.yaml"]),
@@ -20,4 +22,13 @@ genrule(
       cp -aL k8s/vizier_deps/base/etcd_operator $$T
       kustomize build $$T/etcd_operator -o $@
     """,
+)
+
+pkg_tar(
+    name = "vizier_deps_crds",
+    srcs = [
+        "base/etcd_operator/etcd_crd.yaml",
+        "base/nats/nats_crd.yaml",
+    ],
+    package_dir = "/crds",
 )

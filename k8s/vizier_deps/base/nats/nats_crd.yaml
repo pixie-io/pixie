@@ -1,0 +1,305 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: natsclusters.nats.io
+  annotations:
+    "helm.sh/hook": "crd-install"
+    "helm.sh/hook-delete-policy": "before-hook-creation"
+spec:
+  group: nats.io
+  scope: Namespaced
+  names:
+    kind: NatsCluster
+    listKind: NatsClusterList
+    plural: natsclusters
+    singular: natscluster
+    shortNames:
+    - nats
+  versions:
+  - name: v1alpha2
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              size:
+                type: integer
+              version:
+                type: string
+              serverImage:
+                type: string
+              natsConfig:
+                type: object
+                properties:
+                  debug:
+                    type: boolean
+                  trace:
+                    type: boolean
+                  write_deadline:
+                    type: string
+                  maxConnections:
+                    type: integer
+                  maxPayload:
+                    type: integer
+                  maxPending:
+                    type: integer
+                  maxSubscriptions:
+                    type: integer
+                  maxControlLine:
+                    type: integer
+                  disableLogtime:
+                    type: boolean
+              useServerName:
+                type: boolean
+              paused:
+                type: boolean
+              pod:
+                type: object
+                properties:
+                  labels:
+                    x-kubernetes-preserve-unknown-fields: true
+                    type: object
+                  annotations:
+                    x-kubernetes-preserve-unknown-fields: true
+                    type: object
+                  nodeSelector:
+                    x-kubernetes-preserve-unknown-fields: true
+                    type: object
+                  antiAffinity:
+                    type: boolean
+                  resources:
+                    x-kubernetes-preserve-unknown-fields: true
+                    type: object
+                  tolerations:
+                    type: array
+                    items:
+                      x-kubernetes-preserve-unknown-fields: true
+                      type: object
+                  natsEnv:
+                    type: array
+                    items:
+                      x-kubernetes-preserve-unknown-fields: true
+                      type: object
+                  enableConfigReload:
+                    type: boolean
+                  reloaderImage:
+                    type: string
+                  reloaderImageTag:
+                    type: string
+                  reloaderImagePullPolicy:
+                    type: string
+                  reloaderResources:
+                    x-kubernetes-preserve-unknown-fields: true
+                    type: object
+                  enableMetrics:
+                    type: boolean
+                  metricsImage:
+                    type: string
+                  metricsImageTag:
+                    type: string
+                  metricsImagePullPolicy:
+                    type: string
+                  enableClientsHostPort:
+                    type: boolean
+                  advertiseExternalIP:
+                    type: boolean
+                  bootconfigImage:
+                    type: string
+                  bootconfigImageTag:
+                    type: string
+                  volumeMounts:
+                    type: array
+                    items:
+                      x-kubernetes-preserve-unknown-fields: true
+                      type: object
+              tls:
+                type: object
+                properties:
+                  serverSecret:
+                    type: string
+                  serverSecretCAFileName:
+                    type: string
+                  serverSecretKeyFileName:
+                    type: string
+                  serverSecretCertFileName:
+                    type: string
+                  routesSecret:
+                    type: string
+                  routesSecretCAFileName:
+                    type: string
+                  routesSecretKeyFileName:
+                    type: string
+                  routesSecretCertFileName:
+                    type: string
+                  gatewaySecret:
+                    type: string
+                  gatewaySecretCAFileName:
+                    type: string
+                  gatewaySecretKeyFileName:
+                    type: string
+                  gatewaySecretCertFileName:
+                    type: string
+                  leafnodeSecret:
+                    type: string
+                  leafnodeSecretCAFileName:
+                    type: string
+                  leafnodeSecretKeyFileName:
+                    type: string
+                  leafnodeSecretCertFileName:
+                    type: string
+                  websocketSecret:
+                    type: string
+                  websocketSecretCAFileName:
+                    type: string
+                  websocketSecretKeyFileName:
+                    type: string
+                  websocketSecretCertFileName:
+                    type: string
+                  websocketTLSTimeout:
+                    type: number
+                  enableHttps:
+                    type: boolean
+                  clientsTLSTimeout:
+                    type: number
+                  routesTLSTimeout:
+                    type: number
+                  gatewaysTLSTimeout:
+                    type: number
+                  leafnodesTLSTimeout:
+                    type: number
+                  verify:
+                    type: boolean
+                  cipherSuites:
+                    type: array
+                    items:
+                      type: string
+                  curvePreferences:
+                    type: array
+                    items:
+                      type: string
+              auth:
+                type: object
+                properties:
+                  enableServiceAccounts:
+                    type: boolean
+                  clientsAuthSecret:
+                    type: string
+                  clientsAuthFile:
+                    type: string
+                  clientsAuthTimeout:
+                    type: integer
+                  tlsVerifyAndMap:
+                    type: boolean
+              lameDuckDurationSeconds:
+                type: integer
+              noAdvertise:
+                type: boolean
+              template:
+                x-kubernetes-preserve-unknown-fields: true
+                type: object
+              extraRoutes:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    cluster:
+                      type: string
+                    route:
+                      type: string
+              gatewayConfig:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  hostPort:
+                    type: integer
+                  rejectUnknown:
+                    type: boolean
+                  gateways:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                        url:
+                          type: string
+              leafnodeConfig:
+                type: object
+                properties:
+                  port:
+                    type: integer
+                  remotes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        url:
+                          type: string
+                        urls:
+                          type: array
+                          items:
+                            type: string
+                        credentials:
+                          type: string
+              operatorConfig:
+                type: object
+                properties:
+                  secret:
+                    type: string
+                  systemAccount:
+                    type: string
+                  resolver:
+                    type: string
+              websocketConfig:
+                type: object
+                properties:
+                  port:
+                    type: integer
+                  handshakeTimeout:
+                    type: integer
+                  compression:
+                    type: boolean
+
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: natsserviceroles.nats.io
+  annotations:
+    "helm.sh/hook": "crd-install"
+    "helm.sh/hook-delete-policy": "before-hook-creation"
+spec:
+  group: nats.io
+  scope: Namespaced
+  names:
+    kind: NatsServiceRole
+    listKind: NatsServiceRoleList
+    plural: natsserviceroles
+    singular: natsservicerole
+  versions:
+  - name: v1alpha2
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              permissions:
+                type: object
+                properties:
+                  publish:
+                    type: array
+                    items:
+                      type: string
+                  subscribe:
+                    type: array
+                    items:
+                      type: string

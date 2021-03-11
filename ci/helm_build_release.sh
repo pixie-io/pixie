@@ -21,6 +21,7 @@ parse_args "$@"
 helm_gcs_bucket="pixie-helm-charts"
 tmp_path="/tmp/helm-${VERSION}"
 tmp_dir="$(mktemp -d)"
+repo_path=$(pwd)
 
 mkdir -p "${tmp_path}"
 # A Helm chart contains two main items:
@@ -41,6 +42,12 @@ bazel run //src/pixie_cli:px -- \
 
 tar xvf "${tmp_dir}/yamls.tar" -C "${tmp_dir}"
 mv "${tmp_dir}/pixie_yamls" "${tmp_path}/templates"
+
+# Add crds. Helm ensures that these crds are deployed before the templated YAMLs.
+bazel build //k8s/vizier_deps:vizier_deps_crds
+mv "${repo_path}/bazel-bin/k8s/vizier_deps/vizier_deps_crds.tar" "${tmp_dir}"
+tar xvf "${tmp_dir}/vizier_deps_crds.tar"
+mv "crds" "${tmp_path}"
 
 # Fetch all of the current charts in GCS, because generating the index needs all pre-existing tar versions present.
 mkdir -p "${tmp_dir}/${helm_gcs_bucket}"
