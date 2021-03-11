@@ -67,9 +67,14 @@ class ClientServerSystem {
  public:  // Required as an `arc lint` workaround.
   // PID of client, if spawned. Otherwise -1.
   uint32_t ClientPID() { return client_pid_; }
+  uint32_t ClientFD() { return client_.sockfd(); }
 
   // PID of server, if spawned. Otherwise -1.
   uint32_t ServerPID() { return server_pid_; }
+  uint32_t ServerFD() {
+    // Has to wait after accepting connection to get the server-side FD.
+    return server_accepted_->sockfd();
+  }
 
  private:
   /**
@@ -258,13 +263,13 @@ class ClientServerSystem {
    * On even-phases, it will expect to receive the script value.
    * On odd-phases, it will send the script value.
    */
-#define SpawnServerImpl(script)                         \
-  server_pid_ = getpid();                               \
-  LOG(INFO) << "Server PID: " << server_pid_;           \
-  server_thread_ = std::thread([this, script]() {       \
-    std::unique_ptr<TCPSocket> conn = server_.Accept(); \
-    RunServer<TRecvFn, TSendFn>(script, *conn);         \
-    server_.Close();                                    \
+#define SpawnServerImpl(script)                             \
+  server_pid_ = getpid();                                   \
+  LOG(INFO) << "Server PID: " << server_pid_;               \
+  server_thread_ = std::thread([this, script]() {           \
+    server_accepted_ = server_.Accept();                    \
+    RunServer<TRecvFn, TSendFn>(script, *server_accepted_); \
+    server_.Close();                                        \
   });
 
   template <bool (TCPSocket::*TRecvFn)(std::string*) const,
@@ -292,6 +297,7 @@ class ClientServerSystem {
 
   TCPSocket client_;
   TCPSocket server_;
+  std::unique_ptr<TCPSocket> server_accepted_;
 
   uint32_t client_pid_ = -1;
   uint32_t server_pid_ = -1;
