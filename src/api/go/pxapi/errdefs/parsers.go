@@ -1,7 +1,10 @@
 package errdefs
 
 import (
+	"fmt"
+
 	"google.golang.org/grpc/codes"
+
 	"pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 )
 
@@ -29,7 +32,7 @@ func ParseStatus(s *publicvizierapipb.Status) error {
 		return newErrorGroup(errs...)
 	}
 	if s.Code == int32(codes.InvalidArgument) {
-		return ErrInvalidArgument
+		return fmt.Errorf("%w: %s", ErrInvalidArgument, s.Message)
 	}
 	return ErrInternal
 
