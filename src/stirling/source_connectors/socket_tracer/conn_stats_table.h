@@ -12,16 +12,13 @@ constexpr DataElement kConnStatsElements[] = {
         canonical_data_elements::kUPID,
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
+        canonical_data_elements::kTraceRole,
         {"addr_family", "The socket address family of the connection.",
          types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::GENERAL_ENUM,
          &kSockAddrFamilyDecoder},
         {"protocol", "The protocol of the traffic on the connections.",
          types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::GENERAL_ENUM,
          &kTrafficProtocolDecoder},
-        // TODO(yzhao): Might want to replace this with "trace_role" for consistency.
-        {"role", "The role of the process that owns the connections.",
-         types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::GENERAL_ENUM,
-         &kEndpointRoleDecoder},
         {"conn_open", "The number of connections opened since the beginning of tracing.",
          types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_COUNTER},
         {"conn_close", "The number of connections closed since the beginning of tracing.",
@@ -56,7 +53,7 @@ constexpr int kRemoteAddr = kConnStatsTable.ColIndex("remote_addr");
 constexpr int kRemotePort = kConnStatsTable.ColIndex("remote_port");
 constexpr int kAddrFamily = kConnStatsTable.ColIndex("addr_family");
 constexpr int kProtocol = kConnStatsTable.ColIndex("protocol");
-constexpr int kRole = kConnStatsTable.ColIndex("role");
+constexpr int kRole = kConnStatsTable.ColIndex("trace_role");
 constexpr int kConnOpen = kConnStatsTable.ColIndex("conn_open");
 constexpr int kConnClose = kConnStatsTable.ColIndex("conn_close");
 constexpr int kConnActive = kConnStatsTable.ColIndex("conn_active");
