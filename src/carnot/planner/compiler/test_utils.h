@@ -595,7 +595,7 @@ class OperatorTests : public ::testing::Test {
 
   FuncIR* MakeEqualsFunc(ExpressionIR* left, ExpressionIR* right) {
     return graph
-        ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::eq, "==", "equals"},
+        ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::eq, "==", "equal"},
                              std::vector<ExpressionIR*>({left, right}))
         .ConsumeValueOrDie();
   }

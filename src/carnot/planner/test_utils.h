@@ -1242,6 +1242,24 @@ schema_info {
 }
 )proto";
 
+constexpr char kAllAgentsUDF[] = R"proto(
+  name: "all_agents"
+  return_type: STRING
+  executor: UDF_ALL
+)proto";
+
+constexpr char kKelvinOnlyUDF[] = R"proto(
+  name: "kelvin_only"
+  return_type: STRING
+  executor: UDF_KELVIN
+)proto";
+
+constexpr char kPEMOnlyUDF[] = R"proto(
+  name: "pem_only"
+  return_type: STRING
+  executor: UDF_PEM
+)proto";
+
 constexpr char kAllSchemas[] = R"proto(
 relation_map {
   key: "conn_stats"
@@ -1722,6 +1740,16 @@ relation_map {
 
 udfspb::UDFInfo UDFInfoWithTestUDTF() {
   auto udf_info = udfexporter::ExportUDFInfo().ConsumeValueOrDie()->info_pb();
+
+  // Add source-specific test UDFs.
+  CHECK(google::protobuf::TextFormat::MergeFromString(
+      absl::Substitute("scalar_udfs{$0}", kKelvinOnlyUDF), &udf_info));
+  CHECK(google::protobuf::TextFormat::MergeFromString(
+      absl::Substitute("scalar_udfs{$0}", kPEMOnlyUDF), &udf_info));
+  CHECK(google::protobuf::TextFormat::MergeFromString(
+      absl::Substitute("scalar_udfs{$0}", kAllAgentsUDF), &udf_info));
+
+  // Add source-specific test UDTFs.
   CHECK(google::protobuf::TextFormat::MergeFromString(absl::Substitute("udtfs{$0}", kUDTFAllAgents),
                                                       &udf_info));
   CHECK(google::protobuf::TextFormat::MergeFromString(

@@ -327,7 +327,7 @@ constexpr char kExpectedFilterPb[] = R"(
   filter_op {
     expression {
       func {
-        name: "equals"
+        name: "equal"
         args {
           column {
             node: 1

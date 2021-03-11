@@ -509,6 +509,68 @@ TEST_F(AnnotateAbortableSrcsForLimitsRuleTest, DisjointGraphs) {
   EXPECT_THAT(limit2->abortable_srcs(), ::testing::UnorderedElementsAre(mem_src2->id()));
 }
 
+TEST_F(DistributedRulesTest, ScalarUDFRunOnKelvinRuleTest) {
+  // Kelvin-only plan
+  MemorySourceIR* src1 = MakeMemSource("http_events");
+  auto func1 = MakeFunc("kelvin_only", {});
+  func1->SetOutputDataType(types::DataType::STRING);
+  MapIR* map1 = MakeMap(src1, {{"out", func1}});
+  MakeMemSink(map1, "foo", {});
+
+  ScalarUDFsRunOnKelvinRule rule(compiler_state_.get());
+
+  auto rule_or_s = rule.Execute(graph.get());
+  ASSERT_OK(rule_or_s);
+  ASSERT_FALSE(rule_or_s.ConsumeValueOrDie());
+
+  // PEM-only plan
+  MemorySourceIR* src2 = MakeMemSource("http_events");
+  auto func2 = MakeFunc("pem_only", {});
+  func2->SetOutputDataType(types::DataType::STRING);
+  MapIR* map2 = MakeMap(src2, {{"out", func2}}, false);
+  MakeMemSink(map2, "foo", {});
+
+  rule_or_s = rule.Execute(graph.get());
+  ASSERT_NOT_OK(rule_or_s);
+  EXPECT_THAT(
+      rule_or_s.status(),
+      HasCompilerError(
+          "UDF 'pem_only' must execute before blocking nodes such as limit, agg, and join."));
+}
+
+TEST_F(DistributedRulesTest, ScalarUDFRunOnPEMRuleTest) {
+  // PEM-only plan
+  MemorySourceIR* src1 = MakeMemSource("http_events");
+  auto func1 = MakeFunc("pem_only", {});
+  func1->SetOutputDataType(types::DataType::STRING);
+  auto equals_func1 = MakeEqualsFunc(func1, MakeString("abc"));
+  equals_func1->SetOutputDataType(types::DataType::BOOLEAN);
+  FilterIR* filter1 = MakeFilter(src1, equals_func1);
+  MakeMemSink(filter1, "foo", {});
+
+  ScalarUDFsRunOnPEMRule rule(compiler_state_.get());
+
+  auto rule_or_s = rule.Execute(graph.get());
+  ASSERT_OK(rule_or_s);
+  ASSERT_FALSE(rule_or_s.ConsumeValueOrDie());
+
+  // Kelvin-only plan
+  MemorySourceIR* src2 = MakeMemSource("http_events");
+  auto func2 = MakeFunc("kelvin_only", {});
+  func2->SetOutputDataType(types::DataType::STRING);
+  auto equals_func2 = MakeEqualsFunc(func2, MakeString("abc"));
+  equals_func2->SetOutputDataType(types::DataType::BOOLEAN);
+  FilterIR* filter2 = MakeFilter(src2, equals_func2);
+  MakeMemSink(filter2, "foo", {});
+
+  rule_or_s = rule.Execute(graph.get());
+  ASSERT_NOT_OK(rule_or_s);
+  EXPECT_THAT(
+      rule_or_s.status(),
+      HasCompilerError(
+          "UDF 'kelvin_only' must execute after blocking nodes such as limit, agg, and join."));
+}
+
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot

@@ -139,6 +139,36 @@ class DistributedAnnotateAbortableSrcsForLimitsRule : public DistributedRule {
   StatusOr<bool> Apply(distributed::CarnotInstance* node) override;
 };
 
+/**
+ * @brief Ensures that all Scalar UDFs in this plan can run on a PEM.
+ */
+class ScalarUDFsRunOnPEMRule : public Rule {
+ public:
+  explicit ScalarUDFsRunOnPEMRule(CompilerState* compiler_state)
+      : Rule(compiler_state, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
+
+  // Returns true if a given operator's UDFs can successfully run on a PEM.
+  static StatusOr<bool> OperatorUDFsRunOnPEM(CompilerState* compiler_state, OperatorIR* op);
+
+ protected:
+  StatusOr<bool> Apply(IRNode* node) override;
+};
+
+/**
+ * @brief Ensures that all Scalar UDFs in this plan can run on a Kelvin.
+ */
+class ScalarUDFsRunOnKelvinRule : public Rule {
+ public:
+  explicit ScalarUDFsRunOnKelvinRule(CompilerState* compiler_state)
+      : Rule(compiler_state, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
+
+  // Returns true if a given operator's UDFs can successfully run on a Kelvin.
+  static StatusOr<bool> OperatorUDFsRunOnKelvin(CompilerState* compiler_state, OperatorIR* op);
+
+ protected:
+  StatusOr<bool> Apply(IRNode* node) override;
+};
+
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
