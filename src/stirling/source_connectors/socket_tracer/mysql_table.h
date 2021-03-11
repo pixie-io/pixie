@@ -39,10 +39,7 @@ static constexpr DataElement kMySQLElements[] = {
          types::DataType::STRING,
          types::SemanticType::ST_NONE,
          types::PatternType::GENERAL},
-        {"latency_ns", "Request-response latency in nanoseconds",
-         types::DataType::INT64,
-         types::SemanticType::ST_DURATION_NS,
-         types::PatternType::METRIC_GAUGE},
+        canonical_data_elements::kLatencyNS,
 #ifndef NDEBUG
         {"px_info_", "Pixie messages regarding the record (e.g. warnings)",
          types::DataType::STRING,
@@ -62,7 +59,7 @@ constexpr int kMySQLReqCmdIdx = kMySQLTable.ColIndex("req_cmd");
 constexpr int kMySQLReqBodyIdx = kMySQLTable.ColIndex("req_body");
 constexpr int kMySQLRespStatusIdx = kMySQLTable.ColIndex("resp_status");
 constexpr int kMySQLRespBodyIdx = kMySQLTable.ColIndex("resp_body");
-constexpr int kMySQLLatencyIdx = kMySQLTable.ColIndex("latency_ns");
+constexpr int kMySQLLatencyIdx = kMySQLTable.ColIndex("latency");
 
 }  // namespace stirling
 }  // namespace pl

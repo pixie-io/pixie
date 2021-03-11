@@ -513,7 +513,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("http_resp_message")>(std::move(resp_message.resp_message));
   r.Append<r.ColIndex("http_resp_body_size")>(resp_message.body.size());
   r.Append<r.ColIndex("http_resp_body"), kMaxBodyBytes>(std::move(resp_message.body));
-  r.Append<r.ColIndex("http_resp_latency_ns")>(
+  r.Append<r.ColIndex("latency")>(
       CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));
 #ifndef NDEBUG
   r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
@@ -577,7 +577,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("http_req_body"), kMaxBodyBytes>(std::move(req_stream->data));
   r.Append<r.ColIndex("http_resp_body_size")>(resp_stream->data.size());
   r.Append<r.ColIndex("http_resp_body"), kMaxBodyBytes>(std::move(resp_stream->data));
-  r.Append<r.ColIndex("http_resp_latency_ns")>(
+  r.Append<r.ColIndex("latency")>(
       CalculateLatency(req_stream->timestamp_ns, resp_stream->timestamp_ns));
 #ifndef NDEBUG
   r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
@@ -600,7 +600,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("req_body"), kMaxBodyBytes>(std::move(entry.req.msg));
   r.Append<r.ColIndex("resp_status")>(static_cast<uint64_t>(entry.resp.status));
   r.Append<r.ColIndex("resp_body"), kMaxBodyBytes>(std::move(entry.resp.msg));
-  r.Append<r.ColIndex("latency_ns")>(
+  r.Append<r.ColIndex("latency")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 #ifndef NDEBUG
   r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
@@ -623,7 +623,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("req_body"), kMaxBodyBytes>(std::move(entry.req.msg));
   r.Append<r.ColIndex("resp_op")>(static_cast<uint64_t>(entry.resp.op));
   r.Append<r.ColIndex("resp_body"), kMaxBodyBytes>(std::move(entry.resp.msg));
-  r.Append<r.ColIndex("latency_ns")>(
+  r.Append<r.ColIndex("latency")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 #ifndef NDEBUG
   r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
@@ -646,7 +646,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("req_body")>(entry.req.query);
   r.Append<r.ColIndex("resp_header")>(entry.resp.header);
   r.Append<r.ColIndex("resp_body")>(entry.resp.msg);
-  r.Append<r.ColIndex("latency_ns")>(
+  r.Append<r.ColIndex("latency")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 #ifndef NDEBUG
   r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
@@ -667,7 +667,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("trace_role")>(conn_tracker.traffic_class().role);
   r.Append<r.ColIndex("req")>(std::move(entry.req.payload));
   r.Append<r.ColIndex("resp")>(std::move(entry.resp.payload));
-  r.Append<r.ColIndex("latency_ns")>(
+  r.Append<r.ColIndex("latency")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 #ifndef NDEBUG
   r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
@@ -710,7 +710,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("cmd")>(std::string(entry.req.command));
   r.Append<r.ColIndex("cmd_args")>(std::string(entry.req.payload));
   r.Append<r.ColIndex("resp")>(std::string(entry.resp.payload));
-  r.Append<r.ColIndex("latency_ns")>(
+  r.Append<r.ColIndex("latency")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 #ifndef NDEBUG
   r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));

@@ -35,6 +35,13 @@ constexpr DataElement kTraceRole = {
     types::PatternType::GENERAL_ENUM,
     &kEndpointRoleDecoder};
 
+constexpr DataElement kLatencyNS = {
+    "latency",
+    "Request-response latency.",
+    types::DataType::INT64,
+    types::SemanticType::ST_DURATION_NS,
+    types::PatternType::METRIC_GAUGE};
+
 // clang-format on
 
 }  // namespace canonical_data_elements

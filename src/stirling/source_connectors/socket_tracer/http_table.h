@@ -78,11 +78,7 @@ constexpr DataElement kHTTPElements[] = {
      types::DataType::INT64,
      types::SemanticType::ST_BYTES,
      types::PatternType::METRIC_GAUGE},
-    // TODO(yzhao): Rename this to latency_ns and consolidate into canonical_types.h.
-    {"http_resp_latency_ns", "Request-response latency in nanoseconds",
-     types::DataType::INT64,
-     types::SemanticType::ST_DURATION_NS,
-     types::PatternType::METRIC_GAUGE},
+    canonical_data_elements::kLatencyNS,
 #ifndef NDEBUG
         {"px_info_", "Pixie messages regarding the record (e.g. warnings)",
          types::DataType::STRING,
@@ -114,7 +110,7 @@ constexpr int kHTTPRespStatusIdx = kHTTPTable.ColIndex("http_resp_status");
 constexpr int kHTTPRespMessageIdx = kHTTPTable.ColIndex("http_resp_message");
 constexpr int kHTTPRespBodyIdx = kHTTPTable.ColIndex("http_resp_body");
 constexpr int kHTTPRespBodySizeIdx = kHTTPTable.ColIndex("http_resp_body_size");
-constexpr int kHTTPLatencyIdx = kHTTPTable.ColIndex("http_resp_latency_ns");
+constexpr int kHTTPLatencyIdx = kHTTPTable.ColIndex("latency");
 
 }  // namespace stirling
 }  // namespace pl

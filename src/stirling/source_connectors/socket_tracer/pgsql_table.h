@@ -21,10 +21,7 @@ static constexpr DataElement kPGSQLElements[] = {
          types::DataType::STRING,
          types::SemanticType::ST_NONE,
          types::PatternType::GENERAL},
-        {"latency_ns", "Request-response latency in nanoseconds",
-         types::DataType::INT64,
-         types::SemanticType::ST_DURATION_NS,
-         types::PatternType::METRIC_GAUGE},
+        canonical_data_elements::kLatencyNS,
 #ifndef NDEBUG
         {"px_info_", "Pixie messages regarding the record (e.g. warnings)",
          types::DataType::STRING,
@@ -41,7 +38,7 @@ static constexpr auto kPGSQLTable =
 constexpr int kPGSQLUPIDIdx = kPGSQLTable.ColIndex("upid");
 constexpr int kPGSQLReqIdx = kPGSQLTable.ColIndex("req");
 constexpr int kPGSQLRespIdx = kPGSQLTable.ColIndex("resp");
-constexpr int kPGSQLLatencyIdx = kPGSQLTable.ColIndex("latency_ns");
+constexpr int kPGSQLLatencyIdx = kPGSQLTable.ColIndex("latency");
 
 }  // namespace stirling
 }  // namespace pl
