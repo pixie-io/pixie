@@ -2,6 +2,7 @@ package artifacts
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"k8s.io/client-go/rest"
@@ -35,7 +36,7 @@ metadata:
 ---
 apiVersion: v1
 data:
-  PL_BOOTSTRAP_MODE: "true"
+  PL_BOOTSTRAP_MODE: "__PL_BOOTSTRAP_MODE__"
 kind: ConfigMap
 metadata:
   creationTimestamp: null
@@ -82,10 +83,11 @@ func SetConfigValues(currentCluster string, tmplValues *VizierTmplValues, cloudA
 }
 
 // GenerateClusterSecretYAMLs generates YAMLs for the cluster secrets.
-func GenerateClusterSecretYAMLs(sentryDSN string) (string, error) {
+func GenerateClusterSecretYAMLs(sentryDSN string, bootstrapMode bool) (string, error) {
 	// Perform substitutions.
 	r := strings.NewReplacer(
 		"__PL_SENTRY_DSN__", sentryDSN,
+		"__PL_BOOTSTRAP_MODE__", strconv.FormatBool(bootstrapMode),
 	)
 	return r.Replace(secretsYAML), nil
 }

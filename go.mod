@@ -28,7 +28,7 @@ require (
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200417080019-f432f7159508+incompatible
 	github.com/dustin/go-humanize v1.0.0
 	github.com/emicklei/dot v0.10.1
-	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
+	github.com/evanphx/json-patch v4.9.0+incompatible // indirect
 	github.com/fatih/color v1.7.0
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/gdamore/tcell v1.3.0

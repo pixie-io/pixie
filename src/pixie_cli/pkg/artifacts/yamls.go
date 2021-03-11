@@ -20,7 +20,11 @@ import (
 )
 
 const (
-	vizierBootstrapYAMLPath = "./yamls/vizier/vizier_bootstrap_prod.yaml"
+	vizierBootstrapYAMLPath       = "./yamls/vizier/vizier_bootstrap_prod.yaml"
+	etcdOperatorYAMLPath          = "./yamls/vizier_deps/etcd_operator_prod.yaml"
+	vizierEtcdYAMLPath            = "./yamls/vizier/vizier_etcd_metadata_prod.yaml"
+	vizierMetadataPersistYAMLPath = "./yamls/vizier/vizier_metadata_persist_prod.yaml"
+	natsYAMLPath                  = "./yamls/vizier_deps/nats_prod.yaml"
 )
 
 // Sentry configs are not actually secret and safe to check in.
@@ -158,14 +162,14 @@ func getSentryDSN(vizierVersion string) string {
 	return prodSentryDSN
 }
 
-// GenerateTemplatedDeployYAMLs generates the YAMLs that should be run when deploying Pixie.
-func GenerateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, conn *grpc.ClientConn, authToken string, versionStr string, ns string, imagePullSecretName string, imagePullCreds string) ([]*YAMLFile, error) {
+// GenerateTemplatedDeployBootstrapYAMLs generates the YAMLs that should be run when deploying Pixie with Bootstrap mode.
+func GenerateTemplatedDeployBootstrapYAMLs(clientset *kubernetes.Clientset, conn *grpc.ClientConn, authToken string, versionStr string, ns string, imagePullSecretName string, imagePullCreds string) ([]*YAMLFile, error) {
 	yamlMap, err := FetchVizierYAMLMap(conn, authToken, versionStr)
 	if err != nil {
 		return nil, err
 	}
 
-	return generateTemplatedDeployYAMLs(clientset, yamlMap, versionStr, ns, imagePullSecretName, imagePullCreds)
+	return generateTemplatedDeployBootstrapYAMLs(clientset, yamlMap, versionStr, ns, imagePullSecretName, imagePullCreds)
 }
 
 // GenerateTemplatedDeployYAMLsWithTar generates the YAMLs that should be run when deploying Pixie using the provided tar file.
@@ -183,13 +187,13 @@ func GenerateTemplatedDeployYAMLsWithTar(clientset *kubernetes.Clientset, tarPat
 	return generateTemplatedDeployYAMLs(clientset, yamlMap, versionStr, ns, "", "")
 }
 
-func generateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string, versionStr string, ns string, imagePullSecretName string, imagePullCreds string) ([]*YAMLFile, error) {
+func generateTemplatedDeployBootstrapYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string, versionStr string, ns string, imagePullSecretName string, imagePullCreds string) ([]*YAMLFile, error) {
 	nsYAML, err := generateNamespaceYAML(clientset, ns)
 	if err != nil {
 		return nil, err
 	}
 
-	secretsYAML, err := GenerateSecretsYAML(clientset, ns, imagePullSecretName, imagePullCreds, versionStr)
+	secretsYAML, err := GenerateSecretsYAML(clientset, ns, imagePullSecretName, imagePullCreds, versionStr, true)
 	if err != nil {
 		return nil, err
 	}
@@ -215,6 +219,55 @@ func generateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, yamlMap map[s
 	}, nil
 }
 
+func generateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string, versionStr string, ns string, imagePullSecretName string, imagePullCreds string) ([]*YAMLFile, error) {
+	nsYAML, err := generateNamespaceYAML(clientset, ns)
+	if err != nil {
+		return nil, err
+	}
+
+	secretsYAML, err := GenerateSecretsYAML(clientset, ns, imagePullSecretName, imagePullCreds, versionStr, false)
+	if err != nil {
+		return nil, err
+	}
+
+	natsYAML, etcdYAML, err := generateVzDepsYAMLs(clientset, yamlMap)
+	if err != nil {
+		return nil, err
+	}
+
+	etcdVzYAML, persistentVzYAML, err := generateVzYAMLs(clientset, yamlMap)
+	if err != nil {
+		return nil, err
+	}
+
+	return []*YAMLFile{
+		&YAMLFile{
+			Name: "namespace",
+			YAML: nsYAML,
+		},
+		&YAMLFile{
+			Name: "secrets",
+			YAML: secretsYAML,
+		},
+		&YAMLFile{
+			Name: "nats",
+			YAML: natsYAML,
+		},
+		&YAMLFile{
+			Name: "etcd",
+			YAML: etcdYAML,
+		},
+		&YAMLFile{
+			Name: "vizier_etcd",
+			YAML: etcdVzYAML,
+		},
+		&YAMLFile{
+			Name: "vizier_persistent",
+			YAML: persistentVzYAML,
+		},
+	}, nil
+}
+
 // generateNamespaceYAML creates the YAML for the namespace Pixie is deployed in.
 func generateNamespaceYAML(clientset *kubernetes.Clientset, namespace string) (string, error) {
 	ns := &v1.Namespace{}
@@ -235,7 +288,7 @@ func generateNamespaceYAML(clientset *kubernetes.Clientset, namespace string) (s
 }
 
 // GenerateSecretsYAML creates the YAML for Pixie secrets.
-func GenerateSecretsYAML(clientset *kubernetes.Clientset, ns string, imagePullSecretName string, imagePullCreds string, versionStr string) (string, error) {
+func GenerateSecretsYAML(clientset *kubernetes.Clientset, ns string, imagePullSecretName string, imagePullCreds string, versionStr string, bootstrapMode bool) (string, error) {
 	dockerYAML := ""
 
 	// Only add docker image secrets if specified.
@@ -251,7 +304,7 @@ func GenerateSecretsYAML(clientset *kubernetes.Clientset, ns string, imagePullSe
 		dockerYAML = dYaml
 	}
 
-	csYAMLs, err := GenerateClusterSecretYAMLs(getSentryDSN(versionStr))
+	csYAMLs, err := GenerateClusterSecretYAMLs(getSentryDSN(versionStr), bootstrapMode)
 	if err != nil {
 		return "", err
 	}
@@ -330,4 +383,54 @@ func generateBootstrapYAML(clientset *kubernetes.Clientset, yamlMap map[string]s
 	}
 
 	return vzBootstrapYAML, nil
+}
+
+func generateVzDepsYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string) (string, string, error) {
+	natsYAML, err := TemplatizeK8sYAML(clientset, yamlMap[natsYAMLPath], globalTemplateOptions)
+	if err != nil {
+		return "", "", err
+	}
+
+	etcdYAML, err := TemplatizeK8sYAML(clientset, yamlMap[etcdOperatorYAMLPath], globalTemplateOptions)
+	if err != nil {
+		return "", "", err
+	}
+	// The etcdYAML should only be applied if --use_etcd_operator is true. The entire YAML should be wrapped in a template.
+	wrappedEtcd := fmt.Sprintf(
+		`{{if .Values.useEtcdOperator}}
+%s
+{{- end}}`,
+		etcdYAML)
+
+	return natsYAML, wrappedEtcd, nil
+}
+
+func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string) (string, string, error) {
+	if _, ok := yamlMap[vizierMetadataPersistYAMLPath]; !ok {
+		return "", "", fmt.Errorf("Cannot generate YAMLS for specified Vizier version. Please update to latest Vizier version instead.  ")
+	}
+
+	persistentYAML, err := TemplatizeK8sYAML(clientset, yamlMap[vizierMetadataPersistYAMLPath], globalTemplateOptions)
+	if err != nil {
+		return "", "", err
+	}
+	// The persistent YAML should only be applied if --use_etcd_operator is false. The entire YAML should be wrapped in a template.
+	wrappedPersistent := fmt.Sprintf(
+		`{{if not .Values.useEtcdOperator}}
+%s
+{{- end}}`,
+		persistentYAML)
+
+	etcdYAML, err := TemplatizeK8sYAML(clientset, yamlMap[vizierEtcdYAMLPath], globalTemplateOptions)
+	if err != nil {
+		return "", "", err
+	}
+	// The etcd version of Vizier should only be applied if --use_etcd_operator is true. The entire YAML should be wrapped in a template.
+	wrappedEtcd := fmt.Sprintf(
+		`{{if .Values.useEtcdOperator}}
+%s
+{{- end}}`,
+		etcdYAML)
+
+	return wrappedEtcd, wrappedPersistent, nil
 }

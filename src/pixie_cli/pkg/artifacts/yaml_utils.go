@@ -13,6 +13,7 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
+	"github.com/evanphx/json-patch"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -211,14 +212,12 @@ type K8sTemplateOptions struct {
 func addPlaceholder(opt *K8sTemplateOptions, gvk schema.GroupVersionKind, originalJSON []byte) ([]byte, error) {
 	creatorObj, err := scheme.Scheme.New(gvk)
 	if err != nil {
-		return nil, fmt.Errorf("strategic merge patch is not supported for %s", gvk.String())
-	}
-	patchedJSON, err := strategicpatch.StrategicMergePatch(originalJSON, []byte(opt.Patch), creatorObj)
-	if err != nil {
-		return nil, err
+		// Strategic merge patches are not supported for non-native K8s resources (custom CRDs).
+		// We will need to perform a regular JSON patch instead.
+		return jsonpatch.MergePatch(originalJSON, []byte(opt.Patch))
 	}
 
-	return patchedJSON, nil
+	return strategicpatch.StrategicMergePatch(originalJSON, []byte(opt.Patch), creatorObj)
 }
 
 func addPlaceholders(rm meta.RESTMapper, decodedYAML *yaml.YAMLOrJSONDecoder, tmplOpts []*K8sTemplateOptions) (string, error) {
@@ -234,11 +233,12 @@ func addPlaceholders(rm meta.RESTMapper, decodedYAML *yaml.YAMLOrJSONDecoder, tm
 		return "", err
 	}
 
+	resourceType := ""
 	mapping, err := rm.RESTMapping(gvk.GroupKind(), gvk.Version)
-	if err != nil {
-		return "", err
+	if err == nil {
+		k8sRes := mapping.Resource
+		resourceType = k8sRes.Resource
 	}
-	k8sRes := mapping.Resource
 
 	// Decode object into readable struct.
 	var unstructuredOrig unstructured.Unstructured
@@ -254,7 +254,7 @@ func addPlaceholders(rm meta.RESTMapper, decodedYAML *yaml.YAMLOrJSONDecoder, tm
 	// Add placeholders to the object.
 	currJSON := ext.Raw
 	for _, opt := range tmplOpts {
-		if opt.TemplateMatcher != nil && !opt.TemplateMatcher(unstructuredOrig.Object, k8sRes.Resource) {
+		if opt.TemplateMatcher != nil && !opt.TemplateMatcher(unstructuredOrig.Object, resourceType) {
 			continue
 		}
 

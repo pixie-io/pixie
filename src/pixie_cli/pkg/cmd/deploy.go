@@ -341,7 +341,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	}
 
 	utils.Infof("Generating YAMLs for Pixie")
-	templatedYAMLs, err := artifacts.GenerateTemplatedDeployYAMLs(clientset, cloudConn, creds.Token, versionString, namespace, secretName, credsData)
+	templatedYAMLs, err := artifacts.GenerateTemplatedDeployBootstrapYAMLs(clientset, cloudConn, creds.Token, versionString, namespace, secretName, credsData)
 	if err != nil {
 		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 		log.WithError(err).Fatal("failed to generate deployment YAMLs")
