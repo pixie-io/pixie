@@ -1,7 +1,0 @@
-kubernetes.v2.managedBySuffix: for-gcp
-artifacts:
-  gitRepo:
-    enabled: true
-    accounts:
-    - name: pixie-git-repo
-      token: ed200aba526586ee28c10589e8a09ad92161f086

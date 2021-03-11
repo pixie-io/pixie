@@ -1,9 +1,0 @@
-rest:
-  enabled: true
-  endpoints:
-    - wrap: true
-      flatten: false
-      url: https://us-central1-pl-dev-infra.cloudfunctions.net/spinnakerAuditLog
-      username: 213faeac3cnm8640dmjx-1570211517
-      password: aagdvl48htzkxo0q1h33-1570211517
-      eventName: spinnaker_events

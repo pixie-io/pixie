@@ -1,2 +1,0 @@
-overrideBaseUrl: redis://10.211.11.155:6379
-skipLifeCycleManagement: true
