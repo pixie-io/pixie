@@ -110,7 +110,7 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 	}
 
 	if newUser {
-		userInfo, _, err = s.createUserAndOptionallyOrg(ctx, domainName, userID, userInfo, orgInfo)
+		userInfo, err = s.createUser(ctx, userID, userInfo, orgInfo)
 		if err != nil {
 			return nil, err
 		}
@@ -211,10 +211,19 @@ func (s *Server) Signup(ctx context.Context, in *pb.SignupRequest) (*pb.SignupRe
 	}
 
 	orgInfo, _ := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: domainName})
+	var orgID *uuidpb.UUID
 	newOrg := orgInfo == nil
-	userInfo, orgID, err := s.createUserAndOptionallyOrg(ctx, domainName, userID, userInfo, orgInfo)
-	if err != nil {
-		return nil, err
+	if newOrg {
+		userInfo, orgID, err = s.createUserAndOrg(ctx, domainName, userID, userInfo)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		userInfo, err = s.createUser(ctx, userID, userInfo, orgInfo)
+		orgID = orgInfo.ID
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	token, expiresAt, err := generateJWTTokenForUser(userInfo, s.env.JWTSigningKey())
@@ -222,14 +231,12 @@ func (s *Server) Signup(ctx context.Context, in *pb.SignupRequest) (*pb.SignupRe
 		return nil, status.Error(codes.Internal, "failed to generate token")
 	}
 
-	userID = userInfo.PLUserID
-
 	return &pb.SignupReply{
 		Token:      token,
 		ExpiresAt:  expiresAt.Unix(),
 		OrgCreated: newOrg,
 		UserInfo: &pb.AuthenticatedUserInfo{
-			UserID:    pbutils.ProtoFromUUIDStrOrNil(userID),
+			UserID:    pbutils.ProtoFromUUIDStrOrNil(userInfo.PLUserID),
 			FirstName: userInfo.FirstName,
 			LastName:  userInfo.LastName,
 			Email:     userInfo.Email,
@@ -239,55 +246,59 @@ func (s *Server) Signup(ctx context.Context, in *pb.SignupRequest) (*pb.SignupRe
 }
 
 // Creates a user as well as an org if the orgInfo passed in is nil.
-func (s *Server) createUserAndOptionallyOrg(ctx context.Context, domainName string, userID string, userInfo *UserInfo, orgInfo *profilepb.OrgInfo) (*UserInfo, *uuidpb.UUID, error) {
+func (s *Server) createUserAndOrg(ctx context.Context, domainName string, userID string, userInfo *UserInfo) (*UserInfo, *uuidpb.UUID, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
-	pc := s.env.ProfileClient()
-	var orgID *uuidpb.UUID
-	var userIDpb *uuidpb.UUID
-	var err error
-
-	if orgInfo != nil {
-		// Create a new user to register them.
-		userCreateReq := &profilepb.CreateUserRequest{
-			OrgID:     orgInfo.ID,
+	orgName := domainName
+	rpcReq := &profilepb.CreateOrgAndUserRequest{
+		Org: &profilepb.CreateOrgAndUserRequest_Org{
+			OrgName:    orgName,
+			DomainName: domainName,
+		},
+		User: &profilepb.CreateOrgAndUserRequest_User{
 			Username:  userInfo.Email,
 			FirstName: userInfo.FirstName,
 			LastName:  userInfo.LastName,
 			Email:     userInfo.Email,
-		}
-
-		userIDpb, err = pc.CreateUser(ctx, userCreateReq)
-		if err != nil {
-			return nil, orgInfo.ID, err
-		}
-		orgID = orgInfo.ID
-	} else {
-		orgName := domainName
-		rpcReq := &profilepb.CreateOrgAndUserRequest{
-			Org: &profilepb.CreateOrgAndUserRequest_Org{
-				OrgName:    orgName,
-				DomainName: domainName,
-			},
-			User: &profilepb.CreateOrgAndUserRequest_User{
-				Username:  userInfo.Email,
-				FirstName: userInfo.FirstName,
-				LastName:  userInfo.LastName,
-				Email:     userInfo.Email,
-			},
-		}
-
-		resp, err := s.env.ProfileClient().CreateOrgAndUser(ctx, rpcReq)
-		if err != nil {
-			return nil, nil, status.Error(codes.Internal, "failed to create user/org")
-		}
-		orgID = resp.OrgID
-		userIDpb = resp.UserID
+		},
 	}
 
-	userInfo, err = s.updateAuthProviderUser(userID, pbutils.UUIDFromProtoOrNil(orgID).String(), pbutils.UUIDFromProtoOrNil(userIDpb).String())
-	return userInfo, orgID, err
+	pc := s.env.ProfileClient()
+	resp, err := pc.CreateOrgAndUser(ctx, rpcReq)
+	if err != nil {
+		return nil, nil, status.Error(codes.Internal, "failed to create user/org")
+	}
+	orgIDpb := resp.OrgID
+	userIDpb := resp.UserID
+
+	userInfo, err = s.updateAuthProviderUser(userID, pbutils.UUIDFromProtoOrNil(orgIDpb).String(), pbutils.UUIDFromProtoOrNil(userIDpb).String())
+	return userInfo, orgIDpb, err
+}
+
+// Creates a user in the passed in orgname.
+func (s *Server) createUser(ctx context.Context, userID string, userInfo *UserInfo, orgInfo *profilepb.OrgInfo) (*UserInfo, error) {
+	md, _ := metadata.FromIncomingContext(ctx)
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
+	if orgInfo == nil {
+		return nil, fmt.Errorf("orgInfo should not be nil")
+	}
+	// Create a new user to register them.
+	userCreateReq := &profilepb.CreateUserRequest{
+		OrgID:     orgInfo.ID,
+		Username:  userInfo.Email,
+		FirstName: userInfo.FirstName,
+		LastName:  userInfo.LastName,
+		Email:     userInfo.Email,
+	}
+
+	userIDpb, err := s.env.ProfileClient().CreateUser(ctx, userCreateReq)
+	if err != nil {
+		return nil, err
+	}
+	userInfo, err = s.updateAuthProviderUser(userID, pbutils.UUIDFromProtoOrNil(orgInfo.ID).String(), pbutils.UUIDFromProtoOrNil(userIDpb).String())
+	return userInfo, err
 }
 
 // GetAugmentedTokenForAPIKey produces an augmented token for the user given a API key.
