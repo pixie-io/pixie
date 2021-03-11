@@ -23,19 +23,21 @@ func makeErrorResponse(message string) *vizierpb.ExecuteScriptResponse {
 	}
 }
 
-func makeCompilerError(line uint64, col uint64, message string) *vizierpb.ExecuteScriptResponse {
-	errResp := makeErrorResponse(message)
-	errResp.Status.ErrorDetails = []*vizierpb.ErrorDetails{
-		{
-			Error: &vizierpb.ErrorDetails_CompilerError{
-				CompilerError: &vizierpb.CompilerError{
-					Line:    line,
-					Column:  col,
-					Message: message,
-				},
+func makeCompilerErrorDetails(line uint64, col uint64, message string) *vizierpb.ErrorDetails {
+	return &vizierpb.ErrorDetails{
+		Error: &vizierpb.ErrorDetails_CompilerError{
+			CompilerError: &vizierpb.CompilerError{
+				Line:    line,
+				Column:  col,
+				Message: message,
 			},
 		},
 	}
+}
+
+func makeErrorDetailsResponse(details []*vizierpb.ErrorDetails) *vizierpb.ExecuteScriptResponse {
+	errResp := makeErrorResponse("")
+	errResp.Status.ErrorDetails = details
 	return errResp
 }
 
@@ -383,25 +385,46 @@ func TestProcessTwoTables(t *testing.T) {
 	assert.Equal(t, []int64{7, 8, 9, 10}, table2Data.Data)
 }
 
-func DISABLED_TestExecuteScriptGetsScriptError(t *testing.T) {
-	// TODO(zasgar) propagate the script error to the user.
-
+func TestExecuteScriptGetsScriptError(t *testing.T) {
 	results := newScriptResults()
 	results.tm = newTableMux()
 
 	ctx := context.Background()
-	err := results.handleGRPCMsg(ctx, makeCompilerError(1, 2, "name 'aa' is not defined"))
+
+	err := results.handleGRPCMsg(ctx, makeErrorDetailsResponse([]*vizierpb.ErrorDetails{
+		makeCompilerErrorDetails(1, 2, "name 'aa' is not defined"),
+	}))
 	assert.NotNil(t, err)
 	assert.Regexp(t, "name.*is not defined", err)
 }
 
-func DISABLED_TestExecuteScriptGetsOtherErrorOnStream(t *testing.T) {
-	// TODO(zasgar) propagate the script error to the user.
+func TestExecuteScriptGetsMultipleScriptErrors(t *testing.T) {
+	results := newScriptResults()
+	results.tm = newTableMux()
+
+	ctx := context.Background()
+
+	err := results.handleGRPCMsg(ctx, makeErrorDetailsResponse([]*vizierpb.ErrorDetails{
+		makeCompilerErrorDetails(1, 2, "name 'aa' is not defined"),
+		makeCompilerErrorDetails(2, 2, "Indentation error"),
+	}))
+	assert.NotNil(t, err)
+
+	assert.Regexp(t, "name.*is not defined", err)
+	assert.Regexp(t, "Indentation error", err)
+
+	assert.True(t, errdefs.IsCompilationError(err))
+	group := err.(errdefs.CompilerMultiError)
+	assert.EqualError(t, group.Errors()[0], "1:2 name 'aa' is not defined")
+	assert.EqualError(t, group.Errors()[1], "2:2 Indentation error")
+}
+
+func TestExecuteScriptGetsOtherErrorOnStream(t *testing.T) {
 	results := newScriptResults()
 	results.tm = newTableMux()
 
 	ctx := context.Background()
 	err := results.handleGRPCMsg(ctx, makeErrorResponse("Script should not be empty."))
 	assert.NotNil(t, err)
-	assert.Regexp(t, "Script should not be empty.", err)
+	assert.EqualError(t, err, "invalid/missing arguments: Script should not be empty.")
 }

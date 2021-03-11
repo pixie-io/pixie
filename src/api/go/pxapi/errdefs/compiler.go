@@ -59,7 +59,7 @@ func (e compilerErrorWithDetails) UnWrap() error {
 }
 
 func (e compilerErrorWithDetails) Error() string {
-	return fmt.Sprintf("%d:%d $%s", e.line, e.column, e.message)
+	return fmt.Sprintf("%d:%d %s", e.line, e.column, e.message)
 }
 
 func (e compilerErrorWithDetails) Line() int64 {
