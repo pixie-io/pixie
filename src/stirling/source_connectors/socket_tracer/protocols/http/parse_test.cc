@@ -403,7 +403,7 @@ TEST_F(HTTPParserTest, InvalidInput) {
   ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse, buf, &parsed_messages);
 
   EXPECT_EQ(ParseState::kInvalid, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre());
+  EXPECT_THAT(parsed_messages, IsEmpty());
 }
 
 TEST_F(HTTPParserTest, NoAppend) {
@@ -411,7 +411,7 @@ TEST_F(HTTPParserTest, NoAppend) {
   ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse, "", &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre());
+  EXPECT_THAT(parsed_messages, IsEmpty());
 }
 
 TEST_F(HTTPParserTest, ParseCompleteChunkEncodedMessage) {
@@ -434,27 +434,6 @@ TEST_F(HTTPParserTest, ParseCompleteChunkEncodedMessage) {
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
 }
 
-TEST_F(HTTPParserTest, ParseMultipleChunks) {
-  std::string msg1 =
-      "HTTP/1.1 200 OK\r\n"
-      "Transfer-Encoding: chunked\r\n"
-      "\r\n"
-      "9\r\n"
-      "pixielabs\r\n";
-  std::string msg2 = "C\r\n is awesome!\r\n";
-  std::string msg3 = "0\r\n\r\n";
-
-  Message expected_message = EmptyChunkedHTTPResp();
-  expected_message.body = "pixielabs is awesome!";
-
-  const std::string buf = absl::StrCat(msg1, msg2, msg3);
-  std::deque<Message> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse, buf, &parsed_messages);
-
-  EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
-}
-
 TEST_F(HTTPParserTest, ParseIncompleteChunks) {
   std::string msg1 =
       "HTTP/1.1 200 OK\r\n"
@@ -462,18 +441,12 @@ TEST_F(HTTPParserTest, ParseIncompleteChunks) {
       "\r\n"
       "9\r\n"
       "pixie";
-  std::string msg2 = "labs\r\n";
-  std::string msg3 = "0\r\n\r\n";
 
-  Message expected_message = EmptyChunkedHTTPResp();
-  expected_message.body = "pixielabs";
-
-  const std::string buf = absl::StrCat(msg1, msg2, msg3);
   std::deque<Message> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse, buf, &parsed_messages);
+  ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse, msg1, &parsed_messages);
 
-  EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
+  EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
+  EXPECT_THAT(parsed_messages, IsEmpty());
 }
 
 // Note that many other tests already use requests with no content-length,
@@ -531,7 +504,7 @@ TEST_F(HTTPParserTest, MessagePartialHeaders) {
   ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse, msg1, &parsed_messages);
 
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre());
+  EXPECT_THAT(parsed_messages, IsEmpty());
 }
 
 TEST_F(HTTPParserTest, PartialMessageInTheMiddleOfStream) {
