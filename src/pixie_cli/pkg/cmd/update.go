@@ -216,7 +216,8 @@ var CLIUpdateCmd = &cobra.Command{
 			currentSemver := version.GetVersion().Semver()
 			versions, err := updater.GetAvailableVersions(currentSemver)
 			if err != nil {
-				panic(err)
+				utils.Error("Cannot determine new versions to update to.")
+				os.Exit(1)
 			}
 			if len(versions) <= 0 {
 				utils.Info("No updates available")
@@ -224,10 +225,7 @@ var CLIUpdateCmd = &cobra.Command{
 			}
 
 			if ok, err := updater.IsUpdatable(); !ok || err != nil {
-				if err != nil {
-					panic(err)
-				}
-				utils.Error("cannot perform update, it's likely the file is not in a writable path.")
+				utils.Error("Cannot perform update, it's likely the file is not in a writable path.")
 				os.Exit(1)
 				// TODO(zasgar): Provide a means to update this as well.
 			}
@@ -245,8 +243,8 @@ var CLIUpdateCmd = &cobra.Command{
 func mustInstallVersion(u *update.CLIUpdater, v string) {
 	err := u.UpdateSelf(v)
 	if err != nil {
-		utils.Error("Failed to apply update")
-		panic(err)
+		utils.Error("Failed to apply update.")
+		os.Exit(1)
 	}
-	utils.Info("Update completed successfully")
+	utils.Info("Update completed successfully.")
 }

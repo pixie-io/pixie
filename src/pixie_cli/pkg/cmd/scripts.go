@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/alecthomas/chroma/quick"
@@ -51,7 +52,7 @@ var ScriptShowCmd = &cobra.Command{
 		execScript := br.MustGetScript(scriptName)
 		err := quick.Highlight(os.Stdout, execScript.ScriptString, "python3", "terminal16m", "monokai")
 		if err != nil {
-			panic(err)
+			fmt.Fprint(os.Stdout, execScript.ScriptString)
 		}
 	},
 }
