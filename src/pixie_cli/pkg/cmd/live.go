@@ -41,13 +41,11 @@ var LiveCmd = &cobra.Command{
 		var scriptArgs []string
 
 		if scriptFile == "" {
-			if len(args) == 0 {
-				utils.Error("Expected script_name with script args.")
-				os.Exit(1)
+			if len(args) > 0 {
+				scriptName := args[0]
+				execScript = br.MustGetScript(scriptName)
+				scriptArgs = args[1:]
 			}
-			scriptName := args[0]
-			execScript = br.MustGetScript(scriptName)
-			scriptArgs = args[1:]
 		} else {
 			execScript, err = loadScriptFromFile(scriptFile)
 			if err != nil {
@@ -57,16 +55,21 @@ var LiveCmd = &cobra.Command{
 			scriptArgs = args
 		}
 
-		fs := execScript.GetFlagSet()
-		if fs != nil {
-			if err := fs.Parse(scriptArgs); err != nil {
-				utils.WithError(err).Error("Failed to parse script flags")
-				os.Exit(1)
-			}
-			err := execScript.UpdateFlags(fs)
-			if err != nil {
-				utils.WithError(err).Error("Error parsing script flags")
-				os.Exit(1)
+		// `px live`, unlike `px run`, does not require a script to be passed in.
+		// If a script is passed in, it will be executed. If it is not, then the user
+		// will be prompted to select a script using ctrl+k.
+		if execScript != nil {
+			fs := execScript.GetFlagSet()
+			if fs != nil {
+				if err := fs.Parse(scriptArgs); err != nil {
+					utils.WithError(err).Error("Failed to parse script flags")
+					os.Exit(1)
+				}
+				err := execScript.UpdateFlags(fs)
+				if err != nil {
+					utils.WithError(err).Error("Error parsing script flags")
+					os.Exit(1)
+				}
 			}
 		}
 

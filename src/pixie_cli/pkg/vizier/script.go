@@ -173,14 +173,19 @@ func RunScript(ctx context.Context, conns []*Connector, execScript *script.Execu
 
 	mergedResponses := make(chan *VizierExecData)
 	var eg errgroup.Group
+
 	for _, conn := range conns {
 		conn := conn
-		eg.Go(func() error {
-			resp, err := conn.ExecuteScriptStream(ctx, execScript)
-			if err != nil {
+		resp, err := conn.ExecuteScriptStream(ctx, execScript)
+		if err != nil {
+			// Collect this error for tracking.
+			eg.Go(func() error {
 				return err
-			}
+			})
+			return nil, err
+		}
 
+		eg.Go(func() error {
 			for v := range resp {
 				mergedResponses <- v
 				if v.Err != nil && v.Err == io.EOF {
@@ -205,14 +210,14 @@ func RunScript(ctx context.Context, conns []*Connector, execScript *script.Execu
 				Properties: analytics.NewProperties().
 					Set("scriptString", execScript.ScriptString),
 			})
+		} else {
+			_ = pxanalytics.Client().Enqueue(&analytics.Track{
+				UserId: pxconfig.Cfg().UniqueClientID,
+				Event:  "Script Execution Success",
+				Properties: analytics.NewProperties().
+					Set("scriptString", execScript.ScriptString),
+			})
 		}
-
-		_ = pxanalytics.Client().Enqueue(&analytics.Track{
-			UserId: pxconfig.Cfg().UniqueClientID,
-			Event:  "Script Execution Success",
-			Properties: analytics.NewProperties().
-				Set("scriptString", execScript.ScriptString),
-		})
 	}()
 	return mergedResponses, nil
 }

@@ -41,7 +41,7 @@ func (f *FlagSet) Parse(arguments []string) error {
 	// Get the flag values defined, so we can mark which ones are actually set.
 	for _, arg := range arguments {
 		// Not a flag
-		if arg[0] != '-' {
+		if len(arg) == 0 || arg[0] != '-' {
 			continue
 		}
 		splits := strings.SplitN(strings.Trim(arg, "-"), "=", 2)

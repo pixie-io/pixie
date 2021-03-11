@@ -118,9 +118,6 @@ func (m *autocompleteModal) validateScriptAndArgs(s string) (*script.ExecutableS
 		return nil, err
 	}
 
-	if len(tokens) == 1 {
-		return es, nil
-	}
 	fs := es.GetFlagSet()
 	if fs == nil {
 		return es, nil

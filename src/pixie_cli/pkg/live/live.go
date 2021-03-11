@@ -244,6 +244,7 @@ func (v *View) runScript(execScript *script.ExecutableScript) {
 	defer cancel()
 	resp, err := vizier.RunScript(ctx, v.s.viziers, execScript)
 	if err != nil {
+		v.execCompleteWithError(err)
 		return
 	}
 	tw := vizier.NewVizierStreamOutputAdapter(ctx, resp, vizier.FormatInMemory)
