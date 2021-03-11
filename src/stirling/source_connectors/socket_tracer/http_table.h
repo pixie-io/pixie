@@ -25,56 +25,56 @@ constexpr DataElement kHTTPElements[] = {
     canonical_data_elements::kRemoteAddr,
     canonical_data_elements::kRemotePort,
     canonical_data_elements::kTraceRole,
-    {"http_major_version", "HTTP major version, can be 1 or 2",
+    {"major_version", "HTTP major version, can be 1 or 2",
      types::DataType::INT64,
      types::SemanticType::ST_NONE,
      types::PatternType::GENERAL_ENUM},
-    {"http_minor_version", "HTTP minor version, HTTP1 uses 1, HTTP2 set this value to 0",
+    {"minor_version", "HTTP minor version, HTTP1 uses 1, HTTP2 set this value to 0",
      types::DataType::INT64,
      types::SemanticType::ST_NONE,
      types::PatternType::GENERAL_ENUM},
-    {"http_content_type", "Type of the HTTP payload, can be JSON or protobuf",
+    {"content_type", "Type of the HTTP payload, can be JSON or protobuf",
      types::DataType::INT64,
      types::SemanticType::ST_NONE,
      types::PatternType::GENERAL_ENUM,
      &kHTTPContentTypeDecoder},
-    {"http_req_headers", "Request headers in JSON format",
+    {"req_headers", "Request headers in JSON format",
      types::DataType::STRING,
      types::SemanticType::ST_NONE,
      types::PatternType::STRUCTURED},
-    {"http_req_method", "HTTP request method (e.g. GET, POST, ...)",
+    {"req_method", "HTTP request method (e.g. GET, POST, ...)",
      types::DataType::STRING,
      types::SemanticType::ST_HTTP_REQ_METHOD,
      types::PatternType::GENERAL_ENUM},
-    {"http_req_path", "Request path",
+    {"req_path", "Request path",
      types::DataType::STRING,
      types::SemanticType::ST_NONE,
      types::PatternType::STRUCTURED},
-    {"http_req_body", "Request body in JSON format",
+    {"req_body", "Request body in JSON format",
      types::DataType::STRING,
      types::SemanticType::ST_NONE,
      types::PatternType::STRUCTURED},
-    {"http_req_body_size", "Request body size (before any truncation)",
+    {"req_body_size", "Request body size (before any truncation)",
      types::DataType::INT64,
      types::SemanticType::ST_BYTES,
      types::PatternType::METRIC_GAUGE},
-    {"http_resp_headers", "Response headers in JSON format",
+    {"resp_headers", "Response headers in JSON format",
      types::DataType::STRING,
      types::SemanticType::ST_NONE,
      types::PatternType::STRUCTURED},
-    {"http_resp_status", "HTTP response status code",
+    {"resp_status", "HTTP response status code",
      types::DataType::INT64,
      types::SemanticType::ST_HTTP_RESP_STATUS,
      types::PatternType::GENERAL_ENUM},
-    {"http_resp_message", "HTTP response status text (e.g. OK, Not Found, ...)",
+    {"resp_message", "HTTP response status text (e.g. OK, Not Found, ...)",
      types::DataType::STRING,
      types::SemanticType::ST_HTTP_RESP_MESSAGE,
      types::PatternType::STRUCTURED},
-    {"http_resp_body", "Response body in JSON format",
+    {"resp_body", "Response body in JSON format",
      types::DataType::STRING,
      types::SemanticType::ST_NONE,
      types::PatternType::STRUCTURED},
-    {"http_resp_body_size", "Response body size (before any truncation)",
+    {"resp_body_size", "Response body size (before any truncation)",
      types::DataType::INT64,
      types::SemanticType::ST_BYTES,
      types::PatternType::METRIC_GAUGE},
@@ -97,19 +97,19 @@ constexpr int kHTTPUPIDIdx = kHTTPTable.ColIndex("upid");
 constexpr int kHTTPRemoteAddrIdx = kHTTPTable.ColIndex("remote_addr");
 constexpr int kHTTPRemotePortIdx = kHTTPTable.ColIndex("remote_port");
 constexpr int kHTTPTraceRoleIdx = kHTTPTable.ColIndex("trace_role");
-constexpr int kHTTPMajorVersionIdx = kHTTPTable.ColIndex("http_major_version");
-constexpr int kHTTPMinorVersionIdx = kHTTPTable.ColIndex("http_minor_version");
-constexpr int kHTTPContentTypeIdx = kHTTPTable.ColIndex("http_content_type");
-constexpr int kHTTPReqHeadersIdx = kHTTPTable.ColIndex("http_req_headers");
-constexpr int kHTTPReqMethodIdx = kHTTPTable.ColIndex("http_req_method");
-constexpr int kHTTPReqPathIdx = kHTTPTable.ColIndex("http_req_path");
-constexpr int kHTTPReqBodyIdx = kHTTPTable.ColIndex("http_req_body");
-constexpr int kHTTPReqBodySizeIdx = kHTTPTable.ColIndex("http_req_body_size");
-constexpr int kHTTPRespHeadersIdx = kHTTPTable.ColIndex("http_resp_headers");
-constexpr int kHTTPRespStatusIdx = kHTTPTable.ColIndex("http_resp_status");
-constexpr int kHTTPRespMessageIdx = kHTTPTable.ColIndex("http_resp_message");
-constexpr int kHTTPRespBodyIdx = kHTTPTable.ColIndex("http_resp_body");
-constexpr int kHTTPRespBodySizeIdx = kHTTPTable.ColIndex("http_resp_body_size");
+constexpr int kHTTPMajorVersionIdx = kHTTPTable.ColIndex("major_version");
+constexpr int kHTTPMinorVersionIdx = kHTTPTable.ColIndex("minor_version");
+constexpr int kHTTPContentTypeIdx = kHTTPTable.ColIndex("content_type");
+constexpr int kHTTPReqHeadersIdx = kHTTPTable.ColIndex("req_headers");
+constexpr int kHTTPReqMethodIdx = kHTTPTable.ColIndex("req_method");
+constexpr int kHTTPReqPathIdx = kHTTPTable.ColIndex("req_path");
+constexpr int kHTTPReqBodyIdx = kHTTPTable.ColIndex("req_body");
+constexpr int kHTTPReqBodySizeIdx = kHTTPTable.ColIndex("req_body_size");
+constexpr int kHTTPRespHeadersIdx = kHTTPTable.ColIndex("resp_headers");
+constexpr int kHTTPRespStatusIdx = kHTTPTable.ColIndex("resp_status");
+constexpr int kHTTPRespMessageIdx = kHTTPTable.ColIndex("resp_message");
+constexpr int kHTTPRespBodyIdx = kHTTPTable.ColIndex("resp_body");
+constexpr int kHTTPRespBodySizeIdx = kHTTPTable.ColIndex("resp_body_size");
 constexpr int kHTTPLatencyIdx = kHTTPTable.ColIndex("latency");
 
 }  // namespace stirling

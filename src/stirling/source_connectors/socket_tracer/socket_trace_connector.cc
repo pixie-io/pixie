@@ -499,20 +499,19 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
   r.Append<r.ColIndex("trace_role")>(conn_tracker.traffic_class().role);
-  r.Append<r.ColIndex("http_major_version")>(1);
-  r.Append<r.ColIndex("http_minor_version")>(resp_message.minor_version);
-  r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(content_type));
-  r.Append<r.ColIndex("http_req_headers"), kMaxHTTPHeadersBytes>(ToJSONString(req_message.headers));
-  r.Append<r.ColIndex("http_req_method")>(std::move(req_message.req_method));
-  r.Append<r.ColIndex("http_req_path")>(std::move(req_message.req_path));
-  r.Append<r.ColIndex("http_req_body_size")>(req_message.body.size());
-  r.Append<r.ColIndex("http_req_body"), kMaxBodyBytes>(std::move(req_message.body));
-  r.Append<r.ColIndex("http_resp_headers"), kMaxHTTPHeadersBytes>(
-      ToJSONString(resp_message.headers));
-  r.Append<r.ColIndex("http_resp_status")>(resp_message.resp_status);
-  r.Append<r.ColIndex("http_resp_message")>(std::move(resp_message.resp_message));
-  r.Append<r.ColIndex("http_resp_body_size")>(resp_message.body.size());
-  r.Append<r.ColIndex("http_resp_body"), kMaxBodyBytes>(std::move(resp_message.body));
+  r.Append<r.ColIndex("major_version")>(1);
+  r.Append<r.ColIndex("minor_version")>(resp_message.minor_version);
+  r.Append<r.ColIndex("content_type")>(static_cast<uint64_t>(content_type));
+  r.Append<r.ColIndex("req_headers"), kMaxHTTPHeadersBytes>(ToJSONString(req_message.headers));
+  r.Append<r.ColIndex("req_method")>(std::move(req_message.req_method));
+  r.Append<r.ColIndex("req_path")>(std::move(req_message.req_path));
+  r.Append<r.ColIndex("req_body_size")>(req_message.body.size());
+  r.Append<r.ColIndex("req_body"), kMaxBodyBytes>(std::move(req_message.body));
+  r.Append<r.ColIndex("resp_headers"), kMaxHTTPHeadersBytes>(ToJSONString(resp_message.headers));
+  r.Append<r.ColIndex("resp_status")>(resp_message.resp_status);
+  r.Append<r.ColIndex("resp_message")>(std::move(resp_message.resp_message));
+  r.Append<r.ColIndex("resp_body_size")>(resp_message.body.size());
+  r.Append<r.ColIndex("resp_body"), kMaxBodyBytes>(std::move(resp_message.body));
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));
 #ifndef NDEBUG
@@ -560,23 +559,22 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
   r.Append<r.ColIndex("trace_role")>(conn_tracker.traffic_class().role);
-  r.Append<r.ColIndex("http_major_version")>(2);
+  r.Append<r.ColIndex("major_version")>(2);
   // HTTP2 does not define minor version.
-  r.Append<r.ColIndex("http_minor_version")>(0);
-  r.Append<r.ColIndex("http_req_headers"), kMaxHTTPHeadersBytes>(ToJSONString(req_stream->headers));
-  r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(HTTPContentType::kGRPC));
-  r.Append<r.ColIndex("http_resp_headers"), kMaxHTTPHeadersBytes>(
-      ToJSONString(resp_stream->headers));
-  r.Append<r.ColIndex("http_req_method")>(
+  r.Append<r.ColIndex("minor_version")>(0);
+  r.Append<r.ColIndex("req_headers"), kMaxHTTPHeadersBytes>(ToJSONString(req_stream->headers));
+  r.Append<r.ColIndex("content_type")>(static_cast<uint64_t>(HTTPContentType::kGRPC));
+  r.Append<r.ColIndex("resp_headers"), kMaxHTTPHeadersBytes>(ToJSONString(resp_stream->headers));
+  r.Append<r.ColIndex("req_method")>(
       req_stream->headers.ValueByKey(protocols::http2::headers::kMethod));
-  r.Append<r.ColIndex("http_req_path")>(req_stream->headers.ValueByKey(":path"));
-  r.Append<r.ColIndex("http_resp_status")>(resp_status);
+  r.Append<r.ColIndex("req_path")>(req_stream->headers.ValueByKey(":path"));
+  r.Append<r.ColIndex("resp_status")>(resp_status);
   // TODO(yzhao): Populate the following field from headers.
-  r.Append<r.ColIndex("http_resp_message")>("OK");
-  r.Append<r.ColIndex("http_req_body_size")>(req_stream->data.size());
-  r.Append<r.ColIndex("http_req_body"), kMaxBodyBytes>(std::move(req_stream->data));
-  r.Append<r.ColIndex("http_resp_body_size")>(resp_stream->data.size());
-  r.Append<r.ColIndex("http_resp_body"), kMaxBodyBytes>(std::move(resp_stream->data));
+  r.Append<r.ColIndex("resp_message")>("OK");
+  r.Append<r.ColIndex("req_body_size")>(req_stream->data.size());
+  r.Append<r.ColIndex("req_body"), kMaxBodyBytes>(std::move(req_stream->data));
+  r.Append<r.ColIndex("resp_body_size")>(resp_stream->data.size());
+  r.Append<r.ColIndex("resp_body"), kMaxBodyBytes>(std::move(resp_stream->data));
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(req_stream->timestamp_ns, resp_stream->timestamp_ns));
 #ifndef NDEBUG
