@@ -1,0 +1,25 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "extract.go",
+        "templates.go",
+    ],
+    importpath = "pixielabs.ai/pixielabs/src/utils/shared/yamls",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_evanphx_json_patch//:go_default_library",
+        "@com_github_masterminds_sprig_v3//:go_default_library",
+        "@io_k8s_apimachinery//pkg/api/meta:go_default_library",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1/unstructured:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime:go_default_library",
+        "@io_k8s_apimachinery//pkg/runtime/schema:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/strategicpatch:go_default_library",
+        "@io_k8s_apimachinery//pkg/util/yaml:go_default_library",
+        "@io_k8s_client_go//kubernetes:go_default_library",
+        "@io_k8s_client_go//restmapper:go_default_library",
+        "@io_k8s_kubectl//pkg/scheme:go_default_library",
+        "@io_k8s_sigs_yaml//:go_default_library",
+    ],
+)

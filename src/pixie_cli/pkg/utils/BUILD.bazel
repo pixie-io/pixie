@@ -9,7 +9,6 @@ go_library(
         "cloud.go",
         "cmd.go",
         "job_runner.go",
-        "tar.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils",
     visibility = ["//visibility:public"],

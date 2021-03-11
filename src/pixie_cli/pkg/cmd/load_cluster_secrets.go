@@ -8,12 +8,13 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/kubernetes"
-	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
-
 	// Blank import necessary for kubeConfig to work.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/artifacts"
+
+	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
+	"pixielabs.ai/pixielabs/src/utils/shared/yamls"
+	"pixielabs.ai/pixielabs/src/utils/template_generator/vizier_yamls"
 )
 
 // LoadClusterSecretsCmd loads cluster secretss
@@ -58,22 +59,22 @@ func LoadClusterSecrets(clientset *kubernetes.Clientset, cloudAddr string, deplo
 	_ = k8s.DeleteConfigMap(clientset, "pl-cloud-config", "pl")
 	k8s.DeleteSecret(clientset, namespace, "pl-cluster-secrets")
 
-	templatedYAML, err := artifacts.GenerateSecretsYAML(clientset, namespace, "", "", "", true)
+	templatedYAML, err := vizieryamls.GenerateSecretsYAML(clientset, namespace, "", "", "", true)
 	if err != nil {
 		return err
 	}
 
 	// Fill in template values.
-	tmplValues := &artifacts.VizierTmplValues{
+	tmplValues := &vizieryamls.VizierTmplValues{
 		DeployKey: deployKey,
 	}
 	kubeAPIConfig := k8s.GetClientAPIConfig()
-	artifacts.SetConfigValues(kubeAPIConfig.CurrentContext, tmplValues, cloudAddr, devCloudNamespace, "")
+	setTemplateConfigValues(kubeAPIConfig.CurrentContext, tmplValues, cloudAddr, devCloudNamespace, "")
 
-	yamlArgs := &artifacts.YAMLTmplArguments{
-		Values: artifacts.VizierTmplValuesToMap(tmplValues),
+	yamlArgs := &yamls.YAMLTmplArguments{
+		Values: vizieryamls.VizierTmplValuesToMap(tmplValues),
 	}
-	yamls, err := artifacts.ExecuteTemplatedYAMLs([]*artifacts.YAMLFile{&artifacts.YAMLFile{YAML: templatedYAML}}, yamlArgs)
+	yamls, err := yamls.ExecuteTemplatedYAMLs([]*yamls.YAMLFile{&yamls.YAMLFile{YAML: templatedYAML}}, yamlArgs)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to fill in templated deployment YAMLs")
 	}

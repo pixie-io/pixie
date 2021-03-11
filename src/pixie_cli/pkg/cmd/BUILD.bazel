@@ -46,6 +46,8 @@ go_library(
         "//src/utils:go_default_library",
         "//src/utils/shared/certs:go_default_library",
         "//src/utils/shared/k8s:go_default_library",
+        "//src/utils/shared/yamls:go_default_library",
+        "//src/utils/template_generator/vizier_yamls:go_default_library",
         "@com_github_alecthomas_chroma//quick:go_default_library",
         "@com_github_blang_semver//:go_default_library",
         "@com_github_bmatcuk_doublestar//:go_default_library",

@@ -12,29 +12,29 @@ import (
 
 	"github.com/fatih/color"
 	uuid "github.com/satori/go.uuid"
-	"google.golang.org/grpc/metadata"
-	"gopkg.in/segmentio/analytics-go.v3"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/artifacts"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/vizier"
-	utils2 "pixielabs.ai/pixielabs/src/utils"
-
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/auth"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxanalytics"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxconfig"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
+	"gopkg.in/segmentio/analytics-go.v3"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 
+	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/artifacts"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/auth"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/components"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxanalytics"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxconfig"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/vizier"
+	utils2 "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
+	yamlsutils "pixielabs.ai/pixielabs/src/utils/shared/yamls"
+	"pixielabs.ai/pixielabs/src/utils/template_generator/vizier_yamls"
 )
 
 const (
@@ -216,6 +216,25 @@ func getLatestVizierVersion(conn *grpc.ClientConn) (string, error) {
 	return resp.Artifact[0].VersionStr, nil
 }
 
+func setTemplateConfigValues(currentCluster string, tmplValues *vizieryamls.VizierTmplValues, cloudAddr, devCloudNS, clusterName string) {
+	yamlCloudAddr := cloudAddr
+	updateCloudAddr := cloudAddr
+	// devCloudNamespace implies we are running in a dev enivironment and we should attach to
+	// vzconn in that namespace.
+	if devCloudNS != "" {
+		yamlCloudAddr = fmt.Sprintf("vzconn-service.%s.svc.cluster.local:51600", devCloudNS)
+		updateCloudAddr = fmt.Sprintf("api-service.%s.svc.cluster.local:51200", devCloudNS)
+	}
+
+	tmplValues.CloudAddr = yamlCloudAddr
+	tmplValues.CloudUpdateAddr = updateCloudAddr
+
+	if clusterName == "" { // Only record cluster name if we are deploying directly to the current cluster.
+		clusterName = currentCluster
+	}
+	tmplValues.ClusterName = clusterName
+}
+
 func runDeployCmd(cmd *cobra.Command, args []string) {
 	check, _ := cmd.Flags().GetBool("check")
 	checkOnly, _ := cmd.Flags().GetBool("check_only")
@@ -341,14 +360,18 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	}
 
 	utils.Infof("Generating YAMLs for Pixie")
-	templatedYAMLs, err := artifacts.GenerateTemplatedDeployBootstrapYAMLs(clientset, cloudConn, creds.Token, versionString, namespace, secretName, credsData)
+	vzYamls, err := artifacts.FetchVizierYAMLMap(cloudConn, creds.Token, versionString)
+	if err != nil {
+		log.WithError(err).Fatal("Could not fetch Vizier YAMLs")
+	}
+	templatedYAMLs, err := vizieryamls.GenerateTemplatedDeployBootstrapYAMLs(clientset, vzYamls, versionString, namespace, secretName, credsData)
 	if err != nil {
 		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 		log.WithError(err).Fatal("failed to generate deployment YAMLs")
 	}
 
 	// Fill in template values.
-	tmplValues := &artifacts.VizierTmplValues{
+	tmplValues := &vizieryamls.VizierTmplValues{
 		DeployKey:         deployKey,
 		CustomAnnotations: customAnnotations,
 		CustomLabels:      customLabels,
@@ -357,19 +380,19 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	}
 
 	clusterName, _ := cmd.Flags().GetString("cluster_name")
-	artifacts.SetConfigValues(kubeAPIConfig.CurrentContext, tmplValues, cloudAddr, devCloudNS, clusterName)
-	yamlArgs := &artifacts.YAMLTmplArguments{
-		Values: artifacts.VizierTmplValuesToMap(tmplValues),
+	setTemplateConfigValues(kubeAPIConfig.CurrentContext, tmplValues, cloudAddr, devCloudNS, clusterName)
+	yamlArgs := &yamlsutils.YAMLTmplArguments{
+		Values: vizieryamls.VizierTmplValuesToMap(tmplValues),
 	}
 
-	yamls, err := artifacts.ExecuteTemplatedYAMLs(templatedYAMLs, yamlArgs)
+	yamls, err := yamlsutils.ExecuteTemplatedYAMLs(templatedYAMLs, yamlArgs)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to fill in templated deployment YAMLs")
 	}
 
 	// If extract_path is specified, write out yamls to file.
 	if extractPath != "" {
-		if err := artifacts.ExtractYAMLs(yamls, extractPath, "pixie_yamls", artifacts.MultiFileExtractYAMLFormat); err != nil {
+		if err := yamlsutils.ExtractYAMLs(yamls, extractPath, "pixie_yamls", yamlsutils.MultiFileExtractYAMLFormat); err != nil {
 			log.WithError(err).Fatal("failed to extract deployment YAMLs")
 		}
 		return

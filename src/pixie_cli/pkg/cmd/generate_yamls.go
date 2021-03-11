@@ -5,8 +5,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/artifacts"
 	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
+	"pixielabs.ai/pixielabs/src/utils/shared/yamls"
+	"pixielabs.ai/pixielabs/src/utils/template_generator/vizier_yamls"
 )
 
 func init() {
@@ -29,6 +30,7 @@ func init() {
 
 // GenerateYAMLs is the 'generate-yamls' command. It's used to create the templated YAMLs used for deploying
 // Pixie through Helm.
+// TODO(michelle): Delete this and replace it with a separate binary.
 var GenerateYAMLs = &cobra.Command{
 	Use:   "generate-yamls",
 	Short: "Create templated YAMLs for deploying Vizier",
@@ -43,12 +45,12 @@ var GenerateYAMLs = &cobra.Command{
 		kubeConfig := k8s.GetConfig()
 		clientset := k8s.GetClientset(kubeConfig)
 
-		templatedYAMLs, err := artifacts.GenerateTemplatedDeployYAMLsWithTar(clientset, baseTar, version, ns)
+		templatedYAMLs, err := vizieryamls.GenerateTemplatedDeployYAMLsWithTar(clientset, baseTar, version, ns)
 		if err != nil {
 			log.WithError(err).Fatal("failed to generate templated deployment YAMLs")
 		}
 
-		if err := artifacts.ExtractYAMLs(templatedYAMLs, outputPath, "pixie_yamls", artifacts.MultiFileExtractYAMLFormat); err != nil {
+		if err := yamls.ExtractYAMLs(templatedYAMLs, outputPath, "pixie_yamls", yamls.MultiFileExtractYAMLFormat); err != nil {
 			log.WithError(err).Fatal("failed to extract deployment YAMLs")
 		}
 	},
