@@ -104,7 +104,6 @@ pkg_tar(
             "//conditions:default": ["//k8s/vizier:private_vizier_metadata_persist_prod.yaml"],
             ":public": ["//k8s/vizier:public_vizier_metadata_persist_prod.yaml"],
         }) + [
-            "//k8s/vizier_deps:etcd_prod",
             "//k8s/vizier_deps:nats_prod",
             "//k8s/vizier_deps:etcd_operator_prod",
         ],

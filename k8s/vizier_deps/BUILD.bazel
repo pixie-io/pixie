@@ -12,17 +12,6 @@ genrule(
 )
 
 genrule(
-    name = "etcd_prod",
-    srcs = glob(["**/*.yaml"]),
-    outs = ["etcd_prod.yaml"],
-    cmd = """
-      T=`mktemp -d`
-      cp -aL k8s/vizier_deps/base/etcd $$T
-      kustomize build $$T/etcd -o $@
-    """,
-)
-
-genrule(
     name = "etcd_operator_prod",
     srcs = glob(["**/*.yaml"]),
     outs = ["etcd_operator_prod.yaml"],
