@@ -21,8 +21,11 @@ namespace carnot {
 namespace exec {
 
 constexpr std::chrono::milliseconds kDefaultConnectionCheckTimeoutMS{2000};
-// Max request size is 1MB.
-constexpr size_t kMaxBatchSize = 1024 * 1024;
+// Max request size is 1MB minus 16KB (about 1%) to account for differences between the public
+// and private query result data structure size. For example, an extra string field for table ID
+// is added to the public query result data structure.
+constexpr size_t kMetadataMargin = 16 * 1024;
+constexpr size_t kMaxBatchSize = 1024 * 1024 - kMetadataMargin;
 // BatchSizeFactor is the size of kMaxBatchSize to split into to assure that we limit number of
 // splits. We must split batches across row lines, not byte lines. Row batches aren't guaranteed to
 // be uniformly distributed, so splitting a rowbatch will likely lead to one part of the split being
