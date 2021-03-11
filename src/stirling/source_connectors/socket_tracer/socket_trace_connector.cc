@@ -676,6 +676,23 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
 #endif
 }
 
+namespace {
+
+EndpointRole SwapEndpointRole(EndpointRole role) {
+  switch (role) {
+    case kRoleClient:
+      return kRoleServer;
+    case kRoleServer:
+      return kRoleClient;
+    case kRoleUnknown:
+      return kRoleUnknown;
+  }
+  // Needed for GCC build.
+  return kRoleUnknown;
+}
+
+}  // namespace
+
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
                                          protocols::redis::Record entry, DataTable* data_table) {
@@ -687,7 +704,11 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
-  r.Append<r.ColIndex("trace_role")>(conn_tracker.traffic_class().role);
+  if (entry.role_swapped) {
+    r.Append<r.ColIndex("trace_role")>(SwapEndpointRole(conn_tracker.traffic_class().role));
+  } else {
+    r.Append<r.ColIndex("trace_role")>(conn_tracker.traffic_class().role);
+  }
   r.Append<r.ColIndex("cmd")>(std::string(entry.req.command));
   r.Append<r.ColIndex("cmd_args")>(std::string(entry.req.payload));
   r.Append<r.ColIndex("resp")>(std::string(entry.resp.payload));

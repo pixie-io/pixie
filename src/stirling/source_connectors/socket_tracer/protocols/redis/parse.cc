@@ -150,7 +150,7 @@ Status ParseArray(MessageType type, BinaryDecoder* decoder, Message* msg) {
     payloads.push_back(std::move(tmp.payload));
   }
 
-  FormatArrayMessage(type, VectorView<std::string>(payloads), msg);
+  FormatArrayMessage(VectorView<std::string>(payloads), msg);
 
   if (type == MessageType::kResponse && IsPubMsg(payloads)) {
     msg->is_published_message = true;

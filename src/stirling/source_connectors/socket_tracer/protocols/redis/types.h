@@ -34,6 +34,7 @@ struct Message : public FrameBase {
 struct Record {
   Message req;
   Message resp;
+  bool role_swapped = false;
 };
 
 // Required by event parser interface.

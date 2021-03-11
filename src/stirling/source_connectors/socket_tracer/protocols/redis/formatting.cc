@@ -159,8 +159,10 @@ Status FmtArg(const ArgDesc& arg_desc, VectorView<std::string>* args,
       RETURN_ERROR_IF_EMPTY(args, arg_desc);
       if (arg_desc.sub_fields.size() == 1) {
         json_builder->WriteKV(arg_desc.name, *args);
-      } else {
+      } else if (args->size() % arg_desc.sub_fields.size() == 0) {
         json_builder->WriteRepeatedKVs(arg_desc.name, arg_desc.sub_fields, *args);
+      } else {
+        return error::InvalidArgument("Invalid number of argument values");
       }
       // Consume all the rest of the argument values.
       args->clear();
@@ -212,20 +214,22 @@ StatusOr<std::string> FmtArgs(const CmdArgs& cmd_args, VectorView<std::string> a
 
 // Redis wire protocol said requests are array consisting of bulk strings:
 // https://redis.io/topics/protocol#sending-commands-to-a-redis-server
-void FormatArrayMessage(MessageType type, VectorView<std::string> payloads_view, Message* msg) {
-  if (type == MessageType::kRequest) {
-    std::optional<const CmdArgs*> cmd_args_opt = GetCmdAndArgs(&payloads_view);
-    if (cmd_args_opt.has_value()) {
-      msg->command = cmd_args_opt.value()->cmd_name_;
-      auto payload_or = FmtArgs(*cmd_args_opt.value(), payloads_view);
-      if (payload_or.ok()) {
-        msg->payload = payload_or.ConsumeValueOrDie();
-      } else {
-        msg->payload = FormatAsJSONArray(payloads_view);
-      }
-    } else {
-      msg->payload = FormatAsJSONArray(payloads_view);
-    }
+void FormatArrayMessage(VectorView<std::string> payloads_view, Message* msg) {
+  std::optional<const CmdArgs*> cmd_args_opt = GetCmdAndArgs(&payloads_view);
+
+  // If no command is found, this array message is formatted as JSON array.
+  if (!cmd_args_opt.has_value()) {
+    msg->payload = FormatAsJSONArray(payloads_view);
+    return;
+  }
+
+  msg->command = cmd_args_opt.value()->cmd_name_;
+
+  // FmtArgs might fail for requests with invalid format, for example, incorrect number of
+  // arguments; which happens rarely.
+  auto payload_or = FmtArgs(*cmd_args_opt.value(), payloads_view);
+  if (payload_or.ok()) {
+    msg->payload = payload_or.ConsumeValueOrDie();
   } else {
     msg->payload = FormatAsJSONArray(payloads_view);
   }

@@ -37,6 +37,7 @@ constexpr std::string_view kZPopMaxNoOptArgMsg = "*2\r\n$7\r\nzpopmax\r\n$3\r\nf
 constexpr std::string_view kSwapDBMsg = "*3\r\n$6\r\nswapdb\r\n$3\r\nfoo\r\n$3\r\nbar\r\n";
 constexpr std::string_view kEvalSHAMsg =
     "*5\r\n$7\r\nevalsha\r\n$3\r\nsha\r\n:3\r\n$3\r\nfoo\r\n$3\r\nbar\r\n";
+constexpr std::string_view kHSetMsg = "*4\r\n$4\r\nhset\r\n$3\r\nfoo\r\n$3\r\nval\r\n:3\r\n";
 
 struct WellFormedTestCase {
   std::string_view input;
@@ -103,7 +104,10 @@ INSTANTIATE_TEST_SUITE_P(
                            {MessageType::kRequest}},
         WellFormedTestCase{kEvalSHAMsg, "EVALSHA",
                            R"({"sha1":"sha","numkeys":"3","key":["foo"],"value":["bar"]})",
-                           {MessageType::kRequest}}));
+                           {MessageType::kRequest}},
+        WellFormedTestCase{kHSetMsg, "HSET",
+                           R"({"key":"foo","field value":[{"field":"val"},{"value":"3"}]})",
+                           {MessageType::kRequest, MessageType::kResponse}}));
 // clang-format on
 
 TEST(ParsePubMsgTest, DetectPublishedMessage) {

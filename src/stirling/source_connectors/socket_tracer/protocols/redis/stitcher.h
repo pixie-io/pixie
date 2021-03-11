@@ -35,22 +35,52 @@ inline RecordsWithErrorCount<redis::Record> StitchFrames(std::deque<redis::Messa
 
   auto req_iter = req_messages->begin();
   auto resp_iter = resp_messages->begin();
-  while (resp_iter != resp_messages->end()) {
+  while (req_iter != req_messages->end() || resp_iter != resp_messages->end()) {
     redis::Message& req = (req_iter == req_messages->end()) ? dummy_message : *req_iter;
     redis::Message& resp = (resp_iter == resp_messages->end()) ? dummy_message : *resp_iter;
 
     // This if block is the added code to StitchMessagesWithTimestampOrder().
     // For Redis pub/sub, published messages have no corresponding `requests`, therefore we
     // forcefully turn them into records without requests.
-    if (resp.is_published_message) {
+    if (resp_iter != resp_messages->end() && resp.is_published_message) {
       // Synthesize the request message.
-      record.req.timestamp_ns = resp.timestamp_ns;
+      redis::Record unstitched_record = {};
+
+      unstitched_record.req.timestamp_ns = resp.timestamp_ns;
       constexpr std::string_view kPubPushCmd = "PUSH PUB";
-      record.req.command = kPubPushCmd;
+      unstitched_record.req.command = kPubPushCmd;
 
-      record.resp = std::move(resp);
+      unstitched_record.resp = std::move(resp);
 
-      records.push_back(std::move(record));
+      records.push_back(std::move(unstitched_record));
+      ++resp_iter;
+      continue;
+    }
+
+    // Handle REPLCONF ACK command sent from follower to leader.
+    constexpr std::string_view kReplConfAck = "REPLCONF ACK";
+    if (req_iter != req_messages->end() && req.command == kReplConfAck &&
+        // Ensure the output order based on timestamps.
+        (resp_iter == resp_messages->end() || req.timestamp_ns < resp.timestamp_ns)) {
+      redis::Record unstitched_record = {};
+
+      unstitched_record.req = std::move(req);
+      unstitched_record.resp.timestamp_ns = req.timestamp_ns;
+
+      records.push_back(std::move(unstitched_record));
+      ++req_iter;
+      continue;
+    }
+
+    // Handle commands sent from leader to follower, which are replayed at the follower.
+    if (resp_iter != resp_messages->end() && !resp.command.empty()) {
+      redis::Record unstitched_record = {};
+
+      unstitched_record.req = std::move(resp);
+      unstitched_record.resp.timestamp_ns = resp.timestamp_ns;
+      unstitched_record.role_swapped = true;
+
+      records.push_back(std::move(unstitched_record));
       ++resp_iter;
       continue;
     }

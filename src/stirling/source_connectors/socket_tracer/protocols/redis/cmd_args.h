@@ -53,8 +53,8 @@ struct CmdArgs {
                                           absl::StrAppend(buf, arg_desc.ToString());
                                         });
     }
-    return absl::Substitute("cmd_args: $0 formats: $1", absl::StrJoin(cmd_args_, ", "),
-                            cmd_arg_descs_str);
+    return absl::Substitute("name: $0 cmd_args: $1 formats: $2", cmd_name_,
+                            absl::StrJoin(cmd_args_, ", "), cmd_arg_descs_str);
   }
 
   std::string_view cmd_name_;

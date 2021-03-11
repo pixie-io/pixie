@@ -13,7 +13,7 @@ namespace redis {
 
 // Formats an the payloads of an array message according to its type type, and writes the result
 // to the input message result argument.
-void FormatArrayMessage(MessageType type, VectorView<std::string> payloads_view, Message* msg);
+void FormatArrayMessage(VectorView<std::string> payloads_view, Message* msg);
 
 }  // namespace redis
 }  // namespace protocols
