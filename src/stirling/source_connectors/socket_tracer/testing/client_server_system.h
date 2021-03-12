@@ -67,14 +67,11 @@ class ClientServerSystem {
  public:  // Required as an `arc lint` workaround.
   // PID of client, if spawned. Otherwise -1.
   uint32_t ClientPID() { return client_pid_; }
-  uint32_t ClientFD() { return client_.sockfd(); }
+  uint32_t ClientFD() { return client_fd_; }
 
   // PID of server, if spawned. Otherwise -1.
   uint32_t ServerPID() { return server_pid_; }
-  uint32_t ServerFD() {
-    // Has to wait after accepting connection to get the server-side FD.
-    return server_accepted_->sockfd();
-  }
+  uint32_t ServerFD() { return server_fd_; }
 
  private:
   /**
@@ -229,15 +226,23 @@ class ClientServerSystem {
    * On even-phases, it will send the script value.
    * On odd-phases, it will expect to receive the script value.
    */
-#define SpawnClientImpl(script)                   \
-  client_pid_ = fork();                           \
-  if (client_pid_ == 0) {                         \
-    client_.Connect(server_);                     \
-    RunClient<TRecvFn, TSendFn>(script, client_); \
-    client_.Close();                              \
-    exit(0);                                      \
-  } else {                                        \
-    LOG(INFO) << "Client PID: " << client_pid_;   \
+#define SpawnClientImpl(script)                                                  \
+  int fd[2];                                                                     \
+  CHECK_EQ(pipe(fd), 0);                                                         \
+  client_pid_ = fork();                                                          \
+  if (client_pid_ == 0) {                                                        \
+    client_.Connect(server_);                                                    \
+    client_fd_ = client_.sockfd();                                               \
+    CHECK_EQ(write(fd[1], &client_fd_, sizeof(client_fd_)), sizeof(client_fd_)); \
+    RunClient<TRecvFn, TSendFn>(script, client_);                                \
+    client_.Close();                                                             \
+    exit(0);                                                                     \
+  } else {                                                                       \
+    CHECK_EQ(read(fd[0], &client_fd_, sizeof(client_fd_)), sizeof(client_fd_));  \
+    LOG(INFO) << "Client PID: " << client_pid_;                                  \
+    LOG(INFO) << "Client FD: " << client_fd_;                                    \
+    close(fd[0]);                                                                \
+    close(fd[1]);                                                                \
   }
 
   template <bool (TCPSocket::*TRecvFn)(std::string*) const,
@@ -263,13 +268,14 @@ class ClientServerSystem {
    * On even-phases, it will expect to receive the script value.
    * On odd-phases, it will send the script value.
    */
-#define SpawnServerImpl(script)                             \
-  server_pid_ = getpid();                                   \
-  LOG(INFO) << "Server PID: " << server_pid_;               \
-  server_thread_ = std::thread([this, script]() {           \
-    server_accepted_ = server_.Accept();                    \
-    RunServer<TRecvFn, TSendFn>(script, *server_accepted_); \
-    server_.Close();                                        \
+#define SpawnServerImpl(script)                         \
+  server_pid_ = getpid();                               \
+  LOG(INFO) << "Server PID: " << server_pid_;           \
+  server_thread_ = std::thread([this, script]() {       \
+    std::unique_ptr<TCPSocket> conn = server_.Accept(); \
+    server_fd_ = conn->sockfd();                        \
+    RunServer<TRecvFn, TSendFn>(script, *conn);         \
+    server_.Close();                                    \
   });
 
   template <bool (TCPSocket::*TRecvFn)(std::string*) const,
@@ -297,10 +303,12 @@ class ClientServerSystem {
 
   TCPSocket client_;
   TCPSocket server_;
-  std::unique_ptr<TCPSocket> server_accepted_;
 
   uint32_t client_pid_ = -1;
   uint32_t server_pid_ = -1;
+
+  int client_fd_ = -1;
+  int server_fd_ = -1;
 
   std::thread server_thread_;
   // No thread for client, it is run via fork().
