@@ -240,8 +240,8 @@ func TestServer_GetVizierInfos(t *testing.T) {
 	assert.Equal(t, 4, len(resp.VizierInfos))
 	assert.Equal(t, utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"), resp.VizierInfos[0].VizierID)
 	assert.Equal(t, "vzVers", resp.VizierInfos[0].VizierVersion)
-	assert.Nil(t, resp.VizierInfos[1])
-	assert.Nil(t, resp.VizierInfos[2])
+	assert.Equal(t, &cvmsgspb.VizierInfo{}, resp.VizierInfos[1])
+	assert.Equal(t, &cvmsgspb.VizierInfo{}, resp.VizierInfos[2])
 	assert.Equal(t, utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"), resp.VizierInfos[3].VizierID)
 	assert.Equal(t, "k8sID", resp.VizierInfos[3].ClusterUID)
 }

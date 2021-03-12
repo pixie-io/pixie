@@ -230,7 +230,7 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 	}
 
 	for _, vzInfo := range vzInfoResp.VizierInfos {
-		if vzInfo == nil {
+		if vzInfo == nil || vzInfo.VizierID == nil {
 			continue
 		}
 		podStatuses := make(map[string]*cloudapipb.PodStatus)

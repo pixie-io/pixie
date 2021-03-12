@@ -404,6 +404,8 @@ func (s *Server) GetVizierInfos(ctx context.Context, req *vzmgrpb.GetVizierInfos
 	for i, id := range ids {
 		if val, ok := vzInfoMap[id]; ok {
 			vzInfos[i] = val
+		} else {
+			vzInfos[i] = &cvmsgspb.VizierInfo{}
 		}
 	}
 
