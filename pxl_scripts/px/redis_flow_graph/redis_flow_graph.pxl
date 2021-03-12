@@ -59,7 +59,6 @@ def redis_flow_graph(start: str, ns: px.Namespace, from_entity_filter: str, to_e
 def redis_summary_with_links(start: str, ns: px.Namespace, from_entity_filter: str, to_entity_filter: str):
 
     df = redis_flow_graph(start, ns, from_entity_filter, to_entity_filter)
-
     df = add_source_dest_links(df, start)
     df = df['source', 'destination', 'latency_p50', 'latency_p90',
             'latency_p99', 'request_throughput', 'throughput_total']
