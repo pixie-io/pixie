@@ -9,14 +9,17 @@ Shows the most recent Redis messages in the cluster.
 import px
 
 
-def redis_data(start: str, num_head: int):
+def redis_data(start: str, source_filter: str, destination_filter: str, num_head: int):
 
     # redis_events.beta is a beta table, which is subject to change.
     df = px.DataFrame(table='redis_events.beta', start_time=start)
     df = add_source_dest_columns(df)
 
-    # Filter source column.
-    # df = df[df.source == 'default/cartservice']
+    # Filter out entities as specified by the user.
+    df = df[px.contains(df.source, source_filter)]
+    df = df[px.contains(df.destination, destination_filter)]
+
+    # Add additional filters below:
 
     # Restrict number of results.
     df = df.head(num_head)
