@@ -34,13 +34,8 @@ name: pixie-chart
 type: application
 version: ${VERSION}" > "${tmp_path}/Chart.yaml"
 
-mv "${YAML_TAR}" "${tmp_dir}"
-
-# Add template files.
-bazel run //src/pixie_cli:px -- \
-	generate-yamls -b "${tmp_dir}/vizier_yamls.tar" --version="${VERSION}" --out="${tmp_dir}"
-
-tar xvf "${tmp_dir}/yamls.tar" -C "${tmp_dir}"
+# Extract templated YAMLs.
+tar xvf "${YAML_TAR}" -C "${tmp_dir}"
 mv "${tmp_dir}/pixie_yamls" "${tmp_path}/templates"
 
 # Add crds. Helm ensures that these crds are deployed before the templated YAMLs.

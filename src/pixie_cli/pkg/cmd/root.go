@@ -44,7 +44,6 @@ func init() {
 	RootCmd.AddCommand(ScriptCmd)
 
 	RootCmd.AddCommand(CreateBundle)
-	RootCmd.AddCommand(GenerateYAMLs)
 
 	RootCmd.AddCommand(DeployKeyCmd)
 	RootCmd.AddCommand(APIKeyCmd)
