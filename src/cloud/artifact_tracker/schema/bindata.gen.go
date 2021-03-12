@@ -4,6 +4,8 @@
 // 000001_create_artifact_tables.up.sql
 // 000002_add_container_yamls.down.sql
 // 000002_add_container_yamls.up.sql
+// 000003_add_container_tmpl_yamls.down.sql
+// 000003_add_container_tmpl_yamls.up.sql
 package schema
 
 import (
@@ -95,7 +97,7 @@ func _000001_create_artifact_tablesDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_create_artifact_tables.down.sql", size: 133, mode: os.FileMode(436), modTime: time.Unix(1571435365, 0)}
+	info := bindataFileInfo{name: "000001_create_artifact_tables.down.sql", size: 133, mode: os.FileMode(436), modTime: time.Unix(1580433536, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -115,7 +117,7 @@ func _000001_create_artifact_tablesUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_create_artifact_tables.up.sql", size: 829, mode: os.FileMode(436), modTime: time.Unix(1572043700, 0)}
+	info := bindataFileInfo{name: "000001_create_artifact_tables.up.sql", size: 829, mode: os.FileMode(436), modTime: time.Unix(1588726669, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -135,7 +137,7 @@ func _000002_add_container_yamlsDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000002_add_container_yamls.down.sql", size: 59, mode: os.FileMode(436), modTime: time.Unix(1572043679, 0)}
+	info := bindataFileInfo{name: "000002_add_container_yamls.down.sql", size: 59, mode: os.FileMode(436), modTime: time.Unix(1588021619, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -155,7 +157,47 @@ func _000002_add_container_yamlsUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000002_add_container_yamls.up.sql", size: 93, mode: os.FileMode(436), modTime: time.Unix(1572043654, 0)}
+	info := bindataFileInfo{name: "000002_add_container_yamls.up.sql", size: 93, mode: os.FileMode(436), modTime: time.Unix(1588021619, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000003_add_container_tmpl_yamlsDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x89\x0c\x70\x55\x48\x2c\x2a\xc9\x4c\x4b\x4c\x2e\x89\x2f\xa9\x2c\x48\x55\x70\x09\xf2\x0f\x50\x08\x73\xf4\x09\x75\x55\x50\x77\xf6\xf7\x0b\x71\xf4\xf4\x73\x0d\x8a\x0f\x76\x0d\x89\x0f\x71\xf5\x0d\xf0\x71\x0c\x71\x8d\x8f\x74\xf4\xf5\x09\x56\xb7\xe6\x02\x04\x00\x00\xff\xff\x4a\xe5\xf0\x80\x44\x00\x00\x00")
+
+func _000003_add_container_tmpl_yamlsDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000003_add_container_tmpl_yamlsDownSql,
+		"000003_add_container_tmpl_yamls.down.sql",
+	)
+}
+
+func _000003_add_container_tmpl_yamlsDownSql() (*asset, error) {
+	bytes, err := _000003_add_container_tmpl_yamlsDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000003_add_container_tmpl_yamls.down.sql", size: 68, mode: os.FileMode(436), modTime: time.Unix(1615510803, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000003_add_container_tmpl_yamlsUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x89\x0c\x70\x55\x48\x2c\x2a\xc9\x4c\x4b\x4c\x2e\x89\x2f\xa9\x2c\x48\x55\x70\x74\x71\x51\x08\x73\xf4\x09\x75\x55\x50\x77\xf6\xf7\x0b\x71\xf4\xf4\x73\x0d\x8a\x0f\x76\x0d\x89\x0f\x71\xf5\x0d\xf0\x71\x0c\x71\x8d\x8f\x74\xf4\xf5\x09\x56\xb7\xe6\x02\x04\x00\x00\xff\xff\xc8\x9f\x01\x18\x43\x00\x00\x00")
+
+func _000003_add_container_tmpl_yamlsUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000003_add_container_tmpl_yamlsUpSql,
+		"000003_add_container_tmpl_yamls.up.sql",
+	)
+}
+
+func _000003_add_container_tmpl_yamlsUpSql() (*asset, error) {
+	bytes, err := _000003_add_container_tmpl_yamlsUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000003_add_container_tmpl_yamls.up.sql", size: 67, mode: os.FileMode(436), modTime: time.Unix(1615510866, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -212,10 +254,12 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"000001_create_artifact_tables.down.sql": _000001_create_artifact_tablesDownSql,
-	"000001_create_artifact_tables.up.sql":   _000001_create_artifact_tablesUpSql,
-	"000002_add_container_yamls.down.sql":    _000002_add_container_yamlsDownSql,
-	"000002_add_container_yamls.up.sql":      _000002_add_container_yamlsUpSql,
+	"000001_create_artifact_tables.down.sql":   _000001_create_artifact_tablesDownSql,
+	"000001_create_artifact_tables.up.sql":     _000001_create_artifact_tablesUpSql,
+	"000002_add_container_yamls.down.sql":      _000002_add_container_yamlsDownSql,
+	"000002_add_container_yamls.up.sql":        _000002_add_container_yamlsUpSql,
+	"000003_add_container_tmpl_yamls.down.sql": _000003_add_container_tmpl_yamlsDownSql,
+	"000003_add_container_tmpl_yamls.up.sql":   _000003_add_container_tmpl_yamlsUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -259,10 +303,12 @@ type bintree struct {
 }
 
 var _bintree = &bintree{nil, map[string]*bintree{
-	"000001_create_artifact_tables.down.sql": &bintree{_000001_create_artifact_tablesDownSql, map[string]*bintree{}},
-	"000001_create_artifact_tables.up.sql":   &bintree{_000001_create_artifact_tablesUpSql, map[string]*bintree{}},
-	"000002_add_container_yamls.down.sql":    &bintree{_000002_add_container_yamlsDownSql, map[string]*bintree{}},
-	"000002_add_container_yamls.up.sql":      &bintree{_000002_add_container_yamlsUpSql, map[string]*bintree{}},
+	"000001_create_artifact_tables.down.sql":   &bintree{_000001_create_artifact_tablesDownSql, map[string]*bintree{}},
+	"000001_create_artifact_tables.up.sql":     &bintree{_000001_create_artifact_tablesUpSql, map[string]*bintree{}},
+	"000002_add_container_yamls.down.sql":      &bintree{_000002_add_container_yamlsDownSql, map[string]*bintree{}},
+	"000002_add_container_yamls.up.sql":        &bintree{_000002_add_container_yamlsUpSql, map[string]*bintree{}},
+	"000003_add_container_tmpl_yamls.down.sql": &bintree{_000003_add_container_tmpl_yamlsDownSql, map[string]*bintree{}},
+	"000003_add_container_tmpl_yamls.up.sql":   &bintree{_000003_add_container_tmpl_yamlsUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory

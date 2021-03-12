@@ -28,6 +28,7 @@ enum ArtifactType {
     AT_DARWIN_AMD64
     AT_CONTAINER_SET_YAMLS
     AT_CONTAINER_SET_LINUX_AMD64
+    AT_CONTAINER_SET_TEMPLATE_YAMLS
 }
 
 enum AutocompleteEntityState {

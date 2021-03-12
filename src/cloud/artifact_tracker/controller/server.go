@@ -123,6 +123,8 @@ func downloadSuffix(at vpb.ArtifactType) string {
 		return "darwin_amd64"
 	case vpb.AT_CONTAINER_SET_YAMLS:
 		return "yamls.tar"
+	case vpb.AT_CONTAINER_SET_TEMPLATE_YAMLS:
+		return "template_yamls.tar"
 	}
 	return "unknown"
 }
@@ -145,7 +147,7 @@ func (s *Server) GetDownloadLink(ctx context.Context, in *apb.GetDownloadLinkReq
 		return nil, status.Error(codes.InvalidArgument, "artifact type cannot be unknown")
 	}
 
-	if !(at == vpb.AT_DARWIN_AMD64 || at == vpb.AT_LINUX_AMD64 || at == vpb.AT_CONTAINER_SET_YAMLS) {
+	if !(at == vpb.AT_DARWIN_AMD64 || at == vpb.AT_LINUX_AMD64 || at == vpb.AT_CONTAINER_SET_YAMLS || at == vpb.AT_CONTAINER_SET_TEMPLATE_YAMLS) {
 		return nil, status.Error(codes.InvalidArgument, "artifact type cannot be downloaded")
 	}
 

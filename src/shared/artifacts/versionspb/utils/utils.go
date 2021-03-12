@@ -10,11 +10,12 @@ import (
 
 // Enum values for artifact type.
 const (
-	ATUnknown                ArtifactTypeDB = "UNKNOWN"
-	ATLinuxAMD64             ArtifactTypeDB = "LINUX_AMD64"
-	ATDarwinAMD64            ArtifactTypeDB = "DARWIN_AMD64"
-	ATContainerSetYAMLs      ArtifactTypeDB = "CONTAINER_SET_YAMLS"
-	ATContainerSetLinuxAMD64 ArtifactTypeDB = "CONTAINER_SET_LINUX_AMD64"
+	ATUnknown                   ArtifactTypeDB = "UNKNOWN"
+	ATLinuxAMD64                ArtifactTypeDB = "LINUX_AMD64"
+	ATDarwinAMD64               ArtifactTypeDB = "DARWIN_AMD64"
+	ATContainerSetYAMLs         ArtifactTypeDB = "CONTAINER_SET_YAMLS"
+	ATContainerSetLinuxAMD64    ArtifactTypeDB = "CONTAINER_SET_LINUX_AMD64"
+	ATContainerSetTemplateYAMLs ArtifactTypeDB = "CONTAINER_SET_TEMPLATE_YAMLS"
 )
 
 // ArtifactTypeDB is the DB representation of the proto ArtifactType.
@@ -46,6 +47,8 @@ func ToArtifactTypeDB(a versionspb.ArtifactType) ArtifactTypeDB {
 		return ATContainerSetYAMLs
 	case versionspb.AT_CONTAINER_SET_LINUX_AMD64:
 		return ATContainerSetLinuxAMD64
+	case versionspb.AT_CONTAINER_SET_TEMPLATE_YAMLS:
+		return ATContainerSetTemplateYAMLs
 	default:
 		return ATUnknown
 	}
@@ -63,6 +66,8 @@ func ToProtoArtifactType(a ArtifactTypeDB) versionspb.ArtifactType {
 		return versionspb.AT_CONTAINER_SET_YAMLS
 	case ATContainerSetLinuxAMD64:
 		return versionspb.AT_CONTAINER_SET_LINUX_AMD64
+	case ATContainerSetTemplateYAMLs:
+		return versionspb.AT_CONTAINER_SET_TEMPLATE_YAMLS
 	default:
 		return versionspb.AT_UNKNOWN
 	}

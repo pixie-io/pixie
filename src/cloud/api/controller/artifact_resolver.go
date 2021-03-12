@@ -27,6 +27,8 @@ func artifactTypeToProto(a *string) cloudapipb.ArtifactType {
 		return cloudapipb.AT_CONTAINER_SET_YAMLS
 	case "AT_CONTAINER_SET_LINUX_AMD64":
 		return cloudapipb.AT_CONTAINER_SET_LINUX_AMD64
+	case "AT_CONTAINER_SET_TEMPLATE_YAMLS":
+		return cloudapipb.AT_CONTAINER_SET_TEMPLATE_YAMLS
 	default:
 		return cloudapipb.AT_UNKNOWN
 	}

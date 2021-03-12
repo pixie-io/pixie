@@ -73,6 +73,8 @@ func getArtifactTypeFromCloudProto(a cloudapipb.ArtifactType) versionspb.Artifac
 		return versionspb.AT_CONTAINER_SET_YAMLS
 	case cloudapipb.AT_CONTAINER_SET_LINUX_AMD64:
 		return versionspb.AT_CONTAINER_SET_LINUX_AMD64
+	case cloudapipb.AT_CONTAINER_SET_TEMPLATE_YAMLS:
+		return versionspb.AT_CONTAINER_SET_TEMPLATE_YAMLS
 	default:
 		return versionspb.AT_UNKNOWN
 	}
@@ -88,6 +90,8 @@ func getArtifactTypeFromVersionsProto(a versionspb.ArtifactType) cloudapipb.Arti
 		return cloudapipb.AT_CONTAINER_SET_YAMLS
 	case versionspb.AT_CONTAINER_SET_LINUX_AMD64:
 		return cloudapipb.AT_CONTAINER_SET_LINUX_AMD64
+	case versionspb.AT_CONTAINER_SET_TEMPLATE_YAMLS:
+		return cloudapipb.AT_CONTAINER_SET_TEMPLATE_YAMLS
 	default:
 		return cloudapipb.AT_UNKNOWN
 	}
