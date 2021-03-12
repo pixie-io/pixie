@@ -27,3 +27,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        - name: PL_ETCD_TLS_CERTS
+          valueFrom:
+            secretKeyRef:
+              key: peer.key
+              name: etcd-peer-tls-certs
