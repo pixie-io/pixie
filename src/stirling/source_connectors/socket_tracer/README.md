@@ -16,7 +16,7 @@ The first step is to verify that the raw data events were captured by `eBPF` pro
 
   ```shell
   # -f is critical as it allows tracing all threads of a process.
-  sudo strace -f --no-abbrev --attach=PID --string-limit=STRSIZE --trace=SYSCALL 2>&1 | grep PATTERN
+  sudo strace -f -v -s 100 -e write -p PID 2>&1 | grep PATTERN
   ```
 
 You should confirm that all of the expected syscalls were called, and the data matches the protocol.
