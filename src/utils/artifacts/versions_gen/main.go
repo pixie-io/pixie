@@ -30,7 +30,7 @@ func availableArtifacts(artifactName string) []vpb.ArtifactType {
 	if artifactName == "cli" {
 		return []vpb.ArtifactType{vpb.AT_LINUX_AMD64, vpb.AT_DARWIN_AMD64}
 	} else if artifactName == "vizier" {
-		return []vpb.ArtifactType{vpb.AT_CONTAINER_SET_LINUX_AMD64, vpb.AT_CONTAINER_SET_YAMLS}
+		return []vpb.ArtifactType{vpb.AT_CONTAINER_SET_LINUX_AMD64, vpb.AT_CONTAINER_SET_YAMLS, vpb.AT_CONTAINER_SET_TEMPLATE_YAMLS}
 	} else {
 		panic(fmt.Sprintf("Unknown artifact type: %s", artifactName))
 	}
