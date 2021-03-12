@@ -46,32 +46,7 @@ size_t FindFrameBoundary<TestFrame>(MessageType /* type */, std::string_view buf
   return (pos == buf.npos) ? start_pos : pos;
 }
 
-TEST(PositionConverterTest, Basic) {
-  PositionConverter converter;
-
-  std::vector<std::string_view> msgs = {"0", "12", "345", "6", "789"};
-
-  BufferPosition bp;
-  bp = converter.Convert(msgs, 0);
-  EXPECT_EQ(bp, (BufferPosition{0, 0}));
-
-  bp = converter.Convert(msgs, 6);
-  EXPECT_EQ(bp, (BufferPosition{3, 0}));
-
-  bp = converter.Convert(msgs, 6);
-  EXPECT_EQ(bp, (BufferPosition{3, 0}));
-
-  bp = converter.Convert(msgs, 8);
-  EXPECT_EQ(bp, (BufferPosition{4, 1}));
-
-  bp = converter.Convert(msgs, 8);
-  EXPECT_EQ(bp, (BufferPosition{4, 1}));
-
-  // Cannot go backwards.
-  EXPECT_DEBUG_DEATH(converter.Convert(msgs, 7), "");
-}
-
-class EventParserTest : public EventParserTestWrapper, public ::testing::Test {};
+class EventParserTest : public DataStreamBufferTestWrapper, public ::testing::Test {};
 
 // Use dummy protocol to test basics of EventParser.
 TEST_F(EventParserTest, BasicProtocolParsing) {
@@ -89,23 +64,20 @@ TEST_F(EventParserTest, BasicProtocolParsing) {
 
   std::vector<SocketDataEvent> events = CreateEvents(event_messages);
 
-  AppendEvents(events);
-  ParseResult<BufferPosition> res = parser_.ParseFrames(MessageType::kRequest, &word_frames);
+  AddEvents(events);
+  ParseResult res = ParseFrames(MessageType::kRequest, data_buffer_, &word_frames);
 
   EXPECT_EQ(ParseState::kSuccess, res.state);
-  EXPECT_THAT(res.frame_positions, ElementsAre(StartEndPos<BufferPosition>{{0, 0}, {0, 7}},
-                                               StartEndPos<BufferPosition>{{0, 8}, {1, 2}},
-                                               StartEndPos<BufferPosition>{{1, 3}, {1, 10}},
-                                               StartEndPos<BufferPosition>{{1, 11}, {2, 0}},
-                                               StartEndPos<BufferPosition>{{3, 0}, {3, 5}},
-                                               StartEndPos<BufferPosition>{{4, 0}, {4, 7}}));
-  EXPECT_EQ((BufferPosition{5, 0}), res.end_position);
+  EXPECT_THAT(res.frame_positions,
+              ElementsAre(StartEndPos{0, 7}, StartEndPos{8, 14}, StartEndPos{15, 22},
+                          StartEndPos{23, 29}, StartEndPos{30, 35}, StartEndPos{36, 43}));
+  EXPECT_EQ(res.end_position, 44);
 
   std::vector<uint64_t> timestamps;
   for (const auto& frame : word_frames) {
     timestamps.push_back(frame.timestamp_ns);
   }
-  EXPECT_THAT(timestamps, ElementsAre(0, 1, 1, 2, 3, 4));
+  EXPECT_THAT(timestamps, ElementsAre(0, 0, 1, 1, 3, 4));
 }
 
 // TODO(oazizi): Move any protocol specific tests that check for general EventParser behavior here.

@@ -432,8 +432,8 @@ TEST_F(UDPSocketTraceBPFTest, UDPSendMsgRecvMsg) {
   source_->PollPerfBuffers();
 
   ASSERT_OK_AND_ASSIGN(const auto* tracker, GetConnTracker(getpid(), client_.sockfd()));
-  EXPECT_THAT(GetMsgFromEvents(tracker->send_data().events()), ElementsAre(kHTTPReqMsg1));
-  EXPECT_THAT(GetMsgFromEvents(tracker->recv_data().events()), ElementsAre(kHTTPRespMsg1));
+  EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPReqMsg1);
+  EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPRespMsg1);
 
   ASSERT_OK_AND_ASSIGN(tracker, GetConnTracker(getpid(), server_.sockfd()));
   EXPECT_THAT(GetMsgFromEvents(tracker->send_data().events()), ElementsAre(kHTTPRespMsg1));

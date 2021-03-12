@@ -33,23 +33,31 @@ namespace pico_wrapper {
 
 namespace {
 
-// Mutates the input data.
+// TODO(oazizi): ParseChunk makes a copy of the data. Consider finding a way
+//               to mutate the input buffer such that we can avoid this copy.
+//               phr_decode_chunked() already mutates the input buffer, but
+//               this needs to be done in a way that doesn't mess up the rest of
+//               the parsing, since there will be "unused" bytes at the end of the
+//               chunk, but before the rest of the data in the DataStreamBuffer.
+//               Note that the copy is not overhead when a complete message is found,
+//               since the data is std::moved to the result.
 ParseState ParseChunk(std::string_view* data, Message* result) {
-  result->body.clear();
   phr_chunked_decoder chunk_decoder = {};
-  auto buf = const_cast<char*>(data->data());
-  size_t buf_size = data->size();
+  std::string data_copy(*data);
+  char* buf = data_copy.data();
+  size_t buf_size = data_copy.size();
   ssize_t retval = phr_decode_chunked(&chunk_decoder, buf, &buf_size);
   if (retval == -1) {
     // Parse failed.
     return ParseState::kInvalid;
   } else if (retval >= 0) {
     // Complete message.
-    result->body.append(buf, buf_size);
+    data_copy.resize(buf_size);
+    result->body = std::move(data_copy);
     // phr_decode_chunked rewrites the buffer in place, removing chunked-encoding headers.
     // So we cannot simply remove the prefix, but rather have to shorten the buffer too.
     // This is done via retval, which specifies how many unprocessed bytes are left.
-    *data = std::string_view(buf + buf_size, retval);
+    data->remove_prefix(data->size() - retval);
     // Pico claims that the last \r\n are unparsed, manually remove them.
     while (!data->empty() && (data->front() == '\r' || data->front() == '\n')) {
       data->remove_prefix(1);

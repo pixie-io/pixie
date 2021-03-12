@@ -7,6 +7,7 @@
 #include <string>
 
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
+#include "src/stirling/source_connectors/socket_tracer/protocols/common/data_stream_buffer.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/types.h"
 
 DECLARE_uint32(messages_expiration_duration_secs);
@@ -92,10 +93,9 @@ class DataStream : NotCopyMoveable {
    */
   template <typename TFrameType>
   bool Empty() const {
-    return events_.empty() && (std::holds_alternative<std::monostate>(frames_) ||
-                               std::get<std::deque<TFrameType>>(frames_).empty());
+    return data_buffer_.empty() && (std::holds_alternative<std::monostate>(frames_) ||
+                                    std::get<std::deque<TFrameType>>(frames_).empty());
   }
-  const auto& events() const { return events_; }
 
   /**
    * Checks if the DataStream is in a Stuck state, which means that it has
@@ -198,6 +198,8 @@ class DataStream : NotCopyMoveable {
     return false;
   }
 
+  const protocols::DataStreamBuffer& data_buffer() const { return data_buffer_; }
+
  private:
   template <typename TFrameType>
   static void EraseExpiredFrames(std::chrono::seconds exp_dur, std::deque<TFrameType>* frames) {
@@ -234,21 +236,8 @@ class DataStream : NotCopyMoveable {
     streams->erase(streams->begin(), iter);
   }
 
-  // Helper function that appends all contiguous events to the parser.
-  // Returns number of events appended.
-  size_t AppendEvents(protocols::EventParser* parser) const;
-
   // Raw data events from BPF.
-  // TODO(oazizi/yzhao): Convert this to vector or deque.
-  std::map<size_t, std::unique_ptr<SocketDataEvent>> events_;
-
-  // Keep track of the byte position of the stream.
-  // This is used to identify missing events.
-  size_t next_pos_ = 0;
-
-  // To support partially processed events,
-  // the stream may start at an offset in the first raw data event.
-  size_t offset_ = 0;
+  protocols::DataStreamBuffer data_buffer_;
 
   // Vector of parsed HTTP/MySQL messages.
   // Once parsed, the raw data events should be discarded.
@@ -293,7 +282,7 @@ class DataStream : NotCopyMoveable {
 template <typename TFrameType>
 inline std::string DebugString(const DataStream& d, std::string_view prefix) {
   std::string info;
-  info += absl::Substitute("$0raw events=$1\n", prefix, d.events().size());
+  info += absl::Substitute("$0raw event bytes=$1\n", prefix, d.data_buffer_.size());
   int frames_size;
   if (std::holds_alternative<std::deque<TFrameType>>(d.frames_)) {
     frames_size = std::get<std::deque<TFrameType>>(d.frames_).size();

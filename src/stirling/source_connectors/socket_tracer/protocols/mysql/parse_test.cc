@@ -57,17 +57,14 @@ bool operator==(const Packet& lhs, const Packet& rhs) {
 //   EXPECT_EQ(parse_state, ParseState::kSuccess);
 // }
 
-class MySQLParserTest : public ::testing::Test {
- protected:
-  EventParser parser_;
-};
+class MySQLParserTest : public ::testing::Test {};
 
 TEST_F(MySQLParserTest, ParseRaw) {
   const std::string buf = absl::StrCat(testutils::GenRawPacket(0, "\x03SELECT foo"),
                                        testutils::GenRawPacket(1, "\x03SELECT bar"));
 
   std::deque<Packet> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kRequest, buf, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kRequest, buf, &parsed_messages);
 
   Packet expected_message0;
   expected_message0.msg = "\x03SELECT foo";
@@ -100,7 +97,7 @@ TEST_F(MySQLParserTest, ParseComStmtPrepare) {
   const std::string buf = absl::StrCat(msg1, msg2);
 
   std::deque<Packet> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kRequest, buf, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kRequest, buf, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message1, expected_message2));
@@ -118,7 +115,7 @@ TEST_F(MySQLParserTest, ParseComStmtExecute) {
   expected_message1.sequence_id = 0;
 
   std::deque<Packet> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kRequest, msg1, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kRequest, msg1, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message1));
@@ -129,7 +126,7 @@ TEST_F(MySQLParserTest, ParseComStmtClose) {
   std::string msg = testutils::GenRawPacket(expected_packet);
 
   std::deque<Packet> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kRequest, msg, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kRequest, msg, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_packet));
@@ -150,7 +147,7 @@ TEST_F(MySQLParserTest, ParseComQuery) {
   const std::string buf = absl::StrCat(msg1, msg2);
 
   std::deque<Packet> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kRequest, buf, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kRequest, buf, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message1, expected_message2));
@@ -177,8 +174,8 @@ TEST_F(MySQLParserTest, ParseResponse) {
       Command::kStmtPrepare};
 
   std::deque<Packet> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse,
-                                               kMySQLStmtPrepareMessage.response, &parsed_messages);
+  ParseResult result =
+      ParseFramesLoop(MessageType::kResponse, kMySQLStmtPrepareMessage.response, &parsed_messages);
   EXPECT_EQ(ParseState::kSuccess, result.state);
 
   Packet expected_header;
@@ -231,7 +228,7 @@ TEST_F(MySQLParserTest, ParseMultipleRawPackets) {
   const std::string buf = absl::StrCat(chunk1, chunk2, chunk3);
 
   std::deque<Packet> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse, buf, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kResponse, buf, &parsed_messages);
 
   std::deque<Packet> expected_packets;
   for (Packet p : prepare_resp_packets) {
@@ -252,7 +249,7 @@ TEST_F(MySQLParserTest, ParseIncompleteRequest) {
   msg1[0] = '\x24';
 
   std::deque<Packet> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kRequest, msg1, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kRequest, msg1, &parsed_messages);
 
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre());
@@ -262,14 +259,14 @@ TEST_F(MySQLParserTest, ParseInvalidInput) {
   std::string msg1 = "hello world";
 
   std::deque<Packet> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kRequest, msg1, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kRequest, msg1, &parsed_messages);
   EXPECT_EQ(ParseState::kInvalid, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre());
 }
 
-TEST_F(MySQLParserTest, NoAppend) {
+TEST_F(MySQLParserTest, Empty) {
   std::deque<Packet> parsed_messages;
-  ParseResult result = parser_.ParseFrames(MessageType::kResponse, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kResponse, "", &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre());

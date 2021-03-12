@@ -101,7 +101,10 @@ void DataStreamBuffer::Add(size_t pos, std::string_view data, uint64_t timestamp
   if (ppos_back < 0) {
     // Case 1: Data being added is too far back. Just ignore it.
 
-    LOG(WARNING) << absl::Substitute(
+    // This has been observed to happen a lot on initial deployment,
+    // where a large batch of events, with cumulative size greater than the buffer size
+    // arrive in scrambled order.
+    VLOG(1) << absl::Substitute(
         "Ignoring event that has already been skipped [event pos=$0, current pos=$1].", pos,
         position_);
     return;
@@ -114,6 +117,13 @@ void DataStreamBuffer::Add(size_t pos, std::string_view data, uint64_t timestamp
     ppos_front = 0;
   } else if (ppos_back > static_cast<ssize_t>(buffer_.size())) {
     // Case 3: Data being added extends the buffer. Resize the buffer.
+
+    if (pos > position_ + kDataStreamBufferCapacity) {
+      // This has been observed to happen a lot on initial deployment,
+      // where a large batch of events, with cumulative size greater than the buffer size
+      // arrive in scrambled order.
+      VLOG(1) << absl::Substitute("Event skips ahead *a lot* [event pos=$0, current pos=$1].", pos, position_);
+    }
 
     ssize_t logical_size = pos + data.size() - position_;
     if (logical_size > static_cast<ssize_t>(capacity_)) {

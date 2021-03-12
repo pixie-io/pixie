@@ -242,7 +242,8 @@ struct TestParam {
   uint32_t iters;
 };
 
-class HTTPParserTest : public EventParserTestWrapper, public ::testing::TestWithParam<TestParam> {};
+class HTTPParserTest : public DataStreamBufferTestWrapper,
+                       public ::testing::TestWithParam<TestParam> {};
 
 //=============================================================================
 // HTTP Parse() Tests
@@ -255,16 +256,16 @@ TEST_F(HTTPParserTest, CompleteMessages) {
   std::string buf = absl::StrCat(msg_a, msg_b, msg_c);
 
   std::deque<Message> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse, buf, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kResponse, buf, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_EQ(msg_a.size() + msg_b.size() + msg_c.size(), result.end_position);
   EXPECT_THAT(parsed_messages, ElementsAre(HasBody("a"), HasBody("b"), HasBody("c")));
   EXPECT_THAT(result.frame_positions,
-              ElementsAre(StartEndPos<size_t>{0, msg_a.size() - 1},
-                          StartEndPos<size_t>{msg_a.size(), msg_a.size() + msg_b.size() - 1},
-                          StartEndPos<size_t>{msg_a.size() + msg_b.size(),
-                                              msg_a.size() + msg_b.size() + msg_c.size() - 1}));
+              ElementsAre(StartEndPos{0, msg_a.size() - 1},
+                          StartEndPos{msg_a.size(), msg_a.size() + msg_b.size() - 1},
+                          StartEndPos{msg_a.size() + msg_b.size(),
+                                      msg_a.size() + msg_b.size() + msg_c.size() - 1}));
 }
 
 TEST_F(HTTPParserTest, PartialHeader) {
@@ -275,7 +276,7 @@ TEST_F(HTTPParserTest, PartialHeader) {
       "Content-Type:";
 
   std::deque<Message> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse, msg, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kResponse, msg, &parsed_messages);
 
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
   EXPECT_EQ(0, result.end_position);
@@ -291,7 +292,7 @@ TEST_F(HTTPParserTest, PartialBody) {
       "Foo";
 
   std::deque<Message> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse, msg, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kResponse, msg, &parsed_messages);
 
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
   EXPECT_EQ(0, result.end_position);
@@ -309,7 +310,7 @@ TEST_F(HTTPParserTest, Status101) {
   std::string data = absl::StrCat(switch_protocol_msg, new_protocol_data);
 
   std::deque<Message> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse, data, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kResponse, data, &parsed_messages);
 
   EXPECT_EQ(ParseState::kEOS, result.state);
   EXPECT_EQ(switch_protocol_msg.size(), result.end_position);
@@ -322,7 +323,7 @@ TEST_F(HTTPParserTest, Status204) {
       "\r\n";
 
   std::deque<Message> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse, msg, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kResponse, msg, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(HasBody("")));
@@ -365,7 +366,7 @@ TEST_F(HTTPParserTest, ParseCompleteHTTPResponseWithContentLengthHeader) {
 
   std::deque<Message> parsed_messages;
   const std::string buf = absl::StrCat(msg1, msg2);
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse, buf, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kResponse, buf, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message1, expected_message2));
@@ -391,7 +392,7 @@ TEST_F(HTTPParserTest, ParseIncompleteHTTPResponseWithContentLengthHeader) {
 
   const std::string buf = absl::StrCat(msg1, msg2, msg3);
   std::deque<Message> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse, buf, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kResponse, buf, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message1));
@@ -400,7 +401,7 @@ TEST_F(HTTPParserTest, ParseIncompleteHTTPResponseWithContentLengthHeader) {
 TEST_F(HTTPParserTest, InvalidInput) {
   const std::string_view buf = " is awesome";
   std::deque<Message> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse, buf, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kResponse, buf, &parsed_messages);
 
   EXPECT_EQ(ParseState::kInvalid, result.state);
   EXPECT_THAT(parsed_messages, IsEmpty());
@@ -408,7 +409,7 @@ TEST_F(HTTPParserTest, InvalidInput) {
 
 TEST_F(HTTPParserTest, NoAppend) {
   std::deque<Message> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse, "", &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kResponse, "", &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, IsEmpty());
@@ -428,7 +429,7 @@ TEST_F(HTTPParserTest, ParseCompleteChunkEncodedMessage) {
   expected_message.body = "pixielabs is awesome!";
 
   std::deque<Message> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse, msg, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kResponse, msg, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
@@ -443,7 +444,7 @@ TEST_F(HTTPParserTest, ParseIncompleteChunks) {
       "pixie";
 
   std::deque<Message> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse, msg1, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kResponse, msg1, &parsed_messages);
 
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
   EXPECT_THAT(parsed_messages, IsEmpty());
@@ -470,7 +471,7 @@ TEST_F(HTTPParserTest, ParseRequestWithoutLengthOrChunking) {
   expected_message.body = "";
 
   std::deque<Message> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kRequest, msg1, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kRequest, msg1, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
@@ -489,7 +490,7 @@ TEST_F(HTTPParserTest, ParseResponseWithoutLengthOrChunking) {
   expected_message.body = "pixielabs is aweso";
 
   std::deque<Message> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse, msg1, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kResponse, msg1, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
@@ -501,7 +502,7 @@ TEST_F(HTTPParserTest, MessagePartialHeaders) {
       "Content-Type: text/plain";
 
   std::deque<Message> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse, msg1, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kResponse, msg1, &parsed_messages);
 
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
   EXPECT_THAT(parsed_messages, IsEmpty());
@@ -516,7 +517,7 @@ TEST_F(HTTPParserTest, PartialMessageInTheMiddleOfStream) {
 
   const std::string buf = absl::StrCat(msg0, msg1, msg2, msg3, msg4);
   std::deque<Message> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse, buf, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kResponse, buf, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(HasBody("foobar"), HasBody("pixielabs rocks!")));
@@ -528,8 +529,7 @@ TEST_F(HTTPParserTest, PartialMessageInTheMiddleOfStream) {
 
 TEST_F(HTTPParserTest, ParseHTTPRequestSingle) {
   std::deque<Message> parsed_messages;
-  ParseResult result =
-      parser_.ParseFramesLoop(MessageType::kRequest, kHTTPGetReq0, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kRequest, kHTTPGetReq0, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(HTTPGetReq0ExpectedMessage()));
@@ -538,7 +538,7 @@ TEST_F(HTTPParserTest, ParseHTTPRequestSingle) {
 TEST_F(HTTPParserTest, ParseHTTPRequestMultiple) {
   const std::string buf = absl::StrCat(kHTTPGetReq0, kHTTPPostReq0);
   std::deque<Message> parsed_messages;
-  ParseResult result = parser_.ParseFramesLoop(MessageType::kRequest, buf, &parsed_messages);
+  ParseResult result = ParseFramesLoop(MessageType::kRequest, buf, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages,
@@ -553,6 +553,8 @@ TEST_P(HTTPParserTest, ParseHTTPRequestsRepeatedly) {
   std::uniform_int_distribution<uint32_t> splitpoint_dist(0, msg.length());
 
   for (uint32_t i = 0; i < GetParam().iters; ++i) {
+    data_buffer_.Reset();
+
     // Choose two random split points for this iteration.
     std::vector<size_t> split_points;
     split_points.push_back(splitpoint_dist(rng));
@@ -561,19 +563,15 @@ TEST_P(HTTPParserTest, ParseHTTPRequestsRepeatedly) {
     std::vector<std::string_view> msg_splits = MessageSplit(msg, split_points);
     ASSERT_EQ(msg, absl::StrCat(msg_splits[0], msg_splits[1], msg_splits[2]));
 
-    SocketDataEvent event0;
-    event0.msg = msg_splits[0];
-    SocketDataEvent event1;
-    event1.msg = msg_splits[1];
-    SocketDataEvent event2;
-    event2.msg = msg_splits[2];
+    std::vector<SocketDataEvent> events = CreateEvents<std::string_view>(msg_splits);
 
-    parser_.Append(event0);
-    parser_.Append(event1);
-    parser_.Append(event2);
+    AddEvent(events[0]);
+    AddEvent(events[1]);
+    AddEvent(events[2]);
 
     std::deque<Message> parsed_messages;
-    ParseResult result = parser_.ParseFrames(MessageType::kRequest, &parsed_messages);
+    ParseResult result = ParseFrames(MessageType::kRequest, data_buffer_, &parsed_messages);
+    data_buffer_.RemovePrefix(result.end_position);
 
     ASSERT_EQ(ParseState::kSuccess, result.state);
     ASSERT_THAT(parsed_messages,
@@ -589,6 +587,8 @@ TEST_P(HTTPParserTest, ParseHTTPResponsesRepeatedly) {
   std::uniform_int_distribution<size_t> splitpoint_dist(0, msg.length());
 
   for (uint32_t i = 0; i < GetParam().iters; ++i) {
+    data_buffer_.Reset();
+
     // Choose two random split points for this iteration.
     std::vector<size_t> split_points;
     split_points.push_back(splitpoint_dist(rng));
@@ -598,19 +598,15 @@ TEST_P(HTTPParserTest, ParseHTTPResponsesRepeatedly) {
 
     ASSERT_EQ(msg, absl::StrCat(msg_splits[0], msg_splits[1], msg_splits[2]));
 
-    SocketDataEvent event0;
-    event0.msg = msg_splits[0];
-    SocketDataEvent event1;
-    event1.msg = msg_splits[1];
-    SocketDataEvent event2;
-    event2.msg = msg_splits[2];
+    std::vector<SocketDataEvent> events = CreateEvents<std::string_view>(msg_splits);
 
-    parser_.Append(event0);
-    parser_.Append(event1);
-    parser_.Append(event2);
+    AddEvent(events[0]);
+    AddEvent(events[1]);
+    AddEvent(events[2]);
 
     std::deque<Message> parsed_messages;
-    ParseResult result = parser_.ParseFrames(MessageType::kResponse, &parsed_messages);
+    ParseResult result = ParseFrames(MessageType::kResponse, data_buffer_, &parsed_messages);
+    data_buffer_.RemovePrefix(result.end_position);
 
     ASSERT_EQ(ParseState::kSuccess, result.state);
     ASSERT_THAT(parsed_messages, ElementsAre(HTTPResp0ExpectedMessage(), HTTPResp1ExpectedMessage(),
@@ -634,27 +630,22 @@ TEST_F(HTTPParserTest, ParseHTTPResponsesWithLeftover) {
 
   std::vector<SocketDataEvent> events = CreateEvents<std::string_view>(msg_splits);
 
-  parser_.Append(events[0]);
-  parser_.Append(events[1]);
+  AddEvent(events[0]);
+  AddEvent(events[1]);
   // Don't append last split, yet.
 
   std::deque<Message> parsed_messages;
-  ParseResult result = parser_.ParseFrames(MessageType::kResponse, &parsed_messages);
+  ParseResult result = ParseFrames(MessageType::kResponse, data_buffer_, &parsed_messages);
 
   ASSERT_EQ(ParseState::kNeedsMoreData, result.state);
   ASSERT_THAT(parsed_messages, ElementsAre(HTTPResp0ExpectedMessage(), HTTPResp1ExpectedMessage()));
 
-  BufferPosition position = result.end_position;
-  // This replicates the logic inside DataStream::AppendEvents(). We probably should move this test
-  // to test DataStream.
-  events[position.seq_num].msg.erase(0, position.offset);
+  data_buffer_.RemovePrefix(result.end_position);
 
-  // Now append the unprocessed remainder, including msg_splits[2].
-  for (size_t i = position.seq_num; i < events.size(); ++i) {
-    parser_.Append(events[i]);
-  }
+  // Now add last event.
+  AddEvent(events[2]);
 
-  result = parser_.ParseFrames(MessageType::kResponse, &parsed_messages);
+  result = ParseFrames(MessageType::kResponse, data_buffer_, &parsed_messages);
 
   ASSERT_EQ(ParseState::kSuccess, result.state);
   ASSERT_THAT(parsed_messages, ElementsAre(HTTPResp0ExpectedMessage(), HTTPResp1ExpectedMessage(),
@@ -671,6 +662,8 @@ TEST_P(HTTPParserTest, ParseHTTPResponsesWithLeftoverRepeatedly) {
   std::uniform_int_distribution<size_t> splitpoint_dist(0, msg.length());
 
   for (uint32_t j = 0; j < GetParam().iters; ++j) {
+    data_buffer_.Reset();
+
     // Choose two random split points for this iteration.
     std::vector<size_t> split_points;
     split_points.push_back(splitpoint_dist(rng));
@@ -682,22 +675,17 @@ TEST_P(HTTPParserTest, ParseHTTPResponsesWithLeftoverRepeatedly) {
     std::vector<SocketDataEvent> events = CreateEvents<std::string_view>(msg_splits);
 
     // Append and parse some--but not all--splits.
-    parser_.Append(events[0]);
-    parser_.Append(events[1]);
+    AddEvent(events[0]);
+    AddEvent(events[1]);
 
     std::deque<Message> parsed_messages;
-    ParseResult result1 = parser_.ParseFrames(MessageType::kResponse, &parsed_messages);
+    ParseResult result1 = ParseFrames(MessageType::kResponse, data_buffer_, &parsed_messages);
 
-    // Now append the unprocessed remainder, including msg_splits[2].
-    BufferPosition position = result1.end_position;
-    // This replicates the logic inside DataStream::AppendEvents(). We probably should move this
-    // test to test DataStream.
-    events[position.seq_num].msg.erase(0, position.offset);
+    data_buffer_.RemovePrefix(result1.end_position);
 
-    for (size_t i = position.seq_num; i < events.size(); ++i) {
-      parser_.Append(events[i]);
-    }
-    ParseResult result2 = parser_.ParseFrames(MessageType::kResponse, &parsed_messages);
+    // Now add msg_splits[2].
+    AddEvent(events[2]);
+    ParseResult result2 = ParseFrames(MessageType::kResponse, data_buffer_, &parsed_messages);
 
     ASSERT_EQ(ParseState::kSuccess, result2.state);
     ASSERT_THAT(parsed_messages,
@@ -822,14 +810,14 @@ TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessage) {
     std::string partial_http_get_req0(kHTTPGetReq0.substr(offset, kHTTPGetReq0.length()));
     std::vector<SocketDataEvent> events =
         CreateEvents<std::string_view>({partial_http_get_req0, kHTTPPostReq0, kHTTPGetReq1});
-    AppendEvents(events);
+    AddEvents(events);
 
     std::deque<Message> parsed_messages;
     ParseResult result =
-        parser_.ParseFrames(MessageType::kRequest, &parsed_messages, /* resync */ true);
+        ParseFrames(MessageType::kRequest, data_buffer_, &parsed_messages, /* resync */ true);
 
     EXPECT_EQ(ParseState::kSuccess, result.state);
-    EXPECT_THAT(parsed_messages,
+    ASSERT_THAT(parsed_messages,
                 ElementsAre(HTTPPostReq0ExpectedMessage(), HTTPGetReq1ExpectedMessage()));
   }
 }
@@ -840,11 +828,11 @@ TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessage) {
     std::string partial_http_resp0(kHTTPResp0.substr(offset, kHTTPResp0.length()));
     std::vector<SocketDataEvent> events =
         CreateEvents<std::string_view>({partial_http_resp0, kHTTPResp1, kHTTPResp2});
-    AppendEvents(events);
+    AddEvents(events);
 
     std::deque<Message> parsed_messages;
     ParseResult result =
-        parser_.ParseFrames(MessageType::kResponse, &parsed_messages, /* resync */ true);
+        ParseFrames(MessageType::kResponse, data_buffer_, &parsed_messages, /* resync */ true);
 
     EXPECT_EQ(ParseState::kSuccess, result.state);
     EXPECT_THAT(parsed_messages,
@@ -860,11 +848,11 @@ TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessageNoSync) {
   std::string partial_http_get_req0(kHTTPGetReq0.substr(offset, kHTTPGetReq0.length()));
   std::vector<SocketDataEvent> events =
       CreateEvents<std::string_view>({partial_http_get_req0, kHTTPPostReq0, kHTTPGetReq1});
-  AppendEvents(events);
+  AddEvents(events);
 
   std::deque<Message> parsed_messages;
   ParseResult result =
-      parser_.ParseFrames(MessageType::kRequest, &parsed_messages, /* resync */ false);
+      ParseFrames(MessageType::kRequest, data_buffer_, &parsed_messages, /* resync */ false);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages,
@@ -876,11 +864,11 @@ TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessageNoSync) {
   std::string partial_http_resp0(kHTTPResp0.substr(offset, kHTTPResp0.length()));
   std::vector<SocketDataEvent> events =
       CreateEvents<std::string_view>({partial_http_resp0, kHTTPResp1, kHTTPResp2});
-  AppendEvents(events);
+  AddEvents(events);
 
   std::deque<Message> parsed_messages;
   ParseResult result =
-      parser_.ParseFrames(MessageType::kResponse, &parsed_messages, /* resync */ false);
+      ParseFrames(MessageType::kResponse, data_buffer_, &parsed_messages, /* resync */ false);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(HTTPResp1ExpectedMessage(), HTTPResp2ExpectedMessage()));
@@ -901,17 +889,18 @@ TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessageWithSync) {
 
   std::vector<SocketDataEvent> events =
       CreateEvents<std::string_view>({kStuckInducingReq, kHTTPPostReq0, kHTTPGetReq1});
+  AddEvents(events);
 
   std::deque<Message> parsed_messages;
-  ParseResult<BufferPosition> result;
+  ParseResult result;
 
-  AppendEvents(events);
-  result = parser_.ParseFrames(MessageType::kRequest, &parsed_messages, /* resync */ false);
+  result = ParseFrames(MessageType::kRequest, data_buffer_, &parsed_messages, /* resync */ false);
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
   EXPECT_EQ(0, parsed_messages.size());
 
-  AppendEvents(events);
-  result = parser_.ParseFrames(MessageType::kRequest, &parsed_messages, /* resync */ true);
+  data_buffer_.RemovePrefix(result.end_position);
+
+  result = ParseFrames(MessageType::kRequest, data_buffer_, &parsed_messages, /* resync */ true);
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages,
               ElementsAre(HTTPPostReq0ExpectedMessage(), HTTPGetReq1ExpectedMessage()));
@@ -927,17 +916,18 @@ TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessageWithSync) {
 
   std::vector<SocketDataEvent> events =
       CreateEvents<std::string_view>({kStuckInducingResp, kHTTPResp1, kHTTPResp2});
+  AddEvents(events);
 
   std::deque<Message> parsed_messages;
-  ParseResult<BufferPosition> result;
+  ParseResult result;
 
-  AppendEvents(events);
-  result = parser_.ParseFrames(MessageType::kResponse, &parsed_messages, /* resync */ false);
+  result = ParseFrames(MessageType::kResponse, data_buffer_, &parsed_messages, /* resync */ false);
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
   EXPECT_EQ(0, parsed_messages.size());
 
-  AppendEvents(events);
-  result = parser_.ParseFrames(MessageType::kResponse, &parsed_messages, /* resync */ true);
+  data_buffer_.RemovePrefix(result.end_position);
+
+  result = ParseFrames(MessageType::kResponse, data_buffer_, &parsed_messages, /* resync */ true);
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(HTTPResp1ExpectedMessage(), HTTPResp2ExpectedMessage()));
 }

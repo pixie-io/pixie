@@ -5,23 +5,25 @@
 
 #include "src/common/base/base.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
-#include "src/stirling/source_connectors/socket_tracer/protocols/common/event_parser.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/common/data_stream_buffer.h"
 
 namespace pl {
 namespace stirling {
 namespace protocols {
 
-class EventParserTestWrapper {
+class DataStreamBufferTestWrapper {
  protected:
-  void AppendEvent(const SocketDataEvent& event) { parser_.Append(event); }
+  void AddEvent(const SocketDataEvent& event) {
+    data_buffer_.Add(event.attr.pos, event.msg, event.attr.timestamp_ns);
+  }
 
-  void AppendEvents(const std::vector<SocketDataEvent>& events) {
+  void AddEvents(const std::vector<SocketDataEvent>& events) {
     for (const auto& e : events) {
-      AppendEvent(e);
+      AddEvent(e);
     }
   }
 
-  EventParser parser_;
+  DataStreamBuffer data_buffer_;
 };
 
 template <typename TStrType>

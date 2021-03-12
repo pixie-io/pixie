@@ -227,17 +227,13 @@ constexpr uint8_t kRespFrame3[] = {
     0x65, 0x81, 0x8c, 0xc0, 0x2c, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00, 0x1d, 0x00, 0x04, 0x97,
     0x65, 0xc1, 0x8c, 0x00, 0x00, 0x29, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-class DNSParserTest : public ::testing::Test {
- protected:
-  EventParser parser_;
-};
+class DNSParserTest : public ::testing::Test {};
 
 TEST_F(DNSParserTest, BasicReq) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kQueryFrame));
 
   std::deque<Frame> frames;
-  ParseResult<size_t> parse_result =
-      parser_.ParseFramesLoop(MessageType::kRequest, frame_view, &frames);
+  ParseResult parse_result = ParseFramesLoop(MessageType::kRequest, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kSuccess);
   ASSERT_EQ(frames.size(), 1);
@@ -247,7 +243,8 @@ TEST_F(DNSParserTest, BasicReq) {
   EXPECT_EQ(frames[0].header.num_answers, 0);
   EXPECT_EQ(frames[0].header.num_auth, 0);
   EXPECT_EQ(frames[0].header.num_addl, 1);
-  EXPECT_EQ(frames[0].records.size(), 1);
+
+  ASSERT_EQ(frames[0].records.size(), 1);
   EXPECT_EQ(frames[0].records[0].name, "intellij-experiments.appspot.com");
   EXPECT_EQ(frames[0].records[0].addr.family, InetAddrFamily::kIPv4);
   EXPECT_EQ(frames[0].records[0].addr.AddrStr(), "0.0.0.0");
@@ -257,8 +254,7 @@ TEST_F(DNSParserTest, BasicResp) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kRespFrame));
 
   std::deque<Frame> frames;
-  ParseResult<size_t> parse_result =
-      parser_.ParseFramesLoop(MessageType::kResponse, frame_view, &frames);
+  ParseResult parse_result = ParseFramesLoop(MessageType::kResponse, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kSuccess);
   ASSERT_EQ(frames.size(), 1);
@@ -268,7 +264,8 @@ TEST_F(DNSParserTest, BasicResp) {
   EXPECT_EQ(frames[0].header.num_answers, 1);
   EXPECT_EQ(frames[0].header.num_auth, 0);
   EXPECT_EQ(frames[0].header.num_addl, 1);
-  EXPECT_EQ(frames[0].records.size(), 1);
+
+  ASSERT_EQ(frames[0].records.size(), 1);
   EXPECT_EQ(frames[0].records[0].name, "intellij-experiments.appspot.com");
   EXPECT_EQ(frames[0].records[0].addr.family, InetAddrFamily::kIPv4);
   EXPECT_EQ(frames[0].records[0].addr.AddrStr(), "216.58.194.180");
@@ -278,8 +275,7 @@ TEST_F(DNSParserTest, BasicReq2) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kReqFrame2));
 
   std::deque<Frame> frames;
-  ParseResult<size_t> parse_result =
-      parser_.ParseFramesLoop(MessageType::kResponse, frame_view, &frames);
+  ParseResult parse_result = ParseFramesLoop(MessageType::kResponse, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kSuccess);
   ASSERT_EQ(frames.size(), 1);
@@ -289,7 +285,8 @@ TEST_F(DNSParserTest, BasicReq2) {
   EXPECT_EQ(frames[0].header.num_answers, 0);
   EXPECT_EQ(frames[0].header.num_auth, 0);
   EXPECT_EQ(frames[0].header.num_addl, 0);
-  EXPECT_EQ(frames[0].records.size(), 1);
+
+  ASSERT_EQ(frames[0].records.size(), 1);
   EXPECT_EQ(frames[0].records[0].name, "www.yahoo.com");
   EXPECT_EQ(frames[0].records[0].addr.family, InetAddrFamily::kIPv4);
   EXPECT_EQ(frames[0].records[0].addr.AddrStr(), "0.0.0.0");
@@ -299,8 +296,7 @@ TEST_F(DNSParserTest, CNameAndMultipleResponses) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kRespFrame2));
 
   std::deque<Frame> frames;
-  ParseResult<size_t> parse_result =
-      parser_.ParseFramesLoop(MessageType::kResponse, frame_view, &frames);
+  ParseResult parse_result = ParseFramesLoop(MessageType::kResponse, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kSuccess);
   ASSERT_EQ(frames.size(), 1);
@@ -310,6 +306,7 @@ TEST_F(DNSParserTest, CNameAndMultipleResponses) {
   EXPECT_EQ(frames[0].header.num_answers, 5);
   EXPECT_EQ(frames[0].header.num_auth, 0);
   EXPECT_EQ(frames[0].header.num_addl, 0);
+
   ASSERT_EQ(frames[0].records.size(), 5);
 
   EXPECT_EQ(frames[0].records[0].name, "www.yahoo.com");
@@ -337,12 +334,11 @@ TEST_F(DNSParserTest, CNameAndMultipleResponses) {
   EXPECT_EQ(frames[0].records[4].cname, "");
 }
 
-TEST_F(DNSParserTest, Foo) {
+TEST_F(DNSParserTest, CNameAndMultipleResponses2) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kRespFrame3));
 
   std::deque<Frame> frames;
-  ParseResult<size_t> parse_result =
-      parser_.ParseFramesLoop(MessageType::kResponse, frame_view, &frames);
+  ParseResult parse_result = ParseFramesLoop(MessageType::kResponse, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kSuccess);
   ASSERT_EQ(frames.size(), 1);
@@ -385,8 +381,7 @@ TEST_F(DNSParserTest, IncompleteHeader) {
   auto frame_view = CreateStringView<char>(CharArrayStringView<uint8_t>(kIncompleteHeader));
 
   std::deque<Frame> frames;
-  ParseResult<size_t> parse_result =
-      parser_.ParseFramesLoop(MessageType::kRequest, frame_view, &frames);
+  ParseResult parse_result = ParseFramesLoop(MessageType::kRequest, frame_view, &frames);
 
   ASSERT_EQ(parse_result.state, ParseState::kInvalid);
 }
@@ -399,8 +394,7 @@ TEST_F(DNSParserTest, PartialRecords) {
     frame_view.remove_suffix(10);
 
     std::deque<Frame> frames;
-    ParseResult<size_t> parse_result =
-        parser_.ParseFramesLoop(MessageType::kRequest, frame_view, &frames);
+    ParseResult parse_result = ParseFramesLoop(MessageType::kRequest, frame_view, &frames);
 
     ASSERT_EQ(parse_result.state, ParseState::kSuccess);
   }
@@ -410,8 +404,7 @@ TEST_F(DNSParserTest, PartialRecords) {
     frame_view.remove_suffix(20);
 
     std::deque<Frame> frames;
-    ParseResult<size_t> parse_result =
-        parser_.ParseFramesLoop(MessageType::kRequest, frame_view, &frames);
+    ParseResult parse_result = ParseFramesLoop(MessageType::kRequest, frame_view, &frames);
 
     ASSERT_EQ(parse_result.state, ParseState::kInvalid);
   }
