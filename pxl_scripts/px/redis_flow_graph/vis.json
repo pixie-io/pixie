@@ -49,6 +49,30 @@
           }
         ]
       }
+    },
+    {
+      "outputName": "redis_summary_with_links",
+      "func": {
+        "name": "redis_summary_with_links",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          },
+          {
+            "name": "ns",
+            "variable": "namespace"
+          },
+          {
+            "name": "from_entity_filter",
+            "variable": "from_entity_filter"
+          },
+          {
+            "name": "to_entity_filter",
+            "variable": "to_entity_filter"
+          }
+        ]
+      }
     }
   ],
   "widgets": [
@@ -64,10 +88,15 @@
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.Graph",
         "adjacencyList": {
-          "fromColumn": "from_entity",
-          "toColumn": "to_entity"
+          "fromColumn": "source",
+          "toColumn": "destination"
         },
         "edgeWeightColumn": "request_throughput",
+        "edgeColorColumn": "latency_p90",
+        "edgeThresholds": {
+          "mediumThreshold": 100000000,
+          "highThreshold": 500000000
+        },
         "edgeHoverInfo": [
           "latency_p50",
           "latency_p90",
@@ -86,7 +115,7 @@
         "w": 12,
         "h": 4
       },
-      "globalFuncOutputName": "redis_flow",
+      "globalFuncOutputName": "redis_summary_with_links",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.Table"
       }

@@ -13,46 +13,97 @@ def redis_data(start: str, num_head: int):
 
     # redis_events.beta is a beta table, which is subject to change.
     df = px.DataFrame(table='redis_events.beta', start_time=start)
+    df = add_source_dest_columns(df)
 
-    # Calculate source and destination entities.
-    df = add_source_dest_columns(df, start)
+    # Filter source column.
+    # df = df[df.source == 'default/cartservice']
 
     # Restrict number of results.
     df = df.head(num_head)
 
-    return df['time_', 'source', 'destination', 'remote_port', 'cmd',
-              'cmd_args', 'resp', 'latency_ns']
+    df = add_source_dest_links(df, start)
+    df = df['time_', 'source', 'destination', 'remote_port', 'cmd',
+            'cmd_args', 'resp', 'latency_ns']
+
+    return df
 
 
-def add_source_dest_columns(df, start: str):
-    ''' Add request source and destination columns to protocol datasource table.
+def add_source_dest_columns(df):
+    ''' Adds source, destination columns to the dataframe.
 
-    @df: The input *_events table which should contain a `trace_role`,
-    `upid`, and `remote_addr` column.
+    @df: A DataFrame containing trace_role, upid, remote_addr columns.
 
-    Returns: Returns a DataFrame containing columns for the source
-    and destination entity for the protocol request.
+    Returns: The input DataFrame with source, destination, pod, namespace,
+    ra_pod, is_ra_pod columns added.
     '''
-    # Replace UPID with pod.
     df.pod = df.ctx['pod']
     df.namespace = df.ctx['namespace']
 
     # TODO: remove hack to get around PP-2445.
-    df.head(1000000000)
+    df = df.head(1000000000)
 
-    # If remote_addr entity is a pod, get its name. If not, keep IP address.
-    df.remote_addr_pod_name = px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_addr))
-    df.is_remote_addr_pod = px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_addr)) != ''
-    df.remote_addr_name = px.select(df.is_remote_addr_pod, df.remote_addr_pod_name, df.remote_addr)
-
-    # For client-side tracing (trace_role==1), server-side traceing (trace_role==2).
-    df.server_side_tracing = df.trace_role == 2
+    # If remote_addr is a pod, get its name. If not, use IP address.
+    df.ra_pod = px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_addr))
+    df.is_ra_pod = df.ra_pod != ''
+    df.ra_name = px.select(df.is_ra_pod, df.ra_pod, df.remote_addr)
 
     # Set source and destination based on trace_role.
-    df.destination = px.select(df.server_side_tracing, df.pod, df.remote_addr_name)
-    df.source = px.select(df.server_side_tracing, df.remote_addr_name, df.pod)
+    # Redis requests are traced server-side (trace_role==2),
+    # unless the client is outside of the cluster in which
+    # case the request is traced client-side (trace_role==1).
+    df.is_server_tracing = df.trace_role == 2
+    df.source = px.select(df.is_server_tracing, df.ra_name, df.pod)
+    df.destination = px.select(df.is_server_tracing, df.pod, df.ra_name)
 
-    df = df.drop(['server_side_tracing', 'remote_addr_pod_name', 'is_remote_addr_pod',
-                  'remote_addr_name'])
+    df = df.drop(['ra_name', 'is_server_tracing'])
+
+    return df
+
+
+def add_source_dest_links(df, start: str):
+    ''' Adds source, destination columns with script reference links to the dataframe.
+
+    @df: A DataFrame containing source, destination, pod, namespace,
+    remote_addr, ra_pod, is_ra_pod columns.
+
+    Returns: The input DataFrame with script references added to the
+    source, destinaton columns..
+    '''
+
+    # Create script reference links to various remote_addr options.
+    df.ra_pod_link = px.script_reference(df.source, 'px/pod', {
+        'start_time': start,
+        'pod': df.ra_pod
+    })
+    df.ra_link_source = px.script_reference(df.remote_addr, 'px/net_flow_graph', {
+        'start_time': start,
+        'namespace': df.namespace,
+        'from_entity_filter': df.remote_addr,
+        'to_entity_filter': '',
+        'throughput_filter': '0.0'
+    })
+    df.ra_link_dest = px.script_reference(df.remote_addr, 'px/net_flow_graph', {
+        'start_time': start,
+        'namespace': df.namespace,
+        'from_entity_filter': '',
+        'to_entity_filter': df.remote_addr,
+        'throughput_filter': '0.0'
+    })
+
+    # If remote_addr is a pod, get its name. If not, use IP address.
+    df.ra_name_link_source = px.select(df.is_ra_pod, df.ra_pod_link, df.ra_link_source)
+    df.ra_name_link_dest = px.select(df.is_ra_pod, df.ra_pod_link, df.ra_link_dest)
+
+    # Set source and destination based on trace_role.
+    df.pod_link = px.script_reference(df.pod, 'px/pod', {
+        'start_time': start,
+        'pod': df.pod
+    })
+    df.is_server_tracing = df.trace_role == 2
+    df.source = px.select(df.is_server_tracing, df.ra_name_link_source, df.pod_link)
+    df.destination = px.select(df.is_server_tracing, df.pod_link, df.ra_name_link_dest)
+
+    df = df.drop(['ra_pod_link', 'ra_link_source', 'ra_link_dest', 'ra_name_link_source',
+                  'ra_name_link_dest', 'pod_link', 'is_server_tracing'])
 
     return df

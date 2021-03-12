@@ -2,6 +2,7 @@
 # Licensed under the Apache License, Version 2.0 (the "License")
 
 ''' Redis Overview Map
+
 Shows a graph of Redis requests in the cluster, with some latency information.
 '''
 
@@ -15,33 +16,37 @@ window_ns = px.DurationNanos(10 * ns_per_s)
 
 def redis_flow_graph(start: str, ns: px.Namespace, from_entity_filter: str, to_entity_filter: str):
 
+    # redis_events.beta is a beta table, which is subject to change.
     df = px.DataFrame('redis_events.beta', start_time=start)
-    df.pod = df.ctx['pod']
-    df.namespace = df.ctx['namespace']
-    df = df.drop(['upid'])
+    df = add_source_dest_columns(df)
 
     # Filter on namespace as specified by the user.
     df = df[df.namespace == ns]
 
+    # Filter out messages with empty source / destination.
+    df = df[df.source != '']
+    df = df[df.destination != '']
+
+    # Filter out entities as specified by the user.
+    df = df[px.contains(df.source, from_entity_filter)]
+    df = df[px.contains(df.destination, to_entity_filter)]
+
     # Create 10 ns bin for time_ column
     df.timestamp = px.bin(df.time_, window_ns)
 
-    # Aggregate the connections by timestamp.
-    df = df.groupby(['timestamp', 'remote_addr', 'pod']).agg(
+    df = df.groupby(['timestamp', 'source', 'destination', 'namespace', 'trace_role',
+                     'pod', 'remote_addr', 'is_ra_pod', 'ra_pod']).agg(
         latency_quantiles=('latency_ns', px.quantiles),
         throughput_total=('latency_ns', px.count),
     )
+
     df.latency_p50 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p50')))
     df.latency_p90 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p90')))
     df.latency_p99 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p99')))
-
-    # Specify to and from entities.
-    df = df[df.remote_addr != '']
-    df.to_entity = df.pod
-    df.from_entity = px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_addr))
-
     df.request_throughput = df.throughput_total / window_ns
-    df = df.groupby(['from_entity', 'to_entity']).agg(
+
+    df = df.groupby(['source', 'destination', 'namespace', 'trace_role', 'pod', 'remote_addr',
+                     'is_ra_pod', 'ra_pod']).agg(
         latency_p50=('latency_p50', px.mean),
         latency_p90=('latency_p90', px.mean),
         latency_p99=('latency_p99', px.mean),
@@ -49,18 +54,96 @@ def redis_flow_graph(start: str, ns: px.Namespace, from_entity_filter: str, to_e
         throughput_total=('throughput_total', px.sum)
     )
 
-    # Filter out entities as specified by the user.
-    df = df[px.contains(df.from_entity, from_entity_filter)]
-    df = df[px.contains(df.to_entity, to_entity_filter)]
+    return df
 
-    # Add link to go to px/redis_stats script for the specific pod.
-    df.to_entity_stats = px.script_reference('Redis Pod Stats', 'px/redis_stats', {
+
+def redis_summary_with_links(start: str, ns: px.Namespace, from_entity_filter: str, to_entity_filter: str):
+
+    df = redis_flow_graph(start, ns, from_entity_filter, to_entity_filter)
+
+    df = add_source_dest_links(df, start)
+    df = df['source', 'destination', 'latency_p50', 'latency_p90',
+            'latency_p99', 'request_throughput', 'throughput_total']
+
+    return df
+
+
+def add_source_dest_columns(df):
+    ''' Adds source, destination columns to the dataframe.
+
+    @df: A DataFrame containing trace_role, upid, remote_addr columns.
+
+    Returns: The input DataFrame with source, destination, pod, namespace,
+    ra_pod, is_ra_pod columns added.
+    '''
+    df.pod = df.ctx['pod']
+    df.namespace = df.ctx['namespace']
+
+    # TODO: remove hack to get around PP-2445.
+    df = df.head(1000000000)
+
+    # If remote_addr is a pod, get its name. If not, use IP address.
+    df.ra_pod = px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_addr))
+    df.is_ra_pod = df.ra_pod != ''
+    df.ra_name = px.select(df.is_ra_pod, df.ra_pod, df.remote_addr)
+
+    # Set source and destination based on trace_role.
+    # Redis requests are traced server-side (trace_role==2),
+    # unless the client is outside of the cluster in which
+    # case the request is traced client-side (trace_role==1).
+    df.is_server_tracing = df.trace_role == 2
+    df.source = px.select(df.is_server_tracing, df.ra_name, df.pod)
+    df.destination = px.select(df.is_server_tracing, df.pod, df.ra_name)
+
+    df = df.drop(['ra_name', 'is_server_tracing'])
+
+    return df
+
+
+def add_source_dest_links(df, start: str):
+    ''' Adds source, destination columns with script reference links to the dataframe.
+
+    @df: A DataFrame containing source, destination, pod, namespace,
+    remote_addr, ra_pod, is_ra_pod columns.
+
+    Returns: The input DataFrame with script references added to the
+    source, destinaton columns..
+    '''
+
+    # Create script reference links to various remote_addr options.
+    df.ra_pod_link = px.script_reference(df.source, 'px/pod', {
         'start_time': start,
-        'pod': df.to_entity
+        'pod': df.ra_pod
+    })
+    df.ra_link_source = px.script_reference(df.remote_addr, 'px/net_flow_graph', {
+        'start_time': start,
+        'namespace': df.namespace,
+        'from_entity_filter': df.remote_addr,
+        'to_entity_filter': '',
+        'throughput_filter': '0.0'
+    })
+    df.ra_link_dest = px.script_reference(df.remote_addr, 'px/net_flow_graph', {
+        'start_time': start,
+        'namespace': df.namespace,
+        'from_entity_filter': '',
+        'to_entity_filter': df.remote_addr,
+        'throughput_filter': '0.0'
     })
 
-    # Reorder table columns.
-    df = df['from_entity', 'to_entity', 'to_entity_stats', 'latency_p50',
-            'latency_p90', 'latency_p99', 'request_throughput', 'throughput_total']
+    # If remote_addr is a pod, get its name. If not, use IP address.
+    df.ra_name_link_source = px.select(df.is_ra_pod, df.ra_pod_link, df.ra_link_source)
+    df.ra_name_link_dest = px.select(df.is_ra_pod, df.ra_pod_link, df.ra_link_dest)
+
+    # Set source and destination based on trace_role.
+    df.pod_link = px.script_reference(df.pod, 'px/pod', {
+        'start_time': start,
+        'pod': df.pod
+    })
+    df.is_server_tracing = df.trace_role == 2
+    df.source = px.select(df.is_server_tracing, df.ra_name_link_source, df.pod_link)
+    df.destination = px.select(df.is_server_tracing, df.pod_link, df.ra_name_link_dest)
+
+    df = df.drop(['ra_pod_link', 'ra_link_source', 'ra_link_dest', 'ra_name_link_source',
+                  'ra_name_link_dest', 'pod_link', 'is_server_tracing'])
 
     return df
