@@ -3,7 +3,7 @@
 
 ''' Redis Data Tracer
 
-This script traces all Redis data on the cluster.
+Shows the most recent Redis messages in the cluster.
 '''
 
 import px
@@ -22,19 +22,23 @@ def redis_data(start: str, num_head: int):
     df = df.head(num_head)
 
     df = add_source_dest_links(df, start)
-    df = df['time_', 'source', 'destination', 'remote_port', 'cmd',
-            'cmd_args', 'resp', 'latency_ns']
+    df = df[['time_', 'source', 'destination', 'remote_port', 'cmd',
+            'cmd_args', 'resp', 'latency_ns']]
 
     return df
 
 
 def add_source_dest_columns(df):
-    ''' Adds source, destination columns to the dataframe.
+    ''' Add source and destination columns for the Redis request.
 
-    @df: A DataFrame containing trace_role, upid, remote_addr columns.
+    Redis requests are traced server-side (trace_role==2), unless the server is
+    outside of the cluster in which case the request is traced client-side (trace_role==1).
 
-    Returns: The input DataFrame with source, destination, pod, namespace,
-    is_source_pod_type, is_dest_pod_type columns added.
+    When trace_role==2, the Redis request source is the remote_addr column
+    and destination is the pod column. When trace_role==1, the Redis request
+    source is the pod column and the destination is the remote_addr column.
+
+    Input DataFrame must contain trace_role, upid, remote_addr columns.
     '''
     df.pod = df.ctx['pod']
     df.namespace = df.ctx['namespace']
@@ -52,11 +56,12 @@ def add_source_dest_columns(df):
     df.is_dest_pod_type = px.select(df.is_server_tracing, True, df.is_ra_pod)
 
     # Set source and destination based on trace_role.
-    # Redis requests are traced server-side (trace_role==2),
-    # unless the server is outside of the cluster in which
-    # case the request is traced client-side (trace_role==1).
     df.source = px.select(df.is_server_tracing, df.ra_name, df.pod)
     df.destination = px.select(df.is_server_tracing, df.pod, df.ra_name)
+
+    # Filter out messages with empty source / destination.
+    df = df[df.source != '']
+    df = df[df.destination != '']
 
     df = df.drop(['ra_pod', 'is_ra_pod', 'ra_name', 'is_server_tracing'])
 
@@ -64,17 +69,16 @@ def add_source_dest_columns(df):
 
 
 def add_source_dest_links(df, start: str):
-    ''' Adds source, destination columns with script reference links to the DataFrame.
+    ''' Modifies the source and destination columns to display deeplinks in the UI.
+    Clicking on a pod name in either column will run the px/pod script for that pod.
+    Clicking on an IP address, will run the px/net_flow_graph script showing all
+    network connections to/from that address.
 
-    @df: A DataFrame containing source, destination, is_source_pod_type,
-    is_dest_pod_type, namespace columns.
-    @start: The timestamp of data to start at.
-
-    Returns: The input DataFrame with script references added to the source,
-    destinaton columns.
+    Input DataFrame must contain source, destination, is_source_pod_type,
+    is_dest_pod_type, and namespace columns.
     '''
 
-    # If source is a pod, link to px/pod. If an IP addr, link to px/net_flow_graph.
+    # Source linking. If source is a pod, link to px/pod. If an IP addr, link to px/net_flow_graph.
     df.src_pod_link = px.script_reference(df.source, 'px/pod', {
         'start_time': start,
         'pod': df.source
