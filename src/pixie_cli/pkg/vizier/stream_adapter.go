@@ -25,6 +25,7 @@ import (
 // StreamWriterFactorFunc is a stream writer factory.
 type StreamWriterFactorFunc = func(md *public_vizierapipb.ExecuteScriptResponse_MetaData) components.OutputStreamWriter
 
+// TableInfo contains the information about a table.
 type TableInfo struct {
 	w          components.OutputStreamWriter
 	ID         string
@@ -32,14 +33,15 @@ type TableInfo struct {
 	timeColIdx int
 }
 
-type VizierExecData struct {
+// ExecData contains information from script executions.
+type ExecData struct {
 	Resp      *public_vizierapipb.ExecuteScriptResponse
 	ClusterID uuid.UUID
 	Err       error
 }
 
-// VizierStreamOutputAdapter adapts the vizier output to the StreamWriters.
-type VizierStreamOutputAdapter struct {
+// StreamOutputAdapter adapts the vizier output to the StreamWriters.
+type StreamOutputAdapter struct {
 	tableNameToInfo     map[string]*TableInfo
 	execStats           *public_vizierapipb.QueryExecutionStats
 	streamWriterFactory StreamWriterFactorFunc
@@ -65,14 +67,15 @@ var (
 	ErrDuplicateMetadata = errors.New("duplicate table metadata received")
 )
 
+// FormatInMemory denotes the inmemory format.
 const FormatInMemory string = "inmemory"
 
-// NewVizierStreamOutputAdapter creates a new vizier output adapter.
-func NewVizierStreamOutputAdapterWithFactory(ctx context.Context, stream chan *VizierExecData, format string,
-	factoryFunc func(*public_vizierapipb.ExecuteScriptResponse_MetaData) components.OutputStreamWriter) *VizierStreamOutputAdapter {
+// NewStreamOutputAdapterWithFactory creates a new vizier output adapter factory.
+func NewStreamOutputAdapterWithFactory(ctx context.Context, stream chan *ExecData, format string,
+	factoryFunc func(*public_vizierapipb.ExecuteScriptResponse_MetaData) components.OutputStreamWriter) *StreamOutputAdapter {
 	enableFormat := format != "json" && format != FormatInMemory
 
-	adapter := &VizierStreamOutputAdapter{
+	adapter := &StreamOutputAdapter{
 		tableNameToInfo:     make(map[string]*TableInfo),
 		streamWriterFactory: factoryFunc,
 		format:              format,
@@ -88,16 +91,16 @@ func NewVizierStreamOutputAdapterWithFactory(ctx context.Context, stream chan *V
 
 }
 
-// NewVizierStreamOutputAdapter creates a new vizier output adapter.
-func NewVizierStreamOutputAdapter(ctx context.Context, stream chan *VizierExecData, format string) *VizierStreamOutputAdapter {
+// NewStreamOutputAdapter creates a new vizier output adapter.
+func NewStreamOutputAdapter(ctx context.Context, stream chan *ExecData, format string) *StreamOutputAdapter {
 	factoryFunc := func(md *public_vizierapipb.ExecuteScriptResponse_MetaData) components.OutputStreamWriter {
 		return components.CreateStreamWriter(format, os.Stdout)
 	}
-	return NewVizierStreamOutputAdapterWithFactory(ctx, stream, format, factoryFunc)
+	return NewStreamOutputAdapterWithFactory(ctx, stream, format, factoryFunc)
 }
 
 // Finish must be called to wait for the output and flush all the data.
-func (v *VizierStreamOutputAdapter) Finish() error {
+func (v *StreamOutputAdapter) Finish() error {
 	v.wg.Wait()
 
 	if v.err != nil {
@@ -111,7 +114,7 @@ func (v *VizierStreamOutputAdapter) Finish() error {
 }
 
 // WaitForCompletion waits for the stream to complete, but does not flush the data.
-func (v *VizierStreamOutputAdapter) WaitForCompletion() error {
+func (v *StreamOutputAdapter) WaitForCompletion() error {
 	v.wg.Wait()
 	if v.err != nil {
 		return v.err
@@ -120,7 +123,7 @@ func (v *VizierStreamOutputAdapter) WaitForCompletion() error {
 }
 
 // ExecStats returns the reported execution stats. This function is only valid with format = inmemory and after Finish.
-func (v *VizierStreamOutputAdapter) ExecStats() (*public_vizierapipb.QueryExecutionStats, error) {
+func (v *StreamOutputAdapter) ExecStats() (*public_vizierapipb.QueryExecutionStats, error) {
 	if v.execStats == nil {
 		return nil, fmt.Errorf("ExecStats not found")
 	}
@@ -128,7 +131,7 @@ func (v *VizierStreamOutputAdapter) ExecStats() (*public_vizierapipb.QueryExecut
 }
 
 // MutationInfo returns the mutation info. This function is only valid after Finish.
-func (v *VizierStreamOutputAdapter) MutationInfo() (*public_vizierapipb.MutationInfo, error) {
+func (v *StreamOutputAdapter) MutationInfo() (*public_vizierapipb.MutationInfo, error) {
 	if v.mutationInfo == nil {
 		return nil, fmt.Errorf("MutationInfo not found")
 	}
@@ -136,7 +139,7 @@ func (v *VizierStreamOutputAdapter) MutationInfo() (*public_vizierapipb.Mutation
 }
 
 // Views gets all the accumulated views. This function is only valid with format = inmemory and after Finish.
-func (v *VizierStreamOutputAdapter) Views() ([]components.TableView, error) {
+func (v *StreamOutputAdapter) Views() ([]components.TableView, error) {
 	if v.err != nil {
 		return nil, v.err
 	}
@@ -157,7 +160,7 @@ func (v *VizierStreamOutputAdapter) Views() ([]components.TableView, error) {
 }
 
 // Formatters gets all the data formatters. This function is only valid with format = inmemory and after Finish.
-func (v *VizierStreamOutputAdapter) Formatters() ([]DataFormatter, error) {
+func (v *StreamOutputAdapter) Formatters() ([]DataFormatter, error) {
 	if v.err != nil {
 		return nil, v.err
 	}
@@ -172,7 +175,7 @@ func (v *VizierStreamOutputAdapter) Formatters() ([]DataFormatter, error) {
 	return formatters, nil
 }
 
-func (v *VizierStreamOutputAdapter) handleStream(ctx context.Context, stream chan *VizierExecData) {
+func (v *StreamOutputAdapter) handleStream(ctx context.Context, stream chan *ExecData) {
 	defer v.wg.Done()
 	for {
 		select {
@@ -241,7 +244,7 @@ func (v *VizierStreamOutputAdapter) handleStream(ctx context.Context, stream cha
 }
 
 // TotalBytes returns the total bytes of messages passed to this adapter.
-func (v *VizierStreamOutputAdapter) TotalBytes() int {
+func (v *StreamOutputAdapter) TotalBytes() int {
 	return v.totalBytes
 }
 
@@ -265,7 +268,7 @@ func getNumRows(in *public_vizierapipb.Column) int {
 }
 
 // getNativeTypedValue returns the plucked data as a Go not public_vizierapipb type.
-func (v *VizierStreamOutputAdapter) getNativeTypedValue(tableInfo *TableInfo, rowIdx int, colIdx int, data interface{}) interface{} {
+func (v *StreamOutputAdapter) getNativeTypedValue(tableInfo *TableInfo, rowIdx int, colIdx int, data interface{}) interface{} {
 	switch u := data.(type) {
 	case *public_vizierapipb.Column_StringData:
 		s := u.StringData.Data[rowIdx]
@@ -283,9 +286,8 @@ func (v *VizierStreamOutputAdapter) getNativeTypedValue(tableInfo *TableInfo, ro
 		// to int64. We need to maintain types in the engine/compiler so that proper type casting can be done.
 		if colIdx == tableInfo.timeColIdx {
 			return time.Unix(0, u.Int64Data.Data[rowIdx])
-		} else {
-			return u.Int64Data.Data[rowIdx]
 		}
+		return u.Int64Data.Data[rowIdx]
 	case *public_vizierapipb.Column_Time64NsData:
 		return time.Unix(0, u.Time64NsData.Data[rowIdx])
 	case *public_vizierapipb.Column_BooleanData:
@@ -302,7 +304,7 @@ func (v *VizierStreamOutputAdapter) getNativeTypedValue(tableInfo *TableInfo, ro
 	return nil
 }
 
-func (v *VizierStreamOutputAdapter) parseError(ctx context.Context, s *public_vizierapipb.Status) error {
+func (v *StreamOutputAdapter) parseError(ctx context.Context, s *public_vizierapipb.Status) error {
 	var compilerErrors []string
 	if s.ErrorDetails != nil {
 		for _, ed := range s.ErrorDetails {
@@ -327,16 +329,16 @@ func (v *VizierStreamOutputAdapter) parseError(ctx context.Context, s *public_vi
 	return newScriptExecutionError(CodeUnknown, "Script execution error:"+s.Message)
 }
 
-func (v *VizierStreamOutputAdapter) handleExecutionStats(ctx context.Context, es *public_vizierapipb.QueryExecutionStats) error {
+func (v *StreamOutputAdapter) handleExecutionStats(ctx context.Context, es *public_vizierapipb.QueryExecutionStats) error {
 	v.execStats = es
 	return nil
 }
 
-func (v *VizierStreamOutputAdapter) handleMutationInfo(ctx context.Context, mi *public_vizierapipb.MutationInfo) {
+func (v *StreamOutputAdapter) handleMutationInfo(ctx context.Context, mi *public_vizierapipb.MutationInfo) {
 	v.mutationInfo = mi
 }
 
-func (v *VizierStreamOutputAdapter) handleData(ctx context.Context, d *public_vizierapipb.ExecuteScriptResponse_Data) error {
+func (v *StreamOutputAdapter) handleData(ctx context.Context, d *public_vizierapipb.ExecuteScriptResponse_Data) error {
 	if d.Data.ExecutionStats != nil {
 		err := v.handleExecutionStats(ctx, d.Data.ExecutionStats)
 		if err != nil {
@@ -385,7 +387,7 @@ func (v *VizierStreamOutputAdapter) handleData(ctx context.Context, d *public_vi
 	return nil
 }
 
-func (v *VizierStreamOutputAdapter) handleMetadata(ctx context.Context, md *public_vizierapipb.ExecuteScriptResponse_MetaData) error {
+func (v *StreamOutputAdapter) handleMetadata(ctx context.Context, md *public_vizierapipb.ExecuteScriptResponse_MetaData) error {
 	tableName := md.MetaData.Name
 	newWriter := v.streamWriterFactory(md)
 

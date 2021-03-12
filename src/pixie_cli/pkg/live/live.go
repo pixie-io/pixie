@@ -247,7 +247,7 @@ func (v *View) runScript(execScript *script.ExecutableScript) {
 		v.execCompleteWithError(err)
 		return
 	}
-	tw := vizier.NewVizierStreamOutputAdapter(ctx, resp, vizier.FormatInMemory)
+	tw := vizier.NewStreamOutputAdapter(ctx, resp, vizier.FormatInMemory)
 	err = tw.Finish()
 	if err != nil {
 		v.execCompleteWithError(err)

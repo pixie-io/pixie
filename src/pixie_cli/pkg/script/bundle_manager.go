@@ -122,7 +122,7 @@ func NewBundleManager(bundleFiles []string) (*BundleManager, error) {
 	return NewBundleManagerWithOrgName(bundleFiles, authInfo.OrgName)
 }
 
-// GetScriptMetadata returns metadata about available scripts.
+// GetScripts returns metadata about available scripts.
 func (b BundleManager) GetScripts() []*ExecutableScript {
 	s := make([]*ExecutableScript, 0)
 	i := 0
@@ -138,7 +138,7 @@ func (b BundleManager) GetScripts() []*ExecutableScript {
 	return s
 }
 
-// GetOrderedScriptMetadata returns metadata about available scripts ordered by the name of the script.
+// GetOrderedScripts returns metadata about available scripts ordered by the name of the script.
 func (b BundleManager) GetOrderedScripts() []*ExecutableScript {
 	s := b.GetScripts()
 	sort.Slice(s, func(i, j int) bool {

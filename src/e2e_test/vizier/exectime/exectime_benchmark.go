@@ -147,7 +147,7 @@ func executeScript(v []*vizier.Connector, execScript *script.ExecutableScript) (
 	}
 
 	// Accumulate the streamed data and block until all data is received.
-	tw := vizier.NewVizierStreamOutputAdapter(ctx, resp, "inmemory")
+	tw := vizier.NewStreamOutputAdapter(ctx, resp, vizier.FormatInMemory)
 	err = tw.Finish()
 
 	// Calculate the execution time.

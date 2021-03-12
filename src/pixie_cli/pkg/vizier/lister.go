@@ -46,9 +46,7 @@ func selectVizierOrProxy(vizierAddr string) (string, error) {
 	case a := <-selectedAddr:
 		cancel()
 		return a, nil
-
 	}
-	return "", errors.New("Cannot contact vizier")
 }
 
 // Lister allows fetching information about Viziers from the cloud.

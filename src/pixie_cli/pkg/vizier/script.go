@@ -149,19 +149,19 @@ func RunScriptAndOutputResults(ctx context.Context, conns []*Connector, execScri
 	return err
 }
 
-func runScript(ctx context.Context, conns []*Connector, execScript *script.ExecutableScript, format string) (*VizierStreamOutputAdapter, error) {
+func runScript(ctx context.Context, conns []*Connector, execScript *script.ExecutableScript, format string) (*StreamOutputAdapter, error) {
 	resp, err := RunScript(ctx, conns, execScript)
 	if err != nil {
 		return nil, err
 	}
 
-	tw := NewVizierStreamOutputAdapter(ctx, resp, format)
+	tw := NewStreamOutputAdapter(ctx, resp, format)
 	err = tw.WaitForCompletion()
 	return tw, err
 }
 
 // RunScript runs the script and return the data channel
-func RunScript(ctx context.Context, conns []*Connector, execScript *script.ExecutableScript) (chan *VizierExecData, error) {
+func RunScript(ctx context.Context, conns []*Connector, execScript *script.ExecutableScript) (chan *ExecData, error) {
 	// TODO(zasgar): Refactor this when we change to the new API to make analytics cleaner.
 	_ = pxanalytics.Client().Enqueue(&analytics.Track{
 		UserId: pxconfig.Cfg().UniqueClientID,
@@ -171,7 +171,7 @@ func RunScript(ctx context.Context, conns []*Connector, execScript *script.Execu
 			Set("scriptString", execScript.ScriptString),
 	})
 
-	mergedResponses := make(chan *VizierExecData)
+	mergedResponses := make(chan *ExecData)
 	var eg errgroup.Group
 
 	for _, conn := range conns {

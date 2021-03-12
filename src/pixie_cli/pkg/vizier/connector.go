@@ -196,7 +196,7 @@ func containsMutation(script *script.ExecutableScript) bool {
 }
 
 // ExecuteScriptStream execute a vizier query as a stream.
-func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.ExecutableScript) (chan *VizierExecData, error) {
+func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.ExecutableScript) (chan *ExecData, error) {
 	scriptStr := strings.TrimSpace(script.ScriptString)
 	if len(scriptStr) == 0 {
 		return nil, errors.New("input query is empty")
@@ -230,7 +230,7 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.Exec
 		return nil, err
 	}
 
-	results := make(chan *VizierExecData)
+	results := make(chan *ExecData)
 	go func() {
 		for {
 			select {
@@ -240,7 +240,7 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.Exec
 				return
 			default:
 				msg, err := resp.Recv()
-				results <- &VizierExecData{ClusterID: c.id, Resp: msg, Err: err}
+				results <- &ExecData{ClusterID: c.id, Resp: msg, Err: err}
 				if err != nil || msg == nil {
 					close(results)
 					return
@@ -252,6 +252,7 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.Exec
 	return results, nil
 }
 
+// DebugLogResponse contains information about debug logs.
 type DebugLogResponse struct {
 	Data string
 	Err  error

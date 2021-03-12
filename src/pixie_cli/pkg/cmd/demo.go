@@ -233,7 +233,7 @@ func deployCmd(cmd *cobra.Command, args []string) {
 	yamls, err := downloadDemoAppYAMLs(appName, viper.GetString("artifacts"))
 	if err != nil {
 		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
-		log.WithError(err).Fatal("Could not download demo yaml apps for app '%s'", appName)
+		log.WithError(err).Fatalf("Could not download demo yaml apps for app '%s'", appName)
 	}
 
 	kubeAPIConfig := k8s.GetClientAPIConfig()
