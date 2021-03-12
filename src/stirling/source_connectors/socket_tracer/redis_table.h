@@ -16,20 +16,15 @@ static constexpr DataElement kRedisElements[] = {
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
         canonical_data_elements::kTraceRole,
-        {"cmd", "Request command. Could be one of https://redis.io/commands.",
+        {"req_cmd", "Request command. See https://redis.io/commands.",
          types::DataType::STRING,
          types::SemanticType::ST_NONE,
          types::PatternType::GENERAL},
-        {"cmd_args", "Request Command arguments sent from client to server. Parsing follows "
-                "the official spec (https://redis.io/topics/protocol). "
-                "1) Strings and error messages are quoted with \"; "
-                "2) Arrays are braced in [ ], whose elements are separated by ','; NULL arrays "
-                "are represented as [NULL] without quotations; "
-                "3) NULL values are represented as <NULL> without quotations.",
+        {"req_args", "Request command arguments.",
          types::DataType::STRING,
          types::SemanticType::ST_NONE,
          types::PatternType::GENERAL},
-        {"resp", "Response message sent from server to client. The format is identical to 'REQ'.",
+        {"resp", "Response message.",
          types::DataType::STRING,
          types::SemanticType::ST_NONE,
          types::PatternType::GENERAL},
@@ -44,13 +39,12 @@ static constexpr DataElement kRedisElements[] = {
 // clang-format on
 
 static constexpr auto kRedisTable =
-    // TODO(yzhao): Remove .beta suffix after initial testing.
-    DataTableSchema("redis_events.beta", "Redis request-response pair events", kRedisElements,
+    DataTableSchema("redis_events", "Redis request-response pair events", kRedisElements,
                     std::chrono::milliseconds{100}, std::chrono::milliseconds{1000});
 
 constexpr int kRedisUPIDIdx = kRedisTable.ColIndex("upid");
-constexpr int kRedisCmdIdx = kRedisTable.ColIndex("cmd");
-constexpr int kRedisReqIdx = kRedisTable.ColIndex("cmd_args");
+constexpr int kRedisCmdIdx = kRedisTable.ColIndex("req_cmd");
+constexpr int kRedisReqIdx = kRedisTable.ColIndex("req_args");
 constexpr int kRedisRespIdx = kRedisTable.ColIndex("resp");
 
 }  // namespace stirling

@@ -707,8 +707,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   } else {
     r.Append<r.ColIndex("trace_role")>(conn_tracker.traffic_class().role);
   }
-  r.Append<r.ColIndex("cmd")>(std::string(entry.req.command));
-  r.Append<r.ColIndex("cmd_args")>(std::string(entry.req.payload));
+  r.Append<r.ColIndex("req_cmd")>(std::string(entry.req.command));
+  r.Append<r.ColIndex("req_args")>(std::string(entry.req.payload));
   r.Append<r.ColIndex("resp")>(std::string(entry.resp.payload));
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
