@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["yamls.go"],
-    importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/artifacts",
+    importpath = "pixielabs.ai/pixielabs/src/utils/shared/artifacts",
     visibility = ["//visibility:public"],
     deps = [
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",

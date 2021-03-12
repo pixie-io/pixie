@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"strings"
 
@@ -10,7 +9,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"google.golang.org/grpc/metadata"
 
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/auth"
@@ -125,13 +123,7 @@ func getAPIKeyClientAndContext(cloudAddr string) (cloudapipb.APIKeyManagerClient
 	// Get client for apiKeyMgr.
 	apiKeyMgr := cloudapipb.NewAPIKeyManagerClient(cloudConn)
 
-	creds, err := auth.MustLoadDefaultCredentials()
-	if err != nil {
-		return nil, nil, err
-	}
-	ctxWithCreds := metadata.AppendToOutgoingContext(context.Background(), "authorization",
-		fmt.Sprintf("bearer %s", creds.Token))
-
+	ctxWithCreds := auth.CtxWithCreds(context.Background())
 	return apiKeyMgr, ctxWithCreds, nil
 }
 

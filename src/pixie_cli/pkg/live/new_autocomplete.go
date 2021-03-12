@@ -7,7 +7,6 @@ import (
 
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
-	"google.golang.org/grpc/metadata"
 
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/auth"
@@ -442,13 +441,7 @@ func (a *cloudAutocompleter) GetSuggestions(input string, cursor int, action clo
 		Action:    action,
 	}
 
-	creds, err := auth.LoadDefaultCredentials()
-	if err != nil {
-		return nil, nil, false, err
-	}
-	ctxWithCreds := metadata.AppendToOutgoingContext(context.Background(), "authorization",
-		fmt.Sprintf("bearer %s", creds.Token))
-
+	ctxWithCreds := auth.CtxWithCreds(context.Background())
 	resp, err := a.client.Autocomplete(ctxWithCreds, req)
 	if err != nil {
 		return nil, nil, false, err

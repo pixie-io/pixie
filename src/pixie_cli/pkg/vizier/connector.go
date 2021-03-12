@@ -11,10 +11,11 @@ import (
 	"time"
 
 	uuid "github.com/satori/go.uuid"
-	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/auth"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	vispb "pixielabs.ai/pixielabs/src/shared/vispb"
@@ -215,12 +216,7 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.Exec
 	}
 
 	if c.passthroughEnabled {
-		var err error
-		ctx, err = ctxWithCreds(ctx)
-		if err != nil {
-			// TODO(nserrino): refactor so that Sentry doesn't grab this error as an event.
-			log.WithError(err).Fatalln("Failed to get credentials")
-		}
+		ctx = auth.CtxWithCreds(ctx)
 	} else {
 		ctx = ctxWithTokenCreds(ctx, c.vzToken)
 	}
@@ -267,12 +263,7 @@ func (c *Connector) DebugLogRequest(ctx context.Context, podName string, prev bo
 		Container: container,
 	}
 	if c.passthroughEnabled {
-		var err error
-		ctx, err = ctxWithCreds(ctx)
-		if err != nil {
-			// TODO(nserrino): refactor so that Sentry doesn't grab this error as an event.
-			log.WithError(err).Fatalln("Failed to get credentials")
-		}
+		ctx = auth.CtxWithCreds(ctx)
 	} else {
 		ctx = ctxWithTokenCreds(ctx, c.vzToken)
 	}

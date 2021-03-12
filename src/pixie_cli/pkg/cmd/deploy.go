@@ -16,14 +16,12 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 	"gopkg.in/segmentio/analytics-go.v3"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/artifacts"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/auth"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/components"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxanalytics"
@@ -32,9 +30,10 @@ import (
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/vizier"
 	utils2 "pixielabs.ai/pixielabs/src/utils"
+	"pixielabs.ai/pixielabs/src/utils/shared/artifacts"
 	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 	yamlsutils "pixielabs.ai/pixielabs/src/utils/shared/yamls"
-	"pixielabs.ai/pixielabs/src/utils/template_generator/vizier_yamls"
+	vizieryamls "pixielabs.ai/pixielabs/src/utils/template_generator/vizier_yamls"
 )
 
 const (
@@ -162,15 +161,8 @@ func newArtifactTrackerClient(conn *grpc.ClientConn) cloudapipb.ArtifactTrackerC
 func mustGetImagePullSecret(conn *grpc.ClientConn) string {
 	// Make rpc request to the cloud to get creds.
 	client := newVizAuthClient(conn)
-	creds, err := auth.MustLoadDefaultCredentials()
-	if err != nil {
-		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
-		log.WithError(err).Fatal("Failed to get creds. You might have to run: 'pixie auth login'")
-	}
 	req := &cloudapipb.GetImageCredentialsRequest{}
-	ctxWithCreds := metadata.AppendToOutgoingContext(context.Background(), "authorization",
-		fmt.Sprintf("bearer %s", creds.Token))
-
+	ctxWithCreds := auth.CtxWithCreds(context.Background())
 	resp, err := client.GetImageCredentials(ctxWithCreds, req)
 	if err != nil {
 		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
@@ -191,19 +183,12 @@ func mustReadCredsFile(credsFile string) string {
 func getLatestVizierVersion(conn *grpc.ClientConn) (string, error) {
 	client := newArtifactTrackerClient(conn)
 
-	creds, err := auth.MustLoadDefaultCredentials()
-	if err != nil {
-		return "", err
-	}
-
 	req := &cloudapipb.GetArtifactListRequest{
 		ArtifactName: "vizier",
 		ArtifactType: cloudapipb.AT_CONTAINER_SET_YAMLS,
 		Limit:        1,
 	}
-	ctxWithCreds := metadata.AppendToOutgoingContext(context.Background(), "authorization",
-		fmt.Sprintf("bearer %s", creds.Token))
-
+	ctxWithCreds := auth.CtxWithCreds(context.Background())
 	resp, err := client.GetArtifactList(ctxWithCreds, req)
 	if err != nil {
 		return "", err
@@ -353,11 +338,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		credsData = mustReadCredsFile(credsFile)
 	}
 	secretName, _ := cmd.Flags().GetString("secret_name")
-	creds, err := auth.MustLoadDefaultCredentials()
-	if err != nil {
-		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
-		log.WithError(err).Fatal("Could not get auth token")
-	}
+	creds := auth.MustLoadDefaultCredentials()
 
 	utils.Infof("Generating YAMLs for Pixie")
 	vzYamls, err := artifacts.FetchVizierYAMLMap(cloudConn, creds.Token, versionString)
@@ -592,18 +573,11 @@ func waitForHealthCheck(cloudAddr string, clusterID uuid.UUID, clientset *kubern
 func waitForCluster(ctx context.Context, conn *grpc.ClientConn, clusterID uuid.UUID) error {
 	client := cloudapipb.NewVizierClusterInfoClient(conn)
 
-	creds, err := auth.MustLoadDefaultCredentials()
-	if err != nil {
-		return err
-	}
-
 	req := &cloudapipb.GetClusterInfoRequest{
 		ID: utils2.ProtoFromUUID(clusterID),
 	}
 
-	ctxWithCreds := metadata.AppendToOutgoingContext(context.Background(), "authorization",
-		fmt.Sprintf("bearer %s", creds.Token))
-
+	ctxWithCreds := auth.CtxWithCreds(context.Background())
 	t := time.NewTicker(2 * time.Second)
 	defer t.Stop()
 	for {
@@ -625,20 +599,13 @@ func waitForCluster(ctx context.Context, conn *grpc.ClientConn, clusterID uuid.U
 func initiateUpdate(ctx context.Context, conn *grpc.ClientConn, clusterID uuid.UUID, version string, redeployEtcd bool) error {
 	client := cloudapipb.NewVizierClusterInfoClient(conn)
 
-	creds, err := auth.MustLoadDefaultCredentials()
-	if err != nil {
-		return err
-	}
-
 	req := &cloudapipb.UpdateOrInstallClusterRequest{
 		ClusterID:    utils2.ProtoFromUUID(clusterID),
 		Version:      version,
 		RedeployEtcd: redeployEtcd,
 	}
 
-	ctxWithCreds := metadata.AppendToOutgoingContext(ctx, "authorization",
-		fmt.Sprintf("bearer %s", creds.Token))
-
+	ctxWithCreds := auth.CtxWithCreds(context.Background())
 	resp, err := client.UpdateOrInstallCluster(ctxWithCreds, req)
 	if err != nil {
 		return err

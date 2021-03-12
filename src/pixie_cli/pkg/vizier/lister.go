@@ -13,6 +13,7 @@ import (
 	"gopkg.in/segmentio/analytics-go.v3"
 
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/auth"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxconfig"
 	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
@@ -72,10 +73,7 @@ func NewLister(cloudAddr string) (*Lister, error) {
 
 // GetViziersInfo returns information about connected viziers.
 func (l *Lister) GetViziersInfo() ([]*cloudapipb.ClusterInfo, error) {
-	ctx, err := ctxWithCreds(context.Background())
-	if err != nil {
-		return nil, err
-	}
+	ctx := auth.CtxWithCreds(context.Background())
 
 	c, err := l.vc.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{})
 	if err != nil {
@@ -86,10 +84,7 @@ func (l *Lister) GetViziersInfo() ([]*cloudapipb.ClusterInfo, error) {
 
 // GetVizierInfo returns information about a connected vizier.
 func (l *Lister) GetVizierInfo(id uuid.UUID) ([]*cloudapipb.ClusterInfo, error) {
-	ctx, err := ctxWithCreds(context.Background())
-	if err != nil {
-		return nil, err
-	}
+	ctx := auth.CtxWithCreds(context.Background())
 	clusterIDPb := utils.ProtoFromUUID(id)
 
 	c, err := l.vc.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{ID: clusterIDPb})
@@ -101,10 +96,7 @@ func (l *Lister) GetVizierInfo(id uuid.UUID) ([]*cloudapipb.ClusterInfo, error) 
 
 // GetVizierConnection gets connection information for the specified Vizier.
 func (l *Lister) GetVizierConnection(id uuid.UUID) (*ConnectionInfo, error) {
-	ctx, err := ctxWithCreds(context.Background())
-	if err != nil {
-		return nil, err
-	}
+	ctx := auth.CtxWithCreds(context.Background())
 
 	ci, err := l.vc.GetClusterConnectionInfo(ctx, &cloudapipb.GetClusterConnectionInfoRequest{
 		ID: utils.ProtoFromUUID(id),
@@ -147,15 +139,7 @@ func (l *Lister) GetVizierConnection(id uuid.UUID) (*ConnectionInfo, error) {
 
 // UpdateVizierConfig updates the config for the given Vizier.
 func (l *Lister) UpdateVizierConfig(req *cloudapipb.UpdateClusterVizierConfigRequest) error {
-	ctx, err := ctxWithCreds(context.Background())
-	if err != nil {
-		return err
-	}
-
-	_, err = l.vc.UpdateClusterVizierConfig(ctx, req)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	ctx := auth.CtxWithCreds(context.Background())
+	_, err := l.vc.UpdateClusterVizierConfig(ctx, req)
+	return err
 }

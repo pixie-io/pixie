@@ -32,7 +32,6 @@ go_library(
     deps = [
         "//src/cloud/api/ptproxy:go_default_library",
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
-        "//src/pixie_cli/pkg/artifacts:go_default_library",
         "//src/pixie_cli/pkg/auth:go_default_library",
         "//src/pixie_cli/pkg/components:go_default_library",
         "//src/pixie_cli/pkg/live:go_default_library",
@@ -44,6 +43,7 @@ go_library(
         "//src/pixie_cli/pkg/vizier:go_default_library",
         "//src/shared/version/go:go_default_library",
         "//src/utils:go_default_library",
+        "//src/utils/shared/artifacts:go_default_library",
         "//src/utils/shared/certs:go_default_library",
         "//src/utils/shared/k8s:go_default_library",
         "//src/utils/shared/yamls:go_default_library",
@@ -68,6 +68,5 @@ go_library(
         "@io_k8s_client_go//plugin/pkg/client/auth:go_default_library",
         "@io_k8s_client_go//rest:go_default_library",
         "@org_golang_google_grpc//:go_default_library",
-        "@org_golang_google_grpc//metadata:go_default_library",
     ],
 )

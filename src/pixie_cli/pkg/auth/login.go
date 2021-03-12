@@ -71,8 +71,8 @@ func SaveRefreshToken(token *RefreshToken) error {
 	return json.NewEncoder(f).Encode(token)
 }
 
-// LoadDefaultCredentials loads the default credentials for the user.
-func LoadDefaultCredentials() (*RefreshToken, error) {
+// loadDefaultCredentials loads the default credentials for the user.
+func loadDefaultCredentials() (*RefreshToken, error) {
 	pixieAuthFilePath, err := EnsureDefaultAuthFilePath()
 	if err != nil {
 		return nil, err
@@ -116,8 +116,9 @@ func LoadDefaultCredentials() (*RefreshToken, error) {
 }
 
 // MustLoadDefaultCredentials loads the default credentials for the user.
-func MustLoadDefaultCredentials() (*RefreshToken, error) {
-	token, err := LoadDefaultCredentials()
+// An error will print to console and call os.Exit.
+func MustLoadDefaultCredentials() *RefreshToken {
+	token, err := loadDefaultCredentials()
 
 	if err != nil && os.IsNotExist(err) {
 		utils2.Error("You must be logged in to perform this operation. Please run `px auth login`.")
@@ -129,7 +130,17 @@ func MustLoadDefaultCredentials() (*RefreshToken, error) {
 		os.Exit(1)
 	}
 
-	return token, nil
+	return token
+}
+
+// CtxWithCreds returns a context with default credentials for the user.
+// Since this uses MustLoadDefaultCredentials, a lack of credentials will
+// cause an os.Exit
+func CtxWithCreds(ctx context.Context) context.Context {
+	creds := MustLoadDefaultCredentials()
+	ctxWithCreds := metadata.AppendToOutgoingContext(ctx, "authorization",
+		fmt.Sprintf("bearer %s", creds.Token))
+	return ctxWithCreds
 }
 
 // PixieCloudLogin performs login on the pixie cloud.

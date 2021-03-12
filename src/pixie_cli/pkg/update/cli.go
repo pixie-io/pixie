@@ -3,7 +3,6 @@ package update
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -19,7 +18,6 @@ import (
 	"github.com/vbauerster/mpb/v4/decor"
 	"golang.org/x/sys/unix"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/auth"
 	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
@@ -51,16 +49,6 @@ func getArtifactTypes() cloudapipb.ArtifactType {
 		return cloudapipb.AT_LINUX_AMD64
 	}
 	return cloudapipb.AT_UNKNOWN
-}
-
-func ctxWithCreds(ctx context.Context) (context.Context, error) {
-	creds, err := auth.LoadDefaultCredentials()
-	if err != nil {
-		return nil, err
-	}
-	ctxWithCreds := metadata.AppendToOutgoingContext(ctx, "authorization",
-		fmt.Sprintf("bearer %s", creds.Token))
-	return ctxWithCreds, nil
 }
 
 // UpdatesAvailable returns the version if updates are available, otherwise empty string.
@@ -100,10 +88,7 @@ func (c *CLIUpdater) GetAvailableVersions(minVersion semver.Version) ([]string, 
 		Limit:        10,
 	}
 
-	ctx, err := ctxWithCreds(context.Background())
-	if err != nil {
-		return nil, err
-	}
+	ctx := auth.CtxWithCreds(context.Background())
 	client, err := newATClient(c.cloudAddr)
 	if err != nil {
 		return nil, err
@@ -159,10 +144,7 @@ func (c *CLIUpdater) UpdateSelf(version string) error {
 		VersionStr:   version,
 	}
 
-	ctx, err := ctxWithCreds(context.Background())
-	if err != nil {
-		return err
-	}
+	ctx := auth.CtxWithCreds(context.Background())
 	client, err := newATClient(c.cloudAddr)
 	if err != nil {
 		return err

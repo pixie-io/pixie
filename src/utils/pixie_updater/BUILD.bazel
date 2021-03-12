@@ -8,8 +8,8 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/utils/pixie_updater",
     visibility = ["//visibility:private"],
     deps = [
-        "//src/pixie_cli/pkg/artifacts:go_default_library",
         "//src/shared/services:go_default_library",
+        "//src/utils/shared/artifacts:go_default_library",
         "//src/utils/shared/k8s:go_default_library",
         "@com_github_sirupsen_logrus//:go_default_library",
         "@com_github_spf13_pflag//:go_default_library",

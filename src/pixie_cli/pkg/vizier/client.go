@@ -8,24 +8,11 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/auth"
 	"pixielabs.ai/pixielabs/src/shared/services"
 )
 
 func ctxWithTokenCreds(ctx context.Context, token string) context.Context {
-	ctxWithCreds := metadata.AppendToOutgoingContext(ctx, "authorization",
-		fmt.Sprintf("bearer %s", token))
-	return ctxWithCreds
-}
-
-func ctxWithCreds(ctx context.Context) (context.Context, error) {
-	creds, err := auth.MustLoadDefaultCredentials()
-	if err != nil {
-		return nil, err
-	}
-	ctxWithCreds := metadata.AppendToOutgoingContext(ctx, "authorization",
-		fmt.Sprintf("bearer %s", creds.Token))
-	return ctxWithCreds, nil
+	return metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", token))
 }
 
 func newVizierClusterInfoClient(cloudAddr string) (cloudapipb.VizierClusterInfoClient, error) {
