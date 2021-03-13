@@ -267,12 +267,12 @@ TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
   // accept() calls were traced.
 
   ASSERT_OK_AND_ASSIGN(const auto* tracker, GetConnTracker(system.ClientPID(), system.ClientFD()));
-  EXPECT_THAT(tracker->send_data().events(), IsEmpty());
-  EXPECT_THAT(tracker->recv_data().events(), IsEmpty());
+  EXPECT_TRUE(tracker->send_data().data_buffer().empty());
+  EXPECT_TRUE(tracker->recv_data().data_buffer().empty());
 
   ASSERT_OK_AND_ASSIGN(tracker, GetConnTracker(system.ServerPID(), system.ServerFD()));
-  EXPECT_THAT(tracker->send_data().events(), IsEmpty());
-  EXPECT_THAT(tracker->recv_data().events(), IsEmpty());
+  EXPECT_TRUE(tracker->send_data().data_buffer().empty());
+  EXPECT_TRUE(tracker->recv_data().data_buffer().empty());
 }
 
 TEST_F(SocketTraceBPFTest, MultipleConnections) {
@@ -377,17 +377,6 @@ class UDPSocketTraceBPFTest : public SocketTraceBPFTest {
   UDPSocket server_;
 };
 
-// Returns a list of the messages of the input data events.
-std::vector<std::string> GetMsgFromEvents(
-    const std::map<size_t, std::unique_ptr<SocketDataEvent>>& events) {
-  std::vector<std::string> data;
-  data.reserve(events.size());
-  for (const auto& [offset, event_uptr] : events) {
-    data.push_back(event_uptr->msg);
-  }
-  return data;
-}
-
 TEST_F(UDPSocketTraceBPFTest, UDPSendToRecvFrom) {
   std::string recv_data;
 
@@ -406,12 +395,12 @@ TEST_F(UDPSocketTraceBPFTest, UDPSendToRecvFrom) {
   source_->PollPerfBuffers();
 
   ASSERT_OK_AND_ASSIGN(const auto* tracker, GetConnTracker(getpid(), client_.sockfd()));
-  EXPECT_THAT(GetMsgFromEvents(tracker->send_data().events()), ElementsAre(kHTTPReqMsg1));
-  EXPECT_THAT(GetMsgFromEvents(tracker->recv_data().events()), ElementsAre(kHTTPRespMsg1));
+  EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPReqMsg1);
+  EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPRespMsg1);
 
   ASSERT_OK_AND_ASSIGN(tracker, GetConnTracker(getpid(), server_.sockfd()));
-  EXPECT_THAT(GetMsgFromEvents(tracker->send_data().events()), ElementsAre(kHTTPRespMsg1));
-  EXPECT_THAT(GetMsgFromEvents(tracker->recv_data().events()), ElementsAre(kHTTPReqMsg1));
+  EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPRespMsg1);
+  EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPReqMsg1);
 }
 
 TEST_F(UDPSocketTraceBPFTest, UDPSendMsgRecvMsg) {
@@ -436,8 +425,8 @@ TEST_F(UDPSocketTraceBPFTest, UDPSendMsgRecvMsg) {
   EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPRespMsg1);
 
   ASSERT_OK_AND_ASSIGN(tracker, GetConnTracker(getpid(), server_.sockfd()));
-  EXPECT_THAT(GetMsgFromEvents(tracker->send_data().events()), ElementsAre(kHTTPRespMsg1));
-  EXPECT_THAT(GetMsgFromEvents(tracker->recv_data().events()), ElementsAre(kHTTPReqMsg1));
+  EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPRespMsg1);
+  EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPReqMsg1);
 }
 
 TEST_F(UDPSocketTraceBPFTest, UDPSendMMsgRecvMMsg) {
@@ -458,12 +447,12 @@ TEST_F(UDPSocketTraceBPFTest, UDPSendMMsgRecvMMsg) {
   source_->PollPerfBuffers();
 
   ASSERT_OK_AND_ASSIGN(const auto* tracker, GetConnTracker(getpid(), client_.sockfd()));
-  EXPECT_THAT(GetMsgFromEvents(tracker->send_data().events()), ElementsAre(kHTTPReqMsg1));
-  EXPECT_THAT(GetMsgFromEvents(tracker->recv_data().events()), ElementsAre(kHTTPRespMsg1));
+  EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPReqMsg1);
+  EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPRespMsg1);
 
   ASSERT_OK_AND_ASSIGN(tracker, GetConnTracker(getpid(), server_.sockfd()));
-  EXPECT_THAT(GetMsgFromEvents(tracker->send_data().events()), ElementsAre(kHTTPRespMsg1));
-  EXPECT_THAT(GetMsgFromEvents(tracker->recv_data().events()), ElementsAre(kHTTPReqMsg1));
+  EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPRespMsg1);
+  EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPReqMsg1);
 }
 
 // A failed non-blocking receive call shouldn't interfere with tracing.
@@ -491,14 +480,14 @@ TEST_F(UDPSocketTraceBPFTest, NonBlockingRecv) {
   source_->PollPerfBuffers();
 
   ASSERT_OK_AND_ASSIGN(const auto* tracker, GetConnTracker(getpid(), client_.sockfd()));
-  EXPECT_THAT(GetMsgFromEvents(tracker->send_data().events()), ElementsAre(kHTTPReqMsg1));
-  EXPECT_THAT(GetMsgFromEvents(tracker->recv_data().events()), ElementsAre(kHTTPRespMsg1));
+  EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPReqMsg1);
+  EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPRespMsg1);
   EXPECT_EQ(tracker->remote_endpoint().port(), ntohs(server_.sockaddr().sin_port));
   EXPECT_EQ(tracker->remote_endpoint().AddrStr(), "127.0.0.1");
 
   ASSERT_OK_AND_ASSIGN(tracker, GetConnTracker(getpid(), server_.sockfd()));
-  EXPECT_THAT(GetMsgFromEvents(tracker->send_data().events()), ElementsAre(kHTTPRespMsg1));
-  EXPECT_THAT(GetMsgFromEvents(tracker->recv_data().events()), ElementsAre(kHTTPReqMsg1));
+  EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPRespMsg1);
+  EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPReqMsg1);
   EXPECT_EQ(tracker->remote_endpoint().port(), ntohs(server_remote.sin_port));
   EXPECT_EQ(tracker->remote_endpoint().AddrStr(), "127.0.0.1");
 }
