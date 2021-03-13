@@ -56,7 +56,7 @@ func VizierTmplValuesToMap(tmplValues *VizierTmplValues) *map[string]interface{}
 }
 
 // These are template options that should be applied to each resource in the Vizier YAMLs, such as annotations and labels.
-var globalTemplateOptions = []*yamls.K8sTemplateOptions{
+var GlobalTemplateOptions = []*yamls.K8sTemplateOptions{
 	&yamls.K8sTemplateOptions{
 		Patch:       `{"metadata": { "annotations": { "__PL_ANNOTATION_KEY__": "__PL_ANNOTATION_VALUE__"} } }`,
 		Placeholder: "__PL_ANNOTATION_KEY__: __PL_ANNOTATION_VALUE__",
@@ -185,7 +185,7 @@ func generateNamespaceYAML(clientset *kubernetes.Clientset, namespace string) (s
 		return "", err
 	}
 
-	nsYAML, err := yamls.TemplatizeK8sYAML(clientset, origYAML, globalTemplateOptions)
+	nsYAML, err := yamls.TemplatizeK8sYAML(clientset, origYAML, GlobalTemplateOptions)
 	if err != nil {
 		return "", err
 	}
@@ -273,7 +273,7 @@ func GenerateSecretsYAML(clientset *kubernetes.Clientset, ns string, imagePullSe
 			Placeholder:     "__PL_BOOTSTRAP_VERSION__",
 			TemplateValue:   `"{{.Values.bootstrapVersion}}"`,
 		},
-	}, globalTemplateOptions...))
+	}, GlobalTemplateOptions...))
 	if err != nil {
 		return "", err
 	}
@@ -282,12 +282,12 @@ func GenerateSecretsYAML(clientset *kubernetes.Clientset, ns string, imagePullSe
 }
 
 func generateVzDepsYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string) (string, string, error) {
-	natsYAML, err := yamls.TemplatizeK8sYAML(clientset, yamlMap[natsYAMLPath], globalTemplateOptions)
+	natsYAML, err := yamls.TemplatizeK8sYAML(clientset, yamlMap[natsYAMLPath], GlobalTemplateOptions)
 	if err != nil {
 		return "", "", err
 	}
 
-	etcdYAML, err := yamls.TemplatizeK8sYAML(clientset, yamlMap[etcdOperatorYAMLPath], globalTemplateOptions)
+	etcdYAML, err := yamls.TemplatizeK8sYAML(clientset, yamlMap[etcdOperatorYAMLPath], GlobalTemplateOptions)
 	if err != nil {
 		return "", "", err
 	}
@@ -306,7 +306,7 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
 		return "", "", fmt.Errorf("Cannot generate YAMLS for specified Vizier version. Please update to latest Vizier version instead.  ")
 	}
 
-	persistentYAML, err := yamls.TemplatizeK8sYAML(clientset, yamlMap[vizierMetadataPersistYAMLPath], globalTemplateOptions)
+	persistentYAML, err := yamls.TemplatizeK8sYAML(clientset, yamlMap[vizierMetadataPersistYAMLPath], GlobalTemplateOptions)
 	if err != nil {
 		return "", "", err
 	}
@@ -317,7 +317,7 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
 {{- end}}`,
 		persistentYAML)
 
-	etcdYAML, err := yamls.TemplatizeK8sYAML(clientset, yamlMap[vizierEtcdYAMLPath], globalTemplateOptions)
+	etcdYAML, err := yamls.TemplatizeK8sYAML(clientset, yamlMap[vizierEtcdYAMLPath], GlobalTemplateOptions)
 	if err != nil {
 		return "", "", err
 	}

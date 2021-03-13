@@ -79,5 +79,5 @@ func LoadClusterSecrets(clientset *kubernetes.Clientset, cloudAddr string, deplo
 		log.WithError(err).Fatal("Failed to fill in templated deployment YAMLs")
 	}
 
-	return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(yamls[0].YAML), false, nil, nil)
+	return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(yamls[0].YAML), false)
 }

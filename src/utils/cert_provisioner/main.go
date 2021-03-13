@@ -15,6 +15,8 @@ import (
 
 	"pixielabs.ai/pixielabs/src/utils/shared/certs"
 	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
+	yamlsutils "pixielabs.ai/pixielabs/src/utils/shared/yamls"
+	vizieryamls "pixielabs.ai/pixielabs/src/utils/template_generator/vizier_yamls"
 )
 
 func init() {
@@ -73,17 +75,24 @@ func main() {
 		log.WithError(err).Fatal("Failed to generate cert YAMLs")
 	}
 
-	labels, err := k8s.KeyValueStringToMap(viper.GetString("custom_labels"))
+	templatedYAML, err := yamlsutils.TemplatizeK8sYAML(clientset, certYAMLs, vizieryamls.GlobalTemplateOptions)
 	if err != nil {
-		log.WithError(err).Info("Could not apply custom labels")
+		log.WithError(err).Fatal("Failed to templatize cert YAMLs")
+	}
+	tmplValues := &vizieryamls.VizierTmplValues{
+		CustomAnnotations: viper.GetString("custom_annotations"),
+		CustomLabels:      viper.GetString("custom_labels"),
+	}
+	yamls, err := yamlsutils.ExecuteTemplatedYAMLs([]*yamlsutils.YAMLFile{
+		&yamlsutils.YAMLFile{Name: "certs", YAML: templatedYAML},
+	}, &yamlsutils.YAMLTmplArguments{
+		Values: vizieryamls.VizierTmplValuesToMap(tmplValues),
+	})
+	if err != nil {
+		log.WithError(err).Fatal("Failed to fill in templated deployment YAMLs")
 	}
 
-	annotations, err := k8s.KeyValueStringToMap(viper.GetString("custom_annotations"))
-	if err != nil {
-		log.WithError(err).Info("Could not apply custom annotations")
-	}
-
-	err = k8s.ApplyYAML(clientset, kubeConfig, ns, strings.NewReader(certYAMLs), false, labels, annotations)
+	err = k8s.ApplyYAML(clientset, kubeConfig, ns, strings.NewReader(yamls[0].YAML), false)
 	if err != nil {
 		log.WithError(err).Fatalf("Failed deploy cert YAMLs")
 	}

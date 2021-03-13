@@ -49,8 +49,8 @@ func ConvertResourceToYAML(obj runtime.Object) (string, error) {
 
 // ApplyYAML does the equivalent of a kubectl apply for the given yaml. If allowUpdate is true, then we update the resource
 // if it already exists.
-func ApplyYAML(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlFile io.Reader, allowUpdate bool, labels map[string]string, annotations map[string]string) error {
-	return ApplyYAMLForResourceTypes(clientset, config, namespace, yamlFile, []string{}, allowUpdate, labels, annotations)
+func ApplyYAML(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlFile io.Reader, allowUpdate bool) error {
+	return ApplyYAMLForResourceTypes(clientset, config, namespace, yamlFile, []string{}, allowUpdate)
 }
 
 // KeyValueStringToMap converts a user-inputted label string (label1=value,label2=value2) into a string map.
@@ -71,58 +71,8 @@ func KeyValueStringToMap(labels string) (map[string]string, error) {
 	return labelMap, nil
 }
 
-// addKeyValueMapToResource adds the given keyValue map to the K8s resource.
-func addKeyValueMapToResource(mapName string, keyValues map[string]string, res map[string]interface{}) map[string]interface{} {
-	// Add the labels to the resource's labels.
-	metadata := make(map[string]interface{})
-	if md, ok := res["metadata"]; ok {
-		castedMd, castOk := md.(map[string]interface{})
-		if castOk {
-			metadata = castedMd
-		}
-	}
-
-	resLabels := make(map[string]interface{})
-	if l, ok := metadata[mapName]; ok {
-		castedLabel, castOk := l.(map[string]interface{})
-		if castOk {
-			resLabels = castedLabel
-		}
-	}
-
-	for k, v := range keyValues {
-		resLabels[k] = v
-	}
-	metadata[mapName] = resLabels
-
-	// If it exists, recursively add the labels to the resource's template (for deployments/daemonsets).
-	if spec, ok := res["spec"]; ok {
-		castedSpec, castOk := spec.(map[string]interface{})
-		if castOk {
-			if tmpl, tmplOk := castedSpec["template"]; tmplOk {
-				castedTmpl, tmplCastOk := tmpl.(map[string]interface{})
-				if tmplCastOk {
-					updatedTmpl := addKeyValueMapToResource(mapName, keyValues, castedTmpl)
-					castedSpec["template"] = updatedTmpl
-					res["spec"] = castedSpec
-				}
-			}
-		}
-	}
-
-	res["metadata"] = metadata
-	return res
-}
-
 // ApplyYAMLForResourceTypes only applies the specified types in the given YAML file.
-func ApplyYAMLForResourceTypes(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlFile io.Reader, allowedResources []string, allowUpdate bool, labels map[string]string, annotations map[string]string) error {
-	if labels == nil {
-		labels = make(map[string]string)
-	}
-	if annotations == nil {
-		annotations = make(map[string]string)
-	}
-
+func ApplyYAMLForResourceTypes(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlFile io.Reader, allowedResources []string, allowUpdate bool) error {
 	decodedYAML := yaml.NewYAMLOrJSONDecoder(yamlFile, 4096)
 	discoveryClient := clientset.Discovery()
 
@@ -191,10 +141,6 @@ func ApplyYAMLForResourceTypes(clientset *kubernetes.Clientset, config *rest.Con
 
 		res := dynamicClient.Resource(k8sRes)
 		nsRes := res.Namespace(namespace)
-
-		// Apply any custom labels/annotations to the resource.
-		unstructRes.Object = addKeyValueMapToResource("labels", labels, unstructRes.Object)
-		unstructRes.Object = addKeyValueMapToResource("annotations", annotations, unstructRes.Object)
 
 		createRes := nsRes
 		if k8sRes.Resource == "podsecuritypolicies" || k8sRes.Resource == "namespaces" || k8sRes.Resource == "configmap" || k8sRes.Resource == "clusterrolebindings" || k8sRes.Resource == "clusterroles" {
