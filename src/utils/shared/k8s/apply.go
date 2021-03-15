@@ -141,13 +141,15 @@ func ApplyYAMLForResourceTypes(clientset *kubernetes.Clientset, config *rest.Con
 		} else if err != nil {
 			return err
 		}
+		if ext.Raw == nil {
+			continue
+		}
 
 		_, gvk, err := unstructured.UnstructuredJSONScheme.Decode(ext.Raw, nil, nil)
 		if err != nil {
 			log.WithError(err).Fatalf(err.Error())
 			return err
 		}
-
 		mapping, err := rm.RESTMapping(gvk.GroupKind(), gvk.Version)
 		if err != nil {
 			return err

@@ -8,6 +8,7 @@ go_library(
     deps = [
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
         "//src/utils/shared/tar:go_default_library",
+        "//src/utils/shared/yamls:go_default_library",
         "@org_golang_google_grpc//:go_default_library",
         "@org_golang_google_grpc//metadata:go_default_library",
     ],

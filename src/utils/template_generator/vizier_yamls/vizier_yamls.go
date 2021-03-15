@@ -121,43 +121,11 @@ func GenerateTemplatedDeployYAMLsWithTar(clientset *kubernetes.Clientset, tarPat
 		return nil, err
 	}
 
-	return generateTemplatedDeployYAMLs(clientset, yamlMap, versionStr, ns, "", "")
+	return GenerateTemplatedDeployYAMLs(clientset, yamlMap, versionStr, ns, "", "")
 }
 
-// GenerateTemplatedDeployBootstrapYAMLs generates the YAMLs that should be run when deploying Pixie with Bootstrap mode.
-func GenerateTemplatedDeployBootstrapYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string, versionStr string, ns string, imagePullSecretName string, imagePullCreds string) ([]*yamls.YAMLFile, error) {
-	nsYAML, err := generateNamespaceYAML(clientset, ns)
-	if err != nil {
-		return nil, err
-	}
-
-	secretsYAML, err := GenerateSecretsYAML(clientset, ns, imagePullSecretName, imagePullCreds, versionStr, true)
-	if err != nil {
-		return nil, err
-	}
-
-	vzYAML, err := generateBootstrapYAML(clientset, yamlMap)
-	if err != nil {
-		return nil, err
-	}
-
-	return []*yamls.YAMLFile{
-		&yamls.YAMLFile{
-			Name: "namespace",
-			YAML: nsYAML,
-		},
-		&yamls.YAMLFile{
-			Name: "secrets",
-			YAML: secretsYAML,
-		},
-		&yamls.YAMLFile{
-			Name: "bootstrap",
-			YAML: vzYAML,
-		},
-	}, nil
-}
-
-func generateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string, versionStr string, ns string, imagePullSecretName string, imagePullCreds string) ([]*yamls.YAMLFile, error) {
+// GenerateTemplatedDeployYAMLs generates the YAMLs that should be run when deploying Pixie using the provided YAML map.
+func GenerateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string, versionStr string, ns string, imagePullSecretName string, imagePullCreds string) ([]*yamls.YAMLFile, error) {
 	nsYAML, err := generateNamespaceYAML(clientset, ns)
 	if err != nil {
 		return nil, err
@@ -311,16 +279,6 @@ func GenerateSecretsYAML(clientset *kubernetes.Clientset, ns string, imagePullSe
 	}
 
 	return secretsYAML, nil
-}
-
-// generateBootstrapYAML creates the YAML for the Pixie bootstrap resources.
-func generateBootstrapYAML(clientset *kubernetes.Clientset, yamlMap map[string]string) (string, error) {
-	vzBootstrapYAML, err := yamls.TemplatizeK8sYAML(clientset, yamlMap[vizierBootstrapYAMLPath], globalTemplateOptions)
-	if err != nil {
-		return "", err
-	}
-
-	return vzBootstrapYAML, nil
 }
 
 func generateVzDepsYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string) (string, string, error) {

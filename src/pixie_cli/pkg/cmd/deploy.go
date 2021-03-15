@@ -341,14 +341,34 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	creds := auth.MustLoadDefaultCredentials()
 
 	utils.Infof("Generating YAMLs for Pixie")
-	vzYamls, err := artifacts.FetchVizierYAMLMap(cloudConn, creds.Token, versionString)
+
+	var templatedYAMLs []*yamlsutils.YAMLFile
+	// Attempt to fetch templated YAMLs first. These should exist for newly released versions of Vizier (0.5.33+).
+	templatedYAMLs, err = artifacts.FetchVizierTemplates(cloudConn, creds.Token, versionString)
 	if err != nil {
-		log.WithError(err).Fatal("Could not fetch Vizier YAMLs")
+		// Fetch the untemplated YAMLs and templatize them on the fly.
+		vzYamls, err := artifacts.FetchVizierYAMLMap(cloudConn, creds.Token, versionString)
+		if err != nil {
+			log.WithError(err).Fatal("Could not fetch Vizier YAMLs")
+		}
+		templatedYAMLs, err = vizieryamls.GenerateTemplatedDeployYAMLs(clientset, vzYamls, versionString, namespace, secretName, credsData)
+		if err != nil {
+			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
+			log.WithError(err).Fatal("failed to generate deployment YAMLs")
+		}
 	}
-	templatedYAMLs, err := vizieryamls.GenerateTemplatedDeployBootstrapYAMLs(clientset, vzYamls, versionString, namespace, secretName, credsData)
+
+	// Validate correct number of default storage classes.
+	defaultStorageExists, err := validateNumDefaultStorageClasses(clientset)
 	if err != nil {
-		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
-		log.WithError(err).Fatal("failed to generate deployment YAMLs")
+		utils.Error("Error checking default storage classes: " + err.Error())
+	}
+	// useEtcdOperator is true then deploy operator. Otherwise: If defaultStorageExists, then
+	// go for persistent storage version.
+	if !useEtcdOperator {
+		if !defaultStorageExists {
+			useEtcdOperator = true
+		}
 	}
 
 	// Fill in template values.
@@ -421,18 +441,9 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	utils.Infof("Found %v nodes", numNodes)
 
-	// Validate correct number of default storage classes.
-	defaultStorageExists, err := validateNumDefaultStorageClasses(clientset)
-	if err != nil {
-		utils.Error("Error checking default storage classes: " + err.Error())
-	}
-
-	// useEtcdOperator is true then deploy operator. Otherwise: If defaultStorageExists, then
-	// go for persistent storage version.
-	if !useEtcdOperator {
-		if !defaultStorageExists {
-			useEtcdOperator = true
-		}
+	vzYaml := yamlMap["vizier_persistent"]
+	if useEtcdOperator {
+		vzYaml = yamlMap["vizier_etcd"]
 	}
 
 	namespaceJob := newTaskWrapper("Creating namespace", func() error {
@@ -446,11 +457,30 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	})
 
 	certJob := newTaskWrapper("Deploying secrets and configmaps", func() error {
-		return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(yamlMap["secrets"]), false, nil, nil)
+		err = k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(yamlMap["secrets"]), false, nil, nil)
+		if err != nil {
+			return err
+		}
+
+		// Launch roles, service accounts, and clusterroles, as the dependencies need the certs ready first.
+		return k8s.ApplyYAMLForResourceTypes(clientset, kubeConfig, namespace, strings.NewReader(vzYaml),
+			[]string{"podsecuritypolicies", "serviceaccounts", "clusterroles", "clusterrolebindings", "roles", "rolebindings", "jobs"}, false, nil, nil)
+	})
+
+	natsJob := newTaskWrapper("Deploying dependencies: NATS", func() error {
+		return retryDeploy(clientset, kubeConfig, namespace, yamlMap["nats"])
+	})
+
+	etcdJob := newTaskWrapper("Deploying dependencies: etcd", func() error {
+		return retryDeploy(clientset, kubeConfig, namespace, yamlMap["etcd"])
 	})
 
 	setupJobs := []utils.Task{
-		namespaceJob, clusterRoleJob, certJob}
+		namespaceJob, clusterRoleJob, certJob, natsJob}
+	if useEtcdOperator {
+		setupJobs = append(setupJobs, etcdJob)
+	}
+
 	jr := utils.NewSerialTaskRunner(setupJobs)
 	err = jr.RunAndMonitor()
 	if err != nil {
@@ -464,7 +494,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		log.Fatal("Failed to deploy Vizier")
 	}
 
-	clusterID := deploy(cloudConn, versionString, clientset, kubeConfig, yamlMap["bootstrap"], namespace)
+	clusterID := deploy(cloudConn, versionString, clientset, kubeConfig, vzYaml, namespace)
 
 	waitForHealthCheck(cloudAddr, clusterID, clientset, namespace, numNodes)
 }
