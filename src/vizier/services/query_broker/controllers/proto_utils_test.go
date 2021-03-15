@@ -543,39 +543,104 @@ func TestQueryPlanResponse(t *testing.T) {
 		},
 	}
 
-	expected := &public_vizierapipb.ExecuteScriptResponse{
-		QueryID: queryIDStr,
-		Result: &public_vizierapipb.ExecuteScriptResponse_Data{
-			Data: &public_vizierapipb.QueryData{
-				Batch: &public_vizierapipb.RowBatchData{
-					TableID: "table_plan_id",
-					Cols: []*public_vizierapipb.Column{
-						&public_vizierapipb.Column{
-							ColData: &public_vizierapipb.Column_StringData{
-								StringData: &public_vizierapipb.StringColumn{
-									Data: []string{
-										"digraph  {\n\tsubgraph cluster_s0 {\n\t\tID = \"cluster_s0\";\n" +
-											"\t\tcolor=\"lightgrey\";label=\"agent::3ca421d4-5f85-4c99-8248-02252204e281\\n" +
-											"123ns\";\n\t\tn1[color=\"blue\",label=\"memory_source_operator[2]\\" +
-											"nself_time: 70ns\\ntotal_time: 73ns\\nbytes: 456 B\\nrecords_processed: 12\"" +
-											",shape=\"rect\"];\n\t\tn2[color=\"yellow\",label=\"grpc_sink_operator[3]\\n\"" +
-											",shape=\"rect\"];\n\t\tn1->n2;\n\t\t\n\t}\n\t\n}",
+	expected1 := []*public_vizierapipb.ExecuteScriptResponse{
+		&public_vizierapipb.ExecuteScriptResponse{
+			QueryID: queryIDStr,
+			Result: &public_vizierapipb.ExecuteScriptResponse_Data{
+				Data: &public_vizierapipb.QueryData{
+					Batch: &public_vizierapipb.RowBatchData{
+						TableID: "table_plan_id",
+						Cols: []*public_vizierapipb.Column{
+							&public_vizierapipb.Column{
+								ColData: &public_vizierapipb.Column_StringData{
+									StringData: &public_vizierapipb.StringColumn{
+										Data: []string{
+											"digraph  {\n\tsubgraph cluster_s0 {\n\t\tID = \"cluster_s0\";\n" +
+												"\t\tcolor=\"lightgrey\";label=\"agent::3ca421d4-5f85-4c99-8248-02252204e281\\n" +
+												"123ns\";\n\t\tn1[color=\"blue\",label=\"memory_source_operator[2]\\" +
+												"nself_time: 70ns\\ntotal_time: 73ns\\nbytes: 456 B\\nrecords_processed: 12\"" +
+												",shape=\"rect\"];\n\t\tn2[color=\"yellow\",label=\"grpc_sink_operator[3]\\n\"" +
+												",shape=\"rect\"];\n\t\tn1->n2;\n\t\t\n\t}\n\t\n}",
+										},
 									},
 								},
 							},
 						},
+						NumRows: 1,
+						Eow:     true,
+						Eos:     true,
 					},
-					NumRows: 1,
-					Eow:     true,
-					Eos:     true,
 				},
 			},
 		},
 	}
 
-	resp, err := controllers.QueryPlanResponse(queryID, plan, planMap, &agentStats, planTableID)
+	resp1, err := controllers.QueryPlanResponse(queryID, plan, planMap, &agentStats, planTableID, 1024*1024)
 	assert.Nil(t, err)
-	assert.Equal(t, expected, resp)
+	assert.Equal(t, 1, len(resp1))
+	assert.Equal(t, expected1[0], resp1[0])
+
+	expected2 := []*public_vizierapipb.ExecuteScriptResponse{
+		&public_vizierapipb.ExecuteScriptResponse{
+			QueryID: queryIDStr,
+			Result: &public_vizierapipb.ExecuteScriptResponse_Data{
+				Data: &public_vizierapipb.QueryData{
+					Batch: &public_vizierapipb.RowBatchData{
+						TableID: "table_plan_id",
+						Cols: []*public_vizierapipb.Column{
+							&public_vizierapipb.Column{
+								ColData: &public_vizierapipb.Column_StringData{
+									StringData: &public_vizierapipb.StringColumn{
+										Data: []string{
+											"digraph  {\n\tsubgraph cluster_s0 {\n\t\tID = \"cluster_s0\";\n\t\t" +
+												"color=\"lightgrey\";label=\"agent::3ca421d4-5f85-4c99-8248-02252204e281" +
+												"\\n123ns\";\n\t\tn1[color=\"blue\",label=\"memory_source_operator[2]\\n" +
+												"self_time: 70ns\\ntotal_time: 73ns\\nbytes: 456 B\\nrecords_processed: 12\"," +
+												"shape=\"rect\"];\n\t\tn2[color=\"yellow\",label=\"grpc_sink_operator[3]\\n\"," +
+												"shape=\"rect\"];\n\t\tn1->n2;",
+										},
+									},
+								},
+							},
+						},
+						NumRows: 1,
+						Eow:     false,
+						Eos:     false,
+					},
+				},
+			},
+		},
+		&public_vizierapipb.ExecuteScriptResponse{
+			QueryID: queryIDStr,
+			Result: &public_vizierapipb.ExecuteScriptResponse_Data{
+				Data: &public_vizierapipb.QueryData{
+					Batch: &public_vizierapipb.RowBatchData{
+						TableID: "table_plan_id",
+						Cols: []*public_vizierapipb.Column{
+							&public_vizierapipb.Column{
+								ColData: &public_vizierapipb.Column_StringData{
+									StringData: &public_vizierapipb.StringColumn{
+										Data: []string{
+											"\n\t\t\n\t}\n\t\n}",
+										},
+									},
+								},
+							},
+						},
+						NumRows: 1,
+						Eow:     true,
+						Eos:     true,
+					},
+				},
+			},
+		},
+	}
+
+	resp2, err := controllers.QueryPlanResponse(queryID, plan, planMap, &agentStats, planTableID, 350)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(resp2))
+	assert.Equal(t, expected2[0], resp2[0])
+	assert.Equal(t, expected2[1], resp2[1])
 }
 
 func TestTableRelationResponses(t *testing.T) {

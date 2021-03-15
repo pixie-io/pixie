@@ -374,7 +374,8 @@ func BuildExecuteScriptResponse(r *carnotpb.TransferResultChunkRequest,
 // QueryPlanResponse returns the query plan as an ExecuteScriptResponse.
 func QueryPlanResponse(queryID uuid.UUID, plan *distributedpb.DistributedPlan, planMap map[uuid.UUID]*planpb.Plan,
 	agentStats *[]*queryresultspb.AgentExecutionStats,
-	planTableID string) (*public_vizierapipb.ExecuteScriptResponse, error) {
+	planTableID string,
+	maxQueryPlanStringSizeBytes int) ([]*public_vizierapipb.ExecuteScriptResponse, error) {
 
 	queryPlan, err := GetQueryPlanAsDotString(plan, planMap, agentStats)
 	if err != nil {
@@ -382,30 +383,43 @@ func QueryPlanResponse(queryID uuid.UUID, plan *distributedpb.DistributedPlan, p
 		return nil, err
 	}
 
-	batch := &public_vizierapipb.RowBatchData{
-		TableID: planTableID,
-		Cols: []*public_vizierapipb.Column{
-			&public_vizierapipb.Column{
-				ColData: &public_vizierapipb.Column_StringData{
-					StringData: &public_vizierapipb.StringColumn{
-						Data: []string{queryPlan},
+	var resp []*public_vizierapipb.ExecuteScriptResponse
+
+	// We can't overwhelm NATS with a query plan greater than 1MB.
+	for i := 0; i < len(queryPlan); i += maxQueryPlanStringSizeBytes {
+		end := i + maxQueryPlanStringSizeBytes
+		if end > len(queryPlan) {
+			end = len(queryPlan)
+		}
+
+		last := end == len(queryPlan)
+		batch := &public_vizierapipb.RowBatchData{
+			TableID: planTableID,
+			Cols: []*public_vizierapipb.Column{
+				&public_vizierapipb.Column{
+					ColData: &public_vizierapipb.Column_StringData{
+						StringData: &public_vizierapipb.StringColumn{
+							Data: []string{queryPlan[i:end]},
+						},
 					},
 				},
 			},
-		},
-		NumRows: 1,
-		Eos:     true,
-		Eow:     true,
+			NumRows: 1,
+			Eos:     last,
+			Eow:     last,
+		}
+
+		resp = append(resp, &public_vizierapipb.ExecuteScriptResponse{
+			QueryID: queryID.String(),
+			Result: &public_vizierapipb.ExecuteScriptResponse_Data{
+				Data: &public_vizierapipb.QueryData{
+					Batch: batch,
+				},
+			},
+		})
 	}
 
-	return &public_vizierapipb.ExecuteScriptResponse{
-		QueryID: queryID.String(),
-		Result: &public_vizierapipb.ExecuteScriptResponse_Data{
-			Data: &public_vizierapipb.QueryData{
-				Batch: batch,
-			},
-		},
-	}, nil
+	return resp, nil
 }
 
 // QueryPlanRelationResponse returns the relation of the query plan as an ExecuteScriptResponse.

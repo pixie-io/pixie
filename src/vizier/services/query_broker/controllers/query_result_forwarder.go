@@ -251,6 +251,10 @@ func (f *QueryResultForwarderImpl) DeleteQuery(queryID uuid.UUID) {
 	delete(f.activeQueries, queryID)
 }
 
+// The max size of the query plan string, including a buffer for the rest of the message.
+const maxQueryPlanBufferSize int = 64 * 1024
+const maxQueryPlanStringSize int = 1024*1024 - maxQueryPlanBufferSize
+
 // StreamResults streams results from the agent streams to the client stream.
 func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uuid.UUID,
 	resultCh chan *public_vizierapipb.ExecuteScriptResponse,
@@ -326,13 +330,15 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 			// execution stats, since consumers may expect those to be the last message.
 			if activeQuery.queryComplete() {
 				if queryPlanOpts != nil {
-					qpRes, err := QueryPlanResponse(queryID, queryPlanOpts.Plan, queryPlanOpts.PlanMap,
-						activeQuery.agentExecStats, queryPlanOpts.TableID)
+					qpResps, err := QueryPlanResponse(queryID, queryPlanOpts.Plan, queryPlanOpts.PlanMap,
+						activeQuery.agentExecStats, queryPlanOpts.TableID, maxQueryPlanStringSize)
 
 					if err != nil {
 						return cancelStreamReturnErr(err)
 					}
-					resultCh <- qpRes
+					for _, qpRes := range qpResps {
+						resultCh <- qpRes
+					}
 				}
 			}
 
