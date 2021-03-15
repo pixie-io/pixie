@@ -142,9 +142,7 @@ void ConnTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
 
   UpdateDataStats(*event);
 
-  CONN_TRACE(2) << absl::Substitute(
-      "data=$0 [length=$1]", BytesToString<bytes_format::HexAsciiMix>(event->msg.substr(0, 10)),
-      event->msg.size());
+  CONN_TRACE(1) << absl::Substitute("Data event received: $0", event->ToString());
 
   // TODO(yzhao): Change to let userspace resolve the connection type and signal back to BPF.
   // Then we need at least one data event to let ConnTracker know the field descriptor.
@@ -202,9 +200,7 @@ void ConnTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
     return;
   }
 
-  CONN_TRACE(2) << absl::Substitute(
-      "HTTP2 header event received: stream_id=$0 end_stream=$1 header=$2:$3", hdr->attr.stream_id,
-      hdr->attr.end_stream, hdr->name, hdr->value);
+  CONN_TRACE(2) << absl::Substitute("HTTP2 header event received: $0", hdr->ToString());
 
   if (conn_id_.fd == 0) {
     Disable(
@@ -291,9 +287,7 @@ void ConnTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
     return;
   }
 
-  CONN_TRACE(1) << absl::Substitute(
-      "HTTP data event received: stream_id=$0 end_stream=$1 data=$2 ...", data->attr.stream_id,
-      data->attr.end_stream, BytesToString<bytes_format::HexAsciiMix>(data->payload.substr(0, 10)));
+  CONN_TRACE(1) << absl::Substitute("HTTP2 data event received: $0", data->ToString());
 
   if (conn_id_.fd == 0) {
     Disable(

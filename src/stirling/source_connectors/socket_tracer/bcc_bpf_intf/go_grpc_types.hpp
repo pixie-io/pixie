@@ -5,6 +5,7 @@
 
 #include <magic_enum.hpp>
 
+#include "src/common/base/base.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/go_grpc_types.h"
 
 // perf_submit() uses PERF_RECORD_SAMPLE with PERF_SAMPLE_RAW, which has the following structure.
@@ -61,7 +62,9 @@ struct HTTP2DataEvent {
   }
 
   std::string ToString() const {
-    return absl::Substitute("[attr=$0] [payload=$1]", ::pl::stirling::ToString(attr), payload);
+    return absl::Substitute("[attr=$0] [payload=$1]",
+                            ::pl::stirling::ToString(attr),
+                            BytesToString<bytes_format::HexAsciiMix>(payload));
   }
 
   go_grpc_data_event_t::data_attr_t attr;

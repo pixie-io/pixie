@@ -9,6 +9,7 @@
 
 #include <absl/hash/hash.h>
 
+#include "src/common/base/base.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.h"
 
 // This header defines the C++ counterparts of the BPF data structures.
@@ -46,7 +47,8 @@ struct SocketDataEvent {
   }
 
   std::string ToString() const {
-    return absl::Substitute("attr:[$0] msg_size:$1 msg:[$2]", ::ToString(attr), msg.size(), msg);
+    return absl::Substitute("attr:[$0] msg_size:$1 msg:[$2]", ::ToString(attr), msg.size(),
+                            BytesToString<bytes_format::HexAsciiMix>(msg));
   }
 
   socket_data_event_t::attr_t attr;
