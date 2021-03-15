@@ -146,6 +146,7 @@ func main() {
 	serverStreaming := flag.Bool("server_streaming", false, "Whether or not to call server streaming RPC")
 	bidirStreaming := flag.Bool("bidir_streaming", false, "Whether or not to call server streaming RPC")
 	count := flag.Int("count", 1, "The count of requests to make.")
+	waitPeriodMills := flag.Int("wait_period_millis", 500, "The waiting period between making successive requests.")
 
 	flag.Parse()
 
@@ -167,6 +168,6 @@ func main() {
 
 	for i := 0; i < *count; i++ {
 		fn()
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(time.Duration(*waitPeriodMills) * time.Millisecond)
 	}
 }
