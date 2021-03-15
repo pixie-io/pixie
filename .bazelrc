@@ -92,6 +92,7 @@ build:macos --action_env=BAZEL_LINKOPTS
 
 # bazel build --config asan ...
 build:asan --define PL_CONFIG_ASAN=1
+build:asan --copt -DPL_CONFIG_ASAN
 build:asan --copt -D__SANITIZE_ADDRESS__
 build:asan --copt -fsanitize=address,undefined
 build:asan --linkopt -fsanitize=address,undefined
@@ -168,6 +169,7 @@ coverage --cxxopt -fprofile-arcs
 coverage --cxxopt -ftest-coverage
 coverage --instrument_test_targets
 coverage --define PL_COVERAGE=true
+coverage --copt -DPL_COVERAGE
 coverage --test_tag_filters=-requires_root,-requires_bpf,-no_coverage,-disabled
 
 # Use stable GIT build tag by default.

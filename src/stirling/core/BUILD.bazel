@@ -98,6 +98,5 @@ pl_cc_test(
     # This test is flaky with ASAN due to an ASAN bug related to reading /proc/<pid>/stat
     # See //src/common/system:proc_parser_bug_test for a reproducable demonstration of the bug,
     # and for detailed comments of why it happens.
-    tags = ["no_asan"],
     deps = ["//src/stirling:cc_library"],
 )

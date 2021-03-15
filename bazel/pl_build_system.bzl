@@ -192,10 +192,6 @@ def pl_cc_test(
     test_lib_tags = list(tags)
     if coverage:
         test_lib_tags.append("coverage_test_lib")
-    defines = defines + select({
-        "@pl//bazel:coverage_enabled": ["PL_COVERAGE"],
-        "//conditions:default": [],
-    })
     pl_cc_test_library(
         name = name + "_lib",
         srcs = srcs,

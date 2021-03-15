@@ -58,7 +58,7 @@ constexpr int kProcNetDevTxErrsField = 11;
 constexpr int kProcNetDevTxDropField = 12;
 
 /*************************************************
- * constexprants for the /proc/<pid>/stat file
+ * constants for the /proc/<pid>/stat file
  *************************************************/
 constexpr int kProcStatNumFields = 52;
 
@@ -517,16 +517,40 @@ StatusOr<int64_t> GetPIDStartTimeTicks(const std::filesystem::path& proc_pid_pat
   const std::filesystem::path proc_pid_stat_path = proc_pid_path / "stat";
   const std::string fpath = proc_pid_stat_path.string();
 
+  std::string line;
+
+  // It's usually a big no-no to ifdef based on compilation mode,
+  // but this is a workaround for an ASAN bug that causes crashes and flakiness
+  // in our tests. See //src/common/system/proc_parser_bug_test.cc for details.
+  //
+  // The workaround implementation uses a C functions that don't throw exceptions.
+  // Why not just use the workaround version all the time?
+  // Because it has a hard-coded constant which makes it less robust.
+#if defined(PL_CONFIG_ASAN)
+  std::FILE* fp = std::fopen(fpath.c_str(), "r");
+  if (fp == nullptr) {
+    return error::Internal("Could not open file $0", fpath);
+  }
+
+  // A few quick runs show that /proc/<pid>/stat is <200 characters on my machine,
+  // but a lot of those numbers are 0. If they were non-zero, the string could be much
+  // longer. Hopefully a 4KB block keeps us safe. This is for ASAN only anyways.
+  constexpr int kMaxSupportedProcPIDStatLength = 4096;
+  line.resize(kMaxSupportedProcPIDStatLength);
+  if (std::fgets(line.data(), line.size(), fp) == nullptr) {
+    return error::Internal("Could not get line from file $0", fpath);
+  }
+#else
   std::ifstream ifs;
   ifs.open(fpath);
   if (!ifs) {
     return error::Internal("Could not open file $0", fpath);
   }
 
-  std::string line;
   if (!std::getline(ifs, line)) {
     return error::Internal("Could not get line from file $0", fpath);
   }
+#endif
 
   std::vector<std::string_view> split = absl::StrSplit(line, " ", absl::SkipWhitespace());
   // We check less than in case more fields are added later.

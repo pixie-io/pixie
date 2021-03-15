@@ -47,7 +47,6 @@ pl_cc_test(
 pl_cc_test(
     name = "proc_parser_bug_test",
     srcs = ["proc_parser_bug_test.cc"],
-    tags = ["no_asan"],
     deps = [
         ":cc_library",
     ],

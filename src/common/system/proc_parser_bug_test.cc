@@ -8,6 +8,9 @@
 
 #include <absl/strings/substitute.h>
 
+// Uncomment to show the ASAN bug.
+// #define DEMONSTRATE_ASAN_BUG
+
 // This test shows an ASAN bug, where an exception is thrown while reading /proc/<pid>/stat.
 // In particular, the /proc/<pid>/stat file is opened, but the pid dies before the file is read.
 //
@@ -74,12 +77,45 @@ void GetPIDStartTimeTicksProxy(const std::filesystem::path& proc_pid_path) {
       << absl::Substitute("Could not get line from file $0", fpath);
 }
 
-TEST(GetPIDStartTimeTicks, ReproduceAsanBug) {
-  int child_pid = fork();
-  if (child_pid == 0) {
-    sleep(1);
-    exit(1);
+void GetPIDStartTimeTicksProxyWorkaround(const std::filesystem::path& proc_pid_path) {
+  const std::filesystem::path proc_pid_stat_path = proc_pid_path / "stat";
+  const std::string fpath = proc_pid_stat_path.string();
+
+  std::FILE* fp = std::fopen(fpath.c_str(), "r");
+
+  // Wait for the child process to die.
+  wait(NULL);
+
+  // Now try to read /proc/<pid>/stat for the child process.
+  std::string line;
+  line.resize(120);
+  char* result = std::fgets(line.data(), line.size(), fp);
+
+  // Turns out this sometimes succeeds and sometimes fails, due to some unknown race with Linux.
+  // The important thing, however, is that we don't cause an ASAN crash.
+  EXPECT_THAT(result, ::testing::AnyOf(nullptr, ::testing::Not(nullptr)));
+}
+
+class ASANBugReproTest : public ::testing::Test {
+ protected:
+  void SetUp() {
+    int child_pid = fork();
+    if (child_pid == 0) {
+      sleep(1);
+      exit(1);
+    }
+    proc_pid_stat_path_ = "/proc/" + std::to_string(child_pid);
   }
 
-  ASSERT_NO_FATAL_FAILURE(GetPIDStartTimeTicksProxy("/proc/" + std::to_string(child_pid)));
+  std::filesystem::path proc_pid_stat_path_;
+};
+
+TEST_F(ASANBugReproTest, OriginalBuggyOnASAN) {
+#if !defined(PL_CONFIG_ASAN) || defined(DEMONSTRATE_ASAN_BUG)
+  ASSERT_NO_FATAL_FAILURE(GetPIDStartTimeTicksProxy(proc_pid_stat_path_));
+#endif
+}
+
+TEST_F(ASANBugReproTest, Workaround) {
+  ASSERT_NO_FATAL_FAILURE(GetPIDStartTimeTicksProxyWorkaround(proc_pid_stat_path_));
 }
