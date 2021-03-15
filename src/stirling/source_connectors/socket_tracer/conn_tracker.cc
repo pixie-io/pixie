@@ -30,9 +30,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/types.h"
 
 DEFINE_bool(enable_unix_domain_sockets, false, "Whether Unix domain sockets are traced or not.");
-DEFINE_uint32(stirling_http2_stream_id_gap_threshold, 100,
-              "If a stream ID jumps by this many spots or more, an error is assumed and the entire "
-              "connection info is cleared.");
+
 constexpr int64_t kUnsetPIDFD = -1;
 DEFINE_int64(stirling_conn_trace_pid, kUnsetPIDFD, "Trace activity on this pid.");
 DEFINE_int64(stirling_conn_trace_fd, kUnsetPIDFD, "Trace activity on this fd.");
@@ -178,78 +176,8 @@ protocols::http2::HalfStream* ConnTracker::HalfStreamPtr(uint32_t stream_id, boo
   // Server-initiated streams have even stream IDs.
   // https://tools.ietf.org/html/rfc7540#section-5.1.1
   const bool client_stream = (stream_id % 2 == 1);
-
-  std::deque<protocols::http2::Stream>& streams_deque =
-      client_stream ? http2_client_streams_.streams() : http2_server_streams_.streams();
-  uint32_t& oldest_active_stream_id =
-      client_stream ? oldest_active_client_stream_id_ : oldest_active_server_stream_id_;
-
-  // Now we have to figure out where the stream_id is located in the streams_deque, as an index.
-  // This may also require growing the deque.
-  // There are 3 cases:
-  //  1) Deque is empty.
-  //      - Initialize the deque to size 1 and set index to 0.
-  //  2) StreamID precedes the oldest event in the deque.
-  //      - Grow the deque backwards.
-  //  3) StreamID follows the oldest event in the deque.
-  //      - Grow the deque forwards (if required).
-
-  size_t index = 0;
-  if (streams_deque.empty()) {
-    streams_deque.resize(1);
-    index = 0;
-    oldest_active_stream_id = stream_id;
-  } else if (stream_id < oldest_active_stream_id) {
-    // Need to grow the deque at the front.
-    size_t new_entries_count = (oldest_active_stream_id - stream_id) / kHTTP2StreamIDIncrement;
-
-    // If going too far backwards, something is likely wrong. Reset everything for now.
-    if (new_entries_count > FLAGS_stirling_http2_stream_id_gap_threshold) {
-      CONN_TRACE(2) << absl::Substitute(
-          "Encountered a stream ID $0 that is too far from the last known stream ID $1. Resetting "
-          "all streams on this connection.",
-          stream_id, oldest_active_stream_id + streams_deque.size() * 2);
-      streams_deque.clear();
-      streams_deque.resize(1);
-      index = 0;
-      oldest_active_stream_id = stream_id;
-    } else {
-      streams_deque.insert(streams_deque.begin(), new_entries_count, protocols::http2::Stream());
-      index = 0;
-      oldest_active_stream_id = stream_id;
-    }
-  } else {
-    // Stream ID is after the front. We may or may not need to grow the deque,
-    // depending on its current size.
-    index = (stream_id - oldest_active_stream_id) / kHTTP2StreamIDIncrement;
-    size_t new_size = std::max(streams_deque.size(), index + 1);
-
-    // If we are to grow by more than some threshold, then something appears wrong.
-    // Reset everything for now.
-    if (new_size - streams_deque.size() > FLAGS_stirling_http2_stream_id_gap_threshold) {
-      CONN_TRACE(2) << absl::Substitute(
-          "Encountered a stream ID $0 that is too far from the last known stream ID $1. Resetting "
-          "all streams on this connection",
-          stream_id, oldest_active_stream_id + streams_deque.size() * 2);
-      streams_deque.clear();
-      streams_deque.resize(1);
-      index = 0;
-      oldest_active_stream_id = stream_id;
-    } else {
-      streams_deque.resize(new_size);
-    }
-  }
-
-  auto& stream = streams_deque[index];
-
-  if (stream.consumed) {
-    // Don't expect this to happen, but log it just in case.
-    // If http2/stitcher.cc uses std::move on consumption, this would indicate an issue.
-    CONN_TRACE(2) << "Trying to access a consumed stream.";
-  }
-
-  protocols::http2::HalfStream* half_stream_ptr = write_event ? &stream.send : &stream.recv;
-  return half_stream_ptr;
+  HTTP2StreamsContainer& streams = client_stream ? http2_client_streams_ : http2_server_streams_;
+  return streams.HalfStreamPtr(stream_id, write_event);
 }
 
 EndpointRole InferHTTP2Role(bool write_event, const std::unique_ptr<HTTP2HeaderEvent>& hdr) {
@@ -421,14 +349,16 @@ void ConnTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
 template <>
 std::vector<protocols::http2::Record>
 ConnTracker::ProcessToRecords<protocols::http2::ProtocolTraits>() {
-  // TODO(oazizi): ECHECK that raw events are empty.
+  // TODO(oazizi): ECHECK that DataStream is empty.
 
   protocols::RecordsWithErrorCount<protocols::http2::Record> result;
 
-  protocols::http2::ProcessHTTP2Streams(&http2_client_streams_.streams(),
-                                        &oldest_active_client_stream_id_, &result);
-  protocols::http2::ProcessHTTP2Streams(&http2_server_streams_.streams(),
-                                        &oldest_active_server_stream_id_, &result);
+  protocols::http2::ProcessHTTP2Streams(http2_client_streams_.mutable_streams(),
+                                        http2_client_streams_.mutable_oldest_active_stream_id(),
+                                        &result);
+  protocols::http2::ProcessHTTP2Streams(http2_server_streams_.mutable_streams(),
+                                        http2_server_streams_.mutable_oldest_active_stream_id(),
+                                        &result);
 
   UpdateResultStats(result);
   Cleanup<protocols::http2::ProtocolTraits>();

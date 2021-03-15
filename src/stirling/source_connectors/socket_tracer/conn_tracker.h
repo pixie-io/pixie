@@ -560,26 +560,13 @@ class ConnTracker : NotCopyMoveable {
   DataStream send_data_;
   DataStream recv_data_;
 
-  // --- Start uprobe-based HTTP2 members.
-
   // Uprobe-based HTTP2 uses a different scheme, where it holds client and server-initiated streams,
   // instead of send and recv messages. As such, we create aliases for HTTP2.
   HTTP2StreamsContainer http2_client_streams_;
   HTTP2StreamsContainer http2_server_streams_;
 
-  // For uprobe-based HTTP2 tracing only.
-  // Tracks oldest active stream ID for retiring the head of send_data_/recv_data_ deques.
-  uint32_t oldest_active_client_stream_id_;
-  uint32_t oldest_active_server_stream_id_;
-
   // Access the appropriate HalfStream object for the given stream ID.
   protocols::http2::HalfStream* HalfStreamPtr(uint32_t stream_id, bool write_event);
-
-  // According to the HTTP2 protocol, Stream IDs are incremented by 2.
-  // Client-initiated streams use odd IDs, while server-initiated streams use even IDs.
-  static constexpr int kHTTP2StreamIDIncrement = 2;
-
-  // --- End uprobe-based HTTP2 members.
 
   // The timestamp of the last activity on this connection.
   // Recorded as the latest timestamp on a BPF event.
