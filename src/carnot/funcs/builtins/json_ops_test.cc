@@ -13,12 +13,18 @@ constexpr char kTestJSONStr[] = R"(
 {
   "str_key": {"abc": "def"},
   "int64_key": 34243242341,
-  "float64_key": 123423.5234
+  "float64_key": 123423.5234,
+  "str_plain": "abc"
 })";
 
 TEST(JSONOps, PluckUDF) {
   auto udf_tester = udf::UDFTester<PluckUDF>();
   udf_tester.ForInput(kTestJSONStr, "str_key").Expect(R"({"abc":"def"})");
+}
+
+TEST(JSONOps, PluckUDF_plain_string) {
+  auto udf_tester = udf::UDFTester<PluckUDF>();
+  udf_tester.ForInput(kTestJSONStr, "str_plain").Expect("abc");
 }
 
 TEST(JSONOps, PluckUDF_non_existent_key_return_empty) {

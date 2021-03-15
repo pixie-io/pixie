@@ -36,6 +36,10 @@ class PluckUDF : public udf::ScalarUDF {
     if (plucked_value.IsNull()) {
       return "";
     }
+    if (plucked_value.IsString()) {
+      return plucked_value.GetString();
+    }
+
     // This is robust to nested JSON.
     rapidjson::StringBuffer sb;
     rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
