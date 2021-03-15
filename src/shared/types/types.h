@@ -264,7 +264,7 @@ struct IsValidValueType {
       std::is_base_of_v<BaseValueType, T> &&
       (std::is_same_v<T, BoolValue> || std::is_same_v<T, Int64Value> ||
        std::is_same_v<T, Float64Value> || std::is_same_v<T, StringValue> ||
-       std::is_same_v<T, Time64NSValue>);
+       std::is_same_v<T, Time64NSValue> || std::is_same_v<T, UInt128Value>);
 };
 
 /**
