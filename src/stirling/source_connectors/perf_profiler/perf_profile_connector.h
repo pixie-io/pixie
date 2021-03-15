@@ -12,6 +12,8 @@
 #include "src/stirling/source_connectors/perf_profiler/bcc_bpf_intf/stack_event.h"
 #include "src/stirling/source_connectors/perf_profiler/stack_traces_table.h"
 
+DECLARE_bool(stirling_profiler_test_mode);
+
 namespace pl {
 namespace stirling {
 

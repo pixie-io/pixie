@@ -38,6 +38,7 @@ class PerfProfileBPFTest : public ::testing::Test {
 
  protected:
   void SetUp() override {
+    FLAGS_stirling_profiler_test_mode = true;
     source_ = PerfProfileConnector::Create("perf_profile_connector");
     ASSERT_OK(source_->Init());
     ctx_ = std::make_unique<StandaloneContext>();
@@ -219,8 +220,8 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
   ASSERT_NO_FATAL_FAILURE(CheckStackTraceIDsInvariance());
 
   // The two symbolic stack traces we expected to see for the toy app.:
-  const std::string_view fib27key = "__libc_start_main;main;fib27();fib(unsigned long)";
-  const std::string_view fib52key = "__libc_start_main;main;fib52();fib(unsigned long)";
+  const std::string_view fib27key = "-;__libc_start_main;main;fib27();fib(unsigned long)";
+  const std::string_view fib52key = "-;__libc_start_main;main;fib52();fib(unsigned long)";
 
   // Populated expected_stack_traces_ with the keys for this test:
   expected_stack_traces_.insert(fib27key);

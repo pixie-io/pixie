@@ -11,6 +11,8 @@
 
 BPF_SRC_STRVIEW(profiler_bcc_script, profiler);
 
+DEFINE_bool(stirling_profiler_test_mode, false, "Makes stack traces more predictable for testing");
+
 namespace pl {
 namespace stirling {
 
@@ -51,14 +53,14 @@ Status PerfProfileConnector::StopImpl() {
 }
 
 namespace {
-std::string FoldedStackTraceString(ebpf::BPFStackTable* stack_traces,
+std::string FoldedStackTraceString(std::string_view name, ebpf::BPFStackTable* stack_traces,
                                    const stack_trace_key_t& key) {
   using SymbolsVec = std::vector<std::string>;
 
   SymbolsVec user_symbols = stack_traces->get_stack_symbol(key.user_stack_id, key.pid);
   SymbolsVec kernel_symbols = stack_traces->get_stack_symbol(key.kernel_stack_id, -1);
 
-  return stack_traces::FoldedStackTraceString(user_symbols, kernel_symbols);
+  return stack_traces::FoldedStackTraceString(name, user_symbols, kernel_symbols);
 }
 }  // namespace
 
@@ -148,7 +150,12 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
     // refactor use of ctx->getASID() to CreateRecords().
     const md::UPID upid(ctx->GetASID(), stack_trace_key.pid, stack_trace_key.start_time_ticks);
 
-    std::string stack_trace_str = FoldedStackTraceString(stack_traces, stack_trace_key);
+    // TODO(oazizi): Replace this with the Pod and container name.
+    //               Also get rid of FLAGS_stirling_profiler_test_mode.
+    std::string process_name = FLAGS_stirling_profiler_test_mode ? "-" : upid.String();
+
+    std::string stack_trace_str =
+        FoldedStackTraceString(process_name, stack_traces, stack_trace_key);
     SymbolicStackTrace symbolic_stack_trace = {upid, std::move(stack_trace_str)};
     symbolic_histogram[symbolic_stack_trace] += count;
 
