@@ -15,7 +15,7 @@ bool MatchesHTTPHeaders(const HeadersMap& http_headers, const HTTPHeaderFilter& 
     // space as it's necessary in this form.
     //
     // TODO(yzhao): Update cpplint to newer version.
-    // NOLINTNEXTLINE: whitespace/braces
+    // NOLINTNEXTLINE(whitespace/braces)
     for (auto [http_header, substr] : filter.inclusions) {
       auto http_header_iter = http_headers.find(std::string(http_header));
       if (http_header_iter != http_headers.end() &&
@@ -32,7 +32,7 @@ bool MatchesHTTPHeaders(const HeadersMap& http_headers, const HTTPHeaderFilter& 
   // also inside a if statement, which is not needed for correctness.
   if (!filter.exclusions.empty()) {
     bool excluded = false;
-    // NOLINTNEXTLINE: whitespace/braces
+    // NOLINTNEXTLINE(whitespace/braces)
     for (auto [http_header, substr] : filter.exclusions) {
       auto http_header_iter = http_headers.find(std::string(http_header));
       if (http_header_iter != http_headers.end() &&

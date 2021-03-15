@@ -5,11 +5,52 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <utility>
 
 #include "src/stirling/source_connectors/socket_tracer/conn_tracker.h"
 
 namespace pl {
 namespace stirling {
+
+/**
+ * ConnTrackersGenerations is a container of tracker generations,
+ * where a generation is identified by the timestamp ID (TSID).
+ *
+ * It automatically handles marking older generations for death.
+ */
+class ConnTrackerGenerations {
+ public:
+  /**
+   * Get ConnTracker by TSID, or return a new one if the TSID does not exist.
+   *
+   * @return The pointer to the conn_tracker and whether the tracker was newly created.
+   */
+  std::pair<ConnTracker*, bool> GetOrCreate(uint64_t tsid);
+
+  bool Contains(uint64_t tsid) const;
+
+  /**
+   * Returns the oldest tracker, or error if the oldest tracker either has been destroyed
+   * or is ReadyForDestruction().
+   */
+  StatusOr<const ConnTracker*> GetActive() const;
+
+  bool empty() const { return generations_.empty(); }
+
+  /**
+   * Removes all trackers that are ReadyForDestruction().
+   */
+  int CleanupTrackers();
+
+ private:
+  // A map of TSID to ConnTrackers.
+  absl::flat_hash_map<uint64_t, std::unique_ptr<ConnTracker>> generations_;
+
+  // Keep a pointer to the ConnTracker generation with the highest TSID.
+  ConnTracker* oldest_generation_ = nullptr;
+
+  friend class ConnTrackerGenerationsTest;
+};
 
 /**
  * ConnTrackersManager is a container that keeps track of all ConnTrackers.
@@ -131,16 +172,13 @@ class ConnTrackersManager {
   // A map from conn_id (PID+FD+TSID) to tracker. This is for easy update on BPF events.
   // Structured as two nested maps to be explicit about "generations" of trackers per PID+FD.
   // Key is {PID, FD} for outer map, and tsid for inner map.
-  // Note that the inner map cannot be a vector, because there is no guaranteed order
-  // in which events are read from perf buffers.
-  // Inner map could be a priority_queue, but benchmarks showed better performance with a std::map.
-  absl::flat_hash_map<uint64_t, std::map<uint64_t, ConnTracker> > connection_trackers_;
+  absl::flat_hash_map<uint64_t, ConnTrackerGenerations> connection_trackers_;
 
   // A set of lists of pointers to all the contained trackers, organized by protocol
   // This is for easy access to the trackers during TransferData().
   // Key is protocol.
   // TODO(jps): Convert to vector?
-  absl::flat_hash_map<TrafficProtocol, std::list<ConnTracker*> > conn_trackers_by_protocol_;
+  absl::flat_hash_map<TrafficProtocol, std::list<ConnTracker*>> conn_trackers_by_protocol_;
 
   // Keep track of total number of trackers, and other counts.
   // Used to check for consistency.

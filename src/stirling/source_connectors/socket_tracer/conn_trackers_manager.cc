@@ -4,6 +4,76 @@ namespace pl {
 namespace stirling {
 
 //-----------------------------------------------------------------------------
+// ConnTrackerGenerations
+//-----------------------------------------------------------------------------
+
+std::pair<ConnTracker*, bool> ConnTrackerGenerations::GetOrCreate(uint64_t tsid) {
+  std::unique_ptr<ConnTracker>& conn_tracker_ptr = generations_[tsid];
+  bool created = false;
+
+  // If conn_trackers[conn_id.tsid] does not exist, a new one will be created in the map.
+  // New trackers always have TSID == 0, while BPF should never generate a TSID of zero,
+  // so we use this as a way of detecting new trackers.
+  if (conn_tracker_ptr == nullptr) {
+    conn_tracker_ptr = std::make_unique<ConnTracker>();
+    created = true;
+
+    // If there is a another generation for this conn map key,
+    // one of them needs to be marked for death.
+    if (oldest_generation_ != nullptr) {
+      // If the inserted conn_tracker is not the last generation, then mark it for death.
+      // This can happen because the events draining from the perf buffers are not ordered.
+      if (tsid < oldest_generation_->conn_id().tsid) {
+        VLOG(1) << "Marking for death because not last generation.";
+        conn_tracker_ptr->MarkForDeath();
+      } else {
+        // New tracker was the last, so the previous last should be marked for death.
+        VLOG(1) << "Marking previous generation for death.";
+        oldest_generation_->MarkForDeath();
+        oldest_generation_ = conn_tracker_ptr.get();
+      }
+    } else {
+      oldest_generation_ = conn_tracker_ptr.get();
+    }
+  }
+
+  return std::make_pair(conn_tracker_ptr.get(), created);
+}
+
+bool ConnTrackerGenerations::Contains(uint64_t tsid) const { return generations_.contains(tsid); }
+
+StatusOr<const ConnTracker*> ConnTrackerGenerations::GetActive() const {
+  // Don't return trackers that are destroyed or about to be destroyed.
+  if (oldest_generation_ == nullptr || oldest_generation_->ReadyForDestruction()) {
+    return error::NotFound("No active connection trackers found");
+  }
+
+  return oldest_generation_;
+}
+
+int ConnTrackerGenerations::CleanupTrackers() {
+  int num_erased = 0;
+
+  auto iter = generations_.begin();
+  while (iter != generations_.end()) {
+    auto& tracker = iter->second;
+
+    // Remove any trackers that are no longer required.
+    if (tracker->ReadyForDestruction()) {
+      if (tracker.get() == oldest_generation_) {
+        oldest_generation_ = nullptr;
+      }
+      generations_.erase(iter++);
+      ++num_erased;
+    } else {
+      ++iter;
+    }
+  }
+
+  return num_erased;
+}
+
+//-----------------------------------------------------------------------------
 // ConnTrackersManager
 //-----------------------------------------------------------------------------
 
@@ -55,41 +125,18 @@ ConnTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t conn_i
   const uint64_t conn_map_key = GetConnMapKey(conn_id.upid.pid, conn_id.fd);
   DCHECK_NE(conn_map_key, 0) << "Connection map key cannot be 0, pid must be wrong";
 
-  auto& conn_trackers = connection_trackers_[conn_map_key];
-  ConnTracker& conn_tracker = conn_trackers[conn_id.tsid];
+  ConnTrackerGenerations& conn_trackers = connection_trackers_[conn_map_key];
+  // NOLINTNEXTLINE(whitespace/braces)
+  auto [conn_tracker_ptr, created] = conn_trackers.GetOrCreate(conn_id.tsid);
 
-  // If conn_trackers[conn_id.tsid] does not exist, a new one will be created in the map.
-  // New trackers always have TSID == 0, while BPF should never generate a TSID of zero,
-  // so we use this as a way of detecting new trackers.
-  // TODO(oazizi): Find a more direct way of detecting new trackers.
-  const bool new_tracker = (conn_tracker.conn_id().tsid == 0);
-  if (new_tracker) {
+  if (created) {
     ++num_trackers_;
-
-    conn_tracker.manager_ = this;
-    UpdateProtocol(&conn_tracker, {});
-
-    // If there is a another generation for this conn map key,
-    // one of them needs to be marked for death.
-    if (conn_trackers.size() > 1) {
-      auto last_tracker_iter = --conn_trackers.end();
-
-      // If the inserted conn_tracker is not the last generation, then mark it for death.
-      // This can happen because the events draining from the perf buffers are not ordered.
-      if (last_tracker_iter->second.conn_id().tsid != 0) {
-        VLOG(1) << "Marking for death because not last generation.";
-        conn_tracker.MarkForDeath();
-      } else {
-        // New tracker was the last, so the previous last should be marked for death.
-        --last_tracker_iter;
-        VLOG(1) << "Marking previous generation for death.";
-        last_tracker_iter->second.MarkForDeath();
-      }
-    }
+    conn_tracker_ptr->manager_ = this;
+    UpdateProtocol(conn_tracker_ptr, {});
   }
 
   DebugChecks();
-  return conn_tracker;
+  return *conn_tracker_ptr;
 }
 
 StatusOr<const ConnTracker*> ConnTrackersManager::GetConnTracker(uint32_t pid, uint32_t fd) const {
@@ -109,42 +156,25 @@ StatusOr<const ConnTracker*> ConnTrackersManager::GetConnTracker(uint32_t pid, u
   }
 
   // Return last connection.
-  auto tracker_it = tracker_generations.end();
-  --tracker_it;
-
-  // Don't return trackers that are about to be destroyed.
-  if (tracker_it->second.ReadyForDestruction()) {
-    return error::NotFound("Connection tracker with pid=$0 fd=$1 is pending destruction.", pid, fd);
-  }
-
-  return &tracker_it->second;
+  return tracker_generations.GetActive();
 }
 
 void ConnTrackersManager::CleanupTrackers() {
   // Outer loop iterates through tracker sets (keyed by PID+FD),
   // while inner loop iterates through generations of trackers for that PID+FD pair.
-  auto tracker_set_it = connection_trackers_.begin();
-  while (tracker_set_it != connection_trackers_.end()) {
-    auto& tracker_generations = tracker_set_it->second;
+  auto iter = connection_trackers_.begin();
+  while (iter != connection_trackers_.end()) {
+    auto& tracker_generations = iter->second;
 
-    auto generation_it = tracker_generations.begin();
-    while (generation_it != tracker_generations.end()) {
-      auto& tracker = generation_it->second;
+    int num_erased = tracker_generations.CleanupTrackers();
 
-      // Remove any trackers that are no longer required.
-      if (tracker.ReadyForDestruction()) {
-        tracker_generations.erase(generation_it++);
-        --num_trackers_;
-        --num_trackers_ready_for_destruction_;
-      } else {
-        ++generation_it;
-      }
-    }
+    num_trackers_ -= num_erased;
+    num_trackers_ready_for_destruction_ -= num_erased;
 
     if (tracker_generations.empty()) {
-      connection_trackers_.erase(tracker_set_it++);
+      connection_trackers_.erase(iter++);
     } else {
-      ++tracker_set_it;
+      ++iter;
     }
   }
 
@@ -172,15 +202,14 @@ Status ConnTrackersManager::TestOnlyCheckConsistency() const {
       }
 
       const auto& tracker_generations = tracker_set_it->second;
-      auto tracker_it = tracker_generations.find(tracker->conn_id().tsid);
-      if (tracker_it == tracker_generations.end()) {
+      if (!tracker_generations.Contains(tracker->conn_id().tsid)) {
         return error::Internal(
             "Tracker $0 in the protocol lists not found in connection_trackers_.",
             ToString(tracker->conn_id()));
       }
 
       // Check that the pointer only shows up once across all lists.
-      // NOLINTNEXTLINE: whitespace/braces
+      // NOLINTNEXTLINE(whitespace/braces)
       auto [unused, inserted] = trackers_set.insert(tracker);
       if (!inserted) {
         return error::Internal("Tracker $0 found in two lists.", ToString(tracker->conn_id()));

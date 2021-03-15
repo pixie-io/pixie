@@ -121,7 +121,6 @@ void ConnTracker::AddConnCloseEvent(const close_event_t& close_event) {
 }
 
 void ConnTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
-  // Make sure update conn_id traffic_class before exporting stats, which uses these fields.
   SetConnID(event->attr.conn_id);
   bool role_changed = SetRole(event->attr.traffic_class.role);
   SetProtocol(event->attr.traffic_class.protocol);

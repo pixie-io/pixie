@@ -134,5 +134,112 @@ TEST_F(ConnTrackersManagerTest, ChangeProtocolsWhileReadyForDestruction) {
       << "Inconsistent state after TransferStreams on kProtocolHTTP.";
 }
 
+class ConnTrackerGenerationsTest : public ::testing::Test {
+ protected:
+  std::pair<ConnTracker*, bool> GetOrCreateTracker(uint64_t tsid) {
+    // NOLINTNEXTLINE(whitespace/braces)
+    auto [tracker, created] = trackers_.GetOrCreate(tsid);
+    if (created) {
+      struct conn_id_t conn_id = {};
+      conn_id.tsid = tsid;
+      tracker->SetConnID(conn_id);
+    }
+    return {tracker, created};
+  }
+
+  int CleanupTrackers() {
+    // Simulate elapsed iterations, which cause trackers to become ReadyForDestruction().
+    for (auto& [tsid, tracker] : trackers_.generations_) {
+      for (int i = 0; i < ConnTracker::kDeathCountdownIters; ++i) {
+        tracker->IterationPostTick();
+      }
+    }
+
+    return trackers_.CleanupTrackers();
+  }
+
+  ConnTrackerGenerations trackers_;
+};
+
+TEST_F(ConnTrackerGenerationsTest, Basic) {
+  ASSERT_TRUE(trackers_.empty());
+  ASSERT_FALSE(trackers_.Contains(1));
+
+  // NOLINTNEXTLINE(whitespace/braces)
+  auto [tracker1, created1] = GetOrCreateTracker(1);
+  ASSERT_TRUE(tracker1 != nullptr);
+  ASSERT_TRUE(created1);
+  ASSERT_FALSE(trackers_.empty());
+  ASSERT_TRUE(trackers_.Contains(1));
+  ASSERT_FALSE(trackers_.Contains(2));
+  ASSERT_FALSE(trackers_.Contains(3));
+  ASSERT_OK_AND_EQ(trackers_.GetActive(), tracker1);
+
+  // NOLINTNEXTLINE(whitespace/braces)
+  auto [tracker3, created3] = GetOrCreateTracker(3);
+  ASSERT_TRUE(tracker3 != nullptr);
+  ASSERT_TRUE(created3);
+  ASSERT_FALSE(trackers_.empty());
+  ASSERT_TRUE(trackers_.Contains(1));
+  ASSERT_FALSE(trackers_.Contains(2));
+  ASSERT_TRUE(trackers_.Contains(3));
+  ASSERT_OK_AND_EQ(trackers_.GetActive(), tracker3);
+
+  // NOLINTNEXTLINE(whitespace/braces)
+  auto [tracker2, created2] = GetOrCreateTracker(2);
+  ASSERT_TRUE(tracker2 != nullptr);
+  ASSERT_TRUE(created2);
+  ASSERT_FALSE(trackers_.empty());
+  ASSERT_TRUE(trackers_.Contains(1));
+  ASSERT_TRUE(trackers_.Contains(2));
+  ASSERT_TRUE(trackers_.Contains(3));
+  ASSERT_OK_AND_EQ(trackers_.GetActive(), tracker3);
+
+  // NOLINTNEXTLINE(whitespace/braces)
+  auto [tracker1b, created1b] = GetOrCreateTracker(1);
+  ASSERT_EQ(tracker1b, tracker1);
+  ASSERT_FALSE(created1b);
+  ASSERT_FALSE(trackers_.empty());
+  ASSERT_TRUE(trackers_.Contains(1));
+  ASSERT_TRUE(trackers_.Contains(2));
+  ASSERT_TRUE(trackers_.Contains(3));
+  ASSERT_OK_AND_EQ(trackers_.GetActive(), tracker3);
+
+  // NOLINTNEXTLINE(whitespace/braces)
+  auto [tracker2b, created2b] = GetOrCreateTracker(2);
+  ASSERT_EQ(tracker2b, tracker2);
+  ASSERT_FALSE(created2b);
+  ASSERT_FALSE(trackers_.empty());
+  ASSERT_TRUE(trackers_.Contains(1));
+  ASSERT_TRUE(trackers_.Contains(2));
+  ASSERT_TRUE(trackers_.Contains(3));
+  ASSERT_OK_AND_EQ(trackers_.GetActive(), tracker3);
+
+  int num_erased1 = CleanupTrackers();
+  ASSERT_EQ(num_erased1, 2);
+  ASSERT_FALSE(trackers_.empty());
+  ASSERT_FALSE(trackers_.Contains(1));
+  ASSERT_FALSE(trackers_.Contains(2));
+  ASSERT_TRUE(trackers_.Contains(3));
+  ASSERT_OK_AND_EQ(trackers_.GetActive(), tracker3);
+
+  int num_erased2 = CleanupTrackers();
+  ASSERT_EQ(num_erased2, 0);
+  ASSERT_FALSE(trackers_.empty());
+  ASSERT_FALSE(trackers_.Contains(1));
+  ASSERT_FALSE(trackers_.Contains(2));
+  ASSERT_TRUE(trackers_.Contains(3));
+  ASSERT_OK_AND_EQ(trackers_.GetActive(), tracker3);
+
+  tracker3->MarkForDeath();
+  int num_erased3 = CleanupTrackers();
+  ASSERT_EQ(num_erased3, 1);
+  ASSERT_TRUE(trackers_.empty());
+  ASSERT_FALSE(trackers_.Contains(1));
+  ASSERT_FALSE(trackers_.Contains(2));
+  ASSERT_FALSE(trackers_.Contains(3));
+  ASSERT_NOT_OK(trackers_.GetActive());
+}
+
 }  // namespace stirling
 }  // namespace pl

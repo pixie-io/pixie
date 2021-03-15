@@ -624,6 +624,7 @@ class ConnTracker : NotCopyMoveable {
 
   friend class ConnTrackersManager;
   friend class ConnTrackersManagerTest;
+  friend class ConnTrackerGenerationsTest;
 };
 
 // Explicit template specialization must be declared in namespace scope.

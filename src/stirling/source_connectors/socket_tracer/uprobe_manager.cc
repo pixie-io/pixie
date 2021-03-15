@@ -479,7 +479,7 @@ absl::flat_hash_set<md::UPID> UProbeManager::PIDsToRescanForUProbes() {
       constexpr int kMaximumModulus = 1 << 12;
       const double kBackoffFactor = FLAGS_stirling_rescan_exp_backoff_factor;
 
-      // NOLINTNEXTLINE: whitespace/braces
+      // NOLINTNEXTLINE(whitespace/braces)
       auto [iter, success] = backoff_map_.emplace(upid, kInitialModulus);
       int& modulus = iter->second;
       DCHECK_NE(modulus, 0) << success;
