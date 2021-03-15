@@ -76,13 +76,6 @@ class DataStream : NotCopyMoveable {
   }
 
   /**
-   * Returns the current set of streams (for Uprobe-based HTTP2 only)
-   * @return deque of streams.
-   */
-  std::deque<protocols::http2::Stream>& http2_streams() { return http2_streams_; }
-  const std::deque<protocols::http2::Stream>& http2_streams() const { return http2_streams_; }
-
-  /**
    * Clears all unparsed and parsed data from the Datastream.
    */
   void Reset();
@@ -163,28 +156,6 @@ class DataStream : NotCopyMoveable {
   }
 
   /**
-   * Cleanup HTTP2 that are received from the BPF uprobe events, when the condition is right.
-   */
-  void CleanupHTTP2Streams() {
-    // TODO(yzhao): Consider put the size computation into a member function of DataStream.
-    size_t size = 0;
-    for (const auto& stream : http2_streams()) {
-      size += stream.ByteSize();
-    }
-
-    if (size > FLAGS_messages_size_limit_bytes) {
-      LOG_FIRST_N(WARNING, 10) << absl::Substitute(
-          "HTTP2 Streams were cleared, because their size $0 is larger than the specified limit "
-          "$1.",
-          size, FLAGS_messages_size_limit_bytes);
-      http2_streams().clear();
-    }
-
-    EraseExpiredStreams(std::chrono::seconds(FLAGS_messages_expiration_duration_secs),
-                        &http2_streams());
-  }
-
-  /**
    * Cleanup BPF events that are not able to be be processed.
    */
   bool CleanupEvents() {
@@ -220,22 +191,6 @@ class DataStream : NotCopyMoveable {
     frames->erase(frames->begin(), iter);
   }
 
-  static void EraseExpiredStreams(std::chrono::seconds exp_dur,
-                                  std::deque<protocols::http2::Stream>* streams) {
-    auto iter = streams->begin();
-    for (; iter != streams->end(); ++iter) {
-      uint64_t timestamp_ns = std::max(iter->send.timestamp_ns, iter->recv.timestamp_ns);
-      auto last_activity = std::chrono::time_point<std::chrono::steady_clock>(
-          std::chrono::nanoseconds(timestamp_ns));
-      auto now = std::chrono::steady_clock::now();
-      auto stream_age = std::chrono::duration_cast<std::chrono::seconds>(now - last_activity);
-      if (stream_age < exp_dur) {
-        break;
-      }
-    }
-    streams->erase(streams->begin(), iter);
-  }
-
   // Raw data events from BPF.
   protocols::DataStreamBuffer data_buffer_;
 
@@ -250,9 +205,6 @@ class DataStream : NotCopyMoveable {
   // Additionally, ConnTracker must not switch type during runtime, which indicates serious
   // bug, so we add std::monostate as the default type. And switch to the right time in runtime.
   protocols::FrameDequeVariant frames_;
-
-  // Used by Uprobe-based HTTP2 only.
-  std::deque<protocols::http2::Stream> http2_streams_;
 
   // The following state keeps track of whether the raw events were touched or not since the last
   // call to ProcessBytesToFrames(). It enables ProcessToRecords() to exit early if nothing has
@@ -293,14 +245,6 @@ inline std::string DebugString(const DataStream& d, std::string_view prefix) {
     LOG(DFATAL) << "Bad variant access";
   }
   info += absl::Substitute("$0parsed frames=$1\n", prefix, frames_size);
-  return info;
-}
-
-template <>
-inline std::string DebugString<protocols::http2::Stream>(const DataStream& d,
-                                                         std::string_view prefix) {
-  std::string info;
-  info += absl::Substitute("$0active streams=$1\n", prefix, d.http2_streams().size());
   return info;
 }
 

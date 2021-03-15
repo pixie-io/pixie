@@ -250,13 +250,13 @@ TEST_F(ConnTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterBreachingSizeLimit) {
   tracker.AddHTTP2Header(std::move(header_event2));
   tracker.ProcessToRecords<http2::ProtocolTraits>();
 
-  EXPECT_THAT(tracker.http2_send_streams(), ::testing::SizeIs(1));
-  EXPECT_THAT(tracker.http2_recv_streams(), ::testing::SizeIs(1));
+  EXPECT_THAT(tracker.http2_client_streams(), ::testing::SizeIs(1));
+  EXPECT_THAT(tracker.http2_server_streams(), ::testing::SizeIs(1));
 
   FLAGS_messages_size_limit_bytes = 0;
   tracker.ProcessToRecords<http2::ProtocolTraits>();
-  EXPECT_THAT(tracker.http2_send_streams(), ::testing::IsEmpty());
-  EXPECT_THAT(tracker.http2_recv_streams(), ::testing::IsEmpty());
+  EXPECT_THAT(tracker.http2_client_streams(), ::testing::IsEmpty());
+  EXPECT_THAT(tracker.http2_server_streams(), ::testing::IsEmpty());
 }
 
 TEST_F(ConnTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterExpiration) {
@@ -277,13 +277,13 @@ TEST_F(ConnTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterExpiration) {
   tracker.AddHTTP2Header(std::move(header_event2));
   tracker.ProcessToRecords<http2::ProtocolTraits>();
 
-  EXPECT_THAT(tracker.http2_send_streams(), ::testing::SizeIs(1));
-  EXPECT_THAT(tracker.http2_recv_streams(), ::testing::SizeIs(1));
+  EXPECT_THAT(tracker.http2_client_streams(), ::testing::SizeIs(1));
+  EXPECT_THAT(tracker.http2_server_streams(), ::testing::SizeIs(1));
 
   FLAGS_messages_expiration_duration_secs = 0;
   tracker.ProcessToRecords<http2::ProtocolTraits>();
-  EXPECT_THAT(tracker.http2_send_streams(), ::testing::IsEmpty());
-  EXPECT_THAT(tracker.http2_recv_streams(), ::testing::IsEmpty());
+  EXPECT_THAT(tracker.http2_client_streams(), ::testing::IsEmpty());
+  EXPECT_THAT(tracker.http2_server_streams(), ::testing::IsEmpty());
 }
 
 TEST_F(ConnTrackerHTTP2Test, StreamIDJumpAhead) {

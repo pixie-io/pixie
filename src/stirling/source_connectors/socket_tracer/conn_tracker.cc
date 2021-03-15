@@ -180,7 +180,7 @@ protocols::http2::HalfStream* ConnTracker::HalfStreamPtr(uint32_t stream_id, boo
   const bool client_stream = (stream_id % 2 == 1);
 
   std::deque<protocols::http2::Stream>& streams_deque =
-      client_stream ? client_streams_.http2_streams() : server_streams_.http2_streams();
+      client_stream ? http2_client_streams_.streams() : http2_server_streams_.streams();
   uint32_t& oldest_active_stream_id =
       client_stream ? oldest_active_client_stream_id_ : oldest_active_server_stream_id_;
 
@@ -425,9 +425,9 @@ ConnTracker::ProcessToRecords<protocols::http2::ProtocolTraits>() {
 
   protocols::RecordsWithErrorCount<protocols::http2::Record> result;
 
-  protocols::http2::ProcessHTTP2Streams(&client_streams_.http2_streams(),
+  protocols::http2::ProcessHTTP2Streams(&http2_client_streams_.streams(),
                                         &oldest_active_client_stream_id_, &result);
-  protocols::http2::ProcessHTTP2Streams(&server_streams_.http2_streams(),
+  protocols::http2::ProcessHTTP2Streams(&http2_server_streams_.streams(),
                                         &oldest_active_server_stream_id_, &result);
 
   UpdateResultStats(result);

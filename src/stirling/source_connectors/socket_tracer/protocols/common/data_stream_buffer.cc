@@ -122,7 +122,8 @@ void DataStreamBuffer::Add(size_t pos, std::string_view data, uint64_t timestamp
       // This has been observed to happen a lot on initial deployment,
       // where a large batch of events, with cumulative size greater than the buffer size
       // arrive in scrambled order.
-      VLOG(1) << absl::Substitute("Event skips ahead *a lot* [event pos=$0, current pos=$1].", pos, position_);
+      VLOG(1) << absl::Substitute("Event skips ahead *a lot* [event pos=$0, current pos=$1].", pos,
+                                  position_);
     }
 
     ssize_t logical_size = pos + data.size() - position_;

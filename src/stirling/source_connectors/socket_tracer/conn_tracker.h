@@ -18,6 +18,7 @@
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/source_connectors/socket_tracer/data_stream.h"
 #include "src/stirling/source_connectors/socket_tracer/fd_resolver.h"
+#include "src/stirling/source_connectors/socket_tracer/http2_streams_container.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_bpf_tables.h"
 
@@ -43,7 +44,7 @@ class ConnStats;
 class ConnTrackersManager;
 
 /**
- * @brief Describes a connection from user space. This corresponds to struct conn_info_t in
+ * Describes a connection from user space. This corresponds to struct conn_info_t in
  * src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.h.
  */
 struct SocketOpen {
@@ -111,7 +112,7 @@ class ConnTracker : NotCopyMoveable {
   static constexpr std::chrono::seconds kDefaultInactivityDuration{300};
 
   /**
-   * @brief Number of TransferData() (i.e. PerfBuffer read) calls during which a ConnTracker
+   * Number of TransferData() (i.e. PerfBuffer read) calls during which a ConnTracker
    * persists after it has been marked for death. We keep ConnTrackers alive to catch
    * late-arriving events, and for debug purposes.
    *
@@ -135,14 +136,14 @@ class ConnTracker : NotCopyMoveable {
   void set_conn_stats(ConnStats* conn_stats) { conn_stats_ = conn_stats; }
 
   /**
-   * @brief Registers a BPF connection control event into the tracker.
+   * Registers a BPF connection control event into the tracker.
    *
    * @param event The data event from BPF.
    */
   void AddControlEvent(const socket_control_event_t& event);
 
   /**
-   * @brief Registers a BPF data event into the tracker.
+   * Registers a BPF data event into the tracker.
    *
    * @param event The data event from BPF.
    */
@@ -167,7 +168,7 @@ class ConnTracker : NotCopyMoveable {
   void AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data);
 
   /**
-   * @brief Attempts to infer the remote endpoint of a connection.
+   * Attempts to infer the remote endpoint of a connection.
    *
    * Intended for cases where the accept/connect was not traced.
    *
@@ -177,7 +178,7 @@ class ConnTracker : NotCopyMoveable {
   void InferConnInfo(system::ProcParser* proc_parser, system::SocketInfoManager* socket_info_mgr);
 
   /**
-   * @brief Processes the connection tracker, parsing raw events into frames,
+   * Processes the connection tracker, parsing raw events into frames,
    * and frames into record.
    *
    * @tparam TRecordType the type of the entries to be parsed.
@@ -213,7 +214,7 @@ class ConnTracker : NotCopyMoveable {
   }
 
   /**
-   * @brief Returns reference to current set of unconsumed requests.
+   * Returns reference to current set of unconsumed requests.
    * Note: A call to ProcessBytesToFrames() is required to parse new requests.
    */
   template <typename TFrameType>
@@ -227,15 +228,15 @@ class ConnTracker : NotCopyMoveable {
     return send_data_.Frames<TFrameType>();
   }
 
-  const std::deque<protocols::http2::Stream>& http2_send_streams() const {
-    return send_data_.http2_streams();
+  const std::deque<protocols::http2::Stream>& http2_client_streams() const {
+    return http2_client_streams_.streams();
   }
-  const std::deque<protocols::http2::Stream>& http2_recv_streams() const {
-    return recv_data_.http2_streams();
+  const std::deque<protocols::http2::Stream>& http2_server_streams() const {
+    return http2_server_streams_.streams();
   }
 
   /**
-   * @brief Returns reference to current set of unconsumed responses.
+   * Returns reference to current set of unconsumed responses.
    * Note: A call to ProcessBytesToFrames() is required to parse new responses.
    */
   template <typename TFrameType>
@@ -258,35 +259,35 @@ class ConnTracker : NotCopyMoveable {
   const SockAddr& remote_endpoint() const { return open_info_.remote_addr; }
 
   /**
-   * @brief Get the connection information (e.g. remote IP, port, PID, etc.) for this connection.
+   * Get the connection information (e.g. remote IP, port, PID, etc.) for this connection.
    *
    * @return connection information.
    */
   const SocketOpen& conn() const { return open_info_; }
 
   /**
-   * @brief Get the DataStream of sent frames for this connection.
+   * Get the DataStream of sent frames for this connection.
    *
    * @return Data stream of send data.
    */
   const DataStream& send_data() const { return send_data_; }
 
   /**
-   * @brief Get the DataStream of received frames for this connection.
+   * Get the DataStream of received frames for this connection.
    *
    * @return Data stream of received data.
    */
   const DataStream& recv_data() const { return recv_data_; }
 
   /**
-   * @brief Get the DataStream of requests for this connection.
+   * Get the DataStream of requests for this connection.
    *
    * @return Data stream of requests.
    */
   DataStream* req_data();
 
   /**
-   * @brief Get the DataStream of responses for this connection.
+   * Get the DataStream of responses for this connection.
    *
    * @return Data stream of responses.
    */
@@ -312,7 +313,7 @@ class ConnTracker : NotCopyMoveable {
   void Reset();
 
   /**
-   * @brief Disables the connection tracker. The tracker will drop all its existing data,
+   * Disables the connection tracker. The tracker will drop all its existing data,
    * and also not accept any future data (future data events will be ignored).
    *
    * The tracker will still wait for a Close event to get destroyed.
@@ -331,7 +332,7 @@ class ConnTracker : NotCopyMoveable {
   State state() const { return state_; }
 
   /**
-   * @brief Check if all events have been received on this stream.
+   * Check if all events have been received on this stream.
    * Implies that the Close() event has been received as well.
    *
    * @return whether all data events and connection close have been received.
@@ -339,7 +340,7 @@ class ConnTracker : NotCopyMoveable {
   bool AllEventsReceived() const;
 
   /**
-   * @brief Marks the ConnTracker for death.
+   * Marks the ConnTracker for death.
    *
    * This indicates that the tracker should not receive any further events,
    * otherwise an warning or error will be produced.
@@ -347,20 +348,20 @@ class ConnTracker : NotCopyMoveable {
   void MarkForDeath(int32_t countdown = kDeathCountdownIters);
 
   /**
-   * @brief Returns true if this tracker has been marked for death.
+   * Returns true if this tracker has been marked for death.
    *
    * @return true if this tracker is on its death countdown.
    */
   bool IsZombie() const;
 
   /**
-   * @brief Whether this ConnTracker can be destroyed.
+   * Whether this ConnTracker can be destroyed.
    * @return true if this ConnTracker is a candidate for destruction.
    */
   bool ReadyForDestruction() const;
 
   /**
-   * @brief Performs any preprocessing that should happen per iteration on this
+   * Performs any preprocessing that should happen per iteration on this
    * connection tracker.
    * Should be called once per sampling, before ProcessToRecords().
    *
@@ -372,13 +373,13 @@ class ConnTracker : NotCopyMoveable {
                         system::SocketInfoManager* socket_info_mgr);
 
   /**
-   * @brief Updates the any state that changes per iteration on this connection tracker.
+   * Updates the any state that changes per iteration on this connection tracker.
    * Should be called once per sampling, after ProcessToRecords().
    */
   void IterationPostTick();
 
   /**
-   * @brief Sets the duration after which a connection is deemed to be inactive.
+   * Sets the duration after which a connection is deemed to be inactive.
    * After becoming inactive, the connection may either (1) have its buffers purged,
    * where any unparsed frames are discarded or (2) be removed entirely from the
    * set of tracked connections. The main difference between (1) and (2) are that
@@ -398,8 +399,7 @@ class ConnTracker : NotCopyMoveable {
   }
 
   /**
-   * @brief Return the currently configured duration, after which a connection is deemed to be
-   * inactive.
+   * Return the currently configured duration, after which a connection is deemed to be inactive.
    */
   static std::chrono::seconds InactivityDuration() { return inactivity_duration_; }
 
@@ -448,8 +448,8 @@ class ConnTracker : NotCopyMoveable {
     using TStateType = typename TProtocolTraits::state_type;
 
     if constexpr (std::is_same_v<TFrameType, protocols::http2::Stream>) {
-      send_data_.CleanupHTTP2Streams();
-      recv_data_.CleanupHTTP2Streams();
+      http2_client_streams_.Cleanup();
+      http2_server_streams_.Cleanup();
     } else {
       send_data_.CleanupFrames<TFrameType>();
       recv_data_.CleanupFrames<TFrameType>();
@@ -564,8 +564,8 @@ class ConnTracker : NotCopyMoveable {
 
   // Uprobe-based HTTP2 uses a different scheme, where it holds client and server-initiated streams,
   // instead of send and recv messages. As such, we create aliases for HTTP2.
-  DataStream& client_streams_ = send_data_;
-  DataStream& server_streams_ = recv_data_;
+  HTTP2StreamsContainer http2_client_streams_;
+  HTTP2StreamsContainer http2_server_streams_;
 
   // For uprobe-based HTTP2 tracing only.
   // Tracks oldest active stream ID for retiring the head of send_data_/recv_data_ deques.
@@ -657,9 +657,15 @@ std::string DebugString(const ConnTracker& c, std::string_view prefix) {
   info += absl::Substitute("$0protocol=$1\n", prefix,
                            magic_enum::enum_name(c.traffic_class().protocol));
   info += absl::Substitute("$0recv queue\n", prefix);
-  info += DebugString<TFrameType>(c.recv_data(), absl::StrCat(prefix, "  "));
   info += absl::Substitute("$0send queue\n", prefix);
-  info += DebugString<TFrameType>(c.send_data(), absl::StrCat(prefix, "  "));
+  if constexpr (std::is_same_v<TFrameType, protocols::http2::Stream>) {
+    info += c.http2_client_streams_.DebugString(absl::StrCat(prefix, "  "));
+    info += c.http2_server_streams_.DebugString(absl::StrCat(prefix, "  "));
+  } else {
+    info += DebugString<TFrameType>(c.recv_data(), absl::StrCat(prefix, "  "));
+    info += DebugString<TFrameType>(c.send_data(), absl::StrCat(prefix, "  "));
+  }
+
   return info;
 }
 
