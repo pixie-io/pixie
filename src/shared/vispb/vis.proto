@@ -378,9 +378,11 @@ message RequestGraph {
 }
 
 // Display stacktrace information as a flamegraph.
-message StackTraceFlameGraph{
+message StackTraceFlameGraph {
   // The column containing the stacktraces, where the call-stack symbols are separated by semicolons.
   string stacktrace_column = 1;
   // The column containing the count for the stacktrace.
   string count_column = 2;
+  // The column containing the percentage associated with the stacktrace.
+  string percentage_column = 3;
 }
