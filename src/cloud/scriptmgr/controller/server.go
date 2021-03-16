@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/googleapis/google-cloud-go-testing/storage/stiface"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -59,7 +59,7 @@ func NewServer(bundleBucket string, bundlePath string, sc stiface.Client) *Serve
 			LiveViews: make(map[uuid.UUID]*liveViewModel),
 		},
 		storeLastUpdate: time.Unix(0, 0),
-		SeedUUID:        uuid.NewV4(),
+		SeedUUID:        uuid.Must(uuid.NewV4()),
 	}
 	err := s.updateStore()
 	if err != nil {

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/jmoiron/sqlx"
-	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/viper"
 	"pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrenv"
 	dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
@@ -38,7 +38,7 @@ func NewServer(env dnsmgrenv.DNSMgrEnv, dnsService DNSService, db *sqlx.DB) *Ser
 }
 
 func (s *Server) createSSLCert(clusterID uuid.UUID) (*SSLCert, error) {
-	query := `UPDATE ssl_certs SET cluster_id=$1 
+	query := `UPDATE ssl_certs SET cluster_id=$1
 		WHERE cname =(SELECT cname FROM ssl_certs WHERE cluster_id IS NULL ORDER BY cname LIMIT 1) RETURNING *`
 
 	var val SSLCert

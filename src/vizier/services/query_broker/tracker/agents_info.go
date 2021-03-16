@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	log "github.com/sirupsen/logrus"
 
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"

@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gofrs/uuid"
 	"github.com/golang/mock/gomock"
-	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"

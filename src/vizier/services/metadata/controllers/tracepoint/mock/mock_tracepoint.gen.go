@@ -9,7 +9,7 @@ import (
 	time "time"
 
 	gomock "github.com/golang/mock/gomock"
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 )
 

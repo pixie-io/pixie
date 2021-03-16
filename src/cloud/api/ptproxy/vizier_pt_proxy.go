@@ -3,8 +3,8 @@ package ptproxy
 import (
 	"context"
 
+	"github.com/gofrs/uuid"
 	"github.com/nats-io/nats.go"
-	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc"
 
 	proto1 "pixielabs.ai/pixielabs/src/api/public/uuidpb"

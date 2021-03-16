@@ -3,8 +3,8 @@ package autocomplete_test
 import (
 	"testing"
 
+	"github.com/gofrs/uuid"
 	"github.com/golang/mock/gomock"
-	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
@@ -12,7 +12,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 )
 
-var orgID uuid.UUID = uuid.NewV4()
+var orgID uuid.UUID = uuid.Must(uuid.NewV4())
 
 func TestParseIntoCommand(t *testing.T) {
 	tests := []struct {
@@ -1255,7 +1255,7 @@ func TestToFormatString(t *testing.T) {
 			defer ctrl.Finish()
 			s := mock_autocomplete.NewMockSuggester(ctrl)
 
-			orgID := uuid.NewV4()
+			orgID := uuid.Must(uuid.NewV4())
 
 			if test.callSuggester {
 				s.EXPECT().

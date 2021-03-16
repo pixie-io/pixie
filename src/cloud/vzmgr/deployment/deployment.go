@@ -3,7 +3,7 @@ package deployment
 import (
 	"context"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzerrors"

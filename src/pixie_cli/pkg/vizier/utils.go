@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/rest"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"

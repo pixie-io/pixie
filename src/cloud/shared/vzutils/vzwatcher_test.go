@@ -5,9 +5,9 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/gofrs/uuid"
 	"github.com/golang/mock/gomock"
 	"github.com/nats-io/nats.go"
-	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
 	"pixielabs.ai/pixielabs/src/cloud/shared/messages"
@@ -40,8 +40,8 @@ func TestVzWatcher(t *testing.T) {
 
 			mockVZMgr := mock_vzmgrpb.NewMockVZMgrServiceClient(ctrl)
 
-			existingVzID := uuid.NewV4()
-			existingOrgID := uuid.NewV4()
+			existingVzID := uuid.Must(uuid.NewV4())
+			existingOrgID := uuid.Must(uuid.NewV4())
 			existingK8sUID := "testUID"
 
 			mockVZMgr.
@@ -79,8 +79,8 @@ func TestVzWatcher(t *testing.T) {
 
 			defer wg.Wait()
 
-			newVzID := uuid.NewV4()
-			newOrgID := uuid.NewV4()
+			newVzID := uuid.Must(uuid.NewV4())
+			newOrgID := uuid.Must(uuid.NewV4())
 			newK8sUID := "testUID"
 
 			w.RegisterErrorHandler(func(id uuid.UUID, orgID uuid.UUID, uid string, err error) {

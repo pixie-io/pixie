@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/gofrs/uuid"
 	"github.com/golang/mock/gomock"
-	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
 	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
@@ -19,7 +19,7 @@ func TestServer_UpdateCerts(t *testing.T) {
 	defer ctrl.Finish()
 	mockK8s := mock_controller.NewMockK8sAPI(ctrl)
 
-	s := controller.NewServer(nil, uuid.NewV4(), nil, mockK8s)
+	s := controller.NewServer(nil, uuid.Must(uuid.NewV4()), nil, mockK8s)
 
 	req := &certmgrpb.UpdateCertsRequest{
 		Key:  "abc",
@@ -53,7 +53,7 @@ func TestServer_UpdateCerts_SecretsFailed(t *testing.T) {
 	defer ctrl.Finish()
 	mockK8s := mock_controller.NewMockK8sAPI(ctrl)
 
-	s := controller.NewServer(nil, uuid.NewV4(), nil, mockK8s)
+	s := controller.NewServer(nil, uuid.Must(uuid.NewV4()), nil, mockK8s)
 
 	req := &certmgrpb.UpdateCertsRequest{
 		Key:  "abc",
@@ -74,7 +74,7 @@ func TestServer_UpdateCerts_NoPods(t *testing.T) {
 	defer ctrl.Finish()
 	mockK8s := mock_controller.NewMockK8sAPI(ctrl)
 
-	s := controller.NewServer(nil, uuid.NewV4(), nil, mockK8s)
+	s := controller.NewServer(nil, uuid.Must(uuid.NewV4()), nil, mockK8s)
 
 	req := &certmgrpb.UpdateCertsRequest{
 		Key:  "abc",
@@ -99,7 +99,7 @@ func TestServer_UpdateCerts_FailedPodDeletion(t *testing.T) {
 	defer ctrl.Finish()
 	mockK8s := mock_controller.NewMockK8sAPI(ctrl)
 
-	s := controller.NewServer(nil, uuid.NewV4(), nil, mockK8s)
+	s := controller.NewServer(nil, uuid.Must(uuid.NewV4()), nil, mockK8s)
 
 	req := &certmgrpb.UpdateCertsRequest{
 		Key:  "abc",

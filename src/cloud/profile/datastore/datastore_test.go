@@ -3,8 +3,8 @@ package datastore_test
 import (
 	"testing"
 
+	"github.com/gofrs/uuid"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
-	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"pixielabs.ai/pixielabs/src/cloud/profile/datastore"

@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/nats-io/nats.go"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
@@ -162,7 +162,7 @@ func NewManager(agtStore Store, cidr CIDRInfoProvider, conn *nats.Conn) *Manager
 func (m *ManagerImpl) NewAgentUpdateCursor() uuid.UUID {
 	m.agentUpdateTrackersMutex.Lock()
 	defer m.agentUpdateTrackersMutex.Unlock()
-	cursor := uuid.NewV4()
+	cursor := uuid.Must(uuid.NewV4())
 	m.agentUpdateTrackers[cursor] = newAgentUpdateTracker()
 	return cursor
 }

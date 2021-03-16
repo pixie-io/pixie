@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	datastore "pixielabs.ai/pixielabs/src/cloud/profile/datastore"
 )
 

@@ -8,10 +8,10 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
+	"github.com/gofrs/uuid"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/stan.go"
 	"github.com/olivere/elastic/v7"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -122,7 +122,7 @@ func main() {
 	healthz.RegisterDefaultChecks(mux)
 
 	s := server.NewPLServer(env.New(), mux)
-	nc, sc, err := createStanNatsConnection(uuid.NewV4().String())
+	nc, sc, err := createStanNatsConnection(uuid.Must(uuid.NewV4()).String())
 	if err != nil {
 		log.Fatal("Could not connect to NATS/STAN")
 	}

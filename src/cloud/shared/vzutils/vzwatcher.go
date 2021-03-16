@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/nats-io/nats.go"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/metadata"

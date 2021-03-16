@@ -5,9 +5,9 @@ import (
 	"errors"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/utils"

@@ -13,8 +13,8 @@ import (
 
 	"github.com/alecthomas/chroma/quick"
 	"github.com/gdamore/tcell"
+	"github.com/gofrs/uuid"
 	"github.com/rivo/tview"
-	uuid "github.com/satori/go.uuid"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/components"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"

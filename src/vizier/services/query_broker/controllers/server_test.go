@@ -6,10 +6,10 @@ import (
 	"io"
 	"testing"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
 	"github.com/nats-io/nats.go"
-	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	mock_public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb/mock"
@@ -531,7 +531,7 @@ func TestCheckHealth_Success(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	queryID := uuid.NewV4()
+	queryID := uuid.Must(uuid.NewV4())
 	fakeResult := &public_vizierapipb.ExecuteScriptResponse{
 		QueryID: queryID.String(),
 		Result: &public_vizierapipb.ExecuteScriptResponse_Data{
@@ -716,7 +716,7 @@ func TestExecuteScript_Success(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	queryID := uuid.NewV4()
+	queryID := uuid.Must(uuid.NewV4())
 
 	fakeBatch := new(public_vizierapipb.RowBatchData)
 	if err := proto.UnmarshalText(rowBatchPb, fakeBatch); err != nil {
@@ -999,7 +999,7 @@ func TestTransferResultChunk_AgentStreamComplete(t *testing.T) {
 		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
 
-	queryID := uuid.NewV4()
+	queryID := uuid.Must(uuid.NewV4())
 	queryIDpb := pbutils.ProtoFromUUID(queryID)
 
 	msg1 := &carnotpb.TransferResultChunkRequest{
@@ -1101,7 +1101,7 @@ func TestTransferResultChunk_AgentClosedPrematurely(t *testing.T) {
 	}
 	sv.Eos = false
 
-	queryID := uuid.NewV4()
+	queryID := uuid.Must(uuid.NewV4())
 	queryIDpb := pbutils.ProtoFromUUID(queryID)
 
 	msg1 := &carnotpb.TransferResultChunkRequest{
@@ -1186,7 +1186,7 @@ func TestTransferResultChunk_AgentStreamFailed(t *testing.T) {
 		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
 
-	queryID := uuid.NewV4()
+	queryID := uuid.Must(uuid.NewV4())
 	queryIDpb := pbutils.ProtoFromUUID(queryID)
 
 	msg1 := &carnotpb.TransferResultChunkRequest{
@@ -1267,7 +1267,7 @@ func TestTransferResultChunk_ClientStreamCancelled(t *testing.T) {
 		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
 
-	queryID := uuid.NewV4()
+	queryID := uuid.Must(uuid.NewV4())
 	queryIDpb := pbutils.ProtoFromUUID(queryID)
 
 	msg1 := &carnotpb.TransferResultChunkRequest{

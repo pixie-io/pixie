@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/grpc/codes"
 
-	"pixielabs.ai/pixielabs/src/api/public/vizierapipb"
+	publicvizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 )
 
 // ParseStatus parses the status field. Returns an error if exists.

@@ -6,9 +6,9 @@ import (
 	"errors"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
 	"github.com/jmoiron/sqlx"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -47,7 +47,11 @@ func (s *Service) Create(ctx context.Context, req *authpb.CreateAPIKeyRequest) (
 	var id uuid.UUID
 	var ts time.Time
 	query := `INSERT INTO api_keys(org_id, user_id, key, description) VALUES($1, $2, PGP_SYM_ENCRYPT($3, $4), $5) RETURNING id, created_at`
-	key := uuid.NewV4().String()
+	keyID, err := uuid.NewV4()
+	if err != nil {
+		return nil, err
+	}
+	key := keyID.String()
 	err = s.db.QueryRowxContext(ctx, query,
 		sCtx.Claims.GetUserClaims().OrgID, sCtx.Claims.GetUserClaims().UserID, key, s.dbKey, req.Desc).
 		Scan(&id, &ts)

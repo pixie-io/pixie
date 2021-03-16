@@ -7,7 +7,7 @@ import (
 
 	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 	"pixielabs.ai/pixielabs/src/utils/shared/yamls"
-	"pixielabs.ai/pixielabs/src/utils/template_generator/vizier_yamls"
+	vizieryamls "pixielabs.ai/pixielabs/src/utils/template_generator/vizier_yamls"
 )
 
 func init() {

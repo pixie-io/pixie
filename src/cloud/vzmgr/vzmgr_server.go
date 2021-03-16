@@ -4,11 +4,11 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
+	"github.com/gofrs/uuid"
 	"github.com/golang-migrate/migrate"
 	"github.com/golang-migrate/migrate/database/postgres"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/nats-io/nats.go"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -111,7 +111,7 @@ func main() {
 
 	// Connect to NATS.
 	nc := msgbus.MustConnectNATS()
-	stc := msgbus.MustConnectSTAN(nc, uuid.NewV4().String())
+	stc := msgbus.MustConnectSTAN(nc, uuid.Must(uuid.NewV4()).String())
 
 	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
 		if err != nil {

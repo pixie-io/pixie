@@ -6,8 +6,8 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/gofrs/uuid"
 	types "github.com/gogo/protobuf/types"
-	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"

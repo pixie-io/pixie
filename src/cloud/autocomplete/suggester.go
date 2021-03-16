@@ -7,9 +7,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gofrs/uuid"
 	"github.com/olivere/elastic/v7"
 	"github.com/sahilm/fuzzy"
-	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/metadata"
 
@@ -18,7 +18,7 @@ import (
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"
-	"pixielabs.ai/pixielabs/src/shared/vispb"
+	pl_vispb "pixielabs.ai/pixielabs/src/shared/vispb"
 	pbutils "pixielabs.ai/pixielabs/src/utils"
 )
 

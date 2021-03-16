@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -51,7 +51,12 @@ func writeDefaultConfig(path string) (*ConfigInfo, error) {
 	}
 	defer f.Close()
 
-	cfg := &ConfigInfo{UniqueClientID: uuid.NewV4().String()}
+	clientID, err := uuid.NewV4()
+	if err != nil {
+		return nil, err
+	}
+
+	cfg := &ConfigInfo{UniqueClientID: clientID.String()}
 	if err := json.NewEncoder(f).Encode(cfg); err != nil {
 		return nil, err
 	}

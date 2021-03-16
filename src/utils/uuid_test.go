@@ -3,7 +3,7 @@ package utils_test
 import (
 	"testing"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	"github.com/stretchr/testify/assert"
 	pb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/utils"

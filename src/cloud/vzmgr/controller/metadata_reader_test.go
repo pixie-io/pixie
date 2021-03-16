@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/stan.go"
-	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
 	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
@@ -180,8 +180,8 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			vzID := uuid.NewV4()
-			orgID := uuid.NewV4()
+			vzID := uuid.Must(uuid.NewV4())
+			orgID := uuid.Must(uuid.NewV4())
 
 			db, teardown := setupTestDB(t)
 			defer teardown()

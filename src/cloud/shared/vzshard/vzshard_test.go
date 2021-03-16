@@ -3,7 +3,7 @@ package vzshard_test
 import (
 	"testing"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"

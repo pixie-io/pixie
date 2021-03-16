@@ -4,8 +4,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/gofrs/uuid"
 	"github.com/golang/mock/gomock"
-	uuid "github.com/satori/go.uuid"
 
 	distributedpb "pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	utils "pixielabs.ai/pixielabs/src/utils"

@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/gofrs/uuid"
 	"github.com/nats-io/stan.go"
 	"github.com/olivere/elastic/v7"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 
 	mdpb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"

@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
-	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"

@@ -5,12 +5,12 @@ import (
 	"testing"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	"github.com/jmoiron/sqlx"
 	"github.com/nats-io/nats.go"
-	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
@@ -126,8 +126,8 @@ func TestUpdater_AddToUpdateQueue(t *testing.T) {
 	updater, _, _, _, cleanup := setUpUpdater(t)
 	defer cleanup()
 
-	id1 := uuid.NewV4()
-	id2 := uuid.NewV4()
+	id1 := uuid.Must(uuid.NewV4())
+	id2 := uuid.Must(uuid.NewV4())
 
 	assert.True(t, updater.AddToUpdateQueue(id1))
 	assert.True(t, updater.AddToUpdateQueue(id2))

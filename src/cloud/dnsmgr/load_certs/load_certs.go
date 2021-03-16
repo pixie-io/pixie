@@ -9,11 +9,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/gofrs/uuid"
 	"github.com/golang-migrate/migrate"
 	"github.com/golang-migrate/migrate/database/postgres"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/jmoiron/sqlx"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"

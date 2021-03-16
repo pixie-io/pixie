@@ -3,8 +3,8 @@ package datastore
 import (
 	"database/sql"
 
+	"github.com/gofrs/uuid"
 	"github.com/jmoiron/sqlx"
-	uuid "github.com/satori/go.uuid"
 )
 
 // Datastore implementation for projectmanager using a PGSQL backend.

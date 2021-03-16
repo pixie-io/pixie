@@ -5,10 +5,10 @@ import (
 
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 
+	"github.com/gofrs/uuid"
 	_ "github.com/golang-migrate/migrate/source/go_bindata"
 	_ "github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
-	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"pixielabs.ai/pixielabs/src/cloud/project_manager/datastore"

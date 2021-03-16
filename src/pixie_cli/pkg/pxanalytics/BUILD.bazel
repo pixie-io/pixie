@@ -7,7 +7,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//src/shared/version/go:go_default_library",
-        "@com_github_satori_go_uuid//:go_default_library",
+        "@com_github_gofrs_uuid//:go_default_library",
         "@in_gopkg_segmentio_analytics_go_v3//:go_default_library",
     ],
 )

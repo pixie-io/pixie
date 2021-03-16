@@ -3411,3 +3411,10 @@ go_repository(
     sum = "h1:moga+uhicpVshTyaqY9L23E6QqwcHRUv1sqyOsoyOO8=",
     version = "v1.4.3",
 )
+
+go_repository(
+    name = "com_github_gofrs_uuid",
+    importpath = "github.com/gofrs/uuid",
+    sum = "h1:1SD/1F5pU8p29ybwgQSwpQk+mwdRrXCYuPhW6m+TnJw=",
+    version = "v4.0.0+incompatible",
+)

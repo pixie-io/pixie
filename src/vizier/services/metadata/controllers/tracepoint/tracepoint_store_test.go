@@ -7,8 +7,8 @@ import (
 
 	"github.com/cockroachdb/pebble"
 	"github.com/cockroachdb/pebble/vfs"
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
-	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
 	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
@@ -39,7 +39,7 @@ func TestTracepointStore_UpsertTracepoint(t *testing.T) {
 	db, ts, cleanup := setupTest(t)
 	defer cleanup()
 
-	tpID := uuid.NewV4()
+	tpID := uuid.Must(uuid.NewV4())
 	// Create tracepoints.
 	s1 := &storepb.TracepointInfo{
 		ID: utils.ProtoFromUUID(tpID),
@@ -59,7 +59,7 @@ func TestTracepointStore_GetTracepoint(t *testing.T) {
 	db, ts, cleanup := setupTest(t)
 	defer cleanup()
 
-	tpID := uuid.NewV4()
+	tpID := uuid.Must(uuid.NewV4())
 	// Create tracepoints.
 	s1 := &storepb.TracepointInfo{
 		ID: utils.ProtoFromUUID(tpID),
@@ -168,8 +168,8 @@ func TestTracepointStore_UpdateTracepointState(t *testing.T) {
 	db, ts, cleanup := setupTest(t)
 	defer cleanup()
 
-	agentID := uuid.NewV4()
-	tpID := uuid.NewV4()
+	agentID := uuid.Must(uuid.NewV4())
+	tpID := uuid.Must(uuid.NewV4())
 	// Create tracepoint state
 	s1 := &storepb.AgentTracepointStatus{
 		ID:      utils.ProtoFromUUID(tpID),
@@ -191,7 +191,7 @@ func TestTracepointStore_GetTracepointStates(t *testing.T) {
 	db, ts, cleanup := setupTest(t)
 	defer cleanup()
 
-	tpID := uuid.NewV4()
+	tpID := uuid.Must(uuid.NewV4())
 
 	agentID1 := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	agentID2 := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9")
@@ -237,7 +237,7 @@ func TestTracepointStore_SetTracepointWithName(t *testing.T) {
 	db, ts, cleanup := setupTest(t)
 	defer cleanup()
 
-	tpID := uuid.NewV4()
+	tpID := uuid.Must(uuid.NewV4())
 
 	err := ts.SetTracepointWithName("test", tpID)
 	assert.Nil(t, err)
@@ -253,12 +253,12 @@ func TestTracepointStore_GetTracepointsWithNames(t *testing.T) {
 	db, ts, cleanup := setupTest(t)
 	defer cleanup()
 
-	tpID := uuid.NewV4()
+	tpID := uuid.Must(uuid.NewV4())
 	tracepointIDpb := utils.ProtoFromUUID(tpID)
 	val, err := tracepointIDpb.Marshal()
 	assert.Nil(t, err)
 
-	tpID2 := uuid.NewV4()
+	tpID2 := uuid.Must(uuid.NewV4())
 	tracepointIDpb2 := utils.ProtoFromUUID(tpID2)
 	val2, err := tracepointIDpb2.Marshal()
 	assert.Nil(t, err)
@@ -283,7 +283,7 @@ func TestTracepointStore_DeleteTracepoint(t *testing.T) {
 	db, ts, cleanup := setupTest(t)
 	defer cleanup()
 
-	tpID := uuid.NewV4()
+	tpID := uuid.Must(uuid.NewV4())
 
 	db.Set("/tracepoint/"+tpID.String(), "test")
 
@@ -299,8 +299,8 @@ func TestTracepointStore_DeleteTracepointTTLs(t *testing.T) {
 	_, ts, cleanup := setupTest(t)
 	defer cleanup()
 
-	tpID := uuid.NewV4()
-	tpID2 := uuid.NewV4()
+	tpID := uuid.Must(uuid.NewV4())
+	tpID2 := uuid.Must(uuid.NewV4())
 
 	err := ts.DeleteTracepointTTLs([]uuid.UUID{tpID, tpID2})
 	assert.Nil(t, err)

@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 
 	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"

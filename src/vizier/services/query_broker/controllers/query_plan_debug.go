@@ -7,7 +7,7 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/emicklei/dot"
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"

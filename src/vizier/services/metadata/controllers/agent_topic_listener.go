@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/nats-io/nats.go"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"

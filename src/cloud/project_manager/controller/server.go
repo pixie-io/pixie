@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"

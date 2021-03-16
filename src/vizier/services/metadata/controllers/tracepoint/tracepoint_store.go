@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
-	uuid "github.com/satori/go.uuid"
 
 	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/utils"

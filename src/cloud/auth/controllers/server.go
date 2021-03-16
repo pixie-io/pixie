@@ -3,7 +3,7 @@ package controllers
 import (
 	"context"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	"pixielabs.ai/pixielabs/src/cloud/auth/authenv"
 )
 

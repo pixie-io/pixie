@@ -6,12 +6,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/jmoiron/sqlx"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/stan.go"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 
 	"pixielabs.ai/pixielabs/src/cloud/shared/messages"
@@ -347,7 +347,11 @@ func (m *MetadataReader) getMissingUpdates(from, to int64, vzState *VizierState)
 			Info("Completed missing metadata updates")
 	}()
 
-	topic := uuid.NewV4().String()
+	topicID, err := uuid.NewV4()
+	if err != nil {
+		return err
+	}
+	topic := topicID.String()
 	missingResponseTopic := fmt.Sprintf("%s:%s", metadataResponseTopic, topic)
 
 	mdReq := &metadatapb.MissingK8SMetadataRequest{

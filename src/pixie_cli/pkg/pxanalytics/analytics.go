@@ -4,7 +4,7 @@ import (
 	"runtime"
 	"sync"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	"gopkg.in/segmentio/analytics-go.v3"
 	version "pixielabs.ai/pixielabs/src/shared/version/go"
 )
@@ -47,7 +47,7 @@ func Client() analytics.Client {
 					Name: runtime.GOOS,
 				},
 				Extra: map[string]interface{}{
-					"sessionID": uuid.NewV4().String(),
+					"sessionID": uuid.Must(uuid.NewV4()).String(),
 				},
 			},
 		})

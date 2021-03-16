@@ -3,8 +3,8 @@ package main
 import (
 	"net/http"
 
+	"github.com/gofrs/uuid"
 	"github.com/nats-io/nats.go"
-	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrenv"

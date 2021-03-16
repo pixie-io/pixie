@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/nats-io/nats.go"
-	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"

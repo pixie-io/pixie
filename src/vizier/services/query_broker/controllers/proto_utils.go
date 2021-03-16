@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/gofrs/uuid"
 	gogotypes "github.com/gogo/protobuf/types"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
 	"github.com/nats-io/nats.go"
-	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
@@ -506,8 +506,8 @@ func TestAgentTracepointInfoUpdate(t *testing.T) {
 	atl, _, mockTracepointStore, cleanup := setup(t, assertSendMessageUncalled(t))
 	defer cleanup()
 
-	agentID := uuid.NewV4()
-	tpID := uuid.NewV4()
+	agentID := uuid.Must(uuid.NewV4())
+	tpID := uuid.Must(uuid.NewV4())
 
 	mockTracepointStore.
 		EXPECT().

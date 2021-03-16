@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/stan.go"
-	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/genproto/googleapis/rpc/code"
 	"google.golang.org/grpc"
@@ -132,7 +132,7 @@ func TestNATSGRPCBridgeHandshakeTest_CorrectRegistration(t *testing.T) {
 	ts, cleanup := createTestState(t, ctrl)
 	defer cleanup(t)
 
-	vizierID := uuid.NewV4()
+	vizierID := uuid.Must(uuid.NewV4())
 	regReq := &cvmsgspb.RegisterVizierRequest{
 		VizierID: utils.ProtoFromUUIDStrOrNil(vizierID.String()),
 		JwtKey:   "123",
@@ -297,7 +297,7 @@ func TestNATSGRPCBridge_BridgingTest(t *testing.T) {
 	}
 
 	readCh := grpcReader(stream)
-	vizierID := uuid.NewV4()
+	vizierID := uuid.Must(uuid.NewV4())
 	registerVizier(ts, vizierID, stream, readCh)
 
 	t1Ch := make(chan *nats.Msg, 10)
@@ -334,7 +334,7 @@ func TestNATSGRPCBridge_BridgingTest(t *testing.T) {
 }
 
 func TestNATSGRPCBridge_RegisterVizierDeployment(t *testing.T) {
-	vizierID := uuid.NewV4()
+	vizierID := uuid.Must(uuid.NewV4())
 	ctrl := gomock.NewController(t)
 	ts, cleanup := createTestState(t, ctrl)
 	defer cleanup(t)

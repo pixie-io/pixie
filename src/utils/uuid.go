@@ -1,7 +1,7 @@
 package utils
 
 import (
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	pb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 )
 

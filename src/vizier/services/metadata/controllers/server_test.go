@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
-	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
@@ -376,7 +376,7 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 		},
 	}
 
-	oldTPID := uuid.NewV4()
+	oldTPID := uuid.Must(uuid.NewV4())
 
 	mockAgtMgr.
 		EXPECT().
@@ -604,7 +604,7 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 				},
 			}
 
-			tID := uuid.NewV4()
+			tID := uuid.Must(uuid.NewV4())
 			if !test.tracepointExists {
 				mockTracepointStore.
 					EXPECT().
@@ -672,8 +672,8 @@ func Test_Server_RemoveTracepoint(t *testing.T) {
 
 	tracepointMgr := tracepoint.NewManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
 
-	tpID1 := uuid.NewV4()
-	tpID2 := uuid.NewV4()
+	tpID1 := uuid.Must(uuid.NewV4())
+	tpID2 := uuid.Must(uuid.NewV4())
 
 	mockTracepointStore.
 		EXPECT().
@@ -808,7 +808,7 @@ func TestGetAgentUpdates(t *testing.T) {
 		},
 	}
 
-	cursorID := uuid.NewV4()
+	cursorID := uuid.Must(uuid.NewV4())
 	mockAgtMgr.
 		EXPECT().
 		NewAgentUpdateCursor().

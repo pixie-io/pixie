@@ -7,8 +7,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/gofrs/uuid"
 	"github.com/golang/mock/gomock"
-	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -30,8 +30,8 @@ func TestServer_CreateUser(t *testing.T) {
 
 	d := mock_controller.NewMockDatastore(ctrl)
 
-	testOrgUUID := uuid.NewV4()
-	testUUID := uuid.NewV4()
+	testOrgUUID := uuid.Must(uuid.NewV4())
+	testUUID := uuid.Must(uuid.NewV4())
 	createUsertests := []struct {
 		name      string
 		makesCall bool
@@ -190,8 +190,8 @@ func TestServer_GetUser(t *testing.T) {
 
 	d := mock_controller.NewMockDatastore(ctrl)
 
-	userUUID := uuid.NewV4()
-	orgUUID := uuid.NewV4()
+	userUUID := uuid.Must(uuid.NewV4())
+	orgUUID := uuid.Must(uuid.NewV4())
 	s := controller.NewServer(nil, d, nil)
 
 	mockReply := &datastore.UserInfo{
@@ -224,7 +224,7 @@ func TestServer_GetUser_MissingUser(t *testing.T) {
 
 	d := mock_controller.NewMockDatastore(ctrl)
 
-	userUUID := uuid.NewV4()
+	userUUID := uuid.Must(uuid.NewV4())
 	s := controller.NewServer(nil, d, nil)
 	d.EXPECT().
 		GetUser(userUUID).
@@ -242,8 +242,8 @@ func TestServer_GetUserByEmail(t *testing.T) {
 
 	d := mock_controller.NewMockDatastore(ctrl)
 
-	userUUID := uuid.NewV4()
-	orgUUID := uuid.NewV4()
+	userUUID := uuid.Must(uuid.NewV4())
+	orgUUID := uuid.Must(uuid.NewV4())
 	s := controller.NewServer(nil, d, nil)
 
 	mockReply := &datastore.UserInfo{
@@ -296,8 +296,8 @@ func TestServer_CreateOrgAndUser_SuccessCases(t *testing.T) {
 
 	d := mock_controller.NewMockDatastore(ctrl)
 
-	testOrgUUID := uuid.NewV4()
-	testUUID := uuid.NewV4()
+	testOrgUUID := uuid.Must(uuid.NewV4())
+	testUUID := uuid.Must(uuid.NewV4())
 	createOrgUserTest := []struct {
 		name string
 		req  *profile.CreateOrgAndUserRequest
@@ -499,8 +499,8 @@ func TestServer_CreateOrgAndUser_CreateProjectFailed(t *testing.T) {
 
 	d := mock_controller.NewMockDatastore(ctrl)
 
-	testOrgUUID := uuid.NewV4()
-	testUUID := uuid.NewV4()
+	testOrgUUID := uuid.Must(uuid.NewV4())
+	testUUID := uuid.Must(uuid.NewV4())
 
 	pm := mock_projectmanager.NewMockProjectManagerServiceClient(ctrl)
 	projectReq := &projectmanagerpb.RegisterProjectRequest{
@@ -555,7 +555,7 @@ func TestServer_GetOrg(t *testing.T) {
 
 	d := mock_controller.NewMockDatastore(ctrl)
 
-	orgUUID := uuid.NewV4()
+	orgUUID := uuid.Must(uuid.NewV4())
 	s := controller.NewServer(nil, d, nil)
 
 	mockReply := &datastore.OrgInfo{
@@ -582,8 +582,8 @@ func TestServer_GetOrgs(t *testing.T) {
 
 	d := mock_controller.NewMockDatastore(ctrl)
 
-	orgUUID := uuid.NewV4()
-	org2UUID := uuid.NewV4()
+	orgUUID := uuid.Must(uuid.NewV4())
+	org2UUID := uuid.Must(uuid.NewV4())
 
 	s := controller.NewServer(nil, d, nil)
 
@@ -620,7 +620,7 @@ func TestServer_GetOrg_MissingOrg(t *testing.T) {
 
 	d := mock_controller.NewMockDatastore(ctrl)
 
-	orgUUID := uuid.NewV4()
+	orgUUID := uuid.Must(uuid.NewV4())
 	s := controller.NewServer(nil, d, nil)
 
 	d.EXPECT().
@@ -639,7 +639,7 @@ func TestServer_GetOrgByDomain(t *testing.T) {
 
 	d := mock_controller.NewMockDatastore(ctrl)
 
-	orgUUID := uuid.NewV4()
+	orgUUID := uuid.Must(uuid.NewV4())
 	s := controller.NewServer(nil, d, nil)
 
 	mockReply := &datastore.OrgInfo{
@@ -691,7 +691,7 @@ func TestServer_DeleteOrgAndUsers(t *testing.T) {
 
 	s := controller.NewServer(nil, d, nil)
 
-	orgUUID := uuid.NewV4()
+	orgUUID := uuid.Must(uuid.NewV4())
 
 	mockReply := &datastore.OrgInfo{
 		ID:         orgUUID,
@@ -713,7 +713,7 @@ func TestServer_DeleteOrgAndUsers_MissingOrg(t *testing.T) {
 
 	s := controller.NewServer(nil, d, nil)
 
-	orgUUID := uuid.NewV4()
+	orgUUID := uuid.Must(uuid.NewV4())
 	d.EXPECT().
 		GetOrg(orgUUID).
 		Return(nil, nil)
@@ -729,7 +729,7 @@ func TestServer_UpdateUser(t *testing.T) {
 
 	d := mock_controller.NewMockDatastore(ctrl)
 
-	userID := uuid.NewV4()
+	userID := uuid.Must(uuid.NewV4())
 	s := controller.NewServer(nil, d, nil)
 
 	profilePicture := "something"
@@ -773,7 +773,7 @@ func TestServer_GetUserSettings(t *testing.T) {
 
 	s := controller.NewServer(nil, nil, d)
 
-	userID := uuid.NewV4()
+	userID := uuid.Must(uuid.NewV4())
 	d.EXPECT().
 		GetUserSettings(userID, []string{"test", "another_key"}).
 		Return([]string{"a", "b"}, nil)
@@ -795,7 +795,7 @@ func TestServer_UpdateUserSettings(t *testing.T) {
 
 	s := controller.NewServer(nil, nil, d)
 
-	userID := uuid.NewV4()
+	userID := uuid.Must(uuid.NewV4())
 
 	tests := []struct {
 		name string

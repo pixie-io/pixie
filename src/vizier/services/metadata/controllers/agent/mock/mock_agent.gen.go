@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	pl_shared_k8s_metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	types "pixielabs.ai/pixielabs/src/shared/types/go"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/gofrs/uuid"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/stan.go"
 	"github.com/olivere/elastic/v7"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 
 	"pixielabs.ai/pixielabs/src/cloud/indexer/md"

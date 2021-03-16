@@ -4,9 +4,9 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
+	"github.com/gofrs/uuid"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/stan.go"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -82,7 +82,7 @@ func main() {
 	}
 
 	s := server.NewPLServerWithOptions(env.New(), mux, serverOpts)
-	nc, sc, err := createStanNatsConnection(uuid.NewV4().String())
+	nc, sc, err := createStanNatsConnection(uuid.Must(uuid.NewV4()).String())
 	if err != nil {
 		log.Error("Could not connect to NATS/STAN")
 	}

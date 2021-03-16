@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/golang/mock/gomock"
 	"github.com/jmoiron/sqlx"
 	"github.com/nats-io/nats.go"
-	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -1005,7 +1005,7 @@ func TestServer_ProvisionOrClaimVizier(t *testing.T) {
 
 	s := controller.New(db, "test", nil, nil, nil)
 	// TODO(zasgar): We need to make user IDS make sense.
-	userID := uuid.NewV4()
+	userID := uuid.Must(uuid.NewV4())
 
 	// This should select the first cluster with an empty UID that is disconnected.
 	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "my cluster", "", "1.1")
@@ -1054,7 +1054,7 @@ func TestServer_ProvisionOrClaimVizierWIthExistingUID(t *testing.T) {
 			loadTestData(t, db)
 
 			s := controller.New(db, "test", nil, nil, nil)
-			userID := uuid.NewV4()
+			userID := uuid.Must(uuid.NewV4())
 
 			// This should select the existing cluster with the same UID.
 			clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "existing_cluster", test.inputName, "1.1")
@@ -1080,7 +1080,7 @@ func TestServer_ProvisionOrClaimVizier_WithExistingActiveUID(t *testing.T) {
 	loadTestData(t, db)
 
 	s := controller.New(db, "test", nil, nil, nil)
-	userID := uuid.NewV4()
+	userID := uuid.Must(uuid.NewV4())
 	// This should select cause an error b/c we are trying to provision a cluster that is not disconnected.
 	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "my_other_cluster", "", "1.1")
 	assert.NotNil(t, err)
@@ -1094,7 +1094,7 @@ func TestServer_ProvisionOrClaimVizier_WithNewCluster(t *testing.T) {
 	loadTestData(t, db)
 
 	s := controller.New(db, "test", nil, nil, nil)
-	userID := uuid.NewV4()
+	userID := uuid.Must(uuid.NewV4())
 	// This should select cause an error b/c we are trying to provision a cluster that is not disconnected.
 	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testNonAuthOrgID), userID, "my_other_cluster", "", "1.1")
 	assert.Nil(t, err)
@@ -1107,7 +1107,7 @@ func TestServer_ProvisionOrClaimVizier_WithExistingName(t *testing.T) {
 	loadTestData(t, db)
 
 	s := controller.New(db, "test", nil, nil, nil)
-	userID := uuid.NewV4()
+	userID := uuid.Must(uuid.NewV4())
 
 	// This should select the existing cluster with the same UID.
 	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "some_cluster", "test_cluster_1234\n", "1.1")

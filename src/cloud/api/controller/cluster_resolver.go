@@ -5,9 +5,9 @@ import (
 	"errors"
 	"sort"
 
+	"github.com/gofrs/uuid"
 	types "github.com/gogo/protobuf/types"
 	"github.com/graph-gophers/graphql-go"
-	uuid "github.com/satori/go.uuid"
 
 	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"

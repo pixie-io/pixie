@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 
 	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
@@ -213,7 +213,10 @@ func (m *Manager) CreateTracepoint(tracepointName string, tracepointDeployment *
 		}
 	}
 
-	tpID := uuid.NewV4()
+	tpID, err := uuid.NewV4()
+	if err != nil {
+		return nil, err
+	}
 	newTracepoint := &storepb.TracepointInfo{
 		ID:            utils.ProtoFromUUID(tpID),
 		Tracepoint:    tracepointDeployment,

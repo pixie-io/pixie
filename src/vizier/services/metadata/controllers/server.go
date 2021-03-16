@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gofrs/uuid"
 	types "github.com/gogo/protobuf/types"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

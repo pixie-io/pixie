@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	"google.golang.org/grpc"
 
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"

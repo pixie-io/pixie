@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/badoux/checkmail"
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"

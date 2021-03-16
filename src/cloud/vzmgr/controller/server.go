@@ -11,11 +11,11 @@ import (
 	"strings"
 
 	"github.com/docker/docker/pkg/namesgenerator"
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/jmoiron/sqlx"
 	"github.com/nats-io/nats.go"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"

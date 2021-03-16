@@ -4,24 +4,23 @@ import (
 	"os"
 	"testing"
 
+	"github.com/gofrs/uuid"
+	"github.com/gogo/protobuf/proto"
 	log "github.com/sirupsen/logrus"
 
-	"pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/vizier"
-	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
-	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
-
-	"github.com/gogo/protobuf/proto"
-	uuid "github.com/satori/go.uuid"
 	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	logicalplanner "pixielabs.ai/pixielabs/src/carnot/planner"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
+	"pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
 	"pixielabs.ai/pixielabs/src/carnot/udfspb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/vizier"
+	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 	"pixielabs.ai/pixielabs/src/utils"
 	funcs "pixielabs.ai/pixielabs/src/vizier/funcs/go"
+	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
 )
 
 // Base to use. Must set asid and agent_id.
@@ -1225,7 +1224,7 @@ func makePlannerState(numPEM int) *distributedpb.LogicalPlannerState {
 	agentList := make([]*uuidpb.UUID, 0)
 	for i := 1; i < numPEM+1; i++ {
 		pem := baseCarnot
-		u := uuid.NewV4()
+		u := uuid.Must(uuid.NewV4())
 		pem.AgentID = utils.ProtoFromUUID(u)
 		pem.ASID = uint32(i)
 

@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"time"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	"gopkg.in/segmentio/analytics-go.v3"
 
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"

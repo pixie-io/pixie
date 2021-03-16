@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/gofrs/uuid"
 	"github.com/olivere/elastic/v7"
-	uuid "github.com/satori/go.uuid"
 
 	"github.com/stretchr/testify/assert"
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
@@ -16,7 +16,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 
-var org1 uuid.UUID = uuid.NewV4()
+var org1 uuid.UUID = uuid.Must(uuid.NewV4())
 
 var mdEntities = []md.EsMDEntity{
 	md.EsMDEntity{

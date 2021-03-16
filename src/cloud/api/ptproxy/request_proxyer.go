@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
@@ -56,7 +56,10 @@ type ClusterIDer interface {
 func newRequestProxyer(vzmgr vzmgrClient, nc *nats.Conn, debugMode bool, r ClusterIDer, s grpcStream) (*requestProxyer, error) {
 	// Make a request to Vizier Manager validate that we have permissions to access the cluster
 	// and get the key to generate the token.
-	requestID := uuid.NewV4()
+	requestID, err := uuid.NewV4()
+	if err != nil {
+		return nil, err
+	}
 	ctx := s.Context()
 	token, _, err := getCredsFromCtx(ctx)
 	if err != nil {

@@ -6,8 +6,8 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/cloud/profile/datastore",
     visibility = ["//visibility:public"],
     deps = [
+        "@com_github_gofrs_uuid//:go_default_library",
         "@com_github_jmoiron_sqlx//:go_default_library",
-        "@com_github_satori_go_uuid//:go_default_library",
     ],
 )
 
@@ -18,9 +18,9 @@ go_test(
     deps = [
         "//src/cloud/profile/schema:go_default_library",
         "//src/shared/services/pgtest:go_default_library",
+        "@com_github_gofrs_uuid//:go_default_library",
         "@com_github_golang_migrate_migrate//source/go_bindata:go_default_library",
         "@com_github_jmoiron_sqlx//:go_default_library",
-        "@com_github_satori_go_uuid//:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
         "@com_github_stretchr_testify//require:go_default_library",
     ],

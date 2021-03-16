@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	distributedpb "pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"

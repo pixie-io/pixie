@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/jmoiron/sqlx"
-	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -178,7 +178,7 @@ func TestAPIKeyService_Get_NonExistentID(t *testing.T) {
 	ctx := createTestContext()
 	svc := New(db, testDBKey)
 
-	u := uuid.NewV4()
+	u := uuid.Must(uuid.NewV4())
 	resp, err := svc.Get(ctx, &authpb.GetAPIKeyRequest{
 		ID: utils.ProtoFromUUID(u),
 	})
@@ -238,7 +238,7 @@ func TestAPIKeyService_Delete_NonExistentKey(t *testing.T) {
 	ctx := createTestContext()
 	svc := New(db, testDBKey)
 
-	u := uuid.NewV4()
+	u := uuid.Must(uuid.NewV4())
 	resp, err := svc.Delete(ctx, utils.ProtoFromUUID(u))
 	assert.NotNil(t, err)
 	assert.Nil(t, resp)

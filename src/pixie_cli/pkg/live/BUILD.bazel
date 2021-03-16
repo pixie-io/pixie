@@ -25,9 +25,9 @@ go_library(
         "@com_github_alecthomas_participle//lexer:go_default_library",
         "@com_github_alecthomas_participle//lexer/ebnf:go_default_library",
         "@com_github_gdamore_tcell//:go_default_library",
+        "@com_github_gofrs_uuid//:go_default_library",
         "@com_github_rivo_tview//:go_default_library",
         "@com_github_sahilm_fuzzy//:go_default_library",
-        "@com_github_satori_go_uuid//:go_default_library",
     ],
 )
 

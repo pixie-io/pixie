@@ -12,9 +12,9 @@ import (
 	"io"
 	"strings"
 
+	"github.com/gofrs/uuid"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/stan.go"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
@@ -48,7 +48,7 @@ type NATSBridgeController struct {
 
 // NewNATSBridgeController creates a NATSBridgeController.
 func NewNATSBridgeController(clusterID uuid.UUID, srv vzconnpb.VZConnService_NATSBridgeServer, nc *nats.Conn, sc stan.Conn) *NATSBridgeController {
-	streamID := uuid.NewV4()
+	streamID := uuid.Must(uuid.NewV4())
 	return &NATSBridgeController{
 		streamID:  streamID,
 		clusterID: clusterID,

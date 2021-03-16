@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/nats-io/nats.go"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -194,7 +194,11 @@ func (s *Server) runQuery(ctx context.Context, req *plannerpb.QueryRequest, quer
 		planMap[u] = agentPlan
 	}
 
-	queryPlanTableID := uuid.NewV4().String()
+	queryPlanTableID, err := uuid.NewV4()
+	if err != nil {
+		return err
+	}
+
 	tableNameToIDMap := make(map[string]string)
 
 	for _, plan := range planMap {
@@ -202,7 +206,11 @@ func (s *Server) runQuery(ctx context.Context, req *plannerpb.QueryRequest, quer
 			for _, node := range fragment.Nodes {
 				if node.Op.OpType == planpb.GRPC_SINK_OPERATOR {
 					if output := node.Op.GetGRPCSinkOp().GetOutputTable(); output != nil {
-						tableNameToIDMap[output.TableName] = uuid.NewV4().String()
+						id, err := uuid.NewV4()
+						if err != nil {
+							return err
+						}
+						tableNameToIDMap[output.TableName] = id.String()
 					}
 				}
 			}
@@ -227,9 +235,9 @@ func (s *Server) runQuery(ctx context.Context, req *plannerpb.QueryRequest, quer
 	// Send over the query plan responses, if applicable.
 	var queryPlanOpts *QueryPlanOpts
 	if planOpts.Explain {
-		resultStream <- QueryPlanRelationResponse(queryID, queryPlanTableID)
+		resultStream <- QueryPlanRelationResponse(queryID, queryPlanTableID.String())
 		queryPlanOpts = &QueryPlanOpts{
-			TableID: queryPlanTableID,
+			TableID: queryPlanTableID.String(),
 			Plan:    plan,
 			PlanMap: planMap,
 		}
@@ -259,7 +267,10 @@ func (s *Server) CheckHealth(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("error parsing query flags: %v", err)
 	}
-	queryID := uuid.NewV4()
+	queryID, err := uuid.NewV4()
+	if err != nil {
+		return fmt.Errorf("error creating uuid: %v", err)
+	}
 	planOpts := flags.GetPlanOptions()
 
 	resultStream := make(chan *public_vizierapipb.ExecuteScriptResponse)
@@ -367,7 +378,10 @@ func (s *Server) HealthCheck(req *public_vizierapipb.HealthCheckRequest, srv pub
 func (s *Server) ExecuteScript(req *public_vizierapipb.ExecuteScriptRequest, srv public_vizierapipb.VizierService_ExecuteScriptServer) error {
 	ctx := context.WithValue(srv.Context(), execStartKey, time.Now())
 	// TODO(philkuz) we should move the query id into the api so we can track how queries propagate through the system.
-	queryID := uuid.NewV4()
+	queryID, err := uuid.NewV4()
+	if err != nil {
+		return srv.Send(ErrToVizierResponse(queryID, err))
+	}
 
 	flags, err := ParseQueryFlags(req.QueryStr)
 	if err != nil {

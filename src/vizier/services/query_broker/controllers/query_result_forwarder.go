@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	log "github.com/sirupsen/logrus"
 
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"

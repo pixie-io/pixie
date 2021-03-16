@@ -5,8 +5,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/gofrs/uuid"
 	"github.com/nats-io/nats.go"
-	uuid "github.com/satori/go.uuid"
 
 	"pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/utils"

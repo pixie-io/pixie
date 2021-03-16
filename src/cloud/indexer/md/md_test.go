@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/gofrs/uuid"
 	"github.com/olivere/elastic/v7"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 
@@ -27,8 +27,8 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	vzID = uuid.NewV4()
-	orgID = uuid.NewV4()
+	vzID = uuid.Must(uuid.NewV4())
+	orgID = uuid.Must(uuid.NewV4())
 
 	err = md.InitializeMapping(es)
 	if err != nil {

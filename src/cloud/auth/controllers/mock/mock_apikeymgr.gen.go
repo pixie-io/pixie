@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 )
 
 // MockAPIKeyMgr is a mock of APIKeyMgr interface.

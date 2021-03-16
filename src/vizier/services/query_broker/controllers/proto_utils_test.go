@@ -3,9 +3,9 @@ package controllers_test
 import (
 	"testing"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
-	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
@@ -378,7 +378,7 @@ func TestBuildExecuteScriptResponse_RowBatch(t *testing.T) {
 	}
 	convertedRB.TableID = "output_table_1_id"
 
-	queryID := uuid.NewV4()
+	queryID := uuid.Must(uuid.NewV4())
 	queryIDpb := pbutils.ProtoFromUUID(queryID)
 
 	msg := &carnotpb.TransferResultChunkRequest{
@@ -411,7 +411,7 @@ func TestBuildExecuteScriptResponse_RowBatch(t *testing.T) {
 }
 
 func TestBuildExecuteScriptResponse_InitiateResultStream(t *testing.T) {
-	queryID := uuid.NewV4()
+	queryID := uuid.Must(uuid.NewV4())
 	queryIDpb := pbutils.ProtoFromUUID(queryID)
 
 	msg := &carnotpb.TransferResultChunkRequest{
@@ -438,7 +438,7 @@ func TestBuildExecuteScriptResponse_InitiateResultStream(t *testing.T) {
 }
 
 func TestBuildExecuteScriptResponse_ExecutionStats(t *testing.T) {
-	queryID := uuid.NewV4()
+	queryID := uuid.Must(uuid.NewV4())
 	queryIDpb := pbutils.ProtoFromUUID(queryID)
 
 	msg := &carnotpb.TransferResultChunkRequest{
@@ -644,7 +644,7 @@ func TestQueryPlanResponse(t *testing.T) {
 }
 
 func TestTableRelationResponses(t *testing.T) {
-	queryID := uuid.NewV4()
+	queryID := uuid.Must(uuid.NewV4())
 
 	plannerResultPB := &distributedpb.LogicalPlannerResult{}
 	if err := proto.UnmarshalText(expectedPlannerResult, plannerResultPB); err != nil {

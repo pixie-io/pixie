@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	cvmsgspb "pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 )
 

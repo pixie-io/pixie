@@ -28,13 +28,14 @@ require (
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200417080019-f432f7159508+incompatible
 	github.com/dustin/go-humanize v1.0.0
 	github.com/emicklei/dot v0.10.1
-	github.com/evanphx/json-patch v4.9.0+incompatible // indirect
+	github.com/evanphx/json-patch v4.9.0+incompatible
 	github.com/fatih/color v1.7.0
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/gdamore/tcell v1.3.0
 	github.com/getsentry/sentry-go v0.5.1
 	github.com/go-openapi/runtime v0.19.26
 	github.com/go-openapi/strfmt v0.20.0
+	github.com/gofrs/uuid v4.0.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang-migrate/migrate v3.5.4+incompatible
 	github.com/golang/mock v1.5.0
@@ -76,7 +77,7 @@ require (
 	github.com/rivo/tview v0.0.0-20200404204604-ca37f83cb2e7
 	github.com/rivo/uniseg v0.1.0
 	github.com/sahilm/fuzzy v0.1.0
-	github.com/satori/go.uuid v1.2.0
+	github.com/satori/go.uuid v1.2.0 // indirectq
 	github.com/segmentio/backo-go v0.0.0-20160424052352-204274ad699c // indirect
 	github.com/sirupsen/logrus v1.7.0
 	github.com/skratchdot/open-golang v0.0.0-20190402232053-79abb63cd66e

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete/ebnf"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"

@@ -10,9 +10,9 @@ import (
 	"google.golang.org/grpc/codes"
 
 	"cloud.google.com/go/storage"
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/googleapis/google-cloud-go-testing/storage/stiface"
-	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/status"

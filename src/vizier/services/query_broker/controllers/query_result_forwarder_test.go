@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
-	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
@@ -117,7 +117,7 @@ func makePlan(t *testing.T) (*distributedpb.DistributedPlan, map[uuid.UUID]*plan
 }
 
 func TestStreamResultsSimple(t *testing.T) {
-	queryID := uuid.NewV4()
+	queryID := uuid.Must(uuid.NewV4())
 
 	f := controllers.NewQueryResultForwarderWithTimeout(1 * time.Second)
 
@@ -178,7 +178,7 @@ func TestStreamResultsSimple(t *testing.T) {
 }
 
 func TestStreamResultsAgentCancel(t *testing.T) {
-	queryID := uuid.NewV4()
+	queryID := uuid.Must(uuid.NewV4())
 
 	f := controllers.NewQueryResultForwarderWithTimeout(1 * time.Second)
 
@@ -238,7 +238,7 @@ func TestStreamResultsAgentCancel(t *testing.T) {
 }
 
 func TestStreamResultsClientContextCancel(t *testing.T) {
-	queryID := uuid.NewV4()
+	queryID := uuid.Must(uuid.NewV4())
 
 	f := controllers.NewQueryResultForwarderWithTimeout(1 * time.Second)
 
@@ -294,7 +294,7 @@ func TestStreamResultsClientContextCancel(t *testing.T) {
 }
 
 func TestStreamResultsQueryPlan(t *testing.T) {
-	queryID := uuid.NewV4()
+	queryID := uuid.Must(uuid.NewV4())
 
 	f := controllers.NewQueryResultForwarderWithTimeout(1 * time.Second)
 
@@ -377,8 +377,8 @@ func TestStreamResultsQueryPlan(t *testing.T) {
 }
 
 func TestStreamResultsWrongQueryID(t *testing.T) {
-	queryID := uuid.NewV4()
-	otherQueryID := uuid.NewV4()
+	queryID := uuid.Must(uuid.NewV4())
+	otherQueryID := uuid.Must(uuid.NewV4())
 
 	f := controllers.NewQueryResultForwarderWithTimeout(1 * time.Second)
 
@@ -430,7 +430,7 @@ func TestStreamResultsWrongQueryID(t *testing.T) {
 }
 
 func TestStreamResultsResultsBeforeInitialization(t *testing.T) {
-	queryID := uuid.NewV4()
+	queryID := uuid.Must(uuid.NewV4())
 
 	f := controllers.NewQueryResultForwarderWithTimeout(1 * time.Second)
 
@@ -476,7 +476,7 @@ func TestStreamResultsResultsBeforeInitialization(t *testing.T) {
 }
 
 func TestStreamResultsNeverInitializedTable(t *testing.T) {
-	queryID := uuid.NewV4()
+	queryID := uuid.Must(uuid.NewV4())
 
 	f := controllers.NewQueryResultForwarderWithTimeout(1 * time.Second)
 

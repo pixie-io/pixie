@@ -3,7 +3,7 @@ package vzshard
 import (
 	"fmt"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )

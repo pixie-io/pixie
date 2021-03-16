@@ -9,8 +9,8 @@ import (
 	"sort"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/olekukonko/tablewriter"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"

@@ -8,13 +8,14 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/kubernetes"
+
 	// Blank import necessary for kubeConfig to work.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 
 	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 	"pixielabs.ai/pixielabs/src/utils/shared/yamls"
-	"pixielabs.ai/pixielabs/src/utils/template_generator/vizier_yamls"
+	vizieryamls "pixielabs.ai/pixielabs/src/utils/template_generator/vizier_yamls"
 )
 
 // LoadClusterSecretsCmd loads cluster secretss

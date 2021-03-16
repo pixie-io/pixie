@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
-	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
@@ -205,7 +205,7 @@ func TestCreateTracepoint(t *testing.T) {
 			defer ctrl.Finish()
 			mockTracepointStore := mock_tracepoint.NewMockStore(ctrl)
 
-			origID := uuid.NewV4()
+			origID := uuid.Must(uuid.NewV4())
 
 			if test.originalTracepoint == nil {
 				mockTracepointStore.
@@ -298,8 +298,8 @@ func TestGetTracepoints(t *testing.T) {
 	tracepointMgr := tracepoint.NewManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
 	defer tracepointMgr.Close()
 
-	tID1 := uuid.NewV4()
-	tID2 := uuid.NewV4()
+	tID1 := uuid.Must(uuid.NewV4())
+	tID2 := uuid.Must(uuid.NewV4())
 	expectedTracepointInfo := []*storepb.TracepointInfo{
 		&storepb.TracepointInfo{
 			ID: utils.ProtoFromUUID(tID1),
@@ -329,7 +329,7 @@ func TestGetTracepointInfo(t *testing.T) {
 	tracepointMgr := tracepoint.NewManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
 	defer tracepointMgr.Close()
 
-	tID1 := uuid.NewV4()
+	tID1 := uuid.Must(uuid.NewV4())
 	expectedTracepointInfo := &storepb.TracepointInfo{
 		ID: utils.ProtoFromUUID(tID1),
 	}
@@ -354,15 +354,15 @@ func TestGetTracepointStates(t *testing.T) {
 	tracepointMgr := tracepoint.NewManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
 	defer tracepointMgr.Close()
 
-	agentUUID1 := uuid.NewV4()
-	tID1 := uuid.NewV4()
+	agentUUID1 := uuid.Must(uuid.NewV4())
+	tID1 := uuid.Must(uuid.NewV4())
 	expectedTracepointStatus1 := &storepb.AgentTracepointStatus{
 		ID:      utils.ProtoFromUUID(tID1),
 		AgentID: utils.ProtoFromUUID(agentUUID1),
 		State:   statuspb.RUNNING_STATE,
 	}
 
-	agentUUID2 := uuid.NewV4()
+	agentUUID2 := uuid.Must(uuid.NewV4())
 	expectedTracepointStatus2 := &storepb.AgentTracepointStatus{
 		ID:      utils.ProtoFromUUID(tID1),
 		AgentID: utils.ProtoFromUUID(agentUUID2),
@@ -391,8 +391,8 @@ func TestRegisterTracepoint(t *testing.T) {
 	tracepointMgr := tracepoint.NewManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
 	defer tracepointMgr.Close()
 
-	agentUUID := uuid.NewV4()
-	tracepointID := uuid.NewV4()
+	agentUUID := uuid.Must(uuid.NewV4())
+	tracepointID := uuid.Must(uuid.NewV4())
 	program := &logicalpb.TracepointDeployment{
 		Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
 			&logicalpb.TracepointDeployment_Tracepoint{
@@ -440,8 +440,8 @@ func TestUpdateAgentTracepointStatus(t *testing.T) {
 	tracepointMgr := tracepoint.NewManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
 	defer tracepointMgr.Close()
 
-	agentUUID1 := uuid.NewV4()
-	tpID := uuid.NewV4()
+	agentUUID1 := uuid.Must(uuid.NewV4())
+	tpID := uuid.Must(uuid.NewV4())
 	expectedTracepointState := &storepb.AgentTracepointStatus{
 		ID:      utils.ProtoFromUUID(tpID),
 		AgentID: utils.ProtoFromUUID(agentUUID1),
@@ -466,9 +466,9 @@ func TestUpdateAgentTracepointStatus_Terminated(t *testing.T) {
 	tracepointMgr := tracepoint.NewManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
 	defer tracepointMgr.Close()
 
-	agentUUID1 := uuid.NewV4()
-	tpID := uuid.NewV4()
-	agentUUID2 := uuid.NewV4()
+	agentUUID1 := uuid.Must(uuid.NewV4())
+	tpID := uuid.Must(uuid.NewV4())
+	agentUUID2 := uuid.Must(uuid.NewV4())
 
 	mockTracepointStore.
 		EXPECT().
@@ -493,10 +493,10 @@ func TestTTLExpiration(t *testing.T) {
 	mockTracepointStore := mock_tracepoint.NewMockStore(ctrl)
 	mockAgtMgr := mock_agent.NewMockManager(ctrl)
 
-	tpID1 := uuid.NewV4()
-	tpID2 := uuid.NewV4()
-	tpID3 := uuid.NewV4()
-	tpID4 := uuid.NewV4()
+	tpID1 := uuid.Must(uuid.NewV4())
+	tpID2 := uuid.Must(uuid.NewV4())
+	tpID3 := uuid.Must(uuid.NewV4())
+	tpID4 := uuid.Must(uuid.NewV4())
 
 	mockTracepointStore.
 		EXPECT().
@@ -593,8 +593,8 @@ func TestUpdateAgentTracepointStatus_RemoveTracepoints(t *testing.T) {
 	tracepointMgr := tracepoint.NewManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
 	defer tracepointMgr.Close()
 
-	tpID1 := uuid.NewV4()
-	tpID2 := uuid.NewV4()
+	tpID1 := uuid.Must(uuid.NewV4())
+	tpID2 := uuid.Must(uuid.NewV4())
 
 	mockTracepointStore.
 		EXPECT().

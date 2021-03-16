@@ -5,10 +5,10 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
-	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -861,8 +861,8 @@ func TestScriptMgr(t *testing.T) {
 		},
 	}
 
-	ID1 := uuid.NewV4()
-	ID2 := uuid.NewV4()
+	ID1 := uuid.Must(uuid.NewV4())
+	ID2 := uuid.Must(uuid.NewV4())
 	testCases := []struct {
 		name         string
 		endpoint     string

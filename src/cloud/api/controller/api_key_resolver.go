@@ -4,8 +4,8 @@ import (
 	"context"
 	"sort"
 
+	"github.com/gofrs/uuid"
 	"github.com/graph-gophers/graphql-go"
-	uuid "github.com/satori/go.uuid"
 
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/utils"
