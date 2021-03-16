@@ -1,0 +1,21 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["example.go"],
+    importpath = "pixielabs.ai/pixielabs/src/api/go_examples/example_mux",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//src/api/go/pxapi:go_default_library",
+        "//src/api/go/pxapi/errdefs:go_default_library",
+        "//src/api/go/pxapi/errdefs/formatters:go_default_library",
+        "//src/api/go/pxapi/muxes:go_default_library",
+        "//src/api/go/pxapi/types:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "example_mux",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)

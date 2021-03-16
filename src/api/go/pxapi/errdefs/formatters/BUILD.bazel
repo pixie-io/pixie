@@ -1,0 +1,17 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "doc.go",
+        "json.go",
+        "table.go",
+    ],
+    importpath = "pixielabs.ai/pixielabs/src/api/go/pxapi/errdefs/formatters",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/api/go/pxapi/errdefs:go_default_library",
+        "//src/api/go/pxapi/types:go_default_library",
+        "@com_github_olekukonko_tablewriter//:go_default_library",
+    ],
+)
