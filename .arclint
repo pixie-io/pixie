@@ -73,6 +73,12 @@
         "(\\.go$)"
       ]
     },
+    "goimports": {
+      "type": "goimports",
+      "include": [
+        "(\\.go$)"
+      ]
+    },
     "golint": {
       "type": "golint",
       "include": [
