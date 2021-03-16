@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
 
 pl_cc_library(
     name = "cc_library",
@@ -9,7 +9,10 @@ pl_cc_library(
             "*.h",
             "*.cc",
         ],
-        exclude = ["**/*_test.cc"],
+        exclude = [
+            "**/*_test.cc",
+            "**/*_benchmark.cc",
+        ],
     ),
     hdrs = ["uuid.h"],
     deps = [
@@ -23,5 +26,16 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/api/public/uuidpb:uuid_pl_cc_proto",
+    ],
+)
+
+pl_cc_binary(
+    name = "uuid_benchmark",
+    testonly = 1,
+    srcs = ["uuid_benchmark.cc"],
+    deps = [
+        ":cc_library",
+        "//src/api/public/uuidpb:uuid_pl_cc_proto",
+        "@com_google_benchmark//:benchmark_main",
     ],
 )
