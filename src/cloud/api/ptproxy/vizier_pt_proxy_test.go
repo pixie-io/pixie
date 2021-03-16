@@ -14,8 +14,6 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
-	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -25,6 +23,7 @@ import (
 	proto1 "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	public_vizierpb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/cloud/api/ptproxy"
+	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
 	mock_vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb/mock"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	env2 "pixielabs.ai/pixielabs/src/shared/services/env"

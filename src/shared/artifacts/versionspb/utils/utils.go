@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/lib/pq"
+
 	"pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
 )
 

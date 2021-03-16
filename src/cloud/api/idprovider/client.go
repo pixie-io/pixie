@@ -9,10 +9,9 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"strings"
-
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
@@ -25,10 +24,10 @@ import (
 	kratosPublic "github.com/ory/kratos-client-go/client/public"
 	kratosModels "github.com/ory/kratos-client-go/models"
 	log "github.com/sirupsen/logrus"
-	"pixielabs.ai/pixielabs/src/shared/services/handler"
-
 	pflag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
+
+	"pixielabs.ai/pixielabs/src/shared/services/handler"
 )
 
 func init() {

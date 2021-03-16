@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
 
-	"github.com/stretchr/testify/assert"
 	"pixielabs.ai/pixielabs/src/api/go/pxapi/errdefs"
 	"pixielabs.ai/pixielabs/src/api/go/pxapi/types"
 	vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"

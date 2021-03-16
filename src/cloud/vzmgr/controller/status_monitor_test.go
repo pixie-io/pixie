@@ -3,14 +3,12 @@ package controller_test
 import (
 	"testing"
 
+	"github.com/gofrs/uuid"
+	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/gofrs/uuid"
-
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/controller"
-
-	"github.com/jmoiron/sqlx"
 )
 
 func loadStatusMonitorTestData(t *testing.T, db *sqlx.DB) {

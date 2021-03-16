@@ -5,16 +5,16 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/nats-io/nats.go"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrenv"
-	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
-	"pixielabs.ai/pixielabs/src/vizier/services/certmgr/controller"
 
-	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/server"
+	"pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrenv"
+	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
+	"pixielabs.ai/pixielabs/src/vizier/services/certmgr/controller"
 )
 
 func init() {

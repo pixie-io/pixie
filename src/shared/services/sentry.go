@@ -9,6 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+
 	"pixielabs.ai/pixielabs/src/shared/services/sentryhook"
 	version "pixielabs.ai/pixielabs/src/shared/version/go"
 )

@@ -7,6 +7,7 @@ import (
 
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/spf13/viper"
+
 	vispb "pixielabs.ai/pixielabs/src/shared/vispb"
 )
 

@@ -7,12 +7,12 @@ import (
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/proto"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
+
 	"pixielabs.ai/pixielabs/src/carnot/docspb"
 	docstring "pixielabs.ai/pixielabs/src/carnot/docstring/pkg"
 	"pixielabs.ai/pixielabs/src/shared/services"
-
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
 )
 
 func init() {

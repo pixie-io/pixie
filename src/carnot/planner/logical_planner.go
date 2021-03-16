@@ -15,6 +15,7 @@ import (
 
 	// Blank Import required by package.
 	_ "github.com/ianlancetaylor/cgosymbolizer"
+
 	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"

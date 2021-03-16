@@ -8,7 +8,6 @@ import (
 	"google.golang.org/grpc"
 
 	proto1 "pixielabs.ai/pixielabs/src/api/public/uuidpb"
-
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"

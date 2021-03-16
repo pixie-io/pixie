@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/gofrs/uuid"
+
 	"pixielabs.ai/pixielabs/src/cloud/auth/authenv"
 )
 

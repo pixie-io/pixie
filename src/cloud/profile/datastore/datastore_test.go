@@ -5,12 +5,11 @@ import (
 
 	"github.com/gofrs/uuid"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
+	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"pixielabs.ai/pixielabs/src/cloud/profile/datastore"
-
-	"github.com/jmoiron/sqlx"
-
 	"pixielabs.ai/pixielabs/src/cloud/profile/schema"
 	"pixielabs.ai/pixielabs/src/shared/services/pgtest"
 )

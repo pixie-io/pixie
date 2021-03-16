@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"pixielabs.ai/pixielabs/src/shared/services/healthz"
-
 	"github.com/stretchr/testify/assert"
+
+	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 )
 
 func TestInstallPathHandler(t *testing.T) {

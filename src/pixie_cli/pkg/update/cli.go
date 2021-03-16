@@ -18,6 +18,7 @@ import (
 	"github.com/vbauerster/mpb/v4/decor"
 	"golang.org/x/sys/unix"
 	"google.golang.org/grpc"
+
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/auth"
 	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"

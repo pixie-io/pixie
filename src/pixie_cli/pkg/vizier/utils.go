@@ -7,6 +7,7 @@ import (
 	"github.com/gofrs/uuid"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/rest"
+
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 	"pixielabs.ai/pixielabs/src/utils"

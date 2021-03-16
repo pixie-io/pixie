@@ -8,10 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/pflag"
-
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/spf13/pflag"
 )
 
 var schema = `CREATE TABLE IF NOT EXISTS person (

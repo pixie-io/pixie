@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+
 	types "pixielabs.ai/pixielabs/src/shared/types/go"
 )
 

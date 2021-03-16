@@ -9,6 +9,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
+
 	utils2 "pixielabs.ai/pixielabs/src/shared/services/utils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 )

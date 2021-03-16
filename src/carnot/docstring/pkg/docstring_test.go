@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"pixielabs.ai/pixielabs/src/carnot/docspb"
 )
 

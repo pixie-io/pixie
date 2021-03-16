@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/graph-gophers/graphql-go"
+
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	pbutils "pixielabs.ai/pixielabs/src/utils"

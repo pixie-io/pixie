@@ -5,11 +5,11 @@ import (
 	"strconv"
 
 	"github.com/gofrs/uuid"
+	"github.com/gogo/protobuf/types"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/gogo/protobuf/types"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/vizier"

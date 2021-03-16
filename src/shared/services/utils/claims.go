@@ -7,6 +7,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	log "github.com/sirupsen/logrus"
+
 	jwt2 "pixielabs.ai/pixielabs/src/shared/services/proto"
 )
 

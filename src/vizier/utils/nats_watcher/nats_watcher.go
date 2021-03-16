@@ -6,10 +6,6 @@ import (
 	"strings"
 	"time"
 
-	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
-
-	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-
 	"github.com/fatih/color"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
@@ -17,7 +13,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
+	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/shared/services"
+	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 )
 
 func connectNATS() *nats.Conn {

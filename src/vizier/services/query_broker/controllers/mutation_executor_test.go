@@ -5,6 +5,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
+
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 )
 

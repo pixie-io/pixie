@@ -6,16 +6,14 @@ import (
 	"strings"
 
 	"github.com/gogo/protobuf/jsonpb"
-
 	"github.com/gogo/protobuf/types"
-
-	vpb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
+
+	vpb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
 )
 
 func init() {

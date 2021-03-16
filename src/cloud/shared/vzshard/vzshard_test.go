@@ -6,6 +6,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+
 	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
 )
 

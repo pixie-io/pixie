@@ -5,26 +5,23 @@ import (
 	"testing"
 	"time"
 
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
-
-	"golang.org/x/oauth2/jwt"
-
 	"cloud.google.com/go/storage"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-
 	"github.com/gogo/protobuf/types"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/googleapis/google-cloud-go-testing/storage/stiface"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2/jwt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	apb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/controller"
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/schema"
 	vpb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
 	"pixielabs.ai/pixielabs/src/shared/services/pgtest"
+	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 
 func mustSetupFakeBucket(t *testing.T) stiface.Client {

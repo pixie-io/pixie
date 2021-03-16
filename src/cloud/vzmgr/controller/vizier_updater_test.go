@@ -13,12 +13,12 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	mock_artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb/mock"
 	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
-	"pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
-
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/controller"
+	"pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )

@@ -7,13 +7,13 @@ import (
 	"net/url"
 	"strings"
 
-	"pixielabs.ai/pixielabs/src/api/go/pxapi/types"
-	cloudapipb "pixielabs.ai/pixielabs/src/api/public/cloudapipb"
-	vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
+
+	"pixielabs.ai/pixielabs/src/api/go/pxapi/types"
+	cloudapipb "pixielabs.ai/pixielabs/src/api/public/cloudapipb"
+	vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 )
 
 const (

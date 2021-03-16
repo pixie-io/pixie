@@ -6,11 +6,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"pixielabs.ai/pixielabs/src/shared/services/handler"
+	"github.com/stretchr/testify/assert"
 
 	"pixielabs.ai/pixielabs/src/shared/services/env"
-
-	"github.com/stretchr/testify/assert"
+	"pixielabs.ai/pixielabs/src/shared/services/handler"
 )
 
 func TestHandler_ServeHTTP(t *testing.T) {

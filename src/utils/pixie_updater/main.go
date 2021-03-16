@@ -9,9 +9,9 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
-
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/utils/shared/artifacts"
 	"pixielabs.ai/pixielabs/src/utils/shared/k8s"

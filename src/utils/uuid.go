@@ -2,6 +2,7 @@ package utils
 
 import (
 	"github.com/gofrs/uuid"
+
 	pb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 )
 

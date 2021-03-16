@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 )
 

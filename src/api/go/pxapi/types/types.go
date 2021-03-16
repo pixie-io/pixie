@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
-
 	"github.com/gofrs/uuid"
+
+	vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 )
 
 // DataType referes to the underlying Pixie datatype.

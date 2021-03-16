@@ -6,6 +6,7 @@ import (
 	"github.com/nats-io/stan.go"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+
 	"pixielabs.ai/pixielabs/src/shared/services/msgbus"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )

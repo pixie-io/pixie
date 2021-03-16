@@ -7,14 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/grpc/codes"
-
 	"cloud.google.com/go/storage"
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/googleapis/google-cloud-go-testing/storage/stiface"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"

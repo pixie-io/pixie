@@ -9,6 +9,7 @@ import (
 	types "github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	"github.com/graph-gophers/graphql-go/gqltesting"
+
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	pl_vispb "pixielabs.ai/pixielabs/src/shared/vispb"

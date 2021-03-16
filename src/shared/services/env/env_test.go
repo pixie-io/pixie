@@ -3,10 +3,10 @@ package env_test
 import (
 	"testing"
 
-	"pixielabs.ai/pixielabs/src/shared/services/env"
-
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+
+	"pixielabs.ai/pixielabs/src/shared/services/env"
 )
 
 func TestNew(t *testing.T) {

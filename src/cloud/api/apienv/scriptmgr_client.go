@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+
 	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb"
 	"pixielabs.ai/pixielabs/src/shared/services"
 )

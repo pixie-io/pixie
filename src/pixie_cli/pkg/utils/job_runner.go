@@ -2,6 +2,7 @@ package utils
 
 import (
 	"golang.org/x/sync/errgroup"
+
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/components"
 )
 

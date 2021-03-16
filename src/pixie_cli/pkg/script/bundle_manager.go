@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	log "github.com/sirupsen/logrus"
+
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/auth"
 	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 )

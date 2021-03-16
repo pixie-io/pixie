@@ -5,12 +5,11 @@ import (
 	"syscall"
 
 	"github.com/gogo/protobuf/types"
+
 	"pixielabs.ai/pixielabs/src/shared/artifacts/versionspb/utils"
 
 	// This must be GOGO variant or the ENUMs won't work.
 	"github.com/gogo/protobuf/jsonpb"
-	vpb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
-
 	"github.com/golang-migrate/migrate"
 	"github.com/golang-migrate/migrate/database/postgres"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
@@ -18,7 +17,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/schema"
+	vpb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
 	"pixielabs.ai/pixielabs/src/shared/services/pg"
 )
 

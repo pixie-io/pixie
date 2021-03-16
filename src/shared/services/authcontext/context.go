@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/dgrijalva/jwt-go"
+
 	jwt2 "pixielabs.ai/pixielabs/src/shared/services/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"
-
-	"github.com/dgrijalva/jwt-go"
 )
 
 type authContextKey struct{}

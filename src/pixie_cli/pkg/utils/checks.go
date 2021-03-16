@@ -10,6 +10,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 )
 

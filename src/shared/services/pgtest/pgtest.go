@@ -3,8 +3,6 @@ package pgtest
 import (
 	"testing"
 
-	"pixielabs.ai/pixielabs/src/shared/services/pg"
-
 	"github.com/golang-migrate/migrate"
 	"github.com/golang-migrate/migrate/database/postgres"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
@@ -14,6 +12,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
+
+	"pixielabs.ai/pixielabs/src/shared/services/pg"
 )
 
 // SetupTestDB sets up a test database instance and applies migrations.

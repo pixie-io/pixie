@@ -11,6 +11,7 @@ import (
 	"github.com/bmatcuk/doublestar"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/components"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
 )

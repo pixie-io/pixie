@@ -7,10 +7,9 @@ import (
 	// This is required to get the "pgx" driver.
 	_ "github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-
-	log "github.com/sirupsen/logrus"
 )
 
 const retryAttempts = 5

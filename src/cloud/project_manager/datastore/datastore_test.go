@@ -3,14 +3,14 @@ package datastore_test
 import (
 	"testing"
 
-	bindata "github.com/golang-migrate/migrate/source/go_bindata"
-
 	"github.com/gofrs/uuid"
 	_ "github.com/golang-migrate/migrate/source/go_bindata"
+	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	_ "github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"pixielabs.ai/pixielabs/src/cloud/project_manager/datastore"
 	"pixielabs.ai/pixielabs/src/cloud/project_manager/schema"
 	"pixielabs.ai/pixielabs/src/shared/services/pgtest"

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 )
 

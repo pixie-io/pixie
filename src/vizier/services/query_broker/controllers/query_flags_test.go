@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
 )
 

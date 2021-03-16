@@ -10,6 +10,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
 	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/vizier"
 )

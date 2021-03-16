@@ -11,6 +11,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
+
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	mock_public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb/mock"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"

@@ -3,9 +3,9 @@ package authcontext_test
 import (
 	"testing"
 
-	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
-
 	"github.com/stretchr/testify/assert"
+
+	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 

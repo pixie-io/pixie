@@ -14,10 +14,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"pixielabs.ai/pixielabs/src/shared/services"
 
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/vizier"
+	"pixielabs.ai/pixielabs/src/shared/services"
 )
 
 var scriptDisableList = []string{

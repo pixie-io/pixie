@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/controller"
-
 	"github.com/stretchr/testify/assert"
+
+	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/controller"
 )
 
 const placementJSONTxt = `{

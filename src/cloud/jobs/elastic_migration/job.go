@@ -1,14 +1,12 @@
 package main
 
 import (
-	"pixielabs.ai/pixielabs/src/cloud/jobs/elastic_migration/controller"
-	"pixielabs.ai/pixielabs/src/cloud/jobs/elastic_migration/schema"
-
-	"github.com/spf13/viper"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 
+	"pixielabs.ai/pixielabs/src/cloud/jobs/elastic_migration/controller"
+	"pixielabs.ai/pixielabs/src/cloud/jobs/elastic_migration/schema"
 	"pixielabs.ai/pixielabs/src/cloud/shared/esutils"
 )
 

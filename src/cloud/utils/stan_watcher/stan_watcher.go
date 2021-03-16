@@ -6,20 +6,18 @@ import (
 	"strings"
 	"time"
 
-	"pixielabs.ai/pixielabs/src/shared/services/msgbus"
-
-	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-
 	"github.com/fatih/color"
 	"github.com/gogo/protobuf/proto"
+	types "github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/stan.go"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	types "github.com/gogo/protobuf/types"
-	"github.com/spf13/pflag"
+	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/shared/services"
+	"pixielabs.ai/pixielabs/src/shared/services/msgbus"
 	_ "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 )
 
