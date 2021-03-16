@@ -30,6 +30,7 @@ declare module '@material-ui/core/styles/createPalette' {
     graph: {
       category?: string[];
       diverging?: string[];
+      ramp?: string[];
       heatmap?: string[];
       primary?: string;
     };
@@ -60,6 +61,7 @@ declare module '@material-ui/core/styles/createPalette' {
     graph: {
       category?: string[];
       diverging?: string[];
+      ramp?: string[];
       heatmap?: string[];
       primary?: string;
     };
@@ -235,6 +237,16 @@ export const DARK_THEME = createMuiTheme({
         '#d6e8ed', // right-light
         '#91bfd9', // right-main
         '#1d78b5', // right-dark
+      ],
+      ramp: [
+        '#fff48f', // info-light
+        '#f0de3d', // info-main
+        '#dac92f', // info-dark
+        '#ffc656', // warning-light
+        '#f6a609', // warning-main
+        '#dc9406', // warning-dark
+        '#ff5e6d', // error-main
+        '#e54e5c', // error-dark
       ],
       heatmap: [
         '#d6e8ed', // light-1

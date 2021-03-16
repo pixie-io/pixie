@@ -1843,6 +1843,7 @@ function hydrateSpecWithTheme(spec: VgSpec, theme: Theme) {
       category: theme.palette.graph.category,
       diverging: theme.palette.graph.diverging,
       heatmap: theme.palette.graph.heatmap,
+      ramp: theme.palette.graph.ramp,
     },
     shape: {
       stroke: theme.palette.graph.primary,
@@ -1960,7 +1961,7 @@ function convertToStacktraceFlameGraph(
           // Ancestors of the selected stacktrace should have lower opacity.
           {
             test: 'indexof(selectedTrace, datum.fullPath) === 0 && selectedTrace != datum.fullPath',
-            value: 0.5,
+            value: 0.3,
           },
           { value: 1 },
         ],
@@ -1999,7 +2000,7 @@ function convertToStacktraceFlameGraph(
     name: 'color',
     type: 'ordinal',
     domain: { data: TRANSFORMED_DATA_SOURCE_NAME, field: 'name' },
-    range: 'category',
+    range: 'ramp',
   });
 
   const preprocess = (data: Array<{}>): Array<{}> => {
