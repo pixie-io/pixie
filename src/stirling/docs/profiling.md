@@ -63,7 +63,6 @@ Next edit the new file and make the following modifications.
 To get the value of `__PAGE_OFFSET_BASE`, run this script:
 ```
 sudo bpftrace -e 'BEGIN { $pob = kaddr("page_offset_base"); print($pob); }'
-
 ```
 
 Finally, replace `__PAGE_OFFSET_BASE` with the value extracted from the bpftrace script above. Note that you should convert the value to hex first.
@@ -75,15 +74,15 @@ As long as the node doesn't reboot (which GKE nodes don't), the value of __PAGE_
 To run the profiler:
 
 ```
-sudo /usr/sbin/profile-bpfcc.pixie -p <target_pid> <duration> > profile.out
+# 100 Hz sampling, -f for folded stacktraces (for flamegraph compatibility).
+sudo /usr/sbin/profile-bpfcc.pixie -p <target_pid> -f -F 101 <duration> > profile.out
 ```
 
 #### Creating a flamegraph graphic
 
 Get the flamegraph repo and script flamegraph.pl, then follow these steps:
 ```
-/usr/sbin/profile-bpfcc.pixie -p <target_pid> -f -F 101 300 > profile.out # 300 seconds, 101 Hz sampling, -f for flamegraph compat.
-# gcloud compute scp & scp the file profile.out to your local machine, or eventual destination
+# gcloud compute scp profile.out to your local machine.
 flamegraph.pl profile.out > profile.svg
 rsvg-convert profile.svg -f pdf > profile.pdf  # create pdf
 rsvg-convert profile.svg -f eps > profile.eps  # create eps

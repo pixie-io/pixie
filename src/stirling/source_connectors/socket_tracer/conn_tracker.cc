@@ -54,7 +54,7 @@ constexpr double kStitchFailureRateThreshold = 0.5;
 
 ConnTracker::~ConnTracker() {
   if (conn_info_map_mgr_ != nullptr) {
-    conn_info_map_mgr_->ReleaseResources(conn_id_);
+    conn_info_map_mgr_->ReleaseResources(conn_id_, state_ == State::kDisabled);
   }
 }
 

@@ -14,7 +14,7 @@ class ConnInfoMapManager {
       : conn_info_map_(bcc->GetHashTable<uint64_t, struct conn_info_t>("conn_info_map")),
         conn_disabled_map_(bcc->GetHashTable<uint64_t, uint64_t>("conn_disabled_map")) {}
 
-  void ReleaseResources(struct conn_id_t conn_id) {
+  void ReleaseResources(struct conn_id_t conn_id, bool disabled) {
     uint64_t key = id(conn_id);
     std::string conn_str = ToString(conn_id);
 
@@ -36,10 +36,15 @@ class ConnInfoMapManager {
       }
     }
 
-    uint64_t tsid;
-    if (conn_disabled_map_.get_value(key, tsid).ok()) {
-      if (tsid <= conn_id.tsid) {
-        conn_disabled_map_.remove_value(key);
+    // As an optimization, don't try to clear the conn_disabled_map_,
+    // unless we know it was previously populated.
+    // Otherwise, get_value makes a syscall, which can become expensive.
+    if (disabled) {
+      uint64_t tsid;
+      if (conn_disabled_map_.get_value(key, tsid).ok()) {
+        if (tsid <= conn_id.tsid) {
+          conn_disabled_map_.remove_value(key);
+        }
       }
     }
   }
