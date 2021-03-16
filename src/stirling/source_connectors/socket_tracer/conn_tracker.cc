@@ -41,6 +41,8 @@ DEFINE_int64(
     stirling_check_proc_for_conn_close, true,
     "If enabled, Stirling will check Linux /proc on idle connections to see if they are closed.");
 
+DECLARE_int32(test_only_socket_trace_target_pid);
+
 namespace pl {
 namespace stirling {
 
@@ -402,7 +404,8 @@ void ConnTracker::SetConnID(struct conn_id_t conn_id) {
 
   conn_id_ = conn_id;
 
-  if (conn_id_.upid.pid == FLAGS_stirling_conn_trace_pid) {
+  if (conn_id_.upid.pid == FLAGS_stirling_conn_trace_pid ||
+      conn_id_.upid.pid == static_cast<uint32_t>(FLAGS_test_only_socket_trace_target_pid)) {
     if (FLAGS_stirling_conn_trace_fd == kUnsetPIDFD ||
         conn_id_.fd == FLAGS_stirling_conn_trace_fd) {
       SetDebugTrace(2);
