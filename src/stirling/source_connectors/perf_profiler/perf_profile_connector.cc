@@ -57,7 +57,7 @@ std::string FoldedStackTraceString(std::string_view name, ebpf::BPFStackTable* s
                                    const stack_trace_key_t& key) {
   using SymbolsVec = std::vector<std::string>;
 
-  SymbolsVec user_symbols = stack_traces->get_stack_symbol(key.user_stack_id, key.pid);
+  SymbolsVec user_symbols = stack_traces->get_stack_symbol(key.user_stack_id, key.upid.pid);
   SymbolsVec kernel_symbols = stack_traces->get_stack_symbol(key.kernel_stack_id, -1);
 
   return stack_traces::FoldedStackTraceString(name, user_symbols, kernel_symbols);
@@ -148,7 +148,8 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
 
     // TODO(jps): use 'struct upid_t' as a field in SymbolicStackTrace
     // refactor use of ctx->getASID() to CreateRecords().
-    const md::UPID upid(ctx->GetASID(), stack_trace_key.pid, stack_trace_key.start_time_ticks);
+    const md::UPID upid(ctx->GetASID(), stack_trace_key.upid.pid,
+                        stack_trace_key.upid.start_time_ticks);
 
     // TODO(oazizi): Replace this with the Pod and container name.
     //               Also get rid of FLAGS_stirling_profiler_test_mode.

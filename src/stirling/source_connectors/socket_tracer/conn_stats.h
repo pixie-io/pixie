@@ -8,6 +8,7 @@
 #include <absl/hash/hash.h>
 
 #include "src/shared/upid/upid.h"
+#include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/go_grpc_types.hpp"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/source_connectors/socket_tracer/conn_tracker.h"

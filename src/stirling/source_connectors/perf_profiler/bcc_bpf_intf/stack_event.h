@@ -1,5 +1,7 @@
 #pragma once
 
+#include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
+
 // TODO(jps): add a macro that wraps bpf_trace_printk for debug & no-ops for prod builds.
 
 // Indices into the profiler shared state vector "profiler_state":
@@ -22,11 +24,7 @@ static const uint32_t kProfilerStateVectorSize = 5;
 // [1] user & kernel stack trace ids are tracked separately (the kernel creates
 // user & kernel stacks separately because of address aliasing).
 struct stack_trace_key_t {
-  // pid+start_time_ticks are together a "upid" or universally unique pid;
-  // TODO(jps): refactor to use 'struct upid_t'. Requires exfiltration of the same
-  // from socket_trace_connector.
-  uint32_t pid;
-  uint64_t start_time_ticks;
+  struct upid_t upid;
 
   // user_stack_id, an index into the stack-traces map.
   int user_stack_id;

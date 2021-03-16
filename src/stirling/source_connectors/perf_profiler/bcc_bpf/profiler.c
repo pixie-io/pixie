@@ -103,11 +103,10 @@ int sample_call_stack(struct bpf_perf_event_data* ctx) {
 
   profiler_state.increment(sample_count_idx);
 
-  uint32_t pid = bpf_get_current_pid_tgid();
-  uint64_t start_time_ticks = get_tgid_start_time();
-
-  // create map key
-  struct stack_trace_key_t key = {.pid = pid, .start_time_ticks = start_time_ticks};
+  // Create map key.
+  struct stack_trace_key_t key = {};
+  key.upid.tgid = bpf_get_current_pid_tgid() >> 32;
+  key.upid.start_time_ticks = get_tgid_start_time();
 
   if (push_count % 2 == 0) {
     // map set A branch:

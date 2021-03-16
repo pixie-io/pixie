@@ -140,15 +140,11 @@ class PerfProfileBPFTest : public ::testing::Test {
   std::chrono::duration<double> RunTest(const std::chrono::seconds run_time) {
     constexpr std::chrono::milliseconds t_sleep = kStackTraceTableSamplingPeriod;
     const auto start_time = std::chrono::steady_clock::now();
+    const auto stop_time = start_time + run_time;
 
     // Continuously poke Stirling TransferData() using the underlying schema periodicity;
     // break from this loop when the elapsed time exceeds the targeted run time.
-    while (true) {
-      const auto elapsed_time = std::chrono::steady_clock::now() - start_time;
-      if (elapsed_time > run_time) {
-        break;
-      }
-
+    while (std::chrono::steady_clock::now() < stop_time) {
       source_->TransferData(ctx_.get(), PerfProfileConnector::kPerfProfileTableNum, &data_table_);
       std::this_thread::sleep_for(t_sleep);
     }
@@ -156,9 +152,7 @@ class PerfProfileBPFTest : public ::testing::Test {
 
     // We return the amount of time that we ran the test; it will be used to compute
     // the observed sample rate and the expected number of samples.
-    const auto end_time = std::chrono::steady_clock::now();
-    const std::chrono::duration<double> test_run_time = end_time - start_time;
-    return test_run_time;
+    return std::chrono::steady_clock::now() - start_time;
   }
 
   std::unique_ptr<SourceConnector> source_;
