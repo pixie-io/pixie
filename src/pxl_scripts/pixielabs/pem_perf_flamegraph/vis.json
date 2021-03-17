@@ -1,0 +1,24 @@
+{
+  "variables": [],
+  "globalFuncs": [],
+  "widgets": [
+    {
+      "name": "Flamegraph",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 6
+      },
+      "func": {
+        "name": "stacktraces",
+        "args": []
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.StacktraceFlameGraph",
+        "stacktraceColumn": "stack_trace",
+        "countColumn": "count"
+      }
+    }
+  ]
+}

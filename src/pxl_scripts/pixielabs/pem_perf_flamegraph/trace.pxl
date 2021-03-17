@@ -1,0 +1,20 @@
+# Copyright (c) Pixie Labs, Inc.
+# Licensed under the Apache License, Version 2.0 (the "License")
+
+'''PEM Flamegraph
+
+Performance profile visualization for the PEM.
+
+'''
+
+import px
+
+
+def stacktraces(start_time: str):
+    df = px.DataFrame(table='stack_traces.beta', start_time=start_time)
+    df = df.groupby(['upid', 'stack_trace_id']).agg(
+        count=('count', px.sum),
+        stack_trace=('stack_trace', px.any),
+    )
+    df = df[px.contains(df.stack_trace, "PEM")]
+    return df
