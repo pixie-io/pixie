@@ -1,6 +1,6 @@
-import auth0 from 'auth0-js';
-import { AUTH0_CLIENT_ID, AUTH0_DOMAIN } from 'containers/constants';
 import * as QueryString from 'query-string';
+import { HydraClient } from './hydra-oauth-provider';
+import { Auth0Client } from './auth0-oauth-provider';
 
 export type AuthCallbackMode = 'cli_get' | 'cli_token' | 'ui';
 
@@ -12,12 +12,7 @@ interface RedirectArgs {
   redirect_uri?: string;
 }
 
-const auth0Request = (isSignup: boolean) => {
-  const wa = new auth0.WebAuth({
-    domain: AUTH0_DOMAIN,
-    clientID: AUTH0_CLIENT_ID,
-  });
-
+const getRedirectURL = (isSignup: boolean) => {
   // Translate the old API parameters to new versions. In paricular:
   // local, (no redirect_url) -> cli_token
   // local -> cli_get
@@ -61,14 +56,22 @@ const auth0Request = (isSignup: boolean) => {
   if (segmentId) {
     analytics.alias(segmentId);
   }
-
-  wa.authorize({
-    connection: 'google-oauth2',
-    responseType: 'token',
-    redirectUri: redirectURL,
-    prompt: 'login',
-  });
+  return redirectURL;
 };
 
-export const auth0SignupRequest = () => auth0Request(true);
-export const auth0LoginRequest = () => auth0Request(false);
+type OAuthProviderType = 'auth0' | 'hydra';
+// TODO(philkuz) move to an environment variable.
+const OAUTH_PROVIDER: OAuthProviderType = 'auth0';
+
+export const GetOAuthProvider = () => {
+  if (OAUTH_PROVIDER === 'auth0') {
+    return new Auth0Client(getRedirectURL);
+  }
+  if (OAUTH_PROVIDER === 'hydra') {
+    return new HydraClient(getRedirectURL);
+  }
+  throw new Error(`OAUTH_PROVIDER ${OAUTH_PROVIDER} invalid. Expected hydra or auth0.`);
+};
+
+export const OAuthSignupRequest = () => GetOAuthProvider().signupRequest();
+export const OAuthLoginRequest = () => GetOAuthProvider().loginRequest();

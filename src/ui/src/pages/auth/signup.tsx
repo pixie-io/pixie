@@ -4,7 +4,7 @@ import {
 import * as React from 'react';
 import { AuthBox, SignupMarcom } from '@pixie/components';
 import { BasePage } from './base';
-import { auth0SignupRequest } from './utils';
+import { OAuthSignupRequest } from './utils';
 
 const styles = ({ breakpoints }: Theme) => createStyles({
   root: {
@@ -31,7 +31,7 @@ export const SignupPage = withStyles(styles)(({ classes }: WithStyles<typeof sty
         <AuthBox
           variant='signup'
           toggleURL={`/auth/login${window.location.search}`}
-          onPrimaryButtonClick={auth0SignupRequest}
+          onPrimaryButtonClick={OAuthSignupRequest}
           showTOSDisclaimer
         />
       </div>

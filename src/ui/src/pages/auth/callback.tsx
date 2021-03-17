@@ -1,6 +1,4 @@
 import * as React from 'react';
-import auth0 from 'auth0-js';
-import { AUTH0_CLIENT_ID, AUTH0_DOMAIN } from 'containers/constants';
 import * as QueryString from 'query-string';
 import Axios, { AxiosError } from 'axios';
 import * as RedirectUtils from 'utils/redirect-utils';
@@ -11,7 +9,8 @@ import {
   Button, ButtonProps, createStyles, makeStyles, Theme,
 } from '@material-ui/core';
 import { BasePage } from './base';
-import { AuthCallbackMode } from './utils';
+import { AuthCallbackMode, GetOAuthProvider } from './utils';
+import { Token } from './oauth-provider';
 
 const redirectGet = async (url, data) => {
   const fullURL = QueryString.stringifyUrl({ url, query: data });
@@ -142,17 +141,7 @@ export const AuthCallbackPage = () => {
         return false;
       }
     };
-
-    const wa = new auth0.WebAuth({
-      domain: AUTH0_DOMAIN,
-      clientID: AUTH0_CLIENT_ID,
-    });
-    wa.parseHash({ hash: window.location.hash }, (errStatus, authResult) => {
-      if (errStatus) {
-        setErr('internal', `${errStatus.error} - ${errStatus.errorDescription}`);
-        return;
-      }
-
+    const handleAccessToken = (accessToken: string) => {
       const params = QueryString.parse(window.location.search.substr(1));
       let mode: AuthCallbackMode;
       switch (params.mode) {
@@ -175,23 +164,22 @@ export const AuthCallbackPage = () => {
       setConfig({
         mode,
         signup,
-        token: authResult.accessToken,
+        token: accessToken,
         loading: true,
       });
 
       const doAuth = async () => {
-        const token = authResult.accessToken;
         let signupSuccess = false;
         let loginSuccess = false;
 
         if (signup) {
           // We always need to perform signup, even if the mode is CLI.
-          signupSuccess = await performSignup(token);
+          signupSuccess = await performSignup(accessToken);
         }
         // eslint-disable-next-line default-case
         switch (mode) {
           case 'cli_get':
-            loginSuccess = await sendTokenToCLI(token, redirectURI);
+            loginSuccess = await sendTokenToCLI(accessToken, redirectURI);
             if (loginSuccess) {
               setConfig((c) => ({
                 ...c,
@@ -212,7 +200,7 @@ export const AuthCallbackPage = () => {
             break;
           case 'ui':
             if (!signup) {
-              loginSuccess = await performUILogin(token, orgName);
+              loginSuccess = await performUILogin(accessToken, orgName);
             }
             // We just need to redirect if in signup or login were successful since
             // the cookies are installed.
@@ -228,6 +216,12 @@ export const AuthCallbackPage = () => {
       };
 
       doAuth();
+    };
+
+    GetOAuthProvider().handleToken().then((a: Token) => {
+      handleAccessToken(a);
+    }).catch((err) => {
+      setErr('internal', `${err}`);
     });
   }, []);
 
