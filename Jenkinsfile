@@ -406,7 +406,7 @@ def processAllExtractedBazelLogs() {
 
 def archiveUILogs() {
   step([
-    $class: 'XUnitBuilder',
+    $class: 'XUnitPublisher',
     thresholds: [
       [
         $class: 'FailedThreshold',
