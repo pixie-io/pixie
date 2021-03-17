@@ -30,10 +30,10 @@ phutil_register_library_map(array(
   ),
   'function' => array(),
   'xmap' => array(
-    'ArcanistGoFmtLinter' => 'ArcanistLinter',
-    'ArcanistGoImportsLinter' => 'ArcanistLinter',
+    'ArcanistGoFmtLinter' => 'ArcanistExternalLinter',
+    'ArcanistGoImportsLinter' => 'ArcanistExternalLinter',
     'ArcanistGoTestResultParser' => 'ArcanistTestResultParser',
-    'ArcanistGoVetLinter' => 'ArcanistLinter',
+    'ArcanistGoVetLinter' => 'ArcanistExternalLinter',
     'ArcanistShellCheckLinter' => 'ArcanistExternalLinter',
     'ArcanistShellCheckLinterTestCase' => 'PhutilTestCase',
     'ClangFormatLinter' => 'ArcanistExternalLinter',

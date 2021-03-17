@@ -1,9 +1,6 @@
 <?php
 
-final class ArcanistGoImportsLinter extends ArcanistLinter {
-
-  const LINT_GO_IMPORTS = 0;
-
+final class ArcanistGoImportsLinter extends ArcanistExternalLinter {
   public function getInfoName() {
     return 'Go imports';
   }
@@ -13,8 +10,7 @@ final class ArcanistGoImportsLinter extends ArcanistLinter {
   }
 
   public function getInfoDescription() {
-    return pht(
-      'Goimports formats Go imports.');
+    return 'Goimports formats Go imports.';
   }
 
   public function getLinterName() {
@@ -25,35 +21,13 @@ final class ArcanistGoImportsLinter extends ArcanistLinter {
     return 'goimports';
   }
 
-  public function getBinary() {
+  public function getDefaultBinary() {
     return 'goimports';
   }
 
-  protected function checkBinaryConfiguration() {
-    $binary = $this->getBinary();
-    if (!Filesystem::binaryExists($binary)) {
-      throw new ArcanistMissingLinterException(
-        sprintf(
-          "%s\n%s",
-          pht(
-            'Unable to locate binary "%s" to run linter %s. You may need '.
-            'to install the binary, or adjust your linter configuration.',
-            $binary,
-            get_class($this)),
-          pht(
-            'TO INSTALL: %s',
-            $this->getInstallInstructions())));
-    }
-  }
-
   public function getInstallInstructions() {
-    return pht('Install Go imports using `go get golang.org/x/tools/cmd/goimports`');
-  }
-
-  public function getLintNameMap() {
-    return array(
-      self::LINT_GO_IMPORTS => "File is not goimports'd",
-    );
+    return 'Install Go imports using '.
+      '`go get -u golang.org/x/tools/cmd/goimports`';
   }
 
   // Run after gofmt but before go vet.
@@ -62,22 +36,39 @@ final class ArcanistGoImportsLinter extends ArcanistLinter {
     return 5;
   }
 
-  public function lintPath($path) {
-    $this->checkBinaryConfiguration();
+  protected function getMandatoryFlags() {
+    return array('-local="pixielabs.ai"');
+  }
 
-    $data = $this->getData($path);
-    $future = new ExecFuture('%C -local "pixielabs.ai"', $this->getBinary());
-    $future->write($data);
-    list($err, $stdout, $stderr) = $future->resolve();
+  protected function buildFutures(array $paths) {
+    $executable = $this->getExecutableCommand();
+    $flags = $this->getCommandFlags();
+
+    $futures = array();
+    foreach ($paths as $path) {
+      $data = $this->getData($path);
+      $future = new ExecFuture('%C %Ls', $executable, $flags);
+      $future->write($data);
+      $futures[$path] = $future;
+    }
+    return $futures;
+  }
+
+  protected function parseLinterOutput($path, $err, $stdout, $stderr) {
     if (empty($stdout) && $err) {
       throw new Exception(
         sprintf(
-          "%s\n\nSTDOUT\n%s\n\nSTDERR\n%s",
-          pht($this->getLinterName() . ' failed to parse output!'),
+          "%s failed to parse output!\n\nSTDOUT\n%s\n\nSTDERR\n%s",
+          $this->getLinterName(),
           $stdout,
-          $stderr));
+          $stderr
+        )
+      );
     }
 
+    $data = $this->getData($path);
+
+    $messages = array();
     if ($stdout !== $data) {
       $lines = explode("\n", $data);
       $formatted_lines = explode("\n", $stdout);
@@ -89,16 +80,24 @@ final class ArcanistGoImportsLinter extends ArcanistLinter {
         }
       }
 
-      $this->raiseLintAtLine(
-        $line_idx + 1,
-        1,
-        self::LINT_GO_IMPORTS,
-        pht(
+      $desc = sprintf(
           '%s was not formatted correctly. Please setup your '.
-          'editor to run goimports on save', $path),
-        implode("\n", $lines),
-        implode("\n", $formatted_lines));
+          'editor to run goimports on save', $path);
+
+      $message = id(new ArcanistLintMessage())
+        ->setPath($path)
+        ->setLine($line_idx + 1)
+        ->setChar(1)
+        ->setCode('E00')
+        ->setName('goimports')
+        ->setDescription($desc)
+        ->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR)
+        ->setOriginalText(implode("\n", $lines))
+        ->setReplacementText(implode("\n", $formatted_lines));
+
+      $messages[] = $message;
     }
+    return $messages;
   }
 
 }

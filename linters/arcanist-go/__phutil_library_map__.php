@@ -17,10 +17,10 @@ phutil_register_library_map(array(
   ),
   'function' => array(),
   'xmap' => array(
-    'ArcanistGoFmtLinter' => 'ArcanistLinter',
-    'ArcanistGoImportsLinter' => 'ArcanistLinter',
+    'ArcanistGoFmtLinter' => 'ArcanistExternalLinter',
+    'ArcanistGoImportsLinter' => 'ArcanistExternalLinter',
     'ArcanistGoTestResultParser' => 'ArcanistTestResultParser',
-    'ArcanistGoVetLinter' => 'ArcanistLinter',
+    'ArcanistGoVetLinter' => 'ArcanistExternalLinter',
     'GoTestEngine' => 'ArcanistUnitTestEngine',
   ),
 ));
