@@ -126,7 +126,6 @@ ConnTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t conn_i
   DCHECK_NE(conn_map_key, 0) << "Connection map key cannot be 0, pid must be wrong";
 
   ConnTrackerGenerations& conn_trackers = connection_trackers_[conn_map_key];
-  // NOLINTNEXTLINE(whitespace/braces)
   auto [conn_tracker_ptr, created] = conn_trackers.GetOrCreate(conn_id.tsid);
 
   if (created) {
@@ -209,7 +208,6 @@ Status ConnTrackersManager::TestOnlyCheckConsistency() const {
       }
 
       // Check that the pointer only shows up once across all lists.
-      // NOLINTNEXTLINE(whitespace/braces)
       auto [unused, inserted] = trackers_set.insert(tracker);
       if (!inserted) {
         return error::Internal("Tracker $0 found in two lists.", ToString(tracker->conn_id()));

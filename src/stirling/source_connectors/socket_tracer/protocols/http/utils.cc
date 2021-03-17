@@ -10,12 +10,6 @@ namespace http {
 bool MatchesHTTPHeaders(const HeadersMap& http_headers, const HTTPHeaderFilter& filter) {
   if (!filter.inclusions.empty()) {
     bool included = false;
-    // cpplint lags behind C++17, and only consider '[]' as an operator, therefore insists that no
-    // space is before '[]'. And clang-format, which seems is updated with C++17, insists to add a
-    // space as it's necessary in this form.
-    //
-    // TODO(yzhao): Update cpplint to newer version.
-    // NOLINTNEXTLINE(whitespace/braces)
     for (auto [http_header, substr] : filter.inclusions) {
       auto http_header_iter = http_headers.find(std::string(http_header));
       if (http_header_iter != http_headers.end() &&
@@ -32,7 +26,6 @@ bool MatchesHTTPHeaders(const HeadersMap& http_headers, const HTTPHeaderFilter& 
   // also inside a if statement, which is not needed for correctness.
   if (!filter.exclusions.empty()) {
     bool excluded = false;
-    // NOLINTNEXTLINE(whitespace/braces)
     for (auto [http_header, substr] : filter.exclusions) {
       auto http_header_iter = http_headers.find(std::string(http_header));
       if (http_header_iter != http_headers.end() &&
