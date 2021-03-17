@@ -363,8 +363,8 @@ int UProbeManager::DeployOpenSSLUProbes(const absl::flat_hash_set<md::UPID>& pid
 
     StatusOr<int> attach_status = AttachOpenSSLUProbes(pid.pid());
     if (!attach_status.ok()) {
-      LOG_FIRST_N(WARNING, 10) << absl::Substitute("AttachOpenSSLUprobes failed for PID $0: $1",
-                                                   pid.pid(), attach_status.ToString());
+      VLOG(1) << absl::Substitute("AttachOpenSSLUprobes failed for PID $0: $1", pid.pid(),
+                                  attach_status.ToString());
     } else {
       uprobe_count += attach_status.ValueOrDie();
     }
