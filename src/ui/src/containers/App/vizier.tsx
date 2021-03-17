@@ -59,7 +59,7 @@ const useSelectedCluster = () => {
   const { selectedCluster } = React.useContext(ClusterContext);
   const cluster = clusters?.find((c) => c.id === selectedCluster);
   return {
-    loading, cluster, numClusters: clusters?.length, error,
+    loading, cluster, numClusters: clusters?.length ?? 0, error,
   };
 };
 
@@ -191,7 +191,7 @@ export default function WithClusterBanner() {
     console.error(errMsg);
   }
 
-  if (clusters.length > 0) {
+  if (clusters && clusters.length > 0) {
     if (cluster?.id && clusterId !== cluster?.id) {
       setClusterId(cluster.id);
     }
