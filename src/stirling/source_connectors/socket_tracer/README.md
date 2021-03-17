@@ -3,6 +3,11 @@
 Socket tracker deploys eBPF probes onto network IO syscalls (read/write, send/recv etc.),
 captures data, and reassemble & parse them back into application-level protocol messages.
 
+## Summary of important facts
+
+* http2/gRPC tracing uses uprobes, which only capture data on K8s managed processes (through MDS);
+  all other protocols uses kprobes.
+
 ## Debugging missing records for a protocol
 
 The following is a step-by-step process for root-causing missing records for a protocol.
