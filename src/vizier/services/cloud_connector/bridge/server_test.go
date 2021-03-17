@@ -59,7 +59,6 @@ func handleMsg(srv vzconnpb.VZConnService_NATSBridgeServer, msg *vzconnpb.V2CBri
 		var unmarshal = &cvmsgspb.VLogMessage{}
 		err := types.UnmarshalAny(msg.Msg, unmarshal)
 		if err != nil {
-			panic(err)
 			return err
 		}
 		return marshalAndSend(srv, "randomtopicNeedsResponseAck", unmarshal)
@@ -217,10 +216,12 @@ func makeTestState(t *testing.T) (*testState, func(t *testing.T)) {
 	wg := &sync.WaitGroup{}
 	vs := newFakeVZConnServer(wg, t)
 	vzconnpb.RegisterVZConnServiceServer(s, vs)
+	errors := make(chan error, 1)
 	go func() {
 		if err := s.Serve(lis); err != nil {
-			t.Fatalf("Server exited with error: %v\n", err)
+			errors <- err
 		}
+		close(errors)
 	}()
 
 	ctx := context.Background()
@@ -236,9 +237,12 @@ func makeTestState(t *testing.T) (*testState, func(t *testing.T)) {
 	}
 
 	cleanupFunc := func(t *testing.T) {
+		s.GracefulStop()
+		for e := range errors {
+			t.Fatal(e)
+		}
 		natsCleanup()
 		conn.Close()
-
 	}
 
 	u, err := uuid.FromString("31285cdd-1de9-4ab1-ae6a-0ba08c8c676c")
@@ -315,7 +319,7 @@ func TestNATSGRPCBridgeTest_TestOutboundNATSMessage(t *testing.T) {
 	}
 	subany, err := types.MarshalAny(logmsg)
 	if err != nil {
-		t.Fatal("Error marshalling msg: %+v", err)
+		t.Fatalf("Error marshalling msg: %+v", err)
 	}
 	v2cMsg := &cvmsgspb.V2CMessage{
 		VizierID:  ts.vzID.String(),
@@ -386,7 +390,7 @@ func TestNATSGRPCBridgeTest_TestInboundNATSMessage(t *testing.T) {
 	}
 	subany, err := types.MarshalAny(logmsg)
 	if err != nil {
-		t.Fatal("Error marshalling msg: %+v", err)
+		t.Fatalf("Error marshalling msg: %+v", err)
 	}
 	v2cMsg := &cvmsgspb.V2CMessage{
 		VizierID:  ts.vzID.String(),
@@ -441,9 +445,8 @@ func TestNATSGRPCBridgeTest_TestRegisterDeployment(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error subscribing to channel: %+v", err)
 	}
-	var inboundNats *nats.Msg
 	go func() {
-		inboundNats = <-natsCh
+		<-natsCh
 		natsSub.Unsubscribe()
 		ts.wg.Done()
 	}()

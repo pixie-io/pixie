@@ -49,7 +49,7 @@ func newScriptResults() *ScriptResults {
 }
 
 // Close will terminate the call.
-func (s ScriptResults) Close() error {
+func (s *ScriptResults) Close() error {
 	// Cancel stream if still active.
 	select {
 	case <-s.c.Context().Done():

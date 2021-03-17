@@ -580,6 +580,7 @@ func (s *Bridge) StartStream(errCh chan error) error {
 	stream, err := s.vzConnClient.NATSBridge(ctx)
 	if err != nil {
 		log.WithError(err).Error("Error starting stream")
+		cancel()
 		return err
 	}
 	// Wait for  all goroutines to terminate.
@@ -864,7 +865,6 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 			return nil
 		}
 	}
-	return nil
 }
 
 // Stop terminates the server. Don't reuse this server object after stop has been called.
