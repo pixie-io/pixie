@@ -1878,14 +1878,6 @@ function convertToStacktraceFlameGraph(
         type: 'filter',
         expr: 'indexof(selectedTrace, datum.fullPath) === 0 || indexof(datum.fullPath, selectedTrace) === 0',
       },
-      // The width of the ancestors stacktraces should be weighted based on the selected stacktrace.
-      // For example, if the parent stacktrace has 1000 samples, but the selected stacktrace only has 1 sample,
-      // the selected stacktrace rect should not be much smaller than the parent stacktrace.
-      {
-        type: 'formula',
-        as: 'weightedCount',
-        expr: 'indexof(selectedTrace, datum.fullPath) === 0 ? selectedTraceCount : datum.count',
-      },
       // Tranform the data into a hierarchical tree structure that can be consumed by Vega.
       {
         type: 'stratify',
@@ -1895,7 +1887,7 @@ function convertToStacktraceFlameGraph(
       // Generates the layout for an adjacency diagram.
       {
         type: 'partition',
-        field: 'weightedCount',
+        field: 'weight',
         sort: { field: 'count' },
         size: [{ signal: 'width' }, { signal: 'height' }],
       },
@@ -2010,6 +2002,7 @@ function convertToStacktraceFlameGraph(
       all: {
         fullPath: 'all',
         name: 'all',
+        weight: 0,
         count: 0,
         parent: null,
       },
@@ -2018,7 +2011,7 @@ function convertToStacktraceFlameGraph(
     for (const n of data) {
       const splitStack = n[display.stacktraceColumn].split(';');
       let currPath = 'all';
-      for (const s of splitStack) {
+      for (const [i, s] of splitStack.entries()) {
         const path = `${currPath};${s}`;
         if (!nodeMap[path]) {
           nodeMap[path] = {
@@ -2026,14 +2019,18 @@ function convertToStacktraceFlameGraph(
             fullPath: path,
             name: s,
             count: 0,
+            weight: 0,
             percentage: 0,
           };
         }
         nodeMap[path].percentage += n[display.percentageColumn];
+
+        if (i === splitStack.length - 1) {
+          nodeMap[path].weight += n[display.countColumn];
+        }
         nodeMap[path].count += n[display.countColumn];
         currPath = path;
       }
-
       nodeMap.all.count += n[display.countColumn];
     }
     return Object.values(nodeMap);

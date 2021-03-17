@@ -973,28 +973,28 @@ describe('simple stacktraceFlameGraph', () => {
     expect(processedData.length).toEqual(8);
     expect(processedData).toEqual(expect.arrayContaining([
       {
-        fullPath: 'all', name: 'all', count: 7, parent: null,
+        fullPath: 'all', name: 'all', count: 7, parent: null, weight: 0,
       },
       {
-        fullPath: 'all;st1', name: 'st1', count: 3, parent: 'all', percentage: 7.7,
+        fullPath: 'all;st1', name: 'st1', count: 3, parent: 'all', percentage: 7.7, weight: 0,
       },
       {
-        fullPath: 'all;st1;st2', name: 'st2', count: 1, parent: 'all;st1', percentage: 5.5,
+        fullPath: 'all;st1;st2', name: 'st2', count: 1, parent: 'all;st1', percentage: 5.5, weight: 0,
       },
       {
-        fullPath: 'all;st1;st2;st3', name: 'st3', count: 1, parent: 'all;st1;st2', percentage: 5.5,
+        fullPath: 'all;st1;st2;st3', name: 'st3', count: 1, parent: 'all;st1;st2', percentage: 5.5, weight: 1,
       },
       {
-        fullPath: 'all;st1;st4', name: 'st4', count: 2, parent: 'all;st1', percentage: 2.2,
+        fullPath: 'all;st1;st4', name: 'st4', count: 2, parent: 'all;st1', percentage: 2.2, weight: 2,
       },
       {
-        fullPath: 'all;st2', name: 'st2', count: 4, parent: 'all', percentage: 92.3,
+        fullPath: 'all;st2', name: 'st2', count: 4, parent: 'all', percentage: 92.3, weight: 0,
       },
       {
-        fullPath: 'all;st2;st4', name: 'st4', count: 4, parent: 'all;st2', percentage: 92.3,
+        fullPath: 'all;st2;st4', name: 'st4', count: 4, parent: 'all;st2', percentage: 92.3, weight: 1,
       },
       {
-        fullPath: 'all;st2;st4;st5', name: 'st5', count: 3, parent: 'all;st2;st4', percentage: 82.3,
+        fullPath: 'all;st2;st4;st5', name: 'st5', count: 3, parent: 'all;st2;st4', percentage: 82.3, weight: 3,
       },
     ]));
   });
