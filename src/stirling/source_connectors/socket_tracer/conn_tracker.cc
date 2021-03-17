@@ -348,12 +348,8 @@ ConnTracker::ProcessToRecords<protocols::http2::ProtocolTraits>() {
 
   protocols::RecordsWithErrorCount<protocols::http2::Record> result;
 
-  protocols::http2::ProcessHTTP2Streams(http2_client_streams_.mutable_streams(),
-                                        http2_client_streams_.mutable_oldest_active_stream_id(),
-                                        &result);
-  protocols::http2::ProcessHTTP2Streams(http2_server_streams_.mutable_streams(),
-                                        http2_server_streams_.mutable_oldest_active_stream_id(),
-                                        &result);
+  protocols::http2::ProcessHTTP2Streams(&http2_client_streams_, &result);
+  protocols::http2::ProcessHTTP2Streams(&http2_server_streams_, &result);
 
   UpdateResultStats(result);
   Cleanup<protocols::http2::ProtocolTraits>();

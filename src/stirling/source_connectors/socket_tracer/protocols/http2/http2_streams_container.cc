@@ -1,9 +1,6 @@
-#include "src/stirling/source_connectors/socket_tracer/http2_streams_container.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/http2/http2_streams_container.h"
 
 #include <algorithm>
-
-DECLARE_uint32(messages_expiration_duration_secs);
-DECLARE_uint32(messages_size_limit_bytes);
 
 DEFINE_uint32(stirling_http2_stream_id_gap_threshold, 100,
               "If a stream ID jumps by this many spots or more, an error is assumed and the entire "
@@ -13,6 +10,10 @@ namespace pl {
 namespace stirling {
 
 namespace {
+// According to the HTTP2 protocol, Stream IDs are incremented by 2.
+// Client-initiated streams use odd IDs, while server-initiated streams use even IDs.
+static constexpr int kHTTP2StreamIDIncrement = 2;
+
 void EraseExpiredStreams(std::chrono::seconds exp_dur,
                          std::deque<protocols::http2::Stream>* streams) {
   auto iter = streams->begin();
@@ -30,9 +31,7 @@ void EraseExpiredStreams(std::chrono::seconds exp_dur,
 }
 }  // namespace
 
-// TODO(oazizi/yzhao): Consider making the flags as inputs, so the flags can be controlled
-//                     at the ConnTracker level.
-void HTTP2StreamsContainer::Cleanup() {
+void HTTP2StreamsContainer::Cleanup(size_t size_limit_bytes, int expiration_duration_secs) {
   // TODO(yzhao): Consider put the size computation into a member function of
   // protocols::http2::Stream.
   size_t size = 0;
@@ -40,15 +39,20 @@ void HTTP2StreamsContainer::Cleanup() {
     size += stream.ByteSize();
   }
 
-  if (size > FLAGS_messages_size_limit_bytes) {
+  if (size > size_limit_bytes) {
     LOG_FIRST_N(WARNING, 10) << absl::Substitute(
         "HTTP2 Streams were cleared, because their size $0 is larger than the specified limit "
         "$1.",
-        size, FLAGS_messages_size_limit_bytes);
+        size, size_limit_bytes);
     streams_.clear();
   }
 
-  EraseExpiredStreams(std::chrono::seconds(FLAGS_messages_expiration_duration_secs), &streams_);
+  EraseExpiredStreams(std::chrono::seconds(expiration_duration_secs), &streams_);
+}
+
+void HTTP2StreamsContainer::EraseHead(size_t n) {
+  streams_.erase(streams_.begin(), streams_.begin() + n);
+  oldest_active_stream_id_ += kHTTP2StreamIDIncrement * n;
 }
 
 protocols::http2::HalfStream* HTTP2StreamsContainer::HalfStreamPtr(uint32_t stream_id,

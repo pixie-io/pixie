@@ -7,12 +7,11 @@ namespace stirling {
 namespace protocols {
 namespace http2 {
 
-void ProcessHTTP2Streams(std::deque<http2::Stream>* http2_streams,
-                         uint32_t* oldest_active_stream_id_ptr,
+void ProcessHTTP2Streams(HTTP2StreamsContainer* http2_streams,
                          RecordsWithErrorCount<http2::Record>* result) {
   int count_head_consumed = 0;
   bool skipped = false;
-  for (auto& stream : *http2_streams) {
+  for (auto& stream : *http2_streams->mutable_streams()) {
     if (!stream.consumed && stream.StreamEnded()) {
       // TODO(oazizi): Investigate ways of using std::move(stream) for performance.
       //               But be careful since the object may still be accessed after the move
@@ -35,8 +34,7 @@ void ProcessHTTP2Streams(std::deque<http2::Stream>* http2_streams,
   }
 
   // Erase contiguous set of consumed streams at head.
-  http2_streams->erase(http2_streams->begin(), http2_streams->begin() + count_head_consumed);
-  *oldest_active_stream_id_ptr += 2 * count_head_consumed;
+  http2_streams->EraseHead(count_head_consumed);
 }
 
 }  // namespace http2

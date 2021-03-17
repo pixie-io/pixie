@@ -85,7 +85,7 @@ struct Stream {
   HalfStream send;
   HalfStream recv;
 
-  bool StreamEnded() { return send.end_stream && recv.end_stream; }
+  bool StreamEnded() const { return send.end_stream && recv.end_stream; }
 
   bool consumed = false;
 

@@ -18,8 +18,8 @@
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/source_connectors/socket_tracer/data_stream.h"
 #include "src/stirling/source_connectors/socket_tracer/fd_resolver.h"
-#include "src/stirling/source_connectors/socket_tracer/http2_streams_container.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/http2/http2_streams_container.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_bpf_tables.h"
 
 // Include all specializations of the StitchFrames() template specializations for all protocols.
@@ -448,8 +448,10 @@ class ConnTracker : NotCopyMoveable {
     using TStateType = typename TProtocolTraits::state_type;
 
     if constexpr (std::is_same_v<TFrameType, protocols::http2::Stream>) {
-      http2_client_streams_.Cleanup();
-      http2_server_streams_.Cleanup();
+      http2_client_streams_.Cleanup(FLAGS_messages_size_limit_bytes,
+                                    FLAGS_messages_expiration_duration_secs);
+      http2_server_streams_.Cleanup(FLAGS_messages_size_limit_bytes,
+                                    FLAGS_messages_expiration_duration_secs);
     } else {
       send_data_.CleanupFrames<TFrameType>();
       recv_data_.CleanupFrames<TFrameType>();
