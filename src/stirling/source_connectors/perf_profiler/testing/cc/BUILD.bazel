@@ -1,0 +1,12 @@
+package(default_visibility = ["//visibility:public"])
+
+# We build predictable_stack_traces_app with clang++ regardless of the bazel config.
+# This is test data, so we want deterministic debug symbols.
+genrule(
+    name = "profiler_test_app_fib_cpp",
+    srcs = ["profiler_test_app_fib.cc"],
+    outs = ["profiler_test_app_fib"],
+    # -O0: Disables optimization which in turn disables inlining.
+    # -g: Produces dwarf information.
+    cmd = "clang++ -O0 -g -o $@ $<",
+)

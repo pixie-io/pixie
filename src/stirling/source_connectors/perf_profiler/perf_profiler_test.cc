@@ -51,7 +51,8 @@ class PerfProfileBPFTest : public ::testing::Test {
   // This helper will help more once we add more toy apps (go & rust).
   // TODO(jps): remove this comment once we add those.
   std::filesystem::path BazelTestAppPath(const std::filesystem::path& app_name) {
-    const std::filesystem::path kToyAppsPath = "src/stirling/source_connectors/perf_profiler";
+    const std::filesystem::path kToyAppsPath =
+        "src/stirling/source_connectors/perf_profiler/testing/cc";
     const std::filesystem::path app_path = fs::JoinPath({&kToyAppsPath, &app_name});
     const std::filesystem::path bazel_app_path = BazelBinTestFilePath(app_path);
     return bazel_app_path;
@@ -170,7 +171,7 @@ class PerfProfileBPFTest : public ::testing::Test {
 };
 
 TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
-  const std::filesystem::path bazel_app_path = BazelTestAppPath("predictable_stack_traces_app");
+  const std::filesystem::path bazel_app_path = BazelTestAppPath("profiler_test_app_fib");
 
   // To reduce variance in observed results, we can:
   // ... run the test longer

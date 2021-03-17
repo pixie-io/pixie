@@ -21,17 +21,6 @@ pl_cc_library(
     ],
 )
 
-# We build predictable_stack_traces_app with clang++ regardless of the bazel config.
-# This is test data, so we want deterministic debug symbols.
-genrule(
-    name = "predictable_stack_traces_app_cpp",
-    srcs = ["predictable_stack_traces_app.cc"],
-    outs = ["predictable_stack_traces_app"],
-    # -O0: Disables optimization which in turn disables inlining.
-    # -g: Produces dwarf information.
-    cmd = "clang++ -O0 -g -o $@ $<",
-)
-
 pl_cc_test(
     name = "symbolizer_test",
     srcs = ["symbolizer_test.cc"],
@@ -42,7 +31,10 @@ pl_cc_test(
     name = "perf_profiler_test",
     timeout = "moderate",
     srcs = ["perf_profiler_test.cc"],
-    data = [":predictable_stack_traces_app_cpp"],
+    data = [
+        "//src/stirling/source_connectors/perf_profiler/testing/cc:profiler_test_app_fib_cpp",
+        "//src/stirling/source_connectors/perf_profiler/testing/go:profiler_test_app_sqrt_go",
+    ],
     tags = [
         "exclusive",
         "no_asan",
