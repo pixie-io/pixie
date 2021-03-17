@@ -283,10 +283,10 @@ std::shared_ptr<AgentMetadataState> AgentMetadataState::CloneToShared() const {
   state->asid_ = asid_;
   state->k8s_metadata_state_ = k8s_metadata_state_->Clone();
   state->pids_by_upid_.reserve(pids_by_upid_.size());
-
   for (const auto& [k, v] : pids_by_upid_) {
     state->pids_by_upid_[k] = v->Clone();
   }
+  state->upids_ = upids_;
   return state;
 }
 

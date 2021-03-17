@@ -69,12 +69,13 @@ class AgentContext : public ConnectorContext {
   explicit AgentContext(std::shared_ptr<const md::AgentMetadataState> agent_metadata_state)
       : agent_metadata_state_(std::move(agent_metadata_state)) {
     DCHECK(agent_metadata_state_ != nullptr);
-    upids_ = agent_metadata_state_->upids();
   }
 
   uint32_t GetASID() const override { return agent_metadata_state_->asid(); }
 
-  const absl::flat_hash_set<md::UPID>& GetUPIDs() const override { return upids_; }
+  const absl::flat_hash_set<md::UPID>& GetUPIDs() const override {
+    return agent_metadata_state_->upids();
+  }
 
   const absl::flat_hash_map<md::UPID, md::PIDInfoUPtr>& GetPIDInfoMap() const override {
     return agent_metadata_state_->pids_by_upid();
@@ -88,7 +89,6 @@ class AgentContext : public ConnectorContext {
 
  private:
   std::shared_ptr<const md::AgentMetadataState> agent_metadata_state_;
-  absl::flat_hash_set<md::UPID> upids_;
 };
 
 /**

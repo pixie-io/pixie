@@ -259,29 +259,26 @@ class AgentMetadataState : NotCopyable {
   }
 
   void AddUPID(UPID upid, std::unique_ptr<PIDInfo> pid_info) {
+    DCHECK(pid_info != nullptr);
+    DCHECK_EQ(pid_info->stop_time_ns(), 0);
+
     pids_by_upid_[upid] = std::move(pid_info);
+    upids_.insert(upid);
   }
 
   void MarkUPIDAsStopped(UPID upid, int64_t ts) {
     auto* pid_info = GetPIDByUPID(upid);
     if (pid_info != nullptr) {
       pid_info->set_stop_time_ns(ts);
+      upids_.erase(upid);
+    } else {
+      DCHECK(!upids_.contains(upid));
     }
   }
 
   const absl::flat_hash_map<UPID, PIDInfoUPtr>& pids_by_upid() const { return pids_by_upid_; }
 
-  absl::flat_hash_set<md::UPID> upids() const {
-    absl::flat_hash_set<md::UPID> upids;
-    for (const auto& [upid, pid_info] : pids_by_upid()) {
-      if (pid_info == nullptr || pid_info->stop_time_ns() > 0) {
-        // PID has been stopped.
-        continue;
-      }
-      upids.insert(upid);
-    }
-    return upids;
-  }
+  const absl::flat_hash_set<md::UPID>& upids() const { return upids_; }
 
   std::string DebugString(int indent_level = 0) const;
 
@@ -310,6 +307,13 @@ class AgentMetadataState : NotCopyable {
    * Mapping of PIDs by UPID for active pods on the system.
    */
   absl::flat_hash_map<UPID, PIDInfoUPtr> pids_by_upid_;
+
+  /**
+   * All active UPIDs. Unlike pids_by_upid_, this does not contain stopped pids.
+   * While this set could be reconstructed from pids_by_upid_,
+   * it is tracked separately as a performance optimization.
+   */
+  absl::flat_hash_set<md::UPID> upids_;
 };
 
 }  // namespace md
