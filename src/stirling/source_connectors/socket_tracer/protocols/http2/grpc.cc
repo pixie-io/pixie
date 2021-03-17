@@ -17,10 +17,10 @@ namespace grpc {
 using ::google::protobuf::Empty;
 using ::google::protobuf::Message;
 using ::google::protobuf::TextFormat;
-using ::google::protobuf::util::MessageToJsonString;
 
-Status PBWireToText(std::string_view message, PBTextFormat fmt, google::protobuf::Message* pb,
-                    std::string* text) {
+namespace {
+
+Status PBWireToText(std::string_view message, google::protobuf::Message* pb, std::string* text) {
   if (message.size() < kGRPCMessageHeaderSizeInBytes) {
     return error::InvalidArgument(
         "The gRPC message does not have enough data. "
@@ -43,35 +43,24 @@ Status PBWireToText(std::string_view message, PBTextFormat fmt, google::protobuf
       return error::InvalidArgument("Failed to parse the serialized protobuf message");
     }
 
+    // Using ::google::protobuf::util::MessageToJsonString() to print JSON string.
+    // That requires the message to be of the actual type, not Empty.
     std::string message;
-    switch (fmt) {
-      case PBTextFormat::kText:
-        if (!TextFormat::PrintToString(*pb, &message)) {
-          return error::InvalidArgument("Failed to print protobuf message to text format");
-        }
-        break;
-      case PBTextFormat::kJSON:
-        if (!MessageToJsonString(*pb, &message).ok()) {
-          return error::Internal(absl::StrCat("Failed to print protobuf message to JSON"));
-        }
-        break;
-      default:
-        DCHECK(false) << "Impossible, added to please GCC.";
+    if (!TextFormat::PrintToString(*pb, &message)) {
+      return error::InvalidArgument("Failed to print protobuf message to text format");
     }
-    absl::StrAppend(text, message);
+    text->append(message);
   }
   return Status::OK();
 }
 
-std::string ParsePB(std::string_view str, Message* pb) {
+}  // namespace
+
+// TODO(yzhao): Support reflection to get message types instead of empty message.
+std::string ParsePB(std::string_view str) {
   Empty empty;
-  if (pb == nullptr) {
-    pb = &empty;
-  }
   std::string text;
-  Status s = PBWireToText(str, PBTextFormat::kText, pb, &text);
-  VLOG_IF(1, !s.ok()) << absl::Substitute("$0; original data in hex format: $1", s.ToString(),
-                                          BytesToString<bytes_format::Hex>(str));
+  Status s = PBWireToText(str, &empty, &text);
   absl::StripTrailingAsciiWhitespace(&text);
 
   return s.ok() ? text : "<Failed to parse protobuf>";
