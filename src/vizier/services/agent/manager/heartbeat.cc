@@ -127,8 +127,6 @@ Status HeartbeatMessageHandler::HandleMessage(std::unique_ptr<messages::VizierMe
     Status s = ParseCIDRBlock(ack.update_info().service_cidr(), &service_cidr);
     if (s.ok()) {
       mds_manager_->SetServiceCIDR(service_cidr);
-    } else {
-      LOG(ERROR) << "Could not parse CIDR block string, status: " << s.msg();
     }
 
     std::vector<CIDRBlock> pod_cidrs;
@@ -137,8 +135,6 @@ Status HeartbeatMessageHandler::HandleMessage(std::unique_ptr<messages::VizierMe
       Status s = ParseCIDRBlock(pod_cidr_str, &pod_cidr);
       if (s.ok()) {
         pod_cidrs.push_back(std::move(pod_cidr));
-      } else {
-        LOG(ERROR) << "Could not parse CIDR block string, status: " << s.msg();
       }
     }
     mds_manager_->SetPodCIDR(std::move(pod_cidrs));
