@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-# We build predictable_stack_traces_app with clang++ regardless of the bazel config.
+# We build this target with clang++ regardless of the bazel config.
 # This is test data, so we want deterministic debug symbols.
 genrule(
     name = "profiler_test_app_fib_cpp",

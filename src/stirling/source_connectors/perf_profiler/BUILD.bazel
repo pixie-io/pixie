@@ -8,7 +8,6 @@ pl_cc_library(
         ["*.cc"],
         exclude = [
             "**/*_test.cc",
-            "predictable_stack_traces_app.cc",
         ],
     ),
     hdrs = glob(["*.h"]),

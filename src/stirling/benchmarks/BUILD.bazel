@@ -7,3 +7,11 @@ pl_cc_binary(
         "@com_google_benchmark//:benchmark_main",
     ],
 )
+
+pl_cc_binary(
+    name = "str_builder_benchmark",
+    srcs = ["str_builder_benchmark.cc"],
+    deps = [
+        "@com_google_benchmark//:benchmark_main",
+    ],
+)

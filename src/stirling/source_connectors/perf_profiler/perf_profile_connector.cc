@@ -11,7 +11,7 @@
 
 BPF_SRC_STRVIEW(profiler_bcc_script, profiler);
 
-DEFINE_bool(stirling_profiler_test_mode, false, "Makes stack traces more predictable for testing");
+DEFINE_bool(stirling_profiler_test_mode, false, "Make stack traces more predictable for testing.");
 
 namespace pl {
 namespace stirling {
