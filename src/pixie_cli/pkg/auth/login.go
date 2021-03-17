@@ -71,8 +71,8 @@ func SaveRefreshToken(token *RefreshToken) error {
 	return json.NewEncoder(f).Encode(token)
 }
 
-// loadDefaultCredentials loads the default credentials for the user.
-func loadDefaultCredentials() (*RefreshToken, error) {
+// LoadDefaultCredentials loads the default credentials for the user.
+func LoadDefaultCredentials() (*RefreshToken, error) {
 	pixieAuthFilePath, err := EnsureDefaultAuthFilePath()
 	if err != nil {
 		return nil, err
@@ -118,7 +118,7 @@ func loadDefaultCredentials() (*RefreshToken, error) {
 // MustLoadDefaultCredentials loads the default credentials for the user.
 // An error will print to console and call os.Exit.
 func MustLoadDefaultCredentials() *RefreshToken {
-	token, err := loadDefaultCredentials()
+	token, err := LoadDefaultCredentials()
 
 	if err != nil && os.IsNotExist(err) {
 		utils2.Error("You must be logged in to perform this operation. Please run `px auth login`.")
