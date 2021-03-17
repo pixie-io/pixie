@@ -88,6 +88,7 @@ interface TimeseriesDisplay extends WidgetDisplay, DisplayWithLabels {
 interface StacktraceFlameGraphDisplay extends WidgetDisplay {
   readonly stacktraceColumn: string;
   readonly countColumn: string;
+  readonly percentageColumn: string;
 }
 
 type PatchedMark = Mark & { propEventsToOverlapped?: boolean };
@@ -1945,8 +1946,9 @@ function convertToStacktraceFlameGraph(
       enter: {
         fill: { scale: 'color', field: 'name' },
         tooltip: {
-          // Tooltip shows: "stacktraceName, X samples"
-          signal: 'datum.name + (datum.count ? ", " + datum.count + " samples" : "")',
+          signal: `(datum.percentage ? {"title": datum.name, "Samples": datum.count, 
+            "CPU Usage": format(datum.percentage, ".2f") + "%"} :
+            {"title": datum.name, "Samples": datum.count})`,
         },
       },
       update: {
@@ -2024,8 +2026,10 @@ function convertToStacktraceFlameGraph(
             fullPath: path,
             name: s,
             count: 0,
+            percentage: 0,
           };
         }
+        nodeMap[path].percentage += n[display.percentageColumn];
         nodeMap[path].count += n[display.countColumn];
         currPath = path;
       }

@@ -942,24 +942,29 @@ describe('simple stacktraceFlameGraph', () => {
     '@type': 'pixielabs.ai/pl.vispb.StacktraceFlameGraph',
     stacktraceColumn: 'stacktraces',
     countColumn: 'counts',
+    percentageColumn: 'percent',
   };
 
   const inputData = [
     {
       stacktraces: 'st1;st2;st3',
       counts: 1,
+      percent: 5.5,
     },
     {
       stacktraces: 'st1;st4',
       counts: 2,
+      percent: 2.2,
     },
     {
       stacktraces: 'st2;st4',
       counts: 1,
+      percent: 10,
     },
     {
       stacktraces: 'st2;st4;st5',
       counts: 3,
+      percent: 82.3,
     },
   ];
   const { preprocess } = convertWidgetDisplayToVegaSpec(input, 'mysource', DARK_THEME);
@@ -971,25 +976,25 @@ describe('simple stacktraceFlameGraph', () => {
         fullPath: 'all', name: 'all', count: 7, parent: null,
       },
       {
-        fullPath: 'all;st1', name: 'st1', count: 3, parent: 'all',
+        fullPath: 'all;st1', name: 'st1', count: 3, parent: 'all', percentage: 7.7,
       },
       {
-        fullPath: 'all;st1;st2', name: 'st2', count: 1, parent: 'all;st1',
+        fullPath: 'all;st1;st2', name: 'st2', count: 1, parent: 'all;st1', percentage: 5.5,
       },
       {
-        fullPath: 'all;st1;st2;st3', name: 'st3', count: 1, parent: 'all;st1;st2',
+        fullPath: 'all;st1;st2;st3', name: 'st3', count: 1, parent: 'all;st1;st2', percentage: 5.5,
       },
       {
-        fullPath: 'all;st1;st4', name: 'st4', count: 2, parent: 'all;st1',
+        fullPath: 'all;st1;st4', name: 'st4', count: 2, parent: 'all;st1', percentage: 2.2,
       },
       {
-        fullPath: 'all;st2', name: 'st2', count: 4, parent: 'all',
+        fullPath: 'all;st2', name: 'st2', count: 4, parent: 'all', percentage: 92.3,
       },
       {
-        fullPath: 'all;st2;st4', name: 'st4', count: 4, parent: 'all;st2',
+        fullPath: 'all;st2;st4', name: 'st4', count: 4, parent: 'all;st2', percentage: 92.3,
       },
       {
-        fullPath: 'all;st2;st4;st5', name: 'st5', count: 3, parent: 'all;st2;st4',
+        fullPath: 'all;st2;st4;st5', name: 'st5', count: 3, parent: 'all;st2;st4', percentage: 82.3,
       },
     ]));
   });
