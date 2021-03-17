@@ -283,7 +283,13 @@ func (a *AgentTopicListener) Stop() {
 func (ah *AgentHandler) processMessages() {
 	ah.wg.Add(1)
 
-	defer ah.stop()
+	defer func() {
+		ah.agtMgr.DeleteAgent(ah.id)
+		ah.atl.deleteAgent(ah.id)
+		ah.tpMgr.DeleteAgent(ah.id)
+		ah.wg.Done()
+	}()
+
 	timer := time.NewTimer(agentExpirationTimeout)
 	for {
 		select {
@@ -298,11 +304,6 @@ func (ah *AgentHandler) processMessages() {
 			log.WithField("agentID", ah.id.String()).Info("Quit called on agent handler, deleting agent")
 			return
 		case msg := <-ah.MsgChannel:
-			if !timer.Reset(agentExpirationTimeout) {
-				<-timer.C
-				continue
-			}
-
 			pb := &messages.VizierMessage{}
 			proto.Unmarshal(msg.Data, pb)
 
@@ -315,6 +316,11 @@ func (ah *AgentHandler) processMessages() {
 				log.WithField("message-type", reflect.TypeOf(pb.Msg).String()).
 					Error("Unhandled message.")
 			}
+
+			if !timer.Stop() {
+				<-timer.C
+			}
+			timer.Reset(agentExpirationTimeout)
 		case <-timer.C:
 			log.WithField("agentID", ah.id.String()).Info("AgentHandler timed out, deleting agent")
 			return
@@ -438,15 +444,6 @@ func (ah *AgentHandler) onAgentHeartbeat(m *messages.Heartbeat) {
 	if m.UpdateInfo != nil {
 		ah.agtMgr.ApplyAgentUpdate(&agent.Update{AgentID: agentID, UpdateInfo: m.UpdateInfo})
 	}
-}
-
-func (ah *AgentHandler) stop() {
-	defer ah.wg.Done()
-
-	ah.agtMgr.DeleteAgent(ah.id)
-	ah.atl.deleteAgent(ah.id)
-	ah.tpMgr.DeleteAgent(ah.id)
-	close(ah.MsgChannel)
 }
 
 // Stop immediately stops the agent handler from listening to any messages. It blocks until
