@@ -11,3 +11,7 @@ end
 execute 'Install golint' do
   command 'go get -u golang.org/x/lint/golint'
 end
+
+execute 'Install goimports' do
+  command 'go get -u golang.org/x/tools/cmd/goimports'
+end
