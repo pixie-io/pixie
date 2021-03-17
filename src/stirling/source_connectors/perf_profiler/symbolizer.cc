@@ -13,10 +13,8 @@ namespace stirling {
 namespace stack_traces {
 
 std::string FoldedStackTraceString(std::string_view binary_name,
-                                   const std::vector<std::string>& user_symbols,
-                                   const std::vector<std::string>& kernel_symbols) {
+                                   const std::vector<std::string>& symbols) {
   constexpr std::string_view kSeparator = ";";
-  constexpr std::string_view kKSymSuffix = "_[k]";
 
   std::string out;
 
@@ -24,13 +22,8 @@ std::string FoldedStackTraceString(std::string_view binary_name,
 
   // Note that symbols are added in reverse order because of how BCC populates
   // symbols from get_stack_symbol().
-  for (auto iter = user_symbols.rbegin(); iter != user_symbols.rend(); ++iter) {
+  for (auto iter = symbols.rbegin(); iter != symbols.rend(); ++iter) {
     absl::StrAppend(&out, *iter, kSeparator);
-  }
-
-  for (auto iter = kernel_symbols.rbegin(); iter != kernel_symbols.rend(); ++iter) {
-    // Add "_[k]" suffix to all the symbols in the kernel stack trace:
-    absl::StrAppend(&out, *iter, kKSymSuffix, kSeparator);
   }
 
   // Strip off final separator.

@@ -11,10 +11,9 @@ namespace stack_traces {
 
 TEST(Symbolizer, Basic) {
   std::string_view name = "top";
-  std::vector<std::string> user_symbols = {"Foo()", "Run()"};
-  std::vector<std::string> kernel_symbols = {"syscall_helper", "syscall"};
+  std::vector<std::string> symbols = {"syscall_helper_[k]", "syscall_[k]", "Foo()", "Run()"};
 
-  std::string folded_stack_trace = FoldedStackTraceString(name, user_symbols, kernel_symbols);
+  std::string folded_stack_trace = FoldedStackTraceString(name, symbols);
 
   EXPECT_EQ(folded_stack_trace, "top;Run();Foo();syscall_[k];syscall_helper_[k]");
 }

@@ -226,7 +226,7 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
   // then check observed vs. expected stack traces key set:
   ASSERT_NO_FATAL_FAILURE(PopulateCumulativeSum(target_row_idxs));
   ASSERT_NO_FATAL_FAILURE(PopulateObservedStackTraces(target_row_idxs));
-  CheckExpectedVsObservedStackTraces();
+  ASSERT_NO_FATAL_FAILURE(CheckExpectedVsObservedStackTraces());
 
   const uint64_t kBPFSmaplingPeriodMillis = PerfProfileConnector::BPFSamplingPeriodMillis();
   const double expected_rate = 1000.0 / static_cast<double>(kBPFSmaplingPeriodMillis);

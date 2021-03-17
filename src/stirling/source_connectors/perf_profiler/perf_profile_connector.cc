@@ -55,12 +55,25 @@ Status PerfProfileConnector::StopImpl() {
 namespace {
 std::string FoldedStackTraceString(std::string_view name, ebpf::BPFStackTable* stack_traces,
                                    const stack_trace_key_t& key) {
-  using SymbolsVec = std::vector<std::string>;
+  constexpr std::string_view kKSymSuffix = "_[k]";
 
-  SymbolsVec user_symbols = stack_traces->get_stack_symbol(key.user_stack_id, key.upid.pid);
-  SymbolsVec kernel_symbols = stack_traces->get_stack_symbol(key.kernel_stack_id, -1);
+  auto user_addrs = stack_traces->get_stack_addr(key.user_stack_id);
+  auto kernel_addrs = stack_traces->get_stack_addr(key.kernel_stack_id);
 
-  return stack_traces::FoldedStackTraceString(name, user_symbols, kernel_symbols);
+  std::vector<std::string> symbols;
+  symbols.reserve(user_addrs.size() + kernel_addrs.size());
+
+  for (const auto& addr : user_addrs) {
+    symbols.push_back(stack_traces->get_addr_symbol(addr, key.upid.pid));
+  }
+
+  for (const auto& addr : kernel_addrs) {
+    symbols.push_back(stack_traces->get_addr_symbol(addr, -1).append(kKSymSuffix));
+  }
+
+  // TODO(oazizi): stack_traces::FoldedStackTraceString has become very thin.
+  //               Consider collapsing into here, or pushing more logic into there.
+  return stack_traces::FoldedStackTraceString(name, symbols);
 }
 }  // namespace
 
