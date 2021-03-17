@@ -131,8 +131,7 @@ func GetCurrentOrFirstHealthyVizier(cloudAddr string) (uuid.UUID, error) {
 		if err != nil {
 			cliLog.WithError(err).Error("The current cluster in the kubeconfig not found within this org.")
 			clusterID = uuid.Nil
-		}
-		if clusterInfo.Status != cloudapipb.CS_HEALTHY {
+		} else if clusterInfo.Status != cloudapipb.CS_HEALTHY {
 			cliLog.WithError(err).Errorf("'%s'in the kubeconfig's Pixie instance is unhealthy.", clusterInfo.PrettyClusterName)
 			clusterID = uuid.Nil
 		}
