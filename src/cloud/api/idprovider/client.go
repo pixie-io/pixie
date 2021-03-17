@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -21,6 +22,7 @@ import (
 	hydraAdmin "github.com/ory/hydra-client-go/client/admin"
 	hydraModels "github.com/ory/hydra-client-go/models"
 	kratos "github.com/ory/kratos-client-go/client"
+	kratosAdmin "github.com/ory/kratos-client-go/client/admin"
 	kratosPublic "github.com/ory/kratos-client-go/client/public"
 	kratosModels "github.com/ory/kratos-client-go/models"
 	log "github.com/sirupsen/logrus"
@@ -67,6 +69,8 @@ type HydraKratosConfig struct {
 	// The browser-accessible URL for the Kratos instance. Used as part of the redirect login flows.
 	KratosBrowserURL string
 	// Path to the Kratos Public endpoint.
+	KratosAdminHost string
+	// Path to the Kratos Public endpoint.
 	KratosPublicHost string
 	// The path that Hydra redirects to when asking for consent.
 	HydraConsentPath string
@@ -84,6 +88,7 @@ type hydraAdminClientService interface {
 	GetConsentRequest(params *hydraAdmin.GetConsentRequestParams) (*hydraAdmin.GetConsentRequestOK, error)
 	GetLoginRequest(params *hydraAdmin.GetLoginRequestParams) (*hydraAdmin.GetLoginRequestOK, error)
 	GetLogoutRequest(params *hydraAdmin.GetLogoutRequestParams) (*hydraAdmin.GetLogoutRequestOK, error)
+	IntrospectOAuth2Token(params *hydraAdmin.IntrospectOAuth2TokenParams) (*hydraAdmin.IntrospectOAuth2TokenOK, error)
 }
 type kratosPublicClientService interface {
 	CompleteSelfServiceBrowserSettingsOIDCSettingsFlow(params *kratosPublic.CompleteSelfServiceBrowserSettingsOIDCSettingsFlowParams) error
@@ -102,6 +107,10 @@ type kratosPublicClientService interface {
 	InitializeSelfServiceRegistrationViaBrowserFlow(params *kratosPublic.InitializeSelfServiceRegistrationViaBrowserFlowParams) error
 	Whoami(params *kratosPublic.WhoamiParams, authInfo runtime.ClientAuthInfoWriter) (*kratosPublic.WhoamiOK, error)
 }
+type kratosAdminClientService interface {
+	GetIdentity(params *kratosAdmin.GetIdentityParams) (*kratosAdmin.GetIdentityOK, error)
+	UpdateIdentity(params *kratosAdmin.UpdateIdentityParams) (*kratosAdmin.UpdateIdentityOK, error)
+}
 
 // HydraKratosClient implements the Client interface for the a Hydra and Kratos integration.
 type HydraKratosClient struct {
@@ -109,6 +118,7 @@ type HydraKratosClient struct {
 	httpClient         *http.Client
 	hydraAdminClient   hydraAdminClientService
 	kratosPublicClient kratosPublicClientService
+	kratosAdminClient  kratosAdminClientService
 }
 
 func loadRootCA() (*x509.CertPool, error) {
@@ -176,11 +186,19 @@ func NewHydraKratosClientFromConfig(cfg *HydraKratosConfig) (*HydraKratosClient,
 	// We specify the Public client to avoid confusing bugs because the Admin client is held behind a different endpoint.
 	kratosPublicClient := kratos.New(kratosPublicRuntime, strfmt.NewFormats()).Public
 
+	kratosAdminRuntime, err := createRuntime(cfg.KratosAdminHost, httpClient)
+	if err != nil {
+		return nil, err
+	}
+	// We specify the Admin client to avoid confusing bugs because the Admin client is held behind a different endpoint.
+	kratosAdminClient := kratos.New(kratosAdminRuntime, strfmt.NewFormats()).Admin
+
 	return &HydraKratosClient{
 		Config:             cfg,
 		httpClient:         httpClient,
 		hydraAdminClient:   hydraAdminClient,
 		kratosPublicClient: kratosPublicClient,
+		kratosAdminClient:  kratosAdminClient,
 	}, nil
 }
 
@@ -192,6 +210,7 @@ func NewHydraKratosClient() (*HydraKratosClient, error) {
 			HydraAdminHost:   viper.GetString("hydra_admin_host"),
 			HydraBrowserURL:  viper.GetString("hydra_browser_url"),
 			KratosPublicHost: viper.GetString("kratos_public_host"),
+			KratosAdminHost:  viper.GetString("kratos_admin_host"),
 			KratosBrowserURL: viper.GetString("kratos_browser_url"),
 			HydraConsentPath: viper.GetString("hydra_consent_path"),
 			HydraClientID:    viper.GetString("hydra_client_id"),
@@ -293,7 +312,7 @@ type Whoami struct {
 
 // ID returns the ID of the whoami.
 func (w *Whoami) ID() string {
-	return strfmt.UUID4(w.kratosSession.ID).String()
+	return strfmt.UUID4(w.kratosSession.Identity.ID).String()
 }
 
 // Whoami implements the Kratos whoami flow.
@@ -532,6 +551,7 @@ func (c *HydraKratosClient) HandleLogin(session *sessions.Session, w http.Respon
 	// to the login flow where it'll be set.
 	loginState := query.Get(HydraLoginStateKey)
 	if loginState == "" {
+		w.Header().Set("redirectReason", "login_state_not_found")
 		return c.RedirectToLogin(session, w, r)
 	}
 
@@ -539,12 +559,13 @@ func (c *HydraKratosClient) HandleLogin(session *sessions.Session, w http.Respon
 	// we have an error.
 	state, ok := session.Values[HydraLoginStateKey]
 	if !ok {
-		return handler.NewStatusError(http.StatusInternalServerError, "Could not find hydra login state in cookie store")
+		return handler.NewStatusError(http.StatusInternalServerError, fmt.Sprintf("Could not find hydra login state in cookie store: %v", session.Values))
 	}
 
 	// If the query parameter and the cookie value don't match, we set a new state and redirect the user to login.
 	if state != loginState {
 		log.Tracef("mismatching states %s %s", fmt.Sprintf("%s", state)[:5], loginState[:5])
+		w.Header().Set("redirectReason", "mismatch_states")
 		return c.RedirectToLogin(session, w, r)
 	}
 
@@ -590,4 +611,73 @@ func (c *HydraKratosClient) HandleLogout(session *sessions.Session, w http.Respo
 func (c *HydraKratosClient) HandleRegister(session *sessions.Session, w http.ResponseWriter, r *http.Request) error {
 	// TODO(philkuz) implement.
 	return handler.NewStatusError(http.StatusInternalServerError, "not implememented")
+}
+
+// GetUserIDFromToken returns the userID from the subject portion of the access token.
+func (c *HydraKratosClient) GetUserIDFromToken(ctx context.Context, token string) (string, error) {
+	params := &hydraAdmin.IntrospectOAuth2TokenParams{
+		Context: ctx,
+		Token:   token,
+	}
+	res, err := c.hydraAdminClient.IntrospectOAuth2Token(params)
+	if err != nil {
+		return "", err
+	}
+
+	return res.GetPayload().Sub, nil
+}
+
+// KratosUserInfo contains the user information format as stored in Kratos.
+type KratosUserInfo struct {
+	Email    string `json:"email,omitempty"`
+	PLOrgID  string `json:"plOrgID,omitempty"`
+	PLUserID string `json:"plUserID,omitempty"`
+}
+
+// GetUserInfo returns the UserInfo for the userID.
+func (c *HydraKratosClient) GetUserInfo(ctx context.Context, userID string) (*KratosUserInfo, error) {
+	params := &kratosAdmin.GetIdentityParams{
+		ID:      userID,
+		Context: ctx,
+	}
+	resp, err := c.kratosAdminClient.GetIdentity(params)
+	if err != nil {
+		return nil, err
+	}
+
+	return convertIdentityToKratosUserInfo(resp.Payload)
+}
+
+// Converts the Kratos internal representation to the KratosUserInfo representation.
+func convertIdentityToKratosUserInfo(identity *kratosModels.Identity) (*KratosUserInfo, error) {
+	// Trick to convert the traits map into a struct.
+	s, err := json.Marshal(identity.Traits)
+	if err != nil {
+		return nil, err
+	}
+
+	k := &KratosUserInfo{}
+	err = json.Unmarshal(s, k)
+	if err != nil {
+		return nil, err
+	}
+	return k, nil
+
+}
+
+// UpdateUserInfo sets the userInfo for the user. Note that it doesn't patch, but fully updates so you likely need to GetUserInfo first.
+func (c *HydraKratosClient) UpdateUserInfo(ctx context.Context, userID string, kratosInfo *KratosUserInfo) (*KratosUserInfo, error) {
+	params := &kratosAdmin.UpdateIdentityParams{
+		ID: userID,
+		Body: &kratosModels.UpdateIdentity{
+			Traits: kratosInfo,
+		},
+		Context: ctx,
+	}
+	resp, err := c.kratosAdminClient.UpdateIdentity(params)
+	if err != nil {
+		return nil, err
+	}
+
+	return convertIdentityToKratosUserInfo(resp.Payload)
 }

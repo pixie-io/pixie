@@ -48,7 +48,7 @@ func (s *Server) getUserInfoFromToken(accessToken string) (string, *UserInfo, er
 }
 
 func (s *Server) updateAuthProviderUser(authUserID string, orgID string, userID string) (*UserInfo, error) {
-	// Write user and org info to Auth0.
+	// Write user and org info to the AuthProvider.
 	err := s.a.SetPLMetadata(authUserID, orgID, userID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to set user ID")
@@ -63,7 +63,7 @@ func (s *Server) updateAuthProviderUser(authUserID string, orgID string, userID 
 	return userInfo, nil
 }
 
-// Login uses auth0 to authenticate and login the user.
+// Login uses the AuthProvider to authenticate and login the user. Errors out if their org doesn't exist.
 func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply, error) {
 	userID, userInfo, err := s.getUserInfoFromToken(in.AccessToken)
 	if err != nil {
@@ -90,7 +90,7 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 	// If user does not exist in the AuthProvider, then create a new user if specified.
 	newUser := userInfo.PLUserID == ""
 
-	// A user can exist in auth0, but not the profile service. If that's the case, we want to create a new user.
+	// A user can exist in the AuthProvider, but not the profile service. If that's the case, we want to create a new user.
 	if !newUser {
 		_, err := pc.GetUser(ctx, &uuidpb.UUID{Data: []byte(userInfo.PLUserID)})
 		if err != nil {
@@ -188,7 +188,7 @@ func (s *Server) loginSupportUser(ctx context.Context, in *pb.LoginRequest, user
 	}, nil
 }
 
-// Signup uses auth0 to authenticate and sign up the user. It autocreates the org if the org doesn't exist.
+// Signup uses the AuthProvider to authenticate and sign up the user. It autocreates the org if the org doesn't exist.
 func (s *Server) Signup(ctx context.Context, in *pb.SignupRequest) (*pb.SignupReply, error) {
 	userID, userInfo, err := s.getUserInfoFromToken(in.AccessToken)
 	if err != nil {

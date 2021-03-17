@@ -2,6 +2,7 @@ package idprovider
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -11,20 +12,50 @@ import (
 	"github.com/gorilla/sessions"
 	hydraAdmin "github.com/ory/hydra-client-go/client/admin"
 	hydraModels "github.com/ory/hydra-client-go/models"
+	kratosAdmin "github.com/ory/kratos-client-go/client/admin"
 	kratosPublic "github.com/ory/kratos-client-go/client/public"
 	kratosModels "github.com/ory/kratos-client-go/models"
 	"github.com/stretchr/testify/assert"
 )
+
+// Implements the kratosAdminClient interface.
+type fakeKratosAdminClient struct {
+	updateIdentityFn *func(params *kratosAdmin.UpdateIdentityParams) (*kratosAdmin.UpdateIdentityOK, error)
+	getIdentityFn    *func(params *kratosAdmin.GetIdentityParams) (*kratosAdmin.GetIdentityOK, error)
+}
+
+func (ka *fakeKratosAdminClient) GetIdentity(params *kratosAdmin.GetIdentityParams) (*kratosAdmin.GetIdentityOK, error) {
+	if ka.getIdentityFn == nil {
+		return nil, errors.New("not implemented")
+	}
+
+	return (*ka.getIdentityFn)(params)
+}
+
+func (ka *fakeKratosAdminClient) UpdateIdentity(params *kratosAdmin.UpdateIdentityParams) (*kratosAdmin.UpdateIdentityOK, error) {
+	if ka.updateIdentityFn == nil {
+		return nil, errors.New("not implemented")
+	}
+
+	return (*ka.updateIdentityFn)(params)
+}
+
+func convertKratosUserInfoToIdentity(t *testing.T, ui *KratosUserInfo) *kratosModels.Identity {
+	return &kratosModels.Identity{
+		Traits: ui,
+	}
+}
 
 // Implements the hydraAdminClientService interface.
 type fakeHydraAdminClient struct {
 	redirect         string
 	consentChallenge string
 
-	oauthClientID          string
-	getConsentRequestFn    *func(params *hydraAdmin.GetConsentRequestParams) (*hydraAdmin.GetConsentRequestOK, error)
-	acceptConsentRequestFn *func(params *hydraAdmin.AcceptConsentRequestParams) (*hydraAdmin.AcceptConsentRequestOK, error)
-	acceptLoginRequestFn   *func(params *hydraAdmin.AcceptLoginRequestParams) (*hydraAdmin.AcceptLoginRequestOK, error)
+	oauthClientID           string
+	getConsentRequestFn     *func(params *hydraAdmin.GetConsentRequestParams) (*hydraAdmin.GetConsentRequestOK, error)
+	acceptConsentRequestFn  *func(params *hydraAdmin.AcceptConsentRequestParams) (*hydraAdmin.AcceptConsentRequestOK, error)
+	acceptLoginRequestFn    *func(params *hydraAdmin.AcceptLoginRequestParams) (*hydraAdmin.AcceptLoginRequestOK, error)
+	introspectOAuth2TokenFn *func(params *hydraAdmin.IntrospectOAuth2TokenParams) (*hydraAdmin.IntrospectOAuth2TokenOK, error)
 }
 
 func (ha *fakeHydraAdminClient) AcceptConsentRequest(params *hydraAdmin.AcceptConsentRequestParams) (*hydraAdmin.AcceptConsentRequestOK, error) {
@@ -49,6 +80,14 @@ func (ha *fakeHydraAdminClient) AcceptLoginRequest(params *hydraAdmin.AcceptLogi
 			RedirectTo: &ha.redirect,
 		},
 	}, nil
+}
+
+func (ha *fakeHydraAdminClient) IntrospectOAuth2Token(params *hydraAdmin.IntrospectOAuth2TokenParams) (*hydraAdmin.IntrospectOAuth2TokenOK, error) {
+	if ha.introspectOAuth2TokenFn == nil {
+		return nil, errors.New("not implemented")
+	}
+
+	return (*ha.introspectOAuth2TokenFn)(params)
 }
 
 func (ha *fakeHydraAdminClient) AcceptLogoutRequest(params *hydraAdmin.AcceptLogoutRequestParams) (*hydraAdmin.AcceptLogoutRequestOK, error) {
@@ -131,7 +170,9 @@ func (kp *fakeKratosPublicClient) InitializeSelfServiceRegistrationViaBrowserFlo
 func (kp *fakeKratosPublicClient) Whoami(params *kratosPublic.WhoamiParams, authInfo runtime.ClientAuthInfoWriter) (*kratosPublic.WhoamiOK, error) {
 	return &kratosPublic.WhoamiOK{
 		Payload: &kratosModels.Session{
-			ID: kratosModels.UUID(kp.userID),
+			Identity: &kratosModels.Identity{
+				ID: kratosModels.UUID(kp.userID),
+			},
 		},
 	}, nil
 }
@@ -140,13 +181,16 @@ func makeClient(t *testing.T) (*HydraKratosClient, func()) {
 }
 
 type testClientConfig struct {
-	postLoginRedirect     string
-	hydraPublicHostCookie string
-	consentChallenge      string
-	browserURL            string
-	idpConsentPath        string
-	hydraBrowserURL       string
-	hydraConsentPath      string
+	postLoginRedirect       string
+	hydraPublicHostCookie   string
+	consentChallenge        string
+	browserURL              string
+	idpConsentPath          string
+	hydraBrowserURL         string
+	hydraConsentPath        string
+	introspectOAuth2TokenFn *func(params *hydraAdmin.IntrospectOAuth2TokenParams) (*hydraAdmin.IntrospectOAuth2TokenOK, error)
+	updateIdentityFn        *func(params *kratosAdmin.UpdateIdentityParams) (*kratosAdmin.UpdateIdentityOK, error)
+	getIdentityFn           *func(params *kratosAdmin.GetIdentityParams) (*kratosAdmin.GetIdentityOK, error)
 }
 
 func fillDefaults(p *testClientConfig) *testClientConfig {
@@ -215,10 +259,15 @@ func makeClientFromConfig(t *testing.T, p *testClientConfig) (*HydraKratosClient
 			HydraConsentPath: p.idpConsentPath,
 		},
 		hydraAdminClient: &fakeHydraAdminClient{
-			redirect:               p.hydraBrowserURL + p.hydraConsentPath,
-			acceptConsentRequestFn: &acceptConsentRequestFn,
+			introspectOAuth2TokenFn: p.introspectOAuth2TokenFn,
+			redirect:                p.hydraBrowserURL + p.hydraConsentPath,
+			acceptConsentRequestFn:  &acceptConsentRequestFn,
 		},
 		kratosPublicClient: &fakeKratosPublicClient{},
+		kratosAdminClient: &fakeKratosAdminClient{
+			getIdentityFn:    p.getIdentityFn,
+			updateIdentityFn: p.updateIdentityFn,
+		},
 	}, hydraPublicHostFake.Close
 
 }
@@ -369,7 +418,9 @@ func TestAcceptHydraLogin(t *testing.T) {
 	// Fake whoami response.
 	whoami := &Whoami{
 		kratosSession: &kratosModels.Session{
-			ID: kratosModels.UUID("user"),
+			Identity: &kratosModels.Identity{
+				ID: kratosModels.UUID("user"),
+			},
 		},
 	}
 
@@ -585,4 +636,71 @@ func TestHandleLoginPerformsRedirects(t *testing.T) {
 	resp = w.Result()
 	assert.Equal(t, http.StatusFound, w.Code)
 	assert.Equal(t, stripQuery(t, loginURL), stripQuery(t, getRedirectURL(t, resp)))
+}
+
+func TestManageUserInfo(t *testing.T) {
+	email := "a@b.com"
+	plUserID := "123456789"
+	plOrgID := "b.com"
+	token := "usertoken"
+
+	updateIdentityFn := func(params *kratosAdmin.UpdateIdentityParams) (*kratosAdmin.UpdateIdentityOK, error) {
+		assert.Equal(t, params.ID, plUserID)
+		ui := &KratosUserInfo{
+			Email:    email,
+			PLOrgID:  plOrgID,
+			PLUserID: plUserID,
+		}
+		assert.Equal(t, params.Body.Traits, ui)
+		return &kratosAdmin.UpdateIdentityOK{
+			Payload: convertKratosUserInfoToIdentity(t, ui),
+		}, nil
+	}
+	introspectOAuth2TokenFn := func(params *hydraAdmin.IntrospectOAuth2TokenParams) (*hydraAdmin.IntrospectOAuth2TokenOK, error) {
+		assert.Equal(t, params.Token, token)
+		return &hydraAdmin.IntrospectOAuth2TokenOK{
+			Payload: &hydraModels.OAuth2TokenIntrospection{
+				Sub: plUserID,
+			},
+		}, nil
+	}
+	getIdentityFn := func(params *kratosAdmin.GetIdentityParams) (*kratosAdmin.GetIdentityOK, error) {
+		assert.Equal(t, params.ID, plUserID)
+		return &kratosAdmin.GetIdentityOK{
+			Payload: convertKratosUserInfoToIdentity(t, &KratosUserInfo{
+				Email:    email,
+				PLOrgID:  plOrgID,
+				PLUserID: plUserID,
+			}),
+		}, nil
+	}
+
+	c, close := makeClientFromConfig(t, &testClientConfig{
+		updateIdentityFn:        &updateIdentityFn,
+		introspectOAuth2TokenFn: &introspectOAuth2TokenFn,
+		getIdentityFn:           &getIdentityFn,
+	})
+
+	defer close()
+	_, err := c.UpdateUserInfo(context.Background(), plUserID, &KratosUserInfo{
+		Email:    email,
+		PLOrgID:  plOrgID,
+		PLUserID: plUserID,
+	})
+
+	userID, err := c.GetUserIDFromToken(context.Background(), token)
+	if !assert.Nil(t, err) {
+		t.Fatalf("Failed to GetUserIDFromToken %v", err)
+	}
+
+	assert.Equal(t, userID, plUserID)
+
+	userInfo, err := c.GetUserInfo(context.Background(), userID)
+	if !assert.Nil(t, err) {
+		t.Fatalf("Failed to GetUserIDFromToken %v", err)
+	}
+
+	assert.Equal(t, userInfo.Email, email)
+	assert.Equal(t, userInfo.PLUserID, plUserID)
+	assert.Equal(t, userInfo.PLOrgID, plOrgID)
 }

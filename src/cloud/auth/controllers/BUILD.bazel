@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "auth0.go",
         "domain.go",
+        "hydra_kratos_auth.go",
         "login.go",
         "mock.go",
         "server.go",
@@ -13,6 +14,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",
+        "//src/cloud/api/idprovider:go_default_library",
         "//src/cloud/auth/authenv:go_default_library",
         "//src/cloud/auth/proto:auth_go_proto",
         "//src/cloud/profile/profilepb:service_go_proto",
