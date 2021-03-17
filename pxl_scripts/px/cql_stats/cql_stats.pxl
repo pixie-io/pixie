@@ -167,7 +167,7 @@ def format_cql_table(df):
 
     Returns: formatted cql_events DataFrame.
     """
-    df = format_events_table(df, 'latency_ns')
+    df = format_events_table(df, 'latency')
     df.failure = df['resp_op'] == 0
     df.resp_size = px.length(df.resp_body)
 

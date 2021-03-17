@@ -31,14 +31,14 @@ def get_max_elm(df, column):
 
 df = px.DataFrame(table='http_events', start_time='-2m')
 
-df[resp_size] = px.Bytes(px.length(df.http_resp_body))
+df[resp_size] = px.Bytes(px.length(df.resp_body))
 df[k8s_object] = df.ctx[k8s_object]
 filter_pods = px.contains(df[k8s_object], match_name)
-filter_out_conds = ((df.http_req_path != '/health' or not filter_health) and (
-    df.http_req_path != '/readyz' or not filter_readyz)) and (
+filter_out_conds = ((df.req_path != '/health' or not filter_health) and (
+    df.req_path != '/readyz' or not filter_readyz)) and (
     df[ip] != '-' or not filter_dash)
 filt_df = df[(filter_pods and filter_out_conds)]
-k8s_and_req_path_bytes = filt_df.groupby([k8s_object, 'http_req_path']).agg(
+k8s_and_req_path_bytes = filt_df.groupby([k8s_object, 'req_path']).agg(
     resp_bytes_sum=(resp_size, px.sum)
 )
 # Enable the following line if you want to see the bytes for every (k8s_object, 'req_path') pair

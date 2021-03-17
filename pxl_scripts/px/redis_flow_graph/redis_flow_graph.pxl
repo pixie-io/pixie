@@ -15,7 +15,7 @@ window_ns = px.DurationNanos(10 * ns_per_s)
 
 def redis_flow_graph(start: str, ns: px.Namespace, from_entity_filter: str, to_entity_filter: str):
 
-    df = px.DataFrame('redis_events.beta', start_time=start)
+    df = px.DataFrame('redis_events', start_time=start)
     df.pod = df.ctx['pod']
     df.namespace = df.ctx['namespace']
     df = df.drop(['upid'])
@@ -28,8 +28,8 @@ def redis_flow_graph(start: str, ns: px.Namespace, from_entity_filter: str, to_e
 
     # Aggregate the connections by timestamp.
     df = df.groupby(['timestamp', 'remote_addr', 'pod']).agg(
-        latency_quantiles=('latency_ns', px.quantiles),
-        throughput_total=('latency_ns', px.count),
+        latency_quantiles=('latency', px.quantiles),
+        throughput_total=('latency', px.count),
     )
     df.latency_p50 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p50')))
     df.latency_p90 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p90')))
