@@ -122,12 +122,10 @@ TEST(ContainerInfo, add_delete_pids) {
 
   EXPECT_THAT(cinfo.active_upids(),
               testing::UnorderedElementsAre(UPID(1, 1, 123), UPID(1, 2, 123), UPID(1, 5, 123)));
-  EXPECT_THAT(cinfo.inactive_upids(), testing::UnorderedElementsAre());
 
   cinfo.DeactivateUPID(UPID(1, 2, 123));
   EXPECT_THAT(cinfo.active_upids(),
               testing::UnorderedElementsAre(UPID(1, 1, 123), UPID(1, 5, 123)));
-  EXPECT_THAT(cinfo.inactive_upids(), testing::UnorderedElementsAre(UPID(1, 2, 123)));
 }
 
 TEST(ContainerInfo, deactive_non_existing_pid_ignored) {
@@ -138,7 +136,6 @@ TEST(ContainerInfo, deactive_non_existing_pid_ignored) {
   cinfo.DeactivateUPID(UPID(1, 3, 123));
 
   EXPECT_THAT(cinfo.active_upids(), testing::UnorderedElementsAre());
-  EXPECT_THAT(cinfo.inactive_upids(), testing::UnorderedElementsAre());
 }
 
 TEST(ContainerInfo, clone) {

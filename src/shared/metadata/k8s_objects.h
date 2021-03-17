@@ -342,30 +342,12 @@ class ContainerInfo {
   const UID& pod_id() const { return pod_id_; }
 
   void AddUPID(UPID upid) { active_upids_.emplace(upid); }
-  void DeactivateUPID(UPID upid) {
-    auto it = active_upids_.find(upid);
-    if (it != active_upids_.end()) {
-      inactive_upids_.emplace(*it);
-      active_upids_.erase(it);
-    }
-  }
+  void DeactivateUPID(UPID upid) { active_upids_.erase(upid); }
 
   // This function can be used to mark the entire container as stopped.
-  void DeactivateAllUPIDs() {
-    auto it = active_upids_.begin();
-    while (it != active_upids_.end()) {
-      inactive_upids_.emplace(*it);
-      ++it;
-    }
-    active_upids_.clear();
-  }
-
-  bool HasActiveUPID(UPID upid) const { return active_upids_.contains(upid); }
-  bool HasInActiveUPID(UPID upid) const { return inactive_upids_.contains(upid); }
-  bool HasUPID(UPID upid) const { return HasActiveUPID(upid) || HasInActiveUPID(upid); }
+  void DeactivateAllUPIDs() { active_upids_.clear(); }
 
   const absl::flat_hash_set<UPID>& active_upids() const { return active_upids_; }
-  const absl::flat_hash_set<UPID>& inactive_upids() const { return inactive_upids_; }
 
   int64_t start_time_ns() const { return start_time_ns_; }
 
@@ -400,12 +382,6 @@ class ContainerInfo {
    * The set of UPIDs that are running on this container.
    */
   absl::flat_hash_set<UPID> active_upids_;
-
-  /**
-   * The set of UPIDs that used to run on this container but have since been killed.
-   * We maintain them for a while so that they remain queryable.
-   */
-  absl::flat_hash_set<UPID> inactive_upids_;
 
   /**
    * Current state of the container, such as RUNNING, WAITING.

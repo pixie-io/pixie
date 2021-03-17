@@ -72,11 +72,12 @@ class K8sMetadataState : NotCopyable {
       }
     };
   };
-  using PodsByNameMap =
+  using K8sEntityByNameMap =
       absl::flat_hash_map<K8sNameIdent, UID, K8sIdentHashEq::Hash, K8sIdentHashEq::Eq>;
 
-  using ServicesByNameMap = PodsByNameMap;
-  using NamespacesByNameMap = PodsByNameMap;
+  using PodsByNameMap = K8sEntityByNameMap;
+  using ServicesByNameMap = K8sEntityByNameMap;
+  using NamespacesByNameMap = K8sEntityByNameMap;
   using ContainersByNameMap = absl::flat_hash_map<std::string, CID>;
   using PodsByPodIpMap = absl::flat_hash_map<std::string, UID>;
 

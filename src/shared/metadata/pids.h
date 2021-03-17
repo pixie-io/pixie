@@ -16,8 +16,8 @@ namespace md {
 class PIDInfo {
  public:
   PIDInfo() = delete;
-  PIDInfo(UPID upid, std::string_view cmdline, CID container_id)
-      : upid_(upid), cmdline_(cmdline), container_id_(std::move(container_id)), stop_time_ns_(0) {}
+  PIDInfo(UPID upid, std::string_view cmdline, CID cid)
+      : upid_(upid), cmdline_(cmdline), cid_(std::move(cid)), stop_time_ns_(0) {}
 
   UPID upid() const { return upid_; }
 
@@ -29,8 +29,7 @@ class PIDInfo {
 
   const std::string& cmdline() const { return cmdline_; }
 
-  // FIXME: change container_id to cid;
-  CID cid() const { return container_id_; }
+  const CID& cid() const { return cid_; }
 
   std::unique_ptr<PIDInfo> Clone() {
     auto pid_info = std::make_unique<PIDInfo>(*this);
@@ -38,8 +37,8 @@ class PIDInfo {
   }
 
   bool operator==(const PIDInfo& other) const {
-    return (other.upid_ == upid_) && (other.cmdline_ == cmdline_) &&
-           (other.container_id_ == container_id_) && (other.stop_time_ns_ == stop_time_ns_);
+    return (other.upid_ == upid_) && (other.cmdline_ == cmdline_) && (other.cid_ == cid_) &&
+           (other.stop_time_ns_ == stop_time_ns_);
   }
 
   bool operator!=(const PIDInfo& other) const { return !(other == *this); }
@@ -57,7 +56,7 @@ class PIDInfo {
   /**
    * The container running this PID.
    */
-  CID container_id_;
+  CID cid_;
 
   /**
    * The time that this PID stopped running. If 0 we can assume it's still running.
