@@ -39,7 +39,6 @@ class PerfProfileBPFTest : public ::testing::Test {
 
  protected:
   void SetUp() override {
-    FLAGS_stirling_profiler_test_mode = true;
     source_ = PerfProfileConnector::Create("perf_profile_connector");
     ASSERT_OK(source_->Init());
     ctx_ = std::make_unique<StandaloneContext>();
@@ -284,8 +283,8 @@ TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
 
   // The toy test app. should be written such that we can expect one stack trace
   // twice as often as another.
-  key2x_ = "-;runtime.goexit;runtime.main;main.main;main.sqrtOf1e39;main.sqrt";
-  key1x_ = "-;runtime.goexit;runtime.main;main.main;main.sqrtOf1e18;main.sqrt";
+  key2x_ = "runtime.goexit;runtime.main;main.main;main.sqrtOf1e39;main.sqrt";
+  key1x_ = "runtime.goexit;runtime.main;main.main;main.sqrtOf1e18;main.sqrt";
 
   // Populated expected_stack_traces_ with the keys for this test:
   expected_stack_traces_.insert(key2x_);
@@ -320,8 +319,8 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
 
   // The toy test app. should be written such that we can expect one stack trace
   // twice as often as another.
-  key2x_ = "-;__libc_start_main;main;fib52();fib(unsigned long)";
-  key1x_ = "-;__libc_start_main;main;fib27();fib(unsigned long)";
+  key2x_ = "__libc_start_main;main;fib52();fib(unsigned long)";
+  key1x_ = "__libc_start_main;main;fib27();fib(unsigned long)";
 
   // Populated expected_stack_traces_ with the keys for this test:
   expected_stack_traces_.insert(key2x_);

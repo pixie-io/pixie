@@ -13,8 +13,6 @@
 #include "src/stirling/source_connectors/perf_profiler/stack_traces_table.h"
 #include "src/stirling/source_connectors/perf_profiler/symbol_cache.h"
 
-DECLARE_bool(stirling_profiler_test_mode);
-
 namespace pl {
 namespace stirling {
 
@@ -82,7 +80,7 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
                                        ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo,
                                        ConnectorContext* ctx);
 
-  std::string FoldedStackTraceString(std::string_view name, ebpf::BPFStackTable* stack_traces,
+  std::string FoldedStackTraceString(ebpf::BPFStackTable* stack_traces,
                                      const stack_trace_key_t& key);
 
   void CleanupSymbolCaches(const absl::flat_hash_set<md::UPID>& deleted_upids);

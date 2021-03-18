@@ -10,8 +10,6 @@
 
 BPF_SRC_STRVIEW(profiler_bcc_script, profiler);
 
-DEFINE_bool(stirling_profiler_test_mode, false, "Make stack traces more predictable for testing.");
-
 namespace pl {
 namespace stirling {
 
@@ -51,8 +49,7 @@ Status PerfProfileConnector::StopImpl() {
   return Status::OK();
 }
 
-std::string PerfProfileConnector::FoldedStackTraceString(std::string_view name,
-                                                         ebpf::BPFStackTable* stack_traces,
+std::string PerfProfileConnector::FoldedStackTraceString(ebpf::BPFStackTable* stack_traces,
                                                          const stack_trace_key_t& key) {
   constexpr std::string_view kKSymSuffix = "_[k]";
   constexpr std::string_view kSeparator = ";";
@@ -62,10 +59,6 @@ std::string PerfProfileConnector::FoldedStackTraceString(std::string_view name,
 
   std::string stack_trace_str;
   // TODO(oazizi): Add a stack_trace_str.reserve() heuristic.
-
-  // Add top-level binary name.
-  stack_trace_str += name;
-  stack_trace_str += kSeparator;
 
   // Add user stack.
   auto user_addrs = stack_traces->get_stack_addr(key.user_stack_id);
@@ -85,7 +78,9 @@ std::string PerfProfileConnector::FoldedStackTraceString(std::string_view name,
   }
 
   // Remove trailing separator.
-  stack_trace_str.pop_back();
+  if (!stack_trace_str.empty()) {
+    stack_trace_str.pop_back();
+  }
 
   return stack_trace_str;
 }
@@ -189,12 +184,7 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
     const md::UPID upid(ctx->GetASID(), stack_trace_key.upid.pid,
                         stack_trace_key.upid.start_time_ticks);
 
-    // TODO(oazizi): Replace this with the Pod and container name.
-    //               Also get rid of FLAGS_stirling_profiler_test_mode.
-    std::string process_name = FLAGS_stirling_profiler_test_mode ? "-" : upid.String();
-
-    std::string stack_trace_str =
-        FoldedStackTraceString(process_name, stack_traces, stack_trace_key);
+    std::string stack_trace_str = FoldedStackTraceString(stack_traces, stack_trace_key);
     SymbolicStackTrace symbolic_stack_trace = {upid, std::move(stack_trace_str)};
     symbolic_histogram[symbolic_stack_trace] += count;
 
