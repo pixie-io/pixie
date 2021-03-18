@@ -1,13 +1,13 @@
 import auth0 from 'auth0-js';
 import {
-  AUTH0_CLIENT_ID, AUTH0_DOMAIN,
+  AUTH_CLIENT_ID, AUTH_URI,
 } from 'containers/constants';
 import { OAuthProviderClient, Token } from './oauth-provider';
 
 function makeAuth0Client(): auth0.WebAuth {
   return new auth0.WebAuth({
-    domain: AUTH0_DOMAIN,
-    clientID: AUTH0_CLIENT_ID,
+    domain: AUTH_URI,
+    clientID: AUTH_CLIENT_ID,
   });
 }
 

@@ -29,7 +29,7 @@ spec:
             port: 56000
         envFrom:
         - configMapRef:
-            name: pl-auth0-config
+            name: pl-oauth-config
         - configMapRef:
             name: pl-domain-config
         - configMapRef:

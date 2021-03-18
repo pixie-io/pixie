@@ -216,11 +216,23 @@ module.exports = (env, argv) => {
     environment = 'base';
   }
 
+  // Users can specify the OAUTH environment. Usually this just means
+  // setting to "oss_auth", otherwise will default to `environment`.
+  let oauthConfigEnv = process.env.PL_OAUTH_CONFIG_ENV;
+  if (!oauthConfigEnv) {
+    oauthConfigEnv = environment;
+  }
+
   // Get Auth0ClientID.
-  const authYamlPath = join(topLevelDir, 'k8s', 'cloud', environment, 'auth0_config.yaml').replace(/\//g, '\\/');
+  const authYamlPath = join(topLevelDir, 'k8s', 'cloud', oauthConfigEnv, 'oauth_config.yaml').replace(/\//g, '\\/');
   // Don't try to change this to `fs.readFileSync` to avoid the useless cat: readFileSync can't find this path, cat can.
-  const auth0YamlReq = execSync(`cat ${authYamlPath}`);
-  const auth0YAML = YAML.parse(auth0YamlReq.toString());
+  const oauthYamlReq = execSync(`cat ${authYamlPath}`);
+  const oauthYAML = YAML.parse(oauthYamlReq.toString());
+
+  // Setup the auth client.
+  const oauthProvider = oauthYAML.data.PL_OAUTH_PROVIDER;
+  const authURI = oauthYAML.data.PL_AUTH_URI;
+  const authClientID = oauthYAML.data.PL_AUTH_CLIENT_ID;
 
   // Get LDClientID.
   const ldYamlPath = join(topLevelDir, 'k8s', 'cloud', environment, 'ld_config.yaml').replace(/\//g, '\\/');
@@ -258,8 +270,9 @@ module.exports = (env, argv) => {
       __ANNOUNCE_WIDGET_URL__: JSON.stringify(announcementYAML.data.ANNOUNCE_WIDGET_URL),
       __ANALYTICS_ENABLED__: JSON.parse(analyticsYAML.data.ANALYTICS_ENABLED),
       __SEGMENT_UI_WRITE_KEY__: '""',
-      __CONFIG_AUTH0_DOMAIN__: JSON.stringify('pixie-labs.auth0.com'),
-      __CONFIG_AUTH0_CLIENT_ID__: JSON.stringify(auth0YAML.data.PL_AUTH0_CLIENT_ID),
+      __CONFIG_OAUTH_PROVIDER__: JSON.stringify(oauthProvider),
+      __CONFIG_AUTH_URI__: JSON.stringify(authURI),
+      __CONFIG_AUTH_CLIENT_ID__: JSON.stringify(authClientID),
       __CONFIG_DOMAIN_NAME__: JSON.stringify(domainYAML.data.PL_DOMAIN_NAME),
       __CONFIG_LD_CLIENT_ID__: JSON.stringify(ldYAML.data.PL_LD_CLIENT_ID),
       __SEGMENT_ANALYTICS_JS_DOMAIN__: `segment.${domainYAML.data.PL_DOMAIN_NAME}`,

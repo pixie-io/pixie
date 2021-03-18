@@ -14,7 +14,7 @@ resources:
 - db_config.yaml
 - tls_config.yaml
 - service_config.yaml
-- auth0_config.yaml
+- oauth_config.yaml
 - domain_config.yaml
 - auth_deployment.yaml
 - auth_service.yaml

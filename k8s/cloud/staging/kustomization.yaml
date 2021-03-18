@@ -25,7 +25,7 @@ resources:
 patchesStrategicMerge:
 - analytics_config.yaml
 - announce_config.yaml
-- auth0_config.yaml
+- oauth_config.yaml
 - contact_config.yaml
 - db_config.yaml
 - service_config.yaml

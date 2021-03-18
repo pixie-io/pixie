@@ -1,4 +1,5 @@
 import * as QueryString from 'query-string';
+import { OAUTH_PROVIDER } from 'containers/constants';
 import { HydraClient } from './hydra-oauth-provider';
 import { Auth0Client } from './auth0-oauth-provider';
 
@@ -58,10 +59,6 @@ const getRedirectURL = (isSignup: boolean) => {
   }
   return redirectURL;
 };
-
-type OAuthProviderType = 'auth0' | 'hydra';
-// TODO(philkuz) move to an environment variable.
-const OAUTH_PROVIDER: OAuthProviderType = 'auth0';
 
 export const GetOAuthProvider = () => {
   if (OAUTH_PROVIDER === 'auth0') {

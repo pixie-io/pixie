@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pl-oauth-config
+data:
+  PL_OAUTH_PROVIDER: hydra
+  PL_AUTH_URI: oauth/hydra/oauth2/auth
+  PL_AUTH_CLIENT_ID: auth-code-client

@@ -1,3 +1,6 @@
+import {
+  AUTH_URI, AUTH_CLIENT_ID,
+} from 'containers/constants';
 import ClientOAuth2 from 'client-oauth2';
 import { OAuthProviderClient, Token } from './oauth-provider';
 
@@ -67,9 +70,8 @@ export class HydraClient extends OAuthProviderClient {
 
   private makeClient(state: string, isSignup: boolean): ClientOAuth2 {
     return new ClientOAuth2({
-      // TODO(philkuz) pass the client id and uri from env variables.
-      clientId: 'auth-code-client',
-      authorizationUri: `https://${window.location.host}/oauth/hydra/oauth2/auth`,
+      clientId: AUTH_CLIENT_ID,
+      authorizationUri: `https://${window.location.host}/${AUTH_URI}`,
       redirectUri: this.getRedirectURL(isSignup),
       scopes: ['vizier'],
       state,
