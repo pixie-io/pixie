@@ -19,7 +19,7 @@ import (
 var (
 	// MetadataRequestSubscribeTopic is the channel which the listener is subscribed to for metadata requests.
 	MetadataRequestSubscribeTopic = messagebus.C2VTopic("MetadataRequest")
-	// metadataResponseTopic is the channel which the listener uses to responsd to metadata requests.
+	// metadataResponseTopic is the channel which the listener uses to responds to metadata requests.
 	metadataResponseTopic = "MetadataResponse"
 	// MissingMetadataRequestTopic is the channel which the listener should listen to missing metadata update requests on.
 	MissingMetadataRequestTopic = "MissingMetadataRequests"

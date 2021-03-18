@@ -857,7 +857,7 @@ func (s *Server) HandleSSLRequest(v2cMsg *cvmsgspb.V2CMessage) {
 		return
 	}
 
-	// TOOD(michelle): fix
+	// TODO(michelle): fix
 	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
 		fmt.Sprintf("bearer %s", serviceAuthToken))
 

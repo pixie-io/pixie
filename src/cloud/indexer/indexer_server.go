@@ -136,7 +136,7 @@ func main() {
 	es := mustConnectElastic()
 	err = md.InitializeMapping(es)
 	if err != nil {
-		log.WithError(err).Fatal("Could not intialize elastic mapping")
+		log.WithError(err).Fatal("Could not initialize elastic mapping")
 	}
 
 	vzmgrClient, err := newVZMgrClient()

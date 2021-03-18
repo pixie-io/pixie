@@ -95,7 +95,7 @@ func (m *MutationExecutor) Execute(ctx context.Context, req *public_vizierapipb.
 	configmapReqs := make([]*metadatapb.UpdateConfigRequest, 0)
 
 	outputTablesMap := make(map[string]bool, 0)
-	// TODO(zasgar): We should make sure that we don't simultaneosly add nd delete the tracepoint.
+	// TODO(zasgar): We should make sure that we don't simultaneously add and delete the tracepoint.
 	// While this will probably work, we should restrict this because it's likely not the intended behavior.
 	for _, mut := range mutations.Mutations {
 		switch mut := mut.Mutation.(type) {

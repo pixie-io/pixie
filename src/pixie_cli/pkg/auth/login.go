@@ -262,7 +262,7 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 
 		fmt.Fprintf(w, "OK")
 
-		// Sucessful auth.
+		// Successful auth.
 		results <- result{refreshToken, nil}
 		close(results)
 	})

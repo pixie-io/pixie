@@ -39,7 +39,7 @@ func (s *SerialTaskRunner) RunAndMonitor() error {
 	return nil
 }
 
-// ParallelTaskRunner runs tasks in paralell and displays them in a table.
+// ParallelTaskRunner runs tasks in parallel and displays them in a table.
 type ParallelTaskRunner struct {
 	tasks []Task
 }

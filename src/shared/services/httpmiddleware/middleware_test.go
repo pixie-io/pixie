@@ -24,7 +24,7 @@ func TestWithBearerAuthMiddleware(t *testing.T) {
 		Path          string
 
 		ExpectAuthSuccess bool
-		// Only valid if auth is sucessful.
+		// Only valid if auth is successful.
 		ExpectHandlerAuthError bool
 		ExpectHandlerUserID    string
 	}{

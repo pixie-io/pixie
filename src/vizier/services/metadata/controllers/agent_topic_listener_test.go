@@ -54,7 +54,7 @@ func setup(t *testing.T, sendMsgFn controllers.SendMessageFn) (*controllers.Agen
 
 	agentInfo := new(agentpb.Agent)
 	if err := proto.UnmarshalText(testutils.UnhealthyKelvinAgentInfo, agentInfo); err != nil {
-		t.Fatalf("Cannot Unmarshal protobuf for unhelathy kelvin agent")
+		t.Fatalf("Cannot Unmarshal protobuf for unhealthy kelvin agent")
 	}
 
 	// Load some existing agents.

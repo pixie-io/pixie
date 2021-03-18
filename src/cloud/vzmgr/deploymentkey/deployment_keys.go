@@ -108,7 +108,7 @@ func (s *Service) List(ctx context.Context, req *vzmgrpb.ListDeploymentKeyReques
 	}, nil
 }
 
-// Get returns a specfic key if it's owned by the org.
+// Get returns a specific key if it's owned by the org.
 func (s *Service) Get(ctx context.Context, req *vzmgrpb.GetDeploymentKeyRequest) (*vzmgrpb.GetDeploymentKeyResponse, error) {
 	sCtx, err := authcontext.FromContext(ctx)
 	if err != nil {

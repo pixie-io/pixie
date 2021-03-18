@@ -13,7 +13,7 @@ import (
 // an elastic index lifecycle management policy (ILMPolicy).
 //
 // In elastic, indices can be in 1 of 4 phases (hot, warm, cold, delete). The ILMPolicy specifies actions for each
-// phase, and transistion conditions for going between the phases. Currently, the main use of the ManagedIndex is
+// phase, and transition conditions for going between the phases. Currently, the main use of the ManagedIndex is
 // to specify transistioning from the hot phase to the delete phase after the index has reached a certain disk size.
 // This is achieved using the "rollover" action  on the hot phase, which transistions an index into the next phase
 // after the conditions have been met.

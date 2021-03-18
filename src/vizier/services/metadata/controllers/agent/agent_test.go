@@ -301,7 +301,7 @@ func TestGetActiveAgents(t *testing.T) {
 
 	agentInfo = new(agentpb.Agent)
 	if err = proto.UnmarshalText(testutils.UnhealthyKelvinAgentInfo, agentInfo); err != nil {
-		t.Fatalf("Cannot Unmarshal protobuf for unhelathy kelvin agent")
+		t.Fatalf("Cannot Unmarshal protobuf for unhealthy kelvin agent")
 	}
 	assert.Contains(t, agents, agentInfo)
 }

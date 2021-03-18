@@ -12,7 +12,7 @@ import (
 
 const (
 	defragBytes     = 50000000      // Begin defragging @ 500MB.
-	defragFrequency = 1 * time.Hour // The minimum amount of times we should have inbetween defrags.
+	defragFrequency = 1 * time.Hour // The minimum amount of times we should have between defrags.
 )
 
 // EtcdManager manages state for the given etcd instance.

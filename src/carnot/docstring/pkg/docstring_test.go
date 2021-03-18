@@ -13,7 +13,7 @@ import (
 // Valid doc strings
 const dataFrameDoc = `DataFrame represents processed data in Pxl
 
-DataFrame is the primary data strucutre in Pxl. It exposes data transformation operations through its API.
+DataFrame is the primary data structure in Pxl. It exposes data transformation operations through its API.
 Examples:
 	# Create a dataframe object
 	df = px.DataFrame('http_events', start_time='-5m')
@@ -34,7 +34,7 @@ Returns:
 // Valid doc strings
 const twoSpaceDataFrameDoc = `DataFrame represents processed data in Pxl
 
-DataFrame is the primary data strucutre in Pxl. It exposes data transformation operations through its API.
+DataFrame is the primary data structure in Pxl. It exposes data transformation operations through its API.
 Examples:
   # Create a dataframe object
   df = px.DataFrame('http_events', start_time='-5m')
@@ -55,7 +55,7 @@ Returns:
 
 const fourSpaceDataFrameDoc = `DataFrame represents processed data in Pxl
 
-DataFrame is the primary data strucutre in Pxl. It exposes data transformation operations through its API.
+DataFrame is the primary data structure in Pxl. It exposes data transformation operations through its API.
 Examples:
     # Create a dataframe object
     df = px.DataFrame('http_events', start_time='-5m')
@@ -76,7 +76,7 @@ Returns:
 
 const mismatchTabsDataFrameDoc = `DataFrame represents processed data in Pxl
 
-DataFrame is the primary data strucutre in Pxl. It exposes data transformation operations through its API.
+DataFrame is the primary data structure in Pxl. It exposes data transformation operations through its API.
 Examples:
 		# Create a dataframe object
     df = px.DataFrame('http_events', start_time='-5m')
@@ -173,7 +173,7 @@ long desc
 
 Args:
 	arg (str): first line of description should be like this
-	Second description line should be indented, they are nto.
+	Second description line should be indented, they are not.
 `
 
 const docWithErroneousExtra = `short desc

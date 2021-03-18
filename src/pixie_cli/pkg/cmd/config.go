@@ -28,7 +28,7 @@ func init() {
 	ConfigCmd.AddCommand(UpdateConfigCmd)
 }
 
-// ConfigCmd is the "config" command for geting/updating the cluster config.
+// ConfigCmd is the "config" command for getting/updating the cluster config.
 var ConfigCmd = &cobra.Command{
 	Use:   "config",
 	Short: "Get/update the current cluster config",

@@ -78,7 +78,7 @@ func fakeLoad(w *http.ResponseWriter, latency float64, mIters, respSize int64) f
 
 func main() {
 	count := 0
-	// Returns a reponse for /ping. Responses with 200 (pong) 70% of the tim.
+	// Returns a response for /ping. Responses with 200 (pong) 70% of the tim.
 	// Status 500 5% and status 401 25% of the time.
 	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
 		count++

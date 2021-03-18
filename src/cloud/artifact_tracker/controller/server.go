@@ -25,7 +25,7 @@ import (
 // URLSigner is the function used to sign urls.
 var URLSigner = storage.SignedURL
 
-// Server is the controller for the atrifact tracker service.
+// Server is the controller for the artifact tracker service.
 type Server struct {
 	db             *sqlx.DB
 	sc             stiface.Client
