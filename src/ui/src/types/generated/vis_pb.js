@@ -5779,7 +5779,11 @@ proto.pl.vispb.StackTraceFlameGraph.toObject = function(includeInstance, msg) {
   var f, obj = {
     stacktraceColumn: jspb.Message.getFieldWithDefault(msg, 1, ""),
     countColumn: jspb.Message.getFieldWithDefault(msg, 2, ""),
-    percentageColumn: jspb.Message.getFieldWithDefault(msg, 3, "")
+    percentageColumn: jspb.Message.getFieldWithDefault(msg, 3, ""),
+    namespaceColumn: jspb.Message.getFieldWithDefault(msg, 4, ""),
+    podColumn: jspb.Message.getFieldWithDefault(msg, 5, ""),
+    containerColumn: jspb.Message.getFieldWithDefault(msg, 6, ""),
+    pidColumn: jspb.Message.getFieldWithDefault(msg, 7, "")
   };
 
   if (includeInstance) {
@@ -5828,6 +5832,22 @@ proto.pl.vispb.StackTraceFlameGraph.deserializeBinaryFromReader = function(msg, 
       var value = /** @type {string} */ (reader.readString());
       msg.setPercentageColumn(value);
       break;
+    case 4:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setNamespaceColumn(value);
+      break;
+    case 5:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setPodColumn(value);
+      break;
+    case 6:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setContainerColumn(value);
+      break;
+    case 7:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setPidColumn(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -5875,6 +5895,34 @@ proto.pl.vispb.StackTraceFlameGraph.serializeBinaryToWriter = function(message, 
   if (f.length > 0) {
     writer.writeString(
       3,
+      f
+    );
+  }
+  f = message.getNamespaceColumn();
+  if (f.length > 0) {
+    writer.writeString(
+      4,
+      f
+    );
+  }
+  f = message.getPodColumn();
+  if (f.length > 0) {
+    writer.writeString(
+      5,
+      f
+    );
+  }
+  f = message.getContainerColumn();
+  if (f.length > 0) {
+    writer.writeString(
+      6,
+      f
+    );
+  }
+  f = message.getPidColumn();
+  if (f.length > 0) {
+    writer.writeString(
+      7,
       f
     );
   }
@@ -5932,6 +5980,78 @@ proto.pl.vispb.StackTraceFlameGraph.prototype.getPercentageColumn = function() {
  */
 proto.pl.vispb.StackTraceFlameGraph.prototype.setPercentageColumn = function(value) {
   return jspb.Message.setProto3StringField(this, 3, value);
+};
+
+
+/**
+ * optional string namespace_column = 4;
+ * @return {string}
+ */
+proto.pl.vispb.StackTraceFlameGraph.prototype.getNamespaceColumn = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 4, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.pl.vispb.StackTraceFlameGraph} returns this
+ */
+proto.pl.vispb.StackTraceFlameGraph.prototype.setNamespaceColumn = function(value) {
+  return jspb.Message.setProto3StringField(this, 4, value);
+};
+
+
+/**
+ * optional string pod_column = 5;
+ * @return {string}
+ */
+proto.pl.vispb.StackTraceFlameGraph.prototype.getPodColumn = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 5, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.pl.vispb.StackTraceFlameGraph} returns this
+ */
+proto.pl.vispb.StackTraceFlameGraph.prototype.setPodColumn = function(value) {
+  return jspb.Message.setProto3StringField(this, 5, value);
+};
+
+
+/**
+ * optional string container_column = 6;
+ * @return {string}
+ */
+proto.pl.vispb.StackTraceFlameGraph.prototype.getContainerColumn = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 6, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.pl.vispb.StackTraceFlameGraph} returns this
+ */
+proto.pl.vispb.StackTraceFlameGraph.prototype.setContainerColumn = function(value) {
+  return jspb.Message.setProto3StringField(this, 6, value);
+};
+
+
+/**
+ * optional string pid_column = 7;
+ * @return {string}
+ */
+proto.pl.vispb.StackTraceFlameGraph.prototype.getPidColumn = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 7, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.pl.vispb.StackTraceFlameGraph} returns this
+ */
+proto.pl.vispb.StackTraceFlameGraph.prototype.setPidColumn = function(value) {
+  return jspb.Message.setProto3StringField(this, 7, value);
 };
 
 

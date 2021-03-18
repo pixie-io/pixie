@@ -385,4 +385,12 @@ message StackTraceFlameGraph {
   string count_column = 2;
   // The column containing the percentage associated with the stacktrace.
   string percentage_column = 3;
+  // The column containing the stacktrace's namespace.
+  string namespace_column = 4;
+  // The column containing the stacktrace's pod.
+  string pod_column = 5;
+  // The column containing the stacktrace's container.
+  string container_column = 6;
+  // The column containing the stacktrace's pid.
+  string pid_column = 7;
 }
