@@ -21,12 +21,6 @@ pl_cc_library(
 )
 
 pl_cc_test(
-    name = "symbolizer_test",
-    srcs = ["symbolizer_test.cc"],
-    deps = [":cc_library"],
-)
-
-pl_cc_test(
     name = "perf_profiler_test",
     timeout = "moderate",
     srcs = ["perf_profiler_test.cc"],

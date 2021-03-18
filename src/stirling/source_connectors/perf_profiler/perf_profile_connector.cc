@@ -7,7 +7,6 @@
 
 #include "src/stirling/bpf_tools/macros.h"
 #include "src/stirling/source_connectors/perf_profiler/perf_profile_connector.h"
-#include "src/stirling/source_connectors/perf_profiler/symbolizer.h"
 
 BPF_SRC_STRVIEW(profiler_bcc_script, profiler);
 
@@ -16,8 +15,11 @@ DEFINE_bool(stirling_profiler_test_mode, false, "Make stack traces more predicta
 namespace pl {
 namespace stirling {
 
+// BCC's symbol resolver assumes the kernel PID is -1.
+constexpr int kKernelPID = -1;
+
 PerfProfileConnector::PerfProfileConnector(std::string_view source_name)
-    : SourceConnector(source_name, kTables) {}
+    : SourceConnector(source_name, kTables), kernel_symbol_cache_(kKernelPID) {}
 
 Status PerfProfileConnector::InitImpl() {
   const size_t ncpus = get_nprocs_conf();
@@ -52,30 +54,44 @@ Status PerfProfileConnector::StopImpl() {
   return Status::OK();
 }
 
-namespace {
-std::string FoldedStackTraceString(std::string_view name, ebpf::BPFStackTable* stack_traces,
-                                   const stack_trace_key_t& key) {
+std::string PerfProfileConnector::FoldedStackTraceString(std::string_view name,
+                                                         ebpf::BPFStackTable* stack_traces,
+                                                         const stack_trace_key_t& key) {
   constexpr std::string_view kKSymSuffix = "_[k]";
+  constexpr std::string_view kSeparator = ";";
 
+  SymbolCache& upid_symbol_cache =
+      upid_symbol_caches_.try_emplace(key.upid, key.upid.pid).first->second;
+
+  std::string stack_trace_str;
+  // TODO(oazizi): Add a stack_trace_str.reserve() heuristic.
+
+  // Add top-level binary name.
+  stack_trace_str += name;
+  stack_trace_str += kSeparator;
+
+  // Add user stack.
   auto user_addrs = stack_traces->get_stack_addr(key.user_stack_id);
+  for (auto iter = user_addrs.rbegin(); iter != user_addrs.rend(); ++iter) {
+    const auto& addr = *iter;
+    stack_trace_str += upid_symbol_cache.LookupSym(stack_traces, addr);
+    stack_trace_str += kSeparator;
+  }
+
+  // Add kernel stack.
   auto kernel_addrs = stack_traces->get_stack_addr(key.kernel_stack_id);
-
-  std::vector<std::string> symbols;
-  symbols.reserve(user_addrs.size() + kernel_addrs.size());
-
-  for (const auto& addr : user_addrs) {
-    symbols.push_back(stack_traces->get_addr_symbol(addr, key.upid.pid));
+  for (auto iter = kernel_addrs.rbegin(); iter != kernel_addrs.rend(); ++iter) {
+    const auto& addr = *iter;
+    stack_trace_str += kernel_symbol_cache_.LookupSym(stack_traces, addr);
+    stack_trace_str += kKSymSuffix;
+    stack_trace_str += kSeparator;
   }
 
-  for (const auto& addr : kernel_addrs) {
-    symbols.push_back(stack_traces->get_addr_symbol(addr, -1).append(kKSymSuffix));
-  }
+  // Remove trailing separator.
+  stack_trace_str.pop_back();
 
-  // TODO(oazizi): stack_traces::FoldedStackTraceString has become very thin.
-  //               Consider collapsing into here, or pushing more logic into there.
-  return stack_traces::FoldedStackTraceString(name, symbols);
+  return stack_trace_str;
 }
-}  // namespace
 
 void PerfProfileConnector::ProcessBPFStackTraces(ConnectorContext* ctx, DataTable* data_table) {
   auto& histo = read_and_clear_count_ % 2 == 0 ? histogram_a_ : histogram_b_;

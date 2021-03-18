@@ -11,6 +11,7 @@
 #include "src/stirling/core/types.h"
 #include "src/stirling/source_connectors/perf_profiler/bcc_bpf_intf/stack_event.h"
 #include "src/stirling/source_connectors/perf_profiler/stack_traces_table.h"
+#include "src/stirling/source_connectors/perf_profiler/symbol_cache.h"
 
 DECLARE_bool(stirling_profiler_test_mode);
 
@@ -61,6 +62,11 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
     }
   };
 
+  // StackTraceHisto: SymbolicStackTrace => observation-count
+  // StackTraceIDMap: SymbolicStackTrace => stack-trace-id
+  using StackTraceHisto = absl::flat_hash_map<SymbolicStackTrace, uint64_t>;
+  using StackTraceIDMap = absl::flat_hash_map<SymbolicStackTrace, uint64_t>;
+
   void ProcessBPFStackTraces(ConnectorContext* ctx, DataTable* data_table);
 
   // Read BPF data structures, build & incorporate records to the table.
@@ -68,16 +74,14 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
                      ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo, ConnectorContext* ctx,
                      DataTable* data_table);
 
-  // StackTraceHisto: SymbolicStackTrace => observation-count
-  // StackTraceIDMap: SymbolicStackTrace => stack-trace-id
-  using StackTraceHisto = absl::flat_hash_map<SymbolicStackTrace, uint64_t>;
-  using StackTraceIDMap = absl::flat_hash_map<SymbolicStackTrace, uint64_t>;
-
   uint64_t SymbolicStackTradeID(const SymbolicStackTrace& symbolic_stack_trace);
 
   StackTraceHisto AggregateStackTraces(ebpf::BPFStackTable* stack_traces,
                                        ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo,
                                        ConnectorContext* ctx);
+
+  std::string FoldedStackTraceString(std::string_view name, ebpf::BPFStackTable* stack_traces,
+                                     const stack_trace_key_t& key);
 
   explicit PerfProfileConnector(std::string_view source_name);
 
@@ -97,6 +101,10 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   // Tracks unique stack trace ids, for the lifetime of Stirling:
   StackTraceIDMap stack_trace_ids_;
+
+  // Cache of symbols.
+  absl::flat_hash_map<struct upid_t, SymbolCache, UPIDHashFn> upid_symbol_caches_;
+  SymbolCache kernel_symbol_cache_;
 
   // kSamplingPeriodMillis: the time interval in between stack trace samples.
   // kTargetPushPeriodMillis: time interval between "push events".
