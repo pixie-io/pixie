@@ -1,5 +1,5 @@
 import ClientContext from 'common/vizier-grpc-client-context';
-import { PlayIcon, StopIcon } from '@pixie/components';
+import { PlayIcon, StopIcon } from '@pixie-labs/components';
 import * as React from 'react';
 
 import Tooltip from '@material-ui/core/Tooltip';

@@ -1,7 +1,7 @@
 import { shallow } from 'enzyme';
 import * as React from 'react';
 
-import { VizierQueryError } from '@pixie/api';
+import { VizierQueryError } from '@pixie-labs/api';
 import { VizierErrorDetails } from './errors';
 
 describe('<VizierErrorDetails/> test', () => {

@@ -111,7 +111,7 @@ def _pl_storybook_binary_impl(ctx):
     cmd = ui_shared_cmds_start + [
         "export OUTPUT_PATH=" + ctx.outputs.out.path,
         "tar -zxf ${BASE_PATH}/" + ctx.file.deps.path,
-        "yarn workspace @pixie/components storybook_static",
+        "yarn workspace @pixie-labs/components storybook_static",
         # Write the outputs to the correct location so Bazel can find them.
         "pushd packages/pixie-components",
         "tar -czf ${BASE_PATH}/${OUTPUT_PATH} storybook_static",

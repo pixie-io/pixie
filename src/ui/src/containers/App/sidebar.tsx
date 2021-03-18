@@ -26,7 +26,7 @@ import {
   ClusterIcon, CodeIcon, DocsIcon,
   LogoutIcon, NamespaceIcon, SettingsIcon,
   PixieLogo,
-} from '@pixie/components';
+} from '@pixie-labs/components';
 import { toEntityPathname, LiveViewPage } from 'containers/live-widgets/utils/live-view-params';
 import {
   DOMAIN_NAME, ANNOUNCEMENT_ENABLED,
@@ -36,7 +36,7 @@ import { LiveShortcutsContext } from 'containers/live/shortcuts';
 import { SidebarContext } from 'context/sidebar-context';
 import { LiveTourContext, LiveTourDialog } from 'containers/App/live-tour';
 import ExploreIcon from '@material-ui/icons/Explore';
-import { useSetting, useUserInfo } from '@pixie/api-react';
+import { useSetting, useUserInfo } from '@pixie-labs/api-react';
 import { LayoutContext } from 'context/layout-context';
 import { Button } from '@material-ui/core';
 

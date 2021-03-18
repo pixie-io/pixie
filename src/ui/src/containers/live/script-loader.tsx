@@ -1,7 +1,7 @@
 import { SCRATCH_SCRIPT, ScriptsContext } from 'containers/App/scripts-context';
 import * as React from 'react';
 import urlParams from 'utils/url-params';
-import { containsMutation } from '@pixie/api';
+import { containsMutation } from '@pixie-labs/api';
 
 import { ScriptContext } from 'context/script-context';
 import { ResultsContext } from 'context/results-context';

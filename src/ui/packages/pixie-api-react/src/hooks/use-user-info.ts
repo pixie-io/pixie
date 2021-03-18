@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client/react';
-import { USER_QUERIES, GQLUserInfo } from '@pixie/api';
+import { USER_QUERIES, GQLUserInfo } from '@pixie-labs/api';
 import { ImmutablePixieQueryResult } from '../utils/types';
 
 export function useUserInfo(): ImmutablePixieQueryResult<GQLUserInfo> {

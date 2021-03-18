@@ -5,8 +5,8 @@ export {
 export { PixieAPIClientOptions } from './types/client-options';
 
 /**
- * NOTE: Unless you are authoring a framework-specific library (such as @pixie/api-react), these should be ignored.
- * They are an implementation detail from the consumer's view, but they are exposed for libraries like @pixie/api-react.
+ * NOTE: Unless you are authoring a framework-specific library (such as @pixie-labs/api-react), these should be ignored.
+ * They're an implementation detail from the consumer's view, but are exposed for libraries like @pixie-labs/api-react.
  */
 export {
   USER_QUERIES,
@@ -37,7 +37,7 @@ export {
   VizierQueryResult,
 } from './vizier-grpc-client';
 
-// TODO(nick): Create @pixie/api-react/testing as its own package by doing the same trick that Apollo does.
+// TODO(nick): Create @pixie-labs/api-react/testing as its own package by doing the same trick that Apollo does.
 export * from './testing';
 
 /* Generated types begin (types are generated but these exports are manually updated) */

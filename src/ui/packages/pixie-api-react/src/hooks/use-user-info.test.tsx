@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { USER_QUERIES } from '@pixie/api';
+import { USER_QUERIES } from '@pixie-labs/api';
 import { MockedProvider } from '@apollo/client/testing';
 import { act, render, RenderResult } from '@testing-library/react';
 import { ApolloError } from '@apollo/client';

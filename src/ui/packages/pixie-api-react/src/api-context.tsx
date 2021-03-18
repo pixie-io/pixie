@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { ApolloProvider } from '@apollo/client/react';
-import { PixieAPIClientAbstract, PixieAPIClient, PixieAPIClientOptions } from '@pixie/api';
+import { PixieAPIClientAbstract, PixieAPIClient, PixieAPIClientOptions } from '@pixie-labs/api';
 
 export const PixieAPIContext = React.createContext<PixieAPIClientAbstract>(null);
 

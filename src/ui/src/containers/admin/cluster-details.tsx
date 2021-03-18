@@ -1,7 +1,7 @@
 import * as React from 'react';
 
 import ClientContext, { VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
-import { Breadcrumbs, StatusCell, StatusGroup } from '@pixie/components';
+import { Breadcrumbs, StatusCell, StatusGroup } from '@pixie-labs/components';
 import { distanceInWords } from 'date-fns';
 import { useHistory, useParams } from 'react-router';
 import { Link } from 'react-router-dom';
@@ -19,8 +19,8 @@ import TableRow from '@material-ui/core/TableRow';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 
-import { ExecutionStateUpdate, GQLClusterStatus as ClusterStatus, GQLPodStatus as PodStatus } from '@pixie/api';
-import { useListClusters, useClusterControlPlanePods } from '@pixie/api-react';
+import { ExecutionStateUpdate, GQLClusterStatus as ClusterStatus, GQLPodStatus as PodStatus } from '@pixie-labs/api';
+import { useListClusters, useClusterControlPlanePods } from '@pixie-labs/api-react';
 import { BehaviorSubject } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
 import {

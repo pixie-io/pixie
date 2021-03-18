@@ -1,4 +1,4 @@
-import { GQLClusterStatus as ClusterStatus, GQLClusterInfo as Cluster } from '@pixie/api';
+import { GQLClusterStatus as ClusterStatus, GQLClusterInfo as Cluster } from '@pixie-labs/api';
 
 // Selects based on cluster status and tiebreaks by cluster name.
 export function selectCluster(clusters: Cluster[]): Cluster {

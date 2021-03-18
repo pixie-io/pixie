@@ -14,8 +14,8 @@ import { DeploymentKeysTable } from 'containers/admin/deployment-keys';
 import { APIKeysTable } from 'containers/admin/api-keys';
 import { ClustersTable } from 'containers/admin/clusters-list';
 import { StyledTab, StyledTabs } from 'containers/admin/utils';
-import { scrollbarStyles } from '@pixie/components';
-import { useAPIKeys, useDeploymentKeys } from '@pixie/api-react';
+import { scrollbarStyles } from '@pixie-labs/components';
+import { useAPIKeys, useDeploymentKeys } from '@pixie-labs/api-react';
 
 export const AdminOverview = withStyles((theme: Theme) => createStyles({
   createButton: {

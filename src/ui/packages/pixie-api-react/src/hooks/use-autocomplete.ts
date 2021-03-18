@@ -2,7 +2,7 @@ import * as React from 'react';
 import {
   AUTOCOMPLETE_QUERIES,
   GQLAutocompleteActionType, GQLAutocompleteResult,
-} from '@pixie/api';
+} from '@pixie-labs/api';
 import { useApolloClient } from '@apollo/client';
 
 export type AutocompleteSuggester = (

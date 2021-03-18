@@ -1,5 +1,5 @@
 import { useQuery } from '@apollo/client/react';
-import { CLUSTER_QUERIES, GQLClusterInfo } from '@pixie/api';
+import { CLUSTER_QUERIES, GQLClusterInfo } from '@pixie-labs/api';
 // noinspection ES6PreferShortImport
 import { ImmutablePixieQueryResult } from '../utils/types';
 

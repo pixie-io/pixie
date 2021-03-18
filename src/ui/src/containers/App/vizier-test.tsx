@@ -1,4 +1,4 @@
-import { GQLClusterInfo as Cluster, GQLClusterStatus as ClusterStatus } from '@pixie/api';
+import { GQLClusterInfo as Cluster, GQLClusterStatus as ClusterStatus } from '@pixie-labs/api';
 import { selectCluster } from './cluster-info';
 
 describe('selectCluster', () => {

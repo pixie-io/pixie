@@ -164,7 +164,7 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
   }
 
   /**
-   * Implementation detail for adapters like @pixie/api-react.
+   * Implementation detail for adapters like @pixie-labs/api-react.
    * Do not use directly unless writing such an adapter.
    *
    * Provides the internal CloudClient, which has a graphQL property.

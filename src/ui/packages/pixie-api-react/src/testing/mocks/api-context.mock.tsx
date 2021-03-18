@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { MockPixieAPIClient } from '@pixie/api';
+import { MockPixieAPIClient } from '@pixie-labs/api';
 import { PixieAPIContext, PixieAPIContextProviderProps } from 'api-context';
 import { MockedProvider, MockedResponse } from '@apollo/client/testing';
 

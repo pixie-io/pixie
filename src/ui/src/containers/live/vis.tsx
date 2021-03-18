@@ -1,6 +1,6 @@
 import {
   VizierQueryError, VizierQueryArg, VizierQueryFunc, GRPCStatusCode,
-} from '@pixie/api';
+} from '@pixie-labs/api';
 import { ArgTypeMap, getArgTypesForVis } from 'utils/args-utils';
 
 import { Status } from 'types/generated/vizierapi_pb';

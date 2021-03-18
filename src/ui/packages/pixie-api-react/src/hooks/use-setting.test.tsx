@@ -2,7 +2,7 @@ import * as React from 'react';
 import { MockedProvider } from '@apollo/client/testing';
 import { act, render, RenderResult } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { USER_QUERIES, DEFAULT_USER_SETTINGS } from '@pixie/api';
+import { USER_QUERIES, DEFAULT_USER_SETTINGS } from '@pixie-labs/api';
 import { useSetting } from './use-setting';
 import { wait } from '../testing/utils';
 

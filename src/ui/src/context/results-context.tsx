@@ -1,4 +1,4 @@
-import { VizierTable as Table } from '@pixie/api';
+import { VizierTable as Table } from '@pixie-labs/api';
 import * as React from 'react';
 import { QueryExecutionStats, MutationInfo } from 'types/generated/vizierapi_pb';
 

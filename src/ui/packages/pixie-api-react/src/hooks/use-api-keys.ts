@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
-import { API_KEY_QUERIES, GQLAPIKey } from '@pixie/api';
+import { API_KEY_QUERIES, GQLAPIKey } from '@pixie-labs/api';
 // noinspection ES6PreferShortImport
 import { ImmutablePixieQueryResult } from '../utils/types';
 

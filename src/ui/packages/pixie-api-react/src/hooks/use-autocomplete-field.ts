@@ -2,7 +2,7 @@ import {
   AUTOCOMPLETE_QUERIES,
   GQLAutocompleteEntityKind,
   GQLAutocompleteSuggestion,
-} from '@pixie/api';
+} from '@pixie-labs/api';
 import { useApolloClient } from '@apollo/client';
 import * as React from 'react';
 

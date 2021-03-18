@@ -1,5 +1,5 @@
 {
-  "name": "@pixie/api",
+  "name": "@pixie-labs/api",
   "version": "1.0.0",
   "description": "A library to access Pixie's API in TypeScript (https://pixielabs.ai)",
   "author": "Pixie Labs",

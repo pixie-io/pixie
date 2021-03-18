@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { PropsWithChildren } from 'react';
 import { Theme, ThemeProvider } from '@material-ui/core/styles';
-import { DARK_THEME } from '@pixie/components';
+import { DARK_THEME } from '@pixie-labs/components';
 import { LayoutContext, LayoutContextProps } from 'context/layout-context';
 import { LiveTourContext, LiveTourContextProps } from 'containers/App/live-tour';
 import { ResultsContext, ResultsContextProps } from 'context/results-context';
@@ -10,8 +10,8 @@ import { ScriptsContext, ScriptsContextProps } from 'containers/App/scripts-cont
 import { LiveViewPage } from 'containers/live-widgets/utils/live-view-params';
 import { ClusterContext, ClusterContextProps } from 'common/cluster-context';
 import VizierGRPCClientContext, { VizierGRPCClientContextProps } from 'common/vizier-grpc-client-context';
-import { GQLClusterStatus as ClusterStatus } from '@pixie/api';
-import { MockPixieAPIContextProvider } from '@pixie/api-react';
+import { GQLClusterStatus as ClusterStatus } from '@pixie-labs/api';
+import { MockPixieAPIContextProvider } from '@pixie-labs/api-react';
 
 interface MockProps {
   theme?: Theme;

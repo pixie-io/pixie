@@ -1,7 +1,7 @@
 // STATUS_TYPES contains types that should be displayed as a status indicator.
 import * as React from 'react';
 import Tooltip from '@material-ui/core/Tooltip';
-import { StatusCell, StatusGroup } from '@pixie/components';
+import { StatusCell, StatusGroup } from '@pixie-labs/components';
 import { SemanticType } from 'types/generated/vizierapi_pb';
 
 export const STATUS_TYPES = new Set<SemanticType>([

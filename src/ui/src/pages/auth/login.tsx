@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { AuthBox } from '@pixie/components';
+import { AuthBox } from '@pixie-labs/components';
 import { BasePage } from './base';
 import { OAuthLoginRequest } from './utils';
 

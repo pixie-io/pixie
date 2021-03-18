@@ -8,7 +8,7 @@ import {
   createStyles, Theme, withStyles, WithStyles,
 } from '@material-ui/core/styles';
 import { MutationInfo, LifeCycleState } from 'types/generated/vizierapi_pb';
-import { StatusCell } from '@pixie/components';
+import { StatusCell } from '@pixie-labs/components';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';

@@ -1,5 +1,5 @@
 {
-  "name": "@pixie/api-react",
+  "name": "@pixie-labs/api-react",
   "version": "1.0.0",
   "description": "React hooks for Pixie's API",
   "author": "Pixie Labs",
@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "@apollo/client": "^3.3.7",
-    "@pixie/api": "1.0.0",
+    "@pixie-labs/api": "1.0.0",
     "@rollup/plugin-babel": "^5.2.1",
     "@rollup/plugin-commonjs": "^16.0.0",
     "@rollup/plugin-node-resolve": "^10.0.0",

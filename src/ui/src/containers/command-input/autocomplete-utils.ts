@@ -1,5 +1,5 @@
-import { StatusGroup } from '@pixie/components';
-import { GQLAutocompleteEntityKind } from '@pixie/api';
+import { StatusGroup } from '@pixie-labs/components';
+import { GQLAutocompleteEntityKind } from '@pixie-labs/api';
 
 export type EntityType = 'AEK_UNKNOWN' | 'AEK_POD' | 'AEK_SVC' | 'AEK_SCRIPT' | 'AEK_NAMESPACE';
 

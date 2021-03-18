@@ -1,5 +1,5 @@
-import { GQLClusterStatus as ClusterStatus } from '@pixie/api';
-import { scrollbarStyles, EditIcon } from '@pixie/components';
+import { GQLClusterStatus as ClusterStatus } from '@pixie-labs/api';
+import { scrollbarStyles, EditIcon } from '@pixie-labs/components';
 import VizierGRPCClientContext from 'common/vizier-grpc-client-context';
 import { ClusterContext } from 'common/cluster-context';
 import MoveIcon from '@material-ui/icons/OpenWith';

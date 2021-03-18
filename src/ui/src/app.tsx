@@ -1,6 +1,6 @@
 import './wdyr';
 
-import { DARK_THEME, SnackbarProvider, VersionInfo } from '@pixie/components';
+import { DARK_THEME, SnackbarProvider, VersionInfo } from '@pixie-labs/components';
 import Vizier from 'containers/App/vizier';
 import PixieCookieBanner from 'common/cookie-banner';
 import { LD_CLIENT_ID } from 'containers/constants';
@@ -21,7 +21,7 @@ import { withLDProvider } from 'launchdarkly-react-client-sdk';
 import { AuthRouter } from 'pages/auth/auth';
 import 'typeface-roboto';
 import 'typeface-roboto-mono';
-import { PixieAPIContextProvider, useIsAuthenticated } from '@pixie/api-react';
+import { PixieAPIContextProvider, useIsAuthenticated } from '@pixie-labs/api-react';
 
 const RedirectWithArgs = (props) => {
   const {

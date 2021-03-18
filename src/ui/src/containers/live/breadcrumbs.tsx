@@ -3,13 +3,13 @@ import * as React from 'react';
 import {
   createStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
-import { GQLClusterStatus as ClusterStatus, containsMutation } from '@pixie/api';
-import { useListClusters, useAutocompleteFieldSuggester } from '@pixie/api-react';
+import { GQLClusterStatus as ClusterStatus, containsMutation } from '@pixie-labs/api';
+import { useListClusters, useAutocompleteFieldSuggester } from '@pixie-labs/api-react';
 
 import {
   Breadcrumbs, BreadcrumbOptions,
   PixieCommandIcon, StatusCell,
-} from '@pixie/components';
+} from '@pixie-labs/components';
 import { ClusterContext } from 'common/cluster-context';
 import {
   getArgTypesForVis, getArgVariableMap,

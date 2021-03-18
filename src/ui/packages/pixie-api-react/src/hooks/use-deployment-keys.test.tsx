@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { DEPLOYMENT_KEY_QUERIES } from '@pixie/api';
+import { DEPLOYMENT_KEY_QUERIES } from '@pixie-labs/api';
 import { ApolloError } from '@apollo/client';
 import { itPassesBasicHookTests, MOCKED_PROVIDER_DEFAULT_SETTINGS } from 'testing/hook-testing-boilerplate';
 import { act, render } from '@testing-library/react';

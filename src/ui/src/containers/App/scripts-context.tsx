@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { GetPxScripts, Script } from 'utils/script-bundle';
-import { useUserInfo } from '@pixie/api-react';
+import { useUserInfo } from '@pixie-labs/api-react';
 
 export interface ScriptsContextProps {
   scripts: Map<string, Script>;

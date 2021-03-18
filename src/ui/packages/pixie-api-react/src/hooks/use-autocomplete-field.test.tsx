@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { AUTOCOMPLETE_QUERIES, GQLAutocompleteEntityKind, GQLAutocompleteSuggestion } from '@pixie/api';
+import { AUTOCOMPLETE_QUERIES, GQLAutocompleteEntityKind, GQLAutocompleteSuggestion } from '@pixie-labs/api';
 import { ApolloError } from '@apollo/client';
 import { MockedProvider } from '@apollo/client/testing';
 import { render } from '@testing-library/react';

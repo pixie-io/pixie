@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { UserSettings, DEFAULT_USER_SETTINGS, USER_QUERIES } from '@pixie/api';
+import { UserSettings, DEFAULT_USER_SETTINGS, USER_QUERIES } from '@pixie-labs/api';
 import { useMutation, useQuery } from '@apollo/client/react';
 // noinspection ES6PreferShortImport
 import { MutablePixieQueryGuaranteedResult, SetStateFunc } from '../utils/types';
