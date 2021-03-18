@@ -10,11 +10,22 @@ Performance profile visualization for the PEM.
 import px
 
 
-def stacktraces(start_time: str):
+def stacktraces(start_time: str, node: str, namespace: str, pod: str):
     df = px.DataFrame(table='stack_traces.beta', start_time=start_time)
-    df = df.groupby(['upid', 'stack_trace_id']).agg(
-        count=('count', px.sum),
+
+    df.namespace = df.ctx['namespace']
+    df.pod = df.ctx['pod']
+    df.container = df.ctx['container']
+    df.cmdline = df.ctx['cmdline']
+    df.node = df.ctx['node']
+
+    df = df[px.contains(df.node, node)]
+    df = df[px.contains(df.pod, pod)]
+    df = df[px.contains(df.namespace, namespace)]
+
+    df = df.groupby(['namespace', 'pod', 'container', 'cmdline', 'stack_trace_id']).agg(
         stack_trace=('stack_trace', px.any),
+        count=('count', px.sum)
     )
-    df = df[px.contains(df.stack_trace, "PEM")]
+
     return df
