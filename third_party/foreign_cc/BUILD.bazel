@@ -110,7 +110,7 @@ cmake_external(
         "-lelf",
     ],
     make_commands = [
-        "make -j ${nproc} -C src/cc install",
+        "make -j $(nproc) -C src/cc install",
     ],
     static_libraries = [
         "libapi-static.a",
