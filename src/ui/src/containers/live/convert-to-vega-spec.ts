@@ -88,7 +88,11 @@ interface TimeseriesDisplay extends WidgetDisplay, DisplayWithLabels {
 interface StacktraceFlameGraphDisplay extends WidgetDisplay {
   readonly stacktraceColumn: string;
   readonly countColumn: string;
-  readonly percentageColumn: string;
+  readonly percentageColumn?: string;
+  readonly namespaceColumn?: string;
+  readonly podColumn?: string;
+  readonly containerColumn?: string;
+  readonly pidColumn?: string;
 }
 
 type PatchedMark = Mark & { propEventsToOverlapped?: boolean };
@@ -2009,7 +2013,24 @@ function convertToStacktraceFlameGraph(
     };
 
     for (const n of data) {
-      const splitStack = n[display.stacktraceColumn].split(';');
+      let scopedStacktrace = n[display.stacktraceColumn];
+      if (display.pidColumn) {
+        scopedStacktrace = `${n[display.pidColumn] || 'UNKNOWN'};${scopedStacktrace}`;
+      }
+
+      if (display.containerColumn) {
+        scopedStacktrace = `${n[display.containerColumn] || 'UNKNOWN'};${scopedStacktrace}`;
+      }
+
+      if (display.podColumn) {
+        scopedStacktrace = `${n[display.podColumn] || 'UNKNOWN'};${scopedStacktrace}`;
+      }
+
+      if (display.namespaceColumn) {
+        scopedStacktrace = `${n[display.namespaceColumn] || 'UNKNOWN'};${scopedStacktrace}`;
+      }
+
+      const splitStack = scopedStacktrace.split(';');
       let currPath = 'all';
       for (const [i, s] of splitStack.entries()) {
         const path = `${currPath};${s}`;
