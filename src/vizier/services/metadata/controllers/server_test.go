@@ -883,9 +883,18 @@ func TestGetAgentUpdates(t *testing.T) {
 	metadatapb.RegisterMetadataServiceServer(s, srv)
 	lis := bufconn.Listen(1024 * 1024)
 
+	errs := make(chan error, 1)
 	go func() {
 		if err := s.Serve(lis); err != nil {
-			t.Fatalf("Server exited with error: %v\n", err)
+			errs <- err
+		}
+		close(errs)
+	}()
+
+	defer func() {
+		s.GracefulStop()
+		for e := range errs {
+			t.Fatal(e)
 		}
 	}()
 
@@ -951,7 +960,7 @@ func TestGetAgentUpdates(t *testing.T) {
 		for {
 			select {
 			case <-timeout.C:
-				t.Fatal("timeout")
+				readErr = errors.New("timeout")
 			case err := <-errCh:
 				readErr = err
 				return
