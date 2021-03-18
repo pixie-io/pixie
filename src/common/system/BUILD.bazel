@@ -71,6 +71,7 @@ pl_cc_test(
     # TODO(oazizi/yzhao): Make this test safe to run with other tests. Right now it relies on global
     # network state making it flaky.
     tags = ["exclusive"],
+    flaky = 1,
     deps = [
         ":cc_library",
     ],
