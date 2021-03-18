@@ -19,8 +19,13 @@ final class GazelleCheckerTest {
             return substr($f, -3) == '.go';
         });
 
-        // If there are no modified go files, there is no need to check gazelle.
-        if (sizeof($goFiles) == 0) {
+        // Check if there are any modified build files.
+        $buildFiles = array_filter($this->files, function($f) {
+            return substr($f, -11) == 'BUILD.bazel';
+        });
+
+        // If there are no modified go/build files, there is no need to check gazelle.
+        if (sizeof($goFiles) === 0 && sizeof($buildFiles) === 0) {
             return $test_results;
         }
 

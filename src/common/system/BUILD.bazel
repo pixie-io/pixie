@@ -68,10 +68,10 @@ pl_cc_test(
     name = "socket_info_test",
     srcs = ["socket_info_test.cc"],
     data = ["//src/common/system/testdata:proc_fs"],
+    flaky = 1,
     # TODO(oazizi/yzhao): Make this test safe to run with other tests. Right now it relies on global
     # network state making it flaky.
     tags = ["exclusive"],
-    flaky = 1,
     deps = [
         ":cc_library",
     ],
