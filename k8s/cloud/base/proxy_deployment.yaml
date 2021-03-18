@@ -33,6 +33,8 @@ spec:
         - configMapRef:
             name: pl-domain-config
         - configMapRef:
+            name: pl-service-config
+        - configMapRef:
             name: pl-ld-config
         - configMapRef:
             name: pl-analytics-config

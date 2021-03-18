@@ -10,3 +10,4 @@ resources:
 - ../base/kratos
 patchesStrategicMerge:
 - oauth_config.yaml
+- service_config.yaml
