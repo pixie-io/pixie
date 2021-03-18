@@ -1,5 +1,6 @@
 #include <sys/sysinfo.h>
 
+#include <absl/strings/substitute.h>
 #include <gtest/gtest.h>
 
 #include "src/common/base/base.h"
@@ -46,16 +47,42 @@ class PerfProfileBPFTest : public ::testing::Test {
 
   void TearDown() override { ASSERT_OK(source_->Stop()); }
 
-  // BazelTestAppPath() is a helper to build & return the bazelified path to
+  // BazelXXTestAppPath() are helpers to build & return the bazelified path to
   // one of the toy apps used by perf profiler testing.
-  // This helper will help more once we add more toy apps (go & rust).
-  // TODO(jps): remove this comment once we add those.
-  std::filesystem::path BazelTestAppPath(const std::filesystem::path& app_name) {
+  std::filesystem::path BazelCCTestAppPath(const std::filesystem::path& app_name) {
     const std::filesystem::path kToyAppsPath =
         "src/stirling/source_connectors/perf_profiler/testing/cc";
     const std::filesystem::path app_path = fs::JoinPath({&kToyAppsPath, &app_name});
     const std::filesystem::path bazel_app_path = BazelBinTestFilePath(app_path);
     return bazel_app_path;
+  }
+
+  std::filesystem::path BazelGoTestAppPath(const std::filesystem::path& app_name) {
+    const std::string sub_path_str = absl::Substitute(
+        "src/stirling/source_connectors/perf_profiler/testing/go/$0_", app_name.string());
+    const std::filesystem::path sub_path = sub_path_str;
+    const std::filesystem::path app_path = fs::JoinPath({&sub_path, &app_name});
+    const std::filesystem::path bazel_app_path = BazelBinTestFilePath(app_path);
+    return bazel_app_path;
+  }
+
+  // This is templatized because we anticipate having more than one kind of binary runner,
+  // i.e. because future test applications will be threaded, so the CPU pinning will be
+  // done "inside" of the test app.
+  template <typename T>
+  std::vector<T> StartSubProcesses(const std::filesystem::path& app_path, const uint32_t test_idx) {
+    // Before poking the subProcess.Run() method, we need the vector to be
+    // fully populated (or else vector re-sizing will want to make copies).
+    // Copying an already running sub-process kills the sub-process.
+    // Using kNumSubProcesses as a constructor arg. pre-populates the vector
+    // with default constructor initialized values.
+    std::vector<T> sub_processes(kNumSubProcesses);
+
+    for (uint64_t sub_process_idx = 0; sub_process_idx < kNumSubProcesses; ++sub_process_idx) {
+      const uint32_t cpu_idx = kNumSubProcesses * test_idx + sub_process_idx;
+      sub_processes[sub_process_idx].Run(app_path, cpu_idx);
+    }
+    return sub_processes;
   }
 
   void CheckThatAllColumnsHaveSameNumRows(const types::ColumnWrapperRecordBatch& columns) {
@@ -105,6 +132,14 @@ class PerfProfileBPFTest : public ::testing::Test {
       const int64_t count = counts_column_->Get<types::Int64Value>(row_idx).val;
       observed_stack_traces_[stack_trace_str] += count;
     }
+
+    auto makecolor = [](const auto n) { return absl::StrFormat("\x1b[38;5;$%dm", n); };
+    auto reset = []() { return "\x1b[0m"; };
+    VLOG(1) << std::endl;
+    for (const auto& [key, val] : observed_stack_traces_) {
+      VLOG(1) << makecolor(220) << absl::StrFormat("%5d: ", val) << key << reset() << std::endl;
+    }
+    VLOG(1) << std::endl;
   }
 
   void PopulateCumulativeSum(const std::vector<size_t>& target_row_idxs) {
@@ -131,6 +166,66 @@ class PerfProfileBPFTest : public ::testing::Test {
     }
   }
 
+  void CheckExpectedStackTraceCounts(const ssize_t num_subprocesses,
+                                     const std::chrono::duration<double> elapsed_time) {
+    const uint64_t kBPFSmaplingPeriodMillis = PerfProfileConnector::BPFSamplingPeriodMillis();
+    const double expected_rate = 1000.0 / static_cast<double>(kBPFSmaplingPeriodMillis);
+    const double expected_num_samples = num_subprocesses * elapsed_time.count() * expected_rate;
+    const uint64_t expected_num_sample_lower = uint64_t(0.9 * expected_num_samples);
+    const uint64_t expected_num_sample_upper = uint64_t(1.1 * expected_num_samples);
+    const double obsevedNumSamples = static_cast<double>(cumulative_sum_);
+    const double observed_rate = obsevedNumSamples / elapsed_time.count() / num_subprocesses;
+
+    LOG(INFO) << absl::StrFormat("expected num samples: %d", uint64_t(expected_num_samples));
+    LOG(INFO) << absl::StrFormat("total samples: %d", cumulative_sum_);
+    LOG(INFO) << absl::StrFormat("elapsed time: %.1f [sec]", elapsed_time.count());
+    LOG(INFO) << absl::StrFormat("expected sample rate: %.2f [Hz]", expected_rate);
+    LOG(INFO) << absl::StrFormat("observed sample rate: %.2f [Hz]", observed_rate);
+
+    // We expect to see a certain number of samples, but in practice
+    // see fewer (maybe the CPU and Linux scheduler have other things to do!).
+    // For this test, use an upper & lower bound with 10% allowed error band.
+    const std::string err_msg = absl::StrFormat(
+        "num sub-processes: %d, time: %.2f [sec.], rate: %.2f [Hz], observed_rate: %.2f [Hz]",
+        num_subprocesses, elapsed_time.count(), expected_rate, observed_rate);
+    EXPECT_GT(cumulative_sum_, expected_num_sample_lower) << err_msg;
+    EXPECT_LT(cumulative_sum_, expected_num_sample_upper) << err_msg;
+
+    const double num_2x_samples = observed_stack_traces_[key2x_];
+    const double num_1x_samples = observed_stack_traces_[key1x_];
+    const double ratio = num_2x_samples / num_1x_samples;
+
+    // We expect the ratio of fib52:fib27 to be approx. 2:1;
+    // or sqrt, or something else that was in the toy test app.
+    LOG(INFO) << "ratio of 2x samples to 1x samples: " << ratio;
+    EXPECT_GT(ratio, 1.85);
+    EXPECT_LT(ratio, 2.15);
+  }
+
+  template <typename T>
+  std::vector<size_t> GetTargetRowIdxs(const std::vector<T>& sub_processes) {
+    auto GetSubProcessPids = [&]() {
+      std::vector<int> pids;
+      for (const auto& sub_process : sub_processes) {
+        pids.push_back(sub_process.pid());
+      }
+      return pids;
+    };
+
+    const std::vector<int> pids = GetSubProcessPids();
+    return FindRecordIdxMatchesPIDs(columns_, kStackTraceUPIDIdx, pids);
+  }
+
+  void ConsumeRecords() {
+    const std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
+    ASSERT_EQ(tablets.size(), 1);
+
+    columns_ = tablets[0].records;
+
+    CheckThatAllColumnsHaveSameNumRows(columns_);
+    PopulateColumnPtrs(columns_);
+  }
+
   void PopulateColumnPtrs(const types::ColumnWrapperRecordBatch& columns) {
     trace_ids_column_ = columns[kStackTraceStackTraceIDIdx];
     stack_traces_column_ = columns[kStackTraceStackTraceStrIdx];
@@ -138,10 +233,10 @@ class PerfProfileBPFTest : public ::testing::Test {
     column_ptrs_populated_ = true;
   }
 
-  std::chrono::duration<double> RunTest(const std::chrono::seconds run_time) {
+  std::chrono::duration<double> RunTest() {
     constexpr std::chrono::milliseconds t_sleep = kStackTraceTableSamplingPeriod;
     const auto start_time = std::chrono::steady_clock::now();
-    const auto stop_time = start_time + run_time;
+    const auto stop_time = start_time + kTestRunTime;
 
     // Continuously poke Stirling TransferData() using the underlying schema periodicity;
     // break from this loop when the elapsed time exceeds the targeted run time.
@@ -168,97 +263,87 @@ class PerfProfileBPFTest : public ::testing::Test {
   uint64_t cumulative_sum_ = 0;
   absl::flat_hash_map<std::string, uint64_t> observed_stack_traces_;
   absl::flat_hash_set<std::string_view> expected_stack_traces_;
+
+  types::ColumnWrapperRecordBatch columns_;
+
+  std::string key2x_;
+  std::string key1x_;
+
+  // To reduce variance in results, we add more run-time or add sub-processes:
+  static constexpr uint64_t kNumSubProcesses = 4;
+  static constexpr std::chrono::seconds kTestRunTime = std::chrono::seconds(120);
 };
 
-TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
-  const std::filesystem::path bazel_app_path = BazelTestAppPath("profiler_test_app_fib");
+TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
+  // Needs to be unique across test fixtures because we use this to map
+  // into CPU index. If non-unique, two or more different test fixtures
+  // will run their toy apps. on the same CPU.
+  constexpr uint32_t kTestIdx = 1;
 
-  // To reduce variance in observed results, we can:
-  // ... run the test longer
-  // ... run more sub-processes
-  // Current settings: 4 sub-processes & 180 seconds run-time.
-  constexpr uint64_t kNumSubProcesses = 4;
-  const std::chrono::seconds kTestRunTime(180);
+  const std::filesystem::path bazel_app_path = BazelGoTestAppPath("profiler_test_app_sqrt_go");
 
-  // Before poking the subProcess.Run() method, we need the vector to be
-  // fully populated (or else vector re-sizing will want to make copies).
-  // Copying an already running sub-process kills the sub-process.
-  // Using kNumSubProcesses as a constructor arg. pre-populates the vector
-  // with default constructor initialized values.
-  std::vector<CPUPinnedBinaryRunner> sub_processes(kNumSubProcesses);
-
-  for (uint64_t sub_process_idx = 0; sub_process_idx < kNumSubProcesses; ++sub_process_idx) {
-    sub_processes[sub_process_idx].Run(bazel_app_path, sub_process_idx);
-  }
-
-  const std::chrono::duration<double> elapsed_time = RunTest(kTestRunTime);
-  const std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
-  ASSERT_EQ(tablets.size(), 1);
-
-  const types::ColumnWrapperRecordBatch columns = tablets[0].records;
-
-  ASSERT_NO_FATAL_FAILURE(CheckThatAllColumnsHaveSameNumRows(columns));
-  PopulateColumnPtrs(columns);
-
-  auto GetSubProcessPids = [&]() {
-    std::vector<int> pids;
-    for (const auto& sub_process : sub_processes) {
-      pids.push_back(sub_process.pid());
-    }
-    return pids;
-  };
-
-  const std::vector<int> pids = GetSubProcessPids();
-  const std::vector<size_t> target_row_idxs =
-      FindRecordIdxMatchesPIDs(columns, kStackTraceUPIDIdx, pids);
-
-  ASSERT_NO_FATAL_FAILURE(CheckStackTraceIDsInvariance());
-
-  // The two symbolic stack traces we expected to see for the toy app.:
-  const std::string_view fib27key = "-;__libc_start_main;main;fib27();fib(unsigned long)";
-  const std::string_view fib52key = "-;__libc_start_main;main;fib52();fib(unsigned long)";
+  // The toy test app. should be written such that we can expect one stack trace
+  // twice as often as another.
+  key2x_ = "-;runtime.goexit;runtime.main;main.main;main.sqrtOf1e39;main.sqrt";
+  key1x_ = "-;runtime.goexit;runtime.main;main.main;main.sqrtOf1e18;main.sqrt";
 
   // Populated expected_stack_traces_ with the keys for this test:
-  expected_stack_traces_.insert(fib27key);
-  expected_stack_traces_.insert(fib52key);
+  expected_stack_traces_.insert(key2x_);
+  expected_stack_traces_.insert(key1x_);
+
+  // Start they toy apps as sub-processes, then,
+  // for a certain amount of time (kTestRunTime), collect data using RunTest().
+  auto sub_processes = StartSubProcesses<CPUPinnedBinaryRunner>(bazel_app_path, kTestIdx);
+  const std::chrono::duration<double> elapsed_time = RunTest();
+
+  // Pull the data into this test (as columns_) using ConsumeRecords(), and
+  // find the row indices that belong to our sub-processes using GetTargetRowIdxs().
+  ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
+  const std::vector<size_t> target_row_idxs = GetTargetRowIdxs(sub_processes);
 
   // Populate the cumulative sum & the observed stack traces histo,
   // then check observed vs. expected stack traces key set:
+  ASSERT_NO_FATAL_FAILURE(CheckStackTraceIDsInvariance());
   ASSERT_NO_FATAL_FAILURE(PopulateCumulativeSum(target_row_idxs));
   ASSERT_NO_FATAL_FAILURE(PopulateObservedStackTraces(target_row_idxs));
   ASSERT_NO_FATAL_FAILURE(CheckExpectedVsObservedStackTraces());
+  ASSERT_NO_FATAL_FAILURE(CheckExpectedStackTraceCounts(kNumSubProcesses, elapsed_time));
+}
 
-  const uint64_t kBPFSmaplingPeriodMillis = PerfProfileConnector::BPFSamplingPeriodMillis();
-  const double expected_rate = 1000.0 / static_cast<double>(kBPFSmaplingPeriodMillis);
-  const double expected_num_samples = kNumSubProcesses * elapsed_time.count() * expected_rate;
-  const uint64_t expected_num_sample_lower = uint64_t(0.9 * expected_num_samples);
-  const uint64_t expected_num_sample_upper = uint64_t(1.1 * expected_num_samples);
-  const double obsevedNumSamples = static_cast<double>(cumulative_sum_);
-  const double observed_rate = obsevedNumSamples / elapsed_time.count() / kNumSubProcesses;
+TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
+  // Needs to be unique across test fixtures because we use this to map
+  // into CPU index. If non-unique, two or more different test fixtures
+  // will run their toy apps. on the same CPU.
+  constexpr uint32_t kTestIdx = 0;
 
-  LOG(INFO) << absl::StrFormat("expected num samples: %d", uint64_t(expected_num_samples));
-  LOG(INFO) << absl::StrFormat("total samples: %d", cumulative_sum_);
-  LOG(INFO) << absl::StrFormat("elapsed time: %.1f [sec]", elapsed_time.count());
-  LOG(INFO) << absl::StrFormat("expected sample rate: %.2f [Hz]", expected_rate);
-  LOG(INFO) << absl::StrFormat("observed sample rate: %.2f [Hz]", observed_rate);
+  const std::filesystem::path bazel_app_path = BazelCCTestAppPath("profiler_test_app_fib");
 
-  // We expect to see a certain number of samples, but in practice
-  // see fewer (maybe the CPU and Linux scheduler have other things to do!).
-  // For this test, use an upper & lower bound with 10% allowed error band.
-  const std::string err_msg = absl::StrFormat(
-      "num sub-processes: %d, time: %.2f [sec.], rate: %.2f [Hz], observed_rate: %.2f [Hz]",
-      kNumSubProcesses, elapsed_time.count(), expected_rate, observed_rate);
-  EXPECT_GT(cumulative_sum_, expected_num_sample_lower) << err_msg;
-  EXPECT_LT(cumulative_sum_, expected_num_sample_upper) << err_msg;
+  // The toy test app. should be written such that we can expect one stack trace
+  // twice as often as another.
+  key2x_ = "-;__libc_start_main;main;fib52();fib(unsigned long)";
+  key1x_ = "-;__libc_start_main;main;fib27();fib(unsigned long)";
 
-  const double numF52samples = observed_stack_traces_[fib52key];
-  const double numF27samples = observed_stack_traces_[fib27key];
-  const double ratio = numF52samples / numF27samples;
+  // Populated expected_stack_traces_ with the keys for this test:
+  expected_stack_traces_.insert(key2x_);
+  expected_stack_traces_.insert(key1x_);
 
-  // We expect the ratio of fib52:fib27 to be approx. 2:1.
-  LOG(INFO) << "ratio of F52 samples to F27 samples: " << ratio;
-  EXPECT_GT(ratio, 1.85);
-  EXPECT_LT(ratio, 2.15);
+  // Start they toy apps as sub-processes, then,
+  // for a certain amount of time, collect data using RunTest().
+  auto sub_processes = StartSubProcesses<CPUPinnedBinaryRunner>(bazel_app_path, kTestIdx);
+  const std::chrono::duration<double> elapsed_time = RunTest();
+
+  // Pull the data into this test (as columns_) using ConsumeRecords(), and
+  // find the row indices that belong to our sub-processes using GetTargetRowIdxs().
+  ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
+  const std::vector<size_t> target_row_idxs = GetTargetRowIdxs(sub_processes);
+
+  // Populate the cumulative sum & the observed stack traces histo,
+  // then check observed vs. expected stack traces key set:
+  ASSERT_NO_FATAL_FAILURE(CheckStackTraceIDsInvariance());
+  ASSERT_NO_FATAL_FAILURE(PopulateCumulativeSum(target_row_idxs));
+  ASSERT_NO_FATAL_FAILURE(PopulateObservedStackTraces(target_row_idxs));
+  ASSERT_NO_FATAL_FAILURE(CheckExpectedVsObservedStackTraces());
+  ASSERT_NO_FATAL_FAILURE(CheckExpectedStackTraceCounts(kNumSubProcesses, elapsed_time));
 }
 
 }  // namespace stirling
