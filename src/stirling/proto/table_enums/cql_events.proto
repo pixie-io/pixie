@@ -2,9 +2,6 @@ syntax = "proto3";
 
 package pl.stirling.tableenums.cqlpb;
 
-option go_package = "cqlpb";
-
-
 // enum ReqOp provides the encoding used in the cql_events::req_op column.
 // The encodings are the same as from CQL spec.
 enum ReqOp {
