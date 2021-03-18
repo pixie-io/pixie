@@ -15,11 +15,8 @@ DEFINE_bool(stirling_profiler_test_mode, false, "Make stack traces more predicta
 namespace pl {
 namespace stirling {
 
-// BCC's symbol resolver assumes the kernel PID is -1.
-constexpr int kKernelPID = -1;
-
 PerfProfileConnector::PerfProfileConnector(std::string_view source_name)
-    : SourceConnector(source_name, kTables), kernel_symbol_cache_(kKernelPID) {}
+    : SourceConnector(source_name, kTables), kernel_symbol_cache_(SymbolCache::kKernelPID) {}
 
 Status PerfProfileConnector::InitImpl() {
   const size_t ncpus = get_nprocs_conf();

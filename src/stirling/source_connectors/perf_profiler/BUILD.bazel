@@ -40,3 +40,15 @@ pl_cc_test(
         "//src/stirling/testing:cc_library",
     ],
 )
+
+pl_cc_test(
+    name = "symbol_cache_test",
+    timeout = "moderate",
+    srcs = ["symbol_cache_test.cc"],
+    tags = [
+        "requires_bpf",
+    ],
+    deps = [
+        ":cc_library",
+    ],
+)
