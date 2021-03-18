@@ -75,6 +75,16 @@ spec:
             secretKeyRef:
               name: pl-db-secrets
               key: PL_POSTGRES_PASSWORD
+        - name: PL_OAUTH_PROVIDER
+          valueFrom:
+            configMapKeyRef:
+              name: pl-oauth-config
+              key: PL_OAUTH_PROVIDER
+        - name: PL_HYDRA_CLIENT_ID
+          valueFrom:
+            configMapKeyRef:
+              name: pl-oauth-config
+              key: PL_AUTH_CLIENT_ID
         volumeMounts:
         - name: certs
           mountPath: /certs

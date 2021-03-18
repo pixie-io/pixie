@@ -415,8 +415,6 @@ func (c *HydraKratosClient) RedirectToLogin(session *sessions.Session, w http.Re
 	// Add the state to the URL. When we're back in the auth login flow, we verify that the `HydraLoginStateKey` query parameter matches the cookie
 	// value to prevent unauthorized users from stealing this log in flow.
 	returnToURL := r.URL
-	returnToURL.Host = r.Host
-	returnToURL.Scheme = "https"
 	returnQ := returnToURL.Query()
 	returnQ.Set(HydraLoginStateKey, hydraLoginState)
 	returnToURL.RawQuery = returnQ.Encode()
