@@ -90,7 +90,7 @@ void ConnTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
   PopulateSockAddr(reinterpret_cast<const struct sockaddr*>(&conn_event.addr),
                    &open_info_.remote_addr);
 
-  SetRole(conn_event.role);
+  SetRole(conn_event.role, "inferred from conn_open");
 
   CONN_TRACE(1) << absl::Substitute("conn_open af=$0 addr=$1",
                                     magic_enum::enum_name(open_info_.remote_addr.family),
@@ -124,8 +124,8 @@ void ConnTracker::AddConnCloseEvent(const close_event_t& close_event) {
 
 void ConnTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   SetConnID(event->attr.conn_id);
-  bool role_changed = SetRole(event->attr.traffic_class.role);
-  SetProtocol(event->attr.traffic_class.protocol);
+  bool role_changed = SetRole(event->attr.traffic_class.role, "inferred from data_event");
+  SetProtocol(event->attr.traffic_class.protocol, "inferred from data_event");
 
   // If role has just resolved, it may be time to inform conn stats.
   if (role_changed && ShouldExportToConnStats()) {
@@ -195,7 +195,7 @@ EndpointRole InferHTTP2Role(bool write_event, const std::unique_ptr<HTTP2HeaderE
 
 void ConnTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
   SetConnID(hdr->attr.conn_id);
-  SetProtocol(kProtocolHTTP2);
+  SetProtocol(kProtocolHTTP2, "inferred from http2 headers");
 
   if (traffic_class_.protocol != kProtocolHTTP2) {
     return;
@@ -240,7 +240,7 @@ void ConnTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
   // TODO(oazizi): Once we have more confidence that the ECHECK below doesn't fire, restructure this
   // code so it only calls InferHTTP2Role when the current role is Unknown.
   EndpointRole role = InferHTTP2Role(write_event, hdr);
-  bool role_changed = SetRole(role);
+  bool role_changed = SetRole(role, "inferred from http2 header");
   if (role_changed && ShouldExportToConnStats()) {
     ExportInitialConnStats();
   } else {
@@ -282,7 +282,7 @@ void ConnTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
 
 void ConnTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
   SetConnID(data->attr.conn_id);
-  SetProtocol(kProtocolHTTP2);
+  SetProtocol(kProtocolHTTP2, "inferred from http2 data");
 
   if (traffic_class_.protocol != kProtocolHTTP2) {
     return;
@@ -409,7 +409,7 @@ void ConnTracker::SetConnID(struct conn_id_t conn_id) {
   }
 }
 
-bool ConnTracker::SetRole(EndpointRole role) {
+bool ConnTracker::SetRole(EndpointRole role, std::string_view reason) {
   // Don't allow changing active role, unless it is from unknown to something else.
   if (traffic_class_.role != kRoleUnknown) {
     if (role != kRoleUnknown && traffic_class_.role != role) {
@@ -425,9 +425,9 @@ bool ConnTracker::SetRole(EndpointRole role) {
   }
 
   if (role != kRoleUnknown) {
-    CONN_TRACE(1) << absl::Substitute("Role updated $0 -> $1]",
+    CONN_TRACE(1) << absl::Substitute("Role updated $0 -> $1, reason=[$2]]",
                                       magic_enum::enum_name(traffic_class_.role),
-                                      magic_enum::enum_name(role));
+                                      magic_enum::enum_name(role), reason);
     traffic_class_.role = role;
     return true;
   }
@@ -437,7 +437,7 @@ bool ConnTracker::SetRole(EndpointRole role) {
 }
 
 // Returns false if protocol change was not allowed.
-bool ConnTracker::SetProtocol(TrafficProtocol protocol) {
+bool ConnTracker::SetProtocol(TrafficProtocol protocol, std::string_view reason) {
   // No change, so we're all good.
   if (traffic_class_.protocol == protocol) {
     return true;
@@ -446,8 +446,8 @@ bool ConnTracker::SetProtocol(TrafficProtocol protocol) {
   // Changing the active protocol of a connection tracker is not allowed.
   if (traffic_class_.protocol != kProtocolUnknown) {
     CONN_TRACE(2) << absl::Substitute(
-        "Not allowed to change the protocol of an active ConnTracker: $0->$1",
-        magic_enum::enum_name(traffic_class_.protocol), magic_enum::enum_name(protocol));
+        "Not allowed to change the protocol of an active ConnTracker: $0->$1, reason=[$2]",
+        magic_enum::enum_name(traffic_class_.protocol), magic_enum::enum_name(protocol), reason);
     return false;
   }
 
@@ -605,7 +605,8 @@ void ConnTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs) {
         // TODO(yzhao): Incorporate parsing to detect message type, and back fill the role.
         // This is useful for Redis, for which eBPF protocol resolution cannot detect message type.
         Disable("Could not determine role for traffic because connection resolution failed.");
-      } else {
+      } else if (conn_resolver_ == nullptr ||
+                 last_update_timestamp_ != conn_resolver_->prev_infer_timestamp()) {
         CONN_TRACE(2)
             << "Protocol role was not inferred from BPF, waiting for user space inference result.";
       }
@@ -826,8 +827,6 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
     return;
   }
 
-  CONN_TRACE(2) << "Attempting connection inference";
-
   if (conn_resolver_ == nullptr) {
     conn_resolver_ = std::make_unique<FDResolver>(proc_parser, conn_id_.upid.pid, conn_id_.fd);
     bool success = conn_resolver_->Setup();
@@ -835,6 +834,8 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
       conn_resolver_.reset();
       conn_resolution_failed_ = true;
       CONN_TRACE(2) << "Can't infer remote endpoint. Setup failed.";
+    } else {
+      CONN_TRACE(2) << "FDResolver has been created.";
     }
     // Return after Setup(), since we won't be able to infer until some time has elapsed.
     // This is because file descriptors can be re-used, and if we sample the FD just once,
@@ -852,10 +853,17 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
     return;
   }
 
-  std::optional<std::string_view> fd_link_opt = conn_resolver_->InferFDLink(last_update_timestamp_);
+  // TODO(yzhao): Skip calling InferFDLink() if prev_infer_timestamp == infer_timestamp.
+  auto prev_infer_timestamp = prev_sockinfo_infer_timestamp_;
+  auto infer_timestamp = last_update_timestamp_;
+  std::optional<std::string_view> fd_link_opt = conn_resolver_->InferFDLink(infer_timestamp);
+  prev_sockinfo_infer_timestamp_ = infer_timestamp;
   if (!fd_link_opt.has_value()) {
-    CONN_TRACE(2) << "FD link info not available yet. Need more time determine the fd link and "
-                     "resolve the connection.";
+    if (infer_timestamp != prev_infer_timestamp) {
+      // Only trace if there has been new activities since last inference.
+      CONN_TRACE(2) << "FD link info not available yet. Need more time determine the fd link and "
+                       "resolve the connection.";
+    }
     return;
   }
 
@@ -899,7 +907,7 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
   }
 
   EndpointRole inferred_role = TranslateRole(socket_info.role);
-  SetRole(inferred_role);
+  SetRole(inferred_role, "inferred from socket info");
 
   CONN_TRACE(1) << absl::Substitute("Inferred connection dest=$0:$1",
                                     open_info_.remote_addr.AddrStr(),

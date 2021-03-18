@@ -435,8 +435,8 @@ TEST_F(ConnTrackerTest, TrackerDisabledForIntraClusterRemoteEndpoint) {
 
   ConnTracker tracker;
   tracker.AddControlEvent(conn);
-  tracker.SetProtocol(kProtocolHTTP);
-  tracker.SetRole(kRoleClient);
+  tracker.SetProtocol(kProtocolHTTP, "testing");
+  tracker.SetRole(kRoleClient, "testing");
   tracker.IterationPreTick(cidrs, /*proc_parser*/ nullptr, /*connections*/ nullptr);
   EXPECT_EQ(ConnTracker::State::kDisabled, tracker.state());
 }
@@ -449,8 +449,8 @@ TEST_F(ConnTrackerTest, TrackerCollectingForClientSideTracingWithNoCIDR) {
 
   ConnTracker tracker;
   tracker.AddControlEvent(conn);
-  tracker.SetProtocol(kProtocolHTTP);
-  tracker.SetRole(kRoleClient);
+  tracker.SetProtocol(kProtocolHTTP, "testing");
+  tracker.SetRole(kRoleClient, "testing");
   tracker.IterationPreTick(/*cluster_cidrs*/ {}, /*proc_parser*/ nullptr, /*connections*/ nullptr);
   EXPECT_EQ(ConnTracker::State::kCollecting, tracker.state());
 }
@@ -500,8 +500,8 @@ TEST_F(ConnTrackerTest, TrackerDisabledAfterMapping) {
 
     ConnTracker tracker;
     tracker.AddControlEvent(conn);
-    tracker.SetProtocol(kProtocolHTTP);
-    tracker.SetRole(kRoleClient);
+    tracker.SetProtocol(kProtocolHTTP, "testing");
+    tracker.SetRole(kRoleClient, "testing");
     tracker.IterationPreTick({cidr}, /*proc_parser*/ nullptr, /*connections*/ nullptr);
     EXPECT_EQ(ConnTracker::State::kDisabled, tracker.state())
         << "Got: " << magic_enum::enum_name(tracker.state());
@@ -516,8 +516,8 @@ TEST_F(ConnTrackerTest, TrackerDisabledAfterMapping) {
 
     ConnTracker tracker;
     tracker.AddControlEvent(conn);
-    tracker.SetProtocol(kProtocolHTTP);
-    tracker.SetRole(kRoleClient);
+    tracker.SetProtocol(kProtocolHTTP, "testing");
+    tracker.SetRole(kRoleClient, "testing");
     tracker.IterationPreTick({cidr}, /*proc_parser*/ nullptr, /*connections*/ nullptr);
     EXPECT_EQ(ConnTracker::State::kDisabled, tracker.state())
         << "Got: " << magic_enum::enum_name(tracker.state());

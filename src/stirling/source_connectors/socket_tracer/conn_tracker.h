@@ -477,10 +477,10 @@ class ConnTracker : NotCopyMoveable {
   }
 
   // Returns false if the protocol change is disallowed.
-  bool SetProtocol(TrafficProtocol protocol);
+  bool SetProtocol(TrafficProtocol protocol, std::string_view reason);
 
   // Returns true if the state was changed.
-  bool SetRole(EndpointRole role);
+  bool SetRole(EndpointRole role, std::string_view reason);
 
   void SetDebugTrace(int level) { debug_trace_level_ = level; }
 
@@ -580,6 +580,9 @@ class ConnTracker : NotCopyMoveable {
   // Currently using steady clock, so cannot be used meaningfully for logging real times.
   // This can be changed in the future if required.
   std::chrono::time_point<std::chrono::steady_clock> last_update_timestamp_;
+
+  // The timestamp of the previous attempt of sockinfo inference.
+  std::chrono::time_point<std::chrono::steady_clock> prev_sockinfo_infer_timestamp_;
 
   // Some idleness checks used to trigger checks for closed connections.
   // The threshold undergoes an exponential backoff if connection is not closed.

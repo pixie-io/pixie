@@ -61,6 +61,8 @@ class FDResolver {
    */
   bool IsActive() { return active_; }
 
+  auto prev_infer_timestamp() const { return prev_infer_timestamp_; }
+
   std::string DebugInfo() {
     return absl::Substitute("pid=$0 fd=$1 t=$2-$3 active=$4 fdlink=$5", pid_, fd_,
                             first_timestamp_.time_since_epoch().count(),
@@ -83,6 +85,9 @@ class FDResolver {
   // the same on a subsequent sample.
   std::chrono::time_point<std::chrono::steady_clock> first_timestamp_;
   std::chrono::time_point<std::chrono::steady_clock> last_timestamp_;
+
+  // The timestamp of the previous call to InferFDLink().
+  std::chrono::time_point<std::chrono::steady_clock> prev_infer_timestamp_;
 };
 
 }  // namespace stirling

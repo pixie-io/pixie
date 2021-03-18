@@ -39,7 +39,7 @@ class ConnTrackersManagerTest : public ::testing::Test {
     VLOG(1) << "TrackerEvent";
     ConnTracker& tracker = trackers_.GetOrCreateConnTracker(conn_id);
     tracker.SetConnID(conn_id);
-    tracker.SetProtocol(protocol);
+    tracker.SetProtocol(protocol, "for testing");
   }
 };
 
