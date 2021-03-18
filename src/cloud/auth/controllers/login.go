@@ -267,7 +267,7 @@ func (s *Server) createUserAndOrg(ctx context.Context, domainName string, userID
 	pc := s.env.ProfileClient()
 	resp, err := pc.CreateOrgAndUser(ctx, rpcReq)
 	if err != nil {
-		return nil, nil, status.Error(codes.Internal, "failed to create user/org")
+		return nil, nil, status.Error(codes.Internal, fmt.Sprintf("failed to create user/org: %v", err))
 	}
 	orgIDpb := resp.OrgID
 	userIDpb := resp.UserID
