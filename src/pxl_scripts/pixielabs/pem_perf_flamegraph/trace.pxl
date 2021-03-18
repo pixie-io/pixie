@@ -10,7 +10,7 @@ Performance profile visualization for the PEM.
 import px
 
 
-def stacktraces(start_time: str, node: str, namespace: str, pod: str):
+def stacktraces(start_time: str, node: str, namespace: str, pod: str, pct_grouping_entity: str):
     df = px.DataFrame(table='stack_traces.beta', start_time=start_time)
 
     df.namespace = df.ctx['namespace']
@@ -19,13 +19,28 @@ def stacktraces(start_time: str, node: str, namespace: str, pod: str):
     df.cmdline = df.ctx['cmdline']
     df.node = df.ctx['node']
 
+    # This must be done before any filtering, to get accurate stack trace totals per node.
+    node_agg = df.groupby([pct_grouping_entity]).agg(
+        count=('count', px.sum)
+    )
+
     df = df[px.contains(df.node, node)]
     df = df[px.contains(df.pod, pod)]
     df = df[px.contains(df.namespace, namespace)]
 
-    df = df.groupby(['namespace', 'pod', 'container', 'cmdline', 'stack_trace_id']).agg(
+    df = df.groupby(['node', 'namespace', 'pod', 'container', 'cmdline', 'stack_trace_id']).agg(
         stack_trace=('stack_trace', px.any),
         count=('count', px.sum)
     )
+
+    df = df.merge(node_agg,
+                  how='inner',
+                  left_on=pct_grouping_entity,
+                  right_on=pct_grouping_entity,
+                  suffixes=['', '_x'])
+    df.percent = 100.0 * df.count / df.count_x
+    df.drop(pct_grouping_entity + '_x')
+
+    px.debug(df)
 
     return df

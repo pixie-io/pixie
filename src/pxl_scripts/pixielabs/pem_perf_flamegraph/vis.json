@@ -23,6 +23,12 @@
       "type": "PX_POD",
       "description": "The pod to filter on.",
       "defaultValue": "pem"
+    },
+    {
+      "name": "pct_grouping_entity",
+      "type": "PX_STRING",
+      "description": "When computing percentages, the entity to use as the quotient.",
+      "defaultValue": "node"
     }
   ],
   "globalFuncs": [],
@@ -53,6 +59,10 @@
           {
             "name": "pod",
             "variable": "pod"
+          },
+          {
+            "name": "pct_grouping_entity",
+            "variable": "pct_grouping_entity"
           }
         ]
       },
@@ -60,7 +70,7 @@
         "@type": "pixielabs.ai/pl.vispb.StacktraceFlameGraph",
         "stacktraceColumn": "stack_trace",
         "countColumn": "count",
-        "percentColumn": "percent"
+        "percentageColumn": "percent"
       }
     }
   ]
