@@ -14,7 +14,12 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services/pgtest"
 )
 
-func loadTestData(t *testing.T, db *sqlx.DB) {
+func mustLoadTestData(db *sqlx.DB) {
+	// Cleanup.
+	db.MustExec(`DELETE FROM user_settings`)
+	db.MustExec(`DELETE FROM users`)
+	db.MustExec(`DELETE FROM orgs`)
+
 	insertOrgQuery := `INSERT INTO orgs (id, org_name, domain_name) VALUES ($1, $2, $3)`
 	db.MustExec(insertOrgQuery, "123e4567-e89b-12d3-a456-426655440000", "hulu", "hulu.com")
 	insertUserQuery := `INSERT INTO users (id, org_id, username, first_name, last_name, email) VALUES ($1, $2, $3, $4, $5, $6)`
@@ -32,9 +37,8 @@ func TestDatastore(t *testing.T) {
 	db, teardown := pgtest.SetupTestDB(t, s)
 	defer teardown()
 
-	loadTestData(t, db)
-
 	t.Run("test insert and get user", func(t *testing.T) {
+		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 		userInfo := datastore.UserInfo{
 			OrgID:     uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"),
@@ -60,6 +64,7 @@ func TestDatastore(t *testing.T) {
 	})
 
 	t.Run("inserting existing user should fail", func(t *testing.T) {
+		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 		userInfo := datastore.UserInfo{
 			OrgID:     uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"),
@@ -74,6 +79,7 @@ func TestDatastore(t *testing.T) {
 	})
 
 	t.Run("insert user with bad org should fail", func(t *testing.T) {
+		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 		userInfo := datastore.UserInfo{
 			// Changed 123 to 133.
@@ -89,6 +95,7 @@ func TestDatastore(t *testing.T) {
 	})
 
 	t.Run("test get org", func(t *testing.T) {
+		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 		orgInfo, err := d.GetOrg(uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"))
 		require.Nil(t, err)
@@ -100,6 +107,7 @@ func TestDatastore(t *testing.T) {
 	})
 
 	t.Run("get org by domain", func(t *testing.T) {
+		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 		orgInfo, err := d.GetOrgByDomain("hulu.com")
 		require.Nil(t, err)
@@ -110,6 +118,7 @@ func TestDatastore(t *testing.T) {
 	})
 
 	t.Run("get orgs", func(t *testing.T) {
+		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 		orgs, err := d.GetOrgs()
 		require.Nil(t, err)
@@ -121,6 +130,7 @@ func TestDatastore(t *testing.T) {
 	})
 
 	t.Run("get org by domain for missing domain should a specific error", func(t *testing.T) {
+		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 		orgInfo, err := d.GetOrgByDomain("goo.com")
 		require.NotNil(t, err)
@@ -129,6 +139,7 @@ func TestDatastore(t *testing.T) {
 	})
 
 	t.Run("create org and user first time user", func(t *testing.T) {
+		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 		orgInfo := datastore.OrgInfo{
 			OrgName:    "pg",
@@ -152,6 +163,7 @@ func TestDatastore(t *testing.T) {
 	})
 
 	t.Run("create org and user first time user case should fail for existing org", func(t *testing.T) {
+		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 		orgInfo := datastore.OrgInfo{
 			OrgName:    "hulu",
@@ -171,10 +183,11 @@ func TestDatastore(t *testing.T) {
 	})
 
 	t.Run("create org and user should fail for existing user", func(t *testing.T) {
+		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 		orgInfo := datastore.OrgInfo{
-			OrgName:    "pg",
-			DomainName: "pg.com",
+			OrgName:    "hulu",
+			DomainName: "hulu.com",
 		}
 		userInfo := datastore.UserInfo{
 			Username:  "person@hulu.com",
@@ -190,6 +203,7 @@ func TestDatastore(t *testing.T) {
 	})
 
 	t.Run("get user by email", func(t *testing.T) {
+		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 		userInfo, err := d.GetUserByEmail("person@hulu.com")
 		require.Nil(t, err)
@@ -199,6 +213,7 @@ func TestDatastore(t *testing.T) {
 	})
 
 	t.Run("get user by email for missing email should return specific error", func(t *testing.T) {
+		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 		userInfo, err := d.GetUserByEmail("noemail@gmail.com")
 		require.NotNil(t, err)
@@ -207,11 +222,7 @@ func TestDatastore(t *testing.T) {
 	})
 
 	t.Run("delete org and its users", func(t *testing.T) {
-		db, teardown := pgtest.SetupTestDB(t, s)
-		defer teardown()
-
-		loadTestData(t, db)
-
+		mustLoadTestData(db)
 		orgID := "223e4567-e89b-12d3-a456-426655440009"
 		userID := "223e4567-e89b-12d3-a456-426655440001"
 
@@ -244,10 +255,7 @@ func TestDatastore(t *testing.T) {
 	})
 
 	t.Run("update user", func(t *testing.T) {
-		db, teardown := pgtest.SetupTestDB(t, s)
-		defer teardown()
-
-		loadTestData(t, db)
+		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 
 		userID := "123e4567-e89b-12d3-a456-426655440001"
@@ -263,10 +271,7 @@ func TestDatastore(t *testing.T) {
 	})
 
 	t.Run("Get user settings", func(t *testing.T) {
-		db, teardown := pgtest.SetupTestDB(t, s)
-		defer teardown()
-
-		loadTestData(t, db)
+		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 
 		userSettingsFetched, err := d.GetUserSettings(uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440001"), []string{"another_setting", "doesnt_exist", "some_setting"})
@@ -275,14 +280,10 @@ func TestDatastore(t *testing.T) {
 	})
 
 	t.Run("Update user settings", func(t *testing.T) {
-		db, teardown := pgtest.SetupTestDB(t, s)
-		defer teardown()
-
-		id := "123e4567-e89b-12d3-a456-426655440001"
-
-		loadTestData(t, db)
+		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 
+		id := "123e4567-e89b-12d3-a456-426655440001"
 		err := d.UpdateUserSettings(uuid.FromStringOrNil(id), []string{"new_setting", "another_setting"}, []string{"some_val", "new_value"})
 		assert.Nil(t, err)
 
