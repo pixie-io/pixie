@@ -1,4 +1,4 @@
-package logicalplanner_test
+package goplanner_test
 
 // TODO move to some file
 // TODO add px/pod.

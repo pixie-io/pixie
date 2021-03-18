@@ -1,4 +1,4 @@
-package logicalplanner_test
+package goplanner_test
 
 import (
 	"os"
@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 
-	logicalplanner "pixielabs.ai/pixielabs/src/carnot/planner"
+	"pixielabs.ai/pixielabs/src/carnot/goplanner"
 	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
@@ -105,7 +105,7 @@ func TestPlanner_Simple(t *testing.T) {
 	if !assert.Nil(t, err) {
 		t.FailNow()
 	}
-	c, err := logicalplanner.New(&udfInfoPb)
+	c, err := goplanner.New(&udfInfoPb)
 	if !assert.Nil(t, err) {
 		t.FailNow()
 	}
@@ -170,7 +170,7 @@ func TestPlanner_Simple(t *testing.T) {
 
 func TestPlanner_MissingTable(t *testing.T) {
 	// Create the compiler.
-	c, err := logicalplanner.New(&udfspb.UDFInfo{})
+	c, err := goplanner.New(&udfspb.UDFInfo{})
 	if !assert.Nil(t, err) {
 		t.FailNow()
 	}
@@ -192,7 +192,7 @@ func TestPlanner_MissingTable(t *testing.T) {
 	status := plannerResultPB.Status
 	assert.NotEqual(t, status.ErrCode, statuspb.OK)
 	var errorPB compilerpb.CompilerErrorGroup
-	err = logicalplanner.GetCompilerErrorContext(status, &errorPB)
+	err = goplanner.GetCompilerErrorContext(status, &errorPB)
 
 	if !assert.NoError(t, err) {
 		t.FailNow()
@@ -209,10 +209,10 @@ func TestPlanner_MissingTable(t *testing.T) {
 
 }
 
-// This test makes sure the logicalplanner actually works if an empty string is passed in.
+// This test makes sure the goplanner actually works if an empty string is passed in.
 func TestPlanner_EmptyString(t *testing.T) {
 	// Create the compiler.
-	c, err := logicalplanner.New(&udfspb.UDFInfo{})
+	c, err := goplanner.New(&udfspb.UDFInfo{})
 	if !assert.Nil(t, err) {
 		t.FailNow()
 	}
@@ -253,7 +253,7 @@ const mainFuncArgsPBStr = `
 
 func TestPlanner_GetMainFuncArgsSpec(t *testing.T) {
 	// Create the planner.
-	c, err := logicalplanner.New(&udfspb.UDFInfo{})
+	c, err := goplanner.New(&udfspb.UDFInfo{})
 	if !assert.Nil(t, err) {
 		t.FailNow()
 	}
@@ -273,7 +273,7 @@ func TestPlanner_GetMainFuncArgsSpec(t *testing.T) {
 	status := getMainFuncArgsResultPB.Status
 	if !assert.Equal(t, status.ErrCode, statuspb.OK) {
 		var errorPB compilerpb.CompilerErrorGroup
-		err = logicalplanner.GetCompilerErrorContext(status, &errorPB)
+		err = goplanner.GetCompilerErrorContext(status, &errorPB)
 		if err != nil {
 			t.Fatalf("error while getting compiler err context, %s", err)
 		}
@@ -283,7 +283,7 @@ func TestPlanner_GetMainFuncArgsSpec(t *testing.T) {
 	var expectedMainFuncArgsPB scriptspb.FuncArgsSpec
 
 	if err = proto.UnmarshalText(mainFuncArgsPBStr, &expectedMainFuncArgsPB); err != nil {
-		log.Fatalf("Failed to unmarshal expected proto", err)
+		log.Fatalf("Failed to unmarshal expected proto %s", err)
 		t.FailNow()
 	}
 
@@ -292,7 +292,7 @@ func TestPlanner_GetMainFuncArgsSpec(t *testing.T) {
 
 func TestPlanner_GetMainFuncArgsSpec_BadQuery(t *testing.T) {
 	// Create the compiler.
-	c, err := logicalplanner.New(&udfspb.UDFInfo{})
+	c, err := goplanner.New(&udfspb.UDFInfo{})
 	if !assert.Nil(t, err) {
 		t.FailNow()
 	}
@@ -386,7 +386,7 @@ fn_args_map {
 `
 
 func TestPlanner_ExtractVisFuncsInfo(t *testing.T) {
-	c, err := logicalplanner.New(&udfspb.UDFInfo{})
+	c, err := goplanner.New(&udfspb.UDFInfo{})
 	if !assert.Nil(t, err) {
 		t.FailNow()
 	}
@@ -405,7 +405,7 @@ func TestPlanner_ExtractVisFuncsInfo(t *testing.T) {
 	var expectedVisFuncsInfoPb scriptspb.VisFuncsInfo
 
 	if err = proto.UnmarshalText(expectedVisFuncsInfoPBStr, &expectedVisFuncsInfoPb); err != nil {
-		log.Fatalf("Failed to unmarshal expected proto", err)
+		log.Fatalf("Failed to unmarshal expected proto %s", err)
 		t.FailNow()
 	}
 
@@ -489,7 +489,7 @@ func TestPlanner_CompileRequest(t *testing.T) {
 	if !assert.Nil(t, err) {
 		t.FailNow()
 	}
-	c, err := logicalplanner.New(&udfInfoPb)
+	c, err := goplanner.New(&udfInfoPb)
 	if !assert.Nil(t, err) {
 		t.FailNow()
 	}
@@ -510,7 +510,7 @@ func TestPlanner_CompileRequest(t *testing.T) {
 	status := compileMutationResponse.Status
 	if !assert.Equal(t, status.ErrCode, statuspb.OK) {
 		var errorPB compilerpb.CompilerErrorGroup
-		logicalplanner.GetCompilerErrorContext(status, &errorPB)
+		goplanner.GetCompilerErrorContext(status, &errorPB)
 		log.Infof("%v", errorPB)
 		log.Infof("%v", status)
 	}
@@ -518,7 +518,7 @@ func TestPlanner_CompileRequest(t *testing.T) {
 	var expectedDynamicTracePb logical.TracepointDeployment
 
 	if err = proto.UnmarshalText(expectedDynamicTraceStr, &expectedDynamicTracePb); err != nil {
-		log.Fatalf("Failed to unmarshal expected proto", err)
+		log.Fatalf("Failed to unmarshal expected proto %s", err)
 		t.FailNow()
 	}
 

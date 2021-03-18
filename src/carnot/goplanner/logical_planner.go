@@ -1,4 +1,6 @@
-package logicalplanner
+// +build cgo
+
+package goplanner
 
 // // The following is live code even though it is commented out.
 // // If you delete it, the planner will break.
@@ -38,6 +40,7 @@ func New(udfInfo *udfspb.UDFInfo) (GoPlanner, error) {
 	}
 	udfInfoData := C.CBytes(udfInfoBytes)
 	defer C.free(udfInfoData)
+
 	ret.planner = C.PlannerNew((*C.char)(udfInfoData), C.int(len(udfInfoBytes)))
 
 	return ret, nil

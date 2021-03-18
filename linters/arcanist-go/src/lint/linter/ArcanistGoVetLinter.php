@@ -57,6 +57,7 @@ final class ArcanistGoVetLinter extends ArcanistExternalLinter {
 
       // Run go vet on the package path.
       $future = new ExecFuture('%s %Ls %s', $executable, $flags, $pkgPath);
+      $future->setEnv(array('CGO_ENABLED' => 0));
       $futures[$path] = $future;
     }
 

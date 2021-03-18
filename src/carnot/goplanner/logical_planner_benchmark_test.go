@@ -1,4 +1,4 @@
-package logicalplanner_test
+package goplanner_test
 
 import (
 	"os"
@@ -10,7 +10,7 @@ import (
 
 	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
-	logicalplanner "pixielabs.ai/pixielabs/src/carnot/planner"
+	"pixielabs.ai/pixielabs/src/carnot/goplanner"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
 	"pixielabs.ai/pixielabs/src/carnot/udfspb"
@@ -1249,7 +1249,7 @@ func makePlannerState(numPEM int) *distributedpb.LogicalPlannerState {
 	return plannerStatePB
 }
 
-func setupPlanner() (*logicalplanner.GoPlanner, error) {
+func setupPlanner() (*goplanner.GoPlanner, error) {
 	// Create the compiler.
 	var udfInfoPb udfspb.UDFInfo
 	u, err := funcs.Asset("src/vizier/funcs/data/udf.pb")
@@ -1260,14 +1260,14 @@ func setupPlanner() (*logicalplanner.GoPlanner, error) {
 	if err != nil {
 		return nil, err
 	}
-	c, err := logicalplanner.New(&udfInfoPb)
+	c, err := goplanner.New(&udfInfoPb)
 	if err != nil {
 		return nil, err
 	}
 	return &c, nil
 }
 
-func benchmarkPlannerInnerLoop(c *logicalplanner.GoPlanner, plannerStatePB *distributedpb.LogicalPlannerState, queryRequestPB *plannerpb.QueryRequest) {
+func benchmarkPlannerInnerLoop(c *goplanner.GoPlanner, plannerStatePB *distributedpb.LogicalPlannerState, queryRequestPB *plannerpb.QueryRequest) {
 	plannerResultPB, err := c.Plan(plannerStatePB, queryRequestPB)
 
 	if err != nil {

@@ -15,7 +15,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
-	logicalplanner "pixielabs.ai/pixielabs/src/carnot/planner"
+	"pixielabs.ai/pixielabs/src/carnot/goplanner"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
 	"pixielabs.ai/pixielabs/src/carnot/planpb"
@@ -90,7 +90,7 @@ func NewServer(env querybrokerenv.QueryBrokerEnv, agentsTracker AgentsTracker,
 	if err := loadUDFInfo(&udfInfo); err != nil {
 		return nil, err
 	}
-	c, err := logicalplanner.New(&udfInfo)
+	c, err := goplanner.New(&udfInfo)
 	if err != nil {
 		return nil, err
 	}

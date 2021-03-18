@@ -70,10 +70,8 @@ gazelle(
 # gazelle:resolve go pixielabs.ai/pixielabs/src/shared/metadatapb //src/shared/metadatapb:metadata_pl_go_proto
 #
 # Make gazelle resolve CGO libraries correctly.
-# gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/planner/compiler_error_context //src/carnot/planner/compiler_error_context:go_default_library
-# gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/planner //src/carnot/planner:go_default_library
+# gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/goplanner //src/carnot/goplanner:go_default_library
 # gazelle:resolve go pixielabs.ai/pixielabs/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb //src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb:logical_pl_go_proto
-# gazelle:resolve go pixielabs.ai/pixielabs/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logical/sharedpb //src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/sharedpb:shared_pl_go_proto
 
 # gazelle:resolve go pixielabs.ai/pixielabs/third_party/kuberesolver //third_party:kuberesolver_library
 
