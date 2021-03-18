@@ -284,9 +284,6 @@ func (s *Server) CheckHealth(ctx context.Context) error {
 	wg.Add(1)
 
 	go func() {
-		defer func() {
-			close(resultStream)
-		}()
 		for {
 			select {
 			case <-time.After(healthCheckInterval):
@@ -433,7 +430,6 @@ func (s *Server) ExecuteScript(req *public_vizierapipb.ExecuteScriptRequest, srv
 		for {
 			select {
 			case <-doneCh:
-				close(resultStream)
 				wg.Done()
 				return
 			case result := <-resultStream:
