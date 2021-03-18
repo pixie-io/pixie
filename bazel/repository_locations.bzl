@@ -192,9 +192,9 @@ REPOSITORY_LOCATIONS = dict(
     ),
     # August 18, 2020.
     org_tensorflow = dict(
-        sha256 = "2595a5c401521f20a2734c4e5d54120996f8391f00bb62a57267d930bce95350",
-        strip_prefix = "tensorflow-2.3.0",
-        urls = ["https://github.com/tensorflow/tensorflow/archive/v2.3.0.tar.gz"],
+        sha256 = "f681331f8fc0800883761c7709d13cda11942d4ad5ff9f44ad855e9dc78387e0",
+        strip_prefix = "tensorflow-2.4.1",
+        urls = ["https://github.com/tensorflow/tensorflow/archive/v2.4.1.tar.gz"],
     ),
     io_bazel_rules_closure = dict(
         sha256 = "5b00383d08dd71f28503736db0500b6fb4dda47489ff5fc6bed42557c07c6ba9",
