@@ -408,7 +408,6 @@ func TestVizierPassThroughProxy_HealthCheck(t *testing.T) {
 							return nil
 						}
 						responses = append(responses, msg)
-						fmt.Printf("Got message: %+v\n", msg.String())
 					}
 				}
 			})
@@ -523,16 +522,152 @@ func TestVizierPassThroughProxy_DebugLog(t *testing.T) {
 					case <-resp.Context().Done():
 						return nil
 					case <-timeout.C:
-						t.Fatal("timeout")
+						return fmt.Errorf("timeout")
 					case msg := <-grpcDataCh:
 						if msg == nil {
 							return nil
 						}
 						responses = append(responses, msg)
-						fmt.Printf("Got message: %+v\n", msg.String())
 					}
 				}
 			})
+			eg.Wait()
+
+			if tc.expGRPCError != nil {
+				if gotReadErr == nil {
+					t.Fatal("Expected to get GRPC error")
+				}
+				assert.Equal(t, status.Code(tc.expGRPCError), status.Code(gotReadErr))
+			}
+			if tc.expGRPCResponses == nil {
+				if len(responses) != 0 {
+					t.Fatal("Expected to get no responses")
+				}
+			} else {
+				assert.Equal(t, tc.expGRPCResponses, responses)
+			}
+		})
+	}
+}
+
+func TestVizierPassThroughProxy_DebugPods(t *testing.T) {
+	viper.Set("jwt_signing_key", "the-key")
+
+	ts, cleanup := createTestState(t)
+	defer cleanup(t)
+
+	client := pl_api_vizierpb.NewVizierDebugServiceClient(ts.conn)
+	validTestToken := testingutils.GenerateTestJWTToken(t, viper.GetString("jwt_signing_key"))
+
+	testCases := []struct {
+		name string
+
+		clusterID      string
+		authToken      string
+		respFromVizier []*cvmsgspb.V2CAPIStreamResponse
+
+		expGRPCError     error
+		expGRPCResponses []*pl_api_vizierpb.DebugPodsResponse
+	}{
+		{
+			name: "Normal Stream",
+
+			clusterID: "00000000-1111-2222-2222-333333333333",
+			authToken: validTestToken,
+			respFromVizier: []*cvmsgspb.V2CAPIStreamResponse{
+				{
+					Msg: &cvmsgspb.V2CAPIStreamResponse_DebugPodsResp{
+						DebugPodsResp: &pl_api_vizierpb.DebugPodsResponse{
+							ControlPlanePods: []*pl_api_vizierpb.VizierPodStatus{
+								&pl_api_vizierpb.VizierPodStatus{
+									Name: "one pod",
+								},
+							},
+							DataPlanePods: []*pl_api_vizierpb.VizierPodStatus{
+								&pl_api_vizierpb.VizierPodStatus{
+									Name: "another pod",
+								},
+							},
+						},
+					},
+				},
+			},
+
+			expGRPCError: nil,
+			expGRPCResponses: []*pl_api_vizierpb.DebugPodsResponse{
+				&pl_api_vizierpb.DebugPodsResponse{
+					ControlPlanePods: []*pl_api_vizierpb.VizierPodStatus{
+						&pl_api_vizierpb.VizierPodStatus{
+							Name: "one pod",
+						},
+					},
+					DataPlanePods: []*pl_api_vizierpb.VizierPodStatus{
+						&pl_api_vizierpb.VizierPodStatus{
+							Name: "another pod",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			if len(tc.authToken) > 0 {
+				ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
+					fmt.Sprintf("bearer %s", tc.authToken))
+			}
+
+			ctx, cancel := context.WithCancel(ctx)
+			defer cancel()
+			resp, err := client.DebugPods(ctx,
+				&pl_api_vizierpb.DebugPodsRequest{ClusterID: tc.clusterID})
+			assert.Nil(t, err)
+
+			fv := newFakeVizier(t, uuid.FromStringOrNil(tc.clusterID), ts.nc)
+			fv.Run(t, tc.respFromVizier)
+			defer fv.Stop()
+
+			grpcDataCh := make(chan *pl_api_vizierpb.DebugPodsResponse)
+			var gotReadErr error
+			var eg errgroup.Group
+			eg.Go(func() error {
+				defer close(grpcDataCh)
+				for {
+					d, err := resp.Recv()
+					if err != nil && err != io.EOF {
+						gotReadErr = err
+					}
+					if err == io.EOF {
+						return nil
+					}
+					if d == nil {
+						return nil
+					}
+					grpcDataCh <- d
+				}
+			})
+
+			var responses []*pl_api_vizierpb.DebugPodsResponse
+			eg.Go(func() error {
+				timeout := time.NewTimer(defaultTimeout)
+				defer timeout.Stop()
+				for {
+					select {
+					case <-resp.Context().Done():
+						return nil
+					case <-timeout.C:
+						return fmt.Errorf("timeout")
+					case msg := <-grpcDataCh:
+						if msg == nil {
+							return nil
+						}
+						responses = append(responses, msg)
+					}
+				}
+			})
+			eg.Wait()
 
 			err = eg.Wait()
 			if err != nil {

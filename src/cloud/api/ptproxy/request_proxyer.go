@@ -266,6 +266,12 @@ func (p *requestProxyer) processNatsMsg(msg *nats.Msg) error {
 			log.WithError(err).Error("Failed to send message")
 			return err
 		}
+	case *cvmsgspb.V2CAPIStreamResponse_DebugPodsResp:
+		err = p.srv.SendMsg(parsed.DebugPodsResp)
+		if err != nil {
+			log.WithError(err).Error("Failed to send message")
+			return err
+		}
 	case *cvmsgspb.V2CAPIStreamResponse_Status:
 		// Status message come when the stream is closed.
 		if codes.Code(parsed.Status.Code) == codes.OK {

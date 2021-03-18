@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "src/shared/k8s/metadatapb/metadata.proto";
 
 package pl.api.internal.vizierpb;
 
@@ -317,8 +318,31 @@ message DebugLogResponse {
   string data = 2;
 }
 
+// TODO(nserrino), PP-2512: Deprecate and replace with vizierpb's version,
+// VizierPodStatus represents a Vizier pod's status at a moment in time.
+message VizierPodStatus {
+    // The name of the pod. Ex: vizier-pem-z26d8
+    string name = 1;
+    // The status of the pod.
+    pl.shared.k8s.metadatapb.PodStatus status = 2;
+}
+
+message DebugPodsRequest {
+  // The UUID of the cluster encoded as a string with dashes.
+  string cluster_id = 1 [ (gogoproto.customname) = "ClusterID" ];
+}
+
+message DebugPodsResponse {
+  // A list of the Vizier agent pods and their statuses.
+  repeated VizierPodStatus data_plane_pods = 1;
+  // A list of the Vizier control plane pods and their statuses.
+  repeated VizierPodStatus control_plane_pods = 2;
+}
+
 // Service used to run debug commands on Vizier.
 service VizierDebugService {
   // Get a debug log for a specific vizier pod.
   rpc DebugLog(DebugLogRequest) returns (stream DebugLogResponse) {}
+  // Returns a list of Vizier pods and their statuses.
+  rpc DebugPods(DebugPodsRequest) returns (stream DebugPodsResponse) {}
 }

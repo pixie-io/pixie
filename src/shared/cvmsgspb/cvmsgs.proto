@@ -111,6 +111,7 @@ message VizierHeartbeat {
     int32 num_instrumented_nodes = 12;
 }
 
+// TODO(nserrino), PP-2512: Deprecate and replace with vizierpb's VizierPodStatus,
 // PodStatus represents a pod's status at a moment in time. Currently this message
 // only contains name and status, but could contain more information that could
 // help debug in the future.
@@ -133,6 +134,7 @@ message PodStatus {
     repeated K8sEvent events = 7;
 }
 
+// TODO(nserrino), PP-2512: Deprecate this (used by PodStatus).
 // K8sEvent represents a K8s event belonging to a pod.
 message K8sEvent {
     // The string describing the event itself.
@@ -144,6 +146,7 @@ message K8sEvent {
     google.protobuf.Timestamp last_time = 3;
 }
 
+// TODO(nserrino), PP-2512: Deprecate this (used by PodStatus).
 // ContainerStatus represents pa container's status at a moment in time.
 message ContainerStatus {
     // The name of the container.
@@ -286,6 +289,7 @@ message C2VAPIStreamRequest {
         pl.api.vizierpb.HealthCheckRequest hc_req = 4;
         C2VAPIStreamCancel cancel_req = 5;
         pl.api.internal.vizierpb.DebugLogRequest debug_log_req = 6;
+        pl.api.internal.vizierpb.DebugPodsRequest debug_pods_req = 7;
     }
 }
 
@@ -302,6 +306,7 @@ message V2CAPIStreamResponse {
         pl.api.vizierpb.HealthCheckResponse hc_resp = 3;
         pl.api.vizierpb.Status status = 4;
         pl.api.internal.vizierpb.DebugLogResponse debug_log_resp = 5;
+        pl.api.internal.vizierpb.DebugPodsResponse debug_pods_resp = 6;        
     }
 }
 

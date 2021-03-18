@@ -3,6 +3,8 @@ syntax = "proto3";
 package pl.shared.k8s.metadatapb;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+
 import "src/shared/types/proto/types.proto";
 
 // This file is mostly copied from
@@ -187,6 +189,17 @@ message ContainerStatus {
   string reason = 7;
 }
 
+// K8sEvent represents a K8s event belonging to a pod.
+message K8sEvent {
+    // The string describing the event itself.
+    string message = 1;
+    // The first time at which the event occurred.
+    google.protobuf.Timestamp first_time = 2;
+    // The last time at which the event occurred. Using the first_time, we can
+    // determine how long this evenet has been occurring.
+    google.protobuf.Timestamp last_time = 3;
+}
+
 // PodStatus represents information about the status of a pod.
 message PodStatus {
   // The phase of a Pod is a simple, high-level summary of where the Pod is in its lifecycle.
@@ -218,6 +231,12 @@ message PodStatus {
                   ];
 
   repeated ContainerStatus container_statuses = 8;
+
+  // The start time of the pod.
+  google.protobuf.Timestamp created_at = 11;
+
+  // The K8s events associated with the pod.
+  repeated K8sEvent events = 12;
 
   // Deprecated.
   reserved 2;

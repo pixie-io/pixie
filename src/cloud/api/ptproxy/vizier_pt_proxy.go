@@ -80,6 +80,21 @@ func (v *VizierPassThroughProxy) DebugLog(req *pl_api_vizierpb.DebugLogRequest, 
 	return rp.Run()
 }
 
+// DebugPods is the GRPC method to fetch the list of Vizier pods (and statuses) from a cluster.
+func (v *VizierPassThroughProxy) DebugPods(req *pl_api_vizierpb.DebugPodsRequest, srv pl_api_vizierpb.VizierDebugService_DebugPodsServer) error {
+	rp, err := newRequestProxyer(v.vc, v.nc, true, req, srv)
+	if err != nil {
+		return err
+	}
+	defer rp.Finish()
+	vizReq := rp.prepareVizierRequest()
+	vizReq.Msg = &cvmsgspb.C2VAPIStreamRequest_DebugPodsReq{DebugPodsReq: req}
+	if err := rp.sendMessageToVizier(vizReq); err != nil {
+		return err
+	}
+	return rp.Run()
+}
+
 func getCredsFromCtx(ctx context.Context) (token string, claim *jwt.JWTClaims, err error) {
 	var aCtx *authcontext.AuthContext
 	aCtx, err = authcontext.FromContext(ctx)
