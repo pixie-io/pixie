@@ -14,14 +14,19 @@ namespace {
 // Client-initiated streams use odd IDs, while server-initiated streams use even IDs.
 static constexpr int kHTTP2StreamIDIncrement = 2;
 
+// TODO(oazizi): This has been observed to take a significant amount of Stirling time in some cases.
+//               In particular, walking the deque seems to be a problem.
+//               Needs to be investigated and optimized.
 void EraseExpiredStreams(std::chrono::seconds exp_dur,
                          std::deque<protocols::http2::Stream>* streams) {
+  auto now = std::chrono::steady_clock::now();
+
   auto iter = streams->begin();
   for (; iter != streams->end(); ++iter) {
     uint64_t timestamp_ns = std::max(iter->send.timestamp_ns, iter->recv.timestamp_ns);
     auto last_activity =
         std::chrono::time_point<std::chrono::steady_clock>(std::chrono::nanoseconds(timestamp_ns));
-    auto now = std::chrono::steady_clock::now();
+
     auto stream_age = std::chrono::duration_cast<std::chrono::seconds>(now - last_activity);
     if (stream_age < exp_dur) {
       break;

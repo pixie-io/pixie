@@ -174,11 +174,12 @@ class DataStream : NotCopyMoveable {
  private:
   template <typename TFrameType>
   static void EraseExpiredFrames(std::chrono::seconds exp_dur, std::deque<TFrameType>* frames) {
+    auto now = std::chrono::steady_clock::now();
+
     auto iter = frames->begin();
     for (; iter != frames->end(); ++iter) {
       auto frame_timestamp = std::chrono::time_point<std::chrono::steady_clock>(
           std::chrono::nanoseconds(iter->timestamp_ns));
-      auto now = std::chrono::steady_clock::now();
       auto frame_age = std::chrono::duration_cast<std::chrono::seconds>(now - frame_timestamp);
       // As messages are put into the list with monotonically increasing creation time stamp,
       // we can just stop at the first frame that is younger than the expiration duration.
