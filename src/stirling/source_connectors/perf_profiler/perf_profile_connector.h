@@ -67,6 +67,8 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   using StackTraceHisto = absl::flat_hash_map<SymbolicStackTrace, uint64_t>;
   using StackTraceIDMap = absl::flat_hash_map<SymbolicStackTrace, uint64_t>;
 
+  explicit PerfProfileConnector(std::string_view source_name);
+
   void ProcessBPFStackTraces(ConnectorContext* ctx, DataTable* data_table);
 
   // Read BPF data structures, build & incorporate records to the table.
@@ -83,7 +85,7 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   std::string FoldedStackTraceString(std::string_view name, ebpf::BPFStackTable* stack_traces,
                                      const stack_trace_key_t& key);
 
-  explicit PerfProfileConnector(std::string_view source_name);
+  void CleanupSymbolCaches(const absl::flat_hash_set<md::UPID>& deleted_upids);
 
   // data structures shared with BPF:
   std::unique_ptr<ebpf::BPFStackTable> stack_traces_a_;
@@ -105,6 +107,10 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Cache of symbols.
   absl::flat_hash_map<struct upid_t, SymbolCache, UPIDHashFn> upid_symbol_caches_;
   SymbolCache kernel_symbol_cache_;
+
+  // Keeps track of processes. Used to find destroyed processes on which to perform clean-up.
+  // TODO(oazizi): Investigate ways of sharing across source_connectors.
+  ProcTracker proc_tracker_;
 
   // kSamplingPeriodMillis: the time interval in between stack trace samples.
   // kTargetPushPeriodMillis: time interval between "push events".

@@ -123,6 +123,15 @@ void PerfProfileConnector::ProcessBPFStackTraces(ConnectorContext* ctx, DataTabl
   LOG_IF(ERROR, !wr_status.ok()) << "Error writing profiler_state_";
 }
 
+void PerfProfileConnector::CleanupSymbolCaches(const absl::flat_hash_set<md::UPID>& deleted_upids) {
+  for (const auto& md_upid : deleted_upids) {
+    struct upid_t upid;
+    upid.pid = md_upid.pid();
+    upid.start_time_ticks = md_upid.start_ts();
+    upid_symbol_caches_.erase(upid);
+  }
+}
+
 void PerfProfileConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
                                             DataTable* data_table) {
   DCHECK_LT(table_num, kTables.size())
@@ -146,6 +155,9 @@ void PerfProfileConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
     ProcessBPFStackTraces(ctx, data_table);
   }
   DCHECK_EQ(push_count, read_and_clear_count_) << "stack trace handshake protocol out of sync.";
+
+  proc_tracker_.Update(ctx->GetUPIDs());
+  CleanupSymbolCaches(proc_tracker_.deleted_upids());
 }
 
 uint64_t PerfProfileConnector::SymbolicStackTradeID(
