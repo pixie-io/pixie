@@ -307,20 +307,19 @@ func (d *Datastore) GetUserSettings(id uuid.UUID, keys []string) ([]string, erro
 
 // UpdateUserSettings updates the user settings for the given user.
 func (d *Datastore) UpdateUserSettings(id uuid.UUID, keys []string, values []string) error {
-	tx, err := d.db.Begin()
+	tx, err := d.db.Beginx()
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
 
 	for i, k := range keys {
 		userSetting := UserSetting{id, k, values[i]}
 		query := `INSERT INTO user_settings ("user_id", "key", "value") VALUES (:user_id, :key, :value) ON CONFLICT ("user_id", "key") DO UPDATE SET "value" = EXCLUDED.value`
-		row, err := d.db.NamedQuery(query, userSetting)
+		_, err := d.db.NamedExec(query, userSetting)
 		if err != nil {
-			tx.Rollback()
 			return err
 		}
-		defer row.Close()
 	}
 
 	err = tx.Commit()

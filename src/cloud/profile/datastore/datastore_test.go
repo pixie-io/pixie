@@ -286,18 +286,26 @@ func TestDatastore(t *testing.T) {
 		err := d.UpdateUserSettings(uuid.FromStringOrNil(id), []string{"new_setting", "another_setting"}, []string{"some_val", "new_value"})
 		assert.Nil(t, err)
 
-		query := `SELECT * from user_settings WHERE user_id=$1 AND key=$2`
-		expectedKeyValues := [][]string{{"new_setting", "some_val"}, {"another_setting", "new_value"}, {"some_setting", "test"}}
-
-		for _, kv := range expectedKeyValues {
-			rows, err := db.Queryx(query, id, kv[0])
+		checkKVInDB := func(k, v string) {
+			query := `SELECT * from user_settings WHERE user_id=$1 AND key=$2`
+			rows, err := db.Queryx(query, id, k)
 			assert.Nil(t, err)
 			defer rows.Close()
 			var userSetting datastore.UserSetting
 			assert.True(t, rows.Next())
 			err = rows.StructScan(&userSetting)
 			assert.Nil(t, err)
-			assert.Equal(t, kv[1], userSetting.Value)
+			assert.Equal(t, v, userSetting.Value)
+		}
+
+		expectedKeyValues := map[string]string{
+			"new_setting":     "some_val",
+			"another_setting": "new_value",
+			"some_setting":    "test",
+		}
+
+		for k, v := range expectedKeyValues {
+			checkKVInDB(k, v)
 		}
 	})
 }
