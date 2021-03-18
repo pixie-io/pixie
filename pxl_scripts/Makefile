@@ -18,7 +18,7 @@ bundle-oss.json.gz: bundle-oss.json
 .PHONY: update_bundle
 update_bundle: bundle-oss.json.gz
 # Requires prod access to update, or needs to run in CI deploy.
-	gsutil -h "Cache-Control:no-cachle,max-age=0" \
+	gsutil -h "Cache-Control:no-cache,max-age=0" \
          -h "Content-Type:application/json" \
          -h "Content-Encoding: gzip" \
          cp $< $(BUNDLE)
