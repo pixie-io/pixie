@@ -30,7 +30,7 @@ func setUpUpdater(t *testing.T) (*controller.Updater, *nats.Conn, *sqlx.DB, *moc
 
 	ctrl := gomock.NewController(t)
 
-	nc, natsCleanup := testingutils.StartNATS(t)
+	nc, natsCleanup := testingutils.MustStartTestNATS(t)
 
 	mockArtifactTrackerClient := mock_artifacttrackerpb.NewMockArtifactTrackerClient(ctrl)
 	atReq := &artifacttrackerpb.GetArtifactListRequest{

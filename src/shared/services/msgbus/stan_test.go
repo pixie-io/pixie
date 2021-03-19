@@ -14,7 +14,7 @@ import (
 func TestMustConnectSTAN(t *testing.T) {
 	clusterID := "stan"
 	clientID := "test-client"
-	_, sc, cleanup := testingutils.StartStan(t, clusterID, clientID)
+	_, sc, cleanup := testingutils.MustStartTestStan(t, clusterID, clientID)
 	defer cleanup()
 
 	viper.Set("stan_cluster_id", clusterID)

@@ -12,7 +12,7 @@ import (
 )
 
 func TestMustConnectNATS(t *testing.T) {
-	nc, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 
 	viper.Set("nats_url", nc.ConnectedUrl())

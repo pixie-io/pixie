@@ -370,7 +370,7 @@ func TestServer_GetVizierConnectionInfo(t *testing.T) {
 func TestServer_VizierConnectedUnhealthy(t *testing.T) {
 	mustLoadTestData(db)
 
-	nc, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 
 	ctrl := gomock.NewController(t)
@@ -412,7 +412,7 @@ func TestServer_VizierConnectedUnhealthy(t *testing.T) {
 func TestServer_VizierConnectedHealthy(t *testing.T) {
 	mustLoadTestData(db)
 
-	nc, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 
 	subCh := make(chan *nats.Msg, 1)
@@ -479,7 +479,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	nc, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 
 	updater := mock_controller.NewMockVzUpdater(ctrl)
@@ -671,7 +671,7 @@ func TestServer_GetSSLCerts(t *testing.T) {
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	nc, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 
 	subCh := make(chan *nats.Msg, 1)
@@ -741,7 +741,7 @@ func TestServer_UpdateOrInstallVizier(t *testing.T) {
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	nc, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 
 	vizierID, _ := uuid.FromString("123e4567-e89b-12d3-a456-426655440001")
@@ -780,7 +780,7 @@ func TestServer_MessageHandler(t *testing.T) {
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	nc, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 
 	subCh := make(chan *nats.Msg, 1)

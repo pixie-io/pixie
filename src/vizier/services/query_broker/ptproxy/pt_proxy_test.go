@@ -80,7 +80,7 @@ func createTestState(t *testing.T) (*testState, func(t *testing.T)) {
 	lis := bufconn.Listen(bufSize)
 	s := grpc.NewServer()
 
-	nc, natsCleanup := testingutils.StartNATS(t)
+	nc, natsCleanup := testingutils.MustStartTestNATS(t)
 	vzServer := NewMockVzServer(t)
 	public_vizierapipb.RegisterVizierServiceServer(s, vzServer)
 

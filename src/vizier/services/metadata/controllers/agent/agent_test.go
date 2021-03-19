@@ -30,7 +30,7 @@ import (
 
 func setupManager(t *testing.T) (agent.Store, agent.Manager, *nats.Conn, func()) {
 	// Setup NATS.
-	nc, natsCleanup := testingutils.StartNATS(t)
+	nc, natsCleanup := testingutils.MustStartTestNATS(t)
 
 	memFS := vfs.NewMem()
 	c, err := pebble.Open("test", &pebble.Options{

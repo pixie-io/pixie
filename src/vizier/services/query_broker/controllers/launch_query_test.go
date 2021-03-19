@@ -41,7 +41,7 @@ const agent2ID = "31285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 
 func TestLaunchQuery(t *testing.T) {
 	// Check that the query is broadcasted to all agents.
-	nc, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 
 	queryUUID, err := uuid.FromString(queryIDStr)
@@ -112,7 +112,7 @@ func TestLaunchQuery(t *testing.T) {
 }
 
 func TestLaunchQueryNoPlans(t *testing.T) {
-	nc, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 
 	queryUUID, err := uuid.FromString(queryIDStr)

@@ -191,10 +191,10 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 			insertClusterInfoQuery := `INSERT INTO vizier_cluster_info(vizier_cluster_id, status) VALUES ($1, $2)`
 			db.MustExec(insertClusterInfoQuery, vzID, test.vizierStatus)
 
-			nc, natsCleanup := testingutils.StartNATS(t)
+			nc, natsCleanup := testingutils.MustStartTestNATS(t)
 			defer natsCleanup()
 
-			_, sc, stanCleanup := testingutils.StartStan(t, "test-stan", "test-client")
+			_, sc, stanCleanup := testingutils.MustStartTestStan(t, "test-stan", "test-client")
 			defer stanCleanup()
 
 			idxCh := make(chan *stan.Msg)

@@ -59,7 +59,7 @@ func TestVzWatcher(t *testing.T) {
 					},
 				}, nil)
 
-			nc, natsCleanup := testingutils.StartNATS(t)
+			nc, natsCleanup := testingutils.MustStartTestNATS(t)
 			defer natsCleanup()
 
 			w, err := vzutils.NewWatcher(nc, mockVZMgr, "00", "bb")

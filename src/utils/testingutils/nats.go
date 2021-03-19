@@ -14,12 +14,6 @@ import (
 	"github.com/phayes/freeport"
 )
 
-var testOptions = server.Options{
-	Host:   "localhost",
-	NoLog:  true,
-	NoSigs: true,
-}
-
 func startNATS() (gnatsd *server.Server, conn *nats.Conn, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -32,13 +26,14 @@ func startNATS() (gnatsd *server.Server, conn *nats.Conn, err error) {
 		return nil, nil, err
 	}
 
-	testOptions.Port = port
-	gnatsd = test.RunServer(&testOptions)
+	opts := test.DefaultTestOptions
+	opts.Port = port
+	gnatsd = test.RunServer(&opts)
 	if gnatsd == nil {
 		return nil, nil, errors.New("Could not run NATS server")
 	}
 
-	url := GetNATSURL(port)
+	url := fmt.Sprintf("nats://%s:%d", opts.Host, opts.Port)
 	conn, err = nats.Connect(url)
 	if err != nil {
 		gnatsd.Shutdown()
@@ -48,8 +43,8 @@ func startNATS() (gnatsd *server.Server, conn *nats.Conn, err error) {
 	return gnatsd, conn, nil
 }
 
-// StartNATS starts up a NATS server at an open port.
-func StartNATS(t *testing.T) (*nats.Conn, func()) {
+// MustStartTestNATS starts up a NATS server at an open port.
+func MustStartTestNATS(t *testing.T) (*nats.Conn, func()) {
 	var gnatsd *server.Server
 	var conn *nats.Conn
 
@@ -77,9 +72,4 @@ func StartNATS(t *testing.T) (*nats.Conn, func()) {
 	}
 
 	return conn, cleanup
-}
-
-// GetNATSURL gets the URL of the NATS server.
-func GetNATSURL(port int) string {
-	return fmt.Sprintf("nats://%s:%d", testOptions.Host, port)
 }

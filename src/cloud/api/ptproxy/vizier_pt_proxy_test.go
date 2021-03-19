@@ -54,7 +54,7 @@ func createTestState(t *testing.T) (*testState, func(t *testing.T)) {
 	env := env2.New()
 	s := server.CreateGRPCServer(env, &server.GRPCServerOptions{})
 
-	nc, natsCleanup := testingutils.StartNATS(t)
+	nc, natsCleanup := testingutils.MustStartTestNATS(t)
 
 	public_vizierpb.RegisterVizierServiceServer(s, ptproxy.NewVizierPassThroughProxy(nc, &fakeVzMgr{}))
 	pl_api_vizierpb.RegisterVizierDebugServiceServer(s, ptproxy.NewVizierPassThroughProxy(nc, &fakeVzMgr{}))

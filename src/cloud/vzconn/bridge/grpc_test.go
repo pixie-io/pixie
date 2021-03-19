@@ -52,8 +52,8 @@ func createTestState(t *testing.T, ctrl *gomock.Controller) (*testState, func(t 
 	mockVZMgr := mock_vzmgrpb.NewMockVZMgrServiceClient(ctrl)
 	mockVZDeployment := mock_vzmgrpb.NewMockVZDeploymentServiceClient(ctrl)
 
-	nc, natsCleanup := testingutils.StartNATS(t)
-	_, sc, cleanStan := testingutils.StartStan(t, "test-stan", "test-client")
+	nc, natsCleanup := testingutils.MustStartTestNATS(t)
+	_, sc, cleanStan := testingutils.MustStartTestStan(t, "test-stan", "test-client")
 	b := bridge.NewBridgeGRPCServer(mockVZMgr, mockVZDeployment, nc, sc)
 	vzconnpb.RegisterVZConnServiceServer(s, b)
 

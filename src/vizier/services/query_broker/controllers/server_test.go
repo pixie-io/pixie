@@ -504,7 +504,7 @@ func (f *fakeResultForwarder) OptionallyCancelClientStream(queryID uuid.UUID, er
 
 func TestCheckHealth_Success(t *testing.T) {
 	// Start NATS.
-	nc, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 
 	// Set up mocks.
@@ -578,7 +578,7 @@ func TestCheckHealth_Success(t *testing.T) {
 
 func TestCheckHealth_CompilationError(t *testing.T) {
 	// Start NATS.
-	nc, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 
 	// Set up mocks.
@@ -617,7 +617,7 @@ func TestCheckHealth_CompilationError(t *testing.T) {
 
 func TestHealthCheck_ExecutionError(t *testing.T) {
 	// Start NATS.
-	nc, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 
 	// Set up mocks.
@@ -672,7 +672,7 @@ func TestExecuteScript_MutationError(t *testing.T) {
 
 func TestExecuteScript_Success(t *testing.T) {
 	// Start NATS.
-	nc, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 
 	// Set up mocks.
@@ -787,7 +787,7 @@ func TestExecuteScript_Success(t *testing.T) {
 // TestExecuteScript_PlannerErrorResult makes sure that compiler error handling is done well.
 func TestExecuteScript_PlannerErrorResult(t *testing.T) {
 	// Start NATS.
-	nc, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 
 	// Set up mocks.
@@ -868,7 +868,7 @@ func TestExecuteScript_PlannerErrorResult(t *testing.T) {
 
 func TestExecuteScript_ErrorInStatusResult(t *testing.T) {
 	// Start NATS.
-	nc, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 
 	// Set up mocks.
@@ -931,7 +931,7 @@ func TestExecuteScript_ErrorInStatusResult(t *testing.T) {
 }
 
 func TestTransferResultChunk_AgentStreamComplete(t *testing.T) {
-	nc, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 
 	ctrl := gomock.NewController(t)
@@ -1027,7 +1027,7 @@ func TestTransferResultChunk_MultipleTransferResultChunkStreams(t *testing.T) {
 }
 
 func TestTransferResultChunk_AgentClosedPrematurely(t *testing.T) {
-	nc, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 
 	ctrl := gomock.NewController(t)
@@ -1108,7 +1108,7 @@ func TestTransferResultChunk_AgentClosedPrematurely(t *testing.T) {
 }
 
 func TestTransferResultChunk_AgentStreamFailed(t *testing.T) {
-	nc, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 
 	ctrl := gomock.NewController(t)
@@ -1181,7 +1181,7 @@ func TestTransferResultChunk_AgentStreamFailed(t *testing.T) {
 }
 
 func TestTransferResultChunk_ClientStreamCancelled(t *testing.T) {
-	nc, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.MustStartTestNATS(t)
 	defer cleanup()
 
 	ctrl := gomock.NewController(t)
