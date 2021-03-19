@@ -10,8 +10,9 @@ import (
 )
 
 func TestSetupTestDB(t *testing.T) {
-	db, teardown := pgtest.SetupTestDB(t, nil)
+	db, teardown, err := pgtest.SetupTestDB(nil)
 
+	require.Nil(t, err)
 	require.NotNil(t, db)
 	require.NotNil(t, teardown)
 	assert.Nil(t, db.Ping())
@@ -19,6 +20,6 @@ func TestSetupTestDB(t *testing.T) {
 	teardown()
 
 	// This should fail b/c database should be closed after teardown.
-	err := db.Ping()
-	assert.NotNil(t, err)
+	err = db.Ping()
+	require.NotNil(t, err)
 }

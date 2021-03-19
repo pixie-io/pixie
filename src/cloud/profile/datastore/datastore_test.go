@@ -1,6 +1,8 @@
 package datastore_test
 
 import (
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/gofrs/uuid"
@@ -13,6 +15,34 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/profile/schema"
 	"pixielabs.ai/pixielabs/src/shared/services/pgtest"
 )
+
+func TestMain(m *testing.M) {
+	err := testMain(m)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Got error: %v\n", err)
+		os.Exit(1)
+	}
+	os.Exit(0)
+}
+
+var db *sqlx.DB
+
+func testMain(m *testing.M) error {
+	s := bindata.Resource(schema.AssetNames(), func(name string) (bytes []byte, e error) {
+		return schema.Asset(name)
+	})
+
+	testDB, teardown, err := pgtest.SetupTestDB(s)
+	if err != nil {
+		return fmt.Errorf("failed to start test database: %w", err)
+	}
+
+	defer teardown()
+	db = testDB
+
+	m.Run()
+	return nil
+}
 
 func mustLoadTestData(db *sqlx.DB) {
 	// Cleanup.
@@ -31,12 +61,6 @@ func mustLoadTestData(db *sqlx.DB) {
 }
 
 func TestDatastore(t *testing.T) {
-	s := bindata.Resource(schema.AssetNames(), func(name string) (bytes []byte, e error) {
-		return schema.Asset(name)
-	})
-	db, teardown := pgtest.SetupTestDB(t, s)
-	defer teardown()
-
 	t.Run("test insert and get user", func(t *testing.T) {
 		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)

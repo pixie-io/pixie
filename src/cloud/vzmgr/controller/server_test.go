@@ -78,10 +78,9 @@ func testMain(m *testing.M) error {
 		return schema.Asset(name)
 	})
 
-	testDB, teardown, err := pgtest.SetupTestDBNew(s)
+	testDB, teardown, err := pgtest.SetupTestDB(s)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to start test database: %v", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to start test database: %w", err)
 	}
 
 	defer teardown()

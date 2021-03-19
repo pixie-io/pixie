@@ -2,6 +2,8 @@ package controller_test
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -24,6 +26,34 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 
+func TestMain(m *testing.M) {
+	err := testMain(m)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Got error: %v\n", err)
+		os.Exit(1)
+	}
+	os.Exit(0)
+}
+
+var db *sqlx.DB
+
+func testMain(m *testing.M) error {
+	s := bindata.Resource(schema.AssetNames(), func(name string) (bytes []byte, e error) {
+		return schema.Asset(name)
+	})
+
+	testDB, teardown, err := pgtest.SetupTestDB(s)
+	if err != nil {
+		return fmt.Errorf("failed to start test database: %w", err)
+	}
+
+	defer teardown()
+	db = testDB
+
+	m.Run()
+	return nil
+}
+
 func mustSetupFakeBucket(t *testing.T) stiface.Client {
 	return testingutils.NewMockGCSClient(map[string]*testingutils.MockGCSBucket{
 		"test-bucket": testingutils.NewMockGCSBucket(
@@ -35,11 +65,14 @@ func mustSetupFakeBucket(t *testing.T) stiface.Client {
 	})
 }
 
-func mustLoadTestData(t *testing.T, db *sqlx.DB) {
+func mustLoadTestData(db *sqlx.DB) {
+	db.MustExec(`DELETE from artifact_changelogs`)
+	db.MustExec(`DELETE FROM artifacts`)
+
 	insertArtifactQuery := `
-        INSERT INTO artifacts 
-          (id, artifact_name, create_time, commit_hash, version_str, available_artifacts) 
-        VALUES 
+        INSERT INTO artifacts
+          (id, artifact_name, create_time, commit_hash, version_str, available_artifacts)
+        VALUES
           ($1, $2, $3, $4, $5, $6)`
 	db.MustExec(insertArtifactQuery, "123e4567-e89b-12d3-a456-426655440000",
 		"cli", "2019-06-22 19:10:25-07", "bda4ac2f4c979e81f5d95a2b550a08fb041e985c",
@@ -60,9 +93,9 @@ func mustLoadTestData(t *testing.T, db *sqlx.DB) {
 		"1.1.5", "{CONTAINER_SET_LINUX_AMD64}")
 
 	insertChangelogQuery := `
-        INSERT INTO artifact_changelogs 
-          (artifacts_id, changelog) 
-        VALUES 
+        INSERT INTO artifact_changelogs
+          (artifacts_id, changelog)
+        VALUES
           ($1, $2)`
 
 	db.MustExec(insertChangelogQuery, "123e4567-e89b-12d3-a456-426655440000", "cl 0")
@@ -72,18 +105,8 @@ func mustLoadTestData(t *testing.T, db *sqlx.DB) {
 	db.MustExec(insertChangelogQuery, "223e4567-e89b-12d3-a456-426655440001", "cl2 1")
 }
 
-func mustInitTestDB(t *testing.T) (*sqlx.DB, func()) {
-	s := bindata.Resource(schema.AssetNames(), func(name string) (bytes []byte, e error) {
-		return schema.Asset(name)
-	})
-	db, teardown := pgtest.SetupTestDB(t, s)
-	return db, teardown
-}
-
 func TestServer_GetArtifactList(t *testing.T) {
-	db, teardown := mustInitTestDB(t)
-	defer teardown()
-	mustLoadTestData(t, db)
+	mustLoadTestData(db)
 
 	server := controller.NewServer(db, nil, "bucket", nil)
 
@@ -208,9 +231,7 @@ func TestServer_GetArtifactList(t *testing.T) {
 }
 
 func TestServer_GetDownloadLink(t *testing.T) {
-	db, teardown := mustInitTestDB(t)
-	defer teardown()
-	mustLoadTestData(t, db)
+	mustLoadTestData(db)
 	storageClient := mustSetupFakeBucket(t)
 
 	server := controller.NewServer(db, storageClient, "test-bucket", &jwt.Config{

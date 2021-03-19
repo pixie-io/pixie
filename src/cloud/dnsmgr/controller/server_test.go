@@ -2,6 +2,8 @@ package controller_test
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -19,18 +21,38 @@ import (
 	"pixielabs.ai/pixielabs/src/utils"
 )
 
-func setupTestDB(t *testing.T) (*sqlx.DB, func()) {
+func TestMain(m *testing.M) {
+	err := testMain(m)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Got error: %v\n", err)
+		os.Exit(1)
+	}
+	os.Exit(0)
+}
+
+var db *sqlx.DB
+
+func testMain(m *testing.M) error {
 	s := bindata.Resource(schema.AssetNames(), func(name string) (bytes []byte, e error) {
 		return schema.Asset(name)
 	})
-	db, teardown := pgtest.SetupTestDB(t, s)
 
-	return db, func() {
-		teardown()
+	testDB, teardown, err := pgtest.SetupTestDB(s)
+	if err != nil {
+		return fmt.Errorf("failed to start test database: %w", err)
 	}
+
+	defer teardown()
+	db = testDB
+
+	m.Run()
+	return nil
 }
 
-func loadTestData(t *testing.T, db *sqlx.DB) {
+func mustLoadTestData(db *sqlx.DB) {
+	db.MustExec(`DELETE FROM dns_addresses`)
+	db.MustExec(`DELETE FROM ssl_certs`)
+
 	insertSSLCertsQuery := `INSERT INTO ssl_certs(cname, cluster_id, cert, key) VALUES ($1, $2, $3, $4)`
 	db.MustExec(insertSSLCertsQuery, "abcd", "123e4567-e89b-12d3-a456-426655440000", "cert-abcd", "key-abcd")
 	db.MustExec(insertSSLCertsQuery, "befgh", nil, "cert-befgh", "key-befgh")
@@ -43,9 +65,7 @@ func loadTestData(t *testing.T, db *sqlx.DB) {
 
 func TestServer_GetDNSAddressExisting(t *testing.T) {
 	viper.Set("domain_name", "withpixie.ai")
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -67,9 +87,7 @@ func TestServer_GetDNSAddressExisting(t *testing.T) {
 func TestServer_GetDNSAddressDefault(t *testing.T) {
 	viper.Set("domain_name", "withpixie.ai")
 	viper.Set("use_default_dns_cert", true)
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -104,9 +122,7 @@ func TestServer_GetDNSAddressNew(t *testing.T) {
 	viper.Set("domain_name", "withpixie.ai")
 	viper.Set("use_default_dns_cert", false)
 
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -138,9 +154,7 @@ func TestServer_GetDNSAddressNew(t *testing.T) {
 
 func TestServer_CreateSSLCertExisting(t *testing.T) {
 	viper.Set("domain_name", "withpixie.ai")
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -161,9 +175,7 @@ func TestServer_CreateSSLCertExisting(t *testing.T) {
 
 func TestServer_CreateNewSSLCert(t *testing.T) {
 	viper.Set("domain_name", "withpixie.ai")
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -185,9 +197,7 @@ func TestServer_CreateNewSSLCert(t *testing.T) {
 func TestServer_CreateNewSSLCertDefault(t *testing.T) {
 	viper.Set("domain_name", "withpixie.ai")
 	viper.Set("use_default_dns_cert", true)
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
