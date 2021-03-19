@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 	batchv1 "k8s.io/api/batch/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -1010,4 +1011,28 @@ func (s *Bridge) currentStatus() cvmsgspb.VizierStatus {
 		return cvmsgspb.VZ_ST_UNHEALTHY
 	}
 	return cvmsgspb.VZ_ST_HEALTHY
+}
+
+// DebugLog is the GRPC stream method to fetch debug logs from vizier.
+func (s *Bridge) DebugLog(req *vizierpb.DebugLogRequest, srv vizierpb.VizierDebugService_DebugLogServer) error {
+	logs, err := s.vzInfo.GetPodLogs(req.PodName, req.Previous, req.Container)
+	if err != nil {
+		return err
+	}
+	i := 0
+	// Repeated logic from handleDebugLogRequest.
+	for i*logChunkSize <= len(logs) {
+		err := srv.Send(&vizierpb.DebugLogResponse{
+			Data: logs[i*logChunkSize : int(math.Min(float64(len(logs)), float64((i+1)*logChunkSize)))],
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// DebugPods is the GRPC method to fetch the list of Vizier pods (and statuses) from a cluster.
+func (s *Bridge) DebugPods(req *vizierpb.DebugPodsRequest, srv vizierpb.VizierDebugService_DebugPodsServer) error {
+	return status.Errorf(codes.Unimplemented, "method DebugPods not implemented")
 }

@@ -21,6 +21,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services/server"
 	controllers "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/bridge"
 	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/vizhealth"
+	internal_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
 func init() {
@@ -127,6 +128,8 @@ func main() {
 	e := env.New()
 	s := server.NewPLServer(e,
 		httpmiddleware.WithBearerAuthMiddleware(e, mux))
+
+	internal_api_vizierpb.RegisterVizierDebugServiceServer(s.GRPCServer(), svr)
 
 	s.Start()
 	s.StopOnInterrupt()
