@@ -1489,7 +1489,6 @@ TEST_F(SocketTraceConnectorTest, HTTP2ResponseOnly) {
   source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("onse"));
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":status", "200"));
   source_->AcceptHTTP2Header(frame_generator.GenEndStreamHeader<kHeaderEventRead>());
-  source_->AcceptControlEvent(event_gen.InitClose());
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();

@@ -512,7 +512,10 @@ class ConnTracker : NotCopyMoveable {
 
   void SetConnID(struct conn_id_t conn_id);
   void UpdateTimestamps(uint64_t bpf_timestamp);
+
+  // Called when any events were received for a connection.
   void CheckTracker();
+
   void CheckProcForConnClose();
   void HandleInactivity();
   bool IsRemoteAddrInCluster(const std::vector<CIDRBlock>& cluster_cidrs);

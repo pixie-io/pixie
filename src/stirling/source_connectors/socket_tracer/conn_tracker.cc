@@ -55,6 +55,7 @@ constexpr double kStitchFailureRateThreshold = 0.5;
 //--------------------------------------------------------------
 
 ConnTracker::~ConnTracker() {
+  CONN_TRACE(2) << "Being destroyed";
   if (conn_info_map_mgr_ != nullptr) {
     conn_info_map_mgr_->ReleaseResources(conn_id_, state_ == State::kDisabled);
   }
@@ -348,8 +349,8 @@ ConnTracker::ProcessToRecords<protocols::http2::ProtocolTraits>() {
 
   protocols::RecordsWithErrorCount<protocols::http2::Record> result;
 
-  protocols::http2::ProcessHTTP2Streams(&http2_client_streams_, &result);
-  protocols::http2::ProcessHTTP2Streams(&http2_server_streams_, &result);
+  protocols::http2::ProcessHTTP2Streams(&http2_client_streams_, IsZombie(), &result);
+  protocols::http2::ProcessHTTP2Streams(&http2_server_streams_, IsZombie(), &result);
 
   UpdateResultStats(result);
   Cleanup<protocols::http2::ProtocolTraits>();
@@ -503,6 +504,10 @@ DataStream* ConnTracker::resp_data() {
 
 void ConnTracker::MarkForDeath(int32_t countdown) {
   DCHECK_GE(countdown, 0);
+
+  if (death_countdown_ == -1) {
+    CONN_TRACE(2) << absl::Substitute("Marked for death, countdown=$0", countdown);
+  }
 
   // Only send the first time MarkForDeath is called (death_countdown == -1).
   if (death_countdown_ == -1 && ShouldExportToConnStats()) {
@@ -682,7 +687,8 @@ void ConnTracker::IterationPreTick(const std::vector<CIDRBlock>& cluster_cidrs,
 
 void ConnTracker::IterationPostTick() {
   if (death_countdown_ > 0) {
-    death_countdown_--;
+    --death_countdown_;
+    CONN_TRACE(2) << absl::Substitute("Death countdown=$0", death_countdown_);
   }
 
   HandleInactivity();

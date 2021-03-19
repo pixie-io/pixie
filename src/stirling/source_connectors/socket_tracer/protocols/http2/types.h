@@ -85,14 +85,20 @@ struct Stream {
   HalfStream send;
   HalfStream recv;
 
-  bool StreamEnded() const { return send.end_stream && recv.end_stream; }
+  bool StreamEnded() {
+    // This check only applies to unary RPC calls.
+    // In streaming, however, the end_stream is only sent when client or server explicitly indicates
+    // so. And the other side can end the RPC without sending a frame with end_stream set to true.
+    return send.end_stream && recv.end_stream;
+  }
 
   bool consumed = false;
 
   size_t ByteSize() const { return send.ByteSize() + recv.ByteSize(); }
 
   std::string ToString() const {
-    return absl::Substitute("[send=$0] [recv=$1]", send.ToString(), recv.ToString());
+    return absl::Substitute("[consumed=$0] [send=$1] [recv=$2]", consumed, send.ToString(),
+                            recv.ToString());
   }
 };
 

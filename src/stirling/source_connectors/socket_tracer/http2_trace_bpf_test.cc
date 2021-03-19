@@ -307,5 +307,7 @@ TEST_F(ProductCatalogServiceTraceTest, Basic) {
   }
 }
 
+// TODO(yzhao): Add test for bidirectional streaming
+
 }  // namespace stirling
 }  // namespace pl

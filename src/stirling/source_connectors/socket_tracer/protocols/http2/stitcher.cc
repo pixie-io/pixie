@@ -7,12 +7,12 @@ namespace stirling {
 namespace protocols {
 namespace http2 {
 
-void ProcessHTTP2Streams(HTTP2StreamsContainer* http2_streams,
+void ProcessHTTP2Streams(HTTP2StreamsContainer* http2_streams, bool conn_closed,
                          RecordsWithErrorCount<http2::Record>* result) {
   int count_head_consumed = 0;
   bool skipped = false;
   for (auto& stream : *http2_streams->mutable_streams()) {
-    if (!stream.consumed && stream.StreamEnded()) {
+    if (!stream.consumed && (conn_closed || stream.StreamEnded())) {
       // TODO(oazizi): Investigate ways of using std::move(stream) for performance.
       //               But be careful since the object may still be accessed after the move
       //               (see HalfStreamPtr in connection_tracker.cc).
