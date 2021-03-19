@@ -35,7 +35,6 @@ go_test(
         "suggester_test.go",
     ],
     embed = [":go_default_library"],
-    flaky = True,
     deps = [
         "//src/cloud/autocomplete/mock:go_default_library",
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",

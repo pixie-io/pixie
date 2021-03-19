@@ -15,7 +15,6 @@ go_test(
     name = "go_default_test",
     srcs = ["index_manager_test.go"],
     embed = [":go_default_library"],
-    flaky = True,
     deps = [
         "//src/cloud/jobs/elastic_migration/schema:go_default_library",
         "//src/utils/testingutils:go_default_library",

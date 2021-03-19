@@ -28,7 +28,6 @@ go_test(
         "managed_index_test.go",
     ],
     embed = [":go_default_library"],
-    flaky = True,
     deps = [
         "//src/utils/testingutils:go_default_library",
         "@com_github_olivere_elastic_v7//:go_default_library",
