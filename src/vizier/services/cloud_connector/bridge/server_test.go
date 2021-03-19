@@ -230,11 +230,7 @@ func makeTestState(t *testing.T) (*testState, func(t *testing.T)) {
 		t.Fatalf("Got an error during GRPC setup: %+v", err)
 	}
 	vc := vzconnpb.NewVZConnServiceClient(conn)
-	natsPort, natsCleanup := testingutils.StartNATS(t)
-	nc, err := nats.Connect(testingutils.GetNATSURL(natsPort))
-	if err != nil {
-		t.Fatalf("Got an error during NATS setup: %+v", err)
-	}
+	nc, natsCleanup := testingutils.StartNATS(t)
 
 	cleanupFunc := func(t *testing.T) {
 		s.GracefulStop()

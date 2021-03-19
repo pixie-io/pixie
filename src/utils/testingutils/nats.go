@@ -4,6 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
+
+	"github.com/cenkalti/backoff/v3"
 
 	"github.com/nats-io/nats-server/v2/server"
 	"github.com/nats-io/nats-server/v2/test"
@@ -17,55 +20,55 @@ var testOptions = server.Options{
 	NoSigs: true,
 }
 
-func startNATS() (gnatsd *server.Server, conn *nats.Conn, port int, err error) {
+func startNATS() (gnatsd *server.Server, conn *nats.Conn, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = errors.New("Could not run NATS server")
 		}
 	}()
 	// Find available port.
-	port, err = freeport.GetFreePort()
+	port, err := freeport.GetFreePort()
 	if err != nil {
-		return nil, nil, 0, err
+		return nil, nil, err
 	}
 
 	testOptions.Port = port
 	gnatsd = test.RunServer(&testOptions)
 	if gnatsd == nil {
-		return nil, nil, 0, errors.New("Could not run NATS server")
+		return nil, nil, errors.New("Could not run NATS server")
 	}
 
 	url := GetNATSURL(port)
 	conn, err = nats.Connect(url)
 	if err != nil {
 		gnatsd.Shutdown()
-		return nil, nil, 0, err
+		return nil, nil, err
 	}
 
-	return gnatsd, conn, port, nil
+	return gnatsd, conn, nil
 }
 
 // StartNATS starts up a NATS server at an open port.
-func StartNATS(t *testing.T) (int, func()) {
-	tries := 0
-
+func StartNATS(t *testing.T) (*nats.Conn, func()) {
 	var gnatsd *server.Server
 	var conn *nats.Conn
-	var port int
-	var err error
 
-	for {
-		tries++
-		if tries == 5 {
-			t.Fatal("Could not connect to NATS")
-		}
-
-		gnatsd, conn, port, err = startNATS()
+	natsConnectFn := func() error {
+		var err error
+		gnatsd, conn, err = startNATS()
 		if err != nil {
-			continue
+			return err
 		}
+		return nil
+	}
 
-		break
+	bo := backoff.NewExponentialBackOff()
+	bo.MaxInterval = 5 * time.Second
+	bo.MaxElapsedTime = 1 * time.Minute
+
+	err := backoff.Retry(natsConnectFn, bo)
+	if err != nil {
+		t.Fatal("Could not connect to NATS")
 	}
 
 	cleanup := func() {
@@ -73,7 +76,7 @@ func StartNATS(t *testing.T) (int, func()) {
 		conn.Close()
 	}
 
-	return port, cleanup
+	return conn, cleanup
 }
 
 // GetNATSURL gets the URL of the NATS server.

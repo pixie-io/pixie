@@ -370,12 +370,8 @@ func TestServer_GetVizierConnectionInfo(t *testing.T) {
 func TestServer_VizierConnectedUnhealthy(t *testing.T) {
 	mustLoadTestData(db)
 
-	port, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -416,12 +412,8 @@ func TestServer_VizierConnectedUnhealthy(t *testing.T) {
 func TestServer_VizierConnectedHealthy(t *testing.T) {
 	mustLoadTestData(db)
 
-	port, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
 
 	subCh := make(chan *nats.Msg, 1)
 	natsSub, err := nc.ChanSubscribe("VizierConnected", subCh)
@@ -487,13 +479,8 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	port, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
-
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
 
 	updater := mock_controller.NewMockVzUpdater(ctrl)
 	s := controller.New(db, "test", mockDNSClient, nc, updater)
@@ -684,13 +671,8 @@ func TestServer_GetSSLCerts(t *testing.T) {
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	port, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
-
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
 
 	subCh := make(chan *nats.Msg, 1)
 	sub, err := nc.ChanSubscribe("c2v.123e4567-e89b-12d3-a456-426655440001.sslResp", subCh)
@@ -759,13 +741,8 @@ func TestServer_UpdateOrInstallVizier(t *testing.T) {
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	port, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
-
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
 
 	vizierID, _ := uuid.FromString("123e4567-e89b-12d3-a456-426655440001")
 
@@ -803,13 +780,8 @@ func TestServer_MessageHandler(t *testing.T) {
 	defer ctrl.Finish()
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
-	port, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
-
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
 
 	subCh := make(chan *nats.Msg, 1)
 	sub, err := nc.ChanSubscribe("c2v.123e4567-e89b-12d3-a456-426655440001.sslResp", subCh)

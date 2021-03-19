@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
@@ -50,21 +52,18 @@ func createTestState(t *testing.T, ctrl *gomock.Controller) (*testState, func(t 
 	mockVZMgr := mock_vzmgrpb.NewMockVZMgrServiceClient(ctrl)
 	mockVZDeployment := mock_vzmgrpb.NewMockVZDeploymentServiceClient(ctrl)
 
-	natsPort, natsCleanup := testingutils.StartNATS(t)
-	nc, err := nats.Connect(testingutils.GetNATSURL(natsPort))
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	nc, natsCleanup := testingutils.StartNATS(t)
 	_, sc, cleanStan := testingutils.StartStan(t, "test-stan", "test-client")
 	b := bridge.NewBridgeGRPCServer(mockVZMgr, mockVZDeployment, nc, sc)
 	vzconnpb.RegisterVZConnServiceServer(s, b)
 
-	go func() {
+	eg := errgroup.Group{}
+	eg.Go(func() error {
 		if err := s.Serve(lis); err != nil {
-			t.Fatalf("Server exited with error: %v\n", err)
+			return err
 		}
-	}()
+		return nil
+	})
 
 	ctx := context.Background()
 	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithDialer(createDialer(lis)), grpc.WithInsecure())
@@ -76,6 +75,13 @@ func createTestState(t *testing.T, ctrl *gomock.Controller) (*testState, func(t 
 		natsCleanup()
 		conn.Close()
 		cleanStan()
+		s.Stop()
+
+		err := eg.Wait()
+		if err != nil {
+			t.Fatalf("failed to start server: %v", err)
+		}
+
 	}
 
 	return &testState{

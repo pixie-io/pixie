@@ -87,7 +87,6 @@ go_test(
         "@com_github_gogo_protobuf//proto:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",
         "@com_github_golang_mock//gomock:go_default_library",
-        "@com_github_nats_io_nats_go//:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
     ],
 )

@@ -9,7 +9,6 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
-	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
 
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
@@ -505,13 +504,8 @@ func (f *fakeResultForwarder) OptionallyCancelClientStream(queryID uuid.UUID, er
 
 func TestCheckHealth_Success(t *testing.T) {
 	// Start NATS.
-	port, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
-
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
 
 	// Set up mocks.
 	ctrl := gomock.NewController(t)
@@ -584,13 +578,8 @@ func TestCheckHealth_Success(t *testing.T) {
 
 func TestCheckHealth_CompilationError(t *testing.T) {
 	// Start NATS.
-	port, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
-
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
 
 	// Set up mocks.
 	ctrl := gomock.NewController(t)
@@ -628,13 +617,8 @@ func TestCheckHealth_CompilationError(t *testing.T) {
 
 func TestHealthCheck_ExecutionError(t *testing.T) {
 	// Start NATS.
-	port, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
-
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
 
 	// Set up mocks.
 	ctrl := gomock.NewController(t)
@@ -688,13 +672,8 @@ func TestExecuteScript_MutationError(t *testing.T) {
 
 func TestExecuteScript_Success(t *testing.T) {
 	// Start NATS.
-	port, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
-
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
 
 	// Set up mocks.
 	ctrl := gomock.NewController(t)
@@ -808,13 +787,8 @@ func TestExecuteScript_Success(t *testing.T) {
 // TestExecuteScript_PlannerErrorResult makes sure that compiler error handling is done well.
 func TestExecuteScript_PlannerErrorResult(t *testing.T) {
 	// Start NATS.
-	port, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
-
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
 
 	// Set up mocks.
 	ctrl := gomock.NewController(t)
@@ -894,13 +868,8 @@ func TestExecuteScript_PlannerErrorResult(t *testing.T) {
 
 func TestExecuteScript_ErrorInStatusResult(t *testing.T) {
 	// Start NATS.
-	port, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
-
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
 
 	// Set up mocks.
 	ctrl := gomock.NewController(t)
@@ -962,13 +931,8 @@ func TestExecuteScript_ErrorInStatusResult(t *testing.T) {
 }
 
 func TestTransferResultChunk_AgentStreamComplete(t *testing.T) {
-	port, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
-
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -1063,13 +1027,8 @@ func TestTransferResultChunk_MultipleTransferResultChunkStreams(t *testing.T) {
 }
 
 func TestTransferResultChunk_AgentClosedPrematurely(t *testing.T) {
-	port, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
-
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -1149,13 +1108,8 @@ func TestTransferResultChunk_AgentClosedPrematurely(t *testing.T) {
 }
 
 func TestTransferResultChunk_AgentStreamFailed(t *testing.T) {
-	port, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
-
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -1227,13 +1181,8 @@ func TestTransferResultChunk_AgentStreamFailed(t *testing.T) {
 }
 
 func TestTransferResultChunk_ClientStreamCancelled(t *testing.T) {
-	port, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
-
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

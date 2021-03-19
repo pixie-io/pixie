@@ -7,7 +7,6 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
-	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
 
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
@@ -42,13 +41,8 @@ const agent2ID = "31285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 
 func TestLaunchQuery(t *testing.T) {
 	// Check that the query is broadcasted to all agents.
-	port, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
-
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
 
 	queryUUID, err := uuid.FromString(queryIDStr)
 	if err != nil {
@@ -118,13 +112,8 @@ func TestLaunchQuery(t *testing.T) {
 }
 
 func TestLaunchQueryNoPlans(t *testing.T) {
-	port, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
-
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
 
 	queryUUID, err := uuid.FromString(queryIDStr)
 	if err != nil {

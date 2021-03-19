@@ -30,12 +30,7 @@ func setUpUpdater(t *testing.T) (*controller.Updater, *nats.Conn, *sqlx.DB, *moc
 
 	ctrl := gomock.NewController(t)
 
-	port, natsCleanup := testingutils.StartNATS(t)
-
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
+	nc, natsCleanup := testingutils.StartNATS(t)
 
 	mockArtifactTrackerClient := mock_artifacttrackerpb.NewMockArtifactTrackerClient(ctrl)
 	atReq := &artifacttrackerpb.GetArtifactListRequest{

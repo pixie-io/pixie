@@ -191,11 +191,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 			insertClusterInfoQuery := `INSERT INTO vizier_cluster_info(vizier_cluster_id, status) VALUES ($1, $2)`
 			db.MustExec(insertClusterInfoQuery, vzID, test.vizierStatus)
 
-			natsPort, natsCleanup := testingutils.StartNATS(t)
-			nc, err := nats.Connect(testingutils.GetNATSURL(natsPort))
-			if err != nil {
-				t.Fatal(err)
-			}
+			nc, natsCleanup := testingutils.StartNATS(t)
 			defer natsCleanup()
 
 			_, sc, stanCleanup := testingutils.StartStan(t, "test-stan", "test-client")
@@ -205,6 +201,9 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 			indexerSub, err := sc.Subscribe("MetadataIndex.test", func(msg *stan.Msg) {
 				idxCh <- msg
 			})
+			if err != nil {
+				t.Fatalf("failed to subscribe to stan: %v", err)
+			}
 			defer indexerSub.Unsubscribe()
 
 			batch := 0

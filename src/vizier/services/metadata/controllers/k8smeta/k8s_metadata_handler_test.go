@@ -362,11 +362,7 @@ func TestHandler_ProcessUpdates(t *testing.T) {
 	}
 	mds.RVStore[k8smeta.KelvinUpdateTopic] = 3
 
-	natsPort, natsCleanup := testingutils.StartNATS(t)
-	nc, err := nats.Connect(testingutils.GetNATSURL(natsPort))
-	if err != nil {
-		t.Fatal(err)
-	}
+	nc, natsCleanup := testingutils.StartNATS(t)
 	defer natsCleanup()
 
 	mdh := k8smeta.NewHandler(updateCh, mds, nc)

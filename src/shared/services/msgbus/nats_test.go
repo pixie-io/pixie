@@ -8,17 +8,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/shared/services/msgbus"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 
 func TestMustConnectNATS(t *testing.T) {
-	port, cleanup := testingutils.StartNATS(t)
+	nc, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
 
-	viper.Set("nats_url", testingutils.GetNATSURL(port))
+	viper.Set("nats_url", nc.ConnectedUrl())
 	viper.Set("disable_ssl", true)
-	nc := msgbus.MustConnectNATS()
+
 	sub := "sub"
 	msg := []byte("test")
 	ch := make(chan *nats.Msg)

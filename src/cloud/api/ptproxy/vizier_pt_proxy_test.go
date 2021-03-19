@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
@@ -33,7 +35,10 @@ import (
 	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
-const bufSize = 1024 * 1024
+const (
+	bufSize        = 1024 * 1024
+	defaultTimeout = 30 * time.Second
+)
 
 type testState struct {
 	t   *testing.T
@@ -49,20 +54,18 @@ func createTestState(t *testing.T) (*testState, func(t *testing.T)) {
 	env := env2.New()
 	s := server.CreateGRPCServer(env, &server.GRPCServerOptions{})
 
-	natsPort, natsCleanup := testingutils.StartNATS(t)
-	nc, err := nats.Connect(testingutils.GetNATSURL(natsPort))
-	if err != nil {
-		t.Fatal(err)
-	}
+	nc, natsCleanup := testingutils.StartNATS(t)
 
 	public_vizierpb.RegisterVizierServiceServer(s, ptproxy.NewVizierPassThroughProxy(nc, &fakeVzMgr{}))
 	pl_api_vizierpb.RegisterVizierDebugServiceServer(s, ptproxy.NewVizierPassThroughProxy(nc, &fakeVzMgr{}))
 
-	go func() {
+	eg := errgroup.Group{}
+	eg.Go(func() error {
 		if err := s.Serve(lis); err != nil {
-			t.Fatalf("Server exited with error: %v\n", err)
+			return err
 		}
-	}()
+		return nil
+	})
 
 	ctx := context.Background()
 	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithDialer(createDialer(lis)), grpc.WithInsecure())
@@ -73,7 +76,14 @@ func createTestState(t *testing.T) (*testState, func(t *testing.T)) {
 	cleanupFunc := func(t *testing.T) {
 		natsCleanup()
 		conn.Close()
+		s.Stop()
+
+		err := eg.Wait()
+		if err != nil {
+			t.Fatalf("failed to start server: %v", err)
+		}
 	}
+
 	return &testState{
 		t:    t,
 		lis:  nil,
@@ -201,11 +211,8 @@ func TestVizierPassThroughProxy_ExecuteScript(t *testing.T) {
 
 			grpcDataCh := make(chan *public_vizierpb.ExecuteScriptResponse)
 			var gotReadErr error
-			var wg sync.WaitGroup
-			wg.Add(1)
-
-			go func() {
-				defer wg.Done()
+			var eg errgroup.Group
+			eg.Go(func() error {
 				defer close(grpcDataCh)
 				for {
 					d, err := resp.Recv()
@@ -213,38 +220,40 @@ func TestVizierPassThroughProxy_ExecuteScript(t *testing.T) {
 						gotReadErr = err
 					}
 					if err == io.EOF {
-						return
+						return nil
 					}
 					if d == nil {
-						return
+						return nil
 					}
 					grpcDataCh <- d
 				}
-			}()
+			})
 
-			timeout := time.NewTimer(5 * time.Second)
+			var responses []*public_vizierpb.ExecuteScriptResponse
+			eg.Go(func() error {
+				timeout := time.NewTimer(defaultTimeout)
+				defer timeout.Stop()
 
-			responses := make([]*public_vizierpb.ExecuteScriptResponse, 0)
-			defer timeout.Stop()
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
 				for {
 					select {
 					case <-resp.Context().Done():
-						return
+						return nil
 					case <-timeout.C:
-						t.Fatal("timeout")
+						return fmt.Errorf("timeout waiting for data on grpc channel")
 					case msg := <-grpcDataCh:
 
 						if msg == nil {
-							return
+							return nil
 						}
 						responses = append(responses, msg)
 					}
 				}
-			}()
-			wg.Wait()
+			})
+
+			err = eg.Wait()
+			if err != nil {
+				t.Fatalf("Got error while streaming grpc: %v", err)
+			}
 
 			if tc.expGRPCError != nil {
 				if gotReadErr == nil {
@@ -372,11 +381,9 @@ func TestVizierPassThroughProxy_HealthCheck(t *testing.T) {
 
 			grpcDataCh := make(chan *public_vizierpb.HealthCheckResponse)
 			var gotReadErr error
-			var wg sync.WaitGroup
-			wg.Add(1)
 
-			go func() {
-				defer wg.Done()
+			var eg errgroup.Group
+			eg.Go(func() error {
 				defer close(grpcDataCh)
 				for {
 					d, err := resp.Recv()
@@ -384,37 +391,39 @@ func TestVizierPassThroughProxy_HealthCheck(t *testing.T) {
 						gotReadErr = err
 					}
 					if err == io.EOF {
-						return
+						return nil
 					}
 					if d == nil {
-						return
+						return nil
 					}
 					grpcDataCh <- d
 				}
-			}()
+			})
 
-			timeout := time.NewTimer(5 * time.Second)
-			responses := make([]*public_vizierpb.HealthCheckResponse, 0)
-			defer timeout.Stop()
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			var responses []*public_vizierpb.HealthCheckResponse
+			eg.Go(func() error {
+				timeout := time.NewTimer(defaultTimeout)
+				defer timeout.Stop()
 				for {
 					select {
 					case <-resp.Context().Done():
-						return
+						return nil
 					case <-timeout.C:
-						t.Fatal("timeout")
+						return fmt.Errorf("timeout waiting for grpc data")
 					case msg := <-grpcDataCh:
 						if msg == nil {
-							return
+							return nil
 						}
 						responses = append(responses, msg)
 						fmt.Printf("Got message: %+v\n", msg.String())
 					}
 				}
-			}()
-			wg.Wait()
+			})
+
+			err = eg.Wait()
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			if tc.expGRPCError != nil {
 				if gotReadErr == nil {
@@ -494,11 +503,8 @@ func TestVizierPassThroughProxy_DebugLog(t *testing.T) {
 
 			grpcDataCh := make(chan *pl_api_vizierpb.DebugLogResponse)
 			var gotReadErr error
-			var wg sync.WaitGroup
-			wg.Add(1)
-
-			go func() {
-				defer wg.Done()
+			var eg errgroup.Group
+			eg.Go(func() error {
 				defer close(grpcDataCh)
 				for {
 					d, err := resp.Recv()
@@ -506,37 +512,39 @@ func TestVizierPassThroughProxy_DebugLog(t *testing.T) {
 						gotReadErr = err
 					}
 					if err == io.EOF {
-						return
+						return nil
 					}
 					if d == nil {
-						return
+						return nil
 					}
 					grpcDataCh <- d
 				}
-			}()
+			})
 
-			timeout := time.NewTimer(5 * time.Second)
 			responses := make([]*pl_api_vizierpb.DebugLogResponse, 0)
-			defer timeout.Stop()
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			eg.Go(func() error {
+				timeout := time.NewTimer(defaultTimeout)
+				defer timeout.Stop()
 				for {
 					select {
 					case <-resp.Context().Done():
-						return
+						return nil
 					case <-timeout.C:
 						t.Fatal("timeout")
 					case msg := <-grpcDataCh:
 						if msg == nil {
-							return
+							return nil
 						}
 						responses = append(responses, msg)
 						fmt.Printf("Got message: %+v\n", msg.String())
 					}
 				}
-			}()
-			wg.Wait()
+			})
+
+			err = eg.Wait()
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			if tc.expGRPCError != nil {
 				if gotReadErr == nil {

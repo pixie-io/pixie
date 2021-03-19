@@ -7,7 +7,6 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/golang/mock/gomock"
-	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
 
 	"pixielabs.ai/pixielabs/src/cloud/shared/messages"
@@ -60,11 +59,7 @@ func TestVzWatcher(t *testing.T) {
 					},
 				}, nil)
 
-			natsPort, natsCleanup := testingutils.StartNATS(t)
-			nc, err := nats.Connect(testingutils.GetNATSURL(natsPort))
-			if err != nil {
-				t.Fatal(err)
-			}
+			nc, natsCleanup := testingutils.StartNATS(t)
 			defer natsCleanup()
 
 			w, err := vzutils.NewWatcher(nc, mockVZMgr, "00", "bb")

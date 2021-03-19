@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
@@ -21,7 +23,10 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/ptproxy"
 )
 
-const bufSize = 1024 * 1024
+const (
+	bufSize        = 1024 * 1024
+	defaultTimeout = 30 * time.Second
+)
 
 type MockVzServer struct {
 	t *testing.T
@@ -51,7 +56,7 @@ func (m *MockVzServer) ExecuteScript(req *public_vizierapipb.ExecuteScriptReques
 		}
 		srv.Send(resp)
 		select {
-		case <-time.After(2 * time.Second):
+		case <-time.After(defaultTimeout):
 			return errors.New("Timeout waiting for context to be canceled")
 		}
 	}
@@ -75,30 +80,34 @@ func createTestState(t *testing.T) (*testState, func(t *testing.T)) {
 	lis := bufconn.Listen(bufSize)
 	s := grpc.NewServer()
 
-	natsPort, natsCleanup := testingutils.StartNATS(t)
-	nc, err := nats.Connect(testingutils.GetNATSURL(natsPort))
-	if err != nil {
-		t.Fatal(err)
-	}
-
+	nc, natsCleanup := testingutils.StartNATS(t)
 	vzServer := NewMockVzServer(t)
 	public_vizierapipb.RegisterVizierServiceServer(s, vzServer)
 
-	go func() {
+	eg := errgroup.Group{}
+	eg.Go(func() error {
 		if err := s.Serve(lis); err != nil {
-			t.Fatalf("Server exited with error: %v\n", err)
+			return err
 		}
-	}()
+		return nil
+	})
 
 	ctx := context.Background()
 	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithDialer(createDialer(lis)), grpc.WithInsecure())
 	if err != nil {
+		natsCleanup()
 		t.Fatalf("Failed to dial bufnet: %v", err)
 	}
 
 	cleanupFunc := func(t *testing.T) {
 		natsCleanup()
 		conn.Close()
+		s.Stop()
+
+		err := eg.Wait()
+		if err != nil {
+			t.Fatalf("failed to start server: %v", err)
+		}
 	}
 
 	return &testState{
@@ -242,7 +251,7 @@ func TestPassThroughProxy(t *testing.T) {
 					assert.Nil(t, err)
 					assert.Equal(t, test.expectedResps[numResp], resp)
 					numResp++
-				case <-time.After(2 * time.Second):
+				case <-time.After(defaultTimeout):
 					t.Fatal("Timed out")
 				}
 			}
@@ -287,7 +296,7 @@ func TestPassThroughProxy(t *testing.T) {
 				err = types.UnmarshalAny(v2cMsg.Msg, resp)
 				assert.Nil(t, err)
 				assert.Equal(t, cancelResp, resp)
-			case <-time.After(2 * time.Second):
+			case <-time.After(defaultTimeout):
 				t.Fatal("Timed out")
 			}
 

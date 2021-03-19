@@ -30,17 +30,14 @@ import (
 
 func setupManager(t *testing.T) (agent.Store, agent.Manager, *nats.Conn, func()) {
 	// Setup NATS.
-	natsPort, natsCleanup := testingutils.StartNATS(t)
-	nc, err := nats.Connect(testingutils.GetNATSURL(natsPort))
-	if err != nil {
-		t.Fatal(err)
-	}
+	nc, natsCleanup := testingutils.StartNATS(t)
 
 	memFS := vfs.NewMem()
 	c, err := pebble.Open("test", &pebble.Options{
 		FS: memFS,
 	})
 	if err != nil {
+		natsCleanup()
 		t.Fatal("failed to initialize a pebbledb")
 		os.Exit(1)
 	}
