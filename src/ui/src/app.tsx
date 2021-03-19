@@ -60,6 +60,8 @@ export const App: React.FC = () => {
               <RedirectWithArgs exact from='/signup' to='/auth/signup' />
               <RedirectWithArgs exact from='/auth-complete' to='/auth/cli-auth-complete' />
               {
+                // 404s are handled within the Vizier route, after the user authenticates.
+                // Logged out users get redirected to /login before the possibility of a 404 is checked.
                 authenticated ? <Route component={Vizier} />
                   : <Redirect from='/*' to={authRedirectTo} />
               }

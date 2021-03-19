@@ -20,6 +20,7 @@ import { scriptToEntityURL } from 'containers/live-widgets/utils/live-view-param
 import { LIVE_VIEW_SCRIPT_ID_KEY, useSessionStorage } from 'common/storage';
 import { DeployInstructions } from './deploy-instructions';
 import { selectCluster } from './cluster-info';
+import { RouteNotFound } from './route-not-found';
 
 const useStyles = makeStyles(() => createStyles({
   banner: {
@@ -217,7 +218,7 @@ export default function WithClusterBanner() {
             component={ScriptShortcut}
           />
           <Route path={['/scratch', '/scratchpad']} render={() => <ScriptShortcut toScript={SCRATCH_SCRIPT.id} />} />
-          <Redirect from='/*' to='/live' />
+          <Route path='*' component={RouteNotFound} />
         </Switch>
       </UserContext.Provider>
     </ClusterContext.Provider>
