@@ -183,8 +183,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 			vzID := uuid.Must(uuid.NewV4())
 			orgID := uuid.Must(uuid.NewV4())
 
-			db, teardown := setupTestDB(t)
-			defer teardown()
+			mustLoadTestData(db)
 
 			// Set up initial DB state.
 			insertClusterQuery := `INSERT INTO vizier_cluster(id, org_id, cluster_uid) VALUES ($1, $2, 'test')`

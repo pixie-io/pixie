@@ -55,7 +55,6 @@ go_test(
         "vizier_updater_test.go",
     ],
     embed = [":go_default_library"],
-    flaky = 1,
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",

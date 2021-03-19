@@ -3,6 +3,8 @@ package controller_test
 import (
 	"context"
 	"errors"
+	"fmt"
+	"os"
 	"sort"
 	"strings"
 	"testing"
@@ -40,19 +42,6 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 
-type vizierStatus cvmsgspb.VizierStatus
-
-func setupTestDB(t *testing.T) (*sqlx.DB, func()) {
-	s := bindata.Resource(schema.AssetNames(), func(name string) (bytes []byte, e error) {
-		return schema.Asset(name)
-	})
-	db, teardown := pgtest.SetupTestDB(t, s)
-
-	return db, func() {
-		teardown()
-	}
-}
-
 var (
 	testAuthOrgID                   = "223e4567-e89b-12d3-a456-426655440000"
 	testNonAuthOrgID                = "223e4567-e89b-12d3-a456-426655440001"
@@ -73,7 +62,39 @@ var testPodStatuses controller.PodStatuses = map[string]*cvmsgspb.PodStatus{
 	},
 }
 
-func loadTestData(t *testing.T, db *sqlx.DB) {
+func TestMain(m *testing.M) {
+	err := testMain(m)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Got error: %v\n", err)
+		os.Exit(1)
+	}
+	os.Exit(0)
+}
+
+var db *sqlx.DB
+
+func testMain(m *testing.M) error {
+	s := bindata.Resource(schema.AssetNames(), func(name string) (bytes []byte, e error) {
+		return schema.Asset(name)
+	})
+
+	testDB, teardown, err := pgtest.SetupTestDBNew(s)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to start test database: %v", err)
+		os.Exit(1)
+	}
+
+	defer teardown()
+	db = testDB
+
+	m.Run()
+	return nil
+}
+
+func mustLoadTestData(db *sqlx.DB) {
+	db.MustExec(`DELETE FROM vizier_cluster_info`)
+	db.MustExec(`DELETE FROM vizier_cluster`)
+
 	insertCluster := `INSERT INTO vizier_cluster(org_id, id, project_name, cluster_uid, cluster_version, cluster_name) VALUES ($1, $2, $3, $4, $5, $6)`
 	db.MustExec(insertCluster, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440000", testProjectName, "k8sID", "", "unknown_cluster")
 	db.MustExec(insertCluster, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440001", testProjectName, "cUID", "cVers", "healthy_cluster")
@@ -115,9 +136,7 @@ func CreateTestContext() context.Context {
 }
 
 func TestServer_GetViziersByOrg(t *testing.T) {
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -181,9 +200,7 @@ func TestServer_GetViziersByOrg(t *testing.T) {
 }
 
 func TestServer_GetVizierInfo(t *testing.T) {
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -216,9 +233,7 @@ func TestServer_GetVizierInfo(t *testing.T) {
 }
 
 func TestServer_GetVizierInfos(t *testing.T) {
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -248,9 +263,7 @@ func TestServer_GetVizierInfos(t *testing.T) {
 }
 
 func TestServer_UpdateVizierConfig(t *testing.T) {
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -291,9 +304,7 @@ func TestServer_UpdateVizierConfig(t *testing.T) {
 }
 
 func TestServer_UpdateVizierConfig_WrongOrg(t *testing.T) {
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -312,9 +323,7 @@ func TestServer_UpdateVizierConfig_WrongOrg(t *testing.T) {
 }
 
 func TestServer_UpdateVizierConfig_NoUpdates(t *testing.T) {
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -336,9 +345,7 @@ func TestServer_UpdateVizierConfig_NoUpdates(t *testing.T) {
 }
 
 func TestServer_GetVizierConnectionInfo(t *testing.T) {
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -362,9 +369,7 @@ func TestServer_GetVizierConnectionInfo(t *testing.T) {
 }
 
 func TestServer_VizierConnectedUnhealthy(t *testing.T) {
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	port, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
@@ -410,9 +415,7 @@ func TestServer_VizierConnectedUnhealthy(t *testing.T) {
 }
 
 func TestServer_VizierConnectedHealthy(t *testing.T) {
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	port, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
@@ -479,9 +482,7 @@ func TestServer_VizierConnectedHealthy(t *testing.T) {
 }
 
 func TestServer_HandleVizierHeartbeat(t *testing.T) {
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -678,9 +679,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 }
 
 func TestServer_GetSSLCerts(t *testing.T) {
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -755,9 +754,7 @@ func TestServer_GetSSLCerts(t *testing.T) {
 func TestServer_UpdateOrInstallVizier(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwtkey")
 
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -801,9 +798,7 @@ func TestServer_UpdateOrInstallVizier(t *testing.T) {
 }
 
 func TestServer_MessageHandler(t *testing.T) {
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -877,9 +872,7 @@ func TestServer_MessageHandler(t *testing.T) {
 }
 
 func TestServer_GetViziersByShard(t *testing.T) {
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	s := controller.New(db, "test", nil, nil, nil)
 
@@ -1000,9 +993,7 @@ func TestServer_GetViziersByShard(t *testing.T) {
 }
 
 func TestServer_ProvisionOrClaimVizier(t *testing.T) {
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	s := controller.New(db, "test", nil, nil, nil)
 	// TODO(zasgar): We need to make user IDS make sense.
@@ -1050,9 +1041,7 @@ func TestServer_ProvisionOrClaimVizierWIthExistingUID(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			db, teardown := setupTestDB(t)
-			defer teardown()
-			loadTestData(t, db)
+			mustLoadTestData(db)
 
 			s := controller.New(db, "test", nil, nil, nil)
 			userID := uuid.Must(uuid.NewV4())
@@ -1076,9 +1065,7 @@ func TestServer_ProvisionOrClaimVizierWIthExistingUID(t *testing.T) {
 }
 
 func TestServer_ProvisionOrClaimVizier_WithExistingActiveUID(t *testing.T) {
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	s := controller.New(db, "test", nil, nil, nil)
 	userID := uuid.Must(uuid.NewV4())
@@ -1090,9 +1077,7 @@ func TestServer_ProvisionOrClaimVizier_WithExistingActiveUID(t *testing.T) {
 }
 
 func TestServer_ProvisionOrClaimVizier_WithNewCluster(t *testing.T) {
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	s := controller.New(db, "test", nil, nil, nil)
 	userID := uuid.Must(uuid.NewV4())
@@ -1103,9 +1088,7 @@ func TestServer_ProvisionOrClaimVizier_WithNewCluster(t *testing.T) {
 }
 
 func TestServer_ProvisionOrClaimVizier_WithExistingName(t *testing.T) {
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	s := controller.New(db, "test", nil, nil, nil)
 	userID := uuid.Must(uuid.NewV4())

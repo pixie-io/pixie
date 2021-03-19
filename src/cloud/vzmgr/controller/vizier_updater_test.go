@@ -26,12 +26,11 @@ import (
 func setUpUpdater(t *testing.T) (*controller.Updater, *nats.Conn, *sqlx.DB, *mock_artifacttrackerpb.MockArtifactTrackerClient, func()) {
 	viper.Set("jwt_signing_key", "jwtkey")
 
-	db, teardown := setupTestDB(t)
-	loadTestData(t, db)
+	mustLoadTestData(db)
 
 	ctrl := gomock.NewController(t)
 
-	port, cleanup := testingutils.StartNATS(t)
+	port, natsCleanup := testingutils.StartNATS(t)
 
 	nc, err := nats.Connect(testingutils.GetNATSURL(port))
 	if err != nil {
@@ -54,13 +53,12 @@ func setUpUpdater(t *testing.T) (*controller.Updater, *nats.Conn, *sqlx.DB, *moc
 
 	updater, _ := controller.NewUpdater(db, mockArtifactTrackerClient, nc)
 
-	allCleanup := func() {
-		teardown()
+	cleanup := func() {
 		ctrl.Finish()
-		cleanup()
+		natsCleanup()
 	}
 
-	return updater, nc, db, mockArtifactTrackerClient, allCleanup
+	return updater, nc, db, mockArtifactTrackerClient, cleanup
 }
 
 func TestUpdater_UpdateOrInstallVizier(t *testing.T) {

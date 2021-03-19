@@ -11,7 +11,10 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/controller"
 )
 
-func loadStatusMonitorTestData(t *testing.T, db *sqlx.DB) {
+func mustLoadStatusMonitorTestData(db *sqlx.DB) {
+	db.MustExec(`DELETE from vizier_cluster_info`)
+	db.MustExec(`DELETE from vizier_cluster`)
+
 	insertVizierClusterQuery := `INSERT INTO vizier_cluster(org_id, id) VALUES ($1, $2)`
 	db.MustExec(insertVizierClusterQuery, "223e4567-e89b-12d3-a456-426655440000", "123e4567-e89b-12d3-a456-426655440000")
 
@@ -26,9 +29,8 @@ func loadStatusMonitorTestData(t *testing.T, db *sqlx.DB) {
 }
 
 func TestStatusMonitor_Start(t *testing.T) {
-	db, teardown := setupTestDB(t)
-	defer teardown()
-	loadStatusMonitorTestData(t, db)
+	mustLoadTestData(db)
+	mustLoadStatusMonitorTestData(db)
 
 	query := `SELECT vizier_cluster_id, address, status from vizier_cluster_info WHERE vizier_cluster_id=$1`
 	var vizInfo struct {
