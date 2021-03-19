@@ -32,6 +32,19 @@ func SetupTestDB(schemaSource *bindata.AssetSource) (*sqlx.DB, func() error, err
 		}, func(config *docker.HostConfig) {
 			config.AutoRemove = true
 			config.RestartPolicy = docker.RestartPolicy{Name: "no"}
+			config.Mounts = []docker.HostMount{
+				{
+					Target: "/var/lib/postgresql/data",
+					Type:   "tmpfs",
+					TempfsOptions: &docker.TempfsOptions{
+						SizeBytes: 100 * 1024 * 1024,
+					},
+				},
+			}
+			config.CPUCount = 1
+			config.Memory = 512 * 1024 * 1024
+			config.MemorySwap = 0
+			config.MemorySwappiness = 0
 		},
 	)
 	if err != nil {
