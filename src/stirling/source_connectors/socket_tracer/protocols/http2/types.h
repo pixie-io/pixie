@@ -74,7 +74,8 @@ struct HalfStream {
 
   std::string ToString() const {
     return absl::Substitute("[headers=$0] [data=$1] [trailers=$2] [end_stream=$3]",
-                            headers.ToString(), data, trailers.ToString(), end_stream);
+                            headers.ToString(), BytesToString<bytes_format::HexAsciiMix>(data),
+                            trailers.ToString(), end_stream);
   }
 };
 
