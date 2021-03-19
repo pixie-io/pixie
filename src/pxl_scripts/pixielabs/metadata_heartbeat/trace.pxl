@@ -2,7 +2,6 @@ import pxtrace
 import px
 
 
-md_process_upid = "0000000f-001f-54c9-0000-0000004cdb55"
 table_name = 'hb1'
 tp_name = table_name
 
@@ -18,7 +17,7 @@ def probe_func():
 pxtrace.UpsertTracepoint(tp_name,
                          table_name,
                          probe_func,
-                         px.uint128(md_process_upid),
+                         pxtrace.PodProcess("pl/vizier-metadata-0"),
                          "30m")
 
 

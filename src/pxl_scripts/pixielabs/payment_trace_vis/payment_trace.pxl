@@ -28,7 +28,14 @@ split_series_name = 'k8s'
 latency_bin_size_ms = 50
 # ----------------------------------------------------------------
 
-payment_process_upid = "00000008-0000-31cb-0000-00000000ab84"
+
+# ****************************************************************
+# Update this pod name as needed.
+# ****************************************************************
+payment_pod = 'px-sock-shop/payment-'
+
+tp_name = 'http_return_tracepoint'
+table_name = 'http_return_data'
 
 
 @pxtrace.probe("github.com/microservices-demo/payment.(*service).Authorise")
@@ -37,10 +44,10 @@ def probe_func():
     return [{'amount': amount}]
 
 
-pxtrace.UpsertTracepoint('http_return_tracepoint',
-                         'http_return_data25',
+pxtrace.UpsertTracepoint(tp_name,
+                         table_name,
                          probe_func,
-                         px.uint128(payment_process_upid),
+                         pxtrace.PodProcess(payment_pod),
                          "5m")
 
 
@@ -77,4 +84,4 @@ def amount_histogram(start: str, bin_size: int):
 
 
 def raw_table(start: str):
-    return px.DataFrame(table='http_return_data', start_time=start)
+    return px.DataFrame(table=table_name, start_time=start)

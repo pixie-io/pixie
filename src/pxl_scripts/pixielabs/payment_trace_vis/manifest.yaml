@@ -1,5 +1,5 @@
 ---
-short: Trace sockshop paymment
+short: Trace payments on sockshop.
 long: >
-  Traces sockshop payments
+  Sample probe for tracing payments on sockshop.
 org_name: pixielabs.ai
