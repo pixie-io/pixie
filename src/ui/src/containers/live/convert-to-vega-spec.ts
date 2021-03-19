@@ -1895,6 +1895,12 @@ function convertToStacktraceFlameGraph(
         sort: { field: 'count' },
         size: [{ signal: 'width' }, { signal: 'height' }],
       },
+      // Filter out any stacktraces with widths that are too small, as these create artifacts in the
+      // rendered graph.
+      {
+        type: 'filter',
+        expr: 'datum.x1 - datum.x0 > 3',
+      },
       // Flips the y-axis, as the partition transform actually creates an icicle chart.
       {
         type: 'formula',
