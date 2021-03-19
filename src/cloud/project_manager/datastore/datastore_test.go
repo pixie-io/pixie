@@ -1,6 +1,8 @@
 package datastore_test
 
 import (
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/gofrs/uuid"
@@ -19,22 +21,45 @@ import (
 var testOrgID1 = uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000")
 var testOrgID2 = uuid.FromStringOrNil("223e4567-e89b-12d3-a456-426655440000")
 
-func loadTestData(t *testing.T, db *sqlx.DB) {
+func mustLoadTestData(db *sqlx.DB) {
+	db.MustExec(`DELETE from projects`)
+
 	insertQuery := `INSERT INTO projects (org_id, project_name) VALUES ($1, $2)`
 	db.MustExec(insertQuery, testOrgID1.String(), "default")
 	db.MustExec(insertQuery, testOrgID2.String(), "default")
 }
 
-func TestDatastore(t *testing.T) {
+func TestMain(m *testing.M) {
+	err := testMain(m)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Got error: %v\n", err)
+		os.Exit(1)
+	}
+	os.Exit(0)
+}
+
+var db *sqlx.DB
+
+func testMain(m *testing.M) error {
 	s := bindata.Resource(schema.AssetNames(), func(name string) (bytes []byte, e error) {
 		return schema.Asset(name)
 	})
-	db, teardown := pgtest.SetupTestDB(t, s)
+
+	testDB, teardown, err := pgtest.SetupTestDBNew(s)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to start test database: %v", err)
+		os.Exit(1)
+	}
+
 	defer teardown()
+	db = testDB
 
-	loadTestData(t, db)
+	m.Run()
+	return nil
+}
 
-	require.NotNil(t, db)
+func TestDatastore(t *testing.T) {
+	mustLoadTestData(db)
 
 	tests := []struct {
 		name        string
