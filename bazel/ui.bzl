@@ -86,7 +86,7 @@ def _pl_ui_test_impl(ctx):
         "export OUTPUT_PATH_JUNIT=${TEST_UNDECLARED_OUTPUTS_DIR}/junit.xml",
         "printenv",
         "tar -zxf ${BASE_PATH}/" + ctx.file.deps.short_path,
-        "yarn coverage &> build.log",
+        "yarn coverage_ci &> build.log",
         "cp coverage/lcov.info ${OUTPUT_PATH_LCOV}",
         "cp junit.xml ${OUTPUT_PATH_JUNIT}",
     ] + ui_shared_cmds_finish
