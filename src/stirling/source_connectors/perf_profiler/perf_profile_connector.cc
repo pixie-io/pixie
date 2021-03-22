@@ -51,6 +51,9 @@ Status PerfProfileConnector::StopImpl() {
 
 std::string PerfProfileConnector::FoldedStackTraceString(ebpf::BPFStackTable* stack_traces,
                                                          const stack_trace_key_t& key) {
+  // Here, we read the list of addresses from stack_traces and convert that
+  // list into a "folded" symbolic stack trace string. In line with this,
+  // we also clear the entries in stack_traces.
   constexpr std::string_view kKSymSuffix = "_[k]";
   constexpr std::string_view kSeparator = ";";
 
@@ -82,6 +85,12 @@ std::string PerfProfileConnector::FoldedStackTraceString(ebpf::BPFStackTable* st
     stack_trace_str.pop_back();
   }
 
+  // Clear the stack-traces map as we go along here; this has lower overhead
+  // compared to first reading the stack-traces map, then using clear_table_non_atomic().
+  // TODO(jps): add an arg. to get_stack_addr() that *also* clears the stack-id.
+  stack_traces->clear_stack_id(key.user_stack_id);
+  stack_traces->clear_stack_id(key.kernel_stack_id);
+
   return stack_trace_str;
 }
 
@@ -100,16 +109,6 @@ void PerfProfileConnector::ProcessBPFStackTraces(ConnectorContext* ctx, DataTabl
 
   // Read BPF stack traces & histogram, build records, incorporate records to data table.
   CreateRecords(timestamp_ns, stack_traces.get(), histo.get(), ctx, data_table);
-
-  // Clear the map set that we have just now ingested.
-  //
-  // stack_traces->clear_table_non_atomic() does not return an error code,
-  // but histo->clear_table_non_atomic() does. We will do what we can with these.
-  //
-  // TODO(jps): create a wrapper for ebpf status tuple and use PL_RETURN_IF_ERROR.
-  stack_traces->clear_table_non_atomic();
-  const ebpf::StatusTuple histo_clear_status = histo->clear_table_non_atomic();
-  LOG_IF(ERROR, !histo_clear_status.ok()) << "Failed to clear profiler histogram BPF table.";
 
   // update the "read & clear count":
   // TODO(jps): do we really need to track these status codes?
@@ -155,7 +154,7 @@ void PerfProfileConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
   CleanupSymbolCaches(proc_tracker_.deleted_upids());
 }
 
-uint64_t PerfProfileConnector::SymbolicStackTradeID(
+uint64_t PerfProfileConnector::SymbolicStackTraceID(
     const SymbolicStackTrace& symbolic_stack_trace) {
   const auto it = stack_trace_ids_.find(symbolic_stack_trace);
 
@@ -176,7 +175,14 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
   // Avoid an unnecessary copy of the information in local stack_trace_keys_and_counts.
   StackTraceHisto symbolic_histogram;
   uint64_t cum_sum_count = 0;
-  for (const auto& [stack_trace_key, count] : histo->get_table_offline()) {
+
+  // Here we want to "consume" the table, not just "read" it. Pasing "clear_table=true"
+  // into get_table_offline() clears each entry while walking the table and copying
+  // out the data. This has a significant performance boost vs. using clear_table_non_atomic()
+  // after the table has been read.
+  constexpr bool kClearTable = true;
+
+  for (const auto& [stack_trace_key, count] : histo->get_table_offline(kClearTable)) {
     cum_sum_count += count;
 
     // TODO(jps): use 'struct upid_t' as a field in SymbolicStackTrace
@@ -199,7 +205,6 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
     // ... count_and_id.count += count;
     // alternate impl. is a map from "stack-trace-id" => "count & symbolic-stack-trace"
   }
-
   VLOG(1) << "PerfProfileConnector::AggregateStackTraces(): cum_sum_count: " << cum_sum_count;
   return symbolic_histogram;
 }
@@ -223,7 +228,7 @@ void PerfProfileConnector::CreateRecords(const uint64_t timestamp_ns,
   for (const auto& [symbolic_stack_trace, count] : symbolic_histogram) {
     DataTable::RecordBuilder<&kStackTraceTable> r(data_table, timestamp_ns);
 
-    const uint64_t stack_trace_id = SymbolicStackTradeID(symbolic_stack_trace);
+    const uint64_t stack_trace_id = SymbolicStackTraceID(symbolic_stack_trace);
 
     r.Append<r.ColIndex("time_")>(timestamp_ns);
     r.Append<r.ColIndex("upid")>(symbolic_stack_trace.upid.value());

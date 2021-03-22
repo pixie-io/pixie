@@ -74,7 +74,7 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
                      ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo, ConnectorContext* ctx,
                      DataTable* data_table);
 
-  uint64_t SymbolicStackTradeID(const SymbolicStackTrace& symbolic_stack_trace);
+  uint64_t SymbolicStackTraceID(const SymbolicStackTrace& symbolic_stack_trace);
 
   StackTraceHisto AggregateStackTraces(ebpf::BPFStackTable* stack_traces,
                                        ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo,
