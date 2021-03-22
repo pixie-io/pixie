@@ -218,7 +218,8 @@ export default function WithClusterBanner() {
             component={ScriptShortcut}
           />
           <Route path={['/scratch', '/scratchpad']} render={() => <ScriptShortcut toScript={SCRATCH_SCRIPT.id} />} />
-          <Route path='*' component={RouteNotFound} />
+          <Redirect exact from='/' to='/live' />
+          <Route path='/*' component={RouteNotFound} />
         </Switch>
       </UserContext.Provider>
     </ClusterContext.Provider>
