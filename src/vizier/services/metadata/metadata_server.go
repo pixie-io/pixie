@@ -33,10 +33,8 @@ import (
 )
 
 const (
-	cacheFlushPeriod = 30 * time.Second
-	cacheClearPeriod = 1 * time.Minute
 	// pebbledbTTLDuration represents how often we evict from pebble.
-	pebbledbTTLDuration = 30 * time.Second
+	pebbledbTTLDuration = 5 * time.Minute
 	// pebbleOpenDir is where the files live in the directory.
 	pebbleOpenDir = "/metadata"
 )
