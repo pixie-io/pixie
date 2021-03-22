@@ -14,6 +14,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
 	batchv1 "k8s.io/api/batch/v1"
@@ -216,13 +217,8 @@ func makeTestState(t *testing.T) (*testState, func(t *testing.T)) {
 	wg := &sync.WaitGroup{}
 	vs := newFakeVZConnServer(wg, t)
 	vzconnpb.RegisterVZConnServiceServer(s, vs)
-	errors := make(chan error, 1)
-	go func() {
-		if err := s.Serve(lis); err != nil {
-			errors <- err
-		}
-		close(errors)
-	}()
+	eg := errgroup.Group{}
+	eg.Go(func() error { return s.Serve(lis) })
 
 	ctx := context.Background()
 	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithDialer(createDialer(lis)), grpc.WithInsecure())
@@ -234,11 +230,13 @@ func makeTestState(t *testing.T) (*testState, func(t *testing.T)) {
 
 	cleanupFunc := func(t *testing.T) {
 		s.GracefulStop()
-		for e := range errors {
-			t.Fatal(e)
-		}
 		natsCleanup()
 		conn.Close()
+
+		err := eg.Wait()
+		if err != nil {
+			t.Fatalf("failed to start server: %v", err)
+		}
 	}
 
 	u, err := uuid.FromString("31285cdd-1de9-4ab1-ae6a-0ba08c8c676c")

@@ -85,12 +85,7 @@ func createTestState(t *testing.T) (*testState, func(t *testing.T)) {
 	public_vizierapipb.RegisterVizierServiceServer(s, vzServer)
 
 	eg := errgroup.Group{}
-	eg.Go(func() error {
-		if err := s.Serve(lis); err != nil {
-			return err
-		}
-		return nil
-	})
+	eg.Go(func() error { return s.Serve(lis) })
 
 	ctx := context.Background()
 	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithDialer(createDialer(lis)), grpc.WithInsecure())

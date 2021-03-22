@@ -5,19 +5,24 @@ import (
 	"fmt"
 	"net"
 	"testing"
+	"time"
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/test/bufconn"
 
-	env2 "pixielabs.ai/pixielabs/src/shared/services/env"
+	"pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/server"
 	ping "pixielabs.ai/pixielabs/src/shared/services/testproto"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
+
+const bufSize = 1024 * 1024
 
 func init() {
 	// Test will fail with SSL enabled since we don't expose certs to the tests.
@@ -47,37 +52,40 @@ func (s *testserver) PingClientStream(srv ping.PingService_PingClientStreamServe
 	return nil
 }
 
-func startTestGRPCServer(t *testing.T, opts *server.GRPCServerOptions) (int, func()) {
+func startTestGRPCServer(opts *server.GRPCServerOptions) (*bufconn.Listener, func(t *testing.T)) {
 	viper.Set("jwt_signing_key", "abc")
-	env := env2.New()
 	var s *grpc.Server
 	if opts == nil {
 		opts = &server.GRPCServerOptions{}
 	}
 
-	s = server.CreateGRPCServer(env, opts)
+	s = server.CreateGRPCServer(env.New(), opts)
 
 	ping.RegisterPingServiceServer(s, &testserver{})
-	lis, err := net.Listen("tcp", ":0")
+	lis := bufconn.Listen(bufSize)
 
-	if err != nil {
-		t.Fatalf("Failed to start listner: %v", err.Error())
-	}
+	eg := errgroup.Group{}
+	eg.Go(func() error { return s.Serve(lis) })
 
-	go func() {
-		if err := s.Serve(lis); err != nil {
-			t.Fatalf("failed to serve: %v", err)
+	cleanupFunc := func(t *testing.T) {
+		s.GracefulStop()
+
+		err := eg.Wait()
+		if err != nil {
+			t.Fatalf("failed to start server: %v", err)
 		}
-	}()
-	cleanupFunc := func() {
-		s.Stop()
 	}
-	return lis.Addr().(*net.TCPAddr).Port, cleanupFunc
+	return lis, cleanupFunc
 }
 
-func makeTestRequest(ctx context.Context, t *testing.T, port int) (*ping.PingReply, error) {
-	addr := fmt.Sprintf("localhost:%d", port)
-	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+func createDialer(lis *bufconn.Listener) func(string, time.Duration) (net.Conn, error) {
+	return func(str string, duration time.Duration) (conn net.Conn, e error) {
+		return lis.Dial()
+	}
+}
+
+func makeTestRequest(ctx context.Context, t *testing.T, lis *bufconn.Listener) (*ping.PingReply, error) {
+	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithDialer(createDialer(lis)), grpc.WithInsecure())
 	if err != nil {
 		t.Fatalf("did not connect: %v", err)
 	}
@@ -86,9 +94,8 @@ func makeTestRequest(ctx context.Context, t *testing.T, port int) (*ping.PingRep
 	return c.Ping(ctx, &ping.PingRequest{Req: "hello"})
 }
 
-func makeTestClientStreamRequest(ctx context.Context, t *testing.T, port int) (*ping.PingReply, error) {
-	addr := fmt.Sprintf("localhost:%d", port)
-	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+func makeTestClientStreamRequest(ctx context.Context, t *testing.T, lis *bufconn.Listener) (*ping.PingReply, error) {
+	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithDialer(createDialer(lis)), grpc.WithInsecure())
 	if err != nil {
 		t.Fatalf("did not connect: %v", err)
 	}
@@ -105,9 +112,8 @@ func makeTestClientStreamRequest(ctx context.Context, t *testing.T, port int) (*
 	return stream.CloseAndRecv()
 }
 
-func makeTestServerStreamRequest(ctx context.Context, t *testing.T, port int) (*ping.PingReply, error) {
-	addr := fmt.Sprintf("localhost:%d", port)
-	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+func makeTestServerStreamRequest(ctx context.Context, t *testing.T, lis *bufconn.Listener) (*ping.PingReply, error) {
+	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithDialer(createDialer(lis)), grpc.WithInsecure())
 	if err != nil {
 		t.Fatalf("did not connect: %v", err)
 	}
@@ -199,7 +205,7 @@ func TestGrpcServerUnary(t *testing.T) {
 			expectError:  false,
 			clientStream: false,
 			serverOpts: &server.GRPCServerOptions{
-				AuthMiddleware: func(context.Context, env2.Env) (string, error) {
+				AuthMiddleware: func(context.Context, env.Env) (string, error) {
 					return testingutils.GenerateTestJWTToken(t, "abc"), nil
 				},
 			},
@@ -208,8 +214,8 @@ func TestGrpcServerUnary(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			port, cleanup := startTestGRPCServer(t, test.serverOpts)
-			defer cleanup()
+			lis, cleanup := startTestGRPCServer(test.serverOpts)
+			defer cleanup(t)
 
 			var ctx context.Context
 			if test.token != "" {
@@ -224,11 +230,11 @@ func TestGrpcServerUnary(t *testing.T) {
 			var err error
 
 			if test.clientStream {
-				resp, err = makeTestClientStreamRequest(ctx, t, port)
+				resp, err = makeTestClientStreamRequest(ctx, t, lis)
 			} else if test.serverStream {
-				resp, err = makeTestServerStreamRequest(ctx, t, port)
+				resp, err = makeTestServerStreamRequest(ctx, t, lis)
 			} else {
-				resp, err = makeTestRequest(ctx, t, port)
+				resp, err = makeTestRequest(ctx, t, lis)
 			}
 
 			if test.expectError {

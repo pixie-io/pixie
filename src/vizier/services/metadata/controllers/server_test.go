@@ -15,6 +15,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	grpc_metadata "google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/test/bufconn"
@@ -883,18 +884,15 @@ func TestGetAgentUpdates(t *testing.T) {
 	metadatapb.RegisterMetadataServiceServer(s, srv)
 	lis := bufconn.Listen(1024 * 1024)
 
-	errs := make(chan error, 1)
-	go func() {
-		if err := s.Serve(lis); err != nil {
-			errs <- err
-		}
-		close(errs)
-	}()
+	eg := errgroup.Group{}
+	eg.Go(func() error { return s.Serve(lis) })
 
 	defer func() {
 		s.GracefulStop()
-		for e := range errs {
-			t.Fatal(e)
+
+		err := eg.Wait()
+		if err != nil {
+			t.Fatalf("failed to start server: %v", err)
 		}
 	}()
 

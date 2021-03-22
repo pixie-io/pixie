@@ -58,12 +58,7 @@ func createTestState(t *testing.T, ctrl *gomock.Controller) (*testState, func(t 
 	vzconnpb.RegisterVZConnServiceServer(s, b)
 
 	eg := errgroup.Group{}
-	eg.Go(func() error {
-		if err := s.Serve(lis); err != nil {
-			return err
-		}
-		return nil
-	})
+	eg.Go(func() error { return s.Serve(lis) })
 
 	ctx := context.Background()
 	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithDialer(createDialer(lis)), grpc.WithInsecure())
@@ -75,13 +70,12 @@ func createTestState(t *testing.T, ctrl *gomock.Controller) (*testState, func(t 
 		natsCleanup()
 		conn.Close()
 		cleanStan()
-		s.Stop()
+		s.GracefulStop()
 
 		err := eg.Wait()
 		if err != nil {
 			t.Fatalf("failed to start server: %v", err)
 		}
-
 	}
 
 	return &testState{

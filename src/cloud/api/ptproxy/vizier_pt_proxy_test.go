@@ -9,13 +9,12 @@ import (
 	"testing"
 	"time"
 
-	"golang.org/x/sync/errgroup"
-
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -60,12 +59,7 @@ func createTestState(t *testing.T) (*testState, func(t *testing.T)) {
 	pl_api_vizierpb.RegisterVizierDebugServiceServer(s, ptproxy.NewVizierPassThroughProxy(nc, &fakeVzMgr{}))
 
 	eg := errgroup.Group{}
-	eg.Go(func() error {
-		if err := s.Serve(lis); err != nil {
-			return err
-		}
-		return nil
-	})
+	eg.Go(func() error { return s.Serve(lis) })
 
 	ctx := context.Background()
 	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithDialer(createDialer(lis)), grpc.WithInsecure())
@@ -76,7 +70,7 @@ func createTestState(t *testing.T) (*testState, func(t *testing.T)) {
 	cleanupFunc := func(t *testing.T) {
 		natsCleanup()
 		conn.Close()
-		s.Stop()
+		s.GracefulStop()
 
 		err := eg.Wait()
 		if err != nil {
