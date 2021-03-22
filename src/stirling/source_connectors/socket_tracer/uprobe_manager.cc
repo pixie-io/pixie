@@ -424,7 +424,7 @@ int UProbeManager::DeployGoUProbes(const absl::flat_hash_set<md::UPID>& pids) {
 
     Status s = UpdateGoCommonSymAddrs(elf_reader.get(), dwarf_reader.get(), pid_vec);
     if (!s.ok()) {
-      LOG(WARNING) << absl::Substitute(
+      VLOG(1) << absl::Substitute(
           "Golang binary $0 does not have the mandatory symbols (e.g. TCPConn).", binary);
       continue;
     }

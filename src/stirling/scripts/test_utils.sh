@@ -27,14 +27,14 @@ check_stirling_output() {
   # Look for GLOG errors or warnings, which start with E or W respectively.
   err_count=$(echo "$out" | grep -c -e ^E -e ^W || true)
   echo "Error/Warning count = $err_count"
-  if [ "$err_count" -ne "0" ]; then
+  if [ "$err_count" != "0" ]; then
     echo "Test FAILED"
     return 1
   fi
 
   # Look for number deployed probes
   num_kprobes=$(echo "$out" | sed -n "s/.*Number of kprobes deployed = //p")
-  if [ "$num_kprobes" -eq "0" ]; then
+  if [ "$num_kprobes" = "0" ]; then
     echo "No kprobes deployed"
     echo "Test FAILED"
     return 1
@@ -42,14 +42,14 @@ check_stirling_output() {
 
   # Look for number deployed probes
   num_uprobes=$(echo "$out" | sed -n "s/.*Number of uprobes deployed = //p")
-  if [ "$num_uprobes" -eq "0" ]; then
+  if [ "$num_uprobes" = "0" ]; then
     echo "No uprobes deployed"
     echo "Test FAILED"
     return 1
   fi
 
   success_msg=$(echo "$out" | grep -c -e "Probes successfully deployed" || true)
-  if [ "$success_msg" -ne "1" ]; then
+  if [ "$success_msg" != "1" ]; then
     echo "Could not find success message"
     echo "Test FAILED"
     return 1

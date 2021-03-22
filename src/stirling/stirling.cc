@@ -132,6 +132,7 @@ class StirlingImpl final : public Stirling {
 
   void Run() override;
   Status RunAsThread() override;
+  bool IsRunning() const override;
   void Stop() override;
   void WaitForThreadJoin() override;
 
@@ -650,6 +651,8 @@ void StirlingImpl::RunCore() {
   }
   running_ = false;
 }
+
+bool StirlingImpl::IsRunning() const { return run_enable_; }
 
 void StirlingImpl::Stop() {
   run_enable_ = false;

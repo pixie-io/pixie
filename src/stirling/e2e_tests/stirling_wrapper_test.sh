@@ -28,20 +28,24 @@ fi
 # Test set-up
 ###############################################################################
 
+echo "Running trace target."
+
 # Run a GRPC client server as a uprobe target.
 run_uprobe_target "$go_grpc_server" "$go_grpc_client"
-
-echo "Test Setup complete."
 
 ###############################################################################
 # Main test: Run stirling_wrapper.
 ###############################################################################
 
-flags="--init_only"
+echo "Running stirling_wrapper."
+
+flags="--timeout_secs=0"
 out=$(run_prompt_sudo "$stirling_wrapper" $flags 2>&1)
 
 ###############################################################################
 # Check output for errors/warnings.
 ###############################################################################
+
+echo "Checking results."
 
 check_stirling_output "$out"

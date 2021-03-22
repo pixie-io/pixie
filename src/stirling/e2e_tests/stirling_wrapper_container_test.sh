@@ -31,25 +31,30 @@ fi
 image_name=bazel/src/stirling/binaries:stirling_wrapper_image
 docker load -i "$stirling_image"
 
+echo "Running trace target."
+
 # Run a GRPC client server as a uprobe target.
 run_uprobe_target "$go_grpc_server" "$go_grpc_client"
-
-echo "Test Setup complete."
 
 ###############################################################################
 # Main test: Run stirling_wrapper container.
 ###############################################################################
 
-flags="--init_only"
+echo "Running stirling_wrapper container."
+
+flags="--timeout_secs=0"
 out=$(docker run --init --rm \
  -v /:/host \
  -v /sys:/sys \
  --env PL_HOST_PATH=/host \
  --privileged \
+ --pid=host \
  "$image_name" $flags 2>&1)
 
 ###############################################################################
 # Check output for errors/warnings.
 ###############################################################################
+
+echo "Checking results."
 
 check_stirling_output "$out"

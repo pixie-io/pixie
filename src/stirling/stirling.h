@@ -131,6 +131,11 @@ class Stirling : public NotCopyable {
   virtual Status RunAsThread() = 0;
 
   /**
+   * Checks whether Stirling is running.
+   */
+  virtual bool IsRunning() const = 0;
+
+  /**
    * Wait for the running thread to terminate. Assumes previous call to RunThread().
    */
   virtual void WaitForThreadJoin() = 0;

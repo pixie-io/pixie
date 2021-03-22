@@ -48,13 +48,26 @@ DEFINE_string(print_record_batches, "http_events,mysql_events,cql_events,dns_eve
               "Comma-separated list of tables to print. Defaults to tracers if not specified. Use "
               "'None' for none.");
 DEFINE_bool(init_only, false, "If true, only runs the init phase and exits. For testing.");
-DEFINE_int32(timeout_secs, 0,
-             "If greater than 0, only runs for the specified amount of time and exits.");
+DEFINE_int32(timeout_secs, -1,
+             "If non-negative, only runs for the specified amount of time and exits.");
 DEFINE_bool(enable_heap_profiler, false, "If true, heap profiling is enabled.");
 
 // Put this in global space, so we can kill it in the signal handler.
 Stirling* g_stirling = nullptr;
 ProcessStatsMonitor* g_process_stats_monitor = nullptr;
+
+Status WaitForRunning(const Stirling& stirling) {
+  int count = 0;
+  while (!stirling.IsRunning()) {
+    ++count;
+    if (count == 10) {
+      return ::pl::error::Internal("Stirling failed to reach running state.");
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
+
+  return Status::OK();
+}
 
 //-----------------------------------------------------------------------------
 // Callback/Printing Code
@@ -297,6 +310,9 @@ int main(int argc, char** argv) {
   // Run Data Collector.
   std::thread run_thread = std::thread(&Stirling::Run, stirling.get());
 
+  // Wait until thread starts.
+  PL_CHECK_OK(WaitForRunning(*stirling));
+
   std::optional<TraceProgram> trace_program = GetTraceProgram();
 
   if (trace_program.has_value()) {
@@ -327,7 +343,7 @@ int main(int argc, char** argv) {
     }
   }
 
-  if (FLAGS_timeout_secs > 0) {
+  if (FLAGS_timeout_secs >= 0) {
     // Run for the specified amount of time, then terminate.
     LOG(INFO) << absl::Substitute("Running for $0 seconds.", FLAGS_timeout_secs);
     std::this_thread::sleep_for(std::chrono::seconds(FLAGS_timeout_secs));
