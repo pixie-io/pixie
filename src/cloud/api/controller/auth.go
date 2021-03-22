@@ -58,7 +58,7 @@ func AuthSignupHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 
 	apiEnv, ok := env.(apienv.APIEnv)
 	if !ok {
-		return &handler.StatusError{http.StatusInternalServerError, errors.New("failed to get environment")}
+		return handler.NewStatusError(http.StatusInternalServerError, "failed to get environment")
 	}
 
 	// GetDefaultSession, will always return a valid session, even if it is empty.
@@ -67,7 +67,7 @@ func AuthSignupHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 	session, _ := GetDefaultSession(apiEnv, r)
 	// This should never be nil, but we check to be sure.
 	if session == nil {
-		return &handler.StatusError{http.StatusInternalServerError, errors.New("failed to get session cookie")}
+		return handler.NewStatusError(http.StatusInternalServerError, "failed to get session cookie")
 	}
 
 	// Extract params from the body which consists of the Auth0 ID token.
@@ -83,7 +83,7 @@ func AuthSignupHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 
 	ctxWithCreds, err := attachCredentialsToContext(env, r)
 	if err != nil {
-		return &handler.StatusError{http.StatusInternalServerError, err}
+		return &handler.StatusError{Code: http.StatusInternalServerError, Err: err}
 	}
 
 	rpcReq := &authpb.SignupRequest{
@@ -162,7 +162,7 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 
 	apiEnv, ok := env.(apienv.APIEnv)
 	if !ok {
-		return &handler.StatusError{http.StatusInternalServerError, errors.New("failed to get environment")}
+		return handler.NewStatusError(http.StatusInternalServerError, "failed to get environment")
 	}
 
 	// GetDefaultSession, will always return a valid session, even if it is empty.
@@ -171,7 +171,7 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 	session, _ := GetDefaultSession(apiEnv, r)
 	// This should never be nil, but we check to be sure.
 	if session == nil {
-		return &handler.StatusError{http.StatusInternalServerError, errors.New("failed to get session cookie")}
+		return handler.NewStatusError(http.StatusInternalServerError, "failed to get session cookie")
 	}
 
 	// Extract params from the body which consists of the Auth0 ID token.
@@ -209,7 +209,7 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 
 	ctxWithCreds, err := attachCredentialsToContext(env, r)
 	if err != nil {
-		return &handler.StatusError{http.StatusInternalServerError, err}
+		return &handler.StatusError{Code: http.StatusInternalServerError, Err: err}
 	}
 
 	rpcReq := &authpb.LoginRequest{
@@ -281,7 +281,7 @@ func AuthLogoutHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 
 	session, err := GetDefaultSession(apiEnv, r)
 	if err != nil {
-		return &handler.StatusError{http.StatusInternalServerError, err}
+		return &handler.StatusError{Code: http.StatusInternalServerError, Err: err}
 	}
 
 	// Delete the cookie.

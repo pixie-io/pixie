@@ -3,16 +3,17 @@ package cli_e2e_test
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"flag"
 	"io"
 	"os"
 	"os/exec"
-	"sync"
 	"testing"
 
 	"github.com/bazelbuild/rules_go/go/tools/bazel"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/sync/errgroup"
 )
 
 var testDisableList = []string{
@@ -165,22 +166,34 @@ func TestCLIE2E_AllScriptsRepeat10(t *testing.T) {
 // Just repeat a simple script like agent status to make sure it works when lots of scripts are running in parallel.
 func TestCLIE2E_AgentStatusStressParallel(t *testing.T) {
 	t.Run("stress::px/agent_status", func(t *testing.T) {
-		c := make(chan struct{}, *stressMaxParallel)
-		var wg sync.WaitGroup
-		for i := 0; i < *stressRepeat; i++ {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				c <- struct{}{}
-				b, err := cliExecStdoutBytes(t, "run", "-c", *clusterID, "px/agent_status", "-o", "json")
-				if err != nil {
-					t.Fatalf("Failed to run script: %+v", err)
+		jobs := make(chan struct{})
+		go func() {
+			for i := 0; i < *stressRepeat; i++ {
+				jobs <- struct{}{}
+			}
+			close(jobs)
+		}()
+
+		eg := errgroup.Group{}
+		for i := 0; i < *stressMaxParallel; i++ {
+			eg.Go(func() error {
+				for range jobs {
+					b, err := cliExecStdoutBytes(t, "run", "-c", *clusterID, "px/agent_status", "-o", "json")
+					if err != nil {
+						return err
+					}
+					if len(b.String()) == 0 {
+						return errors.New("empty script output")
+					}
 				}
-				assert.Greater(t, len(b.String()), 0)
-				<-c
-			}()
+				return nil
+			})
 		}
-		wg.Wait()
+
+		err := eg.Wait()
+		if err != nil {
+			t.Fatal(err)
+		}
 	})
 }
 

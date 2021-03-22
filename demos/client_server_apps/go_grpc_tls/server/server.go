@@ -30,7 +30,7 @@ func (s *server) SayHelloAgain(ctx context.Context, in *pb.HelloRequest) (*pb.He
 func main() {
 	cert, err := tls.LoadX509KeyPair("https-server.crt", "https-server.key")
 	if err != nil {
-		log.Fatalf("failed to load certs", err)
+		log.Fatalf("failed to load certs: %v", err)
 	}
 	tlsConfig := &tls.Config{Certificates: []tls.Certificate{cert}}
 

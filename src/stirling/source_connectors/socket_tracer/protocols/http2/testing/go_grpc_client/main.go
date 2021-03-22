@@ -43,7 +43,7 @@ func streamGreet(address string, https bool, name string) {
 
 	stream, err := c.SayHelloServerStreaming(ctx, &pb.HelloRequest{Name: name})
 	if err != nil {
-		log.Fatal("Failed to make streaming RPC call SayHelloServerStreaming(), error: %v", err)
+		log.Fatalf("Failed to make streaming RPC call SayHelloServerStreaming(), error: %v", err)
 	}
 	for {
 		item, err := stream.Recv()
@@ -69,7 +69,7 @@ func clientStreamGreet(address string, https bool, names []string) {
 
 	stream, err := c.SayHelloClientStreaming(ctx)
 	if err != nil {
-		log.Fatal("Failed to make streaming RPC call SayHelloServerStreaming(), error: %v", err)
+		log.Fatalf("Failed to make streaming RPC call SayHelloServerStreaming(), error: %v", err)
 	}
 	for _, name := range names {
 		if err := stream.Send(&pb.HelloRequest{Name: name}); err != nil {
@@ -98,7 +98,7 @@ func bidirStreamGreet(address string, https bool, names []string) {
 
 	stream, err := c.SayHelloBidirStreaming(ctx)
 	if err != nil {
-		log.Fatal("Failed to make streaming RPC call SayHelloServerStreaming(), error: %v", err)
+		log.Fatalf("Failed to make streaming RPC call SayHelloServerStreaming(), error: %v", err)
 	}
 	for _, name := range names {
 		if err := stream.Send(&pb.HelloRequest{Name: name}); err != nil {

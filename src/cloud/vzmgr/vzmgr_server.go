@@ -101,7 +101,7 @@ func main() {
 		d, "postgres", driver)
 
 	if err = mg.Up(); err != nil {
-		log.WithError(err).Info("migrations failed: %s", err)
+		log.WithError(err).Infof("migrations failed: %s", err)
 	}
 
 	dbKey := viper.GetString("database_key")
