@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -126,6 +127,9 @@ func createNewCobraCommand() *cobra.Command {
 			fs := execScript.GetFlagSet()
 			if fs != nil {
 				if err := fs.Parse(scriptArgs); err != nil {
+					if err == flag.ErrHelp {
+						os.Exit(0)
+					}
 					cliLog.WithError(err).Error("Failed to parse script flags")
 					os.Exit(1)
 				}

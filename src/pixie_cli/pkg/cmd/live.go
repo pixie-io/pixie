@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"flag"
 	"os"
 
 	"github.com/gofrs/uuid"
@@ -63,6 +64,9 @@ var LiveCmd = &cobra.Command{
 			fs := execScript.GetFlagSet()
 			if fs != nil {
 				if err := fs.Parse(scriptArgs); err != nil {
+					if err == flag.ErrHelp {
+						os.Exit(0)
+					}
 					utils.WithError(err).Error("Failed to parse script flags")
 					os.Exit(1)
 				}
