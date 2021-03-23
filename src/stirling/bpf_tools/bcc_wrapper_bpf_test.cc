@@ -136,6 +136,38 @@ TEST(BCCWrapperTest, GetTGIDStartTime) {
   EXPECT_EQ(proc_pid_start_time, expected_proc_pid_start_time);
 }
 
+TEST(BCCWrapperTest, TestMapClearingAPIs) {
+  // Test to show that get_table_offline() with clear_table=true actually clears the table.
+  bpf_tools::BCCWrapper bcc_wrapper;
+  std::string_view kProgram = "BPF_HASH(alphabet, char const * const, uint64_t, 26);";
+  ASSERT_OK(bcc_wrapper.InitBPFProgram(kProgram));
+  ebpf::BPFHashTable alphabet = bcc_wrapper.GetHashTable<const char*, uint64_t>("alphabet");
+
+  // Set the expected values in the BPF hash table:
+  ASSERT_TRUE(alphabet.update_value("a", 0).ok());
+  ASSERT_TRUE(alphabet.update_value("b", 1).ok());
+  ASSERT_TRUE(alphabet.update_value("c", 2).ok());
+  ASSERT_TRUE(alphabet.update_value("d", 3).ok());
+
+  using ::testing::IsEmpty;
+  using ::testing::Pair;
+  using ::testing::UnorderedElementsAre;
+
+  auto gold = UnorderedElementsAre(Pair("a", 0), Pair("b", 1), Pair("c", 2), Pair("d", 3));
+
+  // Verify that get_table_offline() returns the values we expect:
+  ASSERT_THAT(alphabet.get_table_offline(), gold);
+
+  // Verify calling get_table_offline() (again) returns the values we expect,
+  // but this time we are passing in parameter clear_table=true:
+  constexpr bool kClearTable = true;
+  ASSERT_THAT(alphabet.get_table_offline(kClearTable), gold);
+
+  // After calling get_table_offline() with clear_table=true,
+  // the table should be empty.
+  ASSERT_THAT(alphabet.get_table_offline(), IsEmpty());
+}
+
 }  // namespace bpf_tools
 }  // namespace stirling
 }  // namespace pl
