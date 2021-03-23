@@ -226,6 +226,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	extractPath, _ := cmd.Flags().GetString("extract_yaml")
 	deployKey, _ := cmd.Flags().GetString("deploy_key")
 	useEtcdOperator, _ := cmd.Flags().GetBool("use_etcd_operator")
+	useEtcdOperatorSet := cmd.Flags().Changed("use_etcd_operator")
 	customLabels, _ := cmd.Flags().GetString("labels")
 	customAnnotations, _ := cmd.Flags().GetString("annotations")
 
@@ -358,14 +359,14 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	// Validate correct number of default storage classes.
-	defaultStorageExists, err := validateNumDefaultStorageClasses(clientset)
-	if err != nil {
-		utils.Error("Error checking default storage classes: " + err.Error())
-	}
 	// useEtcdOperator is true then deploy operator. Otherwise: If defaultStorageExists, then
 	// go for persistent storage version.
-	if !useEtcdOperator {
+	if !useEtcdOperatorSet {
+		// Validate correct number of default storage classes.
+		defaultStorageExists, err := validateNumDefaultStorageClasses(clientset)
+		if err != nil {
+			utils.Error("Error checking default storage classes: " + err.Error())
+		}
 		if !defaultStorageExists {
 			useEtcdOperator = true
 		}
