@@ -77,6 +77,7 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
       dispatcher_(api_->AllocateDispatcher("manager")),
       nats_addr_(nats_url),
       table_store_(std::make_shared<table_store::TableStore>()),
+      relation_info_manager_(std::make_unique<RelationInfoManager>()),
       func_context_(this, CreateMDSStub(mds_url, grpc_channel_creds_),
                     CreateMDTPStub(mds_url, grpc_channel_creds_), table_store_,
                     [](grpc::ClientContext* ctx) { AddServiceTokenToClientContext(ctx); }) {
@@ -247,7 +248,9 @@ void Manager::HandleMessage(std::unique_ptr<messages::VizierMessage> msg) {
   auto c = msg->msg_case();
   auto it = message_handlers_.find(c);
   if (it != message_handlers_.end()) {
-    ECHECK_OK(it->second->HandleMessage(std::move(msg))) << "message handler failed... ignoring";
+    ECHECK_OK(it->second->HandleMessage(std::move(msg)))
+        << "message handler failed... for type: " << c
+        << " ignoring. Message: " << msg->DebugString();
     // Handler found.
   } else {
     LOG(ERROR) << "Unhandled message type: " << c << " Message: " << msg->DebugString();
@@ -262,6 +265,13 @@ Status Manager::PostRegisterHook(uint32_t asid) {
       info_.hostname, info_.asid, info_.pod_name, info_.agent_id,
       info_.capabilities.collects_data(), pl::system::Config::GetInstance(),
       agent_metadata_filter_.get());
+  // Register the Carnot callback for metadata.
+  carnot_->RegisterAgentMetadataCallback(
+      std::bind(&pl::md::AgentMetadataStateManager::CurrentAgentMetadataState, mds_manager_.get()));
+
+  // Call the derived class post-register hook.
+  PL_CHECK_OK(PostRegisterHookImpl());
+  PL_CHECK_OK(RegisterBackgroundHelpers());
 
   if (has_nats_connection()) {
     k8s_nats_connector_ = std::make_unique<Manager::VizierNATSConnector>(
@@ -270,9 +280,6 @@ Status Manager::PostRegisterHook(uint32_t asid) {
         SSL::DefaultNATSCreds());
 
     PL_RETURN_IF_ERROR(k8s_nats_connector_->Connect(dispatcher_.get()));
-    // Attach the message handler for k8s nats:
-    k8s_nats_connector_->RegisterMessageHandler(
-        std::bind(&Manager::NATSMessageHandler, this, std::placeholders::_1));
 
     auto k8s_update_handler =
         std::make_shared<K8sUpdateHandler>(dispatcher_.get(), mds_manager_.get(), &info_,
@@ -280,18 +287,13 @@ Status Manager::PostRegisterHook(uint32_t asid) {
 
     PL_CHECK_OK(RegisterMessageHandler(messages::VizierMessage::MsgCase::kK8SMetadataMessage,
                                        k8s_update_handler));
+
+    // Attach the message handler for k8s nats:
+    k8s_nats_connector_->RegisterMessageHandler(
+        std::bind(&Manager::NATSMessageHandler, this, std::placeholders::_1));
   }
 
-  relation_info_manager_ = std::make_unique<RelationInfoManager>();
-
-  // Call the derived class post-register hook.
-  PL_CHECK_OK(PostRegisterHookImpl());
-
-  // Register the Carnot callback for metadata.
-  carnot_->RegisterAgentMetadataCallback(
-      std::bind(&pl::md::AgentMetadataStateManager::CurrentAgentMetadataState, mds_manager_.get()));
-
-  return RegisterBackgroundHelpers();
+  return Status::OK();
 }
 
 Status Manager::ReregisterHook() {
