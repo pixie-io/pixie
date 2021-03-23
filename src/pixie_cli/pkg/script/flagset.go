@@ -32,7 +32,7 @@ func (f *FlagSet) String(name string, defaultValue *string, usage string) {
 	if defaultValue != nil {
 		f.baseFlagSet.String(name, *defaultValue, usage)
 	} else {
-		f.baseFlagSet.String(name, "", usage)
+		f.baseFlagSet.String(name, "", fmt.Sprintf("(required) %s", usage))
 	}
 }
 
