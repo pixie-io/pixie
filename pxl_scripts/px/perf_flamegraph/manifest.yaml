@@ -1,0 +1,4 @@
+---
+short: Flamegraph
+long: >
+  Shows stack trace samples that indicate where applications are spending their time.
