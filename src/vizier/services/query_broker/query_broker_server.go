@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/cenkalti/backoff/v3"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -25,8 +27,10 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/tracker"
 )
 
-const plMDSAddr = "vizier-metadata.pl.svc:50400"
-const querybrokerHostname = "vizier-query-broker.pl.svc"
+const (
+	plMDSAddr           = "vizier-metadata.pl.svc:50400"
+	querybrokerHostname = "vizier-query-broker.pl.svc"
+)
 
 func init() {
 	pflag.String("cloud_connector_addr", "vizier-cloud-connector.pl.svc:50800", "The address to the cloud connector")
@@ -87,12 +91,28 @@ func main() {
 	dialOpts = append(dialOpts, grpc.WithBlock())
 	dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(8*1024*1024)))
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	mdsConn, err := grpc.DialContext(ctx, plMDSAddr, dialOpts...)
+	bOpts := backoff.NewExponentialBackOff()
+	bOpts.InitialInterval = 15 * time.Second
+	bOpts.MaxElapsedTime = 5 * time.Minute
+
+	var mdsConn *grpc.ClientConn
+	err = backoff.Retry(func() error {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		mdsConn, err = grpc.DialContext(ctx, plMDSAddr, dialOpts...)
+		if !errors.Is(err, context.DeadlineExceeded) {
+			// Any errors that aren't timeouts are treated as permanent errors.
+			return backoff.Permanent(err)
+		}
+		return err
+	}, bOpts)
+
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to Metadata Service.")
 	}
+
+	defer mdsConn.Close()
+
 	mdsClient := metadatapb.NewMetadataServiceClient(mdsConn)
 	mdtpClient := metadatapb.NewMetadataTracepointServiceClient(mdsConn)
 	mdconfClient := metadatapb.NewMetadataConfigServiceClient(mdsConn)
