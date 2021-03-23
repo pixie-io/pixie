@@ -41,10 +41,9 @@ describe('useIsAuthenticated hook to check if the API can be accessed', () => {
     mockFetchResponse({ status: 200 } as Response);
     const consumer = getConsumer();
     await wait();
-    expect(getContent(consumer)).toEqual({
+    expect(getContent(consumer)).toStrictEqual({
       authenticated: true,
       loading: false,
-      error: undefined,
     });
   });
 
@@ -52,10 +51,9 @@ describe('useIsAuthenticated hook to check if the API can be accessed', () => {
     mockFetchResponse({ status: 500 } as Response);
     const consumer = getConsumer();
     await wait();
-    expect(getContent(consumer)).toEqual({
+    expect(getContent(consumer)).toStrictEqual({
       authenticated: false,
       loading: false,
-      error: undefined,
     });
   });
 
@@ -63,7 +61,7 @@ describe('useIsAuthenticated hook to check if the API can be accessed', () => {
     mockFetchResponse('Ah, bugger.', true);
     const consumer = getConsumer();
     await wait();
-    expect(getContent(consumer)).toEqual({
+    expect(getContent(consumer)).toStrictEqual({
       authenticated: false,
       loading: false,
       error: 'Ah, bugger.',

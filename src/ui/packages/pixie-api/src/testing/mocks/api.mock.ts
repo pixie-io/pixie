@@ -32,6 +32,12 @@ export class MockPixieAPIClient implements PixieAPIClientAbstract {
     return observableOf(new Status().setCode(0));
   }
 
+  // Using the same implementation as the real class here, so that mocking the network requests works.
+  // This makes the test more accurate and simpler (doesn't have to fiddle with internals).
+  isAuthenticated(): Promise<boolean> {
+    return fetch(`${this.options.uri}/authorized`).then((response) => response.status === 200);
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   private constructor(options: PixieAPIClientOptions) {
     this.options = { ... MockPixieAPIClient.DEFAULT_OPTIONS, ...options };

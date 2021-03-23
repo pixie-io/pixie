@@ -16,8 +16,7 @@ export function useIsAuthenticated(): { loading: boolean; authenticated: boolean
   const client = React.useContext(PixieAPIContext);
   React.useEffect(() => {
     if (client) {
-      const p = fetch(`${client.options.uri}/authorized`).then((response) => response.status === 200);
-      setPromise(p);
+      setPromise(client.isAuthenticated());
     } else {
       throw new Error('useIsAuthenticated requires your component to be within a PixieAPIContextProvider to work!');
     }

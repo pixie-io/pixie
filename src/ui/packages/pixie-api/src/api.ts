@@ -1,16 +1,17 @@
 /* eslint-disable max-classes-per-file */
 
+import { Observable, from } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
+import { containsMutation } from 'utils/pxl';
 import {
   ExecutionStateUpdate,
   VizierGRPCClient,
   VizierQueryFunc,
-} from 'vizier-grpc-client';
-import { CloudClient } from 'cloud-gql-client';
-import { Observable, from } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
-import { PixieAPIClientOptions } from 'types/client-options';
-import { Status } from 'types/generated/vizierapi_pb';
-import { containsMutation } from 'utils/pxl';
+} from './vizier-grpc-client';
+import { CloudClient } from './cloud-gql-client';
+import { PixieAPIClientOptions } from './types/client-options';
+import { Status } from './types/generated/vizierapi_pb';
+import { UserSettings } from './user-settings';
 
 /**
  * When calling `PixieAPIClient.create`, this specifies which clusters to connect to, and any special configuration for
@@ -41,6 +42,8 @@ export abstract class PixieAPIClientAbstract {
     script: string,
     funcs?: VizierQueryFunc[],
   ): Observable<ExecutionStateUpdate>;
+
+  abstract isAuthenticated(): Promise<boolean>;
 }
 
 /**
@@ -128,6 +131,15 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
       : this.createVizierClient({ id, passthroughClusterAddress, attachCredentials });
   }
 
+  // TODO(nick): Once the authentication model settles down, make this easier to use outside of the browser.
+  /**
+   * Checks whether the current cookies include a valid authentication token.
+   * Checks by querying a purpose-built endpoint, to be certain the user really is authenticated.
+   */
+  isAuthenticated(): Promise<boolean> {
+    return fetch(`${this.options.uri}/authorized`).then((response) => response.status === 200);
+  }
+
   /**
    * Creates a stream that listens for the health of the cluster and the API client's connection to it.
    * This is an Observable, so don't forget to unsubscribe when you're done with it.
@@ -162,6 +174,60 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
     return from(this.getClusterClient(cluster))
       .pipe(switchMap((client) => client.executeScript(script, funcs, hasMutation)));
   }
+
+  // Convenience: curry methods from the GQL client.
+  // TSDoc comments are copy-pasted to avoid an extra click through @see.
+
+  /** Fetches a list of all available clusters. */
+  listClusters = () => this.gqlClient.listClusters();
+
+  /**
+   * Fetches a list of control planes for currently-available clusters.
+   */
+  getClusterControlPlanePods = () => this.gqlClient.getClusterControlPlanePods();
+
+  /** Creates a Pixie API key, then returns its ID. */
+  createAPIKey = () => this.gqlClient.createAPIKey();
+
+  /** Deletes a Pixie API key with the given ID. */
+  deleteAPIKey = (id: string) => this.gqlClient.deleteAPIKey(id);
+
+  /** Fetches a list of accessible Pixie API keys. Results update at most once every 2 seconds. */
+  listAPIKeys = () => this.gqlClient.listAPIKeys();
+
+  /** Creates a cluster deployment key, then returns its ID. */
+  createDeploymentKey = () => this.gqlClient.createDeploymentKey();
+
+  /** Deletes a cluster deployment key with the given ID. */
+  deleteDeploymentKey = (id: string) => this.gqlClient.deleteDeploymentKey(id);
+
+  /** Fetches a list of accessible cluster deployment keys. Results update at most once every 2 seconds. */
+  listDeploymentKeys = () => this.gqlClient.listDeploymentKeys();
+
+  /**
+   * Creates a function that can suggest complete commands for a cluster, such as a script to execute and its args.
+   * For an example of this in use, check out CommandAutocomplete in @pixie-labs/components
+   */
+  getAutocompleteSuggester = (clusterUID: string) => this.gqlClient.getAutocompleteSuggester(clusterUID);
+
+  /**
+   * Creates a function that can suggest entity names (such as script IDs) based on a partial input.
+   * For an example of this in use, check out Breadcrumbs in @pixie-labs/components
+   */
+  getAutocompleteFieldSuggester = (clusterUID: string) => this.gqlClient.getAutocompleteFieldSuggester(clusterUID);
+
+  /**
+   * Fetches the upstream value of a specific user setting.
+   * Adapter libraries may wish to leverage localStorage in addition to Apollo's cache, to get the
+   * last-known value synchronously on page load. @pixie-labs/api-react is an example of this.
+   */
+  getSetting = (key: keyof UserSettings) => this.gqlClient.getSetting(key);
+
+  /**
+   * Writes a user setting upstream.
+   * As with getSetting, adapter libraries may wish to use localStorage in combination with this.
+   */
+  setSetting = (key: keyof UserSettings, value: UserSettings[typeof key]) => this.gqlClient.setSetting(key, value);
 
   /**
    * Implementation detail for adapters like @pixie-labs/api-react.

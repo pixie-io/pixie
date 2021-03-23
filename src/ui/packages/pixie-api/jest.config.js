@@ -3,7 +3,7 @@ module.exports = {
     window: true,
   },
   moduleFileExtensions: ['ts', 'js'],
-  moduleDirectories: ['node_modules', '<rootDir>/src'],
+  moduleDirectories: ['node_modules', 'src'],
   resolver: null,
   transform: {
     '^.+\\.jsx?$': 'babel-jest',
