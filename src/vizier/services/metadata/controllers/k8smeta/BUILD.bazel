@@ -20,7 +20,7 @@ go_library(
         "//src/vizier/services/metadata/storepb:store_pl_go_proto",
         "//src/vizier/utils/datastore:go_default_library",
         "//src/vizier/utils/messagebus:go_default_library",
-        "@com_github_cenkalti_backoff//:go_default_library",
+        "@com_github_cenkalti_backoff_v3//:go_default_library",
         "@com_github_evilsuperstars_go_cidrman//:go_default_library",
         "@com_github_gogo_protobuf//proto:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",

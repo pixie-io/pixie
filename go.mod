@@ -16,8 +16,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.2
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
-	github.com/cenkalti/backoff v2.2.1+incompatible
-	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
+	github.com/cenkalti/backoff/v3 v3.2.2
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/cockroachdb/pebble v0.0.0-20210120202502-6110b03a8a85
 	github.com/containerd/containerd v1.3.4 // indirect
@@ -35,7 +34,7 @@ require (
 	github.com/getsentry/sentry-go v0.5.1
 	github.com/go-openapi/runtime v0.19.26
 	github.com/go-openapi/strfmt v0.20.0
-	github.com/gofrs/uuid v4.0.0+incompatible // indirect
+	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang-migrate/migrate v3.5.4+incompatible
 	github.com/golang/mock v1.5.0

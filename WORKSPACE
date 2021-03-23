@@ -808,13 +808,6 @@ go_repository(
 )
 
 go_repository(
-    name = "com_github_cenkalti_backoff",
-    importpath = "github.com/cenkalti/backoff",
-    sum = "h1:tNowT99t7UNflLxfYYSlKYsBpXdEet03Pg2g16Swow4=",
-    version = "v2.2.1+incompatible",
-)
-
-go_repository(
     name = "com_github_containerd_continuity",
     importpath = "github.com/containerd/continuity",
     sum = "h1:6JKvHHt396/qabvMhnhUZvWaHZzfVfldxE60TK8YLhg=",

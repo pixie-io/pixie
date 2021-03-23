@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v3"
-
 	"github.com/nats-io/nats-server/v2/server"
 	"github.com/nats-io/nats-server/v2/test"
 	"github.com/nats-io/nats.go"
