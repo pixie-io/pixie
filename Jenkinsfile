@@ -811,10 +811,10 @@ def buildScriptForCommits = {
     if (isMainRun) {
       // If there is a later build queued up, we want to stop the current build so
       // we can execute the later build instead.
-      def q = Jenkins.instance.queue
+      q = Jenkins.get().getQueue()
       abortBuild = false
-      q.items.each {
-        if (it.task.name == 'pixie-main/build-and-test-all') {
+      q.getItems().each {
+        if (it.task.getDisplayName() == 'build-and-test-all') {
           abortBuild = true
         }
       }
