@@ -192,7 +192,8 @@ void RequestPathCluster::ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writ
   writer->EndObject();
 }
 
-double RequestPathClustering::MaxSimilarity(const RequestPath& request_path, int64_t* max_index) {
+double RequestPathClustering::MaxSimilarity(const RequestPath& request_path,
+                                            int64_t* max_index) const {
   auto it = depth_to_centroid_indices_.find(request_path.depth());
   *max_index = -1;
   if (it == depth_to_centroid_indices_.end()) {
@@ -272,6 +273,46 @@ void RequestPathClustering::Update(const RequestPathCluster& new_cluster) {
     AddNewCluster(new_cluster);
   } else {
     MergeCluster(closest_cluster_index, new_cluster);
+  }
+}
+
+void RequestPathClustering::Merge(const RequestPathClustering& other_clustering) {
+  std::vector<RequestPathCluster> new_clusters;
+  std::vector<RequestPathCluster> singleton_clusters;
+  for (const auto& cluster : clusters_) {
+    if (cluster.members().size() == 0) {
+      new_clusters.push_back(cluster);
+    } else {
+      for (auto request_path : cluster.members()) {
+        singleton_clusters.push_back(RequestPathCluster(request_path));
+      }
+    }
+  }
+
+  clusters_ = new_clusters;
+  // Rebuild depth_to_cluster_indices mapping.
+  depth_to_centroid_indices_.clear();
+  for (const auto& [cluster_idx, cluster] : Enumerate(clusters_)) {
+    auto depth = cluster.centroid().depth();
+    if (depth_to_centroid_indices_.find(depth) == depth_to_centroid_indices_.end()) {
+      depth_to_centroid_indices_.emplace(depth, std::vector<int64_t>());
+    }
+    depth_to_centroid_indices_[depth].push_back(cluster_idx);
+  }
+
+  for (const auto& cluster : other_clustering.clusters_) {
+    if (cluster.members().size() == 0) {
+      Update(cluster);
+    } else {
+      for (auto request_path : cluster.members()) {
+        singleton_clusters.push_back(RequestPathCluster(request_path));
+      }
+    }
+  }
+
+  // Update clustering with the singleton points.
+  for (const auto& cluster : singleton_clusters) {
+    Update(cluster);
   }
 }
 

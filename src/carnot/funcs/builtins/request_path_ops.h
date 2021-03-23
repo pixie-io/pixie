@@ -142,6 +142,7 @@ class RequestPathCluster {
   void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const;
 
   const RequestPath& centroid() const { return centroid_; }
+  const absl::flat_hash_set<RequestPath>& members() const { return members_; }
 
  private:
   explicit RequestPathCluster(size_t min_cardinality = 5) : min_cardinality_(min_cardinality) {}
@@ -175,10 +176,12 @@ class RequestPathClustering {
    */
   void Update(const RequestPathCluster& new_cluster);
 
+  void Merge(const RequestPathClustering& other_clustering);
+
   const std::vector<RequestPathCluster>& clusters() const { return clusters_; }
 
  private:
-  double MaxSimilarity(const RequestPath& request_path, int64_t* max_index);
+  double MaxSimilarity(const RequestPath& request_path, int64_t* max_index) const;
   void AddNewCluster(const RequestPathCluster& cluster);
   void MergeCluster(int64_t cluster_index, const RequestPathCluster& other_cluster);
   // We currently only allow request path's with the same depth to be clustered together.
@@ -210,9 +213,7 @@ class RequestPathClusteringFitUDA : public udf::UDA {
     clustering_.Update(RequestPathCluster(request_path));
   }
   void Merge(FunctionContext*, const RequestPathClusteringFitUDA& other) {
-    for (const auto& cluster : other.clustering_.clusters()) {
-      clustering_.Update(cluster);
-    }
+    clustering_.Merge(other.clustering_);
   }
   StringValue Finalize(FunctionContext*) { return clustering_.ToJSON(); }
 

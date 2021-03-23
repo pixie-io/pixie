@@ -11,7 +11,10 @@ pl_cc_library(
             "**/*_benchmark.cc",
         ],
     ),
-    hdrs = glob(["*.h"]),
+    hdrs = glob(
+        ["*.h"],
+        exclude = ["**/*_test_utils.h"],
+    ),
     deps = [
         "//src/carnot/exec/ml:cc_library",
         "//src/carnot/udf:cc_library",
@@ -119,7 +122,10 @@ pl_cc_binary(
 
 pl_cc_test(
     name = "request_path_ops_test",
-    srcs = ["request_path_ops_test.cc"],
+    srcs = [
+        "request_path_ops_test.cc",
+        "request_path_ops_test_utils.h",
+    ],
     deps = [
         ":cc_library",
         "//src/carnot/udf:udf_testutils",
