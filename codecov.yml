@@ -1,6 +1,7 @@
 ---
 ignore:
-- "src/ui/src/types/generated"
-- "src/ui/src/testing"
-- "src/ui/packages/pixie-api/src/types/generated"
 - "src/ui/packages/pixie-api/src/testing"
+- "src/ui/packages/pixie-api/src/types/generated"
+- "src/ui/src/testing"
+- "src/ui/src/types/generated"
+- "third_party"

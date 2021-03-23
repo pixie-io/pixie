@@ -93,7 +93,6 @@
   "license": "SEE LICENSE IN LICENSE.txt",
   "jest-junit": {
     "suiteName": "Jest tests",
-    "output": "./junit.xml",
     "classNameTemplate": "{classname}-{title}",
     "titleTemplate": "{classname}-{title}",
     "usePathForSuiteName": "true"
@@ -190,6 +189,7 @@
     "clean": "rimraf dist packages/*/dist",
     "dev": "concurrently -c green.dim,magenta.dim,yellow.dim,cyan.dim -n components,api,api-react,ui \"yarn workspace @pixie-labs/components start\" \"yarn workspace @pixie-labs/api start\" \"yarn workspace @pixie-labs/api-react start\" \"webpack serve --mode=development --hot\"",
     "test": "jest",
+    "test_ci": "jest --maxWorkers=4",
     "coverage": "jest --coverage",
     "coverage_ci": "jest --coverage --maxWorkers=4",
     "license_check": "./node_modules/license-checker/bin/license-checker",

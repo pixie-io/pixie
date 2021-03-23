@@ -398,29 +398,10 @@ def processBazelLogs(String logBase) {
 
 def processAllExtractedBazelLogs() {
   stashList.each({ stashName ->
-    if (stashName.endsWith('testlogs') && !stashName.contains('-ui-')) {
+    if (stashName.endsWith('testlogs')) {
       processBazelLogs(stashName)
     }
   })
-}
-
-def archiveUILogs() {
-  step([
-    $class: 'XUnitPublisher',
-    thresholds: [
-      [
-        $class: 'FailedThreshold',
-        unstableThreshold: '1'
-      ]
-    ],
-    tools: [
-      [
-        $class: 'JUnitType',
-        skipNoTestFiles: true,
-        pattern: 'build-ui-testlogs/junit.xml'
-      ]
-    ]
-  ])
 }
 
 def publishStoryBook() {
@@ -567,22 +548,6 @@ def buildAndTestOptWithUI = {
           variable: 'GOOGLE_APPLICATION_CREDENTIALS')
       ]) {
         bazelCICmd('build-opt', 'clang', 'opt', 'clang_opt', '--action_env=GOOGLE_APPLICATION_CREDENTIALS')
-
-        def uiTestFailures = 'bazel-out/k8-opt/testlogs/src/ui/ui-tests/test.log'
-        if (shFileExists(uiTestFailures)) {
-            stashOnGCS('build-ui-failures', 'bazel-out')
-            stashList.add('build-ui-failures')
-        }
-
-        // File might not always exist because of test run caching.
-        // TODO(zasgar): Make sure this file is fetched for main run, otherwise we
-        // might have issues with coverage.
-        def uiTestResults = 'bazel-testlogs-archive/src/ui/ui-tests/test.outputs/outputs.zip'
-        if (shFileExists(uiTestResults)) {
-            sh "unzip ${uiTestResults} -d testlogs"
-            stashOnGCS('build-ui-testlogs', 'testlogs')
-            stashList.add('build-ui-testlogs')
-        }
 
         def storybookBundle = 'bazel-bin/src/ui/ui-storybook-bundle.tar.gz'
         if (shFileExists(storybookBundle)) {
@@ -823,8 +788,6 @@ def archiveBuildArtifacts = {
 
       // Actually process the bazel logs to look for test failures.
       processAllExtractedBazelLogs()
-
-      archiveUILogs()
     }
   }
 }

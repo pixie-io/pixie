@@ -27,7 +27,7 @@ ui_shared_cmds_finish = [
     "rm -rf ${TMPPATH}",
 ]
 
-def _webpack_deps_impl(ctx):
+def _pl_webpack_deps_impl(ctx):
     all_files = list(ctx.files.srcs)
 
     cmd = ui_shared_cmds_start + [
@@ -48,7 +48,7 @@ def _webpack_deps_impl(ctx):
             "Generating webpack deps %s" % ctx.outputs.out.short_path,
     )
 
-def _webpack_binary_impl(ctx):
+def _pl_webpack_archive_impl(ctx):
     all_files = list(ctx.files.srcs)
 
     if ctx.attr.stamp:
@@ -76,37 +76,48 @@ def _webpack_binary_impl(ctx):
     )
 
 def _pl_ui_test_impl(ctx):
-    all_files = list(ctx.files.srcs)
+    test_cmd = [
+        "yarn test_ci",
+    ]
+
+    if ctx.configuration.coverage_enabled:
+        test_cmd = [
+            "yarn coverage_ci",
+            "cp coverage/lcov.info ${COVERAGE_OUTPUT_FILE}",
+        ]
 
     cmd = [
         "export BASE_PATH=$(pwd)",
         "export UILIB_PATH=" + ctx.attr.uilib_base,
+        "export JEST_JUNIT_OUTPUT_NAME=${XML_OUTPUT_FILE:-junit.xml}",
     ] + ui_shared_cmds_start + [
-        "export OUTPUT_PATH_LCOV=${TEST_UNDECLARED_OUTPUTS_DIR}/lcov.info",
-        "export OUTPUT_PATH_JUNIT=${TEST_UNDECLARED_OUTPUTS_DIR}/junit.xml",
-        "printenv",
         "tar -zxf ${BASE_PATH}/" + ctx.file.deps.short_path,
-        "yarn coverage_ci &> build.log",
-        "cp coverage/lcov.info ${OUTPUT_PATH_LCOV}",
-        "cp junit.xml ${OUTPUT_PATH_JUNIT}",
-    ] + ui_shared_cmds_finish
+    ] + test_cmd + ui_shared_cmds_finish
 
     script = " && ".join(cmd)
 
     ctx.actions.write(
         output = ctx.outputs.executable,
         content = script,
+        is_executable = True,
     )
 
-    runfiles = ctx.runfiles(files = [ctx.outputs.executable] + all_files + ctx.files.deps)
-    return [DefaultInfo(runfiles = runfiles)]
+    runfiles = ctx.runfiles(files = ctx.files.srcs + ctx.files.deps)
+    return [
+        DefaultInfo(
+            executable = ctx.outputs.executable,
+            runfiles = runfiles,
+        ),
+        coverage_common.instrumented_files_info(
+            ctx,
+            source_attributes = ["srcs"],
+            dependency_attributes = ["deps"],
+            extensions = ["ts", "tsx", "js", "jsx"],
+        ),
+    ]
 
-def _pl_storybook_binary_impl(ctx):
+def _pl_storybook_archive_impl(ctx):
     all_files = list(ctx.files.srcs)
-
-    if ctx.attr.stamp:
-        all_files.append(ctx.info_file)
-        all_files.append(ctx.version_file)
 
     cmd = ui_shared_cmds_start + [
         "export OUTPUT_PATH=" + ctx.outputs.out.path,
@@ -130,7 +141,7 @@ def _pl_storybook_binary_impl(ctx):
             "Generating storybook bundle %s" % ctx.outputs.out.short_path,
     )
 
-def _deps_licenses_impl(ctx):
+def _pl_deps_licenses_impl(ctx):
     all_files = list(ctx.files.srcs)
 
     cmd = ui_shared_cmds_start + [
@@ -154,7 +165,7 @@ def _deps_licenses_impl(ctx):
     )
 
 pl_webpack_deps = rule(
-    implementation = _webpack_deps_impl,
+    implementation = _pl_webpack_deps_impl,
     attrs = dict({
         "srcs": attr.label_list(
             mandatory = True,
@@ -169,8 +180,8 @@ pl_webpack_deps = rule(
     },
 )
 
-pl_webpack_binary = rule(
-    implementation = _webpack_binary_impl,
+pl_webpack_archive = rule(
+    implementation = _pl_webpack_archive_impl,
     attrs = dict({
         "srcs": attr.label_list(
             mandatory = True,
@@ -199,19 +210,25 @@ pl_ui_test = rule(
         "uilib_base": attr.string(
             doc = "This is a slight hack that requires the basepath to package.json relative to TOT to be specified",
         ),
+        # Workaround for bazelbuild/bazel#6293. See comment in lcov_merger.sh.
+        # This dummy binary is a shell script that just exits with no error.
+        "_lcov_merger": attr.label(
+            executable = True,
+            default = Label("@io_bazel_rules_go//go/tools/builders:lcov_merger"),
+            cfg = "target",
+        ),
     }),
     test = True,
 )
 
-pl_storybook_binary = rule(
-    implementation = _pl_storybook_binary_impl,
+pl_storybook_archive = rule(
+    implementation = _pl_storybook_archive_impl,
     attrs = dict({
         "srcs": attr.label_list(
             mandatory = True,
             allow_files = True,
         ),
         "deps": attr.label(allow_single_file = True),
-        "stamp": attr.bool(mandatory = True),
         "uilib_base": attr.string(
             doc = "This is a slight hack that requires the basepath to package.json relative to TOT to be specified",
         ),
@@ -222,7 +239,7 @@ pl_storybook_binary = rule(
 )
 
 pl_deps_licenses = rule(
-    implementation = _deps_licenses_impl,
+    implementation = _pl_deps_licenses_impl,
     attrs = dict({
         "srcs": attr.label_list(
             mandatory = True,

@@ -5,7 +5,7 @@ export CC=gcc
 export CXX=g++
 
 # We can consider adding this file to our repo if needed.
-CODECOV_VERSION="db834f033a450a75a315e72ae8490393c9b19181"
+CODECOV_VERSION="20210312-2b87ace"
 CODECOV_SCRIPT="https://raw.githubusercontent.com/codecov/codecov-bash/${CODECOV_VERSION}/codecov"
 
 GIT_COMMIT=""
@@ -17,7 +17,7 @@ HTML_OUTPUT_DIR=""
 
 CC_COVERAGE_FILE="cc_coverage.info"
 GO_COVERAGE_FILE="coverage.txt"
-UI_OUTPUTS=bazel-testlogs/src/ui/ui-tests/test.outputs/outputs.zip
+UI_OUTPUT=bazel-testlogs/src/ui/ui-tests/coverage.dat
 
 # Print out the usage information and exit.
 usage() {
@@ -56,7 +56,7 @@ check_config() {
 
   if [ "${GENERATE_HTML}" = true ]; then
     if [ "${HTML_OUTPUT_DIR}" = "" ]; then
-      echo "Option -p to specify lcov output is required wih -g"
+      echo "Option -o to specify html output is required wih -g"
       exit 1
     fi
   fi
@@ -109,7 +109,7 @@ generate_html() {
 }
 
 upload_to_codecov() {
-  bash <(curl -s ${CODECOV_SCRIPT}) -t ${CODECOV_TOKEN} -B ${GIT_BRANCH} -C ${GIT_COMMIT}
+  bash <(curl -s ${CODECOV_SCRIPT}) -t "${CODECOV_TOKEN}" -B "${GIT_BRANCH}" -C "${GIT_COMMIT}" -f '!./third_party/*' -f '!./src/ui/offline_package_cache/*'
 }
 
 # We use globs, make sure they are supported.
@@ -127,7 +127,10 @@ print_config
 cd $(bazel info workspace)
 
 # Get coverage from bazel targets.
-bazel coverage --cache_test_results=no //src/...
+bazel coverage --remote_download_outputs=all //src/...
+
+# Fixup paths for the UI coverage output
+sed -i "s|SF:src|SF:src/ui/src|g" ${UI_OUTPUT}
 
 # This finds all the valid coverage files and then creates a list of them
 # prefixed by -a, which allows up to add them to the lcov output.
@@ -135,9 +138,9 @@ bazel coverage --cache_test_results=no //src/...
 file_merge_args=""
 for file in bazel-out/**/coverage.dat
 do
-    # Only consider valid files. Some files only contain Go coverage and that
-    # does not work with LCOV.
-    lcov --summary ${file} 2>&1 >/dev/null && file_merge_args+=" -a ${file}"
+  # Only consider valid files. Some files only contain Go coverage and that
+  # does not work with LCOV.
+  lcov --summary "${file}" >/dev/null 2>&1 && file_merge_args+=" -a ${file}"
 done
 
 # Merge all the files.
@@ -164,9 +167,6 @@ done
 # Remove test files from the go coverage.
 grep -v "_test.go" coverage.tmp > ${GO_COVERAGE_FILE}
 rm -f coverage.tmp
-
-# Extract the UI coverage files. They are part of the zip archive.
-unzip -o "${UI_OUTPUTS}"
 
 # Upload to codecov.io.
 if [ "${UPLOAD_TO_CODECOV}" = true ]; then
