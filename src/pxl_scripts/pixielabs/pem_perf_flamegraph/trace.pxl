@@ -17,7 +17,12 @@ def stacktraces(start_time: str, node: str, namespace: str, pod: str, pct_basis_
     df.pod = df.ctx['pod']
     df.container = df.ctx['container']
     df.cmdline = df.ctx['cmdline']
-    df.node = df.ctx['node']
+
+    # Compute node using _exec_hostname() instead of `df.ctx['node']`
+    # We do this so it works for non-k8s processes too.
+    # This is important for determining total number of stack trace samples per node,
+    # as we need to include the non-K8s processes in the computation.
+    df.node = px.Node(px._exec_hostname())
 
     # This must be done before any filtering, to get accurate stack trace totals per node.
     node_agg = df.groupby([pct_basis_entity]).agg(
@@ -28,6 +33,9 @@ def stacktraces(start_time: str, node: str, namespace: str, pod: str, pct_basis_
     df = df[px.contains(df.node, node)]
     df = df[px.contains(df.pod, pod)]
     df = df[px.contains(df.namespace, namespace)]
+
+    # Filter out any non-k8s processes (it's now safe to do so).
+    df = df[df.pod != '']
 
     # Aggregate stack-traces from different profiles into one larger profile.
     # For example, if a profile is generated every 30 seconds, and our query spans 5 minutes,
