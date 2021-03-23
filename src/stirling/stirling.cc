@@ -59,6 +59,7 @@ std::unique_ptr<SourceRegistry> CreateProdSourceRegistry() {
   registry->RegisterOrDie<JVMStatsConnector>("jvm_stats");
   registry->RegisterOrDie<SocketTraceConnector>("socket_tracer");
   registry->RegisterOrDie<SystemStatsConnector>("system_stats");
+  registry->RegisterOrDie<PerfProfileConnector>("perf_profiler");
   return registry;
 }
 

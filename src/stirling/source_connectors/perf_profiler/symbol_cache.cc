@@ -1,6 +1,6 @@
 #include "src/stirling/source_connectors/perf_profiler/symbol_cache.h"
 
-DEFINE_bool(stirling_profiler_symcache, false, "Enable the Stirling managed symbol cache.");
+DEFINE_bool(stirling_profiler_symcache, true, "Enable the Stirling managed symbol cache.");
 
 namespace pl {
 namespace stirling {
