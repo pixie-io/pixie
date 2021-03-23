@@ -14,6 +14,7 @@ build --build_metadata=REPO_URL=https://github.com/pixie-labs/pixielabs/
 build --bes_results_url=https://bb.corp.pixielabs.ai/invocation/
 build --bes_backend=grpc://buildbuddy-enterprise.buildbuddy:1985
 build --remote_cache=grpc://buildbuddy-enterprise.buildbuddy:1985
+build --keep_backend_build_event_connections_alive=false
 build --remote_timeout=3600
 
 # Build Cache arguments.

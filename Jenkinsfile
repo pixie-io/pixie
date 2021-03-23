@@ -248,6 +248,14 @@ def writeBazelRCFile() {
     echo "build --remote_upload_local_results=false" >> jenkins.bazelrc
     '''
   }
+  withCredentials([
+    string(
+      credentialsId: 'buildbuddy-api-key',
+      variable: 'BUILDBUDDY_API_KEY')
+  ]) {
+    def bbAPIArg = '--remote_header=x-buildbuddy-api-key=${BUILDBUDDY_API_KEY}'
+    sh "echo \"build ${bbAPIArg}\" >> jenkins.bazelrc"
+  }
 }
 
 def createBazelStash(String stashName) {
@@ -370,19 +378,11 @@ def bazelCICmd(String name, String targetConfig='clang', String targetCompilatio
 
     def args = "-c ${targetCompilationMode} --config=${targetConfig} --build_metadata=COMMIT_SHA=\$(git rev-parse HEAD) ${bazelRunExtraArgs}"
 
-    withCredentials([
-      string(
-        credentialsId: 'buildbuddy-api-key',
-        variable: 'BUILDBUDDY_API_KEY')
-    ]) {
-      def bbAPIArg = '--remote_header=x-buildbuddy-api-key=${BUILDBUDDY_API_KEY}'
-
-      if (runBazelCmd("build ${args} ${bbAPIArg} --target_pattern_file ${buildableFile}") != 0) {
-        throw new Exception('Bazel run failed')
-      }
-      if (runBazelCmd("test ${args} ${bbAPIArg} --target_pattern_file ${testFile}") != 0) {
-        throw new Exception('Bazel test failed')
-      }
+    if (runBazelCmd("build ${args} --target_pattern_file ${buildableFile}") != 0) {
+      throw new Exception('Bazel run failed')
+    }
+    if (runBazelCmd("test ${args} --target_pattern_file ${testFile}") != 0) {
+      throw new Exception('Bazel test failed')
     }
   }
   createBazelStash("${name}-testlogs")
