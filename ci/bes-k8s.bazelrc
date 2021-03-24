@@ -1,0 +1,3 @@
+build --bes_backend=grpc://buildbuddy-enterprise.buildbuddy:1985
+build --bes_results_url=https://bb.corp.pixielabs.ai/invocation/
+build --remote_cache=grpc://buildbuddy-enterprise.buildbuddy:1985

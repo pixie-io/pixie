@@ -301,6 +301,7 @@ def WithSourceCodeAndTargetsK8s(String suffix="${UUID.randomUUID()}", Closure bo
   WithSourceCodeK8s(suffix) {
     container('gcloud') {
       unstashFromGCS(TARGETS_STASH_NAME)
+      sh 'cp ci/bes-k8s.bazelrc bes.bazelrc'
     }
     body()
   }
@@ -328,6 +329,7 @@ def WithSourceCodeFatalError(String stashName = SRC_STASH_NAME, Closure body) {
       sh 'hostname'
       deleteDir()
       unstashFromGCS(stashName)
+      sh 'cp ci/bes-gce.bazelrc bes.bazelrc'
       body()
     }
   }
@@ -634,7 +636,7 @@ def dockerArgsForBPFTest = '--privileged --pid=host -v /:/host -v /sys:/sys --en
 def buildAndTestBPFOpt = {
   WithSourceCodeAndTargetsDocker {
     dockerStep(dockerArgsForBPFTest, {
-      bazelCICmd('build-bpf', 'bpf', 'opt', 'bpf', '--bes_backend=grpcs://bb-grpc.corp.pixielabs.ai --remote_cache=grpcs://bb-grpc.corp.pixielabs.ai')
+      bazelCICmd('build-bpf', 'bpf', 'opt', 'bpf')
     })
   }
 }

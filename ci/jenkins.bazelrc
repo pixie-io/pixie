@@ -10,32 +10,26 @@ build --build_metadata=ROLE=CI
 build --build_metadata=HOST=jenkins-worker
 build --build_metadata=USER=jenkins
 build --build_metadata=REPO_URL=https://github.com/pixie-labs/pixielabs/
+build --verbose_failures
 
-build --bes_results_url=https://bb.corp.pixielabs.ai/invocation/
-build --bes_backend=grpc://buildbuddy-enterprise.buildbuddy:1985
-build --remote_cache=grpc://buildbuddy-enterprise.buildbuddy:1985
-build --keep_backend_build_event_connections_alive=false
+test --verbose_failures
+
+# BES/Cache Setup
+build --bes_timeout=30s
+build --experimental_inmemory_dotd_files
+build --experimental_inmemory_jdeps_files
+build --remote_download_toplevel
+build --remote_max_connections=128
+build --remote_retries=2
 build --remote_timeout=3600
 
-# Build Cache arguments.
-build --announce_rc
-build --verbose_failures
-build --experimental_inmemory_jdeps_files
-build --experimental_inmemory_dotd_files
-build --remote_max_connections=128
-build --bes_timeout=30s
-build --remote_retries=2
-build --remote_download_toplevel
 
-# test Cache arguments.
-test --announce_rc
-test --verbose_failures
-test --experimental_inmemory_jdeps_files
-test --experimental_inmemory_dotd_files
-test --remote_max_connections=128
 test --bes_timeout=30s
-test --remote_retries=2
+test --experimental_inmemory_dotd_files
+test --experimental_inmemory_jdeps_files
 test --remote_download_toplevel
+test --remote_max_connections=128
+test --remote_retries=2
 
 # Limit resources, this is needed to stay under the K8s resource allocations.
 build --local_ram_resources=49152

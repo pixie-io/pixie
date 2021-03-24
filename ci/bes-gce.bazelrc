@@ -1,0 +1,3 @@
+build --bes_backend=grpcs://bb-grpc.corp.pixielabs.ai
+build --bes_results_url=https://bb.corp.pixielabs.ai/invocation/
+build --remote_cache=grpcs://bb-grpc.corp.pixielabs.ai
