@@ -5784,7 +5784,8 @@ proto.pl.vispb.StackTraceFlameGraph.toObject = function(includeInstance, msg) {
     podColumn: jspb.Message.getFieldWithDefault(msg, 5, ""),
     containerColumn: jspb.Message.getFieldWithDefault(msg, 6, ""),
     pidColumn: jspb.Message.getFieldWithDefault(msg, 7, ""),
-    nodeColumn: jspb.Message.getFieldWithDefault(msg, 8, "")
+    nodeColumn: jspb.Message.getFieldWithDefault(msg, 8, ""),
+    percentageLabel: jspb.Message.getFieldWithDefault(msg, 9, "")
   };
 
   if (includeInstance) {
@@ -5852,6 +5853,10 @@ proto.pl.vispb.StackTraceFlameGraph.deserializeBinaryFromReader = function(msg, 
     case 8:
       var value = /** @type {string} */ (reader.readString());
       msg.setNodeColumn(value);
+      break;
+    case 9:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setPercentageLabel(value);
       break;
     default:
       reader.skipField();
@@ -5935,6 +5940,13 @@ proto.pl.vispb.StackTraceFlameGraph.serializeBinaryToWriter = function(message, 
   if (f.length > 0) {
     writer.writeString(
       8,
+      f
+    );
+  }
+  f = message.getPercentageLabel();
+  if (f.length > 0) {
+    writer.writeString(
+      9,
       f
     );
   }
@@ -6082,6 +6094,24 @@ proto.pl.vispb.StackTraceFlameGraph.prototype.getNodeColumn = function() {
  */
 proto.pl.vispb.StackTraceFlameGraph.prototype.setNodeColumn = function(value) {
   return jspb.Message.setProto3StringField(this, 8, value);
+};
+
+
+/**
+ * optional string percentage_label = 9;
+ * @return {string}
+ */
+proto.pl.vispb.StackTraceFlameGraph.prototype.getPercentageLabel = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 9, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.pl.vispb.StackTraceFlameGraph} returns this
+ */
+proto.pl.vispb.StackTraceFlameGraph.prototype.setPercentageLabel = function(value) {
+  return jspb.Message.setProto3StringField(this, 9, value);
 };
 
 
