@@ -2,7 +2,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"strings"
@@ -23,12 +22,6 @@ type person struct {
 	FirstName string `db:"first_name"`
 	LastName  string `db:"last_name"`
 	Email     string
-}
-
-type place struct {
-	Country string
-	City    sql.NullString
-	TelCode int
 }
 
 func main() {

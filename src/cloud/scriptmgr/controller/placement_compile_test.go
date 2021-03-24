@@ -39,11 +39,6 @@ const placementJSONTxt = `{
   }
 }`
 
-type arg struct {
-	name  string
-	value string
-}
-
 type argMap struct {
 	argNameToValue *map[string]string
 }

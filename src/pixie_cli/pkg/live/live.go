@@ -29,7 +29,6 @@ const (
 	logoColor        = "#3FE7E7"
 	textColor        = "#ffffff"
 	accentColor      = "#008B8B"
-	bgColor          = "#000000"
 )
 
 type modalType int
@@ -831,29 +830,6 @@ func (v *View) keyHandler(event *tcell.EventKey) *tcell.EventKey {
 
 	// Ctrl-c, etc. can happen based on default handlers.
 	return event
-}
-
-// TODO(zasgar): Share this functions with regular table renderer.
-type stringer interface {
-	String() string
-}
-
-func stringifyRow(row []interface{}) []string {
-	s := make([]string, len(row))
-
-	for i, val := range row {
-		switch u := val.(type) {
-		case time.Time:
-			s[i] = u.Format(time.RFC3339)
-		case stringer:
-			s[i] = u.String()
-		case float64:
-			s[i] = fmt.Sprintf("%0.2f", u)
-		default:
-			s[i] = fmt.Sprintf("%+v", u)
-		}
-	}
-	return s
 }
 
 func sortIcon(s sortType) string {

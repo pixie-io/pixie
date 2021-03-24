@@ -25,7 +25,6 @@ var (
 	MissingMetadataRequestTopic = "MissingMetadataRequests"
 )
 
-const subscriberName = "cloud"
 const batchSize = 24
 
 // SendMessageFn is the function the TopicListener uses to publish messages back to NATS.

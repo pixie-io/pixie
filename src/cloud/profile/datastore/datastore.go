@@ -272,6 +272,9 @@ func (d *Datastore) GetUserSettings(id uuid.UUID, keys []string) ([]string, erro
 		"keys": keys,
 	}
 	query, args, err := sqlx.Named("SELECT * from user_settings WHERE user_id=:id AND key IN (:keys)", arg)
+	if err != nil {
+		return nil, err
+	}
 	query, args, err = sqlx.In(query, args...)
 	query = d.db.Rebind(query)
 	rows, err := d.db.Queryx(query, args...)

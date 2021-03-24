@@ -2,9 +2,7 @@ package esutils_test
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"math/rand"
 	"testing"
 
 	"github.com/olivere/elastic/v7"
@@ -95,61 +93,5 @@ func TestManagedIndexMigrate(t *testing.T) {
 			assert.Equal(t, expectedAliases, resp.Aliases)
 
 		})
-	}
-}
-
-var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-func randStringRunes(n int) string {
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letterRunes[rand.Intn(len(letterRunes))]
-	}
-	return string(b)
-}
-
-func assertHasAllExpected(t *testing.T, expectedJSON string, actualResp *elastic.IndicesGetResponse) {
-	var ok bool
-	var expectedResp map[string]interface{}
-	err := json.Unmarshal([]byte(expectedJSON), &expectedResp)
-	require.Nil(t, err)
-
-	var expectedMappings map[string]interface{}
-	if expectedResp["mappings"] != nil {
-		expectedMappings, ok = expectedResp["mappings"].(map[string]interface{})
-		require.True(t, ok)
-	} else {
-		expectedMappings = make(map[string]interface{})
-	}
-	var expectedAliases map[string]interface{}
-	if expectedResp["aliases"] != nil {
-		expectedAliases, ok = expectedResp["aliases"].(map[string]interface{})
-		require.True(t, ok)
-	} else {
-		expectedAliases = make(map[string]interface{})
-	}
-	var expectedSettings map[string]interface{}
-	if expectedResp["settings"] != nil {
-		expectedSettings, ok = expectedResp["settings"].(map[string]interface{})
-		require.True(t, ok)
-	} else {
-		expectedSettings = make(map[string]interface{})
-	}
-	assertHasAllExpectedMap(t, expectedMappings, actualResp.Mappings)
-	assertHasAllExpectedMap(t, expectedAliases, actualResp.Aliases)
-	assertHasAllExpectedMap(t, expectedSettings, actualResp.Settings)
-}
-
-func assertHasAllExpectedMap(t *testing.T, expected map[string]interface{}, actual map[string]interface{}) {
-	for k, expectedV := range expected {
-		actualV, ok := actual[k]
-		require.True(t, ok)
-		if expectedM, ok := expectedV.(map[string]interface{}); ok {
-			actualM, ok := actualV.(map[string]interface{})
-			require.True(t, ok)
-			assertHasAllExpectedMap(t, expectedM, actualM)
-		} else {
-			assert.Equalf(t, fmt.Sprintf("%v", expectedV), fmt.Sprintf("%v", actualV), "not equal for key %s", k)
-		}
 	}
 }

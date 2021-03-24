@@ -23,10 +23,6 @@ type IndexTemplate struct {
 	errorDuringAssembly error
 }
 
-func templateName(managedIndName string) string {
-	return fmt.Sprintf("%s_template", managedIndName)
-}
-
 // NewIndexTemplate creates a new IndexTemplate with the given name.
 func NewIndexTemplate(es *elastic.Client, templateName string) *IndexTemplate {
 	return &IndexTemplate{

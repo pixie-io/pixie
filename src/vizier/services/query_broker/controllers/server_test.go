@@ -27,106 +27,6 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/tracker"
 )
 
-const getAgentsResponse = `
-info {
-	agent {
-		info {
-			agent_id {
-				high_bits: 0x21285cdd1de94ab1
-				low_bits: 0xae6a0ba08c8c676c
-			}
-			host_info {
-				hostname: "test_host"
-			}
-			capabilities {
-				collects_data: true
-			}
-		}
-		asid: 123
-	}
-	status {
-		state: 1
-	}
-}
-`
-
-const getAgentTableMetadataResponse = `
-metadata_by_agent {
-	agent_id {
-		high_bits: 0x21285cdd1de94ab1
-		low_bits: 0xae6a0ba08c8c676c
-	}
-	schema {
-		relation_map {
-			key: "perf_and_http"
-			value {
-				columns {
-					column_name: "_time"
-				}
-			}
-		}
-	}
-	data_info {
-		metadata_info {
-			metadata_fields: CONTAINER_ID
-			metadata_fields: SERVICE_NAME
-			xxhash64_bloom_filter {
-				num_hashes: 2
-				data: "1234"
-			}
-		}
-	}
-}
-schema_info {
-	name: "perf_and_http"
-	relation: {
-			columns: {
-				column_name: "_time"
-			}
-	}
-	agent_list {
-		high_bits: 0x21285cdd1de94ab1
-		low_bits: 0xae6a0ba08c8c676c
-	}
-}
-`
-
-const getSchemaResponse = `
-schema {
-	relation_map {
-		key: "perf_and_http"
-		value {
-			columns {
-				column_name: "_time"
-			}
-		}
-	}
-}
-`
-
-const multipleAgentDistributedState = `
-distributed_state: {
-	carnot_info: {
-    	query_broker_address: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-    	has_data_store: true
-		processes_data: true
-		asid: 123
-  	}
-  	carnot_info: {
-    	query_broker_address: "31285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-    	has_data_store: true
-		processes_data: true
-		asid: 456
-  	}
-}
-plan_options: {
-	explain: false
-	analyze: false
-}
-result_address: "qb_address"
-result_ssl_targetname: "qb_hostname"
-`
-
 const singleAgentDistributedState = `
 distributed_state: {
 	carnot_info: {
@@ -169,65 +69,6 @@ result_address: "qb_address"
 result_ssl_targetname: "qb_hostname"
 `
 
-const getMultipleAgentsResponse = `
-info {
-	agent {
-		info {
-			agent_id {
-				high_bits: 0x21285cdd1de94ab1
-				low_bits: 0xae6a0ba08c8c676c
-			}
-			host_info {
-				hostname: "test_host"
-			}
-			capabilities {
-				collects_data: true
-			}
-		}
-		asid: 123
-	}
-	status {
-		state: 1
-	}
-}
-info {
-	agent {
-		info {
-			agent_id {
-				high_bits: 0x31285cdd1de94ab1
-				low_bits: 0xae6a0ba08c8c676c
-			}
-			host_info {
-				hostname: "another_host"
-			}
-			capabilities {
-				collects_data: true
-			}
-		}
-		asid: 456
-	}
-	status {
-		state: 1
-	}
-}
-`
-
-const responseByAgent = `
-agent_id {
-	high_bits: 0x21285cdd1de94ab1
-	low_bits: 0xae6a0ba08c8c676c
-}
-response {
-	query_result {
-    	tables {
-	     	relation {
-	     	}
-	     	name: "test"
-    	}
-  	}
-}
-`
-
 const testQuery = `
 df = dataframe(table='perf_and_http', select=['_time'])
 display(df, 'out')
@@ -236,34 +77,6 @@ display(df, 'out')
 const badQuery = `
 df = dataframe(table='', select=['_time'])
 display(df, 'out')
-`
-
-const invalidFlagQuery = `
-#px:set thisisnotaflag=true
-df = dataframe(table='perf_and_http', select=['_time'])
-display(df, 'out')
-`
-
-const testLogicalPlan = `
-dag: {
-	nodes: {
-		id: 1
-	}
-}
-nodes: {
-	id: 1
-	dag: {
-		nodes: {
-		}
-	}
-	nodes: {
-		op: {
-			op_type: MEMORY_SOURCE_OPERATOR
-			mem_source_op: {
-			}
-		}
-	}
-}
 `
 
 const expectedPlannerResult = `
@@ -425,22 +238,6 @@ const failedPlannerResultFromStatus = `
 status{
 	msg: "failure failure failure"
 	err_code: INVALID_ARGUMENT
-}`
-
-const compilerErrorGroupTxt = `
-errors {
-	line_col_error {
-		line: 1
-		column: 2
-		message: "Error ova here."
-	}
-}
-errors {
-	line_col_error {
-		line: 20
-		column: 19
-		message: "Error ova there."
-	}
 }`
 
 type fakeAgentsTracker struct {

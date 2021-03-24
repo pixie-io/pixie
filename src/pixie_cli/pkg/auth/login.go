@@ -445,18 +445,3 @@ func (p *PixieCloudLogin) getAuthAPIURL() string {
 	}
 	return authURL.String()
 }
-
-func getAuthCompleteURL(cloudAddr string, err error) string {
-	authURL := &url.URL{
-		Scheme: "https",
-		Host:   cloudAddr,
-		Path:   "/auth-complete",
-	}
-	if err == nil {
-		return authURL.String()
-	}
-	params := url.Values{}
-	params.Add("err", err.Error())
-	authURL.RawQuery = params.Encode()
-	return authURL.String()
-}

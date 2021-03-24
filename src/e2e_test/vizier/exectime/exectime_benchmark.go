@@ -188,11 +188,6 @@ type ScriptExecData struct {
 	Distributions map[string]Distribution
 }
 
-// ExecStatsWriter is the writer that takes in ExecData and outputs some other format.
-type ExecStatsWriter interface {
-	Write(*[]ScriptExecData) error
-}
-
 // stdoutTableWriter writes the execStats out to a table in stdout. Implements ExecStatsWriter.
 type stdoutTableWriter struct {
 }

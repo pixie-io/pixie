@@ -18,11 +18,6 @@ import (
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 )
 
-var (
-	kubeSystemNs       = "kube-system"
-	kubeProxyPodPrefix = "kube-proxy"
-)
-
 // Controller listens to any metadata updates from the K8s API and forwards them
 // to a channel where it can be processed.
 type Controller struct {

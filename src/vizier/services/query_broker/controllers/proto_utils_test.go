@@ -22,11 +22,6 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
 )
 
-var boolScalarValuePb = `
-data_type: BOOLEAN
-bool_value: false
-`
-
 var queryReqPb = `
 query_str: "abcd this is a test"
 exec_funcs {

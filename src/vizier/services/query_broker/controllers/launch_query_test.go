@@ -17,25 +17,7 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
 )
 
-const kelvinResponse = `
-agent_id: {
-  data: "21285cdd1de94ab1ae6a0ba08c8c676c"
-}
-result {
-  query_id {
-    data: "11285cdd1de94ab1ae6a0ba08c8c676c"
-  }
-  query_result {
-    tables {
-      relation {
-      }
-    }
-  }
-}
-`
-
 const queryIDStr = "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-const kelvinID = "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 const agent1ID = "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 const agent2ID = "31285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 

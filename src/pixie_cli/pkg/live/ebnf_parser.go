@@ -46,6 +46,6 @@ type Cmd struct {
 type TabStop struct {
 	Index    *int    `parser:"(\"{\" @Ident )"`
 	Label    *string `parser:"(\":\" @Ident )?"`
-	HasLabel bool    `@":"?`
+	HasLabel bool    `parser:"@\":\"?"`
 	Value    *string `parser:"((@Ident)? \"}\")?"`
 }

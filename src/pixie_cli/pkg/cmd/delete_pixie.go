@@ -6,8 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"k8s.io/client-go/kubernetes"
-
 	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 
 	// Blank import necessary for kubeConfig to work.
@@ -67,8 +65,4 @@ func deletePixie(ns string, clobberAll bool) {
 	if err != nil {
 		os.Exit(1)
 	}
-}
-
-func deleteVizier(clientset *kubernetes.Clientset, ns string) error {
-	return k8s.DeleteAllResources(clientset, ns, "component=vizier")
 }

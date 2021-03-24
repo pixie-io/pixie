@@ -27,7 +27,6 @@ var (
 	testAuthOrgID    = uuid.FromStringOrNil("223e4567-e89b-12d3-a456-426655440000")
 	testAuthUserID   = uuid.FromStringOrNil("423e4567-e89b-12d3-a456-426655440000")
 	testNonAuthOrgID = uuid.FromStringOrNil("223e4567-e89b-12d3-a456-426655440001")
-	testProjectName  = "foo"
 
 	testKey1ID           = uuid.FromStringOrNil("883e4567-e89b-12d3-a456-426655440000")
 	testKey2ID           = uuid.FromStringOrNil("993e4567-e89b-12d3-a456-426655440000")

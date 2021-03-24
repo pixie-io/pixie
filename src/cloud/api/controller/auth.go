@@ -298,20 +298,6 @@ func AuthLogoutHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 	return nil
 }
 
-func getSessionFromEnv(env commonenv.Env, r *http.Request) (*sessions.Session, error) {
-	apiEnv, ok := env.(apienv.APIEnv)
-	if !ok {
-		return nil, errors.New("failed to get environment")
-	}
-
-	session, err := GetDefaultSession(apiEnv, r)
-	if err != nil {
-		return nil, err
-	}
-
-	return session, nil
-}
-
 func attachCredentialsToContext(env commonenv.Env, r *http.Request) (context.Context, error) {
 	serviceAuthToken, err := GetServiceCredentials(env.JWTSigningKey())
 	if err != nil {

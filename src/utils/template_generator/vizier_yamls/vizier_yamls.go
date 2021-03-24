@@ -15,7 +15,6 @@ import (
 )
 
 const (
-	vizierBootstrapYAMLPath       = "./yamls/vizier/vizier_bootstrap_prod.yaml"
 	etcdOperatorYAMLPath          = "./yamls/vizier_deps/etcd_operator_prod.yaml"
 	vizierEtcdYAMLPath            = "./yamls/vizier/vizier_etcd_metadata_prod.yaml"
 	vizierMetadataPersistYAMLPath = "./yamls/vizier/vizier_metadata_persist_prod.yaml"

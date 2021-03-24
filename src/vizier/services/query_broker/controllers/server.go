@@ -36,9 +36,7 @@ const healthCheckInterval = 5 * time.Second
 type contextKey string
 
 const (
-	execStartKey               = contextKey("execStart")
-	compileCompleteKey         = contextKey("compileDone")
-	transferResultChunkTimeout = 5 * time.Second
+	execStartKey = contextKey("execStart")
 )
 
 // Planner describes the interface for any planner.
@@ -123,15 +121,6 @@ func NewServerWithForwarderAndPlanner(env querybrokerenv.QueryBrokerEnv,
 // Close frees the planner memory in the server.
 func (s *Server) Close() {
 	s.planner.Free()
-}
-
-func failedStatusQueryResponse(queryID uuid.UUID, status *statuspb.Status) *querybrokerpb.VizierQueryResponse {
-	queryIDPB := utils.ProtoFromUUID(queryID)
-	queryResponse := &querybrokerpb.VizierQueryResponse{
-		QueryID: queryIDPB,
-		Status:  status,
-	}
-	return queryResponse
 }
 
 // runQuery executes a query and streams the results to the client.

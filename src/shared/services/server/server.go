@@ -28,10 +28,6 @@ func isGRPCRequest(r *http.Request) bool {
 	return r.ProtoMajor == 2 && strings.HasPrefix(r.Header.Get("Content-Type"), "application/grpc")
 }
 
-func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "ok")
-}
-
 // PLServer is the services server component used across all Pixie Labs services.
 // It starts both an HTTP and a GRPC server and handles middelware and env injection.
 type PLServer struct {

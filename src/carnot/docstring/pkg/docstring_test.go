@@ -176,16 +176,6 @@ Args:
 	Second description line should be indented, they are not.
 `
 
-const docWithErroneousExtra = `short desc
-
-long desc
-
-Args:
-	arg (str): the name of the table to load into the dataframe.
-	not a good continuation
-This is some extra stuff that should cause the parser to fail
-`
-
 const docHeaderButNoBody = `short desc
 
 long desc
