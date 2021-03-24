@@ -1856,7 +1856,39 @@ function hydrateSpecWithTheme(spec: VgSpec, theme: Theme) {
   };
 }
 
-const STACKTRACE_LABEL_PX = 9;
+function hexToRgb(hex: string) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!result) {
+    return null;
+  }
+  return {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16),
+  };
+}
+
+function generateColorScale(baseColor: string, overlayColor: string, overlayAlpha: number, levels: number) {
+  const scale = [];
+  const baseRGB = hexToRgb(baseColor);
+  const overlayRGB = hexToRgb(overlayColor);
+  let currLevel = 0;
+  while (currLevel < levels) {
+    const r = Math.round(baseRGB.r + (overlayRGB.r - baseRGB.r) * (overlayAlpha) * currLevel);
+    const g = Math.round(baseRGB.g + (overlayRGB.g - baseRGB.g) * (overlayAlpha) * currLevel);
+    const b = Math.round(baseRGB.b + (overlayRGB.b - baseRGB.b) * (overlayAlpha) * currLevel);
+
+    scale.push(`rgb(${r},${g},${b})`);
+    currLevel++;
+  }
+
+  return scale;
+}
+
+const OVERLAY_COLOR = '#121212';
+const OVERLAY_ALPHA = 0.04;
+const OVERLAY_LEVELS = 5;
+const STACKTRACE_LABEL_PX = 10;
 function convertToStacktraceFlameGraph(
   display: StacktraceFlameGraphDisplay,
   source: string, theme: Theme): VegaSpecWithProps {
@@ -1912,13 +1944,20 @@ function convertToStacktraceFlameGraph(
         expr: '-datum.y1 + height',
         as: 'y1',
       },
+      // Apply some vertical padding, depending on the size of the bar.
+      {
+        type: 'formula',
+        expr: `(datum.y0 - datum.y1) > ${STACKTRACE_LABEL_PX + theme.spacing(0.5)} ? -1 * ${theme.spacing(0.3)} : 0`,
+        as: 'dy',
+      },
       // Truncate name based on width and height of rect. These are just estimates on font size widths/heights, since
       // Vega's "limit" field for text marks is a static number.
       {
         type: 'formula',
         as: 'displayedName',
-        expr: `(datum.y0 - datum.y1) > ${STACKTRACE_LABEL_PX} && (datum.x1 - datum.x0) > ${STACKTRACE_LABEL_PX} ? 
-          truncate(datum.name, (datum.x1 - datum.x0)/(${STACKTRACE_LABEL_PX})) : ""`,
+        expr: `(datum.y0 - datum.y1) > ${STACKTRACE_LABEL_PX} && (datum.x1 - datum.x0) > 
+          ${STACKTRACE_LABEL_PX + theme.spacing(1)} ? 
+          truncate(datum.name, 1.5 * (datum.x1 - datum.x0)/(${STACKTRACE_LABEL_PX}) - 1) : ""`,
       },
     ],
   });
@@ -1946,7 +1985,7 @@ function convertToStacktraceFlameGraph(
     from: { data: TRANSFORMED_DATA_SOURCE_NAME },
     encode: {
       enter: {
-        fill: { scale: 'color', field: 'name' },
+        fill: { scale: { datum: 'color' }, field: 'name' },
         tooltip: {
           signal: `(datum.percentage ? {"title": datum.name, "Samples": datum.count, 
             "CPU Usage": format(datum.percentage, ".2f") + "%"} :
@@ -1958,7 +1997,7 @@ function convertToStacktraceFlameGraph(
         x2: { field: 'x1' },
         y: { field: 'y0' },
         y2: { field: 'y1' },
-        strokeWidth: { value: theme.spacing(0.15) },
+        strokeWidth: { value: 0.5 },
         stroke: { value: theme.palette.background.six },
         zindex: { value: 0 },
         fillOpacity: [
@@ -1989,22 +2028,48 @@ function convertToStacktraceFlameGraph(
         fontSize: { value: STACKTRACE_LABEL_PX },
         text: { field: 'displayedName' },
         dx: { value: theme.spacing(1) },
-        dy: { value: -1 * theme.spacing(0.3) },
+        font: { value: 'Roboto Mono' },
+        fill: { value: theme.palette.background.four },
       },
       update: {
         x: { field: 'x0' },
         y: { field: 'y0' },
+        dy: { field: 'dy' },
         text: { field: 'displayedName' },
       },
     },
   });
 
-  // Color the rectangles based on name, so each stacktrace is a different color.
+  // Color the rectangles based on type, so each stacktrace is a different color.
   addScale(spec, {
-    name: 'color',
+    name: 'kernel',
     type: 'ordinal',
     domain: { data: TRANSFORMED_DATA_SOURCE_NAME, field: 'name' },
-    range: 'ramp',
+    range: generateColorScale(theme.palette.error.dark, OVERLAY_COLOR, OVERLAY_ALPHA, OVERLAY_LEVELS),
+  });
+  addScale(spec, {
+    name: 'c',
+    type: 'ordinal',
+    domain: { data: TRANSFORMED_DATA_SOURCE_NAME, field: 'name' },
+    range: generateColorScale(theme.palette.graph.heatmap[3], OVERLAY_COLOR, OVERLAY_ALPHA, OVERLAY_LEVELS),
+  });
+  addScale(spec, {
+    name: 'other',
+    type: 'ordinal',
+    domain: { data: TRANSFORMED_DATA_SOURCE_NAME, field: 'name' },
+    range: generateColorScale(theme.palette.success.main, OVERLAY_COLOR, OVERLAY_ALPHA, OVERLAY_LEVELS),
+  });
+  addScale(spec, {
+    name: 'go',
+    type: 'ordinal',
+    domain: { data: TRANSFORMED_DATA_SOURCE_NAME, field: 'name' },
+    range: generateColorScale(theme.palette.primary.main, OVERLAY_COLOR, OVERLAY_ALPHA, OVERLAY_LEVELS),
+  });
+  addScale(spec, {
+    name: 'k8s',
+    type: 'ordinal',
+    domain: { data: TRANSFORMED_DATA_SOURCE_NAME, field: 'name' },
+    range: generateColorScale(theme.palette.warning.dark, OVERLAY_COLOR, OVERLAY_ALPHA, OVERLAY_LEVELS),
   });
 
   const preprocess = (data: Array<{}>): Array<{}> => {
@@ -2015,39 +2080,60 @@ function convertToStacktraceFlameGraph(
         weight: 0,
         count: 0,
         parent: null,
+        color: 'other',
       },
     };
 
     for (const n of data) {
       let scopedStacktrace = n[display.stacktraceColumn];
       if (display.pidColumn) {
-        scopedStacktrace = `${n[display.pidColumn] || 'UNKNOWN'};${scopedStacktrace}`;
+        scopedStacktrace = `pid: ${n[display.pidColumn] || 'UNKNOWN'}(k8s);${scopedStacktrace}`;
       }
 
       if (display.containerColumn) {
-        scopedStacktrace = `${n[display.containerColumn] || 'UNKNOWN'};${scopedStacktrace}`;
+        scopedStacktrace = `container: ${n[display.containerColumn] || 'UNKNOWN'}(k8s);${scopedStacktrace}`;
       }
 
       if (display.podColumn) {
-        scopedStacktrace = `${n[display.podColumn] || 'UNKNOWN'};${scopedStacktrace}`;
+        // Remove namespace from podColumn, if any.
+        let podCol = n[display.podColumn] || 'UNKNOWN';
+        const nsIndex = podCol.indexOf('/');
+        if (nsIndex !== -1) {
+          podCol = podCol.substring(nsIndex + 1);
+        }
+        scopedStacktrace = `pod: ${podCol}(k8s);${scopedStacktrace}`;
       }
 
       if (display.namespaceColumn) {
-        scopedStacktrace = `${n[display.namespaceColumn] || 'UNKNOWN'};${scopedStacktrace}`;
+        scopedStacktrace = `namespace: ${n[display.namespaceColumn] || 'UNKNOWN'}(k8s);${scopedStacktrace}`;
       }
 
       const splitStack = scopedStacktrace.split(';');
       let currPath = 'all';
       for (const [i, s] of splitStack.entries()) {
-        const path = `${currPath};${s}`;
+        const cleanPath = s.split('(k8s)')[0];
+        const path = `${currPath};${cleanPath}`;
         if (!nodeMap[path]) {
+          // Set the color based on the language type.
+          let lType = 'other';
+          if (s.indexOf('::') !== -1) {
+            lType = 'c';
+          } else if (s.indexOf('.(*') !== -1 || s.indexOf('/') !== -1) {
+            lType = 'go';
+          } else if (s.indexOf('(k8s)') !== -1) {
+            lType = 'k8s';
+          } else if (s.indexOf('_[k]') !== -1) {
+            lType = 'kernel';
+          }
+
           nodeMap[path] = {
             parent: currPath,
             fullPath: path,
-            name: s,
+            name: cleanPath,
             count: 0,
             weight: 0,
             percentage: 0,
+            color: lType,
           };
         }
         nodeMap[path].percentage += n[display.percentageColumn];
