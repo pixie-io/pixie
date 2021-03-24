@@ -91,7 +91,9 @@ func NewK8sVizierInfo(clusterName string) (*K8sVizierInfo, error) {
 	}
 
 	go func() {
-		for _ = time.Tick(k8sStateUpdatePeriod); ; {
+		t := time.NewTicker(k8sStateUpdatePeriod)
+		defer t.Stop()
+		for range t.C {
 			vzInfo.UpdateK8sState()
 		}
 	}()

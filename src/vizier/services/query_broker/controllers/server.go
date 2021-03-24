@@ -332,8 +332,9 @@ func (s *Server) checkHealthCached(ctx context.Context) error {
 
 // HealthCheck continually responds with the current health of Vizier.
 func (s *Server) HealthCheck(req *public_vizierapipb.HealthCheckRequest, srv public_vizierapipb.VizierService_HealthCheckServer) error {
-	// For now, just report itself as healthy.
-	for c := time.Tick(healthCheckInterval); ; {
+	t := time.NewTicker(healthCheckInterval)
+	defer t.Stop()
+	for {
 		hcResult := s.checkHealthCached(srv.Context())
 		// Pass.
 		code := int32(codes.OK)
@@ -353,7 +354,7 @@ func (s *Server) HealthCheck(req *public_vizierapipb.HealthCheckRequest, srv pub
 		select {
 		case <-srv.Context().Done():
 			return nil
-		case <-c:
+		case <-t.C:
 			continue
 		}
 	}
