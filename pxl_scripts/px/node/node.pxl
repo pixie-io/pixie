@@ -143,3 +143,56 @@ def network_stats(start_time: str, node: px.Node, groupby: str):
     df.groupby_col = df[groupby]
     df['time_'] = df['timestamp']
     return df.drop(['timestamp', groupby])
+
+
+def stacktraces(start_time: str, node: str):
+    df = px.DataFrame(table='stack_traces.beta', start_time=start_time)
+
+    df.namespace = df.ctx['namespace']
+    df.pod = df.ctx['pod']
+    df.container = df.ctx['container']
+    df.cmdline = df.ctx['cmdline']
+
+    # Compute node using _exec_hostname() instead of `df.ctx['node']`
+    # We do this so it works for non-k8s processes too.
+    # This is important for determining total number of stack trace samples per node,
+    # as we need to include the non-K8s processes in the computation.
+    df.node = px.Node(px._exec_hostname())
+
+    # When computing percentages below, we want CPU percentages, not Node percentages.
+    # Since a node may have multiple CPUs, the formula is:
+    #    percentage = num_samples_symbol / (num_samples_node / num_cpus )
+    # So grab the number of CPUs and pipe it down to the percentage computation.
+    df.num_cpus = px._exec_host_num_cpus()
+
+    # Filter on the node.
+    df = df[df.node == node]
+
+    # Get stack trace totals for this node.
+    # Do this before any additional filtering.
+    node_agg = df.groupby(["node"]).agg(
+        count=('count', px.sum),
+        num_cpus=('num_cpus', px.any)
+    )
+
+    # Filter out non-k8s processes.
+    df = df[df.pod != '']
+
+    # Combine flamegraphs from different intervals into one larger framegraph.
+    df = df.groupby(['node', 'namespace', 'pod', 'container', 'cmdline', 'stack_trace_id']).agg(
+        stack_trace=('stack_trace', px.any),
+        count=('count', px.sum)
+    )
+
+    # Compute percentages.
+    df = df.merge(
+        node_agg,
+        how='inner',
+        left_on="node",
+        right_on="node",
+        suffixes=['', '_x']
+    )
+    df.percent = 100.0 * df.count * df.num_cpus / df.count_x
+    df.drop('node_x')
+
+    return df
