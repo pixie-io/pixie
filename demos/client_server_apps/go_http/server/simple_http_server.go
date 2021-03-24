@@ -24,7 +24,7 @@ func init() {
 	startTime := time.Now()
 	cyclesToTest := int64(1000000)
 	res := burnCyclesE(cyclesToTest)
-	d := time.Now().Sub(startTime)
+	d := time.Since(startTime)
 	iterationsPerMs := float64(cyclesToTest) / (float64(d.Nanoseconds()) / 1.0e6)
 	mIterationsPerMs = iterationsPerMs
 	fmt.Printf("MIterations/Ms: %.2f, e=%.2f\n", mIterationsPerMs/1.0e6, res)

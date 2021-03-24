@@ -71,7 +71,6 @@ var GetConfigCmd = &cobra.Command{
 
 		cliLog.Infof("%s: %t", "PassthroughEnabled", vzInfo[0].Config.PassthroughEnabled)
 		cliLog.Infof("%s: %t", "AutoUpdateEnabled", vzInfo[0].Config.AutoUpdateEnabled)
-		return
 	},
 }
 

@@ -80,16 +80,12 @@ func (f *QueryFlags) set(key string, value string) error {
 		switch defVal.(type) {
 		case int:
 			typedVal, err = strconv.ParseInt(value, 10, 64)
-			break
 		case float64:
 			typedVal, err = strconv.ParseFloat(value, 64)
-			break
 		case string:
 			typedVal = value
-			break
 		case bool:
 			typedVal, err = strconv.ParseBool(value)
-			break
 		}
 
 		if err != nil {

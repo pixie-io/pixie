@@ -80,7 +80,6 @@ func FormatErrorMessage(err error) string {
 		}
 		sb.WriteString(color.RedString("Script Execution Error:"))
 		sb.WriteString(e.Error())
-		break
 	default:
 		sb.WriteString(color.RedString("Error:"))
 		sb.WriteString("\n")

@@ -151,7 +151,7 @@ func executeScript(v []*vizier.Connector, execScript *script.ExecutableScript) (
 	err = tw.Finish()
 
 	// Calculate the execution time.
-	execRes.externalExecTime = time.Now().Sub(start)
+	execRes.externalExecTime = time.Since(start)
 	if err != nil {
 		log.WithError(err).Infof("Error '%s' on '%s'", vizier.FormatErrorMessage(err), execScript.ScriptName)
 		// Store any error that comes up during execution.

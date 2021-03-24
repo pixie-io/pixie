@@ -98,24 +98,21 @@ func (s *Server) handleMessageBus() {
 			sub.Unsubscribe()
 		}
 	}()
-	for {
-		select {
-		case msg := <-s.natsCh:
-			// Get topic.
-			splitTopic := strings.Split(msg.Subject, ".")
-			topic := splitTopic[len(splitTopic)-1]
+	for msg := range s.natsCh {
+		// Get topic.
+		splitTopic := strings.Split(msg.Subject, ".")
+		topic := splitTopic[len(splitTopic)-1]
 
-			pb := &cvmsgspb.V2CMessage{}
-			err := proto.Unmarshal(msg.Data, pb)
-			if err != nil {
-				log.WithError(err).Error("Could not unmarshal message")
-			}
+		pb := &cvmsgspb.V2CMessage{}
+		err := proto.Unmarshal(msg.Data, pb)
+		if err != nil {
+			log.WithError(err).Error("Could not unmarshal message")
+		}
 
-			if handler, ok := s.msgHandlerMap[topic]; ok {
-				handler(pb)
-			} else {
-				log.WithField("topic", msg.Subject).Error("Could not find handler for topic")
-			}
+		if handler, ok := s.msgHandlerMap[topic]; ok {
+			handler(pb)
+		} else {
+			log.WithField("topic", msg.Subject).Error("Could not find handler for topic")
 		}
 	}
 }

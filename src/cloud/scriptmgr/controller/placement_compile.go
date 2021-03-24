@@ -55,7 +55,7 @@ func (pc *PlacementCompiler) lookupVarOrStrLiteral(state *compilerState, s strin
 	if !ok {
 		return "", fmt.Errorf("'%s' is not a valid global arg", s[1:])
 	}
-	return fmt.Sprintf("%s", s[1:]), nil
+	return s[1:], nil
 }
 
 // prepareVisFuncArg interprets one argumment to a function that is called in the placement spec.

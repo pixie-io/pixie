@@ -55,10 +55,8 @@ func (m *MockVzServer) ExecuteScript(req *public_vizierapipb.ExecuteScriptReques
 			QueryID: "3",
 		}
 		srv.Send(resp)
-		select {
-		case <-time.After(defaultTimeout):
-			return errors.New("Timeout waiting for context to be canceled")
-		}
+		<-time.After(defaultTimeout)
+		return errors.New("Timeout waiting for context to be canceled")
 	}
 	return nil
 }

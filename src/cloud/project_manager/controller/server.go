@@ -54,7 +54,7 @@ func (s *Server) IsProjectAvailable(ctx context.Context, req *projectmanagerpb.I
 	}
 
 	if !validProject(pn) {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("project name must consist of only a-z and 0-9"))
+		return nil, status.Error(codes.InvalidArgument, "project name must consist of only a-z and 0-9")
 	}
 
 	orgID, err := utils.UUIDFromProto(req.OrgID)
@@ -77,7 +77,7 @@ func (s *Server) RegisterProject(ctx context.Context, req *projectmanagerpb.Regi
 	pn := strings.ToLower(req.ProjectName)
 
 	if !validProject(pn) {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("project name must consist of only a-z and 0-9"))
+		return nil, status.Error(codes.InvalidArgument, "project name must consist of only a-z and 0-9")
 	}
 
 	parsedOrgID, err := utils.UUIDFromProto(req.OrgID)

@@ -32,7 +32,6 @@ var AuthCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cliLog.Info("Nothing here... Please execute one of the subcommands")
 		cmd.Help()
-		return
 	},
 }
 

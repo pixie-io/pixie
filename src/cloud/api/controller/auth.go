@@ -315,7 +315,7 @@ func setSessionCookie(session *sessions.Session, token string, expiresAt int64, 
 	// Set session cookie.
 	session.Values["_at"] = token
 	session.Values["_expires_at"] = expiresAt
-	session.Options.MaxAge = int(time.Unix(expiresAt, 0).Sub(time.Now()).Seconds())
+	session.Options.MaxAge = int(time.Until(time.Unix(expiresAt, 0)).Seconds())
 	session.Options.HttpOnly = true
 	session.Options.Secure = true
 	session.Options.SameSite = http.SameSiteStrictMode

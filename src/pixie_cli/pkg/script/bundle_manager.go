@@ -93,7 +93,7 @@ func NewBundleManagerWithOrgName(bundleFiles []string, orgName string) (*BundleM
 	}
 	wg.Wait()
 
-	filtered := make(map[string]*pixieScript, 0)
+	filtered := make(map[string]*pixieScript)
 	// Filter scripts by org.
 	for _, b := range bundles {
 		if b != nil {

@@ -59,7 +59,6 @@ func ExtractYAMLs(yamls []*YAMLFile, extractPath string, yamlDir string, format 
 				return err
 			}
 		}
-		break
 	case SingleFileExtractYAMLFormat:
 		// Combine all YAMLs into a single file.
 		combinedYAML := ""
@@ -70,7 +69,6 @@ func ExtractYAMLs(yamls []*YAMLFile, extractPath string, yamlDir string, format 
 		if err != nil {
 			return err
 		}
-		break
 	default:
 		return errors.New("Invalid extract YAML format")
 	}

@@ -68,7 +68,7 @@ func nodeExecTiming(nodeID int64, execStats *map[int64]*queryresultspb.OperatorE
 func GetQueryPlanAsDotString(distributedPlan *distributedpb.DistributedPlan, planMap map[uuid.UUID]*planpb.Plan,
 	planExecStats *[]*queryresultspb.AgentExecutionStats) (string, error) {
 	g := dot.NewGraph(dot.Directed)
-	execDetails := make(map[uuid.UUID]*queryresultspb.AgentExecutionStats, 0)
+	execDetails := make(map[uuid.UUID]*queryresultspb.AgentExecutionStats)
 	if planExecStats != nil {
 		for _, execStat := range *planExecStats {
 			agentID := utils.UUIDFromProtoOrNil(execStat.AgentID)
@@ -77,14 +77,14 @@ func GetQueryPlanAsDotString(distributedPlan *distributedpb.DistributedPlan, pla
 	}
 
 	// Node map keeps a map of strings to the graphviz nodes.
-	nodeMap := make(map[string]dot.Node, 0)
+	nodeMap := make(map[string]dot.Node)
 	for agentID, plan := range planMap {
 		if plan == nil {
 			return "", fmt.Errorf("plan for agent %s is nil", plan.String())
 		}
 
 		agentExecStats, hasExecStats := execDetails[agentID]
-		operatorExecStatsMap := make(map[int64]*queryresultspb.OperatorExecutionStats, 0)
+		operatorExecStatsMap := make(map[int64]*queryresultspb.OperatorExecutionStats)
 
 		agentIDStr := agentID.String()
 		subGraphName := fmt.Sprintf("agent::%s", agentIDStr)

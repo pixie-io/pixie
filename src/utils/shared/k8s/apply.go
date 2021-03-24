@@ -113,7 +113,7 @@ func ApplyYAMLForResourceTypes(clientset *kubernetes.Clientset, config *rest.Con
 					validResource = true
 				}
 			}
-			if validResource == false {
+			if !validResource {
 				continue // Don't apply this resource.
 			}
 		}

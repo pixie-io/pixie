@@ -34,13 +34,8 @@ var ProxyCmd = &cobra.Command{
 		signal.Notify(stop, os.Interrupt)
 
 		// Wait for interrupt.
-		select {
-		case <-stop:
-			{
-				cliLog.Info("Stopping proxy")
-				_ = p.Stop()
-				break
-			}
-		}
+		<-stop
+		cliLog.Info("Stopping proxy")
+		_ = p.Stop()
 	},
 }

@@ -309,7 +309,7 @@ func TestServer_GetDownloadLink(t *testing.T) {
 
 				ts, err := types.TimestampFromProto(resp.ValidUntil)
 				require.Nil(t, err)
-				assert.True(t, ts.Sub(time.Now()) > 0)
+				assert.True(t, time.Until(ts) > 0)
 				assert.Equal(t, resp.Url, tc.expectedResp.Url)
 				assert.Equal(t, resp.SHA256, tc.expectedResp.SHA256)
 			}

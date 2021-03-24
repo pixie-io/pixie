@@ -71,34 +71,28 @@ func RunScriptAndOutputResults(ctx context.Context, conns []*Connector, execScri
 	tasks := make([]utils.Task, len(mutationInfo.States))
 	for i, mutation := range mutationInfo.States {
 		tasks[i] = newTaskWrapper(fmt.Sprintf("Deploying %s", mutation.Name), func() error {
-			for {
-				select {
-				case s, ok := <-taskChs[i]:
-					if !ok || s == public_vizierapipb.FAILED_STATE {
-						return errors.New("Could not deploy tracepoint")
-					}
-					if s == public_vizierapipb.RUNNING_STATE {
-						return nil
-					}
+			for s := range taskChs[i] {
+				if s == public_vizierapipb.FAILED_STATE {
+					return errors.New("Could not deploy tracepoint")
+				}
+				if s == public_vizierapipb.RUNNING_STATE {
+					return nil
 				}
 			}
+			// Channel was closed and we never saw a running state.
+			return errors.New("Could not deploy tracepoint")
 		})
 		taskChs[i] = make(chan public_vizierapipb.LifeCycleState, 10)
 	}
 
 	schemaCh := make(chan bool, 10)
 	tasks = append(tasks, newTaskWrapper("Preparing schema", func() error {
-		for {
-			select {
-			case s, ok := <-schemaCh:
-				if !ok {
-					return errors.New("Could not prepare schema")
-				}
-				if s {
-					return nil
-				}
+		for s := range schemaCh {
+			if s {
+				return nil
 			}
 		}
+		return errors.New("Could not prepare schema")
 	}))
 
 	vzJr := utils.NewParallelTaskRunner(tasks)

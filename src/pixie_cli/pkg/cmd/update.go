@@ -45,7 +45,6 @@ var UpdateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		utils.Info("Nothing here... Please execute one of the subcommands")
 		cmd.Help()
-		return
 	},
 }
 

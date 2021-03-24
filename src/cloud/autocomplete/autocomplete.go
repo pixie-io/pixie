@@ -322,7 +322,7 @@ func validateCommand(scriptDefined bool, cmd *Command) {
 
 	for _, a := range cmd.TabStops {
 		// All args should be valid.
-		if a.Valid != true && a.Value != "" && a.Value != CursorMarker {
+		if !a.Valid && a.Value != "" && a.Value != CursorMarker {
 			cmd.Executable = false
 			break
 		}
@@ -431,9 +431,6 @@ func (cmd *Command) ToFormatString(action cloudapipb.AutocompleteActionType, s S
 			cmd.TabStops[nextInvalidTabStop].Value = cmd.TabStops[nextInvalidTabStop].Value + CursorMarker
 			curTabStop = nextInvalidTabStop
 		}
-		break
-	default:
-		break
 	}
 
 	// Construct the formatted string and tab suggestions.

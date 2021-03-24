@@ -81,7 +81,7 @@ func NewStreamOutputAdapterWithFactory(ctx context.Context, stream chan *ExecDat
 		format:              format,
 		enableFormat:        enableFormat,
 		formatters:          make(map[string]DataFormatter),
-		tabledIDToName:      make(map[string]string, 0),
+		tabledIDToName:      make(map[string]string),
 	}
 
 	adapter.wg.Add(1)
@@ -379,7 +379,7 @@ func (v *StreamOutputAdapter) handleData(ctx context.Context, d *public_vizierap
 				rec[colIdx] = val
 			}
 		}
-		ti, _ := v.tableNameToInfo[tableName]
+		ti := v.tableNameToInfo[tableName]
 		if err := ti.w.Write(rec); err != nil {
 			return err
 		}

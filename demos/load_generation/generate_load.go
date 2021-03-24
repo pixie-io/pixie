@@ -132,9 +132,9 @@ func main() {
 	startTime := time.Now()
 	stopTime := startTime.Add(testDuration)
 
-	for stopTime.Sub(time.Now()).Seconds() > 0 {
+	for time.Until(stopTime).Seconds() > 0 {
 		for i, phase := range loadConfig.Phases {
-			if stopTime.Sub(time.Now()).Seconds() < 0 {
+			if time.Until(stopTime).Seconds() < 0 {
 				break
 			}
 			log.WithField("phase", i).Info("Running locust phase.")

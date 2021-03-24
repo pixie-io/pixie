@@ -48,11 +48,9 @@ func (e errorGroup) Error() string {
 	s := "Multiple Errors: "
 	for i, err := range e.errs {
 		if i > 0 {
-			s += fmt.Sprintf(", %s", err.Error())
-		} else {
-			s += fmt.Sprintf("%s", err.Error())
+			s += ", "
 		}
-
+		s += err.Error()
 	}
 	return s
 }

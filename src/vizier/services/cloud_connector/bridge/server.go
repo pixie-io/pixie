@@ -1005,7 +1005,7 @@ func (s *Bridge) currentStatus() cvmsgspb.VizierStatus {
 	}
 
 	t, status := s.vizChecker.GetStatus()
-	if time.Now().Sub(t) > vizStatusCheckFailInterval {
+	if time.Since(t) > vizStatusCheckFailInterval {
 		return cvmsgspb.VZ_ST_UNKNOWN
 	}
 	if status != nil {

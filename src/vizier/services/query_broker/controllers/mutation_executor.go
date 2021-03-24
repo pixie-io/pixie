@@ -51,7 +51,7 @@ func NewMutationExecutor(
 		mdtp:              mdtp,
 		mdconf:            mdconf,
 		distributedState:  distributedState,
-		activeTracepoints: make(TracepointMap, 0),
+		activeTracepoints: make(TracepointMap),
 	}
 }
 
@@ -94,7 +94,7 @@ func (m *MutationExecutor) Execute(ctx context.Context, req *public_vizierapipb.
 	}
 	configmapReqs := make([]*metadatapb.UpdateConfigRequest, 0)
 
-	outputTablesMap := make(map[string]bool, 0)
+	outputTablesMap := make(map[string]bool)
 	// TODO(zasgar): We should make sure that we don't simultaneously add and delete the tracepoint.
 	// While this will probably work, we should restrict this because it's likely not the intended behavior.
 	for _, mut := range mutations.Mutations {
@@ -172,9 +172,7 @@ func (m *MutationExecutor) Execute(ctx context.Context, req *public_vizierapipb.
 		}
 		// Remove the tracepoints we considered deleted.
 		for _, tpName := range deleteTracepointsReq.Names {
-			if _, ok := m.activeTracepoints[tpName]; ok {
-				delete(m.activeTracepoints, tpName)
-			}
+			delete(m.activeTracepoints, tpName)
 		}
 	}
 
@@ -248,7 +246,7 @@ func (m *MutationExecutor) MutationInfo(ctx context.Context) (*public_vizierapip
 }
 
 func (m *MutationExecutor) isSchemaReady() bool {
-	schemaNames := make(map[string]bool, 0)
+	schemaNames := make(map[string]bool)
 	for _, s := range m.distributedState.SchemaInfo {
 		schemaNames[s.Name] = true
 	}

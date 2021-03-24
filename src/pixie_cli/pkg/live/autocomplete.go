@@ -307,7 +307,7 @@ func (f *fuzzyAutocompleter) GetSuggestions(input string, cursor int, action clo
 	if es.Vis == nil || es.Vis.Variables == nil {
 		return nil, nil, false, nil
 	}
-	allSuggestionsMap := make(map[string]suggestion, 0)
+	allSuggestionsMap := make(map[string]suggestion)
 	argNames := make([]string, 0)
 	for _, arg := range es.Vis.Variables {
 		name := fmt.Sprintf("--%s", arg.Name)

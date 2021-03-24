@@ -75,7 +75,7 @@ func ParseVisSpec(specJSON string) (*vispb.Vis, error) {
 // UpdateFlags updates the flags based on the passed in flag set.
 func (e *ExecutableScript) UpdateFlags(fs *FlagSet) error {
 	if e.Args == nil {
-		e.Args = make(map[string]Arg, 0)
+		e.Args = make(map[string]Arg)
 	}
 	if e.Vis == nil {
 		return nil

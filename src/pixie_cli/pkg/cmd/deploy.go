@@ -726,10 +726,7 @@ func podUnschedulableMessage(podStatus *v1.PodStatus) string {
 
 func pemCanScheduleWithTaint(t *v1.Taint) bool {
 	// For now an effect of NoSchedule should be sufficient, we don't have tolerations in the Daemonset spec.
-	if t.Effect == "NoSchedule" {
-		return false
-	}
-	return true
+	return t.Effect != "NoSchedule"
 }
 
 // validateNumDefaultStorageClasses returns a boolean whether there is exactly

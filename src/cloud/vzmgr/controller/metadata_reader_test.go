@@ -282,7 +282,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 				run := true
 				for run {
 					select {
-					case _ = <-idxCh:
+					case <-idxCh:
 						t.Fatal("Unpexected index message")
 					case <-time.After(2 * time.Second):
 						run = false

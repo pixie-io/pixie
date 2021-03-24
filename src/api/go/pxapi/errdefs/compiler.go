@@ -13,9 +13,10 @@ type CompilerMultiError struct {
 
 // Error returns the string representation of the error.
 func (c CompilerMultiError) Error() string {
-	s := fmt.Sprintf("Compilation failed: \n")
+	s := "Compilation failed: "
 	for _, e := range c.errors {
-		s += fmt.Sprintf("%s\n", e.Error())
+		s += "\n"
+		s += e.Error()
 	}
 	return s
 }

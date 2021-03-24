@@ -91,7 +91,7 @@ func TestDeploymentKeyService_CreateDeploymentKey(t *testing.T) {
 	ts, err := types.TimestampFromProto(resp.CreatedAt)
 	assert.Nil(t, err)
 
-	diff := time.Now().Sub(ts).Milliseconds()
+	diff := time.Since(ts).Milliseconds()
 	if diff < 0 {
 		diff = -1 * diff
 	}
@@ -122,7 +122,7 @@ func TestDeploymentKeyService_ListDeploymentKeys(t *testing.T) {
 	ts, err := types.TimestampFromProto(resp.Keys[0].CreatedAt)
 	assert.Nil(t, err)
 
-	diff := time.Now().Sub(ts).Milliseconds()
+	diff := time.Since(ts).Milliseconds()
 	if diff < 0 {
 		diff = -1 * diff
 	}
@@ -159,7 +159,7 @@ func TestDeploymentKeyService_Get(t *testing.T) {
 	ts, err := types.TimestampFromProto(resp.Key.CreatedAt)
 	assert.Nil(t, err)
 
-	diff := time.Now().Sub(ts).Milliseconds()
+	diff := time.Since(ts).Milliseconds()
 	if diff < 0 {
 		diff = -1 * diff
 	}

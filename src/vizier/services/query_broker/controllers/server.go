@@ -132,7 +132,7 @@ func (s *Server) runQuery(ctx context.Context, req *plannerpb.QueryRequest, quer
 	log.WithField("query_id", queryID).Infof("Running script")
 	start := time.Now()
 	defer func(t time.Time) {
-		duration := time.Now().Sub(t)
+		duration := time.Since(t)
 		log.WithField("query_id", queryID).WithField("duration", duration).Info("Executed query")
 	}(start)
 
@@ -161,7 +161,7 @@ func (s *Server) runQuery(ctx context.Context, req *plannerpb.QueryRequest, quer
 		return err
 	}
 
-	compilationTimeNs := time.Now().Sub(start).Nanoseconds()
+	compilationTimeNs := time.Since(start).Nanoseconds()
 
 	// When the status is not OK, this means it's a compilation error on the query passed in.
 	if plannerResultPB.Status.ErrCode != statuspb.OK {

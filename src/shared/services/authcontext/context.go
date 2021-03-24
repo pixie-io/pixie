@@ -50,12 +50,12 @@ func (s *AuthContext) UseJWTAuth(signingKey string, tokenString string) error {
 
 // ValidClaims returns true if the user is logged in and valid.
 func (s *AuthContext) ValidClaims() bool {
-	if s.Claims == nil {
-		return false
-	}
-
+	return s.Claims != nil
 	// TODO(michelle): Create service/cluster tokens.
-	return true
+	// if s.Claims == nil {
+	// 	return false
+	// }
+	//
 	// if len(s.Claims.Subject) > 0 &&
 	// 	len(s.Claims.UserID) > 0 &&
 	// 	s.Claims.ExpiresAt > time.Now().Unix() {

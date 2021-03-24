@@ -106,7 +106,7 @@ var GetViziersCmd = &cobra.Command{
 				if vz.LastHeartbeatNs >= 0 {
 					lastHeartbeat = humanize.Time(
 						time.Unix(0,
-							time.Now().Sub(time.Unix(0, vz.LastHeartbeatNs)).Nanoseconds()))
+							time.Since(time.Unix(0, vz.LastHeartbeatNs)).Nanoseconds()))
 				}
 			}
 			sb := strings.Builder{}

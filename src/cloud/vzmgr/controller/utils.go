@@ -24,17 +24,15 @@ func (p PodStatuses) Value() (driver.Value, error) {
 
 // Scan Scans the sqlx database type ([]bytes) into the PodStatuses type.
 func (p *PodStatuses) Scan(src interface{}) error {
-	var jsonText []byte
-	switch src.(type) {
+	switch jsonText := src.(type) {
 	case []byte:
-		jsonText = src.([]byte)
+		err := json.Unmarshal(jsonText, p)
+		if err != nil {
+			return status.Error(codes.Internal, "could not unmarshal control plane pod statuses")
+		}
 	default:
 		return status.Error(codes.Internal, "could not unmarshal control plane pod statuses")
 	}
 
-	err := json.Unmarshal(jsonText, p)
-	if err != nil {
-		return status.Error(codes.Internal, "could not unmarshal control plane pod statuses")
-	}
 	return nil
 }

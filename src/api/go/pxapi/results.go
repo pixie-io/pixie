@@ -190,7 +190,7 @@ func (s *ScriptResults) handleTableRowbatch(ctx context.Context, b *vizierapipb.
 	}
 	s.stats.TotalBytes += int64(b.Size())
 
-	if tracker.done == true {
+	if tracker.done {
 		return errdefs.ErrInternalDataAfterEOS
 	}
 

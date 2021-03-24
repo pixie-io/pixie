@@ -424,7 +424,7 @@ func TestStreamResultsWrongQueryID(t *testing.T) {
 	wg.Wait()
 
 	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(), fmt.Sprintf("An error"))
+	assert.Equal(t, err.Error(), "An error")
 	assert.Equal(t, 1, len(results))
 	assert.Equal(t, queryID.String(), results[0].QueryID)
 	assert.Equal(t, expected0, results[0].GetData().Batch)

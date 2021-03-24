@@ -369,7 +369,7 @@ func (m *ManagerImpl) ApplyAgentUpdate(update *Update) error {
 }
 
 func (m *ManagerImpl) handleCreatedProcesses(processes []*metadatapb.ProcessCreated) error {
-	if processes == nil || len(processes) == 0 {
+	if len(processes) == 0 {
 		return nil
 	}
 
@@ -389,7 +389,7 @@ func (m *ManagerImpl) handleCreatedProcesses(processes []*metadatapb.ProcessCrea
 }
 
 func (m *ManagerImpl) handleTerminatedProcesses(processes []*metadatapb.ProcessTerminated) error {
-	if processes == nil || len(processes) == 0 {
+	if len(processes) == 0 {
 		return nil
 	}
 

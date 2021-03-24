@@ -276,7 +276,6 @@ func (v *View) runScript(execScript *script.ExecutableScript) {
 	v.s.selectedTable = 0
 
 	v.execCompleteViewUpdate()
-	return
 }
 
 func (v *View) clearErrorIfAny() {
