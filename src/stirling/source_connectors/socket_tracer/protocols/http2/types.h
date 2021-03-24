@@ -93,6 +93,8 @@ struct Stream {
     return send.end_stream && recv.end_stream;
   }
 
+  bool HasGRPCContentType() const { return send.HasGRPCContentType() || recv.HasGRPCContentType(); }
+
   bool consumed = false;
 
   size_t ByteSize() const { return send.ByteSize() + recv.ByteSize(); }

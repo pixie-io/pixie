@@ -548,7 +548,9 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
 
   std::string path = req_stream->headers.ValueByKey(protocols::http2::headers::kPath);
 
-  if ((req_stream->HasGRPCContentType() || resp_stream->HasGRPCContentType())) {
+  HTTPContentType content_type = HTTPContentType::kUnknown;
+  if (record.HasGRPCContentType()) {
+    content_type = HTTPContentType::kGRPC;
     req_stream->data = ParsePB(req_stream->data);
     resp_stream->data = ParsePB(resp_stream->data);
   }
@@ -563,7 +565,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   // HTTP2 does not define minor version.
   r.Append<r.ColIndex("minor_version")>(0);
   r.Append<r.ColIndex("req_headers"), kMaxHTTPHeadersBytes>(ToJSONString(req_stream->headers));
-  r.Append<r.ColIndex("content_type")>(static_cast<uint64_t>(HTTPContentType::kGRPC));
+  r.Append<r.ColIndex("content_type")>(static_cast<uint64_t>(content_type));
   r.Append<r.ColIndex("resp_headers"), kMaxHTTPHeadersBytes>(ToJSONString(resp_stream->headers));
   r.Append<r.ColIndex("req_method")>(
       req_stream->headers.ValueByKey(protocols::http2::headers::kMethod));
