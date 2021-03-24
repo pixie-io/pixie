@@ -24,9 +24,22 @@ def stacktraces(start_time: str, node: str, namespace: str, pod: str, pct_basis_
     # as we need to include the non-K8s processes in the computation.
     df.node = px.Node(px._exec_hostname())
 
-    # This must be done before any filtering, to get accurate stack trace totals per node.
-    node_agg = df.groupby([pct_basis_entity]).agg(
-        count=('count', px.sum)
+    # This variable is used when later computing percentages.
+    # When pct_basis_entity is pod, then the computation is simple:
+    #    percentage = num_samples_symbol / num_samples_pod
+    # But when pct_basis_entity is node, the computation needs to account for the number of CPUs,
+    # because we want CPU percentages, not Node percentages (a Node may have multiple CPUs).
+    # The formula then becomes:
+    #    percentage = num_samples_symbol / (num_samples_node / num_cpus )
+    # Note that the difference between the two formulas is that the denominator is scaled.
+    # We call this extra quotient the "scaling_factor".
+    # Also note each node may have a different number of CPUs, so we have to compute this early.
+    df.scaling_factor = px.select(pct_basis_entity == 'node', px._exec_host_num_cpus(), 1)
+
+    # This must be done before any filtering, to get accurate stack trace totals.
+    grouping_agg = df.groupby([pct_basis_entity]).agg(
+        count=('count', px.sum),
+        scaling_factor=('scaling_factor', px.any)
     )
 
     # Apply filters.
@@ -47,13 +60,13 @@ def stacktraces(start_time: str, node: str, namespace: str, pod: str, pct_basis_
 
     # Compute percentages.
     df = df.merge(
-        node_agg,
+        grouping_agg,
         how='inner',
         left_on=pct_basis_entity,
         right_on=pct_basis_entity,
         suffixes=['', '_x']
     )
-    df.percent = 100.0 * df.count / df.count_x
+    df.percent = 100.0 * df.count * df.scaling_factor / df.count_x
     df.drop(pct_basis_entity + '_x')
 
     return df
