@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -73,6 +74,20 @@ func init() {
 
 		// If we get here, then just print the default usage.
 		command.Usage()
+
+		fmt.Fprintf(os.Stderr, `
+Script Usage:
+  To show a script’s arguments and their descriptions:
+
+    px run <script_name> – --help
+    px run px/namespace – --help
+
+  To pass an argument to a script:
+
+    px run <script_name> – --arg_name val
+    px run px/namespace – --namespace default
+
+`)
 	})
 }
 
@@ -135,6 +150,10 @@ func createNewCobraCommand() *cobra.Command {
 				}
 				err := execScript.UpdateFlags(fs)
 				if err != nil {
+					if errors.Is(err, script.ErrMissingRequiredArgument) {
+						cliLog.Errorf("Missing required argument, please look at help below on how to pass in required arguments\n")
+						cmd.Help()
+					}
 					cliLog.WithError(err).Error("Error parsing script flags")
 					os.Exit(1)
 				}

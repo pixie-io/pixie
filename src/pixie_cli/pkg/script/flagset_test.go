@@ -1,6 +1,7 @@
 package script_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -82,7 +83,7 @@ func TestMissingRequiredFlags(t *testing.T) {
 
 	f1, err := flags.Lookup("no_default1")
 	assert.NotNil(t, err)
-	assert.Equal(t, err.Error(), "No value provided for argument 'no_default1'")
+	assert.True(t, errors.Is(err, script.ErrMissingRequiredArgument))
 	assert.Equal(t, f1, "")
 
 	f2, err := flags.Lookup("no_default2")

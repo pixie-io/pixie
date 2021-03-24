@@ -1,11 +1,15 @@
 package script
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"strings"
 )
+
+// ErrMissingRequiredArgument specifies that a required script flag has not been provided.
+var ErrMissingRequiredArgument = errors.New("missing required argument")
 
 // FlagSet is a wrapper around flag.FlagSet, because the latter
 // does not support required args without a default value.
@@ -65,7 +69,7 @@ func (f *FlagSet) Lookup(name string) (string, error) {
 	if f.argHasValue[name] {
 		return f.baseFlagSet.Lookup(name).Value.String(), nil
 	}
-	return "", fmt.Errorf("No value provided for argument '%s'", name)
+	return "", fmt.Errorf("%w : '%s'", ErrMissingRequiredArgument, name)
 }
 
 // SetOutput wraps flag.FlagSet's SetOutput function.
