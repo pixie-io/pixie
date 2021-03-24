@@ -57,6 +57,7 @@ void RegisterMetadataOpsOrDie(pl::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<UPIDToServiceIDUDF>("upid_to_service_id");
   registry->RegisterOrDie<UPIDToStringUDF>("upid_to_string");
   registry->RegisterOrDie<HostnameUDF>("_exec_hostname");
+  registry->RegisterOrDie<HostNumCPUsUDF>("_exec_host_num_cpus");
 
   /*****************************************
    * Aggregate UDFs.

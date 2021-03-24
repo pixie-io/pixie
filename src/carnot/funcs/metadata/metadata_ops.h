@@ -1,5 +1,7 @@
 #pragma once
 
+#include <sys/sysinfo.h>
+
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
@@ -1338,6 +1340,24 @@ class HostnameUDF : public ScalarUDF {
         .Details("Get the hostname of the machine that the data originated from.")
         .Example("df.hostname = px._exec_hostname()")
         .Returns("The hostname of the machine.");
+  }
+};
+
+class HostNumCPUsUDF : public ScalarUDF {
+ public:
+  /**
+   * @brief Gets the number of CPUs on the machine.
+   */
+  Int64Value Exec(FunctionContext* /* ctx */) {
+    const size_t ncpus = get_nprocs_conf();
+    return ncpus;
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the number of CPUs on the host machine.")
+        .Details("Get the number of CPUs on the machine where the function is executed.")
+        .Example("df.num_cpus = px._exec_host_num_cpus()")
+        .Returns("The number of CPUs of the host machine.");
   }
 };
 

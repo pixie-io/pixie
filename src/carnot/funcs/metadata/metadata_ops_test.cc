@@ -498,6 +498,17 @@ TEST_F(MetadataOpsTest, hostname) {
   EXPECT_EQ(udf.Exec(function_ctx.get()), "myhost");
 }
 
+TEST_F(MetadataOpsTest, num_cpus) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
+
+  HostNumCPUsUDF udf;
+  auto num_cpus = udf.Exec(function_ctx.get());
+  // If this test is ever run on a host with more than 1024 CPUs,
+  // then first off...congratulations! Now please update this expectation :)
+  EXPECT_GT(num_cpus, 0);
+  EXPECT_LT(num_cpus, 1024);
+}
+
 TEST_F(MetadataOpsTest, pod_ip) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_, nullptr);
 
