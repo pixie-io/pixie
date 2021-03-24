@@ -171,6 +171,8 @@ coverage --instrument_test_targets
 coverage --define PL_COVERAGE=true
 coverage --copt -DPL_COVERAGE
 coverage --test_tag_filters=-requires_root,-requires_bpf,-no_coverage,-disabled
+# Uploading to BES from the coverage build seems to fail on jenkins.
+coverage --experimental_build_event_upload_strategy=local
 
 # Use stable GIT build tag by default.
 build --define BUNDLE_VERSION={STABLE_BUILD_TAG}
