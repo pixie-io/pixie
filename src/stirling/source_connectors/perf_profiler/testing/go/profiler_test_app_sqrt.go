@@ -33,7 +33,7 @@ func sqrtOf1e18() float64 {
 
 func main() {
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGKILL)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
 	var done = false
 	var x float64
