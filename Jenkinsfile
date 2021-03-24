@@ -811,7 +811,7 @@ def buildScriptForCommits = {
     if (isMainRun) {
       // If there is a later build queued up, we want to stop the current build so
       // we can execute the later build instead.
-      q = Jenkins.get().getQueue()
+      def q = Jenkins.get().getQueue()
       abortBuild = false
       q.getItems().each {
         if (it.task.getDisplayName() == 'build-and-test-all') {
