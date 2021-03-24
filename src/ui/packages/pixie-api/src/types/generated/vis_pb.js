@@ -5783,7 +5783,8 @@ proto.pl.vispb.StackTraceFlameGraph.toObject = function(includeInstance, msg) {
     namespaceColumn: jspb.Message.getFieldWithDefault(msg, 4, ""),
     podColumn: jspb.Message.getFieldWithDefault(msg, 5, ""),
     containerColumn: jspb.Message.getFieldWithDefault(msg, 6, ""),
-    pidColumn: jspb.Message.getFieldWithDefault(msg, 7, "")
+    pidColumn: jspb.Message.getFieldWithDefault(msg, 7, ""),
+    nodeColumn: jspb.Message.getFieldWithDefault(msg, 8, "")
   };
 
   if (includeInstance) {
@@ -5847,6 +5848,10 @@ proto.pl.vispb.StackTraceFlameGraph.deserializeBinaryFromReader = function(msg, 
     case 7:
       var value = /** @type {string} */ (reader.readString());
       msg.setPidColumn(value);
+      break;
+    case 8:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setNodeColumn(value);
       break;
     default:
       reader.skipField();
@@ -5923,6 +5928,13 @@ proto.pl.vispb.StackTraceFlameGraph.serializeBinaryToWriter = function(message, 
   if (f.length > 0) {
     writer.writeString(
       7,
+      f
+    );
+  }
+  f = message.getNodeColumn();
+  if (f.length > 0) {
+    writer.writeString(
+      8,
       f
     );
   }
@@ -6052,6 +6064,24 @@ proto.pl.vispb.StackTraceFlameGraph.prototype.getPidColumn = function() {
  */
 proto.pl.vispb.StackTraceFlameGraph.prototype.setPidColumn = function(value) {
   return jspb.Message.setProto3StringField(this, 7, value);
+};
+
+
+/**
+ * optional string node_column = 8;
+ * @return {string}
+ */
+proto.pl.vispb.StackTraceFlameGraph.prototype.getNodeColumn = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 8, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.pl.vispb.StackTraceFlameGraph} returns this
+ */
+proto.pl.vispb.StackTraceFlameGraph.prototype.setNodeColumn = function(value) {
+  return jspb.Message.setProto3StringField(this, 8, value);
 };
 
 

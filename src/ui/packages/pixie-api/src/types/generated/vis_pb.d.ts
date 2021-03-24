@@ -735,6 +735,9 @@ export class StackTraceFlameGraph extends jspb.Message {
   getPidColumn(): string;
   setPidColumn(value: string): StackTraceFlameGraph;
 
+  getNodeColumn(): string;
+  setNodeColumn(value: string): StackTraceFlameGraph;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): StackTraceFlameGraph.AsObject;
   static toObject(includeInstance: boolean, msg: StackTraceFlameGraph): StackTraceFlameGraph.AsObject;
@@ -752,6 +755,7 @@ export namespace StackTraceFlameGraph {
     podColumn: string,
     containerColumn: string,
     pidColumn: string,
+    nodeColumn: string,
   }
 }
 

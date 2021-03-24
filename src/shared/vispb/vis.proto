@@ -393,4 +393,6 @@ message StackTraceFlameGraph {
   string container_column = 6;
   // The column containing the stacktrace's pid.
   string pid_column = 7;
+  // The column containing the stacktrace's node.
+  string node_column = 8;
 }
