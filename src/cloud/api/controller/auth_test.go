@@ -249,7 +249,7 @@ func TestAuthLoginHandler_FailedAuthRequest(t *testing.T) {
 	rr := httptest.NewRecorder()
 	h := handler.New(env, controller.AuthLoginHandler)
 	h.ServeHTTP(rr, req)
-	fmt.Printf(rr.Body.String())
+	fmt.Print(rr.Body.String())
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
 }
 

@@ -80,9 +80,9 @@ func (c *CLIOutputEntry) write(w io.Writer, format string, args ...interface{}) 
 	}
 	text = text + "\n"
 	if c.textColor == nil {
-		fmt.Fprintf(w, text)
+		fmt.Fprint(w, text)
 	} else {
-		c.textColor.Fprintf(w, text)
+		c.textColor.Fprint(w, text)
 	}
 }
 

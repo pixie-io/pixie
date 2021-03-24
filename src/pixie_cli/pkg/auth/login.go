@@ -199,7 +199,7 @@ func addCORSHeaders(res http.ResponseWriter) {
 
 func sendError(w http.ResponseWriter, err error) {
 	w.WriteHeader(http.StatusInternalServerError)
-	fmt.Fprintf(w, err.Error())
+	fmt.Fprint(w, err.Error())
 }
 
 func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
