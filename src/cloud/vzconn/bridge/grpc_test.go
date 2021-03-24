@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"golang.org/x/sync/errgroup"
-
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
@@ -16,6 +14,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/stan.go"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/genproto/googleapis/rpc/code"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -70,7 +69,10 @@ func createTestState(t *testing.T, ctrl *gomock.Controller) (*testState, func(t 
 		natsCleanup()
 		conn.Close()
 		cleanStan()
-		s.GracefulStop()
+
+		// NATSBridgeController doesn't have a Stop method and blocks until it hits errors.
+		// So we cannot gracefulStop the grpc server, that causes the test to hang.
+		s.Stop()
 
 		err := eg.Wait()
 		if err != nil {

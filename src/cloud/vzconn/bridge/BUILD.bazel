@@ -33,9 +33,6 @@ go_test(
     name = "go_default_test",
     srcs = ["grpc_test.go"],
     embed = [":go_default_library"],
-    tags = [
-        "exclusive",
-    ],
     deps = [
         "//src/cloud/shared/vzshard:go_default_library",
         "//src/cloud/vzconn/vzconnpb:service_pl_go_proto",
