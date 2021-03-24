@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"testing"
-	"time"
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -78,14 +77,15 @@ func startTestGRPCServer(opts *server.GRPCServerOptions) (*bufconn.Listener, fun
 	return lis, cleanupFunc
 }
 
-func createDialer(lis *bufconn.Listener) func(string, time.Duration) (net.Conn, error) {
-	return func(str string, duration time.Duration) (conn net.Conn, e error) {
+func createDialer(lis *bufconn.Listener) func(ctx context.Context, url string) (net.Conn, error) {
+	return func(ctx context.Context, url string) (conn net.Conn, e error) {
 		return lis.Dial()
 	}
 }
 
 func makeTestRequest(ctx context.Context, t *testing.T, lis *bufconn.Listener) (*ping.PingReply, error) {
-	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithDialer(createDialer(lis)), grpc.WithInsecure())
+	grpc.WithContextDialer(createDialer(lis))
+	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(createDialer(lis)), grpc.WithInsecure())
 	if err != nil {
 		t.Fatalf("did not connect: %v", err)
 	}
@@ -95,7 +95,7 @@ func makeTestRequest(ctx context.Context, t *testing.T, lis *bufconn.Listener) (
 }
 
 func makeTestClientStreamRequest(ctx context.Context, t *testing.T, lis *bufconn.Listener) (*ping.PingReply, error) {
-	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithDialer(createDialer(lis)), grpc.WithInsecure())
+	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(createDialer(lis)), grpc.WithInsecure())
 	if err != nil {
 		t.Fatalf("did not connect: %v", err)
 	}
@@ -113,7 +113,7 @@ func makeTestClientStreamRequest(ctx context.Context, t *testing.T, lis *bufconn
 }
 
 func makeTestServerStreamRequest(ctx context.Context, t *testing.T, lis *bufconn.Listener) (*ping.PingReply, error) {
-	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithDialer(createDialer(lis)), grpc.WithInsecure())
+	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(createDialer(lis)), grpc.WithInsecure())
 	if err != nil {
 		t.Fatalf("did not connect: %v", err)
 	}

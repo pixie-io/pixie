@@ -48,6 +48,7 @@ go_test(
         "@com_github_nats_io_nats_go//:go_default_library",
         "@com_github_nats_io_stan_go//:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
+        "@com_github_stretchr_testify//require:go_default_library",
         "@go_googleapis//google/rpc:code_go_proto",
         "@org_golang_google_grpc//:go_default_library",
         "@org_golang_google_grpc//metadata:go_default_library",

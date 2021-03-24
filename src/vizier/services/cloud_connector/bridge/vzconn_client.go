@@ -1,6 +1,7 @@
 package bridge
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -26,9 +27,12 @@ func NewVZConnClient() (vzconnpb.VZConnServiceClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	dialOpts = append(dialOpts, []grpc.DialOption{grpc.WithBlock(), grpc.WithTimeout(time.Second * 10)}...)
+	dialOpts = append(dialOpts, []grpc.DialOption{grpc.WithBlock()}...)
 
-	ccChannel, err := grpc.Dial(cloudAddr, dialOpts...)
+	ctxBg := context.Background()
+	ctx, cancel := context.WithTimeout(ctxBg, 10*time.Second)
+	defer cancel()
+	ccChannel, err := grpc.DialContext(ctx, cloudAddr, dialOpts...)
 	if err != nil {
 		return nil, err
 	}

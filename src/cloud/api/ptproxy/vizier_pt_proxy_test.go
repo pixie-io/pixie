@@ -62,7 +62,7 @@ func createTestState(t *testing.T) (*testState, func(t *testing.T)) {
 	eg.Go(func() error { return s.Serve(lis) })
 
 	ctx := context.Background()
-	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithDialer(createDialer(lis)), grpc.WithInsecure())
+	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(createDialer(lis)), grpc.WithInsecure())
 	if err != nil {
 		t.Fatalf("Failed to dial bufnet: %v", err)
 	}
@@ -86,8 +86,8 @@ func createTestState(t *testing.T) (*testState, func(t *testing.T)) {
 	}, cleanupFunc
 }
 
-func createDialer(lis *bufconn.Listener) func(string, time.Duration) (net.Conn, error) {
-	return func(str string, duration time.Duration) (conn net.Conn, e error) {
+func createDialer(lis *bufconn.Listener) func(ctx context.Context, url string) (net.Conn, error) {
+	return func(ctx context.Context, url string) (conn net.Conn, e error) {
 		return lis.Dial()
 	}
 }
