@@ -947,6 +947,7 @@ describe('simple stacktraceFlameGraph', () => {
     containerColumn: 'container',
     podColumn: 'pod',
     namespaceColumn: 'namespace',
+    nodeColumn: 'node',
   };
 
   const inputData = [
@@ -993,12 +994,13 @@ describe('simple stacktraceFlameGraph', () => {
       container: 'container',
       pod: 'pl/pod',
       namespace: 'namespace',
+      node: 'node',
     },
   ];
   const { preprocess } = convertWidgetDisplayToVegaSpec(input, 'mysource', DARK_THEME);
   it('preprocesses data correctly', () => {
     const processedData = preprocess(inputData);
-    expect(processedData.length).toEqual(14);
+    expect(processedData.length).toEqual(18);
     expect(processedData).toEqual(expect.arrayContaining([
       {
         fullPath: 'all', name: 'all', count: 8, parent: null, weight: 0, color: 'other',
@@ -1006,7 +1008,7 @@ describe('simple stacktraceFlameGraph', () => {
       {
         fullPath: 'all;namespace: namespace',
         name: 'namespace: namespace',
-        count: 8,
+        count: 7,
         parent: 'all',
         percentage: 100,
         weight: 0,
@@ -1015,7 +1017,7 @@ describe('simple stacktraceFlameGraph', () => {
       {
         fullPath: 'all;namespace: namespace;pod: pod',
         name: 'pod: pod',
-        count: 8,
+        count: 7,
         parent: 'all;namespace: namespace',
         percentage: 100,
         weight: 0,
@@ -1024,7 +1026,7 @@ describe('simple stacktraceFlameGraph', () => {
       {
         fullPath: 'all;namespace: namespace;pod: pod;container: container',
         name: 'container: container',
-        count: 8,
+        count: 7,
         parent: 'all;namespace: namespace;pod: pod',
         percentage: 100,
         weight: 0,
@@ -1103,19 +1105,55 @@ describe('simple stacktraceFlameGraph', () => {
         color: 'go',
       },
       {
-        fullPath: 'all;namespace: namespace;pod: pod;container: container;pid: UNKNOWN',
-        name: 'pid: UNKNOWN',
+        fullPath: 'all;node: node',
+        name: 'node: node',
         count: 1,
-        parent: 'all;namespace: namespace;pod: pod;container: container',
+        parent: 'all',
         percentage: 0,
         weight: 0,
         color: 'k8s',
       },
       {
-        fullPath: 'all;namespace: namespace;pod: pod;container: container;pid: UNKNOWN;st6_[k]',
+        fullPath: 'all;node: node;namespace: namespace',
+        name: 'namespace: namespace',
+        count: 1,
+        parent: 'all;node: node',
+        percentage: 0,
+        weight: 0,
+        color: 'k8s',
+      },
+      {
+        fullPath: 'all;node: node;namespace: namespace;pod: pod',
+        name: 'pod: pod',
+        count: 1,
+        parent: 'all;node: node;namespace: namespace',
+        percentage: 0,
+        weight: 0,
+        color: 'k8s',
+      },
+      {
+        fullPath: 'all;node: node;namespace: namespace;pod: pod;container: container',
+        name: 'container: container',
+        count: 1,
+        parent: 'all;node: node;namespace: namespace;pod: pod',
+        percentage: 0,
+        weight: 0,
+        color: 'k8s',
+      },
+      {
+        fullPath: 'all;node: node;namespace: namespace;pod: pod;container: container;pid: UNKNOWN',
+        name: 'pid: UNKNOWN',
+        count: 1,
+        parent: 'all;node: node;namespace: namespace;pod: pod;container: container',
+        percentage: 0,
+        weight: 0,
+        color: 'k8s',
+      },
+      {
+        fullPath: 'all;node: node;namespace: namespace;pod: pod;container: container;pid: UNKNOWN;st6_[k]',
         name: 'st6_[k]',
         count: 1,
-        parent: 'all;namespace: namespace;pod: pod;container: container;pid: UNKNOWN',
+        parent: 'all;node: node;namespace: namespace;pod: pod;container: container;pid: UNKNOWN',
         percentage: 0,
         weight: 1,
         color: 'kernel',

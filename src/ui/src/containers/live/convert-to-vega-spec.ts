@@ -93,6 +93,7 @@ interface StacktraceFlameGraphDisplay extends WidgetDisplay {
   readonly podColumn?: string;
   readonly containerColumn?: string;
   readonly pidColumn?: string;
+  readonly nodeColumn?: string;
 }
 
 type PatchedMark = Mark & { propEventsToOverlapped?: boolean };
@@ -2106,6 +2107,10 @@ function convertToStacktraceFlameGraph(
 
       if (display.namespaceColumn) {
         scopedStacktrace = `namespace: ${n[display.namespaceColumn] || 'UNKNOWN'}(k8s);${scopedStacktrace}`;
+      }
+
+      if (display.nodeColumn && n[display.nodeColumn]) {
+        scopedStacktrace = `node: ${n[display.nodeColumn]}(k8s);${scopedStacktrace}`;
       }
 
       const splitStack = scopedStacktrace.split(';');
