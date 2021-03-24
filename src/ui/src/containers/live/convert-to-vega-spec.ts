@@ -1987,7 +1987,7 @@ function convertToStacktraceFlameGraph(
       enter: {
         fill: { scale: { datum: 'color' }, field: 'name' },
         tooltip: {
-          signal: `(datum.percentage ? {"title": datum.name, "Samples": datum.count, 
+          signal: `datum.fullPath !== "all" && (datum.percentage ? {"title": datum.name, "Samples": datum.count, 
             "CPU Usage": format(datum.percentage, ".2f") + "%"} :
             {"title": datum.name, "Samples": datum.count})`,
         },
