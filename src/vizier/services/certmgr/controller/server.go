@@ -103,10 +103,16 @@ func (s *Server) CertRequester() {
 	log.Info("Requesting SSL certs")
 	sslCh := make(chan *nats.Msg)
 	sub, err := s.nc.ChanSubscribe(messagebus.C2VTopic("sslResp"), sslCh)
+	if err != nil {
+		log.WithError(err).Warn("Failed to subscribe to sslResp channel")
+	}
 	defer sub.Unsubscribe()
 
 	configCh := make(chan *nats.Msg)
 	sub, err = s.nc.ChanSubscribe(messagebus.C2VTopic("sslVizierConfigResp"), configCh)
+	if err != nil {
+		log.WithError(err).Warn("Failed to subscribe to sslVizierConfigResp channel")
+	}
 	defer sub.Unsubscribe()
 
 	err = s.sendSSLCertRequest()

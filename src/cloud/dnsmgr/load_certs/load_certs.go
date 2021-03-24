@@ -9,10 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
+
 	"github.com/gofrs/uuid"
-	"github.com/golang-migrate/migrate"
-	"github.com/golang-migrate/migrate/database/postgres"
-	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -117,24 +116,13 @@ func loadCerts(db *sqlx.DB) {
 // InitDBAndLoadCerts initializes the database then loads or updates the certs.
 func InitDBAndLoadCerts() {
 	db := pg.MustConnectDefaultPostgresDB()
-	driver, err := postgres.WithInstance(db.DB, &postgres.Config{
-		MigrationsTable: "dnsmgr_service_migrations",
+	err := pgmigrate.PerformMigrationsUsingBindata(db, "dnsmgr_service_migrations", &pgmigrate.SchemaAssetFetcher{
+		AssetNames: schema.AssetNames,
+		Asset:      schema.Asset,
 	})
-
-	sc := bindata.Resource(schema.AssetNames(), func(name string) (bytes []byte, e error) {
-		return schema.Asset(name)
-	})
-
-	d, err := bindata.WithInstance(sc)
-
-	mg, err := migrate.NewWithInstance(
-		"go-bindata",
-		d, "postgres", driver)
-
-	if err = mg.Up(); err != nil {
-		log.WithError(err).Infof("migrations failed: %s", err)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to apply migrations")
 	}
-
 	loadCerts(db)
 }
 

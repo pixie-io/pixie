@@ -6,10 +6,9 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
+	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
+
 	"cloud.google.com/go/storage"
-	"github.com/golang-migrate/migrate"
-	"github.com/golang-migrate/migrate/database/postgres"
-	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/googleapis/google-cloud-go-testing/storage/stiface"
 	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
@@ -52,26 +51,12 @@ func mustLoadServiceAccountConfig() *jwt.Config {
 func mustLoadDB() *sqlx.DB {
 	db := pg.MustConnectDefaultPostgresDB()
 
-	// TODO(zasgar): Pull out this migration code into a util. Just leaving it here for now for testing.
-	driver, err := postgres.WithInstance(db.DB, &postgres.Config{
-		MigrationsTable: "artifacts_tracker_service_migrations",
+	err := pgmigrate.PerformMigrationsUsingBindata(db, "artifacts_tracker_service_migrations", &pgmigrate.SchemaAssetFetcher{
+		AssetNames: schema.AssetNames,
+		Asset:      schema.Asset,
 	})
-
-	sc := bindata.Resource(schema.AssetNames(), func(name string) (bytes []byte, e error) {
-		return schema.Asset(name)
-	})
-
-	d, err := bindata.WithInstance(sc)
 	if err != nil {
-		log.Fatalln(err)
-	}
-
-	mg, err := migrate.NewWithInstance(
-		"go-bindata",
-		d, "postgres", driver)
-
-	if err = mg.Up(); err != nil {
-		log.WithError(err).Infof("migrations failed: %s", err)
+		log.WithError(err).Fatal("Failed to apply migrations")
 	}
 	return db
 }

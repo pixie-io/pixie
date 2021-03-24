@@ -4,10 +4,10 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
+	"pixielabs.ai/pixielabs/src/cloud/dnsmgr/schema"
+	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
+
 	"github.com/gofrs/uuid"
-	"github.com/golang-migrate/migrate"
-	"github.com/golang-migrate/migrate/database/postgres"
-	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -19,7 +19,6 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/controller"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/deployment"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/deploymentkey"
-	"pixielabs.ai/pixielabs/src/cloud/vzmgr/schema"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/env"
@@ -84,24 +83,12 @@ func main() {
 	}
 
 	db := pg.MustConnectDefaultPostgresDB()
-
-	// TODO(zasgar): Pull out this migration code into a util. Just leaving it here for now for testing.
-	driver, err := postgres.WithInstance(db.DB, &postgres.Config{
-		MigrationsTable: "vzmgr_service_migrations",
+	err = pgmigrate.PerformMigrationsUsingBindata(db, "vzmgr_service_migrations", &pgmigrate.SchemaAssetFetcher{
+		AssetNames: schema.AssetNames,
+		Asset:      schema.Asset,
 	})
-
-	sc := bindata.Resource(schema.AssetNames(), func(name string) (bytes []byte, e error) {
-		return schema.Asset(name)
-	})
-
-	d, err := bindata.WithInstance(sc)
-
-	mg, err := migrate.NewWithInstance(
-		"go-bindata",
-		d, "postgres", driver)
-
-	if err = mg.Up(); err != nil {
-		log.WithError(err).Infof("migrations failed: %s", err)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to apply migrations")
 	}
 
 	dbKey := viper.GetString("database_key")

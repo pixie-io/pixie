@@ -4,15 +4,14 @@ import (
 	"os"
 	"syscall"
 
+	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
+
 	"github.com/gogo/protobuf/types"
 
 	"pixielabs.ai/pixielabs/src/shared/artifacts/versionspb/utils"
 
 	// This must be GOGO variant or the ENUMs won't work.
 	"github.com/gogo/protobuf/jsonpb"
-	"github.com/golang-migrate/migrate"
-	"github.com/golang-migrate/migrate/database/postgres"
-	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -30,27 +29,12 @@ func init() {
 
 func mustLoadDB() *sqlx.DB {
 	db := pg.MustConnectDefaultPostgresDB()
-
-	// TODO(zasgar): Pull out this migration code into a util. Just leaving it here for now for testing.
-	driver, err := postgres.WithInstance(db.DB, &postgres.Config{
-		MigrationsTable: "artifacts_tracker_service_migrations",
+	err := pgmigrate.PerformMigrationsUsingBindata(db, "artifacts_tracker_service_migrations", &pgmigrate.SchemaAssetFetcher{
+		AssetNames: schema.AssetNames,
+		Asset:      schema.Asset,
 	})
-
-	sc := bindata.Resource(schema.AssetNames(), func(name string) (bytes []byte, e error) {
-		return schema.Asset(name)
-	})
-
-	d, err := bindata.WithInstance(sc)
 	if err != nil {
-		log.Fatalln(err)
-	}
-
-	mg, err := migrate.NewWithInstance(
-		"go-bindata",
-		d, "postgres", driver)
-
-	if err = mg.Up(); err != nil {
-		log.WithError(err).Infof("migrations failed: %s", err)
+		log.WithError(err).Fatal("Failed to apply migrations")
 	}
 	return db
 }

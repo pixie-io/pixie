@@ -4,9 +4,8 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
-	"github.com/golang-migrate/migrate"
-	"github.com/golang-migrate/migrate/database/postgres"
-	bindata "github.com/golang-migrate/migrate/source/go_bindata"
+	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
+
 	log "github.com/sirupsen/logrus"
 
 	controllers "pixielabs.ai/pixielabs/src/cloud/project_manager/controller"
@@ -32,22 +31,12 @@ func main() {
 	healthz.RegisterDefaultChecks(mux)
 
 	db := pg.MustConnectDefaultPostgresDB()
-
-	// TODO(zasgar): Pull out this migration code into a util. Just leaving it here for now for testing.
-	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
-
-	sc := bindata.Resource(schema.AssetNames(), func(name string) (bytes []byte, e error) {
-		return schema.Asset(name)
+	err := pgmigrate.PerformMigrationsUsingBindata(db, "project_manager_service_migrations", &pgmigrate.SchemaAssetFetcher{
+		AssetNames: schema.AssetNames,
+		Asset:      schema.Asset,
 	})
-
-	d, err := bindata.WithInstance(sc)
-
-	mg, err := migrate.NewWithInstance(
-		"go-bindata",
-		d, "postgres", driver)
-
-	if err = mg.Up(); err != nil {
-		log.WithError(err).Infof("migrations failed: %s", err)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to apply migrations")
 	}
 
 	datastore, err := datastore.NewDatastore(db)
