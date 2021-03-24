@@ -147,7 +147,7 @@ fi
 # Start the cluster
 ##################
 
-gcloud container --project "${PROJECT}" clusters create ${CLUSTER_NAME} \
+gcloud beta container --project "${PROJECT}" clusters create "${CLUSTER_NAME}" \
  --zone "${ZONE}" \
  --username "admin" \
  --machine-type "${MACHINE_TYPE}" \
@@ -179,5 +179,5 @@ if [ $? -ne 0 ]; then
 else
   echo "Cluster created."
   echo "To delete the cluster run:"
-  echo "  gcloud container --project ${PROJECT} clusters delete ${CLUSTER_NAME} --zone ${ZONE}"
+  echo "  gcloud beta container --project ${PROJECT} clusters delete ${CLUSTER_NAME} --zone ${ZONE}"
 fi
