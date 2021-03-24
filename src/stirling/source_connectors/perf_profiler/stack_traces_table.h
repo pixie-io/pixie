@@ -26,7 +26,7 @@ static constexpr DataElement kElements[] = {
      types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_GAUGE}
 };
 
-constexpr std::chrono::milliseconds kStackTraceTableSamplingPeriod(1000);
+constexpr std::chrono::milliseconds kStackTraceTableSamplingPeriod(2500);
 constexpr std::chrono::milliseconds kStackTraceTablePushPeriod(5000);
 
 constexpr auto kStackTraceTable = DataTableSchema(

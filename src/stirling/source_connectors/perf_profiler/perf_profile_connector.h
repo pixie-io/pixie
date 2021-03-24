@@ -115,8 +115,8 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // ... a push event is when the BPF perf-profiler probe notifies stirling (user space)
   // that the shared maps are full and ready for consumption. After each push,
   // the BPF side switches over to the other map set.
-  static constexpr uint64_t kSamplingPeriodMillis = 5;
-  static constexpr uint64_t kTargetPushPeriodMillis = 5 * 1000;
+  static constexpr uint64_t kSamplingPeriodMillis = 10;
+  static constexpr uint64_t kTargetPushPeriodMillis = 10 * 1000;
   static constexpr auto kProbeSpecs =
       MakeArray<bpf_tools::SamplingProbeSpec>({"sample_call_stack", kSamplingPeriodMillis});
 };
