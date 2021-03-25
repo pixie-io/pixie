@@ -687,12 +687,6 @@ func TestAPIKeyServer_Delete(t *testing.T) {
 	assert.Equal(t, resp, vzresp)
 }
 
-type SuggestionRequest struct {
-	requestKinds []cloudapipb.AutocompleteEntityKind
-	requestArgs  []cloudapipb.AutocompleteEntityKind
-	suggestions  []*autocomplete.Suggestion
-}
-
 func TestAutocompleteService_Autocomplete(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

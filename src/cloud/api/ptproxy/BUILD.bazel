@@ -38,7 +38,6 @@ go_test(
         "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
         "//src/cloud/shared/vzshard:go_default_library",
-        "//src/cloud/vzmgr/vzmgrpb/mock:go_default_library",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/services/env:go_default_library",
         "//src/shared/services/server:go_default_library",

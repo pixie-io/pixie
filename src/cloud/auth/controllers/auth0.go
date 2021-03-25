@@ -90,8 +90,7 @@ func NewAuth0Config() Auth0Config {
 
 // Auth0Connector implements the AuthProvider interface for Auth0.
 type Auth0Connector struct {
-	cfg             Auth0Config
-	managementToken string
+	cfg Auth0Config
 }
 
 // NewAuth0Connector provides an implementation of an Auth0Connector.

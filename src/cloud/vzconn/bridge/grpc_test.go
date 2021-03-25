@@ -11,7 +11,6 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	"github.com/nats-io/nats.go"
-	"github.com/nats-io/stan.go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
@@ -39,7 +38,6 @@ type testState struct {
 	b   *bridge.GRPCServer
 
 	nc               *nats.Conn
-	sc               stan.Conn
 	conn             *grpc.ClientConn
 	mockVZMgr        *mock_vzmgrpb.MockVZMgrServiceClient
 	mockVZDeployment *mock_vzmgrpb.MockVZDeploymentServiceClient

@@ -87,7 +87,6 @@ type View struct {
 	logoBox           *tview.TextView
 	bottomBar         *tview.Flex
 	searchBox         *tview.InputField
-	clusterSelector   *tview.DropDown
 	modal             Modal
 	s                 *appState
 	useNewAC          bool

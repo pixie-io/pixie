@@ -202,7 +202,6 @@ type testState struct {
 	jwt      string
 	wg       *sync.WaitGroup
 	lis      *bufconn.Listener
-	s        *grpc.Server
 }
 
 func createDialer(lis *bufconn.Listener) func(ctx context.Context, url string) (net.Conn, error) {

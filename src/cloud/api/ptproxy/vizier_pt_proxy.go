@@ -3,7 +3,6 @@ package ptproxy
 import (
 	"context"
 
-	"github.com/gofrs/uuid"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/grpc"
 
@@ -15,10 +14,6 @@ import (
 	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
-type vizierConnInfo struct {
-	vch chan *cvmsgspb.V2CMessage
-}
-
 type vzmgrClient interface {
 	GetVizierInfo(ctx context.Context, in *proto1.UUID, opts ...grpc.CallOption) (*cvmsgspb.VizierInfo, error)
 	GetVizierConnectionInfo(ctx context.Context, in *proto1.UUID, opts ...grpc.CallOption) (*cvmsgspb.VizierConnectionInfo, error)
@@ -29,9 +24,6 @@ type vzmgrClient interface {
 type VizierPassThroughProxy struct {
 	nc *nats.Conn
 	vc vzmgrClient
-
-	// Map from request ID to a channel for each goroutine.
-	vizierConns map[uuid.UUID]*vizierConnInfo
 }
 
 // NewVizierPassThroughProxy creates a new passthrough proxy.

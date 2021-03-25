@@ -25,7 +25,6 @@ type Version struct {
 	buildSCMStatus   string
 	buildSemver      semver.Version
 	buildTimeStamp   time.Time
-	isDev            bool
 }
 
 func init() {

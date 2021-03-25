@@ -26,7 +26,6 @@ import (
 	public_vizierpb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/cloud/api/ptproxy"
 	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
-	mock_vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb/mock"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	env2 "pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/server"
@@ -44,9 +43,8 @@ type testState struct {
 	t   *testing.T
 	lis *bufconn.Listener
 
-	nc        *nats.Conn
-	conn      *grpc.ClientConn
-	mockVZMgr *mock_vzmgrpb.MockVZMgrServiceClient
+	nc   *nats.Conn
+	conn *grpc.ClientConn
 }
 
 func createTestState(t *testing.T) (*testState, func(t *testing.T)) {

@@ -18,7 +18,6 @@ type JSONFormatter struct {
 	w            io.Writer
 	tableName    string
 	headerValues []string
-	data         [][]string
 	encoder      *json.Encoder
 }
 

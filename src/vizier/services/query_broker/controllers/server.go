@@ -65,8 +65,6 @@ type Server struct {
 	env           querybrokerenv.QueryBrokerEnv
 	agentsTracker AgentsTracker
 	natsConn      *nats.Conn
-	// Mutex is used for managing query executor instances.
-	mux sync.Mutex
 
 	hcMux    sync.Mutex
 	hcStatus error
