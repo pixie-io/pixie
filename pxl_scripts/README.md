@@ -38,7 +38,7 @@ Visualize these in three separate time series charts.
 - px/[pod_lifetime_resource](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/pod_lifetime_resource): Total resource usage of a pod over it's lifetime.
 - px/[pod_memory_usage](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/pod_memory_usage): Get the Virtual memory usage and average memory for all processes in the k8s cluster.
 - px/[pods](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/pods): List of Pods monitored by Pixie in a given Namespace with their high level application metrics (latency, error-rate & rps) and resource usage (cpu, writes, reads).
-- px/[redis_data](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/redis_data): Shows a sample of Redis messages in the cluster. WARNING: Redis tracing is a beta feature. This script is for demonstration purposes only.
+- px/[redis_data](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/redis_data): Shows a sample of Redis messages in the cluster.
 - px/[redis_flow_graph](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/redis_flow_graph): Graph of Redis messages in the cluster, with latency stats.
 - px/[redis_stats](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/redis_stats): This live view calculates the latency, error rate, and throughput of a pod's Redis requests.
 - px/[schemas](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/schemas): Get all the table schemas available in the system

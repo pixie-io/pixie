@@ -2,4 +2,3 @@
 short: Redis RPC messages
 long: >
   Shows a sample of Redis messages in the cluster.
-  WARNING: Redis tracing is a beta feature. This script is for demonstration purposes only.

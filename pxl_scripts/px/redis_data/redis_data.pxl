@@ -11,8 +11,7 @@ import px
 
 def redis_data(start: str, source_filter: str, destination_filter: str, num_head: int):
 
-    # redis_events.beta is a beta table, which is subject to change.
-    df = px.DataFrame(table='redis_events.beta', start_time=start)
+    df = px.DataFrame(table='redis_events', start_time=start)
     df = add_source_dest_columns(df)
 
     # Filter out entities as specified by the user.
@@ -25,8 +24,8 @@ def redis_data(start: str, source_filter: str, destination_filter: str, num_head
     df = df.head(num_head)
 
     df = add_source_dest_links(df, start)
-    df = df[['time_', 'source', 'destination', 'remote_port', 'cmd',
-            'cmd_args', 'resp', 'latency_ns']]
+    df = df[['time_', 'source', 'destination', 'remote_port', 'req_cmd',
+            'req_args', 'resp', 'latency']]
 
     return df
 

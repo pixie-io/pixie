@@ -17,7 +17,7 @@ def http_data(start: str, num_head: int):
     df = df.drop(['upid'])
 
     # Remove some columns.
-    df = df.drop(['trace_role', 'http_content_type', 'http_minor_version'])
+    df = df.drop(['trace_role', 'content_type', 'minor_version'])
 
     # Restrict number of results.
     df = df.head(num_head)
