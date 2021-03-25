@@ -303,3 +303,39 @@ def let_helper(start_time: str):
 
     df = df[filter_out_conds]
     return df
+
+
+def stacktraces(start_time: str, pod: str):
+    df = px.DataFrame(table='stack_traces.beta', start_time=start_time)
+
+    df.namespace = df.ctx['namespace']
+    df.pod = df.ctx['pod']
+    df.container = df.ctx['container']
+    df.cmdline = df.ctx['cmdline']
+
+    # This must be done before any filtering, to get accurate stack trace totals per node.
+    grouping_agg = df.groupby(["pod"]).agg(
+        count=('count', px.sum)
+    )
+
+    # Filter on the pod.
+    df = df[df.pod == pod]
+
+    # Combine flamegraphs from different intervals into one larger framegraph.
+    df = df.groupby(['namespace', 'pod', 'container', 'cmdline', 'stack_trace_id']).agg(
+        stack_trace=('stack_trace', px.any),
+        count=('count', px.sum)
+    )
+
+    # Compute percentages.
+    df = df.merge(
+        grouping_agg,
+        how='inner',
+        left_on="pod",
+        right_on="pod",
+        suffixes=['', '_x']
+    )
+    df.percent = 100.0 * df.count / df.count_x
+    df.drop('pod_x')
+
+    return df
