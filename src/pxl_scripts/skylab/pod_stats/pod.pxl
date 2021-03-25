@@ -112,7 +112,7 @@ def make_http_table(start: str):
     return df
 
 
-def format_events_table(spans_df, latency_ns_col):
+def format_events_table(spans_df, latency_col):
     """ Format data and add semantic columns in event tables
 
     Unifies latency column to 'latency_ms', adds a binned
@@ -123,11 +123,11 @@ def format_events_table(spans_df, latency_ns_col):
 
     Args:
     @df: the input events table
-    @latency_ns_col: the name of the latency column in @df.
+    @latency_col: the name of the latency column in @df.
 
     Returns: formatted events DataFrame
     """
-    spans_df.latency_ms = spans_df[latency_ns_col] / 1.0E6
+    spans_df.latency_ms = spans_df[latency_col] / 1.0E6
     spans_df = spans_df[spans_df['latency_ms'] < 10000.0]
     spans_df.timestamp = px.bin(spans_df.time_, px.seconds(window_s))
     spans_df[k8s_object] = spans_df.ctx[k8s_object]
@@ -149,9 +149,9 @@ def format_http_table(spans_df):
 
     Returns: formatted HTTP events DataFrame.
     """
-    spans_df = format_events_table(spans_df, 'http_resp_latency_ns')
-    spans_df.resp_size = px.length(spans_df.http_resp_body)
-    spans_df.failure = spans_df.http_resp_status >= 400
+    spans_df = format_events_table(spans_df, 'latency')
+    spans_df.resp_size = px.length(spans_df.resp_body)
+    spans_df.failure = spans_df.resp_status >= 400
 
     return spans_df
 

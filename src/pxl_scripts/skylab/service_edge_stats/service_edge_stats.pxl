@@ -166,7 +166,7 @@ def make_http_table(start: str):
     return df
 
 
-def format_events_table(df, latency_ns_col):
+def format_events_table(df, latency_col):
     """ Format data and add semantic columns in event tables
 
     Unifies latency column to 'latency_ms', adds a binned
@@ -177,11 +177,11 @@ def format_events_table(df, latency_ns_col):
 
     Args:
     @df: the input events table
-    @latency_ns_col: the name of the latency column in @df.
+    @latency_col: the name of the latency column in @df.
 
     Returns: formatted events DataFrame
     """
-    df.latency_ms = df[latency_ns_col] / 1.0E6
+    df.latency_ms = df[latency_col] / 1.0E6
     df = df[df['latency_ms'] < 10000.0]
     df.timestamp = px.bin(df.time_, px.seconds(window_s))
     df[k8s_object] = df.ctx[k8s_object]
@@ -207,11 +207,11 @@ def format_http_table(df, filter_health_checks, filter_ready_checks,
 
     Returns: formatted HTTP events DataFrame.
     """
-    df = format_events_table(df, 'http_resp_latency_ns')
-    df.resp_size = px.length(df.http_resp_body)
-    df.failure = df.http_resp_status >= 400
-    filter_out_conds = ((df.http_req_path != '/health' or not filter_health_checks) and (
-        df.http_req_path != '/readyz' or not filter_ready_checks)) and (
+    df = format_events_table(df, 'latency')
+    df.resp_size = px.length(df.resp_body)
+    df.failure = df.resp_status >= 400
+    filter_out_conds = ((df.req_path != '/health' or not filter_health_checks) and (
+        df.req_path != '/readyz' or not filter_ready_checks)) and (
         df['remote_addr'] != '-' or not filter_unresolved_inbound)
 
     df = df[filter_out_conds]
