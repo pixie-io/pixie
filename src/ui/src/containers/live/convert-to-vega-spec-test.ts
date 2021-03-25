@@ -1003,7 +1003,7 @@ describe('simple stacktraceFlameGraph', () => {
     expect(processedData.length).toEqual(18);
     expect(processedData).toEqual(expect.arrayContaining([
       {
-        fullPath: 'all', name: 'all', count: 8, parent: null, weight: 0, color: 'other',
+        fullPath: 'all', name: 'all', count: 8, parent: null, weight: 0, color: 'k8s',
       },
       {
         fullPath: 'all;namespace: namespace',
