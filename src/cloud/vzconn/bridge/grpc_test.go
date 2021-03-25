@@ -161,7 +161,7 @@ func TestNATSGRPCBridgeHandshakeTest_CorrectRegistration(t *testing.T) {
 		Msg:       convertToAny(regReq),
 	})
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	// Should get the register ACK.
 	m := <-readCh
 	assert.Nil(t, m.err)
@@ -194,7 +194,7 @@ func TestNATSGRPCBridgeHandshakeTest_MissingRegister(t *testing.T) {
 		SessionId: 0,
 		Msg:       nil,
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Should get the register error.
 	m := <-readCh
@@ -222,7 +222,7 @@ func TestNATSGRPCBridgeHandshakeTest_NilRegister(t *testing.T) {
 		SessionId: 0,
 		Msg:       nil,
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Should get the register error.
 	m := <-readCh
@@ -250,7 +250,7 @@ func TestNATSGRPCBridgeHandshakeTest_MalformedRegister(t *testing.T) {
 		SessionId: 0,
 		Msg:       convertToAny(&cvmsgspb.RegisterVizierAck{}),
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	// Should get the register error.
 	m := <-readCh
@@ -310,7 +310,7 @@ func TestNATSGRPCBridge_BridgingTest(t *testing.T) {
 	t1Ch := make(chan *nats.Msg, 10)
 	topic := vzshard.V2CTopic("t1", vizierID)
 	sub, err := ts.nc.ChanSubscribe(topic, t1Ch)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	defer sub.Unsubscribe()
 
 	fmt.Printf("Listing to topic: %s\n", topic)
@@ -322,7 +322,7 @@ func TestNATSGRPCBridge_BridgingTest(t *testing.T) {
 			VizierID: utils.ProtoFromUUIDStrOrNil(vizierID.String()),
 		}),
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	natsMsg := <-t1Ch
 
@@ -335,7 +335,7 @@ func TestNATSGRPCBridge_BridgingTest(t *testing.T) {
 
 	msg := &cvmsgspb.V2CMessage{}
 	err = msg.Unmarshal(natsMsg.Data)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expectedMsg, msg)
 }
 
@@ -364,7 +364,7 @@ func TestNATSGRPCBridge_RegisterVizierDeployment(t *testing.T) {
 		K8sClusterName:    "some name",
 		K8sClusterVersion: "1.1",
 	})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, utils.ProtoFromUUID(vizierID), resp.VizierID)
 
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	pb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/utils"
@@ -50,7 +51,7 @@ func TestUUIDFromProto_DeprecatedStrValidUUID(t *testing.T) {
 	assert.Equal(t, uuidStr, u.String(), "must have correct value")
 
 	wire, err := proto.Marshal()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	t.Logf("Wire Size for Old Format: %d bytes", len(wire))
 }
 
@@ -65,7 +66,7 @@ func TestUUIDFromProto_BitsValidUUID(t *testing.T) {
 	assert.Equal(t, uuidStr, u.String(), "must have correct value")
 
 	wire, err := proto.Marshal()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	t.Logf("Wire Size for New Format: %d bytes", len(wire))
 }
 

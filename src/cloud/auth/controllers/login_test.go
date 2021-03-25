@@ -11,6 +11,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -95,12 +96,12 @@ func TestServer_LoginNewUser(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s, "")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	// Make sure expiry time is in the future.
 	currentTime := time.Now().Unix()
@@ -136,9 +137,9 @@ func TestServer_LoginNewUser_NoAutoCreate(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	resp, err := doLoginRequestNoAutoCreate(getTestContext(), t, s)
 	assert.NotNil(t, err)
@@ -165,9 +166,9 @@ func TestServer_Login_OrgNameSpecified(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s, "testorg")
 	assert.Nil(t, resp)
@@ -201,9 +202,9 @@ func TestServer_Login_MissingOrgError(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s, "")
 	assert.Nil(t, resp)
@@ -230,9 +231,9 @@ func TestServer_LoginNewUser_InvalidEmail(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s, "")
 	assert.Nil(t, resp)
@@ -259,9 +260,9 @@ func TestServer_LoginNewUser_SupportUserNoOrg(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s, "")
 	assert.Nil(t, resp)
@@ -302,13 +303,13 @@ func TestServer_LoginNewUser_SupportUser(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s, "hulu.com")
 	assert.NotNil(t, resp)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	// Make sure expiry time is in the future.
 	currentTime := time.Now().Unix()
@@ -346,9 +347,9 @@ func TestServer_LoginNewUser_InvalidOrg(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s, "")
 	assert.NotNil(t, err)
@@ -395,9 +396,9 @@ func TestServer_LoginNewUser_CreateUserFailed(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s, "")
 	assert.Nil(t, resp)
@@ -415,9 +416,9 @@ func TestServer_Login_BadToken(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s, "")
 	assert.NotNil(t, err)
@@ -468,12 +469,12 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s, "")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 
 	// Make sure expiry time is in the future.
@@ -551,12 +552,12 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s, "")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 
 	// Make sure expiry time is in the future.
@@ -588,9 +589,9 @@ func TestServer_GetAugmentedToken(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	claims := testingutils.GenerateTestClaims(t)
 	token := testingutils.SignPBClaims(t, claims, "jwtkey")
@@ -601,7 +602,7 @@ func TestServer_GetAugmentedToken(t *testing.T) {
 	sCtx.Claims = claims
 	resp, err := s.GetAugmentedToken(context.Background(), req)
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 
 	// Make sure expiry time is in the future & > 0.
@@ -620,9 +621,9 @@ func TestServer_GetAugmentedToken_Service(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	claims := testingutils.GenerateTestServiceClaims(t, "vzmgr")
 	token := testingutils.SignPBClaims(t, claims, "jwtkey")
@@ -633,7 +634,7 @@ func TestServer_GetAugmentedToken_Service(t *testing.T) {
 	sCtx.Claims = claims
 	resp, err := s.GetAugmentedToken(context.Background(), req)
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 
 	// Make sure expiry time is in the future & > 0.
@@ -646,7 +647,7 @@ func TestServer_GetAugmentedToken_Service(t *testing.T) {
 	_, err = jwt.ParseWithClaims(token, jwtclaims, func(token *jwt.Token) (interface{}, error) {
 		return []byte("jwtkey"), nil
 	})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "vzmgr", jwtclaims["ServiceID"])
 }
 
@@ -662,9 +663,9 @@ func TestServer_GetAugmentedToken_NoOrg(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	claims := testingutils.GenerateTestClaims(t)
 	token := testingutils.SignPBClaims(t, claims, "jwtkey")
@@ -701,9 +702,9 @@ func TestServer_GetAugmentedToken_NoUser(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	claims := testingutils.GenerateTestClaims(t)
 	token := testingutils.SignPBClaims(t, claims, "jwtkey")
@@ -744,9 +745,9 @@ func TestServer_GetAugmentedToken_MismatchedOrg(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	claims := testingutils.GenerateTestClaims(t)
 	token := testingutils.SignPBClaims(t, claims, "jwtkey")
@@ -773,9 +774,9 @@ func TestServer_GetAugmentedTokenBadSigningKey(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	claims := testingutils.GenerateTestClaims(t)
 	token := testingutils.SignPBClaims(t, claims, "jwtkey1")
@@ -800,9 +801,9 @@ func TestServer_GetAugmentedTokenBadToken(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	claims := testingutils.GenerateTestClaims(t)
 	token := testingutils.SignPBClaims(t, claims, "jwtkey")
@@ -833,9 +834,9 @@ func TestServer_GetAugmentedTokenSupportAccount(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	claims := testingutils.GenerateTestClaimsWithEmail(t, "test@pixie.support")
 	token := testingutils.SignPBClaims(t, claims, "jwtkey")
@@ -846,7 +847,7 @@ func TestServer_GetAugmentedTokenSupportAccount(t *testing.T) {
 	sCtx.Claims = claims
 	resp, err := s.GetAugmentedToken(context.Background(), req)
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 
 	// Make sure expiry time is in the future & > 0.
@@ -876,16 +877,16 @@ func TestServer_GetAugmentedTokenFromAPIKey(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, apiKeyServer)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	req := &pb.GetAugmentedTokenForAPIKeyRequest{
 		APIKey: "test_api",
 	}
 	resp, err := s.GetAugmentedTokenForAPIKey(context.Background(), req)
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 
 	// Make sure expiry time is in the future & > 0.
@@ -957,12 +958,12 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	resp, err := doSignupRequest(getTestContext(), t, s)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	// Make sure expiry time is in the future.
 	currentTime := time.Now().Unix()
@@ -1043,12 +1044,12 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	resp, err := doSignupRequest(getTestContext(), t, s)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	// Make sure expiry time is in the future.
 	currentTime := time.Now().Unix()
@@ -1106,9 +1107,9 @@ func TestServer_Signup_CreateUserOrgFailed(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	resp, err := doSignupRequest(getTestContext(), t, s)
 	assert.Nil(t, resp)
@@ -1139,9 +1140,9 @@ func TestServer_Signup_UserAlreadyExists(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	resp, err := doSignupRequest(getTestContext(), t, s)
 	assert.Nil(t, resp)
@@ -1153,7 +1154,7 @@ func verifyToken(t *testing.T, token, expectedUserID string, expectedOrgID strin
 	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(key), nil
 	})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expectedUserID, claims["UserID"])
 	assert.Equal(t, expectedOrgID, claims["OrgID"])
 	assert.Equal(t, expectedExpiry, int64(claims["exp"].(float64)))

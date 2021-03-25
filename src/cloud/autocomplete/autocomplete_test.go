@@ -6,6 +6,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
 	mock_autocomplete "pixielabs.ai/pixielabs/src/cloud/autocomplete/mock"
@@ -786,7 +787,7 @@ func TestParseIntoCommand(t *testing.T) {
 				Times(len(test.requests))
 
 			cmd, err := autocomplete.ParseIntoCommand(test.input, s, orgID, "test")
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, cmd)
 
 			assert.Equal(t, test.expectedCmd.Executable, cmd.Executable)

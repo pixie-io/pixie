@@ -72,7 +72,7 @@ var testBundle = map[string]scriptsDef{
 
 func mustSetupFakeBucket(t *testing.T, testBundle map[string]scriptsDef) stiface.Client {
 	bundleJSON, err := json.Marshal(testBundle)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	return testingutils.NewMockGCSClient(map[string]*testingutils.MockGCSBucket{
 		bundleBucket: testingutils.NewMockGCSBucket(
@@ -122,7 +122,7 @@ func TestScriptMgr_GetLiveViews(t *testing.T) {
 			if tc.expectErr {
 				require.NotNil(t, err)
 			} else {
-				require.Nil(t, err)
+				require.NoError(t, err)
 				// Ignore UUID in equality check.
 				for _, liveView := range resp.LiveViews {
 					liveView.ID = nil
@@ -176,7 +176,7 @@ func TestScriptMgr_GetLiveViewContents(t *testing.T) {
 
 			var vis pl_vispb.Vis
 			err = jsonpb.UnmarshalString(testBundle["scripts"][tc.liveViewName]["vis"], &vis)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			// Make sure a future bug in the test doesn't accidentally expect the "0 value" for Vis.
 			if testBundle["scripts"][tc.liveViewName]["vis"] != "" {
 				require.True(t, len(vis.Widgets) > 0)
@@ -192,7 +192,7 @@ func TestScriptMgr_GetLiveViewContents(t *testing.T) {
 				Vis:         &vis,
 			}
 
-			require.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, expectedResp, resp)
 		})
 	}
@@ -243,7 +243,7 @@ func TestScriptMgr_GetScripts(t *testing.T) {
 			if tc.expectErr {
 				require.NotNil(t, err)
 			} else {
-				require.Nil(t, err)
+				require.NoError(t, err)
 				// Ignore UUID in equality check.
 				for _, script := range resp.Scripts {
 					script.ID = nil
@@ -300,7 +300,7 @@ func TestScriptMgr_GetScriptContents(t *testing.T) {
 				require.True(t, ok)
 				assert.Equal(t, tc.errCode, status.Code())
 			} else {
-				require.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, expectedResp, resp)
 			}
 		})

@@ -11,6 +11,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
@@ -147,7 +148,7 @@ func TestAgentRegisterRequest(t *testing.T) {
 	msg := nats.Msg{}
 	msg.Data = reqPb
 	err = atl.HandleMessage(&msg)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	defer wg.Wait()
 }
@@ -222,7 +223,7 @@ func TestKelvinRegisterRequest(t *testing.T) {
 	msg := nats.Msg{}
 	msg.Data = reqPb
 	err = atl.HandleMessage(&msg)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	defer wg.Wait()
 }
@@ -301,7 +302,7 @@ func TestAgentReRegisterRequest(t *testing.T) {
 	msg := nats.Msg{}
 	msg.Data = reqPb
 	err = atl.HandleMessage(&msg)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	defer wg.Wait()
 }
@@ -321,7 +322,7 @@ func TestAgentRegisterRequestInvalidUUID(t *testing.T) {
 	msg := nats.Msg{}
 	msg.Data = reqPb
 	err = atl.HandleMessage(&msg)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }
 
 func TestAgentCreateFailed(t *testing.T) {
@@ -356,7 +357,7 @@ func TestAgentCreateFailed(t *testing.T) {
 	msg := nats.Msg{}
 	msg.Data = reqPb
 	err = atl.HandleMessage(&msg)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	wg.Wait()
 }
@@ -434,7 +435,7 @@ func TestAgentHeartbeat(t *testing.T) {
 	msg := nats.Msg{}
 	msg.Data = reqPb
 	err = atl.HandleMessage(&msg)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }
 
 func TestAgentHeartbeat_Failed(t *testing.T) {
@@ -473,7 +474,7 @@ func TestAgentHeartbeat_Failed(t *testing.T) {
 	msg := nats.Msg{}
 	msg.Data = reqPb
 	err = atl.HandleMessage(&msg)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	wg.Wait()
 }
@@ -489,7 +490,7 @@ func TestEmptyMessage(t *testing.T) {
 	msg := nats.Msg{}
 	msg.Data = reqPb
 	err = atl.HandleMessage(&msg)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }
 
 func TestUnhandledMessage(t *testing.T) {
@@ -507,7 +508,7 @@ func TestUnhandledMessage(t *testing.T) {
 	msg := nats.Msg{}
 	msg.Data = reqPb
 	err = atl.HandleMessage(&msg)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }
 
 func TestAgentTracepointInfoUpdate(t *testing.T) {
@@ -541,18 +542,17 @@ func TestAgentTracepointInfoUpdate(t *testing.T) {
 		},
 	}
 	reqPb, err := req.Marshal()
-	assert.NoError(t, err)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	msg := nats.Msg{}
 	msg.Data = reqPb
 	err = atl.HandleMessage(&msg)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }
 
 func TestAgentStop(t *testing.T) {
 	u, err := uuid.FromString(testutils.NewAgentUUID)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	sendMsg := assertSendMessageCalledWith(t, "Agent/"+testutils.NewAgentUUID,
 		messages.VizierMessage{

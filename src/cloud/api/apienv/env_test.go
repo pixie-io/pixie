@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
 )
@@ -12,7 +13,7 @@ import (
 func TestNew(t *testing.T) {
 	viper.Set("session_key", "a-key")
 	env, err := apienv.New(nil, nil, nil, nil, nil, nil, nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, env)
 	assert.NotNil(t, env.CookieStore())
 }

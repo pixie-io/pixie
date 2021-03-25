@@ -9,6 +9,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	"pixielabs.ai/pixielabs/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb"
@@ -281,7 +282,7 @@ func TestCreateTracepoint(t *testing.T) {
 			if test.expectError || test.expectTTLUpdateOnly {
 				assert.Equal(t, tracepoint.ErrTracepointAlreadyExists, err)
 			} else {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, &newID, actualTpID)
 			}
 		})
@@ -315,7 +316,7 @@ func TestGetTracepoints(t *testing.T) {
 		Return(expectedTracepointInfo, nil)
 
 	tracepoints, err := tracepointMgr.GetAllTracepoints()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expectedTracepointInfo, tracepoints)
 }
 
@@ -340,7 +341,7 @@ func TestGetTracepointInfo(t *testing.T) {
 		Return(expectedTracepointInfo, nil)
 
 	tracepoints, err := tracepointMgr.GetTracepointInfo(tID1)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expectedTracepointInfo, tracepoints)
 }
 
@@ -375,7 +376,7 @@ func TestGetTracepointStates(t *testing.T) {
 		Return([]*storepb.AgentTracepointStatus{expectedTracepointStatus1, expectedTracepointStatus2}, nil)
 
 	tracepoints, err := tracepointMgr.GetTracepointStates(tID1)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expectedTracepointStatus1, tracepoints[0])
 	assert.Equal(t, expectedTracepointStatus2, tracepoints[1])
 }
@@ -427,7 +428,7 @@ func TestRegisterTracepoint(t *testing.T) {
 		Return(nil)
 
 	err = tracepointMgr.RegisterTracepoint([]uuid.UUID{agentUUID}, tracepointID, program)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }
 
 func TestUpdateAgentTracepointStatus(t *testing.T) {
@@ -609,5 +610,5 @@ func TestUpdateAgentTracepointStatus_RemoveTracepoints(t *testing.T) {
 		Return(nil)
 
 	err := tracepointMgr.RemoveTracepoints([]string{"test1", "test2"})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }

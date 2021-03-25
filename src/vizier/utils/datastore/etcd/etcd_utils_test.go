@@ -8,6 +8,7 @@ import (
 
 	etcd "github.com/coreos/etcd/clientv3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func randString(size int) string {
@@ -26,16 +27,15 @@ func TestBatching_NumOps(t *testing.T) {
 	}
 
 	batches, err := createBatches(ops)
-	if assert.Nil(t, err) {
-		numExpectedBatches := int(math.Ceil(float64(numOps) / float64(maxTxnOps)))
-		assert.Len(t, batches, numExpectedBatches)
-		for i := 0; i < numExpectedBatches; i++ {
-			expectedOpsInBatch := maxTxnOps
-			if i == numExpectedBatches-1 {
-				expectedOpsInBatch = numOps % maxTxnOps
-			}
-			assert.Len(t, batches[i], expectedOpsInBatch)
+	require.NoError(t, err)
+	numExpectedBatches := int(math.Ceil(float64(numOps) / float64(maxTxnOps)))
+	assert.Len(t, batches, numExpectedBatches)
+	for i := 0; i < numExpectedBatches; i++ {
+		expectedOpsInBatch := maxTxnOps
+		if i == numExpectedBatches-1 {
+			expectedOpsInBatch = numOps % maxTxnOps
 		}
+		assert.Len(t, batches[i], expectedOpsInBatch)
 	}
 }
 
@@ -57,11 +57,10 @@ func TestBatching_OpSize(t *testing.T) {
 	}
 
 	batches, err := createBatches(ops)
-	if assert.Nil(t, err) {
-		for i := 0; i < len(batches); i++ {
-			assert.LessOrEqual(t, len(batches[i]), maxTxnOps)
-			assert.LessOrEqual(t, batchByteSize(batches[i]), maxNumBytes)
-		}
+	require.NoError(t, err)
+	for i := 0; i < len(batches); i++ {
+		assert.LessOrEqual(t, len(batches[i]), maxTxnOps)
+		assert.LessOrEqual(t, batchByteSize(batches[i]), maxNumBytes)
 	}
 }
 

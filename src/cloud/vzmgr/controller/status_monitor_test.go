@@ -40,7 +40,7 @@ func TestStatusMonitor_Start(t *testing.T) {
 	}
 
 	err := db.Get(&vizInfo, query, uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, vizInfo.Address, "addr0")
 	assert.Equal(t, vizInfo.Status, "HEALTHY")
 
@@ -51,12 +51,12 @@ func TestStatusMonitor_Start(t *testing.T) {
 	sm.UpdateDBEntries()
 
 	err = db.Get(&vizInfo, query, uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, vizInfo.Address, "")
 	assert.Equal(t, vizInfo.Status, "DISCONNECTED")
 
 	err = db.Get(&vizInfo, query, uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440001"))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, vizInfo.Address, "addr0")
 	assert.Equal(t, vizInfo.Status, "UPDATING")
 }

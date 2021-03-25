@@ -8,6 +8,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/cloud/shared/messages"
 	messagespb "pixielabs.ai/pixielabs/src/cloud/shared/messagespb"
@@ -63,7 +64,7 @@ func TestVzWatcher(t *testing.T) {
 			defer natsCleanup()
 
 			w, err := vzutils.NewWatcher(nc, mockVZMgr, "00", "bb")
-			assert.Nil(t, err)
+			require.NoError(t, err)
 
 			var wg sync.WaitGroup
 			wg.Add(2)
@@ -109,7 +110,7 @@ func TestVzWatcher(t *testing.T) {
 				K8sUID:   newK8sUID,
 			}
 			b, err := msg.Marshal()
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			nc.Publish(messages.VizierConnectedChannel, b)
 		})
 	}

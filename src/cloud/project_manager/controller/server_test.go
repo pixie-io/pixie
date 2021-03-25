@@ -138,7 +138,7 @@ func TestServer_IsProjectAvailable(t *testing.T) {
 			if test.expectError {
 				assert.NotNil(t, err)
 			} else {
-				require.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, resp.Available, test.isAvailable)
 			}
 		})
@@ -167,7 +167,7 @@ func TestServer_GetProjectByName(t *testing.T) {
 			ProjectName: "hulu",
 		}
 		resp, err := server.GetProjectByName(context.Background(), req)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, resp)
 
 		assert.Equal(t, resp.ProjectName, "hulu")
@@ -221,7 +221,7 @@ func TestServer_GetProjectForOrg(t *testing.T) {
 
 	t.Run("project found", func(t *testing.T) {
 		resp, err := server.GetProjectForOrg(context.Background(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"))
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, resp)
 
 		assert.Equal(t, resp.ProjectName, "hulu")

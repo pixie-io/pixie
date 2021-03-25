@@ -14,6 +14,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -197,7 +198,7 @@ func TestVizierPassThroughProxy_ExecuteScript(t *testing.T) {
 			defer cancel()
 			resp, err := client.ExecuteScript(ctx,
 				&public_vizierpb.ExecuteScriptRequest{ClusterID: tc.clusterID})
-			assert.Nil(t, err)
+			require.NoError(t, err)
 
 			fv := newFakeVizier(t, uuid.FromStringOrNil(tc.clusterID), ts.nc)
 			fv.Run(t, tc.respFromVizier)
@@ -367,7 +368,7 @@ func TestVizierPassThroughProxy_HealthCheck(t *testing.T) {
 			defer cancel()
 			resp, err := client.HealthCheck(ctx,
 				&public_vizierpb.HealthCheckRequest{ClusterID: tc.clusterID})
-			assert.Nil(t, err)
+			require.NoError(t, err)
 
 			fv := newFakeVizier(t, uuid.FromStringOrNil(tc.clusterID), ts.nc)
 			fv.Run(t, tc.respFromVizier)
@@ -489,7 +490,7 @@ func TestVizierPassThroughProxy_DebugLog(t *testing.T) {
 			defer cancel()
 			resp, err := client.DebugLog(ctx,
 				&pl_api_vizierpb.DebugLogRequest{ClusterID: tc.clusterID})
-			assert.Nil(t, err)
+			require.NoError(t, err)
 
 			fv := newFakeVizier(t, uuid.FromStringOrNil(tc.clusterID), ts.nc)
 			fv.Run(t, tc.respFromVizier)
@@ -671,7 +672,7 @@ func (f *fakeVizier) Run(t *testing.T, responses []*cvmsgspb.V2CAPIStreamRespons
 			case msg := <-ch:
 				c2vReq := cvmsgspb.C2VMessage{VizierID: f.id.String()}
 				err := c2vReq.Unmarshal(msg.Data)
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				req := &cvmsgspb.C2VAPIStreamRequest{}
 				assert.Nil(t, types.UnmarshalAny(c2vReq.Msg, req))
 
@@ -679,7 +680,7 @@ func (f *fakeVizier) Run(t *testing.T, responses []*cvmsgspb.V2CAPIStreamRespons
 				for _, resp := range responses {
 					resp.RequestID = req.RequestID
 					err = f.nc.Publish(replyTopic, f.createV2CMessage(resp))
-					assert.Nil(t, err)
+					require.NoError(t, err)
 				}
 				// Send completion message.
 				fin := &cvmsgspb.V2CAPIStreamResponse{
@@ -689,7 +690,7 @@ func (f *fakeVizier) Run(t *testing.T, responses []*cvmsgspb.V2CAPIStreamRespons
 					}},
 				}
 				err = f.nc.Publish(replyTopic, f.createV2CMessage(fin))
-				assert.Nil(t, err)
+				require.NoError(t, err)
 			}
 		}
 	}()

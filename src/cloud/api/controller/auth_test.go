@@ -14,6 +14,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -29,14 +30,14 @@ import (
 
 func TestGetServiceCredentials(t *testing.T) {
 	tokenString, err := controller.GetServiceCredentials("jwt-key")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	token, err := jwt.ParseWithClaims(tokenString, &jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 		}
 		return []byte("jwt-key"), nil
 	})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	claims := token.Claims.(*jwt.MapClaims)
 	assert.Nil(t, claims.Valid())
 }
@@ -47,7 +48,7 @@ func TestAuthSignupHandler(t *testing.T) {
 
 	req, err := http.NewRequest("POST", "/signup",
 		strings.NewReader("{\"accessToken\": \"the-token\"}"))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	expectedAuthServiceReq := &authpb.SignupRequest{
 		AccessToken: "the-token",
@@ -98,7 +99,7 @@ func TestAuthSignupHandler(t *testing.T) {
 		OrgCreated bool `json:"orgCreated"`
 	}
 	err = json.NewDecoder(rr.Body).Decode(&parsedResponse)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, testReplyToken, parsedResponse.Token)
 	assert.Equal(t, testTokenExpiry, parsedResponse.ExpiresAt)
 	assert.Equal(t, "abc@defg.com", parsedResponse.UserInfo.Email)
@@ -121,7 +122,7 @@ func TestAuthLoginHandler(t *testing.T) {
 
 	req, err := http.NewRequest("POST", "/login",
 		strings.NewReader("{\"accessToken\": \"the-token\"}"))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	expectedAuthServiceReq := &authpb.LoginRequest{
 		AccessToken:           "the-token",
@@ -168,7 +169,7 @@ func TestAuthLoginHandler(t *testing.T) {
 		} `json:"orgInfo"`
 	}
 	err = json.NewDecoder(rr.Body).Decode(&parsedResponse)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, testReplyToken, parsedResponse.Token)
 	assert.Equal(t, testTokenExpiry, parsedResponse.ExpiresAt)
 	assert.Equal(t, "abc@defg.com", parsedResponse.UserInfo.Email)
@@ -193,7 +194,7 @@ func TestAuthLoginHandler_WithOrgName(t *testing.T) {
 	defer cleanup()
 	req, err := http.NewRequest("POST", "/login",
 		strings.NewReader("{\"accessToken\": \"the-token\", \"orgName\": \"hulu\"}"))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	expectedAuthServiceReq := &authpb.LoginRequest{
 		AccessToken:           "the-token",
@@ -215,7 +216,7 @@ func TestAuthLoginHandler_FailedAuthServiceRequestFailed(t *testing.T) {
 	defer cleanup()
 	req, err := http.NewRequest("POST", "/login",
 		strings.NewReader("{\"accessToken\": \"the-token\"}"))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	expectedAuthServiceReq := &authpb.LoginRequest{
 		AccessToken:           "the-token",
@@ -237,7 +238,7 @@ func TestAuthLoginHandler_FailedAuthRequest(t *testing.T) {
 	defer cleanup()
 	req, err := http.NewRequest("POST", "/login",
 		strings.NewReader("{\"accessToken\": \"the-token\"}"))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	expectedAuthServiceReq := &authpb.LoginRequest{
 		AccessToken:           "the-token",
@@ -259,7 +260,7 @@ func TestAuthLoginHandler_BadMethod(t *testing.T) {
 	env, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	req, err := http.NewRequest("GET", "/login", nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	rr := httptest.NewRecorder()
 	h := handler.New(env, controller.AuthLoginHandler)
@@ -273,7 +274,7 @@ func TestAuthLogoutHandler(t *testing.T) {
 	defer cleanup()
 
 	req, err := http.NewRequest("POST", "/logout", nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	rr := httptest.NewRecorder()
 	h := handler.New(env, controller.AuthLogoutHandler)
@@ -306,7 +307,7 @@ func TestAuthLogoutHandler_BadMethod(t *testing.T) {
 	defer cleanup()
 
 	req, err := http.NewRequest("GET", "/logout", nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	rr := httptest.NewRecorder()
 	h := handler.New(env, controller.AuthLogoutHandler)

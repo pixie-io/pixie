@@ -15,6 +15,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	grpc_metadata "google.golang.org/grpc/metadata"
@@ -225,7 +226,7 @@ func TestGetSchemas(t *testing.T) {
 
 	resp, err := s.GetSchemas(context.Background(), &req)
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 
 	assert.Equal(t, 2, len(resp.Schema.RelationMap))
@@ -345,7 +346,7 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 	resp, err := s.RegisterTracepoint(context.Background(), &req)
 
 	assert.NotNil(t, resp)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, 1, len(resp.Tracepoints))
 	assert.Equal(t, tpID, utils.UUIDFromProtoOrNil(resp.Tracepoints[0].ID))
@@ -470,7 +471,7 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 	resp, err := s.RegisterTracepoint(context.Background(), &req)
 
 	assert.NotNil(t, resp)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, 1, len(resp.Tracepoints))
 	assert.Equal(t, utils.ProtoFromUUID(tpID), resp.Tracepoints[0].ID)
@@ -648,7 +649,7 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 			}
 
 			resp, err := s.GetTracepointInfo(context.Background(), &req)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, 1, len(resp.Tracepoints))
 			assert.Equal(t, utils.ProtoFromUUID(tID), resp.Tracepoints[0].ID)
 			assert.Equal(t, test.expectedState, resp.Tracepoints[0].State)
@@ -704,7 +705,7 @@ func Test_Server_RemoveTracepoint(t *testing.T) {
 	resp, err := s.RemoveTracepoint(context.Background(), &req)
 
 	assert.NotNil(t, resp)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, statuspb.OK, resp.Status.ErrCode)
 }
@@ -932,7 +933,7 @@ func TestGetAgentUpdates(t *testing.T) {
 			MaxUpdatesPerResponse: 2,
 		})
 		assert.NotNil(t, resp)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 
 		defer func() {
 			close(errCh)
@@ -1050,7 +1051,7 @@ func Test_Server_UpdateConfig(t *testing.T) {
 	resp, err := s.UpdateConfig(context.Background(), &req)
 
 	assert.NotNil(t, resp)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, statuspb.OK, resp.Status.ErrCode)
 
 	// This is an invalid request because AgentPodName must contain the namespace.

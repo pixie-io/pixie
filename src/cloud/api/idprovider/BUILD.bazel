@@ -37,5 +37,6 @@ go_test(
         "@com_github_ory_kratos_client_go//client/public:go_default_library",
         "@com_github_ory_kratos_client_go//models:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
+        "@com_github_stretchr_testify//require:go_default_library",
     ],
 )

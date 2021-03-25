@@ -469,7 +469,7 @@ func TestIndexMigrate(t *testing.T) {
 					i.AddWriteAlias(tc.createBeforeConfig.aliasName)
 				}
 				err := i.Migrate(context.Background())
-				require.Nil(t, err)
+				require.NoError(t, err)
 			}
 
 			i := esutils.NewIndex(elasticClient).Name(tc.indexName)
@@ -485,12 +485,12 @@ func TestIndexMigrate(t *testing.T) {
 				assert.Equal(t, tc.errMsg, err.Error())
 				return
 			}
-			require.Nil(t, err)
+			require.NoError(t, err)
 			// Only cleanup if the creation was successful.
 			defer cleanupIndex(t, tc.indexName)
 
 			respMap, err := elasticClient.IndexGet(tc.indexName).Do(context.Background())
-			require.Nil(t, err)
+			require.NoError(t, err)
 			resp, ok := respMap[tc.indexName]
 			require.True(t, ok)
 
@@ -504,7 +504,7 @@ func assertIndicesEqual(t *testing.T, expectedJSON string, actualResp *elastic.I
 
 	var expectedResp map[string]interface{}
 	err := json.Unmarshal([]byte(expectedJSON), &expectedResp)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	var expectedMappings map[string]interface{}
 	if expectedResp["mappings"] != nil {
@@ -572,7 +572,7 @@ func copyIgnoredSettingsPaths(expected map[string]interface{}, actual map[string
 
 func cleanupIndex(t *testing.T, indexName string) {
 	resp, err := elasticClient.DeleteIndex(indexName).Do(context.Background())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.True(t, resp.Acknowledged)
 
 	_, err = elasticClient.Refresh(indexName).Do(context.Background())

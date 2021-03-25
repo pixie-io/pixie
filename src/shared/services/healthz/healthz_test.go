@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 )
@@ -16,7 +17,7 @@ func TestInstallPathHandler(t *testing.T) {
 	mux := http.NewServeMux()
 	healthz.InstallPathHandler(mux, "/healthz/test")
 	req, err := http.NewRequest("GET", "http://abc.com/healthz/test", nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -28,14 +29,14 @@ func TestRegisterDefaultChecks(t *testing.T) {
 	healthz.RegisterDefaultChecks(mux)
 
 	req, err := http.NewRequest("GET", "http://abc.com/healthz", nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.True(t, strings.HasPrefix(w.Body.String(), "OK"))
 
 	req, err = http.NewRequest("GET", "http://abc.com/ping", nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	w = httptest.NewRecorder()
 	mux.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -65,7 +66,7 @@ func TestMultipleChecks(t *testing.T) {
 		mux := http.NewServeMux()
 		healthz.RegisterDefaultChecks(mux, checks...)
 		req, err := http.NewRequest("GET", fmt.Sprintf("http://abc.com%s", test.path), nil)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 
 		w := httptest.NewRecorder()
 		mux.ServeHTTP(w, req)

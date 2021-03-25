@@ -74,11 +74,11 @@ func TestDatastore(t *testing.T) {
 			Email:     "zasgar@pixielabs.ai",
 		}
 		userID, err := d.CreateUser(&userInfo)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotEqual(t, userID, uuid.Nil)
 
 		userInfoFetched, err := d.GetUser(userID)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, userInfoFetched)
 
 		assert.Equal(t, userID, userInfoFetched.ID)
@@ -124,7 +124,7 @@ func TestDatastore(t *testing.T) {
 		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 		orgInfo, err := d.GetOrg(uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"))
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, orgInfo)
 
 		assert.Equal(t, orgInfo.ID, uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"))
@@ -136,7 +136,7 @@ func TestDatastore(t *testing.T) {
 		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 		orgInfo, err := d.GetOrgByDomain("hulu.com")
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, orgInfo)
 
 		assert.Equal(t, orgInfo.OrgName, "hulu")
@@ -147,7 +147,7 @@ func TestDatastore(t *testing.T) {
 		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 		orgs, err := d.GetOrgs()
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, orgs)
 
 		assert.Equal(t, 1, len(orgs))
@@ -179,7 +179,7 @@ func TestDatastore(t *testing.T) {
 		}
 
 		orgID, userID, err := d.CreateUserAndOrg(&orgInfo, &userInfo)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		assert.NotEqual(t, orgID, uuid.Nil)
 		assert.NotEqual(t, userID, uuid.Nil)
 
@@ -232,7 +232,7 @@ func TestDatastore(t *testing.T) {
 		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 		userInfo, err := d.GetUserByEmail("person@hulu.com")
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, userInfo)
 
 		assert.Equal(t, userInfo.Email, "person@hulu.com")
@@ -262,14 +262,14 @@ func TestDatastore(t *testing.T) {
 
 		// Should show up before the deletion
 		userInfo, err := d.GetUser(uuid.FromStringOrNil(userID))
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, userInfo)
 		orgInfo, err := d.GetOrg(uuid.FromStringOrNil(orgID))
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, orgInfo)
 
 		err = d.DeleteOrgAndUsers(uuid.FromStringOrNil(orgID))
-		require.Nil(t, err)
+		require.NoError(t, err)
 
 		// Should not show up before the deletion
 		userInfo, err = d.GetUser(uuid.FromStringOrNil(userID))
@@ -287,10 +287,10 @@ func TestDatastore(t *testing.T) {
 		userID := "123e4567-e89b-12d3-a456-426655440001"
 		profilePicture := "http://somepicture"
 		err := d.UpdateUser(&datastore.UserInfo{ID: uuid.FromStringOrNil(userID), FirstName: "first", LastName: "last", ProfilePicture: &profilePicture})
-		assert.Nil(t, err)
+		require.NoError(t, err)
 
 		userInfoFetched, err := d.GetUser(uuid.FromStringOrNil(userID))
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, userInfoFetched)
 		assert.Equal(t, "http://somepicture", *userInfoFetched.ProfilePicture)
 
@@ -301,7 +301,7 @@ func TestDatastore(t *testing.T) {
 		d := datastore.NewDatastore(db)
 
 		userSettingsFetched, err := d.GetUserSettings(uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440001"), []string{"another_setting", "doesnt_exist", "some_setting"})
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, []string{"true", "", "test"}, userSettingsFetched)
 	})
 
@@ -311,17 +311,17 @@ func TestDatastore(t *testing.T) {
 
 		id := "123e4567-e89b-12d3-a456-426655440001"
 		err := d.UpdateUserSettings(uuid.FromStringOrNil(id), []string{"new_setting", "another_setting"}, []string{"some_val", "new_value"})
-		assert.Nil(t, err)
+		require.NoError(t, err)
 
 		checkKVInDB := func(k, v string) {
 			query := `SELECT * from user_settings WHERE user_id=$1 AND key=$2`
 			rows, err := db.Queryx(query, id, k)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			defer rows.Close()
 			var userSetting datastore.UserSetting
 			assert.True(t, rows.Next())
 			err = rows.StructScan(&userSetting)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, v, userSetting.Value)
 		}
 

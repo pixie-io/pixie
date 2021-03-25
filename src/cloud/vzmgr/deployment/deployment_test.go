@@ -7,6 +7,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -57,7 +58,7 @@ func TestService_RegisterVizierDeployment(t *testing.T) {
 		K8sClusterName:    "test",
 		K8sClusterVersion: "1.1",
 	})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, testValidClusterID, utils.UUIDFromProtoOrNil(resp.VizierID))
 }

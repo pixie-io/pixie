@@ -10,6 +10,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	mock_public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb/mock"
@@ -379,7 +380,7 @@ func TestCheckHealth_Success(t *testing.T) {
 	assert.NoError(t, err)
 	err = s.CheckHealth(context.Background())
 	// Should pass.
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }
 
 func TestCheckHealth_CompilationError(t *testing.T) {
@@ -575,7 +576,7 @@ func TestExecuteScript_Success(t *testing.T) {
 		QueryStr: testQuery,
 	}, srv)
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 4, len(resps))
 
 	assert.Equal(t, 2, len(rf.TableIDMap))
@@ -653,7 +654,7 @@ func TestExecuteScript_PlannerErrorResult(t *testing.T) {
 		QueryStr: badQuery,
 	}, srv)
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int32(3), resp.Status.Code)
 	assert.Equal(t, "", resp.Status.Message)
 	assert.Equal(t, 2, len(resp.Status.ErrorDetails))
@@ -736,7 +737,7 @@ func TestExecuteScript_ErrorInStatusResult(t *testing.T) {
 		QueryStr: badQuery,
 	}, srv)
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int32(3), resp.Status.Code)
 	assert.Equal(t, "failure failure failure", resp.Status.Message)
 	assert.Equal(t, 0, len(resp.Status.ErrorDetails))
@@ -825,9 +826,7 @@ func TestTransferResultChunk_AgentStreamComplete(t *testing.T) {
 	assert.Equal(t, 0, len(rf.ReceivedAgentResults))
 
 	err = s.TransferResultChunk(srv)
-	if !assert.Nil(t, err) {
-		t.Fatal("Error while transferring result chunk", err)
-	}
+	require.NoError(t, err)
 
 	assert.False(t, rf.ClientStreamClosed)
 	assert.Equal(t, 2, len(rf.ReceivedAgentResults))
@@ -912,9 +911,7 @@ func TestTransferResultChunk_AgentClosedPrematurely(t *testing.T) {
 	assert.Equal(t, 0, len(rf.ReceivedAgentResults))
 
 	err = s.TransferResultChunk(srv)
-	if !assert.Nil(t, err) {
-		t.Fatal("Error while transferring result chunk", err)
-	}
+	require.NoError(t, err)
 
 	assert.True(t, rf.ClientStreamClosed)
 	assert.NotNil(t, rf.ClientStreamError)
@@ -989,7 +986,7 @@ func TestTransferResultChunk_AgentStreamFailed(t *testing.T) {
 	assert.Equal(t, 0, len(rf.ReceivedAgentResults))
 
 	err = s.TransferResultChunk(srv)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.True(t, rf.ClientStreamClosed)
 	assert.NotNil(t, rf.ClientStreamError)
@@ -1065,7 +1062,7 @@ func TestTransferResultChunk_ClientStreamCancelled(t *testing.T) {
 	assert.Equal(t, 0, len(rf.ReceivedAgentResults))
 
 	err = s.TransferResultChunk(srv)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.True(t, rf.ClientStreamClosed)
 	assert.NotNil(t, rf.ClientStreamError)

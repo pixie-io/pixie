@@ -12,6 +12,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/cloud/dnsmgr/controller"
 	mock_controller "pixielabs.ai/pixielabs/src/cloud/dnsmgr/controller/mock"
@@ -81,7 +82,7 @@ func TestServer_GetDNSAddressExisting(t *testing.T) {
 	s := controller.NewServer(nil, mockDNS, db)
 
 	resp, err := s.GetDNSAddress(context.Background(), req)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, "1305560198000000000.abcd.clusters.withpixie.ai", resp.DNSAddress)
 }
@@ -115,7 +116,7 @@ func TestServer_GetDNSAddressDefault(t *testing.T) {
 		})
 
 	resp, err := s.GetDNSAddress(context.Background(), req)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, actualCname, resp.DNSAddress+".")
 }
@@ -149,7 +150,7 @@ func TestServer_GetDNSAddressNew(t *testing.T) {
 		})
 
 	resp, err := s.GetDNSAddress(context.Background(), req)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, actualCname, resp.DNSAddress+".")
 }
@@ -169,7 +170,7 @@ func TestServer_CreateSSLCertExisting(t *testing.T) {
 	}
 
 	resp, err := s.GetSSLCerts(context.Background(), req)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, "cert-abcd", resp.Cert)
 	assert.Equal(t, "key-abcd", resp.Key)
@@ -190,7 +191,7 @@ func TestServer_CreateNewSSLCert(t *testing.T) {
 	}
 
 	resp, err := s.GetSSLCerts(context.Background(), req)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, "cert-befgh", resp.Cert)
 	assert.Equal(t, "key-befgh", resp.Key)
@@ -212,7 +213,7 @@ func TestServer_CreateNewSSLCertDefault(t *testing.T) {
 	}
 
 	resp, err := s.GetSSLCerts(context.Background(), req)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, "cert-default", resp.Cert)
 	assert.Equal(t, "key-default", resp.Key)

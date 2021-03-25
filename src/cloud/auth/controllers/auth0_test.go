@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/cloud/auth/controllers"
 )
@@ -74,11 +75,11 @@ func TestAuth0ConnectorImpl_GetUserIDFromToken(t *testing.T) {
 
 	cfg := controllers.NewAuth0Config()
 	c, err := controllers.NewAuth0Connector(cfg)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	userID, err := c.GetUserIDFromToken("abcd")
 	assert.Equal(t, 1, callCount)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "myfakeuser", userID)
 }
 
@@ -93,7 +94,7 @@ func TestAuth0ConnectorImpl_GetUserIDFromToken_BadStatus(t *testing.T) {
 
 	cfg := controllers.NewAuth0Config()
 	c, err := controllers.NewAuth0Connector(cfg)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	_, err = c.GetUserIDFromToken("abcd")
 	assert.EqualError(t, err, "bad response from auth0")
@@ -110,7 +111,7 @@ func TestAuth0ConnectorImpl_GetUserIDFromToken_BadResponse(t *testing.T) {
 
 	cfg := controllers.NewAuth0Config()
 	c, err := controllers.NewAuth0Connector(cfg)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	_, err = c.GetUserIDFromToken("abcd")
 	assert.NotNil(t, err)
@@ -133,7 +134,7 @@ func TestAuth0ConnectorImpl_GetUserInfoUnauthorizedToken(t *testing.T) {
 
 	cfg := controllers.NewAuth0Config()
 	c, err := controllers.NewAuth0Connector(cfg)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	userInfo, err := c.GetUserInfo("abcd")
 	assert.NotNil(t, err)
@@ -173,11 +174,11 @@ func TestAuth0ConnectorImpl_GetUserInfo(t *testing.T) {
 
 	cfg := controllers.NewAuth0Config()
 	c, err := controllers.NewAuth0Connector(cfg)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	userInfo, err := c.GetUserInfo("abcd")
 	assert.Equal(t, 2, callCount)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "testuser@test.com", userInfo.Email)
 	assert.Equal(t, "Test User", userInfo.Name)
 	assert.Equal(t, "picture.jpg", userInfo.Picture)
@@ -202,7 +203,7 @@ func TestAuth0ConnectorImpl_GetUserInfo_BadResponse(t *testing.T) {
 
 	cfg := controllers.NewAuth0Config()
 	c, err := controllers.NewAuth0Connector(cfg)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	_, err = c.GetUserInfo("abcd")
 	assert.Equal(t, 2, callCount)
@@ -224,7 +225,7 @@ func TestAuth0ConnectorImpl_SetPLMetadata(t *testing.T) {
 		assert.Equal(t, "Bearer test_token", r.Header.Get("Authorization"))
 
 		body, err := ioutil.ReadAll(r.Body)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		defer r.Body.Close()
 
 		assert.JSONEq(t,
@@ -238,9 +239,9 @@ func TestAuth0ConnectorImpl_SetPLMetadata(t *testing.T) {
 
 	cfg := controllers.NewAuth0Config()
 	c, err := controllers.NewAuth0Connector(cfg)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	err = c.SetPLMetadata("abcd", "test_pl_org_id", "test_pl_user_id")
 	assert.Equal(t, 2, callCount)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }

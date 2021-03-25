@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/live"
 )
@@ -74,7 +75,7 @@ func TestParseInput(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			cmd, err := live.ParseInput(test.input)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, len(test.expectedTabStops), len(cmd.TabStops))
 
 			for i, ts := range cmd.TabStops {

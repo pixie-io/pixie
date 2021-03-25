@@ -60,7 +60,7 @@ func TestManagedIndexMigrate(t *testing.T) {
 				i := esutils.NewIndex(elasticClient).Name(tc.createBeforeConfig.indexName)
 				i.AddWriteAlias(tc.managedIndName)
 				err := i.Migrate(context.Background())
-				require.Nil(t, err)
+				require.NoError(t, err)
 			}
 
 			err := esutils.NewManagedIndex(elasticClient, tc.managedIndName).Migrate(context.Background())
@@ -69,7 +69,7 @@ func TestManagedIndexMigrate(t *testing.T) {
 				assert.Equal(t, tc.errMsg, err.Error())
 				return
 			}
-			require.Nil(t, err)
+			require.NoError(t, err)
 			// Only cleanup if the creation was successful.
 			defer cleanupManagedIndex(t, tc.managedIndName)
 
@@ -79,7 +79,7 @@ func TestManagedIndexMigrate(t *testing.T) {
 					t.Logf("Expected index '%s' was not found.", tc.expectedIndexName)
 					t.FailNow()
 				}
-				require.Nil(t, err)
+				require.NoError(t, err)
 			}
 			resp, ok := respMap[tc.expectedIndexName]
 			require.True(t, ok)

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/controller"
 )
@@ -108,9 +109,8 @@ func TestPlacementToPxl(t *testing.T) {
 	spacing := "    "
 	compiler := controller.NewPlacementCompiler()
 	res, err := compiler.PlacementToPxl(placementJSONTxt)
-	if !assert.Nil(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t, err)
+
 	actual, err1 := getDFArguments(res, spacing)
 	expected, err2 := getDFArguments(compiledMainForPlacement, spacing)
 	if !assert.Nil(t, err1) || !assert.Nil(t, err2) {
@@ -159,9 +159,8 @@ func TestPlacementPercentilPxl(t *testing.T) {
 	spacing := "    "
 	compiler := controller.NewPlacementCompiler()
 	res, err := compiler.PlacementToPxl(jsonPercentilePlacement)
-	if !assert.Nil(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t, err)
+
 	actual, err1 := getDFArguments(res, spacing)
 	expected, err2 := getDFArguments(compiledPercentilePxl, spacing)
 	if !assert.Nil(t, err1) || !assert.Nil(t, err2) {

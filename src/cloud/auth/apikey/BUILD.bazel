@@ -35,6 +35,7 @@ go_test(
         "@com_github_golang_migrate_migrate//source/go_bindata:go_default_library",
         "@com_github_jmoiron_sqlx//:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
+        "@com_github_stretchr_testify//require:go_default_library",
         "@org_golang_google_grpc//codes:go_default_library",
         "@org_golang_google_grpc//status:go_default_library",
     ],

@@ -48,5 +48,6 @@ go_test(
     deps = [
         "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
         "@com_github_stretchr_testify//assert:go_default_library",
+        "@com_github_stretchr_testify//require:go_default_library",
     ],
 )

@@ -148,7 +148,7 @@ func TestServer_GetViziersByOrg(t *testing.T) {
 	t.Run("valid", func(t *testing.T) {
 		// Fetch the test data that was inserted earlier.
 		resp, err := s.GetViziersByOrg(CreateTestContext(), utils.ProtoFromUUIDStrOrNil(testAuthOrgID))
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, resp)
 
 		assert.Equal(t, len(resp.VizierIDs), 6)
@@ -209,7 +209,7 @@ func TestServer_GetVizierInfo(t *testing.T) {
 
 	s := controller.New(db, "test", mockDNSClient, nil, nil)
 	resp, err := s.GetVizierInfo(CreateTestContext(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, resp)
 
 	assert.Equal(t, resp.VizierID, utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
@@ -228,7 +228,7 @@ func TestServer_GetVizierInfo(t *testing.T) {
 	assert.Equal(t, make(controller.PodStatuses), controller.PodStatuses(resp.ControlPlanePodStatuses))
 	// Test that the non-empty pods list case works.
 	resp, err = s.GetVizierInfo(CreateTestContext(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, resp)
 	assert.Equal(t, testPodStatuses, controller.PodStatuses(resp.ControlPlanePodStatuses))
 }
@@ -251,7 +251,7 @@ func TestServer_GetVizierInfos(t *testing.T) {
 	resp, err := s.GetVizierInfos(CreateTestContext(), &vzmgrpb.GetVizierInfosRequest{
 		VizierIDs: requestedIDs,
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, resp)
 
 	assert.Equal(t, 4, len(resp.VizierInfos))
@@ -278,12 +278,12 @@ func TestServer_UpdateVizierConfig(t *testing.T) {
 			PassthroughEnabled: &types.BoolValue{Value: true},
 		},
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, resp)
 
 	// Check that the value was actually updated.
 	infoResp, err := s.GetVizierInfo(CreateTestContext(), vzIDpb)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, infoResp)
 	assert.Equal(t, infoResp.Config.PassthroughEnabled, true)
 
@@ -293,12 +293,12 @@ func TestServer_UpdateVizierConfig(t *testing.T) {
 			AutoUpdateEnabled: &types.BoolValue{Value: false},
 		},
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, resp)
 
 	// Check that the value was actually updated.
 	infoResp, err = s.GetVizierInfo(CreateTestContext(), vzIDpb)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, infoResp)
 	assert.Equal(t, infoResp.Config.PassthroughEnabled, true)
 	assert.Equal(t, infoResp.Config.AutoUpdateEnabled, false)
@@ -335,12 +335,12 @@ func TestServer_UpdateVizierConfig_NoUpdates(t *testing.T) {
 		VizierID:     utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{},
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, resp)
 
 	// Check that the value was not updated.
 	infoResp, err := s.GetVizierInfo(CreateTestContext(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, infoResp)
 	assert.Equal(t, infoResp.Config.PassthroughEnabled, false)
 }
@@ -354,7 +354,7 @@ func TestServer_GetVizierConnectionInfo(t *testing.T) {
 
 	s := controller.New(db, "test", mockDNSClient, nil, nil)
 	resp, err := s.GetVizierConnectionInfo(CreateTestContext(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, resp)
 
 	assert.Equal(t, resp.IPAddress, "https://addr1")
@@ -363,7 +363,7 @@ func TestServer_GetVizierConnectionInfo(t *testing.T) {
 	_, err = jwt.ParseWithClaims(resp.Token, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte("key0"), nil
 	})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "cluster", claims["Scopes"].(string))
 
 	// TODO(zasgar): write more tests here.
@@ -389,7 +389,7 @@ func TestServer_VizierConnectedUnhealthy(t *testing.T) {
 	}
 
 	resp, err := s.VizierConnected(context.Background(), req)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, resp)
 
 	assert.Equal(t, resp.Status, cvmsgspb.ST_OK)
@@ -402,9 +402,9 @@ func TestServer_VizierConnectedUnhealthy(t *testing.T) {
 		Status        string `db:"status"`
 	}
 	clusterID, err := uuid.FromString("123e4567-e89b-12d3-a456-426655440001")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	err = db.Get(&clusterInfo, clusterQuery, clusterID)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "the-token", clusterInfo.JWTSigningKey[controller.SaltLength:])
 
 	assert.Equal(t, "UNHEALTHY", clusterInfo.Status)
@@ -439,7 +439,7 @@ func TestServer_VizierConnectedHealthy(t *testing.T) {
 	}
 
 	resp, err := s.VizierConnected(context.Background(), req)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, resp)
 
 	assert.Equal(t, resp.Status, cvmsgspb.ST_OK)
@@ -453,9 +453,9 @@ func TestServer_VizierConnectedHealthy(t *testing.T) {
 		VizierVersion string `db:"vizier_version"`
 	}
 	clusterID, err := uuid.FromString("123e4567-e89b-12d3-a456-426655440001")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	err = db.Get(&clusterInfo, clusterQuery, clusterID)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "CONNECTED", clusterInfo.Status)
 	assert.Equal(t, "some version", clusterInfo.VizierVersion)
 
@@ -463,7 +463,7 @@ func TestServer_VizierConnectedHealthy(t *testing.T) {
 	case msg := <-subCh:
 		req := &messagespb.VizierConnected{}
 		err := proto.Unmarshal(msg.Data, req)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "cUID", req.K8sUID)
 		assert.Equal(t, "223e4567-e89b-12d3-a456-426655440000", utils.UUIDFromProtoOrNil(req.OrgID).String())
 		assert.Equal(t, "123e4567-e89b-12d3-a456-426655440001", utils.UUIDFromProtoOrNil(req.VizierID).String())
@@ -660,18 +660,15 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 				NumInstrumentedNodes    int32                  `db:"num_instrumented_nodes"`
 			}
 			clusterID, err := uuid.FromString(tc.vizierID)
-			assert.Nil(t, err)
+			require.NoError(t, err)
+			err = db.Get(&clusterInfo, clusterQuery, clusterID)
 			if tc.checkDB {
-				err = db.Get(&clusterInfo, clusterQuery, clusterID)
-				assert.NoError(t, err)
-				assert.Equal(t, tc.updatedClusterStatus, clusterInfo.Status)
-				assert.Equal(t, tc.expectedClusterAddress, clusterInfo.Address)
-				assert.Equal(t, tc.numNodes, clusterInfo.NumNodes)
-				assert.Equal(t, tc.numInstrumentedNodes, clusterInfo.NumInstrumentedNodes)
-				if tc.controlPlanePodStatuses != nil {
-					assert.Equal(t, tc.controlPlanePodStatuses, clusterInfo.ControlPlanePodStatuses)
-				}
+				require.NoError(t, err)
 			}
+			assert.Equal(t, tc.updatedClusterStatus, clusterInfo.Status)
+			assert.Equal(t, tc.expectedClusterAddress, clusterInfo.Address)
+			assert.Equal(t, tc.numNodes, clusterInfo.NumNodes)
+			assert.Equal(t, tc.numInstrumentedNodes, clusterInfo.NumInstrumentedNodes)
 		})
 	}
 }
@@ -762,7 +759,7 @@ func TestServer_UpdateOrInstallVizier(t *testing.T) {
 		UpdateStarted: true,
 	}
 	respAnyMsg, err := types.MarshalAny(updateResp)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	wrappedMsg := &cvmsgspb.V2CMessage{
 		VizierID: vizierID.String(),
 		Msg:      respAnyMsg,
@@ -781,7 +778,7 @@ func TestServer_UpdateOrInstallVizier(t *testing.T) {
 	}
 
 	resp, err := s.UpdateOrInstallVizier(CreateTestContext(), req)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, resp)
 }
 
@@ -984,7 +981,7 @@ func TestServer_ProvisionOrClaimVizier(t *testing.T) {
 
 	// This should select the first cluster with an empty UID that is disconnected.
 	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "my cluster", "", "1.1")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	// Should select the disconnected cluster.
 	assert.Equal(t, testDisconnectedClusterEmptyUID, clusterID.String())
 }
@@ -1031,7 +1028,7 @@ func TestServer_ProvisionOrClaimVizierWIthExistingUID(t *testing.T) {
 
 			// This should select the existing cluster with the same UID.
 			clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "existing_cluster", test.inputName, "1.1")
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			// Should select the disconnected cluster.
 			assert.Equal(t, testExistingCluster, clusterID.String())
 
@@ -1041,7 +1038,7 @@ func TestServer_ProvisionOrClaimVizierWIthExistingUID(t *testing.T) {
 			}
 			nameQuery := `SELECT cluster_name from vizier_cluster WHERE id=$1`
 			err = db.Get(&clusterInfo, nameQuery, clusterID)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, *clusterInfo.ClusterName, test.expectedName)
 		})
 	}
@@ -1066,7 +1063,7 @@ func TestServer_ProvisionOrClaimVizier_WithNewCluster(t *testing.T) {
 	userID := uuid.Must(uuid.NewV4())
 	// This should select cause an error b/c we are trying to provision a cluster that is not disconnected.
 	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testNonAuthOrgID), userID, "my_other_cluster", "", "1.1")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotEqual(t, uuid.Nil, clusterID)
 }
 
@@ -1078,7 +1075,7 @@ func TestServer_ProvisionOrClaimVizier_WithExistingName(t *testing.T) {
 
 	// This should select the existing cluster with the same UID.
 	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "some_cluster", "test_cluster_1234\n", "1.1")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	// Should select the disconnected cluster.
 	assert.Equal(t, testDisconnectedClusterEmptyUID, clusterID.String())
 	// Check cluster name.
@@ -1088,7 +1085,7 @@ func TestServer_ProvisionOrClaimVizier_WithExistingName(t *testing.T) {
 	}
 	nameQuery := `SELECT cluster_name, cluster_version from vizier_cluster WHERE id=$1`
 	err = db.Get(&clusterInfo, nameQuery, clusterID)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.True(t, strings.HasPrefix(*clusterInfo.ClusterName, "test_cluster_1234_"))
 	assert.Equal(t, "1.1", *clusterInfo.ClusterVersion)
 }

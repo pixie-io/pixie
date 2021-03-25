@@ -8,6 +8,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
 	"pixielabs.ai/pixielabs/src/vizier/services/certmgr/controller"
@@ -43,7 +44,7 @@ func TestServer_UpdateCerts(t *testing.T) {
 		Return(nil)
 
 	resp, err := s.UpdateCerts(context.Background(), req)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, true, resp.OK)
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/shared/services/env"
@@ -88,7 +89,7 @@ func TestWithBearerAuthMiddleware(t *testing.T) {
 				handlerCallCount++
 				sCtx, err := authcontext.FromContext(r.Context())
 				if !test.ExpectHandlerAuthError {
-					assert.Nil(t, err)
+					require.NoError(t, err)
 					assert.NotNil(t, sCtx)
 					assert.Equal(t, test.ExpectHandlerUserID, sCtx.Claims.GetUserClaims().UserID)
 
@@ -101,7 +102,7 @@ func TestWithBearerAuthMiddleware(t *testing.T) {
 			if len(test.Authorization) > 0 {
 				req.Header.Add("Authorization", test.Authorization)
 			}
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			rr := httptest.NewRecorder()
 
 			handler := httpmiddleware.WithBearerAuthMiddleware(

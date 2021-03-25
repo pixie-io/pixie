@@ -63,7 +63,7 @@ func TestArtifactTracker_GetArtifactList(t *testing.T) {
 		ArtifactType: cloudapipb.AT_LINUX_AMD64,
 	})
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "cli", resp.Name)
 	assert.Equal(t, 1, len(resp.Artifact))
 }
@@ -97,7 +97,7 @@ func TestArtifactTracker_GetDownloadLink(t *testing.T) {
 		ArtifactType: cloudapipb.AT_LINUX_AMD64,
 	})
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "http://localhost", resp.Url)
 	assert.Equal(t, "sha", resp.SHA256)
 }
@@ -122,7 +122,7 @@ func TestVizierClusterInfo_GetClusterConnection(t *testing.T) {
 	}
 
 	resp, err := vzClusterInfoServer.GetClusterConnection(ctx, &public_cloudapipb.GetClusterConnectionRequest{ID: clusterID})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "127.0.0.1", resp.IPAddress)
 	assert.Equal(t, "hello", resp.Token)
 }
@@ -229,7 +229,7 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 		},
 	}
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 1, len(resp.Clusters))
 	cluster := resp.Clusters[0]
 	assert.Equal(t, cluster.ID, clusterID)
@@ -306,7 +306,7 @@ func TestVizierClusterInfo_GetClusterInfoDuplicates(t *testing.T) {
 
 	resp, err := vzClusterInfoServer.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{})
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 2, len(resp.Clusters))
 	assert.Equal(t, "gke:dev-cluster-zasgar (pl-dev-infra)", resp.Clusters[0].PrettyClusterName)
 	assert.Equal(t, "gke:dev-cluster-zasgar (pl-pixies)", resp.Clusters[1].PrettyClusterName)
@@ -350,7 +350,7 @@ func TestVizierClusterInfo_GetClusterInfoWithID(t *testing.T) {
 		ID: clusterID,
 	})
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 1, len(resp.Clusters))
 	cluster := resp.Clusters[0]
 	assert.Equal(t, cluster.ID, clusterID)
@@ -393,7 +393,7 @@ func TestVizierClusterInfo_UpdateClusterVizierConfig(t *testing.T) {
 		},
 	})
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 }
 
@@ -433,7 +433,7 @@ func TestVizierClusterInfo_UpdateOrInstallCluster(t *testing.T) {
 		Version:   "0.1.30",
 	})
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 }
 
@@ -459,7 +459,7 @@ func TestVizierDeploymentKeyServer_Create(t *testing.T) {
 	}
 
 	resp, err := vzDeployKeyServer.Create(ctx, &cloudapipb.CreateDeploymentKeyRequest{Desc: "test key"})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, resp.ID, vzresp.ID)
 	assert.Equal(t, resp.Key, vzresp.Key)
@@ -493,7 +493,7 @@ func TestVizierDeploymentKeyServer_List(t *testing.T) {
 	}
 
 	resp, err := vzDeployKeyServer.List(ctx, &cloudapipb.ListDeploymentKeyRequest{})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	for i, key := range resp.Keys {
 		assert.Equal(t, key.ID, vzresp.Keys[i].ID)
@@ -532,7 +532,7 @@ func TestVizierDeploymentKeyServer_Get(t *testing.T) {
 	resp, err := vzDeployKeyServer.Get(ctx, &cloudapipb.GetDeploymentKeyRequest{
 		ID: id,
 	})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, resp.Key.ID, vzresp.Key.ID)
 	assert.Equal(t, resp.Key.Key, vzresp.Key.Key)
@@ -557,7 +557,7 @@ func TestVizierDeploymentKeyServer_Delete(t *testing.T) {
 		VzDeploymentKey: mockClients.MockVzDeployKey,
 	}
 	resp, err := vzDeployKeyServer.Delete(ctx, id)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, resp, vzresp)
 }
@@ -584,7 +584,7 @@ func TestAPIKeyServer_Create(t *testing.T) {
 	}
 
 	resp, err := vzAPIKeyServer.Create(ctx, &cloudapipb.CreateAPIKeyRequest{Desc: "test key"})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, resp.ID, vzresp.ID)
 	assert.Equal(t, resp.Key, vzresp.Key)
@@ -618,7 +618,7 @@ func TestAPIKeyServer_List(t *testing.T) {
 	}
 
 	resp, err := vzAPIKeyServer.List(ctx, &cloudapipb.ListAPIKeyRequest{})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	for i, key := range resp.Keys {
 		assert.Equal(t, key.ID, vzresp.Keys[i].ID)
@@ -657,7 +657,7 @@ func TestAPIKeyServer_Get(t *testing.T) {
 	resp, err := vzAPIKeyServer.Get(ctx, &cloudapipb.GetAPIKeyRequest{
 		ID: id,
 	})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, resp.Key.ID, vzresp.Key.ID)
 	assert.Equal(t, resp.Key.Key, vzresp.Key.Key)
@@ -682,7 +682,7 @@ func TestAPIKeyServer_Delete(t *testing.T) {
 		APIKeyClient: mockClients.MockAPIKey,
 	}
 	resp, err := vzAPIKeyServer.Delete(ctx, id)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, resp, vzresp)
 }
@@ -698,7 +698,7 @@ func TestAutocompleteService_Autocomplete(t *testing.T) {
 	defer ctrl.Finish()
 
 	orgID, err := uuid.FromString("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	ctx := CreateTestContext()
 
 	s := mock_autocomplete.NewMockSuggester(ctrl)
@@ -768,7 +768,7 @@ func TestAutocompleteService_Autocomplete(t *testing.T) {
 		Action:     cloudapipb.AAT_EDIT,
 		ClusterUID: "test",
 	})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, "${2:$0px/svc_info} ${1:pl/test}", resp.FormattedInput)
 	assert.False(t, resp.IsExecutable)
@@ -780,7 +780,7 @@ func TestAutocompleteService_AutocompleteField(t *testing.T) {
 	defer ctrl.Finish()
 
 	orgID, err := uuid.FromString("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	ctx := CreateTestContext()
 
 	s := mock_autocomplete.NewMockSuggester(ctrl)
@@ -831,14 +831,14 @@ func TestAutocompleteService_AutocompleteField(t *testing.T) {
 		FieldType:  cloudapipb.AEK_SVC,
 		ClusterUID: "test",
 	})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, 2, len(resp.Suggestions))
 }
 
 func toBytes(t *testing.T, msg proto.Message) []byte {
 	bytes, err := proto.Marshal(msg)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	return bytes
 }
 
@@ -1054,7 +1054,7 @@ func TestProfileServer_GetOrgInfo(t *testing.T) {
 
 	resp, err := profileServer.GetOrgInfo(ctx, orgID)
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "someOrg", resp.OrgName)
 	assert.Equal(t, orgID, resp.ID)
 }

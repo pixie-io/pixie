@@ -74,9 +74,9 @@ func TestDatastore(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			datastore, err := datastore.NewDatastore(db)
-			require.Nil(t, err)
+			require.NoError(t, err)
 			available, err := datastore.CheckAvailability(testOrgID1, test.projectName)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, available, test.available)
 		})
 	}
@@ -84,29 +84,29 @@ func TestDatastore(t *testing.T) {
 	// Insert into datastore and check if there.
 	t.Run("Register and Check", func(t *testing.T) {
 		datastore, err := datastore.NewDatastore(db)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		available, err := datastore.CheckAvailability(testOrgID1, "my domain")
-		require.Nil(t, err)
+		require.NoError(t, err)
 		assert.True(t, available)
 		err = datastore.RegisterProject(testOrgID1, "my-domain")
-		require.Nil(t, err)
+		require.NoError(t, err)
 		available, err = datastore.CheckAvailability(testOrgID1, "my-domain")
-		require.Nil(t, err)
+		require.NoError(t, err)
 		assert.False(t, available)
 	})
 
 	t.Run("Registering existing project should fail", func(t *testing.T) {
 		datastore, err := datastore.NewDatastore(db)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		err = datastore.RegisterProject(testOrgID1, "default")
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Get project by name for existing project", func(t *testing.T) {
 		datastore, err := datastore.NewDatastore(db)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		projectInfo, err := datastore.GetProjectByName(testOrgID2, "default")
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, projectInfo)
 
 		assert.Equal(t, projectInfo.OrgID, testOrgID2)
@@ -115,25 +115,25 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("Get project by name for missing project", func(t *testing.T) {
 		datastore, err := datastore.NewDatastore(db)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		projectInfo, err := datastore.GetProjectByName(testOrgID1, "h")
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.Nil(t, projectInfo)
 	})
 
 	t.Run("Get project by name for empty project", func(t *testing.T) {
 		datastore, err := datastore.NewDatastore(db)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		projectInfo, err := datastore.GetProjectByName(testOrgID1, "")
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.Nil(t, projectInfo)
 	})
 
 	t.Run("Get project by org", func(t *testing.T) {
 		datastore, err := datastore.NewDatastore(db)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		projectInfo, err := datastore.GetProjectForOrg(testOrgID1)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, projectInfo)
 
 		assert.Equal(t, projectInfo.OrgID, testOrgID1)
@@ -142,9 +142,9 @@ func TestDatastore(t *testing.T) {
 
 	t.Run("Get project by org for missing org", func(t *testing.T) {
 		datastore, err := datastore.NewDatastore(db)
-		require.Nil(t, err)
+		require.NoError(t, err)
 		projectInfo, err := datastore.GetProjectForOrg(uuid.FromStringOrNil("623e4567-e89b-12d3-a456-426655440010"))
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.Nil(t, projectInfo)
 	})
 }

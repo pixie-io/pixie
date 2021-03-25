@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/handler"
@@ -19,7 +20,7 @@ func TestHandler_ServeHTTP(t *testing.T) {
 	h := handler.New(env.New(), testHandler)
 
 	req, err := http.NewRequest("GET", "http://test.com/", nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	rw := httptest.NewRecorder()
 	h.ServeHTTP(rw, req)
@@ -33,7 +34,7 @@ func TestHandler_ServeHTTP_StatusError(t *testing.T) {
 	h := handler.New(env.New(), testHandler)
 
 	req, err := http.NewRequest("GET", "http://test.com/", nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	rw := httptest.NewRecorder()
 	h.ServeHTTP(rw, req)
@@ -48,7 +49,7 @@ func TestHandler_ServeHTTP_RegularError(t *testing.T) {
 	h := handler.New(env.New(), testHandler)
 
 	req, err := http.NewRequest("GET", "http://test.com/", nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	rw := httptest.NewRecorder()
 	h.ServeHTTP(rw, req)

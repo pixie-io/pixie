@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/shared/k8s"
 	types "pixielabs.ai/pixielabs/src/shared/types/go"
@@ -32,9 +33,6 @@ func TestUPIDFromString(t *testing.T) {
 	assert.Equal(t, "123:567:89101", upidString)
 
 	upidObj, err := k8s.UPIDFromString(upidString)
-	if !assert.Nil(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t, err)
 	assert.Equal(t, *upid, upidObj)
-
 }

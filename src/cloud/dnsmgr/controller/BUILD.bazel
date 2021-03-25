@@ -36,5 +36,6 @@ go_test(
         "@com_github_jmoiron_sqlx//:go_default_library",
         "@com_github_spf13_viper//:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
+        "@com_github_stretchr_testify//require:go_default_library",
     ],
 )

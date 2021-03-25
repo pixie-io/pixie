@@ -5,6 +5,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	jwt2 "pixielabs.ai/pixielabs/src/shared/services/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"
@@ -156,7 +157,7 @@ func TestMapClaimsToPB_User(t *testing.T) {
 	claims["Email"] = "user@email.com"
 
 	pb, err := utils.MapClaimsToPB(claims)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "audience", pb.Audience)
 	assert.Equal(t, int64(100), pb.ExpiresAt)
 	assert.Equal(t, "jti", pb.JTI)
@@ -188,7 +189,7 @@ func TestMapClaimsToPB_Service(t *testing.T) {
 	claims["ServiceID"] = "service_id"
 
 	pb, err := utils.MapClaimsToPB(claims)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "audience", pb.Audience)
 	assert.Equal(t, int64(100), pb.ExpiresAt)
 	assert.Equal(t, "jti", pb.JTI)
@@ -218,7 +219,7 @@ func TestMapClaimsToPB_Cluster(t *testing.T) {
 	claims["ClusterID"] = "cluster_id"
 
 	pb, err := utils.MapClaimsToPB(claims)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "audience", pb.Audience)
 	assert.Equal(t, int64(100), pb.ExpiresAt)
 	assert.Equal(t, "jti", pb.JTI)

@@ -7,6 +7,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
@@ -230,7 +231,7 @@ func TestVizierQueryRequestToPlannerQueryRequest(t *testing.T) {
 	}
 
 	qr, err := controllers.VizierQueryRequestToPlannerQueryRequest(sv)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expectedQr, qr)
 }
 
@@ -269,7 +270,7 @@ func TestCompilerErrorStatusToVizierStatus(t *testing.T) {
 		Errors: errs,
 	}
 	compilerEGAny, err := types.MarshalAny(compilerEG)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	sv := &statuspb.Status{
 		Context: compilerEGAny,
 	}
@@ -296,7 +297,7 @@ func TestRelationFromTable(t *testing.T) {
 	}
 
 	qm, err := controllers.RelationFromTable(sv)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expectedQm, qm)
 }
 
@@ -312,7 +313,7 @@ func TestRelationFromTableWithSemanticTypes(t *testing.T) {
 	}
 
 	qm, err := controllers.RelationFromTable(sv)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expectedQm, qm)
 }
 
@@ -358,7 +359,7 @@ func TestRowBatchToVizierRowBatch(t *testing.T) {
 	}
 
 	qm, err := controllers.RowBatchToVizierRowBatch(sv, "")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, expectedQd, qm)
 }
 
@@ -395,7 +396,7 @@ func TestBuildExecuteScriptResponse_RowBatch(t *testing.T) {
 		"output_table_1": "output_table_1_id",
 	}
 	resp, err := controllers.BuildExecuteScriptResponse(msg, tableIDMap, 10)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.Nil(t, resp.Status)
 	assert.Equal(t, queryID.String(), resp.QueryID)
@@ -428,7 +429,7 @@ func TestBuildExecuteScriptResponse_InitiateResultStream(t *testing.T) {
 		"output_table_1": "output_table_1_id",
 	}
 	resp, err := controllers.BuildExecuteScriptResponse(msg, tableIDMap, 10)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, resp)
 }
 
@@ -462,7 +463,7 @@ func TestBuildExecuteScriptResponse_ExecutionStats(t *testing.T) {
 	}
 
 	resp, err := controllers.BuildExecuteScriptResponse(msg, nil, 10)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.Nil(t, resp.Status)
 	assert.Equal(t, queryID.String(), resp.QueryID)
@@ -571,7 +572,7 @@ func TestQueryPlanResponse(t *testing.T) {
 	}
 
 	resp1, err := controllers.QueryPlanResponse(queryID, plan, planMap, &agentStats, planTableID, 1024*1024)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 1, len(resp1))
 	assert.Equal(t, expected1[0], resp1[0])
 
@@ -632,7 +633,7 @@ func TestQueryPlanResponse(t *testing.T) {
 	}
 
 	resp2, err := controllers.QueryPlanResponse(queryID, plan, planMap, &agentStats, planTableID, 350)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 2, len(resp2))
 	assert.Equal(t, expected2[0], resp2[0])
 	assert.Equal(t, expected2[1], resp2[1])
@@ -718,7 +719,7 @@ func TestTableRelationResponses(t *testing.T) {
 	}
 
 	resps, err := controllers.TableRelationResponses(queryID, tableIDMap, planMap)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resps)
 	assert.Equal(t, 2, len(resps))
 	actualSchemaResults[resps[0].GetMetaData().Name] = resps[0]

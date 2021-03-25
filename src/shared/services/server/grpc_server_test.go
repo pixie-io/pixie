@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -244,7 +245,7 @@ func TestGrpcServerUnary(t *testing.T) {
 				assert.Equal(t, codes.Unauthenticated, stat.Code())
 				assert.Nil(t, resp)
 			} else {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, resp)
 				assert.Equal(t, "test reply", resp.Reply)
 			}

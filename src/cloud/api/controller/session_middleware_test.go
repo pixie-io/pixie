@@ -9,6 +9,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -39,10 +40,10 @@ func callFailsTestHandler(t *testing.T) http.Handler {
 func getTestCookie(t *testing.T, env apienv.APIEnv) string {
 	// Make a fake request to create a cookie with fake user credentials.
 	req, err := http.NewRequest("GET", "/", nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	rr := httptest.NewRecorder()
 	session, err := env.CookieStore().Get(req, "default-session4")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	session.Values["_at"] = "authpb-token"
 	session.Save(req, rr)
 	cookies, ok := rr.Header()["Set-Cookie"]
@@ -68,7 +69,7 @@ func validRequestCheckHelper(t *testing.T, env apienv.APIEnv, mockAuthClient *mo
 	// to handlers.
 	validateAuthInfo := func(w http.ResponseWriter, r *http.Request) {
 		aCtx, err := authcontext.FromContext(r.Context())
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, testingutils.TestUserID, aCtx.Claims.GetUserClaims().UserID)
 		assert.Equal(t, "test@test.com", aCtx.Claims.GetUserClaims().Email)
 		assert.Equal(t, testAugmentedToken, aCtx.AuthToken)
@@ -99,7 +100,7 @@ func TestWithAugmentedAuthMiddlewareWithSession(t *testing.T) {
 	defer cleanup()
 
 	req, err := http.NewRequest("GET", "https://pixie.dev.pixielabs.dev/api/users", nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	cookie := getTestCookie(t, env)
 	req.Header.Add("Cookie", cookie)
 
@@ -111,7 +112,7 @@ func TestWithAugmentedAuthMiddlewareWithBearer(t *testing.T) {
 	defer cleanup()
 
 	req, err := http.NewRequest("GET", "https://pixie.dev.pixielabs.dev/api/users", nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	req.Header.Add("Authorization", "Bearer authpb-token")
 
 	validRequestCheckHelper(t, env, mockClients.MockAuth, req)
@@ -122,7 +123,7 @@ func TestWithAugmentedAuthMiddlewareMissingAuth(t *testing.T) {
 	defer cleanup()
 
 	req, err := http.NewRequest("GET", "https://pixie.dev.pixielabs.dev/api/users", nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	failedRequestCheckHelper(t, env, mockClients.MockAuth, req)
 }
@@ -139,7 +140,7 @@ func TestWithAugmentedAuthMiddlewareFailedAugmentation(t *testing.T) {
 		nil, status.Error(codes.Unauthenticated, "failed auth check"))
 
 	req, err := http.NewRequest("GET", "https://pixie.dev.pixielabs.dev/api/users", nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	req.Header.Add("Authorization", "Bearer bad-token")
 
 	failedRequestCheckHelper(t, env, mockClients.MockAuth, req)
@@ -161,12 +162,12 @@ func TestWithAugmentedAuthMiddlewareWithAPIKey(t *testing.T) {
 		}, nil)
 
 	req, err := http.NewRequest("GET", "https://pixie.dev.pixielabs.dev/api/users", nil)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	req.Header.Add("pixie-api-key", "test-api-key")
 
 	validateAuthInfo := func(w http.ResponseWriter, r *http.Request) {
 		aCtx, err := authcontext.FromContext(r.Context())
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, testingutils.TestUserID, aCtx.Claims.GetUserClaims().UserID)
 		assert.Equal(t, "test@test.com", aCtx.Claims.GetUserClaims().Email)
 		assert.Equal(t, testAugmentedToken, aCtx.AuthToken)

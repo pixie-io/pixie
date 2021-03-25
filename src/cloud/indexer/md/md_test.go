@@ -10,6 +10,7 @@ import (
 	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/cloud/indexer/md"
 	mdpb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
@@ -265,19 +266,19 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 
 			for _, u := range test.updates {
 				err := indexer.HandleResourceUpdate(u)
-				assert.Nil(t, err)
+				require.NoError(t, err)
 			}
 
 			resp, err := elasticClient.Search().
 				Index(md.IndexName).
 				Query(elastic.NewTermQuery("kind", test.updateKind)).
 				Do(context.Background())
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, int64(len(test.expectedResults)), resp.TotalHits())
 			for i, r := range test.expectedResults {
 				res := &md.EsMDEntity{}
 				err = json.Unmarshal(resp.Hits.Hits[i].Source, res)
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, r, res)
 			}
 		})

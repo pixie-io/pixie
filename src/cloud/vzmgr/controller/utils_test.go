@@ -5,6 +5,7 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/controller"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
@@ -48,10 +49,10 @@ func TestPodStatusScan(t *testing.T) {
 	var outputPodStatuses controller.PodStatuses
 
 	serialized, err := inputPodStatuses.Value()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	err = outputPodStatuses.Scan(serialized)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, inputPodStatuses, outputPodStatuses)
 }

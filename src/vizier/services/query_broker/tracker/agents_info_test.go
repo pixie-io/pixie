@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
@@ -201,7 +202,7 @@ func TestAgentsInfo_UpdateAgentsInfo(t *testing.T) {
 		AgentSchemasUpdated: true,
 	})
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	// Updates shouldn't have been propagated yet until the end of the version.
 	assert.Equal(t, 0, len(agentsInfo.DistributedState().SchemaInfo))
 	assert.Equal(t, 0, len(agentsInfo.DistributedState().CarnotInfo))
@@ -212,7 +213,7 @@ func TestAgentsInfo_UpdateAgentsInfo(t *testing.T) {
 		AgentSchemasUpdated: true,
 		EndOfVersion:        true,
 	})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, testSchema, agentsInfo.DistributedState().SchemaInfo)
 
 	expectedPEM1Info := &distributedpb.CarnotInfo{
@@ -304,7 +305,7 @@ func TestAgentsInfo_UpdateAgentsInfo(t *testing.T) {
 		AgentSchemasUpdated: false,
 		EndOfVersion:        true,
 	})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	agentsMap = make(map[uuid.UUID]*distributedpb.CarnotInfo)
 	for _, carnotInfo := range agentsInfo.DistributedState().CarnotInfo {
 		agentsMap[utils.UUIDFromProtoOrNil(carnotInfo.AgentID)] = carnotInfo
@@ -326,6 +327,6 @@ func TestAgentsInfo_UpdateAgentsInfo(t *testing.T) {
 		AgentSchemasUpdated: true,
 		EndOfVersion:        true,
 	})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 0, len(agentsInfo.DistributedState().SchemaInfo))
 }

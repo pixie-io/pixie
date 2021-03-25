@@ -9,6 +9,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/olivere/elastic/v7"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
@@ -423,7 +424,7 @@ func TestGetSuggestions(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			es, _ := autocomplete.NewElasticSuggester(elasticClient, "scripts", nil)
 			results, err := es.GetSuggestions(test.reqs)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, results)
 			assert.Equal(t, len(test.expectedResults), len(results))
 			for i, r := range results {

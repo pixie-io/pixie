@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
 )
@@ -35,19 +36,19 @@ func TestParseFlags(t *testing.T) {
 	assert.Nil(t, flags.Parse(flagVals))
 
 	f1, err := flags.Lookup("no_default1")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, f1, "true")
 
 	f2, err := flags.Lookup("no_default2")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, f2, "\"\"")
 
 	f3, err := flags.Lookup("f3")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, f3, "5")
 
 	f4, err := flags.Lookup("f4")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, f4, "6")
 }
 
@@ -66,7 +67,7 @@ func TestSetFlag(t *testing.T) {
 	flags.Set("f3", "555")
 
 	f3, err := flags.Lookup("f3")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, f3, "555")
 }
 
@@ -87,14 +88,14 @@ func TestMissingRequiredFlags(t *testing.T) {
 	assert.Equal(t, f1, "")
 
 	f2, err := flags.Lookup("no_default2")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, f2, "\"\"")
 
 	f3, err := flags.Lookup("f3")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, f3, "5")
 
 	f4, err := flags.Lookup("f4")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, f4, "6")
 }

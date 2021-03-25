@@ -9,6 +9,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
@@ -324,7 +325,7 @@ func TestHandler_GetUpdatesForIP(t *testing.T) {
 	mdh := k8smeta.NewHandler(updateCh, mds, nil)
 	defer mdh.Stop()
 	updates, err := mdh.GetUpdatesForIP("", 0, 0)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 4, len(updates))
 	assert.Equal(t, nsUpdate, updates[0])
 	svcUpdateKelvin.PrevUpdateVersion = 2
@@ -340,14 +341,14 @@ func TestHandler_GetUpdatesForIP(t *testing.T) {
 	assert.Equal(t, pu.Update, updates[3])
 
 	updates, err = mdh.GetUpdatesForIP("127.0.0.2", 0, 0)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 2, len(updates))
 	assert.Equal(t, nsUpdate, updates[0])
 	svcUpdate2.PrevUpdateVersion = 2
 	assert.Equal(t, svcUpdate2, updates[1])
 
 	updates, err = mdh.GetUpdatesForIP("127.0.0.1", 0, 3)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 1, len(updates))
 	assert.Equal(t, nsUpdate, updates[0])
 }
@@ -393,7 +394,7 @@ func TestHandler_ProcessUpdates(t *testing.T) {
 	nc.Subscribe(fmt.Sprintf("%s/%s", k8smeta.K8sMetadataUpdateChannel, k8smeta.KelvinUpdateTopic), func(msg *nats.Msg) {
 		m := &messages.VizierMessage{}
 		err := proto.Unmarshal(msg.Data, m)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, int64(3), m.GetK8SMetadataMessage().GetK8SMetadataUpdate().PrevUpdateVersion)
 		m.GetK8SMetadataMessage().GetK8SMetadataUpdate().PrevUpdateVersion = 0
 		assert.Equal(t, expectedMsg, m)
@@ -403,7 +404,7 @@ func TestHandler_ProcessUpdates(t *testing.T) {
 	nc.Subscribe(fmt.Sprintf("%s/127.0.0.1", k8smeta.K8sMetadataUpdateChannel), func(msg *nats.Msg) {
 		m := &messages.VizierMessage{}
 		err := proto.Unmarshal(msg.Data, m)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, int64(5), m.GetK8SMetadataMessage().GetK8SMetadataUpdate().PrevUpdateVersion)
 		m.GetK8SMetadataMessage().GetK8SMetadataUpdate().PrevUpdateVersion = 0
 		assert.Equal(t, expectedMsg, m)

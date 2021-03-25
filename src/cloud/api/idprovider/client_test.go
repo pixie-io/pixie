@@ -16,6 +16,7 @@ import (
 	kratosPublic "github.com/ory/kratos-client-go/client/public"
 	kratosModels "github.com/ory/kratos-client-go/models"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Implements the kratosAdminClient interface.
@@ -226,9 +227,8 @@ func makeClientFromConfig(t *testing.T, p *testClientConfig) (*HydraKratosClient
 
 	// Set up the redirect URL from the fake endpoint.
 	consentURL, err := url.Parse(p.browserURL + p.idpConsentPath)
-	if !assert.Nil(t, err) {
-		t.Fatalf("Failed to parse url: %v", err)
-	}
+	require.NoError(t, err)
+
 	q := make(url.Values)
 	q.Set("consent_challenge", p.consentChallenge)
 	consentURL.RawQuery = q.Encode()
@@ -283,9 +283,7 @@ func TestWhoami(t *testing.T) {
 	r.Header.Set("Cookie", "notempty")
 
 	whoami, err := client.Whoami(context.Background(), r)
-	if !assert.Nil(t, err) {
-		t.Fatalf("err not nil %s", err)
-	}
+	require.NoError(t, err)
 
 	assert.Equal(t, kratosPublicClient.userID, whoami.ID())
 
@@ -307,24 +305,21 @@ func getSessionFromResponse(t *testing.T, cookieStore sessions.Store, resp *http
 	}
 	// Extract the cookie value by creating a new request, then feeding it to the cookieStore.
 	testReq, err := http.NewRequest("", "/", nil)
-	if !assert.Nil(t, err) {
-		t.Fatalf("Failed to get request %v", err)
-	}
+	require.NoError(t, err)
+
 	testReq.Header = make(http.Header)
 	testReq.Header.Set("Cookie", cookies[0])
 	session, err := cookieStore.Get(testReq, IDProviderSessionKey)
-	if !assert.Nil(t, err) {
-		t.Fatalf("Failed to get session %v", err)
-	}
+	require.NoError(t, err)
+
 	return session
 }
 
 // Returns the URL without the query string.
 func stripQuery(t *testing.T, urlStr string) string {
 	u, err := url.Parse(urlStr)
-	if !assert.Nil(t, err) {
-		t.Fatalf("unable to parse url %v", err)
-	}
+	require.NoError(t, err)
+
 	u.RawQuery = ""
 	return u.String()
 
@@ -332,9 +327,8 @@ func stripQuery(t *testing.T, urlStr string) string {
 
 func createLoginRequest(t *testing.T, hydraLoginState, loginChallenge string) *http.Request {
 	reqURL, err := url.Parse("/api/auth/oauth/login")
-	if !assert.Nil(t, err) {
-		t.Fatalf("Failed to parse url: %v", err)
-	}
+	require.NoError(t, err)
+
 	q := url.Values{}
 	if hydraLoginState != "" {
 		q.Set(HydraLoginStateKey, hydraLoginState)
@@ -343,9 +337,7 @@ func createLoginRequest(t *testing.T, hydraLoginState, loginChallenge string) *h
 	reqURL.RawQuery = q.Encode()
 
 	req, err := http.NewRequest("GET", reqURL.String(), nil)
-	if !assert.Nil(t, err) {
-		t.Fatalf("Failed to create new request: %v", err)
-	}
+	require.NoError(t, err)
 
 	// Set the host, matching what we expect internally.
 	req.Host = "withpixie.ai"
@@ -364,9 +356,8 @@ func TestRedirectToLogin(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	err = c.RedirectToLogin(session, w, req)
-	if !assert.Nil(t, err) {
-		t.Fatalf("Failed to redirect to login %v", err)
-	}
+	require.NoError(t, err)
+
 	resp := w.Result()
 	// Verify the call redirected the writer.
 	assert.Equal(t, http.StatusFound, resp.StatusCode)
@@ -378,9 +369,7 @@ func TestRedirectToLogin(t *testing.T) {
 	}
 
 	u, err := url.Parse(loginRedirectURL)
-	if !assert.Nil(t, err) {
-		t.Fatalf("Failed to parse url %v", err)
-	}
+	require.NoError(t, err)
 
 	returnTo := u.Query().Get("return_to")
 	if !assert.NotEmpty(t, returnTo) {
@@ -388,9 +377,7 @@ func TestRedirectToLogin(t *testing.T) {
 	}
 
 	returnToU, err := url.Parse(returnTo)
-	if !assert.Nil(t, err) {
-		t.Fatalf("Failed to parse url %v", err)
-	}
+	require.NoError(t, err)
 
 	redirectHydraState := returnToU.Query().Get(HydraLoginStateKey)
 	if !assert.NotEmpty(t, returnTo) {
@@ -427,9 +414,7 @@ func TestAcceptHydraLogin(t *testing.T) {
 
 	// Just make sure the error is not nil.
 	_, err := c.AcceptHydraLogin(context.Background(), loginChallenge, whoami)
-	if !assert.Nil(t, err) {
-		t.Fatalf("AcceptHydraLogin failed %s", err)
-	}
+	require.NoError(t, err)
 }
 
 func TestConvertHydraURL(t *testing.T) {
@@ -447,9 +432,7 @@ func TestConvertHydraURL(t *testing.T) {
 
 	// Should strip the full browserURL prefix and add to the internalHost.
 	internalURL, err := c.convertExternalHydraURLToInternal(externalURL)
-	if !assert.Nil(t, err) {
-		t.Fatalf("AcceptHydraLogin failed %s", err)
-	}
+	require.NoError(t, err)
 
 	// Set the expected internal.
 	assert.Equal(t, internalHost+hydraPath, internalURL)
@@ -470,9 +453,7 @@ func TestInterceptHydraConsent(t *testing.T) {
 	r.Header.Set("ory_hydra_session", "abcd")
 
 	header, challenge, err := c.InterceptHydraUserConsent(consentURL, r.Header)
-	if !assert.Nil(t, err) {
-		t.Fatalf("AcceptHydraLogin failed %s", err)
-	}
+	require.NoError(t, err)
 
 	assert.Equal(t, consentChallenge, challenge)
 	assert.Contains(t, header.Get("Set-Cookie"), hydraPublicHostCookie)
@@ -518,10 +499,7 @@ func TestAcceptConsent(t *testing.T) {
 	}
 
 	consentResp, err := c.AcceptConsent(context.Background(), hydraAdminClient.consentChallenge)
-	if !assert.Nil(t, err) {
-		t.Fatalf("Failed to accept consent %s", err)
-	}
-
+	require.NoError(t, err)
 	assert.Equal(t, redirectURL, *consentResp.RedirectTo)
 }
 
@@ -560,17 +538,15 @@ func TestHandleLogin(t *testing.T) {
 
 	cookieStore := sessions.NewCookieStore([]byte("pair"))
 	session, err := cookieStore.New(req, IDProviderSessionKey)
-	if !assert.Nil(t, err) {
-		t.Fatalf("Failed to create session %v", err)
-	}
+	require.NoError(t, err)
+
 	session.Values[HydraLoginStateKey] = hydraLoginState
 
 	w := httptest.NewRecorder()
 
 	err = c.HandleLogin(session, w, req)
-	if !assert.Nil(t, err) {
-		t.Fatalf("Failed to redirect to login %v", err)
-	}
+	require.NoError(t, err)
+
 	resp := w.Result()
 	// Verify the call redirected the writer.
 	assert.Equal(t, http.StatusFound, resp.StatusCode)
@@ -606,22 +582,18 @@ func TestHandleLoginPerformsRedirects(t *testing.T) {
 
 	cookieStore := sessions.NewCookieStore([]byte("pair"))
 	session, err := cookieStore.New(req, IDProviderSessionKey)
-	if !assert.Nil(t, err) {
-		t.Fatalf("Failed to create session %v", err)
-	}
+	require.NoError(t, err)
+
 	session.Values[HydraLoginStateKey] = "state2"
 	w := httptest.NewRecorder()
 	err = c.HandleLogin(session, w, req)
-	if !assert.Nil(t, err) {
-		t.Fatalf("Failed to redirect to login %v", err)
-	}
+	require.NoError(t, err)
 
 	resp := w.Result()
 	assert.Equal(t, http.StatusFound, w.Code)
 	loginURL, err := c.kratosLoginURL("")
-	if !assert.Nil(t, err) {
-		t.Fatalf("Failed to create loginURL %v", err)
-	}
+	require.NoError(t, err)
+
 	assert.Equal(t, stripQuery(t, loginURL), stripQuery(t, getRedirectURL(t, resp)))
 
 	// Performs login when no state in query.
@@ -630,9 +602,7 @@ func TestHandleLoginPerformsRedirects(t *testing.T) {
 
 	w = httptest.NewRecorder()
 	err = c.HandleLogin(session, w, req)
-	if !assert.Nil(t, err) {
-		t.Fatalf("Failed to redirect to login %v", err)
-	}
+	require.NoError(t, err)
 
 	resp = w.Result()
 	assert.Equal(t, http.StatusFound, w.Code)
@@ -691,16 +661,11 @@ func TestManageUserInfo(t *testing.T) {
 	assert.NoError(t, err)
 
 	userID, err := c.GetUserIDFromToken(context.Background(), token)
-	if !assert.Nil(t, err) {
-		t.Fatalf("Failed to GetUserIDFromToken %v", err)
-	}
-
+	require.NoError(t, err)
 	assert.Equal(t, userID, plUserID)
 
 	userInfo, err := c.GetUserInfo(context.Background(), userID)
-	if !assert.Nil(t, err) {
-		t.Fatalf("Failed to GetUserIDFromToken %v", err)
-	}
+	require.NoError(t, err)
 
 	assert.Equal(t, userInfo.Email, email)
 	assert.Equal(t, userInfo.PLUserID, plUserID)

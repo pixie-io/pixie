@@ -225,7 +225,7 @@ func TestServer_GetArtifactList(t *testing.T) {
 			if tc.err != nil {
 				assert.Equal(t, status.Code(err), status.Code(tc.err))
 			} else {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, resp, tc.expectedResp)
 			}
 		})
@@ -306,11 +306,11 @@ func TestServer_GetDownloadLink(t *testing.T) {
 				assert.Equal(t, status.Code(err), tc.errCode)
 				assert.Nil(t, resp)
 			} else {
-				require.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, resp.Url, "the-url")
 
 				ts, err := types.TimestampFromProto(resp.ValidUntil)
-				require.Nil(t, err)
+				require.NoError(t, err)
 				assert.True(t, time.Until(ts) > 0)
 				assert.Equal(t, resp.Url, tc.expectedResp.Url)
 				assert.Equal(t, resp.SHA256, tc.expectedResp.SHA256)

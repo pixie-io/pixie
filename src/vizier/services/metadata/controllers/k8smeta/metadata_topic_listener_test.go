@@ -7,6 +7,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
@@ -102,7 +103,7 @@ func TestMetadataTopicListener_GetUpdatesInBatches(t *testing.T) {
 			assert.NoError(t, err)
 
 			batches, firstAvailable, lastAvailable, err := mdTL.getUpdatesInBatches(test.firstAvailable, test.lastAvailable+1, "127.0.0.1")
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, test.expectedNumBatches, len(batches))
 			assert.Equal(t, test.firstAvailable, firstAvailable)
 			assert.Equal(t, test.lastAvailable, lastAvailable)
@@ -163,12 +164,12 @@ func TestMetadataTopicListener_ProcessAgentMessage(t *testing.T) {
 		},
 	}
 	b, err := req.Marshal()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	natsMsg := nats.Msg{}
 	natsMsg.Data = b
 	err = mdTL.processAgentMessage(&natsMsg)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, 4, len(sentUpdates))
 	// Check first/last available set on all sent batches, and that updates are included.

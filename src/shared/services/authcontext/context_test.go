@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
@@ -21,7 +22,7 @@ func TestSessionCtx_UseJWTAuth(t *testing.T) {
 
 	ctx := authcontext.New()
 	err := ctx.UseJWTAuth("signing_key", token)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, testingutils.TestUserID, ctx.Claims.Subject)
 	assert.Equal(t, "test@test.com", ctx.Claims.GetUserClaims().Email)
@@ -32,7 +33,7 @@ func TestSessionCtx_ValidClaims(t *testing.T) {
 
 	ctx := authcontext.New()
 	err := ctx.UseJWTAuth("signing_key", token)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.True(t, ctx.ValidClaims())
 }
@@ -43,7 +44,7 @@ func TestSessionCtx_ValidClaims(t *testing.T) {
 //
 //	ctx := authcontext.New()
 //	err := ctx.UseJWTAuth("signing_key", token)
-//	assert.Nil(t, err)
+//	require.NoError(t, err)
 //
 //	ctx.Claims.ExpiresAt = time.Now().Add(-1 * time.Second).Unix()
 //	assert.False(t, ctx.ValidUser())

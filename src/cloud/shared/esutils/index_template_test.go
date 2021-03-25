@@ -13,7 +13,7 @@ import (
 
 func cleanupTemplate(t *testing.T, templateName string) {
 	resp, err := elasticClient.IndexDeleteTemplate(templateName).Do(context.Background())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.True(t, resp.Acknowledged)
 }
 
@@ -74,7 +74,7 @@ func TestIndexTemplateMigrate(t *testing.T) {
 				err := esutils.NewIndexTemplate(elasticClient, tc.templateName).
 					AssociateRolloverPolicy(tc.createBeforeConfig.policyName, tc.createBeforeConfig.aliasName).
 					Migrate(context.Background())
-				require.Nil(t, err)
+				require.NoError(t, err)
 			}
 
 			expectedTemplate := esutils.NewIndexTemplate(elasticClient, tc.templateName).
@@ -84,17 +84,17 @@ func TestIndexTemplateMigrate(t *testing.T) {
 				require.NotNil(t, err)
 				return
 			}
-			require.Nil(t, err)
+			require.NoError(t, err)
 			// Only cleanup if the creation was successful.
 			defer cleanupTemplate(t, tc.templateName)
 
 			respMap, err := elasticClient.IndexGetTemplate(tc.templateName).Do(context.Background())
-			require.Nil(t, err)
+			require.NoError(t, err)
 			resp, ok := respMap[tc.templateName]
 			require.True(t, ok)
 
 			respStr, err := json.Marshal(resp)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			actualTemplate := esutils.NewIndexTemplate(elasticClient, tc.templateName).FromJSONString(string(respStr))
 

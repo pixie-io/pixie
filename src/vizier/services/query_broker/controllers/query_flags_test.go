@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
 )
@@ -44,7 +45,7 @@ const nonexistentFlag = `
 func TestParseQueryFlags_WithFlag(t *testing.T) {
 	qf, err := controllers.ParseQueryFlags(validQueryWithFlag)
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, qf)
 
 	val := qf.GetBool("analyze")
@@ -60,7 +61,7 @@ func TestParseQueryFlags_WithFlag(t *testing.T) {
 func TestParseQueryFlags_NoFlag(t *testing.T) {
 	qf, err := controllers.ParseQueryFlags(validQueryWithoutFlag)
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, qf)
 
 	val := qf.GetBool("analyze")
@@ -90,7 +91,7 @@ func TestParseQueryFlags_InvalidFlag(t *testing.T) {
 func TestParseQueryFlags_PlanOptions(t *testing.T) {
 	qf, err := controllers.ParseQueryFlags(validQueryWithFlag)
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, qf)
 
 	options := qf.GetPlanOptions()

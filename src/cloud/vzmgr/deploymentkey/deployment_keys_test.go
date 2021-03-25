@@ -12,6 +12,7 @@ import (
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -86,12 +87,12 @@ func TestDeploymentKeyService_CreateDeploymentKey(t *testing.T) {
 	ctx := createTestContext()
 	svc := New(db, testDBKey)
 	resp, err := svc.Create(ctx, &vzmgrpb.CreateDeploymentKeyRequest{Desc: "this is a key"})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 
 	// Check if time is reasonable.
 	ts, err := types.TimestampFromProto(resp.CreatedAt)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	diff := time.Since(ts).Milliseconds()
 	if diff < 0 {
@@ -110,7 +111,7 @@ func TestDeploymentKeyService_ListDeploymentKeys(t *testing.T) {
 	ctx := createTestContext()
 	svc := New(db, testDBKey)
 	resp, err := svc.List(ctx, &vzmgrpb.ListDeploymentKeyRequest{})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, 2, len(resp.Keys))
 	assert.Equal(t, testKey1ID, utils.UUIDFromProtoOrNil(resp.Keys[0].ID))
@@ -122,7 +123,7 @@ func TestDeploymentKeyService_ListDeploymentKeys(t *testing.T) {
 
 	// Check that time looks reasonable.
 	ts, err := types.TimestampFromProto(resp.Keys[0].CreatedAt)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	diff := time.Since(ts).Milliseconds()
 	if diff < 0 {
@@ -153,13 +154,13 @@ func TestDeploymentKeyService_Get(t *testing.T) {
 		ID: utils.ProtoFromUUID(testKey1ID),
 	})
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 
 	assert.Equal(t, "key1", resp.Key.Key)
 	// Check if time is reasonable.
 	ts, err := types.TimestampFromProto(resp.Key.CreatedAt)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	diff := time.Since(ts).Milliseconds()
 	if diff < 0 {
@@ -208,7 +209,7 @@ func TestDeploymentKeyService_Delete(t *testing.T) {
 
 	u := utils.ProtoFromUUID(testKey1ID)
 	resp, err := svc.Delete(ctx, u)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, resp)
 
 	_, err = svc.Get(ctx, &vzmgrpb.GetDeploymentKeyRequest{
@@ -234,7 +235,7 @@ func TestDeploymentKeyService_Delete_UnownedKey(t *testing.T) {
 	err = db.QueryRow(`SELECT PGP_SYM_DECRYPT(key::bytea, $1) from vizier_deployment_keys where id=$2`,
 		testDBKey, testNonAuthUserKeyID).
 		Scan(&key)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "key2", key)
 }
 
@@ -258,7 +259,7 @@ func TestService_FetchOrgUserIDUsingDeploymentKey(t *testing.T) {
 	svc := New(db, testDBKey)
 
 	orgID, userID, err := svc.FetchOrgUserIDUsingDeploymentKey(ctx, "key1")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, testAuthOrgID, orgID)
 	assert.Equal(t, testAuthUserID, userID)
 }

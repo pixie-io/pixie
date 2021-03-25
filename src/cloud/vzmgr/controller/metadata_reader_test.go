@@ -12,6 +12,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/stan.go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/controller"
@@ -211,10 +212,10 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 				mdSub, err := nc.Subscribe(vzshard.C2VTopic("MetadataRequest", vzID), func(msg *nats.Msg) {
 					c2vMsg := &cvmsgspb.C2VMessage{}
 					err := proto.Unmarshal(msg.Data, c2vMsg)
-					assert.Nil(t, err)
+					require.NoError(t, err)
 					req := &metadatapb.MissingK8SMetadataRequest{}
 					err = types.UnmarshalAny(c2vMsg.Msg, req)
-					assert.Nil(t, err)
+					require.NoError(t, err)
 					if len(test.missingMetadataCalls) <= batch {
 						assert.FailNow(t, "unexpected missingmetadatarequest call", req)
 					}
@@ -226,18 +227,18 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 					// Send response.
 					for _, r := range test.missingMetadataCalls[batch].responses {
 						anyUpdates, err := types.MarshalAny(r)
-						assert.Nil(t, err)
+						require.NoError(t, err)
 						v2cMsg := cvmsgspb.V2CMessage{
 							Msg: anyUpdates,
 						}
 						b, err := v2cMsg.Marshal()
-						assert.Nil(t, err)
+						require.NoError(t, err)
 						nc.Publish(vzshard.V2CTopic(responseTopic, vzID), b)
 					}
 
 					batch++
 				})
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				defer mdSub.Unsubscribe()
 			}
 
@@ -254,12 +255,12 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 				for _, update := range test.stanMetadataUpdates {
 					// Publish update to STAN channel.
 					anyInitUpdate, err := types.MarshalAny(update)
-					assert.Nil(t, err)
+					require.NoError(t, err)
 					v2cMsg := cvmsgspb.V2CMessage{
 						Msg: anyInitUpdate,
 					}
 					b, err := v2cMsg.Marshal()
-					assert.Nil(t, err)
+					require.NoError(t, err)
 
 					sc.Publish(vzshard.V2CTopic("DurableMetadataUpdates", vzID), b)
 				}
@@ -272,7 +273,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 					case idxMessage := <-idxCh:
 						u := &metadatapb.ResourceUpdate{}
 						err := proto.Unmarshal(idxMessage.Data, u)
-						assert.Nil(t, err)
+						require.NoError(t, err)
 						assert.Equal(t, test.expectedIndexerUpdates[numUpdates].PrevResourceVersion, u.PrevResourceVersion)
 						numUpdates++
 					case <-time.After(2 * time.Second):

@@ -13,6 +13,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/test/bufconn"
@@ -205,7 +206,7 @@ func TestPassThroughProxy(t *testing.T) {
 			client := public_vizierapipb.NewVizierServiceClient(ts.conn)
 
 			s, err := ptproxy.NewPassThroughProxy(ts.nc, client)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			go s.Run()
 
 			// Subscribe to reply channel.
@@ -223,15 +224,15 @@ func TestPassThroughProxy(t *testing.T) {
 				},
 			}
 			reqAnyMsg, err := types.MarshalAny(sr)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			c2vMsg := &cvmsgspb.C2VMessage{
 				Msg: reqAnyMsg,
 			}
 			b, err := c2vMsg.Marshal()
-			assert.Nil(t, err)
+			require.NoError(t, err)
 
 			err = ts.nc.Publish("c2v.VizierPassthroughRequest", b)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 
 			numResp := 0
 			for numResp < len(test.expectedResps) {
@@ -239,10 +240,10 @@ func TestPassThroughProxy(t *testing.T) {
 				case msg := <-replyCh:
 					v2cMsg := &cvmsgspb.V2CMessage{}
 					err := proto.Unmarshal(msg.Data, v2cMsg)
-					assert.Nil(t, err)
+					require.NoError(t, err)
 					resp := &cvmsgspb.V2CAPIStreamResponse{}
 					err = types.UnmarshalAny(v2cMsg.Msg, resp)
-					assert.Nil(t, err)
+					require.NoError(t, err)
 					assert.Equal(t, test.expectedResps[numResp], resp)
 					numResp++
 				case <-time.After(defaultTimeout):
@@ -262,15 +263,15 @@ func TestPassThroughProxy(t *testing.T) {
 				},
 			}
 			reqAnyMsg, err = types.MarshalAny(sr)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			c2vMsg = &cvmsgspb.C2VMessage{
 				Msg: reqAnyMsg,
 			}
 			b, err = c2vMsg.Marshal()
-			assert.Nil(t, err)
+			require.NoError(t, err)
 
 			err = ts.nc.Publish("c2v.VizierPassthroughRequest", b)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 
 			cancelResp := &cvmsgspb.V2CAPIStreamResponse{
 				RequestID: test.requestID,
@@ -285,10 +286,10 @@ func TestPassThroughProxy(t *testing.T) {
 			case msg := <-replyCh:
 				v2cMsg := &cvmsgspb.V2CMessage{}
 				err := proto.Unmarshal(msg.Data, v2cMsg)
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				resp := &cvmsgspb.V2CAPIStreamResponse{}
 				err = types.UnmarshalAny(v2cMsg.Msg, resp)
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, cancelResp, resp)
 			case <-time.After(defaultTimeout):
 				t.Fatal("Timed out")

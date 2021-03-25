@@ -7,6 +7,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/carnot/goplanner"
 	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
@@ -104,18 +105,15 @@ func TestPlanner_Simple(t *testing.T) {
 	// Create the compiler.
 	var udfInfoPb udfspb.UDFInfo
 	b, err := funcs.Asset("src/vizier/funcs/data/udf.pb")
-	if !assert.Nil(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t, err)
+
 	err = proto.Unmarshal(b, &udfInfoPb)
-	if !assert.Nil(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t, err)
+
 	c, err := goplanner.New(&udfInfoPb)
-	if !assert.Nil(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t, err)
 	defer c.Free()
+
 	// Pass the relation proto, table and query to the compilation.
 	query := "import px\ndf = px.DataFrame(table='table1')\npx.display(df, 'out')"
 	plannerStatePB := new(distributedpb.LogicalPlannerState)
@@ -177,10 +175,9 @@ func TestPlanner_Simple(t *testing.T) {
 func TestPlanner_MissingTable(t *testing.T) {
 	// Create the compiler.
 	c, err := goplanner.New(&udfspb.UDFInfo{})
-	if !assert.Nil(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t, err)
 	defer c.Free()
+
 	// Pass the relation proto, table and query to the compilation.
 	query := "import px\ndf = px.DataFrame(table='bad_table')\npx.display(df, 'out')"
 	plannerStatePB := new(distributedpb.LogicalPlannerState)
@@ -219,10 +216,9 @@ func TestPlanner_MissingTable(t *testing.T) {
 func TestPlanner_EmptyString(t *testing.T) {
 	// Create the compiler.
 	c, err := goplanner.New(&udfspb.UDFInfo{})
-	if !assert.Nil(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t, err)
 	defer c.Free()
+
 	// Empty string should yield a status error not a CHECK failure in cgo_export.
 	query := ""
 	plannerStatePB := new(distributedpb.LogicalPlannerState)
@@ -260,10 +256,9 @@ const mainFuncArgsPBStr = `
 func TestPlanner_GetMainFuncArgsSpec(t *testing.T) {
 	// Create the planner.
 	c, err := goplanner.New(&udfspb.UDFInfo{})
-	if !assert.Nil(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t, err)
 	defer c.Free()
+
 	// Note that the string can't be empty since the cgo interface treats an empty string
 	// as an error
 	queryRequestPB := &plannerpb.QueryRequest{
@@ -299,10 +294,9 @@ func TestPlanner_GetMainFuncArgsSpec(t *testing.T) {
 func TestPlanner_GetMainFuncArgsSpec_BadQuery(t *testing.T) {
 	// Create the compiler.
 	c, err := goplanner.New(&udfspb.UDFInfo{})
-	if !assert.Nil(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t, err)
 	defer c.Free()
+
 	// query doesn't have a main function so should throw error.
 	query := "import px\npx.display(px.DataFrame('http_events'))"
 	queryRequestPB := &plannerpb.QueryRequest{
@@ -393,9 +387,7 @@ fn_args_map {
 
 func TestPlanner_ExtractVisFuncsInfo(t *testing.T) {
 	c, err := goplanner.New(&udfspb.UDFInfo{})
-	if !assert.Nil(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t, err)
 	defer c.Free()
 
 	visFuncsResult, err := c.ExtractVisFuncsInfo(visFuncsQuery)
@@ -488,18 +480,15 @@ func TestPlanner_CompileRequest(t *testing.T) {
 	// Create the compiler.
 	var udfInfoPb udfspb.UDFInfo
 	b, err := funcs.Asset("src/vizier/funcs/data/udf.pb")
-	if !assert.Nil(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t, err)
+
 	err = proto.Unmarshal(b, &udfInfoPb)
-	if !assert.Nil(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t, err)
+
 	c, err := goplanner.New(&udfInfoPb)
-	if !assert.Nil(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t, err)
 	defer c.Free()
+
 	// Pass the relation proto, table and query to the compilation.
 	plannerStatePB := new(distributedpb.LogicalPlannerState)
 	proto.UnmarshalText(plannerStatePBStr, plannerStatePB)

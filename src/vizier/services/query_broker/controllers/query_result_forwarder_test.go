@@ -10,6 +10,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
@@ -166,7 +167,7 @@ func TestStreamResultsSimple(t *testing.T) {
 	assert.Nil(t, f.ForwardQueryResult(in3))
 	wg.Wait()
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 4, len(results))
 
 	for _, result := range results {
@@ -291,7 +292,7 @@ func TestStreamResultsClientContextCancel(t *testing.T) {
 	f.ForwardQueryResult(in3)
 	wg.Wait()
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }
 
 func TestStreamResultsQueryPlan(t *testing.T) {
@@ -351,7 +352,7 @@ func TestStreamResultsQueryPlan(t *testing.T) {
 	assert.Nil(t, f.ForwardQueryResult(in3))
 	wg.Wait()
 
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 5, len(results))
 
 	for _, result := range results {

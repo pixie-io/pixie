@@ -8,6 +8,7 @@ import (
 
 	"github.com/olivere/elastic/v7"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/cloud/jobs/elastic_migration/controller"
 	"pixielabs.ai/pixielabs/src/cloud/jobs/elastic_migration/schema"
@@ -35,10 +36,10 @@ func TestServer_PrepareOnNonexistantIndex(t *testing.T) {
 
 	im := controller.NewIndexManager(elasticClient)
 	err := im.PrepareIndex(indexName, string(indexMapping))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	response, err := elasticClient.IndexGet(indexName).Do(context.TODO())
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	// Check to make sure the index is actually there.
 	_, ok := response[indexName]
 	assert.True(t, ok)
@@ -52,7 +53,7 @@ func TestServer_PrepareOnExistingIndex(t *testing.T) {
 	im := controller.NewIndexManager(elasticClient)
 	// On the first creation, we don't have an issue.
 	err := im.PrepareIndex(indexName, string(indexMapping))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	// On the second creation we do have an issue.
 	err = im.PrepareIndex(indexName, string(indexMapping))
 	assert.EqualError(t, err, "index 'test2' already exists, cannot prepare it")

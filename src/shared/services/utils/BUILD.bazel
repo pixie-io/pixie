@@ -20,5 +20,6 @@ go_test(
         "//src/shared/services/proto:jwt_go_proto",
         "@com_github_dgrijalva_jwt_go//:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
+        "@com_github_stretchr_testify//require:go_default_library",
     ],
 )

@@ -12,6 +12,7 @@ import (
 	"github.com/cockroachdb/pebble/vfs"
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
@@ -62,13 +63,13 @@ func TestDatastore_AddFullResourceUpdate(t *testing.T) {
 	}
 
 	err := mds.AddFullResourceUpdate(int64(15), update)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	savedResourceUpdate, err := db.Get(path.Join(fullResourceUpdatePrefix, "00000000000000000015"))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	savedResourceUpdatePb := &storepb.K8SResource{}
 	err = proto.Unmarshal(savedResourceUpdate, savedResourceUpdatePb)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, update, savedResourceUpdatePb)
 }
 
@@ -98,7 +99,7 @@ func TestDatastore_FetchFullResourceUpdates(t *testing.T) {
 		},
 	}
 	val, err := update1.Marshal()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	db.Set(path.Join(fullResourceUpdatePrefix, fmt.Sprintf("%020d", 1)), string(val))
 
 	update2 := &storepb.K8SResource{
@@ -123,12 +124,12 @@ func TestDatastore_FetchFullResourceUpdates(t *testing.T) {
 		},
 	}
 	val, err = update2.Marshal()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	db.Set(path.Join(fullResourceUpdatePrefix, fmt.Sprintf("%020d", 2)), string(val))
 
 	updates, err := mds.FetchFullResourceUpdates(int64(1), int64(3))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 2, len(updates))
 	assert.Equal(t, update1, updates[0])
 	assert.Equal(t, update2, updates[1])
@@ -153,13 +154,13 @@ func TestDatastore_AddResourceUpdateForTopic(t *testing.T) {
 	}
 
 	err := mds.AddResourceUpdateForTopic(int64(15), "127.0.0.1", update)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	savedResourceUpdate, err := db.Get(path.Join(topicResourceUpdatePrefix, "127.0.0.1", "00000000000000000015"))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	savedResourceUpdatePb := &storepb.K8SResourceUpdate{}
 	err = proto.Unmarshal(savedResourceUpdate, savedResourceUpdatePb)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, update, savedResourceUpdatePb)
 }
 
@@ -182,13 +183,13 @@ func TestDatastore_AddResourceUpdate(t *testing.T) {
 	}
 
 	err := mds.AddResourceUpdate(int64(15), update)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	savedResourceUpdate, err := db.Get(path.Join(topicResourceUpdatePrefix, unscopedTopic, "00000000000000000015"))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	savedResourceUpdatePb := &storepb.K8SResourceUpdate{}
 	err = proto.Unmarshal(savedResourceUpdate, savedResourceUpdatePb)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, update, savedResourceUpdatePb)
 }
 
@@ -256,7 +257,7 @@ func TestDatastore_FetchResourceUpdates(t *testing.T) {
 					},
 				}
 				val, err := update.Marshal()
-				assert.Nil(t, err)
+				require.NoError(t, err)
 
 				db.Set(path.Join(topicResourceUpdatePrefix, "127.0.0.1", fmt.Sprintf("%020d", u)), string(val))
 			}
@@ -267,13 +268,13 @@ func TestDatastore_FetchResourceUpdates(t *testing.T) {
 					},
 				}
 				val, err := update.Marshal()
-				assert.Nil(t, err)
+				require.NoError(t, err)
 
 				db.Set(path.Join(topicResourceUpdatePrefix, unscopedTopic, fmt.Sprintf("%020d", u)), string(val))
 			}
 
 			updates, err := mds.FetchResourceUpdates("127.0.0.1", int64(tc.from), int64(tc.to))
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, len(tc.fetchedVersions), len(updates))
 
 			for i, v := range tc.fetchedVersions {
@@ -289,7 +290,7 @@ func TestDatastore_GetUpdateVersion(t *testing.T) {
 
 	db.Set(path.Join(topicVersionPrefix, "127.0.0.1"), "57")
 	version, err := mds.GetUpdateVersion("127.0.0.1")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(57), version)
 }
 
@@ -298,11 +299,11 @@ func TestDatastore_SetUpdateVersion(t *testing.T) {
 	defer cleanup()
 
 	err := mds.SetUpdateVersion("127.0.0.1", 123)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	savedVersion, err := db.Get(path.Join(topicVersionPrefix, "127.0.0.1"))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	i, err := strconv.ParseInt(string(savedVersion), 10, 64)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, int64(123), i)
 }

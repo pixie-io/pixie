@@ -21,5 +21,6 @@ go_test(
     deps = [
         "//src/carnot/docspb:docs_pl_go_proto",
         "@com_github_stretchr_testify//assert:go_default_library",
+        "@com_github_stretchr_testify//require:go_default_library",
     ],
 )

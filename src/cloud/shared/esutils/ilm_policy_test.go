@@ -17,7 +17,7 @@ func cleanupPolicy(t *testing.T, policyName string) {
 	if err != nil {
 		t.Logf("ErrorDetails: %v", err.(*elastic.Error).Details)
 	}
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.True(t, resp.Acknowledged)
 }
 
@@ -73,7 +73,7 @@ func TestILMPolicyMigrate(t *testing.T) {
 					Rollover(&tc.createBeforeConfig.maxIndexSize, nil, nil).
 					DeleteAfter(tc.createBeforeConfig.timeBeforeDelete).
 					Migrate(context.Background())
-				require.Nil(t, err)
+				require.NoError(t, err)
 			}
 
 			expectedPolicy := esutils.NewILMPolicy(elasticClient, tc.policyName).
@@ -84,17 +84,17 @@ func TestILMPolicyMigrate(t *testing.T) {
 				require.NotNil(t, err)
 				return
 			}
-			require.Nil(t, err)
+			require.NoError(t, err)
 			// Only cleanup if the creation was successful.
 			defer cleanupPolicy(t, tc.policyName)
 
 			policyMap, err := elasticClient.XPackIlmGetLifecycle().Policy(tc.policyName).Do(context.Background())
-			require.Nil(t, err)
+			require.NoError(t, err)
 			policyResp, ok := policyMap[tc.policyName]
 			require.True(t, ok)
 
 			policyRespBytes, err := json.Marshal(policyResp)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			actualPolicy := esutils.NewILMPolicy(elasticClient, tc.policyName).FromJSONString(string(policyRespBytes))
 

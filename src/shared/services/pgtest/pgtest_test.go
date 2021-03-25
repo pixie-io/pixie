@@ -12,7 +12,7 @@ import (
 func TestSetupTestDB(t *testing.T) {
 	db, teardown, err := pgtest.SetupTestDB(nil)
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, db)
 	require.NotNil(t, teardown)
 	assert.Nil(t, db.Ping())

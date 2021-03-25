@@ -1,11 +1,11 @@
 package docstring
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/carnot/docspb"
 )
@@ -215,9 +215,7 @@ const docIndentedAndArgsBadIndent = `
 func TestParseDocstring(t *testing.T) {
 	// DataFrame documentation.
 	parsedDoc, err := parseDocstring(dataFrameDoc)
-	if !assert.Nil(t, err) {
-		t.Fatal()
-	}
+	require.NoError(t, err)
 
 	assert.ElementsMatch(t, parsedDoc.function.ReturnType.Types, []string{"DataFrame"})
 	assert.Regexp(t, "table loaded as a DataFrame", parsedDoc.function.ReturnType.Desc)
@@ -241,9 +239,7 @@ func TestParseDocstring(t *testing.T) {
 
 	// Aggregate document with kwargs.
 	parsedDoc, err = parseDocstring(aggDoc)
-	if !assert.Nil(t, err) {
-		t.Fatal()
-	}
+	require.NoError(t, err)
 	if !assert.Equal(t, 1, len(parsedDoc.function.Args)) {
 		t.Fatal()
 	}
@@ -253,9 +249,7 @@ func TestParseDocstring(t *testing.T) {
 
 	// Return documentation.
 	parsedDoc, err = parseDocstring(docReturnBeforeArgs)
-	if !assert.Nil(t, err) {
-		t.Fatal()
-	}
+	require.NoError(t, err)
 
 	assert.ElementsMatch(t, parsedDoc.function.ReturnType.Types, []string{"DataFrame"})
 	assert.Regexp(t, "containing the memory source", parsedDoc.function.ReturnType.Desc)
@@ -268,9 +262,8 @@ func TestParseDocstring(t *testing.T) {
 
 	// Drop documentation.
 	parsedDoc, err = parseDocstring(docDrop)
-	if !assert.Nil(t, err) {
-		t.Fatal()
-	}
+	require.NoError(t, err)
+
 	assert.ElementsMatch(t, parsedDoc.function.ReturnType.Types, []string{"DataFrame"})
 	assert.Regexp(t, "columns removed", parsedDoc.function.ReturnType.Desc)
 
@@ -280,9 +273,7 @@ func TestParseDocstring(t *testing.T) {
 	assert.Equal(t, parsedDoc.function.Args[0].Ident, "columns")
 
 	parsedDoc, err = parseDocstring(longReturnDesc)
-	if !assert.Nil(t, err) {
-		t.Fatal()
-	}
+	require.NoError(t, err)
 	assert.Regexp(t, "More documentation here.", parsedDoc.function.ReturnType.Desc)
 }
 
@@ -296,11 +287,11 @@ func TestFailures(t *testing.T) {
 	assert.Regexp(t, "Expected arg description", err)
 
 	parsedDoc, err := parseDocstring(docHeaderMashUp1)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 0, len(parsedDoc.function.Args))
 
 	parsedDoc, err = parseDocstring(docHeaderMashUp2)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, 0, len(parsedDoc.function.Args))
 
@@ -331,9 +322,7 @@ func TestParseAllDocStrings(t *testing.T) {
 	}
 
 	structDocs, err := ParseAllDocStrings(internalDoc)
-	if !assert.Nil(t, err) {
-		t.Fatal()
-	}
+	require.NoError(t, err)
 	if !assert.Len(t, structDocs.MutationDocs, 1) {
 		t.Fatal()
 	}
@@ -356,17 +345,15 @@ func TestParseAllDocStrings(t *testing.T) {
 
 func TestGetTabChar(t *testing.T) {
 	tabChar, err := getTabChar(dataFrameDoc)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "\t", tabChar)
 
 	tabChar, err = getTabChar(twoSpaceDataFrameDoc)
-	if !assert.Nil(t, err) {
-		fmt.Println(err.Error())
-	}
+	require.NoError(t, err)
 	assert.Equal(t, "  ", tabChar)
 
 	tabChar, err = getTabChar(fourSpaceDataFrameDoc)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "    ", tabChar)
 
 	_, err = getTabChar(mismatchTabsDataFrameDoc)

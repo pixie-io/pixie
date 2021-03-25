@@ -208,7 +208,7 @@ func TestServer_GetUser(t *testing.T) {
 
 	resp, err := s.GetUser(context.Background(), utils.ProtoFromUUID(userUUID))
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, resp.ID, utils.ProtoFromUUID(userUUID))
 	assert.Equal(t, resp.OrgID, utils.ProtoFromUUID(orgUUID))
 	assert.Equal(t, resp.Username, "foobar")
@@ -262,7 +262,7 @@ func TestServer_GetUserByEmail(t *testing.T) {
 		context.Background(),
 		&profile.GetUserByEmailRequest{Email: "foo@bar.com"})
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, resp.ID, utils.ProtoFromUUID(userUUID))
 	assert.Equal(t, resp.Email, "foo@bar.com")
 	assert.Equal(t, resp.OrgID, utils.ProtoFromUUID(orgUUID))
@@ -370,7 +370,7 @@ func TestServer_CreateOrgAndUser_SuccessCases(t *testing.T) {
 				CreateUserAndOrg(exOrg, exUserInfo).
 				Return(testOrgUUID, testUUID, nil)
 			orgResp, err := s.CreateOrgAndUser(context.Background(), tc.req)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, orgResp, tc.resp)
 		})
 	}
@@ -554,7 +554,7 @@ func TestServer_GetOrg(t *testing.T) {
 
 	resp, err := s.GetOrg(context.Background(), utils.ProtoFromUUID(orgUUID))
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, resp.ID, utils.ProtoFromUUID(orgUUID))
 	assert.Equal(t, resp.DomainName, "hulu.com")
 	assert.Equal(t, resp.OrgName, "hulu")
@@ -588,7 +588,7 @@ func TestServer_GetOrgs(t *testing.T) {
 
 	resp, err := s.GetOrgs(context.Background(), &profile.GetOrgsRequest{})
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 2, len(resp.Orgs))
 	assert.Equal(t, utils.ProtoFromUUID(orgUUID), resp.Orgs[0].ID)
 	assert.Equal(t, "hulu.com", resp.Orgs[0].DomainName)
@@ -640,7 +640,7 @@ func TestServer_GetOrgByDomain(t *testing.T) {
 		context.Background(),
 		&profile.GetOrgByDomainRequest{DomainName: "hulu.com"})
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, resp.ID, utils.ProtoFromUUID(orgUUID))
 	assert.Equal(t, resp.DomainName, "hulu.com")
 	assert.Equal(t, resp.OrgName, "hulu")
@@ -686,7 +686,7 @@ func TestServer_DeleteOrgAndUsers(t *testing.T) {
 	d.EXPECT().DeleteOrgAndUsers(orgUUID).Return(nil)
 
 	err := s.DeleteOrgAndUsers(context.Background(), utils.ProtoFromUUID(orgUUID))
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }
 
 func TestServer_DeleteOrgAndUsers_MissingOrg(t *testing.T) {
@@ -744,7 +744,7 @@ func TestServer_UpdateUser(t *testing.T) {
 		context.Background(),
 		&profile.UpdateUserRequest{ID: utils.ProtoFromUUID(userID), ProfilePicture: "new"})
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, resp.ID, utils.ProtoFromUUID(userID))
 	assert.Equal(t, resp.ProfilePicture, "new")
 }
@@ -766,7 +766,7 @@ func TestServer_GetUserSettings(t *testing.T) {
 		ID:   utils.ProtoFromUUID(userID),
 		Keys: []string{"test", "another_key"},
 	})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, []string{"test", "another_key"}, resp.Keys)
 	assert.Equal(t, []string{"a", "b"}, resp.Values)
 }
@@ -825,7 +825,7 @@ func TestServer_UpdateUserSettings(t *testing.T) {
 				assert.NotNil(t, err)
 				assert.Equal(t, tc.expectedCode, status.Code(err))
 			} else {
-				assert.Nil(t, err)
+				require.NoError(t, err)
 				assert.NotNil(t, resp)
 				assert.Equal(t, true, resp.OK)
 			}

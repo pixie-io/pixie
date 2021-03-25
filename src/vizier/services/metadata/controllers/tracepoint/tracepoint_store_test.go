@@ -10,6 +10,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
@@ -46,13 +47,13 @@ func TestTracepointStore_UpsertTracepoint(t *testing.T) {
 	}
 
 	err := ts.UpsertTracepoint(tpID, s1)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	savedTracepoint, err := db.Get("/tracepoint/" + tpID.String())
 	assert.Nil(t, err)
 	savedTracepointPb := &storepb.TracepointInfo{}
 	err = proto.Unmarshal(savedTracepoint, savedTracepointPb)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, s1, savedTracepointPb)
 }
 
@@ -73,7 +74,7 @@ func TestTracepointStore_GetTracepoint(t *testing.T) {
 	db.Set("/tracepoint/"+tpID.String(), string(s1Text))
 
 	tracepoint, err := ts.GetTracepoint(tpID)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, tracepoint)
 
 	assert.Equal(t, s1.ID, tracepoint.ID)
@@ -106,7 +107,7 @@ func TestTracepointStore_GetTracepoints(t *testing.T) {
 	db.Set("/tracepoint/"+s2ID.String(), string(s2Text))
 
 	tracepoints, err := ts.GetTracepoints()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 2, len(tracepoints))
 
 	ids := make([]string, len(tracepoints))
@@ -147,7 +148,7 @@ func TestTracepointStore_GetTracepointsForIDs(t *testing.T) {
 	db.Set("/tracepoint/"+s2ID.String(), string(s2Text))
 
 	tracepoints, err := ts.GetTracepointsForIDs([]uuid.UUID{s1ID, s2ID, s3ID})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 3, len(tracepoints))
 
 	ids := make([]string, len(tracepoints))
@@ -176,13 +177,13 @@ func TestTracepointStore_UpdateTracepointState(t *testing.T) {
 	}
 
 	err := ts.UpdateTracepointState(s1)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	savedTracepoint, err := db.Get("/tracepointStates/" + tpID.String() + "/" + agentID.String())
 	assert.Nil(t, err)
 	savedTracepointPb := &storepb.AgentTracepointStatus{}
 	err = proto.Unmarshal(savedTracepoint, savedTracepointPb)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, s1, savedTracepointPb)
 }
 
@@ -220,7 +221,7 @@ func TestTracepointStore_GetTracepointStates(t *testing.T) {
 	db.Set("/tracepointStates/"+tpID.String()+"/"+agentID2.String(), string(s2Text))
 
 	tracepoints, err := ts.GetTracepointStates(tpID)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 2, len(tracepoints))
 
 	agentIDs := make([]string, len(tracepoints))
@@ -239,13 +240,13 @@ func TestTracepointStore_SetTracepointWithName(t *testing.T) {
 	tpID := uuid.Must(uuid.NewV4())
 
 	err := ts.SetTracepointWithName("test", tpID)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	savedTracepoint, err := db.Get("/tracepointName/test")
 	assert.Nil(t, err)
 	savedTracepointPb := &uuidpb.UUID{}
 	err = proto.Unmarshal(savedTracepoint, savedTracepointPb)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, tpID, utils.UUIDFromProtoOrNil(savedTracepointPb))
 }
 
@@ -256,18 +257,18 @@ func TestTracepointStore_GetTracepointsWithNames(t *testing.T) {
 	tpID := uuid.Must(uuid.NewV4())
 	tracepointIDpb := utils.ProtoFromUUID(tpID)
 	val, err := tracepointIDpb.Marshal()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	tpID2 := uuid.Must(uuid.NewV4())
 	tracepointIDpb2 := utils.ProtoFromUUID(tpID2)
 	val2, err := tracepointIDpb2.Marshal()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	db.Set("/tracepointName/test", string(val))
 	db.Set("/tracepointName/test2", string(val2))
 
 	tracepoints, err := ts.GetTracepointsWithNames([]string{"test", "test2"})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 2, len(tracepoints))
 
 	tps := make([]string, len(tracepoints))
@@ -288,10 +289,10 @@ func TestTracepointStore_DeleteTracepoint(t *testing.T) {
 	db.Set("/tracepoint/"+tpID.String(), "test")
 
 	err := ts.DeleteTracepoint(tpID)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	val, err := db.Get("/tracepoint/" + tpID.String())
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, val)
 }
 
@@ -303,7 +304,7 @@ func TestTracepointStore_DeleteTracepointTTLs(t *testing.T) {
 	tpID2 := uuid.Must(uuid.NewV4())
 
 	err := ts.DeleteTracepointTTLs([]uuid.UUID{tpID, tpID2})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }
 
 func TestTracepointStore_GetTracepointTTLs(t *testing.T) {
@@ -319,7 +320,7 @@ func TestTracepointStore_GetTracepointTTLs(t *testing.T) {
 	db.Set("/tracepointTTL/invalid", "")
 
 	tracepoints, _, err := ts.GetTracepointTTLs()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, 2, len(tracepoints))
 
 	assert.Contains(t, tracepoints, s1ID)

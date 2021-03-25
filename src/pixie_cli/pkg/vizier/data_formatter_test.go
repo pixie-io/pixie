@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/vizier"
@@ -177,12 +178,12 @@ func TestQuantiles(t *testing.T) {
 		"p50": float64(-1231),
 		"p99": float64(0.000023423),
 	})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	rate2, err := json.Marshal(map[string]interface{}{
 		"p50": float64(9234234.3),
 		"p99": float64(42398243.001),
 	})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, "p50: -1231, p99: 2.3423e-05", formatter.FormatValue(0, string(rate1)))
 	assert.Equal(t, "p50: 9.23423e+06, p99: 4.23982e+07", formatter.FormatValue(0, string(rate2)))
@@ -191,12 +192,12 @@ func TestQuantiles(t *testing.T) {
 		"p50": float64(-12313),
 		"p99": float64(0.0001),
 	})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	duration2, err := json.Marshal(map[string]interface{}{
 		"p50": float64(23409234),
 		"p99": float64(234092234234),
 	})
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, "p50: -12.3 µs, p99: 0 s", formatter.FormatValue(1, string(duration1)))
 	assert.Equal(t, "p50: 23.4 ms, p99: 234 s", formatter.FormatValue(1, string(duration2)))

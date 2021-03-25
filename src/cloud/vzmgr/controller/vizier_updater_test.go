@@ -13,6 +13,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	mock_artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb/mock"
@@ -65,7 +66,7 @@ func TestUpdater_UpdateOrInstallVizier(t *testing.T) {
 	go nc.Subscribe("c2v.123e4567-e89b-12d3-a456-426655440001.VizierUpdate", func(m *nats.Msg) {
 		c2vMsg := &cvmsgspb.C2VMessage{}
 		err := proto.Unmarshal(m.Data, c2vMsg)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		resp := &cvmsgspb.UpdateOrInstallVizierRequest{}
 		err = types.UnmarshalAny(c2vMsg.Msg, resp)
 		assert.NoError(t, err)
@@ -75,24 +76,24 @@ func TestUpdater_UpdateOrInstallVizier(t *testing.T) {
 		_, err = jwt.ParseWithClaims(resp.Token, claims, func(token *jwt.Token) (interface{}, error) {
 			return []byte("jwtkey"), nil
 		})
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "cluster", claims["Scopes"].(string))
 		// Send response.
 		updateResp := &cvmsgspb.UpdateOrInstallVizierResponse{
 			UpdateStarted: true,
 		}
 		respAnyMsg, err := types.MarshalAny(updateResp)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		wrappedMsg := &cvmsgspb.V2CMessage{
 			VizierID: vizierID.String(),
 			Msg:      respAnyMsg,
 		}
 
 		b, err := wrappedMsg.Marshal()
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		topic := vzshard.V2CTopic("VizierUpdateResponse", vizierID)
 		err = nc.Publish(topic, b)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	})
 
 	mockArtifactTrackerClient.EXPECT().GetDownloadLink(
@@ -103,7 +104,7 @@ func TestUpdater_UpdateOrInstallVizier(t *testing.T) {
 		}).Return(&artifacttrackerpb.GetDownloadLinkResponse{}, nil)
 
 	_, err := updater.UpdateOrInstallVizier(vizierID, "123", false)
-	assert.Nil(t, err)
+	require.NoError(t, err)
 }
 
 func TestUpdater_VersionUpToDate(t *testing.T) {
@@ -146,7 +147,7 @@ func TestUpdater_ProcessUpdateQueue(t *testing.T) {
 	go nc.Subscribe("c2v.123e4567-e89b-12d3-a456-426655440001.VizierUpdate", func(m *nats.Msg) {
 		c2vMsg := &cvmsgspb.C2VMessage{}
 		err := proto.Unmarshal(m.Data, c2vMsg)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		resp := &cvmsgspb.UpdateOrInstallVizierRequest{}
 		err = types.UnmarshalAny(c2vMsg.Msg, resp)
 		assert.NoError(t, err)
@@ -156,24 +157,24 @@ func TestUpdater_ProcessUpdateQueue(t *testing.T) {
 		_, err = jwt.ParseWithClaims(resp.Token, claims, func(token *jwt.Token) (interface{}, error) {
 			return []byte("jwtkey"), nil
 		})
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "cluster", claims["Scopes"].(string))
 		// Send response.
 		updateResp := &cvmsgspb.UpdateOrInstallVizierResponse{
 			UpdateStarted: true,
 		}
 		respAnyMsg, err := types.MarshalAny(updateResp)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		wrappedMsg := &cvmsgspb.V2CMessage{
 			VizierID: vizierID.String(),
 			Msg:      respAnyMsg,
 		}
 
 		b, err := wrappedMsg.Marshal()
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		topic := vzshard.V2CTopic("VizierUpdateResponse", vizierID)
 		err = nc.Publish(topic, b)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 		wg.Done()
 	})
 

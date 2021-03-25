@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 )
@@ -46,7 +47,7 @@ func TestVersionCompatible(t *testing.T) {
 				assert.NotNil(t, err)
 				return
 			}
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, test.ok, ok)
 		})
 	}

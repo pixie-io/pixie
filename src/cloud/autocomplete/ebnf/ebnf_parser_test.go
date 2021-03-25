@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete/ebnf"
 )
@@ -200,7 +201,7 @@ func TestParseInput(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			cmd, err := ebnf.ParseInput(test.input)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.NotNil(t, cmd)
 			if test.expectedAction != "" {
 				assert.Equal(t, test.expectedAction, *cmd.Action)
