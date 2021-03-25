@@ -4,6 +4,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
+	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -28,10 +29,8 @@ func init() {
 
 func connectToPostgres() (*sqlx.DB, string) {
 	db := pg.MustConnectDefaultPostgresDB()
-	err := pgmigrate.PerformMigrationsUsingBindata(db, "auth_service_migrations", &pgmigrate.SchemaAssetFetcher{
-		AssetNames: schema.AssetNames,
-		Asset:      schema.Asset,
-	})
+	err := pgmigrate.PerformMigrationsUsingBindata(db, "auth_service_migrations",
+		bindata.Resource(schema.AssetNames(), schema.Asset))
 	if err != nil {
 		log.WithError(err).Fatal("Failed to apply migrations")
 	}

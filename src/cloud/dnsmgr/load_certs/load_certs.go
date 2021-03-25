@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/gofrs/uuid"
+	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -115,10 +116,8 @@ func loadCerts(db *sqlx.DB) {
 // InitDBAndLoadCerts initializes the database then loads or updates the certs.
 func InitDBAndLoadCerts() {
 	db := pg.MustConnectDefaultPostgresDB()
-	err := pgmigrate.PerformMigrationsUsingBindata(db, "dnsmgr_service_migrations", &pgmigrate.SchemaAssetFetcher{
-		AssetNames: schema.AssetNames,
-		Asset:      schema.Asset,
-	})
+	err := pgmigrate.PerformMigrationsUsingBindata(db, "dnsmgr_service_migrations",
+		bindata.Resource(schema.AssetNames(), schema.Asset))
 	if err != nil {
 		log.WithError(err).Fatal("Failed to apply migrations")
 	}

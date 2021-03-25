@@ -5,6 +5,8 @@ import (
 	"syscall"
 
 	"github.com/gogo/protobuf/types"
+	bindata "github.com/golang-migrate/migrate/source/go_bindata"
+
 	// This must be GOGO variant or the ENUMs won't work.
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/jmoiron/sqlx"
@@ -26,10 +28,8 @@ func init() {
 
 func mustLoadDB() *sqlx.DB {
 	db := pg.MustConnectDefaultPostgresDB()
-	err := pgmigrate.PerformMigrationsUsingBindata(db, "artifacts_tracker_service_migrations", &pgmigrate.SchemaAssetFetcher{
-		AssetNames: schema.AssetNames,
-		Asset:      schema.Asset,
-	})
+	err := pgmigrate.PerformMigrationsUsingBindata(db, "artifacts_tracker_service_migrations",
+		bindata.Resource(schema.AssetNames(), schema.Asset))
 	if err != nil {
 		log.WithError(err).Fatal("Failed to apply migrations")
 	}

@@ -28,10 +28,7 @@ func TestMain(m *testing.M) {
 var db *sqlx.DB
 
 func testMain(m *testing.M) error {
-	s := bindata.Resource(schema.AssetNames(), func(name string) (bytes []byte, e error) {
-		return schema.Asset(name)
-	})
-
+	s := bindata.Resource(schema.AssetNames(), schema.Asset)
 	testDB, teardown, err := pgtest.SetupTestDB(s)
 	if err != nil {
 		return fmt.Errorf("failed to start test database: %w", err)

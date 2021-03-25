@@ -5,6 +5,7 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/gofrs/uuid"
+	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -82,10 +83,8 @@ func main() {
 	}
 
 	db := pg.MustConnectDefaultPostgresDB()
-	err = pgmigrate.PerformMigrationsUsingBindata(db, "vzmgr_service_migrations", &pgmigrate.SchemaAssetFetcher{
-		AssetNames: schema.AssetNames,
-		Asset:      schema.Asset,
-	})
+	err = pgmigrate.PerformMigrationsUsingBindata(db, "vzmgr_service_migrations",
+		bindata.Resource(schema.AssetNames(), schema.Asset))
 	if err != nil {
 		log.WithError(err).Fatal("Failed to apply migrations")
 	}

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
+	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	log "github.com/sirupsen/logrus"
 
 	controllers "pixielabs.ai/pixielabs/src/cloud/project_manager/controller"
@@ -30,10 +31,8 @@ func main() {
 	healthz.RegisterDefaultChecks(mux)
 
 	db := pg.MustConnectDefaultPostgresDB()
-	err := pgmigrate.PerformMigrationsUsingBindata(db, "project_manager_service_migrations", &pgmigrate.SchemaAssetFetcher{
-		AssetNames: schema.AssetNames,
-		Asset:      schema.Asset,
-	})
+	err := pgmigrate.PerformMigrationsUsingBindata(db, "project_manager_service_migrations",
+		bindata.Resource(schema.AssetNames(), schema.Asset))
 	if err != nil {
 		log.WithError(err).Fatal("Failed to apply migrations")
 	}

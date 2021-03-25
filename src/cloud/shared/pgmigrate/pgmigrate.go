@@ -8,14 +8,8 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// SchemaAssetFetcher defines the functions needed to fetch assets.
-type SchemaAssetFetcher struct {
-	AssetNames func() []string
-	Asset      func(string) ([]byte, error)
-}
-
 // PerformMigrationsUsingBindata uses the passed in bindata assets to perform postgres DB migrations.
-func PerformMigrationsUsingBindata(db *sqlx.DB, migrationTable string, fetcher *SchemaAssetFetcher) error {
+func PerformMigrationsUsingBindata(db *sqlx.DB, migrationTable string, assetSource *bindata.AssetSource) error {
 	driver, err := postgres.WithInstance(db.DB, &postgres.Config{
 		MigrationsTable: migrationTable,
 	})
@@ -23,11 +17,7 @@ func PerformMigrationsUsingBindata(db *sqlx.DB, migrationTable string, fetcher *
 		return err
 	}
 
-	sc := bindata.Resource(fetcher.AssetNames(), func(name string) (bytes []byte, e error) {
-		return fetcher.Asset(name)
-	})
-
-	d, err := bindata.WithInstance(sc)
+	d, err := bindata.WithInstance(assetSource)
 	if err != nil {
 		return err
 	}
