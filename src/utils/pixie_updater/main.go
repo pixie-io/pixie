@@ -108,6 +108,9 @@ func main() {
 	yamls, err := yamlsutils.ExecuteTemplatedYAMLs(templatedYAMLs, &yamlsutils.YAMLTmplArguments{
 		Values: vizieryamls.VizierTmplValuesToMap(tmplValues),
 	})
+	if err != nil {
+		log.WithError(err).Fatalf("Failed to execute templates")
+	}
 	// Map from the YAML name to the YAML contents.
 	yamlMap := make(map[string]string)
 	for _, y := range yamls {

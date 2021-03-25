@@ -376,6 +376,7 @@ func TestCheckHealth_Success(t *testing.T) {
 		Return(plannerResultPB, nil)
 
 	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nil, nc, planner)
+	assert.NoError(t, err)
 	err = s.CheckHealth(context.Background())
 	// Should pass.
 	assert.Nil(t, err)
@@ -415,6 +416,7 @@ func TestCheckHealth_CompilationError(t *testing.T) {
 		Return(nil, fmt.Errorf("some compiler error"))
 
 	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nil, nc, planner)
+	assert.NoError(t, err)
 	err = s.CheckHealth(context.Background())
 	// Should not pass.
 	assert.NotNil(t, err)
@@ -462,6 +464,8 @@ func TestHealthCheck_ExecutionError(t *testing.T) {
 		Return(plannerResultPB, nil)
 
 	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nil, nc, planner)
+	assert.NoError(t, err)
+
 	err = s.CheckHealth(context.Background())
 	// Should not pass.
 	assert.NotNil(t, err)
@@ -550,6 +554,7 @@ func TestExecuteScript_Success(t *testing.T) {
 		Return(plannerResultPB, nil)
 
 	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nil, nc, planner)
+	assert.NoError(t, err)
 
 	srv := mock_public_vizierapipb.NewMockVizierService_ExecuteScriptServer(ctrl)
 	auth := authcontext.New()
@@ -628,6 +633,7 @@ func TestExecuteScript_PlannerErrorResult(t *testing.T) {
 		Return(badPlannerResultPB, nil)
 
 	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nil, nc, planner)
+	assert.NoError(t, err)
 
 	srv := mock_public_vizierapipb.NewMockVizierService_ExecuteScriptServer(ctrl)
 	auth := authcontext.New()
@@ -710,6 +716,7 @@ func TestExecuteScript_ErrorInStatusResult(t *testing.T) {
 		Return(badPlannerResultPB, nil)
 
 	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nil, nc, planner)
+	assert.NoError(t, err)
 
 	srv := mock_public_vizierapipb.NewMockVizierService_ExecuteScriptServer(ctrl)
 	auth := authcontext.New()
@@ -762,6 +769,8 @@ func TestTransferResultChunk_AgentStreamComplete(t *testing.T) {
 	}
 
 	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nil, nc, nil)
+	assert.NoError(t, err)
+
 	srv := mock_carnotpb.NewMockResultSinkService_TransferResultChunkServer(ctrl)
 
 	sv := new(schemapb.RowBatchData)
@@ -858,6 +867,8 @@ func TestTransferResultChunk_AgentClosedPrematurely(t *testing.T) {
 	}
 
 	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nil, nc, nil)
+	assert.NoError(t, err)
+
 	srv := mock_carnotpb.NewMockResultSinkService_TransferResultChunkServer(ctrl)
 
 	sv := new(schemapb.RowBatchData)
@@ -939,6 +950,8 @@ func TestTransferResultChunk_AgentStreamFailed(t *testing.T) {
 	}
 
 	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nil, nc, nil)
+	assert.NoError(t, err)
+
 	srv := mock_carnotpb.NewMockResultSinkService_TransferResultChunkServer(ctrl)
 
 	sv := new(schemapb.RowBatchData)
@@ -1015,6 +1028,8 @@ func TestTransferResultChunk_ClientStreamCancelled(t *testing.T) {
 	}
 
 	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nil, nc, nil)
+	assert.NoError(t, err)
+
 	srv := mock_carnotpb.NewMockResultSinkService_TransferResultChunkServer(ctrl)
 
 	sv := new(schemapb.RowBatchData)

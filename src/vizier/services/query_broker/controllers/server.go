@@ -206,6 +206,9 @@ func (s *Server) runQuery(ctx context.Context, req *plannerpb.QueryRequest, quer
 	}
 
 	tableRelationResponses, err := TableRelationResponses(queryID, tableNameToIDMap, planMap)
+	if err != nil {
+		return err
+	}
 	for _, resp := range tableRelationResponses {
 		resultStream <- resp
 	}

@@ -276,6 +276,9 @@ func (d *Datastore) GetUserSettings(id uuid.UUID, keys []string) ([]string, erro
 		return nil, err
 	}
 	query, args, err = sqlx.In(query, args...)
+	if err != nil {
+		return nil, err
+	}
 	query = d.db.Rebind(query)
 	rows, err := d.db.Queryx(query, args...)
 

@@ -127,8 +127,7 @@ func (a *Agents) streamUpdates() (chan updateOrError, func(), error) {
 	claims := utils2.GenerateJWTForService("metadata_tracker")
 	token, _ := utils2.SignJWTClaims(claims, a.signingKey)
 
-	ctx := context.Background()
-	ctx = metadata.AppendToOutgoingContext(context.Background(), "authorization",
+	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
 		fmt.Sprintf("bearer %s", token))
 	ctx, cancel := context.WithCancel(ctx)
 

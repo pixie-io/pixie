@@ -367,6 +367,9 @@ func (m *MetadataReader) getMissingUpdates(from, to int64, vzState *VizierState)
 	// Subscribe to topic that the response will be sent on.
 	subCh := make(chan *nats.Msg, 1024)
 	sub, err := m.nc.ChanSubscribe(vzshard.V2CTopic(missingResponseTopic, vzState.id), subCh)
+	if err != nil {
+		return err
+	}
 	defer sub.Unsubscribe()
 
 	pubTopic := vzshard.C2VTopic(metadataRequestTopic, vzState.id)

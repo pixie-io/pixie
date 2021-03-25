@@ -211,6 +211,7 @@ func TestPassThroughProxy(t *testing.T) {
 			// Subscribe to reply channel.
 			replyCh := make(chan *nats.Msg, 10)
 			replySub, err := ts.nc.ChanSubscribe("v2c.reply-"+test.requestID, replyCh)
+			assert.NoError(t, err)
 			defer replySub.Unsubscribe()
 
 			// Publish execute script request.

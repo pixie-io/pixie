@@ -66,9 +66,12 @@ func createAgentInADS(t *testing.T, agentID string, ads agent.Store, agentPb str
 	}
 	agUUID, err := uuid.FromString(agentID)
 	if err != nil {
-		t.Fatalf("Could not convert uuid from string")
+		t.Fatal("Could not convert uuid from string")
 	}
 	err = ads.CreateAgent(agUUID, info)
+	if err != nil {
+		t.Fatal("Could not create agent")
+	}
 
 	// Add schema info.
 	schema := new(storepb.TableInfo)
@@ -77,7 +80,7 @@ func createAgentInADS(t *testing.T, agentID string, ads agent.Store, agentPb str
 	}
 	err = ads.UpdateSchemas(agUUID, []*storepb.TableInfo{schema})
 	if err != nil {
-		t.Fatalf("Could not add schema for agent")
+		t.Fatal("Could not add schema for agent")
 	}
 }
 
@@ -264,6 +267,7 @@ func TestUpdateAgentDelete(t *testing.T) {
 	assert.NoError(t, err)
 
 	agents, err := ads.GetAgents()
+	assert.NoError(t, err)
 	assert.Len(t, agents, 1)
 
 	agt, err := ads.GetAgent(u)
@@ -704,7 +708,7 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 
 	agtMgr.DeleteAgentUpdateCursor(cursor)
 	// This should throw an error because the cursor has been deleted.
-	updates, schema, err = agtMgr.GetAgentUpdates(cursor)
+	_, _, err = agtMgr.GetAgentUpdates(cursor)
 	assert.NotNil(t, err)
 }
 

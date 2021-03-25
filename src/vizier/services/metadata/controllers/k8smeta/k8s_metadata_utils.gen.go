@@ -187,7 +187,6 @@ func (mc *PodWatcher) StartWatcher(quitCh chan struct{}, wg *sync.WaitGroup) {
 		}
 
 		log.WithField("resource", mc.resourceStr).Info("K8s watcher channel closed. Retrying")
-		runWatcher = true
 
 		// Wait 5 minutes before retrying, however if stop is called, just return.
 		select {
@@ -360,7 +359,6 @@ func (mc *ServiceWatcher) StartWatcher(quitCh chan struct{}, wg *sync.WaitGroup)
 		}
 
 		log.WithField("resource", mc.resourceStr).Info("K8s watcher channel closed. Retrying")
-		runWatcher = true
 
 		// Wait 5 minutes before retrying, however if stop is called, just return.
 		select {
@@ -533,7 +531,6 @@ func (mc *NamespaceWatcher) StartWatcher(quitCh chan struct{}, wg *sync.WaitGrou
 		}
 
 		log.WithField("resource", mc.resourceStr).Info("K8s watcher channel closed. Retrying")
-		runWatcher = true
 
 		// Wait 5 minutes before retrying, however if stop is called, just return.
 		select {
@@ -706,7 +703,6 @@ func (mc *EndpointsWatcher) StartWatcher(quitCh chan struct{}, wg *sync.WaitGrou
 		}
 
 		log.WithField("resource", mc.resourceStr).Info("K8s watcher channel closed. Retrying")
-		runWatcher = true
 
 		// Wait 5 minutes before retrying, however if stop is called, just return.
 		select {
@@ -879,7 +875,6 @@ func (mc *NodeWatcher) StartWatcher(quitCh chan struct{}, wg *sync.WaitGroup) {
 		}
 
 		log.WithField("resource", mc.resourceStr).Info("K8s watcher channel closed. Retrying")
-		runWatcher = true
 
 		// Wait 5 minutes before retrying, however if stop is called, just return.
 		select {

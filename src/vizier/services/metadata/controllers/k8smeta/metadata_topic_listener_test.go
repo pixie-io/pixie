@@ -99,6 +99,7 @@ func TestMetadataTopicListener_GetUpdatesInBatches(t *testing.T) {
 			mdTL, err := NewMetadataTopicListener(mdh, func(topic string, b []byte) error {
 				return nil
 			})
+			assert.NoError(t, err)
 
 			batches, firstAvailable, lastAvailable, err := mdTL.getUpdatesInBatches(test.firstAvailable, test.lastAvailable+1, "127.0.0.1")
 			assert.Nil(t, err)
@@ -146,6 +147,7 @@ func TestMetadataTopicListener_ProcessAgentMessage(t *testing.T) {
 		sentUpdates = append(sentUpdates, vzMsg)
 		return nil
 	})
+	assert.NoError(t, err)
 
 	req := messages.VizierMessage{
 		Msg: &messages.VizierMessage_K8SMetadataMessage{

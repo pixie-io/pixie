@@ -60,7 +60,7 @@ func main() {
 
 		// You can also get a single result, a la QueryRow
 		jason := person{}
-		err = db.Get(&jason, "SELECT * FROM person WHERE first_name=$1", "Jason")
+		db.Get(&jason, "SELECT * FROM person WHERE first_name=$1", "Jason")
 		fmt.Printf("%#v\n", jason)
 		time.Sleep(1 * time.Second)
 	}

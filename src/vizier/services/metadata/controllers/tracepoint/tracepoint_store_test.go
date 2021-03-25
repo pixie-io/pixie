@@ -49,6 +49,7 @@ func TestTracepointStore_UpsertTracepoint(t *testing.T) {
 	assert.Nil(t, err)
 
 	savedTracepoint, err := db.Get("/tracepoint/" + tpID.String())
+	assert.Nil(t, err)
 	savedTracepointPb := &storepb.TracepointInfo{}
 	err = proto.Unmarshal(savedTracepoint, savedTracepointPb)
 	assert.Nil(t, err)
@@ -178,6 +179,7 @@ func TestTracepointStore_UpdateTracepointState(t *testing.T) {
 	assert.Nil(t, err)
 
 	savedTracepoint, err := db.Get("/tracepointStates/" + tpID.String() + "/" + agentID.String())
+	assert.Nil(t, err)
 	savedTracepointPb := &storepb.AgentTracepointStatus{}
 	err = proto.Unmarshal(savedTracepoint, savedTracepointPb)
 	assert.Nil(t, err)
@@ -240,6 +242,7 @@ func TestTracepointStore_SetTracepointWithName(t *testing.T) {
 	assert.Nil(t, err)
 
 	savedTracepoint, err := db.Get("/tracepointName/test")
+	assert.Nil(t, err)
 	savedTracepointPb := &uuidpb.UUID{}
 	err = proto.Unmarshal(savedTracepoint, savedTracepointPb)
 	assert.Nil(t, err)

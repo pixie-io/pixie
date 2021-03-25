@@ -108,6 +108,9 @@ func isDir(scriptPath string) bool {
 
 func loadScriptFromDir(scriptPath string) (*script.ExecutableScript, error) {
 	pxlFiles, err := doublestar.Glob(path.Join(scriptPath, "*.pxl"))
+	if err != nil {
+		return nil, err
+	}
 	if len(pxlFiles) != 1 {
 		return nil, fmt.Errorf("Expected 1 pxl file, got %d", len(pxlFiles))
 	}

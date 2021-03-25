@@ -183,7 +183,6 @@ func (a *Auth0Connector) getManagementToken() (string, error) {
 	}
 
 	var tokenError TokenError
-	err = json.Unmarshal(body, &tokenError)
 	if err = json.Unmarshal(body, &tokenError); err != nil {
 		return "", err
 	}

@@ -397,8 +397,7 @@ func (p *PixieCloudLogin) getRefreshToken(accessToken string) (*RefreshToken, er
 			return nil, err
 		}
 		client := cloudapipb.NewProfileServiceClient(conn)
-		ctx := context.Background()
-		ctx = metadata.AppendToOutgoingContext(context.Background(), "authorization",
+		ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
 			fmt.Sprintf("bearer %s", refreshToken.Token))
 		ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		defer cancel()

@@ -202,6 +202,9 @@ func (m *Manager) CreateTracepoint(tracepointName string, tracepointDeployment *
 
 			if allTpsSame {
 				err = m.ts.SetTracepointTTL(*prevTracepointID, ttl)
+				if err != nil {
+					return nil, err
+				}
 				return prevTracepointID, ErrTracepointAlreadyExists
 			}
 
@@ -228,7 +231,13 @@ func (m *Manager) CreateTracepoint(tracepointName string, tracepointDeployment *
 		return nil, err
 	}
 	err = m.ts.SetTracepointTTL(tpID, ttl)
+	if err != nil {
+		return nil, err
+	}
 	err = m.ts.SetTracepointWithName(tracepointName, tpID)
+	if err != nil {
+		return nil, err
+	}
 	return &tpID, nil
 }
 

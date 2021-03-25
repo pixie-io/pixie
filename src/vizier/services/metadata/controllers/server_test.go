@@ -149,6 +149,7 @@ func TestGetAgentInfo(t *testing.T) {
 	req := metadatapb.AgentInfoRequest{}
 
 	resp, err := s.GetAgentInfo(context.Background(), &req)
+	assert.NoError(t, err)
 
 	assert.Equal(t, 2, len(resp.Info))
 

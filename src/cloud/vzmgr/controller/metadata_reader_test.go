@@ -242,6 +242,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 			}
 
 			mdr, err := controller.NewMetadataReader(db, sc, nc)
+			assert.NoError(t, err)
 			defer mdr.Stop()
 
 			var wg sync.WaitGroup

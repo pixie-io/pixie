@@ -275,6 +275,7 @@ func registerVizier(ts *testState, vizierID uuid.UUID, stream vzconnpb.VZConnSer
 		SessionId: 0,
 		Msg:       convertToAny(regReq),
 	})
+	assert.NoError(ts.t, err)
 
 	// Should get the register ACK.
 	m := <-readCh
@@ -321,8 +322,7 @@ func TestNATSGRPCBridge_BridgingTest(t *testing.T) {
 			VizierID: utils.ProtoFromUUIDStrOrNil(vizierID.String()),
 		}),
 	})
-
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	natsMsg := <-t1Ch
 

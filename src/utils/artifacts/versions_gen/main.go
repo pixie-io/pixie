@@ -45,6 +45,10 @@ func parseTagsIntoVersionFile(repoPath string, artifactName string, outputFile s
 
 	releaseTagPrefix := fmt.Sprintf("release/%s/v", artifactName)
 	tags, err := r.TagObjects()
+	if err != nil {
+		return err
+	}
+
 	// This only gets annotated tags, which is what we use in the release process.
 	err = tags.ForEach(func(tag *object.Tag) error {
 		if !strings.HasPrefix(tag.Name, releaseTagPrefix) {

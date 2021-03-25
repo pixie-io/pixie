@@ -90,11 +90,12 @@ func main() {
 		if len(*key) > 0 {
 			keyFile = *key
 		}
-		cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+		var c tls.Certificate
+		c, err = tls.LoadX509KeyPair(certFile, keyFile)
 		if err != nil {
 			log.Fatalf("failed to load certs: %v", err)
 		}
-		tlsConfig := &tls.Config{Certificates: []tls.Certificate{cert}}
+		tlsConfig := &tls.Config{Certificates: []tls.Certificate{c}}
 
 		log.Printf("Starting https server on port : %s cert: %s key: %s", portStr, certFile, keyFile)
 		lis, err = tls.Listen("tcp", portStr, tlsConfig)

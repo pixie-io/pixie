@@ -358,6 +358,9 @@ func vizierInfoToProto(vzInfo VizierInfo) *cvmsgspb.VizierInfo {
 // GetVizierInfos gets the vizier info for multiple viziers.
 func (s *Server) GetVizierInfos(ctx context.Context, req *vzmgrpb.GetVizierInfosRequest) (*vzmgrpb.GetVizierInfosResponse, error) {
 	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
 
 	ids := make([]uuid.UUID, len(req.VizierIDs))
@@ -914,6 +917,9 @@ func (s *Server) UpdateOrInstallVizier(ctx context.Context, req *cvmsgspb.Update
 	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
 
 	v2cMsg, err := s.updater.UpdateOrInstallVizier(vizierID, req.Version, req.RedeployEtcd)
+	if err != nil {
+		return nil, err
+	}
 
 	resp := &cvmsgspb.UpdateOrInstallVizierResponse{}
 	err = types.UnmarshalAny(v2cMsg.Msg, resp)
@@ -1106,7 +1112,7 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 		return assignNameAndCommit()
 	}
 
-	clusterID, status, err = findVizierWithEmptyUID(ctx, tx, orgID)
+	clusterID, _, err = findVizierWithEmptyUID(ctx, tx, orgID)
 	if err != nil {
 		return uuid.Nil, err
 	}

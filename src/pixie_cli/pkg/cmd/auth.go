@@ -46,7 +46,7 @@ var LoginCmd = &cobra.Command{
 			CloudAddr:  viper.GetString("cloud_addr"),
 			OrgName:    orgName,
 		}
-		refreshToken := &auth.RefreshToken{}
+		var refreshToken *auth.RefreshToken
 		var err error
 		if refreshToken, err = l.Run(); err != nil {
 			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.

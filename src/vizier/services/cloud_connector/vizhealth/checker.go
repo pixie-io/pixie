@@ -93,8 +93,7 @@ func (c *Checker) run() {
 		claims := utils2.GenerateJWTForService("cloud_conn")
 		token, _ := utils2.SignJWTClaims(claims, c.signingKey)
 
-		ctx := context.Background()
-		ctx = metadata.AppendToOutgoingContext(context.Background(), "authorization",
+		ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
 			fmt.Sprintf("bearer %s", token))
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()

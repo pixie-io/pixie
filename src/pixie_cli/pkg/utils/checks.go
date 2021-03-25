@@ -59,7 +59,7 @@ func detectClusterType() ClusterType {
 	}
 
 	// Check if it is a kind cluster.
-	result, err := exec.Command("/bin/sh", "-c", fmt.Sprintf(`kind get clusters | grep "^$(echo "%s" | sed -e "s/^kind-//g")$"`, currentContext)).Output()
+	_, err := exec.Command("/bin/sh", "-c", fmt.Sprintf(`kind get clusters | grep "^$(echo "%s" | sed -e "s/^kind-//g")$"`, currentContext)).Output()
 	if err == nil {
 		return ClusterTypeKind
 	}
@@ -71,7 +71,7 @@ func detectClusterType() ClusterType {
 	}
 
 	// Check if it a minikube cluster.
-	result, err = exec.Command("/bin/sh", "-c", fmt.Sprintf(`minikube profile list | grep " %s "| cut -f3 -d'|'`, currentContext)).Output()
+	result, err := exec.Command("/bin/sh", "-c", fmt.Sprintf(`minikube profile list | grep " %s "| cut -f3 -d'|'`, currentContext)).Output()
 	if err == nil {
 		s := strings.Trim(string(result), " \n")
 		// err not nil, means command failed and either minikube is not installed or not used.

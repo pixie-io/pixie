@@ -173,6 +173,9 @@ func (u *Updater) updateOrInstallVizier(vizierID uuid.UUID, version string, rede
 	// Subscribe to topic that the response will be sent on.
 	subCh := make(chan *nats.Msg, 1024)
 	sub, err := u.nc.ChanSubscribe(vzshard.V2CTopic("VizierUpdateResponse", vizierID), subCh)
+	if err != nil {
+		return nil, err
+	}
 	defer sub.Unsubscribe()
 
 	log.WithField("Vizier ID", vizierID.String()).WithField("version", req.Version).Info("Sending update request to Vizier")

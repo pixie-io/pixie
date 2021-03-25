@@ -1,3 +1,7 @@
+//nolint
+// This is not generated code, but follows the gogoproto generated code
+// conventions. So don't lint this.
+
 package types
 
 import (

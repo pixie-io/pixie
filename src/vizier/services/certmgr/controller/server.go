@@ -125,8 +125,6 @@ func (s *Server) CertRequester() {
 
 	sslResp := cvmsgspb.VizierSSLCertResponse{}
 	vizConf := cvmsgspb.VizierConfig{}
-	// Assume we are running in passthrough mode since that's the default.
-	passthroughEnabled := true
 
 	for {
 		select {
@@ -152,8 +150,7 @@ func (s *Server) CertRequester() {
 				log.WithError(err).Error("Got bad Vizier Config")
 				break
 			}
-			passthroughEnabled = vizConf.GetPassthroughEnabled()
-			if passthroughEnabled {
+			if vizConf.GetPassthroughEnabled() {
 				// Reset timer to a longer duration since we don't need
 				// to do anything in passthrough mode.
 				// If the mode changes, we should get a message on the

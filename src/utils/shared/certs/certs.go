@@ -115,6 +115,9 @@ func generateCertificate(certPath string, certName string, caCert *x509.Certific
 func signCertificate(certPath string, certName string, cert *x509.Certificate, ca *x509.Certificate, caKey crypto.PrivateKey, privateKey *rsa.PrivateKey) error {
 	// Self-sign certificate.
 	certB, err := x509.CreateCertificate(rand.Reader, cert, ca, &privateKey.PublicKey, caKey)
+	if err != nil {
+		return err
+	}
 
 	certOut, err := os.Create(path.Join(certPath, fmt.Sprintf("%s.crt", certName)))
 	if err != nil {

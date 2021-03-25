@@ -360,6 +360,7 @@ func TestRedirectToLogin(t *testing.T) {
 
 	cookieStore := sessions.NewCookieStore([]byte("pair"))
 	session, err := cookieStore.New(req, IDProviderSessionKey)
+	assert.NoError(t, err)
 	w := httptest.NewRecorder()
 
 	err = c.RedirectToLogin(session, w, req)
@@ -687,6 +688,7 @@ func TestManageUserInfo(t *testing.T) {
 		PLOrgID:  plOrgID,
 		PLUserID: plUserID,
 	})
+	assert.NoError(t, err)
 
 	userID, err := c.GetUserIDFromToken(context.Background(), token)
 	if !assert.Nil(t, err) {

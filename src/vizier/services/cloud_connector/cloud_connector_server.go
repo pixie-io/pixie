@@ -71,7 +71,7 @@ func main() {
 
 	// Clean up cert-provisioner-job, if exists.
 	certJob, err := vzInfo.GetJob("cert-provisioner-job")
-	if certJob != nil {
+	if err == nil && certJob != nil {
 		err = vzInfo.DeleteJob("cert-provisioner-job")
 		if err != nil && !k8sErrors.IsNotFound(err) {
 			log.WithError(err).Info("Error deleting cert-provisioner-job")

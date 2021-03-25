@@ -419,6 +419,7 @@ func TestServer_VizierConnectedHealthy(t *testing.T) {
 
 	subCh := make(chan *nats.Msg, 1)
 	natsSub, err := nc.ChanSubscribe("VizierConnected", subCh)
+	assert.NoError(t, err)
 	defer natsSub.Unsubscribe()
 
 	ctrl := gomock.NewController(t)
@@ -506,6 +507,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 		numNodes                   int32
 		numInstrumentedNodes       int32
 		checkVersion               bool
+		checkDB                    bool
 		versionUpdated             bool
 	}{
 		{
@@ -524,6 +526,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			numNodes:                4,
 			numInstrumentedNodes:    3,
 			checkVersion:            true,
+			checkDB:                 true,
 		},
 		{
 			name:                      "valid vizier dns failed",
@@ -538,6 +541,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			numNodes:                  4,
 			numInstrumentedNodes:      3,
 			checkVersion:              true,
+			checkDB:                   true,
 			versionUpdated:            true,
 		},
 		{
@@ -551,6 +555,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			numNodes:                  4,
 			numInstrumentedNodes:      3,
 			checkVersion:              true,
+			checkDB:                   true,
 		},
 		{
 			name:                      "unknown vizier",
@@ -561,6 +566,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			expectedClusterAddress:    "",
 			status:                    cvmsgspb.VZ_ST_UPDATING,
 			checkVersion:              false,
+			checkDB:                   false,
 		},
 		{
 			name:                      "bootstrap vizier",
@@ -581,6 +587,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			expectDeploy:               true,
 			numNodes:                   4,
 			numInstrumentedNodes:       3,
+			checkDB:                    true,
 		},
 	}
 
@@ -654,13 +661,16 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			}
 			clusterID, err := uuid.FromString(tc.vizierID)
 			assert.Nil(t, err)
-			err = db.Get(&clusterInfo, clusterQuery, clusterID)
-			assert.Equal(t, tc.updatedClusterStatus, clusterInfo.Status)
-			assert.Equal(t, tc.expectedClusterAddress, clusterInfo.Address)
-			assert.Equal(t, tc.numNodes, clusterInfo.NumNodes)
-			assert.Equal(t, tc.numInstrumentedNodes, clusterInfo.NumInstrumentedNodes)
-			if tc.controlPlanePodStatuses != nil {
-				assert.Equal(t, tc.controlPlanePodStatuses, clusterInfo.ControlPlanePodStatuses)
+			if tc.checkDB {
+				err = db.Get(&clusterInfo, clusterQuery, clusterID)
+				assert.NoError(t, err)
+				assert.Equal(t, tc.updatedClusterStatus, clusterInfo.Status)
+				assert.Equal(t, tc.expectedClusterAddress, clusterInfo.Address)
+				assert.Equal(t, tc.numNodes, clusterInfo.NumNodes)
+				assert.Equal(t, tc.numInstrumentedNodes, clusterInfo.NumInstrumentedNodes)
+				if tc.controlPlanePodStatuses != nil {
+					assert.Equal(t, tc.controlPlanePodStatuses, clusterInfo.ControlPlanePodStatuses)
+				}
 			}
 		})
 	}

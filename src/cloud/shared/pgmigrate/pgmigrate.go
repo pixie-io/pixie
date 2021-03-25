@@ -35,6 +35,9 @@ func PerformMigrationsUsingBindata(db *sqlx.DB, migrationTable string, fetcher *
 	mg, err := migrate.NewWithInstance(
 		"go-bindata",
 		d, "postgres", driver)
+	if err != nil {
+		return err
+	}
 
 	if err = mg.Up(); err != nil && err != migrate.ErrNoChange {
 		return err
