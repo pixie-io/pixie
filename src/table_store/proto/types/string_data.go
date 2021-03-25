@@ -1,7 +1,3 @@
-//nolint
-// This is not generated code, but follows the gogoproto generated code
-// conventions. So don't lint this.
-
 package types
 
 import (
@@ -39,7 +35,7 @@ func (data StringData) MarshalTo(mData []byte) (n int, err error) {
 // Unmarshal unmarshals the string data to bytes.
 func (data *StringData) Unmarshal(mData []byte) error {
 	if len(mData) == 0 {
-		data = nil
+		data = nil //nolint:ineffassign // This follows the gogoproto generated code conventions.
 		return nil
 	}
 	id := StringData(make([]byte, len(mData)))
