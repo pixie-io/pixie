@@ -15,10 +15,12 @@ go_test(
     tags = ["integration"],
     deps = [
         "//src/utils/testingutils:go_default_library",
+        "//src/vizier/utils/datastore/badgerdb:go_default_library",
         "//src/vizier/utils/datastore/etcd:go_default_library",
         "//src/vizier/utils/datastore/pebbledb:go_default_library",
         "@com_github_cockroachdb_pebble//:go_default_library",
         "@com_github_cockroachdb_pebble//vfs:go_default_library",
+        "@com_github_dgraph_io_badger_v3//:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
         "@com_github_stretchr_testify//require:go_default_library",
     ],

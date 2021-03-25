@@ -287,8 +287,8 @@ go_repository(
 go_repository(
     name = "com_github_konsorten_go_windows_terminal_sequences",
     importpath = "github.com/konsorten/go-windows-terminal-sequences",
-    sum = "h1:DB17ag19krx9CFsz4o3enTrPXyIXCl+2iCXH/aMAp9s=",
-    version = "v1.0.2",
+    sum = "h1:CE8S1cTafDpPvMhIxNJKvHsGVBgn1xWYf1NbHQhywc8=",
+    version = "v1.0.3",
 )
 
 go_repository(
@@ -717,8 +717,8 @@ go_repository(
 go_repository(
     name = "com_github_hashicorp_golang_lru",
     importpath = "github.com/hashicorp/golang-lru",
-    sum = "h1:0hERBMJE1eitiLkihrMvRVBYAkpHzc/J3QdDN+dAcgU=",
-    version = "v0.5.1",
+    sum = "h1:YDjusn29QI/Das2iO9M0BHnIbxPeyuCHsjMW+lJfyTc=",
+    version = "v0.5.4",
 )
 
 go_repository(
@@ -831,8 +831,8 @@ go_repository(
 go_repository(
     name = "com_github_google_flatbuffers",
     importpath = "github.com/google/flatbuffers",
-    sum = "h1:71QmbtqS/ceC6Tl19bSbPDWAsvSz115MnM5xB6ideY8=",
-    version = "v1.11.1-0.20190424190944-bf9eb67ab937",
+    sum = "h1:/PtAHvnBY4Kqnx/xCQ3OIV9uYcSFGScBsWI3Oogeh6w=",
+    version = "v1.12.0",
 )
 
 go_repository(
@@ -922,8 +922,8 @@ go_repository(
 go_repository(
     name = "io_opencensus_go",
     importpath = "go.opencensus.io",
-    sum = "h1:8sGtKOrtQqkN1bp2AtX+misvLIlOmsEsNd+9NIcPEm8=",
-    version = "v0.22.3",
+    sum = "h1:dntmOdLpSpHlVqbW5Eay97DelsZHe+55D+xC6i0dDS0=",
+    version = "v0.22.5",
 )
 
 go_repository(
@@ -1970,8 +1970,8 @@ go_repository(
 go_repository(
     name = "com_github_spaolacci_murmur3",
     importpath = "github.com/spaolacci/murmur3",
-    sum = "h1:qLC7fQah7D6K1B0ujays3HV9gkFtllcxhzImRR7ArPQ=",
-    version = "v0.0.0-20180118202830-f09979ecbc72",
+    sum = "h1:7c1g84S4BPRrfL5Xrdp6fOJ206sU9y293DDHaoy0bLI=",
+    version = "v1.1.0",
 )
 
 go_repository(
@@ -3410,4 +3410,82 @@ go_repository(
     importpath = "github.com/gofrs/uuid",
     sum = "h1:1SD/1F5pU8p29ybwgQSwpQk+mwdRrXCYuPhW6m+TnJw=",
     version = "v4.0.0+incompatible",
+)
+
+go_repository(
+    name = "com_github_cosiner_argv",
+    importpath = "github.com/cosiner/argv",
+    sum = "h1:BVDiEL32lwHukgJKP87btEPenzrrHUjajs/8yzaqcXg=",
+    version = "v0.1.0",
+)
+
+go_repository(
+    name = "com_github_datadog_zstd",
+    importpath = "github.com/DataDog/zstd",
+    sum = "h1:3oxKN3wbHibqx897utPC2LTQU4J+IHWWJO+glkAkpFM=",
+    version = "v1.4.1",
+)
+
+go_repository(
+    name = "com_github_dgraph_io_badger_v3",
+    build_file_proto_mode = "disable",
+    importpath = "github.com/dgraph-io/badger/v3",
+    sum = "h1:Hmyof0WMEF/QtutX5SQHzIMnJQxb/IrSzhjckV2SD6g=",
+    version = "v3.2011.1",
+)
+
+go_repository(
+    name = "com_github_dgraph_io_ristretto",
+    importpath = "github.com/dgraph-io/ristretto",
+    sum = "h1:eQYOG6A4td1tht0NdJB9Ls6DsXRGb2Ft6X9REU/MbbE=",
+    version = "v0.0.4-0.20210122082011-bb5d392ed82d",
+)
+
+go_repository(
+    name = "com_github_go_delve_delve",
+    importpath = "github.com/go-delve/delve",
+    sum = "h1:gQsRvFdR0BGk19NROQZsAv6iG4w5QIZoJlxJeEUBb0c=",
+    version = "v1.5.0",
+)
+
+go_repository(
+    name = "com_github_google_go_dap",
+    importpath = "github.com/google/go-dap",
+    sum = "h1:whjIGQRumwbR40qRU7CEKuFLmePUUc2s4Nt9DoXXxWk=",
+    version = "v0.2.0",
+)
+
+go_repository(
+    name = "com_github_mmcloughlin_avo",
+    importpath = "github.com/mmcloughlin/avo",
+    sum = "h1:D4I34fbgczGrhrN4DzBCZXT3u/nMWJnGmviIjSzzXSw=",
+    version = "v0.0.0-20201105074841-5d2f697d268f",
+)
+
+go_repository(
+    name = "com_github_peterh_liner",
+    importpath = "github.com/peterh/liner",
+    sum = "h1:8uaXtUkxiy+T/zdLWuxa/PG4so0TPZDZfafFNNSaptE=",
+    version = "v0.0.0-20170317030525-88609521dc4b",
+)
+
+go_repository(
+    name = "com_github_twitchyliquid64_golang_asm",
+    importpath = "github.com/twitchyliquid64/golang-asm",
+    sum = "h1:WYZ15YKpC5xM8PwpBTDsAgemoLB/lyhRkzJSEw9eAew=",
+    version = "v0.15.0",
+)
+
+go_repository(
+    name = "net_starlark_go",
+    importpath = "go.starlark.net",
+    sum = "h1:lkYv5AKwvvduv5XWP6szk/bvvgO6aDeUujhZQXIFTes=",
+    version = "v0.0.0-20190702223751-32f345186213",
+)
+
+go_repository(
+    name = "org_golang_x_arch",
+    importpath = "golang.org/x/arch",
+    sum = "h1:XmKBi9R6duxOB3lfc72wyrwiOY7X2Jl1wuI+RFOyMDE=",
+    version = "v0.0.0-20201008161808-52c3e6f60cff",
 )

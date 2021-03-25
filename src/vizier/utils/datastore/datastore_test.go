@@ -6,13 +6,25 @@ import (
 
 	"github.com/cockroachdb/pebble"
 	"github.com/cockroachdb/pebble/vfs"
+	"github.com/dgraph-io/badger/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
+	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/badgerdb"
 	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/etcd"
 	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/pebbledb"
 )
+
+func TestBadgerDB(t *testing.T) {
+	c, err := badger.Open(badger.DefaultOptions("").WithInMemory(true))
+	if err != nil {
+		t.Fatal("failed to initialize badgerdb")
+	}
+
+	db := badgerdb.New(c)
+	runTests(db, t)
+}
 
 func TestPebbleDB(t *testing.T) {
 	memFS := vfs.NewMem()
