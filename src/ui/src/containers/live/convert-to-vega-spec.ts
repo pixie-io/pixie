@@ -94,6 +94,7 @@ interface StacktraceFlameGraphDisplay extends WidgetDisplay {
   readonly containerColumn?: string;
   readonly pidColumn?: string;
   readonly nodeColumn?: string;
+  readonly percentageLabel?: string;
 }
 
 type PatchedMark = Mark & { propEventsToOverlapped?: boolean };
@@ -1989,7 +1990,7 @@ function convertToStacktraceFlameGraph(
         fill: { scale: { datum: 'color' }, field: 'name' },
         tooltip: {
           signal: `datum.fullPath !== "all" && (datum.percentage ? {"title": datum.name, "Samples": datum.count, 
-            "CPU Usage": format(datum.percentage, ".2f") + "%"} :
+            "${display.percentageLabel || 'Percentage'}": format(datum.percentage, ".2f") + "%"} :
             {"title": datum.name, "Samples": datum.count})`,
         },
       },
