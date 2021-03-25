@@ -17,7 +17,7 @@ class SymbolCache {
  public:
   explicit SymbolCache(int pid) : pid_(pid) {}
 
-  const std::string& LookupSym(ebpf::BPFStackTable* stack_traces, uintptr_t addr);
+  const std::string& LookupSym(ebpf::BPFStackTable* stack_traces, const uintptr_t addr);
 
   void Flush();
 
