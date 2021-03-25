@@ -21,6 +21,7 @@ Pixie open sources all of its scripts, which serve as examples of scripting in t
 - px/[largest_http_request](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/largest_http_request): Calculates the largest HTTP Request according to the passed in filter value.
 - px/[most_http_data](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/most_http_data): Finds the endpoint on a specific Pod that passes the most HTTP Data. Optionally, you can uncomment a line to see a table summarizing data per service, endpoint pair.
 - px/[mysql_data](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/mysql_data): Shows most recent MySQL messages in the cluster.
+- px/[mysql_flow_graph](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/mysql_flow_graph): Graph of MySQL messages in the cluster, with latency stats.
 - px/[mysql_stats](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/mysql_stats): This live view calculates the latency, error rate, and throughput of a pod's MySQL requests.
 - px/[namespace](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/namespace): This view gives a top-level summary of the pods and services in a given namespace, as well as a service map.
 - px/[namespaces](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/namespaces): This view lists the namespaces on the current cluster and their pod and service counts. It also lists the high-level resource consumption by namespace.

@@ -33,7 +33,7 @@
   ],
   "widgets": [
     {
-      "name": "p50 Latency",
+      "name": "P50 Latency",
       "position": {
         "x": 0,
         "y": 0,
@@ -46,7 +46,7 @@
         "timeseries": [
           {
             "value": "latency_p50",
-            "series": "k8s",
+            "series": "destination",
             "stackBySeries": false,
             "mode": "MODE_LINE"
           }
@@ -59,7 +59,7 @@
       }
     },
     {
-      "name": "p90 Latency",
+      "name": "P90 Latency",
       "position": {
         "x": 4,
         "y": 0,
@@ -72,7 +72,7 @@
         "timeseries": [
           {
             "value": "latency_p90",
-            "series": "k8s",
+            "series": "destination",
             "stackBySeries": false,
             "mode": "MODE_LINE"
           }
@@ -85,11 +85,37 @@
       }
     },
     {
+      "name": "P99 Latency",
+      "position": {
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "LET",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "latency_p99",
+            "series": "destination",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "P99 Latency"
+        },
+        "xAxis": null
+      }
+    },
+    {
       "name": "Request Throughput",
       "position": {
-        "x": 0,
+        "x": 4,
         "y": 3,
-        "w": 6,
+        "w": 4,
         "h": 3
       },
       "globalFuncOutputName": "LET",
@@ -98,14 +124,14 @@
         "timeseries": [
           {
             "value": "request_throughput",
-            "series": "k8s",
+            "series": "destination",
             "stackBySeries": false,
             "mode": "MODE_LINE"
           }
         ],
         "title": "",
         "yAxis": {
-          "label": "Throughput"
+          "label": "Request throughput"
         },
         "xAxis": null
       }
@@ -113,8 +139,8 @@
     {
       "name": "Request Error Rate",
       "position": {
-        "x": 8,
-        "y": 0,
+        "x": 0,
+        "y": 3,
         "w": 4,
         "h": 3
       },
@@ -167,9 +193,9 @@
         }
       },
       "position": {
-        "x": 6,
+        "x": 8,
         "y": 3,
-        "w": 6,
+        "w": 4,
         "h": 3
       }
     },

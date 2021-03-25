@@ -3,8 +3,20 @@
     {
       "name": "start",
       "type": "PX_STRING",
-      "description": "The start time of the window in time units before now.",
+      "description": "The relative start time of the window. Current time is assumed to be now.",
       "defaultValue": "-5m"
+    },
+    {
+      "name": "source_filter",
+      "type": "PX_STRING",
+      "description": "The partial string to match the 'source' column.",
+      "defaultValue": ""
+    },
+    {
+      "name": "destination_filter",
+      "type": "PX_STRING",
+      "description": "The partial string to match the 'destination' column.",
+      "defaultValue": ""
     },
     {
       "name": "max_num_records",
@@ -22,6 +34,14 @@
           {
             "name": "start",
             "variable": "start"
+          },
+          {
+            "name": "source_filter",
+            "variable": "source_filter"
+          },
+          {
+            "name": "destination_filter",
+            "variable": "destination_filter"
           },
           {
             "name": "num_head",
