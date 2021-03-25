@@ -18,6 +18,7 @@ test --verbose_failures
 build --bes_timeout=60s
 build --experimental_inmemory_dotd_files
 build --experimental_inmemory_jdeps_files
+build --keep_backend_build_event_connections_alive=false
 build --remote_download_toplevel
 build --remote_max_connections=128
 build --remote_retries=2
