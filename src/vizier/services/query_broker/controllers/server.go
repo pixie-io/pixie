@@ -81,7 +81,6 @@ type Server struct {
 func NewServer(env querybrokerenv.QueryBrokerEnv, agentsTracker AgentsTracker,
 	mds metadatapb.MetadataTracepointServiceClient, mdconf metadatapb.MetadataConfigServiceClient,
 	natsConn *nats.Conn) (*Server, error) {
-
 	var udfInfo udfspb.UDFInfo
 	if err := loadUDFInfo(&udfInfo); err != nil {
 		return nil, err
@@ -103,7 +102,6 @@ func NewServerWithForwarderAndPlanner(env querybrokerenv.QueryBrokerEnv,
 	mdconf metadatapb.MetadataConfigServiceClient,
 	natsConn *nats.Conn,
 	planner Planner) (*Server, error) {
-
 	s := &Server{
 		env:             env,
 		agentsTracker:   agentsTracker,
@@ -126,7 +124,6 @@ func (s *Server) Close() {
 func (s *Server) runQuery(ctx context.Context, req *plannerpb.QueryRequest, queryID uuid.UUID,
 	planOpts *planpb.PlanOptions, distributedState *distributedpb.DistributedState,
 	resultStream chan *public_vizierapipb.ExecuteScriptResponse, doneCh chan bool) error {
-
 	log.WithField("query_id", queryID).Infof("Running script")
 	start := time.Now()
 	defer func(t time.Time) {

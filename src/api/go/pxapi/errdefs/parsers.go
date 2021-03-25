@@ -35,5 +35,4 @@ func ParseStatus(s *publicvizierapipb.Status) error {
 		return fmt.Errorf("%w: %s", ErrInvalidArgument, s.Message)
 	}
 	return ErrInternal
-
 }

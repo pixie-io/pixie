@@ -294,7 +294,6 @@ func TestPassThroughProxy(t *testing.T) {
 			case <-time.After(defaultTimeout):
 				t.Fatal("Timed out")
 			}
-
 		})
 	}
 }

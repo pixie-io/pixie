@@ -90,7 +90,6 @@ func mustSetupFakeBucket(t *testing.T, testBundle map[string]scriptsDef) stiface
 }
 
 func TestScriptMgr_GetLiveViews(t *testing.T) {
-
 	testCases := []struct {
 		name         string
 		expectedResp *scriptmgrpb.GetLiveViewsResp
@@ -305,5 +304,4 @@ func TestScriptMgr_GetScriptContents(t *testing.T) {
 			}
 		})
 	}
-
 }

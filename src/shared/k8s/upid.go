@@ -56,5 +56,4 @@ func UPIDFromString(upidString string) (types.UInt128, error) {
 	upid.Low = uint64(ts)
 
 	return upid, nil
-
 }

@@ -364,7 +364,6 @@ func TestNATSGRPCBridge_RegisterVizierDeployment(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Equal(t, utils.ProtoFromUUID(vizierID), resp.VizierID)
-
 }
 
 // TODO(zasgar/michelle): Add tests for disconnect of Vizier. Should make sure messages are not lost on durable channel.

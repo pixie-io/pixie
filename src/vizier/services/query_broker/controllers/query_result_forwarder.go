@@ -259,7 +259,6 @@ const maxQueryPlanStringSize = 1024*1024 - maxQueryPlanBufferSize
 func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uuid.UUID,
 	resultCh chan *public_vizierapipb.ExecuteScriptResponse,
 	compilationTimeNs int64, queryPlanOpts *QueryPlanOpts) error {
-
 	f.activeQueriesMutex.Lock()
 	activeQuery, present := f.activeQueries[queryID]
 	f.activeQueriesMutex.Unlock()

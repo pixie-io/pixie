@@ -44,7 +44,6 @@ func setupFlags() {
 	pflag.String("n", "plc-dev", "The namespace to watch (plc-dev) by default")
 	pflag.String("domain-name", "dev.withpixie.dev", "The domain name to use")
 	pflag.String("kubeconfig", filepath.Join(homeDir(), ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-
 }
 
 func parseFlags() {

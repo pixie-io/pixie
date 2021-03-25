@@ -627,7 +627,6 @@ func (v *View) search(s string) {
 	v.s.searchString = s
 	v.searchNext(false, false)
 	v.app.SetFocus(v.searchBox)
-
 }
 
 func (v *View) searchNext(searchBackwards bool, advance bool) {

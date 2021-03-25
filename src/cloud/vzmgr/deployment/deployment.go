@@ -54,7 +54,6 @@ func (s *Service) RegisterVizierDeployment(ctx context.Context, req *vzmgrpb.Reg
 	clusterID, err := s.vp.ProvisionOrClaimVizier(ctx, orgID, userID, req.K8sClusterUID, req.K8sClusterName, req.K8sClusterVersion)
 	if err != nil {
 		return nil, vzerrors.ToGRPCError(err)
-
 	}
 	return &vzmgrpb.RegisterVizierDeploymentResponse{VizierID: utils.ProtoFromUUID(clusterID)}, nil
 }

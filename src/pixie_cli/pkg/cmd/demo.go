@@ -331,7 +331,6 @@ func deleteDemoApp(appName string) error {
 					}
 					<-s.C
 				}
-
 			}
 		}),
 	}

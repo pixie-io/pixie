@@ -29,7 +29,6 @@ func (c CompilerMultiError) Errors() []error {
 // Unwrap makes this error wrap a generic compilation error.
 func (c CompilerMultiError) Unwrap() error {
 	return ErrCompilation
-
 }
 
 func newCompilerMultiError(errs ...error) error {

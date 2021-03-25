@@ -293,7 +293,6 @@ func TestDatastore(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, userInfoFetched)
 		assert.Equal(t, "http://somepicture", *userInfoFetched.ProfilePicture)
-
 	})
 
 	t.Run("Get user settings", func(t *testing.T) {

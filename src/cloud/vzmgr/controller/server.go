@@ -624,7 +624,6 @@ func (s *Server) GetViziersByShard(ctx context.Context, req *vzmgrpb.GetViziersB
 		var result Result
 		err = rows.StructScan(&result)
 		if err != nil {
-
 			return nil, status.Error(codes.Internal, "failed to read vizier info")
 		}
 		results = append(results, &vzmgrpb.GetViziersByShardResponse_VizierInfo{

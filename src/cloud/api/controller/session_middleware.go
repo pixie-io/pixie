@@ -49,7 +49,6 @@ func GetTokenFromSession(env apienv.APIEnv, r *http.Request) (string, bool) {
 // using returned data to augment the session.
 func WithAugmentedAuthMiddleware(env apienv.APIEnv, next http.Handler) http.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) {
-
 		ctx, err := getAugmentedAuthHTTP(env, r)
 		if err != nil {
 			if err == ErrFetchAugmentedTokenFailedUnauthenticated || err == ErrGetAuthTokenFailed {

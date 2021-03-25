@@ -67,7 +67,6 @@ func TestILMPolicyMigrate(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-
 			if tc.createBeforeConfig != nil {
 				err := esutils.NewILMPolicy(elasticClient, tc.policyName).
 					Rollover(&tc.createBeforeConfig.maxIndexSize, nil, nil).

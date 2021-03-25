@@ -202,5 +202,4 @@ func (s *Server) GetDownloadLink(ctx context.Context, in *apb.GetDownloadLinkReq
 		SHA256:     strings.TrimSpace(string(sha256bytes)),
 		ValidUntil: tpb,
 	}, nil
-
 }

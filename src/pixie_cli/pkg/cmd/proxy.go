@@ -15,7 +15,6 @@ import (
 func init() {
 	ProxyCmd.Flags().StringP("namespace", "n", "pl", "The namespace to install K8s secrets to")
 	viper.BindPFlag("namespace", ProxyCmd.Flags().Lookup("namespace"))
-
 }
 
 // ProxyCmd is the "proxy" command.

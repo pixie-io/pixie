@@ -135,7 +135,6 @@ type execResults struct {
 }
 
 func executeScript(v []*vizier.Connector, execScript *script.ExecutableScript) (*execResults, error) {
-
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	execRes := execResults{}
@@ -168,7 +167,6 @@ func executeScript(v []*vizier.Connector, execScript *script.ExecutableScript) (
 	execRes.compileTime = time.Duration(execStats.Timing.CompilationTimeNs)
 	execRes.numBytes = tw.TotalBytes()
 	return &execRes, nil
-
 }
 
 func isDisabled(script string) bool {

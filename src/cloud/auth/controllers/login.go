@@ -342,7 +342,6 @@ func (s *Server) GetAugmentedTokenForAPIKey(ctx context.Context, in *pb.GetAugme
 func (s *Server) GetAugmentedToken(
 	ctx context.Context, in *pb.GetAugmentedAuthTokenRequest) (
 	*pb.GetAugmentedAuthTokenResponse, error) {
-
 	// Check the incoming token and make sure it's valid.
 	aCtx := authcontext.New()
 

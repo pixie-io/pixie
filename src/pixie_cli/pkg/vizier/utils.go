@@ -221,7 +221,6 @@ func GetClusterIDFromKubeConfig(config *rest.Config) uuid.UUID {
 	cID, ok := s.Data["cluster-id"]
 	if !ok {
 		return uuid.Nil
-
 	}
 	return uuid.FromStringOrNil(string(cID))
 }

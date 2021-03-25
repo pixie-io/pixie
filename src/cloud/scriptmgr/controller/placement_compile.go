@@ -95,9 +95,7 @@ func (pc *PlacementCompiler) createVisSpecCalls(state *compilerState, tableName 
 func (pc *PlacementCompiler) createSignature(state *compilerState) (string, error) {
 	var argsFmt []string
 	for argName, argType := range *state.globalArgMap {
-
 		argsFmt = append(argsFmt, fmt.Sprintf("%s: %s", argName, argType))
-
 	}
 	return fmt.Sprintf("def %s(%s):", pc.funcName, strings.Join(argsFmt, ", ")), nil
 }

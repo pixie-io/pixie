@@ -715,7 +715,6 @@ func (a *AutocompleteServer) AutocompleteField(ctx context.Context, req *cloudap
 	return &cloudapipb.AutocompleteFieldResponse{
 		Suggestions: acSugg,
 	}, nil
-
 }
 
 // ScriptMgrServer is the server that implements the ScriptMgr gRPC service.

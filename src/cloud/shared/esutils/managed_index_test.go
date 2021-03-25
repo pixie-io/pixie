@@ -55,7 +55,6 @@ func TestManagedIndexMigrate(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-
 			if tc.createBeforeConfig != nil {
 				i := esutils.NewIndex(elasticClient).Name(tc.createBeforeConfig.indexName)
 				i.AddWriteAlias(tc.managedIndName)
@@ -91,7 +90,6 @@ func TestManagedIndexMigrate(t *testing.T) {
 			}
 
 			assert.Equal(t, expectedAliases, resp.Aliases)
-
 		})
 	}
 }

@@ -119,7 +119,6 @@ func (c *LogCollector) CollectPixieLogs(fName string) error {
 
 	for _, pod := range pods.Items {
 		for _, containerStatus := range pod.Status.ContainerStatuses {
-
 			// Ignore prev logs, they might not exist.
 			_ = c.logPodInfoToZipFile(zf, pod, containerStatus.Name, true)
 

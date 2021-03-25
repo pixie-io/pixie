@@ -575,7 +575,6 @@ func (m *ManagerImpl) UpdateConfig(ns string, podName string, key string, value 
 // Afterwards, the changes to the agent state are read out as a delta to the previous state.
 func (m *ManagerImpl) GetAgentUpdates(cursorID uuid.UUID) ([]*metadata_servicepb.AgentUpdate,
 	*storepb.ComputedSchema, error) {
-
 	schemaUpdated := false
 	var updatedAgentsUpdates []*metadata_servicepb.AgentUpdate
 

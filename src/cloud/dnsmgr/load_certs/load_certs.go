@@ -134,5 +134,4 @@ func main() {
 	viper.BindPFlags(pflag.CommandLine)
 
 	InitDBAndLoadCerts()
-
 }

@@ -289,7 +289,6 @@ func generateCertYAMLs(certPath string, caCertPath string, caKeyPath string, nam
 }
 
 func installCertsUsingClientset(certPath string, caCertPath string, caKeyPath string, namespace string, bitsize int, clientset *kubernetes.Clientset, config *rest.Config) error {
-
 	// Delete secrets in k8s.
 	k8s.DeleteSecret(clientset, namespace, "proxy-tls-certs")
 	k8s.DeleteSecret(clientset, namespace, "service-tls-certs")

@@ -22,7 +22,6 @@ func init() {
 	pflag.String("postgres_username", "pl", "The username in the postgres database")
 	pflag.String("postgres_password", "pl", "The password in the postgres database")
 	pflag.Bool("postgres_ssl", false, "Enable ssl for postgres")
-
 }
 
 // DefaultDBURI returns the URI string for the default postgres instance based on flags/env vars.

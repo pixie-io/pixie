@@ -169,7 +169,6 @@ func GetFuncsToExecute(script *script.ExecutableScript) ([]*public_vizierapipb.E
 			}
 			execFuncs = append(execFuncs, execFunc)
 		}
-
 	}
 	// Find function definitions within widgets.
 	for _, w := range script.Vis.Widgets {
@@ -243,7 +242,6 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.Exec
 				}
 			}
 		}
-
 	}()
 	return results, nil
 }

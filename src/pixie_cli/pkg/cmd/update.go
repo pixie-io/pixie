@@ -35,7 +35,6 @@ func init() {
 	VizierUpdateCmd.Flags().BoolP("redeploy_etcd", "e", false, "Whether or not to redeploy etcd during the update")
 	_ = viper.BindPFlag("redeploy_etcd", VizierUpdateCmd.Flags().Lookup("redeploy_etcd"))
 	VizierUpdateCmd.Flags().StringP("cluster", "c", "", "Run only on selected cluster")
-
 }
 
 // UpdateCmd is the "update" sub-command of the CLI.

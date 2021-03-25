@@ -162,7 +162,6 @@ func (i *InputField) Draw(screen tcell.Screen) {
 			cursorScreenPos += screenWidth
 			return false
 		})
-
 	} else {
 		// The text doesn't fit. Where is the cursor?
 		if i.cursorPos < 0 {

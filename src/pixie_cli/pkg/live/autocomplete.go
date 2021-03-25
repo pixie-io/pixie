@@ -200,7 +200,6 @@ func (m *autocompleteModal) Show(app *tview.Application) tview.Primitive {
 		} else {
 			m.ib.SetBorderColor(tcell.ColorYellow)
 		}
-
 	})
 
 	m.ib.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {

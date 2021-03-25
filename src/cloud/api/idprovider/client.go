@@ -243,7 +243,6 @@ func (c *HydraKratosClient) convertExternalHydraURLToInternal(externalHydraURL s
 	// Get rid of any prepended path.
 	u.Path = strings.ReplaceAll(u.Path, browserURL.Path, "")
 	return u.String(), nil
-
 }
 
 // deepCopyHeader creates a deep copy of the src into dst.
@@ -650,7 +649,6 @@ func convertIdentityToKratosUserInfo(identity *kratosModels.Identity) (*KratosUs
 		return nil, err
 	}
 	return k, nil
-
 }
 
 // UpdateUserInfo sets the userInfo for the user. Note that it doesn't patch, but fully updates so you likely need to GetUserInfo first.

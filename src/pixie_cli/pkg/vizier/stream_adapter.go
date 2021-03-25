@@ -88,7 +88,6 @@ func NewStreamOutputAdapterWithFactory(ctx context.Context, stream chan *ExecDat
 	go adapter.handleStream(ctx, stream)
 
 	return adapter
-
 }
 
 // NewStreamOutputAdapter creates a new vizier output adapter.

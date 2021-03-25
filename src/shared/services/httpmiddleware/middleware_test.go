@@ -92,7 +92,6 @@ func TestWithBearerAuthMiddleware(t *testing.T) {
 					require.NoError(t, err)
 					assert.NotNil(t, sCtx)
 					assert.Equal(t, test.ExpectHandlerUserID, sCtx.Claims.GetUserClaims().UserID)
-
 				} else {
 					assert.NotNil(t, err)
 				}
@@ -117,5 +116,4 @@ func TestWithBearerAuthMiddleware(t *testing.T) {
 			}
 		})
 	}
-
 }

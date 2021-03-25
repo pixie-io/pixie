@@ -111,7 +111,6 @@ func (d *errorViewDecorator) Decor(stat *decor.Statistics) string {
 	}
 	if d.err == nil {
 		return ""
-
 	}
 	return color.RedString(fmt.Sprintf(" ERR: %s", d.err.Error()))
 }

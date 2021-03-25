@@ -24,7 +24,6 @@ func init() {
 	LiveCmd.Flags().BoolP("all-clusters", "d", false, "Run script across all clusters")
 	LiveCmd.Flags().StringP("cluster", "c", "", "Run only on selected cluster")
 	LiveCmd.Flags().MarkHidden("all-clusters")
-
 }
 
 // LiveCmd is the "query" command.

@@ -74,7 +74,6 @@ func (ha *fakeHydraAdminClient) AcceptConsentRequest(params *hydraAdmin.AcceptCo
 func (ha *fakeHydraAdminClient) AcceptLoginRequest(params *hydraAdmin.AcceptLoginRequestParams) (*hydraAdmin.AcceptLoginRequestOK, error) {
 	if ha.acceptLoginRequestFn != nil {
 		return (*ha.acceptLoginRequestFn)(params)
-
 	}
 	return &hydraAdmin.AcceptLoginRequestOK{
 		Payload: &hydraModels.CompletedRequest{
@@ -269,7 +268,6 @@ func makeClientFromConfig(t *testing.T, p *testClientConfig) (*HydraKratosClient
 			updateIdentityFn: p.updateIdentityFn,
 		},
 	}, hydraPublicHostFake.Close
-
 }
 
 func TestWhoami(t *testing.T) {
@@ -318,7 +316,6 @@ func stripQuery(t *testing.T, urlStr string) string {
 
 	u.RawQuery = ""
 	return u.String()
-
 }
 
 func createLoginRequest(t *testing.T, hydraLoginState, loginChallenge string) *http.Request {

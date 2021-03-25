@@ -552,7 +552,6 @@ func (a *Datastore) GetProcesses(upids []*types.UInt128) ([]*metadatapb.ProcessI
 			}
 			processes[i] = &processPb
 		}
-
 	}
 	return processes, nil
 }

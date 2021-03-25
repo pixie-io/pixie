@@ -70,7 +70,6 @@ func buildConfig(kubeconfig string) (*rest.Config, error) {
 
 // runElection manages the election.
 func (le *K8sLeaderElectionMgr) runElection(ctx context.Context, callback func(string), id string) {
-
 	// leader election uses the Kubernetes API by writing to a
 	// lock object, which can be a LeaseLock object (preferred),
 	// a ConfigMap, or an Endpoints (deprecated) object.

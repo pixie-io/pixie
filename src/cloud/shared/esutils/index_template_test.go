@@ -69,7 +69,6 @@ func TestIndexTemplateMigrate(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-
 			if tc.createBeforeConfig != nil {
 				err := esutils.NewIndexTemplate(elasticClient, tc.templateName).
 					AssociateRolloverPolicy(tc.createBeforeConfig.policyName, tc.createBeforeConfig.aliasName).

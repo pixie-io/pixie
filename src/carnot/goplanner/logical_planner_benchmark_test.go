@@ -1243,7 +1243,6 @@ func makePlannerState(numPEM int) *distributedpb.LogicalPlannerState {
 			AgentList: agentList,
 		}
 		plannerStatePB.DistributedState.SchemaInfo = append(plannerStatePB.DistributedState.SchemaInfo, &newSchemaInfo)
-
 	}
 
 	return plannerStatePB
@@ -1280,7 +1279,6 @@ func benchmarkPlannerInnerLoop(c *goplanner.GoPlanner, plannerStatePB *distribut
 		log.Fatalln("Failed to plan:", status.Msg)
 		os.Exit(1)
 	}
-
 }
 func benchmarkPlanner(b *testing.B, queryRequestPB *plannerpb.QueryRequest, numAgents int) {
 	// Create the compiler.
@@ -1320,7 +1318,6 @@ func getExecRequest(pxlScript, visJSON string) (*plannerpb.QueryRequest, error) 
 	vs, err := script.ParseVisSpec(visJSON)
 	if err != nil {
 		return nil, err
-
 	}
 	funcs, err := vizier.GetFuncsToExecute(&script.ExecutableScript{Vis: vs})
 	if err != nil {

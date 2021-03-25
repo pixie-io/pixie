@@ -45,7 +45,6 @@ func addSignalInterruptCatch(action func()) {
 		for range ch {
 			action()
 		}
-
 	}()
 }
 

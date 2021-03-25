@@ -62,7 +62,6 @@ func (w *parser) ArgMatch(s string) bool {
 	return allRe.MatchString(s) && w.isTabbedLine(s)
 }
 func (w *parser) ReturnMatch(s string) bool {
-
 	allRe := re.MustCompile(w.ReturnReStr())
 
 	return allRe.MatchString(s) && w.isTabbedLine(s)
@@ -256,7 +255,6 @@ func combineNeighborLines(lines *[]string, i int) string {
 	}
 
 	return combineLines(lines, []int{i - 1, i, i + 1}, i)
-
 }
 
 // formatLineError takes the lines object and prints the error with a pointer to the line that failed.
@@ -450,7 +448,6 @@ func parseDocstringAndWrite(outDocs *docspb.StructuredDocs, rawDocstring string,
 			Body:    body,
 			FuncDoc: genDocString.function,
 		})
-
 	} else if topic == CompileTimeFns {
 		outDocs.CompileFnDocs = append(outDocs.CompileFnDocs, &docspb.CompileFnDoc{
 			Body:    genDocString.body,
@@ -461,7 +458,6 @@ func parseDocstringAndWrite(outDocs *docspb.StructuredDocs, rawDocstring string,
 	}
 
 	return nil
-
 }
 
 func makeName(runningName, addedName string) string {

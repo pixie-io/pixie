@@ -459,7 +459,6 @@ func TestIndexMigrate(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-
 			if tc.createBeforeConfig != nil {
 				i := esutils.NewIndex(elasticClient).Name(tc.indexName)
 				if tc.createBeforeConfig.indexJSON != "" {

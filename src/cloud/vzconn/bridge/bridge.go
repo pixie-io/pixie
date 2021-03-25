@@ -143,7 +143,6 @@ func (s *NATSBridgeController) _run(ctx context.Context) error {
 			return err
 		}
 	}
-
 }
 
 func (s *NATSBridgeController) getRemoteSubject(topic string) string {
@@ -212,7 +211,6 @@ func (s *NATSBridgeController) sendMessageToMessageBus(msg *vzconnpb.V2CBridgeMe
 	}
 
 	return s.nc.Publish(topic, b)
-
 }
 
 func (s *NATSBridgeController) startStreamGRPCReader(ctx context.Context) error {

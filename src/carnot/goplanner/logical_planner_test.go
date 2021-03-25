@@ -278,7 +278,6 @@ func TestPlanner_GetMainFuncArgsSpec_BadQuery(t *testing.T) {
 	status := plannerResultPB.Status
 	assert.NotEqual(t, status.ErrCode, statuspb.OK)
 	assert.Regexp(t, "Could not find 'main' fn", status.Msg)
-
 }
 
 const visFuncsQuery = `

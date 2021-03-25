@@ -35,7 +35,6 @@ func setupCommonFlags() {
 	pflag.String("jwt_signing_key", "", "The signing key used for JWTs")
 	pflag.String("pod_name", "<unknown>", "The pod name")
 	pflag.Bool("version", false, "Print the version and quit.")
-
 }
 
 // SetupCommonFlags sets flags that are used by every service, even non GRPC servers.

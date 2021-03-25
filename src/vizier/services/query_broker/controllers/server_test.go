@@ -283,7 +283,6 @@ func (f *fakeResultForwarder) StreamResults(ctx context.Context, queryID uuid.UU
 	resultCh chan *public_vizierapipb.ExecuteScriptResponse,
 	compilationTimeNs int64,
 	queryPlanOpts *controllers.QueryPlanOpts) error {
-
 	f.StreamedQueryPlanOpts = queryPlanOpts
 	f.QueryStreamed = queryID
 

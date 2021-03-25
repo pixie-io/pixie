@@ -930,7 +930,6 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 	a.EXPECT().SetPLMetadata("userid", gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.PLUserID = plid
 		fakeUserInfoSecondRequest.PLOrgID = plorgid
-
 	}).Return(nil)
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfoSecondRequest, nil)
 
@@ -976,7 +975,6 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 	assert.Equal(t, resp.UserInfo.LastName, "last")
 	assert.Equal(t, resp.UserInfo.Email, "abc@gmail.com")
 	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.PLUserID, fakeUserInfoSecondRequest.PLOrgID, resp.ExpiresAt, "jwtkey")
-
 }
 
 func TestServer_Signup_CreateOrg(t *testing.T) {

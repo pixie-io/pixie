@@ -223,7 +223,6 @@ func NewUint128Value(schema *ColSchema) *UInt128Value {
 		ValueType: ValueType{schema},
 		b:         make([]byte, 16),
 	}
-
 }
 
 // String returns the string representation.

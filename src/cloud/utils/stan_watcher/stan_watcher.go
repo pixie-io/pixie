@@ -113,7 +113,6 @@ func handleMessage(subject string, data []byte, messageType string) {
 	fmt.Printf("%s=%s\n", red("Vizier ID"), msg.GetVizierID())
 	fmt.Printf("%s\n", proto.MarshalTextString(innerPb))
 	fmt.Printf("----------------------------------------------------------\n")
-
 }
 
 func handleSTANMessage(m *stan.Msg) {
