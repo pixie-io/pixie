@@ -25,7 +25,7 @@ def mysql_data(start: str, source_filter: str, destination_filter: str, num_head
 
     df = add_source_dest_links(df, start)
     df = df[['time_', 'source', 'destination', 'remote_port', 'req_cmd',
-            'req_body', 'resp_status', 'resp_body', 'latency_ns']]
+            'req_body', 'resp_status', 'resp_body', 'latency']]
 
     return df
 
