@@ -45,7 +45,9 @@ func testMain(m *testing.M) error {
 	defer teardown()
 	db = testDB
 
-	m.Run()
+	if c := m.Run(); c != 0 {
+		return fmt.Errorf("some tests failed with code: %d", c)
+	}
 	return nil
 }
 
