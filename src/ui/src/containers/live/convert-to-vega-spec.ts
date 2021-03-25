@@ -2126,18 +2126,7 @@ function convertToStacktraceFlameGraph(
           source: 'scope',
           type: 'click',
           markname: 'stacktrace_rect',
-          between: [
-            {
-              source: 'window',
-              type: 'keydown',
-              filter: 'event.keyCode === 17',
-            },
-            {
-              source: 'window',
-              type: 'keyup',
-              filter: 'event.keyCode === 17',
-            },
-          ],
+          filter: ['event.ctrlKey || event.metaKey', 'event.button === 0'],
         },
         update: 'clampRange([datum.x0 - 50, datum.x1 + 50], 0, main_width)',
       },
