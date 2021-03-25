@@ -297,12 +297,8 @@ func TestWhoami(t *testing.T) {
 // inspected.
 func getSessionFromResponse(t *testing.T, cookieStore sessions.Store, resp *http.Response, sessionKey string) *sessions.Session {
 	cookies, ok := resp.Header["Set-Cookie"]
-	if !assert.True(t, ok) {
-		t.Fatal("No cookie set by response")
-	}
-	if !assert.Len(t, cookies, 1) {
-		t.Fatalf("Got wrong number of cookies %d", len(cookies))
-	}
+	require.True(t, ok)
+	require.Len(t, cookies, 1)
 	// Extract the cookie value by creating a new request, then feeding it to the cookieStore.
 	testReq, err := http.NewRequest("", "/", nil)
 	require.NoError(t, err)
@@ -352,7 +348,7 @@ func TestRedirectToLogin(t *testing.T) {
 
 	cookieStore := sessions.NewCookieStore([]byte("pair"))
 	session, err := cookieStore.New(req, IDProviderSessionKey)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	w := httptest.NewRecorder()
 
 	err = c.RedirectToLogin(session, w, req)
@@ -364,25 +360,19 @@ func TestRedirectToLogin(t *testing.T) {
 
 	loginRedirectURL := resp.Header.Get("Location")
 
-	if !assert.NotEmpty(t, loginRedirectURL) {
-		t.Fatal("redirect is empty")
-	}
+	require.NotEmpty(t, loginRedirectURL)
 
 	u, err := url.Parse(loginRedirectURL)
 	require.NoError(t, err)
 
 	returnTo := u.Query().Get("return_to")
-	if !assert.NotEmpty(t, returnTo) {
-		t.Fatal("Didn't set returnTo URL")
-	}
+	require.NotEmpty(t, returnTo)
 
 	returnToU, err := url.Parse(returnTo)
 	require.NoError(t, err)
 
 	redirectHydraState := returnToU.Query().Get(HydraLoginStateKey)
-	if !assert.NotEmpty(t, returnTo) {
-		t.Fatalf("Didn't set '%s' param", HydraLoginStateKey)
-	}
+	require.NotEmpty(t, returnTo)
 
 	respSession := getSessionFromResponse(t, cookieStore, resp, IDProviderSessionKey)
 	// Verify the login state matches in the return URL and cookies.
@@ -552,9 +542,7 @@ func TestHandleLogin(t *testing.T) {
 	assert.Equal(t, http.StatusFound, resp.StatusCode)
 
 	redirectToURL := resp.Header.Get("Location")
-	if !assert.NotEmpty(t, redirectToURL) {
-		t.Fatal("Didn't get redirectLocation")
-	}
+	require.NotEmpty(t, redirectToURL)
 	// Make sure the redirection is the same as the consentRedirect.
 	assert.Equal(t, postLoginRedirect, redirectToURL)
 
@@ -566,9 +554,7 @@ func TestHandleLogin(t *testing.T) {
 func getRedirectURL(t *testing.T, resp *http.Response) string {
 	loginRedirectURL := resp.Header.Get("Location")
 
-	if !assert.NotEmpty(t, loginRedirectURL) {
-		t.Fatal("redirect is empty")
-	}
+	require.NotEmpty(t, loginRedirectURL)
 
 	return loginRedirectURL
 }
@@ -658,7 +644,7 @@ func TestManageUserInfo(t *testing.T) {
 		PLOrgID:  plOrgID,
 		PLUserID: plUserID,
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	userID, err := c.GetUserIDFromToken(context.Background(), token)
 	require.NoError(t, err)

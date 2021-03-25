@@ -273,7 +273,7 @@ func registerVizier(ts *testState, vizierID uuid.UUID, stream vzconnpb.VZConnSer
 		SessionId: 0,
 		Msg:       convertToAny(regReq),
 	})
-	assert.NoError(ts.t, err)
+	require.NoError(ts.t, err)
 
 	// Should get the register ACK.
 	m := <-readCh

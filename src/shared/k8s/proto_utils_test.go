@@ -5,6 +5,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -384,7 +385,7 @@ func TestOwnerReferenceToProto(t *testing.T) {
 	}
 
 	oPb, err := k8s.OwnerReferenceToProto(&o)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	expectedPb := &metadatapb.OwnerReference{}
 	if err := proto.UnmarshalText(ownerReferencePb, expectedPb); err != nil {
@@ -400,7 +401,7 @@ func TestOwnerReferenceFromProto(t *testing.T) {
 	}
 
 	obj, err := k8s.OwnerReferenceFromProto(oPb)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	assert.Equal(t, "pod", obj.Kind)
 	assert.Equal(t, "abcd", obj.Name)
@@ -446,7 +447,7 @@ func TestObjectMetadataToProto(t *testing.T) {
 	}
 
 	oPb, err := k8s.ObjectMetadataToProto(&o)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	expectedPb := &metadatapb.ObjectMetadata{}
 	if err := proto.UnmarshalText(objectMetadataPb, expectedPb); err != nil {
@@ -482,7 +483,7 @@ func TestObjectMetadataMissingClusterToProto(t *testing.T) {
 	}
 
 	oPb, err := k8s.ObjectMetadataToProto(&o)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	expectedPb := &metadatapb.ObjectMetadata{}
 	if err := proto.UnmarshalText(objectMetadataMissingClusterPb, expectedPb); err != nil {
@@ -498,7 +499,7 @@ func TestObjectMetadataFromProto(t *testing.T) {
 	}
 
 	obj, err := k8s.ObjectMetadataFromProto(oPb)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	delTime := metav1.Unix(0, 6)
 	creationTime := metav1.Unix(0, 4)
@@ -525,7 +526,7 @@ func TestPodSpecToProto(t *testing.T) {
 	}
 
 	oPb, err := k8s.PodSpecToProto(&o)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	expectedPb := &metadatapb.PodSpec{}
 	if err := proto.UnmarshalText(podSpecPb, expectedPb); err != nil {
@@ -541,7 +542,7 @@ func TestPodSpecFromProto(t *testing.T) {
 	}
 
 	obj, err := k8s.PodSpecFromProto(oPb)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	assert.Equal(t, "test", obj.NodeName)
 	assert.Equal(t, "hostname", obj.Hostname)
@@ -585,7 +586,7 @@ func TestPodStatusToProto(t *testing.T) {
 	}
 
 	oPb, err := k8s.PodStatusToProto(&o)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	expectedPb := &metadatapb.PodStatus{}
 	if err := proto.UnmarshalText(podStatusPb, expectedPb); err != nil {
@@ -601,7 +602,7 @@ func TestPodStatusFromProto(t *testing.T) {
 	}
 
 	obj, err := k8s.PodStatusFromProto(oPb)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	assert.Equal(t, "this is message", obj.Message)
 	assert.Equal(t, v1.PodRunning, obj.Phase)
@@ -678,7 +679,7 @@ func TestPodToProto(t *testing.T) {
 	}
 
 	oPb, err := k8s.PodToProto(&o)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	expectedPb := &metadatapb.Pod{}
 	if err := proto.UnmarshalText(podPb, expectedPb); err != nil {
@@ -694,7 +695,7 @@ func TestPodFromProto(t *testing.T) {
 	}
 
 	obj, err := k8s.PodFromProto(oPb)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	assert.Equal(t, "object_md", obj.ObjectMeta.Name)
 	assert.Equal(t, "this is message", obj.Status.Message)
@@ -727,7 +728,7 @@ func TestNamespaceToProto(t *testing.T) {
 	}
 
 	oPb, err := k8s.NamespaceToProto(&o)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	expectedPb := &metadatapb.Namespace{}
 	if err := proto.UnmarshalText(namespacePb, expectedPb); err != nil {
@@ -745,7 +746,7 @@ func TestObjectReferenceToProto(t *testing.T) {
 	}
 
 	oPb, err := k8s.ObjectReferenceToProto(&o)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	expectedPb := &metadatapb.ObjectReference{}
 	if err := proto.UnmarshalText(objectReferencePb, expectedPb); err != nil {
@@ -761,7 +762,7 @@ func TestObjectReferenceFromProto(t *testing.T) {
 	}
 
 	obj, err := k8s.ObjectReferenceFromProto(oPb)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	assert.Equal(t, "pod", obj.Kind)
 	assert.Equal(t, "pl", obj.Namespace)
@@ -777,7 +778,7 @@ func TestEndpointPortToProto(t *testing.T) {
 	}
 
 	oPb, err := k8s.EndpointPortToProto(&o)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	expectedPb := &metadatapb.EndpointPort{}
 	if err := proto.UnmarshalText(endpointPortPb, expectedPb); err != nil {
@@ -793,7 +794,7 @@ func TestEndpointPortFromProto(t *testing.T) {
 	}
 
 	obj, err := k8s.EndpointPortFromProto(oPb)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	assert.Equal(t, "endpt", obj.Name)
 	assert.Equal(t, int32(10), obj.Port)
@@ -815,7 +816,7 @@ func TestEndpointAddressToProto(t *testing.T) {
 	}
 
 	oPb, err := k8s.EndpointAddressToProto(&o)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	expectedPb := &metadatapb.EndpointAddress{}
 	if err := proto.UnmarshalText(endpointAddrPb, expectedPb); err != nil {
@@ -831,7 +832,7 @@ func TestEndpointAddressFromProto(t *testing.T) {
 	}
 
 	obj, err := k8s.EndpointAddressFromProto(oPb)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	assert.Equal(t, "127.0.0.1", obj.IP)
 	assert.Equal(t, "host", obj.Hostname)
@@ -888,7 +889,7 @@ func TestEndpointSubsetToProto(t *testing.T) {
 	}
 
 	oPb, err := k8s.EndpointSubsetToProto(&o)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	expectedPb := &metadatapb.EndpointSubset{}
 	if err := proto.UnmarshalText(endpointSubsetPb, expectedPb); err != nil {
@@ -904,7 +905,7 @@ func TestEndpointSubsetsFromProto(t *testing.T) {
 	}
 
 	obj, err := k8s.EndpointSubsetFromProto(oPb)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	assert.Equal(t, 2, len(obj.Addresses))
 	assert.Equal(t, "127.0.0.1", obj.Addresses[0].IP)
@@ -992,7 +993,7 @@ func TestEndpointsToProto(t *testing.T) {
 	}
 
 	oPb, err := k8s.EndpointsToProto(&o)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	expectedPb := &metadatapb.Endpoints{}
 	if err := proto.UnmarshalText(endpointsPb, expectedPb); err != nil {
@@ -1008,7 +1009,7 @@ func TestEndpointsFromProto(t *testing.T) {
 	}
 
 	e, err := k8s.EndpointsFromProto(oPb)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	assert.Equal(t, "object_md", e.ObjectMeta.Name)
 	assert.Equal(t, 1, len(e.Subsets))
@@ -1024,7 +1025,7 @@ func TestServicePortToProto(t *testing.T) {
 	}
 
 	oPb, err := k8s.ServicePortToProto(&o)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	expectedPb := &metadatapb.ServicePort{}
 	if err := proto.UnmarshalText(servicePortPb, expectedPb); err != nil {
@@ -1040,7 +1041,7 @@ func TestServicePortFromProto(t *testing.T) {
 	}
 
 	obj, err := k8s.ServicePortFromProto(oPb)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	assert.Equal(t, "endpt", obj.Name)
 	assert.Equal(t, int32(10), obj.Port)
@@ -1076,7 +1077,7 @@ func TestServiceSpecToProto(t *testing.T) {
 	}
 
 	oPb, err := k8s.ServiceSpecToProto(&o)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	expectedPb := &metadatapb.ServiceSpec{}
 	if err := proto.UnmarshalText(serviceSpecPb, expectedPb); err != nil {
@@ -1092,7 +1093,7 @@ func TestServiceSpecFromProto(t *testing.T) {
 	}
 
 	obj, err := k8s.ServiceSpecFromProto(oPb)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	assert.Equal(t, "127.0.0.1", obj.ClusterIP)
 	assert.Equal(t, "127.0.0.4", obj.LoadBalancerIP)
@@ -1158,7 +1159,7 @@ func TestServiceToProto(t *testing.T) {
 	}
 
 	oPb, err := k8s.ServiceToProto(&o)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	expectedPb := &metadatapb.Service{}
 	if err := proto.UnmarshalText(servicePb, expectedPb); err != nil {
@@ -1174,7 +1175,7 @@ func TestServiceFromProto(t *testing.T) {
 	}
 
 	obj, err := k8s.ServiceFromProto(oPb)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	assert.Equal(t, "object_md", obj.ObjectMeta.Name)
 	assert.Equal(t, "hello", obj.Spec.ExternalName)
@@ -1196,7 +1197,7 @@ func TestContainerStatusToProtoWaiting(t *testing.T) {
 	}
 
 	oPb, err := k8s.ContainerStatusToProto(&o)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	expectedPb := &metadatapb.ContainerStatus{}
 	if err := proto.UnmarshalText(waitingContainerStatusPb, expectedPb); err != nil {
@@ -1222,7 +1223,7 @@ func TestContainerStatusToProtoRunning(t *testing.T) {
 	}
 
 	oPb, err := k8s.ContainerStatusToProto(&o)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	expectedPb := &metadatapb.ContainerStatus{}
 	if err := proto.UnmarshalText(runningContainerStatusPb, expectedPb); err != nil {
@@ -1250,7 +1251,7 @@ func TestContainerStatusToProtoTerminated(t *testing.T) {
 	}
 
 	oPb, err := k8s.ContainerStatusToProto(&o)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	expectedPb := &metadatapb.ContainerStatus{}
 	if err := proto.UnmarshalText(terminatedContainerStatusPb, expectedPb); err != nil {
@@ -1307,7 +1308,7 @@ func TestNodeToProto(t *testing.T) {
 	}
 
 	oPb, err := k8s.NodeToProto(&o)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 
 	expectedPb := &metadatapb.Node{}
 	if err := proto.UnmarshalText(nodePb, expectedPb); err != nil {

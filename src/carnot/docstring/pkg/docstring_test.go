@@ -220,9 +220,7 @@ func TestParseDocstring(t *testing.T) {
 	assert.ElementsMatch(t, parsedDoc.function.ReturnType.Types, []string{"DataFrame"})
 	assert.Regexp(t, "table loaded as a DataFrame", parsedDoc.function.ReturnType.Desc)
 
-	if !assert.Equal(t, 4, len(parsedDoc.function.Args)) {
-		t.Fatal()
-	}
+	require.Equal(t, 4, len(parsedDoc.function.Args))
 
 	assert.Equal(t, parsedDoc.function.Args[0].Ident, "table")
 	assert.ElementsMatch(t, parsedDoc.function.Args[0].Types, []string{"str"})
@@ -232,17 +230,14 @@ func TestParseDocstring(t *testing.T) {
 	assert.Equal(t, parsedDoc.function.Args[3].Ident, "stop_time")
 
 	// Check examples.
-	if assert.Len(t, parsedDoc.body.Examples, 1) {
-		// Is the example wrapped by backticks?
-		assert.Regexp(t, "(?s)^```.*```$", parsedDoc.body.Examples[0].Value)
-	}
+	require.Len(t, parsedDoc.body.Examples, 1)
+	// Is the example wrapped by backticks?
+	assert.Regexp(t, "(?s)^```.*```$", parsedDoc.body.Examples[0].Value)
 
 	// Aggregate document with kwargs.
 	parsedDoc, err = parseDocstring(aggDoc)
 	require.NoError(t, err)
-	if !assert.Equal(t, 1, len(parsedDoc.function.Args)) {
-		t.Fatal()
-	}
+	require.Equal(t, 1, len(parsedDoc.function.Args))
 
 	assert.Regexp(t, "keys are the column names", parsedDoc.function.Args[0].Desc)
 	assert.ElementsMatch(t, parsedDoc.function.Args[0].Types, []string{"Tuple[string, FunctionType]"})
@@ -254,9 +249,7 @@ func TestParseDocstring(t *testing.T) {
 	assert.ElementsMatch(t, parsedDoc.function.ReturnType.Types, []string{"DataFrame"})
 	assert.Regexp(t, "containing the memory source", parsedDoc.function.ReturnType.Desc)
 
-	if !assert.Equal(t, len(parsedDoc.function.Args), 2) {
-		t.Fatal()
-	}
+	require.Equal(t, len(parsedDoc.function.Args), 2)
 	assert.Equal(t, parsedDoc.function.Args[0].Ident, "arg")
 	assert.Equal(t, parsedDoc.function.Args[1].Ident, "arg2")
 
@@ -267,9 +260,7 @@ func TestParseDocstring(t *testing.T) {
 	assert.ElementsMatch(t, parsedDoc.function.ReturnType.Types, []string{"DataFrame"})
 	assert.Regexp(t, "columns removed", parsedDoc.function.ReturnType.Desc)
 
-	if !assert.Equal(t, len(parsedDoc.function.Args), 1) {
-		t.Fatal()
-	}
+	require.Equal(t, len(parsedDoc.function.Args), 1)
 	assert.Equal(t, parsedDoc.function.Args[0].Ident, "columns")
 
 	parsedDoc, err = parseDocstring(longReturnDesc)
@@ -322,9 +313,7 @@ func TestParseAllDocStrings(t *testing.T) {
 
 	structDocs, err := ParseAllDocStrings(internalDoc)
 	require.NoError(t, err)
-	if !assert.Len(t, structDocs.MutationDocs, 1) {
-		t.Fatal()
-	}
+	require.Len(t, structDocs.MutationDocs, 1)
 
 	// The topic matcher should push it into the body.
 	body := structDocs.MutationDocs[0].Body
@@ -356,9 +345,8 @@ func TestGetTabChar(t *testing.T) {
 	assert.Equal(t, "    ", tabChar)
 
 	_, err = getTabChar(mismatchTabsDataFrameDoc)
-	if assert.Error(t, err) {
-		assert.Regexp(t, "Mismatching tabChars", err.Error())
-	}
+	require.Error(t, err)
+	assert.Regexp(t, "Mismatching tabChars", err.Error())
 }
 
 func TestDedent(t *testing.T) {
@@ -372,11 +360,10 @@ func TestDedent(t *testing.T) {
 
 	// Now that it's dedented, we should be able to parse it
 	funcDoc, err := parseDocstring(strings.TrimSpace(dedented))
-	if assert.NoError(t, err) {
-		// Check that we actually parsed it.
-		assert.Regexp(t, "Upserts a tracepoint on the UPID", funcDoc.body.Brief)
-		assert.Len(t, funcDoc.function.Args, 5)
-	}
+	require.NoError(t, err)
+	// Check that we actually parsed it.
+	assert.Regexp(t, "Upserts a tracepoint on the UPID", funcDoc.body.Brief)
+	assert.Len(t, funcDoc.function.Args, 5)
 
 	// Make sure it doesn't dedent stuff that doesn't need dedenting.
 	assert.Equal(t, dataFrameDoc, dedent(dataFrameDoc))

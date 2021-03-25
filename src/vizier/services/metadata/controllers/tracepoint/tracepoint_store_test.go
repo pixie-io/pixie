@@ -50,7 +50,7 @@ func TestTracepointStore_UpsertTracepoint(t *testing.T) {
 	require.NoError(t, err)
 
 	savedTracepoint, err := db.Get("/tracepoint/" + tpID.String())
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	savedTracepointPb := &storepb.TracepointInfo{}
 	err = proto.Unmarshal(savedTracepoint, savedTracepointPb)
 	require.NoError(t, err)
@@ -180,7 +180,7 @@ func TestTracepointStore_UpdateTracepointState(t *testing.T) {
 	require.NoError(t, err)
 
 	savedTracepoint, err := db.Get("/tracepointStates/" + tpID.String() + "/" + agentID.String())
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	savedTracepointPb := &storepb.AgentTracepointStatus{}
 	err = proto.Unmarshal(savedTracepoint, savedTracepointPb)
 	require.NoError(t, err)
@@ -243,7 +243,7 @@ func TestTracepointStore_SetTracepointWithName(t *testing.T) {
 	require.NoError(t, err)
 
 	savedTracepoint, err := db.Get("/tracepointName/test")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	savedTracepointPb := &uuidpb.UUID{}
 	err = proto.Unmarshal(savedTracepoint, savedTracepointPb)
 	require.NoError(t, err)

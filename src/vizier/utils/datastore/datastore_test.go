@@ -7,6 +7,7 @@ import (
 	"github.com/cockroachdb/pebble"
 	"github.com/cockroachdb/pebble/vfs"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/etcd"
@@ -47,26 +48,22 @@ func runTests(db MultiGetterSetterDeleterCloser, t *testing.T) {
 	t.Run("Set/Get", func(t *testing.T) {
 		setupDatastore(db)
 		v, err := db.Get("key1")
-		if assert.NoError(t, err) {
-			assert.Equal(t, "val1", string(v))
-		}
+		require.NoError(t, err)
+		assert.Equal(t, "val1", string(v))
 
 		v, err = db.Get("key2")
-		if assert.NoError(t, err) {
-			assert.Equal(t, "val2", string(v))
-		}
+		require.NoError(t, err)
+		assert.Equal(t, "val2", string(v))
 
 		db.Set("key1", "val1.1")
 
 		v, err = db.Get("key1")
-		if assert.NoError(t, err) {
-			assert.Equal(t, "val1.1", string(v))
-		}
+		require.NoError(t, err)
+		assert.Equal(t, "val1.1", string(v))
 
 		v, err = db.Get("nonexistent")
-		if assert.NoError(t, err) {
-			assert.Nil(t, v)
-		}
+		require.NoError(t, err)
+		assert.Nil(t, v)
 	})
 
 	t.Run("SetWithTTL", func(t *testing.T) {
@@ -88,13 +85,12 @@ func runTests(db MultiGetterSetterDeleterCloser, t *testing.T) {
 				return
 			case <-ticker.C:
 				v, err := db.Get("timed1")
-				if assert.NoError(t, err) {
-					if time.Since(now) < ttl {
-						assert.Equal(t, "limited1", string(v))
-					} else if v == nil {
-						// Key was deleted some time after TTL passed.
-						return
-					}
+				require.NoError(t, err)
+				if time.Since(now) < ttl {
+					assert.Equal(t, "limited1", string(v))
+				} else if v == nil {
+					// Key was deleted some time after TTL passed.
+					return
 				}
 			}
 		}
@@ -104,104 +100,87 @@ func runTests(db MultiGetterSetterDeleterCloser, t *testing.T) {
 		setupDatastore(db)
 		t.Run("Range", func(t *testing.T) {
 			keys, vals, err := db.GetWithRange("key1", "key1.1")
-			if assert.NoError(t, err) {
-				assert.Equal(t, []string{"key1"}, keys)
-				assert.Equal(t, [][]byte{[]byte("val1")}, vals)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, []string{"key1"}, keys)
+			assert.Equal(t, [][]byte{[]byte("val1")}, vals)
 
 			keys, vals, err = db.GetWithRange("key1", "key2")
-			if assert.NoError(t, err) {
-				assert.Equal(t, []string{"key1"}, keys)
-				assert.Equal(t, [][]byte{[]byte("val1")}, vals)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, []string{"key1"}, keys)
+			assert.Equal(t, [][]byte{[]byte("val1")}, vals)
 
 			keys, vals, err = db.GetWithRange("key1", "key4")
-			if assert.NoError(t, err) {
-				assert.Equal(t, []string{"key1", "key2", "key3"}, keys)
-				assert.Equal(t, [][]byte{[]byte("val1"), []byte("val2"), []byte("val3")}, vals)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, []string{"key1", "key2", "key3"}, keys)
+			assert.Equal(t, [][]byte{[]byte("val1"), []byte("val2"), []byte("val3")}, vals)
 
 			keys, vals, err = db.GetWithRange("nonexistent", "nonexistent2")
-			if assert.NoError(t, err) {
-				assert.Nil(t, keys)
-				assert.Nil(t, vals)
-			}
+			require.NoError(t, err)
+			assert.Nil(t, keys)
+			assert.Nil(t, vals)
 		})
 
 		t.Run("Prefix", func(t *testing.T) {
 			keys, vals, err := db.GetWithPrefix("key")
-			if assert.NoError(t, err) {
-				assert.Equal(t, []string{"key1", "key2", "key3", "key9"}, keys)
-				assert.Equal(t, [][]byte{[]byte("val1"), []byte("val2"), []byte("val3"), []byte("val9")}, vals)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, []string{"key1", "key2", "key3", "key9"}, keys)
+			assert.Equal(t, [][]byte{[]byte("val1"), []byte("val2"), []byte("val3"), []byte("val9")}, vals)
 
 			keys, vals, err = db.GetWithPrefix("nonexistent")
-			if assert.NoError(t, err) {
-				assert.Nil(t, keys)
-				assert.Nil(t, vals)
-			}
+			require.NoError(t, err)
+			assert.Nil(t, keys)
+			assert.Nil(t, vals)
 		})
 
 		t.Run("All", func(t *testing.T) {
 			vals, err := db.GetAll([]string{"key1", "key3", "nonexistent", "jam1"})
-			if assert.NoError(t, err) {
-				assert.Equal(t, [][]byte{[]byte("val1"), []byte("val3"), nil, []byte("neg")}, vals)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, [][]byte{[]byte("val1"), []byte("val3"), nil, []byte("neg")}, vals)
 		})
 	})
 
 	t.Run("Delete", func(t *testing.T) {
 		setupDatastore(db)
 		err := db.Delete("key2")
-		if assert.NoError(t, err) {
-			v, err := db.Get("key2")
-			if assert.NoError(t, err) {
-				assert.Nil(t, v)
-			}
+		require.NoError(t, err)
+		v, err := db.Get("key2")
+		require.NoError(t, err)
+		assert.Nil(t, v)
 
-			v, err = db.Get("key1")
-			if assert.NoError(t, err) {
-				assert.Equal(t, "val1", string(v))
-			}
-		}
+		v, err = db.Get("key1")
+		require.NoError(t, err)
+		assert.Equal(t, "val1", string(v))
 	})
 
 	t.Run("DeleteAll", func(t *testing.T) {
 		setupDatastore(db)
 		err := db.DeleteAll([]string{"key1", "key3"})
-		if assert.NoError(t, err) {
-			v, err := db.Get("key1")
-			if assert.NoError(t, err) {
-				assert.Nil(t, v)
-			}
+		require.NoError(t, err)
+		v, err := db.Get("key1")
+		require.NoError(t, err)
+		assert.Nil(t, v)
 
-			v, err = db.Get("key2")
-			if assert.NoError(t, err) {
-				assert.Equal(t, "val2", string(v))
-			}
-		}
+		v, err = db.Get("key2")
+		require.NoError(t, err)
+		assert.Equal(t, "val2", string(v))
 	})
 
 	t.Run("DeletePrefix", func(t *testing.T) {
 		setupDatastore(db)
 		err := db.DeleteWithPrefix("key")
 
-		if assert.NoError(t, err) {
-			v, err := db.Get("key1")
-			if assert.NoError(t, err) {
-				assert.Nil(t, v)
-			}
+		require.NoError(t, err)
+		v, err := db.Get("key1")
+		require.NoError(t, err)
+		assert.Nil(t, v)
 
-			v, err = db.Get("key2")
-			if assert.NoError(t, err) {
-				assert.Nil(t, v)
-			}
+		v, err = db.Get("key2")
+		require.NoError(t, err)
+		assert.Nil(t, v)
 
-			v, err = db.Get("jam1")
-			if assert.NoError(t, err) {
-				assert.Equal(t, "neg", string(v))
-			}
-		}
+		v, err = db.Get("jam1")
+		require.NoError(t, err)
+		assert.Equal(t, "neg", string(v))
 	})
 
 	err := db.Close()

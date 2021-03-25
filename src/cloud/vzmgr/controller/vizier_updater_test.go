@@ -69,7 +69,7 @@ func TestUpdater_UpdateOrInstallVizier(t *testing.T) {
 		require.NoError(t, err)
 		resp := &cvmsgspb.UpdateOrInstallVizierRequest{}
 		err = types.UnmarshalAny(c2vMsg.Msg, resp)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "123", resp.Version)
 		assert.NotNil(t, resp.Token)
 		claims := jwt.MapClaims{}
@@ -150,7 +150,7 @@ func TestUpdater_ProcessUpdateQueue(t *testing.T) {
 		require.NoError(t, err)
 		resp := &cvmsgspb.UpdateOrInstallVizierRequest{}
 		err = types.UnmarshalAny(c2vMsg.Msg, resp)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, "0.4.1", resp.Version)
 		assert.NotNil(t, resp.Token)
 		claims := jwt.MapClaims{}

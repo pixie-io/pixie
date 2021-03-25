@@ -138,33 +138,21 @@ func TestPlanner_Simple(t *testing.T) {
 	kelvinGRPCSourceParentNode2 := kelvinPlan.Nodes[0].Nodes[1]
 	kelvinGRPCSource1 := kelvinGRPCSourceParentNode1.Op.GetGRPCSourceOp()
 	kelvinGRPCSource2 := kelvinGRPCSourceParentNode2.Op.GetGRPCSourceOp()
-	if !assert.NotNil(t, kelvinGRPCSource1) {
-		t.FailNow()
-	}
-	if !assert.NotNil(t, kelvinGRPCSource2) {
-		t.FailNow()
-	}
+	require.NotNil(t, kelvinGRPCSource1)
+	require.NotNil(t, kelvinGRPCSource2)
 
 	assert.Equal(t, 3, len(planPB.Dag.GetNodes()))
 	pem1Plan := planPB.QbAddressToPlan["pem1"]
 	pem1MemSrc1 := pem1Plan.Nodes[0].Nodes[0].Op.GetMemSourceOp()
-	if !assert.NotNil(t, pem1MemSrc1) {
-		t.FailNow()
-	}
+	require.NotNil(t, pem1MemSrc1)
 
 	pem2Plan := planPB.QbAddressToPlan["pem2"]
 	pem2MemSrc1 := pem2Plan.Nodes[0].Nodes[0].Op.GetMemSourceOp()
-	if !assert.NotNil(t, pem2MemSrc1) {
-		t.FailNow()
-	}
+	require.NotNil(t, pem2MemSrc1)
 	pem1GRPCSink := pem1Plan.Nodes[0].Nodes[len(pem1Plan.Nodes[0].Nodes)-1].Op.GetGRPCSinkOp()
-	if !assert.NotNil(t, pem1GRPCSink) {
-		t.FailNow()
-	}
+	require.NotNil(t, pem1GRPCSink)
 	pem2GRPCSink := pem2Plan.Nodes[0].Nodes[len(pem2Plan.Nodes[0].Nodes)-1].Op.GetGRPCSinkOp()
-	if !assert.NotNil(t, pem2GRPCSink) {
-		t.FailNow()
-	}
+	require.NotNil(t, pem2GRPCSink)
 	assert.Equal(t, pem1GRPCSink.Address, "1111")
 	assert.Equal(t, pem2GRPCSink.Address, "1111")
 	assert.ElementsMatch(t,
@@ -197,19 +185,12 @@ func TestPlanner_MissingTable(t *testing.T) {
 	var errorPB compilerpb.CompilerErrorGroup
 	err = goplanner.GetCompilerErrorContext(status, &errorPB)
 
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
+	require.NoError(t, err)
 
-	if !assert.Equal(t, 1, len(errorPB.Errors)) {
-		t.FailNow()
-	}
+	require.Equal(t, 1, len(errorPB.Errors))
 	compilerError := errorPB.Errors[0]
 	lineColError := compilerError.GetLineColError()
-	if !assert.NotNil(t, lineColError) {
-		t.FailNow()
-	}
-
+	require.NotNil(t, lineColError)
 }
 
 // This test makes sure the goplanner actually works if an empty string is passed in.
@@ -265,28 +246,14 @@ func TestPlanner_GetMainFuncArgsSpec(t *testing.T) {
 		QueryStr: mainFuncArgsQuery,
 	}
 	getMainFuncArgsResultPB, err := c.GetMainFuncArgsSpec(queryRequestPB)
-
-	if err != nil {
-		log.Fatalln("Failed to get flags: ", err)
-		t.FailNow()
-	}
+	require.NoError(t, err)
 
 	status := getMainFuncArgsResultPB.Status
-	if !assert.Equal(t, status.ErrCode, statuspb.OK) {
-		var errorPB compilerpb.CompilerErrorGroup
-		err = goplanner.GetCompilerErrorContext(status, &errorPB)
-		if err != nil {
-			t.Fatalf("error while getting compiler err context, %s", err)
-		}
-		t.Fatalf("Parsing caused error %s", errorPB)
-	}
+	require.Equal(t, status.ErrCode, statuspb.OK)
 
 	var expectedMainFuncArgsPB scriptspb.FuncArgsSpec
-
-	if err = proto.UnmarshalText(mainFuncArgsPBStr, &expectedMainFuncArgsPB); err != nil {
-		log.Fatalf("Failed to unmarshal expected proto %s", err)
-		t.FailNow()
-	}
+	err = proto.UnmarshalText(mainFuncArgsPBStr, &expectedMainFuncArgsPB)
+	require.NoError(t, err)
 
 	assert.Equal(t, &expectedMainFuncArgsPB, getMainFuncArgsResultPB.MainFuncSpec)
 }
@@ -391,21 +358,15 @@ func TestPlanner_ExtractVisFuncsInfo(t *testing.T) {
 	defer c.Free()
 
 	visFuncsResult, err := c.ExtractVisFuncsInfo(visFuncsQuery)
-
-	if err != nil {
-		log.Fatalln("Failed to get vis funcs info: ", err)
-		t.FailNow()
-	}
+	require.NoError(t, err)
 
 	status := visFuncsResult.Status
 	assert.Equal(t, status.ErrCode, statuspb.OK)
 
 	var expectedVisFuncsInfoPb scriptspb.VisFuncsInfo
 
-	if err = proto.UnmarshalText(expectedVisFuncsInfoPBStr, &expectedVisFuncsInfoPb); err != nil {
-		log.Fatalf("Failed to unmarshal expected proto %s", err)
-		t.FailNow()
-	}
+	err = proto.UnmarshalText(expectedVisFuncsInfoPBStr, &expectedVisFuncsInfoPb)
+	require.NoError(t, err)
 
 	assert.Equal(t, &expectedVisFuncsInfoPb, visFuncsResult.Info)
 }
@@ -496,28 +457,15 @@ func TestPlanner_CompileRequest(t *testing.T) {
 		QueryStr: probePxl,
 	}
 	compileMutationResponse, err := c.CompileMutations(plannerStatePB, compileRequestPB)
-
-	if err != nil {
-		log.Fatalln("Failed to compile mutations:", err)
-		os.Exit(1)
-	}
+	require.NoError(t, err)
 
 	status := compileMutationResponse.Status
-	if !assert.Equal(t, status.ErrCode, statuspb.OK) {
-		var errorPB compilerpb.CompilerErrorGroup
-		goplanner.GetCompilerErrorContext(status, &errorPB)
-		log.Infof("%v", errorPB)
-		log.Infof("%v", status)
-	}
+	require.Equal(t, status.ErrCode, statuspb.OK)
 
 	var expectedDynamicTracePb logical.TracepointDeployment
-
-	if err = proto.UnmarshalText(expectedDynamicTraceStr, &expectedDynamicTracePb); err != nil {
-		log.Fatalf("Failed to unmarshal expected proto %s", err)
-		t.FailNow()
-	}
+	err = proto.UnmarshalText(expectedDynamicTraceStr, &expectedDynamicTracePb)
+	require.NoError(t, err)
 
 	assert.Equal(t, 1, len(compileMutationResponse.Mutations))
-
 	assert.Equal(t, &expectedDynamicTracePb, compileMutationResponse.Mutations[0].GetTrace())
 }

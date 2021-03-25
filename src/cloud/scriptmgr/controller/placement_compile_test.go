@@ -113,21 +113,17 @@ func TestPlacementToPxl(t *testing.T) {
 
 	actual, err1 := getDFArguments(res, spacing)
 	expected, err2 := getDFArguments(compiledMainForPlacement, spacing)
-	if !assert.Nil(t, err1) || !assert.Nil(t, err2) {
-		t.FailNow()
-	}
+	require.NoError(t, err1)
+	require.NoError(t, err2)
 
 	assert.Equal(t, 2, len(*actual))
 	assert.Equal(t, *expected, *actual)
 
 	actualDisplay, err1 := getDisplayArguments(res, spacing)
 	expectedDisplay, err2 := getDisplayArguments(compiledMainForPlacement, spacing)
-	if !assert.Nil(t, err1) || !assert.Nil(t, err2) {
-		t.FailNow()
-	}
-	if !assert.Equal(t, 2, len(*actualDisplay)) {
-		t.FailNow()
-	}
+	require.NoError(t, err1)
+	require.NoError(t, err2)
+	require.Equal(t, 2, len(*actualDisplay))
 	assert.Equal(t, expectedDisplay, actualDisplay)
 }
 
@@ -163,21 +159,20 @@ func TestPlacementPercentilPxl(t *testing.T) {
 
 	actual, err1 := getDFArguments(res, spacing)
 	expected, err2 := getDFArguments(compiledPercentilePxl, spacing)
-	if !assert.Nil(t, err1) || !assert.Nil(t, err2) {
-		t.FailNow()
-	}
+
+	require.NoError(t, err1)
+	require.NoError(t, err2)
 
 	assert.Equal(t, 1, len(*actual))
 	assert.Equal(t, *expected, *actual)
 
 	actualDisplay, err1 := getDisplayArguments(res, spacing)
 	expectedDisplay, err2 := getDisplayArguments(compiledPercentilePxl, spacing)
-	if !assert.Nil(t, err1) || !assert.Nil(t, err2) {
-		t.FailNow()
-	}
-	if !assert.Equal(t, 1, len(*actualDisplay)) {
-		t.FailNow()
-	}
+
+	require.NoError(t, err1)
+	require.NoError(t, err2)
+
+	require.Equal(t, 1, len(*actualDisplay))
 	assert.Equal(t, expectedDisplay, actualDisplay)
 }
 

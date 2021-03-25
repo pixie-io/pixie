@@ -8,6 +8,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/planpb"
@@ -71,9 +72,7 @@ func TestLaunchQuery(t *testing.T) {
 
 	// Execute a query.
 	err = controllers.LaunchQuery(queryUUID, nc, planMap, false)
-	if !assert.NoError(t, err) {
-		t.Fatal("Query couldn't execute properly.")
-	}
+	require.NoError(t, err)
 
 	// Check that each agent received the correct message.
 	queryUUIDPb := utils.ProtoFromUUID(queryUUID)
@@ -81,14 +80,14 @@ func TestLaunchQuery(t *testing.T) {
 		t.Fatal("Could not convert UUID to proto.")
 	}
 	m1, err := sub1.NextMsg(time.Second)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	pb := &messages.VizierMessage{}
 	proto.Unmarshal(m1.Data, pb)
 	assert.Equal(t, planPB1, pb.Msg.(*messages.VizierMessage_ExecuteQueryRequest).ExecuteQueryRequest.Plan)
 	assert.Equal(t, queryUUIDPb, pb.Msg.(*messages.VizierMessage_ExecuteQueryRequest).ExecuteQueryRequest.QueryID)
 
 	m2, err := sub2.NextMsg(time.Second)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	pb = &messages.VizierMessage{}
 	proto.Unmarshal(m2.Data, pb)
 	assert.Equal(t, planPB2, pb.Msg.(*messages.VizierMessage_ExecuteQueryRequest).ExecuteQueryRequest.Plan)

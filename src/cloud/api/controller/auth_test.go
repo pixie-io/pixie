@@ -112,7 +112,7 @@ func TestAuthSignupHandler(t *testing.T) {
 	header.Add("Cookie", rawCookies)
 	req2 := http.Request{Header: header}
 	sess, err := controller.GetDefaultSession(env, &req2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, testReplyToken, sess.Values["_at"])
 }
 
@@ -185,7 +185,7 @@ func TestAuthLoginHandler(t *testing.T) {
 	header.Add("Cookie", rawCookies)
 	req2 := http.Request{Header: header}
 	sess, err := controller.GetDefaultSession(env, &req2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, testReplyToken, sess.Values["_at"])
 }
 
@@ -298,7 +298,7 @@ func TestAuthLogoutHandler(t *testing.T) {
 	header.Add("Cookie", rawCookies)
 	req2 := http.Request{Header: header}
 	sess, err := controller.GetDefaultSession(env, &req2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "", sess.Values["_at"])
 }
 

@@ -419,7 +419,7 @@ func TestServer_VizierConnectedHealthy(t *testing.T) {
 
 	subCh := make(chan *nats.Msg, 1)
 	natsSub, err := nc.ChanSubscribe("VizierConnected", subCh)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer natsSub.Unsubscribe()
 
 	ctrl := gomock.NewController(t)

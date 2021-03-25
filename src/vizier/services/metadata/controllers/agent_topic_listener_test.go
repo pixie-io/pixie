@@ -39,10 +39,9 @@ func assertSendMessageCalledWith(t *testing.T, expTopic string, expMsg messages.
 		msg := &messages.VizierMessage{}
 		err := proto.Unmarshal(b, msg)
 
-		if assert.NoError(t, err) {
-			assert.Equal(t, expMsg, *msg)
-			assert.Equal(t, expTopic, topic)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, expMsg, *msg)
+		assert.Equal(t, expTopic, topic)
 		return nil
 	}
 }
@@ -130,7 +129,7 @@ func TestAgentRegisterRequest(t *testing.T) {
 		CollectsData: true,
 	}
 	reqPb, err := req.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	now := time.Now().UnixNano()
 	mockAgtMgr.
@@ -205,7 +204,7 @@ func TestKelvinRegisterRequest(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	reqPb, err := req.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	now := time.Now().UnixNano()
 	mockAgtMgr.
@@ -284,7 +283,7 @@ func TestAgentReRegisterRequest(t *testing.T) {
 		CollectsData: true,
 	}
 	reqPb, err := req.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	now := time.Now().UnixNano()
 	mockAgtMgr.
@@ -317,7 +316,7 @@ func TestAgentRegisterRequestInvalidUUID(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	reqPb, err := req.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	msg := nats.Msg{}
 	msg.Data = reqPb
@@ -338,7 +337,7 @@ func TestAgentCreateFailed(t *testing.T) {
 		CollectsData: false,
 	}
 	reqPb, err := req.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	mockAgtMgr.
 		EXPECT().
@@ -370,7 +369,7 @@ func TestAgentHeartbeat(t *testing.T) {
 	}
 	req.GetHeartbeat().AgentID = utils.ProtoFromUUIDStrOrNil(testutils.UnhealthyKelvinAgentUUID)
 	reqPb, err := req.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	resp := new(messages.VizierMessage)
 	if err := proto.UnmarshalText(testutils.HeartbeatAckPB, resp); err != nil {
@@ -454,7 +453,7 @@ func TestAgentHeartbeat_Failed(t *testing.T) {
 	}
 	req.GetHeartbeat().AgentID = utils.ProtoFromUUIDStrOrNil(testutils.UnhealthyKelvinAgentUUID)
 	reqPb, err := req.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Set up mock.
 	atl, mockAgtMgr, _, cleanup := setup(t, sendMsg)
@@ -485,7 +484,7 @@ func TestEmptyMessage(t *testing.T) {
 	defer cleanup()
 	req := new(messages.VizierMessage)
 	reqPb, err := req.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	msg := nats.Msg{}
 	msg.Data = reqPb
@@ -503,7 +502,7 @@ func TestUnhandledMessage(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	reqPb, err := req.Marshal()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	// Send update.
 	msg := nats.Msg{}
 	msg.Data = reqPb

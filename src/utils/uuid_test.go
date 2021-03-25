@@ -47,7 +47,7 @@ func TestUUIDFromProto_DeprecatedStrValidUUID(t *testing.T) {
 	}
 
 	u, err := utils.UUIDFromProto(proto)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 	assert.Equal(t, uuidStr, u.String(), "must have correct value")
 
 	wire, err := proto.Marshal()
@@ -62,7 +62,7 @@ func TestUUIDFromProto_BitsValidUUID(t *testing.T) {
 	}
 
 	u, err := utils.UUIDFromProto(proto)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 	assert.Equal(t, uuidStr, u.String(), "must have correct value")
 
 	wire, err := proto.Marshal()
@@ -82,7 +82,7 @@ func TestUUIDFromProto_ZeroUUID(t *testing.T) {
 		DeprecatedData: []byte(uuid.Nil.String()),
 	}
 	u, err := utils.UUIDFromProto(proto)
-	assert.Nil(t, err, "must not have an error")
+	require.NoError(t, err, "must not have an error")
 	assert.Equal(t, "00000000-0000-0000-0000-000000000000",
 		u.String(), "must have correct value")
 }
