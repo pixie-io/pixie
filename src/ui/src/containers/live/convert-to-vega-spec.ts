@@ -2487,8 +2487,8 @@ function convertToStacktraceFlameGraph(
         scopedStacktrace = `namespace: ${n[display.namespaceColumn] || 'UNKNOWN'}(k8s);${scopedStacktrace}`;
       }
 
-      if (display.nodeColumn && n[display.nodeColumn]) {
-        scopedStacktrace = `node: ${n[display.nodeColumn]}(k8s);${scopedStacktrace}`;
+      if (display.nodeColumn) {
+        scopedStacktrace = `node: ${n[display.nodeColumn] || 'UNKNOWN'}(k8s);${scopedStacktrace}`;
       }
 
       const splitStack = scopedStacktrace.split(';');
