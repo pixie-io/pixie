@@ -30,6 +30,7 @@ Pixie open sources all of its scripts, which serve as examples of scripting in t
 - px/[nodes](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/nodes): This view summarizes the process and network stats for each node in a cluster. It computes CPU, memory consumption, as well as network traffic statistics, per node. It also displays a list of pods that were on each node during the time window.
 - px/[perf_flamegraph](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/perf_flamegraph): Shows stack trace samples that indicate where applications are spending their time.
 - px/[pgsql_data](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/pgsql_data): Shows most recent PGSQL (Postgres) messages in the cluster.
+- px/[pgsql_flow_graph](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/pgsql_flow_graph): Graph of PostgreSQL messages in the cluster, with latency stats.
 - px/[pgsql_stats](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/pgsql_stats): This live view calculates the latency, error rate, and throughput of a pod's PostgreSQL requests.
 - px/[pid_memory_usage](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/pid_memory_usage): Get the Virtual memory usage and average memory for all processes in the k8s cluster.
 - px/[pixie_quality_metrics](https://github.com/pixie-labs/pixie/tree/main/pxl_scripts/px/pixie_quality_metrics): Metrics that sample Pixie's collector data.

@@ -1,30 +1,62 @@
 # Copyright (c) Pixie Labs, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License")
 
-''' PostgreSQL Data Tracer
+''' PostgreSQL Overview Map
 
-Shows the most recent PostgreSQL messages in the cluster.
+Shows a graph of PostgreSQL requests in the cluster, with some latency information.
 '''
 
 import px
 
+ns_per_ms = 1000 * 1000
+ns_per_s = 1000 * ns_per_ms
+# Window size to use on time_ column for bucketing.
+window_ns = px.DurationNanos(10 * ns_per_s)
 
-def pgsql_data(start: str, source_filter: str, destination_filter: str, num_head: int):
 
-    df = px.DataFrame(table='pgsql_events', start_time=start)
+def pgsql_flow_graph(start: str, ns: px.Namespace, source_filter: str, destination_filter: str):
+
+    df = px.DataFrame('pgsql_events', start_time=start)
     df = add_source_dest_columns(df)
+
+    # Filter on namespace as specified by the user.
+    df = df[df.namespace == ns]
 
     # Filter out entities as specified by the user.
     df = df[px.contains(df.source, source_filter)]
     df = df[px.contains(df.destination, destination_filter)]
 
-    # Add additional filters below:
+    # Create 10 ns bin for time_ column
+    df.timestamp = px.bin(df.time_, window_ns)
 
-    # Restrict number of results.
-    df = df.head(num_head)
+    df = df.groupby(['timestamp', 'source', 'destination', 'is_source_pod_type',
+                     'is_dest_pod_type', 'namespace']).agg(
+        latency_quantiles=('latency_ns', px.quantiles),
+        throughput_total=('latency_ns', px.count),
+    )
 
+    df.latency_p50 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p50')))
+    df.latency_p90 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p90')))
+    df.latency_p99 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p99')))
+    df.request_throughput = df.throughput_total / window_ns
+
+    df = df.groupby(['source', 'destination', 'is_source_pod_type', 'is_dest_pod_type', 'namespace']).agg(
+        latency_p50=('latency_p50', px.mean),
+        latency_p90=('latency_p90', px.mean),
+        latency_p99=('latency_p99', px.mean),
+        request_throughput=('request_throughput', px.mean),
+        throughput_total=('throughput_total', px.sum)
+    )
+
+    return df
+
+
+def pgsql_summary_with_links(start: str, ns: px.Namespace, source_filter: str, destination_filter: str):
+
+    df = pgsql_flow_graph(start, ns, source_filter, destination_filter)
     df = add_source_dest_links(df, start)
-    df = df[['time_', 'source', 'destination', 'remote_port', 'req', 'resp', 'latency_ns']]
+    df = df[['source', 'destination', 'latency_p50', 'latency_p90',
+            'latency_p99', 'request_throughput', 'throughput_total']]
 
     return df
 

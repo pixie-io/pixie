@@ -1,0 +1,4 @@
+---
+short: PostgreSQL Flow Graph
+long: >
+  Graph of PostgreSQL messages in the cluster, with latency stats.
