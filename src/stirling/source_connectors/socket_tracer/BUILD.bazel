@@ -158,23 +158,6 @@ pl_cc_test(
     name = "mysql_trace_bpf_test",
     timeout = "moderate",
     srcs = ["mysql_trace_bpf_test.cc"],
-    flaky = True,
-    shard_count = 2,
-    tags = [
-        "no_asan",
-        "requires_bpf",
-    ],
-    deps = [
-        ":cc_library",
-        "//src/stirling/source_connectors/socket_tracer/testing:cc_library",
-        "//src/stirling/testing:cc_library",
-    ],
-)
-
-pl_cc_test(
-    name = "mysql_container_bpf_test",
-    timeout = "moderate",
-    srcs = ["mysql_container_bpf_test.cc"],
     data = [
         "//src/stirling/source_connectors/socket_tracer/protocols/mysql/testing:expected_outputs",
         "//src/stirling/source_connectors/socket_tracer/protocols/mysql/testing:scripts",
