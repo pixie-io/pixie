@@ -313,13 +313,14 @@ def stacktraces(start_time: str, pod: str):
     df.container = df.ctx['container']
     df.cmdline = df.ctx['cmdline']
 
-    # This must be done before any filtering, to get accurate stack trace totals per node.
+    # Filter on the pod.
+    df = df[df.pod == pod]
+
+    # Get stack trace totals for the pod.
+    # This must be done before any additional filtering to avoid skewing percentages.
     grouping_agg = df.groupby(["pod"]).agg(
         count=('count', px.sum)
     )
-
-    # Filter on the pod.
-    df = df[df.pod == pod]
 
     # Combine flamegraphs from different intervals into one larger framegraph.
     df = df.groupby(['namespace', 'pod', 'container', 'cmdline', 'stack_trace_id']).agg(
