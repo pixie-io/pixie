@@ -6,8 +6,6 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
-	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
-
 	"cloud.google.com/go/storage"
 	"github.com/googleapis/google-cloud-go-testing/storage/stiface"
 	"github.com/jmoiron/sqlx"
@@ -22,6 +20,7 @@ import (
 	atpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/controller"
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/schema"
+	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/pg"

@@ -4,14 +4,13 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
-	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
-
 	log "github.com/sirupsen/logrus"
 
 	controllers "pixielabs.ai/pixielabs/src/cloud/project_manager/controller"
 	"pixielabs.ai/pixielabs/src/cloud/project_manager/datastore"
 	"pixielabs.ai/pixielabs/src/cloud/project_manager/projectmanagerpb"
 	"pixielabs.ai/pixielabs/src/cloud/project_manager/schema"
+	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"

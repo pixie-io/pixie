@@ -4,8 +4,6 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
-	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -14,6 +12,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrenv"
 	dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
 	"pixielabs.ai/pixielabs/src/cloud/dnsmgr/schema"
+	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/pg"

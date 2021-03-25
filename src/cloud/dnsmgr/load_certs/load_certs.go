@@ -9,8 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
-
 	"github.com/gofrs/uuid"
 	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
@@ -19,6 +17,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"pixielabs.ai/pixielabs/src/cloud/dnsmgr/schema"
+	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
 	"pixielabs.ai/pixielabs/src/shared/services/pg"
 )
 

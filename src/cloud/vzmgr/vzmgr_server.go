@@ -4,9 +4,6 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
-	"pixielabs.ai/pixielabs/src/cloud/dnsmgr/schema"
-	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
-
 	"github.com/gofrs/uuid"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
@@ -16,9 +13,11 @@ import (
 
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
+	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/controller"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/deployment"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/deploymentkey"
+	"pixielabs.ai/pixielabs/src/cloud/vzmgr/schema"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/env"

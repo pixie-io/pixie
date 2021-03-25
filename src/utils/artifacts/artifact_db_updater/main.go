@@ -4,12 +4,7 @@ import (
 	"os"
 	"syscall"
 
-	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
-
 	"github.com/gogo/protobuf/types"
-
-	"pixielabs.ai/pixielabs/src/shared/artifacts/versionspb/utils"
-
 	// This must be GOGO variant or the ENUMs won't work.
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/jmoiron/sqlx"
@@ -18,7 +13,9 @@ import (
 	"github.com/spf13/viper"
 
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/schema"
+	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
 	vpb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
+	"pixielabs.ai/pixielabs/src/shared/artifacts/versionspb/utils"
 	"pixielabs.ai/pixielabs/src/shared/services/pg"
 )
 

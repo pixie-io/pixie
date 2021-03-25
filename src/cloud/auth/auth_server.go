@@ -4,8 +4,6 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 
-	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
-
 	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -16,6 +14,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/auth/controllers"
 	auth "pixielabs.ai/pixielabs/src/cloud/auth/proto"
 	"pixielabs.ai/pixielabs/src/cloud/auth/schema"
+	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/pg"
