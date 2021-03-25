@@ -24,7 +24,7 @@ def pgsql_data(start: str, source_filter: str, destination_filter: str, num_head
     df = df.head(num_head)
 
     df = add_source_dest_links(df, start)
-    df = df[['time_', 'source', 'destination', 'remote_port', 'req', 'resp', 'latency_ns']]
+    df = df[['time_', 'source', 'destination', 'remote_port', 'req', 'resp', 'latency']]
 
     return df
 

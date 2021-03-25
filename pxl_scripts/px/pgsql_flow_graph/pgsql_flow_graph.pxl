@@ -31,8 +31,8 @@ def pgsql_flow_graph(start: str, ns: px.Namespace, source_filter: str, destinati
 
     df = df.groupby(['timestamp', 'source', 'destination', 'is_source_pod_type',
                      'is_dest_pod_type', 'namespace']).agg(
-        latency_quantiles=('latency_ns', px.quantiles),
-        throughput_total=('latency_ns', px.count),
+        latency_quantiles=('latency', px.quantiles),
+        throughput_total=('latency', px.count),
     )
 
     df.latency_p50 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p50')))
