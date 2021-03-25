@@ -9,8 +9,7 @@
     {
       "name": "namespace",
       "type": "PX_NAMESPACE",
-      "description": "The namespace to filter on.",
-      "defaultValue": "default"
+      "description": "The namespace to filter on."
     },
     {
       "name": "source_filter",

@@ -9,8 +9,7 @@
     {
       "name": "node_name",
       "type": "PX_STRING",
-      "description": "The full/partial hostname to fitler by",
-      "defaultValue": ""
+      "description": "The full/partial hostname to fitler by"
     },
     {
       "name": "pod",
