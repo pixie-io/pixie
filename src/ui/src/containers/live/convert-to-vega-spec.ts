@@ -1890,8 +1890,8 @@ function generateColorScale(baseColor: string, overlayColor: string, overlayAlph
 const OVERLAY_COLOR = '#121212';
 const OVERLAY_ALPHA = 0.04;
 const OVERLAY_LEVELS = 1;// 5;
-const STACKTRACE_LABEL_PX = 18;
-const RECTANGLE_HEIGHT_PX = 33;
+const STACKTRACE_LABEL_PX = 16;
+const RECTANGLE_HEIGHT_PX = 32;
 function convertToStacktraceFlameGraph(
   display: StacktraceFlameGraphDisplay,
   source: string, theme: Theme): VegaSpecWithProps {
@@ -2499,12 +2499,12 @@ function convertToStacktraceFlameGraph(
         if (!nodeMap[path]) {
           // Set the color based on the language type.
           let lType = 'other';
-          if (s.indexOf('::') !== -1) {
-            lType = 'c';
+          if (s.indexOf('(k8s)') !== -1) {
+            lType = 'k8s';
           } else if (s.indexOf('.(*') !== -1 || s.indexOf('/') !== -1) {
             lType = 'go';
-          } else if (s.indexOf('(k8s)') !== -1) {
-            lType = 'k8s';
+          } else if (s.indexOf('::') !== -1) {
+            lType = 'c';
           } else if (s.indexOf('_[k]') !== -1) {
             lType = 'kernel';
           }
