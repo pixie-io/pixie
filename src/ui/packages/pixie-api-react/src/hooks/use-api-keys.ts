@@ -2,12 +2,13 @@ import * as React from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { API_KEY_QUERIES, GQLAPIKey } from '@pixie-labs/api';
 // noinspection ES6PreferShortImport
-import { ImmutablePixieQueryResult } from '../utils/types';
+import { ImmutablePixieQueryGuaranteedResult } from '../utils/types';
 
 interface APIKeyHookResult {
   createAPIKey: () => Promise<string>;
   deleteAPIKey: (id: string) => Promise<void>;
-  apiKeys: GQLAPIKey[];
+  /** While data is still loading, this will be undefined (to differentiate it from empty results). */
+  apiKeys?: GQLAPIKey[];
 }
 
 /**
@@ -19,7 +20,7 @@ interface APIKeyHookResult {
  * const [{ createAPIKey, deleteAPIKey, apiKeys }, loading, error] = useAPIKeys();
  * ```
  */
-export function useAPIKeys(): ImmutablePixieQueryResult<APIKeyHookResult> {
+export function useAPIKeys(): ImmutablePixieQueryGuaranteedResult<APIKeyHookResult> {
   const { data, loading, error } = useQuery<{ apiKeys: GQLAPIKey[] }>(
     API_KEY_QUERIES.LIST_API_KEYS,
     { pollInterval: 2000 },

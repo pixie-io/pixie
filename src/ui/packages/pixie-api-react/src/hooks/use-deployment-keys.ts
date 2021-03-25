@@ -2,12 +2,13 @@ import * as React from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { DEPLOYMENT_KEY_QUERIES, GQLDeploymentKey } from '@pixie-labs/api';
 // noinspection ES6PreferShortImport
-import { ImmutablePixieQueryResult } from '../utils/types';
+import { ImmutablePixieQueryGuaranteedResult } from '../utils/types';
 
 interface DeploymentKeyHookResult {
   createDeploymentKey: () => Promise<string>;
   deleteDeploymentKey: (id: string) => Promise<void>;
-  deploymentKeys: GQLDeploymentKey[];
+  /** While data is still loading, this will be undefined (to differentiate it from empty results). */
+  deploymentKeys?: GQLDeploymentKey[];
 }
 
 /**
@@ -19,7 +20,7 @@ interface DeploymentKeyHookResult {
  * const [{ createDeploymentKey, deleteDeploymentKey, deploymentKeys }, loading, error] = useDeploymentKeys();
  * ```
  */
-export function useDeploymentKeys(): ImmutablePixieQueryResult<DeploymentKeyHookResult> {
+export function useDeploymentKeys(): ImmutablePixieQueryGuaranteedResult<DeploymentKeyHookResult> {
   const { data, loading, error } = useQuery<{ deploymentKeys: GQLDeploymentKey[] }>(
     DEPLOYMENT_KEY_QUERIES.LIST_DEPLOYMENT_KEYS,
     { pollInterval: 2000 },
