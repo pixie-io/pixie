@@ -279,16 +279,6 @@ func (c *HydraKratosClient) interceptRedirect(u string, header http.Header) (*ht
 	return c.httpClient.Transport.RoundTrip(req)
 }
 
-// kratosRegistrationURL returns the url for browser registration.
-func (c *HydraKratosClient) kratosRegistrationURL() (string, error) {
-	return c.Config.KratosBrowserURL + "/self-service/registration/browser", nil
-}
-
-// kratosLogoutURL returns the url for browser logout.
-func (c *HydraKratosClient) kratosLogoutURL() (string, error) {
-	return c.Config.KratosBrowserURL + "/self-service/browser/flows/logout", nil
-}
-
 // kratosLoginURL returns the url for browser login.
 func (c *HydraKratosClient) kratosLoginURL(returnToURL string) (string, error) {
 	kratosURL, err := url.Parse(c.Config.KratosBrowserURL + "/self-service/login/browser")

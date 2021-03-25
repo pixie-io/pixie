@@ -342,11 +342,3 @@ func (e *ElasticSuggester) getMDEntityQuery(orgID uuid.UUID, clusterUID string, 
 
 	return entityQuery
 }
-
-func (e *ElasticSuggester) getScriptQuery(orgID uuid.UUID, clusterUID string, input string, allowedArgs []cloudapipb.AutocompleteEntityKind) *elastic.BoolQuery {
-	// TODO(michelle): Handle scripts once we get a better idea of what the index looks like.
-	scriptQuery := elastic.NewBoolQuery()
-	scriptQuery.Must(elastic.NewTermQuery("_index", "scripts"))
-
-	return scriptQuery
-}

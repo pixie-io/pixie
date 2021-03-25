@@ -87,10 +87,6 @@ func mustGetScriptList(t *testing.T) []scriptInfo {
 		t.Fatalf("Failed to get script list: %+v", err)
 	}
 
-	type script struct {
-		Name string `json:"Name"`
-	}
-
 	scripts := make([]scriptInfo, 0)
 	dec := json.NewDecoder(b)
 	for {
