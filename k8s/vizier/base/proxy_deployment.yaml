@@ -14,8 +14,6 @@ spec:
         name: vizier-proxy
         plane: control
     spec:
-      imagePullSecrets:
-      - name: pl-image-secret
       containers:
       - name: app
         image: envoyproxy/envoy:v1.12.2

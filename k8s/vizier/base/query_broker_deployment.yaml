@@ -57,8 +57,6 @@ spec:
             scheme: HTTPS
             path: /healthz
             port: 50300
-      imagePullSecrets:
-      - name: pl-image-secret
       volumes:
       - name: certs
         secret:

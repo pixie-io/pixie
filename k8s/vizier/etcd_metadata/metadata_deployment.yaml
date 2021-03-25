@@ -97,8 +97,6 @@ spec:
           initialDelaySeconds: 30
           failureThreshold: 5
           periodSeconds: 10
-      imagePullSecrets:
-      - name: pl-image-secret
       volumes:
       - name: certs
         secret:

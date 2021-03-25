@@ -13,8 +13,6 @@ spec:
         name: kelvin
         plane: data
     spec:
-      imagePullSecrets:
-      - name: pl-image-secret
       initContainers:
       - name: qb-wait
         image: gcr.io/pixie-prod/pixie-prod-artifacts/curl:1.0
