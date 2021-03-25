@@ -142,7 +142,7 @@ func (s *PLServer) Stop() {
 
 // StopOnInterrupt gracefully shuts down when ctrl-c is pressed or termination signal is received.
 func (s *PLServer) StopOnInterrupt() {
-	ch := make(chan os.Signal)
+	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	<-ch
 	s.Stop()

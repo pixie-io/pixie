@@ -30,7 +30,7 @@ var ProxyCmd = &cobra.Command{
 			log.WithError(err).Fatal("Failed to start proxy")
 		}
 
-		stop := make(chan os.Signal)
+		stop := make(chan os.Signal, 1)
 		signal.Notify(stop, os.Interrupt)
 
 		// Wait for interrupt.

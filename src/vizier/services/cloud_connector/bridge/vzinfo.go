@@ -472,6 +472,6 @@ func (v *K8sVizierInfo) UpdateClusterID(id string) error {
 	}
 	s.Data["cluster-id"] = []byte(id)
 
-	s, err = v.clientset.CoreV1().Secrets(plNamespace).Update(context.Background(), s, metav1.UpdateOptions{})
+	_, err = v.clientset.CoreV1().Secrets(plNamespace).Update(context.Background(), s, metav1.UpdateOptions{})
 	return err
 }

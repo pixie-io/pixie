@@ -65,7 +65,7 @@ func main() {
 	}
 	s.Data["jwt-signing-key"] = []byte(fmt.Sprintf("%x", jwtSigningKey))
 
-	s, err = clientset.CoreV1().Secrets(ns).Update(context.Background(), s, metav1.UpdateOptions{})
+	_, err = clientset.CoreV1().Secrets(ns).Update(context.Background(), s, metav1.UpdateOptions{})
 	if err != nil {
 		log.WithError(err).Fatal("Could not update cluster secrets")
 	}

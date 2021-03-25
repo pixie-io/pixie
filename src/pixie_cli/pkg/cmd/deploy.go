@@ -533,6 +533,7 @@ func runSimpleHealthCheckScript(cloudAddr string, clusterID uuid.UUID) error {
 			case msg := <-resp:
 				if msg == nil {
 					errCh <- nil
+					return
 				}
 				if msg.Err != nil {
 					if msg.Err == io.EOF {

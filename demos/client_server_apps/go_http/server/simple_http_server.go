@@ -62,9 +62,9 @@ func fakeLoad(w *http.ResponseWriter, latency float64, mIters, respSize int64) f
 	// add some jitters
 	// latency = rand.NormFloat64()*latency/10 + latency
 	if latency > 0 {
-		burnCyclesE(int64(mIterationsPerMs * latency))
+		_ = burnCyclesE(int64(mIterationsPerMs * latency))
 	}
-	burnCyclesE(mIters)
+	_ = burnCyclesE(mIters)
 
 	bytesSent := int64(0)
 	maxCachedSize := int64(len(cachedRespData))

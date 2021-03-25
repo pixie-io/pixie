@@ -153,6 +153,9 @@ func ApplyYAMLForResourceTypes(clientset *kubernetes.Clientset, config *rest.Con
 				return err
 			} else if (k8sRes.Resource == "clusterroles" || k8sRes.Resource == "cronjobs") || allowUpdate {
 				_, err = createRes.Update(context.Background(), &unstructRes, metav1.UpdateOptions{})
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}

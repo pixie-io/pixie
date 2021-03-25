@@ -15,9 +15,9 @@ type VizierStatus string
 // Vizier Statuses.
 const (
 	VizierStatusUnknown      VizierStatus = "Unknown"
-	VizierStatusHealthy                   = "Healthy"
-	VizierStatusUnhealthy                 = "Unhealthy"
-	VizierStatusDisconnected              = "Disconnected"
+	VizierStatusHealthy      VizierStatus = "Healthy"
+	VizierStatusUnhealthy    VizierStatus = "Unhealthy"
+	VizierStatusDisconnected VizierStatus = "Disconnected"
 )
 
 // VizierInfo has information of a single Vizier.

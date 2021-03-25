@@ -797,15 +797,13 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 				}
 			}
 		case bridgeMsg := <-s.grpcInCh:
-			log.
-				WithField("type", bridgeMsg.Msg.TypeUrl).
-				Info("Got Message on GRPC channel")
 			if bridgeMsg == nil {
 				return nil
 			}
 
 			log.
 				WithField("msg", bridgeMsg.String()).
+				WithField("type", bridgeMsg.Msg.TypeUrl).
 				Trace("Got Message on GRPC channel")
 
 			if bridgeMsg.Topic == "VizierUpdate" {

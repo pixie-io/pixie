@@ -295,9 +295,8 @@ func TestFailures(t *testing.T) {
 
 	assert.Equal(t, 0, len(parsedDoc.function.Args))
 
-	parsedDoc, err = parseDocstring(strings.TrimSpace(dedent(docIndentedAndArgsBadIndent)))
+	_, err = parseDocstring(strings.TrimSpace(dedent(docIndentedAndArgsBadIndent)))
 	assert.Regexp(t, "Expected arg description", err)
-
 }
 
 func TestParseAllDocStrings(t *testing.T) {

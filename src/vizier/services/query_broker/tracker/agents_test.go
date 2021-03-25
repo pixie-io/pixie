@@ -4,11 +4,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/gofrs/uuid"
 	"github.com/golang/mock/gomock"
 
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
-	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	mock_metadatapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb/mock"
@@ -44,10 +42,6 @@ func TestAgentsInfo_GetAgentInfo(t *testing.T) {
 	// that they all interact with each other properly.
 	testSchema := makeTestSchema(t)
 	uuidpbs := makeTestAgentIDs(t)
-	var uuids []uuid.UUID
-	for _, uuidpb := range uuidpbs {
-		uuids = append(uuids, utils.UUIDFromProtoOrNil(uuidpb))
-	}
 
 	agents := makeTestAgents(t)
 	agentDataInfos := makeTestAgentDataInfo()
