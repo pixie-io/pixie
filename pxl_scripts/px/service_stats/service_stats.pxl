@@ -66,7 +66,7 @@ def svc_let(start: str, svc: px.Service):
     let_df[split_series_name] = let_df[k8s_object]
     let_df = let_df[['time_', split_series_name, 'latency_p50',
                      'latency_p90', 'latency_p99', 'error_rate',
-                     'request_throughput', 'bytes_per_ns']]
+                     'request_throughput', 'bytes_throughput']]
     return let_df
 
 
@@ -82,7 +82,7 @@ def http_code_histogram(start: str, svc: px.Service):
     """
     df = make_http_table(start)
     matching_df = df[px.contains(df[k8s_object], svc)]
-    return matching_df.groupby(['http_resp_status']).agg(count=('http_resp_latency_ns', px.count))
+    return matching_df.groupby(['resp_status']).agg(count=('latency', px.count))
 
 
 def latency_histogram(start: str, svc: px.Service):
@@ -97,9 +97,9 @@ def latency_histogram(start: str, svc: px.Service):
     """
     df = make_http_table(start)
     matching_df = df[px.contains(df[k8s_object], svc)]
-    matching_df.request_latency = px.DurationNanos(px.bin(matching_df.http_resp_latency_ns,
+    matching_df.request_latency = px.DurationNanos(px.bin(matching_df.latency,
                                                           latency_bin_size_ns))
-    return matching_df.groupby('request_latency').agg(count=('http_resp_status', px.count))
+    return matching_df.groupby('request_latency').agg(count=('resp_status', px.count))
 
 
 def outgoing_edges(start: str, svc: px.Service):
@@ -248,11 +248,11 @@ def format_http_table(df, filter_health_checks, filter_ready_checks,
 
     Returns: formatted HTTP events DataFrame.
     """
-    df = format_events_table(df, 'http_resp_latency_ns')
-    df.resp_size = px.Bytes(px.length(df.http_resp_body))
-    df.failure = df.http_resp_status >= 400
-    filter_out_conds = ((df.http_req_path != '/health' or not filter_health_checks) and (
-        df.http_req_path != '/readyz' or not filter_ready_checks)) and (
+    df = format_events_table(df, 'latency')
+    df.resp_size = px.Bytes(px.length(df.resp_body))
+    df.failure = df.resp_status >= 400
+    filter_out_conds = ((df.req_path != '/health' or not filter_health_checks) and (
+        df.req_path != '/readyz' or not filter_ready_checks)) and (
         df['remote_addr'] != '-' or not filter_unresolved_inbound)
 
     df = df[filter_out_conds]
@@ -264,7 +264,7 @@ def format_LET_aggs(df):
 
     Converts the result of aggregates on windows into well-formatted metrics that
     can be visualized. Latency quantile values need to be extracted from the
-    quantiles struct, and then error_rate, request_throughput, and bytes_per_ns are calculated as
+    quantiles struct, and then error_rate, request_throughput, and bytes_throughput are calculated as
     a function of window size.
 
 
@@ -282,7 +282,7 @@ def format_LET_aggs(df):
     df.latency_p99 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p99')))
     df['time_'] = df['timestamp']
     df.request_throughput = df.throughput_total / window_ns
-    df.bytes_per_ns = df.bytes_total / window_ns
+    df.bytes_throughput = df.bytes_total / window_ns
     df.error_rate = df.error_rate_per_window * df.request_throughput / px.DurationNanos(1)
 
     return df
@@ -292,7 +292,7 @@ def calc_http_LET(df, groups):
     """ Calculates Latency, Error Rate, and Throughput on HTTP events.
 
     Calculates latency, error rate, and throughput aggregated over
-    @groups. Throughput is represented by two values: request_throughput, and bytes_per_ns.
+    @groups. Throughput is represented by two values: request_throughput, and bytes_throughput.
 
     Args:
     @df: the input http_events table.
@@ -346,7 +346,7 @@ def summarize_LET(let_df, groups):
 
     df = let_df.groupby(groups).agg(
         request_throughput=('request_throughput', px.mean),
-        bytes_per_ns=('bytes_per_ns', px.mean),
+        bytes_throughput=('bytes_throughput', px.mean),
         error_rate=('error_rate', px.mean),
     )
     return df

@@ -89,14 +89,14 @@ def endpoint_let_helper(start_time: str, service: px.Service):
     df = px.DataFrame(table='http_events', start_time=start_time)
     df.service = df.ctx['service']
     df = df[px.contains(df.service, service)]
-    df.latency = df.http_resp_latency_ns
+    df.latency = df.latency
     df.timestamp = px.bin(df.time_, window_ns)
 
-    df.req_size = px.Bytes(px.length(df.http_req_body))
-    df.resp_size = px.Bytes(px.length(df.http_resp_body))
-    df.failure = df.http_resp_status >= 400
-    filter_out_conds = ((df.http_req_path != '/health' or not filter_health_checks) and (
-        df.http_req_path != '/readyz' or not filter_ready_checks)) and (
+    df.req_size = px.Bytes(px.length(df.req_body))
+    df.resp_size = px.Bytes(px.length(df.resp_body))
+    df.failure = df.resp_status >= 400
+    filter_out_conds = ((df.req_path != '/health' or not filter_health_checks) and (
+        df.req_path != '/readyz' or not filter_ready_checks)) and (
         df['remote_addr'] != '-' or not filter_unresolved_inbound)
 
     df = df[filter_out_conds]
@@ -105,13 +105,13 @@ def endpoint_let_helper(start_time: str, service: px.Service):
 
 def request_path_endpoint_clustering(let_df):
     clustering_df = let_df.agg(
-        clustering=("http_req_path", px._build_request_path_clusters)
+        clustering=("req_path", px._build_request_path_clusters)
     )
     merged_df = let_df.merge(
         clustering_df, how="outer", right_on=[], left_on=[], suffixes=["", ""]
     )
     merged_df.endpoint = px._predict_request_path_cluster(
-        merged_df.http_req_path, merged_df.clustering
+        merged_df.req_path, merged_df.clustering
     )
     merged_df.drop(["clustering"])
     return merged_df

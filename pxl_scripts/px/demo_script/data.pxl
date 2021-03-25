@@ -25,8 +25,8 @@ df = px.DataFrame(
         'upid',
         'remote_addr',
         'remote_port',
-        'http_req_path',
-        'http_resp_latency_ns',
+        'req_path',
+        'latency',
     ],
     start_time=start_time,
 )

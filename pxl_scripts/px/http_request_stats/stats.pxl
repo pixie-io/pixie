@@ -6,14 +6,14 @@ import px
 t1 = px.DataFrame(table='http_events', start_time='-30s')
 
 t1.service = t1.ctx['service']
-t1.failure = t1.http_resp_status >= 400
+t1.failure = t1.resp_status >= 400
 window = px.DurationNanos(px.seconds(5))
 t1.range_group = px.bin(t1.time_, window)
 
 quantiles_agg = t1.groupby('service').agg(
-    latency_quantiles=('http_resp_latency_ns', px.quantiles),
+    latency_quantiles=('latency', px.quantiles),
     errors=('failure', px.mean),
-    throughput_total=('http_resp_status', px.count),
+    throughput_total=('resp_status', px.count),
 )
 quantiles_agg.errors = px.Percent(quantiles_agg.errors)
 
@@ -28,7 +28,7 @@ quantiles_table = quantiles_agg[['service', 'latency_p50',
 
 # The Range aggregate to calcualte the requests per second.
 range_agg = t1.groupby(['service', 'range_group']).agg(
-    requests_per_window=('http_resp_status', px.count),
+    requests_per_window=('resp_status', px.count),
 )
 
 rps_table = range_agg.groupby('service').agg(

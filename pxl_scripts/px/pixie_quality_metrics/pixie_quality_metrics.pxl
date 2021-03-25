@@ -13,10 +13,10 @@ def events(t1, latency_col):
 
 
 t1 = px.DataFrame(table='http_events', start_time='-300s')
-px.display(events(t1, 'http_resp_latency_ns'), 'http_latencies')
+px.display(events(t1, 'latency'), 'http_latencies')
 
 t1 = px.DataFrame(table='mysql_events', start_time='-300s')
-px.display(events(t1, 'latency_ns'), 'mysql_latencies')
+px.display(events(t1, 'latency'), 'mysql_latencies')
 
 t1 = px.DataFrame(table='process_stats', start_time='-30s')
 t1.cmd_line = px.upid_to_cmdline(t1.upid)

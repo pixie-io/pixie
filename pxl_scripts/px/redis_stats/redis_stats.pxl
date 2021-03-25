@@ -80,9 +80,9 @@ def latency_histogram(start: str, pod: px.Pod):
         match @svc.
     '''
     # The data necessary to compute redis LET information is located in the
-    # redis_events.beta table. We filter and aggregate data from this table to compute the
+    # redis_events table. We filter and aggregate data from this table to compute the
     # required metrics.
-    df = px.DataFrame(table='redis_events.beta', start_time=start)
+    df = px.DataFrame(table='redis_events', start_time=start)
     df = format_redis_table(df)
 
     # Calculate LET of pod(s) (k8s_object) connection to redis connections
@@ -104,12 +104,12 @@ def cmd_timeseries(start: str, pod: px.Pod):
     Returns: Returns the DataFrame containing Redis cmd time-series for Redis
     traffic to a Redis database pod.
     '''
-    df = px.DataFrame(table='redis_events.beta', start_time=start)
+    df = px.DataFrame(table='redis_events', start_time=start)
     df = format_redis_table(df)
     df = df[px.contains(df.source, pod) or px.contains(df.destination, pod)]
     df.time_ = px.bin(df.time_, window_ns)
-    df = df.groupby(['time_', 'cmd']).agg(
-        throughput_total=('cmd', px.count),
+    df = df.groupby(['time_', 'req_cmd']).agg(
+        throughput_total=('req_cmd', px.count),
     )
     return df
 
@@ -135,9 +135,9 @@ def redis_let_per_pod(start: str, pod: px.Pod, groups):
     traffic to a Redis database pod.
     '''
     # The data necessary to compute redis LET information is located in the
-    # redis_events.beta table. We filter and aggregate data from this table to compute the
+    # redis_events table. We filter and aggregate data from this table to compute the
     # required metrics.
-    df = px.DataFrame(table='redis_events.beta', start_time=start)
+    df = px.DataFrame(table='redis_events', start_time=start)
     df = format_redis_table(df)
 
     # Calculate LET of pod(s) (k8s_object) connection to redis connections
@@ -156,7 +156,7 @@ def format_events_table(df, latency_col):
     timestamp field to aggregate on, and adds the svc
     (k8s_object) as a semantic column.
 
-    Works on 'redis_events.beta' and 'http_events'
+    Works on 'redis_events' and 'http_events'
 
     Args:
     @df: the input events table
@@ -172,17 +172,17 @@ def format_events_table(df, latency_col):
 
 
 def format_redis_table(df):
-    ''' Formats redis_events.beta tables
+    ''' Formats redis_events tables
 
     Args:
-    @df: the input redis_events.beta table.
+    @df: the input redis_events table.
 
-    Returns: formatted redis_events.beta DataFrame.
+    Returns: formatted redis_events DataFrame.
     '''
     # Add source, destination columns.
     df = add_source_dest_columns(df)
 
-    df = format_events_table(df, 'latency_ns')
+    df = format_events_table(df, 'latency')
     df.resp_size = px.length(df.resp)
     return df
 
@@ -222,7 +222,7 @@ def calc_redis_LET(df, groups):
     @groups.
 
     Args:
-    @df: the input redis_events.beta table.
+    @df: the input redis_events table.
     @groups: the list of columns to group on. 'timestamp' must be a a group
         or this will fail.
 
