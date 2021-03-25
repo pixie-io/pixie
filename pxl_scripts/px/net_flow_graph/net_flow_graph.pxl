@@ -12,7 +12,7 @@ def net_flow_graph(start: str, ns: px.Namespace, from_entity_filter: str, to_ent
     df = df[df.ctx['namespace'] == ns]
 
     # Filter for client side requests.
-    df = df[df.role == 1]
+    df = df[df.trace_role == 1]
 
     # Store the pod. Ideally this would be done after the aggregate,
     # but that's not working right now.

@@ -48,15 +48,15 @@ def http_requests(start_time: str, requesting_pod: px.Pod, responding_pod: px.Po
     df = df.merge(remote_ip_table, how='inner', left_on='remote_addr', right_on='remote_addr',
                   suffixes=['_x', '']).drop('remote_addr_x')
 
-    df.latency = df.http_resp_latency_ns
+    df.latency = df.latency
     df.timestamp = px.bin(df.time_, window_ns)
-    df.failure = df.http_resp_status >= 400
-    filter_out_conds = ((df.http_req_path != '/health' or not filter_health_checks) and (
-        df.http_req_path != '/readyz' or not filter_ready_checks)) and (
+    df.failure = df.resp_status >= 400
+    filter_out_conds = ((df.req_path != '/health' or not filter_health_checks) and (
+        df.req_path != '/readyz' or not filter_ready_checks)) and (
         df['remote_addr'] != '-' or not filter_unresolved_inbound)
     df = df[filter_out_conds]
-    return df[['timestamp', 'latency', 'http_req_method', 'http_req_path', 'http_req_body',
-               'http_resp_status', 'http_resp_body', 'failure']]
+    return df[['timestamp', 'latency', 'req_method', 'req_path', 'req_body',
+               'resp_status', 'resp_body', 'failure']]
 
 
 def http_code_agg(start_time: str, requesting_pod: px.Pod, responding_pod: px.Pod):
@@ -69,7 +69,7 @@ def http_code_agg(start_time: str, requesting_pod: px.Pod, responding_pod: px.Po
     @responding_pod: The name of the requesting pod.
     """
     df = http_requests(start_time, requesting_pod, responding_pod)
-    return df.groupby('http_resp_status').agg(count=('timestamp', px.count))
+    return df.groupby('resp_status').agg(count=('timestamp', px.count))
 
 
 def latency_histogram(start_time: str, requesting_pod: px.Pod, responding_pod: px.Pod):
@@ -97,8 +97,8 @@ def pod_edge_let(start_time: str, requesting_pod: px.Pod, responding_pod: px.Pod
     """
 
     df = http_requests(start_time, requesting_pod, responding_pod)
-    df.resp_size = px.Bytes(px.length(df.http_resp_body))
-    df.req_size = px.Bytes(px.length(df.http_req_body))
+    df.resp_size = px.Bytes(px.length(df.resp_body))
+    df.req_size = px.Bytes(px.length(df.req_body))
 
     df = df.groupby('timestamp').agg(
         latency_quantiles=('latency', px.quantiles),

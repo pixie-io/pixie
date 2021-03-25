@@ -173,7 +173,7 @@ def format_mysql_table(df, filter_responses_with_none_code):
     # Add source, destination columns.
     df = add_source_dest_columns(df)
 
-    df = format_events_table(df, 'latency_ns')
+    df = format_events_table(df, 'latency')
     df.failure = df['resp_status'] == 3
     df.resp_size = px.Bytes(px.length(df.resp_body))
 

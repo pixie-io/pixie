@@ -269,6 +269,39 @@
         },
         "xAxis": null
       }
+    },
+    {
+      "name": "CPU Flamegraph",
+      "position": {
+        "x": 0,
+        "y": 9,
+        "w": 12,
+        "h": 4
+      },
+      "func": {
+        "name": "stacktraces",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "node",
+            "variable": "node"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.StacktraceFlameGraph",
+        "stacktraceColumn": "stack_trace",
+        "countColumn": "count",
+        "percentageColumn": "percent",
+        "namespaceColumn": "namespace",
+        "podColumn": "pod",
+        "containerColumn": "container",
+        "pidColumn": "cmdline",
+        "percentageLabel": "CPU Usage"
+      }
     }
   ]
 }

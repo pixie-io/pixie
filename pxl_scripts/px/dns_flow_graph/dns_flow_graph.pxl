@@ -58,9 +58,9 @@ def dns_flow_graph(start: str, from_entity_filter: str, to_entity_filter: str):
 
     # Aggregate the connections.
     df = df.groupby(['from_entity', 'pod', 'to_entity']).agg(
-        latency_avg=('latency_ns', px.mean),
-        latency_max=('latency_ns', px.max),
-        count=('latency_ns', px.count)
+        latency_avg=('latency', px.mean),
+        latency_max=('latency', px.max),
+        count=('latency', px.count)
     )
 
     # Filter out entities as specified by the user.

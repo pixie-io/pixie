@@ -421,6 +421,37 @@
         "w": 12,
         "h": 2
       }
+    },
+    {
+      "name": "Pod Performance Flamegraph",
+      "func": {
+        "name": "stacktraces",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.StacktraceFlameGraph",
+        "stacktraceColumn": "stack_trace",
+        "countColumn": "count",
+        "percentageColumn": "percent",
+        "podColumn": "pod",
+        "containerColumn": "container",
+        "pidColumn": "cmdline"
+      },
+      "position": {
+        "x": 0,
+        "y": 17,
+        "w": 12,
+        "h": 4
+      }
     }
   ]
 }

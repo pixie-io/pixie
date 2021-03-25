@@ -30,11 +30,11 @@ def get_max_elm(df, column):
 
 df = px.DataFrame(table='http_events', start_time='-2m')
 
-df[resp_size] = px.Bytes(px.length(df.http_resp_body))
+df[resp_size] = px.Bytes(px.length(df.resp_body))
 df[k8s_object] = df.ctx[k8s_object]
 filter_pods = px.contains(df[k8s_object], match_name)
-filter_out_conds = ((df.http_req_path != '/health' or not filter_health) and (
-    df.http_req_path != '/readyz' or not filter_readyz)) and (
+filter_out_conds = ((df.req_path != '/health' or not filter_health) and (
+    df.req_path != '/readyz' or not filter_readyz)) and (
     df[ip] != '-' or not filter_dash)
 filt_df = df[(filter_pods and filter_out_conds)]
 
@@ -42,8 +42,8 @@ max_size_df = get_max_elm(filt_df, resp_size)
 px.display(max_size_df[[
     k8s_object,
     resp_size,
-    'http_resp_body',
-    'http_req_path']].head(5), 'requests_of_max_size')
+    'resp_body',
+    'req_path']].head(5), 'requests_of_max_size')
 qa = max_size_df.groupby(
-    [k8s_object, 'http_req_path', resp_size]).agg(num_requests=(resp_size, px.count))
+    [k8s_object, 'req_path', resp_size]).agg(num_requests=(resp_size, px.count))
 px.display(qa, 'number of reqs')
