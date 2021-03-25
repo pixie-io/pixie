@@ -856,53 +856,53 @@ def buildScriptForCommits = {
   }
 }
 
-  /*****************************************************************************
-  * REGRESSION_BUILDERS: This sections defines all the test regressions steps
-  * that will happen in parallel.
-  *****************************************************************************/
-  def regressionBuilders = [:]
+/*****************************************************************************
+ * REGRESSION_BUILDERS: This sections defines all the test regressions steps
+ * that will happen in parallel.
+ *****************************************************************************/
+def regressionBuilders = [:]
 
-  TEST_ITERATIONS = 10
+TEST_ITERATIONS = 5
 
-  regressionBuilders['Test (opt)'] = {
-    WithSourceCodeAndTargetsK8s {
-      container('pxbuild') {
-        sh """
-        bazel test -c opt  --runs_per_test ${TEST_ITERATIONS} \
-          --target_pattern_file bazel_tests_clang_opt
-        """
-        createBazelStash('build-opt-testlogs')
-      }
+regressionBuilders['Test (opt)'] = {
+  WithSourceCodeAndTargetsK8s {
+    container('pxbuild') {
+      sh """
+      bazel test -c opt  --runs_per_test ${TEST_ITERATIONS} \
+        --target_pattern_file bazel_tests_clang_opt
+      """
+      createBazelStash('build-opt-testlogs')
     }
   }
+}
 
-  regressionBuilders['Test (ASAN)'] = {
-    WithSourceCodeAndTargetsK8s {
-      container('pxbuild') {
-        sh """
-        bazel test --config asan  --runs_per_test ${TEST_ITERATIONS} \
-          --target_pattern_file bazel_tests_sanitizer
-        """
-        createBazelStash('build-asan-testlogs')
-      }
+regressionBuilders['Test (ASAN)'] = {
+  WithSourceCodeAndTargetsK8s {
+    container('pxbuild') {
+      sh """
+      bazel test --config asan  --runs_per_test ${TEST_ITERATIONS} \
+        --target_pattern_file bazel_tests_sanitizer
+      """
+      createBazelStash('build-asan-testlogs')
     }
   }
+}
 
-  regressionBuilders['Test (TSAN)'] = {
-    WithSourceCodeAndTargetsK8s {
-      container('pxbuild') {
-        sh """
-        bazel test --config tsan  --runs_per_test ${TEST_ITERATIONS} \
-          --target_pattern_file bazel_tests_sanitizer
-        """
-        createBazelStash('build-tsan-testlogs')
-      }
+regressionBuilders['Test (TSAN)'] = {
+  WithSourceCodeAndTargetsK8s {
+    container('pxbuild') {
+      sh """
+      bazel test --config tsan  --runs_per_test ${TEST_ITERATIONS} \
+        --target_pattern_file bazel_tests_sanitizer
+      """
+      createBazelStash('build-tsan-testlogs')
     }
   }
+}
 
-  /*****************************************************************************
-  * END REGRESSION_BUILDERS
-  *****************************************************************************/
+/*****************************************************************************
+ * END REGRESSION_BUILDERS
+ *****************************************************************************/
 
 def buildScriptForNightlyTestRegression = {
   try {
@@ -930,16 +930,23 @@ def buildScriptForNightlyTestRegression = {
       parallel(regressionBuilders)
     }
     stage('Archive') {
-      // Unstash and save the builds logs.
-      stashList.each({ stashName ->
-        dir(stashName) {
-          unstashFromGCS(stashName)
-        }
-        archiveBazelLogs(stashName)
-      })
+      DefaultGCloudPodTemplate('archive') {
+        container('gcloud') {
+          // Unstash the build artifacts.
+          stashList.each({ stashName ->
+            dir(stashName) {
+              unstashFromGCS(stashName)
+            }
+          })
 
-      // Actually process the bazel logs to look for test failures.
-      processAllExtractedBazelLogs()
+          // Remove the tests attempts directory because it
+          // causes the test publisher to mark as failed.
+          sh 'find . -name test_attempts -type d -exec rm -rf {} +'
+
+          // Actually process the bazel logs to look for test failures.
+          processAllExtractedBazelLogs()
+        }
+      }
     }
   }
   catch (err) {
