@@ -10,7 +10,7 @@ import (
 
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
-	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 )
 
 type FakeStore struct{}

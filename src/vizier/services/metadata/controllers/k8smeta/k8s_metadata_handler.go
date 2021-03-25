@@ -19,7 +19,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
-	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
 )
 
@@ -771,7 +771,7 @@ func (p *NamespaceUpdateProcessor) GetUpdatesToSend(storedUpdates []*StoredUpdat
 		agents = append(agents, ip)
 	}
 	return []*OutgoingUpdate{
-		&OutgoingUpdate{
+		{
 			Update: getResourceUpdateFromNamespace(pb, rv),
 			Topics: agents,
 		},

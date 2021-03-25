@@ -23,7 +23,7 @@ import (
 	"google.golang.org/grpc/status"
 	"gopkg.in/segmentio/analytics-go.v3"
 
-	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
+	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	dnsmgr "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
 	"pixielabs.ai/pixielabs/src/cloud/shared/messages"
 	messagespb "pixielabs.ai/pixielabs/src/cloud/shared/messagespb"

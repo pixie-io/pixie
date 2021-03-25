@@ -8,9 +8,9 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 
-	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
+	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/utils"
-	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	"pixielabs.ai/pixielabs/src/vizier/utils/datastore"
 )
 

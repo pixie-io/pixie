@@ -253,7 +253,7 @@ func (f *QueryResultForwarderImpl) DeleteQuery(queryID uuid.UUID) {
 
 // The max size of the query plan string, including a buffer for the rest of the message.
 const maxQueryPlanBufferSize int = 64 * 1024
-const maxQueryPlanStringSize int = 1024*1024 - maxQueryPlanBufferSize
+const maxQueryPlanStringSize = 1024*1024 - maxQueryPlanBufferSize
 
 // StreamResults streams results from the agent streams to the client stream.
 func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uuid.UUID,

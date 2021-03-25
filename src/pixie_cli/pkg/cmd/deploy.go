@@ -747,7 +747,7 @@ func validateNumDefaultStorageClasses(clientset *kubernetes.Clientset) (bool, er
 		}
 	}
 
-	return (defaultClassCount == 1), nil
+	return defaultClassCount == 1, nil
 }
 
 func getNumNodes(clientset *kubernetes.Clientset) (int, error) {

@@ -11,7 +11,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
-	types "github.com/gogo/protobuf/types"
+	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -20,16 +20,16 @@ import (
 	grpc_metadata "google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/test/bufconn"
 
-	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	distributedpb "pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
+	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
+	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
-	bloomfilterpb "pixielabs.ai/pixielabs/src/shared/bloomfilterpb"
+	"pixielabs.ai/pixielabs/src/shared/bloomfilterpb"
 	sharedmetadatapb "pixielabs.ai/pixielabs/src/shared/metadatapb"
 	env2 "pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/server"
 	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
-	logicalpb "pixielabs.ai/pixielabs/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb"
-	utils "pixielabs.ai/pixielabs/src/utils"
+	"pixielabs.ai/pixielabs/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb"
+	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
@@ -39,7 +39,7 @@ import (
 	mock_tracepoint "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
-	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
@@ -105,7 +105,7 @@ func TestGetAgentInfo(t *testing.T) {
 	now := time.Now()
 
 	agents := []*agentpb.Agent{
-		&agentpb.Agent{
+		{
 			// Push the heartbeat into the past (past the UnhealthyAgentThreshold) to make this look unhealthy!
 			LastHeartbeatNS: now.Add(-controllers.UnhealthyAgentThreshold).UnixNano(),
 			CreateTimeNS:    5,
@@ -118,7 +118,7 @@ func TestGetAgentInfo(t *testing.T) {
 			},
 			ASID: 123,
 		},
-		&agentpb.Agent{
+		{
 			// Push the heartbeat into the future to make this look healthy!
 			LastHeartbeatNS: now.Add(10 * controllers.UnhealthyAgentThreshold).UnixNano(),
 			CreateTimeNS:    0,
@@ -256,22 +256,22 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 
 	program := &logicalpb.TracepointDeployment{
 		Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
-			&logicalpb.TracepointDeployment_Tracepoint{
+			{
 				TableName: "test",
 				Program: &logicalpb.TracepointSpec{
 					Outputs: []*logicalpb.Output{
-						&logicalpb.Output{
+						{
 							Name:   "test",
 							Fields: []string{"def"},
 						},
 					},
 				},
 			},
-			&logicalpb.TracepointDeployment_Tracepoint{
+			{
 				TableName: "anotherTracepoint",
 				Program: &logicalpb.TracepointSpec{
 					Outputs: []*logicalpb.Output{
-						&logicalpb.Output{
+						{
 							Name:   "anotherTracepoint",
 							Fields: []string{"def"},
 						},
@@ -329,7 +329,7 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 	s := controllers.NewServer(env, mockAgtMgr, tracepointMgr)
 
 	reqs := []*metadatapb.RegisterTracepointRequest_TracepointRequest{
-		&metadatapb.RegisterTracepointRequest_TracepointRequest{
+		{
 			TracepointDeployment: program,
 			Name:                 "test_tracepoint",
 			TTL: &types.Duration{
@@ -363,11 +363,11 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 
 	program := &logicalpb.TracepointDeployment{
 		Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
-			&logicalpb.TracepointDeployment_Tracepoint{
+			{
 				TableName: "table1",
 				Program: &logicalpb.TracepointSpec{
 					Outputs: []*logicalpb.Output{
-						&logicalpb.Output{
+						{
 							Name:   "table1",
 							Fields: []string{"def", "abcd"},
 						},
@@ -395,11 +395,11 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 		Return(&storepb.TracepointInfo{
 			Tracepoint: &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
-					&logicalpb.TracepointDeployment_Tracepoint{
+					{
 						TableName: "table1",
 						Program: &logicalpb.TracepointSpec{
 							Outputs: []*logicalpb.Output{
-								&logicalpb.Output{
+								{
 									Name:   "table1",
 									Fields: []string{"def"},
 								},
@@ -454,7 +454,7 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 	s := controllers.NewServer(env, mockAgtMgr, tracepointMgr)
 
 	reqs := []*metadatapb.RegisterTracepointRequest_TracepointRequest{
-		&metadatapb.RegisterTracepointRequest_TracepointRequest{
+		{
 			TracepointDeployment: program,
 			Name:                 "test_tracepoint",
 			TTL: &types.Duration{
@@ -490,13 +490,13 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 			expectedState:  statuspb.RUNNING_STATE,
 			expectedStatus: nil,
 			agentStates: []*storepb.AgentTracepointStatus{
-				&storepb.AgentTracepointStatus{
+				{
 					State: statuspb.FAILED_STATE,
 					Status: &statuspb.Status{
 						ErrCode: statuspb.NOT_FOUND,
 					},
 				},
-				&storepb.AgentTracepointStatus{
+				{
 					State: statuspb.RUNNING_STATE,
 				},
 			},
@@ -507,10 +507,10 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 			expectedState:  statuspb.TERMINATED_STATE,
 			expectedStatus: nil,
 			agentStates: []*storepb.AgentTracepointStatus{
-				&storepb.AgentTracepointStatus{
+				{
 					State: statuspb.RUNNING_STATE,
 				},
-				&storepb.AgentTracepointStatus{
+				{
 					State: statuspb.TERMINATED_STATE,
 				},
 			},
@@ -530,13 +530,13 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 			expectedState:  statuspb.PENDING_STATE,
 			expectedStatus: nil,
 			agentStates: []*storepb.AgentTracepointStatus{
-				&storepb.AgentTracepointStatus{
+				{
 					State: statuspb.FAILED_STATE,
 					Status: &statuspb.Status{
 						ErrCode: statuspb.NOT_FOUND,
 					},
 				},
-				&storepb.AgentTracepointStatus{
+				{
 					State: statuspb.PENDING_STATE,
 				},
 			},
@@ -549,13 +549,13 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 				ErrCode: statuspb.RESOURCE_UNAVAILABLE,
 			},
 			agentStates: []*storepb.AgentTracepointStatus{
-				&storepb.AgentTracepointStatus{
+				{
 					State: statuspb.FAILED_STATE,
 					Status: &statuspb.Status{
 						ErrCode: statuspb.RESOURCE_UNAVAILABLE,
 					},
 				},
-				&storepb.AgentTracepointStatus{
+				{
 					State: statuspb.FAILED_STATE,
 					Status: &statuspb.Status{
 						ErrCode: statuspb.RESOURCE_UNAVAILABLE,
@@ -569,13 +569,13 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 			expectedState:  statuspb.PENDING_STATE,
 			expectedStatus: nil,
 			agentStates: []*storepb.AgentTracepointStatus{
-				&storepb.AgentTracepointStatus{
+				{
 					State: statuspb.FAILED_STATE,
 					Status: &statuspb.Status{
 						ErrCode: statuspb.RESOURCE_UNAVAILABLE,
 					},
 				},
-				&storepb.AgentTracepointStatus{
+				{
 					State: statuspb.PENDING_STATE,
 				},
 			},
@@ -596,10 +596,10 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 
 			program := &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
-					&logicalpb.TracepointDeployment_Tracepoint{
+					{
 						TableName: "table1",
 					},
-					&logicalpb.TracepointDeployment_Tracepoint{
+					{
 						TableName: "test",
 					},
 				},
@@ -616,12 +616,12 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 					mockTracepointStore.
 						EXPECT().
 						GetTracepoints().
-						Return([]*storepb.TracepointInfo{&storepb.TracepointInfo{ID: utils.ProtoFromUUID(tID), Tracepoint: program, ExpectedState: statuspb.RUNNING_STATE}}, nil)
+						Return([]*storepb.TracepointInfo{{ID: utils.ProtoFromUUID(tID), Tracepoint: program, ExpectedState: statuspb.RUNNING_STATE}}, nil)
 				} else {
 					mockTracepointStore.
 						EXPECT().
 						GetTracepointsForIDs([]uuid.UUID{tID}).
-						Return([]*storepb.TracepointInfo{&storepb.TracepointInfo{ID: utils.ProtoFromUUID(tID), Tracepoint: program, ExpectedState: statuspb.RUNNING_STATE}}, nil)
+						Return([]*storepb.TracepointInfo{{ID: utils.ProtoFromUUID(tID), Tracepoint: program, ExpectedState: statuspb.RUNNING_STATE}}, nil)
 				}
 
 				mockTracepointStore.
@@ -742,7 +742,7 @@ func TestGetAgentUpdates(t *testing.T) {
 	u3pb := utils.ProtoFromUUID(u3)
 
 	updates1 := []*metadatapb.AgentUpdate{
-		&metadatapb.AgentUpdate{
+		{
 			AgentID: u1pb,
 			Update: &metadatapb.AgentUpdate_Agent{
 				Agent: &agentpb.Agent{
@@ -759,7 +759,7 @@ func TestGetAgentUpdates(t *testing.T) {
 				},
 			},
 		},
-		&metadatapb.AgentUpdate{
+		{
 			AgentID: u2pb,
 			Update: &metadatapb.AgentUpdate_Agent{
 				Agent: &agentpb.Agent{
@@ -776,7 +776,7 @@ func TestGetAgentUpdates(t *testing.T) {
 				},
 			},
 		},
-		&metadatapb.AgentUpdate{
+		{
 			AgentID: u1pb,
 			Update: &metadatapb.AgentUpdate_DataInfo{
 				DataInfo: &messagespb.AgentDataInfo{
@@ -800,10 +800,10 @@ func TestGetAgentUpdates(t *testing.T) {
 	computedSchema1 := &storepb.ComputedSchema{
 		Tables: testTableInfos(),
 		TableNameToAgentIDs: map[string]*storepb.ComputedSchema_AgentIDs{
-			"table1": &storepb.ComputedSchema_AgentIDs{
+			"table1": {
 				AgentID: []*uuidpb.UUID{u1pb, u2pb},
 			},
-			"table2": &storepb.ComputedSchema_AgentIDs{
+			"table2": {
 				AgentID: []*uuidpb.UUID{u1pb},
 			},
 		},
@@ -830,7 +830,7 @@ func TestGetAgentUpdates(t *testing.T) {
 	computedSchema2 := &storepb.ComputedSchema{
 		Tables: []*storepb.TableInfo{computedSchema1.Tables[0]},
 		TableNameToAgentIDs: map[string]*storepb.ComputedSchema_AgentIDs{
-			"table1": &storepb.ComputedSchema_AgentIDs{
+			"table1": {
 				AgentID: []*uuidpb.UUID{u2pb},
 			},
 		},
@@ -843,7 +843,7 @@ func TestGetAgentUpdates(t *testing.T) {
 		Return(nil, computedSchema2, nil)
 
 	updates2 := []*metadatapb.AgentUpdate{
-		&metadatapb.AgentUpdate{
+		{
 			AgentID: u3pb,
 			Update: &metadatapb.AgentUpdate_Deleted{
 				Deleted: true,

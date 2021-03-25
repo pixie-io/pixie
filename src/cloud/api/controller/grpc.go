@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/gofrs/uuid"
-	types "github.com/gogo/protobuf/types"
+	"github.com/gogo/protobuf/types"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
@@ -15,15 +15,15 @@ import (
 	"google.golang.org/grpc/status"
 
 	public_cloudapipb "pixielabs.ai/pixielabs/src/api/public/cloudapipb"
-	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
+	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
+	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
 	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
-	versionspb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
+	"pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"
@@ -685,7 +685,7 @@ func (a *AutocompleteServer) AutocompleteField(ctx context.Context, req *cloudap
 	}
 
 	suggestionReq := []*autocomplete.SuggestionRequest{
-		&autocomplete.SuggestionRequest{
+		{
 			OrgID:        orgID,
 			Input:        req.Input,
 			AllowedKinds: []cloudapipb.AutocompleteEntityKind{req.FieldType},

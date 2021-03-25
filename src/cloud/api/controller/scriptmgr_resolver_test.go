@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
-	types "github.com/gogo/protobuf/types"
+	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	"github.com/graph-gophers/graphql-go/gqltesting"
 
@@ -31,12 +31,12 @@ func TestScriptMgrResolver(t *testing.T) {
 			req:      &cloudapipb.GetLiveViewsReq{},
 			resp: &cloudapipb.GetLiveViewsResp{
 				LiveViews: []*cloudapipb.LiveViewMetadata{
-					&cloudapipb.LiveViewMetadata{
+					{
 						ID:   "test-id-1",
 						Name: "1",
 						Desc: "1 desc",
 					},
-					&cloudapipb.LiveViewMetadata{
+					{
 						ID:   "test-id-2",
 						Name: "2",
 						Desc: "2 desc",
@@ -85,7 +85,7 @@ func TestScriptMgrResolver(t *testing.T) {
 				PxlContents: "1 pxl",
 				Vis: &pl_vispb.Vis{
 					Widgets: []*pl_vispb.Widget{
-						&pl_vispb.Widget{
+						{
 							FuncOrRef: &pl_vispb.Widget_Func_{
 								Func: &pl_vispb.Widget_Func{
 									Name: "my_func",
@@ -138,13 +138,13 @@ func TestScriptMgrResolver(t *testing.T) {
 			req:      &cloudapipb.GetScriptsReq{},
 			resp: &cloudapipb.GetScriptsResp{
 				Scripts: []*cloudapipb.ScriptMetadata{
-					&cloudapipb.ScriptMetadata{
+					{
 						ID:          "test-id-1",
 						Name:        "1",
 						Desc:        "1 desc",
 						HasLiveView: false,
 					},
-					&cloudapipb.ScriptMetadata{
+					{
 						ID:          "test-id-2",
 						Name:        "2",
 						Desc:        "2 desc",

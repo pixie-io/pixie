@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 )
 
 // This tests just the pod watcher, since the generated code for all of the watchers are
@@ -125,7 +125,7 @@ func TestPodWatcher_SyncPodImpl(t *testing.T) {
 	watcher.syncPodImpl(storedUpdates, currentState)
 
 	expectedUpdates := []*metadatapb.ObjectMetadata{
-		&metadatapb.ObjectMetadata{
+		{
 			Name:                "current_pod",
 			UID:                 "2000",
 			ResourceVersion:     "4",
@@ -134,7 +134,7 @@ func TestPodWatcher_SyncPodImpl(t *testing.T) {
 			DeletionTimestampNS: 0,
 			OwnerReferences:     []*metadatapb.OwnerReference{},
 		},
-		&metadatapb.ObjectMetadata{
+		{
 			Name:                "alive_pod",
 			UID:                 "1234",
 			ResourceVersion:     "5",
@@ -143,7 +143,7 @@ func TestPodWatcher_SyncPodImpl(t *testing.T) {
 			DeletionTimestampNS: 0,
 			OwnerReferences:     []*metadatapb.OwnerReference{},
 		},
-		&metadatapb.ObjectMetadata{
+		{
 			Name:                "zombie_pod",
 			UID:                 "1236",
 			ResourceVersion:     "6",

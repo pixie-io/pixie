@@ -133,7 +133,7 @@ func TestPassThroughProxy(t *testing.T) {
 				QueryStr: "should pass",
 			},
 			expectedResps: []*cvmsgspb.V2CAPIStreamResponse{
-				&cvmsgspb.V2CAPIStreamResponse{
+				{
 					RequestID: "1",
 					Msg: &cvmsgspb.V2CAPIStreamResponse_ExecResp{
 						ExecResp: &public_vizierapipb.ExecuteScriptResponse{
@@ -141,7 +141,7 @@ func TestPassThroughProxy(t *testing.T) {
 						},
 					},
 				},
-				&cvmsgspb.V2CAPIStreamResponse{
+				{
 					RequestID: "1",
 					Msg: &cvmsgspb.V2CAPIStreamResponse_Status{
 						Status: &public_vizierapipb.Status{
@@ -158,7 +158,7 @@ func TestPassThroughProxy(t *testing.T) {
 				QueryStr: "error",
 			},
 			expectedResps: []*cvmsgspb.V2CAPIStreamResponse{
-				&cvmsgspb.V2CAPIStreamResponse{
+				{
 					RequestID: "2",
 					Msg: &cvmsgspb.V2CAPIStreamResponse_ExecResp{
 						ExecResp: &public_vizierapipb.ExecuteScriptResponse{
@@ -166,7 +166,7 @@ func TestPassThroughProxy(t *testing.T) {
 						},
 					},
 				},
-				&cvmsgspb.V2CAPIStreamResponse{
+				{
 					RequestID: "2",
 					Msg: &cvmsgspb.V2CAPIStreamResponse_Status{
 						Status: &public_vizierapipb.Status{
@@ -185,7 +185,7 @@ func TestPassThroughProxy(t *testing.T) {
 				QueryStr: "cancel",
 			},
 			expectedResps: []*cvmsgspb.V2CAPIStreamResponse{
-				&cvmsgspb.V2CAPIStreamResponse{
+				{
 					RequestID: "3",
 					Msg: &cvmsgspb.V2CAPIStreamResponse_ExecResp{
 						ExecResp: &public_vizierapipb.ExecuteScriptResponse{

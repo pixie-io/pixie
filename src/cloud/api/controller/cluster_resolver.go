@@ -6,10 +6,10 @@ import (
 	"sort"
 
 	"github.com/gofrs/uuid"
-	types "github.com/gogo/protobuf/types"
+	"github.com/gogo/protobuf/types"
 	"github.com/graph-gophers/graphql-go"
 
-	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
+	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/utils"
 )

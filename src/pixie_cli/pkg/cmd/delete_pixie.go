@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
 	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 
 	// Blank import necessary for kubeConfig to work.

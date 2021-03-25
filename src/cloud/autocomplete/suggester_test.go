@@ -16,10 +16,10 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 
-var org1 uuid.UUID = uuid.Must(uuid.NewV4())
+var org1 = uuid.Must(uuid.NewV4())
 
 var mdEntities = []md.EsMDEntity{
-	md.EsMDEntity{
+	{
 		OrgID:              org1.String(),
 		UID:                "svc1",
 		Name:               "testService",
@@ -29,7 +29,7 @@ var mdEntities = []md.EsMDEntity{
 		TimeStoppedNS:      0,
 		RelatedEntityNames: []string{},
 	},
-	md.EsMDEntity{
+	{
 		OrgID:              org1.String(),
 		ClusterUID:         "test",
 		UID:                "svc2",
@@ -40,7 +40,7 @@ var mdEntities = []md.EsMDEntity{
 		TimeStoppedNS:      0,
 		RelatedEntityNames: []string{},
 	},
-	md.EsMDEntity{
+	{
 		OrgID:              org1.String(),
 		UID:                "pod1",
 		Name:               "test-Pod",
@@ -51,7 +51,7 @@ var mdEntities = []md.EsMDEntity{
 		RelatedEntityNames: []string{},
 		State:              md.ESMDEntityStateRunning,
 	},
-	md.EsMDEntity{
+	{
 		OrgID:              org1.String(),
 		UID:                "ns1",
 		Name:               "testNamespace",
@@ -61,7 +61,7 @@ var mdEntities = []md.EsMDEntity{
 		TimeStoppedNS:      0,
 		RelatedEntityNames: []string{},
 	},
-	md.EsMDEntity{
+	{
 		OrgID:              org1.String(),
 		UID:                "svc3",
 		Name:               "abcd",
@@ -127,7 +127,7 @@ func TestGetSuggestions(t *testing.T) {
 		{
 			name: "no namespace",
 			reqs: []*autocomplete.SuggestionRequest{
-				&autocomplete.SuggestionRequest{
+				{
 					Input: "test",
 					OrgID: org1,
 					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
@@ -137,14 +137,14 @@ func TestGetSuggestions(t *testing.T) {
 				},
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
-				&autocomplete.SuggestionResult{
+				{
 					ExactMatch: false,
 					Suggestions: []*autocomplete.Suggestion{
-						&autocomplete.Suggestion{
+						{
 							Name: "pl/testService",
 							Kind: cloudapipb.AEK_SVC,
 						},
-						&autocomplete.Suggestion{
+						{
 							Name: "anotherNS/testService",
 							Kind: cloudapipb.AEK_SVC,
 						},
@@ -155,7 +155,7 @@ func TestGetSuggestions(t *testing.T) {
 		{
 			name: "namespace",
 			reqs: []*autocomplete.SuggestionRequest{
-				&autocomplete.SuggestionRequest{
+				{
 					Input: "pl/testService",
 					OrgID: org1,
 					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
@@ -165,10 +165,10 @@ func TestGetSuggestions(t *testing.T) {
 				},
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
-				&autocomplete.SuggestionResult{
+				{
 					ExactMatch: true,
 					Suggestions: []*autocomplete.Suggestion{
-						&autocomplete.Suggestion{
+						{
 							Name: "pl/testService",
 							Kind: cloudapipb.AEK_SVC,
 						},
@@ -179,7 +179,7 @@ func TestGetSuggestions(t *testing.T) {
 		{
 			name: "typo",
 			reqs: []*autocomplete.SuggestionRequest{
-				&autocomplete.SuggestionRequest{
+				{
 					Input: "pl/tss",
 					OrgID: org1,
 					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
@@ -189,10 +189,10 @@ func TestGetSuggestions(t *testing.T) {
 				},
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
-				&autocomplete.SuggestionResult{
+				{
 					ExactMatch: false,
 					Suggestions: []*autocomplete.Suggestion{
-						&autocomplete.Suggestion{
+						{
 							Name: "pl/testService",
 							Kind: cloudapipb.AEK_SVC,
 						},
@@ -203,7 +203,7 @@ func TestGetSuggestions(t *testing.T) {
 		{
 			name: "dash",
 			reqs: []*autocomplete.SuggestionRequest{
-				&autocomplete.SuggestionRequest{
+				{
 					Input: "t-Po",
 					OrgID: org1,
 					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
@@ -213,10 +213,10 @@ func TestGetSuggestions(t *testing.T) {
 				},
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
-				&autocomplete.SuggestionResult{
+				{
 					ExactMatch: false,
 					Suggestions: []*autocomplete.Suggestion{
-						&autocomplete.Suggestion{
+						{
 							Name:  "anotherNS/test-Pod",
 							Kind:  cloudapipb.AEK_POD,
 							State: cloudapipb.AES_RUNNING,
@@ -228,7 +228,7 @@ func TestGetSuggestions(t *testing.T) {
 		{
 			name: "middle of name",
 			reqs: []*autocomplete.SuggestionRequest{
-				&autocomplete.SuggestionRequest{
+				{
 					Input: "Po",
 					OrgID: org1,
 					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
@@ -238,10 +238,10 @@ func TestGetSuggestions(t *testing.T) {
 				},
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
-				&autocomplete.SuggestionResult{
+				{
 					ExactMatch: false,
 					Suggestions: []*autocomplete.Suggestion{
-						&autocomplete.Suggestion{
+						{
 							Name:  "anotherNS/test-Pod",
 							Kind:  cloudapipb.AEK_POD,
 							State: cloudapipb.AES_RUNNING,
@@ -253,7 +253,7 @@ func TestGetSuggestions(t *testing.T) {
 		{
 			name: "multiple kinds",
 			reqs: []*autocomplete.SuggestionRequest{
-				&autocomplete.SuggestionRequest{
+				{
 					Input: "test",
 					OrgID: org1,
 					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
@@ -263,18 +263,18 @@ func TestGetSuggestions(t *testing.T) {
 				},
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
-				&autocomplete.SuggestionResult{
+				{
 					ExactMatch: false,
 					Suggestions: []*autocomplete.Suggestion{
-						&autocomplete.Suggestion{
+						{
 							Name: "pl/testService",
 							Kind: cloudapipb.AEK_SVC,
 						},
-						&autocomplete.Suggestion{
+						{
 							Name: "anotherNS/testService",
 							Kind: cloudapipb.AEK_SVC,
 						},
-						&autocomplete.Suggestion{
+						{
 							Name:  "anotherNS/test-Pod",
 							Kind:  cloudapipb.AEK_POD,
 							State: cloudapipb.AES_RUNNING,
@@ -286,7 +286,7 @@ func TestGetSuggestions(t *testing.T) {
 		{
 			name: "cluster UID",
 			reqs: []*autocomplete.SuggestionRequest{
-				&autocomplete.SuggestionRequest{
+				{
 					Input:      "test",
 					ClusterUID: "test",
 					OrgID:      org1,
@@ -297,10 +297,10 @@ func TestGetSuggestions(t *testing.T) {
 				},
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
-				&autocomplete.SuggestionResult{
+				{
 					ExactMatch: false,
 					Suggestions: []*autocomplete.Suggestion{
-						&autocomplete.Suggestion{
+						{
 							Name: "anotherNS/testService",
 							Kind: cloudapipb.AEK_SVC,
 						},
@@ -311,7 +311,7 @@ func TestGetSuggestions(t *testing.T) {
 		{
 			name: "multiple requests",
 			reqs: []*autocomplete.SuggestionRequest{
-				&autocomplete.SuggestionRequest{
+				{
 					Input: "pl/testService",
 					OrgID: org1,
 					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
@@ -319,7 +319,7 @@ func TestGetSuggestions(t *testing.T) {
 					},
 					AllowedArgs: []cloudapipb.AutocompleteEntityKind{},
 				},
-				&autocomplete.SuggestionRequest{
+				{
 					Input: "test",
 					OrgID: org1,
 					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
@@ -329,23 +329,23 @@ func TestGetSuggestions(t *testing.T) {
 				},
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
-				&autocomplete.SuggestionResult{
+				{
 					ExactMatch: true,
 					Suggestions: []*autocomplete.Suggestion{
-						&autocomplete.Suggestion{
+						{
 							Name: "pl/testService",
 							Kind: cloudapipb.AEK_SVC,
 						},
 					},
 				},
-				&autocomplete.SuggestionResult{
+				{
 					ExactMatch: false,
 					Suggestions: []*autocomplete.Suggestion{
-						&autocomplete.Suggestion{
+						{
 							Name: "pl/testService",
 							Kind: cloudapipb.AEK_SVC,
 						},
-						&autocomplete.Suggestion{
+						{
 							Name: "anotherNS/testService",
 							Kind: cloudapipb.AEK_SVC,
 						},
@@ -356,7 +356,7 @@ func TestGetSuggestions(t *testing.T) {
 		{
 			name: "empty",
 			reqs: []*autocomplete.SuggestionRequest{
-				&autocomplete.SuggestionRequest{
+				{
 					Input: "",
 					OrgID: org1,
 					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
@@ -366,18 +366,18 @@ func TestGetSuggestions(t *testing.T) {
 				},
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
-				&autocomplete.SuggestionResult{
+				{
 					ExactMatch: false,
 					Suggestions: []*autocomplete.Suggestion{
-						&autocomplete.Suggestion{
+						{
 							Name: "pl/testService",
 							Kind: cloudapipb.AEK_SVC,
 						},
-						&autocomplete.Suggestion{
+						{
 							Name: "anotherNS/testService",
 							Kind: cloudapipb.AEK_SVC,
 						},
-						&autocomplete.Suggestion{
+						{
 							Name: "pl/abcd",
 							Kind: cloudapipb.AEK_SVC,
 						},
@@ -388,7 +388,7 @@ func TestGetSuggestions(t *testing.T) {
 		{
 			name: "only namespace",
 			reqs: []*autocomplete.SuggestionRequest{
-				&autocomplete.SuggestionRequest{
+				{
 					Input: "pl/",
 					OrgID: org1,
 					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
@@ -398,14 +398,14 @@ func TestGetSuggestions(t *testing.T) {
 				},
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
-				&autocomplete.SuggestionResult{
+				{
 					ExactMatch: false,
 					Suggestions: []*autocomplete.Suggestion{
-						&autocomplete.Suggestion{
+						{
 							Name: "pl/testService",
 							Kind: cloudapipb.AEK_SVC,
 						},
-						&autocomplete.Suggestion{
+						{
 							Name: "pl/abcd",
 							Kind: cloudapipb.AEK_SVC,
 						},

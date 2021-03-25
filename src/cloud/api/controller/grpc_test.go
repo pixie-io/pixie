@@ -7,16 +7,16 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
-	types "github.com/gogo/protobuf/types"
+	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	public_cloudapipb "pixielabs.ai/pixielabs/src/api/public/cloudapipb"
-	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
+	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
-	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
+	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
 	mock_autocomplete "pixielabs.ai/pixielabs/src/cloud/autocomplete/mock"
@@ -24,8 +24,8 @@ import (
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
 	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb"
 	mock_scriptmgr "pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb/mock"
-	vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
-	versionspb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
+	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
+	"pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	pl_vispb "pixielabs.ai/pixielabs/src/shared/vispb"
@@ -48,7 +48,7 @@ func TestArtifactTracker_GetArtifactList(t *testing.T) {
 		}).
 		Return(&versionspb.ArtifactSet{
 			Name: "cli",
-			Artifact: []*versionspb.Artifact{&versionspb.Artifact{
+			Artifact: []*versionspb.Artifact{{
 				VersionStr: "test",
 			}},
 		}, nil)
@@ -146,7 +146,7 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 	mockClients.MockVzMgr.EXPECT().GetVizierInfos(gomock.Any(), &vzmgrpb.GetVizierInfosRequest{
 		VizierIDs: []*uuidpb.UUID{clusterID},
 	}).Return(&vzmgrpb.GetVizierInfosResponse{
-		VizierInfos: []*cvmsgspb.VizierInfo{&cvmsgspb.VizierInfo{
+		VizierInfos: []*cvmsgspb.VizierInfo{{
 			VizierID:        clusterID,
 			Status:          cvmsgspb.VZ_ST_HEALTHY,
 			LastHeartbeatNs: int64(1305646598000000000),
@@ -159,11 +159,11 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 			ClusterName:    "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar-3",
 			ClusterVersion: "5.6.7",
 			ControlPlanePodStatuses: map[string]*cvmsgspb.PodStatus{
-				"vizier-proxy": &cvmsgspb.PodStatus{
+				"vizier-proxy": {
 					Name:   "vizier-proxy",
 					Status: metadatapb.RUNNING,
 					Containers: []*cvmsgspb.ContainerStatus{
-						&cvmsgspb.ContainerStatus{
+						{
 							Name:      "my-proxy-container",
 							State:     metadatapb.CONTAINER_STATE_RUNNING,
 							Message:   "container message",
@@ -172,7 +172,7 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 						},
 					},
 					Events: []*cvmsgspb.K8SEvent{
-						&cvmsgspb.K8SEvent{
+						{
 							Message:   "this is a test event",
 							FirstTime: &types.Timestamp{Seconds: 1561230620},
 							LastTime:  &types.Timestamp{Seconds: 1561230625},
@@ -182,7 +182,7 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 					Reason:        "pod reason",
 					CreatedAt:     &types.Timestamp{Seconds: 1561230621},
 				},
-				"vizier-query-broker": &cvmsgspb.PodStatus{
+				"vizier-query-broker": {
 					Name:   "vizier-query-broker",
 					Status: metadatapb.RUNNING,
 				},
@@ -199,11 +199,11 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 	resp, err := vzClusterInfoServer.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{})
 
 	expectedPodStatuses := map[string]*cloudapipb.PodStatus{
-		"vizier-proxy": &cloudapipb.PodStatus{
+		"vizier-proxy": {
 			Name:   "vizier-proxy",
 			Status: metadatapb.RUNNING,
 			Containers: []*cloudapipb.ContainerStatus{
-				&cloudapipb.ContainerStatus{
+				{
 					Name:      "my-proxy-container",
 					State:     metadatapb.CONTAINER_STATE_RUNNING,
 					Message:   "container message",
@@ -212,7 +212,7 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 				},
 			},
 			Events: []*cloudapipb.K8SEvent{
-				&cloudapipb.K8SEvent{
+				{
 					Message:   "this is a test event",
 					FirstTime: &types.Timestamp{Seconds: 1561230620},
 					LastTime:  &types.Timestamp{Seconds: 1561230625},
@@ -222,7 +222,7 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 			Reason:        "pod reason",
 			CreatedAt:     &types.Timestamp{Seconds: 1561230621},
 		},
-		"vizier-query-broker": &cloudapipb.PodStatus{
+		"vizier-query-broker": {
 			Name:      "vizier-query-broker",
 			Status:    metadatapb.RUNNING,
 			CreatedAt: nil,
@@ -267,7 +267,7 @@ func TestVizierClusterInfo_GetClusterInfoDuplicates(t *testing.T) {
 	mockClients.MockVzMgr.EXPECT().GetVizierInfos(gomock.Any(), &vzmgrpb.GetVizierInfosRequest{
 		VizierIDs: []*uuidpb.UUID{clusterID, clusterID2},
 	}).Return(&vzmgrpb.GetVizierInfosResponse{
-		VizierInfos: []*cvmsgspb.VizierInfo{&cvmsgspb.VizierInfo{
+		VizierInfos: []*cvmsgspb.VizierInfo{{
 			VizierID:        clusterID,
 			Status:          cvmsgspb.VZ_ST_HEALTHY,
 			LastHeartbeatNs: int64(1305646598000000000),
@@ -282,7 +282,7 @@ func TestVizierClusterInfo_GetClusterInfoDuplicates(t *testing.T) {
 			NumNodes:             5,
 			NumInstrumentedNodes: 3,
 		},
-			&cvmsgspb.VizierInfo{
+			{
 				VizierID:        clusterID,
 				Status:          cvmsgspb.VZ_ST_HEALTHY,
 				LastHeartbeatNs: int64(1305646598000000000),
@@ -326,7 +326,7 @@ func TestVizierClusterInfo_GetClusterInfoWithID(t *testing.T) {
 	mockClients.MockVzMgr.EXPECT().GetVizierInfos(gomock.Any(), &vzmgrpb.GetVizierInfosRequest{
 		VizierIDs: []*uuidpb.UUID{clusterID},
 	}).Return(&vzmgrpb.GetVizierInfosResponse{
-		VizierInfos: []*cvmsgspb.VizierInfo{&cvmsgspb.VizierInfo{
+		VizierInfos: []*cvmsgspb.VizierInfo{{
 			VizierID:        clusterID,
 			Status:          cvmsgspb.VZ_ST_HEALTHY,
 			LastHeartbeatNs: int64(1305646598000000000),
@@ -477,7 +477,7 @@ func TestVizierDeploymentKeyServer_List(t *testing.T) {
 	vzreq := &vzmgrpb.ListDeploymentKeyRequest{}
 	vzresp := &vzmgrpb.ListDeploymentKeyResponse{
 		Keys: []*vzmgrpb.DeploymentKey{
-			&vzmgrpb.DeploymentKey{
+			{
 				ID:        pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
 				Key:       "foobar",
 				CreatedAt: types.TimestampNow(),
@@ -602,7 +602,7 @@ func TestAPIKeyServer_List(t *testing.T) {
 	vzreq := &authpb.ListAPIKeyRequest{}
 	vzresp := &authpb.ListAPIKeyResponse{
 		Keys: []*authpb.APIKey{
-			&authpb.APIKey{
+			{
 				ID:        pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
 				Key:       "foobar",
 				CreatedAt: types.TimestampNow(),
@@ -704,15 +704,15 @@ func TestAutocompleteService_Autocomplete(t *testing.T) {
 	s := mock_autocomplete.NewMockSuggester(ctrl)
 
 	requests := [][]*autocomplete.SuggestionRequest{
-		[]*autocomplete.SuggestionRequest{
-			&autocomplete.SuggestionRequest{
+		{
+			{
 				OrgID:        orgID,
 				ClusterUID:   "test",
 				Input:        "px/svc_info",
 				AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD, cloudapipb.AEK_SVC, cloudapipb.AEK_NAMESPACE, cloudapipb.AEK_SCRIPT},
 				AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
 			},
-			&autocomplete.SuggestionRequest{
+			{
 				OrgID:        orgID,
 				ClusterUID:   "test",
 				Input:        "pl/test",
@@ -723,10 +723,10 @@ func TestAutocompleteService_Autocomplete(t *testing.T) {
 	}
 
 	responses := [][]*autocomplete.SuggestionResult{
-		[]*autocomplete.SuggestionResult{
-			&autocomplete.SuggestionResult{
+		{
+			{
 				Suggestions: []*autocomplete.Suggestion{
-					&autocomplete.Suggestion{
+					{
 						Name:     "px/svc_info",
 						Score:    1,
 						ArgNames: []string{"svc_name"},
@@ -735,9 +735,9 @@ func TestAutocompleteService_Autocomplete(t *testing.T) {
 				},
 				ExactMatch: true,
 			},
-			&autocomplete.SuggestionResult{
+			{
 				Suggestions: []*autocomplete.Suggestion{
-					&autocomplete.Suggestion{
+					{
 						Name:  "px/test",
 						Score: 1,
 					},
@@ -786,8 +786,8 @@ func TestAutocompleteService_AutocompleteField(t *testing.T) {
 	s := mock_autocomplete.NewMockSuggester(ctrl)
 
 	requests := [][]*autocomplete.SuggestionRequest{
-		[]*autocomplete.SuggestionRequest{
-			&autocomplete.SuggestionRequest{
+		{
+			{
 				OrgID:        orgID,
 				ClusterUID:   "test",
 				Input:        "px/svc_info",
@@ -798,14 +798,14 @@ func TestAutocompleteService_AutocompleteField(t *testing.T) {
 	}
 
 	responses := []*autocomplete.SuggestionResult{
-		&autocomplete.SuggestionResult{
+		{
 			Suggestions: []*autocomplete.Suggestion{
-				&autocomplete.Suggestion{
+				{
 					Name:  "px/svc_info",
 					Score: 1,
 					State: cloudapipb.AES_RUNNING,
 				},
-				&autocomplete.Suggestion{
+				{
 					Name:  "px/svc_info2",
 					Score: 1,
 					State: cloudapipb.AES_TERMINATED,
@@ -845,7 +845,7 @@ func toBytes(t *testing.T, msg proto.Message) []byte {
 func TestScriptMgr(t *testing.T) {
 	var testVis = &pl_vispb.Vis{
 		Widgets: []*pl_vispb.Widget{
-			&pl_vispb.Widget{
+			{
 				FuncOrRef: &pl_vispb.Widget_Func_{
 					Func: &pl_vispb.Widget_Func{
 						Name: "my_func",
@@ -877,12 +877,12 @@ func TestScriptMgr(t *testing.T) {
 			smReq:    &scriptmgrpb.GetLiveViewsReq{},
 			smResp: &scriptmgrpb.GetLiveViewsResp{
 				LiveViews: []*scriptmgrpb.LiveViewMetadata{
-					&scriptmgrpb.LiveViewMetadata{
+					{
 						ID:   pbutils.ProtoFromUUID(ID1),
 						Name: "liveview1",
 						Desc: "liveview1 desc",
 					},
-					&scriptmgrpb.LiveViewMetadata{
+					{
 						ID:   pbutils.ProtoFromUUID(ID2),
 						Name: "liveview2",
 						Desc: "liveview2 desc",
@@ -892,12 +892,12 @@ func TestScriptMgr(t *testing.T) {
 			req: &cloudapipb.GetLiveViewsReq{},
 			expectedResp: &cloudapipb.GetLiveViewsResp{
 				LiveViews: []*cloudapipb.LiveViewMetadata{
-					&cloudapipb.LiveViewMetadata{
+					{
 						ID:   ID1.String(),
 						Name: "liveview1",
 						Desc: "liveview1 desc",
 					},
-					&cloudapipb.LiveViewMetadata{
+					{
 						ID:   ID2.String(),
 						Name: "liveview2",
 						Desc: "liveview2 desc",
@@ -939,13 +939,13 @@ func TestScriptMgr(t *testing.T) {
 			smReq:    &scriptmgrpb.GetScriptsReq{},
 			smResp: &scriptmgrpb.GetScriptsResp{
 				Scripts: []*scriptmgrpb.ScriptMetadata{
-					&scriptmgrpb.ScriptMetadata{
+					{
 						ID:          pbutils.ProtoFromUUID(ID1),
 						Name:        "script1",
 						Desc:        "script1 desc",
 						HasLiveView: false,
 					},
-					&scriptmgrpb.ScriptMetadata{
+					{
 						ID:          pbutils.ProtoFromUUID(ID2),
 						Name:        "liveview1",
 						Desc:        "liveview1 desc",
@@ -956,13 +956,13 @@ func TestScriptMgr(t *testing.T) {
 			req: &cloudapipb.GetScriptsReq{},
 			expectedResp: &cloudapipb.GetScriptsResp{
 				Scripts: []*cloudapipb.ScriptMetadata{
-					&cloudapipb.ScriptMetadata{
+					{
 						ID:          ID1.String(),
 						Name:        "script1",
 						Desc:        "script1 desc",
 						HasLiveView: false,
 					},
-					&cloudapipb.ScriptMetadata{
+					{
 						ID:          ID2.String(),
 						Name:        "liveview1",
 						Desc:        "liveview1 desc",

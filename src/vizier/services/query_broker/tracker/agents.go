@@ -121,7 +121,7 @@ type updateOrError struct {
 	FreshState bool
 }
 
-func (a *Agents) streamUpdates() (chan (updateOrError), func(), error) {
+func (a *Agents) streamUpdates() (chan updateOrError, func(), error) {
 	log.Trace("Streaming agent state.")
 
 	claims := utils2.GenerateJWTForService("metadata_tracker")

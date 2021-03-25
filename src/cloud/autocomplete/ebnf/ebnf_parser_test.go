@@ -25,7 +25,7 @@ func TestParseInput(t *testing.T) {
 			input:          "go profile",
 			expectedAction: "go",
 			expectedArgs: []*arg{
-				&arg{
+				{
 					Type: "",
 					Name: "profile",
 				},
@@ -48,7 +48,7 @@ func TestParseInput(t *testing.T) {
 			input:          "px/svc",
 			expectedAction: "",
 			expectedArgs: []*arg{
-				&arg{
+				{
 					Type: "",
 					Name: "px/svc",
 				},
@@ -59,7 +59,7 @@ func TestParseInput(t *testing.T) {
 			input:          "run px/svc",
 			expectedAction: "run",
 			expectedArgs: []*arg{
-				&arg{
+				{
 					Type: "",
 					Name: "px/svc",
 				},
@@ -70,15 +70,15 @@ func TestParseInput(t *testing.T) {
 			input:          "script:px/svc abcd svc:pl/frontend",
 			expectedAction: "",
 			expectedArgs: []*arg{
-				&arg{
+				{
 					Type: "script",
 					Name: "px/svc",
 				},
-				&arg{
+				{
 					Type: "",
 					Name: "abcd",
 				},
-				&arg{
+				{
 					Type: "svc",
 					Name: "pl/frontend",
 				},
@@ -89,19 +89,19 @@ func TestParseInput(t *testing.T) {
 			input:          "script:px/svc abcd svc:pl/frontend go",
 			expectedAction: "",
 			expectedArgs: []*arg{
-				&arg{
+				{
 					Type: "script",
 					Name: "px/svc",
 				},
-				&arg{
+				{
 					Type: "",
 					Name: "abcd",
 				},
-				&arg{
+				{
 					Type: "svc",
 					Name: "pl/frontend",
 				},
-				&arg{
+				{
 					Type: "",
 					Name: "go",
 				},
@@ -112,19 +112,19 @@ func TestParseInput(t *testing.T) {
 			input:          "script:px-test/svc ab$0cd svc:pl/frontend go",
 			expectedAction: "",
 			expectedArgs: []*arg{
-				&arg{
+				{
 					Type: "script",
 					Name: "px-test/svc",
 				},
-				&arg{
+				{
 					Type: "",
 					Name: "ab$0cd",
 				},
-				&arg{
+				{
 					Type: "svc",
 					Name: "pl/frontend",
 				},
-				&arg{
+				{
 					Type: "",
 					Name: "go",
 				},
@@ -135,15 +135,15 @@ func TestParseInput(t *testing.T) {
 			input:          "script:px/svc ab$0cd svc:",
 			expectedAction: "",
 			expectedArgs: []*arg{
-				&arg{
+				{
 					Type: "script",
 					Name: "px/svc",
 				},
-				&arg{
+				{
 					Type: "",
 					Name: "ab$0cd",
 				},
-				&arg{
+				{
 					Type: "svc",
 					Name: "",
 				},
@@ -154,19 +154,19 @@ func TestParseInput(t *testing.T) {
 			input:          "script:px/svc ab$0cd svc: svc2:",
 			expectedAction: "",
 			expectedArgs: []*arg{
-				&arg{
+				{
 					Type: "script",
 					Name: "px/svc",
 				},
-				&arg{
+				{
 					Type: "",
 					Name: "ab$0cd",
 				},
-				&arg{
+				{
 					Type: "svc",
 					Name: "",
 				},
-				&arg{
+				{
 					Type: "svc2",
 					Name: "",
 				},
@@ -177,19 +177,19 @@ func TestParseInput(t *testing.T) {
 			input:          "script:px/svc ab$0cd svc: svc2:test",
 			expectedAction: "",
 			expectedArgs: []*arg{
-				&arg{
+				{
 					Type: "script",
 					Name: "px/svc",
 				},
-				&arg{
+				{
 					Type: "",
 					Name: "ab$0cd",
 				},
-				&arg{
+				{
 					Type: "svc",
 					Name: "",
 				},
-				&arg{
+				{
 					Type: "svc2",
 					Name: "test",
 				},

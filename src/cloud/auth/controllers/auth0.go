@@ -9,7 +9,7 @@ import (
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
-	pflag "github.com/spf13/pflag"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 

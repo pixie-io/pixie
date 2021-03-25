@@ -5,7 +5,7 @@ import (
 	"regexp"
 
 	"github.com/gdamore/tcell"
-	runewidth "github.com/mattn/go-runewidth"
+	"github.com/mattn/go-runewidth"
 	"github.com/rivo/tview"
 	"github.com/rivo/uniseg"
 )

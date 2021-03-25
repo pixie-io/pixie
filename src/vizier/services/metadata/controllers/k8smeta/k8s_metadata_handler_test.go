@@ -15,7 +15,7 @@ import (
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/k8smeta"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
-	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 )
 
 func createEndpointsObject() *storepb.K8SResource {
@@ -61,7 +61,7 @@ func createNodeObject() *storepb.K8SResource {
 					ResourceVersion: "1",
 					ClusterName:     "a_cluster",
 					OwnerReferences: []*metadatapb.OwnerReference{
-						&metadatapb.OwnerReference{
+						{
 							Kind: "pod",
 							Name: "test",
 							UID:  "abcd",
@@ -76,7 +76,7 @@ func createNodeObject() *storepb.K8SResource {
 				Status: &metadatapb.NodeStatus{
 					Phase: metadatapb.NODE_PHASE_RUNNING,
 					Addresses: []*metadatapb.NodeAddress{
-						&metadatapb.NodeAddress{
+						{
 							Type:    metadatapb.NODE_ADDR_TYPE_INTERNAL_IP,
 							Address: "127.0.0.1",
 						},
@@ -97,7 +97,7 @@ func createNamespaceObject() *storepb.K8SResource {
 					ResourceVersion: "1",
 					ClusterName:     "a_cluster",
 					OwnerReferences: []*metadatapb.OwnerReference{
-						&metadatapb.OwnerReference{
+						{
 							Kind: "pod",
 							Name: "test",
 							UID:  "abcd",
@@ -302,7 +302,7 @@ func TestHandler_GetUpdatesForIP(t *testing.T) {
 					ContainerNames:   []string{"container1"},
 					Phase:            metadatapb.RUNNING,
 					Conditions: []*metadatapb.PodCondition{
-						&metadatapb.PodCondition{
+						{
 							Type:   metadatapb.READY,
 							Status: metadatapb.STATUS_TRUE,
 						},
@@ -439,7 +439,7 @@ func TestHandler_ProcessUpdates(t *testing.T) {
 					ResourceVersion: "1",
 					ClusterName:     "a_cluster",
 					OwnerReferences: []*metadatapb.OwnerReference{
-						&metadatapb.OwnerReference{
+						{
 							Kind: "pod",
 							Name: "test",
 							UID:  "abcd",
@@ -461,7 +461,7 @@ func TestHandler_ProcessUpdates(t *testing.T) {
 					ResourceVersion: "1",
 					ClusterName:     "a_cluster",
 					OwnerReferences: []*metadatapb.OwnerReference{
-						&metadatapb.OwnerReference{
+						{
 							Kind: "pod",
 							Name: "test",
 							UID:  "abcd",
@@ -475,7 +475,7 @@ func TestHandler_ProcessUpdates(t *testing.T) {
 				Status: &metadatapb.NodeStatus{
 					Phase: metadatapb.NODE_PHASE_RUNNING,
 					Addresses: []*metadatapb.NodeAddress{
-						&metadatapb.NodeAddress{
+						{
 							Type:    metadatapb.NODE_ADDR_TYPE_INTERNAL_IP,
 							Address: "127.0.0.1",
 						},
@@ -571,7 +571,7 @@ func TestEndpointsUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 	})
 
 	storedProtos := []*k8smeta.StoredUpdate{
-		&k8smeta.StoredUpdate{
+		{
 			Update: &storepb.K8SResource{
 				Resource: &storepb.K8SResource_Endpoints{
 					Endpoints: expectedPb,
@@ -736,7 +736,7 @@ func TestServiceUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 	}
 
 	storedProtos := []*k8smeta.StoredUpdate{
-		&k8smeta.StoredUpdate{
+		{
 			Update: &storepb.K8SResource{
 				Resource: &storepb.K8SResource_Service{
 					Service: expectedPb,
@@ -844,7 +844,7 @@ func TestPodUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 		Reason:         "container state reason",
 	}
 	storedProtos := []*k8smeta.StoredUpdate{
-		&k8smeta.StoredUpdate{
+		{
 			Update: &storepb.K8SResource{
 				Resource: &storepb.K8SResource_Container{
 					Container: containerUpdate,
@@ -852,7 +852,7 @@ func TestPodUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 			},
 			UpdateVersion: 2,
 		},
-		&k8smeta.StoredUpdate{
+		{
 			Update: &storepb.K8SResource{
 				Resource: &storepb.K8SResource_Pod{
 					Pod: podUpdate,
@@ -893,7 +893,7 @@ func TestPodUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 					ContainerNames:   []string{"container1"},
 					Phase:            metadatapb.RUNNING,
 					Conditions: []*metadatapb.PodCondition{
-						&metadatapb.PodCondition{
+						{
 							Type:   metadatapb.READY,
 							Status: metadatapb.STATUS_TRUE,
 						},
@@ -960,7 +960,7 @@ func TestNodeUpdateProcessor_GetStoredProtos(t *testing.T) {
 					ResourceVersion: "1",
 					ClusterName:     "a_cluster",
 					OwnerReferences: []*metadatapb.OwnerReference{
-						&metadatapb.OwnerReference{
+						{
 							Kind: "pod",
 							Name: "test",
 							UID:  "abcd",
@@ -975,7 +975,7 @@ func TestNodeUpdateProcessor_GetStoredProtos(t *testing.T) {
 				Status: &metadatapb.NodeStatus{
 					Phase: metadatapb.NODE_PHASE_RUNNING,
 					Addresses: []*metadatapb.NodeAddress{
-						&metadatapb.NodeAddress{
+						{
 							Type:    metadatapb.NODE_ADDR_TYPE_INTERNAL_IP,
 							Address: "127.0.0.1",
 						},
@@ -989,7 +989,7 @@ func TestNodeUpdateProcessor_GetStoredProtos(t *testing.T) {
 func TestNodeUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 	// Construct node object.
 	storedProtos := []*k8smeta.StoredUpdate{
-		&k8smeta.StoredUpdate{
+		{
 			Update: &storepb.K8SResource{
 				Resource: &storepb.K8SResource_Node{
 					Node: &metadatapb.Node{
@@ -999,7 +999,7 @@ func TestNodeUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 							ResourceVersion: "1",
 							ClusterName:     "a_cluster",
 							OwnerReferences: []*metadatapb.OwnerReference{
-								&metadatapb.OwnerReference{
+								{
 									Kind: "pod",
 									Name: "test",
 									UID:  "abcd",
@@ -1014,7 +1014,7 @@ func TestNodeUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 						Status: &metadatapb.NodeStatus{
 							Phase: metadatapb.NODE_PHASE_RUNNING,
 							Addresses: []*metadatapb.NodeAddress{
-								&metadatapb.NodeAddress{
+								{
 									Type:    metadatapb.NODE_ADDR_TYPE_INTERNAL_IP,
 									Address: "127.0.0.1",
 								},
@@ -1075,7 +1075,7 @@ func TestNamespaceUpdateProcessor_GetStoredProtos(t *testing.T) {
 					ResourceVersion: "1",
 					ClusterName:     "a_cluster",
 					OwnerReferences: []*metadatapb.OwnerReference{
-						&metadatapb.OwnerReference{
+						{
 							Kind: "pod",
 							Name: "test",
 							UID:  "abcd",
@@ -1097,7 +1097,7 @@ func TestNamespaceUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 	}
 
 	storedProtos := []*k8smeta.StoredUpdate{
-		&k8smeta.StoredUpdate{
+		{
 			Update: &storepb.K8SResource{
 				Resource: &storepb.K8SResource_Namespace{
 					Namespace: &metadatapb.Namespace{
@@ -1107,7 +1107,7 @@ func TestNamespaceUpdateProcessor_GetUpdatesToSend(t *testing.T) {
 							ResourceVersion: "1",
 							ClusterName:     "a_cluster",
 							OwnerReferences: []*metadatapb.OwnerReference{
-								&metadatapb.OwnerReference{
+								{
 									Kind: "pod",
 									Name: "test",
 									UID:  "abcd",

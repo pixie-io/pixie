@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
+	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/cloud/profile/datastore"
 	"pixielabs.ai/pixielabs/src/cloud/profile/profileenv"
 	profile "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"

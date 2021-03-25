@@ -13,13 +13,13 @@ import (
 
 func TestPodStatusScan(t *testing.T) {
 	var inputPodStatuses controller.PodStatuses = map[string]*cvmsgspb.PodStatus{
-		"vizier-proxy": &cvmsgspb.PodStatus{
+		"vizier-proxy": {
 			Name:          "vizier-proxy",
 			Status:        metadatapb.RUNNING,
 			StatusMessage: "a message",
 			Reason:        "a reason",
 			Containers: []*cvmsgspb.ContainerStatus{
-				&cvmsgspb.ContainerStatus{
+				{
 					Name:    "a-container",
 					State:   metadatapb.CONTAINER_STATE_RUNNING,
 					Message: "a container message",
@@ -35,7 +35,7 @@ func TestPodStatusScan(t *testing.T) {
 				Nanos:   0,
 			},
 		},
-		"vizier-query-broker": &cvmsgspb.PodStatus{
+		"vizier-query-broker": {
 			Name:   "vizier-query-broker",
 			Status: metadatapb.RUNNING,
 			CreatedAt: &types.Timestamp{

@@ -25,7 +25,7 @@ func TestCLIArtifact(t *testing.T) {
 		}).
 		Return(&cloudapipb.ArtifactSet{
 			Name: "cli",
-			Artifact: []*cloudapipb.Artifact{&cloudapipb.Artifact{
+			Artifact: []*cloudapipb.Artifact{{
 				VersionStr: "test",
 			}},
 		}, nil)
@@ -76,11 +76,11 @@ func TestArtifacts_CLI(t *testing.T) {
 		}).
 		Return(&cloudapipb.ArtifactSet{
 			Name: "cli",
-			Artifact: []*cloudapipb.Artifact{&cloudapipb.Artifact{
+			Artifact: []*cloudapipb.Artifact{{
 				VersionStr: "1.2.3",
 				Changelog:  "a changelog",
 				Timestamp:  &types.Timestamp{Seconds: 10},
-			}, &cloudapipb.Artifact{
+			}, {
 				VersionStr: "1.2.2",
 				Changelog:  "some changes go here",
 				Timestamp:  &types.Timestamp{Seconds: 5},
@@ -137,11 +137,11 @@ func TestArtifacts_Vizier(t *testing.T) {
 		}).
 		Return(&cloudapipb.ArtifactSet{
 			Name: "vizier",
-			Artifact: []*cloudapipb.Artifact{&cloudapipb.Artifact{
+			Artifact: []*cloudapipb.Artifact{{
 				VersionStr: "1.2.3",
 				Changelog:  "a changelog",
 				Timestamp:  &types.Timestamp{Seconds: 10},
-			}, &cloudapipb.Artifact{
+			}, {
 				VersionStr: "1.2.2",
 				Changelog:  "some changes go here",
 				Timestamp:  &types.Timestamp{Seconds: 5},

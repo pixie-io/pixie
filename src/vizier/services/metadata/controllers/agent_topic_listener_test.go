@@ -22,7 +22,7 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint"
 	mock_tracepoint "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint/mock"
-	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 

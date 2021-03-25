@@ -11,13 +11,13 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
-	logicalpb "pixielabs.ai/pixielabs/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb"
+	"pixielabs.ai/pixielabs/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb"
 	"pixielabs.ai/pixielabs/src/utils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	mock_agent "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint"
 	mock_tracepoint "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint/mock"
-	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 )
 
 func TestCreateTracepoint(t *testing.T) {
@@ -35,11 +35,11 @@ func TestCreateTracepoint(t *testing.T) {
 			originalTracepoint: nil,
 			newTracepoint: &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
-					&logicalpb.TracepointDeployment_Tracepoint{
+					{
 						TableName: "table1",
 						Program: &logicalpb.TracepointSpec{
 							Outputs: []*logicalpb.Output{
-								&logicalpb.Output{
+								{
 									Name:   "table1",
 									Fields: []string{"abc", "def"},
 								},
@@ -54,11 +54,11 @@ func TestCreateTracepoint(t *testing.T) {
 			name: "existing tracepoint, match",
 			originalTracepoint: &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
-					&logicalpb.TracepointDeployment_Tracepoint{
+					{
 						TableName: "table1",
 						Program: &logicalpb.TracepointSpec{
 							Outputs: []*logicalpb.Output{
-								&logicalpb.Output{
+								{
 									Name:   "table1",
 									Fields: []string{"abc", "def"},
 								},
@@ -70,11 +70,11 @@ func TestCreateTracepoint(t *testing.T) {
 			originalTracepointState: statuspb.RUNNING_STATE,
 			newTracepoint: &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
-					&logicalpb.TracepointDeployment_Tracepoint{
+					{
 						TableName: "table1",
 						Program: &logicalpb.TracepointSpec{
 							Outputs: []*logicalpb.Output{
-								&logicalpb.Output{
+								{
 									Name:   "table1",
 									Fields: []string{"abc", "def"},
 								},
@@ -89,11 +89,11 @@ func TestCreateTracepoint(t *testing.T) {
 			name: "existing tracepoint, not exactly same (1)",
 			originalTracepoint: &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
-					&logicalpb.TracepointDeployment_Tracepoint{
+					{
 						TableName: "table1",
 						Program: &logicalpb.TracepointSpec{
 							Outputs: []*logicalpb.Output{
-								&logicalpb.Output{
+								{
 									Name:   "table1",
 									Fields: []string{"abc"},
 								},
@@ -105,11 +105,11 @@ func TestCreateTracepoint(t *testing.T) {
 			originalTracepointState: statuspb.RUNNING_STATE,
 			newTracepoint: &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
-					&logicalpb.TracepointDeployment_Tracepoint{
+					{
 						TableName: "table1",
 						Program: &logicalpb.TracepointSpec{
 							Outputs: []*logicalpb.Output{
-								&logicalpb.Output{
+								{
 									Name:   "table1",
 									Fields: []string{"abc", "def"},
 								},
@@ -125,17 +125,17 @@ func TestCreateTracepoint(t *testing.T) {
 			originalTracepointState: statuspb.RUNNING_STATE,
 			originalTracepoint: &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
-					&logicalpb.TracepointDeployment_Tracepoint{
+					{
 						TableName: "table1",
 						Program: &logicalpb.TracepointSpec{
 							Outputs: []*logicalpb.Output{
-								&logicalpb.Output{
+								{
 									Name:   "table1",
 									Fields: []string{"abc", "def"},
 								},
 							},
 							Probes: []*logicalpb.Probe{
-								&logicalpb.Probe{Name: "test"},
+								{Name: "test"},
 							},
 						},
 					},
@@ -143,11 +143,11 @@ func TestCreateTracepoint(t *testing.T) {
 			},
 			newTracepoint: &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
-					&logicalpb.TracepointDeployment_Tracepoint{
+					{
 						TableName: "table1",
 						Program: &logicalpb.TracepointSpec{
 							Outputs: []*logicalpb.Output{
-								&logicalpb.Output{
+								{
 									Name:   "table1",
 									Fields: []string{"abc", "def"},
 								},
@@ -163,17 +163,17 @@ func TestCreateTracepoint(t *testing.T) {
 			originalTracepointState: statuspb.TERMINATED_STATE,
 			originalTracepoint: &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
-					&logicalpb.TracepointDeployment_Tracepoint{
+					{
 						TableName: "table1",
 						Program: &logicalpb.TracepointSpec{
 							Outputs: []*logicalpb.Output{
-								&logicalpb.Output{
+								{
 									Name:   "table1",
 									Fields: []string{"abc", "def"},
 								},
 							},
 							Probes: []*logicalpb.Probe{
-								&logicalpb.Probe{Name: "test"},
+								{Name: "test"},
 							},
 						},
 					},
@@ -181,11 +181,11 @@ func TestCreateTracepoint(t *testing.T) {
 			},
 			newTracepoint: &logicalpb.TracepointDeployment{
 				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
-					&logicalpb.TracepointDeployment_Tracepoint{
+					{
 						TableName: "table1",
 						Program: &logicalpb.TracepointSpec{
 							Outputs: []*logicalpb.Output{
-								&logicalpb.Output{
+								{
 									Name:   "table1",
 									Fields: []string{"abc", "def"},
 								},
@@ -301,10 +301,10 @@ func TestGetTracepoints(t *testing.T) {
 	tID1 := uuid.Must(uuid.NewV4())
 	tID2 := uuid.Must(uuid.NewV4())
 	expectedTracepointInfo := []*storepb.TracepointInfo{
-		&storepb.TracepointInfo{
+		{
 			ID: utils.ProtoFromUUID(tID1),
 		},
-		&storepb.TracepointInfo{
+		{
 			ID: utils.ProtoFromUUID(tID2),
 		},
 	}
@@ -395,10 +395,10 @@ func TestRegisterTracepoint(t *testing.T) {
 	tracepointID := uuid.Must(uuid.NewV4())
 	program := &logicalpb.TracepointDeployment{
 		Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
-			&logicalpb.TracepointDeployment_Tracepoint{
+			{
 				TableName: "test",
 			},
-			&logicalpb.TracepointDeployment_Tracepoint{
+			{
 				TableName: "anotherTracepoint",
 			},
 		},
@@ -474,8 +474,8 @@ func TestUpdateAgentTracepointStatus_Terminated(t *testing.T) {
 		EXPECT().
 		GetTracepointStates(tpID).
 		Return([]*storepb.AgentTracepointStatus{
-			&storepb.AgentTracepointStatus{AgentID: utils.ProtoFromUUID(agentUUID1), State: statuspb.TERMINATED_STATE},
-			&storepb.AgentTracepointStatus{AgentID: utils.ProtoFromUUID(agentUUID2), State: statuspb.RUNNING_STATE},
+			{AgentID: utils.ProtoFromUUID(agentUUID1), State: statuspb.TERMINATED_STATE},
+			{AgentID: utils.ProtoFromUUID(agentUUID2), State: statuspb.RUNNING_STATE},
 		}, nil)
 
 	mockTracepointStore.
@@ -502,16 +502,16 @@ func TestTTLExpiration(t *testing.T) {
 		EXPECT().
 		GetTracepoints().
 		Return([]*storepb.TracepointInfo{
-			&storepb.TracepointInfo{
+			{
 				ID: utils.ProtoFromUUID(tpID1),
 			},
-			&storepb.TracepointInfo{
+			{
 				ID: utils.ProtoFromUUID(tpID2),
 			},
-			&storepb.TracepointInfo{
+			{
 				ID: utils.ProtoFromUUID(tpID3),
 			},
-			&storepb.TracepointInfo{
+			{
 				ID:            utils.ProtoFromUUID(tpID4),
 				ExpectedState: statuspb.TERMINATED_STATE,
 			},

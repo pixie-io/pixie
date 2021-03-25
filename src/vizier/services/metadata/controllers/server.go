@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
-	types "github.com/gogo/protobuf/types"
+	"github.com/gogo/protobuf/types"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -22,7 +22,7 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
-	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
@@ -367,7 +367,7 @@ func (s *Server) GetTracepointInfo(ctx context.Context, req *metadatapb.GetTrace
 			tracepointState[i] = &metadatapb.GetTracepointInfoResponse_TracepointState{
 				ID:    req.IDs[i],
 				State: statuspb.UNKNOWN_STATE,
-				Statuses: []*statuspb.Status{&statuspb.Status{
+				Statuses: []*statuspb.Status{{
 					ErrCode: statuspb.NOT_FOUND,
 				}},
 			}

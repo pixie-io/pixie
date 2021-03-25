@@ -471,8 +471,8 @@ func TestVizierPassThroughProxy_DebugLog(t *testing.T) {
 
 			expGRPCError: nil,
 			expGRPCResponses: []*pl_api_vizierpb.DebugLogResponse{
-				&pl_api_vizierpb.DebugLogResponse{Data: "test log 1"},
-				&pl_api_vizierpb.DebugLogResponse{Data: "test log 2"},
+				{Data: "test log 1"},
+				{Data: "test log 2"},
 			},
 		},
 	}

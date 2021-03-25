@@ -312,17 +312,17 @@ func TestFailures(t *testing.T) {
 func TestParseAllDocStrings(t *testing.T) {
 	internalDoc := &docspb.InternalPXLDocs{}
 	internalDoc.DocstringNodes = []*docspb.DocstringNode{
-		&docspb.DocstringNode{
+		{
 			Name:      "px",
 			Docstring: "",
 			Children: []*docspb.DocstringNode{
 				// Should show up in the module.
-				&docspb.DocstringNode{
+				{
 					Name:      "UpsertTracepoint",
 					Docstring: upsertTracepointDoc,
 				},
 				// Should not show up.
-				&docspb.DocstringNode{
+				{
 					Name:      "DataFrame",
 					Docstring: dataFrameDoc,
 				},

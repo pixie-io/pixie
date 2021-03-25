@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	types "k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/types"
 
 	"pixielabs.ai/pixielabs/src/shared/k8s"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
@@ -1261,7 +1261,7 @@ func TestContainerStatusToProtoTerminated(t *testing.T) {
 
 func TestNodeToProto(t *testing.T) {
 	oRefs := []metav1.OwnerReference{
-		metav1.OwnerReference{
+		{
 			Kind: "",
 			Name: "",
 			UID:  "",
@@ -1280,11 +1280,11 @@ func TestNodeToProto(t *testing.T) {
 	}
 
 	addresses := []v1.NodeAddress{
-		v1.NodeAddress{
+		{
 			Type:    v1.NodeInternalIP,
 			Address: "10.32.0.77",
 		},
-		v1.NodeAddress{
+		{
 			Type:    v1.NodeExternalIP,
 			Address: "34.82.242.42",
 		},

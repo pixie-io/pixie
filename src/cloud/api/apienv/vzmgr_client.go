@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 
-	vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
+	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	"pixielabs.ai/pixielabs/src/shared/services"
 )
 

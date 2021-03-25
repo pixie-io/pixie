@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
-	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
+	"pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"

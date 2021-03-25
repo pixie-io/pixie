@@ -13,7 +13,7 @@ import (
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
-	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
+	"pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
 	"pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	"pixielabs.ai/pixielabs/src/carnotpb"
@@ -396,7 +396,7 @@ func QueryPlanResponse(queryID uuid.UUID, plan *distributedpb.DistributedPlan, p
 		batch := &public_vizierapipb.RowBatchData{
 			TableID: planTableID,
 			Cols: []*public_vizierapipb.Column{
-				&public_vizierapipb.Column{
+				{
 					ColData: &public_vizierapipb.Column_StringData{
 						StringData: &public_vizierapipb.StringColumn{
 							Data: []string{queryPlan[i:end]},

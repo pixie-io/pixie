@@ -15,7 +15,7 @@ import (
 	mock_public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb/mock"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
-	carnotpb "pixielabs.ai/pixielabs/src/carnotpb"
+	"pixielabs.ai/pixielabs/src/carnotpb"
 	mock_carnotpb "pixielabs.ai/pixielabs/src/carnotpb/mock"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
@@ -339,7 +339,7 @@ func TestCheckHealth_Success(t *testing.T) {
 				Batch: &public_vizierapipb.RowBatchData{
 					TableID: "health_check_unused",
 					Cols: []*public_vizierapipb.Column{
-						&public_vizierapipb.Column{
+						{
 							ColData: &public_vizierapipb.Column_StringData{
 								StringData: &public_vizierapipb.StringColumn{
 									Data: []string{

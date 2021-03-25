@@ -11,6 +11,7 @@ import (
 	"github.com/ory/dockertest/v3/docker"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+
 	"pixielabs.ai/pixielabs/src/shared/services/pg"
 )
 

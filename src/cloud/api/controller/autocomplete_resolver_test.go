@@ -24,16 +24,16 @@ func TestAutocomplete(t *testing.T) {
 			FormattedInput: "${2:run} ${3:$0px/svc_info} ${1:svc:pl/test}",
 			IsExecutable:   false,
 			TabSuggestions: []*cloudapipb.TabSuggestion{
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              2,
 					ExecutableAfterSelect: false,
 					Suggestions:           []*cloudapipb.AutocompleteSuggestion{},
 				},
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              3,
 					ExecutableAfterSelect: false,
 					Suggestions: []*cloudapipb.AutocompleteSuggestion{
-						&cloudapipb.AutocompleteSuggestion{
+						{
 							Kind:           cloudapipb.AEK_POD,
 							Name:           "svc_info_pod",
 							Description:    "this is a pod",
@@ -42,11 +42,11 @@ func TestAutocomplete(t *testing.T) {
 						},
 					},
 				},
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              1,
 					ExecutableAfterSelect: false,
 					Suggestions: []*cloudapipb.AutocompleteSuggestion{
-						&cloudapipb.AutocompleteSuggestion{
+						{
 							Kind:           cloudapipb.AEK_SVC,
 							Name:           "pl/test",
 							Description:    "this is a svc",
@@ -116,14 +116,14 @@ func TestAutocompleteField(t *testing.T) {
 	}).
 		Return(&cloudapipb.AutocompleteFieldResponse{
 			Suggestions: []*cloudapipb.AutocompleteSuggestion{
-				&cloudapipb.AutocompleteSuggestion{
+				{
 					Kind:           cloudapipb.AEK_SVC,
 					Name:           "px/svc_info",
 					Description:    "test",
 					MatchedIndexes: []int64{0, 1, 2},
 					State:          cloudapipb.AES_TERMINATED,
 				},
-				&cloudapipb.AutocompleteSuggestion{
+				{
 					Kind:           cloudapipb.AEK_SVC,
 					Name:           "px/svc_info2",
 					Description:    "test2",

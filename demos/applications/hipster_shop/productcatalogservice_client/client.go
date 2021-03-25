@@ -5,6 +5,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+
 	pb "pixielabs.ai/pixielabs/demos/applications/hipster_shop/proto"
 )
 

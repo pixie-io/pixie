@@ -11,7 +11,7 @@ import (
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
-	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
+	"pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
 	"pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	"pixielabs.ai/pixielabs/src/carnotpb"
@@ -499,7 +499,7 @@ func TestQueryPlanResponse(t *testing.T) {
 	dagIDMap[agentIDStr] = 0
 	dag := &planpb.DAG{
 		Nodes: []*planpb.DAG_DAGNode{
-			&planpb.DAG_DAGNode{
+			{
 				Id: 0,
 			},
 		},
@@ -512,13 +512,13 @@ func TestQueryPlanResponse(t *testing.T) {
 	}
 
 	agentStats := []*queryresultspb.AgentExecutionStats{
-		&queryresultspb.AgentExecutionStats{
+		{
 			AgentID:          pbutils.ProtoFromUUID(agentID),
 			ExecutionTimeNs:  123,
 			BytesProcessed:   456,
 			RecordsProcessed: 12,
 			OperatorExecutionStats: []*queryresultspb.OperatorExecutionStats{
-				&queryresultspb.OperatorExecutionStats{
+				{
 					PlanFragmentId:       1,
 					NodeId:               2,
 					BytesOutput:          450,
@@ -526,7 +526,7 @@ func TestQueryPlanResponse(t *testing.T) {
 					TotalExecutionTimeNs: 50,
 					SelfExecutionTimeNs:  40,
 				},
-				&queryresultspb.OperatorExecutionStats{
+				{
 					PlanFragmentId:       1,
 					NodeId:               2,
 					BytesOutput:          456,
@@ -539,14 +539,14 @@ func TestQueryPlanResponse(t *testing.T) {
 	}
 
 	expected1 := []*public_vizierapipb.ExecuteScriptResponse{
-		&public_vizierapipb.ExecuteScriptResponse{
+		{
 			QueryID: queryIDStr,
 			Result: &public_vizierapipb.ExecuteScriptResponse_Data{
 				Data: &public_vizierapipb.QueryData{
 					Batch: &public_vizierapipb.RowBatchData{
 						TableID: "table_plan_id",
 						Cols: []*public_vizierapipb.Column{
-							&public_vizierapipb.Column{
+							{
 								ColData: &public_vizierapipb.Column_StringData{
 									StringData: &public_vizierapipb.StringColumn{
 										Data: []string{
@@ -576,14 +576,14 @@ func TestQueryPlanResponse(t *testing.T) {
 	assert.Equal(t, expected1[0], resp1[0])
 
 	expected2 := []*public_vizierapipb.ExecuteScriptResponse{
-		&public_vizierapipb.ExecuteScriptResponse{
+		{
 			QueryID: queryIDStr,
 			Result: &public_vizierapipb.ExecuteScriptResponse_Data{
 				Data: &public_vizierapipb.QueryData{
 					Batch: &public_vizierapipb.RowBatchData{
 						TableID: "table_plan_id",
 						Cols: []*public_vizierapipb.Column{
-							&public_vizierapipb.Column{
+							{
 								ColData: &public_vizierapipb.Column_StringData{
 									StringData: &public_vizierapipb.StringColumn{
 										Data: []string{
@@ -605,14 +605,14 @@ func TestQueryPlanResponse(t *testing.T) {
 				},
 			},
 		},
-		&public_vizierapipb.ExecuteScriptResponse{
+		{
 			QueryID: queryIDStr,
 			Result: &public_vizierapipb.ExecuteScriptResponse_Data{
 				Data: &public_vizierapipb.QueryData{
 					Batch: &public_vizierapipb.RowBatchData{
 						TableID: "table_plan_id",
 						Cols: []*public_vizierapipb.Column{
-							&public_vizierapipb.Column{
+							{
 								ColData: &public_vizierapipb.Column_StringData{
 									StringData: &public_vizierapipb.StringColumn{
 										Data: []string{
@@ -673,16 +673,16 @@ func TestTableRelationResponses(t *testing.T) {
 				ID:   "agent1_table_id",
 				Relation: &public_vizierapipb.Relation{
 					Columns: []*public_vizierapipb.Relation_ColumnInfo{
-						&public_vizierapipb.Relation_ColumnInfo{ColumnName: "time_",
+						{ColumnName: "time_",
 							ColumnType:         6,
 							ColumnDesc:         "",
 							ColumnSemanticType: 1,
-						}, &public_vizierapipb.Relation_ColumnInfo{
+						}, {
 							ColumnName:         "cpu_cycles",
 							ColumnType:         2,
 							ColumnDesc:         "",
 							ColumnSemanticType: 1,
-						}, &public_vizierapipb.Relation_ColumnInfo{
+						}, {
 							ColumnName:         "upid",
 							ColumnType:         3,
 							ColumnDesc:         "",
@@ -701,7 +701,7 @@ func TestTableRelationResponses(t *testing.T) {
 				ID:   "agent2_table_id",
 				Relation: &public_vizierapipb.Relation{
 					Columns: []*public_vizierapipb.Relation_ColumnInfo{
-						&public_vizierapipb.Relation_ColumnInfo{ColumnName: "time_",
+						{ColumnName: "time_",
 							ColumnType:         6,
 							ColumnDesc:         "",
 							ColumnSemanticType: 1,

@@ -53,7 +53,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 		{
 			name: "namespace update",
 			updates: []*mdpb.ResourceUpdate{
-				&mdpb.ResourceUpdate{
+				{
 					Update: &mdpb.ResourceUpdate_NamespaceUpdate{
 						NamespaceUpdate: &mdpb.NamespaceUpdate{
 							UID:              "100",
@@ -67,7 +67,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 			},
 			updateKind: "namespace",
 			expectedResults: []*md.EsMDEntity{
-				&md.EsMDEntity{
+				{
 					OrgID:              orgID.String(),
 					VizierID:           vzID.String(),
 					ClusterUID:         "test",
@@ -86,7 +86,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 		{
 			name: "pod update",
 			updates: []*mdpb.ResourceUpdate{
-				&mdpb.ResourceUpdate{
+				{
 					Update: &mdpb.ResourceUpdate_PodUpdate{
 						PodUpdate: &mdpb.PodUpdate{
 							UID:              "300",
@@ -102,7 +102,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 			},
 			updateKind: "pod",
 			expectedResults: []*md.EsMDEntity{
-				&md.EsMDEntity{
+				{
 					OrgID:              orgID.String(),
 					VizierID:           vzID.String(),
 					ClusterUID:         "test",
@@ -121,7 +121,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 		{
 			name: "svc update",
 			updates: []*mdpb.ResourceUpdate{
-				&mdpb.ResourceUpdate{
+				{
 					Update: &mdpb.ResourceUpdate_ServiceUpdate{
 						ServiceUpdate: &mdpb.ServiceUpdate{
 							UID:              "200",
@@ -136,7 +136,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 			},
 			updateKind: "service",
 			expectedResults: []*md.EsMDEntity{
-				&md.EsMDEntity{
+				{
 					OrgID:              orgID.String(),
 					VizierID:           vzID.String(),
 					ClusterUID:         "test",
@@ -155,7 +155,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 		{
 			name: "out of order svc update",
 			updates: []*mdpb.ResourceUpdate{
-				&mdpb.ResourceUpdate{
+				{
 					Update: &mdpb.ResourceUpdate_ServiceUpdate{
 						ServiceUpdate: &mdpb.ServiceUpdate{
 							UID:              "200",
@@ -167,7 +167,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 					UpdateVersion:     2,
 					PrevUpdateVersion: 1,
 				},
-				&mdpb.ResourceUpdate{
+				{
 					Update: &mdpb.ResourceUpdate_ServiceUpdate{
 						ServiceUpdate: &mdpb.ServiceUpdate{
 							UID:              "200",
@@ -182,7 +182,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 			},
 			updateKind: "service",
 			expectedResults: []*md.EsMDEntity{
-				&md.EsMDEntity{
+				{
 					OrgID:              orgID.String(),
 					VizierID:           vzID.String(),
 					ClusterUID:         "test",
@@ -201,7 +201,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 		{
 			name: "in order svc update",
 			updates: []*mdpb.ResourceUpdate{
-				&mdpb.ResourceUpdate{
+				{
 					Update: &mdpb.ResourceUpdate_ServiceUpdate{
 						ServiceUpdate: &mdpb.ServiceUpdate{
 							UID:              "200",
@@ -213,7 +213,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 					UpdateVersion:     2,
 					PrevUpdateVersion: 1,
 				},
-				&mdpb.ResourceUpdate{
+				{
 					Update: &mdpb.ResourceUpdate_ServiceUpdate{
 						ServiceUpdate: &mdpb.ServiceUpdate{
 							UID:              "200",
@@ -226,7 +226,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 					UpdateVersion:     3,
 					PrevUpdateVersion: 2,
 				},
-				&mdpb.ResourceUpdate{
+				{
 					Update: &mdpb.ResourceUpdate_ServiceUpdate{
 						ServiceUpdate: &mdpb.ServiceUpdate{
 							UID:              "200",
@@ -242,7 +242,7 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 			},
 			updateKind: "service",
 			expectedResults: []*md.EsMDEntity{
-				&md.EsMDEntity{
+				{
 					OrgID:              orgID.String(),
 					VizierID:           vzID.String(),
 					ClusterUID:         "test",

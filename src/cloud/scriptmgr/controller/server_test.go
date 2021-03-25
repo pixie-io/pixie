@@ -45,7 +45,7 @@ var testLiveView = `{
 }`
 
 var testBundle = map[string]scriptsDef{
-	"scripts": scriptsDef{
+	"scripts": {
 		"script1": scriptDef{
 			"pxl":       "script1 pxl",
 			"placement": "",
@@ -100,7 +100,7 @@ func TestScriptMgr_GetLiveViews(t *testing.T) {
 			name: "Empty live view request returns all live views.",
 			expectedResp: &scriptmgrpb.GetLiveViewsResp{
 				LiveViews: []*scriptmgrpb.LiveViewMetadata{
-					&scriptmgrpb.LiveViewMetadata{
+					{
 						ID:   nil,
 						Name: "liveview1",
 						Desc: "liveview1 desc",
@@ -208,19 +208,19 @@ func TestScriptMgr_GetScripts(t *testing.T) {
 			name: "Empty request returns all scripts, including scripts with live views.",
 			expectedResp: &scriptmgrpb.GetScriptsResp{
 				Scripts: []*scriptmgrpb.ScriptMetadata{
-					&scriptmgrpb.ScriptMetadata{
+					{
 						ID:          nil,
 						Name:        "script1",
 						Desc:        "script1 desc",
 						HasLiveView: false,
 					},
-					&scriptmgrpb.ScriptMetadata{
+					{
 						ID:          nil,
 						Name:        "script2",
 						Desc:        "script2 desc",
 						HasLiveView: false,
 					},
-					&scriptmgrpb.ScriptMetadata{
+					{
 						ID:          nil,
 						Name:        "liveview1",
 						Desc:        "liveview1 desc",

@@ -7,9 +7,9 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/golang/mock/gomock"
 
-	distributedpb "pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
-	utils "pixielabs.ai/pixielabs/src/utils"
-	testingutils "pixielabs.ai/pixielabs/src/utils/testingutils"
+	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
+	"pixielabs.ai/pixielabs/src/utils"
+	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	mock_metadatapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/tracker"
@@ -54,13 +54,13 @@ func TestAgentsInfo_GetAgentInfo(t *testing.T) {
 
 	msg1 := &metadatapb.AgentUpdatesResponse{
 		AgentUpdates: []*metadatapb.AgentUpdate{
-			&metadatapb.AgentUpdate{
+			{
 				AgentID: uuidpbs[0],
 				Update: &metadatapb.AgentUpdate_Agent{
 					Agent: agents[0],
 				},
 			},
-			&metadatapb.AgentUpdate{
+			{
 				AgentID: uuidpbs[0],
 				Update: &metadatapb.AgentUpdate_DataInfo{
 					DataInfo: agentDataInfos[0],

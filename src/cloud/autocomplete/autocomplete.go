@@ -132,7 +132,7 @@ func parseRunScript(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, orgID 
 				searchTerm = strings.Replace(searchTerm, CursorMarker, "", 1)
 			}
 
-			res, err := s.GetSuggestions([]*SuggestionRequest{&SuggestionRequest{orgID, clusterUID, searchTerm, []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SCRIPT}, []cloudapipb.AutocompleteEntityKind{}}})
+			res, err := s.GetSuggestions([]*SuggestionRequest{{orgID, clusterUID, searchTerm, []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SCRIPT}, []cloudapipb.AutocompleteEntityKind{}}})
 			if err != nil {
 				return -1, nil, nil, err
 			}
@@ -419,7 +419,7 @@ func (cmd *Command) ToFormatString(action cloudapipb.AutocompleteActionType, s S
 			for k := range knownTypes {
 				scriptTypes = append(scriptTypes, k)
 			}
-			res, err := s.GetSuggestions([]*SuggestionRequest{&SuggestionRequest{orgID, clusterUID, "",
+			res, err := s.GetSuggestions([]*SuggestionRequest{{orgID, clusterUID, "",
 				[]cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD, cloudapipb.AEK_SVC, cloudapipb.AEK_NAMESPACE, cloudapipb.AEK_SCRIPT},
 				scriptTypes}})
 			if err == nil {

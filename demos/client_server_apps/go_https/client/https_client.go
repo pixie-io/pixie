@@ -1,14 +1,13 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"runtime"
 	"time"
-
-	"crypto/tls"
-	"net/http"
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"

@@ -14,6 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+
 	pb "pixielabs.ai/pixielabs/demos/load_generation/proto"
 	"pixielabs.ai/pixielabs/src/utils"
 )

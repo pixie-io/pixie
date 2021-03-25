@@ -5,7 +5,7 @@ import (
 
 	"github.com/alecthomas/participle"
 	"github.com/alecthomas/participle/lexer"
-	ebnf "github.com/alecthomas/participle/lexer/ebnf"
+	"github.com/alecthomas/participle/lexer/ebnf"
 )
 
 var (

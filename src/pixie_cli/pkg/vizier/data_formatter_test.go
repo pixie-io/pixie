@@ -14,27 +14,27 @@ import (
 func TestBasic(t *testing.T) {
 	relation := &public_vizierapipb.Relation{
 		Columns: []*public_vizierapipb.Relation_ColumnInfo{
-			&public_vizierapipb.Relation_ColumnInfo{
+			{
 				ColumnName:         "bool",
 				ColumnType:         public_vizierapipb.BOOLEAN,
 				ColumnSemanticType: public_vizierapipb.ST_NONE,
 			},
-			&public_vizierapipb.Relation_ColumnInfo{
+			{
 				ColumnName:         "int",
 				ColumnType:         public_vizierapipb.INT64,
 				ColumnSemanticType: public_vizierapipb.ST_NONE,
 			},
-			&public_vizierapipb.Relation_ColumnInfo{
+			{
 				ColumnName:         "float",
 				ColumnType:         public_vizierapipb.FLOAT64,
 				ColumnSemanticType: public_vizierapipb.ST_NONE,
 			},
-			&public_vizierapipb.Relation_ColumnInfo{
+			{
 				ColumnName:         "string",
 				ColumnType:         public_vizierapipb.STRING,
 				ColumnSemanticType: public_vizierapipb.ST_NONE,
 			},
-			&public_vizierapipb.Relation_ColumnInfo{
+			{
 				ColumnName:         "time",
 				ColumnType:         public_vizierapipb.TIME64NS,
 				ColumnSemanticType: public_vizierapipb.ST_NONE,
@@ -68,12 +68,12 @@ func TestBasic(t *testing.T) {
 func TestDuration(t *testing.T) {
 	relation := &public_vizierapipb.Relation{
 		Columns: []*public_vizierapipb.Relation_ColumnInfo{
-			&public_vizierapipb.Relation_ColumnInfo{
+			{
 				ColumnName:         "bool",
 				ColumnType:         public_vizierapipb.BOOLEAN,
 				ColumnSemanticType: public_vizierapipb.ST_NONE,
 			},
-			&public_vizierapipb.Relation_ColumnInfo{
+			{
 				ColumnName:         "duration",
 				ColumnType:         public_vizierapipb.INT64,
 				ColumnSemanticType: public_vizierapipb.ST_DURATION_NS,
@@ -95,7 +95,7 @@ func TestDuration(t *testing.T) {
 func TestBytes(t *testing.T) {
 	relation := &public_vizierapipb.Relation{
 		Columns: []*public_vizierapipb.Relation_ColumnInfo{
-			&public_vizierapipb.Relation_ColumnInfo{
+			{
 				ColumnName:         "bytes",
 				ColumnType:         public_vizierapipb.INT64,
 				ColumnSemanticType: public_vizierapipb.ST_BYTES,
@@ -115,12 +115,12 @@ func TestBytes(t *testing.T) {
 func TestThroughput(t *testing.T) {
 	relation := &public_vizierapipb.Relation{
 		Columns: []*public_vizierapipb.Relation_ColumnInfo{
-			&public_vizierapipb.Relation_ColumnInfo{
+			{
 				ColumnName:         "throughput",
 				ColumnType:         public_vizierapipb.FLOAT64,
 				ColumnSemanticType: public_vizierapipb.ST_THROUGHPUT_PER_NS,
 			},
-			&public_vizierapipb.Relation_ColumnInfo{
+			{
 				ColumnName:         "throughput_bytes",
 				ColumnType:         public_vizierapipb.FLOAT64,
 				ColumnSemanticType: public_vizierapipb.ST_THROUGHPUT_BYTES_PER_NS,
@@ -140,7 +140,7 @@ func TestThroughput(t *testing.T) {
 func TestPercent(t *testing.T) {
 	relation := &public_vizierapipb.Relation{
 		Columns: []*public_vizierapipb.Relation_ColumnInfo{
-			&public_vizierapipb.Relation_ColumnInfo{
+			{
 				ColumnName:         "percent",
 				ColumnType:         public_vizierapipb.FLOAT64,
 				ColumnSemanticType: public_vizierapipb.ST_PERCENT,
@@ -158,12 +158,12 @@ func TestPercent(t *testing.T) {
 func TestQuantiles(t *testing.T) {
 	relation := &public_vizierapipb.Relation{
 		Columns: []*public_vizierapipb.Relation_ColumnInfo{
-			&public_vizierapipb.Relation_ColumnInfo{
+			{
 				ColumnName:         "quantiles",
 				ColumnType:         public_vizierapipb.STRING,
 				ColumnSemanticType: public_vizierapipb.ST_QUANTILES,
 			},
-			&public_vizierapipb.Relation_ColumnInfo{
+			{
 				ColumnName:         "quantiles_duration_ns",
 				ColumnType:         public_vizierapipb.STRING,
 				ColumnSemanticType: public_vizierapipb.ST_DURATION_NS_QUANTILES,

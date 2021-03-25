@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	types "github.com/gogo/protobuf/types"
+	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	"github.com/graph-gophers/graphql-go/gqltesting"
 
@@ -98,19 +98,19 @@ func TestAPIKeys(t *testing.T) {
 		List(gomock.Any(), &cloudapipb.ListAPIKeyRequest{}).
 		Return(&cloudapipb.ListAPIKeyResponse{
 			Keys: []*cloudapipb.APIKey{
-				&cloudapipb.APIKey{
+				{
 					ID:        utils.ProtoFromUUIDStrOrNil(key1ID),
 					Key:       "abc",
 					CreatedAt: createTime1Pb,
 					Desc:      "key description 1",
 				},
-				&cloudapipb.APIKey{
+				{
 					ID:        utils.ProtoFromUUIDStrOrNil(key2ID),
 					Key:       "def",
 					CreatedAt: createTime2Pb,
 					Desc:      "key description 2",
 				},
-				&cloudapipb.APIKey{
+				{
 					ID:        utils.ProtoFromUUIDStrOrNil(key3ID),
 					Key:       "ghi",
 					CreatedAt: createTime3Pb,

@@ -16,7 +16,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	metadata_servicepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
-	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
 )

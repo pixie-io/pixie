@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
+	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/cloud/profile/controller"
 	mock_controller "pixielabs.ai/pixielabs/src/cloud/profile/controller/mock"
 	"pixielabs.ai/pixielabs/src/cloud/profile/datastore"
@@ -571,12 +571,12 @@ func TestServer_GetOrgs(t *testing.T) {
 
 	s := controller.NewServer(nil, d, nil)
 
-	mockReply := []*datastore.OrgInfo{&datastore.OrgInfo{
+	mockReply := []*datastore.OrgInfo{{
 		ID:         orgUUID,
 		DomainName: "hulu.com",
 		OrgName:    "hulu",
 	},
-		&datastore.OrgInfo{
+		{
 			ID:         org2UUID,
 			DomainName: "pixie.com",
 			OrgName:    "pixie",

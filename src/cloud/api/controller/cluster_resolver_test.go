@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	types "github.com/gogo/protobuf/types"
+	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/gqltesting"
@@ -40,11 +40,11 @@ func TestClusterInfoWithoutID(t *testing.T) {
 	ctx := CreateTestContext()
 
 	podStatuses := map[string]*cloudapipb.PodStatus{
-		"vizier-proxy": &cloudapipb.PodStatus{
+		"vizier-proxy": {
 			Name:   "vizier-proxy",
 			Status: metadatapb.RUNNING,
 			Containers: []*cloudapipb.ContainerStatus{
-				&cloudapipb.ContainerStatus{
+				{
 					Name:      "my-proxy-container",
 					State:     metadatapb.CONTAINER_STATE_RUNNING,
 					Message:   "container message",
@@ -53,7 +53,7 @@ func TestClusterInfoWithoutID(t *testing.T) {
 				},
 			},
 			Events: []*cloudapipb.K8SEvent{
-				&cloudapipb.K8SEvent{
+				{
 					Message:   "this is a test event",
 					LastTime:  &types.Timestamp{Seconds: 1561230620},
 					FirstTime: &types.Timestamp{Seconds: 1561230621},
@@ -63,7 +63,7 @@ func TestClusterInfoWithoutID(t *testing.T) {
 			Reason:        "pod reason",
 			CreatedAt:     &types.Timestamp{Seconds: 1561230621},
 		},
-		"vizier-query-broker": &cloudapipb.PodStatus{
+		"vizier-query-broker": {
 			Name:      "vizier-query-broker",
 			Status:    metadatapb.RUNNING,
 			CreatedAt: nil,

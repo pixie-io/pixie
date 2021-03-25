@@ -24,7 +24,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
+	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
 	mock_dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb/mock"
 	messagespb "pixielabs.ai/pixielabs/src/cloud/shared/messagespb"
@@ -52,11 +52,11 @@ var (
 )
 
 var testPodStatuses controller.PodStatuses = map[string]*cvmsgspb.PodStatus{
-	"vizier-proxy": &cvmsgspb.PodStatus{
+	"vizier-proxy": {
 		Name:   "vizier-proxy",
 		Status: metadatapb.RUNNING,
 	},
-	"vizier-query-broker": &cvmsgspb.PodStatus{
+	"vizier-query-broker": {
 		Name:   "vizier-query-broker",
 		Status: metadatapb.RUNNING,
 	},

@@ -56,47 +56,47 @@ func VizierTmplValuesToMap(tmplValues *VizierTmplValues) *map[string]interface{}
 
 // These are template options that should be applied to each resource in the Vizier YAMLs, such as annotations and labels.
 var GlobalTemplateOptions = []*yamls.K8sTemplateOptions{
-	&yamls.K8sTemplateOptions{
+	{
 		Patch:       `{"metadata": { "annotations": { "__PL_ANNOTATION_KEY__": "__PL_ANNOTATION_VALUE__"} } }`,
 		Placeholder: "__PL_ANNOTATION_KEY__: __PL_ANNOTATION_VALUE__",
 		TemplateValue: `{{if .Values.customAnnotations}}{{range $element := split "," .Values.customAnnotations -}}
-    {{ $kv := split "=" $element -}}
-    {{if eq (len $kv) 2 -}}
-    {{ $kv._0 }}: "{{ $kv._1 }}"
-    {{- end}}
-    {{end}}{{end}}`,
+		{{ $kv := split "=" $element -}}
+		{{if eq (len $kv) 2 -}}
+		{{ $kv._0 }}: "{{ $kv._1 }}"
+		{{- end}}
+		{{end}}{{end}}`,
 	},
-	&yamls.K8sTemplateOptions{
+	{
 		TemplateMatcher: yamls.TemplateScopeMatcher,
 		Patch:           `{"spec": { "template": { "metadata": { "annotations": { "__PL_SPEC_ANNOTATION_KEY__": "__PL_SPEC_ANNOTATION_VALUE__"} } } } }`,
 		Placeholder:     "__PL_SPEC_ANNOTATION_KEY__: __PL_SPEC_ANNOTATION_VALUE__",
 		TemplateValue: `{{if .Values.customAnnotations}}{{range $element := split "," .Values.customAnnotations -}}
-        {{ $kv := split "=" $element -}}
-        {{if eq (len $kv) 2 -}}
-        {{ $kv._0 }}: "{{ $kv._1 }}"
-        {{- end}}
-        {{end}}{{end}}`,
+			{{ $kv := split "=" $element -}}
+			{{if eq (len $kv) 2 -}}
+			{{ $kv._0 }}: "{{ $kv._1 }}"
+			{{- end}}
+			{{end}}{{end}}`,
 	},
-	&yamls.K8sTemplateOptions{
+	{
 		Patch:       `{"metadata": { "labels": { "__PL_LABEL_KEY__": "__PL_LABEL_VALUE__"} } }`,
 		Placeholder: "__PL_LABEL_KEY__: __PL_LABEL_VALUE__",
 		TemplateValue: `{{if .Values.customLabels}}{{range $element := split "," .Values.customLabels -}}
-    {{ $kv := split "=" $element -}}
-    {{if eq (len $kv) 2 -}}
-    {{ $kv._0 }}: "{{ $kv._1 }}"
-    {{- end}}
-    {{end}}{{end}}`,
+		{{ $kv := split "=" $element -}}
+		{{if eq (len $kv) 2 -}}
+		{{ $kv._0 }}: "{{ $kv._1 }}"
+		{{- end}}
+		{{end}}{{end}}`,
 	},
-	&yamls.K8sTemplateOptions{
+	{
 		TemplateMatcher: yamls.TemplateScopeMatcher,
 		Patch:           `{"spec": { "template": { "metadata": { "labels": { "__PL_SPEC_LABEL_KEY__": "__PL_SPEC_LABEL_VALUE__"} } } } }`,
 		Placeholder:     "__PL_SPEC_LABEL_KEY__: __PL_SPEC_LABEL_VALUE__",
 		TemplateValue: `{{if .Values.customLabels}}{{range $element := split "," .Values.customLabels -}}
-        {{ $kv := split "=" $element -}}
-        {{if eq (len $kv) 2 -}}
-        {{ $kv._0 }}: "{{ $kv._1 }}"
-        {{- end}}
-        {{end}}{{end}}`,
+			{{ $kv := split "=" $element -}}
+			{{if eq (len $kv) 2 -}}
+			{{ $kv._0 }}: "{{ $kv._1 }}"
+			{{- end}}
+			{{end}}{{end}}`,
 	},
 }
 
@@ -146,27 +146,27 @@ func GenerateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, yamlMap map[s
 	}
 
 	return []*yamls.YAMLFile{
-		&yamls.YAMLFile{
+		{
 			Name: "namespace",
 			YAML: nsYAML,
 		},
-		&yamls.YAMLFile{
+		{
 			Name: "secrets",
 			YAML: secretsYAML,
 		},
-		&yamls.YAMLFile{
+		{
 			Name: "nats",
 			YAML: natsYAML,
 		},
-		&yamls.YAMLFile{
+		{
 			Name: "etcd",
 			YAML: etcdYAML,
 		},
-		&yamls.YAMLFile{
+		{
 			Name: "vizier_etcd",
 			YAML: etcdVzYAML,
 		},
-		&yamls.YAMLFile{
+		{
 			Name: "vizier_persistent",
 			YAML: persistentVzYAML,
 		},
@@ -218,55 +218,55 @@ func GenerateSecretsYAML(clientset *kubernetes.Clientset, ns string, imagePullSe
 
 	// Fill in configmaps.
 	secretsYAML, err := yamls.TemplatizeK8sYAML(clientset, origYAML, append([]*yamls.K8sTemplateOptions{
-		&yamls.K8sTemplateOptions{
+		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-deploy-secrets"),
 			Patch:           `{"stringData": { "deploy-key": "__PL_DEPLOY_KEY__"} }`,
 			Placeholder:     "__PL_DEPLOY_KEY__",
 			TemplateValue:   `"{{ .Values.deployKey }}"`,
 		},
-		&yamls.K8sTemplateOptions{
+		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cluster-config"),
 			Patch:           `{"data": { "PL_CUSTOM_ANNOTATIONS": "__PL_CUSTOM_ANNOTATIONS__"} }`,
 			Placeholder:     "__PL_CUSTOM_ANNOTATIONS__",
 			TemplateValue:   `"{{ .Values.customAnnotations }}"`,
 		},
-		&yamls.K8sTemplateOptions{
+		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cluster-config"),
 			Patch:           `{"data": { "PL_CUSTOM_LABELS": "__PL_CUSTOM_LABELS__"} }`,
 			Placeholder:     "__PL_CUSTOM_LABELS__",
 			TemplateValue:   `"{{ .Values.customLabels }}"`,
 		},
-		&yamls.K8sTemplateOptions{
+		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cloud-config"),
 			Patch:           `{"data": { "PL_CLOUD_ADDR": "__PL_CLOUD_ADDR__"} }`,
 			Placeholder:     "__PL_CLOUD_ADDR__",
 			TemplateValue:   `{{ if .Values.cloudAddr }}"{{ .Values.cloudAddr }}"{{ else }}"withpixie.ai:443"{{ end }}`,
 		},
-		&yamls.K8sTemplateOptions{
+		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cloud-config"),
 			Patch:           `{"data": { "PL_UPDATE_CLOUD_ADDR": "__PL_UPDATE_CLOUD_ADDR__"} }`,
 			Placeholder:     "__PL_UPDATE_CLOUD_ADDR__",
 			TemplateValue:   `{{ if .Values.cloudUpdateAddr }}"{{ .Values.cloudUpdateAddr }}"{{ else }}"withpixie.ai:443"{{ end }}`,
 		},
-		&yamls.K8sTemplateOptions{
+		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cloud-config"),
 			Patch:           `{"data": { "PL_CLUSTER_NAME": "__PL_CLUSTER_NAME__"} }`,
 			Placeholder:     "__PL_CLUSTER_NAME__",
 			TemplateValue:   `"{{ .Values.clusterName }}"`,
 		},
-		&yamls.K8sTemplateOptions{
+		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cluster-config"),
 			Patch:           `{"data": { "PL_ETCD_OPERATOR_ENABLED": "__PL_ETCD_OPERATOR_ENABLED__"} }`,
 			Placeholder:     "__PL_ETCD_OPERATOR_ENABLED__",
 			TemplateValue:   `{{ if .Values.useEtcdOperator }}"true"{{else}}"false"{{end}}`,
 		},
-		&yamls.K8sTemplateOptions{
+		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cluster-config"),
 			Patch:           `{"data": { "PL_MD_ETCD_SERVER": "__PL_MD_ETCD_SERVER__"} }`,
 			Placeholder:     "__PL_MD_ETCD_SERVER__",
 			TemplateValue:   `{{ if .Values.useEtcdOperator }}"https://pl-etcd-client.pl.svc:2379"{{else}}"https://etcd.pl.svc:2379"{{end}}`,
 		},
-		&yamls.K8sTemplateOptions{
+		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cloud-connector-bootstrap-config"),
 			Patch:           `{"data": { "PL_BOOTSTRAP_VERSION": "__PL_BOOTSTRAP_VERSION__"} }`,
 			Placeholder:     "__PL_BOOTSTRAP_VERSION__",

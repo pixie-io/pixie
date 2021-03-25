@@ -41,7 +41,7 @@ func setUpUpdater(t *testing.T) (*controller.Updater, *nats.Conn, *sqlx.DB, *moc
 	mockArtifactTrackerClient.EXPECT().GetArtifactList(
 		gomock.Any(), atReq).Return(&versionspb.ArtifactSet{
 		Name: "vizier",
-		Artifact: []*versionspb.Artifact{&versionspb.Artifact{
+		Artifact: []*versionspb.Artifact{{
 			VersionStr: "0.4.1",
 		}},
 	}, nil)

@@ -19,7 +19,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	analytics "gopkg.in/segmentio/analytics-go.v3"
+	"gopkg.in/segmentio/analytics-go.v3"
 	v1 "k8s.io/api/core/v1"
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -394,7 +394,7 @@ func setupDemoApp(appName string, yamls map[string][]byte) error {
 	clientset := k8s.GetClientset(kubeConfig)
 	if namespaceExists(appName) {
 		fmt.Printf("%s: namespace %s already exists. If created with px, run %s to remove\n",
-			color.RedString("Error"), color.RedString(appName), color.GreenString((fmt.Sprintf("px demo delete %s", appName))))
+			color.RedString("Error"), color.RedString(appName), color.GreenString(fmt.Sprintf("px demo delete %s", appName)))
 		return errNamespaceAlreadyExists
 	}
 

@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
+	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/cloud/project_manager/datastore"
 	"pixielabs.ai/pixielabs/src/cloud/project_manager/projectmanagerpb"
 	"pixielabs.ai/pixielabs/src/utils"

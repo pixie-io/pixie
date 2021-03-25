@@ -84,7 +84,7 @@ func main() {
 		CustomLabels:      viper.GetString("custom_labels"),
 	}
 	yamls, err := yamlsutils.ExecuteTemplatedYAMLs([]*yamlsutils.YAMLFile{
-		&yamlsutils.YAMLFile{Name: "certs", YAML: templatedYAML},
+		{Name: "certs", YAML: templatedYAML},
 	}, &yamlsutils.YAMLTmplArguments{
 		Values: vizieryamls.VizierTmplValuesToMap(tmplValues),
 	})

@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/pebbledb"
 )
 
@@ -48,7 +48,7 @@ func TestDatastore_AddFullResourceUpdate(t *testing.T) {
 					ResourceVersion: "1",
 					ClusterName:     "a_cluster",
 					OwnerReferences: []*metadatapb.OwnerReference{
-						&metadatapb.OwnerReference{
+						{
 							Kind: "pod",
 							Name: "test",
 							UID:  "abcd",
@@ -85,7 +85,7 @@ func TestDatastore_FetchFullResourceUpdates(t *testing.T) {
 					ResourceVersion: "1",
 					ClusterName:     "a_cluster",
 					OwnerReferences: []*metadatapb.OwnerReference{
-						&metadatapb.OwnerReference{
+						{
 							Kind: "pod",
 							Name: "test",
 							UID:  "abcd",
@@ -110,7 +110,7 @@ func TestDatastore_FetchFullResourceUpdates(t *testing.T) {
 					ResourceVersion: "2",
 					ClusterName:     "a_cluster",
 					OwnerReferences: []*metadatapb.OwnerReference{
-						&metadatapb.OwnerReference{
+						{
 							Kind: "pod",
 							Name: "test",
 							UID:  "abcd",

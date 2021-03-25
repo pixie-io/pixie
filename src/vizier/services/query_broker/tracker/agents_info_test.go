@@ -6,12 +6,12 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/stretchr/testify/assert"
 
-	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	distributedpb "pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
-	bloomfilterpb "pixielabs.ai/pixielabs/src/shared/bloomfilterpb"
+	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
+	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
+	"pixielabs.ai/pixielabs/src/shared/bloomfilterpb"
 	sharedmetadatapb "pixielabs.ai/pixielabs/src/shared/metadatapb"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
-	utils "pixielabs.ai/pixielabs/src/utils"
+	"pixielabs.ai/pixielabs/src/utils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/tracker"
@@ -47,11 +47,11 @@ func makeTestSchema(t *testing.T) []*distributedpb.SchemaInfo {
 	ids := makeTestAgentIDs(t)
 
 	return []*distributedpb.SchemaInfo{
-		&distributedpb.SchemaInfo{
+		{
 			Name: "table1",
 			Relation: &schemapb.Relation{
 				Columns: []*schemapb.Relation_ColumnInfo{
-					&schemapb.Relation_ColumnInfo{
+					{
 						ColumnName: "foo",
 					},
 				},
@@ -68,7 +68,7 @@ func makeTestAgents(t *testing.T) []*agentpb.Agent {
 	ids := makeTestAgentIDs(t)
 
 	return []*agentpb.Agent{
-		&agentpb.Agent{
+		{
 			LastHeartbeatNS: 10,
 			CreateTimeNS:    5,
 			Info: &agentpb.AgentInfo{
@@ -84,7 +84,7 @@ func makeTestAgents(t *testing.T) []*agentpb.Agent {
 			},
 			ASID: 123,
 		},
-		&agentpb.Agent{
+		{
 			LastHeartbeatNS: 20,
 			CreateTimeNS:    0,
 			Info: &agentpb.AgentInfo{
@@ -100,7 +100,7 @@ func makeTestAgents(t *testing.T) []*agentpb.Agent {
 			},
 			ASID: 456,
 		},
-		&agentpb.Agent{
+		{
 			LastHeartbeatNS: 30,
 			CreateTimeNS:    0,
 			Info: &agentpb.AgentInfo{
@@ -121,7 +121,7 @@ func makeTestAgents(t *testing.T) []*agentpb.Agent {
 
 func makeTestAgentDataInfo() []*messagespb.AgentDataInfo {
 	return []*messagespb.AgentDataInfo{
-		&messagespb.AgentDataInfo{
+		{
 			MetadataInfo: &distributedpb.MetadataInfo{
 				MetadataFields: []sharedmetadatapb.MetadataType{
 					sharedmetadatapb.CONTAINER_ID,
@@ -135,7 +135,7 @@ func makeTestAgentDataInfo() []*messagespb.AgentDataInfo {
 				},
 			},
 		},
-		&messagespb.AgentDataInfo{
+		{
 			MetadataInfo: &distributedpb.MetadataInfo{
 				MetadataFields: []sharedmetadatapb.MetadataType{
 					sharedmetadatapb.CONTAINER_ID,
@@ -173,19 +173,19 @@ func TestAgentsInfo_UpdateAgentsInfo(t *testing.T) {
 	assert.Equal(t, 0, len(agentsInfo.DistributedState().CarnotInfo))
 
 	updates1 := []*metadatapb.AgentUpdate{
-		&metadatapb.AgentUpdate{
+		{
 			AgentID: uuidpbs[0],
 			Update: &metadatapb.AgentUpdate_Agent{
 				Agent: agents[0],
 			},
 		},
-		&metadatapb.AgentUpdate{
+		{
 			AgentID: uuidpbs[0],
 			Update: &metadatapb.AgentUpdate_DataInfo{
 				DataInfo: agentDataInfos[0],
 			},
 		},
-		&metadatapb.AgentUpdate{
+		{
 			AgentID: uuidpbs[1],
 			Update: &metadatapb.AgentUpdate_Agent{
 				Agent: agents[1],
@@ -272,25 +272,25 @@ func TestAgentsInfo_UpdateAgentsInfo(t *testing.T) {
 	}
 
 	updates2 := []*metadatapb.AgentUpdate{
-		&metadatapb.AgentUpdate{
+		{
 			AgentID: uuidpbs[0],
 			Update: &metadatapb.AgentUpdate_Agent{
 				Agent: agent1Update,
 			},
 		},
-		&metadatapb.AgentUpdate{
+		{
 			AgentID: uuidpbs[0],
 			Update: &metadatapb.AgentUpdate_DataInfo{
 				DataInfo: agentDataInfos[1],
 			},
 		},
-		&metadatapb.AgentUpdate{
+		{
 			AgentID: uuidpbs[2],
 			Update: &metadatapb.AgentUpdate_Agent{
 				Agent: agents[2],
 			},
 		},
-		&metadatapb.AgentUpdate{
+		{
 			AgentID: uuidpbs[1],
 			Update: &metadatapb.AgentUpdate_Deleted{
 				Deleted: true,

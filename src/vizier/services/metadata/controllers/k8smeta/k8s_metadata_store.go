@@ -10,7 +10,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
-	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	"pixielabs.ai/pixielabs/src/vizier/utils/datastore"
 )
 

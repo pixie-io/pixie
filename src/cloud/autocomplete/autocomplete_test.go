@@ -12,7 +12,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 )
 
-var orgID uuid.UUID = uuid.Must(uuid.NewV4())
+var orgID = uuid.Must(uuid.NewV4())
 
 func TestParseIntoCommand(t *testing.T) {
 	tests := []struct {
@@ -26,8 +26,8 @@ func TestParseIntoCommand(t *testing.T) {
 			name:  "valid",
 			input: "script:px/svc_info svc_name:pl/test",
 			requests: [][]*autocomplete.SuggestionRequest{
-				[]*autocomplete.SuggestionRequest{
-					&autocomplete.SuggestionRequest{
+				{
+					{
 						OrgID:        orgID,
 						ClusterUID:   "test",
 						Input:        "px/svc_info",
@@ -35,8 +35,8 @@ func TestParseIntoCommand(t *testing.T) {
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
 					},
 				},
-				[]*autocomplete.SuggestionRequest{
-					&autocomplete.SuggestionRequest{
+				{
+					{
 						OrgID:        orgID,
 						ClusterUID:   "test",
 						Input:        "pl/test",
@@ -46,10 +46,10 @@ func TestParseIntoCommand(t *testing.T) {
 				},
 			},
 			responses: [][]*autocomplete.SuggestionResult{
-				[]*autocomplete.SuggestionResult{
-					&autocomplete.SuggestionResult{
+				{
+					{
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:     "px/svc_info",
 								Score:    1,
 								ArgNames: []string{"svc_name"},
@@ -59,10 +59,10 @@ func TestParseIntoCommand(t *testing.T) {
 						ExactMatch: true,
 					},
 				},
-				[]*autocomplete.SuggestionResult{
-					&autocomplete.SuggestionResult{
+				{
+					{
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:  "px/test",
 								Score: 1,
 							},
@@ -73,12 +73,12 @@ func TestParseIntoCommand(t *testing.T) {
 			},
 			expectedCmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
-					&autocomplete.TabStop{
+					{
 						Value: "px/svc_info",
 						Kind:  cloudapipb.AEK_SCRIPT,
 						Valid: true,
 					},
-					&autocomplete.TabStop{
+					{
 						Value:   "pl/test",
 						Kind:    cloudapipb.AEK_SVC,
 						Valid:   true,
@@ -92,8 +92,8 @@ func TestParseIntoCommand(t *testing.T) {
 			name:  "valid with run",
 			input: "run script:px/svc_info svc_name:pl/test",
 			requests: [][]*autocomplete.SuggestionRequest{
-				[]*autocomplete.SuggestionRequest{
-					&autocomplete.SuggestionRequest{
+				{
+					{
 						OrgID:        orgID,
 						ClusterUID:   "test",
 						Input:        "px/svc_info",
@@ -101,8 +101,8 @@ func TestParseIntoCommand(t *testing.T) {
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
 					},
 				},
-				[]*autocomplete.SuggestionRequest{
-					&autocomplete.SuggestionRequest{
+				{
+					{
 						OrgID:        orgID,
 						ClusterUID:   "test",
 						Input:        "pl/test",
@@ -112,10 +112,10 @@ func TestParseIntoCommand(t *testing.T) {
 				},
 			},
 			responses: [][]*autocomplete.SuggestionResult{
-				[]*autocomplete.SuggestionResult{
-					&autocomplete.SuggestionResult{
+				{
+					{
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:     "px/svc_info",
 								Score:    1,
 								ArgNames: []string{"svc_name"},
@@ -125,10 +125,10 @@ func TestParseIntoCommand(t *testing.T) {
 						ExactMatch: true,
 					},
 				},
-				[]*autocomplete.SuggestionResult{
-					&autocomplete.SuggestionResult{
+				{
+					{
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:  "px/test",
 								Score: 1,
 							},
@@ -139,17 +139,17 @@ func TestParseIntoCommand(t *testing.T) {
 			},
 			expectedCmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
-					&autocomplete.TabStop{
+					{
 						Value: "run",
 						Kind:  cloudapipb.AEK_UNKNOWN,
 						Valid: true,
 					},
-					&autocomplete.TabStop{
+					{
 						Value: "px/svc_info",
 						Kind:  cloudapipb.AEK_SCRIPT,
 						Valid: true,
 					},
-					&autocomplete.TabStop{
+					{
 						Value:   "pl/test",
 						Kind:    cloudapipb.AEK_SVC,
 						Valid:   true,
@@ -163,8 +163,8 @@ func TestParseIntoCommand(t *testing.T) {
 			name:  "script with entity defined",
 			input: "script:px/svc_info svc:pl/test",
 			requests: [][]*autocomplete.SuggestionRequest{
-				[]*autocomplete.SuggestionRequest{
-					&autocomplete.SuggestionRequest{
+				{
+					{
 						OrgID:        orgID,
 						ClusterUID:   "test",
 						Input:        "px/svc_info",
@@ -172,8 +172,8 @@ func TestParseIntoCommand(t *testing.T) {
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
 					},
 				},
-				[]*autocomplete.SuggestionRequest{
-					&autocomplete.SuggestionRequest{
+				{
+					{
 						OrgID:        orgID,
 						ClusterUID:   "test",
 						Input:        "pl/test",
@@ -183,10 +183,10 @@ func TestParseIntoCommand(t *testing.T) {
 				},
 			},
 			responses: [][]*autocomplete.SuggestionResult{
-				[]*autocomplete.SuggestionResult{
-					&autocomplete.SuggestionResult{
+				{
+					{
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:     "px/svc_info",
 								Score:    1,
 								ArgNames: []string{"svc_name"},
@@ -196,10 +196,10 @@ func TestParseIntoCommand(t *testing.T) {
 						ExactMatch: true,
 					},
 				},
-				[]*autocomplete.SuggestionResult{
-					&autocomplete.SuggestionResult{
+				{
+					{
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:  "pl/test",
 								Score: 1,
 							},
@@ -210,12 +210,12 @@ func TestParseIntoCommand(t *testing.T) {
 			},
 			expectedCmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
-					&autocomplete.TabStop{
+					{
 						Value: "px/svc_info",
 						Kind:  cloudapipb.AEK_SCRIPT,
 						Valid: true,
 					},
-					&autocomplete.TabStop{
+					{
 						Value:   "pl/test",
 						Kind:    cloudapipb.AEK_SVC,
 						Valid:   true,
@@ -229,8 +229,8 @@ func TestParseIntoCommand(t *testing.T) {
 			name:  "invalid",
 			input: "script:px/svc_info pod:pl/test",
 			requests: [][]*autocomplete.SuggestionRequest{
-				[]*autocomplete.SuggestionRequest{
-					&autocomplete.SuggestionRequest{
+				{
+					{
 						OrgID:        orgID,
 						ClusterUID:   "test",
 						Input:        "px/svc_info",
@@ -238,8 +238,8 @@ func TestParseIntoCommand(t *testing.T) {
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
 					},
 				},
-				[]*autocomplete.SuggestionRequest{
-					&autocomplete.SuggestionRequest{
+				{
+					{
 						OrgID:        orgID,
 						ClusterUID:   "test",
 						Input:        "pl/test",
@@ -249,10 +249,10 @@ func TestParseIntoCommand(t *testing.T) {
 				},
 			},
 			responses: [][]*autocomplete.SuggestionResult{
-				[]*autocomplete.SuggestionResult{
-					&autocomplete.SuggestionResult{
+				{
+					{
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:     "px/svc_info",
 								Score:    1,
 								ArgNames: []string{"svc_name"},
@@ -262,10 +262,10 @@ func TestParseIntoCommand(t *testing.T) {
 						ExactMatch: true,
 					},
 				},
-				[]*autocomplete.SuggestionResult{
-					&autocomplete.SuggestionResult{
+				{
+					{
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:  "pl/test",
 								Score: 1,
 							},
@@ -276,12 +276,12 @@ func TestParseIntoCommand(t *testing.T) {
 			},
 			expectedCmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
-					&autocomplete.TabStop{
+					{
 						Value: "px/svc_info",
 						Kind:  cloudapipb.AEK_SCRIPT,
 						Valid: true,
 					},
-					&autocomplete.TabStop{
+					{
 						Value:   "pl/test",
 						Kind:    cloudapipb.AEK_SVC,
 						Valid:   false,
@@ -295,15 +295,15 @@ func TestParseIntoCommand(t *testing.T) {
 			name:  "no script, defined entity",
 			input: "px/svc_info pod:pl/test",
 			requests: [][]*autocomplete.SuggestionRequest{
-				[]*autocomplete.SuggestionRequest{
-					&autocomplete.SuggestionRequest{
+				{
+					{
 						OrgID:        orgID,
 						ClusterUID:   "test",
 						Input:        "px/svc_info",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD, cloudapipb.AEK_SVC, cloudapipb.AEK_NAMESPACE, cloudapipb.AEK_SCRIPT},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD},
 					},
-					&autocomplete.SuggestionRequest{
+					{
 						OrgID:        orgID,
 						ClusterUID:   "test",
 						Input:        "pl/test",
@@ -313,10 +313,10 @@ func TestParseIntoCommand(t *testing.T) {
 				},
 			},
 			responses: [][]*autocomplete.SuggestionResult{
-				[]*autocomplete.SuggestionResult{
-					&autocomplete.SuggestionResult{
+				{
+					{
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:     "px/svc_info",
 								Score:    1,
 								ArgNames: []string{"svc_name"},
@@ -325,9 +325,9 @@ func TestParseIntoCommand(t *testing.T) {
 						},
 						ExactMatch: false,
 					},
-					&autocomplete.SuggestionResult{
+					{
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:  "pl/test",
 								Score: 1,
 							},
@@ -338,12 +338,12 @@ func TestParseIntoCommand(t *testing.T) {
 			},
 			expectedCmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
-					&autocomplete.TabStop{
+					{
 						Value: "px/svc_info",
 						Kind:  cloudapipb.AEK_UNKNOWN,
 						Valid: false,
 					},
-					&autocomplete.TabStop{
+					{
 						Value: "pl/test",
 						Kind:  cloudapipb.AEK_POD,
 						Valid: false,
@@ -356,8 +356,8 @@ func TestParseIntoCommand(t *testing.T) {
 			name:  "invalid script",
 			input: "script:px/svc_info pl/$0test",
 			requests: [][]*autocomplete.SuggestionRequest{
-				[]*autocomplete.SuggestionRequest{
-					&autocomplete.SuggestionRequest{
+				{
+					{
 						OrgID:        orgID,
 						ClusterUID:   "test",
 						Input:        "px/svc_info",
@@ -365,8 +365,8 @@ func TestParseIntoCommand(t *testing.T) {
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
 					},
 				},
-				[]*autocomplete.SuggestionRequest{
-					&autocomplete.SuggestionRequest{
+				{
+					{
 						OrgID:        orgID,
 						ClusterUID:   "test",
 						Input:        "pl/test",
@@ -376,10 +376,10 @@ func TestParseIntoCommand(t *testing.T) {
 				},
 			},
 			responses: [][]*autocomplete.SuggestionResult{
-				[]*autocomplete.SuggestionResult{
-					&autocomplete.SuggestionResult{
+				{
+					{
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:     "px/svc_infos",
 								Score:    1,
 								ArgNames: []string{"svc_name"},
@@ -389,10 +389,10 @@ func TestParseIntoCommand(t *testing.T) {
 						ExactMatch: false,
 					},
 				},
-				[]*autocomplete.SuggestionResult{
-					&autocomplete.SuggestionResult{
+				{
+					{
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:  "pl/test",
 								Score: 1,
 							},
@@ -403,12 +403,12 @@ func TestParseIntoCommand(t *testing.T) {
 			},
 			expectedCmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
-					&autocomplete.TabStop{
+					{
 						Value: "px/svc_info",
 						Kind:  cloudapipb.AEK_SCRIPT,
 						Valid: false,
 					},
-					&autocomplete.TabStop{
+					{
 						Value:          "pl/$0test",
 						Kind:           cloudapipb.AEK_UNKNOWN,
 						Valid:          false,
@@ -422,8 +422,8 @@ func TestParseIntoCommand(t *testing.T) {
 			name:  "script with two args",
 			input: "script:$0px/svc_info svc:pl/test test",
 			requests: [][]*autocomplete.SuggestionRequest{
-				[]*autocomplete.SuggestionRequest{
-					&autocomplete.SuggestionRequest{
+				{
+					{
 						OrgID:        orgID,
 						ClusterUID:   "test",
 						Input:        "px/svc_info",
@@ -431,15 +431,15 @@ func TestParseIntoCommand(t *testing.T) {
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
 					},
 				},
-				[]*autocomplete.SuggestionRequest{
-					&autocomplete.SuggestionRequest{
+				{
+					{
 						OrgID:        orgID,
 						ClusterUID:   "test",
 						Input:        "pl/test",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
 					},
-					&autocomplete.SuggestionRequest{
+					{
 						OrgID:        orgID,
 						ClusterUID:   "test",
 						Input:        "test",
@@ -449,10 +449,10 @@ func TestParseIntoCommand(t *testing.T) {
 				},
 			},
 			responses: [][]*autocomplete.SuggestionResult{
-				[]*autocomplete.SuggestionResult{
-					&autocomplete.SuggestionResult{
+				{
+					{
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:     "px/svc_info",
 								Score:    1,
 								ArgNames: []string{"svc_name", "svc_name2"},
@@ -462,19 +462,19 @@ func TestParseIntoCommand(t *testing.T) {
 						ExactMatch: true,
 					},
 				},
-				[]*autocomplete.SuggestionResult{
-					&autocomplete.SuggestionResult{
+				{
+					{
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:  "pl/test",
 								Score: 1,
 							},
 						},
 						ExactMatch: true,
 					},
-					&autocomplete.SuggestionResult{
+					{
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:  "pl/test",
 								Score: 1,
 							},
@@ -485,19 +485,19 @@ func TestParseIntoCommand(t *testing.T) {
 			},
 			expectedCmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
-					&autocomplete.TabStop{
+					{
 						Value:          "$0px/svc_info",
 						Kind:           cloudapipb.AEK_SCRIPT,
 						Valid:          true,
 						ContainsCursor: true,
 					},
-					&autocomplete.TabStop{
+					{
 						Value:   "pl/test",
 						Kind:    cloudapipb.AEK_SVC,
 						Valid:   true,
 						ArgName: "svc_name",
 					},
-					&autocomplete.TabStop{
+					{
 						Value:   "test",
 						Kind:    cloudapipb.AEK_SVC,
 						ArgName: "svc_name2",
@@ -511,8 +511,8 @@ func TestParseIntoCommand(t *testing.T) {
 			name:  "invalid label",
 			input: "script:px/svc_info no:pl/test",
 			requests: [][]*autocomplete.SuggestionRequest{
-				[]*autocomplete.SuggestionRequest{
-					&autocomplete.SuggestionRequest{
+				{
+					{
 						OrgID:        orgID,
 						ClusterUID:   "test",
 						Input:        "px/svc_info",
@@ -520,15 +520,15 @@ func TestParseIntoCommand(t *testing.T) {
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
 					},
 				},
-				[]*autocomplete.SuggestionRequest{
-					&autocomplete.SuggestionRequest{
+				{
+					{
 						OrgID:        orgID,
 						ClusterUID:   "test",
 						Input:        "pl/test",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
 					},
-					&autocomplete.SuggestionRequest{
+					{
 						OrgID:        orgID,
 						ClusterUID:   "test",
 						Input:        "",
@@ -538,10 +538,10 @@ func TestParseIntoCommand(t *testing.T) {
 				},
 			},
 			responses: [][]*autocomplete.SuggestionResult{
-				[]*autocomplete.SuggestionResult{
-					&autocomplete.SuggestionResult{
+				{
+					{
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:     "px/svc_info",
 								Score:    1,
 								ArgNames: []string{"svc_name", "svc_name2"},
@@ -551,19 +551,19 @@ func TestParseIntoCommand(t *testing.T) {
 						ExactMatch: true,
 					},
 				},
-				[]*autocomplete.SuggestionResult{
-					&autocomplete.SuggestionResult{
+				{
+					{
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:  "pl/test",
 								Score: 1,
 							},
 						},
 						ExactMatch: false,
 					},
-					&autocomplete.SuggestionResult{
+					{
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:  "pl/some_svc",
 								Score: 0,
 							},
@@ -574,18 +574,18 @@ func TestParseIntoCommand(t *testing.T) {
 			},
 			expectedCmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
-					&autocomplete.TabStop{
+					{
 						Value: "px/svc_info",
 						Kind:  cloudapipb.AEK_SCRIPT,
 						Valid: true,
 					},
-					&autocomplete.TabStop{
+					{
 						Value:   "pl/test",
 						Kind:    cloudapipb.AEK_SVC,
 						Valid:   false,
 						ArgName: "svc_name",
 					},
-					&autocomplete.TabStop{
+					{
 						Value:   "",
 						Kind:    cloudapipb.AEK_SVC,
 						Valid:   false,
@@ -599,8 +599,8 @@ func TestParseIntoCommand(t *testing.T) {
 			name:  "no args",
 			input: "script:px/svc_info",
 			requests: [][]*autocomplete.SuggestionRequest{
-				[]*autocomplete.SuggestionRequest{
-					&autocomplete.SuggestionRequest{
+				{
+					{
 						OrgID:        orgID,
 						ClusterUID:   "test",
 						Input:        "px/svc_info",
@@ -608,15 +608,15 @@ func TestParseIntoCommand(t *testing.T) {
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
 					},
 				},
-				[]*autocomplete.SuggestionRequest{
-					&autocomplete.SuggestionRequest{
+				{
+					{
 						OrgID:        orgID,
 						ClusterUID:   "test",
 						Input:        "",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
 					},
-					&autocomplete.SuggestionRequest{
+					{
 						OrgID:        orgID,
 						ClusterUID:   "test",
 						Input:        "",
@@ -626,10 +626,10 @@ func TestParseIntoCommand(t *testing.T) {
 				},
 			},
 			responses: [][]*autocomplete.SuggestionResult{
-				[]*autocomplete.SuggestionResult{
-					&autocomplete.SuggestionResult{
+				{
+					{
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:     "px/svc_info",
 								Score:    1,
 								ArgNames: []string{"svc_name", "svc_name2"},
@@ -639,19 +639,19 @@ func TestParseIntoCommand(t *testing.T) {
 						ExactMatch: true,
 					},
 				},
-				[]*autocomplete.SuggestionResult{
-					&autocomplete.SuggestionResult{
+				{
+					{
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:  "pl/test",
 								Score: 1,
 							},
 						},
 						ExactMatch: false,
 					},
-					&autocomplete.SuggestionResult{
+					{
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:  "pl/some_svc",
 								Score: 0,
 							},
@@ -662,18 +662,18 @@ func TestParseIntoCommand(t *testing.T) {
 			},
 			expectedCmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
-					&autocomplete.TabStop{
+					{
 						Value: "px/svc_info",
 						Kind:  cloudapipb.AEK_SCRIPT,
 						Valid: true,
 					},
-					&autocomplete.TabStop{
+					{
 						Value:   "",
 						Kind:    cloudapipb.AEK_SVC,
 						Valid:   false,
 						ArgName: "svc_name",
 					},
-					&autocomplete.TabStop{
+					{
 						Value:   "",
 						Kind:    cloudapipb.AEK_SVC,
 						Valid:   false,
@@ -687,8 +687,8 @@ func TestParseIntoCommand(t *testing.T) {
 			name:  "extra arg",
 			input: "script:px/svc_info svc_name:pl/test test",
 			requests: [][]*autocomplete.SuggestionRequest{
-				[]*autocomplete.SuggestionRequest{
-					&autocomplete.SuggestionRequest{
+				{
+					{
 						OrgID:        orgID,
 						ClusterUID:   "test",
 						Input:        "px/svc_info",
@@ -696,15 +696,15 @@ func TestParseIntoCommand(t *testing.T) {
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
 					},
 				},
-				[]*autocomplete.SuggestionRequest{
-					&autocomplete.SuggestionRequest{
+				{
+					{
 						OrgID:        orgID,
 						ClusterUID:   "test",
 						Input:        "pl/test",
 						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
 						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
 					},
-					&autocomplete.SuggestionRequest{
+					{
 						OrgID:        orgID,
 						ClusterUID:   "test",
 						Input:        "test",
@@ -714,10 +714,10 @@ func TestParseIntoCommand(t *testing.T) {
 				},
 			},
 			responses: [][]*autocomplete.SuggestionResult{
-				[]*autocomplete.SuggestionResult{
-					&autocomplete.SuggestionResult{
+				{
+					{
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:     "px/svc_info",
 								Score:    1,
 								ArgNames: []string{"svc_name"},
@@ -727,17 +727,17 @@ func TestParseIntoCommand(t *testing.T) {
 						ExactMatch: true,
 					},
 				},
-				[]*autocomplete.SuggestionResult{
-					&autocomplete.SuggestionResult{
+				{
+					{
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:  "pl/test",
 								Score: 1,
 							},
 						},
 						ExactMatch: true,
 					},
-					&autocomplete.SuggestionResult{
+					{
 						Suggestions: []*autocomplete.Suggestion{},
 						ExactMatch:  false,
 					},
@@ -745,18 +745,18 @@ func TestParseIntoCommand(t *testing.T) {
 			},
 			expectedCmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
-					&autocomplete.TabStop{
+					{
 						Value: "px/svc_info",
 						Kind:  cloudapipb.AEK_SCRIPT,
 						Valid: true,
 					},
-					&autocomplete.TabStop{
+					{
 						Value:   "pl/test",
 						Kind:    cloudapipb.AEK_SVC,
 						Valid:   true,
 						ArgName: "svc_name",
 					},
-					&autocomplete.TabStop{
+					{
 						Value: "test",
 						Kind:  cloudapipb.AEK_UNKNOWN,
 						Valid: false,
@@ -814,23 +814,23 @@ func TestToFormatString(t *testing.T) {
 			name: "edit",
 			cmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
-					&autocomplete.TabStop{
+					{
 						Value: "run",
 						Kind:  cloudapipb.AEK_UNKNOWN,
 						Valid: true,
 					},
-					&autocomplete.TabStop{
+					{
 						Value:          "px/$0svc_info",
 						Kind:           cloudapipb.AEK_SCRIPT,
 						Valid:          true,
 						ContainsCursor: true,
 					},
-					&autocomplete.TabStop{
+					{
 						Value: "pl/test",
 						Kind:  cloudapipb.AEK_UNKNOWN,
 						Valid: false,
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:  "pl/test",
 								Desc:  "a svc",
 								Kind:  cloudapipb.AEK_SVC,
@@ -844,21 +844,21 @@ func TestToFormatString(t *testing.T) {
 			action:      cloudapipb.AAT_EDIT,
 			expectedStr: "${2:run} ${3:script:px/$0svc_info} ${1:pl/test}",
 			expectedSuggestions: []*cloudapipb.TabSuggestion{
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              2,
 					ExecutableAfterSelect: false,
 					Suggestions:           []*cloudapipb.AutocompleteSuggestion{},
 				},
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              3,
 					ExecutableAfterSelect: false,
 					Suggestions:           []*cloudapipb.AutocompleteSuggestion{},
 				},
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              1,
 					ExecutableAfterSelect: true,
 					Suggestions: []*cloudapipb.AutocompleteSuggestion{
-						&cloudapipb.AutocompleteSuggestion{
+						{
 							Kind:        cloudapipb.AEK_SVC,
 							Name:        "pl/test",
 							Description: "a svc",
@@ -872,23 +872,23 @@ func TestToFormatString(t *testing.T) {
 			name: "edit",
 			cmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
-					&autocomplete.TabStop{
+					{
 						Value: "run",
 						Kind:  cloudapipb.AEK_UNKNOWN,
 						Valid: true,
 					},
-					&autocomplete.TabStop{
+					{
 						Value:          "px/$0svc_info",
 						Kind:           cloudapipb.AEK_SCRIPT,
 						Valid:          true,
 						ContainsCursor: true,
 					},
-					&autocomplete.TabStop{
+					{
 						Value: "pl/test",
 						Kind:  cloudapipb.AEK_UNKNOWN,
 						Valid: false,
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name: "pl/test",
 								Desc: "a svc",
 								Kind: cloudapipb.AEK_SVC,
@@ -901,21 +901,21 @@ func TestToFormatString(t *testing.T) {
 			action:      cloudapipb.AAT_SELECT,
 			expectedStr: "${1:run} ${2:script:px/svc_info} ${3:pl/test$0}",
 			expectedSuggestions: []*cloudapipb.TabSuggestion{
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              1,
 					ExecutableAfterSelect: false,
 					Suggestions:           []*cloudapipb.AutocompleteSuggestion{},
 				},
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              2,
 					ExecutableAfterSelect: false,
 					Suggestions:           []*cloudapipb.AutocompleteSuggestion{},
 				},
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              3,
 					ExecutableAfterSelect: true,
 					Suggestions: []*cloudapipb.AutocompleteSuggestion{
-						&cloudapipb.AutocompleteSuggestion{
+						{
 							Kind:        cloudapipb.AEK_SVC,
 							Name:        "pl/test",
 							Description: "a svc",
@@ -928,23 +928,23 @@ func TestToFormatString(t *testing.T) {
 			name: "empty value",
 			cmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
-					&autocomplete.TabStop{
+					{
 						Value: "run",
 						Kind:  cloudapipb.AEK_UNKNOWN,
 						Valid: true,
 					},
-					&autocomplete.TabStop{
+					{
 						Value:          "px/svc_info$0",
 						Kind:           cloudapipb.AEK_SCRIPT,
 						Valid:          true,
 						ContainsCursor: true,
 					},
-					&autocomplete.TabStop{
+					{
 						Value: "",
 						Kind:  cloudapipb.AEK_UNKNOWN,
 						Valid: false,
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name: "pl/test",
 								Desc: "a svc",
 								Kind: cloudapipb.AEK_SVC,
@@ -957,21 +957,21 @@ func TestToFormatString(t *testing.T) {
 			action:      cloudapipb.AAT_EDIT,
 			expectedStr: "${2:run} ${3:script:px/svc_info$0} ${1}",
 			expectedSuggestions: []*cloudapipb.TabSuggestion{
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              2,
 					ExecutableAfterSelect: false,
 					Suggestions:           []*cloudapipb.AutocompleteSuggestion{},
 				},
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              3,
 					ExecutableAfterSelect: false,
 					Suggestions:           []*cloudapipb.AutocompleteSuggestion{},
 				},
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              1,
 					ExecutableAfterSelect: true,
 					Suggestions: []*cloudapipb.AutocompleteSuggestion{
-						&cloudapipb.AutocompleteSuggestion{
+						{
 							Kind:        cloudapipb.AEK_SVC,
 							Name:        "pl/test",
 							Description: "a svc",
@@ -984,37 +984,37 @@ func TestToFormatString(t *testing.T) {
 			name: "invalid before current cursor",
 			cmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
-					&autocomplete.TabStop{
+					{
 						Value: "run",
 						Kind:  cloudapipb.AEK_UNKNOWN,
 						Valid: true,
 					},
-					&autocomplete.TabStop{
+					{
 						Value: "px/service_stats",
 						Kind:  cloudapipb.AEK_SCRIPT,
 						Valid: true,
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name: "px/service_stats",
 								Desc: "a svc",
 								Kind: cloudapipb.AEK_SCRIPT,
 							},
 						},
 					},
-					&autocomplete.TabStop{
+					{
 						Value:          "pl/",
 						Kind:           cloudapipb.AEK_SVC,
 						Valid:          false,
 						ContainsCursor: false,
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name: "pl/blah",
 								Desc: "a svc",
 								Kind: cloudapipb.AEK_SVC,
 							},
 						},
 					},
-					&autocomplete.TabStop{
+					{
 						Value:          "pl/frontend$0",
 						Kind:           cloudapipb.AEK_SVC,
 						Valid:          true,
@@ -1027,34 +1027,34 @@ func TestToFormatString(t *testing.T) {
 			action:      cloudapipb.AAT_SELECT,
 			expectedStr: "${2:run} ${3:script:px/service_stats} ${4:svc:pl/$0} ${1:svc:pl/frontend}",
 			expectedSuggestions: []*cloudapipb.TabSuggestion{
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              2,
 					ExecutableAfterSelect: false,
 					Suggestions:           []*cloudapipb.AutocompleteSuggestion{},
 				},
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              3,
 					ExecutableAfterSelect: false,
 					Suggestions: []*cloudapipb.AutocompleteSuggestion{
-						&cloudapipb.AutocompleteSuggestion{
+						{
 							Kind:        cloudapipb.AEK_SCRIPT,
 							Name:        "px/service_stats",
 							Description: "a svc",
 						},
 					},
 				},
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              4,
 					ExecutableAfterSelect: true,
 					Suggestions: []*cloudapipb.AutocompleteSuggestion{
-						&cloudapipb.AutocompleteSuggestion{
+						{
 							Kind:        cloudapipb.AEK_SVC,
 							Name:        "pl/blah",
 							Description: "a svc",
 						},
 					},
 				},
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              1,
 					ExecutableAfterSelect: false,
 					Suggestions:           []*cloudapipb.AutocompleteSuggestion{},
@@ -1065,25 +1065,25 @@ func TestToFormatString(t *testing.T) {
 			name: "add new tabstop",
 			cmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
-					&autocomplete.TabStop{
+					{
 						Value: "run",
 						Kind:  cloudapipb.AEK_UNKNOWN,
 						Valid: true,
 					},
-					&autocomplete.TabStop{
+					{
 						Value:          "pl/",
 						Kind:           cloudapipb.AEK_SVC,
 						Valid:          false,
 						ContainsCursor: false,
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name: "pl/blah",
 								Desc: "a svc",
 								Kind: cloudapipb.AEK_SVC,
 							},
 						},
 					},
-					&autocomplete.TabStop{
+					{
 						Value:          "pl/frontend$0",
 						Kind:           cloudapipb.AEK_SVC,
 						Valid:          true,
@@ -1099,32 +1099,32 @@ func TestToFormatString(t *testing.T) {
 			action:        cloudapipb.AAT_SELECT,
 			expectedStr:   "${1:run} ${2:svc:pl/} ${3:svc:pl/frontend} ${4:$0}",
 			expectedSuggestions: []*cloudapipb.TabSuggestion{
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              1,
 					ExecutableAfterSelect: false,
 					Suggestions:           []*cloudapipb.AutocompleteSuggestion{},
 				},
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              2,
 					ExecutableAfterSelect: false,
 					Suggestions: []*cloudapipb.AutocompleteSuggestion{
-						&cloudapipb.AutocompleteSuggestion{
+						{
 							Kind:        cloudapipb.AEK_SVC,
 							Name:        "pl/blah",
 							Description: "a svc",
 						},
 					},
 				},
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              3,
 					ExecutableAfterSelect: false,
 					Suggestions:           []*cloudapipb.AutocompleteSuggestion{},
 				},
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              4,
 					ExecutableAfterSelect: false,
 					Suggestions: []*cloudapipb.AutocompleteSuggestion{
-						&cloudapipb.AutocompleteSuggestion{
+						{
 							Kind:        cloudapipb.AEK_POD,
 							Name:        "pl/test",
 							Description: "default pod",
@@ -1137,18 +1137,18 @@ func TestToFormatString(t *testing.T) {
 			name: "all valid",
 			cmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
-					&autocomplete.TabStop{
+					{
 						Value: "run",
 						Kind:  cloudapipb.AEK_UNKNOWN,
 						Valid: true,
 					},
-					&autocomplete.TabStop{
+					{
 						Value:          "px/svc_info$0",
 						Kind:           cloudapipb.AEK_SCRIPT,
 						Valid:          true,
 						ContainsCursor: true,
 					},
-					&autocomplete.TabStop{
+					{
 						Value:   "pl/frontend",
 						Kind:    cloudapipb.AEK_SVC,
 						Valid:   true,
@@ -1160,17 +1160,17 @@ func TestToFormatString(t *testing.T) {
 			action:      cloudapipb.AAT_SELECT,
 			expectedStr: "${1:run} ${2:script:px/svc_info} ${3:svc_name:pl/frontend$0}",
 			expectedSuggestions: []*cloudapipb.TabSuggestion{
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              1,
 					ExecutableAfterSelect: false,
 					Suggestions:           []*cloudapipb.AutocompleteSuggestion{},
 				},
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              2,
 					ExecutableAfterSelect: false,
 					Suggestions:           []*cloudapipb.AutocompleteSuggestion{},
 				},
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              3,
 					ExecutableAfterSelect: false,
 					Suggestions:           []*cloudapipb.AutocompleteSuggestion{},
@@ -1181,30 +1181,30 @@ func TestToFormatString(t *testing.T) {
 			name: "invalid args",
 			cmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
-					&autocomplete.TabStop{
+					{
 						Value: "run",
 						Kind:  cloudapipb.AEK_UNKNOWN,
 						Valid: true,
 					},
-					&autocomplete.TabStop{
+					{
 						Value: "px/svc_info",
 						Kind:  cloudapipb.AEK_SCRIPT,
 						Valid: false,
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name: "pl/svc_info_abc",
 								Desc: "a svc",
 								Kind: cloudapipb.AEK_SCRIPT,
 							},
 						},
 					},
-					&autocomplete.TabStop{
+					{
 						Value:          "pl/frontend$0",
 						Kind:           cloudapipb.AEK_POD,
 						Valid:          false,
 						ContainsCursor: true,
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name:           "pl/frontend-test",
 								Desc:           "a pod",
 								Kind:           cloudapipb.AEK_POD,
@@ -1218,27 +1218,27 @@ func TestToFormatString(t *testing.T) {
 			action:      cloudapipb.AAT_EDIT,
 			expectedStr: "${1:run} ${2:script:px/svc_info} ${3:pod:pl/frontend$0}",
 			expectedSuggestions: []*cloudapipb.TabSuggestion{
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              1,
 					ExecutableAfterSelect: false,
 					Suggestions:           []*cloudapipb.AutocompleteSuggestion{},
 				},
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              2,
 					ExecutableAfterSelect: false,
 					Suggestions: []*cloudapipb.AutocompleteSuggestion{
-						&cloudapipb.AutocompleteSuggestion{
+						{
 							Kind:        cloudapipb.AEK_SCRIPT,
 							Name:        "pl/svc_info_abc",
 							Description: "a svc",
 						},
 					},
 				},
-				&cloudapipb.TabSuggestion{
+				{
 					TabIndex:              3,
 					ExecutableAfterSelect: false,
 					Suggestions: []*cloudapipb.AutocompleteSuggestion{
-						&cloudapipb.AutocompleteSuggestion{
+						{
 							Kind:           cloudapipb.AEK_POD,
 							Name:           "pl/frontend-test",
 							Description:    "a pod",
@@ -1260,15 +1260,15 @@ func TestToFormatString(t *testing.T) {
 			if test.callSuggester {
 				s.EXPECT().
 					GetSuggestions([]*autocomplete.SuggestionRequest{
-						&autocomplete.SuggestionRequest{
+						{
 							orgID, "test", "",
 							[]cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD, cloudapipb.AEK_SVC, cloudapipb.AEK_NAMESPACE, cloudapipb.AEK_SCRIPT},
 							test.suggestionScriptTypes,
 						},
 					}).Return([]*autocomplete.SuggestionResult{
-					&autocomplete.SuggestionResult{
+					{
 						Suggestions: []*autocomplete.Suggestion{
-							&autocomplete.Suggestion{
+							{
 								Name: "pl/test",
 								Kind: cloudapipb.AEK_POD,
 								Desc: "default pod",

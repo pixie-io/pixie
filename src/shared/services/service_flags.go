@@ -14,8 +14,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	version "pixielabs.ai/pixielabs/src/shared/version/go"
 	"pixielabs.ai/pixielabs/third_party/kuberesolver"
+
+	version "pixielabs.ai/pixielabs/src/shared/version/go"
 )
 
 var (
