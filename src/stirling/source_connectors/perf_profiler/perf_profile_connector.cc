@@ -56,6 +56,7 @@ std::string PerfProfileConnector::FoldedStackTraceString(ebpf::BPFStackTable* st
   // we also clear the entries in stack_traces.
   constexpr std::string_view kKSymSuffix = "_[k]";
   constexpr std::string_view kSeparator = ";";
+  constexpr uint64_t kSentinelAddr = 0xcccccccccccccccc;
 
   SymbolCache& upid_symbol_cache =
       upid_symbol_caches_.try_emplace(key.upid, key.upid.pid).first->second;
@@ -67,6 +68,13 @@ std::string PerfProfileConnector::FoldedStackTraceString(ebpf::BPFStackTable* st
   auto user_addrs = stack_traces->get_stack_addr(key.user_stack_id);
   for (auto iter = user_addrs.rbegin(); iter != user_addrs.rend(); ++iter) {
     const auto& addr = *iter;
+    if (addr == kSentinelAddr) {
+      // Some stack-traces have the address 0xcccccccccccccccc where one might
+      // otherwise expect to find "main" or "start_thread". Given that this address
+      // is not a "real" address, we filter it out here.
+      DCHECK(iter == user_addrs.rbegin()) << "Detectected sentinel address in unexpected location.";
+      continue;
+    }
     stack_trace_str += upid_symbol_cache.LookupSym(stack_traces, addr);
     stack_trace_str += kSeparator;
   }
