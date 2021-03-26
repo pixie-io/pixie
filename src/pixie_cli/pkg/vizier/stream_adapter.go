@@ -307,8 +307,7 @@ func (v *StreamOutputAdapter) parseError(ctx context.Context, s *public_vizierap
 	var compilerErrors []string
 	if s.ErrorDetails != nil {
 		for _, ed := range s.ErrorDetails {
-			switch e := ed.Error.(type) {
-			case *public_vizierapipb.ErrorDetails_CompilerError:
+			if e, ok := ed.Error.(*public_vizierapipb.ErrorDetails_CompilerError); ok {
 				compilerErrors = append(compilerErrors,
 					fmt.Sprintf("L%d : C%d  %s\n",
 						e.CompilerError.Line, e.CompilerError.Column,

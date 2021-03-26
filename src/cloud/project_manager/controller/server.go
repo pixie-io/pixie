@@ -131,7 +131,7 @@ func (s *Server) GetProjectForOrg(ctx context.Context, req *uuidpb.UUID) (*proje
 func (s *Server) GetProjectByName(ctx context.Context, req *projectmanagerpb.GetProjectByNameRequest) (*projectmanagerpb.ProjectInfo, error) {
 	pn := strings.ToLower(req.ProjectName)
 
-	if len(pn) <= 0 {
+	if len(pn) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "project name is a required argument")
 	}
 

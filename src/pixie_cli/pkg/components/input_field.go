@@ -259,7 +259,8 @@ func (i *InputField) InputHandler() func(event *tcell.EventKey, setFocus func(p 
 		// Process key event.
 		switch key := event.Key(); key {
 		case tcell.KeyRune: // Regular character.
-			if event.Modifiers()&tcell.ModAlt > 0 {
+			switch {
+			case event.Modifiers()&tcell.ModAlt > 0:
 				// We accept some Alt- key combinations.
 				switch event.Rune() {
 				case 'a': // Home.
@@ -275,7 +276,7 @@ func (i *InputField) InputHandler() func(event *tcell.EventKey, setFocus func(p 
 						return
 					}
 				}
-			} else {
+			default:
 				// Other keys are simply accepted as regular characters.
 				if !add(event.Rune()) {
 					return

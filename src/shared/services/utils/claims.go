@@ -119,7 +119,8 @@ func MapClaimsToPB(claims jwt.MapClaims) (*jwt2.JWTClaims, error) {
 	p.Scopes = strings.Split(scopes, ",")
 
 	// Custom claims.
-	if claims["UserID"] != nil {
+	switch {
+	case claims["UserID"] != nil:
 		userClaims := &jwt2.UserJWTClaims{
 			UserID: claims["UserID"].(string),
 			OrgID:  claims["OrgID"].(string),
@@ -128,14 +129,14 @@ func MapClaimsToPB(claims jwt.MapClaims) (*jwt2.JWTClaims, error) {
 		p.CustomClaims = &jwt2.JWTClaims_UserClaims{
 			UserClaims: userClaims,
 		}
-	} else if claims["ServiceID"] != nil {
+	case claims["ServiceID"] != nil:
 		serviceClaims := &jwt2.ServiceJWTClaims{
 			ServiceID: claims["ServiceID"].(string),
 		}
 		p.CustomClaims = &jwt2.JWTClaims_ServiceClaims{
 			ServiceClaims: serviceClaims,
 		}
-	} else if claims["ClusterID"] != nil {
+	case claims["ClusterID"] != nil:
 		clusterClaims := &jwt2.ClusterJWTClaims{
 			ClusterID: claims["ClusterID"].(string),
 		}

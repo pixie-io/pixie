@@ -428,7 +428,7 @@ func (cmd *Command) ToFormatString(action cloudapipb.AutocompleteActionType, s S
 		} else {
 			// Move the cursor to the next invalid tabstop.
 			cmd.TabStops[curTabStop].Value = strings.Replace(cmd.TabStops[curTabStop].Value, CursorMarker, "", 1)
-			cmd.TabStops[nextInvalidTabStop].Value = cmd.TabStops[nextInvalidTabStop].Value + CursorMarker
+			cmd.TabStops[nextInvalidTabStop].Value += CursorMarker
 			curTabStop = nextInvalidTabStop
 		}
 	}
@@ -512,7 +512,7 @@ func (cmd *Command) processTabStops() (int, int, map[int]bool) {
 
 	if curTabStop == -1 { // For some reason, if there is no cursor, we should put it at the very end.
 		curTabStop = len(cmd.TabStops) - 1
-		cmd.TabStops[curTabStop].Value = cmd.TabStops[curTabStop].Value + CursorMarker
+		cmd.TabStops[curTabStop].Value += CursorMarker
 	}
 	if nextInvalidTabStop == -1 { // All tabstops are valid.
 		nextInvalidTabStop = len(cmd.TabStops) - 1

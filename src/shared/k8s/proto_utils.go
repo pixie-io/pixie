@@ -685,21 +685,21 @@ func ContainerStatusToProto(c *v1.ContainerStatus) (*metadatapb.ContainerStatus,
 		Name:        c.Name,
 		ContainerID: c.ContainerID,
 	}
-	if c.State.Waiting != nil {
+	switch {
+	case c.State.Waiting != nil:
 		cPb.ContainerState = metadatapb.CONTAINER_STATE_WAITING
 		cPb.Message = c.State.Waiting.Message
 		cPb.Reason = c.State.Waiting.Reason
-	} else if c.State.Running != nil {
+	case c.State.Running != nil:
 		cPb.ContainerState = metadatapb.CONTAINER_STATE_RUNNING
 		cPb.StartTimestampNS = c.State.Running.StartedAt.UnixNano()
-	} else if c.State.Terminated != nil {
+	case c.State.Terminated != nil:
 		cPb.ContainerState = metadatapb.CONTAINER_STATE_TERMINATED
 		cPb.StartTimestampNS = c.State.Terminated.StartedAt.UnixNano()
 		cPb.StopTimestampNS = c.State.Terminated.FinishedAt.UnixNano()
 		cPb.Message = c.State.Terminated.Message
 		cPb.Reason = c.State.Terminated.Reason
 	}
-
 	return cPb, nil
 }
 

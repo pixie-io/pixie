@@ -554,12 +554,12 @@ func init() {
 func copyIgnoredSettingsPaths(expected map[string]interface{}, actual map[string]interface{}, currentPath string) {
 	for k, v := range actual {
 		path := strings.Join([]string{currentPath, k}, ".")
-		switch v.(type) {
+		switch tv := v.(type) {
 		case map[string]interface{}:
 			if _, ok := expected[k]; !ok || expected[k] == nil {
 				expected[k] = make(map[string]interface{})
 			}
-			copyIgnoredSettingsPaths(expected[k].(map[string]interface{}), v.(map[string]interface{}), path)
+			copyIgnoredSettingsPaths(expected[k].(map[string]interface{}), tv, path)
 		default:
 			if _, ok := settingsIgnorePaths[path]; !ok {
 				continue

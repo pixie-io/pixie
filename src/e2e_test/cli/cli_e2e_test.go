@@ -114,17 +114,17 @@ func TestCLIE2E_AllScripts(t *testing.T) {
 			}
 			var b *bytes.Buffer
 			var err error
-			if *allClusters {
+			switch {
+			case *allClusters:
 				b, err = cliExecStdoutBytes(t, "run", s.Name, "--all-clusters", "-o", "json")
-			} else if *clusterID != "" {
+			case *clusterID != "":
 				b, err = cliExecStdoutBytes(t, "run", s.Name, "-c", *clusterID, "-o", "json")
-			} else {
+			default:
 				t.Fatalf("Either --all-clusters or -c <cluster_id> must be provided.")
 			}
 			if err != nil {
 				t.Fatalf("Failed to run script: %+v", err)
 			}
-
 			assert.GreaterOrEqual(t, len(b.String()), 0)
 		})
 	}
@@ -143,11 +143,12 @@ func TestCLIE2E_AllScriptsRepeat10(t *testing.T) {
 			for i := 0; i < repeatCount; i++ {
 				var b *bytes.Buffer
 				var err error
-				if *allClusters {
+				switch {
+				case *allClusters:
 					b, err = cliExecStdoutBytes(t, "run", s.Name, "--all-clusters", "-o", "json")
-				} else if *clusterID != "" {
+				case *clusterID != "":
 					b, err = cliExecStdoutBytes(t, "run", s.Name, "-c", *clusterID, "-o", "json")
-				} else {
+				default:
 					t.Fatalf("Either --all-clusters or -c <cluster_id> must be provided.")
 				}
 				if err != nil {

@@ -230,14 +230,14 @@ func TestGrpcServerUnary(t *testing.T) {
 			var resp *ping.PingReply
 			var err error
 
-			if test.clientStream {
+			switch {
+			case test.clientStream:
 				resp, err = makeTestClientStreamRequest(ctx, t, lis)
-			} else if test.serverStream {
+			case test.serverStream:
 				resp, err = makeTestServerStreamRequest(ctx, t, lis)
-			} else {
+			default:
 				resp, err = makeTestRequest(ctx, t, lis)
 			}
-
 			if test.expectError {
 				assert.NotNil(t, err)
 				stat, ok := status.FromError(err)
@@ -249,6 +249,7 @@ func TestGrpcServerUnary(t *testing.T) {
 				assert.NotNil(t, resp)
 				assert.Equal(t, "test reply", resp.Reply)
 			}
+
 		})
 	}
 }

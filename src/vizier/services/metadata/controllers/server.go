@@ -414,16 +414,17 @@ func getTracepointStateFromAgentTracepointStates(agentStates []*storepb.AgentTra
 	statuses := make([]*statuspb.Status, 0)
 
 	for _, s := range agentStates {
-		if s.State == statuspb.TERMINATED_STATE {
+		switch s.State {
+		case statuspb.TERMINATED_STATE:
 			numTerminated++
-		} else if s.State == statuspb.FAILED_STATE {
+		case statuspb.FAILED_STATE:
 			numFailed++
 			if s.Status.ErrCode != statuspb.FAILED_PRECONDITION && s.Status.ErrCode != statuspb.OK {
 				statuses = append(statuses, s.Status)
 			}
-		} else if s.State == statuspb.PENDING_STATE {
+		case statuspb.PENDING_STATE:
 			numPending++
-		} else if s.State == statuspb.RUNNING_STATE {
+		case statuspb.RUNNING_STATE:
 			numRunning++
 		}
 	}

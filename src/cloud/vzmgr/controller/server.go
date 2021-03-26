@@ -1017,9 +1017,6 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 	var clusterID uuid.UUID
 	inputName := strings.TrimSpace(clusterName)
 
-	generateRandomName := func(i int) string {
-		return namesgenerator.GetRandomName(i)
-	}
 	generateFromGivenName := func(i int) string {
 		name := inputName
 		if i > 0 {
@@ -1068,7 +1065,7 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 			}
 		}
 
-		generateNameFunc := generateRandomName
+		generateNameFunc := namesgenerator.GetRandomName
 		if inputName != "" {
 			generateNameFunc = generateFromGivenName
 		}

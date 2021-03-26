@@ -178,12 +178,8 @@ func getSettingsToUpdate(expected map[string]interface{}, actual map[string]inte
 			if needsUpdate {
 				toUpdate[k] = newVal
 			}
-		} else {
-			// Elastic will convert numbers and floats to strings sometimes,
-			// so check the string version of the expected val as well.
-			if expectedVal != actualVal && fmt.Sprint(expectedVal) != actualVal {
-				toUpdate[k] = expectedVal
-			}
+		} else if expectedVal != actualVal && fmt.Sprint(expectedVal) != actualVal {
+			toUpdate[k] = expectedVal
 		}
 	}
 	return len(toUpdate) > 0, toUpdate

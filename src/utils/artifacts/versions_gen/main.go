@@ -25,11 +25,12 @@ func init() {
 func availableArtifacts(artifactName string) []vpb.ArtifactType {
 	// TODO(zasgar/michelle): This is an ugly hack because we can't get available artifact types
 	// so we just assume that they are all available.
-	if artifactName == "cli" {
+	switch {
+	case artifactName == "cli":
 		return []vpb.ArtifactType{vpb.AT_LINUX_AMD64, vpb.AT_DARWIN_AMD64}
-	} else if artifactName == "vizier" {
+	case artifactName == "vizier":
 		return []vpb.ArtifactType{vpb.AT_CONTAINER_SET_LINUX_AMD64, vpb.AT_CONTAINER_SET_YAMLS, vpb.AT_CONTAINER_SET_TEMPLATE_YAMLS}
-	} else {
+	default:
 		panic(fmt.Sprintf("Unknown artifact type: %s", artifactName))
 	}
 }

@@ -75,11 +75,14 @@ func detectClusterType() ClusterType {
 	if err == nil {
 		s := strings.Trim(string(result), " \n")
 		// err not nil, means command failed and either minikube is not installed or not used.
-		if s == "hyperkit" {
+		switch s {
+		case "hyperkit":
 			return ClusterTypeMinikubeHyperkit
-		} else if s == "kvm2" {
+		case "kvm2":
 			return ClusterTypeMinikubeKVM2
-		} else if s != "" {
+		case "":
+			break
+		default:
 			return ClusterTypeMinikubeOther
 		}
 	}

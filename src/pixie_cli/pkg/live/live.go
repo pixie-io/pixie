@@ -320,11 +320,12 @@ func (v *View) updateScriptInfoView() {
 	// Get the name for this cluster for the live view
 	var clusterName *string
 	vzInfo, err := v.vizierLister.GetVizierInfo(v.selectedClusterID)
-	if err != nil {
+	switch {
+	case err != nil:
 		cliLog.WithError(err).Errorf("Error getting cluster name for cluster %s", v.selectedClusterID.String())
-	} else if len(vzInfo) == 0 {
+	case len(vzInfo) == 0:
 		cliLog.Errorf("Error getting cluster name for cluster %s, no results returned", v.selectedClusterID.String())
-	} else {
+	default:
 		clusterName = &(vzInfo[0].ClusterName)
 	}
 
@@ -591,7 +592,7 @@ func (v *View) selectTable(tableNum int) int {
 	if len(v.s.tables) == 0 {
 		return 0
 	}
-	tableNum = tableNum % len(v.s.tables)
+	tableNum %= len(v.s.tables)
 
 	// We only need to render if it's a different table.
 	if v.s.selectedTable != tableNum {
@@ -758,8 +759,7 @@ func (v *View) keyHandler(event *tcell.EventKey) *tcell.EventKey {
 			v.closeModal()
 			return nil
 		case tcell.KeyRune:
-			switch string(event.Rune()) {
-			case "?":
+			if string(event.Rune()) == "?" {
 				if v.activeModalType() == modalTypeHelp {
 					v.closeModal()
 					return nil
@@ -775,8 +775,7 @@ func (v *View) keyHandler(event *tcell.EventKey) *tcell.EventKey {
 	}
 
 	if v.s.searchBoxEnabled {
-		switch event.Key() {
-		case tcell.KeyCtrlK:
+		if event.Key() == tcell.KeyCtrlK {
 			v.showTableNav()
 			v.searchClear()
 			v.showAutcompleteModal()

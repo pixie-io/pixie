@@ -47,9 +47,7 @@ func deletePixie(ns string, clobberAll bool) {
 	tasks := make([]utils.Task, 0)
 
 	if clobberAll {
-		tasks = append(tasks, newTaskWrapper("Deleting namespace", func() error {
-			return od.DeleteNamespace()
-		}))
+		tasks = append(tasks, newTaskWrapper("Deleting namespace", od.DeleteNamespace))
 		tasks = append(tasks, newTaskWrapper("Deleting cluster-scoped resources", func() error {
 			_, err := od.DeleteByLabel("app=pl-monitoring", k8s.AllResourceKinds...)
 			return err

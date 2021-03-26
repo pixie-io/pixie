@@ -17,18 +17,19 @@ func (u UInt128) Equal(o *UInt128) bool {
 }
 
 // Compare compares the two UInt128s.
-// Copied from https://github.com/cockroachdb/cockroach/blob/c097a16427f65e9070991f062716d222ea5903fe/pkg/util/uint128/uint128.go.
 func (u UInt128) Compare(o *UInt128) int {
-	if u.High > o.High {
+	switch {
+	case u.High > o.High:
 		return 1
-	} else if u.High < o.High {
+	case u.High < o.High:
 		return -1
-	} else if u.Low > o.Low {
+	case u.Low > o.Low:
 		return 1
-	} else if u.Low < o.Low {
+	case u.Low < o.Low:
 		return -1
+	default:
+		return 0
 	}
-	return 0
 }
 
 // UInt128FromProto converts the UInt128 proto into a UInt128.

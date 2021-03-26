@@ -59,17 +59,18 @@ func main() {
 
 	authProvider := viper.GetString("oauth_provider")
 
-	if authProvider == "auth0" {
+	switch authProvider {
+	case "auth0":
 		a, err = controllers.NewAuth0Connector(controllers.NewAuth0Config())
 		if err != nil {
 			log.WithError(err).Fatal("Failed to initialize Auth0")
 		}
-	} else if authProvider == "hydra" {
+	case "hydra":
 		a, err = controllers.NewHydraKratosConnector()
 		if err != nil {
 			log.WithError(err).Fatal("Failed to initialize hydraKratosConnector")
 		}
-	} else {
+	default:
 		log.Fatalf("Cannot initialize authProvider '%s'. Only 'auth0' and 'hydra' are supported.", authProvider)
 	}
 

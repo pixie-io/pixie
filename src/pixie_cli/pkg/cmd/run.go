@@ -202,12 +202,14 @@ func createNewCobraCommand() *cobra.Command {
 			err = vizier.RunScriptAndOutputResults(ctx, conns, execScript, format)
 
 			if err != nil {
-				if vzErr, ok := err.(*vizier.ScriptExecutionError); ok && vzErr.Code() == vizier.CodeCanceled {
+				vzErr, ok := err.(*vizier.ScriptExecutionError)
+				switch {
+				case ok && vzErr.Code() == vizier.CodeCanceled:
 					cliLog.Info("Script was cancelled. Exiting.")
-				} else if err == ptproxy.ErrNotAvailable {
+				case err == ptproxy.ErrNotAvailable:
 					cliLog.WithError(err).Error("Cannot execute script")
 					os.Exit(1)
-				} else {
+				default:
 					log.WithError(err).Error("Failed to execute script")
 					os.Exit(1)
 				}
@@ -220,11 +222,12 @@ func createNewCobraCommand() *cobra.Command {
 				log.WithError(err).Fatal("Failed to create Vizier lister")
 			}
 			vzInfo, err := lister.GetVizierInfo(clusterID)
-			if err != nil {
+			switch {
+			case err != nil:
 				cliLog.WithError(err).Errorf("Error getting cluster name for cluster %s", clusterID.String())
-			} else if len(vzInfo) == 0 {
+			case len(vzInfo) == 0:
 				cliLog.Errorf("Error getting cluster name for cluster %s, no results returned", clusterID.String())
-			} else {
+			default:
 				clusterName = &(vzInfo[0].ClusterName)
 			}
 

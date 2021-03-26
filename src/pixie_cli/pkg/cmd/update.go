@@ -218,7 +218,7 @@ var CLIUpdateCmd = &cobra.Command{
 				utils.Error("Cannot determine new versions to update to.")
 				os.Exit(1)
 			}
-			if len(versions) <= 0 {
+			if len(versions) == 0 {
 				utils.Info("No updates available")
 				return
 			}

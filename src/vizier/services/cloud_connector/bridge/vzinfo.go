@@ -126,7 +126,8 @@ func (v *K8sVizierInfo) GetAddress() (string, int32, error) {
 	ip := ""
 	port := int32(0)
 
-	if proxySvc.Spec.Type == corev1.ServiceTypeNodePort {
+	switch proxySvc.Spec.Type {
+	case corev1.ServiceTypeNodePort:
 		nodesList, err := v.clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 		if err != nil {
 			return "", int32(0), err
@@ -156,7 +157,7 @@ func (v *K8sVizierInfo) GetAddress() (string, int32, error) {
 		if port <= 0 {
 			return "", int32(0), errors.New("Could not determine port for vizier service")
 		}
-	} else if proxySvc.Spec.Type == corev1.ServiceTypeLoadBalancer {
+	case corev1.ServiceTypeLoadBalancer:
 		// It's possible to have more than one external IP. Just select the first one for now.
 		if len(proxySvc.Status.LoadBalancer.Ingress) == 0 {
 			return "", int32(0), errors.New("Proxy service has no external IPs")
@@ -171,7 +172,7 @@ func (v *K8sVizierInfo) GetAddress() (string, int32, error) {
 		if port <= 0 {
 			return "", int32(0), errors.New("Could not determine port for vizier service")
 		}
-	} else {
+	default:
 		return "", int32(0), errors.New("Unexpected service type")
 	}
 

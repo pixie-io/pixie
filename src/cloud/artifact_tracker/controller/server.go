@@ -83,10 +83,10 @@ func (s *Server) GetArtifactList(ctx context.Context, in *apb.GetArtifactListReq
 	var rows *sqlx.Rows
 	var err error
 	if limit != 0 && limit != -1 {
-		query = query + " LIMIT $3;"
+		query += " LIMIT $3;"
 		rows, err = s.db.Queryx(query, name, at, limit)
 	} else {
-		query = query + ";"
+		query += ";"
 		rows, err = s.db.Queryx(query, name, at)
 	}
 

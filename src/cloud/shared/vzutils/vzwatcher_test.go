@@ -89,16 +89,17 @@ func TestVzWatcher(t *testing.T) {
 			w.RegisterVizierHandler(func(id uuid.UUID, orgID uuid.UUID, uid string) error {
 				defer wg.Done()
 
-				if id == existingVzID {
+				switch id {
+				case existingVzID:
 					assert.Equal(t, existingOrgID, orgID)
 					assert.Equal(t, existingK8sUID, uid)
 					if test.expectError {
 						return errors.New("Some error")
 					}
-				} else if id == newVzID {
+				case newVzID:
 					assert.Equal(t, newOrgID, orgID)
 					assert.Equal(t, newK8sUID, uid)
-				} else {
+				default:
 					t.Fatal("Called Vizier handler with unexpected vizier")
 				}
 				return nil

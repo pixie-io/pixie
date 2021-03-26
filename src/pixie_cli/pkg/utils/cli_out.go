@@ -76,9 +76,9 @@ func (c *CLIOutputEntry) WithError(err error) *CLIOutputEntry {
 func (c *CLIOutputEntry) write(w io.Writer, format string, args ...interface{}) {
 	text := fmt.Sprintf(format, args...)
 	if c.err != nil {
-		text = text + fmt.Sprintf(" error=%s", c.err.Error())
+		text += fmt.Sprintf(" error=%s", c.err.Error())
 	}
-	text = text + "\n"
+	text += "\n"
 	if c.textColor == nil {
 		fmt.Fprint(w, text)
 	} else {

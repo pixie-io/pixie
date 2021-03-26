@@ -151,13 +151,14 @@ func main() {
 	flag.Parse()
 
 	var fn func()
-	if *clientStreaming {
+	switch {
+	case *clientStreaming:
 		fn = func() { clientStreamGreet(*address, *https, []string{*name, *name, *name}) }
-	} else if *serverStreaming {
+	case *serverStreaming:
 		fn = func() { streamGreet(*address, *https, *name) }
-	} else if *bidirStreaming {
+	case *bidirStreaming:
 		fn = func() { bidirStreamGreet(*address, *https, []string{*name, *name, *name}) }
-	} else {
+	default:
 		fn = func() { connectAndGreet(*address, *https, *name) }
 	}
 

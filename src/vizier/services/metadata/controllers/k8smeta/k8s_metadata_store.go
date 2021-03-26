@@ -123,13 +123,14 @@ func (m *Datastore) FetchResourceUpdates(topic string, from int64, to int64) ([]
 		}
 
 		var updateBytes []byte
-		if tVersion == -1 || (uVersion != -1 && uVersion < tVersion) {
+		switch {
+		case tVersion == -1 || (uVersion != -1 && uVersion < tVersion):
 			updateBytes = uValues[uIdx]
 			uIdx++
-		} else if uVersion == -1 || (tVersion < uVersion) {
+		case uVersion == -1 || (tVersion < uVersion):
 			updateBytes = tValues[tIdx]
 			tIdx++
-		} else {
+		default:
 			// tVersion == uVersion. This should never happen, since a resource update must either be node-specific or not. In any
 			// case, if this ever happens, we should just take the topic-specific update.
 			updateBytes = tValues[tIdx]

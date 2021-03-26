@@ -164,10 +164,8 @@ func (s *InMemoryStore) FetchResourceUpdates(topic string, from int64, to int64)
 		if k >= int(from) && k < int(to) {
 			if val, ok := s.ResourceStoreByTopic[topic][int64(k)]; ok {
 				updates = append(updates, val)
-			} else {
-				if val, ok := s.ResourceStoreByTopic["unscoped"][int64(k)]; ok {
-					updates = append(updates, val)
-				}
+			} else if val, ok := s.ResourceStoreByTopic["unscoped"][int64(k)]; ok {
+				updates = append(updates, val)
 			}
 		}
 	}

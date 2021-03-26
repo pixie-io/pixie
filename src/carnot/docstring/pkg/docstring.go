@@ -219,9 +219,9 @@ func processRemainingDesc(lines *[]string, i int, tabChar string, argDoc *docspb
 			break
 		}
 		if hasContent((*lines)[i]) {
-			argDoc.Desc = argDoc.Desc + " " + strings.Trim((*lines)[i], tabChar)
+			argDoc.Desc += " " + strings.Trim((*lines)[i], tabChar)
 		} else {
-			argDoc.Desc = argDoc.Desc + "\n"
+			argDoc.Desc += "\n"
 		}
 		i++
 	}
@@ -423,22 +423,23 @@ func parseDocstringAndWrite(outDocs *docspb.StructuredDocs, rawDocstring string,
 	}
 	genDocString.body.Name = name
 
-	if topic == PixieMutation {
+	switch topic {
+	case PixieMutation:
 		outDocs.MutationDocs = append(outDocs.MutationDocs, &docspb.MutationDoc{
 			Body:    genDocString.body,
 			FuncDoc: genDocString.function,
 		})
-	} else if topic == TracepointDecorator {
+	case TracepointDecorator:
 		outDocs.TracepointDecoratorDocs = append(outDocs.TracepointDecoratorDocs, &docspb.TracepointDecoratorDoc{
 			Body:    genDocString.body,
 			FuncDoc: genDocString.function,
 		})
-	} else if topic == TracepointFields {
+	case TracepointFields:
 		outDocs.TracepointFieldDocs = append(outDocs.TracepointFieldDocs, &docspb.TracepointFieldDoc{
 			Body:    genDocString.body,
 			FuncDoc: genDocString.function,
 		})
-	} else if topic == DataFrameOps {
+	case DataFrameOps:
 		body := genDocString.body
 		if len(opname) > 0 {
 			body.Name = opname
@@ -448,12 +449,12 @@ func parseDocstringAndWrite(outDocs *docspb.StructuredDocs, rawDocstring string,
 			Body:    body,
 			FuncDoc: genDocString.function,
 		})
-	} else if topic == CompileTimeFns {
+	case CompileTimeFns:
 		outDocs.CompileFnDocs = append(outDocs.CompileFnDocs, &docspb.CompileFnDoc{
 			Body:    genDocString.body,
 			FuncDoc: genDocString.function,
 		})
-	} else {
+	default:
 		return fmt.Errorf("topic not found %s", topic)
 	}
 

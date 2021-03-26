@@ -12,7 +12,7 @@ var (
 )
 
 func computePadding(s string, pad int) (padS int, padE int) {
-	pad = pad - len([]rune(s))
+	pad -= len([]rune(s))
 	if pad < 0 {
 		pad = 0
 	}
