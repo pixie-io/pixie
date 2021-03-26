@@ -197,8 +197,9 @@ class PerfProfileBPFTest : public ::testing::Test {
     // We expect the ratio of fib52:fib27 to be approx. 2:1;
     // or sqrt, or something else that was in the toy test app.
     LOG(INFO) << "ratio of 2x samples to 1x samples: " << ratio;
-    EXPECT_GT(ratio, 1.85);
-    EXPECT_LT(ratio, 2.15);
+    constexpr double kMargin = 0.3;
+    EXPECT_GT(ratio, 2.0 - kMargin);
+    EXPECT_LT(ratio, 2.0 + kMargin);
   }
 
   template <typename T>
