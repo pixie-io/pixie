@@ -146,7 +146,7 @@ build:tsan --test_env=TSAN_OPTIONS=report_atomic_races=0
 # bazel build --config bpf
 build:bpf --build_tag_filters=requires_bpf,requires_root
 build:bpf --test_tag_filters=requires_bpf,requires_root,-disabled
-test:bpf --strategy=TestRunner=standalone
+test:bpf --jobs=4 --strategy=TestRunner=standalone
 
 # bazel build --config bpf_asan
 # Need to repeat the negative build_tag_filters from config=asan,
@@ -154,7 +154,7 @@ test:bpf --strategy=TestRunner=standalone
 build:bpf_asan --config=asan
 build:bpf_asan --build_tag_filters=requires_bpf,requires_root,-no_asan
 build:bpf_asan --test_tag_filters=requires_bpf,requires_root,-no_asan,-disabled
-test:bpf_asan --strategy=TestRunner=standalone
+test:bpf_asan --jobs=4 --strategy=TestRunner=standalone
 
 # bazel build --config bpf_tsan
 # Need to repeat the negative build_tag_filters from config=tsan,
@@ -162,7 +162,7 @@ test:bpf_asan --strategy=TestRunner=standalone
 build:bpf_tsan --config=tsan
 build:bpf_tsan --build_tag_filters=requires_bpf,requires_root,-no_tsan
 build:bpf_tsan --test_tag_filters=requires_bpf,requires_root,-no_tsan,-disabled
-test:bpf_tsan --strategy=TestRunner=standalone
+test:bpf_tsan --jobs=4 --strategy=TestRunner=standalone
 
 coverage --config=gcc
 coverage --cxxopt -fprofile-arcs
