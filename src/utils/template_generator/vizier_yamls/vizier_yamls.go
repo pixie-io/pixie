@@ -60,43 +60,43 @@ var GlobalTemplateOptions = []*yamls.K8sTemplateOptions{
 		Patch:       `{"metadata": { "annotations": { "__PL_ANNOTATION_KEY__": "__PL_ANNOTATION_VALUE__"} } }`,
 		Placeholder: "__PL_ANNOTATION_KEY__: __PL_ANNOTATION_VALUE__",
 		TemplateValue: `{{if .Values.customAnnotations}}{{range $element := split "," .Values.customAnnotations -}}
-		{{ $kv := split "=" $element -}}
-		{{if eq (len $kv) 2 -}}
-		{{ $kv._0 }}: "{{ $kv._1 }}"
-		{{- end}}
-		{{end}}{{end}}`,
+    {{ $kv := split "=" $element -}}
+    {{if eq (len $kv) 2 -}}
+    {{ $kv._0 }}: "{{ $kv._1 }}"
+    {{- end}}
+    {{end}}{{end}}`,
 	},
 	{
 		TemplateMatcher: yamls.TemplateScopeMatcher,
 		Patch:           `{"spec": { "template": { "metadata": { "annotations": { "__PL_SPEC_ANNOTATION_KEY__": "__PL_SPEC_ANNOTATION_VALUE__"} } } } }`,
 		Placeholder:     "__PL_SPEC_ANNOTATION_KEY__: __PL_SPEC_ANNOTATION_VALUE__",
 		TemplateValue: `{{if .Values.customAnnotations}}{{range $element := split "," .Values.customAnnotations -}}
-			{{ $kv := split "=" $element -}}
-			{{if eq (len $kv) 2 -}}
-			{{ $kv._0 }}: "{{ $kv._1 }}"
-			{{- end}}
-			{{end}}{{end}}`,
+        {{ $kv := split "=" $element -}}
+        {{if eq (len $kv) 2 -}}
+        {{ $kv._0 }}: "{{ $kv._1 }}"
+        {{- end}}
+        {{end}}{{end}}`,
 	},
 	{
 		Patch:       `{"metadata": { "labels": { "__PL_LABEL_KEY__": "__PL_LABEL_VALUE__"} } }`,
 		Placeholder: "__PL_LABEL_KEY__: __PL_LABEL_VALUE__",
 		TemplateValue: `{{if .Values.customLabels}}{{range $element := split "," .Values.customLabels -}}
-		{{ $kv := split "=" $element -}}
-		{{if eq (len $kv) 2 -}}
-		{{ $kv._0 }}: "{{ $kv._1 }}"
-		{{- end}}
-		{{end}}{{end}}`,
+    {{ $kv := split "=" $element -}}
+    {{if eq (len $kv) 2 -}}
+    {{ $kv._0 }}: "{{ $kv._1 }}"
+    {{- end}}
+    {{end}}{{end}}`,
 	},
 	{
 		TemplateMatcher: yamls.TemplateScopeMatcher,
 		Patch:           `{"spec": { "template": { "metadata": { "labels": { "__PL_SPEC_LABEL_KEY__": "__PL_SPEC_LABEL_VALUE__"} } } } }`,
 		Placeholder:     "__PL_SPEC_LABEL_KEY__: __PL_SPEC_LABEL_VALUE__",
 		TemplateValue: `{{if .Values.customLabels}}{{range $element := split "," .Values.customLabels -}}
-			{{ $kv := split "=" $element -}}
-			{{if eq (len $kv) 2 -}}
-			{{ $kv._0 }}: "{{ $kv._1 }}"
-			{{- end}}
-			{{end}}{{end}}`,
+        {{ $kv := split "=" $element -}}
+        {{if eq (len $kv) 2 -}}
+        {{ $kv._0 }}: "{{ $kv._1 }}"
+        {{- end}}
+        {{end}}{{end}}`,
 	},
 }
 
