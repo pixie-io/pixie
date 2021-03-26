@@ -76,6 +76,13 @@ def stirling_docker_images_setup():
         repository = "pl-dev-infra/python_mysql_connector",
     )
 
+    container_pull(
+        name = "distroless_busybox",
+        digest = "sha256:f989df6099c5efb498021c7f01b74f484b46d2f5e1cdb862e508569d87569f2b",
+        registry = "gcr.io",
+        repository = "distroless/base",
+    )
+
 def _docker_images_setup():
     _go_image_repos()
     _java_image_repos()

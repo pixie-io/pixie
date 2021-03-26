@@ -1,6 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//bazel:pl_build_system.bzl", "pl_cc_library")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_layer")
 
 pl_cc_library(
     name = "cc_library",
@@ -8,6 +9,15 @@ pl_cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "//src/common/exec:cc_library",
-        "@com_google_googletest//:gtest",
     ],
+)
+
+container_image(
+    name = "busybox_container_image",
+    base = "@distroless_busybox//image",
+    cmd = [
+        "-c",
+        "echo started & sleep 100000000",
+    ],
+    entrypoint = ["/busybox/sh"],
 )
