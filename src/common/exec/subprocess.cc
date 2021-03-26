@@ -37,11 +37,13 @@ Status SubProcess::Start(const std::vector<std::string>& args, bool stderr_to_st
   if (child_pid_ == 0) {
     // Redirect STDOUT to pipe
     if (dup2(pipefd_[kWrite], STDOUT_FILENO) == -1) {
-      return error::Internal("Could not redirect STDOUT to pipe");
+      LOG(ERROR) << "Could not redirect STDOUT to pipe";
+      exit(1);
     }
     if (stderr_to_stdout) {
       if (dup2(pipefd_[kWrite], STDERR_FILENO) == -1) {
-        return error::Internal("Could not redirect STDERR to pipe");
+        LOG(ERROR) << "Could not redirect STDERR to pipe";
+        exit(1);
       }
     }
 
@@ -56,9 +58,11 @@ Status SubProcess::Start(const std::vector<std::string>& args, bool stderr_to_st
     // argv[2] = NULL;
     // execvp(cmd, argv);
     int retval = execvp(exec_args.front(), exec_args.data());
-    if (retval == -1) {
-      exit(1);
-    }
+
+    // If all goes well with exec, we never reach here.
+    DCHECK_EQ(retval, -1);
+    LOG(ERROR) << absl::Substitute("exec failed! error = $0", std::strerror(errno));
+    exit(1);
   } else {
     // Wait until the execution has started.
     // Test code might still want to wait for the child process actually initiated and one can
