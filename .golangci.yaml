@@ -1,4 +1,9 @@
 ---
+run:
+  # Tell golangci-lint to not acquire a lock because
+  # arcanist will run multiple instances in parallel.
+  allow-parallel-runners: true
+
 output:
   sort-results: true
 
