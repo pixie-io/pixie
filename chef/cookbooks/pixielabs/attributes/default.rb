@@ -3,25 +3,36 @@ default['clang']['deb']        =
   'https://storage.googleapis.com/pl-infra-dev-artifacts/clang-11.1-pl1.deb'
 default['clang']['deb_sha256'] =
   'e43f55f53a347f65327c69a29465bd007737ae2a9b839319ad9ae5f658ccde99'
-default['clang']['version'] = "11.1-pl1"
+default['clang']['version']    = "11.1-pl1"
 
 default['gperftools']               = {}
 default['gperftools']['deb']        =
   'https://storage.googleapis.com/pl-infra-dev-artifacts/gperftools-pixie-2.7-pl2.deb'
 default['gperftools']['deb_sha256'] =
   'f43a343a6eae52dfd9ef1a3e3a9fe14347587d05fa7397f9444b473a4a65e959'
-default['gperftools']['version'] = "2.7-pl2"
+default['gperftools']['version']    = "2.7-pl2"
 
+default['gsutil']                  = {}
+default['gsutil']['download_path'] = 'https://storage.googleapis.com/pub/gsutil_4.54.tar.gz'
+default['gsutil']['sha256']        = 'a6698479af8dc26e2ed809102e9e5d813f475bca44ce7007ed4e25ee79a3289c'
 
 default['skaffold']                  = {}
 default['kubectl']                   = {}
 default['bazel']                     = {}
 default['golang']                    = {}
+default['minikube']                  = {}
+default['nodejs']                    = {}
+default['packer']                    = {}
+default['kustomize']                 = {}
 default['sops']                      = {}
 default['shellcheck']                = {}
 default['sentry']                    = {}
 default['prototool']                 = {}
 default['yq']                        = {}
+default['src']                       = {}
+default['lsif-go']                   = {}
+default['golangci-lint']             = {}
+default['helm']                      = {}
 
 if node[:platform] == 'ubuntu'
   default['bazel']['download_path'] =
@@ -99,9 +110,6 @@ if node[:platform] == 'ubuntu'
   default['golangci-lint']['sha256']        =
     '3a73aa7468087caa62673c8adea99b4e4dff846dc72707222db85f8679b40cbf'
 
-  default['gsutil']['download_path'] = 'https://storage.googleapis.com/pub/gsutil_4.54.tar.gz'
-  default['gsutil']['sha256']        = 'a6698479af8dc26e2ed809102e9e5d813f475bca44ce7007ed4e25ee79a3289c'
-
   default['helm']['download_path'] = 'https://get.helm.sh/helm-v3.5.2-linux-amd64.tar.gz'
   default['helm']['sha256']        = '01b317c506f8b6ad60b11b1dc3f093276bb703281cb1ae01132752253ec706a2'
 elsif node[:platform] == 'mac_os_x'
@@ -177,9 +185,6 @@ elsif node[:platform] == 'mac_os_x'
     'https://github.com/golangci/golangci-lint/releases/download/v1.39.0/golangci-lint-1.39.0-darwin-amd64.tar.gz'
   default['golangci-lint']['sha256']        =
     '7e9a47ab540aa3e8472fbf8120d28bed3b9d9cf625b955818e8bc69628d7187c'
-
-  default['gsutil']['download_path'] = 'https://storage.googleapis.com/pub/gsutil_4.54.tar.gz'
-  default['gsutil']['sha256']        = 'a6698479af8dc26e2ed809102e9e5d813f475bca44ce7007ed4e25ee79a3289c'
 
   default['helm']['download_path'] = 'https://get.helm.sh/helm-v3.5.2-darwin-amd64.tar.gz'
   default['helm']['sha256']        = '68040e9a2f147a92c2f66ce009069826df11f9d1e1c6b78c7457066080ad3229'

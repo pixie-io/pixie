@@ -1,9 +1,6 @@
 [submodule "chef/site-cookbooks/alternatives"]
 	path = chef/site-cookbooks/alternatives
 	url = https://github.com/vkhatri/chef-alternatives
-[submodule "chef/site-cookbooks/ark"]
-	path = chef/site-cookbooks/ark
-	url = https://github.com/chef-cookbooks/ark
 [submodule "chef/site-cookbooks/build-essential"]
 	path = chef/site-cookbooks/build-essential
 	url = https://github.com/chef-cookbooks/build-essential

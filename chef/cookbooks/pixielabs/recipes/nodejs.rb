@@ -10,7 +10,7 @@ remote_file '/tmp/nodejs.tar.gz' do
 end
 
 execute 'install_node' do
-   command 'tar -xvf /tmp/nodejs.tar.gz -C /opt/node --strip-components 1'
+   command 'tar xf /tmp/nodejs.tar.gz -C /opt/node --strip-components 1'
    action :run
  end
 

@@ -4,9 +4,11 @@ case node['platform']
 when 'mac_os_x'
   include_recipe 'pixielabs::mac_os_x'
   root_group = 'wheel'
+  user = node['current_user']
 else
   include_recipe 'pixielabs::linux'
   root_group = 'root'
+  user = 'root'
 end
 
 execute 'install_python_packages' do
@@ -24,14 +26,14 @@ execute 'install node packages' do
 end
 
 directory '/opt/pixielabs' do
-  owner 'root'
+  owner user
   group root_group
   mode '0755'
   action :create
 end
 
 directory '/opt/pixielabs/bin' do
-  owner 'root'
+  owner user
   group root_group
   mode '0755'
   action :create
@@ -39,7 +41,7 @@ end
 
 template '/opt/pixielabs/plenv.inc' do
   source 'plenv.inc.erb'
-  owner 'root'
+  owner user
   group root_group
   mode '0644'
   action :create
@@ -47,7 +49,7 @@ end
 
 template '/opt/pixielabs/bin/tot' do
   source 'tot.erb'
-  owner 'root'
+  owner user
   group root_group
   mode '0755'
   action :create
@@ -71,11 +73,20 @@ remote_file '/opt/pixielabs/bin/sops' do
   checksum node['sops']['sha256']
 end
 
-ark 'shellcheck' do
-  url node['shellcheck']['download_path']
-  has_binaries ['shellcheck']
+remote_file '/tmp/shellcheck.tar.xz' do
+  source node['shellcheck']['download_path']
+  mode 0755
   checksum node['shellcheck']['sha256']
 end
+
+execute 'install shellcheck' do
+  command 'tar xf /tmp/shellcheck.tar.xz -C /opt/pixielabs/bin --strip-components 1'
+end
+
+file '/tmp/shellcheck.tar.xz' do
+  action :delete
+end
+
 
 remote_file '/opt/pixielabs/bin/prototool' do
   source node['prototool']['download_path']
@@ -108,7 +119,7 @@ remote_file '/tmp/golangci-lint.tar.gz' do
 end
 
 execute 'install golangci-lint' do
-  command 'tar xfz /tmp/golangci-lint.tar.gz -C /opt/pixielabs/bin --strip-components 1'
+  command 'tar xf /tmp/golangci-lint.tar.gz -C /opt/pixielabs/bin --strip-components 1'
 end
 
 file '/tmp/golangci-lint.tar.gz' do
@@ -122,7 +133,7 @@ remote_file '/tmp/gsutil.tar.gz' do
 end
 
 execute 'install gsutil' do
-  command 'tar xfz /tmp/gsutil.tar.gz -C /opt'
+  command 'tar xf /tmp/gsutil.tar.gz -C /opt'
 end
 
 file '/tmp/gsutil.tar.gz' do
@@ -135,15 +146,8 @@ remote_file '/tmp/helm.tar.gz' do
   checksum node['helm']['sha256']
 end
 
-directory '/tmp/helm' do
-  owner 'root'
-  group root_group
-  mode '0755'
-  action :create
-end
-
 execute 'install helm' do
-  command 'tar xfz /tmp/helm.tar.gz -C /opt/pixielabs/bin --strip-components 1'
+  command 'tar xf /tmp/helm.tar.gz -C /opt/pixielabs/bin --strip-components 1'
 end
 
 file '/tmp/helm.tar.gz' do

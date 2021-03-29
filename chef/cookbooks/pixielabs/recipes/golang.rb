@@ -15,7 +15,7 @@ remote_file '/tmp/golang.tar.gz' do
 end
 
 execute 'install_golang' do
-   command 'tar -xvf /tmp/golang.tar.gz -C /opt/golang --strip-components 1'
+   command 'tar xf /tmp/golang.tar.gz -C /opt/golang --strip-components 1'
    action :run
  end
 
