@@ -67,7 +67,7 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   explicit PerfProfileConnector(std::string_view source_name);
 
-  void ProcessBPFStackTraces(ConnectorContext* ctx, DataTable* data_table);
+  Status ProcessBPFStackTraces(ConnectorContext* ctx, DataTable* data_table);
 
   // Read BPF data structures, build & incorporate records to the table.
   void CreateRecords(const uint64_t timestamp_ns, ebpf::BPFStackTable* stack_traces,

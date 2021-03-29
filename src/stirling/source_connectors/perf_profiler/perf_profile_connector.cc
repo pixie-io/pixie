@@ -100,27 +100,23 @@ std::string PerfProfileConnector::FoldedStackTraceString(ebpf::BPFStackTable* st
   return stack_trace_str;
 }
 
-void PerfProfileConnector::ProcessBPFStackTraces(ConnectorContext* ctx, DataTable* data_table) {
+Status PerfProfileConnector::ProcessBPFStackTraces(ConnectorContext* ctx, DataTable* data_table) {
   auto& histo = read_and_clear_count_ % 2 == 0 ? histogram_a_ : histogram_b_;
   auto& stack_traces = read_and_clear_count_ % 2 == 0 ? stack_traces_a_ : stack_traces_b_;
 
   ++read_and_clear_count_;
 
-  // TODO(jps): stop tracking these status codes, or, write a wrapper for PL_RETURN_IF_ERROR.
   uint64_t timestamp_ns;
-  const ebpf::StatusTuple rd_status = profiler_state_->get_value(kTimeStampIdx, timestamp_ns);
-  LOG_IF(ERROR, !rd_status.ok()) << "Error reading profiler_state_";
-
+  PL_RETURN_IF_ERROR(profiler_state_->get_value(kTimeStampIdx, timestamp_ns));
   timestamp_ns += ClockRealTimeOffset();
 
   // Read BPF stack traces & histogram, build records, incorporate records to data table.
   CreateRecords(timestamp_ns, stack_traces.get(), histo.get(), ctx, data_table);
 
-  // update the "read & clear count":
-  // TODO(jps): do we really need to track these status codes?
-  const ebpf::StatusTuple wr_status =
-      profiler_state_->update_value(kUserReadAndClearCountIdx, read_and_clear_count_);
-  LOG_IF(ERROR, !wr_status.ok()) << "Error writing profiler_state_";
+  // Update the "read & clear count":
+  PL_RETURN_IF_ERROR(
+      profiler_state_->update_value(kUserReadAndClearCountIdx, read_and_clear_count_));
+  return Status::OK();
 }
 
 void PerfProfileConnector::CleanupSymbolCaches(const absl::flat_hash_set<md::UPID>& deleted_upids) {
@@ -140,7 +136,6 @@ void PerfProfileConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
 
   uint64_t push_count = 0;
 
-  // TODO(jps): stop tracking these status codes, or, write a wrapper for PL_RETURN_IF_ERROR.
   const ebpf::StatusTuple rd_status = profiler_state_->get_value(kBPFPushCountIdx, push_count);
   LOG_IF(ERROR, !rd_status.ok()) << "Error reading profiler_state_";
 
@@ -152,7 +147,8 @@ void PerfProfileConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
     // After (and in steady state), we expect push_count==read_and_clear_count_.
     const uint64_t expected_push_count = 1 + read_and_clear_count_;
     DCHECK_EQ(push_count, expected_push_count) << "stack trace handshake protocol out of sync.";
-    ProcessBPFStackTraces(ctx, data_table);
+    const Status s = ProcessBPFStackTraces(ctx, data_table);
+    LOG_IF(ERROR, !s.ok()) << "Error in ProcessBPFStackTraces().";
   }
   DCHECK_EQ(push_count, read_and_clear_count_) << "stack trace handshake protocol out of sync.";
 
