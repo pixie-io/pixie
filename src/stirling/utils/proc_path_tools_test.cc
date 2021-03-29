@@ -52,7 +52,7 @@ TEST(FilePathResolver, ResolveNonContainerPaths) {
 //    `--pid=host -v /:/host -v /sys:/sys --env PL_HOST_PATH=/host`
 #ifdef CONTAINER_ENV
 TEST(FilePathResolver, ResolveContainerPaths) {
-  BusyBoxContainer container;
+  SleepContainer container;
   ASSERT_OK(container.Run());
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<FilePathResolver> fp_resolver,

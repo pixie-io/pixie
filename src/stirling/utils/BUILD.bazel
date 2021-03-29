@@ -71,8 +71,6 @@ pl_cc_test(
 # Meant to be run directly on the OS (not inside a container).
 pl_cc_test(
     name = "proc_path_tools_test",
-    # Set timeout to moderate because this test downloads a container image.
-    timeout = "moderate",
     srcs = ["proc_path_tools_test.cc"],
     deps = [
         ":cc_library",
@@ -86,10 +84,8 @@ pl_cc_test(
 # Also works directly on the OS, but should also be run inside a container for coverage purposes.
 pl_cc_test(
     name = "proc_path_tools_container_test",
-    # Set timeout to moderate because this test downloads a container image.
-    timeout = "moderate",
     srcs = ["proc_path_tools_test.cc"],
-    data = ["//src/common/testing/test_utils:busybox_container_image.tar"],
+    data = ["//src/common/testing/test_utils:sleep_container_image.tar"],
     defines = [
         "CONTAINER_ENV",
     ],

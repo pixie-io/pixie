@@ -8,7 +8,7 @@
 
 namespace pl {
 
-// TODO(oazizi): Remove all uses to this container in favor of BusyBoxContainer below.
+// TODO(oazizi): Remove all uses to this container in favor of SleepContainer below.
 class DummyTestContainer : public ContainerRunner {
  public:
   DummyTestContainer() : ContainerRunner(kImage, kInstanceNamePrefix, kReadyMessage) {}
@@ -20,16 +20,16 @@ class DummyTestContainer : public ContainerRunner {
   static constexpr std::string_view kReadyMessage = "listening on port: 8080";
 };
 
-class BusyBoxContainer : public ContainerRunner {
+class SleepContainer : public ContainerRunner {
  public:
-  BusyBoxContainer()
+  SleepContainer()
       : ContainerRunner(pl::testing::BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix,
                         kReadyMessage) {}
 
  private:
   static constexpr std::string_view kBazelImageTar =
-      "src/common/testing/test_utils/busybox_container_image.tar";
-  static constexpr std::string_view kInstanceNamePrefix = "busybox_container";
+      "src/common/testing/test_utils/sleep_container_image.tar";
+  static constexpr std::string_view kInstanceNamePrefix = "sleep_container";
   static constexpr std::string_view kReadyMessage = "started";
 };
 

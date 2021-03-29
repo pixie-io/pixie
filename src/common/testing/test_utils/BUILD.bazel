@@ -13,7 +13,7 @@ pl_cc_library(
 )
 
 container_image(
-    name = "busybox_container_image",
+    name = "sleep_container_image",
     base = "@distroless_busybox//image",
     cmd = [
         "-c",
