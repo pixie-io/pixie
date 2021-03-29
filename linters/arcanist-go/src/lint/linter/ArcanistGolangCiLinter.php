@@ -34,6 +34,10 @@ final class ArcanistGolangCiLinter extends ArcanistExternalLinter {
     return array('--out-format=checkstyle');
   }
 
+  protected function getPathArgumentForLinterFuture($path) {
+    return dirname($path);
+  }
+
   protected function buildFutures(array $paths) {
     $executable = $this->getExecutableCommand();
 
@@ -65,6 +69,9 @@ final class ArcanistGolangCiLinter extends ArcanistExternalLinter {
     $messages = array();
 
     foreach ($files as $file) {
+      if ($file->getAttribute('name') != $path) {
+        continue;
+      }
       foreach ($file->childNodes as $child) {
         if ($child->nodeType == XML_TEXT_NODE) {
           continue;
