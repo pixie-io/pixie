@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/cockroachdb/pebble"
-	"golang.org/x/sync/errgroup"
 )
 
 const ttlPrefix = "___ttl___"
@@ -124,22 +123,6 @@ func (w *DataStore) GetWithRange(from string, to string) ([]string, [][]byte, er
 // GetWithPrefix gets all keys and values with the given prefix.
 func (w *DataStore) GetWithPrefix(prefix string) ([]string, [][]byte, error) {
 	return w.GetWithRange(prefix, string(keyUpperBound([]byte(prefix))))
-}
-
-// GetAll gets all values for the given keys.
-func (w *DataStore) GetAll(keys []string) ([][]byte, error) {
-	vals := make([][]byte, len(keys))
-	g := new(errgroup.Group)
-	for i := 0; i < len(keys); i++ {
-		i := i // Closure for goroutine
-		g.Go(func() error {
-			v, err := w.Get(keys[i])
-			vals[i] = v
-			return err
-		})
-	}
-	err := g.Wait()
-	return vals, err
 }
 
 // Delete deletes the value for the given key from the datastore.

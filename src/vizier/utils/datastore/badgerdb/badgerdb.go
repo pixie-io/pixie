@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/dgraph-io/badger/v3"
-	"golang.org/x/sync/errgroup"
 )
 
 // DataStore wraps a badgerdb datastore.
@@ -36,22 +35,6 @@ func (w *DataStore) Get(key string) ([]byte, error) {
 	}
 
 	return item.ValueCopy(nil)
-}
-
-// GetAll gets all values for the given keys.
-func (w *DataStore) GetAll(keys []string) ([][]byte, error) {
-	vals := make([][]byte, len(keys))
-	g := errgroup.Group{}
-	for i := 0; i < len(keys); i++ {
-		i := i // Closure for goroutine
-		g.Go(func() error {
-			v, err := w.Get(keys[i])
-			vals[i] = v
-			return err
-		})
-	}
-	err := g.Wait()
-	return vals, err
 }
 
 // GetWithRange gets all keys and values within the given range.

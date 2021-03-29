@@ -7,6 +7,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
+	"golang.org/x/sync/errgroup"
 
 	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/utils"
@@ -53,27 +54,31 @@ func getTracepointTTLKey(tracepointID uuid.UUID) string {
 
 // GetTracepointsWithNames gets which tracepoint is associated with the given name.
 func (t *Datastore) GetTracepointsWithNames(tracepointNames []string) ([]*uuid.UUID, error) {
-	keys := make([]string, len(tracepointNames))
-	for i, n := range tracepointNames {
-		keys[i] = getTracepointWithNameKey(n)
-	}
-
-	resp, err := t.ds.GetAll(keys)
-	if err != nil {
-		return nil, err
-	}
-
-	ids := make([]*uuid.UUID, len(keys))
-	for i, r := range resp {
-		if r != nil {
-			uuidPB := &uuidpb.UUID{}
-			err = proto.Unmarshal(r, uuidPB)
+	eg := errgroup.Group{}
+	ids := make([]*uuid.UUID, len(tracepointNames))
+	for i := 0; i < len(tracepointNames); i++ {
+		i := i // Closure for goroutine
+		eg.Go(func() error {
+			val, err := t.ds.Get(getTracepointWithNameKey(tracepointNames[i]))
 			if err != nil {
-				return nil, err
+				return err
+			}
+			if val == nil {
+				return nil
+			}
+			uuidPB := &uuidpb.UUID{}
+			err = proto.Unmarshal(val, uuidPB)
+			if err != nil {
+				return err
 			}
 			id := utils.UUIDFromProtoOrNil(uuidPB)
 			ids[i] = &id
-		}
+			return nil
+		})
+	}
+	err := eg.Wait()
+	if err != nil {
+		return nil, err
 	}
 
 	return ids, nil
@@ -145,26 +150,33 @@ func (t *Datastore) GetTracepoints() ([]*storepb.TracepointInfo, error) {
 
 // GetTracepointsForIDs gets all of the tracepoints with the given it.ds.
 func (t *Datastore) GetTracepointsForIDs(ids []uuid.UUID) ([]*storepb.TracepointInfo, error) {
-	keys := make([]string, len(ids))
-	for i, id := range ids {
-		keys[i] = getTracepointKey(id)
+	eg := errgroup.Group{}
+	tracepoints := make([]*storepb.TracepointInfo, len(ids))
+	for i := 0; i < len(ids); i++ {
+		i := i // Closure for goroutine
+		eg.Go(func() error {
+			val, err := t.ds.Get(getTracepointKey(ids[i]))
+			if err != nil {
+				return err
+			}
+			if val == nil {
+				return nil
+			}
+			tp := &storepb.TracepointInfo{}
+			err = proto.Unmarshal(val, tp)
+			if err != nil {
+				return err
+			}
+			tracepoints[i] = tp
+			return nil
+		})
 	}
 
-	vals, err := t.ds.GetAll(keys)
+	err := eg.Wait()
 	if err != nil {
 		return nil, err
 	}
 
-	tracepoints := make([]*storepb.TracepointInfo, len(vals))
-	for i, val := range vals {
-		if val == nil {
-			tracepoints[i] = nil
-			continue
-		}
-		pb := &storepb.TracepointInfo{}
-		proto.Unmarshal(val, pb)
-		tracepoints[i] = pb
-	}
 	return tracepoints, nil
 }
 
