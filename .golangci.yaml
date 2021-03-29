@@ -1,0 +1,32 @@
+---
+output:
+  sort-results: true
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+linters:
+  enable:
+  - deadcode
+  - gosimple
+  - ineffassign
+  - staticcheck
+  - structcheck
+  - typecheck
+  - unused
+  - varcheck
+  disable:
+  - errcheck
+  # We run goimports which includes gofmt.
+  - gofmt
+  # The following linters are run separately by arcanist at the moment.
+  # This is because we have autofix hooks for these linters.
+  - goimports
+  - golint
+  - govet
+  disable-all: false
+
+linters-settings:
+  goimports:
+    local-prefixes: pixielabs.ai

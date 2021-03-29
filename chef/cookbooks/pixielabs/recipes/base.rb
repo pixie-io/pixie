@@ -101,6 +101,20 @@ remote_file '/opt/pixielabs/bin/lsif-go' do
   checksum node['lsif-go']['sha256']
 end
 
+remote_file '/tmp/golangci-lint.tar.gz' do
+  source node['golangci-lint']['download_path']
+  mode 0755
+  checksum node['golangci-lint']['sha256']
+end
+
+execute 'install golangci-lint' do
+  command 'tar xfz /tmp/golangci-lint.tar.gz -C /opt/pixielabs/bin --strip-components 1'
+end
+
+file '/tmp/golangci-lint.tar.gz' do
+  action :delete
+end
+
 remote_file '/tmp/gsutil.tar.gz' do
   source node['gsutil']['download_path']
   mode 0755

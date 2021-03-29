@@ -51,7 +51,7 @@ func main() {
 	clientset := k8s.GetClientset(kubeConfig)
 
 	imagePullCreds := ""
-	if strings.Index(version, "-") != -1 { // Check if the version is an rc, if so, read and include the image pull secrets.
+	if strings.Contains(version, "-") { // Check if the version is an rc, if so, read and include the image pull secrets.
 		secret := k8s.GetSecret(clientset, "plc", "vizier-image-secret")
 		if secret != nil {
 			imagePullCreds = string(secret.Data["vizier_image_secret.json"])

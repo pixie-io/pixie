@@ -91,8 +91,13 @@ if node[:platform] == 'ubuntu'
 
   default['lsif-go']['download_path'] =
     'https://github.com/sourcegraph/lsif-go/releases/download/v1.3.0/src_linux_amd64'
-  default['lsif-go']['sha256']            =
+  default['lsif-go']['sha256']        =
     '82eb998370b05d2d9c05664f7270599ddcef676c1d211274a5e04ffddf6ac024'
+
+  default['golangci-lint']['download_path'] =
+    'https://github.com/golangci/golangci-lint/releases/download/v1.39.0/golangci-lint-1.39.0-linux-amd64.tar.gz'
+  default['golangci-lint']['sha256']        =
+    '3a73aa7468087caa62673c8adea99b4e4dff846dc72707222db85f8679b40cbf'
 
   default['gsutil']['download_path'] = 'https://storage.googleapis.com/pub/gsutil_4.54.tar.gz'
   default['gsutil']['sha256']        = 'a6698479af8dc26e2ed809102e9e5d813f475bca44ce7007ed4e25ee79a3289c'
@@ -165,8 +170,13 @@ elsif node[:platform] == 'mac_os_x'
 
   default['lsif-go']['download_path'] =
     'https://github.com/sourcegraph/lsif-go/releases/download/v1.3.0/src_darwin_amd64'
-  default['lsif-go']['sha256']            =
+  default['lsif-go']['sha256']        =
     'a8ad2b7169763978a63605ac854473998729ba7c497dd39bed01b57a294bd32a'
+
+  default['golangci-lint']['download_path'] =
+    'https://github.com/golangci/golangci-lint/releases/download/v1.39.0/golangci-lint-1.39.0-darwin-amd64.tar.gz'
+  default['golangci-lint']['sha256']        =
+    '7e9a47ab540aa3e8472fbf8120d28bed3b9d9cf625b955818e8bc69628d7187c'
 
   default['gsutil']['download_path'] = 'https://storage.googleapis.com/pub/gsutil_4.54.tar.gz'
   default['gsutil']['sha256']        = 'a6698479af8dc26e2ed809102e9e5d813f475bca44ce7007ed4e25ee79a3289c'

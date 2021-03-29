@@ -13,6 +13,7 @@ phutil_register_library_map(array(
     'ArcanistGoImportsLinter' => 'src/lint/linter/ArcanistGoImportsLinter.php',
     'ArcanistGoTestResultParser' => 'src/unit/parser/ArcanistGoTestResultParser.php',
     'ArcanistGoVetLinter' => 'src/lint/linter/ArcanistGoVetLinter.php',
+    'ArcanistGolangCiLinter' => 'src/lint/linter/ArcanistGolangCiLinter.php',
     'GoTestEngine' => 'src/unit/engine/GoTestEngine.php',
   ),
   'function' => array(),
@@ -21,6 +22,7 @@ phutil_register_library_map(array(
     'ArcanistGoImportsLinter' => 'ArcanistExternalLinter',
     'ArcanistGoTestResultParser' => 'ArcanistTestResultParser',
     'ArcanistGoVetLinter' => 'ArcanistExternalLinter',
+    'ArcanistGolangCiLinter' => 'ArcanistExternalLinter',
     'GoTestEngine' => 'ArcanistUnitTestEngine',
   ),
 ));
