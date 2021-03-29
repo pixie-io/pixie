@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "src/shared/types/types.h"
+#include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/core/source_connector.h"
 #include "src/stirling/core/types.h"
@@ -44,7 +45,7 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   //
   // SymbolicStackTrace will serve as a key to the unique stack-trace-id (an integer) in Stirling.
   struct SymbolicStackTrace {
-    const md::UPID upid;
+    const struct upid_t upid;
     const std::string stack_trace_str;
 
     template <typename H>
@@ -52,11 +53,11 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
       return H::combine(std::move(h), s.upid, s.stack_trace_str);
     }
 
-    bool operator==(const SymbolicStackTrace& rhs) const {
-      if (rhs.upid != upid) {
+    friend bool operator==(const SymbolicStackTrace& lhs, const SymbolicStackTrace& rhs) {
+      if (lhs.upid != rhs.upid) {
         return false;
       }
-      return rhs.stack_trace_str == stack_trace_str;
+      return lhs.stack_trace_str == rhs.stack_trace_str;
     }
   };
 
@@ -77,8 +78,7 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   uint64_t SymbolicStackTraceID(const SymbolicStackTrace& symbolic_stack_trace);
 
   StackTraceHisto AggregateStackTraces(ebpf::BPFStackTable* stack_traces,
-                                       ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo,
-                                       ConnectorContext* ctx);
+                                       ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo);
 
   std::string FoldedStackTraceString(ebpf::BPFStackTable* stack_traces,
                                      const stack_trace_key_t& key);
