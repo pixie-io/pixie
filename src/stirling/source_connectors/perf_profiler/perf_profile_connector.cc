@@ -64,8 +64,12 @@ std::string PerfProfileConnector::FoldedStackTraceString(ebpf::BPFStackTable* st
   std::string stack_trace_str;
   // TODO(oazizi): Add a stack_trace_str.reserve() heuristic.
 
+  // Clear the stack-traces map as we go along here; this has lower overhead
+  // compared to first reading the stack-traces map, then using clear_table_non_atomic().
+  constexpr bool kClearStackId = true;
+
   // Add user stack.
-  auto user_addrs = stack_traces->get_stack_addr(key.user_stack_id);
+  auto user_addrs = stack_traces->get_stack_addr(key.user_stack_id, kClearStackId);
   for (auto iter = user_addrs.rbegin(); iter != user_addrs.rend(); ++iter) {
     const auto& addr = *iter;
     if (addr == kSentinelAddr) {
@@ -80,7 +84,7 @@ std::string PerfProfileConnector::FoldedStackTraceString(ebpf::BPFStackTable* st
   }
 
   // Add kernel stack.
-  auto kernel_addrs = stack_traces->get_stack_addr(key.kernel_stack_id);
+  auto kernel_addrs = stack_traces->get_stack_addr(key.kernel_stack_id, kClearStackId);
   for (auto iter = kernel_addrs.rbegin(); iter != kernel_addrs.rend(); ++iter) {
     const auto& addr = *iter;
     stack_trace_str += kernel_symbol_cache_.LookupSym(stack_traces, addr);
@@ -92,12 +96,6 @@ std::string PerfProfileConnector::FoldedStackTraceString(ebpf::BPFStackTable* st
   if (!stack_trace_str.empty()) {
     stack_trace_str.pop_back();
   }
-
-  // Clear the stack-traces map as we go along here; this has lower overhead
-  // compared to first reading the stack-traces map, then using clear_table_non_atomic().
-  // TODO(jps): add an arg. to get_stack_addr() that *also* clears the stack-id.
-  stack_traces->clear_stack_id(key.user_stack_id);
-  stack_traces->clear_stack_id(key.kernel_stack_id);
 
   return stack_trace_str;
 }
