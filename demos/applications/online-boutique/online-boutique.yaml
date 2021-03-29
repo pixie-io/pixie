@@ -347,7 +347,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/google-samples/microservices-demo/productcatalogservice:v0.2.2
+        image: gcr.io/pl-pixies/demos/microservices-demo-app/productcatalogservice:profilerdemo
         ports:
         - containerPort: 3550
         env:
@@ -467,7 +467,7 @@ spec:
         - name: FRONTEND_ADDR
           value: "frontend:80"
         - name: USERS
-          value: "10"
+          value: "100"
         resources:
           requests:
             cpu: 300m
