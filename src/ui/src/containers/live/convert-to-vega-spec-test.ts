@@ -939,7 +939,7 @@ describe('vega chart', () => {
 
 describe('simple stacktraceFlameGraph', () => {
   const input = {
-    '@type': 'pixielabs.ai/pl.vispb.StacktraceFlameGraph',
+    '@type': 'pixielabs.ai/pl.vispb.StackTraceFlameGraph',
     stacktraceColumn: 'stacktraces',
     countColumn: 'counts',
     percentageColumn: 'percent',

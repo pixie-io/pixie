@@ -38,7 +38,7 @@ const VEGA_SCHEMA = '$schema';
 export const TIMESERIES_CHART_TYPE = 'pixielabs.ai/pl.vispb.TimeseriesChart';
 export const BAR_CHART_TYPE = 'pixielabs.ai/pl.vispb.BarChart';
 export const HISTOGRAM_CHART_TYPE = 'pixielabs.ai/pl.vispb.HistogramChart';
-export const FLAMEGRAPH_CHART_TYPE = 'pixielabs.ai/pl.vispb.StacktraceFlameGraph';
+export const FLAMEGRAPH_CHART_TYPE = 'pixielabs.ai/pl.vispb.StackTraceFlameGraph';
 
 export const COLOR_SCALE = 'color';
 const HOVER_LINE_OPACITY = 0.75;
@@ -1896,10 +1896,10 @@ function convertToStacktraceFlameGraph(
   display: StacktraceFlameGraphDisplay,
   source: string, theme: Theme): VegaSpecWithProps {
   if (!display.stacktraceColumn) {
-    throw new Error('StacktraceFlamegraph must have an entry for property stacktraceColumn');
+    throw new Error('StackTraceFlamegraph must have an entry for property stacktraceColumn');
   }
   if (!display.countColumn) {
-    throw new Error('StacktraceFlamegraph must have an entry for property countColumn');
+    throw new Error('StackTraceFlamegraph must have an entry for property countColumn');
   }
 
   const spec = { ...BASE_SPEC, style: 'cell' };
