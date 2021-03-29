@@ -334,7 +334,7 @@ class UProbeManager {
   ProcTracker proc_tracker_;
   LazyLoadedFPResolver fp_resolver_;
 
-  absl::flat_hash_set<upid_t, UPIDHashFn> upids_with_mmap_;
+  absl::flat_hash_set<upid_t> upids_with_mmap_;
 
   // Count the number of times PIDsToRescanForUProbes() has been called.
   int rescan_counter_ = 0;

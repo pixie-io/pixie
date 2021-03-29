@@ -103,7 +103,7 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   StackTraceIDMap stack_trace_ids_;
 
   // Cache of symbols.
-  absl::flat_hash_map<struct upid_t, SymbolCache, UPIDHashFn> upid_symbol_caches_;
+  absl::flat_hash_map<struct upid_t, SymbolCache> upid_symbol_caches_;
   SymbolCache kernel_symbol_cache_;
 
   // Keeps track of processes. Used to find destroyed processes on which to perform clean-up.

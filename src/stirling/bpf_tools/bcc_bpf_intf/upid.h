@@ -1,6 +1,7 @@
 #pragma once
 
 #ifdef __cplusplus
+#include <utility>
 #include "src/common/base/hash_utils.h"
 #endif
 
@@ -21,21 +22,15 @@ struct upid_t {
   uint64_t start_time_ticks;
 
 #ifdef __cplusplus
-  inline bool operator==(const upid_t& other) const {
-    return (tgid == other.tgid) && (start_time_ticks == other.start_time_ticks);
+  friend inline bool operator==(const upid_t& lhs, const upid_t& rhs) {
+    return (lhs.tgid == rhs.tgid) && (lhs.start_time_ticks == rhs.start_time_ticks);
   }
-#endif
-};
 
-#ifdef __cplusplus
-// Hash function required to use TableTabletCol as an unordered_map key.
-class UPIDHashFn {
- public:
-  inline size_t operator()(const struct upid_t& val) const {
-    size_t hash = 0;
-    hash = pl::HashCombine(hash, val.tgid);
-    hash = pl::HashCombine(hash, val.start_time_ticks);
-    return hash;
+  friend inline bool operator!=(const upid_t& lhs, const upid_t& rhs) { return !(lhs == rhs); }
+
+  template <typename H>
+  friend H AbslHashValue(H h, const upid_t& upid) {
+    return H::combine(std::move(h), upid.tgid, upid.start_time_ticks);
   }
-};
 #endif
+};
