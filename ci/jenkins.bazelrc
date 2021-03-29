@@ -15,7 +15,7 @@ build --verbose_failures
 test --verbose_failures
 
 # BES/Cache Setup
-build --bes_timeout=60s
+build --bes_timeout=120s
 build --experimental_inmemory_dotd_files
 build --experimental_inmemory_jdeps_files
 build --keep_backend_build_event_connections_alive=false
@@ -25,7 +25,7 @@ build --remote_retries=2
 build --remote_timeout=3600
 
 
-test --bes_timeout=60s
+test --bes_timeout=120s
 test --experimental_inmemory_dotd_files
 test --experimental_inmemory_jdeps_files
 test --remote_download_toplevel
