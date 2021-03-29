@@ -3366,8 +3366,8 @@ go_repository(
 go_repository(
     name = "com_github_tidwall_pretty",
     importpath = "github.com/tidwall/pretty",
-    sum = "h1:HsD+QiTn7sK6flMKIvNmpqz1qrpP3Ps6jOKIKMooyg4=",
-    version = "v1.0.0",
+    sum = "h1:K3hMW5epkdAVwibsQEfR/7Zj0Qgt4DxtNumTq/VloO8=",
+    version = "v1.1.0",
 )
 
 go_repository(
@@ -3435,6 +3435,13 @@ go_repository(
 )
 
 go_repository(
+    name = "com_github_tidwall_buntdb",
+    importpath = "github.com/tidwall/buntdb",
+    sum = "h1:+s5TqjuAfo6IdMa8boDkCx5PzT2mlP5AwgNN4yxJba8=",
+    version = "v1.2.1",
+)
+
+go_repository(
     name = "com_github_dgraph_io_ristretto",
     importpath = "github.com/dgraph-io/ristretto",
     sum = "h1:eQYOG6A4td1tht0NdJB9Ls6DsXRGb2Ft6X9REU/MbbE=",
@@ -3488,4 +3495,53 @@ go_repository(
     importpath = "golang.org/x/arch",
     sum = "h1:XmKBi9R6duxOB3lfc72wyrwiOY7X2Jl1wuI+RFOyMDE=",
     version = "v0.0.0-20201008161808-52c3e6f60cff",
+)
+
+go_repository(
+    name = "com_github_tidwall_btree",
+    importpath = "github.com/tidwall/btree",
+    sum = "h1:aLwwJlG+InuFzdAPuBf9YCAR1LvSQ9zhC5aorFPlIPs=",
+    version = "v0.4.2",
+)
+
+go_repository(
+    name = "com_github_tidwall_gjson",
+    importpath = "github.com/tidwall/gjson",
+    sum = "h1:19cchw8FOxkG5mdLRkGf9jqIqEyqdZhPqW60XfyFxk8=",
+    version = "v1.7.4",
+)
+
+go_repository(
+    name = "com_github_tidwall_grect",
+    importpath = "github.com/tidwall/grect",
+    sum = "h1:+kMEkxhoqB7rniVXzMEIA66XwU07STgINqxh+qVIndY=",
+    version = "v0.1.1",
+)
+
+go_repository(
+    name = "com_github_tidwall_match",
+    importpath = "github.com/tidwall/match",
+    sum = "h1:FQUVvBImDutD8wJLN6c5eMzWtjgONK9MwIBCOrUJKeE=",
+    version = "v1.0.3",
+)
+
+go_repository(
+    name = "com_github_tidwall_rtred",
+    importpath = "github.com/tidwall/rtred",
+    sum = "h1:exmoQtOLvDoO8ud++6LwVsAMTu0KPzLTUrMln8u1yu8=",
+    version = "v0.1.2",
+)
+
+go_repository(
+    name = "com_github_tidwall_rtree",
+    importpath = "github.com/tidwall/rtree",
+    sum = "h1:+NL1GDIUOKxVfbp2KoJQD9cTQ6dyP2co9q4yzmT9FZo=",
+    version = "v0.0.0-20180113144539-6cd427091e0e",
+)
+
+go_repository(
+    name = "com_github_tidwall_tinyqueue",
+    importpath = "github.com/tidwall/tinyqueue",
+    sum = "h1:SpNEvEggbpyN5DIReaJ2/1ndroY8iyEGxPYxoSaymYE=",
+    version = "v0.1.1",
 )
