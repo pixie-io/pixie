@@ -129,7 +129,8 @@ type VizierInfo interface {
 	GetJob(string) (*batchv1.Job, error)
 	GetClusterUID() (string, error)
 	UpdateClusterID(string) error
-	GetPodLogs(string, bool, string) (string, error)
+	GetVizierPodLogs(string, bool, string) (string, error)
+	GetVizierPods() ([]*vizierpb.VizierPodStatus, []*vizierpb.VizierPodStatus, error)
 }
 
 // VizierHealthChecker is the interface that gets information on health of a Vizier.
@@ -477,27 +478,10 @@ func (s *Bridge) sendPTStatusMessage(reqID string, code codes.Code, message stri
 	}
 }
 
-func (s *Bridge) handleDebugLogRequest(msg *cvmsgspb.C2VAPIStreamRequest) error {
-	reqID := msg.RequestID
+func (s *Bridge) sendDebugStreamResponse(reqID string, resps []*cvmsgspb.V2CAPIStreamResponse) error {
 	topic := fmt.Sprintf("v2c.reply-%s", reqID)
-	debugReq := msg.GetDebugLogReq()
 
-	logs, err := s.vzInfo.GetPodLogs(debugReq.PodName, debugReq.Previous, debugReq.Container)
-	if err != nil {
-		s.sendPTStatusMessage(reqID, codes.NotFound, err.Error())
-		return err
-	}
-
-	i := 0
-	for i*logChunkSize <= len(logs) {
-		resp := &cvmsgspb.V2CAPIStreamResponse{
-			RequestID: reqID,
-			Msg: &cvmsgspb.V2CAPIStreamResponse_DebugLogResp{
-				DebugLogResp: &vizierpb.DebugLogResponse{
-					Data: logs[i*logChunkSize : int(math.Min(float64(len(logs)), float64((i+1)*logChunkSize)))],
-				},
-			},
-		}
+	for _, resp := range resps {
 		// Wrap message in V2C message.
 		reqAnyMsg, err := types.MarshalAny(resp)
 		if err != nil {
@@ -517,11 +501,66 @@ func (s *Bridge) handleDebugLogRequest(msg *cvmsgspb.C2VAPIStreamRequest) error 
 		if err != nil {
 			return err
 		}
-		i++
 	}
 
 	s.sendPTStatusMessage(reqID, codes.OK, "")
 	return nil
+}
+
+func (s *Bridge) handleDebugLogRequest(reqID string, req *vizierpb.DebugLogRequest) error {
+	if req == nil {
+		err := status.Errorf(codes.Internal, "DebugLogRequest is unexpectedly nil")
+		s.sendPTStatusMessage(reqID, codes.Internal, err.Error())
+		return err
+	}
+
+	logs, err := s.vzInfo.GetVizierPodLogs(req.PodName, req.Previous, req.Container)
+	if err != nil {
+		s.sendPTStatusMessage(reqID, codes.NotFound, err.Error())
+		return err
+	}
+
+	var resps []*cvmsgspb.V2CAPIStreamResponse
+	i := 0
+	for i*logChunkSize <= len(logs) {
+		resps = append(resps, &cvmsgspb.V2CAPIStreamResponse{
+			RequestID: reqID,
+			Msg: &cvmsgspb.V2CAPIStreamResponse_DebugLogResp{
+				DebugLogResp: &vizierpb.DebugLogResponse{
+					Data: logs[i*logChunkSize : int(math.Min(float64(len(logs)), float64((i+1)*logChunkSize)))],
+				},
+			},
+		})
+		i++
+	}
+
+	return s.sendDebugStreamResponse(reqID, resps)
+}
+
+func (s *Bridge) handleDebugPodsRequest(reqID string, req *vizierpb.DebugPodsRequest) error {
+	if req == nil {
+		err := status.Errorf(codes.Internal, "DebugPodsRequest is unexpectedly nil")
+		s.sendPTStatusMessage(reqID, codes.Internal, err.Error())
+		return err
+	}
+
+	ctrlPods, dataPods, err := s.vzInfo.GetVizierPods()
+	if err != nil {
+		return err
+	}
+
+	resps := []*cvmsgspb.V2CAPIStreamResponse{
+		&cvmsgspb.V2CAPIStreamResponse{
+			RequestID: reqID,
+			Msg: &cvmsgspb.V2CAPIStreamResponse_DebugPodsResp{
+				DebugPodsResp: &vizierpb.DebugPodsResponse{
+					ControlPlanePods: ctrlPods,
+					DataPlanePods:    dataPods,
+				},
+			},
+		},
+	}
+	return s.sendDebugStreamResponse(reqID, resps)
 }
 
 func (s *Bridge) doRegistrationHandshake(stream vzconnpb.VZConnService_NATSBridgeClient) error {
@@ -824,9 +863,15 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 				}
 				switch pb.Msg.(type) {
 				case *cvmsgspb.C2VAPIStreamRequest_DebugLogReq:
-					err := s.handleDebugLogRequest(pb)
+					err := s.handleDebugLogRequest(pb.RequestID, pb.GetDebugLogReq())
 					if err != nil {
 						log.WithError(err).Error("Could not handle debug log request")
+					}
+					continue
+				case *cvmsgspb.C2VAPIStreamRequest_DebugPodsReq:
+					err := s.handleDebugPodsRequest(pb.RequestID, pb.GetDebugPodsReq())
+					if err != nil {
+						log.WithError(err).Error("Could not handle debug pods request")
 					}
 					continue
 				default:
@@ -1015,7 +1060,7 @@ func (s *Bridge) currentStatus() cvmsgspb.VizierStatus {
 
 // DebugLog is the GRPC stream method to fetch debug logs from vizier.
 func (s *Bridge) DebugLog(req *vizierpb.DebugLogRequest, srv vizierpb.VizierDebugService_DebugLogServer) error {
-	logs, err := s.vzInfo.GetPodLogs(req.PodName, req.Previous, req.Container)
+	logs, err := s.vzInfo.GetVizierPodLogs(req.PodName, req.Previous, req.Container)
 	if err != nil {
 		return err
 	}
@@ -1034,5 +1079,13 @@ func (s *Bridge) DebugLog(req *vizierpb.DebugLogRequest, srv vizierpb.VizierDebu
 
 // DebugPods is the GRPC method to fetch the list of Vizier pods (and statuses) from a cluster.
 func (s *Bridge) DebugPods(req *vizierpb.DebugPodsRequest, srv vizierpb.VizierDebugService_DebugPodsServer) error {
-	return status.Errorf(codes.Unimplemented, "method DebugPods not implemented")
+	ctrlPods, dataPods, err := s.vzInfo.GetVizierPods()
+	if err != nil {
+		return err
+	}
+	srv.Send(&vizierpb.DebugPodsResponse{
+		ControlPlanePods: ctrlPods,
+		DataPlanePods:    dataPods,
+	})
+	return nil
 }

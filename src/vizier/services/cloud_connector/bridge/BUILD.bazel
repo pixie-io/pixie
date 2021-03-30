@@ -57,6 +57,7 @@ go_test(
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
         "//src/utils:go_default_library",
         "//src/utils/testingutils:go_default_library",
+        "//src/vizier/vizierpb:vizier_pl_go_proto",
         "@com_github_gofrs_uuid//:go_default_library",
         "@com_github_gogo_protobuf//proto:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",

@@ -25,6 +25,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/bridge"
+	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
 const bufSize = 1024 * 1024
@@ -190,8 +191,22 @@ func (f *FakeVZInfo) UpdateClusterID(string) error {
 	return nil
 }
 
-func (f *FakeVZInfo) GetPodLogs(string, bool, string) (string, error) {
+func (f *FakeVZInfo) GetVizierPodLogs(string, bool, string) (string, error) {
 	return "fake log", nil
+}
+
+func (f *FakeVZInfo) GetVizierPods() ([]*vizierpb.VizierPodStatus, []*vizierpb.VizierPodStatus, error) {
+	fakeControlPlane := []*vizierpb.VizierPodStatus{
+		&vizierpb.VizierPodStatus{
+			Name: "A pod",
+		},
+	}
+	fakeAgents := []*vizierpb.VizierPodStatus{
+		&vizierpb.VizierPodStatus{
+			Name: "Another pod",
+		},
+	}
+	return fakeAgents, fakeControlPlane, nil
 }
 
 type testState struct {

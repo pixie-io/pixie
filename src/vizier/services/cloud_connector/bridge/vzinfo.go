@@ -27,6 +27,7 @@ import (
 	protoutils "pixielabs.ai/pixielabs/src/shared/k8s"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	version "pixielabs.ai/pixielabs/src/shared/version/go"
+	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
 // TODO(michelle): Make namespace a flag that can be passed in.
@@ -190,7 +191,7 @@ func (v *K8sVizierInfo) GetClusterUID() (string, error) {
 	return string(ksNS.UID), nil
 }
 
-const nanosPerSecond = int64(1000 * 1000)
+const nanosPerSecond = int64(1000 * 1000 * 1000)
 
 func nanosToTimestampProto(nanos int64) *types.Timestamp {
 	seconds := nanos / nanosPerSecond
@@ -201,14 +202,117 @@ func nanosToTimestampProto(nanos int64) *types.Timestamp {
 	}
 }
 
-// GetPodLogs gets the k8s logs for the pod with the given name.
-func (v *K8sVizierInfo) GetPodLogs(podName string, previous bool, container string) (string, error) {
+// GetVizierPodLogs gets the k8s logs for the Vizier pod with the given name.
+func (v *K8sVizierInfo) GetVizierPodLogs(podName string, previous bool, container string) (string, error) {
 	resp := v.clientset.CoreV1().Pods(plNamespace).GetLogs(podName, &corev1.PodLogOptions{Previous: previous, Container: container}).Do(context.Background())
 	rawResp, err := resp.Raw()
 	if err != nil {
 		return "", err
 	}
 	return string(rawResp), nil
+}
+
+func (v *K8sVizierInfo) toVizierPodStatus(p *corev1.Pod) (*vizierpb.VizierPodStatus, error) {
+	podPb, err := protoutils.PodToProto(p)
+	if err != nil {
+		return nil, err
+	}
+
+	status := metadatapb.PHASE_UNKNOWN
+	msg := ""
+	reason := ""
+	containers := make([]*metadatapb.ContainerStatus, 0)
+	if podPb.Status != nil {
+		status = podPb.Status.Phase
+		msg = podPb.Status.Message
+		reason = podPb.Status.Reason
+		for _, c := range podPb.Status.ContainerStatuses {
+			containers = append(containers, &metadatapb.ContainerStatus{
+				Name:             c.Name,
+				Message:          c.Message,
+				Reason:           c.Reason,
+				ContainerState:   c.ContainerState,
+				StartTimestampNS: c.StartTimestampNS,
+				StopTimestampNS:  c.StopTimestampNS,
+			})
+		}
+	}
+	name := podPb.Metadata.Name
+	ns := plNamespace
+	events := make([]*metadatapb.K8SEvent, 0)
+
+	eventsInterface := v.clientset.CoreV1().Events(plNamespace)
+	selector := eventsInterface.GetFieldSelector(&name, &ns, nil, nil)
+	options := metav1.ListOptions{FieldSelector: selector.String()}
+	evs, err := eventsInterface.List(context.Background(), options)
+	if err != nil {
+		return nil, err
+	}
+
+	// Limit to last 5 events.
+	start := len(evs.Items) - 5
+	if start < 0 {
+		start = 0
+	}
+	end := len(evs.Items)
+
+	for start < end {
+		e := evs.Items[start]
+		events = append(events, &metadatapb.K8SEvent{
+			Message:   e.Message,
+			FirstTime: nanosToTimestampProto(e.FirstTimestamp.UnixNano()),
+			LastTime:  nanosToTimestampProto(e.LastTimestamp.UnixNano()),
+		})
+		start++
+	}
+
+	return &vizierpb.VizierPodStatus{
+		Name: name,
+		Status: &metadatapb.PodStatus{
+			Phase:             status,
+			Message:           msg,
+			Reason:            reason,
+			ContainerStatuses: containers,
+			CreatedAt:         nanosToTimestampProto(podPb.Metadata.CreationTimestampNS),
+			Events:            events,
+		},
+	}, nil
+}
+
+// GetVizierPods gets the Vizier pods and their statuses.
+func (v *K8sVizierInfo) GetVizierPods() ([]*vizierpb.VizierPodStatus, []*vizierpb.VizierPodStatus, error) {
+	// Get only control-plane pods.
+	rawControlPodsList, err := v.clientset.CoreV1().Pods(plNamespace).List(context.Background(), metav1.ListOptions{
+		LabelSelector: "plane=control",
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+	// Get only data-plane pods.
+	rawDataPodsList, err := v.clientset.CoreV1().Pods(plNamespace).List(context.Background(), metav1.ListOptions{
+		LabelSelector: "plane=data",
+	})
+
+	var controlPods []*vizierpb.VizierPodStatus
+	var dataPods []*vizierpb.VizierPodStatus
+
+	for _, rawPod := range rawControlPodsList.Items {
+		pod, err := v.toVizierPodStatus(&rawPod)
+		if err != nil {
+			return nil, nil, err
+		}
+		controlPods = append(controlPods, pod)
+	}
+
+	for _, rawPod := range rawDataPodsList.Items {
+		pod, err := v.toVizierPodStatus(&rawPod)
+		if err != nil {
+			return nil, nil, err
+		}
+		dataPods = append(dataPods, pod)
+	}
+
+	return controlPods, dataPods, err
 }
 
 // UpdateK8sState gets the relevant state of the cluster, such as pod statuses, at the current moment in time.
