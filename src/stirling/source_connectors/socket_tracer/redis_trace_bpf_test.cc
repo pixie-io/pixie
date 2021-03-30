@@ -8,6 +8,8 @@ namespace pl {
 namespace stirling {
 
 using ::pl::SubProcess;
+using ::pl::testing::BazelBinTestFilePath;
+
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 using ::testing::SizeIs;
@@ -15,12 +17,28 @@ using ::testing::StrEq;
 
 class RedisContainer : public ContainerRunner {
  public:
-  RedisContainer() : ContainerRunner(kImageName, kContainerNamePrefix, kReadyMessage) {}
+  RedisContainer()
+      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix, kReadyMessage) {
+  }
 
  private:
-  static constexpr std::string_view kImageName = "redis";
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/redis_container_image.tar";
   static constexpr std::string_view kContainerNamePrefix = "redis_test";
   static constexpr std::string_view kReadyMessage = "# Server initialized";
+};
+
+class RubyContainer : public ContainerRunner {
+ public:
+  RubyContainer()
+      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix, kReadyMessage) {
+  }
+
+ private:
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/ruby_container_image.tar";
+  static constexpr std::string_view kContainerNamePrefix = "ruby";
+  static constexpr std::string_view kReadyMessage = "";
 };
 
 struct RedisTraceTestCase {

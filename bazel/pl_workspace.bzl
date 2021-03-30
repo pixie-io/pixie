@@ -44,6 +44,14 @@ def _package_manager_setup():
 
 # Set-up images used by Stirling BPF tests.
 def stirling_docker_images_setup():
+    # Busybox container, for basic container tests.
+    container_pull(
+        name = "distroless_busybox",
+        digest = "sha256:f989df6099c5efb498021c7f01b74f484b46d2f5e1cdb862e508569d87569f2b",
+        registry = "gcr.io",
+        repository = "distroless/base",
+    )
+
     # NGINX with OpenSSL 1.1.0, for OpenSSL tracing tests.
     container_pull(
         name = "nginx_openssl_1_1_0",
@@ -68,21 +76,8 @@ def stirling_docker_images_setup():
         digest = "sha256:b9d834c7ca1b3c0fb32faedc786f2cb96fa2ec00976827e3f0c44f647375e18c",
     )
 
-    # Custom built container with python MySQL client, for MySQL tests.
-    container_pull(
-        name = "python_mysql_connector",
-        digest = "sha256:14f3013a1939c20184914e1afb17b9b2ed3c5ff1982d6a6cb3ba7d580c059653",
-        registry = "gcr.io",
-        repository = "pl-dev-infra/python_mysql_connector",
-    )
-
-    container_pull(
-        name = "distroless_busybox",
-        digest = "sha256:f989df6099c5efb498021c7f01b74f484b46d2f5e1cdb862e508569d87569f2b",
-        registry = "gcr.io",
-        repository = "distroless/base",
-    )
-
+    # Curl container, for OpenSSL tracing tests.
+    # curlimages/curl:7.74.0
     container_pull(
         name = "curl",
         digest = "sha256:5594e102d5da87f8a3a6b16e5e9b0e40292b5404c12f9b6962fd6b056d2a4f82",
@@ -90,11 +85,57 @@ def stirling_docker_images_setup():
         repository = "curlimages/curl",
     )
 
+    # Ruby container, for OpenSSL tracing tests.
+    # ruby:3.0.0-buster
     container_pull(
         name = "ruby",
         digest = "sha256:beeed8e63b1ae4a1492f4be9cd40edc6bdb1009b94228438f162d0d05e10c8fd",
         registry = "index.docker.io",
         repository = "library/ruby",
+    )
+
+    # Datastax DSE server, for CQL tracing tests.
+    # datastax/dse-server:6.7.7
+    container_pull(
+        name = "datastax",
+        digest = "sha256:a98e1a877f9c1601aa6dac958d00e57c3f6eaa4b48d4f7cac3218643a4bfb36e",
+        registry = "index.docker.io",
+        repository = "datastax/dse-server",
+    )
+
+    # Postgres server, for PGSQL tracing tests.
+    # postgres:13.2
+    container_pull(
+        name = "postgres",
+        digest = "sha256:661dc59f4a71e689c51d4823963baa56b8fcc8daa5b16cf740cad236fa5ffe74",
+        registry = "index.docker.io",
+        repository = "library/postgres",
+    )
+
+    # Redis server, for Redis tracing tests.
+    # redis:6.2.1-alpine
+    container_pull(
+        name = "redis",
+        digest = "sha256:736086f0ad5063792bd2cca77eb45ccc24ef89f4a35329f3526e2e94aff1934f",
+        registry = "index.docker.io",
+        repository = "library/redis",
+    )
+
+    # MySQL server, for MySQL tracing tests.
+    # mysql/mysql-server:8.0.13
+    container_pull(
+        name = "mysql",
+        digest = "sha256:3d50c733cc42cbef715740ed7b4683a8226e61911e3a80c3ed8a30c2fbd78e9a",
+        registry = "index.docker.io",
+        repository = "mysql/mysql-server",
+    )
+
+    # Custom-built container with python MySQL client, for MySQL tests.
+    container_pull(
+        name = "python_mysql_connector",
+        digest = "sha256:14f3013a1939c20184914e1afb17b9b2ed3c5ff1982d6a6cb3ba7d580c059653",
+        registry = "gcr.io",
+        repository = "pl-dev-infra/python_mysql_connector",
     )
 
 def _docker_images_setup():

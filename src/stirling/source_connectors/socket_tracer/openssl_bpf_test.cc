@@ -69,7 +69,7 @@ class CurlContainer : public ContainerRunner {
 
  private:
   static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/ssl/curl_container_image.tar";
+      "src/stirling/source_connectors/socket_tracer/testing/containers/curl_container_image.tar";
   static constexpr std::string_view kContainerNamePrefix = "curl";
   static constexpr std::string_view kReadyMessage = "";
 };
@@ -82,7 +82,7 @@ class RubyContainer : public ContainerRunner {
 
  private:
   static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/ssl/ruby_container_image.tar";
+      "src/stirling/source_connectors/socket_tracer/testing/containers/ruby_container_image.tar";
   static constexpr std::string_view kContainerNamePrefix = "ruby";
   static constexpr std::string_view kReadyMessage = "";
 };

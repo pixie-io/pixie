@@ -46,10 +46,12 @@ DEFINE_bool(tracing_mode, false, "If true, only runs the containers and exits. F
 
 class MySQLContainer : public ContainerRunner {
  public:
-  MySQLContainer() : ContainerRunner(kImage, kInstanceNamePrefix, kReadyMessage) {}
+  MySQLContainer()
+      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
 
  private:
-  static constexpr std::string_view kImage = "mysql/mysql-server:8.0.13";
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/mysql_container_image.tar";
   static constexpr std::string_view kInstanceNamePrefix = "mysql_server";
   static constexpr std::string_view kReadyMessage =
       "/usr/sbin/mysqld: ready for connections. Version: '8.0.13'  socket: "

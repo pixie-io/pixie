@@ -21,6 +21,8 @@ namespace stirling {
 
 namespace cass = protocols::cass;
 
+using ::pl::testing::BazelBinTestFilePath;
+
 using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::stirling::testing::SocketTraceBPFTest;
 using ::pl::types::ColumnWrapper;
@@ -36,10 +38,13 @@ using ::testing::UnorderedElementsAre;
 
 class CassandraContainer : public ContainerRunner {
  public:
-  CassandraContainer() : ContainerRunner(kImage, kInstanceNamePrefix, kReadyMessage) {}
+  CassandraContainer()
+      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix, kReadyMessage) {}
 
  private:
-  static constexpr std::string_view kImage = "datastax/dse-server:6.7.7";
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/"
+      "datastax_container_image.tar";
   static constexpr std::string_view kInstanceNamePrefix = "dse_server";
   static constexpr std::string_view kReadyMessage = "DSE startup complete.";
 };

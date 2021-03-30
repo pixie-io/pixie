@@ -42,13 +42,3 @@ container_image(
         ":nginx_ssl_keys",
     ],
 )
-
-container_image(
-    name = "curl_container_image",
-    base = "@curl//image",
-)
-
-container_image(
-    name = "ruby_container_image",
-    base = "@ruby//image",
-)

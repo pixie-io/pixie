@@ -52,10 +52,13 @@ class NginxContainer : public ContainerRunner {
 
 class RubyContainer : public ContainerRunner {
  public:
-  RubyContainer() : ContainerRunner(kImageName, kContainerNamePrefix, kReadyMessage) {}
+  RubyContainer()
+      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix, kReadyMessage) {
+  }
 
  private:
-  static constexpr std::string_view kImageName = "ruby:3.0.0-buster";
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/ruby_container_image.tar";
   static constexpr std::string_view kContainerNamePrefix = "ruby";
   static constexpr std::string_view kReadyMessage = "";
 };

@@ -29,10 +29,14 @@ using ::testing::StrEq;
 
 class PostgreSQLContainer : public ContainerRunner {
  public:
-  PostgreSQLContainer() : ContainerRunner(kImageName, kContainerNamePrefix, kReadyMessage) {}
+  PostgreSQLContainer()
+      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix, kReadyMessage) {
+  }
 
  private:
-  static constexpr std::string_view kImageName = "postgres";
+  static constexpr std::string_view kBazelImageTar =
+      "src/stirling/source_connectors/socket_tracer/testing/containers/"
+      "postgres_container_image.tar";
   static constexpr std::string_view kContainerNamePrefix = "postgres_testing";
   static constexpr std::string_view kReadyMessage =
       "database system is ready to accept connections";

@@ -161,6 +161,7 @@ pl_cc_test(
     data = [
         "//src/stirling/source_connectors/socket_tracer/protocols/mysql/testing:expected_outputs",
         "//src/stirling/source_connectors/socket_tracer/protocols/mysql/testing:scripts",
+        "//src/stirling/source_connectors/socket_tracer/testing/containers:mysql_container_image.tar",
         "//src/stirling/source_connectors/socket_tracer/testing/mysql:mysql_connector_image.tar",
     ],
     flaky = True,
@@ -183,6 +184,9 @@ pl_cc_test(
     srcs = [
         "cql_trace_bpf_test.cc",
     ],
+    data = [
+        "//src/stirling/source_connectors/socket_tracer/testing/containers:datastax_container_image.tar",
+    ],
     flaky = True,
     tags = [
         "no_asan",
@@ -204,6 +208,7 @@ pl_cc_test(
     ],
     data = [
         "//src/stirling/source_connectors/socket_tracer/protocols/pgsql/testing:demo_image.tar",
+        "//src/stirling/source_connectors/socket_tracer/testing/containers:postgres_container_image.tar",
     ],
     flaky = True,
     shard_count = 2,
@@ -299,6 +304,9 @@ pl_cc_test(
     name = "redis_trace_bpf_test",
     timeout = "long",
     srcs = ["redis_trace_bpf_test.cc"],
+    data = [
+        "//src/stirling/source_connectors/socket_tracer/testing/containers:redis_container_image.tar",
+    ],
     flaky = True,
     tags = ["requires_bpf"],
     deps = [
@@ -315,10 +323,10 @@ pl_cc_test(
     timeout = "moderate",
     srcs = ["openssl_bpf_test.cc"],
     data = [
-        "//src/stirling/source_connectors/socket_tracer/testing/ssl:curl_container_image.tar",
+        "//src/stirling/source_connectors/socket_tracer/testing/containers:curl_container_image.tar",
+        "//src/stirling/source_connectors/socket_tracer/testing/containers:ruby_container_image.tar",
         "//src/stirling/source_connectors/socket_tracer/testing/ssl:nginx_openssl_1_1_0_image.tar",
         "//src/stirling/source_connectors/socket_tracer/testing/ssl:nginx_openssl_1_1_1_image.tar",
-        "//src/stirling/source_connectors/socket_tracer/testing/ssl:ruby_container_image.tar",
     ],
     flaky = True,
     tags = [
@@ -337,7 +345,10 @@ pl_cc_test(
     name = "dyn_lib_trace_bpf_test",
     timeout = "moderate",
     srcs = ["dyn_lib_trace_bpf_test.cc"],
-    data = ["//src/stirling/source_connectors/socket_tracer/testing/ssl:nginx_openssl_1_1_0_image.tar"],
+    data = [
+        "//src/stirling/source_connectors/socket_tracer/testing/containers:ruby_container_image.tar",
+        "//src/stirling/source_connectors/socket_tracer/testing/ssl:nginx_openssl_1_1_0_image.tar",
+    ],
     flaky = True,
     tags = [
         "no_asan",
