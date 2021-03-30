@@ -29,12 +29,14 @@ func NewK8sAPI(namespace string) (*K8sAPIImpl, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Info("Got cluster config")
 
 	// Create k8s client.
 	clientset, err := kubernetes.NewForConfig(kubeConfig)
 	if err != nil {
 		return nil, err
 	}
+	log.Info("Created k8s client")
 
 	k8sAPI := &K8sAPIImpl{clientset: clientset, namespace: namespace}
 	return k8sAPI, nil

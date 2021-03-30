@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gofrs/uuid"
 	"github.com/nats-io/nats.go"
@@ -34,11 +35,25 @@ func main() {
 	flush := services.InitDefaultSentry(viper.GetString("cluster_id"))
 	defer flush()
 
-	nc, err := nats.Connect(viper.GetString("nats_url"),
-		nats.ClientCert(viper.GetString("client_tls_cert"), viper.GetString("client_tls_key")),
-		nats.RootCAs(viper.GetString("tls_ca_cert")))
-	if err != nil {
-		log.WithError(err).Fatal("Failed to connect to NATS.")
+	natsWait := make(chan struct{})
+	var nc *nats.Conn
+	var err error
+
+	go func() {
+		nc, err = nats.Connect(viper.GetString("nats_url"),
+			nats.ClientCert(viper.GetString("client_tls_cert"), viper.GetString("client_tls_key")),
+			nats.RootCAs(viper.GetString("tls_ca_cert")))
+		if err != nil {
+			log.WithError(err).Fatal("Failed to connect to NATS.")
+		}
+		close(natsWait)
+	}()
+
+	select {
+	case <-natsWait:
+		log.Info("Connected to NATS")
+	case <-time.After(1 * time.Minute):
+		log.WithError(err).Fatal("Timed out: failed to connect to NATS.")
 	}
 
 	clusterID, err := uuid.FromString(viper.GetString("cluster_id"))
@@ -49,9 +64,22 @@ func main() {
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
 
-	k8sAPI, err := controller.NewK8sAPI(viper.GetString("namespace"))
-	if err != nil {
-		log.WithError(err).Fatal("Failed to connect to K8S API")
+	k8sWait := make(chan struct{})
+	var k8sAPI *controller.K8sAPIImpl
+
+	go func() {
+		k8sAPI, err = controller.NewK8sAPI(viper.GetString("namespace"))
+		if err != nil {
+			log.WithError(err).Fatal("Failed to connect to K8S API")
+		}
+		close(k8sWait)
+	}()
+
+	select {
+	case <-k8sWait:
+		log.Info("Connected to K8s API")
+	case <-time.After(1 * time.Minute):
+		log.WithError(err).Fatal("Timed out: failed to connect to K8s API.")
 	}
 
 	env := certmgrenv.New()
