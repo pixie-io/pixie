@@ -15,6 +15,7 @@ linters:
   enable:
   - asciicheck
   - deadcode
+  - errcheck
   - gosimple
   - ineffassign
   - makezero
@@ -30,7 +31,6 @@ linters:
   - wastedassign
   - whitespace
   disable:
-  - errcheck
   # We run goimports which includes gofmt.
   - gofmt
   # The following linters are run separately by arcanist at the moment.
@@ -41,6 +41,8 @@ linters:
   disable-all: false
 
 linters-settings:
+  errcheck:
+    ignore: github.com/spf13/viper:BindPFlag
   goimports:
     local-prefixes: pixielabs.ai
   nakedret:
