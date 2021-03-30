@@ -126,4 +126,20 @@ replace (
 	github.com/go-openapi/analysis => github.com/go-openapi/analysis v0.19.5
 	github.com/go-openapi/loads => github.com/go-openapi/loads v0.19.0
 	github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.3
+
+	golang.org/x/crypto => github.com/golang/crypto v0.0.0-20210322153248-0c34fe9e7dc2
+	golang.org/x/exp => github.com/golang/exp v0.0.0-20210220032938-85be41e4509f
+	golang.org/x/image => github.com/golang/image v0.0.0-20210220032944-ac19c3e999fb
+	golang.org/x/lint => github.com/golang/lint v0.0.0-20201208152925-83fdc39ff7b5
+	golang.org/x/mobile => github.com/golang/mobile v0.0.0-20210220033013-bdb1ca9a1e08
+	golang.org/x/mod => github.com/golang/mod v0.4.2
+	golang.org/x/net => github.com/golang/net v0.0.0-20210330142815-c8897c278d10
+	golang.org/x/oauth2 => github.com/golang/oauth2 v0.0.0-20210323180902-22b0adad7558
+	golang.org/x/sync => github.com/golang/sync v0.0.0-20210220032951-036812b2e83c
+	golang.org/x/sys => github.com/golang/sys v0.0.0-20210326220804-49726bf1d181
+	golang.org/x/term => github.com/golang/term v0.0.0-20210317153231-de623e64d2a6
+	golang.org/x/text => github.com/golang/text v0.3.5
+	golang.org/x/time => github.com/golang/time v0.0.0-20210220033141-f8bda1e9f3ba
+	golang.org/x/tools => github.com/golang/tools v0.1.0
+	golang.org/x/xerrors => github.com/golang/xerrors v0.0.0-20200804184101-5ec99f83aff1
 )
