@@ -18,6 +18,14 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 )
 
+const (
+	// refreshUpdateDuration is how frequently we request all k8s updates to
+	// refresh the ones in our DataStore.
+	refreshUpdateDuration = 12 * time.Hour
+	// resourceUpdateTTL is how long the k8s update live in the DataStore.
+	resourceUpdateTTL = 24 * time.Hour
+)
+
 // Controller listens to any metadata updates from the K8s API and forwards them
 // to a channel where it can be processed.
 type Controller struct {
@@ -86,7 +94,7 @@ func (mc *Controller) Start(mds Store) error {
 		return err
 	}
 
-	ticker := time.NewTicker(12 * time.Hour)
+	ticker := time.NewTicker(refreshUpdateDuration)
 
 	defer func() {
 		close(watcherQuitCh)

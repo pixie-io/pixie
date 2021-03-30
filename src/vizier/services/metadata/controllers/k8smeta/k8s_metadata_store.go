@@ -6,7 +6,6 @@ import (
 	"path"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gogo/protobuf/proto"
 
@@ -59,7 +58,7 @@ func (m *Datastore) AddResourceUpdateForTopic(updateVersion int64, topic string,
 		return err
 	}
 
-	return m.ds.SetWithTTL(getTopicResourceUpdateKey(topic, updateVersion), string(val), time.Hour*24)
+	return m.ds.SetWithTTL(getTopicResourceUpdateKey(topic, updateVersion), string(val), resourceUpdateTTL)
 }
 
 // AddResourceUpdate stores a resource update that is applicable to all topics.
@@ -74,7 +73,7 @@ func (m *Datastore) AddFullResourceUpdate(updateVersion int64, resource *storepb
 		return err
 	}
 
-	return m.ds.SetWithTTL(getFullResourceUpdateKey(updateVersion), string(val), time.Hour*24)
+	return m.ds.SetWithTTL(getFullResourceUpdateKey(updateVersion), string(val), resourceUpdateTTL)
 }
 
 // FetchResourceUpdates gets the resource updates from the `from` update version, to the `to`
