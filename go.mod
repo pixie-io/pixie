@@ -8,7 +8,6 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/Microsoft/go-winio v0.4.16 // indirect
 	github.com/PuerkitoBio/goquery v1.6.0
-	github.com/ajstarks/svgo v0.0.0-20181006003313-6ce6a3bcf6cd // indirect
 	github.com/alecthomas/chroma v0.7.1
 	github.com/alecthomas/participle v0.4.1
 	github.com/badoux/checkmail v0.0.0-20181210160741-9661bd69e9ad
@@ -29,7 +28,6 @@ require (
 	github.com/emicklei/dot v0.10.1
 	github.com/evanphx/json-patch v4.9.0+incompatible
 	github.com/fatih/color v1.7.0
-	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/gdamore/tcell v1.3.0
 	github.com/getsentry/sentry-go v0.5.1
 	github.com/go-openapi/runtime v0.19.26
@@ -100,8 +98,6 @@ require (
 	golang.org/x/oauth2 v0.0.0-20210313182246-cd4f82c27b84
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210326220804-49726bf1d181
-	gonum.org/v1/gonum v0.0.0-20190413104459-5d695651a1d5 // indirect
-	gonum.org/v1/plot v0.0.0-20190410204940-3a5f52653745
 	google.golang.org/api v0.43.0
 	google.golang.org/genproto v0.0.0-20210329143202-679c6ae281ee
 	google.golang.org/grpc v1.36.1
