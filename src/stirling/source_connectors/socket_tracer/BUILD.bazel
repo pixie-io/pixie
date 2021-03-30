@@ -315,8 +315,10 @@ pl_cc_test(
     timeout = "moderate",
     srcs = ["openssl_bpf_test.cc"],
     data = [
+        "//src/stirling/source_connectors/socket_tracer/testing/ssl:curl_container_image.tar",
         "//src/stirling/source_connectors/socket_tracer/testing/ssl:nginx_openssl_1_1_0_image.tar",
         "//src/stirling/source_connectors/socket_tracer/testing/ssl:nginx_openssl_1_1_1_image.tar",
+        "//src/stirling/source_connectors/socket_tracer/testing/ssl:ruby_container_image.tar",
     ],
     flaky = True,
     tags = [

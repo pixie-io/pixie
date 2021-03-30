@@ -83,6 +83,20 @@ def stirling_docker_images_setup():
         repository = "distroless/base",
     )
 
+    container_pull(
+        name = "curl",
+        digest = "sha256:5594e102d5da87f8a3a6b16e5e9b0e40292b5404c12f9b6962fd6b056d2a4f82",
+        registry = "index.docker.io",
+        repository = "curlimages/curl",
+    )
+
+    container_pull(
+        name = "ruby",
+        digest = "sha256:beeed8e63b1ae4a1492f4be9cd40edc6bdb1009b94228438f162d0d05e10c8fd",
+        registry = "index.docker.io",
+        repository = "library/ruby",
+    )
+
 def _docker_images_setup():
     _go_image_repos()
     _java_image_repos()
