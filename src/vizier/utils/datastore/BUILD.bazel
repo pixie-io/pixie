@@ -9,7 +9,6 @@ go_library(
 
 go_test(
     name = "go_default_test",
-    size = "small",
     srcs = ["datastore_test.go"],
     embed = [":go_default_library"],
     tags = ["integration"],

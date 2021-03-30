@@ -1,6 +1,7 @@
 package pebbledb
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -8,7 +9,10 @@ import (
 	"github.com/cockroachdb/pebble"
 )
 
-const ttlPrefix = "___ttl___"
+const (
+	ttlByKeyPrefix  = "___ttl___"
+	ttlByTimePrefix = "___ttl_time___"
+)
 
 // DataStore wraps a pebbledb datastore.
 type DataStore struct {
@@ -39,22 +43,51 @@ func (w *DataStore) ttlWatcher(ttlReaperDuration time.Duration) {
 			return
 		case <-ticker.C:
 			now := time.Now()
-			keys, vals, err := w.GetWithPrefix(ttlPrefix)
-			var expired []string
-			if err != nil {
-				continue
-			}
-			for i, v := range vals {
+
+			from := fmt.Sprintf("%s/", ttlByTimePrefix)
+			to := fmt.Sprintf("%s/%20d/", ttlByTimePrefix, now.Unix()+1)
+
+			iter := w.db.NewIter(&pebble.IterOptions{
+				LowerBound: []byte(from),
+				UpperBound: []byte(to),
+			})
+
+			var deleteKeys []string
+
+			for iter.First(); iter.Valid(); iter.Next() {
+				if iter.Error() != nil {
+					break
+				}
+				// Casting to a string causes a implicit copy, making
+				// ensuring that this is valid across iterations.
+				k := string(iter.Key())
+
+				sp := strings.Split(k, "/")
+				if len(sp) < 3 {
+					continue
+				}
+
+				keyToDelete := sp[2]
+				ttlByKey := fmt.Sprintf("%s/%s", ttlByKeyPrefix, keyToDelete)
+
+				v, err := w.Get(ttlByKey)
+				if err != nil {
+					continue
+				}
+
 				var expiresAt time.Time
-				err := expiresAt.UnmarshalBinary(v)
+				err = expiresAt.UnmarshalBinary(v)
 				if err != nil {
 					continue
 				}
 				if expiresAt.Before(now) {
-					expired = append(expired, strings.TrimPrefix(keys[i], ttlPrefix))
+					deleteKeys = append(deleteKeys, ttlByKey)
+					deleteKeys = append(deleteKeys, keyToDelete)
 				}
 			}
-			w.DeleteAll(expired)
+			w.DeleteAll(deleteKeys)
+			w.db.DeleteRange([]byte(from), []byte(to), pebble.Sync)
+			iter.Close()
 		}
 	}
 }
@@ -79,7 +112,16 @@ func (w *DataStore) SetWithTTL(key string, value string, ttl time.Duration) erro
 		batch.Close()
 		return err
 	}
-	err = batch.Set([]byte(ttlPrefix+key), encodedExpiry, pebble.Sync)
+
+	ttlByKey := fmt.Sprintf("%s/%s", ttlByKeyPrefix, key)
+	ttlByTime := fmt.Sprintf("%s/%20d/%s", ttlByTimePrefix, expiresAt.Unix(), key)
+
+	err = batch.Set([]byte(ttlByKey), encodedExpiry, pebble.Sync)
+	if err != nil {
+		batch.Close()
+		return err
+	}
+	err = batch.Set([]byte(ttlByTime), nil, pebble.Sync)
 	if err != nil {
 		batch.Close()
 		return err
@@ -110,6 +152,9 @@ func (w *DataStore) GetWithRange(from string, to string) ([]string, [][]byte, er
 	})
 
 	for iter.First(); iter.Valid(); iter.Next() {
+		if err := iter.Error(); err != nil {
+			return nil, nil, err
+		}
 		v := iter.Value()
 		value := make([]byte, len(v))
 		copy(value, v)

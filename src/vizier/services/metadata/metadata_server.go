@@ -34,9 +34,9 @@ import (
 
 const (
 	// pebbledbTTLDuration represents how often we evict from pebble.
-	pebbledbTTLDuration = 5 * time.Minute
+	pebbledbTTLDuration = 1 * time.Minute
 	// pebbleOpenDir is where the files live in the directory.
-	pebbleOpenDir = "/metadata"
+	pebbleOpenDir = "/metadata/pebble_20200330"
 )
 
 func init() {

@@ -18,47 +18,6 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/pebbledb"
 )
 
-func TestBuntdb(t *testing.T) {
-	c, err := bunt.Open(":memory:")
-	if err != nil {
-		t.Fatal("failed to initialize buntdb")
-	}
-
-	db := buntdb.New(c)
-	runTests(db, t)
-}
-
-func TestBadgerDB(t *testing.T) {
-	c, err := badger.Open(badger.DefaultOptions("").WithInMemory(true))
-	if err != nil {
-		t.Fatal("failed to initialize badgerdb")
-	}
-
-	db := badgerdb.New(c)
-	runTests(db, t)
-}
-
-func TestPebbleDB(t *testing.T) {
-	memFS := vfs.NewMem()
-	c, err := pebble.Open("test", &pebble.Options{
-		FS: memFS,
-	})
-	if err != nil {
-		t.Fatal("failed to initialize a pebbledb")
-	}
-
-	db := pebbledb.New(c, 3*time.Second)
-	runTests(db, t)
-}
-
-func TestEtcd(t *testing.T) {
-	c, cleanup := testingutils.SetupEtcd()
-	defer cleanup()
-
-	db := etcd.New(c)
-	runTests(db, t)
-}
-
 func setupDatastore(db Setter) {
 	db.Set("jam1", "neg")
 	db.Set("key1", "val1")
@@ -68,151 +27,210 @@ func setupDatastore(db Setter) {
 	db.Set("lim1", "inf")
 }
 
-func runTests(db MultiGetterSetterDeleterCloser, t *testing.T) {
-	t.Run("Set/Get", func(t *testing.T) {
-		setupDatastore(db)
-		v, err := db.Get("key1")
-		require.NoError(t, err)
-		assert.Equal(t, "val1", string(v))
+func TestDatastore(t *testing.T) {
+	bnt, err := bunt.Open(":memory:")
+	if err != nil {
+		t.Fatal("failed to initialize buntdb")
+	}
 
-		v, err = db.Get("key2")
-		require.NoError(t, err)
-		assert.Equal(t, "val2", string(v))
+	bgr, err := badger.Open(badger.DefaultOptions("").WithInMemory(true))
+	if err != nil {
+		t.Fatal("failed to initialize badgerdb")
+	}
 
-		db.Set("key1", "val1.1")
-
-		v, err = db.Get("key1")
-		require.NoError(t, err)
-		assert.Equal(t, "val1.1", string(v))
-
-		v, err = db.Get("nonexistent")
-		require.NoError(t, err)
-		assert.Nil(t, v)
+	memFS := vfs.NewMem()
+	pbbl, err := pebble.Open("test", &pebble.Options{
+		FS: memFS,
 	})
+	if err != nil {
+		t.Fatal("failed to initialize a pebbledb")
+	}
 
-	t.Run("SetWithTTL", func(t *testing.T) {
-		// TODO(vihang): Fixup and re-enable.
-		t.Skip("Flaky on CPU constrained environments.")
-		now := time.Now()
-		ttl := 10 * time.Second
+	et, cleanup := testingutils.SetupEtcd()
+	defer cleanup()
 
-		db.SetWithTTL("timed1", "limited1", ttl)
+	tests := []struct {
+		db          MultiGetterSetterDeleterCloser
+		name        string
+		runTTLTests bool
+	}{
+		{buntdb.New(bnt), "BuntDB", false},
+		{badgerdb.New(bgr), "BadgerDB", false},
+		{pebbledb.New(pbbl, 2*time.Second), "PebbleDB", true},
+		{etcd.New(et), "etcd", false},
+	}
 
-		timedOut := time.After(1 * time.Minute)
-		ticker := time.NewTicker(1 * time.Second)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-timedOut:
-				t.Error("set with TTL timed out and key still exists")
-				return
-			case <-ticker.C:
-				v, err := db.Get("timed1")
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db := tc.db
+			t.Run("Set/Get", func(t *testing.T) {
+				setupDatastore(db)
+				v, err := db.Get("key1")
 				require.NoError(t, err)
-				if time.Since(now) < ttl {
-					assert.Equal(t, "limited1", string(v))
-				} else if v == nil {
-					// Key was deleted some time after TTL passed.
-					return
-				}
+				assert.Equal(t, "val1", string(v))
+
+				v, err = db.Get("key2")
+				require.NoError(t, err)
+				assert.Equal(t, "val2", string(v))
+
+				db.Set("key1", "val1.1")
+
+				v, err = db.Get("key1")
+				require.NoError(t, err)
+				assert.Equal(t, "val1.1", string(v))
+
+				v, err = db.Get("nonexistent")
+				require.NoError(t, err)
+				assert.Nil(t, v)
+			})
+
+			t.Run("Get", func(t *testing.T) {
+				setupDatastore(db)
+				t.Run("Range", func(t *testing.T) {
+					keys, vals, err := db.GetWithRange("key1", "key1.1")
+					require.NoError(t, err)
+					assert.Equal(t, []string{"key1"}, keys)
+					assert.Equal(t, [][]byte{[]byte("val1")}, vals)
+
+					keys, vals, err = db.GetWithRange("key1", "key2")
+					require.NoError(t, err)
+					assert.Equal(t, []string{"key1"}, keys)
+					assert.Equal(t, [][]byte{[]byte("val1")}, vals)
+
+					keys, vals, err = db.GetWithRange("key1", "key4")
+					require.NoError(t, err)
+					assert.Equal(t, []string{"key1", "key2", "key3"}, keys)
+					assert.Equal(t, [][]byte{[]byte("val1"), []byte("val2"), []byte("val3")}, vals)
+
+					keys, vals, err = db.GetWithRange("nonexistent", "nonexistent2")
+					require.NoError(t, err)
+					assert.Nil(t, keys)
+					assert.Nil(t, vals)
+				})
+
+				t.Run("Prefix", func(t *testing.T) {
+					keys, vals, err := db.GetWithPrefix("key")
+					require.NoError(t, err)
+					assert.Equal(t, []string{"key1", "key2", "key3", "key9"}, keys)
+					assert.Equal(t, [][]byte{[]byte("val1"), []byte("val2"), []byte("val3"), []byte("val9")}, vals)
+
+					keys, vals, err = db.GetWithPrefix("nonexistent")
+					require.NoError(t, err)
+					assert.Nil(t, keys)
+					assert.Nil(t, vals)
+				})
+			})
+
+			t.Run("Delete", func(t *testing.T) {
+				setupDatastore(db)
+				err := db.Delete("key2")
+				require.NoError(t, err)
+				v, err := db.Get("key2")
+				require.NoError(t, err)
+				assert.Nil(t, v)
+
+				// No error when deleting nonexistent keys.
+				err = db.Delete("nonexistent")
+				require.NoError(t, err)
+
+				v, err = db.Get("key1")
+				require.NoError(t, err)
+				assert.Equal(t, "val1", string(v))
+			})
+
+			t.Run("DeleteAll", func(t *testing.T) {
+				setupDatastore(db)
+				err := db.DeleteAll([]string{"key1", "key3", "nonexistent"})
+				require.NoError(t, err)
+				v, err := db.Get("key1")
+				require.NoError(t, err)
+				assert.Nil(t, v)
+
+				v, err = db.Get("key2")
+				require.NoError(t, err)
+				assert.Equal(t, "val2", string(v))
+			})
+
+			t.Run("DeletePrefix", func(t *testing.T) {
+				setupDatastore(db)
+				err := db.DeleteWithPrefix("key")
+
+				require.NoError(t, err)
+				v, err := db.Get("key1")
+				require.NoError(t, err)
+				assert.Nil(t, v)
+
+				v, err = db.Get("key2")
+				require.NoError(t, err)
+				assert.Nil(t, v)
+
+				v, err = db.Get("jam1")
+				require.NoError(t, err)
+				assert.Equal(t, "neg", string(v))
+
+				// No error when deleting nonexistent keys.
+				err = db.DeleteWithPrefix("nonexistent")
+				require.NoError(t, err)
+			})
+
+			if tc.runTTLTests {
+				t.Run("SetWithTTL", func(t *testing.T) {
+					now := time.Now()
+					ttl := 3 * time.Second
+
+					db.SetWithTTL("timed1", "limited1", ttl)
+
+					// Set and reset TTL
+					db.SetWithTTL("timed2", "limited2", ttl)
+					db.SetWithTTL("timed2", "limited2", 1*time.Hour)
+
+					timedOut := time.After(60 * time.Second)
+					ticker := time.NewTicker(1 * time.Second)
+					defer ticker.Stop()
+
+					for {
+						select {
+						case <-timedOut:
+							// Log but don't fail since this is flaky on CPU constrained
+							// environments.
+							t.Log("WARNING: set with TTL timed out and key still exists")
+							return
+						case <-ticker.C:
+							v, err := db.Get("timed1")
+							require.NoError(t, err)
+							if time.Since(now) < ttl {
+								assert.Equal(t, "limited1", string(v))
+							} else if v == nil {
+								// Key timed1 was deleted some time after TTL passed.
+
+								// Key timed2 should still exist since a longer TTL was set on it.
+								v, err := db.Get("timed2")
+								require.NoError(t, err)
+								assert.Equal(t, "limited2", string(v))
+
+								// Ensure that TTL marker (used only by pebbledb impl) is also gone.
+								keys, _, err := db.GetWithPrefix("___ttl___")
+								require.NoError(t, err)
+								assert.Len(t, keys, 1)
+								assert.Equal(t, keys, []string{"___ttl___/timed2"})
+
+								keys, _, err = db.GetWithPrefix("___ttl_time___")
+								require.NoError(t, err)
+								assert.Len(t, keys, 1)
+
+								return
+							}
+						}
+					}
+				})
 			}
-		}
-	})
 
-	t.Run("Get", func(t *testing.T) {
-		setupDatastore(db)
-		t.Run("Range", func(t *testing.T) {
-			keys, vals, err := db.GetWithRange("key1", "key1.1")
-			require.NoError(t, err)
-			assert.Equal(t, []string{"key1"}, keys)
-			assert.Equal(t, [][]byte{[]byte("val1")}, vals)
+			err := db.Close()
+			assert.NoError(t, err)
 
-			keys, vals, err = db.GetWithRange("key1", "key2")
-			require.NoError(t, err)
-			assert.Equal(t, []string{"key1"}, keys)
-			assert.Equal(t, [][]byte{[]byte("val1")}, vals)
-
-			keys, vals, err = db.GetWithRange("key1", "key4")
-			require.NoError(t, err)
-			assert.Equal(t, []string{"key1", "key2", "key3"}, keys)
-			assert.Equal(t, [][]byte{[]byte("val1"), []byte("val2"), []byte("val3")}, vals)
-
-			keys, vals, err = db.GetWithRange("nonexistent", "nonexistent2")
-			require.NoError(t, err)
-			assert.Nil(t, keys)
-			assert.Nil(t, vals)
+			// Calling close repeatedly should be fine
+			err = db.Close()
+			assert.NoError(t, err)
 		})
-
-		t.Run("Prefix", func(t *testing.T) {
-			keys, vals, err := db.GetWithPrefix("key")
-			require.NoError(t, err)
-			assert.Equal(t, []string{"key1", "key2", "key3", "key9"}, keys)
-			assert.Equal(t, [][]byte{[]byte("val1"), []byte("val2"), []byte("val3"), []byte("val9")}, vals)
-
-			keys, vals, err = db.GetWithPrefix("nonexistent")
-			require.NoError(t, err)
-			assert.Nil(t, keys)
-			assert.Nil(t, vals)
-		})
-	})
-
-	t.Run("Delete", func(t *testing.T) {
-		setupDatastore(db)
-		err := db.Delete("key2")
-		require.NoError(t, err)
-		v, err := db.Get("key2")
-		require.NoError(t, err)
-		assert.Nil(t, v)
-
-		// No error when deleting nonexistent keys.
-		err = db.Delete("nonexistent")
-		require.NoError(t, err)
-
-		v, err = db.Get("key1")
-		require.NoError(t, err)
-		assert.Equal(t, "val1", string(v))
-	})
-
-	t.Run("DeleteAll", func(t *testing.T) {
-		setupDatastore(db)
-		err := db.DeleteAll([]string{"key1", "key3", "nonexistent"})
-		require.NoError(t, err)
-		v, err := db.Get("key1")
-		require.NoError(t, err)
-		assert.Nil(t, v)
-
-		v, err = db.Get("key2")
-		require.NoError(t, err)
-		assert.Equal(t, "val2", string(v))
-	})
-
-	t.Run("DeletePrefix", func(t *testing.T) {
-		setupDatastore(db)
-		err := db.DeleteWithPrefix("key")
-
-		require.NoError(t, err)
-		v, err := db.Get("key1")
-		require.NoError(t, err)
-		assert.Nil(t, v)
-
-		v, err = db.Get("key2")
-		require.NoError(t, err)
-		assert.Nil(t, v)
-
-		v, err = db.Get("jam1")
-		require.NoError(t, err)
-		assert.Equal(t, "neg", string(v))
-
-		// No error when deleting nonexistent keys.
-		err = db.DeleteWithPrefix("nonexistent")
-		require.NoError(t, err)
-	})
-
-	err := db.Close()
-	assert.NoError(t, err)
-
-	// Calling close repeatedly should be fine
-	err = db.Close()
-	assert.NoError(t, err)
+	}
 }
