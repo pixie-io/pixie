@@ -7,11 +7,19 @@ namespace compiler {
 
 // Get new locations for the input limit node.
 // A single limit may be cloned and pushed up to multiple branches.
-absl::flat_hash_set<OperatorIR*> LimitPushdownRule::NewLimitParents(OperatorIR* current_node) {
+absl::flat_hash_set<OperatorIR*> LimitPushdownRule::NewLimitParents(OperatorIR* current_node,
+                                                                    int64_t limit_value) {
+  if (Match(current_node, Limit())) {
+    LimitIR* current_limit = static_cast<LimitIR*>(current_node);
+    // No need to add a redundant limit if there is already one in the chain.
+    if (current_limit->limit_value() <= limit_value) {
+      return {};
+    }
+  }
   // Maps we can simply push up the chain.
   if (Match(current_node, Map())) {
     DCHECK_EQ(1, current_node->parents().size());
-    return NewLimitParents(current_node->parents()[0]);
+    return NewLimitParents(current_node->parents()[0], limit_value);
   }
   // Unions will need at most N records from each source.
   if (Match(current_node, Union())) {
@@ -21,7 +29,7 @@ absl::flat_hash_set<OperatorIR*> LimitPushdownRule::NewLimitParents(OperatorIR* 
     results.insert(current_node);
 
     for (OperatorIR* parent : current_node->parents()) {
-      auto parent_results = NewLimitParents(parent);
+      auto parent_results = NewLimitParents(parent, limit_value);
       for (OperatorIR* parent_result : parent_results) {
         results.insert(parent_result);
       }
@@ -42,7 +50,8 @@ StatusOr<bool> LimitPushdownRule::Apply(IRNode* ir_node) {
   DCHECK_EQ(1, limit->parents().size());
   OperatorIR* limit_parent = limit->parents()[0];
 
-  auto new_parents = NewLimitParents(limit_parent);
+  auto new_parents = NewLimitParents(limit_parent, limit->limit_value());
+
   // If we don't push the limit up at all, just return.
   if (new_parents.size() == 1 && new_parents.find(limit_parent) != new_parents.end()) {
     return false;
@@ -55,6 +64,8 @@ StatusOr<bool> LimitPushdownRule::Apply(IRNode* ir_node) {
   PL_RETURN_IF_ERROR(limit->RemoveParent(limit_parent));
 
   // Add the limit to its new location(s).
+  // If new_parents is empty, which happens when the limit is redundant with upstream limits,
+  // it will simply be removed.
   for (OperatorIR* new_parent : new_parents) {
     PL_ASSIGN_OR_RETURN(LimitIR * new_limit, graph->CopyNode(limit));
     // The parent's children should now be the children of the limit.
