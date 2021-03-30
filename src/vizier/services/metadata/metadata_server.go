@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/cockroachdb/pebble"
-	"github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/pkg/transport"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	clientv3 "go.etcd.io/etcd/client/v3"
+	"go.etcd.io/etcd/pkg/v3/transport"
 	"google.golang.org/grpc"
 
 	"pixielabs.ai/pixielabs/src/shared/services"

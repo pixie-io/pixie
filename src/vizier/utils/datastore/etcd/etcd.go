@@ -5,18 +5,18 @@ import (
 	"sync"
 	"time"
 
-	etcd "github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/mvcc/mvccpb"
+	"go.etcd.io/etcd/api/v3/mvccpb"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-// DataStore wraps a etcd datastore.
+// DataStore wraps a clientv3 datastore.
 type DataStore struct {
-	client *etcd.Client
+	client *clientv3.Client
 	once   sync.Once
 }
 
-// New creates a new etcd for use as a KVStore.
-func New(client *etcd.Client) *DataStore {
+// New creates a new clientv3 for use as a KVStore.
+func New(client *clientv3.Client) *DataStore {
 	return &DataStore{client: client}
 }
 
@@ -35,13 +35,13 @@ func (w *DataStore) SetWithTTL(key string, value string, ttl time.Duration) erro
 	}
 	leaseID := resp.ID
 
-	_, err = w.client.Put(context.Background(), key, value, etcd.WithLease(leaseID))
+	_, err = w.client.Put(context.Background(), key, value, clientv3.WithLease(leaseID))
 	return err
 }
 
 // Get gets the value for the given key from the datastore.
 func (w *DataStore) Get(key string) ([]byte, error) {
-	resp, err := w.client.Get(context.Background(), key, etcd.WithSerializable())
+	resp, err := w.client.Get(context.Background(), key, clientv3.WithSerializable())
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func kvsToSlices(kvs []*mvccpb.KeyValue) ([]string, [][]byte, error) {
 // GetWithRange gets all keys and values within the given range.
 // Treats this as [from, to) i.e. includes the key from, but excludes the key to.
 func (w *DataStore) GetWithRange(from string, to string) ([]string, [][]byte, error) {
-	resp, err := w.client.Get(context.Background(), from, etcd.WithRange(to), etcd.WithSerializable())
+	resp, err := w.client.Get(context.Background(), from, clientv3.WithRange(to), clientv3.WithSerializable())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -80,7 +80,7 @@ func (w *DataStore) GetWithRange(from string, to string) ([]string, [][]byte, er
 
 // GetWithPrefix gets all keys and values with the given prefix.
 func (w *DataStore) GetWithPrefix(prefix string) ([]string, [][]byte, error) {
-	resp, err := w.client.Get(context.Background(), prefix, etcd.WithPrefix(), etcd.WithSerializable())
+	resp, err := w.client.Get(context.Background(), prefix, clientv3.WithPrefix(), clientv3.WithSerializable())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -96,9 +96,9 @@ func (w *DataStore) Delete(key string) error {
 
 // DeleteAll deletes all of the given keys and corresponding values in the datastore if they exist.
 func (w *DataStore) DeleteAll(keys []string) error {
-	ops := make([]etcd.Op, len(keys))
+	ops := make([]clientv3.Op, len(keys))
 	for i, k := range keys {
-		ops[i] = etcd.OpDelete(k)
+		ops[i] = clientv3.OpDelete(k)
 	}
 
 	_, err := batchOps(context.Background(), w.client, ops)
@@ -107,7 +107,7 @@ func (w *DataStore) DeleteAll(keys []string) error {
 
 // DeleteWithPrefix deletes all keys and values with the given prefix.
 func (w *DataStore) DeleteWithPrefix(prefix string) error {
-	_, err := w.client.Delete(context.Background(), prefix, etcd.WithPrefix())
+	_, err := w.client.Delete(context.Background(), prefix, clientv3.WithPrefix())
 	return err
 }
 

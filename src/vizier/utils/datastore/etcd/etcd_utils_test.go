@@ -6,9 +6,9 @@ import (
 	"math/rand"
 	"testing"
 
-	etcd "github.com/coreos/etcd/clientv3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 func randString(size int) string {
@@ -21,9 +21,9 @@ func randString(size int) string {
 
 func TestBatching_NumOps(t *testing.T) {
 	numOps := 300
-	ops := make([]etcd.Op, numOps)
+	ops := make([]clientv3.Op, numOps)
 	for i := 0; i < numOps; i++ {
-		ops[i] = etcd.OpGet(fmt.Sprint(i))
+		ops[i] = clientv3.OpGet(fmt.Sprint(i))
 	}
 
 	batches, err := createBatches(ops)
@@ -43,12 +43,12 @@ func TestBatching_OpSize(t *testing.T) {
 	largeStr := randString(16 * 1024)
 
 	numOps := 200
-	ops := make([]etcd.Op, numOps)
+	ops := make([]clientv3.Op, numOps)
 	for i := 0; i < numOps; i++ {
-		ops[i] = etcd.OpPut(fmt.Sprint(i), largeStr)
+		ops[i] = clientv3.OpPut(fmt.Sprint(i), largeStr)
 	}
 
-	batchByteSize := func(batch []etcd.Op) int {
+	batchByteSize := func(batch []clientv3.Op) int {
 		batchBytes := 0
 		for _, op := range batch {
 			batchBytes += len(op.ValueBytes())
@@ -68,11 +68,11 @@ func TestBatching_OpTooBig(t *testing.T) {
 	oversizedStr := randString(1024*1024 + 1)
 
 	numOps := 2
-	ops := make([]etcd.Op, numOps)
+	ops := make([]clientv3.Op, numOps)
 	for i := 0; i < numOps; i++ {
-		ops[i] = etcd.OpPut(fmt.Sprint(i), oversizedStr)
+		ops[i] = clientv3.OpPut(fmt.Sprint(i), oversizedStr)
 	}
 
 	_, err := createBatches(ops)
-	assert.EqualError(t, err, "etcd operation bytes larger than max request bytes")
+	assert.EqualError(t, err, "clientv3 operation bytes larger than max request bytes")
 }

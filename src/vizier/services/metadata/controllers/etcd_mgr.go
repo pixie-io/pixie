@@ -5,9 +5,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	v3 "github.com/coreos/etcd/clientv3"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 const (
@@ -17,7 +17,7 @@ const (
 
 // EtcdManager manages state for the given etcd instance.
 type EtcdManager struct {
-	client     *v3.Client
+	client     *clientv3.Client
 	defragging atomic.Value
 	lastDefrag time.Time
 
@@ -26,7 +26,7 @@ type EtcdManager struct {
 }
 
 // NewEtcdManager creates a new etcd manager.
-func NewEtcdManager(client *v3.Client) *EtcdManager {
+func NewEtcdManager(client *clientv3.Client) *EtcdManager {
 	return &EtcdManager{
 		client: client,
 		quitCh: make(chan bool),

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/coreos/etcd/clientv3"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
 	log "github.com/sirupsen/logrus"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 // SetupEtcd starts up an embedded etcd server on some free ports.

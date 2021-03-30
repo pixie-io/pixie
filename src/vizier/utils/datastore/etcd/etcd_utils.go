@@ -4,26 +4,26 @@ import (
 	"context"
 	"errors"
 
-	etcd "github.com/coreos/etcd/clientv3"
-	etcdpb "github.com/coreos/etcd/etcdserver/etcdserverpb"
+	"go.etcd.io/etcd/api/v3/etcdserverpb"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
-// The maximum number of operations that can be done in a single transaction, set by the etcd cluster.
+// The maximum number of operations that can be done in a single transaction, set by the clientv3 cluster.
 var maxTxnOps = 128
 
-// The maximum number of bytes we should include a in single transaction (max allowed by etcd: 1.5MiB).
+// The maximum number of bytes we should include a in single transaction (max allowed by clientv3: 1.5MiB).
 var maxNumBytes = 1048576 // (1 MiB)
 
-func createBatches(ops []etcd.Op) ([][]etcd.Op, error) {
-	var batches [][]etcd.Op
+func createBatches(ops []clientv3.Op) ([][]clientv3.Op, error) {
+	var batches [][]clientv3.Op
 
-	var currBatch []etcd.Op
+	var currBatch []clientv3.Op
 	currBatchBytes := 0
 
 	for _, op := range ops {
 		opBytes := len(op.ValueBytes())
 		if opBytes > maxNumBytes {
-			return nil, errors.New("etcd operation bytes larger than max request bytes")
+			return nil, errors.New("clientv3 operation bytes larger than max request bytes")
 		}
 
 		if len(currBatch) == maxTxnOps || (currBatchBytes+opBytes > maxNumBytes) {
@@ -42,8 +42,8 @@ func createBatches(ops []etcd.Op) ([][]etcd.Op, error) {
 	return batches, nil
 }
 
-func batchOps(ctx context.Context, client *etcd.Client, ops []etcd.Op) ([]*etcdpb.ResponseOp, error) {
-	var totalOutput []*etcdpb.ResponseOp
+func batchOps(ctx context.Context, client *clientv3.Client, ops []clientv3.Op) ([]*etcdserverpb.ResponseOp, error) {
+	var totalOutput []*etcdserverpb.ResponseOp
 
 	batches, err := createBatches(ops)
 	if err != nil {
