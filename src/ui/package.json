@@ -126,7 +126,7 @@
     "immutable-tuple": "^0.4.8",
     "keycharm": "^0.3.0",
     "launchdarkly-react-client-sdk": "^2.20.0",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.21",
     "moment": "^2.24.0",
     "monaco-editor": "0.20.0",
     "numeral": "^2.0.6",
