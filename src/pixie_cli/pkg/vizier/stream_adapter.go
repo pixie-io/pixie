@@ -357,7 +357,7 @@ func (v *StreamOutputAdapter) handleData(ctx context.Context, d *public_vizierap
 		return ErrMetadataMissing
 	}
 
-	numRows := 0
+	var numRows int
 	if d.Data != nil && d.Data.Batch != nil && d.Data.Batch.Cols != nil {
 		numRows = getNumRows(d.Data.Batch.Cols[0])
 	} else {

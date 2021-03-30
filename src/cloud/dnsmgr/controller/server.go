@@ -157,7 +157,7 @@ func (s *Server) GetDNSAddress(ctx context.Context, req *dnsmgrpb.GetDNSAddressR
 		return nil, err
 	}
 
-	cname := ""
+	var cname string
 	useDefault := viper.GetBool("use_default_dns_cert")
 	if useDefault {
 		cname = "default"

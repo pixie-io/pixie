@@ -96,19 +96,22 @@ func (d *Datastore) CreateOrg(orgInfo *OrgInfo) (uuid.UUID, error) {
 }
 
 // CreateUserAndOrg creates a new user and organization as needed for initial user/org creation.
-func (d *Datastore) CreateUserAndOrg(orgInfo *OrgInfo, userInfo *UserInfo) (orgID uuid.UUID, userID uuid.UUID, err error) {
+func (d *Datastore) CreateUserAndOrg(orgInfo *OrgInfo, userInfo *UserInfo) (uuid.UUID, uuid.UUID, error) {
 	txn, err := d.db.Beginx()
 	if err != nil {
-		return
+		return uuid.Nil, uuid.Nil, err
 	}
 	defer txn.Rollback()
 
-	orgID, err = d.createOrgUsingTxn(txn, orgInfo)
+	orgID, err := d.createOrgUsingTxn(txn, orgInfo)
 	if err != nil {
-		return
+		return uuid.Nil, uuid.Nil, err
 	}
 	userInfo.OrgID = orgID
-	userID, err = d.createUserUsingTxn(txn, userInfo)
+	userID, err := d.createUserUsingTxn(txn, userInfo)
+	if err != nil {
+		return uuid.Nil, uuid.Nil, err
+	}
 
 	orgInfo.ID = orgID
 	userInfo.ID = userID
