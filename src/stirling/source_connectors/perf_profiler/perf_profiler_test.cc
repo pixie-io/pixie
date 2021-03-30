@@ -132,6 +132,9 @@ class PerfProfileBPFTest : public ::testing::Test {
       observed_stack_traces_[stack_trace_str] += count;
     }
 
+    // TODO(jps): bring in a 3rd party library for colorization. e.g., one of the following:
+    // https://github.com/agauniyal/rang
+    // https://github.com/ikalnytskyi/termcolor
     auto makecolor = [](const auto n) { return absl::StrFormat("\x1b[38;5;$%dm", n); };
     auto reset = []() { return "\x1b[0m"; };
     VLOG(1) << std::endl;
