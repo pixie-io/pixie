@@ -374,7 +374,8 @@ func (i *InputField) Focus(func(p tview.Primitive)) {
 // stringWidth returns the number of horizontal cells needed to print the given
 // text. It splits the text into its grapheme clusters, calculates each
 // cluster's width, and adds them up to a total.
-func stringWidth(text string) (width int) {
+func stringWidth(text string) int {
+	width := 0
 	g := uniseg.NewGraphemes(text)
 	for g.Next() {
 		var chWidth int
@@ -386,7 +387,7 @@ func stringWidth(text string) (width int) {
 		}
 		width += chWidth
 	}
-	return
+	return width
 }
 
 // iterateString iterates through the given string one printed character at a

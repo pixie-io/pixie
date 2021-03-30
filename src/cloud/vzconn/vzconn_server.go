@@ -41,23 +41,24 @@ func newVZMgrClients() (vzmgrpb.VZMgrServiceClient, vzmgrpb.VZDeploymentServiceC
 	return vzmgrpb.NewVZMgrServiceClient(vzmgrChannel), vzmgrpb.NewVZDeploymentServiceClient(vzmgrChannel), nil
 }
 
-func createStanNatsConnection(clientID string) (nc *nats.Conn, sc stan.Conn, err error) {
-	nc, err = nats.Connect(viper.GetString("nats_url"),
+func createStanNatsConnection(clientID string) (*nats.Conn, stan.Conn, error) {
+	nc, err := nats.Connect(viper.GetString("nats_url"),
 		nats.ClientCert(viper.GetString("client_tls_cert"), viper.GetString("client_tls_key")),
 		nats.RootCAs(viper.GetString("tls_ca_cert")))
 	if err != nil {
 		log.WithError(err).Error("NATS connection failed")
-		return
+		return nil, nil, err
 	}
-	sc, err = stan.Connect(viper.GetString("stan_cluster"),
+	sc, err := stan.Connect(viper.GetString("stan_cluster"),
 		clientID, stan.NatsConn(nc),
 		stan.SetConnectionLostHandler(func(_ stan.Conn, err error) {
 			log.WithError(err).Fatal("STAN Connection Lost")
 		}))
 	if err != nil {
 		log.WithError(err).Error("STAN connection failed")
+		return nil, nil, err
 	}
-	return
+	return nc, sc, nil
 }
 
 func main() {

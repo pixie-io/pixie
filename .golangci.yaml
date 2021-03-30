@@ -19,6 +19,7 @@ linters:
   - ineffassign
   - makezero
   - misspell
+  - nakedret
   - nolintlint
   - staticcheck
   - structcheck
@@ -39,3 +40,5 @@ linters:
 linters-settings:
   goimports:
     local-prefixes: pixielabs.ai
+  nakedret:
+    max-func-lines: 0

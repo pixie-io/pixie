@@ -11,7 +11,8 @@ var (
 	statusErr = "\u2715"
 )
 
-func computePadding(s string, pad int) (padS int, padE int) {
+func computePadding(s string, pad int) (int, int) {
+	var padS, padE int
 	pad -= len([]rune(s))
 	if pad < 0 {
 		pad = 0
@@ -22,7 +23,7 @@ func computePadding(s string, pad int) (padS int, padE int) {
 	if pad%2 != 0 {
 		padE = padS + 1
 	}
-	return
+	return padS, padE
 }
 
 // StatusOK prints out the default OK symbol, center padded to the size specified.

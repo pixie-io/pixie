@@ -937,8 +937,8 @@ func (s *Bridge) publishBridgeSync(stream vzconnpb.VZConnService_NATSBridgeClien
 	return nil
 }
 
-func (s *Bridge) generateHeartbeats(done <-chan bool) (hbCh chan *cvmsgspb.VizierHeartbeat) {
-	hbCh = make(chan *cvmsgspb.VizierHeartbeat)
+func (s *Bridge) generateHeartbeats(done <-chan bool) chan *cvmsgspb.VizierHeartbeat {
+	hbCh := make(chan *cvmsgspb.VizierHeartbeat)
 
 	sendHeartbeat := func() {
 		addr, port, err := s.vzInfo.GetAddress()
@@ -992,7 +992,7 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) (hbCh chan *cvmsgspb.Vizie
 			}
 		}
 	}()
-	return
+	return hbCh
 }
 
 func (s *Bridge) currentStatus() cvmsgspb.VizierStatus {

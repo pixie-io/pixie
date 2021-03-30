@@ -95,14 +95,11 @@ func (v *VizierPassThroughProxy) DebugPods(req *pl_api_vizierpb.DebugPodsRequest
 	return rp.Run()
 }
 
-func getCredsFromCtx(ctx context.Context) (token string, claim *jwt.JWTClaims, err error) {
-	var aCtx *authcontext.AuthContext
-	aCtx, err = authcontext.FromContext(ctx)
+func getCredsFromCtx(ctx context.Context) (string, *jwt.JWTClaims, error) {
+	aCtx, err := authcontext.FromContext(ctx)
 	if err != nil {
-		return
+		return "", nil, err
 	}
 
-	token = aCtx.AuthToken
-	claim = aCtx.Claims
-	return
+	return aCtx.AuthToken, aCtx.Claims, nil
 }
