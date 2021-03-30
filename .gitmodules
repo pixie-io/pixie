@@ -1,27 +1,6 @@
 [submodule "chef/site-cookbooks/alternatives"]
 	path = chef/site-cookbooks/alternatives
 	url = https://github.com/vkhatri/chef-alternatives
-[submodule "chef/site-cookbooks/build-essential"]
-	path = chef/site-cookbooks/build-essential
-	url = https://github.com/chef-cookbooks/build-essential
-[submodule "chef/site-cookbooks/git"]
-	path = chef/site-cookbooks/git
-	url = https://github.com/chef-cookbooks/git
-[submodule "chef/site-cookbooks/homebrew"]
-	path = chef/site-cookbooks/homebrew
-	url = https://github.com/chef-cookbooks/homebrew
-[submodule "chef/site-cookbooks/mingw"]
-	path = chef/site-cookbooks/mingw
-	url = https://github.com/chef-cookbooks/mingw
-[submodule "chef/site-cookbooks/seven_zip"]
-	path = chef/site-cookbooks/seven_zip
-	url = https://github.com/windowschefcookbooks/seven_zip
-[submodule "chef/site-cookbooks/tar"]
-	path = chef/site-cookbooks/tar
-	url = https://github.com/chef-cookbooks/tar
-[submodule "chef/site-cookbooks/windows"]
-	path = chef/site-cookbooks/windows
-	url = https://github.com/chef-cookbooks/windows
 [submodule "linters/cpplint"]
 	path = linters/cpplint
 	url = git@github.com:pixie-labs/cpplint.git

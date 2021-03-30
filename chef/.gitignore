@@ -7,10 +7,3 @@ data_collector_metadata.json
 local-mode-cache/
 remote_file/
 nodes/
-
-# Cookbooks that are downloaded.
-cookbooks/ark
-cookbooks/build-essential
-cookbooks/mingw
-cookbooks/seven_zip
-cookbooks/windows
