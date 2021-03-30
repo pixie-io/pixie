@@ -242,8 +242,9 @@ go_repository(
 go_repository(
     name = "com_github_spf13_cobra",
     importpath = "github.com/spf13/cobra",
-    sum = "h1:KfztREH0tPxJJ+geloSLaAkaPkr4ki2Er5quFV1TDo4=",
-    version = "v1.1.1",
+    replace = "github.com/spf13/cobra",
+    sum = "h1:xghbfqPkxzxP3C/f3n5DdpAbdKLj4ZE4BWQI362l53M=",
+    version = "v1.1.3",
 )
 
 go_repository(
@@ -263,8 +264,9 @@ go_repository(
 go_repository(
     name = "com_github_spf13_viper",
     importpath = "github.com/spf13/viper",
-    sum = "h1:xVKxvI7ouOI5I+U9s2eeiUfMaWBVoXA3AWskkrqK0VM=",
-    version = "v1.7.0",
+    replace = "github.com/spf13/viper",
+    sum = "h1:pM5oEahlgWv/WnHXpgbKz7iLIxRf65tye2Ci+XFK5sk=",
+    version = "v1.7.1",
 )
 
 go_repository(
