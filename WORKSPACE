@@ -3934,3 +3934,10 @@ go_repository(
     sum = "h1:UcRoCA1FgXoc4CEM8J31fqEvI69uFIObY5ZDEFH7Znc=",
     version = "v3.5.0-alpha.0",
 )
+
+go_repository(
+    name = "org_golang_google_grpc_examples",
+    importpath = "google.golang.org/grpc/examples",
+    sum = "h1:UdBI3NZesDI4AuP02aKqpg73FiB0RO728xXQjlDfWk8=",
+    version = "v0.0.0-20210326170912-4a19753e9dfd",
+)

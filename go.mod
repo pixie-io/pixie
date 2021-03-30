@@ -85,8 +85,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.0
 	github.com/stretchr/testify v1.6.1
-	github.com/tidwall/buntdb v1.2.1 // indirect
-	github.com/tidwall/rtree v0.0.0-20180113144539-6cd427091e0e // indirect
+	github.com/tidwall/buntdb v1.2.1
 	github.com/txn2/txeh v1.2.1
 	github.com/vbauerster/mpb/v4 v4.11.0
 	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
@@ -106,6 +105,7 @@ require (
 	google.golang.org/api v0.43.0
 	google.golang.org/genproto v0.0.0-20210329143202-679c6ae281ee
 	google.golang.org/grpc v1.36.1
+	google.golang.org/grpc/examples v0.0.0-20210326170912-4a19753e9dfd // indirect
 	gopkg.in/segmentio/analytics-go.v3 v3.1.0
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/yaml.v2 v2.4.0
