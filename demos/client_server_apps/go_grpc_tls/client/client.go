@@ -95,5 +95,4 @@ func main() {
 		fmt.Println("Elapsed time = ", duration.Seconds())
 		fmt.Println("Requests per second = ", float64(statRequests)/duration.Seconds())
 	}
-
 }

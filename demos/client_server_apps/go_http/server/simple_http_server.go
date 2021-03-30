@@ -28,7 +28,6 @@ func init() {
 	iterationsPerMs := float64(cyclesToTest) / (float64(d.Nanoseconds()) / 1.0e6)
 	mIterationsPerMs = iterationsPerMs
 	fmt.Printf("MIterations/Ms: %.2f, e=%.2f\n", mIterationsPerMs/1.0e6, res)
-
 }
 
 // burnCyclesE computes the approximation of e by running a fixed number of iterations.

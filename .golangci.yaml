@@ -27,6 +27,7 @@ linters:
   - unused
   - varcheck
   - wastedassign
+  - whitespace
   disable:
   - errcheck
   # We run goimports which includes gofmt.

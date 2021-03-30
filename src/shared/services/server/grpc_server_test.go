@@ -249,7 +249,6 @@ func TestGrpcServerUnary(t *testing.T) {
 				assert.NotNil(t, resp)
 				assert.Equal(t, "test reply", resp.Reply)
 			}
-
 		})
 	}
 }
