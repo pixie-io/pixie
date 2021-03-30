@@ -29,7 +29,6 @@ inline StatusOr<sole::uuid> ParseUUID(const pl::uuidpb::UUID& uuid_proto) {
 inline void ToProto(const sole::uuid& uuid, pl::uuidpb::UUID* uuid_proto) {
   uuid_proto->set_high_bits(uuid.ab);
   uuid_proto->set_low_bits(uuid.cd);
-  *(uuid_proto->mutable_deprecated_data()) = uuid.str();
 }
 
 inline void ClearUUID(sole::uuid* uuid) {

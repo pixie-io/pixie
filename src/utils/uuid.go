@@ -38,9 +38,8 @@ func UUIDFromProtoOrNil(pb *pb.UUID) uuid.UUID {
 func ProtoFromUUID(u uuid.UUID) *pb.UUID {
 	data := u.Bytes()
 	p := &pb.UUID{
-		HighBits:       enc.Uint64(data[0:8]),
-		LowBits:        enc.Uint64(data[8:16]),
-		DeprecatedData: []byte(u.String()),
+		HighBits: enc.Uint64(data[0:8]),
+		LowBits:  enc.Uint64(data[8:16]),
 	}
 	return p
 }

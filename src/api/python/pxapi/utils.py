@@ -8,7 +8,6 @@ def uuid_pb_from_string(id_str: str) -> uuidpb.UUID:
     return uuidpb.UUID(
         high_bits=(u.int >> 64),
         low_bits=(u.int & 2**64 - 1),
-        deprecated_data=id_str.encode('utf-8'),
     )
 
 
