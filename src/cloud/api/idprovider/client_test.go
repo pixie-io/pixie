@@ -338,8 +338,8 @@ func createLoginRequest(t *testing.T, hydraLoginState, loginChallenge string) *h
 }
 
 func TestRedirectToLogin(t *testing.T) {
-	c, close := makeClient(t)
-	defer close()
+	c, cleanup := makeClient(t)
+	defer cleanup()
 
 	req := createLoginRequest(t, "", "abcd")
 
@@ -384,11 +384,11 @@ func TestAcceptHydraLogin(t *testing.T) {
 		// Call the original login request to handle the rest.
 		return (&fakeHydraAdminClient{}).AcceptLoginRequest(params)
 	}
-	c, close := makeClient(t)
+	c, cleanup := makeClient(t)
 	c.hydraAdminClient = &fakeHydraAdminClient{
 		acceptLoginRequestFn: &acceptLoginRequestFn,
 	}
-	defer close()
+	defer cleanup()
 
 	// Fake whoami response.
 	whoami := &Whoami{
@@ -430,8 +430,8 @@ func TestInterceptHydraConsent(t *testing.T) {
 	hydraPublicHostCookie := "coolcookie"
 	p := fillDefaults(&testClientConfig{consentChallenge: consentChallenge, hydraPublicHostCookie: hydraPublicHostCookie})
 
-	c, close := makeClientFromConfig(t, p)
-	defer close()
+	c, cleanup := makeClientFromConfig(t, p)
+	defer cleanup()
 
 	consentURL := p.hydraBrowserURL + p.hydraConsentPath
 
@@ -510,11 +510,11 @@ func TestAcceptConsentWithWrongClientID(t *testing.T) {
 func TestHandleLogin(t *testing.T) {
 	postLoginRedirect := "/auth/callback"
 	consentRedirectCookie := "consentRedirectCookie"
-	c, close := makeClientFromConfig(t, &testClientConfig{
+	c, cleanup := makeClientFromConfig(t, &testClientConfig{
 		postLoginRedirect:     postLoginRedirect,
 		hydraPublicHostCookie: consentRedirectCookie,
 	})
-	defer close()
+	defer cleanup()
 
 	hydraLoginState := "abcdef"
 	loginChallenge := "ghijkl"
@@ -558,8 +558,8 @@ func getRedirectURL(t *testing.T, resp *http.Response) string {
 
 func TestHandleLoginPerformsRedirects(t *testing.T) {
 	// Performs redirect on state mismatch.
-	c, close := makeClient(t)
-	defer close()
+	c, cleanup := makeClient(t)
+	defer cleanup()
 
 	req := createLoginRequest(t, "state1", "abcd")
 
@@ -629,13 +629,13 @@ func TestManageUserInfo(t *testing.T) {
 		}, nil
 	}
 
-	c, close := makeClientFromConfig(t, &testClientConfig{
+	c, cleanup := makeClientFromConfig(t, &testClientConfig{
 		updateIdentityFn:        &updateIdentityFn,
 		introspectOAuth2TokenFn: &introspectOAuth2TokenFn,
 		getIdentityFn:           &getIdentityFn,
 	})
 
-	defer close()
+	defer cleanup()
 	_, err := c.UpdateUserInfo(context.Background(), plUserID, &KratosUserInfo{
 		Email:    email,
 		PLOrgID:  plOrgID,

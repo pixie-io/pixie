@@ -62,18 +62,18 @@ func TestUInt128FromProto(t *testing.T) {
 		Low:  uint64(456),
 	}
 
-	uint := UInt128FromProto(uintPb)
-	assert.Equal(t, uint64(123), uint.High)
-	assert.Equal(t, uint64(456), uint.Low)
+	uint1 := UInt128FromProto(uintPb)
+	assert.Equal(t, uint64(123), uint1.High)
+	assert.Equal(t, uint64(456), uint1.Low)
 }
 
 func TestProtoFromUInt128(t *testing.T) {
-	uint := &UInt128{
+	uint1 := &UInt128{
 		High: uint64(123),
 		Low:  uint64(456),
 	}
 
-	uintPb := ProtoFromUInt128(uint)
+	uintPb := ProtoFromUInt128(uint1)
 	assert.Equal(t, uint64(123), uintPb.High)
 	assert.Equal(t, uint64(456), uintPb.Low)
 }

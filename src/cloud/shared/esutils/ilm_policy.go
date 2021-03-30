@@ -90,13 +90,13 @@ func (p *ILMPolicy) Rollover(maxSize *string, maxDocs *int, maxAge *string) *ILM
 // DeleteAfter adds a delete action to the policy's delete phase.
 // This actions causes rolled over indices to be deleted after `timeBeforeDelete` time has passed.
 func (p *ILMPolicy) DeleteAfter(timeBeforeDelete string) *ILMPolicy {
-	delete := p.mapForPhase("delete")
-	delete["min_age"] = timeBeforeDelete
+	del := p.mapForPhase("delete")
+	del["min_age"] = timeBeforeDelete
 
-	if delete["actions"] == nil {
-		delete["actions"] = make(map[string]interface{})
+	if del["actions"] == nil {
+		del["actions"] = make(map[string]interface{})
 	}
-	actions := delete["actions"].(map[string]interface{})
+	actions := del["actions"].(map[string]interface{})
 	actions["delete"] = make(map[string]interface{})
 
 	return p
