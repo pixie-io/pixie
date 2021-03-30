@@ -13,9 +13,13 @@ issues:
 
 linters:
   enable:
+  - asciicheck
   - deadcode
   - gosimple
   - ineffassign
+  - makezero
+  - misspell
+  - nolintlint
   - staticcheck
   - structcheck
   - typecheck

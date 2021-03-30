@@ -241,8 +241,8 @@ func (t *Datastore) DeleteTracepointsForAgent(agentID uuid.UUID) error {
 	}
 
 	delKeys := make([]string, len(tps))
-	for _, tp := range tps {
-		delKeys = append(delKeys, getTracepointStateKey(utils.UUIDFromProtoOrNil(tp.ID), agentID))
+	for i, tp := range tps {
+		delKeys[i] = getTracepointStateKey(utils.UUIDFromProtoOrNil(tp.ID), agentID)
 	}
 
 	return t.ds.DeleteAll(delKeys)

@@ -86,6 +86,8 @@ func RunScriptAndOutputResults(ctx context.Context, conns []*Connector, execScri
 	}
 
 	schemaCh := make(chan bool, 10)
+	//The preallocated slice is filled by the for loop and then this adds one more element.
+	//nolint:makezero
 	tasks = append(tasks, newTaskWrapper("Preparing schema", func() error {
 		for s := range schemaCh {
 			if s {
