@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go/v4"
 	log "github.com/sirupsen/logrus"
 
 	jwt2 "pixielabs.ai/pixielabs/src/shared/services/proto"

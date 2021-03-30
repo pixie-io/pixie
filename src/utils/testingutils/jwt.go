@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go/v4"
 
 	pb "pixielabs.ai/pixielabs/src/shared/services/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"

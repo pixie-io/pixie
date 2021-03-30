@@ -4,7 +4,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
@@ -75,7 +75,7 @@ func TestUpdater_UpdateOrInstallVizier(t *testing.T) {
 		claims := jwt.MapClaims{}
 		_, err = jwt.ParseWithClaims(resp.Token, claims, func(token *jwt.Token) (interface{}, error) {
 			return []byte("jwtkey"), nil
-		})
+		}, jwt.WithoutAudienceValidation())
 		require.NoError(t, err)
 		assert.Equal(t, "cluster", claims["Scopes"].(string))
 		// Send response.
@@ -156,7 +156,7 @@ func TestUpdater_ProcessUpdateQueue(t *testing.T) {
 		claims := jwt.MapClaims{}
 		_, err = jwt.ParseWithClaims(resp.Token, claims, func(token *jwt.Token) (interface{}, error) {
 			return []byte("jwtkey"), nil
-		})
+		}, jwt.WithoutAudienceValidation())
 		require.NoError(t, err)
 		assert.Equal(t, "cluster", claims["Scopes"].(string))
 		// Send response.

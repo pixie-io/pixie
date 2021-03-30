@@ -3943,3 +3943,10 @@ go_repository(
     sum = "h1:UdBI3NZesDI4AuP02aKqpg73FiB0RO728xXQjlDfWk8=",
     version = "v0.0.0-20210326170912-4a19753e9dfd",
 )
+
+go_repository(
+    name = "com_github_dgrijalva_jwt_go_v4",
+    importpath = "github.com/dgrijalva/jwt-go/v4",
+    sum = "h1:CaO/zOnF8VvUfEbhRatPcwKVWamvbYd8tQGRWacE9kU=",
+    version = "v4.0.0-preview1",
+)

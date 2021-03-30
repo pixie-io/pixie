@@ -50,7 +50,7 @@ go_library(
         "@com_github_alecthomas_chroma//quick:go_default_library",
         "@com_github_blang_semver//:go_default_library",
         "@com_github_bmatcuk_doublestar//:go_default_library",
-        "@com_github_dgrijalva_jwt_go//:go_default_library",
+        "@com_github_dgrijalva_jwt_go_v4//:go_default_library",
         "@com_github_dustin_go_humanize//:go_default_library",
         "@com_github_fatih_color//:go_default_library",
         "@com_github_gofrs_uuid//:go_default_library",

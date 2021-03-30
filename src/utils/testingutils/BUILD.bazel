@@ -17,7 +17,7 @@ go_library(
         "//src/shared/services/proto:jwt_go_proto",
         "//src/shared/services/utils:go_default_library",
         "@com_github_cenkalti_backoff_v3//:go_default_library",
-        "@com_github_dgrijalva_jwt_go//:go_default_library",
+        "@com_github_dgrijalva_jwt_go_v4//:go_default_library",
         "@com_github_googleapis_google_cloud_go_testing//storage/stiface:go_default_library",
         "@com_github_nats_io_nats_go//:go_default_library",
         "@com_github_nats_io_nats_server_v2//server:go_default_library",

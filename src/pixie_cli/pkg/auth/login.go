@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go/v4"
 	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open"
 	"google.golang.org/grpc/metadata"

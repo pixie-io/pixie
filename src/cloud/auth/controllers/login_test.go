@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/gofrs/uuid"
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/viper"
@@ -646,7 +646,7 @@ func TestServer_GetAugmentedToken_Service(t *testing.T) {
 	jwtclaims := jwt.MapClaims{}
 	_, err = jwt.ParseWithClaims(token, jwtclaims, func(token *jwt.Token) (interface{}, error) {
 		return []byte("jwtkey"), nil
-	})
+	}, jwt.WithoutAudienceValidation())
 	require.NoError(t, err)
 	assert.Equal(t, "vzmgr", jwtclaims["ServiceID"])
 }
@@ -1151,7 +1151,7 @@ func verifyToken(t *testing.T, token, expectedUserID string, expectedOrgID strin
 	claims := jwt.MapClaims{}
 	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(key), nil
-	})
+	}, jwt.WithoutAudienceValidation())
 	require.NoError(t, err)
 	assert.Equal(t, expectedUserID, claims["UserID"])
 	assert.Equal(t, expectedOrgID, claims["OrgID"])

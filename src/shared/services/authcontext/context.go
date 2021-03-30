@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go/v4"
 
 	jwt2 "pixielabs.ai/pixielabs/src/shared/services/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"
@@ -34,7 +34,7 @@ func (s *AuthContext) UseJWTAuth(signingKey string, tokenString string) error {
 			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 		}
 		return []byte(secret), nil
-	})
+	}, jwt.WithoutAudienceValidation())
 	if err != nil {
 		return err
 	}

@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -36,10 +36,10 @@ func TestGetServiceCredentials(t *testing.T) {
 			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 		}
 		return []byte("jwt-key"), nil
-	})
+	}, jwt.WithoutAudienceValidation())
 	require.NoError(t, err)
 	claims := token.Claims.(*jwt.MapClaims)
-	assert.Nil(t, claims.Valid())
+	assert.Nil(t, claims.Valid(jwt.NewValidationHelper(jwt.WithoutAudienceValidation())))
 }
 
 func TestAuthSignupHandler(t *testing.T) {
