@@ -9,12 +9,24 @@ import (
 	"github.com/dgraph-io/badger/v3"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	bunt "github.com/tidwall/buntdb"
 
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/badgerdb"
+	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/buntdb"
 	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/etcd"
 	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/pebbledb"
 )
+
+func TestBuntdb(t *testing.T) {
+	c, err := bunt.Open(":memory:")
+	if err != nil {
+		t.Fatal("failed to initialize buntdb")
+	}
+
+	db := buntdb.New(c)
+	runTests(db, t)
+}
 
 func TestBadgerDB(t *testing.T) {
 	c, err := badger.Open(badger.DefaultOptions("").WithInMemory(true))
@@ -153,6 +165,10 @@ func runTests(db MultiGetterSetterDeleterCloser, t *testing.T) {
 		require.NoError(t, err)
 		assert.Nil(t, v)
 
+		// No error when deleting nonexistent keys.
+		err = db.Delete("nonexistent")
+		require.NoError(t, err)
+
 		v, err = db.Get("key1")
 		require.NoError(t, err)
 		assert.Equal(t, "val1", string(v))
@@ -160,7 +176,7 @@ func runTests(db MultiGetterSetterDeleterCloser, t *testing.T) {
 
 	t.Run("DeleteAll", func(t *testing.T) {
 		setupDatastore(db)
-		err := db.DeleteAll([]string{"key1", "key3"})
+		err := db.DeleteAll([]string{"key1", "key3", "nonexistent"})
 		require.NoError(t, err)
 		v, err := db.Get("key1")
 		require.NoError(t, err)
@@ -187,6 +203,10 @@ func runTests(db MultiGetterSetterDeleterCloser, t *testing.T) {
 		v, err = db.Get("jam1")
 		require.NoError(t, err)
 		assert.Equal(t, "neg", string(v))
+
+		// No error when deleting nonexistent keys.
+		err = db.DeleteWithPrefix("nonexistent")
+		require.NoError(t, err)
 	})
 
 	err := db.Close()

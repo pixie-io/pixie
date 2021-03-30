@@ -100,6 +100,9 @@ func (w *DataStore) SetWithTTL(key string, value string, ttl time.Duration) erro
 func (w *DataStore) Delete(key string) error {
 	return w.db.Update(func(tx *buntdb.Tx) error {
 		_, err := tx.Delete(key)
+		if err == buntdb.ErrNotFound {
+			return nil
+		}
 		return err
 	})
 }
@@ -109,6 +112,9 @@ func (w *DataStore) DeleteAll(keys []string) error {
 	return w.db.Update(func(tx *buntdb.Tx) error {
 		for i := 0; i < len(keys); i++ {
 			_, err := tx.Delete(keys[i])
+			if err == buntdb.ErrNotFound {
+				return nil
+			}
 			if err != nil {
 				return err
 			}
