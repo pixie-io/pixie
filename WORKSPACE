@@ -105,6 +105,7 @@ pip_install(
 go_repository(
     name = "com_github_golang_protobuf",
     importpath = "github.com/golang/protobuf",
+    replace = "github.com/golang/protobuf",
     sum = "h1:ROPKBNFfQgOUMifHyP+KYbvpjbdoFNs+aK7DXlji0Tw=",
     version = "v1.5.2",
 )
@@ -112,6 +113,7 @@ go_repository(
 go_repository(
     name = "org_golang_google_genproto",
     importpath = "google.golang.org/genproto",
+    replace = "google.golang.org/genproto",
     sum = "h1:vVeMwkgjjF0rgUTvAJkHJC5hUf50yFdZFDpBgK2kVXI=",
     version = "v0.0.0-20210329143202-679c6ae281ee",
 )
@@ -119,6 +121,7 @@ go_repository(
 go_repository(
     name = "org_golang_google_grpc",
     importpath = "google.golang.org/grpc",
+    replace = "google.golang.org/grpc",
     sum = "h1:cmUfbeGKnz9+2DD/UYsMQXeqbHZqZDs4eQwW0sFOpBY=",
     version = "v1.36.1",
 )
@@ -272,6 +275,7 @@ go_repository(
 go_repository(
     name = "in_gopkg_yaml_v2",
     importpath = "gopkg.in/yaml.v2",
+    replace = "gopkg.in/yaml.v2",
     sum = "h1:D8xgwECY7CYvx+Y2n4sBz93Jn9JRvxdiyyo8CTfuKaY=",
     version = "v2.4.0",
 )
@@ -706,6 +710,7 @@ go_repository(
 go_repository(
     name = "com_github_google_go_cmp",
     importpath = "github.com/google/go-cmp",
+    replace = "github.com/google/go-cmp",
     sum = "h1:Khx7svrCpmxxtHBq5j2mp/xVjsi8hQMfNLvJFAlrGgU=",
     version = "v0.5.5",
 )
@@ -741,6 +746,7 @@ go_repository(
 go_repository(
     name = "com_google_cloud_go",
     importpath = "cloud.google.com/go",
+    replace = "cloud.google.com/go",
     sum = "h1:kAdyAMrj9CjqOSGiluseVjIgAyQ3uxADYtUYR6MwYeY=",
     version = "v0.80.0",
 )
@@ -814,6 +820,7 @@ go_repository(
 go_repository(
     name = "com_github_azure_go_ansiterm",
     importpath = "github.com/Azure/go-ansiterm",
+    replace = "github.com/Azure/go-ansiterm",
     sum = "h1:w+iIsaOQNcT7OZ575w+acHgRric5iCyQh+xv+KJ4HB8=",
     version = "v0.0.0-20170929234023-d6e3b3328b78",
 )
@@ -940,6 +947,7 @@ go_repository(
 go_repository(
     name = "org_golang_google_api",
     importpath = "google.golang.org/api",
+    replace = "google.golang.org/api",
     sum = "h1:4sAyIHT6ZohtAQDoxws+ez7bROYmUlOVvsUscYCDTqA=",
     version = "v0.43.0",
 )
@@ -1286,8 +1294,9 @@ go_repository(
 go_repository(
     name = "com_github_docker_docker",
     importpath = "github.com/docker/docker",
-    sum = "h1:oJdSw9tsT8dthwdcBLVzTf3U4xC4rpjNpgdMXi6L/xg=",
-    version = "v17.12.0-ce-rc1.0.20200417080019-f432f7159508+incompatible",
+    replace = "github.com/moby/moby",
+    sum = "h1:X1Kfy/GrYL4UMcxWrIZCw4saZsIbd+W/++w6HA6STb8=",
+    version = "v20.10.5+incompatible",
 )
 
 go_repository(
@@ -2615,15 +2624,16 @@ go_repository(
 go_repository(
     name = "com_github_azure_go_autorest_autorest",
     importpath = "github.com/Azure/go-autorest/autorest",
-    sum = "h1:90Y4srNYrwOtAgVo3ndrQkTYn6kf1Eg/AjTFJ8Is2aM=",
-    version = "v0.11.18",
+    replace = "github.com/Azure/go-autorest/autorest",
+    sum = "h1:eVvIXUKiTgv++6YnWb42DUA1YL7qDugnKP0HljexdnQ=",
+    version = "v0.11.1",
 )
 
 go_repository(
     name = "com_github_azure_go_autorest_autorest_adal",
     importpath = "github.com/Azure/go-autorest/autorest/adal",
-    sum = "h1:Mp5hbtOePIzM8pJVRa3YLrWWmZtoxRXqUEzCfJt3+/Q=",
-    version = "v0.9.13",
+    sum = "h1:Y3bBUV4rTuxenJJs41HU3qmqsb+auo+a3Lz+PlJPpL0=",
+    version = "v0.9.5",
 )
 
 go_repository(
@@ -2643,8 +2653,8 @@ go_repository(
 go_repository(
     name = "com_github_azure_go_autorest_logger",
     importpath = "github.com/Azure/go-autorest/logger",
-    sum = "h1:IG7i4p/mDa2Ce4TRyAO8IHnVhAVF3RFU+ZtXWSmf4Tg=",
-    version = "v0.2.1",
+    sum = "h1:e4RVHVZKC5p6UANLJHkM4OfR1UKZPj8Wt8Pcx+3oqrE=",
+    version = "v0.2.0",
 )
 
 go_repository(
@@ -3201,6 +3211,7 @@ go_repository(
 go_repository(
     name = "com_github_go_openapi_strfmt",
     importpath = "github.com/go-openapi/strfmt",
+    replace = "github.com/go-openapi/strfmt",
     sum = "h1:l2omNtmNbMc39IGptl9BuXBEKcZfS8zjrTsPKTiJiDM=",
     version = "v0.20.0",
 )
@@ -3418,8 +3429,9 @@ go_repository(
 go_repository(
     name = "org_mongodb_go_mongo_driver",
     importpath = "go.mongodb.org/mongo-driver",
-    sum = "h1:moga+uhicpVshTyaqY9L23E6QqwcHRUv1sqyOsoyOO8=",
-    version = "v1.4.3",
+    replace = "go.mongodb.org/mongo-driver",
+    sum = "h1:9nOVLGDfOaZ9R0tBumx/BcuqkbFpyTCU2r/Po7A2azI=",
+    version = "v1.5.1",
 )
 
 go_repository(
@@ -3954,6 +3966,7 @@ go_repository(
 go_repository(
     name = "com_github_azure_go_autorest",
     importpath = "github.com/Azure/go-autorest",
+    replace = "github.com/Azure/go-autorest",
     sum = "h1:V5VMDjClD3GiElqLWO7mz2MxNAK/vTfRHdAubSIPRgs=",
     version = "v14.2.0+incompatible",
 )
@@ -3991,4 +4004,32 @@ go_repository(
     importpath = "k8s.io/component-helpers",
     sum = "h1:JmmGqBM7CaJRUKL6oVFoiM7BT2hE9cxg/yjrPkMhSbk=",
     version = "v0.20.5",
+)
+
+go_repository(
+    name = "com_github_xdg_go_pbkdf2",
+    importpath = "github.com/xdg-go/pbkdf2",
+    sum = "h1:Su7DPu48wXMwC3bs7MCNG+z4FhcyEuz5dlvchbq0B0c=",
+    version = "v1.0.0",
+)
+
+go_repository(
+    name = "com_github_xdg_go_scram",
+    importpath = "github.com/xdg-go/scram",
+    sum = "h1:akYIkZ28e6A96dkWNJQu3nmCzH3YfwMPQExUYDaRv7w=",
+    version = "v1.0.2",
+)
+
+go_repository(
+    name = "com_github_xdg_go_stringprep",
+    importpath = "github.com/xdg-go/stringprep",
+    sum = "h1:6iq84/ryjjeRmMJwxutI51F2GIPlP5BfTvXHeYjyhBc=",
+    version = "v1.0.2",
+)
+
+go_repository(
+    name = "com_github_youmark_pkcs8",
+    importpath = "github.com/youmark/pkcs8",
+    sum = "h1:splanxYIlg+5LfHAM6xpdFEAYOk8iySO56hMFq6uLyA=",
+    version = "v0.0.0-20181117223130-1be2e3e5546d",
 )

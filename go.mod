@@ -25,7 +25,7 @@ require (
 	github.com/coreos/go-systemd/v22 v22.3.0 // indirect
 	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
-	github.com/docker/docker v17.12.0-ce-rc1.0.20200417080019-f432f7159508+incompatible // indirect
+	github.com/docker/docker v20.10.5+incompatible // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/emicklei/dot v0.10.1
 	github.com/evanphx/json-patch v4.9.0+incompatible
@@ -93,6 +93,7 @@ require (
 	go.etcd.io/etcd/api/v3 v3.5.0-alpha.0
 	go.etcd.io/etcd/client/v3 v3.5.0-alpha.0
 	go.etcd.io/etcd/pkg/v3 v3.5.0-alpha.0
+	go.mongodb.org/mongo-driver v1.5.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2 // indirect
 	golang.org/x/mod v0.4.2 // indirect
@@ -123,7 +124,7 @@ require (
 
 replace (
 	// Fix go mod issues with upper case Sirupsen.
-	github.com/Sirupsen/logrus v1.7.0 => github.com/sirupsen/logrus v1.7.0
+	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.7.0
 	github.com/coreos/etcd => go.etcd.io/etcd/v3 v3.5.0-alpha.0
 	github.com/go-openapi/analysis => github.com/go-openapi/analysis v0.19.5
 	github.com/go-openapi/loads => github.com/go-openapi/loads v0.19.0
@@ -149,3 +150,29 @@ replace (
 replace github.com/spf13/cobra => github.com/spf13/cobra v1.1.3
 
 replace github.com/spf13/viper => github.com/spf13/viper v1.7.1
+
+replace cloud.google.com/go => cloud.google.com/go v0.80.0
+
+replace github.com/Azure/go-autorest/autorest => github.com/Azure/go-autorest/autorest v0.11.1
+
+replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v14.2.0+incompatible
+
+replace github.com/Azure/go-ansiterm => github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78
+
+replace github.com/golang/protobuf => github.com/golang/protobuf v1.5.2
+
+replace google.golang.org/genproto => google.golang.org/genproto v0.0.0-20210329143202-679c6ae281ee
+
+replace google.golang.org/grpc => google.golang.org/grpc v1.36.1
+
+replace google.golang.org/api => google.golang.org/api v0.43.0
+
+replace gopkg.in/yaml.v2 => gopkg.in/yaml.v2 v2.4.0
+
+replace github.com/go-openapi/strfmt => github.com/go-openapi/strfmt v0.20.0
+
+replace github.com/google/go-cmp => github.com/google/go-cmp v0.5.5
+
+replace go.mongodb.org/mongo-driver => go.mongodb.org/mongo-driver v1.5.1
+
+replace github.com/docker/docker => github.com/moby/moby v20.10.5+incompatible
