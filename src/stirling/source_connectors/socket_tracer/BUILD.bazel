@@ -38,7 +38,7 @@ pl_cc_test(
     name = "uprobe_symaddrs_test",
     srcs = ["uprobe_symaddrs_test.cc"],
     data = [
-        "//demos/client_server_apps/go_grpc_tls_pl/server",
+        "//src/stirling/testing/demo_apps/go_grpc_tls_pl/server",
     ],
     deps = [
         ":cc_library",
@@ -253,8 +253,8 @@ pl_cc_test(
     srcs = ["http2_trace_bpf_test.cc"],
     data = [
         "//demos/applications/hipster_shop/productcatalogservice_client:productcatalogservice_client_image.tar",
-        "//demos/client_server_apps/go_grpc_tls_pl/client:client_image.tar",
-        "//demos/client_server_apps/go_grpc_tls_pl/server:server_image.tar",
+        "//src/stirling/testing/demo_apps/go_grpc_tls_pl/client:client_image.tar",
+        "//src/stirling/testing/demo_apps/go_grpc_tls_pl/server:server_image.tar",
     ],
     flaky = True,
     tags = [

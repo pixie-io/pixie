@@ -47,10 +47,10 @@ pl_cc_test(
     name = "dwarf_tools_test",
     srcs = ["dwarf_tools_test.cc"],
     data = [
-        "//demos/client_server_apps/go_grpc_tls_pl/server",
         "//src/stirling/obj_tools/testdata:dummy_exe_fixture",
         "//src/stirling/obj_tools/testdata:dummy_go_binary",
         "//src/stirling/obj_tools/testdata:sockshop_service",
+        "//src/stirling/testing/demo_apps/go_grpc_tls_pl/server",
     ],
     deps = [
         ":cc_library",
@@ -80,7 +80,7 @@ pl_cc_binary(
 pl_cc_binary(
     name = "dwarf_reader_benchmark",
     srcs = ["dwarf_reader_benchmark.cc"],
-    data = ["//demos/client_server_apps/go_grpc_tls_pl/server"],
+    data = ["//src/stirling/testing/demo_apps/go_grpc_tls_pl/server"],
     deps = [
         ":cc_library",
         "//src/common/testing:cc_library",

@@ -6,7 +6,7 @@
 constexpr std::string_view kDummyGoBinary =
     "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary";
 constexpr std::string_view kGoGRPCServer =
-    "demos/client_server_apps/go_grpc_tls_pl/server/server_/server";
+    "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/server_/server";
 constexpr std::string_view kCppBinary = "src/stirling/obj_tools/testdata/dummy_exe";
 constexpr std::string_view kGoBinaryUnconventional =
     "src/stirling/obj_tools/testdata/sockshop_payments_service";

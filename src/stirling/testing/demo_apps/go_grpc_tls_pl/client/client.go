@@ -14,8 +14,8 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"pixielabs.ai/pixielabs/demos/client_server_apps/go_grpc_tls_pl/server/greetpb"
 	"pixielabs.ai/pixielabs/src/shared/services"
+	"pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/go_grpc_tls_pl/server/greetpb"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 

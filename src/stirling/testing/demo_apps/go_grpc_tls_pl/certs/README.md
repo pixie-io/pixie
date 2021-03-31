@@ -1,10 +1,13 @@
 # Commands used to generate keys
 
+TODO(yzhao): Change to dynamic generate certs in the test programs.
+https://golang.org/src/crypto/tls/generate_cert.go
+
 ## Generate rootCA
 
 ```
-openssl genrsa -out rootCA.key 4096 
-openssl req -x509 -new -nodes -key rootCA.key -sha256 -days 1024 -out rootCA.crt -config san.cnf -extensions 'req_ext' 
+openssl genrsa -out rootCA.key 4096
+openssl req -x509 -new -nodes -key rootCA.key -sha256 -days 1024 -out rootCA.crt -config san.cnf -extensions 'req_ext'
 ```
 
 # Generate keys and certs for server

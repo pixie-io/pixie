@@ -3,7 +3,7 @@
 scriptdir=$(dirname "$(realpath "$0")")
 certdir=$scriptdir/../certs
 
-target="//demos/client_server_apps/go_grpc_tls_pl/server:server"
+target="//src/stirling/testing/demo_apps/go_grpc_tls_pl/server:server"
 
 # Note that client assumes this JWT signing key, so do not change it.
 

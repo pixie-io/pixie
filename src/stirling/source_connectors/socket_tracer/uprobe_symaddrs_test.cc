@@ -24,7 +24,7 @@ class UprobeSymaddrsTest : public ::testing::Test {
   }
 
   static inline constexpr std::string_view kGoGRPCServer =
-      "demos/client_server_apps/go_grpc_tls_pl/server/server_/server";
+      "src/stirling/testing/demo_apps/go_grpc_tls_pl/server/server_/server";
 
   std::unique_ptr<DwarfReader> dwarf_reader_;
   std::unique_ptr<ElfReader> elf_reader_;

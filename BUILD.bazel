@@ -65,7 +65,7 @@ gazelle(
 # gazelle:resolve go pixielabs.ai/pixielabs/demos/applications/hipster_shop/proto //demos/applications/hipster_shop/proto:demo_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/shared/scriptspb //src/shared/scriptspb:scripts_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/shared/vispb //src/shared/vispb:vis_pl_go_proto
-# gazelle:resolve go pixielabs.ai/pixielabs/demos/client_server_apps/go_grpc_tls_pl/server/greetpb //demos/client_server_apps/go_grpc_tls_pl/server/greetpb:service_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/go_grpc_tls_pl/server/greetpb //src/stirling/testing/demo_apps/go_grpc_tls_pl/server/greetpb:service_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/shared/bloomfilterpb //src/shared/bloomfilterpb:bloomfilter_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/shared/metadatapb //src/shared/metadatapb:metadata_pl_go_proto
 #
