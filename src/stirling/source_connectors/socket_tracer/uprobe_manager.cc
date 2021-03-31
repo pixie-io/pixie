@@ -327,7 +327,7 @@ std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
     pids[host_exe_path.string()].push_back(upid.pid());
   }
 
-  LOG_FIRST_N(INFO, 1) << absl::Substitute("New PIDs count = $0", pids.size());
+  VLOG(1) << absl::Substitute("New PIDs count = $0", pids.size());
 
   return pids;
 }
@@ -366,6 +366,8 @@ int UProbeManager::DeployOpenSSLUProbes(const absl::flat_hash_set<md::UPID>& pid
       VLOG(1) << absl::Substitute("AttachOpenSSLUprobes failed for PID $0: $1", pid.pid(),
                                   attach_status.ToString());
     } else {
+      VLOG(1) << absl::Substitute("AttachOpenSSLUprobes succeeded for PID $0: $1 probes", pid.pid(),
+                                  attach_status.ValueOrDie());
       uprobe_count += attach_status.ValueOrDie();
     }
   }

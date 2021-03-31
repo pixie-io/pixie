@@ -102,6 +102,16 @@ class OpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ fals
     sleep(1);
   }
 
+  int NginxWorkerPID() {
+    // Nginx has a master process and a worker process. We need the PID of the worker process.
+    int worker_pid;
+    std::string pid_str =
+        pl::Exec(absl::Substitute("pgrep -P $0", this->server_.process_pid())).ValueOrDie();
+    CHECK(absl::SimpleAtoi(pid_str, &worker_pid));
+    LOG(INFO) << absl::Substitute("Worker thread PID: $0", worker_pid);
+    return worker_pid;
+  }
+
   NginxContainer server_;
 };
 
@@ -140,121 +150,109 @@ typedef ::testing::Types<NginxOpenSSL_1_1_0_Container, NginxOpenSSL_1_1_1_Contai
 TYPED_TEST_SUITE(OpenSSLTraceTest, NginxImplementations);
 
 TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
+  DataTable data_table(kHTTPTable);
+  this->StartTransferDataThread(SocketTraceConnector::kHTTPTableNum, &data_table);
+
+  // Make an SSL request with curl.
+  // Because the server uses a self-signed certificate, curl will normally refuse to connect.
+  // This is similar to the warning pages that Firefox/Chrome would display.
+  // To take an exception and make the SSL connection anyways, we use the --insecure flag.
+
+  // Run the client in the network of the server, so they can connect to each other.
   CurlContainer client;
+  PL_CHECK_OK(
+      client.Run(10, {absl::Substitute("--network=container:$0", this->server_.container_name())},
+                 {"--insecure", "-s", "-S", "https://localhost:443/index.html"}));
+  client.Wait();
 
+  int worker_pid = this->NginxWorkerPID();
+
+  // Grab the data from Stirling.
+  this->StopTransferDataThread();
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+  ASSERT_FALSE(tablets.empty());
+  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+
+  for (size_t i = 0; i < record_batch[0]->Size(); ++i) {
+    uint32_t pid = record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(i).High64();
+    std::string req_path = record_batch[kHTTPReqPathIdx]->Get<types::StringValue>(i);
+    VLOG(1) << absl::Substitute("$0 $1", pid, req_path);
+  }
+
+  http::Record expected_record;
+  expected_record.req.minor_version = 1;
+  expected_record.req.req_method = "GET";
+  expected_record.req.req_path = "/index.html";
+  expected_record.req.body = "";
+  expected_record.resp.resp_status = 200;
+  expected_record.resp.resp_message = "OK";
+  expected_record.resp.body = kNginxRespBody;
+
+  // Check server-side tracing results.
   {
-    // Make an SSL request with curl.
-    // Because the server uses a self-signed certificate, curl will normally refuse to connect.
-    // This is similar to the warning pages that Firefox/Chrome would display.
-    // To take an exception and make the SSL connection anyways, we use the --insecure flag.
+    std::vector<http::Record> records = GetTargetRecords(record_batch, worker_pid);
 
-    // Run the client in the network of the server, so they can connect to each other.
-    PL_CHECK_OK(
-        client.Run(10, {absl::Substitute("--network=container:$0", this->server_.container_name())},
-                   {"--insecure", "-s", "-S", "https://localhost:443/index.html"}));
-    client.Wait();
-
-    // Grab the data from Stirling.
-    DataTable data_table(kHTTPTable);
-    this->source_->TransferData(this->ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
-    std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
-    ASSERT_FALSE(tablets.empty());
-    types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
-
-    for (size_t i = 0; i < record_batch[0]->Size(); ++i) {
-      uint32_t pid = record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(i).High64();
-      std::string req_path = record_batch[kHTTPReqPathIdx]->Get<types::StringValue>(i);
-      VLOG(1) << absl::Substitute("$0 $1", pid, req_path);
-    }
-
-    http::Record expected_record;
-    expected_record.req.minor_version = 1;
-    expected_record.req.req_method = "GET";
-    expected_record.req.req_path = "/index.html";
-    expected_record.req.body = "";
-    expected_record.resp.resp_status = 200;
-    expected_record.resp.resp_message = "OK";
-    expected_record.resp.body = kNginxRespBody;
-
-    // Check server-side tracing results.
-    {
-      // Nginx has a master process and a worker process. We need the PID of the worker process.
-      int worker_pid;
-      std::string pid_str =
-          pl::Exec(absl::Substitute("pgrep -P $0", this->server_.process_pid())).ValueOrDie();
-      ASSERT_TRUE(absl::SimpleAtoi(pid_str, &worker_pid));
-      LOG(INFO) << absl::Substitute("Worker thread PID: $0", worker_pid);
-
-      std::vector<http::Record> records = GetTargetRecords(record_batch, worker_pid);
-
-      EXPECT_THAT(records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
-    }
+    EXPECT_THAT(records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
   }
 }
 
-TYPED_TEST(OpenSSLTraceTest, DISABLED_ssl_capture_ruby_client) {
+TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
+  DataTable data_table(kHTTPTable);
+  this->StartTransferDataThread(SocketTraceConnector::kHTTPTableNum, &data_table);
+
+  // Make multiple requests and make sure we capture all of them.
+  std::string rb_script = R"(
+        require 'net/http'
+        require 'uri'
+
+        $i = 0
+        while $i < 3 do
+          uri = URI.parse('https://localhost:443/index.html')
+          http = Net::HTTP.new(uri.host, uri.port)
+          http.use_ssl = true
+          http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+          request = Net::HTTP::Get.new(uri.request_uri)
+          response = http.request(request)
+          p response.body
+
+          sleep(1)
+
+          $i += 1
+        end
+  )";
+
+  // Make an SSL request with the client.
+  // Run the client in the network of the server, so they can connect to each other.
   RubyContainer client;
+  PL_CHECK_OK(
+      client.Run(10, {absl::Substitute("--network=container:$0", this->server_.container_name())},
+                 {"ruby", "-e", rb_script}));
+  client.Wait();
 
+  int worker_pid = this->NginxWorkerPID();
+
+  // Grab the data from Stirling.
+  this->StopTransferDataThread();
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+  ASSERT_FALSE(tablets.empty());
+  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+
+  http::Record expected_record;
+  expected_record.req.minor_version = 1;
+  expected_record.req.req_method = "GET";
+  expected_record.req.req_path = "/index.html";
+  expected_record.req.body = "";
+  expected_record.resp.resp_status = 200;
+  expected_record.resp.resp_message = "OK";
+  expected_record.resp.body = kNginxRespBody;
+
+  // Check server-side tracing results.
   {
-    // Make multiple requests and make sure we capture all of them.
-    std::string rb_script = R"(
-          require 'net/http'
-          require 'uri'
+    std::vector<http::Record> records = GetTargetRecords(record_batch, worker_pid);
 
-          $i = 0
-          while $i < 3 do
-            uri = URI.parse('https://localhost:443/index.html')
-            http = Net::HTTP.new(uri.host, uri.port)
-            http.use_ssl = true
-            http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-            request = Net::HTTP::Get.new(uri.request_uri)
-            response = http.request(request)
-            p response.body
-
-            sleep(1)
-
-            $i += 1
-          end
-    )";
-
-    // Make an SSL request with the client.
-    // Run the client in the network of the server, so they can connect to each other.
-    PL_CHECK_OK(
-        client.Run(10, {absl::Substitute("--network=container:$0", this->server_.container_name())},
-                   {"ruby", "-e", rb_script}));
-    client.Wait();
-
-    // Grab the data from Stirling.
-    DataTable data_table(kHTTPTable);
-    this->source_->TransferData(this->ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
-    std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
-    ASSERT_FALSE(tablets.empty());
-    types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
-
-    http::Record expected_record;
-    expected_record.req.minor_version = 1;
-    expected_record.req.req_method = "GET";
-    expected_record.req.req_path = "/index.html";
-    expected_record.req.body = "";
-    expected_record.resp.resp_status = 200;
-    expected_record.resp.resp_message = "OK";
-    expected_record.resp.body = kNginxRespBody;
-
-    // Check server-side tracing results.
-    {
-      // Nginx has a master process and a worker process. We need the PID of the worker process.
-      int worker_pid;
-      std::string pid_str =
-          pl::Exec(absl::Substitute("pgrep --parent $0", this->server_.process_pid())).ValueOrDie();
-      ASSERT_TRUE(absl::SimpleAtoi(pid_str, &worker_pid));
-      LOG(INFO) << absl::Substitute("Worker thread PID: $0", worker_pid);
-
-      std::vector<http::Record> records = GetTargetRecords(record_batch, worker_pid);
-
-      EXPECT_THAT(records,
-                  UnorderedElementsAre(EqHTTPRecord(expected_record), EqHTTPRecord(expected_record),
-                                       EqHTTPRecord(expected_record)));
-    }
+    EXPECT_THAT(records,
+                UnorderedElementsAre(EqHTTPRecord(expected_record), EqHTTPRecord(expected_record),
+                                     EqHTTPRecord(expected_record)));
   }
 }
 

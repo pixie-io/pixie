@@ -58,11 +58,30 @@ class SocketTraceBPFTest : public ::testing::Test {
     }
   }
 
+  void StartTransferDataThread(int table_num, DataTable* data_table) {
+    transfer_data_thread_ = std::thread(
+        [this](int table_num, DataTable* data_table) {
+          while (transfer_enable_) {
+            source_->TransferData(ctx_.get(), table_num, data_table);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+          }
+        },
+        table_num, data_table);
+  }
+
+  void StopTransferDataThread() {
+    CHECK(transfer_data_thread_.joinable());
+    transfer_enable_ = false;
+    transfer_data_thread_.join();
+  }
+
   static constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
   static constexpr int kMySQLTableNum = SocketTraceConnector::kMySQLTableNum;
 
   std::unique_ptr<SocketTraceConnector> source_;
   std::unique_ptr<StandaloneContext> ctx_;
+  std::atomic<bool> transfer_enable_ = true;
+  std::thread transfer_data_thread_;
 };
 
 }  // namespace testing
