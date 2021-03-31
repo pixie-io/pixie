@@ -73,6 +73,8 @@ class HTTP2TraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing 
 };
 
 TEST_F(HTTP2TraceTest, Basic) {
+  StartTransferDataThread(SocketTraceConnector::kHTTPTableNum, kHTTPTable);
+
   // Run the client in the network of the server, so they can connect to each other.
   PL_CHECK_OK(
       client_.Run(10, {absl::Substitute("--network=container:$0", server_.container_name())}));
@@ -83,9 +85,7 @@ TEST_F(HTTP2TraceTest, Basic) {
   sleep(3);
 
   // Grab the data from Stirling.
-  DataTable data_table(kHTTPTable);
-  source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
@@ -125,9 +125,8 @@ TEST_F(HTTP2TraceTest, Basic) {
               IsEmpty());
 
   {
-    DataTable data_table(kConnStatsTable);
-    source_->TransferData(ctx_.get(), SocketTraceConnector::kConnStatsTableNum, &data_table);
-    std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+    StartTransferDataThread(SocketTraceConnector::kConnStatsTableNum, kConnStatsTable);
+    std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
 
     ASSERT_FALSE(tablets.empty());
 
@@ -193,6 +192,8 @@ class ProductCatalogServiceTraceTest
 };
 
 TEST_F(ProductCatalogServiceTraceTest, Basic) {
+  StartTransferDataThread(SocketTraceConnector::kHTTPTableNum, kHTTPTable);
+
   // Run the client in the network of the server, so they can connect to each other.
   PL_CHECK_OK(
       client_.Run(10, {absl::Substitute("--network=container:$0", server_.container_name())}));
@@ -202,9 +203,7 @@ TEST_F(ProductCatalogServiceTraceTest, Basic) {
   sleep(3);
 
   // Grab the data from Stirling.
-  DataTable data_table(kHTTPTable);
-  source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
   ASSERT_FALSE(tablets.empty());
   const types::ColumnWrapperRecordBatch& rb = tablets[0].records;
 

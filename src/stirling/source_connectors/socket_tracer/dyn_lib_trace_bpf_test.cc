@@ -11,7 +11,6 @@
 #include "src/common/testing/testing.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
-#include "src/stirling/core/data_table.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/protocol_checkers.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
@@ -101,21 +100,18 @@ TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
   // Makes the test run much faster.
   FLAGS_stirling_disable_self_tracing = true;
 
+  StartTransferDataThread(SocketTraceConnector::kHTTPTableNum, kHTTPTable);
+
   NginxContainer server;
   RubyContainer client;
-  DataTable data_table(kHTTPTable);
 
-  {
-    // Run the nginx HTTPS server.
-    // The container runner will make sure it is in the ready state before unblocking.
-    StatusOr<std::string> run_result = server.Run(60);
-    PL_CHECK_OK(run_result);
-  }
+  // Run the nginx HTTPS server.
+  // The container runner will make sure it is in the ready state before unblocking.
+  ASSERT_OK_AND_ASSIGN(std::string run_result, server.Run(60));
 
-  // This TransferData will detect nginx for the first time, and deploy uprobes on its libssl.
+  // This RefreshData will cause next TransferData to detect nginx, and deploy uprobes on its
+  // libssl.
   RefreshContext();
-  source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
-  sleep(1);
 
   {
     // The key to this test is that Ruby only loads OpenSSL when it's required,
@@ -160,18 +156,16 @@ TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
                            {absl::Substitute("--network=container:$0", server.container_name())},
                            {"ruby", "-e", rb_script}));
 
-    // Periodically run TransferData.
+    // Periodically run RefreshContext.
     // Do this at a frequency faster than the sleep in the Ruby script.
     // This is to detect libssl, and deploy uprobes.
     for (int i = 0; i < 20; ++i) {
       RefreshContext();
-      source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
       sleep(1);
     }
     client.Wait();
 
-    source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
-    std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+    std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
     ASSERT_FALSE(tablets.empty());
     types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 

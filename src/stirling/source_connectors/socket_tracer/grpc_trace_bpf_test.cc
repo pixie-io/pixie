@@ -103,9 +103,6 @@ class GRPCTraceGoTest : public ::testing::Test {
   std::string server_path_;
   std::string client_path_;
 
-  // Create a context to pass into each TransferData() in the test, using a dummy ASID.
-  static constexpr uint32_t kASID = 1;
-
   DataTable data_table_;
   SubProcess s_;
   int s_port_ = -1;

@@ -6,6 +6,8 @@
 #include <utility>
 #include <vector>
 
+#include <absl/base/internal/spinlock.h>
+
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/testing/common.h"
@@ -47,6 +49,8 @@ class SocketTraceBPFTest : public ::testing::Test {
   }
 
   void RefreshContext() {
+    absl::base_internal::SpinLockHolder lock(&socket_tracer_state_lock_);
+
     ctx_ = std::make_unique<StandaloneContext>();
 
     // Normally, Stirling will be setup to think that all traffic is within the cluster,
@@ -60,18 +64,32 @@ class SocketTraceBPFTest : public ::testing::Test {
 
   void StartTransferDataThread(int table_num, const DataTableSchema& schema) {
     data_table_ = std::make_unique<DataTable>(schema);
-    transfer_enable_ = true;
     transfer_data_thread_ = std::thread(
         [this](int table_num, DataTable* data_table) {
+          transfer_enable_ = true;
           while (transfer_enable_) {
-            source_->TransferData(ctx_.get(), table_num, data_table);
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            {
+              absl::base_internal::SpinLockHolder lock(&socket_tracer_state_lock_);
+              source_->TransferData(ctx_.get(), table_num, data_table);
+            }
+            std::this_thread::sleep_for(kTransferDataPeriod);
           }
         },
         table_num, data_table_.get());
+
+    while (!transfer_enable_) {
+    }
+
+    // Wait for at least one TransferData() call before returning.
+    std::this_thread::sleep_for(kTransferDataPeriod);
   }
 
   std::vector<TaggedRecordBatch> StopTransferDataThread() {
+    // Give enough time for one more TransferData call by transfer_data_thread_,
+    // so we make sure we've captured everything.
+    std::this_thread::sleep_for(kTransferDataPeriod);
+
+    absl::base_internal::SpinLockHolder lock(&socket_tracer_state_lock_);
     CHECK(data_table_ != nullptr);
     CHECK(transfer_data_thread_.joinable());
     transfer_enable_ = false;
@@ -82,11 +100,15 @@ class SocketTraceBPFTest : public ::testing::Test {
   static constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
   static constexpr int kMySQLTableNum = SocketTraceConnector::kMySQLTableNum;
 
+  absl::base_internal::SpinLock socket_tracer_state_lock_;
+
   std::unique_ptr<SocketTraceConnector> source_;
   std::unique_ptr<StandaloneContext> ctx_;
-  std::atomic<bool> transfer_enable_ = true;
+  std::atomic<bool> transfer_enable_ = false;
   std::thread transfer_data_thread_;
   std::unique_ptr<DataTable> data_table_;
+
+  static constexpr std::chrono::milliseconds kTransferDataPeriod{100};
 };
 
 }  // namespace testing

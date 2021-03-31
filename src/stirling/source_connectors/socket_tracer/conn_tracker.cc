@@ -20,14 +20,6 @@
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/go_grpc_types.hpp"
 #include "src/stirling/source_connectors/socket_tracer/conn_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/conn_trackers_manager.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/cql/stitcher.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/cql/types.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/http/stitcher.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/http/types.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/http2/stitcher.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/http2/types.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/mysql/stitcher.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/mysql/types.h"
 
 DEFINE_bool(enable_unix_domain_sockets, false, "Whether Unix domain sockets are traced or not.");
 

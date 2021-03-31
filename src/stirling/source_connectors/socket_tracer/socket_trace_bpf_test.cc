@@ -105,6 +105,8 @@ TEST_P(NonVecSyscallTests, NonVecSyscalls) {
                                 magic_enum::enum_name(p.syscall_pair), p.trace_role);
   ConfigureBPFCapture(kProtocolHTTP, p.trace_role);
 
+  StartTransferDataThread(kHTTPTableNum, kHTTPTable);
+
   testing::SendRecvScript script({
       {{kHTTPReqMsg1}, {kHTTPRespMsg1}},
       {{kHTTPReqMsg2}, {kHTTPRespMsg2}},
@@ -123,9 +125,7 @@ TEST_P(NonVecSyscallTests, NonVecSyscalls) {
                                      magic_enum::enum_name(p.syscall_pair));
   }
 
-  DataTable data_table(kHTTPTable);
-  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
   ASSERT_FALSE(tablets.empty());
 
   if (p.trace_role & kRoleClient) {
@@ -186,6 +186,8 @@ TEST_P(IOVecSyscallTests, IOVecSyscalls) {
   LOG(INFO) << absl::Substitute("$0 $1", magic_enum::enum_name(p.syscall_pair), p.trace_role);
   ConfigureBPFCapture(kProtocolHTTP, p.trace_role);
 
+  StartTransferDataThread(kHTTPTableNum, kHTTPTable);
+
   testing::SendRecvScript script({
       {{kHTTPReqMsg1},
        {"HTTP/1.1 200 OK\r\n", "Content-Type: json\r\n", "Content-Length: 1\r\n\r\na"}},
@@ -206,9 +208,7 @@ TEST_P(IOVecSyscallTests, IOVecSyscalls) {
                                      magic_enum::enum_name(p.syscall_pair));
   }
 
-  DataTable data_table(kHTTPTable);
-  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
   ASSERT_FALSE(tablets.empty());
 
   if (p.trace_role & kRoleServer) {
@@ -278,6 +278,8 @@ TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
 TEST_F(SocketTraceBPFTest, MultipleConnections) {
   ConfigureBPFCapture(TrafficProtocol::kProtocolHTTP, kRoleClient);
 
+  StartTransferDataThread(kHTTPTableNum, kHTTPTable);
+
   // Two separate connections.
 
   testing::SendRecvScript script1({
@@ -292,33 +294,31 @@ TEST_F(SocketTraceBPFTest, MultipleConnections) {
   testing::ClientServerSystem system2;
   system2.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(script2);
 
+  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+  ASSERT_FALSE(tablets.empty());
+
   {
-    DataTable data_table(kHTTPTable);
-    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
-    ASSERT_FALSE(tablets.empty());
+    ColumnWrapperRecordBatch records =
+        FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, system1.ClientPID());
 
-    {
-      ColumnWrapperRecordBatch records =
-          FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, system1.ClientPID());
+    ASSERT_THAT(records, Each(ColWrapperSizeIs(1)));
+    EXPECT_THAT(records[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
+  }
 
-      ASSERT_THAT(records, Each(ColWrapperSizeIs(1)));
-      EXPECT_THAT(records[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
-    }
+  {
+    ColumnWrapperRecordBatch records =
+        FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, system2.ClientPID());
 
-    {
-      ColumnWrapperRecordBatch records =
-          FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, system2.ClientPID());
-
-      ASSERT_THAT(records, Each(ColWrapperSizeIs(1)));
-      EXPECT_THAT(records[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg2"));
-    }
+    ASSERT_THAT(records, Each(ColWrapperSizeIs(1)));
+    EXPECT_THAT(records[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg2"));
   }
 }
 
 // Tests that the start time of UPIDs reported in data table are within a specified time window.
 TEST_F(SocketTraceBPFTest, StartTime) {
   ConfigureBPFCapture(TrafficProtocol::kProtocolHTTP, kRoleClient);
+
+  StartTransferDataThread(kHTTPTableNum, kHTTPTable);
 
   testing::SendRecvScript script({
       {{kHTTPReqMsg1}, {kHTTPRespMsg1}},
@@ -344,9 +344,7 @@ TEST_F(SocketTraceBPFTest, StartTime) {
   auto time_window_start = time_window_start_tp.time_since_epoch().count() / kDivFactor;
   auto time_window_end = time_window_end_tp.time_since_epoch().count() / kDivFactor;
 
-  DataTable data_table(kHTTPTable);
-  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
   ASSERT_FALSE(tablets.empty());
   ColumnWrapperRecordBatch records =
       FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, system.ClientPID());
@@ -494,16 +492,6 @@ TEST_F(UDPSocketTraceBPFTest, NonBlockingRecv) {
 
 class SocketTraceServerSideBPFTest
     : public testing::SocketTraceBPFTest</* TClientSideTracing */ false> {};
-
-// Returns the number of records that belong to the input pid.
-int GetTargetRecordsCount(DataTable* data_table, int32_t pid) {
-  int res = 0;
-  std::vector<TaggedRecordBatch> tablets = data_table->ConsumeRecords();
-  for (const auto& tablet : tablets) {
-    res += FindRecordIdxMatchesPID(tablet.records, kHTTPUPIDIdx, pid).size();
-  }
-  return res;
-}
 
 uint64_t GetConnStats(const ConnTracker& tracker, ConnTracker::Stats::Key key) {
   return tracker.stats().Get(key);

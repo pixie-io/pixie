@@ -35,17 +35,15 @@ class GoHTTPTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ false
 
   testing::GoHTTPFixture go_http_fixture_;
 
-  // Create a context to pass into each TransferData() in the test, using a dummy ASID.
-  static constexpr uint32_t kASID = 1;
-
   DataTable data_table_{kHTTPTable};
 };
 
 TEST_F(GoHTTPTraceTest, RequestAndResponse) {
+  StartTransferDataThread(kHTTPTableNum, kHTTPTable);
+
   go_http_fixture_.LaunchClient();
 
-  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
-  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
+  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
@@ -98,10 +96,11 @@ TEST_P(TraceRoleTest, VerifyRecordsCount) {
   ASSERT_NE(nullptr, socket_trace_connector);
   EXPECT_OK(socket_trace_connector->UpdateBPFProtocolTraceRole(kProtocolHTTP, param.role));
 
+  StartTransferDataThread(kHTTPTableNum, kHTTPTable);
+
   go_http_fixture_.LaunchClient();
 
-  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
-  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
+  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
 
   std::vector<size_t> client_record_ids;
   std::vector<size_t> server_record_ids;

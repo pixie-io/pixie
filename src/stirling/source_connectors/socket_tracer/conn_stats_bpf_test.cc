@@ -31,21 +31,18 @@ constexpr int kRoleIdx = conn_stats_idx::kRole;
 
 // Turn off client-side tracing. Unlike data tracing, conn-stats should still trace client-side even
 // with the client-side tracing turned off.
-class ConnStatsBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ false> {
- protected:
-  DataTable data_table_{kConnStatsTable};
-};
+class ConnStatsBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ false> {};
 
 TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
-  ClientServerSystem cs;
+  StartTransferDataThread(SocketTraceConnector::kConnStatsTableNum, kConnStatsTable);
 
+  ClientServerSystem cs;
   SendRecvScript script;
   script.push_back({{"req1"}, {"resp1"}});
   script.push_back({{"req2"}, {"resp2"}});
   cs.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(script);
 
-  source_->TransferData(ctx_.get(), SocketTraceConnector::kConnStatsTableNum, &data_table_);
-  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
+  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch rb = tablets[0].records;
   PrintRecordBatch("test", kConnStatsTable.ToProto(), rb);
@@ -99,15 +96,14 @@ TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
 // Expectation is that summary stats are collected. The bytes transferred will be zero,
 // but we should see the connect/accept for both client and server.
 TEST_F(ConnStatsBPFTest, RoleFromConnectAccept) {
+  StartTransferDataThread(SocketTraceConnector::kConnStatsTableNum, kConnStatsTable);
+
   // No data transfer, since we want to see if we can infer role from connect/accept syscalls.
   testing::SendRecvScript script({});
-
   testing::ClientServerSystem system;
   system.RunClientServer<&TCPSocket::Recv, &TCPSocket::Send>(script);
 
-  DataTable data_table(kConnStatsTable);
-  source_->TransferData(ctx_.get(), SocketTraceConnector::kConnStatsTableNum, &data_table);
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
   ASSERT_FALSE(tablets.empty());
 
   PrintRecordBatch("test", kConnStatsTable.ToProto(), tablets[0].records);
@@ -170,18 +166,18 @@ class ConnStatsMidConnBPFTest : public testing::SocketTraceBPFTest</* TClientSid
   std::unique_ptr<TCPSocket> server_;
 
   TCPSocket client_;
-  DataTable data_table_{kConnStatsTable};
 };
 
 TEST_F(ConnStatsMidConnBPFTest, DidNotSeeConnEstablishment) {
+  StartTransferDataThread(SocketTraceConnector::kConnStatsTableNum, kConnStatsTable);
+
   std::string_view test_msg = "Hello World!";
   EXPECT_EQ(test_msg.size(), client_.Send(test_msg));
   std::string text;
   while (!server_->Recv(&text)) {
   }
 
-  source_->TransferData(ctx_.get(), SocketTraceConnector::kConnStatsTableNum, &data_table_);
-  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
+  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
   if (!tablets.empty()) {
     types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
@@ -191,39 +187,30 @@ TEST_F(ConnStatsMidConnBPFTest, DidNotSeeConnEstablishment) {
 }
 
 TEST_F(ConnStatsMidConnBPFTest, InferRole) {
+  // TODO(oazizi): Connection inference is tied to HTTP table. Decouple.
+  StartTransferDataThread(SocketTraceConnector::kHTTPTableNum, kHTTPTable);
+
   std::string_view test_msg = "Hello World!";
   EXPECT_EQ(test_msg.size(), client_.Send(test_msg));
   std::string text;
   while (!server_->Read(&text)) {
   }
 
-  DataTable http_data_table(kHTTPTable);
-
-  // Make a sequence of TransferData() calls, so that connection inference has a chance to kick in.
-
+  // Make sure traffic spans across multiple TransferData calls,
+  // so that connection inference has a chance to kick in.
+  // If this test becomes flaky, may want to try bumping this up to 4.
   for (int i = 0; i < 3; ++i) {
     EXPECT_EQ(test_msg.size(), client_.Send(test_msg));
     while (!server_->Recv(&text)) {
     }
-
-    source_->TransferData(ctx_.get(), SocketTraceConnector::kConnStatsTableNum, &data_table_);
-
-    // Also have to transfer data on HTTP table for this to work.
-    // TODO(oazizi): Decouple connection inference from HTTP table.
-    source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &http_data_table);
+    std::this_thread::sleep_for(kTransferDataPeriod);
   }
 
-  // Clear the table
-  data_table_.ConsumeRecords();
+  StopTransferDataThread();
 
-  // Trigger one more event, so that TransferData will transfer updated stats.
-  EXPECT_EQ(test_msg.size(), client_.Send(test_msg));
-  while (!server_->Recv(&text)) {
-  }
-
-  // Get the new conn stats records.
-  source_->TransferData(ctx_.get(), SocketTraceConnector::kConnStatsTableNum, &data_table_);
-  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
+  // Also read ConnStatsTable, which is what we're really want to see.
+  StartTransferDataThread(SocketTraceConnector::kConnStatsTableNum, kConnStatsTable);
+  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
 
   ASSERT_FALSE(tablets.empty());
 
