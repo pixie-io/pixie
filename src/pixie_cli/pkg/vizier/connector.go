@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"regexp"
@@ -289,13 +290,73 @@ func (c *Connector) DebugLogRequest(ctx context.Context, podName string, prev bo
 				msg, err := resp.Recv()
 
 				if err != nil || msg == nil {
-					if err != nil {
-						fmt.Printf("%v", err)
+					if err != nil && err != io.EOF {
+						results <- &DebugLogResponse{
+							Err: err,
+						}
 					}
 					return
 				}
 				results <- &DebugLogResponse{
 					Data: msg.Data,
+				}
+			}
+		}
+	}()
+	return results, nil
+}
+
+// DebugPodsResponse contains information about debug logs.
+type DebugPodsResponse struct {
+	ControlPlanePods []*pl_api_vizierpb.VizierPodStatus
+	DataPlanePods    []*pl_api_vizierpb.VizierPodStatus
+	Err              error
+}
+
+// DebugPodsRequest sends a debug pods request and returns data in a chan.
+func (c *Connector) DebugPodsRequest(ctx context.Context) (chan *DebugPodsResponse, error) {
+	reqPB := &pl_api_vizierpb.DebugPodsRequest{
+		ClusterID: c.id.String(),
+	}
+	if c.passthroughEnabled {
+		ctx = auth.CtxWithCreds(ctx)
+	} else {
+		ctx = ctxWithTokenCreds(ctx, c.vzToken)
+	}
+
+	resp, err := c.vzDebug.DebugPods(ctx, reqPB)
+	if err != nil {
+		return nil, err
+	}
+
+	results := make(chan *DebugPodsResponse)
+	go func() {
+		defer close(results)
+		for {
+			select {
+			case <-resp.Context().Done():
+				if resp.Context().Err() != nil {
+					results <- &DebugPodsResponse{
+						Err: resp.Context().Err(),
+					}
+				}
+				return
+			case <-ctx.Done():
+				return
+			default:
+				msg, err := resp.Recv()
+				if msg == nil || err == io.EOF {
+					return
+				}
+				if err != nil {
+					results <- &DebugPodsResponse{
+						Err: err,
+					}
+					return
+				}
+				results <- &DebugPodsResponse{
+					ControlPlanePods: msg.ControlPlanePods,
+					DataPlanePods:    msg.DataPlanePods,
 				}
 			}
 		}
