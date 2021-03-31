@@ -93,7 +93,6 @@ class OpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ fals
     // Run the nginx HTTPS server.
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
-    // Note that this step will make an access to docker hub to download the container image.
     StatusOr<std::string> run_result = server_.Run(60);
     PL_CHECK_OK(run_result);
 

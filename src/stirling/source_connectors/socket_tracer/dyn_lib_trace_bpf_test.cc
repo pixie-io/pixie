@@ -109,8 +109,7 @@ TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
   // The container runner will make sure it is in the ready state before unblocking.
   ASSERT_OK_AND_ASSIGN(std::string run_result, server.Run(60));
 
-  // This RefreshData will cause next TransferData to detect nginx, and deploy uprobes on its
-  // libssl.
+  // RefreshData will cause next TransferData to detect nginx, and deploy uprobes on its libssl.
   RefreshContext();
 
   {

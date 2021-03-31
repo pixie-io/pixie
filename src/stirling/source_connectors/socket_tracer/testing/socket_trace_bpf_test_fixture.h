@@ -26,14 +26,9 @@ class SocketTraceBPFTest : public ::testing::Test {
     source_.reset(dynamic_cast<SocketTraceConnector*>(source_connector.release()));
     ASSERT_OK(source_->Init());
 
-    RefreshContext();
-
-    source_->InitContext(ctx_.get());
-
-    // InitContext will cause Uprobes to deploy.
-    // It won't return until the first set of uprobes has successfully deployed.
-    // Sleep an additional second just to be safe.
-    sleep(1);
+    // Cause Uprobes to deploy in a blocking manner.
+    // We don't return until the first set of uprobes has successfully deployed.
+    RefreshContext(/* blocking_deploy_uprobes */ true);
   }
 
   void TearDown() override { ASSERT_OK(source_->Stop()); }
@@ -48,7 +43,7 @@ class SocketTraceBPFTest : public ::testing::Test {
     ASSERT_OK(socket_trace_connector->TestOnlySetTargetPID(pid));
   }
 
-  void RefreshContext() {
+  void RefreshContext(bool blocking_deploy_uprobes = false) {
     absl::base_internal::SpinLockHolder lock(&socket_tracer_state_lock_);
 
     ctx_ = std::make_unique<StandaloneContext>();
@@ -59,6 +54,10 @@ class SocketTraceBPFTest : public ::testing::Test {
       // This makes the Stirling interpret all traffic as leaving the cluster,
       // which means client-side tracing will also apply.
       PL_CHECK_OK(ctx_->SetClusterCIDR("1.2.3.4/32"));
+    }
+
+    if (blocking_deploy_uprobes) {
+      source_->InitContext(ctx_.get());
     }
   }
 

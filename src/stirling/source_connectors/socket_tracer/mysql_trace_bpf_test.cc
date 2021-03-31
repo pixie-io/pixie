@@ -80,7 +80,6 @@ class MySQLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> 
     // Run the MySQL server.
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
-    // Note that this step will make an access to docker hub to download the MySQL image.
     StatusOr<std::string> run_result =
         server_.Run(90, {"--env=MYSQL_ALLOW_EMPTY_PASSWORD=1", "--env=MYSQL_ROOT_HOST=%"});
     PL_CHECK_OK(run_result);

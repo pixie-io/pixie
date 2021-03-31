@@ -62,7 +62,6 @@ class GoTLSTraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing 
     // Run the server.
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
-    // Note that this step will make an access to docker hub to download the HTTP image.
     PL_CHECK_OK(server_.Run(60, {}));
   }
 

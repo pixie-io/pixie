@@ -319,9 +319,9 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "openssl_bpf_test",
+    name = "openssl_trace_bpf_test",
     timeout = "moderate",
-    srcs = ["openssl_bpf_test.cc"],
+    srcs = ["openssl_trace_bpf_test.cc"],
     data = [
         "//src/stirling/source_connectors/socket_tracer/testing/containers:curl_container_image.tar",
         "//src/stirling/source_connectors/socket_tracer/testing/containers:ruby_container_image.tar",

@@ -64,7 +64,6 @@ class HTTP2TraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing 
     // Run the server.
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
-    // Note that this step will make an access to docker hub to download the HTTP image.
     PL_CHECK_OK(server_.Run(60, {}));
   }
 
@@ -183,7 +182,7 @@ class ProductCatalogServiceTraceTest
     // Run the server.
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
-    // Note that this step will make an access to docker hub to  download the HTTP image.
+    // Note that this step will make an access to docker hub to download the HTTP image.
     PL_CHECK_OK(server_.Run(60, {}));
   }
 
@@ -198,9 +197,6 @@ TEST_F(ProductCatalogServiceTraceTest, Basic) {
   PL_CHECK_OK(
       client_.Run(10, {absl::Substitute("--network=container:$0", server_.container_name())}));
   client_.Wait();
-
-  // We do not expect this sleep to be required, but it appears to be necessary for Jenkins.
-  sleep(3);
 
   // Grab the data from Stirling.
   std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
