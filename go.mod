@@ -25,7 +25,7 @@ require (
 	github.com/coreos/go-systemd/v22 v22.3.0 // indirect
 	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
-	github.com/docker/docker v17.12.0-ce-rc1.0.20200417080019-f432f7159508+incompatible
+	github.com/docker/docker v17.12.0-ce-rc1.0.20200417080019-f432f7159508+incompatible // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/emicklei/dot v0.10.1
 	github.com/evanphx/json-patch v4.9.0+incompatible
@@ -43,7 +43,6 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.2.0 // indirect
 	github.com/googleapis/google-cloud-go-testing v0.0.0-20191008195207-8e1d251e947d
-	github.com/gophercloud/gophercloud v0.1.0 // indirect
 	github.com/gorilla/handlers v1.4.2
 	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/gorilla/sessions v1.1.3
@@ -89,7 +88,6 @@ require (
 	github.com/tidwall/buntdb v1.2.1
 	github.com/txn2/txeh v1.2.1
 	github.com/vbauerster/mpb/v4 v4.11.0
-	github.com/xlab/handysort v0.0.0-20150421192137-fb3537ed64a1 // indirect
 	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
 	github.com/zenazn/goji v0.9.1-0.20160507202103-64eb34159fe5
 	go.etcd.io/etcd/api/v3 v3.5.0-alpha.0
@@ -119,10 +117,8 @@ require (
 	k8s.io/klog/v2 v2.8.0 // indirect
 	k8s.io/kubectl v0.20.5
 	k8s.io/utils v0.0.0-20210305010621-2afb4311ab10 // indirect
-	sigs.k8s.io/structured-merge-diff/v3 v3.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.0 // indirect
 	sigs.k8s.io/yaml v1.2.0
-	vbom.ml/util v0.0.0-20160121211510-db5cfe13f5cc // indirect
 )
 
 replace (

@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/docker/docker/pkg/namesgenerator"
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
@@ -35,6 +34,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services/events"
 	jwtutils "pixielabs.ai/pixielabs/src/shared/services/utils"
 	"pixielabs.ai/pixielabs/src/utils"
+	"pixielabs.ai/pixielabs/src/utils/namesgenerator"
 )
 
 // SaltLength is the length of the salt used when encrypting the jwt signing key.
