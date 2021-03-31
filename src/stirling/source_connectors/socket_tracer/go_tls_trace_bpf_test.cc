@@ -76,6 +76,8 @@ class GoTLSTraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing 
 //-----------------------------------------------------------------------------
 
 TEST_F(GoTLSTraceTest, Basic) {
+  StartTransferDataThread(SocketTraceConnector::kHTTPTableNum, kHTTPTable);
+
   // Run the client in the network of the server, so they can connect to each other.
   PL_CHECK_OK(
       client_.Run(10, {absl::Substitute("--network=container:$0", server_.container_name())}));
@@ -86,9 +88,7 @@ TEST_F(GoTLSTraceTest, Basic) {
   sleep(3);
 
   // Grab the data from Stirling.
-  DataTable data_table(kHTTPTable);
-  source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 

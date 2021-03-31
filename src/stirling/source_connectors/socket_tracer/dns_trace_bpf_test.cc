@@ -52,11 +52,10 @@ class DNSTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {
 //-----------------------------------------------------------------------------
 
 TEST_F(DNSTraceTest, Capture) {
-  // Sleep an additional second, just to be safe.
-  sleep(1);
+  StartTransferDataThread(SocketTraceConnector::kDNSTableNum, kDNSTable);
 
   // Uncomment to enable tracing:
-  FLAGS_stirling_conn_trace_pid = container_.process_pid();
+  // FLAGS_stirling_conn_trace_pid = container_.process_pid();
 
   // Run dig to generate a DNS request.
   // Run it through bash, and return the PID, so we can use it to filter captured results.
@@ -67,9 +66,7 @@ TEST_F(DNSTraceTest, Capture) {
   LOG(INFO) << out;
 
   // Grab the data from Stirling.
-  DataTable data_table(kDNSTable);
-  source_->TransferData(ctx_.get(), SocketTraceConnector::kDNSTableNum, &data_table);
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
   ASSERT_FALSE(tablets.empty());
 
   types::ColumnWrapperRecordBatch rb = tablets[0].records;

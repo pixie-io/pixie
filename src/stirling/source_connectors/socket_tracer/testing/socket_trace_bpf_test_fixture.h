@@ -58,7 +58,9 @@ class SocketTraceBPFTest : public ::testing::Test {
     }
   }
 
-  void StartTransferDataThread(int table_num, DataTable* data_table) {
+  void StartTransferDataThread(int table_num, const DataTableSchema& schema) {
+    data_table_ = std::make_unique<DataTable>(schema);
+    transfer_enable_ = true;
     transfer_data_thread_ = std::thread(
         [this](int table_num, DataTable* data_table) {
           while (transfer_enable_) {
@@ -66,13 +68,15 @@ class SocketTraceBPFTest : public ::testing::Test {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
           }
         },
-        table_num, data_table);
+        table_num, data_table_.get());
   }
 
-  void StopTransferDataThread() {
+  std::vector<TaggedRecordBatch> StopTransferDataThread() {
+    CHECK(data_table_ != nullptr);
     CHECK(transfer_data_thread_.joinable());
     transfer_enable_ = false;
     transfer_data_thread_.join();
+    return data_table_->ConsumeRecords();
   }
 
   static constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
@@ -82,6 +86,7 @@ class SocketTraceBPFTest : public ::testing::Test {
   std::unique_ptr<StandaloneContext> ctx_;
   std::atomic<bool> transfer_enable_ = true;
   std::thread transfer_data_thread_;
+  std::unique_ptr<DataTable> data_table_;
 };
 
 }  // namespace testing

@@ -55,8 +55,6 @@ class PostgreSQLTraceTest : public testing::SocketTraceBPFTest</* TClientSideTra
  protected:
   PostgreSQLTraceTest() { PL_CHECK_OK(container_.Run(150, {"--env=POSTGRES_PASSWORD=docker"})); }
 
-  DataTable data_table_{kPGSQLTable};
-
   PostgreSQLContainer container_;
 };
 
@@ -65,6 +63,8 @@ class PostgreSQLTraceTest : public testing::SocketTraceBPFTest</* TClientSideTra
 // capability because it's running a query from start to finish, which always establish new
 // connections.
 TEST_F(PostgreSQLTraceTest, SelectQuery) {
+  StartTransferDataThread(SocketTraceConnector::kPGSQLTableNum, kPGSQLTable);
+
   // --pid host is required to access the correct PID.
   constexpr char kCmdTmpl[] =
       "docker run --pid host --rm -e PGPASSWORD=docker --network=container:$0 postgres bash -c "
@@ -78,9 +78,7 @@ TEST_F(PostgreSQLTraceTest, SelectQuery) {
   int32_t client_pid;
   ASSERT_TRUE(absl::SimpleAtoi(create_table_output, &client_pid));
 
-  source_->TransferData(ctx_.get(), SocketTraceConnector::kPGSQLTableNum, &data_table_);
-
-  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
+  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
   auto indices = FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, client_pid);
@@ -102,7 +100,6 @@ class PostgreSQLTraceGoSQLxTest
     PL_CHECK_OK(pgsql_container_.Run(150, {"--env=POSTGRES_PASSWORD=docker"}));
   }
 
-  DataTable data_table_{kPGSQLTable};
   PostgreSQLContainer pgsql_container_;
   GolangSQLxContainer sqlx_container_;
 };
@@ -119,12 +116,12 @@ std::vector<std::pair<std::string, std::string>> RecordBatchToPairs(
 
 // Executes a demo golang app that queries PostgreSQL database with sqlx.
 TEST_F(PostgreSQLTraceGoSQLxTest, GolangSqlxDemo) {
+  StartTransferDataThread(SocketTraceConnector::kPGSQLTableNum, kPGSQLTable);
+
   PL_CHECK_OK(sqlx_container_.Run(
       10, {absl::Substitute("--network=container:$0", pgsql_container_.container_name())}));
 
-  source_->TransferData(ctx_.get(), SocketTraceConnector::kPGSQLTableNum, &data_table_);
-
-  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
+  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
@@ -174,6 +171,8 @@ TEST_F(PostgreSQLTraceTest, FunctionCall) {
       "docker run --pid host --rm -e PGPASSWORD=docker --network=container:$0 postgres bash -c "
       R"('psql -h localhost -U postgres -c "$1" &>/dev/null & echo $$! && wait')";
   {
+    StartTransferDataThread(SocketTraceConnector::kPGSQLTableNum, kPGSQLTable);
+
     const std::string cmd = absl::Substitute(
         kCmdTmpl, container_.container_name(),
         "CREATE OR REPLACE FUNCTION increment(i integer) RETURNS integer AS \\$\\$\n"
@@ -185,9 +184,7 @@ TEST_F(PostgreSQLTraceTest, FunctionCall) {
     int32_t client_pid;
     ASSERT_TRUE(absl::SimpleAtoi(output, &client_pid));
 
-    source_->TransferData(ctx_.get(), SocketTraceConnector::kPGSQLTableNum, &data_table_);
-
-    std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
+    std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
     ASSERT_FALSE(tablets.empty());
     types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
@@ -206,15 +203,15 @@ TEST_F(PostgreSQLTraceTest, FunctionCall) {
         StrEq("CREATE FUNCTION"));
   }
   {
+    StartTransferDataThread(SocketTraceConnector::kPGSQLTableNum, kPGSQLTable);
+
     const std::string cmd =
         absl::Substitute(kCmdTmpl, container_.container_name(), "select increment(1);");
     ASSERT_OK_AND_ASSIGN(const std::string output, pl::Exec(cmd));
     int32_t client_pid;
     ASSERT_TRUE(absl::SimpleAtoi(output, &client_pid));
 
-    source_->TransferData(ctx_.get(), SocketTraceConnector::kPGSQLTableNum, &data_table_);
-
-    std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
+    std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
     ASSERT_FALSE(tablets.empty());
     types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
