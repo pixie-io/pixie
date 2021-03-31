@@ -3,7 +3,9 @@ module pixielabs.ai/pixielabs
 go 1.13
 
 require (
+	cloud.google.com/go v0.80.0 // indirect
 	cloud.google.com/go/storage v1.10.0
+	github.com/Azure/go-autorest/autorest v0.11.18 // indirect
 	github.com/EvilSuperstars/go-cidrman v0.0.0-20190607145828-28e79e32899a
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/Microsoft/go-winio v0.4.16 // indirect
@@ -38,9 +40,10 @@ require (
 	github.com/golang/mock v1.5.0
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-github/v32 v32.1.0
+	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.2.0 // indirect
-	github.com/googleapis/gnostic v0.2.0 // indirect
 	github.com/googleapis/google-cloud-go-testing v0.0.0-20191008195207-8e1d251e947d
+	github.com/gophercloud/gophercloud v0.1.0 // indirect
 	github.com/gorilla/handlers v1.4.2
 	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/gorilla/sessions v1.1.3
@@ -70,7 +73,7 @@ require (
 	github.com/ory/hydra-client-go v1.9.2
 	github.com/ory/kratos-client-go v0.5.4-alpha.1
 	github.com/phayes/freeport v0.0.0-20171002181615-b8543db493a5
-	github.com/prometheus/client_golang v1.5.1
+	github.com/prometheus/client_golang v1.7.1
 	github.com/rivo/tview v0.0.0-20200404204604-ca37f83cb2e7
 	github.com/rivo/uniseg v0.1.0
 	github.com/sahilm/fuzzy v0.1.0
@@ -86,18 +89,21 @@ require (
 	github.com/tidwall/buntdb v1.2.1
 	github.com/txn2/txeh v1.2.1
 	github.com/vbauerster/mpb/v4 v4.11.0
+	github.com/xlab/handysort v0.0.0-20150421192137-fb3537ed64a1 // indirect
 	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
 	github.com/zenazn/goji v0.9.1-0.20160507202103-64eb34159fe5
 	go.etcd.io/etcd/api/v3 v3.5.0-alpha.0
 	go.etcd.io/etcd/client/v3 v3.5.0-alpha.0
 	go.etcd.io/etcd/pkg/v3 v3.5.0-alpha.0
 	go.uber.org/multierr v1.6.0 // indirect
-	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83 // indirect
+	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2 // indirect
 	golang.org/x/mod v0.4.2 // indirect
-	golang.org/x/net v0.0.0-20210330142815-c8897c278d10
-	golang.org/x/oauth2 v0.0.0-20210313182246-cd4f82c27b84
+	golang.org/x/net v0.0.0-20210330230544-e57232859fb2
+	golang.org/x/oauth2 v0.0.0-20210323180902-22b0adad7558
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210326220804-49726bf1d181
+	golang.org/x/sys v0.0.0-20210330210617-4fbd30eecc44
+	golang.org/x/term v0.0.0-20210317153231-de623e64d2a6 // indirect
+	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba // indirect
 	google.golang.org/api v0.43.0
 	google.golang.org/genproto v0.0.0-20210329143202-679c6ae281ee
 	google.golang.org/grpc v1.36.1
@@ -105,14 +111,18 @@ require (
 	gopkg.in/segmentio/analytics-go.v3 v3.1.0
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.18.2
-	k8s.io/apimachinery v0.18.2
-	k8s.io/cli-runtime v0.18.2
-	k8s.io/client-go v0.18.2
+	k8s.io/api v0.20.5
+	k8s.io/apimachinery v0.20.5
+	k8s.io/cli-runtime v0.20.5
+	k8s.io/client-go v0.20.5
 	k8s.io/klog v1.0.0
-	k8s.io/kube-openapi v0.0.0-20200204173128-addea2498afe // indirect
-	k8s.io/kubectl v0.18.2
+	k8s.io/klog/v2 v2.8.0 // indirect
+	k8s.io/kubectl v0.20.5
+	k8s.io/utils v0.0.0-20210305010621-2afb4311ab10 // indirect
+	sigs.k8s.io/structured-merge-diff/v3 v3.0.0 // indirect
+	sigs.k8s.io/structured-merge-diff/v4 v4.1.0 // indirect
 	sigs.k8s.io/yaml v1.2.0
+	vbom.ml/util v0.0.0-20160121211510-db5cfe13f5cc // indirect
 )
 
 replace (
