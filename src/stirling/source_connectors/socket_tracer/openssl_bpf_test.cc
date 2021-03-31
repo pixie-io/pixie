@@ -192,7 +192,7 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
   }
 }
 
-TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
+TYPED_TEST(OpenSSLTraceTest, DISABLED_ssl_capture_ruby_client) {
   RubyContainer client;
 
   {
