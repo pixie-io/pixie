@@ -271,7 +271,6 @@ Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source, bool dyn
   return Status::OK();
 }
 
-// TODO(oazizi): Consider a data structure more friendly to erase().
 Status StirlingImpl::RemoveSource(std::string_view source_name) {
   absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
 
@@ -578,7 +577,6 @@ std::chrono::milliseconds TimeUntilNextTick(const InfoClassManagerVec& info_clas
   auto wakeup_time = now + kMaxSleepDuration;
 
   for (const auto& mgr : info_class_mgrs) {
-    // TODO(oazizi): Make implementation of NextPushTime/NextSamplingTime low cost.
     if (mgr->subscribed()) {
       wakeup_time = std::min(wakeup_time, mgr->NextPushTime());
       wakeup_time = std::min(wakeup_time, mgr->NextSamplingTime());

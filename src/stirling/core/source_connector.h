@@ -8,6 +8,7 @@
 #include "src/shared/types/types.h"
 #include "src/stirling/core/connector_context.h"
 #include "src/stirling/core/data_table.h"
+#include "src/stirling/core/utils.h"
 
 /**
  * These are the steps to follow to add a new data source connector.
@@ -93,6 +94,9 @@ class SourceConnector : public NotCopyable {
            ClockRealTimeOffset();
   }
 
+  const SamplePushFrequencyManager& sample_push_mgr() const { return sample_push_freq_mgr_; }
+  SamplePushFrequencyManager* mutable_sample_push_mgr() { return &sample_push_freq_mgr_; }
+
  protected:
   explicit SourceConnector(std::string_view source_name,
                            const ArrayView<DataTableSchema>& table_schemas)
@@ -128,6 +132,8 @@ class SourceConnector : public NotCopyable {
 
   const std::string source_name_;
   const ArrayView<DataTableSchema> table_schemas_;
+
+  SamplePushFrequencyManager sample_push_freq_mgr_;
 };
 
 }  // namespace stirling

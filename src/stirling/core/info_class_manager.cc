@@ -9,34 +9,17 @@
 namespace pl {
 namespace stirling {
 
-bool InfoClassManager::SamplingRequired() const {
-  return std::chrono::steady_clock::now() > NextSamplingTime();
-}
+bool InfoClassManager::SamplingRequired() const { return sample_push_freq_mgr_.SamplingRequired(); }
 
 bool InfoClassManager::PushRequired() const {
-  // Note: It's okay to exercise an early Push, by returning true before the final return,
-  // but it is not okay to 'return false' in this function.
-
-  if (data_table_->OccupancyPct() > occupancy_pct_threshold_) {
-    return true;
-  }
-
-  if (data_table_->Occupancy() > occupancy_threshold_) {
-    return true;
-  }
-
-  return std::chrono::steady_clock::now() > NextPushTime();
+  return sample_push_freq_mgr_.PushRequired(data_table_->OccupancyPct(), data_table_->Occupancy());
 }
 
 void InfoClassManager::InitContext(ConnectorContext* ctx) { source_->InitContext(ctx); }
 
 void InfoClassManager::SampleData(ConnectorContext* ctx) {
   source_->TransferData(ctx, source_table_num_, data_table_);
-
-  // Update the last sampling time.
-  last_sampled_ = std::chrono::steady_clock::now();
-
-  sampling_count_++;
+  sample_push_freq_mgr_.Sample();
 }
 
 void InfoClassManager::PushData(DataPushCallback agent_callback) {
@@ -49,11 +32,7 @@ void InfoClassManager::PushData(DataPushCallback agent_callback) {
       LOG_IF(DFATAL, !s.ok()) << absl::Substitute("Failed to push data. Message = $0", s.msg());
     }
   }
-
-  // Update the last pushed time.
-  last_pushed_ = std::chrono::steady_clock::now();
-
-  push_count_++;
+  sample_push_freq_mgr_.Push();
 }
 
 stirlingpb::InfoClass InfoClassManager::ToProto() const {
@@ -62,8 +41,8 @@ stirlingpb::InfoClass InfoClassManager::ToProto() const {
   info_class_proto.mutable_schema()->CopyFrom(schema_.ToProto());
   info_class_proto.set_id(id_);
   info_class_proto.set_subscribed(subscribed_);
-  info_class_proto.set_sampling_period_millis(sampling_period_.count());
-  info_class_proto.set_push_period_millis(push_period_.count());
+  info_class_proto.set_sampling_period_millis(sample_push_freq_mgr_.sampling_period().count());
+  info_class_proto.set_push_period_millis(sample_push_freq_mgr_.push_period().count());
 
   return info_class_proto;
 }

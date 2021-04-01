@@ -11,6 +11,7 @@
 #include "src/shared/types/proto/wrapper/types_pb_wrapper.h"
 #include "src/shared/types/type_utils.h"
 #include "src/stirling/core/types.h"
+#include "src/stirling/core/utils.h"
 #include "src/stirling/proto/stirling.pb.h"
 
 namespace pl {
@@ -45,11 +46,10 @@ class InfoClassManager final : public NotCopyable {
    */
   explicit InfoClassManager(const DataTableSchema& schema,
                             stirlingpb::SourceType type = stirlingpb::STATIC)
-      : type_(type),
-        schema_(schema),
-        sampling_period_(schema.default_sampling_period()),
-        push_period_(schema.default_push_period()) {
+      : type_(type), schema_(schema) {
     id_ = global_id_++;
+    sample_push_freq_mgr_.set_sampling_period(schema.default_sampling_period());
+    sample_push_freq_mgr_.set_push_period(schema.default_push_period());
   }
 
   /**
@@ -99,14 +99,18 @@ class InfoClassManager final : public NotCopyable {
    *
    * @param period Sampling period in ms.
    */
-  void SetSamplingPeriod(std::chrono::milliseconds period) { sampling_period_ = period; }
+  void SetSamplingPeriod(std::chrono::milliseconds period) {
+    sample_push_freq_mgr_.set_sampling_period(period);
+  }
 
   /**
    * Configure sampling period.
    *
    * @param period Sampling period in ms.
    */
-  void SetPushPeriod(std::chrono::milliseconds period) { push_period_ = period; }
+  void SetPushPeriod(std::chrono::milliseconds period) {
+    sample_push_freq_mgr_.set_push_period(period);
+  }
 
   /**
    * Returns true if sampling is required, for whatever reason (elapsed time, etc.).
@@ -149,7 +153,7 @@ class InfoClassManager final : public NotCopyable {
    * @return std::chrono::milliseconds
    */
   std::chrono::steady_clock::time_point NextSamplingTime() const {
-    return last_sampled_ + sampling_period_;
+    return sample_push_freq_mgr_.NextSamplingTime();
   }
 
   /**
@@ -157,7 +161,9 @@ class InfoClassManager final : public NotCopyable {
    *
    * @return std::chrono::milliseconds
    */
-  std::chrono::steady_clock::time_point NextPushTime() const { return last_pushed_ + push_period_; }
+  std::chrono::steady_clock::time_point NextPushTime() const {
+    return sample_push_freq_mgr_.NextPushTime();
+  }
 
   /**
    * Set the Subscription for the InfoClass.
@@ -194,33 +200,7 @@ class InfoClassManager final : public NotCopyable {
   // Pointer to the data table where the data is stored.
   DataTable* data_table_ = nullptr;
 
-  // Sampling period.
-  std::chrono::milliseconds sampling_period_;
-
-  // Keep track of when the source was last sampled.
-  std::chrono::steady_clock::time_point last_sampled_;
-
-  // Statistics: count number of samples.
-  uint32_t sampling_count_ = 0;
-
-  // Sampling period.
-  std::chrono::milliseconds push_period_;
-
-  // Keep track of when the source was last sampled.
-  std::chrono::steady_clock::time_point last_pushed_;
-
-  // Data push threshold, based number of records after which a push.
-  uint32_t occupancy_threshold_ = kDefaultOccupancyThreshold;
-
-  // Data push threshold, based on percentage of buffer that is filled.
-  uint32_t occupancy_pct_threshold_ = kDefaultOccupancyPctThreshold;
-
-  // Statistics: count number of pushes.
-  uint32_t push_count_ = 0;
-
- public:
-  static constexpr uint32_t kDefaultOccupancyThreshold = 1024;
-  static constexpr uint32_t kDefaultOccupancyPctThreshold = 100;
+  SamplePushFrequencyManager sample_push_freq_mgr_;
 };
 
 using InfoClassManagerVec = std::vector<std::unique_ptr<InfoClassManager>>;
