@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/viper"
 
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/components"
-	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/vizier"
 	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
@@ -38,13 +38,24 @@ var DebugCmd = &cobra.Command{
 	Hidden: true,
 }
 
+// Gets the current Vizier if there is one in kubeconfig, even if it isn't healthy.
+// Gets the first healthy Vizier otherwise. This is intentionally different from other px commands,
+// since debug commands may run on an unhealthy Vizier.
+func getVizier(cloudAddr string) (uuid.UUID, error) {
+	id, err := vizier.GetCurrentVizier(cloudAddr)
+	if err != nil || id == uuid.Nil {
+		id, err = vizier.FirstHealthyVizier(cloudAddr)
+	}
+	return id, err
+}
+
 // DebugLogCmd is the log debug command.
 var DebugLogCmd = &cobra.Command{
 	Use:   "log",
 	Short: "Show log for vizier pods",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
-			cliLog.Error("Must supply a single argument pod name")
+			utils.Error("Must supply a single argument pod name")
 			os.Exit(1)
 		}
 
@@ -57,9 +68,9 @@ var DebugLogCmd = &cobra.Command{
 		container, _ := cmd.Flags().GetString("container")
 
 		if clusterID == uuid.Nil {
-			clusterID, err = vizier.GetCurrentOrFirstHealthyVizier(cloudAddr)
+			clusterID, err = getVizier(cloudAddr)
 			if err != nil {
-				cliLog.WithError(err).Error("Could not fetch healthy vizier")
+				utils.WithError(err).Error("Could not fetch healthy vizier")
 				os.Exit(1)
 			}
 		}
@@ -70,21 +81,22 @@ var DebugLogCmd = &cobra.Command{
 
 		conn, err := vizier.ConnectionToVizierByID(cloudAddr, clusterID)
 		if err != nil {
-			cliLog.WithError(err).Error("Could not connect to vizier")
+			utils.WithError(err).Error("Could not connect to vizier")
 			os.Exit(1)
 		}
 
 		prev, _ := cmd.Flags().GetBool("previous")
-		resp, err := conn.DebugLogRequest(context.Background(), podName, prev, container)
+		ctx := utils.WithSignalCancellable(context.Background())
+		resp, err := conn.DebugLogRequest(ctx, podName, prev, container)
 		if err != nil {
-			cliLog.WithError(err).Error("Logging failed")
+			utils.WithError(err).Error("Logging failed")
 			os.Exit(1)
 		}
 
 		for v := range resp {
 			if v != nil {
 				if v.Err != nil {
-					cliLog.WithError(v.Err).Error("Failed to get logs")
+					utils.WithError(v.Err).Error("Failed to get logs")
 					os.Exit(1)
 				} else {
 					fmt.Printf("%s", strings.ReplaceAll(v.Data, "\n",
@@ -102,7 +114,7 @@ func fetchVizierPods(cloudAddr, selectedCluster, plane string) ([]*pl_api_vizier
 
 	if clusterID == uuid.Nil {
 		var err error
-		clusterID, err = vizier.GetCurrentOrFirstHealthyVizier(cloudAddr)
+		clusterID, err = getVizier(cloudAddr)
 		if err != nil {
 			return nil, err
 		}
@@ -115,7 +127,8 @@ func fetchVizierPods(cloudAddr, selectedCluster, plane string) ([]*pl_api_vizier
 		return nil, err
 	}
 
-	resp, err := conn.DebugPodsRequest(context.Background())
+	ctx := utils.WithSignalCancellable(context.Background())
+	resp, err := conn.DebugPodsRequest(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +161,7 @@ var DebugPodsCmd = &cobra.Command{
 		plane, _ := cmd.Flags().GetString("plane")
 		pods, err := fetchVizierPods(cloudAddr, selectedCluster, plane)
 		if err != nil {
-			cliLog.WithError(err).Error("Could not fetch Vizier pods")
+			utils.WithError(err).Error("Could not fetch Vizier pods")
 			os.Exit(1)
 		}
 		w := components.CreateStreamWriter("table", os.Stdout)
@@ -171,7 +184,7 @@ var DebugContainersCmd = &cobra.Command{
 		plane, _ := cmd.Flags().GetString("plane")
 		pods, err := fetchVizierPods(cloudAddr, selectedCluster, plane)
 		if err != nil {
-			cliLog.WithError(err).Error("Could not fetch Vizier pods")
+			utils.WithError(err).Error("Could not fetch Vizier pods")
 			os.Exit(1)
 		}
 		w := components.CreateStreamWriter("table", os.Stdout)

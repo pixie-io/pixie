@@ -117,6 +117,26 @@ func FirstHealthyVizier(cloudAddr string) (uuid.UUID, error) {
 	return uuid.Nil, errors.New("no healthy Viziers available")
 }
 
+// GetCurrentVizier tries to get the ID of the current Vizier, even if it is unhealthy.
+func GetCurrentVizier(cloudAddr string) (uuid.UUID, error) {
+	var clusterID uuid.UUID
+	config := k8s.GetConfig()
+	if config != nil {
+		clusterID = GetClusterIDFromKubeConfig(config)
+	}
+	if clusterID != uuid.Nil {
+		_, err := GetVizierInfo(cloudAddr, clusterID)
+		if err != nil {
+			cliLog.WithError(err).Error("The current cluster in the kubeconfig not found within this org.")
+			clusterID = uuid.Nil
+		}
+	}
+	if clusterID == uuid.Nil {
+		return uuid.Nil, fmt.Errorf("No current Vizier exists in kubeconfig")
+	}
+	return clusterID, nil
+}
+
 // GetCurrentOrFirstHealthyVizier tries to get the vizier from the current context. If unavailable, it gets the ID of
 // the first healthy Vizier.
 func GetCurrentOrFirstHealthyVizier(cloudAddr string) (uuid.UUID, error) {

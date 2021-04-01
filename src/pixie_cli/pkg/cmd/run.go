@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/signal"
 	"strings"
 
 	"github.com/fatih/color"
@@ -20,7 +19,7 @@ import (
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxconfig"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
-	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/vizier"
 )
 
@@ -39,7 +38,7 @@ func init() {
 	RunCmd.SetHelpFunc(func(command *cobra.Command, args []string) {
 		br, err := createBundleReader()
 		if err != nil {
-			// Keep this as a log.Fatal() as opposed to using the cliLog, because it
+			// Keep this as a log.Fatal() as opposed to using the utils, because it
 			// is an unexpected error that Sentry should catch.
 			log.WithError(err).Fatal("Failed to read script bundle")
 		}
@@ -108,7 +107,7 @@ func createNewCobraCommand() *cobra.Command {
 			listScripts, _ := cmd.Flags().GetBool("list")
 			br, err := createBundleReader()
 			if err != nil {
-				// Keep this as a log.Fatal() as opposed to using the cliLog, because it
+				// Keep this as a log.Fatal() as opposed to using the utils, because it
 				// is an unexpected error that Sentry should catch.
 				log.WithError(err).Fatal("Failed to read script bundle")
 			}
@@ -124,7 +123,7 @@ func createNewCobraCommand() *cobra.Command {
 
 			if scriptFile == "" {
 				if len(args) == 0 {
-					cliLog.Error("Expected script_name with script args.")
+					utils.Error("Expected script_name with script args.")
 					os.Exit(1)
 				}
 				scriptName := args[0]
@@ -133,7 +132,7 @@ func createNewCobraCommand() *cobra.Command {
 			} else {
 				execScript, err = loadScriptFromFile(scriptFile)
 				if err != nil {
-					cliLog.WithError(err).Error("Failed to get query string")
+					utils.WithError(err).Error("Failed to get query string")
 					os.Exit(1)
 				}
 				scriptArgs = args
@@ -145,16 +144,16 @@ func createNewCobraCommand() *cobra.Command {
 					if err == flag.ErrHelp {
 						os.Exit(0)
 					}
-					cliLog.WithError(err).Error("Failed to parse script flags")
+					utils.WithError(err).Error("Failed to parse script flags")
 					os.Exit(1)
 				}
 				err := execScript.UpdateFlags(fs)
 				if err != nil {
 					if errors.Is(err, script.ErrMissingRequiredArgument) {
-						cliLog.Errorf("Missing required argument, please look at help below on how to pass in required arguments\n")
+						utils.Errorf("Missing required argument, please look at help below on how to pass in required arguments\n")
 						cmd.Help()
 					}
-					cliLog.WithError(err).Error("Error parsing script flags")
+					utils.WithError(err).Error("Error parsing script flags")
 					os.Exit(1)
 				}
 			}
@@ -166,7 +165,7 @@ func createNewCobraCommand() *cobra.Command {
 			if !allClusters && clusterID == uuid.Nil {
 				clusterID, err = vizier.GetCurrentOrFirstHealthyVizier(cloudAddr)
 				if err != nil {
-					cliLog.WithError(err).Error("Could not fetch healthy vizier")
+					utils.WithError(err).Error("Could not fetch healthy vizier")
 					os.Exit(1)
 				}
 			}
@@ -183,31 +182,16 @@ func createNewCobraCommand() *cobra.Command {
 			})
 
 			// Support Ctrl+C to cancel a query.
-			ctx, cancel := context.WithCancel(context.Background())
-			c := make(chan os.Signal, 1)
-			signal.Notify(c, os.Interrupt)
-			defer func() {
-				signal.Stop(c)
-				cancel()
-			}()
-
-			go func() {
-				select {
-				case <-c:
-					cancel()
-				case <-ctx.Done():
-				}
-			}()
-
+			ctx := utils.WithSignalCancellable(context.Background())
 			err = vizier.RunScriptAndOutputResults(ctx, conns, execScript, format)
 
 			if err != nil {
 				vzErr, ok := err.(*vizier.ScriptExecutionError)
 				switch {
 				case ok && vzErr.Code() == vizier.CodeCanceled:
-					cliLog.Info("Script was cancelled. Exiting.")
+					utils.Info("Script was cancelled. Exiting.")
 				case err == ptproxy.ErrNotAvailable:
-					cliLog.WithError(err).Error("Cannot execute script")
+					utils.WithError(err).Error("Cannot execute script")
 					os.Exit(1)
 				default:
 					log.WithError(err).Error("Failed to execute script")
@@ -224,9 +208,9 @@ func createNewCobraCommand() *cobra.Command {
 			vzInfo, err := lister.GetVizierInfo(clusterID)
 			switch {
 			case err != nil:
-				cliLog.WithError(err).Errorf("Error getting cluster name for cluster %s", clusterID.String())
+				utils.WithError(err).Errorf("Error getting cluster name for cluster %s", clusterID.String())
 			case len(vzInfo) == 0:
-				cliLog.Errorf("Error getting cluster name for cluster %s, no results returned", clusterID.String())
+				utils.Errorf("Error getting cluster name for cluster %s, no results returned", clusterID.String())
 			default:
 				clusterName = &(vzInfo[0].ClusterName)
 			}
