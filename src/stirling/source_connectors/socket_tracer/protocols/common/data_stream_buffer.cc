@@ -118,7 +118,7 @@ void DataStreamBuffer::Add(size_t pos, std::string_view data, uint64_t timestamp
   } else if (ppos_back > static_cast<ssize_t>(buffer_.size())) {
     // Case 3: Data being added extends the buffer. Resize the buffer.
 
-    if (pos > position_ + kDataStreamBufferCapacity) {
+    if (pos > position_ + capacity_) {
       // This has been observed to happen a lot on initial deployment,
       // where a large batch of events, with cumulative size greater than the buffer size
       // arrive in scrambled order.

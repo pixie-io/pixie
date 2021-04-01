@@ -9,9 +9,6 @@ namespace pl {
 namespace stirling {
 namespace protocols {
 
-// TODO(oazizi): Turn this into a flag.
-constexpr size_t kDataStreamBufferCapacity = 128 * 1024;
-
 /**
  * DataStreamBuffer is a buffer for storing traced data events and metadata from BPF.
  * Events are inserted by byte position, and are allowed to arrive out-of-order; in other words,
@@ -31,8 +28,7 @@ constexpr size_t kDataStreamBufferCapacity = 128 * 1024;
  */
 class DataStreamBuffer {
  public:
-  explicit DataStreamBuffer(size_t max_capacity = kDataStreamBufferCapacity)
-      : capacity_(max_capacity) {}
+  explicit DataStreamBuffer(size_t max_capacity) : capacity_(max_capacity) {}
 
   /**
    * Adds data to the buffer at the specified logical position.

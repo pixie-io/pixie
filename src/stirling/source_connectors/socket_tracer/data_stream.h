@@ -27,6 +27,9 @@ namespace stirling {
  */
 class DataStream : NotCopyMoveable {
  public:
+  // Make the underlying raw buffer size limit the same as the parsed frames byte limit.
+  DataStream() : data_buffer_(FLAGS_messages_size_limit_bytes) {}
+
   /**
    * Adds a raw (unparsed) chunk of data into the stream.
    */
