@@ -85,7 +85,7 @@ func main() {
 	s := server.NewPLServerWithOptions(env.New(), mux, serverOpts)
 	nc, sc, err := createStanNatsConnection(uuid.Must(uuid.NewV4()).String())
 	if err != nil {
-		log.Error("Could not connect to NATS/STAN")
+		log.WithError(err).Fatal("Could not connect to NATS/STAN")
 	}
 
 	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
