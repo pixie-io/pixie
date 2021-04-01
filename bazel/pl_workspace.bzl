@@ -113,10 +113,10 @@ def stirling_docker_images_setup():
     )
 
     # Redis server, for Redis tracing tests.
-    # redis:6.2.1-alpine
+    # redis:6.2.1
     container_pull(
         name = "redis",
-        digest = "sha256:736086f0ad5063792bd2cca77eb45ccc24ef89f4a35329f3526e2e94aff1934f",
+        digest = "sha256:fd68bec9c2cdb05d74882a7eb44f39e1c6a59b479617e49df245239bba4649f9",
         registry = "index.docker.io",
         repository = "library/redis",
     )
