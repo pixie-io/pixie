@@ -97,7 +97,7 @@ func _000001_create_sites_tableDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_create_sites_table.down.sql", size: 28, mode: os.FileMode(436), modTime: time.Unix(1584509757, 0)}
+	info := bindataFileInfo{name: "000001_create_sites_table.down.sql", size: 28, mode: os.FileMode(436), modTime: time.Unix(1585012039, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -117,12 +117,12 @@ func _000001_create_sites_tableUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_create_sites_table.up.sql", size: 167, mode: os.FileMode(436), modTime: time.Unix(1584509757, 0)}
+	info := bindataFileInfo{name: "000001_create_sites_table.up.sql", size: 167, mode: os.FileMode(436), modTime: time.Unix(1585012039, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
 
-var __000002_create_site_name_columnDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x0a\x0d\x70\x71\x0c\x71\x55\x28\xce\x2c\x49\x2d\xe6\x0a\x76\x0d\x51\x48\xc9\xcf\x4d\xcc\xcc\x8b\xcf\x4b\xcc\x4d\x55\xb0\x05\x8b\x83\xd9\xd6\x5c\x5c\x8e\x3e\x21\xae\x41\x0a\x21\x8e\x4e\x3e\x30\xf5\x2e\x41\xfe\x01\x0a\xc9\xf9\x39\xa5\xb9\x79\xc8\x2a\x01\x01\x00\x00\xff\xff\x2f\x17\x40\x82\x54\x00\x00\x00")
+var __000002_create_site_name_columnDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xce\x2c\x49\x2d\xe6\x72\x74\x71\x51\x70\xf6\xf7\x09\xf5\xf5\x53\x48\xc9\xcf\x4d\xcc\xcc\x8b\xcf\x4b\xcc\x4d\x55\x08\x73\x0c\x72\xf6\x70\x0c\xd2\x30\x35\xd0\x54\x08\xf5\xf3\x0c\x0c\x75\xb5\xe6\xe2\x0a\x0d\x70\x71\x0c\x81\x69\x0c\x76\x0d\x41\xd1\x61\x0b\x16\x07\xb3\xad\xb9\xb8\x30\x2d\x72\x09\xf2\x0f\x50\x48\xce\xcf\x29\xcd\xcd\x43\x56\x09\x08\x00\x00\xff\xff\x5a\x48\xab\x8d\x92\x00\x00\x00")
 
 func _000002_create_site_name_columnDownSqlBytes() ([]byte, error) {
 	return bindataRead(
@@ -137,7 +137,7 @@ func _000002_create_site_name_columnDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000002_create_site_name_column.down.sql", size: 84, mode: os.FileMode(436), modTime: time.Unix(1584509757, 0)}
+	info := bindataFileInfo{name: "000002_create_site_name_column.down.sql", size: 146, mode: os.FileMode(436), modTime: time.Unix(1617318672, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -157,7 +157,7 @@ func _000002_create_site_name_columnUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000002_create_site_name_column.up.sql", size: 103, mode: os.FileMode(436), modTime: time.Unix(1584509757, 0)}
+	info := bindataFileInfo{name: "000002_create_site_name_column.up.sql", size: 103, mode: os.FileMode(436), modTime: time.Unix(1585012039, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -177,12 +177,12 @@ func _000003_rename_sites_to_projectsDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000003_rename_sites_to_projects.down.sql", size: 187, mode: os.FileMode(436), modTime: time.Unix(1584511197, 0)}
+	info := bindataFileInfo{name: "000003_rename_sites_to_projects.down.sql", size: 187, mode: os.FileMode(436), modTime: time.Unix(1585012039, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
 
-var __000003_rename_sites_to_projectsUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x09\xf2\x0f\x50\x08\x71\x74\xf2\x71\x55\x28\xce\x2c\x49\x2d\xb6\xe6\xe2\x72\x0e\x72\x75\x0c\x71\x85\x0a\x16\x14\xe5\x67\xa5\x26\x97\x14\x2b\x68\x70\x29\x28\xe8\xea\x2a\xe4\x17\xa5\xc7\x67\xa6\x28\x64\x16\x2b\x94\x64\xa4\x2a\xe4\x97\xe7\xa5\x16\x29\xe4\xa7\x29\x94\x64\x64\x16\xc3\xd4\xea\x71\x29\xc0\x94\x85\x86\x7a\xba\xe8\x40\x34\x42\x25\xe3\xf3\x12\x73\x53\x61\xda\xc1\x6c\xb0\xee\x54\x64\xcd\x28\x4a\xcb\x12\x8b\x92\x33\x12\x8b\x34\x4c\x0d\x34\x41\x26\x85\xfa\x79\x06\x86\xba\x2a\x68\x40\x2c\xd0\x41\x51\xab\xc9\xa5\x69\x0d\x08\x00\x00\xff\xff\x6d\x87\xb6\x5c\xd0\x00\x00\x00")
+var __000003_rename_sites_to_projectsUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x09\xf2\x0f\x50\x08\x71\x74\xf2\x71\x55\x28\xce\x2c\x49\x2d\xb6\xe6\xe2\x72\x0e\x72\x75\x0c\x71\x85\x0a\x16\x14\xe5\x67\xa5\x26\x97\x14\x2b\x68\x70\x29\x28\xe8\xea\x2a\xe4\x17\xa5\xc7\x67\xa6\x28\x64\x16\x2b\x94\x64\xa4\x2a\xe4\x97\xe7\xa5\x16\x29\xe4\xa7\x29\x94\x64\x64\x16\xc3\xd4\xea\x71\x29\xc0\x94\x85\x86\x7a\xba\xe8\x40\x34\x42\x25\xe3\xf3\x12\x73\x53\x61\xda\xc1\x6c\xb0\xee\x54\x64\xcd\x28\x4a\xcb\x12\x8b\x92\x33\x12\x8b\x34\x4c\x0d\x34\x41\x26\x85\xfa\x79\x06\x86\xba\x2a\x68\x40\x2c\xd0\x41\x51\xab\xc9\xa5\x69\xcd\x05\x08\x00\x00\xff\xff\xf1\xad\x88\x01\xd1\x00\x00\x00")
 
 func _000003_rename_sites_to_projectsUpSqlBytes() ([]byte, error) {
 	return bindataRead(
@@ -197,7 +197,7 @@ func _000003_rename_sites_to_projectsUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000003_rename_sites_to_projects.up.sql", size: 208, mode: os.FileMode(436), modTime: time.Unix(1584511198, 0)}
+	info := bindataFileInfo{name: "000003_rename_sites_to_projects.up.sql", size: 209, mode: os.FileMode(436), modTime: time.Unix(1617306602, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
