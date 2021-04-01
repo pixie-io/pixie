@@ -1,24 +1,11 @@
 #pragma once
 
-#include "src/stirling/core/source_connector.h"
-
-#ifndef __linux__
-
-namespace pl {
-namespace stirling {
-
-DUMMY_SOURCE_CONNECTOR(DynamicBPFTraceConnector);
-
-}  // namespace stirling
-}  // namespace pl
-
-#else
-
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "src/stirling/bpf_tools/bpftrace_wrapper.h"
+#include "src/stirling/core/source_connector.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb/logical.pb.h"
 
 namespace pl {
@@ -57,5 +44,3 @@ class DynamicBPFTraceConnector : public SourceConnector, public bpf_tools::BPFTr
 
 }  // namespace stirling
 }  // namespace pl
-
-#endif

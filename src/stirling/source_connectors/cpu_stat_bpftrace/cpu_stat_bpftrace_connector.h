@@ -6,16 +6,6 @@
 
 #include "src/stirling/core/source_connector.h"
 
-#ifndef __linux__
-namespace pl {
-namespace stirling {
-
-DUMMY_SOURCE_CONNECTOR(CPUStatBPFTraceConnector);
-
-}  // namespace stirling
-}  // namespace pl
-#else
-
 #include "src/common/base/base.h"
 #include "src/stirling/bpf_tools/bpftrace_wrapper.h"
 
@@ -108,5 +98,3 @@ class CPUStatBPFTraceConnector : public SourceConnector, public bpf_tools::BPFTr
 
 }  // namespace stirling
 }  // namespace pl
-
-#endif

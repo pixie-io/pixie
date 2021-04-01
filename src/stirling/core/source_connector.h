@@ -21,30 +21,8 @@
 namespace pl {
 namespace stirling {
 
-#define DUMMY_SOURCE_CONNECTOR(NAME)                                        \
-  class NAME : public SourceConnector {                                     \
-   public:                                                                  \
-    static constexpr bool kAvailable = false;                               \
-    static constexpr std::array<DataTableSchema, 0> kTables = {};           \
-    static std::unique_ptr<SourceConnector> Create(std::string_view name) { \
-      PL_UNUSED(name);                                                      \
-      return nullptr;                                                       \
-    }                                                                       \
-  }
-
 class SourceConnector : public NotCopyable {
  public:
-  /**
-   * Defines whether the SourceConnector has an implementation.
-   *
-   * Default in the base class is true, and normally should not be changed in the derived class.
-   *
-   * However, a derived class may want to redefine to false in certain special circumstances:
-   * 1) a SourceConnector that is just a placeholder (not yet implemented).
-   * 2) a SourceConnector that is not compilable (e.g. on Mac). See DUMMY_SOURCE_CONNECTOR macro.
-   */
-  static constexpr bool kAvailable = true;
-
   SourceConnector() = delete;
   virtual ~SourceConnector() = default;
 

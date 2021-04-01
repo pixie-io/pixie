@@ -1,19 +1,5 @@
 #pragma once
 
-#ifndef __linux__
-
-#include "src/stirling/core/source_connector.h"
-
-namespace pl {
-namespace stirling {
-
-DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
-
-}  // namespace stirling
-}  // namespace pl
-
-#else
-
 #include <fstream>
 #include <list>
 #include <map>
@@ -305,5 +291,3 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
 }  // namespace stirling
 }  // namespace pl
-
-#endif

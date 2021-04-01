@@ -1,18 +1,5 @@
 #pragma once
 
-#ifndef __linux__
-
-#include "src/stirling/core/source_connector.h"
-
-namespace pl {
-namespace stirling {
-
-DUMMY_SOURCE_CONNECTOR(PIDRuntimeConnector);
-
-}  // namespace stirling
-}  // namespace pl
-#else
-
 #include <map>
 #include <memory>
 #include <string>
@@ -73,5 +60,3 @@ class PIDRuntimeConnector : public SourceConnector, public bpf_tools::BCCWrapper
 
 }  // namespace stirling
 }  // namespace pl
-
-#endif

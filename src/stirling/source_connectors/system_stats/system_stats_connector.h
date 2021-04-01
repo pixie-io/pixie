@@ -1,19 +1,5 @@
 #pragma once
 
-#include "src/stirling/core/source_connector.h"
-#include "src/stirling/source_connectors/system_stats/system_stats_table.h"
-
-#ifndef __linux__
-
-namespace pl {
-namespace stirling {
-
-DUMMY_SOURCE_CONNECTOR(SystemStatsConnector);
-
-}  // namespace stirling
-}  // namespace pl
-#else
-
 #include <map>
 #include <memory>
 #include <string>
@@ -24,6 +10,8 @@ DUMMY_SOURCE_CONNECTOR(SystemStatsConnector);
 #include "src/common/system/system.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/stirling/core/canonical_types.h"
+#include "src/stirling/core/source_connector.h"
+#include "src/stirling/source_connectors/system_stats/system_stats_table.h"
 
 namespace pl {
 namespace stirling {
@@ -65,5 +53,3 @@ class SystemStatsConnector : public SourceConnector {
 
 }  // namespace stirling
 }  // namespace pl
-
-#endif

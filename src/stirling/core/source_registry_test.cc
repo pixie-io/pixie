@@ -6,12 +6,9 @@
 namespace pl {
 namespace stirling {
 
-DUMMY_SOURCE_CONNECTOR(DummyUnavailableConnector);
-
 void RegisterTestSources(SourceRegistry* registry) {
   registry->RegisterOrDie<SeqGenConnector>("source_0");
   registry->RegisterOrDie<SeqGenConnector>("source_1");
-  registry->RegisterOrDie<DummyUnavailableConnector>("unavailable_source");
 }
 
 class SourceRegistryTest : public ::testing::Test {
@@ -42,9 +39,6 @@ TEST_F(SourceRegistryTest, register_sources) {
     auto source = source_fn(name);
     EXPECT_EQ(name, source->source_name());
   }
-
-  // Unavailable source connectors should not make their way into the registry.
-  EXPECT_EQ(registry_.sources().end(), registry_.sources().find("unavailable_source"));
 
   auto all_sources = registry_.sources();
   EXPECT_EQ(2, all_sources.size());

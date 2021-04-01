@@ -8,16 +8,6 @@
 #include "src/stirling/bpf_tools/bpftrace_wrapper.h"
 #include "src/stirling/core/source_connector.h"
 
-#ifndef __linux__
-namespace pl {
-namespace stirling {
-
-DUMMY_SOURCE_CONNECTOR(PIDCPUUseBPFTraceConnector);
-
-}  // namespace stirling
-}  // namespace pl
-#else
-
 namespace pl {
 namespace stirling {
 
@@ -80,5 +70,3 @@ class PIDCPUUseBPFTraceConnector : public SourceConnector, public bpf_tools::BPF
 
 }  // namespace stirling
 }  // namespace pl
-
-#endif

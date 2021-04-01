@@ -1,18 +1,6 @@
 #pragma once
 
-#ifndef __linux__
-
 #include "src/stirling/core/source_connector.h"
-
-namespace pl {
-namespace stirling {
-
-DUMMY_SOURCE_CONNECTOR(JVMStatsConnector);
-
-}  // namespace stirling
-}  // namespace pl
-
-#else
 
 #include <absl/container/flat_hash_set.h>
 #include <map>
@@ -74,5 +62,3 @@ class JVMStatsConnector : public SourceConnector {
 
 }  // namespace stirling
 }  // namespace pl
-
-#endif
