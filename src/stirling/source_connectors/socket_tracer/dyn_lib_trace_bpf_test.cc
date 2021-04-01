@@ -118,26 +118,34 @@ TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
   sleep(1);
 
   {
-    // The key to this test is that Ruby only loads OpenSSL when it's required (i.e. http.request()
-    // call), By sleeping at the beginning of the loop, Stirling will first detect the ruby binary
-    // without OpenSSL.
-    // Then we make multiple requests:
-    //  - The first request will load the OpenSSL library, but won't be traced since the uprobes
-    //    won't be deployed yet. This should cause the OpenSSL library to be dynamically loaded and
-    //    then tracing should begin.
-    //  - The subsequent requests should come after the uprobes are deployed and should be traced.
+    // The key to this test is that Ruby only loads OpenSSL when it's required,
+    // which is when the line `http.verify_mode = OpenSSL::SSL::VERIFY_NONE` is executed.
+    // Stirling will first detect the ruby binary without OpenSSL, but by sleeping
+    // after OpenSSL is loaded, Stirling has a chance to deploy its uprobes,
+    // and any subsequent requests are traced.
+    //
+    // Note: a previous version of this test did not have a sleep before the first reqeust,
+    // and assumed that the first request would not be traced. However, because of a race between
+    // Stirling and ruby, Stirling would still sometimes trace the first request, causing failure.
+    // The current version is more robust to that race.
     std::string rb_script = R"(
           require 'net/http'
           require 'uri'
 
+          # Let Stirling discover ruby when it has not yet loaded OpenSSL.
+          sleep(1)
+
+          uri = URI.parse('https://localhost:443/index.html')
+          http = Net::HTTP.new(uri.host, uri.port)
+          http.use_ssl = true
+          http.verify_mode = OpenSSL::SSL::VERIFY_NONE # This line dynamically loads OpenSSL libs.
+
+          # Give enough time for uprobes to load.
+          sleep(5)
+
+          # Make multiple requests, so we can check we trace them all.
           $i = 0
           while $i < 3 do
-            sleep(3)
-
-            uri = URI.parse('https://localhost:443/index.html')
-            http = Net::HTTP.new(uri.host, uri.port)
-            http.use_ssl = true
-            http.verify_mode = OpenSSL::SSL::VERIFY_NONE
             request = Net::HTTP::Get.new(uri.request_uri)
             response = http.request(request)
             p response.body
@@ -206,8 +214,9 @@ TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
     {
       std::vector<http::Record> records = GetTargetRecords(record_batch, client.process_pid());
 
-      EXPECT_THAT(records, UnorderedElementsAre(EqHTTPRecord(expected_record),
-                                                EqHTTPRecord(expected_record)));
+      EXPECT_THAT(records,
+                  UnorderedElementsAre(EqHTTPRecord(expected_record), EqHTTPRecord(expected_record),
+                                       EqHTTPRecord(expected_record)));
     }
   }
 }
