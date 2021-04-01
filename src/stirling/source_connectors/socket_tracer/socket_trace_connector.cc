@@ -257,7 +257,7 @@ void SocketTraceConnector::UpdateCommonState(ConnectorContext* ctx) {
 
   // Can call this less frequently if it becomes a performance issue.
   // Trade-off is just how quickly we release memory and BPF map entries.
-  conn_trackers_.CleanupTrackers();
+  conn_trackers_mgr_.CleanupTrackers();
 }
 
 void SocketTraceConnector::CachedUpdateCommonState(ConnectorContext* ctx, uint32_t table_num) {
@@ -419,7 +419,7 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
     WriteDataEvent(*event);
   }
 
-  ConnTracker& tracker = conn_trackers_.GetOrCreateConnTracker(event->attr.conn_id);
+  ConnTracker& tracker = conn_trackers_mgr_.GetOrCreateConnTracker(event->attr.conn_id);
   tracker.set_conn_stats(&connection_stats_);
 
   tracker.AddDataEvent(std::move(event));
@@ -430,7 +430,7 @@ void SocketTraceConnector::AcceptControlEvent(socket_control_event_t event) {
   event.open.timestamp_ns += ClockRealTimeOffset();
 
   // conn_id is a common field of open & close.
-  ConnTracker& tracker = conn_trackers_.GetOrCreateConnTracker(event.open.conn_id);
+  ConnTracker& tracker = conn_trackers_mgr_.GetOrCreateConnTracker(event.open.conn_id);
   tracker.set_conn_stats(&connection_stats_);
 
   tracker.AddControlEvent(event);
@@ -439,7 +439,7 @@ void SocketTraceConnector::AcceptControlEvent(socket_control_event_t event) {
 void SocketTraceConnector::AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> event) {
   event->attr.timestamp_ns += ClockRealTimeOffset();
 
-  ConnTracker& tracker = conn_trackers_.GetOrCreateConnTracker(event->attr.conn_id);
+  ConnTracker& tracker = conn_trackers_mgr_.GetOrCreateConnTracker(event->attr.conn_id);
   tracker.set_conn_stats(&connection_stats_);
 
   tracker.AddHTTP2Header(std::move(event));
@@ -448,7 +448,7 @@ void SocketTraceConnector::AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> e
 void SocketTraceConnector::AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event) {
   event->attr.timestamp_ns += ClockRealTimeOffset();
 
-  ConnTracker& tracker = conn_trackers_.GetOrCreateConnTracker(event->attr.conn_id);
+  ConnTracker& tracker = conn_trackers_mgr_.GetOrCreateConnTracker(event->attr.conn_id);
   tracker.set_conn_stats(&connection_stats_);
 
   tracker.AddHTTP2Data(std::move(event));
@@ -794,7 +794,7 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
     DCHECK(protocol.has_value());
 
     ConnTrackersManager::TrackersList conn_trackers_list =
-        conn_trackers_.ConnTrackersForProtocol(protocol.value());
+        conn_trackers_mgr_.ConnTrackersForProtocol(protocol.value());
 
     for (auto iter = conn_trackers_list.begin(); iter != conn_trackers_list.end(); ++iter) {
       ConnTracker* tracker = *iter;

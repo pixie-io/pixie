@@ -172,7 +172,7 @@ class ConnTrackersManager {
   // A map from conn_id (PID+FD+TSID) to tracker. This is for easy update on BPF events.
   // Structured as two nested maps to be explicit about "generations" of trackers per PID+FD.
   // Key is {PID, FD} for outer map, and tsid for inner map.
-  absl::flat_hash_map<uint64_t, ConnTrackerGenerations> connection_trackers_;
+  absl::flat_hash_map<uint64_t, ConnTrackerGenerations> conn_trackers_;
 
   // A set of lists of pointers to all the contained trackers, organized by protocol
   // This is for easy access to the trackers during TransferData().

@@ -107,7 +107,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
    * @return Pointer to the ConnTracker, or error::NotFound if it does not exist.
    */
   StatusOr<const ConnTracker*> GetConnTracker(uint32_t pid, uint32_t fd) const {
-    return conn_trackers_.GetConnTracker(pid, fd);
+    return conn_trackers_mgr_.GetConnTracker(pid, fd);
   }
 
  private:
@@ -220,11 +220,13 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Writes data event to the specified output file.
   void WriteDataEvent(const SocketDataEvent& event);
 
-  ConnTrackersManager conn_trackers_;
+  ConnTrackersManager conn_trackers_mgr_;
 
   ConnStats connection_stats_;
 
   struct TransferSpec {
+    // TODO(yzhao): Enabling protocol is essentially equivalent to subscribing to DataTable. They
+    // could be unified.
     bool enabled = false;
     uint32_t table_num = 0;
     std::vector<EndpointRole> trace_roles;
