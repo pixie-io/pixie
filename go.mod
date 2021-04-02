@@ -12,6 +12,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.6.0
 	github.com/alecthomas/chroma v0.7.1
 	github.com/alecthomas/participle v0.4.1
+	github.com/armon/go-metrics v0.3.6 // indirect
 	github.com/badoux/checkmail v0.0.0-20181210160741-9661bd69e9ad
 	github.com/bazelbuild/rules_go v0.22.4
 	github.com/blang/semver v3.5.1+incompatible
@@ -29,11 +30,12 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/emicklei/dot v0.10.1
 	github.com/evanphx/json-patch v4.9.0+incompatible
-	github.com/fatih/color v1.7.0
+	github.com/fatih/color v1.10.0
 	github.com/gdamore/tcell v1.3.0
 	github.com/getsentry/sentry-go v0.5.1
 	github.com/go-openapi/runtime v0.19.26
 	github.com/go-openapi/strfmt v0.20.0
+	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/gofrs/uuid v4.0.0+incompatible
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang-migrate/migrate v3.5.4+incompatible
@@ -48,6 +50,8 @@ require (
 	github.com/gorilla/sessions v1.1.3
 	github.com/graph-gophers/graphql-go v0.0.0-20190225005345-3e8838d4614c
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.2
+	github.com/hashicorp/go-hclog v0.15.0 // indirect
+	github.com/hashicorp/go-immutable-radix v1.3.0 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/ianlancetaylor/cgosymbolizer v0.0.0-20200424224625-be1b05b0b279
 	github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf
@@ -55,17 +59,18 @@ require (
 	github.com/jackc/pgx v3.5.0+incompatible
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
+	github.com/klauspost/compress v1.11.13 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
-	github.com/lib/pq v1.3.0
+	github.com/lib/pq v1.10.0
 	github.com/mattn/go-runewidth v0.0.9
+	github.com/minio/highwayhash v1.0.2 // indirect
 	github.com/mitchellh/copystructure v1.1.1 // indirect
 	github.com/moby/term v0.0.0-20201216013528-df9cb8a40635 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
-	github.com/nats-io/jwt v1.2.2 // indirect
-	github.com/nats-io/nats-server/v2 v2.1.4
-	github.com/nats-io/nats-streaming-server v0.17.0
-	github.com/nats-io/nats.go v1.10.0
-	github.com/nats-io/stan.go v0.8.2
+	github.com/nats-io/nats-server/v2 v2.2.0
+	github.com/nats-io/nats-streaming-server v0.21.1
+	github.com/nats-io/nats.go v1.10.1-0.20210228004050-ed743748acac
+	github.com/nats-io/stan.go v0.8.3
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/olivere/elastic/v7 v7.0.12
 	github.com/ory/dockertest/v3 v3.6.3
@@ -100,7 +105,7 @@ require (
 	golang.org/x/net v0.0.0-20210330230544-e57232859fb2
 	golang.org/x/oauth2 v0.0.0-20210323180902-22b0adad7558
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20210330210617-4fbd30eecc44
+	golang.org/x/sys v0.0.0-20210331175145-43e1dd70ce54
 	golang.org/x/term v0.0.0-20210317153231-de623e64d2a6 // indirect
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba // indirect
 	google.golang.org/api v0.43.0
@@ -176,3 +181,7 @@ replace github.com/google/go-cmp => github.com/google/go-cmp v0.5.5
 replace go.mongodb.org/mongo-driver => go.mongodb.org/mongo-driver v1.5.1
 
 replace github.com/docker/docker => github.com/moby/moby v20.10.5+incompatible
+
+replace github.com/nats-io/nats.go => github.com/nats-io/nats.go v1.10.0
+
+replace github.com/nats-io/nats-server/v2 => github.com/nats-io/nats-server/v2 v2.2.0

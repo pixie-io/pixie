@@ -354,15 +354,15 @@ go_repository(
 go_repository(
     name = "com_github_mattn_go_colorable",
     importpath = "github.com/mattn/go-colorable",
-    sum = "h1:/bC9yWikZXAL9uJdulbSfyVNIR3n3trXl+v8+1sx8mU=",
-    version = "v0.1.2",
+    sum = "h1:c1ghPdyEDarC70ftn0y+A/Ee++9zz8ljHG1b13eJ0s8=",
+    version = "v0.1.8",
 )
 
 go_repository(
     name = "com_github_mattn_go_isatty",
     importpath = "github.com/mattn/go-isatty",
-    sum = "h1:d5US/mDsogSGW37IV293h//ZFaeajb69h+EHFsv2xGg=",
-    version = "v0.0.9",
+    sum = "h1:wuysRhFDzyxgEmMf5xjvJ2M9dZoWAXNNr5LSBS7uHXY=",
+    version = "v0.0.12",
 )
 
 go_repository(
@@ -403,8 +403,8 @@ go_repository(
 go_repository(
     name = "com_github_fatih_color",
     importpath = "github.com/fatih/color",
-    sum = "h1:DkWD4oS2D8LGGgTQ6IvwJJXSL5Vp2ffcQg58nFV38Ys=",
-    version = "v1.7.0",
+    sum = "h1:s36xzo75JdqLaaWoiEHk767eHiwo0598uUxyfiPkDsg=",
+    version = "v1.10.0",
 )
 
 go_repository(
@@ -496,8 +496,8 @@ go_repository(
 go_repository(
     name = "com_github_nats_io_nkeys",
     importpath = "github.com/nats-io/nkeys",
-    sum = "h1:WXKF7diOaPU9cJdLD7nuzwasQy9vT1tBqzXZZf3AMJM=",
-    version = "v0.2.0",
+    sum = "h1:cgM5tL53EvYRU+2YLXIK0G2mJtK12Ft9oeooSZMA2G8=",
+    version = "v0.3.0",
 )
 
 go_repository(
@@ -653,8 +653,8 @@ go_repository(
 go_repository(
     name = "com_github_prometheus_procfs",
     importpath = "github.com/prometheus/procfs",
-    sum = "h1:wH4vA7pcjKuZzjF7lM8awk4fnuJO6idemZXoKnULUx4=",
-    version = "v0.2.0",
+    sum = "h1:mxy4L2jP6qMonqmq+aTtOx1ifVWUgG/TAmntgbh3xv4=",
+    version = "v0.6.0",
 )
 
 go_repository(
@@ -905,8 +905,8 @@ go_repository(
 go_repository(
     name = "com_github_go_sql_driver_mysql",
     importpath = "github.com/go-sql-driver/mysql",
-    sum = "h1:ozyZYNQW3x3HtqT1jira07DN2PArx2v7/mN66gGcHOs=",
-    version = "v1.5.0",
+    sum = "h1:BCTh4TKNUYmOmMUcQ3IipzF5prigylS7XXjEkfCHuOE=",
+    version = "v1.6.0",
 )
 
 go_repository(
@@ -962,8 +962,8 @@ go_repository(
 go_repository(
     name = "com_github_lib_pq",
     importpath = "github.com/lib/pq",
-    sum = "h1:/qkRGz8zljWiDcFvgpwUpwIAPu3r07TDvs3Rws+o/pU=",
-    version = "v1.3.0",
+    sum = "h1:Zx5DJFEYQXio93kgXnQ09fXNiUKsqv4OUEu2UtGcB1E=",
+    version = "v1.10.0",
 )
 
 go_repository(
@@ -1652,6 +1652,7 @@ go_repository(
 go_repository(
     name = "com_github_nats_io_nats_go",
     importpath = "github.com/nats-io/nats.go",
+    replace = "github.com/nats-io/nats.go",
     sum = "h1:L8qnKaofSfNFbXg0C5F71LdjPRnmQwSsA4ukmkt1TvY=",
     version = "v1.10.0",
 )
@@ -1661,8 +1662,8 @@ go_repository(
     build_file_generation = "on",
     build_file_proto_mode = "disable",
     importpath = "github.com/nats-io/stan.go",
-    sum = "h1:Sry4+zk+bsveHxqNo4k4tj6elEEt4j0GkXhlylI1P1w=",
-    version = "v0.8.2",
+    sum = "h1:XyemjL9vAeGHooHn5RQy+ngljd8AVSM2l65Jdnpv4rI=",
+    version = "v0.8.3",
 )
 
 go_repository(
@@ -1725,8 +1726,9 @@ go_repository(
 go_repository(
     name = "com_github_nats_io_nats_server_v2",
     importpath = "github.com/nats-io/nats-server/v2",
-    sum = "h1:BILRnsJ2Yb/fefiFbBWADpViGF69uh4sxe8poVDQ06g=",
-    version = "v2.1.4",
+    replace = "github.com/nats-io/nats-server/v2",
+    sum = "h1:QNeFmJRBq+O2zF8EmsR/JSvtL2zXb3GwICloHgskYBU=",
+    version = "v2.2.0",
 )
 
 go_repository(
@@ -1767,8 +1769,8 @@ go_repository(
 go_repository(
     name = "com_github_armon_go_metrics",
     importpath = "github.com/armon/go-metrics",
-    sum = "h1:EFSB7Zo9Eg91v7MJPVsifUysc/wPdN+NOnVe6bWbdBM=",
-    version = "v0.0.0-20190430140413-ec5e00d3c878",
+    sum = "h1:x/tmtOF9cDBoXH7XoAGOz2qqm1DknFD1590XmD/DUJ8=",
+    version = "v0.3.6",
 )
 
 go_repository(
@@ -1795,8 +1797,8 @@ go_repository(
 go_repository(
     name = "com_github_datadog_datadog_go",
     importpath = "github.com/DataDog/datadog-go",
-    sum = "h1:V5BKkxACZLjzHjSgBbr2gvLA2Ae49yhc6CSY7MLy5k4=",
-    version = "v2.2.0+incompatible",
+    sum = "h1:qSG2N4FghB1He/r2mFrWKCaL7dXCilEuNEeAn20fdD4=",
+    version = "v3.2.0+incompatible",
 )
 
 go_repository(
@@ -1809,22 +1811,22 @@ go_repository(
 go_repository(
     name = "com_github_hashicorp_go_hclog",
     importpath = "github.com/hashicorp/go-hclog",
-    sum = "h1:9PZfAcVEvez4yhLH2TBU64/h/z4xlFI80cWXRrxuKuM=",
-    version = "v0.9.1",
+    sum = "h1:qMuK0wxsoW4D0ddCCYwPSTm4KQv1X1ke3WmPWZ0Mvsk=",
+    version = "v0.15.0",
 )
 
 go_repository(
     name = "com_github_hashicorp_go_immutable_radix",
     importpath = "github.com/hashicorp/go-immutable-radix",
-    sum = "h1:AKDB1HM5PWEA7i4nhcpwOrO2byshxBjXVn/J/3+z5/0=",
-    version = "v1.0.0",
+    sum = "h1:8exGP7ego3OmkfksihtSouGMZ+hQrhxx+FVELeXpVPE=",
+    version = "v1.3.0",
 )
 
 go_repository(
     name = "com_github_hashicorp_go_msgpack",
     importpath = "github.com/hashicorp/go-msgpack",
-    sum = "h1:i9R9JSrqIz0QVLz3sz+i3YJdT7TTSLcfLLzJi9aZTuI=",
-    version = "v0.5.5",
+    sum = "h1:9byZdVjKTe5mce63pRVNP1L7UAmdHOTEMGehn6KvJWs=",
+    version = "v1.1.5",
 )
 
 go_repository(
@@ -1844,8 +1846,8 @@ go_repository(
 go_repository(
     name = "com_github_hashicorp_raft",
     importpath = "github.com/hashicorp/raft",
-    sum = "h1:HJr7UE1x/JrJSc9Oy6aDBHtNHUUBHjcQjTgvUVihoZs=",
-    version = "v1.1.1",
+    sum = "h1:mHzHIrF0S91d3A7RPBvuqkgB4d/7oFJZyvf1Q4m7GA0=",
+    version = "v1.2.0",
 )
 
 go_repository(
@@ -1860,8 +1862,8 @@ go_repository(
     build_file_generation = "on",
     build_file_proto_mode = "disable",
     importpath = "github.com/nats-io/nats-streaming-server",
-    sum = "h1:eYhSmjRmRsCYNsoUshmZ+RgKbhq6B+7FvMHXo3M5yMs=",
-    version = "v0.17.0",
+    sum = "h1:jb/osnXmFJtKDS9DFghDjX82v1NT9IhaoR/r6s6toNg=",
+    version = "v0.21.1",
 )
 
 go_repository(
@@ -2302,8 +2304,8 @@ go_repository(
 go_repository(
     name = "com_github_klauspost_compress",
     importpath = "github.com/klauspost/compress",
-    sum = "h1:U+CaK85mrNNb4k8BNOfgJtJ/gr6kswUCFj6miSzVC6M=",
-    version = "v1.9.5",
+    sum = "h1:eSvu8Tmq6j2psUJqJrLcWH6K3w5Dwc+qipbaA6eVEN4=",
+    version = "v1.11.13",
 )
 
 go_repository(
@@ -4032,4 +4034,18 @@ go_repository(
     importpath = "github.com/youmark/pkcs8",
     sum = "h1:splanxYIlg+5LfHAM6xpdFEAYOk8iySO56hMFq6uLyA=",
     version = "v0.0.0-20181117223130-1be2e3e5546d",
+)
+
+go_repository(
+    name = "com_github_minio_highwayhash",
+    importpath = "github.com/minio/highwayhash",
+    sum = "h1:Aak5U0nElisjDCfPSG79Tgzkn2gl66NxOMspRrKnA/g=",
+    version = "v1.0.2",
+)
+
+go_repository(
+    name = "com_github_nats_io_jwt_v2",
+    importpath = "github.com/nats-io/jwt/v2",
+    sum = "h1:SycklijeduR742i/1Y3nRhURYM7imDzZZ3+tuAQqhQA=",
+    version = "v2.0.1",
 )
