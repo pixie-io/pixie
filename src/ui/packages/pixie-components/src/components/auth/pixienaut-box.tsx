@@ -74,6 +74,8 @@ const styles = ({ spacing, palette, breakpoints }: Theme) => createStyles({
   },
 });
 
+export type PixienautImage = 'balloon' | 'octopus' | 'toilet';
+
 export interface PixienautBoxProps extends WithStyles<typeof styles> {
   children?: React.ReactNode;
   /**
@@ -82,7 +84,7 @@ export interface PixienautBoxProps extends WithStyles<typeof styles> {
    * - Running from a space octopus (use for recoverable errors)
    * - Using the toilet with an "oh no" pose (use for fatal errors)
    */
-  image?: 'balloon'|'octopus'|'toilet';
+  image?: PixienautImage;
 }
 
 export const PixienautBox = withStyles(styles)(({ classes, children, image = 'balloon' }: PixienautBoxProps) => {

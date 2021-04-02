@@ -1,4 +1,7 @@
 export { AuthBox } from './components/auth/auth-box';
+export {
+  Form, FormProps, FormField, FormStructure, PixienautForm, PixienautFormProps,
+} from './components/form/form';
 export { AuthFooter } from './components/auth/footer';
 export { AuthMessageBoxProps, AuthMessageBox } from './components/auth/message';
 export {
