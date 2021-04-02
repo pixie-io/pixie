@@ -347,7 +347,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/pl-pixies/demos/microservices-demo-app/productcatalogservice:profilerdemo
+        image: gcr.io/pixie-prod/demos/microservices-demo-app/productcatalogservice:profilerdemo
         ports:
         - containerPort: 3550
         env:
