@@ -105,7 +105,6 @@ export class CloudClient {
   async listClusters(): Promise<GQLClusterInfo[]> {
     const { data } = await this.graphQL.query<{ clusters: GQLClusterInfo[] }>({
       query: CLUSTER_QUERIES.LIST_CLUSTERS,
-      pollInterval: 2500,
       fetchPolicy: 'network-only',
     });
     return data.clusters;
@@ -138,11 +137,10 @@ export class CloudClient {
     // Nothing to return here. Just wait for the promise to resolve or reject.
   }
 
-  /** Fetches a list of accessible Pixie API keys. Results update at most once every 2 seconds. */
+  /** Fetches a list of accessible Pixie API keys. */
   async listAPIKeys(): Promise<GQLAPIKey[]> {
     const { data } = await this.graphQL.query<{ apiKeys: GQLAPIKey[] }>({
       query: API_KEY_QUERIES.LIST_API_KEYS,
-      pollInterval: 2000,
     });
     return data.apiKeys;
   }
@@ -164,11 +162,10 @@ export class CloudClient {
     // Nothing to return here. Just wait for the promise to resolve or reject.
   }
 
-  /** Fetches a list of accessible cluster deployment keys. Results update at most once every 2 seconds. */
+  /** Fetches a list of accessible cluster deployment keys. */
   async listDeploymentKeys(): Promise<GQLDeploymentKey[]> {
     const { data } = await this.graphQL.query<{ deploymentKeys: GQLDeploymentKey[] }>({
       query: DEPLOYMENT_KEY_QUERIES.LIST_DEPLOYMENT_KEYS,
-      pollInterval: 2000,
     });
     return data.deploymentKeys;
   }

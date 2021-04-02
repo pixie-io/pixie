@@ -4,7 +4,7 @@ import { ApolloError } from '@apollo/client';
 import { itPassesBasicHookTests, MOCKED_PROVIDER_DEFAULT_SETTINGS } from 'testing/hook-testing-boilerplate';
 import { act, render } from '@testing-library/react';
 import { MockedProvider } from '@apollo/client/testing';
-import { wait } from 'testing/utils';
+import { wait } from '../testing/utils';
 import { useAPIKeys } from './use-api-keys';
 
 describe('useAPIKeys hook for creating, listing, and deleting API keys', () => {

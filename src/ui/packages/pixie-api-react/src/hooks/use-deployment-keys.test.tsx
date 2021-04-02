@@ -4,7 +4,7 @@ import { ApolloError } from '@apollo/client';
 import { itPassesBasicHookTests, MOCKED_PROVIDER_DEFAULT_SETTINGS } from 'testing/hook-testing-boilerplate';
 import { act, render } from '@testing-library/react';
 import { MockedProvider } from '@apollo/client/testing';
-import { wait } from 'testing/utils';
+import { wait } from '../testing/utils';
 import { useDeploymentKeys } from './use-deployment-keys';
 
 describe('useDeploymentKeys hook for creating, listing, and deleting deployment keys', () => {

@@ -1,6 +1,6 @@
 import { PixieAPIClient } from './api';
 import { CloudClient } from './cloud-gql-client';
-import { mockApolloClient } from './testing/boilerplate';
+import { mockApolloClient, Invocation } from './testing';
 import { GQLAutocompleteActionType, GQLAutocompleteEntityKind } from './types/schema';
 // Imported only so that its import in the test subject can be mocked successfully.
 import * as vizierDependency from './vizier-grpc-client';
@@ -50,12 +50,6 @@ describe('Pixie TypeScript API Client', () => {
 
   // The GQL methods are just proxies to CloudGQLClient, which has its own tests. Only skeletal tests needed here.
 
-  // This type finds the names of each method on a class, as well as the parameters of those methods.
-  type Invocation<Class> = {
-    [Key in keyof Class]: Class[Key] extends (...args: infer Params) => any
-      ? (Params extends [] ? [Key] : any[]) // TODO(nick,PC-819): TS 4.x lets us change this line to `[Key, ...Params]`.
-      : never;
-  }[keyof Class];
   const proxies: ReadonlyArray<Invocation<CloudClient>> = [
     ['createAPIKey'],
     ['listAPIKeys'],

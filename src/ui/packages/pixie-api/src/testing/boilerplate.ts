@@ -1,36 +1,42 @@
-import { ApolloClient } from '@apollo/client/core';
+import type { ApolloClient } from '@apollo/client/core';
+
+import * as apolloDependency from '@apollo/client/core';
+
+// Imported so it can be mocked
+import 'apollo3-cache-persist';
 
 /**
  * Mocks ApolloClient's core; returns Jest mocks for the query and mutate methods.
- * This method has side effects! It uses a beforeEach and an afterEach to create and reset the mocks.
- * This allows adding implementation to the mocks on a per-test or per-describe-block basis.
+ * Note: this uses beforeEach() to create the spies. It must be used outside of an individual test as such.
+ * If you add mock implementation to the returned methods, be sure to reset it between tests!
  */
 export function mockApolloClient(): {
-  query: InstanceType<typeof ApolloClient>['query'];
-  mutate: InstanceType<typeof ApolloClient>['mutate'];
+  query: jest.MockedFunction<InstanceType<typeof ApolloClient>['query']>;
+  watchQuery: jest.MockedFunction<InstanceType<typeof ApolloClient>['watchQuery']>;
+  mutate: jest.MockedFunction<InstanceType<typeof ApolloClient>['mutate']>;
 } {
   // GQL functionality runs through Apollo, which does provide its own mock features.
   // However, those mocks are exposed in a React context.
   // As this is a framework-independent library, it can't reasonably use that. Thus, Jest mock.
   const query = jest.fn();
+  const watchQuery = jest.fn();
   const mutate = jest.fn();
+
+  const mockApollo = {
+    ApolloClient: () => ({ query, watchQuery, mutate }),
+    InMemoryCache: jest.fn(),
+    ApolloLink: {
+      from: jest.fn(),
+    },
+    createHttpLink: jest.fn(),
+  };
+
   beforeEach(() => {
-    const apolloMock = {
-      ApolloClient: () => ({ query, mutate }),
-      InMemoryCache: jest.fn(),
-      ApolloLink: {
-        from: jest.fn(),
-      },
-      createHttpLink: jest.fn(),
-    };
-    jest.mock('@apollo/client', () => apolloMock);
-    jest.mock('@apollo/client/core', () => apolloMock);
+    spyOn(apolloDependency, 'ApolloClient').and.returnValue(mockApollo.ApolloClient());
+    spyOn(apolloDependency, 'InMemoryCache').and.returnValue(mockApollo.InMemoryCache);
+    spyOn(apolloDependency, 'ApolloLink').and.returnValue(mockApollo.ApolloLink);
+    spyOn(apolloDependency, 'createHttpLink').and.returnValue(mockApollo.createHttpLink);
   });
 
-  afterEach(() => {
-    query.mockReset();
-    mutate.mockReset();
-  });
-
-  return { query, mutate };
+  return { query, watchQuery, mutate };
 }

@@ -3,7 +3,7 @@ import { AUTOCOMPLETE_QUERIES, GQLAutocompleteEntityKind, GQLAutocompleteSuggest
 import { ApolloError } from '@apollo/client';
 import { MockedProvider } from '@apollo/client/testing';
 import { render } from '@testing-library/react';
-import { wait } from 'testing/utils';
+import { wait } from '../testing/utils';
 import { useAutocompleteFieldSuggester } from './use-autocomplete-field';
 
 describe('useAutocompleteFieldSuggester to suggest available entities from user input', () => {
