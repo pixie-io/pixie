@@ -119,6 +119,9 @@ class GetTables final : public carnot::udf::UDTF<GetTables> {
   }
 
   bool NextRecord(FunctionContext*, RecordWriter* rw) {
+    if (!table_info_.size()) {
+      return false;
+    }
     const auto& r = table_info_[idx_];
     rw->Append<IndexOf("table_name")>(r.table_name);
     rw->Append<IndexOf("table_desc")>(r.table_desc);
@@ -191,6 +194,9 @@ class GetTableSchemas final : public carnot::udf::UDTF<GetTableSchemas> {
   }
 
   bool NextRecord(FunctionContext*, RecordWriter* rw) {
+    if (!relation_info_.size()) {
+      return false;
+    }
     const auto& r = relation_info_[idx_];
     rw->Append<IndexOf("table_name")>(r.table_name);
     rw->Append<IndexOf("column_name")>(r.column_name);
