@@ -303,7 +303,7 @@ func (e *ElasticSuggester) getQueryForRequest(orgID uuid.UUID, clusterUID string
 
 	q.Should(e.getMDEntityQuery(orgID, clusterUID, input, allowedKinds))
 
-	// TODO(michelle): Add script query here once that is ready: q.Should(e.getScriptQuery(orgID, input, allowedArgs))
+	// Once script indexing is in, we should also query the scripts: q.Should(e.getScriptQuery(orgID, input, allowedArgs))
 	return q
 }
 

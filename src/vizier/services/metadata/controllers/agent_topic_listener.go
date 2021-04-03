@@ -137,9 +137,6 @@ func (a *AgentTopicListener) HandleMessage(msg *nats.Msg) error {
 		a.forwardAgentHeartBeat(m.Heartbeat, msg)
 	case *messages.VizierMessage_RegisterAgentRequest:
 		a.forwardAgentRegisterRequest(m.RegisterAgentRequest, msg)
-	// TODO(michelle): All of the above messages now are placed in a separate channel to unblock
-	// this message handler, except for the TracepointRequest below. We should consider putting this on a separate
-	// channel or have this run in a separate goroutine.
 	case *messages.VizierMessage_TracepointMessage:
 		a.onAgentTracepointMessage(m.TracepointMessage)
 	default:

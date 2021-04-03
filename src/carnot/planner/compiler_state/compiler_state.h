@@ -76,7 +76,6 @@ class CompilerState : public NotCopyable {
   std::unique_ptr<RelationMap> relation_map_;
   RegistryInfo* registry_info_;
   types::Time64NSValue time_now_;
-  // TODO(michelle): Update this map to handle init args, once we add init args to the compiler.
   std::map<RegistryKey, int64_t> udf_to_id_map_;
   std::map<RegistryKey, int64_t> uda_to_id_map_;
 

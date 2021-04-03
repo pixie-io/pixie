@@ -118,9 +118,8 @@ func (a *AgentsInfoImpl) UpdateAgentsInfo(update *metadatapb.AgentUpdatesRespons
 			updatedAgentsDataInfo++
 			carnotInfo, present := carnotInfoMap[agentUUID]
 			if !present {
+				// It's possible that an agent may be deleted, but we still receive the schema. We should be robust to this case.
 				continue
-				// TODO(michelle, nserrino): Re-enable when PP-2232 is fixed.
-				// return fmt.Errorf("Could not update agent table metadata of unknown agent %s", agentUUID.String())
 			}
 			if carnotInfo == nil {
 				return fmt.Errorf("Carnot info is nil for agent %s, but received agent data info", agentUUID.String())

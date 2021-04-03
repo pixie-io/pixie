@@ -1519,8 +1519,7 @@ IRNode* IR::Get(int64_t id) const {
 
 StatusOr<planpb::Plan> IR::ToProto(int64_t agent_id) const {
   auto plan = planpb::Plan();
-  // TODO(michelle) For M1.5 , we'll only handle plans with a single plan fragment. In the future
-  // we will need to update this to loop through all plan fragments.
+
   auto plan_dag = plan.mutable_dag();
   auto plan_dag_node = plan_dag->add_nodes();
   plan_dag_node->set_id(1);

@@ -280,9 +280,6 @@ func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metada
 
 // RegisterTracepoint is a request to register the tracepoints specified in the TracepointDeployment on all agents.
 func (s *Server) RegisterTracepoint(ctx context.Context, req *metadatapb.RegisterTracepointRequest) (*metadatapb.RegisterTracepointResponse, error) {
-	// TODO(michelle): Some additional work will need to be done
-	// in order to transactionalize the creation of multiple tracepoints. The current behavior is temporary just
-	// so we can get the updated protos out.
 	responses := make([]*metadatapb.RegisterTracepointResponse_TracepointStatus, len(req.Requests))
 
 	// Create tracepoint.

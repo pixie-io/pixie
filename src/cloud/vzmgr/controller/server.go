@@ -729,7 +729,7 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 		log.WithError(err).Error("Could not get service creds from jwt")
 		return
 	}
-	// TODO(michelle): fix
+
 	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
 		fmt.Sprintf("bearer %s", serviceAuthToken))
 
@@ -856,7 +856,6 @@ func (s *Server) HandleSSLRequest(v2cMsg *cvmsgspb.V2CMessage) {
 		return
 	}
 
-	// TODO(michelle): fix
 	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
 		fmt.Sprintf("bearer %s", serviceAuthToken))
 

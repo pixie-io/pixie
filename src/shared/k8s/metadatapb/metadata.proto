@@ -104,10 +104,6 @@ enum DNSPolicy {
 
 // PodSpec is a description of a pod.
 message PodSpec {
-  // List of volumes that can be mounted by containers belonging to the pod.
-  // TODO(michelle): Add this in at some point, since we may want volume information.
-  // repeated Volume volumes = 1;
-
   // The DNS policy for the pod.
   DNSPolicy dns_policy = 1 [
                   (gogoproto.customname) = "DNSPolicy"

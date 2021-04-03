@@ -11,7 +11,7 @@ service CertMgrService {
     rpc UpdateCerts(UpdateCertsRequest) returns (UpdateCertsResponse) {}
 }
 
-// TODO(michelle): This request is from CloudConnector -> CrtMgr. In the future, we may
+// This request is from CloudConnector -> CrtMgr. In the future, we may
 // want CrtMgr to be the one initiating the request when it detects that its certs are
 // expiring.
 message UpdateCertsRequest {

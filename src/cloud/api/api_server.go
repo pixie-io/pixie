@@ -182,7 +182,7 @@ func main() {
 	var br *script.BundleManager
 	var bundleErr error
 	updateBundle := func() {
-		//TODO(michelle): Requiring the bundle manager in the API service is temporary until we
+		// Requiring the bundle manager in the API service is temporary until we
 		// start indexing scripts.
 		br, bundleErr = script.NewBundleManagerWithOrgName([]string{defaultBundleFile, ossBundleFile}, "")
 		if bundleErr != nil {

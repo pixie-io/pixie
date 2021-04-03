@@ -388,7 +388,6 @@ func (s *Bridge) handleUpdateMessage(msg *types.Any) error {
 		return err
 	}
 
-	// TODO(michelle): Fill in the YAML contents.
 	job, err := s.vzInfo.ParseJobYAML(UpdaterJobYAML, map[string]string{"updater": pb.Version}, map[string]string{
 		"PL_VIZIER_VERSION": pb.Version,
 		"PL_REDEPLOY_ETCD":  fmt.Sprintf("%v", pb.RedeployEtcd),

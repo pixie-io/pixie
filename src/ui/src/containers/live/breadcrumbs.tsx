@@ -112,8 +112,6 @@ const LiveViewBreadcrumbs = ({ classes }) => {
 
     const argVariableMap = getArgVariableMap(vis);
 
-    // TODO(michelle): We may want to separate non-entity args from the entity args and put them in separate
-    // breadcrumbs. For now, they will all go in the same breadcrumbs object.
     Object.entries(args).filter(([argName]) => argName !== 'script').forEach(([argName, argVal]) => {
       // Only add suggestions if validValues are specified. Otherwise, the dropdown is populated with autocomplete
       // entities or has no elements and the user must manually type in values.
