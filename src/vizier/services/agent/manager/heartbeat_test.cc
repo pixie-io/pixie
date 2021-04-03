@@ -260,6 +260,7 @@ TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatMetadataAfterDisable) {
   EXPECT_EQ(3, nats_conn_->published_msgs().size());
   hb = nats_conn_->published_msgs()[2].heartbeat();
   EXPECT_EQ(1, hb.sequence_number());
+  EXPECT_EQ(2, hb.update_info().schema().size());
   CheckFilterElements(hb.update_info().data(), {"pl/service"}, {"pl/another_service"});
 }
 

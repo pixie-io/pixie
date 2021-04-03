@@ -31,6 +31,7 @@ HeartbeatMessageHandler::HeartbeatMessageHandler(Dispatcher* d,
 
 void HeartbeatMessageHandler::DisableHeartbeats() {
   last_metadata_epoch_id_ = 0;
+  sent_schema_ = false;
   heartbeat_send_timer_->DisableTimer();
   heartbeat_watchdog_timer_->DisableTimer();
 }
@@ -79,7 +80,8 @@ Status HeartbeatMessageHandler::SendHeartbeatInternal() {
   // TODO(zasgar/michelle): Maybe consider moving to threadpool.
   ConsumeAgentPIDUpdates(update_info);
   if (agent_info()->capabilities.collects_data() &&
-      (heartbeat_info_.last_sent_seq_num == 0 || relation_info_manager_->has_updates())) {
+      (!sent_schema_ || relation_info_manager_->has_updates())) {
+    sent_schema_ = true;
     relation_info_manager_->AddSchemaToUpdateInfo(update_info);
   }
 
