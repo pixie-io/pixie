@@ -36,7 +36,7 @@ class PostgreSQLContainer : public ContainerRunner {
  private:
   static constexpr std::string_view kBazelImageTar =
       "src/stirling/source_connectors/socket_tracer/testing/containers/"
-      "postgres_container_image.tar";
+      "postgres_image.tar";
   static constexpr std::string_view kContainerNamePrefix = "postgres_testing";
   static constexpr std::string_view kReadyMessage =
       "database system is ready to accept connections";
@@ -50,7 +50,7 @@ class GolangSQLxContainer : public ContainerRunner {
 
  private:
   static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/protocols/pgsql/testing/demo_image.tar";
+      "src/stirling/source_connectors/socket_tracer/testing/containers/pgsql/demo_client_image.tar";
   static constexpr std::string_view kContainerNamePrefix = "pgsql_demo";
   static constexpr std::string_view kReadyMessage = "";
 };

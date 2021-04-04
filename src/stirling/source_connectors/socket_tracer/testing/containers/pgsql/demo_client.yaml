@@ -2,22 +2,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: postgres-demo
+  name: postgres-demo-client
   namespace: stirling-testing
   labels:
-    name: postgres-demo
+    name: postgres-demo-client
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: postgres-demo
+      name: postgres-demo-client
   template:
     metadata:
       labels:
-        name: postgres-demo
+        name: postgres-demo-client
     spec:
       containers:
-      - name: postgres-demo
+      - name: postgres-demo-client
         # Replace with your ldap
         image: gcr.io/pl-dev-infra/demos/postgres/demo:latest
         imagePullPolicy: Always

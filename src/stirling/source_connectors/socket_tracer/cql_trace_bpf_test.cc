@@ -43,7 +43,7 @@ class CassandraContainer : public ContainerRunner {
  private:
   static constexpr std::string_view kBazelImageTar =
       "src/stirling/source_connectors/socket_tracer/testing/containers/"
-      "datastax_container_image.tar";
+      "datastax_image.tar";
   static constexpr std::string_view kInstanceNamePrefix = "dse_server";
   static constexpr std::string_view kReadyMessage = "DSE startup complete.";
 };

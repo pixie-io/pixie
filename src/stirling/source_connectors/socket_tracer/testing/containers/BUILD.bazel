@@ -1,33 +1,68 @@
 package(default_visibility = ["//visibility:public"])
 
-load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_layer")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image")
 
 container_image(
-    name = "ruby_container_image",
-    base = "@ruby//image",
+    name = "ruby_image",
+    base = "@ruby_base_image//image",
 )
 
 container_image(
-    name = "curl_container_image",
-    base = "@curl//image",
+    name = "curl_image",
+    base = "@curl_base_image//image",
 )
 
 container_image(
-    name = "datastax_container_image",
-    base = "@datastax//image",
+    name = "datastax_image",
+    base = "@datastax_base_image//image",
 )
 
 container_image(
-    name = "mysql_container_image",
-    base = "@mysql//image",
+    name = "mysql_image",
+    base = "@mysql_base_image//image",
 )
 
 container_image(
-    name = "postgres_container_image",
-    base = "@postgres//image",
+    name = "postgres_image",
+    base = "@postgres_base_image//image",
 )
 
 container_image(
-    name = "redis_container_image",
-    base = "@redis//image",
+    name = "redis_image",
+    base = "@redis_base_image//image",
+)
+
+container_image(
+    name = "dns_image",
+    base = "@alpine_dns_base_image//image",
+    layers = [
+        "//src/stirling/source_connectors/socket_tracer/testing/containers/dns:bind_conf",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+container_image(
+    name = "mysql_connector_image",
+    base = "@python_mysql_connector_image//image",
+    layers = [
+        "//src/stirling/source_connectors/socket_tracer/testing/containers/mysql:mysql_scripts",
+    ],
+)
+
+container_image(
+    name = "nginx_openssl_1_1_0_image",
+    base = "@nginx_openssl_1_1_0_base_image//image",
+    layers = [
+        "//src/stirling/source_connectors/socket_tracer/testing/containers/ssl:nginx_conf",
+        "//src/stirling/source_connectors/socket_tracer/testing/containers/ssl:nginx_ssl_keys",
+    ],
+)
+
+container_image(
+    name = "nginx_openssl_1_1_1_image",
+    base = "@nginx_openssl_1_1_1_base_image//image",
+    layers = [
+        "//src/stirling/source_connectors/socket_tracer/testing/containers/ssl:nginx_conf",
+        "//src/stirling/source_connectors/socket_tracer/testing/containers/ssl:nginx_ssl_keys",
+    ],
 )

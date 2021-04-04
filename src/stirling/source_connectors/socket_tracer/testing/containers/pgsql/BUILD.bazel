@@ -1,13 +1,11 @@
-package(default_visibility = ["//src/stirling:__subpackages__"])
-
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 go_library(
     name = "go_default_library",
-    srcs = ["demo.go"],
-    importpath = "pixielabs.ai/pixielabs/src/stirling/source_connectors/socket_tracer/protocols/pgsql/testing",
+    srcs = ["demo_client.go"],
+    importpath = "pixielabs.ai/pixielabs/src/stirling/source_connectors/socket_tracer/testing/containers/pgsql",
     visibility = ["//visibility:private"],
     deps = [
         "@com_github_jmoiron_sqlx//:go_default_library",
@@ -17,21 +15,21 @@ go_library(
 )
 
 go_binary(
-    name = "demo",
+    name = "demo_client",
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
 )
 
 go_image(
-    name = "demo_image",
-    binary = ":demo",
+    name = "demo_client_image",
+    binary = ":demo_client",
     visibility = ["//visibility:public"],
 )
 
 container_push(
-    name = "push_demo_image",
+    name = "push_demo_client_image",
     format = "Docker",
-    image = ":demo_image",
+    image = ":demo_client_image",
     registry = "gcr.io",
     repository = "pl-dev-infra/demos/postgres/demo",
 )

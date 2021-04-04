@@ -25,7 +25,7 @@ class RedisContainer : public ContainerRunner {
 
  private:
   static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/redis_container_image.tar";
+      "src/stirling/source_connectors/socket_tracer/testing/containers/redis_image.tar";
   static constexpr std::string_view kContainerNamePrefix = "redis_test";
   static constexpr std::string_view kReadyMessage = "# Server initialized";
 };
@@ -38,7 +38,7 @@ class RubyContainer : public ContainerRunner {
 
  private:
   static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/ruby_container_image.tar";
+      "src/stirling/source_connectors/socket_tracer/testing/containers/ruby_image.tar";
   static constexpr std::string_view kContainerNamePrefix = "ruby";
   static constexpr std::string_view kReadyMessage = "";
 };

@@ -17,7 +17,7 @@ pl_cc_library(
 
 container_image(
     name = "sleep_container_image",
-    base = "@distroless_busybox//image",
+    base = "@distroless_base_image//image",
     cmd = [
         "-c",
         "echo started & sleep 100000000",

@@ -51,7 +51,7 @@ class MySQLContainer : public ContainerRunner {
 
  private:
   static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/mysql_container_image.tar";
+      "src/stirling/source_connectors/socket_tracer/testing/containers/mysql_image.tar";
   static constexpr std::string_view kInstanceNamePrefix = "mysql_server";
   static constexpr std::string_view kReadyMessage =
       "/usr/sbin/mysqld: ready for connections. Version: '8.0.13'  socket: "
@@ -65,7 +65,7 @@ class PythonMySQLConnectorContainer : public ContainerRunner {
 
  private:
   static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/mysql/mysql_connector_image.tar";
+      "src/stirling/source_connectors/socket_tracer/testing/containers/mysql_connector_image.tar";
   static constexpr std::string_view kInstanceNamePrefix = "mysql_client";
   static constexpr std::string_view kReadyMessage = "pid=";
 };

@@ -41,7 +41,8 @@ class NginxOpenSSL_1_1_0_Container : public ContainerRunner {
   // Image is a modified nginx image created through bazel rules, and stored as a tar file.
   // It is not pushed to any repo.
   static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/ssl/nginx_openssl_1_1_0_image.tar";
+      "src/stirling/source_connectors/socket_tracer/testing/containers/"
+      "nginx_openssl_1_1_0_image.tar";
   static constexpr std::string_view kInstanceNamePrefix = "nginx";
   static constexpr std::string_view kReadyMessage = "";
 };
@@ -55,7 +56,8 @@ class NginxOpenSSL_1_1_1_Container : public ContainerRunner {
   // Image is a modified nginx image created through bazel rules, and stored as a tar file.
   // It is not pushed to any repo.
   static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/ssl/nginx_openssl_1_1_1_image.tar";
+      "src/stirling/source_connectors/socket_tracer/testing/containers/"
+      "nginx_openssl_1_1_1_image.tar";
   static constexpr std::string_view kInstanceNamePrefix = "nginx";
   static constexpr std::string_view kReadyMessage = "";
 };
@@ -68,7 +70,7 @@ class CurlContainer : public ContainerRunner {
 
  private:
   static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/curl_container_image.tar";
+      "src/stirling/source_connectors/socket_tracer/testing/containers/curl_image.tar";
   static constexpr std::string_view kContainerNamePrefix = "curl";
   static constexpr std::string_view kReadyMessage = "";
 };
@@ -81,7 +83,7 @@ class RubyContainer : public ContainerRunner {
 
  private:
   static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/ruby_container_image.tar";
+      "src/stirling/source_connectors/socket_tracer/testing/containers/ruby_image.tar";
   static constexpr std::string_view kContainerNamePrefix = "ruby";
   static constexpr std::string_view kReadyMessage = "";
 };

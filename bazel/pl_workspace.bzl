@@ -46,7 +46,7 @@ def _package_manager_setup():
 def stirling_docker_images_setup():
     # Busybox container, for basic container tests.
     container_pull(
-        name = "distroless_busybox",
+        name = "distroless_base_image",
         digest = "sha256:f989df6099c5efb498021c7f01b74f484b46d2f5e1cdb862e508569d87569f2b",
         registry = "gcr.io",
         repository = "distroless/base",
@@ -54,7 +54,7 @@ def stirling_docker_images_setup():
 
     # NGINX with OpenSSL 1.1.0, for OpenSSL tracing tests.
     container_pull(
-        name = "nginx_openssl_1_1_0",
+        name = "nginx_openssl_1_1_0_base_image",
         digest = "sha256:204a9a8e65061b10b92ad361dd6f406248404fe60efd5d6a8f2595f18bb37aad",
         registry = "index.docker.io",
         repository = "library/nginx",
@@ -62,7 +62,7 @@ def stirling_docker_images_setup():
 
     # NGINX with OpenSSL 1.1.1, for OpenSSL tracing tests.
     container_pull(
-        name = "nginx_openssl_1_1_1",
+        name = "nginx_openssl_1_1_1_base_image",
         digest = "sha256:0b159cd1ee1203dad901967ac55eee18c24da84ba3be384690304be93538bea8",
         registry = "index.docker.io",
         repository = "library/nginx",
@@ -70,16 +70,16 @@ def stirling_docker_images_setup():
 
     # DNS server image for DNS tests.
     container_pull(
-        name = "alpine_dns_linux_amd64",
+        name = "alpine_dns_base_image",
+        digest = "sha256:b9d834c7ca1b3c0fb32faedc786f2cb96fa2ec00976827e3f0c44f647375e18c",
         registry = "index.docker.io",
         repository = "resystit/bind9",
-        digest = "sha256:b9d834c7ca1b3c0fb32faedc786f2cb96fa2ec00976827e3f0c44f647375e18c",
     )
 
     # Curl container, for OpenSSL tracing tests.
     # curlimages/curl:7.74.0
     container_pull(
-        name = "curl",
+        name = "curl_base_image",
         digest = "sha256:5594e102d5da87f8a3a6b16e5e9b0e40292b5404c12f9b6962fd6b056d2a4f82",
         registry = "index.docker.io",
         repository = "curlimages/curl",
@@ -88,7 +88,7 @@ def stirling_docker_images_setup():
     # Ruby container, for OpenSSL tracing tests.
     # ruby:3.0.0-buster
     container_pull(
-        name = "ruby",
+        name = "ruby_base_image",
         digest = "sha256:beeed8e63b1ae4a1492f4be9cd40edc6bdb1009b94228438f162d0d05e10c8fd",
         registry = "index.docker.io",
         repository = "library/ruby",
@@ -97,7 +97,7 @@ def stirling_docker_images_setup():
     # Datastax DSE server, for CQL tracing tests.
     # datastax/dse-server:6.7.7
     container_pull(
-        name = "datastax",
+        name = "datastax_base_image",
         digest = "sha256:a98e1a877f9c1601aa6dac958d00e57c3f6eaa4b48d4f7cac3218643a4bfb36e",
         registry = "index.docker.io",
         repository = "datastax/dse-server",
@@ -106,7 +106,7 @@ def stirling_docker_images_setup():
     # Postgres server, for PGSQL tracing tests.
     # postgres:13.2
     container_pull(
-        name = "postgres",
+        name = "postgres_base_image",
         digest = "sha256:661dc59f4a71e689c51d4823963baa56b8fcc8daa5b16cf740cad236fa5ffe74",
         registry = "index.docker.io",
         repository = "library/postgres",
@@ -115,7 +115,7 @@ def stirling_docker_images_setup():
     # Redis server, for Redis tracing tests.
     # redis:6.2.1
     container_pull(
-        name = "redis",
+        name = "redis_base_image",
         digest = "sha256:fd68bec9c2cdb05d74882a7eb44f39e1c6a59b479617e49df245239bba4649f9",
         registry = "index.docker.io",
         repository = "library/redis",
@@ -124,7 +124,7 @@ def stirling_docker_images_setup():
     # MySQL server, for MySQL tracing tests.
     # mysql/mysql-server:8.0.13
     container_pull(
-        name = "mysql",
+        name = "mysql_base_image",
         digest = "sha256:3d50c733cc42cbef715740ed7b4683a8226e61911e3a80c3ed8a30c2fbd78e9a",
         registry = "index.docker.io",
         repository = "mysql/mysql-server",
@@ -132,7 +132,7 @@ def stirling_docker_images_setup():
 
     # Custom-built container with python MySQL client, for MySQL tests.
     container_pull(
-        name = "python_mysql_connector",
+        name = "python_mysql_connector_image",
         digest = "sha256:14f3013a1939c20184914e1afb17b9b2ed3c5ff1982d6a6cb3ba7d580c059653",
         registry = "gcr.io",
         repository = "pl-dev-infra/python_mysql_connector",
