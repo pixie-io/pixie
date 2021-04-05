@@ -16,7 +16,8 @@ commit_range=${commit_range:-$(git merge-base origin/main HEAD)".."}
 
 ui_excludes="except //src/ui/..."
 bpf_excludes="except attr('tags', 'requires_bpf', //...)"
-darwin_excludes="except attr('goos', 'darwin', //...)"
+default_go_transition_binary="attr('goos', 'auto', //...) union attr('goarch', 'auto', //...)"
+go_xcompile_excludes="except (kind(go_transition_binary, //...) except (${default_go_transition_binary}))"
 default_excludes="except attr('tags', 'manual', //...) \
   except //third_party/... \
   except //experimental/... \
@@ -100,7 +101,7 @@ if [ "${all_targets}" = "false" ]; then
   files=()
   for file in $(git diff --name-only "${commit_range}" ); do
     # shellcheck disable=SC2207
-    files+=($(bazel query --noshow_progress "$file" || true))
+    files+=($(bazel query --noshow_progress "$file" 2>/dev/null || true))
   done
 
   targets="rdeps(${target_pattern}, set(${files[*]}))"
@@ -153,8 +154,8 @@ ${bazel_query} "${cc_buildables}" > bazel_buildables_clang_tidy
 ${bazel_query} "${cc_tests}" > bazel_tests_clang_tidy
 
 # Should we run golang race detection?
-${bazel_query} "${go_buildables} ${darwin_excludes}" > bazel_buildables_go_race
-${bazel_query} "${go_tests} ${darwin_excludes}" > bazel_tests_go_race
+${bazel_query} "${go_buildables} ${go_xcompile_excludes}" > bazel_buildables_go_race
+${bazel_query} "${go_tests} ${go_xcompile_excludes}" > bazel_tests_go_race
 
 # Should we run doxygen?
 bazel_cc_touched=$(${bazel_query} "${cc_buildables} union ${cc_tests}")
