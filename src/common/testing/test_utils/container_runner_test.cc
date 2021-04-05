@@ -6,7 +6,8 @@ namespace pl {
 
 TEST(ContainerRunnerTest, Run) {
   SleepContainer container;
-  ASSERT_OK(container.Run());
+  constexpr int kTimeoutSeconds = 30;
+  ASSERT_OK(container.Run(kTimeoutSeconds));
 }
 
 }  // namespace pl

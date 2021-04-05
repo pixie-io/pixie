@@ -53,7 +53,8 @@ TEST(FilePathResolver, ResolveNonContainerPaths) {
 #ifdef CONTAINER_ENV
 TEST(FilePathResolver, ResolveContainerPaths) {
   SleepContainer container;
-  ASSERT_OK(container.Run());
+  constexpr int kTimeoutSeconds = 30;
+  ASSERT_OK(container.Run(kTimeoutSeconds));
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<FilePathResolver> fp_resolver,
                        FilePathResolver::Create(container.process_pid()));
