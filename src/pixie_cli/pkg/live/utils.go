@@ -47,7 +47,10 @@ func tryJSONHighlight(s string) string {
 	}
 
 	highlighted := strings.Builder{}
-	quick.Highlight(&highlighted, string(parsed), "json", "terminal16m", "monokai")
+	err = quick.Highlight(&highlighted, string(parsed), "json", "terminal16m", "monokai")
+	if err != nil {
+		return s
+	}
 	return highlighted.String()
 }
 

@@ -836,7 +836,12 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	}
 
 	// If we reach this point, the cluster is in bootstrap mode and needs to be deployed.
-	go s.updater.UpdateOrInstallVizier(vizierID, req.BootstrapVersion, false)
+	go func() {
+		_, err := s.updater.UpdateOrInstallVizier(vizierID, req.BootstrapVersion, false)
+		if err != nil {
+			log.WithError(err).Error("Failed to update or install vizier")
+		}
+	}()
 }
 
 // HandleSSLRequest registers certs for the vizier cluster.

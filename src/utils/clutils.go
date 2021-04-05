@@ -72,9 +72,15 @@ func RunCmd(cmd *exec.Cmd) error {
 		// special kill switch in case keyboard interrupt is hit 3 times.
 		// otherwise, allow for graceful cleanup of command
 		// via keyboard interrupt
-		cmd.Process.Signal(syscall.SIGINT)
+		err := cmd.Process.Signal(syscall.SIGINT)
+		if err != nil {
+			log.WithError(err).Error("Failed to signal SIGINT")
+		}
 		if counter > 3 {
-			cmd.Process.Kill()
+			err = cmd.Process.Kill()
+			if err != nil {
+				log.WithError(err).Error("Failed to signal SIGINT")
+			}
 		}
 		counter++
 	})

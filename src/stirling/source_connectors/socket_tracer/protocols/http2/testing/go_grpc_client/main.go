@@ -116,7 +116,10 @@ func bidirStreamGreet(address string, https bool, names []string) {
 		}
 		log.Println(reply.Message)
 	}
-	stream.CloseSend()
+	err = stream.CloseSend()
+	if err != nil {
+		log.Fatalf("Failed to close send")
+	}
 }
 
 func connectAndGreet(address string, https bool, name string) {

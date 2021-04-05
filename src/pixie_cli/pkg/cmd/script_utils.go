@@ -59,7 +59,10 @@ func listBundleScripts(br *script.BundleManager, format string) {
 		if script.Hidden {
 			continue
 		}
-		w.Write([]interface{}{script.ScriptName, script.ShortDoc})
+		err := w.Write([]interface{}{script.ScriptName, script.ShortDoc})
+		if err != nil {
+			log.WithError(err).Error("Failed to write to stream")
+		}
 	}
 }
 

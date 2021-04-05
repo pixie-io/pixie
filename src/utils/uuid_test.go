@@ -19,7 +19,7 @@ const lo uint64 = 0xb127d50e5b6e2645
 var enc = binary.BigEndian
 
 func TestProtoFromUUID_BaseCaseValidUUID(t *testing.T) {
-	u, _ := uuid.FromString(uuidStr)
+	u := uuid.FromStringOrNil(uuidStr)
 	proto := utils.ProtoFromUUID(u)
 
 	assert.Equal(t, hi, proto.HighBits)
@@ -89,7 +89,7 @@ func TestUUIDFromProto_ZeroUUID(t *testing.T) {
 
 func BenchmarkUUIDFromString(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		uuid.FromString(uuidStr)
+		uuid.FromStringOrNil(uuidStr)
 	}
 }
 
@@ -98,7 +98,7 @@ func BenchmarkUUIDFromBytes(b *testing.B) {
 		data := make([]byte, 16)
 		enc.PutUint64(data[0:], hi)
 		enc.PutUint64(data[8:], lo)
-		uuid.FromBytes(data)
+		uuid.FromBytesOrNil(data)
 	}
 }
 

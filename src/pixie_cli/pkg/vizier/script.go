@@ -50,7 +50,10 @@ func RunScriptAndOutputResults(ctx context.Context, conns []*Connector, execScri
 
 	tw, err := runScript(ctx, conns, execScript, format)
 	if err == nil { // Script ran successfully.
-		tw.Finish()
+		err = tw.Finish()
+		if err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -62,7 +65,10 @@ func RunScriptAndOutputResults(ctx context.Context, conns []*Connector, execScri
 	mutationInfo, _ := tw.MutationInfo()
 	if mutationInfo == nil || (mutationInfo.Status.Code != int32(codes.Unavailable)) {
 		// There is no mutation in the script, or the mutation is complete.
-		tw.Finish()
+		err = tw.Finish()
+		if err != nil {
+			return err
+		}
 		return err
 	}
 
@@ -138,9 +144,15 @@ func RunScriptAndOutputResults(ctx context.Context, conns []*Connector, execScri
 		}
 	}()
 
-	vzJr.RunAndMonitor()
+	err = vzJr.RunAndMonitor()
+	if err != nil {
+		return err
+	}
 	if tw != nil {
-		tw.Finish()
+		err = tw.Finish()
+		if err != nil {
+			return err
+		}
 	}
 	return err
 }

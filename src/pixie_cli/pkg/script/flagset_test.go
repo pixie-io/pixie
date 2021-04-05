@@ -64,7 +64,8 @@ func TestSetFlag(t *testing.T) {
 
 	assert.Nil(t, flags.Parse(flagVals))
 
-	flags.Set("f3", "555")
+	err := flags.Set("f3", "555")
+	require.NoError(t, err)
 
 	f3, err := flags.Lookup("f3")
 	require.NoError(t, err)

@@ -237,7 +237,10 @@ func (d *dataFormatterImpl) formatKV(valueDataType public_vizierapipb.DataType, 
 		return toString(val)
 	}
 	var result map[string]interface{}
-	json.Unmarshal([]byte(strVal), &result)
+	err := json.Unmarshal([]byte(strVal), &result)
+	if err != nil {
+		return toString(val)
+	}
 
 	var keys []string
 	for k := range result {

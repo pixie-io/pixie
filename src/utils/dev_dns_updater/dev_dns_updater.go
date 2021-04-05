@@ -176,7 +176,10 @@ func updateHostsFile(svcInfoCh <-chan svcInfo) error {
 			hosts.RemoveHosts(entries)
 			hosts.AddHosts(s.Addr, entries)
 		}
-		hosts.Save()
+		err = hosts.Save()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -191,7 +194,10 @@ func cleanup() {
 	for _, dnsEntries := range dnsEntriesByService {
 		hosts.RemoveHosts(dnsEntries)
 	}
-	hosts.Save()
+	err = hosts.Save()
+	if err != nil {
+		log.WithError(err).Fatal("Failed to save hosts file")
+	}
 }
 
 func copyFile(src, dst string) error {

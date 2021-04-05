@@ -36,7 +36,10 @@ func (s *testserver) Ping(ctx context.Context, in *ping.PingRequest) (*ping.Ping
 }
 
 func (s *testserver) PingServerStream(in *ping.PingRequest, srv ping.PingService_PingServerStreamServer) error {
-	srv.Send(&ping.PingReply{Reply: "test reply"})
+	err := srv.Send(&ping.PingReply{Reply: "test reply"})
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -48,7 +51,10 @@ func (s *testserver) PingClientStream(srv ping.PingService_PingClientStreamServe
 	if msg == nil {
 		return fmt.Errorf("Got a nil message")
 	}
-	srv.SendAndClose(&ping.PingReply{Reply: "test reply"})
+	err = srv.SendAndClose(&ping.PingReply{Reply: "test reply"})
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -104,10 +110,13 @@ func makeTestClientStreamRequest(ctx context.Context, t *testing.T, lis *bufconn
 	c := ping.NewPingServiceClient(conn)
 
 	stream, err := c.PingClientStream(ctx)
-	stream.Send(&ping.PingRequest{Req: "hello"})
-
 	if err != nil {
 		t.Fatalf("Could not create stream")
+	}
+
+	err = stream.Send(&ping.PingRequest{Req: "hello"})
+	if err != nil {
+		t.Fatalf("Could not send on stream")
 	}
 
 	return stream.CloseAndRecv()

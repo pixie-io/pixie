@@ -174,7 +174,10 @@ func (m *tabAutocompleteModal) parseCommand() (*script.ExecutableScript, error) 
 			return nil, err
 		}
 	}
-	es.UpdateFlags(fs)
+	err = es.UpdateFlags(fs)
+	if err != nil {
+		return nil, err
+	}
 	return es, nil
 }
 

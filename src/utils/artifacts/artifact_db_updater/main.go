@@ -132,7 +132,10 @@ func main() {
 	// Print out latest artifact info to Stdout.
 	latestArtifact := versionData.Artifact[0]
 	m := jsonpb.Marshaler{}
-	m.Marshal(os.Stdout, latestArtifact)
+	err := m.Marshal(os.Stdout, latestArtifact)
+	if err != nil {
+		log.WithError(err).Error("Failed to marshal artifact")
+	}
 
 	if viper.GetBool("check_only") {
 		syscall.Exit(0)

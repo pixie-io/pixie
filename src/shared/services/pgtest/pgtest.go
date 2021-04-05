@@ -52,7 +52,10 @@ func SetupTestDB(schemaSource *bindata.AssetSource) (*sqlx.DB, func(), error) {
 		return nil, nil, fmt.Errorf("Failed to run docker pool: %w", err)
 	}
 	// Set a 5 minute expiration on resources.
-	resource.Expire(300)
+	err = resource.Expire(300)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	viper.Set("postgres_port", resource.GetPort("5432/tcp"))
 	viper.Set("postgres_hostname", "localhost")

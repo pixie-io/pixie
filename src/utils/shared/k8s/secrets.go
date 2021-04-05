@@ -10,6 +10,8 @@ import (
 	"io/ioutil"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
@@ -18,7 +20,10 @@ import (
 
 // DeleteSecret deletes the given secret in kubernetes.
 func DeleteSecret(clientset *kubernetes.Clientset, namespace, name string) {
-	clientset.CoreV1().Secrets(namespace).Delete(context.Background(), name, metav1.DeleteOptions{})
+	err := clientset.CoreV1().Secrets(namespace).Delete(context.Background(), name, metav1.DeleteOptions{})
+	if err != nil {
+		log.WithError(err).Error("Failed to delete secret")
+	}
 }
 
 // GetSecret gets the secret in kubernetes.
@@ -139,7 +144,10 @@ func CreateDockerConfigJSONSecret(namespace, name, credsData string) (*v1.Secret
 	credsBytes := []byte(encodedCredsData)
 	encodedCreds := new(bytes.Buffer)
 	encoder := base64.NewEncoder(base64.StdEncoding, encodedCreds)
-	encoder.Write(credsBytes)
+	_, err := encoder.Write(credsBytes)
+	if err != nil {
+		return nil, err
+	}
 	encoder.Close()
 
 	s := dockerConfig{

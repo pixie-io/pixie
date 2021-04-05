@@ -22,7 +22,10 @@ func sayHello(w http.ResponseWriter, r *http.Request) {
 		name = nameArgs[0]
 	}
 	reply := helloReply{Greeter: "Hello " + name + "!"}
-	json.NewEncoder(w).Encode(reply)
+	err := json.NewEncoder(w).Encode(reply)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func main() {

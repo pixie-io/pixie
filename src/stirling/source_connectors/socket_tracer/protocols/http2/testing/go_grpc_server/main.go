@@ -48,7 +48,10 @@ func (s *server) SayHelloServerStreaming(in *pb.HelloRequest, srv pb.StreamingGr
 	// Send 3 responses each time. We do not care much about the exact number of responses, this is for executing the
 	// server streaming mechanism and observe the underlying HTTP2 framing data.
 	for i := 0; i < 3; i++ {
-		srv.Send(&pb.HelloReply{Message: "Hello " + in.Name})
+		err := srv.Send(&pb.HelloReply{Message: "Hello " + in.Name})
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -62,7 +65,10 @@ func (s *server) SayHelloBidirStreaming(stream pb.StreamingGreeter_SayHelloBidir
 		if err != nil {
 			return err
 		}
-		stream.Send(&pb.HelloReply{Message: "Hello " + helloReq.Name})
+		err = stream.Send(&pb.HelloReply{Message: "Hello " + helloReq.Name})
+		if err != nil {
+			return err
+		}
 	}
 }
 

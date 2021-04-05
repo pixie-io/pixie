@@ -6,6 +6,7 @@ import (
 	"github.com/nats-io/stan.go"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/shared/services/msgbus"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
@@ -24,10 +25,12 @@ func TestMustConnectSTAN(t *testing.T) {
 	sub := "abc"
 	data := []byte("123")
 	ch := make(chan *stan.Msg)
-	sc.Subscribe(sub, func(msg *stan.Msg) {
+	_, err := sc.Subscribe(sub, func(msg *stan.Msg) {
 		ch <- msg
 	})
-	sc.Publish(sub, data)
+	require.NoError(t, err)
+	err = sc.Publish(sub, data)
+	require.NoError(t, err)
 	msg := <-ch
 	assert.Equal(t, msg.Data, data)
 }

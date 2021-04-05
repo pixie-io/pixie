@@ -487,7 +487,7 @@ func (v *View) showScriptView() {
 	v.pages.AddAndSwitchToPage("script", tv, true)
 	if v.s.execScript != nil {
 		highlighted := strings.Builder{}
-		quick.Highlight(&highlighted, v.s.execScript.ScriptString, "python",
+		quick.Highlight(&highlighted, v.s.execScript.ScriptString, "python", // nolint: errcheck
 			"terminal16m", "monokai")
 		fmt.Fprintf(tv, "%s :\n\n", withAccent("Script View"))
 		fmt.Fprint(tv, tview.TranslateANSI(highlighted.String()))

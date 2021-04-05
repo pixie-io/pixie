@@ -62,7 +62,10 @@ func (c *LogCollector) logPodInfoToZipFile(zf *zip.Writer, pod v12.Pod, containe
 		return err
 	}
 	defer podLogs.Close()
-	io.Copy(w, podLogs)
+	_, err = io.Copy(w, podLogs)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -80,8 +83,16 @@ func (c *LogCollector) logKubeCmd(zf *zip.Writer, fName string, arg ...string) e
 		return err
 	}
 
-	cmd.Start()
-	go io.Copy(w, stdoutPipe)
+	err = cmd.Start()
+	if err != nil {
+		return err
+	}
+	go func() {
+		_, err := io.Copy(w, stdoutPipe)
+		if err != nil {
+			log.WithError(err).Error("Failed to copy stdout")
+		}
+	}()
 	return cmd.Wait()
 }
 

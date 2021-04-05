@@ -123,7 +123,10 @@ func signCertificate(certPath string, certName string, cert *x509.Certificate, c
 	if err != nil {
 		return err
 	}
-	pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: certB})
+	err = pem.Encode(certOut, &pem.Block{Type: "CERTIFICATE", Bytes: certB})
+	if err != nil {
+		return err
+	}
 	certOut.Close()
 
 	// Generate key.
@@ -131,7 +134,10 @@ func signCertificate(certPath string, certName string, cert *x509.Certificate, c
 	if err != nil {
 		return err
 	}
-	pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)})
+	err = pem.Encode(keyOut, &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)})
+	if err != nil {
+		return err
+	}
 	keyOut.Close()
 	return nil
 }

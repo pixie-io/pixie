@@ -53,6 +53,7 @@ func init() {
 	RootCmd.PersistentFlags().MarkHidden("cloud_addr")
 }
 
+// nolint:errcheck
 func printTestingBanner() {
 	r := color.New(color.Bold, color.FgRed).Fprintf
 	r(os.Stderr, "*******************************\n")

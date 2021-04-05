@@ -531,7 +531,7 @@ func TestVizierPassThroughProxy_DebugLog(t *testing.T) {
 					}
 				}
 			})
-			eg.Wait()
+			err = eg.Wait()
 			if err != nil {
 				t.Fatal(err)
 			}

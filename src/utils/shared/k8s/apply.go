@@ -28,9 +28,18 @@ import (
 func init() {
 	// Suppress k8s log output.
 	klog.InitFlags(nil)
-	flag.Set("logtostderr", "false")
-	flag.Set("v", "9")
-	flag.Set("alsologtostderr", "false")
+	err := flag.Set("logtostderr", "false")
+	if err != nil {
+		log.WithError(err).Error("Failed to set flag")
+	}
+	err = flag.Set("v", "9")
+	if err != nil {
+		log.WithError(err).Error("Failed to set flag")
+	}
+	err = flag.Set("alsologtostderr", "false")
+	if err != nil {
+		log.WithError(err).Error("Failed to set flag")
+	}
 
 	// Suppress k8s log output.
 	klog.SetOutput(ioutil.Discard)

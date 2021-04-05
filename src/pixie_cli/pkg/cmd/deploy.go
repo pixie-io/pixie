@@ -325,7 +325,12 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 			log.WithError(err).Fatal("Failed to generate deployment key")
 		}
-		defer deleteDeployKey(cloudAddr, uuid.FromStringOrNil(deployKeyID))
+		defer func() {
+			err := deleteDeployKey(cloudAddr, uuid.FromStringOrNil(deployKeyID))
+			if err != nil {
+				log.WithError(err).Info("Failed to delete generated deploy key")
+			}
+		}()
 	}
 
 	kubeConfig := k8s.GetConfig()

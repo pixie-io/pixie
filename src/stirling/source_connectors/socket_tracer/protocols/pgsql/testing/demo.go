@@ -56,11 +56,17 @@ func main() {
 		tx := db.MustBegin()
 		tx.MustExec("INSERT INTO person (first_name, last_name, email) VALUES ($1, $2, $3)", "Jason", "Moiron", "jmoiron@jmoiron.net")
 		// Named queries can use structs, so if you have an existing struct (i.e. person := &person{}) that you have populated, you can pass it in as &person
-		tx.Commit()
+		err := tx.Commit()
+		if err != nil {
+			log.Fatalln(err)
+		}
 
 		// You can also get a single result, a la QueryRow
 		jason := person{}
-		db.Get(&jason, "SELECT * FROM person WHERE first_name=$1", "Jason")
+		err = db.Get(&jason, "SELECT * FROM person WHERE first_name=$1", "Jason")
+		if err != nil {
+			log.Fatalln(err)
+		}
 		fmt.Printf("%#v\n", jason)
 		time.Sleep(1 * time.Second)
 	}

@@ -70,7 +70,10 @@ func cliExecStdoutBytes(t *testing.T, args ...string) (*bytes.Buffer, error) {
 
 	var buf bytes.Buffer
 	go func() {
-		io.Copy(&buf, r)
+		_, err := io.Copy(&buf, r)
+		if err != nil {
+			log.WithError(err).Error("Failed to copy")
+		}
 	}()
 
 	if err := c.Run(); err != nil {

@@ -123,7 +123,10 @@ func registerRootHealthzChecks(checks ...Checker) http.HandlerFunc {
 		}
 
 		fmt.Fprint(w, "OK\n")
-		verboseOut.WriteTo(w)
+		_, err := verboseOut.WriteTo(w)
+		if err != nil {
+			log.WithError(err).Error("Failed to write to response")
+		}
 		fmt.Fprint(w, "healthz check passed\n")
 	})
 }

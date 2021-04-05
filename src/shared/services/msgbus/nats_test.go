@@ -23,7 +23,8 @@ func TestMustConnectNATS(t *testing.T) {
 	ch := make(chan *nats.Msg)
 	_, err := nc.ChanSubscribe(sub, ch)
 	require.NoError(t, err)
-	nc.Publish(sub, msg)
+	err = nc.Publish(sub, msg)
+	require.NoError(t, err)
 	natsMsg := <-ch
 	assert.Equal(t, natsMsg.Data, msg)
 }

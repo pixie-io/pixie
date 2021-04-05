@@ -144,7 +144,11 @@ func listCmd(cmd *cobra.Command, args []string) {
 	for app, appSpec := range manifest {
 		// When a demo app is deprecated, its contents will be set to null in manifest.json.
 		if appSpec != nil {
-			w.Write([]interface{}{app})
+			err = w.Write([]interface{}{app})
+			if err != nil {
+				log.WithError(err).Error("Failed to write demo app")
+				continue
+			}
 		}
 	}
 }

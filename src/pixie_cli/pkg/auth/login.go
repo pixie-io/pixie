@@ -48,7 +48,10 @@ func EnsureDefaultAuthFilePath() (string, error) {
 
 	pixieDirPath := filepath.Join(u.HomeDir, pixieAuthPath)
 	if _, err := os.Stat(pixieDirPath); os.IsNotExist(err) {
-		os.Mkdir(pixieDirPath, 0744)
+		err := os.Mkdir(pixieDirPath, 0744)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	pixieAuthFilePath := filepath.Join(pixieDirPath, pixieAuthFile)
@@ -300,7 +303,11 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 	defer cancel()
-	defer h.Shutdown(ctx)
+	defer func() {
+		err := h.Shutdown(ctx)
+		log.WithError(err).Error("Failed to shutdown server")
+	}()
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -329,7 +336,10 @@ func (p *PixieCloudLogin) getAuthStringManually() (string, error) {
 	// fmt.Printf appears to escape % (as desired) so we use it here instead of the cli logger.
 	fmt.Printf("\nPlease Visit: \n \t %s\n\n", authURL.String())
 	f := bufio.NewWriter(os.Stdout)
-	f.WriteString("Copy and paste token here: ")
+	_, err := f.WriteString("Copy and paste token here: ")
+	if err != nil {
+		return "", err
+	}
 	f.Flush()
 
 	r := bufio.NewReader(os.Stdin)

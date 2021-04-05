@@ -37,7 +37,10 @@ func ensureDefaultConfigFilePath() (string, error) {
 
 	pixieDirPath := filepath.Join(u.HomeDir, pixieDotPath)
 	if _, err := os.Stat(pixieDirPath); os.IsNotExist(err) {
-		os.Mkdir(pixieDirPath, 0744)
+		err = os.Mkdir(pixieDirPath, 0744)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	pixieConfigFilePath := filepath.Join(pixieDirPath, pixieConfigFile)
