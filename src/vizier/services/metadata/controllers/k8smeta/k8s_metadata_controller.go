@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -84,7 +85,31 @@ func NewController(mds Store, updateCh chan *K8sResourceMessage) (*Controller, e
 
 // Start starts the k8s watcher. Every 12h, it will resync such that the updates from the
 // last 24h will always contain updates from currently running resources.
-func (mc *Controller) Start(mds Store) error {
+func (mc *Controller) Start(mds Store) {
+	// Loop the sync/watch so that if it ever fails because of an intermittent error, it
+	// will continue trying to collect data.
+	for {
+		select {
+		case <-mc.quitCh:
+			return // Quit signaled, so exit the goroutine.
+		default:
+			err := mc.runSyncWatchLoop(mds)
+			if err == nil {
+				return // Quit signaled, so exit the goroutine.
+			}
+			log.WithError(err).Info("Failed K8s metadata sync/watch... Restarting.")
+			// Wait 5 minutes before retrying, however if stop is called, just return.
+			select {
+			case <-mc.quitCh:
+				return
+			case <-time.After(5 * time.Minute):
+				continue
+			}
+		}
+	}
+}
+
+func (mc *Controller) runSyncWatchLoop(mds Store) error {
 	// Run initial sync and watch.
 	watcherQuitCh := make(chan struct{})
 	var wg sync.WaitGroup
@@ -121,16 +146,19 @@ func (mc *Controller) Start(mds Store) error {
 func (mc *Controller) syncAndWatch(mds Store, quitCh chan struct{}, wg *sync.WaitGroup) error {
 	lastUpdate, err := mds.GetUpdateVersion(KelvinUpdateTopic)
 	if err != nil {
+		log.WithError(err).Info("Failed to get latest update version")
 		return err
 	}
 	storedUpdates, err := mds.FetchFullResourceUpdates(0, lastUpdate)
 	if err != nil {
+		log.WithError(err).Info("Failed to fetch resource updates")
 		return err
 	}
 
 	for _, w := range mc.watchers {
 		err := w.Sync(storedUpdates)
 		if err != nil {
+			log.WithError(err).Info("Failed to sync metadata")
 			return err
 		}
 		wg.Add(1)
