@@ -56,7 +56,7 @@ export const AuthFooter = withStyles(styles)(({ classes }: AuthFooterProps) => (
     </div>
     <div className={classes.right}>
       <Typography variant='subtitle2' className={classes.text}>
-        &copy; 2020, Pixie Labs Inc.
+        &copy; 2021, Pixie Labs Inc.
       </Typography>
     </div>
   </div>
