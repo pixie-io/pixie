@@ -6,7 +6,6 @@
 #include <vector>
 
 #include "src/carnot/planner/compiler/optimizer/filter_push_down.h"
-#include "src/carnot/planner/compiler/optimizer/limit_push_down.h"
 #include "src/carnot/planner/compiler/optimizer/merge_nodes.h"
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/compiler_state/registry_info.h"
@@ -40,11 +39,6 @@ class Optimizer : public RuleExecutor<IR> {
     filter_pushdown_batch->AddRule<FilterPushdownRule>();
   }
 
-  void CreateLimitPushdownBatch() {
-    RuleBatch* limit_pushdown_batch = CreateRuleBatch<FailOnMax>("LimitPushdown", 2);
-    limit_pushdown_batch->AddRule<LimitPushdownRule>();
-  }
-
   void CreateMergeNodesBatch() {
     RuleBatch* merge_nodes_batch = CreateRuleBatch<TryUntilMax>("MergeNodes", 1);
     merge_nodes_batch->AddRule<MergeNodesRule>(compiler_state_);
@@ -58,7 +52,6 @@ class Optimizer : public RuleExecutor<IR> {
   Status Init() {
     CreatePruneUnconnectedOpsBatch();
     CreateFilterPushdownBatch();
-    CreateLimitPushdownBatch();
     CreateMergeNodesBatch();
     CreatePruneUnusedColumnsBatch();
     return Status::OK();

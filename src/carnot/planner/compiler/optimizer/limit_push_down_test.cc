@@ -63,11 +63,6 @@ TEST_F(OperatorTests, simple) {
 
   // Ensure the limit inherits the relation from its parent, not the previous location.
   EXPECT_EQ(new_limit->relation(), relation);
-
-  // Rerunning the rule shouldn't cause the limits to get cloned again.
-  result = rule.Execute(graph.get());
-  ASSERT_OK(result);
-  EXPECT_FALSE(result.ValueOrDie());
 }
 
 TEST_F(OperatorTests, multi_branch_union) {
@@ -119,11 +114,6 @@ TEST_F(OperatorTests, multi_branch_union) {
   EXPECT_THAT(new_limit2->parents(), ElementsAre(src2));
   // Ensure the limit inherits the relation from its parent, not the previous location.
   EXPECT_EQ(new_limit2->relation(), relation2);
-
-  // Rerunning the rule shouldn't cause the limits to get cloned again.
-  result = rule.Execute(graph.get());
-  ASSERT_OK(result);
-  EXPECT_FALSE(result.ValueOrDie());
 }
 
 }  // namespace compiler

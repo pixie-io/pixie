@@ -114,21 +114,19 @@ TEST_F(OptimizerTest, mem_src_map_sink_test) {
   ASSERT_EQ(memory_sources.size(), 1);
   auto mem_src = static_cast<MemorySourceIR*>(memory_sources[0]);
   ASSERT_EQ(mem_src->Children().size(), 1);
+  ASSERT_MATCH(mem_src->Children()[0], Map());
 
-  // Child is a Limit because of the analyzer.
-  ASSERT_MATCH(mem_src->Children()[0], Limit());
-  auto limit = static_cast<LimitIR*>(mem_src->Children()[0]);
-
-  EXPECT_MATCH(limit->Children()[0], Map());
-  EXPECT_MATCH(limit->Children()[0]->Children()[0], MemorySink());
-
-  MapIR* map = static_cast<MapIR*>(limit->Children()[0]);
+  MapIR* map = static_cast<MapIR*>(mem_src->Children()[0]);
   EXPECT_EQ(map->col_exprs().size(), 1);
   EXPECT_EQ(map->col_exprs()[0].name, "fn");
   auto expr_fn = static_cast<FuncIR*>(map->col_exprs()[0].node);
   ASSERT_EQ(expr_fn->args().size(), 2);
   ASSERT_TRUE(Match(expr_fn, Add(Add(ColumnNode("cpu0"), Int(2)), Int(23))))
       << expr_fn->DebugString();
+
+  // Child is a Limit because of the analyzer.
+  EXPECT_MATCH(map->Children()[0], Limit());
+  EXPECT_MATCH(map->Children()[0]->Children()[0], MemorySink());
 }
 
 TEST_F(OptimizerTest, DISABLED_mem_src_different_map_exprs_sink_test) {
@@ -542,22 +540,20 @@ TEST_F(OptimizerTest, shared_mem_src) {
   ASSERT_EQ(memory_sources.size(), 1);
   auto mem_src = static_cast<MemorySourceIR*>(memory_sources[0]);
   ASSERT_EQ(mem_src->Children().size(), 1);
-  ASSERT_MATCH(mem_src->Children()[0], Limit());
+  ASSERT_MATCH(mem_src->Children()[0], Map());
 
-  // Limits added by the analyzer and consolidated by the optimizer.
-  auto limit = static_cast<LimitIR*>(mem_src->Children()[0]);
-  EXPECT_EQ(limit->Children().size(), 1);
-  ASSERT_MATCH(limit->Children()[0], Map());
-
-  MapIR* map = static_cast<MapIR*>(limit->Children()[0]);
+  MapIR* map = static_cast<MapIR*>(mem_src->Children()[0]);
   EXPECT_EQ(map->col_exprs().size(), 1);
   EXPECT_EQ(map->col_exprs()[0].name, "fn");
   auto expr_fn = static_cast<FuncIR*>(map->col_exprs()[0].node);
   ASSERT_EQ(expr_fn->args().size(), 2);
   ASSERT_TRUE(Match(expr_fn, Add(ColumnNode("cpu0"), Int(2)))) << expr_fn->DebugString();
 
-  EXPECT_EQ(map->Children().size(), 5);
-  EXPECT_MATCH(map->Children()[0], MemorySink());
+  EXPECT_EQ(map->Children().size(), 1);
+  // Op is a limit because of the analyzer.
+  EXPECT_MATCH(map->Children()[0], Limit());
+  EXPECT_EQ(map->Children()[0]->Children().size(), 5);
+  EXPECT_MATCH(map->Children()[0]->Children()[0], MemorySink());
 }
 
 TEST_F(OptimizerTest, join_with_identical_mem_src) {
@@ -605,21 +601,16 @@ TEST_F(OptimizerTest, self_union) {
   MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(memory_sources[0]);
 
   ASSERT_EQ(mem_src->table_name(), "cpu");
-  ASSERT_EQ(mem_src->Children().size(), 1);
-  EXPECT_MATCH(mem_src->Children()[0], Limit());
-
-  LimitIR* limit = static_cast<LimitIR*>(mem_src->Children()[0]);
-  ASSERT_EQ(limit->Children().size(), 3);
-  EXPECT_MATCH(limit->Children()[0], Union());
-
+  ASSERT_EQ(mem_src->Children().size(), 3);
+  EXPECT_MATCH(mem_src->Children()[0], Union());
   // Should be no-op maps.
-  EXPECT_MATCH(limit->Children()[1], Map());
-  EXPECT_MATCH(limit->Children()[2], Map());
-  EXPECT_EQ(limit->Children()[1]->relation(), limit->relation());
-  EXPECT_EQ(limit->Children()[2]->relation(), limit->relation());
+  EXPECT_MATCH(mem_src->Children()[1], Map());
+  EXPECT_MATCH(mem_src->Children()[2], Map());
+  EXPECT_EQ(mem_src->Children()[1]->relation(), mem_src->relation());
+  EXPECT_EQ(mem_src->Children()[2]->relation(), mem_src->relation());
 
-  EXPECT_EQ(limit->Children()[0], limit->Children()[1]->Children()[0]);
-  EXPECT_EQ(limit->Children()[0], limit->Children()[2]->Children()[0]);
+  EXPECT_EQ(mem_src->Children()[0], mem_src->Children()[1]->Children()[0]);
+  EXPECT_EQ(mem_src->Children()[0], mem_src->Children()[2]->Children()[0]);
 }
 
 constexpr char kInnerJoinFollowedByMapQuery[] = R"pxl(
@@ -657,15 +648,10 @@ TEST_F(OptimizerTest, prune_unused_columns) {
   EXPECT_THAT(left_src->column_names(), ElementsAre("upid"));
 
   ASSERT_EQ(join->Children().size(), 1);
-  ASSERT_MATCH(join->Children()[0], Limit());
-
-  auto limit = static_cast<LimitIR*>(join->Children()[0]);
-  ASSERT_EQ(limit->Children().size(), 1);
-  ASSERT_MATCH(limit->Children()[0], Map());
-
+  ASSERT_MATCH(join->Children()[0], Map());
   // TODO(nserrino): PL-1344 Maps 1 and 3 are no-ops after this column pruning,
   // we should have a rule for detecting that and cleaning them up.
-  auto map1 = static_cast<MapIR*>(limit->Children()[0]);
+  auto map1 = static_cast<MapIR*>(join->Children()[0]);
   EXPECT_THAT(map1->relation().col_names(), ElementsAre("bytes_in"));
 
   ASSERT_EQ(map1->Children().size(), 1);
@@ -678,10 +664,15 @@ TEST_F(OptimizerTest, prune_unused_columns) {
   auto map3 = static_cast<MapIR*>(map2->Children()[0]);
   EXPECT_THAT(map3->relation().col_names(), ElementsAre("mb_in"));
 
-  // Check sink node
   ASSERT_EQ(map3->Children().size(), 1);
-  ASSERT_MATCH(map3->Children()[0], ExternalGRPCSink());
-  auto sink = static_cast<GRPCSinkIR*>(map3->Children()[0]);
+  ASSERT_MATCH(map3->Children()[0], Limit());
+  auto limit = static_cast<LimitIR*>(map3->Children()[0]);
+  EXPECT_THAT(limit->relation().col_names(), ElementsAre("mb_in"));
+
+  // Check sink node
+  ASSERT_EQ(limit->Children().size(), 1);
+  ASSERT_MATCH(limit->Children()[0], ExternalGRPCSink());
+  auto sink = static_cast<GRPCSinkIR*>(limit->Children()[0]);
   EXPECT_THAT(sink->relation().col_names(), ElementsAre("mb_in"));
 }
 
