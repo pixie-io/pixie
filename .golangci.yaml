@@ -3,6 +3,9 @@ run:
   # Tell golangci-lint to not acquire a lock because
   # arcanist will run multiple instances in parallel.
   allow-parallel-runners: true
+  # arcanist runs many of these in parallel causing
+  # CPU contention and longer runtimes.
+  timeout: 3m
 
 output:
   sort-results: true
