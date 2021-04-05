@@ -117,7 +117,9 @@ func TestPlanner_Simple(t *testing.T) {
 	// Pass the relation proto, table and query to the compilation.
 	query := "import px\ndf = px.DataFrame(table='table1')\npx.display(df, 'out')"
 	plannerStatePB := new(distributedpb.LogicalPlannerState)
-	proto.UnmarshalText(plannerStatePBStr, plannerStatePB)
+	err = proto.UnmarshalText(plannerStatePBStr, plannerStatePB)
+	require.NoError(t, err)
+
 	queryRequestPB := &plannerpb.QueryRequest{
 		QueryStr: query,
 	}
@@ -169,7 +171,9 @@ func TestPlanner_MissingTable(t *testing.T) {
 	// Pass the relation proto, table and query to the compilation.
 	query := "import px\ndf = px.DataFrame(table='bad_table')\npx.display(df, 'out')"
 	plannerStatePB := new(distributedpb.LogicalPlannerState)
-	proto.UnmarshalText(plannerStatePBStr, plannerStatePB)
+	err = proto.UnmarshalText(plannerStatePBStr, plannerStatePB)
+	require.NoError(t, err)
+
 	queryRequestPB := &plannerpb.QueryRequest{
 		QueryStr: query,
 	}
@@ -203,7 +207,9 @@ func TestPlanner_EmptyString(t *testing.T) {
 	// Empty string should yield a status error not a CHECK failure in cgo_export.
 	query := ""
 	plannerStatePB := new(distributedpb.LogicalPlannerState)
-	proto.UnmarshalText(plannerStatePBStr, plannerStatePB)
+	err = proto.UnmarshalText(plannerStatePBStr, plannerStatePB)
+	require.NoError(t, err)
+
 	queryRequestPB := &plannerpb.QueryRequest{
 		QueryStr: query,
 	}
@@ -451,7 +457,9 @@ func TestPlanner_CompileRequest(t *testing.T) {
 
 	// Pass the relation proto, table and query to the compilation.
 	plannerStatePB := new(distributedpb.LogicalPlannerState)
-	proto.UnmarshalText(plannerStatePBStr, plannerStatePB)
+	err = proto.UnmarshalText(plannerStatePBStr, plannerStatePB)
+	require.NoError(t, err)
+
 	compileRequestPB := &plannerpb.CompileMutationsRequest{
 		QueryStr: probePxl,
 	}

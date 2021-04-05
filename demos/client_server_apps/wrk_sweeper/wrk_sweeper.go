@@ -159,7 +159,10 @@ func runWrkWithParams(duration, threads, connections, messageSize, thousandIters
 
 	outputFile := path.Join(flagOutputDir, outputFileName)
 	// Move the CSV file.
-	os.Rename("result.csv", outputFile)
+	err = os.Rename("result.csv", outputFile)
+	if err != nil {
+		panic(err.Error())
+	}
 }
 
 func main() {

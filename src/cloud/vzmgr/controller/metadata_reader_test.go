@@ -205,7 +205,10 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to subscribe to stan: %v", err)
 			}
-			defer indexerSub.Unsubscribe()
+			defer func() {
+				err = indexerSub.Unsubscribe()
+				require.NoError(t, err)
+			}()
 
 			batch := 0
 			if test.missingMetadataCalls != nil {
@@ -233,13 +236,17 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 						}
 						b, err := v2cMsg.Marshal()
 						require.NoError(t, err)
-						nc.Publish(vzshard.V2CTopic(responseTopic, vzID), b)
+						err = nc.Publish(vzshard.V2CTopic(responseTopic, vzID), b)
+						require.NoError(t, err)
 					}
 
 					batch++
 				})
 				require.NoError(t, err)
-				defer mdSub.Unsubscribe()
+				defer func() {
+					err = mdSub.Unsubscribe()
+					require.NoError(t, err)
+				}()
 			}
 
 			mdr, err := controller.NewMetadataReader(db, sc, nc)
@@ -262,7 +269,8 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 					b, err := v2cMsg.Marshal()
 					require.NoError(t, err)
 
-					sc.Publish(vzshard.V2CTopic("DurableMetadataUpdates", vzID), b)
+					err = sc.Publish(vzshard.V2CTopic("DurableMetadataUpdates", vzID), b)
+					require.NoError(t, err)
 				}
 			}()
 

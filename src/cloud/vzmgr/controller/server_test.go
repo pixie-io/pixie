@@ -415,7 +415,10 @@ func TestServer_VizierConnectedHealthy(t *testing.T) {
 	subCh := make(chan *nats.Msg, 1)
 	natsSub, err := nc.ChanSubscribe("VizierConnected", subCh)
 	require.NoError(t, err)
-	defer natsSub.Unsubscribe()
+	defer func() {
+		err = natsSub.Unsubscribe()
+		require.NoError(t, err)
+	}()
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -683,7 +686,10 @@ func TestServer_GetSSLCerts(t *testing.T) {
 	if err != nil {
 		t.Fatal("Could not subscribe to NATS.")
 	}
-	defer sub.Unsubscribe()
+	defer func() {
+		err = sub.Unsubscribe()
+		require.NoError(t, err)
+	}()
 
 	s := controller.New(db, "test", mockDNSClient, nc, nil)
 
@@ -792,7 +798,10 @@ func TestServer_MessageHandler(t *testing.T) {
 	if err != nil {
 		t.Fatal("Could not subscribe to NATS.")
 	}
-	defer sub.Unsubscribe()
+	defer func() {
+		err = sub.Unsubscribe()
+		require.NoError(t, err)
+	}()
 
 	_ = controller.New(db, "test", mockDNSClient, nc, nil)
 
@@ -825,7 +834,8 @@ func TestServer_MessageHandler(t *testing.T) {
 	if err != nil {
 		t.Fatal("Could not marshal message to bytes")
 	}
-	nc.Publish("v2c.1.123e4567-e89b-12d3-a456-426655440001.ssl", b)
+	err = nc.Publish("v2c.1.123e4567-e89b-12d3-a456-426655440001.ssl", b)
+	require.NoError(t, err)
 
 	select {
 	case m := <-subCh:

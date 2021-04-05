@@ -218,8 +218,11 @@ func (p *requestProxyer) run() error {
 }
 
 // Finish finalizes the request proxyer and cleans up resources. Must be called to prevent resource leak.
-func (p *requestProxyer) Finish() error {
-	return p.sub.Unsubscribe()
+func (p *requestProxyer) Finish() {
+	err := p.sub.Unsubscribe()
+	if err != nil {
+		log.WithError(err).Error("requestProxyer failed to unsubscribe")
+	}
 }
 
 func (p requestProxyer) sendMessageToVizier(req *cvmsgspb.C2VAPIStreamRequest) error {

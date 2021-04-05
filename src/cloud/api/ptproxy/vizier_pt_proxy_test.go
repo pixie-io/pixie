@@ -532,6 +532,9 @@ func TestVizierPassThroughProxy_DebugLog(t *testing.T) {
 				}
 			})
 			eg.Wait()
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			if tc.expGRPCError != nil {
 				if gotReadErr == nil {
@@ -667,7 +670,6 @@ func TestVizierPassThroughProxy_DebugPods(t *testing.T) {
 					}
 				}
 			})
-			eg.Wait()
 
 			err = eg.Wait()
 			if err != nil {
@@ -845,6 +847,8 @@ func (f *fakeVizier) createV2CMessage(response *cvmsgspb.V2CAPIStreamResponse) [
 
 func (f *fakeVizier) Stop() {
 	close(f.done)
-	f.ns.Unsubscribe()
+	err := f.ns.Unsubscribe()
+	require.NoError(f.t, err)
+
 	f.wg.Wait()
 }

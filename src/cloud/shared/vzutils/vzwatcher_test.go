@@ -86,7 +86,7 @@ func TestVzWatcher(t *testing.T) {
 				assert.Equal(t, existingK8sUID, uid)
 			})
 
-			w.RegisterVizierHandler(func(id uuid.UUID, orgID uuid.UUID, uid string) error {
+			err = w.RegisterVizierHandler(func(id uuid.UUID, orgID uuid.UUID, uid string) error {
 				defer wg.Done()
 
 				switch id {
@@ -104,6 +104,7 @@ func TestVzWatcher(t *testing.T) {
 				}
 				return nil
 			})
+			require.NoError(t, err)
 
 			msg := &messagespb.VizierConnected{
 				VizierID: utils.ProtoFromUUID(newVzID),
@@ -112,7 +113,8 @@ func TestVzWatcher(t *testing.T) {
 			}
 			b, err := msg.Marshal()
 			require.NoError(t, err)
-			nc.Publish(messages.VizierConnectedChannel, b)
+			err = nc.Publish(messages.VizierConnectedChannel, b)
+			require.NoError(t, err)
 		})
 	}
 }

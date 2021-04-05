@@ -222,28 +222,25 @@ func (m *MetadataReader) startVizierUpdates(id uuid.UUID, k8sUID string) error {
 }
 
 // stopVizierUpdates stops listening to the metadata update channel for a given vizier.
-func (m *MetadataReader) stopVizierUpdates(id uuid.UUID) error {
+func (m *MetadataReader) stopVizierUpdates(id uuid.UUID) {
 	vz := m.viziers.read(id)
 	if vz != nil {
 		vz.stop()
 		m.viziers.delete(id)
-		return nil
 	}
-
-	return errors.New("Vizier doesn't exist")
 }
 
 // processVizierUpdates reads from the metadata updates and sends them to the indexer in order.
-func (m *MetadataReader) processVizierUpdates(vzState *VizierState) error {
+func (m *MetadataReader) processVizierUpdates(vzState *VizierState) {
 	// Clean up if any error has occurred.
 	defer m.stopVizierUpdates(vzState.id)
 
 	for {
 		select {
 		case <-m.quitCh:
-			return nil
+			return
 		case <-vzState.quitCh:
-			return nil
+			return
 		case msg := <-vzState.liveCh:
 			if msg == nil {
 				continue
@@ -251,14 +248,18 @@ func (m *MetadataReader) processVizierUpdates(vzState *VizierState) error {
 
 			update, err := readMetadataUpdate(msg.Data)
 			if err != nil {
-				return err
+				log.WithError(err).Error("Error processing Vizier metadata updates")
+				return
 			}
 			err = m.processVizierUpdate(update, vzState)
 			if err != nil {
 				log.WithError(err).Error("Error processing Vizier metadata updates")
-				return err
+				return
 			}
-			msg.Ack()
+			err = msg.Ack()
+			if err != nil {
+				log.WithError(err).Error("Failed to ack STAN message")
+			}
 		}
 	}
 }

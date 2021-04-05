@@ -45,7 +45,8 @@ func getTestCookie(t *testing.T, env apienv.APIEnv) string {
 	session, err := env.CookieStore().Get(req, "default-session4")
 	require.NoError(t, err)
 	session.Values["_at"] = "authpb-token"
-	session.Save(req, rr)
+	err = session.Save(req, rr)
+	require.NoError(t, err)
 	cookies, ok := rr.Header()["Set-Cookie"]
 	assert.True(t, ok)
 	assert.Equal(t, 1, len(cookies))

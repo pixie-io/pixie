@@ -10,7 +10,10 @@ import (
 
 func BasicHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
-	io.WriteString(w, `{"status":"ok"}`)
+	_, err := io.WriteString(w, `{"status":"ok"}`)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func ListenAndServeTLS(port int, certFile, keyFile string) {

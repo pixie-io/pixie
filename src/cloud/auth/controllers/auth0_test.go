@@ -66,7 +66,8 @@ func TestAuth0ConnectorImpl_GetUserIDFromToken(t *testing.T) {
 		assert.Equal(t, "/userinfo", r.URL.String())
 		callCount++
 		assert.Equal(t, "Bearer abcd", r.Header.Get("Authorization"))
-		w.Write([]byte(`{"sub": "myfakeuser"}`))
+		_, err := w.Write([]byte(`{"sub": "myfakeuser"}`))
+		require.NoError(t, err)
 	}))
 	defer server.Close()
 
@@ -102,7 +103,8 @@ func TestAuth0ConnectorImpl_GetUserIDFromToken_BadStatus(t *testing.T) {
 
 func TestAuth0ConnectorImpl_GetUserIDFromToken_BadResponse(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`{"sub": `))
+		_, err := w.Write([]byte(`{"sub": `))
+		require.NoError(t, err)
 	}))
 	defer server.Close()
 
@@ -123,7 +125,8 @@ func TestAuth0ConnectorImpl_GetUserInfoUnauthorizedToken(t *testing.T) {
 		callCount++
 		// Return an unauthorized error.
 		if r.URL.String() == "/oauth/token" {
-			w.Write([]byte(`{"error": "access_denied", "error_description": "Unauthorized"}`))
+			_, err := w.Write([]byte(`{"error": "access_denied", "error_description": "Unauthorized"}`))
+			require.NoError(t, err)
 			return
 		}
 	}))
@@ -147,13 +150,14 @@ func TestAuth0ConnectorImpl_GetUserInfo(t *testing.T) {
 		callCount++
 		// Return valid management token.
 		if r.URL.String() == "/oauth/token" {
-			w.Write([]byte(`{"access_token": "test_token"}`))
+			_, err := w.Write([]byte(`{"access_token": "test_token"}`))
+			require.NoError(t, err)
 			return
 		}
 
 		assert.Equal(t, "/api/v2/users/abcd", r.URL.String())
 		assert.Equal(t, "Bearer test_token", r.Header.Get("Authorization"))
-		w.Write([]byte(`
+		_, err := w.Write([]byte(`
          {
               "email": "testuser@test.com",
               "name": "Test User",
@@ -166,6 +170,7 @@ func TestAuth0ConnectorImpl_GetUserInfo(t *testing.T) {
               }
          }
         `))
+		require.NoError(t, err)
 	}))
 	defer server.Close()
 
@@ -191,7 +196,8 @@ func TestAuth0ConnectorImpl_GetUserInfo_BadResponse(t *testing.T) {
 		callCount++
 		// Return valid management token.
 		if r.URL.String() == "/oauth/token" {
-			w.Write([]byte(`{"access_token": "test_token"}`))
+			_, err := w.Write([]byte(`{"access_token": "test_token"}`))
+			require.NoError(t, err)
 			return
 		}
 		http.Error(w, "badness", http.StatusInternalServerError)
@@ -216,7 +222,8 @@ func TestAuth0ConnectorImpl_SetPLMetadata(t *testing.T) {
 		callCount++
 		// Return valid management token.
 		if r.URL.String() == "/oauth/token" {
-			w.Write([]byte(`{"access_token": "test_token"}`))
+			_, err := w.Write([]byte(`{"access_token": "test_token"}`))
+			require.NoError(t, err)
 			return
 		}
 
@@ -230,7 +237,8 @@ func TestAuth0ConnectorImpl_SetPLMetadata(t *testing.T) {
 
 		assert.JSONEq(t,
 			`{"app_metadata":{"foo":{"pl_org_id":"test_pl_org_id", "pl_user_id":"test_pl_user_id"}}}`, string(body))
-		w.Write([]byte(`OK`))
+		_, err = w.Write([]byte(`OK`))
+		require.NoError(t, err)
 	}))
 	defer server.Close()
 

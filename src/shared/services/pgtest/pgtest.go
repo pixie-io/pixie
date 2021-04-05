@@ -16,7 +16,7 @@ import (
 )
 
 // SetupTestDB sets up a test database instance and applies migrations.
-func SetupTestDB(schemaSource *bindata.AssetSource) (*sqlx.DB, func() error, error) {
+func SetupTestDB(schemaSource *bindata.AssetSource) (*sqlx.DB, func(), error) {
 	var db *sqlx.DB
 
 	pool, err := dockertest.NewPool("")
@@ -90,14 +90,13 @@ func SetupTestDB(schemaSource *bindata.AssetSource) (*sqlx.DB, func() error, err
 		}
 	}
 
-	return db, func() error {
+	return db, func() {
 		if db != nil {
 			db.Close()
 		}
 
 		if err := pool.Purge(resource); err != nil {
-			return fmt.Errorf("could not purge docker resource: %w", err)
+			log.WithError(err).Error("could not purge docker resource")
 		}
-		return nil
 	}, nil
 }

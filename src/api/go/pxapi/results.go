@@ -166,7 +166,10 @@ func (s *ScriptResults) handleTableMetadata(ctx context.Context, md *vizierapipb
 			return err
 		}
 		if handler != nil {
-			handler.HandleInit(ctx, tableMD)
+			err = handler.HandleInit(ctx, tableMD)
+			if err != nil {
+				return err
+			}
 		}
 	}
 

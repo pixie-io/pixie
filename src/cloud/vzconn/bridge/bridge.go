@@ -84,7 +84,10 @@ func (s *NATSBridgeController) Run() error {
 		return err
 	}
 	// Set large limits on message size and count.
-	natsSub.SetPendingLimits(1e7, 1e7)
+	err = natsSub.SetPendingLimits(1e7, 1e7)
+	if err != nil {
+		s.l.WithError(err).Error("Failed to set limits on subscription")
+	}
 	defer func() {
 		s.l.Infof("Unsubscribing from : %s", natsSub.Subject)
 		err := natsSub.Unsubscribe()

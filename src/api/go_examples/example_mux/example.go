@@ -42,12 +42,18 @@ func main() {
 	fmt.Printf("Running on Cluster: %s\n", clusterID)
 
 	tm := muxes.NewRegexTableMux()
-	tm.RegisterHandlerForPattern("http_as_table", func(metadata types.TableMetadata) (pxapi.TableRecordHandler, error) {
+	err = tm.RegisterHandlerForPattern("http_as_table", func(metadata types.TableMetadata) (pxapi.TableRecordHandler, error) {
 		return formatters.NewTableFormatter(os.Stdout)
 	})
-	tm.RegisterHandlerForPattern("http_as_json", func(metadata types.TableMetadata) (pxapi.TableRecordHandler, error) {
+	if err != nil {
+		panic(err)
+	}
+	err = tm.RegisterHandlerForPattern("http_as_json", func(metadata types.TableMetadata) (pxapi.TableRecordHandler, error) {
 		return formatters.NewJSONFormatter(os.Stdout)
 	})
+	if err != nil {
+		panic(err)
+	}
 	vz, err := client.NewVizierClient(ctx, clusterID)
 	if err != nil {
 		panic(err)

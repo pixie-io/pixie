@@ -293,7 +293,10 @@ func AuthLogoutHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 	session.Options.SameSite = http.SameSiteStrictMode
 	session.Options.Domain = viper.GetString("domain_name")
 
-	session.Save(r, w)
+	err = session.Save(r, w)
+	if err != nil {
+		return &handler.StatusError{Code: http.StatusInternalServerError, Err: err}
+	}
 	w.WriteHeader(http.StatusOK)
 	return nil
 }
@@ -321,7 +324,10 @@ func setSessionCookie(session *sessions.Session, token string, expiresAt int64, 
 	session.Options.SameSite = http.SameSiteStrictMode
 	session.Options.Domain = viper.GetString("domain_name")
 
-	session.Save(r, w)
+	err := session.Save(r, w)
+	if err != nil {
+		log.WithError(err).Error("Failed to write session cookie")
+	}
 }
 
 func sendUserInfo(w http.ResponseWriter, userInfo *authpb.AuthenticatedUserInfo, orgInfo *authpb.LoginReply_OrgInfo, token string, expiresAt int64, userCreated bool) error {

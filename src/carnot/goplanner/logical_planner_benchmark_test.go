@@ -1214,12 +1214,21 @@ const pxPodJSON = `
 
 func makePlannerState(numPEM int) *distributedpb.LogicalPlannerState {
 	plannerStatePB := new(distributedpb.LogicalPlannerState)
-	proto.UnmarshalText(basePlannerState, plannerStatePB)
+	err := proto.UnmarshalText(basePlannerState, plannerStatePB)
+	if err != nil {
+		return nil
+	}
 	baseCarnot := distributedpb.CarnotInfo{}
-	proto.UnmarshalText(pemCarnotInfoPb, &baseCarnot)
+	err = proto.UnmarshalText(pemCarnotInfoPb, &baseCarnot)
+	if err != nil {
+		return nil
+	}
 
 	schemas := schemapb.Schema{}
-	proto.UnmarshalText(schemaPB, &schemas)
+	err = proto.UnmarshalText(schemaPB, &schemas)
+	if err != nil {
+		return nil
+	}
 
 	agentList := make([]*uuidpb.UUID, 0)
 	for i := 1; i < numPEM+1; i++ {

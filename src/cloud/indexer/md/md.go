@@ -39,7 +39,7 @@ func NewVizierIndexer(vizierID uuid.UUID, orgID uuid.UUID, k8sUID string, sc sta
 }
 
 // Run starts the indexer.
-func (v *VizierIndexer) Run(topic string) error {
+func (v *VizierIndexer) Run(topic string) {
 	log.
 		WithField("VizierID", v.vizierID).
 		WithField("ClusterUID", v.k8sUID).
@@ -54,7 +54,7 @@ func (v *VizierIndexer) Run(topic string) error {
 	for {
 		select {
 		case <-v.quitCh:
-			return nil
+			return
 		case <-v.errCh:
 			log.WithField("vizier", v.vizierID.String()).WithError(err).Error("Error during indexing")
 		}
@@ -177,7 +177,10 @@ func (v *VizierIndexer) stanMessageHandler(msg *stan.Msg) {
 	if err != nil { // We received an invalid message through stan.
 		log.WithError(err).Error("Could not unmarshal message from stan")
 		v.errCh <- err
-		msg.Ack()
+		err = msg.Ack()
+		if err != nil {
+			log.WithError(err).Error("Failed to ack stan msg")
+		}
 		return
 	}
 
@@ -185,11 +188,18 @@ func (v *VizierIndexer) stanMessageHandler(msg *stan.Msg) {
 	if err != nil {
 		log.WithError(err).Error("Error handling resource update")
 		v.errCh <- err
-		msg.Ack()
+		err = msg.Ack()
+		if err != nil {
+			log.WithError(err).Error("Failed to ack stan msg")
+		}
+
 		return
 	}
 
-	msg.Ack()
+	err = msg.Ack()
+	if err != nil {
+		log.WithError(err).Error("Failed to ack stan msg")
+	}
 }
 
 // HandleResourceUpdate indexes the resource update in elastic.

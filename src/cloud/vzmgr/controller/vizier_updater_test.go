@@ -63,38 +63,41 @@ func TestUpdater_UpdateOrInstallVizier(t *testing.T) {
 
 	vizierID, _ := uuid.FromString("123e4567-e89b-12d3-a456-426655440001")
 
-	go nc.Subscribe("c2v.123e4567-e89b-12d3-a456-426655440001.VizierUpdate", func(m *nats.Msg) {
-		c2vMsg := &cvmsgspb.C2VMessage{}
-		err := proto.Unmarshal(m.Data, c2vMsg)
-		require.NoError(t, err)
-		resp := &cvmsgspb.UpdateOrInstallVizierRequest{}
-		err = types.UnmarshalAny(c2vMsg.Msg, resp)
-		require.NoError(t, err)
-		assert.Equal(t, "123", resp.Version)
-		assert.NotNil(t, resp.Token)
-		claims := jwt.MapClaims{}
-		_, err = jwt.ParseWithClaims(resp.Token, claims, func(token *jwt.Token) (interface{}, error) {
-			return []byte("jwtkey"), nil
-		}, jwt.WithoutAudienceValidation())
-		require.NoError(t, err)
-		assert.Equal(t, "cluster", claims["Scopes"].(string))
-		// Send response.
-		updateResp := &cvmsgspb.UpdateOrInstallVizierResponse{
-			UpdateStarted: true,
-		}
-		respAnyMsg, err := types.MarshalAny(updateResp)
-		require.NoError(t, err)
-		wrappedMsg := &cvmsgspb.V2CMessage{
-			VizierID: vizierID.String(),
-			Msg:      respAnyMsg,
-		}
+	go func() {
+		_, err := nc.Subscribe("c2v.123e4567-e89b-12d3-a456-426655440001.VizierUpdate", func(m *nats.Msg) {
+			c2vMsg := &cvmsgspb.C2VMessage{}
+			err := proto.Unmarshal(m.Data, c2vMsg)
+			require.NoError(t, err)
+			resp := &cvmsgspb.UpdateOrInstallVizierRequest{}
+			err = types.UnmarshalAny(c2vMsg.Msg, resp)
+			require.NoError(t, err)
+			assert.Equal(t, "123", resp.Version)
+			assert.NotNil(t, resp.Token)
+			claims := jwt.MapClaims{}
+			_, err = jwt.ParseWithClaims(resp.Token, claims, func(token *jwt.Token) (interface{}, error) {
+				return []byte("jwtkey"), nil
+			}, jwt.WithoutAudienceValidation())
+			require.NoError(t, err)
+			assert.Equal(t, "cluster", claims["Scopes"].(string))
+			// Send response.
+			updateResp := &cvmsgspb.UpdateOrInstallVizierResponse{
+				UpdateStarted: true,
+			}
+			respAnyMsg, err := types.MarshalAny(updateResp)
+			require.NoError(t, err)
+			wrappedMsg := &cvmsgspb.V2CMessage{
+				VizierID: vizierID.String(),
+				Msg:      respAnyMsg,
+			}
 
-		b, err := wrappedMsg.Marshal()
+			b, err := wrappedMsg.Marshal()
+			require.NoError(t, err)
+			topic := vzshard.V2CTopic("VizierUpdateResponse", vizierID)
+			err = nc.Publish(topic, b)
+			require.NoError(t, err)
+		})
 		require.NoError(t, err)
-		topic := vzshard.V2CTopic("VizierUpdateResponse", vizierID)
-		err = nc.Publish(topic, b)
-		require.NoError(t, err)
-	})
+	}()
 
 	mockArtifactTrackerClient.EXPECT().GetDownloadLink(
 		gomock.Any(), &artifacttrackerpb.GetDownloadLinkRequest{
@@ -144,39 +147,42 @@ func TestUpdater_ProcessUpdateQueue(t *testing.T) {
 		updater.Stop()
 	}()
 
-	go nc.Subscribe("c2v.123e4567-e89b-12d3-a456-426655440001.VizierUpdate", func(m *nats.Msg) {
-		c2vMsg := &cvmsgspb.C2VMessage{}
-		err := proto.Unmarshal(m.Data, c2vMsg)
-		require.NoError(t, err)
-		resp := &cvmsgspb.UpdateOrInstallVizierRequest{}
-		err = types.UnmarshalAny(c2vMsg.Msg, resp)
-		require.NoError(t, err)
-		assert.Equal(t, "0.4.1", resp.Version)
-		assert.NotNil(t, resp.Token)
-		claims := jwt.MapClaims{}
-		_, err = jwt.ParseWithClaims(resp.Token, claims, func(token *jwt.Token) (interface{}, error) {
-			return []byte("jwtkey"), nil
-		}, jwt.WithoutAudienceValidation())
-		require.NoError(t, err)
-		assert.Equal(t, "cluster", claims["Scopes"].(string))
-		// Send response.
-		updateResp := &cvmsgspb.UpdateOrInstallVizierResponse{
-			UpdateStarted: true,
-		}
-		respAnyMsg, err := types.MarshalAny(updateResp)
-		require.NoError(t, err)
-		wrappedMsg := &cvmsgspb.V2CMessage{
-			VizierID: vizierID.String(),
-			Msg:      respAnyMsg,
-		}
+	go func() {
+		_, err := nc.Subscribe("c2v.123e4567-e89b-12d3-a456-426655440001.VizierUpdate", func(m *nats.Msg) {
+			c2vMsg := &cvmsgspb.C2VMessage{}
+			err := proto.Unmarshal(m.Data, c2vMsg)
+			require.NoError(t, err)
+			resp := &cvmsgspb.UpdateOrInstallVizierRequest{}
+			err = types.UnmarshalAny(c2vMsg.Msg, resp)
+			require.NoError(t, err)
+			assert.Equal(t, "0.4.1", resp.Version)
+			assert.NotNil(t, resp.Token)
+			claims := jwt.MapClaims{}
+			_, err = jwt.ParseWithClaims(resp.Token, claims, func(token *jwt.Token) (interface{}, error) {
+				return []byte("jwtkey"), nil
+			}, jwt.WithoutAudienceValidation())
+			require.NoError(t, err)
+			assert.Equal(t, "cluster", claims["Scopes"].(string))
+			// Send response.
+			updateResp := &cvmsgspb.UpdateOrInstallVizierResponse{
+				UpdateStarted: true,
+			}
+			respAnyMsg, err := types.MarshalAny(updateResp)
+			require.NoError(t, err)
+			wrappedMsg := &cvmsgspb.V2CMessage{
+				VizierID: vizierID.String(),
+				Msg:      respAnyMsg,
+			}
 
-		b, err := wrappedMsg.Marshal()
+			b, err := wrappedMsg.Marshal()
+			require.NoError(t, err)
+			topic := vzshard.V2CTopic("VizierUpdateResponse", vizierID)
+			err = nc.Publish(topic, b)
+			require.NoError(t, err)
+			wg.Done()
+		})
 		require.NoError(t, err)
-		topic := vzshard.V2CTopic("VizierUpdateResponse", vizierID)
-		err = nc.Publish(topic, b)
-		require.NoError(t, err)
-		wg.Done()
-	})
+	}()
 
 	go updater.ProcessUpdateQueue()
 }
