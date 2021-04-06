@@ -16,7 +16,7 @@ var (
 	pxl = `
 import px
 df = px.DataFrame('http_events')
-df = df[['upid', 'http_req_path', 'remote_addr', 'http_req_method']]
+df = df[['upid', 'req_path', 'remote_addr', 'req_method']]
 df = df.head(10)
 px.display(df, 'http_as_json')
 px.display(df, 'http_as_table')
