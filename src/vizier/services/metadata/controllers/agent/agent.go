@@ -67,9 +67,6 @@ type Manager interface {
 	// UpdateHeartbeat updates the agent heartbeat with the current time.
 	UpdateHeartbeat(agentID uuid.UUID) error
 
-	// UpdateAgent updates agent info, such as schema.
-	UpdateAgent(info *agentpb.Agent) error
-
 	// Delete agent deletes the agent.
 	DeleteAgent(uuid.UUID) error
 
@@ -479,13 +476,6 @@ func (m *ManagerImpl) UpdateHeartbeat(agentID uuid.UUID) error {
 		return err
 	}
 
-	return nil
-}
-
-// UpdateAgent updates agent info, such as schema.
-func (m *ManagerImpl) UpdateAgent(info *agentpb.Agent) error {
-	// TODO(michelle): Implement once we figure out how the agent info (schemas, etc) looks.
-	// Make sure to add any updates to the agent updates list.
 	return nil
 }
 

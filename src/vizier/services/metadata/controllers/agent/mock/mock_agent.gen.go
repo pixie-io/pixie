@@ -7,8 +7,8 @@ package mock_agent
 import (
 	reflect "reflect"
 
+	uuid "github.com/gofrs/uuid"
 	gomock "github.com/golang/mock/gomock"
-	"github.com/gofrs/uuid"
 	pl_shared_k8s_metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	types "pixielabs.ai/pixielabs/src/shared/types/go"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
@@ -517,20 +517,6 @@ func (m *MockManager) RegisterAgent(info *pl_vizier_services_shared_agent.Agent)
 func (mr *MockManagerMockRecorder) RegisterAgent(info interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterAgent", reflect.TypeOf((*MockManager)(nil).RegisterAgent), info)
-}
-
-// UpdateAgent mocks base method.
-func (m *MockManager) UpdateAgent(info *pl_vizier_services_shared_agent.Agent) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateAgent", info)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// UpdateAgent indicates an expected call of UpdateAgent.
-func (mr *MockManagerMockRecorder) UpdateAgent(info interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAgent", reflect.TypeOf((*MockManager)(nil).UpdateAgent), info)
 }
 
 // UpdateConfig mocks base method.
