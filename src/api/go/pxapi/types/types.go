@@ -19,8 +19,9 @@ package types
 import (
 	"encoding/binary"
 	"fmt"
-	uuid "github.com/satori/go.uuid"
 	"time"
+
+	"github.com/gofrs/uuid"
 
 	vizierapipb "go.withpixie.dev/pixie/src/api/public/vizierapipb"
 )
@@ -81,7 +82,7 @@ func NewBooleanValue(schema *ColSchema) *BooleanValue {
 
 // String returns the string representation.
 func (v BooleanValue) String() string {
-	return fmt.Sprintf("%b", v.val)
+	return fmt.Sprintf("%t", v.val)
 }
 
 // Value returns the data as a bool
@@ -121,7 +122,7 @@ func (v Int64Value) Value() int64 {
 	return v.val
 }
 
-// ScanIn64 writes the int64 to the internal data structure.
+// ScanInt64 writes the int64 to the internal data structure.
 func (v *Int64Value) ScanInt64(data int64) {
 	v.val = data
 }
@@ -226,7 +227,7 @@ func (v *Time64NSValue) ScanInt64(data int64) {
  * UINT128
  *****************/
 
-// Time64NSValue is the concrete type that holds an time value.
+// UInt128Value is the concrete type that holds an time value.
 type UInt128Value struct {
 	ValueType
 	b []byte
@@ -238,7 +239,6 @@ func NewUint128Value(schema *ColSchema) *UInt128Value {
 		ValueType: ValueType{schema},
 		b:         make([]byte, 16),
 	}
-
 }
 
 // String returns the string representation.

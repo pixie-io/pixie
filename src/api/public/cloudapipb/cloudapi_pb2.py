@@ -37,7 +37,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=b'ZApixielabs.ai/pixielabs/src/api/public/cloudapipb;publiccloudapipb',
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n(src/api/public/cloudapipb/cloudapi.proto\x12\x12pl.public.cloudapi\x1a-github.com/gogo/protobuf/gogoproto/gogo.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a src/api/public/uuidpb/uuid.proto\",\n\rClusterConfig\x12\x1b\n\x13passthrough_enabled\x18\x01 \x01(\x08\"N\n\x13\x43lusterConfigUpdate\x12\x37\n\x13passthrough_enabled\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.BoolValue\"8\n\x11GetClusterRequest\x12#\n\x02id\x18\x01 \x01(\x0b\x32\x0f.pl.uuidpb.UUIDB\x06\xe2\xde\x1f\x02ID\"B\n\x1bGetClusterConnectionRequest\x12#\n\x02id\x18\x01 \x01(\x0b\x32\x0f.pl.uuidpb.UUIDB\x06\xe2\xde\x1f\x02ID\"O\n\x1cGetClusterConnectionResponse\x12 \n\tipAddress\x18\x01 \x01(\tB\r\xe2\xde\x1f\tIPAddress\x12\r\n\x05token\x18\x02 \x01(\t\"\xd0\x02\n\x0b\x43lusterInfo\x12#\n\x02id\x18\x01 \x01(\x0b\x32\x0f.pl.uuidpb.UUIDB\x06\xe2\xde\x1f\x02ID\x12\x31\n\x06status\x18\x02 \x01(\x0e\x32!.pl.public.cloudapi.ClusterStatus\x12\x17\n\x0flastHeartbeatNs\x18\x03 \x01(\x03\x12\x31\n\x06\x63onfig\x18\x04 \x01(\x0b\x32!.pl.public.cloudapi.ClusterConfig\x12#\n\x0b\x63luster_uid\x18\x05 \x01(\tB\x0e\xe2\xde\x1f\nClusterUID\x12\x14\n\x0c\x63luster_name\x18\x06 \x01(\t\x12\x17\n\x0f\x63luster_version\x18\x07 \x01(\t\x12\x16\n\x0evizier_version\x18\x08 \x01(\t\x12\x11\n\tnum_nodes\x18\t \x01(\x05\x12\x1e\n\x16num_instrumented_nodes\x18\n \x01(\x05\"G\n\x12GetClusterResponse\x12\x31\n\x08\x63lusters\x18\x01 \x03(\x0b\x32\x1f.pl.public.cloudapi.ClusterInfo\"\x81\x01\n\x1aUpdateClusterConfigRequest\x12#\n\x02id\x18\x01 \x01(\x0b\x32\x0f.pl.uuidpb.UUIDB\x06\xe2\xde\x1f\x02ID\x12>\n\rconfig_update\x18\x02 \x01(\x0b\x32\'.pl.public.cloudapi.ClusterConfigUpdate\"\x1d\n\x1bUpdateClusterConfigResponse*\x8f\x01\n\rClusterStatus\x12\x0e\n\nCS_UNKNOWN\x10\x00\x12\x0e\n\nCS_HEALTHY\x10\x01\x12\x10\n\x0c\x43S_UNHEALTHY\x10\x02\x12\x13\n\x0f\x43S_DISCONNECTED\x10\x03\x12\x0f\n\x0b\x43S_UPDATING\x10\x04\x12\x10\n\x0c\x43S_CONNECTED\x10\x05\x12\x14\n\x10\x43S_UPDATE_FAILED\x10\x06\x32\xe6\x02\n\x0e\x43lusterManager\x12]\n\nGetCluster\x12%.pl.public.cloudapi.GetClusterRequest\x1a&.pl.public.cloudapi.GetClusterResponse\"\x00\x12x\n\x13UpdateClusterConfig\x12..pl.public.cloudapi.UpdateClusterConfigRequest\x1a/.pl.public.cloudapi.UpdateClusterConfigResponse\"\x00\x12{\n\x14GetClusterConnection\x12/.pl.public.cloudapi.GetClusterConnectionRequest\x1a\x30.pl.public.cloudapi.GetClusterConnectionResponse\"\x00\x42\x43ZApixielabs.ai/pixielabs/src/api/public/cloudapipb;publiccloudapipbb\x06proto3'
+  serialized_pb=b'\n(src/api/public/cloudapipb/cloudapi.proto\x12\x12pl.public.cloudapi\x1a-github.com/gogo/protobuf/gogoproto/gogo.proto\x1a\x1egoogle/protobuf/wrappers.proto\x1a src/api/public/uuidpb/uuid.proto\"I\n\rClusterConfig\x12\x1b\n\x13passthrough_enabled\x18\x01 \x01(\x08\x12\x1b\n\x13\x61uto_update_enabled\x18\x02 \x01(\x08\"\x87\x01\n\x13\x43lusterConfigUpdate\x12\x37\n\x13passthrough_enabled\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.BoolValue\x12\x37\n\x13\x61uto_update_enabled\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.BoolValue\"8\n\x11GetClusterRequest\x12#\n\x02id\x18\x01 \x01(\x0b\x32\x0f.pl.uuidpb.UUIDB\x06\xe2\xde\x1f\x02ID\"B\n\x1bGetClusterConnectionRequest\x12#\n\x02id\x18\x01 \x01(\x0b\x32\x0f.pl.uuidpb.UUIDB\x06\xe2\xde\x1f\x02ID\"O\n\x1cGetClusterConnectionResponse\x12 \n\tipAddress\x18\x01 \x01(\tB\r\xe2\xde\x1f\tIPAddress\x12\r\n\x05token\x18\x02 \x01(\t\"\xd0\x02\n\x0b\x43lusterInfo\x12#\n\x02id\x18\x01 \x01(\x0b\x32\x0f.pl.uuidpb.UUIDB\x06\xe2\xde\x1f\x02ID\x12\x31\n\x06status\x18\x02 \x01(\x0e\x32!.pl.public.cloudapi.ClusterStatus\x12\x17\n\x0flastHeartbeatNs\x18\x03 \x01(\x03\x12\x31\n\x06\x63onfig\x18\x04 \x01(\x0b\x32!.pl.public.cloudapi.ClusterConfig\x12#\n\x0b\x63luster_uid\x18\x05 \x01(\tB\x0e\xe2\xde\x1f\nClusterUID\x12\x14\n\x0c\x63luster_name\x18\x06 \x01(\t\x12\x17\n\x0f\x63luster_version\x18\x07 \x01(\t\x12\x16\n\x0evizier_version\x18\x08 \x01(\t\x12\x11\n\tnum_nodes\x18\t \x01(\x05\x12\x1e\n\x16num_instrumented_nodes\x18\n \x01(\x05\"G\n\x12GetClusterResponse\x12\x31\n\x08\x63lusters\x18\x01 \x03(\x0b\x32\x1f.pl.public.cloudapi.ClusterInfo\"\x81\x01\n\x1aUpdateClusterConfigRequest\x12#\n\x02id\x18\x01 \x01(\x0b\x32\x0f.pl.uuidpb.UUIDB\x06\xe2\xde\x1f\x02ID\x12>\n\rconfig_update\x18\x02 \x01(\x0b\x32\'.pl.public.cloudapi.ClusterConfigUpdate\"\x1d\n\x1bUpdateClusterConfigResponse*\x8f\x01\n\rClusterStatus\x12\x0e\n\nCS_UNKNOWN\x10\x00\x12\x0e\n\nCS_HEALTHY\x10\x01\x12\x10\n\x0c\x43S_UNHEALTHY\x10\x02\x12\x13\n\x0f\x43S_DISCONNECTED\x10\x03\x12\x0f\n\x0b\x43S_UPDATING\x10\x04\x12\x10\n\x0c\x43S_CONNECTED\x10\x05\x12\x14\n\x10\x43S_UPDATE_FAILED\x10\x06\x32\xe6\x02\n\x0e\x43lusterManager\x12]\n\nGetCluster\x12%.pl.public.cloudapi.GetClusterRequest\x1a&.pl.public.cloudapi.GetClusterResponse\"\x00\x12x\n\x13UpdateClusterConfig\x12..pl.public.cloudapi.UpdateClusterConfigRequest\x1a/.pl.public.cloudapi.UpdateClusterConfigResponse\"\x00\x12{\n\x14GetClusterConnection\x12/.pl.public.cloudapi.GetClusterConnectionRequest\x1a\x30.pl.public.cloudapi.GetClusterConnectionResponse\"\x00\x42\x43ZApixielabs.ai/pixielabs/src/api/public/cloudapipb;publiccloudapipbb\x06proto3'
   ,
   dependencies=[github_dot_com_dot_gogo_dot_protobuf_dot_gogoproto_dot_gogo__pb2.DESCRIPTOR,google_dot_protobuf_dot_wrappers__pb2.DESCRIPTOR,src_dot_api_dot_public_dot_uuidpb_dot_uuid__pb2.DESCRIPTOR,])
 
@@ -86,8 +86,8 @@ _CLUSTERSTATUS = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=1086,
-  serialized_end=1229,
+  serialized_start=1173,
+  serialized_end=1316,
 )
 _sym_db.RegisterEnumDescriptor(_CLUSTERSTATUS)
 
@@ -117,6 +117,13 @@ _CLUSTERCONFIG = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='auto_update_enabled', full_name='pl.public.cloudapi.ClusterConfig.auto_update_enabled', index=1,
+      number=2, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -130,7 +137,7 @@ _CLUSTERCONFIG = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=177,
-  serialized_end=221,
+  serialized_end=250,
 )
 
 
@@ -149,6 +156,13 @@ _CLUSTERCONFIGUPDATE = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='auto_update_enabled', full_name='pl.public.cloudapi.ClusterConfigUpdate.auto_update_enabled', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -161,8 +175,8 @@ _CLUSTERCONFIGUPDATE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=223,
-  serialized_end=301,
+  serialized_start=253,
+  serialized_end=388,
 )
 
 
@@ -193,8 +207,8 @@ _GETCLUSTERREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=303,
-  serialized_end=359,
+  serialized_start=390,
+  serialized_end=446,
 )
 
 
@@ -225,8 +239,8 @@ _GETCLUSTERCONNECTIONREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=361,
-  serialized_end=427,
+  serialized_start=448,
+  serialized_end=514,
 )
 
 
@@ -264,8 +278,8 @@ _GETCLUSTERCONNECTIONRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=429,
-  serialized_end=508,
+  serialized_start=516,
+  serialized_end=595,
 )
 
 
@@ -359,8 +373,8 @@ _CLUSTERINFO = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=511,
-  serialized_end=847,
+  serialized_start=598,
+  serialized_end=934,
 )
 
 
@@ -391,8 +405,8 @@ _GETCLUSTERRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=849,
-  serialized_end=920,
+  serialized_start=936,
+  serialized_end=1007,
 )
 
 
@@ -430,8 +444,8 @@ _UPDATECLUSTERCONFIGREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=923,
-  serialized_end=1052,
+  serialized_start=1010,
+  serialized_end=1139,
 )
 
 
@@ -455,11 +469,12 @@ _UPDATECLUSTERCONFIGRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1054,
-  serialized_end=1083,
+  serialized_start=1141,
+  serialized_end=1170,
 )
 
 _CLUSTERCONFIGUPDATE.fields_by_name['passthrough_enabled'].message_type = google_dot_protobuf_dot_wrappers__pb2._BOOLVALUE
+_CLUSTERCONFIGUPDATE.fields_by_name['auto_update_enabled'].message_type = google_dot_protobuf_dot_wrappers__pb2._BOOLVALUE
 _GETCLUSTERREQUEST.fields_by_name['id'].message_type = src_dot_api_dot_public_dot_uuidpb_dot_uuid__pb2._UUID
 _GETCLUSTERCONNECTIONREQUEST.fields_by_name['id'].message_type = src_dot_api_dot_public_dot_uuidpb_dot_uuid__pb2._UUID
 _CLUSTERINFO.fields_by_name['id'].message_type = src_dot_api_dot_public_dot_uuidpb_dot_uuid__pb2._UUID
@@ -559,8 +574,8 @@ _CLUSTERMANAGER = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=1232,
-  serialized_end=1590,
+  serialized_start=1319,
+  serialized_end=1677,
   methods=[
   _descriptor.MethodDescriptor(
     name='GetCluster',

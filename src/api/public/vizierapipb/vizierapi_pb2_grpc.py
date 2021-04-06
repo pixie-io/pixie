@@ -20,7 +20,8 @@ from src.api.public.vizierapipb import vizierapi_pb2 as src_dot_api_dot_public_d
 
 
 class VizierServiceStub(object):
-    """Missing associated documentation comment in .proto file."""
+    """The API that manages all communication with a particular Vizier cluster.
+    """
 
     def __init__(self, channel):
         """Constructor.
@@ -41,17 +42,20 @@ class VizierServiceStub(object):
 
 
 class VizierServiceServicer(object):
-    """Missing associated documentation comment in .proto file."""
+    """The API that manages all communication with a particular Vizier cluster.
+    """
 
     def ExecuteScript(self, request, context):
-        """This is an incoming request to Vizier to execute queries.
+        """Execute a script on the Vizier cluster and stream the results of that execution.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def HealthCheck(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """Start a stream to receive health updates from the Vizier service. For most practical 
+        purposes, users should only need `ExecuteScript()` and can safely ignore this call.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -77,7 +81,8 @@ def add_VizierServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class VizierService(object):
-    """Missing associated documentation comment in .proto file."""
+    """The API that manages all communication with a particular Vizier cluster.
+    """
 
     @staticmethod
     def ExecuteScript(request,
@@ -85,6 +90,7 @@ class VizierService(object):
             options=(),
             channel_credentials=None,
             call_credentials=None,
+            insecure=False,
             compression=None,
             wait_for_ready=None,
             timeout=None,
@@ -93,7 +99,7 @@ class VizierService(object):
             src_dot_api_dot_public_dot_vizierapipb_dot_vizierapi__pb2.ExecuteScriptRequest.SerializeToString,
             src_dot_api_dot_public_dot_vizierapipb_dot_vizierapi__pb2.ExecuteScriptResponse.FromString,
             options, channel_credentials,
-            call_credentials, compression, wait_for_ready, timeout, metadata)
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def HealthCheck(request,
@@ -101,6 +107,7 @@ class VizierService(object):
             options=(),
             channel_credentials=None,
             call_credentials=None,
+            insecure=False,
             compression=None,
             wait_for_ready=None,
             timeout=None,
@@ -109,4 +116,4 @@ class VizierService(object):
             src_dot_api_dot_public_dot_vizierapipb_dot_vizierapi__pb2.HealthCheckRequest.SerializeToString,
             src_dot_api_dot_public_dot_vizierapipb_dot_vizierapi__pb2.HealthCheckResponse.FromString,
             options, channel_credentials,
-            call_credentials, compression, wait_for_ready, timeout, metadata)
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

@@ -16,7 +16,8 @@ import grpc
 import grpc.aio
 from urllib.parse import urlparse
 import asyncio
-from typing import Callable, List, Union, Awaitable, Dict, Set, AsyncGenerator, cast, Literal
+from typing import AsyncGenerator, Awaitable, Callable, cast, \
+    Dict, Generator, List, Literal, Union, Set
 
 from src.api.public.vizierapipb import vizierapi_pb2 as vpb
 from src.api.public.vizierapipb import vizierapi_pb2_grpc
@@ -24,7 +25,6 @@ from src.api.public.vizierapipb import vizierapi_pb2_grpc
 from src.api.public.cloudapipb import cloudapi_pb2 as cpb
 from src.api.public.cloudapipb import cloudapi_pb2_grpc
 
-from src.api.public.uuidpb import uuid_pb2 as uuidpb
 from .data import (
     _TableStream,
     RowGenerator,
@@ -35,6 +35,11 @@ from .data import (
 
 from .errors import (
     build_pxl_exception,
+)
+
+from .utils import (
+    uuid_pb_from_string,
+    uuid_pb_to_string,
 )
 
 
@@ -395,7 +400,7 @@ class ScriptExecutor:
             for name, table in self._table_name_to_table_map.items():
                 table.close()
 
-    def results(self, table_name: str) -> List[Row]:
+    def results(self, table_name: str) -> Generator[Row, None, None]:
         """ Runs script and return results for the table.
         Examples:
             for row in script.results("http_table"):
@@ -412,7 +417,10 @@ class ScriptExecutor:
 
         self.add_callback(table_name, _cb)
         self.run()
-        return rows
+        # TODO(philkuz) update the run call to be multi-threaded
+        # to avoid accumulating memory for rows.
+        for r in rows:
+            yield r
 
     async def _run_conn(self, conn: Conn) -> None:
         """ Executes the script on a single connection. """
@@ -470,7 +478,7 @@ class Client:
 
     To setup the client, you need to generate an API token
     and pass it in as the first argument.
-    See: https://docs.pixielabs.ai/reference/api/quick-start/
+    See: https://docs.pixielabs.ai/using-pixie/api-quick-start/
     for more info.
     """
 
@@ -515,7 +523,7 @@ class Client:
                 continue
             healthy_clusters.append(
                 Cluster(
-                    cluster_id=c.id.data.decode('utf-8'),
+                    cluster_id=uuid_pb_to_string(c.id),
                     cluster_info=c,
                 )
             )
@@ -524,8 +532,7 @@ class Client:
 
     def _get_cluster_info(self, cluster_id: ClusterID) -> cpb.ClusterInfo:
         request = cpb.GetClusterRequest(
-            id=uuidpb.UUID(
-                data=cluster_id.encode('utf-8'))
+            id=uuid_pb_from_string(cluster_id)
         )
         return self._get_cluster(request)[0]
 
@@ -536,8 +543,7 @@ class Client:
         channel = self._get_cloud_channel()
         stub = cloudapi_pb2_grpc.ClusterManagerStub(channel)
         request = cpb.GetClusterConnectionRequest(
-            id=uuidpb.UUID(
-                data=cluster_id.encode('utf-8'))
+            id=uuid_pb_from_string(cluster_id)
         )
         response = stub.GetClusterConnection(request, metadata=[
             ("pixie-api-key", self._token),

@@ -33,7 +33,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=b'Z3pixielabs.ai/pixielabs/src/public/api/uuidpb;uuidpb',
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n src/api/public/uuidpb/uuid.proto\x12\tpl.uuidpb\"\x14\n\x04UUID\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\x0c\x42\x35Z3pixielabs.ai/pixielabs/src/public/api/uuidpb;uuidpbb\x06proto3'
+  serialized_pb=b'\n src/api/public/uuidpb/uuid.proto\x12\tpl.uuidpb\"D\n\x04UUID\x12\x17\n\x0f\x64\x65precated_data\x18\x01 \x01(\x0c\x12\x11\n\thigh_bits\x18\x02 \x01(\x04\x12\x10\n\x08low_bits\x18\x03 \x01(\x04\x42\x35Z3pixielabs.ai/pixielabs/src/public/api/uuidpb;uuidpbb\x06proto3'
 )
 
 
@@ -48,9 +48,23 @@ _UUID = _descriptor.Descriptor(
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='data', full_name='pl.uuidpb.UUID.data', index=0,
+      name='deprecated_data', full_name='pl.uuidpb.UUID.deprecated_data', index=0,
       number=1, type=12, cpp_type=9, label=1,
       has_default_value=False, default_value=b"",
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='high_bits', full_name='pl.uuidpb.UUID.high_bits', index=1,
+      number=2, type=4, cpp_type=4, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='low_bits', full_name='pl.uuidpb.UUID.low_bits', index=2,
+      number=3, type=4, cpp_type=4, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
@@ -67,7 +81,7 @@ _UUID = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=47,
-  serialized_end=67,
+  serialized_end=115,
 )
 
 DESCRIPTOR.message_types_by_name['UUID'] = _UUID

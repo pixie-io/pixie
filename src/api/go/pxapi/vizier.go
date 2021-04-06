@@ -19,6 +19,7 @@ package pxapi
 import (
 	"context"
 
+	"go.withpixie.dev/pixie/src/api/go/pxapi/errdefs"
 	cloudapipb "go.withpixie.dev/pixie/src/api/public/cloudapipb"
 	vizierapipb "go.withpixie.dev/pixie/src/api/public/vizierapipb"
 )
@@ -29,9 +30,9 @@ type VizierStatus string
 // Vizier Statuses.
 const (
 	VizierStatusUnknown      VizierStatus = "Unknown"
-	VizierStatusHealthy                   = "Healthy"
-	VizierStatusUnhealthy                 = "Unhealthy"
-	VizierStatusDisconnected              = "Disconnected"
+	VizierStatusHealthy      VizierStatus = "Healthy"
+	VizierStatusUnhealthy    VizierStatus = "Unhealthy"
+	VizierStatusDisconnected VizierStatus = "Disconnected"
 )
 
 // VizierInfo has information of a single Vizier.
@@ -62,18 +63,18 @@ func clusterStatusToVizierStatus(status cloudapipb.ClusterStatus) VizierStatus {
 }
 
 // ListViziers gets a list of Viziers registered with Pixie.
-func (c *Client) ListViziers(ctx context.Context) ([]VizierInfo, error) {
+func (c *Client) ListViziers(ctx context.Context) ([]*VizierInfo, error) {
 	req := &cloudapipb.GetClusterRequest{}
 	res, err := c.cmClient.GetCluster(c.cloudCtxWithMD(ctx), req)
 	if err != nil {
 		return nil, err
 	}
 
-	viziers := make([]VizierInfo, 0)
+	viziers := make([]*VizierInfo, 0)
 	for _, v := range res.Clusters {
-		viziers = append(viziers, VizierInfo{
+		viziers = append(viziers, &VizierInfo{
 			Name:         v.ClusterName,
-			ID:           string(v.ID.Data),
+			ID:           ProtoToUUIDStr(v.ID),
 			Version:      v.VizierVersion,
 			Status:       clusterStatusToVizierStatus(v.Status),
 			DirectAccess: !v.Config.PassthroughEnabled,
@@ -83,12 +84,43 @@ func (c *Client) ListViziers(ctx context.Context) ([]VizierInfo, error) {
 	return viziers, nil
 }
 
+// GetVizierInfo gets info about the given clusterID.
+func (c *Client) GetVizierInfo(ctx context.Context, clusterID string) (*VizierInfo, error) {
+	req := &cloudapipb.GetClusterRequest{
+		ID: ProtoFromUUIDStrOrNil(clusterID),
+	}
+	res, err := c.cmClient.GetCluster(c.cloudCtxWithMD(ctx), req)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(res.Clusters) == 0 {
+		return nil, errdefs.ErrClusterNotFound
+	}
+
+	v := res.Clusters[0]
+
+	return &VizierInfo{
+		Name:         v.ClusterName,
+		ID:           ProtoToUUIDStr(v.ID),
+		Version:      v.VizierVersion,
+		Status:       clusterStatusToVizierStatus(v.Status),
+		DirectAccess: !v.Config.PassthroughEnabled,
+	}, nil
+}
+
+// getConnectionInfo gets the connection info for a cluster using direct mode.
+func (c *Client) getConnectionInfo(ctx context.Context, clusterID string) (*cloudapipb.GetClusterConnectionResponse, error) {
+	req := &cloudapipb.GetClusterConnectionRequest{
+		ID: ProtoFromUUIDStrOrNil(clusterID),
+	}
+	return c.cmClient.GetClusterConnection(c.cloudCtxWithMD(ctx), req)
+}
+
 // VizierClient is the client for a single vizier.
 type VizierClient struct {
-	cloud        *Client
-	directAccess bool
-	accessToken  string
-	vizierID     string
+	cloud    *Client
+	vizierID string
 
 	vzClient vizierapipb.VizierServiceClient
 }
@@ -99,7 +131,6 @@ func (v *VizierClient) ExecuteScript(ctx context.Context, pxl string, mux TableM
 		ClusterID: v.vizierID,
 		QueryStr:  pxl,
 	}
-	// TODO(zasgar): Fix the token to use the right version dependent or directaccess or cloud.
 	ctx, cancel := context.WithCancel(ctx)
 	res, err := v.vzClient.ExecuteScript(v.cloud.cloudCtxWithMD(ctx), req)
 	if err != nil {

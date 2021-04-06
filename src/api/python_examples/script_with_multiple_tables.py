@@ -16,13 +16,13 @@ import pxapi
 
 
 # You'll need to generate an API token.
-# For more info, see: https://docs.pixielabs.ai/reference/api/quick-start/
+# For more info, see: https://docs.pixielabs.ai/using-pixie/api-quick-start/
 API_TOKEN = "<YOUR_API_TOKEN>"
 
 # PxL script with 2 output tables
 PXL_SCRIPT = """
 import px
-df = px.DataFrame('http_events')[['http_resp_status','http_req_path']]
+df = px.DataFrame('http_events')[['resp_status','req_path']]
 df = df.head(10)
 px.display(df, 'http_table')
 
@@ -47,7 +47,7 @@ script = conn.prepare_script(PXL_SCRIPT)
 
 # create a function to process the table rows
 def http_fn(row: pxapi.Row) -> None:
-    print(row["http_resp_status"], row["http_req_path"])
+    print(row["resp_status"], row["req_path"])
 
 
 def stats_fn(row: pxapi.Row) -> None:
