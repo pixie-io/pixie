@@ -86,7 +86,8 @@ var DebugLogCmd = &cobra.Command{
 		}
 
 		prev, _ := cmd.Flags().GetBool("previous")
-		ctx := utils.WithSignalCancellable(context.Background())
+		ctx, cleanup := utils.WithSignalCancellable(context.Background())
+		defer cleanup()
 		resp, err := conn.DebugLogRequest(ctx, podName, prev, container)
 		if err != nil {
 			utils.WithError(err).Error("Logging failed")
@@ -127,7 +128,8 @@ func fetchVizierPods(cloudAddr, selectedCluster, plane string) ([]*pl_api_vizier
 		return nil, err
 	}
 
-	ctx := utils.WithSignalCancellable(context.Background())
+	ctx, cleanup := utils.WithSignalCancellable(context.Background())
+	defer cleanup()
 	resp, err := conn.DebugPodsRequest(ctx)
 	if err != nil {
 		return nil, err

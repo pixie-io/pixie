@@ -182,7 +182,8 @@ func createNewCobraCommand() *cobra.Command {
 			})
 
 			// Support Ctrl+C to cancel a query.
-			ctx := utils.WithSignalCancellable(context.Background())
+			ctx, cleanup := utils.WithSignalCancellable(context.Background())
+			defer cleanup()
 			err = vizier.RunScriptAndOutputResults(ctx, conns, execScript, format)
 
 			if err != nil {
