@@ -1,6 +1,8 @@
 package authenv
 
 import (
+	"github.com/spf13/viper"
+
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
 	"pixielabs.ai/pixielabs/src/shared/services/env"
 )
@@ -29,7 +31,7 @@ func NewWithDefaults() (*Impl, error) {
 
 // New creates a new auth authenv.
 func New(pc profilepb.ProfileServiceClient) (*Impl, error) {
-	return &Impl{env.New(), pc}, nil
+	return &Impl{env.New(viper.GetString("domain_name")), pc}, nil
 }
 
 // ProfileClient returns the authenv's profile client.

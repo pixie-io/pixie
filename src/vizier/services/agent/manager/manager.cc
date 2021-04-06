@@ -340,7 +340,7 @@ Manager::MessageHandler::MessageHandler(Dispatcher* dispatcher, Info* agent_info
 std::string GenerateServiceToken() {
   jwt::jwt_object obj{jwt::params::algorithm("HS256")};
   obj.add_claim("iss", "PL");
-  obj.add_claim("aud", "service");
+  obj.add_claim("aud", "vizier");
   obj.add_claim("jti", sole::uuid4().str());
   obj.add_claim("iat", std::chrono::system_clock::now());
   obj.add_claim("nbf", std::chrono::system_clock::now() - std::chrono::seconds{60});

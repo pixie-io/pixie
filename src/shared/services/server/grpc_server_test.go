@@ -65,7 +65,7 @@ func startTestGRPCServer(opts *server.GRPCServerOptions) (*bufconn.Listener, fun
 		opts = &server.GRPCServerOptions{}
 	}
 
-	s = server.CreateGRPCServer(env.New(), opts)
+	s = server.CreateGRPCServer(env.New("withpixie.ai"), opts)
 
 	ping.RegisterPingServiceServer(s, &testserver{})
 	lis := bufconn.Listen(bufSize)

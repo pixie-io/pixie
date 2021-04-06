@@ -139,6 +139,6 @@ func (w *Watcher) Stop() {
 }
 
 func getServiceCredentials(signingKey string) (string, error) {
-	claims := svcutils.GenerateJWTForService("vzwatcher")
+	claims := svcutils.GenerateJWTForService("vzwatcher", viper.GetString("domain_name"))
 	return svcutils.SignJWTClaims(claims, signingKey)
 }

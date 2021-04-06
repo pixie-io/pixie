@@ -215,7 +215,7 @@ func main() {
 	defer mc.Close()
 
 	// Set up server.
-	env, err := metadataenv.New()
+	env, err := metadataenv.New("vizier")
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create api environment")
 	}

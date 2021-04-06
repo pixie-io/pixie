@@ -25,6 +25,7 @@ func init() {
 	pflag.String("vzmgr_service", "kubernetes:///vzmgr-service.plc:51800", "The profile service url (load balancer/list is ok)")
 	pflag.String("nats_url", "pl-nats", "The URL of NATS")
 	pflag.String("stan_cluster", "pl-stan", "The name of the STAN cluster")
+	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
 }
 
 func newVZMgrClients() (vzmgrpb.VZMgrServiceClient, vzmgrpb.VZDeploymentServiceClient, error) {
@@ -82,7 +83,7 @@ func main() {
 		},
 	}
 
-	s := server.NewPLServerWithOptions(env.New(), mux, serverOpts)
+	s := server.NewPLServerWithOptions(env.New(viper.GetString("domain_name")), mux, serverOpts)
 	nc, sc, err := createStanNatsConnection(uuid.Must(uuid.NewV4()).String())
 	if err != nil {
 		log.WithError(err).Fatal("Could not connect to NATS/STAN")

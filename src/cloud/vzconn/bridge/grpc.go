@@ -156,6 +156,6 @@ func convertToGRPCErr(err error) error {
 // TODO(zasgar/michelle): Remove this, we need to make this into cluster credentials.
 // getServiceCredentials returns JWT credentials for inter-service requests.
 func getServiceCredentials(signingKey string) (string, error) {
-	claims := utils.GenerateJWTForService("Vzconn Service")
+	claims := utils.GenerateJWTForService("Vzconn Service", viper.GetString("domain_name"))
 	return utils.SignJWTClaims(claims, signingKey)
 }

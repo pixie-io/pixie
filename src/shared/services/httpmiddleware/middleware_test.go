@@ -17,7 +17,7 @@ import (
 
 func TestWithBearerAuthMiddleware(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwt-key")
-	e := env.New()
+	e := env.New("withpixie.ai")
 
 	tests := []struct {
 		Name          string

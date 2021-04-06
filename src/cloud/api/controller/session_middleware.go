@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -72,7 +73,7 @@ func getAugmentedToken(env apienv.APIEnv, r *http.Request) (string, error) {
 	apiHeader := r.Header.Get("pixie-api-key")
 	if apiHeader != "" {
 		// Try to get augmented token.
-		svcJWT := utils.GenerateJWTForService("APIService")
+		svcJWT := utils.GenerateJWTForService("APIService", viper.GetString("domain_name"))
 		svcClaims, err := utils.SignJWTClaims(svcJWT, env.JWTSigningKey())
 		if err != nil {
 			return "", ErrGetAuthTokenFailed
@@ -86,7 +87,7 @@ func getAugmentedToken(env apienv.APIEnv, r *http.Request) (string, error) {
 		if err == nil {
 			// Get user/org info from augmented token.
 			aCtx := authcontext.New()
-			if err := aCtx.UseJWTAuth(env.JWTSigningKey(), apiKeyResp.Token); err != nil {
+			if err := aCtx.UseJWTAuth(env.JWTSigningKey(), apiKeyResp.Token, viper.GetString("domain_name")); err != nil {
 				return "", ErrGetAuthTokenFailed
 			}
 
@@ -141,7 +142,7 @@ func getAugmentedAuthHTTP(env apienv.APIEnv, r *http.Request) (context.Context, 
 		return nil, err
 	}
 	aCtx := authcontext.New()
-	err = aCtx.UseJWTAuth(env.JWTSigningKey(), token)
+	err = aCtx.UseJWTAuth(env.JWTSigningKey(), token, viper.GetString("domain_name"))
 	if err != nil {
 		return nil, ErrParseAuthToken
 	}

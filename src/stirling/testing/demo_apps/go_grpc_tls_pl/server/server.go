@@ -33,7 +33,7 @@ func main() {
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
 
-	e := env.New()
+	e := env.New("withpixie.ai")
 	s := server.NewPLServer(e, mux)
 	greetpb.RegisterGreeterServer(s.GRPCServer(), &Server{})
 

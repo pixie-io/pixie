@@ -60,6 +60,7 @@ func setUpUpdater(t *testing.T) (*controller.Updater, *nats.Conn, *sqlx.DB, *moc
 func TestUpdater_UpdateOrInstallVizier(t *testing.T) {
 	updater, nc, _, mockArtifactTrackerClient, cleanup := setUpUpdater(t)
 	defer cleanup()
+	viper.Set("domain_name", "withpixie.ai")
 
 	vizierID, _ := uuid.FromString("123e4567-e89b-12d3-a456-426655440001")
 
@@ -76,7 +77,7 @@ func TestUpdater_UpdateOrInstallVizier(t *testing.T) {
 			claims := jwt.MapClaims{}
 			_, err = jwt.ParseWithClaims(resp.Token, claims, func(token *jwt.Token) (interface{}, error) {
 				return []byte("jwtkey"), nil
-			}, jwt.WithoutAudienceValidation())
+			}, jwt.WithAudience("withpixie.ai"))
 			require.NoError(t, err)
 			assert.Equal(t, "cluster", claims["Scopes"].(string))
 			// Send response.
@@ -137,6 +138,7 @@ func TestUpdater_ProcessUpdateQueue(t *testing.T) {
 	updater, nc, _, _, cleanup := setUpUpdater(t)
 	defer cleanup()
 	vizierID, _ := uuid.FromString("123e4567-e89b-12d3-a456-426655440001")
+	viper.Set("domain_name", "withpixie.ai")
 
 	assert.True(t, updater.AddToUpdateQueue(vizierID))
 
@@ -160,7 +162,7 @@ func TestUpdater_ProcessUpdateQueue(t *testing.T) {
 			claims := jwt.MapClaims{}
 			_, err = jwt.ParseWithClaims(resp.Token, claims, func(token *jwt.Token) (interface{}, error) {
 				return []byte("jwtkey"), nil
-			}, jwt.WithoutAudienceValidation())
+			}, jwt.WithAudience("withpixie.ai"))
 			require.NoError(t, err)
 			assert.Equal(t, "cluster", claims["Scopes"].(string))
 			// Send response.

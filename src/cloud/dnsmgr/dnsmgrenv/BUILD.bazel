@@ -5,5 +5,8 @@ go_library(
     srcs = ["env.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrenv",
     visibility = ["//visibility:public"],
-    deps = ["//src/shared/services/env:go_default_library"],
+    deps = [
+        "//src/shared/services/env:go_default_library",
+        "@com_github_spf13_viper//:go_default_library",
+    ],
 )

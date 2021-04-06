@@ -145,7 +145,7 @@ func (u *Updater) updateOrInstallVizier(vizierID uuid.UUID, version string, rede
 	}
 
 	// Generate token.
-	clusterClaims := jwtutils.GenerateJWTForCluster(vizierID.String())
+	clusterClaims := jwtutils.GenerateJWTForCluster(vizierID.String(), viper.GetString("domain_name"))
 	tokenString, err := jwtutils.SignJWTClaims(clusterClaims, viper.GetString("jwt_signing_key"))
 	if err != nil {
 		return nil, errors.New("Could not generate Vizier token")

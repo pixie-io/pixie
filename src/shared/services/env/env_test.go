@@ -12,6 +12,7 @@ import (
 func TestNew(t *testing.T) {
 	viper.Set("jwt_signing_key", "the-jwt-key")
 
-	env := env.New()
+	env := env.New("audience")
 	assert.Equal(t, "the-jwt-key", env.JWTSigningKey())
+	assert.Equal(t, "audience", env.Audience())
 }

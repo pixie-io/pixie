@@ -28,7 +28,7 @@ func New() *AuthContext {
 }
 
 // UseJWTAuth takes a token and sets claims, etc.
-func (s *AuthContext) UseJWTAuth(signingKey string, tokenString string) error {
+func (s *AuthContext) UseJWTAuth(signingKey string, tokenString string, audience string) error {
 	secret := signingKey
 	token, err := jwt.ParseWithClaims(tokenString, &jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
 		// validate that the signing method is correct
@@ -36,7 +36,7 @@ func (s *AuthContext) UseJWTAuth(signingKey string, tokenString string) error {
 			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 		}
 		return []byte(secret), nil
-	}, jwt.WithoutAudienceValidation())
+	}, jwt.WithAudience(audience))
 	if err != nil {
 		return err
 	}

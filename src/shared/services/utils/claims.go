@@ -149,10 +149,11 @@ func MapClaimsToPB(claims jwt.MapClaims) (*jwt2.JWTClaims, error) {
 }
 
 // GenerateJWTForUser creates a protobuf claims for the given user.
-func GenerateJWTForUser(userID string, orgID string, email string, expiresAt time.Time) *jwt2.JWTClaims {
+func GenerateJWTForUser(userID string, orgID string, email string, expiresAt time.Time, audience string) *jwt2.JWTClaims {
 	claims := jwt2.JWTClaims{
 		Subject: userID,
 		// Standard claims.
+		Audience:  audience,
 		ExpiresAt: expiresAt.Unix(),
 		IssuedAt:  time.Now().Unix(),
 		Issuer:    "PL",
@@ -169,8 +170,9 @@ func GenerateJWTForUser(userID string, orgID string, email string, expiresAt tim
 }
 
 // GenerateJWTForService creates a protobuf claims for the given service.
-func GenerateJWTForService(serviceID string) *jwt2.JWTClaims {
+func GenerateJWTForService(serviceID string, audience string) *jwt2.JWTClaims {
 	pbClaims := jwt2.JWTClaims{
+		Audience:  audience,
 		Subject:   serviceID,
 		Issuer:    "PL",
 		ExpiresAt: time.Now().Add(time.Minute * 10).Unix(),
@@ -185,9 +187,9 @@ func GenerateJWTForService(serviceID string) *jwt2.JWTClaims {
 }
 
 // GenerateJWTForCluster creates a protobuf claims for the given cluster.
-func GenerateJWTForCluster(clusterID string) *jwt2.JWTClaims {
+func GenerateJWTForCluster(clusterID string, audience string) *jwt2.JWTClaims {
 	pbClaims := jwt2.JWTClaims{
-		Audience:  "pixielabs.ai",
+		Audience:  audience,
 		ExpiresAt: time.Now().Add(time.Hour).Unix(),
 		// The IssuedAt begins earlier, to give leeway for user's clusters
 		// which may have some clock skew.

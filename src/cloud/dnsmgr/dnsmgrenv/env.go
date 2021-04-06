@@ -1,6 +1,9 @@
 package dnsmgrenv
 
-import "pixielabs.ai/pixielabs/src/shared/services/env"
+import (
+	"github.com/spf13/viper"
+	"pixielabs.ai/pixielabs/src/shared/services/env"
+)
 
 // DNSMgrEnv is the environment used for the dnsmgr service.
 type DNSMgrEnv interface {
@@ -14,5 +17,5 @@ type Impl struct {
 
 // New creates a new dnsmgr env.
 func New() *Impl {
-	return &Impl{env.New()}
+	return &Impl{env.New(viper.GetString("domain_name"))}
 }

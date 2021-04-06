@@ -64,7 +64,7 @@ func testMain(m *testing.M) error {
 
 func createTestContext() context.Context {
 	sCtx := authcontext.New()
-	sCtx.Claims = jwtutils.GenerateJWTForUser(testAuthUserID.String(), testAuthOrgID.String(), "test@test.com", time.Now())
+	sCtx.Claims = jwtutils.GenerateJWTForUser(testAuthUserID.String(), testAuthOrgID.String(), "test@test.com", time.Now(), "pixie")
 	return authcontext.NewContext(context.Background(), sCtx)
 }
 

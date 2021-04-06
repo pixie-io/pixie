@@ -19,11 +19,11 @@ type Impl struct {
 }
 
 // New creates a new api env.
-func New(qbAddress string, sslTargetName string) (*Impl, error) {
+func New(qbAddress string, sslTargetName string, audience string) (*Impl, error) {
 	return &Impl{
 		qbAddress,
 		sslTargetName,
-		env.New(),
+		env.New(audience),
 	}, nil
 }
 

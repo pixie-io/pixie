@@ -564,7 +564,7 @@ func (s *Server) GetVizierConnectionInfo(ctx context.Context, req *uuidpb.UUID) 
 
 	// Generate a signed token for this cluster.
 	jwtKey := info.JWTSigningKey[SaltLength:]
-	claims := jwtutils.GenerateJWTForCluster("vizier_cluster")
+	claims := jwtutils.GenerateJWTForCluster("vizier_cluster", "vizier")
 	tokenString, err := jwtutils.SignJWTClaims(claims, jwtKey)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to sign token: %s", err.Error())
@@ -907,7 +907,7 @@ func (s *Server) HandleSSLRequest(v2cMsg *cvmsgspb.V2CMessage) {
 
 // getServiceCredentials returns JWT credentials for inter-service requests.
 func getServiceCredentials(signingKey string) (string, error) {
-	claims := jwtutils.GenerateJWTForService("vzmgr Service")
+	claims := jwtutils.GenerateJWTForService("vzmgr Service", viper.GetString("domain_name"))
 	return jwtutils.SignJWTClaims(claims, signingKey)
 }
 

@@ -47,5 +47,5 @@ func NewWithDefaults() (*Impl, error) {
 
 // New creates a new profile env.
 func New(pm projectmanagerpb.ProjectManagerServiceClient) *Impl {
-	return &Impl{env.New(), pm}
+	return &Impl{env.New(viper.GetString("domain_name")), pm}
 }

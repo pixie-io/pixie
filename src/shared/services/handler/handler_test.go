@@ -17,7 +17,7 @@ func TestHandler_ServeHTTP(t *testing.T) {
 	testHandler := func(e env.Env, w http.ResponseWriter, r *http.Request) error {
 		return nil
 	}
-	h := handler.New(env.New(), testHandler)
+	h := handler.New(env.New("test"), testHandler)
 
 	req, err := http.NewRequest("GET", "http://test.com/", nil)
 	require.NoError(t, err)
@@ -31,7 +31,7 @@ func TestHandler_ServeHTTP_StatusError(t *testing.T) {
 	testHandler := func(e env.Env, w http.ResponseWriter, r *http.Request) error {
 		return &handler.StatusError{http.StatusUnauthorized, errors.New("badness")}
 	}
-	h := handler.New(env.New(), testHandler)
+	h := handler.New(env.New("test"), testHandler)
 
 	req, err := http.NewRequest("GET", "http://test.com/", nil)
 	require.NoError(t, err)
@@ -46,7 +46,7 @@ func TestHandler_ServeHTTP_RegularError(t *testing.T) {
 	testHandler := func(e env.Env, w http.ResponseWriter, r *http.Request) error {
 		return errors.New("badness")
 	}
-	h := handler.New(env.New(), testHandler)
+	h := handler.New(env.New("test"), testHandler)
 
 	req, err := http.NewRequest("GET", "http://test.com/", nil)
 	require.NoError(t, err)

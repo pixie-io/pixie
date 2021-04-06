@@ -13,6 +13,6 @@ type Impl struct {
 }
 
 // New creates a new api env.
-func New() (*Impl, error) {
-	return &Impl{env.New()}, nil
+func New(audience string) (*Impl, error) {
+	return &Impl{env.New(audience)}, nil
 }

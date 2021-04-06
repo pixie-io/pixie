@@ -36,6 +36,8 @@ spec:
             name: pl-tls-config
         - configMapRef:
             name: pl-artifact-config
+        - configMapRef:
+            name: pl-domain-config
         env:
         - name: PL_JWT_SIGNING_KEY
           valueFrom:

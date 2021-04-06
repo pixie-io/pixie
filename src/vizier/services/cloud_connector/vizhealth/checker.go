@@ -90,7 +90,7 @@ func (c *Checker) run() {
 		default:
 		}
 
-		claims := utils2.GenerateJWTForService("cloud_conn")
+		claims := utils2.GenerateJWTForService("cloud_conn", "vizier")
 		token, _ := utils2.SignJWTClaims(claims, c.signingKey)
 
 		ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",

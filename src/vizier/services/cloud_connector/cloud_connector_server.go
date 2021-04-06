@@ -125,7 +125,7 @@ func main() {
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
 
-	e := env.New()
+	e := env.New("vizier")
 	s := server.NewPLServer(e,
 		httpmiddleware.WithBearerAuthMiddleware(e, mux))
 

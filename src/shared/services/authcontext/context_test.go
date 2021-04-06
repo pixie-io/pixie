@@ -17,7 +17,7 @@ func TestSessionCtx_UseJWTAuth(t *testing.T) {
 	token := testingutils.GenerateTestJWTToken(t, "signing_key")
 
 	ctx := authcontext.New()
-	err := ctx.UseJWTAuth("signing_key", token)
+	err := ctx.UseJWTAuth("signing_key", token, "withpixie.ai")
 	require.NoError(t, err)
 
 	assert.Equal(t, testingutils.TestUserID, ctx.Claims.Subject)
@@ -62,19 +62,19 @@ func TestSessionCtx_ValidClaims(t *testing.T) {
 		{
 			name:          "valid cluster claims",
 			isValid:       true,
-			claims:        utils.GenerateJWTForCluster("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+			claims:        utils.GenerateJWTForCluster("6ba7b810-9dad-11d1-80b4-00c04fd430c8", "withpixie.ai"),
 			expiryFromNow: time.Minute * 60,
 		},
 		{
 			name:          "invalid cluster ID",
 			isValid:       false,
-			claims:        utils.GenerateJWTForCluster("some text"),
+			claims:        utils.GenerateJWTForCluster("some text", "withpixie.ai"),
 			expiryFromNow: time.Minute * 60,
 		},
 		{
 			name:          "expired cluster claims",
 			isValid:       false,
-			claims:        utils.GenerateJWTForCluster("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+			claims:        utils.GenerateJWTForCluster("6ba7b810-9dad-11d1-80b4-00c04fd430c8", "withpixie.ai"),
 			expiryFromNow: -1 * time.Second,
 		},
 		{
@@ -82,6 +82,7 @@ func TestSessionCtx_ValidClaims(t *testing.T) {
 			isValid: false,
 			claims: &pb.JWTClaims{
 				Subject:   "test subject",
+				Audience:  "withpixie.ai",
 				IssuedAt:  time.Now().Unix(),
 				ExpiresAt: time.Now().Add(time.Minute * 10).Unix(),
 			},
@@ -94,7 +95,7 @@ func TestSessionCtx_ValidClaims(t *testing.T) {
 			ctx := authcontext.New()
 			if tc.claims != nil {
 				token := testingutils.SignPBClaims(t, tc.claims, "signing_key")
-				err := ctx.UseJWTAuth("signing_key", token)
+				err := ctx.UseJWTAuth("signing_key", token, "withpixie.ai")
 				require.NoError(t, err)
 
 				ctx.Claims.ExpiresAt = time.Now().Add(tc.expiryFromNow).Unix()

@@ -71,7 +71,7 @@ func CreateTestAPIEnv(t *testing.T) (apienv.APIEnv, *MockAPIClients, func()) {
 	ctrl := gomock.NewController(t)
 	viper.Set("session_key", "fake-session-key")
 	viper.Set("jwt_signing_key", "jwt-key")
-	viper.Set("domain_name", "example.com")
+	viper.Set("domain_name", "withpixie.ai")
 
 	mockAuthClient := mock_auth.NewMockAuthServiceClient(ctrl)
 	mockProfileClient := mock_profilepb.NewMockProfileServiceClient(ctrl)

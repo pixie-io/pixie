@@ -95,6 +95,8 @@ func TestServer_LoginNewUser(t *testing.T) {
 		Return(nil, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
@@ -136,6 +138,8 @@ func TestServer_LoginNewUser_NoAutoCreate(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
 	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
@@ -165,6 +169,8 @@ func TestServer_Login_OrgNameSpecified(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
 	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
@@ -201,6 +207,8 @@ func TestServer_Login_MissingOrgError(t *testing.T) {
 		Return(nil, errors.New("organization does not exist"))
 
 	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
@@ -230,6 +238,8 @@ func TestServer_LoginNewUser_InvalidEmail(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
 	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
@@ -259,6 +269,8 @@ func TestServer_LoginNewUser_SupportUserNoOrg(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
 	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
@@ -302,6 +314,8 @@ func TestServer_LoginNewUser_SupportUser(t *testing.T) {
 		Return(fakeOrgInfo, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
@@ -346,6 +360,8 @@ func TestServer_LoginNewUser_InvalidOrg(t *testing.T) {
 		Return(nil, errors.New("organization does not exist"))
 
 	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
@@ -395,6 +411,8 @@ func TestServer_LoginNewUser_CreateUserFailed(t *testing.T) {
 		Return(nil, errors.New("Could not create user"))
 
 	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
@@ -415,6 +433,8 @@ func TestServer_Login_BadToken(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
 	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
@@ -468,6 +488,8 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 		Return(nil, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
@@ -551,6 +573,8 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 		Return(nil, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
@@ -588,6 +612,7 @@ func TestServer_GetAugmentedToken(t *testing.T) {
 		Return(mockOrgInfo, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
+
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
@@ -646,7 +671,7 @@ func TestServer_GetAugmentedToken_Service(t *testing.T) {
 	jwtclaims := jwt.MapClaims{}
 	_, err = jwt.ParseWithClaims(token, jwtclaims, func(token *jwt.Token) (interface{}, error) {
 		return []byte("jwtkey"), nil
-	}, jwt.WithoutAudienceValidation())
+	}, jwt.WithAudience("withpixie.ai"))
 	require.NoError(t, err)
 	assert.Equal(t, "vzmgr", jwtclaims["ServiceID"])
 }
@@ -662,6 +687,8 @@ func TestServer_GetAugmentedToken_NoOrg(t *testing.T) {
 		Return(nil, status.Error(codes.NotFound, "no such org"))
 
 	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
@@ -701,6 +728,8 @@ func TestServer_GetAugmentedToken_NoUser(t *testing.T) {
 		Return(nil, status.Error(codes.NotFound, "no such user"))
 
 	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
@@ -744,6 +773,8 @@ func TestServer_GetAugmentedToken_MismatchedOrg(t *testing.T) {
 		Return(mockOrgInfo, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
@@ -773,6 +804,8 @@ func TestServer_GetAugmentedTokenBadSigningKey(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
 	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
@@ -800,6 +833,8 @@ func TestServer_GetAugmentedTokenBadToken(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
 	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
@@ -833,6 +868,8 @@ func TestServer_GetAugmentedTokenSupportAccount(t *testing.T) {
 		Return(mockOrgInfo, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
@@ -876,6 +913,8 @@ func TestServer_GetAugmentedTokenFromAPIKey(t *testing.T) {
 		Return(mockUserInfo, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, apiKeyServer)
@@ -956,6 +995,8 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 	}).Return(pbutils.ProtoFromUUIDStrOrNil(userID), nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
@@ -1041,6 +1082,8 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 		}, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
@@ -1104,6 +1147,8 @@ func TestServer_Signup_CreateUserOrgFailed(t *testing.T) {
 		Return(nil, errors.New("Could not create user org"))
 
 	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
@@ -1137,6 +1182,8 @@ func TestServer_Signup_UserAlreadyExists(t *testing.T) {
 		Return(nil, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)
 	s, err := controllers.NewServer(env, a, nil)
@@ -1151,7 +1198,7 @@ func verifyToken(t *testing.T, token, expectedUserID string, expectedOrgID strin
 	claims := jwt.MapClaims{}
 	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(key), nil
-	}, jwt.WithoutAudienceValidation())
+	}, jwt.WithAudience("withpixie.ai"))
 	require.NoError(t, err)
 	assert.Equal(t, expectedUserID, claims["UserID"])
 	assert.Equal(t, expectedOrgID, claims["OrgID"])

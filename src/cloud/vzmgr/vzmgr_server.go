@@ -31,6 +31,7 @@ import (
 func init() {
 	pflag.String("database_key", "", "The encryption key to use for the database")
 	pflag.String("dnsmgr_service", "dnsmgr-service.plc.svc.cluster.local:51900", "The dns manager service url (load balancer/list is ok)")
+	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
 }
 
 // NewDNSMgrServiceClient creates a new profile RPC client stub.
@@ -74,7 +75,7 @@ func main() {
 	mux.Handle("/debug/", http.DefaultServeMux)
 	healthz.RegisterDefaultChecks(mux)
 
-	s := server.NewPLServer(env.New(), mux)
+	s := server.NewPLServer(env.New(viper.GetString("domain_name")), mux)
 
 	dnsMgrClient, err := NewDNSMgrServiceClient()
 	if err != nil {

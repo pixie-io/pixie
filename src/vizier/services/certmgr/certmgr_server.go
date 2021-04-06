@@ -82,7 +82,7 @@ func main() {
 		log.WithError(err).Fatal("Timed out: failed to connect to K8s API.")
 	}
 
-	env := certmgrenv.New()
+	env := certmgrenv.New("vizier")
 	svr := controller.NewServer(env, clusterID, nc, k8sAPI)
 	go svr.CertRequester()
 	defer svr.StopCertRequester()

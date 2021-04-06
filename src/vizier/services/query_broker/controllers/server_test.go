@@ -326,7 +326,7 @@ func TestCheckHealth_Success(t *testing.T) {
 	}
 
 	// Set up server.
-	env, err := querybrokerenv.New("qb_address", "qb_hostname")
+	env, err := querybrokerenv.New("qb_address", "qb_hostname", "test")
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
@@ -401,7 +401,7 @@ func TestCheckHealth_CompilationError(t *testing.T) {
 	}
 
 	// Set up server.
-	env, err := querybrokerenv.New("qb_address", "qb_hostname")
+	env, err := querybrokerenv.New("qb_address", "qb_hostname", "test")
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
@@ -441,7 +441,7 @@ func TestHealthCheck_ExecutionError(t *testing.T) {
 	}
 
 	// Set up server.
-	env, err := querybrokerenv.New("qb_address", "qb_hostname")
+	env, err := querybrokerenv.New("qb_address", "qb_hostname", "test")
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
@@ -500,7 +500,7 @@ func TestExecuteScript_Success(t *testing.T) {
 	}
 
 	// Set up server.
-	env, err := querybrokerenv.New("qb_address", "qb_hostname")
+	env, err := querybrokerenv.New("qb_address", "qb_hostname", "test")
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
@@ -616,7 +616,7 @@ func TestExecuteScript_PlannerErrorResult(t *testing.T) {
 	}
 
 	// Set up server.
-	env, err := querybrokerenv.New("qb_address", "qb_hostname")
+	env, err := querybrokerenv.New("qb_address", "qb_hostname", "test")
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
@@ -698,7 +698,7 @@ func TestExecuteScript_ErrorInStatusResult(t *testing.T) {
 	}
 
 	// Set up server.
-	env, err := querybrokerenv.New("qb_address", "qb_hostname")
+	env, err := querybrokerenv.New("qb_address", "qb_hostname", "test")
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
@@ -761,7 +761,7 @@ func TestTransferResultChunk_AgentStreamComplete(t *testing.T) {
 	rf := fakeResultForwarder{}
 
 	// Set up server.
-	env, err := querybrokerenv.New("qb_address", "qb_hostname")
+	env, err := querybrokerenv.New("qb_address", "qb_hostname", "test")
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
@@ -855,7 +855,7 @@ func TestTransferResultChunk_AgentClosedPrematurely(t *testing.T) {
 	rf := fakeResultForwarder{}
 
 	// Set up server.
-	env, err := querybrokerenv.New("qb_address", "qb_hostname")
+	env, err := querybrokerenv.New("qb_address", "qb_hostname", "test")
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
@@ -934,7 +934,7 @@ func TestTransferResultChunk_AgentStreamFailed(t *testing.T) {
 	rf := fakeResultForwarder{}
 
 	// Set up server.
-	env, err := querybrokerenv.New("qb_address", "qb_hostname")
+	env, err := querybrokerenv.New("qb_address", "qb_hostname", "test")
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
@@ -1010,7 +1010,7 @@ func TestTransferResultChunk_ClientStreamCancelled(t *testing.T) {
 	}
 
 	// Set up server.
-	env, err := querybrokerenv.New("qb_address", "qb_hostname")
+	env, err := querybrokerenv.New("qb_address", "qb_hostname", "test")
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}

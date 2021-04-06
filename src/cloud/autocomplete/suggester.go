@@ -56,7 +56,7 @@ var elasticStateToProtoMap = map[md.ESMDEntityState]cloudapipb.AutocompleteEntit
 }
 
 func getServiceCredentials(signingKey string) (string, error) {
-	claims := utils.GenerateJWTForService("API Service")
+	claims := utils.GenerateJWTForService("API Service", viper.GetString("domain_name"))
 	return utils.SignJWTClaims(claims, signingKey)
 }
 

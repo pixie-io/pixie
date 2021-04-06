@@ -55,7 +55,7 @@ func New(ac authpb.AuthServiceClient, pc profilepb.ProfileServiceClient,
 	}
 
 	sessionStore := sessions.NewCookieStore([]byte(sessionKey))
-	return &Impl{env.New(), sessionStore, ac, pc, vk, ak, vc, at, oa}, nil
+	return &Impl{env.New(viper.GetString("domain_name")), sessionStore, ac, pc, vk, ak, vc, at, oa}, nil
 }
 
 // CookieStore returns the CookieStore from the environment.

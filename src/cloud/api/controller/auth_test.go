@@ -13,6 +13,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/golang/mock/gomock"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
@@ -29,6 +30,7 @@ import (
 )
 
 func TestGetServiceCredentials(t *testing.T) {
+	viper.Set("domain_name", "withpixie.ai")
 	tokenString, err := controller.GetServiceCredentials("jwt-key")
 	require.NoError(t, err)
 	token, err := jwt.ParseWithClaims(tokenString, &jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
@@ -36,10 +38,10 @@ func TestGetServiceCredentials(t *testing.T) {
 			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 		}
 		return []byte("jwt-key"), nil
-	}, jwt.WithoutAudienceValidation())
+	}, jwt.WithAudience("withpixie.ai"))
 	require.NoError(t, err)
 	claims := token.Claims.(*jwt.MapClaims)
-	assert.Nil(t, claims.Valid(jwt.NewValidationHelper(jwt.WithoutAudienceValidation())))
+	assert.Nil(t, claims.Valid(jwt.NewValidationHelper(jwt.WithAudience("withpixie.ai"))))
 }
 
 func TestAuthSignupHandler(t *testing.T) {
@@ -287,7 +289,7 @@ func TestAuthLogoutHandler(t *testing.T) {
 	// The cookies are encrypted so it's hard to validate the values of the actual cookie.
 	// This is a *not* great test to make sure certain properties are set, so the browser correctly marks
 	// the cookie as dead.
-	assert.Contains(t, rawCookies, "Domain=example.com")
+	assert.Contains(t, rawCookies, "Domain=withpixie.ai")
 	assert.Contains(t, rawCookies, "Path=/")
 	assert.Contains(t, rawCookies, "Max-Age=0")
 	assert.Contains(t, rawCookies, "HttpOnly")

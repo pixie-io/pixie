@@ -32,6 +32,8 @@ spec:
             name: pl-tls-config
         - configMapRef:
             name: pl-scriptmgr-config
+        - configMapRef:
+            name: pl-domain-config
         env:
         - name: PL_JWT_SIGNING_KEY
           valueFrom:

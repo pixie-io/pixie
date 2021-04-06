@@ -46,7 +46,7 @@ func WithBearerAuthMiddleware(env env.Env, next http.Handler) http.Handler {
 		}
 
 		aCtx := authcontext.New()
-		err := aCtx.UseJWTAuth(env.JWTSigningKey(), token)
+		err := aCtx.UseJWTAuth(env.JWTSigningKey(), token, env.Audience())
 		if err != nil {
 			http.Error(w, "Failed to parse token", http.StatusUnauthorized)
 			return

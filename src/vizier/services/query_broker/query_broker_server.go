@@ -76,7 +76,7 @@ func main() {
 	if podAddr == "" {
 		log.Fatal("Expected to receive pod IP address.")
 	}
-	env, err := querybrokerenv.New(fmt.Sprintf("%s:%d", podAddr, servicePort), querybrokerHostname)
+	env, err := querybrokerenv.New(fmt.Sprintf("%s:%d", podAddr, servicePort), querybrokerHostname, "vizier")
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create api environment.")
 	}

@@ -29,7 +29,7 @@ import (
 
 // GetServiceCredentials returns JWT credentials for inter-service requests.
 func GetServiceCredentials(signingKey string) (string, error) {
-	claims := utils.GenerateJWTForService("AuthService")
+	claims := utils.GenerateJWTForService("AuthService", viper.GetString("domain_name"))
 	return utils.SignJWTClaims(claims, signingKey)
 }
 

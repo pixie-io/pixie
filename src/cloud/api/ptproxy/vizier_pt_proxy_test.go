@@ -49,7 +49,7 @@ type testState struct {
 
 func createTestState(t *testing.T) (*testState, func(t *testing.T)) {
 	lis := bufconn.Listen(bufSize)
-	env := env2.New()
+	env := env2.New("withpixie.ai")
 	s := server.CreateGRPCServer(env, &server.GRPCServerOptions{})
 
 	nc, natsCleanup := testingutils.MustStartTestNATS(t)

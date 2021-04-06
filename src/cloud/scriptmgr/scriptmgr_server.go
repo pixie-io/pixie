@@ -35,7 +35,7 @@ func main() {
 	mux.Handle("/debug/", http.DefaultServeMux)
 	healthz.RegisterDefaultChecks(mux)
 
-	s := server.NewPLServer(env.New(), mux)
+	s := server.NewPLServer(env.New(viper.GetString("domain_name")), mux)
 
 	client, err := storage.NewClient(context.Background())
 	if err != nil {

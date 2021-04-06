@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -164,7 +165,7 @@ func (s *Server) loginSupportUser(ctx context.Context, in *pb.LoginRequest, user
 	userID := uuid.FromStringOrNil("") // No account actually exists, so this should be a nil UUID.
 	orgID := pbutils.UUIDFromProtoOrNil(orgInfo.ID)
 	expiresAt := time.Now().Add(RefreshTokenValidDuration)
-	claims := utils.GenerateJWTForUser(userID.String(), orgID.String(), userInfo.Email, expiresAt)
+	claims := utils.GenerateJWTForUser(userID.String(), orgID.String(), userInfo.Email, expiresAt, viper.GetString("domain_name"))
 	token, err := utils.SignJWTClaims(claims, s.env.JWTSigningKey())
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to generate token")
@@ -309,7 +310,7 @@ func (s *Server) GetAugmentedTokenForAPIKey(ctx context.Context, in *pb.GetAugme
 	}
 
 	// Generate service token, so that we can make a call to the Profile service.
-	svcJWT := utils.GenerateJWTForService("AuthService")
+	svcJWT := utils.GenerateJWTForService("AuthService", viper.GetString("domain_name"))
 	svcClaims, err := utils.SignJWTClaims(svcJWT, s.env.JWTSigningKey())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to generate auth token")
@@ -325,7 +326,7 @@ func (s *Server) GetAugmentedTokenForAPIKey(ctx context.Context, in *pb.GetAugme
 	}
 
 	// Create JWT for user/org.
-	claims := utils.GenerateJWTForUser(userID.String(), orgID.String(), user.Email, time.Now().Add(AugmentedTokenValidDuration))
+	claims := utils.GenerateJWTForUser(userID.String(), orgID.String(), user.Email, time.Now().Add(AugmentedTokenValidDuration), viper.GetString("domain_name"))
 	token, err := utils.SignJWTClaims(claims, s.env.JWTSigningKey())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to generate auth token")
@@ -345,7 +346,7 @@ func (s *Server) GetAugmentedToken(
 	// Check the incoming token and make sure it's valid.
 	aCtx := authcontext.New()
 
-	if err := aCtx.UseJWTAuth(s.env.JWTSigningKey(), in.Token); err != nil {
+	if err := aCtx.UseJWTAuth(s.env.JWTSigningKey(), in.Token, viper.GetString("domain_name")); err != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "Invalid auth token")
 	}
 
@@ -405,7 +406,7 @@ func (s *Server) GetAugmentedToken(
 
 func generateJWTTokenForUser(userInfo *UserInfo, signingKey string) (string, time.Time, error) {
 	expiresAt := time.Now().Add(RefreshTokenValidDuration)
-	claims := utils.GenerateJWTForUser(userInfo.PLUserID, userInfo.PLOrgID, userInfo.Email, expiresAt)
+	claims := utils.GenerateJWTForUser(userInfo.PLUserID, userInfo.PLOrgID, userInfo.Email, expiresAt, viper.GetString("domain_name"))
 	token, err := utils.SignJWTClaims(claims, signingKey)
 
 	return token, expiresAt, err

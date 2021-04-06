@@ -124,7 +124,7 @@ type updateOrError struct {
 func (a *Agents) streamUpdates() (chan updateOrError, func(), error) {
 	log.Trace("Streaming agent state.")
 
-	claims := utils2.GenerateJWTForService("metadata_tracker")
+	claims := utils2.GenerateJWTForService("metadata_tracker", "vizier")
 	token, _ := utils2.SignJWTClaims(claims, a.signingKey)
 
 	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",

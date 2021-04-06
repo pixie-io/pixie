@@ -6,6 +6,7 @@ import (
 
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 
 	controllers "pixielabs.ai/pixielabs/src/cloud/project_manager/controller"
 	"pixielabs.ai/pixielabs/src/cloud/project_manager/datastore"
@@ -43,7 +44,7 @@ func main() {
 	}
 
 	svr := controllers.NewServer(datastore)
-	s := server.NewPLServer(env.New(), mux)
+	s := server.NewPLServer(env.New(viper.GetString("domain_name")), mux)
 	projectmanagerpb.RegisterProjectManagerServiceServer(s.GRPCServer(), svr)
 
 	s.Start()

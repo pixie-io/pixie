@@ -34,6 +34,7 @@ func init() {
 	pflag.String("es_user", "elastic", "The user for elastic")
 	pflag.String("es_passwd", "elastic", "The password for elastic")
 	pflag.String("vzmgr_service", "kubernetes:///vzmgr-service.plc:51800", "The profile service url (load balancer/list is ok)")
+	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
 }
 
 func newVZMgrClient() (vzmgrpb.VZMgrServiceClient, error) {
@@ -122,7 +123,7 @@ func main() {
 	mux.Handle("/debug/", http.DefaultServeMux)
 	healthz.RegisterDefaultChecks(mux)
 
-	s := server.NewPLServer(env.New(), mux)
+	s := server.NewPLServer(env.New(viper.GetString("domain_name")), mux)
 	nc, sc, err := createStanNatsConnection(uuid.Must(uuid.NewV4()).String())
 	if err != nil {
 		log.Fatal("Could not connect to NATS/STAN")

@@ -32,6 +32,8 @@ spec:
             name: pl-db-config
         - configMapRef:
             name: pl-tls-config
+        - configMapRef:
+            name: pl-domain-config
         env:
         - name: PL_SERVER_TLS_CERT
           value: /proxycerts/tls.crt

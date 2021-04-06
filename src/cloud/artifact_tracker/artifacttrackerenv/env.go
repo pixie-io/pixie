@@ -1,6 +1,10 @@
 package artifacttrackerenv
 
-import "pixielabs.ai/pixielabs/src/shared/services/env"
+import (
+	"github.com/spf13/viper"
+
+	"pixielabs.ai/pixielabs/src/shared/services/env"
+)
 
 // ArtifactTrackerEnv is the environment used for the artifacttracker service.
 type ArtifactTrackerEnv interface {
@@ -14,5 +18,5 @@ type Impl struct {
 
 // New creates a new artifacttracker env.
 func New() *Impl {
-	return &Impl{env.New()}
+	return &Impl{env.New(viper.GetString("domain_name"))}
 }

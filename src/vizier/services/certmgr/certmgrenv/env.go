@@ -13,6 +13,6 @@ type Impl struct {
 }
 
 // New creates a new certmgr env.
-func New() *Impl {
-	return &Impl{env.New()}
+func New(audience string) *Impl {
+	return &Impl{env.New(audience)}
 }

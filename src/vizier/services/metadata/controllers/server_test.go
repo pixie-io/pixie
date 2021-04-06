@@ -140,7 +140,7 @@ func TestGetAgentInfo(t *testing.T) {
 		Return(agents, nil)
 
 	// Set up server.
-	env, err := metadataenv.New()
+	env, err := metadataenv.New("vizier")
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
@@ -186,7 +186,7 @@ func TestGetAgentInfoGetActiveAgentsFailed(t *testing.T) {
 		Return(nil, errors.New("could not get active agents"))
 
 	// Set up server.
-	env, err := metadataenv.New()
+	env, err := metadataenv.New("vizier")
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
@@ -215,7 +215,7 @@ func TestGetSchemas(t *testing.T) {
 		Return(&storepb.ComputedSchema{Tables: tableInfos}, nil)
 
 	// Set up server.
-	env, err := metadataenv.New()
+	env, err := metadataenv.New("vizier")
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
@@ -323,7 +323,7 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 			return nil
 		})
 	// Set up server.
-	env, err := metadataenv.New()
+	env, err := metadataenv.New("vizier")
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
@@ -448,7 +448,7 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 		})
 
 	// Set up server.
-	env, err := metadataenv.New()
+	env, err := metadataenv.New("vizier")
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
@@ -633,7 +633,7 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 			}
 
 			// Set up server.
-			env, err := metadataenv.New()
+			env, err := metadataenv.New("vizier")
 			if err != nil {
 				t.Fatal("Failed to create api environment.")
 			}
@@ -691,7 +691,7 @@ func Test_Server_RemoveTracepoint(t *testing.T) {
 		Return(nil)
 
 	// Set up server.
-	env, err := metadataenv.New()
+	env, err := metadataenv.New("vizier")
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
@@ -874,14 +874,14 @@ func TestGetAgentUpdates(t *testing.T) {
 		AnyTimes()
 
 	// Set up server.
-	mdEnv, err := metadataenv.New()
+	mdEnv, err := metadataenv.New("test")
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
 
 	srv := controllers.NewServer(mdEnv, mockAgtMgr, nil)
 
-	env := env2.New()
+	env := env2.New("withpixie.ai")
 	s := server.CreateGRPCServer(env, &server.GRPCServerOptions{})
 	metadatapb.RegisterMetadataServiceServer(s, srv)
 	lis := bufconn.Listen(1024 * 1024)
@@ -1035,7 +1035,7 @@ func Test_Server_UpdateConfig(t *testing.T) {
 		Return(nil)
 
 	// Set up server.
-	env, err := metadataenv.New()
+	env, err := metadataenv.New("vizier")
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
