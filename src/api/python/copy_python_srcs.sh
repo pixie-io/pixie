@@ -40,7 +40,6 @@ function prepare_python_repo() {
 
   # Add README and setup.py
   cp "${PYTHONPKG}/README.md" "${TMPDIR}"
-  cp "${PYTHONPKG}/LICENSE.md" "${TMPDIR}"
   cp "${PYTHONPKG}/setup.py" "${TMPDIR}"
   cp "${PYTHONPKG}/requirements.txt" "${TMPDIR}"
 
