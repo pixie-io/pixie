@@ -230,17 +230,11 @@ void ConnTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
       return;
   }
 
-  // TODO(oazizi): Once we have more confidence that the ECHECK below doesn't fire, restructure this
-  // code so it only calls InferHTTP2Role when the current role is Unknown.
-  EndpointRole role = InferHTTP2Role(write_event, hdr);
-  bool role_changed = SetRole(role, "inferred from http2 header");
-  if (role_changed && ShouldExportToConnStats()) {
-    ExportInitialConnStats();
-  } else {
-    if (!(role == kRoleUnknown || role == traffic_class_.role)) {
-      LOG_FIRST_N(ERROR, 10) << absl::Substitute(
-          "The role of an active ConnTracker was changed: $0 role: $1 -> $2", ToString(conn_id_),
-          magic_enum::enum_name(traffic_class_.role), magic_enum::enum_name(role));
+  if (traffic_class_.role == kRoleUnknown) {
+    EndpointRole role = InferHTTP2Role(write_event, hdr);
+    bool role_changed = SetRole(role, "Inferred from http2 header");
+    if (role_changed && ShouldExportToConnStats()) {
+      ExportInitialConnStats();
     }
   }
 
