@@ -62,16 +62,14 @@ spec:
           value: work.$(PL_DOMAIN_NAME)
         - name: PL_OAUTH_DOMAIN
           value: $(PL_WORK_DOMAIN)/oauth
-        - name: FRONTEND_URL
-          value: https://$(PL_OAUTH_DOMAIN)
         - name: HYDRA_URL
           value: https://$(PL_OAUTH_DOMAIN)/hydra
         - name: URLS_CONSENT
-          value: $(FRONTEND_URL)/auth/hydra/consent
+          value: https://$(PL_OAUTH_DOMAIN)/auth/hydra/consent
         - name: URLS_LOGIN
           value: https://$(PL_WORK_DOMAIN)/api/auth/oauth/login
         - name: URLS_LOGOUT
-          value: $(FRONTEND_URL)/logout
+          value: https://$(PL_OAUTH_DOMAIN)/logout
         - name: URLS_SELF_PUBLIC
           value: $(HYDRA_URL)
         - name: URLS_SELF_ISSUER

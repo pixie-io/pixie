@@ -49,13 +49,13 @@ spec:
         - name: PL_OAUTH_DOMAIN
           value: $(PL_WORK_DOMAIN)/oauth
         - name: FRONTEND_URL
-          value: https://$(PL_OAUTH_DOMAIN)
+          value: https://$(PL_WORK_DOMAIN)/auth/ossauth
         - name: ADMIN_URL
           value: http://kratos:4434
         - name: AUTH_LOGIN_URL
-          value: $(FRONTEND_URL)/auth/login
+          value: https://$(PL_WORK_DOMAIN)/auth/password-login
         - name: SERVE_PUBLIC_BASE_URL
-          value: $(FRONTEND_URL)/kratos/
+          value: https://$(PL_OAUTH_DOMAIN)/kratos/
         - name: SERVE_ADMIN_BASE_URL
           value: $(ADMIN_URL)/
         - name: SELFSERVICE_DEFAULT_BROWSER_RETURN_URL
@@ -74,8 +74,6 @@ spec:
           value: $(AUTH_LOGIN_URL)
         - name: SELFSERVICE_FLOWS_LOGIN_UI_URL
           value: $(AUTH_LOGIN_URL)
-        - name: SELFSERVICE_FLOWS_REGISTRATION_UI_URL
-          value: $(FRONTEND_URL)/auth/registration
         image: oryd/kratos:v0.5.5
         imagePullPolicy: ""
         name: kratos

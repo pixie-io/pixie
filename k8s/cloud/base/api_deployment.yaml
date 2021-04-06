@@ -91,6 +91,10 @@ spec:
               key: elastic
         - name: PL_ELASTIC_CA_CERT
           value: /elastic-certs-pub/tls.crt
+        - name: PL_WORK_DOMAIN
+          value: work.$(PL_DOMAIN_NAME)
+        - name: PL_KRATOS_BROWSER_URL
+          value: https://$(PL_WORK_DOMAIN)/oauth/kratos
         volumeMounts:
         - name: certs
           mountPath: /certs
