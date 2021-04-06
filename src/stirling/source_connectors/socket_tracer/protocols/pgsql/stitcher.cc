@@ -230,20 +230,12 @@ Status HandleBind(const RegularMessage& bind_msg, MsgDeqIter* resp_iter, const M
 
   *resp_iter = iter + 1;
 
-  absl::flat_hash_map<std::string, std::string> replacements;
-
-  for (size_t i = 0; i < bind_req.params.size(); ++i) {
-    // Postgres parameter index is 1-based.
-    replacements[absl::StrCat("$", i + 1)] = bind_req.params[i].Value();
-  }
-
-  req_resp->req = std::move(bind_req);
   req_resp->resp.timestamp_ns = iter->timestamp_ns;
 
   if (iter->tag == Tag::kBindComplete) {
     // Unnamed statement.
     if (bind_req.src_prepared_stat_name.empty()) {
-      state->bound_statement = absl::StrReplaceAll(state->unnamed_statement, replacements);
+      state->bound_statement = state->unnamed_statement;
     } else {
       if (!state->prepared_statements.contains(bind_req.src_prepared_stat_name)) {
         // TODO(yzhao): The code should handle the case where the previous Parse message was not
@@ -251,11 +243,13 @@ Status HandleBind(const RegularMessage& bind_msg, MsgDeqIter* resp_iter, const M
         return error::InvalidArgument("Statement [name=$0] is not recorded",
                                       bind_req.src_prepared_stat_name);
       }
-      state->bound_statement = absl::StrReplaceAll(
-          state->prepared_statements[bind_req.src_prepared_stat_name], replacements);
+      state->bound_statement = state->prepared_statements[bind_req.src_prepared_stat_name];
     }
+    state->bound_params = bind_req.params;
     req_resp->resp.msg = CmdCmpl{.timestamp_ns = iter->timestamp_ns, .cmd_tag = "BIND COMPLETE"};
   }
+
+  req_resp->req = std::move(bind_req);
 
   if (iter->tag == Tag::kErrResp) {
     ErrResp err_resp;
@@ -346,6 +340,7 @@ Status HandleExecute(const RegularMessage& msg, MsgDeqIter* resps_begin,
 
   req_resp->req.timestamp_ns = msg.timestamp_ns;
   req_resp->req.query = state->bound_statement;
+  req_resp->req.params = state->bound_params;
 
   PL_RETURN_IF_ERROR(FillQueryResp(resps_begin, resps_end, &req_resp->resp));
 

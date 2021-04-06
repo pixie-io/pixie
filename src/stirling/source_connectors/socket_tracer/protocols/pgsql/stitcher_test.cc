@@ -122,10 +122,10 @@ TEST_F(StitchFramesTest, VerifySingleOutputMessage) {
   EXPECT_THAT(
       req_msgs,
       ElementsAre(
-          "SELECT * FROM person WHERE first_name=$1", "DESCRIBE [type=kStatement name=]",
+          "PARSE [SELECT * FROM person WHERE first_name=$1]", "DESCRIBE [type=kStatement name=]",
           "BIND [portal= statement= parameters=[[formt=kText value=Jason]] result_format_codes=[]]",
-          "EXECUTE [SELECT * FROM person WHERE first_name=Jason]", "QUERY [select * from table;]",
-          "QUERY [drop table foo;]", "QUERY [ROLLBACK]"));
+          "EXECUTE [query=[SELECT * FROM person WHERE first_name=$1], params=[Jason]]",
+          "QUERY [select * from table;]", "QUERY [drop table foo;]", "QUERY [ROLLBACK]"));
 
   EXPECT_THAT(resp_tses, ElementsAre(110, 111, 113, 115, 118, 119, 120));
   EXPECT_THAT(resp_msgs,
@@ -168,6 +168,7 @@ struct HandleBindTestCase {
   std::string_view req_data;
   std::string_view resp_data;
   std::string_view expected_bound_statement;
+  std::vector<std::string> expected_bound_params;
 };
 
 std::ostream& operator<<(std::ostream& os, const HandleBindTestCase& test_case) {
@@ -208,8 +209,9 @@ TEST_P(HandleBindTest, CheckBoundStatement) {
 
 INSTANTIATE_TEST_SUITE_P(
     UnnamedAndNamedStatements, HandleBindTest,
-    ::testing::Values(HandleBindTestCase{kBindUnnamedData, kBindCmplData, "select foo, bar from t"},
-                      HandleBindTestCase{kBindNamedData, kBindCmplData, "select foo, bar from t"}));
+    ::testing::Values(
+        HandleBindTestCase{kBindUnnamedData, kBindCmplData, "select $1, $2 from t", {"foo", "bar"}},
+        HandleBindTestCase{kBindNamedData, kBindCmplData, "select $1, $2 from t", {"foo", "bar"}}));
 
 }  // namespace pgsql
 }  // namespace protocols

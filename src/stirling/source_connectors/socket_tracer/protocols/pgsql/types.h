@@ -191,7 +191,7 @@ struct Parse {
   std::string_view query;
   std::vector<int32_t> param_type_oids;
 
-  std::string ToString() const { return std::string(query); }
+  std::string ToString() const { return absl::Substitute("PARSE [$0]", query); }
 };
 
 struct RowDesc {
@@ -433,8 +433,16 @@ struct Exec {
   uint64_t timestamp_ns = 0;
 
   std::string_view query;
+  std::vector<Param> params;
 
-  std::string ToString() const { return absl::Substitute("EXECUTE [$0]", query); }
+  std::string ToString() const {
+    std::vector<std::string> param_strs;
+    for (const auto& p : params) {
+      param_strs.emplace_back(p.Value());
+    }
+    return absl::Substitute("EXECUTE [query=[$0], params=[$1]]", query,
+                            absl::StrJoin(param_strs, ", "));
+  }
 };
 
 struct ExecReqResp {
@@ -453,9 +461,13 @@ struct State {
   // One postgres session can only have at most one unnamed statement.
   std::string unnamed_statement;
 
-  // The resolved query statement of the current extended query session.
+  // The last bound statement of the extended query session, without the parameters substituted. See
+  // link for more info on extended query sessions:
   // https://www.postgresql.org/docs/10/protocol-flow.html#PROTOCOL-FLOW-EXT-QUERY
   std::string bound_statement;
+  // The last set of parameters bound to bound_statement. Everytime a BIND command happens these are
+  // invalidated.
+  std::vector<Param> bound_params;
 };
 
 struct StateWrapper {

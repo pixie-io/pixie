@@ -136,37 +136,38 @@ TEST_F(PostgreSQLTraceGoSQLxTest, GolangSqlxDemo) {
 
   EXPECT_THAT(
       RecordBatchToPairs(record_batch, indices),
-      ElementsAre(Pair("QUERY [CREATE TABLE IF NOT EXISTS person (\n"
-                       "    first_name text,\n"
-                       "    last_name text,\n"
-                       "    email text\n)]",
-                       "CREATE TABLE"),
-                  Pair("QUERY [BEGIN READ WRITE]", "BEGIN"),
-                  Pair("INSERT INTO person (first_name, last_name, email) VALUES ($1, $2, $3)",
-                       "PARSE COMPLETE"),
-                  Pair("DESCRIBE [type=kStatement name=]", "ROW DESCRIPTION "),
-                  Pair("BIND [portal= statement= parameters=[[formt=kText value=Jason], "
-                       "[formt=kText value=Moiron], "
-                       "[formt=kText value=jmoiron@jmoiron.net]] result_format_codes=[]]",
-                       "BIND COMPLETE"),
-                  Pair("EXECUTE [INSERT INTO person (first_name, last_name, email) VALUES "
-                       "(Jason, Moiron, jmoiron@jmoiron.net)]",
-                       "INSERT 0 1"),
-                  Pair("QUERY [COMMIT]", "COMMIT"),
-                  Pair("SELECT * FROM person WHERE first_name=$1", "PARSE COMPLETE"),
-                  Pair("DESCRIBE [type=kStatement name=]",
-                       "ROW DESCRIPTION [name=first_name table_oid=16384 attr_num=1 type_oid=25 "
-                       "type_size=-1 type_modifier=-1 fmt_code=kText] "
-                       "[name=last_name table_oid=16384 attr_num=2 type_oid=25 type_size=-1 "
-                       "type_modifier=-1 fmt_code=kText] "
-                       "[name=email table_oid=16384 attr_num=3 type_oid=25 type_size=-1 "
-                       "type_modifier=-1 fmt_code=kText]"),
-                  Pair("BIND [portal= statement= parameters=[[formt=kText value=Jason]] "
-                       "result_format_codes=[]]",
-                       "BIND COMPLETE"),
-                  Pair("EXECUTE [SELECT * FROM person WHERE first_name=Jason]",
-                       "Jason,Moiron,jmoiron@jmoiron.net\n"
-                       "SELECT 1")));
+      ElementsAre(
+          Pair("QUERY [CREATE TABLE IF NOT EXISTS person (\n"
+               "    first_name text,\n"
+               "    last_name text,\n"
+               "    email text\n)]",
+               "CREATE TABLE"),
+          Pair("QUERY [BEGIN READ WRITE]", "BEGIN"),
+          Pair("PARSE [INSERT INTO person (first_name, last_name, email) VALUES ($1, $2, $3)]",
+               "PARSE COMPLETE"),
+          Pair("DESCRIBE [type=kStatement name=]", "ROW DESCRIPTION "),
+          Pair("BIND [portal= statement= parameters=[[formt=kText value=Jason], "
+               "[formt=kText value=Moiron], "
+               "[formt=kText value=jmoiron@jmoiron.net]] result_format_codes=[]]",
+               "BIND COMPLETE"),
+          Pair("EXECUTE [query=[INSERT INTO person (first_name, last_name, email) VALUES "
+               "($1, $2, $3)], params=[Jason, Moiron, jmoiron@jmoiron.net]]",
+               "INSERT 0 1"),
+          Pair("QUERY [COMMIT]", "COMMIT"),
+          Pair("PARSE [SELECT * FROM person WHERE first_name=$1]", "PARSE COMPLETE"),
+          Pair("DESCRIBE [type=kStatement name=]",
+               "ROW DESCRIPTION [name=first_name table_oid=16384 attr_num=1 type_oid=25 "
+               "type_size=-1 type_modifier=-1 fmt_code=kText] "
+               "[name=last_name table_oid=16384 attr_num=2 type_oid=25 type_size=-1 "
+               "type_modifier=-1 fmt_code=kText] "
+               "[name=email table_oid=16384 attr_num=3 type_oid=25 type_size=-1 "
+               "type_modifier=-1 fmt_code=kText]"),
+          Pair("BIND [portal= statement= parameters=[[formt=kText value=Jason]] "
+               "result_format_codes=[]]",
+               "BIND COMPLETE"),
+          Pair("EXECUTE [query=[SELECT * FROM person WHERE first_name=$1], params=[Jason]]",
+               "Jason,Moiron,jmoiron@jmoiron.net\n"
+               "SELECT 1")));
 }
 
 TEST_F(PostgreSQLTraceTest, FunctionCall) {
