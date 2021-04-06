@@ -19,7 +19,7 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/pebbledb"
 )
 
-func setupTest(t *testing.T) (*pebbledb.DataStore, *Datastore, func() error) {
+func setupTest(t *testing.T) (*pebbledb.DataStore, *Datastore, func()) {
 	memFS := vfs.NewMem()
 	c, err := pebble.Open("test", &pebble.Options{
 		FS: memFS,
@@ -31,7 +31,12 @@ func setupTest(t *testing.T) (*pebbledb.DataStore, *Datastore, func() error) {
 
 	db := pebbledb.New(c, 3*time.Second)
 	ts := NewDatastore(db)
-	cleanup := db.Close
+	cleanup := func() {
+		err := db.Close()
+		if err != nil {
+			t.Fatal("Failed to close db")
+		}
+	}
 
 	return db, ts, cleanup
 }
@@ -71,7 +76,8 @@ func TestTracepointStore_GetTracepoint(t *testing.T) {
 		t.Fatal("Unable to marshal tracepoint pb")
 	}
 
-	db.Set("/tracepoint/"+tpID.String(), string(s1Text))
+	err = db.Set("/tracepoint/"+tpID.String(), string(s1Text))
+	require.NoError(t, err)
 
 	tracepoint, err := ts.GetTracepoint(tpID)
 	require.NoError(t, err)
@@ -103,8 +109,10 @@ func TestTracepointStore_GetTracepoints(t *testing.T) {
 		t.Fatal("Unable to marshal tracepoint pb")
 	}
 
-	db.Set("/tracepoint/"+s1ID.String(), string(s1Text))
-	db.Set("/tracepoint/"+s2ID.String(), string(s2Text))
+	err = db.Set("/tracepoint/"+s1ID.String(), string(s1Text))
+	require.NoError(t, err)
+	err = db.Set("/tracepoint/"+s2ID.String(), string(s2Text))
+	require.NoError(t, err)
 
 	tracepoints, err := ts.GetTracepoints()
 	require.NoError(t, err)
@@ -144,8 +152,10 @@ func TestTracepointStore_GetTracepointsForIDs(t *testing.T) {
 
 	s3ID := uuid.FromStringOrNil("8ba7b810-9dad-11d1-80b4-00c04fd430c7")
 
-	db.Set("/tracepoint/"+s1ID.String(), string(s1Text))
-	db.Set("/tracepoint/"+s2ID.String(), string(s2Text))
+	err = db.Set("/tracepoint/"+s1ID.String(), string(s1Text))
+	require.NoError(t, err)
+	err = db.Set("/tracepoint/"+s2ID.String(), string(s2Text))
+	require.NoError(t, err)
 
 	tracepoints, err := ts.GetTracepointsForIDs([]uuid.UUID{s1ID, s2ID, s3ID})
 	require.NoError(t, err)
@@ -217,8 +227,10 @@ func TestTracepointStore_GetTracepointStates(t *testing.T) {
 		t.Fatal("Unable to marshal tracepoint pb")
 	}
 
-	db.Set("/tracepointStates/"+tpID.String()+"/"+agentID1.String(), string(s1Text))
-	db.Set("/tracepointStates/"+tpID.String()+"/"+agentID2.String(), string(s2Text))
+	err = db.Set("/tracepointStates/"+tpID.String()+"/"+agentID1.String(), string(s1Text))
+	require.NoError(t, err)
+	err = db.Set("/tracepointStates/"+tpID.String()+"/"+agentID2.String(), string(s2Text))
+	require.NoError(t, err)
 
 	tracepoints, err := ts.GetTracepointStates(tpID)
 	require.NoError(t, err)
@@ -264,8 +276,10 @@ func TestTracepointStore_GetTracepointsWithNames(t *testing.T) {
 	val2, err := tracepointIDpb2.Marshal()
 	require.NoError(t, err)
 
-	db.Set("/tracepointName/test", string(val))
-	db.Set("/tracepointName/test2", string(val2))
+	err = db.Set("/tracepointName/test", string(val))
+	require.NoError(t, err)
+	err = db.Set("/tracepointName/test2", string(val2))
+	require.NoError(t, err)
 
 	tracepoints, err := ts.GetTracepointsWithNames([]string{"test", "test2"})
 	require.NoError(t, err)
@@ -286,9 +300,10 @@ func TestTracepointStore_DeleteTracepoint(t *testing.T) {
 
 	tpID := uuid.Must(uuid.NewV4())
 
-	db.Set("/tracepoint/"+tpID.String(), "test")
+	err := db.Set("/tracepoint/"+tpID.String(), "test")
+	require.NoError(t, err)
 
-	err := ts.DeleteTracepoint(tpID)
+	err = ts.DeleteTracepoint(tpID)
 	require.NoError(t, err)
 
 	val, err := db.Get("/tracepoint/" + tpID.String())
@@ -315,9 +330,12 @@ func TestTracepointStore_GetTracepointTTLs(t *testing.T) {
 	s1ID := uuid.FromStringOrNil("8ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	s2ID := uuid.FromStringOrNil("8ba7b810-9dad-11d1-80b4-00c04fd430c9")
 
-	db.Set("/tracepointTTL/"+s1ID.String(), "")
-	db.Set("/tracepointTTL/"+s2ID.String(), "")
-	db.Set("/tracepointTTL/invalid", "")
+	err := db.Set("/tracepointTTL/"+s1ID.String(), "")
+	require.NoError(t, err)
+	err = db.Set("/tracepointTTL/"+s2ID.String(), "")
+	require.NoError(t, err)
+	err = db.Set("/tracepointTTL/invalid", "")
+	require.NoError(t, err)
 
 	tracepoints, _, err := ts.GetTracepointTTLs()
 	require.NoError(t, err)

@@ -335,9 +335,15 @@ func (s *Bridge) RunStream() {
 		if err != nil {
 			log.WithError(err).Fatal("Failed to subscribe to NATS.")
 		}
-		defer natsSub.Unsubscribe()
+		defer func() {
+			err := natsSub.Unsubscribe()
+			log.WithError(err).Error("Failed to unsubscribe from NATS")
+		}()
 		// Set large limits on message size and count.
-		natsSub.SetPendingLimits(1e7, 1e7)
+		err = natsSub.SetPendingLimits(1e7, 1e7)
+		if err != nil {
+			log.WithError(err).Error("Failed to send NATS message limits")
+		}
 	}
 
 	// Check if there is an existing update job. If so, then set the status to "UPDATING".
@@ -744,7 +750,10 @@ func (s *Bridge) startStreamGRPCWriter(stream vzconnpb.VZConnService_NATSBridgeC
 			return
 		case <-done:
 			log.Trace("Closing GRPC writer because of <-done")
-			stream.CloseSend()
+			err := stream.CloseSend()
+			if err != nil {
+				log.WithError(err).Error("Failed to CloseSend stream")
+			}
 			// Quit called.
 			return
 		case m := <-s.ptOutCh:
@@ -761,7 +770,10 @@ func (s *Bridge) startStreamGRPCWriter(stream vzconnpb.VZConnService_NATSBridgeC
 			return
 		case <-done:
 			log.Trace("Closing GRPC writer because of <-done")
-			stream.CloseSend()
+			err := stream.CloseSend()
+			if err != nil {
+				log.WithError(err).Error("Failed to CloseSend stream")
+			}
 			// Quit called.
 			return
 		case m := <-s.ptOutCh:
@@ -1082,9 +1094,12 @@ func (s *Bridge) DebugPods(req *vizierpb.DebugPodsRequest, srv vizierpb.VizierDe
 	if err != nil {
 		return err
 	}
-	srv.Send(&vizierpb.DebugPodsResponse{
+	err = srv.Send(&vizierpb.DebugPodsResponse{
 		ControlPlanePods: ctrlPods,
 		DataPlanePods:    dataPods,
 	})
+	if err != nil {
+		return err
+	}
 	return nil
 }

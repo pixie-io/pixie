@@ -377,7 +377,8 @@ func TestApplyUpdates(t *testing.T) {
 		AgentID:    u,
 	}
 
-	agtMgr.ApplyAgentUpdate(&agentUpdate)
+	err = agtMgr.ApplyAgentUpdate(&agentUpdate)
+	require.NoError(t, err)
 
 	upid1 := &types.UInt128{
 		Low:  uint64(89101),
@@ -473,7 +474,8 @@ func TestApplyUpdatesDeleted(t *testing.T) {
 		AgentID:    u,
 	}
 
-	agtMgr.ApplyAgentUpdate(&agentUpdate)
+	err = agtMgr.ApplyAgentUpdate(&agentUpdate)
+	require.NoError(t, err)
 
 	upid1 := &types.UInt128{
 		Low:  uint64(89101),
@@ -566,7 +568,8 @@ func TestAgentTerminatedProcesses(t *testing.T) {
 		AgentID:    u,
 	}
 
-	agtMgr.ApplyAgentUpdate(&agentUpdate)
+	err = agtMgr.ApplyAgentUpdate(&agentUpdate)
+	require.NoError(t, err)
 
 	update = &messagespb.AgentUpdateInfo{
 		Schema:            schemas,
@@ -578,7 +581,8 @@ func TestAgentTerminatedProcesses(t *testing.T) {
 		AgentID:    u,
 	}
 
-	agtMgr.ApplyAgentUpdate(&agentUpdate)
+	err = agtMgr.ApplyAgentUpdate(&agentUpdate)
+	require.NoError(t, err)
 
 	upid1 := &types.UInt128{
 		Low:  uint64(89101),
@@ -673,7 +677,8 @@ func TestAgent_GetAgentUpdate(t *testing.T) {
 		},
 		AgentID: agUUID2,
 	}
-	agtMgr.ApplyAgentUpdate(&agentUpdate)
+	err = agtMgr.ApplyAgentUpdate(&agentUpdate)
+	require.NoError(t, err)
 
 	// Check results of first call to GetAgentUpdates.
 	updates, schema, err = agtMgr.GetAgentUpdates(cursor)
@@ -722,7 +727,8 @@ func TestAgent_UpdateConfig(t *testing.T) {
 
 	adsub, err := nc.Subscribe("Agent/"+testutils.ExistingAgentUUID, func(msg *nats.Msg) {
 		vzMsg := &messagespb.VizierMessage{}
-		proto.Unmarshal(msg.Data, vzMsg)
+		err := proto.Unmarshal(msg.Data, vzMsg)
+		require.NoError(t, err)
 		req := vzMsg.GetConfigUpdateMessage().GetConfigUpdateRequest()
 		assert.NotNil(t, req)
 		assert.Equal(t, "gprof", req.Key)
@@ -730,7 +736,10 @@ func TestAgent_UpdateConfig(t *testing.T) {
 		wg.Done()
 	})
 	require.NoError(t, err)
-	defer adsub.Unsubscribe()
+	defer func() {
+		err := adsub.Unsubscribe()
+		require.NoError(t, err)
+	}()
 
 	err = agtMgr.UpdateConfig("pl", "pem-existing", "gprof", "true")
 	require.NoError(t, err)

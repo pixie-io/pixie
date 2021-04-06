@@ -18,13 +18,19 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/pebbledb"
 )
 
-func setupDatastore(db Setter) {
-	db.Set("jam1", "neg")
-	db.Set("key1", "val1")
-	db.Set("key2", "val2")
-	db.Set("key3", "val3")
-	db.Set("key9", "val9")
-	db.Set("lim1", "inf")
+func setupDatastore(t *testing.T, db Setter) {
+	err := db.Set("jam1", "neg")
+	require.NoError(t, err)
+	err = db.Set("key1", "val1")
+	require.NoError(t, err)
+	err = db.Set("key2", "val2")
+	require.NoError(t, err)
+	err = db.Set("key3", "val3")
+	require.NoError(t, err)
+	err = db.Set("key9", "val9")
+	require.NoError(t, err)
+	err = db.Set("lim1", "inf")
+	require.NoError(t, err)
 }
 
 func TestDatastore(t *testing.T) {
@@ -64,7 +70,7 @@ func TestDatastore(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			db := tc.db
 			t.Run("Set/Get", func(t *testing.T) {
-				setupDatastore(db)
+				setupDatastore(t, db)
 				v, err := db.Get("key1")
 				require.NoError(t, err)
 				assert.Equal(t, "val1", string(v))
@@ -73,7 +79,8 @@ func TestDatastore(t *testing.T) {
 				require.NoError(t, err)
 				assert.Equal(t, "val2", string(v))
 
-				db.Set("key1", "val1.1")
+				err = db.Set("key1", "val1.1")
+				require.NoError(t, err)
 
 				v, err = db.Get("key1")
 				require.NoError(t, err)
@@ -85,7 +92,7 @@ func TestDatastore(t *testing.T) {
 			})
 
 			t.Run("Get", func(t *testing.T) {
-				setupDatastore(db)
+				setupDatastore(t, db)
 				t.Run("Range", func(t *testing.T) {
 					keys, vals, err := db.GetWithRange("key1", "key1.1")
 					require.NoError(t, err)
@@ -122,7 +129,7 @@ func TestDatastore(t *testing.T) {
 			})
 
 			t.Run("Delete", func(t *testing.T) {
-				setupDatastore(db)
+				setupDatastore(t, db)
 				err := db.Delete("key2")
 				require.NoError(t, err)
 				v, err := db.Get("key2")
@@ -139,7 +146,7 @@ func TestDatastore(t *testing.T) {
 			})
 
 			t.Run("DeleteAll", func(t *testing.T) {
-				setupDatastore(db)
+				setupDatastore(t, db)
 				err := db.DeleteAll([]string{"key1", "key3", "nonexistent"})
 				require.NoError(t, err)
 				v, err := db.Get("key1")
@@ -152,7 +159,7 @@ func TestDatastore(t *testing.T) {
 			})
 
 			t.Run("DeletePrefix", func(t *testing.T) {
-				setupDatastore(db)
+				setupDatastore(t, db)
 				err := db.DeleteWithPrefix("key")
 
 				require.NoError(t, err)
@@ -178,11 +185,13 @@ func TestDatastore(t *testing.T) {
 					now := time.Now()
 					ttl := 3 * time.Second
 
-					db.SetWithTTL("timed1", "limited1", ttl)
-
+					err := db.SetWithTTL("timed1", "limited1", ttl)
+					require.NoError(t, err)
 					// Set and reset TTL
-					db.SetWithTTL("timed2", "limited2", ttl)
-					db.SetWithTTL("timed2", "limited2", 1*time.Hour)
+					err = db.SetWithTTL("timed2", "limited2", ttl)
+					require.NoError(t, err)
+					err = db.SetWithTTL("timed2", "limited2", 1*time.Hour)
+					require.NoError(t, err)
 
 					timedOut := time.After(60 * time.Second)
 					ticker := time.NewTicker(1 * time.Second)

@@ -484,7 +484,10 @@ func (v *K8sVizierInfo) LaunchJob(j *batchv1.Job) (*batchv1.Job, error) {
 // CreateSecret creates the K8s secret.
 func (v *K8sVizierInfo) CreateSecret(name string, literals map[string]string) error {
 	// Attempt to delete the secret first, if it already exists.
-	v.clientset.CoreV1().Secrets(plNamespace).Delete(context.Background(), name, metav1.DeleteOptions{})
+	err := v.clientset.CoreV1().Secrets(plNamespace).Delete(context.Background(), name, metav1.DeleteOptions{})
+	if err != nil {
+		log.WithError(err).Info("Failed to delete secret, possibly because it may not exist")
+	}
 
 	secret := &corev1.Secret{}
 	secret.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
@@ -496,7 +499,7 @@ func (v *K8sVizierInfo) CreateSecret(name string, literals map[string]string) er
 		secret.Data[k] = []byte(v)
 	}
 
-	_, err := v.clientset.CoreV1().Secrets(plNamespace).Create(context.Background(), secret, metav1.CreateOptions{})
+	_, err = v.clientset.CoreV1().Secrets(plNamespace).Create(context.Background(), secret, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}

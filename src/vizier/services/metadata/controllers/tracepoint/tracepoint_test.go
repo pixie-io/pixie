@@ -454,7 +454,8 @@ func TestUpdateAgentTracepointStatus(t *testing.T) {
 		UpdateTracepointState(expectedTracepointState).
 		Return(nil)
 
-	tracepointMgr.UpdateAgentTracepointStatus(utils.ProtoFromUUID(tpID), utils.ProtoFromUUID(agentUUID1), statuspb.RUNNING_STATE, nil)
+	err := tracepointMgr.UpdateAgentTracepointStatus(utils.ProtoFromUUID(tpID), utils.ProtoFromUUID(agentUUID1), statuspb.RUNNING_STATE, nil)
+	require.NoError(t, err)
 }
 
 func TestUpdateAgentTracepointStatus_Terminated(t *testing.T) {
@@ -484,7 +485,8 @@ func TestUpdateAgentTracepointStatus_Terminated(t *testing.T) {
 		DeleteTracepoint(tpID).
 		Return(nil)
 
-	tracepointMgr.UpdateAgentTracepointStatus(utils.ProtoFromUUID(tpID), utils.ProtoFromUUID(agentUUID2), statuspb.TERMINATED_STATE, nil)
+	err := tracepointMgr.UpdateAgentTracepointStatus(utils.ProtoFromUUID(tpID), utils.ProtoFromUUID(agentUUID2), statuspb.TERMINATED_STATE, nil)
+	require.NoError(t, err)
 }
 
 func TestTTLExpiration(t *testing.T) {
@@ -561,7 +563,8 @@ func TestTTLExpiration(t *testing.T) {
 	var seenDeletions []string
 	msgHandler := func(msg []byte) error {
 		vzMsg := &messages.VizierMessage{}
-		proto.Unmarshal(msg, vzMsg)
+		err := proto.Unmarshal(msg, vzMsg)
+		require.NoError(t, err)
 		req := vzMsg.GetTracepointMessage().GetRemoveTracepointRequest()
 		assert.NotNil(t, req)
 		seenDeletions = append(seenDeletions, utils.ProtoToUUIDStr(req.ID))

@@ -78,7 +78,10 @@ func SetupElastic() (*elastic.Client, func(), error) {
 		return nil, cleanup, err
 	}
 	// Set a 5 minute expiration on resources.
-	resource.Expire(300)
+	err = resource.Expire(300)
+	if err != nil {
+		return nil, cleanup, err
+	}
 
 	clientPort := resource.GetPort("9200/tcp")
 	var client *elastic.Client
@@ -90,7 +93,10 @@ func SetupElastic() (*elastic.Client, func(), error) {
 		return err
 	})
 	if err != nil {
-		pool.Purge(resource)
+		purgeErr := pool.Purge(resource)
+		if purgeErr != nil {
+			log.WithError(err).Error("Failed to purge pool")
+		}
 		return nil, cleanup, fmt.Errorf("Cannot start elasticsearch: %s", err)
 	}
 
@@ -98,7 +104,10 @@ func SetupElastic() (*elastic.Client, func(), error) {
 
 	cleanup = func() {
 		client.Stop()
-		pool.Purge(resource)
+		err = pool.Purge(resource)
+		if err != nil {
+			log.WithError(err).Error("Failed to purge pool")
+		}
 	}
 
 	return client, cleanup, nil

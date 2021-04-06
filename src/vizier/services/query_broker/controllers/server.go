@@ -238,8 +238,7 @@ func loadUDFInfo(udfInfoPb *udfspb.UDFInfo) error {
 	if err != nil {
 		return err
 	}
-	proto.Unmarshal(b, udfInfoPb)
-	return nil
+	return proto.Unmarshal(b, udfInfoPb)
 }
 
 // CheckHealth runs the health check and returns an error if it didn't pass.

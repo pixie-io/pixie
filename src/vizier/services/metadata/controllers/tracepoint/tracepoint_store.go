@@ -92,8 +92,7 @@ func (t *Datastore) SetTracepointWithName(tracepointName string, tracepointID uu
 		return err
 	}
 
-	t.ds.Set(getTracepointWithNameKey(tracepointName), string(val))
-	return nil
+	return t.ds.Set(getTracepointWithNameKey(tracepointName), string(val))
 }
 
 // UpsertTracepoint updates or creates a new tracepoint entry in the store.
@@ -103,13 +102,15 @@ func (t *Datastore) UpsertTracepoint(tracepointID uuid.UUID, tracepointInfo *sto
 		return err
 	}
 
-	t.ds.Set(getTracepointKey(tracepointID), string(val))
-	return nil
+	return t.ds.Set(getTracepointKey(tracepointID), string(val))
 }
 
 // DeleteTracepoint deletes the tracepoint from the store.
 func (t *Datastore) DeleteTracepoint(tracepointID uuid.UUID) error {
-	t.ds.DeleteAll([]string{getTracepointKey(tracepointID)})
+	err := t.ds.DeleteAll([]string{getTracepointKey(tracepointID)})
+	if err != nil {
+		return err
+	}
 
 	return t.ds.DeleteWithPrefix(getTracepointStatesKey(tracepointID))
 }
@@ -142,7 +143,10 @@ func (t *Datastore) GetTracepoints() ([]*storepb.TracepointInfo, error) {
 	tracepoints := make([]*storepb.TracepointInfo, len(vals))
 	for i, val := range vals {
 		pb := &storepb.TracepointInfo{}
-		proto.Unmarshal(val, pb)
+		err := proto.Unmarshal(val, pb)
+		if err != nil {
+			continue
+		}
 		tracepoints[i] = pb
 	}
 	return tracepoints, nil
@@ -189,8 +193,7 @@ func (t *Datastore) UpdateTracepointState(state *storepb.AgentTracepointStatus) 
 
 	tpID := utils.UUIDFromProtoOrNil(state.ID)
 
-	t.ds.Set(getTracepointStateKey(tpID, utils.UUIDFromProtoOrNil(state.AgentID)), string(val))
-	return nil
+	return t.ds.Set(getTracepointStateKey(tpID, utils.UUIDFromProtoOrNil(state.AgentID)), string(val))
 }
 
 // GetTracepointStates gets all the agentTracepoint states for the given tracepoint.
@@ -203,7 +206,10 @@ func (t *Datastore) GetTracepointStates(tracepointID uuid.UUID) ([]*storepb.Agen
 	tracepoints := make([]*storepb.AgentTracepointStatus, len(vals))
 	for i, val := range vals {
 		pb := &storepb.AgentTracepointStatus{}
-		proto.Unmarshal(val, pb)
+		err := proto.Unmarshal(val, pb)
+		if err != nil {
+			continue
+		}
 		tracepoints[i] = pb
 	}
 	return tracepoints, nil

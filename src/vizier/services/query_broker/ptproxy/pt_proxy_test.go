@@ -42,20 +42,26 @@ func (m *MockVzServer) ExecuteScript(req *public_vizierapipb.ExecuteScriptReques
 		resp := &public_vizierapipb.ExecuteScriptResponse{
 			QueryID: "1",
 		}
-		srv.Send(resp)
+		return srv.Send(resp)
 	}
 	if req.QueryStr == "error" {
 		resp := &public_vizierapipb.ExecuteScriptResponse{
 			QueryID: "2",
 		}
-		srv.Send(resp)
+		err := srv.Send(resp)
+		if err != nil {
+			return err
+		}
 		return errors.New("Failed")
 	}
 	if req.QueryStr == "cancel" {
 		resp := &public_vizierapipb.ExecuteScriptResponse{
 			QueryID: "3",
 		}
-		srv.Send(resp)
+		err := srv.Send(resp)
+		if err != nil {
+			return err
+		}
 		<-time.After(defaultTimeout)
 		return errors.New("Timeout waiting for context to be canceled")
 	}
@@ -207,13 +213,19 @@ func TestPassThroughProxy(t *testing.T) {
 
 			s, err := ptproxy.NewPassThroughProxy(ts.nc, client)
 			require.NoError(t, err)
-			go s.Run()
+			go func() {
+				err := s.Run()
+				require.NoError(t, err)
+			}()
 
 			// Subscribe to reply channel.
 			replyCh := make(chan *nats.Msg, 10)
 			replySub, err := ts.nc.ChanSubscribe("v2c.reply-"+test.requestID, replyCh)
 			require.NoError(t, err)
-			defer replySub.Unsubscribe()
+			defer func() {
+				err := replySub.Unsubscribe()
+				require.NoError(t, err)
+			}()
 
 			// Publish execute script request.
 			sr := &cvmsgspb.C2VAPIStreamRequest{

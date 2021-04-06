@@ -92,13 +92,25 @@ func (a *Datastore) CreateAgent(agentID uuid.UUID, agt *agentpb.Agent) error {
 		IP:       agt.Info.HostInfo.HostIP,
 	}
 
-	a.ds.Set(getHostnamePairAgentKey(hnPair), agentID.String())
-	a.ds.Set(getAgentKey(agentID), string(i))
-	a.ds.Set(getPodNameToAgentIDKey(agt.Info.HostInfo.PodName), agentID.String())
+	err = a.ds.Set(getHostnamePairAgentKey(hnPair), agentID.String())
+	if err != nil {
+		return err
+	}
+	err = a.ds.Set(getAgentKey(agentID), string(i))
+	if err != nil {
+		return err
+	}
+	err = a.ds.Set(getPodNameToAgentIDKey(agt.Info.HostInfo.PodName), agentID.String())
+	if err != nil {
+		return err
+	}
 
 	collectsData := agt.Info.Capabilities == nil || agt.Info.Capabilities.CollectsData
 	if !collectsData {
-		a.ds.Set(getKelvinAgentKey(agentID), agentID.String())
+		err = a.ds.Set(getKelvinAgentKey(agentID), agentID.String())
+		if err != nil {
+			return err
+		}
 	}
 
 	log.WithField("hostname", hnPair.Hostname).WithField("HostIP", hnPair.IP).Info("Registering agent")
@@ -169,7 +181,10 @@ func (a *Datastore) DeleteAgent(agentID uuid.UUID) error {
 		delKeys = append(delKeys, getKelvinAgentKey(agentID))
 	}
 
-	a.ds.DeleteAll(delKeys)
+	err = a.ds.DeleteAll(delKeys)
+	if err != nil {
+		return err
+	}
 
 	// Deletes from the computedSchema
 	err = a.UpdateSchemas(agentID, []*storepb.TableInfo{})
@@ -197,7 +212,10 @@ func (a *Datastore) GetAgents() ([]*agentpb.Agent, error) {
 		}
 
 		pb := &agentpb.Agent{}
-		proto.Unmarshal(vals[i], pb)
+		err = proto.Unmarshal(vals[i], pb)
+		if err != nil {
+			return nil, err
+		}
 		if pb.Info != nil && !utils.IsNilUUIDProto(pb.Info.AgentID) {
 			agents = append(agents, pb)
 		}
@@ -228,7 +246,10 @@ func (a *Datastore) GetASID() (uint32, error) {
 
 	// Increment ASID in datastore.
 	updatedAsid := asidInt + 1
-	a.ds.Set(asidKey, fmt.Sprint(updatedAsid))
+	err = a.ds.Set(asidKey, fmt.Sprint(updatedAsid))
+	if err != nil {
+		return 0, err
+	}
 
 	return uint32(asidInt), nil
 }
@@ -568,9 +589,15 @@ func (a *Datastore) UpdateProcesses(processes []*metadatapb.ProcessInfo) error {
 		processKey := getProcessKey(k8s.StringFromUPID(upid))
 
 		if processPb.StopTimestampNS > 0 {
-			a.ds.SetWithTTL(processKey, string(process), a.expiryDuration)
+			err = a.ds.SetWithTTL(processKey, string(process), a.expiryDuration)
+			if err != nil {
+				return err
+			}
 		} else {
-			a.ds.Set(processKey, string(process))
+			err = a.ds.Set(processKey, string(process))
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

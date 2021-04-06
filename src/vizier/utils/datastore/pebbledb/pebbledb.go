@@ -85,8 +85,14 @@ func (w *DataStore) ttlWatcher(ttlReaperDuration time.Duration) {
 					deleteKeys = append(deleteKeys, keyToDelete)
 				}
 			}
-			w.DeleteAll(deleteKeys)
-			w.db.DeleteRange([]byte(from), []byte(to), pebble.Sync)
+			err := w.DeleteAll(deleteKeys)
+			if err != nil {
+				continue
+			}
+			err = w.db.DeleteRange([]byte(from), []byte(to), pebble.Sync)
+			if err != nil {
+				continue
+			}
 			iter.Close()
 		}
 	}
@@ -179,7 +185,10 @@ func (w *DataStore) Delete(key string) error {
 func (w *DataStore) DeleteAll(keys []string) error {
 	batch := w.db.NewBatch()
 	for _, key := range keys {
-		batch.Delete([]byte(key), pebble.Sync)
+		err := batch.Delete([]byte(key), pebble.Sync)
+		if err != nil {
+			return err
+		}
 	}
 	return batch.Commit(pebble.Sync)
 }

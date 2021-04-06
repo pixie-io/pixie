@@ -106,14 +106,24 @@ func (s *Server) CertRequester() {
 	if err != nil {
 		log.WithError(err).Warn("Failed to subscribe to sslResp channel")
 	}
-	defer sub.Unsubscribe()
+	defer func() {
+		err := sub.Unsubscribe()
+		if err != nil {
+			log.WithError(err).Error("Failed to unsubscribe from sslResp channel")
+		}
+	}()
 
 	configCh := make(chan *nats.Msg)
 	sub, err = s.nc.ChanSubscribe(messagebus.C2VTopic("sslVizierConfigResp"), configCh)
 	if err != nil {
 		log.WithError(err).Warn("Failed to subscribe to sslVizierConfigResp channel")
 	}
-	defer sub.Unsubscribe()
+	defer func() {
+		err := sub.Unsubscribe()
+		if err != nil {
+			log.WithError(err).Error("Failed to unsubscribe from sslVizierConfigResp channel")
+		}
+	}()
 
 	err = s.sendSSLCertRequest()
 	if err != nil {

@@ -165,7 +165,12 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("Failed to start passthrough proxy.")
 	}
-	go ptProxy.Run()
+	go func() {
+		err := ptProxy.Run()
+		if err != nil {
+			log.WithError(err).Error("Passthrough proxy failed to run")
+		}
+	}()
 	defer ptProxy.Close()
 
 	s.Start()

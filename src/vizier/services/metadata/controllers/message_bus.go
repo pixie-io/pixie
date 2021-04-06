@@ -48,7 +48,10 @@ func NewMessageBusController(conn *nats.Conn, agtMgr agent.Manager,
 		subscriptions: subscriptions,
 	}
 
-	mc.registerListeners(agtMgr, tpMgr, k8smetaHandler)
+	err := mc.registerListeners(agtMgr, tpMgr, k8smetaHandler)
+	if err != nil {
+		return nil, err
+	}
 
 	// Start listening to messages.
 	go mc.handleMessages()
@@ -65,7 +68,10 @@ func (mc *MessageBusController) handleMessages() {
 
 		if !mc.wasLeader && *mc.isLeader {
 			// Gained leadership!
-			mc.listeners[updateAgentTopic].Initialize()
+			err := mc.listeners[updateAgentTopic].Initialize()
+			if err != nil {
+				log.WithError(err).Error("Failed to initialize update agent topic")
+			}
 		}
 
 		mc.wasLeader = *mc.isLeader
@@ -136,11 +142,20 @@ func (mc *MessageBusController) registerListener(topic string, tl TopicListener)
 // Close closes the subscription and NATS connection.
 func (mc *MessageBusController) Close() {
 	for _, sub := range mc.subscriptions {
-		sub.Unsubscribe()
-		sub.Drain()
+		err := sub.Unsubscribe()
+		if err != nil {
+			log.WithError(err).Error("Failed to unsubscribe")
+		}
+		err = sub.Drain()
+		if err != nil {
+			log.WithError(err).Error("Failed to drain subscription")
+		}
 	}
 
-	mc.conn.Drain()
+	err := mc.conn.Drain()
+	if err != nil {
+		log.WithError(err).Error("Failed to drain nats connection")
+	}
 	mc.conn.Close()
 
 	for _, tl := range mc.listeners {

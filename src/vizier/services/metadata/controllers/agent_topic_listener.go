@@ -124,7 +124,11 @@ func (a *AgentTopicListener) Initialize() error {
 // HandleMessage handles a message on the agent topic.
 func (a *AgentTopicListener) HandleMessage(msg *nats.Msg) error {
 	pb := &messages.VizierMessage{}
-	proto.Unmarshal(msg.Data, pb)
+	err := proto.Unmarshal(msg.Data, pb)
+	if err != nil {
+		log.WithError(err).Error("Failed to unmarshal vizier message")
+		return nil
+	}
 
 	if pb.Msg == nil {
 		log.
@@ -201,7 +205,10 @@ func (a *AgentTopicListener) forwardAgentHeartBeat(m *messages.Heartbeat, msg *n
 				},
 			},
 		}
-		a.SendMessageToAgent(agentID, resp)
+		err = a.SendMessageToAgent(agentID, resp)
+		if err != nil {
+			log.WithError(err).Error("Failed to send message to agent")
+		}
 	}
 }
 
@@ -242,8 +249,10 @@ func (a *AgentTopicListener) deleteAgent(agentID uuid.UUID) {
 			},
 		},
 	}
-	a.SendMessageToAgent(agentID, resp)
-
+	err := a.SendMessageToAgent(agentID, resp)
+	if err != nil {
+		log.WithError(err).Error("Failed to send message to agent")
+	}
 	a.agentMap.delete(agentID)
 }
 
@@ -280,9 +289,15 @@ func (ah *AgentHandler) processMessages() {
 	ah.wg.Add(1)
 
 	defer func() {
-		ah.agtMgr.DeleteAgent(ah.id)
+		err := ah.agtMgr.DeleteAgent(ah.id)
+		if err != nil {
+			log.WithError(err).Error("Failed to delete agent from agent manager")
+		}
 		ah.atl.deleteAgent(ah.id)
-		ah.tpMgr.DeleteAgent(ah.id)
+		err = ah.tpMgr.DeleteAgent(ah.id)
+		if err != nil {
+			log.WithError(err).Error("Failed to delete agent from tracepoint manager")
+		}
 		ah.wg.Done()
 	}()
 
@@ -301,7 +316,10 @@ func (ah *AgentHandler) processMessages() {
 			return
 		case msg := <-ah.MsgChannel:
 			pb := &messages.VizierMessage{}
-			proto.Unmarshal(msg.Data, pb)
+			err := proto.Unmarshal(msg.Data, pb)
+			if err != nil {
+				continue
+			}
 
 			switch m := pb.Msg.(type) {
 			case *messages.VizierMessage_Heartbeat:
@@ -413,7 +431,10 @@ func (ah *AgentHandler) onAgentHeartbeat(m *messages.Heartbeat) {
 				},
 			},
 		}
-		ah.atl.SendMessageToAgent(agentID, resp)
+		err = ah.atl.SendMessageToAgent(agentID, resp)
+		if err != nil {
+			log.WithError(err).Error("Failed to send message to agent")
+		}
 		return
 	}
 
@@ -438,7 +459,10 @@ func (ah *AgentHandler) onAgentHeartbeat(m *messages.Heartbeat) {
 
 	// Apply agent's container/schema updates.
 	if m.UpdateInfo != nil {
-		ah.agtMgr.ApplyAgentUpdate(&agent.Update{AgentID: agentID, UpdateInfo: m.UpdateInfo})
+		err = ah.agtMgr.ApplyAgentUpdate(&agent.Update{AgentID: agentID, UpdateInfo: m.UpdateInfo})
+		if err != nil {
+			log.WithError(err).Error("Could not apply agent updates")
+		}
 	}
 }
 

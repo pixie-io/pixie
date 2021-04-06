@@ -19,7 +19,7 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/pebbledb"
 )
 
-func setupMDSTest(t *testing.T) (*pebbledb.DataStore, *Datastore, func() error) {
+func setupMDSTest(t *testing.T) (*pebbledb.DataStore, *Datastore, func()) {
 	memFS := vfs.NewMem()
 	c, err := pebble.Open("test", &pebble.Options{
 		FS: memFS,
@@ -31,7 +31,12 @@ func setupMDSTest(t *testing.T) (*pebbledb.DataStore, *Datastore, func() error) 
 
 	db := pebbledb.New(c, 3*time.Second)
 	ts := NewDatastore(db)
-	cleanup := db.Close
+	cleanup := func() {
+		err := db.Close()
+		if err != nil {
+			t.Fatal("failed to close db")
+		}
+	}
 
 	return db, ts, cleanup
 }
@@ -100,7 +105,8 @@ func TestDatastore_FetchFullResourceUpdates(t *testing.T) {
 	}
 	val, err := update1.Marshal()
 	require.NoError(t, err)
-	db.Set(path.Join(fullResourceUpdatePrefix, fmt.Sprintf("%020d", 1)), string(val))
+	err = db.Set(path.Join(fullResourceUpdatePrefix, fmt.Sprintf("%020d", 1)), string(val))
+	require.NoError(t, err)
 
 	update2 := &storepb.K8SResource{
 		Resource: &storepb.K8SResource_Namespace{
@@ -126,7 +132,8 @@ func TestDatastore_FetchFullResourceUpdates(t *testing.T) {
 	val, err = update2.Marshal()
 	require.NoError(t, err)
 
-	db.Set(path.Join(fullResourceUpdatePrefix, fmt.Sprintf("%020d", 2)), string(val))
+	err = db.Set(path.Join(fullResourceUpdatePrefix, fmt.Sprintf("%020d", 2)), string(val))
+	require.NoError(t, err)
 
 	updates, err := mds.FetchFullResourceUpdates(int64(1), int64(3))
 	require.NoError(t, err)
@@ -259,7 +266,8 @@ func TestDatastore_FetchResourceUpdates(t *testing.T) {
 				val, err := update.Marshal()
 				require.NoError(t, err)
 
-				db.Set(path.Join(topicResourceUpdatePrefix, "127.0.0.1", fmt.Sprintf("%020d", u)), string(val))
+				err = db.Set(path.Join(topicResourceUpdatePrefix, "127.0.0.1", fmt.Sprintf("%020d", u)), string(val))
+				require.NoError(t, err)
 			}
 			for _, u := range tc.unscopedVersions {
 				update := &storepb.K8SResourceUpdate{
@@ -270,7 +278,8 @@ func TestDatastore_FetchResourceUpdates(t *testing.T) {
 				val, err := update.Marshal()
 				require.NoError(t, err)
 
-				db.Set(path.Join(topicResourceUpdatePrefix, unscopedTopic, fmt.Sprintf("%020d", u)), string(val))
+				err = db.Set(path.Join(topicResourceUpdatePrefix, unscopedTopic, fmt.Sprintf("%020d", u)), string(val))
+				require.NoError(t, err)
 			}
 
 			updates, err := mds.FetchResourceUpdates("127.0.0.1", int64(tc.from), int64(tc.to))
@@ -288,7 +297,9 @@ func TestDatastore_GetUpdateVersion(t *testing.T) {
 	db, mds, cleanup := setupMDSTest(t)
 	defer cleanup()
 
-	db.Set(path.Join(topicVersionPrefix, "127.0.0.1"), "57")
+	err := db.Set(path.Join(topicVersionPrefix, "127.0.0.1"), "57")
+	require.NoError(t, err)
+
 	version, err := mds.GetUpdateVersion("127.0.0.1")
 	require.NoError(t, err)
 	assert.Equal(t, int64(57), version)

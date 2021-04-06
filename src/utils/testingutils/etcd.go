@@ -37,7 +37,10 @@ func SetupEtcd() (*clientv3.Client, func()) {
 		log.Fatal(err)
 	}
 	// Set a 5 minute expiration on resources.
-	resource.Expire(300)
+	err = resource.Expire(300)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	clientPort := resource.GetPort("2379/tcp")
 

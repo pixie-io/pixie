@@ -288,8 +288,10 @@ func TestStreamResultsClientContextCancel(t *testing.T) {
 	cancel()
 
 	// It's ok if these error but they should not hang.
-	f.ForwardQueryResult(in2)
-	f.ForwardQueryResult(in3)
+	fwdErr := f.ForwardQueryResult(in2)
+	_ = fwdErr
+	fwdErr = f.ForwardQueryResult(in3)
+	_ = fwdErr
 	wg.Wait()
 
 	require.NoError(t, err)

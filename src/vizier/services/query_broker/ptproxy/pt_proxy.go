@@ -251,7 +251,10 @@ func (s *PassThroughProxy) cleanupRequest(reqState *RequestState) {
 }
 
 func (s *PassThroughProxy) cleanup() {
-	s.sub.Unsubscribe()
+	err := s.sub.Unsubscribe()
+	if err != nil {
+		log.WithError(err).Error("Failed to unsubscribe")
+	}
 	close(s.subCh)
 
 	s.mu.Lock()

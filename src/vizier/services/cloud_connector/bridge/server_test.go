@@ -14,6 +14,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
@@ -387,7 +388,9 @@ func TestNATSGRPCBridgeTest_TestInboundNATSMessage(t *testing.T) {
 	ts.wg.Add(1) // For the nats msg.
 	go func() {
 		inboundNats = <-natsCh
-		natsSub.Unsubscribe()
+		err := natsSub.Unsubscribe()
+		require.NoError(t, err)
+
 		ts.wg.Done()
 	}()
 
@@ -455,7 +458,8 @@ func TestNATSGRPCBridgeTest_TestRegisterDeployment(t *testing.T) {
 	}
 	go func() {
 		<-natsCh
-		natsSub.Unsubscribe()
+		err := natsSub.Unsubscribe()
+		require.NoError(t, err)
 		ts.wg.Done()
 	}()
 }

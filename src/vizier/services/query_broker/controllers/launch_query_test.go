@@ -82,14 +82,17 @@ func TestLaunchQuery(t *testing.T) {
 	m1, err := sub1.NextMsg(time.Second)
 	require.NoError(t, err)
 	pb := &messages.VizierMessage{}
-	proto.Unmarshal(m1.Data, pb)
+	err = proto.Unmarshal(m1.Data, pb)
+	require.NoError(t, err)
+
 	assert.Equal(t, planPB1, pb.Msg.(*messages.VizierMessage_ExecuteQueryRequest).ExecuteQueryRequest.Plan)
 	assert.Equal(t, queryUUIDPb, pb.Msg.(*messages.VizierMessage_ExecuteQueryRequest).ExecuteQueryRequest.QueryID)
 
 	m2, err := sub2.NextMsg(time.Second)
 	require.NoError(t, err)
 	pb = &messages.VizierMessage{}
-	proto.Unmarshal(m2.Data, pb)
+	err = proto.Unmarshal(m2.Data, pb)
+	require.NoError(t, err)
 	assert.Equal(t, planPB2, pb.Msg.(*messages.VizierMessage_ExecuteQueryRequest).ExecuteQueryRequest.Plan)
 	assert.Equal(t, queryUUIDPb, pb.Msg.(*messages.VizierMessage_ExecuteQueryRequest).ExecuteQueryRequest.QueryID)
 }

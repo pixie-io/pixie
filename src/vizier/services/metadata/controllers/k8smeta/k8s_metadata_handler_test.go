@@ -21,7 +21,10 @@ import (
 
 func createEndpointsObject() *storepb.K8SResource {
 	pb := &metadatapb.Endpoints{}
-	proto.UnmarshalText(testutils.EndpointsPb, pb)
+	err := proto.UnmarshalText(testutils.EndpointsPb, pb)
+	if err != nil {
+		return &storepb.K8SResource{}
+	}
 
 	return &storepb.K8SResource{
 		Resource: &storepb.K8SResource_Endpoints{
@@ -32,7 +35,10 @@ func createEndpointsObject() *storepb.K8SResource {
 
 func createServiceObject() *storepb.K8SResource {
 	pb := &metadatapb.Service{}
-	proto.UnmarshalText(testutils.ServicePb, pb)
+	err := proto.UnmarshalText(testutils.ServicePb, pb)
+	if err != nil {
+		return &storepb.K8SResource{}
+	}
 
 	return &storepb.K8SResource{
 		Resource: &storepb.K8SResource_Service{
@@ -43,7 +49,10 @@ func createServiceObject() *storepb.K8SResource {
 
 func createPodObject() *storepb.K8SResource {
 	pb := &metadatapb.Pod{}
-	proto.UnmarshalText(testutils.PodPbWithContainers, pb)
+	err := proto.UnmarshalText(testutils.PodPbWithContainers, pb)
+	if err != nil {
+		return &storepb.K8SResource{}
+	}
 
 	return &storepb.K8SResource{
 		Resource: &storepb.K8SResource_Pod{
@@ -202,9 +211,10 @@ func TestHandler_GetUpdatesForIP(t *testing.T) {
 			},
 		},
 	}
-	mds.AddResourceUpdate(2, &storepb.K8SResourceUpdate{
+	err := mds.AddResourceUpdate(2, &storepb.K8SResourceUpdate{
 		Update: nsUpdate,
 	})
+	require.NoError(t, err)
 
 	svcUpdateKelvin := &metadatapb.ResourceUpdate{
 		UpdateVersion: 4,
@@ -220,9 +230,10 @@ func TestHandler_GetUpdatesForIP(t *testing.T) {
 			},
 		},
 	}
-	mds.AddResourceUpdateForTopic(4, k8smeta.KelvinUpdateTopic, &storepb.K8SResourceUpdate{
+	err = mds.AddResourceUpdateForTopic(4, k8smeta.KelvinUpdateTopic, &storepb.K8SResourceUpdate{
 		Update: svcUpdateKelvin,
 	})
+	require.NoError(t, err)
 
 	svcUpdate1 := &metadatapb.ResourceUpdate{
 		UpdateVersion: 4,
@@ -238,9 +249,11 @@ func TestHandler_GetUpdatesForIP(t *testing.T) {
 			},
 		},
 	}
-	mds.AddResourceUpdateForTopic(4, "127.0.0.1", &storepb.K8SResourceUpdate{
+	err = mds.AddResourceUpdateForTopic(4, "127.0.0.1", &storepb.K8SResourceUpdate{
 		Update: svcUpdate1,
 	})
+	require.NoError(t, err)
+
 	svcUpdate2 := &metadatapb.ResourceUpdate{
 		UpdateVersion: 4,
 		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
@@ -255,9 +268,10 @@ func TestHandler_GetUpdatesForIP(t *testing.T) {
 			},
 		},
 	}
-	mds.AddResourceUpdateForTopic(4, "127.0.0.2", &storepb.K8SResourceUpdate{
+	err = mds.AddResourceUpdateForTopic(4, "127.0.0.2", &storepb.K8SResourceUpdate{
 		Update: svcUpdate2,
 	})
+	require.NoError(t, err)
 
 	containerUpdate := &metadatapb.ContainerUpdate{
 		CID:            "test",
@@ -268,7 +282,7 @@ func TestHandler_GetUpdatesForIP(t *testing.T) {
 		Message:        "container state message",
 		Reason:         "container state reason",
 	}
-	mds.AddResourceUpdateForTopic(5, k8smeta.KelvinUpdateTopic, &storepb.K8SResourceUpdate{
+	err = mds.AddResourceUpdateForTopic(5, k8smeta.KelvinUpdateTopic, &storepb.K8SResourceUpdate{
 		Update: &metadatapb.ResourceUpdate{
 			UpdateVersion: 5,
 			Update: &metadatapb.ResourceUpdate_ContainerUpdate{
@@ -276,8 +290,9 @@ func TestHandler_GetUpdatesForIP(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
 
-	mds.AddResourceUpdateForTopic(5, "127.0.0.1", &storepb.K8SResourceUpdate{
+	err = mds.AddResourceUpdateForTopic(5, "127.0.0.1", &storepb.K8SResourceUpdate{
 		Update: &metadatapb.ResourceUpdate{
 			UpdateVersion: 5,
 			Update: &metadatapb.ResourceUpdate_ContainerUpdate{
@@ -285,6 +300,7 @@ func TestHandler_GetUpdatesForIP(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
 
 	pu := &storepb.K8SResourceUpdate{
 		Update: &metadatapb.ResourceUpdate{
@@ -316,8 +332,10 @@ func TestHandler_GetUpdatesForIP(t *testing.T) {
 			},
 		},
 	}
-	mds.AddResourceUpdateForTopic(6, k8smeta.KelvinUpdateTopic, pu)
-	mds.AddResourceUpdateForTopic(6, "127.0.0.1", pu)
+	err = mds.AddResourceUpdateForTopic(6, k8smeta.KelvinUpdateTopic, pu)
+	require.NoError(t, err)
+	err = mds.AddResourceUpdateForTopic(6, "127.0.0.1", pu)
+	require.NoError(t, err)
 
 	updateCh := make(chan *k8smeta.K8sResourceMessage)
 	mdh := k8smeta.NewHandler(updateCh, mds, nil)
@@ -389,7 +407,7 @@ func TestHandler_ProcessUpdates(t *testing.T) {
 	// We should expect a message to be sent out to the kelvin topic and 127.0.0.1
 	var wg sync.WaitGroup
 	wg.Add(1)
-	nc.Subscribe(fmt.Sprintf("%s/%s", k8smeta.K8sMetadataUpdateChannel, k8smeta.KelvinUpdateTopic), func(msg *nats.Msg) {
+	_, err := nc.Subscribe(fmt.Sprintf("%s/%s", k8smeta.K8sMetadataUpdateChannel, k8smeta.KelvinUpdateTopic), func(msg *nats.Msg) {
 		m := &messages.VizierMessage{}
 		err := proto.Unmarshal(msg.Data, m)
 		require.NoError(t, err)
@@ -398,8 +416,9 @@ func TestHandler_ProcessUpdates(t *testing.T) {
 		assert.Equal(t, expectedMsg, m)
 		wg.Done()
 	})
+	require.NoError(t, err)
 	wg.Add(1)
-	nc.Subscribe(fmt.Sprintf("%s/127.0.0.1", k8smeta.K8sMetadataUpdateChannel), func(msg *nats.Msg) {
+	_, err = nc.Subscribe(fmt.Sprintf("%s/127.0.0.1", k8smeta.K8sMetadataUpdateChannel), func(msg *nats.Msg) {
 		m := &messages.VizierMessage{}
 		err := proto.Unmarshal(msg.Data, m)
 		require.NoError(t, err)
@@ -408,6 +427,7 @@ func TestHandler_ProcessUpdates(t *testing.T) {
 		assert.Equal(t, expectedMsg, m)
 		wg.Done()
 	})
+	require.NoError(t, err)
 
 	// Process a node update, to populate the NodeIPs.
 	// This will increment the current resource version to 4, so the next update should have a resource version of 5.
