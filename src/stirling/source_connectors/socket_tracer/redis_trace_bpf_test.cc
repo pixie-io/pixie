@@ -15,6 +15,8 @@ using ::testing::ElementsAreArray;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
+using ::pl::stirling::testing::FindRecordIdxMatchesPID;
+
 class RedisContainer : public ContainerRunner {
  public:
   RedisContainer()
@@ -72,13 +74,13 @@ bool operator==(const RedisTraceRecord& lhs, const RedisTraceRecord& rhs) {
 }
 
 std::vector<RedisTraceRecord> GetRedisTraceRecords(
-    const types::ColumnWrapperRecordBatch& record_batch) {
+    const types::ColumnWrapperRecordBatch& record_batch, int pid) {
   std::vector<RedisTraceRecord> res;
-  for (size_t i = 0; i < record_batch[kRedisReqIdx]->Size(); ++i) {
+  for (const auto& idx : FindRecordIdxMatchesPID(record_batch, kRedisUPIDIdx, pid)) {
     res.push_back(
-        RedisTraceRecord{std::string(record_batch[kRedisCmdIdx]->Get<types::StringValue>(i)),
-                         std::string(record_batch[kRedisReqIdx]->Get<types::StringValue>(i)),
-                         std::string(record_batch[kRedisRespIdx]->Get<types::StringValue>(i))});
+        RedisTraceRecord{std::string(record_batch[kRedisCmdIdx]->Get<types::StringValue>(idx)),
+                         std::string(record_batch[kRedisReqIdx]->Get<types::StringValue>(idx)),
+                         std::string(record_batch[kRedisRespIdx]->Get<types::StringValue>(idx))});
   }
   return res;
 }
@@ -122,7 +124,9 @@ TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
   ASSERT_FALSE(tablets.empty());
 
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
-  std::vector<RedisTraceRecord> redis_trace_records = GetRedisTraceRecords(record_batch);
+
+  std::vector<RedisTraceRecord> redis_trace_records =
+      GetRedisTraceRecords(record_batch, container_.process_pid());
 
   // redis-cli sends a 'command' req to query all available commands from server.
   // The response is too long to test meaningfully, so we ignore them.
@@ -178,7 +182,8 @@ TEST_F(RedisTraceBPFTest, VerifyPubSubCommands) {
   ASSERT_FALSE(tablets.empty());
 
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
-  std::vector<RedisTraceRecord> redis_trace_records = GetRedisTraceRecords(record_batch);
+  std::vector<RedisTraceRecord> redis_trace_records =
+      GetRedisTraceRecords(record_batch, container_.process_pid());
 
   // redis-cli sends a 'command' req to query all available commands from server.
   // The response is too long to test meaningfully, so we ignore them.
@@ -217,7 +222,8 @@ TEST_F(RedisTraceBPFTest, ScriptLoadAndEvalSHA) {
   ASSERT_FALSE(tablets.empty());
 
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
-  std::vector<RedisTraceRecord> redis_trace_records = GetRedisTraceRecords(record_batch);
+  std::vector<RedisTraceRecord> redis_trace_records =
+      GetRedisTraceRecords(record_batch, container_.process_pid());
 
   EXPECT_THAT(
       redis_trace_records,
@@ -248,7 +254,7 @@ TEST_P(RedisTraceBPFTest, VerifyCommand) {
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
   EXPECT_THAT(
-      GetRedisTraceRecords(record_batch),
+      GetRedisTraceRecords(record_batch, container_.process_pid()),
       ElementsAre(RedisTraceRecord{GetParam().exp_cmd, GetParam().exp_req, GetParam().exp_resp}));
 }
 
