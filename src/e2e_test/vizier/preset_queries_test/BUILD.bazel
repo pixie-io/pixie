@@ -15,8 +15,8 @@ pl_cc_test(
         "manual",
     ],
     deps = [
-        ":cc_library",
-        ":test_utils",
+        "//src/carnot/planner:cc_library",
+        "//src/carnot/planner:test_utils",
         "//src/carnot/planpb:plan_testutils",
         "//src/carnot/udf_exporter:cc_library",
         "//src/shared/schema:cc_library",
