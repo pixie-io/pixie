@@ -331,7 +331,6 @@ func validateCommand(scriptDefined bool, cmd *Command) {
 
 func parseRunCommand(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, orgID uuid.UUID, clusterUID string) error {
 	if parsedCmd.Args == nil {
-		// TODO(michelle): Handle the case where there are no args.
 		return nil
 	}
 

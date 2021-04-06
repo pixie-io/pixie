@@ -76,8 +76,8 @@ StatusOr<std::unique_ptr<RowBatch>> MemorySourceNode::GetNextRowBatch(ExecState*
     offset = start_batch_info_.row_idx;
   }
 
-  // TODO(michelle): PL-388 Fix our table store to correctly support hot/cold data. For now, do not
-  // support StopTime, since the current implementation is buggy.
+  // TODO(michellenguyen, PL-388): Fix our table store to correctly support hot/cold data. For now,
+  // do not support StopTime.
   PL_ASSIGN_OR_RETURN(auto row_batch,
                       table_->GetRowBatchSlice(current_batch_, plan_node_->Columns(),
                                                exec_state->exec_mem_pool(), offset, end));

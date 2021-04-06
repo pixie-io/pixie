@@ -188,7 +188,7 @@ func (m *MetadataReader) listenToConnectedViziers() error {
 
 // startVizierUpdates starts listening to the metadata update channel for a given vizier.
 func (m *MetadataReader) startVizierUpdates(id uuid.UUID, k8sUID string) error {
-	// TODO(michelle): We currently don't have to signal when a Vizier has disconnected. When we have that
+	// TODO(michellenguyen, PC-827): We currently don't have to signal when a Vizier has disconnected. When we have that
 	// functionality, we should clean up the Vizier map and stop its STAN subscriptions.
 	vz := m.viziers.read(id)
 	if vz != nil {

@@ -23,8 +23,6 @@
 #include "src/shared/upid/upid.h"
 
 PL_SUPPRESS_WARNINGS_START()
-// TODO(michelle): Fix this so that we don't need to the NOLINT.
-// NOLINTNEXTLINE(build/include_subdir)
 #include "blockingconcurrentqueue.h"
 PL_SUPPRESS_WARNINGS_END()
 

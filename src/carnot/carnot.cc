@@ -267,9 +267,9 @@ Status CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan, const sole::uui
   std::vector<std::string> output_table_strs;
   auto exec_state = engine_state_->CreateExecState(query_id);
 
-  // TODO(michelle/zasgar): We should periodically update the metadata state for long-running
-  // queries after a certain time duration or number of row batches processed. For now, we use a
-  // single metadata state throughout the entire length of the query.
+  // TODO(michellenguyen/zasgar, PP-2579): We should periodically update the metadata state for
+  // long-running queries after a certain time duration or number of row batches processed. For now,
+  // we use a single metadata state throughout the entire length of the query.
   auto metadata_state = GetMetadataState();
   if (metadata_state) {
     exec_state->set_metadata_state(metadata_state);

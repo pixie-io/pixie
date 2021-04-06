@@ -319,7 +319,6 @@ TEST(ScalarExpressionWalker, walk_node_graph) {
   EXPECT_EQ(std::vector<int64_t>({0, 1}), col_node_ids);
 }
 
-// TODO(michelle): Use our fixtures for this.
 constexpr char kAggregateExpression[] = R"(
 name: "testAgg"
 args {

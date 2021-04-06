@@ -61,9 +61,6 @@ func main() {
 		log.WithError(err).Fatal("Failed to init auth client")
 	}
 
-	// TODO(michelle): Move these to the controller server so that we can
-	// deprecate the environment.
-
 	pc, err := apienv.NewProfileServiceClient()
 	if err != nil {
 		log.WithError(err).Fatal("Failed to init profile client")

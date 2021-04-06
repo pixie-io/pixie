@@ -112,9 +112,8 @@ Status PredicateCopyValues<types::STRING>(const types::BoolValueColumnWrapper& p
 }
 
 Status FilterNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, size_t) {
-  // TODO(zasgar/michelle): Current implementation does not merge across row batches, which is
-  // something we should consider in case the filter has really low selectivity.
-
+  // Current implementation does not merge across row batches, we should
+  // consider this for cases where the filter has really low selectivity.
   PL_ASSIGN_OR_RETURN(auto pred_col, evaluator_->EvaluateSingleExpression(
                                          exec_state, rb, *plan_node_->expression()));
 

@@ -30,7 +30,7 @@ import (
 	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
-// TODO(michelle): Make namespace a flag that can be passed in.
+// TODO(michellenguyen, PP-1702): Make namespace a flag that can be passed in.
 const plNamespace = "pl"
 
 const k8sStateUpdatePeriod = 10 * time.Second
@@ -39,8 +39,6 @@ const privateImageRepo = "gcr.io/pl-dev-infra"
 const publicImageRepo = "gcr.io/pixie-prod"
 
 // K8sJobHandler manages k8s jobs.
-// TODO(michelle): Refactor and move job-related operations from the VizierInfo
-// interface here.
 type K8sJobHandler interface {
 	CleanupCronJob(string, time.Duration, chan bool)
 }
@@ -118,7 +116,6 @@ func (v *K8sVizierInfo) GetVizierClusterInfo() (*cvmsgspb.VizierClusterInfo, err
 
 // GetAddress gets the external address of Vizier's proxy service.
 func (v *K8sVizierInfo) GetAddress() (string, int32, error) {
-	// TODO(michelle): Make the service name a flag that can be passed in.
 	proxySvc, err := v.clientset.CoreV1().Services(plNamespace).Get(context.Background(), "vizier-proxy-service", metav1.GetOptions{})
 	if err != nil {
 		return "", int32(0), err
@@ -472,7 +469,7 @@ func (v *K8sVizierInfo) ParseJobYAML(yamlStr string, imageTag map[string]string,
 
 // LaunchJob starts the specified job.
 func (v *K8sVizierInfo) LaunchJob(j *batchv1.Job) (*batchv1.Job, error) {
-	// TODO(michelle): Don't hardcode namespace
+	// TODO(michellenguyen, PP-1702): Don't hardcode namespace
 	job, err := v.clientset.BatchV1().Jobs("pl").Create(context.Background(), j, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err

@@ -118,8 +118,6 @@ class GRPCRouter final : public carnotpb::ResultSinkService::Service {
     std::vector<queryresultspb::AgentExecutionStats> agent_exec_stats;
   };
 
-  // TODO(zasgar/michelle): We should periodically delete stale queries as part of garbage
-  // collection.
   absl::node_hash_map<sole::uuid, QueryTracker> query_node_map_ GUARDED_BY(query_node_map_lock_);
   absl::base_internal::SpinLock query_node_map_lock_;
 };

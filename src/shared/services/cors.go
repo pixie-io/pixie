@@ -9,7 +9,7 @@ func DefaultCORSConfig() []handlers.CORSOption {
 	return []handlers.CORSOption{
 		handlers.AllowedMethods([]string{"POST", "OPTIONS"}),
 		handlers.AllowedHeaders([]string{"Content-Type", "Origin", "Accept", "token", "authorization"}),
-		// TODO(michelle/zasgar): Make this more restrictive.
+		// TODO(michellenguyen/zasgar, PP-2581): Make this more restrictive.
 		handlers.AllowedOrigins([]string{"*"}),
 	}
 }

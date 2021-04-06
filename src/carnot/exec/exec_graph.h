@@ -168,7 +168,6 @@ class ExecutionGraph {
     // Get output descriptor.
     PL_ASSIGN_OR_RETURN(auto output_rel, node.OutputRelation(*schema_, *plan_state_, parents));
     table_store::schema::RowDescriptor output_descriptor(output_rel.col_types());
-    // TODO(michelle) (PL-400) causes excessive warnings.
     schema_->AddRelation(node.id(), output_rel);
     descriptors->insert({node.id(), output_descriptor});
 

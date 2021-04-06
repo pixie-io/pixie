@@ -91,9 +91,6 @@ class Column {
   std::string name_;
   types::DataType data_type_;
 
-  // TODO(michelle): This is a deque so that we can do easily do data expiration. In the future,
-  // when we refactor the table store to do data compaction we may want to change back to a vector
-  // with beginning and end indices.
   std::deque<std::shared_ptr<arrow::Array>> batches_;
 };
 
@@ -185,7 +182,7 @@ class Table : public NotCopyable {
    */
   BatchPosition FindBatchPositionGreaterThanOrEqual(int64_t time, arrow::MemoryPool* mem_pool);
 
-  // TODO(michelle) (PL-404): Time should always be column 0.
+  // TODO(michellenguyen, PL-404): Time should always be column 0.
   int64_t FindTimeColumn();
 
   /**
@@ -219,12 +216,9 @@ class Table : public NotCopyable {
   int64_t NumBatchesUnlocked() const ABSL_EXCLUSIVE_LOCKS_REQUIRED(cold_batches_lock_);
   schema::RowDescriptor desc_;
   std::vector<std::shared_ptr<Column>> columns_;
-  // TODO(michelle): (PL-388) Change hot_batches_ to a list-based queue.
+  // TODO(michellenguyen, PL-388): Change hot_batches_ to a list-based queue.
   std::unordered_map<std::string, std::shared_ptr<Column>> name_to_column_map_;
 
-  // TODO(michelle): This is a deque so that we can do easily do data expiration. In the future,
-  // when we refactor the table store to do data compaction we may want to change back to a vector
-  // with beginning and end indices.
   mutable std::deque<std::unique_ptr<pl::types::ColumnWrapperRecordBatch>> hot_batches_;
   mutable absl::base_internal::SpinLock hot_batches_lock_;
 

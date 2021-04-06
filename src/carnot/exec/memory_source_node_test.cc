@@ -136,7 +136,7 @@ TEST_F(MemorySourceNodeTest, added_batch) {
   EXPECT_EQ(sizeof(int64_t) * 5, tester.node()->BytesProcessed());
 }
 
-// TODO(michelle): PL-388 Re-enable this test when StopTime for range is fixed.
+// TODO(michellenguyen, PL-388): Re-enable this test when StopTime for range is fixed.
 TEST_F(MemorySourceNodeTest, DISABLED_range) {
   auto op_proto = planpb::testutils::CreateTestSourceRangePB();
   std::unique_ptr<plan::Operator> plan_node = plan::MemorySourceOperator::FromProto(op_proto, 1);

@@ -135,9 +135,9 @@ StatusOr<std::unique_ptr<schema::RowBatch>> Table::GetRowBatchSlice(int64_t row_
     if (hot_idx >= 0) {
       DCHECK(hot_batches_.size() > static_cast<size_t>(hot_idx));
       // Move hot column batches 0 to hot_idx into cold storage.
-      // TODO(michelle): (PL-388) We're currently converting hot data to row batches on a 1:1 basis.
-      // This should be updated so that multiple hot column batches are merged into a single row
-      // batch.
+      // TODO(michellenguyen, PL-388): We're currently converting hot data to row batches on a 1:1
+      // basis. This should be updated so that multiple hot column batches are merged into a single
+      // row batch.
       auto batch_idx = 0;
       while (batch_idx <= hot_idx) {
         for (size_t col_idx = 0; col_idx < columns_.size(); col_idx++) {
