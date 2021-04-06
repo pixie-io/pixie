@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/dgrijalva/jwt-go/v4"
+	"github.com/gofrs/uuid"
 
 	jwt2 "pixielabs.ai/pixielabs/src/shared/services/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"
@@ -50,19 +52,32 @@ func (s *AuthContext) UseJWTAuth(signingKey string, tokenString string) error {
 
 // ValidClaims returns true if the user is logged in and valid.
 func (s *AuthContext) ValidClaims() bool {
-	return s.Claims != nil
-	// TODO(michelle): Create service/cluster tokens.
-	// if s.Claims == nil {
-	// 	return false
-	// }
-	//
-	// if len(s.Claims.Subject) > 0 &&
-	// 	len(s.Claims.UserID) > 0 &&
-	// 	s.Claims.ExpiresAt > time.Now().Unix() {
-	// 	return true
-	// }
+	if s.Claims == nil {
+		return false
+	}
 
-	// return false
+	if len(s.Claims.Subject) == 0 {
+		return false
+	}
+	if s.Claims.ExpiresAt < time.Now().Unix() {
+		return false
+	}
+
+	switch utils.GetClaimsType(s.Claims) {
+	case utils.UserClaimType:
+		return s.Claims.GetUserClaims() != nil && len(s.Claims.GetUserClaims().UserID) > 0
+	case utils.ServiceClaimType:
+		return s.Claims.GetServiceClaims() != nil && len(s.Claims.GetServiceClaims().ServiceID) > 0
+	case utils.ClusterClaimType:
+		clusterClaims := s.Claims.GetClusterClaims()
+		if clusterClaims == nil {
+			return false
+		}
+		clusterClaimID := uuid.FromStringOrNil(clusterClaims.ClusterID)
+		return clusterClaimID != uuid.Nil
+	default:
+	}
+	return false
 }
 
 // NewContext returns a new context with session context.
