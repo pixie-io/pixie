@@ -6,6 +6,9 @@
 
 #include "src/carnot/planner/distributed/distributed_rules.h"
 #include "src/carnot/planner/distributed/distributed_splitter.h"
+#include "src/carnot/planner/distributed/presplit_analyzer.h"
+#include "src/carnot/planner/distributed/presplit_optimizer.h"
+
 namespace pl {
 namespace carnot {
 namespace planner {
@@ -95,7 +98,18 @@ StatusOr<absl::flat_hash_map<int64_t, bool>> DistributedSplitter::GetKelvinNodes
 }
 
 StatusOr<std::unique_ptr<BlockingSplitPlan>> DistributedSplitter::SplitKelvinAndAgents(
-    const IR* logical_plan) {
+    const IR* input_plan) {
+  PL_ASSIGN_OR_RETURN(auto logical_plan, input_plan->Clone());
+
+  // Run the pre-split analysis step.
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<PreSplitAnalyzer> analyzer,
+                      PreSplitAnalyzer::Create(compiler_state_));
+  PL_RETURN_IF_ERROR(analyzer->Execute(logical_plan.get()));
+  // Run the pre-split optimization step.
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<PreSplitOptimizer> optimizer,
+                      PreSplitOptimizer::Create(compiler_state_));
+  PL_RETURN_IF_ERROR(optimizer->Execute(logical_plan.get()));
+
   // Source_ids are necessary because we will make a clone of the plan at which point we will no
   // longer be able to use IRNode pointers and only IDs will be valid.
   std::vector<int64_t> source_ids;
@@ -103,9 +117,9 @@ StatusOr<std::unique_ptr<BlockingSplitPlan>> DistributedSplitter::SplitKelvinAnd
     source_ids.push_back(src->id());
   }
 
-  PL_ASSIGN_OR_RETURN(auto on_kelvin, GetKelvinNodes(logical_plan, source_ids));
+  PL_ASSIGN_OR_RETURN(auto on_kelvin, GetKelvinNodes(logical_plan.get(), source_ids));
   PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> grpc_bridge_plan,
-                      CreateGRPCBridgePlan(logical_plan, on_kelvin, source_ids));
+                      CreateGRPCBridgePlan(logical_plan.get(), on_kelvin, source_ids));
 
   PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> pem_plan, grpc_bridge_plan->Clone());
   PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> kelvin_plan, grpc_bridge_plan->Clone());
