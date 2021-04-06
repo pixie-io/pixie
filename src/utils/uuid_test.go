@@ -41,20 +41,6 @@ func TestProtoFromUUIDStrOrNil_InValidUUID(t *testing.T) {
 	assert.Equal(t, uint64(0), proto.LowBits)
 }
 
-func TestUUIDFromProto_DeprecatedStrValidUUID(t *testing.T) {
-	proto := &pb.UUID{
-		DeprecatedData: []byte(uuidStr),
-	}
-
-	u, err := utils.UUIDFromProto(proto)
-	require.NoError(t, err, "must not have an error")
-	assert.Equal(t, uuidStr, u.String(), "must have correct value")
-
-	wire, err := proto.Marshal()
-	require.NoError(t, err)
-	t.Logf("Wire Size for Old Format: %d bytes", len(wire))
-}
-
 func TestUUIDFromProto_BitsValidUUID(t *testing.T) {
 	proto := &pb.UUID{
 		HighBits: hi,
@@ -74,17 +60,7 @@ func TestUUIDFromProto_EmptyUUID(t *testing.T) {
 	proto := &pb.UUID{}
 	_, err := utils.UUIDFromProto(proto)
 	assert.NotNil(t, err)
-	assert.Contains(t, err.Error(), "neither data nor high_bits/low_bits are set in proto")
-}
-
-func TestUUIDFromProto_ZeroUUID(t *testing.T) {
-	proto := &pb.UUID{
-		DeprecatedData: []byte(uuid.Nil.String()),
-	}
-	u, err := utils.UUIDFromProto(proto)
-	require.NoError(t, err, "must not have an error")
-	assert.Equal(t, "00000000-0000-0000-0000-000000000000",
-		u.String(), "must have correct value")
+	assert.Contains(t, err.Error(), "uuid data in proto is nil")
 }
 
 func BenchmarkUUIDFromString(b *testing.B) {

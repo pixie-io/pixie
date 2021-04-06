@@ -4,28 +4,12 @@
 
 namespace pl {
 
-TEST(ParseUUID, deprecated_test) {
-  pl::uuidpb::UUID uuid_pb;
-  *(uuid_pb.mutable_deprecated_data()) = "ea8aa095-697f-49f1-b127-d50e5b6e2645";
-  ASSERT_OK_AND_ASSIGN(auto parsed, ParseUUID(uuid_pb));
-  EXPECT_EQ(parsed.str(), "ea8aa095-697f-49f1-b127-d50e5b6e2645");
-}
-
 TEST(ParseUUID, basic_test) {
   pl::uuidpb::UUID uuid_pb;
   uuid_pb.set_high_bits(0xea8aa095697f49f1);
   uuid_pb.set_low_bits(0xb127d50e5b6e2645);
   ASSERT_OK_AND_ASSIGN(auto parsed, ParseUUID(uuid_pb));
   EXPECT_EQ(parsed.str(), "ea8aa095-697f-49f1-b127-d50e5b6e2645");
-}
-
-TEST(ParseUUID, bad_input) {
-  pl::uuidpb::UUID uuid_pb;
-  // The 1 is removed from 4th segment b127.
-  *(uuid_pb.mutable_deprecated_data()) = "ea8aa095-697f-49f1-b27-d50e5b6e2645";
-  auto parsed = ParseUUID(uuid_pb);
-  ASSERT_FALSE(parsed.ok());
-  EXPECT_TRUE(error::IsInvalidArgument(parsed.status()));
 }
 
 TEST(ToProto, uuid_basic) {

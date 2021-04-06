@@ -22,10 +22,7 @@ func UUIDFromProto(pb *pb.UUID) (uuid.UUID, error) {
 		enc.PutUint64(b[8:], pb.LowBits)
 		return uuid.FromBytes(b)
 	}
-	if pb.DeprecatedData != nil {
-		return uuid.FromString(string(pb.DeprecatedData))
-	}
-	return uuid.Nil, errors.New("neither data nor high_bits/low_bits are set in proto")
+	return uuid.Nil, errors.New("uuid data in proto is nil")
 }
 
 // UUIDFromProtoOrNil converts a proto message to uuid if error sets to nil uuid.
@@ -66,9 +63,6 @@ func IsNilUUIDProto(pb *pb.UUID) bool {
 	}
 	if pb.HighBits != 0 && pb.LowBits != 0 {
 		return false
-	}
-	if pb.DeprecatedData != nil {
-		return uuid.FromStringOrNil(string(pb.DeprecatedData)) == uuid.Nil
 	}
 	return true
 }

@@ -12,13 +12,7 @@ namespace pl {
  * @return proto message
  */
 inline StatusOr<sole::uuid> ParseUUID(const pl::uuidpb::UUID& uuid_proto) {
-  if (uuid_proto.high_bits() != 0 && uuid_proto.low_bits() != 0) {
-    return sole::rebuild(uuid_proto.high_bits(), uuid_proto.low_bits());
-  }
-  if (uuid_proto.deprecated_data().size() != 36) {
-    return error::InvalidArgument("Malformed UUID: $0", uuid_proto.deprecated_data());
-  }
-  return sole::rebuild(uuid_proto.deprecated_data());
+  return sole::rebuild(uuid_proto.high_bits(), uuid_proto.low_bits());
 }
 
 /**

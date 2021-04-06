@@ -12,8 +12,6 @@ def uuid_pb_from_string(id_str: str) -> uuidpb.UUID:
 
 
 def uuid_pb_to_string(pb: uuidpb.UUID) -> str:
-    if pb.deprecated_data:
-        return pb.deprecated_data.decode('utf-8')
     i = (pb.high_bits << 64) + pb.low_bits
     u = uuid.UUID(int=i)
     return str(u)
