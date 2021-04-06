@@ -219,8 +219,8 @@ Status SendFinalExecutionStatsToOutgoingConns(
 
     ToProto(query_id, req.mutable_query_id());
 
-    auto total_bytes_processed = 0;
-    auto total_records_processed = 0;
+    int64_t total_bytes_processed = 0;
+    int64_t total_records_processed = 0;
 
     // Add all of the agent stats.
     for (const auto& agent_stats : all_agent_stats) {
