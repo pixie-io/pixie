@@ -35,7 +35,7 @@ class GoTLSServerContainer : public ContainerRunner {
 
  private:
   static constexpr std::string_view kBazelImageTar =
-      "demos/client_server_apps/go_https/server/https_server_image.tar";
+      "src/stirling/testing/demo_apps/go_https/server/server_image.tar";
   static constexpr std::string_view kInstanceNamePrefix = "https_server";
   static constexpr std::string_view kReadyMessage = "Starting HTTPS service";
 };
@@ -47,7 +47,7 @@ class GoTLSClientContainer : public ContainerRunner {
 
  private:
   static constexpr std::string_view kBazelImageTar =
-      "demos/client_server_apps/go_https/client/https_client_image.tar";
+      "src/stirling/testing/demo_apps/go_https/client/client_image.tar";
   static constexpr std::string_view kInstanceNamePrefix = "https_client";
   static constexpr std::string_view kReadyMessage = R"({"status":"ok"})";
 };

@@ -39,7 +39,7 @@ func main() {
 
 	var cert = flag.String("cert", "", "Path to the .crt file.")
 	var key = flag.String("key", "", "Path to the .key file.")
-	const keyPairBase = "demos/client_server_apps/go_https/server"
+	const keyPairBase = "src/stirling/testing/demo_apps/go_https/server"
 
 	certFile := keyPairBase + "/https-server.crt"
 	if len(*cert) > 0 {

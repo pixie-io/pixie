@@ -1,6 +1,6 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
-load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_layer")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image")
 
 go_library(
     name = "go_default_library",
@@ -9,7 +9,7 @@ go_library(
         "https-server.crt",
         "https-server.key",
     ],
-    importpath = "pixielabs.ai/pixielabs/demos/client_server_apps/go_https/server",
+    importpath = "pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/go_https/server",
     visibility = ["//visibility:private"],
 )
 
@@ -27,20 +27,15 @@ filegroup(
     ],
 )
 
-container_layer(
-    name = "server_certs",
+container_image(
+    name = "server_image_base",
+    base = "@go_image_base//image",
     directory = "/certs",
     files = [":server_cert_files"],
 )
 
-container_image(
-    name = "server_image_base",
-    base = "@go_image_base//image",
-    layers = [":server_certs"],
-)
-
 go_image(
-    name = "https_server_image",
+    name = "server_image",
     args = [
         "--cert=/certs/https-server.crt",
         "--key=/certs/https-server.key",

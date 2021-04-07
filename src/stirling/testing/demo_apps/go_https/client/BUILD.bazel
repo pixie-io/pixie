@@ -1,11 +1,10 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
-load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_layer")
 
 go_library(
     name = "go_default_library",
     srcs = ["https_client.go"],
-    importpath = "pixielabs.ai/pixielabs/demos/client_server_apps/go_https/client",
+    importpath = "pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/go_https/client",
     visibility = ["//visibility:private"],
     deps = [
         "@com_github_spf13_pflag//:go_default_library",
@@ -20,7 +19,7 @@ go_binary(
 )
 
 go_image(
-    name = "https_client_image",
+    name = "client_image",
     base = "@go_image_base//image",
     binary = ":https_client",
     visibility = ["//visibility:public"],

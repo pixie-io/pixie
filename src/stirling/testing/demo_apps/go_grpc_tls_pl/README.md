@@ -21,3 +21,4 @@ ${PIXIE_ROOT}/bazel-bin/src/stirling/testing/demo_apps/go_grpc_tls_pl/client/cli
   --client_tls_key=${PIXIE_ROOT}/bazel-bin/src/stirling/testing/demo_apps/go_grpc_tls_pl/certs/client.key \
   --tls_ca_cert=${PIXIE_ROOT}/bazel-bin/src/stirling/testing/demo_apps/go_grpc_tls_pl/certs/ca.crt
 ```
+\

@@ -367,8 +367,8 @@ pl_cc_test(
     timeout = "moderate",
     srcs = ["go_tls_trace_bpf_test.cc"],
     data = [
-        "//demos/client_server_apps/go_https/client:https_client_image.tar",
-        "//demos/client_server_apps/go_https/server:https_server_image.tar",
+        "//src/stirling/testing/demo_apps/go_https/client:client_image.tar",
+        "//src/stirling/testing/demo_apps/go_https/server:server_image.tar",
     ],
     flaky = True,
     tags = [
