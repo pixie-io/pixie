@@ -27,6 +27,7 @@ import (
 
 	"github.com/slack-go/slack"
 	"go.withpixie.dev/pixie/src/api/go/pxapi"
+	"go.withpixie.dev/pixie/src/api/go/pxapi/errdefs"
 	"go.withpixie.dev/pixie/src/api/go/pxapi/types"
 )
 

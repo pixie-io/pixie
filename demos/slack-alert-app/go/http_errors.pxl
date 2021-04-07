@@ -3,7 +3,7 @@
 
 ''' HTTP Errors
 
-This script ouputs a table of the HTTP total requests count and 
+This script ouputs a table of the HTTP total requests count and
 HTTP error (>4xxx) count for each service in the `px-sock-shop` namespace.
 '''
 
@@ -12,7 +12,7 @@ import px
 df = px.DataFrame(table='http_events', start_time='-5m')
 
 # Add column for HTTP response status errors.
-df.error = df.http_resp_status >= 400
+df.error = df.resp_status >= 400
 
 # Add columns for service, namespace info
 df.namespace = df.ctx['namespace']
@@ -24,7 +24,7 @@ df = df[df.namespace == 'px-sock-shop']
 # Group HTTP events by service, counting errors and total HTTP events.
 df = df.groupby(['service']).agg(
     error_count=('error', px.sum),
-    total_requests=('http_resp_status', px.count)
+    total_requests=('resp_status', px.count)
 )
 
 px.display(df, "http_table")
