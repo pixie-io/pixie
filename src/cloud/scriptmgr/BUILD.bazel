@@ -1,7 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
-load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
+load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 go_library(
@@ -30,9 +30,8 @@ go_binary(
     visibility = ["//visibility:public"],
 )
 
-cc_image(
+go_image(
     name = "scriptmgr_server_image",
-    base = "//:pl_cc_base_image",
     binary = ":scriptmgr",
     visibility = ["//visibility:public"],
 )

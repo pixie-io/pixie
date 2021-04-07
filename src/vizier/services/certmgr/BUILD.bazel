@@ -1,6 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
-load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 go_library(
@@ -29,9 +28,8 @@ go_binary(
     visibility = ["//visibility:public"],
 )
 
-cc_image(
+go_image(
     name = "certmgr_server_image",
-    base = "//:pl_cc_base_image",
     binary = ":certmgr",
     visibility = ["//visibility:public"],
 )
