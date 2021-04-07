@@ -43,20 +43,24 @@ test-asan: ## Run all the tests (except UI), with address sanitizer.
 test-tsan: ## Run all the tests (except UI),  with thread sanitizer.
 	$(BAZEL) test --config=tsan //... ${BAZEL_TEST_EXTRA_ARGS}
 
+.PHONY: go-mod-tidy
+go-mod-tidy: ## Ensure that go are cleaned up.
+	go mod tidy
+
 .PHONY: go-mod-ensure
 go-mod-ensure: ## Ensure that go dependencies exist.
 	go mod download
 
 .PHONY: gazelle-repos
 gazelle-repos: go.mod
-	$(BAZEL) run //:gazelle -- update-repos -from_file=go.mod
+	$(BAZEL) run //:gazelle -- update-repos -from_file=go.mod -prune
 
 .PHONY: gazelle
 gazelle: gazelle-repos
 	$(BAZEL) run //:gazelle -- fix
 
 .PHONY: go-setup
-go-setup: go-mod-ensure gazelle ## Run go setup to regenrate modules/build files.
+go-setup: go-mod-tidy go-mod-ensure gazelle ## Run go setup to regenrate modules/build files.
 
 dev-env-start: ## Start K8s dev environment.
 	$(WORKSPACE)/scripts/setup_dev_k8s.sh
