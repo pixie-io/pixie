@@ -24,7 +24,7 @@ final class PrototoolCheckerTest {
         });
 
         if (count($protoFiles) == 0) {
-            return $test_results; 
+            return $test_results;
         }
 
         // Build proto files.
@@ -45,6 +45,7 @@ final class PrototoolCheckerTest {
             exec('chmod -R 755 '. $cpModuleDir);
         }
 
+        $output = array();
         exec('prototool break check . --git-branch main --walk-timeout 10s', $output, $return_var);
         $updatedRes = new ArcanistUnitTestResult();
         $updatedRes->setName('Protobuf Breaking API check');
@@ -52,10 +53,10 @@ final class PrototoolCheckerTest {
             $updatedRes->setResult(ArcanistUnitTestResult::RESULT_PASS);
         } else {
             $updatedRes->setUserData(implode("\n", $output));
-            $updatedRes->setResult(ArcanistUnitTestResult::RESULT_FAIL);   
+            $updatedRes->setResult(ArcanistUnitTestResult::RESULT_FAIL);
         }
 
-        $test_results[] = $updatedRes;           
+        $test_results[] = $updatedRes;
         return $test_results;
     }
 }
