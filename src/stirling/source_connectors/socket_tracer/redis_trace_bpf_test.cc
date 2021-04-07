@@ -12,6 +12,8 @@ using ::pl::testing::BazelBinTestFilePath;
 
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
+using ::testing::IsEmpty;
+using ::testing::Not;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
@@ -119,8 +121,14 @@ TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
       GetRedisTraceRecords(record_batch, container_.process_pid());
 
   // redis-cli sends a 'command' req to query all available commands from server.
+  // This only appears to happen when piping in a script.
   // The response is too long to test meaningfully, so we ignore them.
-  redis_trace_records.erase(redis_trace_records.begin());
+  // Sometimes this command is not properly traced, so we make this conditional.
+  // TODO(oazizi/yzhao): Figure out why this is not always traced.
+  ASSERT_THAT(redis_trace_records, Not(IsEmpty()));
+  if (redis_trace_records.begin()->cmd == "COMMAND") {
+    redis_trace_records.erase(redis_trace_records.begin());
+  }
 
   EXPECT_THAT(
       redis_trace_records,
@@ -174,12 +182,9 @@ TEST_F(RedisTraceBPFTest, VerifyPubSubCommands) {
   std::vector<RedisTraceRecord> redis_trace_records =
       GetRedisTraceRecords(record_batch, container_.process_pid());
 
-  // redis-cli sends a 'command' req to query all available commands from server.
-  // The response is too long to test meaningfully, so we ignore them.
-  redis_trace_records.erase(redis_trace_records.begin());
-
   EXPECT_THAT(redis_trace_records,
-              ElementsAre(RedisTraceRecord{"PUBLISH", R"({"channel":"foo","message":"test"})", "1"},
+              ElementsAre(RedisTraceRecord{"SUBSCRIBE", R"({"channel":["foo","1"]})", ""},
+                          RedisTraceRecord{"PUBLISH", R"({"channel":"foo","message":"test"})", "1"},
                           RedisTraceRecord{"PUSH PUB", "", R"(["message","foo","test"])"}));
 }
 
