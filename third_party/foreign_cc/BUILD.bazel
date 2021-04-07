@@ -1,12 +1,11 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_foreign_cc//tools/build_defs:cmake.bzl", "cmake_external")
+load("@rules_foreign_cc//tools/build_defs:configure.bzl", "configure_make")
+load("@rules_foreign_cc//tools/build_defs:make.bzl", "make")
+
 licenses(["notice"])
 
 package(default_visibility = ["//visibility:public"])
-
-load("@rules_foreign_cc//tools/build_defs:configure.bzl", "configure_make")
-load("@rules_foreign_cc//tools/build_defs:cmake.bzl", "cmake_external")
-load("@rules_foreign_cc//tools/build_defs:make.bzl", "make")
-load("@io_bazel_rules_docker//container:container.bzl", "container_image")
-load("@package_bundle//file:packages.bzl", "packages")
 
 configure_make(
     name = "gperftools_build",
@@ -35,11 +34,11 @@ cc_library(
 cmake_external(
     name = "natsc",
     cache_entries = {
-        "NATS_BUILD_STREAMING": "OFF",
         # This forces nats to link against boringssl instead of openssl.
         # Since some of our services use both GRPC and nats, this lets
         # us have a single SSL library.
         "CMAKE_SYSTEM_PREFIX_PATH": "$EXT_BUILD_DEPS",
+        "NATS_BUILD_STREAMING": "OFF",
     },
     generate_crosstool_file = True,
     lib_name = "libnats_static",
@@ -54,9 +53,9 @@ cmake_external(
 cmake_external(
     name = "libuv",
     cache_entries = {
+        "BUILDING_UV_SHARED": "OFF",
         "BUILD_TESTING": "OFF",
         "USING_UV_SHARE": "OFF",
-        "BUILDING_UV_SHARED": "OFF",
     },
     generate_crosstool_file = True,
     lib_name = "libuv_a",
@@ -70,13 +69,13 @@ cmake_external(
 cmake_external(
     name = "libarchive",
     cache_entries = {
-        "ENABLE_CNG": "OFF",
-        "ENABLE_TAR": "OFF",
-        "ENABLE_TAR_SHARED": "OFF",
-        "ENABLE_CPIO": "OFF",
-        "ENABLE_CPIO_SHARED": "OFF",
         "ENABLE_CAT": "OFF",
         "ENABLE_CAT_SHARED": "OFF",
+        "ENABLE_CNG": "OFF",
+        "ENABLE_CPIO": "OFF",
+        "ENABLE_CPIO_SHARED": "OFF",
+        "ENABLE_TAR": "OFF",
+        "ENABLE_TAR_SHARED": "OFF",
         "ENABLE_TEST": "OFF",
     },
     generate_crosstool_file = True,

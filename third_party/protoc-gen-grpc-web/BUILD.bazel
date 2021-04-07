@@ -1,6 +1,6 @@
-package(default_visibility = ["//visibility:public"])
+load("@rules_cc//cc:defs.bzl", "cc_binary")
 
-load("//bazel:pl_build_system.bzl", "pl_cc_binary")
+package(default_visibility = ["//visibility:public"])
 
 cc_binary(
     name = "protoc-gen-grpc-web",

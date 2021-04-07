@@ -1,7 +1,7 @@
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test", "pl_cc_test_library")
+
 # gazelle:ignore
 package(default_visibility = ["//src:__subpackages__"])
-
-load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test", "pl_cc_test_library", "pl_linkopts")
 
 pl_cc_library(
     name = "cc_library",

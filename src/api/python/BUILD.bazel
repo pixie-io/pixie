@@ -1,6 +1,5 @@
 # gazelle:ignore
-load("@rules_python//python:defs.bzl", "py_library", "py_test")
-load("@vizier_api_python_deps//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_test")
 
 sh_library(
     name = "copy_python_api_sh",

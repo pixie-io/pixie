@@ -1,6 +1,7 @@
 # Based on envoy(28d5f41) envoy/bazel/envoy_build_system.bzl
 # Compute the final copts based on various options.
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_context", "go_library", "go_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_context", "go_library")
+load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
 
 def pl_copts():
     posix_options = [
@@ -111,8 +112,7 @@ def pl_cc_library_internal(
         strip_include_prefix = None):
     if tcmalloc_dep:
         deps += tcmalloc_external_deps(repository)
-
-    native.cc_library(
+    cc_library(
         name = name,
         srcs = srcs,
         hdrs = hdrs,
@@ -156,7 +156,7 @@ def pl_cc_binary(
     if not linkopts:
         linkopts = pl_linkopts()
     deps = deps
-    native.cc_binary(
+    cc_binary(
         name = name,
         srcs = srcs,
         data = data,
@@ -201,8 +201,7 @@ def pl_cc_test(
         tags = test_lib_tags,
         defines = defines,
     )
-
-    native.cc_test(
+    cc_test(
         name = name,
         copts = pl_copts(),
         linkopts = pl_test_linkopts(),
@@ -235,7 +234,7 @@ def pl_cc_test_library(
         repository = "",
         tags = [],
         defines = []):
-    native.cc_library(
+    cc_library(
         name = name,
         srcs = srcs,
         hdrs = hdrs,
@@ -355,22 +354,22 @@ pl_bindata = rule(
     _pl_bindata_impl,
     toolchains = ["@io_bazel_rules_go//go:toolchain"],
     attrs = {
-        "_go_context_data": attr.label(default = "@io_bazel_rules_go//:go_context_data"),
-        "srcs": attr.label_list(allow_files = True),
-        "package": attr.string(mandatory = True),
         "compress": attr.bool(default = True),
-        "metadata": attr.bool(default = False),
+        "extra_args": attr.string_list(),
         "memcopy": attr.bool(default = True),
+        "metadata": attr.bool(default = False),
         "modtime": attr.bool(default = False),
-        "strip_external": attr.bool(default = False),
+        "package": attr.string(mandatory = True),
+        "srcs": attr.label_list(allow_files = True),
         # Modification of the original bindata arguments.
         "strip_bin_dir": attr.bool(default = False),
-        "extra_args": attr.string_list(),
+        "strip_external": attr.bool(default = False),
         "_bindata": attr.label(
             executable = True,
             cfg = "host",
             # Modification of go_bindata repo from kevinburke to the go-bindata repo.
             default = "@com_github_go_bindata_go_bindata//go-bindata:go-bindata",
         ),
+        "_go_context_data": attr.label(default = "@io_bazel_rules_go//:go_context_data"),
     },
 )

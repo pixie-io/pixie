@@ -1,6 +1,6 @@
-package(default_visibility = ["//src:__subpackages__"])
+load("//bazel:pl_build_system.bzl", "pl_cc_test")
 
-load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test", "pl_cc_test_library", "pl_linkopts")
+package(default_visibility = ["//src:__subpackages__"])
 
 # This test needs to run as root, because stirling needs root in order to create the http and mysql events table.
 # Jenkins will run this test as root, but to run it locally, build it and then execute the bazel-bin file with sudo.

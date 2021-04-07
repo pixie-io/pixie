@@ -1,7 +1,7 @@
+load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
+
 # gazelle:ignore
 package(default_visibility = ["//src/stirling:__subpackages__"])
-
-load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
 
 pl_proto_library(
     name = "greet_pl_proto",

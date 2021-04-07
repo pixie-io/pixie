@@ -1,6 +1,6 @@
-package(default_visibility = ["//src:__subpackages__"])
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
 
-load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test", "pl_cc_test_library")
+package(default_visibility = ["//src:__subpackages__"])
 
 pl_cc_library(
     name = "cc_library",

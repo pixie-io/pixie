@@ -1,8 +1,8 @@
-package(default_visibility = ["//src/stirling:__subpackages__"])
-
-load("//bazel:pl_build_system.bzl", "pl_cc_test")
 load("//bazel:cc_resource.bzl", "pl_bpf_cc_resource")
 load("//bazel:pl_bpf_preprocess.bzl", "pl_bpf_preprocess")
+load("//bazel:pl_build_system.bzl", "pl_cc_test")
+
+package(default_visibility = ["//src/stirling:__subpackages__"])
 
 # TODO(oazizi): Ideally, we would use pl_bpf_preprocess and feed it to pl_cc_resource
 # as an input, but that turns out to be a bit more tricky, since bl_cc_resource would

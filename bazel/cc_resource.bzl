@@ -1,3 +1,4 @@
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//bazel:pl_bpf_preprocess.bzl", "pl_bpf_preprocess")
 
 def pl_cc_resource(
@@ -55,7 +56,7 @@ def pl_cc_resource_impl(
     )
 
     # Create a cc_library with the .o file.
-    native.cc_library(name = name, srcs = [object_file], tags = tags, linkstatic = 1, **kwargs)
+    cc_library(name = name, srcs = [object_file], tags = tags, linkstatic = 1, **kwargs)
 
 def pl_exp_cc_resource(**kwargs):
     tags = kwargs.get("tags", [])

@@ -1,7 +1,10 @@
-licenses(["restricted"])
-
 load("@bazel_gazelle//:def.bzl", "gazelle")
+load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image")
+load("@package_bundle//file:packages.bzl", "packages")
 load("//bazel:repositories.bzl", "list_pl_deps")
+
+licenses(["restricted"])
 
 exports_files(["LICENSE"])
 
@@ -74,15 +77,14 @@ gazelle(
 
 # gazelle:resolve go pixielabs.ai/pixielabs/third_party/kuberesolver //third_party:kuberesolver_library
 
-load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier")
-
 buildifier(
     name = "buildifier",
+    exclude_patterns = [
+        "./third_party/*",
+    ],
+    lint_mode = "fix",
+    lint_warnings = ["all"],
 )
-
-load("@io_bazel_rules_docker//container:container.bzl", "container_bundle", "container_image")
-load("@io_bazel_rules_docker//contrib:push-all.bzl", "container_push")
-load("@package_bundle//file:packages.bzl", "packages")
 
 pl_cc_base_packages = [
     packages["libc6"],

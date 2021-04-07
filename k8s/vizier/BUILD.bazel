@@ -1,20 +1,19 @@
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
+load("@io_bazel_rules_docker//contrib:push-all.bzl", "container_push")
+load(":images.bzl", "generate_vizier_bootstrap_yamls", "generate_vizier_metadata_persist_yamls", "generate_vizier_yamls", "image_map_with_bundle_version")
+
 package(default_visibility = ["//visibility:public"])
 
-load(":images.bzl", "generate_vizier_bootstrap_yamls", "generate_vizier_yamls", "image_map_with_bundle_version")
-load(":images.bzl", "generate_vizier_metadata_persist_yamls", "generate_vizier_yamls", "image_map_with_bundle_version")
-load("@io_bazel_rules_docker//container:container.bzl", "container_bundle", "container_image")
-load("@io_bazel_rules_docker//contrib:push-all.bzl", "container_push")
-load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
-
 VIZIER_IMAGE_MAP = {
-    "gcr.io/pl-dev-infra/vizier/pem_image": "//src/vizier/services/agent/pem:pem_image",
-    "gcr.io/pl-dev-infra/vizier/kelvin_image": "//src/vizier/services/agent/kelvin:kelvin_image",
-    "gcr.io/pl-dev-infra/vizier/cloud_connector_server_image": "//src/vizier/services/cloud_connector:cloud_connector_server_image",
-    "gcr.io/pl-dev-infra/vizier/metadata_server_image": "//src/vizier/services/metadata:metadata_server_image",
-    "gcr.io/pl-dev-infra/vizier/query_broker_server_image": "//src/vizier/services/query_broker:query_broker_server_image",
-    "gcr.io/pl-dev-infra/vizier/certmgr_server_image": "//src/vizier/services/certmgr:certmgr_server_image",
-    "gcr.io/pl-dev-infra/vizier/vizier_updater_image": "//src/utils/pixie_updater:vizier_updater_image",
     "gcr.io/pl-dev-infra/vizier/cert_provisioner_image": "//src/utils/cert_provisioner:cert_provisioner_image",
+    "gcr.io/pl-dev-infra/vizier/certmgr_server_image": "//src/vizier/services/certmgr:certmgr_server_image",
+    "gcr.io/pl-dev-infra/vizier/cloud_connector_server_image": "//src/vizier/services/cloud_connector:cloud_connector_server_image",
+    "gcr.io/pl-dev-infra/vizier/kelvin_image": "//src/vizier/services/agent/kelvin:kelvin_image",
+    "gcr.io/pl-dev-infra/vizier/metadata_server_image": "//src/vizier/services/metadata:metadata_server_image",
+    "gcr.io/pl-dev-infra/vizier/pem_image": "//src/vizier/services/agent/pem:pem_image",
+    "gcr.io/pl-dev-infra/vizier/query_broker_server_image": "//src/vizier/services/query_broker:query_broker_server_image",
+    "gcr.io/pl-dev-infra/vizier/vizier_updater_image": "//src/utils/pixie_updater:vizier_updater_image",
 }
 
 generate_vizier_yamls(
@@ -93,16 +92,16 @@ pkg_tar(
     name = "vizier_yamls",
     srcs =
         select({
-            "//conditions:default": ["//k8s/vizier:private_vizier_bootstrap_prod.yaml"],
             ":public": ["//k8s/vizier:public_vizier_bootstrap_prod.yaml"],
+            "//conditions:default": ["//k8s/vizier:private_vizier_bootstrap_prod.yaml"],
         }) +
         select({
-            "//conditions:default": ["//k8s/vizier:private_vizier_etcd_metadata_prod.yaml"],
             ":public": ["//k8s/vizier:public_vizier_etcd_metadata_prod.yaml"],
+            "//conditions:default": ["//k8s/vizier:private_vizier_etcd_metadata_prod.yaml"],
         }) +
         select({
-            "//conditions:default": ["//k8s/vizier:private_vizier_metadata_persist_prod.yaml"],
             ":public": ["//k8s/vizier:public_vizier_metadata_persist_prod.yaml"],
+            "//conditions:default": ["//k8s/vizier:private_vizier_metadata_persist_prod.yaml"],
         }) + [
             "//k8s/vizier_deps:nats_prod",
             "//k8s/vizier_deps:etcd_operator_prod",
@@ -110,10 +109,10 @@ pkg_tar(
     package_dir = "/yamls",
     remap_paths = {
         "/vizier/private_vizier_bootstrap_prod.yaml": "vizier/vizier_bootstrap_prod.yaml",
-        "/vizier/public_vizier_bootstrap_prod.yaml": "vizier/vizier_bootstrap_prod.yaml",
         "/vizier/private_vizier_etcd_metadata_prod.yaml": "vizier/vizier_etcd_metadata_prod.yaml",
-        "/vizier/public_vizier_etcd_metadata_prod.yaml": "vizier/vizier_etcd_metadata_prod.yaml",
         "/vizier/private_vizier_metadata_persist_prod.yaml": "vizier/vizier_metadata_persist_prod.yaml",
+        "/vizier/public_vizier_bootstrap_prod.yaml": "vizier/vizier_bootstrap_prod.yaml",
+        "/vizier/public_vizier_etcd_metadata_prod.yaml": "vizier/vizier_etcd_metadata_prod.yaml",
         "/vizier/public_vizier_metadata_persist_prod.yaml": "vizier/vizier_metadata_persist_prod.yaml",
     },
     strip_prefix = "/k8s",

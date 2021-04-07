@@ -1,7 +1,7 @@
-package(default_visibility = ["//src/stirling:__subpackages__"])
-
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 load("@io_bazel_rules_docker//container:container.bzl", "container_layer")
+
+package(default_visibility = ["//src/stirling:__subpackages__"])
 
 pkg_tar(
     name = "bind_conf_files",

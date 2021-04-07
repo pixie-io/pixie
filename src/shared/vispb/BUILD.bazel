@@ -1,6 +1,7 @@
+load("//bazel:grpc_web.bzl", "pl_grpc_web_library")
+
 # gazelle:ignore
 load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library", "pl_py_proto_library")
-load("//bazel:grpc_web.bzl", "pl_grpc_web_library")
 
 pl_proto_library(
     name = "vis_pl_proto",

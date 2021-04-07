@@ -1,8 +1,8 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_test")
+load("//bazel:pl_build_system.bzl", "pl_cgo_library")
+
 # gazelle:ignore
 package(default_visibility = ["//src:__subpackages__"])
-
-load("//bazel:pl_build_system.bzl", "pl_cgo_library")
-load("@io_bazel_rules_go//go:def.bzl", "go_test")
 
 pl_cgo_library(
     name = "go_default_library",

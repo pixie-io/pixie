@@ -1,8 +1,8 @@
 # gazelle:ignore
 
-package(default_visibility = ["//src:__subpackages__"])
+load("//bazel:proto_compile.bzl", "pl_go_proto_library", "pl_proto_library", "pl_py_grpc_library")
 
-load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library", "pl_py_grpc_library")
+package(default_visibility = ["//src:__subpackages__"])
 
 pl_proto_library(
     name = "cloudapi_pl_proto",

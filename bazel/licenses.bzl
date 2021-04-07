@@ -25,13 +25,13 @@ def _fetch_licenses_impl(ctx):
 fetch_licenses = rule(
     implementation = _fetch_licenses_impl,
     attrs = dict({
-        "src": attr.label(mandatory = True, allow_single_file = True),
-        "oauth_token": attr.label(mandatory = True, allow_single_file = True),
-        "manual_licenses": attr.label(mandatory = True, allow_single_file = True),
-        "fetch_tool": attr.label(mandatory = True, allow_single_file = True),
-        "use_pkg_dev_go": attr.bool(),
         "disallow_missing": attr.bool(),
+        "fetch_tool": attr.label(mandatory = True, allow_single_file = True),
+        "manual_licenses": attr.label(mandatory = True, allow_single_file = True),
+        "oauth_token": attr.label(mandatory = True, allow_single_file = True),
         "out_found": attr.output(mandatory = True),
         "out_missing": attr.output(),
+        "src": attr.label(mandatory = True, allow_single_file = True),
+        "use_pkg_dev_go": attr.bool(),
     }),
 )

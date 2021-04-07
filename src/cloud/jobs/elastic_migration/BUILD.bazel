@@ -1,7 +1,6 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
-load("@io_bazel_rules_docker//go:image.bzl", "go_image")
-load("@io_bazel_rules_docker//container:layer.bzl", "container_layer")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
+load("@io_bazel_rules_docker//go:image.bzl", "go_image")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("@io_bazel_rules_k8s//k8s:object.bzl", "k8s_object")
 
 go_library(
@@ -57,9 +56,9 @@ k8s_object(
     images = {"gcr.io/pl-dev-infra/cloud/elastic_migration_image:latest": ":elastic_migration_image"},
     kind = "job",
     substitutions = {
-        "{namespace}": "plc-dev",
         "{es_index}": "$(es_index)",
         "{mapping_file}": "$(mapping_file)",
+        "{namespace}": "plc-dev",
     },
     tags = ["manual"],
     template = ":elastic_migration_job.yaml",
@@ -70,9 +69,9 @@ k8s_object(
     images = {"gcr.io/pl-dev-infra/cloud/elastic_migration_image:latest": ":elastic_migration_image"},
     kind = "job",
     substitutions = {
-        "{namespace}": "plc-staging",
         "{es_index}": "$(es_index)",
         "{mapping_file}": "$(mapping_file)",
+        "{namespace}": "plc-staging",
     },
     tags = ["manual"],
     template = ":elastic_migration_job.yaml",
@@ -83,9 +82,9 @@ k8s_object(
     images = {"gcr.io/pl-dev-infra/cloud/elastic_migration_image:latest": ":elastic_migration_image"},
     kind = "job",
     substitutions = {
-        "{namespace}": "plc",
         "{es_index}": "$(es_index)",
         "{mapping_file}": "$(mapping_file)",
+        "{namespace}": "plc",
     },
     tags = ["manual"],
     template = ":elastic_migration_job.yaml",

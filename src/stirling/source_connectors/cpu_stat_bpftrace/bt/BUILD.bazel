@@ -1,6 +1,6 @@
-package(default_visibility = ["//src/stirling/source_connectors/cpu_stat_bpftrace:__pkg__"])
-
 load("//bazel:cc_resource.bzl", "pl_bpf_cc_resource")
+
+package(default_visibility = ["//src/stirling/source_connectors/cpu_stat_bpftrace:__pkg__"])
 
 pl_bpf_cc_resource(
     name = "cpustat",

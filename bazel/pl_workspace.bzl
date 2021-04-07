@@ -1,16 +1,16 @@
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 load("@com_github_bazelbuild_buildtools//buildifier:deps.bzl", "buildifier_dependencies")
+load("@distroless//package_manager:dpkg.bzl", "dpkg_list", "dpkg_src")
+load("@distroless//package_manager:package_manager.bzl", "package_manager_repositories")
+load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
+load("@io_bazel_rules_docker//go:image.bzl", _go_image_repos = "repositories")
+load("@io_bazel_rules_docker//java:image.bzl", _java_image_repos = "repositories")
+load("@io_bazel_rules_docker//repositories:deps.bzl", container_deps = "deps")
 load(
     "@io_bazel_rules_docker//repositories:repositories.bzl",
     container_repositories = "repositories",
 )
-load("@io_bazel_rules_docker//repositories:deps.bzl", container_deps = "deps")
-load("@io_bazel_rules_docker//go:image.bzl", _go_image_repos = "repositories")
-load("@io_bazel_rules_docker//java:image.bzl", _java_image_repos = "repositories")
-load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
-load("@distroless//package_manager:package_manager.bzl", "package_manager_repositories")
-load("@distroless//package_manager:dpkg.bzl", "dpkg_list", "dpkg_src")
 load("@io_bazel_rules_k8s//k8s:k8s.bzl", "k8s_repositories")
 load("@io_bazel_rules_k8s//k8s:k8s_go_deps.bzl", k8s_go_deps = "deps")
 

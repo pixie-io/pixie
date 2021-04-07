@@ -59,6 +59,10 @@ gazelle-repos: go.mod
 gazelle: gazelle-repos
 	$(BAZEL) run //:gazelle -- fix
 
+.PHONY: buildifier
+buildifier:
+	$(BAZEL) run //:buildifier
+
 .PHONY: go-setup
 go-setup: go-mod-tidy go-mod-ensure gazelle ## Run go setup to regenrate modules/build files.
 

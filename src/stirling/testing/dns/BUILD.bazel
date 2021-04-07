@@ -1,8 +1,7 @@
-package(default_visibility = ["//src/stirling:__subpackages__"])
-
 load("@io_bazel_rules_docker//java:image.bzl", "java_image")
-load("@io_bazel_rules_docker//container:container.bzl", "container_image")
-load("@io_bazel_rules_docker//container:container.bzl", "container_push")
+load("@rules_java//java:defs.bzl", "java_binary")
+
+package(default_visibility = ["//src/stirling:__subpackages__"])
 
 # These targets are binaries that send requests to the host DNS resolution with different sites.
 # Intended for use in tests, where we want to trace the DNS queries.

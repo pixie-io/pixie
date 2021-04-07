@@ -1,7 +1,7 @@
-package(default_visibility = ["//src/vizier:__subpackages__"])
-
-load("//bazel:pl_build_system.bzl", "pl_bindata")
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//bazel:pl_build_system.bzl", "pl_bindata")
+
+package(default_visibility = ["//src/vizier:__subpackages__"])
 
 pl_bindata(
     name = "udf_info_bindata",

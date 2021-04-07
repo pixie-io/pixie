@@ -1,9 +1,9 @@
+load("//bazel:pl_build_system.bzl", "pl_cc_library")
+
 package(default_visibility = [
     "//experimental/bpf:__subpackages__",
     "//src/stirling:__subpackages__",
 ])
-
-load("//bazel:pl_build_system.bzl", "pl_cc_library")
 
 filegroup(
     name = "dummy_system_headers",

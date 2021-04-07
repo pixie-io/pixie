@@ -1,4 +1,4 @@
-load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_binary")
 
 pl_cc_binary(
     name = "str_replace_benchmark",

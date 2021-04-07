@@ -1,5 +1,3 @@
-package(default_visibility = ["//src:__subpackages__"])
-
 load(
     "//bazel:ui.bzl",
     "pl_deps_licenses",
@@ -8,6 +6,8 @@ load(
     "pl_webpack_archive",
     "pl_webpack_deps",
 )
+
+package(default_visibility = ["//src:__subpackages__"])
 
 UI_DEP_PACKAGES = [
     "yarn.lock",

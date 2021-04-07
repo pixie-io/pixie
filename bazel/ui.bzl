@@ -183,12 +183,12 @@ pl_webpack_deps = rule(
 pl_webpack_archive = rule(
     implementation = _pl_webpack_archive_impl,
     attrs = dict({
+        "deps": attr.label(allow_single_file = True),
+        "licenses": attr.label(allow_single_file = True),
         "srcs": attr.label_list(
             mandatory = True,
             allow_files = True,
         ),
-        "deps": attr.label(allow_single_file = True),
-        "licenses": attr.label(allow_single_file = True),
         "stamp": attr.bool(mandatory = True),
         "uilib_base": attr.string(
             doc = "This is a slight hack that requires the basepath to package.json relative to TOT to be specified",
@@ -202,11 +202,11 @@ pl_webpack_archive = rule(
 pl_ui_test = rule(
     implementation = _pl_ui_test_impl,
     attrs = dict({
+        "deps": attr.label(allow_single_file = True),
         "srcs": attr.label_list(
             mandatory = True,
             allow_files = True,
         ),
-        "deps": attr.label(allow_single_file = True),
         "uilib_base": attr.string(
             doc = "This is a slight hack that requires the basepath to package.json relative to TOT to be specified",
         ),
@@ -224,11 +224,11 @@ pl_ui_test = rule(
 pl_storybook_archive = rule(
     implementation = _pl_storybook_archive_impl,
     attrs = dict({
+        "deps": attr.label(allow_single_file = True),
         "srcs": attr.label_list(
             mandatory = True,
             allow_files = True,
         ),
-        "deps": attr.label(allow_single_file = True),
         "uilib_base": attr.string(
             doc = "This is a slight hack that requires the basepath to package.json relative to TOT to be specified",
         ),
@@ -241,11 +241,11 @@ pl_storybook_archive = rule(
 pl_deps_licenses = rule(
     implementation = _pl_deps_licenses_impl,
     attrs = dict({
+        "deps": attr.label(allow_single_file = True),
         "srcs": attr.label_list(
             mandatory = True,
             allow_files = True,
         ),
-        "deps": attr.label(allow_single_file = True),
         "uilib_base": attr.string(
             doc = "This is a slight hack that requires the basepath to package.json relative to TOT to be specified",
         ),

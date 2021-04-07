@@ -1,5 +1,6 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 load("//bazel:flex_bison.bzl", "genbison", "genflex")
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 licenses(["notice"])
 
@@ -179,8 +180,6 @@ cc_library(
     includes = ["ELFIO"],
     visibility = ["//visibility:public"],
 )
-
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "kuberesolver_library",

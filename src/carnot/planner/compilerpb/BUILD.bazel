@@ -1,6 +1,5 @@
 # gazelle:ignore
 load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
-load("//bazel:pl_build_system.bzl", "pl_cc_test_library")
 
 pl_proto_library(
     name = "compiler_status_pl_proto",

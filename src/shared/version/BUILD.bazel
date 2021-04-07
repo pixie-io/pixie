@@ -1,6 +1,6 @@
-package(default_visibility = ["//src:__subpackages__"])
-
 load("//bazel:pl_build_system.bzl", "pl_cc_library")
+
+package(default_visibility = ["//src:__subpackages__"])
 
 # https://github.com/bazelbuild/bazel/issues/1992
 # Borrowed from envoy build.

@@ -1,8 +1,9 @@
 # gazelle:ignore
 
-package(default_visibility = ["//src/stirling:__subpackages__"])
+load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+package(default_visibility = ["//src/stirling:__subpackages__"])
 
 # We build dummy_exe with clang++ regardless of the bazel config.
 # This is test data, so we want deterministic debug symbols.

@@ -2,6 +2,8 @@
 # licensed under Apache 2.
 # https://github.com/grpc/grpc-web/blob/master/bazel/closure_grpc_web_library.bzl
 
+load("@rules_proto//proto:defs.bzl", "ProtoInfo")
+
 # This was borrowed from Rules Go, licensed under Apache 2.
 # https://github.com/bazelbuild/rules_go/blob/67f44035d84a352cffb9465159e199066ecb814c/proto/compiler.bzl#L72
 def _proto_path(proto):
@@ -132,7 +134,7 @@ def _grpc_web_library_impl(ctx):
     else:
         # f points to "external/com_google_protobuf/src/google/protobuf"
         # add -I argument to protoc so it knows where to look for the proto files.
-        arguments += ["-I{0}".format(f + "/../..")]
+        arguments.append("-I{0}".format(f + "/../.."))
         well_known_proto_files = [
             f
             for f in ctx.attr.well_known_protos.files.to_list()
@@ -155,25 +157,25 @@ def _grpc_web_library_impl(ctx):
 pl_grpc_web_library = rule(
     implementation = _grpc_web_library_impl,
     attrs = dict({
-        "proto": attr.label(
-            mandatory = True,
-            providers = [ProtoInfo],
+        "grpc": attr.bool(
+            default = True,
+            doc = "Set to false if no GRPC protos are generated",
         ),
         "mode": attr.string(
             default = "grpcwebtext",
             values = ["grpcwebtext", "grpcweb"],
         ),
-        "grpc": attr.bool(
-            default = True,
-            doc = "Set to false if no GRPC protos are generated",
+        "proto": attr.label(
+            mandatory = True,
+            providers = [ProtoInfo],
+        ),
+        "well_known_protos": attr.label(
+            default = Label("@com_google_protobuf//:well_known_protos"),
         ),
         "_protoc": attr.label(
             default = Label("//external:protocol_compiler"),
             executable = True,
             cfg = "host",
-        ),
-        "well_known_protos": attr.label(
-            default = Label("@com_google_protobuf//:well_known_protos"),
         ),
         "_protoc_gen_grpc_web": attr.label(
             default = Label("//third_party/protoc-gen-grpc-web:protoc-gen-grpc-web"),

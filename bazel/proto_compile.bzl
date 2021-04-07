@@ -4,10 +4,11 @@
 # rules don't play well with each other.
 # This also disables warnings associated with building the proto files.
 load("@com_github_grpc_grpc//bazel:generate_cc.bzl", "generate_cc")
-load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
-load("//bazel:pl_build_system.bzl", "pl_cc_library_internal")
-load("@rules_python//python:defs.bzl", "py_library")
 load("@com_github_grpc_grpc//bazel:python_rules.bzl", "py_grpc_library", "py_proto_library")
+load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@rules_python//python:defs.bzl", "py_library")
+load("//bazel:pl_build_system.bzl", "pl_cc_library_internal")
 
 def pl_proto_library(name, srcs, deps = [], **kwargs):
     """
@@ -35,9 +36,8 @@ def pl_proto_library(name, srcs, deps = [], **kwargs):
     # Copy list so we can make it mutable.
     proto_deps = list(deps)
     for proto in well_known_protos_list:
-        proto_deps += ["@com_google_protobuf//:{}_proto".format(proto)]
-
-    native.proto_library(
+        proto_deps.append("@com_google_protobuf//:{}_proto".format(proto))
+    proto_library(
         name = name,
         srcs = srcs,
         deps = proto_deps,

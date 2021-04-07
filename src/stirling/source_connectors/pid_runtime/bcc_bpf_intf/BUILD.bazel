@@ -1,6 +1,6 @@
-package(default_visibility = ["//src/stirling:__subpackages__"])
+load("//bazel:pl_build_system.bzl", "pl_cc_library")
 
-load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+package(default_visibility = ["//src/stirling:__subpackages__"])
 
 filegroup(
     name = "headers",

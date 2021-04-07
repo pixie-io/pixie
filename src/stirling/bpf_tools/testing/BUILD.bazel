@@ -1,7 +1,6 @@
-package(default_visibility = ["//src/stirling:__subpackages__"])
-
 load("//bazel:cc_resource.bzl", "pl_bpf_cc_resource")
-load("//bazel:pl_bpf_preprocess.bzl", "pl_bpf_preprocess")
+
+package(default_visibility = ["//src/stirling:__subpackages__"])
 
 pl_bpf_cc_resource(
     name = "get_tgid_start_time",

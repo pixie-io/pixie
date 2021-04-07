@@ -1,6 +1,6 @@
-package(default_visibility = ["//src/stirling:__subpackages__"])
-
 load("//bazel:pl_build_system.bzl", "pl_cc_test_library")
+
+package(default_visibility = ["//src/stirling:__subpackages__"])
 
 pl_cc_test_library(
     name = "cc_library",
