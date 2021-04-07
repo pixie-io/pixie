@@ -1,4 +1,4 @@
-#include "demos/applications/hipster_shop/reflection.h"
+#include "src/stirling/testing/demo_apps/hipster_shop/reflection.h"
 
 #include <google/protobuf/descriptor.pb.h>
 
@@ -16,7 +16,7 @@ TEST(GetFileDescriptorSetTest, HasAllServicesAndMessages) {
   FileDescriptorSet fds = GetFileDescriptorSet();
   EXPECT_THAT(fds.file(), ElementsAre(Partially(EqualsProto(R"proto(
       syntax: "proto3"
-      name: "demos/applications/hipster_shop/proto/demo.proto"
+      name: "src/stirling/testing/demo_apps/hipster_shop/proto/demo.proto"
       package: "hipstershop"
   )proto"))));
 }

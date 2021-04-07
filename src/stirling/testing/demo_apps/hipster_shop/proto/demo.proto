@@ -4,7 +4,7 @@ syntax = "proto3";
 
 package hipstershop;
 
-option go_package = "pixielabs.ai/pixielabs/demos/applications/hipster_shop/proto;demopb";
+option go_package = "pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/hipster_shop/proto;demopb";
 
 // -----------------Cart service-----------------
 

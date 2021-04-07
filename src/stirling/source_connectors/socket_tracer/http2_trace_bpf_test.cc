@@ -169,7 +169,7 @@ class ProductCatalogClient : public ContainerRunner {
 
  private:
   static constexpr std::string_view kBazelImageTar =
-      "demos/applications/hipster_shop/productcatalogservice_client/"
+      "src/stirling/testing/demo_apps/hipster_shop/productcatalogservice_client/"
       "productcatalogservice_client_image.tar";
   static constexpr std::string_view kInstanceNamePrefix = "pcc";
   static constexpr std::string_view kReadyMessage = "";

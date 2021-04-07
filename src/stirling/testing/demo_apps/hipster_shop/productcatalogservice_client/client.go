@@ -6,7 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
-	pb "pixielabs.ai/pixielabs/demos/applications/hipster_shop/proto"
+	pb "pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/hipster_shop/proto"
 )
 
 func main() {

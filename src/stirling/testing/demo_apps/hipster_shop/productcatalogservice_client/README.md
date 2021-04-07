@@ -10,5 +10,5 @@ To run it stand-alone, you can use these steps:
 docker run -e DISABLE_PROFILER=1 -e DISABLE_TRACING=1 -p 3550:3550 gcr.io/google-samples/microservices-demo/productcatalogservice:v0.2.0
 
 # Run the client
-bazel run //demos/applications/hipster_shop/productcatalogservice_client:productcatalogservice_client_image
+bazel run //src/stirling/testing/demo_apps/hipster_shop/productcatalogservice_client:productcatalogservice_client_image
 ```

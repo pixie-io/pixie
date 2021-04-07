@@ -1,0 +1,21 @@
+load("//bazel:pl_build_system.bzl", "pl_cc_library_internal", "pl_cc_test")
+
+pl_cc_library_internal(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = ["**/*_test.cc"],
+    ),
+    hdrs = glob(["*.h"]),
+    deps = [
+        "//src/stirling/testing/demo_apps/hipster_shop/proto:demo_pl_cc_proto",
+    ],
+)
+
+pl_cc_test(
+    name = "reflection_test",
+    srcs = ["reflection_test.cc"],
+    deps = [
+        ":cc_library",
+    ],
+)

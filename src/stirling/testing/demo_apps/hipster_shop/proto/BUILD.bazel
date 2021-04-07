@@ -16,6 +16,6 @@ pl_cc_proto_library(
 
 pl_go_proto_library(
     name = "demo_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/demos/applications/hipster_shop/proto",
+    importpath = "pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/hipster_shop/proto",
     proto = ":demo_pl_proto",
 )

@@ -257,9 +257,9 @@ pl_cc_test(
     timeout = "moderate",
     srcs = ["http2_trace_bpf_test.cc"],
     data = [
-        "//demos/applications/hipster_shop/productcatalogservice_client:productcatalogservice_client_image.tar",
         "//src/stirling/testing/demo_apps/go_grpc_tls_pl/client:client_image.tar",
         "//src/stirling/testing/demo_apps/go_grpc_tls_pl/server:server_image.tar",
+        "//src/stirling/testing/demo_apps/hipster_shop/productcatalogservice_client:productcatalogservice_client_image.tar",
     ],
     flaky = True,
     tags = [

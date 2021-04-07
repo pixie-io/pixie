@@ -1,22 +1,22 @@
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//src/stirling:__subpackages__"])
 
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 
-go_binary(
-    name = "productcatalogservice_client",
-    embed = [":productcatalogservice_client_lib"],
-)
-
 go_library(
     name = "productcatalogservice_client_lib",
     srcs = ["client.go"],
-    importpath = "pixielabs.ai/pixielabs/demos/applications/hipster_shop/productcatalogservice_client",
+    importpath = "pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/hipster_shop/productcatalogservice_client",
     deps = [
-        "//demos/applications/hipster_shop/proto:demo_pl_go_proto",
+        "//src/stirling/testing/demo_apps/hipster_shop/proto:demo_pl_go_proto",
         "@com_github_sirupsen_logrus//:logrus",
         "@org_golang_google_grpc//:go_default_library",
     ],
+)
+
+go_binary(
+    name = "productcatalogservice_client",
+    embed = [":productcatalogservice_client_lib"],
 )
 
 go_image(

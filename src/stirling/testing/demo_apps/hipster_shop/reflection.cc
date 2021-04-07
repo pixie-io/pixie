@@ -1,6 +1,6 @@
-#include "demos/applications/hipster_shop/reflection.h"
+#include "src/stirling/testing/demo_apps/hipster_shop/reflection.h"
 
-#include "demos/applications/hipster_shop/proto/demo.pb.h"
+#include "src/stirling/testing/demo_apps/hipster_shop/proto/demo.pb.h"
 
 namespace demos {
 namespace hipster_shop {
