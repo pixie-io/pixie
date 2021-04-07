@@ -1,17 +1,59 @@
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//src/stirling:__subpackages__"])
+
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["cert_generator.go"],
+    importpath = "pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/go_grpc_tls_pl/certs",
+    visibility = ["//visibility:private"],
+    deps = [
+        "@com_github_spf13_pflag//:go_default_library",
+        "@com_github_spf13_viper//:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "cert_generator",
+    embed = [":go_default_library"],
+)
+
+genrule(
+    name = "certs",
+    outs = [
+        "ca.crt",
+        "client.crt",
+        "client.key",
+        "server.crt",
+        "server.key",
+    ],
+    cmd = """
+        $(location cert_generator) \
+        --ca_crt $(location ca.crt) \
+        --client_crt $(location client.crt) \
+        --client_key $(location client.key) \
+        --server_crt $(location server.crt) \
+        --server_key $(location server.key)
+    """,
+    tools = [
+        "cert_generator",
+    ],
+)
 
 filegroup(
     name = "client_certs",
-    srcs = glob([
-        "client.*",
-        "rootCA.crt",
-    ]),
+    srcs = [
+        "ca.crt",
+        "client.crt",
+        "client.key",
+    ],
 )
 
 filegroup(
     name = "server_certs",
-    srcs = glob([
-        "server.*",
-        "rootCA.crt",
-    ]),
+    srcs = [
+        "ca.crt",
+        "server.crt",
+        "server.key",
+    ],
 )

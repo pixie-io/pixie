@@ -2,55 +2,63 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
-	"testing"
+	"io/ioutil"
 	"time"
 
 	log "github.com/sirupsen/logrus"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
-
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
-	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/go_grpc_tls_pl/server/greetpb"
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 
 const serverAddr = "localhost:50400"
-const serverJWTSigningKey = "123456"
 
 func main() {
+	pflag.String("client_tls_cert", "", "Path to client.crt")
+	pflag.String("client_tls_key", "", "Path to client.key")
+	pflag.String("tls_ca_cert", "", "Path to ca.crt")
 	pflag.Int("count", 1000, "Number of requests sent.")
+	pflag.Parse()
+	viper.BindPFlags(pflag.CommandLine)
 
-	services.SetupSSLClientFlags()
-	services.PostFlagSetupAndParse()
-	services.CheckSSLClientFlags()
-
-	// Connect to server.
-	dialOpts, err := services.GetGRPCClientDialOpts()
+	pair, err := tls.LoadX509KeyPair(viper.GetString("client_tls_cert"), viper.GetString("client_tls_key"))
 	if err != nil {
-		log.WithError(err).Fatal("Could not get dial opts.")
+		log.WithError(err).Fatal("failed to load keys")
 	}
-	dialOpts = append(dialOpts, grpc.WithBlock())
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	conn, err := grpc.DialContext(ctx, serverAddr, dialOpts...)
+	certPool := x509.NewCertPool()
+	ca, err := ioutil.ReadFile(viper.GetString("tls_ca_cert"))
+	if err != nil {
+		log.WithError(err).Fatal("failed to read CA cert")
+	}
+
+	if ok := certPool.AppendCertsFromPEM(ca); !ok {
+		log.Fatal("failed to append CA cert")
+	}
+
+	config := &tls.Config{
+		Certificates:       []tls.Certificate{pair},
+		NextProtos:         []string{"h2"},
+		ClientCAs:          certPool,
+		InsecureSkipVerify: true,
+	}
+
+	conn, err := grpc.Dial(serverAddr, grpc.WithTransportCredentials(credentials.NewTLS(config)), grpc.WithBlock())
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to Server.")
 	}
-	client := greetpb.NewGreeterClient(conn)
 
-	token := testingutils.GenerateTestJWTToken(&testing.T{}, serverJWTSigningKey)
+	client := greetpb.NewGreeterClient(conn)
 
 	for j := 0; j < viper.GetInt("count"); j++ {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
-
-		ctx = metadata.AppendToOutgoingContext(ctx, "Authorization", "bearer "+token)
 
 		name := fmt.Sprintf("%d", j)
 		resp, err := client.SayHello(ctx, &greetpb.HelloRequest{Name: name})

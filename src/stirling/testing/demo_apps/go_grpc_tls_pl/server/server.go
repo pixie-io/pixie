@@ -2,20 +2,32 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"io/ioutil"
+	"net"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
+	"google.golang.org/grpc"
 
-	"pixielabs.ai/pixielabs/src/shared/services"
-	"pixielabs.ai/pixielabs/src/shared/services/env"
-	"pixielabs.ai/pixielabs/src/shared/services/healthz"
-	"pixielabs.ai/pixielabs/src/shared/services/server"
 	"pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/go_grpc_tls_pl/server/greetpb"
 )
 
+const (
+	port = ":50400"
+)
+
 // Server is used to implement the Greeter.
-type Server struct {
-}
+type Server struct{}
 
 // SayHello responds to a the basic HelloRequest.
 func (s *Server) SayHello(ctx context.Context, in *greetpb.HelloRequest) (*greetpb.HelloReply, error) {
@@ -23,20 +35,68 @@ func (s *Server) SayHello(ctx context.Context, in *greetpb.HelloRequest) (*greet
 }
 
 func main() {
-	log.WithField("service", "server").Info("Starting service")
+	pflag.String("server_tls_cert", "", "Path to server.crt")
+	pflag.String("server_tls_key", "", "Path to server.key")
+	pflag.String("tls_ca_cert", "", "Path to ca.crt")
+	pflag.Parse()
+	viper.BindPFlags(pflag.CommandLine)
 
-	services.SetupService("server", 50400)
-	services.PostFlagSetupAndParse()
-	services.CheckServiceFlags()
-	services.SetupServiceLogging()
+	pair, err := tls.LoadX509KeyPair(viper.GetString("server_tls_cert"), viper.GetString("server_tls_key"))
+	if err != nil {
+		log.WithError(err).Fatal("failed to load keys")
+	}
 
-	mux := http.NewServeMux()
-	healthz.RegisterDefaultChecks(mux)
+	certPool := x509.NewCertPool()
+	ca, err := ioutil.ReadFile(viper.GetString("tls_ca_cert"))
+	if err != nil {
+		log.WithError(err).Fatal("failed to read CA cert")
+	}
 
-	e := env.New("withpixie.ai")
-	s := server.NewPLServer(e, mux)
-	greetpb.RegisterGreeterServer(s.GRPCServer(), &Server{})
+	if ok := certPool.AppendCertsFromPEM(ca); !ok {
+		log.Fatal("failed to append CA cert")
+	}
 
-	s.Start()
-	s.StopOnInterrupt()
+	config := &tls.Config{
+		Certificates: []tls.Certificate{pair},
+		NextProtos:   []string{"h2"},
+		ClientCAs:    certPool,
+	}
+
+	lis, err := net.Listen("tcp", port)
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+
+	grpcServer := grpc.NewServer()
+	greetpb.RegisterGreeterServer(grpcServer, &Server{})
+
+	muxHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		grpcServer.ServeHTTP(w, r)
+	})
+
+	httpServer := &http.Server{
+		Addr:           port,
+		Handler:        h2c.NewHandler(muxHandler, &http2.Server{}),
+		TLSConfig:      config,
+		ReadTimeout:    1800 * time.Second,
+		WriteTimeout:   1800 * time.Second,
+		MaxHeaderBytes: 1 << 20,
+	}
+
+	lis = tls.NewListener(lis, httpServer.TLSConfig)
+	go httpServer.Serve(lis) //nolint:errcheck // This returns an error on graceful shutdown too.
+
+	// The test relies on the following to check for server readiness
+	log.Print("Starting HTTP/2 server")
+
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
+	<-ch
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	err = httpServer.Shutdown(ctx)
+	if err != nil {
+		log.WithError(err).Error("http2 server Shutdown() failed")
+	}
 }

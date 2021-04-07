@@ -131,7 +131,7 @@ TEST_F(HTTP2TraceTest, Basic) {
 
     const types::ColumnWrapperRecordBatch& rb = tablets[0].records;
 
-    auto indices = FindRecordIdxMatchesPID(rb, kPGSQLUPIDIdx, server_.process_pid());
+    auto indices = FindRecordIdxMatchesPID(rb, kHTTPUPIDIdx, server_.process_pid());
     ASSERT_THAT(indices, SizeIs(1));
 
     int conn_open =
@@ -146,8 +146,8 @@ TEST_F(HTTP2TraceTest, Basic) {
     // TODO(oazizi/yzhao): Causing flakiness. Investigate.
     // EXPECT_THAT(conn_close, 1);
     PL_UNUSED(conn_close);
-    EXPECT_THAT(bytes_sent, Gt(2000));
-    EXPECT_THAT(bytes_rcvd, Gt(900));
+    EXPECT_THAT(bytes_sent, Gt(1800));
+    EXPECT_THAT(bytes_rcvd, Gt(600));
   }
 }
 
