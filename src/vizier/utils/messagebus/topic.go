@@ -18,13 +18,11 @@ const (
 
 // V2CTopic returns the topic used in the Vizier NATS domain to send messages from Vizier to Cloud.
 func V2CTopic(topic string) string {
-	// TODO(zasgar/michelle): Add validation.
 	return fmt.Sprintf("%s.%s", v2cTopicPrefix, topic)
 }
 
 // C2VTopic returns the topic used in the Vizier NATS domain to get messages from the Cloud.
 func C2VTopic(topic string) string {
-	// TODO(zasgar/michelle): Add validation.
 	return fmt.Sprintf("%s.%s", c2vTopicPrefix, topic)
 }
 

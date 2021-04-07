@@ -8,7 +8,7 @@ namespace ml {
 static int load_ints_from_json(std::string in, int32_t* arr, int max_num) {
   rapidjson::Document d;
   rapidjson::ParseResult ok = d.Parse(in.data());
-  // TODO(zasgar/michelle): Replace with null when available.
+  // TODO(zasgar/michellenguyen, PP-419): Replace with null when available.
   if (ok == nullptr) {
     return 0;
   }

@@ -40,8 +40,7 @@ type VizierImageAuthServer struct{}
 
 // GetImageCredentials fetches image credentials for vizier.
 func (v VizierImageAuthServer) GetImageCredentials(context.Context, *cloudapipb.GetImageCredentialsRequest) (*cloudapipb.GetImageCredentialsResponse, error) {
-	// TODO(zasgar/michelle): Fix this to create creds for user.
-	// This is a workaround implementation to just give them access based on static keys.
+	// These creds are just for internal use. All official releases are written to a public registry.
 	p := viper.GetString("vizier_image_secret_path")
 	f := viper.GetString("vizier_image_secret_file")
 

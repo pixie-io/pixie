@@ -27,10 +27,6 @@ message SchemaResponse {
   repeated SchemaByAgent schema_by_agent = 1;
 }
 
-// TODO(zasgar/michelle): We should change this after we add the compute nodes.
-// For now, we plan to just return the QueryResponse from each agent on the
-// message bus and have the broker merge the results together.
-// AgentQueryResponse is returned for each execution of a query by the agent.
 message AgentQueryResponse {
   pl.statuspb.Status status = 1;
 

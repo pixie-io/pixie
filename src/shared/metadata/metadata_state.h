@@ -187,7 +187,6 @@ class K8sMetadataState : NotCopyable {
   // This stores K8s native objects (services, pods, etc).
   absl::flat_hash_map<UID, K8sMetadataObjectUPtr> k8s_objects_;
 
-  // TODO(zasgar/michelle): Add heterogeneous lookup from std::pair<string_view, string_view>.
   /**
    * Mapping of pods by name.
    */

@@ -57,6 +57,6 @@ message RegisterProjectRequest {
 }
 
 message RegisterProjectResponse {
-  // TODO(zasgar/michelle): This should actually be our Status proto type.
+  // TODO(zasgar/michellenguyen, PC-829): This should actually be our Status proto type.
   bool project_registered = 1;
 }

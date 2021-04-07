@@ -93,7 +93,8 @@ func (s *Server) RegisterProject(ctx context.Context, req *projectmanagerpb.Regi
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("project '%s' already exists for org", pn))
 	}
 
-	// TODO(zasgar/michelle): We need to maybe have different error types.
+	// TODO(zasgar/michellenguyen, PC-829): Provide more context about potential failures by returning an
+	// error instead of boolean.
 	err = s.datastore.RegisterProject(parsedOrgID, pn)
 	if err != nil {
 		resp.ProjectRegistered = false

@@ -186,8 +186,6 @@ void TracepointManager::Monitor() {
     update_msg->set_state(tracepoint.current_state);
     probe_status.ToProto(update_msg->mutable_status());
     auto s = nats_conn_->Publish(msg);
-    // TODO(zasgar/michelle): We should just maintain a global nats queue that we
-    // can push into and ensure that we can keep retrying updates.
     if (!s.ok()) {
       LOG(ERROR) << "Failed to update nats";
     }

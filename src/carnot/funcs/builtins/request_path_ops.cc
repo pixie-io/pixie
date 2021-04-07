@@ -226,7 +226,7 @@ void RequestPathClustering::MergeCluster(int64_t cluster_index,
 RequestPathClustering RequestPathClustering::FromJSON(const std::string& json) {
   rapidjson::Document d;
   rapidjson::ParseResult ok = d.Parse(json.data());
-  // TODO(zasgar/michelle): Replace with null when available.
+  // TODO(zasgar/michellenguyen, PP-419): Replace with null when available.
   if (ok == nullptr) {
     return RequestPathClustering();
   }

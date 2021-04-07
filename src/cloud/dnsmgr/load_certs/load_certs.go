@@ -1,7 +1,6 @@
 package main
 
-// TODO(zasgar/michelle/philkuz): Remove this when we have automated cert provisioning.
-// This is a throwaway script to load certs into the database until we setup automated provisioning.
+// This is a script to load certs into the database until we setup automated provisioning.
 
 import (
 	"os"

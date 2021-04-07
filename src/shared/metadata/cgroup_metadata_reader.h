@@ -17,16 +17,12 @@ namespace md {
 /**
  * CGroupMetadataReader is responsible for reading metadata such as process info from
  * sys/fs and proc.
- *
- * TODO(zasgar/michelle): We need to reconcile this with the exising CGroupManager code as
- * we merge the metadata with the current cgroup code.
  */
 class CGroupMetadataReader : public NotCopyable {
  public:
   CGroupMetadataReader() = delete;
   virtual ~CGroupMetadataReader() = default;
 
-  // TODO(zasgar/michelle): Reconcile this constructor with the SysConfig changes when ready.
   explicit CGroupMetadataReader(const system::Config& cfg);
 
   /**

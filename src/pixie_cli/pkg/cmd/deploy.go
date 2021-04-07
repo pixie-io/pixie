@@ -457,7 +457,6 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	})
 
 	clusterRoleJob := newTaskWrapper("Deleting stale Pixie objects, if any", func() error {
-		// TODO(zasgar/michelle): Only run this if we see stale objects.
 		_, err := od.DeleteByLabel("component=vizier", k8s.AllResourceKinds...)
 		return err
 	})

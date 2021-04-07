@@ -248,7 +248,7 @@ Status ProcessPIDUpdates(
 }
 
 Status DeleteMetadataForDeadObjects(AgentMetadataState*, int64_t ttl) {
-  // TODO(zasgar/michelle): Implement this.
+  // TODO(zasgar/michellenguyen, PP-2583): We should clean up any expired metadata.
   PL_UNUSED(ttl);
   return Status::OK();
 }

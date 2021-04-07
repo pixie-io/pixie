@@ -438,7 +438,6 @@ message ContainerInfo {
   repeated ProcessInfo processes = 7;
 }
 
-// TODO(zasgar/michelle): We need to cleanup this proto b/c some of these fields aren't needed.
 // ProcessInfo contains info for a process running in a container.
 message ProcessInfo {
   // Name of the process.

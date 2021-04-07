@@ -14,7 +14,6 @@ import (
 // session has expired.
 func GetDefaultSession(env apienv.APIEnv, r *http.Request) (*sessions.Session, error) {
 	store := env.CookieStore()
-	// TODO(zasgar/michelle): Figure out why our sessions aren't getting cleared and remove this hack.
 	session, err := store.Get(r, "default-session4")
 	if err != nil {
 		// CookieStore().Get(...) will always return a valid session, even if it has

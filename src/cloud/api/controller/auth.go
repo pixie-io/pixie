@@ -187,26 +187,6 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 			"failed to decode json request")
 	}
 
-	// TODO(zasgar/michelle): See if we can enable this again. This block of code provides an
-	// optimization to return the existing cookie if a valid session exists.
-	// However, This breaks the API contract since
-	// we don't ship back the user information, token, ID. Adding this information might make it
-	// just as expensive as performing the Login, so this needs to be investigated.
-	// This should check the err returned by GetDefaultSession.
-	//	// Bail early if the session is valid.
-	//	if len(session.Values) != 0 && session.Values["_at"] != nil {
-	//		expiresAt, ok := session.Values["_expires_at"].(int64)
-	//		if !ok {
-	//			http.Error(w, "failed to get session expiration", http.StatusInternalServerError)
-	//			return nil
-	//		}
-	//		// Check if token is still valid.
-	//		if expiresAt > time.Now().Unix() && session.Values["_auth_site"] == params.SiteName {
-	//			w.WriteHeader(http.StatusOK)
-	//			return nil
-	//		}
-	//	}
-
 	ctxWithCreds, err := attachCredentialsToContext(env, r)
 	if err != nil {
 		return &handler.StatusError{Code: http.StatusInternalServerError, Err: err}
@@ -235,18 +215,15 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 	ev := events.UserLoggedIn
 	if resp.UserCreated {
 		ev = events.UserSignedUp
-	}
 
-	// TODO(zasgar/michelle): Move this to the above block ~ mid dec, since we just need to associate users once.
-	// This is here for now to help associate old users.
-	// User created successfully, send an analytics event to identify the user.
-	events.Client().Enqueue(&analytics.Identify{
-		UserId: userIDStr,
-		Traits: analytics.NewTraits().
-			SetFirstName(resp.UserInfo.FirstName).
-			SetLastName(resp.UserInfo.LastName).
-			SetEmail(resp.UserInfo.Email),
-	})
+		events.Client().Enqueue(&analytics.Identify{
+			UserId: userIDStr,
+			Traits: analytics.NewTraits().
+				SetFirstName(resp.UserInfo.FirstName).
+				SetLastName(resp.UserInfo.LastName).
+				SetEmail(resp.UserInfo.Email),
+		})
+	}
 
 	events.Client().Enqueue(&analytics.Track{
 		UserId: userIDStr,

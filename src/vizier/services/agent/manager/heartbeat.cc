@@ -58,7 +58,7 @@ Status HeartbeatMessageHandler::SendHeartbeatInternal() {
   }
 
   heartbeat_info_.last_sent_seq_num++;
-  /// TODO(zasgar/michelle): We can probably recycle.
+
   last_sent_hb_ = std::make_unique<messages::VizierMessage>();
 
   auto& req = *last_sent_hb_;
@@ -77,7 +77,7 @@ Status HeartbeatMessageHandler::SendHeartbeatInternal() {
   hb->set_sequence_number(heartbeat_info_.last_sent_seq_num);
 
   auto* update_info = hb->mutable_update_info();
-  // TODO(zasgar/michelle): Maybe consider moving to threadpool.
+
   ConsumeAgentPIDUpdates(update_info);
   if (agent_info()->capabilities.collects_data() &&
       (!sent_schema_ || relation_info_manager_->has_updates())) {

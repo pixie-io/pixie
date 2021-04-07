@@ -22,7 +22,7 @@ class PluckUDF : public udf::ScalarUDF {
   StringValue Exec(FunctionContext*, StringValue in, StringValue key) {
     rapidjson::Document d;
     rapidjson::ParseResult ok = d.Parse(in.data());
-    // TODO(zasgar/michelle): Replace with null when available.
+    // TODO(zasgar/michellenguyen, PP-419): Replace with null when available.
     if (ok == nullptr) {
       return "";
     }
@@ -71,7 +71,7 @@ class PluckAsInt64UDF : public udf::ScalarUDF {
   Int64Value Exec(FunctionContext*, StringValue in, StringValue key) {
     rapidjson::Document d;
     rapidjson::ParseResult ok = d.Parse(in.data());
-    // TODO(zasgar/michelle): Replace with null when available.
+    // TODO(zasgar/michellenguyen, PP-419): Replace with null when available.
     if (ok == nullptr) {
       return 0;
     }
@@ -106,7 +106,7 @@ class PluckAsFloat64UDF : public udf::ScalarUDF {
   Float64Value Exec(FunctionContext*, StringValue in, StringValue key) {
     rapidjson::Document d;
     rapidjson::ParseResult ok = d.Parse(in.data());
-    // TODO(zasgar/michelle): Replace with null when available.
+    // TODO(zasgar/michellenguyen, PP-419): Replace with null when available.
     if (ok == nullptr) {
       return 0.0;
     }

@@ -24,7 +24,7 @@ void RegisterMLOpsOrDie(udf::Registry* registry) {
 int load_floats_from_json(std::string in, Eigen::VectorXf* out, int max_num) {
   rapidjson::Document d;
   rapidjson::ParseResult ok = d.Parse(in.data());
-  // TODO(zasgar/michelle): Replace with null when available.
+  // TODO(zasgar/michellenguyen, PP-419): Replace with null when available.
   if (ok == nullptr) {
     return 0;
   }
