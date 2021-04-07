@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/stan.go"
@@ -100,10 +101,12 @@ func (s *GRPCServer) NATSBridge(srv vzconnpb.VZConnService_NATSBridgeServer) err
 }
 
 func (s *GRPCServer) handleRegisterMessage(msg *cvmsgspb.RegisterVizierRequest, srv vzconnpb.VZConnService_NATSBridgeServer) error {
-	log.WithField("VizierID", utils2.UUIDFromProtoOrNil(msg.VizierID).String()).
+	vzID := utils2.UUIDFromProtoOrNil(msg.VizierID)
+
+	log.WithField("VizierID", vzID.String()).
 		Info("Vizier registration request")
 
-	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
+	serviceAuthToken, err := getClusterCredentials(viper.GetString("jwt_signing_key"), vzID)
 	if err != nil {
 		return err
 	}
@@ -153,9 +156,12 @@ func convertToGRPCErr(err error) error {
 	return status.Error(codes.Unknown, err.Error())
 }
 
-// TODO(zasgar/michelle): Remove this, we need to make this into cluster credentials.
-// getServiceCredentials returns JWT credentials for inter-service requests.
 func getServiceCredentials(signingKey string) (string, error) {
 	claims := utils.GenerateJWTForService("Vzconn Service", viper.GetString("domain_name"))
+	return utils.SignJWTClaims(claims, signingKey)
+}
+
+func getClusterCredentials(signingKey string, clusterID uuid.UUID) (string, error) {
+	claims := utils.GenerateJWTForCluster(clusterID.String(), viper.GetString("domain_name"))
 	return utils.SignJWTClaims(claims, signingKey)
 }
