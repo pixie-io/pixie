@@ -17,6 +17,9 @@ using ::testing::StrEq;
 
 using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 
+static constexpr std::string_view kRedisImagePath =
+    "src/stirling/source_connectors/socket_tracer/testing/containers/redis_image.tar";
+
 class RedisContainer : public ContainerRunner {
  public:
   RedisContainer()
@@ -28,19 +31,6 @@ class RedisContainer : public ContainerRunner {
       "src/stirling/source_connectors/socket_tracer/testing/containers/redis_image.tar";
   static constexpr std::string_view kContainerNamePrefix = "redis_test";
   static constexpr std::string_view kReadyMessage = "# Server initialized";
-};
-
-class RubyContainer : public ContainerRunner {
- public:
-  RubyContainer()
-      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix, kReadyMessage) {
-  }
-
- private:
-  static constexpr std::string_view kBazelImageTar =
-      "src/stirling/source_connectors/socket_tracer/testing/containers/ruby_image.tar";
-  static constexpr std::string_view kContainerNamePrefix = "ruby";
-  static constexpr std::string_view kReadyMessage = "";
 };
 
 struct RedisTraceTestCase {
@@ -165,11 +155,10 @@ TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
 TEST_F(RedisTraceBPFTest, VerifyPubSubCommands) {
   StartTransferDataThread(SocketTraceConnector::kRedisTableNum, kRedisTable);
 
-  SubProcess sub_proc;
-
-  ASSERT_OK(sub_proc.Start({"docker", "run", "--rm",
-                            absl::Substitute("--network=container:$0", container_.container_name()),
-                            "redis", "redis-cli", "subscribe", "foo"}));
+  ContainerRunner redis_sub_client(BazelBinTestFilePath(kRedisImagePath), "redis_sub_client", "");
+  redis_sub_client.Run(60,
+                       {absl::Substitute("--network=container:$0", container_.container_name())},
+                       {"redis-cli", "subscribe", "foo"});
 
   std::string redis_cli_cmd =
       absl::Substitute("docker run --rm --network=container:$0 redis redis-cli publish foo test",
@@ -192,8 +181,6 @@ TEST_F(RedisTraceBPFTest, VerifyPubSubCommands) {
   EXPECT_THAT(redis_trace_records,
               ElementsAre(RedisTraceRecord{"PUBLISH", R"({"channel":"foo","message":"test"})", "1"},
                           RedisTraceRecord{"PUSH PUB", "", R"(["message","foo","test"])"}));
-  sub_proc.Kill();
-  EXPECT_EQ(9, sub_proc.Wait()) << "Client should be killed";
 }
 
 // Verifies that script load and evalsha works as expected.
