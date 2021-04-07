@@ -12,7 +12,7 @@ go_library(
 go_binary(
     name = "go_http_server",
     embed = [":go_http_server_lib"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src/stirling:__subpackages__"],
 )
 
 go_image(

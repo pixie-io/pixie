@@ -23,7 +23,7 @@ go_library(
 go_binary(
     name = "px",
     embed = [":pixie_cli_lib"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )
 
 go_binary(
@@ -31,13 +31,13 @@ go_binary(
     embed = [":pixie_cli_lib"],
     goarch = "amd64",
     goos = "darwin",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )
 
 filegroup(
     name = "installer_script",
     srcs = ["install.sh"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )
 
 go_image(

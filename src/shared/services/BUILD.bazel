@@ -11,7 +11,7 @@ go_library(
         "tls.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/shared/services",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/services/handler",
         "//src/shared/services/sentryhook",

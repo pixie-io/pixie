@@ -4,6 +4,6 @@ go_library(
     name = "metadataenv",
     srcs = ["env.go"],
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/vizier:__subpackages__"],
     deps = ["//src/shared/services/env"],
 )

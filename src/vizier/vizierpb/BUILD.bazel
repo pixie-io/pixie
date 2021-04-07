@@ -2,10 +2,13 @@
 load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library", "pl_py_grpc_library")
 load("//bazel:grpc_web.bzl", "pl_grpc_web_library")
 
+# TODO(PP-2567): This is used by src/shared/cvmsgspb/cvmsgs.proto
+# Break this chain and clamp down visibility.
+package(default_visibility = ["//src:__subpackages__"])
+
 pl_proto_library(
     name = "vizier_pl_proto",
     srcs = ["vizier.proto"],
-    visibility = ["//visibility:public"],
     deps = [
         "//src/shared/k8s/metadatapb:metadata_pl_proto",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
@@ -15,7 +18,6 @@ pl_proto_library(
 pl_cc_proto_library(
     name = "vizier_pl_cc_proto",
     proto = ":vizier_pl_proto",
-    visibility = ["//visibility:public"],
     deps = [
         "//src/shared/k8s/metadatapb:metadata_pl_cc_proto",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
@@ -26,7 +28,6 @@ pl_go_proto_library(
     name = "vizier_pl_go_proto",
     importpath = "pixielabs.ai/pixielabs/src/vizier/vizierpb",
     proto = ":vizier_pl_proto",
-    visibility = ["//visibility:public"],
     deps = [
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
     ],
@@ -35,12 +36,10 @@ pl_go_proto_library(
 pl_grpc_web_library(
     name = "vizier_pl_grpc_web_proto",
     proto = ":vizier_pl_proto",
-    visibility = ["//visibility:public"],
 )
 
 pl_py_grpc_library(
     name = "vizier_pl_py_grpc",
     imports = ["../../../"],
     proto = ":vizier_pl_proto",
-    visibility = ["//visibility:public"],
 )

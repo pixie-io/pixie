@@ -4,5 +4,5 @@ go_library(
     name = "types",
     srcs = ["string_data.go"],
     importpath = "pixielabs.ai/pixielabs/src/table_store/proto/types",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )

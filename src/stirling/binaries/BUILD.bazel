@@ -1,4 +1,4 @@
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//src/stirling:__subpackages__"])
 
 load("//bazel:pl_build_system.bzl", "pl_cc_binary")
 load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")

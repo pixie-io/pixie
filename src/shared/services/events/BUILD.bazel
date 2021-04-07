@@ -7,7 +7,7 @@ go_library(
         "track.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/shared/services/events",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "@com_github_sirupsen_logrus//:logrus",
         "@com_github_spf13_pflag//:pflag",

@@ -7,7 +7,7 @@ go_library(
         "templates.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/utils/shared/yamls",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "@com_github_evanphx_json_patch//:json-patch",
         "@com_github_masterminds_sprig_v3//:sprig",

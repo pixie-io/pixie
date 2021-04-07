@@ -6,7 +6,7 @@ load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 proto_library(
     name = "service_pl_proto",
     srcs = ["service.proto"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_proto",
         "//src/carnot/planner/plannerpb:func_args_pl_proto",
@@ -20,7 +20,7 @@ go_proto_library(
     compilers = ["@io_bazel_rules_go//proto:gogoslick_grpc"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb",
     proto = ":service_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/carnot/planner/plannerpb:func_args_pl_go_proto",

@@ -8,7 +8,7 @@ go_library(
         "server.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/cloud/scriptmgr/controller",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/cloud/scriptmgr/scriptmgrpb:service_pl_go_proto",
         "//src/shared/vispb:vis_pl_go_proto",

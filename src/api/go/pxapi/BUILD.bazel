@@ -11,7 +11,7 @@ go_library(
         "vizier.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/api/go/pxapi",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/go/pxapi/errdefs",
         "//src/api/go/pxapi/types",
@@ -35,7 +35,7 @@ filegroup(
         "//src/api/go/pxapi/errdefs:errors_group",
         "//src/api/go/pxapi/types:types_group",
     ],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )
 
 go_test(

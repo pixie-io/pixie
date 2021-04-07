@@ -4,7 +4,7 @@ go_library(
     name = "mock",
     srcs = ["artifact_tracker_mock.gen.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb/mock",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
         "//src/shared/artifacts/versionspb:versions_pl_go_proto",

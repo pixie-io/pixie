@@ -4,7 +4,7 @@ go_library(
     name = "apikey",
     srcs = ["api_key.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/auth/apikey",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/cloud/auth/proto:auth_go_proto",

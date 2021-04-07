@@ -4,7 +4,7 @@ go_library(
     name = "controller",
     srcs = ["index_manager.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/jobs/elastic_migration/controller",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "@com_github_olivere_elastic_v7//:elastic",
         "@com_github_sirupsen_logrus//:logrus",

@@ -4,7 +4,7 @@ go_library(
     name = "namesgenerator",
     srcs = ["namesgenerator.go"],
     importpath = "pixielabs.ai/pixielabs/src/utils/namesgenerator",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )
 
 go_test(

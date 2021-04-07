@@ -1,13 +1,12 @@
 # gazelle:ignore
 
-package(default_visibility = ["//src/stirling:__subpackages__"])
+package(default_visibility = ["//src:__subpackages__"])
 
 load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_proto_library")
 
 pl_proto_library(
     name = "stirling_pl_proto",
     srcs = ["stirling.proto"],
-    visibility = ["//visibility:public"],
     deps = [
         "//src/shared/types/proto:types_pl_proto",
     ],
@@ -16,7 +15,6 @@ pl_proto_library(
 pl_cc_proto_library(
     name = "stirling_pl_cc_proto",
     proto = ":stirling_pl_proto",
-    visibility = ["//visibility:public"],
     deps = [
         "//src/shared/types/proto/wrapper:cc_library",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",

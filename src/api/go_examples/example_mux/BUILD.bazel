@@ -17,5 +17,5 @@ go_library(
 go_binary(
     name = "example_mux",
     embed = [":example_mux_lib"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )

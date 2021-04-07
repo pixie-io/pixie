@@ -1,4 +1,4 @@
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//src/vizier:__subpackages__"])
 
 load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library")
 load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
@@ -33,6 +33,10 @@ cc_image(
     name = "kelvin_image",
     base = "//:pl_cc_base_image",
     binary = ":kelvin",
+    visibility = [
+        "//k8s:__subpackages__",
+        "//src/vizier:__subpackages__",
+    ],
 )
 
 container_push(

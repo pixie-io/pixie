@@ -8,7 +8,7 @@ go_library(
         "server.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/cloud/dnsmgr/controller",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/cloud/dnsmgr/dnsmgrenv",
         "//src/cloud/dnsmgr/dnsmgrpb:service_go_proto",

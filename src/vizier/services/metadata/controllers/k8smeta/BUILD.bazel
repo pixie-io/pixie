@@ -11,7 +11,7 @@ go_library(
         "metadata_topic_listener.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/k8smeta",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/vizier:__subpackages__"],
     deps = [
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/k8s",

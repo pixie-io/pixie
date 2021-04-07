@@ -12,7 +12,7 @@ go_library(
         "watcher.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/utils/shared/k8s",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "@com_github_sirupsen_logrus//:logrus",
         "@com_github_spf13_pflag//:pflag",

@@ -15,11 +15,11 @@ go_library(
 go_binary(
     name = "basic_example",
     embed = [":basic_example_lib"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )
 
 filegroup(
     name = "basic_example_group",
     srcs = glob(["*.go"]),
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )

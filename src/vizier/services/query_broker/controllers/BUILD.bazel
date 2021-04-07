@@ -14,7 +14,11 @@ go_library(
         "server.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers",
-    visibility = ["//visibility:public"],
+    # TODO(PP-2567): Fix this visibility.
+    visibility = [
+        "//src/carnot:__subpackages__",
+        "//src/vizier:__subpackages__",
+    ],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/api/public/vizierapipb:public_vizier_pl_go_proto",

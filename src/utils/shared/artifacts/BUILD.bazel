@@ -4,7 +4,7 @@ go_library(
     name = "artifacts",
     srcs = ["yamls.go"],
     importpath = "pixielabs.ai/pixielabs/src/utils/shared/artifacts",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
         "//src/utils/shared/tar",

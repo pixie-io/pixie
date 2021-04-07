@@ -4,7 +4,7 @@ go_library(
     name = "mock",
     srcs = ["datastore_mock.gen.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/profile/controller/mock",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/cloud/profile/datastore",
         "@com_github_gofrs_uuid//:uuid",

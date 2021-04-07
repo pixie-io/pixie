@@ -39,7 +39,10 @@ cc_image(
     name = "query_broker_server_image",
     base = "//:pl_cc_base_image",
     binary = ":query_broker",
-    visibility = ["//visibility:public"],
+    visibility = [
+        "//k8s:__subpackages__",
+        "//src/vizier:__subpackages__",
+    ],
 )
 
 container_push(

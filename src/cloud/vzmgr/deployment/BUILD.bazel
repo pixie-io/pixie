@@ -4,7 +4,7 @@ go_library(
     name = "deployment",
     srcs = ["deployment.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/vzmgr/deployment",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/cloud/vzmgr/vzerrors",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",

@@ -11,7 +11,7 @@ py_library(
             "test_utils.py",
         ],
     ),
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/public/cloudapipb:cloudapi_pl_py_grpc",
         "//src/api/public/vizierapipb:vizier_pl_py_grpc",
@@ -26,13 +26,13 @@ py_library(
     name = "py_test_library",
     testonly = True,
     srcs = ["test_utils.py"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [":py_library"],
 )
 
 py_test(
     name = "data_test",
     srcs = ["data_test.py"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [":py_test_library"],
 )

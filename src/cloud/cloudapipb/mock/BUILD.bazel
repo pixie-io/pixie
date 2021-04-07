@@ -4,7 +4,7 @@ go_library(
     name = "mock",
     srcs = ["cloudapi_mock.gen.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/cloudapipb/mock",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",

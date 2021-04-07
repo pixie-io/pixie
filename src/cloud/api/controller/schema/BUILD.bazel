@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 filegroup(
     name = "schema_fg",
     srcs = ["schema.d.ts"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
 )
 
 go_library(
@@ -13,5 +13,5 @@ go_library(
         "schema.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/cloud/api/controller/schema",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
 )

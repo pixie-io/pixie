@@ -5,7 +5,7 @@ go_library(
     srcs = ["docstring.go"],
     importpath = "pixielabs.ai/pixielabs/src/carnot/docstring/pkg",
     visibility = [
-        "//visibility:public",
+        "//src:__subpackages__",
     ],
     deps = [
         "//src/carnot/docspb:docs_pl_go_proto",

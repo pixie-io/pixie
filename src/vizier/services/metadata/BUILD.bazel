@@ -43,7 +43,10 @@ go_binary(
 go_image(
     name = "metadata_server_image",
     binary = ":metadata",
-    visibility = ["//visibility:public"],
+    visibility = [
+        "//k8s:__subpackages__",
+        "//src/vizier:__subpackages__",
+    ],
 )
 
 container_push(

@@ -4,7 +4,7 @@ go_library(
     name = "controller",
     srcs = ["server.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/project_manager/controller",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/cloud/project_manager/datastore",

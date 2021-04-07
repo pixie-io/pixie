@@ -22,5 +22,5 @@ go_library(
 go_binary(
     name = "load_certs",
     embed = [":load_certs_lib"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
 )

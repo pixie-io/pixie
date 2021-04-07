@@ -1,4 +1,4 @@
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//src/cloud:__subpackages__"])
 
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
@@ -27,13 +27,15 @@ go_library(
 go_binary(
     name = "scriptmgr",
     embed = [":scriptmgr_lib"],
-    visibility = ["//visibility:public"],
 )
 
 go_image(
     name = "scriptmgr_server_image",
     binary = ":scriptmgr",
-    visibility = ["//visibility:public"],
+    visibility = [
+        "//k8s:__subpackages__",
+        "//src/cloud:__subpackages__",
+    ],
 )
 
 container_push(

@@ -7,7 +7,7 @@ go_library(
         "regex.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/api/go/pxapi/muxes",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/go/pxapi",
         "//src/api/go/pxapi/types",

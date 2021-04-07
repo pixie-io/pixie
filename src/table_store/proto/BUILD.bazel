@@ -5,7 +5,7 @@ load("//bazel:pl_build_system.bzl", "pl_cc_library")
 pl_proto_library(
     name = "schema_pl_proto",
     srcs = ["schema.proto"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/types/proto:types_pl_proto",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
@@ -15,7 +15,7 @@ pl_proto_library(
 pl_cc_proto_library(
     name = "schema_pl_cc_proto",
     proto = ":schema_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/types/proto/wrapper:cc_library",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
@@ -26,7 +26,7 @@ pl_go_proto_library(
     name = "schema_pl_go_proto",
     importpath = "pixielabs.ai/pixielabs/src/table_store/proto",
     proto = ":schema_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/types/proto:types_pl_go_proto",
         "//src/table_store/proto/types",

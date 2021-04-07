@@ -4,7 +4,7 @@ go_library(
     name = "datastore",
     srcs = ["datastore.go"],
     importpath = "pixielabs.ai/pixielabs/src/vizier/utils/datastore",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/vizier:__subpackages__"],
 )
 
 go_test(

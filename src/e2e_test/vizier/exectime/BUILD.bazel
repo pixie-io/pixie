@@ -4,7 +4,7 @@ go_library(
     name = "exectime_lib",
     srcs = ["exectime_benchmark.go"],
     importpath = "pixielabs.ai/pixielabs/src/e2e_test/vizier/exectime",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/pixie_cli/pkg/script",
         "//src/pixie_cli/pkg/vizier",
@@ -20,5 +20,5 @@ go_library(
 go_binary(
     name = "exectime",
     embed = [":exectime_lib"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )

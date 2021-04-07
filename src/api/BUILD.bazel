@@ -3,7 +3,7 @@ load("@rules_python//python:defs.bzl", "py_binary")
 filegroup(
     name = "py_examples",
     srcs = glob(["python_examples/*.py"]),
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )
 
 py_binary(

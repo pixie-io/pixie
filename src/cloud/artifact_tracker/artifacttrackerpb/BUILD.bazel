@@ -5,7 +5,7 @@ load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", 
 pl_proto_library(
     name = "artifact_tracker_pl_proto",
     srcs = ["artifact_tracker.proto"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_proto",
         "//src/shared/artifacts/versionspb:versions_pl_proto",
@@ -17,7 +17,7 @@ pl_go_proto_library(
     name = "artifact_tracker_pl_go_proto",
     importpath = "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb",
     proto = ":artifact_tracker_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/shared/artifacts/versionspb:versions_pl_go_proto",

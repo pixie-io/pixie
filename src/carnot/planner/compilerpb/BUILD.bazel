@@ -5,7 +5,7 @@ load("//bazel:pl_build_system.bzl", "pl_cc_test_library")
 pl_proto_library(
     name = "compiler_status_pl_proto",
     srcs = ["compiler_status.proto"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/carnot/planpb:plan_pl_proto",
         "//src/common/base/proto:status_pl_proto",
@@ -16,7 +16,7 @@ pl_proto_library(
 pl_cc_proto_library(
     name = "compiler_status_pl_cc_proto",
     proto = ":compiler_status_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/carnot/planpb:plan_pl_cc_proto",
         "//src/common/base/proto:status_pl_cc_proto",
@@ -28,7 +28,7 @@ pl_go_proto_library(
     name = "compiler_status_pl_go_proto",
     importpath = "pixielabs.ai/pixielabs/src/carnot/planner/compilerpb",
     proto = ":compiler_status_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/carnot/planpb:plan_pl_go_proto",
         "//src/common/base/proto:status_pl_go_proto",

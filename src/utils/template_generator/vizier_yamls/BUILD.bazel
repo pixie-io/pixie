@@ -4,7 +4,7 @@ go_library(
     name = "vizier_yamls",
     srcs = ["vizier_yamls.go"],
     importpath = "pixielabs.ai/pixielabs/src/utils/template_generator/vizier_yamls",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/utils/shared/k8s",
         "//src/utils/shared/tar",

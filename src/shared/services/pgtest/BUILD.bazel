@@ -4,7 +4,7 @@ go_library(
     name = "pgtest",
     srcs = ["pgtest.go"],
     importpath = "pixielabs.ai/pixielabs/src/shared/services/pgtest",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/services/pg",
         "@com_github_golang_migrate_migrate//:migrate",

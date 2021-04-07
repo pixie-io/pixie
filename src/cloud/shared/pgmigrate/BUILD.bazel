@@ -4,7 +4,7 @@ go_library(
     name = "pgmigrate",
     srcs = ["pgmigrate.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "@com_github_golang_migrate_migrate//:migrate",
         "@com_github_golang_migrate_migrate//database/postgres",

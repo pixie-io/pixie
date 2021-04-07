@@ -4,7 +4,7 @@ go_library(
     name = "pxanalytics",
     srcs = ["analytics.go"],
     importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxanalytics",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/version/go",
         "@com_github_gofrs_uuid//:uuid",

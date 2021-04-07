@@ -4,7 +4,7 @@ go_library(
     name = "httpmiddleware",
     srcs = ["middleware.go"],
     importpath = "pixielabs.ai/pixielabs/src/shared/services/httpmiddleware",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/services/authcontext",
         "//src/shared/services/env",

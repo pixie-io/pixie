@@ -4,7 +4,7 @@ go_library(
     name = "vzerrors",
     srcs = ["errors.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzerrors",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "@org_golang_google_grpc//codes",
         "@org_golang_google_grpc//status",

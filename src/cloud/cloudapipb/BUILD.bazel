@@ -1,13 +1,14 @@
 # gazelle:ignore
 
-package(default_visibility = ["//visibility:public"])
+# TODO(PP-2567): This is used by src/utils/shared/artifacts
+# Break this chain and clamp down visibility.
+package(default_visibility = ["//src:__subpackages__"])
 
 load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library", "pl_py_grpc_library")
 
 pl_proto_library(
     name = "cloudapi_pl_proto",
     srcs = ["cloudapi.proto"],
-    visibility = ["//visibility:public"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_proto",
         "//src/shared/k8s/metadatapb:metadata_pl_proto",
@@ -20,7 +21,6 @@ pl_go_proto_library(
     name = "cloudapi_pl_go_proto",
     importpath = "pixielabs.ai/pixielabs/src/cloud/cloudapipb",
     proto = ":cloudapi_pl_proto",
-    visibility = ["//visibility:public"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
@@ -33,7 +33,6 @@ pl_py_grpc_library(
     name = "cloudapi_pl_py_grpc",
     imports = ["../../../"],
     proto = ":cloudapi_pl_proto",
-    visibility = ["//visibility:public"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_py_proto",
         "//src/shared/k8s/metadatapb:metadata_pl_py_proto",

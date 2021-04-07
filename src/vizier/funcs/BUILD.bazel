@@ -1,6 +1,6 @@
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//src/vizier:__subpackages__"])
 
-load("//bazel:pl_build_system.bzl", "pl_bindata", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
 
 pl_cc_library(
     name = "cc_library",
@@ -15,6 +15,10 @@ pl_cc_library(
             "**/*_benchmark.cc",
         ],
     ),
+    visibility = [
+        "//src/carnot:__subpackages__",
+        "//src/vizier:__subpackages__",
+    ],
     deps = [
         "//src/carnot/funcs:cc_library",
         "//src/carnot/udf:cc_library",

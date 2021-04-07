@@ -4,7 +4,7 @@ go_library(
     name = "idprovider",
     srcs = ["client.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/api/idprovider",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/shared/services/handler",
         "@com_github_go_openapi_runtime//:runtime",

@@ -4,7 +4,7 @@ go_library(
     name = "vzutils",
     srcs = ["vzwatcher.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/shared/vzutils",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/cloud/shared/messages",
         "//src/cloud/shared/messagespb:messages_pl_go_proto",

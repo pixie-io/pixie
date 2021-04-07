@@ -5,14 +5,14 @@ load("//bazel:grpc_web.bzl", "pl_grpc_web_library")
 pl_proto_library(
     name = "vis_pl_proto",
     srcs = ["vis.proto"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [],
 )
 
 pl_cc_proto_library(
     name = "vis_pl_cc_proto",
     proto = ":vis_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [],
 )
 
@@ -20,7 +20,7 @@ pl_go_proto_library(
     name = "vis_pl_go_proto",
     importpath = "pixielabs.ai/pixielabs/src/shared/vispb",
     proto = ":vis_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [],
 )
 
@@ -28,12 +28,12 @@ pl_grpc_web_library(
     name = "vis_pl_grpc_web_proto",
     grpc = False,
     proto = ":vis_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )
 
 pl_py_proto_library(
     name = "vis_pl_py_proto",
     imports = ["../../../"],
     proto = ":vis_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )

@@ -4,7 +4,7 @@ go_library(
     name = "mock",
     srcs = ["mock_tracepoint.gen.go"],
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint/mock",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/vizier:__subpackages__"],
     deps = [
         "//src/vizier/services/metadata/storepb:store_pl_go_proto",
         "@com_github_gofrs_uuid//:uuid",

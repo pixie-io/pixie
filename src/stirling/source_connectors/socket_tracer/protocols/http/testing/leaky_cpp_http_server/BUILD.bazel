@@ -3,6 +3,6 @@ load("//bazel:pl_build_system.bzl", "pl_cc_binary")
 pl_cc_binary(
     name = "leaky_http_server",
     srcs = ["server.cc"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src/stirling:__subpackages__"],
     deps = ["//src/common/system:cc_library"],
 )

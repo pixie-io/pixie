@@ -8,7 +8,7 @@ go_library(
         "server.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/certmgr/controller",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/vizier:__subpackages__"],
     deps = [
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/utils",

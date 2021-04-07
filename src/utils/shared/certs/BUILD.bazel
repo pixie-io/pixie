@@ -4,7 +4,7 @@ go_library(
     name = "certs",
     srcs = ["certs.go"],
     importpath = "pixielabs.ai/pixielabs/src/utils/shared/certs",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/utils/shared/k8s",
         "@io_k8s_client_go//kubernetes",

@@ -20,5 +20,5 @@ go_library(
 go_binary(
     name = "versions_gen",
     embed = [":versions_gen_lib"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )

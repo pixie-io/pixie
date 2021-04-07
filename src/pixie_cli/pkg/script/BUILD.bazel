@@ -12,7 +12,7 @@ go_library(
         "well_known.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/script",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/pixie_cli/pkg/auth",
         "//src/pixie_cli/pkg/utils",

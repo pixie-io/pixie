@@ -4,5 +4,5 @@ go_library(
     name = "tar",
     srcs = ["tar.go"],
     importpath = "pixielabs.ai/pixielabs/src/utils/shared/tar",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )

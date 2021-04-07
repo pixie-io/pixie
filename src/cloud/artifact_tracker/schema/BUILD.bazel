@@ -7,5 +7,6 @@ go_library(
         "schema.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/schema",
-    visibility = ["//visibility:public"],
+    # TODO(PP-2567): This is used by src/utils/artifacts
+    visibility = ["//src:__subpackages__"],
 )

@@ -8,7 +8,7 @@ sh_library(
     data = [
         "//src/api/python/pxapi:py_library",
     ],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )
 
 sh_binary(
@@ -22,7 +22,7 @@ sh_binary(
 py_test(
     name = "api_test",
     srcs = ["api_test.py"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/python/pxapi:py_library",
         "//src/api/python/pxapi:py_test_library",

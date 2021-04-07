@@ -19,7 +19,7 @@ go_library(
         "user_resolver.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/cloud/api/controller",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/api/public/cloudapipb:public_cloudapi_pl_go_proto",
         "//src/api/public/uuidpb:uuid_pl_go_proto",

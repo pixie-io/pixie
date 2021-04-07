@@ -1,6 +1,6 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//src:__subpackages__"])
 
 stamped_xdefs = {
     "buildSCMRevision": "{STABLE_BUILD_SCM_REVISION}",

@@ -4,7 +4,7 @@ go_library(
     name = "update",
     srcs = ["cli.go"],
     importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/update",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
         "//src/pixie_cli/pkg/auth",

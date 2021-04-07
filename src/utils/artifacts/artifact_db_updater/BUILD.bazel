@@ -29,14 +29,14 @@ go_library(
 go_binary(
     name = "artifact_db_updater",
     embed = [":artifact_db_updater_lib"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )
 
 container_layer(
     name = "artifact_db_updater_go_layer",
     directory = "/artifact_db_updater",
     files = [":artifact_db_updater"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )
 
 container_layer(

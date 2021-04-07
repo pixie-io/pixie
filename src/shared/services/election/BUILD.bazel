@@ -4,7 +4,7 @@ go_library(
     name = "election",
     srcs = ["election.go"],
     importpath = "pixielabs.ai/pixielabs/src/shared/services/election",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "@com_github_sirupsen_logrus//:logrus",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",

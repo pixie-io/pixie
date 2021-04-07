@@ -9,7 +9,7 @@ go_library(
         "parsers.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/api/go/pxapi/errdefs",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
         "@org_golang_google_grpc//codes",
@@ -29,5 +29,5 @@ filegroup(
             "*.go",
         ],
     ),
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )

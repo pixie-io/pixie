@@ -4,6 +4,6 @@ go_library(
     name = "messagebus",
     srcs = ["topic.go"],
     importpath = "pixielabs.ai/pixielabs/src/vizier/utils/messagebus",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/vizier:__subpackages__"],
     deps = ["@com_github_gofrs_uuid//:uuid"],
 )

@@ -1,26 +1,24 @@
 # gazelle:ignore
 load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_proto_library")
 
+package(default_visibility = ["//src:__subpackages__"])
+
 pl_proto_library(
     name = "mysql_events_pl_proto",
     srcs = ["mysql_events.proto"],
-    visibility = ["//src/stirling:__pkg__"],
 )
 
 pl_cc_proto_library(
     name = "mysql_events_pl_cc_proto",
     proto = ":mysql_events_pl_proto",
-    visibility = ["//visibility:public"],
 )
 
 pl_proto_library(
     name = "cql_events_pl_proto",
     srcs = ["cql_events.proto"],
-    visibility = ["//src/stirling:__pkg__"],
 )
 
 pl_cc_proto_library(
     name = "cql_events_pl_cc_proto",
     proto = ":cql_events_pl_proto",
-    visibility = ["//visibility:public"],
 )

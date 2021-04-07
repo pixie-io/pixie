@@ -4,7 +4,7 @@ load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", 
 pl_proto_library(
     name = "messages_pl_proto",
     srcs = ["messages.proto"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src/vizier:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_proto",
@@ -24,7 +24,7 @@ pl_proto_library(
 pl_cc_proto_library(
     name = "messages_pl_cc_proto",
     proto = ":messages_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/vizier:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_cc_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_cc_proto",
@@ -45,7 +45,9 @@ pl_go_proto_library(
     name = "messages_pl_go_proto",
     importpath = "pixielabs.ai/pixielabs/src/vizier/messages/messagespb",
     proto = ":messages_pl_proto",
-    visibility = ["//visibility:public"],
+    # TODO(PP-2567): This is used by src/cloud/utils/stan_watcher:stan_watcher_lib
+    # consider moving or breaking the chain.
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",

@@ -17,13 +17,13 @@ go_library(
 go_binary(
     name = "demo_client",
     embed = [":pgsql_lib"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src/stirling:__subpackages__"],
 )
 
 go_image(
     name = "demo_client_image",
     binary = ":demo_client",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/stirling:__subpackages__"],
 )
 
 container_push(

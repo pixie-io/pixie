@@ -21,7 +21,7 @@ go_binary(
         "https-server.key",
     ],
     embed = [":go_grpc_server_lib"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src/stirling:__subpackages__"],
 )
 
 go_image(

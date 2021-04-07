@@ -1,4 +1,4 @@
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//src/cloud:__subpackages__"])
 
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
@@ -37,13 +37,16 @@ go_library(
 go_binary(
     name = "vzmgr_server",
     embed = [":vzmgr_lib"],
-    visibility = ["//visibility:public"],
 )
 
 go_image(
     name = "vzmgr_server_image",
     binary = ":vzmgr_server",
     importpath = "pixielabs.ai/pixielabs",
+    visibility = [
+        "//k8s:__subpackages__",
+        "//src/cloud:__subpackages__",
+    ],
 )
 
 container_push(

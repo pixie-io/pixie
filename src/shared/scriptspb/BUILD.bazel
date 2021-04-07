@@ -4,7 +4,7 @@ load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", 
 pl_proto_library(
     name = "scripts_pl_proto",
     srcs = ["scripts.proto"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/common/base/proto:status_pl_proto",
         "//src/shared/types/proto:types_pl_proto",
@@ -15,7 +15,7 @@ pl_proto_library(
 pl_cc_proto_library(
     name = "scripts_pl_cc_proto",
     proto = ":scripts_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/common/base/proto:status_pl_cc_proto",
         "//src/shared/types/proto/wrapper:cc_library",
@@ -27,7 +27,7 @@ pl_go_proto_library(
     name = "scripts_pl_go_proto",
     importpath = "pixielabs.ai/pixielabs/src/shared/scriptspb",
     proto = ":scripts_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/common/base/proto:status_pl_go_proto",
         "//src/shared/types/proto:types_pl_go_proto",

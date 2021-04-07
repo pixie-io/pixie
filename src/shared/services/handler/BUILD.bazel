@@ -4,7 +4,7 @@ go_library(
     name = "handler",
     srcs = ["handler.go"],
     importpath = "pixielabs.ai/pixielabs/src/shared/services/handler",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = ["//src/shared/services/env"],
 )
 

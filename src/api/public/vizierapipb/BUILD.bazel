@@ -5,7 +5,7 @@ load("//bazel:grpc_web.bzl", "pl_grpc_web_library")
 pl_proto_library(
     name = "vizier_pl_proto",
     srcs = ["vizierapi.proto"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
     ],
@@ -14,7 +14,7 @@ pl_proto_library(
 pl_cc_proto_library(
     name = "vizier_pl_cc_proto",
     proto = ":vizier_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
     ],
@@ -24,20 +24,20 @@ pl_go_proto_library(
     name = "public_vizier_pl_go_proto",
     importpath = "pixielabs.ai/pixielabs/src/api/public/vizierapipb",
     proto = ":vizier_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )
 
 pl_grpc_web_library(
     name = "vizier_pl_grpc_web_proto",
     proto = ":vizier_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )
 
 pl_py_grpc_library(
     name = "vizier_pl_py_grpc",
     imports = ["../../../"],
     proto = ":vizier_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )
 
 filegroup(
@@ -46,5 +46,5 @@ filegroup(
         "*.pb.go",
         "*.proto",
     ]),
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )

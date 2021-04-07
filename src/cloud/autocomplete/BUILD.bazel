@@ -10,7 +10,7 @@ go_library(
         "suggester.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/cloud/autocomplete",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/cloud/autocomplete/ebnf",
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",

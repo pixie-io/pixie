@@ -18,5 +18,5 @@ go_library(
 go_binary(
     name = "template_generator",
     embed = [":template_generator_lib"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )

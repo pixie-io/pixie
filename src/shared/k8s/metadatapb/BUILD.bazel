@@ -5,7 +5,7 @@ load("//bazel:pl_build_system.bzl", "pl_cc_library")
 pl_proto_library(
     name = "metadata_pl_proto",
     srcs = ["metadata.proto"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/types/proto:types_pl_proto",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
@@ -15,7 +15,7 @@ pl_proto_library(
 pl_cc_proto_library(
     name = "metadata_pl_cc_proto",
     proto = ":metadata_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/types/proto/wrapper:cc_library",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
@@ -26,7 +26,7 @@ pl_go_proto_library(
     name = "metadata_pl_go_proto",
     importpath = "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb",
     proto = ":metadata_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/types/proto:types_pl_go_proto",
     ],
@@ -36,7 +36,7 @@ pl_cc_library(
     name = "metadata_testutils",
     testonly = 1,
     hdrs = ["test_proto.h"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         ":metadata_pl_cc_proto",
     ],
@@ -46,7 +46,7 @@ pl_py_proto_library(
     name = "metadata_pl_py_proto",
     imports = ["../../../"],
     proto = ":metadata_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/types/proto:types_pl_py_proto",
     ],

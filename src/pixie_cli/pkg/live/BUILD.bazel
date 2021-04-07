@@ -12,7 +12,7 @@ go_library(
         "utils.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/live",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
         "//src/pixie_cli/pkg/auth",

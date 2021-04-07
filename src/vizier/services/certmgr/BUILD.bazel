@@ -31,7 +31,10 @@ go_binary(
 go_image(
     name = "certmgr_server_image",
     binary = ":certmgr",
-    visibility = ["//visibility:public"],
+    visibility = [
+        "//k8s:__subpackages__",
+        "//src/vizier:__subpackages__",
+    ],
 )
 
 container_push(

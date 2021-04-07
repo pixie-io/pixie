@@ -12,5 +12,5 @@ go_library(
         "schema.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/cloud/auth/schema",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
 )

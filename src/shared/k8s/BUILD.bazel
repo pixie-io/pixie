@@ -7,7 +7,7 @@ go_library(
         "upid.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/shared/k8s",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
         "//src/shared/types/go",

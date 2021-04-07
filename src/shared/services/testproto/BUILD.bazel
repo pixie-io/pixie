@@ -6,7 +6,7 @@ load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 proto_library(
     name = "ping_proto",
     srcs = ["ping.proto"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "@gogo_special_proto//github.com/gogo/protobuf/gogoproto",
     ],
@@ -17,7 +17,7 @@ go_proto_library(
     compilers = ["@io_bazel_rules_go//proto:gogoslick_grpc"],
     importpath = "pixielabs.ai/pixielabs/src/shared/services/testproto",
     proto = ":ping_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "@com_github_gogo_protobuf//gogoproto:go_default_library",
     ],

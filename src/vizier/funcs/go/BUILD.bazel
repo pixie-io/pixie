@@ -1,4 +1,4 @@
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//src/vizier:__subpackages__"])
 
 load("//bazel:pl_build_system.bzl", "pl_bindata")
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
@@ -16,5 +16,7 @@ go_library(
     # keep
     srcs = [":udf_info_bindata"],
     importpath = "pixielabs.ai/pixielabs/src/vizier/funcs/go",
-    visibility = ["//visibility:public"],
+    # TODO(PP-2567): This is used by src/carnot/goplanner
+    # consider moving or breaking the chain.
+    visibility = ["//src:__subpackages__"],
 )

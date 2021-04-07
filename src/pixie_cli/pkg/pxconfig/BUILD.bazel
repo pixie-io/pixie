@@ -4,7 +4,7 @@ go_library(
     name = "pxconfig",
     srcs = ["config.go"],
     importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxconfig",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_sirupsen_logrus//:logrus",

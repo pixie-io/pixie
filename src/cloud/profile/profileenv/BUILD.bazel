@@ -4,7 +4,7 @@ go_library(
     name = "profileenv",
     srcs = ["env.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/profile/profileenv",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/cloud/project_manager/projectmanagerpb:service_go_proto",
         "//src/shared/services",

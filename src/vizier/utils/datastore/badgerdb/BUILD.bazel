@@ -4,6 +4,6 @@ go_library(
     name = "badgerdb",
     srcs = ["badgerdb.go"],
     importpath = "pixielabs.ai/pixielabs/src/vizier/utils/datastore/badgerdb",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/vizier:__subpackages__"],
     deps = ["@com_github_dgraph_io_badger_v3//:badger"],
 )

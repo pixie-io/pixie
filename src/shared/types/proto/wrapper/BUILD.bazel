@@ -3,7 +3,7 @@ load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 pl_cc_library(
     name = "cc_library",
     srcs = ["types_pb_wrapper.h"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = ["//src/shared/types/proto:types_pl_cc_proto"],
 )
 

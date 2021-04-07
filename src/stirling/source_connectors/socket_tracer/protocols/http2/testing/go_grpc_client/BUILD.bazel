@@ -17,7 +17,7 @@ go_library(
 go_binary(
     name = "go_grpc_client",
     embed = [":go_grpc_client_lib"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src/stirling:__subpackages__"],
 )
 
 go_image(

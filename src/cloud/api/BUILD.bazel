@@ -42,7 +42,10 @@ go_binary(
 go_image(
     name = "api_server_image",
     binary = ":api_server",
-    visibility = ["//visibility:public"],
+    visibility = [
+        "//k8s:__subpackages__",
+        "//src/cloud:__subpackages__",
+    ],
 )
 
 container_push(

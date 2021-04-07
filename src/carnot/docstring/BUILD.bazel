@@ -5,7 +5,7 @@ go_library(
     srcs = ["main.go"],
     importpath = "pixielabs.ai/pixielabs/src/carnot/docstring",
     visibility = [
-        "//visibility:public",
+        "//src:__subpackages__",
     ],
     deps = [
         "//src/carnot/docspb:docs_pl_go_proto",
@@ -22,7 +22,7 @@ go_library(
 go_binary(
     name = "docstring",
     embed = [":docstring_lib"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )
 
 # Binary that combines the entire docstring extraction and parsing pipeline.

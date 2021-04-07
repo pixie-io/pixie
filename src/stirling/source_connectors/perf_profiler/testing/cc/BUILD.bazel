@@ -1,4 +1,4 @@
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//src/stirling:__subpackages__"])
 
 # We build this target with clang++ regardless of the bazel config.
 # This is test data, so we want deterministic debug symbols.

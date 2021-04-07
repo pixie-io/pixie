@@ -26,5 +26,5 @@ go_library(
 go_binary(
     name = "dev_dns_updater",
     embed = [":dev_dns_updater_lib"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )

@@ -4,7 +4,7 @@ go_library(
     name = "ptproxy",
     srcs = ["pt_proxy.go"],
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/query_broker/ptproxy",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/vizier:__subpackages__"],
     deps = [
         "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",

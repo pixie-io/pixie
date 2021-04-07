@@ -25,13 +25,16 @@ go_library(
 go_binary(
     name = "pixie_updater",
     embed = [":pixie_updater_lib"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )
 
 go_image(
     name = "vizier_updater_image",
     binary = ":pixie_updater",
-    visibility = ["//visibility:public"],
+    visibility = [
+        "//k8s:__subpackages__",
+        "//src:__subpackages__",
+    ],
 )
 
 container_push(

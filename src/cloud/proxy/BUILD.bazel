@@ -1,4 +1,4 @@
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//src/cloud:__subpackages__"])
 
 load("@io_bazel_rules_docker//container:image.bzl", "container_image")
 load("@io_bazel_rules_docker//container:layer.bzl", "container_layer")
@@ -41,7 +41,10 @@ container_image(
         ":ui_assets",
         ":installer",
     ],
-    visibility = ["//visibility:public"],
+    visibility = [
+        "//k8s:__subpackages__",
+        "//src/cloud:__subpackages__",
+    ],
 )
 
 container_image(
@@ -50,7 +53,10 @@ container_image(
     layers = [
         ":conf",
     ],
-    visibility = ["//visibility:public"],
+    visibility = [
+        "//k8s:__subpackages__",
+        "//src/cloud:__subpackages__",
+    ],
 )
 
 container_push(

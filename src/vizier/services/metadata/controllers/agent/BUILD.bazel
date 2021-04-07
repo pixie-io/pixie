@@ -8,7 +8,7 @@ go_library(
         "mock.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/vizier:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/shared/k8s",

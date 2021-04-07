@@ -4,18 +4,18 @@ load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", 
 pl_proto_library(
     name = "status_pl_proto",
     srcs = ["status.proto"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )
 
 pl_cc_proto_library(
     name = "status_pl_cc_proto",
     proto = ":status_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )
 
 pl_go_proto_library(
     name = "status_pl_go_proto",
     importpath = "pixielabs.ai/pixielabs/src/common/base/proto",
     proto = ":status_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )

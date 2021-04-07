@@ -1,4 +1,4 @@
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//src:__subpackages__"])
 
 load(
     "//bazel:ui.bzl",
@@ -69,5 +69,8 @@ pl_deps_licenses(
     name = "npm_licenses",
     srcs = UI_DEP_PACKAGES + LICENSES_SRCS,
     uilib_base = "src/ui",
+    # TODO(PP-2567): This is used by tools/licenses.
+    # Move that into source and remove this.
+    visibility = ["//visibility:public"],
     deps = ":ui-deps",
 )

@@ -4,6 +4,6 @@ go_library(
     name = "buntdb",
     srcs = ["buntdb.go"],
     importpath = "pixielabs.ai/pixielabs/src/vizier/utils/datastore/buntdb",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/vizier:__subpackages__"],
     deps = ["@com_github_tidwall_buntdb//:buntdb"],
 )

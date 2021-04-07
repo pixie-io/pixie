@@ -12,7 +12,7 @@ go_library(
         "stan.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/utils/testingutils",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/services/proto:jwt_go_proto",
         "//src/shared/services/utils",

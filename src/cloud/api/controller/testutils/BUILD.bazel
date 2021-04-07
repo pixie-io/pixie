@@ -4,7 +4,7 @@ go_library(
     name = "testutils",
     srcs = ["testutils.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/api/controller/testutils",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/cloud/api/apienv",
         "//src/cloud/api/controller",

@@ -7,7 +7,7 @@ go_library(
         "agents_info.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/query_broker/tracker",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/vizier:__subpackages__"],
     deps = [
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
         "//src/shared/services/utils",

@@ -4,7 +4,7 @@ go_library(
     name = "mock",
     srcs = ["updater_mock.gen.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/vzmgr/controller/mock",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "@com_github_gofrs_uuid//:uuid",

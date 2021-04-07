@@ -7,7 +7,7 @@ go_library(
         "pebbledb_utils.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/vizier/utils/datastore/pebbledb",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/vizier:__subpackages__"],
     deps = ["@com_github_cockroachdb_pebble//:pebble"],
 )
 

@@ -23,13 +23,13 @@ go_library(
 go_binary(
     name = "nats_watcher",
     embed = [":nats_watcher_lib"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src/vizier:__subpackages__"],
 )
 
 go_image(
     name = "nats_watcher_image",
     binary = ":nats_watcher",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/vizier:__subpackages__"],
 )
 
 container_push(

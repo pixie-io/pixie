@@ -4,7 +4,7 @@ go_library(
     name = "authcontext",
     srcs = ["context.go"],
     importpath = "pixielabs.ai/pixielabs/src/shared/services/authcontext",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/services/proto:jwt_go_proto",
         "//src/shared/services/utils",

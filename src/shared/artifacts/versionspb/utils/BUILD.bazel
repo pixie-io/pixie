@@ -4,7 +4,7 @@ go_library(
     name = "utils",
     srcs = ["utils.go"],
     importpath = "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb/utils",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/artifacts/versionspb:versions_pl_go_proto",
         "@com_github_lib_pq//:pq",

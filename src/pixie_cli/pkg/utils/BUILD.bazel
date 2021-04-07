@@ -12,7 +12,7 @@ go_library(
         "job_runner.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/pixie_cli/pkg/components",
         "//src/shared/services",

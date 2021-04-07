@@ -11,7 +11,7 @@ go_library(
         "vzmgr_client.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/cloud/api/apienv",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/cloud/api/idprovider",
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",

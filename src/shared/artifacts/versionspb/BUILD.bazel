@@ -5,7 +5,7 @@ load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", 
 pl_proto_library(
     name = "versions_pl_proto",
     srcs = ["versions.proto"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_proto",
         "@gogo_special_proto//github.com/gogo/protobuf/gogoproto",
@@ -16,7 +16,7 @@ pl_go_proto_library(
     name = "versions_pl_go_proto",
     importpath = "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb",
     proto = ":versions_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",
         "@com_github_gogo_protobuf//gogoproto:go_default_library",

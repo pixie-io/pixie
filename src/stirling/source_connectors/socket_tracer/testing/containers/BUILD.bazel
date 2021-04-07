@@ -1,4 +1,4 @@
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//src/stirling:__subpackages__"])
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_image")
 
@@ -38,7 +38,7 @@ container_image(
     layers = [
         "//src/stirling/source_connectors/socket_tracer/testing/containers/dns:bind_conf",
     ],
-    visibility = ["//visibility:public"],
+    visibility = ["//src/stirling:__subpackages__"],
 )
 
 container_image(

@@ -10,7 +10,7 @@ pl_cc_test_library(
         exclude = ["**/*_test.cc"],
     ),
     hdrs = ["benchmark.h"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/types:cc_library",
         "@com_google_absl//absl/random",

@@ -4,7 +4,7 @@ go_library(
     name = "mock",
     srcs = ["vzmgr_mock.gen.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb/mock",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",

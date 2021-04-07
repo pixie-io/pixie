@@ -5,28 +5,28 @@ load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", 
 pl_proto_library(
     name = "uuid_pl_proto",
     srcs = ["uuid.proto"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [],
 )
 
 pl_cc_proto_library(
     name = "uuid_pl_cc_proto",
     proto = ":uuid_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )
 
 pl_go_proto_library(
     name = "uuid_pl_go_proto",
     importpath = "pixielabs.ai/pixielabs/src/api/public/uuidpb",
     proto = ":uuid_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )
 
 pl_py_proto_library(
     name = "uuid_pl_py_proto",
     imports = ["../../../"],
     proto = ":uuid_pl_proto",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )
 
 filegroup(
@@ -35,5 +35,5 @@ filegroup(
         "*.pb.go",
         "*.proto",
     ]),
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )

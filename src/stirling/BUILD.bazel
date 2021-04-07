@@ -1,4 +1,4 @@
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//src/stirling:__subpackages__"])
 
 load("//bazel:pl_build_system.bzl", "pl_cc_library")
 
@@ -16,6 +16,10 @@ pl_cc_library(
             "**/*_mock.h",
         ],
     ),
+    visibility = [
+        "//src/stirling:__subpackages__",
+        "//src/vizier/services/agent:__subpackages__",
+    ],
     deps = [
         "//src/shared/types/proto/wrapper:cc_library",
         "//src/stirling/bpf_tools:cc_library",

@@ -4,7 +4,7 @@ go_library(
     name = "sentryhook",
     srcs = ["hook.go"],
     importpath = "pixielabs.ai/pixielabs/src/shared/services/sentryhook",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "@com_github_getsentry_sentry_go//:sentry-go",
         "@com_github_sirupsen_logrus//:logrus",

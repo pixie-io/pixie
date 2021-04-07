@@ -4,7 +4,7 @@ go_library(
     name = "mock",
     srcs = ["mock_controllers.gen.go"],
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers/mock",
-    visibility = ["//visibility:public"],
+    visibility = ["//src/vizier:__subpackages__"],
     deps = [
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
         "//src/carnot/planner/plannerpb:func_args_pl_go_proto",

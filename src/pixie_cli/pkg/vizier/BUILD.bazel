@@ -13,7 +13,7 @@ go_library(
         "utils.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/vizier",
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",

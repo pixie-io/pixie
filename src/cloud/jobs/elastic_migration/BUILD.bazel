@@ -3,7 +3,6 @@ load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 load("@io_bazel_rules_docker//container:layer.bzl", "container_layer")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 load("@io_bazel_rules_k8s//k8s:object.bzl", "k8s_object")
-load("//bazel:pl_build_system.bzl", "pl_bindata")
 
 go_library(
     name = "elastic_migration_lib",
@@ -23,7 +22,7 @@ go_library(
 go_binary(
     name = "elastic_migration",
     embed = [":elastic_migration_lib"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src/cloud:__subpackages__"],
 )
 
 go_image(

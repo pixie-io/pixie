@@ -24,13 +24,16 @@ go_library(
 go_binary(
     name = "cert_provisioner",
     embed = [":cert_provisioner_lib"],
-    visibility = ["//visibility:public"],
+    visibility = ["//src:__subpackages__"],
 )
 
 go_image(
     name = "cert_provisioner_image",
     binary = ":cert_provisioner",
-    visibility = ["//visibility:public"],
+    visibility = [
+        "//k8s:__subpackages__",
+        "//src:__subpackages__",
+    ],
 )
 
 container_push(
