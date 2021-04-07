@@ -305,7 +305,9 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 	defer cancel()
 	defer func() {
 		err := h.Shutdown(ctx)
-		log.WithError(err).Error("Failed to shutdown server")
+		if err != nil {
+			log.WithError(err).Error("Failed to shutdown server")
+		}
 	}()
 
 	for {
