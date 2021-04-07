@@ -39,9 +39,10 @@ struct conn_info_t {
   // The number of bytes read on this connection.
   uint64_t rd_bytes;
 
-  // The offset to start read the first frame of the upcoming bytes buffer.
-  uint64_t wr_next_http2_frame_offset;
-  uint64_t rd_next_http2_frame_offset;
+  // The number of bytes written by application (for uprobe) on this connection.
+  uint64_t app_wr_bytes;
+  // The number of bytes read by application (for uprobe) on this connection.
+  uint64_t app_rd_bytes;
 
   // Some stats for protocol inference. Used for threshold-based filtering.
   //

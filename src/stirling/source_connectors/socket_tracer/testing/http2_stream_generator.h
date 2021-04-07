@@ -22,7 +22,10 @@ class StreamEventGenerator {
     frame->attr.timestamp_ns = clock_->now();
     frame->attr.stream_id = stream_id_;
     frame->attr.end_stream = end_stream;
-    frame->attr.data_len = body.length();
+    frame->attr.pos = pos;
+    pos += body.length();
+    frame->attr.data_size = body.length();
+    frame->attr.data_buf_size = body.length();
     frame->payload = body;
     return frame;
   }
@@ -54,6 +57,8 @@ class StreamEventGenerator {
   }
 
  private:
+  // Used to track the position for the next data frame.
+  size_t pos = 0;
   Clock* clock_;
   conn_id_t conn_id_;
   uint32_t stream_id_;

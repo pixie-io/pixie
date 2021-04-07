@@ -67,7 +67,16 @@ struct go_grpc_data_event_t {
     struct conn_id_t conn_id;
     uint32_t stream_id;
     bool end_stream;
-    uint32_t data_len;
+    // A 0-based position number for this event on the connection, in terms of byte position.
+    // The position is for the first byte of this message.
+    // Note that write/send have separate sequences than read/recv.
+    uint64_t pos;
+    // The size of the original message. We use this to truncate msg field to minimize the amount
+    // of data being transferred.
+    uint32_t data_size;
+    // The amount of data actually being sent to user space. This may be less than msg_size if
+    // data had to be truncated.
+    uint32_t data_buf_size;
   } attr;
   char data[MAX_DATA_SIZE];
   // IMPORTANT: This unused byte is required to follow char data[MAX_DATA_SIZE].

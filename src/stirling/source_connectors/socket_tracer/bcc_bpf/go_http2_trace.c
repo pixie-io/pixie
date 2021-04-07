@@ -716,11 +716,21 @@ static __inline void go_http2_submit_data(struct pt_regs* ctx, enum http2_probe_
   info->attr.type = type;
   info->attr.stream_id = stream_id;
   info->attr.end_stream = end_stream;
-  uint32_t data_len = BPF_LEN_CAP(data.len, MAX_DATA_SIZE);
-  info->attr.data_len = data_len;
-  bpf_probe_read(info->data, data_len + 1, data.ptr);
 
-  go_grpc_data_events.perf_submit(ctx, info, sizeof(info->attr) + data_len);
+  if (type == kDataFrameEventWrite) {
+    info->attr.pos = conn_info->app_wr_bytes;
+    conn_info->app_wr_bytes += data.len;
+  } else if (type == kDataFrameEventRead) {
+    info->attr.pos = conn_info->app_rd_bytes;
+    conn_info->app_rd_bytes += data.len;
+  }
+
+  info->attr.data_size = data.len;
+  uint32_t data_buf_size = BPF_LEN_CAP(data.len, MAX_DATA_SIZE);
+  info->attr.data_buf_size = data_buf_size;
+  bpf_probe_read(info->data, data_buf_size + 1, data.ptr);
+
+  go_grpc_data_events.perf_submit(ctx, info, sizeof(info->attr) + data_buf_size);
 }
 
 // Probes golang.org/x/net/http2.Framer for payload.

@@ -37,17 +37,18 @@ namespace stirling {
 
 inline std::string ToString(const struct go_grpc_http2_header_event_t::header_attr_t& attr) {
   return absl::Substitute(
-      "[probe_type=$0] [type=$1] [timestamp_ns=$2] [conn_id=$3] [stream_id=$4] [end_stream=$5] ",
+      "[probe_type=$0 type=$1 timestamp_ns=$2 conn_id=$3 stream_id=$4 end_stream=$5] ",
       magic_enum::enum_name(attr.probe_type), magic_enum::enum_name(attr.type), attr.timestamp_ns,
       ToString(attr.conn_id), attr.stream_id, attr.end_stream);
 }
 
 inline std::string ToString(const struct go_grpc_data_event_t::data_attr_t& attr) {
   return absl::Substitute(
-      "[probe_type=$0] [type=$1] [timestamp_ns=$2] [conn_id=$3] [stream_id=$4] [end_stream=$5] "
-      "[data_len=$6]",
+      "[probe_type=$0 type=$1 timestamp_ns=$2 conn_id=$3 stream_id=$4 end_stream=$5 pos=$6 "
+      "data_size=$7 data_buf_size=$8]",
       magic_enum::enum_name(attr.probe_type), magic_enum::enum_name(attr.type), attr.timestamp_ns,
-      ToString(attr.conn_id), attr.stream_id, attr.end_stream, attr.data_len);
+      ToString(attr.conn_id), attr.stream_id, attr.end_stream, attr.pos, attr.data_size,
+      attr.data_buf_size);
 }
 
 struct HTTP2DataEvent {
@@ -57,13 +58,11 @@ struct HTTP2DataEvent {
            sizeof(go_grpc_data_event_t::data_attr_t));
 
     auto payload_ptr = static_cast<const char*>(data) + offsetof(go_grpc_data_event_t, data);
-    size_t payload_len = std::min<size_t>(attr.data_len, sizeof(go_grpc_data_event_t::data));
-    payload.assign(payload_ptr, payload_len);
+    payload.assign(payload_ptr, attr.data_buf_size);
   }
 
   std::string ToString() const {
-    return absl::Substitute("[attr=$0] [payload=$1]",
-                            ::pl::stirling::ToString(attr),
+    return absl::Substitute("[attr=$0 payload=$1]", ::pl::stirling::ToString(attr),
                             BytesToString<bytes_format::HexAsciiMix>(payload));
   }
 
