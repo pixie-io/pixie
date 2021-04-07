@@ -28,8 +28,6 @@ Status TracepointIR::ToProto(stirling::dynamic_tracing::ir::logical::TracepointS
     probe_pb->mutable_function_latency()->set_id(latency_col_id_);
   }
 
-  pb->set_language(language_);
-
   // TODO(philkuz) implement map methods.
   // for (const auto& map_stash : map_stash_actions_) {
   // (*probe_pb->add_map_stash_actions()) = map_stash;
@@ -86,9 +84,8 @@ void TracepointIR::AddReturnValue(const std::string& id, const std::string& expr
   ret_vals_.push_back(ret);
 }
 
-std::shared_ptr<TracepointIR> MutationsIR::StartProbe(
-    stirling::dynamic_tracing::ir::shared::Language language, const std::string& function_name) {
-  auto tracepoint_ir = std::make_shared<TracepointIR>(language, function_name);
+std::shared_ptr<TracepointIR> MutationsIR::StartProbe(const std::string& function_name) {
+  auto tracepoint_ir = std::make_shared<TracepointIR>(function_name);
   probes_pool_.push_back(tracepoint_ir);
   current_tracepoint_ = tracepoint_ir;
   return tracepoint_ir;
@@ -168,16 +165,6 @@ Status TracepointDeployment::AddBPFTrace(const std::string& bpftrace_program,
 Status TracepointDeployment::AddTracepoint(TracepointIR* tracepoint_ir,
                                            const std::string& probe_name,
                                            const std::string& output_name) {
-  if (tracepoints_.size()) {
-    if (tracepoint_ir->language() != language_) {
-      return error::InvalidArgument(
-          "Cannot add '$1' tracer to '$0' tracing program. Multiple languages not supported.",
-          stirling::dynamic_tracing::ir::shared::Language_Name(language_),
-          stirling::dynamic_tracing::ir::shared::Language_Name(tracepoint_ir->language()));
-    }
-  } else {
-    language_ = tracepoint_ir->language();
-  }
   tracepoint_ir->SetOutputName(output_name);
 
   stirling::dynamic_tracing::ir::logical::TracepointDeployment::Tracepoint tracepoint_pb;

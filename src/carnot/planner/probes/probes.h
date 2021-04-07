@@ -52,9 +52,7 @@ class ProbeOutput {
 
 class TracepointIR {
  public:
-  TracepointIR(stirling::dynamic_tracing::ir::shared::Language language,
-               const std::string& function_name)
-      : language_(language), symbol_(function_name) {}
+  explicit TracepointIR(const std::string& function_name) : symbol_(function_name) {}
 
   /**
    * @brief Serializes this probe definition as a protobuf.
@@ -139,10 +137,8 @@ class TracepointIR {
   void SetOutputName(const std::string& output_name);
 
   std::shared_ptr<ProbeOutput> output() const { return output_; }
-  stirling::dynamic_tracing::ir::shared::Language language() const { return language_; }
 
  private:
-  stirling::dynamic_tracing::ir::shared::Language language_;
   std::string symbol_;
   std::string latency_col_id_;
   std::vector<stirling::dynamic_tracing::ir::logical::Argument> args_;
@@ -191,7 +187,6 @@ class TracepointDeployment {
       tracepoints_;
   std::vector<stirling::dynamic_tracing::ir::logical::Output> outputs_;
   absl::flat_hash_map<std::string, stirling::dynamic_tracing::ir::logical::Output*> output_map_;
-  stirling::dynamic_tracing::ir::shared::Language language_;
 };
 
 class MutationsIR {
@@ -202,8 +197,7 @@ class MutationsIR {
    * @param function_name
    * @return std::shared_ptr<TracepointIR>
    */
-  std::shared_ptr<TracepointIR> StartProbe(stirling::dynamic_tracing::ir::shared::Language language,
-                                           const std::string& function_name);
+  std::shared_ptr<TracepointIR> StartProbe(const std::string& function_name);
 
   /**
    * @brief Create a TraceProgram for the MutationsIR w/ the specified UPID.

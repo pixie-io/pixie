@@ -74,14 +74,12 @@ StatusOr<std::shared_ptr<TraceModule>> TraceModule::Create(MutationsIR* mutation
 Status TraceModule::Init() {
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> probe_fn,
-      FuncObject::Create(
-          kProbeTraceDefinition, {"fn_name"}, {},
-          /* has_variable_len_args */ false,
-          /* has_variable_len_kwargs */ false,
-          std::bind(ProbeHandler::Probe, mutations_ir_,
-                    stirling::dynamic_tracing::ir::shared::Language::LANG_UNKNOWN,
-                    std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
-          ast_visitor()));
+      FuncObject::Create(kProbeTraceDefinition, {"fn_name"}, {},
+                         /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(ProbeHandler::Probe, mutations_ir_, std::placeholders::_1,
+                                   std::placeholders::_2, std::placeholders::_3),
+                         ast_visitor()));
   PL_RETURN_IF_ERROR(probe_fn->SetDocString(kProbeDocstring));
   AddMethod(kProbeTraceDefinition, probe_fn);
 
@@ -178,10 +176,8 @@ Status TraceModule::Init() {
   return Status::OK();
 }
 
-StatusOr<QLObjectPtr> ProbeHandler::Probe(MutationsIR* mutations_ir,
-                                          stirling::dynamic_tracing::ir::shared::Language language,
-                                          const pypa::AstPtr& ast, const ParsedArgs& args,
-                                          ASTVisitor* visitor) {
+StatusOr<QLObjectPtr> ProbeHandler::Probe(MutationsIR* mutations_ir, const pypa::AstPtr& ast,
+                                          const ParsedArgs& args, ASTVisitor* visitor) {
   DCHECK(mutations_ir);
   PL_ASSIGN_OR_RETURN(StringIR * function_name_ir, GetArgAs<StringIR>(ast, args, "fn_name"));
 
@@ -189,15 +185,15 @@ StatusOr<QLObjectPtr> ProbeHandler::Probe(MutationsIR* mutations_ir,
       TraceModule::kProbeTraceDefinition, {"fn"}, {},
       /* has_variable_len_args */ false,
       /* has_variable_len_kwargs */ false,
-      std::bind(&ProbeHandler::Decorator, mutations_ir, language, function_name_ir->str(),
+      std::bind(&ProbeHandler::Decorator, mutations_ir, function_name_ir->str(),
                 std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
       visitor);
 }
 
-StatusOr<QLObjectPtr> ProbeHandler::Decorator(
-    MutationsIR* mutations_ir, stirling::dynamic_tracing::ir::shared::Language language,
-    const std::string& function_name, const pypa::AstPtr& ast, const ParsedArgs& args,
-    ASTVisitor* visitor) {
+StatusOr<QLObjectPtr> ProbeHandler::Decorator(MutationsIR* mutations_ir,
+                                              const std::string& function_name,
+                                              const pypa::AstPtr& ast, const ParsedArgs& args,
+                                              ASTVisitor* visitor) {
   auto fn = args.GetArg("fn");
   PL_ASSIGN_OR_RETURN(auto func, GetCallMethod(ast, fn));
   // mutations_ir->AddFunc(func);
@@ -206,8 +202,8 @@ StatusOr<QLObjectPtr> ProbeHandler::Decorator(
       "wrapper", {}, {},
       /* has_variable_len_args */ false,
       /* has_variable_len_kwargs */ false,
-      std::bind(&ProbeHandler::Wrapper, mutations_ir, language, function_name, func,
-                std::placeholders::_1, std::placeholders::_2, std::placeholders::_3),
+      std::bind(&ProbeHandler::Wrapper, mutations_ir, function_name, func, std::placeholders::_1,
+                std::placeholders::_2, std::placeholders::_3),
       visitor);
 }
 
@@ -262,15 +258,17 @@ Status ParseOutput(TracepointIR* probe, const QLObjectPtr& probe_output) {
   return ParseColumns(probe, columns);
 }
 
-StatusOr<QLObjectPtr> ProbeHandler::Wrapper(
-    MutationsIR* mutations_ir, stirling::dynamic_tracing::ir::shared::Language language,
-    const std::string& function_name, const std::shared_ptr<FuncObject> wrapped_func,
-    const pypa::AstPtr& ast, const ParsedArgs&, ASTVisitor* visitor) {
+StatusOr<QLObjectPtr> ProbeHandler::Wrapper(MutationsIR* mutations_ir,
+                                            const std::string& function_name,
+                                            const std::shared_ptr<FuncObject> wrapped_func,
+                                            const pypa::AstPtr& ast, const ParsedArgs&,
+                                            ASTVisitor* visitor) {
   if (mutations_ir->current_probe() != nullptr) {
-    return CreateAstError(
-        ast, "Already have a current probe. Are you calling this in a another trace definition.");
+    return CreateAstError(ast,
+                          "Already have a current probe. Are you calling this in a another trace "
+                          "definition.");
   }
-  auto probe = mutations_ir->StartProbe(language, function_name);
+  auto probe = mutations_ir->StartProbe(function_name);
   // Note that even though we call the wrapped func here, Handler::Wrapper only gets called
   // whenever the resulting funcobject is called. Ie in pxtrace.Upsert.
   PL_ASSIGN_OR_RETURN(auto wrapped_result, wrapped_func->Call({}, ast));
