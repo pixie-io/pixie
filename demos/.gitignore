@@ -1,5 +1,1 @@
 artifacts
-
-# Ignore generated locust files.
-load_generation/locustfile.py
-load_generation/load_generation
