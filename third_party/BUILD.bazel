@@ -1,4 +1,3 @@
-load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
 load("//bazel:flex_bison.bzl", "genbison", "genflex")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
@@ -33,7 +32,7 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
-pl_cc_library(
+cc_library(
     name = "arrow",
     # This list is copied from ARROW_SRCS in
     # https://github.com/apache/arrow/blob/master/cpp/src/arrow/CMakeLists.txt.
@@ -112,11 +111,13 @@ pl_cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_tencent_rapidjson//:rapidjson",
+        "@com_google_absl//absl/base:base",
+        "@com_google_absl//absl/strings:strings",
         "@com_google_flatbuffers//:flatbuffers",
     ],
 )
 
-pl_cc_library(
+cc_library(
     name = "libpypa",
     srcs = [
         "libpypa/src/pypa/ast/ast.cc",
@@ -141,19 +142,12 @@ pl_cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
+        "@com_google_absl//absl/strings:strings",
         "@com_google_double_conversion//:double-conversion",
     ],
 )
 
-pl_cc_binary(
-    name = "libpypa_parser_test",
-    srcs = [
-        "libpypa/src/pypa/parser/test.cc",
-    ],
-    deps = [":libpypa"],
-)
-
-pl_cc_library(
+cc_library(
     name = "dnsparser",
     srcs = glob([
         "dnsparser/src/*.cpp",
@@ -169,7 +163,7 @@ pl_cc_library(
     visibility = ["//visibility:public"],
 )
 
-pl_cc_library(
+cc_library(
     name = "aes-min",
     srcs = ["aes-min/aes-min.c"],
     hdrs = ["aes-min/aes-min.h"],
@@ -179,7 +173,7 @@ pl_cc_library(
     visibility = ["//visibility:public"],
 )
 
-pl_cc_library(
+cc_library(
     name = "elfio",
     hdrs = glob(["ELFIO/elfio/*.hpp"]),
     includes = ["ELFIO"],
@@ -210,7 +204,7 @@ go_library(
 )
 
 # See README.md for special instructions on re-building bpftrace.
-pl_cc_library(
+cc_library(
     name = "bpftrace",
     srcs = glob(
         ["bpftrace/src/*.cpp"],
@@ -250,7 +244,7 @@ pl_cc_library(
     ],
 )
 
-pl_cc_library(
+cc_library(
     name = "bpftrace-arch",
     srcs = [
         "bpftrace/src/arch/x86_64.cpp",
@@ -264,7 +258,7 @@ pl_cc_library(
     visibility = ["//visibility:private"],
 )
 
-pl_cc_library(
+cc_library(
     name = "bpftrace-ast",
     srcs = glob([
         "bpftrace/src/ast/*.cpp",
@@ -288,7 +282,7 @@ pl_cc_library(
     ],
 )
 
-pl_cc_library(
+cc_library(
     name = "bpftrace-parser",
     srcs = [
         ":bpftrace-bison",
