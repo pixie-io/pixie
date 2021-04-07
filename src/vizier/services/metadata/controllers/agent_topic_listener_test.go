@@ -414,7 +414,7 @@ func TestAgentHeartbeat(t *testing.T) {
 
 	createdProcesses := make([]*metadatapb.ProcessCreated, 1)
 	createdProcesses[0] = &metadatapb.ProcessCreated{
-		PID: 1,
+		CID: "test",
 	}
 	agentUpdatePb := &messages.AgentUpdateInfo{
 		ProcessCreated: createdProcesses,

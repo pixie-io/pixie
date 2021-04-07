@@ -157,7 +157,6 @@ upid {
   low: 89101
   high: 528280977975
 }
-pid: 123
 start_timestamp_ns: 4
 cmdline: "./bin/bash"
 cid: "container_1"
@@ -169,7 +168,6 @@ upid {
   low: 89101
   high: 528280977975
 }
-pid: 123
 start_timestamp_ns: 4
 process_args: "./bin/bash"
 cid: "container_1"
@@ -181,7 +179,6 @@ upid {
   low: 468
   high: 528280977975
 }
-pid: 456
 start_timestamp_ns: 4
 cmdline: "test"
 cid: "container_2"
@@ -193,7 +190,6 @@ upid {
   low: 468
   high: 528280977975
 }
-pid: 456
 start_timestamp_ns: 4
 process_args: "test"
 cid: "container_2"
@@ -402,7 +398,7 @@ heartbeat {
   }
   update_info {
     process_created {
-      pid: 1
+      cid: "test"
     }
   }
 }

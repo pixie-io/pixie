@@ -447,10 +447,6 @@ message ProcessInfo {
                   (gogoproto.customname) = "UPID"
                   ];
 
-  int32 pid = 3 [
-                  (gogoproto.customname) = "PID"
-                  ];
-
   // The server time in nanoseconds when the process started.
   int64 start_timestamp_ns = 4 [
                   (gogoproto.customname) = "StartTimestampNS"
@@ -466,6 +462,9 @@ message ProcessInfo {
   string cid = 7 [
                   (gogoproto.customname) = "CID"
                   ];
+
+  // DEPRECATED: This was PID, which can be derived from UPID.
+  reserved 3; 
 }
 
 // PodUpdate contains updated information about a Pod on K8s.
@@ -620,10 +619,8 @@ message ProcessCreated {
                   (gogoproto.customname) = "UPID"
                   ];
 
-  // The PID for this process which is unique on this machine in space, but not time.
-  int32 pid = 2 [
-                  (gogoproto.customname) = "PID"
-                  ];
+  // DEPRECATED: This was PID, which can be derived from UPID.
+  reserved 2; 
 
   // The server time in nanoseconds when the process started.
   int64 start_timestamp_ns = 3 [

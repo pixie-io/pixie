@@ -173,8 +173,6 @@ void HeartbeatMessageHandler::ProcessPIDStartedEvent(const pl::md::PIDStartedEve
   mu_upid->set_high(absl::Uint128High64(upid.value()));
   mu_upid->set_low(absl::Uint128Low64(upid.value()));
 
-  // TODO(zasgar/michelle): We should remove pid since it's already in UPID.
-  process_info->set_pid(upid.pid());
   process_info->set_start_timestamp_ns(ev.pid_info.start_time_ns());
   process_info->set_cmdline(ev.pid_info.cmdline());
   process_info->set_cid(ev.pid_info.cid());

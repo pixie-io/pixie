@@ -60,7 +60,6 @@ process_created {
     low: $0
     high: 4294967298
   }
-  pid: 2
   start_timestamp_ns: $0
   cmdline: "./a_command"
   cid: "example_container"

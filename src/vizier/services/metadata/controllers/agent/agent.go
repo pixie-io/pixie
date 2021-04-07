@@ -374,7 +374,6 @@ func (m *ManagerImpl) handleCreatedProcesses(processes []*metadatapb.ProcessCrea
 	for i, p := range processes {
 		pPb := &metadatapb.ProcessInfo{
 			UPID:             p.UPID,
-			PID:              p.PID,
 			StartTimestampNS: p.StartTimestampNS,
 			ProcessArgs:      p.Cmdline,
 			CID:              p.CID,

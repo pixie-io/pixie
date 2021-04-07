@@ -88,14 +88,15 @@ message AgentDataInfo {
 message AgentUpdateInfo {
     // Schema holds information about tables on the agent.
     repeated pl.vizier.services.metadata.TableInfo schema = 2;
-    // TODO(zasgar/michelle): Delete this.
-    repeated pl.shared.k8s.metadatapb.ProcessInfo process = 3;
 
     repeated pl.shared.k8s.metadatapb.ProcessCreated process_created = 4;
     repeated pl.shared.k8s.metadatapb.ProcessTerminated process_terminated = 5;
     // Whether the schema updates.
     bool does_update_schema = 6;
     AgentDataInfo data = 7;
+    
+    // DEPRECATED: This was ProcessInfo which has been replaced by ProcessCreated and ProcessTerminated.
+    reserved 3;
 }
 
 // The heart beat signal.
