@@ -133,7 +133,7 @@ def stirling_docker_images_setup():
     # Custom-built container with python MySQL client, for MySQL tests.
     container_pull(
         name = "python_mysql_connector_image",
-        digest = "sha256:14f3013a1939c20184914e1afb17b9b2ed3c5ff1982d6a6cb3ba7d580c059653",
+        digest = "sha256:5f28e6eee56f40eb13cae7b7e2ccc305183ceb7be7ec44d862209d7f522cd316",
         registry = "gcr.io",
         repository = "pl-dev-infra/python_mysql_connector",
     )

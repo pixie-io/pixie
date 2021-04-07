@@ -67,7 +67,7 @@ class PythonMySQLConnectorContainer : public ContainerRunner {
   static constexpr std::string_view kBazelImageTar =
       "src/stirling/source_connectors/socket_tracer/testing/containers/mysql_connector_image.tar";
   static constexpr std::string_view kInstanceNamePrefix = "mysql_client";
-  static constexpr std::string_view kReadyMessage = "pid=";
+  static constexpr std::string_view kReadyMessage = "pid";
 };
 
 class MySQLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {

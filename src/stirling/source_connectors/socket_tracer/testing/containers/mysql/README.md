@@ -7,8 +7,7 @@ This image is pre-built and made available via the BUILD.bazel file.
 
 ## Updating the image
 
-If you need to update the container image, make the appropriate changes to the `Dockerfile`,
-and then run `update_gcr.sh` to build and upload the image.
+If you need to update the container image, make the appropriate changes to the `Dockerfile`, bump the version in `update_gcr.sh`, and then run `update_gcr.sh` to build and upload the image.
 
 You will then have to update `//bazel/pl_workspace.pl` with the updated SHA, which the script will print out for you.
 

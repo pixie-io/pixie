@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 # Increment this number on every upload.
-version=1.0
+version=1.1
 tag="gcr.io/pl-dev-infra/python_mysql_connector:$version"
 
 docker build . -t $tag
