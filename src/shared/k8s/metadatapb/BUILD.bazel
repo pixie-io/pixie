@@ -44,9 +44,9 @@ pl_cc_library(
 
 pl_py_proto_library(
     name = "metadata_pl_py_proto",
+    imports = ["../../../"],
     proto = ":metadata_pl_proto",
     visibility = ["//visibility:public"],
-    imports = ["../../../"],
     deps = [
         "//src/shared/types/proto:types_pl_py_proto",
     ],

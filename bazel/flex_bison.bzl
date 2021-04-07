@@ -26,7 +26,7 @@ def genbison(name, src, header_out, source_out, extra_outs = [], **kwargs):
       source_out: The generated source file.
       extra_outs: Additional generated outputs.
     """
-    arg_adjust = "$$(bison --version | grep -qE '^bison .* 3\..*' && echo -Wno-deprecated)"
+    arg_adjust = "$$(bison --version | grep -qE '^bison .* 3\\..*' && echo -Wno-deprecated)"
     cmd = "bison %s -o $(@D)/%s $(location %s)" % (arg_adjust, source_out, src)
     native.genrule(
         name = name,

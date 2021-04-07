@@ -24,13 +24,16 @@ pl_go_proto_library(
 
 pl_py_proto_library(
     name = "uuid_pl_py_proto",
+    imports = ["../../../"],
     proto = ":uuid_pl_proto",
     visibility = ["//visibility:public"],
-    imports = ["../../../"],
 )
 
 filegroup(
     name = "pbfiles",
-    srcs = glob(["*.pb.go", "*.proto"]),
+    srcs = glob([
+        "*.pb.go",
+        "*.proto",
+    ]),
     visibility = ["//visibility:public"],
 )

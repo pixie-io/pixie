@@ -6,11 +6,11 @@ pl_proto_library(
     srcs = ["cvmsgs.proto"],
     visibility = ["//visibility:public"],
     deps = [
-        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
-        "//src/shared/k8s/metadatapb:metadata_pl_proto",
         "//src/api/public/uuidpb:uuid_pl_proto",
-        "//src/vizier/vizierpb:vizier_pl_proto",
         "//src/api/public/vizierapipb:vizier_pl_proto",
+        "//src/shared/k8s/metadatapb:metadata_pl_proto",
+        "//src/vizier/vizierpb:vizier_pl_proto",
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
     ],
 )
 
@@ -19,11 +19,11 @@ pl_cc_proto_library(
     proto = ":cvmsgs_pl_proto",
     visibility = ["//visibility:public"],
     deps = [
-        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
-        "//src/shared/k8s/metadatapb:metadata_pl_cc_proto",
         "//src/api/public/uuidpb:uuid_pl_cc_proto",
-        "//src/vizier/vizierpb:vizier_pl_cc_proto",
         "//src/api/public/vizierapipb:vizier_pl_cc_proto",
+        "//src/shared/k8s/metadatapb:metadata_pl_cc_proto",
+        "//src/vizier/vizierpb:vizier_pl_cc_proto",
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
     ],
 )
 
@@ -33,9 +33,9 @@ pl_go_proto_library(
     proto = ":cvmsgs_pl_proto",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
         "//src/api/public/uuidpb:uuid_pl_go_proto",
-        "//src/vizier/vizierpb:vizier_pl_go_proto",
         "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
+        "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
+        "//src/vizier/vizierpb:vizier_pl_go_proto",
     ],
 )

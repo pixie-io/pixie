@@ -35,13 +35,16 @@ pl_grpc_web_library(
 
 pl_py_grpc_library(
     name = "vizier_pl_py_grpc",
+    imports = ["../../../"],
     proto = ":vizier_pl_proto",
     visibility = ["//visibility:public"],
-    imports = ["../../../"],
 )
 
 filegroup(
     name = "pbfiles",
-    srcs = glob(["*.pb.go", "*.proto"]),
+    srcs = glob([
+        "*.pb.go",
+        "*.proto",
+    ]),
     visibility = ["//visibility:public"],
 )

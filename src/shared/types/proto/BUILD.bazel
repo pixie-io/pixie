@@ -27,7 +27,7 @@ pl_go_proto_library(
 
 pl_py_proto_library(
     name = "types_pl_py_proto",
+    imports = ["../../../"],
     proto = ":types_pl_proto",
     visibility = ["//visibility:public"],
-    imports = ["../../../"],
 )

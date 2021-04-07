@@ -26,14 +26,14 @@ pl_go_proto_library(
 
 pl_grpc_web_library(
     name = "vis_pl_grpc_web_proto",
-    proto = ":vis_pl_proto",
     grpc = False,
+    proto = ":vis_pl_proto",
     visibility = ["//visibility:public"],
 )
 
 pl_py_proto_library(
     name = "vis_pl_py_proto",
+    imports = ["../../../"],
     proto = ":vis_pl_proto",
     visibility = ["//visibility:public"],
-    imports = ["../../../"],
 )

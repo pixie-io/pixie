@@ -17,8 +17,8 @@ pl_cc_library(
     ),
     hdrs = ["parser.h"],
     deps = [
-        "//src/carnot/planner/compilerpb:compiler_status_pl_cc_proto",
         "//src/carnot/planner/compiler_state:cc_library",
+        "//src/carnot/planner/compilerpb:compiler_status_pl_cc_proto",
         "//src/carnot/planner/ir:cc_library",
         "//third_party:libpypa",
     ],
@@ -33,5 +33,8 @@ pl_cc_test(
 pl_cc_test(
     name = "parser_test",
     srcs = ["parser_test.cc"],
-    deps = [":cc_library", "//src/carnot/planner/compiler:test_utils"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner/compiler:test_utils",
+    ],
 )

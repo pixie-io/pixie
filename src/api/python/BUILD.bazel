@@ -5,10 +5,10 @@ load("@vizier_api_python_deps//:requirements.bzl", "requirement")
 sh_library(
     name = "copy_python_api_sh",
     srcs = ["copy_python_srcs.sh"],
-    visibility = ["//visibility:public"],
     data = [
         "//src/api/python/pxapi:py_library",
     ],
+    visibility = ["//visibility:public"],
 )
 
 sh_binary(

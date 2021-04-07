@@ -31,9 +31,9 @@ pl_go_proto_library(
 
 pl_py_grpc_library(
     name = "cloudapi_pl_py_grpc",
+    imports = ["../../../"],
     proto = ":cloudapi_pl_proto",
     visibility = ["//visibility:public"],
-    imports = ["../../../"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_py_proto",
         "//src/shared/k8s/metadatapb:metadata_pl_py_proto",
