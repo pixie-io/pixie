@@ -39,7 +39,7 @@
         "(\\.bzl$)"
       ],
       "script-and-regex.script": "./linters/buildifier.sh",
-      "script-and-regex.regex": "/^(?P<filename>.*) # (?P<autofix>reformat) (?P<message>.*)$/m"
+      "script-and-regex.regex": "/^(?P<filename>.*):(?P<line>\\d+): (?P<error>.*): (?P<message>.*)$/m"
     },
     "cpplint": {
       "type": "cpplint",
