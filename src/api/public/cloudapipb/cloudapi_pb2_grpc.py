@@ -20,7 +20,9 @@ from src.api.public.cloudapipb import cloudapi_pb2 as src_dot_api_dot_public_dot
 
 
 class ClusterManagerStub(object):
-    """Missing associated documentation comment in .proto file."""
+    """The API to access Vizier cluster info, connection info
+    for direct access clusters, and configuration management for the cluster.
+    """
 
     def __init__(self, channel):
         """Constructor.
@@ -46,22 +48,30 @@ class ClusterManagerStub(object):
 
 
 class ClusterManagerServicer(object):
-    """Missing associated documentation comment in .proto file."""
+    """The API to access Vizier cluster info, connection info
+    for direct access clusters, and configuration management for the cluster.
+    """
 
     def GetCluster(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """Returns ClusterInfo for a single cluster if specified in the request,
+        otherwise returns info for all clusters in an org.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def UpdateClusterConfig(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """Modifies the configuration for a cluster.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def GetClusterConnection(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """Returns the information necessary to connect to the specified cluster. Making this call
+        is only necessary for direct mode (non-passthrough) connections. Passthrough should talk
+        to the same cloud URL as this API and use the same authentication.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -92,7 +102,9 @@ def add_ClusterManagerServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class ClusterManager(object):
-    """Missing associated documentation comment in .proto file."""
+    """The API to access Vizier cluster info, connection info
+    for direct access clusters, and configuration management for the cluster.
+    """
 
     @staticmethod
     def GetCluster(request,
@@ -100,6 +112,7 @@ class ClusterManager(object):
             options=(),
             channel_credentials=None,
             call_credentials=None,
+            insecure=False,
             compression=None,
             wait_for_ready=None,
             timeout=None,
@@ -108,7 +121,7 @@ class ClusterManager(object):
             src_dot_api_dot_public_dot_cloudapipb_dot_cloudapi__pb2.GetClusterRequest.SerializeToString,
             src_dot_api_dot_public_dot_cloudapipb_dot_cloudapi__pb2.GetClusterResponse.FromString,
             options, channel_credentials,
-            call_credentials, compression, wait_for_ready, timeout, metadata)
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def UpdateClusterConfig(request,
@@ -116,6 +129,7 @@ class ClusterManager(object):
             options=(),
             channel_credentials=None,
             call_credentials=None,
+            insecure=False,
             compression=None,
             wait_for_ready=None,
             timeout=None,
@@ -124,7 +138,7 @@ class ClusterManager(object):
             src_dot_api_dot_public_dot_cloudapipb_dot_cloudapi__pb2.UpdateClusterConfigRequest.SerializeToString,
             src_dot_api_dot_public_dot_cloudapipb_dot_cloudapi__pb2.UpdateClusterConfigResponse.FromString,
             options, channel_credentials,
-            call_credentials, compression, wait_for_ready, timeout, metadata)
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def GetClusterConnection(request,
@@ -132,6 +146,7 @@ class ClusterManager(object):
             options=(),
             channel_credentials=None,
             call_credentials=None,
+            insecure=False,
             compression=None,
             wait_for_ready=None,
             timeout=None,
@@ -140,4 +155,4 @@ class ClusterManager(object):
             src_dot_api_dot_public_dot_cloudapipb_dot_cloudapi__pb2.GetClusterConnectionRequest.SerializeToString,
             src_dot_api_dot_public_dot_cloudapipb_dot_cloudapi__pb2.GetClusterConnectionResponse.FromString,
             options, channel_credentials,
-            call_credentials, compression, wait_for_ready, timeout, metadata)
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

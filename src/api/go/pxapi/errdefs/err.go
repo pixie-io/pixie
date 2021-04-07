@@ -16,22 +16,89 @@
 
 package errdefs
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 var (
 	// ErrStreamAlreadyClosed is invoked when trying to read a stream that has been closed or cancelled.
 	ErrStreamAlreadyClosed = errors.New("stream has already been closed")
+	// ErrClusterNotFound is invoked when trying to fetch information for a nonexistent cluster ID.
+	ErrClusterNotFound = errors.New("cluster not found")
 	// ErrUnImplemented is used for unimplemented features.
 	ErrUnImplemented = errors.New("unimplemented")
+
+	// ErrInvalidArgument specifies an unknown internal error has occurred.
+	ErrInvalidArgument = errors.New("invalid/missing arguments")
+
+	// ErrInternal specifies an unknown internal error has occurred.
+	ErrInternal = errors.New("internal error")
 	// ErrInternalMissingTableMetadata specifies an internal error has occurred where the table metadata is missing.
-	ErrInternalMissingTableMetadata = errors.New("internal error, missing table metadata")
+	ErrInternalMissingTableMetadata = createInternalError("missing table metadata")
 	// ErrInternalDuplicateTableMetadata specifies an internal error has occurred where the table metadata has shown up multiple times.
-	ErrInternalDuplicateTableMetadata = errors.New("internal error, duplicate table metadata")
+	ErrInternalDuplicateTableMetadata = createInternalError("duplicate table metadata")
 	// ErrInternalMismatchedType specifies an internal error has occurred where the table types don't match up between metadata and the various batches.
-	ErrInternalMismatchedType = errors.New("internal error, types don't match between metadata and row batch data")
+	ErrInternalMismatchedType = createInternalError("types don't match between metadata and row batch data")
 	// ErrInternalUnImplementedType specifies an internal error has occurred where the types used by the Pixie API are not supported by this client version.
 	// Most likely a client version update will fix the problem.
-	ErrInternalUnImplementedType = errors.New("internal error, unimplemented type")
+	ErrInternalUnImplementedType = createInternalError("unimplemented type")
 	// ErrInternalDataAfterEOS got data after EOS.
-	ErrInternalDataAfterEOS = errors.New("internal error, got data after eos")
+	ErrInternalDataAfterEOS = createInternalError("got data after eos")
+
+	// ErrCompilation is a generic PxL compilation error.
+	ErrCompilation = errors.New("compilation error")
 )
+
+// MultiError is an interface to allow access to groups of errors.
+type MultiError interface {
+	error
+	Errors() []error
+}
+
+type errorGroup struct {
+	errs []error
+}
+
+func (e errorGroup) Error() string {
+	s := "Multiple Errors: "
+	for i, err := range e.errs {
+		if i > 0 {
+			s += ", "
+		}
+		s += err.Error()
+	}
+	return s
+}
+
+func (e errorGroup) Errors() []error {
+	return e.errs
+}
+
+func (e errorGroup) Append(c error) {
+	e.errs = append(e.errs, c)
+}
+
+func newErrorGroup(errs ...error) error {
+	e := errorGroup{
+		errs: make([]error, len(errs)),
+	}
+	for i, err := range errs {
+		e.errs[i] = err
+	}
+	return e
+}
+
+// IsInternalError checks to see if the error is an internal error.
+func IsInternalError(e error) bool {
+	return errors.Is(e, ErrInternal)
+}
+
+// IsCompilationError returns true if the error is a result of PxlCompilationError.
+func IsCompilationError(e error) bool {
+	return errors.Is(e, ErrCompilation)
+}
+
+func createInternalError(s string) error {
+	return fmt.Errorf("%s : %w", s, ErrInternal)
+}

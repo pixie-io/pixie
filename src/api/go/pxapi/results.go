@@ -18,7 +18,6 @@ package pxapi
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -66,7 +65,7 @@ func newScriptResults() *ScriptResults {
 }
 
 // Close will terminate the call.
-func (s ScriptResults) Close() error {
+func (s *ScriptResults) Close() error {
 	// Cancel stream if still active.
 	select {
 	case <-s.c.Context().Done():
@@ -106,6 +105,27 @@ func (s *ScriptResults) Stream() error {
 	return streamErr
 }
 
+func (s *ScriptResults) handleGRPCMsg(ctx context.Context, resp *vizierapipb.ExecuteScriptResponse) error {
+	if err := errdefs.ParseStatus(resp.Status); err != nil {
+		return err
+	}
+	switch v := resp.Result.(type) {
+	case *vizierapipb.ExecuteScriptResponse_MetaData:
+		return s.handleTableMetadata(ctx, v)
+	case *vizierapipb.ExecuteScriptResponse_Data:
+		if v.Data != nil {
+			if v.Data.Batch != nil {
+				return s.handleTableRowbatch(ctx, v.Data.Batch)
+			}
+			if v.Data.ExecutionStats != nil {
+				return s.handleStats(ctx, v.Data.ExecutionStats)
+			}
+		}
+	}
+
+	return errdefs.ErrInternalUnImplementedType
+}
+
 func (s *ScriptResults) run() error {
 	ctx := s.c.Context()
 	for {
@@ -121,21 +141,7 @@ func (s *ScriptResults) run() error {
 		if resp == nil {
 			return nil
 		}
-
-		switch v := resp.Result.(type) {
-		case *vizierapipb.ExecuteScriptResponse_MetaData:
-			err = s.handleTableMetadata(ctx, v)
-		case *vizierapipb.ExecuteScriptResponse_Data:
-			if v.Data != nil {
-				if v.Data.Batch != nil {
-					err = s.handleTableRowbatch(ctx, v.Data.Batch)
-				}
-				if v.Data.ExecutionStats != nil {
-					err = s.handleStats(ctx, v.Data.ExecutionStats)
-				}
-			}
-		}
-		if err != nil {
+		if err := s.handleGRPCMsg(ctx, resp); err != nil {
 			return err
 		}
 	}
@@ -176,7 +182,10 @@ func (s *ScriptResults) handleTableMetadata(ctx context.Context, md *vizierapipb
 			return err
 		}
 		if handler != nil {
-			handler.HandleInit(ctx, tableMD)
+			err = handler.HandleInit(ctx, tableMD)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -200,7 +209,7 @@ func (s *ScriptResults) handleTableRowbatch(ctx context.Context, b *vizierapipb.
 	}
 	s.stats.TotalBytes += int64(b.Size())
 
-	if tracker.done == true {
+	if tracker.done {
 		return errdefs.ErrInternalDataAfterEOS
 	}
 
@@ -272,7 +281,6 @@ func extractDataFromCol(colData []*vizierapipb.Column, rowIdx, colIdx int64, row
 	case *vizierapipb.Column_Time64NsData:
 		dCasted, ok := row[colIdx].(*types.Time64NSValue)
 		if !ok {
-			fmt.Printf("Here %+v", row[colIdx].Type())
 			return errdefs.ErrInternalMismatchedType
 		}
 		dCasted.ScanInt64(colTyped.Time64NsData.Data[rowIdx])
