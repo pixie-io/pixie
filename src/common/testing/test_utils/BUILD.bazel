@@ -29,9 +29,10 @@ pl_cc_test(
     name = "container_runner_test",
     srcs = ["container_runner_test.cc"],
     data = [":sleep_container_image.tar"],
-    # Doesn't really require this tag, but this could provide a clue,
-    # given that it alters the build environment.
-    tags = ["requires_bpf"],
+    tags = [
+        "no_asan",
+        "no_tsan",
+    ],
     deps = [
         ":cc_library",
     ],

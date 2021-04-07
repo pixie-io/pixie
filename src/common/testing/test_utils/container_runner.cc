@@ -42,6 +42,33 @@ ContainerRunner::~ContainerRunner() {
   }
 }
 
+namespace {
+StatusOr<std::string> ContainerStatus(std::string_view container_name) {
+  PL_ASSIGN_OR_RETURN(
+      std::string container_status,
+      pl::Exec(absl::Substitute("docker inspect -f '{{.State.Status}}' $0", container_name)));
+  absl::StripAsciiWhitespace(&container_status);
+  return container_status;
+}
+
+StatusOr<int> ContainerPID(std::string_view container_name) {
+  PL_ASSIGN_OR_RETURN(
+      std::string pid_str,
+      pl::Exec(absl::Substitute("docker inspect -f '{{.State.Pid}}' $0", container_name)));
+
+  int pid;
+  if (!absl::SimpleAtoi(pid_str, &pid)) {
+    return error::Internal("PID was not parseable.");
+  }
+
+  if (pid == 0) {
+    return error::Internal("Failed to get PID.");
+  }
+
+  return pid;
+}
+}  // namespace
+
 StatusOr<std::string> ContainerRunner::Run(int timeout, const std::vector<std::string>& options,
                                            const std::vector<std::string>& args) {
   // Now run the container.
@@ -92,11 +119,8 @@ StatusOr<std::string> ContainerRunner::Run(int timeout, const std::vector<std::s
     // to avoid races where the container stops running after the docker inspect.
     bool container_is_running = container_.IsRunning();
 
-    PL_ASSIGN_OR_RETURN(
-        container_status,
-        pl::Exec(absl::Substitute("docker inspect -f '{{.State.Status}}' $0", container_name_)));
-    absl::StripAsciiWhitespace(&container_status);
-    VLOG(1) << absl::Substitute("Container status: $0", container_status);
+    PL_ASSIGN_OR_RETURN(container_status, ContainerStatus(container_name_));
+    LOG(INFO) << absl::Substitute("Container status: $0", container_status);
 
     // Status should be one of: created, restarting, running, removing, paused, exited, dead.
     if (container_status == "running" || container_status == "exited" ||
@@ -124,14 +148,10 @@ StatusOr<std::string> ContainerRunner::Run(int timeout, const std::vector<std::s
 
   // Get the PID of process within the container.
   // Note that this like won't work for short-lived containers.
-  PL_ASSIGN_OR_RETURN(
-      std::string pid_str,
-      pl::Exec(absl::Substitute("docker inspect -f '{{.State.Pid}}' $0", container_name_)));
+  process_pid_ = ContainerPID(container_name_).ValueOr(-1);
 
-  if (!absl::SimpleAtoi(pid_str, &process_pid_) || process_pid_ == 0) {
-    LOG(WARNING) << "Could not obtain process PID. Container may have terminated before PID could "
-                    "be sampled.";
-    process_pid_ = -1;
+  if (process_pid_ == -1) {
+    LOG(WARNING) << "Container may have terminated before PID could be sampled.";
   }
   LOG(INFO) << absl::Substitute("Container process PID: $0", process_pid_);
 
@@ -139,18 +159,47 @@ StatusOr<std::string> ContainerRunner::Run(int timeout, const std::vector<std::s
 
   // Wait for container to become "ready".
   std::string container_out;
-  PL_RETURN_IF_ERROR(container_.Stdout(&container_out));
-  while (!absl::StrContains(container_out, ready_message_)) {
-    sleep(kSleepSeconds);
+  for (; attempts_remaining > 0; --attempts_remaining) {
+    // Read Stdout after reading ContainerStatus to avoid races.
+    // Otherwise it is possible we don't see the container become ready,
+    // but we do see its status as "exited", and we think it exited without ever becoming ready.
+    PL_ASSIGN_OR_RETURN(container_status, ContainerStatus(container_name_));
     PL_RETURN_IF_ERROR(container_.Stdout(&container_out));
 
-    --attempts_remaining;
-    if (attempts_remaining <= 0) {
-      return error::Internal("Timeout. Container did not reach ready state.");
+    LOG(INFO) << absl::Substitute("Container status: $0", container_status);
+
+    if (absl::StrContains(container_out, ready_message_)) {
+      break;
     }
+
+    // Early exit to save time if the container has exited.
+    // Any further looping won't really help us.
+    if (container_status == "exited" || container_status == "dead") {
+      LOG(INFO) << "Container has exited.";
+      break;
+    }
+
     LOG(INFO) << absl::Substitute(
         "Container not in ready state, will try again ($0 attempts remaining).",
         attempts_remaining);
+
+    sleep(kSleepSeconds);
+  }
+
+  if (!absl::StrContains(container_out, ready_message_)) {
+    LOG(ERROR) << "Container did not reach ready state.";
+
+    // Dump some information that may be useful for debugging.
+    LOG(INFO) << "\n> docker container ls -a";
+    LOG(INFO) << pl::Exec("docker container ls -a").ValueOr("<docker container ls failed>");
+    LOG(INFO) << "\n> docker container inspect";
+    LOG(INFO) << pl::Exec(absl::Substitute("docker container inspect $0", container_name_))
+                     .ValueOr("<docker container failed>");
+    LOG(INFO) << "\n> docker logs";
+    LOG(INFO) << pl::Exec(absl::Substitute("docker logs $0", container_name_))
+                     .ValueOr("<docker logs failed>");
+
+    return error::Internal("Timeout. Container did not reach ready state.");
   }
 
   LOG(INFO) << absl::Substitute("Container $0 is ready.", container_name_);

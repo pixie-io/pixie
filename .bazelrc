@@ -141,7 +141,12 @@ build:tsan --test_env=TSAN_OPTIONS=report_atomic_races=0
 
 # Note that we are lumping tests that require root into the BPF tests below
 # to minimize number of configs.
-# If there are ever a lot of tests with requires_root set, a new config is warranted.
+# If there are ever a lot of tests with requires_root, a new config is warranted.
+
+# Note 2: BPF tests are limited to --jobs=4, because otherwise the parallel tests
+# cause a lot of flakiness. In particular, many of the BPF tests deploy containers,
+# and the sudden deployment of too many containers causes some containers to get
+# stuck for minutes without actually running.
 
 # bazel build --config bpf
 build:bpf --build_tag_filters=requires_bpf,requires_root
