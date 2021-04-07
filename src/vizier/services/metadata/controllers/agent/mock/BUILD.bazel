@@ -7,7 +7,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
-        "//src/shared/types/go:go_default_library",
+        "//src/shared/types/go",
         "//src/vizier/messages/messagespb:messages_pl_go_proto",
         "//src/vizier/services/metadata/controllers/agent",
         "//src/vizier/services/metadata/metadatapb:service_pl_go_proto",

@@ -10,7 +10,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
-        "//src/shared/types/go:go_default_library",
+        "//src/shared/types/go",
         "@com_github_sirupsen_logrus//:logrus",
         "@io_k8s_api//core/v1:core",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
@@ -27,7 +27,7 @@ go_test(
     embed = [":k8s"],
     deps = [
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
-        "//src/shared/types/go:go_default_library",
+        "//src/shared/types/go",
         "@com_github_gogo_protobuf//proto",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
