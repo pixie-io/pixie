@@ -1,3 +1,5 @@
+package(default_visibility = ["//src/stirling:__subpackages__"])
+
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_image")
@@ -5,25 +7,36 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_image")
 go_library(
     name = "server_lib",
     srcs = ["https_server.go"],
-    data = [
-        "https-server.crt",
-        "https-server.key",
-    ],
     importpath = "pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/go_https/server",
     visibility = ["//visibility:private"],
+    deps = [
+        "@com_github_spf13_pflag//:pflag",
+        "@com_github_spf13_viper//:viper",
+    ],
 )
 
 go_binary(
     name = "https_server",
     embed = [":server_lib"],
-    visibility = ["//visibility:public"],
+)
+
+genrule(
+    name = "certs",
+    outs = [
+        "server.crt",
+        "server.key",
+    ],
+    cmd = """
+        openssl ecparam -genkey -name secp384r1 -out $(location server.key) && \
+        openssl req -new -x509 -sha256 -key $(location server.key) -subj "/C=US/ST=California/L=San Francisco/O=Pixie Labs Inc./CN=127.0.0.1:50101" -out $(location server.crt) -days 365
+    """,
 )
 
 filegroup(
-    name = "server_cert_files",
+    name = "server_certs",
     srcs = [
-        "https-server.crt",
-        "https-server.key",
+        "server.crt",
+        "server.key",
     ],
 )
 
@@ -31,16 +44,15 @@ container_image(
     name = "server_image_base",
     base = "@go_image_base//image",
     directory = "/certs",
-    files = [":server_cert_files"],
+    files = [":server_certs"],
 )
 
 go_image(
     name = "server_image",
     args = [
-        "--cert=/certs/https-server.crt",
-        "--key=/certs/https-server.key",
+        "--cert=/certs/server.crt",
+        "--key=/certs/server.key",
     ],
     base = ":server_image_base",
     binary = ":https_server",
-    visibility = ["//visibility:public"],
 )

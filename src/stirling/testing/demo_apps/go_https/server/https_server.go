@@ -1,11 +1,18 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
+)
+
+const (
+	httpPort  = 50100
+	httpsPort = 50101
 )
 
 func BasicHandler(w http.ResponseWriter, r *http.Request) {
@@ -33,26 +40,14 @@ func ListenAndServe(port int) {
 }
 
 func main() {
-	http_port := 50100
-	https_port := 50101
+	pflag.String("cert", "", "Path to the .crt file.")
+	pflag.String("key", "", "Path to the .key file.")
+	pflag.Parse()
+
+	viper.BindPFlags(pflag.CommandLine)
+
 	http.HandleFunc("/", BasicHandler)
 
-	var cert = flag.String("cert", "", "Path to the .crt file.")
-	var key = flag.String("key", "", "Path to the .key file.")
-	const keyPairBase = "src/stirling/testing/demo_apps/go_https/server"
-
-	certFile := keyPairBase + "/https-server.crt"
-	if len(*cert) > 0 {
-		certFile = *cert
-	}
-	keyFile := keyPairBase + "/https-server.key"
-	if len(*key) > 0 {
-		keyFile = *key
-	}
-
-	fmt.Printf("cert: %s\n", certFile)
-	fmt.Printf("key: %s\n", certFile)
-
-	go ListenAndServeTLS(https_port, certFile, keyFile)
-	ListenAndServe(http_port)
+	go ListenAndServeTLS(httpsPort, viper.GetString("cert"), viper.GetString("key"))
+	ListenAndServe(httpPort)
 }
