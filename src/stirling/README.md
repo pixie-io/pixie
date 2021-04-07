@@ -142,3 +142,14 @@ The standard deploy will install some prerequisites. It only needs to be run onc
 
 You can then deploy a development version based on your local changes using `skaffold`:
 `skaffold run -p opt -f skaffold/skaffold_vizier.yaml`
+
+## FAQ
+
+### Why do some of my records have exactly the same latency?
+
+Rarely, a few successive records may have the exactly-same latency value. That is because theose
+records, despite being separated into multiple req/resp pairs, were actually sent in batch by
+syscalls. Stirling captures data from those syscalls, and cannot assign different timestamps to
+those messages. As a result, records have the exactly-same latency.
+
+This is an expected behavior, and a result of Stirling's use of eBPF kprobes.
