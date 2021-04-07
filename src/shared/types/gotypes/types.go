@@ -1,4 +1,4 @@
-package types
+package gotypes
 
 import (
 	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"

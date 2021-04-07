@@ -18,7 +18,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/bloomfilterpb"
 	k8s_metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/shared/metadatapb"
-	types "pixielabs.ai/pixielabs/src/shared/types/go"
+	types "pixielabs.ai/pixielabs/src/shared/types/gotypes"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"

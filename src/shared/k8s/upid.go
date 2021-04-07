@@ -7,7 +7,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	types "pixielabs.ai/pixielabs/src/shared/types/go"
+	types "pixielabs.ai/pixielabs/src/shared/types/gotypes"
 )
 
 // ASIDFromUPID gets the ASID from the UPID.

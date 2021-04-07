@@ -20,3 +20,20 @@ go_test(
         "@com_github_stretchr_testify//assert",
     ],
 )
+
+go_library(
+    name = "gotypes",
+    srcs = ["types.go"],
+    importpath = "pixielabs.ai/pixielabs/src/shared/types/gotypes",
+    deps = ["//src/shared/types/proto:types_pl_go_proto"],
+)
+
+go_test(
+    name = "gotypes_test",
+    srcs = ["types_test.go"],
+    embed = [":gotypes"],
+    deps = [
+        "//src/shared/types/proto:types_pl_go_proto",
+        "@com_github_stretchr_testify//assert",
+    ],
+)

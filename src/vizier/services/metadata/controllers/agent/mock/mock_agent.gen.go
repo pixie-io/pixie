@@ -10,7 +10,7 @@ import (
 	uuid "github.com/gofrs/uuid"
 	gomock "github.com/golang/mock/gomock"
 	pl_shared_k8s_metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	types "pixielabs.ai/pixielabs/src/shared/types/go"
+	types "pixielabs.ai/pixielabs/src/shared/types/gotypes"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	agent "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent"
 	metadatapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
