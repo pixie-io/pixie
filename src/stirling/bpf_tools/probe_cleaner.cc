@@ -66,8 +66,6 @@ Status RemoveProbes(const char* file_path, std::vector<std::string> probes) {
     VLOG(1) << absl::Substitute("Writing $0", delete_probe);
 
     if (write(fd, delete_probe.data(), delete_probe.size()) < 0) {
-      // TODO(yzhao): Avoid spamming customers' PEM logs. Switch this back to LOG(ERROR) after
-      // initial rollout.
       VLOG(1) << absl::Substitute("Failed to write '$0' to file: $1 [errno=$2 message=$3]",
                                   delete_probe, file_path, errno, std::strerror(errno));
     }

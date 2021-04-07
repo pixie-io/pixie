@@ -165,8 +165,6 @@ TEST_P(NonVecSyscallTests, NonVecSyscalls) {
     EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kJSON),
               records[kHTTPContentTypeIdx]->Get<types::Int64Value>(1).val);
   }
-
-  // TODO(oazizi): Check IPs.
 }
 
 INSTANTIATE_TEST_SUITE_P(

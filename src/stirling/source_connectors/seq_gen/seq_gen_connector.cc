@@ -36,9 +36,6 @@ void SeqGenConnector::TransferDataTable1(uint32_t num_records, DataTable* data_t
   for (uint32_t irecord = 0; irecord < num_records; ++irecord) {
     auto table1_mode8_seq_val = table1_mod8_seq_();
 
-    // TODO(oazizi): The call to std::to_string() here is a little concerning.
-    // I don't like it in the Transfer() functions; may hurt performance.
-    // Same pattern will arise when tabletizing other tables.
     types::TabletID tablet_id = std::to_string(table1_mode8_seq_val);
 
     DataTable::RecordBuilder<&kSeq1Table> r(data_table, tablet_id);

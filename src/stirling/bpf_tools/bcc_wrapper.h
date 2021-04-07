@@ -149,13 +149,7 @@ struct PerfEventSpec {
 
   // Sampling period in number of events.
   // Mutually exclusive with sample_freq.
-  // TODO(oazizi): Even though BCC does it this way, we can have a better scheme.
   uint64_t sample_period;
-
-  // Sampling frequency in Hz to trigger the probe.
-  // Kernel will try to modulate the sample period to achieve the desired frequency.
-  // Mutually exclusive with sample_period.
-  uint64_t sample_freq;
 };
 
 /**

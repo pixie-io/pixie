@@ -516,7 +516,6 @@ TEST_F(SocketTraceConnectorTest, MissingEventInStream) {
   source_->AcceptDataEvent(std::move(resp_event3));
 
   // Processing of resp_event3 will result in one more record.
-  // TODO(oazizi): Update this when req-resp matching algorithm is updated.
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());

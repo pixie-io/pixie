@@ -48,8 +48,6 @@ std::vector<TaggedRecordBatch> DataTable::ConsumeRecords() {
 
   for (auto& [tablet_id, tablet] : tablets_) {
     // Sort based on times.
-    // TODO(oazizi): Could keep track of whether tablet is already sorted to avoid some work.
-    //               Many tables will naturally be in sorted order.
     std::vector<size_t> sort_indexes = utils::SortedIndexes(tablet.times);
 
     // End time is cutoff time + 1, so call to SplitSortedVector() produces the following

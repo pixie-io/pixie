@@ -331,8 +331,6 @@ void ConnTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
 template <>
 std::vector<protocols::http2::Record>
 ConnTracker::ProcessToRecords<protocols::http2::ProtocolTraits>() {
-  // TODO(oazizi): ECHECK that DataStream is empty.
-
   protocols::RecordsWithErrorCount<protocols::http2::Record> result;
 
   protocols::http2::ProcessHTTP2Streams(&http2_client_streams_, IsZombie(), &result);

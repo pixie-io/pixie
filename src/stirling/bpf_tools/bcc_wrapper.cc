@@ -204,8 +204,7 @@ Status BCCWrapper::AttachSamplingProbe(const SamplingProbeSpec& probe) {
   PerfEventSpec perf_event_spec{.type = PERF_TYPE_SOFTWARE,
                                 .config = PERF_COUNT_SW_CPU_CLOCK,
                                 .probe_fn = probe.probe_fn,
-                                .sample_period = sample_period,
-                                .sample_freq = 0};
+                                .sample_period = sample_period};
 
   return AttachPerfEvent(perf_event_spec);
 }
@@ -305,7 +304,7 @@ Status BCCWrapper::AttachPerfEvent(const PerfEventSpec& perf_event) {
                               magic_enum::enum_name(perf_event.type), perf_event.probe_fn);
   PL_RETURN_IF_ERROR(bpf_.attach_perf_event(perf_event.type, perf_event.config,
                                             std::string(perf_event.probe_fn),
-                                            perf_event.sample_period, perf_event.sample_freq));
+                                            perf_event.sample_period, 0));
   perf_events_.push_back(perf_event);
   ++num_attached_perf_events_;
   return Status::OK();
@@ -327,11 +326,6 @@ Status BCCWrapper::DetachPerfEvent(const PerfEventSpec& perf_event) {
 }
 
 void BCCWrapper::DetachPerfEvents() {
-  // TODO(kgandhi): PL-453  Figure out a fix for below warning.
-  // WARNING: Detaching perf events based on type and config might
-  // end up removing the perf event if there was another source with the same perf event and
-  // config. Should be rare but may still be an issue.
-
   for (const PerfEventSpec& p : perf_events_) {
     auto res = DetachPerfEvent(p);
     LOG_IF(ERROR, !res.ok()) << res.msg();

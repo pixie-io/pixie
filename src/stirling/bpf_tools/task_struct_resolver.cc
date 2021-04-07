@@ -178,7 +178,6 @@ StatusOr<TaskStructOffsets> ResolveTaskStructOffsetsCore() {
   // Retrieve the task struct address from BPF map.
   uint64_t task_struct_addr;
   {
-    // TODO(oazizi): Find systematic way to convert ebpf::StatusTuple to pl::Status.
     ebpf::StatusTuple bpf_status =
         bcc->GetArrayTable<uint64_t>("task_struct_address_map").get_value(0, task_struct_addr);
     if (!bpf_status.ok()) {
@@ -189,7 +188,6 @@ StatusOr<TaskStructOffsets> ResolveTaskStructOffsetsCore() {
   // Retrieve the raw memory buffer of the task struct.
   struct buf buf;
   {
-    // TODO(oazizi): Find systematic way to convert ebpf::StatusTuple to pl::Status.
     ebpf::StatusTuple bpf_status =
         bcc->GetArrayTable<struct buf>("task_struct_buf").get_value(0, buf);
     if (!bpf_status.ok()) {

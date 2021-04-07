@@ -2,10 +2,6 @@
 
 #pragma once
 
-// TODO(yzhao): According to https://github.com/cilium/cilium/blob/master/Documentation/bpf.rst
-// and https://lwn.net/Articles/741773/, kernel 4.16 & llvm 6.0 or newer are required to support BPF
-// to BPF calls for C code. Figure out how to detect kernel and llvm versions.
-// TODO(yzhao): Clarify the effect on GCC and Clang, and see if we can remove the inline keyword.
 #define __inline inline __attribute__((__always_inline__))
 
 // This macro is essentially a min() function that caps a number.

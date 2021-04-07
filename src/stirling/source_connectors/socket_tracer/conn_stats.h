@@ -23,14 +23,10 @@ namespace stirling {
  */
 class ConnStats {
  public:
-  // AggKey ideally should be unique to individual service instances. Such that the aggregated
-  // metrics from an AggKey reflects a service instance, which then indicates the load on that
-  // service instance.
-  //
-  // AggKey approximates that by combining upid and protocol.
-  //
-  // TODO(yzhao): One way to improve is to resolve the local port of the connections, and replace
-  // protocol with local port number.
+  // AggKey is the ConnStats connection identifier; it is unique to a client-server pair.
+  // The upid represents the local process and the remote addr+port represents the remote endpoint.
+  // When the local process (upid) represents a servers, the remote port of the client will be
+  // set to 0 by BuildAggKey() to collapse multiple connections from the same client to a server.
   struct AggKey {
     struct upid_t upid;
     std::string remote_addr;
