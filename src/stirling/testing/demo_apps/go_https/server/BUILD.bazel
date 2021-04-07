@@ -3,7 +3,7 @@ load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_image")
 
 go_library(
-    name = "go_default_library",
+    name = "server_lib",
     srcs = ["https_server.go"],
     data = [
         "https-server.crt",
@@ -15,7 +15,7 @@ go_library(
 
 go_binary(
     name = "https_server",
-    embed = [":go_default_library"],
+    embed = [":server_lib"],
     visibility = ["//visibility:public"],
 )
 

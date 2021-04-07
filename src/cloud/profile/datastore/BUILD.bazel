@@ -1,27 +1,27 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "datastore",
     srcs = ["datastore.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/profile/datastore",
     visibility = ["//visibility:public"],
     deps = [
-        "@com_github_gofrs_uuid//:go_default_library",
-        "@com_github_jmoiron_sqlx//:go_default_library",
+        "@com_github_gofrs_uuid//:uuid",
+        "@com_github_jmoiron_sqlx//:sqlx",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "datastore_test",
     srcs = ["datastore_test.go"],
-    embed = [":go_default_library"],
+    embed = [":datastore"],
     deps = [
-        "//src/cloud/profile/schema:go_default_library",
-        "//src/shared/services/pgtest:go_default_library",
-        "@com_github_gofrs_uuid//:go_default_library",
-        "@com_github_golang_migrate_migrate//source/go_bindata:go_default_library",
-        "@com_github_jmoiron_sqlx//:go_default_library",
-        "@com_github_stretchr_testify//assert:go_default_library",
-        "@com_github_stretchr_testify//require:go_default_library",
+        "//src/cloud/profile/schema",
+        "//src/shared/services/pgtest",
+        "@com_github_gofrs_uuid//:uuid",
+        "@com_github_golang_migrate_migrate//source/go_bindata",
+        "@com_github_jmoiron_sqlx//:sqlx",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
     ],
 )

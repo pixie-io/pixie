@@ -1,19 +1,19 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "env",
     srcs = ["env.go"],
     importpath = "pixielabs.ai/pixielabs/src/shared/services/env",
     visibility = ["//visibility:public"],
-    deps = ["@com_github_spf13_viper//:go_default_library"],
+    deps = ["@com_github_spf13_viper//:viper"],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "env_test",
     srcs = ["env_test.go"],
-    embed = [":go_default_library"],
+    embed = [":env"],
     deps = [
-        "@com_github_spf13_viper//:go_default_library",
-        "@com_github_stretchr_testify//assert:go_default_library",
+        "@com_github_spf13_viper//:viper",
+        "@com_github_stretchr_testify//assert",
     ],
 )

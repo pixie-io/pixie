@@ -1,12 +1,12 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "mock",
     srcs = ["suggester_mock.gen.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/autocomplete/mock",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/cloud/autocomplete:go_default_library",
-        "@com_github_golang_mock//gomock:go_default_library",
+        "//src/cloud/autocomplete",
+        "@com_github_golang_mock//gomock",
     ],
 )

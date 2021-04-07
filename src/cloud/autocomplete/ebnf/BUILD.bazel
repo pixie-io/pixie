@@ -1,23 +1,23 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "ebnf",
     srcs = ["ebnf_parser.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/autocomplete/ebnf",
     visibility = ["//visibility:public"],
     deps = [
-        "@com_github_alecthomas_participle//:go_default_library",
-        "@com_github_alecthomas_participle//lexer:go_default_library",
-        "@com_github_alecthomas_participle//lexer/ebnf:go_default_library",
+        "@com_github_alecthomas_participle//:participle",
+        "@com_github_alecthomas_participle//lexer",
+        "@com_github_alecthomas_participle//lexer/ebnf",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "ebnf_test",
     srcs = ["ebnf_parser_test.go"],
-    embed = [":go_default_library"],
+    embed = [":ebnf"],
     deps = [
-        "@com_github_stretchr_testify//assert:go_default_library",
-        "@com_github_stretchr_testify//require:go_default_library",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
     ],
 )

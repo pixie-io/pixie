@@ -1,7 +1,7 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "pkg",
     srcs = ["docstring.go"],
     importpath = "pixielabs.ai/pixielabs/src/carnot/docstring/pkg",
     visibility = [
@@ -10,17 +10,17 @@ go_library(
     deps = [
         "//src/carnot/docspb:docs_pl_go_proto",
         "//src/carnot/udfspb:udfs_pl_go_proto",
-        "//src/utils:go_default_library",
+        "//src/utils",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "pkg_test",
     srcs = ["docstring_test.go"],
-    embed = [":go_default_library"],
+    embed = [":pkg"],
     deps = [
         "//src/carnot/docspb:docs_pl_go_proto",
-        "@com_github_stretchr_testify//assert:go_default_library",
-        "@com_github_stretchr_testify//require:go_default_library",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
     ],
 )

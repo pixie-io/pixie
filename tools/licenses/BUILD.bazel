@@ -7,20 +7,20 @@ load("//bazel:licenses.bzl", "fetch_licenses")
 package(default_visibility = ["//visibility:private"])
 
 go_library(
-    name = "go_default_library",
+    name = "licenses_lib",
     srcs = ["fetch_licenses.go"],
     importpath = "pixielabs.ai/pixielabs/tools/licenses",
     visibility = ["//visibility:private"],
     deps = [
-        "@com_github_google_go_github_v32//github:go_default_library",
-        "@com_github_puerkitobio_goquery//:go_default_library",
-        "@org_golang_x_oauth2//:go_default_library",
+        "@com_github_google_go_github_v32//github",
+        "@com_github_puerkitobio_goquery//:goquery",
+        "@org_golang_x_oauth2//:oauth2",
     ],
 )
 
 go_binary(
     name = "fetch_licenses",
-    embed = [":go_default_library"],
+    embed = [":licenses_lib"],
     visibility = ["//visibility:public"],
 )
 

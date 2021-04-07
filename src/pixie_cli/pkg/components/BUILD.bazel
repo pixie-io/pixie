@@ -1,7 +1,7 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "components",
     srcs = [
         "dragon.go",
         "input_field.go",
@@ -13,14 +13,14 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/components",
     visibility = ["//visibility:public"],
     deps = [
-        "@com_github_fatih_color//:go_default_library",
-        "@com_github_gdamore_tcell//:go_default_library",
-        "@com_github_mattn_go_runewidth//:go_default_library",
-        "@com_github_olekukonko_tablewriter//:go_default_library",
-        "@com_github_rivo_tview//:go_default_library",
-        "@com_github_rivo_uniseg//:go_default_library",
-        "@com_github_spf13_viper//:go_default_library",
-        "@com_github_vbauerster_mpb_v4//:go_default_library",
-        "@com_github_vbauerster_mpb_v4//decor:go_default_library",
+        "@com_github_fatih_color//:color",
+        "@com_github_gdamore_tcell//:tcell",
+        "@com_github_mattn_go_runewidth//:go-runewidth",
+        "@com_github_olekukonko_tablewriter//:tablewriter",
+        "@com_github_rivo_tview//:tview",
+        "@com_github_rivo_uniseg//:uniseg",
+        "@com_github_spf13_viper//:viper",
+        "@com_github_vbauerster_mpb_v4//:mpb",
+        "@com_github_vbauerster_mpb_v4//decor",
     ],
 )

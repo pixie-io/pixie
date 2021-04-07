@@ -1,16 +1,16 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "profileenv",
     srcs = ["env.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/profile/profileenv",
     visibility = ["//visibility:public"],
     deps = [
         "//src/cloud/project_manager/projectmanagerpb:service_go_proto",
-        "//src/shared/services:go_default_library",
-        "//src/shared/services/env:go_default_library",
-        "@com_github_spf13_pflag//:go_default_library",
-        "@com_github_spf13_viper//:go_default_library",
+        "//src/shared/services",
+        "//src/shared/services/env",
+        "@com_github_spf13_pflag//:pflag",
+        "@com_github_spf13_viper//:viper",
         "@org_golang_google_grpc//:go_default_library",
     ],
 )

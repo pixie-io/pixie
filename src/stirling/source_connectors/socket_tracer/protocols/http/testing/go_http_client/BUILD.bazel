@@ -3,7 +3,7 @@ load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 go_library(
-    name = "go_default_library",
+    name = "go_http_client_lib",
     srcs = ["main.go"],
     importpath = "pixielabs.ai/pixielabs/src/stirling/source_connectors/socket_tracer/protocols/http/testing/go_http_client",
     visibility = ["//visibility:private"],
@@ -11,7 +11,7 @@ go_library(
 
 go_binary(
     name = "go_http_client",
-    embed = [":go_default_library"],
+    embed = [":go_http_client_lib"],
     visibility = ["//visibility:public"],
 )
 

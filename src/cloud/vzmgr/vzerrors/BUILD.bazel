@@ -1,12 +1,12 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "vzerrors",
     srcs = ["errors.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzerrors",
     visibility = ["//visibility:public"],
     deps = [
-        "@org_golang_google_grpc//codes:go_default_library",
-        "@org_golang_google_grpc//status:go_default_library",
+        "@org_golang_google_grpc//codes",
+        "@org_golang_google_grpc//status",
     ],
 )

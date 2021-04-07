@@ -1,9 +1,9 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "metadataenv",
     srcs = ["env.go"],
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv",
     visibility = ["//visibility:public"],
-    deps = ["//src/shared/services/env:go_default_library"],
+    deps = ["//src/shared/services/env"],
 )

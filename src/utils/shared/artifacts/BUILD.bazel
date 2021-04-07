@@ -1,15 +1,15 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "artifacts",
     srcs = ["yamls.go"],
     importpath = "pixielabs.ai/pixielabs/src/utils/shared/artifacts",
     visibility = ["//visibility:public"],
     deps = [
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
-        "//src/utils/shared/tar:go_default_library",
-        "//src/utils/shared/yamls:go_default_library",
+        "//src/utils/shared/tar",
+        "//src/utils/shared/yamls",
         "@org_golang_google_grpc//:go_default_library",
-        "@org_golang_google_grpc//metadata:go_default_library",
+        "@org_golang_google_grpc//metadata",
     ],
 )

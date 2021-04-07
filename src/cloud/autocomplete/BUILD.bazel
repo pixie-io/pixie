@@ -3,7 +3,7 @@ load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 go_library(
-    name = "go_default_library",
+    name = "autocomplete",
     srcs = [
         "autocomplete.go",
         "mock.go",
@@ -12,38 +12,38 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/cloud/autocomplete",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/cloud/autocomplete/ebnf:go_default_library",
+        "//src/cloud/autocomplete/ebnf",
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
-        "//src/cloud/indexer/md:go_default_library",
+        "//src/cloud/indexer/md",
         "//src/cloud/profile/profilepb:service_go_proto",
-        "//src/pixie_cli/pkg/script:go_default_library",
-        "//src/shared/services/utils:go_default_library",
+        "//src/pixie_cli/pkg/script",
+        "//src/shared/services/utils",
         "//src/shared/vispb:vis_pl_go_proto",
-        "//src/utils:go_default_library",
-        "@com_github_gofrs_uuid//:go_default_library",
-        "@com_github_olivere_elastic_v7//:go_default_library",
-        "@com_github_sahilm_fuzzy//:go_default_library",
-        "@com_github_spf13_viper//:go_default_library",
-        "@org_golang_google_grpc//metadata:go_default_library",
+        "//src/utils",
+        "@com_github_gofrs_uuid//:uuid",
+        "@com_github_olivere_elastic_v7//:elastic",
+        "@com_github_sahilm_fuzzy//:fuzzy",
+        "@com_github_spf13_viper//:viper",
+        "@org_golang_google_grpc//metadata",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "autocomplete_test",
     srcs = [
         "autocomplete_test.go",
         "suggester_test.go",
     ],
-    embed = [":go_default_library"],
+    embed = [":autocomplete"],
     deps = [
-        "//src/cloud/autocomplete/mock:go_default_library",
+        "//src/cloud/autocomplete/mock",
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
-        "//src/cloud/indexer/md:go_default_library",
-        "//src/utils/testingutils:go_default_library",
-        "@com_github_gofrs_uuid//:go_default_library",
-        "@com_github_golang_mock//gomock:go_default_library",
-        "@com_github_olivere_elastic_v7//:go_default_library",
-        "@com_github_stretchr_testify//assert:go_default_library",
-        "@com_github_stretchr_testify//require:go_default_library",
+        "//src/cloud/indexer/md",
+        "//src/utils/testingutils",
+        "@com_github_gofrs_uuid//:uuid",
+        "@com_github_golang_mock//gomock",
+        "@com_github_olivere_elastic_v7//:elastic",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
     ],
 )

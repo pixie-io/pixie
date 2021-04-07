@@ -3,20 +3,20 @@ load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 go_library(
-    name = "go_default_library",
+    name = "pgsql_lib",
     srcs = ["demo_client.go"],
     importpath = "pixielabs.ai/pixielabs/src/stirling/source_connectors/socket_tracer/testing/containers/pgsql",
     visibility = ["//visibility:private"],
     deps = [
-        "@com_github_jmoiron_sqlx//:go_default_library",
-        "@com_github_lib_pq//:go_default_library",
-        "@com_github_spf13_pflag//:go_default_library",
+        "@com_github_jmoiron_sqlx//:sqlx",
+        "@com_github_lib_pq//:pq",
+        "@com_github_spf13_pflag//:pflag",
     ],
 )
 
 go_binary(
     name = "demo_client",
-    embed = [":go_default_library"],
+    embed = [":pgsql_lib"],
     visibility = ["//visibility:public"],
 )
 

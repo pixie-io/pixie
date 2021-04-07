@@ -1,14 +1,14 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "mock",
     srcs = ["carnot_mock.gen.go"],
     importpath = "pixielabs.ai/pixielabs/src/carnotpb/mock",
     visibility = ["//visibility:public"],
     deps = [
         "//src/carnotpb:carnot_pl_go_proto",
-        "@com_github_golang_mock//gomock:go_default_library",
+        "@com_github_golang_mock//gomock",
         "@org_golang_google_grpc//:go_default_library",
-        "@org_golang_google_grpc//metadata:go_default_library",
+        "@org_golang_google_grpc//metadata",
     ],
 )

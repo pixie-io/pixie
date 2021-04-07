@@ -1,18 +1,18 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "controllers",
     srcs = ["indexer.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/indexer/controllers",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/cloud/indexer/md:go_default_library",
-        "//src/cloud/shared/vzutils:go_default_library",
+        "//src/cloud/indexer/md",
+        "//src/cloud/shared/vzutils",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
-        "@com_github_gofrs_uuid//:go_default_library",
-        "@com_github_nats_io_nats_go//:go_default_library",
-        "@com_github_nats_io_stan_go//:go_default_library",
-        "@com_github_olivere_elastic_v7//:go_default_library",
-        "@com_github_sirupsen_logrus//:go_default_library",
+        "@com_github_gofrs_uuid//:uuid",
+        "@com_github_nats_io_nats_go//:nats_go",
+        "@com_github_nats_io_stan_go//:stan_go",
+        "@com_github_olivere_elastic_v7//:elastic",
+        "@com_github_sirupsen_logrus//:logrus",
     ],
 )

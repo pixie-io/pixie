@@ -1,7 +1,7 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "pxapi",
     srcs = [
         "client.go",
         "doc.go",
@@ -13,15 +13,15 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/api/go/pxapi",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/api/go/pxapi/errdefs:go_default_library",
-        "//src/api/go/pxapi/types:go_default_library",
+        "//src/api/go/pxapi/errdefs",
+        "//src/api/go/pxapi/types",
         "//src/api/public/cloudapipb:public_cloudapi_pl_go_proto",
         "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
-        "@com_github_gofrs_uuid//:go_default_library",
+        "@com_github_gofrs_uuid//:uuid",
         "@org_golang_google_grpc//:go_default_library",
-        "@org_golang_google_grpc//credentials:go_default_library",
-        "@org_golang_google_grpc//metadata:go_default_library",
+        "@org_golang_google_grpc//credentials",
+        "@org_golang_google_grpc//metadata",
     ],
 )
 
@@ -39,14 +39,14 @@ filegroup(
 )
 
 go_test(
-    name = "go_default_test",
+    name = "pxapi_test",
     srcs = ["results_test.go"],
-    embed = [":go_default_library"],
+    embed = [":pxapi"],
     deps = [
-        "//src/api/go/pxapi/errdefs:go_default_library",
-        "//src/api/go/pxapi/types:go_default_library",
+        "//src/api/go/pxapi/errdefs",
+        "//src/api/go/pxapi/types",
         "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
-        "@com_github_stretchr_testify//assert:go_default_library",
-        "@org_golang_google_grpc//codes:go_default_library",
+        "@com_github_stretchr_testify//assert",
+        "@org_golang_google_grpc//codes",
     ],
 )

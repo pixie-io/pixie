@@ -1,24 +1,24 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "versions_gen_lib",
     srcs = ["main.go"],
     importpath = "pixielabs.ai/pixielabs/src/utils/artifacts/versions_gen",
     visibility = ["//visibility:private"],
     deps = [
         "//src/shared/artifacts/versionspb:versions_pl_go_proto",
-        "@com_github_gogo_protobuf//jsonpb:go_default_library",
-        "@com_github_gogo_protobuf//types:go_default_library",
-        "@com_github_sirupsen_logrus//:go_default_library",
-        "@com_github_spf13_pflag//:go_default_library",
-        "@com_github_spf13_viper//:go_default_library",
-        "@in_gopkg_src_d_go_git_v4//:go_default_library",
-        "@in_gopkg_src_d_go_git_v4//plumbing/object:go_default_library",
+        "@com_github_gogo_protobuf//jsonpb",
+        "@com_github_gogo_protobuf//types",
+        "@com_github_sirupsen_logrus//:logrus",
+        "@com_github_spf13_pflag//:pflag",
+        "@com_github_spf13_viper//:viper",
+        "@in_gopkg_src_d_go_git_v4//:go-git_v4",
+        "@in_gopkg_src_d_go_git_v4//plumbing/object",
     ],
 )
 
 go_binary(
     name = "versions_gen",
-    embed = [":go_default_library"],
+    embed = [":versions_gen_lib"],
     visibility = ["//visibility:public"],
 )

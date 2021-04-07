@@ -1,9 +1,9 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "messagebus",
     srcs = ["topic.go"],
     importpath = "pixielabs.ai/pixielabs/src/vizier/utils/messagebus",
     visibility = ["//visibility:public"],
-    deps = ["@com_github_gofrs_uuid//:go_default_library"],
+    deps = ["@com_github_gofrs_uuid//:uuid"],
 )

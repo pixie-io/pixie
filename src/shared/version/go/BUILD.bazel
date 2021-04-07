@@ -19,12 +19,12 @@ unstamped_xdefs = {
 }
 
 go_library(
-    name = "go_default_library",
+    name = "go",
     srcs = ["version.go"],
     importpath = "pixielabs.ai/pixielabs/src/shared/version/go",
     x_defs = select({
         "//bazel:stamped": stamped_xdefs,
         "//conditions:default": unstamped_xdefs,
     }),
-    deps = ["@com_github_blang_semver//:go_default_library"],
+    deps = ["@com_github_blang_semver//:semver"],
 )

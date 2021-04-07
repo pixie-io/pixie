@@ -1,13 +1,13 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "certs",
     srcs = ["certs.go"],
     importpath = "pixielabs.ai/pixielabs/src/utils/shared/certs",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/utils/shared/k8s:go_default_library",
-        "@io_k8s_client_go//kubernetes:go_default_library",
-        "@io_k8s_client_go//rest:go_default_library",
+        "//src/utils/shared/k8s",
+        "@io_k8s_client_go//kubernetes",
+        "@io_k8s_client_go//rest",
     ],
 )

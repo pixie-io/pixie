@@ -1,12 +1,12 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "dnsmgrenv",
     srcs = ["env.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrenv",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/shared/services/env:go_default_library",
-        "@com_github_spf13_viper//:go_default_library",
+        "//src/shared/services/env",
+        "@com_github_spf13_viper//:viper",
     ],
 )

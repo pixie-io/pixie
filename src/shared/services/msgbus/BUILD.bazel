@@ -1,7 +1,7 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "msgbus",
     srcs = [
         "nats.go",
         "stan.go",
@@ -9,27 +9,27 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/shared/services/msgbus",
     visibility = ["//visibility:public"],
     deps = [
-        "@com_github_nats_io_nats_go//:go_default_library",
-        "@com_github_nats_io_stan_go//:go_default_library",
-        "@com_github_sirupsen_logrus//:go_default_library",
-        "@com_github_spf13_pflag//:go_default_library",
-        "@com_github_spf13_viper//:go_default_library",
+        "@com_github_nats_io_nats_go//:nats_go",
+        "@com_github_nats_io_stan_go//:stan_go",
+        "@com_github_sirupsen_logrus//:logrus",
+        "@com_github_spf13_pflag//:pflag",
+        "@com_github_spf13_viper//:viper",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "msgbus_test",
     srcs = [
         "nats_test.go",
         "stan_test.go",
     ],
-    embed = [":go_default_library"],
+    embed = [":msgbus"],
     deps = [
-        "//src/utils/testingutils:go_default_library",
-        "@com_github_nats_io_nats_go//:go_default_library",
-        "@com_github_nats_io_stan_go//:go_default_library",
-        "@com_github_spf13_viper//:go_default_library",
-        "@com_github_stretchr_testify//assert:go_default_library",
-        "@com_github_stretchr_testify//require:go_default_library",
+        "//src/utils/testingutils",
+        "@com_github_nats_io_nats_go//:nats_go",
+        "@com_github_nats_io_stan_go//:stan_go",
+        "@com_github_spf13_viper//:viper",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
     ],
 )

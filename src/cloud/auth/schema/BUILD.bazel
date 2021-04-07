@@ -6,7 +6,7 @@ filegroup(
 )
 
 go_library(
-    name = "go_default_library",
+    name = "schema",
     srcs = [
         "bindata.gen.go",
         "schema.go",

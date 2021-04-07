@@ -29,6 +29,6 @@ pl_go_proto_library(
     visibility = ["//visibility:public"],
     deps = [
         "//src/shared/types/proto:types_pl_go_proto",
-        "//src/table_store/proto/types:go_default_library",
+        "//src/table_store/proto/types:types",
     ],
 )

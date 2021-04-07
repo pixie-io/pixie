@@ -1,28 +1,28 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "datastore",
     srcs = ["datastore.go"],
     importpath = "pixielabs.ai/pixielabs/src/vizier/utils/datastore",
     visibility = ["//visibility:public"],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "datastore_test",
     srcs = ["datastore_test.go"],
-    embed = [":go_default_library"],
+    embed = [":datastore"],
     tags = ["integration"],
     deps = [
-        "//src/utils/testingutils:go_default_library",
-        "//src/vizier/utils/datastore/badgerdb:go_default_library",
-        "//src/vizier/utils/datastore/buntdb:go_default_library",
-        "//src/vizier/utils/datastore/etcd:go_default_library",
-        "//src/vizier/utils/datastore/pebbledb:go_default_library",
-        "@com_github_cockroachdb_pebble//:go_default_library",
-        "@com_github_cockroachdb_pebble//vfs:go_default_library",
-        "@com_github_dgraph_io_badger_v3//:go_default_library",
-        "@com_github_stretchr_testify//assert:go_default_library",
-        "@com_github_stretchr_testify//require:go_default_library",
-        "@com_github_tidwall_buntdb//:go_default_library",
+        "//src/utils/testingutils",
+        "//src/vizier/utils/datastore/badgerdb",
+        "//src/vizier/utils/datastore/buntdb",
+        "//src/vizier/utils/datastore/etcd",
+        "//src/vizier/utils/datastore/pebbledb",
+        "@com_github_cockroachdb_pebble//:pebble",
+        "@com_github_cockroachdb_pebble//vfs",
+        "@com_github_dgraph_io_badger_v3//:badger",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@com_github_tidwall_buntdb//:buntdb",
     ],
 )

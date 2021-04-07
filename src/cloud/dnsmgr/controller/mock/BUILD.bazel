@@ -1,9 +1,9 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "mock",
     srcs = ["dns_mock.gen.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/dnsmgr/controller/mock",
     visibility = ["//visibility:public"],
-    deps = ["@com_github_golang_mock//gomock:go_default_library"],
+    deps = ["@com_github_golang_mock//gomock"],
 )

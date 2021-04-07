@@ -3,14 +3,14 @@ load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 go_library(
-    name = "go_default_library",
+    name = "go_grpc_server_lib",
     srcs = ["main.go"],
     importpath = "pixielabs.ai/pixielabs/src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server",
     visibility = ["//visibility:private"],
     deps = [
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto:greet_pl_go_proto",
         "@org_golang_google_grpc//:go_default_library",
-        "@org_golang_google_grpc//reflection:go_default_library",
+        "@org_golang_google_grpc//reflection",
     ],
 )
 
@@ -20,7 +20,7 @@ go_binary(
         "https-server.crt",
         "https-server.key",
     ],
-    embed = [":go_default_library"],
+    embed = [":go_grpc_server_lib"],
     visibility = ["//visibility:public"],
 )
 

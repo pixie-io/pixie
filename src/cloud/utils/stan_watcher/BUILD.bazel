@@ -3,29 +3,29 @@ load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 go_library(
-    name = "go_default_library",
+    name = "stan_watcher_lib",
     srcs = ["stan_watcher.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/utils/stan_watcher",
     visibility = ["//visibility:private"],
     deps = [
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
-        "//src/shared/services:go_default_library",
-        "//src/shared/services/msgbus:go_default_library",
+        "//src/shared/services",
+        "//src/shared/services/msgbus",
         "//src/vizier/messages/messagespb:messages_pl_go_proto",
-        "@com_github_fatih_color//:go_default_library",
-        "@com_github_gogo_protobuf//proto:go_default_library",
-        "@com_github_gogo_protobuf//types:go_default_library",
-        "@com_github_nats_io_nats_go//:go_default_library",
-        "@com_github_nats_io_stan_go//:go_default_library",
-        "@com_github_sirupsen_logrus//:go_default_library",
-        "@com_github_spf13_pflag//:go_default_library",
-        "@com_github_spf13_viper//:go_default_library",
+        "@com_github_fatih_color//:color",
+        "@com_github_gogo_protobuf//proto",
+        "@com_github_gogo_protobuf//types",
+        "@com_github_nats_io_nats_go//:nats_go",
+        "@com_github_nats_io_stan_go//:stan_go",
+        "@com_github_sirupsen_logrus//:logrus",
+        "@com_github_spf13_pflag//:pflag",
+        "@com_github_spf13_viper//:viper",
     ],
 )
 
 go_binary(
     name = "stan_watcher",
-    embed = [":go_default_library"],
+    embed = [":stan_watcher_lib"],
     visibility = ["//visibility:public"],
 )
 

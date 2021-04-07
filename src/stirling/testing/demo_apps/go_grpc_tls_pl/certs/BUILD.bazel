@@ -3,19 +3,19 @@ package(default_visibility = ["//src/stirling:__subpackages__"])
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "certs_lib",
     srcs = ["cert_generator.go"],
     importpath = "pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/go_grpc_tls_pl/certs",
     visibility = ["//visibility:private"],
     deps = [
-        "@com_github_spf13_pflag//:go_default_library",
-        "@com_github_spf13_viper//:go_default_library",
+        "@com_github_spf13_pflag//:pflag",
+        "@com_github_spf13_viper//:viper",
     ],
 )
 
 go_binary(
     name = "cert_generator",
-    embed = [":go_default_library"],
+    embed = [":certs_lib"],
 )
 
 genrule(

@@ -11,7 +11,7 @@ pl_bindata(
 )
 
 go_library(
-    name = "go_default_library",
+    name = "go",
     # Note we only import the bindata rule not the bindata file that's kept in this dir.
     # keep
     srcs = [":udf_info_bindata"],

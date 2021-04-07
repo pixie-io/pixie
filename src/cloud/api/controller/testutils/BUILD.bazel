@@ -1,19 +1,19 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "testutils",
     srcs = ["testutils.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/api/controller/testutils",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/cloud/api/apienv:go_default_library",
-        "//src/cloud/api/controller:go_default_library",
-        "//src/cloud/artifact_tracker/artifacttrackerpb/mock:go_default_library",
-        "//src/cloud/auth/proto/mock:go_default_library",
-        "//src/cloud/cloudapipb/mock:go_default_library",
-        "//src/cloud/profile/profilepb/mock:go_default_library",
-        "//src/cloud/vzmgr/vzmgrpb/mock:go_default_library",
-        "@com_github_golang_mock//gomock:go_default_library",
-        "@com_github_spf13_viper//:go_default_library",
+        "//src/cloud/api/apienv",
+        "//src/cloud/api/controller",
+        "//src/cloud/artifact_tracker/artifacttrackerpb/mock",
+        "//src/cloud/auth/proto/mock",
+        "//src/cloud/cloudapipb/mock",
+        "//src/cloud/profile/profilepb/mock",
+        "//src/cloud/vzmgr/vzmgrpb/mock",
+        "@com_github_golang_mock//gomock",
+        "@com_github_spf13_viper//:viper",
     ],
 )

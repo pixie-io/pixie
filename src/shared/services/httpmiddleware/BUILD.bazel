@@ -1,26 +1,26 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "httpmiddleware",
     srcs = ["middleware.go"],
     importpath = "pixielabs.ai/pixielabs/src/shared/services/httpmiddleware",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/shared/services/authcontext:go_default_library",
-        "//src/shared/services/env:go_default_library",
+        "//src/shared/services/authcontext",
+        "//src/shared/services/env",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "httpmiddleware_test",
     srcs = ["middleware_test.go"],
-    embed = [":go_default_library"],
+    embed = [":httpmiddleware"],
     deps = [
-        "//src/shared/services/authcontext:go_default_library",
-        "//src/shared/services/env:go_default_library",
-        "//src/utils/testingutils:go_default_library",
-        "@com_github_spf13_viper//:go_default_library",
-        "@com_github_stretchr_testify//assert:go_default_library",
-        "@com_github_stretchr_testify//require:go_default_library",
+        "//src/shared/services/authcontext",
+        "//src/shared/services/env",
+        "//src/utils/testingutils",
+        "@com_github_spf13_viper//:viper",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
     ],
 )

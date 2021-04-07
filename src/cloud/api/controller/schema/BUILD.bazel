@@ -1,13 +1,13 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 filegroup(
-    name = "schema",
+    name = "schema_fg",
     srcs = ["schema.d.ts"],
     visibility = ["//visibility:public"],
 )
 
 go_library(
-    name = "go_default_library",
+    name = "schema",
     srcs = [
         "bindata.gen.go",
         "schema.go",

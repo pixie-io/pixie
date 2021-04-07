@@ -14,7 +14,7 @@ gazelle(
 # gazelle:exclude vendor
 # gazelle:exclude third_party
 # gazelle:exclude src/ui/node_modules
-# gazelle:go_naming_convention go_default_library
+# gazelle:go_naming_convention import
 
 # Make gazelle not generate proto files. We need to use gogo proto and this does
 # not seem to work automatically right now. Keep an eye out on issue:
@@ -41,7 +41,6 @@ gazelle(
 # gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/udfspb //src/carnot/udfspb:udfs_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/queryresultspb //src/carnot/queryresultspb:query_results_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/carnotpb //src/carnotpb:carnot_pl_go_proto
-# gazelle:resolve go pixielabs.ai/pixielabs/src/carnotpb/mock //src/carnotpb/mock:go_default_library
 # gazelle:resolve go pixielabs.ai/pixielabs/src/cloud/auth/proto //src/cloud/auth/proto:auth_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/cloud/project_manager/projectmanagerpb //src/cloud/project_manager/projectmanagerpb:service_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb //src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto

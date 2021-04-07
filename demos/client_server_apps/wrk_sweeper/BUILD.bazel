@@ -1,7 +1,7 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "wrk_sweeper_lib",
     srcs = ["wrk_sweeper.go"],
     importpath = "pixielabs.ai/pixielabs/demos/client_server_apps/wrk_sweeper",
     visibility = ["//visibility:private"],
@@ -9,6 +9,6 @@ go_library(
 
 go_binary(
     name = "wrk_sweeper",
-    embed = [":go_default_library"],
+    embed = [":wrk_sweeper_lib"],
     visibility = ["//visibility:public"],
 )

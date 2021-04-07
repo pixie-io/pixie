@@ -1,7 +1,7 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "docstring_lib",
     srcs = ["main.go"],
     importpath = "pixielabs.ai/pixielabs/src/carnot/docstring",
     visibility = [
@@ -9,19 +9,19 @@ go_library(
     ],
     deps = [
         "//src/carnot/docspb:docs_pl_go_proto",
-        "//src/carnot/docstring/pkg:go_default_library",
-        "//src/shared/services:go_default_library",
-        "@com_github_gogo_protobuf//jsonpb:go_default_library",
-        "@com_github_gogo_protobuf//proto:go_default_library",
-        "@com_github_sirupsen_logrus//:go_default_library",
-        "@com_github_spf13_pflag//:go_default_library",
-        "@com_github_spf13_viper//:go_default_library",
+        "//src/carnot/docstring/pkg",
+        "//src/shared/services",
+        "@com_github_gogo_protobuf//jsonpb",
+        "@com_github_gogo_protobuf//proto",
+        "@com_github_sirupsen_logrus//:logrus",
+        "@com_github_spf13_pflag//:pflag",
+        "@com_github_spf13_viper//:viper",
     ],
 )
 
 go_binary(
     name = "docstring",
-    embed = [":go_default_library"],
+    embed = [":docstring_lib"],
     visibility = ["//visibility:public"],
 )
 

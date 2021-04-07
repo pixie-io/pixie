@@ -1,32 +1,32 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "deployment",
     srcs = ["deployment.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/vzmgr/deployment",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/cloud/vzmgr/vzerrors:go_default_library",
+        "//src/cloud/vzmgr/vzerrors",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
-        "//src/utils:go_default_library",
-        "@com_github_gofrs_uuid//:go_default_library",
-        "@org_golang_google_grpc//codes:go_default_library",
-        "@org_golang_google_grpc//status:go_default_library",
+        "//src/utils",
+        "@com_github_gofrs_uuid//:uuid",
+        "@org_golang_google_grpc//codes",
+        "@org_golang_google_grpc//status",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "deployment_test",
     srcs = ["deployment_test.go"],
-    embed = [":go_default_library"],
+    embed = [":deployment"],
     deps = [
-        "//src/cloud/vzmgr/vzerrors:go_default_library",
+        "//src/cloud/vzmgr/vzerrors",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
-        "//src/utils:go_default_library",
-        "@com_github_gofrs_uuid//:go_default_library",
-        "@com_github_stretchr_testify//assert:go_default_library",
-        "@com_github_stretchr_testify//require:go_default_library",
-        "@org_golang_google_grpc//codes:go_default_library",
-        "@org_golang_google_grpc//status:go_default_library",
+        "//src/utils",
+        "@com_github_gofrs_uuid//:uuid",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@org_golang_google_grpc//codes",
+        "@org_golang_google_grpc//status",
     ],
 )

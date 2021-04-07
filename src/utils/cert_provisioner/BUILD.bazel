@@ -3,27 +3,27 @@ load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 go_library(
-    name = "go_default_library",
+    name = "cert_provisioner_lib",
     srcs = ["main.go"],
     importpath = "pixielabs.ai/pixielabs/src/utils/cert_provisioner",
     visibility = ["//visibility:private"],
     deps = [
-        "//src/utils/shared/certs:go_default_library",
-        "//src/utils/shared/k8s:go_default_library",
-        "//src/utils/shared/yamls:go_default_library",
-        "//src/utils/template_generator/vizier_yamls:go_default_library",
-        "@com_github_sirupsen_logrus//:go_default_library",
-        "@com_github_spf13_pflag//:go_default_library",
-        "@com_github_spf13_viper//:go_default_library",
-        "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
-        "@io_k8s_client_go//kubernetes:go_default_library",
-        "@io_k8s_client_go//rest:go_default_library",
+        "//src/utils/shared/certs",
+        "//src/utils/shared/k8s",
+        "//src/utils/shared/yamls",
+        "//src/utils/template_generator/vizier_yamls",
+        "@com_github_sirupsen_logrus//:logrus",
+        "@com_github_spf13_pflag//:pflag",
+        "@com_github_spf13_viper//:viper",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_client_go//kubernetes",
+        "@io_k8s_client_go//rest",
     ],
 )
 
 go_binary(
     name = "cert_provisioner",
-    embed = [":go_default_library"],
+    embed = [":cert_provisioner_lib"],
     visibility = ["//visibility:public"],
 )
 

@@ -1,7 +1,7 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "apienv",
     srcs = [
         "artifact_tracker_client.go",
         "env.go",
@@ -13,29 +13,29 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/cloud/api/apienv",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/cloud/api/idprovider:go_default_library",
+        "//src/cloud/api/idprovider",
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
         "//src/cloud/auth/proto:auth_go_proto",
         "//src/cloud/profile/profilepb:service_go_proto",
         "//src/cloud/project_manager/projectmanagerpb:service_go_proto",
         "//src/cloud/scriptmgr/scriptmgrpb:service_pl_go_proto",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
-        "//src/shared/services:go_default_library",
-        "//src/shared/services/env:go_default_library",
-        "@com_github_gorilla_sessions//:go_default_library",
-        "@com_github_spf13_pflag//:go_default_library",
-        "@com_github_spf13_viper//:go_default_library",
+        "//src/shared/services",
+        "//src/shared/services/env",
+        "@com_github_gorilla_sessions//:sessions",
+        "@com_github_spf13_pflag//:pflag",
+        "@com_github_spf13_viper//:viper",
         "@org_golang_google_grpc//:go_default_library",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "apienv_test",
     srcs = ["env_test.go"],
-    embed = [":go_default_library"],
+    embed = [":apienv"],
     deps = [
-        "@com_github_spf13_viper//:go_default_library",
-        "@com_github_stretchr_testify//assert:go_default_library",
-        "@com_github_stretchr_testify//require:go_default_library",
+        "@com_github_spf13_viper//:viper",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
     ],
 )

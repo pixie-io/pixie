@@ -1,7 +1,7 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "muxes",
     srcs = [
         "doc.go",
         "regex.go",
@@ -9,7 +9,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/api/go/pxapi/muxes",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/api/go/pxapi:go_default_library",
-        "//src/api/go/pxapi/types:go_default_library",
+        "//src/api/go/pxapi",
+        "//src/api/go/pxapi/types",
     ],
 )

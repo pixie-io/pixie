@@ -1,14 +1,14 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "go_default_library",
+    name = "vizhealth",
     srcs = ["checker.go"],
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/vizhealth",
     visibility = ["//visibility:public"],
     deps = [
         "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
-        "//src/shared/services/utils:go_default_library",
-        "@com_github_sirupsen_logrus//:go_default_library",
-        "@org_golang_google_grpc//metadata:go_default_library",
+        "//src/shared/services/utils",
+        "@com_github_sirupsen_logrus//:logrus",
+        "@org_golang_google_grpc//metadata",
     ],
 )

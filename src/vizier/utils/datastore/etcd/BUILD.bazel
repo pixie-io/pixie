@@ -1,7 +1,7 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "etcd",
     srcs = [
         "etcd.go",
         "etcd_utils.go",
@@ -9,20 +9,20 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/vizier/utils/datastore/etcd",
     visibility = ["//visibility:public"],
     deps = [
-        "@io_etcd_go_etcd_api_v3//etcdserverpb:go_default_library",
-        "@io_etcd_go_etcd_api_v3//mvccpb:go_default_library",
-        "@io_etcd_go_etcd_client_v3//:go_default_library",
+        "@io_etcd_go_etcd_api_v3//etcdserverpb",
+        "@io_etcd_go_etcd_api_v3//mvccpb",
+        "@io_etcd_go_etcd_client_v3//:client",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "etcd_test",
     size = "small",
     srcs = ["etcd_utils_test.go"],
-    embed = [":go_default_library"],
+    embed = [":etcd"],
     deps = [
-        "@com_github_stretchr_testify//assert:go_default_library",
-        "@com_github_stretchr_testify//require:go_default_library",
-        "@io_etcd_go_etcd_client_v3//:go_default_library",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
+        "@io_etcd_go_etcd_client_v3//:client",
     ],
 )

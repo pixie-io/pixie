@@ -1,24 +1,24 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "vzshard",
     srcs = ["vzshard.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/shared/vzshard",
     visibility = ["//visibility:public"],
     deps = [
-        "@com_github_gofrs_uuid//:go_default_library",
-        "@com_github_spf13_pflag//:go_default_library",
-        "@com_github_spf13_viper//:go_default_library",
+        "@com_github_gofrs_uuid//:uuid",
+        "@com_github_spf13_pflag//:pflag",
+        "@com_github_spf13_viper//:viper",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "vzshard_test",
     srcs = ["vzshard_test.go"],
-    embed = [":go_default_library"],
+    embed = [":vzshard"],
     deps = [
-        "@com_github_gofrs_uuid//:go_default_library",
-        "@com_github_spf13_viper//:go_default_library",
-        "@com_github_stretchr_testify//assert:go_default_library",
+        "@com_github_gofrs_uuid//:uuid",
+        "@com_github_spf13_viper//:viper",
+        "@com_github_stretchr_testify//assert",
     ],
 )

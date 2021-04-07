@@ -1,7 +1,7 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "controller",
     srcs = [
         "dns.go",
         "mock.go",
@@ -10,32 +10,32 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/cloud/dnsmgr/controller",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/cloud/dnsmgr/dnsmgrenv:go_default_library",
+        "//src/cloud/dnsmgr/dnsmgrenv",
         "//src/cloud/dnsmgr/dnsmgrpb:service_go_proto",
-        "//src/utils:go_default_library",
-        "@com_github_gofrs_uuid//:go_default_library",
-        "@com_github_jmoiron_sqlx//:go_default_library",
-        "@com_github_spf13_viper//:go_default_library",
-        "@org_golang_google_api//dns/v1:go_default_library",
-        "@org_golang_google_api//option:go_default_library",
+        "//src/utils",
+        "@com_github_gofrs_uuid//:uuid",
+        "@com_github_jmoiron_sqlx//:sqlx",
+        "@com_github_spf13_viper//:viper",
+        "@org_golang_google_api//dns/v1:dns",
+        "@org_golang_google_api//option",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "controller_test",
     srcs = ["server_test.go"],
-    embed = [":go_default_library"],
+    embed = [":controller"],
     deps = [
-        "//src/cloud/dnsmgr/controller/mock:go_default_library",
+        "//src/cloud/dnsmgr/controller/mock",
         "//src/cloud/dnsmgr/dnsmgrpb:service_go_proto",
-        "//src/cloud/dnsmgr/schema:go_default_library",
-        "//src/shared/services/pgtest:go_default_library",
-        "//src/utils:go_default_library",
-        "@com_github_golang_migrate_migrate//source/go_bindata:go_default_library",
-        "@com_github_golang_mock//gomock:go_default_library",
-        "@com_github_jmoiron_sqlx//:go_default_library",
-        "@com_github_spf13_viper//:go_default_library",
-        "@com_github_stretchr_testify//assert:go_default_library",
-        "@com_github_stretchr_testify//require:go_default_library",
+        "//src/cloud/dnsmgr/schema",
+        "//src/shared/services/pgtest",
+        "//src/utils",
+        "@com_github_golang_migrate_migrate//source/go_bindata",
+        "@com_github_golang_mock//gomock",
+        "@com_github_jmoiron_sqlx//:sqlx",
+        "@com_github_spf13_viper//:viper",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
     ],
 )

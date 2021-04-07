@@ -1,7 +1,7 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "go_default_library",
+    name = "live",
     srcs = [
         "autocomplete.go",
         "details.go",
@@ -15,28 +15,28 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
-        "//src/pixie_cli/pkg/auth:go_default_library",
-        "//src/pixie_cli/pkg/components:go_default_library",
-        "//src/pixie_cli/pkg/script:go_default_library",
-        "//src/pixie_cli/pkg/utils:go_default_library",
-        "//src/pixie_cli/pkg/vizier:go_default_library",
-        "@com_github_alecthomas_chroma//quick:go_default_library",
-        "@com_github_alecthomas_participle//:go_default_library",
-        "@com_github_alecthomas_participle//lexer:go_default_library",
-        "@com_github_alecthomas_participle//lexer/ebnf:go_default_library",
-        "@com_github_gdamore_tcell//:go_default_library",
-        "@com_github_gofrs_uuid//:go_default_library",
-        "@com_github_rivo_tview//:go_default_library",
-        "@com_github_sahilm_fuzzy//:go_default_library",
+        "//src/pixie_cli/pkg/auth",
+        "//src/pixie_cli/pkg/components",
+        "//src/pixie_cli/pkg/script",
+        "//src/pixie_cli/pkg/utils",
+        "//src/pixie_cli/pkg/vizier",
+        "@com_github_alecthomas_chroma//quick",
+        "@com_github_alecthomas_participle//:participle",
+        "@com_github_alecthomas_participle//lexer",
+        "@com_github_alecthomas_participle//lexer/ebnf",
+        "@com_github_gdamore_tcell//:tcell",
+        "@com_github_gofrs_uuid//:uuid",
+        "@com_github_rivo_tview//:tview",
+        "@com_github_sahilm_fuzzy//:fuzzy",
     ],
 )
 
 go_test(
-    name = "go_default_test",
+    name = "live_test",
     srcs = ["ebnf_parser_test.go"],
-    embed = [":go_default_library"],
+    embed = [":live"],
     deps = [
-        "@com_github_stretchr_testify//assert:go_default_library",
-        "@com_github_stretchr_testify//require:go_default_library",
+        "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
     ],
 )
