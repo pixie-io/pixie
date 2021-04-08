@@ -15,12 +15,12 @@ import (
 	"go.etcd.io/etcd/pkg/v3/transport"
 	"google.golang.org/grpc"
 
+	version "pixielabs.ai/pixielabs/src/shared/goversion"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/election"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
 	"pixielabs.ai/pixielabs/src/shared/services/server"
-	version "pixielabs.ai/pixielabs/src/shared/version/go"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/k8smeta"

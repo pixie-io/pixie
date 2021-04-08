@@ -20,7 +20,7 @@ import (
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/update"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/vizier"
-	version "pixielabs.ai/pixielabs/src/shared/version/go"
+	version "pixielabs.ai/pixielabs/src/shared/goversion"
 	utils2 "pixielabs.ai/pixielabs/src/utils"
 )
 

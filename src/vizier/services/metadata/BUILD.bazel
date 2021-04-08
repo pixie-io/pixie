@@ -8,12 +8,12 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/metadata",
     visibility = ["//visibility:private"],
     deps = [
+        "//src/shared/goversion",
         "//src/shared/services",
         "//src/shared/services/election",
         "//src/shared/services/healthz",
         "//src/shared/services/httpmiddleware",
         "//src/shared/services/server",
-        "//src/shared/version/go",
         "//src/vizier/services/metadata/controllers",
         "//src/vizier/services/metadata/controllers/agent",
         "//src/vizier/services/metadata/controllers/k8smeta",

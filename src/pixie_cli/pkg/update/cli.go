@@ -24,8 +24,8 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/auth"
 	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
+	version "pixielabs.ai/pixielabs/src/shared/goversion"
 	"pixielabs.ai/pixielabs/src/shared/services"
-	version "pixielabs.ai/pixielabs/src/shared/version/go"
 )
 
 func newATClient(cloudAddr string) (cloudapipb.ArtifactTrackerClient, error) {

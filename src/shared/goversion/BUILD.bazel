@@ -28,3 +28,10 @@ go_library(
     }),
     deps = ["@com_github_blang_semver//:semver"],
 )
+
+go_library(
+    name = "goversion",
+    srcs = ["version.go"],
+    importpath = "pixielabs.ai/pixielabs/src/shared/goversion",
+    deps = ["@com_github_blang_semver//:semver"],
+)

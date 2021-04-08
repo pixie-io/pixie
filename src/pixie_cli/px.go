@@ -18,7 +18,7 @@ import (
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxconfig"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/sentryhook"
 	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
-	version "pixielabs.ai/pixielabs/src/shared/version/go"
+	version "pixielabs.ai/pixielabs/src/shared/goversion"
 )
 
 const sentryDSN = "https://ef3a781b5e7b42e282706fc541077f3a@sentry.io/4090453"

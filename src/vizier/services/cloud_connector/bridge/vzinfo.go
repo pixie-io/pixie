@@ -24,9 +24,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
+	version "pixielabs.ai/pixielabs/src/shared/goversion"
 	protoutils "pixielabs.ai/pixielabs/src/shared/k8s"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	version "pixielabs.ai/pixielabs/src/shared/version/go"
 	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 

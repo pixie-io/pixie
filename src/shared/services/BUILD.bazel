@@ -13,9 +13,9 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/shared/services",
     visibility = ["//src:__subpackages__"],
     deps = [
+        "//src/shared/goversion",
         "//src/shared/services/handler",
         "//src/shared/services/sentryhook",
-        "//src/shared/version/go",
         "//third_party:kuberesolver_library",
         "@com_github_getsentry_sentry_go//:sentry-go",
         "@com_github_gorilla_handlers//:handlers",

@@ -13,7 +13,7 @@ go_library(
         "//src/pixie_cli/pkg/pxconfig",
         "//src/pixie_cli/pkg/sentryhook",
         "//src/pixie_cli/pkg/utils",
-        "//src/shared/version/go",
+        "//src/shared/goversion",
         "@com_github_getsentry_sentry_go//:sentry-go",
         "@com_github_sirupsen_logrus//:logrus",
         "@in_gopkg_segmentio_analytics_go_v3//:analytics-go_v3",

@@ -40,7 +40,7 @@ go_library(
         "//src/pixie_cli/pkg/update",
         "//src/pixie_cli/pkg/utils",
         "//src/pixie_cli/pkg/vizier",
-        "//src/shared/version/go",
+        "//src/shared/goversion",
         "//src/utils",
         "//src/utils/shared/artifacts",
         "//src/utils/shared/certs",

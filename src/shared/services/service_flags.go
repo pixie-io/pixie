@@ -16,7 +16,7 @@ import (
 
 	"pixielabs.ai/pixielabs/third_party/kuberesolver"
 
-	version "pixielabs.ai/pixielabs/src/shared/version/go"
+	version "pixielabs.ai/pixielabs/src/shared/goversion"
 )
 
 var (
