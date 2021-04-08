@@ -48,6 +48,7 @@ require (
 	github.com/gorilla/handlers v1.4.2
 	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/gorilla/sessions v1.1.3
+	github.com/grafana/grafana-plugin-sdk-go v0.91.0
 	github.com/graph-gophers/graphql-go v0.0.0-20190225005345-3e8838d4614c
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.2
 	github.com/hashicorp/go-hclog v0.15.0 // indirect
@@ -71,14 +72,12 @@ require (
 	github.com/nats-io/nats-streaming-server v0.21.1
 	github.com/nats-io/nats.go v1.10.1-0.20210228004050-ed743748acac
 	github.com/nats-io/stan.go v0.8.3
-	github.com/olekukonko/tablewriter v0.0.4
+	github.com/olekukonko/tablewriter v0.0.5
 	github.com/olivere/elastic/v7 v7.0.12
 	github.com/ory/dockertest/v3 v3.6.3
 	github.com/ory/hydra-client-go v1.9.2
 	github.com/ory/kratos-client-go v0.5.4-alpha.1
 	github.com/phayes/freeport v0.0.0-20171002181615-b8543db493a5
-	github.com/prometheus/client_golang v1.10.0 // indirect
-	github.com/prometheus/common v0.20.0 // indirect
 	github.com/rivo/tview v0.0.0-20200404204604-ca37f83cb2e7
 	github.com/rivo/uniseg v0.1.0
 	github.com/sahilm/fuzzy v0.1.0
@@ -91,7 +90,7 @@ require (
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.7.0
 	github.com/tidwall/buntdb v1.2.1
 	github.com/txn2/txeh v1.2.1
 	github.com/vbauerster/mpb/v4 v4.11.0
