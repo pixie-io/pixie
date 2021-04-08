@@ -128,13 +128,24 @@ require (
 )
 
 replace (
-	// Fix go mod issues with upper case Sirupsen.
+	cloud.google.com/go => cloud.google.com/go v0.80.0
+	github.com/Azure/go-ansiterm => github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78
+	github.com/Azure/go-autorest => github.com/Azure/go-autorest v14.2.0+incompatible
+	github.com/Azure/go-autorest/autorest => github.com/Azure/go-autorest/autorest v0.11.1
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.7.0
 	github.com/coreos/etcd => go.etcd.io/etcd/v3 v3.5.0-alpha.0
+	github.com/docker/docker => github.com/moby/moby v20.10.5+incompatible
 	github.com/go-openapi/analysis => github.com/go-openapi/analysis v0.19.5
 	github.com/go-openapi/loads => github.com/go-openapi/loads v0.19.0
 	github.com/go-openapi/spec => github.com/go-openapi/spec v0.19.3
-
+	github.com/go-openapi/strfmt => github.com/go-openapi/strfmt v0.20.0
+	github.com/golang/protobuf => github.com/golang/protobuf v1.5.2
+	github.com/google/go-cmp => github.com/google/go-cmp v0.5.5
+	github.com/nats-io/nats-server/v2 => github.com/nats-io/nats-server/v2 v2.2.0
+	github.com/nats-io/nats.go => github.com/nats-io/nats.go v1.10.0
+	github.com/spf13/cobra => github.com/spf13/cobra v1.1.3
+	github.com/spf13/viper => github.com/spf13/viper v1.7.1
+	go.mongodb.org/mongo-driver => go.mongodb.org/mongo-driver v1.5.1
 	golang.org/x/crypto => github.com/golang/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 	golang.org/x/exp => github.com/golang/exp v0.0.0-20210220032938-85be41e4509f
 	golang.org/x/image => github.com/golang/image v0.0.0-20210220032944-ac19c3e999fb
@@ -150,38 +161,8 @@ replace (
 	golang.org/x/time => github.com/golang/time v0.0.0-20210220033141-f8bda1e9f3ba
 	golang.org/x/tools => github.com/golang/tools v0.1.0
 	golang.org/x/xerrors => github.com/golang/xerrors v0.0.0-20200804184101-5ec99f83aff1
+	google.golang.org/api => google.golang.org/api v0.43.0
+	google.golang.org/genproto => google.golang.org/genproto v0.0.0-20210329143202-679c6ae281ee
+	google.golang.org/grpc => google.golang.org/grpc v1.36.1
+	gopkg.in/yaml.v2 => gopkg.in/yaml.v2 v2.4.0
 )
-
-replace github.com/spf13/cobra => github.com/spf13/cobra v1.1.3
-
-replace github.com/spf13/viper => github.com/spf13/viper v1.7.1
-
-replace cloud.google.com/go => cloud.google.com/go v0.80.0
-
-replace github.com/Azure/go-autorest/autorest => github.com/Azure/go-autorest/autorest v0.11.1
-
-replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v14.2.0+incompatible
-
-replace github.com/Azure/go-ansiterm => github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78
-
-replace github.com/golang/protobuf => github.com/golang/protobuf v1.5.2
-
-replace google.golang.org/genproto => google.golang.org/genproto v0.0.0-20210329143202-679c6ae281ee
-
-replace google.golang.org/grpc => google.golang.org/grpc v1.36.1
-
-replace google.golang.org/api => google.golang.org/api v0.43.0
-
-replace gopkg.in/yaml.v2 => gopkg.in/yaml.v2 v2.4.0
-
-replace github.com/go-openapi/strfmt => github.com/go-openapi/strfmt v0.20.0
-
-replace github.com/google/go-cmp => github.com/google/go-cmp v0.5.5
-
-replace go.mongodb.org/mongo-driver => go.mongodb.org/mongo-driver v1.5.1
-
-replace github.com/docker/docker => github.com/moby/moby v20.10.5+incompatible
-
-replace github.com/nats-io/nats.go => github.com/nats-io/nats.go v1.10.0
-
-replace github.com/nats-io/nats-server/v2 => github.com/nats-io/nats-server/v2 v2.2.0
