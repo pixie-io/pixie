@@ -15,16 +15,6 @@ pl_cc_library_internal(
 )
 
 pl_cc_test(
-    name = "fs_watcher_test",
-    srcs = ["fs_watcher_test.cc"],
-    data = glob(["testdata/**/*"]),
-    tags = ["linux_only"],
-    deps = [
-        ":cc_library",
-    ],
-)
-
-pl_cc_test(
     name = "fs_wrapper_test",
     srcs = ["fs_wrapper_test.cc"],
     deps = [":cc_library"],
