@@ -471,7 +471,7 @@ TEST_F(ConnTrackerTest, TrackerDisabledForUnixDomainSocket) {
   EXPECT_EQ(ConnTracker::State::kDisabled, tracker.state());
 }
 
-// Tests that tracker state is kDisabled if the remote address is kOther (non-IP, non-Unix).
+// Tests that tracker state is kDisabled if the remote address is kOther (non-IP).
 TEST_F(ConnTrackerTest, TrackerDisabledForOtherSockAddrFamily) {
   testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn();

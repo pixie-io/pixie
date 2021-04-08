@@ -203,14 +203,10 @@ static __inline struct socket_data_event_t* fill_event(enum source_function_t sr
  * Trace filtering functions
  ***********************************************************/
 
-static __inline bool is_inet_family(sa_family_t sa_family) {
-  return sa_family == AF_INET || sa_family == AF_INET6;
-}
-
 static __inline bool should_trace_sockaddr_family(sa_family_t sa_family) {
   // AF_UNKNOWN means we never traced the accept/connect, and we don't know the sockaddr family.
   // Trace these because they *may* be a sockaddr of interest.
-  return sa_family == AF_UNKNOWN || sa_family == AF_UNIX || is_inet_family(sa_family);
+  return sa_family == AF_UNKNOWN || sa_family == AF_INET || sa_family == AF_INET6;
 }
 
 // Returns true if detection passes threshold. Right now this is only used for PGSQL.
@@ -529,8 +525,8 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx, const enum TrafficD
 //
 // SockAddr   | Protocol   ||  Connect/Accept   |   Data      | Close
 // -----------|------------||-------------------|-------------|-------
-// INET/UNIX  | Unknown    ||  Yes              |   Summary   | Yes
-// INET/UNIX  | Known      ||  N/A              |   Full      | Yes
+// INET       | Unknown    ||  Yes              |   Summary   | Yes
+// INET       | Known      ||  N/A              |   Full      | Yes
 // Other      | Unknown    ||  No               |   No        | No
 // Other      | Known      ||  N/A              |   No        | No
 // Unknown    | Unknown    ||  No*              |   Summary   | Yes
@@ -686,7 +682,7 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
   uint64_t tgid_fd = gen_tgid_fd(tgid, args->fd);
 
   // While we keep all sa_family types in conn_info_map,
-  // we only send connections on INET/UNIX or UNKNOWN to user-space.
+  // we only send connections on INET or UNKNOWN to user-space.
   // Why UNKNOWN? Because we may have failed to trace the initial connection.
   // Also, it's very important to send the UNKNOWN cases to user-space,
   // otherwise we may have a BPF map leak from the earlier call to get_or_create_conn_info().

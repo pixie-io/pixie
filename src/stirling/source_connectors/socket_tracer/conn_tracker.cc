@@ -21,8 +21,6 @@
 #include "src/stirling/source_connectors/socket_tracer/conn_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/conn_trackers_manager.h"
 
-DEFINE_bool(enable_unix_domain_sockets, false, "Whether Unix domain sockets are traced or not.");
-
 constexpr int64_t kUnsetPIDFD = -1;
 DEFINE_int64(stirling_conn_trace_pid, kUnsetPIDFD, "Trace activity on this pid.");
 DEFINE_int64(stirling_conn_trace_fd, kUnsetPIDFD, "Trace activity on this fd.");
@@ -528,15 +526,12 @@ bool ConnTracker::IsRemoteAddrInCluster(const std::vector<CIDRBlock>& cluster_ci
 }
 
 void ConnTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs) {
-  // Don't handle anything but IP or Unix domain sockets.
-  if (open_info_.remote_addr.family == SockAddrFamily::kOther) {
+  // Don't handle anything but IP domain sockets.
+  // Unspecified means we haven't figure out the SockAddrFamily yet, so let those through.
+  if (open_info_.remote_addr.family != SockAddrFamily::kIPv4 &&
+      open_info_.remote_addr.family != SockAddrFamily::kIPv6 &&
+      open_info_.remote_addr.family != SockAddrFamily::kUnspecified) {
     Disable("Unhandled socket address family");
-    return;
-  }
-
-  // And normally, we don't want to trace Unix domain sockets.
-  if (open_info_.remote_addr.family == SockAddrFamily::kUnix && !FLAGS_enable_unix_domain_sockets) {
-    Disable("Unix domain socket");
     return;
   }
 
@@ -570,11 +565,6 @@ void ConnTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs) {
         CONN_TRACE(2) << "State not updated: socket info resolution is still in progress.";
         // If resolution fails, then conn_resolution_failed_ will get set, and
         // this tracker should be disabled, see above.
-        break;
-      }
-
-      if (open_info_.remote_addr.family == SockAddrFamily::kUnix) {
-        Disable("No client-side tracing: Unix socket, data will be traced on server side.");
         break;
       }
 
