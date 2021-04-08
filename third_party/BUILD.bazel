@@ -181,27 +181,6 @@ cc_library(
     visibility = ["//visibility:public"],
 )
 
-go_library(
-    name = "kuberesolver_library",
-    srcs = [
-        "kuberesolver/builder.go",
-        "kuberesolver/kubernetes.go",
-        "kuberesolver/models.go",
-        "kuberesolver/stream.go",
-        "kuberesolver/util.go",
-    ],
-    importpath = "pixielabs.ai/pixielabs/third_party/kuberesolver",
-    visibility = ["//visibility:public"],
-    deps = [
-        "@com_github_prometheus_client_golang//prometheus:go_default_library",
-        "@com_github_prometheus_client_golang//prometheus/promauto:go_default_library",
-        "@org_golang_google_grpc//attributes:go_default_library",
-        "@org_golang_google_grpc//grpclog:go_default_library",
-        "@org_golang_google_grpc//resolver:go_default_library",
-        "@org_golang_x_net//context:go_default_library",
-    ],
-)
-
 # See README.md for special instructions on re-building bpftrace.
 cc_library(
     name = "bpftrace",
