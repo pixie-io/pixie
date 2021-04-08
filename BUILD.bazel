@@ -80,6 +80,7 @@ gazelle(
 buildifier(
     name = "buildifier",
     exclude_patterns = [
+        "./experimental/*",
         "./third_party/*",
     ],
     lint_mode = "fix",
