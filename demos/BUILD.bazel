@@ -1,0 +1,35 @@
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
+load("@pl//demos:demo_upload.bzl", "demo_upload")
+
+pkg_tar(
+    name = "px-sock-shop",
+    srcs = glob(["sock-shop/*"]),
+    extension = "tar.gz",
+    strip_prefix = "sock-shop",
+)
+
+pkg_tar(
+    name = "px-online-boutique",
+    srcs = glob(["online-boutique/*"]),
+    extension = "tar.gz",
+    strip_prefix = "online-boutique",
+)
+
+ARCHIVES = [
+    ":px-sock-shop",
+    ":px-online-boutique",
+]
+
+demo_upload(
+    name = "upload_dev_demo",
+    archives = ARCHIVES,
+    bucket = "gs://pl-infra-dev-artifacts/dev-demo-apps",
+    manifest = "manifest.json",
+)
+
+demo_upload(
+    name = "upload_prod_demo",
+    archives = ARCHIVES,
+    bucket = "gs://pl-infra-dev-artifacts/dev-demo-apps",
+    manifest = "manifest.json",
+)
