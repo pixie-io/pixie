@@ -1,0 +1,30 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		}
+	],
+	"settings": {
+		"clang-tidy.checks": [],
+		"bazel.buildifierFixOnFormat": true,
+		"files.associations": {
+			".arclint": "json",
+			".arcconfig": "json",
+			"*.pxl": "python"
+		},
+		"files.exclude": {
+			"**/.bazel-*": true,
+		},
+		"go.formatTool": "goimports",
+		"gopls": {
+			"build.allowModfileModifications": true,
+			"build.directoryFilters": [
+				"-src/carnot/planner"
+			],
+			"ui.completion.usePlaceholders": true,
+		},
+		"go.toolsEnvVars": {
+			"CGO_ENABLED": 0
+		},
+	}
+}

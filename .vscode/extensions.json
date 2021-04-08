@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    "bazelbuild.vscode-bazel",
+    "xaver.clang-format",
+    "notskm.clang-tidy",
+    "llvm-vs-code-extensions.vscode-clangd",
+    "golang.go",
+    "npxms.hide-gitignored",
+    "ms-python.python",
+    "zxh404.vscode-proto3"
+  ]
+}
