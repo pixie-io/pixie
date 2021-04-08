@@ -5,7 +5,7 @@ metadata:
   name: load-test
   labels:
     name: load-test
-  namespace: sock-shop
+  namespace: px-sock-shop
 spec:
   selector:
     matchLabels:
