@@ -310,7 +310,7 @@ func TestServer_LoginNewUser_SupportUser(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
 	mockProfile.EXPECT().
-		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "hulu.com"}).
+		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "my-org.com"}).
 		Return(fakeOrgInfo, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
@@ -321,7 +321,7 @@ func TestServer_LoginNewUser_SupportUser(t *testing.T) {
 	s, err := controllers.NewServer(env, a, nil)
 	require.NoError(t, err)
 
-	resp, err := doLoginRequest(getTestContext(), t, s, "hulu.com")
+	resp, err := doLoginRequest(getTestContext(), t, s, "my-org.com")
 	assert.NotNil(t, resp)
 	require.NoError(t, err)
 

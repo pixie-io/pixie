@@ -40,7 +40,7 @@ func (d *fakeDatastore) GetProjectForOrg(org uuid.UUID) (*datastore.ProjectInfo,
 	if org.String() == "123e4567-e89b-12d3-a456-426655440000" {
 		return &datastore.ProjectInfo{
 			OrgID:       uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"),
-			ProjectName: "hulu",
+			ProjectName: "my-org",
 		}, nil
 	}
 	if org.String() == "323e4567-e89b-12d3-a456-426655440000" {
@@ -50,10 +50,10 @@ func (d *fakeDatastore) GetProjectForOrg(org uuid.UUID) (*datastore.ProjectInfo,
 }
 
 func (d *fakeDatastore) GetProjectByName(org uuid.UUID, projectName string) (*datastore.ProjectInfo, error) {
-	if projectName == "hulu" {
+	if projectName == "my-org" {
 		return &datastore.ProjectInfo{
 			OrgID:       org,
-			ProjectName: "hulu",
+			ProjectName: "my-org",
 		}, nil
 	}
 	if projectName == "goo" {
@@ -164,13 +164,13 @@ func TestServer_GetProjectByName(t *testing.T) {
 	t.Run("project found", func(t *testing.T) {
 		req := &projectmanagerpb.GetProjectByNameRequest{
 			OrgID:       utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"),
-			ProjectName: "hulu",
+			ProjectName: "my-org",
 		}
 		resp, err := server.GetProjectByName(context.Background(), req)
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 
-		assert.Equal(t, resp.ProjectName, "hulu")
+		assert.Equal(t, resp.ProjectName, "my-org")
 		assert.Equal(t, resp.OrgID, utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"))
 	})
 
@@ -224,7 +224,7 @@ func TestServer_GetProjectForOrg(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, resp)
 
-		assert.Equal(t, resp.ProjectName, "hulu")
+		assert.Equal(t, resp.ProjectName, "my-org")
 		assert.Equal(t, resp.OrgID, utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"))
 	})
 

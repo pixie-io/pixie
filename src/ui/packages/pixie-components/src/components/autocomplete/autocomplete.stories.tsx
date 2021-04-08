@@ -129,18 +129,18 @@ export const BasicCompletions = () => {
         { type: 'header', header: 'Org scripts' },
         {
           type: 'item',
-          title: 'hulu/script1',
-          id: 'hulu-4',
+          title: 'my-org/script1',
+          id: 'my-org-4',
           description: 'cool script',
         },
         {
           type: 'item',
-          title: 'hulu/script2',
-          id: 'hulu-5',
+          title: 'my-org/script2',
+          id: 'my-org-5',
           description: 'another cool script',
         },
-        { type: 'item', title: 'hulu/script3', id: 'hulu-6' },
-        { type: 'item', title: 'hulu/script4', id: 'hulu-7' },
+        { type: 'item', title: 'my-org/script3', id: 'my-org-6' },
+        { type: 'item', title: 'my-org/script4', id: 'my-org-7' },
       ]}
       onActiveChange={setActive}
       activeItem={active}

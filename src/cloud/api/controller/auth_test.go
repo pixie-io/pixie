@@ -195,13 +195,13 @@ func TestAuthLoginHandler_WithOrgName(t *testing.T) {
 	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	req, err := http.NewRequest("POST", "/login",
-		strings.NewReader("{\"accessToken\": \"the-token\", \"orgName\": \"hulu\"}"))
+		strings.NewReader("{\"accessToken\": \"the-token\", \"orgName\": \"my-org\"}"))
 	require.NoError(t, err)
 
 	expectedAuthServiceReq := &authpb.LoginRequest{
 		AccessToken:           "the-token",
 		CreateUserIfNotExists: true,
-		OrgName:               "hulu",
+		OrgName:               "my-org",
 	}
 
 	mockClients.MockAuth.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {

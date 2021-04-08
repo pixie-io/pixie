@@ -30,8 +30,8 @@ describe('<Completions/> test', () => {
             highlights: [3, 4, 5],
           },
           { type: 'header', header: 'Org scripts' },
-          { type: 'item', title: 'hulu/script1', id: 'hulu-4' },
-          { type: 'item', title: 'hulu/script2', id: 'hulu-5' },
+          { type: 'item', title: 'my-org/script1', id: 'my-org-4' },
+          { type: 'item', title: 'my-org/script2', id: 'my-org-5' },
         ]}
         onActiveChange={noop}
         activeItem='px-1'

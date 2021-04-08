@@ -50,9 +50,9 @@ func mustLoadTestData(db *sqlx.DB) {
 	db.MustExec(`DELETE FROM orgs`)
 
 	insertOrgQuery := `INSERT INTO orgs (id, org_name, domain_name) VALUES ($1, $2, $3)`
-	db.MustExec(insertOrgQuery, "123e4567-e89b-12d3-a456-426655440000", "hulu", "hulu.com")
+	db.MustExec(insertOrgQuery, "123e4567-e89b-12d3-a456-426655440000", "my-org", "my-org.com")
 	insertUserQuery := `INSERT INTO users (id, org_id, username, first_name, last_name, email) VALUES ($1, $2, $3, $4, $5, $6)`
-	db.MustExec(insertUserQuery, "123e4567-e89b-12d3-a456-426655440001", "123e4567-e89b-12d3-a456-426655440000", "person@hulu.com", "first", "last", "person@hulu.com")
+	db.MustExec(insertUserQuery, "123e4567-e89b-12d3-a456-426655440001", "123e4567-e89b-12d3-a456-426655440000", "person@my-org.com", "first", "last", "person@my-org.com")
 
 	insertUserSetting := `INSERT INTO user_settings (user_id, key, value) VALUES ($1, $2, $3)`
 	db.MustExec(insertUserSetting, "123e4567-e89b-12d3-a456-426655440001", "some_setting", "test")
@@ -91,10 +91,10 @@ func TestDatastore(t *testing.T) {
 		d := datastore.NewDatastore(db)
 		userInfo := datastore.UserInfo{
 			OrgID:     uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"),
-			Username:  "person@hulu.com",
+			Username:  "person@my-org.com",
 			FirstName: "first",
 			LastName:  "last",
-			Email:     "person@hulu.com",
+			Email:     "person@my-org.com",
 		}
 		userID, err := d.CreateUser(&userInfo)
 		assert.NotNil(t, err)
@@ -125,19 +125,19 @@ func TestDatastore(t *testing.T) {
 		require.NotNil(t, orgInfo)
 
 		assert.Equal(t, orgInfo.ID, uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"))
-		assert.Equal(t, orgInfo.DomainName, "hulu.com")
-		assert.Equal(t, orgInfo.OrgName, "hulu")
+		assert.Equal(t, orgInfo.DomainName, "my-org.com")
+		assert.Equal(t, orgInfo.OrgName, "my-org")
 	})
 
 	t.Run("get org by domain", func(t *testing.T) {
 		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
-		orgInfo, err := d.GetOrgByDomain("hulu.com")
+		orgInfo, err := d.GetOrgByDomain("my-org.com")
 		require.NoError(t, err)
 		require.NotNil(t, orgInfo)
 
-		assert.Equal(t, orgInfo.OrgName, "hulu")
-		assert.Equal(t, orgInfo.DomainName, "hulu.com")
+		assert.Equal(t, orgInfo.OrgName, "my-org")
+		assert.Equal(t, orgInfo.DomainName, "my-org.com")
 	})
 
 	t.Run("get orgs", func(t *testing.T) {
@@ -148,8 +148,8 @@ func TestDatastore(t *testing.T) {
 		require.NotNil(t, orgs)
 
 		assert.Equal(t, 1, len(orgs))
-		assert.Equal(t, "hulu", orgs[0].OrgName)
-		assert.Equal(t, "hulu.com", orgs[0].DomainName)
+		assert.Equal(t, "my-org", orgs[0].OrgName)
+		assert.Equal(t, "my-org.com", orgs[0].DomainName)
 	})
 
 	t.Run("get org by domain for missing domain should a specific error", func(t *testing.T) {
@@ -189,14 +189,14 @@ func TestDatastore(t *testing.T) {
 		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 		orgInfo := datastore.OrgInfo{
-			OrgName:    "hulu",
-			DomainName: "hulu.com",
+			OrgName:    "my-org",
+			DomainName: "my-org.com",
 		}
 		userInfo := datastore.UserInfo{
 			Username:  "johnd",
 			FirstName: "john",
 			LastName:  "doe",
-			Email:     "john@hulu.com",
+			Email:     "john@my-org.com",
 		}
 
 		orgID, userID, err := d.CreateUserAndOrg(&orgInfo, &userInfo)
@@ -209,14 +209,14 @@ func TestDatastore(t *testing.T) {
 		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 		orgInfo := datastore.OrgInfo{
-			OrgName:    "hulu",
-			DomainName: "hulu.com",
+			OrgName:    "my-org",
+			DomainName: "my-org.com",
 		}
 		userInfo := datastore.UserInfo{
-			Username:  "person@hulu.com",
+			Username:  "person@my-org.com",
 			FirstName: "first",
 			LastName:  "last",
-			Email:     "person@hulu.com",
+			Email:     "person@my-org.com",
 		}
 
 		orgID, userID, err := d.CreateUserAndOrg(&orgInfo, &userInfo)
@@ -228,11 +228,11 @@ func TestDatastore(t *testing.T) {
 	t.Run("get user by email", func(t *testing.T) {
 		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
-		userInfo, err := d.GetUserByEmail("person@hulu.com")
+		userInfo, err := d.GetUserByEmail("person@my-org.com")
 		require.NoError(t, err)
 		require.NotNil(t, userInfo)
 
-		assert.Equal(t, userInfo.Email, "person@hulu.com")
+		assert.Equal(t, userInfo.Email, "person@my-org.com")
 	})
 
 	t.Run("get user by email for missing email should return specific error", func(t *testing.T) {
@@ -251,9 +251,9 @@ func TestDatastore(t *testing.T) {
 
 		// Add in data to be deleted
 		insertOrgQuery := `INSERT INTO orgs (id, org_name, domain_name) VALUES ($1, $2, $3)`
-		db.MustExec(insertOrgQuery, orgID, "not-hulu", "not-hulu.com")
+		db.MustExec(insertOrgQuery, orgID, "not-my-org", "not-my-org.com")
 		insertUserQuery := `INSERT INTO users (id, org_id, username, first_name, last_name, email) VALUES ($1, $2, $3, $4, $5, $6)`
-		db.MustExec(insertUserQuery, userID, orgID, "person@not-hulu.com", "first", "last", "person@not-hulu.com")
+		db.MustExec(insertUserQuery, userID, orgID, "person@not-my-org.com", "first", "last", "person@not-my-org.com")
 
 		d := datastore.NewDatastore(db)
 

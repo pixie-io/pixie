@@ -29,8 +29,8 @@ func TestPrettifyClusterName(t *testing.T) {
 		},
 		{
 			"basic eks",
-			"arn:aws:eks:us-east-2:016013129672:cluster/skylab4-hulu",
-			"eks:skylab4-hulu",
+			"arn:aws:eks:us-east-2:016013129672:cluster/skylab4-my-org",
+			"eks:skylab4-my-org",
 			false,
 		},
 		{

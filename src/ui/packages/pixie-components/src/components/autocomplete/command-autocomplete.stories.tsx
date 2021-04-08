@@ -21,14 +21,14 @@ export const Basic = () => (
         suggestions: [
           {
             type: 'item',
-            title: 'hulu/script3',
-            id: 'hulu-6',
+            title: 'my-org/script3',
+            id: 'my-org-6',
             itemType: 'script',
           },
           {
             type: 'item',
-            title: 'hulu/script5',
-            id: 'hulu-5',
+            title: 'my-org/script5',
+            id: 'my-org-5',
             itemType: 'script',
           },
         ],
@@ -39,8 +39,8 @@ export const Basic = () => (
         suggestions: [
           {
             type: 'item',
-            title: 'hulu/script4',
-            id: 'hulu-4',
+            title: 'my-org/script4',
+            id: 'my-org-4',
             itemType: 'script',
           },
         ],

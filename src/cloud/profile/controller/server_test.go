@@ -306,8 +306,8 @@ func TestServer_CreateOrgAndUser_SuccessCases(t *testing.T) {
 			name: "valid request",
 			req: &profile.CreateOrgAndUserRequest{
 				Org: &profile.CreateOrgAndUserRequest_Org{
-					OrgName:    "hulu",
-					DomainName: "hulu.com",
+					OrgName:    "my-org",
+					DomainName: "my-org.com",
 				},
 				User: &profile.CreateOrgAndUserRequest_User{
 					Username:  "foobar",
@@ -324,8 +324,8 @@ func TestServer_CreateOrgAndUser_SuccessCases(t *testing.T) {
 			name: "allowed email",
 			req: &profile.CreateOrgAndUserRequest{
 				Org: &profile.CreateOrgAndUserRequest_Org{
-					OrgName:    "hulu",
-					DomainName: "hulu.com",
+					OrgName:    "my-org",
+					DomainName: "my-org.com",
 				},
 				User: &profile.CreateOrgAndUserRequest_User{
 					Username:  "foobar",
@@ -391,7 +391,7 @@ func TestServer_CreateOrgAndUser_InvalidArgumentCases(t *testing.T) {
 			req: &profile.CreateOrgAndUserRequest{
 				Org: &profile.CreateOrgAndUserRequest_Org{
 					OrgName:    "",
-					DomainName: "hulu.com",
+					DomainName: "my-org.com",
 				},
 				User: &profile.CreateOrgAndUserRequest_User{
 					Username:  "foobar",
@@ -405,7 +405,7 @@ func TestServer_CreateOrgAndUser_InvalidArgumentCases(t *testing.T) {
 			name: "invalid domain name",
 			req: &profile.CreateOrgAndUserRequest{
 				Org: &profile.CreateOrgAndUserRequest_Org{
-					OrgName:    "hulu",
+					OrgName:    "my-org",
 					DomainName: "",
 				},
 				User: &profile.CreateOrgAndUserRequest_User{
@@ -420,8 +420,8 @@ func TestServer_CreateOrgAndUser_InvalidArgumentCases(t *testing.T) {
 			name: "invalid username",
 			req: &profile.CreateOrgAndUserRequest{
 				Org: &profile.CreateOrgAndUserRequest_Org{
-					OrgName:    "hulu",
-					DomainName: "hulu.com",
+					OrgName:    "my-org",
+					DomainName: "my-org.com",
 				},
 				User: &profile.CreateOrgAndUserRequest_User{
 					Username:  "",
@@ -435,8 +435,8 @@ func TestServer_CreateOrgAndUser_InvalidArgumentCases(t *testing.T) {
 			name: "missing email",
 			req: &profile.CreateOrgAndUserRequest{
 				Org: &profile.CreateOrgAndUserRequest_Org{
-					OrgName:    "hulu",
-					DomainName: "hulu.com",
+					OrgName:    "my-org",
+					DomainName: "my-org.com",
 				},
 				User: &profile.CreateOrgAndUserRequest_User{
 					Username:  "foobar",
@@ -450,8 +450,8 @@ func TestServer_CreateOrgAndUser_InvalidArgumentCases(t *testing.T) {
 			name: "banned email",
 			req: &profile.CreateOrgAndUserRequest{
 				Org: &profile.CreateOrgAndUserRequest_Org{
-					OrgName:    "hulu",
-					DomainName: "hulu.com",
+					OrgName:    "my-org",
+					DomainName: "my-org.com",
 				},
 				User: &profile.CreateOrgAndUserRequest_User{
 					Username:  "foobar",
@@ -498,8 +498,8 @@ func TestServer_CreateOrgAndUser_CreateProjectFailed(t *testing.T) {
 
 	req := &profile.CreateOrgAndUserRequest{
 		Org: &profile.CreateOrgAndUserRequest_Org{
-			OrgName:    "hulu",
-			DomainName: "hulu.com",
+			OrgName:    "my-org",
+			DomainName: "my-org.com",
 		},
 		User: &profile.CreateOrgAndUserRequest_User{
 			Username:  "foobar",
@@ -544,8 +544,8 @@ func TestServer_GetOrg(t *testing.T) {
 
 	mockReply := &datastore.OrgInfo{
 		ID:         orgUUID,
-		DomainName: "hulu.com",
-		OrgName:    "hulu",
+		DomainName: "my-org.com",
+		OrgName:    "my-org",
 	}
 
 	d.EXPECT().
@@ -556,8 +556,8 @@ func TestServer_GetOrg(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, resp.ID, utils.ProtoFromUUID(orgUUID))
-	assert.Equal(t, resp.DomainName, "hulu.com")
-	assert.Equal(t, resp.OrgName, "hulu")
+	assert.Equal(t, resp.DomainName, "my-org.com")
+	assert.Equal(t, resp.OrgName, "my-org")
 }
 
 func TestServer_GetOrgs(t *testing.T) {
@@ -573,8 +573,8 @@ func TestServer_GetOrgs(t *testing.T) {
 
 	mockReply := []*datastore.OrgInfo{{
 		ID:         orgUUID,
-		DomainName: "hulu.com",
-		OrgName:    "hulu",
+		DomainName: "my-org.com",
+		OrgName:    "my-org",
 	},
 		{
 			ID:         org2UUID,
@@ -591,8 +591,8 @@ func TestServer_GetOrgs(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(resp.Orgs))
 	assert.Equal(t, utils.ProtoFromUUID(orgUUID), resp.Orgs[0].ID)
-	assert.Equal(t, "hulu.com", resp.Orgs[0].DomainName)
-	assert.Equal(t, "hulu", resp.Orgs[0].OrgName)
+	assert.Equal(t, "my-org.com", resp.Orgs[0].DomainName)
+	assert.Equal(t, "my-org", resp.Orgs[0].OrgName)
 	assert.Equal(t, utils.ProtoFromUUID(org2UUID), resp.Orgs[1].ID)
 	assert.Equal(t, "pixie.com", resp.Orgs[1].DomainName)
 	assert.Equal(t, "pixie", resp.Orgs[1].OrgName)
@@ -628,22 +628,22 @@ func TestServer_GetOrgByDomain(t *testing.T) {
 
 	mockReply := &datastore.OrgInfo{
 		ID:         orgUUID,
-		DomainName: "hulu.com",
-		OrgName:    "hulu",
+		DomainName: "my-org.com",
+		OrgName:    "my-org",
 	}
 
 	d.EXPECT().
-		GetOrgByDomain("hulu.com").
+		GetOrgByDomain("my-org.com").
 		Return(mockReply, nil)
 
 	resp, err := s.GetOrgByDomain(
 		context.Background(),
-		&profile.GetOrgByDomainRequest{DomainName: "hulu.com"})
+		&profile.GetOrgByDomainRequest{DomainName: "my-org.com"})
 
 	require.NoError(t, err)
 	assert.Equal(t, resp.ID, utils.ProtoFromUUID(orgUUID))
-	assert.Equal(t, resp.DomainName, "hulu.com")
-	assert.Equal(t, resp.OrgName, "hulu")
+	assert.Equal(t, resp.DomainName, "my-org.com")
+	assert.Equal(t, resp.OrgName, "my-org")
 }
 
 func TestServer_GetOrgByDomain_MissingOrg(t *testing.T) {
@@ -655,12 +655,12 @@ func TestServer_GetOrgByDomain_MissingOrg(t *testing.T) {
 	s := controller.NewServer(nil, d, nil)
 
 	d.EXPECT().
-		GetOrgByDomain("hulu.com").
+		GetOrgByDomain("my-org.com").
 		Return(nil, datastore.ErrOrgNotFound)
 
 	resp, err := s.GetOrgByDomain(
 		context.Background(),
-		&profile.GetOrgByDomainRequest{DomainName: "hulu.com"})
+		&profile.GetOrgByDomainRequest{DomainName: "my-org.com"})
 
 	assert.Nil(t, resp)
 	assert.NotNil(t, err)
@@ -679,8 +679,8 @@ func TestServer_DeleteOrgAndUsers(t *testing.T) {
 
 	mockReply := &datastore.OrgInfo{
 		ID:         orgUUID,
-		DomainName: "hulu.com",
-		OrgName:    "hulu",
+		DomainName: "my-org.com",
+		OrgName:    "my-org",
 	}
 	d.EXPECT().GetOrg(orgUUID).Return(mockReply, nil)
 	d.EXPECT().DeleteOrgAndUsers(orgUUID).Return(nil)
