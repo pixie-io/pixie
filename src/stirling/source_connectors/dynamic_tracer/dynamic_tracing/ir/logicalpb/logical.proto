@@ -5,7 +5,6 @@ import "google/protobuf/duration.proto";
 
 option go_package = "logicalpb";
 
-import "src/shared/types/typespb/types.proto";
 import "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/sharedpb/shared.proto";
 
 package pl.stirling.dynamic_tracing.ir.logical;
@@ -164,25 +163,8 @@ message TracepointSpec {
 }
 
 message BPFTrace {
-  // This overlaps with Field message in physical.proto. But does not need StructSpec.
-  //
-  // This is temporary until the output schema parsing is done for bpftrace, which directly
-  // extracts the output format of the perf buffer.
-  //
-  // TODO(yzhao): Remove this after implementing bpftrace output format parsing.
-  message Output {
-    // Name of this output field.
-    string name = 1;
-
-    // Type of this output field.
-    types.DataType type = 2;
-  }
-
   // Bpftrace code to be deployed.
   string program = 1;
-
-  // Describes the output format of the above code.
-  repeated Output outputs = 2;
 }
 
 // A logical program, either an application tracepoint, or a bpftrace.
