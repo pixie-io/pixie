@@ -5,21 +5,12 @@ ARTIFACTS_DIR := $(dir $(realpath $(firstword $(MAKEFILE_LIST))))/artifacts
 # Rename namespace sock-shop to be px-sock-shop.
 .PHONY: package_sock_shop
 package_sock_shop:
-	cp -r applications/sockshop/kubernetes_manifests $(ARTIFACTS_DIR)/tmp/sock_shop_manifests
-	# replace namespace sock-shop with namespace px-sock-shop
-	# When the namespace is missing, the demo app code will automatically add the correct
-	# namespace. TODO(nserrino): We should consider handling this part in the demo app code
-	# if we ever want to support configurable namespaces for demo apps.
-	find $(ARTIFACTS_DIR)/tmp/sock_shop_manifests -type f -print0 | xargs -0 perl -pi -e s/sock-shop/px-sock-shop/g
-
-	# tar up the edited files
+	cp -r sock-shop $(ARTIFACTS_DIR)/tmp/sock_shop_manifests
 	tar -czf $(ARTIFACTS_DIR)/px-sock-shop.tar.gz -C $(ARTIFACTS_DIR)/tmp/sock_shop_manifests .
 
 .PHONY: package_online_boutique
 package_online_boutique:
 	cp -r applications/online-boutique $(ARTIFACTS_DIR)/tmp/online_boutique_manifests
-
-	# tar up the edited files
 	tar -czf $(ARTIFACTS_DIR)/px-online-boutique.tar.gz -C $(ARTIFACTS_DIR)/tmp/online_boutique_manifests .
 
 .PHONY: package_demo_apps
@@ -27,7 +18,7 @@ package_demo_apps:
 	rm -rf $(ARTIFACTS_DIR)
 	mkdir -p $(ARTIFACTS_DIR)
 	mkdir -p $(ARTIFACTS_DIR)/tmp
-# TODO(nserrino): Add in other demo applications once they have working load testers.
+
 	make package_sock_shop
 	make package_online_boutique
 
