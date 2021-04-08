@@ -639,19 +639,23 @@ TEST_P(FilterTest, basic) {
 
 INSTANTIATE_TEST_SUITE_P(FilterTestSuite, FilterTest, ::testing::ValuesIn(comparison_fns));
 
-// TODO(nserrino/phlkuz) create expectations for filter errors.
 TEST_F(CompilerTest, filter_errors) {
   std::string non_bool_filter =
       absl::StrJoin({"import px", "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])",
                      "queryDF = queryDF[queryDF['cpu0'] + 0.5]", "px.display(queryDF, 'blah')"},
                     "\n");
-  EXPECT_NOT_OK(compiler_.Compile(non_bool_filter, compiler_state_.get()));
+  auto res = compiler_.Compile(non_bool_filter, compiler_state_.get());
+  EXPECT_NOT_OK(res);
+  EXPECT_THAT(res.status(), HasCompilerError("Expected Boolean for Filter expression"));
 
   std::string int_val =
       absl::StrJoin({"import px", "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])",
                      "d = queryDF[1]", "px.display(d, 'filtered')"},
                     "\n");
-  EXPECT_NOT_OK(compiler_.Compile(int_val, compiler_state_.get()));
+
+  res = compiler_.Compile(int_val, compiler_state_.get());
+  EXPECT_NOT_OK(res);
+  EXPECT_THAT(res.status(), HasCompilerError("Expected Boolean for Filter expression"));
 }
 
 TEST_F(CompilerTest, reused_result) {
@@ -2224,13 +2228,12 @@ nodes {
 }
 )proto";
 
-// TODO(philkuz/nserrino): Fix test broken with clang-9/gcc-9.
 TEST_F(CompilerTest, right_join) {
   auto plan_status =
       compiler_.Compile(absl::Substitute(kJoinQueryTypeTpl, "right"), compiler_state_.get());
   ASSERT_OK(plan_status);
   auto plan = plan_status.ConsumeValueOrDie();
-  EXPECT_THAT(plan, Partially(EqualsProto(kJoinRightQueryPlan))) << plan.DebugString();
+  EXPECT_THAT(plan, Partially(EqualsProto(kJoinRightQueryPlan)));
 }
 
 constexpr char kSelfJoinQueryPlan[] = R"proto(
@@ -2508,8 +2511,7 @@ TEST_F(CompilerTest, AndExpressionFailsGracefully) {
               HasCompilerError("SyntaxError: Expected expression after operator"));
 }
 
-// TODO(nserrino): PL-1578 Re-enable when "import px" append hack is removed from compiler.cc
-TEST_F(CompilerTest, DISABLED_CommentOnlyCodeShouldFailGracefullly) {
+TEST_F(CompilerTest, CommentOnlyCodeShouldFailGracefullly) {
   auto query = "# this is a comment";
   auto ir_graph_or_s = compiler_.Compile(query, compiler_state_.get());
   ASSERT_NOT_OK(ir_graph_or_s);

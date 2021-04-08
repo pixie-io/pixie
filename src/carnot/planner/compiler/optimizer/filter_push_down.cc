@@ -49,11 +49,10 @@ OperatorIR* FilterPushdownRule::HandleAggPushdown(BlockingAggIR* agg,
 
   for (const auto& agg_expr : agg->aggregate_expressions()) {
     // If any of the filter columns come from the output of an aggregate expression,
-    // don't push the filter up any further.
-    // TODO(nserrino): For certain aggregate functions like min or max, it is actually
-    // possible to push the aggregate up further. In order to support this, we need a
-    // way of identifying whether or not a given aggregate func outputs the same type
-    // of values that it receives (max(foo) returns an instance of a "foo" data point,
+    // don't push the filter up any further. For certain aggregate functions like min or max,
+    // it is actually possible to push the aggregate up further. In order to support this,
+    // we would need a way of identifying whether or not a given aggregate func outputs the
+    // same type of values that it receives (max(foo) returns an instance of a "foo" data point,
     // whereas count(foo) does not) and only push the filter up with that type.
     if (reverse_column_name_mapping.contains(agg_expr.name)) {
       return nullptr;
@@ -65,9 +64,9 @@ OperatorIR* FilterPushdownRule::HandleAggPushdown(BlockingAggIR* agg,
   return agg;
 }
 
+// Currently only supports single-parent, single-child operators.
 OperatorIR* FilterPushdownRule::NextFilterLocation(OperatorIR* current_node,
                                                    ColumnNameMapping* column_name_mapping) {
-  // TODO(nserrino): Support pushing filters that originate from multiple parents.
   if (current_node->parents().size() != 1) {
     return nullptr;
   }
@@ -85,7 +84,6 @@ OperatorIR* FilterPushdownRule::NextFilterLocation(OperatorIR* current_node,
   if (Match(parent, Map())) {
     return HandleMapPushdown(static_cast<MapIR*>(parent), column_name_mapping);
   }
-  // TODO(nserrino): Support joins and unions.
   return nullptr;
 }
 

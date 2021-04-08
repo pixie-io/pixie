@@ -77,10 +77,6 @@ class CarnotImpl final : public Carnot {
   std::unique_ptr<EngineState> engine_state_;
 
   std::shared_ptr<grpc::ServerCredentials> grpc_server_creds_;
-  // GRPC server setup.
-  // TODO(zasgar/nserrino): Pull these out to another class that we can inject into Carnot.
-  // TODO(zasgar/nserrino): GRPC server should not need threads and we should be able to use
-  // pl::event instead.
   std::unique_ptr<std::thread> grpc_server_thread_;
   std::unique_ptr<grpc::Server> grpc_server_;
   std::unique_ptr<exec::GRPCRouter> grpc_router_;

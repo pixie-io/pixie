@@ -649,8 +649,8 @@ TEST_F(OptimizerTest, prune_unused_columns) {
 
   ASSERT_EQ(join->Children().size(), 1);
   ASSERT_MATCH(join->Children()[0], Map());
-  // TODO(nserrino): PL-1344 Maps 1 and 3 are no-ops after this column pruning,
-  // we should have a rule for detecting that and cleaning them up.
+  // Maps 1 and 3 are no-ops after this column pruning, but once we add
+  // a rule to remove no-op maps, these will go away.
   auto map1 = static_cast<MapIR*>(join->Children()[0]);
   EXPECT_THAT(map1->relation().col_names(), ElementsAre("bytes_in"));
 

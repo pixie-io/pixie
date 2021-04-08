@@ -506,7 +506,6 @@ class BinUDF<TReturn, types::Float64Value, TArg2> : public udf::ScalarUDF {
   static udf::ScalarUDFDocBuilder Doc() { return BinDoc(); }
 };
 
-// TODO(philkuz, nserrino) Move decimal places to be a constructor arg after PL-1048 is done.
 class RoundUDF : public udf::ScalarUDF {
  public:
   StringValue Exec(FunctionContext*, Float64Value value, Int64Value decimal_places) {

@@ -312,7 +312,6 @@ TEST_F(CoordinatorTest, prune_agents_unsupported_metadata_type) {
 constexpr char kPruneAgentsRename[] = R"pxl(
 import px
 
-# not a metadata filter (yet). TODO(nserrino): Support aliases.
 t1 = px.DataFrame(table='http_events', start_time='-120s', select=['upid', 'remote_port'])
 t1.pod_id = t1.ctx['pod_id']
 t1 = t1[t1.pod_id == 'agent1_pod']

@@ -28,8 +28,6 @@ using SchemaToAgentsMap = absl::flat_hash_map<std::string, absl::flat_hash_set<i
  * DistributedPlan. This is distinct from other DistributedRules, which may modify the
  * CarnotInstances and DistributedPlan dag.
  * Note that this rule shares the state of its inner rule across all Carnot instances.
- * TODO(nserrino): Add a version of this where there is a map from CarnotInstance to Rule,
- * so that non-state-sharing use cases are supported.
  *
  */
 template <typename TRule>

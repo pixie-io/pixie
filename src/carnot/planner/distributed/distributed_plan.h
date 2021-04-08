@@ -70,8 +70,8 @@ class CarnotInstance {
   std::unique_ptr<md::AgentMetadataFilter> md_filter_ = nullptr;
 };
 
-// TODO(nserrino): Refactor this and IR to share a common base class for shared operations like
-// AddEdge, etc.
+// Note: this can be refactored to share a common base class with IR for shared
+// operations like AddEdge, HasNode, etc.
 class DistributedPlan {
  public:
   /**

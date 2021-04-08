@@ -262,7 +262,7 @@ class ASTVisitorImpl : public ASTVisitor {
 
   /**
    * @brief ProcessImport handles imports definitions in the query language.
-   * Only supports px right now. TODO(nserrino) add more import capabilities.
+   * Only supports px and pxtrace right now.
    * ```
    * import px
    * ```
@@ -274,7 +274,7 @@ class ASTVisitorImpl : public ASTVisitor {
 
   /**
    * @brief ProcessImportFrom handles from imports definitions in the query language.
-   * Only supports px right now. TODO(nserrino) add more import capabilities.
+   * Only supports px and pxtrace right now.
    * ```
    * from px import now
    * ```

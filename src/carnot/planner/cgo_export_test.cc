@@ -52,14 +52,13 @@ class PlannerExportTest : public ::testing::Test {
   std::string udf_info_str_;
 };
 
-// TODO(philkuz/nserrino): Fix test broken with clang-9/gcc-9.
-TEST_F(PlannerExportTest, DISABLED_one_pem_one_kelvin_query_test) {
+TEST_F(PlannerExportTest, one_pem_one_kelvin_query_test) {
   planner_ = MakePlanner();
   int result_len;
   std::string logical_planner_state;
   ASSERT_TRUE(
-      testutils::CreateTwoPEMsOneKelvinPlannerState().SerializeToString(&logical_planner_state));
-  std::string query = "import px\ndf = px.DataFrame(table='table1')\npx.display(df, 'out')";
+      testutils::CreateOnePEMOneKelvinPlannerState().SerializeToString(&logical_planner_state));
+  std::string query = "import px\npx.display(px.DataFrame('table1'), 'out')";
   std::string query_request;
   ASSERT_TRUE(MakeQueryRequest(query).SerializeToString(&query_request));
 
@@ -73,10 +72,8 @@ TEST_F(PlannerExportTest, DISABLED_one_pem_one_kelvin_query_test) {
       planner_result.ParseFromString(std::string(interface_result, interface_result + result_len)));
   delete[] interface_result;
   ASSERT_OK(planner_result.status());
-  std::string expected_planner_result_str =
-      absl::Substitute("plan {$0}", testutils::kExpectedPlanTwoPEMOneKelvin);
-  EXPECT_THAT(planner_result, Partially(EqualsProto(expected_planner_result_str)))
-      << planner_result.DebugString();
+  EXPECT_THAT(planner_result.plan(),
+              Partially(EqualsProto(testutils::kExpectedPlanOnePEMOneKelvin)));
 }
 
 TEST_F(PlannerExportTest, bad_queries) {

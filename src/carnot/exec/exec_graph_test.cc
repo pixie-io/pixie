@@ -621,7 +621,7 @@ TEST_F(YieldingExecGraphTest, yield) {
 }
 
 TEST_F(YieldingExecGraphTest, continue_yield) {
-// TODO(nserrino): PP-2202: Re-enable after identifying TSAN issue.
+// This test appears to generate a false TSAN error.
 // Possibly related to https://github.com/google/sanitizers/issues/1259
 #if !__has_feature(thread_sanitizer)
   ExecutionGraph e;

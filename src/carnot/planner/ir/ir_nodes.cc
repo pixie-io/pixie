@@ -768,9 +768,7 @@ Status BlockingAggIR::ToProto(planpb::Operator* op) const {
     pb->add_group_names(group->col_name());
   }
 
-  // TODO(nserrino/philkuz): Add support for streaming aggregates in the compiler.
   pb->set_windowed(false);
-
   pb->set_partial_agg(partial_agg_);
   pb->set_finalize_results(finalize_results_);
 
@@ -1681,9 +1679,6 @@ Status UnionIR::SetColumnMappings(const std::vector<InputColumnMapping>& column_
   return Status::OK();
 }
 
-// TODO(nserrino, philkuz): Once we support null values in columns, we can support performing a
-// union where the output schema of the union is the combined set of the input relations, and any
-// input table that is missing a certain column will just output null.
 Status UnionIR::SetRelationFromParents() {
   DCHECK(!default_column_mapping_)
       << "Default column mapping set on using the SetRelationFromParents call.";

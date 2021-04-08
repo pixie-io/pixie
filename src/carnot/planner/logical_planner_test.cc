@@ -32,16 +32,15 @@ class LogicalPlannerTest : public ::testing::Test {
   udfspb::UDFInfo info_;
 };
 
-TEST_F(LogicalPlannerTest, two_pems_one_kelvin) {
+TEST_F(LogicalPlannerTest, one_pems_one_kelvin) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
   auto plan = planner
-                  ->Plan(testutils::CreateTwoPEMsOneKelvinPlannerState(),
+                  ->Plan(testutils::CreateOnePEMOneKelvinPlannerState(),
                          MakeQueryRequest("import px\npx.display(px.DataFrame('table1'), 'out')"))
                   .ConsumeValueOrDie();
   auto out_pb = plan->ToProto().ConsumeValueOrDie();
-  LOG(INFO) << out_pb.DebugString();
-  // EXPECT_THAT(out_pb, Partially(EqualsProto(testutils::kExpectedPlanTwoPEMOneKelvin)))
-  //     << out_pb.DebugString();
+  EXPECT_THAT(out_pb, Partially(EqualsProto(testutils::kExpectedPlanOnePEMOneKelvin)))
+      << out_pb.DebugString();
 }
 
 TEST_F(LogicalPlannerTest, distributed_plan_test_basic_queries) {

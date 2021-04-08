@@ -796,7 +796,6 @@ TEST_F(AnalyzerTest, eval_compile_time_function) {
   ASSERT_OK(analyzer_status);
 }
 
-// TODO(nserrino, philkuz): PL-1264 Add a  test case like start_time=a+a when that issue is fixed.
 constexpr char kCompileTimeStringFunc1[] = R"pxl(
 import px
 t1 = px.DataFrame(table='http_events', start_time='-5m' + '-1h')
@@ -805,7 +804,7 @@ px.display(t1)
 constexpr char kCompileTimeStringFunc2[] = R"pxl(
 import px
 a = '-5m'
-t1 = px.DataFrame(table='http_events', start_time=a+'-10m')
+t1 = px.DataFrame(table='http_events', start_time=a+a)
 t2 = px.DataFrame(table='http_events', start_time='-1h', end_time=a+'-15m')
 px.display(t1)
 px.display(t2)

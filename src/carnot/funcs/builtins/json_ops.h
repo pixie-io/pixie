@@ -150,7 +150,6 @@ class PluckAsFloat64UDF : public udf::ScalarUDF {
   Since script args are always expressed as strings in vis specs, these arg values are
   also passed in as strings. (When a script is executed, its script args are parsed by
   the compiler into their proper data type).
-  TODO(nserrino, philkuz): Update this logic when we add support for object types.
  */
 template <typename... T>
 class ScriptReferenceUDF : public udf::ScalarUDF {

@@ -389,14 +389,6 @@ TEST_F(FilterPushDownTest, multiple_children_dont_push) {
   EXPECT_MATCH(filter->parents()[0], BlockingAgg());
 }
 
-// TODO(nserrino): Fill these in when pushdown is supported with join and union.
-// TEST_F(FilterPushDownTest, join_no_suffix) {
-// }
-// TEST_F(FilterPushDownTest, join_with_suffix) {
-// }
-// TEST_F(FilterPushDownTest, union) {
-// }
-
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
