@@ -1,0 +1,3 @@
+*.pb.* -diff
+*.gen.go -diff
+go_deps.bzl -diff
