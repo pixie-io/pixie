@@ -1,5 +1,7 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
+package(default_visibility = ["//visibility:private"])
+
 go_library(
     name = "wrk_sweeper_lib",
     srcs = ["wrk_sweeper.go"],
