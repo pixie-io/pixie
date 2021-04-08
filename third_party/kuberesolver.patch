@@ -1,0 +1,20 @@
+diff --git a/builder.go b/builder.go
+index f0c0fe9..210d001 100644
+--- a/builder.go
++++ b/builder.go
+@@ -222,14 +222,10 @@ func (k *kResolver) makeAddresses(e Endpoints) ([]resolver.Address, string) {
+ 		}
+ 
+ 		for _, address := range subset.Addresses {
+-			sname := k.target.serviceName
+-			if address.TargetRef != nil {
+-				sname = address.TargetRef.Name
+-			}
+ 			newAddrs = append(newAddrs, resolver.Address{
+ 				Type:       resolver.Backend,
+ 				Addr:       net.JoinHostPort(address.IP, port),
+-				ServerName: sname,
++				ServerName: "",
+ 				Metadata:   nil,
+ 			})
+ 		}

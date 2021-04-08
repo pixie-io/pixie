@@ -19,9 +19,6 @@
 [submodule "third_party/dnsparser"]
 	path = third_party/dnsparser
 	url = git@github.com:pixie-labs/dnsparser.git
-[submodule "third_party/kuberesolver"]
-	path = third_party/kuberesolver
-	url = git@github.com:pixie-labs/kuberesolver.git
 [submodule "third_party/libpypa"]
 	path = third_party/libpypa
 	url = git@github.com:pixie-labs/libpypa.git

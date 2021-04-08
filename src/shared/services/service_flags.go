@@ -8,13 +8,12 @@ import (
 	"os"
 	"sync"
 
+	"github.com/sercand/kuberesolver/v3"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-
-	"pixielabs.ai/pixielabs/third_party/kuberesolver"
 
 	version "pixielabs.ai/pixielabs/src/shared/goversion"
 )

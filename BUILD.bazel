@@ -70,12 +70,10 @@ gazelle(
 # gazelle:resolve go pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/go_grpc_tls_pl/server/greetpb //src/stirling/testing/demo_apps/go_grpc_tls_pl/server/greetpb:service_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/shared/bloomfilterpb //src/shared/bloomfilterpb:bloomfilter_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/shared/metadatapb //src/shared/metadatapb:metadata_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb //src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb:logical_pl_go_proto
 #
 # Make gazelle resolve CGO libraries correctly.
 # gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/goplanner //src/carnot/goplanner:go_default_library
-# gazelle:resolve go pixielabs.ai/pixielabs/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb //src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb:logical_pl_go_proto
-
-# gazelle:resolve go pixielabs.ai/pixielabs/third_party/kuberesolver //third_party:kuberesolver_library
 
 buildifier(
     name = "buildifier",
