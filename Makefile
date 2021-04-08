@@ -53,7 +53,7 @@ go-mod-ensure: ## Ensure that go dependencies exist.
 
 .PHONY: gazelle-repos
 gazelle-repos: go.mod
-	$(BAZEL) run //:gazelle -- update-repos -from_file=go.mod -prune
+	$(BAZEL) run //:gazelle -- update-repos -from_file=go.mod -prune -to_macro=go_deps.bzl%pl_go_dependencies
 
 .PHONY: gazelle
 gazelle: gazelle-repos
