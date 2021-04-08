@@ -42,7 +42,7 @@ go_library(
         "@io_k8s_client_go//tools/cache",
         "@io_k8s_client_go//tools/clientcmd",
         "@io_k8s_client_go//tools/clientcmd/api",
-        "@io_k8s_klog//:klog",
+        "@io_k8s_klog_v2//:klog",
         "@io_k8s_kubectl//pkg/cmd/util",
         "@io_k8s_kubectl//pkg/cmd/wait",
     ],
