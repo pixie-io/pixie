@@ -90,7 +90,7 @@ echo "Generating compilation database..."
 pushd $SRCDIR
 
 # This is a bit ugly, but limits the bazel build targets to only C++ code.
-bazel_targets=$(bazel query 'kind("cc_(binary|test) rule",//... -//third_party/... -//demos/...)
+bazel_targets=$(bazel query 'kind("cc_(binary|test) rule",//... -//third_party/...)
                except attr("tags", "manual", //...)')
 
 flags="--include_headers"

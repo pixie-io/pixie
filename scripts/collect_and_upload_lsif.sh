@@ -72,7 +72,7 @@ LSIF_CPP_OUT="cpp.dump.lsif"
 mapfile -t < <(bazel query \
   --noshow_progress \
   --noshow_loading_progress \
-  'kind("cc_(library|binary|test|proto_library) rule",//... -//third_party/... -//demos/... -//experimental/...) except attr("tags", "manual", //...)')
+  'kind("cc_(library|binary|test|proto_library) rule",//... -//third_party/... -//experimental/...) except attr("tags", "manual", //...)')
 ./scripts/gen_compilation_database.py \
   --run_bazel_build \
   --include_genfiles \

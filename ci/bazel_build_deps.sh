@@ -25,8 +25,7 @@ default_go_transition_binary="attr('goos', 'auto', //...) union attr('goarch', '
 go_xcompile_excludes="except (kind(go_transition_binary, //...) except (${default_go_transition_binary}))"
 default_excludes="except attr('tags', 'manual', //...) \
   except //third_party/... \
-  except //experimental/... \
-  except //demos/..."
+  except //experimental/..."
 sanitizer_only="except attr('tags', 'no_asan', //...) \
   except attr('tags', 'no_msan', //...) \
   except attr('tags', 'no_tsan', //...)"
