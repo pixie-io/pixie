@@ -1,0 +1,42 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-service
+  labels:
+    name: simple-service
+    namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: simple-service
+  template:
+    metadata:
+      labels:
+        name: simple-service
+        plane: control
+    spec:
+      containers:
+      - name: app
+        image: gcr.io/pl-dev-infra/demo/simple_http_server_image:latest
+        ports:
+        - containerPort: 9090
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: simple-service
+  labels:
+    name: simple-service
+  namespace: default
+  annotations:
+    cloud.google.com/load-balancer-type: "internal"
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 9090
+    nodePort: 31001
+  selector:
+    name: simple-service

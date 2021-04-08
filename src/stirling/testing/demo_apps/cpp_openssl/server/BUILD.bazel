@@ -7,7 +7,6 @@ pl_exp_cc_binary(
         "cpp-tls-server.pem",
         "cpp-tls-server-cert.pem",
     ],
-    visibility = ["//visibility:public"],
     deps = [
         "@boringssl//:ssl",
     ],

@@ -1,7 +1,7 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
 
-# gazelle:ignore
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//src/stirling:__subpackages__"])
 
 pl_proto_library(
     name = "demo_pl_proto",
@@ -18,4 +18,16 @@ pl_go_proto_library(
     name = "demo_pl_go_proto",
     importpath = "pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/hipster_shop/proto",
     proto = ":demo_pl_proto",
+)
+
+go_library(
+    name = "proto",
+    srcs = ["demo.pb.go"],
+    importpath = "pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/hipster_shop/proto",
+    deps = [
+        "@com_github_gogo_protobuf//proto",
+        "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//codes",
+        "@org_golang_google_grpc//status",
+    ],
 )

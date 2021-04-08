@@ -22,7 +22,6 @@ go_library(
 go_binary(
     name = "server",
     embed = [":server_lib"],
-    visibility = ["//src/stirling:__subpackages__"],
 )
 
 container_image(
@@ -41,5 +40,4 @@ go_image(
     ],
     base = ":server_image_base",
     binary = ":server",
-    visibility = ["//src/stirling:__subpackages__"],
 )

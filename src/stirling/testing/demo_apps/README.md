@@ -4,6 +4,8 @@ This directory contains binaries that serve either as BPF probing targets, or as
  - cpp_openssl: a client-server sending raw messages over a TLS connection, using OpenSSL.
  - go_grpc_tls: a GRPC client-server, over TLS, written in Golang.
  - go_http: a basic HTTP client-server, written in Golang.
+ - go_https: a basic HTTPs client-server, written in Golang.
+ - hipster-shop: a client to the productcatalogservice, written in Golang.
  - python_tls: a client-server sending raw messages over a TLS connection, written in Python which uses OpenSSL.
  - wrk_sweeper: a client that hammers on an HTTP server
 
