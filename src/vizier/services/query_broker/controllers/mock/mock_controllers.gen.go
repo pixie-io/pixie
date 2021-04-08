@@ -13,7 +13,7 @@ import (
 	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	queryresultspb "pixielabs.ai/pixielabs/src/carnot/queryresultspb"
-	carnotpb "pixielabs.ai/pixielabs/src/carnotpb"
+	carnotpb "pixielabs.ai/pixielabs/src/carnot/carnotpb"
 	querybrokerpb "pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 	tracker "pixielabs.ai/pixielabs/src/vizier/services/query_broker/tracker"
 )

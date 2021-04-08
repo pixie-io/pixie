@@ -20,7 +20,6 @@ pl_cc_library(
 pl_cc_test_library(
     name = "test_utils",
     hdrs = ["test_utils.h"],
-    visibility = ["//src:__subpackages__"],
     deps = [
         ":cc_library",
         "//src/carnot/planner/compiler:test_utils",

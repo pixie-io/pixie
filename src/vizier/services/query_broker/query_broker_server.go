@@ -15,7 +15,7 @@ import (
 	"google.golang.org/grpc"
 
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
-	"pixielabs.ai/pixielabs/src/carnotpb"
+	"pixielabs.ai/pixielabs/src/carnot/carnotpb"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"

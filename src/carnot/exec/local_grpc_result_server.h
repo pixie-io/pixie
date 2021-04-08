@@ -6,8 +6,8 @@
 #include <string>
 #include <vector>
 
-#include "src/carnotpb/carnot.grpc.pb.h"
-#include "src/carnotpb/carnot.pb.h"
+#include "src/carnot/carnotpb/carnot.grpc.pb.h"
+#include "src/carnot/carnotpb/carnot.pb.h"
 #include "src/common/base/base.h"
 #include "src/table_store/table_store.h"
 

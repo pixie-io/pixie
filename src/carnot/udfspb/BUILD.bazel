@@ -1,10 +1,14 @@
 # gazelle:ignore
 load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
 
+package(default_visibility = [
+    "//src/carnot:__subpackages__",
+    "//src/vizier:__subpackages__",
+])
+
 pl_proto_library(
     name = "udfs_pl_proto",
     srcs = ["udfs.proto"],
-    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/carnot/planpb:plan_pl_proto",
         "//src/shared/types/typespb:types_pl_proto",
@@ -16,7 +20,6 @@ pl_proto_library(
 pl_cc_proto_library(
     name = "udfs_pl_cc_proto",
     proto = ":udfs_pl_proto",
-    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/carnot/planpb:plan_pl_cc_proto",
         "//src/shared/types/typespb/wrapper:cc_library",
@@ -29,7 +32,6 @@ pl_go_proto_library(
     name = "udfs_pl_go_proto",
     importpath = "pixielabs.ai/pixielabs/src/carnot/udfspb",
     proto = ":udfs_pl_proto",
-    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/carnot/planpb:plan_pl_go_proto",
         "//src/shared/types/typespb:types_pl_go_proto",

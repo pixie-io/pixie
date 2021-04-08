@@ -10,15 +10,15 @@
 
 #include <sole.hpp>
 
+#include "src/carnot/carnotpb/carnot.pb.h"
 #include "src/carnot/exec/grpc_router.h"
 #include "src/carnot/exec/ml/model_pool.h"
 #include "src/carnot/udf/registry.h"
-#include "src/carnotpb/carnot.pb.h"
 #include "src/common/base/base.h"
 #include "src/shared/metadata/metadata_state.h"
 #include "src/table_store/table/table_store.h"
 
-#include "src/carnotpb/carnot.grpc.pb.h"
+#include "src/carnot/carnotpb/carnot.grpc.pb.h"
 
 namespace pl {
 namespace carnot {

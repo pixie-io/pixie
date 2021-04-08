@@ -1,6 +1,6 @@
 load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test", "pl_cc_test_library")
 
-package(default_visibility = ["//src:__subpackages__"])
+package(default_visibility = ["//src/carnot:__subpackages__"])
 
 pl_cc_library(
     name = "cc_library",
@@ -21,11 +21,11 @@ pl_cc_library(
         "exec_state.h",
     ],
     deps = [
+        "//src/carnot/carnotpb:carnot_pl_cc_proto",
         "//src/carnot/exec/ml:cc_library",
         "//src/carnot/plan:cc_library",
         "//src/carnot/planpb:plan_pl_cc_proto",
         "//src/carnot/udf:cc_library",
-        "//src/carnotpb:carnot_pl_cc_proto",
         "//src/common/uuid:cc_library",
         "//src/shared/types:cc_library",
         "//src/table_store/table:cc_library",

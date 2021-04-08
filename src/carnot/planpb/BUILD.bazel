@@ -3,10 +3,14 @@ load("//bazel:pl_build_system.bzl", "pl_cc_library")
 # gazelle:ignore
 load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
 
+package(default_visibility = [
+    "//src/carnot:__subpackages__",
+    "//src/vizier:__subpackages__",
+])
+
 pl_proto_library(
     name = "plan_pl_proto",
     srcs = ["plan.proto"],
-    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_proto",
         "//src/shared/types/typespb:types_pl_proto",
@@ -17,7 +21,6 @@ pl_proto_library(
 pl_cc_proto_library(
     name = "plan_pl_cc_proto",
     proto = ":plan_pl_proto",
-    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_cc_proto",
         "//src/shared/types/typespb/wrapper:cc_library",
@@ -29,7 +32,6 @@ pl_go_proto_library(
     name = "plan_pl_go_proto",
     importpath = "pixielabs.ai/pixielabs/src/carnot/planpb",
     proto = ":plan_pl_proto",
-    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/shared/types/typespb:types_pl_go_proto",
@@ -40,7 +42,6 @@ pl_cc_library(
     name = "plan_testutils",
     testonly = 1,
     hdrs = ["test_proto.h"],
-    visibility = ["//src:__subpackages__"],
     deps = [
         ":plan_pl_cc_proto",
         "//third_party:arrow",

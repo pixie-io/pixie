@@ -11,7 +11,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 	metadata "google.golang.org/grpc/metadata"
-	carnotpb "pixielabs.ai/pixielabs/src/carnotpb"
+	carnotpb "pixielabs.ai/pixielabs/src/carnot/carnotpb"
 )
 
 // MockisTransferResultChunkRequest_Result is a mock of isTransferResultChunkRequest_Result interface.

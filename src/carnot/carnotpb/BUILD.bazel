@@ -1,10 +1,15 @@
 # gazelle:ignore
 load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
 
+package(default_visibility = [
+    "//src/carnot:__subpackages__",
+    "//src/shared/metadata:__subpackages__",
+    "//src/vizier:__subpackages__",
+])
+
 pl_proto_library(
     name = "carnot_pl_proto",
     srcs = ["carnot.proto"],
-    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_proto",
         "//src/carnot/queryresultspb:query_results_pl_proto",
@@ -16,7 +21,6 @@ pl_proto_library(
 pl_cc_proto_library(
     name = "carnot_pl_cc_proto",
     proto = ":carnot_pl_proto",
-    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_cc_proto",
         "//src/carnot/queryresultspb:query_results_pl_cc_proto",
@@ -27,9 +31,8 @@ pl_cc_proto_library(
 
 pl_go_proto_library(
     name = "carnot_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/carnotpb",
+    importpath = "pixielabs.ai/pixielabs/src/carnot/carnotpb",
     proto = ":carnot_pl_proto",
-    visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/carnot/queryresultspb:query_results_pl_go_proto",

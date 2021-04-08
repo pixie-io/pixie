@@ -5,8 +5,7 @@ package(default_visibility = ["//visibility:private"])
 go_library(
     name = "plandebugger_lib",
     srcs = ["main.go"],
-    importpath = "pixielabs.ai/pixielabs/src/utils/plandebugger",
-    visibility = ["//visibility:private"],
+    importpath = "pixielabs.ai/pixielabs/src/carnot/plandebugger",
     deps = [
         "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
         "//src/carnot/goplanner:go_default_library",
@@ -31,5 +30,4 @@ go_library(
 go_binary(
     name = "plandebugger",
     embed = [":plandebugger_lib"],
-    visibility = ["//visibility:private"],
 )

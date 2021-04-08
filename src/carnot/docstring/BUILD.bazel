@@ -1,12 +1,11 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
+package(default_visibility = ["//src/carnot:__subpackages__"])
+
 go_library(
     name = "docstring_lib",
     srcs = ["main.go"],
     importpath = "pixielabs.ai/pixielabs/src/carnot/docstring",
-    visibility = [
-        "//src:__subpackages__",
-    ],
     deps = [
         "//src/carnot/docspb:docs_pl_go_proto",
         "//src/carnot/docstring/pkg",
@@ -22,7 +21,6 @@ go_library(
 go_binary(
     name = "docstring",
     embed = [":docstring_lib"],
-    visibility = ["//src:__subpackages__"],
 )
 
 # Binary that combines the entire docstring extraction and parsing pipeline.

@@ -7,11 +7,11 @@
 #include <gtest/gtest.h>
 #include <sole.hpp>
 
+#include "src/carnot/carnotpb/carnot_mock.grpc.pb.h"
 #include "src/carnot/exec/test_utils.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/planpb/test_proto.h"
 #include "src/carnot/udf/registry.h"
-#include "src/carnotpb/carnot_mock.grpc.pb.h"
 #include "src/common/testing/testing.h"
 #include "src/common/uuid/uuid_utils.h"
 #include "src/shared/types/types.h"

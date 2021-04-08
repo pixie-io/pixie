@@ -1,6 +1,9 @@
 load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test", "pl_cc_test_library")
 
-package(default_visibility = ["//src:__subpackages__"])
+package(default_visibility = [
+    "//src/carnot:__subpackages__",
+    "//src/vizier/funcs:__subpackages__",
+])
 
 pl_cc_library(
     name = "cc_library",
@@ -29,7 +32,6 @@ pl_cc_library(
 pl_cc_test_library(
     name = "udf_testutils",
     hdrs = ["test_utils.h"],
-    visibility = ["//src:__subpackages__"],
     deps = [":cc_library"],
 )
 

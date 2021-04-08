@@ -14,10 +14,10 @@ import (
 
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	mock_public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb/mock"
+	"pixielabs.ai/pixielabs/src/carnot/carnotpb"
+	mock_carnotpb "pixielabs.ai/pixielabs/src/carnot/carnotpb/mock"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
-	"pixielabs.ai/pixielabs/src/carnotpb"
-	mock_carnotpb "pixielabs.ai/pixielabs/src/carnotpb/mock"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/table_store/schemapb"
 	pbutils "pixielabs.ai/pixielabs/src/utils"

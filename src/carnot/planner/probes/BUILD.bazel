@@ -1,6 +1,6 @@
 load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
 
-package(default_visibility = ["//src:__subpackages__"])
+package(default_visibility = ["//src/carnot:__subpackages__"])
 
 pl_cc_library(
     name = "cc_library",
@@ -39,6 +39,10 @@ pl_cc_library(
     name = "tracepoint_generator_lib",
     srcs = ["tracepoint_generator.cc"],
     hdrs = ["tracepoint_generator.h"],
+    visibility = [
+        "//src/carnot:__subpackages__",
+        "//src/stirling/binaries:__subpackages__",
+    ],
     deps = [
         ":cc_library",
         "//src/carnot/planner/compiler:cc_library",

@@ -11,10 +11,10 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
+	"pixielabs.ai/pixielabs/src/carnot/carnotpb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
-	"pixielabs.ai/pixielabs/src/carnotpb"
 	"pixielabs.ai/pixielabs/src/utils"
 )
 

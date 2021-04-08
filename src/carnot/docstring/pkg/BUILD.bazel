@@ -1,12 +1,11 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
+package(default_visibility = ["//src/carnot:__subpackages__"])
+
 go_library(
     name = "pkg",
     srcs = ["docstring.go"],
     importpath = "pixielabs.ai/pixielabs/src/carnot/docstring/pkg",
-    visibility = [
-        "//src:__subpackages__",
-    ],
     deps = [
         "//src/carnot/docspb:docs_pl_go_proto",
         "//src/carnot/udfspb:udfs_pl_go_proto",
