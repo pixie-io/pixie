@@ -1,0 +1,35 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+package(default_visibility = ["//visibility:private"])
+
+go_library(
+    name = "plandebugger_lib",
+    srcs = ["main.go"],
+    importpath = "pixielabs.ai/pixielabs/src/utils/plandebugger",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
+        "//src/carnot/goplanner:go_default_library",
+        "//src/carnot/planner/compilerpb:compiler_status_pl_go_proto",
+        "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
+        "//src/carnot/planner/plannerpb:func_args_pl_go_proto",
+        "//src/carnot/planpb:plan_pl_go_proto",
+        "//src/carnot/queryresultspb:query_results_pl_go_proto",
+        "//src/carnot/udfspb:udfs_pl_go_proto",
+        "//src/common/base/proto:status_pl_go_proto",
+        "//src/pixie_cli/pkg/script",
+        "//src/pixie_cli/pkg/vizier",
+        "//src/utils",
+        "//src/vizier/funcs/go",
+        "//src/vizier/services/query_broker/controllers",
+        "@com_github_gofrs_uuid//:uuid",
+        "@com_github_gogo_protobuf//proto",
+        "@com_github_sirupsen_logrus//:logrus",
+    ],
+)
+
+go_binary(
+    name = "plandebugger",
+    embed = [":plandebugger_lib"],
+    visibility = ["//visibility:private"],
+)

@@ -17,6 +17,7 @@ go_library(
     # TODO(PP-2567): Fix this visibility.
     visibility = [
         "//src/carnot:__subpackages__",
+        "//src/utils/plandebugger:__subpackages__",
         "//src/vizier:__subpackages__",
     ],
     deps = [
