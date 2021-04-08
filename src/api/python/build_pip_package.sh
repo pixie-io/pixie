@@ -130,6 +130,9 @@ function main() {
     elif [[ "$1" == "--dst" ]]; then
       shift
       DSTDIR=$(real_path "$1")
+    elif [[ -z "$1" ]]; then
+      usage
+      exit 1
     else
       DSTDIR=$(real_path "$1")
     fi

@@ -1,9 +1,11 @@
+import os
 import pxapi
 
 
-# You'll need to generate an API token.
+# You"ll need to generate an API token.
 # For more info, see: https://docs.pixielabs.ai/using-pixie/api-quick-start/
-API_TOKEN = "<YOUR_API_TOKEN>"
+API_TOKEN = os.getenv("PX_API_KEY")
+CLUSTER_ID = os.getenv("PX_CLUSTER_ID")
 
 # PxL script with 2 output tables
 PXL_SCRIPT = """
@@ -19,13 +21,7 @@ px.display(df2, 'stats')
 
 # create a Pixie client
 px_client = pxapi.Client(token=API_TOKEN)
-
-# find first healthy cluster
-cluster = px_client.list_healthy_clusters()[0]
-print("Selected cluster: ", cluster.name())
-
-# connect to  cluster
-conn = px_client.connect_to_cluster(cluster)
+conn = px_client.connect_to_cluster(CLUSTER_ID)
 
 # setup the PxL script
 script = conn.prepare_script(PXL_SCRIPT)
