@@ -118,10 +118,12 @@ class Conn:
 
         If the channel exists, will grab from the cache. Otherwise will recreate it.
         """
-        if self._channel_cache is None:
-            self._channel_cache = self._create_grpc_channel()
+        # TODO(PP-2587): Disable channel cache while fixing the global async loop discrepancy issue.
+        # if self._channel_cache is None:
+        #     self._channel_cache = self._create_grpc_channel()
+        # return self._channel_cache
 
-        return self._channel_cache
+        return self._create_grpc_channel()
 
     def _create_grpc_channel(self) -> grpc.aio.Channel:
         """ Creates a grpc channel for this connection. """
@@ -376,7 +378,12 @@ class ScriptExecutor:
                 `ScriptExecutor`.
         """
         loop = asyncio.get_event_loop()
-        return loop.run_until_complete(self.run_async())
+        if loop.is_closed():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        loop.run_until_complete(self.run_async())
+        loop.close()
 
     def _close_table_q(self) -> None:
         self._add_table_to_q(EOF)
@@ -488,7 +495,6 @@ class Client:
 
     def _get_cloud_channel(self) -> grpc.Channel:
         if self._cloud_channel_cache is None:
-            # if self._cloud_channel_cache is None:
             self._cloud_channel_cache = self._create_cloud_channel()
 
         return self._cloud_channel_cache
