@@ -6,7 +6,6 @@ import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import { AutocompleteContext } from 'components/autocomplete/autocomplete-context';
 import { Key } from './key';
 
-// TODO(malthus): Make use of the theme styles.
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
     ...theme.typography.h6,

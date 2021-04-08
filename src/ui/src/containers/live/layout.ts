@@ -148,8 +148,6 @@ export function updatePositions(visSpec: Vis, positions: ChartPosition[]): Vis {
 }
 
 // Helper function to generate a default layout for tables without vis specs.
-// TODO(malthus): Refactor this whole file to do this better. We probably need to
-// decouple the positioning of widgets with the vis spec for more flexible manipulation.
 export function addTableLayout(tables: string[], layout: Layout[], isMobile: boolean, height: number): {
   layout: Layout[];
   numCols: number;

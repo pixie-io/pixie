@@ -41,7 +41,6 @@ export interface CompletionItem {
   autoSelectPriority?: number;
 }
 
-// TODO(malthus): Make use of the theme styles.
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
     display: 'flex',

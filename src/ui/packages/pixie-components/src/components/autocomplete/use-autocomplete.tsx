@@ -16,7 +16,6 @@ interface AutocompleteState {
 }
 
 // Hook for managing autocomplete states.
-// TODO(malthus): Combine this with the autocomplete component.
 export const useAutocomplete = (
   getCompletions: GetCompletionsFunc,
   input: string,

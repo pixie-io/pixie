@@ -85,7 +85,6 @@ export const SplitContainer = (
     return Array(children.length).fill(100 / children.length);
   }, [props.initialSizes, children.length]);
 
-  // TODO(malthus): Persist the state with localstorage or apollo client.
   const [state, setState] = React.useState<SplitContainerState>({
     collapsed: -1,
     prevSizes: initialSizes,

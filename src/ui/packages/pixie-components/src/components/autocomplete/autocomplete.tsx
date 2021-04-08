@@ -23,7 +23,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     cursor: 'text',
     display: 'flex',
     flexDirection: 'column',
-    // TODO(malthus): remove this once the scrollbar theme is set at global level.
     ...scrollbarStyles(theme),
   },
   input: {

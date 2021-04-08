@@ -30,7 +30,6 @@ describe('url params', () => {
     expect(instance.args).toEqual({ foo: '', bar: 'bar' });
   });
 
-  // TODO(malthus): The keys order might not be stable, so the path comparison might fail.
   describe('setArgs', () => {
     it('updates the URL', () => {
       const instance = new URLParams(mockWindow as Window);
