@@ -1,9 +1,10 @@
 syntax = "proto3";
-import "src/shared/types/typespb/types.proto";
 
 package pl.stirling.stirlingpb;
 
 option go_package = "stirlingpb";
+
+import "src/shared/types/typespb/types.proto";
 
 // Element stores a datum belonging to an InfoClass. For example,
 // number_of_hits, number_of_misses, buffered, free_bytes
@@ -20,7 +21,7 @@ message Element {
   types.SemanticType stype = 5;
   // If the type is INT64, and ptype is GENERAL_ENUM,
   // then this map can convert values to human readable strings.
-  map<int64,string> decoder = 6;
+  map<int64, string> decoder = 6;
 }
 
 message TableSchema {
@@ -56,11 +57,15 @@ message InfoClass {
 // to the Data Collector. Data Collector sends this
 // message to an Agent so that an Agent can know what
 // data is being collected.
-message Publish { repeated InfoClass published_info_classes = 1; }
+message Publish {
+  repeated InfoClass published_info_classes = 1;
+}
 
 // Subscribe message is sent by an agent in response to
 // a Publish message from the Data Collector,
 // An agent updates the ElementState in each Element of an
 // InfoClass so that the Data Collector is aware of
 // the data that the Agent wants.
-message Subscribe { repeated InfoClass subscribed_info_classes = 1; }
+message Subscribe {
+  repeated InfoClass subscribed_info_classes = 1;
+}

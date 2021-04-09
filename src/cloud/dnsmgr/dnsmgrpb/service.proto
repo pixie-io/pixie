@@ -2,37 +2,28 @@ syntax = "proto3";
 
 package pl.services;
 
+option go_package = "dnsmgr";
+
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/api/public/uuidpb/uuid.proto";
 
-
-option go_package = "dnsmgr";
-
 // DNSMgrService tracks DNS information for clusters.
 service DNSMgrService {
-    rpc GetDNSAddress(GetDNSAddressRequest) returns (GetDNSAddressResponse) {}
-    rpc GetSSLCerts(GetSSLCertsRequest) returns (GetSSLCertsResponse) {}
+  rpc GetDNSAddress(GetDNSAddressRequest) returns (GetDNSAddressResponse);
+  rpc GetSSLCerts(GetSSLCertsRequest) returns (GetSSLCertsResponse);
 }
 
 message GetDNSAddressRequest {
-   pl.uuidpb.UUID cluster_id = 1 [
-                                 (gogoproto.customname) = "ClusterID"
-                                 ];
-   string ip_address = 2 [
-                         (gogoproto.customname) = "IPAddress"
-                         ];
+  pl.uuidpb.UUID cluster_id = 1 [(gogoproto.customname) = "ClusterID"];
+  string ip_address = 2 [(gogoproto.customname) = "IPAddress"];
 }
 
 message GetDNSAddressResponse {
-  string dns_address = 1 [
-                         (gogoproto.customname) = "DNSAddress"
-                         ];
+  string dns_address = 1 [(gogoproto.customname) = "DNSAddress"];
 }
 
 message GetSSLCertsRequest {
-  uuidpb.UUID cluster_id = 1 [
-                              (gogoproto.customname) = "ClusterID"
-                             ];
+  uuidpb.UUID cluster_id = 1 [(gogoproto.customname) = "ClusterID"];
 }
 
 message GetSSLCertsResponse {

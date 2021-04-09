@@ -2,25 +2,23 @@ syntax = "proto3";
 
 package pl.services;
 
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-
 option go_package = "certmgr";
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 // CertMgrService manages Vizier's proxy certs.
 service CertMgrService {
-    rpc UpdateCerts(UpdateCertsRequest) returns (UpdateCertsResponse) {}
+  rpc UpdateCerts(UpdateCertsRequest) returns (UpdateCertsResponse);
 }
 
 // This request is from CloudConnector -> CrtMgr. In the future, we may
 // want CrtMgr to be the one initiating the request when it detects that its certs are
 // expiring.
 message UpdateCertsRequest {
-    string key = 1;
-    string cert = 2;
+  string key = 1;
+  string cert = 2;
 }
 
 message UpdateCertsResponse {
-  bool ok = 1 [
-              (gogoproto.customname) = "OK"
-              ];
+  bool ok = 1 [(gogoproto.customname) = "OK"];
 }

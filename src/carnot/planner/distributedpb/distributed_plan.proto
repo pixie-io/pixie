@@ -1,16 +1,16 @@
 syntax = "proto3";
 
+package pl.carnot.planner.distributedpb;
+
+option go_package = "distributedpb";
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "src/api/public/uuidpb/uuid.proto";
 import "src/carnot/planpb/plan.proto";
 import "src/common/base/statuspb/status.proto";
 import "src/shared/bloomfilterpb/bloomfilter.proto";
 import "src/shared/metadatapb/metadata.proto";
 import "src/table_store/schemapb/schema.proto";
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-import "src/api/public/uuidpb/uuid.proto";
-
-package pl.carnot.planner.distributedpb;
-
-option go_package = "distributedpb";
 
 // Info about the Metadata stored on a Carnot instance.
 message MetadataInfo {
@@ -22,9 +22,7 @@ message MetadataInfo {
   // for the carnot's metadata, such as container id, service name, pod id, namespace.
   // This structure may contain false positives but not false negatives.
   oneof filter {
-      pl.shared.bloomfilterpb.XXHash64BloomFilter xxhash64_bloom_filter = 2 [
-        (gogoproto.customname) = "XXHash64BloomFilter"
-      ];
+    pl.shared.bloomfilterpb.XXHash64BloomFilter xxhash64_bloom_filter = 2 [(gogoproto.customname) = "XXHash64BloomFilter"];
   }
 }
 
@@ -33,12 +31,12 @@ message CarnotInfo {
   // The unique address used by the query broker to contact this instance.
   string query_broker_address = 1;
   // The unique ID of this agent.
-  uuidpb.UUID agent_id = 10 [ (gogoproto.customname) = "AgentID" ];
+  uuidpb.UUID agent_id = 10 [(gogoproto.customname) = "AgentID"];
   // Flag if the Carnot instance hosts a GRPC server.
-  bool has_grpc_server = 2 [ (gogoproto.customname) = "HasGRPCServer" ];
+  bool has_grpc_server = 2 [(gogoproto.customname) = "HasGRPCServer"];
   // The address of the GRPC server hosted by the Carnot instance, it has a GRPC
   // server.
-  string grpc_address = 3 [ (gogoproto.customname) = "GRPCAddress" ];
+  string grpc_address = 3 [(gogoproto.customname) = "GRPCAddress"];
   // Flag if the carnot instance has an in-memory store of data.
   // E.g. agents stores data, but some Kelvin instances might only be used for
   // computation.
@@ -53,11 +51,11 @@ message CarnotInfo {
   // Info about the tables for the Carnot instance.
   repeated TableInfo table_info = 7;
   // The asid of the Agent running the Carnot.
-  uint32 asid = 8 [ (gogoproto.customname) = "ASID" ];
+  uint32 asid = 8 [(gogoproto.customname) = "ASID"];
   // Information about the metadata stored on a Carnot instance.
   MetadataInfo metadata_info = 9;
   // Optional field that gives the SSL target hostname for this Carnot instance.
-  string ssl_targetname = 11 [ (gogoproto.customname) = "SSLTargetName" ];
+  string ssl_targetname = 11 [(gogoproto.customname) = "SSLTargetName"];
 }
 
 // Information about the table structure as well as the tablet keys.
@@ -115,7 +113,7 @@ message LogicalPlannerState {
   // The address to which the query results should be sent.
   string result_address = 4;
   // The SSL target override for the result address, if applicable.
-  string result_ssl_targetname = 5 [ (gogoproto.customname) = "ResultSSLTargetName" ];
+  string result_ssl_targetname = 5 [(gogoproto.customname) = "ResultSSLTargetName"];
 }
 
 // The result for the planner. Contains a status to track any errors

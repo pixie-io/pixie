@@ -9,7 +9,7 @@ option go_package = "sockeventpb";
 message TrafficClass {
   uint32 protocol = 1;
   uint32 role = 2;
-};
+}
 
 message ConnID {
   // User land PID, equivalent to TGID in the BPF and kernel land.
@@ -17,12 +17,12 @@ message ConnID {
   uint64 start_time_ns = 2;
   uint32 fd = 3;
   uint32 generation = 4;
-};
+}
 
 message SocketDataEvent {
   message Attribute {
     uint64 timestamp_ns = 1;
-    ConnID  conn_id = 2;
+    ConnID conn_id = 2;
     TrafficClass traffic_class = 3;
     uint32 direction = 4;
     uint64 pos = 5;
@@ -31,4 +31,4 @@ message SocketDataEvent {
   }
   Attribute attr = 1;
   bytes msg = 2;
-};
+}

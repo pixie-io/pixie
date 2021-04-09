@@ -1,19 +1,22 @@
 syntax = "proto3";
 
-import "src/common/base/statuspb/status.proto";
-import "src/carnot/planpb/plan.proto";
-
 package pl.carnot.planner.compilerpb;
 
 option go_package = "compilerpb";
+
+import "src/carnot/planpb/plan.proto";
+import "src/common/base/statuspb/status.proto";
 
 message LineColError {
   uint64 line = 1;
   uint64 column = 2;
   string message = 3;
 }
+
 message CompilerError {
-  oneof error { LineColError line_col_error = 1; }
+  oneof error {
+    LineColError line_col_error = 1;
+  }
 }
 
 message CompilerResult {
@@ -21,4 +24,6 @@ message CompilerResult {
   pl.carnot.planpb.Plan logical_plan = 2;
 }
 
-message CompilerErrorGroup { repeated CompilerError errors = 1; }
+message CompilerErrorGroup {
+  repeated CompilerError errors = 1;
+}

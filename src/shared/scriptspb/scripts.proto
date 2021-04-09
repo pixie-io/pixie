@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-import "src/shared/types/typespb/types.proto";
-import "src/common/base/statuspb/status.proto";
-
 package pl.shared.scriptspb;
 
 option go_package = "scriptspb";
+
+import "src/common/base/statuspb/status.proto";
+import "src/shared/types/typespb/types.proto";
 
 // FuncArgsSpec specifies the flags that are defined within a query.
 message FuncArgsSpec {

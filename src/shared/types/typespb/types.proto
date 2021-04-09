@@ -27,12 +27,12 @@ enum DataType {
 // Counters and gauges generally only applies to numeric types. General_enum records states/properties with finite
 // locality. General includes other information/logs. Structured is everything can be parsed(JSON, HTML, SQL body etc.).
 enum PatternType {
-   UNSPECIFIED = 0;
-   GENERAL = 100;
-   GENERAL_ENUM = 101;
-   STRUCTURED = 200;
-   METRIC_COUNTER = 300;
-   METRIC_GAUGE = 301;
+  UNSPECIFIED = 0;
+  GENERAL = 100;
+  GENERAL_ENUM = 101;
+  STRUCTURED = 200;
+  METRIC_COUNTER = 300;
+  METRIC_GAUGE = 301;
 }
 
 // Represents an unsigned 128-bit int.

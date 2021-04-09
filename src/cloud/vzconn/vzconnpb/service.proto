@@ -2,60 +2,53 @@ syntax = "proto3";
 
 package pl.services;
 
+option go_package = "vzconnpb";
+
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/any.proto";
 import "src/api/public/uuidpb/uuid.proto";
 
-option go_package = "vzconnpb";
-
 service VZConnService {
   // Registers a new Vizier deployment and returns a cluster ID.
   // Needs to have an X-API-KEY metadata with the Vizier deploy key.
-  rpc RegisterVizierDeployment(RegisterVizierDeploymentRequest) returns (RegisterVizierDeploymentResponse) {}
-  rpc NATSBridge(stream V2CBridgeMessage) returns (stream C2VBridgeMessage) {}
+  rpc RegisterVizierDeployment(RegisterVizierDeploymentRequest) returns (RegisterVizierDeploymentResponse);
+  rpc NATSBridge(stream V2CBridgeMessage) returns (stream C2VBridgeMessage);
 }
 
 // V2CBridgeMessage is the message sent from vizier to cloud to bridge their respective NATS instances.
 message V2CBridgeMessage {
-    // The topic is the intended topic on the cloud side. All published cvmsgspb will automatically become a
-    // topic under the subpath /vizier/<vizier_id>/<topic>.
-    string topic = 1;
-    // This is an opaque monotonically increasing ID that changes when ever the cloud connector restarts.
-    int64 session_id = 2;
-    // The contents of the actual message.
-    google.protobuf.Any msg = 3;
+  // The topic is the intended topic on the cloud side. All published cvmsgspb will automatically become a
+  // topic under the subpath /vizier/<vizier_id>/<topic>.
+  string topic = 1;
+  // This is an opaque monotonically increasing ID that changes when ever the cloud connector restarts.
+  int64 session_id = 2;
+  // The contents of the actual message.
+  google.protobuf.Any msg = 3;
 }
 
 // C2VBridgeMessage is the message sent from cloud to vizier to bridge their respective NATS instances.
 message C2VBridgeMessage {
-    // The topic where this message will be published. All cvmsgspb will be published under the sub-path:
-    // /cloud-response/<topic>.
-    string topic = 1;
-    // The contents of the actual message.
-    google.protobuf.Any msg = 2;
+  // The topic where this message will be published. All cvmsgspb will be published under the sub-path:
+  // /cloud-response/<topic>.
+  string topic = 1;
+  // The contents of the actual message.
+  google.protobuf.Any msg = 2;
 }
 
 message RegisterVizierDeploymentRequest {
-    // The UID of the K8s cluster. This is typically the UI of the kube-system namespace.
-    // We assume this is globally unique.
-    string k8s_cluster_uid = 1 [
-                               (gogoproto.customname) = "K8sClusterUID"
-                               ];
-    // The recommended name for the cluster. Modifications may be made to the recommended name to
-    // perform deduplication. If no name is specified, a random name will be generated.
-    string k8s_cluster_name = 2 [
-                               (gogoproto.customname) = "K8sClusterName"
-                               ];
-    // The K8s version of the cluster.
-    string k8s_cluster_version = 3 [
-                               (gogoproto.customname) = "K8sClusterVersion"
-                               ];
+  // The UID of the K8s cluster. This is typically the UI of the kube-system namespace.
+  // We assume this is globally unique.
+  string k8s_cluster_uid = 1 [(gogoproto.customname) = "K8sClusterUID"];
+  // The recommended name for the cluster. Modifications may be made to the recommended name to
+  // perform deduplication. If no name is specified, a random name will be generated.
+  string k8s_cluster_name = 2 [(gogoproto.customname) = "K8sClusterName"];
+  // The K8s version of the cluster.
+  string k8s_cluster_version = 3 [(gogoproto.customname) = "K8sClusterVersion"];
 }
+
 // RegisterVizierDeploymentResponse returns the registration status. It either will include the
 // assigned vizier_id or a GRPC error will be returned.
 message RegisterVizierDeploymentResponse {
-    // The ID for this Vizier.
-    uuidpb.UUID vizier_id = 1 [
-                              (gogoproto.customname) = "VizierID"
-                              ];
+  // The ID for this Vizier.
+  uuidpb.UUID vizier_id = 1 [(gogoproto.customname) = "VizierID"];
 }

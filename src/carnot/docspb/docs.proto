@@ -1,9 +1,10 @@
 syntax = "proto3";
+
 package pl.carnot.docspb;
 
-import "src/carnot/udfspb/udfs.proto";
-
 option go_package = "docspb";
+
+import "src/carnot/udfspb/udfs.proto";
 
 message IdentDoc {
   // The name of the identifier.

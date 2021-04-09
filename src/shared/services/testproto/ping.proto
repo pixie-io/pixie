@@ -2,9 +2,9 @@ syntax = "proto3";
 
 package pl.common;
 
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-
 option go_package = "ping";
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 message PingRequest {
   string req = 1;
@@ -16,7 +16,7 @@ message PingReply {
 
 service PingService {
   // Sends a greeting
-  rpc Ping (PingRequest) returns (PingReply) {}
-  rpc PingClientStream (stream PingRequest) returns (PingReply) {}
-  rpc PingServerStream (PingRequest) returns (stream PingReply) {}
+  rpc Ping(PingRequest) returns (PingReply);
+  rpc PingClientStream(stream PingRequest) returns (PingReply);
+  rpc PingServerStream(PingRequest) returns (stream PingReply);
 }

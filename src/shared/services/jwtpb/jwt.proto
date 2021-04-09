@@ -2,49 +2,28 @@ syntax = "proto3";
 
 package pl.common;
 
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-
 option go_package = "jwtpb";
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 // Store the basic JWT claim information.
 message JWTClaims {
   // Generic claims, as referenced at
   // https://tools.ietf.org/html/rfc7519#section-4.1
-  string audience     = 1 [
-                          (gogoproto.jsontag) = "aud"
-                          ];
-
-  int64 expires_at    = 2 [
-                          (gogoproto.jsontag) = "exp"
-                          ];
-
-  string jti          = 3 [
-                          (gogoproto.customname) = "JTI",
-                           (gogoproto.jsontag) = "jti"
-                          ];
-
-  int64 issued_at     = 4 [
-                          (gogoproto.jsontag) = "iat"
-                          ];
-
-  string issuer       = 5 [
-                          (gogoproto.jsontag) = "iss"
-                          ];
-
-  int64 not_before    = 6 [
-                          (gogoproto.jsontag) = "nbf"
-                          ];
-
-  string subject      = 7 [
-                          (gogoproto.jsontag) = "sub"
-                          ];
-
-
+  string audience = 1 [(gogoproto.jsontag) = "aud"];
+  int64 expires_at = 2 [(gogoproto.jsontag) = "exp"];
+  string jti = 3 [
+    (gogoproto.customname) = "JTI",
+    (gogoproto.jsontag) = "jti"
+  ];
+  int64 issued_at = 4 [(gogoproto.jsontag) = "iat"];
+  string issuer = 5 [(gogoproto.jsontag) = "iss"];
+  int64 not_before = 6 [(gogoproto.jsontag) = "nbf"];
+  string subject = 7 [(gogoproto.jsontag) = "sub"];
   // The permitted scopes for the jwt. For now, these scopes will just be
   // "user", "cluster", or "service", but may be more fine-grained in the future
   // like "read:user_profile", etc.
   repeated string scopes = 8;
-
   oneof custom_claims {
     UserJWTClaims user_claims = 9;
     ServiceJWTClaims service_claims = 10;
@@ -55,29 +34,29 @@ message JWTClaims {
 // Claims for User JWTs.
 message UserJWTClaims {
   string user_id = 1 [
-          (gogoproto.customname) = "UserID",
-          (gogoproto.jsontag) = "userID"
+    (gogoproto.customname) = "UserID",
+    (gogoproto.jsontag) = "userID"
   ];
   // The organization that this user belongs to.
   string org_id = 2 [
-          (gogoproto.customname) = "OrgID",
-          (gogoproto.jsontag) = "orgID"
+    (gogoproto.customname) = "OrgID",
+    (gogoproto.jsontag) = "orgID"
   ];
-  string email   = 3;
+  string email = 3;
 }
 
 // Claims for Service JWTs.
 message ServiceJWTClaims {
   string service_id = 1 [
-          (gogoproto.customname) = "ServiceID",
-          (gogoproto.jsontag) = "serviceID"
+    (gogoproto.customname) = "ServiceID",
+    (gogoproto.jsontag) = "serviceID"
   ];
 }
 
 // Claims for Cluster JWTs.
 message ClusterJWTClaims {
   string cluster_id = 1 [
-          (gogoproto.customname) = "ClusterID",
-          (gogoproto.jsontag) = "clusterID"
+    (gogoproto.customname) = "ClusterID",
+    (gogoproto.jsontag) = "clusterID"
   ];
 }

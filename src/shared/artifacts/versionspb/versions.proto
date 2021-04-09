@@ -2,45 +2,44 @@ syntax = "proto3";
 
 package pl.versions;
 
+option go_package = "versionspb";
+
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
 
-option go_package = "versionspb";
-
 // ArtifactType is the type of artifact that was released.
 enum ArtifactType {
-    AT_UNKNOWN = 0;
-    AT_LINUX_AMD64 = 1;
-    AT_DARWIN_AMD64 = 2;
-
-    AT_CONTAINER_SET_YAMLS = 50;
-    AT_CONTAINER_SET_TEMPLATE_YAMLS = 60;
-    AT_CONTAINER_SET_LINUX_AMD64 = 100;
+  AT_UNKNOWN = 0;
+  AT_LINUX_AMD64 = 1;
+  AT_DARWIN_AMD64 = 2;
+  AT_CONTAINER_SET_YAMLS = 50;
+  AT_CONTAINER_SET_TEMPLATE_YAMLS = 60;
+  AT_CONTAINER_SET_LINUX_AMD64 = 100;
 }
 
 // ArtifactSet stores a list artifacts. This is typically stored in a VERSIONS file in JSON format.
 message ArtifactSet {
-    // The name of the artifact: (cli, vizier).
-    string name = 1;
-    // List of artifacts, sorted by release date.
-    repeated Artifact artifact = 2;
+  // The name of the artifact: (cli, vizier).
+  string name = 1;
+  // List of artifacts, sorted by release date.
+  repeated Artifact artifact = 2;
 }
 
 // Artifact stores information about a specific artifact version.
 message Artifact {
-    // The timestamp that this artifact was released.
-    google.protobuf.Timestamp timestamp = 1;
-    // The commit hash that this artifact was built using.
-    string commit_hash = 2;
-    // The version string of the artifact (in either CalVer or SemVer).
-    string version_str = 3;
-    // This is a list of artifact types that are available. The artifacts need to be in a canonical location:
-    // gs://<artifact_bucket>/<name>/version_str/<name>_<type>[.sha256]. The location is only valid for artifacts that
-    // are individual binaries. For example, the linux "cli" will of version 2019.10.03-1 will be located at:
-    // gs://<artifact_bucket>/cli/2019.10.03-1/cli_linux_amd64 with it's sha hash at:
-    // gs://<artifact_bucket>/cli/2019.10.03-1/cli_linux_amd64.sha256.
-    // For container_sets, the path is typically gcr.io/..../image_name:<version_str>.
-    repeated ArtifactType available_artifacts = 4;
-    // The changelog for this version (in markdown format).
-    string changelog = 5;
+  // The timestamp that this artifact was released.
+  google.protobuf.Timestamp timestamp = 1;
+  // The commit hash that this artifact was built using.
+  string commit_hash = 2;
+  // The version string of the artifact (in either CalVer or SemVer).
+  string version_str = 3;
+  // This is a list of artifact types that are available. The artifacts need to be in a canonical location:
+  // gs://<artifact_bucket>/<name>/version_str/<name>_<type>[.sha256]. The location is only valid for artifacts that
+  // are individual binaries. For example, the linux "cli" will of version 2019.10.03-1 will be located at:
+  // gs://<artifact_bucket>/cli/2019.10.03-1/cli_linux_amd64 with it's sha hash at:
+  // gs://<artifact_bucket>/cli/2019.10.03-1/cli_linux_amd64.sha256.
+  // For container_sets, the path is typically gcr.io/..../image_name:<version_str>.
+  repeated ArtifactType available_artifacts = 4;
+  // The changelog for this version (in markdown format).
+  string changelog = 5;
 }

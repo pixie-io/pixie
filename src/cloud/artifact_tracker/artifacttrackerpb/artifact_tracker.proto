@@ -2,43 +2,40 @@ syntax = "proto3";
 
 package pl.services;
 
+option go_package = "artifacttrackerpb";
+
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
 import "src/shared/artifacts/versionspb/versions.proto";
 
-option go_package = "artifacttrackerpb";
-
 // ArtifactTracker tracks versions of released artifacts.
 service ArtifactTracker {
-    // GetArtifactList is used to request a list of artifacts.
-    rpc GetArtifactList(GetArtifactListRequest) returns(pl.versions.ArtifactSet) {}
-    // GetDownloadLink is used to request a signed URL.
-    rpc GetDownloadLink(GetDownloadLinkRequest) returns(GetDownloadLinkResponse) {}
+  // GetArtifactList is used to request a list of artifacts.
+  rpc GetArtifactList(GetArtifactListRequest) returns (pl.versions.ArtifactSet);
+  // GetDownloadLink is used to request a signed URL.
+  rpc GetDownloadLink(GetDownloadLinkRequest) returns (GetDownloadLinkResponse);
 }
 
 message GetArtifactListRequest {
-    string artifact_name = 1;
-    // Select the type of artifact to look for and filter by.
-    pl.versions.ArtifactType artifact_type = 2;
-    // Limit the number of responses, ordered by time.
-    int64 limit = 3;
+  string artifact_name = 1;
+  // Select the type of artifact to look for and filter by.
+  pl.versions.ArtifactType artifact_type = 2;
+  // Limit the number of responses, ordered by time.
+  int64 limit = 3;
 }
 
 // GetDownloadLinkRequest is used to get a signed URL for a specific artifact. Only singular
 // artifacts are currently supported.
 message GetDownloadLinkRequest {
-    string artifact_name = 1;
-    string version_str = 2;
-    pl.versions.ArtifactType artifact_type = 3;
+  string artifact_name = 1;
+  string version_str = 2;
+  pl.versions.ArtifactType artifact_type = 3;
 }
 
 // GetDownloadLinkResponse returns a signed url that can be used to download the artifact.
 message GetDownloadLinkResponse {
-    string url = 1;
-    // The sha256 of the artifact.
-    string sha256 = 2 [
-                          (gogoproto.customname) = "SHA256"
-                      ];
-
-    google.protobuf.Timestamp valid_until = 3;
+  string url = 1;
+  // The sha256 of the artifact.
+  string sha256 = 2 [(gogoproto.customname) = "SHA256"];
+  google.protobuf.Timestamp valid_until = 3;
 }

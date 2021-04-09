@@ -1,12 +1,13 @@
 syntax = "proto3";
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-import "src/table_store/schemapb/schema.proto";
-import "src/api/public/uuidpb/uuid.proto";
-import "google/protobuf/any.proto";
 
 package pl.carnot.queryresultspb;
 
 option go_package = "queryresultspb";
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/protobuf/any.proto";
+import "src/api/public/uuidpb/uuid.proto";
+import "src/table_store/schemapb/schema.proto";
 
 // Tracks information about query execution time.
 message QueryTimingInfo {
@@ -49,7 +50,7 @@ message OperatorExecutionStats {
 }
 
 message AgentExecutionStats {
-  uuidpb.UUID agent_id = 1 [ (gogoproto.customname) = "AgentID" ];
+  uuidpb.UUID agent_id = 1 [(gogoproto.customname) = "AgentID"];
   repeated OperatorExecutionStats operator_execution_stats = 2;
   // The total execution time in nanoseconds for this agent.
   int64 execution_time_ns = 3;

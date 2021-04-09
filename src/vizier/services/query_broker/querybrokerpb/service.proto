@@ -2,18 +2,20 @@ syntax = "proto3";
 
 package pl.vizier.services.query_broker.querybrokerpb;
 
+option go_package = "querybrokerpb";
+
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-import "src/carnot/queryresultspb/query_results.proto";
 import "src/api/public/uuidpb/uuid.proto";
+import "src/carnot/queryresultspb/query_results.proto";
 import "src/common/base/statuspb/status.proto";
 import "src/table_store/schemapb/schema.proto";
-
-option go_package = "querybrokerpb";
 
 // The query broker implements ResultSinkService and VizierService.
 
 // The schema information per agent.
-message Schema { repeated pl.table_store.schemapb.Relation relations = 1; }
+message Schema {
+  repeated pl.table_store.schemapb.Relation relations = 1;
+}
 
 // The schema request.
 message SchemaRequest {}
@@ -21,7 +23,7 @@ message SchemaRequest {}
 // The schema response from Vizier.
 message SchemaResponse {
   message SchemaByAgent {
-    uuidpb.UUID agent_id = 1 [ (gogoproto.customname) = "AgentID" ];
+    uuidpb.UUID agent_id = 1 [(gogoproto.customname) = "AgentID"];
     Schema schema = 2;
   }
   repeated SchemaByAgent schema_by_agent = 1;
@@ -29,17 +31,15 @@ message SchemaResponse {
 
 message AgentQueryResponse {
   pl.statuspb.Status status = 1;
-
   // The ID of the returned query.
-  uuidpb.UUID query_id = 2 [ (gogoproto.customname) = "QueryID" ];
-
+  uuidpb.UUID query_id = 2 [(gogoproto.customname) = "QueryID"];
   pl.carnot.queryresultspb.QueryResult query_result = 3;
 }
 
 // AgentQueryResultRequest is a request from the agent to the query broker
 // containing the results from a query.
 message AgentQueryResultRequest {
-  uuidpb.UUID agent_id = 1 [ (gogoproto.customname) = "AgentID" ];
+  uuidpb.UUID agent_id = 1 [(gogoproto.customname) = "AgentID"];
   AgentQueryResponse result = 2;
 }
 
@@ -51,8 +51,7 @@ message VizierQueryResponse {
   // about any potential failures, ie compiler error failures
   pl.statuspb.Status status = 2;
   // The id for the query
-  uuidpb.UUID query_id = 3 [ (gogoproto.customname) = "QueryID" ];
-
+  uuidpb.UUID query_id = 3 [(gogoproto.customname) = "QueryID"];
   pl.carnot.queryresultspb.QueryResult query_result = 4;
   // Reserved for deprecated ResponsesByAgent.
   reserved 1;

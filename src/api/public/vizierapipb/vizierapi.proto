@@ -1,9 +1,10 @@
 syntax = "proto3";
 
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-
 package pl.api.vizierpb;
+
 option go_package = "publicvizierapipb";
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 // The list of data types supported by our execution engine.
 // Each type corresponds to a Column type below.
@@ -143,7 +144,7 @@ message Column {
 // RowBatchData contains the data for a particular row batch from the specified table.
 message RowBatchData {
   // The ID of the table which the row batch belongs to.
-  string table_id = 5 [ (gogoproto.customname) = "TableID" ];
+  string table_id = 5 [(gogoproto.customname) = "TableID"];
   // The columns in this row-batch.
   repeated Column cols = 1;
   // The number of rows in this batch.
@@ -191,15 +192,12 @@ message ErrorDetails {
 message Status {
   // The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
   int32 code = 1;
-
   // A developer-facing error message, which should be in English. Any
   // user-facing error message should be localized and sent in the
   // [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
   string message = 2;
-
   // Reserved for deprecated Details.
   reserved 3;
-
   // The details about the particular error. A Status can be an error status and have 0
   // elements in the error_details. However, if the Status.code is OK (Status.code == 0),
   // error_details should be empty as well.
@@ -242,13 +240,10 @@ message ScalarValue {
 message ExecuteScriptRequest {
   // query_str is the string representation of the query to run.
   string query_str = 1;
-
   // Old arg_values deprecated.
   reserved 2;
-
   // The UUID of the cluster encoded as a string with dashes.
-  string cluster_id = 3 [ (gogoproto.customname) = "ClusterID" ];
-
+  string cluster_id = 3 [(gogoproto.customname) = "ClusterID"];
   // FuncToExecute specifies the name and arguments of a function to execute.
   message FuncToExecute {
     // Name of function to execute. Can be of the form 'func_name' or 'module_name.func_name'.
@@ -280,7 +275,6 @@ message ExecuteScriptRequest {
   // exec_funcs is a list of functions to execute.
   // If any functions specified cannot be found ExecuteScriptResponse will contain a compiler error.
   repeated FuncToExecute exec_funcs = 4;
-
   // If set to true, the execute script will run the mutations (probe installs, etc.).
   // If unset, any mutation will be ignored.
   // If the mutated state is already ready, the script will also be executed.
@@ -315,7 +309,7 @@ message QueryMetadata {
   string name = 2;
   // The UUID of the table. RowBatchData for this particular table will use
   // the same ID.
-  string id = 3 [ (gogoproto.customname) = "ID" ];
+  string id = 3 [(gogoproto.customname) = "ID"];
 }
 
 // Data message containing either a row batch or execution stats.
@@ -333,13 +327,11 @@ message ExecuteScriptResponse {
   // error, execution error, timeout, etc.
   Status status = 1;
   // The id for the query. UUID encoded as string.
-  string query_id = 2 [ (gogoproto.customname) = "QueryID" ];
-
+  string query_id = 2 [(gogoproto.customname) = "QueryID"];
   oneof result {
     QueryData data = 3;
     QueryMetadata meta_data = 4;
   }
-
   // The status of the mutation, only populated if the request was a mutation.
   MutationInfo mutation_info = 5;
 }
@@ -348,7 +340,7 @@ message ExecuteScriptResponse {
 message MutationInfo {
   message MutationState {
     // ID of resource created/updated by the mutation.
-    string id = 1 [ (gogoproto.customname) = "ID" ];
+    string id = 1 [(gogoproto.customname) = "ID"];
     // State of resource created/updated by the mutation.
     LifeCycleState state = 2;
     // The name of the resource created/updated by the mutation.
@@ -364,7 +356,7 @@ message MutationInfo {
 // Request for the HealthCheck call.
 message HealthCheckRequest {
   // The UUID of the cluster encoded as a string with dashes.
-  string cluster_id = 1 [ (gogoproto.customname) = "ClusterID" ];
+  string cluster_id = 1 [(gogoproto.customname) = "ClusterID"];
 }
 
 // Response for the HealthCheck call.
@@ -373,12 +365,11 @@ message HealthCheckResponse {
   Status status = 1;
 }
 
-
 // The API that manages all communication with a particular Vizier cluster.
 service VizierService {
   // Execute a script on the Vizier cluster and stream the results of that execution.
-  rpc ExecuteScript(ExecuteScriptRequest) returns (stream ExecuteScriptResponse) {}
+  rpc ExecuteScript(ExecuteScriptRequest) returns (stream ExecuteScriptResponse);
   // Start a stream to receive health updates from the Vizier service. For most practical
   // purposes, users should only need `ExecuteScript()` and can safely ignore this call.
-  rpc HealthCheck(HealthCheckRequest) returns (stream HealthCheckResponse) {}
+  rpc HealthCheck(HealthCheckRequest) returns (stream HealthCheckResponse);
 }

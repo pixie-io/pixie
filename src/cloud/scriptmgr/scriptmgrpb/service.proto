@@ -2,29 +2,27 @@ syntax = "proto3";
 
 package pl.services;
 
+option go_package = "scriptmgrpb";
+
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/api/public/uuidpb/uuid.proto";
 import "src/shared/vispb/vis.proto";
 
-option go_package = "scriptmgrpb";
-
 // ScriptMgrService service handles ingestion and access to scripts.
 service ScriptMgrService {
   // GetLiveViews returns a list of all available live views.
-  rpc GetLiveViews(GetLiveViewsReq) returns (GetLiveViewsResp) {}
+  rpc GetLiveViews(GetLiveViewsReq) returns (GetLiveViewsResp);
   // GetLiveViewContents returns the pxl script, vis spec, and metadata for a live view.
-  rpc GetLiveViewContents(GetLiveViewContentsReq) returns (GetLiveViewContentsResp) {}
-
+  rpc GetLiveViewContents(GetLiveViewContentsReq) returns (GetLiveViewContentsResp);
   // GetScripts returns a list of all available scripts.
-  rpc GetScripts(GetScriptsReq) returns (GetScriptsResp) {}
+  rpc GetScripts(GetScriptsReq) returns (GetScriptsResp);
   // GetScriptContents returns the pxl string of the script.
-  rpc GetScriptContents(GetScriptContentsReq) returns (GetScriptContentsResp) {}
+  rpc GetScriptContents(GetScriptContentsReq) returns (GetScriptContentsResp);
 }
 
 // GetLiveViewsReq is the request message for getting a list of all live views.
 // Currently, its empty but in the future it will contain org/repo info.
-message GetLiveViewsReq {
-}
+message GetLiveViewsReq {}
 
 // LiveViewMetadata stores metadata information about a particular live view.
 // This message allows for GetLiveViews to return some information about the live views
@@ -72,9 +70,7 @@ message GetLiveViewContentsResp {
 
 // GetScriptsReq is the request message for getting a list of all scripts.
 // Currently, its empty but in the future it will contain org/repo info.
-message GetScriptsReq {
-}
-
+message GetScriptsReq {}
 
 // ScriptMetadata stores metadata information about a particular script.
 // This message allows for GetScripts to return some information about the scripts

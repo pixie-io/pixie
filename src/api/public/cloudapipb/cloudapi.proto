@@ -1,136 +1,120 @@
 syntax = "proto3";
 
-/**********************************************************************
- * NOTICE: INTERNAL
- * This file is meant as the external protobuf interface for the cloud.
- * Please do not include dependencies that are outside of /src/common
- * and only include protobufs that are useful to external-facing users.
- **********************************************************************/
-
 package pl.public.cloudapi;
-
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-import "google/protobuf/wrappers.proto";
-
-import "src/api/public/uuidpb/uuid.proto";
 
 option go_package = "publiccloudapipb";
 
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/protobuf/wrappers.proto";
+import "src/api/public/uuidpb/uuid.proto";
+
+//
+// * NOTICE: INTERNAL
+// * This file is meant as the external protobuf interface for the cloud.
+// * Please do not include dependencies that are outside of /src/common
+// * and only include protobufs that are useful to external-facing users.
+//
 
 // The API to access Vizier cluster info, connection info
 // for direct access clusters, and configuration management for the cluster.
 service ClusterManager {
-    // Returns ClusterInfo for a single cluster if specified in the request,
-    // otherwise returns info for all clusters in an org.
-    rpc GetCluster(GetClusterRequest) returns(GetClusterResponse) {}
-    // Modifies the configuration for a cluster.
-    rpc UpdateClusterConfig(UpdateClusterConfigRequest) returns(UpdateClusterConfigResponse) {}
-    // Returns the information necessary to connect to the specified cluster. Making this call
-    // is only necessary for direct mode (non-passthrough) connections. Passthrough should talk
-    // to the same cloud URL as this API and use the same authentication.
-    rpc GetClusterConnection(GetClusterConnectionRequest) returns(GetClusterConnectionResponse) {}
+  // Returns ClusterInfo for a single cluster if specified in the request,
+  // otherwise returns info for all clusters in an org.
+  rpc GetCluster(GetClusterRequest) returns (GetClusterResponse);
+  // Modifies the configuration for a cluster.
+  rpc UpdateClusterConfig(UpdateClusterConfigRequest) returns (UpdateClusterConfigResponse);
+  // Returns the information necessary to connect to the specified cluster. Making this call
+  // is only necessary for direct mode (non-passthrough) connections. Passthrough should talk
+  // to the same cloud URL as this API and use the same authentication.
+  rpc GetClusterConnection(GetClusterConnectionRequest) returns (GetClusterConnectionResponse);
 }
 
 // Details about the configuration of a particular cluster.
 message ClusterConfig {
-    // True if passthrough is enabled, false if direct-mode is enabled.
-    bool passthrough_enabled = 1;
-    // True if autoUpdate is enabled (default), false if it is disabled.
-    bool auto_update_enabled = 2;
+  // True if passthrough is enabled, false if direct-mode is enabled.
+  bool passthrough_enabled = 1;
+  // True if autoUpdate is enabled (default), false if it is disabled.
+  bool auto_update_enabled = 2;
 }
 
 // Contains the cluster info to update for this cluster.
 message ClusterConfigUpdate {
-    // The new value for whether the cluster uses passthrough or direct mode.
-    // Changing this will propagate the change to Pixie running in your cluster.
-    google.protobuf.BoolValue passthrough_enabled = 1;
-    // The value for whether auto updates are enabled for the cluster.
-    google.protobuf.BoolValue auto_update_enabled = 2;
+  // The new value for whether the cluster uses passthrough or direct mode.
+  // Changing this will propagate the change to Pixie running in your cluster.
+  google.protobuf.BoolValue passthrough_enabled = 1;
+  // The value for whether auto updates are enabled for the cluster.
+  google.protobuf.BoolValue auto_update_enabled = 2;
 }
 
 // Request message for the GetCluster call.
 message GetClusterRequest {
-    // Optional. If specified, get cluster info only for the specified cluster.
-    pl.uuidpb.UUID id = 1 [
-                          (gogoproto.customname) = "ID"
-                          ];
+  // Optional. If specified, get cluster info only for the specified cluster.
+  pl.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
 }
 
 // Request message for the GetClusterConnection call.
 message GetClusterConnectionRequest {
-    // The ID of the cluster to get connection info.
-     pl.uuidpb.UUID id = 1 [
-                           (gogoproto.customname) = "ID"
-                           ];
+  // The ID of the cluster to get connection info.
+  pl.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
 }
 
 // Response message for the GetClusterConnection call.
 message GetClusterConnectionResponse {
-    // The URL to find the cluster. Despite being called an IPAddress, is actually a URL.
-    string ipAddress = 1 [
-                         (gogoproto.customname) = "IPAddress"
-                         ];
-    // The bearer-auth token necessary to connect with this particular cluster.
-    string token = 2;
+  // The URL to find the cluster. Despite being called an IPAddress, is actually a URL.
+  string ipAddress = 1 [(gogoproto.customname) = "IPAddress"];
+  // The bearer-auth token necessary to connect with this particular cluster.
+  string token = 2;
 }
 
 // The status for a particular cluster.
 enum ClusterStatus {
-    CS_UNKNOWN = 0;
-    CS_HEALTHY = 1;
-    CS_UNHEALTHY = 2;
-    CS_DISCONNECTED = 3;
-    CS_UPDATING = 4;
-    CS_CONNECTED = 5;
-    CS_UPDATE_FAILED = 6;
+  CS_UNKNOWN = 0;
+  CS_HEALTHY = 1;
+  CS_UNHEALTHY = 2;
+  CS_DISCONNECTED = 3;
+  CS_UPDATING = 4;
+  CS_CONNECTED = 5;
+  CS_UPDATE_FAILED = 6;
 }
 
 message ClusterInfo {
-    // The ID of the cluster.
-    pl.uuidpb.UUID id = 1 [
-                          (gogoproto.customname) = "ID"
-                          ];
-
-
-    // The status for the particular cluster.
-    ClusterStatus status = 2;
-    // The time in nanoseconds since the last heartbeat was sent by the
-    // cluster to the cloud.
-    int64 lastHeartbeatNs = 3;
-    // The current configuration of the cluster.
-    ClusterConfig config = 4;
-    // A unique ID for the cluster. This is typically the kube-system namespace UID.
-    string cluster_uid = 5 [
-      (gogoproto.customname) = "ClusterUID"
-      ];
-    // The name of the cluster. The return value of "kubectl config current-context".
-    // This could be empty if the user has not deployed through the CLI.
-    string cluster_name = 6;
-    // The version of the K8s cluster. For example: v1.14.10-gke.27. This could be empty if
-    // the user has not deployed through the CLI.
-    string cluster_version = 7;
-    // The version of the deployed Vizier.
-    string vizier_version = 8;
-    // The total number of nodes (instrumented & non-instrumented) on the cluster this Vizier is on.
-    int32 num_nodes = 9;
-    // The total number of  nodes on the cluster that have pems.
-    int32 num_instrumented_nodes = 10;
+  // The ID of the cluster.
+  pl.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  // The status for the particular cluster.
+  ClusterStatus status = 2;
+  // The time in nanoseconds since the last heartbeat was sent by the
+  // cluster to the cloud.
+  int64 lastHeartbeatNs = 3;
+  // The current configuration of the cluster.
+  ClusterConfig config = 4;
+  // A unique ID for the cluster. This is typically the kube-system namespace UID.
+  string cluster_uid = 5 [(gogoproto.customname) = "ClusterUID"];
+  // The name of the cluster. The return value of "kubectl config current-context".
+  // This could be empty if the user has not deployed through the CLI.
+  string cluster_name = 6;
+  // The version of the K8s cluster. For example: v1.14.10-gke.27. This could be empty if
+  // the user has not deployed through the CLI.
+  string cluster_version = 7;
+  // The version of the deployed Vizier.
+  string vizier_version = 8;
+  // The total number of nodes (instrumented & non-instrumented) on the cluster this Vizier is on.
+  int32 num_nodes = 9;
+  // The total number of  nodes on the cluster that have pems.
+  int32 num_instrumented_nodes = 10;
 }
 
 // Request message for the GetCluster call. If the request specified a cluster ID
 // clusters should be a single element.
 message GetClusterResponse {
-    repeated ClusterInfo clusters = 1;
+  repeated ClusterInfo clusters = 1;
 }
 
 // Request message for the UpdateClusterConfig call.
 message UpdateClusterConfigRequest {
-    // ID of the cluster to update. Required.
-    pl.uuidpb.UUID id = 1 [
-                           (gogoproto.customname) = "ID"
-                           ];
-    // The update to apply to the cluster's config.
-    ClusterConfigUpdate config_update = 2;
+  // ID of the cluster to update. Required.
+  pl.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  // The update to apply to the cluster's config.
+  ClusterConfigUpdate config_update = 2;
 }
 
 // Response message for the UpdateClusterConfig.

@@ -19,7 +19,6 @@ enum BPFHelper {
   TGID = 1;
   TGID_PID = 2;
   TGID_START_TIME = 3;
-
   // Return the kernel time in nanoseconds.
   KTIME = 4;
 }
@@ -30,10 +29,8 @@ enum BPFHelper {
 // TODO(oazizi): Move to physical.proto once last use in logical form is removed.
 enum ScalarType {
   UNKNOWN = 0;
-
   // Boolean.
   BOOL = 100;
-
   // Integer types (relative definitions).
   // The widths of these types may change depending on the hardware.
   // Note that C++ absolute width types (e.g. uint32_t) map to these types,
@@ -46,7 +43,6 @@ enum ScalarType {
   ULONG = 205;
   LONGLONG = 206;
   ULONGLONG = 207;
-
   // Integer types (absolute widths).
   // Used by Golang only (see note about C++ above).
   INT8 = 300;
@@ -57,20 +53,15 @@ enum ScalarType {
   UINT16 = 305;
   UINT32 = 306;
   UINT64 = 307;
-
   // Character types.
   CHAR = 400;
   UCHAR = 401;
-
   // Floating point types.
   FLOAT = 500;
   DOUBLE = 501;
-
   VOID_POINTER = 900;
-
   STRING = 1000;
   BYTE_ARRAY = 1001;
-
   // A struct represented as a blob of bytes.
   STRUCT_BLOB = 1100;
 }
@@ -90,7 +81,6 @@ message Tracepoint {
     //
     // pl::Foo::Bar points to the only member function of struct Foo.
     string name = 1;
-
     // The types of the parameters.
     // This only applies to C++ (or any languages that support function overloading).
     // Use string to represent the type, instead of ScalarType, for greater flexibility to describe
@@ -100,24 +90,18 @@ message Tracepoint {
     // pl::Foo::Bar(int)
     repeated string param_types = 2;
   }
-
   // Describes the target function to attach a Tracepoint.
   Function function = 3;
-
   // TODO(yzhao): Remove this field.
   string symbol = 1;
-
   enum Type {
     // Only for logical IR.
     LOGICAL = 0;
-
     // Intermediate and physical IR uses this to specify a BPF entry probe.
     ENTRY = 1;
-
     // Intermediate and physical IR uses this to specify a BPF return probe.
     RETURN = 2;
   }
-
   // This has to be LOGICAL for logical IR.
   Type type = 2;
 }
@@ -127,10 +111,8 @@ message Tracepoint {
 message UPID {
   // A unique ID for a particular agent.
   uint32 asid = 1;
-
   // The PID of the running process on a particular node.
   uint32 pid = 2;
-
   // The start time stamp of the process, used to distinguish between processes having the same
   // PID across different time frame.
   uint64 ts_ns = 3;
@@ -143,35 +125,27 @@ message DeploymentSpec {
     // The name should not include a path or the version number.
     // E.g. /lib/x86_64-linux-gnu/libc.so.6 -> libc
     string name = 1;
-
     // A running process which is used to locate the shared library.
     // The shared object must be used by this process.
     // Note, however, that the tracepoint is attached to the shared library; not just this process.
     UPID upid = 2;
   }
-
   message PodProcess {
     // The name of the Pod.
     string pod = 1;
-
     // The name of the container inside the above Pod.
     string container = 2;
-
     // The application processes whose cmdline contains this regexp are selected.
     string process = 3;
   }
-
   oneof target_oneof {
     // The path of the object file (may be executable or shared library).
     string path = 1;
-
     // The UPID of a running process.
     // Resolved to an executable.
     UPID upid = 3;
-
     // An way to specify a shared object to be traced.
     SharedObject shared_object = 8;
-
     // Describes the target process to attach.
     PodProcess pod_process = 10;
   }
@@ -189,7 +163,6 @@ message VariableType {
 // Corresponds to px.Map().
 message Map {
   string name = 1;
-
   // TODO(yzhao): Remove the following 2 lines and create PerfBuffer in physical.proto with them.
   VariableType key_type = 2; // Exclusive to physical IR.
   VariableType value_type = 3; // Exclusive to physical IR.
@@ -202,10 +175,8 @@ message Condition {
     NIL = 0;
     EQUAL = 1;
   }
-
   // Describes the operation performed on the variables listed below.
   Op op = 1;
-
   // List variables used in the operation.
   repeated string vars = 2;
 }
@@ -215,7 +186,6 @@ message Printk {
   oneof content_oneof {
     // A piece of hardcoded text.
     string text = 1;
-
     // Another ScalarVariable, cannot be StructVariable.
     string scalar = 2;
   }
@@ -223,4 +193,6 @@ message Printk {
 
 // Indicates a variable named 'id' should be generated, and represents the latency from function
 // entry to return.
-message FunctionLatency { string id = 1; }
+message FunctionLatency {
+  string id = 1;
+}

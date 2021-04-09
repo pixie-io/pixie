@@ -2,20 +2,14 @@ syntax = "proto3";
 
 package pl.cloud.shared.messages;
 
+option go_package = "messagespb";
+
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/api/public/uuidpb/uuid.proto";
 
-option go_package = "messagespb";
-
 message VizierConnected {
-  uuidpb.UUID vizier_id = 1 [
-                             (gogoproto.customname) = "VizierID"
-                            ];
-  uuidpb.UUID org_id = 2 [
-                          (gogoproto.customname) = "OrgID"
-                         ];
-  string k8s_uid = 4 [
-                      (gogoproto.customname) = "K8sUID"
-                     ];
+  uuidpb.UUID vizier_id = 1 [(gogoproto.customname) = "VizierID"];
+  uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
+  string k8s_uid = 4 [(gogoproto.customname) = "K8sUID"];
   reserved 3; //DEPRECATED string resource_version
 }

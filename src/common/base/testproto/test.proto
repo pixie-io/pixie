@@ -1,11 +1,15 @@
 // Test proto for use in the Status proto tests.
+
 syntax = "proto3";
 
 package pl.testpb;
 
 option go_package = "testpb";
 
-message TestChildMessage { string string_val = 1; }
+message TestChildMessage {
+  string string_val = 1;
+}
+
 // This is the proto representation.
 message TestParentMessage {
   int64 int_val = 1;

@@ -42,8 +42,8 @@ enum Command {
 // enum RespStatus provides the encoding used in the mysql_events::req_cmd column.
 // This is a custom enum (not from MySQL spec).
 enum RespStatus {
-    Unknown = 0;
-    None = 1;
-    OK = 2;
-    Err = 3;
+  Unknown = 0;
+  None = 1;
+  OK = 2;
+  Err = 3;
 }

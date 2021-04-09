@@ -1,12 +1,13 @@
 syntax = "proto3";
-import "google/protobuf/wrappers.proto";
-import "src/shared/types/typespb/types.proto";
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-import "src/api/public/uuidpb/uuid.proto";
 
 package pl.carnot.planpb;
 
 option go_package = "planpb";
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/protobuf/wrappers.proto";
+import "src/api/public/uuidpb/uuid.proto";
+import "src/shared/types/typespb/types.proto";
 
 message PlanOptions {
   // Show the execution plan for the given query without executing the query.
@@ -18,7 +19,6 @@ message PlanOptions {
   // This limit applies to the entire result for batch tables, and per window on windowed
   // streaming queries.
   int64 max_output_rows_per_table = 4;
-
   // Reserved for prior fields (distributed).
   reserved 1;
 }
@@ -32,11 +32,11 @@ message Plan {
   // List of plan fragments referenced by the DAG.
   repeated PlanFragment nodes = 2;
   // DEPRECATED: Whether or not the plan is a distributed plan.
-  bool distributed = 3 [deprecated=true];
+  bool distributed = 3 [deprecated = true];
   // Options about how the plan should be executed.
   PlanOptions plan_options = 4;
   // The incoming connections to this node.
-  repeated uuidpb.UUID incoming_agent_ids = 5 [ (gogoproto.customname) = "IncomingAgentIDs" ];
+  repeated uuidpb.UUID incoming_agent_ids = 5 [(gogoproto.customname) = "IncomingAgentIDs"];
 }
 
 // Each plan fragment is a DAG represented in a format similar to an adjacency
@@ -112,9 +112,9 @@ message Operator {
     // Operator that performs an ordered union across multiple inputs.
     UnionOperator union_op = 8;
     // Operator that reads data from a remote node via grpc.
-    GRPCSourceOperator grpc_source_op = 9 [ (gogoproto.customname) = "GRPCSourceOp" ];
+    GRPCSourceOperator grpc_source_op = 9 [(gogoproto.customname) = "GRPCSourceOp"];
     // Operator that stores data to a remote node via grpc.
-    GRPCSinkOperator grpc_sink_op = 1000 [ (gogoproto.customname) = "GRPCSinkOp" ];
+    GRPCSinkOperator grpc_sink_op = 1000 [(gogoproto.customname) = "GRPCSinkOp"];
     // Operator that performs a join based on column equality and/or time_ columns within a certain
     // range of each other.
     JoinOperator join_op = 11;
@@ -170,10 +170,8 @@ message GRPCSourceOperator {
 message GRPCSinkOperator {
   // The address of the GRPC service.
   string address = 1;
-
   // Originally used for `destination_id` field, now renamed to `grpc_source_id`.
   reserved 2;
-
   // This message is used when the GRPCSink produces a final result table, as opposed to an
   // internal result that is ingested by a corresponding GRPCSource.
   message ResultTable {
@@ -187,23 +185,20 @@ message GRPCSinkOperator {
     // The semantic types of the columns.
     repeated pl.types.SemanticType column_semantic_types = 4;
   }
-
   // GRPCSinkOperator refers to its corresponding GRPCSourceOperator to each other via its DAG ID.
   oneof destination {
     // The ID of the GRPC Source node that will receive the RowBatch, when the sink's RowBatches
     // are being sent to another Carnot instance.
-    uint64 grpc_source_id = 3 [ (gogoproto.customname) = "GRPCSourceID" ];
+    uint64 grpc_source_id = 3 [(gogoproto.customname) = "GRPCSourceID"];
     // The name of the table that row batches from this sink belong to, when the sink's RowBatches
     // are being sent to a non-Carnot address, such as the query broker.
     ResultTable output_table = 4;
   }
-
   // Options regarding the GRPC connection to be established.
   message GRPCConnectionOptions {
     // This field is used when there is a need for an SSL target hostname override.
     string ssl_targetname = 1;
   }
-
   GRPCConnectionOptions connection_options = 5;
 }
 
@@ -289,13 +284,11 @@ message JoinOperator {
     LEFT_OUTER = 1;
     FULL_OUTER = 3;
   }
-
   // Equality condition represents one particular condition in an equijoin.
   message EqualityCondition {
     uint64 left_column_index = 1;
     uint64 right_column_index = 2;
   }
-
   // This message represents a column from the parent table.
   message ParentColumn {
     // parent_index indicates which parent table this column comes from.
@@ -303,7 +296,6 @@ message JoinOperator {
     uint64 parent_index = 1;
     uint64 column_index = 2;
   }
-
   JoinType type = 1;
   // These are the conditions for the equijoin, which are ANDed together.
   repeated EqualityCondition equality_conditions = 2;

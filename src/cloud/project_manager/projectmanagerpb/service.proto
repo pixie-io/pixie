@@ -2,44 +2,35 @@ syntax = "proto3";
 
 package pl.services;
 
+option go_package = "projectmanagerpb";
+
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/api/public/uuidpb/uuid.proto";
 
-option go_package = "projectmanagerpb";
-
-
 service ProjectManagerService {
   // Checks to see a particular subdomain is available for registration.
-  rpc IsProjectAvailable(IsProjectAvailableRequest) returns (IsProjectAvailableResponse) {}
-
+  rpc IsProjectAvailable(IsProjectAvailableRequest) returns (IsProjectAvailableResponse);
   // Registers a project for an organization.
-  rpc RegisterProject(RegisterProjectRequest) returns (RegisterProjectResponse) {}
-
-  rpc GetProjectForOrg(pl.uuidpb.UUID) returns (ProjectInfo) {}
-  rpc GetProjectByName(GetProjectByNameRequest) returns (ProjectInfo) {}
+  rpc RegisterProject(RegisterProjectRequest) returns (RegisterProjectResponse);
+  rpc GetProjectForOrg(pl.uuidpb.UUID) returns (ProjectInfo);
+  rpc GetProjectByName(GetProjectByNameRequest) returns (ProjectInfo);
 }
 
 message ProjectInfo {
   string project_name = 1;
-  pl.uuidpb.UUID org_id = 2 [
-                            (gogoproto.customname) = "OrgID"
-                            ];
+  pl.uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
 }
 
 message GetProjectByNameRequest {
   string project_name = 1;
-  pl.uuidpb.UUID org_id = 2 [
-                            (gogoproto.customname) = "OrgID"
-                            ];
+  pl.uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
 }
 
 message IsProjectAvailableRequest {
   // The project name to check. For example, if we want to check that walmart.pixie.ai is available we will check
   // the project name walmart.
   string project_name = 1;
-  pl.uuidpb.UUID org_id = 2 [
-                            (gogoproto.customname) = "OrgID"
-                            ];
+  pl.uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
 }
 
 message IsProjectAvailableResponse {
@@ -49,11 +40,8 @@ message IsProjectAvailableResponse {
 message RegisterProjectRequest {
   // The project name to register.
   string project_name = 1;
-
   // The UUID of the org name.
-  pl.uuidpb.UUID org_id = 2 [
-                            (gogoproto.customname) = "OrgID"
-                            ];
+  pl.uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
 }
 
 message RegisterProjectResponse {

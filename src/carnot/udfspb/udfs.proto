@@ -1,11 +1,12 @@
 syntax = "proto3";
-import "src/shared/types/typespb/types.proto";
-import "src/table_store/schemapb/schema.proto";
-import "src/carnot/planpb/plan.proto";
 
 package pl.carnot.udfspb;
 
 option go_package = "udfspb";
+
+import "src/carnot/planpb/plan.proto";
+import "src/shared/types/typespb/types.proto";
+import "src/table_store/schemapb/schema.proto";
 
 // UDASpec stores the specification of a single UDA.
 message UDASpec {
@@ -78,7 +79,6 @@ message UDTFSourceSpec {
     // Optional value.
     pl.carnot.planpb.ScalarValue default_value = 4;
   }
-
   // Name of the UDTFSource.
   string name = 1;
   // The types of the arguments of the UDTFSource. Must be the same length as
@@ -105,7 +105,6 @@ message SemanticInferenceRule {
   // If it applies to a UDF then this will only have exec_arg_types.
   repeated pl.types.SemanticType update_arg_types = 4;
   repeated pl.types.SemanticType exec_arg_types = 5;
-
   // This might turn into a repeated or something in the future, if we support
   // non-scalar udfs/udas.
   pl.types.SemanticType output_type = 6;
@@ -146,12 +145,11 @@ message Doc {
   // Corresponds to a UDF that takes in two INT64s and returns a FLOAT64.
   string name = 1;
   // The short description.
-  string  brief = 2;
+  string brief = 2;
   // The long form description if it exists.
   string desc = 3;
   // A list of examples, if any.
   repeated ExampleDoc examples = 4;
-
   // Specific documentation for each type of UDF that we support.
   oneof u {
     // Docs for a scalar UDF.

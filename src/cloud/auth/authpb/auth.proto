@@ -2,19 +2,16 @@ syntax = "proto3";
 
 package pl.services;
 
+option go_package = "authpb";
+
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-import "src/api/public/uuidpb/uuid.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
-
-option go_package = "authpb";
+import "src/api/public/uuidpb/uuid.proto";
 
 message AuthenticatedUserInfo {
   // User ID of the logged in user.
-  pl.uuidpb.UUID user_id = 1 [
-    (gogoproto.customname) = "UserID"
-  ];
-
+  pl.uuidpb.UUID user_id = 1 [(gogoproto.customname) = "UserID"];
   // Name of the logged in user.
   string first_name = 2;
   string last_name = 3;
@@ -24,15 +21,13 @@ message AuthenticatedUserInfo {
 
 service AuthService {
   // Performs a login based on auth0 credentials and returns an opaque JWT identifier for the user.
-  rpc Login(LoginRequest) returns (LoginReply) {}
+  rpc Login(LoginRequest) returns (LoginReply);
   // Performs a signup based on auth0 credentials and returns an opaque JWT identifier for the user.
-  rpc Signup(SignupRequest) returns (SignupReply) {}
-
+  rpc Signup(SignupRequest) returns (SignupReply);
   // Takes an opaque identifier (from above) and produces a token with user details.
-  rpc GetAugmentedToken(GetAugmentedAuthTokenRequest) returns (GetAugmentedAuthTokenResponse) {}
-
+  rpc GetAugmentedToken(GetAugmentedAuthTokenRequest) returns (GetAugmentedAuthTokenResponse);
   // Takes an API key and produces a token with user details.
-  rpc GetAugmentedTokenForAPIKey(GetAugmentedTokenForAPIKeyRequest) returns (GetAugmentedTokenForAPIKeyResponse) {}
+  rpc GetAugmentedTokenForAPIKey(GetAugmentedTokenForAPIKeyRequest) returns (GetAugmentedTokenForAPIKeyResponse);
 }
 
 message LoginRequest {
@@ -50,23 +45,16 @@ message LoginReply {
   // and should not be sent to the browser or other insecure clients.
   string token = 1;
   // When this login expires.
-  int64 expires_at      = 2;
+  int64 expires_at = 2;
   // True if a new user was created while processing the LoginRequest. This is only possible if
   // create_user_if_not_exists is set in the LoginRequest.
   bool user_created = 3;
-
   // User ID of the logged in user.
-  pl.uuidpb.UUID user_id = 4 [
-    (gogoproto.customname) = "UserID"
-  ];
-
+  pl.uuidpb.UUID user_id = 4 [(gogoproto.customname) = "UserID"];
   // Information about the logged in user.
   AuthenticatedUserInfo user_info = 5;
-
   message OrgInfo {
-    string org_id = 1 [
-    (gogoproto.customname) = "OrgID"
-  ];
+    string org_id = 1 [(gogoproto.customname) = "OrgID"];
     string org_name = 2;
   }
   OrgInfo org_info = 6;
@@ -85,24 +73,16 @@ message SignupReply {
   // and should not be sent to the browser or other insecure clients.
   string token = 1;
   // When this login expires.
-  int64 expires_at      = 2;
+  int64 expires_at = 2;
   // True if a new org was created while processing the SignupRequest.
   bool org_created = 3;
-
   // User ID of the logged in user.
-  pl.uuidpb.UUID user_id = 4 [
-    (gogoproto.customname) = "UserID"
-  ];
-
+  pl.uuidpb.UUID user_id = 4 [(gogoproto.customname) = "UserID"];
   // Information about the logged in user.
   AuthenticatedUserInfo user_info = 5;
-
   // Org ID of the logged in user.
-  pl.uuidpb.UUID org_id = 6 [
-    (gogoproto.customname) = "OrgID"
-  ];
+  pl.uuidpb.UUID org_id = 6 [(gogoproto.customname) = "OrgID"];
 }
-
 
 message GetAugmentedAuthTokenRequest {
   // The signed token identifying the user.
@@ -114,16 +94,13 @@ message GetAugmentedAuthTokenResponse {
   // the user such as permissions, etc. This allows us to keep the initial token small.
   // This token will have a short lifetime of ~30 mins.
   string token = 1;
-
   // When this login expires.
-  int64 expires_at      = 2;
+  int64 expires_at = 2;
 }
 
 message GetAugmentedTokenForAPIKeyRequest {
   // An API Key that can be linked to a particular user/org.
-  string api_key = 1 [
-    (gogoproto.customname) = "APIKey"
-  ];
+  string api_key = 1 [(gogoproto.customname) = "APIKey"];
 }
 
 message GetAugmentedTokenForAPIKeyResponse {
@@ -131,61 +108,57 @@ message GetAugmentedTokenForAPIKeyResponse {
   // the user such as permissions, etc. This allows us to keep the initial token small.
   // This token will have a short lifetime of ~30 mins.
   string token = 1;
-
   // When this login expires.
-  int64 expires_at      = 2;
+  int64 expires_at = 2;
 }
 
-//////////////////////////////////////////////////////////////
+//
 // API Key Service
-//////////////////////////////////////////////////////////////
+//
 
 // The service that handles API keys.
 service APIKeyService {
-    // Create a new API key.
-    rpc Create(CreateAPIKeyRequest) returns (APIKey) {}
-    // List all keys for the user/org.
-    rpc List(ListAPIKeyRequest) returns(ListAPIKeyResponse) {}
-    // Get the key specified by ID.
-    rpc Get(GetAPIKeyRequest) returns (GetAPIKeyResponse) {}
-    // Delete the Key specified by ID.
-    rpc Delete(uuidpb.UUID) returns (google.protobuf.Empty) {}
+  // Create a new API key.
+  rpc Create(CreateAPIKeyRequest) returns (APIKey);
+  // List all keys for the user/org.
+  rpc List(ListAPIKeyRequest) returns (ListAPIKeyResponse);
+  // Get the key specified by ID.
+  rpc Get(GetAPIKeyRequest) returns (GetAPIKeyResponse);
+  // Delete the Key specified by ID.
+  rpc Delete(uuidpb.UUID) returns (google.protobuf.Empty);
 }
 
 // A key that can be used to access the Pixie API. This is value of the key
 // is added to the PIXIE-API-KEY requests.
 message APIKey {
-    // They ID of the key.
-    uuidpb.UUID id = 1  [
-                        (gogoproto.customname) = "ID"
-                        ];
-    // The value of the key.
-    string key = 2;
-    google.protobuf.Timestamp created_at = 3;
-    // Description for the key.
-    string desc = 4;
+  // They ID of the key.
+  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  // The value of the key.
+  string key = 2;
+  google.protobuf.Timestamp created_at = 3;
+  // Description for the key.
+  string desc = 4;
 }
 
 // Create a API key.
 message CreateAPIKeyRequest {
-    // Description for the key.
-    string desc = 1;
+  // Description for the key.
+  string desc = 1;
 }
 
 message ListAPIKeyRequest {
-    // Empty message on purpose so we can extend with attributes easily if needed.
+  // Empty message on purpose so we can extend with attributes easily if needed.
+
 }
 
 message ListAPIKeyResponse {
-    repeated APIKey keys = 1;
+  repeated APIKey keys = 1;
 }
 
 message GetAPIKeyRequest {
-    uuidpb.UUID id = 1  [
-                        (gogoproto.customname) = "ID"
-                        ];
+  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
 }
 
 message GetAPIKeyResponse {
-    APIKey key = 1;
+  APIKey key = 1;
 }

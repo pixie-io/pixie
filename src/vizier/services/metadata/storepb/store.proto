@@ -2,21 +2,21 @@ syntax = "proto3";
 
 package pl.vizier.services.metadata;
 
-import "src/common/base/statuspb/status.proto";
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-import "src/carnot/planner/dynamic_tracing/ir/logicalpb/logical.proto";
-import "src/api/public/uuidpb/uuid.proto";
-import "src/shared/types/typespb/types.proto";
-import "src/shared/k8s/metadatapb/metadata.proto";
-
 option go_package = "storepb";
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "src/api/public/uuidpb/uuid.proto";
+import "src/carnot/planner/dynamic_tracing/ir/logicalpb/logical.proto";
+import "src/common/base/statuspb/status.proto";
+import "src/shared/k8s/metadatapb/metadata.proto";
+import "src/shared/types/typespb/types.proto";
 
 // This file contains protos for data that is stored in the metadata service's datastore.
 // Along with the protos in this file, the datastore also contains shared protos, such as from agentpb and metadatapb.
 
 // Information about the status of a specific tracepoint.
 message TracepointInfo {
-  uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
+  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
   // The tracepoint deployment.
   pl.carnot.planner.dynamic_tracing.ir.logical.TracepointDeployment tracepoint = 2;
   // The name of the tracepoint, not unique.
@@ -32,8 +32,8 @@ message AgentTracepointStatus {
   pl.statuspb.LifeCycleState state = 1;
   // The status of the tracepoint, specified if the state of the tracepoint is not healthy.
   pl.statuspb.Status status = 2;
-  uuidpb.UUID id = 3 [ (gogoproto.customname) = "ID" ];
-  uuidpb.UUID agent_id = 4 [ (gogoproto.customname) = "AgentID" ];
+  uuidpb.UUID id = 3 [(gogoproto.customname) = "ID"];
+  uuidpb.UUID agent_id = 4 [(gogoproto.customname) = "AgentID"];
 }
 
 // TableInfo contains info about the table in Vizier.
@@ -42,19 +42,12 @@ message TableInfo {
   string name = 1;
   // The description of the table.
   string desc = 7;
-
   // TODO need to move this information to a different message, no need to couple it with ColumnInfo.
   // Maybe in DataInfo?
   // The server unix time in nanoseconds when the schema was available.
-  int64 start_timestamp_ns = 2 [
-                  (gogoproto.customname) = "StartTimestampNS"
-                  ];
-
+  int64 start_timestamp_ns = 2 [(gogoproto.customname) = "StartTimestampNS"];
   // The unix time in nanoseconds when the schema stopped being available. It will be 0 if there is no stop time.
-  int64 stop_timestamp_ns = 3 [
-                  (gogoproto.customname) = "StopTimestampNS"
-                  ];
-
+  int64 stop_timestamp_ns = 3 [(gogoproto.customname) = "StopTimestampNS"];
   message ColumnInfo {
     string name = 1;
     pl.types.DataType data_type = 2;
@@ -71,15 +64,13 @@ message TableInfo {
   string tabletization_key = 6;
 }
 
-
 // ComputedSchema describes the schema available on Vizier.
 message ComputedSchema {
   repeated TableInfo tables = 1;
   message AgentIDs {
-    repeated uuidpb.UUID agent_id = 1 [ (gogoproto.customname) = "AgentID" ];
+    repeated uuidpb.UUID agent_id = 1 [(gogoproto.customname) = "AgentID"];
   }
-  map<string, AgentIDs> table_name_to_agent_ids = 2
-      [ (gogoproto.customname) = "TableNameToAgentIDs" ];
+  map<string, AgentIDs> table_name_to_agent_ids = 2 [(gogoproto.customname) = "TableNameToAgentIDs"];
 }
 
 // K8sResource contains a full update for a K8s resource.

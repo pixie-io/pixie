@@ -2,78 +2,62 @@ syntax = "proto3";
 
 package pl.services.internal;
 
-import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-import "src/api/public/uuidpb/uuid.proto";
-import "src/shared/cvmsgspb/cvmsgs.proto";
-import "google/protobuf/empty.proto";
-import "google/protobuf/timestamp.proto";
-
 option go_package = "vzmgrpb";
 
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "src/api/public/uuidpb/uuid.proto";
+import "src/shared/cvmsgspb/cvmsgs.proto";
+
 service VZMgrService {
-  rpc CreateVizierCluster(CreateVizierClusterRequest) returns (uuidpb.UUID) {}
-  rpc GetViziersByOrg(uuidpb.UUID) returns (GetViziersByOrgResponse) {}
-  rpc GetVizierInfo(uuidpb.UUID) returns (cvmsgspb.VizierInfo) {}
-  rpc GetViziersByShard(GetViziersByShardRequest) returns (GetViziersByShardResponse) {}
-  rpc GetVizierConnectionInfo(uuidpb.UUID) returns (cvmsgspb.VizierConnectionInfo) {}
+  rpc CreateVizierCluster(CreateVizierClusterRequest) returns (uuidpb.UUID);
+  rpc GetViziersByOrg(uuidpb.UUID) returns (GetViziersByOrgResponse);
+  rpc GetVizierInfo(uuidpb.UUID) returns (cvmsgspb.VizierInfo);
+  rpc GetViziersByShard(GetViziersByShardRequest) returns (GetViziersByShardResponse);
+  rpc GetVizierConnectionInfo(uuidpb.UUID) returns (cvmsgspb.VizierConnectionInfo);
   // Fetch vizier infos for multiple viziers.
-  rpc GetVizierInfos(GetVizierInfosRequest) returns (GetVizierInfosResponse) {}
+  rpc GetVizierInfos(GetVizierInfosRequest) returns (GetVizierInfosResponse);
   // Call to acknowledge connection of a vizier.
-  rpc VizierConnected(cvmsgspb.RegisterVizierRequest) returns (cvmsgspb.RegisterVizierAck) {}
-  rpc UpdateVizierConfig(cvmsgspb.UpdateVizierConfigRequest) returns (cvmsgspb.UpdateVizierConfigResponse) {}
+  rpc VizierConnected(cvmsgspb.RegisterVizierRequest) returns (cvmsgspb.RegisterVizierAck);
+  rpc UpdateVizierConfig(cvmsgspb.UpdateVizierConfigRequest) returns (cvmsgspb.UpdateVizierConfigResponse);
   // This call is made when we want to update or install a Vizier.
-  rpc UpdateOrInstallVizier(cvmsgspb.UpdateOrInstallVizierRequest) returns (cvmsgspb.UpdateOrInstallVizierResponse) {}
+  rpc UpdateOrInstallVizier(cvmsgspb.UpdateOrInstallVizierRequest) returns (cvmsgspb.UpdateOrInstallVizierResponse);
 }
 
 message CreateVizierClusterRequest {
-  uuidpb.UUID org_id = 1 [
-                          (gogoproto.customname) = "OrgID"
-                         ];
+  uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
   string project_name = 2;
 }
 
 message GetViziersByOrgResponse {
-  repeated uuidpb.UUID vizier_ids = 1 [
-                                       (gogoproto.customname) = "VizierIDs"
-                                      ];
+  repeated uuidpb.UUID vizier_ids = 1 [(gogoproto.customname) = "VizierIDs"];
 }
 
 // GetViziersByShardRequest gets all connected viziers within the given shard range.
 message GetViziersByShardRequest {
-    // The beginning of the range of Vizier shards to fetch, inclusive.
-    string from_shard_id = 1 [
-                        (gogoproto.customname) = "FromShardID"
-                        ];
-    // The ending of the range of Vizier shards to fetch, also inclusive. To fetch
-    // viziers for a single shard, the FromShardID and ToShardID should be the same.
-    string to_shard_id = 2 [
-                        (gogoproto.customname) = "ToShardID"
-                        ];
+  // The beginning of the range of Vizier shards to fetch, inclusive.
+  string from_shard_id = 1 [(gogoproto.customname) = "FromShardID"];
+  // The ending of the range of Vizier shards to fetch, also inclusive. To fetch
+  // viziers for a single shard, the FromShardID and ToShardID should be the same.
+  string to_shard_id = 2 [(gogoproto.customname) = "ToShardID"];
 }
 
 // GetViziersByShardResponse, get a information about all connected viziers in a shard.
 message GetViziersByShardResponse {
-    // TODO(vihang): Reconcile with VizierConnected?
-    message VizierInfo {
-        uuidpb.UUID vizier_id = 1 [
-                                   (gogoproto.customname) = "VizierID"
-                                  ];
-        uuidpb.UUID org_id = 2 [
-                                (gogoproto.customname) = "OrgID"
-                               ];
-        string k8s_uid = 4 [
-                            (gogoproto.customname) = "K8sUID"
-                           ];
-        reserved 3;  // DEPRECATED string resource_version
-    }
-    repeated VizierInfo viziers = 1;
+  // TODO(vihang): Reconcile with VizierConnected?
+  message VizierInfo {
+    uuidpb.UUID vizier_id = 1 [(gogoproto.customname) = "VizierID"];
+    uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
+    string k8s_uid = 4 [(gogoproto.customname) = "K8sUID"];
+    reserved 3; // DEPRECATED string resource_version
+  }
+  repeated VizierInfo viziers = 1;
 }
 
 // GetVizierInfosRequest, get information about all the given viziers.
 message GetVizierInfosRequest {
-  repeated uuidpb.UUID vizier_ids = 1 [
-                                       (gogoproto.customname) = "VizierIDs"
-                                      ];
+  repeated uuidpb.UUID vizier_ids = 1 [(gogoproto.customname) = "VizierIDs"];
 }
 
 // GetVizierInfosResponse is the response to a GetVizierInfosRequest.
@@ -81,95 +65,84 @@ message GetVizierInfosResponse {
   repeated cvmsgspb.VizierInfo vizier_infos = 1;
 }
 
-//////////////////////////////////////////////////////////////
+//
 // Deployment Key Service
-//////////////////////////////////////////////////////////////
+//
 
 // The service that handles deployment keys. This is a user facing service.
 service VZDeploymentKeyService {
-    // Create a new deployment key.
-    rpc Create(CreateDeploymentKeyRequest) returns (DeploymentKey) {}
-    // List all keys for the user/org.
-    // TODO(zasgar): Update when we have RBAC.
-    rpc List(ListDeploymentKeyRequest) returns(ListDeploymentKeyResponse) {}
-    // Get the key specified by ID.
-    rpc Get(GetDeploymentKeyRequest) returns (GetDeploymentKeyResponse) {}
-    // Delete the Key specified by ID.
-    rpc Delete(uuidpb.UUID) returns (google.protobuf.Empty) {}
+  // Create a new deployment key.
+  rpc Create(CreateDeploymentKeyRequest) returns (DeploymentKey);
+  // List all keys for the user/org.
+  // TODO(zasgar): Update when we have RBAC.
+  rpc List(ListDeploymentKeyRequest) returns (ListDeploymentKeyResponse);
+  // Get the key specified by ID.
+  rpc Get(GetDeploymentKeyRequest) returns (GetDeploymentKeyResponse);
+  // Delete the Key specified by ID.
+  rpc Delete(uuidpb.UUID) returns (google.protobuf.Empty);
 }
 
 // A key that can be used to deploy a new vizier cluster. This is value of the key
 // is added to the X-API-KEY requests from Vizier on cloud conn.
 message DeploymentKey {
-    // They ID of the key.
-    uuidpb.UUID id = 1  [
-                        (gogoproto.customname) = "ID"
-                        ];
-    // The value of the key.
-    string key = 2;
-    google.protobuf.Timestamp created_at = 3;
-    // Description for the key.
-    string desc = 4;
+  // They ID of the key.
+  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  // The value of the key.
+  string key = 2;
+  google.protobuf.Timestamp created_at = 3;
+  // Description for the key.
+  string desc = 4;
 }
 
 // Create a deployment key.
 message CreateDeploymentKeyRequest {
-    // Description for the key.
-    string desc = 1;
+  // Description for the key.
+  string desc = 1;
 }
 
 message ListDeploymentKeyRequest {
-    // Empty message on purpose so we can extend with attributes easily if needed.
+  // Empty message on purpose so we can extend with attributes easily if needed.
+
 }
 
 message ListDeploymentKeyResponse {
-    repeated DeploymentKey keys = 1;
+  repeated DeploymentKey keys = 1;
 }
 
 message GetDeploymentKeyRequest {
-    uuidpb.UUID id = 1  [
-                        (gogoproto.customname) = "ID"
-                        ];
+  uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
 }
 
 message GetDeploymentKeyResponse {
-    DeploymentKey key = 1;
+  DeploymentKey key = 1;
 }
 
-//////////////////////////////////////////////////////////////
+//
 // Deployment Service
-//////////////////////////////////////////////////////////////
+//
 
 // The service that deployment and registration of Viziers. Its primary
 // consumer is Vizier through Vzconn.
 service VZDeploymentService {
-  rpc RegisterVizierDeployment(RegisterVizierDeploymentRequest) returns (RegisterVizierDeploymentResponse) {}
+  rpc RegisterVizierDeployment(RegisterVizierDeploymentRequest) returns (RegisterVizierDeploymentResponse);
 }
 
 message RegisterVizierDeploymentRequest {
-    // The UID of the K8s cluster. This is typically the UI of the kube-system namespace.
-    // We assume this is globally unique.
-    string k8s_cluster_uid = 1 [
-                               (gogoproto.customname) = "K8sClusterUID"
-                               ];
-    // The deployment key that will be use to register this vizier. The org/user it's registered
-    // to will be determined by this key.
-    string deployment_key = 2;
-    // The name of the cluster. If none is specified, a random name will be generated.
-    string k8s_cluster_name = 3 [
-                               (gogoproto.customname) = "K8sClusterName"
-                               ];
-    // The K8s version of the cluster.
-    string k8s_cluster_version = 4 [
-                               (gogoproto.customname) = "K8sClusterVersion"
-                               ];
+  // The UID of the K8s cluster. This is typically the UI of the kube-system namespace.
+  // We assume this is globally unique.
+  string k8s_cluster_uid = 1 [(gogoproto.customname) = "K8sClusterUID"];
+  // The deployment key that will be use to register this vizier. The org/user it's registered
+  // to will be determined by this key.
+  string deployment_key = 2;
+  // The name of the cluster. If none is specified, a random name will be generated.
+  string k8s_cluster_name = 3 [(gogoproto.customname) = "K8sClusterName"];
+  // The K8s version of the cluster.
+  string k8s_cluster_version = 4 [(gogoproto.customname) = "K8sClusterVersion"];
 }
 
 // RegisterVizierDeploymentResponse returns the registration status. It either will include the
 // assigned vizier_id or a GRPC error will be returned.
 message RegisterVizierDeploymentResponse {
-    // The ID for this Vizier.
-    uuidpb.UUID vizier_id = 1 [
-                              (gogoproto.customname) = "VizierID"
-                              ];
+  // The ID for this Vizier.
+  uuidpb.UUID vizier_id = 1 [(gogoproto.customname) = "VizierID"];
 }

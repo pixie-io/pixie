@@ -2,44 +2,46 @@ syntax = "proto3";
 
 package pl.vizier.services.metadata;
 
+option go_package = "metadatapb";
+
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/protobuf/duration.proto";
 import "src/api/public/uuidpb/uuid.proto";
-import "src/table_store/schemapb/schema.proto";
 import "src/carnot/planner/distributedpb/distributed_plan.proto";
-import "src/vizier/messages/messagespb/messages.proto";
-import "src/vizier/services/shared/agentpb/agent.proto";
 import "src/carnot/planner/dynamic_tracing/ir/logicalpb/logical.proto";
 import "src/common/base/statuspb/status.proto";
-import "google/protobuf/duration.proto";
-
-option go_package = "metadatapb";
+import "src/table_store/schemapb/schema.proto";
+import "src/vizier/messages/messagespb/messages.proto";
+import "src/vizier/services/shared/agentpb/agent.proto";
 
 service MetadataService {
   // An endpoint used by the query broker which is responsible for streaming the state of the agents.
   // It first sends the full initial state of the agents, and then it sends state updates after that.
-  rpc GetAgentUpdates(AgentUpdatesRequest) returns (stream AgentUpdatesResponse) {}
+  rpc GetAgentUpdates(AgentUpdatesRequest) returns (stream AgentUpdatesResponse);
   // These RPC calls are used by UDTFs to fetch metadata.
-  rpc GetSchemas(SchemaRequest) returns (SchemaResponse) {}
-  rpc GetAgentInfo(AgentInfoRequest) returns (AgentInfoResponse) {}
+  rpc GetSchemas(SchemaRequest) returns (SchemaResponse);
+  rpc GetAgentInfo(AgentInfoRequest) returns (AgentInfoResponse);
 }
 
 service MetadataTracepointService {
-  rpc RegisterTracepoint(RegisterTracepointRequest) returns (RegisterTracepointResponse) {}
-  rpc GetTracepointInfo(GetTracepointInfoRequest) returns (GetTracepointInfoResponse) {}
-  rpc RemoveTracepoint(RemoveTracepointRequest) returns (RemoveTracepointResponse) {}
+  rpc RegisterTracepoint(RegisterTracepointRequest) returns (RegisterTracepointResponse);
+  rpc GetTracepointInfo(GetTracepointInfoRequest) returns (GetTracepointInfoResponse);
+  rpc RemoveTracepoint(RemoveTracepointRequest) returns (RemoveTracepointResponse);
 }
 
 // MetadataConfigService is responsible for delegating config changes to PEMs.
 service MetadataConfigService {
   // UpdateConfig updates the PEM config for the given key/value setting.
-  rpc UpdateConfig(UpdateConfigRequest) returns (UpdateConfigResponse) {}
+  rpc UpdateConfig(UpdateConfigRequest) returns (UpdateConfigResponse);
 }
 
 message SchemaRequest {}
 
 // The schema response from the metadata service containing the schema that all
 // agents serve.
-message SchemaResponse { pl.table_store.schemapb.Schema schema = 2; }
+message SchemaResponse {
+  pl.table_store.schemapb.Schema schema = 2;
+}
 
 message AgentInfoRequest {}
 
@@ -67,7 +69,7 @@ message AgentUpdatesRequest {
 
 // AgentUpdate contains an update about a particular agent.
 message AgentUpdate {
-  uuidpb.UUID agent_id = 1 [ (gogoproto.customname) = "AgentID" ];
+  uuidpb.UUID agent_id = 1 [(gogoproto.customname) = "AgentID"];
   oneof update {
     // True if the agent has been deleted.
     bool deleted = 2;
@@ -97,23 +99,23 @@ message AgentUpdatesResponse {
 
 // The request to register tracepoints on all PEMs.
 message RegisterTracepointRequest {
-    message TracepointRequest {
-      pl.carnot.planner.dynamic_tracing.ir.logical.TracepointDeployment tracepoint_deployment = 1;
-      // The user-specified name for the tracepoint.
-      string name = 2;
-      // The TTL, in seconds, for how long we want the tracepoint to live.
-      google.protobuf.Duration ttl = 3 [ (gogoproto.customname) = "TTL" ];
-    }
-    repeated TracepointRequest requests = 1;
+  message TracepointRequest {
+    pl.carnot.planner.dynamic_tracing.ir.logical.TracepointDeployment tracepoint_deployment = 1;
+    // The user-specified name for the tracepoint.
+    string name = 2;
+    // The TTL, in seconds, for how long we want the tracepoint to live.
+    google.protobuf.Duration ttl = 3 [(gogoproto.customname) = "TTL"];
+  }
+  repeated TracepointRequest requests = 1;
 }
 
 // The response to a RegisterTracepointRequest.
 message RegisterTracepointResponse {
   message TracepointStatus {
-      pl.statuspb.Status status = 1;
-      // The ID of the tracepoint. This should be the user-specified name for the tracepoint.
-      uuidpb.UUID id = 2 [ (gogoproto.customname) = "ID" ];
-      string name = 3;
+    pl.statuspb.Status status = 1;
+    // The ID of the tracepoint. This should be the user-specified name for the tracepoint.
+    uuidpb.UUID id = 2 [(gogoproto.customname) = "ID"];
+    string name = 3;
   }
   repeated TracepointStatus tracepoints = 1;
   // Overall status of whether tracepoint registration requests were initiated with/without errors.
@@ -123,33 +125,33 @@ message RegisterTracepointResponse {
 // The request to check the status for a tracepoint with the given names.
 message GetTracepointInfoRequest {
   // The tracepoint IDs to get the info for. If empty, fetches the info for all known tracepoints.
-  repeated uuidpb.UUID ids = 1 [ (gogoproto.customname) = "IDs" ];
+  repeated uuidpb.UUID ids = 1 [(gogoproto.customname) = "IDs"];
 }
 
 // The status of whether the tracepoint has successfully registered or not.
 message GetTracepointInfoResponse {
-    message TracepointState {
-        // The tracepoint ID.
-        uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
-        // The state of the tracepoint.
-        pl.statuspb.LifeCycleState state = 2;
-        // The status of the tracepoint, specified if the state of the tracepoint is not healthy.
-        repeated pl.statuspb.Status statuses = 3;
-        string name = 4;
-        // The desired state for the tracepoint. This can be used to determine whether
-        // the tracepoint is just starting up or in the process of terminating.
-        pl.statuspb.LifeCycleState expected_state = 5;
-        repeated string schema_names = 6;
-    }
-    // List of tracepoint states.
-    repeated TracepointState tracepoints = 1;
+  message TracepointState {
+    // The tracepoint ID.
+    uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+    // The state of the tracepoint.
+    pl.statuspb.LifeCycleState state = 2;
+    // The status of the tracepoint, specified if the state of the tracepoint is not healthy.
+    repeated pl.statuspb.Status statuses = 3;
+    string name = 4;
+    // The desired state for the tracepoint. This can be used to determine whether
+    // the tracepoint is just starting up or in the process of terminating.
+    pl.statuspb.LifeCycleState expected_state = 5;
+    repeated string schema_names = 6;
+  }
+  // List of tracepoint states.
+  repeated TracepointState tracepoints = 1;
 }
 
 // The request to evict a tracepoint. This will normally happen via the tracepoint's TTL, but can be
 // initiated via request as well.
 message RemoveTracepointRequest {
-    // The name of the tracepoint to remove.
-    repeated string names = 1;
+  // The name of the tracepoint to remove.
+  repeated string names = 1;
 }
 
 // The response to the tracepoint removal.
