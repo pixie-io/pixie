@@ -31,10 +31,7 @@
       "type": "script-and-regex",
       "include": [
         "(^third_party/.*\\.bzl$)",
-        "(^third_party/BUILD$)",
         "(^third_party/BUILD\\.bazel$)",
-        "(WORKSPACE$)",
-        "(BUILD$)",
         "(BUILD\\.bazel$)",
         "(\\.bzl$)"
       ],

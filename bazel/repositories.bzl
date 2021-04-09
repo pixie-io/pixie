@@ -101,7 +101,7 @@ def list_pl_deps(name):
         for url in urls:
             if url.startswith("https://github.com") or best_url == None:
                 best_url = url
-        repo_urls.append(url)
+        repo_urls.append(best_url)
 
     native.genrule(
         name = name,
