@@ -9,7 +9,6 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/graph-gophers/graphql-go"
 
-	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/utils"
 )
@@ -20,7 +19,7 @@ func (q *QueryResolver) CreateCluster(ctx context.Context) (*ClusterInfoResolver
 }
 
 type clusterArgs struct {
-	ID *graphql.ID
+	ID graphql.ID
 }
 
 func timestampProtoToNanos(ts *types.Timestamp) int64 {
@@ -159,21 +158,9 @@ func (q *QueryResolver) Clusters(ctx context.Context) ([]*ClusterInfoResolver, e
 
 // Cluster resolves cluster information.
 func (q *QueryResolver) Cluster(ctx context.Context, args *clusterArgs) (*ClusterInfoResolver, error) {
-	if args == nil || args.ID == nil {
-		clusters, err := q.Clusters(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if len(clusters) == 0 {
-			return nil, errors.New("org has no clusters")
-		}
-		// Take first cluster for now.
-		return clusters[0], nil
-	}
-
 	grpcAPI := q.Env.VizierClusterInfo
 	res, err := grpcAPI.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{
-		ID: utils.ProtoFromUUIDStrOrNil(string(*(args.ID))),
+		ID: utils.ProtoFromUUIDStrOrNil(string(args.ID)),
 	})
 	if err != nil {
 		return nil, err
@@ -378,29 +365,11 @@ func (c *ClusterInfoResolver) NumInstrumentedNodes() int32 {
 	return c.numInstrumentedNodes
 }
 
-// ClusterConnection resolves cluster connection information.
-// TODO(nserrino): When we have multiple clusters per customer, we will need to change this API to take
-// a cluster ID argument to match the GRPC one.
+// ClusterConnection resolves cluster connection information..
 func (q *QueryResolver) ClusterConnection(ctx context.Context, args *clusterArgs) (*ClusterConnectionInfoResolver, error) {
 	grpcAPI := q.Env.VizierClusterInfo
 
-	var clusterID *uuidpb.UUID
-	if args == nil || args.ID == nil {
-		resp, err := grpcAPI.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{})
-		if err != nil {
-			return nil, err
-		}
-
-		if len(resp.Clusters) == 0 {
-			return nil, errors.New("org has no clusters")
-		}
-
-		// Take first ID for now.
-		clusterID = resp.Clusters[0].ID
-	} else {
-		clusterID = utils.ProtoFromUUIDStrOrNil(string(*(args.ID)))
-	}
-
+	clusterID := utils.ProtoFromUUIDStrOrNil(string(args.ID))
 	info, err := grpcAPI.GetClusterConnectionInfo(ctx, &cloudapipb.GetClusterConnectionInfoRequest{
 		ID: clusterID,
 	})

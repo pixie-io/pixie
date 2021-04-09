@@ -30,7 +30,6 @@ type QueryResolver struct {
 }
 
 // NewGraphQLHandler is the hTTP handler used for handling GraphQL requests.
-// TODO(nserrino): Remove apienv when graphqlEnv fully subsumes it.
 func NewGraphQLHandler(graphqlEnv GraphQLEnv) http.Handler {
 	schemaData := schema.MustLoadSchema()
 	opts := []graphql.SchemaOpt{graphql.UseFieldResolvers(), graphql.MaxParallelism(20)}

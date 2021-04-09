@@ -74,11 +74,9 @@ type APIKey {
 type Query {
   user: UserInfo!
   userSettings(keys: [String]!): [UserSetting]!
-  # TODO(nserrino): Make ID required once UI moves over to multi-cluster support.
-  cluster(id: ID): ClusterInfo!
+  cluster(id: ID!): ClusterInfo!
   clusters: [ClusterInfo!]!
-  # TODO(nserrino): Make ID required once UI moves over to multi-cluster support.
-  clusterConnection(id: ID): ClusterConnectionInfo!
+  clusterConnection(id: ID!): ClusterConnectionInfo!
   cliArtifact(artifactType: ArtifactType): CLIArtifact!
   artifacts(artifactName: String): ArtifactsInfo!
   autocomplete(input: String, cursorPos: Int, action: AutocompleteActionType, clusterUID: String): AutocompleteResult!
