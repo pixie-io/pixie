@@ -14,12 +14,11 @@ The Stirling architecture consists of a core infrastructure into which "source c
 The Stirling directory structure is as follows:
 
 ```
+binaries            # Standalone executable versions of Stirling.
 bpf_tools           # Tools for managing the compilation and deployment of BPF code.
 BUILD.bazel         # Top-level build file.
 core                # Core Stirling infrastructure, without data source connectors.
-docs                # Documents for developers.
 e2e_tests           # Top-level stirling tests (mostly shell tests).
-k8s                 # Scripts for deploying to k8s.
 LICENSE.txt         # Stirling specific license
 obj_tools           # Tools for managing binary objects (e.g. ELF and DWARF information).
 proto               # Public messages for publishing data tables.
@@ -28,8 +27,6 @@ scripts             # Utility scripts.
 source_connectors   # Directory containing all source connectors, which are responsible for gathering data.
 stirling.cc         # Top-level Stirling source code.
 stirling.h          # Top-level Stirling header file.
-stirling_mock.h     # Mock definition for testing.
-stirling_wrapper.cc # Source code for stand-alone (command-line) version of Stirling binary.
 testing             # Testing utilities.
 utils               # Utilities.
 ```
@@ -53,8 +50,9 @@ The Stirling code base can be build with the following command:
 bazel build //src/stirling/...
 ```
 
-Certain Stirling tests use BPF, whic requires root privileges.
-Those tests are marked with the bazel tag `requires_bpf`. When you run the standard `bazel test`, only those tests that do not require BPF are run.
+Certain Stirling tests use BPF, which requires root privileges.
+Those tests are marked with the bazel tag `requires_bpf`.
+When you run the standard `bazel test`, only those tests that do not require BPF are run.
 ```
 bazel test //src/stirling/...
 ```
@@ -68,7 +66,7 @@ The `sudo_bazel_run.sh` builds the target, and then uses sudo to run the script 
 
 Note: if a test uses sharding, `--test_sharding_strategy=disabled` is required to run the test.
 
-### Running BPF test suite
+### Running the BPF test suite
 
 To run the entire BPF test suite, you can deploy to Jenkins, which will run these tests with the appropriate priveleges and environment.
 
@@ -80,23 +78,6 @@ $PIXIE_ROOT/scripts/run_docker.sh
 bazel test --config=bpf //path/to:test
 ```
 
-### BCC breakage because of Clang upgrade with chef.
-
-BCC, as part of Stirling, links a complete Clang. That Clang stack is from chef-managed host Clang stack.
-Because of bazel caching, conflicting Clang artifacts might get linked into Stirling inadvertently.
-That could result into confusing build failure or runtime crash in PEM/Stirling.
-For example, BPF tests, stirling_wrapper, or PEM might crash.
-
-Usually the fix is to clean up the caches, following the steps below:
-```shell
-# Remove more cached artifacts, and shutdown bazel
-bazel clean --expunge && bazel shutdown
-
-# `bazel clean --expunge` can't remove files that may have been made while running bazel in a container,
-# so perform a deeper clean.
-sudo rm -rf ~/.cache/bazel
-```
-
 ## Stirling Wrapper
 
 `stirling_wrapper` is a stand-alone version of Stirling that one can run locally. It does not require the rest of the PEM, or even k8s. It will collect the data from its sources and print the results directly to STDOUT.
@@ -105,10 +86,6 @@ You can run `stirling_wrapper` via the following command, which builds `stirling
 ```
 $PIXIE_ROOT/src/stirling/scripts/stirling_wrapper.sh
 ```
-
-### Running Stirling Wrapper on K8s (e.g. GKE)
-
-`src/stirling/k8s/run_on_k8s.sh` is a convenience script that will deploy a `stirling_wrapper` pod to your current k8s cluster (as pointed to by `kubectl`).
 
 ## Stirling docker container environment
 
@@ -123,25 +100,14 @@ To make sure Stirling runs properly in a container environment, the following fl
 *   `--volume=/:/host`: Make the entire host file system to `/host` inside container. Stirling needs
     this to access all of the data files on the host. One of them is the system headers, which is
     used by BCC to compile C code. Also required for accessing debug info of binaries in other containers.
-*   `--env PL_HOST_PATH=/host": Related to the line above.
-```
+*   `--env PL_HOST_PATH=/host`: Related to the line above.
 
-If any additional flags become required, be sure to udpate at least the following files:
+If any additional flags become required, be sure to update at least the following files:
  - `scripts/run_docker.sh`
  - `k8s/pem/pem_daemonset.yaml`
  - `src/stirling/k8s`: all yaml files
  - `src/stirling/scripts/docker_run_stirling_wrapper.sh`
  - `src/stirling/e2e_tests`: files that run stirling in a container
-
-## Testing Stirling via PEM on GKE
-
-If using a brand new cluster with no Pixie deployments, start by deploying standard Pixie:
-`px deploy`
-
-The standard deploy will install some prerequisites. It only needs to be run once.
-
-You can then deploy a development version based on your local changes using `skaffold`:
-`skaffold run -p opt -f skaffold/skaffold_vizier.yaml`
 
 ## FAQ
 
