@@ -2644,8 +2644,6 @@ TEST_F(CompilerTest, DISABLED_RollingTimeStringQuery) {
             std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(3)).count());
   Relation rolling_relation({types::TIME64NS, types::INT64}, {"time_", "remote_port"});
   EXPECT_EQ(rolling_relation, rolling->relation());
-  // TODO(james): the rolling will likely get merged into some kind of Agg or MergedAgg so this test
-  // will nechange.
 }
 
 constexpr char kRollingIntQuery[] = R"pxl(
@@ -2669,8 +2667,6 @@ TEST_F(CompilerTest, DISABLED_RollingIntQuery) {
   ASSERT_EQ(window_size_int->val(), 3000);
   Relation rolling_relation({types::TIME64NS, types::INT64}, {"time_", "remote_port"});
   EXPECT_EQ(rolling_relation, rolling->relation());
-  // TODO(james): the rolling will likely get merged into some kind of Agg or MergedAgg so this test
-  // will need to change.
 }
 
 constexpr char kRollingCompileTimeExprEvalQuery[] = R"pxl(
@@ -2694,8 +2690,6 @@ TEST_F(CompilerTest, DISABLED_RollingCompileTimeExprEvalQuery) {
   ASSERT_EQ(window_size_int->val(), compiler_state_->time_now().val + 1);
   Relation rolling_relation({types::TIME64NS, types::INT64}, {"time_", "remote_port"});
   EXPECT_EQ(rolling_relation, rolling->relation());
-  // TODO(james): the rolling will likely get merged into some kind of Agg or MergedAgg so this test
-  // will need to change.
 }
 
 constexpr char kRollingNonTimeColumn[] = R"pxl(

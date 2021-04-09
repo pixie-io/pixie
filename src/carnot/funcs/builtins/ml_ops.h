@@ -154,7 +154,6 @@ class ReservoirSampleUDA : public udf::UDA {
     count_ += other.count_;
   }
   TArg Finalize(FunctionContext*) {
-    // TODO(james): figure out how to return multiple rows here.
     return reservoir_[0];
   }
 

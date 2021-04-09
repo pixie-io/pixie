@@ -73,8 +73,8 @@ class RequestPath {
   // Serialization/Deserialization
   std::string ToJSON() const;
   void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const;
-  static RequestPath FromJSON(std::string serialized_request_path);
-  static RequestPath FromJSON(const rapidjson::Document::ValueType& doc);
+  static StatusOr<RequestPath> FromJSON(std::string serialized_request_path);
+  static StatusOr<RequestPath> FromJSON(const rapidjson::Document::ValueType& doc);
 
   int64_t depth() const { return path_components_.size(); }
   const std::vector<std::string>& path_components() const { return path_components_; }
@@ -105,6 +105,7 @@ class RequestPathCluster {
    /a/f/c, then the centroid is /a/<RequestPath::kAnyToken>/c.
    */
  public:
+  explicit RequestPathCluster(size_t min_cardinality = 5) : min_cardinality_(min_cardinality) {}
   explicit RequestPathCluster(const RequestPath& request_path, size_t min_cardinality = 5)
       : centroid_(request_path), min_cardinality_(min_cardinality) {
     members_.insert(request_path);
@@ -136,8 +137,8 @@ class RequestPathCluster {
   const RequestPath& Predict(const RequestPath& request_path) const;
 
   // Serialization/Deserialization
-  static RequestPathCluster FromJSON(const std::string& json);
-  static RequestPathCluster FromJSON(const rapidjson::Document::ValueType& doc);
+  static StatusOr<RequestPathCluster> FromJSON(const std::string& json);
+  static StatusOr<RequestPathCluster> FromJSON(const rapidjson::Document::ValueType& doc);
   std::string ToJSON() const;
   void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const;
 
@@ -145,8 +146,6 @@ class RequestPathCluster {
   const absl::flat_hash_set<RequestPath>& members() const { return members_; }
 
  private:
-  explicit RequestPathCluster(size_t min_cardinality = 5) : min_cardinality_(min_cardinality) {}
-
   void MergeCentroids(const RequestPath& other_centroid);
   void MergeMembers(const absl::flat_hash_set<RequestPath>& other_members);
 
@@ -159,7 +158,7 @@ class RequestPathCluster {
 
 class RequestPathClustering {
  public:
-  static RequestPathClustering FromJSON(const std::string& json);
+  static StatusOr<RequestPathClustering> FromJSON(const std::string& json);
 
   std::string ToJSON() const;
 
@@ -195,7 +194,11 @@ class RequestPathClusteringPredictUDF : public udf::ScalarUDF {
   StringValue Exec(FunctionContext*, StringValue request_path_str,
                    StringValue serialized_clustering) {
     if (!clustering_init_) {
-      clustering_ = RequestPathClustering::FromJSON(serialized_clustering);
+      auto clustering_or_s = RequestPathClustering::FromJSON(serialized_clustering);
+      if (!clustering_or_s.ok()) {
+        return clustering_or_s.msg();
+      }
+      clustering_ = clustering_or_s.ConsumeValueOrDie();
       clustering_init_ = true;
     }
     auto request_path = RequestPath(request_path_str);
@@ -220,7 +223,7 @@ class RequestPathClusteringFitUDA : public udf::UDA {
   StringValue Serialize(FunctionContext*) { return clustering_.ToJSON(); }
 
   Status Deserialize(FunctionContext*, const StringValue& data) {
-    clustering_ = RequestPathClustering::FromJSON(data);
+    PL_ASSIGN_OR_RETURN(clustering_, RequestPathClustering::FromJSON(data));
     return Status::OK();
   }
 

@@ -62,7 +62,6 @@ static void BM_CoresetFromWeightedPointSet(benchmark::State& state) {
   }
 }
 
-// TODO(james): serialize/deserialize are a bit slow at the moment.
 // NOLINTNEXTLINE : runtime/references.
 static void BM_CoresetSerialize(benchmark::State& state) {
   int d = 64;

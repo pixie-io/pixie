@@ -32,7 +32,6 @@ type liveViewModel struct {
 	vis         *pl_vispb.Vis
 }
 
-// TODO(james): Eventually this will be a DB.
 type scriptStore struct {
 	Scripts   map[uuid.UUID]*scriptModel
 	LiveViews map[uuid.UUID]*liveViewModel

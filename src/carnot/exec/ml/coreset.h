@@ -190,8 +190,6 @@ class CoresetTree {
     }
 
     // Fix the r-way tree by coresetting any levels that have r or more buckets after merge.
-    // TODO(james): I think techincally this should be done such that each new coreset is the union
-    // of only r lower level buckets. But for now this is probably sufficient.
     for (auto i = 0UL; i < levels_.size(); i++) {
       if (levels_[i].size() >= r_) {
         auto merged =
@@ -243,8 +241,8 @@ class CoresetTree {
          itr != doc["levels"].MemberEnd(); ++itr) {
       size_t level_ind;
       if (!absl::SimpleAtoi(itr->name.GetString(), &level_ind)) {
-        // TODO(james): don't silently fail here.
-        return;
+        // Skip any keys that aren't numbers.
+        continue;
       }
       Level level;
       for (rapidjson::SizeType i = 0; i < itr->value.Size(); i++) {
@@ -263,7 +261,6 @@ class CoresetTree {
   std::vector<Level> levels_;
 };
 
-// TODO(james): implement cached coreset tree as alternative CoresetStructure.
 template <typename TCoresetStructure>
 class CoresetDriver {
  public:

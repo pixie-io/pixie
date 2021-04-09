@@ -9,7 +9,6 @@ import (
 var mergeFailureReg *regexp.Regexp
 var settingsNonDynReg *regexp.Regexp
 
-// TODO(james): regexp based parsing of errors seems a bit fragile, not sure what the alternative is though.
 func init() {
 	mergeFailureReg = regexp.MustCompile(
 		`mapper \[(.*)\] of different type, current_type \[(.*)\], merged_type \[(.*)\]`)

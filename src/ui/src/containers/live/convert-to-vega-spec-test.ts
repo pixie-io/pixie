@@ -13,7 +13,6 @@ function addHoverDataTest(spec: Spec, seriesFieldName: string | null, valueField
       expect(spec.data).toEqual(expect.arrayContaining([
         {
           name: 'hover_pivot_data',
-          // TODO(james): match the name of the transformed data source instead of any string.
           source: expect.any(String),
           transform: [{
             type: 'pivot',
@@ -29,7 +28,6 @@ function addHoverDataTest(spec: Spec, seriesFieldName: string | null, valueField
       expect(spec.data).toEqual(expect.arrayContaining([
         {
           name: 'hover_pivot_data',
-          // TODO(james): match the name of the transformed data source instead of any string.
           source: expect.any(String),
           transform: [{
             type: 'project',
@@ -205,7 +203,6 @@ function addTimeseriesYDomainHoverTests(spec: Spec, dsName: string, tsValues: st
     expect(spec.data).toEqual(expect.arrayContaining([
       {
         name: dsName,
-        // TODO(james): match the name of the transformed data source instead of any string.
         source: expect.any(String),
         transform: expect.arrayContaining(tsValues.map((tsv) => ({
           type: 'extent',
@@ -707,7 +704,6 @@ describe('grouped bar', () => {
     },
   };
   const { spec } = convertWidgetDisplayToVegaSpec(input, 'mysource', DARK_THEME);
-  // TODO(james): add checks for column headers/footers and row headers/footers.
   it('produces group mark for bars', () => {
     expect(spec.marks).toEqual(expect.arrayContaining([expect.objectContaining({
       type: 'group',
@@ -754,7 +750,6 @@ describe('grouped bar with stackby', () => {
     },
   };
   const { spec } = convertWidgetDisplayToVegaSpec(input, 'mysource', DARK_THEME);
-  // TODO(james): add checks for column headers/footers and row headers/footers.
   it('produces group mark for bars', () => {
     expect(spec.marks).toEqual(expect.arrayContaining([expect.objectContaining({
       type: 'group',

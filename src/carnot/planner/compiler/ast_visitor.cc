@@ -218,7 +218,6 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ParseStringAsType(const pypa::AstPtr& ast,
       break;
     }
     case types::DataType::UINT128: {
-      // TODO(james): Implement this.
       return CreateAstError(ast, "Passing arg of type UINT128 is currently unsupported.");
       break;
     }
@@ -244,7 +243,6 @@ StatusOr<ArgMap> ASTVisitorImpl::ProcessExecFuncArgs(const pypa::AstPtr& ast,
       return CreateAstError(ast, "Arg type annotation required. Function: '$0', arg: '$1'",
                             func->name(), arg.name());
     }
-    // TODO(james): Parse the string as an expression instead of adhoc parsing.
     PL_ASSIGN_OR_RETURN(auto node, ParseStringAsType(ast, arg.value(), it->second));
     // FuncObject::Call has logic to handle accepting normal args as kwargs,
     // so its easiest to just pass everything as kwargs. In the future, if we want to support

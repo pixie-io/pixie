@@ -24,8 +24,8 @@ class ModelPool {
 
   template <typename TExecutor, typename... Args>
   void CreatePool(Args... args) {
-    // TODO(james): currently if you ask for the same type of model with different args the pool
-    // will return the first args asked for.
+    // TODO(james, PP-2594): currently if you ask for the same type of model with different args the
+    // pool will return the first args asked for.
     auto pool = std::make_unique<PoolType>();
     pool->Add(std::make_unique<TExecutor>(args...));
     pool_map_[TExecutor::Type()] = std::move(pool);

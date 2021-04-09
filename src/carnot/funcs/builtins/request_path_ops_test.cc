@@ -7,6 +7,7 @@
 #include "src/carnot/funcs/builtins/request_path_ops.h"
 #include "src/carnot/funcs/builtins/request_path_ops_test_utils.h"
 #include "src/carnot/udf/test_utils.h"
+#include "src/common/base/test_utils.h"
 
 namespace pl {
 namespace carnot {
@@ -16,7 +17,7 @@ class RequestPathTest : public testing::TestWithParam<const char*> {};
 
 TEST_P(RequestPathTest, serialization) {
   RequestPath path(GetParam());
-  EXPECT_EQ(path, RequestPath::FromJSON(path.ToJSON()));
+  EXPECT_OK_AND_EQ(RequestPath::FromJSON(path.ToJSON()), path);
 }
 
 INSTANTIATE_TEST_SUITE_P(RequestPathVariants, RequestPathTest,
@@ -33,7 +34,9 @@ TEST(RequestPathClusteringFit, basic) {
                                    .ForInput("/a/b/e")
                                    .ForInput("a/b/f")
                                    .Result();
-  auto clustering = RequestPathClustering::FromJSON(serialized_clustering);
+  auto clustering_or_s = RequestPathClustering::FromJSON(serialized_clustering);
+  ASSERT_OK(clustering_or_s);
+  auto clustering = clustering_or_s.ConsumeValueOrDie();
   ASSERT_EQ(1, clustering.clusters().size());
   EXPECT_EQ("/a/b/*", clustering.clusters()[0].centroid().ToString());
   EXPECT_EQ("/a/b/*", clustering.clusters()[0].Predict(RequestPath("/a/b/c")).ToString());
@@ -43,7 +46,9 @@ TEST(RequestPathClusteringFit, basic_low_cardinality) {
   auto uda_tester = udf::UDATester<RequestPathClusteringFitUDA>();
 
   auto serialized_clustering = uda_tester.ForInput("/a/b/d").ForInput("/a/b/c").Result();
-  auto clustering = RequestPathClustering::FromJSON(serialized_clustering);
+  auto clustering_or_s = RequestPathClustering::FromJSON(serialized_clustering);
+  ASSERT_OK(clustering_or_s);
+  auto clustering = clustering_or_s.ConsumeValueOrDie();
   ASSERT_EQ(1, clustering.clusters().size());
   EXPECT_EQ("/a/b/*", clustering.clusters()[0].centroid().ToString());
   EXPECT_EQ("/a/b/d", clustering.clusters()[0].Predict(RequestPath("/a/b/d")).ToString());
@@ -101,8 +106,12 @@ TEST(RequestPathClusteringFit, merging_clusters) {
   // Check that merging works in either order.
   auto serialized_clustering1 = uda_tester1.Merge(&uda_tester2).Result();
   auto serialized_clustering2 = uda_tester2.Merge(&uda_tester1).Result();
-  auto clustering1 = RequestPathClustering::FromJSON(serialized_clustering1);
-  auto clustering2 = RequestPathClustering::FromJSON(serialized_clustering2);
+  auto clustering1_or_s = RequestPathClustering::FromJSON(serialized_clustering1);
+  ASSERT_OK(clustering1_or_s);
+  auto clustering1 = clustering1_or_s.ConsumeValueOrDie();
+  auto clustering2_or_s = RequestPathClustering::FromJSON(serialized_clustering2);
+  ASSERT_OK(clustering2_or_s);
+  auto clustering2 = clustering2_or_s.ConsumeValueOrDie();
 
   std::vector<std::string> centroids({"/a/b/*", "/b/b/c", "/c/b/c"});
   EXPECT_THAT(clustering1, HasCentroids(centroids));
@@ -161,7 +170,9 @@ TEST(RequestPathClusteringFit, merging_clusters_complicated) {
       merged.Merge(&pems[idx]);
     }
     auto serialized_clustering = merged.Result();
-    auto clustering = RequestPathClustering::FromJSON(serialized_clustering);
+    auto clustering_or_s = RequestPathClustering::FromJSON(serialized_clustering);
+    ASSERT_OK(clustering_or_s);
+    auto clustering = clustering_or_s.ConsumeValueOrDie();
     EXPECT_THAT(clustering, HasCentroids(expected_centroids));
   } while (std::next_permutation(permutation_indices.begin(), permutation_indices.end()));
 }

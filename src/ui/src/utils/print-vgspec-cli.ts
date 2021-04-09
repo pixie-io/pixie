@@ -309,7 +309,7 @@ function printSpec(display: ChartDisplay) {
     console.log('Error compiling spec', error);
     return;
   }
-  let data: Array<{}>;
+  let data: Array<Record<string, any>>;
 
   if (display[DISPLAY_TYPE_KEY] === BAR_CHART_TYPE) {
     data = barData;
@@ -336,8 +336,6 @@ function printSpec(display: ChartDisplay) {
       if (axis.scale === 'x' && axis.encode && axis.encode.labels && axis.encode.labels.update
         && axis.encode.labels.update.text && axis.encode.labels.update.text.signal
         && axis.encode.labels.update.text.signal.includes('pxTimeFormat')) {
-        // TODO(james): figure out how to get the x axis labels to show something reasonable without
-        // pxTimeFormat.
         axis.encode.labels.update.text.signal = '';
       }
     }

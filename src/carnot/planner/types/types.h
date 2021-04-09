@@ -23,7 +23,6 @@ using pl::table_store::schema::Relation;
 using pl::types::DataType;
 using pl::types::SemanticType;
 
-// TODO(james): implement type hashing for the purpose of type checking.
 class BaseType {
  public:
   virtual ~BaseType() {}

@@ -273,7 +273,7 @@ Status OperatorIR::PruneOutputColumnsTo(const absl::flat_hash_set<std::string>& 
     }
   }
 
-  // TODO(james): Once relation is removed we should turn this into a DCHECK.
+  // TODO(james, PP-2065): Once relation is removed we should turn this into a DCHECK.
   if (is_type_resolved()) {
     auto new_table = TableType::Create();
     for (const auto& [col_name, col_type] : *std::static_pointer_cast<TableType>(resolved_type())) {
@@ -2138,8 +2138,6 @@ Status CheckTypeCast(ExpressionIR* expr, std::shared_ptr<ValueType> from_type,
         "Cannot cast from '$0' to '$1'. Only semantic type casts are allowed.",
         types::ToString(from_type->data_type()), types::ToString(to_type->data_type()));
   }
-  // TODO(james): Add check that semantic type cast is valid. For now, all semantic type casts are
-  // treated as valid.
   return Status::OK();
 }
 

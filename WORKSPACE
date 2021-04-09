@@ -72,7 +72,6 @@ tf_repositories()
 load("@io_bazel_toolchains//rules:gcs.bzl", "gcs_file")
 
 # Download model files
-# TODO(james): add some sort of versioning for models.
 gcs_file(
     name = "embedding_model",
     bucket = "gs://pl-ml-data",

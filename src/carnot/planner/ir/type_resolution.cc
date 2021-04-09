@@ -86,7 +86,7 @@ Status UnionIR::ResolveType(CompilerState* /* compiler_state */) {
   for (const auto& [parent_idx, parent_type] : Enumerate(parent_types())) {
     PL_UNUSED(parent_idx);
     PL_UNUSED(parent_type);
-    // TODO(james): Add type checking.
+    // TODO(james, PP-2595): Add type checking here.
   }
   return SetResolvedType(type);
 }

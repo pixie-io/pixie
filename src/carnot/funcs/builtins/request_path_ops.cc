@@ -53,26 +53,27 @@ double RequestPath::Similarity(const RequestPath& other) const {
   return num_agree / depth();
 }
 
-RequestPath RequestPath::FromJSON(std::string serialized_request_path) {
+StatusOr<RequestPath> RequestPath::FromJSON(std::string serialized_request_path) {
   rapidjson::Document d;
   rapidjson::ParseResult ok = d.Parse(serialized_request_path.data());
   if (ok == nullptr) {
-    // TODO(james): this shouldn't happen, surface this error better.
-    return RequestPath();
+    return error::InvalidArgument("RequestPath::FromJSON: cannot parse JSON");
   }
   return RequestPath::FromJSON(d);
 }
 
-RequestPath RequestPath::FromJSON(const rapidjson::Document::ValueType& doc) {
+StatusOr<RequestPath> RequestPath::FromJSON(const rapidjson::Document::ValueType& doc) {
   if (!doc.IsArray()) {
-    // TODO(james): this shouldn't happen, surface this error better.
-    return RequestPath();
+    return error::InvalidArgument(
+        "RequestPath::FromJSON: expected array of path components, didn't receive array");
   }
   RequestPath request_path;
   for (rapidjson::Value::ConstValueIterator itr = doc.Begin(); itr != doc.End(); ++itr) {
     const rapidjson::Value& val = *itr;
     if (!val.IsString()) {
-      return RequestPath();
+      return error::InvalidArgument(
+          "RequestPath::FromJSON: expected array of path components, received non string path "
+          "component");
     }
     request_path.path_components_.emplace_back(val.GetString(), val.GetStringLength());
   }
@@ -159,21 +160,21 @@ const RequestPath& RequestPathCluster::Predict(const RequestPath& request_path) 
   return centroid_;
 }
 
-RequestPathCluster RequestPathCluster::FromJSON(const rapidjson::Document::ValueType& doc) {
+StatusOr<RequestPathCluster> RequestPathCluster::FromJSON(
+    const rapidjson::Document::ValueType& doc) {
   if (!doc.IsObject()) {
-    // TODO(james): this shouldn't happen, surface this error better.
-    return RequestPathCluster(RequestPath());
+    return error::InvalidArgument(
+        "RequestPathCluster::FromJSON outer json must be object with centroid and member keys");
   }
   RequestPathCluster cluster;
-  cluster.centroid_ = RequestPath::FromJSON(doc[kCentroidKey]);
+  PL_ASSIGN_OR_RETURN(cluster.centroid_, RequestPath::FromJSON(doc[kCentroidKey]));
   const auto& members = doc[kMembersKey];
   if (!members.IsArray()) {
-    // TODO(james): this shouldn't happen, surface this error better.
-    return RequestPathCluster(RequestPath());
+    return error::InvalidArgument("RequestPathCluster::FromJSON members key must be array");
   }
   for (rapidjson::Value::ConstValueIterator itr = members.Begin(); itr != members.End(); ++itr) {
     const rapidjson::Value& val = *itr;
-    auto path = RequestPath::FromJSON(val);
+    PL_ASSIGN_OR_RETURN(auto path, RequestPath::FromJSON(val));
     cluster.members_.insert(path);
   }
   return cluster;
@@ -224,21 +225,20 @@ void RequestPathClustering::MergeCluster(int64_t cluster_index,
   clusters_[cluster_index].Merge(other_cluster);
 }
 
-RequestPathClustering RequestPathClustering::FromJSON(const std::string& json) {
+StatusOr<RequestPathClustering> RequestPathClustering::FromJSON(const std::string& json) {
   rapidjson::Document d;
   rapidjson::ParseResult ok = d.Parse(json.data());
-  // TODO(zasgar/michellenguyen, PP-419): Replace with null when available.
   if (ok == nullptr) {
-    return RequestPathClustering();
+    return error::InvalidArgument("RequestPathClustering::FromJSON: invalid json");
   }
   if (!d.IsArray()) {
-    return RequestPathClustering();
+    return error::InvalidArgument("RequestPathClustering::FromJSON: expected array");
   }
 
   RequestPathClustering clustering;
   for (rapidjson::Value::ConstValueIterator itr = d.Begin(); itr != d.End(); ++itr) {
     const rapidjson::Value& val = *itr;
-    auto cluster = RequestPathCluster::FromJSON(val);
+    PL_ASSIGN_OR_RETURN(auto cluster, RequestPathCluster::FromJSON(val));
     clustering.AddNewCluster(cluster);
   }
   return clustering;

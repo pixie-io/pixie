@@ -106,8 +106,8 @@ class Analyzer : public RuleExecutor<IR> {
     CreateMetadataConversionBatch();
     CreateResolutionVerificationBatch();
     CreateRemoveIROnlyNodesBatch();
-    // TODO(james): once the old relation rules are removed this will probably have to move closer
-    // to the top.
+    // TODO(james, PP-2065): once the old relation rules are removed this will probably have to move
+    // closer to the top.
     CreateTypeResolutionBatch();
     return Status::OK();
   }

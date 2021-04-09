@@ -151,7 +151,7 @@ export interface VegaSpecWithProps {
   hasLegend: boolean;
   legendColumnName: string;
   error?: Error;
-  preprocess?: (data: Array<{}>) => Array<{}>;
+  preprocess?: (data: Array<Record<string, any>>) => Array<Record<string, any>>;
   showTooltips?: boolean;
 }
 
@@ -1011,7 +1011,6 @@ function addChildWidthHeightSignals(spec: VgSpec, widthName: string,
 
 function addGridLayout(spec: VgSpec, columnDomainData: Data, horizontal: boolean) {
   spec.layout = {
-    // TODO(james): figure out the best way to get this from the theme.
     padding: 20,
     titleAnchor: {
       column: 'end',
@@ -2440,7 +2439,7 @@ function convertToStacktraceFlameGraph(
     range: generateColorScale('#549CC6', OVERLAY_COLOR, OVERLAY_ALPHA, OVERLAY_LEVELS),
   });
 
-  const preprocess = (data: Array<{}>): Array<{}> => {
+  const preprocess = (data: Array<Record<string, any>>): Array<Record<string, any>> => {
     const nodeMap = {
       all: {
         fullPath: 'all',
