@@ -26,8 +26,6 @@ resources:
 - ../overlays/exposed_services_gclb
 patchesStrategicMerge:
 - analytics_config.yaml
-- announce_config.yaml
-- oauth_config.yaml
 - contact_config.yaml
 - db_config.yaml
 - service_config.yaml
@@ -35,7 +33,6 @@ patchesStrategicMerge:
 - cloud_ingress_ip.yaml
 - dns_config.yaml
 - scriptmgr_config.yaml
-- ld_config.yaml
 patches:
 - path: db_sidecar.yaml
   target:

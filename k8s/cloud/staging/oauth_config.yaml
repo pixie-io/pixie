@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: pl-oauth-config
-data:
-  PL_AUTH_CLIENT_ID: BZlUnYRfRlckFBILaMZWnBzhvc5rK2mX

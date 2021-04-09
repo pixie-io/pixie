@@ -16,7 +16,13 @@ if [ ! -d "${credentials_path}" ]; then
 fi
 
 shopt -s nullglob
-for yaml in ${credentials_path}/*.yaml; do
+# Apply configs.
+for yaml in "${credentials_path}"/configs/*.yaml; do
   echo "Loading: ${yaml}"
-  sops --decrypt ${yaml} | kubectl apply -n ${namespace} -f -
+  sops --decrypt "${yaml}" | kubectl apply -n "${namespace}" -f -
+done
+# Apply secrets.
+for yaml in "${credentials_path}"/*.yaml; do
+  echo "Loading: ${yaml}"
+  sops --decrypt "${yaml}" | kubectl apply -n "${namespace}" -f -
 done

@@ -5,6 +5,5 @@ commonLabels:
   app: slackin
 namespace: slackin
 resources:
-- config.yaml
 - deployment.yaml
 - service.yaml

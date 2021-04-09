@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: pl-oauth-config
-data:
-  PL_OAUTH_PROVIDER: auth0
-  PL_AUTH_URI: pixie-labs.auth0.com
-  PL_AUTH_CLIENT_ID: qaAfEHQT7mRt6W0gMd9mcQwNANz9kRup

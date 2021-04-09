@@ -1,8 +1,0 @@
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: pl-announcement-config
-data:
-  ANNOUNCEMENT_ENABLED: "true"
-  ANNOUNCE_WIDGET_URL: "https://announcekit.app/widgets/v2/1okO1W"

@@ -5,7 +5,6 @@ const webpack = require('webpack');
 const { CheckerPlugin } = require('awesome-typescript-loader');
 const CaseSensitivePathsPlugin = require('case-sensitive-paths-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const YAML = require('yaml');
 const fs = require('fs');
 const CompressionPlugin = require('compression-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
@@ -224,10 +223,8 @@ module.exports = (env, argv) => {
   }
 
   // Get Auth0ClientID.
-  const authYamlPath = join(topLevelDir, 'k8s', 'cloud', oauthConfigEnv, 'oauth_config.yaml').replace(/\//g, '\\/');
-  // Don't try to change this to `fs.readFileSync` to avoid the useless cat: readFileSync can't find this path, cat can.
-  const oauthYamlReq = execSync(`cat ${authYamlPath}`);
-  const oauthYAML = YAML.parse(oauthYamlReq.toString());
+  const oauthYAML = utils.readYAMLFile(join(topLevelDir, 'credentials', 'k8s',
+    oauthConfigEnv, 'configs', 'oauth_config.yaml'), true);
 
   // Setup the auth client.
   const oauthProvider = oauthYAML.data.PL_OAUTH_PROVIDER;
@@ -235,34 +232,24 @@ module.exports = (env, argv) => {
   const authClientID = oauthYAML.data.PL_AUTH_CLIENT_ID;
 
   // Get LDClientID.
-  const ldYamlPath = join(topLevelDir, 'k8s', 'cloud', environment, 'ld_config.yaml').replace(/\//g, '\\/');
-  // Don't try to change this to `fs.readFileSync` to avoid the useless cat: readFileSync can't find this path, cat can.
-  const ldYamlReq = execSync(`cat ${ldYamlPath}`);
-  const ldYAML = YAML.parse(ldYamlReq.toString());
+  const ldYAML = utils.readYAMLFile(join(topLevelDir, 'credentials', 'k8s',
+    oauthConfigEnv, 'configs', 'ld_config.yaml'), true);
 
   // Get domain name.
-  const domainYamlPath = join(topLevelDir, 'k8s', 'cloud', environment, 'domain_config.yaml').replace(/\//g, '\\/');
-  // Don't try to change this to `fs.readFileSync` to avoid the useless cat: readFileSync can't find this path, cat can.
-  const domainYamlReq = execSync(`cat ${domainYamlPath}`);
-  const domainYAML = YAML.parse(domainYamlReq.toString());
+  const domainYAML = utils.readYAMLFile(join(topLevelDir, 'k8s', 'cloud', environment, 'domain_config.yaml'), false);
 
   // Get whether to enable analytics.
-  const analyticsYamlPath = join(topLevelDir, 'k8s', 'cloud', environment,
-    'analytics_config.yaml').replace(/\//g, '\\/');
-  const analyticsYamlReq = execSync(`cat ${analyticsYamlPath}`);
-  const analyticsYAML = YAML.parse(analyticsYamlReq.toString());
+  const analyticsYAML = utils.readYAMLFile(join(topLevelDir, 'k8s', 'cloud', environment,
+    'analytics_config.yaml'), false);
 
   // Get whether to enable analytics.
-  const anouncementYamlPath = join(topLevelDir, 'k8s', 'cloud', environment,
-    'announce_config.yaml').replace(/\//g, '\\/');
-  const announcementYamlReq = execSync(`cat ${anouncementYamlPath}`);
-  const announcementYAML = YAML.parse(announcementYamlReq.toString());
+  const announcementYAML = utils.readYAMLFile(join(topLevelDir, 'credentials', 'k8s',
+    oauthConfigEnv, 'configs', 'announce_config.yaml'), true);
 
   // Get whether to enable chat contact.
-  const contactYamlPath = join(topLevelDir, 'k8s', 'cloud', environment,
-    'contact_config.yaml').replace(/\//g, '\\/');
-  const contactYamlReq = execSync(`cat ${contactYamlPath}`);
-  const contactYAML = YAML.parse(contactYamlReq.toString());
+  const contactYAML = utils.readYAMLFile(join(topLevelDir, 'k8s', 'cloud', environment,
+    'contact_config.yaml'), false);
+
   webpackConfig.plugins.unshift(
     new webpack.DefinePlugin({
       __CONTACT_ENABLED__: JSON.parse(contactYAML.data.CONTACT_ENABLED),
@@ -285,10 +272,8 @@ module.exports = (env, argv) => {
     webpackConfig.devServer.https = { key, cert };
   } else {
     const credsEnv = environment === 'base' ? 'dev' : environment;
-    const certsPath = join(topLevelDir,
-      'credentials', 'k8s', credsEnv, 'cloud_proxy_tls_certs.yaml').replace(/\//g, '\\/');
-    const results = execSync(`sops --decrypt ${certsPath}`);
-    const credsYAML = YAML.parse(results.toString());
+    const credsYAML = utils.readYAMLFile(join(topLevelDir,
+      'credentials', 'k8s', credsEnv, 'cloud_proxy_tls_certs.yaml'), true);
     webpackConfig.devServer.https = {
       key: credsYAML.stringData['tls.key'],
       cert: credsYAML.stringData['tls.crt'],

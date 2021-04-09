@@ -2,6 +2,8 @@ const archiver = require('archiver');
 const fs = require('fs');
 const { dirname } = require('path');
 const shell = require('shelljs');
+const { execSync } = require('child_process');
+const YAML = require('yaml');
 
 // Executes the passed in command. On non-zero exit code an exception
 // is thrown.
@@ -29,6 +31,20 @@ function findGatewayProxyPath() {
     '--output jsonpath=\'{.spec.ports[?(@.name=="tcp-rest")].nodePort}\''].join(' ');
   const nodePort = execAndParseResults(nodePortCmd);
   return `${nodeIP}:${nodePort}`;
+}
+
+// Reads the YAML file from the given sops file.
+function readYAMLFile(filePath, isEncrypted) {
+  const cleanedPath = filePath.replace(/\//g, '\\/');
+  let results;
+  if (isEncrypted) {
+    results = execSync(`sops --decrypt ${cleanedPath}`);
+  } else {
+    // Don't try to change this to `fs.readFileSync` to avoid the useless cat:
+    // readFileSync can't find this path, cat can.
+    results = execSync(`cat ${cleanedPath}`);
+  }
+  return YAML.parse(results.toString());
 }
 
 class ArchivePlugin {
@@ -63,4 +79,5 @@ class ArchivePlugin {
 module.exports = {
   findGatewayProxyPath,
   ArchivePlugin,
+  readYAMLFile,
 };

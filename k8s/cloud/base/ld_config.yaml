@@ -1,7 +1,0 @@
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: pl-ld-config
-data:
-  PL_LD_CLIENT_ID: 5f32dc575b249c09ddc64c86
