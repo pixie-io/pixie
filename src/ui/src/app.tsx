@@ -106,9 +106,13 @@ const styles = () => createStyles({
   },
 });
 
-const StyledApp = withLDProvider({
-  clientSideID: LD_CLIENT_ID,
-})(withStyles(styles)(App));
+let StyledApp = withStyles(styles)(App);
+
+if (LD_CLIENT_ID !== '') {
+  StyledApp = withLDProvider({
+    clientSideID: LD_CLIENT_ID,
+  })(StyledApp);
+}
 
 ReactDOM.render(
   <ThemeProvider theme={DARK_THEME}>
