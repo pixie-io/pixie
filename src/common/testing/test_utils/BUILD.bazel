@@ -25,11 +25,17 @@ container_image(
     entrypoint = ["/busybox/sh"],
 )
 
+# This test is useful for debugging flakiness on Jenkins BPF worker nodes,
+# where there is some non-deterministic issues where containers fail to deploy.
+# Mark as manual, since it is primarily for debugging, and could fail.
 pl_cc_test(
     name = "container_runner_test",
     srcs = ["container_runner_test.cc"],
     data = [":sleep_container_image.tar"],
     tags = [
+        "manual",
+        # No BPF, but mark as such to make sure the test runs on a Jenkins BPF worker node.
+        "requires_bpf",
         "no_asan",
         "no_tsan",
     ],
