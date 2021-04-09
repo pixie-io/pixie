@@ -132,6 +132,12 @@
         "(\\.php$)"
       ]
     },
+    "phutil-library": {
+      "type": "phutil-library",
+      "include": [
+        "(^arc_addons/.*\\.php$)"
+      ]
+    },
     "spelling": {
       "type": "spelling",
       "exclude": [
@@ -144,6 +150,15 @@
       "include": [
         "(.*\\.sh$)"
       ]
+    },
+    "xhpast": {
+      "type": "xhpast",
+      "include": [
+        "(^arc_addons/.*\\.php$)"
+      ],
+      "severity": {
+        "5": "warning"
+      }
     },
     "yaml": {
       "type": "script-and-regex",
