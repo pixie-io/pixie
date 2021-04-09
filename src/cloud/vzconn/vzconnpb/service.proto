@@ -6,7 +6,7 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/any.proto";
 import "src/api/public/uuidpb/uuid.proto";
 
-option go_package = "pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb;vzconnpb";
+option go_package = "vzconnpb";
 
 service VZConnService {
   // Registers a new Vizier deployment and returns a cluster ID.

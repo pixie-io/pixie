@@ -11,7 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	"pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
 )

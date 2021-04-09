@@ -17,7 +17,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/api/controller"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
-	authpb "pixielabs.ai/pixielabs/src/cloud/auth/authpb"
+	"pixielabs.ai/pixielabs/src/cloud/auth/authpb"
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
 	mock_autocomplete "pixielabs.ai/pixielabs/src/cloud/autocomplete/mock"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
@@ -27,7 +27,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	"pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	"pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	pl_vispb "pixielabs.ai/pixielabs/src/shared/vispb"
 	pbutils "pixielabs.ai/pixielabs/src/utils"
 )

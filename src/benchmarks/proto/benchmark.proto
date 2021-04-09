@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package pl.benchmarks;
 
-option go_package = "pixielabs.ai/pixielabs/src/benchmarks/proto;benchmarkpb";
+option go_package = "benchmarkpb";
 
 // This is extracted from Hipster Shop's proto. Names are kept for convenience, and have no
 // particular meaning.

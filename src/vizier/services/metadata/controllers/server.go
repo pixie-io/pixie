@@ -15,15 +15,15 @@ import (
 	"google.golang.org/grpc/status"
 
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
-	statuspb "pixielabs.ai/pixielabs/src/common/base/statuspb"
-	schemapb "pixielabs.ai/pixielabs/src/table_store/schemapb"
+	"pixielabs.ai/pixielabs/src/common/base/statuspb"
+	"pixielabs.ai/pixielabs/src/table_store/schemapb"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
-	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
+	"pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
 // UnhealthyAgentThreshold is the amount of time where an agent is considered unhealthy if

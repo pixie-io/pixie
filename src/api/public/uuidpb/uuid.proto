@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package pl.uuidpb;
 
-option go_package = "pixielabs.ai/pixielabs/src/public/api/uuidpb;uuidpb";
+option go_package = "uuidpb";
 
 message UUID {
   // Big ending style encoding similar to what a UUID Variant 1 would do.

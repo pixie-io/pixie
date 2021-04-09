@@ -15,12 +15,12 @@ import (
 
 	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/shared/k8s"
-	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	"pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	types "pixielabs.ai/pixielabs/src/shared/types/gotypes"
 	"pixielabs.ai/pixielabs/src/utils"
-	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
+	"pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
-	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
+	"pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 	"pixielabs.ai/pixielabs/src/vizier/utils/datastore"
 )
 

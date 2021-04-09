@@ -5,7 +5,7 @@ package pl.cloud.shared.messages;
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/api/public/uuidpb/uuid.proto";
 
-option go_package = "pixielabs.ai/pixielabs/src/cloud/messages/messagespb;messages";
+option go_package = "messagespb";
 
 message VizierConnected {
   uuidpb.UUID vizier_id = 1 [

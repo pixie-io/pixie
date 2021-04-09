@@ -6,7 +6,7 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/api/public/uuidpb/uuid.proto";
 
 
-option go_package = "pixielabs.ai/pixielabs/src/cloud/profile/proto;profile";
+option go_package = "profile";
 
 // Profile service tracks the user and organization profile information.
 service ProfileService {
@@ -122,7 +122,7 @@ message GetUserSettingsRequest {
                         (gogoproto.customname) = "ID"
                         ];
   // The user setting keys to fetch.
-  repeated string keys = 2; 
+  repeated string keys = 2;
 }
 
 // The response for a UserSettingsRequest.
@@ -130,7 +130,7 @@ message GetUserSettingsResponse {
   // The keys fetched in the user settings request.
   repeated string keys = 1;
   // The corresponding values to the user settings keys.
-  repeated string values = 2; 
+  repeated string values = 2;
 }
 
 // A request to update the user settings for a particular user.

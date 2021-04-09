@@ -15,10 +15,10 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"pixielabs.ai/pixielabs/src/cloud/shared/messages"
-	messagespb "pixielabs.ai/pixielabs/src/cloud/shared/messagespb"
+	"pixielabs.ai/pixielabs/src/cloud/shared/messagespb"
 	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	"pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/utils"
 )
 

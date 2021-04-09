@@ -9,7 +9,7 @@ import (
 
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/controller"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	"pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 )
 
 func TestPodStatusScan(t *testing.T) {

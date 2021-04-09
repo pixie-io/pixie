@@ -23,16 +23,16 @@ import (
 
 	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
-	statuspb "pixielabs.ai/pixielabs/src/common/base/statuspb"
+	"pixielabs.ai/pixielabs/src/common/base/statuspb"
 	"pixielabs.ai/pixielabs/src/shared/bloomfilterpb"
 	sharedmetadatapb "pixielabs.ai/pixielabs/src/shared/metadatapb"
 	env2 "pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/server"
-	typespb "pixielabs.ai/pixielabs/src/shared/types/typespb"
+	"pixielabs.ai/pixielabs/src/shared/types/typespb"
 	"pixielabs.ai/pixielabs/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
-	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
+	"pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	mock_agent "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
@@ -41,7 +41,7 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
-	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
+	"pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
 func testTableInfos() []*storepb.TableInfo {

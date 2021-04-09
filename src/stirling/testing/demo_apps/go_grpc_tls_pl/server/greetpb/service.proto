@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package pl.go_grpc_tls_pl.server;
 
-option go_package = "pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/go_grpc_tls_pl/server/greetpb;greetpb";
+option go_package = "greetpb";
 
 // The greeting service definition.
 service Greeter {

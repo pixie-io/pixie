@@ -26,8 +26,8 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	version "pixielabs.ai/pixielabs/src/shared/goversion"
 	protoutils "pixielabs.ai/pixielabs/src/shared/k8s"
-	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
+	"pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	"pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
 // TODO(michellenguyen, PP-1702): Make namespace a flag that can be passed in.

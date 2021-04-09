@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/cloud/shared/messages"
-	messagespb "pixielabs.ai/pixielabs/src/cloud/shared/messagespb"
+	"pixielabs.ai/pixielabs/src/cloud/shared/messagespb"
 	"pixielabs.ai/pixielabs/src/cloud/shared/vzutils"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	mock_vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb/mock"

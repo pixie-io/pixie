@@ -22,7 +22,7 @@ import (
 	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
-	authpb "pixielabs.ai/pixielabs/src/cloud/auth/authpb"
+	"pixielabs.ai/pixielabs/src/cloud/auth/authpb"
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
 	"pixielabs.ai/pixielabs/src/shared/services/handler"
 	pbutils "pixielabs.ai/pixielabs/src/utils"

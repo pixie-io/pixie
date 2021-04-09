@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	typespb "pixielabs.ai/pixielabs/src/shared/types/typespb"
+	"pixielabs.ai/pixielabs/src/shared/types/typespb"
 )
 
 func TestUInt128Equal(t *testing.T) {

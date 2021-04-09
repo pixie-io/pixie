@@ -13,8 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	statuspb "pixielabs.ai/pixielabs/src/common/base/statuspb"
-	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	"pixielabs.ai/pixielabs/src/common/base/statuspb"
+	"pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/utils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
@@ -24,7 +24,7 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint"
 	mock_tracepoint "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
-	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
+	"pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
 func assertSendMessageUncalled(t *testing.T) controllers.SendMessageFn {

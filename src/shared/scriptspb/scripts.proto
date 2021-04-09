@@ -5,7 +5,7 @@ import "src/common/base/statuspb/status.proto";
 
 package pl.shared.scriptspb;
 
-option go_package = "pixielabs.ai/pixielabs/src/shared/scriptspb;scriptspb";
+option go_package = "scriptspb";
 
 // FuncArgsSpec specifies the flags that are defined within a query.
 message FuncArgsSpec {

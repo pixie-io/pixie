@@ -29,7 +29,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
-	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
+	"pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
 const (

@@ -9,7 +9,7 @@ import (
 
 	"pixielabs.ai/pixielabs/src/cloud/api/idprovider"
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
-	authpb "pixielabs.ai/pixielabs/src/cloud/auth/authpb"
+	"pixielabs.ai/pixielabs/src/cloud/auth/authpb"
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	"pixielabs.ai/pixielabs/src/shared/services/env"

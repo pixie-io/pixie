@@ -4,7 +4,7 @@ package pl.common;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
-option go_package = "pixielabs.ai/pixielabs/src/shared/services/jwtpb;jwt";
+option go_package = "jwtpb";
 
 // Store the basic JWT claim information.
 message JWTClaims {

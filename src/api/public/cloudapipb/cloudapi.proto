@@ -14,7 +14,7 @@ import "google/protobuf/wrappers.proto";
 
 import "src/api/public/uuidpb/uuid.proto";
 
-option go_package = "pixielabs.ai/pixielabs/src/api/public/cloudapipb;publiccloudapipb";
+option go_package = "publiccloudapipb";
 
 
 // The API to access Vizier cluster info, connection info
@@ -58,7 +58,7 @@ message GetClusterRequest {
 
 // Request message for the GetClusterConnection call.
 message GetClusterConnectionRequest {
-    // The ID of the cluster to get connection info. 
+    // The ID of the cluster to get connection info.
      pl.uuidpb.UUID id = 1 [
                            (gogoproto.customname) = "ID"
                            ];

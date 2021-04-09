@@ -4,7 +4,7 @@ package pl.services;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
-option go_package = "pixielabs.ai/pixielabs/src/vizier/services/certmgr/proto;certmgr";
+option go_package = "certmgr";
 
 // CertMgrService manages Vizier's proxy certs.
 service CertMgrService {

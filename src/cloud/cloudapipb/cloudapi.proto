@@ -17,7 +17,7 @@ import "src/api/public/uuidpb/uuid.proto";
 import "src/shared/k8s/metadatapb/metadata.proto";
 import "src/shared/vispb/vis.proto";
 
-option go_package = "pixielabs.ai/pixielabs/src/cloud/cloudapipb;cloudapipb";
+option go_package = "cloudapipb";
 
 service AuthService {
   // Get a refresh token.

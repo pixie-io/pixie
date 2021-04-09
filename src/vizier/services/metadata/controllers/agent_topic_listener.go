@@ -10,12 +10,12 @@ import (
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 
-	statuspb "pixielabs.ai/pixielabs/src/common/base/statuspb"
+	"pixielabs.ai/pixielabs/src/common/base/statuspb"
 	"pixielabs.ai/pixielabs/src/utils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint"
-	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
+	"pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
 )
 

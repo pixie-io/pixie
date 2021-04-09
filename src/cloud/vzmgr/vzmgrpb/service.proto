@@ -8,7 +8,7 @@ import "src/shared/cvmsgspb/cvmsgs.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
-option go_package = "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb;vzmgrpb";
+option go_package = "vzmgrpb";
 
 service VZMgrService {
   rpc CreateVizierCluster(CreateVizierClusterRequest) returns (uuidpb.UUID) {}

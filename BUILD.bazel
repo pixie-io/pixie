@@ -61,7 +61,6 @@ gazelle(
 # gazelle:resolve go pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/hipster_shop/proto //src/stirling/testing/demo_apps/hipster_shop/proto:demo_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/table_store/schemapb //src/table_store/schemapb:schema_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/messages/messagespb //src/vizier/messages/messagespb:messages_pl_go_proto
-# gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb //src/vizier/services/metadata/datapb:data_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb //src/vizier/services/metadata/metadatapb:service_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb //src/vizier/services/metadata/storepb:store_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb //src/vizier/services/query_broker/querybrokerpb:service_pl_go_proto

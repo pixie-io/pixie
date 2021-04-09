@@ -3,7 +3,7 @@ syntax = "proto3";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/duration.proto";
 
-option go_package = "pixielabs.ai/pixielabs/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb";
+option go_package = "logicalpb";
 
 import "src/shared/types/typespb/types.proto";
 import "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/sharedpb/shared.proto";

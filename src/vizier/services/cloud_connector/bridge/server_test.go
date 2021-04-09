@@ -22,11 +22,11 @@ import (
 
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	"pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/bridge"
-	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
+	"pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
 const bufSize = 1024 * 1024

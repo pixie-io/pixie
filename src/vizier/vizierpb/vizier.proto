@@ -5,6 +5,8 @@ import "src/shared/k8s/metadatapb/metadata.proto";
 
 package pl.api.internal.vizierpb;
 
+option go_package = "vizierpb";
+
 // The list of data types supported by our execution engine.
 enum DataType {
   DATA_TYPE_UNKNOWN = 0;

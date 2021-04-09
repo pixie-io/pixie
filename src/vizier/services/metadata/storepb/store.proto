@@ -9,7 +9,7 @@ import "src/api/public/uuidpb/uuid.proto";
 import "src/shared/types/typespb/types.proto";
 import "src/shared/k8s/metadatapb/metadata.proto";
 
-option go_package = "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb;storepb";
+option go_package = "storepb";
 
 // This file contains protos for data that is stored in the metadata service's datastore.
 // Along with the protos in this file, the datastore also contains shared protos, such as from agentpb and metadatapb.

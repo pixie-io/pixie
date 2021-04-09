@@ -7,6 +7,8 @@ import "google/protobuf/timestamp.proto";
 
 import "src/shared/types/typespb/types.proto";
 
+option go_package = "metadatapb";
+
 // This file is mostly copied from
 // github.com/kubernetes/api/blob/e480447a07fd8adfbff8abea81c1d2dcd6af906e/core/v1/generated.proto and
 // github.com/kubernetes/apimachinery/blob/bca0c154df821d07920394c2d6831112dc1bcdec/pkg/apis/meta/v1/generated.proto

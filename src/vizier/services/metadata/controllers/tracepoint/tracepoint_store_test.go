@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	statuspb "pixielabs.ai/pixielabs/src/common/base/statuspb"
+	"pixielabs.ai/pixielabs/src/common/base/statuspb"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/pebbledb"

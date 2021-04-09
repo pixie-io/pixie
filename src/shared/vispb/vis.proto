@@ -5,6 +5,8 @@ package pl.vispb;
 import "google/protobuf/any.proto";
 import "google/protobuf/wrappers.proto";
 
+option go_package = "vispb";
+
 // PXType represents the data type of an argument that a pxl script can take.
 // For example, with a func like def my_func(arg1: px.Service, arg2: int),
 // the PXType of arg1 would be PX_SERVICE and the PXType of arg2 would be PX_INT64.

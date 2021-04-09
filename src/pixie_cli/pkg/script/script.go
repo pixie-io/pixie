@@ -8,7 +8,7 @@ import (
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/spf13/viper"
 
-	vispb "pixielabs.ai/pixielabs/src/shared/vispb"
+	"pixielabs.ai/pixielabs/src/shared/vispb"
 )
 
 // Arg is a single script argument.

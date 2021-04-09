@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"pixielabs.ai/pixielabs/src/cloud/shared/messages"
-	messagespb "pixielabs.ai/pixielabs/src/cloud/shared/messagespb"
+	"pixielabs.ai/pixielabs/src/cloud/shared/messagespb"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	svcutils "pixielabs.ai/pixielabs/src/shared/services/utils"
 	"pixielabs.ai/pixielabs/src/utils"

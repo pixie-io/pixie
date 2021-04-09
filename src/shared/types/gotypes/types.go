@@ -1,7 +1,7 @@
 package gotypes
 
 import (
-	typespb "pixielabs.ai/pixielabs/src/shared/types/typespb"
+	"pixielabs.ai/pixielabs/src/shared/types/typespb"
 )
 
 // UInt128 represents a 128 bit unsigned integer which wraps two uint64s.

@@ -3,10 +3,10 @@ syntax = "proto3";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 package pl.api.vizierpb;
-option go_package = "pixielabs.ai/pixielabs/src/api/public/vizierapipb;publicvizierapipb";
+option go_package = "publicvizierapipb";
 
-// The list of data types supported by our execution engine. 
-// Each type corresponds to a Column type below. 
+// The list of data types supported by our execution engine.
+// Each type corresponds to a Column type below.
 enum DataType {
   // Data has no specified type. Usually means there is an error.
   DATA_TYPE_UNKNOWN = 0;
@@ -378,7 +378,7 @@ message HealthCheckResponse {
 service VizierService {
   // Execute a script on the Vizier cluster and stream the results of that execution.
   rpc ExecuteScript(ExecuteScriptRequest) returns (stream ExecuteScriptResponse) {}
-  // Start a stream to receive health updates from the Vizier service. For most practical 
+  // Start a stream to receive health updates from the Vizier service. For most practical
   // purposes, users should only need `ExecuteScript()` and can safely ignore this call.
   rpc HealthCheck(HealthCheckRequest) returns (stream HealthCheckResponse) {}
 }

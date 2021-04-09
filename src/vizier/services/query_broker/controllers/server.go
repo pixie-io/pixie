@@ -22,7 +22,7 @@ import (
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	"pixielabs.ai/pixielabs/src/carnot/udfspb"
 	"pixielabs.ai/pixielabs/src/carnotpb"
-	statuspb "pixielabs.ai/pixielabs/src/common/base/statuspb"
+	"pixielabs.ai/pixielabs/src/common/base/statuspb"
 	"pixielabs.ai/pixielabs/src/utils"
 	funcs "pixielabs.ai/pixielabs/src/vizier/funcs/go"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"

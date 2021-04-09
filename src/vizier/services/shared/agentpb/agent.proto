@@ -5,6 +5,8 @@ package pl.vizier.services.shared.agent;
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/api/public/uuidpb/uuid.proto";
 
+option go_package = "agentpb";
+
 // AgentCapabilities describes functions that the agent has available.
 message AgentCapabilities {
     bool collects_data = 1;

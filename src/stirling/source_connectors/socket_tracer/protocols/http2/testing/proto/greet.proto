@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package pl.stirling.protocols.http2.testing;
 
-option go_package = "pixielabs.ai/pixielabs/src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto;greetpb";
+option go_package = "greetpb";
 
 // The greeting service definition.
 service Greeter {

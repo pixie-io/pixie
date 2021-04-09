@@ -21,11 +21,11 @@ import (
 	types "pixielabs.ai/pixielabs/src/shared/types/gotypes"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
-	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
+	"pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
-	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
+	"pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/pebbledb"
 )
 

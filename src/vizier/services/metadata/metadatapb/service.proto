@@ -12,7 +12,7 @@ import "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logical
 import "src/common/base/statuspb/status.proto";
 import "google/protobuf/duration.proto";
 
-option go_package = "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb;metadatapb";
+option go_package = "metadatapb";
 
 service MetadataService {
   // An endpoint used by the query broker which is responsible for streaming the state of the agents.

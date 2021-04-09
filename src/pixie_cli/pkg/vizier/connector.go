@@ -19,7 +19,7 @@ import (
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/auth"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
 	"pixielabs.ai/pixielabs/src/shared/services"
-	vispb "pixielabs.ai/pixielabs/src/shared/vispb"
+	"pixielabs.ai/pixielabs/src/shared/vispb"
 	"pixielabs.ai/pixielabs/src/utils"
 	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )

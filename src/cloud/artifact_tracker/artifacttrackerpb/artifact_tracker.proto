@@ -6,7 +6,7 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
 import "src/shared/artifacts/versionspb/versions.proto";
 
-option go_package = "pixielabs.ai/pixielabs/src/cloud/artifact_tracker;artifacttrackerpb";
+option go_package = "artifacttrackerpb";
 
 // ArtifactTracker tracks versions of released artifacts.
 service ArtifactTracker {

@@ -4,7 +4,7 @@ package pl.common;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
-option go_package = "pixielabs.ai/pixielabs/src/shared/services/testproto;ping";
+option go_package = "ping";
 
 message PingRequest {
   string req = 1;

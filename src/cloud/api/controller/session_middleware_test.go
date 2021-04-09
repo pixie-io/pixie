@@ -17,7 +17,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
-	authpb "pixielabs.ai/pixielabs/src/cloud/auth/authpb"
+	"pixielabs.ai/pixielabs/src/cloud/auth/authpb"
 	mock_auth "pixielabs.ai/pixielabs/src/cloud/auth/authpb/mock"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"

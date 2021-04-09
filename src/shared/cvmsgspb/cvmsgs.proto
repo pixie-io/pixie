@@ -21,7 +21,7 @@ import "src/api/public/vizierapipb/vizierapi.proto";
 import "src/api/public/uuidpb/uuid.proto";
 
 
-option go_package = "pixielabs.ai/pixielabs/src/shared/cvmsgspb/messagespb;cvmsgspb";
+option go_package = "cvmsgspb";
 
 // Message to register a new Vizier.
 message RegisterVizierRequest {
@@ -306,7 +306,7 @@ message V2CAPIStreamResponse {
         pl.api.vizierpb.HealthCheckResponse hc_resp = 3;
         pl.api.vizierpb.Status status = 4;
         pl.api.internal.vizierpb.DebugLogResponse debug_log_resp = 5;
-        pl.api.internal.vizierpb.DebugPodsResponse debug_pods_resp = 6;        
+        pl.api.internal.vizierpb.DebugPodsResponse debug_pods_resp = 6;
     }
 }
 
