@@ -175,8 +175,11 @@ def unstashFromGCS(String name) {
 
   gsutilCopy("gs://${GCS_STASH_BUCKET}/${env.BUILD_TAG}/${srcFile}", ".archive/${srcFile}")
 
+  // Note: The tar extraction must use `--no-same-owner`.
+  // Without this, the owner of some third_party files become invalid users,
+  // which causes some cmake projects to fail with "failed to preserve ownership" messages.
   sh """
-    tar -zxf .archive/${srcFile}
+    tar -zxf .archive/${srcFile} --no-same-owner
     rm -f .archive/${srcFile}
   """
 }

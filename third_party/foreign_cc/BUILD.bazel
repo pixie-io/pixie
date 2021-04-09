@@ -1,7 +1,5 @@
 load("@rules_cc//cc:defs.bzl", "cc_library")
-load("@rules_foreign_cc//tools/build_defs:cmake.bzl", "cmake_external")
-load("@rules_foreign_cc//tools/build_defs:configure.bzl", "configure_make")
-load("@rules_foreign_cc//tools/build_defs:make.bzl", "make")
+load("@rules_foreign_cc//foreign_cc:defs.bzl", "configure_make", "cmake", "make")
 
 licenses(["notice"])
 
@@ -17,7 +15,7 @@ configure_make(
     lib_source = "@com_github_gperftools_gperftools//:all",
     linkopts = ["-lpthread"],
     make_commands = ["make install-libLTLIBRARIES install-perftoolsincludeHEADERS"],
-    static_libraries = select({
+    out_static_libs = select({
         "//bazel:debug_tcmalloc": ["libtcmalloc_debug.a"],
         "//conditions:default": ["libtcmalloc_and_profiler.a"],
     }),
@@ -31,7 +29,7 @@ cc_library(
     ],
 )
 
-cmake_external(
+cmake(
     name = "natsc",
     cache_entries = {
         # This forces nats to link against boringssl instead of openssl.
@@ -50,7 +48,7 @@ cmake_external(
     deps = ["@boringssl//:ssl"],
 )
 
-cmake_external(
+cmake(
     name = "libuv",
     cache_entries = {
         "BUILDING_UV_SHARED": "OFF",
@@ -66,7 +64,7 @@ cmake_external(
     ],
 )
 
-cmake_external(
+cmake(
     name = "libarchive",
     cache_entries = {
         "ENABLE_CAT": "OFF",
@@ -93,12 +91,12 @@ make(
     #    make_commands = ["BUILD_STATIC_ONLY=y make -C src install PREFIX=out"],
     #    out_include_dir = "out/include",
     #    out_lib_dir = "out/lib64",
-    static_libraries = [
+    out_static_libs = [
         "libbpf.a",
     ],
 )
 
-cmake_external(
+cmake(
     name = "bcc",
     generate_crosstool_file = True,
     lib_name = "libbcc_static",
@@ -109,9 +107,9 @@ cmake_external(
         "-lelf",
     ],
     make_commands = [
-        "make -j ${nproc} -C src/cc install",
+        "make -j$(nproc) -C src/cc install",
     ],
-    static_libraries = [
+    out_static_libs = [
         "libapi-static.a",
         "libbcc.a",
         "libbcc_bpf.a",
