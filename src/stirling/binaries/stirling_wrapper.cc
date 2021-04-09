@@ -18,6 +18,7 @@
 
 #ifdef PXL_SUPPORT
 #include "src/carnot/planner/probes/tracepoint_generator.h"
+#include "src/shared/tracepoint_translation/translation.h"
 #endif
 
 using ::pl::ProcessStatsMonitor;
@@ -201,10 +202,12 @@ StatusOr<Publish> DeployTrace(Stirling* stirling, TraceProgram trace_program_str
 
   if (trace_program_str.format == TracepointFormat::kPXL) {
 #ifdef PXL_SUPPORT
-    PL_ASSIGN_OR_RETURN(DynamicTracepointDeployment compiled_tracepoint,
+    PL_ASSIGN_OR_RETURN(auto compiled_tracepoint,
                         pl::carnot::planner::compiler::CompileTracepoint(trace_program_str.text));
     LOG(INFO) << compiled_tracepoint.DebugString();
-    trace_program = std::make_unique<DynamicTracepointDeployment>(std::move(compiled_tracepoint));
+    trace_program = std::make_unique<DynamicTracepointDeployment>();
+    ::pl::tracepoint::ConvertPlannerTracepointToStirlingTracepoint(compiled_tracepoint,
+                                                                   trace_program.get());
 #else
     return pl::error::Internal(
         "Cannot deploy tracepoint. stirling_wrapper was not built with PxL support.");

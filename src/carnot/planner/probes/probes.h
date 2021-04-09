@@ -4,14 +4,13 @@
 #include <utility>
 #include <vector>
 
+#include "src/carnot/planner/dynamic_tracing/ir/logicalpb/logical.pb.h"
 #include "src/carnot/planner/objects/funcobject.h"
 #include "src/carnot/planner/plannerpb/func_args.pb.h"
 #include "src/carnot/planner/probes/process_target.h"
 #include "src/carnot/planner/probes/shared_object.h"
 #include "src/common/uuid/uuid.h"
 #include "src/shared/upid/upid.h"
-#include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb/logical.pb.h"
-#include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/sharedpb/shared.pb.h"
 
 namespace pl {
 namespace carnot {
@@ -35,8 +34,8 @@ class ProbeOutput {
    */
   // std::string_view Schema() const { return absl::StrJoin(col_names_, ","); }
 
-  Status ToActionProto(stirling::dynamic_tracing::ir::logical::OutputAction* pb);
-  Status ToOutputProto(stirling::dynamic_tracing::ir::logical::Output* pb);
+  Status ToActionProto(carnot::planner::dynamic_tracing::ir::logical::OutputAction* pb);
+  Status ToOutputProto(carnot::planner::dynamic_tracing::ir::logical::Output* pb);
   const std::string& name() const { return output_name_; }
 
   void set_name(const std::string& output_name) { output_name_ = output_name; }
@@ -60,7 +59,7 @@ class TracepointIR {
    * @param pb
    * @return Any error that occured during serialization.
    */
-  Status ToProto(stirling::dynamic_tracing::ir::logical::TracepointSpec* pb,
+  Status ToProto(carnot::planner::dynamic_tracing::ir::logical::TracepointSpec* pb,
                  const std::string& name);
 
   /**
@@ -141,8 +140,8 @@ class TracepointIR {
  private:
   std::string symbol_;
   std::string latency_col_id_;
-  std::vector<stirling::dynamic_tracing::ir::logical::Argument> args_;
-  std::vector<stirling::dynamic_tracing::ir::logical::ReturnValue> ret_vals_;
+  std::vector<carnot::planner::dynamic_tracing::ir::logical::Argument> args_;
+  std::vector<carnot::planner::dynamic_tracing::ir::logical::ReturnValue> ret_vals_;
   std::shared_ptr<ProbeOutput> output_ = nullptr;
 };
 
@@ -156,7 +155,7 @@ class TracepointDeployment {
    * @param pb
    * @return Status errors if they happen.
    */
-  Status ToProto(stirling::dynamic_tracing::ir::logical::TracepointDeployment* pb) const;
+  Status ToProto(carnot::planner::dynamic_tracing::ir::logical::TracepointDeployment* pb) const;
 
   /**
    * @brief Add a Probe to the current program being traced.
@@ -182,11 +181,13 @@ class TracepointDeployment {
   std::string name_;
   int64_t ttl_ns_;
   std::string binary_path_;
-  std::vector<stirling::dynamic_tracing::ir::logical::Probe> probes_;
-  std::vector<stirling::dynamic_tracing::ir::logical::TracepointDeployment::Tracepoint>
+  std::vector<carnot::planner::dynamic_tracing::ir::logical::Probe> probes_;
+  std::vector<
+      carnot::planner::dynamic_tracing::ir::logical::TracepointDeployment::TracepointProgram>
       tracepoints_;
-  std::vector<stirling::dynamic_tracing::ir::logical::Output> outputs_;
-  absl::flat_hash_map<std::string, stirling::dynamic_tracing::ir::logical::Output*> output_map_;
+  std::vector<carnot::planner::dynamic_tracing::ir::logical::Output> outputs_;
+  absl::flat_hash_map<std::string, carnot::planner::dynamic_tracing::ir::logical::Output*>
+      output_map_;
 };
 
 class MutationsIR {
@@ -296,7 +297,7 @@ class MutationsIR {
   // All the new tracepoints added as part of this mutation. DeploymentSpecs are protobufs because
   // we only modify these upon inserting the new tracepoint, while the Tracepoint definition is
   // still modified aftered adding the tracepoint.
-  std::vector<std::pair<stirling::dynamic_tracing::ir::shared::DeploymentSpec,
+  std::vector<std::pair<carnot::planner::dynamic_tracing::ir::logical::DeploymentSpec,
                         std::unique_ptr<TracepointDeployment>>>
       deployments_;
 

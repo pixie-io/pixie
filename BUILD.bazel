@@ -32,6 +32,7 @@ gazelle(
 # gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/docspb //src/carnot/docspb:docs_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/planner/compilerpb //src/carnot/planner/compilerpb:compiler_status_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/planner/distributedpb //src/carnot/planner/distributedpb:distributed_plan_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/planner/dynamic_tracing/ir/logicalpb //src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/planner/plannerpb //src/carnot/planner/plannerpb:func_args_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/planpb //src/carnot/planpb:plan_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/queryresultspb //src/carnot/queryresultspb:query_results_pl_go_proto

@@ -1,0 +1,27 @@
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+
+package(default_visibility = ["//src:__subpackages__"])
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = [
+            "**/*_test.cc",
+        ],
+    ),
+    hdrs = glob(["*.h"]),
+    deps = [
+        "//src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_cc_proto",
+        "//src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb:logical_pl_cc_proto",
+    ],
+)
+
+pl_cc_test(
+    name = "translation_test",
+    srcs = ["translation_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/common/testing/event:cc_library",
+    ],
+)

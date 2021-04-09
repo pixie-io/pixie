@@ -299,16 +299,16 @@ deployment_spec {
     asid: 306070887 pid: 3902477011 ts_ns: 11841725277501915136
   }
 }
-tracepoints {
+programs {
   table_name: "http_return_table"
-  program {
+  spec {
     outputs {
       name: "http_return_table"
       fields: "id"
       fields: "err"
       fields: "latency"
     }
-    probes {
+    probe {
       name: "http_return"
       tracepoint {
         symbol: "MyFunc"

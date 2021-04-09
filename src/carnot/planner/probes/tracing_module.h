@@ -280,14 +280,12 @@ class ProbeHandler {
    * @param visitor
    * @return StatusOr<QLObjectPtr>
    */
-  static StatusOr<QLObjectPtr> Probe(MutationsIR* mutations_ir,
-                                     const pypa::AstPtr& ast, const ParsedArgs& args,
-                                     ASTVisitor* visitor);
+  static StatusOr<QLObjectPtr> Probe(MutationsIR* mutations_ir, const pypa::AstPtr& ast,
+                                     const ParsedArgs& args, ASTVisitor* visitor);
   static StatusOr<QLObjectPtr> Decorator(MutationsIR* mutations_ir,
                                          const std::string& function_name, const pypa::AstPtr& ast,
                                          const ParsedArgs& args, ASTVisitor* visitor);
-  static StatusOr<QLObjectPtr> Wrapper(MutationsIR* mutations_ir,
-                                       const std::string& function_name,
+  static StatusOr<QLObjectPtr> Wrapper(MutationsIR* mutations_ir, const std::string& function_name,
                                        const std::shared_ptr<FuncObject> func_obj,
                                        const pypa::AstPtr& ast, const ParsedArgs& args,
                                        ASTVisitor* visitor);

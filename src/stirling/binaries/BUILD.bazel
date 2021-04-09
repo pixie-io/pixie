@@ -13,6 +13,7 @@ pl_cc_binary(
     deps = [
         "//src/carnot/planner/probes:tracepoint_generator_lib",
         "//src/common/signal:cc_library",
+        "//src/shared/tracepoint_translation:cc_library",
         "//src/stirling:cc_library",
     ],
 )

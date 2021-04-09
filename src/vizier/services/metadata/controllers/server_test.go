@@ -23,13 +23,13 @@ import (
 
 	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
+	"pixielabs.ai/pixielabs/src/carnot/planner/dynamic_tracing/ir/logicalpb"
 	"pixielabs.ai/pixielabs/src/common/base/statuspb"
 	"pixielabs.ai/pixielabs/src/shared/bloomfilterpb"
 	sharedmetadatapb "pixielabs.ai/pixielabs/src/shared/metadatapb"
 	env2 "pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/server"
 	"pixielabs.ai/pixielabs/src/shared/types/typespb"
-	"pixielabs.ai/pixielabs/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
@@ -257,10 +257,10 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 	tracepointMgr := tracepoint.NewManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
 
 	program := &logicalpb.TracepointDeployment{
-		Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
+		Programs: []*logicalpb.TracepointDeployment_TracepointProgram{
 			{
 				TableName: "test",
-				Program: &logicalpb.TracepointSpec{
+				Spec: &logicalpb.TracepointSpec{
 					Outputs: []*logicalpb.Output{
 						{
 							Name:   "test",
@@ -271,7 +271,7 @@ func Test_Server_RegisterTracepoint(t *testing.T) {
 			},
 			{
 				TableName: "anotherTracepoint",
-				Program: &logicalpb.TracepointSpec{
+				Spec: &logicalpb.TracepointSpec{
 					Outputs: []*logicalpb.Output{
 						{
 							Name:   "anotherTracepoint",
@@ -364,10 +364,10 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 	tracepointMgr := tracepoint.NewManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
 
 	program := &logicalpb.TracepointDeployment{
-		Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
+		Programs: []*logicalpb.TracepointDeployment_TracepointProgram{
 			{
 				TableName: "table1",
-				Program: &logicalpb.TracepointSpec{
+				Spec: &logicalpb.TracepointSpec{
 					Outputs: []*logicalpb.Output{
 						{
 							Name:   "table1",
@@ -396,10 +396,10 @@ func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 		GetTracepoint(oldTPID).
 		Return(&storepb.TracepointInfo{
 			Tracepoint: &logicalpb.TracepointDeployment{
-				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
+				Programs: []*logicalpb.TracepointDeployment_TracepointProgram{
 					{
 						TableName: "table1",
-						Program: &logicalpb.TracepointSpec{
+						Spec: &logicalpb.TracepointSpec{
 							Outputs: []*logicalpb.Output{
 								{
 									Name:   "table1",
@@ -597,7 +597,7 @@ func Test_Server_GetTracepointInfo(t *testing.T) {
 			tracepointMgr := tracepoint.NewManager(mockTracepointStore, mockAgtMgr, 5*time.Second)
 
 			program := &logicalpb.TracepointDeployment{
-				Tracepoints: []*logicalpb.TracepointDeployment_Tracepoint{
+				Programs: []*logicalpb.TracepointDeployment_TracepointProgram{
 					{
 						TableName: "table1",
 					},

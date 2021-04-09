@@ -8,14 +8,14 @@
 #include "src/carnot/planner/parser/parser.h"
 #include "src/carnot/planner/probes/probes.h"
 
-#include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb/logical.pb.h"
+#include "src/carnot/planner/dynamic_tracing/ir/logicalpb/logical.pb.h"
 
 namespace pl {
 namespace carnot {
 namespace planner {
 namespace compiler {
 
-StatusOr<stirling::dynamic_tracing::ir::logical::TracepointDeployment> CompileTracepoint(
+StatusOr<carnot::planner::dynamic_tracing::ir::logical::TracepointDeployment> CompileTracepoint(
     std::string_view query) {
   // Create a dummy compiler state; it doesn't affect the tracepoint compilation.
   // TODO(oazizi): Try inserting nullptr for registry_info.

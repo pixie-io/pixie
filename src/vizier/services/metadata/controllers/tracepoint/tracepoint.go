@@ -11,8 +11,8 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
+	"pixielabs.ai/pixielabs/src/carnot/planner/dynamic_tracing/ir/logicalpb"
 	"pixielabs.ai/pixielabs/src/common/base/statuspb"
-	"pixielabs.ai/pixielabs/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb"
 	"pixielabs.ai/pixielabs/src/utils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
@@ -187,10 +187,10 @@ func (m *Manager) CreateTracepoint(tracepointName string, tracepointDeployment *
 			// Check if the tracepoints are exactly the same.
 			allTpsSame := true
 
-			if len(prevTracepoint.Tracepoint.Tracepoints) == len(tracepointDeployment.Tracepoints) {
-				for i := range prevTracepoint.Tracepoint.Tracepoints {
-					if tracepointDeployment.Tracepoints[i] != nil {
-						if !proto.Equal(tracepointDeployment.Tracepoints[i], prevTracepoint.Tracepoint.Tracepoints[i]) {
+			if len(prevTracepoint.Tracepoint.Programs) == len(tracepointDeployment.Programs) {
+				for i := range prevTracepoint.Tracepoint.Programs {
+					if tracepointDeployment.Programs[i] != nil {
+						if !proto.Equal(tracepointDeployment.Programs[i], prevTracepoint.Tracepoint.Programs[i]) {
 							allTpsSame = false
 							break
 						}

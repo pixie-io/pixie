@@ -87,16 +87,16 @@ deployment_spec {
     asid: 306070887 pid: 3902477011 ts_ns: 11841725277501915136
   }
 }
-tracepoints {
+programs {
   table_name: "http_return_table"
-  program {
+  spec {
     outputs {
       name: "http_return_table"
       fields: "id"
       fields: "err"
       fields: "latency"
     }
-    probes {
+    probe {
       name: "http_return"
       tracepoint {
         symbol: "MyFunc"
@@ -157,16 +157,16 @@ deployment_spec {
     }
   }
 }
-tracepoints {
+programs {
   table_name: "http_return_table"
-  program {
+  spec {
     outputs {
       name: "http_return_table"
       fields: "id"
       fields: "err"
       fields: "latency"
     }
-    probes {
+    probe {
       name: "http_return"
       tracepoint {
         symbol: "MyFunc"
@@ -271,108 +271,6 @@ TEST_F(ProbeCompilerTest, parse_single_probe_in_func) {
   EXPECT_THAT(pb.mutations()[0].trace(), testing::proto::EqualsProto(kSingleProbeProgramOnUPIDPb));
 }
 
-constexpr char kMultipleProbePxl[] = R"pxl(
-import pxtrace
-import px
-
-@pxtrace.probe("MyFunc")
-def cool_func_probe():
-    return "cool_func_table", [{'id': pxtrace.ArgExpr('id')},
-            {'err': pxtrace.RetExpr('$0.a')},
-            {'latency': pxtrace.FunctionLatency()}]
-
-
-@pxtrace.probe("HTTPFunc")
-def http_func_probe():
-    return "http_table", [{'req_body': pxtrace.ArgExpr('req_body')},
-            {'resp_body': pxtrace.ArgExpr('req_status')}]
-
-# NOTE: syntax not supported yet.
-pxtrace.UpsertTracepoints('myfunc',
-                    px.uint128("123e4567-e89b-12d3-a456-426655440000"),
-                    "5m")
-                    .AddTracepoint("cool_func_table", cool_func_probe)
-                    .AddTracepoint("http_table", http_func_probe)
-)pxl";
-
-constexpr char kMultipleProbeProgramPb[] = R"pxl(
-ttl {
-  seconds: 300
-}
-deployment_spec {
-  upid {
-    asid: 306070887 pid: 3902477011 ts_ns: 11841725277501915136
-  }
-}
-tracepoints {
-  table_name: "cool_func_table"
-  program {
-    outputs {
-      name: "cool_func_table"
-      fields: "id"
-      fields: "err"
-      fields: "latency"
-    }
-    outputs {
-      name: "http_table"
-      fields: "req_body"
-      fields: "resp_body"
-    }
-    probes {
-      name: "myfunc0"
-      tracepoint {
-        symbol: "MyFunc"
-      }
-      args {
-        id: "arg0"
-        expr: "id"
-      }
-      ret_vals {
-        id: "ret0"
-        expr: "$0.a"
-      }
-      function_latency {
-        id: "lat0"
-      }
-      output_actions {
-        output_name: "cool_func_table"
-        variable_names: "arg0"
-        variable_names: "ret0"
-        variable_names: "lat0"
-      }
-    }
-    probes {
-      name: "myfunc1"
-      tracepoint {
-        symbol: "HTTPFunc"
-      }
-      args {
-        id: "arg0"
-        expr: "req_body"
-      }
-      args {
-        id: "arg1"
-        expr: "req_status"
-      }
-      output_actions {
-        output_name: "http_table"
-        variable_names: "arg0"
-        variable_names: "arg1"
-      }
-    }
-  }
-}
-)pxl";
-
-// TODO(philkuz) need to support multiple probe programs.
-TEST_F(ProbeCompilerTest, DISABLED_parse_multiple_probes) {
-  ASSERT_OK_AND_ASSIGN(auto probe_ir, CompileProbeScript(kMultipleProbePxl));
-  plannerpb::CompileMutationsResponse pb;
-  EXPECT_OK(probe_ir->ToProto(&pb));
-  ASSERT_EQ(pb.mutations_size(), 1);
-  EXPECT_THAT(pb.mutations()[0].trace(), testing::proto::EqualsProto(kMultipleProbeProgramPb));
-}
-
 constexpr char kHTTPBodyTracepointPb[] = R"pxl(
 name: "http_body"
 ttl {
@@ -383,15 +281,15 @@ deployment_spec {
     asid: 1985274657 pid: 3902477011 ts_ns: 11841725277501915136
   }
 }
-tracepoints{
+programs {
   table_name: "http_body_table"
-  program {
+  spec {
     outputs {
       name: "http_body_table"
       fields: "req_body"
       fields: "resp_body"
     }
-    probes {
+    probe {
       name: "http_body"
       tracepoint {
         symbol: "HTTPFunc"
@@ -644,7 +542,7 @@ name: "syscall_write_bpftrace"
 ttl {
   seconds: 300
 }
-tracepoints{
+programs{
   table_name: "output_table"
   bpftrace {
     program: "$0"

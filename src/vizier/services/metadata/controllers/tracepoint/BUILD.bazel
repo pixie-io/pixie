@@ -11,8 +11,8 @@ go_library(
     visibility = ["//src/vizier:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",
+        "//src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_go_proto",
         "//src/common/base/statuspb:status_pl_go_proto",
-        "//src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb:logical_pl_go_proto",
         "//src/utils",
         "//src/vizier/messages/messagespb:messages_pl_go_proto",
         "//src/vizier/services/metadata/storepb:store_pl_go_proto",
@@ -33,8 +33,8 @@ go_test(
     embed = [":tracepoint"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",
+        "//src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_go_proto",
         "//src/common/base/statuspb:status_pl_go_proto",
-        "//src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb:logical_pl_go_proto",
         "//src/utils",
         "//src/vizier/messages/messagespb:messages_pl_go_proto",
         "//src/vizier/services/metadata/controllers/agent/mock",

@@ -1,8 +1,9 @@
 #include <string>
 #include <utility>
 
+#include "src/carnot/planner/dynamic_tracing/ir/logicalpb/logical.pb.h"
 #include "src/common/base/base.h"
-#include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb/logical.pb.h"
+#include "src/shared/tracepoint_translation/translation.h"
 #include "src/vizier/services/agent/pem/tracepoint_manager.h"
 
 namespace pl {
@@ -56,9 +57,9 @@ Status TracepointManager::HandleRegisterTracepointRequest(
     const messages::RegisterTracepointRequest& req) {
   const std::string& name = req.tracepoint_deployment().name();
   PL_ASSIGN_OR_RETURN(auto id, ParseUUID(req.id()));
-  auto program_copy =
-      std::make_unique<stirling::dynamic_tracing::ir::logical::TracepointDeployment>(
-          req.tracepoint_deployment());
+  auto program = std::make_unique<stirling::dynamic_tracing::ir::logical::TracepointDeployment>();
+  ::pl::tracepoint::ConvertPlannerTracepointToStirlingTracepoint(req.tracepoint_deployment(),
+                                                                 program.get());
 
   TracepointInfo info;
   info.name = name;
@@ -67,7 +68,7 @@ Status TracepointManager::HandleRegisterTracepointRequest(
   info.last_updated_at = dispatcher_->GetTimeSource().MonotonicTime();
 
   // Poke Stirling to actually add the tracepoint.
-  stirling_->RegisterTracepoint(id, std::move(program_copy));
+  stirling_->RegisterTracepoint(id, std::move(program));
 
   {
     std::lock_guard<std::mutex> lock(mu_);

@@ -5,6 +5,7 @@
 
 #include <sole.hpp>
 
+#include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb/logical.pb.h"
 #include "src/stirling/stirling.h"
 #include "src/vizier/services/agent/manager/manager.h"
 

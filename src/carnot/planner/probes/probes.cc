@@ -8,13 +8,12 @@ namespace carnot {
 namespace planner {
 namespace compiler {
 
-Status TracepointIR::ToProto(stirling::dynamic_tracing::ir::logical::TracepointSpec* pb,
+Status TracepointIR::ToProto(carnot::planner::dynamic_tracing::ir::logical::TracepointSpec* pb,
                              const std::string& probe_name) {
-  auto* probe_pb = pb->add_probes();
+  auto* probe_pb = pb->mutable_probe();
   probe_pb->set_name(probe_name);
   auto* tracepoint_pb = probe_pb->mutable_tracepoint();
   tracepoint_pb->set_symbol(symbol_);
-  tracepoint_pb->set_type(stirling::dynamic_tracing::ir::shared::Tracepoint::LOGICAL);
 
   for (const auto& arg : args_) {
     *probe_pb->add_args() = arg;
@@ -28,11 +27,6 @@ Status TracepointIR::ToProto(stirling::dynamic_tracing::ir::logical::TracepointS
     probe_pb->mutable_function_latency()->set_id(latency_col_id_);
   }
 
-  // TODO(philkuz) implement map methods.
-  // for (const auto& map_stash : map_stash_actions_) {
-  // (*probe_pb->add_map_stash_actions()) = map_stash;
-  // }
-
   // Probes don't necessarily have an output. IE if our probe just writes to a map.
   if (output_) {
     PL_RETURN_IF_ERROR(output_->ToActionProto(probe_pb->add_output_actions()));
@@ -41,7 +35,7 @@ Status TracepointIR::ToProto(stirling::dynamic_tracing::ir::logical::TracepointS
   return Status::OK();
 }
 
-Status ProbeOutput::ToActionProto(stirling::dynamic_tracing::ir::logical::OutputAction* pb) {
+Status ProbeOutput::ToActionProto(carnot::planner::dynamic_tracing::ir::logical::OutputAction* pb) {
   pb->set_output_name(output_name_);
   for (const auto& var : var_names_) {
     pb->add_variable_names(var);
@@ -49,7 +43,7 @@ Status ProbeOutput::ToActionProto(stirling::dynamic_tracing::ir::logical::Output
   return Status::OK();
 }
 
-Status ProbeOutput::ToOutputProto(stirling::dynamic_tracing::ir::logical::Output* pb) {
+Status ProbeOutput::ToOutputProto(carnot::planner::dynamic_tracing::ir::logical::Output* pb) {
   pb->set_name(output_name_);
   for (const auto& col : col_names_) {
     pb->add_fields(col);
@@ -70,14 +64,14 @@ void TracepointIR::CreateNewOutput(const std::vector<std::string>& col_names,
 }
 
 void TracepointIR::AddArgument(const std::string& id, const std::string& expr) {
-  stirling::dynamic_tracing::ir::logical::Argument arg;
+  carnot::planner::dynamic_tracing::ir::logical::Argument arg;
   arg.set_id(id);
   arg.set_expr(expr);
   args_.push_back(arg);
 }
 
 void TracepointIR::AddReturnValue(const std::string& id, const std::string& expr) {
-  stirling::dynamic_tracing::ir::logical::ReturnValue ret;
+  carnot::planner::dynamic_tracing::ir::logical::ReturnValue ret;
   ret.set_id(id);
   // TODO(philkuz/oazizi) The expression needs to be in the form "$<index>.<field>.<...>".
   ret.set_expr(expr);
@@ -97,7 +91,7 @@ StatusOr<TracepointDeployment*> MutationsIR::CreateTracepointDeployment(
       std::make_unique<TracepointDeployment>(tracepoint_name, ttl_ns);
   TracepointDeployment* raw = program.get();
 
-  stirling::dynamic_tracing::ir::shared::DeploymentSpec deployment_spec;
+  carnot::planner::dynamic_tracing::ir::logical::DeploymentSpec deployment_spec;
   auto upid_pb = deployment_spec.mutable_upid();
   upid_pb->set_asid(upid.asid());
   upid_pb->set_pid(upid.pid());
@@ -113,7 +107,7 @@ StatusOr<TracepointDeployment*> MutationsIR::CreateTracepointDeployment(
       std::make_unique<TracepointDeployment>(tracepoint_name, ttl_ns);
   TracepointDeployment* raw = program.get();
 
-  stirling::dynamic_tracing::ir::shared::DeploymentSpec deployment_spec;
+  carnot::planner::dynamic_tracing::ir::logical::DeploymentSpec deployment_spec;
   auto shared_object_pb = deployment_spec.mutable_shared_object();
 
   shared_object_pb->set_name(shared_object.name());
@@ -133,7 +127,7 @@ StatusOr<TracepointDeployment*> MutationsIR::CreateTracepointDeploymentOnProcess
       std::make_unique<TracepointDeployment>(tracepoint_name, ttl_ns);
   TracepointDeployment* raw = program.get();
 
-  stirling::dynamic_tracing::ir::shared::DeploymentSpec deployment_spec;
+  carnot::planner::dynamic_tracing::ir::logical::DeploymentSpec deployment_spec;
   auto pod_process = deployment_spec.mutable_pod_process();
   pod_process->set_pod(process_spec.pod_name_);
   pod_process->set_container(process_spec.container_name_);
@@ -153,10 +147,11 @@ StatusOr<TracepointDeployment*> MutationsIR::CreateKProbeTracepointDeployment(
   return raw;
 }
 
-Status TracepointDeployment::AddBPFTrace(const std::string& bpftrace_program,
+Status TracepointDeployment::AddBPFTrace(const std::string& bpftrace,
                                          const std::string& output_name) {
-  stirling::dynamic_tracing::ir::logical::TracepointDeployment::Tracepoint tracepoint_pb;
-  tracepoint_pb.mutable_bpftrace()->set_program(bpftrace_program);
+  carnot::planner::dynamic_tracing::ir::logical::TracepointDeployment::TracepointProgram
+      tracepoint_pb;
+  tracepoint_pb.mutable_bpftrace()->set_program(bpftrace);
   tracepoint_pb.set_table_name(output_name);
   tracepoints_.push_back(tracepoint_pb);
   return Status::OK();
@@ -167,8 +162,9 @@ Status TracepointDeployment::AddTracepoint(TracepointIR* tracepoint_ir,
                                            const std::string& output_name) {
   tracepoint_ir->SetOutputName(output_name);
 
-  stirling::dynamic_tracing::ir::logical::TracepointDeployment::Tracepoint tracepoint_pb;
-  PL_CHECK_OK(tracepoint_ir->ToProto(tracepoint_pb.mutable_program(), probe_name));
+  carnot::planner::dynamic_tracing::ir::logical::TracepointDeployment::TracepointProgram
+      tracepoint_pb;
+  PL_CHECK_OK(tracepoint_ir->ToProto(tracepoint_pb.mutable_spec(), probe_name));
   tracepoint_pb.set_table_name(output_name);
   tracepoints_.push_back(tracepoint_pb);
 
@@ -177,7 +173,7 @@ Status TracepointDeployment::AddTracepoint(TracepointIR* tracepoint_ir,
     return Status::OK();
   }
   // Upsert the output definition.
-  stirling::dynamic_tracing::ir::logical::Output output_pb;
+  carnot::planner::dynamic_tracing::ir::logical::Output output_pb;
   PL_RETURN_IF_ERROR(output->ToOutputProto(&output_pb));
 
   // If the output name is missing, then we need to add it.
@@ -205,9 +201,9 @@ StatusOr<TracepointIR*> MutationsIR::GetCurrentProbeOrError(const pypa::AstPtr& 
 }
 
 Status TracepointDeployment::ToProto(
-    stirling::dynamic_tracing::ir::logical::TracepointDeployment* pb) const {
+    carnot::planner::dynamic_tracing::ir::logical::TracepointDeployment* pb) const {
   for (const auto& tracepoint : tracepoints_) {
-    (*pb->add_tracepoints()) = tracepoint;
+    (*pb->add_programs()) = tracepoint;
   }
   pb->set_name(name_);
 

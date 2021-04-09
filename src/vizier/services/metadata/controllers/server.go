@@ -379,8 +379,8 @@ func (s *Server) GetTracepointInfo(ctx context.Context, req *metadatapb.GetTrace
 
 		state, statuses := getTracepointStateFromAgentTracepointStates(tracepointStates)
 
-		schemas := make([]string, len(tp.Tracepoint.Tracepoints))
-		for i, t := range tp.Tracepoint.Tracepoints {
+		schemas := make([]string, len(tp.Tracepoint.Programs))
+		for i, t := range tp.Tracepoint.Programs {
 			schemas[i] = t.TableName
 		}
 

@@ -8,7 +8,7 @@ import "src/table_store/schemapb/schema.proto";
 import "src/carnot/planner/distributedpb/distributed_plan.proto";
 import "src/vizier/messages/messagespb/messages.proto";
 import "src/vizier/services/shared/agentpb/agent.proto";
-import "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb/logical.proto";
+import "src/carnot/planner/dynamic_tracing/ir/logicalpb/logical.proto";
 import "src/common/base/statuspb/status.proto";
 import "google/protobuf/duration.proto";
 
@@ -98,7 +98,7 @@ message AgentUpdatesResponse {
 // The request to register tracepoints on all PEMs.
 message RegisterTracepointRequest {
     message TracepointRequest {
-      pl.stirling.dynamic_tracing.ir.logical.TracepointDeployment tracepoint_deployment = 1;
+      pl.carnot.planner.dynamic_tracing.ir.logical.TracepointDeployment tracepoint_deployment = 1;
       // The user-specified name for the tracepoint.
       string name = 2;
       // The TTL, in seconds, for how long we want the tracepoint to live.
