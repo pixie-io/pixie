@@ -15,8 +15,8 @@ import {
   CLUSTER_QUERIES,
   DEPLOYMENT_KEY_QUERIES, USER_QUERIES,
 } from 'gql-queries';
-import { fetch } from 'whatwg-fetch';
-import { PixieAPIClientOptions } from 'types/client-options';
+import fetch from 'cross-fetch';
+import { PixieAPIClientOptions } from './types/client-options';
 import {
   GQLAPIKey,
   GQLAutocompleteActionType,
@@ -27,10 +27,13 @@ import {
 import { DEFAULT_USER_SETTINGS, UserSettings } from './user-settings';
 
 // Apollo link that adds cookies in the request.
-const cloudAuthLink = setContext((_, { headers }) => ({
+const makeCloudAuthLink = (opts: PixieAPIClientOptions) => setContext((_, { headers }) => ({
   headers: {
     ...headers,
-    withCredentials: true,
+    // NOTE: apiKey is required in the interface because every consumer EXCEPT Pixie's web UI must provide it.
+    // Pixie's web UI provides the empty string to indicate that it's using credentials instead.
+    // If any other consumer tries to do the same thing in a browser, CORS will block the request on the API side.
+    ...(opts.apiKey ? { 'pixie-api-key': opts.apiKey } : { withCredentials: true }),
   },
 }));
 
@@ -41,12 +44,12 @@ const loginRedirectLink = (on401: (errorMessage?: string) => void) => onError(({
   }
 });
 
-interface ClusterConnection {
+export interface ClusterConnection {
   ipAddress: string;
   token: string;
 }
 
-interface GetClusterConnResults {
+export interface GetClusterConnResults {
   clusterConnection: ClusterConnection;
 }
 
@@ -71,15 +74,30 @@ export class CloudClient {
       connectToDevTools: process?.env && process.env.NODE_ENV === 'development',
       cache: this.cache,
       link: ApolloLink.from([
-        cloudAuthLink,
+        makeCloudAuthLink(opts),
         loginRedirectLink(opts.onUnauthorized ?? (() => {})),
         createHttpLink({ uri: `${opts.uri}/graphql`, fetch }),
       ]),
     });
 
+    // On NodeJS, there is no localStorage. However, we still want to cache at runtime, so use a Map.
+    // In a browser, we can use localStorage normally.
+    const storage = globalThis.localStorage ?? (() => {
+      const map = new Map<string, any>();
+      return {
+        getItem: (k: string) => map.get(k),
+        setItem: (k: string, v: any) => {
+          map.set(k, v);
+        },
+        removeItem: (k: string) => {
+          map.delete(k);
+        },
+      };
+    })();
+
     this.persistPromise = persistCache({
       cache: this.cache,
-      storage: window.localStorage,
+      storage,
     }).then(() => {
       this.loaded = true;
     });
@@ -92,7 +110,10 @@ export class CloudClient {
     return this.graphQL;
   }
 
-  async getClusterConnection(id: string, noCache = false) {
+  /**
+   * Implementation detail for forming a connection to a cluster for health check and script execution requests.
+   */
+  async getClusterConnection(id: string, noCache = false): Promise<ClusterConnection> {
     const { data } = await this.graphQL.query<GetClusterConnResults>({
       query: CLUSTER_QUERIES.GET_CLUSTER_CONN,
       variables: { id },
@@ -141,6 +162,7 @@ export class CloudClient {
   async listAPIKeys(): Promise<GQLAPIKey[]> {
     const { data } = await this.graphQL.query<{ apiKeys: GQLAPIKey[] }>({
       query: API_KEY_QUERIES.LIST_API_KEYS,
+      fetchPolicy: 'no-cache',
     });
     return data.apiKeys;
   }
@@ -166,6 +188,7 @@ export class CloudClient {
   async listDeploymentKeys(): Promise<GQLDeploymentKey[]> {
     const { data } = await this.graphQL.query<{ deploymentKeys: GQLDeploymentKey[] }>({
       query: DEPLOYMENT_KEY_QUERIES.LIST_DEPLOYMENT_KEYS,
+      fetchPolicy: 'no-cache',
     });
     return data.deploymentKeys;
   }
@@ -177,7 +200,7 @@ export class CloudClient {
   getAutocompleteSuggester(
     clusterUID: string,
   ): (input: string, cursor: number, action: GQLAutocompleteActionType) => Promise<GQLAutocompleteResult> {
-    return (input, cursor, action) => this.graphQL.query<{ autocomplete: GQLAutocompleteResult}>({
+    return (input, cursor, action) => this.graphQL.query<{ autocomplete: GQLAutocompleteResult }>({
       query: AUTOCOMPLETE_QUERIES.AUTOCOMPLETE,
       fetchPolicy: 'network-only',
       variables: {
@@ -198,7 +221,7 @@ export class CloudClient {
   getAutocompleteFieldSuggester(
     clusterUID: string,
   ): (input: string, kind: GQLAutocompleteEntityKind) => Promise<GQLAutocompleteSuggestion[]> {
-    return (input, kind) => this.graphQL.query<{ autocompleteField: GQLAutocompleteSuggestion[]}>({
+    return (input, kind) => this.graphQL.query<{ autocompleteField: GQLAutocompleteSuggestion[] }>({
       query: AUTOCOMPLETE_QUERIES.FIELD,
       fetchPolicy: 'network-only',
       variables: {

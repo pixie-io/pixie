@@ -117,7 +117,7 @@ if (LD_CLIENT_ID !== '') {
 ReactDOM.render(
   <ThemeProvider theme={DARK_THEME}>
     <CssBaseline />
-    <PixieAPIContextProvider>
+    <PixieAPIContextProvider apiKey=''>
       <StyledApp />
     </PixieAPIContextProvider>
   </ThemeProvider>, document.getElementById('root'));

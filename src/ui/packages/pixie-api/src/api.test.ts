@@ -1,3 +1,4 @@
+import fetch from 'cross-fetch';
 import { PixieAPIClient } from './api';
 import { CloudClient } from './cloud-gql-client';
 import { mockApolloClient, Invocation } from './testing';
@@ -5,39 +6,43 @@ import { GQLAutocompleteActionType, GQLAutocompleteEntityKind } from './types/sc
 // Imported only so that its import in the test subject can be mocked successfully.
 import * as vizierDependency from './vizier-grpc-client';
 
+jest.mock('cross-fetch', () => ({
+  default: jest.fn(),
+}));
+
 describe('Pixie TypeScript API Client', () => {
   mockApolloClient();
   jest.mock('./vizier-grpc-client');
 
   const mockFetchResponse = (response, reject = false) => {
-    jest.spyOn(window, 'fetch').mockImplementation(
+    (fetch as jest.Mock).mockImplementation(
       () => (reject ? Promise.reject(response) : Promise.resolve(response)),
     );
   };
 
   it('can be instantiated', async () => {
-    const client = await PixieAPIClient.create();
+    const client = await PixieAPIClient.create({ apiKey: '' });
     expect(client).toBeTruthy();
   });
 
   describe('authentication check', () => {
     it('treats HTTP 200 to mean successful authentication', async () => {
       mockFetchResponse({ status: 200 } as Response);
-      const client = await PixieAPIClient.create();
+      const client = await PixieAPIClient.create({ apiKey: '' });
       const authenticated = await client.isAuthenticated();
       expect(authenticated).toBe(true);
     });
 
     it('treats any other HTTP status as not authenticated', async () => {
       mockFetchResponse({ status: 500 } as Response);
-      const client = await PixieAPIClient.create();
+      const client = await PixieAPIClient.create({ apiKey: '' });
       const authenticated = await client.isAuthenticated();
       expect(authenticated).toBe(false);
     });
 
     it('treats a failed request as an error', async () => {
       mockFetchResponse('Ah, bugger.', true);
-      const client = await PixieAPIClient.create();
+      const client = await PixieAPIClient.create({ apiKey: '' });
       try {
         const authenticated = await client.isAuthenticated();
         if (authenticated) fail('The fetch request rejected, but isAuthenticated came back with true.');
@@ -64,7 +69,7 @@ describe('Pixie TypeScript API Client', () => {
   ];
 
   it.each(proxies)('%s forwards to CloudClient', async (name: keyof CloudClient, ...args: any[]) => {
-    const client = await PixieAPIClient.create();
+    const client = await PixieAPIClient.create({ apiKey: '' });
     const spy = spyOn(client.getCloudGQLClientForAdapterLibrary(), name);
     expect(typeof client[name]).toBe('function');
     client[name](...args);
@@ -73,7 +78,7 @@ describe('Pixie TypeScript API Client', () => {
 
   describe('autocomplete methods', () => {
     it('getAutocompleteSuggester forwards to CloudClient', async () => {
-      const client = await PixieAPIClient.create();
+      const client = await PixieAPIClient.create({ apiKey: '' });
       const spy = jest.fn();
       spyOn(client.getCloudGQLClientForAdapterLibrary(), 'getAutocompleteSuggester').and.returnValue(spy);
       const suggester = await client.getAutocompleteSuggester('foo');
@@ -83,7 +88,7 @@ describe('Pixie TypeScript API Client', () => {
     });
 
     it('getAutocompleteFieldSuggester forwards to CloudClient', async () => {
-      const client = await PixieAPIClient.create();
+      const client = await PixieAPIClient.create({ apiKey: '' });
       const spy = jest.fn();
       spyOn(client.getCloudGQLClientForAdapterLibrary(), 'getAutocompleteFieldSuggester').and.returnValue(spy);
       const suggester = await client.getAutocompleteFieldSuggester('foo');
@@ -98,7 +103,7 @@ describe('Pixie TypeScript API Client', () => {
       const spy = jest.fn(() => Promise.resolve('bar'));
       spyOn(vizierDependency, 'VizierGRPCClient').and.returnValue({ health: spy });
 
-      const client = await PixieAPIClient.create();
+      const client = await PixieAPIClient.create({ apiKey: '' });
       spyOn(client.getCloudGQLClientForAdapterLibrary(), 'getClusterConnection').and.returnValue({});
 
       const out = await client.health('foo').toPromise();
@@ -110,7 +115,7 @@ describe('Pixie TypeScript API Client', () => {
       const spy = jest.fn(() => Promise.resolve('bar'));
       spyOn(vizierDependency, 'VizierGRPCClient').and.returnValue({ executeScript: spy });
 
-      const client = await PixieAPIClient.create();
+      const client = await PixieAPIClient.create({ apiKey: '' });
       spyOn(client.getCloudGQLClientForAdapterLibrary(), 'getClusterConnection').and.returnValue({});
 
       const out = await client.executeScript('foo', 'import px').toPromise();

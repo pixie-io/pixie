@@ -5,7 +5,7 @@ import { PixieAPIContextProvider } from './api-context';
 
 describe('Pixie API React Context', () => {
   it('renders once the context is ready', async () => {
-    render(<PixieAPIContextProvider>Hello</PixieAPIContextProvider>);
+    render(<PixieAPIContextProvider apiKey=''>Hello</PixieAPIContextProvider>);
     await screen.findByText('Hello');
   });
 });

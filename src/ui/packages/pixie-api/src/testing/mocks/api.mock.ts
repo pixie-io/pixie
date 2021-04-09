@@ -1,6 +1,7 @@
 // TODO(nick): This file needs implementation to make gRPC testing possible.
 //  For the moment, ignoring most lint and inspection rules.
 
+import fetch from 'cross-fetch';
 import { Observable, of as observableOf } from 'rxjs';
 // noinspection ES6PreferShortImport
 import {
@@ -44,8 +45,8 @@ export class MockPixieAPIClient implements PixieAPIClientAbstract {
   }
 
   static async create(
-    options: PixieAPIClientOptions = {},
+    options: PixieAPIClientOptions = { apiKey: '' },
   ) {
-    return Promise.resolve(new MockPixieAPIClient(MockPixieAPIClient.DEFAULT_OPTIONS));
+    return Promise.resolve(new MockPixieAPIClient({...MockPixieAPIClient.DEFAULT_OPTIONS, ...options}));
   }
 }

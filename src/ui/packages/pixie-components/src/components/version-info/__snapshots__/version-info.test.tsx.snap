@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports['<VersionInfo/> renders correctly 1'] = `
+exports[`<VersionInfo/> renders correctly 1`] = `
 initialize {
   "0": Object {
     "attribs": Object {

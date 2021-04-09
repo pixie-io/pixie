@@ -1,10 +1,10 @@
-import { VizierQueryError } from 'vizier';
 import { Observable, throwError } from 'rxjs';
 import { catchError, timeout } from 'rxjs/operators';
+import { VizierQueryError } from './vizier';
 // noinspection ES6PreferShortImport
 import {
   ErrorDetails, ExecuteScriptRequest, HealthCheckRequest, QueryExecutionStats, Relation,
-  RowBatchData, Status, MutationInfo,
+  RowBatchData, Status, MutationInfo, HealthCheckResponse, ExecuteScriptResponse,
 } from './types/generated/vizierapi_pb';
 // noinspection ES6PreferShortImport
 import { VizierServiceClient } from './types/generated/VizierapiServiceClientPb';
@@ -19,7 +19,7 @@ declare global {
 
 function withDevTools(client) {
   // eslint-disable-next-line no-underscore-dangle
-  const enableDevTools = window.__GRPCWEB_DEVTOOLS__ || noop;
+  const enableDevTools = globalThis.__GRPCWEB_DEVTOOLS__ || noop;
   enableDevTools([client]);
 }
 
@@ -166,7 +166,7 @@ export class VizierGRPCClient {
     req.setClusterId(this.clusterID);
     const call = this.client.healthCheck(req, headers);
     return new Observable<Status>((observer) => {
-      call.on('data', (resp) => {
+      call.on('data', (resp: HealthCheckResponse) => {
         if (observer.closed) {
           call.cancel();
         }
@@ -219,7 +219,10 @@ export class VizierGRPCClient {
       let resolved = false;
 
       let awaitingUpdates: BatchDataUpdate[] = [];
-      let updateInterval: number;
+
+      // Implicitly typed on purpose. This is a number in browsers, but a Timeout in NodeJS.
+      // We can't specify this explicitly without including the NodeJS lib.d.ts in tsconfig.json, which isn't portable.
+      let updateInterval;
 
       const cancel = () => {
         if (subscriber.closed) return;
@@ -257,7 +260,7 @@ export class VizierGRPCClient {
         emit({ type: 'error', error }, 'error', error);
       };
 
-      updateInterval = window.setInterval(() => {
+      updateInterval = setInterval(() => {
         if (awaitingUpdates.length) {
           emit({ type: 'data', data: awaitingUpdates });
           awaitingUpdates = [];
@@ -267,7 +270,7 @@ export class VizierGRPCClient {
       // To provide a cancel method immediately
       emit({ type: 'start' });
 
-      call.on('data', (resp) => {
+      call.on('data', (resp: ExecuteScriptResponse) => {
         if (!results.queryId) {
           results.queryId = resp.getQueryId();
         }

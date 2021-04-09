@@ -4,6 +4,10 @@
  */
 export interface PixieAPIClientOptions {
   /**
+   * Access token. Required for everyone except Pixie Cloud's Live UI code (which uses withCredentials and passes '').
+   */
+  apiKey: string;
+  /**
    * Where the Pixie API is hosted.
    * Includes the protocol, host, port (if needed), and path.
    * Defaults to window.location.origin, which on Pixie Cloud means https://withpixie.ai.

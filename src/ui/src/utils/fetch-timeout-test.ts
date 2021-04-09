@@ -1,8 +1,9 @@
-import { fetch } from 'whatwg-fetch';
-
+import fetch from 'cross-fetch';
 import fetchWithTimeout from './fetch-timeout';
 
-jest.mock('whatwg-fetch');
+jest.mock('cross-fetch', () => ({
+  default: jest.fn(),
+}));
 
 describe('fetchWithTimeout test', () => {
   beforeEach(() => {
@@ -11,7 +12,7 @@ describe('fetchWithTimeout test', () => {
 
   it('resolves before timeout', () => {
     expect.assertions(1);
-    fetch.mockImplementationOnce(() => new Promise((resolve) => {
+    (fetch as jest.Mock).mockImplementationOnce(() => new Promise((resolve) => {
       setTimeout(() => {
         resolve('success');
       }, 5);
@@ -22,7 +23,7 @@ describe('fetchWithTimeout test', () => {
 
   it('rejects before timeout', () => {
     expect.assertions(1);
-    fetch.mockImplementationOnce(() => new Promise((_, reject) => {
+    (fetch as jest.Mock).mockImplementationOnce(() => new Promise((_, reject) => {
       setTimeout(() => {
         // eslint-disable-next-line prefer-promise-reject-errors
         reject('failed');
@@ -34,7 +35,7 @@ describe('fetchWithTimeout test', () => {
 
   it('time out before resolves', () => {
     expect.assertions(1);
-    fetch.mockImplementationOnce(() => new Promise((resolve) => {
+    (fetch as jest.Mock).mockImplementationOnce(() => new Promise((resolve) => {
       setTimeout(() => {
         resolve('success');
       }, 10);

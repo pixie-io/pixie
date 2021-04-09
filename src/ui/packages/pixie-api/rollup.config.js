@@ -36,8 +36,9 @@ export default {
     commonjs(),
     copy({
       targets: [
-        { src: 'src/types/schema.d.ts', dest: 'dist/types' },
+        { src: 'src/types/**/*', dest: 'dist/' },
       ],
+      flatten: false,
     }),
   ],
   onwarn(warning, warn) {

@@ -1,8 +1,13 @@
 import * as React from 'react';
 import { render, RenderResult, act } from '@testing-library/react';
+import fetch from 'cross-fetch';
 import { useIsAuthenticated } from './use-is-authenticated';
 // noinspection ES6PreferShortImport
 import { MockPixieAPIContextProvider, wait } from '../testing';
+
+jest.mock('cross-fetch', () => ({
+  default: jest.fn(),
+}));
 
 describe('useIsAuthenticated hook to check if the API can be accessed', () => {
   const Consumer: React.FC = () => {
@@ -32,7 +37,7 @@ describe('useIsAuthenticated hook to check if the API can be accessed', () => {
   };
 
   const mockFetchResponse = (response, reject = false) => {
-    jest.spyOn(window, 'fetch').mockImplementation(
+    (fetch as jest.Mock).mockImplementation(
       () => (reject ? Promise.reject(response) : Promise.resolve(response)),
     );
   };

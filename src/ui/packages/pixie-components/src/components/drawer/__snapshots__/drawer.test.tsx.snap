@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports['<FixedSizeDrawer/> renders correctly when closed 1'] = `
+exports[`<FixedSizeDrawer/> renders correctly when closed 1`] = `
 initialize {
   "0": Object {
     "attribs": Object {

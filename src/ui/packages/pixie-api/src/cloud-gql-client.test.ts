@@ -6,7 +6,7 @@ describe('Cloud client (GQL wrapper)', () => {
   const { query, mutate } = mockApolloClient();
 
   it('instantiates', () => {
-    const cloudClient = new CloudClient({ uri: 'irrelevant' });
+    const cloudClient = new CloudClient({ apiKey: '', uri: 'irrelevant' });
     expect(cloudClient).toBeTruthy();
   });
 
@@ -20,7 +20,7 @@ describe('Cloud client (GQL wrapper)', () => {
     ];
 
     it.each(querySubjects)('%s queries GraphQL', async (name: keyof CloudClient, ...args: any[]) => {
-      const cloudClient = new CloudClient({ uri: 'irrelevant' });
+      const cloudClient = new CloudClient({ apiKey: '', uri: 'irrelevant' });
       expect(typeof cloudClient[name]).toBe('function');
       query.mockImplementation(() => Promise.resolve({
         data: new Proxy({}, {
@@ -28,12 +28,12 @@ describe('Cloud client (GQL wrapper)', () => {
         }),
       } as ApolloQueryResult<unknown>));
 
-      const out = await (cloudClient[name] as Function)(...args);
+      const out = await (cloudClient[name] as (...p: any[]) => any)(...args);
       expect(out).toBe('retrieved');
     });
 
     it('getSetting gets and parses settings', async () => {
-      const cloudClient = new CloudClient({ uri: 'irrelevant' });
+      const cloudClient = new CloudClient({ apiKey: '', uri: 'irrelevant' });
       query.mockImplementation(() => Promise.resolve({
         data: {
           userSettings: { tourSeen: 'true' },
@@ -45,7 +45,7 @@ describe('Cloud client (GQL wrapper)', () => {
     });
 
     it('getSetting returns default values in the absence of a setting', async () => {
-      const cloudClient = new CloudClient({ uri: 'irrelevant' });
+      const cloudClient = new CloudClient({ apiKey: '', uri: 'irrelevant' });
       query.mockImplementation(() => Promise.resolve({
         data: { userSettings: {} },
       } as ApolloQueryResult<{ userSettings: any }>));
@@ -55,7 +55,7 @@ describe('Cloud client (GQL wrapper)', () => {
     });
 
     it('setSetting sends a mutation to GraphQL', async () => {
-      const cloudClient = new CloudClient({ uri: 'irrelevant' });
+      const cloudClient = new CloudClient({ apiKey: '', uri: 'irrelevant' });
       mutate.mockImplementation(() => Promise.resolve({}));
 
       await cloudClient.setSetting('tourSeen', true);
@@ -68,7 +68,7 @@ describe('Cloud client (GQL wrapper)', () => {
     });
 
     it.each(['createAPIKey', 'createDeploymentKey'])('%s sends a mutation to GraphQL', async (name) => {
-      const cloudClient = new CloudClient({ uri: 'irrelevant' });
+      const cloudClient = new CloudClient({ apiKey: '', uri: 'irrelevant' });
       mutate.mockImplementation(() => Promise.resolve({
         data: {
           [`C${name.substr(1)}`]: { // CreateAPIKey and CreateDeploymentKey; names of the mutations are title case
@@ -83,7 +83,7 @@ describe('Cloud client (GQL wrapper)', () => {
     });
 
     it.each(['deleteAPIKey', 'deleteDeploymentKey'])('%s sends a mutation to GraphQL', async (name) => {
-      const cloudClient = new CloudClient({ uri: 'irrelevant' });
+      const cloudClient = new CloudClient({ apiKey: '', uri: 'irrelevant' });
       mutate.mockImplementation(() => Promise.resolve({}));
 
       await cloudClient[name]('foo');
