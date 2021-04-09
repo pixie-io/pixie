@@ -23,6 +23,7 @@ import {
 } from './graph-utils';
 import { toEntityURL, toSingleEntityPage } from '../utils/live-view-params';
 import { formatByDataType, formatBySemType } from '../../format-data/format-data';
+import { getColor, getLatencyNSLevel, GaugeLevel } from '../../../utils/metric-thresholds';
 
 interface AdjacencyList {
   toColumn: string;
@@ -54,6 +55,9 @@ interface GraphWidgetProps {
   propagatedArgs?: Arguments;
 }
 
+const INVALID_NODE_TYPES = [SemanticType.ST_SCRIPT_REFERENCE, SemanticType.ST_HTTP_RESP_MESSAGE];
+const LATENCY_TYPES = [SemanticType.ST_DURATION_NS, SemanticType.ST_THROUGHPUT_PER_NS];
+
 export const GraphWidget = (props: GraphWidgetProps) => {
   const { display, data, relation } = props;
   if (display.dotColumn && data.length > 0) {
@@ -61,8 +65,17 @@ export const GraphWidget = (props: GraphWidgetProps) => {
       <Graph dot={data[0][display.dotColumn]} />
     );
   } if (display.adjacencyList && display.adjacencyList.fromColumn && display.adjacencyList.toColumn) {
+    let errorMsg = '';
+
     const toColInfo = colInfoFromName(relation, display.adjacencyList.toColumn);
+    if (toColInfo && INVALID_NODE_TYPES.includes(toColInfo.semType)) {
+      errorMsg = `${display.adjacencyList.toColumn} cannot be used as the source column`;
+    }
     const fromColInfo = colInfoFromName(relation, display.adjacencyList.fromColumn);
+    if (fromColInfo && INVALID_NODE_TYPES.includes(fromColInfo.semType)) {
+      errorMsg = `${display.adjacencyList.fromColumn} cannot be used as the destination column`;
+    }
+    const colorColInfo = colInfoFromName(relation, display.edgeColorColumn);
     const edgeHoverInfo = [];
     if (display.edgeHoverInfo && display.edgeHoverInfo.length > 0) {
       for (const e of display.edgeHoverInfo) {
@@ -72,25 +85,26 @@ export const GraphWidget = (props: GraphWidgetProps) => {
         }
       }
     }
-    if (toColInfo && fromColInfo) {
+    if (toColInfo && fromColInfo && !errorMsg) {
       return (
         <Graph
           {...display}
           data={data}
           toCol={toColInfo}
           fromCol={fromColInfo}
+          edgeColorColumn={colorColInfo}
           propagatedArgs={props.propagatedArgs}
           edgeHoverInfo={edgeHoverInfo}
         />
       );
     }
 
-    let errorMsg = `${display.adjacencyList.toColumn} and ${display.adjacencyList.fromColumn} columns do not exist`;
-    if (toColInfo) {
-      errorMsg = `${display.adjacencyList.fromColumn} column does not exist`;
-    } else if (fromColInfo) {
+    if (!toColInfo) {
       errorMsg = `${display.adjacencyList.toColumn} column does not exist`;
+    } else if (!fromColInfo) {
+      errorMsg = `${display.adjacencyList.fromColumn} column does not exist`;
     }
+
     return <div>{errorMsg}</div>;
   }
   return <div key={props.display.dotColumn}>Invalid spec for graph</div>;
@@ -104,7 +118,7 @@ interface GraphProps {
   propagatedArgs?: Arguments;
   edgeWeightColumn?: string;
   nodeWeightColumn?: string;
-  edgeColorColumn?: string;
+  edgeColorColumn?: ColInfo;
   edgeThresholds?: EdgeThresholds;
   edgeHoverInfo?: ColInfo[];
   edgeLength?: number;
@@ -139,14 +153,18 @@ interface GraphData {
   propagatedArgs?: Arguments;
 }
 
-function getColorForEdge(val: number, theme: Theme, thresholds: EdgeThresholds): string {
+function getColorForEdge(col: ColInfo, val: number, thresholds: EdgeThresholds): GaugeLevel {
+  if (!thresholds && LATENCY_TYPES.includes(col.semType)) {
+    return getLatencyNSLevel(val);
+  }
+
   const medThreshold = thresholds ? thresholds.mediumThreshold : 100;
   const highThreshold = thresholds ? thresholds.highThreshold : 200;
 
   if (val < medThreshold) {
-    return theme.palette.success.dark;
+    return 'low';
   }
-  return val > highThreshold ? theme.palette.error.main : theme.palette.warning.main;
+  return val > highThreshold ? 'high' : 'med';
 }
 
 export const Graph = (props: GraphProps) => {
@@ -235,7 +253,8 @@ export const Graph = (props: GraphProps) => {
       }
 
       if (edgeColorColumn) {
-        edge.color = getColorForEdge(d[edgeColorColumn], theme, edgeThresholds);
+        const level = getColorForEdge(edgeColorColumn, d[edgeColorColumn.name], edgeThresholds);
+        edge.color = getColor(level, theme);
       }
 
       if (edgeHoverInfo && edgeHoverInfo.length > 0) {
