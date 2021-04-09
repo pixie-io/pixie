@@ -57,6 +57,7 @@ class ConnTrackerGenerations {
    */
   StatusOr<const ConnTracker*> GetActive() const;
 
+  const auto& generations() const { return generations_; }
   bool empty() const { return generations_.empty(); }
 
   /**
@@ -136,17 +137,19 @@ class ConnTrackersManager {
     };
 
     TrackersListIterator begin() {
-      return TrackersListIterator(list_, list_->begin(), conn_trackers_);
+      return TrackersListIterator(list_, list_->begin(), conn_trackers_mgr_);
     }
 
-    TrackersListIterator end() { return TrackersListIterator(list_, list_->end(), conn_trackers_); }
+    TrackersListIterator end() {
+      return TrackersListIterator(list_, list_->end(), conn_trackers_mgr_);
+    }
 
    private:
-    TrackersList(std::list<ConnTracker*>* list, ConnTrackersManager* conn_trackers)
-        : list_(list), conn_trackers_(conn_trackers) {}
+    TrackersList(std::list<ConnTracker*>* list, ConnTrackersManager* conn_trackers_mgr)
+        : list_(list), conn_trackers_mgr_(conn_trackers_mgr) {}
 
     std::list<ConnTracker*>* list_;
-    ConnTrackersManager* conn_trackers_;
+    ConnTrackersManager* conn_trackers_mgr_;
 
     friend class ConnTrackersManager;
   };
@@ -190,6 +193,10 @@ class ConnTrackersManager {
    */
   std::string DebugInfo() const;
 
+  const auto& conn_id_to_conn_tracker_generations() const {
+    return conn_id_to_conn_tracker_generations_;
+  }
+
  private:
   // Simple consistency DCHECKs meant for enforcing invariants.
   void DebugChecks() const;
@@ -197,7 +204,7 @@ class ConnTrackersManager {
   // A map from conn_id (PID+FD+TSID) to tracker. This is for easy update on BPF events.
   // Structured as two nested maps to be explicit about "generations" of trackers per PID+FD.
   // Key is {PID, FD} for outer map, and tsid for inner map.
-  absl::flat_hash_map<uint64_t, ConnTrackerGenerations> conn_trackers_;
+  absl::flat_hash_map<uint64_t, ConnTrackerGenerations> conn_id_to_conn_tracker_generations_;
 
   // A set of lists of pointers to all the contained trackers, organized by protocol
   // This is for easy access to the trackers during TransferData().

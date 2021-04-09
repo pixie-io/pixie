@@ -139,9 +139,10 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
                                     // SocketInfo to infer the role.
                                     {kRoleUnknown, kRoleClient, kRoleServer},
                                     TRANSER_STREAM_PROTOCOL(redis)}},
-      // Unknown protocols attached to HTTP table so that they run their cleanup functions,
-      // but the use of nullptr transfer_fn means it won't actually transfer data to the HTTP table.
       {kProtocolUnknown, TransferSpec{false /*enabled*/,
+                                      // Unknown protocols attached to HTTP table so that they run
+                                      // their cleanup functions, but the use of nullptr transfer_fn
+                                      // means it won't actually transfer data to the HTTP table.
                                       kHTTPTableNum,
                                       {kRoleUnknown, kRoleClient, kRoleServer},
                                       nullptr /*transfer_fn*/}}};
@@ -350,22 +351,47 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
 
   UpdateCommonState(ctx);
 
-  for (size_t table_num = 0; table_num < data_tables.size(); ++table_num) {
-    DataTable* data_table = data_tables[table_num];
+  DataTable* conn_stats_table = data_tables[kConnStatsTableNum];
+  if (conn_stats_table != nullptr &&
+      sample_push_freq_mgr_.sampling_count() % kConnStatsSamplingRatio == 0) {
+    TransferConnStats(ctx, conn_stats_table);
+  }
 
-    // Unsubscribed DataTable is nullptr.
+  std::vector<CIDRBlock> cluster_cidrs = ctx->GetClusterCIDRs();
+
+  for (size_t i = 0; i < data_tables.size(); ++i) {
+    if (i == kConnStatsTableNum) {
+      // conn_stats table does not need cutoff time, because its timestamps are assigned
+      // artificially.
+      continue;
+    }
+    DataTable* data_table = data_tables[i];
     if (data_table == nullptr) {
       continue;
     }
+    // Ensure records are within the time window, in order to ensure the order between record
+    // batches.
+    data_table->SetConsumeRecordsCutoffTime(perf_buffer_drain_time_);
+  }
 
-    if (table_num == kConnStatsTableNum) {
-      if (sample_push_freq_mgr_.sampling_count() % kConnStatsSamplingRatio == 0) {
-        TransferConnStats(ctx, data_table);
+  // TODO(yzhao): Can have a ConnTrackersManager::GetAllConnTrackers() to return all ConnTracker
+  // objects, and hide generations.
+  for (const auto& [conn_id, conn_tracker_gen] :
+       conn_trackers_mgr_.conn_id_to_conn_tracker_generations()) {
+    for (auto& [tsid, conn_tracker] : conn_tracker_gen.generations()) {
+      DCHECK_LT(conn_tracker->traffic_class().protocol, protocol_transfer_specs_.size());
+      const auto& transfer_spec = protocol_transfer_specs_[conn_tracker->traffic_class().protocol];
+
+      DataTable* data_table = data_tables[transfer_spec.table_num];
+      if (data_table == nullptr) {
+        continue;
       }
-    } else {
-      data_table->SetConsumeRecordsCutoffTime(perf_buffer_drain_time_);
 
-      TransferStreams(ctx, table_num, data_table);
+      conn_tracker->IterationPreTick(cluster_cidrs, proc_parser_.get(), socket_info_mgr_.get());
+      if (transfer_spec.enabled && transfer_spec.transfer_fn) {
+        transfer_spec.transfer_fn(*this, ctx, conn_tracker.get(), data_table);
+      }
+      conn_tracker->IterationPostTick();
     }
   }
 

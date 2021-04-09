@@ -151,7 +151,7 @@ ConnTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t conn_i
   const uint64_t conn_map_key = GetConnMapKey(conn_id.upid.pid, conn_id.fd);
   DCHECK_NE(conn_map_key, 0) << "Connection map key cannot be 0, pid must be wrong";
 
-  ConnTrackerGenerations& conn_trackers = conn_trackers_[conn_map_key];
+  ConnTrackerGenerations& conn_trackers = conn_id_to_conn_tracker_generations_[conn_map_key];
   auto [conn_tracker_ptr, created] = conn_trackers.GetOrCreate(conn_id.tsid, &trackers_pool_);
 
   if (created) {
@@ -167,8 +167,8 @@ ConnTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t conn_i
 StatusOr<const ConnTracker*> ConnTrackersManager::GetConnTracker(uint32_t pid, uint32_t fd) const {
   const uint64_t conn_map_key = GetConnMapKey(pid, fd);
 
-  auto tracker_set_it = conn_trackers_.find(conn_map_key);
-  if (tracker_set_it == conn_trackers_.end()) {
+  auto tracker_set_it = conn_id_to_conn_tracker_generations_.find(conn_map_key);
+  if (tracker_set_it == conn_id_to_conn_tracker_generations_.end()) {
     return error::NotFound("Could not find the tracker with pid=$0 fd=$1.", pid, fd);
   }
 
@@ -187,8 +187,8 @@ StatusOr<const ConnTracker*> ConnTrackersManager::GetConnTracker(uint32_t pid, u
 void ConnTrackersManager::CleanupTrackers() {
   // Outer loop iterates through tracker sets (keyed by PID+FD),
   // while inner loop iterates through generations of trackers for that PID+FD pair.
-  auto iter = conn_trackers_.begin();
-  while (iter != conn_trackers_.end()) {
+  auto iter = conn_id_to_conn_tracker_generations_.begin();
+  while (iter != conn_id_to_conn_tracker_generations_.end()) {
     auto& tracker_generations = iter->second;
 
     int num_erased = tracker_generations.CleanupGenerations(&trackers_pool_);
@@ -197,7 +197,7 @@ void ConnTrackersManager::CleanupTrackers() {
     num_trackers_ready_for_destruction_ -= num_erased;
 
     if (tracker_generations.empty()) {
-      conn_trackers_.erase(iter++);
+      conn_id_to_conn_tracker_generations_.erase(iter++);
     } else {
       ++iter;
     }
@@ -214,20 +214,20 @@ Status ConnTrackersManager::TestOnlyCheckConsistency() const {
     for (auto iter = conn_trackers_list.begin(); iter != conn_trackers_list.end(); ++iter) {
       ConnTracker* tracker = *iter;
 
-      // Check that tracker exists in conn_trackers_ (i.e. that the pointer is valid).
+      // Check that tracker exists (i.e. that the pointer is valid).
       // If the pointer is not valid, this will likely cause a crash or ASAN error.
       const uint64_t conn_map_key =
           GetConnMapKey(tracker->conn_id().upid.pid, tracker->conn_id().fd);
       DCHECK_NE(conn_map_key, 0) << "Connection map key cannot be 0, pid must be wrong";
-      auto tracker_set_it = conn_trackers_.find(conn_map_key);
-      if (tracker_set_it == conn_trackers_.end()) {
-        return error::Internal("Tracker $0 in the protocol lists not found in conn_trackers_.",
+      auto tracker_set_it = conn_id_to_conn_tracker_generations_.find(conn_map_key);
+      if (tracker_set_it == conn_id_to_conn_tracker_generations_.end()) {
+        return error::Internal("Tracker $0 in the protocol lists not found.",
                                ToString(tracker->conn_id()));
       }
 
       const auto& tracker_generations = tracker_set_it->second;
       if (!tracker_generations.Contains(tracker->conn_id().tsid)) {
-        return error::Internal("Tracker $0 in the protocol lists not found in conn_trackers_.",
+        return error::Internal("Tracker $0 in the protocol lists not found.",
                                ToString(tracker->conn_id()));
       }
 
