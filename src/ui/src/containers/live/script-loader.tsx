@@ -47,8 +47,6 @@ export function ScriptLoader() {
   }, [execute, loadState, pxl, vis]);
 
   React.useEffect(() => {
-    // TODO(nserrino): refactor this legacy code to reduce duplication with ScriptContext.
-    // (matchLiveViewEntity et al).
     const subscription = urlParams.onChange.subscribe((urlInfo) => {
       if (loadingScripts) return;
 

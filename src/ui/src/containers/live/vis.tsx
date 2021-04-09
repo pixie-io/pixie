@@ -6,9 +6,6 @@ import { ArgTypeMap, getArgTypesForVis } from 'utils/args-utils';
 import { Status } from 'types/generated/vizierapi_pb';
 import { ChartPosition } from './layout';
 
-// TODO(nserrino): Replace these with proto when the UI receives protobuf from the script manager
-// instead of json from the json bundle.
-
 interface FuncArg {
   name: string;
   value?: string;
@@ -60,7 +57,6 @@ export function parseVis(json: string): Vis {
   try {
     const parsed = JSON.parse(json);
     if (typeof parsed === 'object') {
-      // TODO(nserrino): Do actual validation that this object matches the vis.proto json schema.
       if (!parsed.variables) {
         parsed.variables = [];
       }
@@ -107,8 +103,6 @@ function getFuncArgs(variableValues: VariableValues, func: Func): VizierQueryArg
       });
       return;
     }
-    // For now, use the default value in the vis.json spec as the value to the function.
-    // TODO(nserrino): Support actual variables from the command prompt, or other UI inputs.
     if (!(arg.variable in variableValues)) {
       errors.push(`Arg "${arg.name}" of "${func.name}()" references undefined variable "${arg.variable}"`);
       return;

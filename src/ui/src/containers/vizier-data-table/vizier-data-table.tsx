@@ -62,7 +62,6 @@ interface VizierDataTableProps {
   prettyRender?: boolean;
   expandable?: boolean;
   expandedRenderer?: (rowIndex: number) => JSX.Element;
-  // TODO(michelle/zasgar/nserrino): Remove this.
   clusterName?: string;
   onRowSelectionChanged?: (row: any) => void;
   onRowsRendered?: (range: IndexRange) => void;

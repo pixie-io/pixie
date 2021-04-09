@@ -156,7 +156,6 @@ export const Graph = (props: GraphProps) => {
   } = props;
   const theme = useTheme();
 
-  // TODO(zasgar/michelle/nserrino): Remove the context information from here and elsewhere.
   const { selectedClusterName } = React.useContext(ClusterContext);
   const history = useHistory();
 

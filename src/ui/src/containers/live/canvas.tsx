@@ -342,8 +342,6 @@ const Canvas = (props: CanvasProps) => {
     vis.widgets.forEach((widget, i) => {
       const widgetLayout = layout[i];
       const display = widget.displaySpec;
-      // TODO(nserrino): Support multiple output tables when we have a Vega component that
-      // takes in multiple output tables.
       const tableName = widgetTableName(widget, i);
       const widgetName = widgetLayout.i;
       const table = tables[tableName];

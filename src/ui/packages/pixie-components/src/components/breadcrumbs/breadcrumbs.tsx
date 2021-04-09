@@ -383,8 +383,6 @@ interface BreadcrumbsProps extends WithStyles<typeof styles> {
   breadcrumbs: BreadcrumbOptions[];
 }
 
-// TODO(nserrino/michelle): Support links (non-menu) as a type of breadcrumb,
-// replace breadcrumbs in cluster details page with that new type of breadcrumb.
 const BreadcrumbsImpl = ({ classes, breadcrumbs }: BreadcrumbsProps) => {
   // In case a breadcrumb doesn't override, give it the nearest context's values.
   const { allowTyping, requireCompletion } = React.useContext(
