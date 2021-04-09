@@ -45,16 +45,6 @@ func init() {
 	pflag.String("kratos_browser_url", "https://work.dev.withpixie.dev/oauth/kratos", "The URL for kratos available from the browser.")
 }
 
-// Client is the interface for IdentityProvider clients that require endpoints.
-type Client interface {
-	// HandleLogin handles the login for a user into the Identity Provider.
-	HandleLogin(session *sessions.Session, w http.ResponseWriter, r *http.Request) error
-	// HandleLogout logs out a user from the Identity Provider.
-	HandleLogout(session *sessions.Session, w http.ResponseWriter, r *http.Request) error
-	// HandleLogout registers a user in the Identity Provider.
-	HandleRegister(session *sessions.Session, w http.ResponseWriter, r *http.Request) error
-}
-
 // IDProviderSessionKey is the key for the cookie session storing idp data.
 const IDProviderSessionKey string = "ossidprovider"
 
@@ -592,6 +582,11 @@ func (c *HydraKratosClient) HandleLogin(session *sessions.Session, w http.Respon
 func (c *HydraKratosClient) HandleLogout(session *sessions.Session, w http.ResponseWriter, r *http.Request) error {
 	// TODO implement.
 	return handler.NewStatusError(http.StatusInternalServerError, "not implememented")
+}
+
+// SessionKey returns the string key under which cookie the session info should be stored.
+func (c *HydraKratosClient) SessionKey() string {
+	return IDProviderSessionKey
 }
 
 // HandleRegister conducts the user registration flow for Hydra and Kratos.

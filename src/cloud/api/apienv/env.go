@@ -2,12 +2,12 @@ package apienv
 
 import (
 	"errors"
+	"net/http"
 
 	"github.com/gorilla/sessions"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"pixielabs.ai/pixielabs/src/cloud/api/idprovider"
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	"pixielabs.ai/pixielabs/src/cloud/auth/authpb"
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
@@ -29,7 +29,19 @@ type APIEnv interface {
 	VZDeploymentKeyClient() vzmgrpb.VZDeploymentKeyServiceClient
 	APIKeyClient() authpb.APIKeyServiceClient
 	ArtifactTrackerClient() artifacttrackerpb.ArtifactTrackerClient
-	IdentityProviderClient() idprovider.Client
+	IdentityProviderClient() IdentityProviderClient
+}
+
+// IdentityProviderClient is the interface for IdentityProvider clients that require endpoints.
+type IdentityProviderClient interface {
+	// HandleLogin handles the login for a user into the Identity Provider.
+	HandleLogin(session *sessions.Session, w http.ResponseWriter, r *http.Request) error
+	// HandleLogout logs out a user from the Identity Provider.
+	HandleLogout(session *sessions.Session, w http.ResponseWriter, r *http.Request) error
+	// HandleLogout registers a user in the Identity Provider.
+	HandleRegister(session *sessions.Session, w http.ResponseWriter, r *http.Request) error
+	// The key to use for the session.
+	SessionKey() string
 }
 
 // Impl is an implementation of the APIEnv interface.
@@ -42,13 +54,13 @@ type Impl struct {
 	apiKeyClient           authpb.APIKeyServiceClient
 	vzMgrClient            vzmgrpb.VZMgrServiceClient
 	artifactTrackerClient  artifacttrackerpb.ArtifactTrackerClient
-	identityProviderClient idprovider.Client
+	identityProviderClient IdentityProviderClient
 }
 
 // New creates a new api env.
 func New(ac authpb.AuthServiceClient, pc profilepb.ProfileServiceClient,
 	vk vzmgrpb.VZDeploymentKeyServiceClient, ak authpb.APIKeyServiceClient, vc vzmgrpb.VZMgrServiceClient,
-	at artifacttrackerpb.ArtifactTrackerClient, oa idprovider.Client) (APIEnv, error) {
+	at artifacttrackerpb.ArtifactTrackerClient, oa IdentityProviderClient) (APIEnv, error) {
 	sessionKey := viper.GetString("session_key")
 	if len(sessionKey) == 0 {
 		return nil, errors.New("session_key is required for cookie store")
@@ -94,6 +106,6 @@ func (e *Impl) ArtifactTrackerClient() artifacttrackerpb.ArtifactTrackerClient {
 }
 
 // IdentityProviderClient returns a client that interfaces with an identity provider.
-func (e *Impl) IdentityProviderClient() idprovider.Client {
+func (e *Impl) IdentityProviderClient() IdentityProviderClient {
 	return e.identityProviderClient
 }
