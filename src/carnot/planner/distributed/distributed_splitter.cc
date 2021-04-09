@@ -215,8 +215,7 @@ bool MustBeOnPemFilter(OperatorIR* op) {
 bool MustBeOnPem(OperatorIR* op) { return MustBeOnPemMap(op) || MustBeOnPemFilter(op); }
 
 bool DistributedSplitter::CanBeGRPCBridgeTree(OperatorIR* op) {
-  // TODO(philkuz/nserrino) extend this like we extended the PartialBlockingOperator stuff when we
-  // need it.
+  // We can generalize this beyond sparse filters in the future as needed.
   return SparseFilter(op);
 }
 

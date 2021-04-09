@@ -233,13 +233,7 @@ class OperatorRelationRule : public Rule {
 class ConvertStringTimesRule : public Rule {
   /**
    * @brief ConverStringTimesRuleUsed to support taking strings like "-2m"
-   * into a memory source or a rolling operator. Currently special-cased in the system in order to
-   * provide an ergonomic way to specify times in a memory source without disrupting the more
-   * general constant-folding code in OperatorCompileTimeExpressionRule.
-   * TODO(nserrino/philkuz): figure out if users will want to pass strings in as expressions
-   * to memory sources or rolling operators that should NOT be converted to a time, and remove
-   * this rule if so.
-   *
+   * into a memory source or a rolling operator.
    */
  public:
   explicit ConvertStringTimesRule(CompilerState* compiler_state)
@@ -498,11 +492,6 @@ class AddLimitToBatchResultSinkRule : public Rule {
  * assigned to be the value of a new column, that new column should have receive the same
  * annotations as the integer that created it.
  *
- * TODO(nserrino): Possibly move this rule to the distributed_planner, in the event that the
- * unions and GRPCSources that are generated in the distributed planner need to be given
- * annotations as well. For now, all of the nodes downstream of the union/grpc sources should be
- * annotated in those distributed plans from this rules in the single node analyzer.
- *
  */
 class PropagateExpressionAnnotationsRule : public Rule {
  public:
@@ -511,10 +500,6 @@ class PropagateExpressionAnnotationsRule : public Rule {
 
  protected:
   StatusOr<bool> Apply(IRNode* node) override;
-  // Status HandleMapAncestor(MapIR* map, std::string_view column_name);
-  // Status HandleBlockingAggAncestor(BlockingAggIR* map, std::string_view column_name);
-  // Status HandleJoinAncestor(JoinIR* map, std::string_view column_name);
-  // Status HandleUnionAncestor(UnionIR* map, std::string_view column_name);
 
  private:
   using OperatorOutputAnnotations =

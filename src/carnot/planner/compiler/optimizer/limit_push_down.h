@@ -9,11 +9,7 @@ namespace planner {
 namespace compiler {
 
 /**
- * @brief This rule pushes limits as early in the IR as possible. It should be at most once, because
- * in the case of a limit preceded by a union, the rule will clone the limit to exist before and
- * after each instance of the union. The rule does not contain the logic to check if a past
- * invocation of the rule has already pushed a given limit up before a union.
- * TODO(nserrino): Add support to allow this rule to run multiple times in a row.
+ * @brief This rule pushes limits as early in the IR as possible.
  *
  */
 class LimitPushdownRule : public Rule {

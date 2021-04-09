@@ -339,7 +339,6 @@ StatusOr<QLObjectPtr> CompileTimeFuncHandler::TimeEval(IR* graph, std::chrono::n
                                                        const pypa::AstPtr& ast,
                                                        const ParsedArgs& args,
                                                        ASTVisitor* visitor) {
-  // TODO(philkuz/nserrino) maybe just convert this into an Integer because we have the info here.
   std::vector<ExpressionIR*> expr_args;
 
   PL_ASSIGN_OR_RETURN(IntIR * unit, GetArgAs<IntIR>(ast, args, "unit"));

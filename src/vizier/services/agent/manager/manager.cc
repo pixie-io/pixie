@@ -89,7 +89,6 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
   auto func_registry = std::make_unique<pl::carnot::udf::Registry>("vizier_func_registry");
   ::pl::vizier::funcs::RegisterFuncsOrDie(func_context_, func_registry.get());
 
-  // TODO(zasgar/nserrino): abstract away the stub generator.
   carnot_ = pl::carnot::Carnot::Create(
                 agent_id, std::move(func_registry), table_store_,
                 std::bind(&Manager::ResultSinkStubGenerator, this, std::placeholders::_1,

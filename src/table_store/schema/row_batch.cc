@@ -61,8 +61,6 @@ int64_t RowBatch::NumBytes() const {
 }
 
 // Serialize/deserialize from protobuf.
-// TODO(nserrino): Replace these functions when schemapb::RowBatchData is deprecated
-// in favor of proper (de)serialization.
 
 // PL_CARNOT_UPDATE_FOR_NEW_TYPES
 template <DataType T>

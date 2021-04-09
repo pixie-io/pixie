@@ -22,7 +22,6 @@ class NameMetadataProperty : public MetadataProperty {
  public:
   explicit NameMetadataProperty(MetadataType metadata_type, std::vector<MetadataType> key_columns)
       : MetadataProperty(metadata_type, types::DataType::STRING, key_columns) {}
-  // TODO(nserrino): Remove this requirement and store entity names without namespace prepended.
   // Expect format to be "<namespace>/<value>"
   bool ExprFitsFormat(ExpressionIR* ir_node) const override {
     DCHECK(ir_node->type() == IRNodeType::kString);

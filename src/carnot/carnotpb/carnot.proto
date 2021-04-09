@@ -29,7 +29,6 @@ message TransferResultChunkRequest {
   message SinkResult {
     oneof result_contents {
       // The row batch data.
-      // TODO(nserrino): Fix this to flat buffers/feather for better performance.
       pl.table_store.schemapb.RowBatchData row_batch = 1;
       // This case is sent by a GRPCSink as soon as it makes the remote connection to the client
       // receiving its results. It is used by the client to identify the particular connection and

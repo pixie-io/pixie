@@ -575,8 +575,6 @@ bool ConvertStringTimesRule::HasStringTime(const ExpressionIR* node) {
 // Support taking strings like "-2m" into a memory source or rolling operator.
 // relative_time determines whether to add in the current compiler time or just
 // use the time given by the string
-// TODO(nserrino, philkuz) Figure out if we can generalize so that it can work in other operators
-// without polluting our approach to types.
 StatusOr<ExpressionIR*> ConvertStringTimesRule::ConvertStringTimes(ExpressionIR* node,
                                                                    bool relative_time) {
   // Mem sources treat expressions differently than other nodes, so if we run into one with
@@ -1276,7 +1274,7 @@ StatusOr<bool> ResolveStreamRule::Apply(IRNode* ir_node) {
   auto stream_node = static_cast<StreamIR*>(ir_node);
 
   // Check for blocking nodes in the ancestors.
-  // TODO(nserrino): PP-2115: Support blocking ancetor nodes when rolling() is present.
+  // Currently not supported to stream on queries containing blocking operators.
   DCHECK_EQ(stream_node->parents().size(), 1UL);
   OperatorIR* parent = stream_node->parents()[0];
   std::queue<OperatorIR*> nodes;
@@ -1300,7 +1298,6 @@ StatusOr<bool> ResolveStreamRule::Apply(IRNode* ir_node) {
   }
 
   // The only supported children right now should be MemorySinks.
-  // TODO(nserrino): PP-2115
   auto children = stream_node->Children();
   DCHECK_GT(children.size(), 0);
   for (OperatorIR* child : children) {

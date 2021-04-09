@@ -33,8 +33,6 @@ class RowBatch {
 
   ~RowBatch() { DCHECK_EQ(desc_.size(), columns_.size()); }
 
-  // TODO(nserrino): Replace these conversion funcs when RowBatchData is deprecated
-  // and proper serialization is implemented.
   Status ToProto(table_store::schemapb::RowBatchData* row_batch_proto) const;
   static StatusOr<std::unique_ptr<RowBatch>> FromProto(
       const table_store::schemapb::RowBatchData& row_batch_proto);

@@ -194,8 +194,6 @@ void TableToCsv(const std::string& filename,
   if (!result_batches.size()) {
     output_csv.close();
   }
-  // TODO(nserrino): Add the column names back in here.
-  // They will need to either be collected from the plan, or the schema sent via the GRPCSink.
   for (const auto& rb : result_batches) {
     for (auto row_idx = 0; row_idx < rb.num_rows(); row_idx++) {
       std::vector<std::string> row;
