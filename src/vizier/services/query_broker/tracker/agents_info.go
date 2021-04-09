@@ -13,8 +13,8 @@ import (
 )
 
 // KelvinSSLTargetOverride the hostname used for SSL target override when sending data to Kelvin.
-// TODO(nserrino): This value may differ in the future.
-// Have this come from the Kelvins themselves when they send their updated state.
+// Note: This value may differ in the future. When that happens, this should instead come from the
+// Kelvins themselves. rather than this variable, when Kelvins send their updated state.
 const KelvinSSLTargetOverride = "kelvin.pl.svc"
 
 // AgentsInfo tracks information about the distributed state of the system.
@@ -189,9 +189,7 @@ func makeKelvinCarnotInfo(agentID uuid.UUID, grpcAddress string, asid uint32) *d
 		ProcessesData:        true,
 		AcceptsRemoteSources: true,
 		// When we support persistent storage, Kelvins will also have MetadataInfo.
-		MetadataInfo: nil,
-		// TODO(nserrino): When this value is no longer a constant, we will need to get the value from
-		// the agent update.
+		MetadataInfo:  nil,
 		SSLTargetName: KelvinSSLTargetOverride,
 	}
 }

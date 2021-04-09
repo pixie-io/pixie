@@ -471,14 +471,6 @@ func TestHealthCheck_ExecutionError(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestExecuteScript_Mutation(t *testing.T) {
-	// TODO(zasgar, philkuz, nserrino): Add unit tests for mutation execution.
-}
-
-func TestExecuteScript_MutationError(t *testing.T) {
-	// TODO(zasgar, philkuz, nserrino): Add unit tests for mutation execution.
-}
-
 func TestExecuteScript_Success(t *testing.T) {
 	// Start NATS.
 	nc, cleanup := testingutils.MustStartTestNATS(t)
@@ -829,11 +821,6 @@ func TestTransferResultChunk_AgentStreamComplete(t *testing.T) {
 	assert.Equal(t, 2, len(rf.ReceivedAgentResults))
 	assert.Equal(t, msg1, rf.ReceivedAgentResults[0])
 	assert.Equal(t, msg2, rf.ReceivedAgentResults[1])
-}
-
-func TestTransferResultChunk_MultipleTransferResultChunkStreams(t *testing.T) {
-	// TODO(nserrino): Write a test for the case where two streams send to the same forwarder.
-	// Or modify the _Success test to use multiple streams.
 }
 
 func TestTransferResultChunk_AgentClosedPrematurely(t *testing.T) {

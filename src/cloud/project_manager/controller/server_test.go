@@ -145,19 +145,6 @@ func TestServer_IsProjectAvailable(t *testing.T) {
 	}
 }
 
-// TODO(nserrino): Re-enable when we have a project name in the blockedlist.
-// func TestServer_RegisterProjectBlockList(t *testing.T) {
-// 	server := SetupServerTest(t)
-
-// 	req := &projectmanagerpb.RegisterProjectRequest{
-// 		ProjectName: "default",
-// 	}
-// 	resp, err := server.RegisterProject(context.Background(), req)
-
-// 	assert.NotNil(t, err)
-// 	assert.Nil(t, resp)
-// }
-
 func TestServer_GetProjectByName(t *testing.T) {
 	server := SetupServerTest(t)
 

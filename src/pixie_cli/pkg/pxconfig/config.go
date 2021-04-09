@@ -8,7 +8,8 @@ import (
 	"sync"
 
 	"github.com/gofrs/uuid"
-	log "github.com/sirupsen/logrus"
+
+	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 )
 
 // ConfigInfo store the config about the CLI.
@@ -85,25 +86,22 @@ func Cfg() *ConfigInfo {
 	once.Do(func() {
 		configPath, err := ensureDefaultConfigFilePath()
 		if err != nil {
-			// TODO(nserrino): Refactor to use cliLog so that an unnecessary event
-			// is not sent to Sentry.
-			log.WithError(err).Fatal("Failed to load/create config file path")
+			cliLog.WithError(err).Error("Failed to load/create config file path")
+			os.Exit(1)
 		}
 		_, err = os.Stat(configPath)
 		if os.IsNotExist(err) {
 			// Write the default config.
 			if config, err = writeDefaultConfig(configPath); err != nil {
-				// TODO(nserrino): Refactor to use cliLog so that an unnecessary event
-				// is not sent to Sentry.
-				log.WithError(err).Fatal("Failed to create default config")
+				cliLog.WithError(err).Error("Failed to create default config")
+				os.Exit(1)
 			}
 			return
 		}
 
 		if config, err = readDefaultConfig(configPath); err != nil {
-			// TODO(nserrino): Refactor to use cliLog so that an unnecessary event
-			// is not sent to Sentry.
-			log.WithError(err).Fatal("Failed to read config file")
+			cliLog.WithError(err).Error("Failed to read config file")
+			os.Exit(1)
 		}
 	})
 	return config

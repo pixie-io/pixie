@@ -41,8 +41,7 @@ func (t *taskWrapper) Run() error {
 
 // RunScriptAndOutputResults runs the specified script on vizier and outputs based on format string.
 func RunScriptAndOutputResults(ctx context.Context, conns []*Connector, execScript *script.ExecutableScript, format string) error {
-	// Check for the presence of df.stream().
-	// TODO(nserrino): Support addition of end_time as a way to execute a streaming query in this mode.
+	// Check for the presence of df.stream() in the query.
 	if strings.Contains(execScript.ScriptString, "stream()") && format != "json" {
 		return fmt.Errorf("Cannot execute a query containing df.stream() using px run with table output. " +
 			"Please try using `px live` instead or setting output format to json (`-o json`).")

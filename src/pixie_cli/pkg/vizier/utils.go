@@ -3,9 +3,9 @@ package vizier
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/gofrs/uuid"
-	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/rest"
 
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
@@ -18,8 +18,8 @@ import (
 func MustConnectDefaultVizier(cloudAddr string, allClusters bool, clusterID uuid.UUID) []*Connector {
 	c, err := ConnectDefaultVizier(cloudAddr, allClusters, clusterID)
 	if err != nil {
-		// TODO(nserrino): Change the logic to not use logrus.
-		log.WithError(err).Fatal("Failed to connect to vizier")
+		cliLog.WithError(err).Error("Failed to connect to vizier")
+		os.Exit(1)
 	}
 	return c
 }

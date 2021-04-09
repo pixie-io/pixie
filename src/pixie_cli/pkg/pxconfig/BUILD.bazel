@@ -6,7 +6,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxconfig",
     visibility = ["//src:__subpackages__"],
     deps = [
+        "//src/pixie_cli/pkg/utils",
         "@com_github_gofrs_uuid//:uuid",
-        "@com_github_sirupsen_logrus//:logrus",
     ],
 )

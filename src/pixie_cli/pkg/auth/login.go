@@ -167,9 +167,8 @@ func (p *PixieCloudLogin) Run() (*RefreshToken, error) {
 		case nil:
 			return refreshToken, nil
 		case errUserChallengeTimeout:
-			// TODO(nserrino): Refactor so that we don't use log.Fatal, which sends an unnecessary
-			// event to Sentry.
-			log.Fatal("Timeout waiting for response from browser. Perhaps try --manual mode.")
+			utils2.Error("Timeout waiting for response from browser. Perhaps try --manual mode.")
+			os.Exit(1)
 		case errBrowserFailed:
 			fallthrough
 		default:
@@ -282,9 +281,8 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 			if err == http.ErrServerClosed {
 				return
 			}
-			// TODO(nserrino): Refactor so that we don't use log.Fatal, which sends an unnecessary
-			// event to Sentry.
-			log.WithError(err).Fatal("failed to listen")
+			utils2.WithError(err).Error("failed to listen")
+			os.Exit(1)
 		}
 	}()
 
@@ -306,7 +304,7 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 	defer func() {
 		err := h.Shutdown(ctx)
 		if err != nil {
-			log.WithError(err).Error("Failed to shutdown server")
+			utils2.WithError(err).Error("Failed to shutdown server")
 		}
 	}()
 
@@ -433,8 +431,9 @@ type RefreshToken struct {
 func (p *PixieCloudLogin) getAuthURL() *url.URL {
 	authURL, err := url.Parse(fmt.Sprintf("https://work.%s", p.CloudAddr))
 	if err != nil {
-		// TODO(nserrino): Refactor so that we don't use log.Fatal, which sends an unnecessary
-		// event to Sentry.
+		// This is intentionally a log.Fatal, which will trigger a Sentry error.
+		// In most other cases, we want to use the cli logger, which will not trigger
+		// Sentry errors on user errors.
 		log.WithError(err).Fatal("Failed to parse cloud addr.")
 	}
 	authURL.Path = "/login"
@@ -450,8 +449,9 @@ func (p *PixieCloudLogin) getAuthURL() *url.URL {
 func (p *PixieCloudLogin) getAuthAPIURL() string {
 	authURL, err := url.Parse(fmt.Sprintf("https://%s/api/auth/login", p.CloudAddr))
 	if err != nil {
-		// TODO(nserrino): Refactor so that we don't use log.Fatal, which sends an unnecessary
-		// event to Sentry.
+		// This is intentionally a log.Fatal, which will trigger a Sentry error.
+		// In most other cases, we want to use the cli logger, which will not trigger
+		// Sentry errors on user errors.
 		log.WithError(err).Fatal("Failed to parse cloud addr.")
 	}
 	return authURL.String()

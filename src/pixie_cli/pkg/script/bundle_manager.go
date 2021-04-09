@@ -10,8 +10,6 @@ import (
 	"sort"
 	"sync"
 
-	log "github.com/sirupsen/logrus"
-
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/auth"
 	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 )
@@ -155,10 +153,8 @@ func (b BundleManager) GetScript(scriptName string) (*ExecutableScript, error) {
 func (b BundleManager) MustGetScript(scriptName string) *ExecutableScript {
 	es, err := b.GetScript(scriptName)
 	if err != nil {
-		// TODO(nserrino): Refactor to return an error rather than log.Fatal,
-		// or fatal without log.Fatal, rather than this approach which sends an
-		// unnecessary error event to sentry.
-		log.WithError(err).Fatal("Failed to get script")
+		cliLog.WithError(err).Error("Failed to get script")
+		os.Exit(1)
 	}
 	return es
 }

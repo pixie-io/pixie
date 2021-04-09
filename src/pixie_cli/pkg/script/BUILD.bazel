@@ -19,7 +19,6 @@ go_library(
         "//src/shared/vispb:vis_pl_go_proto",
         "@com_github_bmatcuk_doublestar//:doublestar",
         "@com_github_gogo_protobuf//jsonpb",
-        "@com_github_sirupsen_logrus//:logrus",
         "@com_github_spf13_viper//:viper",
         "@in_gopkg_yaml_v2//:yaml_v2",
     ],
