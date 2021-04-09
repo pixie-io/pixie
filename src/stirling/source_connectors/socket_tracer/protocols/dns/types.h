@@ -80,12 +80,19 @@ struct Frame : public FrameBase {
   bool consumed = false;
 
   size_t ByteSize() const override {
-    size_t byte_size = sizeof(Frame);
-    for (const auto& record : records) {
-      byte_size += record.name.size() + record.cname.size() + sizeof(record.addr);
+    // Optimization: Perform just-in-time computation of ByteSize() the first time its called.
+    if (byte_size == 0) {
+      Frame* self = const_cast<Frame*>(this);
+      self->byte_size = sizeof(Frame);
+      for (const auto& record : records) {
+        self->byte_size += record.name.size() + record.cname.size() + sizeof(record.addr);
+      }
     }
     return byte_size;
   }
+
+ private:
+  size_t byte_size = 0;
 };
 
 //-----------------------------------------------------------------------------

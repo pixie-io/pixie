@@ -9,7 +9,7 @@ namespace pl {
  * Both hashes can be from the same family.
  * @return A 64-bit combined hash.
  */
-static uint64_t HashCombine(uint64_t h1, uint64_t h2) {
+inline uint64_t HashCombine(uint64_t h1, uint64_t h2) {
   // Murmur-inspired hashing.
   const uint64_t kMul = 0x9ddfea08eb382d69ULL;
   uint64_t a = (h1 ^ h2) * kMul;

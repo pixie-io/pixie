@@ -6,6 +6,7 @@
 
 #include <absl/strings/str_join.h>
 
+#include "src/common/base/utils.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
 #include "src/stirling/utils/utils.h"
 
@@ -31,14 +32,21 @@ constexpr char kContentTypeGRPC[] = "application/grpc";
 // A request or response containing uppercase header field names MUST be treated as malformed.
 class NVMap : public std::multimap<std::string, std::string> {
  public:
-  using std::multimap<std::string, std::string>::multimap;
-
   std::string ValueByKey(const std::string& key, const std::string& default_value = "") const {
     const auto iter = find(key);
     if (iter != end()) {
       return iter->second;
     }
     return default_value;
+  }
+
+  size_t ByteSize() const {
+    size_t byte_size = 0;
+    for (const auto& [name, value] : *this) {
+      byte_size += name.size();
+      byte_size += value.size();
+    }
+    return byte_size;
   }
 
   std::string ToString() const { return absl::StrJoin(*this, ", ", absl::PairFormatter(":")); }
@@ -64,8 +72,7 @@ struct HalfStream {
   }
 
   size_t ByteSize() const {
-    return sizeof(HalfStream) + data.size() + CountStringMapSize(headers) +
-           CountStringMapSize(trailers);
+    return sizeof(HalfStream) + data.size() + headers.ByteSize() + trailers.ByteSize();
   }
 
   bool HasGRPCContentType() const {

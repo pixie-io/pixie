@@ -1,24 +1,13 @@
 #pragma once
 
-#include <map>
 #include <string>
 
 #include <absl/strings/substitute.h>
 
-#include "src/common/base/base.h"
-
 namespace pl {
 namespace stirling {
 
-inline size_t CountStringMapSize(const std::multimap<std::string, std::string>& name_values) {
-  size_t res = 0;
-  for (const auto& [name, value] : name_values) {
-    res += name.size();
-    res += value.size();
-  }
-  return res;
-}
-
+// TODO(oazizi): Move to socket_tracer. It's the only user.
 struct NV {
   std::string name;
   std::string value;
