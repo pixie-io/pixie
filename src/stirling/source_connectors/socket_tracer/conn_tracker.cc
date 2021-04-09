@@ -47,7 +47,7 @@ constexpr double kStitchFailureRateThreshold = 0.5;
 ConnTracker::~ConnTracker() {
   CONN_TRACE(2) << "Being destroyed";
   if (conn_info_map_mgr_ != nullptr) {
-    conn_info_map_mgr_->ReleaseResources(conn_id_, state_ == State::kDisabled);
+    conn_info_map_mgr_->ReleaseResources(conn_id_);
   }
 }
 

@@ -126,5 +126,11 @@ class LazyLoadedFPResolver {
   std::unique_ptr<FilePathResolver> fp_resolver_;
 };
 
+/**
+ * Return the path to the currently running process (i.e. /proc/self/exe).
+ * This function will return a host relative path self is in a container.
+ */
+StatusOr<std::filesystem::path> GetSelfPath();
+
 }  // namespace stirling
 }  // namespace pl

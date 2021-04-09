@@ -134,16 +134,6 @@ StatusOr<TaskStructOffsets> ScanBufferForFields(const struct buf& buf,
   return task_struct_offsets;
 }
 
-StatusOr<std::filesystem::path> GetSelfPath() {
-  const system::Config& sysconfig = system::Config::GetInstance();
-  ::pl::system::ProcParser proc_parser(sysconfig);
-  PL_ASSIGN_OR_RETURN(std::filesystem::path self_path, proc_parser.GetExePath(getpid()));
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<FilePathResolver> fp_resolver,
-                      FilePathResolver::Create(getpid()));
-  PL_ASSIGN_OR_RETURN(self_path, fp_resolver->ResolvePath(self_path));
-  return sysconfig.ToHostPath(self_path);
-}
-
 }  // namespace
 
 StatusOr<TaskStructOffsets> ResolveTaskStructOffsetsCore() {

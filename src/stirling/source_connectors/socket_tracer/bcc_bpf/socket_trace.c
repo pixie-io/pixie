@@ -518,6 +518,43 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx, const enum TrafficD
 }
 
 /***********************************************************
+ * Map cleanup functions
+ ***********************************************************/
+
+int conn_cleanup_uprobe(struct pt_regs* ctx) {
+  int n = (int)PT_REGS_PARM1(ctx);
+  struct conn_id_t* conn_id_list = (struct conn_id_t*)PT_REGS_PARM2(ctx);
+
+#pragma unroll
+  for (int i = 0; i < CONN_CLEANUP_ITERS; ++i) {
+    struct conn_id_t conn_id = conn_id_list[i];
+
+    // Moving this break above or into the for loop causes us to breach the BPF instruction count.
+    // Has not been investigated. Just keep it here for now.
+    if (i >= n) {
+      break;
+    }
+
+    uint64_t tgid_fd = gen_tgid_fd(conn_id.upid.tgid, conn_id.fd);
+
+    // Before deleting, make sure we have the correct generation by checking the TSID.
+    // We don't want to accidentally delete a newer generation that has since come into existence.
+
+    struct conn_info_t* conn_info = conn_info_map.lookup(&tgid_fd);
+    if (conn_info != NULL && conn_info->conn_id.tsid == conn_id.tsid) {
+      conn_info_map.delete(&tgid_fd);
+    }
+
+    uint64_t* tsid = conn_disabled_map.lookup(&tgid_fd);
+    if (tsid != NULL && *tsid == conn_id.tsid) {
+      conn_disabled_map.delete(&tgid_fd);
+    }
+  }
+
+  return 0;
+}
+
+/***********************************************************
  * BPF syscall processing functions
  ***********************************************************/
 

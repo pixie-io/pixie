@@ -12,6 +12,10 @@ const uint64_t kSocketTraceNothing = 0;
 const int64_t kTraceAllTGIDs = -1;
 const char kControlValuesArrayName[] = "control_values";
 
+// Note: A value of 100 results in >4096 BPF instructions, which is too much for older kernels.
+#define CONN_CLEANUP_ITERS 90
+const int kMaxConnMapCleanupItems = CONN_CLEANUP_ITERS;
+
 // TODO(yzhao): Investigate the performance cost of misaligned memory access (8 vs. 4 bytes).
 
 // This struct contains information collected when a connection is established,
@@ -95,7 +99,7 @@ struct close_event_t {
 
 // This defines how many chunks a perf_submit can support.
 // This applies to messages that are over MAX_MSG_SIZE,
-// and effecitvely makes the maximum message size to be CHUNK_LIMIT*MAX_MSG_SIZE.
+// and effectively makes the maximum message size to be CHUNK_LIMIT*MAX_MSG_SIZE.
 #define CHUNK_LIMIT 4
 
 // Unique ID to all syscalls and a few other notable functions.

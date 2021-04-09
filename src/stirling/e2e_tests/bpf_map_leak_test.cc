@@ -64,6 +64,10 @@ TEST_F(BPFMapLeakTest, unclosed_connection) {
   // At this point, server should have been traced.
   // And because it was killed, it should have leaked a BPF map entry.
 
+  // For testing, make sure Stirling cleans up BPF entries right away.
+  // Without this flag, Stirling delays clean-up to acccumulate a clean-up batch.
+  FLAGS_stirling_conn_map_cleanup_threshold = 1;
+
   DataTable data_table(kHTTPTable);
   auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.get());
   ebpf::BPFHashTable<uint64_t, struct conn_info_t> conn_info_map =
