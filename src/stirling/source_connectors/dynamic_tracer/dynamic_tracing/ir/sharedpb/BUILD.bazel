@@ -7,13 +7,13 @@ package(default_visibility = ["//src:__subpackages__"])
 pl_proto_library(
     name = "shared_pl_proto",
     srcs = ["shared.proto"],
-    deps = ["//src/shared/types/proto:types_pl_proto"],
+    deps = ["//src/shared/types/typespb:types_pl_proto"],
 )
 
 pl_cc_proto_library(
     name = "shared_pl_cc_proto",
     proto = ":shared_pl_proto",
-    deps = ["//src/shared/types/proto:types_pl_cc_proto"],
+    deps = ["//src/shared/types/typespb:types_pl_cc_proto"],
 )
 
 pl_go_proto_library(
@@ -21,6 +21,6 @@ pl_go_proto_library(
     importpath = "pixielabs.ai/pixielabs/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/sharedpb",
     proto = ":shared_pl_proto",
     deps = [
-        "//src/shared/types/proto:types_pl_go_proto",
+        "//src/shared/types/typespb:types_pl_go_proto",
     ],
 )

@@ -7,7 +7,7 @@ import "src/api/public/uuidpb/uuid.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
-option go_package = "pixielabs.ai/pixielabs/src/cloud/auth/proto;auth";
+option go_package = "pixielabs.ai/pixielabs/src/cloud/auth/authpb;auth";
 
 message AuthenticatedUserInfo {
   // User ID of the logged in user.
@@ -120,7 +120,7 @@ message GetAugmentedAuthTokenResponse {
 }
 
 message GetAugmentedTokenForAPIKeyRequest {
-  // An API Key that can be linked to a particular user/org. 
+  // An API Key that can be linked to a particular user/org.
   string api_key = 1 [
     (gogoproto.customname) = "APIKey"
   ];
@@ -140,7 +140,7 @@ message GetAugmentedTokenForAPIKeyResponse {
 // API Key Service
 //////////////////////////////////////////////////////////////
 
-// The service that handles API keys. 
+// The service that handles API keys.
 service APIKeyService {
     // Create a new API key.
     rpc Create(CreateAPIKeyRequest) returns (APIKey) {}

@@ -7,8 +7,8 @@ pl_proto_library(
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/carnot/planpb:plan_pl_proto",
-        "//src/common/base/proto:status_pl_proto",
-        "//src/shared/types/proto:types_pl_proto",
+        "//src/common/base/statuspb:status_pl_proto",
+        "//src/shared/types/typespb:types_pl_proto",
         "//src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb:logical_pl_proto",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
     ],
@@ -20,8 +20,8 @@ pl_cc_proto_library(
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/carnot/planpb:plan_pl_cc_proto",
-        "//src/common/base/proto:status_pl_cc_proto",
-        "//src/shared/types/proto/wrapper:cc_library",
+        "//src/common/base/statuspb:status_pl_cc_proto",
+        "//src/shared/types/typespb/wrapper:cc_library",
         "//src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb:logical_pl_cc_proto",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
     ],
@@ -34,8 +34,8 @@ pl_go_proto_library(
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/carnot/planpb:plan_pl_go_proto",
-        "//src/common/base/proto:status_pl_go_proto",
-        "//src/shared/types/proto:types_pl_go_proto",
+        "//src/common/base/statuspb:status_pl_go_proto",
+        "//src/shared/types/typespb:types_pl_go_proto",
         "//src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb:logical_pl_go_proto",
     ],
 )

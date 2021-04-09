@@ -25,7 +25,7 @@
 #include "src/common/testing/testing.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/types.h"
-#include "src/table_store/proto/schema.pb.h"
+#include "src/table_store/schemapb/schema.pb.h"
 #include "src/table_store/table_store.h"
 
 namespace pl {

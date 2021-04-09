@@ -5,11 +5,11 @@
 
 #include "src/common/testing/testing.h"
 #include "src/shared/types/arrow_adapter.h"
-#include "src/shared/types/proto/wrapper/types_pb_wrapper.h"
 #include "src/shared/types/types.h"
-#include "src/table_store/proto/schema.pb.h"
+#include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 #include "src/table_store/schema/row_batch.h"
 #include "src/table_store/schema/row_descriptor.h"
+#include "src/table_store/schemapb/schema.pb.h"
 
 namespace pl {
 namespace table_store {

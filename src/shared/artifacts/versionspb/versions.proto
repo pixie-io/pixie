@@ -5,7 +5,7 @@ package pl.versions;
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
 
-option go_package = "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/versionspb;versionspb";
+option go_package = "versionspb";
 
 // ArtifactType is the type of artifact that was released.
 enum ArtifactType {

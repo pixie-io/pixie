@@ -32,7 +32,7 @@ go_test(
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
         "//src/shared/bloomfilterpb:bloomfilter_pl_go_proto",
         "//src/shared/metadatapb:metadata_pl_go_proto",
-        "//src/table_store/proto:schema_pl_go_proto",
+        "//src/table_store/schemapb:schema_pl_go_proto",
         "//src/utils",
         "//src/utils/testingutils",
         "//src/vizier/messages/messagespb:messages_pl_go_proto",

@@ -26,7 +26,6 @@ gazelle(
 
 # TODO(zasgar): We should keep an eye on fixes to gazelle that make this automatic
 # Make gazelle resolve the proto paths correctly.
-# gazelle:resolve go pixielabs.ai/pixielabs/experimental/stirling/proto_data_model/proto //experimental/stirling/proto_data_model/proto:http_record_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/api/public/cloudapipb //src/api/public/cloudapipb:public_cloudapi_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/api/public/uuidpb //src/api/public/uuidpb:uuid_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/api/public/vizierapipb //src/api/public/vizierapipb:public_vizier_pl_go_proto
@@ -39,28 +38,28 @@ gazelle(
 # gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/udfspb //src/carnot/udfspb:udfs_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/carnotpb //src/carnotpb:carnot_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb //src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto
-# gazelle:resolve go pixielabs.ai/pixielabs/src/cloud/auth/proto //src/cloud/auth/proto:auth_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/cloud/auth/authpb //src/cloud/auth/authpb:auth_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/cloud/cloudapipb //src/cloud/cloudapipb:cloudapi_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/cloud/project_manager/projectmanagerpb //src/cloud/project_manager/projectmanagerpb:service_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/cloud/shared/messagespb //src/cloud/shared/messagespb:messages_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb //src/cloud/vzconn/vzconnpb:service_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb //src/cloud/vzmgr/vzmgrpb:service_pl_go_proto
-# gazelle:resolve go pixielabs.ai/pixielabs/src/common/base/proto //src/common/base/proto:status_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/common/base/statuspb //src/common/base/statuspb:status_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/shared/artifacts/versionspb //src/shared/artifacts/versionspb:versions_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/shared/bloomfilterpb //src/shared/bloomfilterpb:bloomfilter_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/shared/cvmsgspb //src/shared/cvmsgspb:cvmsgs_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/shared/k8s/metadatapb //src/shared/k8s/metadatapb:metadata_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/shared/metadatapb //src/shared/metadatapb:metadata_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/shared/scriptspb //src/shared/scriptspb:scripts_pl_go_proto
-# gazelle:resolve go pixielabs.ai/pixielabs/src/shared/services/proto //src/shared/services/proto:jwt_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/shared/services/jwtpb //src/shared/services/jwtpb:jwt_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/shared/services/testproto //src/shared/services/testproto:ping_go_proto
-# gazelle:resolve go pixielabs.ai/pixielabs/src/shared/types/proto //src/shared/types/proto:types_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/shared/types/typespb //src/shared/types/typespb:types_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/shared/vispb //src/shared/vispb:vis_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb //src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb:logical_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto //src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto:greet_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/go_grpc_tls_pl/server/greetpb //src/stirling/testing/demo_apps/go_grpc_tls_pl/server/greetpb:service_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/hipster_shop/proto //src/stirling/testing/demo_apps/hipster_shop/proto:demo_pl_go_proto
-# gazelle:resolve go pixielabs.ai/pixielabs/src/table_store/proto //src/table_store/proto:schema_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/table_store/schemapb //src/table_store/schemapb:schema_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/messages/messagespb //src/vizier/messages/messagespb:messages_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb //src/vizier/services/metadata/datapb:data_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb //src/vizier/services/metadata/metadatapb:service_pl_go_proto
@@ -68,6 +67,8 @@ gazelle(
 # gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb //src/vizier/services/query_broker/querybrokerpb:service_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb //src/vizier/services/shared/agentpb:agent_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/vizierpb //src/vizier/vizierpb:vizier_pl_go_proto
+#
+# gazelle:resolve go pixielabs.ai/pixielabs/experimental/stirling/proto_data_model/proto //experimental/stirling/proto_data_model/proto:http_record_pl_go_proto
 #
 # Make gazelle resolve CGO libraries correctly.
 # gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/goplanner //src/carnot/goplanner:go_default_library

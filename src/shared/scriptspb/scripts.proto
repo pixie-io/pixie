@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-import "src/shared/types/proto/types.proto";
-import "src/common/base/proto/status.proto";
+import "src/shared/types/typespb/types.proto";
+import "src/common/base/statuspb/status.proto";
 
 package pl.shared.scriptspb;
 

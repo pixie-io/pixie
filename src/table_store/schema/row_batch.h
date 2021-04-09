@@ -8,8 +8,8 @@
 #include <utility>
 #include <vector>
 
-#include "src/table_store/proto/schema.pb.h"
 #include "src/table_store/schema/row_descriptor.h"
+#include "src/table_store/schemapb/schema.pb.h"
 
 namespace pl {
 namespace table_store {

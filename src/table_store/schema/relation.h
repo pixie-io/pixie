@@ -4,8 +4,8 @@
 #include <vector>
 
 #include "src/common/base/base.h"
-#include "src/shared/types/proto/wrapper/types_pb_wrapper.h"
-#include "src/table_store/proto/schema.pb.h"
+#include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
+#include "src/table_store/schemapb/schema.pb.h"
 
 namespace pl {
 namespace table_store {

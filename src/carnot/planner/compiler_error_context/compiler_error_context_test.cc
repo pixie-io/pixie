@@ -4,8 +4,8 @@
 
 #include "src/carnot/planner/compiler_error_context/compiler_error_context.h"
 #include "src/carnot/planner/compilerpb/compiler_status.pb.h"
-#include "src/common/base/proto/status.pb.h"
 #include "src/common/base/status.h"
+#include "src/common/base/statuspb/status.pb.h"
 #include "src/common/testing/testing.h"
 
 namespace pl {

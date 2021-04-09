@@ -13,8 +13,8 @@
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/arrow_adapter.h"
-#include "src/shared/types/proto/wrapper/types_pb_wrapper.h"
 #include "src/shared/types/type_utils.h"
+#include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 
 namespace pl {
 namespace carnot {

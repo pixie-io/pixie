@@ -5,7 +5,7 @@
 #include <absl/strings/str_cat.h>
 #include <absl/strings/substitute.h>
 
-#include "src/common/base/proto/status.pb.h"
+#include "src/common/base/statuspb/status.pb.h"
 
 namespace pl {
 namespace error {

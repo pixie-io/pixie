@@ -18,7 +18,7 @@ import (
 
 	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
 	"pixielabs.ai/pixielabs/src/cloud/api/idprovider"
-	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
+	authpb "pixielabs.ai/pixielabs/src/cloud/auth/authpb"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	commonenv "pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/events"

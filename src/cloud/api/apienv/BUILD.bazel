@@ -15,7 +15,7 @@ go_library(
     deps = [
         "//src/cloud/api/idprovider",
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
-        "//src/cloud/auth/proto:auth_go_proto",
+        "//src/cloud/auth/authpb:auth_go_proto",
         "//src/cloud/profile/profilepb:service_go_proto",
         "//src/cloud/project_manager/projectmanagerpb:service_go_proto",
         "//src/cloud/scriptmgr/scriptmgrpb:service_pl_go_proto",

@@ -6,8 +6,8 @@ pl_proto_library(
     srcs = ["scripts.proto"],
     visibility = ["//src:__subpackages__"],
     deps = [
-        "//src/common/base/proto:status_pl_proto",
-        "//src/shared/types/proto:types_pl_proto",
+        "//src/common/base/statuspb:status_pl_proto",
+        "//src/shared/types/typespb:types_pl_proto",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
     ],
 )
@@ -17,8 +17,8 @@ pl_cc_proto_library(
     proto = ":scripts_pl_proto",
     visibility = ["//src:__subpackages__"],
     deps = [
-        "//src/common/base/proto:status_pl_cc_proto",
-        "//src/shared/types/proto/wrapper:cc_library",
+        "//src/common/base/statuspb:status_pl_cc_proto",
+        "//src/shared/types/typespb/wrapper:cc_library",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
     ],
 )
@@ -29,7 +29,7 @@ pl_go_proto_library(
     proto = ":scripts_pl_proto",
     visibility = ["//src:__subpackages__"],
     deps = [
-        "//src/common/base/proto:status_pl_go_proto",
-        "//src/shared/types/proto:types_pl_go_proto",
+        "//src/common/base/statuspb:status_pl_go_proto",
+        "//src/shared/types/typespb:types_pl_go_proto",
     ],
 )

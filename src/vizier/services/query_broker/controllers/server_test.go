@@ -19,7 +19,7 @@ import (
 	"pixielabs.ai/pixielabs/src/carnotpb"
 	mock_carnotpb "pixielabs.ai/pixielabs/src/carnotpb/mock"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
-	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
+	schemapb "pixielabs.ai/pixielabs/src/table_store/schemapb"
 	pbutils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"

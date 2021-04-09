@@ -5,8 +5,8 @@
 #include <absl/strings/substitute.h>
 #include <magic_enum.hpp>
 
-#include "src/common/base/proto/status.pb.h"
 #include "src/common/base/status.h"
+#include "src/common/base/statuspb/status.pb.h"
 
 namespace pl {
 namespace error {

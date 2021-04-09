@@ -2,7 +2,7 @@ syntax = "proto3";
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/api/public/uuidpb/uuid.proto";
-import "src/table_store/proto/schema.proto";
+import "src/table_store/schemapb/schema.proto";
 import "src/carnot/queryresultspb/query_results.proto";
 
 package pl.carnotpb;

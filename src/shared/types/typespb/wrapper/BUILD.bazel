@@ -4,7 +4,7 @@ pl_cc_library(
     name = "cc_library",
     srcs = ["types_pb_wrapper.h"],
     visibility = ["//src:__subpackages__"],
-    deps = ["//src/shared/types/proto:types_pl_cc_proto"],
+    deps = ["//src/shared/types/typespb:types_pl_cc_proto"],
 )
 
 pl_cc_test(

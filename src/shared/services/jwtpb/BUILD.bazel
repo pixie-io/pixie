@@ -16,7 +16,7 @@ proto_library(
 go_proto_library(
     name = "jwt_go_proto",
     compilers = ["@io_bazel_rules_go//proto:gogoslick_grpc"],
-    importpath = "pixielabs.ai/pixielabs/src/shared/services/proto",
+    importpath = "pixielabs.ai/pixielabs/src/shared/services/jwtpb",
     proto = ":jwt_proto",
     visibility = ["//src:__subpackages__"],
     deps = [

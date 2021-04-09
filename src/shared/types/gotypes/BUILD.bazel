@@ -7,7 +7,7 @@ go_library(
     srcs = ["types.go"],
     importpath = "pixielabs.ai/pixielabs/src/shared/types/go",
     deps = [
-        "//src/shared/types/proto:types_pl_go_proto",
+        "//src/shared/types/typespb:types_pl_go_proto",
     ],
 )
 
@@ -16,7 +16,7 @@ go_test(
     srcs = ["types_test.go"],
     embed = [":go"],
     deps = [
-        "//src/shared/types/proto:types_pl_go_proto",
+        "//src/shared/types/typespb:types_pl_go_proto",
         "@com_github_stretchr_testify//assert",
     ],
 )
@@ -25,7 +25,7 @@ go_library(
     name = "gotypes",
     srcs = ["types.go"],
     importpath = "pixielabs.ai/pixielabs/src/shared/types/gotypes",
-    deps = ["//src/shared/types/proto:types_pl_go_proto"],
+    deps = ["//src/shared/types/typespb:types_pl_go_proto"],
 )
 
 go_test(
@@ -33,7 +33,7 @@ go_test(
     srcs = ["types_test.go"],
     embed = [":gotypes"],
     deps = [
-        "//src/shared/types/proto:types_pl_go_proto",
+        "//src/shared/types/typespb:types_pl_go_proto",
         "@com_github_stretchr_testify//assert",
     ],
 )

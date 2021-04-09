@@ -8,7 +8,7 @@
 #include <map>
 
 #include "src/common/base/base.h"
-#include "src/shared/types/proto/wrapper/types_pb_wrapper.h"
+#include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dynamic_tracer.h"
 
 namespace pl {

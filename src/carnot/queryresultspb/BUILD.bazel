@@ -7,8 +7,8 @@ pl_proto_library(
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_proto",
-        "//src/shared/types/proto:types_pl_proto",
-        "//src/table_store/proto:schema_pl_proto",
+        "//src/shared/types/typespb:types_pl_proto",
+        "//src/table_store/schemapb:schema_pl_proto",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
     ],
 )
@@ -19,8 +19,8 @@ pl_cc_proto_library(
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_cc_proto",
-        "//src/shared/types/proto/wrapper:cc_library",
-        "//src/table_store/proto:schema_pl_cc_proto",
+        "//src/shared/types/typespb/wrapper:cc_library",
+        "//src/table_store/schemapb:schema_pl_cc_proto",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
     ],
 )
@@ -32,7 +32,7 @@ pl_go_proto_library(
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",
-        "//src/shared/types/proto:types_pl_go_proto",
-        "//src/table_store/proto:schema_pl_go_proto",
+        "//src/shared/types/typespb:types_pl_go_proto",
+        "//src/table_store/schemapb:schema_pl_go_proto",
     ],
 )

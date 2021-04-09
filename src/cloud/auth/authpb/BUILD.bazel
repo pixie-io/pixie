@@ -9,7 +9,7 @@ proto_library(
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_proto",
-        "//src/shared/services/proto:jwt_proto",
+        "//src/shared/services/jwtpb:jwt_proto",
         "@com_google_protobuf//:empty_proto",
         "@com_google_protobuf//:timestamp_proto",
         "@gogo_special_proto//github.com/gogo/protobuf/gogoproto",
@@ -19,12 +19,12 @@ proto_library(
 go_proto_library(
     name = "auth_go_proto",
     compilers = ["@io_bazel_rules_go//proto:gogoslick_grpc"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/auth/proto",
+    importpath = "pixielabs.ai/pixielabs/src/cloud/auth/authpb",
     proto = ":auth_proto",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",
-        "//src/shared/services/proto:jwt_go_proto",
+        "//src/shared/services/jwtpb:jwt_go_proto",
         "@com_github_gogo_protobuf//gogoproto:go_default_library",
     ],
 )

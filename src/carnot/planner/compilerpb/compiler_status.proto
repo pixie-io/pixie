@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-import "src/common/base/proto/status.proto";
+import "src/common/base/statuspb/status.proto";
 import "src/carnot/planpb/plan.proto";
 
 package pl.carnot.planner.compilerpb;

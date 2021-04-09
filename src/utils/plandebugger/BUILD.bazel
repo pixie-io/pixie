@@ -16,7 +16,7 @@ go_library(
         "//src/carnot/planpb:plan_pl_go_proto",
         "//src/carnot/queryresultspb:query_results_pl_go_proto",
         "//src/carnot/udfspb:udfs_pl_go_proto",
-        "//src/common/base/proto:status_pl_go_proto",
+        "//src/common/base/statuspb:status_pl_go_proto",
         "//src/pixie_cli/pkg/script",
         "//src/pixie_cli/pkg/vizier",
         "//src/utils",

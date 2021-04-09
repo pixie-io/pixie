@@ -2,11 +2,11 @@ syntax = "proto3";
 
 package pl.vizier.services.metadata;
 
-import "src/common/base/proto/status.proto";
+import "src/common/base/statuspb/status.proto";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb/logical.proto";
 import "src/api/public/uuidpb/uuid.proto";
-import "src/shared/types/proto/types.proto";
+import "src/shared/types/typespb/types.proto";
 import "src/shared/k8s/metadatapb/metadata.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb;storepb";
@@ -94,7 +94,7 @@ message K8sResource {
   }
 }
 
-// K8sResourceUpdate contains an update for a K8s resource, scoped down to just 
+// K8sResourceUpdate contains an update for a K8s resource, scoped down to just
 // the data that we need to send to our agents.
 message K8sResourceUpdate {
   pl.shared.k8s.metadatapb.ResourceUpdate update = 1;

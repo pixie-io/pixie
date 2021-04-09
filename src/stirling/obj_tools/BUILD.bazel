@@ -21,7 +21,7 @@ pl_cc_library(
         "//:llvm",
         "//src/common/fs:cc_library",
         "//src/common/system:cc_library",
-        "//src/shared/types/proto/wrapper:cc_library",
+        "//src/shared/types/typespb/wrapper:cc_library",
         "//third_party:elfio",
     ],
 )

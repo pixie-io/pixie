@@ -12,7 +12,7 @@
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
 #include "src/common/testing/testing.h"
-#include "src/shared/types/proto/wrapper/types_pb_wrapper.h"
+#include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 #include "src/table_store/table_store.h"
 
 namespace pl {

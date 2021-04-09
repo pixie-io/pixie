@@ -16,9 +16,9 @@ import (
 	"google.golang.org/grpc/status"
 
 	"pixielabs.ai/pixielabs/src/cloud/auth/authenv"
+	pb "pixielabs.ai/pixielabs/src/cloud/auth/authpb"
 	"pixielabs.ai/pixielabs/src/cloud/auth/controllers"
 	mock_controllers "pixielabs.ai/pixielabs/src/cloud/auth/controllers/mock"
-	pb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
 	mock_profile "pixielabs.ai/pixielabs/src/cloud/profile/profilepb/mock"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"

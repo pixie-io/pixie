@@ -16,7 +16,7 @@ pl_cc_library_internal(
         exclude = ["test_utils.h"],
     ),
     deps = [
-        "//src/common/base/proto:status_pl_cc_proto",
+        "//src/common/base/statuspb:status_pl_cc_proto",
         "@com_google_farmhash//:farmhash",
         "@com_google_googletest//:gtest_prod",
     ],
@@ -26,7 +26,7 @@ pl_cc_library_internal(
     name = "cc_test_library",
     hdrs = ["test_utils.h"],
     deps = [
-        "//src/common/base/proto:status_pl_cc_proto",
+        "//src/common/base/statuspb:status_pl_cc_proto",
         "@com_google_googletest//:gtest_prod",
     ],
 )

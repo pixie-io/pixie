@@ -9,7 +9,7 @@ go_library(
         "//src/cloud/api/apienv",
         "//src/cloud/api/controller",
         "//src/cloud/artifact_tracker/artifacttrackerpb/mock",
-        "//src/cloud/auth/proto/mock",
+        "//src/cloud/auth/authpb/mock",
         "//src/cloud/cloudapipb/mock",
         "//src/cloud/profile/profilepb/mock",
         "//src/cloud/vzmgr/vzmgrpb/mock",

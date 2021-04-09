@@ -17,9 +17,9 @@ import (
 	"pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	"pixielabs.ai/pixielabs/src/carnotpb"
-	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
-	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
-	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
+	statuspb "pixielabs.ai/pixielabs/src/common/base/statuspb"
+	typespb "pixielabs.ai/pixielabs/src/shared/types/typespb"
+	schemapb "pixielabs.ai/pixielabs/src/table_store/schemapb"
 	"pixielabs.ai/pixielabs/src/utils"
 )
 

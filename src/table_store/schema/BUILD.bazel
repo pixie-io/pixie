@@ -11,7 +11,7 @@ pl_cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "//src/shared/types:cc_library",
-        "//src/table_store/proto:schema_pl_cc_proto",
+        "//src/table_store/schemapb:schema_pl_cc_proto",
         "//third_party:arrow",
     ],
 )
@@ -33,7 +33,7 @@ pl_cc_test(
     srcs = ["row_batch_test.cc"],
     deps = [
         ":cc_library",
-        "//src/table_store/proto:schema_pl_cc_proto",
+        "//src/table_store/schemapb:schema_pl_cc_proto",
         "//third_party:arrow",
     ],
 )

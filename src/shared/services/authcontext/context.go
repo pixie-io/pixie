@@ -9,7 +9,7 @@ import (
 	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/gofrs/uuid"
 
-	jwt2 "pixielabs.ai/pixielabs/src/shared/services/proto"
+	jwt2 "pixielabs.ai/pixielabs/src/shared/services/jwtpb"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"
 )
 

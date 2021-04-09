@@ -5,7 +5,7 @@ package pl.shared.k8s.metadatapb;
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/timestamp.proto";
 
-import "src/shared/types/proto/types.proto";
+import "src/shared/types/typespb/types.proto";
 
 // This file is mostly copied from
 // github.com/kubernetes/api/blob/e480447a07fd8adfbff8abea81c1d2dcd6af906e/core/v1/generated.proto and
@@ -464,7 +464,7 @@ message ProcessInfo {
                   ];
 
   // DEPRECATED: This was PID, which can be derived from UPID.
-  reserved 3; 
+  reserved 3;
 }
 
 // PodUpdate contains updated information about a Pod on K8s.
@@ -620,7 +620,7 @@ message ProcessCreated {
                   ];
 
   // DEPRECATED: This was PID, which can be derived from UPID.
-  reserved 2; 
+  reserved 2;
 
   // The server time in nanoseconds when the process started.
   int64 start_timestamp_ns = 3 [

@@ -17,7 +17,7 @@ import (
 	public_cloudapipb "pixielabs.ai/pixielabs/src/api/public/cloudapipb"
 	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
-	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
+	authpb "pixielabs.ai/pixielabs/src/cloud/auth/authpb"
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"

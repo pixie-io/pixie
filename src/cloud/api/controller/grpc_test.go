@@ -17,7 +17,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/api/controller"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
 	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
-	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
+	authpb "pixielabs.ai/pixielabs/src/cloud/auth/authpb"
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
 	mock_autocomplete "pixielabs.ai/pixielabs/src/cloud/autocomplete/mock"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"

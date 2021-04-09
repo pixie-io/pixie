@@ -18,7 +18,7 @@ pl_cc_library(
         "//src/carnot/planner/compiler:cc_library",
         "//src/carnot/funcs:cc_library",
         "//src/carnot/udf:cc_library",
-        "//src/shared/types/proto/wrapper:cc_library",
+        "//src/shared/types/typespb/wrapper:cc_library",
         # TODO(zasgar/philkuz): This is a giant hack, refactor to fix this.
         "//src/vizier/funcs:cc_library",
         "//src/vizier/funcs/context:cc_library",

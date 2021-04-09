@@ -7,7 +7,7 @@ go_library(
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",
-        "//src/cloud/auth/proto:auth_go_proto",
+        "//src/cloud/auth/authpb:auth_go_proto",
         "//src/shared/services/authcontext",
         "//src/utils",
         "@com_github_gofrs_uuid//:uuid",
@@ -24,7 +24,7 @@ go_test(
     srcs = ["api_key_test.go"],
     embed = [":apikey"],
     deps = [
-        "//src/cloud/auth/proto:auth_go_proto",
+        "//src/cloud/auth/authpb:auth_go_proto",
         "//src/cloud/auth/schema",
         "//src/shared/services/authcontext",
         "//src/shared/services/pgtest",

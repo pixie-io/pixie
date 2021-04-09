@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 
-	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
+	authpb "pixielabs.ai/pixielabs/src/cloud/auth/authpb"
 	"pixielabs.ai/pixielabs/src/shared/services"
 )
 

@@ -14,7 +14,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
+	authpb "pixielabs.ai/pixielabs/src/cloud/auth/authpb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/utils"
 )

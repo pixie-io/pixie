@@ -3550,12 +3550,6 @@ def pl_go_dependencies():
         sum = "h1:JApXBKYyB7l9xx+DK7/+mFjC7A9Bt5A93FPvFD0HIFE=",
         version = "v0.0.0-20201113003025-83324d819ded",
     )
-    go_repository(
-        name = "io_k8s_klog",
-        importpath = "k8s.io/klog",
-        sum = "h1:Pt+yjF5aB1xDSVbau4VsWe+dQNzA0qv1LlXdC2dF6Q8=",
-        version = "v1.0.0",
-    )
 
     go_repository(
         name = "io_k8s_klog_v2",

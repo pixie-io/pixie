@@ -1,10 +1,10 @@
 syntax = "proto3";
 
 import "src/carnot/planpb/plan.proto";
-import "src/common/base/proto/status.proto";
+import "src/common/base/statuspb/status.proto";
 import "src/shared/bloomfilterpb/bloomfilter.proto";
 import "src/shared/metadatapb/metadata.proto";
-import "src/table_store/proto/schema.proto";
+import "src/table_store/schemapb/schema.proto";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/api/public/uuidpb/uuid.proto";
 

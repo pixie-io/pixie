@@ -1,6 +1,6 @@
 #include "src/stirling/core/source_registry.h"
 #include "src/common/testing/testing.h"
-#include "src/shared/types/proto/wrapper/types_pb_wrapper.h"
+#include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 #include "src/stirling/source_connectors/seq_gen/seq_gen_connector.h"
 
 namespace pl {

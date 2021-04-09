@@ -15,8 +15,8 @@
 #include "src/common/base/base.h"
 #include "src/common/base/test_utils.h"
 #include "src/shared/types/arrow_adapter.h"
-#include "src/shared/types/proto/wrapper/types_pb_wrapper.h"
 #include "src/shared/types/types.h"
+#include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 #include "src/table_store/table_store.h"
 
 namespace pl {

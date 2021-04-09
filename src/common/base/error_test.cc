@@ -3,7 +3,7 @@
 #include <iostream>
 
 #include "src/common/base/error.h"
-#include "src/common/base/proto/status.pb.h"
+#include "src/common/base/statuspb/status.pb.h"
 
 namespace pl {
 namespace error {

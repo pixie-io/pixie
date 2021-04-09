@@ -21,7 +21,7 @@ pl_cc_library(
         "//src/vizier/services/agent:__subpackages__",
     ],
     deps = [
-        "//src/shared/types/proto/wrapper:cc_library",
+        "//src/shared/types/typespb/wrapper:cc_library",
         "//src/stirling/bpf_tools:cc_library",
         "//src/stirling/core:cc_library",
         "//src/stirling/proto:stirling_pl_cc_proto",

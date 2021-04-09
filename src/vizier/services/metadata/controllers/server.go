@@ -15,8 +15,8 @@ import (
 	"google.golang.org/grpc/status"
 
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
-	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
-	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
+	statuspb "pixielabs.ai/pixielabs/src/common/base/statuspb"
+	schemapb "pixielabs.ai/pixielabs/src/table_store/schemapb"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint"

@@ -43,7 +43,7 @@ pl_cc_library(
     ],
     hdrs = ["version.h"],
     deps = [
-        "//src/shared/types/proto/wrapper:cc_library",
+        "//src/shared/types/typespb/wrapper:cc_library",
         "//third_party:arrow",
         "@com_google_absl//absl/time",
         "@com_google_farmhash//:farmhash",

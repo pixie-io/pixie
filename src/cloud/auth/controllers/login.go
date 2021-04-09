@@ -12,7 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	pb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
+	pb "pixielabs.ai/pixielabs/src/cloud/auth/authpb"
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"

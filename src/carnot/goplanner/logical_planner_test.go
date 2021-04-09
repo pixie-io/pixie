@@ -14,7 +14,7 @@ import (
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
 	"pixielabs.ai/pixielabs/src/carnot/udfspb"
-	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
+	statuspb "pixielabs.ai/pixielabs/src/common/base/statuspb"
 	"pixielabs.ai/pixielabs/src/shared/scriptspb"
 	logical "pixielabs.ai/pixielabs/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb"
 	funcs "pixielabs.ai/pixielabs/src/vizier/funcs/go"

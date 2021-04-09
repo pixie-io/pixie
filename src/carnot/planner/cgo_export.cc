@@ -15,8 +15,8 @@
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/time.h"
 #include "src/shared/scriptspb/scripts.pb.h"
-#include "src/table_store/proto/schema.pb.h"
 #include "src/table_store/schema/relation.h"
+#include "src/table_store/schemapb/schema.pb.h"
 
 using pl::carnot::planner::distributedpb::LogicalPlannerResult;
 using pl::carnot::planner::plannerpb::CompileMutationsResponse;

@@ -13,7 +13,7 @@ import (
 	"gopkg.in/segmentio/analytics-go.v3"
 
 	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
-	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
+	authpb "pixielabs.ai/pixielabs/src/cloud/auth/authpb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/shared/services/events"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"

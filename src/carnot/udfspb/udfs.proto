@@ -1,6 +1,6 @@
 syntax = "proto3";
-import "src/shared/types/proto/types.proto";
-import "src/table_store/proto/schema.proto";
+import "src/shared/types/typespb/types.proto";
+import "src/table_store/schemapb/schema.proto";
 import "src/carnot/planpb/plan.proto";
 
 package pl.carnot.udfspb;

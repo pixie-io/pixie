@@ -12,7 +12,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	auth "pixielabs.ai/pixielabs/src/cloud/auth/proto"
+	auth "pixielabs.ai/pixielabs/src/cloud/auth/authpb"
 )
 
 // MockAuthServiceClient is a mock of AuthServiceClient interface.

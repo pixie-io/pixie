@@ -6,7 +6,7 @@ pl_proto_library(
     srcs = ["schema.proto"],
     visibility = ["//src:__subpackages__"],
     deps = [
-        "//src/shared/types/proto:types_pl_proto",
+        "//src/shared/types/typespb:types_pl_proto",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
     ],
 )
@@ -16,18 +16,18 @@ pl_cc_proto_library(
     proto = ":schema_pl_proto",
     visibility = ["//src:__subpackages__"],
     deps = [
-        "//src/shared/types/proto/wrapper:cc_library",
+        "//src/shared/types/typespb/wrapper:cc_library",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
     ],
 )
 
 pl_go_proto_library(
     name = "schema_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/table_store/proto",
+    importpath = "pixielabs.ai/pixielabs/src/table_store/schemapb",
     proto = ":schema_pl_proto",
     visibility = ["//src:__subpackages__"],
     deps = [
-        "//src/shared/types/proto:types_pl_go_proto",
-        "//src/table_store/proto/types",
+        "//src/shared/types/typespb:types_pl_go_proto",
+        "//src/table_store/schemapb/types",
     ],
 )

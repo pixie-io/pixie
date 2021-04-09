@@ -8,7 +8,7 @@
 
 #include "src/common/base/logging.h"
 #include "src/common/base/macros.h"
-#include "src/common/base/proto/status.pb.h"
+#include "src/common/base/statuspb/status.pb.h"
 
 namespace pl {
 

@@ -2,7 +2,7 @@
 
 #include <magic_enum.hpp>
 
-#include "src/shared/types/proto/types.pb.h"
+#include "src/shared/types/typespb/types.pb.h"
 
 namespace magic_enum::customize {
 template <>

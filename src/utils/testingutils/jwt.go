@@ -6,7 +6,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go/v4"
 
-	pb "pixielabs.ai/pixielabs/src/shared/services/proto"
+	pb "pixielabs.ai/pixielabs/src/shared/services/jwtpb"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"
 )
 

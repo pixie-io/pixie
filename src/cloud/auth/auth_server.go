@@ -12,8 +12,8 @@ import (
 
 	"pixielabs.ai/pixielabs/src/cloud/auth/apikey"
 	"pixielabs.ai/pixielabs/src/cloud/auth/authenv"
+	auth "pixielabs.ai/pixielabs/src/cloud/auth/authpb"
 	"pixielabs.ai/pixielabs/src/cloud/auth/controllers"
-	auth "pixielabs.ai/pixielabs/src/cloud/auth/proto"
 	"pixielabs.ai/pixielabs/src/cloud/auth/schema"
 	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
 	"pixielabs.ai/pixielabs/src/shared/services"

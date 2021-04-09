@@ -5,8 +5,8 @@
 #include <utility>
 
 #include "src/common/base/macros.h"
-#include "src/common/base/proto/status.pb.h"
 #include "src/common/base/status.h"
+#include "src/common/base/statuspb/status.pb.h"
 
 namespace pl {
 

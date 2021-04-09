@@ -10,7 +10,7 @@ import (
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
-	jwt "pixielabs.ai/pixielabs/src/shared/services/proto"
+	jwt "pixielabs.ai/pixielabs/src/shared/services/jwtpb"
 	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 

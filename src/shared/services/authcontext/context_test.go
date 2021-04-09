@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
-	pb "pixielabs.ai/pixielabs/src/shared/services/proto"
+	pb "pixielabs.ai/pixielabs/src/shared/services/jwtpb"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )

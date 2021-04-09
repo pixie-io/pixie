@@ -13,15 +13,15 @@ pl_cc_proto_library(
     # Intentionally private. In general, use :cc_library instead,
     # which provides an extra wrapper that customizes magic_enum.
     visibility = [
-        "//src/shared/types/proto/wrapper:__subpackages__",
+        "//src/shared/types/typespb/wrapper:__subpackages__",
         "//src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/sharedpb:__subpackages__",
     ],
 )
 
 pl_go_proto_library(
     name = "types_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/shared/types/proto",
-    proto = "//src/shared/types/proto:types_pl_proto",
+    importpath = "pixielabs.ai/pixielabs/src/shared/types/typespb",
+    proto = ":types_pl_proto",
     visibility = ["//src:__subpackages__"],
 )
 

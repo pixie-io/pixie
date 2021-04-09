@@ -14,10 +14,10 @@
 #include "src/common/base/base.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
-#include "src/table_store/proto/schema.pb.h"
 #include "src/table_store/schema/relation.h"
 #include "src/table_store/schema/row_batch.h"
 #include "src/table_store/schema/row_descriptor.h"
+#include "src/table_store/schemapb/schema.pb.h"
 
 DECLARE_int32(table_store_table_size_limit);
 

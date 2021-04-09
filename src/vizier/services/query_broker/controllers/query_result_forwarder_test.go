@@ -17,7 +17,7 @@ import (
 	"pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	"pixielabs.ai/pixielabs/src/carnotpb"
-	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
+	schemapb "pixielabs.ai/pixielabs/src/table_store/schemapb"
 	pbutils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
 )
