@@ -1,6 +1,6 @@
 module pixielabs.ai/pixielabs
 
-go 1.13
+go 1.16
 
 require (
 	cloud.google.com/go v0.80.0 // indirect
@@ -46,7 +46,6 @@ require (
 	github.com/google/uuid v1.2.0 // indirect
 	github.com/googleapis/google-cloud-go-testing v0.0.0-20191008195207-8e1d251e947d
 	github.com/gorilla/handlers v1.4.2
-	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/gorilla/sessions v1.1.3
 	github.com/grafana/grafana-plugin-sdk-go v0.91.0
 	github.com/graph-gophers/graphql-go v0.0.0-20190225005345-3e8838d4614c
@@ -67,7 +66,6 @@ require (
 	github.com/minio/highwayhash v1.0.2 // indirect
 	github.com/mitchellh/copystructure v1.1.1 // indirect
 	github.com/moby/term v0.0.0-20201216013528-df9cb8a40635 // indirect
-	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/nats-io/nats-server/v2 v2.2.0
 	github.com/nats-io/nats-streaming-server v0.21.1
 	github.com/nats-io/nats.go v1.10.1-0.20210228004050-ed743748acac

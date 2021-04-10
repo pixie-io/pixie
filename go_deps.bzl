@@ -1467,8 +1467,8 @@ def pl_go_dependencies():
     go_repository(
         name = "com_github_gorilla_mux",
         importpath = "github.com/gorilla/mux",
-        sum = "h1:VuZ8uybHlWmqV03+zRzdwKL4tUnIp1MAQtp1mIFE1bc=",
-        version = "v1.7.4",
+        sum = "h1:gnP5JzjVOuiZD07fKKToCAOjS0yOpj/qPETTXCCS6hw=",
+        version = "v1.7.3",
     )
     go_repository(
         name = "com_github_gorilla_securecookie",
@@ -2355,12 +2355,7 @@ def pl_go_dependencies():
         sum = "h1:iruDEfMl2E6fbMZ9s0scYfZQ84/6SPL6zC8ACM2oIL0=",
         version = "v0.0.0-20171201202039-1bf9dbcd8cbe",
     )
-    go_repository(
-        name = "com_github_morikuni_aec",
-        importpath = "github.com/morikuni/aec",
-        sum = "h1:nP9CBfwrvYnBRgY6qfDQkygYDmYwOilePFkwzv4dU8A=",
-        version = "v1.0.0",
-    )
+
     go_repository(
         name = "com_github_moul_http2curl",
         importpath = "github.com/moul/http2curl",
