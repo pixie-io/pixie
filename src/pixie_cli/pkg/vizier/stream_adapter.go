@@ -19,7 +19,7 @@ import (
 
 	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/components"
-	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 )
 
 // StreamWriterFactorFunc is a stream writer factory.
@@ -323,7 +323,7 @@ func (v *StreamOutputAdapter) parseError(ctx context.Context, s *public_vizierap
 		return err
 	}
 
-	cliLog.Errorf("Script execution error: %s", s.Message)
+	utils.Errorf("Script execution error: %s", s.Message)
 	return newScriptExecutionError(CodeUnknown, "Script execution error:"+s.Message)
 }
 

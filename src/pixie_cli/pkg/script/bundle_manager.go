@@ -11,7 +11,7 @@ import (
 	"sync"
 
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/auth"
-	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 )
 
 // BundleManager reads a script bundle.
@@ -61,7 +61,7 @@ func NewBundleManagerWithOrgName(bundleFiles []string, orgName string) (*BundleM
 		if isValidURL(bundleFile) {
 			resp, err := http.Get(bundleFile)
 			if err != nil {
-				cliLog.WithError(err).Error("Error checking bundle file URL")
+				utils.WithError(err).Error("Error checking bundle file URL")
 				return
 			}
 			defer resp.Body.Close()
@@ -69,7 +69,7 @@ func NewBundleManagerWithOrgName(bundleFiles []string, orgName string) (*BundleM
 		} else {
 			f, err := os.Open(bundleFile)
 			if err != nil {
-				cliLog.WithError(err).Error("Error reading bundle file")
+				utils.WithError(err).Error("Error reading bundle file")
 				return
 			}
 			defer f.Close()
@@ -79,7 +79,7 @@ func NewBundleManagerWithOrgName(bundleFiles []string, orgName string) (*BundleM
 		var b bundle
 		err := json.NewDecoder(r).Decode(&b)
 		if err != nil {
-			cliLog.WithError(err).Error("Error decoding bundle file")
+			utils.WithError(err).Error("Error decoding bundle file")
 			return
 		}
 
@@ -122,7 +122,7 @@ func (b BundleManager) GetScripts() []*ExecutableScript {
 	for k, val := range b.scripts {
 		pixieScript, err := pixieScriptToExecutableScript(k, val)
 		if err != nil {
-			cliLog.WithError(err).Error("Failed to parse script, skipping...")
+			utils.WithError(err).Error("Failed to parse script, skipping...")
 			continue
 		}
 		s = append(s, pixieScript)
@@ -153,7 +153,7 @@ func (b BundleManager) GetScript(scriptName string) (*ExecutableScript, error) {
 func (b BundleManager) MustGetScript(scriptName string) *ExecutableScript {
 	es, err := b.GetScript(scriptName)
 	if err != nil {
-		cliLog.WithError(err).Error("Failed to get script")
+		utils.WithError(err).Error("Failed to get script")
 		os.Exit(1)
 	}
 	return es

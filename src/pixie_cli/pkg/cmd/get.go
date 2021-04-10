@@ -17,7 +17,7 @@ import (
 
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/components"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
-	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
+	cliUtils "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/vizier"
 	"pixielabs.ai/pixielabs/src/utils"
 )
@@ -52,7 +52,7 @@ var GetPEMsCmd = &cobra.Command{
 		if !allClusters && clusterID == uuid.Nil {
 			clusterID, err = vizier.GetCurrentOrFirstHealthyVizier(cloudAddr)
 			if err != nil {
-				cliLog.WithError(err).Error("Could not fetch healthy vizier")
+				cliUtils.WithError(err).Error("Could not fetch healthy vizier")
 				os.Exit(1)
 			}
 		}
@@ -62,7 +62,7 @@ var GetPEMsCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 		if err := vizier.RunScriptAndOutputResults(ctx, conns, execScript, format); err != nil {
-			cliLog.Errorf("Script failed: %s", vizier.FormatErrorMessage(err))
+			cliUtils.Errorf("Script failed: %s", vizier.FormatErrorMessage(err))
 			os.Exit(1)
 		}
 	},

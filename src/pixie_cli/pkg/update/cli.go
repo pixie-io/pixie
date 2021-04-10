@@ -23,7 +23,7 @@ import (
 
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/auth"
-	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 	version "pixielabs.ai/pixielabs/src/shared/goversion"
 	"pixielabs.ai/pixielabs/src/shared/services"
 )
@@ -178,7 +178,7 @@ func (c *CLIUpdater) UpdateSelf(version string) error {
 		return err
 	}
 
-	cliLog.Info("Download complete, applying update ...")
+	utils.Info("Download complete, applying update ...")
 	checksum, err := hex.DecodeString(resp.SHA256)
 	if err != nil {
 		return err

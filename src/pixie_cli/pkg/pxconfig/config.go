@@ -9,7 +9,7 @@ import (
 
 	"github.com/gofrs/uuid"
 
-	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
+	utils "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 )
 
 // ConfigInfo store the config about the CLI.
@@ -86,21 +86,21 @@ func Cfg() *ConfigInfo {
 	once.Do(func() {
 		configPath, err := ensureDefaultConfigFilePath()
 		if err != nil {
-			cliLog.WithError(err).Error("Failed to load/create config file path")
+			utils.WithError(err).Error("Failed to load/create config file path")
 			os.Exit(1)
 		}
 		_, err = os.Stat(configPath)
 		if os.IsNotExist(err) {
 			// Write the default config.
 			if config, err = writeDefaultConfig(configPath); err != nil {
-				cliLog.WithError(err).Error("Failed to create default config")
+				utils.WithError(err).Error("Failed to create default config")
 				os.Exit(1)
 			}
 			return
 		}
 
 		if config, err = readDefaultConfig(configPath); err != nil {
-			cliLog.WithError(err).Error("Failed to read config file")
+			utils.WithError(err).Error("Failed to read config file")
 			os.Exit(1)
 		}
 	})

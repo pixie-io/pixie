@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 )
 
@@ -34,7 +34,7 @@ var ProxyCmd = &cobra.Command{
 
 		// Wait for interrupt.
 		<-stop
-		cliLog.Info("Stopping proxy")
+		utils.Info("Stopping proxy")
 		_ = p.Stop()
 	},
 }

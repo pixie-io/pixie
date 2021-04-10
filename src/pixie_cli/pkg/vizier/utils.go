@@ -9,7 +9,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
+	cliUtils "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 )
@@ -18,7 +18,7 @@ import (
 func MustConnectDefaultVizier(cloudAddr string, allClusters bool, clusterID uuid.UUID) []*Connector {
 	c, err := ConnectDefaultVizier(cloudAddr, allClusters, clusterID)
 	if err != nil {
-		cliLog.WithError(err).Error("Failed to connect to vizier")
+		cliUtils.WithError(err).Error("Failed to connect to vizier")
 		os.Exit(1)
 	}
 	return c
@@ -127,7 +127,7 @@ func GetCurrentVizier(cloudAddr string) (uuid.UUID, error) {
 	if clusterID != uuid.Nil {
 		_, err := GetVizierInfo(cloudAddr, clusterID)
 		if err != nil {
-			cliLog.WithError(err).Error("The current cluster in the kubeconfig not found within this org.")
+			cliUtils.WithError(err).Error("The current cluster in the kubeconfig not found within this org.")
 			clusterID = uuid.Nil
 		}
 	}
@@ -149,10 +149,10 @@ func GetCurrentOrFirstHealthyVizier(cloudAddr string) (uuid.UUID, error) {
 	if clusterID != uuid.Nil {
 		clusterInfo, err := GetVizierInfo(cloudAddr, clusterID)
 		if err != nil {
-			cliLog.WithError(err).Error("The current cluster in the kubeconfig not found within this org.")
+			cliUtils.WithError(err).Error("The current cluster in the kubeconfig not found within this org.")
 			clusterID = uuid.Nil
 		} else if clusterInfo.Status != cloudapipb.CS_HEALTHY {
-			cliLog.WithError(err).Errorf("'%s'in the kubeconfig's Pixie instance is unhealthy.", clusterInfo.PrettyClusterName)
+			cliUtils.WithError(err).Errorf("'%s'in the kubeconfig's Pixie instance is unhealthy.", clusterInfo.PrettyClusterName)
 			clusterID = uuid.Nil
 		}
 	}
@@ -165,7 +165,7 @@ func GetCurrentOrFirstHealthyVizier(cloudAddr string) (uuid.UUID, error) {
 		if err != nil {
 			return uuid.Nil, errors.New("Could not fetch healthy vizier")
 		}
-		cliLog.WithError(err).Infof("Running on '%s' instead.", clusterInfo.PrettyClusterName)
+		cliUtils.WithError(err).Infof("Running on '%s' instead.", clusterInfo.PrettyClusterName)
 	}
 
 	return clusterID, nil

@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/viper"
 
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
+	cliUtils "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/vizier"
 	"pixielabs.ai/pixielabs/src/utils"
 )
@@ -42,12 +42,12 @@ var GetConfigCmd = &cobra.Command{
 		// Check cluster ID.
 		clusterID, _ := cmd.Flags().GetString("cluster_id")
 		if clusterID == "" {
-			cliLog.Error("Need to specify cluster ID in flags: --cluster_id=<cluster-id>")
+			cliUtils.Error("Need to specify cluster ID in flags: --cluster_id=<cluster-id>")
 			return
 		}
 		clusterUUID, err := uuid.FromString(clusterID)
 		if err != nil {
-			cliLog.Errorf("Invalid cluster ID: %s\n", err.Error())
+			cliUtils.Errorf("Invalid cluster ID: %s\n", err.Error())
 			return
 		}
 
@@ -65,12 +65,12 @@ var GetConfigCmd = &cobra.Command{
 		}
 
 		if len(vzInfo) == 0 {
-			cliLog.Errorf("Invalid cluster ID: %s", clusterID)
+			cliUtils.Errorf("Invalid cluster ID: %s", clusterID)
 			os.Exit(1)
 		}
 
-		cliLog.Infof("%s: %t", "PassthroughEnabled", vzInfo[0].Config.PassthroughEnabled)
-		cliLog.Infof("%s: %t", "AutoUpdateEnabled", vzInfo[0].Config.AutoUpdateEnabled)
+		cliUtils.Infof("%s: %t", "PassthroughEnabled", vzInfo[0].Config.PassthroughEnabled)
+		cliUtils.Infof("%s: %t", "AutoUpdateEnabled", vzInfo[0].Config.AutoUpdateEnabled)
 	},
 }
 
@@ -82,12 +82,12 @@ var UpdateConfigCmd = &cobra.Command{
 		// Check cluster ID.
 		clusterID, _ := cmd.Flags().GetString("cluster_id")
 		if clusterID == "" {
-			cliLog.Error("Need to specify cluster ID in flags: --cluster_id=<cluster-id>")
+			cliUtils.Error("Need to specify cluster ID in flags: --cluster_id=<cluster-id>")
 			return
 		}
 		clusterUUID, err := uuid.FromString(clusterID)
 		if err != nil {
-			cliLog.Errorf("Invalid cluster ID: %s\n", err.Error())
+			cliUtils.Errorf("Invalid cluster ID: %s\n", err.Error())
 			return
 		}
 		clusterIDPb := utils.ProtoFromUUID(clusterUUID)
@@ -112,14 +112,14 @@ var UpdateConfigCmd = &cobra.Command{
 			if pt, err := strconv.ParseBool(ptEnabled); err == nil {
 				update.PassthroughEnabled = &types.BoolValue{Value: pt}
 			} else {
-				cliLog.Errorf("Invalid value provided for passthrough: %s", err.Error())
+				cliUtils.Errorf("Invalid value provided for passthrough: %s", err.Error())
 			}
 		}
 		if auEnabled != "" {
 			if au, err := strconv.ParseBool(auEnabled); err == nil {
 				update.AutoUpdateEnabled = &types.BoolValue{Value: au}
 			} else {
-				cliLog.Errorf("Invalid value provided for auto_update: %s", err.Error())
+				cliUtils.Errorf("Invalid value provided for auto_update: %s", err.Error())
 			}
 		}
 
@@ -130,8 +130,8 @@ var UpdateConfigCmd = &cobra.Command{
 
 		err = l.UpdateVizierConfig(req)
 		if err != nil {
-			cliLog.Errorf("Error updating config: %s", err.Error())
+			cliUtils.Errorf("Error updating config: %s", err.Error())
 		}
-		cliLog.Info("Successfully updated config")
+		cliUtils.Info("Successfully updated config")
 	},
 }

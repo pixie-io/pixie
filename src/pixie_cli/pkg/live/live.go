@@ -19,7 +19,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/components"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
-	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/vizier"
 )
 
@@ -171,7 +171,7 @@ func New(br *script.BundleManager, viziers []*vizier.Connector, cloudAddr string
 
 	lister, err := vizier.NewLister(cloudAddr)
 	if err != nil {
-		cliLog.WithError(err).Error("Failed to create Vizier lister")
+		utils.WithError(err).Error("Failed to create Vizier lister")
 		return nil, err
 	}
 
@@ -322,9 +322,9 @@ func (v *View) updateScriptInfoView() {
 	vzInfo, err := v.vizierLister.GetVizierInfo(v.selectedClusterID)
 	switch {
 	case err != nil:
-		cliLog.WithError(err).Errorf("Error getting cluster name for cluster %s", v.selectedClusterID.String())
+		utils.WithError(err).Errorf("Error getting cluster name for cluster %s", v.selectedClusterID.String())
 	case len(vzInfo) == 0:
-		cliLog.Errorf("Error getting cluster name for cluster %s, no results returned", v.selectedClusterID.String())
+		utils.Errorf("Error getting cluster name for cluster %s, no results returned", v.selectedClusterID.String())
 	default:
 		clusterName = &(vzInfo[0].ClusterName)
 	}

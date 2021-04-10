@@ -22,7 +22,7 @@ const ossBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/scrip
 func mustCreateBundleReader() *script.BundleManager {
 	br, err := createBundleReader()
 	if err != nil {
-		// Keep this as a log.Fatal() as opposed to using the cliLog, because it
+		// Keep this as a log.Fatal() as opposed to using the CLI logger, because it
 		// is an unexpected error that Sentry should catch.
 		log.WithError(err).Fatal("Failed to load bundle scripts")
 	}

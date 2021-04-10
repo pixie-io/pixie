@@ -76,7 +76,7 @@ var VizierUpdateCmd = &cobra.Command{
 		// Get grpc connection to cloud.
 		cloudConn, err := utils.GetCloudClientConnection(cloudAddr)
 		if err != nil {
-			// Keep this as a log.Fatal() as opposed to using the cliLog, because it
+			// Keep this as a log.Fatal() as opposed to using the CLI logger, because it
 			// is an unexpected error that Sentry should catch.
 			log.Fatalln(err)
 		}
@@ -105,7 +105,7 @@ var VizierUpdateCmd = &cobra.Command{
 			// Fetch latest version.
 			versionString, err = getLatestVizierVersion(cloudConn)
 			if err != nil {
-				// Keep this as a log.Fatal() as opposed to using the cliLog, because it
+				// Keep this as a log.Fatal() as opposed to using the CLI logger, because it
 				// is an unexpected error that Sentry should catch.
 				log.WithError(err).Fatal("Failed to fetch Vizier versions")
 			}

@@ -11,7 +11,7 @@ import (
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/components"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxconfig"
-	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 )
 
 func init() {
@@ -30,7 +30,7 @@ var AuthCmd = &cobra.Command{
 	Use:   "auth",
 	Short: "Authenticate with Pixie",
 	Run: func(cmd *cobra.Command, args []string) {
-		cliLog.Info("Nothing here... Please execute one of the subcommands")
+		utils.Info("Nothing here... Please execute one of the subcommands")
 		cmd.Help()
 	},
 }
@@ -68,7 +68,7 @@ var LoginCmd = &cobra.Command{
 				})
 			}
 		}
-		cliLog.Info("Authentication Successful")
+		utils.Info("Authentication Successful")
 
 		if orgName != "" {
 			components.RenderBureaucratDragon(orgName)

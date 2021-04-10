@@ -13,7 +13,7 @@ import (
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxconfig"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/update"
-	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 )
 
 func init() {
@@ -136,7 +136,7 @@ func Execute() {
 			UserId: pxconfig.Cfg().UniqueClientID,
 			Event:  "Exec Error",
 		})
-		cliLog.WithError(err).Error("Error executing command")
+		utils.WithError(err).Error("Error executing command")
 		os.Exit(1)
 	}
 }

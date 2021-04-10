@@ -17,7 +17,7 @@ import (
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxconfig"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/sentryhook"
-	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
+	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 	version "pixielabs.ai/pixielabs/src/shared/goversion"
 )
 
@@ -65,6 +65,6 @@ func main() {
 	})
 
 	log.SetOutput(os.Stderr)
-	cliLog.Info("Pixie CLI")
+	utils.Info("Pixie CLI")
 	cmd.Execute()
 }

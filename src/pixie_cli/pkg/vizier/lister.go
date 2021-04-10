@@ -16,7 +16,7 @@ import (
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/auth"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxconfig"
-	cliLog "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
+	cliUtils "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
 	"pixielabs.ai/pixielabs/src/utils"
 )
 
@@ -116,7 +116,7 @@ func (l *Lister) GetVizierConnection(id uuid.UUID) (*ConnectionInfo, error) {
 			return nil, err
 		}
 
-		cliLog.Infof("Selected Vizier address addr=%s", addr)
+		cliUtils.Infof("Selected Vizier address addr=%s", addr)
 		_ = pxanalytics.Client().Enqueue(&analytics.Track{
 			UserId: pxconfig.Cfg().UniqueClientID,
 			Event:  "Selected Vizier Address",
