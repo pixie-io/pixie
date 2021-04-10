@@ -9,7 +9,8 @@
   "private": true,
   "workspaces": {
     "packages": [
-      "packages/*"
+      "packages/pixie-*",
+      "packages/samples/*"
     ],
     "nohoist": [
       "@pixie-labs/*/**/vega*",
@@ -34,14 +35,14 @@
     "@types/lodash": "^4.14.150",
     "@types/node": "^14.0.14",
     "@types/numeral": "^0.0.27",
-    "@types/react": "^16.9.11",
+    "@types/react": "^17.0.3",
     "@types/react-dom": "^16.9.4",
     "@types/react-router": "^5.1.7",
     "@types/react-virtualized": "^9.21.8",
     "@types/retry": "^0.12.0",
     "@types/segment-analytics": "^0.0.32",
-    "@typescript-eslint/eslint-plugin": "^2.30.0",
-    "@typescript-eslint/parser": "^2.30.0",
+    "@typescript-eslint/eslint-plugin": "^4.21.0",
+    "@typescript-eslint/parser": "^4.21.0",
     "@webpack-cli/serve": "^1.1.0",
     "archiver": "^5.0.2",
     "awesome-typescript-loader": "^5.2.0",
@@ -54,14 +55,14 @@
     "css-loader": "^3.6.0",
     "enzyme": "^3.10.0",
     "enzyme-adapter-react-16": "^1.15.1",
-    "eslint": "^6.8.0",
-    "eslint-config-airbnb-typescript": "^8.0.2",
+    "eslint": "^7.23.0",
+    "eslint-config-airbnb-typescript": "^12.3.1",
     "eslint-plugin-enzyme": "^0.2.0",
-    "eslint-plugin-import": "^2.20.2",
-    "eslint-plugin-jest": "^23.8.2",
-    "eslint-plugin-jsx-a11y": "^6.2.3",
-    "eslint-plugin-react": "^7.19.0",
-    "eslint-plugin-react-hooks": "^4.0.4",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-jest": "^24.3.4",
+    "eslint-plugin-jsx-a11y": "^6.4.1",
+    "eslint-plugin-react": "^7.23.1",
+    "eslint-plugin-react-hooks": "^4.2.0",
     "favicons-webpack-plugin": "^5.0.0-alpha.3",
     "file-loader": "^6.2.0",
     "html-webpack-plugin": "^5.0.0-alpha.9",
@@ -201,6 +202,7 @@
     "http-proxy-middleware": "0.19.2",
     "jimp": "^0.10.3",
     "resize-img": "^2.0.0",
-    "react-dev-utils": "^11.0.4"
+    "react-dev-utils": "^11.0.4",
+    "@types/react": "^17.0.3"
   }
 }

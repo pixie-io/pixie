@@ -2,20 +2,20 @@
 
 exports[`<FixedSizeDrawer/> renders correctly when closed 1`] = `
 initialize {
-  "0": Object {
+  "0": Node {
     "attribs": Object {
       "class": "FixedSizeDrawerImpl-root-1",
     },
     "children": Array [
-      Object {
+      Node {
         "attribs": Object {
           "class": "FixedSizeDrawerImpl-otherContent-2",
         },
         "children": Array [
-          Object {
+          Node {
             "attribs": Object {},
             "children": Array [
-              Object {
+              Node {
                 "data": "Other content. Some text goes here.",
                 "next": null,
                 "parent": [Circular],
@@ -35,28 +35,28 @@ initialize {
         ],
         "name": "div",
         "namespace": "http://www.w3.org/1999/xhtml",
-        "next": Object {
+        "next": Node {
           "attribs": Object {
             "class": "MuiDrawer-root MuiDrawer-docked FixedSizeDrawerImpl-dockedHorizontal-6",
             "style": "width:50px",
           },
           "children": Array [
-            Object {
+            Node {
               "attribs": Object {
                 "class": "MuiPaper-root MuiDrawer-paper FixedSizeDrawerImpl-drawerPaper-4 MuiDrawer-paperAnchorLeft MuiDrawer-paperAnchorDockedLeft MuiPaper-elevation0",
                 "style": "visibility:hidden",
               },
               "children": Array [
-                Object {
+                Node {
                   "attribs": Object {
                     "class": "FixedSizeDrawerImpl-drawerContents-3",
                     "style": "width:50px",
                   },
                   "children": Array [
-                    Object {
+                    Node {
                       "attribs": Object {},
                       "children": Array [
-                        Object {
+                        Node {
                           "data": "Drawer contents",
                           "next": null,
                           "parent": [Circular],
@@ -131,28 +131,28 @@ initialize {
           "class": undefined,
         },
       },
-      Object {
+      Node {
         "attribs": Object {
           "class": "MuiDrawer-root MuiDrawer-docked FixedSizeDrawerImpl-dockedHorizontal-6",
           "style": "width:50px",
         },
         "children": Array [
-          Object {
+          Node {
             "attribs": Object {
               "class": "MuiPaper-root MuiDrawer-paper FixedSizeDrawerImpl-drawerPaper-4 MuiDrawer-paperAnchorLeft MuiDrawer-paperAnchorDockedLeft MuiPaper-elevation0",
               "style": "visibility:hidden",
             },
             "children": Array [
-              Object {
+              Node {
                 "attribs": Object {
                   "class": "FixedSizeDrawerImpl-drawerContents-3",
                   "style": "width:50px",
                 },
                 "children": Array [
-                  Object {
+                  Node {
                     "attribs": Object {},
                     "children": Array [
-                      Object {
+                      Node {
                         "data": "Drawer contents",
                         "next": null,
                         "parent": [Circular],
@@ -206,15 +206,15 @@ initialize {
         "namespace": "http://www.w3.org/1999/xhtml",
         "next": null,
         "parent": [Circular],
-        "prev": Object {
+        "prev": Node {
           "attribs": Object {
             "class": "FixedSizeDrawerImpl-otherContent-2",
           },
           "children": Array [
-            Object {
+            Node {
               "attribs": Object {},
               "children": Array [
-                Object {
+                Node {
                   "data": "Other content. Some text goes here.",
                   "next": null,
                   "parent": [Circular],
@@ -259,22 +259,17 @@ initialize {
     "name": "div",
     "namespace": "http://www.w3.org/1999/xhtml",
     "next": null,
-    "parent": null,
-    "prev": null,
-    "root": Object {
-      "attribs": Object {},
+    "parent": Node {
       "children": Array [
         [Circular],
       ],
       "name": "root",
-      "namespace": "http://www.w3.org/1999/xhtml",
       "next": null,
       "parent": null,
       "prev": null,
       "type": "root",
-      "x-attribsNamespace": Object {},
-      "x-attribsPrefix": Object {},
     },
+    "prev": null,
     "type": "tag",
     "x-attribsNamespace": Object {
       "class": undefined,
@@ -287,8 +282,6 @@ initialize {
   "length": 1,
   "options": Object {
     "decodeEntities": true,
-    "normalizeWhitespace": false,
-    "withDomLvl1": true,
     "xml": false,
   },
 }

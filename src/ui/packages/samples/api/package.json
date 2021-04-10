@@ -1,0 +1,20 @@
+{
+  "name": "@pixie-labs/samples-api",
+  "version": "1.0.0",
+  "description": "Example usage of @pixie-labs/api in a Node project (outside of the browser).",
+  "author": "Pixie Labs",
+  "license": "Apache-2.0",
+  "private": true,
+  "dependencies": {
+    "@pixie-labs/api": "^1.0.0",
+    "@pixie-labs/api-react": "^1.0.0",
+    "@pixie-labs/components": "^1.0.0",
+    "chalk": "^4.1.0"
+  },
+  "devDependencies": {
+    "concurrently": "^6.0.0",
+    "esbuild": "^0.11.5",
+    "rimraf": "^3.0.2",
+    "typescript": "^4.2.3"
+  }
+}

@@ -5,8 +5,7 @@
     "es6": true
   },
   "extends": [
-    "eslint:recommended",
-    "airbnb-typescript/base"
+    "eslint:recommended"
   ],
   "settings": {
     "import/extensions": [".js", ".ts"]
@@ -32,7 +31,6 @@
   "overrides": [
     {
       "files": [
-        "src/utils/env.tsx",
         "*test.ts",
         "./*.js",
         "src/testing/**/*"
@@ -46,6 +44,9 @@
       "files": [
         "./rollup.config.js"
       ],
+      "parserOptions": {
+        "sourceType": "module"
+      },
       "rules": {
         "import/no-extraneous-dependencies": 0
       }
@@ -55,7 +56,8 @@
         "*.ts"
       ],
       "extends": [
-        "plugin:@typescript-eslint/recommended"
+        "plugin:@typescript-eslint/recommended",
+        "airbnb-typescript/base"
       ],
       "parser": "@typescript-eslint/parser",
       "parserOptions": {
@@ -68,6 +70,12 @@
         "@typescript-eslint"
       ],
       "rules": {
+        "max-len": [
+          "error",
+          {
+            "code": 120
+          }
+        ],
         "import/extensions": 0,
         "no-mixed-operators": [
             "error",

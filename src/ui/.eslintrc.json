@@ -5,10 +5,12 @@
   },
   "extends": [
     "eslint:recommended",
-    "airbnb-typescript/base",
     "airbnb/rules/react",
     "plugin:react-hooks/recommended"
   ],
+  "parserOptions": {
+    "sourceType": "module"
+  },
   "settings": {
     "import/extensions": [".js", ".jsx", ".ts", ".tsx", ".mjs"]
   },
@@ -66,6 +68,7 @@
         "*.tsx"
       ],
       "extends": [
+        "airbnb-typescript/base",
         "plugin:react/recommended",
         "plugin:@typescript-eslint/recommended"
       ],
@@ -84,6 +87,12 @@
         "@typescript-eslint"
       ],
       "rules": {
+        "max-len": [
+          "error",
+          {
+            "code": 120
+          }
+        ],
         "import/extensions": 0,
         "no-mixed-operators": [
             "error",
