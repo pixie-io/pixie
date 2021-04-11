@@ -1,48 +1,52 @@
 <?php
 
-final class ArcanistGoFmtLinter extends ArcanistExternalLinter {
+final class ArcanistGoImportsLinter extends ArcanistExternalLinter {
   public function getInfoName() {
-    return 'Go fmt';
+    return 'Go imports';
   }
 
   public function getInfoURI() {
-    return 'https://golang.org/doc/install';
+    return 'https://github.com/golang/tools';
   }
 
   public function getInfoDescription() {
-    return 'Gofmt formats Go programs. It uses tabs (width = 8) '.
-      'for indentation and blanks for alignment.';
+    return 'Goimports formats Go imports.';
   }
 
   public function getLinterName() {
-    return 'GOFMT';
+    return 'GOIMPORTS';
   }
 
   public function getLinterConfigurationName() {
-    return 'gofmt';
+    return 'goimports';
   }
 
   public function getDefaultBinary() {
-    return 'gofmt';
+    return 'goimports';
   }
 
   public function getInstallInstructions() {
-    return 'Gofmt comes with Go, please '.
-      'follow https://golang.org/doc/install to install go';
+    return 'Install Go imports using '.
+      '`go get -u golang.org/x/tools/cmd/goimports`';
   }
 
-  // Gofmt must run before any other linter for Go.
+  // Run before go vet.
   public function getLinterPriority() {
-    return 10;
+    return 2.0;
+  }
+
+  protected function getMandatoryFlags() {
+    return array('-local="pixielabs.ai"');
   }
 
   protected function buildFutures(array $paths) {
     $executable = $this->getExecutableCommand();
+    $flags = $this->getCommandFlags();
 
     $futures = array();
     foreach ($paths as $path) {
       $data = $this->getData($path);
-      $future = new ExecFuture('%C', $executable);
+      $future = new ExecFuture('%C %Ls', $executable, $flags);
       $future->write($data);
       $futures[$path] = $future;
     }
@@ -77,14 +81,14 @@ final class ArcanistGoFmtLinter extends ArcanistExternalLinter {
 
       $desc = sprintf(
           '%s was not formatted correctly. Please setup your '.
-          'editor to run gofmt on save', $path);
+          'editor to run goimports on save', $path);
 
       $message = id(new ArcanistLintMessage())
         ->setPath($path)
         ->setLine($line_idx + 1)
         ->setChar(1)
         ->setCode('E00')
-        ->setName('gofmt')
+        ->setName('goimports')
         ->setDescription($desc)
         ->setSeverity(ArcanistLintSeverity::SEVERITY_ERROR)
         ->setOriginalText(implode("\n", $lines))
@@ -94,4 +98,5 @@ final class ArcanistGoFmtLinter extends ArcanistExternalLinter {
     }
     return $messages;
   }
+
 }

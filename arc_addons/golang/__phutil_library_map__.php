@@ -9,16 +9,10 @@
 phutil_register_library_map(array(
   '__library_version__' => 2,
   'class' => array(
-    'ArcanistGoFmtLinter' => 'lint/ArcanistGoFmtLinter.php',
-    'ArcanistGoImportsLinter' => 'lint/ArcanistGoImportsLinter.php',
     'ArcanistGoVetLinter' => 'lint/ArcanistGoVetLinter.php',
-    'ArcanistGolangCiLinter' => 'lint/ArcanistGolangCiLinter.php',
   ),
   'function' => array(),
   'xmap' => array(
-    'ArcanistGoFmtLinter' => 'ArcanistExternalLinter',
-    'ArcanistGoImportsLinter' => 'ArcanistExternalLinter',
     'ArcanistGoVetLinter' => 'ArcanistExternalLinter',
-    'ArcanistGolangCiLinter' => 'ArcanistExternalLinter',
   ),
 ));

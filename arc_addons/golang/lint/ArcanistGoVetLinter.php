@@ -1,5 +1,7 @@
 <?php
 
+/* Modified from the original by vihang@ */
+
 final class ArcanistGoVetLinter extends ArcanistExternalLinter {
 
   public function getInfoName() {
