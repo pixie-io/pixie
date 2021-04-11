@@ -14,4 +14,4 @@ excludes:
 protoc:
   version: 3.8.0
   includes:
-  - /tmp/pixie/vendor
+  - third_party
