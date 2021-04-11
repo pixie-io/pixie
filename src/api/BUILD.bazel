@@ -18,7 +18,6 @@ sh_binary(
         ":prepend_licenses",
         ":py_examples",
         "//src/api/go/pxapi:pxapi_group",
-        "//src/api/go_examples/basic_example:basic_example_group",
         "//src/api/public/cloudapipb:pbfiles",
         "//src/api/public/uuidpb:pbfiles",
         "//src/api/public/vizierapipb:pbfiles",

@@ -1,25 +1,21 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 go_library(
-    name = "basic_example_lib",
+    name = "example_mux_lib",
     srcs = ["example.go"],
-    importpath = "pixielabs.ai/pixielabs/src/api/go_examples/basic_example",
+    importpath = "pixielabs.ai/pixielabs/src/api/go/pxapi/examples/example_mux",
     visibility = ["//visibility:private"],
     deps = [
         "//src/api/go/pxapi",
         "//src/api/go/pxapi/errdefs",
+        "//src/api/go/pxapi/errdefs/formatters",
+        "//src/api/go/pxapi/muxes",
         "//src/api/go/pxapi/types",
     ],
 )
 
 go_binary(
-    name = "basic_example",
-    embed = [":basic_example_lib"],
-    visibility = ["//src:__subpackages__"],
-)
-
-filegroup(
-    name = "basic_example_group",
-    srcs = glob(["*.go"]),
+    name = "example_mux",
+    embed = [":example_mux_lib"],
     visibility = ["//src:__subpackages__"],
 )
