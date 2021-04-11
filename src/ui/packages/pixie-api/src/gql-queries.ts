@@ -86,7 +86,7 @@ export const DEPLOYMENT_KEY_QUERIES = {
 
 export const CLUSTER_QUERIES = {
   GET_CLUSTER_CONN: gql`
-    query GetClusterConnection($id: ID) {
+    query GetClusterConnection($id: ID!) {
       clusterConnection(id: $id) {
         ipAddress
         token
