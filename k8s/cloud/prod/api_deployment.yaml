@@ -1,0 +1,19 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-server
+spec:
+  selector:
+    matchLabels:
+      name: api-server
+  template:
+    metadata:
+      labels:
+        name: api-server
+    spec:
+      containers:
+      - name: api-server
+        env:
+        - name: PL_ALLOWED_ORIGINS
+          value: https://docs.pixielabs.ai

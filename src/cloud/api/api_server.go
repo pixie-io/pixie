@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
+	"strings"
 	"time"
 
 	"github.com/gorilla/handlers"
@@ -45,6 +46,7 @@ func init() {
 	pflag.String("elastic_tls_key", "/elastic-certs/tls.key", "TLS Key for elastic cluster")
 	pflag.String("elastic_username", "elastic", "Username for access to elastic cluster")
 	pflag.String("elastic_password", "", "Password for access to elastic")
+	pflag.String("allowed_origins", "", "The allowed origins for CORS")
 }
 
 func main() {
@@ -140,7 +142,13 @@ func main() {
 			return controller.GetAugmentedTokenGRPC(ctx, apiEnv)
 		},
 	}
-	s := server.NewPLServerWithOptions(env, handlers.CORS(services.DefaultCORSConfig()...)(mux), serverOpts)
+
+	domainName := viper.GetString("domain_name")
+	allowedOrigins := []string{"https://" + domainName, "https://work." + domainName}
+	if viper.GetString("allowed_origins") != "" {
+		allowedOrigins = append(allowedOrigins, strings.Split(viper.GetString("allowed_origins"), ",")...)
+	}
+	s := server.NewPLServerWithOptions(env, handlers.CORS(services.DefaultCORSConfig(allowedOrigins)...)(mux), serverOpts)
 
 	imageAuthServer := &controller.VizierImageAuthServer{}
 	cloudapipb.RegisterVizierImageAuthorizationServer(s.GRPCServer(), imageAuthServer)
