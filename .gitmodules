@@ -1,6 +1,3 @@
-[submodule "tools/chef/site-cookbooks/alternatives"]
-	path = tools/chef/site-cookbooks/alternatives
-	url = https://github.com/vkhatri/chef-alternatives
 [submodule "linters/cpplint"]
 	path = linters/cpplint
 	url = git@github.com:pixie-labs/cpplint.git

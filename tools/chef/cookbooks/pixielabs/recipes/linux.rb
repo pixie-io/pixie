@@ -60,11 +60,8 @@ apt_package ['gcc-10','g++-10'] do
   action :upgrade
 end
 
-alternatives 'python install' do
-  link_name 'python'
-  path '/usr/bin/python3'
-  priority 100
-  action :install
+execute 'python alternatives selection' do
+  command 'update-alternatives --install /usr/bin/python python /usr/bin/python3 100'
 end
 
 include_recipe 'pixielabs::linux_java'
