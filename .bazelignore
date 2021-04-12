@@ -3,4 +3,4 @@ vendor
 third_party/bpftrace/build
 # Ignore this because we want to import it as a nested bazel repo.
 third_party/threadstacks
-chef/nodes
+tools/chef/nodes

@@ -1,6 +1,7 @@
 {
   "exclude": [
     "(/testdata/)",
+    "(Doxyfile$)",
     "(\\.gen\\.go$)",
     "(\\.gitmodules$)",
     "(\\.idea/)",
@@ -8,7 +9,6 @@
     "(\\.pb\\.go$)",
     "(\\.pbtxt$)",
     "(\\.sublime-project$)",
-    "(^chef/site-cookbooks/)",
     "(^credentials/dev_infra/)",
     "(^credentials\/.*\\.yaml)",
     "(^docs/customer/)",
@@ -16,12 +16,12 @@
     "(^src/stirling/bpf_tools/bcc_bpf/system-headers)",
     "(^src/stirling/mysql/testing/.*\\.json$)",
     "(^src/ui/offline_package_cache)",
+    "(^src/ui/packages/pixie-api/src/types/generated/)",
     "(^src/ui/src/segment.js$)",
     "(^src/ui/src/types/generated/)",
-    "(^src/ui/packages/pixie-api/src/types/generated/)",
     "(^third_party)",
+    "(^tools/chef/site-cookbooks/)",
     "(c_cpp_properties.json$)",
-    "(Doxyfile$)",
     "(go\\.mod$)",
     "(go\\.sum$)",
     "(spinnaker/hal/)"
