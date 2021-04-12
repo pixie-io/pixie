@@ -35,6 +35,7 @@ const pixieAuthFile = "auth.json"
 
 var errUserChallengeTimeout = errors.New("timeout waiting for user")
 var errBrowserFailed = errors.New("browser failed to open")
+var errServerListenerFailed = errors.New("failed to start up local server")
 var errTokenUnauthorized = errors.New("failed to obtain token")
 var localServerRedirectURL = "http://localhost:8085/auth_complete"
 var localServerPort = int32(8085)
@@ -225,7 +226,7 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 		err   error
 	}
 
-	// The token/ error is returned on this channel. A closed channel also implies error.
+	// The token/error is returned on this channel.
 	results := make(chan result, 1)
 
 	mux := http.DefaultServeMux
@@ -239,7 +240,6 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 			err := errors.New("wrong method on HTTP request, assuming auth failed")
 			sendError(w, err)
 			results <- result{nil, err}
-			close(results)
 			return
 		}
 
@@ -249,7 +249,6 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 			err := errors.New("missing code, assuming auth failed")
 			sendError(w, err)
 			results <- result{nil, err}
-			close(results)
 			return
 		}
 
@@ -258,7 +257,6 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 		if err != nil {
 			sendError(w, err)
 			results <- result{nil, err}
-			close(results)
 			return
 		}
 
@@ -266,7 +264,6 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 
 		// Successful auth.
 		results <- result{refreshToken, nil}
-		close(results)
 	})
 
 	h := http.Server{
@@ -281,8 +278,7 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 			if err == http.ErrServerClosed {
 				return
 			}
-			utils2.WithError(err).Error("failed to listen")
-			os.Exit(1)
+			results <- result{nil, errServerListenerFailed}
 		}
 	}()
 
@@ -295,17 +291,13 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 				Event:  "Browser Open Failed",
 			})
 			results <- result{nil, errBrowserFailed}
-			close(results)
 		}
 	}()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*2)
 	defer cancel()
 	defer func() {
-		err := h.Shutdown(ctx)
-		if err != nil {
-			utils2.WithError(err).Error("Failed to shutdown server")
-		}
+		_ = h.Shutdown(ctx)
 	}()
 
 	for {
