@@ -11,17 +11,18 @@ phutil_register_library_map(array(
   'class' => array(
     'ArcanistGoImportsLinter' => 'lint/ArcanistGoImportsLinter.php',
     'ArcanistGolangCiLinter' => 'lint/ArcanistGolangCiLinter.php',
+    'ArcanistProtoBreakCheckLinter' => 'lint/ArcanistProtoBreakCheckLinter.php',
     'ExpCheckerTestEngine' => 'unit/ExpCheckerTestEngine.php',
     'FileCheckerTestEngine' => 'unit/FileCheckerTestEngine.php',
     'GazelleCheckerTestEngine' => 'unit/GazelleCheckerTestEngine.php',
     'GoGenerateCheckerTestEngine' => 'unit/GoGenerateCheckerTestEngine.php',
     'PLTestEngine' => 'unit/PLTestEngine.php',
-    'PrototoolCheckerTestEngine' => 'unit/PrototoolCheckerTestEngine.php',
   ),
   'function' => array(),
   'xmap' => array(
     'ArcanistGoImportsLinter' => 'ArcanistExternalLinter',
     'ArcanistGolangCiLinter' => 'ArcanistExternalLinter',
+    'ArcanistProtoBreakCheckLinter' => 'ArcanistExternalLinter',
     'PLTestEngine' => 'ArcanistUnitTestEngine',
   ),
 ));

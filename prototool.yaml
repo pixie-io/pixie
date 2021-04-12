@@ -1,16 +1,10 @@
 ---
 excludes:
-- vendor
-- third_party
-- chef
 - bazel-bin
 - bazel-out
 - bazel-pixielabs
 - bazel-testlogs
-- docs
-- src/ui
-# Exclude stirling's dynamic tracing physical IR, since it is not a public proto.
-- src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/physicalpb
+- third_party
 protoc:
   version: 3.8.0
   includes:

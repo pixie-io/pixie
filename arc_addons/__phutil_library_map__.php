@@ -15,6 +15,7 @@ phutil_register_library_map(array(
     'ArcanistGoImportsLinter' => 'pixielabs/lint/ArcanistGoImportsLinter.php',
     'ArcanistGoVetLinter' => 'golang/lint/ArcanistGoVetLinter.php',
     'ArcanistGolangCiLinter' => 'pixielabs/lint/ArcanistGolangCiLinter.php',
+    'ArcanistProtoBreakCheckLinter' => 'pixielabs/lint/ArcanistProtoBreakCheckLinter.php',
     'ArcanistShellCheckLinter' => 'shellcheck/lint/ArcanistShellCheckLinter.php',
     'ArcanistShellCheckLinterTestCase' => 'shellcheck/lint/__tests__/ArcanistShellCheckLinterTestCase.php',
     'ExpCheckerTestEngine' => 'pixielabs/unit/ExpCheckerTestEngine.php',
@@ -22,7 +23,6 @@ phutil_register_library_map(array(
     'GazelleCheckerTestEngine' => 'pixielabs/unit/GazelleCheckerTestEngine.php',
     'GoGenerateCheckerTestEngine' => 'pixielabs/unit/GoGenerateCheckerTestEngine.php',
     'PLTestEngine' => 'pixielabs/unit/PLTestEngine.php',
-    'PrototoolCheckerTestEngine' => 'pixielabs/unit/PrototoolCheckerTestEngine.php',
   ),
   'function' => array(),
   'xmap' => array(
@@ -32,6 +32,7 @@ phutil_register_library_map(array(
     'ArcanistGoImportsLinter' => 'ArcanistExternalLinter',
     'ArcanistGoVetLinter' => 'ArcanistExternalLinter',
     'ArcanistGolangCiLinter' => 'ArcanistExternalLinter',
+    'ArcanistProtoBreakCheckLinter' => 'ArcanistExternalLinter',
     'ArcanistShellCheckLinter' => 'ArcanistExternalLinter',
     'ArcanistShellCheckLinterTestCase' => 'PhutilTestCase',
     'PLTestEngine' => 'ArcanistUnitTestEngine',

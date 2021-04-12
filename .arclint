@@ -138,6 +138,15 @@
         "(^arc_addons/.*\\.php$)"
       ]
     },
+    "proto-break-check": {
+      "type": "proto-break-check",
+      "include": [
+        "(.*\\.proto$)"
+      ],
+      "exclude": [
+        "(^src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/physicalpb/physical\\.proto$)"
+      ]
+    },
     "spelling": {
       "type": "spelling",
       "exclude": [
