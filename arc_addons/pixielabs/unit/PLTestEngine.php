@@ -1,7 +1,6 @@
 <?php
 
 include 'FileCheckerTestEngine.php';
-include 'GazelleCheckerTestEngine.php';
 include 'GoGenerateCheckerTestEngine.php';
 
 final class PLTestEngine extends ArcanistUnitTestEngine {
@@ -17,9 +16,6 @@ final class PLTestEngine extends ArcanistUnitTestEngine {
 
         $file_checker = new FileCheckerTestEngine($this->project_root, $this->files);
         $test_results = array_merge($test_results, $file_checker->run());
-
-        $gazelle_checker = new GazelleCheckerTestEngine($this->project_root, $this->files);
-        $test_results = array_merge($test_results, $gazelle_checker->run());
 
         // TODO(michelle): Determine a more robust check.
         // $go_generate_checker = new GoGenerateCheckerTestEngine($this->project_root, $this->files);

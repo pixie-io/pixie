@@ -19,7 +19,6 @@ phutil_register_library_map(array(
     'ArcanistShellCheckLinter' => 'shellcheck/lint/ArcanistShellCheckLinter.php',
     'ArcanistShellCheckLinterTestCase' => 'shellcheck/lint/__tests__/ArcanistShellCheckLinterTestCase.php',
     'FileCheckerTestEngine' => 'pixielabs/unit/FileCheckerTestEngine.php',
-    'GazelleCheckerTestEngine' => 'pixielabs/unit/GazelleCheckerTestEngine.php',
     'GoGenerateCheckerTestEngine' => 'pixielabs/unit/GoGenerateCheckerTestEngine.php',
     'PLTestEngine' => 'pixielabs/unit/PLTestEngine.php',
   ),
