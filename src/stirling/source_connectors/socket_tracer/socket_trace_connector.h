@@ -181,6 +181,9 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Only sample the head of the body, to save space.
   inline static constexpr size_t kMaxBodyBytes = 512;
 
+  // Protobuf printer will limit strings to this length.
+  inline static constexpr size_t kMaxPBStringLen = 64;
+
   explicit SocketTraceConnector(std::string_view source_name);
 
   // Initialize protocol_transfer_specs_.

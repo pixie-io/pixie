@@ -1,0 +1,101 @@
+diff --git a/src/google/protobuf/stubs/strutil.cc b/src/google/protobuf/stubs/strutil.cc
+index 2ecdb2bf7..c5e84df54 100644
+--- a/src/google/protobuf/stubs/strutil.cc
++++ b/src/google/protobuf/stubs/strutil.cc
+@@ -592,7 +592,7 @@ void CEscapeAndAppend(StringPiece src, std::string *dest) {
+   }
+ }
+ 
+-std::string CEscape(const std::string &src) {
++std::string CEscape(StringPiece src) {
+   std::string dest;
+   CEscapeAndAppend(src, &dest);
+   return dest;
+diff --git a/src/google/protobuf/stubs/strutil.h b/src/google/protobuf/stubs/strutil.h
+index 8ce81f28c..89f8ae250 100644
+--- a/src/google/protobuf/stubs/strutil.h
++++ b/src/google/protobuf/stubs/strutil.h
+@@ -328,7 +328,7 @@ PROTOBUF_EXPORT std::string UnescapeCEscapeString(const std::string& src);
+ //
+ //    Escaped chars: \n, \r, \t, ", ', \, and !isprint().
+ // ----------------------------------------------------------------------
+-PROTOBUF_EXPORT std::string CEscape(const std::string& src);
++PROTOBUF_EXPORT std::string CEscape(StringPiece src);
+ 
+ // ----------------------------------------------------------------------
+ // CEscapeAndAppend()
+diff --git a/src/google/protobuf/text_format.cc b/src/google/protobuf/text_format.cc
+index 2abd92766..7cbdd5ec0 100644
+--- a/src/google/protobuf/text_format.cc
++++ b/src/google/protobuf/text_format.cc
+@@ -81,6 +81,18 @@ inline bool IsOctNumber(const std::string& str) {
+           (str[1] >= '0' && str[1] < '8'));
+ }
+ 
++// Returns true if truncatation occurred.
++bool TruncateString(int64_t max_length, StringPiece* s) {
++  if (max_length > 0) {
++    int64_t excess = static_cast<int64_t>(s->size()) - max_length;
++    if (excess > 0) {
++      s->remove_suffix(excess);
++      return true;
++    }
++  }
++  return false;
++}
++
+ }  // namespace
+ 
+ std::string Message::DebugString() const {
+@@ -2392,20 +2404,22 @@ void TextFormat::Printer::PrintFieldValue(const Message& message,
+               ? reflection->GetRepeatedStringReference(message, field, index,
+                                                        &scratch)
+               : reflection->GetStringReference(message, field, &scratch);
+-      const std::string* value_to_print = &value;
+-      std::string truncated_value;
+-      if (truncate_string_field_longer_than_ > 0 &&
+-          static_cast<size_t>(truncate_string_field_longer_than_) <
+-              value.size()) {
+-        truncated_value = value.substr(0, truncate_string_field_longer_than_) +
+-                          "...<truncated>...";
+-        value_to_print = &truncated_value;
+-      }
++      StringPiece value_to_print(value);
++      bool truncated = TruncateString(truncate_string_field_longer_than_, &value_to_print);
++
+       if (field->type() == FieldDescriptor::TYPE_STRING) {
+-        printer->PrintString(*value_to_print, generator);
++        if (truncated) {
++          printer->PrintString(StrCat(value_to_print, "...<truncated>..."), generator);
++        } else {
++          printer->PrintString(value, generator);
++        }
+       } else {
+         GOOGLE_DCHECK_EQ(field->type(), FieldDescriptor::TYPE_BYTES);
+-        printer->PrintBytes(*value_to_print, generator);
++        if (truncated) {
++          printer->PrintBytes(StrCat(value_to_print, "...<truncated>..."), generator);
++        } else {
++          printer->PrintBytes(value, generator);
++        }
+       }
+       break;
+     }
+@@ -2545,7 +2559,16 @@ void TextFormat::Printer::PrintUnknownFields(
+           // This field is not parseable as a Message (or we ran out of
+           // recursion budget). So it is probably just a plain string.
+           generator->PrintLiteral(": \"");
+-          generator->PrintString(CEscape(value));
++
++          StringPiece value_to_print(value);
++          bool truncated = TruncateString(truncate_string_field_longer_than_, &value_to_print);
++
++          if (truncated) {
++            generator->PrintString(CEscape(value_to_print) + "...<truncated>...");
++          } else {
++            generator->PrintString(CEscape(value));
++          }
++
+           if (single_line_mode_) {
+             generator->PrintLiteral("\" ");
+           } else {

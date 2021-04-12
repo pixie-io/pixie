@@ -1,11 +1,9 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/grpc.h"
 
 #include <utility>
-#include <vector>
 
 #include <google/protobuf/empty.pb.h>
 #include <google/protobuf/text_format.h>
-#include <google/protobuf/util/json_util.h>
 
 #include "src/common/base/base.h"
 #include "src/stirling/utils/binary_decoder.h"
@@ -20,7 +18,8 @@ using ::google::protobuf::TextFormat;
 
 namespace {
 
-Status PBWireToText(std::string_view message, google::protobuf::Message* pb, std::string* text) {
+Status PBWireToText(std::string_view message, google::protobuf::Message* pb, std::string* text,
+                    std::optional<int> str_truncation_len) {
   if (message.size() < kGRPCMessageHeaderSizeInBytes) {
     return error::InvalidArgument(
         "The gRPC message does not have enough data. "
@@ -29,6 +28,9 @@ Status PBWireToText(std::string_view message, google::protobuf::Message* pb, std
   }
 
   BinaryDecoder decoder(message);
+
+  TextFormat::Printer pb_printer;
+  pb_printer.SetTruncateStringFieldLongerThan(str_truncation_len.value_or(0));
 
   while (!decoder.eof()) {
     PL_ASSIGN_OR_RETURN(uint8_t compressed_flag, decoder.ExtractInt<uint8_t>());
@@ -43,13 +45,11 @@ Status PBWireToText(std::string_view message, google::protobuf::Message* pb, std
       return error::InvalidArgument("Failed to parse the serialized protobuf message");
     }
 
-    // Using ::google::protobuf::util::MessageToJsonString() to print JSON string.
-    // That requires the message to be of the actual type, not Empty.
-    std::string message;
-    if (!TextFormat::PrintToString(*pb, &message)) {
+    std::string pb_str;
+    if (!pb_printer.PrintToString(*pb, &pb_str)) {
       return error::InvalidArgument("Failed to print protobuf message to text format");
     }
-    text->append(message);
+    text->append(pb_str);
   }
   return Status::OK();
 }
@@ -57,10 +57,10 @@ Status PBWireToText(std::string_view message, google::protobuf::Message* pb, std
 }  // namespace
 
 // TODO(yzhao): Support reflection to get message types instead of empty message.
-std::string ParsePB(std::string_view str) {
+std::string ParsePB(std::string_view str, std::optional<int> str_truncation_len) {
   Empty empty;
   std::string text;
-  Status s = PBWireToText(str, &empty, &text);
+  Status s = PBWireToText(str, &empty, &text, str_truncation_len);
   absl::StripTrailingAsciiWhitespace(&text);
 
   return s.ok() ? text : "<Failed to parse protobuf>";

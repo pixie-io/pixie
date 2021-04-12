@@ -590,8 +590,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   HTTPContentType content_type = HTTPContentType::kUnknown;
   if (record.HasGRPCContentType()) {
     content_type = HTTPContentType::kGRPC;
-    req_stream->data = ParsePB(req_stream->data);
-    resp_stream->data = ParsePB(resp_stream->data);
+    req_stream->data = ParsePB(req_stream->data, kMaxPBStringLen);
+    resp_stream->data = ParsePB(resp_stream->data, kMaxPBStringLen);
   }
 
   DataTable::RecordBuilder<&kHTTPTable> r(data_table, resp_stream->timestamp_ns);

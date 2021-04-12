@@ -246,7 +246,7 @@ TEST_F(ProductCatalogServiceTraceTest, Basic) {
 1 {
   1: "66VCHSJNUP"
   2: "Vintage Camera Lens"
-  3: "You won\'t have a camera to use it and it probably doesn\'t work anyway."
+  3: "You won\'t have a camera to use it and it probably doesn\'t work a...<truncated>..."
   4: "/static/img/products/camera-lens.jpg"
   5 {
     1: "USD"
@@ -258,7 +258,7 @@ TEST_F(ProductCatalogServiceTraceTest, Basic) {
 }
 1 {
   1: "1YMWWN1N4O"
-  2: "Home Barista... [TRUNCATED])";
+  2: "H... [TRUNCATED])";
 
     http::Record expected_record2 = {};
     expected_record2.req.req_path = "/hipstershop.ProductCatalogService/GetProduct";

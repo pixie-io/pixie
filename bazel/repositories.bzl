@@ -56,7 +56,7 @@ def _com_github_threadstacks():
     )
 
 def _cc_deps():
-    _bazel_repo("com_google_protobuf", patches = ["//third_party:protobuf.patch"], patch_args = ["-p1"])
+    _bazel_repo("com_google_protobuf", patches = ["//third_party:protobuf.patch", "//third_party:protobuf_text_format.patch"], patch_args = ["-p1"])
     _bazel_repo("com_google_benchmark")
     _bazel_repo("com_google_googletest")
     _bazel_repo("com_github_gflags_gflags")

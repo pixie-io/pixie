@@ -67,6 +67,14 @@ TEST(ParsePB, MultipleGRPCLengthPrefixedMessages) {
                                    R"(1: "Hello world")"));
 }
 
+TEST(ParsePB, LongStringTruncation) {
+  std::string_view data = CreateStringView<char>(
+      "\x00\x00\x00\x00\x49\x0A\x47This is a long string. It is so long that is expected to get "
+      "truncated.");
+  EXPECT_THAT(ParsePB(data, 32),
+              StrEq(R"(1: "This is a long string. It is so ...<truncated>...")"));
+}
+
 }  // namespace grpc
 }  // namespace stirling
 }  // namespace pl
