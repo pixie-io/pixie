@@ -132,8 +132,3 @@ def pl_py_grpc_library(name, proto, deps = [], **kwargs):
         deps = deps,
         **kwargs
     )
-
-def pl_exp_cc_proto_library(**kwargs):
-    tags = kwargs.get("tags", [])
-    kwargs["tags"] = tags + ["manual"]
-    pl_cc_proto_library(**kwargs)

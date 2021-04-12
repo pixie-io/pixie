@@ -281,27 +281,6 @@ def pl_cgo_library(**kwargs):
         kwargs["toolchains"] = ["@bazel_tools//tools/cpp:current_cc_toolchain"]
     go_library(**kwargs)
 
-def append_manual_tag(kwargs):
-    tags = kwargs.get("tags", [])
-    kwargs["tags"] = tags + ["manual"]
-    return kwargs
-
-def pl_exp_cc_binary(**kwargs):
-    kwargs = append_manual_tag(kwargs)
-    pl_cc_binary(**kwargs)
-
-def pl_exp_cc_library(**kwargs):
-    kwargs = append_manual_tag(kwargs)
-    pl_cc_library(**kwargs)
-
-def pl_exp_cc_test(**kwargs):
-    kwargs = append_manual_tag(kwargs)
-    pl_cc_test(**kwargs)
-
-def pl_exp_cc_test_library(**kwargs):
-    kwargs = append_manual_tag(kwargs)
-    pl_cc_test_library(**kwargs)
-
 def _pl_bindata_impl(ctx):
     """
     Copied from https://github.com/bazelbuild/rules_go/blob/master/extras/bindata.bzl

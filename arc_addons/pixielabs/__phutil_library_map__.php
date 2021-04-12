@@ -12,7 +12,6 @@ phutil_register_library_map(array(
     'ArcanistGoImportsLinter' => 'lint/ArcanistGoImportsLinter.php',
     'ArcanistGolangCiLinter' => 'lint/ArcanistGolangCiLinter.php',
     'ArcanistProtoBreakCheckLinter' => 'lint/ArcanistProtoBreakCheckLinter.php',
-    'ExpCheckerTestEngine' => 'unit/ExpCheckerTestEngine.php',
     'FileCheckerTestEngine' => 'unit/FileCheckerTestEngine.php',
     'GazelleCheckerTestEngine' => 'unit/GazelleCheckerTestEngine.php',
     'GoGenerateCheckerTestEngine' => 'unit/GoGenerateCheckerTestEngine.php',

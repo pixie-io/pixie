@@ -28,7 +28,7 @@ def pl_bpf_cc_resource(
     # The name chosen here will determine the name of out_file, which will, in turn,
     # determine the symbol in the object file.
     out_file = pl_bpf_preprocess(name + "_bpf_src", src, hdrs, syshdrs, tags)
-    pl_cc_resource_impl(name, out_file, tags = [], **kwargs)
+    pl_cc_resource_impl(name, out_file, tags = tags, **kwargs)
 
 def pl_cc_resource_impl(
         name,
@@ -57,8 +57,3 @@ def pl_cc_resource_impl(
 
     # Create a cc_library with the .o file.
     cc_library(name = name, srcs = [object_file], tags = tags, linkstatic = 1, **kwargs)
-
-def pl_exp_cc_resource(**kwargs):
-    tags = kwargs.get("tags", [])
-    kwargs["tags"] = tags + ["manual"]
-    pl_cc_resource(**kwargs)

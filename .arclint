@@ -60,6 +60,14 @@
         "(\\.(m|h|mm|c|cc)$)"
       ]
     },
+    "experimental-manual": {
+      "type": "script-and-regex",
+      "include": [
+        "(^experimental/.*BUILD\\.bazel$)"
+      ],
+      "script-and-regex.script": "./linters/experimental-manual.sh",
+      "script-and-regex.regex": "/^(?P<filename>.*): (?P<message>.*)$/m"
+    },
     "filename": {
       "type": "filename"
     },
