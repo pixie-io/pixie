@@ -613,14 +613,14 @@ void StirlingImpl::RunCore() {
   while (run_enable_) {
     auto sleep_duration = std::chrono::milliseconds::zero();
 
-    {
-      // Update the context/state on each iteration.
-      // Note that if no changes are present, the same pointer will be returned back.
-      // TODO(oazizi): If context constructor does a lot of work (e.g. ListUPIDs()),
-      //               then there might be an inefficiency here, since we don't know if
-      //               mgr->SamplingRequired() will be true for any manager.
-      std::unique_ptr<ConnectorContext> ctx = GetContext();
+    // Update the context/state on each iteration.
+    // Note that if no changes are present, the same pointer will be returned back.
+    // TODO(oazizi): If context constructor does a lot of work (e.g. ListUPIDs()),
+    //               then there might be an inefficiency here, since we don't know if
+    //               mgr->SamplingRequired() will be true for any manager.
+    std::unique_ptr<ConnectorContext> ctx = GetContext();
 
+    {
       // Acquire spin lock to go through one iteration of sampling and pushing data.
       // Needed to avoid race with main thread update info_class_mgrs_ on new subscription.
       absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
