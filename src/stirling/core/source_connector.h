@@ -1,7 +1,7 @@
 #pragma once
 
-#include <memory>
 #include <string>
+#include <vector>
 
 #include "src/common/base/base.h"
 #include "src/common/system/system.h"
@@ -49,12 +49,28 @@ class SourceConnector : public NotCopyable {
   void TransferData(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table);
 
   /**
+   * Transfers all collected data to data tables.
+   * @param ctx Shared context, e.g. ASID & tracked PIDs.
+   * @param data_tables Map from the table number to DataTable objects.
+   */
+  void TransferData(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables);
+
+  /**
    * Stops the source connector and releases any acquired resources.
    * May only be called after a successful Init().
    *
    * @return Status of whether stop was successful.
    */
   Status Stop();
+
+  /**
+   * If true, the overlaoded TransferData() is implemented, and the sampled data can be output to
+   * multiple data tables.
+   *
+   * This is temporary, will be removed once all SouceConnector subclasses are changed to output
+   * data to multiple data tables.
+   */
+  virtual bool output_multi_tables() const { return false; }
 
   const std::string& source_name() const { return source_name_; }
 
@@ -110,6 +126,10 @@ class SourceConnector : public NotCopyable {
 
   virtual void TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
                                 DataTable* data_table) = 0;
+  virtual void TransferDataImpl(ConnectorContext*, const std::vector<DataTable*>&) {
+    // TODO(yzhao): Change to pure virutal function after all subclasses are updated.
+    LOG(DFATAL) << "TransferStreams() Unimplemented";
+  }
 
   virtual Status StopImpl() = 0;
 
@@ -127,13 +147,13 @@ class SourceConnector : public NotCopyable {
 
   const system::Config& sysconfig_ = system::Config::GetInstance();
 
+  SamplePushFrequencyManager sample_push_freq_mgr_;
+
  private:
   std::atomic<State> state_ = State::kUninitialized;
 
   const std::string source_name_;
   const ArrayView<DataTableSchema> table_schemas_;
-
-  SamplePushFrequencyManager sample_push_freq_mgr_;
 };
 
 }  // namespace stirling

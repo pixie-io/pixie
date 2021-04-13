@@ -167,6 +167,16 @@ class StirlingImpl final : public Stirling {
   std::atomic<bool> run_enable_ = false;
   std::atomic<bool> running_ = false;
   std::vector<std::unique_ptr<SourceConnector>> sources_ ABSL_GUARDED_BY(info_class_mgrs_lock_);
+
+  // Holds InfoClassManager and DataTable.
+  struct SourceOutput {
+    std::vector<InfoClassManager*> info_class_mgrs;
+    std::vector<DataTable*> data_tables;
+  };
+  // TODO(yzhao): Move InfoClassManager objects into SourceConnector, and remove this map.
+  absl::flat_hash_map<SourceConnector*, SourceOutput> source_output_map_
+      ABSL_GUARDED_BY(info_class_mgrs_lock_);
+
   std::vector<std::unique_ptr<DataTable>> tables_;
 
   InfoClassManagerVec info_class_mgrs_ ABSL_GUARDED_BY(info_class_mgrs_lock_);
@@ -249,6 +259,9 @@ Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source, bool dyn
 
   absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
 
+  std::vector<InfoClassManager*> mgrs;
+  mgrs.reserve(source->num_tables());
+
   for (uint32_t i = 0; i < source->num_tables(); ++i) {
     const DataTableSchema& schema = source->TableSchema(i);
     LOG(INFO) << "Adding info class " << schema.name();
@@ -262,10 +275,15 @@ Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source, bool dyn
     mgr->SetSamplingPeriod(schema.default_sampling_period());
     mgr->SetPushPeriod(schema.default_push_period());
 
+    mgrs.push_back(mgr.get());
+
     // Step 4: Keep pointers to all the objects
     info_class_mgrs_.push_back(std::move(mgr));
   }
 
+  source_output_map_[source.get()] = {std::move(mgrs),
+                                      // DataTable objects are created after subscribing.
+                                      {}};
   sources_.push_back(std::move(source));
 
   return Status::OK();
@@ -293,6 +311,7 @@ Status StirlingImpl::RemoveSource(std::string_view source_name) {
 
   // Now perform the removal.
   PL_RETURN_IF_ERROR(source->Stop());
+  source_output_map_.erase(source.get());
   sources_.erase(source_iter);
 
   return Status::OK();
@@ -480,6 +499,21 @@ void StirlingImpl::GetPublishProto(stirlingpb::Publish* publish_pb) {
   config_->PopulatePublishProto(publish_pb, info_class_mgrs_);
 }
 
+// Assumes info_class_mgrs are ordered by source_table_num, which was guaranteed in AddSource().
+std::vector<DataTable*> GetDataTables(const std::vector<InfoClassManager*>& info_class_mgrs) {
+  std::vector<DataTable*> data_tables;
+  data_tables.reserve(info_class_mgrs.size());
+
+  for (InfoClassManager* mgr : info_class_mgrs) {
+    if (mgr->subscribed()) {
+      data_tables.push_back(mgr->data_table());
+    } else {
+      data_tables.push_back(nullptr);
+    }
+  }
+  return data_tables;
+}
+
 Status StirlingImpl::SetSubscription(const stirlingpb::Subscribe& subscribe_proto) {
   // Acquire lock to update info_class_mgrs_.
   absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
@@ -502,6 +536,11 @@ Status StirlingImpl::SetSubscription(const stirlingpb::Subscribe& subscribe_prot
       mgr->SetDataTable(data_table.get());
       tables_.push_back(std::move(data_table));
     }
+  }
+
+  // Update mapping from SourceConnector to DataTable objects.
+  for (auto& [source, source_output] : source_output_map_) {
+    source_output.data_tables = GetDataTables(source_output.info_class_mgrs);
   }
 
   return Status::OK();
@@ -579,7 +618,16 @@ std::chrono::milliseconds TimeUntilNextTick(const InfoClassManagerVec& info_clas
   for (const auto& mgr : info_class_mgrs) {
     if (mgr->subscribed()) {
       wakeup_time = std::min(wakeup_time, mgr->NextPushTime());
-      wakeup_time = std::min(wakeup_time, mgr->NextSamplingTime());
+      const SourceConnector* source = mgr->source();
+      if (source->output_multi_tables()) {
+        // Note that the same SourceConnector could be examined multiple times for the associated
+        // InfoClassManager objects, but that does not affect the result.
+        wakeup_time = std::min(wakeup_time, source->sample_push_mgr().NextSamplingTime());
+      } else {
+        // If the SourceConnector can output to multiple data tables, then the sampling frequency is
+        // managed by the SourceConnector, not InfoClassManager.
+        wakeup_time = std::min(wakeup_time, mgr->NextSamplingTime());
+      }
     }
   }
 
@@ -625,20 +673,27 @@ void StirlingImpl::RunCore() {
       // Needed to avoid race with main thread update info_class_mgrs_ on new subscription.
       absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
 
-      // Run through every InfoClass being managed.
-      for (const auto& mgr : info_class_mgrs_) {
-        if (mgr->subscribed()) {
-          // Phase 1: Probe each source for its data.
-          if (mgr->SamplingRequired()) {
-            mgr->SampleData(ctx.get());
+      // Run through every SourceConnector and InfoClassManager being managed.
+      for (auto& [source, output] : source_output_map_) {
+        // Phase 1: Probe each source for its data.
+        if (source->output_multi_tables()) {
+          if (source->sample_push_mgr().SamplingRequired()) {
+            source->TransferData(ctx.get(), output.data_tables);
           }
+        } else {
+          // TODO(yzhao): Reduce sampling periods if we are dropping data.
+          for (const auto& mgr : output.info_class_mgrs) {
+            if (mgr->subscribed() && mgr->SamplingRequired()) {
+              mgr->SampleData(ctx.get());
+            }
+          }
+        }
 
-          // Phase 2: Push Data upstream.
-          if (mgr->PushRequired()) {
+        // Phase 2: Push Data upstream.
+        for (auto* mgr : output.info_class_mgrs) {
+          if (mgr->subscribed() && mgr->PushRequired()) {
             mgr->PushData(data_push_callback_);
           }
-
-          // Optional: Update sampling periods if we are dropping data.
         }
       }
 

@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <utility>
 
+#include <absl/container/flat_hash_map.h>
 #include <absl/strings/match.h>
 #include <google/protobuf/empty.pb.h>
 #include <google/protobuf/text_format.h>
@@ -62,6 +63,9 @@ DEFINE_bool(stirling_enable_redis_tracing, true,
 
 DEFINE_bool(stirling_disable_self_tracing, true,
             "If true, stirling will not trace and process syscalls made by itself.");
+DEFINE_bool(stirling_socket_tracer_output_multiple_data_tables, true,
+            "If true, socket tracer can output data to multiple data tables. "
+            "Temporary, will be removed once tested.");
 
 BPF_SRC_STRVIEW(socket_trace_bcc_script, socket_trace);
 
@@ -136,6 +140,9 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
 }
 
 Status SocketTraceConnector::InitImpl() {
+  sample_push_freq_mgr_.set_sampling_period(kSamplingPeriod);
+  sample_push_freq_mgr_.set_push_period(kPushPeriod);
+
   constexpr uint64_t kNanosPerSecond = 1000 * 1000 * 1000;
   if (kNanosPerSecond % sysconfig_.KernelTicksPerSecond() != 0) {
     return error::Internal(
@@ -296,6 +303,38 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
 
     TransferStreams(ctx, table_num, data_table);
   }
+}
+
+void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
+                                            const std::vector<DataTable*>& data_tables) {
+  DCHECK_EQ(data_tables.size(), num_tables()) << "DataTable objects must all be specified.";
+
+  UpdateCommonState(ctx);
+
+  for (size_t table_num = 0; table_num < data_tables.size(); ++table_num) {
+    DataTable* data_table = data_tables[table_num];
+
+    // Unsubscribed DataTable is nullptr.
+    if (data_table == nullptr) {
+      continue;
+    }
+
+    if (table_num == kConnStatsTableNum) {
+      if (sample_push_freq_mgr_.sampling_count() % kConnStatsSamplingRatio == 0) {
+        TransferConnStats(ctx, data_table);
+      }
+    } else {
+      data_table->SetConsumeRecordsCutoffTime(perf_buffer_drain_time_);
+
+      TransferStreams(ctx, table_num, data_table);
+    }
+  }
+
+  sample_push_freq_mgr_.Sample();
+}
+
+bool SocketTraceConnector::output_multi_tables() const {
+  return FLAGS_stirling_socket_tracer_output_multiple_data_tables;
 }
 
 template <typename TValueType>

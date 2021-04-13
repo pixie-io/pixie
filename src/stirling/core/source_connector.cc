@@ -29,6 +29,12 @@ void SourceConnector::TransferData(ConnectorContext* ctx, uint32_t table_num,
   TransferDataImpl(ctx, table_num, data_table);
 }
 
+void SourceConnector::TransferData(ConnectorContext* ctx,
+                                   const std::vector<DataTable*>& data_tables) {
+  DCHECK(ctx != nullptr);
+  TransferDataImpl(ctx, data_tables);
+}
+
 Status SourceConnector::Stop() {
   if (state_ != State::kActive) {
     return Status::OK();

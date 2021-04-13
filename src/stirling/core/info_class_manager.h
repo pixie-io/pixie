@@ -174,8 +174,10 @@ class InfoClassManager final : public NotCopyable {
 
   std::string_view name() const { return schema_.name(); }
   const SourceConnector* source() const { return source_; }
-  uint64_t id() { return id_; }
+  uint64_t id() const { return id_; }
   bool subscribed() const { return subscribed_; }
+  uint32_t source_table_num() const { return source_table_num_; }
+  DataTable* data_table() const { return data_table_; }
 
  private:
   inline static std::atomic<uint64_t> global_id_ = 0;

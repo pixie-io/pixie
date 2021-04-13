@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include <absl/container/flat_hash_map.h>
 #include <absl/synchronization/mutex.h>
 
 #include "src/common/grpcutils/service_descriptor_database.h"
@@ -55,6 +56,13 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static constexpr uint32_t kDNSTableNum = TableNum(kTables, kDNSTable);
   static constexpr uint32_t kRedisTableNum = TableNum(kTables, kRedisTable);
 
+  static constexpr auto kSamplingPeriod = std::chrono::milliseconds{100};
+  // TODO(yzhao): This is not used right now. Eventually use this to control data push frequency.
+  static constexpr auto kPushPeriod = std::chrono::milliseconds{1000};
+  // 50 X less often than the normal sampling frequency. Based on the conn_stats_table.h's
+  // sampling period of 5 seconds, and other tables' 100 miliseconds.
+  static constexpr size_t kConnStatsSamplingRatio = 50;
+
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new SocketTraceConnector(name));
   }
@@ -63,6 +71,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   Status StopImpl() override;
   void InitContextImpl(ConnectorContext* ctx) override;
   void TransferDataImpl(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table) override;
+  void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
+  bool output_multi_tables() const override;
 
   // Perform actions that are not specifically targeting a table.
   // For example, drain perf buffers, deploy new uprobes, and update socket info manager.
