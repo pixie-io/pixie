@@ -39,8 +39,8 @@ TEST_F(ConnTrackerHTTP2Test, BasicData) {
   std::vector<http2::Record> records = tracker.ProcessToRecords<http2::ProtocolTraits>();
 
   ASSERT_EQ(records.size(), 1);
-  EXPECT_EQ(records[0].send.data, "Request");
-  EXPECT_EQ(records[0].recv.data, "Response");
+  EXPECT_EQ(records[0].send.data(), "Request");
+  EXPECT_EQ(records[0].recv.data(), "Response");
 }
 
 TEST_F(ConnTrackerHTTP2Test, BasicHeader) {
@@ -67,8 +67,8 @@ TEST_F(ConnTrackerHTTP2Test, BasicHeader) {
   std::vector<http2::Record> records = tracker.ProcessToRecords<http2::ProtocolTraits>();
 
   ASSERT_EQ(records.size(), 1);
-  EXPECT_THAT(records[0].send.headers, UnorderedElementsAre(Pair(":method", "post")));
-  EXPECT_THAT(records[0].recv.headers, UnorderedElementsAre(Pair(":status", "200")));
+  EXPECT_THAT(records[0].send.headers(), UnorderedElementsAre(Pair(":method", "post")));
+  EXPECT_THAT(records[0].recv.headers(), UnorderedElementsAre(Pair(":status", "200")));
 }
 
 TEST_F(ConnTrackerHTTP2Test, MultipleDataFrames) {
@@ -95,8 +95,8 @@ TEST_F(ConnTrackerHTTP2Test, MultipleDataFrames) {
   std::vector<http2::Record> records = tracker.ProcessToRecords<http2::ProtocolTraits>();
 
   ASSERT_EQ(records.size(), 1);
-  EXPECT_EQ(records[0].send.data, "Request");
-  EXPECT_EQ(records[0].recv.data, "Response");
+  EXPECT_EQ(records[0].send.data(), "Request");
+  EXPECT_EQ(records[0].recv.data(), "Response");
 }
 
 TEST_F(ConnTrackerHTTP2Test, MixedHeadersAndData) {
@@ -139,12 +139,12 @@ TEST_F(ConnTrackerHTTP2Test, MixedHeadersAndData) {
   std::vector<http2::Record> records = tracker.ProcessToRecords<http2::ProtocolTraits>();
 
   ASSERT_EQ(records.size(), 1);
-  EXPECT_EQ(records[0].send.data, "Request");
-  EXPECT_EQ(records[0].recv.data, "Response");
-  EXPECT_THAT(records[0].send.headers,
+  EXPECT_EQ(records[0].send.data(), "Request");
+  EXPECT_EQ(records[0].recv.data(), "Response");
+  EXPECT_THAT(records[0].send.headers(),
               UnorderedElementsAre(Pair(":method", "post"), Pair(":host", "pixie.ai"),
                                    Pair(":path", "/magic")));
-  EXPECT_THAT(records[0].recv.headers, UnorderedElementsAre(Pair(":status", "200")));
+  EXPECT_THAT(records[0].recv.headers(), UnorderedElementsAre(Pair(":status", "200")));
 }
 
 // This test models capturing data mid-stream, where we may have missed the request headers.
@@ -181,10 +181,10 @@ TEST_F(ConnTrackerHTTP2Test, MidStreamCapture) {
   std::vector<http2::Record> records = tracker.ProcessToRecords<http2::ProtocolTraits>();
 
   ASSERT_EQ(records.size(), 1);
-  EXPECT_THAT(records[0].send.data, StrEq("Request"));
-  EXPECT_THAT(records[0].recv.data, StrEq("Response"));
-  EXPECT_THAT(records[0].send.headers, IsEmpty());
-  EXPECT_THAT(records[0].recv.headers, UnorderedElementsAre(Pair(":status", "200")));
+  EXPECT_THAT(records[0].send.data(), StrEq("Request"));
+  EXPECT_THAT(records[0].recv.data(), StrEq("Response"));
+  EXPECT_THAT(records[0].send.headers(), IsEmpty());
+  EXPECT_THAT(records[0].recv.headers(), UnorderedElementsAre(Pair(":status", "200")));
 }
 
 // This test ensures we ignore data with file descriptor of zero
@@ -359,12 +359,12 @@ TEST_F(ConnTrackerHTTP2Test, StreamIDJumpAhead) {
   std::vector<http2::Record> records = tracker.ProcessToRecords<http2::ProtocolTraits>();
 
   ASSERT_EQ(records.size(), 1);
-  EXPECT_EQ(records[0].send.data, "Request");
-  EXPECT_EQ(records[0].recv.data, "Long ways from home");
-  EXPECT_THAT(records[0].send.headers,
+  EXPECT_EQ(records[0].send.data(), "Request");
+  EXPECT_EQ(records[0].recv.data(), "Long ways from home");
+  EXPECT_THAT(records[0].send.headers(),
               UnorderedElementsAre(Pair(":method", "post"), Pair(":host", "pixie.ai"),
                                    Pair(":path", "/wormhole")));
-  EXPECT_THAT(records[0].recv.headers, UnorderedElementsAre(Pair(":status", "200")));
+  EXPECT_THAT(records[0].recv.headers(), UnorderedElementsAre(Pair(":status", "200")));
 }
 
 TEST_F(ConnTrackerHTTP2Test, StreamIDJumpBack) {
@@ -442,12 +442,12 @@ TEST_F(ConnTrackerHTTP2Test, StreamIDJumpBack) {
   std::vector<http2::Record> records = tracker.ProcessToRecords<http2::ProtocolTraits>();
 
   ASSERT_EQ(records.size(), 1);
-  EXPECT_EQ(records[0].send.data, "Request");
-  EXPECT_EQ(records[0].recv.data, "Long ways from home");
-  EXPECT_THAT(records[0].send.headers,
+  EXPECT_EQ(records[0].send.data(), "Request");
+  EXPECT_EQ(records[0].recv.data(), "Long ways from home");
+  EXPECT_THAT(records[0].send.headers(),
               UnorderedElementsAre(Pair(":method", "post"), Pair(":host", "pixie.ai"),
                                    Pair(":path", "/wormhole")));
-  EXPECT_THAT(records[0].recv.headers, UnorderedElementsAre(Pair(":status", "200")));
+  EXPECT_THAT(records[0].recv.headers(), UnorderedElementsAre(Pair(":status", "200")));
 }
 
 }  // namespace stirling

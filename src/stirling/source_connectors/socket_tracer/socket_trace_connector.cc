@@ -580,18 +580,24 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   // TODO(oazizi): Status should be in the trailers, not headers. But for now it is found in
   // headers. Fix when this changes.
   int64_t resp_status;
-  ECHECK(absl::SimpleAtoi(resp_stream->headers.ValueByKey(":status", "-1"), &resp_status));
+  ECHECK(absl::SimpleAtoi(resp_stream->headers().ValueByKey(":status", "-1"), &resp_status));
 
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
-  std::string path = req_stream->headers.ValueByKey(protocols::http2::headers::kPath);
+  std::string path = req_stream->headers().ValueByKey(protocols::http2::headers::kPath);
 
-  HTTPContentType content_type = HTTPContentType::kUnknown;
+  HTTPContentType content_type;
+  std::string req_data;
+  std::string resp_data;
   if (record.HasGRPCContentType()) {
     content_type = HTTPContentType::kGRPC;
-    req_stream->data = ParsePB(req_stream->data, kMaxPBStringLen);
-    resp_stream->data = ParsePB(resp_stream->data, kMaxPBStringLen);
+    req_data = ParsePB(req_stream->ConsumeData(), kMaxPBStringLen);
+    resp_data = ParsePB(resp_stream->ConsumeData(), kMaxPBStringLen);
+  } else {
+    content_type = HTTPContentType::kUnknown;
+    req_data = req_stream->ConsumeData();
+    resp_data = resp_stream->ConsumeData();
   }
 
   DataTable::RecordBuilder<&kHTTPTable> r(data_table, resp_stream->timestamp_ns);
@@ -603,19 +609,19 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("major_version")>(2);
   // HTTP2 does not define minor version.
   r.Append<r.ColIndex("minor_version")>(0);
-  r.Append<r.ColIndex("req_headers"), kMaxHTTPHeadersBytes>(ToJSONString(req_stream->headers));
+  r.Append<r.ColIndex("req_headers"), kMaxHTTPHeadersBytes>(ToJSONString(req_stream->headers()));
   r.Append<r.ColIndex("content_type")>(static_cast<uint64_t>(content_type));
-  r.Append<r.ColIndex("resp_headers"), kMaxHTTPHeadersBytes>(ToJSONString(resp_stream->headers));
+  r.Append<r.ColIndex("resp_headers"), kMaxHTTPHeadersBytes>(ToJSONString(resp_stream->headers()));
   r.Append<r.ColIndex("req_method")>(
-      req_stream->headers.ValueByKey(protocols::http2::headers::kMethod));
-  r.Append<r.ColIndex("req_path")>(req_stream->headers.ValueByKey(":path"));
+      req_stream->headers().ValueByKey(protocols::http2::headers::kMethod));
+  r.Append<r.ColIndex("req_path")>(req_stream->headers().ValueByKey(":path"));
   r.Append<r.ColIndex("resp_status")>(resp_status);
   // TODO(yzhao): Populate the following field from headers.
   r.Append<r.ColIndex("resp_message")>("OK");
-  r.Append<r.ColIndex("req_body_size")>(req_stream->data.size());
-  r.Append<r.ColIndex("req_body"), kMaxBodyBytes>(std::move(req_stream->data));
-  r.Append<r.ColIndex("resp_body_size")>(resp_stream->data.size());
-  r.Append<r.ColIndex("resp_body"), kMaxBodyBytes>(std::move(resp_stream->data));
+  r.Append<r.ColIndex("req_body_size")>(req_data.size());
+  r.Append<r.ColIndex("req_body"), kMaxBodyBytes>(std::move(req_data));
+  r.Append<r.ColIndex("resp_body_size")>(resp_data.size());
+  r.Append<r.ColIndex("resp_body"), kMaxBodyBytes>(std::move(resp_data));
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(req_stream->timestamp_ns, resp_stream->timestamp_ns));
 #ifndef NDEBUG

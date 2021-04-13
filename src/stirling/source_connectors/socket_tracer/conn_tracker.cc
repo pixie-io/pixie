@@ -251,17 +251,17 @@ void ConnTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
     // For now, just print a warning. The only harm is duplicated headers in the tables.
     // Note that the duplicates are not necessarily restricted to headers which have the end_stream
     // flag set; the end_stream cases are just the easiest to detect.
-    if (half_stream_ptr->end_stream) {
+    if (half_stream_ptr->end_stream()) {
       LOG_FIRST_N(WARNING, 10) << absl::Substitute(
           "Duplicate end_stream flag in header. stream_id: $0, conn_id: $1", hdr->attr.stream_id,
           ToString(hdr->attr.conn_id));
     }
 
-    half_stream_ptr->end_stream = true;
+    half_stream_ptr->AddEndStream();
     return;
   }
 
-  half_stream_ptr->headers.emplace(std::move(hdr->name), std::move(hdr->value));
+  half_stream_ptr->AddHeader(std::move(hdr->name), std::move(hdr->value));
   half_stream_ptr->UpdateTimestamp(hdr->attr.timestamp_ns);
 }
 
@@ -315,14 +315,16 @@ void ConnTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
   // It is not yet known if duplicate data also occurs. This log will help us figure out if such
   // cases exist. Note that the duplicates are not related to the end_stream flag being set;
   // the end_stream cases are just the easiest to detect.
-  if (half_stream_ptr->end_stream && data->attr.end_stream) {
+  if (half_stream_ptr->end_stream() && data->attr.end_stream) {
     LOG_FIRST_N(WARNING, 10) << absl::Substitute(
         "Duplicate end_stream flag in data. stream_id: $0, conn_id: $1", data->attr.stream_id,
         ToString(data->attr.conn_id));
   }
 
-  half_stream_ptr->data += data->payload;
-  half_stream_ptr->end_stream |= data->attr.end_stream;
+  half_stream_ptr->AddData(data->payload);
+  if (data->attr.end_stream) {
+    half_stream_ptr->AddEndStream();
+  }
   half_stream_ptr->UpdateTimestamp(data->attr.timestamp_ns);
 }
 

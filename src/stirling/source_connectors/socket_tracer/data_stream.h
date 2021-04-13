@@ -79,6 +79,18 @@ class DataStream : NotCopyMoveable {
   }
 
   /**
+   * Approximate size of the parsed frames in the DataStream.
+   */
+  template <typename TFrameType>
+  size_t FramesSize() const {
+    size_t size = 0;
+    for (const auto& msg : Frames<TFrameType>()) {
+      size += msg.ByteSize();
+    }
+    return size;
+  }
+
+  /**
    * Clears all unparsed and parsed data from the Datastream.
    */
   void Reset();
@@ -143,15 +155,10 @@ class DataStream : NotCopyMoveable {
    */
   template <typename TFrameType>
   void CleanupFrames() {
-    size_t size = 0;
-    // TODO(yzhao): Consider put the size computation into a member function of DataStream.
-    for (const auto& msg : Frames<TFrameType>()) {
-      size += msg.ByteSize();
-    }
+    size_t size = FramesSize<TFrameType>();
     if (size > FLAGS_messages_size_limit_bytes) {
-      LOG(WARNING) << absl::Substitute(
-          "Messages are cleared, because their size $0 is larger than the specified limit $1.",
-          size, FLAGS_messages_size_limit_bytes);
+      VLOG(1) << absl::Substitute("Messages cleared due to size limit ($0 > $1).", size,
+                                  FLAGS_messages_size_limit_bytes);
       Frames<TFrameType>().clear();
     }
     EraseExpiredFrames(std::chrono::seconds(FLAGS_messages_expiration_duration_secs),

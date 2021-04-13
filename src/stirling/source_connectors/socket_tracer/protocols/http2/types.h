@@ -3,6 +3,7 @@
 #include <chrono>
 #include <map>
 #include <string>
+#include <utility>
 
 #include <absl/strings/str_join.h>
 
@@ -57,11 +58,15 @@ class NVMap : public std::multimap<std::string, std::string> {
 // For example, the request is one HalfStream while the response is on another HalfStream,
 // both of which are on the same stream ID of the same connection.
 struct HalfStream {
-  uint64_t timestamp_ns = 0;
-  NVMap headers;
-  std::string data;
-  NVMap trailers;
-  bool end_stream = false;
+ public:
+  const std::string& data() const { return data_; }
+  const NVMap& headers() const { return headers_; }
+  const NVMap& trailers() const { return trailers_; }
+  bool end_stream() { return end_stream_; }
+
+  // After calling ConsumeData(), the HalfStream is no longer valid.
+  // ByteSize() and other calls may be wrong.
+  std::string ConsumeData() { return std::move(data_); }
 
   void UpdateTimestamp(uint64_t t) {
     if (timestamp_ns == 0) {
@@ -71,22 +76,46 @@ struct HalfStream {
     }
   }
 
-  size_t ByteSize() const {
-    return sizeof(HalfStream) + data.size() + headers.ByteSize() + trailers.ByteSize();
+  void AddHeader(std::string key, std::string val) {
+    byte_size_ += key.size() + val.size();
+    headers_.emplace(std::move(key), std::move(val));
   }
 
+  void AddTrailer(std::string key, std::string val) {
+    byte_size_ += key.size() + val.size();
+    trailers_.emplace(std::move(key), std::move(val));
+  }
+
+  void AddData(std::string_view val) {
+    byte_size_ += val.size();
+    data_ += val;
+  }
+
+  void AddEndStream() { end_stream_ = true; }
+
+  size_t ByteSize() const { return byte_size_; }
+
   bool HasGRPCContentType() const {
-    return absl::StrContains(headers.ValueByKey(headers::kContentType), headers::kContentTypeGRPC);
+    return absl::StrContains(headers_.ValueByKey(headers::kContentType), headers::kContentTypeGRPC);
   }
 
   std::string ToString() const {
     return absl::Substitute("[headers=$0] [data=$1] [trailers=$2] [end_stream=$3]",
-                            headers.ToString(), BytesToString<bytes_format::HexAsciiMix>(data),
-                            trailers.ToString(), end_stream);
+                            headers_.ToString(), BytesToString<bytes_format::HexAsciiMix>(data_),
+                            trailers_.ToString(), end_stream_);
   }
+
+  uint64_t timestamp_ns = 0;
+
+ private:
+  NVMap headers_;
+  std::string data_;
+  NVMap trailers_;
+  bool end_stream_ = false;
+  size_t byte_size_ = 0;
 };
 
-// This struct represents an HTTP2 stream (https://http2.github.io/http2-spec/#StreamsLayer).
+// This class represents an HTTP2 stream (https://http2.github.io/http2-spec/#StreamsLayer).
 // It is split out into a send and recv. Depending on whether we are tracing the requestor
 // or the responder, send and recv contain either the request or response.
 struct Stream {
@@ -97,7 +126,7 @@ struct Stream {
     // This check only applies to unary RPC calls.
     // In streaming, however, the end_stream is only sent when client or server explicitly indicates
     // so. And the other side can end the RPC without sending a frame with end_stream set to true.
-    return send.end_stream && recv.end_stream;
+    return send.end_stream() && recv.end_stream();
   }
 
   bool HasGRPCContentType() const { return send.HasGRPCContentType() || recv.HasGRPCContentType(); }

@@ -27,6 +27,11 @@ class HTTP2StreamsContainer : NotCopyMoveable {
   protocols::http2::HalfStream* HalfStreamPtr(uint32_t stream_id, bool write_event);
 
   /**
+   * Returns the approximate memory consumption of the HTTP2StreamsContainer.
+   */
+  size_t StreamsSize();
+
+  /**
    * Cleans up the HTTP2 events from BPF uprobes that are too old,
    * either because they are too far back in time, or too far back in bytes.
    */

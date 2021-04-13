@@ -36,19 +36,19 @@ void EraseExpiredStreams(std::chrono::seconds exp_dur,
 }
 }  // namespace
 
-void HTTP2StreamsContainer::Cleanup(size_t size_limit_bytes, int expiration_duration_secs) {
-  // TODO(yzhao): Consider put the size computation into a member function of
-  // protocols::http2::Stream.
+size_t HTTP2StreamsContainer::StreamsSize() {
   size_t size = 0;
   for (const auto& stream : streams_) {
     size += stream.ByteSize();
   }
+  return size;
+}
 
+void HTTP2StreamsContainer::Cleanup(size_t size_limit_bytes, int expiration_duration_secs) {
+  size_t size = StreamsSize();
   if (size > size_limit_bytes) {
-    LOG_FIRST_N(WARNING, 10) << absl::Substitute(
-        "HTTP2 Streams were cleared, because their size $0 is larger than the specified limit "
-        "$1.",
-        size, size_limit_bytes);
+    VLOG(1) << absl::Substitute("HTTP2 streams cleared due to size limit ($0 > $1).", size,
+                                size_limit_bytes);
     streams_.clear();
   }
 
