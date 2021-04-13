@@ -17,7 +17,12 @@ def _impl(ctx):
                cp {} {}/{}
         """.format(archive.short_path, ctx.attr.bucket, archive.basename))
 
-    cmds = ["#!/bin/sh -e\n", manifest_cmd] + archive_cmds
+    acl_cmds = []
+    acl_cmds.append("gsutil acl ch -u allUsers:READER {}/manifest.json".format(ctx.attr.bucket))
+    for archive in ctx.files.archives:
+        acl_cmds.append("gsutil acl ch -u allUsers:READER {}/{}".format(ctx.attr.bucket, archive.basename))
+
+    cmds = ["#!/bin/sh -e\n", manifest_cmd] + archive_cmds + acl_cmds
     ctx.actions.write(
         output = ctx.outputs.executable,
         content = "\n".join(cmds),
