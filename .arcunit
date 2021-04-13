@@ -1,0 +1,34 @@
+{
+  "engines": {
+    "proto-gen-checker": {
+      "type": "proto-gen-checker",
+      "include": [
+         "(\\.proto$)"
+      ],
+      "exclude": [
+        "(^experimental/)",
+        "(^third_party/)"
+      ]
+    },
+    "graphql-gen-checker": {
+      "type": "graphql-gen-checker",
+      "include": [
+         "(\\.graphql$)"
+      ],
+      "exclude": [
+        "(^experimental/)",
+        "(^third_party/)"
+      ]
+    },
+    "go-gen-checker": {
+      "type": "go-gen-checker",
+      "include": [
+         "(\\.go$)"
+      ],
+      "exclude": [
+        "(^experimental/)",
+        "(^third_party/)"
+      ]
+    }
+  }
+}

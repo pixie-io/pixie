@@ -181,10 +181,7 @@
       "type": "xhpast",
       "include": [
         "(^arc_addons/.*\\.php$)"
-      ],
-      "severity": {
-        "5": "warning"
-      }
+      ]
     },
     "yaml": {
       "type": "script-and-regex",

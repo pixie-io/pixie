@@ -4,6 +4,5 @@
   "arc.land.onto": ["main"],
   "base": "git:merge-base(origin/main), arc:prompt",
   "arc.feature.start.default": "origin/main",
-  "load": ["./arc_addons"],
-  "unit.engine": "PLTestEngine"
+  "load": ["./arc_addons"]
 }

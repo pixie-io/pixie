@@ -9,18 +9,22 @@
 phutil_register_library_map(array(
   '__library_version__' => 2,
   'class' => array(
+    'ArcanistBaseGenCheckerTestEngine' => 'unit/ArcanistBaseGenCheckerTestEngine.php',
+    'ArcanistGoGenCheckerTestEngine' => 'unit/ArcanistGoGenCheckerTestEngine.php',
     'ArcanistGoImportsLinter' => 'lint/ArcanistGoImportsLinter.php',
     'ArcanistGolangCiLinter' => 'lint/ArcanistGolangCiLinter.php',
+    'ArcanistGraphqlGenCheckerTestEngine' => 'unit/ArcanistGraphqlGenCheckerTestEngine.php',
     'ArcanistProtoBreakCheckLinter' => 'lint/ArcanistProtoBreakCheckLinter.php',
-    'FileCheckerTestEngine' => 'unit/FileCheckerTestEngine.php',
-    'GoGenerateCheckerTestEngine' => 'unit/GoGenerateCheckerTestEngine.php',
-    'PLTestEngine' => 'unit/PLTestEngine.php',
+    'ArcanistProtoGenCheckerTestEngine' => 'unit/ArcanistProtoGenCheckerTestEngine.php',
   ),
   'function' => array(),
   'xmap' => array(
+    'ArcanistBaseGenCheckerTestEngine' => 'ArcanistUnitTestEngine',
+    'ArcanistGoGenCheckerTestEngine' => 'ArcanistBaseGenCheckerTestEngine',
     'ArcanistGoImportsLinter' => 'ArcanistExternalLinter',
     'ArcanistGolangCiLinter' => 'ArcanistExternalLinter',
+    'ArcanistGraphqlGenCheckerTestEngine' => 'ArcanistBaseGenCheckerTestEngine',
     'ArcanistProtoBreakCheckLinter' => 'ArcanistExternalLinter',
-    'PLTestEngine' => 'ArcanistUnitTestEngine',
+    'ArcanistProtoGenCheckerTestEngine' => 'ArcanistBaseGenCheckerTestEngine',
   ),
 ));
