@@ -1,6 +1,27 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
 sh_library(
     name = "sh_library",
     srcs = glob(["*.sh"]),
+)
+
+go_library(
+    name = "scripts_lib",
+    srcs = ["perf-eval.go"],
+    importpath = "pixielabs.ai/pixielabs/src/stirling/scripts",
+    deps = [
+        "//src/utils/shared/k8s",
+        "@com_github_spf13_pflag//:pflag",
+        "@com_github_spf13_viper//:viper",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_client_go//kubernetes",
+        "@io_k8s_client_go//plugin/pkg/client/auth/gcp",
+    ],
+)
+
+go_binary(
+    name = "scripts",
+    embed = [":scripts_lib"],
 )
