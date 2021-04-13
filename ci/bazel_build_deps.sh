@@ -7,11 +7,11 @@ cd "$(git rev-parse --show-toplevel)" || exit
 bazel_query="bazel query --keep_going --noshow_progress"
 
 # A list of patterns that will trigger a full build.
-poison_patterns=('^Jenkinsfile' '^ci\/' '^docker\.properties' '^.bazelrc')
+poison_patterns=('^Jenkinsfile' '^ci\/' '^docker\.properties' '^\.bazelrc')
 
 # A list of patterns that will guard BPF targets.
 # We won't run BPF targets unless there are changes to these patterns.
-bpf_patterns=('^src/stirling')
+bpf_patterns=('^src\/stirling\/')
 
 # Set the default values for the flags.
 all_targets=false
@@ -109,8 +109,14 @@ if [ "${all_targets}" = "false" ]; then
   # because it just translates file names to bazel packages.
   files=()
   for file in $(git diff --name-only "${commit_range}" ); do
-    # shellcheck disable=SC2207
-    files+=($(bazel query --noshow_progress "$file" 2>/dev/null || true))
+    mapfile -t file_targets < <(bazel query --noshow_progress "$file" 2>/dev/null || true)
+    for file_target in "${file_targets[@]}"; do
+      if [[ "$file_target" =~ (.*):BUILD.bazel ]]; then
+        files+=("${BASH_REMATCH[1]}/...")
+      else
+        files+=("$file_target")
+      fi
+    done
   done
 
   targets="rdeps(${target_pattern}, set(${files[*]}))"

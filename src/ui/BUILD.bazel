@@ -3,8 +3,8 @@ load(
     "pl_deps_licenses",
     "pl_storybook_archive",
     "pl_ui_test",
-    "pl_webpack_archive",
     "pl_webpack_deps",
+    "pl_webpack_library",
 )
 
 package(default_visibility = ["//src:__subpackages__"])
@@ -39,7 +39,7 @@ pl_webpack_deps(
     uilib_base = "src/ui",
 )
 
-pl_webpack_archive(
+pl_webpack_library(
     name = "ui-bundle",
     srcs = UI_SRCS + COMPONENT_SRCS,
     licenses = "//tools/licenses:all_licenses",

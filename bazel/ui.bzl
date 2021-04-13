@@ -48,7 +48,7 @@ def _pl_webpack_deps_impl(ctx):
             "Generating webpack deps %s" % ctx.outputs.out.short_path,
     )
 
-def _pl_webpack_archive_impl(ctx):
+def _pl_webpack_library_impl(ctx):
     all_files = list(ctx.files.srcs)
 
     if ctx.attr.stamp:
@@ -180,8 +180,8 @@ pl_webpack_deps = rule(
     },
 )
 
-pl_webpack_archive = rule(
-    implementation = _pl_webpack_archive_impl,
+pl_webpack_library = rule(
+    implementation = _pl_webpack_library_impl,
     attrs = dict({
         "deps": attr.label(allow_single_file = True),
         "licenses": attr.label(allow_single_file = True),
