@@ -1,4 +1,5 @@
 #!/bin/bash -eE
+# shellcheck disable=SC1090
 
 # This script creates a cluster with the specified type of node,
 # then tries to deploy pixie and execute a simple pxl script.
@@ -12,10 +13,19 @@
 #   COS - Container-optimized OS with docker as the container runtime.
 #   COS_CONTAINERD - Container-optimized OS with containerd as the container runtime.
 
-script_dir="$(dirname "$0")"
+# --- begin runfiles.bash initialization v2 ---
+# Copy-pasted from the Bazel Bash runfiles library v2.
+set -uo pipefail; f=bazel_tools/tools/bash/runfiles/runfiles.bash
+source "${RUNFILES_DIR:-/dev/null}/$f" 2>/dev/null || \
+  source "$(grep -sm1 "^$f " "${RUNFILES_MANIFEST_FILE:-/dev/null}" | cut -f2- -d' ')" 2>/dev/null || \
+  source "$0.runfiles/$f" 2>/dev/null || \
+  source "$(grep -sm1 "^$f " "$0.runfiles_manifest" | cut -f2- -d' ')" 2>/dev/null || \
+  source "$(grep -sm1 "^$f " "$0.exe.runfiles_manifest" | cut -f2- -d' ')" 2>/dev/null || \
+  { echo>&2 "ERROR: cannot find $f"; exit 1; }; f=; set -e
+# --- end runfiles.bash initialization v2 ---
 
 # shellcheck source=./src/e2e_test/px_cluster/common.sh
-source "$script_dir"/common.sh
+source "$(rlocation pl/src/e2e_test/px_cluster/common.sh)"
 
 # Get arguments
 if [ "$#" -ne 1 ]; then
@@ -29,7 +39,26 @@ image_type="$1"
 cluster_name="test-cluster-${RANDOM}"
 
 # Create the cluster
-"$script_dir"/../../../scripts/create_gke_cluster.sh -c "$cluster_name" -n 3 -i "$image_type"
+gcloud beta container --project "pl-pixies" clusters create "${cluster_name}" \
+  --zone "us-west1-a" \
+  --username "admin" \
+  --machine-type "e2-standard-4" \
+  --image-type "${image_type}" \
+  --disk-type "pd-ssd" \
+  --disk-size 100 \
+  --cluster-ipv4-cidr=/21 \
+  --services-ipv4-cidr=/20 \
+  --scopes "https://www.googleapis.com/auth/compute,https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/service.management,https://www.googleapis.com/auth/servicecontrol" \
+  --num-nodes 3 \
+  --enable-ip-alias \
+  --network "projects/pl-pixies/global/networks/dev" \
+  --subnetwork "projects/pl-pixies/regions/us-west1/subnetworks/us-west1-0" \
+  --addons HorizontalPodAutoscaling,HttpLoadBalancing \
+  --no-enable-autoupgrade \
+  --no-enable-autorepair \
+  --labels k8s-dev-cluster=\
+  --security-group="gke-security-groups@pixielabs.ai" \
+  --no-enable-stackdriver-kubernetes
 
 # Delete cluster on exit (covers error cases too).
 trap 'gcloud container clusters delete "$cluster_name" --quiet' EXIT

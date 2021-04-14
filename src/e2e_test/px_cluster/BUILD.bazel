@@ -1,5 +1,5 @@
 sh_library(
-    name = "sh_library",
+    name = "common_library",
     srcs = glob(["*.sh"]),
 )
 
@@ -10,8 +10,8 @@ sh_test(
     args = ["UBUNTU"],
     tags = ["manual"],
     deps = [
-        ":sh_library",
-        "//scripts:sh_library",
+        ":common_library",
+        "@bazel_tools//tools/bash/runfiles",
     ],
 )
 
@@ -22,8 +22,8 @@ sh_test(
     args = ["UBUNTU_CONTAINERD"],
     tags = ["manual"],
     deps = [
-        ":sh_library",
-        "//scripts:sh_library",
+        ":common_library",
+        "@bazel_tools//tools/bash/runfiles",
     ],
 )
 
@@ -34,8 +34,8 @@ sh_test(
     args = ["COS"],
     tags = ["manual"],
     deps = [
-        ":sh_library",
-        "//scripts:sh_library",
+        ":common_library",
+        "@bazel_tools//tools/bash/runfiles",
     ],
 )
 
@@ -46,8 +46,8 @@ sh_test(
     args = ["COS_CONTAINERD"],
     tags = ["manual"],
     deps = [
-        ":sh_library",
-        "//scripts:sh_library",
+        ":common_library",
+        "@bazel_tools//tools/bash/runfiles",
     ],
 )
 
@@ -61,8 +61,8 @@ sh_test(
     ],
     tags = ["manual"],
     deps = [
-        ":sh_library",
-        "//scripts:sh_library",
+        ":common_library",
+        "@bazel_tools//tools/bash/runfiles",
     ],
 )
 
@@ -72,7 +72,7 @@ sh_test(
     srcs = ["test_px_on_kind.sh"],
     tags = ["manual"],
     deps = [
-        ":sh_library",
-        "//scripts:sh_library",
+        ":common_library",
+        "@bazel_tools//tools/bash/runfiles",
     ],
 )

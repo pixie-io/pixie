@@ -1,6 +1,0 @@
-package(default_visibility = ["//visibility:public"])
-
-sh_library(
-    name = "sh_library",
-    srcs = glob(["*.sh"]),
-)
