@@ -40,7 +40,4 @@ else
   fi
 fi
 
-${workspace}/scripts/deploy_vizier_prereqs.sh
-${workspace}/scripts/deploy_cloud_prereqs.sh plc-dev dev
-
 echo "K8s cluster setup complete!"
