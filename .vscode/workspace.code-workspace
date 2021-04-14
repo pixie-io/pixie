@@ -7,6 +7,8 @@
 	"settings": {
 		"clang-tidy.checks": [],
 		"bazel.buildifierFixOnFormat": true,
+		"bazel.enableCodeLens": true,
+		"bazel.queriesShareServer": true,
 		"files.associations": {
 			".arclint": "json",
 			".arcconfig": "json",
@@ -15,16 +17,22 @@
 		"files.exclude": {
 			"**/.bazel-*": true,
 		},
+		"git.ignoreSubmodules": true,
+		"go.formatFlags": [
+			"-local=pixielabs.ai"
+		],
 		"go.formatTool": "goimports",
+		"go.lintTool": "golangci-lint",
+		"go.toolsEnvVars": {
+			"CGO_ENABLED": 0
+		},
 		"gopls": {
 			"build.allowModfileModifications": true,
 			"build.directoryFilters": [
 				"-src/carnot/planner"
 			],
+			"formatting.local": "pixielabs.ai",
 			"ui.completion.usePlaceholders": true,
-		},
-		"go.toolsEnvVars": {
-			"CGO_ENABLED": 0
 		},
 	}
 }
