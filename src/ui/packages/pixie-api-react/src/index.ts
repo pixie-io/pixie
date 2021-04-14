@@ -7,4 +7,5 @@ export * from './hooks';
 export { UserSettings as GQLUserSettings } from '@pixie-labs/api';
 
 // TODO(nick): Create @pixie-labs/api-react/testing as its own package by doing what Apollo does.
-export * from './testing';
+//  This will involve putting a package.json in ./testing, and outputting that directory in the top of dist/
+//  so that consumers can `import * from '@pixie-labs/api-react/testing';`.

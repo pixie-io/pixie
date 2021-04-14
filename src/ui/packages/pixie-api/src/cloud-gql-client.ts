@@ -71,7 +71,7 @@ export class CloudClient {
       },
     });
     this.graphQL = new ApolloClient({
-      connectToDevTools: process?.env && process.env.NODE_ENV === 'development',
+      connectToDevTools: globalThis.process?.env && process.env.NODE_ENV === 'development',
       cache: this.cache,
       link: ApolloLink.from([
         makeCloudAuthLink(opts),

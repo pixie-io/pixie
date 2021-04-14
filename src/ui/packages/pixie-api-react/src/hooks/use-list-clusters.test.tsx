@@ -1,6 +1,6 @@
 import { CLUSTER_QUERIES } from '@pixie-labs/api';
 import { ApolloError } from '@apollo/client';
-import { itPassesBasicHookTests } from 'testing/hook-testing-boilerplate';
+import { itPassesBasicHookTests } from '../testing/hook-testing-boilerplate';
 import { useListClusters } from './use-list-clusters';
 
 describe('useListClusters hook for fetching available clusters', () => {

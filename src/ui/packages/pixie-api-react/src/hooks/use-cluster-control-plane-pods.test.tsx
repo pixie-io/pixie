@@ -1,6 +1,6 @@
 import { CLUSTER_QUERIES } from '@pixie-labs/api';
 import { ApolloError } from '@apollo/client';
-import { itPassesBasicHookTests } from 'testing/hook-testing-boilerplate';
+import { itPassesBasicHookTests } from '../testing/hook-testing-boilerplate';
 import { useClusterControlPlanePods } from './use-cluster-control-plane-pods';
 
 describe('useClusterControlPlanePods hook for fetching control planes', () => {

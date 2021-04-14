@@ -5,6 +5,7 @@ import { LiveTourContext } from 'containers/App/live-tour';
 import { ResultsContext } from 'context/results-context';
 import { ScriptContext } from 'context/script-context';
 import { withLiveViewContext } from 'containers/live/context';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { render } from 'enzyme';
 import { Router } from 'react-router';
 import history from 'utils/pl-history';
@@ -14,12 +15,14 @@ import { LIVE_CONTEXT_DEFAULTS } from 'testing/mocks/live-context-mock';
 import { ThemeProvider } from '@material-ui/core/styles';
 import { VizierGRPCClientContext } from 'common/vizier-grpc-client-context';
 import { SnackbarContext } from '@pixie-labs/components';
-import { MockPixieAPIContextProvider } from '@pixie-labs/api-react';
+// TODO(nick,PC-738): Fix this import once the corresponding export is corrected so it doesn't get bundled in the root.
+import { MockPixieAPIContextProvider } from '@pixie-labs/api-react/src/testing';
 
 /**
  * Replaces all of the jest.fn() values with expect.any() in the mock defaults of a context.
  * @param withMockFunctions
  */
+// eslint-disable-next-line @typescript-eslint/ban-types
 function mockToAny(withMockFunctions: object) {
   const functionKeys = Object.keys(withMockFunctions).filter((k) => typeof withMockFunctions[k] === 'function');
   const withExpectAny = functionKeys.reduce((p, k) => ({

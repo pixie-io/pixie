@@ -1,9 +1,9 @@
 import * as React from 'react';
 import { API_KEY_QUERIES } from '@pixie-labs/api';
 import { ApolloError } from '@apollo/client';
-import { itPassesBasicHookTests, MOCKED_PROVIDER_DEFAULT_SETTINGS } from 'testing/hook-testing-boilerplate';
 import { act, render } from '@testing-library/react';
 import { MockedProvider } from '@apollo/client/testing';
+import { itPassesBasicHookTests, MOCKED_PROVIDER_DEFAULT_SETTINGS } from '../testing/hook-testing-boilerplate';
 import { wait } from '../testing/utils';
 import { useAPIKeys } from './use-api-keys';
 
