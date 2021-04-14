@@ -762,6 +762,8 @@ if (isMainRun) {
 builders['Lint & Docs'] = {
   WithSourceCodeAndTargetsK8s('lint') {
     container('pxbuild') {
+      // Prototool relies on having a main branch in this checkout, so create one tracking origin/main
+      sh 'git branch main --track origin/main'
       sh 'arc lint --trace'
     }
 

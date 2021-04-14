@@ -42,6 +42,7 @@ final class ArcanistProtoBreakCheckLinter extends ArcanistExternalLinter {
     foreach ($paths as $path) {
       $future = new ExecFuture('%C break check %Ls %s', $executable, $flags, $path);
       $futures[$path] = $future;
+      $future->setCWD($this->getProjectRoot());
     }
     return $futures;
   }
