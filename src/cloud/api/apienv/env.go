@@ -36,10 +36,6 @@ type APIEnv interface {
 type IdentityProviderClient interface {
 	// HandleLogin handles the login for a user into the Identity Provider.
 	HandleLogin(session *sessions.Session, w http.ResponseWriter, r *http.Request) error
-	// HandleLogout logs out a user from the Identity Provider.
-	HandleLogout(session *sessions.Session, w http.ResponseWriter, r *http.Request) error
-	// HandleLogout registers a user in the Identity Provider.
-	HandleRegister(session *sessions.Session, w http.ResponseWriter, r *http.Request) error
 	// The key to use for the session.
 	SessionKey() string
 }

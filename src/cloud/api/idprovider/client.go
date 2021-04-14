@@ -589,12 +589,6 @@ func (c *HydraKratosClient) SessionKey() string {
 	return IDProviderSessionKey
 }
 
-// HandleRegister conducts the user registration flow for Hydra and Kratos.
-func (c *HydraKratosClient) HandleRegister(session *sessions.Session, w http.ResponseWriter, r *http.Request) error {
-	// TODO(philkuz) implement.
-	return handler.NewStatusError(http.StatusInternalServerError, "not implememented")
-}
-
 // GetUserIDFromToken returns the userID from the subject portion of the access token.
 func (c *HydraKratosClient) GetUserIDFromToken(ctx context.Context, token string) (string, error) {
 	params := &hydraAdmin.IntrospectOAuth2TokenParams{
