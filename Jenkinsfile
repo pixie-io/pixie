@@ -583,10 +583,10 @@ def buildClangTidy = {
       if (isMainRun) {
         // For main builds we run clang tidy on changes files in the past 10 revisions,
         // this gives us a good balance of speed and coverage.
-        sh 'scripts/run_clang_tidy.sh -f diff_head_cc'
+        sh 'ci/run_clang_tidy.sh -f diff_head_cc'
       } else {
         // For code review builds only run on diff.
-        sh 'scripts/run_clang_tidy.sh -f diff_origin_main_cc'
+        sh 'ci/run_clang_tidy.sh -f diff_origin_main_cc'
       }
       stashOnGCS(stashName, 'clang_tidy.log')
       stashList.add(stashName)
@@ -734,7 +734,7 @@ if (isMainRun) {
     WithSourceCodeAndTargetsK8s('coverage') {
       container('pxbuild') {
         warnError('Coverage command failed') {
-          sh "scripts/collect_coverage.sh -u -t ${CODECOV_TOKEN} -b main -c `cat GIT_COMMIT`"
+          sh "ci/collect_coverage.sh -u -t ${CODECOV_TOKEN} -b main -c `cat GIT_COMMIT`"
         }
         createBazelStash('build-gcc-coverage-testlogs')
       }
@@ -751,7 +751,7 @@ if (isMainRun) {
               credentialsId: 'sourcegraph-api-token',
               variable: 'SOURCEGRAPH_TOKEN')
           ]) {
-            sh 'scripts/collect_and_upload_lsif.sh -t ${SOURCEGRAPH_TOKEN} -c `cat GIT_COMMIT`'
+            sh 'ci/collect_and_upload_lsif.sh -t ${SOURCEGRAPH_TOKEN} -c `cat GIT_COMMIT`'
           }
         }
       }

@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash -e
 
 # We use GCC for building coverage code.
 export CC=gcc
