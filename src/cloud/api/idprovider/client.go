@@ -519,7 +519,6 @@ func (c *HydraKratosClient) HandleLogin(session *sessions.Session, w http.Respon
 	// we won't be able to finish the login scheme.
 	challenge := query.Get("login_challenge")
 	if challenge == "" {
-		// TODO(philkuz) should we just redirect to the hydra auth endpoint instead?
 		return handler.NewStatusError(http.StatusInternalServerError, "no login challenge on call")
 	}
 

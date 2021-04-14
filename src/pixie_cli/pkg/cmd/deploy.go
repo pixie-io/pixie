@@ -805,7 +805,6 @@ func waitForPems(clientset *kubernetes.Clientset, namespace string, expectedPods
 		case "Running":
 			successfulPods[pod.Name] = empty
 		default:
-			// TODO(philkuz/zasgar) should we make this a print line instead?
 			return fmt.Errorf("unexpected status for PEM '%s': '%v'", pod.Name, pod.Status.Phase)
 		}
 

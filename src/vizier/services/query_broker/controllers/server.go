@@ -360,7 +360,7 @@ func (s *Server) HealthCheck(req *public_vizierapipb.HealthCheckRequest, srv pub
 // ExecuteScript executes the script and sends results through the gRPC stream.
 func (s *Server) ExecuteScript(req *public_vizierapipb.ExecuteScriptRequest, srv public_vizierapipb.VizierService_ExecuteScriptServer) error {
 	ctx := context.WithValue(srv.Context(), execStartKey, time.Now())
-	// TODO(philkuz) we should move the query id into the api so we can track how queries propagate through the system.
+	// TODO(philkuz,PP-2262) we should move the query id into the api so we can track queries from the client that orignated them.
 	queryID, err := uuid.NewV4()
 	if err != nil {
 		return srv.Send(ErrToVizierResponse(queryID, err))

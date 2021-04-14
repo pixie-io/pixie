@@ -280,7 +280,6 @@ const badGlobalArgSpec = `{
   }
 }`
 
-// TODO(philkuz) need to decide if and how we should parse the types here.
 func TestBadGlobalArgType(t *testing.T) {
 	t.Skip()
 	compiler := controller.NewPlacementCompiler()

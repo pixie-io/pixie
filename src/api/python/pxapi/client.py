@@ -410,7 +410,7 @@ class ScriptExecutor:
 
         self.add_callback(table_name, _cb)
         self.run()
-        # TODO(philkuz) update the run call to be multi-threaded
+        # TODO(philkuz,PP-2424) update the run call to be multi-threaded
         # to avoid accumulating memory for rows.
         for r in rows:
             yield r

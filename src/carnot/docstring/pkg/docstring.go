@@ -143,7 +143,6 @@ func (w *parser) Walk(lines *[]string, i int) (int, error) {
 		w.parsedDoc.body.Desc = (*lines)[i]
 	} else {
 		line := (*lines)[i]
-		// TODO(philkuz) support more cases.
 		// Add newline if starts with *.
 		if ok, err := re.MatchString(`^\*\s`, line); err == nil && ok {
 			line = "\n" + line
@@ -355,7 +354,6 @@ func parseDocstring(docString string) (*FunctionDocstring, error) {
 	return p.parsedDoc, nil
 }
 
-// TODO(philkuz) combine multiple tag readers into one.
 const topicRegex = `:topic: (?P<topic>[^\s]*)\n`
 const opnameRegex = `:opname: (?P<opname>.*)\n`
 
