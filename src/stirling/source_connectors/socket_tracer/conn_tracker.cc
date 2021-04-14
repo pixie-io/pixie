@@ -66,8 +66,8 @@ void ConnTracker::AddControlEvent(const socket_control_event_t& event) {
 
 void ConnTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
   if (open_info_.timestamp_ns != 0) {
-    LOG_FIRST_N(WARNING, 20) << absl::Substitute("[PL-985] Clobbering existing ConnOpenEvent $0.",
-                                                 ToString(conn_event.conn_id));
+    CONN_TRACE(1) << absl::Substitute("[PL-985] Clobbering existing ConnOpenEvent $0.",
+                                      ToString(conn_event.conn_id));
   }
 
   SetConnID(conn_event.conn_id);
@@ -94,8 +94,8 @@ void ConnTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
 
 void ConnTracker::AddConnCloseEvent(const close_event_t& close_event) {
   if (close_info_.timestamp_ns != 0) {
-    LOG_FIRST_N(ERROR, 20) << absl::Substitute("Clobbering existing ConnCloseEvent $0.",
-                                               ToString(close_event.conn_id));
+    CONN_TRACE(1) << absl::Substitute("Clobbering existing ConnCloseEvent $0.",
+                                      ToString(close_event.conn_id));
   }
 
   SetConnID(close_event.conn_id);
@@ -252,7 +252,7 @@ void ConnTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
     // Note that the duplicates are not necessarily restricted to headers which have the end_stream
     // flag set; the end_stream cases are just the easiest to detect.
     if (half_stream_ptr->end_stream()) {
-      LOG_FIRST_N(WARNING, 10) << absl::Substitute(
+      CONN_TRACE(1) << absl::Substitute(
           "Duplicate end_stream flag in header. stream_id: $0, conn_id: $1", hdr->attr.stream_id,
           ToString(hdr->attr.conn_id));
     }
@@ -316,7 +316,7 @@ void ConnTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
   // cases exist. Note that the duplicates are not related to the end_stream flag being set;
   // the end_stream cases are just the easiest to detect.
   if (half_stream_ptr->end_stream() && data->attr.end_stream) {
-    LOG_FIRST_N(WARNING, 10) << absl::Substitute(
+    CONN_TRACE(1) << absl::Substitute(
         "Duplicate end_stream flag in data. stream_id: $0, conn_id: $1", data->attr.stream_id,
         ToString(data->attr.conn_id));
   }
@@ -456,7 +456,7 @@ void ConnTracker::UpdateTimestamps(uint64_t bpf_timestamp) {
 
 void ConnTracker::CheckTracker() {
   if (death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1) {
-    LOG_FIRST_N(WARNING, 10) << absl::Substitute(
+    CONN_TRACE(1) << absl::Substitute(
         "Did not expect new event more than 1 sampling iteration after Close. Connection=$0.",
         ToString(conn_id_));
   }
