@@ -233,16 +233,16 @@ module.exports = (env, argv) => {
     environment = 'base';
   }
 
+  let credentialsEnv = process.env.PL_BUILD_TYPE;
+
   // Users can specify the OAUTH environment. Usually this just means
   // setting to "oss_auth", otherwise will default to `environment`.
-  let oauthConfigEnv = process.env.PL_OAUTH_CONFIG_ENV;
-  if (!oauthConfigEnv) {
-    oauthConfigEnv = environment;
+  const oauthConfigEnv = process.env.PL_OAUTH_CONFIG_ENV;
+  let oauthYAML = utils.readYAMLFile(join(topLevelDir, 'credentials', 'k8s', credentialsEnv, 'configs', 'oauth_config.yaml'), true);
+  // Special case for oss_auth where we read from the unecrypted file.
+  if (oauthConfigEnv === 'oss_auth') {
+    oauthYAML = utils.readYAMLFile( join(topLevelDir, 'k8s', 'cloud', oauthConfigEnv, 'oauth_config.yaml'), false);
   }
-
-  // Get Auth0ClientID.
-  const oauthYAML = utils.readYAMLFile(join(topLevelDir, 'credentials', 'k8s',
-    oauthConfigEnv, 'configs', 'oauth_config.yaml'), true);
 
   // Setup the auth client.
   const oauthProvider = oauthYAML.data.PL_OAUTH_PROVIDER;
@@ -251,7 +251,7 @@ module.exports = (env, argv) => {
 
   // Get LDClientID.
   const ldYAML = utils.readYAMLFile(join(topLevelDir, 'credentials', 'k8s',
-    oauthConfigEnv, 'configs', 'ld_config.yaml'), true);
+    credentialsEnv, 'configs', 'ld_config.yaml'), true);
 
   // Get domain name.
   const domainYAML = utils.readYAMLFile(join(topLevelDir, 'k8s', 'cloud', environment, 'domain_config.yaml'), false);
@@ -262,7 +262,7 @@ module.exports = (env, argv) => {
 
   // Get whether to enable analytics.
   const announcementYAML = utils.readYAMLFile(join(topLevelDir, 'credentials', 'k8s',
-    oauthConfigEnv, 'configs', 'announce_config.yaml'), true);
+    credentialsEnv, 'configs', 'announce_config.yaml'), true);
 
   // Get whether to enable chat contact.
   const contactYAML = utils.readYAMLFile(join(topLevelDir, 'k8s', 'cloud', environment,
