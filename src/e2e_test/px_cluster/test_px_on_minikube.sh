@@ -21,6 +21,13 @@ fi
 minikube_bin=$1
 runtime=$2
 
+if [ "$minikube_bin" == "minikube" ]; then
+  minikube_bin=$(command -v minikube)
+fi
+
+echo "Using minikube: $minikube_bin"
+echo "Using container runtime: $runtime"
+
 if [ ! -f "$minikube_bin" ]; then
   echo "Could not find minikube binary: $minikube_bin"
   exit 1

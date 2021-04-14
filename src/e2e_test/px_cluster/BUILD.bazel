@@ -55,6 +55,10 @@ sh_test(
     name = "px_on_minikube_test",
     timeout = "long",
     srcs = ["test_px_on_minikube.sh"],
+    args = [
+        "minikube",
+        "docker",
+    ],
     tags = ["manual"],
     deps = [
         ":sh_library",
