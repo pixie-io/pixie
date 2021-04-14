@@ -101,9 +101,7 @@ TEST_F(CarnotTest, register_metadata) {
           "px.display(df, 'test_output')",
       },
       "\n");
-  auto query_uuid = sole::uuid4();
-  auto s = carnot_->ExecuteQuery(query, query_uuid, 0);
-  ASSERT_OK(s);
+  ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
   // Check that the function was registered correctly and that it is called once during query
   // execution.
   EXPECT_EQ(1, callback_calls);
@@ -119,9 +117,7 @@ TEST_F(CarnotTest, literal_only) {
           "px.display(df[['col2']])",
       },
       "\n");
-  auto query_uuid = sole::uuid4();
-  auto s = carnot_->ExecuteQuery(query, query_uuid, 0);
-  ASSERT_OK(s);
+  ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("output"));
   auto output_batches = result_server_->query_results("output");
@@ -181,73 +177,13 @@ TEST_F(CarnotTest, subscript_map_test) {
       types::ToArrow(col1_in2, arrow::default_memory_pool())));
 }
 
-// Test whether the compiler will handle issues nicely
-TEST_F(CarnotTest, bad_syntax) {
-  // Missing paranethesis
-  auto bad_syntax = "import px\nqueryDF = px.DataFrame(";
-  // No time column, doesn't use a time parameter.
-  auto query_uuid = sole::uuid4();
-  auto bad_syntax_status = carnot_->ExecuteQuery(bad_syntax, query_uuid, 0);
-  VLOG(1) << bad_syntax_status.ToString();
-  EXPECT_NOT_OK(bad_syntax_status);
-}
-
-TEST_F(CarnotTest, wrong_args) {
-  // select -> sel (wrong arg for Form).
-  auto wrong_arg_names =
-      absl::StrJoin({"import px", "df = px.DataFrame(table='test_table', sel=['col2', 'col2'])",
-                     "px.display(df, 'test_output')"},
-                    "\n");
-  // No time column, doesn't use a time parameter.
-  auto query_uuid = sole::uuid4();
-  auto wrong_arg_status = carnot_->ExecuteQuery(wrong_arg_names, query_uuid, 0);
-  VLOG(1) << wrong_arg_status.ToString();
-  EXPECT_NOT_OK(wrong_arg_status);
-}
-
-TEST_F(CarnotTest, wrong_columns) {
-  // Adding extra column that doesn't exist in the schema.
-  auto wrong_columns = absl::StrJoin(
-      {"import px", "df = px.DataFrame(table='test_table', select=['col1', 'col2', 'bunk_column'])",
-       "px.display(df, 'test_output')"},
-      "\n");
-  // No time column, doesn't use a time parameter.
-  auto query_uuid = sole::uuid4();
-  auto wrong_columns_status = carnot_->ExecuteQuery(wrong_columns, query_uuid, 0);
-  VLOG(1) << wrong_columns_status.ToString();
-  EXPECT_NOT_OK(wrong_columns_status);
-}
-
-// See whether executor is tolerant to receiving the wrong table name.
-TEST_F(CarnotTest, wrong_table_name) {
-  auto wrong_table_name =
-      absl::StrJoin({"import px", "df = px.DataFrame(table='bunk_table', select=['col1', 'col2'])",
-                     "px.display(df, 'test_output')"},
-                    "\n");
-  // No time column, doesn't use a time parameter.
-  auto query_uuid = sole::uuid4();
-  auto wrong_table_status = carnot_->ExecuteQuery(wrong_table_name, query_uuid, 0);
-  VLOG(1) << wrong_table_status.ToString();
-  EXPECT_NOT_OK(wrong_table_status);
-  // TODO(philkuz) refactor all of these failure tests to verify that we get the expected errors.
-}
-
-// Select no columns which should be acceptable.
+// Selecting 0 columns should still execute correctly.
 TEST_F(CarnotTest, no_columns) {
   auto no_columns_name =
       "import px\ndf = px.DataFrame(table='test_table', select=[])\npx.display(df, 'test_output')";
   // No time column, doesn't use a time parameter.
   auto query_uuid = sole::uuid4();
-  auto no_columns_status = carnot_->ExecuteQuery(no_columns_name, query_uuid, 0);
-  VLOG(1) << no_columns_status.ToString();
-  EXPECT_OK(no_columns_status);
-}
-
-TEST_F(CarnotTest, empty_query_test) {
-  // No time column, doesn't use a time parameter.
-  auto query_uuid = sole::uuid4();
-  auto s = carnot_->ExecuteQuery("", query_uuid, 0);
-  ASSERT_NOT_OK(s);
+  EXPECT_OK(carnot_->ExecuteQuery(no_columns_name, query_uuid, 0));
 }
 
 TEST_F(CarnotTest, map_op_udf_add) {
@@ -256,7 +192,6 @@ TEST_F(CarnotTest, map_op_udf_add) {
        "queryDF.sum = queryDF.col1 + queryDF.col2", "df = queryDF[['sum']]",
        "px.display(df, 'test_output')"},
       "\n");
-  // No time column, doesn't use a time parameter.
   auto query_uuid = sole::uuid4();
   EXPECT_OK(carnot_->ExecuteQuery(add_query, query_uuid, 0));
 }
@@ -379,10 +314,7 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
       "\n");
   query = absl::Substitute(query, start_time, stop_time);
   // now() not called, doesn't matter what now is.
-  auto query_uuid = sole::uuid4();
-  auto s = carnot_->ExecuteQuery(query, query_uuid, 0);
-  VLOG(1) << s.ToString();
-  ASSERT_OK(s);
+  ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("range_output"));
   auto output_batches = result_server_->query_results("range_output");
@@ -441,9 +373,7 @@ TEST_F(CarnotTest, range_test_single_rb) {
   int64_t stop_time = 12;
   query = absl::Substitute(query, start_time, stop_time);
   // now() not called, doesn't matter what now is.
-  auto query_uuid = sole::uuid4();
-  auto s = carnot_->ExecuteQuery(query, query_uuid, 0);
-  ASSERT_OK(s);
+  ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("range_output"));
   auto output_batches = result_server_->query_results("range_output");
@@ -486,10 +416,7 @@ TEST_F(CarnotTest, empty_range_test) {
   int64_t stop_time = start_time + 10000;
   query = absl::Substitute(query, start_time, stop_time);
   // now() not called, doesn't matter what now is.
-  auto query_uuid = sole::uuid4();
-  auto s = carnot_->ExecuteQuery(query, query_uuid, 0);
-  VLOG(1) << s.ToString();
-  ASSERT_OK(s);
+  ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("range_output"));
   auto output_batches = result_server_->query_results("range_output");
@@ -567,9 +494,7 @@ TEST_F(CarnotTest, group_by_all_agg_test) {
       "\n");
   query = absl::Substitute(query, agg_dict);
   // now() not called, doesn't matter what now is.
-  auto query_uuid = sole::uuid4();
-  auto s = carnot_->ExecuteQuery(query, query_uuid, 0);
-  ASSERT_OK(s);
+  ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
   auto output_batches = result_server_->query_results("test_output");
@@ -632,11 +557,7 @@ TEST_F(CarnotTest, group_by_col_agg_test) {
           "px.display(aggDF, 'test_output')",
       },
       "\n");
-  // now() not called, doesn't matter what now is.
-  auto query_uuid = sole::uuid4();
-  auto s = carnot_->ExecuteQuery(query, query_uuid, 0);
-  VLOG(1) << s.ToString();
-  ASSERT_OK(s);
+  ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
   auto output_batches = result_server_->query_results("test_output");
@@ -672,10 +593,7 @@ TEST_F(CarnotTest, multiple_group_by_test) {
       },
       "\n");
   // now() not called, doesn't matter what now is.
-  auto query_uuid = sole::uuid4();
-  auto s = carnot_->ExecuteQuery(query, query_uuid, 0);
-  VLOG(1) << s.ToString();
-  ASSERT_OK(s);
+  ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
   auto output_batches = result_server_->query_results("test_output");
@@ -733,10 +651,7 @@ TEST_F(CarnotTest, comparison_tests) {
   int64_t num_groups_gt_val = 1;
   query = absl::Substitute(query, col3_lt_val, num_groups_gt_val);
   // now() not called, doesn't matter what now is.
-  auto query_uuid = sole::uuid4();
-  auto s = carnot_->ExecuteQuery(query, query_uuid, 0);
-  VLOG(1) << s.ToString();
-  ASSERT_OK(s);
+  ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
   auto output_batches = result_server_->query_results("test_output");
@@ -772,10 +687,7 @@ TEST_F(CarnotTest, comparison_to_agg_tests) {
   int64_t col3_gt_val = 30;
   query = absl::Substitute(query, col3_gt_val);
   // now() not called, doesn't matter what now is.
-  auto query_uuid = sole::uuid4();
-  auto s = carnot_->ExecuteQuery(query, query_uuid, 0);
-  VLOG(1) << s.ToString();
-  ASSERT_OK(s);
+  ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
   auto output_batches = result_server_->query_results("test_output");
@@ -818,25 +730,22 @@ class CarnotFilterTest
 };
 
 std::vector<std::tuple<std::string, std::function<bool(const double&, const double&)>>>
-    filter_test_values = {
-        {
-            ">",
-            [](double a, double b) { return a > b; },
-        },
-        {
-            "<",
-            [](double a, double b) { return a < b; },
-        },
-        {
-            "==",
-            [](double a, double b) { return a == b; },
-        },
-        // TODO(philkuz) add operation for != into builtins
-        // {
-        //     "!=",
-        //     [](double a, double b) { return a != b; },
-        // }
-};
+    filter_test_values = {{
+                              ">",
+                              [](double a, double b) { return a > b; },
+                          },
+                          {
+                              "<",
+                              [](double a, double b) { return a < b; },
+                          },
+                          {
+                              "==",
+                              [](double a, double b) { return a == b; },
+                          },
+                          {
+                              "!=",
+                              [](double a, double b) { return a != b; },
+                          }};
 
 TEST_P(CarnotFilterTest, int_filter) {
   auto query = absl::StrJoin(
@@ -855,9 +764,7 @@ TEST_P(CarnotFilterTest, int_filter) {
   std::string comparison_column_str = "col3";
 
   query = absl::Substitute(query, comparison_val, comparison_fn_str, comparison_column_str);
-  auto query_uuid = sole::uuid4();
-  auto s = carnot_->ExecuteQuery(query, query_uuid, 0);
-  ASSERT_OK(s);
+  ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
   auto output_batches = result_server_->query_results("test_output");
@@ -920,9 +827,7 @@ TEST_F(CarnotTest, string_filter) {
   auto comparison_fn = [](std::string a, std::string b) { return a == b; };
 
   query = absl::Substitute(query, comparison_val, comparison_fn_str, comparison_column_str);
-  auto query_uuid = sole::uuid4();
-  auto s = carnot_->ExecuteQuery(query, query_uuid, 0);
-  ASSERT_OK(s);
+  ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
   auto output_batches = result_server_->query_results("test_output");
@@ -977,9 +882,7 @@ TEST_P(CarnotLimitTest, limit) {
   std::tie(expected_num_batches, num_rows) = GetParam();
   VLOG(2) << absl::Substitute("{$0, $1}", expected_num_batches, num_rows);
   query = absl::Substitute(query, num_rows);
-  auto query_uuid = sole::uuid4();
-  auto s = carnot_->ExecuteQuery(query, query_uuid, 0);
-  ASSERT_OK(s);
+  ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
 
   EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("test_output"));
   auto output_batches = result_server_->query_results("test_output");
@@ -1070,10 +973,7 @@ TEST_F(CarnotTest, multiple_result_calls) {
   int64_t num_groups_gt_val = 1;
   int64_t groups_val = 1;
   query = absl::Substitute(query, col3_lt_val, num_groups_gt_val, groups_val);
-  auto query_uuid = sole::uuid4();
-  auto s = carnot_->ExecuteQuery(query, query_uuid, 0);
-  VLOG(1) << s.ToString();
-  ASSERT_OK(s);
+  ASSERT_OK(carnot_->ExecuteQuery(query, sole::uuid4(), 0));
 
   // test the original output
   VLOG(1) << "test the original output";
@@ -1159,8 +1059,7 @@ TEST_F(CarnotTest, pass_logical_plan) {
   planpb::Plan plan = logical_plan_status.ConsumeValueOrDie();
   auto plan_uuid = sole::uuid4();
   auto query_uuid = sole::uuid4();
-  auto resStatus = carnot_->ExecutePlan(plan, plan_uuid);
-  ASSERT_OK(resStatus);
+  ASSERT_OK(carnot_->ExecutePlan(plan, plan_uuid));
 
   // Run the parallel execution using the Query path.
   ASSERT_OK(
@@ -1178,55 +1077,6 @@ TEST_F(CarnotTest, pass_logical_plan) {
     for (int64_t j = 0; j < plan_rb.num_columns(); ++j) {
       VLOG(2) << absl::Substitute("Batch $0; Column $1", i, j);
       EXPECT_TRUE(plan_rb.ColumnAt(j)->Equals(query_rb.ColumnAt(j)));
-    }
-  }
-}
-
-// TODO(philkuz) enable when we add the udfs for metadata. This works if you define the
-// pod_id_to_pod_name udf.
-TEST_F(CarnotTest, DISABLED_metadata_logical_plan_filter) {
-  // Test to make sure that metadata can actually compile and work in the executor.
-  // This test does not actually test to make sure that the AgentMetadataState works properly.
-  std::string query = absl::StrJoin(
-      {
-          "import px",
-          // In addition to making the UDFs, need to add upid or pod_id to test table to re-enable
-          // this test.
-          "df = px.DataFrame(table='big_test_table')",
-          "df['pod_name'] = df.ctx['pod_name']",
-          "bdf = df[df['pod_name'] == 'pl/name']",
-          "px.display(bdf, 'logical_plan')",
-      },
-      "\n");
-  Compiler compiler;
-  int64_t current_time = 0;
-  std::string table_name = "logical_plan";
-
-  // Create a CompilerState obj using the relation map and grabbing the current time.
-
-  pl::StatusOr<std::unique_ptr<planner::RegistryInfo>> registry_info_or_s =
-      udfexporter::ExportUDFInfo();
-  ASSERT_OK(registry_info_or_s);
-  std::unique_ptr<planner::RegistryInfo> registry_info = registry_info_or_s.ConsumeValueOrDie();
-
-  std::unique_ptr<planner::CompilerState> compiler_state = std::make_unique<planner::CompilerState>(
-      table_store_->GetRelationMap(), registry_info.get(), current_time, "result_addr");
-  StatusOr<planpb::Plan> logical_plan_status =
-      compiler.Compile(absl::Substitute(query, table_name), compiler_state.get());
-  ASSERT_OK(logical_plan_status);
-  planpb::Plan plan = logical_plan_status.ConsumeValueOrDie();
-  ASSERT_OK(carnot_->ExecutePlan(plan, sole::uuid4()));
-
-  EXPECT_THAT(result_server_->output_tables(), UnorderedElementsAre("logical_plan"));
-  auto output_batches = result_server_->query_results("logical_plan");
-  EXPECT_EQ(3, output_batches.size());
-  EXPECT_EQ(3, output_batches[0].num_columns());
-
-  for (const auto& rb : output_batches) {
-    for (int64_t j = 0; j < rb.num_columns(); ++j) {
-      // Filters currently don't get rid of batches, but do keep around empty batches.
-      EXPECT_TRUE(rb.ColumnAt(j)->Equals(
-          types::ToArrow(std::vector<types::StringValue>({}), arrow::default_memory_pool())));
     }
   }
 }
