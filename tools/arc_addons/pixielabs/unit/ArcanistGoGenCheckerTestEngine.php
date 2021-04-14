@@ -33,9 +33,8 @@ final class ArcanistGoGenCheckerTestEngine extends ArcanistBaseGenCheckerTestEng
             $res->setName(get_class($this));
             $res->setResult(ArcanistUnitTestResult::RESULT_FAIL);
             $res->setUserData('go:generate command '.$command.' has not been added to goGenerateMap. Please add'.
-              ' an entry in $goGenerateMap in linters/engine/FileCheckerTestEngine.php, '.
-              'where the key is '.$command.' and the value is a regex for the name of the'.
-              ' generated output file.');
+              ' an entry in $goGenerateMap in tools/arc_addons/pixielabs/unit/ArcanistGoGenCheckerTestEngine.php, '.
+              'where the key is '.$command.' and the value is a regex for the name of the generated output file.');
             $test_results[] = $res;
             break;
           }

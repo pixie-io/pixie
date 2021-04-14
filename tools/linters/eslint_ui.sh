@@ -2,11 +2,11 @@
 set -e
 
 # This script is invoked with a line like:
-# linters/eslint_ui.sh '--format=json' --no-color --config .eslintrc.json src/ui/.../something.ts
+# ./tools/linters/eslint_ui.sh '--format=json' --no-color --config .eslintrc.json src/ui/.../something.ts
 # That assumes that there's a .eslintrc.json in the working directory. We need the nearest matching ancestor directory.
 
 scriptDir="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-uiDir="${scriptDir}/../src/ui"
+uiDir="${scriptDir}/../../src/ui"
 
 # Walk up the lint target's directory ancestry until finding .eslintrc.json, or until reaching the UI root or /.
 workDir=$(dirname "$5")

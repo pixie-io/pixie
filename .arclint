@@ -35,7 +35,7 @@
         "(BUILD\\.bazel$)",
         "(\\.bzl$)"
       ],
-      "script-and-regex.script": "./linters/buildifier.sh",
+      "script-and-regex.script": "./tools/linters/buildifier.sh",
       "script-and-regex.regex": "/^(?P<file>.*):(?P<line>\\d+): (?P<error>.*): (?P<message>.*)$/m"
     },
     "cpplint": {
@@ -46,7 +46,7 @@
       "exclude": [
         "(_objc\\.h$)"
       ],
-      "bin": "./linters/cpplint/cpplint.py",
+      "bin": "./tools/linters/cpplint/cpplint.py",
       "flags": [
         "--filter=-build/c++11",
         "--filter=-build/c++14",
@@ -65,7 +65,7 @@
       "include": [
         "(^experimental/.*BUILD\\.bazel$)"
       ],
-      "script-and-regex.script": "./linters/experimental-manual.sh",
+      "script-and-regex.script": "./tools/linters/experimental-manual.sh",
       "script-and-regex.regex": "/^(?P<file>.*): (?P<message>.*)$/m"
     },
     "filename": {
@@ -77,7 +77,7 @@
         "(BUILD\\.bazel$)",
         "(\\.go$)"
       ],
-      "script-and-regex.script": "./linters/gazelle.sh",
+      "script-and-regex.script": "./tools/linters/gazelle.sh",
       "script-and-regex.regex": "/^(?P<severity>[[:alpha:]]+)\n(?P<file>[^\n]+)\n(?P<message>[^\n]+)\n((?P<line>\\d),(?P<char>\\d)\n<<<<<\n(?P<original>.*)=====\n(?P<replacement>.*)>>>>>\n)$/s"
     },
     "goimports": {
@@ -152,7 +152,7 @@
     "phutil-library": {
       "type": "phutil-library",
       "include": [
-        "(^arc_addons/.*\\.php$)"
+        "(^tools/arc_addons/.*\\.php$)"
       ]
     },
     "proto-break-check": {
@@ -180,7 +180,7 @@
     "xhpast": {
       "type": "xhpast",
       "include": [
-        "(^arc_addons/.*\\.php$)"
+        "(^tools/arc_addons/.*\\.php$)"
       ]
     },
     "yaml": {
@@ -197,9 +197,9 @@
     },
     "eslint-ui": {
       "type": "eslint",
-      "bin": "./linters/eslint_ui.sh",
+      "bin": "./tools/linters/eslint_ui.sh",
       "eslint.config": ".eslintrc.json",
-      "eslint.setup": "./linters/eslint_setup.sh",
+      "eslint.setup": "./tools/linters/eslint_setup.sh",
       "include": [
         "(^src/ui/.*\\.(tsx|ts|js)$)"
       ]
