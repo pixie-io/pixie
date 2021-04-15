@@ -77,7 +77,7 @@ TEST_F(EventParserTest, BasicProtocolParsing) {
   for (const auto& frame : word_frames) {
     timestamps.push_back(frame.timestamp_ns);
   }
-  EXPECT_THAT(timestamps, ElementsAre(0, 0, 1, 1, 3, 4));
+  EXPECT_THAT(timestamps, ElementsAre(0, 1, 1, 2, 3, 4));
 }
 
 // TODO(oazizi): Move any protocol specific tests that check for general EventParser behavior here.

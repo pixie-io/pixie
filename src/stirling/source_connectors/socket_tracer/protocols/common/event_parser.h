@@ -114,7 +114,7 @@ ParseResult ParseFrames(MessageType type, const DataStreamBuffer& data_stream_bu
 
     auto& msg = (*frames)[prev_size + i];
     StatusOr<uint64_t> timestamp_ns_status =
-        data_stream_buffer.GetTimestamp(data_stream_buffer.position() + f.start);
+        data_stream_buffer.GetTimestamp(data_stream_buffer.position() + f.end);
     LOG_IF(ERROR, !timestamp_ns_status.ok()) << timestamp_ns_status.ToString();
     msg.timestamp_ns = timestamp_ns_status.ValueOr(0);
   }
@@ -123,7 +123,7 @@ ParseResult ParseFrames(MessageType type, const DataStreamBuffer& data_stream_bu
 }
 
 /**
- * Calls ParseFrame() repeatedly on a continguous stream of raw bytes.
+ * Calls ParseFrame() repeatedly on a contiguous stream of raw bytes.
  * Places parsed frames into the provided frames container.
  *
  * Note: This is a helper function for EventParser::ParseFrames().
