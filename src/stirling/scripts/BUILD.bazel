@@ -9,9 +9,10 @@ sh_library(
 
 go_library(
     name = "scripts_lib",
-    srcs = ["perf-eval.go"],
+    srcs = ["perf_eval_main.go"],
     importpath = "pixielabs.ai/pixielabs/src/stirling/scripts",
     deps = [
+        "//src/stirling/scripts/utils",
         "//src/utils/shared/k8s",
         "@com_github_spf13_pflag//:pflag",
         "@com_github_spf13_viper//:viper",
