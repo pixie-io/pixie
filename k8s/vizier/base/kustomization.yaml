@@ -5,15 +5,12 @@ commonLabels:
   component: vizier
 kind: Kustomization
 namespace: pl
-patchesStrategicMerge:
-- patch_pem_daemonset.yaml
 patches:
 - path: patch_sentry.yaml
   target:
     kind: Deployment
 resources:
 - ../bootstrap
-- pem
 - proxy_envoy.yaml
 - certmgr_role.yaml
 - certmgr_deployment.yaml
@@ -23,6 +20,7 @@ resources:
 - metadata_role.yaml
 - metadata_service.yaml
 - node_view_cluster_role.yaml
+- pem_daemonset.yaml
 - proxy_deployment.yaml
 - proxy_service.yaml
 - query_broker_deployment.yaml

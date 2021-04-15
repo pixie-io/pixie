@@ -84,6 +84,8 @@ spec:
         - name: sys
           mountPath: /sys
           readOnly: true
+        - name: certs
+          mountPath: /certs
       hostPID: true
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
@@ -97,3 +99,6 @@ spec:
         hostPath:
           path: /sys
           type: Directory
+      - name: certs
+        secret:
+          secretName: service-tls-certs
