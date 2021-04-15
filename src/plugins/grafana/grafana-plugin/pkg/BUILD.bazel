@@ -1,15 +1,19 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
 
 package(default_visibility = ["//src/plugins/grafana:__subpackages__"])
 
 go_library(
     name = "pkg_lib",
     srcs = [
+        "grafana_table_mux.go",
         "main.go",
         "sample-plugin.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/plugins/grafana/grafana-plugin/pkg",
     deps = [
+        "//src/api/go/pxapi",
+        "//src/api/go/pxapi/types",
+        "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
         "@com_github_grafana_grafana_plugin_sdk_go//backend",
         "@com_github_grafana_grafana_plugin_sdk_go//backend/datasource",
         "@com_github_grafana_grafana_plugin_sdk_go//backend/instancemgmt",
@@ -23,7 +27,6 @@ go_binary(
     embed = [":pkg_lib"],
     goarch = "arm64",
     goos = "linux",
-    visibility = ["//visibility:public"],
 )
 
 go_binary(
@@ -31,7 +34,6 @@ go_binary(
     embed = [":pkg_lib"],
     goarch = "arm",
     goos = "linux",
-    visibility = ["//visibility:public"],
 )
 
 go_binary(
@@ -39,7 +41,6 @@ go_binary(
     embed = [":pkg_lib"],
     goarch = "amd64",
     goos = "linux",
-    visibility = ["//visibility:public"],
 )
 
 go_binary(
@@ -47,7 +48,17 @@ go_binary(
     embed = [":pkg_lib"],
     goarch = "amd64",
     goos = "darwin",
-    visibility = ["//visibility:public"],
+)
+
+go_test(
+    name = "pkg_test",
+    srcs = ["grafana_table_mux_test.go"],
+    embed = [":pkg_lib"],
+    deps = [
+        "//src/api/go/pxapi/types",
+        "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
+        "@com_github_stretchr_testify//assert",
+    ],
 )
 
 # Darwin arm 64 unsupported, needs investigation.
