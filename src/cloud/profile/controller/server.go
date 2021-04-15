@@ -323,3 +323,8 @@ func (s *Server) UpdateUserSettings(ctx context.Context, req *profile.UpdateUser
 
 	return &profile.UpdateUserSettingsResponse{OK: true}, nil
 }
+
+// InviteUser implements the Profile interface's InviteUser method.
+func (s *Server) InviteUser(ctx context.Context, req *profile.InviteUserRequest) (*profile.InviteUserResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "InviteUser not implemented")
+}

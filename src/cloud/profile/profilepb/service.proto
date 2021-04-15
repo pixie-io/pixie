@@ -21,6 +21,9 @@ service ProfileService {
   // Calls for handling user settings.
   rpc GetUserSettings(GetUserSettingsRequest) returns (GetUserSettingsResponse);
   rpc UpdateUserSettings(UpdateUserSettingsRequest) returns (UpdateUserSettingsResponse);
+  // Create a new account for the user's org and return an invite link. Errors out if the account
+  // already exists.
+  rpc InviteUser(InviteUserRequest) returns (InviteUserResponse);
 }
 
 // UserInfo has information about a single end user in our system.
@@ -125,4 +128,15 @@ message UpdateUserSettingsRequest {
 message UpdateUserSettingsResponse {
   // Whether the update was successful.
   bool ok = 1 [(gogoproto.customname) = "OK"];
+}
+
+message InviteUserRequest {
+	string email = 1;
+	string first_name = 2;
+	string last_name = 3;
+}
+
+message InviteUserResponse {
+	string email = 1;
+	string invite_link = 2;
 }
