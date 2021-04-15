@@ -119,3 +119,20 @@ message UpdateClusterConfigRequest {
 
 // Response message for the UpdateClusterConfig.
 message UpdateClusterConfigResponse {}
+
+// OrganizationService enables users to make changes to their organization.
+service OrganizationService {
+  // Create an Invite Link that a new user can follow to create a password for their account.
+  rpc InviteUser(InviteUserRequest) returns (InviteUserResponse);
+}
+
+message InviteUserRequest {
+	string email = 1;
+	string first_name = 2;
+	string last_name = 3;
+}
+
+message InviteUserResponse {
+	string email = 1;
+	string invite_link = 2;
+}
