@@ -9,6 +9,10 @@ final class ArcanistGraphqlGenCheckerTestEngine extends ArcanistBaseGenCheckerTe
     $test_results = array();
 
     foreach ($this->getPaths() as $file) {
+      if (!file_exists($this->getWorkingCopy()->getProjectRoot().DIRECTORY_SEPARATOR.$file)) {
+        continue;
+      }
+
       $schema_filename = substr($file, 0, -8).'.d.ts';
       $test_results[] = $this->checkFile($file, $schema_filename, 'To regenerate, run src/cloud/api/controller/schema/update.sh');
     }

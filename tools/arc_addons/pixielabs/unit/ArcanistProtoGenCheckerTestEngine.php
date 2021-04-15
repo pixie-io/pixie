@@ -30,6 +30,10 @@ final class ArcanistProtoGenCheckerTestEngine extends ArcanistBaseGenCheckerTest
     $test_results = array();
 
     foreach ($this->getPaths() as $file) {
+      if (!file_exists($this->getWorkingCopy()->getProjectRoot().DIRECTORY_SEPARATOR.$file)) {
+        continue;
+      }
+
       $pb_filename = substr($file, 0, -6).'.pb.go';
       $test_results[] = $this->checkFile($file, $pb_filename, 'To regenerate, run: '.
           'scripts/update_go_protos.sh');

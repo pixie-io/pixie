@@ -22,6 +22,9 @@ final class ArcanistGoGenCheckerTestEngine extends ArcanistBaseGenCheckerTestEng
 
     foreach ($this->getPaths() as $file) {
       $file_path = $this->getWorkingCopy()->getProjectRoot().DIRECTORY_SEPARATOR.$file;
+      if (!file_exists($file_path)) {
+        continue;
+      }
 
       // Find if the .go file contains //go:generate.
       foreach (file($file_path) as $line_num => $line) {
