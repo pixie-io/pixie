@@ -10,7 +10,6 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,6 +19,7 @@ import (
 
 	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
 	"px.dev/pixie/src/shared/cvmsgspb"
+	"px.dev/pixie/src/utils/pbutils"
 	"px.dev/pixie/src/utils/testingutils"
 	"px.dev/pixie/src/vizier/services/query_broker/ptproxy"
 )
@@ -235,7 +235,7 @@ func TestPassThroughProxy(t *testing.T) {
 					ExecReq: test.request,
 				},
 			}
-			reqAnyMsg, err := types.MarshalAny(sr)
+			reqAnyMsg, err := pbutils.MarshalAny(sr)
 			require.NoError(t, err)
 			c2vMsg := &cvmsgspb.C2VMessage{
 				Msg: reqAnyMsg,
@@ -254,7 +254,7 @@ func TestPassThroughProxy(t *testing.T) {
 					err := proto.Unmarshal(msg.Data, v2cMsg)
 					require.NoError(t, err)
 					resp := &cvmsgspb.V2CAPIStreamResponse{}
-					err = types.UnmarshalAny(v2cMsg.Msg, resp)
+					err = pbutils.UnmarshalAny(v2cMsg.Msg, resp)
 					require.NoError(t, err)
 					assert.Equal(t, test.expectedResps[numResp], resp)
 					numResp++
@@ -274,7 +274,7 @@ func TestPassThroughProxy(t *testing.T) {
 					CancelReq: &cvmsgspb.C2VAPIStreamCancel{},
 				},
 			}
-			reqAnyMsg, err = types.MarshalAny(sr)
+			reqAnyMsg, err = pbutils.MarshalAny(sr)
 			require.NoError(t, err)
 			c2vMsg = &cvmsgspb.C2VMessage{
 				Msg: reqAnyMsg,
@@ -300,7 +300,7 @@ func TestPassThroughProxy(t *testing.T) {
 				err := proto.Unmarshal(msg.Data, v2cMsg)
 				require.NoError(t, err)
 				resp := &cvmsgspb.V2CAPIStreamResponse{}
-				err = types.UnmarshalAny(v2cMsg.Msg, resp)
+				err = pbutils.UnmarshalAny(v2cMsg.Msg, resp)
 				require.NoError(t, err)
 				assert.Equal(t, cancelResp, resp)
 			case <-time.After(defaultTimeout):

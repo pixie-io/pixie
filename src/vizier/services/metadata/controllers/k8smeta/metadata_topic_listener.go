@@ -6,12 +6,12 @@ import (
 	"sync"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/k8s/metadatapb"
+	"px.dev/pixie/src/utils/pbutils"
 	messages "px.dev/pixie/src/vizier/messages/messagespb"
 	"px.dev/pixie/src/vizier/utils/messagebus"
 )
@@ -184,7 +184,7 @@ func (m *MetadataTopicListener) processCloudMessage(msg *nats.Msg) error {
 	}
 
 	req := &metadatapb.MissingK8SMetadataRequest{}
-	err = types.UnmarshalAny(c2vMsg.Msg, req)
+	err = pbutils.UnmarshalAny(c2vMsg.Msg, req)
 	if err != nil {
 		log.WithError(err).Error("Could not unmarshal metadata req message")
 		return err
@@ -207,7 +207,7 @@ func (m *MetadataTopicListener) processCloudMessage(msg *nats.Msg) error {
 			LastUpdateAvailable:  lastAvailable,
 		}
 
-		respAnyMsg, err := types.MarshalAny(resp)
+		respAnyMsg, err := pbutils.MarshalAny(resp)
 		if err != nil {
 			return err
 		}

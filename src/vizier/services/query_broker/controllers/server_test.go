@@ -20,7 +20,7 @@ import (
 	"px.dev/pixie/src/carnot/queryresultspb"
 	"px.dev/pixie/src/shared/services/authcontext"
 	"px.dev/pixie/src/table_store/schemapb"
-	pbutils "px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/testingutils"
 	"px.dev/pixie/src/vizier/services/query_broker/controllers"
 	mock_controllers "px.dev/pixie/src/vizier/services/query_broker/controllers/mock"
@@ -769,7 +769,7 @@ func TestTransferResultChunk_AgentStreamComplete(t *testing.T) {
 	}
 
 	queryID := uuid.Must(uuid.NewV4())
-	queryIDpb := pbutils.ProtoFromUUID(queryID)
+	queryIDpb := utils.ProtoFromUUID(queryID)
 
 	msg1 := &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
@@ -859,7 +859,7 @@ func TestTransferResultChunk_AgentClosedPrematurely(t *testing.T) {
 	sv.Eos = false
 
 	queryID := uuid.Must(uuid.NewV4())
-	queryIDpb := pbutils.ProtoFromUUID(queryID)
+	queryIDpb := utils.ProtoFromUUID(queryID)
 
 	msg1 := &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
@@ -937,7 +937,7 @@ func TestTransferResultChunk_AgentStreamFailed(t *testing.T) {
 	}
 
 	queryID := uuid.Must(uuid.NewV4())
-	queryIDpb := pbutils.ProtoFromUUID(queryID)
+	queryIDpb := utils.ProtoFromUUID(queryID)
 
 	msg1 := &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
@@ -1013,7 +1013,7 @@ func TestTransferResultChunk_ClientStreamCancelled(t *testing.T) {
 	}
 
 	queryID := uuid.Must(uuid.NewV4())
-	queryIDpb := pbutils.ProtoFromUUID(queryID)
+	queryIDpb := utils.ProtoFromUUID(queryID)
 
 	msg1 := &carnotpb.TransferResultChunkRequest{
 		Address: "foo",

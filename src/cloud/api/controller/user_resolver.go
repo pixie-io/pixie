@@ -9,7 +9,7 @@ import (
 	public_cloudapipb "px.dev/pixie/src/api/public/cloudapipb"
 	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/shared/services/authcontext"
-	pbutils "px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils"
 )
 
 // UserInfoResolver resolves user information.
@@ -27,7 +27,7 @@ func (q *QueryResolver) User(ctx context.Context) (*UserInfoResolver, error) {
 		return nil, err
 	}
 	grpcAPI := q.Env.ProfileServiceClient
-	userInfo, err := grpcAPI.GetUser(ctx, pbutils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID))
+	userInfo, err := grpcAPI.GetUser(ctx, utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID))
 	if err != nil {
 		userInfo = nil
 	}
@@ -65,7 +65,7 @@ func (u *UserInfoResolver) Picture() string {
 func (u *UserInfoResolver) OrgName() string {
 	orgID := u.SessionCtx.Claims.GetUserClaims().OrgID
 
-	org, err := u.GQLEnv.ProfileServiceClient.GetOrg(u.ctx, pbutils.ProtoFromUUIDStrOrNil(orgID))
+	org, err := u.GQLEnv.ProfileServiceClient.GetOrg(u.ctx, utils.ProtoFromUUIDStrOrNil(orgID))
 	if err != nil {
 		return ""
 	}
@@ -107,7 +107,7 @@ func (q *QueryResolver) UserSettings(ctx context.Context, args *userSettingsArgs
 
 	grpcAPI := q.Env.ProfileServiceClient
 	resp, err := grpcAPI.GetUserSettings(ctx, &profilepb.GetUserSettingsRequest{
-		ID:   pbutils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID),
+		ID:   utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID),
 		Keys: keys,
 	})
 	if err != nil {
@@ -145,7 +145,7 @@ func (q *QueryResolver) UpdateUserSettings(ctx context.Context, args *updateUser
 	}
 
 	resp, err := grpcAPI.UpdateUserSettings(ctx, &profilepb.UpdateUserSettingsRequest{
-		ID:     pbutils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID),
+		ID:     utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID),
 		Keys:   keys,
 		Values: values,
 	})

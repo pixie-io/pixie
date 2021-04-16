@@ -16,8 +16,8 @@ import (
 	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
 	mock_profile "px.dev/pixie/src/cloud/profile/profilepb/mock"
 	"px.dev/pixie/src/shared/services/authcontext"
-	"px.dev/pixie/src/shared/services/utils"
-	pbutils "px.dev/pixie/src/utils"
+	srvutils "px.dev/pixie/src/shared/services/utils"
+	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/testingutils"
 )
 
@@ -34,7 +34,7 @@ func TestUserInfoResolver(t *testing.T) {
 		{
 			name: "existing user",
 			mockUser: &profilepb.UserInfo{
-				ID:             pbutils.ProtoFromUUIDStrOrNil(userID),
+				ID:             utils.ProtoFromUUIDStrOrNil(userID),
 				ProfilePicture: "test",
 				FirstName:      "first",
 				LastName:       "last",
@@ -57,19 +57,19 @@ func TestUserInfoResolver(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 			mockOrgInfo := &profilepb.OrgInfo{
-				ID:      pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
+				ID:      utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
 				OrgName: "testOrg",
 			}
 
 			mockProfile.EXPECT().
-				GetOrg(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
+				GetOrg(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
 				Return(mockOrgInfo, nil)
 
 			gqlEnv := controller.GraphQLEnv{
 				ProfileServiceClient: mockProfile,
 			}
 
-			sCtx.Claims = utils.GenerateJWTForUser(userID, "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "test@test.com", time.Now(), "pixie")
+			sCtx.Claims = srvutils.GenerateJWTForUser(userID, "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "test@test.com", time.Now(), "pixie")
 
 			resolver := controller.UserInfoResolver{SessionCtx: sCtx, GQLEnv: &gqlEnv, UserInfo: test.mockUser}
 			assert.Equal(t, "test@test.com", resolver.Email())
@@ -87,7 +87,7 @@ func TestUserSettingsResolver_GetUserSettings(t *testing.T) {
 	ctx := CreateTestContext()
 
 	mockClients.MockProfile.EXPECT().GetUserSettings(gomock.Any(), &profilepb.GetUserSettingsRequest{
-		ID:   pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9"),
+		ID:   utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9"),
 		Keys: []string{"test", "a_key"},
 	}).Return(&profilepb.GetUserSettingsResponse{
 		Keys:   []string{"test", "a_key"},
@@ -130,7 +130,7 @@ func TestUserSettingsResolver_UpdateUserSettings(t *testing.T) {
 	ctx := CreateTestContext()
 
 	mockClients.MockProfile.EXPECT().UpdateUserSettings(gomock.Any(), &profilepb.UpdateUserSettingsRequest{
-		ID:     pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9"),
+		ID:     utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9"),
 		Keys:   []string{"test", "a_key"},
 		Values: []string{"c", "d"},
 	}).Return(&profilepb.UpdateUserSettingsResponse{

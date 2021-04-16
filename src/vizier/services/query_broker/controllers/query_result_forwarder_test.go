@@ -18,14 +18,14 @@ import (
 	"px.dev/pixie/src/carnot/planpb"
 	"px.dev/pixie/src/carnot/queryresultspb"
 	"px.dev/pixie/src/table_store/schemapb"
-	pbutils "px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/vizier/services/query_broker/controllers"
 )
 
 func makeInitiateTableRequest(queryID uuid.UUID, tableName string) *carnotpb.TransferResultChunkRequest {
 	return &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
-		QueryID: pbutils.ProtoFromUUID(queryID),
+		QueryID: utils.ProtoFromUUID(queryID),
 		Result: &carnotpb.TransferResultChunkRequest_QueryResult{
 			QueryResult: &carnotpb.TransferResultChunkRequest_SinkResult{
 				ResultContents: &carnotpb.TransferResultChunkRequest_SinkResult_InitiateResultStream{
@@ -54,7 +54,7 @@ func makeRowBatchResult(t *testing.T, queryID uuid.UUID, tableName string, table
 
 	return expected, &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
-		QueryID: pbutils.ProtoFromUUID(queryID),
+		QueryID: utils.ProtoFromUUID(queryID),
 		Result: &carnotpb.TransferResultChunkRequest_QueryResult{
 			QueryResult: &carnotpb.TransferResultChunkRequest_SinkResult{
 				ResultContents: &carnotpb.TransferResultChunkRequest_SinkResult_RowBatch{
@@ -83,7 +83,7 @@ func makeExecStatsResult(t *testing.T, queryID uuid.UUID) (*public_vizierapipb.Q
 
 	return expected, &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
-		QueryID: pbutils.ProtoFromUUID(queryID),
+		QueryID: utils.ProtoFromUUID(queryID),
 		Result: &carnotpb.TransferResultChunkRequest_ExecutionAndTimingInfo{
 			ExecutionAndTimingInfo: &carnotpb.TransferResultChunkRequest_QueryExecutionAndTimingInfo{
 				ExecutionStats:      execStats,

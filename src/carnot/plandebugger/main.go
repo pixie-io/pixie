@@ -21,7 +21,7 @@ import (
 	"px.dev/pixie/src/common/base/statuspb"
 	"px.dev/pixie/src/pixie_cli/pkg/script"
 	"px.dev/pixie/src/pixie_cli/pkg/vizier"
-	pbutils "px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils"
 	funcs "px.dev/pixie/src/vizier/funcs/go"
 	"px.dev/pixie/src/vizier/services/query_broker/controllers"
 )
@@ -809,7 +809,7 @@ func main() {
 	}
 	// Hack because the agent names in test are human readable but not the case in the final.
 	for _, agent := range plannerStatePB.DistributedState.CarnotInfo {
-		id := pbutils.UUIDFromProtoOrNil(agent.AgentID)
+		id := utils.UUIDFromProtoOrNil(agent.AgentID)
 		agent.QueryBrokerAddress = id.String()
 	}
 	plannerResultPB, err := c.Plan(plannerStatePB, queryRequestPB)

@@ -29,7 +29,8 @@ import (
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/k8s/metadatapb"
 	pl_vispb "px.dev/pixie/src/shared/vispb"
-	pbutils "px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils/pbutils"
 )
 
 func TestArtifactTracker_GetArtifactList(t *testing.T) {
@@ -103,7 +104,7 @@ func TestArtifactTracker_GetDownloadLink(t *testing.T) {
 }
 
 func TestVizierClusterInfo_GetClusterConnection(t *testing.T) {
-	clusterID := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	clusterID := utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -128,8 +129,8 @@ func TestVizierClusterInfo_GetClusterConnection(t *testing.T) {
 }
 
 func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
-	orgID := pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
-	clusterID := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	orgID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	clusterID := utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	assert.NotNil(t, clusterID)
 
 	ctrl := gomock.NewController(t)
@@ -248,10 +249,10 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 }
 
 func TestVizierClusterInfo_GetClusterInfoDuplicates(t *testing.T) {
-	orgID := pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
-	clusterID := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	orgID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	clusterID := utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	assert.NotNil(t, clusterID)
-	clusterID2 := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c9")
+	clusterID2 := utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c9")
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -313,7 +314,7 @@ func TestVizierClusterInfo_GetClusterInfoDuplicates(t *testing.T) {
 }
 
 func TestVizierClusterInfo_GetClusterInfoWithID(t *testing.T) {
-	clusterID := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	clusterID := utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	assert.NotNil(t, clusterID)
 
 	ctrl := gomock.NewController(t)
@@ -361,7 +362,7 @@ func TestVizierClusterInfo_GetClusterInfoWithID(t *testing.T) {
 }
 
 func TestVizierClusterInfo_UpdateClusterVizierConfig(t *testing.T) {
-	clusterID := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	clusterID := utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	assert.NotNil(t, clusterID)
 
 	ctrl := gomock.NewController(t)
@@ -398,7 +399,7 @@ func TestVizierClusterInfo_UpdateClusterVizierConfig(t *testing.T) {
 }
 
 func TestVizierClusterInfo_UpdateOrInstallCluster(t *testing.T) {
-	clusterID := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	clusterID := utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	assert.NotNil(t, clusterID)
 
 	ctrl := gomock.NewController(t)
@@ -447,7 +448,7 @@ func TestVizierDeploymentKeyServer_Create(t *testing.T) {
 
 	vzreq := &vzmgrpb.CreateDeploymentKeyRequest{Desc: "test key"}
 	vzresp := &vzmgrpb.DeploymentKey{
-		ID:        pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+		ID:        utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
 		Key:       "foobar",
 		CreatedAt: types.TimestampNow(),
 	}
@@ -478,7 +479,7 @@ func TestVizierDeploymentKeyServer_List(t *testing.T) {
 	vzresp := &vzmgrpb.ListDeploymentKeyResponse{
 		Keys: []*vzmgrpb.DeploymentKey{
 			{
-				ID:        pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+				ID:        utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
 				Key:       "foobar",
 				CreatedAt: types.TimestampNow(),
 				Desc:      "this is a key",
@@ -511,7 +512,7 @@ func TestVizierDeploymentKeyServer_Get(t *testing.T) {
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	id := pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	id := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	vzreq := &vzmgrpb.GetDeploymentKeyRequest{
 		ID: id,
 	}
@@ -548,7 +549,7 @@ func TestVizierDeploymentKeyServer_Delete(t *testing.T) {
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	id := pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	id := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	vzresp := &types.Empty{}
 	mockClients.MockVzDeployKey.EXPECT().
 		Delete(gomock.Any(), id).Return(vzresp, nil)
@@ -572,7 +573,7 @@ func TestAPIKeyServer_Create(t *testing.T) {
 
 	vzreq := &authpb.CreateAPIKeyRequest{Desc: "test key"}
 	vzresp := &authpb.APIKey{
-		ID:        pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+		ID:        utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
 		Key:       "foobar",
 		CreatedAt: types.TimestampNow(),
 	}
@@ -603,7 +604,7 @@ func TestAPIKeyServer_List(t *testing.T) {
 	vzresp := &authpb.ListAPIKeyResponse{
 		Keys: []*authpb.APIKey{
 			{
-				ID:        pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+				ID:        utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
 				Key:       "foobar",
 				CreatedAt: types.TimestampNow(),
 				Desc:      "this is a key",
@@ -636,7 +637,7 @@ func TestAPIKeyServer_Get(t *testing.T) {
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	id := pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	id := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	vzreq := &authpb.GetAPIKeyRequest{
 		ID: id,
 	}
@@ -673,7 +674,7 @@ func TestAPIKeyServer_Delete(t *testing.T) {
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	id := pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	id := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	vzresp := &types.Empty{}
 	mockClients.MockAPIKey.EXPECT().
 		Delete(gomock.Any(), id).Return(vzresp, nil)
@@ -830,10 +831,10 @@ func TestAutocompleteService_AutocompleteField(t *testing.T) {
 	assert.Equal(t, 2, len(resp.Suggestions))
 }
 
-func toBytes(t *testing.T, msg proto.Message) []byte {
-	bytes, err := proto.Marshal(msg)
+func toAny(t *testing.T, msg proto.Message) *types.Any {
+	any, err := pbutils.MarshalAny(msg)
 	require.NoError(t, err)
-	return bytes
+	return any
 }
 
 func TestScriptMgr(t *testing.T) {
@@ -845,12 +846,9 @@ func TestScriptMgr(t *testing.T) {
 						Name: "my_func",
 					},
 				},
-				DisplaySpec: &types.Any{
-					TypeUrl: "pixielabs.ai/pl.vispb.VegaChart",
-					Value: toBytes(t, &pl_vispb.VegaChart{
-						Spec: "{}",
-					}),
-				},
+				DisplaySpec: toAny(t, &pl_vispb.VegaChart{
+					Spec: "{}",
+				}),
 			},
 		},
 	}
@@ -872,12 +870,12 @@ func TestScriptMgr(t *testing.T) {
 			smResp: &scriptmgrpb.GetLiveViewsResp{
 				LiveViews: []*scriptmgrpb.LiveViewMetadata{
 					{
-						ID:   pbutils.ProtoFromUUID(ID1),
+						ID:   utils.ProtoFromUUID(ID1),
 						Name: "liveview1",
 						Desc: "liveview1 desc",
 					},
 					{
-						ID:   pbutils.ProtoFromUUID(ID2),
+						ID:   utils.ProtoFromUUID(ID2),
 						Name: "liveview2",
 						Desc: "liveview2 desc",
 					},
@@ -903,11 +901,11 @@ func TestScriptMgr(t *testing.T) {
 			name:     "GetLiveViewContents correctly translates between scriptmgr and cloudapipb.",
 			endpoint: "GetLiveViewContents",
 			smReq: &scriptmgrpb.GetLiveViewContentsReq{
-				LiveViewID: pbutils.ProtoFromUUID(ID1),
+				LiveViewID: utils.ProtoFromUUID(ID1),
 			},
 			smResp: &scriptmgrpb.GetLiveViewContentsResp{
 				Metadata: &scriptmgrpb.LiveViewMetadata{
-					ID:   pbutils.ProtoFromUUID(ID1),
+					ID:   utils.ProtoFromUUID(ID1),
 					Name: "liveview1",
 					Desc: "liveview1 desc",
 				},
@@ -934,13 +932,13 @@ func TestScriptMgr(t *testing.T) {
 			smResp: &scriptmgrpb.GetScriptsResp{
 				Scripts: []*scriptmgrpb.ScriptMetadata{
 					{
-						ID:          pbutils.ProtoFromUUID(ID1),
+						ID:          utils.ProtoFromUUID(ID1),
 						Name:        "script1",
 						Desc:        "script1 desc",
 						HasLiveView: false,
 					},
 					{
-						ID:          pbutils.ProtoFromUUID(ID2),
+						ID:          utils.ProtoFromUUID(ID2),
 						Name:        "liveview1",
 						Desc:        "liveview1 desc",
 						HasLiveView: true,
@@ -969,11 +967,11 @@ func TestScriptMgr(t *testing.T) {
 			name:     "GetScriptContents correctly translates between scriptmgr and cloudapipb.",
 			endpoint: "GetScriptContents",
 			smReq: &scriptmgrpb.GetScriptContentsReq{
-				ScriptID: pbutils.ProtoFromUUID(ID1),
+				ScriptID: utils.ProtoFromUUID(ID1),
 			},
 			smResp: &scriptmgrpb.GetScriptContentsResp{
 				Metadata: &scriptmgrpb.ScriptMetadata{
-					ID:          pbutils.ProtoFromUUID(ID1),
+					ID:          utils.ProtoFromUUID(ID1),
 					Name:        "Script1",
 					Desc:        "Script1 desc",
 					HasLiveView: false,
@@ -1032,7 +1030,7 @@ func TestScriptMgr(t *testing.T) {
 func TestProfileServer_GetOrgInfo(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	orgID := pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	orgID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 
 	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
@@ -1061,7 +1059,7 @@ func TestProfileServer_InviteUser(t *testing.T) {
 	defer cleanup()
 	ctx := CreateTestContext()
 	mockReq := &profilepb.InviteUserRequest{
-		OrgID:          pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+		OrgID:          utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
 		MustCreateUser: true,
 		Email:          "bobloblaw@lawblog.law",
 		FirstName:      "bob",

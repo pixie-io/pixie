@@ -22,14 +22,14 @@ import (
 	commonenv "px.dev/pixie/src/shared/services/env"
 	"px.dev/pixie/src/shared/services/events"
 	"px.dev/pixie/src/shared/services/handler"
-	"px.dev/pixie/src/shared/services/utils"
-	pbutils "px.dev/pixie/src/utils"
+	srvutils "px.dev/pixie/src/shared/services/utils"
+	"px.dev/pixie/src/utils"
 )
 
 // GetServiceCredentials returns JWT credentials for inter-service requests.
 func GetServiceCredentials(signingKey string) (string, error) {
-	claims := utils.GenerateJWTForService("AuthService", viper.GetString("domain_name"))
-	return utils.SignJWTClaims(claims, signingKey)
+	claims := srvutils.GenerateJWTForService("AuthService", viper.GetString("domain_name"))
+	return srvutils.SignJWTClaims(claims, signingKey)
 }
 
 // AuthOAuthLoginHandler handles logins for OSS oauth support.
@@ -102,8 +102,8 @@ func AuthSignupHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 		return services.HTTPStatusFromError(err, "Failed to signup")
 	}
 
-	userIDStr := pbutils.UUIDFromProtoOrNil(resp.UserInfo.UserID).String()
-	orgIDStr := pbutils.UUIDFromProtoOrNil(resp.OrgID).String()
+	userIDStr := utils.UUIDFromProtoOrNil(resp.UserInfo.UserID).String()
+	orgIDStr := utils.UUIDFromProtoOrNil(resp.OrgID).String()
 
 	// Get orgName for analytics events.
 	pc := env.(apienv.APIEnv).ProfileClient()
@@ -131,7 +131,7 @@ func AuthSignupHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 		})
 
 		events.Client().Enqueue(&analytics.Track{
-			UserId: pbutils.UUIDFromProtoOrNil(resp.UserID).String(),
+			UserId: utils.UUIDFromProtoOrNil(resp.UserID).String(),
 			Event:  events.OrgCreated,
 			Properties: analytics.NewProperties().
 				Set("org_id", orgIDStr),
@@ -210,7 +210,7 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 		return services.HTTPStatusFromError(err, "Failed to login")
 	}
 
-	userIDStr := pbutils.UUIDFromProtoOrNil(resp.UserInfo.UserID).String()
+	userIDStr := utils.UUIDFromProtoOrNil(resp.UserInfo.UserID).String()
 	ev := events.UserLoggedIn
 	if resp.UserCreated {
 		ev = events.UserSignedUp
@@ -325,7 +325,7 @@ func sendUserInfo(w http.ResponseWriter, userInfo *authpb.AuthenticatedUserInfo,
 
 	data.Token = token
 	data.ExpiresAt = expiresAt
-	data.UserInfo.UserID = pbutils.UUIDFromProtoOrNil(userInfo.UserID).String()
+	data.UserInfo.UserID = utils.UUIDFromProtoOrNil(userInfo.UserID).String()
 	data.UserInfo.Email = userInfo.Email
 	data.UserInfo.FirstName = userInfo.FirstName
 	data.UserInfo.LastName = userInfo.LastName
@@ -354,7 +354,7 @@ func sendSignupUserInfo(w http.ResponseWriter, userInfo *authpb.AuthenticatedUse
 
 	data.Token = token
 	data.ExpiresAt = expiresAt
-	data.UserInfo.UserID = pbutils.UUIDFromProtoOrNil(userInfo.UserID).String()
+	data.UserInfo.UserID = utils.UUIDFromProtoOrNil(userInfo.UserID).String()
 	data.UserInfo.Email = userInfo.Email
 	data.UserInfo.FirstName = userInfo.FirstName
 	data.UserInfo.LastName = userInfo.LastName

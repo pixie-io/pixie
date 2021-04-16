@@ -13,7 +13,6 @@ import (
 	"unsafe"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
 
 	// Blank Import required by package.
 	_ "github.com/ianlancetaylor/cgosymbolizer"
@@ -24,6 +23,7 @@ import (
 	"px.dev/pixie/src/carnot/udfspb"
 	"px.dev/pixie/src/common/base/statuspb"
 	"px.dev/pixie/src/shared/scriptspb"
+	"px.dev/pixie/src/utils/pbutils"
 )
 
 // GoPlanner wraps the C Planner.
@@ -168,10 +168,10 @@ func GetCompilerErrorContext(status *statuspb.Status, errorPB *compilerpb.Compil
 		return errors.New("No context in status")
 	}
 
-	if !types.Is(context, errorPB) {
+	if !pbutils.Is(context, errorPB) {
 		return fmt.Errorf("Didn't expect type %s", context.TypeUrl)
 	}
-	return types.UnmarshalAny(context, errorPB)
+	return pbutils.UnmarshalAny(context, errorPB)
 }
 
 // HasContext returns true whether status has context or not.

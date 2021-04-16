@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	"github.com/graph-gophers/graphql-go/gqltesting"
 
@@ -91,12 +90,9 @@ func TestScriptMgrResolver(t *testing.T) {
 									Name: "my_func",
 								},
 							},
-							DisplaySpec: &types.Any{
-								TypeUrl: "pixielabs.ai/pl.vispb.VegaChart",
-								Value: toBytes(t, &pl_vispb.VegaChart{
-									Spec: "{}",
-								}),
-							},
+							DisplaySpec: toAny(t, &pl_vispb.VegaChart{
+								Spec: "{}",
+							}),
 						},
 					},
 				},
@@ -124,7 +120,7 @@ func TestScriptMgrResolver(t *testing.T) {
 						},
 						"pxlContents": "1 pxl",
 						"visJSON": "{\"widgets\":[{\"func\":{\"name\":\"my_func\"},\"displaySpec\":` +
-				`{\"@type\":\"pixielabs.ai/pl.vispb.VegaChart\",\"spec\":\"{}\"}}]}"
+				`{\"@type\":\"type.googleapis.com/pl.vispb.VegaChart\",\"spec\":\"{}\"}}]}"
 					}
 				}
 			`,

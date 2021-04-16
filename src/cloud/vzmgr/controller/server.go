@@ -35,6 +35,7 @@ import (
 	jwtutils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/namesgenerator"
+	"px.dev/pixie/src/utils/pbutils"
 )
 
 // SaltLength is the length of the salt used when encrypting the jwt signing key.
@@ -524,7 +525,7 @@ func (s *Server) UpdateVizierConfig(ctx context.Context, req *cvmsgspb.UpdateViz
 
 	if req.ConfigUpdate.PassthroughEnabled != nil {
 		passthroughEnabled := req.ConfigUpdate.PassthroughEnabled.Value
-		anyMsg, err := types.MarshalAny(&cvmsgspb.VizierConfig{
+		anyMsg, err := pbutils.MarshalAny(&cvmsgspb.VizierConfig{
 			PassthroughEnabled: passthroughEnabled,
 		})
 		if err != nil {
@@ -716,7 +717,7 @@ func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizi
 func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	anyMsg := v2cMsg.Msg
 	req := &cvmsgspb.VizierHeartbeat{}
-	err := types.UnmarshalAny(anyMsg, req)
+	err := pbutils.UnmarshalAny(anyMsg, req)
 	if err != nil {
 		log.WithError(err).Error("Could not unmarshal NATS message")
 		return
@@ -849,7 +850,7 @@ func (s *Server) HandleSSLRequest(v2cMsg *cvmsgspb.V2CMessage) {
 	anyMsg := v2cMsg.Msg
 
 	req := &cvmsgspb.VizierSSLCertRequest{}
-	err := types.UnmarshalAny(anyMsg, req)
+	err := pbutils.UnmarshalAny(anyMsg, req)
 	if err != nil {
 		log.WithError(err).Error("Could not unmarshal NATS message")
 		return
@@ -869,7 +870,7 @@ func (s *Server) HandleSSLRequest(v2cMsg *cvmsgspb.V2CMessage) {
 		log.WithError(err).Error("Could not get vizier config")
 		return
 	}
-	respAnyMsg, err := types.MarshalAny(vizierConf)
+	respAnyMsg, err := pbutils.MarshalAny(vizierConf)
 	if err != nil {
 		log.WithError(err).Error("Could not marshal proto to any")
 		return
@@ -895,7 +896,7 @@ func (s *Server) HandleSSLRequest(v2cMsg *cvmsgspb.V2CMessage) {
 		Cert: resp.Cert,
 	}
 
-	respAnyMsg, err = types.MarshalAny(natsResp)
+	respAnyMsg, err = pbutils.MarshalAny(natsResp)
 	if err != nil {
 		log.WithError(err).Error("Could not marshal proto to any")
 		return
@@ -925,7 +926,7 @@ func (s *Server) UpdateOrInstallVizier(ctx context.Context, req *cvmsgspb.Update
 	}
 
 	resp := &cvmsgspb.UpdateOrInstallVizierResponse{}
-	err = types.UnmarshalAny(v2cMsg.Msg, resp)
+	err = pbutils.UnmarshalAny(v2cMsg.Msg, resp)
 	if err != nil {
 		log.WithError(err).Error("Could not unmarshal response message")
 		return nil, err

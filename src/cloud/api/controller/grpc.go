@@ -26,8 +26,8 @@ import (
 	"px.dev/pixie/src/shared/artifacts/versionspb"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/services/authcontext"
-	"px.dev/pixie/src/shared/services/utils"
-	pbutils "px.dev/pixie/src/utils"
+	srvutils "px.dev/pixie/src/shared/services/utils"
+	"px.dev/pixie/src/utils"
 )
 
 func init() {
@@ -97,8 +97,8 @@ func getArtifactTypeFromVersionsProto(a versionspb.ArtifactType) cloudapipb.Arti
 }
 
 func getServiceCredentials(signingKey string) (string, error) {
-	claims := utils.GenerateJWTForService("API Service", viper.GetString("domain_name"))
-	return utils.SignJWTClaims(claims, signingKey)
+	claims := srvutils.GenerateJWTForService("API Service", viper.GetString("domain_name"))
+	return srvutils.SignJWTClaims(claims, signingKey)
 }
 
 // GetArtifactList gets the set of artifact versions for the given artifact.
@@ -210,7 +210,7 @@ func (v *VizierClusterInfo) GetClusterInfo(ctx context.Context, request *cloudap
 	if request.ID != nil {
 		vzIDs = append(vzIDs, request.ID)
 	} else {
-		viziers, err := v.VzMgr.GetViziersByOrg(ctx, pbutils.ProtoFromUUID(orgID))
+		viziers, err := v.VzMgr.GetViziersByOrg(ctx, utils.ProtoFromUUID(orgID))
 		if err != nil {
 			return nil, err
 		}
@@ -737,7 +737,7 @@ func (s *ScriptMgrServer) GetLiveViews(ctx context.Context, req *cloudapipb.GetL
 	}
 	for i, liveView := range smResp.LiveViews {
 		resp.LiveViews[i] = &cloudapipb.LiveViewMetadata{
-			ID:   pbutils.UUIDFromProtoOrNil(liveView.ID).String(),
+			ID:   utils.UUIDFromProtoOrNil(liveView.ID).String(),
 			Name: liveView.Name,
 			Desc: liveView.Desc,
 		}
@@ -753,7 +753,7 @@ func (s *ScriptMgrServer) GetLiveViewContents(ctx context.Context, req *cloudapi
 	}
 
 	smReq := &scriptmgrpb.GetLiveViewContentsReq{
-		LiveViewID: pbutils.ProtoFromUUIDStrOrNil(req.LiveViewID),
+		LiveViewID: utils.ProtoFromUUIDStrOrNil(req.LiveViewID),
 	}
 	smResp, err := s.ScriptMgr.GetLiveViewContents(ctx, smReq)
 	if err != nil {
@@ -788,7 +788,7 @@ func (s *ScriptMgrServer) GetScripts(ctx context.Context, req *cloudapipb.GetScr
 	}
 	for i, script := range smResp.Scripts {
 		resp.Scripts[i] = &cloudapipb.ScriptMetadata{
-			ID:          pbutils.UUIDFromProtoOrNil(script.ID).String(),
+			ID:          utils.UUIDFromProtoOrNil(script.ID).String(),
 			Name:        script.Name,
 			Desc:        script.Desc,
 			HasLiveView: script.HasLiveView,
@@ -805,7 +805,7 @@ func (s *ScriptMgrServer) GetScriptContents(ctx context.Context, req *cloudapipb
 	}
 
 	smReq := &scriptmgrpb.GetScriptContentsReq{
-		ScriptID: pbutils.ProtoFromUUIDStrOrNil(req.ScriptID),
+		ScriptID: utils.ProtoFromUUIDStrOrNil(req.ScriptID),
 	}
 	smResp, err := s.ScriptMgr.GetScriptContents(ctx, smReq)
 	if err != nil {
@@ -839,7 +839,7 @@ func (p *ProfileServer) GetOrgInfo(ctx context.Context, req *uuidpb.UUID) (*clou
 		return nil, err
 	}
 	claimsOrgID := sCtx.Claims.GetUserClaims().OrgID
-	orgID := pbutils.UUIDFromProtoOrNil(req)
+	orgID := utils.UUIDFromProtoOrNil(req)
 	if claimsOrgID != orgID.String() {
 		return nil, status.Error(codes.Unauthenticated, "Unable to fetch org info")
 	}
@@ -867,7 +867,7 @@ func (p *ProfileServer) InviteUser(ctx context.Context, externalReq *public_clou
 		return nil, err
 	}
 	claimsOrgID := sCtx.Claims.GetUserClaims().OrgID
-	orgIDPb := pbutils.ProtoFromUUIDStrOrNil(claimsOrgID)
+	orgIDPb := utils.ProtoFromUUIDStrOrNil(claimsOrgID)
 	if orgIDPb == nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Could not identify user's org")
 	}

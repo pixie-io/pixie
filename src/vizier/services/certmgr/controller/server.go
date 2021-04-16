@@ -6,12 +6,12 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
-	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils/pbutils"
 	"px.dev/pixie/src/vizier/services/certmgr/certmgrenv"
 	certmgrpb "px.dev/pixie/src/vizier/services/certmgr/certmgrpb"
 	"px.dev/pixie/src/vizier/utils/messagebus"
@@ -81,7 +81,7 @@ func (s *Server) sendSSLCertRequest() error {
 		VizierID: utils.ProtoFromUUID(s.clusterID),
 	}
 
-	regReqAny, err := types.MarshalAny(regReq)
+	regReqAny, err := pbutils.MarshalAny(regReq)
 	if err != nil {
 		return err
 	}
@@ -155,7 +155,7 @@ func (s *Server) CertRequester() {
 				break
 			}
 
-			err = types.UnmarshalAny(envelope.Msg, &vizConf)
+			err = pbutils.UnmarshalAny(envelope.Msg, &vizConf)
 			if err != nil {
 				log.WithError(err).Error("Got bad Vizier Config")
 				break
@@ -183,7 +183,7 @@ func (s *Server) CertRequester() {
 				break
 			}
 
-			err = types.UnmarshalAny(envelope.Msg, &sslResp)
+			err = pbutils.UnmarshalAny(envelope.Msg, &sslResp)
 			if err != nil {
 				log.WithError(err).Error("Got bad SSL response")
 				break

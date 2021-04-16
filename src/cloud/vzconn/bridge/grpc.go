@@ -19,6 +19,7 @@ import (
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/services/utils"
 	utils2 "px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils/pbutils"
 )
 
 // GRPCServer is implementation of the vzconn server.
@@ -82,7 +83,7 @@ func (s *GRPCServer) NATSBridge(srv vzconnpb.VZConnService_NATSBridgeServer) err
 	}
 
 	registerMsg := &cvmsgspb.RegisterVizierRequest{}
-	err = types.UnmarshalAny(msg.Msg, registerMsg)
+	err = pbutils.UnmarshalAny(msg.Msg, registerMsg)
 	if err != nil {
 		return convertToGRPCErr(ErrBadRegistrationMessage)
 	}
@@ -118,7 +119,7 @@ func (s *GRPCServer) handleRegisterMessage(msg *cvmsgspb.RegisterVizierRequest, 
 	}
 
 	var respAsAny *types.Any
-	if respAsAny, err = types.MarshalAny(vzmgrResp); err != nil {
+	if respAsAny, err = pbutils.MarshalAny(vzmgrResp); err != nil {
 		return err
 	}
 

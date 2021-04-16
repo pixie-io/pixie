@@ -5,7 +5,6 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -19,7 +18,8 @@ import (
 	"px.dev/pixie/src/common/base/statuspb"
 	"px.dev/pixie/src/shared/types/typespb"
 	"px.dev/pixie/src/table_store/schemapb"
-	pbutils "px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils/pbutils"
 	"px.dev/pixie/src/vizier/services/query_broker/controllers"
 )
 
@@ -269,7 +269,7 @@ func TestCompilerErrorStatusToVizierStatus(t *testing.T) {
 	compilerEG := &compilerpb.CompilerErrorGroup{
 		Errors: errs,
 	}
-	compilerEGAny, err := types.MarshalAny(compilerEG)
+	compilerEGAny, err := pbutils.MarshalAny(compilerEG)
 	require.NoError(t, err)
 	sv := &statuspb.Status{
 		Context: compilerEGAny,
@@ -375,7 +375,7 @@ func TestBuildExecuteScriptResponse_RowBatch(t *testing.T) {
 	convertedRB.TableID = "output_table_1_id"
 
 	queryID := uuid.Must(uuid.NewV4())
-	queryIDpb := pbutils.ProtoFromUUID(queryID)
+	queryIDpb := utils.ProtoFromUUID(queryID)
 
 	msg := &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
@@ -408,7 +408,7 @@ func TestBuildExecuteScriptResponse_RowBatch(t *testing.T) {
 
 func TestBuildExecuteScriptResponse_InitiateResultStream(t *testing.T) {
 	queryID := uuid.Must(uuid.NewV4())
-	queryIDpb := pbutils.ProtoFromUUID(queryID)
+	queryIDpb := utils.ProtoFromUUID(queryID)
 
 	msg := &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
@@ -435,7 +435,7 @@ func TestBuildExecuteScriptResponse_InitiateResultStream(t *testing.T) {
 
 func TestBuildExecuteScriptResponse_ExecutionStats(t *testing.T) {
 	queryID := uuid.Must(uuid.NewV4())
-	queryIDpb := pbutils.ProtoFromUUID(queryID)
+	queryIDpb := utils.ProtoFromUUID(queryID)
 
 	msg := &carnotpb.TransferResultChunkRequest{
 		Address: "foo",
@@ -514,7 +514,7 @@ func TestQueryPlanResponse(t *testing.T) {
 
 	agentStats := []*queryresultspb.AgentExecutionStats{
 		{
-			AgentID:          pbutils.ProtoFromUUID(agentID),
+			AgentID:          utils.ProtoFromUUID(agentID),
 			ExecutionTimeNs:  123,
 			BytesProcessed:   456,
 			RecordsProcessed: 12,

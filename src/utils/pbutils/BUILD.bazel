@@ -1,0 +1,12 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "pbutils",
+    srcs = ["pbutils.go"],
+    importpath = "px.dev/pixie/src/utils/pbutils",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_gogo_protobuf//proto",
+        "@com_github_gogo_protobuf//types",
+    ],
+)

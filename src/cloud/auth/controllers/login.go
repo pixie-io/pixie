@@ -16,8 +16,8 @@ import (
 	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/authcontext"
-	"px.dev/pixie/src/shared/services/utils"
-	pbutils "px.dev/pixie/src/utils"
+	srvutils "px.dev/pixie/src/shared/services/utils"
+	"px.dev/pixie/src/utils"
 )
 
 const (
@@ -93,7 +93,7 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 
 	// A user can exist in the AuthProvider, but not the profile service. If that's the case, we want to create a new user.
 	if !newUser {
-		upb := pbutils.ProtoFromUUIDStrOrNil(userInfo.PLUserID)
+		upb := utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID)
 		_, err := pc.GetUser(ctx, upb)
 		if err != nil {
 			newUser = true
@@ -119,7 +119,7 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 	}
 
 	// Update user's profile photo.
-	upb := pbutils.ProtoFromUUIDStrOrNil(userInfo.PLUserID)
+	upb := utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID)
 	_, err = pc.UpdateUser(ctx, &profilepb.UpdateUserRequest{ID: upb, ProfilePicture: userInfo.Picture})
 	if err != nil {
 		return nil, err
@@ -137,14 +137,14 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 		ExpiresAt:   expiresAt.Unix(),
 		UserCreated: newUser,
 		UserInfo: &pb.AuthenticatedUserInfo{
-			UserID:    pbutils.ProtoFromUUIDStrOrNil(userID),
+			UserID:    utils.ProtoFromUUIDStrOrNil(userID),
 			FirstName: userInfo.FirstName,
 			LastName:  userInfo.LastName,
 			Email:     userInfo.Email,
 		},
 		OrgInfo: &pb.LoginReply_OrgInfo{
 			OrgName: orgInfo.OrgName,
-			OrgID:   pbutils.UUIDFromProtoOrNil(orgInfo.ID).String(),
+			OrgID:   utils.UUIDFromProtoOrNil(orgInfo.ID).String(),
 		},
 	}, nil
 }
@@ -163,10 +163,10 @@ func (s *Server) loginSupportUser(ctx context.Context, in *pb.LoginRequest, user
 
 	// Generate token for impersonated support account.
 	userID := uuid.FromStringOrNil("") // No account actually exists, so this should be a nil UUID.
-	orgID := pbutils.UUIDFromProtoOrNil(orgInfo.ID)
+	orgID := utils.UUIDFromProtoOrNil(orgInfo.ID)
 	expiresAt := time.Now().Add(RefreshTokenValidDuration)
-	claims := utils.GenerateJWTForUser(userID.String(), orgID.String(), userInfo.Email, expiresAt, viper.GetString("domain_name"))
-	token, err := utils.SignJWTClaims(claims, s.env.JWTSigningKey())
+	claims := srvutils.GenerateJWTForUser(userID.String(), orgID.String(), userInfo.Email, expiresAt, viper.GetString("domain_name"))
+	token, err := srvutils.SignJWTClaims(claims, s.env.JWTSigningKey())
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to generate token")
 	}
@@ -176,7 +176,7 @@ func (s *Server) loginSupportUser(ctx context.Context, in *pb.LoginRequest, user
 		ExpiresAt:   expiresAt.Unix(),
 		UserCreated: false,
 		UserInfo: &pb.AuthenticatedUserInfo{
-			UserID:    pbutils.ProtoFromUUID(userID),
+			UserID:    utils.ProtoFromUUID(userID),
 			FirstName: userInfo.FirstName,
 			LastName:  userInfo.LastName,
 			Email:     userInfo.Email,
@@ -236,7 +236,7 @@ func (s *Server) Signup(ctx context.Context, in *pb.SignupRequest) (*pb.SignupRe
 		ExpiresAt:  expiresAt.Unix(),
 		OrgCreated: newOrg,
 		UserInfo: &pb.AuthenticatedUserInfo{
-			UserID:    pbutils.ProtoFromUUIDStrOrNil(userInfo.PLUserID),
+			UserID:    utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID),
 			FirstName: userInfo.FirstName,
 			LastName:  userInfo.LastName,
 			Email:     userInfo.Email,
@@ -272,7 +272,7 @@ func (s *Server) createUserAndOrg(ctx context.Context, domainName string, userID
 	orgIDpb := resp.OrgID
 	userIDpb := resp.UserID
 
-	userInfo, err = s.updateAuthProviderUser(userID, pbutils.UUIDFromProtoOrNil(orgIDpb).String(), pbutils.UUIDFromProtoOrNil(userIDpb).String())
+	userInfo, err = s.updateAuthProviderUser(userID, utils.UUIDFromProtoOrNil(orgIDpb).String(), utils.UUIDFromProtoOrNil(userIDpb).String())
 	return userInfo, orgIDpb, err
 }
 
@@ -297,7 +297,7 @@ func (s *Server) createUser(ctx context.Context, userID string, userInfo *UserIn
 	if err != nil {
 		return nil, err
 	}
-	userInfo, err = s.updateAuthProviderUser(userID, pbutils.UUIDFromProtoOrNil(orgInfo.ID).String(), pbutils.UUIDFromProtoOrNil(userIDpb).String())
+	userInfo, err = s.updateAuthProviderUser(userID, utils.UUIDFromProtoOrNil(orgInfo.ID).String(), utils.UUIDFromProtoOrNil(userIDpb).String())
 	return userInfo, err
 }
 
@@ -310,8 +310,8 @@ func (s *Server) GetAugmentedTokenForAPIKey(ctx context.Context, in *pb.GetAugme
 	}
 
 	// Generate service token, so that we can make a call to the Profile service.
-	svcJWT := utils.GenerateJWTForService("AuthService", viper.GetString("domain_name"))
-	svcClaims, err := utils.SignJWTClaims(svcJWT, s.env.JWTSigningKey())
+	svcJWT := srvutils.GenerateJWTForService("AuthService", viper.GetString("domain_name"))
+	svcClaims, err := srvutils.SignJWTClaims(svcJWT, s.env.JWTSigningKey())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to generate auth token")
 	}
@@ -320,14 +320,14 @@ func (s *Server) GetAugmentedTokenForAPIKey(ctx context.Context, in *pb.GetAugme
 
 	// Fetch user's email.
 	pc := s.env.ProfileClient()
-	user, err := pc.GetUser(ctxWithSvcCreds, pbutils.ProtoFromUUID(userID))
+	user, err := pc.GetUser(ctxWithSvcCreds, utils.ProtoFromUUID(userID))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to generate auth token")
 	}
 
 	// Create JWT for user/org.
-	claims := utils.GenerateJWTForUser(userID.String(), orgID.String(), user.Email, time.Now().Add(AugmentedTokenValidDuration), viper.GetString("domain_name"))
-	token, err := utils.SignJWTClaims(claims, s.env.JWTSigningKey())
+	claims := srvutils.GenerateJWTForUser(userID.String(), orgID.String(), user.Email, time.Now().Add(AugmentedTokenValidDuration), viper.GetString("domain_name"))
+	token, err := srvutils.SignJWTClaims(claims, s.env.JWTSigningKey())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to generate auth token")
 	}
@@ -355,7 +355,7 @@ func (s *Server) GetAugmentedToken(
 	}
 
 	// We perform extra checks for user tokens.
-	if utils.GetClaimsType(aCtx.Claims) == utils.UserClaimType {
+	if srvutils.GetClaimsType(aCtx.Claims) == srvutils.UserClaimType {
 		// Check to make sure that the org and user exist in the system.
 		pc := s.env.ProfileClient()
 
@@ -363,7 +363,7 @@ func (s *Server) GetAugmentedToken(
 		ctx = metadata.NewOutgoingContext(ctx, md)
 
 		orgIDstr := aCtx.Claims.GetUserClaims().OrgID
-		_, err := pc.GetOrg(ctx, pbutils.ProtoFromUUIDStrOrNil(orgIDstr))
+		_, err := pc.GetOrg(ctx, utils.ProtoFromUUIDStrOrNil(orgIDstr))
 		if err != nil {
 			return nil, status.Error(codes.Unauthenticated, "Invalid auth/org")
 		}
@@ -375,12 +375,12 @@ func (s *Server) GetAugmentedToken(
 
 		if domainName != SupportAccountDomain {
 			userIDstr := aCtx.Claims.GetUserClaims().UserID
-			userInfo, err := pc.GetUser(ctx, pbutils.ProtoFromUUIDStrOrNil(userIDstr))
+			userInfo, err := pc.GetUser(ctx, utils.ProtoFromUUIDStrOrNil(userIDstr))
 			if err != nil || userInfo == nil {
 				return nil, status.Error(codes.Unauthenticated, "Invalid auth/user")
 			}
 
-			if orgIDstr != pbutils.UUIDFromProtoOrNil(userInfo.OrgID).String() {
+			if orgIDstr != utils.UUIDFromProtoOrNil(userInfo.OrgID).String() {
 				return nil, status.Error(codes.Unauthenticated, "Mismatched org")
 			}
 		}
@@ -391,7 +391,7 @@ func (s *Server) GetAugmentedToken(
 	claims.IssuedAt = time.Now().Unix()
 	claims.ExpiresAt = time.Now().Add(AugmentedTokenValidDuration).Unix()
 
-	augmentedToken, err := utils.SignJWTClaims(&claims, s.env.JWTSigningKey())
+	augmentedToken, err := srvutils.SignJWTClaims(&claims, s.env.JWTSigningKey())
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to generate auth token")
 	}
@@ -406,8 +406,8 @@ func (s *Server) GetAugmentedToken(
 
 func generateJWTTokenForUser(userInfo *UserInfo, signingKey string) (string, time.Time, error) {
 	expiresAt := time.Now().Add(RefreshTokenValidDuration)
-	claims := utils.GenerateJWTForUser(userInfo.PLUserID, userInfo.PLOrgID, userInfo.Email, expiresAt, viper.GetString("domain_name"))
-	token, err := utils.SignJWTClaims(claims, signingKey)
+	claims := srvutils.GenerateJWTForUser(userInfo.PLUserID, userInfo.PLOrgID, userInfo.Email, expiresAt, viper.GetString("domain_name"))
+	token, err := srvutils.SignJWTClaims(claims, signingKey)
 
 	return token, expiresAt, err
 }

@@ -27,6 +27,7 @@ import (
 	mock_vzmgrpb "px.dev/pixie/src/cloud/vzmgr/vzmgrpb/mock"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils/pbutils"
 	"px.dev/pixie/src/utils/testingutils"
 )
 
@@ -120,7 +121,7 @@ func grpcReader(stream vzconnpb.VZConnService_NATSBridgeClient) chan readMsgWrap
 }
 
 func convertToAny(msg proto.Message) *types.Any {
-	any, err := types.MarshalAny(msg)
+	any, err := pbutils.MarshalAny(msg)
 	if err != nil {
 		panic(err)
 	}
@@ -165,7 +166,7 @@ func TestNATSGRPCBridgeHandshakeTest_CorrectRegistration(t *testing.T) {
 	assert.Nil(t, m.err)
 	assert.Equal(t, "registerAck", m.msg.Topic)
 	ack := cvmsgspb.RegisterVizierAck{}
-	err = types.UnmarshalAny(m.msg.Msg, &ack)
+	err = pbutils.UnmarshalAny(m.msg.Msg, &ack)
 	if err != nil {
 		t.Fatal("Expected to get back RegisterVizierAck message")
 	}
@@ -280,7 +281,7 @@ func registerVizier(ts *testState, vizierID uuid.UUID, stream vzconnpb.VZConnSer
 	assert.Nil(ts.t, m.err)
 	assert.Equal(ts.t, "registerAck", m.msg.Topic)
 	ack := cvmsgspb.RegisterVizierAck{}
-	err = types.UnmarshalAny(m.msg.Msg, &ack)
+	err = pbutils.UnmarshalAny(m.msg.Msg, &ack)
 	if err != nil {
 		ts.t.Fatal("Expected to get back RegisterVizierAck message")
 	}

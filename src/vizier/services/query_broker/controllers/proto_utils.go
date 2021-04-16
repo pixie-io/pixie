@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/gofrs/uuid"
-	gogotypes "github.com/gogo/protobuf/types"
+	"github.com/gogo/protobuf/types"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -21,6 +21,7 @@ import (
 	"px.dev/pixie/src/shared/types/typespb"
 	"px.dev/pixie/src/table_store/schemapb"
 	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils/pbutils"
 )
 
 var dataTypeToVizierDataType = map[typespb.DataType]public_vizierapipb.DataType{
@@ -171,12 +172,12 @@ func StatusToVizierStatus(s *statuspb.Status) *public_vizierapipb.Status {
 	}
 }
 
-func getErrorsFromStatusContext(ctx *gogotypes.Any) []*public_vizierapipb.ErrorDetails {
+func getErrorsFromStatusContext(ctx *types.Any) []*public_vizierapipb.ErrorDetails {
 	errorPB := &compilerpb.CompilerErrorGroup{}
-	if !gogotypes.Is(ctx, errorPB) {
+	if !pbutils.Is(ctx, errorPB) {
 		return nil
 	}
-	err := gogotypes.UnmarshalAny(ctx, errorPB)
+	err := pbutils.UnmarshalAny(ctx, errorPB)
 	if err != nil {
 		return nil
 	}

@@ -11,13 +11,13 @@ import (
 
 	"github.com/EvilSuperstars/go-cidrman"
 	"github.com/cenkalti/backoff/v3"
-	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/watch"
 
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/k8s/metadatapb"
+	"px.dev/pixie/src/utils/pbutils"
 	messages "px.dev/pixie/src/vizier/messages/messagespb"
 	"px.dev/pixie/src/vizier/services/metadata/storepb"
 	"px.dev/pixie/src/vizier/utils/messagebus"
@@ -299,7 +299,7 @@ func (m *Handler) sendUpdate(update *metadatapb.ResourceUpdate, topic string) er
 
 	// Send message to cloud.
 	if topic == KelvinUpdateTopic {
-		reqAnyMessage, err := types.MarshalAny(update)
+		reqAnyMessage, err := pbutils.MarshalAny(update)
 		if err != nil {
 			return err
 		}

@@ -25,7 +25,7 @@ import (
 	"px.dev/pixie/src/cloud/auth/authpb"
 	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/shared/services/handler"
-	pbutils "px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/testingutils"
 )
 
@@ -62,12 +62,12 @@ func TestAuthSignupHandler(t *testing.T) {
 		Token:     testReplyToken,
 		ExpiresAt: testTokenExpiry,
 		UserInfo: &authpb.AuthenticatedUserInfo{
-			UserID:    pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+			UserID:    utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
 			FirstName: "first",
 			LastName:  "last",
 			Email:     "abc@defg.com",
 		},
-		OrgID: pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c9"),
+		OrgID: utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c9"),
 	}
 	mockClients.MockAuth.EXPECT().Signup(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.SignupRequest) {
 		assert.Equal(t, "the-token", in.AccessToken)
@@ -77,7 +77,7 @@ func TestAuthSignupHandler(t *testing.T) {
 		OrgName: "defg.com",
 	}
 	mockClients.MockProfile.EXPECT().GetOrg(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, in *uuidpb.UUID) {
-		assert.Equal(t, pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c9"), in)
+		assert.Equal(t, utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c9"), in)
 	}).Return(getOrgReply, nil)
 
 	rr := httptest.NewRecorder()
@@ -136,7 +136,7 @@ func TestAuthLoginHandler(t *testing.T) {
 		Token:     testReplyToken,
 		ExpiresAt: testTokenExpiry,
 		UserInfo: &authpb.AuthenticatedUserInfo{
-			UserID:    pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+			UserID:    utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
 			FirstName: "first",
 			LastName:  "last",
 			Email:     "abc@defg.com",

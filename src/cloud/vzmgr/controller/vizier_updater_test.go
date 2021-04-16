@@ -7,7 +7,6 @@ import (
 	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	"github.com/jmoiron/sqlx"
 	"github.com/nats-io/nats.go"
@@ -21,6 +20,7 @@ import (
 	"px.dev/pixie/src/cloud/vzmgr/controller"
 	"px.dev/pixie/src/shared/artifacts/versionspb"
 	"px.dev/pixie/src/shared/cvmsgspb"
+	"px.dev/pixie/src/utils/pbutils"
 	"px.dev/pixie/src/utils/testingutils"
 )
 
@@ -70,7 +70,7 @@ func TestUpdater_UpdateOrInstallVizier(t *testing.T) {
 			err := proto.Unmarshal(m.Data, c2vMsg)
 			require.NoError(t, err)
 			resp := &cvmsgspb.UpdateOrInstallVizierRequest{}
-			err = types.UnmarshalAny(c2vMsg.Msg, resp)
+			err = pbutils.UnmarshalAny(c2vMsg.Msg, resp)
 			require.NoError(t, err)
 			assert.Equal(t, "123", resp.Version)
 			assert.NotNil(t, resp.Token)
@@ -84,7 +84,7 @@ func TestUpdater_UpdateOrInstallVizier(t *testing.T) {
 			updateResp := &cvmsgspb.UpdateOrInstallVizierResponse{
 				UpdateStarted: true,
 			}
-			respAnyMsg, err := types.MarshalAny(updateResp)
+			respAnyMsg, err := pbutils.MarshalAny(updateResp)
 			require.NoError(t, err)
 			wrappedMsg := &cvmsgspb.V2CMessage{
 				VizierID: vizierID.String(),
@@ -155,7 +155,7 @@ func TestUpdater_ProcessUpdateQueue(t *testing.T) {
 			err := proto.Unmarshal(m.Data, c2vMsg)
 			require.NoError(t, err)
 			resp := &cvmsgspb.UpdateOrInstallVizierRequest{}
-			err = types.UnmarshalAny(c2vMsg.Msg, resp)
+			err = pbutils.UnmarshalAny(c2vMsg.Msg, resp)
 			require.NoError(t, err)
 			assert.Equal(t, "0.4.1", resp.Version)
 			assert.NotNil(t, resp.Token)
@@ -169,7 +169,7 @@ func TestUpdater_ProcessUpdateQueue(t *testing.T) {
 			updateResp := &cvmsgspb.UpdateOrInstallVizierResponse{
 				UpdateStarted: true,
 			}
-			respAnyMsg, err := types.MarshalAny(updateResp)
+			respAnyMsg, err := pbutils.MarshalAny(updateResp)
 			require.NoError(t, err)
 			wrappedMsg := &cvmsgspb.V2CMessage{
 				VizierID: vizierID.String(),

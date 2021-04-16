@@ -17,9 +17,9 @@ import (
 	"px.dev/pixie/src/cloud/indexer/md"
 	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/pixie_cli/pkg/script"
-	"px.dev/pixie/src/shared/services/utils"
+	srvutils "px.dev/pixie/src/shared/services/utils"
 	pl_vispb "px.dev/pixie/src/shared/vispb"
-	pbutils "px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils"
 )
 
 // ElasticSuggester provides suggestions based on the given index in Elastic.
@@ -56,8 +56,8 @@ var elasticStateToProtoMap = map[md.ESMDEntityState]cloudapipb.AutocompleteEntit
 }
 
 func getServiceCredentials(signingKey string) (string, error) {
-	claims := utils.GenerateJWTForService("API Service", viper.GetString("domain_name"))
-	return utils.SignJWTClaims(claims, signingKey)
+	claims := srvutils.GenerateJWTForService("API Service", viper.GetString("domain_name"))
+	return srvutils.SignJWTClaims(claims, signingKey)
 }
 
 // NewElasticSuggester creates a suggester based on an elastic index.
@@ -127,7 +127,7 @@ func (e *ElasticSuggester) UpdateScriptBundle(br *script.BundleManager) error {
 		}
 
 		for _, org := range resp.Orgs {
-			orgMapping[pbutils.UUIDFromProtoOrNil(org.ID)] = org.OrgName
+			orgMapping[utils.UUIDFromProtoOrNil(org.ID)] = org.OrgName
 		}
 	}
 

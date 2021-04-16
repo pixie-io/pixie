@@ -24,6 +24,7 @@ pl_cgo_library(
         "//src/common/base/statuspb:status_pl_go_proto",
         "//src/shared/scriptspb:scripts_pl_go_proto",
         "//src/table_store/schemapb:schema_pl_go_proto",
+        "//src/utils/pbutils",
         "@com_github_gogo_protobuf//proto:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",
         "@com_github_ianlancetaylor_cgosymbolizer//:go_default_library",

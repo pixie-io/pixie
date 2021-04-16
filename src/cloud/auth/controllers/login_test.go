@@ -22,7 +22,7 @@ import (
 	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
 	mock_profile "px.dev/pixie/src/cloud/profile/profilepb/mock"
 	"px.dev/pixie/src/shared/services/authcontext"
-	pbutils "px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/testingutils"
 )
 
@@ -35,9 +35,9 @@ func TestServer_LoginNewUser(t *testing.T) {
 	defer ctrl.Finish()
 
 	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
-	orgPb := pbutils.ProtoFromUUIDStrOrNil(orgID)
+	orgPb := utils.ProtoFromUUIDStrOrNil(orgID)
 	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
-	userPb := pbutils.ProtoFromUUIDStrOrNil(userID)
+	userPb := utils.ProtoFromUUIDStrOrNil(userID)
 
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
@@ -85,7 +85,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 			LastName:  "last",
 			Email:     "abc@gmail.com",
 		}).
-		Return(pbutils.ProtoFromUUIDStrOrNil(userID), nil)
+		Return(utils.ProtoFromUUIDStrOrNil(userID), nil)
 
 	mockProfile.EXPECT().
 		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
@@ -110,7 +110,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 	assert.True(t, resp.UserCreated)
-	assert.Equal(t, pbutils.UUIDFromProtoOrNil(resp.UserInfo.UserID).String(), userID)
+	assert.Equal(t, utils.UUIDFromProtoOrNil(resp.UserInfo.UserID).String(), userID)
 	assert.Equal(t, resp.UserInfo.FirstName, "first")
 	assert.Equal(t, resp.UserInfo.LastName, "last")
 	assert.Equal(t, resp.UserInfo.Email, "abc@gmail.com")
@@ -289,7 +289,7 @@ func TestServer_LoginNewUser_SupportUser(t *testing.T) {
 	defer ctrl.Finish()
 
 	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
-	orgPb := pbutils.ProtoFromUUIDStrOrNil(orgID)
+	orgPb := utils.ProtoFromUUIDStrOrNil(orgID)
 
 	userID := uuid.FromStringOrNil("")
 	fakeOrgInfo := &profilepb.OrgInfo{
@@ -330,7 +330,7 @@ func TestServer_LoginNewUser_SupportUser(t *testing.T) {
 	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 	assert.False(t, resp.UserCreated)
-	assert.Equal(t, pbutils.UUIDFromProtoOrNil(resp.UserInfo.UserID), userID)
+	assert.Equal(t, utils.UUIDFromProtoOrNil(resp.UserInfo.UserID), userID)
 	assert.Equal(t, resp.UserInfo.FirstName, "first")
 	assert.Equal(t, resp.UserInfo.LastName, "last")
 	assert.Equal(t, resp.UserInfo.Email, "test@pixie.support")
@@ -377,7 +377,7 @@ func TestServer_LoginNewUser_CreateUserFailed(t *testing.T) {
 	defer ctrl.Finish()
 
 	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
-	orgPb := pbutils.ProtoFromUUIDStrOrNil(orgID)
+	orgPb := utils.ProtoFromUUIDStrOrNil(orgID)
 
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
@@ -454,9 +454,9 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 	defer ctrl.Finish()
 
 	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
-	orgPb := pbutils.ProtoFromUUIDStrOrNil(orgID)
+	orgPb := utils.ProtoFromUUIDStrOrNil(orgID)
 	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
-	userPb := pbutils.ProtoFromUUIDStrOrNil(userID)
+	userPb := utils.ProtoFromUUIDStrOrNil(userID)
 
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
@@ -512,9 +512,9 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 	defer ctrl.Finish()
 
 	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
-	orgPb := pbutils.ProtoFromUUIDStrOrNil(orgID)
+	orgPb := utils.ProtoFromUUIDStrOrNil(orgID)
 	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
-	userPb := pbutils.ProtoFromUUIDStrOrNil(userID)
+	userPb := utils.ProtoFromUUIDStrOrNil(userID)
 
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
@@ -598,17 +598,17 @@ func TestServer_GetAugmentedToken(t *testing.T) {
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockUserInfo := &profilepb.UserInfo{
-		ID:    pbutils.ProtoFromUUIDStrOrNil(testingutils.TestUserID),
-		OrgID: pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
+		ID:    utils.ProtoFromUUIDStrOrNil(testingutils.TestUserID),
+		OrgID: utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
 	}
 	mockOrgInfo := &profilepb.OrgInfo{
-		ID: pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
+		ID: utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
 	}
 	mockProfile.EXPECT().
-		GetUser(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestUserID)).
+		GetUser(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestUserID)).
 		Return(mockUserInfo, nil)
 	mockProfile.EXPECT().
-		GetOrg(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
+		GetOrg(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
 		Return(mockOrgInfo, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
@@ -683,7 +683,7 @@ func TestServer_GetAugmentedToken_NoOrg(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
 	mockProfile.EXPECT().
-		GetOrg(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
+		GetOrg(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
 		Return(nil, status.Error(codes.NotFound, "no such org"))
 
 	viper.Set("jwt_signing_key", "jwtkey")
@@ -718,13 +718,13 @@ func TestServer_GetAugmentedToken_NoUser(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
 	mockOrgInfo := &profilepb.OrgInfo{
-		ID: pbutils.ProtoFromUUIDStrOrNil("test"),
+		ID: utils.ProtoFromUUIDStrOrNil("test"),
 	}
 	mockProfile.EXPECT().
-		GetOrg(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
+		GetOrg(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
 		Return(mockOrgInfo, nil)
 	mockProfile.EXPECT().
-		GetUser(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestUserID)).
+		GetUser(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestUserID)).
 		Return(nil, status.Error(codes.NotFound, "no such user"))
 
 	viper.Set("jwt_signing_key", "jwtkey")
@@ -759,17 +759,17 @@ func TestServer_GetAugmentedToken_MismatchedOrg(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
 	mockUserInfo := &profilepb.UserInfo{
-		ID:    pbutils.ProtoFromUUIDStrOrNil(testingutils.TestUserID),
-		OrgID: pbutils.ProtoFromUUIDStrOrNil("0cb7b810-9dad-11d1-80b4-00c04fd430c8"),
+		ID:    utils.ProtoFromUUIDStrOrNil(testingutils.TestUserID),
+		OrgID: utils.ProtoFromUUIDStrOrNil("0cb7b810-9dad-11d1-80b4-00c04fd430c8"),
 	}
 	mockOrgInfo := &profilepb.OrgInfo{
-		ID: pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
+		ID: utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
 	}
 	mockProfile.EXPECT().
-		GetUser(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestUserID)).
+		GetUser(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestUserID)).
 		Return(mockUserInfo, nil)
 	mockProfile.EXPECT().
-		GetOrg(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
+		GetOrg(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
 		Return(mockOrgInfo, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
@@ -861,10 +861,10 @@ func TestServer_GetAugmentedTokenSupportAccount(t *testing.T) {
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrgInfo := &profilepb.OrgInfo{
-		ID: pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
+		ID: utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
 	}
 	mockProfile.EXPECT().
-		GetOrg(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
+		GetOrg(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
 		Return(mockOrgInfo, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
@@ -904,12 +904,12 @@ func TestServer_GetAugmentedTokenFromAPIKey(t *testing.T) {
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockUserInfo := &profilepb.UserInfo{
-		ID:    pbutils.ProtoFromUUIDStrOrNil(testingutils.TestUserID),
-		OrgID: pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
+		ID:    utils.ProtoFromUUIDStrOrNil(testingutils.TestUserID),
+		OrgID: utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
 		Email: "testUser@pixielabs.ai",
 	}
 	mockProfile.EXPECT().
-		GetUser(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestUserID)).
+		GetUser(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestUserID)).
 		Return(mockUserInfo, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
@@ -942,7 +942,7 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 	defer ctrl.Finish()
 
 	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
-	orgPb := pbutils.ProtoFromUUIDStrOrNil(orgID)
+	orgPb := utils.ProtoFromUUIDStrOrNil(orgID)
 
 	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
 
@@ -992,7 +992,7 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 		FirstName: "first",
 		LastName:  "last",
 		Email:     "abc@gmail.com",
-	}).Return(pbutils.ProtoFromUUIDStrOrNil(userID), nil)
+	}).Return(utils.ProtoFromUUIDStrOrNil(userID), nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
@@ -1009,9 +1009,9 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 	currentTime := time.Now().Unix()
 	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
 	assert.False(t, resp.OrgCreated)
-	assert.Equal(t, resp.OrgID, pbutils.ProtoFromUUIDStrOrNil(orgID))
+	assert.Equal(t, resp.OrgID, utils.ProtoFromUUIDStrOrNil(orgID))
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
-	assert.Equal(t, resp.UserInfo.UserID, pbutils.ProtoFromUUIDStrOrNil(userID))
+	assert.Equal(t, resp.UserInfo.UserID, utils.ProtoFromUUIDStrOrNil(userID))
 	assert.Equal(t, resp.UserInfo.FirstName, "first")
 	assert.Equal(t, resp.UserInfo.LastName, "last")
 	assert.Equal(t, resp.UserInfo.Email, "abc@gmail.com")
@@ -1023,10 +1023,10 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 	defer ctrl.Finish()
 
 	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
-	orgPb := pbutils.ProtoFromUUIDStrOrNil(orgID)
+	orgPb := utils.ProtoFromUUIDStrOrNil(orgID)
 
 	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
-	userPb := pbutils.ProtoFromUUIDStrOrNil(userID)
+	userPb := utils.ProtoFromUUIDStrOrNil(userID)
 
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
@@ -1096,9 +1096,9 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 	currentTime := time.Now().Unix()
 	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
 	assert.True(t, resp.OrgCreated)
-	assert.Equal(t, resp.OrgID, pbutils.ProtoFromUUIDStrOrNil(orgID))
+	assert.Equal(t, resp.OrgID, utils.ProtoFromUUIDStrOrNil(orgID))
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
-	assert.Equal(t, resp.UserInfo.UserID, pbutils.ProtoFromUUIDStrOrNil(userID))
+	assert.Equal(t, resp.UserInfo.UserID, utils.ProtoFromUUIDStrOrNil(userID))
 	assert.Equal(t, resp.UserInfo.FirstName, "first")
 	assert.Equal(t, resp.UserInfo.LastName, "last")
 	assert.Equal(t, resp.UserInfo.Email, "abc@gmail.com")

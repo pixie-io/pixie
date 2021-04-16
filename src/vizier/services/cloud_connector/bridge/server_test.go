@@ -24,6 +24,7 @@ import (
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/k8s/metadatapb"
 	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils/pbutils"
 	"px.dev/pixie/src/utils/testingutils"
 	"px.dev/pixie/src/vizier/services/cloud_connector/bridge"
 	"px.dev/pixie/src/vizier/vizierpb"
@@ -41,7 +42,7 @@ type FakeVZConnServer struct {
 func marshalAndSend(srv vzconnpb.VZConnService_NATSBridgeServer, topic string, msg proto.Message) error {
 	var respAsAny *types.Any
 	var err error
-	if respAsAny, err = types.MarshalAny(msg); err != nil {
+	if respAsAny, err = pbutils.MarshalAny(msg); err != nil {
 		return err
 	}
 	outMsg := &vzconnpb.C2VBridgeMessage{
@@ -60,7 +61,7 @@ func handleMsg(srv vzconnpb.VZConnService_NATSBridgeServer, msg *vzconnpb.V2CBri
 	}
 	if msg.Topic == "randomtopicNeedsResponse" {
 		var unmarshal = &cvmsgspb.VLogMessage{}
-		err := types.UnmarshalAny(msg.Msg, unmarshal)
+		err := pbutils.UnmarshalAny(msg.Msg, unmarshal)
 		if err != nil {
 			return err
 		}
@@ -292,7 +293,7 @@ func TestNATSGRPCBridgeTest_CorrectRegistrationFlow(t *testing.T) {
 
 	// Check the contents
 	registerMsg := &cvmsgspb.RegisterVizierRequest{}
-	err := types.UnmarshalAny(register.Msg, registerMsg)
+	err := pbutils.UnmarshalAny(register.Msg, registerMsg)
 	if err != nil {
 		t.Fatalf("Could not unmarshal: %+v", err)
 	}
@@ -326,7 +327,7 @@ func TestNATSGRPCBridgeTest_TestOutboundNATSMessage(t *testing.T) {
 	logmsg := &cvmsgspb.VLogMessage{
 		Data: []byte("Foobar"),
 	}
-	subany, err := types.MarshalAny(logmsg)
+	subany, err := pbutils.MarshalAny(logmsg)
 	if err != nil {
 		t.Fatalf("Error marshalling msg: %+v", err)
 	}
@@ -354,7 +355,7 @@ func TestNATSGRPCBridgeTest_TestOutboundNATSMessage(t *testing.T) {
 	assert.Equal(t, sessionID, msg.SessionId)
 
 	expected := &cvmsgspb.VLogMessage{}
-	err = types.UnmarshalAny(msg.Msg, expected)
+	err = pbutils.UnmarshalAny(msg.Msg, expected)
 	if err != nil {
 		t.Fatalf("Error Unmarshaling: %+v", err)
 	}
@@ -399,7 +400,7 @@ func TestNATSGRPCBridgeTest_TestInboundNATSMessage(t *testing.T) {
 	logmsg := &cvmsgspb.VLogMessage{
 		Data: []byte("Foobar"),
 	}
-	subany, err := types.MarshalAny(logmsg)
+	subany, err := pbutils.MarshalAny(logmsg)
 	if err != nil {
 		t.Fatalf("Error marshalling msg: %+v", err)
 	}

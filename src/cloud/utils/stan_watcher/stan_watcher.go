@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 
@@ -18,6 +17,7 @@ import (
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/msgbus"
+	"px.dev/pixie/src/utils/pbutils"
 	_ "px.dev/pixie/src/vizier/messages/messagespb"
 )
 
@@ -47,21 +47,6 @@ var channelTypeMap = map[string]func() Message{
 
 const shardIDStart = 0
 const shardIDEnd = 100
-
-func getProtoFromAny(any *types.Any) (proto.Message, bool) {
-	slash := strings.LastIndex(any.TypeUrl, "/")
-	if slash < 0 {
-		log.Errorf("Invalid any type url: %s", any.TypeUrl)
-		return nil, false
-	}
-	typeName := any.TypeUrl[slash+1:]
-	messageType := proto.MessageType(typeName)
-	if messageType == nil {
-		log.Errorf("Cannot find %s type in protobuf registries, probably missing a proto import", typeName)
-	}
-	pb := reflect.New(messageType.Elem()).Interface().(proto.Message)
-	return pb, true
-}
 
 func getMsgSubjectName(fullSub string) string {
 	lastDot := strings.LastIndex(fullSub, ".")
@@ -95,16 +80,14 @@ func handleMessage(subject string, data []byte, messageType string) {
 		return
 	}
 
-	innerPb, ok := getProtoFromAny(msg.GetMsg())
-	if !ok {
+	var dyn pbutils.DynamicAny
+	if err := pbutils.UnmarshalAny(msg.GetMsg(), &dyn); err != nil {
+		log.WithError(err).Error("Failed to unmarshal inner message.")
 		return
 	}
 
-	err = proto.Unmarshal(msg.GetMsg().Value, innerPb)
-	if err != nil {
-		log.WithError(err).Error("Failed to unmarshal inner google.protobuf.Any message")
-		return
-	}
+	innerPb := dyn.Message
+
 	red := color.New(color.FgRed).SprintfFunc()
 
 	fmt.Printf("----------------------------------------------------------\n")

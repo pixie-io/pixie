@@ -11,6 +11,7 @@ go_library(
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/services",
         "//src/shared/services/msgbus",
+        "//src/utils/pbutils",
         "//src/vizier/messages/messagespb:messages_pl_go_proto",
         "@com_github_fatih_color//:color",
         "@com_github_gogo_protobuf//proto",

@@ -39,6 +39,7 @@ import (
 	"px.dev/pixie/src/shared/services/pgtest"
 	jwtutils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils/pbutils"
 	"px.dev/pixie/src/utils/testingutils"
 )
 
@@ -636,7 +637,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 				NumNodes:             tc.numNodes,
 				NumInstrumentedNodes: tc.numInstrumentedNodes,
 			}
-			nestedAny, err := types.MarshalAny(nestedMsg)
+			nestedAny, err := pbutils.MarshalAny(nestedMsg)
 			if err != nil {
 				t.Fatal("Could not marshal pb")
 			}
@@ -711,7 +712,7 @@ func TestServer_GetSSLCerts(t *testing.T) {
 		nestedMsg := &cvmsgspb.VizierSSLCertRequest{
 			VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 		}
-		nestedAny, err := types.MarshalAny(nestedMsg)
+		nestedAny, err := pbutils.MarshalAny(nestedMsg)
 		if err != nil {
 			t.Fatal("Could not marshal pb")
 		}
@@ -731,7 +732,7 @@ func TestServer_GetSSLCerts(t *testing.T) {
 				t.Fatal("Could not unmarshal message")
 			}
 			resp := &cvmsgspb.VizierSSLCertResponse{}
-			err = types.UnmarshalAny(pb.Msg, resp)
+			err = pbutils.UnmarshalAny(pb.Msg, resp)
 			if err != nil {
 				t.Fatal("Could not unmarshal any message")
 			}
@@ -760,7 +761,7 @@ func TestServer_UpdateOrInstallVizier(t *testing.T) {
 	updateResp := &cvmsgspb.UpdateOrInstallVizierResponse{
 		UpdateStarted: true,
 	}
-	respAnyMsg, err := types.MarshalAny(updateResp)
+	respAnyMsg, err := pbutils.MarshalAny(updateResp)
 	require.NoError(t, err)
 	wrappedMsg := &cvmsgspb.V2CMessage{
 		VizierID: vizierID.String(),
@@ -822,7 +823,7 @@ func TestServer_MessageHandler(t *testing.T) {
 	nestedMsg := &cvmsgspb.VizierSSLCertRequest{
 		VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 	}
-	nestedAny, err := types.MarshalAny(nestedMsg)
+	nestedAny, err := pbutils.MarshalAny(nestedMsg)
 	if err != nil {
 		t.Fatal("Could not marshal pb")
 	}
@@ -846,7 +847,7 @@ func TestServer_MessageHandler(t *testing.T) {
 			t.Fatal("Could not unmarshal message")
 		}
 		resp := &cvmsgspb.VizierSSLCertResponse{}
-		err = types.UnmarshalAny(pb.Msg, resp)
+		err = pbutils.UnmarshalAny(pb.Msg, resp)
 		if err != nil {
 			t.Fatal("Could not unmarshal any message")
 		}

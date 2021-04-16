@@ -2,19 +2,17 @@ package main
 
 import (
 	"fmt"
-	"reflect"
-	"strings"
 	"time"
 
 	"github.com/fatih/color"
 	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/services"
+	"px.dev/pixie/src/utils/pbutils"
 	messages "px.dev/pixie/src/vizier/messages/messagespb"
 )
 
@@ -44,21 +42,6 @@ func connectNATS() *nats.Conn {
 	return nc
 }
 
-func getProtoFromAny(any *types.Any) (proto.Message, bool) {
-	slash := strings.LastIndex(any.TypeUrl, "/")
-	if slash < 0 {
-		log.Errorf("Invalid any type url: %s", any.TypeUrl)
-		return nil, false
-	}
-	typeName := any.TypeUrl[slash+1:]
-	messageType := proto.MessageType(typeName)
-	if messageType == nil {
-		log.Errorf("Cannot find %s type in protobuf registries, probably missing a proto import", typeName)
-	}
-	pb := reflect.New(messageType.Elem()).Interface().(proto.Message)
-	return pb, true
-}
-
 func handleV2CMessage(m *nats.Msg) {
 	pb := &cvmsgspb.V2CMessage{}
 	err := proto.Unmarshal(m.Data, pb)
@@ -70,15 +53,14 @@ func handleV2CMessage(m *nats.Msg) {
 	if pb.Msg == nil {
 		log.Errorf("Invalid msg: %s", proto.MarshalTextString(pb))
 	}
-	innerPb, ok := getProtoFromAny(pb.Msg)
-	if !ok {
-		return
-	}
 
-	if err := proto.Unmarshal(pb.Msg.Value, innerPb); err != nil {
+	var dyn pbutils.DynamicAny
+	if err := pbutils.UnmarshalAny(pb.Msg, &dyn); err != nil {
 		log.WithError(err).Error("Failed to unmarshal inner message.")
 		return
 	}
+
+	innerPb := dyn.Message
 
 	red := color.New(color.FgRed).SprintfFunc()
 

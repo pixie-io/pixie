@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
-	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -30,6 +29,7 @@ import (
 	env2 "px.dev/pixie/src/shared/services/env"
 	"px.dev/pixie/src/shared/services/server"
 	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils/pbutils"
 	"px.dev/pixie/src/utils/testingutils"
 	pl_api_vizierpb "px.dev/pixie/src/vizier/vizierpb"
 )
@@ -809,7 +809,7 @@ func (f *fakeVizier) Run(t *testing.T, responses []*cvmsgspb.V2CAPIStreamRespons
 				err := c2vReq.Unmarshal(msg.Data)
 				require.NoError(t, err)
 				req := &cvmsgspb.C2VAPIStreamRequest{}
-				assert.Nil(t, types.UnmarshalAny(c2vReq.Msg, req))
+				assert.Nil(t, pbutils.UnmarshalAny(c2vReq.Msg, req))
 
 				replyTopic := vzshard.V2CTopic(fmt.Sprintf("reply-%s", req.RequestID), f.id)
 				for _, resp := range responses {
@@ -835,7 +835,7 @@ func (f *fakeVizier) createV2CMessage(response *cvmsgspb.V2CAPIStreamResponse) [
 	m := &cvmsgspb.V2CMessage{
 		VizierID: f.id.String(),
 	}
-	anyPB, err := types.MarshalAny(response)
+	anyPB, err := pbutils.MarshalAny(response)
 	assert.Nil(f.t, err)
 	m.Msg = anyPB
 
