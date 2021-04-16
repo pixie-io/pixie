@@ -29,8 +29,12 @@ namespace stirling {
 
 namespace http2 = protocols::http2;
 
+using ::testing::ElementsAre;
+using ::testing::Eq;
+using ::testing::Field;
 using ::testing::IsEmpty;
 using ::testing::Pair;
+using ::testing::Property;
 using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
 
@@ -38,6 +42,18 @@ class ConnTrackerHTTP2Test : public ::testing::Test {
  protected:
   testing::RealClock real_clock_;
 };
+
+auto EqHTTP2HalfStream(const protocols::http2::HalfStream& x) {
+  return AllOf(Property(&protocols::http2::HalfStream::end_stream, Eq(x.end_stream())),
+               Property(&protocols::http2::HalfStream::data, StrEq(x.data())),
+               Property(&protocols::http2::HalfStream::headers, Eq(x.headers())),
+               Property(&protocols::http2::HalfStream::trailers, Eq(x.trailers())));
+}
+
+auto EqHTTP2Record(const protocols::http2::Stream& x) {
+  return AllOf(Field(&protocols::http2::Stream::recv, EqHTTP2HalfStream(x.recv)),
+               Field(&protocols::http2::Stream::send, EqHTTP2HalfStream(x.send)));
+}
 
 TEST_F(ConnTrackerHTTP2Test, BasicData) {
   ConnTracker tracker;
@@ -268,13 +284,13 @@ TEST_F(ConnTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterBreachingSizeLimit) {
   tracker.AddHTTP2Header(std::move(header_event2));
   tracker.ProcessToRecords<http2::ProtocolTraits>();
 
-  EXPECT_THAT(tracker.http2_client_streams(), ::testing::SizeIs(1));
-  EXPECT_THAT(tracker.http2_server_streams(), ::testing::SizeIs(1));
+  EXPECT_EQ(tracker.http2_client_streams_size(), 1);
+  EXPECT_EQ(tracker.http2_server_streams_size(), 1);
 
   FLAGS_messages_size_limit_bytes = 0;
   tracker.ProcessToRecords<http2::ProtocolTraits>();
-  EXPECT_THAT(tracker.http2_client_streams(), ::testing::IsEmpty());
-  EXPECT_THAT(tracker.http2_server_streams(), ::testing::IsEmpty());
+  EXPECT_EQ(tracker.http2_client_streams_size(), 0);
+  EXPECT_EQ(tracker.http2_server_streams_size(), 0);
 }
 
 TEST_F(ConnTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterExpiration) {
@@ -295,13 +311,13 @@ TEST_F(ConnTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterExpiration) {
   tracker.AddHTTP2Header(std::move(header_event2));
   tracker.ProcessToRecords<http2::ProtocolTraits>();
 
-  EXPECT_THAT(tracker.http2_client_streams(), ::testing::SizeIs(1));
-  EXPECT_THAT(tracker.http2_server_streams(), ::testing::SizeIs(1));
+  EXPECT_EQ(tracker.http2_client_streams_size(), 1);
+  EXPECT_EQ(tracker.http2_server_streams_size(), 1);
 
   FLAGS_messages_expiration_duration_secs = 0;
   tracker.ProcessToRecords<http2::ProtocolTraits>();
-  EXPECT_THAT(tracker.http2_client_streams(), ::testing::IsEmpty());
-  EXPECT_THAT(tracker.http2_server_streams(), ::testing::IsEmpty());
+  EXPECT_EQ(tracker.http2_client_streams_size(), 0);
+  EXPECT_EQ(tracker.http2_server_streams_size(), 0);
 }
 
 TEST_F(ConnTrackerHTTP2Test, StreamIDJumpAhead) {
@@ -376,13 +392,28 @@ TEST_F(ConnTrackerHTTP2Test, StreamIDJumpAhead) {
 
   std::vector<http2::Record> records = tracker.ProcessToRecords<http2::ProtocolTraits>();
 
-  ASSERT_EQ(records.size(), 1);
-  EXPECT_EQ(records[0].send.data(), "Request");
-  EXPECT_EQ(records[0].recv.data(), "Long ways from home");
-  EXPECT_THAT(records[0].send.headers(),
-              UnorderedElementsAre(Pair(":method", "post"), Pair(":host", "pixie.ai"),
-                                   Pair(":path", "/wormhole")));
-  EXPECT_THAT(records[0].recv.headers(), UnorderedElementsAre(Pair(":status", "200")));
+  http2::Record expected_record0;
+  expected_record0.send.AddHeader(":method", "post");
+  expected_record0.send.AddHeader(":host", "pixie.ai");
+  expected_record0.send.AddHeader(":path", "/magic");
+  expected_record0.send.AddData("Request");
+  expected_record0.send.AddEndStream();
+  expected_record0.recv.AddHeader(":status", "200");
+  expected_record0.recv.AddData("Response");
+  expected_record0.recv.AddEndStream();
+
+  http2::Record expected_record1;
+  expected_record1.send.AddHeader(":method", "post");
+  expected_record1.send.AddHeader(":host", "pixie.ai");
+  expected_record1.send.AddHeader(":path", "/wormhole");
+  expected_record1.send.AddData("Request");
+  expected_record1.send.AddEndStream();
+  expected_record1.recv.AddHeader(":status", "200");
+  expected_record1.recv.AddData("Long ways from home");
+  expected_record1.recv.AddEndStream();
+
+  EXPECT_THAT(records, UnorderedElementsAre(EqHTTP2Record(expected_record0),
+                                            EqHTTP2Record(expected_record1)));
 }
 
 TEST_F(ConnTrackerHTTP2Test, StreamIDJumpBack) {
@@ -432,10 +463,8 @@ TEST_F(ConnTrackerHTTP2Test, StreamIDJumpBack) {
     std::unique_ptr<HTTP2DataEvent> data_frame;
     std::unique_ptr<HTTP2HeaderEvent> header_event;
 
-    LOG(INFO) << "A";
     header_event = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
     tracker.AddHTTP2Header(std::move(header_event));
-    LOG(INFO) << "B";
 
     header_event = frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai");
     tracker.AddHTTP2Header(std::move(header_event));
@@ -459,13 +488,28 @@ TEST_F(ConnTrackerHTTP2Test, StreamIDJumpBack) {
 
   std::vector<http2::Record> records = tracker.ProcessToRecords<http2::ProtocolTraits>();
 
-  ASSERT_EQ(records.size(), 1);
-  EXPECT_EQ(records[0].send.data(), "Request");
-  EXPECT_EQ(records[0].recv.data(), "Long ways from home");
-  EXPECT_THAT(records[0].send.headers(),
-              UnorderedElementsAre(Pair(":method", "post"), Pair(":host", "pixie.ai"),
-                                   Pair(":path", "/wormhole")));
-  EXPECT_THAT(records[0].recv.headers(), UnorderedElementsAre(Pair(":status", "200")));
+  http2::Record expected_record0;
+  expected_record0.send.AddHeader(":method", "post");
+  expected_record0.send.AddHeader(":host", "pixie.ai");
+  expected_record0.send.AddHeader(":path", "/magic");
+  expected_record0.send.AddData("Request");
+  expected_record0.send.AddEndStream();
+  expected_record0.recv.AddHeader(":status", "200");
+  expected_record0.recv.AddData("Response");
+  expected_record0.recv.AddEndStream();
+
+  http2::Record expected_record1;
+  expected_record1.send.AddHeader(":method", "post");
+  expected_record1.send.AddHeader(":host", "pixie.ai");
+  expected_record1.send.AddHeader(":path", "/wormhole");
+  expected_record1.send.AddData("Request");
+  expected_record1.send.AddEndStream();
+  expected_record1.recv.AddHeader(":status", "200");
+  expected_record1.recv.AddData("Long ways from home");
+  expected_record1.recv.AddEndStream();
+
+  EXPECT_THAT(records, UnorderedElementsAre(EqHTTP2Record(expected_record0),
+                                            EqHTTP2Record(expected_record1)));
 }
 
 }  // namespace stirling

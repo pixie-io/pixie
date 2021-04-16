@@ -48,9 +48,9 @@ DECLARE_int64(stirling_conn_trace_fd);
 DECLARE_bool(stirling_conn_disable_to_bpf);
 DECLARE_int64(stirling_check_proc_for_conn_close);
 
-#define CONN_TRACE(level)                                         \
-  DLOG_IF(INFO, level <= debug_trace_level_) << absl::Substitute( \
-      "$0 protocol=$1 role=$2 ", ToString(conn_id_),              \
+#define CONN_TRACE(level)                                        \
+  LOG_IF(INFO, level <= debug_trace_level_) << absl::Substitute( \
+      "$0 protocol=$1 role=$2 ", ToString(conn_id_),             \
       magic_enum::enum_name(traffic_class_.protocol), magic_enum::enum_name(traffic_class_.role))
 
 namespace px {
@@ -245,12 +245,8 @@ class ConnTracker : NotCopyMoveable {
     return send_data_.Frames<TFrameType>();
   }
 
-  const std::deque<protocols::http2::Stream>& http2_client_streams() const {
-    return http2_client_streams_.streams();
-  }
-  const std::deque<protocols::http2::Stream>& http2_server_streams() const {
-    return http2_server_streams_.streams();
-  }
+  size_t http2_client_streams_size() const { return http2_client_streams_.streams().size(); }
+  size_t http2_server_streams_size() const { return http2_server_streams_.streams().size(); }
 
   /**
    * Returns reference to current set of unconsumed responses.

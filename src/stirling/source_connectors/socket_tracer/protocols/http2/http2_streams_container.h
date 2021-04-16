@@ -21,6 +21,8 @@
 #include <deque>
 #include <string>
 
+#include <absl/container/flat_hash_map.h>
+
 #include "src/common/base/mixins.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/types.h"
 
@@ -35,8 +37,10 @@ namespace stirling {
  */
 class HTTP2StreamsContainer : NotCopyMoveable {
  public:
-  const std::deque<protocols::http2::Stream>& streams() const { return streams_; }
-  std::deque<protocols::http2::Stream>* mutable_streams() { return &streams_; }
+  const absl::flat_hash_map<uint32_t, protocols::http2::Stream>& streams() const {
+    return streams_;
+  }
+  absl::flat_hash_map<uint32_t, protocols::http2::Stream>* mutable_streams() { return &streams_; }
 
   /**
    * Get the HTTP2 stream for the given stream ID and the direction of traffic.
@@ -60,17 +64,11 @@ class HTTP2StreamsContainer : NotCopyMoveable {
    */
   void EraseHead(size_t n);
 
-  std::string DebugString(std::string_view prefix) const {
-    std::string info;
-    info += absl::Substitute("$0active streams=$1\n", prefix, streams_.size());
-    return info;
-  }
+  std::string DebugString(std::string_view prefix) const;
 
  private:
-  std::deque<protocols::http2::Stream> streams_;
-
-  // The oldest active Stream ID. Used to managed the size of the streams_ deque.
-  uint32_t oldest_active_stream_id_;
+  // Map of all HTTP2 streams. Key is stream ID.
+  absl::flat_hash_map<uint32_t, protocols::http2::Stream> streams_;
 };
 
 }  // namespace stirling

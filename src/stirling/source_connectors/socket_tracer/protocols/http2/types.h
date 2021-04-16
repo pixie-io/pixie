@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <chrono>
 #include <map>
 #include <string>
@@ -80,7 +81,7 @@ struct HalfStream {
   const std::string& data() const { return data_; }
   const NVMap& headers() const { return headers_; }
   const NVMap& trailers() const { return trailers_; }
-  bool end_stream() { return end_stream_; }
+  bool end_stream() const { return end_stream_; }
 
   // After calling ConsumeData(), the HalfStream is no longer valid.
   // ByteSize() and other calls may be wrong.
@@ -140,7 +141,7 @@ struct Stream {
   HalfStream send;
   HalfStream recv;
 
-  bool StreamEnded() {
+  bool StreamEnded() const {
     // This check only applies to unary RPC calls.
     // In streaming, however, the end_stream is only sent when client or server explicitly indicates
     // so. And the other side can end the RPC without sending a frame with end_stream set to true.
