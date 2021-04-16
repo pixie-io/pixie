@@ -19,6 +19,7 @@ const (
 	vizierEtcdYAMLPath            = "./yamls/vizier/vizier_etcd_metadata_prod.yaml"
 	vizierMetadataPersistYAMLPath = "./yamls/vizier/vizier_metadata_persist_prod.yaml"
 	natsYAMLPath                  = "./yamls/vizier_deps/nats_prod.yaml"
+	defaultMemoryLimit            = "2Gi"
 )
 
 // Sentry configs are not actually secret and safe to check in.
@@ -38,6 +39,7 @@ type VizierTmplValues struct {
 	CloudUpdateAddr   string
 	UseEtcdOperator   bool
 	BootstrapVersion  string
+	PEMMemoryLimit    string
 }
 
 // VizierTmplValuesToMap converts the vizier template values to a map which can be used to fill out a template.
@@ -51,6 +53,7 @@ func VizierTmplValuesToMap(tmplValues *VizierTmplValues) *map[string]interface{}
 		"cloudUpdateAddr":   tmplValues.CloudUpdateAddr,
 		"useEtcdOperator":   tmplValues.UseEtcdOperator,
 		"bootstrapVersion":  tmplValues.BootstrapVersion,
+		"pemMemoryLimit":    tmplValues.PEMMemoryLimit,
 	}
 }
 
@@ -237,6 +240,12 @@ func GenerateSecretsYAML(clientset *kubernetes.Clientset, ns string, imagePullSe
 			TemplateValue:   `"{{ .Values.customLabels }}"`,
 		},
 		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cluster-config"),
+			Patch:           `{"data": { "PX_MEMORY_LIMIT": "__PX_MEMORY_LIMIT__"} }`,
+			Placeholder:     "__PX_MEMORY_LIMIT__",
+			TemplateValue:   `"{{ .Values.pemMemoryLimit }}"`,
+		},
+		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cloud-config"),
 			Patch:           `{"data": { "PL_CLOUD_ADDR": "__PL_CLOUD_ADDR__"} }`,
 			Placeholder:     "__PL_CLOUD_ADDR__",
@@ -305,7 +314,14 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string,
 		return "", "", fmt.Errorf("Cannot generate YAMLS for specified Vizier version. Please update to latest Vizier version instead.  ")
 	}
 
-	tmplOptions := GlobalTemplateOptions
+	tmplOptions := append(GlobalTemplateOptions, []*yamls.K8sTemplateOptions{
+		{
+			TemplateMatcher: yamls.GenerateContainerNameMatcherFn("pem"),
+			Patch:           `{"spec": { "template": { "spec": { "containers": [{ "name": "pem", "resources": { "limits": { "memory": "__PX_MEMORY_LIMIT__"} } }] } } } }`,
+			Placeholder:     "__PX_MEMORY_LIMIT__",
+			TemplateValue:   fmt.Sprintf(`{{ if .Values.pemMemoryLimit }}"{{ .Values.pemMemoryLimit }}"{{else}}"%s"{{end}}`, defaultMemoryLimit),
+		},
+	}...)
 	if imagePullCreds != "" {
 		tmplOptions = append(tmplOptions, &yamls.K8sTemplateOptions{
 			TemplateMatcher: yamls.TemplateScopeMatcher,

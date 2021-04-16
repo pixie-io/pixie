@@ -145,6 +145,9 @@ func init() {
 	DeployCmd.Flags().StringP("cluster_name", "u", "", "The name for your cluster. Otherwise, the name will be taken from the current kubeconfig.")
 	viper.BindPFlag("cluster_name", DeployCmd.Flags().Lookup("cluster_name"))
 
+	DeployCmd.Flags().StringP("pem_memory_limit", "p", "", "The memory limit to specify for the PEMS, otherwise a default is used.")
+	viper.BindPFlag("pem_memory_limit", DeployCmd.Flags().Lookup("pem_memory_limit"))
+
 	// Super secret flags for Pixies.
 	DeployCmd.Flags().MarkHidden("namespace")
 	DeployCmd.Flags().MarkHidden("dev_cloud_namespace")
@@ -229,6 +232,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	useEtcdOperatorSet := cmd.Flags().Changed("use_etcd_operator")
 	customLabels, _ := cmd.Flags().GetString("labels")
 	customAnnotations, _ := cmd.Flags().GetString("annotations")
+	pemMemoryLimit, _ := cmd.Flags().GetString("pem_memory_limit")
 
 	labelMap := make(map[string]string)
 	if customLabels != "" {
@@ -384,6 +388,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		CustomLabels:      customLabels,
 		UseEtcdOperator:   useEtcdOperator,
 		BootstrapVersion:  inputVersionStr,
+		PEMMemoryLimit:    pemMemoryLimit,
 	}
 
 	clusterName, _ := cmd.Flags().GetString("cluster_name")

@@ -36,6 +36,7 @@ func init() {
 	pflag.String("cloud_addr", "withpixie.ai:443", "The pixie cloud address to use.")
 	pflag.String("custom_labels", "", "Custom labels that should be attached to the vizier resources")
 	pflag.String("custom_annotations", "", "Custom annotations that should be attached to the vizier resources")
+	pflag.String("pem_memory_limit", "", "The memory limit to apply to the PEMS")
 }
 
 func getCloudClientConnection(cloudAddr string) (*grpc.ClientConn, error) {
@@ -104,6 +105,7 @@ func main() {
 		CustomAnnotations: viper.GetString("custom_annotations"),
 		CustomLabels:      viper.GetString("custom_labels"),
 		UseEtcdOperator:   etcdOperatorEnabled,
+		PEMMemoryLimit:    viper.GetString("pem_memory_limit"),
 	}
 	yamls, err := yamlsutils.ExecuteTemplatedYAMLs(templatedYAMLs, &yamlsutils.YAMLTmplArguments{
 		Values: vizieryamls.VizierTmplValuesToMap(tmplValues),

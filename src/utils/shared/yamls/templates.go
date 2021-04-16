@@ -116,6 +116,50 @@ func TemplateScopeMatcher(obj map[string]interface{}, resourceType string) bool 
 	return false
 }
 
+// GenerateContainerNameMatcherFn creates a matcher function for matching the resource if the resource has a pod
+// template with a container of the given name.
+func GenerateContainerNameMatcherFn(expectedName string) TemplateMatchFn {
+	fn := func(obj map[string]interface{}, resourceType string) bool {
+		// Check that spec.template.spec.containers[].name in the YAML matches the given name.
+		spec := obj["spec"]
+		if spec == nil {
+			return false
+		}
+
+		tmpl := spec.(map[string]interface{})["template"]
+		if tmpl == nil {
+			return false
+		}
+
+		tmplSpec := tmpl.(map[string]interface{})["spec"]
+		if tmplSpec == nil {
+			return false
+		}
+		containers := tmplSpec.(map[string]interface{})["containers"]
+		if containers == nil {
+			return false
+		}
+		containersList, ok := containers.([]interface{})
+		if !ok {
+			return false
+		}
+
+		for _, c := range containersList {
+			container, ok := c.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			if container["name"] == expectedName {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	return fn
+}
+
 // K8sTemplateOptions specifies how the templated YAML should be constructed, by specifying selectors for which resources should
 // contain the template, how the placeholder should be patched in, and what that placeholder should be replaced with.
 type K8sTemplateOptions struct {
