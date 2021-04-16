@@ -134,6 +134,10 @@ message InviteUserRequest {
 	string email = 1;
 	string first_name = 2;
 	string last_name = 3;
+
+  // The ID of the organization to create the user for.
+  pl.uuidpb.UUID org_id = 4 [(gogoproto.customname) = "OrgID"];
+  bool must_create_user = 5;
 }
 
 message InviteUserResponse {
