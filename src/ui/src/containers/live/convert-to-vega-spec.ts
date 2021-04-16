@@ -97,8 +97,6 @@ interface StacktraceFlameGraphDisplay extends WidgetDisplay {
   readonly percentageLabel?: string;
 }
 
-type PatchedMark = Mark & { propEventsToOverlapped?: boolean };
-
 // TODO(philkuz) A bit of a hack to get the column from the display,
 // fix when you fix the heterogenous timeseries types fix.
 export function getColumnFromDisplay(display: ChartDisplay): string {
@@ -260,7 +258,7 @@ function addDataSource(spec: VgSpec, dataSpec: Data): Data {
   return dataSpec;
 }
 
-function addMark(spec: VgSpec | GroupMark, markSpec: PatchedMark): PatchedMark {
+function addMark(spec: VgSpec | GroupMark, markSpec: Mark): Mark {
   if (!spec.marks) {
     spec.marks = [];
   }
@@ -395,7 +393,7 @@ function stackBySeriesTransform(
 }
 
 /* Mark Functions */
-function extendMarkEncoding(mark: PatchedMark, encodeEntryName: EncodeEntryName, entry: Partial<TrailEncodeEntry>) {
+function extendMarkEncoding(mark: Mark, encodeEntryName: EncodeEntryName, entry: Partial<TrailEncodeEntry>) {
   if (!mark.encode) {
     mark.encode = {};
   }
@@ -567,12 +565,11 @@ function extendReverseSignalsWithHitBox(
   ]);
 }
 
-function addInteractivityHitBox(spec: VgSpec | GroupMark, lineMark: TimeseriesMark, name: string): PatchedMark {
+function addInteractivityHitBox(spec: VgSpec | GroupMark, lineMark: TimeseriesMark, name: string): Mark {
   return addMark(spec, {
     ...lineMark,
     name,
     type: lineMark.type,
-    propEventsToOverlapped: true,
     encode: {
       ...lineMark.encode,
       update: {
@@ -588,7 +585,7 @@ function addInteractivityHitBox(spec: VgSpec | GroupMark, lineMark: TimeseriesMa
   });
 }
 
-function addLegendInteractivityEncodings(mark: PatchedMark, ts: Timeseries, interactivitySelector: string) {
+function addLegendInteractivityEncodings(mark: Mark, ts: Timeseries, interactivitySelector: string) {
   extendMarkEncoding(mark, 'update', {
     opacity: [
       {
@@ -874,7 +871,6 @@ function convertToTimeseriesChart(
       group = addMark(spec, {
         name: `timeseries_group_${i}`,
         type: 'group',
-        propEventsToOverlapped: true,
         from: {
           facet: {
             name: dataName,
@@ -918,7 +914,6 @@ function convertToTimeseriesChart(
     const yField = (timeseries.stackBySeries) ? stackedValueEnd : timeseries.value;
     const lineMark = addMark(group, {
       name: `timeseries_line_${i}`,
-      propEventsToOverlapped: true,
       type: markType,
       style: markType,
       from: {
