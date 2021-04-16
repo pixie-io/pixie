@@ -12,7 +12,7 @@ def _gogo_grpc_proto_impl(ctx):
     )
     ctx.file("github.com/gogo/protobuf/gogoproto/BUILD.bazel", """
 
-load("@pl//bazel:proto_compile.bzl", "pl_proto_library", "pl_cc_proto_library")
+load("@px//bazel:proto_compile.bzl", "pl_proto_library", "pl_cc_proto_library")
 
 pl_proto_library(
     name = "gogo_pl_proto",

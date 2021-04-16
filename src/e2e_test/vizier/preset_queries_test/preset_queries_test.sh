@@ -25,7 +25,7 @@ fi
 # --- end runfiles.bash initialization ---
 
 # -- begin loading the binaries ---
-bundle_test=$(rlocation "pl/src/carnot/planner/preset_queries_test")
+bundle_test=$(rlocation "px/src/carnot/planner/preset_queries_test")
 if [[ ! -f "${bundle_test:-}" ]]; then
   echo >&2 "ERROR: could not find the queries_test binary"
   exit 1

@@ -174,7 +174,7 @@ function main() {
   copy_go_runfiles "src/api/python_examples" "${API_DIR}"
 
   # -- begin loading prepend_licenses ---
-  prepend_licenses=$(rlocation "pl/src/api/prepend_licenses")
+  prepend_licenses=$(rlocation "px/src/api/prepend_licenses")
   if [[ ! -f "${prepend_licenses:-}" ]]; then
     echo >&2 "ERROR: could not find the prepend_licenses binary"
     exit 1

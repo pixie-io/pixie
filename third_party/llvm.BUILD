@@ -89,7 +89,7 @@ cc_library(
         # do any auto cleanup/formatting during our compile process. If this ever changes,
         # this stub will need to be removed.
         # Refer to: https://reviews.llvm.org/D55415
-        "@pl//third_party:clang_tidy_stub",
+        "@px//third_party:clang_tidy_stub",
     ],
     hdrs = glob([
         "include/**/*.h",

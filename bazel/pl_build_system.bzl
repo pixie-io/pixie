@@ -18,16 +18,16 @@ def pl_copts():
     manual_system_includes = ["-isystem external/com_google_absl", "-isystem external/org_tensorflow"]
 
     tcmalloc_flags = select({
-        "@pl//bazel:disable_tcmalloc": ["-DABSL_MALLOC_HOOK_MMAP_DISABLE=1"],
+        "@px//bazel:disable_tcmalloc": ["-DABSL_MALLOC_HOOK_MMAP_DISABLE=1"],
         "//conditions:default": ["-DTCMALLOC=1"],
     }) + select({
-        "@pl//bazel:debug_tcmalloc": ["-DPL_MEMORY_DEBUG_ENABLED=1"],
+        "@px//bazel:debug_tcmalloc": ["-DPL_MEMORY_DEBUG_ENABLED=1"],
         "//conditions:default": [],
     })
 
     # Leaving this here as an example of how to add compiler dependent_flags.
     compiler_dependent_flags = select({
-        "@pl//bazel:gcc_build": [
+        "@px//bazel:gcc_build": [
             # Since we globally disable these warnings in the .bazelrc file,
             # we force them enabled for our own source code.
             "-Werror=stringop-truncation",
@@ -275,7 +275,7 @@ def tcmalloc_external_deps(repository):
 def pl_cgo_library(**kwargs):
     if "cgo" in kwargs and kwargs["cgo"] and "clinkopts" not in kwargs:
         kwargs["clinkopts"] = pl_linkopts() + select({
-            "@pl//bazel:coverage_enabled": ["-lgcov --coverage"],
+            "@px//bazel:coverage_enabled": ["-lgcov --coverage"],
             "//conditions:default": [],
         })
         kwargs["toolchains"] = ["@bazel_tools//tools/cpp:current_cc_toolchain"]

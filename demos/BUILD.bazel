@@ -1,5 +1,5 @@
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
-load("@pl//demos:demo_upload.bzl", "demo_upload")
+load("@px//demos:demo_upload.bzl", "demo_upload")
 
 pkg_tar(
     name = "px-sock-shop",

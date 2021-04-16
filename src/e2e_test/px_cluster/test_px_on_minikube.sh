@@ -18,7 +18,7 @@ source "${RUNFILES_DIR:-/dev/null}/$f" 2>/dev/null || \
 # --- end runfiles.bash initialization v2 ---
 
 # shellcheck source=./src/e2e_test/px_cluster/common.sh
-source "$(rlocation pl/src/e2e_test/px_cluster/common.sh)"
+source "$(rlocation px/src/e2e_test/px_cluster/common.sh)"
 
 # Get arguments
 if [ "$#" -ne 2 ]; then

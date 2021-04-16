@@ -25,12 +25,12 @@ fi
 # --- end runfiles.bash initialization ---
 
 # -- begin loading the docstring binaries ---
-extractor=$(rlocation "pl/src/carnot/planner/docs/doc_extractor")
+extractor=$(rlocation "px/src/carnot/planner/docs/doc_extractor")
 if [[ ! -f "${extractor:-}" ]]; then
   echo >&2 "ERROR: could not find the doc_extractor binary"
   exit 1
 fi
-parser=$(rlocation "pl/src/carnot/docstring/docstring_/docstring")
+parser=$(rlocation "px/src/carnot/docstring/docstring_/docstring")
 if [[ ! -f "${parser:-}" ]]; then
   echo >&2 "ERROR: could not find the docstring binary parser"
   exit 1

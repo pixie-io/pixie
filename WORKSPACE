@@ -1,4 +1,4 @@
-workspace(name = "pl")
+workspace(name = "px")
 
 load("//:workspace.bzl", "check_min_bazel_version")
 

@@ -127,9 +127,9 @@ def pl_deps():
     _repo_impl("io_bazel_rules_docker")
     _repo_impl("bazel_gazelle")
     _repo_impl("com_github_grpc_grpc", patches = ["//third_party:grpc.patch"], patch_args = ["-p1"])
-    _repo_impl("com_intel_tbb", build_file = "@pl//third_party:tbb.BUILD")
-    _repo_impl("com_google_farmhash", build_file = "@pl//third_party:farmhash.BUILD")
-    _repo_impl("com_github_h2o_picohttpparser", build_file = "@pl//third_party:picohttpparser.BUILD")
+    _repo_impl("com_intel_tbb", build_file = "@px//third_party:tbb.BUILD")
+    _repo_impl("com_google_farmhash", build_file = "@px//third_party:farmhash.BUILD")
+    _repo_impl("com_github_h2o_picohttpparser", build_file = "@px//third_party:picohttpparser.BUILD")
 
     _cc_deps()
     _go_deps()
