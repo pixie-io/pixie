@@ -8,6 +8,6 @@ resources:
 - ../dev
 - ../base/hydra
 - ../base/kratos
-patchesStrategicMerge:
 - oauth_config.yaml
+patchesStrategicMerge:
 - service_config.yaml
