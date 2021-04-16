@@ -30,7 +30,8 @@ export const enum GQLArtifactType {
   AT_LINUX_AMD64 = 'AT_LINUX_AMD64',
   AT_DARWIN_AMD64 = 'AT_DARWIN_AMD64',
   AT_CONTAINER_SET_YAMLS = 'AT_CONTAINER_SET_YAMLS',
-  AT_CONTAINER_SET_LINUX_AMD64 = 'AT_CONTAINER_SET_LINUX_AMD64'
+  AT_CONTAINER_SET_LINUX_AMD64 = 'AT_CONTAINER_SET_LINUX_AMD64',
+  AT_CONTAINER_SET_TEMPLATE_YAMLS = 'AT_CONTAINER_SET_TEMPLATE_YAMLS'
 }
 
 export const enum GQLAutocompleteEntityState {
@@ -167,6 +168,11 @@ export interface GQLClusterConnectionInfo {
   token: string;
 }
 
+export interface GQLUserInvite {
+  email: string;
+  inviteLink: string;
+}
+
 export interface GQLMutation {
   
   /**
@@ -180,6 +186,7 @@ export interface GQLMutation {
   CreateAPIKey: GQLAPIKey;
   DeleteAPIKey: boolean;
   UpdateUserSettings: boolean;
+  InviteUser: GQLUserInvite;
 }
 
 export interface GQLCLIArtifact {
@@ -246,6 +253,7 @@ export interface GQLResolver {
   PodStatus?: GQLPodStatusTypeResolver;
   ClusterInfo?: GQLClusterInfoTypeResolver;
   ClusterConnectionInfo?: GQLClusterConnectionInfoTypeResolver;
+  UserInvite?: GQLUserInviteTypeResolver;
   Mutation?: GQLMutationTypeResolver;
   CLIArtifact?: GQLCLIArtifactTypeResolver;
   ArtifactsInfo?: GQLArtifactsInfoTypeResolver;
@@ -374,7 +382,7 @@ export interface QueryToUserSettingsResolver<TParent = any, TResult = any> {
 }
 
 export interface QueryToClusterArgs {
-  id?: string;
+  id: string;
 }
 export interface QueryToClusterResolver<TParent = any, TResult = any> {
   (parent: TParent, args: QueryToClusterArgs, context: any, info: GraphQLResolveInfo): TResult;
@@ -385,7 +393,7 @@ export interface QueryToClustersResolver<TParent = any, TResult = any> {
 }
 
 export interface QueryToClusterConnectionArgs {
-  id?: string;
+  id: string;
 }
 export interface QueryToClusterConnectionResolver<TParent = any, TResult = any> {
   (parent: TParent, args: QueryToClusterConnectionArgs, context: any, info: GraphQLResolveInfo): TResult;
@@ -701,6 +709,19 @@ export interface ClusterConnectionInfoToTokenResolver<TParent = any, TResult = a
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
+export interface GQLUserInviteTypeResolver<TParent = any> {
+  email?: UserInviteToEmailResolver<TParent>;
+  inviteLink?: UserInviteToInviteLinkResolver<TParent>;
+}
+
+export interface UserInviteToEmailResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface UserInviteToInviteLinkResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
 export interface GQLMutationTypeResolver<TParent = any> {
   CreateCluster?: MutationToCreateClusterResolver<TParent>;
   UpdateVizierConfig?: MutationToUpdateVizierConfigResolver<TParent>;
@@ -709,6 +730,7 @@ export interface GQLMutationTypeResolver<TParent = any> {
   CreateAPIKey?: MutationToCreateAPIKeyResolver<TParent>;
   DeleteAPIKey?: MutationToDeleteAPIKeyResolver<TParent>;
   UpdateUserSettings?: MutationToUpdateUserSettingsResolver<TParent>;
+  InviteUser?: MutationToInviteUserResolver<TParent>;
 }
 
 export interface MutationToCreateClusterResolver<TParent = any, TResult = any> {
@@ -751,6 +773,15 @@ export interface MutationToUpdateUserSettingsArgs {
 }
 export interface MutationToUpdateUserSettingsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: MutationToUpdateUserSettingsArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface MutationToInviteUserArgs {
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+export interface MutationToInviteUserResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: MutationToInviteUserArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface GQLCLIArtifactTypeResolver<TParent = any> {
