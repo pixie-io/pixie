@@ -24,7 +24,7 @@
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -50,7 +50,7 @@ static constexpr const char* kIRNodeStrings[] = {
 #undef PL_IR_NODE
 };
 
-StatusOr<pl::types::DataType> IRNodeTypeToDataType(IRNodeType type);
+StatusOr<px::types::DataType> IRNodeTypeToDataType(IRNodeType type);
 StatusOr<IRNodeType> DataTypeToIRNodeType(types::DataType type);
 
 inline std::ostream& operator<<(std::ostream& out, IRNodeType node_type) {
@@ -2285,4 +2285,4 @@ Status ResolveExpressionType(ExpressionIR* expr, CompilerState* compiler_state,
                              const std::vector<TypePtr>& parent_types);
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

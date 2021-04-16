@@ -19,7 +19,7 @@
  * 3. Register the data source in the appropriate registry.
  */
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 class SourceConnector : public NotCopyable {
@@ -157,4 +157,4 @@ class SourceConnector : public NotCopyable {
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

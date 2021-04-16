@@ -12,7 +12,7 @@
 // This file deals with process path resolution.
 // In particular, FilePathResolver handles cases when these paths are within containers.
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 /**
@@ -133,4 +133,4 @@ class LazyLoadedFPResolver {
 StatusOr<std::filesystem::path> GetSelfPath();
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

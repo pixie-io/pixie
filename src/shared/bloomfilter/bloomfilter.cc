@@ -10,7 +10,7 @@ PL_SUPPRESS_WARNINGS_START()
 #include "xxhash.h"
 PL_SUPPRESS_WARNINGS_END()
 
-namespace pl {
+namespace px {
 namespace bloomfilter {
 
 StatusOr<std::unique_ptr<XXHash64BloomFilter>> XXHash64BloomFilter::Create(int64_t max_entries,
@@ -99,4 +99,4 @@ bool XXHash64BloomFilter::Contains(std::string_view item) const {
 }
 
 }  // namespace bloomfilter
-}  // namespace pl
+}  // namespace px

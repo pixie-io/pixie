@@ -3,7 +3,7 @@
 
 #include "src/common/base/defer.h"
 
-namespace pl {
+namespace px {
 
 TEST(DeferTest, Basic) {
   std::default_random_engine rng;
@@ -25,4 +25,4 @@ TEST(DeferTest, Basic) {
   }
 }
 
-}  // namespace pl
+}  // namespace px

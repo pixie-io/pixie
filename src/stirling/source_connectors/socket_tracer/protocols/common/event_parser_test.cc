@@ -8,7 +8,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/test_utils.h"
 #include "src/stirling/utils/utils.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 
@@ -85,4 +85,4 @@ TEST_F(EventParserTest, BasicProtocolParsing) {
 
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

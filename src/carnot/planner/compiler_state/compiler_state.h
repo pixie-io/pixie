@@ -11,7 +11,7 @@
 #include "src/common/base/base.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -86,4 +86,4 @@ class CompilerState : public NotCopyable {
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

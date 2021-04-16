@@ -2,7 +2,7 @@
 
 #include <vector>
 
-namespace pl {
+namespace px {
 
 constexpr int kIPv4BitLen = 32;
 constexpr int kIPv6BitLen = 128;
@@ -279,4 +279,4 @@ CIDRBlock MapIPv4ToIPv6(const CIDRBlock& addr) {
   return CIDRBlock{MapIPv4ToIPv6(addr.ip_addr), kBitPrefixLen + addr.prefix_length};
 }
 
-}  // namespace pl
+}  // namespace px

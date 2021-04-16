@@ -6,7 +6,7 @@
 #include "src/common/base/mixins.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 /**
@@ -56,4 +56,4 @@ class HTTP2StreamsContainer : NotCopyMoveable {
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

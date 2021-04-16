@@ -7,7 +7,7 @@
 #include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planner/rules/rules.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
@@ -62,4 +62,4 @@ class MergeSameNodeGRPCBridgeRule : public Rule {
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

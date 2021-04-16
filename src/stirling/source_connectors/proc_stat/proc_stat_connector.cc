@@ -4,7 +4,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 // Temporary data source for M2. We plan to remove this data source
@@ -97,4 +97,4 @@ void ProcStatConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t t
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

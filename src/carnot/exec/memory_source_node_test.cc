@@ -17,7 +17,7 @@
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -270,7 +270,7 @@ TEST_F(MemorySourceNodeTabletTest, multiple_tablet_test) {
   EXPECT_NE(tablet_id_, new_tablet_id);
   std::shared_ptr<Table> new_tablet = Table::Create(rel);
 
-  auto wrapper_batch_1 = std::make_unique<pl::types::ColumnWrapperRecordBatch>();
+  auto wrapper_batch_1 = std::make_unique<px::types::ColumnWrapperRecordBatch>();
   auto col_wrapper_1 = std::make_shared<types::BoolValueColumnWrapper>(0);
   col_wrapper_1->Clear();
 
@@ -362,4 +362,4 @@ TEST_F(MemorySourceNodeTest, infinite_stream) {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

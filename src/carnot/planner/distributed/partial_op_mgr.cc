@@ -4,7 +4,7 @@
 #include <utility>
 #include <vector>
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
@@ -71,4 +71,4 @@ StatusOr<OperatorIR*> AggOperatorMgr::CreateMergeOperator(IR* plan, OperatorIR* 
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

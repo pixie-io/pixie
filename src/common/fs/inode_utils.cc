@@ -1,6 +1,6 @@
 #include "src/common/fs/inode_utils.h"
 
-namespace pl {
+namespace px {
 namespace fs {
 
 // Extract the inode number from a string that looks like the following: "socket:[32431]"
@@ -26,4 +26,4 @@ StatusOr<uint32_t> ExtractInodeNum(std::string_view inode_type_prefix, std::stri
 }
 
 }  // namespace fs
-}  // namespace pl
+}  // namespace px

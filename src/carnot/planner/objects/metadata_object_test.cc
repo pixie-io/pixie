@@ -5,7 +5,7 @@
 #include "src/carnot/planner/objects/metadata_object.h"
 #include "src/carnot/planner/objects/test_utils.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -51,4 +51,4 @@ TEST_F(MetadataObjectTest, ErrorsOnSubscriptWithNonString) {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -12,7 +12,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/cql/types.h"
 #include "src/stirling/utils/binary_decoder.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace cass {
@@ -412,4 +412,4 @@ StatusOr<AuthSuccessResp> ParseAuthSuccessResp(Frame* frame);
 }  // namespace cass
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

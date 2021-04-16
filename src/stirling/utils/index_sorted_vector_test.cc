@@ -4,7 +4,7 @@
 
 #include "src/stirling/utils/index_sorted_vector.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace utils {
 
@@ -83,4 +83,4 @@ TEST(SplitSortedVector, ReferenceModelComparison) {
 
 }  // namespace utils
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

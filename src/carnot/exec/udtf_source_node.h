@@ -15,7 +15,7 @@
 #include "src/common/base/status.h"
 #include "src/table_store/schema/row_descriptor.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -44,4 +44,4 @@ class UDTFSourceNode : public SourceNode {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

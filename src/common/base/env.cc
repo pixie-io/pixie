@@ -7,7 +7,7 @@
 #include <filesystem>
 #include <mutex>  // NOLINT
 
-namespace pl {
+namespace px {
 
 namespace {
 
@@ -93,4 +93,4 @@ void ChDirPixieRoot() {
   }
 }
 
-}  // namespace pl
+}  // namespace px

@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <queue>
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -150,4 +150,4 @@ StatusOr<bool> FilterPushdownRule::Apply(IRNode* ir_node) {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

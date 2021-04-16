@@ -3,7 +3,7 @@
 #include "src/vizier/services/agent/manager/exec.h"
 #include "src/vizier/services/agent/manager/manager.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 
@@ -22,4 +22,4 @@ Status KelvinManager::StopImpl(std::chrono::milliseconds) { return Status::OK();
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

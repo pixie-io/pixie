@@ -6,13 +6,13 @@
 #include "src/stirling/source_connectors/socket_tracer/canonical_types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/cql/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 static const std::map<int64_t, std::string_view> kCQLReqOpDecoder =
-    pl::EnumDefToMap<protocols::cass::RespOp>();
+    px::EnumDefToMap<protocols::cass::RespOp>();
 static const std::map<int64_t, std::string_view> kCQLRespOpDecoder =
-    pl::EnumDefToMap<protocols::cass::RespOp>();
+    px::EnumDefToMap<protocols::cass::RespOp>();
 
 // clang-format off
 static constexpr DataElement kCQLElements[] = {
@@ -61,4 +61,4 @@ static constexpr int kCQLRespOp = kCQLTable.ColIndex("resp_op");
 static constexpr int kCQLRespBody = kCQLTable.ColIndex("resp_body");
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

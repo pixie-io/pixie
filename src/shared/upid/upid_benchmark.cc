@@ -5,7 +5,7 @@
 #include "src/common/benchmark/benchmark.h"
 #include "src/shared/upid/upid.h"
 
-using ::pl::md::UPID;
+using ::px::md::UPID;
 
 template <typename UpidSetType>
 static void BM_set_insertion(benchmark::State& state) {  // NOLINT

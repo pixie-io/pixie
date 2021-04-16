@@ -11,7 +11,7 @@
 #include "src/table_store/schema/row_descriptor.h"
 #include "src/table_store/schemapb/schema.pb.h"
 
-namespace pl {
+namespace px {
 namespace table_store {
 namespace schema {
 
@@ -215,4 +215,4 @@ TEST_F(RowBatchTest, slice) {
 
 }  // namespace schema
 }  // namespace table_store
-}  // namespace pl
+}  // namespace px

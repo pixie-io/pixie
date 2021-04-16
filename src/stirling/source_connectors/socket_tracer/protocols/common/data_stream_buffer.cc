@@ -9,7 +9,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 
@@ -320,4 +320,4 @@ std::string DataStreamBuffer::DebugInfo() const {
 
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

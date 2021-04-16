@@ -20,17 +20,17 @@
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 namespace mysql = protocols::mysql;
 
-using ::pl::stirling::testing::FindRecordIdxMatchesPID;
-using ::pl::stirling::testing::SocketTraceBPFTest;
-using ::pl::testing::BazelBinTestFilePath;
-using ::pl::testing::TestFilePath;
-using ::pl::types::ColumnWrapper;
-using ::pl::types::ColumnWrapperRecordBatch;
+using ::px::stirling::testing::FindRecordIdxMatchesPID;
+using ::px::stirling::testing::SocketTraceBPFTest;
+using ::px::testing::BazelBinTestFilePath;
+using ::px::testing::TestFilePath;
+using ::px::types::ColumnWrapper;
+using ::px::types::ColumnWrapperRecordBatch;
 
 using ::testing::AllOf;
 using ::testing::Eq;
@@ -90,7 +90,7 @@ class MySQLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> 
 
   StatusOr<int32_t> RunSQLScript(std::string_view script_path) {
     std::string absl_script_path = TestFilePath(script_path);
-    PL_ASSIGN_OR_RETURN(std::string script_content, pl::ReadFileToString(absl_script_path));
+    PL_ASSIGN_OR_RETURN(std::string script_content, px::ReadFileToString(absl_script_path));
 
     // Since script content will be passed through bash, escape any single quotes in the script.
     script_content = absl::StrReplaceAll(script_content, {{"'", "'\\''"}});
@@ -101,7 +101,7 @@ class MySQLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> 
         "docker exec %s bash -c 'echo \"%s\" | mysql --protocol=TCP --ssl-mode=DISABLED "
         "--host=localhost --port=3306 -uroot & echo $! && wait'",
         server_.container_name(), script_content);
-    PL_ASSIGN_OR_RETURN(std::string out, pl::Exec(cmd));
+    PL_ASSIGN_OR_RETURN(std::string out, px::Exec(cmd));
 
     std::vector<std::string_view> lines = absl::StrSplit(out, "\n");
     if (lines.empty()) {
@@ -500,4 +500,4 @@ TEST_F(MySQLTraceTest, mysql_capture) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

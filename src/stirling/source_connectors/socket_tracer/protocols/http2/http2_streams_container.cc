@@ -6,7 +6,7 @@ DEFINE_uint32(stirling_http2_stream_id_gap_threshold, 100,
               "If a stream ID jumps by this many spots or more, an error is assumed and the entire "
               "connection info is cleared.");
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 namespace {
@@ -131,4 +131,4 @@ protocols::http2::HalfStream* HTTP2StreamsContainer::HalfStreamPtr(uint32_t stre
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

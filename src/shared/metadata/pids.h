@@ -7,7 +7,7 @@
 #include "src/common/base/base.h"
 #include "src/shared/upid/upid.h"
 
-namespace pl {
+namespace px {
 namespace md {
 
 /**
@@ -127,4 +127,4 @@ bool operator==(const PIDStartedEvent& lhs, const PIDStartedEvent& rhs);
 bool operator==(const PIDTerminatedEvent& lhs, const PIDTerminatedEvent& rhs);
 
 }  // namespace md
-}  // namespace pl
+}  // namespace px

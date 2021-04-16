@@ -14,7 +14,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace tools {
 
 #define PL_RETURN_IF_NOT_ARCHIVE_OK(r, ar)              \
@@ -93,4 +93,4 @@ Status Minitar::Extract(std::string_view dest_dir, int flags) {
 }
 
 }  // namespace tools
-}  // namespace pl
+}  // namespace px

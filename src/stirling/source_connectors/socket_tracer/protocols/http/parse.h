@@ -6,7 +6,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 
@@ -21,4 +21,4 @@ size_t FindFrameBoundary<http::Message>(MessageType type, std::string_view buf, 
 
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

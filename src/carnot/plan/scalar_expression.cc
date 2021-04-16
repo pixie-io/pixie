@@ -15,11 +15,11 @@
 #include "src/common/base/base.h"
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace plan {
 
-pl::Status ScalarValue::Init(const pl::carnot::planpb::ScalarValue& pb) {
+px::Status ScalarValue::Init(const px::carnot::planpb::ScalarValue& pb) {
   DCHECK(!is_initialized_) << "Already initialized";
   CHECK(pb.data_type() != types::DATA_TYPE_UNKNOWN);
   CHECK(types::DataType_IsValid(pb.data_type()));
@@ -338,4 +338,4 @@ std::string AggregateExpression::DebugString() const {
 
 }  // namespace plan
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -4,7 +4,7 @@
 #include "src/carnot/planner/objects/test_utils.h"
 #include "src/carnot/planner/objects/var_table.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -101,4 +101,4 @@ TEST_F(VarTableTest, test_vis_funcs) {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

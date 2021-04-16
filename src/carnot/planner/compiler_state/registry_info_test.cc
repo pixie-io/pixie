@@ -8,7 +8,7 @@
 #include "src/common/testing/testing.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 using ::testing::UnorderedElementsAre;
@@ -187,4 +187,4 @@ TEST(SemanticRuleRegistry, semantic_lookup) {
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

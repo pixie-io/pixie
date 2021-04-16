@@ -14,7 +14,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 namespace ml {
@@ -353,4 +353,4 @@ class CoresetDriver {
 }  // namespace ml
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

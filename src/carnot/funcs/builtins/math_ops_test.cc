@@ -8,7 +8,7 @@
 #include "src/common/base/base.h"
 #include "src/common/base/test_utils.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace builtins {
 
@@ -622,4 +622,4 @@ TEST(MathOps, partial_count_test) {
 }
 }  // namespace builtins
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

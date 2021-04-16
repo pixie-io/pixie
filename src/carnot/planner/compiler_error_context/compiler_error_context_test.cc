@@ -8,7 +8,7 @@
 #include "src/common/base/statuspb/status.pb.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -26,10 +26,10 @@ TEST(CompilerErrorContextStatus, Default) {
     error->set_column(column + i);
     error->set_message(absl::Substitute("msg: $0, idx: $1", message, i));
   }
-  Status status(pl::statuspb::INVALID_ARGUMENT, "Issue",
+  Status status(px::statuspb::INVALID_ARGUMENT, "Issue",
                 std::make_unique<compilerpb::CompilerErrorGroup>(errorgroup_in));
 
-  pl::statuspb::Status status_pb = status.ToProto();
+  px::statuspb::Status status_pb = status.ToProto();
   ASSERT_TRUE(status_pb.context().Is<compilerpb::CompilerErrorGroup>());
 
   status_pb.context().UnpackTo(&errorgroup_out);
@@ -99,4 +99,4 @@ TEST(CompilerErrorBuilder, EmptyStatusesVector) {
 }
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

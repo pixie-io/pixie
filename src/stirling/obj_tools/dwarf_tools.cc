@@ -9,7 +9,7 @@
 
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace obj_tools {
 
@@ -845,4 +845,4 @@ StatusOr<RetValInfo> DwarfReader::GetFunctionRetValInfo(std::string_view functio
 
 }  // namespace obj_tools
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

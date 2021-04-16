@@ -2,18 +2,18 @@
 
 #include "src/shared/upid/upid.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
-using pl::types::BoolValue;
-using pl::types::ColumnWrapperRecordBatch;
-using pl::types::DataType;
-using pl::types::Float64Value;
-using pl::types::Int64Value;
-using pl::types::SemanticType;
-using pl::types::StringValue;
-using pl::types::Time64NSValue;
-using pl::types::UInt128Value;
+using px::types::BoolValue;
+using px::types::ColumnWrapperRecordBatch;
+using px::types::DataType;
+using px::types::Float64Value;
+using px::types::Int64Value;
+using px::types::SemanticType;
+using px::types::StringValue;
+using px::types::Time64NSValue;
+using px::types::UInt128Value;
 
 constexpr char kTimeFormat[] = "%Y-%m-%d %X";
 const absl::TimeZone kLocalTimeZone;
@@ -101,4 +101,4 @@ void PrintRecordBatch(std::string_view prefix, const stirlingpb::TableSchema& sc
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

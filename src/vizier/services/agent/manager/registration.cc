@@ -5,14 +5,14 @@
 #include "src/vizier/services/agent/manager/manager.h"
 #include "src/vizier/services/agent/manager/registration.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 
-using ::pl::event::Dispatcher;
-using ::pl::shared::k8s::metadatapb::ResourceUpdate;
+using ::px::event::Dispatcher;
+using ::px::shared::k8s::metadatapb::ResourceUpdate;
 
-RegistrationHandler::RegistrationHandler(pl::event::Dispatcher* dispatcher, Info* agent_info,
+RegistrationHandler::RegistrationHandler(px::event::Dispatcher* dispatcher, Info* agent_info,
                                          Manager::VizierNATSConnector* nats_conn,
                                          RegistrationHook post_registration_hook,
                                          RegistrationHook post_reregistration_hook)
@@ -115,4 +115,4 @@ Status RegistrationHandler::HandleMessage(std::unique_ptr<messages::VizierMessag
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

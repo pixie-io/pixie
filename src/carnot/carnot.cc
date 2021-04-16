@@ -14,7 +14,7 @@
 #include "src/shared/types/type_utils.h"
 #include "src/table_store/table_store.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 
 using types::DataType;
@@ -211,7 +211,7 @@ Status SendFinalExecutionStatsToOutgoingConns(
     const std::vector<queryresultspb::AgentExecutionStats>& all_agent_stats) {
   // Only run this if there are outgoing_servers.
   if (outgoing_servers.size()) {
-    ::pl::carnotpb::TransferResultChunkRequest req;
+    ::px::carnotpb::TransferResultChunkRequest req;
 
     ToProto(query_id, req.mutable_query_id());
 
@@ -232,7 +232,7 @@ Status SendFinalExecutionStatsToOutgoingConns(
     stats->set_records_processed(total_records_processed);
 
     for (const auto& [addr, server] : outgoing_servers) {
-      ::pl::carnotpb::TransferResultChunkResponse resp;
+      ::px::carnotpb::TransferResultChunkResponse resp;
       req.set_address(addr);
       grpc::ClientContext context;
       add_auth_to_grpc_context_func(&context);
@@ -395,8 +395,8 @@ StatusOr<std::unique_ptr<Carnot>> Carnot::Create(
     const sole::uuid& agent_id, std::shared_ptr<table_store::TableStore> table_store,
     const exec::ResultSinkStubGenerator& stub_generator, int grpc_server_port,
     std::shared_ptr<grpc::ServerCredentials> grpc_server_creds) {
-  auto func_registry = std::make_unique<pl::carnot::udf::Registry>("default_registry");
-  pl::carnot::funcs::RegisterFuncsOrDie(func_registry.get());
+  auto func_registry = std::make_unique<px::carnot::udf::Registry>("default_registry");
+  px::carnot::funcs::RegisterFuncsOrDie(func_registry.get());
 
   return Create(
       agent_id, std::move(func_registry), table_store, stub_generator, [](grpc::ClientContext*) {},
@@ -404,4 +404,4 @@ StatusOr<std::unique_ptr<Carnot>> Carnot::Create(
 }
 
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

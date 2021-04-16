@@ -4,7 +4,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace utils {
 
@@ -51,4 +51,4 @@ StatusOr<TaskStructOffsets> ResolveTaskStructOffsetsCore();
 
 }  // namespace utils
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

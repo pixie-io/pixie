@@ -10,7 +10,7 @@
 #include "src/carnot/planner/objects/collection_object.h"
 #include "src/carnot/planner/objects/funcobject.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -591,4 +591,4 @@ class MapAssignHandler {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

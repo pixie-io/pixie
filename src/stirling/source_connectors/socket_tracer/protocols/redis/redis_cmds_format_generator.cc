@@ -8,9 +8,9 @@ DEFINE_string(redis_cmds, "", "A text file lists all Redis command names on each
 DEFINE_string(redis_cmdargs, "",
               "A text file lists the names and descriptions of all Redis commands on each line.");
 
-using ::pl::ReadFileToString;
-using ::pl::Status;
-using ::pl::VectorView;
+using ::px::ReadFileToString;
+using ::px::Status;
+using ::px::VectorView;
 
 // Returns a list of string lists. Each string list contains command name, 0 or more command
 // arguments descriptions.
@@ -58,7 +58,7 @@ std::string FomatCommand(const std::vector<std::string_view>& cmd_and_arg_descs)
 
 // Prints a map from redis command name to its arguments names.
 int main(int argc, char* argv[]) {
-  pl::EnvironmentGuard env_guard(&argc, argv);
+  px::EnvironmentGuard env_guard(&argc, argv);
 
   CHECK(!FLAGS_redis_cmdargs.empty()) << "--redis_cmdargs must be specified.";
   CHECK(!FLAGS_redis_cmds.empty()) << "--redis_cmds must be specified.";

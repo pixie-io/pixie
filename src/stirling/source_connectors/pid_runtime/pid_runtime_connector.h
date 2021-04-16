@@ -12,7 +12,7 @@
 #include "src/stirling/core/source_connector.h"
 #include "src/stirling/source_connectors/pid_runtime/bcc_bpf_intf/pidruntime.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 class PIDRuntimeConnector : public SourceConnector, public bpf_tools::BCCWrapper {
@@ -59,4 +59,4 @@ class PIDRuntimeConnector : public SourceConnector, public bpf_tools::BCCWrapper
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

@@ -13,7 +13,7 @@
 // The BT files are permanently resident in memory, so the string view is permanent too.
 BPF_SRC_STRVIEW(kPIDRuntimeBTScript, pidruntime);
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 Status PIDCPUUseBPFTraceConnector::InitImpl() {
@@ -107,6 +107,6 @@ void PIDCPUUseBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, u
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px
 
 #endif

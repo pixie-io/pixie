@@ -4,7 +4,7 @@
 
 #include "src/shared/metadata/pids.h"
 
-namespace pl {
+namespace px {
 namespace md {
 
 class PIDInfoTest : public ::testing::Test {
@@ -61,4 +61,4 @@ TEST(PIDTerminatedEvent, CheckUPIDAndStopTime) {
   EXPECT_EQ(PIDStatusEventType::kTerminated, ev.type);
 }
 }  // namespace md
-}  // namespace pl
+}  // namespace px

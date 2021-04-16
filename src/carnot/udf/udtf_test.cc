@@ -9,7 +9,7 @@
 #include "src/common/testing/testing.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace udf {
 
@@ -245,4 +245,4 @@ TEST(ValidOneColUDTFEmptyInit, empty_init_is_valid) {
 
 }  // namespace udf
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

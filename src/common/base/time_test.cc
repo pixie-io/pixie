@@ -3,7 +3,7 @@
 #include "src/common/base/time.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 
 TEST(StringToRange, basic) {
   ASSERT_OK_AND_ASSIGN(auto output_pair, StringToTimeRange("5,20"));
@@ -30,4 +30,4 @@ TEST(PrettyDuration, strings) {
   EXPECT_EQ("14.56 s", PrettyDuration(14561230000));
 }
 
-}  // namespace pl
+}  // namespace px

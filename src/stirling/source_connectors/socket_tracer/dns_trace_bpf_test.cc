@@ -10,13 +10,13 @@
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
-using ::pl::stirling::testing::ColWrapperSizeIs;
-using ::pl::stirling::testing::FindRecordsMatchingPID;
-using ::pl::stirling::testing::SocketTraceBPFTest;
-using ::pl::testing::BazelBinTestFilePath;
+using ::px::stirling::testing::ColWrapperSizeIs;
+using ::px::stirling::testing::FindRecordsMatchingPID;
+using ::px::stirling::testing::SocketTraceBPFTest;
+using ::px::testing::BazelBinTestFilePath;
 
 using ::testing::Each;
 using ::testing::MatchesRegex;
@@ -61,7 +61,7 @@ TEST_F(DNSTraceTest, Capture) {
   std::string cmd =
       absl::StrFormat("docker exec %s sh -c 'dig @127.0.0.1 server.dnstest.com & echo $! && wait'",
                       container_.container_name());
-  ASSERT_OK_AND_ASSIGN(std::string out, pl::Exec(cmd));
+  ASSERT_OK_AND_ASSIGN(std::string out, px::Exec(cmd));
   LOG(INFO) << out;
 
   // Grab the data from Stirling.
@@ -100,4 +100,4 @@ TEST_F(DNSTraceTest, Capture) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

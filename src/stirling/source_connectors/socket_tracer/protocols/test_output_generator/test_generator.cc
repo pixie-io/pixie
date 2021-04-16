@@ -4,7 +4,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/test_output_generator/test_utils.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace mysql {
@@ -151,10 +151,10 @@ void GenMySQLTestOutput(const std::string& wireshark_path, const std::string& ou
 }  // namespace mysql
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px
 
 int main(int argc, char** argv) {
-  pl::EnvironmentGuard env_guard(&argc, argv);
-  pl::stirling::protocols::mysql::GenMySQLTestOutput(argv[1], argv[2]);
+  px::EnvironmentGuard env_guard(&argc, argv);
+  px::stirling::protocols::mysql::GenMySQLTestOutput(argv[1], argv[2]);
   return 0;
 }

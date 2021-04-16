@@ -8,7 +8,7 @@
 #include "src/common/base/base.h"
 #include "src/shared/bloomfilterpb/bloomfilter.pb.h"
 
-namespace pl {
+namespace px {
 namespace bloomfilter {
 
 using XXHash64BloomFilterPB = shared::bloomfilterpb::XXHash64BloomFilter;
@@ -64,4 +64,4 @@ class XXHash64BloomFilter {
 };
 
 }  // namespace bloomfilter
-}  // namespace pl
+}  // namespace px

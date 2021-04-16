@@ -6,9 +6,9 @@
 #include "src/common/base/file.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 
-using ::pl::testing::TempDir;
+using ::px::testing::TempDir;
 
 TEST(FileUtils, WriteThenRead) {
   std::string write_val = R"(This is a a file content.
@@ -22,4 +22,4 @@ It has two lines.)";
   EXPECT_EQ(read_val, write_val);
 }
 
-}  // namespace pl
+}  // namespace px

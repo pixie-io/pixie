@@ -9,7 +9,7 @@
 #include "src/stirling/core/types.h"
 #include "src/stirling/utils/index_sorted_vector.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 using types::ColumnWrapper;
@@ -22,7 +22,7 @@ void DataTable::InitBuffers(types::ColumnWrapperRecordBatch* record_batch_ptr) {
   DCHECK(record_batch_ptr->empty());
 
   for (const auto& element : table_schema_.elements()) {
-    pl::types::DataType type = element.type();
+    px::types::DataType type = element.type();
 
 #define TYPE_CASE(_dt_)                           \
   auto col = types::ColumnWrapper::Make(_dt_, 0); \
@@ -113,4 +113,4 @@ std::vector<TaggedRecordBatch> DataTable::ConsumeRecords() {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

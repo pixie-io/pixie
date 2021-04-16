@@ -3,7 +3,7 @@
 #include <nats/adapters/libuv.h>
 #include <nats/nats.h>
 
-namespace pl {
+namespace px {
 namespace event {
 
 Status NATSConnectorBase::ConnectBase(Dispatcher* base_dispatcher) {
@@ -47,4 +47,4 @@ Status NATSConnectorBase::ConnectBase(Dispatcher* base_dispatcher) {
 }
 
 }  // namespace event
-}  // namespace pl
+}  // namespace px

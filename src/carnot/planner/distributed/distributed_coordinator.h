@@ -9,7 +9,7 @@
 #include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planner/ir/pattern_match.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
@@ -115,4 +115,4 @@ class CoordinatorImpl : public Coordinator {
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

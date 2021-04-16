@@ -2,7 +2,7 @@
 #include "src/common/testing/test_utils/test_container.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 
 TEST(ContainerRunnerTest, Run) {
   SleepContainer container;
@@ -10,4 +10,4 @@ TEST(ContainerRunnerTest, Run) {
   ASSERT_OK(container.Run(kTimeoutSeconds));
 }
 
-}  // namespace pl
+}  // namespace px

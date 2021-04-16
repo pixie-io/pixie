@@ -2,7 +2,7 @@
 #include "src/carnot/udf/registry.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace builtins {
 /**
@@ -52,4 +52,4 @@ class AnyUDA : public udf::UDA {
 
 }  // namespace builtins
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

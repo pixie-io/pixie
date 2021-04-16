@@ -21,16 +21,16 @@
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
-using ::pl::stirling::testing::ColWrapperIsEmpty;
-using ::pl::stirling::testing::ColWrapperSizeIs;
-using ::pl::stirling::testing::FindRecordIdxMatchesPID;
-using ::pl::stirling::testing::FindRecordsMatchingPID;
-using ::pl::system::TCPSocket;
-using ::pl::system::UDPSocket;
-using ::pl::types::ColumnWrapperRecordBatch;
+using ::px::stirling::testing::ColWrapperIsEmpty;
+using ::px::stirling::testing::ColWrapperSizeIs;
+using ::px::stirling::testing::FindRecordIdxMatchesPID;
+using ::px::stirling::testing::FindRecordsMatchingPID;
+using ::px::system::TCPSocket;
+using ::px::system::UDPSocket;
+using ::px::types::ColumnWrapperRecordBatch;
 using ::testing::Each;
 using ::testing::ElementsAre;
 using ::testing::HasSubstr;
@@ -327,7 +327,7 @@ TEST_F(SocketTraceBPFTest, StartTime) {
   system.RunClientServer<&TCPSocket::Recv, &TCPSocket::Send>(script);
 
   // Kernel uses a special monotonic clock as start_time, so we must do the same.
-  auto now = pl::chrono::boot_clock::now();
+  auto now = px::chrono::boot_clock::now();
 
   // Use a time window to make sure the recorded PID start_time is right.
   // Being super generous with the window, just in case test runs slow.
@@ -606,4 +606,4 @@ TEST_F(SocketTraceServerSideBPFTest, ConnStatsUpdatedAfterConnTrackerDisabled) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

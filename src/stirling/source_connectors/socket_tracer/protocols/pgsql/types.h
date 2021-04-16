@@ -11,7 +11,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/event_parser.h"
 #include "src/stirling/utils/utils.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace pgsql {
@@ -495,4 +495,4 @@ struct TagMatcher {
 }  // namespace pgsql
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

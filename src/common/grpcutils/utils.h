@@ -3,7 +3,7 @@
 #include <absl/strings/str_replace.h>
 #include <string>
 
-namespace pl {
+namespace px {
 namespace grpc {
 
 /**
@@ -19,4 +19,4 @@ inline std::string MethodPath(std::string_view grpc_path) {
 }
 
 }  // namespace grpc
-}  // namespace pl
+}  // namespace px

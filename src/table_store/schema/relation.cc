@@ -9,7 +9,7 @@
 #include "src/shared/types/type_utils.h"
 #include "src/table_store/schema/relation.h"
 
-namespace pl {
+namespace px {
 namespace table_store {
 namespace schema {
 
@@ -146,4 +146,4 @@ Status Relation::FromProto(const table_store::schemapb::Relation* relation_pb) {
 
 }  // namespace schema
 }  // namespace table_store
-}  // namespace pl
+}  // namespace px

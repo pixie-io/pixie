@@ -13,7 +13,7 @@
 #include "src/shared/metadata/metadata_state.h"
 #include "src/table_store/table_store.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 
 constexpr auto kRPCResultTimeout = std::chrono::seconds(2);
@@ -66,4 +66,4 @@ class Carnot : public NotCopyable {
 };
 
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

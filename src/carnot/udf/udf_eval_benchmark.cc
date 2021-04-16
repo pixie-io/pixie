@@ -12,20 +12,20 @@
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
 
-using pl::Status;
-using pl::carnot::udf::FunctionContext;
-using pl::carnot::udf::ScalarUDF;
-using pl::carnot::udf::ScalarUDFDefinition;
-using pl::carnot::udf::ScalarUDFWrapper;
-using pl::types::BaseValueType;
-using pl::types::Int64Value;
-using pl::types::Int64ValueColumnWrapper;
-using pl::types::StringValue;
-using pl::types::StringValueColumnWrapper;
-using pl::types::ToArrow;
+using px::Status;
+using px::carnot::udf::FunctionContext;
+using px::carnot::udf::ScalarUDF;
+using px::carnot::udf::ScalarUDFDefinition;
+using px::carnot::udf::ScalarUDFWrapper;
+using px::types::BaseValueType;
+using px::types::Int64Value;
+using px::types::Int64ValueColumnWrapper;
+using px::types::StringValue;
+using px::types::StringValueColumnWrapper;
+using px::types::ToArrow;
 
-using pl::datagen::CreateLargeData;
-using pl::datagen::RandomString;
+using px::datagen::CreateLargeData;
+using px::datagen::RandomString;
 
 std::vector<StringValue> GenerateStringValueVector(int size, int string_width) {
   std::vector<StringValue> data(size);

@@ -1,6 +1,6 @@
 #include "src/carnot/planner/distributed/tablet_rules.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
@@ -237,4 +237,4 @@ StatusOr<bool> Tabletizer::Execute(const distributedpb::CarnotInfo& carnot_info,
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

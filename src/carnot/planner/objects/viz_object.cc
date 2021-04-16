@@ -3,7 +3,7 @@
 #include <utility>
 #include "src/carnot/planner/objects/expr_object.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -55,4 +55,4 @@ StatusOr<QLObjectPtr> VegaHandler::NestedFn(std::string spec, const pypa::AstPtr
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

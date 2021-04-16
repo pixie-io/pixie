@@ -6,7 +6,7 @@
 
 namespace magic_enum::customize {
 template <>
-struct enum_range<pl::types::SemanticType> {
+struct enum_range<px::types::SemanticType> {
   static constexpr int min = 0;
   static constexpr int max = 2000;
 };

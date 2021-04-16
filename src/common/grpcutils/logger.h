@@ -2,7 +2,7 @@
 
 #include <grpcpp/grpcpp.h>
 
-namespace pl {
+namespace px {
 
 /**
  * The factory that creates a logger for a GRPC transaction.
@@ -13,4 +13,4 @@ class LoggingInterceptorFactory : public grpc::experimental::ServerInterceptorFa
       grpc::experimental::ServerRpcInfo* info) override;
 };
 
-}  // namespace pl
+}  // namespace px

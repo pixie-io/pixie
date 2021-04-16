@@ -5,7 +5,7 @@
 #include "src/stirling/core/types.h"
 #include "src/stirling/source_connectors/socket_tracer/canonical_types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 enum class HTTPContentType {
@@ -16,7 +16,7 @@ enum class HTTPContentType {
 };
 
 static const std::map<int64_t, std::string_view> kHTTPContentTypeDecoder =
-    pl::EnumDefToMap<HTTPContentType>();
+    px::EnumDefToMap<HTTPContentType>();
 
 // clang-format off
 constexpr DataElement kHTTPElements[] = {
@@ -113,4 +113,4 @@ constexpr int kHTTPRespBodySizeIdx = kHTTPTable.ColIndex("resp_body_size");
 constexpr int kHTTPLatencyIdx = kHTTPTable.ColIndex("latency");
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

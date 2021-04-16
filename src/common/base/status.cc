@@ -6,7 +6,7 @@
 
 #include "src/common/base/error.h"
 
-namespace pl {
+namespace px {
 
 Status::Status(statuspb::Code code, const std::string& msg) {
   state_ = std::make_unique<State>();
@@ -19,7 +19,7 @@ Status::Status(statuspb::Code code, const std::string& msg,
   state_ = std::make_unique<State>(code, msg, std::move(context));
 }
 
-Status::Status(const pl::statuspb::Status& status_pb) {
+Status::Status(const px::statuspb::Status& status_pb) {
   if (status_pb.err_code() == statuspb::Code::OK) {
     return;
   }
@@ -43,16 +43,16 @@ std::string Status::ToString() const {
     context_str = " Context: ";
     context_str += context()->DebugString();
   }
-  return absl::StrCat(pl::error::CodeToString(code()), " : ", state_->msg + context_str);
+  return absl::StrCat(px::error::CodeToString(code()), " : ", state_->msg + context_str);
 }
 
-pl::statuspb::Status Status::ToProto() const {
-  pl::statuspb::Status spb;
+px::statuspb::Status Status::ToProto() const {
+  px::statuspb::Status spb;
   ToProto(&spb);
   return spb;
 }
 
-void Status::ToProto(pl::statuspb::Status* status_pb) const {
+void Status::ToProto(px::statuspb::Status* status_pb) const {
   CHECK(status_pb != nullptr);
   if (state_ == nullptr) {
     status_pb->set_err_code(statuspb::Code::OK);
@@ -68,4 +68,4 @@ void Status::ToProto(pl::statuspb::Status* status_pb) const {
   }
 }
 
-}  // namespace pl
+}  // namespace px

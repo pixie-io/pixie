@@ -10,7 +10,7 @@
 #include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planpb/plan.pb.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -48,7 +48,7 @@ class Compiler {
                                                       const ExecFuncs& exec_funcs);
   StatusOr<shared::scriptspb::FuncArgsSpec> GetMainFuncArgsSpec(const std::string& query,
                                                                 CompilerState* compiler_state);
-  StatusOr<pl::shared::scriptspb::VisFuncsInfo> GetVisFuncsInfo(const std::string& query,
+  StatusOr<px::shared::scriptspb::VisFuncsInfo> GetVisFuncsInfo(const std::string& query,
                                                                 CompilerState* compiler_state);
 
  private:
@@ -63,4 +63,4 @@ class Compiler {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

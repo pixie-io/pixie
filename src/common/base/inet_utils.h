@@ -19,7 +19,7 @@
 #include "src/common/base/status.h"
 #include "src/common/base/statusor.h"
 
-namespace pl {
+namespace px {
 
 //-----------------------------------------------------------------------------
 // Functions on native linux types.
@@ -87,7 +87,7 @@ struct CIDRBlock {
 
 enum class SockAddrFamily { kUnspecified, kIPv4, kIPv6, kUnix, kOther };
 static const std::map<int64_t, std::string_view> kSockAddrFamilyDecoder =
-    pl::EnumDefToMap<SockAddrFamily>();
+    px::EnumDefToMap<SockAddrFamily>();
 
 struct SockAddrUnix {
   std::string path;
@@ -111,7 +111,7 @@ struct SockAddrIPv6 {
 struct SockAddrIPv4HashFn {
   size_t operator()(const SockAddrIPv4& x) const {
     size_t hash = std::hash<uint32_t>{}(x.addr.s_addr);
-    hash = pl::HashCombine(hash, std::hash<uint32_t>{}(x.port));
+    hash = px::HashCombine(hash, std::hash<uint32_t>{}(x.port));
     return hash;
   }
 };
@@ -125,7 +125,7 @@ struct SockAddrIPv4EqFn {
 struct SockAddrIPv6HashFn {
   size_t operator()(const SockAddrIPv6& x) const {
     size_t hash = ::util::Hash64(reinterpret_cast<const char*>(&x.addr), sizeof(struct in6_addr));
-    hash = pl::HashCombine(hash, std::hash<uint32_t>{}(x.port));
+    hash = px::HashCombine(hash, std::hash<uint32_t>{}(x.port));
     return hash;
   }
 };
@@ -231,4 +231,4 @@ bool CIDRContainsIPAddr(const CIDRBlock& block, const InetAddr& ip_addr);
  */
 CIDRBlock MapIPv4ToIPv6(const CIDRBlock& addr);
 
-}  // namespace pl
+}  // namespace px

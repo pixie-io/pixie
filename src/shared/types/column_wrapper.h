@@ -13,7 +13,7 @@
 #include "src/shared/types/type_utils.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace types {
 
 class ColumnWrapper;
@@ -356,4 +356,4 @@ void ExtractValueToColumnWrapper(ColumnWrapper* wrapper, arrow::Array* arr, int6
 }
 
 }  // namespace types
-}  // namespace pl
+}  // namespace px

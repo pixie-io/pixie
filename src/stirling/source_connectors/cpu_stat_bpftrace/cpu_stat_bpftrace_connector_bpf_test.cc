@@ -8,7 +8,7 @@
 #include "src/stirling/core/data_table.h"
 #include "src/stirling/source_connectors/cpu_stat_bpftrace/cpu_stat_bpftrace_connector.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 class BPFTraceConnectorBPFTest : public ::testing::Test {
@@ -46,4 +46,4 @@ TEST_F(BPFTraceConnectorBPFTest, Basic) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

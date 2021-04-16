@@ -12,7 +12,7 @@
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/testing/common.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace testing {
 
@@ -112,4 +112,4 @@ class SocketTraceBPFTest : public ::testing::Test {
 
 }  // namespace testing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

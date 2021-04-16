@@ -6,12 +6,12 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/dynamic_bpftrace/dynamic_bpftrace_connector.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
-using ::pl::stirling::dynamic_tracing::ir::logical::TracepointDeployment_Tracepoint;
+using ::px::stirling::dynamic_tracing::ir::logical::TracepointDeployment_Tracepoint;
 
-using ::pl::testing::status::StatusIs;
+using ::px::testing::status::StatusIs;
 using ::testing::HasSubstr;
 using ::testing::MatchesRegex;
 
@@ -406,4 +406,4 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceCheckPrintfsError) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

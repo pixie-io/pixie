@@ -3,10 +3,10 @@
 #include "src/carnot/exec/ml/coreset.h"
 #include "src/common/perf/perf.h"
 
-using pl::carnot::exec::ml::CoresetDriver;
-using pl::carnot::exec::ml::CoresetTree;
-using pl::carnot::exec::ml::KMeansCoreset;
-using pl::carnot::exec::ml::WeightedPointSet;
+using px::carnot::exec::ml::CoresetDriver;
+using px::carnot::exec::ml::CoresetTree;
+using px::carnot::exec::ml::KMeansCoreset;
+using px::carnot::exec::ml::WeightedPointSet;
 
 // NOLINTNEXTLINE : runtime/references.
 static void BM_CoresetTreeUpdate(benchmark::State& state) {

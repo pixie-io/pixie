@@ -10,7 +10,7 @@
 #include "src/common/system/socket_info.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 /**
@@ -91,4 +91,4 @@ class FDResolver {
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

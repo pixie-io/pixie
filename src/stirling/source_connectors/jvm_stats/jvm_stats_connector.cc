@@ -20,11 +20,11 @@ DEFINE_int32(
     stirling_java_process_monitoring_attempts, 3,
     "The number of attempts to monitor a potential Java process for collecting JVM stats.");
 
-namespace pl {
+namespace px {
 namespace stirling {
 
-using ::pl::fs::Exists;
-using ::pl::utils::LEndianBytesToInt;
+using ::px::fs::Exists;
+using ::px::utils::LEndianBytesToInt;
 
 void JVMStatsConnector::FindJavaUPIDs(const ConnectorContext& ctx) {
   proc_tracker_.Update(ctx.GetUPIDs());
@@ -97,6 +97,6 @@ void JVMStatsConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_n
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px
 
 #endif

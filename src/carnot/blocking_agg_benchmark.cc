@@ -18,7 +18,7 @@
 #include "src/shared/types/column_wrapper.h"
 #include "src/table_store/test_utils.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -174,4 +174,4 @@ BENCHMARK_CAPTURE(BM_Query_Int, eval_group_by_one_exponential_int,
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

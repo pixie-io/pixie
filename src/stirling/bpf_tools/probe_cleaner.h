@@ -5,7 +5,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace utils {
 
@@ -48,4 +48,4 @@ Status CleanProbes(std::string_view marker = kPixieBPFProbeMarker);
 
 }  // namespace utils
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

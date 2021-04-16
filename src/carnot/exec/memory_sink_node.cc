@@ -9,7 +9,7 @@
 #include "src/common/base/base.h"
 #include "src/table_store/table_store.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -65,4 +65,4 @@ Status MemorySinkNode::ConsumeNextImpl(ExecState*, const RowBatch& rb, size_t) {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

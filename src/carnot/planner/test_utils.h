@@ -24,14 +24,14 @@
 #include "src/common/uuid/uuid.h"
 #include "src/shared/metadata/metadata_filter.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace testutils {
 
 using md::AgentMetadataFilter;
-using ::pl::testing::proto::EqualsProto;
-using ::pl::testing::proto::Partially;
+using ::px::testing::proto::EqualsProto;
+using ::px::testing::proto::Partially;
 using ::testing::Contains;
 using ::testing::ContainsRegex;
 using ::testing::ElementsAre;
@@ -1676,10 +1676,10 @@ udfspb::UDFInfo UDFInfoWithTestUDTF() {
   return udf_info;
 }
 
-std::unique_ptr<RelationMap> MakeRelationMap(const pl::table_store::schemapb::Schema& schema_pb) {
-  auto rel_map = std::make_unique<pl::carnot::planner::RelationMap>();
+std::unique_ptr<RelationMap> MakeRelationMap(const px::table_store::schemapb::Schema& schema_pb) {
+  auto rel_map = std::make_unique<px::carnot::planner::RelationMap>();
   for (auto& relation_pair : schema_pb.relation_map()) {
-    pl::table_store::schema::Relation rel;
+    px::table_store::schema::Relation rel;
     PL_CHECK_OK(rel.FromProto(&relation_pair.second));
     rel_map->emplace(relation_pair.first, rel);
   }
@@ -1852,4 +1852,4 @@ px.display(df)
 }  // namespace testutils
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

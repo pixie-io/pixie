@@ -5,7 +5,7 @@
 
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace cass {
@@ -751,4 +751,4 @@ TEST(ExtractSchemaChange, Basic) {
 }  // namespace cass
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

@@ -6,7 +6,7 @@
 #include "src/carnot/planner/ir/pattern_match.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 class PatternMatchTest : public OperatorTests {};
@@ -177,4 +177,4 @@ TEST_F(PatternMatchTest, OpWithParentMatch) {
 }  // namespace planner
 
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

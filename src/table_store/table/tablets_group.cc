@@ -1,6 +1,6 @@
 #include "src/table_store/table/tablets_group.h"
 
-namespace pl {
+namespace px {
 namespace table_store {
 
 void TabletsGroup::CreateTablet(const types::TabletID& tablet_id) {
@@ -29,4 +29,4 @@ bool TabletsGroup::HasTablet(const types::TabletID& tablet_id) const {
 }
 
 }  // namespace table_store
-}  // namespace pl
+}  // namespace px

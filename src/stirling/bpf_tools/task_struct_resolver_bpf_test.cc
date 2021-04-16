@@ -6,7 +6,7 @@
 #include "src/common/base/test_utils.h"
 #include "src/stirling/bpf_tools/task_struct_resolver.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace utils {
 
@@ -46,4 +46,4 @@ TEST(ResolveTaskStructOffsets, AsSubProcess) {
 
 }  // namespace utils
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

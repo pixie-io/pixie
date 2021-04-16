@@ -9,7 +9,7 @@
 #include "src/carnot/udfspb/udfs.pb.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace udf {
 
@@ -232,4 +232,4 @@ class InheritTypeFromArgs : public InferenceRule {
 
 }  // namespace udf
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

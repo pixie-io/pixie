@@ -4,7 +4,7 @@
 
 #include "src/common/base/env.h"
 
-namespace pl {
+namespace px {
 namespace testing {
 
 /**
@@ -42,4 +42,4 @@ class TempDir {
 };
 
 }  // namespace testing
-}  // namespace pl
+}  // namespace px

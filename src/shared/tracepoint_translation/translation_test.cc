@@ -9,7 +9,7 @@
 #include "src/common/testing/testing.h"
 #include "src/shared/tracepoint_translation/translation.h"
 
-namespace pl {
+namespace px {
 namespace tracepoint {
 
 using ::google::protobuf::TextFormat;
@@ -110,8 +110,8 @@ tracepoints {
 
 class TracepointManagerTest : public ::testing::Test {};
 
-using PlannerDeployment = ::pl::carnot::planner::dynamic_tracing::ir::logical::TracepointDeployment;
-using StirlingDeployment = ::pl::stirling::dynamic_tracing::ir::logical::TracepointDeployment;
+using PlannerDeployment = ::px::carnot::planner::dynamic_tracing::ir::logical::TracepointDeployment;
+using StirlingDeployment = ::px::stirling::dynamic_tracing::ir::logical::TracepointDeployment;
 TEST_F(TracepointManagerTest, TracepointConversion) {
   PlannerDeployment planner_deployment;
   CHECK(TextFormat::ParseFromString(kPlannerTracepoint, &planner_deployment));
@@ -256,4 +256,4 @@ TEST_F(TracepointManagerTest, BPFTraceDeployment) {
 }
 
 }  // namespace tracepoint
-}  // namespace pl
+}  // namespace px

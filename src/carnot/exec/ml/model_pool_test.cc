@@ -5,7 +5,7 @@
 
 DEFINE_string(embedding_dir, "", "Path to embedding.proto");
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 namespace ml {
@@ -19,4 +19,4 @@ TEST(ModelPool, basic) {
 }  // namespace ml
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

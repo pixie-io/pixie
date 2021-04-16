@@ -2,7 +2,7 @@
 
 #include <memory>
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace udf {
 // Forward declare registries.
@@ -27,4 +27,4 @@ class PlanState {
 
 }  // namespace plan
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

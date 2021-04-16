@@ -11,7 +11,7 @@
 #include "src/shared/metadata/cgroup_metadata_reader.h"
 #include "src/shared/metadata/k8s_objects.h"
 
-namespace pl {
+namespace px {
 namespace md {
 
 // Note that there are different cgroup naming formats used by Kuberenetes under sysfs.
@@ -155,4 +155,4 @@ bool CGroupMetadataReader::PodDirExists(const PodInfo& pod_info) const {
 }
 
 }  // namespace md
-}  // namespace pl
+}  // namespace px

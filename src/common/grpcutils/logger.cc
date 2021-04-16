@@ -11,7 +11,7 @@ using grpc::experimental::InterceptionHookPoints;
 using grpc::experimental::Interceptor;
 using grpc::experimental::ServerRpcInfo;
 
-namespace pl {
+namespace px {
 
 class LoggingInterceptor : public grpc::experimental::Interceptor {
  public:
@@ -47,8 +47,8 @@ class LoggingInterceptor : public grpc::experimental::Interceptor {
   std::chrono::high_resolution_clock::time_point start_time_;
 };
 
-Interceptor* pl::LoggingInterceptorFactory::CreateServerInterceptor(ServerRpcInfo* info) {
+Interceptor* px::LoggingInterceptorFactory::CreateServerInterceptor(ServerRpcInfo* info) {
   return new LoggingInterceptor(info);
 }
 
-}  // namespace pl
+}  // namespace px

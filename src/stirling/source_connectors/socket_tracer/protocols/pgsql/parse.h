@@ -8,7 +8,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/pgsql/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace pgsql {
@@ -42,4 +42,4 @@ size_t FindFrameBoundary<pgsql::RegularMessage>(MessageType type, std::string_vi
 
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

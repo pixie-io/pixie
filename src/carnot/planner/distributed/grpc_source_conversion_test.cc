@@ -10,7 +10,7 @@
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/distributed/grpc_source_conversion.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
@@ -249,4 +249,4 @@ TEST_F(MergeSameNodeGRPCBridgeRuleTest, construction_test) {
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -14,7 +14,7 @@
 #include "src/common/base/base.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -220,4 +220,4 @@ TEST_F(LimitNodeTest, drop_input_columns_fewer_than_limit) {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -16,7 +16,7 @@ DEFINE_int32(table_store_table_size_limit, 128 * 1024 * 1024,
              "The maximal size a table allows. When the size grows beyond this limit, "
              "old data will be discarded. Set to '-1' to remove this limit.");
 
-namespace pl {
+namespace px {
 namespace table_store {
 
 Table::Table(const schema::Relation& relation, int64_t max_table_size)
@@ -243,7 +243,7 @@ Status Table::WriteRowBatch(schema::RowBatch rb) {
 }
 
 Status Table::TransferRecordBatch(
-    std::unique_ptr<pl::types::ColumnWrapperRecordBatch> record_batch) {
+    std::unique_ptr<px::types::ColumnWrapperRecordBatch> record_batch) {
   // Don't transfer over empty row batches.
   if (record_batch->empty() || record_batch->at(0)->Size() == 0) {
     return Status::OK();
@@ -405,4 +405,4 @@ TableStats Table::GetTableStats() const {
 }
 
 }  // namespace table_store
-}  // namespace pl
+}  // namespace px

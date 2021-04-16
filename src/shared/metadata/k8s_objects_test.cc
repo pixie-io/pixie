@@ -3,7 +3,7 @@
 
 #include "src/shared/metadata/k8s_objects.h"
 
-namespace pl {
+namespace px {
 namespace md {
 
 TEST(PodInfo, basic_accessors) {
@@ -204,4 +204,4 @@ TEST(ServiceInfo, clone) {
 }
 
 }  // namespace md
-}  // namespace pl
+}  // namespace px

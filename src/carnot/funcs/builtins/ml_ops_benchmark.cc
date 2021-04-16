@@ -41,14 +41,14 @@ std::string random_string(std::size_t length) {
 
 // NOLINTNEXTLINE : runtime/references.
 static void BM_TransformerModel(benchmark::State& state) {
-  pl::carnot::builtins::TransformerUDF udf(FLAGS_embedding_dir);
+  px::carnot::builtins::TransformerUDF udf(FLAGS_embedding_dir);
   auto ints = random_ints(64);
-  auto json = pl::carnot::builtins::write_ints_to_json(ints.data(), 64);
-  auto model_pool = pl::carnot::exec::ml::ModelPool::Create();
+  auto json = px::carnot::builtins::write_ints_to_json(ints.data(), 64);
+  auto model_pool = px::carnot::exec::ml::ModelPool::Create();
   auto model =
-      model_pool->GetModelExecutor<pl::carnot::exec::ml::TransformerExecutor>(FLAGS_embedding_dir);
+      model_pool->GetModelExecutor<px::carnot::exec::ml::TransformerExecutor>(FLAGS_embedding_dir);
   model.reset();
-  auto ctx = pl::carnot::udf::FunctionContext(nullptr, model_pool.get());
+  auto ctx = px::carnot::udf::FunctionContext(nullptr, model_pool.get());
 
   for (auto _ : state) {
     benchmark::DoNotOptimize(udf.Exec(&ctx, json));
@@ -57,7 +57,7 @@ static void BM_TransformerModel(benchmark::State& state) {
 
 // NOLINTNEXTLINE : runtime/references.
 static void BM_SentencePiece(benchmark::State& state) {
-  auto udf = pl::carnot::builtins::SentencePieceUDF(FLAGS_sentencepiece_dir);
+  auto udf = px::carnot::builtins::SentencePieceUDF(FLAGS_sentencepiece_dir);
   auto text = random_string(1024);
 
   for (auto _ : state) {

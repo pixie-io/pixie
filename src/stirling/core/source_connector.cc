@@ -6,7 +6,7 @@
 
 #include "src/stirling/core/source_connector.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 Status SourceConnector::Init() {
@@ -52,6 +52,6 @@ Status SourceConnector::Stop() {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px
 
 #endif

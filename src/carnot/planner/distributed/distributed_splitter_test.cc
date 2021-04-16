@@ -15,7 +15,7 @@
 #include "src/carnot/planner/test_utils.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
@@ -1353,4 +1353,4 @@ TEST_F(SplitterTest, errors_if_pem_func_on_kelvin) {
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

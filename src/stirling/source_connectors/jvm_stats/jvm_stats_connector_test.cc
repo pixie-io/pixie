@@ -12,12 +12,12 @@
 #include "src/stirling/source_connectors/jvm_stats/jvm_stats_table.h"
 #include "src/stirling/testing/common.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
-using ::pl::stirling::testing::ColWrapperSizeIs;
-using ::pl::stirling::testing::FindRecordIdxMatchesPID;
-using ::pl::testing::TestFilePath;
+using ::px::stirling::testing::ColWrapperSizeIs;
+using ::px::stirling::testing::FindRecordIdxMatchesPID;
+using ::px::testing::TestFilePath;
 using ::testing::Each;
 using ::testing::SizeIs;
 
@@ -107,4 +107,4 @@ TEST_F(JVMStatsConnectorTest, CaptureData) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

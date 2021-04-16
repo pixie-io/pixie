@@ -21,24 +21,24 @@
 #include "src/shared/tracepoint_translation/translation.h"
 #endif
 
-using ::pl::ProcessStatsMonitor;
+using ::px::ProcessStatsMonitor;
 
-using ::pl::Status;
-using ::pl::StatusOr;
+using ::px::Status;
+using ::px::StatusOr;
 
-using ::pl::stirling::IndexPublication;
-using ::pl::stirling::PrintRecordBatch;
-using ::pl::stirling::SourceRegistry;
-using ::pl::stirling::SourceRegistrySpecifier;
-using ::pl::stirling::Stirling;
-using ::pl::stirling::stirlingpb::InfoClass;
-using ::pl::stirling::stirlingpb::Publish;
-using ::pl::stirling::stirlingpb::Subscribe;
+using ::px::stirling::IndexPublication;
+using ::px::stirling::PrintRecordBatch;
+using ::px::stirling::SourceRegistry;
+using ::px::stirling::SourceRegistrySpecifier;
+using ::px::stirling::Stirling;
+using ::px::stirling::stirlingpb::InfoClass;
+using ::px::stirling::stirlingpb::Publish;
+using ::px::stirling::stirlingpb::Subscribe;
 using DynamicTracepointDeployment =
-    ::pl::stirling::dynamic_tracing::ir::logical::TracepointDeployment;
+    ::px::stirling::dynamic_tracing::ir::logical::TracepointDeployment;
 
-using ::pl::types::ColumnWrapperRecordBatch;
-using ::pl::types::TabletID;
+using ::px::types::ColumnWrapperRecordBatch;
+using ::px::types::TabletID;
 
 DEFINE_string(sources, "kProd",
               "[kAll|kProd|kMetrics|kTracers|kProfiler] Choose sources to enable.");
@@ -62,7 +62,7 @@ Status WaitForRunning(const Stirling& stirling) {
   while (!stirling.IsRunning()) {
     ++count;
     if (count == 10) {
-      return ::pl::error::Internal("Stirling failed to reach running state.");
+      return ::px::error::Internal("Stirling failed to reach running state.");
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
@@ -86,7 +86,7 @@ Status StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
   // Find the table info from the publications.
   auto iter = g_table_info_map.find(table_id);
   if (iter == g_table_info_map.end()) {
-    return pl::error::Internal("Encountered unknown table id $0", table_id);
+    return px::error::Internal("Encountered unknown table id $0", table_id);
   }
   const InfoClass& table_info = iter->second;
 
@@ -111,9 +111,9 @@ void TerminationHandler(int signum) {
     g_stirling->Stop();
   }
 
-  if (FLAGS_enable_heap_profiler && ::pl::profiler::Heap::IsProfilerStarted()) {
+  if (FLAGS_enable_heap_profiler && ::px::profiler::Heap::IsProfilerStarted()) {
     LOG(INFO) << "===== Stopping heap profiler.";
-    ::pl::profiler::Heap::StopProfiler();
+    ::px::profiler::Heap::StopProfiler();
   }
 
   if (g_process_stats_monitor != nullptr) {
@@ -124,13 +124,13 @@ void TerminationHandler(int signum) {
 
 // DeathHandler is meant for fatal errors (like seg-faults),
 // where no graceful termination is performed.
-class DeathHandler : public pl::FatalErrorHandlerInterface {
+class DeathHandler : public px::FatalErrorHandlerInterface {
  public:
   DeathHandler() = default;
   void OnFatalError() const override {}
 };
 
-std::unique_ptr<pl::SignalAction> g_signal_action;
+std::unique_ptr<px::SignalAction> g_signal_action;
 
 //-----------------------------------------------------------------------------
 // DynamicTracing Specific Code
@@ -182,7 +182,7 @@ std::optional<TraceProgram> GetTraceProgram() {
     } else {
       trace_program.format =
           (absl::EndsWith(FLAGS_trace, ".pxl")) ? TracepointFormat::kPXL : TracepointFormat::kIR;
-      PL_ASSIGN_OR_EXIT(trace_program.text, pl::ReadFileToString(FLAGS_trace));
+      PL_ASSIGN_OR_EXIT(trace_program.text, px::ReadFileToString(FLAGS_trace));
     }
     return trace_program;
   }
@@ -203,13 +203,13 @@ StatusOr<Publish> DeployTrace(Stirling* stirling, TraceProgram trace_program_str
   if (trace_program_str.format == TracepointFormat::kPXL) {
 #ifdef PXL_SUPPORT
     PL_ASSIGN_OR_RETURN(auto compiled_tracepoint,
-                        pl::carnot::planner::compiler::CompileTracepoint(trace_program_str.text));
+                        px::carnot::planner::compiler::CompileTracepoint(trace_program_str.text));
     LOG(INFO) << compiled_tracepoint.DebugString();
     trace_program = std::make_unique<DynamicTracepointDeployment>();
-    ::pl::tracepoint::ConvertPlannerTracepointToStirlingTracepoint(compiled_tracepoint,
+    ::px::tracepoint::ConvertPlannerTracepointToStirlingTracepoint(compiled_tracepoint,
                                                                    trace_program.get());
 #else
-    return pl::error::Internal(
+    return px::error::Internal(
         "Cannot deploy tracepoint. stirling_wrapper was not built with PxL support.");
 #endif
   } else {
@@ -217,7 +217,7 @@ StatusOr<Publish> DeployTrace(Stirling* stirling, TraceProgram trace_program_str
     bool success =
         google::protobuf::TextFormat::ParseFromString(trace_program_str.text, trace_program.get());
     if (!success) {
-      return pl::error::Internal("Unable to parse trace file");
+      return px::error::Internal("Unable to parse trace file");
     }
   }
 
@@ -234,7 +234,7 @@ StatusOr<Publish> DeployTrace(Stirling* stirling, TraceProgram trace_program_str
   do {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     s = stirling->GetTracepointInfo(trace_id);
-  } while (!s.ok() && s.code() == pl::statuspb::Code::RESOURCE_UNAVAILABLE);
+  } while (!s.ok() && s.code() == px::statuspb::Code::RESOURCE_UNAVAILABLE);
 
   return s;
 }
@@ -251,16 +251,16 @@ int main(int argc, char** argv) {
   signal(SIGHUP, TerminationHandler);
 
   // This handles fatal (non-graceful) errors.
-  g_signal_action = std::make_unique<pl::SignalAction>();
+  g_signal_action = std::make_unique<px::SignalAction>();
   DeathHandler err_handler;
   g_signal_action->RegisterFatalErrorHandler(err_handler);
 
-  pl::EnvironmentGuard env_guard(&argc, argv);
+  px::EnvironmentGuard env_guard(&argc, argv);
 
   if (FLAGS_enable_heap_profiler) {
-    CHECK(::pl::profiler::Heap::ProfilerAvailable());
+    CHECK(::px::profiler::Heap::ProfilerAvailable());
     LOG(INFO) << "===== Enabling heap profiler.";
-    ::pl::profiler::Heap::StartProfiler("stirling_heap");
+    ::px::profiler::Heap::StartProfiler("stirling_heap");
   }
 
   LOG(INFO) << "Stirling Wrapper PID: " << getpid();
@@ -277,7 +277,7 @@ int main(int argc, char** argv) {
   if (!sources.has_value()) {
     LOG(ERROR) << absl::Substitute("$0 is not a valid source register specifier", FLAGS_sources);
   }
-  std::unique_ptr<SourceRegistry> registry = pl::stirling::CreateSourceRegistry(sources.value());
+  std::unique_ptr<SourceRegistry> registry = px::stirling::CreateSourceRegistry(sources.value());
 
   if (!FLAGS_print_record_batches.empty()) {
     // controls which tables are dumped to STDOUT
@@ -296,7 +296,7 @@ int main(int argc, char** argv) {
 
   // Subscribe to all elements.
   // Stirling will update its schemas and sets up the data tables.
-  PL_CHECK_OK(stirling->SetSubscription(pl::stirling::SubscribeToAllInfoClasses(publication)));
+  PL_CHECK_OK(stirling->SetSubscription(px::stirling::SubscribeToAllInfoClasses(publication)));
 
   // Set a dummy callback function (normally this would be in the agent).
   stirling->RegisterDataPushCallback(StirlingWrapperCallback);
@@ -342,7 +342,7 @@ int main(int argc, char** argv) {
       }
 
       // Update the subscription to enable the new trace.
-      PL_CHECK_OK(stirling->SetSubscription(pl::stirling::SubscribeToAllInfoClasses(trace_pub)));
+      PL_CHECK_OK(stirling->SetSubscription(px::stirling::SubscribeToAllInfoClasses(trace_pub)));
     }
   }
 

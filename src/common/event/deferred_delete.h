@@ -2,7 +2,7 @@
 
 #include <memory>
 
-namespace pl {
+namespace px {
 namespace event {
 
 /**
@@ -18,4 +18,4 @@ class DeferredDeletable {
 using DeferredDeletableUPtr = std::unique_ptr<DeferredDeletable>;
 
 }  // namespace event
-}  // namespace pl
+}  // namespace px

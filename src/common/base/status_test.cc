@@ -7,27 +7,27 @@
 #include "src/common/base/testproto/test.pb.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 
-using ::pl::testing::status::StatusIs;
+using ::px::testing::status::StatusIs;
 
 TEST(Status, Default) {
   Status status;
   EXPECT_TRUE(status.ok());
   EXPECT_EQ(status, Status::OK());
-  EXPECT_EQ(status.code(), pl::statuspb::OK);
+  EXPECT_EQ(status.code(), px::statuspb::OK);
 }
 
 TEST(Status, EqCopy) {
-  Status a(pl::statuspb::UNKNOWN, "Badness");
+  Status a(px::statuspb::UNKNOWN, "Badness");
   Status b = a;
 
   ASSERT_EQ(a, b);
 }
 
 TEST(Status, EqDiffCode) {
-  Status a(pl::statuspb::UNKNOWN, "Badness");
-  Status b(pl::statuspb::CANCELLED, "Badness");
+  Status a(px::statuspb::UNKNOWN, "Badness");
+  Status b(px::statuspb::CANCELLED, "Badness");
 
   ASSERT_NE(a, b);
 }
@@ -40,7 +40,7 @@ Status MacroTestFn(const Status& s) {
 TEST(Status, pl_return_if_error_test) {
   EXPECT_EQ(Status::OK(), MacroTestFn(Status::OK()));
 
-  auto err_status = Status(pl::statuspb::UNKNOWN, "an error");
+  auto err_status = Status(px::statuspb::UNKNOWN, "an error");
   EXPECT_EQ(err_status, MacroTestFn(err_status));
 
   // Check to make sure value to macro is used only once.
@@ -58,23 +58,23 @@ TEST(Status, pl_return_if_error_test) {
 }
 
 TEST(Status, to_proto) {
-  Status s1(pl::statuspb::UNKNOWN, "error 1");
+  Status s1(px::statuspb::UNKNOWN, "error 1");
   auto pb1 = s1.ToProto();
-  EXPECT_EQ(pl::statuspb::UNKNOWN, pb1.err_code());
+  EXPECT_EQ(px::statuspb::UNKNOWN, pb1.err_code());
   EXPECT_EQ("error 1", pb1.msg());
 
-  Status s2(pl::statuspb::INVALID_ARGUMENT, "error 2");
+  Status s2(px::statuspb::INVALID_ARGUMENT, "error 2");
   auto pb2 = s2.ToProto();
-  EXPECT_EQ(pl::statuspb::INVALID_ARGUMENT, pb2.err_code());
+  EXPECT_EQ(px::statuspb::INVALID_ARGUMENT, pb2.err_code());
   EXPECT_EQ("error 2", pb2.msg());
 
-  pl::statuspb::Status status_proto;
+  px::statuspb::Status status_proto;
   s2.ToProto(&status_proto);
   EXPECT_EQ(s2, Status(status_proto));
 }
 
 TEST(Status, no_context_tests) {
-  Status s1(pl::statuspb::UNKNOWN, "error 1");
+  Status s1(px::statuspb::UNKNOWN, "error 1");
   EXPECT_FALSE(s1.has_context());
 }
 
@@ -88,7 +88,7 @@ std::unique_ptr<google::protobuf::Message> MakeTestMessage() {
 }
 
 TEST(Status, context_copy_tests) {
-  Status s1(pl::statuspb::UNKNOWN, "error 1", MakeTestMessage());
+  Status s1(px::statuspb::UNKNOWN, "error 1", MakeTestMessage());
   EXPECT_TRUE(s1.has_context());
   Status s2 = s1;
   EXPECT_TRUE(s2.has_context());
@@ -97,7 +97,7 @@ TEST(Status, context_copy_tests) {
 }
 
 TEST(Status, context_vs_no_context_status) {
-  Status s1(pl::statuspb::UNKNOWN, "error 1", MakeTestMessage());
+  Status s1(px::statuspb::UNKNOWN, "error 1", MakeTestMessage());
   Status s2(s1.code(), s1.msg());
   EXPECT_NE(s1, s2);
   EXPECT_FALSE(s2.has_context());
@@ -107,7 +107,7 @@ TEST(Status, context_vs_no_context_status) {
 
 TEST(StatusAdapter, proto_with_context_test) {
   // from_proto
-  Status s1(pl::statuspb::UNKNOWN, "error 1", MakeTestMessage());
+  Status s1(px::statuspb::UNKNOWN, "error 1", MakeTestMessage());
   auto pb1 = s1.ToProto();
   auto s2 = StatusAdapter(pb1);
   EXPECT_TRUE(google::protobuf::util::MessageDifferencer::Equals(s1.ToProto(), s2.ToProto()));
@@ -120,13 +120,13 @@ TEST(StatusAdapter, proto_with_context_test) {
 
 TEST(Status, context_nullptr_test) {
   // nullptr for context should mean statuses are the same.
-  Status s1(pl::statuspb::UNKNOWN, "error 1", nullptr);
-  Status s2(pl::statuspb::UNKNOWN, "error 1");
+  Status s1(px::statuspb::UNKNOWN, "error 1", nullptr);
+  Status s2(px::statuspb::UNKNOWN, "error 1");
   EXPECT_EQ(s1, s2);
 }
 
 TEST(StatusAdapter, from_proto) {
-  Status s1(pl::statuspb::UNKNOWN, "error 1");
+  Status s1(px::statuspb::UNKNOWN, "error 1");
   auto pb1 = s1.ToProto();
   EXPECT_EQ(s1, StatusAdapter(pb1));
 }
@@ -138,8 +138,8 @@ TEST(StatusAdapter, from_proto_without_error) {
 }
 
 TEST(PrependMessage, ResultsIsAsExpected) {
-  Status s1(pl::statuspb::INTERNAL, "Internal");
-  EXPECT_THAT(s1, StatusIs(pl::statuspb::INTERNAL, "Internal"));
+  Status s1(px::statuspb::INTERNAL, "Internal");
+  EXPECT_THAT(s1, StatusIs(px::statuspb::INTERNAL, "Internal"));
 }
 
-}  // namespace pl
+}  // namespace px

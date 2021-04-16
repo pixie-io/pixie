@@ -31,7 +31,7 @@
 #include "src/stirling/stirling.h"
 #include "src/table_store/schema/schema.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -39,9 +39,9 @@ using ::google::protobuf::DescriptorPool;
 using ::google::protobuf::util::JsonToBinaryString;
 using ::google::protobuf::util::NewTypeResolverForDescriptorPool;
 using ::google::protobuf::util::TypeResolver;
-using ::pl::table_store::schema::Relation;
-using ::pl::testing::proto::EqualsProto;
-using ::pl::vispb::Vis;
+using ::px::table_store::schema::Relation;
+using ::px::testing::proto::EqualsProto;
+using ::px::vispb::Vis;
 using planpb::testutils::CompareLogicalPlans;
 using ::testing::_;
 using ::testing::ContainsRegex;
@@ -169,7 +169,7 @@ class PresetQueriesTest : public ::testing::Test {
 
   compiler::FuncToExecute ParseFunc(
       const absl::flat_hash_map<std::string, std::string>& variable_map,
-      const pl::vispb::Widget_Func& widget_func, const std::string& table_name) {
+      const px::vispb::Widget_Func& widget_func, const std::string& table_name) {
     compiler::FuncToExecute exec_func;
     exec_func.set_output_table_prefix(table_name);
     exec_func.set_func_name(widget_func.name());
@@ -341,4 +341,4 @@ TEST_F(PresetQueriesTest, PresetQueries) {
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

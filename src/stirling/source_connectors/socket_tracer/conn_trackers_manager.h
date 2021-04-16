@@ -9,7 +9,7 @@
 
 #include "src/stirling/source_connectors/socket_tracer/conn_tracker.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 /**
@@ -188,4 +188,4 @@ class ConnTrackersManager {
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

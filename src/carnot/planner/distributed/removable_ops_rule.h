@@ -18,7 +18,7 @@
 #include "src/common/uuid/uuid.h"
 #include "src/shared/upid/upid.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
@@ -176,4 +176,4 @@ class MapRemovableOperatorsRule : public Rule {
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

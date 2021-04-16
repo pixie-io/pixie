@@ -21,7 +21,7 @@
 #include "src/shared/types/types.h"
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -154,4 +154,4 @@ Status FilterNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, si
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

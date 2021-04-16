@@ -5,7 +5,7 @@
 #include "src/stirling/core/data_table.h"
 #include "src/stirling/source_connectors/seq_gen/sequence_generator.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 class DataTableTest : public ::testing::Test {
@@ -493,4 +493,4 @@ TEST_F(DataTableStressTest, column_wrapper_read_write) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

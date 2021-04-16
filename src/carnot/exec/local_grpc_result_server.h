@@ -11,7 +11,7 @@
 #include "src/common/base/base.h"
 #include "src/table_store/table_store.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 
 using table_store::schema::RowBatch;
@@ -31,8 +31,8 @@ class LocalResultSinkServer final : public carnotpb::ResultSinkService::Service 
   // Implements the TransferResultChunkAPI of ResultSinkService.
   ::grpc::Status TransferResultChunk(
       ::grpc::ServerContext*,
-      ::grpc::ServerReader<::pl::carnotpb::TransferResultChunkRequest>* reader,
-      ::pl::carnotpb::TransferResultChunkResponse* response) override {
+      ::grpc::ServerReader<::px::carnotpb::TransferResultChunkRequest>* reader,
+      ::px::carnotpb::TransferResultChunkResponse* response) override {
     auto rb = std::make_unique<carnotpb::TransferResultChunkRequest>();
     // Write the results to the result vector.
 
@@ -114,7 +114,7 @@ class LocalGRPCResultSinkServer {
   std::unique_ptr<carnotpb::ResultSinkService::StubInterface> StubGenerator(
       const std::string&) const {
     grpc::ChannelArguments args;
-    return pl::carnotpb::ResultSinkService::NewStub(grpc_server_->InProcessChannel(args));
+    return px::carnotpb::ResultSinkService::NewStub(grpc_server_->InProcessChannel(args));
   }
 
  private:
@@ -124,4 +124,4 @@ class LocalGRPCResultSinkServer {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

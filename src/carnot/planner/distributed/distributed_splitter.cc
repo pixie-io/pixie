@@ -9,7 +9,7 @@
 #include "src/carnot/planner/distributed/presplit_analyzer.h"
 #include "src/carnot/planner/distributed/presplit_optimizer.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
@@ -474,4 +474,4 @@ StatusOr<GRPCSourceGroupIR*> DistributedSplitter::CreateGRPCSourceGroup(Operator
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

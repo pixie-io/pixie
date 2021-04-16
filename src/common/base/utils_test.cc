@@ -4,7 +4,7 @@
 #include "src/common/base/utils.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 
 using ::testing::StrEq;
 
@@ -301,4 +301,4 @@ TEST(AutoStreamOperator, Basic) {
   }
 }
 
-}  // namespace pl
+}  // namespace px

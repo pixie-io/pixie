@@ -14,7 +14,7 @@
 #include "src/stirling/source_connectors/perf_profiler/stack_traces_table.h"
 #include "src/stirling/source_connectors/perf_profiler/symbol_cache.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrapper {
@@ -122,4 +122,4 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

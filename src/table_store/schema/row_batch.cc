@@ -10,7 +10,7 @@
 #include "src/shared/types/type_utils.h"
 #include "src/table_store/schema/row_batch.h"
 
-namespace pl {
+namespace px {
 namespace table_store {
 namespace schema {
 
@@ -249,4 +249,4 @@ StatusOr<std::unique_ptr<RowBatch>> RowBatch::Slice(int64_t offset, int64_t leng
 
 }  // namespace schema
 }  // namespace table_store
-}  // namespace pl
+}  // namespace px

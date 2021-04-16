@@ -8,7 +8,7 @@
 
 #include "src/carnot/planner/parser/string_reader.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -107,4 +107,4 @@ TEST(StringReaderTest, pypa_args_before_kwargs_error) {
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

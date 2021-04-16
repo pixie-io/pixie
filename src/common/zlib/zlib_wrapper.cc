@@ -4,7 +4,7 @@
 #include "src/common/base/base.h"
 #include "src/common/zlib/zlib_wrapper.h"
 
-namespace pl {
+namespace px {
 namespace zlib {
 
 StatusOr<std::string> Inflate(std::string_view in, size_t output_block_size) {
@@ -43,4 +43,4 @@ StatusOr<std::string> Inflate(std::string_view in, size_t output_block_size) {
 }
 
 }  // namespace zlib
-}  // namespace pl
+}  // namespace px

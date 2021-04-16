@@ -5,7 +5,7 @@
 #include <absl/base/internal/spinlock.h>
 #include "src/shared/metadata/state_manager.h"
 
-namespace pl {
+namespace px {
 namespace md {
 
 /**
@@ -293,4 +293,4 @@ Status HandleNamespaceUpdate(const NamespaceUpdate& update, AgentMetadataState* 
 }
 
 }  // namespace md
-}  // namespace pl
+}  // namespace px

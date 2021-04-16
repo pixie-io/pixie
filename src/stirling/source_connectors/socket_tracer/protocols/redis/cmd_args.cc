@@ -6,15 +6,15 @@
 
 #include "src/common/json/json.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace redis {
 
 namespace {
 
-using ::pl::utils::JSONObjectBuilder;
-using ::pl::utils::ToJSONString;
+using ::px::utils::JSONObjectBuilder;
+using ::px::utils::ToJSONString;
 
 constexpr std::string_view kListArgSeparator = " [";
 constexpr std::string_view kListArgSuffix = " ...]";
@@ -503,4 +503,4 @@ std::optional<const CmdArgs*> GetCmdAndArgs(VectorView<std::string>* payloads) {
 }  // namespace redis
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

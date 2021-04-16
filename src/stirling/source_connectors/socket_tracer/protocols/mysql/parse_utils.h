@@ -4,7 +4,7 @@
 #include "src/common/base/base.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace mysql {
@@ -53,4 +53,4 @@ Status DissectInt(std::string_view msg, size_t* offset, int_type* result) {
 }  // namespace mysql
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

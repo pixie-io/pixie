@@ -10,7 +10,7 @@
 #include "src/carnot/exec/ml/borrow_pool.h"
 #include "src/carnot/exec/ml/model_executor.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 namespace ml {
@@ -57,4 +57,4 @@ class ModelPool {
 }  // namespace ml
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

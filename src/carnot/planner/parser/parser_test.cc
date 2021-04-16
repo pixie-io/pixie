@@ -8,7 +8,7 @@
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/parser/parser.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -143,4 +143,4 @@ TEST_F(ParserTest, indent_dedent_error) {
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

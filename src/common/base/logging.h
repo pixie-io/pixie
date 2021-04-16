@@ -49,9 +49,9 @@ PL_SUPPRESS_WARNINGS_END()
 #define ECHECK_GE(val1, val2) ECHECK_OP(_GE, >=, val1, val2)
 #define ECHECK_GT(val1, val2) ECHECK_OP(_GT, >, val1, val2)
 
-namespace pl {
+namespace px {
 
 // Indent provides a consitent indent base on level.
 inline std::string Indent(int level) { return std::string(level, '\t'); }
 
-}  // namespace pl
+}  // namespace px

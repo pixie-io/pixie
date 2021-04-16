@@ -6,7 +6,7 @@
 
 #include "src/common/system/config.h"
 
-namespace pl {
+namespace px {
 namespace system {
 
 class MockConfig : public Config {
@@ -22,4 +22,4 @@ class MockConfig : public Config {
 };
 
 }  // namespace system
-}  // namespace pl
+}  // namespace px

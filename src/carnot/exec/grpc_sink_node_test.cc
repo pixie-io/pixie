@@ -16,7 +16,7 @@
 #include "src/common/uuid/uuid_utils.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -556,4 +556,4 @@ TEST_F(GRPCSinkNodeTest, break_up_row_batch_that_isnt_eow_eos) {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

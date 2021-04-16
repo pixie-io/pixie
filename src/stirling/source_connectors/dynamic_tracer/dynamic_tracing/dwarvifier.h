@@ -8,15 +8,15 @@
 
 DECLARE_bool(enable_tracing_golang_interface);
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace dynamic_tracing {
 
 StatusOr<ir::physical::Program> GeneratePhysicalProgram(
     const ir::logical::TracepointDeployment& input_program,
-    ::pl::stirling::obj_tools::DwarfReader* dwarf_reader,
-    ::pl::stirling::obj_tools::ElfReader* elf_reader);
+    ::px::stirling::obj_tools::DwarfReader* dwarf_reader,
+    ::px::stirling::obj_tools::ElfReader* elf_reader);
 
 }  // namespace dynamic_tracing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

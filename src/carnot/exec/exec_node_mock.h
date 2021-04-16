@@ -7,7 +7,7 @@
 
 #include "src/carnot/exec/exec_node.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -59,4 +59,4 @@ class MockSinkNode : public SinkNode {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -9,7 +9,7 @@
 #include "src/table_store/schemapb/schema.pb.h"
 #include "src/table_store/table/table.h"
 
-namespace pl {
+namespace px {
 namespace table_store {
 
 namespace {
@@ -545,4 +545,4 @@ TEST(TableTest, write_zero_row_row_batch) {
 }
 
 }  // namespace table_store
-}  // namespace pl
+}  // namespace px

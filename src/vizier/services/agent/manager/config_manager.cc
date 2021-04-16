@@ -1,11 +1,11 @@
 #include "src/vizier/services/agent/manager/config_manager.h"
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 
-ConfigManager::ConfigManager(pl::event::Dispatcher* dispatcher, Info* agent_info,
+ConfigManager::ConfigManager(px::event::Dispatcher* dispatcher, Info* agent_info,
                              Manager::VizierNATSConnector* nats_conn)
     : MessageHandler(dispatcher, agent_info, nats_conn),
       dispatcher_(dispatcher),
@@ -24,4 +24,4 @@ Status ConfigManager::HandleMessage(std::unique_ptr<messages::VizierMessage> msg
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

@@ -15,7 +15,7 @@
 #include "src/common/uuid/uuid.h"
 #include "src/shared/metadata/metadata_filter.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
@@ -155,4 +155,4 @@ class DistributedPlan {
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

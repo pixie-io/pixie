@@ -11,7 +11,7 @@
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 #include "third_party/bpftrace/src/ast/async_event_types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 namespace {
@@ -362,6 +362,6 @@ void DynamicBPFTraceConnector::HandleEvent(uint8_t* data) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px
 
 #endif

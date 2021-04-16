@@ -4,12 +4,12 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto/greet.pb.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace grpc {
 
-using ::pl::stirling::protocols::http2::testing::HelloReply;
-using ::pl::stirling::protocols::http2::testing::HelloRequest;
+using ::px::stirling::protocols::http2::testing::HelloReply;
+using ::px::stirling::protocols::http2::testing::HelloRequest;
 using ::testing::HasSubstr;
 using ::testing::StrEq;
 
@@ -77,4 +77,4 @@ TEST(ParsePB, LongStringTruncation) {
 
 }  // namespace grpc
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

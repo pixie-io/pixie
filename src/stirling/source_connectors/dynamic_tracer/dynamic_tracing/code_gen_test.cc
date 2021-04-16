@@ -7,20 +7,20 @@
 constexpr std::string_view kBinaryPath =
     "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary";
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace dynamic_tracing {
 
 using ::google::protobuf::TextFormat;
-using ::pl::stirling::dynamic_tracing::ir::physical::Field;
-using ::pl::stirling::dynamic_tracing::ir::physical::MapStashAction;
-using ::pl::stirling::dynamic_tracing::ir::physical::PerfBufferOutputAction;
-using ::pl::stirling::dynamic_tracing::ir::physical::Register;
-using ::pl::stirling::dynamic_tracing::ir::physical::ScalarVariable;
-using ::pl::stirling::dynamic_tracing::ir::physical::Struct;
-using ::pl::stirling::dynamic_tracing::ir::physical::StructVariable;
-using ::pl::stirling::dynamic_tracing::ir::shared::BPFHelper;
-using ::pl::stirling::dynamic_tracing::ir::shared::ScalarType;
+using ::px::stirling::dynamic_tracing::ir::physical::Field;
+using ::px::stirling::dynamic_tracing::ir::physical::MapStashAction;
+using ::px::stirling::dynamic_tracing::ir::physical::PerfBufferOutputAction;
+using ::px::stirling::dynamic_tracing::ir::physical::Register;
+using ::px::stirling::dynamic_tracing::ir::physical::ScalarVariable;
+using ::px::stirling::dynamic_tracing::ir::physical::Struct;
+using ::px::stirling::dynamic_tracing::ir::physical::StructVariable;
+using ::px::stirling::dynamic_tracing::ir::shared::BPFHelper;
+using ::px::stirling::dynamic_tracing::ir::shared::ScalarType;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 using ::testing::StrEq;
@@ -370,7 +370,7 @@ TEST(GenProgramTest, SpecsAndCode) {
   ir::physical::Program program;
 
   ASSERT_TRUE(TextFormat::ParseFromString(program_protobuf, &program));
-  program.mutable_deployment_spec()->set_path(pl::testing::BazelBinTestFilePath(kBinaryPath));
+  program.mutable_deployment_spec()->set_path(px::testing::BazelBinTestFilePath(kBinaryPath));
 
   ASSERT_OK_AND_ASSIGN(const std::string bcc_code, GenBCCProgram(program));
 
@@ -470,4 +470,4 @@ TEST(GenProgramTest, SpecsAndCode) {
 
 }  // namespace dynamic_tracing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

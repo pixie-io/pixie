@@ -12,10 +12,10 @@
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/stirling.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
-using ::pl::testing::BazelBinTestFilePath;
+using ::px::testing::BazelBinTestFilePath;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
@@ -67,7 +67,7 @@ class StirlingDynamicTraceBPFTest : public ::testing::Test {
     do {
       s = stirling_->GetTracepointInfo(trace_id);
       std::this_thread::sleep_for(std::chrono::seconds(1));
-    } while (!s.ok() && s.code() == pl::statuspb::Code::RESOURCE_UNAVAILABLE);
+    } while (!s.ok() && s.code() == px::statuspb::Code::RESOURCE_UNAVAILABLE);
 
     return s;
   }
@@ -106,7 +106,7 @@ class StirlingDynamicTraceBPFTest : public ::testing::Test {
     info_class_ = publication.published_info_classes(0);
 
     // Subscribe to the new info class.
-    ASSERT_OK(stirling_->SetSubscription(pl::stirling::SubscribeToAllInfoClasses(publication)));
+    ASSERT_OK(stirling_->SetSubscription(px::stirling::SubscribeToAllInfoClasses(publication)));
 
     // Run Stirling data collector.
     ASSERT_OK(stirling_->RunAsThread());
@@ -119,7 +119,7 @@ class StirlingDynamicTraceBPFTest : public ::testing::Test {
     ASSERT_OK(stirling_->RemoveTracepoint(trace_id));
 
     // Should get removed.
-    EXPECT_EQ(WaitForStatus(trace_id).code(), pl::statuspb::Code::NOT_FOUND);
+    EXPECT_EQ(WaitForStatus(trace_id).code(), px::statuspb::Code::NOT_FOUND);
 
     stirling_->Stop();
   }
@@ -185,7 +185,7 @@ TEST_F(DynamicTraceAPITest, DynamicTraceAPI) {
 
   // Checking status of non-existent trace should return NOT_FOUND.
   s = stirling_->GetTracepointInfo(trace_id);
-  EXPECT_EQ(s.code(), pl::statuspb::Code::NOT_FOUND);
+  EXPECT_EQ(s.code(), px::statuspb::Code::NOT_FOUND);
 
   auto trace_program = Prepare(kTracepointDeployment, kBinaryPath);
   stirling_->RegisterTracepoint(trace_id, std::move(trace_program));
@@ -193,7 +193,7 @@ TEST_F(DynamicTraceAPITest, DynamicTraceAPI) {
   // Immediately after registering, state should be pending.
   // TODO(oazizi): How can we make sure this is not flaky?
   s = stirling_->GetTracepointInfo(trace_id);
-  EXPECT_EQ(s.code(), pl::statuspb::Code::RESOURCE_UNAVAILABLE) << s.ToString();
+  EXPECT_EQ(s.code(), px::statuspb::Code::RESOURCE_UNAVAILABLE) << s.ToString();
 
   // Should deploy.
   ASSERT_OK(WaitForStatus(trace_id));
@@ -210,7 +210,7 @@ TEST_F(DynamicTraceAPITest, NonExistentBinary) {
   stirling_->RegisterTracepoint(trace_id, std::move(trace_program));
 
   s = WaitForStatus(trace_id);
-  EXPECT_EQ(s.code(), pl::statuspb::Code::FAILED_PRECONDITION);
+  EXPECT_EQ(s.code(), px::statuspb::Code::FAILED_PRECONDITION);
 }
 
 TEST_F(DynamicTraceAPITest, MissingSymbol) {
@@ -230,7 +230,7 @@ TEST_F(DynamicTraceAPITest, MissingSymbol) {
   stirling_->RegisterTracepoint(trace_id, std::move(trace_program));
 
   s = WaitForStatus(trace_id);
-  EXPECT_EQ(s.code(), pl::statuspb::Code::INTERNAL);
+  EXPECT_EQ(s.code(), px::statuspb::Code::INTERNAL);
 }
 
 TEST_F(DynamicTraceAPITest, InvalidReference) {
@@ -251,7 +251,7 @@ TEST_F(DynamicTraceAPITest, InvalidReference) {
   stirling_->RegisterTracepoint(trace_id, std::move(trace_program));
 
   s = WaitForStatus(trace_id);
-  EXPECT_EQ(s.code(), pl::statuspb::Code::INTERNAL);
+  EXPECT_EQ(s.code(), px::statuspb::Code::INTERNAL);
 }
 
 //-----------------------------------------------------------------------------
@@ -987,4 +987,4 @@ tracepoints {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

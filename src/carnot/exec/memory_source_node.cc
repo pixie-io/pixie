@@ -9,7 +9,7 @@
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -110,4 +110,4 @@ bool MemorySourceNode::NextBatchReady() {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -7,7 +7,7 @@
 #include "src/carnot/planner/distributed/plan_clusters.h"
 #include "src/carnot/planner/test_utils.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
@@ -144,4 +144,4 @@ TEST_F(PlanClustersTest, cluster_operator_intersecting_set) {
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

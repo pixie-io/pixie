@@ -3,7 +3,7 @@
 #include <string>
 #include <thread>
 
-namespace pl {
+namespace px {
 
 inline std::string CurrentThreadIDAsString() {
   std::stringstream ss;
@@ -11,4 +11,4 @@ inline std::string CurrentThreadIDAsString() {
   return ss.str();
 }
 
-}  // namespace pl
+}  // namespace px

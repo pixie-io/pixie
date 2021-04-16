@@ -10,7 +10,7 @@
 
 #include <absl/strings/str_join.h>
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 compilerpb::CompilerErrorGroup LineColErrorPb(int64_t line, int64_t column,
@@ -65,4 +65,4 @@ Status MergeStatuses(const std::vector<Status>& statuses) {
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

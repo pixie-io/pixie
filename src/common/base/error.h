@@ -8,7 +8,7 @@
 #include "src/common/base/status.h"
 #include "src/common/base/statuspb/status.pb.h"
 
-namespace pl {
+namespace px {
 namespace error {
 
 // Declare convenience functions:
@@ -17,9 +17,9 @@ namespace error {
 #define DECLARE_ERROR(FUNC, CONST)                                           \
   template <typename... Args>                                                \
   Status FUNC(std::string_view format, Args... args) {                       \
-    return Status(::pl::statuspb::CONST, absl::Substitute(format, args...)); \
+    return Status(::px::statuspb::CONST, absl::Substitute(format, args...)); \
   }                                                                          \
-  inline bool Is##FUNC(const Status& status) { return status.code() == ::pl::statuspb::CONST; }
+  inline bool Is##FUNC(const Status& status) { return status.code() == ::px::statuspb::CONST; }
 
 DECLARE_ERROR(Cancelled, CANCELLED)
 DECLARE_ERROR(Unknown, UNKNOWN)
@@ -37,7 +37,7 @@ DECLARE_ERROR(FailedPrecondition, FAILED_PRECONDITION)
 
 #undef DECLARE_ERROR
 
-inline std::string CodeToString(pl::statuspb::Code code) {
+inline std::string CodeToString(px::statuspb::Code code) {
   std::string_view code_str_view = magic_enum::enum_name(code);
   if (code_str_view.empty()) {
     return "Unknown error_code";
@@ -59,4 +59,4 @@ inline std::string CodeToString(pl::statuspb::Code code) {
 }
 
 }  // namespace error
-}  // namespace pl
+}  // namespace px

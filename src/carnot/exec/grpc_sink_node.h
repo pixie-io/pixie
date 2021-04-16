@@ -16,7 +16,7 @@
 
 #include "src/carnot/carnotpb/carnot.grpc.pb.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -80,4 +80,4 @@ class GRPCSinkNode : public SinkNode {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

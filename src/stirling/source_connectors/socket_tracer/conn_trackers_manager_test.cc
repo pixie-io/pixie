@@ -3,7 +3,7 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/socket_tracer/conn_trackers_manager.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 class ConnTrackersManagerTest : public ::testing::Test {
@@ -236,4 +236,4 @@ TEST_F(ConnTrackerGenerationsTest, Basic) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

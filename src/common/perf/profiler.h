@@ -9,7 +9,7 @@
 #define PROFILER_AVAILABLE
 #endif
 
-namespace pl {
+namespace px {
 namespace profiler {
 
 class CPU {
@@ -74,4 +74,4 @@ class Heap {
 };
 
 }  // namespace profiler
-}  // namespace pl
+}  // namespace px

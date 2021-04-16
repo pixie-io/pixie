@@ -6,7 +6,7 @@
 #include "src/carnot/udf/udf.h"
 #include "src/carnot/udfspb/udfs.pb.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace udf {
 
@@ -213,4 +213,4 @@ constexpr bool has_valid_doc_fn() {
 
 }  // namespace udf
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

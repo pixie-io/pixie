@@ -6,13 +6,13 @@
 #include "src/common/base/utils.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/event_parser.h"  // For FrameBase
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace http {
 
 // Automatically converts ToString() to stream operator for gtest.
-using ::pl::operator<<;
+using ::px::operator<<;
 
 //-----------------------------------------------------------------------------
 // HTTP Message
@@ -90,4 +90,4 @@ struct ProtocolTraits {
 }  // namespace http
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

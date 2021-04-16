@@ -7,7 +7,7 @@
 #include "src/carnot/planner/objects/funcobject.h"
 #include "src/carnot/planner/probes/probes.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -47,4 +47,4 @@ class ConfigModule : public QLObject {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

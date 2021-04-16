@@ -8,7 +8,7 @@
 #include "src/stirling/bpf_tools/bpftrace_wrapper.h"
 #include "src/stirling/core/source_connector.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 class PIDCPUUseBPFTraceConnector : public SourceConnector, public bpf_tools::BPFTraceWrapper {
@@ -69,4 +69,4 @@ class PIDCPUUseBPFTraceConnector : public SourceConnector, public bpf_tools::BPF
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

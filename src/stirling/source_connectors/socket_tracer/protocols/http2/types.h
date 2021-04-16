@@ -11,7 +11,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
 #include "src/stirling/utils/utils.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace http2 {
@@ -152,4 +152,4 @@ struct ProtocolTraits {
 }  // namespace http2
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

@@ -1,6 +1,6 @@
 #include "src/shared/metadata/pids.h"
 
-namespace pl {
+namespace px {
 namespace md {
 
 std::string PIDInfo::DebugString() const {
@@ -34,4 +34,4 @@ bool operator==(const PIDTerminatedEvent& lhs, const PIDTerminatedEvent& rhs) {
   return lhs.upid == rhs.upid && lhs.stop_time_ns == rhs.stop_time_ns;
 }
 }  // namespace md
-}  // namespace pl
+}  // namespace px

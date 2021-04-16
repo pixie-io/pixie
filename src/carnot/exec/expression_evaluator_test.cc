@@ -20,15 +20,15 @@
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
-using pl::carnot::planpb::testutils::kAddScalarFuncConstPbtxt;
-using pl::carnot::planpb::testutils::kAddScalarFuncNestedPbtxt;
-using pl::carnot::planpb::testutils::kAddScalarFuncPbtxt;
-using pl::carnot::planpb::testutils::kScalarInt64ValuePbtxt;
-using pl::carnot::planpb::testutils::kScalarUInt128ValuePbtxt;
+using px::carnot::planpb::testutils::kAddScalarFuncConstPbtxt;
+using px::carnot::planpb::testutils::kAddScalarFuncNestedPbtxt;
+using px::carnot::planpb::testutils::kAddScalarFuncPbtxt;
+using px::carnot::planpb::testutils::kScalarInt64ValuePbtxt;
+using px::carnot::planpb::testutils::kScalarUInt128ValuePbtxt;
 using table_store::schema::RowBatch;
 using table_store::schema::RowDescriptor;
 using types::Int64Value;
@@ -194,4 +194,4 @@ TEST_P(ScalarExpressionTest, eval_uint128_constant) {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

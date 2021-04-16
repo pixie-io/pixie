@@ -6,7 +6,7 @@
 #include "src/common/base/test_utils.h"
 #include "src/common/perf/perf.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace logical_planner {
@@ -44,4 +44,4 @@ BENCHMARK(BM_Query);
 }  // namespace logical_planner
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

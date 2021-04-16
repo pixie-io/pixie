@@ -4,7 +4,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 
 /**
  * Scoped profiler is used to profile a block of code.
@@ -46,4 +46,4 @@ class ScopedProfiler {
   bool enabled_;
 };
 
-}  // namespace pl
+}  // namespace px

@@ -36,7 +36,7 @@ DEFINE_bool(
     stirling_always_infer_task_struct_offsets, false,
     "When true, run the task_struct offset resolver even when local/host headers are found.");
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace bpf_tools {
 
@@ -355,6 +355,6 @@ void BCCWrapper::Close() {
 
 }  // namespace bpf_tools
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px
 
 #endif

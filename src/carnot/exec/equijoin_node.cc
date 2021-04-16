@@ -17,7 +17,7 @@
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/type_utils.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -456,4 +456,4 @@ Status EquijoinNode::ConsumeNextImpl(ExecState* exec_state, const table_store::s
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

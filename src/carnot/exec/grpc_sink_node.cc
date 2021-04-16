@@ -10,7 +10,7 @@
 #include "src/common/uuid/uuid_utils.h"
 #include "src/table_store/table_store.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -208,4 +208,4 @@ Status GRPCSinkNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, 
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

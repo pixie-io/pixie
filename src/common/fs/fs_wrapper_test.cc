@@ -3,10 +3,10 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace fs {
 
-using ::pl::testing::status::StatusIs;
+using ::px::testing::status::StatusIs;
 using ::testing::ElementsAre;
 using ::testing::HasSubstr;
 
@@ -139,4 +139,4 @@ TEST_F(FSWrapperTest, EnumerateParentPaths) {
 }
 
 }  // namespace fs
-}  // namespace pl
+}  // namespace px

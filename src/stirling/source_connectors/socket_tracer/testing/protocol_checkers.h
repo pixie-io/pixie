@@ -8,7 +8,7 @@
 #include "src/shared/types/column_wrapper.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace testing {
 
@@ -43,4 +43,4 @@ inline auto EqHTTPRecord(const protocols::http::Record& x) {
 
 }  // namespace testing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

@@ -14,12 +14,12 @@
 #include "src/shared/metadata/metadata_state.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace funcs {
 namespace metadata {
 
-using ScalarUDF = pl::carnot::udf::ScalarUDF;
+using ScalarUDF = px::carnot::udf::ScalarUDF;
 
 namespace internal {
 inline rapidjson::GenericStringRef<char> StringRef(std::string_view s) {
@@ -27,7 +27,7 @@ inline rapidjson::GenericStringRef<char> StringRef(std::string_view s) {
 }
 }  // namespace internal
 
-inline const pl::md::AgentMetadataState* GetMetadataState(pl::carnot::udf::FunctionContext* ctx) {
+inline const px::md::AgentMetadataState* GetMetadataState(px::carnot::udf::FunctionContext* ctx) {
   DCHECK(ctx != nullptr);
   auto md = ctx->metadata_state();
   DCHECK(md != nullptr);
@@ -100,7 +100,7 @@ class PodNameToPodIDUDF : public ScalarUDF {
     return GetPodID(md, pod_name);
   }
 
-  static StringValue GetPodID(const pl::md::AgentMetadataState* md, StringValue pod_name) {
+  static StringValue GetPodID(const px::md::AgentMetadataState* md, StringValue pod_name) {
     // This UDF expects the pod name to be in the format of "<ns>/<pod-name>".
     std::vector<std::string_view> name_parts = absl::StrSplit(pod_name, "/");
     if (name_parts.size() != 2) {
@@ -126,7 +126,7 @@ class PodNameToPodIPUDF : public ScalarUDF {
   StringValue Exec(FunctionContext* ctx, StringValue pod_name) {
     auto md = GetMetadataState(ctx);
     StringValue pod_id = PodNameToPodIDUDF::GetPodID(md, pod_name);
-    const pl::md::PodInfo* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    const px::md::PodInfo* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
     if (pod_info == nullptr) {
       return "";
     }
@@ -217,7 +217,7 @@ class UPIDToContainerIDUDF : public ScalarUDF {
   }
 };
 
-inline const md::ContainerInfo* UPIDToContainer(const pl::md::AgentMetadataState* md,
+inline const md::ContainerInfo* UPIDToContainer(const px::md::AgentMetadataState* md,
                                                 types::UInt128Value upid_value) {
   auto upid_uint128 = absl::MakeUint128(upid_value.High64(), upid_value.Low64());
   auto upid = md::UPID(upid_uint128);
@@ -255,7 +255,7 @@ class UPIDToContainerNameUDF : public ScalarUDF {
   }
 };
 
-inline const pl::md::PodInfo* UPIDtoPod(const pl::md::AgentMetadataState* md,
+inline const px::md::PodInfo* UPIDtoPod(const px::md::AgentMetadataState* md,
                                         types::UInt128Value upid_value) {
   auto container_info = UPIDToContainer(md, upid_value);
   if (container_info == nullptr) {
@@ -829,7 +829,7 @@ class PodIDToPodStartTimeUDF : public ScalarUDF {
  public:
   Time64NSValue Exec(FunctionContext* ctx, StringValue pod_id) {
     auto md = GetMetadataState(ctx);
-    const pl::md::PodInfo* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    const px::md::PodInfo* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
     if (pod_info == nullptr) {
       return 0;
     }
@@ -848,7 +848,7 @@ class PodIDToPodStopTimeUDF : public ScalarUDF {
  public:
   Time64NSValue Exec(FunctionContext* ctx, StringValue pod_id) {
     auto md = GetMetadataState(ctx);
-    const pl::md::PodInfo* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    const px::md::PodInfo* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
     if (pod_info == nullptr) {
       return 0;
     }
@@ -868,7 +868,7 @@ class PodNameToPodStartTimeUDF : public ScalarUDF {
   Time64NSValue Exec(FunctionContext* ctx, StringValue pod_name) {
     auto md = GetMetadataState(ctx);
     StringValue pod_id = PodNameToPodIDUDF::GetPodID(md, pod_name);
-    const pl::md::PodInfo* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    const px::md::PodInfo* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
     if (pod_info == nullptr) {
       return 0;
     }
@@ -888,7 +888,7 @@ class PodNameToPodStopTimeUDF : public ScalarUDF {
   Time64NSValue Exec(FunctionContext* ctx, StringValue pod_name) {
     auto md = GetMetadataState(ctx);
     StringValue pod_id = PodNameToPodIDUDF::GetPodID(md, pod_name);
-    const pl::md::PodInfo* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    const px::md::PodInfo* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
     if (pod_info == nullptr) {
       return 0;
     }
@@ -923,7 +923,7 @@ class ContainerIDToContainerStartTimeUDF : public ScalarUDF {
  public:
   Time64NSValue Exec(FunctionContext* ctx, StringValue container_id) {
     auto md = GetMetadataState(ctx);
-    const pl::md::ContainerInfo* container_info =
+    const px::md::ContainerInfo* container_info =
         md->k8s_metadata_state().ContainerInfoByID(container_id);
     if (container_info == nullptr) {
       return 0;
@@ -945,7 +945,7 @@ class ContainerIDToContainerStopTimeUDF : public ScalarUDF {
  public:
   Time64NSValue Exec(FunctionContext* ctx, StringValue container_id) {
     auto md = GetMetadataState(ctx);
-    const pl::md::ContainerInfo* container_info =
+    const px::md::ContainerInfo* container_info =
         md->k8s_metadata_state().ContainerInfoByID(container_id);
     if (container_info == nullptr) {
       return 0;
@@ -968,7 +968,7 @@ class ContainerNameToContainerStartTimeUDF : public ScalarUDF {
   Time64NSValue Exec(FunctionContext* ctx, StringValue container_name) {
     auto md = GetMetadataState(ctx);
     StringValue container_id = md->k8s_metadata_state().ContainerIDByName(container_name);
-    const pl::md::ContainerInfo* container_info =
+    const px::md::ContainerInfo* container_info =
         md->k8s_metadata_state().ContainerInfoByID(container_id);
     if (container_info == nullptr) {
       return 0;
@@ -990,7 +990,7 @@ class ContainerNameToContainerStopTimeUDF : public ScalarUDF {
   Time64NSValue Exec(FunctionContext* ctx, StringValue container_name) {
     auto md = GetMetadataState(ctx);
     StringValue container_id = md->k8s_metadata_state().ContainerIDByName(container_name);
-    const pl::md::ContainerInfo* container_info =
+    const px::md::ContainerInfo* container_info =
         md->k8s_metadata_state().ContainerInfoByID(container_id);
     if (container_info == nullptr) {
       return 0;
@@ -1007,7 +1007,7 @@ class ContainerNameToContainerStopTimeUDF : public ScalarUDF {
   }
 };
 
-inline std::string PodPhaseToString(const pl::md::PodPhase& pod_phase) {
+inline std::string PodPhaseToString(const px::md::PodPhase& pod_phase) {
   switch (pod_phase) {
     case md::PodPhase::kRunning:
       return "Running";
@@ -1023,7 +1023,7 @@ inline std::string PodPhaseToString(const pl::md::PodPhase& pod_phase) {
   }
 }
 
-inline types::StringValue PodInfoToPodStatus(const pl::md::PodInfo* pod_info) {
+inline types::StringValue PodInfoToPodStatus(const px::md::PodInfo* pod_info) {
   std::string phase = PodPhaseToString(md::PodPhase::kUnknown);
   std::string msg = "";
   std::string reason = "";
@@ -1161,7 +1161,7 @@ class PodNameToPodStatusReasonUDF : public ScalarUDF {
   }
 };
 
-inline std::string ContainerStateToString(const pl::md::ContainerState& container_state) {
+inline std::string ContainerStateToString(const px::md::ContainerState& container_state) {
   switch (container_state) {
     case md::ContainerState::kRunning:
       return "Running";
@@ -1290,7 +1290,7 @@ class UPIDToCmdLineUDF : public ScalarUDF {
   }
 };
 
-inline std::string PodInfoToPodQoS(const pl::md::PodInfo* pod_info) {
+inline std::string PodInfoToPodQoS(const px::md::PodInfo* pod_info) {
   if (pod_info == nullptr) {
     return "";
   }
@@ -1414,9 +1414,9 @@ class PodIPToServiceIDUDF : public ScalarUDF {
   }
 };
 
-void RegisterMetadataOpsOrDie(pl::carnot::udf::Registry* registry);
+void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry);
 
 }  // namespace metadata
 }  // namespace funcs
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

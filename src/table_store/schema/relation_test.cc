@@ -3,7 +3,7 @@
 #include "src/common/testing/testing.h"
 #include "src/table_store/schema/relation.h"
 
-namespace pl {
+namespace px {
 namespace table_store {
 namespace schema {
 
@@ -109,4 +109,4 @@ TEST(RelationDeathTest, bad_init) {
 
 }  // namespace schema
 }  // namespace table_store
-}  // namespace pl
+}  // namespace px

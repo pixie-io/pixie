@@ -6,7 +6,7 @@
 
 #include "src/carnot/planner/distributed/distributed_stitcher_rules.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
@@ -77,4 +77,4 @@ StatusOr<bool> AssociateDistributedPlanEdgesRule::ConnectGraphs(
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

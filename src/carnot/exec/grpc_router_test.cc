@@ -28,7 +28,7 @@
 #include "src/table_store/schemapb/schema.pb.h"
 #include "src/table_store/table_store.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -61,15 +61,15 @@ class GRPCRouterTest : public ::testing::Test {
   std::unique_ptr<GRPCRouter> service_;
 };
 
-class FakeGRPCSourceNode : public pl::carnot::exec::GRPCSourceNode {
+class FakeGRPCSourceNode : public px::carnot::exec::GRPCSourceNode {
  public:
-  Status EnqueueRowBatch(std::unique_ptr<pl::carnotpb::TransferResultChunkRequest> row_batch) {
+  Status EnqueueRowBatch(std::unique_ptr<px::carnotpb::TransferResultChunkRequest> row_batch) {
     row_batches.emplace_back(std::move(row_batch));
 
     return Status::OK();
   }
 
-  std::vector<std::unique_ptr<pl::carnotpb::TransferResultChunkRequest>> row_batches;
+  std::vector<std::unique_ptr<px::carnotpb::TransferResultChunkRequest>> row_batches;
 };
 
 TEST_F(GRPCRouterTest, no_node_router_test) {
@@ -118,7 +118,7 @@ TEST_F(GRPCRouterTest, no_node_router_test) {
   // Add source node to GRPC router.
   auto query_uuid = sole::rebuild(ab, cd);
   auto op_proto = planpb::testutils::CreateTestGRPCSource1PB();
-  std::unique_ptr<pl::carnot::plan::Operator> plan_node =
+  std::unique_ptr<px::carnot::plan::Operator> plan_node =
       plan::GRPCSourceOperator::FromProto(op_proto, grpc_source_node_id);
   auto source_node = FakeGRPCSourceNode();
   ASSERT_OK(source_node.Init(*plan_node, input_rd, {}));
@@ -144,7 +144,7 @@ TEST_F(GRPCRouterTest, basic_router_test) {
 
   // Add source node to GRPC router.
   auto op_proto = planpb::testutils::CreateTestGRPCSource1PB();
-  std::unique_ptr<pl::carnot::plan::Operator> plan_node =
+  std::unique_ptr<px::carnot::plan::Operator> plan_node =
       plan::GRPCSourceOperator::FromProto(op_proto, grpc_source_node_id);
   auto source_node = FakeGRPCSourceNode();
   ASSERT_OK(source_node.Init(*plan_node, input_rd, {}));
@@ -187,7 +187,7 @@ TEST_F(GRPCRouterTest, basic_router_test) {
   query_id->set_low_bits(cd);
 
   // Send row batches to GRPC router.
-  pl::carnotpb::TransferResultChunkResponse response;
+  px::carnotpb::TransferResultChunkResponse response;
   grpc::ClientContext context;
   auto writer = stub_->TransferResultChunk(&context, &response);
   writer->Write(initiate_stream_req0);
@@ -218,7 +218,7 @@ TEST_F(GRPCRouterTest, router_and_stats_test) {
 
   // Add source node to GRPC router.
   auto op_proto = planpb::testutils::CreateTestGRPCSource1PB();
-  std::unique_ptr<pl::carnot::plan::Operator> plan_node =
+  std::unique_ptr<px::carnot::plan::Operator> plan_node =
       plan::GRPCSourceOperator::FromProto(op_proto, grpc_source_node_id);
   auto source_node = FakeGRPCSourceNode();
   ASSERT_OK(source_node.Init(*plan_node, input_rd, {}));
@@ -251,7 +251,7 @@ TEST_F(GRPCRouterTest, router_and_stats_test) {
   query_id->set_low_bits(cd);
 
   // Send row batches to GRPC router.
-  pl::carnotpb::TransferResultChunkResponse response;
+  px::carnotpb::TransferResultChunkResponse response;
   grpc::ClientContext context;
   auto writer = stub_->TransferResultChunk(&context, &response);
   writer->Write(initiate_stream_req0);
@@ -260,8 +260,8 @@ TEST_F(GRPCRouterTest, router_and_stats_test) {
   writer->Finish();
 
   {
-    ::pl::carnotpb::TransferResultChunkRequest stats_req;
-    ::pl::carnotpb::TransferResultChunkResponse stats_resp;
+    ::px::carnotpb::TransferResultChunkRequest stats_req;
+    ::px::carnotpb::TransferResultChunkResponse stats_resp;
 
     auto agent_stats = stats_req.mutable_execution_and_timing_info()->add_agent_execution_stats();
     ToProto(agent_uuid, agent_stats->mutable_agent_id());
@@ -307,7 +307,7 @@ TEST_F(GRPCRouterTest, delete_node_router_test) {
   auto query_uuid = sole::rebuild("ea8aa095-697f-49f1-b127-d50e5b6e2645");
 
   auto op_proto = planpb::testutils::CreateTestGRPCSource1PB();
-  std::unique_ptr<pl::carnot::plan::Operator> plan_node =
+  std::unique_ptr<px::carnot::plan::Operator> plan_node =
       plan::GRPCSourceOperator::FromProto(op_proto, grpc_source_node_id);
   auto source_node = FakeGRPCSourceNode();
   ASSERT_OK(source_node.Init(*plan_node, input_rd, {}));
@@ -324,7 +324,7 @@ TEST_F(GRPCRouterTest, done_query_test) {
   auto query_uuid = sole::rebuild("ea8aa095-697f-49f1-b127-d50e5b6e2645");
 
   auto op_proto = planpb::testutils::CreateTestGRPCSource1PB();
-  std::unique_ptr<pl::carnot::plan::Operator> plan_node =
+  std::unique_ptr<px::carnot::plan::Operator> plan_node =
       plan::GRPCSourceOperator::FromProto(op_proto, grpc_source_node_id);
   auto source_node = FakeGRPCSourceNode();
   ASSERT_OK(source_node.Init(*plan_node, input_rd, {}));
@@ -350,7 +350,7 @@ TEST_F(GRPCRouterTest, threaded_router_test) {
 
   RowDescriptor input_rd({types::DataType::INT64});
   auto op_proto = planpb::testutils::CreateTestGRPCSource1PB();
-  std::unique_ptr<pl::carnot::plan::Operator> plan_node =
+  std::unique_ptr<px::carnot::plan::Operator> plan_node =
       plan::GRPCSourceOperator::FromProto(op_proto, 1);
   auto source_node = GRPCSourceNode();
   ASSERT_OK(source_node.Init(*plan_node, input_rd, {}));
@@ -367,7 +367,7 @@ TEST_F(GRPCRouterTest, threaded_router_test) {
   ASSERT_OK(mock_child.Open(exec_state.get()));
   ASSERT_OK(mock_child.Prepare(exec_state.get()));
 
-  pl::carnotpb::TransferResultChunkResponse response;
+  px::carnotpb::TransferResultChunkResponse response;
   grpc::ClientContext context;
   auto writer = stub_->TransferResultChunk(&context, &response);
 
@@ -430,4 +430,4 @@ TEST_F(GRPCRouterTest, threaded_router_test) {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -6,7 +6,7 @@
 #include "src/shared/metadata/metadata_filter.h"
 #include "src/shared/metadata/state_manager.h"
 
-namespace pl {
+namespace px {
 namespace md {
 
 class TestAgentMetadataFilter : public AgentMetadataFilter {
@@ -29,4 +29,4 @@ class TestAgentMetadataFilter : public AgentMetadataFilter {
 };
 
 }  // namespace md
-}  // namespace pl
+}  // namespace px

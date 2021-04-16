@@ -8,7 +8,7 @@
 #include "src/common/base/status.h"
 #include "src/common/base/statuspb/status.pb.h"
 
-namespace pl {
+namespace px {
 
 // Concept and some code borrowed
 // from : tensorflow/stream_executor/lib/statusor.h
@@ -20,7 +20,7 @@ class StatusOr {
  public:
   // Construct a new StatusOr with Status::UNKNOWN status
   StatusOr()
-      : status_(pl::statuspb::UNKNOWN,
+      : status_(px::statuspb::UNKNOWN,
                 "Default constructed StatusOr should not be used, "
                 "did you mistakenly return {}?") {}
 
@@ -72,7 +72,7 @@ class StatusOr {
   bool ok() const { return status_.ok(); }
 
   // Returns this->status().code()
-  pl::statuspb::Code code() const { return status_.code(); }
+  px::statuspb::Code code() const { return status_.code(); }
 
   // Returns this->status().msg()
   std::string msg() const { return status_.msg(); }
@@ -145,7 +145,7 @@ template <typename T>
 StatusOr<T>::StatusOr(const Status& status) : status_(status) {
   DCHECK(!status_.ok()) << "Should not pass OK status to constructor";
   if (status.ok()) {
-    status_ = Status(pl::statuspb::INTERNAL,
+    status_ = Status(px::statuspb::INTERNAL,
                      "Status::OK is not a valid constructor argument to StatusOr<T>");
   }
 }
@@ -196,4 +196,4 @@ std::ostream& operator<<(std::ostream& os, const StatusOr<T>& status_or) {
   return os;
 }
 
-}  // namespace pl
+}  // namespace px

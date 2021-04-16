@@ -3,7 +3,7 @@
 #include "src/common/base/base.h"
 #include "src/stirling/core/pub_sub_manager.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 using stirlingpb::InfoClass;
@@ -81,4 +81,4 @@ stirlingpb::Subscribe SubscribeToInfoClass(const stirlingpb::Publish& publish_pr
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

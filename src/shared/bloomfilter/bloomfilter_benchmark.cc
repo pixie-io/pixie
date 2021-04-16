@@ -9,7 +9,7 @@
 #include "src/common/datagen/datagen.h"
 #include "src/shared/bloomfilter/bloomfilter.h"
 
-namespace pl {
+namespace px {
 namespace bloomfilter {
 
 class BloomFilterBenchmark : public benchmark::Fixture {
@@ -62,4 +62,4 @@ BENCHMARK_REGISTER_F(BloomFilterBenchmark, LookupTest)
     ->Ranges({{1 << 10, 1 << 20}, {10, 100000}, {8, 256}});
 
 }  // namespace bloomfilter
-}  // namespace pl
+}  // namespace px

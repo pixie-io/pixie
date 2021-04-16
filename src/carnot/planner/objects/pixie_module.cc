@@ -10,7 +10,7 @@
 #include "src/carnot/planner/objects/viz_object.h"
 #include "src/shared/upid/upid.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -581,4 +581,4 @@ StatusOr<QLObjectPtr> UDTFSourceHandler::Eval(IR* graph,
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

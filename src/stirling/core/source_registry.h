@@ -10,7 +10,7 @@
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 #include "src/stirling/core/source_connector.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 /**
@@ -67,4 +67,4 @@ class SourceRegistry : public NotCopyable {
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

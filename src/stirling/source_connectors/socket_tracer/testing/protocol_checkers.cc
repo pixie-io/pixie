@@ -3,7 +3,7 @@
 #include "src/stirling/source_connectors/socket_tracer/http_table.h"
 #include "src/stirling/testing/common.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace testing {
 
@@ -41,4 +41,4 @@ std::vector<http::Record> GetTargetRecords(const types::ColumnWrapperRecordBatch
 
 }  // namespace testing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

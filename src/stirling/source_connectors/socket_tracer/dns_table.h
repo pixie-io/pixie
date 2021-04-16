@@ -6,7 +6,7 @@
 #include "src/stirling/source_connectors/socket_tracer/canonical_types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/dns/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 // clang-format off
@@ -53,4 +53,4 @@ static constexpr int kDNSRespHdrIdx = kDNSTable.ColIndex("resp_header");
 static constexpr int kDNSRespBodyIdx = kDNSTable.ColIndex("resp_body");
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

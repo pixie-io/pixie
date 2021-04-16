@@ -14,7 +14,7 @@
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planpb {
 namespace testutils {
@@ -1538,4 +1538,4 @@ bool CompareLogicalPlans(const planpb::Plan& expected_plan, const planpb::Plan& 
 }  // namespace testutils
 }  // namespace planpb
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

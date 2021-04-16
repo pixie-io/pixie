@@ -5,7 +5,7 @@
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/go_grpc_types.hpp"
 #include "src/stirling/source_connectors/socket_tracer/testing/clock.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace testing {
 
@@ -66,4 +66,4 @@ class StreamEventGenerator {
 
 }  // namespace testing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

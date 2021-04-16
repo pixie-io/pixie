@@ -3,7 +3,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 using ::testing::IsEmpty;
@@ -44,4 +44,4 @@ TEST_F(ProcTrackerTest, Basic) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

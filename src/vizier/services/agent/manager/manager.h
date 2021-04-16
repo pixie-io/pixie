@@ -20,7 +20,7 @@
 
 #include "src/vizier/services/metadata/metadatapb/service.grpc.pb.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 
@@ -73,15 +73,15 @@ class RegistrationHandler;
  * sub-components of a pixie agent. The base version has a table store, carnot and metadata system.
  * This version can be extended to add more sub-components.
  */
-class Manager : public pl::NotCopyable {
+class Manager : public px::NotCopyable {
  public:
-  using VizierNATSConnector = pl::event::NATSConnector<pl::vizier::messages::VizierMessage>;
+  using VizierNATSConnector = px::event::NATSConnector<px::vizier::messages::VizierMessage>;
   using MsgCase = messages::VizierMessage::MsgCase;
   using MDSService = services::metadata::MetadataService;
   using MDSServiceSPtr = std::shared_ptr<Manager::MDSService::Stub>;
   using MDTPService = services::metadata::MetadataTracepointService;
   using MDTPServiceSPtr = std::shared_ptr<Manager::MDTPService::Stub>;
-  using ResultSinkStub = pl::carnotpb::ResultSinkService::StubInterface;
+  using ResultSinkStub = px::carnotpb::ResultSinkService::StubInterface;
 
   Manager() = delete;
   virtual ~Manager() = default;
@@ -134,9 +134,9 @@ class Manager : public pl::NotCopyable {
 
   // APIs for the derived classes to reference the state of the agent.
   table_store::TableStore* table_store() { return table_store_.get(); }
-  pl::md::AgentMetadataStateManager* mds_manager() { return mds_manager_.get(); }
+  px::md::AgentMetadataStateManager* mds_manager() { return mds_manager_.get(); }
   RelationInfoManager* relation_info_manager() { return relation_info_manager_.get(); }
-  pl::event::Dispatcher* dispatcher() { return dispatcher_.get(); }
+  px::event::Dispatcher* dispatcher() { return dispatcher_.get(); }
   carnot::Carnot* carnot() { return carnot_.get(); }
   const Info* info() const { return &info_; }
   Info* info() { return &info_; }
@@ -166,7 +166,7 @@ class Manager : public pl::NotCopyable {
   void HandleMessage(std::unique_ptr<messages::VizierMessage> msg);
 
   // The timer to manage metadata updates.
-  pl::event::TimerUPtr metadata_update_timer_;
+  px::event::TimerUPtr metadata_update_timer_;
 
   bool stop_called_ = false;
 
@@ -175,7 +175,7 @@ class Manager : public pl::NotCopyable {
   // Chan caches active connections to other Agents. Methods are all threadsafe.
   std::unique_ptr<ChanCache> chan_cache_;
   // The timer that runs the garbage collection routine.
-  pl::event::TimerUPtr chan_cache_garbage_collect_timer_;
+  px::event::TimerUPtr chan_cache_garbage_collect_timer_;
 
   // A pointer to the heartbeat handler for reregistration hooks.
   std::shared_ptr<HeartbeatMessageHandler> heartbeat_handler_;
@@ -184,11 +184,11 @@ class Manager : public pl::NotCopyable {
   std::shared_ptr<grpc::ChannelCredentials> grpc_channel_creds_;
 
   // The time system to use (real or simulated).
-  std::unique_ptr<pl::event::TimeSystem> time_system_;
-  pl::event::APIUPtr api_;
+  std::unique_ptr<px::event::TimeSystem> time_system_;
+  px::event::APIUPtr api_;
 
   Info info_;
-  pl::event::DispatcherUPtr dispatcher_;
+  px::event::DispatcherUPtr dispatcher_;
   const std::string nats_addr_;
   // NATS connector for subscribing to and publishing agent updates.
   std::unique_ptr<VizierNATSConnector> agent_nats_connector_;
@@ -201,7 +201,7 @@ class Manager : public pl::NotCopyable {
   // The base agent contains the following components.
   std::unique_ptr<carnot::Carnot> carnot_;
   std::shared_ptr<table_store::TableStore> table_store_;
-  std::unique_ptr<pl::md::AgentMetadataStateManager> mds_manager_;
+  std::unique_ptr<px::md::AgentMetadataStateManager> mds_manager_;
   std::unique_ptr<RelationInfoManager> relation_info_manager_;
 
   // Factory context for vizier functions.
@@ -223,7 +223,7 @@ class Manager::MessageHandler {
    * MessageHandler handles agent messages asynchronously and may respond over the
    * provided nats connection. agent_info and nats_conn lifetime must exceed that this object.
    */
-  MessageHandler(pl::event::Dispatcher* dispatcher, Info* agent_info,
+  MessageHandler(px::event::Dispatcher* dispatcher, Info* agent_info,
                  Manager::VizierNATSConnector* nats_conn);
 
   virtual ~MessageHandler() = default;
@@ -237,15 +237,15 @@ class Manager::MessageHandler {
  protected:
   const Info* agent_info() const { return agent_info_; }
   Manager::VizierNATSConnector* nats_conn() { return nats_conn_; }
-  pl::event::Dispatcher* dispatcher() { return dispatcher_; }
+  px::event::Dispatcher* dispatcher() { return dispatcher_; }
 
  private:
   const Info* agent_info_;
   Manager::VizierNATSConnector* nats_conn_;
 
-  pl::event::Dispatcher* dispatcher_ = nullptr;
+  px::event::Dispatcher* dispatcher_ = nullptr;
 };
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

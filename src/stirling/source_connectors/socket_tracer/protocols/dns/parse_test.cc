@@ -3,7 +3,7 @@
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/dns/parse.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace dns {
@@ -413,4 +413,4 @@ TEST_F(DNSParserTest, PartialRecords) {
 }  // namespace dns
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

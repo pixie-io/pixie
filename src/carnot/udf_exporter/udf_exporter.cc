@@ -2,7 +2,7 @@
 #include "src/vizier/funcs/context/vizier_context.h"
 #include "src/vizier/funcs/funcs.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace udfexporter {
 
@@ -28,4 +28,4 @@ udfspb::Docs ExportUDFDocs() {
 
 }  // namespace udfexporter
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

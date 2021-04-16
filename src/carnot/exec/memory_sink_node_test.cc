@@ -15,7 +15,7 @@
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -166,4 +166,4 @@ TEST_F(MemorySinkNodeTest, zero_row_row_batch_eos) {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

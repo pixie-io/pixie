@@ -6,7 +6,7 @@
 #include "src/carnot/planner/compiler_state/registry_info.h"
 #include "src/carnot/udf/registry.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace udfexporter {
 
@@ -29,4 +29,4 @@ udfspb::Docs ExportUDFDocs();
 
 }  // namespace udfexporter
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

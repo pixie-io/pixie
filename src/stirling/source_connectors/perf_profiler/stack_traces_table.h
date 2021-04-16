@@ -5,7 +5,7 @@
 #include "src/stirling/core/canonical_types.h"
 #include "src/stirling/core/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 // clang-format off
@@ -46,4 +46,4 @@ constexpr int kStackTraceStackTraceStrIdx = kStackTraceTable.ColIndex("stack_tra
 constexpr int kStackTraceCountIdx = kStackTraceTable.ColIndex("count");
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

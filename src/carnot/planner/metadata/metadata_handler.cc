@@ -2,7 +2,7 @@
 
 #include <algorithm>
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 StatusOr<MetadataProperty*> MetadataHandler::GetProperty(const std::string& md_name) const {
@@ -74,4 +74,4 @@ void MetadataHandler::AddObject(MetadataType md_type, const std::vector<std::str
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

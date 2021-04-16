@@ -7,7 +7,7 @@
 
 #include <absl/container/flat_hash_set.h>
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -1315,4 +1315,4 @@ StatusOr<bool> ResolveStreamRule::Apply(IRNode* ir_node) {
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

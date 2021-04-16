@@ -6,7 +6,7 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_trace_connector.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 TEST(DynamicTraceConnectorTest, ConvertFields) {
@@ -42,7 +42,7 @@ TEST(DynamicTraceConnectorTest, ConvertFields) {
   }
 )";
 
-  ::pl::stirling::dynamic_tracing::ir::physical::Struct output_struct;
+  ::px::stirling::dynamic_tracing::ir::physical::Struct output_struct;
   ASSERT_TRUE(
       google::protobuf::TextFormat::ParseFromString(std::string(kOutputStruct), &output_struct));
 
@@ -62,4 +62,4 @@ TEST(DynamicTraceConnectorTest, ConvertFields) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

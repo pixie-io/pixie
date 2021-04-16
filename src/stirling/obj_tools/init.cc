@@ -4,7 +4,7 @@
 
 #include <mutex>
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 namespace {
@@ -22,4 +22,4 @@ void InitLLVMOnce() {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

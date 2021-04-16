@@ -2,7 +2,7 @@
 
 #include <utility>
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace bpf_tools {
 
@@ -45,4 +45,4 @@ StatusOr<std::vector<UProbeSpec>> TransformGolangReturnProbe(const UProbeSpec& s
 
 }  // namespace bpf_tools
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

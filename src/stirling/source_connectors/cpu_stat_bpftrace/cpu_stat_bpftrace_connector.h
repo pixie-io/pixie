@@ -9,7 +9,7 @@
 #include "src/common/base/base.h"
 #include "src/stirling/bpf_tools/bpftrace_wrapper.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 class CPUStatBPFTraceConnector : public SourceConnector, public bpf_tools::BPFTraceWrapper {
@@ -97,4 +97,4 @@ class CPUStatBPFTraceConnector : public SourceConnector, public bpf_tools::BPFTr
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

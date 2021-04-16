@@ -16,7 +16,7 @@
 #include "src/shared/types/column_wrapper.h"
 #include "src/table_store/table_store.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -151,4 +151,4 @@ class ArrowNativeScalarExpressionEvaluator : public ScalarExpressionEvaluator {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -20,7 +20,7 @@
 #include "src/common/system/config.h"
 #include "src/common/zlib/zlib_wrapper.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace utils {
 
@@ -206,7 +206,7 @@ Status GenAutoConf(const std::filesystem::path& linux_headers_base,
   // If file is gzipped, then unzip it and read that instead.
   if (config_file.extension() == ".gz") {
     PL_ASSIGN_OR_RETURN(std::string config_gzip_contents, ReadFileToString(config_file));
-    PL_ASSIGN_OR_RETURN(std::string config_contents, pl::zlib::Inflate(config_gzip_contents));
+    PL_ASSIGN_OR_RETURN(std::string config_contents, px::zlib::Inflate(config_gzip_contents));
 
     std::unique_ptr<fs::TempFile> tmp_file = fs::TempFile::Create();
     std::filesystem::path tmp_file_path = tmp_file->path();
@@ -366,7 +366,7 @@ Status ExtractPackagedHeaders(PackagedLinuxHeadersSpec* headers_package) {
   }
 
   // Extract the files.
-  ::pl::tools::Minitar minitar(headers_package->path.string());
+  ::px::tools::Minitar minitar(headers_package->path.string());
   PL_RETURN_IF_ERROR(minitar.Extract("/"));
 
   // Update the path to the extracted copy.
@@ -499,6 +499,6 @@ StatusOr<std::filesystem::path> FindOrInstallLinuxHeaders(
 
 }  // namespace utils
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px
 
 #endif

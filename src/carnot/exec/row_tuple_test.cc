@@ -2,7 +2,7 @@
 
 #include "src/carnot/exec/row_tuple.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 std::vector<types::DataType> types_single = {
@@ -106,4 +106,4 @@ TEST_F(RowTupleDeathTest, should_debug_die_on_bad_order) {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

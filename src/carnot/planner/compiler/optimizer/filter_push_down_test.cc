@@ -13,7 +13,7 @@
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -392,4 +392,4 @@ TEST_F(FilterPushDownTest, multiple_children_dont_push) {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

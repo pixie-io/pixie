@@ -4,7 +4,7 @@
 #include "src/common/base/test_utils.h"
 #include "src/shared/metadata/metadata_filter.h"
 
-namespace pl {
+namespace px {
 namespace md {
 
 using ::testing::UnorderedElementsAre;
@@ -41,4 +41,4 @@ TEST(AgentMetadataFilter, test_proto) {
 }
 
 }  // namespace md
-}  // namespace pl
+}  // namespace px

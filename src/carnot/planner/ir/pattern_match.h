@@ -43,7 +43,7 @@
 #include <unordered_map>
 
 #include "src/carnot/planner/ir/ir_nodes.h"
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -1083,4 +1083,4 @@ inline SemanticTypeMatch ASID() { return SemanticTypeMatch(types::ST_ASID); }
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

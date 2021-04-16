@@ -8,11 +8,11 @@
 #include "src/common/testing/testing.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace udf {
 
-using ::pl::testing::proto::EqualsProto;
+using ::px::testing::proto::EqualsProto;
 
 class ScalarUDF1 : public ScalarUDF {
  public:
@@ -611,4 +611,4 @@ TEST(Registry, docs) {
 
 }  // namespace udf
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -7,7 +7,7 @@
 #include "src/carnot/planner/objects/none_object.h"
 #include "src/carnot/planner/objects/pixie_module.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -530,4 +530,4 @@ StatusOr<QLObjectPtr> DataFrameHandler::Eval(IR* graph, const pypa::AstPtr& ast,
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

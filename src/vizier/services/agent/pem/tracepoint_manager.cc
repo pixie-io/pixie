@@ -6,13 +6,13 @@
 #include "src/shared/tracepoint_translation/translation.h"
 #include "src/vizier/services/agent/pem/tracepoint_manager.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 
 constexpr auto kUpdateInterval = std::chrono::seconds(2);
 
-TracepointManager::TracepointManager(pl::event::Dispatcher* dispatcher, Info* agent_info,
+TracepointManager::TracepointManager(px::event::Dispatcher* dispatcher, Info* agent_info,
                                      Manager::VizierNATSConnector* nats_conn,
                                      stirling::Stirling* stirling,
                                      table_store::TableStore* table_store,
@@ -58,7 +58,7 @@ Status TracepointManager::HandleRegisterTracepointRequest(
   const std::string& name = req.tracepoint_deployment().name();
   PL_ASSIGN_OR_RETURN(auto id, ParseUUID(req.id()));
   auto program = std::make_unique<stirling::dynamic_tracing::ir::logical::TracepointDeployment>();
-  ::pl::tracepoint::ConvertPlannerTracepointToStirlingTracepoint(req.tracepoint_deployment(),
+  ::px::tracepoint::ConvertPlannerTracepointToStirlingTracepoint(req.tracepoint_deployment(),
                                                                  program.get());
 
   TracepointInfo info;
@@ -179,7 +179,7 @@ void TracepointManager::Monitor() {
 
     tracepoint.current_state = current_state;
     // Update MDS with the latest status.
-    pl::vizier::messages::VizierMessage msg;
+    px::vizier::messages::VizierMessage msg;
     auto tracepoint_msg = msg.mutable_tracepoint_message();
     auto update_msg = tracepoint_msg->mutable_tracepoint_info_update();
     ToProto(agent_info()->agent_id, update_msg->mutable_agent_id());
@@ -222,4 +222,4 @@ Status TracepointManager::UpdateSchema(const stirling::stirlingpb::Publish& publ
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

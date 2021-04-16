@@ -5,7 +5,7 @@
 #include "src/common/base/base.h"
 #include "src/shared/version/version.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace funcs {
 namespace internal {
@@ -34,4 +34,4 @@ void RegisterFuncsOrDie(carnot::udf::Registry* registry);
 }  // namespace internal
 }  // namespace funcs
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

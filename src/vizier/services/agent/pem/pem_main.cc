@@ -13,11 +13,11 @@ DEFINE_string(pod_name, gflags::StringFromEnv("PL_POD_NAME", ""),
 DEFINE_string(host_ip, gflags::StringFromEnv("PL_HOST_IP", ""),
               "The IP of the host this service is running on");
 
-using ::pl::stirling::Stirling;
-using ::pl::vizier::agent::Manager;
-using ::pl::vizier::agent::PEMManager;
+using ::px::stirling::Stirling;
+using ::px::vizier::agent::Manager;
+using ::px::vizier::agent::PEMManager;
 
-class AgentDeathHandler : public pl::FatalErrorHandlerInterface {
+class AgentDeathHandler : public px::FatalErrorHandlerInterface {
  public:
   AgentDeathHandler() = default;
   void OnFatalError() const override {
@@ -30,7 +30,7 @@ class AgentDeathHandler : public pl::FatalErrorHandlerInterface {
 class AgentTerminationHandler {
  public:
   // This list covers signals that are handled gracefully.
-  static constexpr auto kSignals = ::pl::MakeArray(SIGINT, SIGQUIT, SIGTERM, SIGHUP);
+  static constexpr auto kSignals = ::px::MakeArray(SIGINT, SIGQUIT, SIGTERM, SIGHUP);
 
   static void InstallSignalHandlers() {
     for (size_t i = 0; i < kSignals.size(); ++i) {
@@ -56,20 +56,20 @@ class AgentTerminationHandler {
 };
 
 int main(int argc, char** argv) {
-  pl::EnvironmentGuard env_guard(&argc, argv);
+  px::EnvironmentGuard env_guard(&argc, argv);
 
   AgentDeathHandler err_handler;
 
   // This covers signals such as SIGSEGV and other fatal errors.
   // We print the stack trace and die.
-  auto signal_action = std::make_unique<pl::SignalAction>();
+  auto signal_action = std::make_unique<px::SignalAction>();
   signal_action->RegisterFatalErrorHandler(err_handler);
 
   // Install signal handlers where graceful exit is possible.
   AgentTerminationHandler::InstallSignalHandlers();
 
   sole::uuid agent_id = sole::uuid4();
-  LOG(INFO) << absl::Substitute("Pixie PEM. Version: $0, id: $1", pl::VersionInfo::VersionString(),
+  LOG(INFO) << absl::Substitute("Pixie PEM. Version: $0, id: $1", px::VersionInfo::VersionString(),
                                 agent_id.str());
 
   if (FLAGS_host_ip.length() == 0) {

@@ -20,7 +20,7 @@
 DECLARE_bool(stirling_rescan_for_dlopen);
 DECLARE_double(stirling_rescan_exp_backoff_factor);
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 /**
@@ -363,4 +363,4 @@ class UProbeManager {
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

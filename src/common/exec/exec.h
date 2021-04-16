@@ -4,7 +4,7 @@
 
 #include "src/common/base/statusor.h"
 
-namespace pl {
+namespace px {
 
 /**
  * Executes the provided command on the system.
@@ -14,4 +14,4 @@ namespace pl {
  */
 StatusOr<std::string> Exec(std::string cmd);
 
-}  // namespace pl
+}  // namespace px

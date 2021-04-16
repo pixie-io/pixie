@@ -5,7 +5,7 @@
 #include "src/shared/types/types.h"
 #include "src/table_store/schema/relation.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -85,4 +85,4 @@ TEST(TableType, iterator) {
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

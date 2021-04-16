@@ -9,10 +9,10 @@
 #include "src/shared/metadata/state_manager.h"
 #include "src/shared/metadata/test_utils.h"
 
-namespace pl {
+namespace px {
 namespace md {
 
-using ResourceUpdate = pl::shared::k8s::metadatapb::ResourceUpdate;
+using ResourceUpdate = px::shared::k8s::metadatapb::ResourceUpdate;
 
 using ::testing::ElementsAre;
 using ::testing::Pair;
@@ -295,7 +295,7 @@ TEST_F(AgentMetadataStateTest, insert_into_filter) {
 
 TEST_F(AgentMetadataStateTest, cidr_test) {
   AgentMetadataStateManagerImpl mgr("test_host", /*asid*/ 0, "test_pod", /*id*/ sole::uuid4(),
-                                    /*collects_data*/ true, pl::system::Config::GetInstance(),
+                                    /*collects_data*/ true, px::system::Config::GetInstance(),
                                     &md_filter_);
 
   EXPECT_OK(mgr.PerformMetadataStateUpdate());
@@ -331,4 +331,4 @@ TEST_F(AgentMetadataStateTest, cidr_test) {
 }
 
 }  // namespace md
-}  // namespace pl
+}  // namespace px

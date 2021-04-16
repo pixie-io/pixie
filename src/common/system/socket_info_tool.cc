@@ -20,18 +20,18 @@ constexpr char kProgramDescription[] =
     "\n"
     "Note that this program must be run as root.";
 
-using ::pl::Status;
-using ::pl::system::kTCPEstablishedState;
-using ::pl::system::kTCPListeningState;
-using ::pl::system::SocketInfo;
-using ::pl::system::SocketInfoManager;
+using ::px::Status;
+using ::px::system::kTCPEstablishedState;
+using ::px::system::kTCPListeningState;
+using ::px::system::SocketInfo;
+using ::px::system::SocketInfoManager;
 
 std::string IPv4AddrToString(struct in_addr addr, in_port_t port) {
-  return absl::StrCat(pl::IPv4AddrToString(addr).ValueOr("<error>"), ":", port);
+  return absl::StrCat(px::IPv4AddrToString(addr).ValueOr("<error>"), ":", port);
 }
 
 std::string IPv6AddrToString(struct in6_addr addr, in_port_t port) {
-  return absl::StrCat(pl::IPv6AddrToString(addr).ValueOr("<error>"), ":", port);
+  return absl::StrCat(px::IPv6AddrToString(addr).ValueOr("<error>"), ":", port);
 }
 
 std::string UnixAddrToString(struct un_path_t path, uint32_t inode) {
@@ -75,7 +75,7 @@ std::string ToString(const SocketInfo& socket_info) {
 
 int main(int argc, char** argv) {
   gflags::SetUsageMessage(kProgramDescription);
-  pl::EnvironmentGuard env_guard(&argc, argv);
+  px::EnvironmentGuard env_guard(&argc, argv);
 
   const std::string kProcPath = FLAGS_proc_path;
   int32_t pid = FLAGS_pid;
@@ -108,9 +108,9 @@ int main(int argc, char** argv) {
   } else {
     std::cout << absl::Substitute("Querying pid=$0 fd=$1:", pid, fd) << std::endl;
     std::string fd_path = absl::Substitute("$0/$1/fd/$2", kProcPath, pid, fd);
-    PL_ASSIGN_OR_EXIT(std::filesystem::path fd_link, pl::fs::ReadSymlink(fd_path));
+    PL_ASSIGN_OR_EXIT(std::filesystem::path fd_link, px::fs::ReadSymlink(fd_path));
     PL_ASSIGN_OR_EXIT(uint32_t inode_num,
-                      pl::fs::ExtractInodeNum(pl::fs::kSocketInodePrefix, fd_link.string()));
+                      px::fs::ExtractInodeNum(px::fs::kSocketInodePrefix, fd_link.string()));
 
     PL_ASSIGN_OR_EXIT(SocketInfo * socket_info, socket_info_db->Lookup(pid, inode_num));
     if (socket_info == nullptr) {

@@ -7,7 +7,7 @@
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace cass {
@@ -528,4 +528,4 @@ TEST(CassStitcherTest, AuthResponseAuthSuccess) {
 }  // namespace cass
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

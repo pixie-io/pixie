@@ -6,7 +6,7 @@ int main(int argc, char** argv) {
   // throws an error if you pass in benchmark args. Note the arguments that benchmark uses are also
   // consumed but doesn't affect other arguments.
   benchmark::Initialize(&argc, argv);
-  pl::EnvironmentGuard env_guard(&argc, argv);
+  px::EnvironmentGuard env_guard(&argc, argv);
   benchmark::RunSpecifiedBenchmarks();
   return 0;
 }

@@ -13,7 +13,7 @@
 // The BT files are permanently resident in memory, so the string view is permanent too.
 BPF_SRC_STRVIEW(kCPUStatBTScript, cpustat);
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 Status CPUStatBPFTraceConnector::InitImpl() {
@@ -58,6 +58,6 @@ void CPUStatBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uin
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px
 
 #endif

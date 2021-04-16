@@ -6,7 +6,7 @@
 #include "src/stirling/proto/stirling.pb.h"
 #include "src/table_store/schema/relation.h"
 
-namespace pl {
+namespace px {
 
 /**
  * A relation and accompanying information such as names and ids.
@@ -53,4 +53,4 @@ RelationInfo ConvertInfoClassPBToRelationInfo(const stirling::stirlingpb::InfoCl
 std::vector<RelationInfo> ConvertSubscribePBToRelationInfo(
     const stirling::stirlingpb::Subscribe& subscribe_pb);
 
-}  // namespace pl
+}  // namespace px

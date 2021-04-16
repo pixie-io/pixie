@@ -1,6 +1,6 @@
 #pragma once
 
-namespace pl {
+namespace px {
 /**
  * Inheriting this class will make disallow automatic copies in
  * the subclass.
@@ -22,4 +22,4 @@ class NotCopyMoveable : public NotCopyable {
   NotCopyMoveable() = default;
 };
 
-}  // namespace pl
+}  // namespace px

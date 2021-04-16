@@ -20,7 +20,7 @@
 #include "src/shared/types/types.h"
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace udf {
 
@@ -358,4 +358,4 @@ class UDATraits {
 
 }  // namespace udf
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -4,7 +4,7 @@
 
 #include "src/carnot/udf/doc.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace udf {
 
@@ -23,4 +23,4 @@ std::string DedentBlock(const std::string& in) {
 
 }  // namespace udf
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

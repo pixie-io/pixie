@@ -21,7 +21,7 @@
 
 DECLARE_int32(table_store_table_size_limit);
 
-namespace pl {
+namespace px {
 namespace table_store {
 
 using RecordBatchSPtr = std::shared_ptr<arrow::RecordBatch>;
@@ -154,7 +154,7 @@ class Table : public NotCopyable {
    * @param record_batch the record batch to be appended to the Table.
    * @return status
    */
-  Status TransferRecordBatch(std::unique_ptr<pl::types::ColumnWrapperRecordBatch> record_batch);
+  Status TransferRecordBatch(std::unique_ptr<px::types::ColumnWrapperRecordBatch> record_batch);
 
   /**
    * @return number of column batches.
@@ -219,7 +219,7 @@ class Table : public NotCopyable {
   // TODO(michellenguyen, PL-388): Change hot_batches_ to a list-based queue.
   std::unordered_map<std::string, std::shared_ptr<Column>> name_to_column_map_;
 
-  mutable std::deque<std::unique_ptr<pl::types::ColumnWrapperRecordBatch>> hot_batches_;
+  mutable std::deque<std::unique_ptr<px::types::ColumnWrapperRecordBatch>> hot_batches_;
   mutable absl::base_internal::SpinLock hot_batches_lock_;
 
   mutable absl::base_internal::SpinLock cold_batches_lock_;
@@ -231,4 +231,4 @@ class Table : public NotCopyable {
 };
 
 }  // namespace table_store
-}  // namespace pl
+}  // namespace px

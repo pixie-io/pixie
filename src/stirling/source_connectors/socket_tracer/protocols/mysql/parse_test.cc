@@ -10,7 +10,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/test_data.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/test_utils.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace mysql {
@@ -321,4 +321,4 @@ TEST_F(MySQLParserTest, FindNoBoundary) {
 }  // namespace mysql
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

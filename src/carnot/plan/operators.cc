@@ -20,11 +20,11 @@
 #include "src/common/base/base.h"
 #include "src/table_store/table_store.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace plan {
 
-using pl::Status;
+using px::Status;
 
 template <typename TOp, typename TProto>
 std::unique_ptr<Operator> CreateOperator(int64_t id, const TProto& pb) {
@@ -691,4 +691,4 @@ StatusOr<table_store::schema::Relation> EmptySourceOperator::OutputRelation(
 
 }  // namespace plan
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

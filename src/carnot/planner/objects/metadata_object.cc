@@ -4,7 +4,7 @@
 #include "src/carnot/planner/objects/expr_object.h"
 #include "src/carnot/planner/objects/metadata_object.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -48,4 +48,4 @@ StatusOr<QLObjectPtr> MetadataObject::SubscriptHandler(const pypa::AstPtr& ast,
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

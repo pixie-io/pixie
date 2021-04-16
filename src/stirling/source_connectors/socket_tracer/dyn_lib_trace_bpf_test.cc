@@ -16,22 +16,22 @@
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 namespace http = protocols::http;
 
 // Automatically converts ToString() to stream operator for gtest.
-using ::pl::operator<<;
+using ::px::operator<<;
 
-using ::pl::testing::BazelBinTestFilePath;
-using ::pl::testing::TestFilePath;
+using ::px::testing::BazelBinTestFilePath;
+using ::px::testing::TestFilePath;
 
-using ::pl::stirling::testing::EqHTTPRecord;
-using ::pl::stirling::testing::FindRecordIdxMatchesPID;
-using ::pl::stirling::testing::GetTargetRecords;
-using ::pl::stirling::testing::SocketTraceBPFTest;
-using ::pl::stirling::testing::ToRecordVector;
+using ::px::stirling::testing::EqHTTPRecord;
+using ::px::stirling::testing::FindRecordIdxMatchesPID;
+using ::px::stirling::testing::GetTargetRecords;
+using ::px::stirling::testing::SocketTraceBPFTest;
+using ::px::stirling::testing::ToRecordVector;
 
 using ::testing::UnorderedElementsAre;
 
@@ -193,7 +193,7 @@ TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
       // Nginx has a master process and a worker process. We need the PID of the worker process.
       int worker_pid;
       std::string pid_str =
-          pl::Exec(absl::Substitute("pgrep --parent $0", server.process_pid())).ValueOrDie();
+          px::Exec(absl::Substitute("pgrep --parent $0", server.process_pid())).ValueOrDie();
       ASSERT_TRUE(absl::SimpleAtoi(pid_str, &worker_pid));
       LOG(INFO) << absl::Substitute("Worker thread PID: $0", worker_pid);
 
@@ -216,4 +216,4 @@ TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

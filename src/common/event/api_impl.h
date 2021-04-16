@@ -4,7 +4,7 @@
 
 #include "src/common/event/api.h"
 
-namespace pl {
+namespace px {
 namespace event {
 
 /**
@@ -23,4 +23,4 @@ class APIImpl : public API {
 };
 
 }  // namespace event
-}  // namespace pl
+}  // namespace px

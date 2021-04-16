@@ -23,7 +23,7 @@
 #include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -1036,7 +1036,7 @@ class ASTVisitorTest : public OperatorTests {
     return ast_walker;
   }
 
-  StatusOr<pl::shared::scriptspb::VisFuncsInfo> GetVisFuncsInfo(const std::string& query) {
+  StatusOr<px::shared::scriptspb::VisFuncsInfo> GetVisFuncsInfo(const std::string& query) {
     Parser parser;
     PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
     std::shared_ptr<IR> ir = std::make_shared<IR>();
@@ -1050,7 +1050,7 @@ class ASTVisitorTest : public OperatorTests {
     return ast_walker->GetVisFuncsInfo();
   }
 
-  StatusOr<pl::shared::scriptspb::FuncArgsSpec> GetMainFuncArgsSpec(const std::string& query) {
+  StatusOr<px::shared::scriptspb::FuncArgsSpec> GetMainFuncArgsSpec(const std::string& query) {
     Parser parser;
     PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
     std::shared_ptr<IR> ir = std::make_shared<IR>();
@@ -1370,4 +1370,4 @@ void CompareClone(IRNode* new_ir, IRNode* old_ir, const std::string& err_string)
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

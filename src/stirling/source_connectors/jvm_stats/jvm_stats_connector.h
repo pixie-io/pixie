@@ -15,7 +15,7 @@
 #include "src/stirling/source_connectors/jvm_stats/utils/java.h"
 #include "src/stirling/utils/proc_tracker.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 // Reads and parses the hsperfdata file created by JVM, and exports them into a data table.
@@ -61,4 +61,4 @@ class JVMStatsConnector : public SourceConnector {
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

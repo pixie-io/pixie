@@ -1,6 +1,6 @@
 #pragma once
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 namespace ml {
@@ -23,4 +23,4 @@ class ModelExecutor {
 }  // namespace ml
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

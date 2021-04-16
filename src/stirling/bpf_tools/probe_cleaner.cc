@@ -8,7 +8,7 @@
 #include "src/common/base/base.h"
 #include "src/stirling/bpf_tools/probe_cleaner.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace utils {
 
@@ -109,4 +109,4 @@ Status CleanProbes(std::string_view marker) {
 
 }  // namespace utils
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

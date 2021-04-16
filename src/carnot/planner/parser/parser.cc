@@ -13,7 +13,7 @@
 #include "src/carnot/planner/parser/string_reader.h"
 #include "src/common/base/statusor.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -86,4 +86,4 @@ StatusOr<pypa::AstModulePtr> Parser::Parse(std::string_view query, bool parse_do
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -4,7 +4,7 @@
 #include "src/common/testing/test_utils/test_container.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 using ::testing::EndsWith;
@@ -71,4 +71,4 @@ TEST(FilePathResolver, ResolveContainerPaths) {
 #endif
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

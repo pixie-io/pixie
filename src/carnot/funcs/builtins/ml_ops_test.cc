@@ -16,11 +16,11 @@
 DEFINE_string(sentencepiece_dir, "", "Path to sentencepiece.proto");
 DEFINE_string(embedding_dir, "", "Path to embedding.proto");
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace builtins {
 
-using ::pl::carnot::udf::FunctionContext;
+using ::px::carnot::udf::FunctionContext;
 
 std::string write_vector_to_json(const Eigen::VectorXf& vector) {
   rapidjson::StringBuffer sb;
@@ -48,7 +48,7 @@ TEST(KMeans, basic) {
   }
 
   auto res = kmeans_uda_tester.Result();
-  pl::carnot::exec::ml::KMeans kmeans(k);
+  px::carnot::exec::ml::KMeans kmeans(k);
   kmeans.FromJSON(res);
   EXPECT_THAT(kmeans.centroids(), UnorderedRowsAre(expected_centroids, 0.1));
 }
@@ -134,4 +134,4 @@ TEST(Transformer, basic) {
 
 }  // namespace builtins
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

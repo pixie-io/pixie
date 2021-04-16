@@ -7,7 +7,7 @@
 #include "src/shared/types/types.h"
 #include "third_party/tdigest/tdigest.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace builtins {
 
@@ -67,4 +67,4 @@ void RegisterMathSketchesOrDie(udf::Registry* registry);
 
 }  // namespace builtins
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

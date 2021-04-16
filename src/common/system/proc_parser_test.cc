@@ -12,7 +12,7 @@
 #include "src/common/testing/test_environment.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace system {
 
 using ::testing::ElementsAre;
@@ -221,4 +221,4 @@ TEST_F(ProcParserTest, GetMapPaths) {
 }
 
 }  // namespace system
-}  // namespace pl
+}  // namespace px

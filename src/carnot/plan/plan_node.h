@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace plan {
 
@@ -18,4 +18,4 @@ class PlanNode {
 
 }  // namespace plan
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

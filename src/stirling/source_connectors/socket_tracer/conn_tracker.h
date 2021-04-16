@@ -35,7 +35,7 @@ DECLARE_int64(stirling_check_proc_for_conn_close);
       "$0 protocol=$1 role=$2 ", ToString(conn_id_),              \
       magic_enum::enum_name(traffic_class_.protocol), magic_enum::enum_name(traffic_class_.role))
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 // Forward declaration to avoid circular include of conn_stats.h and conn_tracker.h.
@@ -665,4 +665,4 @@ std::string DebugString(const ConnTracker& c, std::string_view prefix) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

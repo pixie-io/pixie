@@ -10,7 +10,7 @@
 
 #include "src/common/base/statusor.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -29,4 +29,4 @@ class Parser {
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

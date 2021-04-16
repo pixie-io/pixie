@@ -7,7 +7,7 @@
 
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 using ::testing::StrEq;
@@ -90,4 +90,4 @@ TEST(BinaryDecoderTest, TooShortText) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

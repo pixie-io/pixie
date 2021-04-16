@@ -9,7 +9,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/types.h"
 #include "src/stirling/utils/parse_state.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace mysql {
@@ -110,4 +110,4 @@ size_t FindFrameBoundary<mysql::Packet>(MessageType type, std::string_view buf, 
 
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

@@ -3,7 +3,7 @@
 #include "src/common/base/statusor.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 
 using std::string;
 
@@ -24,18 +24,18 @@ TEST(StatusOr, ValueMove) {
 }
 
 TEST(StatusOr, ValueOr) {
-  StatusOr<string> s(Status(pl::statuspb::UNKNOWN, "This is not OK"));
+  StatusOr<string> s(Status(px::statuspb::UNKNOWN, "This is not OK"));
   EXPECT_EQ(s.ValueOr("pixie"), "pixie");
 }
 
 TEST(StatusOr, ConsumeValueOr) {
   {
-    StatusOr<string> s(Status(pl::statuspb::UNKNOWN, "This is not OK"));
+    StatusOr<string> s(Status(px::statuspb::UNKNOWN, "This is not OK"));
     EXPECT_EQ(s.ConsumeValueOr("pixie"), "pixie");
   }
 
   {
-    StatusOr<std::unique_ptr<int>> s(Status(pl::statuspb::UNKNOWN, "This is not OK"));
+    StatusOr<std::unique_ptr<int>> s(Status(px::statuspb::UNKNOWN, "This is not OK"));
     std::unique_ptr<int> val = s.ConsumeValueOr(std::make_unique<int>(2));
     EXPECT_EQ(*val, 2);
   }
@@ -50,7 +50,7 @@ TEST(StatusOr, ValuesAndErrors) {
   ASSERT_OK(s);
   EXPECT_EQ(s.ValueOrDie(), "another value");
 
-  s = StatusOr<string>(Status(pl::statuspb::UNKNOWN, "some error"));
+  s = StatusOr<string>(Status(px::statuspb::UNKNOWN, "some error"));
   ASSERT_FALSE(s.ok());
   EXPECT_EQ(s.msg(), "some error");
 }
@@ -74,7 +74,7 @@ TEST(StatusOr, NullPointer) {
 TEST(StatusOr, DefaultCtor) {
   StatusOr<string> s;
   EXPECT_FALSE(s.ok());
-  EXPECT_EQ(s.code(), pl::statuspb::UNKNOWN);
+  EXPECT_EQ(s.code(), px::statuspb::UNKNOWN);
 }
 
 TEST(StatusOr, DefaultCtorValue) {
@@ -85,7 +85,7 @@ TEST(StatusOr, DefaultCtorValue) {
 
 StatusOr<int> StatusOrTestFunc(int x) {
   if (x == 0) {
-    return Status(pl::statuspb::INTERNAL, "badness");
+    return Status(px::statuspb::INTERNAL, "badness");
   }
   return x + 1;
 }
@@ -100,7 +100,7 @@ TEST(StatusOr, Macros) {
   EXPECT_TRUE(TestCheckCall(3).ok());
   Status s = TestCheckCall(0);
   EXPECT_FALSE(s.ok());
-  EXPECT_EQ(pl::statuspb::INTERNAL, s.code());
+  EXPECT_EQ(px::statuspb::INTERNAL, s.code());
 }
 
-}  // namespace pl
+}  // namespace px

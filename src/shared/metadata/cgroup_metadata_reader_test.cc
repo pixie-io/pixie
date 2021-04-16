@@ -9,7 +9,7 @@
 #include "src/common/testing/testing.h"
 #include "src/shared/metadata/cgroup_metadata_reader.h"
 
-namespace pl {
+namespace px {
 namespace md {
 
 constexpr char kTestDataBasePath[] = "src/shared/metadata";
@@ -153,4 +153,4 @@ TEST_F(CGroupMetadataReaderTest, read_pid_list_alternate) {
 }
 
 }  // namespace md
-}  // namespace pl
+}  // namespace px

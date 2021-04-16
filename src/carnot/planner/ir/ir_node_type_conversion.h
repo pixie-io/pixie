@@ -14,7 +14,7 @@
 #include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planner/types/types.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -66,4 +66,4 @@ inline StatusOr<IRNode*> AsNodeType<IRNode>(IRNode* node, std::string_view /* no
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -9,7 +9,7 @@
 #include "src/table_store/schema/row_descriptor.h"
 #include "src/table_store/table/table_store.h"
 
-namespace pl {
+namespace px {
 namespace table_store {
 
 using table_store::Column;
@@ -273,4 +273,4 @@ TEST_F(TableStoreTabletsDeathTest, tablet_test) {
 }
 
 }  // namespace table_store
-}  // namespace pl
+}  // namespace px

@@ -7,7 +7,7 @@
 #include "gperftools/heap-profiler.h"
 #include "gperftools/profiler.h"
 
-namespace pl {
+namespace px {
 namespace profiler {
 
 bool CPU::ProfilerAvailable() { return ProfilingIsEnabledForAllThreads() == 0; }
@@ -52,11 +52,11 @@ void Heap::ForceLink() {
 }
 
 }  // namespace profiler
-}  // namespace pl
+}  // namespace px
 
 #else  // !PROFILER_AVAILABLE
 
-namespace pl {
+namespace px {
 namespace profiler {
 
 bool CPU::ProfilerAvailable() { return false; }
@@ -69,6 +69,6 @@ bool Heap::StartProfiler(const std::string& /*output_path*/) { return false; }
 bool Heap::StopProfiler() { return false; }
 
 }  // namespace profiler
-}  // namespace pl
+}  // namespace px
 
 #endif  // PROFILER_AVAILABLE

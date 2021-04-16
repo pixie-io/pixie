@@ -8,7 +8,7 @@
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace plan {
 
@@ -210,4 +210,4 @@ TEST_F(PlanFragmentWalkerTest, basic_tests) {
 
 }  // namespace plan
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

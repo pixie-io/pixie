@@ -7,7 +7,7 @@
 #include "src/common/testing/testing.h"
 #include "src/shared/types/column_wrapper.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace udf {
 
@@ -170,4 +170,4 @@ TEST(UDADefinition, arrow_output) {
 
 }  // namespace udf
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

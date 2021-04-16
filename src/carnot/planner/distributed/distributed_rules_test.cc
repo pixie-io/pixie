@@ -17,7 +17,7 @@
 #include "src/carnot/planner/rules/rule_mock.h"
 #include "src/carnot/planner/test_utils.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
@@ -572,4 +572,4 @@ TEST_F(DistributedRulesTest, ScalarUDFRunOnPEMRuleTest) {
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

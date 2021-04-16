@@ -7,7 +7,7 @@
 #include "src/shared/types/column_wrapper.h"
 #include "src/stirling/core/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 // Returns a string representation of the row specified by index.
@@ -21,4 +21,4 @@ void PrintRecordBatch(std::string_view prefix, const stirlingpb::TableSchema& sc
                       const types::ColumnWrapperRecordBatch& record_batch);
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

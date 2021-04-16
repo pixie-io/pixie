@@ -11,7 +11,7 @@
 #include "src/common/testing/grpc_utils/grpc_utils.h"
 #include "src/vizier/services/agent/manager/chan_cache.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 
@@ -27,8 +27,8 @@ class FakeGRPCRouter final : public carnotpb::ResultSinkService::Service {
    * TransferResultChunk implements the RPC method.
    */
   ::grpc::Status TransferResultChunk(
-      ::grpc::ServerContext*, ::grpc::ServerReader<::pl::carnotpb::TransferResultChunkRequest>*,
-      ::pl::carnotpb::TransferResultChunkResponse*) override {
+      ::grpc::ServerContext*, ::grpc::ServerReader<::px::carnotpb::TransferResultChunkRequest>*,
+      ::px::carnotpb::TransferResultChunkResponse*) override {
     return ::grpc::Status::OK;
   }
 };
@@ -155,4 +155,4 @@ TEST_F(ChanCacheTest, channel_idleness_triggers_gc) {
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

@@ -12,7 +12,7 @@
 #include "src/common/base/status.h"
 #include "src/table_store/schema/row_batch.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -37,4 +37,4 @@ class EmptySourceNode : public SourceNode {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

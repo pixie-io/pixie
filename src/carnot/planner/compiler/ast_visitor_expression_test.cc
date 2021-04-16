@@ -11,7 +11,7 @@
 #include "src/carnot/planner/parser/parser.h"
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -117,4 +117,4 @@ TEST_F(ASTExpressionTest, PLModuleWrongName) {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

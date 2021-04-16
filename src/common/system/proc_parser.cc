@@ -12,7 +12,7 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/proc_parser.h"
 
-namespace pl {
+namespace px {
 namespace system {
 
 // Separators of the fields in the various files in the proc filesystem.
@@ -435,7 +435,7 @@ StatusOr<std::string> ProcParser::GetExePath(int32_t pid) const {
 StatusOr<int64_t> ProcParser::GetPIDStartTimeTicks(int32_t pid) const {
   const std::filesystem::path proc_pid_path =
       std::filesystem::path(proc_base_path_) / std::to_string(pid);
-  return ::pl::system::GetPIDStartTimeTicks(proc_pid_path);
+  return ::px::system::GetPIDStartTimeTicks(proc_pid_path);
 }
 
 Status ProcParser::ReadProcPIDFDLink(int32_t pid, int32_t fd, std::string* out) const {
@@ -466,7 +466,7 @@ std::string_view LineWithPrefix(std::string_view content, std::string_view prefi
 Status ProcParser::ReadUIDs(int32_t pid, ProcUIDs* uids) const {
   std::filesystem::path proc_pid_status_path =
       std::filesystem::path(proc_base_path_) / std::to_string(pid) / "status";
-  PL_ASSIGN_OR_RETURN(std::string content, pl::ReadFileToString(proc_pid_status_path));
+  PL_ASSIGN_OR_RETURN(std::string content, px::ReadFileToString(proc_pid_status_path));
 
   constexpr std::string_view kUIDPrefix = "Uid:";
   std::string_view uid_line = LineWithPrefix(content, kUIDPrefix);
@@ -497,7 +497,7 @@ Status ProcParser::ReadUIDs(int32_t pid, ProcUIDs* uids) const {
 Status ProcParser::ReadNSPid(pid_t pid, std::vector<std::string>* ns_pids) const {
   std::filesystem::path proc_pid_status_path =
       std::filesystem::path(proc_base_path_) / std::to_string(pid) / "status";
-  PL_ASSIGN_OR_RETURN(std::string content, pl::ReadFileToString(proc_pid_status_path));
+  PL_ASSIGN_OR_RETURN(std::string content, px::ReadFileToString(proc_pid_status_path));
 
   constexpr std::string_view kNSPidPrefix = "NStgid:";
   std::string_view ns_pid_line = LineWithPrefix(content, kNSPidPrefix);
@@ -588,7 +588,7 @@ Status ParseMountInfo(std::string_view str, ProcParser::MountInfo* mount_info) {
 Status ProcParser::ReadMountInfos(pid_t pid,
                                   std::vector<ProcParser::MountInfo>* mount_infos) const {
   const std::filesystem::path proc_pid_mount_info_path = ProcPidPath(pid) / "mountinfo";
-  PL_ASSIGN_OR_RETURN(std::string content, pl::ReadFileToString(proc_pid_mount_info_path));
+  PL_ASSIGN_OR_RETURN(std::string content, px::ReadFileToString(proc_pid_mount_info_path));
   std::vector<std::string_view> lines = absl::StrSplit(content, "\n", absl::SkipWhitespace());
   for (const auto line : lines) {
     ProcParser::MountInfo& mount_info = mount_infos->emplace_back();
@@ -602,7 +602,7 @@ StatusOr<absl::flat_hash_set<std::string>> ProcParser::GetMapPaths(pid_t pid) {
   absl::flat_hash_set<std::string> map_paths;
 
   const std::filesystem::path proc_pid_maps_path = ProcPidPath(pid) / "maps";
-  PL_ASSIGN_OR_RETURN(std::string content, pl::ReadFileToString(proc_pid_maps_path));
+  PL_ASSIGN_OR_RETURN(std::string content, px::ReadFileToString(proc_pid_maps_path));
   std::vector<std::string_view> lines = absl::StrSplit(content, "\n", absl::SkipWhitespace());
   for (const auto line : lines) {
     std::vector<std::string_view> fields =
@@ -618,4 +618,4 @@ StatusOr<absl::flat_hash_set<std::string>> ProcParser::GetMapPaths(pid_t pid) {
 }
 
 }  // namespace system
-}  // namespace pl
+}  // namespace px

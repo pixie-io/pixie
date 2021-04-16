@@ -6,7 +6,7 @@
 #include <memory>
 #include <string>
 
-namespace pl {
+namespace px {
 namespace event {
 
 struct NATSTLSConfig {
@@ -137,4 +137,4 @@ class NATSConnector : public NATSConnectorBase {
 };
 
 }  // namespace event
-}  // namespace pl
+}  // namespace px

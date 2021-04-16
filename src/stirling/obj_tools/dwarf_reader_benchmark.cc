@@ -4,8 +4,8 @@
 #include "src/common/testing/test_environment.h"
 #include "src/stirling/obj_tools/dwarf_tools.h"
 
-using pl::stirling::obj_tools::DwarfReader;
-using pl::testing::BazelBinTestFilePath;
+using px::stirling::obj_tools::DwarfReader;
+using px::testing::BazelBinTestFilePath;
 
 // NOTE: This benchmark only works with `-c opt`, but that's how we want it to run anyways.
 constexpr std::string_view kBinary =

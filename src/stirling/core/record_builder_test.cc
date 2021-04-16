@@ -5,10 +5,10 @@
 #include "src/stirling/core/types.h"
 #include "src/stirling/testing/common.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
-using ::pl::stirling::testing::ColWrapperSizeIs;
+using ::px::stirling::testing::ColWrapperSizeIs;
 using ::testing::Each;
 using ::testing::ElementsAre;
 using ::testing::EndsWith;
@@ -135,4 +135,4 @@ TEST(DynamicRecordBuilder, Duplicate) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

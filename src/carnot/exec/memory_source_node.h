@@ -13,7 +13,7 @@
 #include "src/table_store/schema/row_batch.h"
 #include "src/table_store/table_store.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -50,4 +50,4 @@ class MemorySourceNode : public SourceNode {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

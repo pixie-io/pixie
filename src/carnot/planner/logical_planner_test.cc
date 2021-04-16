@@ -16,10 +16,10 @@
 #include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/testing/protobuf.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
-using pl::testing::proto::EqualsProto;
+using px::testing::proto::EqualsProto;
 
 class LogicalPlannerTest : public ::testing::Test {
  protected:
@@ -594,4 +594,4 @@ TEST_F(LogicalPlannerTest, pem_only_limit) {
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

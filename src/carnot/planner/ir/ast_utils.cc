@@ -1,6 +1,6 @@
 #include "src/carnot/planner/ir/ast_utils.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -35,4 +35,4 @@ Status WrapAstError(const pypa::AstPtr& ast, Status status) {
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

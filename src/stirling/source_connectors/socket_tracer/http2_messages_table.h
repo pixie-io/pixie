@@ -1,6 +1,6 @@
 #pragma once
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 // clang-format off
@@ -50,4 +50,4 @@ constexpr int kHTTP2MessagesBodyIdx = kHTTP2MessagesTable.ColIndex("body");
 constexpr int kHTTP2MessagesBodySizeIdx = kHTTP2MessagesTable.ColIndex("body_size");
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

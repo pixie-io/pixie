@@ -3,7 +3,7 @@
 
 #include <fstream>
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace docs {
@@ -45,12 +45,12 @@ StatusOr<docspb::InternalPXLDocs> ExtractDocs() {
 }  // namespace docs
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px
 
 DEFINE_string(output_file, "input.pb.txt", "File to write AllDocs to.");
 int main(int argc, char** argv) {
-  pl::EnvironmentGuard env_guard(&argc, argv);
-  auto docs_or_s = pl::carnot::planner::docs::ExtractDocs();
+  px::EnvironmentGuard env_guard(&argc, argv);
+  auto docs_or_s = px::carnot::planner::docs::ExtractDocs();
   if (!docs_or_s.ok()) {
     LOG(ERROR) << docs_or_s.status().ToString();
     return 1;

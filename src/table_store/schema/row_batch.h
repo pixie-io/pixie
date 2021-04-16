@@ -11,7 +11,7 @@
 #include "src/table_store/schema/row_descriptor.h"
 #include "src/table_store/schemapb/schema.pb.h"
 
-namespace pl {
+namespace px {
 namespace table_store {
 namespace schema {
 
@@ -115,7 +115,7 @@ class RowBatch {
 // Append a scalar value to an arrow::Array.
 template <types::DataType T>
 Status CopyValue(arrow::ArrayBuilder* output_col_builder,
-                 const typename pl::types::DataTypeTraits<T>::native_type& value) {
+                 const typename px::types::DataTypeTraits<T>::native_type& value) {
   auto* typed_col_builder =
       static_cast<typename types::DataTypeTraits<T>::arrow_builder_type*>(output_col_builder);
 
@@ -132,7 +132,7 @@ Status CopyValue(arrow::ArrayBuilder* output_col_builder,
 
 template <types::DataType T>
 Status CopyValueRepeated(arrow::ArrayBuilder* output_col_builder,
-                         const typename pl::types::DataTypeTraits<T>::native_type& value,
+                         const typename px::types::DataTypeTraits<T>::native_type& value,
                          size_t num_times) {
   auto* typed_col_builder =
       static_cast<typename types::DataTypeTraits<T>::arrow_builder_type*>(output_col_builder);
@@ -151,4 +151,4 @@ Status CopyValueRepeated(arrow::ArrayBuilder* output_col_builder,
 
 }  // namespace schema
 }  // namespace table_store
-}  // namespace pl
+}  // namespace px

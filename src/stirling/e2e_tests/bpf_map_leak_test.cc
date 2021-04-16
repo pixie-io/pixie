@@ -12,12 +12,12 @@
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
-using ::pl::stirling::testing::SocketTraceBPFTest;
-using ::pl::testing::BazelBinTestFilePath;
-using ::pl::testing::TestFilePath;
+using ::px::stirling::testing::SocketTraceBPFTest;
+using ::px::testing::BazelBinTestFilePath;
+using ::px::testing::TestFilePath;
 
 using ::testing::Contains;
 using ::testing::Key;
@@ -93,4 +93,4 @@ TEST_F(BPFMapLeakTest, unclosed_connection) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

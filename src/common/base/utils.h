@@ -16,7 +16,7 @@
 #include "src/common/base/error.h"
 #include "src/common/base/statusor.h"
 
-namespace pl {
+namespace px {
 
 inline bool IsRoot() { return (geteuid() == 0); }
 
@@ -317,4 +317,4 @@ inline std::ostream& operator<<(std::ostream& os, const T& v) {
   return os;
 }
 
-}  // namespace pl
+}  // namespace px

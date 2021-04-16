@@ -15,12 +15,12 @@
 #include "src/shared/metadata/metadata_state.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace funcs {
 namespace net {
 
-using ScalarUDF = pl::carnot::udf::ScalarUDF;
+using ScalarUDF = px::carnot::udf::ScalarUDF;
 
 class NSLookupUDF : public ScalarUDF {
  public:
@@ -38,9 +38,9 @@ class NSLookupUDF : public ScalarUDF {
   internal::DNSCache& cache_ = internal::DNSCache::GetInstance();
 };
 
-void RegisterNetOpsOrDie(pl::carnot::udf::Registry* registry);
+void RegisterNetOpsOrDie(px::carnot::udf::Registry* registry);
 
 }  // namespace net
 }  // namespace funcs
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

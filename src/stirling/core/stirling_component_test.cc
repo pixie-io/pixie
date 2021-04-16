@@ -9,7 +9,7 @@
 #include "src/stirling/source_connectors/seq_gen/seq_gen_connector.h"
 #include "src/stirling/stirling.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 class StirlingComponentTest : public ::testing::Test {
@@ -94,4 +94,4 @@ TEST_F(SourceToTableTest, source_to_table) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

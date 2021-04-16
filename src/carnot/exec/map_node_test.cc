@@ -15,7 +15,7 @@
 #include "src/common/base/test_utils.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -127,4 +127,4 @@ TEST_F(MapNodeTest, child_fail) {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

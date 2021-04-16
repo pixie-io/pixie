@@ -5,7 +5,7 @@
 #include "src/common/base/base.h"
 #include "src/common/fs/inode_utils.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 FDResolver::FDResolver(system::ProcParser* proc_parser, int pid, int fd)
@@ -71,4 +71,4 @@ std::optional<std::string_view> FDResolver::InferFDLink(
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

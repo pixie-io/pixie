@@ -13,35 +13,35 @@
 #include "src/stirling/obj_tools/elf_tools.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace dynamic_tracing {
 
-using ::pl::stirling::bpf_tools::BPFProbeAttachType;
-using ::pl::stirling::bpf_tools::UProbeSpec;
-using ::pl::stirling::dynamic_tracing::ir::physical::BinaryExpression;
-using ::pl::stirling::dynamic_tracing::ir::physical::Field;
-using ::pl::stirling::dynamic_tracing::ir::physical::MapDeleteAction;
-using ::pl::stirling::dynamic_tracing::ir::physical::MapStashAction;
-using ::pl::stirling::dynamic_tracing::ir::physical::PerCPUArray;
-using ::pl::stirling::dynamic_tracing::ir::physical::PerfBufferOutput;
-using ::pl::stirling::dynamic_tracing::ir::physical::PerfBufferOutputAction;
-using ::pl::stirling::dynamic_tracing::ir::physical::Probe;
-using ::pl::stirling::dynamic_tracing::ir::physical::Program;
-using ::pl::stirling::dynamic_tracing::ir::physical::PtrLenVariable;
-using ::pl::stirling::dynamic_tracing::ir::physical::Register;
-using ::pl::stirling::dynamic_tracing::ir::physical::ScalarVariable;
-using ::pl::stirling::dynamic_tracing::ir::physical::Struct;
-using ::pl::stirling::dynamic_tracing::ir::physical::StructVariable;
-using ::pl::stirling::dynamic_tracing::ir::physical::Variable;
-using ::pl::stirling::dynamic_tracing::ir::shared::BPFHelper;
-using ::pl::stirling::dynamic_tracing::ir::shared::Condition;
-using ::pl::stirling::dynamic_tracing::ir::shared::Map;
-using ::pl::stirling::dynamic_tracing::ir::shared::Printk;
-using ::pl::stirling::dynamic_tracing::ir::shared::ScalarType;
-using ::pl::stirling::dynamic_tracing::ir::shared::Tracepoint;
-using ::pl::stirling::dynamic_tracing::ir::shared::VariableType;
-using ::pl::stirling::obj_tools::ElfReader;
+using ::px::stirling::bpf_tools::BPFProbeAttachType;
+using ::px::stirling::bpf_tools::UProbeSpec;
+using ::px::stirling::dynamic_tracing::ir::physical::BinaryExpression;
+using ::px::stirling::dynamic_tracing::ir::physical::Field;
+using ::px::stirling::dynamic_tracing::ir::physical::MapDeleteAction;
+using ::px::stirling::dynamic_tracing::ir::physical::MapStashAction;
+using ::px::stirling::dynamic_tracing::ir::physical::PerCPUArray;
+using ::px::stirling::dynamic_tracing::ir::physical::PerfBufferOutput;
+using ::px::stirling::dynamic_tracing::ir::physical::PerfBufferOutputAction;
+using ::px::stirling::dynamic_tracing::ir::physical::Probe;
+using ::px::stirling::dynamic_tracing::ir::physical::Program;
+using ::px::stirling::dynamic_tracing::ir::physical::PtrLenVariable;
+using ::px::stirling::dynamic_tracing::ir::physical::Register;
+using ::px::stirling::dynamic_tracing::ir::physical::ScalarVariable;
+using ::px::stirling::dynamic_tracing::ir::physical::Struct;
+using ::px::stirling::dynamic_tracing::ir::physical::StructVariable;
+using ::px::stirling::dynamic_tracing::ir::physical::Variable;
+using ::px::stirling::dynamic_tracing::ir::shared::BPFHelper;
+using ::px::stirling::dynamic_tracing::ir::shared::Condition;
+using ::px::stirling::dynamic_tracing::ir::shared::Map;
+using ::px::stirling::dynamic_tracing::ir::shared::Printk;
+using ::px::stirling::dynamic_tracing::ir::shared::ScalarType;
+using ::px::stirling::dynamic_tracing::ir::shared::Tracepoint;
+using ::px::stirling::dynamic_tracing::ir::shared::VariableType;
+using ::px::stirling::obj_tools::ElfReader;
 
 #define PB_ENUM_SENTINEL_SWITCH_CLAUSE                             \
   LOG(DFATAL) << "Cannot happen. Needed to avoid default clause."; \
@@ -1006,4 +1006,4 @@ StatusOr<std::string> GenBCCProgram(const Program& program) {
 
 }  // namespace dynamic_tracing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

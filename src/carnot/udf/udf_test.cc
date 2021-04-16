@@ -8,7 +8,7 @@
 #include "src/common/base/base.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace udf {
 
@@ -231,4 +231,4 @@ TEST(StringValue, value_tests) {
 
 }  // namespace udf
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -11,7 +11,7 @@
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace builtins {
 
@@ -207,4 +207,4 @@ void RegisterJSONOpsOrDie(udf::Registry* registry);
 
 }  // namespace builtins
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

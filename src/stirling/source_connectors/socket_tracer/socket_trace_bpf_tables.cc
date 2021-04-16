@@ -19,7 +19,7 @@ NO_OPT_ATTR void ConnInfoMapCleanupTrigger(int n, struct conn_id_t* conn_id_vec)
 }
 }
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 ConnInfoMapManager::ConnInfoMapManager(bpf_tools::BCCWrapper* bcc)
@@ -58,4 +58,4 @@ void ConnInfoMapManager::Disable(struct conn_id_t conn_id) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

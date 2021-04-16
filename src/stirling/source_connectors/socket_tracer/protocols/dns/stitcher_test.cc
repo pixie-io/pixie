@@ -9,7 +9,7 @@
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace dns {
@@ -158,4 +158,4 @@ TEST(DnsStitcherTest, OutOfOrderMatching) {
 }  // namespace dns
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

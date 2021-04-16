@@ -21,26 +21,26 @@ constexpr std::string_view kServerPath =
     "go_grpc_server_/"
     "go_grpc_server";
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 using ::google::protobuf::TextFormat;
-using ::pl::stirling::testing::ColWrapperSizeIs;
-using ::pl::stirling::testing::FindRecordsMatchingPID;
+using ::px::stirling::testing::ColWrapperSizeIs;
+using ::px::stirling::testing::FindRecordsMatchingPID;
 using ::testing::Each;
 using ::testing::Ge;
 using ::testing::Gt;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
-using LogicalProgram = ::pl::stirling::dynamic_tracing::ir::logical::TracepointDeployment;
+using LogicalProgram = ::px::stirling::dynamic_tracing::ir::logical::TracepointDeployment;
 
 // TODO(yzhao): Create test fixture that wraps the test binaries.
 class GoHTTPDynamicTraceTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    client_path_ = pl::testing::BazelBinTestFilePath(kClientPath).string();
-    server_path_ = pl::testing::BazelBinTestFilePath(kServerPath).string();
+    client_path_ = px::testing::BazelBinTestFilePath(kClientPath).string();
+    server_path_ = px::testing::BazelBinTestFilePath(kServerPath).string();
 
     ASSERT_OK(fs::Exists(server_path_));
     ASSERT_OK(fs::Exists(client_path_));
@@ -242,7 +242,7 @@ tracepoints {
     probes: {
       name: "probe_foo_bar"
       tracepoint: {
-        symbol: "pl::testing::Foo::Bar"
+        symbol: "px::testing::Foo::Bar"
         type: LOGICAL
       }
       args {
@@ -266,4 +266,4 @@ TEST_F(CPPDynamicTraceTest, DISABLED_TraceDummyExe) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

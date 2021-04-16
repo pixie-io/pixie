@@ -17,7 +17,7 @@
 
 #include "src/stirling/utils/linux_headers.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace bpf_tools {
 
@@ -55,7 +55,7 @@ Status BPFTraceWrapper::Compile(std::string_view script, const std::vector<std::
   // bpftrace::bt_verbose = true;
   // bpftrace::bt_debug = bpftrace::DebugLevel::kFullDebug;
 
-  uint64_t time_offset = pl::system::Config::GetInstance().ClockRealTimeOffset();
+  uint64_t time_offset = px::system::Config::GetInstance().ClockRealTimeOffset();
 
   // Set boottime. Required to support strftime() in bpftrace code.
   // Since BPF nsecs uses monotonic clock, but strftime() needs to know the real time,
@@ -222,6 +222,6 @@ bpftrace::BPFTraceMap BPFTraceWrapper::GetBPFMap(const std::string& name) {
 
 }  // namespace bpf_tools
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px
 
 #endif

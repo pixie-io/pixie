@@ -7,7 +7,7 @@
 #include "src/shared/metadata/cgroup_metadata_reader.h"
 #include "src/shared/upid/upid.h"
 
-namespace pl {
+namespace px {
 namespace md {
 
 class MockCGroupMetadataReader : public CGroupMetadataReader {
@@ -24,4 +24,4 @@ class MockCGroupMetadataReader : public CGroupMetadataReader {
 };
 
 }  // namespace md
-}  // namespace pl
+}  // namespace px

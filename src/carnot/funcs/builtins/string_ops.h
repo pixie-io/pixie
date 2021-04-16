@@ -7,7 +7,7 @@
 #include "src/common/base/utils.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace builtins {
 
@@ -198,4 +198,4 @@ void RegisterStringOpsOrDie(udf::Registry* registry);
 
 }  // namespace builtins
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

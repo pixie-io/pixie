@@ -2,7 +2,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace testing {
 
 bool IsBazelEnvironment() {
@@ -32,4 +32,4 @@ std::filesystem::path BazelBinTestFilePath(const std::filesystem::path& rel_path
 }
 
 }  // namespace testing
-}  // namespace pl
+}  // namespace px

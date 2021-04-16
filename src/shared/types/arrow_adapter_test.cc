@@ -3,7 +3,7 @@
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace types {
 
 TEST(BinarySearchTest, find_index_greater_or_eq) {
@@ -27,4 +27,4 @@ TEST(BinarySearchTest, find_index_lower_or_eq) {
 }
 
 }  // namespace types
-}  // namespace pl
+}  // namespace px

@@ -9,7 +9,7 @@
 #include "src/common/event/nats.h"
 #include "src/shared/metadata/state_manager.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 
@@ -39,7 +39,7 @@ class FakeAgentMetadataStateManager : public md::AgentMetadataStateManager {
   explicit FakeAgentMetadataStateManager(md::AgentMetadataFilter* metadata_filter)
       : metadata_filter_(metadata_filter) {
     metadata_state_ =
-        std::make_shared<pl::md::AgentMetadataState>("myhost", 1, sole::uuid4(), "mypod");
+        std::make_shared<px::md::AgentMetadataState>("myhost", 1, sole::uuid4(), "mypod");
   }
 
   virtual ~FakeAgentMetadataStateManager() = default;
@@ -92,4 +92,4 @@ class FakeAgentMetadataStateManager : public md::AgentMetadataStateManager {
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

@@ -2,7 +2,7 @@
 
 #include "src/table_store/schema/schema.h"
 
-namespace pl {
+namespace px {
 namespace table_store {
 namespace schema {
 
@@ -54,4 +54,4 @@ TEST_F(SchemaTest, overwrite_relation) {
 
 }  // namespace schema
 }  // namespace table_store
-}  // namespace pl
+}  // namespace px

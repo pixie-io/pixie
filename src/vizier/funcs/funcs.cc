@@ -2,17 +2,17 @@
 #include "src/carnot/funcs/funcs.h"
 #include "src/vizier/funcs/internal/internal_impl.h"
 #include "src/vizier/funcs/md_udtfs/md_udtfs.h"
-namespace pl {
+namespace px {
 namespace vizier {
 namespace funcs {
 
 void RegisterFuncsOrDie(const VizierFuncFactoryContext& ctx, carnot::udf::Registry* registry) {
   // All used functions must be registered here.
-  ::pl::carnot::funcs::RegisterFuncsOrDie(registry);
+  ::px::carnot::funcs::RegisterFuncsOrDie(registry);
   md::RegisterFuncsOrDie(ctx, registry);
   internal::RegisterFuncsOrDie(registry);
 }
 
 }  // namespace funcs
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

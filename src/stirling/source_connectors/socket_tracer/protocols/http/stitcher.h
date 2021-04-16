@@ -11,7 +11,7 @@
 
 DECLARE_string(http_response_header_filters);
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace http {
@@ -41,4 +41,4 @@ inline RecordsWithErrorCount<http::Record> StitchFrames(std::deque<http::Message
 
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

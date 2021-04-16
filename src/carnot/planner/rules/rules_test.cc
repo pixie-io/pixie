@@ -13,7 +13,7 @@
 #include "src/carnot/planner/rules/rules.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -2490,4 +2490,4 @@ TEST_F(RulesTest, resolve_stream_non_mem_sink_child) {
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

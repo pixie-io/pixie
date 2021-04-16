@@ -10,7 +10,7 @@
 #include "src/stirling/core/source_connector.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dynamic_tracer.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 class DynamicTraceConnector : public SourceConnector, public bpf_tools::BCCWrapper {
@@ -40,7 +40,7 @@ class DynamicTraceConnector : public SourceConnector, public bpf_tools::BCCWrapp
   Status StopImpl() override { return Status::OK(); }
 
  private:
-  Status AppendRecord(const ::pl::stirling::dynamic_tracing::ir::physical::Struct& st,
+  Status AppendRecord(const ::px::stirling::dynamic_tracing::ir::physical::Struct& st,
                       uint32_t asid, std::string_view buf, DataTable* data_table);
 
   // Describes the output table column types.
@@ -60,4 +60,4 @@ BackedDataElements ConvertFields(
         repeated_fields);
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

@@ -10,7 +10,7 @@
 #include "src/common/base/base.h"
 #include "src/common/system/tcp_socket.h"
 
-namespace pl {
+namespace px {
 namespace system {
 
 TEST(TCPSocketTest, DataIsWrittenAndReceivedCorrectly) {
@@ -152,4 +152,4 @@ TEST(TCPSocketTest, MultipleSequencialConnectsFailed) {
 }
 
 }  // namespace system
-}  // namespace pl
+}  // namespace px

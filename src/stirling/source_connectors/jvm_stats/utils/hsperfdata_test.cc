@@ -11,12 +11,12 @@
 #include "src/common/base/test_utils.h"
 #include "src/common/testing/test_environment.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace java {
 namespace hsperf {
 
-using ::pl::testing::TestFilePath;
+using ::px::testing::TestFilePath;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
@@ -79,4 +79,4 @@ TEST(PerfDataHeaderTest, NotEnoughData) {
 }  // namespace hsperf
 }  // namespace java
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

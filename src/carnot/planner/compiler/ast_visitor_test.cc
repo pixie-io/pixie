@@ -12,7 +12,7 @@
 #include "src/common/testing/testing.h"
 #include "src/shared/scriptspb/scripts.pb.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -1416,16 +1416,16 @@ TEST_F(ASTVisitorTest, arg_annotations) {
   ASSERT_EQ(qlobjptr->type(), QLObjectType::kFunction);
   auto func_obj = std::static_pointer_cast<FuncObject>(qlobjptr);
   auto arg_type_objs = func_obj->arg_types();
-  absl::flat_hash_map<std::string, pl::types::DataType> arg_types;
+  absl::flat_hash_map<std::string, px::types::DataType> arg_types;
   for (const auto& [name, type_obj] : arg_type_objs) {
     arg_types[name] = type_obj->data_type();
   }
-  absl::flat_hash_map<std::string, pl::types::DataType> expected_types({
-      {"a", pl::types::DataType::INT64},
-      {"b", pl::types::DataType::STRING},
-      {"c", pl::types::DataType::FLOAT64},
-      {"d", pl::types::DataType::BOOLEAN},
-      {"e", pl::types::DataType::TIME64NS},
+  absl::flat_hash_map<std::string, px::types::DataType> expected_types({
+      {"a", px::types::DataType::INT64},
+      {"b", px::types::DataType::STRING},
+      {"c", px::types::DataType::FLOAT64},
+      {"d", px::types::DataType::BOOLEAN},
+      {"e", px::types::DataType::TIME64NS},
   });
   ASSERT_EQ(arg_types, expected_types);
 }
@@ -1490,7 +1490,7 @@ TEST_F(ASTVisitorTest, get_vis_funcs_info) {
   });
   EXPECT_EQ(vis_spec_map, expected_vis_specs);
 
-  absl::flat_hash_map<std::string, pl::shared::scriptspb::FuncArgsSpec> fn_args_map(
+  absl::flat_hash_map<std::string, px::shared::scriptspb::FuncArgsSpec> fn_args_map(
       vis_funcs.fn_args_map().begin(), vis_funcs.fn_args_map().end());
   absl::flat_hash_map<std::string, std::string> expected_fn_args({
       {"f", kExpectedFArgsProto},
@@ -2093,4 +2093,4 @@ TEST_F(ASTVisitorTest, agg_segfault) {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

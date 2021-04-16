@@ -6,7 +6,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace system {
 
 DECLARE_string(host_path);
@@ -78,4 +78,4 @@ class Config : public NotCopyable {
 };
 
 }  // namespace system
-}  // namespace pl
+}  // namespace px

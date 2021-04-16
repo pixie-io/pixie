@@ -4,7 +4,7 @@
 
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 
 class ZlibTest : public ::testing::Test {
  private:
@@ -24,8 +24,8 @@ class ZlibTest : public ::testing::Test {
 };
 
 TEST_F(ZlibTest, inflate_test) {
-  auto result = pl::zlib::Inflate(GetCompressedString());
+  auto result = px::zlib::Inflate(GetCompressedString());
   EXPECT_OK_AND_EQ(result, GetExpectedResult());
 }
 
-}  // namespace pl
+}  // namespace px

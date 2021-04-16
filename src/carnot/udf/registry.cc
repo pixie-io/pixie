@@ -1,6 +1,6 @@
 #include "src/carnot/udf/registry.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace udf {
 
@@ -177,4 +177,4 @@ StatusOr<UDFDefinition*> Registry::GetDefinition(
 
 }  // namespace udf
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

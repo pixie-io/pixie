@@ -5,7 +5,7 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/config.h"
 
-namespace pl {
+namespace px {
 namespace system {
 
 namespace {
@@ -36,4 +36,4 @@ void LogSystemInfo() {
 }
 
 }  // namespace system
-}  // namespace pl
+}  // namespace px

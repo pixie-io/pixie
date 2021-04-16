@@ -17,13 +17,13 @@
 #include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
 
-using ::pl::table_store::schema::Relation;
-using ::pl::testing::proto::EqualsProto;
+using ::px::table_store::schema::Relation;
+using ::px::testing::proto::EqualsProto;
 using planpb::testutils::CompareLogicalPlans;
 using ::testing::_;
 using ::testing::ContainsRegex;
@@ -3146,4 +3146,4 @@ TEST_F(CompilerTest, nested_semantic_type_cast) {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

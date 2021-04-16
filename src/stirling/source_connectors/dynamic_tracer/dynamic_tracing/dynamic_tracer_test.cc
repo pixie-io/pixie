@@ -11,15 +11,15 @@
 constexpr std::string_view kBinaryPath =
     "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary";
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace dynamic_tracing {
 
 using ::google::protobuf::TextFormat;
-using ::pl::stirling::bpf_tools::UProbeSpec;
-using ::pl::stirling::testing::PIDToUPID;
-using ::pl::testing::proto::EqualsProto;
-using ::pl::testing::status::StatusIs;
+using ::px::stirling::bpf_tools::UProbeSpec;
+using ::px::stirling::testing::PIDToUPID;
+using ::px::testing::proto::EqualsProto;
+using ::px::testing::status::StatusIs;
 using ::testing::ElementsAreArray;
 using ::testing::EndsWith;
 using ::testing::Field;
@@ -70,7 +70,7 @@ constexpr char kContainer1UpdateTxt[] = R"(
 class ResolveTargetObjPathTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    auto server_path = pl::testing::BazelBinTestFilePath(kServerPath).string();
+    auto server_path = px::testing::BazelBinTestFilePath(kServerPath).string();
     ASSERT_OK(s_.Start({server_path}));
 
     md::K8sMetadataState::PodUpdate pod0_update;
@@ -137,7 +137,7 @@ TEST_F(ResolveTargetObjPathTest, ResolvePodProcessNonMatchingProcessRegexp) {
   TextFormat::ParseFromString(kDeploymentSpecTxt, &deployment_spec);
   EXPECT_THAT(
       ResolveTargetObjPath(k8s_mds_, &deployment_spec),
-      StatusIs(pl::statuspb::NOT_FOUND, HasSubstr("Found no UPIDs in Container: 'container0'")));
+      StatusIs(px::statuspb::NOT_FOUND, HasSubstr("Found no UPIDs in Container: 'container0'")));
 }
 
 // Tests that a given pod name prefix matches multiple Pods.
@@ -150,7 +150,7 @@ TEST_F(ResolveTargetObjPathTest, ResolvePodProcessMultiplePods) {
   )";
   TextFormat::ParseFromString(kDeploymentSpecTxt, &deployment_spec);
   EXPECT_THAT(ResolveTargetObjPath(k8s_mds_, &deployment_spec),
-              StatusIs(pl::statuspb::FAILED_PRECONDITION,
+              StatusIs(px::statuspb::FAILED_PRECONDITION,
                        HasSubstr("Pod name 'ns0/pod' matches multiple Pods")));
 }
 
@@ -164,7 +164,7 @@ TEST_F(ResolveTargetObjPathTest, ResolvePodProcessMissingContainerName) {
   )";
   TextFormat::ParseFromString(kDeploymentSpecTxt, &deployment_spec);
   EXPECT_THAT(ResolveTargetObjPath(k8s_mds_, &deployment_spec),
-              StatusIs(pl::statuspb::FAILED_PRECONDITION,
+              StatusIs(px::statuspb::FAILED_PRECONDITION,
                        HasSubstr("Container name not specified, but Pod 'pod0' has multiple "
                                  "containers 'container0,container1'")));
 }
@@ -371,7 +371,7 @@ const std::vector<std::string> kExpectedBCC = {
 
 TEST(DynamicTracerTest, Compile) {
   std::string input_program_str = absl::Substitute(
-      kLogicalProgramSpec, pl::testing::BazelBinTestFilePath(kBinaryPath).string());
+      kLogicalProgramSpec, px::testing::BazelBinTestFilePath(kBinaryPath).string());
   ir::logical::TracepointDeployment input_program;
   ASSERT_TRUE(TextFormat::ParseFromString(input_program_str, &input_program));
 
@@ -439,4 +439,4 @@ TEST(DynamicTracerTest, Compile) {
 
 }  // namespace dynamic_tracing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

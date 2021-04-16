@@ -9,7 +9,7 @@
 #include "src/stirling/obj_tools/elf_tools.h"
 #include "src/stirling/source_connectors/socket_tracer/uprobe_symaddrs.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 using obj_tools::DwarfReader;
@@ -18,7 +18,7 @@ using obj_tools::ElfReader;
 class UprobeSymaddrsTest : public ::testing::Test {
  protected:
   void SetUp() {
-    std::filesystem::path p = pl::testing::BazelBinTestFilePath(kGoGRPCServer);
+    std::filesystem::path p = px::testing::BazelBinTestFilePath(kGoGRPCServer);
     ASSERT_OK_AND_ASSIGN(dwarf_reader_, DwarfReader::Create(p.string()));
     ASSERT_OK_AND_ASSIGN(elf_reader_, ElfReader::Create(p));
   }
@@ -74,4 +74,4 @@ TEST_F(UprobeSymaddrsTest, GoTLSSymAddrs) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

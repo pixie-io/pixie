@@ -9,7 +9,7 @@
 #include "src/common/base/base.h"
 #include "src/shared/types/column_wrapper.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace udf {
 
@@ -303,4 +303,4 @@ class UDTFDefinition : public UDFDefinition {
 
 }  // namespace udf
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

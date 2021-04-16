@@ -8,7 +8,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace java {
 namespace hsperf {
@@ -91,4 +91,4 @@ Status ParseHsperfData(std::string_view buf_view, HsperfData* data) {
 }  // namespace hsperf
 }  // namespace java
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

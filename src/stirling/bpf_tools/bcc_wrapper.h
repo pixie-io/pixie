@@ -32,7 +32,7 @@
 DECLARE_uint32(stirling_bpf_perf_buffer_page_count);
 DECLARE_bool(stirling_always_infer_task_struct_offsets);
 
-namespace pl {
+namespace px {
 /*
  * Status adapter for ebpf::StatusTuple.
  */
@@ -43,9 +43,9 @@ inline Status StatusAdapter<ebpf::StatusTuple>(const ebpf::StatusTuple& s) noexc
   }
   return Status(statuspb::INTERNAL, s.msg());
 }
-}  // namespace pl
+}  // namespace px
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace bpf_tools {
 
@@ -331,6 +331,6 @@ class BCCWrapper {
 
 }  // namespace bpf_tools
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px
 
 #endif

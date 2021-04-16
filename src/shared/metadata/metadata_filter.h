@@ -12,7 +12,7 @@
 #include "src/shared/bloomfilter/bloomfilter.h"
 #include "src/shared/metadatapb/metadata.pb.h"
 
-namespace pl {
+namespace px {
 namespace md {
 
 using bloomfilter::XXHash64BloomFilter;
@@ -110,4 +110,4 @@ class AgentMetadataFilterImpl : public AgentMetadataFilter {
 };
 
 }  // namespace md
-}  // namespace pl
+}  // namespace px

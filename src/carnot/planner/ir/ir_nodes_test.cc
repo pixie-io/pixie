@@ -13,10 +13,10 @@
 #include "src/common/testing/protobuf.h"
 #include "src/table_store/table_store.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
-using ::pl::testing::proto::EqualsProto;
+using ::px::testing::proto::EqualsProto;
 using table_store::schema::Relation;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
@@ -2059,4 +2059,4 @@ TEST(ZeroValueForType, TestUint128) {
 }  // namespace planner
 
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

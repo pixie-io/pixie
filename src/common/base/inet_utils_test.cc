@@ -1,7 +1,7 @@
 #include "src/common/base/inet_utils.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 
 using ::testing::StrEq;
 
@@ -238,4 +238,4 @@ TEST(MapIPv4ToIPv6Test, WorksAsExpected) {
   }
 }
 
-}  // namespace pl
+}  // namespace px

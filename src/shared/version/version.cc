@@ -11,7 +11,7 @@ extern const int64_t kBuildTimeStamp;
 extern const char* kBuildSemver;
 extern const char* kBuildNumber;
 
-namespace pl {
+namespace px {
 
 std::string VersionInfo::Revision() { return kBuildSCMRevision; }
 
@@ -36,4 +36,4 @@ std::string VersionInfo::VersionString() {
                           build_time, BuildNumber(), build_type);
 }
 
-}  // namespace pl
+}  // namespace px

@@ -6,7 +6,7 @@
 #include "src/stirling/source_connectors/socket_tracer/canonical_types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/redis/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 // clang-format off
@@ -48,4 +48,4 @@ constexpr int kRedisReqIdx = kRedisTable.ColIndex("req_args");
 constexpr int kRedisRespIdx = kRedisTable.ColIndex("resp");
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

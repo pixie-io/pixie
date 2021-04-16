@@ -11,11 +11,11 @@
 #include "src/common/perf/perf.h"
 #include "src/vizier/services/agent/manager/manager.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 
-using ::pl::event::AsyncTask;
+using ::px::event::AsyncTask;
 
 class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
  public:
@@ -35,7 +35,7 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
 
     auto s = carnot_->ExecutePlan(req_.plan(), query_id_, req_.analyze());
     if (!s.ok()) {
-      if (s.code() == pl::statuspb::Code::CANCELLED) {
+      if (s.code() == px::statuspb::Code::CANCELLED) {
         LOG(WARNING) << absl::Substitute("Cancelled query: $0", query_id_.str());
       } else {
         LOG(ERROR) << absl::Substitute("Query $0 failed, reason: $1, plan: $2", query_id_.str(),
@@ -57,7 +57,7 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
   sole::uuid query_id_;
 };
 
-ExecuteQueryMessageHandler::ExecuteQueryMessageHandler(pl::event::Dispatcher* dispatcher,
+ExecuteQueryMessageHandler::ExecuteQueryMessageHandler(px::event::Dispatcher* dispatcher,
                                                        Info* agent_info,
                                                        Manager::VizierNATSConnector* nats_conn,
                                                        carnot::Carnot* carnot)
@@ -89,4 +89,4 @@ void ExecuteQueryMessageHandler::HandleQueryExecutionComplete(sole::uuid query_i
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

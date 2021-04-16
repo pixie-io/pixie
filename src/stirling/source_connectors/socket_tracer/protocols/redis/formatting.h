@@ -6,7 +6,7 @@
 #include "src/common/json/json.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/redis/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace redis {
@@ -18,4 +18,4 @@ void FormatArrayMessage(VectorView<std::string> payloads_view, Message* msg);
 }  // namespace redis
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

@@ -69,10 +69,10 @@ DEFINE_bool(stirling_socket_tracer_output_multiple_data_tables, true,
 
 BPF_SRC_STRVIEW(socket_trace_bcc_script, socket_trace);
 
-namespace pl {
+namespace px {
 namespace stirling {
 
-using ::pl::utils::ToJSONString;
+using ::px::utils::ToJSONString;
 
 SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
     : SourceConnector(source_name, kTables), uprobe_mgr_(this) {
@@ -561,8 +561,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
                                          protocols::http2::Record record, DataTable* data_table) {
-  using ::pl::grpc::MethodInputOutput;
-  using ::pl::stirling::grpc::ParsePB;
+  using ::px::grpc::MethodInputOutput;
+  using ::px::stirling::grpc::ParsePB;
 
   protocols::http2::HalfStream* req_stream;
   protocols::http2::HalfStream* resp_stream;
@@ -878,7 +878,7 @@ void SocketTraceConnector::TransferStream(ConnectorContext* ctx, ConnTracker* tr
 }
 
 void SocketTraceConnector::TransferConnStats(ConnectorContext* ctx, DataTable* data_table) {
-  namespace idx = ::pl::stirling::conn_stats_idx;
+  namespace idx = ::px::stirling::conn_stats_idx;
 
   absl::flat_hash_set<md::UPID> upids = ctx->GetUPIDs();
 
@@ -943,6 +943,6 @@ void SocketTraceConnector::TransferConnStats(ConnectorContext* ctx, DataTable* d
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px
 
 #endif

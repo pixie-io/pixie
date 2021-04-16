@@ -17,7 +17,7 @@
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -72,4 +72,4 @@ TEST_F(EmptySourceNodeTest, basic) {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

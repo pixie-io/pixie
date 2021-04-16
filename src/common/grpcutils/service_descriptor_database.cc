@@ -5,7 +5,7 @@
 #include <absl/memory/memory.h>
 #include "src/common/base/logging.h"
 
-namespace pl {
+namespace px {
 namespace grpc {
 
 using ::google::protobuf::Descriptor;
@@ -73,4 +73,4 @@ std::vector<::google::protobuf::ServiceDescriptorProto> ServiceDescriptorDatabas
 }
 
 }  // namespace grpc
-}  // namespace pl
+}  // namespace px

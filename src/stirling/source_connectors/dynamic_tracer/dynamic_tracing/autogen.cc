@@ -10,7 +10,7 @@
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/sharedpb/shared.pb.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace dynamic_tracing {
 
@@ -154,4 +154,4 @@ Status AutoTraceExpansion(obj_tools::DwarfReader* dwarf_reader,
 
 }  // namespace dynamic_tracing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

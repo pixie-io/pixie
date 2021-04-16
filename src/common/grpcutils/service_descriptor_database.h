@@ -13,7 +13,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace grpc {
 
 struct MethodInputOutput {
@@ -63,4 +63,4 @@ class ServiceDescriptorDatabase {
 // TODO(yzhao): Benchmark dynamic message parsing.
 
 }  // namespace grpc
-}  // namespace pl
+}  // namespace px

@@ -21,22 +21,22 @@
 
 #include "src/stirling/proto/stirling.pb.h"
 
-using pl::stirling::DataElement;
-using pl::stirling::DataTableSchema;
-using pl::stirling::SeqGenConnector;
-using pl::stirling::SourceRegistry;
-using pl::stirling::Stirling;
+using px::stirling::DataElement;
+using px::stirling::DataTableSchema;
+using px::stirling::SeqGenConnector;
+using px::stirling::SourceRegistry;
+using px::stirling::Stirling;
 
-using pl::types::ColumnWrapperRecordBatch;
-using pl::types::DataType;
-using pl::types::Float64Value;
-using pl::types::Int64Value;
-using pl::types::StringValue;
-using pl::types::TabletID;
-using pl::types::Time64NSValue;
+using px::types::ColumnWrapperRecordBatch;
+using px::types::DataType;
+using px::types::Float64Value;
+using px::types::Int64Value;
+using px::types::StringValue;
+using px::types::TabletID;
+using px::types::Time64NSValue;
 
-using pl::ArrayView;
-using pl::Status;
+using px::ArrayView;
+using px::Status;
 
 // Test arguments, from the command line
 DEFINE_uint64(kRNGSeed, 377, "Random Seed");
@@ -46,7 +46,7 @@ DEFINE_uint32(kNumIterMax, 20, "Max number of iterations");
 DEFINE_uint64(kNumProcessedRequirement, 5000,
               "Number of records required to be processed before test is allowed to end");
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 // This is the duration for which a subscription will be valid.
@@ -75,9 +75,9 @@ class TableTabletColHashFn {
  public:
   size_t operator()(const TableTabletCol& val) const {
     size_t hash = 0;
-    hash = pl::HashCombine(hash, val.table);
-    hash = pl::HashCombine(hash, std::hash<TabletID>{}(val.tablet));
-    hash = pl::HashCombine(hash, val.col);
+    hash = px::HashCombine(hash, val.table);
+    hash = px::HashCombine(hash, std::hash<TabletID>{}(val.tablet));
+    hash = px::HashCombine(hash, val.col);
     return hash;
   }
 };
@@ -100,10 +100,10 @@ class StirlingTest : public ::testing::Test {
   std::unordered_map<uint32_t, DataTableSchema> schemas_;
 
   // Reference model (checkers).
-  std::unordered_map<TableTabletCol, std::unique_ptr<pl::stirling::Sequence<int64_t>>,
+  std::unordered_map<TableTabletCol, std::unique_ptr<px::stirling::Sequence<int64_t>>,
                      TableTabletColHashFn>
       int_seq_checker_;
-  std::unordered_map<TableTabletCol, std::unique_ptr<pl::stirling::Sequence<double>>,
+  std::unordered_map<TableTabletCol, std::unique_ptr<px::stirling::Sequence<double>>,
                      TableTabletColHashFn>
       double_seq_checker_;
 
@@ -158,17 +158,17 @@ class StirlingTest : public ::testing::Test {
 
         uint32_t col_idx = 1;  // Start at 1, because column 0 is time.
         int_seq_checker_.emplace(TableTabletCol{id, "", col_idx++},
-                                 std::make_unique<pl::stirling::LinearSequence<int64_t>>(1, 1));
+                                 std::make_unique<px::stirling::LinearSequence<int64_t>>(1, 1));
         int_seq_checker_.emplace(TableTabletCol{id, "", col_idx++},
-                                 std::make_unique<pl::stirling::ModuloSequence<int64_t>>(10));
+                                 std::make_unique<px::stirling::ModuloSequence<int64_t>>(10));
         int_seq_checker_.emplace(
             TableTabletCol{id, "", col_idx++},
-            std::make_unique<pl::stirling::QuadraticSequence<int64_t>>(1, 0, 0));
+            std::make_unique<px::stirling::QuadraticSequence<int64_t>>(1, 0, 0));
         int_seq_checker_.emplace(TableTabletCol{id, "", col_idx++},
-                                 std::make_unique<pl::stirling::FibonacciSequence<int64_t>>());
+                                 std::make_unique<px::stirling::FibonacciSequence<int64_t>>());
         double_seq_checker_.emplace(
             TableTabletCol{id, "", col_idx++},
-            std::make_unique<pl::stirling::LinearSequence<double>>(3.14159, 0));
+            std::make_unique<px::stirling::LinearSequence<double>>(3.14159, 0));
 
         num_processed_per_table_.emplace(id, 0);
       } else if (name[name.length() - 1] == '1') {
@@ -185,12 +185,12 @@ class StirlingTest : public ::testing::Test {
           uint32_t col_idx = 1;  // Start at 1, because column 0 is time.
           int_seq_checker_.emplace(
               TableTabletCol{id, t_str, col_idx++},
-              std::make_unique<pl::stirling::LinearSequence<int64_t>>(2 * kModulo, 2 + (2 * t)));
+              std::make_unique<px::stirling::LinearSequence<int64_t>>(2 * kModulo, 2 + (2 * t)));
 
           // The modulo is the tablet id, so after tabletization, it will appear as a constant.
           // So use a Linear Sequence with slope 0 to specify a constant expectation.
           int_seq_checker_.emplace(TableTabletCol{id, t_str, col_idx++},
-                                   std::make_unique<pl::stirling::LinearSequence<int64_t>>(0, t));
+                                   std::make_unique<px::stirling::LinearSequence<int64_t>>(0, t));
         }
 
         num_processed_per_table_.emplace(id, 0);
@@ -347,4 +347,4 @@ TEST_F(StirlingTest, no_data_callback_defined) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

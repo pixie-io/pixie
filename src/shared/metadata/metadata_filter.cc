@@ -4,7 +4,7 @@
 #include "src/carnot/planner/distributedpb/distributed_plan.pb.h"
 #include "src/shared/metadata/metadata_filter.h"
 
-namespace pl {
+namespace px {
 namespace md {
 
 StatusOr<std::unique_ptr<AgentMetadataFilter>> AgentMetadataFilter::Create(
@@ -76,4 +76,4 @@ StatusOr<std::unique_ptr<AgentMetadataFilter>> AgentMetadataFilterImpl::FromProt
 }
 
 }  // namespace md
-}  // namespace pl
+}  // namespace px

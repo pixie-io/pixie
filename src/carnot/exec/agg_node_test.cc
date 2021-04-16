@@ -12,7 +12,7 @@
 #include "src/common/testing/testing.h"
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -460,4 +460,4 @@ TEST_F(AggNodeTest, no_aggregate_expressions) {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -1,7 +1,7 @@
 #include "src/common/event/api_impl.h"
 #include "src/common/event/libuv.h"
 
-namespace pl {
+namespace px {
 namespace event {
 
 DispatcherUPtr event::APIImpl::AllocateDispatcher(std::string_view name) {
@@ -11,4 +11,4 @@ DispatcherUPtr event::APIImpl::AllocateDispatcher(std::string_view name) {
 const event::TimeSource& APIImpl::TimeSourceRef() const { return *time_system_; }
 
 }  // namespace event
-}  // namespace pl
+}  // namespace px

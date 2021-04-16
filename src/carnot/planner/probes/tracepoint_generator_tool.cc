@@ -18,7 +18,7 @@ void PrintUsageAndExit(std::string_view name) {
 }
 
 int main(int argc, char** argv) {
-  pl::EnvironmentGuard env_guard(&argc, argv);
+  px::EnvironmentGuard env_guard(&argc, argv);
   std::string query = FLAGS_query;
   std::string output_file = FLAGS_output_file;
   if (query.empty()) {
@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
     PrintUsageAndExit(argv[0]);
   }
 
-  PL_ASSIGN_OR_EXIT(auto tracepoint_pb, pl::carnot::planner::compiler::CompileTracepoint(query));
-  PL_CHECK_OK(pl::WriteFileFromString(output_file, tracepoint_pb.DebugString()));
+  PL_ASSIGN_OR_EXIT(auto tracepoint_pb, px::carnot::planner::compiler::CompileTracepoint(query));
+  PL_CHECK_OK(px::WriteFileFromString(output_file, tracepoint_pb.DebugString()));
   return 0;
 }

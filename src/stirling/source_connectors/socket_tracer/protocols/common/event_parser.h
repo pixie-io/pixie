@@ -17,7 +17,7 @@
 #include "src/stirling/utils/parse_state.h"
 #include "src/stirling/utils/utils.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 
@@ -205,4 +205,4 @@ ParseResult ParseFramesLoop(MessageType type, std::string_view buf,
 
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

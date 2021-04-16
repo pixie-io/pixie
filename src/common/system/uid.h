@@ -8,7 +8,7 @@
 
 #include "src/common/base/statusor.h"
 
-namespace pl {
+namespace px {
 
 StatusOr<std::string> NameForUID(uid_t uid);
 
@@ -18,4 +18,4 @@ StatusOr<std::string> NameForUID(uid_t uid);
  */
 std::map<uid_t, std::string> ParsePasswd(std::string_view passwd_content);
 
-}  // namespace pl
+}  // namespace px

@@ -1,6 +1,6 @@
 #include "src/carnot/planner/compiler/optimizer/limit_push_down.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -74,4 +74,4 @@ StatusOr<bool> LimitPushdownRule::Apply(IRNode* ir_node) {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

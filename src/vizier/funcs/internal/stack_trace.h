@@ -6,7 +6,7 @@
 #include "src/common/base/base.h"
 #include "threadstacks/signal_handler.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace funcs {
 
@@ -38,4 +38,4 @@ class StackTracerUDTF final : public carnot::udf::UDTF<StackTracerUDTF> {
 
 }  // namespace funcs
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

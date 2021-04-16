@@ -15,7 +15,7 @@
 #include "src/common/testing/testing.h"
 #include "src/table_store/table_store.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 
 using exec::CarnotTestUtils;
@@ -112,4 +112,4 @@ TEST_F(JoinTest, self_join) {
 }
 
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

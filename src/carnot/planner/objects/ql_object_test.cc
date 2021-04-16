@@ -6,7 +6,7 @@
 #include "src/carnot/planner/objects/funcobject.h"
 #include "src/carnot/planner/objects/test_utils.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -211,4 +211,4 @@ TEST_F(QLObjectTest, GetAttribute) {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -4,7 +4,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace testing {
 
 namespace {
@@ -125,4 +125,4 @@ std::string DiffLines(const std::string& lhs, const std::string& rhs, DiffPolicy
 }
 
 }  // namespace testing
-}  // namespace pl
+}  // namespace px

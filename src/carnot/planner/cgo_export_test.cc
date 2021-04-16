@@ -19,12 +19,12 @@
 #include "src/common/testing/protobuf.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
-using pl::testing::proto::EqualsProto;
-using pl::testing::proto::Partially;
+using px::testing::proto::EqualsProto;
+using px::testing::proto::Partially;
 
 class PlannerExportTest : public ::testing::Test {
  protected:
@@ -177,7 +177,7 @@ TEST_F(PlannerExportTest, GetMainFuncArgsSpec) {
                                                      query_request.length(), &result_len);
 
   ASSERT_GT(result_len, 0);
-  pl::shared::scriptspb::MainFuncSpecResult main_funcs_info_result;
+  px::shared::scriptspb::MainFuncSpecResult main_funcs_info_result;
   ASSERT_TRUE(main_funcs_info_result.ParseFromString(
       std::string(interface_result, interface_result + result_len)));
   delete[] interface_result;
@@ -263,7 +263,7 @@ TEST_F(PlannerExportTest, get_vis_funcs_info) {
       PlannerVisFuncsInfo(planner_, kVisFuncsQuery, sizeof(kVisFuncsQuery), &result_len);
 
   ASSERT_GT(result_len, 0);
-  pl::shared::scriptspb::VisFuncsInfoResult vis_funcs_result;
+  px::shared::scriptspb::VisFuncsInfoResult vis_funcs_result;
   ASSERT_TRUE(vis_funcs_result.ParseFromString(
       std::string(interface_result, interface_result + result_len)));
   delete[] interface_result;
@@ -400,4 +400,4 @@ TEST_F(PlannerExportTest, compile_delete_tracepoint) {
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -12,7 +12,7 @@
 #include "src/carnot/planner/probes/probes.h"
 #include "src/shared/scriptspb/scripts.pb.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -61,7 +61,7 @@ class LogicalPlanner : public NotCopyable {
    * @param script: the string of the script.
    * @return VisFuncsInfo or error if one occurs during compilation.
    */
-  StatusOr<pl::shared::scriptspb::VisFuncsInfo> GetVisFuncsInfo(const std::string& script_str);
+  StatusOr<px::shared::scriptspb::VisFuncsInfo> GetVisFuncsInfo(const std::string& script_str);
 
   Status Init(std::unique_ptr<planner::RegistryInfo> registry_info);
   Status Init(const udfspb::UDFInfo& udf_info);
@@ -77,4 +77,4 @@ class LogicalPlanner : public NotCopyable {
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

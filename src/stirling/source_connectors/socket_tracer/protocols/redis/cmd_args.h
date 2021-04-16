@@ -7,7 +7,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace redis {
@@ -68,4 +68,4 @@ std::optional<const CmdArgs*> GetCmdAndArgs(VectorView<std::string>* payloads);
 }  // namespace redis
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

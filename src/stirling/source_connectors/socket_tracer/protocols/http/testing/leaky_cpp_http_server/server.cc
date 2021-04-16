@@ -9,7 +9,7 @@
 
 #include "src/common/base/base.h"
 
-using pl::system::TCPSocket;
+using px::system::TCPSocket;
 
 // Note that Content-Length is 1 byte extra,
 // so that the connection does not close after writing the response.
@@ -21,7 +21,7 @@ char response[] =
     "Goodbye, world!\r\n";
 
 int main(int argc, char** argv) {
-  pl::EnvironmentGuard env_guard(&argc, argv);
+  px::EnvironmentGuard env_guard(&argc, argv);
 
   TCPSocket socket;
 

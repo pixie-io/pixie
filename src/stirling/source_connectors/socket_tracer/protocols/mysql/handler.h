@@ -7,7 +7,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/types.h"
 #include "src/stirling/utils/parse_state.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace mysql {
@@ -63,4 +63,4 @@ StatusOr<ParseState> HandleNonStringRequest(const Packet& req_packet, Record* en
 }  // namespace mysql
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

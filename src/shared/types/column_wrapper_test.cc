@@ -10,7 +10,7 @@
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace types {
 
 TEST(ColumnWrapperTest, make_test_bool) {
@@ -266,4 +266,4 @@ TEST(ColumnWrapperTest, MoveIndexes) {
 }
 
 }  // namespace types
-}  // namespace pl
+}  // namespace px

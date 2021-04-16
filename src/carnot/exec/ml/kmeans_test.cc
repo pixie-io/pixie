@@ -9,7 +9,7 @@
 #include "src/carnot/exec/ml/eigen_test_utils.h"
 #include "src/carnot/exec/ml/kmeans.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 namespace ml {
@@ -81,4 +81,4 @@ TEST(KMeans, trimodal_normal_dist) {
 }  // namespace ml
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

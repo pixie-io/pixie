@@ -14,19 +14,19 @@ DEFINE_string(client_tls_key,
 DEFINE_string(tls_ca_crt, gflags::StringFromEnv("PL_TLS_CA_CERT", "../../services/certs/ca.crt"),
               "The GRPC CA cert");
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 
-using pl::event::NATSTLSConfig;
+using px::event::NATSTLSConfig;
 
 bool SSL::Enabled() { return !FLAGS_disable_SSL; }
 
 grpc::SslCredentialsOptions SSL::DefaultGRPCClientCredsOpts() {
   grpc::SslCredentialsOptions ssl_opts;
-  ssl_opts.pem_root_certs = pl::FileContentsOrDie(FLAGS_tls_ca_crt);
-  ssl_opts.pem_cert_chain = pl::FileContentsOrDie(FLAGS_client_tls_cert);
-  ssl_opts.pem_private_key = pl::FileContentsOrDie(FLAGS_client_tls_key);
+  ssl_opts.pem_root_certs = px::FileContentsOrDie(FLAGS_tls_ca_crt);
+  ssl_opts.pem_cert_chain = px::FileContentsOrDie(FLAGS_client_tls_cert);
+  ssl_opts.pem_private_key = px::FileContentsOrDie(FLAGS_client_tls_key);
   return ssl_opts;
 }
 
@@ -51,13 +51,13 @@ std::shared_ptr<grpc::ServerCredentials> SSL::DefaultGRPCServerCreds() {
     return grpc::InsecureServerCredentials();
   }
   grpc::SslServerCredentialsOptions ssl_opts;
-  ssl_opts.pem_root_certs = pl::FileContentsOrDie(FLAGS_tls_ca_crt);
-  auto pem_key = pl::FileContentsOrDie(FLAGS_client_tls_key);
-  auto pem_cert = pl::FileContentsOrDie(FLAGS_client_tls_cert);
+  ssl_opts.pem_root_certs = px::FileContentsOrDie(FLAGS_tls_ca_crt);
+  auto pem_key = px::FileContentsOrDie(FLAGS_client_tls_key);
+  auto pem_cert = px::FileContentsOrDie(FLAGS_client_tls_cert);
   ssl_opts.pem_key_cert_pairs.push_back({pem_key, pem_cert});
   return grpc::SslServerCredentials(ssl_opts);
 }
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

@@ -5,7 +5,7 @@
 #include "src/carnot/planner/distributed/distributed_rules.h"
 #include "src/carnot/planner/rules/rule_executor.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
@@ -37,4 +37,4 @@ class PreSplitOptimizer : public RuleExecutor<IR> {
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

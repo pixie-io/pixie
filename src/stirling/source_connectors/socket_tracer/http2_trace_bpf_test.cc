@@ -10,17 +10,17 @@
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 namespace http = protocols::http;
 
-using ::pl::testing::BazelBinTestFilePath;
+using ::px::testing::BazelBinTestFilePath;
 
-using ::pl::stirling::testing::AccessRecordBatch;
-using ::pl::stirling::testing::EqHTTPRecord;
-using ::pl::stirling::testing::FindRecordIdxMatchesPID;
-using ::pl::stirling::testing::ToRecordVector;
+using ::px::stirling::testing::AccessRecordBatch;
+using ::px::stirling::testing::EqHTTPRecord;
+using ::px::stirling::testing::FindRecordIdxMatchesPID;
+using ::px::stirling::testing::ToRecordVector;
 
 using ::testing::Gt;
 using ::testing::IsEmpty;
@@ -305,4 +305,4 @@ TEST_F(ProductCatalogServiceTraceTest, Basic) {
 // TODO(yzhao): Add test for bidirectional streaming
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

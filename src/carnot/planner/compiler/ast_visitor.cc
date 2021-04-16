@@ -12,11 +12,11 @@
 #include "src/carnot/planner/parser/parser.h"
 #include "src/carnot/planner/probes/config_module.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
-using pl::shared::scriptspb::VisFuncsInfo;
+using px::shared::scriptspb::VisFuncsInfo;
 using pypa::AstType;
 
 StatusOr<FuncIR::Op> ASTVisitorImpl::GetOp(const std::string& python_op, const pypa::AstPtr node) {
@@ -984,7 +984,7 @@ StatusOr<ExpressionIR*> ExecUDF(IR* graph, const pypa::AstPtr& ast, udf::ScalarU
 
   // Execute the UDF.
   auto output = types::ColumnWrapper::Make(def->exec_return_type(), 1);
-  auto function_ctx = std::make_unique<pl::carnot::udf::FunctionContext>(nullptr, nullptr);
+  auto function_ctx = std::make_unique<px::carnot::udf::FunctionContext>(nullptr, nullptr);
   auto udf = def->Make();
   PL_RETURN_IF_ERROR(def->ExecBatch(udf.get(), function_ctx.get(), columns, output.get(), 1));
 
@@ -1145,7 +1145,7 @@ StatusOr<VisFuncsInfo> ASTVisitorImpl::GetVisFuncsInfo() const {
   for (const auto& [name, func] : var_table_->GetVisFuncs()) {
     doc_string_map->insert({name, func->doc_string()});
     auto vis_spec = func->vis_spec();
-    pl::shared::scriptspb::VisSpec vis_spec_pb;
+    px::shared::scriptspb::VisSpec vis_spec_pb;
     vis_spec_pb.set_vega_spec(vis_spec->vega_spec);
     vis_spec_map->insert({name, vis_spec_pb});
     fn_args_map->insert({name, func->CreateFuncArgsSpec()});
@@ -1156,4 +1156,4 @@ StatusOr<VisFuncsInfo> ASTVisitorImpl::GetVisFuncsInfo() const {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

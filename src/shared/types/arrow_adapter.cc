@@ -13,7 +13,7 @@
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace types {
 
 using arrow::Type;
@@ -101,4 +101,4 @@ std::unique_ptr<arrow::ArrayBuilder> MakeArrowBuilder(const DataType& data_type,
 #undef BUILDER_CASE
 
 }  // namespace types
-}  // namespace pl
+}  // namespace px

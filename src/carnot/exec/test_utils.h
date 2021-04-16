@@ -20,7 +20,7 @@
 
 #include "src/carnot/carnotpb/carnot_mock.grpc.pb.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -400,10 +400,10 @@ class ExecNodeTester {
     EXPECT_EQ(actual_rb.eos(), expected_rb.eos());
   }
 
-  template <pl::types::DataType DT>
+  template <px::types::DataType DT>
   void SetRowTupleValues(RowTuple* expected_rt, RowTuple* actual_rt, arrow::Array* expected_arr,
                          arrow::Array* actual_arr, int64_t col, int64_t row) {
-    using ValueType = typename pl::types::DataTypeTraits<DT>::value_type;
+    using ValueType = typename px::types::DataTypeTraits<DT>::value_type;
 
     expected_rt->SetValue(col, ValueType(types::GetValueFromArrowArray<DT>(expected_arr, row)));
     actual_rt->SetValue(col, ValueType(types::GetValueFromArrowArray<DT>(actual_arr, row)));
@@ -474,4 +474,4 @@ class ExecNodeTester {
 };
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

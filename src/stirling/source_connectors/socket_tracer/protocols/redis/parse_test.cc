@@ -5,7 +5,7 @@
 
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace redis {
@@ -169,4 +169,4 @@ INSTANTIATE_TEST_SUITE_P(AllDataTypes, ParseInvalidInputTest,
 }  // namespace redis
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

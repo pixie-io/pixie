@@ -15,7 +15,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace plan {
 
@@ -403,4 +403,4 @@ std::vector<absl::flat_hash_set<int64_t>> DAG::IndependentGraphs() const {
 
 }  // namespace plan
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

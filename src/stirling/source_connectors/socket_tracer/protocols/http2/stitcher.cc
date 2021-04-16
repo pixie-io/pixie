@@ -2,7 +2,7 @@
 
 #include <utility>
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace http2 {
@@ -40,4 +40,4 @@ void ProcessHTTP2Streams(HTTP2StreamsContainer* http2_streams, bool conn_closed,
 }  // namespace http2
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

@@ -3,7 +3,7 @@
 #include "src/shared/types/hash_utils.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace types {
 namespace utils {
 
@@ -44,4 +44,4 @@ TEST(HashUtils, Time64NSValue) {
 
 }  // namespace utils
 }  // namespace types
-}  // namespace pl
+}  // namespace px

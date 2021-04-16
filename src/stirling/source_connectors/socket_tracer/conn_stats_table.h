@@ -3,7 +3,7 @@
 #include "src/stirling/core/types.h"
 #include "src/stirling/source_connectors/socket_tracer/canonical_types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 // clang-format off
@@ -66,4 +66,4 @@ constexpr int kPxInfo = kConnStatsTable.ColIndex("px_info_");
 }  // namespace conn_stats_idx
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

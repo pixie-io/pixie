@@ -3,7 +3,7 @@
 #include "src/carnot/udf/registry.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace builtins {
 
@@ -45,4 +45,4 @@ class SelectUDF : public udf::ScalarUDF {
 
 }  // namespace builtins
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

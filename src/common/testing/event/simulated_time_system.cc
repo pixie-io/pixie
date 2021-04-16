@@ -5,7 +5,7 @@
 #include "src/common/base/base.h"
 #include "src/common/testing/event/simulated_time_system.h"
 
-namespace pl {
+namespace px {
 namespace event {
 
 // SimulatedTimer
@@ -146,4 +146,4 @@ bool SimulatedTimeSystem::CompareSimulatedTimer::operator()(const SimulatedTimer
 }
 
 }  // namespace event
-}  // namespace pl
+}  // namespace px

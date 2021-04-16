@@ -13,7 +13,7 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/stirling/obj_tools/init.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace obj_tools {
 
@@ -431,4 +431,4 @@ StatusOr<absl::flat_hash_map<std::string, std::vector<IntfImplTypeInfo>>> Extrac
 
 }  // namespace obj_tools
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

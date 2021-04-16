@@ -7,7 +7,7 @@
 #include "src/common/event/libuv.h"
 #include "src/common/testing/event/simulated_time_system.h"
 
-namespace pl {
+namespace px {
 namespace event {
 class SimulatedTimeSystemTest : public testing::Test {
  protected:
@@ -153,4 +153,4 @@ TEST_F(SimulatedTimeSystemTest, OverrideEnable) {
 }
 
 }  // namespace event
-}  // namespace pl
+}  // namespace px

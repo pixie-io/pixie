@@ -4,11 +4,11 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/utils/linux_headers.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace utils {
 
-using ::pl::testing::TempDir;
+using ::px::testing::TempDir;
 
 bool operator==(const KernelVersion& a, const KernelVersion& b) {
   return (a.version == b.version) && (a.major_rev == b.major_rev) && (a.minor_rev == b.minor_rev);
@@ -219,4 +219,4 @@ TEST(LinuxHeadersUtils, FindClosestPackagedLinuxHeaders) {
 
 }  // namespace utils
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

@@ -24,7 +24,7 @@ struct un_path_t {
   char path[108];
 };
 
-namespace pl {
+namespace px {
 namespace system {
 
 // See linux tcp_states.h for other states if we ever need them.
@@ -307,4 +307,4 @@ class SocketInfoManager {
 };
 
 };  // namespace system
-}  // namespace pl
+}  // namespace px

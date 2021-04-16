@@ -35,7 +35,7 @@
 
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dynamic_tracer.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 namespace {
@@ -91,15 +91,15 @@ std::unique_ptr<SourceRegistry> CreateSourceRegistry(SourceRegistrySpecifier sou
     case SourceRegistrySpecifier::kNone:
       return std::make_unique<SourceRegistry>();
     case SourceRegistrySpecifier::kTracers:
-      return pl::stirling::CreateTracerSourceRegistry();
+      return px::stirling::CreateTracerSourceRegistry();
     case SourceRegistrySpecifier::kMetrics:
-      return pl::stirling::CreateMetricsSourceRegistry();
+      return px::stirling::CreateMetricsSourceRegistry();
     case SourceRegistrySpecifier::kProd:
-      return pl::stirling::CreateProdSourceRegistry();
+      return px::stirling::CreateProdSourceRegistry();
     case SourceRegistrySpecifier::kAll:
-      return pl::stirling::CreateAllSourceRegistry();
+      return px::stirling::CreateAllSourceRegistry();
     case SourceRegistrySpecifier::kProfiler:
-      return pl::stirling::CreatePerfProfilerRegistry();
+      return px::stirling::CreatePerfProfilerRegistry();
     default:
       // To keep GCC happy.
       DCHECK(false);
@@ -325,7 +325,7 @@ Status StirlingImpl::RemoveSource(std::string_view source_name) {
 // or some future code that we plan to reserve.
 #define RETURN_ERROR(s)                                                        \
   {                                                                            \
-    Status ret_status(pl::statuspb::Code::INTERNAL, s.msg());                  \
+    Status ret_status(px::statuspb::Code::INTERNAL, s.msg());                  \
     absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_); \
     dynamic_trace_status_map_[trace_id] = ret_status;                          \
     LOG(INFO) << ret_status.ToString();                                        \
@@ -735,4 +735,4 @@ std::unique_ptr<Stirling> Stirling::Create(std::unique_ptr<SourceRegistry> regis
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

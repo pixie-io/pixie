@@ -11,7 +11,7 @@
 #include "src/common/base/error.h"
 #include "src/common/base/statusor.h"
 
-namespace pl {
+namespace px {
 namespace md {
 
 /**
@@ -95,4 +95,4 @@ inline std::ostream& operator<<(std::ostream& os, const md::UPID& upid) {
 }
 
 }  // namespace md
-}  // namespace pl
+}  // namespace px

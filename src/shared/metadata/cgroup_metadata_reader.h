@@ -11,7 +11,7 @@
 #include "src/common/system/system.h"
 #include "src/shared/metadata/k8s_objects.h"
 
-namespace pl {
+namespace px {
 namespace md {
 
 /**
@@ -62,4 +62,4 @@ class CGroupMetadataReader : public NotCopyable {
 };
 
 }  // namespace md
-}  // namespace pl
+}  // namespace px

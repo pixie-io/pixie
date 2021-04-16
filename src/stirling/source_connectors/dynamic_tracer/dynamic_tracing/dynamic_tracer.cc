@@ -25,15 +25,15 @@
 
 DEFINE_bool(debug_dt_pipeline, false, "Enable logging of the Dynamic Tracing pipeline IR graphs.");
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace dynamic_tracing {
 
-using ::pl::stirling::bpf_tools::BPFProbeAttachType;
-using ::pl::stirling::bpf_tools::UProbeSpec;
+using ::px::stirling::bpf_tools::BPFProbeAttachType;
+using ::px::stirling::bpf_tools::UProbeSpec;
 
-using ::pl::stirling::obj_tools::DwarfReader;
-using ::pl::stirling::obj_tools::ElfReader;
+using ::px::stirling::obj_tools::DwarfReader;
+using ::px::stirling::obj_tools::ElfReader;
 
 namespace {
 
@@ -246,7 +246,7 @@ StatusOr<std::filesystem::path> ResolveSharedObject(
   return error::Internal("Could not find shared library $0 in context of PID $1.", lib_name, pid);
 }
 
-using K8sNameIdentView = ::pl::md::K8sMetadataState::K8sNameIdentView;
+using K8sNameIdentView = ::px::md::K8sMetadataState::K8sNameIdentView;
 
 // pod_name is formatted as <namespace>/<name>.
 StatusOr<K8sNameIdentView> GetPodNameIdent(std::string_view pod_name) {
@@ -459,4 +459,4 @@ Status ResolveTargetObjPath(const md::K8sMetadataState& k8s_mds,
 
 }  // namespace dynamic_tracing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

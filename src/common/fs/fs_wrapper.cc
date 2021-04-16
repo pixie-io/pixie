@@ -4,7 +4,7 @@
 
 #include "src/common/fs/fs_wrapper.h"
 
-namespace pl {
+namespace px {
 namespace fs {
 
 std::filesystem::path TempDirectoryPath() {
@@ -43,7 +43,7 @@ Status CreateDirectories(const std::filesystem::path& dir) {
   return Status::OK();
 }
 
-pl::StatusOr<std::filesystem::path> ReadSymlink(const std::filesystem::path& symlink) {
+px::StatusOr<std::filesystem::path> ReadSymlink(const std::filesystem::path& symlink) {
   std::error_code ec;
   std::filesystem::path res = std::filesystem::read_symlink(symlink, ec);
   if (ec) {
@@ -210,6 +210,6 @@ std::vector<PathSplit> EnumerateParentPaths(const std::filesystem::path& path) {
 }
 
 }  // namespace fs
-}  // namespace pl
+}  // namespace px
 
 #endif

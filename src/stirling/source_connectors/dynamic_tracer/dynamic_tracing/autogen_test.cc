@@ -7,15 +7,15 @@
 constexpr std::string_view kBinaryPath =
     "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary";
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace dynamic_tracing {
 
 using ::google::protobuf::TextFormat;
-using ::pl::testing::proto::EqualsProto;
+using ::px::testing::proto::EqualsProto;
 
-using ::pl::stirling::obj_tools::DwarfReader;
-using ::pl::stirling::obj_tools::ElfReader;
+using ::px::stirling::obj_tools::DwarfReader;
+using ::px::stirling::obj_tools::ElfReader;
 
 constexpr std::string_view kInputProgram = R"(
 deployment_spec {
@@ -152,7 +152,7 @@ struct ProbeGenTestParam {
 
 class ProbeGenTest : public ::testing::TestWithParam<ProbeGenTestParam> {
  protected:
-  ProbeGenTest() : binary_path_(pl::testing::BazelBinTestFilePath(kBinaryPath)) {}
+  ProbeGenTest() : binary_path_(px::testing::BazelBinTestFilePath(kBinaryPath)) {}
 
   void SetUp() {
     ASSERT_OK_AND_ASSIGN(dwarf_reader_, DwarfReader::Create(binary_path_));
@@ -239,4 +239,4 @@ INSTANTIATE_TEST_SUITE_P(AutoTraceExpansionTestSuite, AutoTraceExpansionTest,
 
 }  // namespace dynamic_tracing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

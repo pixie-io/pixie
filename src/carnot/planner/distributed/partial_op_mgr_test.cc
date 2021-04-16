@@ -12,7 +12,7 @@
 #include "src/carnot/planner/rules/rules.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
@@ -133,4 +133,4 @@ TEST_F(PartialOpMgrTest, agg_where_fn_cant_partial) {
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

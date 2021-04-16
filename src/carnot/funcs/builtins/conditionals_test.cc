@@ -6,7 +6,7 @@
 #include "src/carnot/funcs/builtins/conditionals.h"
 #include "src/carnot/udf/test_utils.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace builtins {
 
@@ -18,4 +18,4 @@ TEST(ConditionalsTest, SelectUDF) {
 
 }  // namespace builtins
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

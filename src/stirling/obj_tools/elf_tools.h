@@ -11,7 +11,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace obj_tools {
 
@@ -97,7 +97,7 @@ class ElfReader {
   /**
    * Returns the byte code of the function specified by the symbol.
    */
-  StatusOr<pl::utils::u8string> FuncByteCode(const SymbolInfo& func_symbol);
+  StatusOr<px::utils::u8string> FuncByteCode(const SymbolInfo& func_symbol);
 
   std::string binary_path_;
 
@@ -127,4 +127,4 @@ StatusOr<absl::flat_hash_map<std::string, std::vector<IntfImplTypeInfo>>> Extrac
 
 }  // namespace obj_tools
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

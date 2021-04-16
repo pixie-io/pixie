@@ -25,24 +25,24 @@
 #include "src/table_store/table/table_store.h"
 #include "src/table_store/table_store.h"
 
-using ScalarExpression = pl::carnot::plan::ScalarExpression;
+using ScalarExpression = px::carnot::plan::ScalarExpression;
 using ScalarExpressionVector = std::vector<std::shared_ptr<ScalarExpression>>;
-using pl::carnot::exec::ExecState;
-using pl::carnot::exec::MockResultSinkStubGenerator;
-using pl::carnot::exec::ScalarExpressionEvaluator;
-using pl::carnot::exec::ScalarExpressionEvaluatorType;
-using pl::carnot::planpb::testutils::kAddScalarFuncNestedPbtxt;
-using pl::carnot::planpb::testutils::kAddScalarFuncPbtxt;
-using pl::carnot::planpb::testutils::kColumnReferencePbtxt;
-using pl::carnot::planpb::testutils::kScalarInt64ValuePbtxt;
-using pl::carnot::udf::FunctionContext;
-using pl::carnot::udf::Registry;
-using pl::carnot::udf::ScalarUDF;
-using pl::table_store::schema::RowBatch;
-using pl::table_store::schema::RowDescriptor;
-using pl::types::DataType;
-using pl::types::Int64Value;
-using pl::types::ToArrow;
+using px::carnot::exec::ExecState;
+using px::carnot::exec::MockResultSinkStubGenerator;
+using px::carnot::exec::ScalarExpressionEvaluator;
+using px::carnot::exec::ScalarExpressionEvaluatorType;
+using px::carnot::planpb::testutils::kAddScalarFuncNestedPbtxt;
+using px::carnot::planpb::testutils::kAddScalarFuncPbtxt;
+using px::carnot::planpb::testutils::kColumnReferencePbtxt;
+using px::carnot::planpb::testutils::kScalarInt64ValuePbtxt;
+using px::carnot::udf::FunctionContext;
+using px::carnot::udf::Registry;
+using px::carnot::udf::ScalarUDF;
+using px::table_store::schema::RowBatch;
+using px::table_store::schema::RowDescriptor;
+using px::types::DataType;
+using px::types::Int64Value;
+using px::types::ToArrow;
 
 class AddUDF : public ScalarUDF {
  public:
@@ -52,22 +52,22 @@ class AddUDF : public ScalarUDF {
 // NOLINTNEXTLINE : runtime/references.
 void BM_ScalarExpressionTwoCols(benchmark::State& state,
                                 const ScalarExpressionEvaluatorType& eval_type, const char* pbtxt) {
-  pl::carnot::planpb::ScalarExpression se_pb;
+  px::carnot::planpb::ScalarExpression se_pb;
   size_t data_size = state.range(0);
 
   google::protobuf::TextFormat::MergeFromString(pbtxt, &se_pb);
-  auto s_or_se = pl::carnot::plan::ScalarExpression::FromProto(se_pb);
+  auto s_or_se = px::carnot::plan::ScalarExpression::FromProto(se_pb);
   CHECK(s_or_se.ok());
   std::shared_ptr<ScalarExpression> se = s_or_se.ConsumeValueOrDie();
 
   auto func_registry = std::make_unique<Registry>("test_registry");
-  auto table_store = std::make_shared<pl::table_store::TableStore>();
+  auto table_store = std::make_shared<px::table_store::TableStore>();
   PL_CHECK_OK(func_registry->Register<AddUDF>("add"));
   auto exec_state = std::make_unique<ExecState>(
       func_registry.get(), table_store, MockResultSinkStubGenerator, sole::uuid4(), nullptr);
 
-  auto in1 = pl::datagen::CreateLargeData<Int64Value>(data_size);
-  auto in2 = pl::datagen::CreateLargeData<Int64Value>(data_size);
+  auto in1 = px::datagen::CreateLargeData<Int64Value>(data_size);
+  auto in2 = px::datagen::CreateLargeData<Int64Value>(data_size);
 
   RowDescriptor rd({DataType::INT64, DataType::INT64});
   auto input_rb = std::make_unique<RowBatch>(rd, in1.size());
@@ -78,7 +78,7 @@ void BM_ScalarExpressionTwoCols(benchmark::State& state,
   for (auto _ : state) {
     RowDescriptor rd_output({DataType::INT64});
     RowBatch output_rb(rd_output, input_rb->num_rows());
-    auto function_ctx = std::make_unique<pl::carnot::udf::FunctionContext>(nullptr, nullptr);
+    auto function_ctx = std::make_unique<px::carnot::udf::FunctionContext>(nullptr, nullptr);
     auto evaluator = ScalarExpressionEvaluator::Create({se}, eval_type, function_ctx.get());
     PL_CHECK_OK(evaluator->Open(exec_state.get()));
     PL_CHECK_OK(evaluator->Evaluate(exec_state.get(), *input_rb, &output_rb));

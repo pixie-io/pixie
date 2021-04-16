@@ -9,7 +9,7 @@
 
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/distributed/tablet_rules.h"
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
@@ -465,4 +465,4 @@ TEST_F(TabletizerTest, no_table_info_for_memory_source) {
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

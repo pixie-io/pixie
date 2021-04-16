@@ -8,7 +8,7 @@
 #include "src/carnot/planner/probes/kprobe_target.h"
 #include "src/carnot/planner/probes/process_target.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -419,4 +419,4 @@ StatusOr<QLObjectPtr> ProcessTargetHandler(const pypa::AstPtr& ast, const Parsed
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

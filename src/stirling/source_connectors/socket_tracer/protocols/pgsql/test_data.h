@@ -2,7 +2,7 @@
 
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace pgsql {
@@ -133,4 +133,4 @@ D(kDropTableCmplMsg, "C\000\000\000\017DROP TABLE\000");
 }  // namespace pgsql
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

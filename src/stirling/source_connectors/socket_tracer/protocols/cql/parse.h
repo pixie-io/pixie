@@ -7,7 +7,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/cql/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 
@@ -22,4 +22,4 @@ size_t FindFrameBoundary<cass::Frame>(MessageType type, std::string_view buf, si
 
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

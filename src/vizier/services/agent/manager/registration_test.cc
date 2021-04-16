@@ -16,13 +16,13 @@
 
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 
-using ::pl::table_store::schema::Relation;
-using ::pl::testing::proto::EqualsProto;
-using ::pl::testing::proto::Partially;
+using ::px::table_store::schema::Relation;
+using ::px::testing::proto::EqualsProto;
+using ::px::testing::proto::Partially;
 using shared::metadatapb::MetadataType;
 using ::testing::Return;
 using ::testing::ReturnRef;
@@ -37,9 +37,9 @@ class RegistrationHandlerTest : public ::testing::Test {
     start_system_time_ = std::chrono::system_clock::now();
     time_system_ =
         std::make_unique<event::SimulatedTimeSystem>(start_monotonic_time_, start_system_time_);
-    api_ = std::make_unique<pl::event::APIImpl>(time_system_.get());
+    api_ = std::make_unique<px::event::APIImpl>(time_system_.get());
     dispatcher_ = api_->AllocateDispatcher("manager");
-    nats_conn_ = std::make_unique<FakeNATSConnector<pl::vizier::messages::VizierMessage>>();
+    nats_conn_ = std::make_unique<FakeNATSConnector<px::vizier::messages::VizierMessage>>();
 
     agent_info_ = agent::Info{};
     agent_info_.agent_id = sole::uuid4();
@@ -72,7 +72,7 @@ class RegistrationHandlerTest : public ::testing::Test {
   std::unique_ptr<event::APIImpl> api_;
   std::unique_ptr<event::Dispatcher> dispatcher_;
   std::unique_ptr<RegistrationHandler> registration_handler_;
-  std::unique_ptr<FakeNATSConnector<pl::vizier::messages::VizierMessage>> nats_conn_;
+  std::unique_ptr<FakeNATSConnector<px::vizier::messages::VizierMessage>> nats_conn_;
   agent::Info agent_info_;
   int32_t called_register_ = 0;
   int32_t called_reregister_ = 0;
@@ -158,4 +158,4 @@ TEST_F(RegistrationHandlerTest, RegisterAgentTimeout) {
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

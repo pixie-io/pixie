@@ -13,7 +13,7 @@
 #include "src/common/base/base.h"
 #include "src/table_store/table_store.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 
 /**
@@ -100,4 +100,4 @@ class EngineState : public NotCopyable {
 };
 
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

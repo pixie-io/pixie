@@ -11,7 +11,7 @@
 #include "src/common/base/base.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/dns/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace dns {
@@ -222,4 +222,4 @@ RecordsWithErrorCount<Record> StitchFrames(std::deque<Frame>* req_frames,
 }  // namespace dns
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

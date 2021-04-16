@@ -13,12 +13,12 @@
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/testing/protobuf.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
-using ::pl::testing::proto::EqualsProto;
-using ::pl::testing::proto::Partially;
+using ::px::testing::proto::EqualsProto;
+using ::px::testing::proto::Partially;
 
 using DistributedPlanTest = OperatorTests;
 
@@ -202,4 +202,4 @@ TEST_F(DistributedPlanTest, construction_test) {
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

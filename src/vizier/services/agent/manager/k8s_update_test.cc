@@ -11,11 +11,11 @@
 #include "src/vizier/services/agent/manager/k8s_update.h"
 #include "src/vizier/services/agent/manager/test_utils.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 
-using ::pl::testing::proto::EqualsProto;
+using ::px::testing::proto::EqualsProto;
 
 constexpr char kUpdate0[] = R"(
   namespace_update {
@@ -60,9 +60,9 @@ class K8sUpdateHandlerTest : public ::testing::Test {
     start_system_time_ = std::chrono::system_clock::now();
     time_system_ =
         std::make_unique<event::SimulatedTimeSystem>(start_monotonic_time_, start_system_time_);
-    api_ = std::make_unique<pl::event::APIImpl>(time_system_.get());
+    api_ = std::make_unique<px::event::APIImpl>(time_system_.get());
     dispatcher_ = api_->AllocateDispatcher("manager");
-    nats_conn_ = std::make_unique<FakeNATSConnector<pl::vizier::messages::VizierMessage>>();
+    nats_conn_ = std::make_unique<FakeNATSConnector<px::vizier::messages::VizierMessage>>();
     auto sys_config = system::MockConfig();
     EXPECT_CALL(sys_config, KernelTicksPerSecond()).WillRepeatedly(::testing::Return(10000000));
     EXPECT_CALL(sys_config, HasConfig()).WillRepeatedly(::testing::Return(true));
@@ -87,7 +87,7 @@ class K8sUpdateHandlerTest : public ::testing::Test {
   std::unique_ptr<event::Dispatcher> dispatcher_;
   std::unique_ptr<FakeAgentMetadataStateManager> fake_mds_manager_;
   std::unique_ptr<K8sUpdateHandler> k8s_update_handler_;
-  std::unique_ptr<FakeNATSConnector<pl::vizier::messages::VizierMessage>> nats_conn_;
+  std::unique_ptr<FakeNATSConnector<px::vizier::messages::VizierMessage>> nats_conn_;
   agent::Info agent_info_;
   std::filesystem::path proc_path_;
   std::filesystem::path sysfs_path_;
@@ -464,4 +464,4 @@ TEST_F(K8sUpdateHandlerTest, RequestMissingK8sUpdatesDropBacklog) {
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

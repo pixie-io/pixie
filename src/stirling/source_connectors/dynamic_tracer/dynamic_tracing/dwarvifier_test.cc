@@ -7,12 +7,12 @@
 constexpr std::string_view kBinaryPath =
     "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary";
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace dynamic_tracing {
 
 using ::google::protobuf::TextFormat;
-using ::pl::testing::proto::EqualsProto;
+using ::px::testing::proto::EqualsProto;
 
 constexpr std::string_view kEntryProbeIn = R"(
 deployment_spec {
@@ -1450,7 +1450,7 @@ struct DwarfInfoTestParam {
 
 class DwarfInfoTest : public ::testing::TestWithParam<DwarfInfoTestParam> {
  protected:
-  DwarfInfoTest() : binary_path_(pl::testing::BazelBinTestFilePath(kBinaryPath)) {}
+  DwarfInfoTest() : binary_path_(px::testing::BazelBinTestFilePath(kBinaryPath)) {}
 
   std::string binary_path_;
 };
@@ -1500,4 +1500,4 @@ INSTANTIATE_TEST_SUITE_P(
 
 }  // namespace dynamic_tracing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

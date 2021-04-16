@@ -4,7 +4,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 
 /**
  * Timing class.
@@ -62,4 +62,4 @@ class ElapsedTimer : public NotCopyable {
   uint64_t elapsed_time_us_ = 0;
 };
 
-}  // namespace pl
+}  // namespace px

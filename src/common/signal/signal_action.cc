@@ -8,7 +8,7 @@
 #include <absl/synchronization/mutex.h>
 #include "threadstacks/signal_handler.h"
 
-namespace pl {
+namespace px {
 
 using ::threadstacks::StackTraceCollector;
 
@@ -133,4 +133,4 @@ void SignalAction::MapAndProtectStackMemory() {
 
 void SignalAction::UnmapStackMemory() { munmap(altstack_, MapSizeWithGuards()); }
 
-}  // namespace pl
+}  // namespace px

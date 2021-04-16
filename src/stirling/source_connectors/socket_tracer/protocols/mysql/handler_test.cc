@@ -7,7 +7,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/test_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace mysql {
@@ -158,4 +158,4 @@ TEST(HandleStringRequest, Basic) {
 }  // namespace mysql
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

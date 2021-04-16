@@ -3,7 +3,7 @@
 #include "src/stirling/core/info_class_manager.h"
 #include "src/stirling/source_connectors/seq_gen/seq_gen_connector.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 using types::DataType;
@@ -31,4 +31,4 @@ TEST(InfoClassInfoSchemaTest, infoclass_mgr_proto_getters_test) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

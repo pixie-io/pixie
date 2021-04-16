@@ -3,12 +3,12 @@
 #include "src/common/exec/exec.h"
 #include "src/common/exec/subprocess.h"
 
-namespace pl {
+namespace px {
 
 ContainerRunner::ContainerRunner(std::string_view image, std::string_view instance_name_prefix,
                                  std::string_view ready_message)
     : image_(image), instance_name_prefix_(instance_name_prefix), ready_message_(ready_message) {
-  std::string out = pl::Exec("docker pull " + image_).ConsumeValueOrDie();
+  std::string out = px::Exec("docker pull " + image_).ConsumeValueOrDie();
   LOG(INFO) << out;
 }
 
@@ -18,7 +18,7 @@ ContainerRunner::ContainerRunner(std::filesystem::path image_tar,
     : instance_name_prefix_(instance_name_prefix), ready_message_(ready_message) {
   std::string docker_load_cmd = absl::Substitute("docker load -i $0", image_tar.string());
   VLOG(1) << docker_load_cmd;
-  std::string out = pl::Exec(docker_load_cmd).ConsumeValueOrDie();
+  std::string out = px::Exec(docker_load_cmd).ConsumeValueOrDie();
   LOG(INFO) << out;
 
   // Extract the image name.
@@ -35,7 +35,7 @@ ContainerRunner::~ContainerRunner() {
   Stop();
 
   std::string docker_rm_cmd = absl::StrCat("docker rm ", container_name_);
-  StatusOr<std::string> s = pl::Exec(docker_rm_cmd);
+  StatusOr<std::string> s = px::Exec(docker_rm_cmd);
   if (!s.ok()) {
     // Failing to remove the container will just result in a leak of containers.
     LOG(ERROR) << s.ToString();
@@ -46,7 +46,7 @@ namespace {
 StatusOr<std::string> ContainerStatus(std::string_view container_name) {
   PL_ASSIGN_OR_RETURN(
       std::string container_status,
-      pl::Exec(absl::Substitute("docker inspect -f '{{.State.Status}}' $0", container_name)));
+      px::Exec(absl::Substitute("docker inspect -f '{{.State.Status}}' $0", container_name)));
   absl::StripAsciiWhitespace(&container_status);
   return container_status;
 }
@@ -54,7 +54,7 @@ StatusOr<std::string> ContainerStatus(std::string_view container_name) {
 StatusOr<int> ContainerPID(std::string_view container_name) {
   PL_ASSIGN_OR_RETURN(
       std::string pid_str,
-      pl::Exec(absl::Substitute("docker inspect -f '{{.State.Pid}}' $0", container_name)));
+      px::Exec(absl::Substitute("docker inspect -f '{{.State.Pid}}' $0", container_name)));
 
   int pid;
   if (!absl::SimpleAtoi(pid_str, &pid)) {
@@ -191,12 +191,12 @@ StatusOr<std::string> ContainerRunner::Run(int timeout, const std::vector<std::s
 
     // Dump some information that may be useful for debugging.
     LOG(INFO) << "\n> docker container ls -a";
-    LOG(INFO) << pl::Exec("docker container ls -a").ValueOr("<docker container ls failed>");
+    LOG(INFO) << px::Exec("docker container ls -a").ValueOr("<docker container ls failed>");
     LOG(INFO) << "\n> docker container inspect";
-    LOG(INFO) << pl::Exec(absl::Substitute("docker container inspect $0", container_name_))
+    LOG(INFO) << px::Exec(absl::Substitute("docker container inspect $0", container_name_))
                      .ValueOr("<docker container failed>");
     LOG(INFO) << "\n> docker logs";
-    LOG(INFO) << pl::Exec(absl::Substitute("docker logs $0", container_name_))
+    LOG(INFO) << px::Exec(absl::Substitute("docker logs $0", container_name_))
                      .ValueOr("<docker logs failed>");
 
     return error::Internal("Timeout. Container did not reach ready state.");
@@ -214,4 +214,4 @@ void ContainerRunner::Stop() {
 
 void ContainerRunner::Wait() { container_.Wait(); }
 
-}  // namespace pl
+}  // namespace px

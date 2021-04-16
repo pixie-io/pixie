@@ -9,7 +9,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/timestamp_stitcher.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/redis/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 
@@ -109,4 +109,4 @@ inline RecordsWithErrorCount<redis::Record> StitchFrames(std::deque<redis::Messa
 
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

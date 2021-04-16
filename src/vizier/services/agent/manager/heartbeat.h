@@ -4,15 +4,15 @@
 
 #include "src/vizier/services/agent/manager/manager.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 
 class HeartbeatMessageHandler : public Manager::MessageHandler {
  public:
   HeartbeatMessageHandler() = delete;
-  HeartbeatMessageHandler(pl::event::Dispatcher* dispatcher,
-                          pl::md::AgentMetadataStateManager* mds_manager,
+  HeartbeatMessageHandler(px::event::Dispatcher* dispatcher,
+                          px::md::AgentMetadataStateManager* mds_manager,
                           RelationInfoManager* relation_info_manager, Info* agent_info,
                           Manager::VizierNATSConnector* nats_conn);
 
@@ -24,10 +24,10 @@ class HeartbeatMessageHandler : public Manager::MessageHandler {
 
  private:
   void ConsumeAgentPIDUpdates(messages::AgentUpdateInfo* update_info);
-  void ProcessPIDStartedEvent(const pl::md::PIDStartedEvent& ev,
+  void ProcessPIDStartedEvent(const px::md::PIDStartedEvent& ev,
                               messages::AgentUpdateInfo* update_info);
 
-  void ProcessPIDTerminatedEvent(const pl::md::PIDTerminatedEvent& ev,
+  void ProcessPIDTerminatedEvent(const px::md::PIDTerminatedEvent& ev,
                                  messages::AgentUpdateInfo* update_info);
 
   void DoHeartbeats();
@@ -43,18 +43,18 @@ class HeartbeatMessageHandler : public Manager::MessageHandler {
     std::chrono::steady_clock::time_point last_heartbeat_send_time_;
   };
 
-  std::unique_ptr<pl::vizier::messages::VizierMessage> last_sent_hb_;
+  std::unique_ptr<px::vizier::messages::VizierMessage> last_sent_hb_;
   int64_t last_metadata_epoch_id_ = 0;
   bool sent_schema_ = false;
 
   HeartbeatInfo heartbeat_info_;
-  const pl::event::TimeSource& time_source_;
-  pl::md::AgentMetadataStateManager* mds_manager_;
+  const px::event::TimeSource& time_source_;
+  px::md::AgentMetadataStateManager* mds_manager_;
   RelationInfoManager* relation_info_manager_;
   std::chrono::duration<double> heartbeat_latency_moving_average_{0};
 
-  pl::event::TimerUPtr heartbeat_send_timer_;
-  pl::event::TimerUPtr heartbeat_watchdog_timer_;
+  px::event::TimerUPtr heartbeat_send_timer_;
+  px::event::TimerUPtr heartbeat_watchdog_timer_;
 
   static constexpr double kHbLatencyDecay = 0.25;
 
@@ -72,7 +72,7 @@ using HeartbeatReregisterHook = std::function<Status()>;
 class HeartbeatNackMessageHandler : public Manager::MessageHandler {
  public:
   HeartbeatNackMessageHandler() = delete;
-  HeartbeatNackMessageHandler(pl::event::Dispatcher* dispatcher, Info* agent_info,
+  HeartbeatNackMessageHandler(px::event::Dispatcher* dispatcher, Info* agent_info,
                               Manager::VizierNATSConnector* nats_conn,
                               HeartbeatReregisterHook reregister_hook)
       : MessageHandler(dispatcher, agent_info, nats_conn), reregister_hook_(reregister_hook) {}
@@ -87,4 +87,4 @@ class HeartbeatNackMessageHandler : public Manager::MessageHandler {
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

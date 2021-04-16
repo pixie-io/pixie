@@ -9,7 +9,7 @@
 #include "src/common/base/base.h"
 #include "src/common/event/api.h"
 
-namespace pl {
+namespace px {
 namespace event {
 
 namespace {
@@ -277,4 +277,4 @@ void LibuvDispatcher::DoDeferredDelete() {
 }
 
 }  // namespace event
-}  // namespace pl
+}  // namespace px

@@ -1,7 +1,7 @@
 #include "src/carnot/planner/objects/type_object.h"
 #include "src/carnot/planner/objects/funcobject.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -41,4 +41,4 @@ StatusOr<QLObjectPtr> CastHandler::Eval(types::DataType data_type,
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

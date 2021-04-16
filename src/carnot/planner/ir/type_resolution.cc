@@ -1,6 +1,6 @@
 #include "src/carnot/planner/ir/ir_nodes.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -186,4 +186,4 @@ Status FuncIR::ResolveType(CompilerState* compiler_state,
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace pl {
+namespace px {
 
 /**
  * Combines two 64-bit hash values (borrowed from CityHash).
@@ -20,4 +20,4 @@ inline uint64_t HashCombine(uint64_t h1, uint64_t h2) {
   return b;
 }
 
-}  // namespace pl
+}  // namespace px

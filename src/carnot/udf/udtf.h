@@ -7,7 +7,7 @@
 #include "src/carnot/udf/base.h"
 #include "src/carnot/udfspb/udfs.pb.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace udf {
 
@@ -565,4 +565,4 @@ class GenericUDTFFactory final : public UDTFFactory {
 
 }  // namespace udf
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

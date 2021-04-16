@@ -2,7 +2,7 @@
 
 #include "src/shared/schema/utils.h"
 
-namespace pl {
+namespace px {
 namespace {
 
 table_store::schema::Relation InfoClassProtoToRelation(
@@ -37,4 +37,4 @@ std::vector<RelationInfo> ConvertSubscribePBToRelationInfo(
   return relation_info_vec;
 }
 
-}  // namespace pl
+}  // namespace px

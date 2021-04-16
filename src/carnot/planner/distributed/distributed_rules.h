@@ -10,7 +10,7 @@
 #include "src/carnot/planner/rules/rule_executor.h"
 #include "src/carnot/planner/rules/rules.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 template <>
@@ -170,4 +170,4 @@ class ScalarUDFsRunOnKelvinRule : public Rule {
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

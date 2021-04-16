@@ -6,7 +6,7 @@
 
 #include "src/common/event/dispatcher.h"
 
-namespace pl {
+namespace px {
 namespace event {
 
 namespace {
@@ -36,4 +36,4 @@ SchedulerUPtr RealTimeSystem::CreateScheduler(Scheduler* base_scheduler) {
 }
 
 }  // namespace event
-}  // namespace pl
+}  // namespace px

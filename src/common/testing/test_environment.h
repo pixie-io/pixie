@@ -3,7 +3,7 @@
 #include <filesystem>
 #include <string>
 
-namespace pl {
+namespace px {
 namespace testing {
 
 /**
@@ -24,4 +24,4 @@ std::filesystem::path TestFilePath(const std::filesystem::path& rel_path);
 std::filesystem::path BazelBinTestFilePath(const std::filesystem::path& rel_path);
 
 }  // namespace testing
-}  // namespace pl
+}  // namespace px

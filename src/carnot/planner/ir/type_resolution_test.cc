@@ -8,7 +8,7 @@
 #include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -331,4 +331,4 @@ TEST_F(TypeResolutionTest, data_ir) {
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

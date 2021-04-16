@@ -9,7 +9,7 @@
 
 #include "src/common/base/logging.h"
 
-namespace pl {
+namespace px {
 
 // A RAII-style wrapper of initializing and shutting down the process execution environment
 // (such as flags and logging).
@@ -42,4 +42,4 @@ std::optional<std::string> GetEnv(const std::string& env_var);
 
 void ChDirPixieRoot();
 
-}  // namespace pl
+}  // namespace px

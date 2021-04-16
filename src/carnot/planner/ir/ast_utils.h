@@ -13,7 +13,7 @@
 #include "src/common/base/status.h"
 #include "src/common/base/statusor.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -115,4 +115,4 @@ StatusOr<T> WrapError(const pypa::AstPtr& ast, StatusOr<T> status_or) {
 }  // namespace planner
 
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

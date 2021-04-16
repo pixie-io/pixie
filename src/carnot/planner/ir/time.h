@@ -4,7 +4,7 @@
 
 #include "src/carnot/planner/ir/ir_nodes.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -17,4 +17,4 @@ StatusOr<int64_t> ParseStringToTime(const StringIR* node, int64_t time_now);
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

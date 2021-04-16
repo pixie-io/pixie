@@ -3,12 +3,12 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/code_gen.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace dynamic_tracing {
 
-using ::pl::testing::BazelBinTestFilePath;
-using ::pl::testing::proto::EqualsProto;
+using ::px::testing::BazelBinTestFilePath;
+using ::px::testing::proto::EqualsProto;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
@@ -47,4 +47,4 @@ TEST(GOIDTest, CheckProbe) {
 
 }  // namespace dynamic_tracing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

@@ -5,7 +5,7 @@
 #include "src/common/testing/testing.h"
 #include "src/common/exec/exec.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace obj_tools {
 
@@ -29,4 +29,4 @@ class DummyExeFixture {
 
 }  // namespace obj_tools
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

@@ -20,7 +20,7 @@
 #include "src/common/base/base.h"
 #include "src/common/uuid/uuid.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -38,8 +38,8 @@ class GRPCRouter final : public carnotpb::ResultSinkService::Service {
    */
   ::grpc::Status TransferResultChunk(
       ::grpc::ServerContext* context,
-      ::grpc::ServerReader<::pl::carnotpb::TransferResultChunkRequest>* reader,
-      ::pl::carnotpb::TransferResultChunkResponse* response) override;
+      ::grpc::ServerReader<::px::carnotpb::TransferResultChunkRequest>* reader,
+      ::px::carnotpb::TransferResultChunkResponse* response) override;
 
   /**
    * Adds the specified source node to the router. Includes a function that should be called to
@@ -98,7 +98,7 @@ class GRPCRouter final : public carnotpb::ResultSinkService::Service {
     GRPCSourceNode* source_node GUARDED_BY(node_lock) = nullptr;
     bool connection_initiated_by_sink GUARDED_BY(node_lock) = false;
     bool connection_closed_by_sink GUARDED_BY(node_lock) = false;
-    std::vector<std::unique_ptr<::pl::carnotpb::TransferResultChunkRequest>> response_backlog
+    std::vector<std::unique_ptr<::px::carnotpb::TransferResultChunkRequest>> response_backlog
         GUARDED_BY(node_lock);
     absl::base_internal::SpinLock node_lock;
   };
@@ -124,4 +124,4 @@ class GRPCRouter final : public carnotpb::ResultSinkService::Service {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

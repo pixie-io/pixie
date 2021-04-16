@@ -14,7 +14,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace obj_tools {
 
@@ -319,4 +319,4 @@ std::string Dump(const llvm::DWARFDie& die);
 
 }  // namespace obj_tools
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

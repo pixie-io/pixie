@@ -7,7 +7,7 @@
 #include "src/common/base/base.h"
 #include "src/common/exec/subprocess.h"
 
-namespace pl {
+namespace px {
 
 // ContainerRunner runs a container.
 class ContainerRunner {
@@ -102,4 +102,4 @@ class ContainerRunner {
   int process_pid_ = -1;
 };
 
-}  // namespace pl
+}  // namespace px

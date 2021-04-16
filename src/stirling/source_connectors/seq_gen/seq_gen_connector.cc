@@ -1,6 +1,6 @@
 #include "src/stirling/source_connectors/seq_gen/seq_gen_connector.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 void SeqGenConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t table_num,
@@ -48,4 +48,4 @@ void SeqGenConnector::TransferDataTable1(uint32_t num_records, DataTable* data_t
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

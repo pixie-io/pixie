@@ -4,7 +4,7 @@
 #include "src/carnot/planner/ir/pattern_match.h"
 #include "src/shared/upid/upid.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -2059,25 +2059,25 @@ StatusOr<absl::flat_hash_set<std::string>> RollingIR::PruneOutputColumnsToImpl(
   return error::Unimplemented("Rolling operator doesn't support PruneOutputColumntTo.");
 }
 
-StatusOr<pl::types::DataType> IRNodeTypeToDataType(IRNodeType type) {
+StatusOr<px::types::DataType> IRNodeTypeToDataType(IRNodeType type) {
   switch (type) {
     case IRNodeType::kString: {
-      return pl::types::DataType::STRING;
+      return px::types::DataType::STRING;
     }
     case IRNodeType::kInt: {
-      return pl::types::DataType::INT64;
+      return px::types::DataType::INT64;
     }
     case IRNodeType::kUInt128: {
-      return pl::types::DataType::UINT128;
+      return px::types::DataType::UINT128;
     }
     case IRNodeType::kBool: {
-      return pl::types::DataType::BOOLEAN;
+      return px::types::DataType::BOOLEAN;
     }
     case IRNodeType::kFloat: {
-      return pl::types::DataType::FLOAT64;
+      return px::types::DataType::FLOAT64;
     }
     case IRNodeType::kTime: {
-      return pl::types::DataType::TIME64NS;
+      return px::types::DataType::TIME64NS;
     }
     default: {
       return error::InvalidArgument("IRNode type: $0 cannot be converted into literal type.",
@@ -2088,22 +2088,22 @@ StatusOr<pl::types::DataType> IRNodeTypeToDataType(IRNodeType type) {
 
 StatusOr<IRNodeType> DataTypeToIRNodeType(types::DataType type) {
   switch (type) {
-    case pl::types::DataType::STRING: {
+    case px::types::DataType::STRING: {
       return IRNodeType::kString;
     }
-    case pl::types::DataType::INT64: {
+    case px::types::DataType::INT64: {
       return IRNodeType::kInt;
     }
-    case pl::types::DataType::UINT128: {
+    case px::types::DataType::UINT128: {
       return IRNodeType::kUInt128;
     }
-    case pl::types::DataType::BOOLEAN: {
+    case px::types::DataType::BOOLEAN: {
       return IRNodeType::kBool;
     }
-    case pl::types::DataType::FLOAT64: {
+    case px::types::DataType::FLOAT64: {
       return IRNodeType::kFloat;
     }
-    case pl::types::DataType::TIME64NS: {
+    case px::types::DataType::TIME64NS: {
       return IRNodeType::kTime;
     }
     default: {
@@ -2170,4 +2170,4 @@ Status ResolveExpressionType(ExpressionIR* expr, CompilerState* compiler_state,
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

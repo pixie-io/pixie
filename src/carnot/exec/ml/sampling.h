@@ -3,7 +3,7 @@
 #include "src/common/base/base.h"
 #include "third_party/eigen3/Eigen/Core"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 namespace ml {
@@ -15,4 +15,4 @@ size_t randint(size_t high);
 }  // namespace ml
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

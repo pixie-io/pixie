@@ -3,7 +3,7 @@
 
 #include "src/carnot/exec/ml/sampling.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 namespace ml {
@@ -145,4 +145,4 @@ void KMeans::FromJSON(std::string data) {
 }  // namespace ml
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

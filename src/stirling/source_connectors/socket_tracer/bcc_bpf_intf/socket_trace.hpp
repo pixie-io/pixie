@@ -15,7 +15,7 @@
 // This header defines the C++ counterparts of the BPF data structures.
 // The file name is kept identical to its BPF counterpart as well.
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 /**
@@ -58,7 +58,7 @@ struct SocketDataEvent {
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px
 
 inline bool operator==(const struct conn_id_t& lhs, const struct conn_id_t& rhs) {
   return lhs.upid.tgid == rhs.upid.tgid && lhs.upid.start_time_ticks == rhs.upid.start_time_ticks &&

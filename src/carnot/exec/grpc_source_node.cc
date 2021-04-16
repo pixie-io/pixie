@@ -8,7 +8,7 @@
 
 #include "src/carnot/planpb/plan.pb.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -70,4 +70,4 @@ bool GRPCSourceNode::NextBatchReady() {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

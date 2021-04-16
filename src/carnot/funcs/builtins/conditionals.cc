@@ -1,6 +1,6 @@
 #include "src/carnot/funcs/builtins/conditionals.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace builtins {
 
@@ -15,4 +15,4 @@ void RegisterConditionalOpsOrDie(udf::Registry* registry) {
 
 }  // namespace builtins
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

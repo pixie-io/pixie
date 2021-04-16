@@ -18,7 +18,7 @@
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/shared/scriptspb/scripts.pb.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -124,7 +124,7 @@ StatusOr<std::unique_ptr<MutationsIR>> Compiler::CompileTrace(const std::string&
   return mutations;
 }
 
-StatusOr<pl::shared::scriptspb::VisFuncsInfo> Compiler::GetVisFuncsInfo(
+StatusOr<px::shared::scriptspb::VisFuncsInfo> Compiler::GetVisFuncsInfo(
     const std::string& query, CompilerState* compiler_state) {
   Parser parser;
   PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
@@ -153,4 +153,4 @@ Status Compiler::VerifyGraphHasResultSink(IR* ir) {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace pl {
+namespace px {
 
 class VersionInfo {
  public:
@@ -31,4 +31,4 @@ class VersionInfo {
   static int BuildNumber();
 };
 
-}  // namespace pl
+}  // namespace px

@@ -4,7 +4,7 @@
 
 #include <absl/strings/substitute.h>
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 // TODO(oazizi): Move to socket_tracer. It's the only user.
@@ -23,4 +23,4 @@ inline void RemoveRepeatingSuffix(std::string_view* str, char c) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

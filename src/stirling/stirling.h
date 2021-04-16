@@ -11,7 +11,7 @@
 #include "src/stirling/proto/stirling.pb.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb/logical.pb.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 /**
@@ -162,4 +162,4 @@ inline std::ostream& operator<<(std::ostream& os, const Publish& pub) {
 
 }  // namespace stirlingpb
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

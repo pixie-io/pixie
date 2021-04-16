@@ -2,7 +2,7 @@
 
 #include <vector>
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace utils {
 
@@ -97,4 +97,4 @@ std::array<size_t, N> SplitSortedVector(const std::vector<T>& vec,
 
 }  // namespace utils
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

@@ -17,7 +17,7 @@
 #include "src/carnot/planner/ir/ast_utils.h"
 #include "src/carnot/planner/ir/ir_nodes.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -42,4 +42,4 @@ using SymbolTablePtr = std::shared_ptr<SymbolTable>;
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -12,7 +12,7 @@
 #include "src/common/base/base.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 
 /*
  * Status adapter for arrow.
@@ -222,4 +222,4 @@ int64_t SearchArrowArrayLessThan(
 }
 
 }  // namespace types
-}  // namespace pl
+}  // namespace px

@@ -9,14 +9,14 @@
 #include "src/common/signal/fatal_handler.h"
 #include "src/common/system/system.h"
 
-namespace pl {
+namespace px {
 
 // This implementation is based on Envoy's signal handler.
 
 class SignalAction : public NotCopyable {
  public:
   SignalAction()
-      : guard_size_(pl::system::Config::GetInstance().PageSize()),
+      : guard_size_(px::system::Config::GetInstance().PageSize()),
         altstack_size_(std::max(guard_size_ * 4, static_cast<size_t>(MINSIGSTKSZ))) {
     MapAndProtectStackMemory();
     InstallSigHandlers();
@@ -86,4 +86,4 @@ class SignalAction : public NotCopyable {
   std::list<const FatalErrorHandlerInterface*> fatal_error_handlers_;
 };
 
-}  // namespace pl
+}  // namespace px

@@ -2,7 +2,7 @@
 
 #include <utility>
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace http {
@@ -70,4 +70,4 @@ bool IsJSONContent(const Message& message) {
 }  // namespace http
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

@@ -23,11 +23,11 @@ DEFINE_double(stirling_rescan_exp_backoff_factor, 2.0,
               "Exponential backoff factor used in decided how often to rescan binaries for "
               "dynamically loaded libraries");
 
-namespace pl {
+namespace px {
 namespace stirling {
 
-using ::pl::stirling::obj_tools::DwarfReader;
-using ::pl::stirling::obj_tools::ElfReader;
+using ::px::stirling::obj_tools::DwarfReader;
+using ::px::stirling::obj_tools::ElfReader;
 
 UProbeManager::UProbeManager(bpf_tools::BCCWrapper* bcc) : bcc_(bcc) {
   proc_parser_ = std::make_unique<system::ProcParser>(system::Config::GetInstance());
@@ -530,4 +530,4 @@ void UProbeManager::DeployUProbes(const absl::flat_hash_set<md::UPID>& pids) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

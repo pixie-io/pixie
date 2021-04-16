@@ -6,15 +6,15 @@
 
 #include "src/vizier/services/agent/manager/manager.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 
-using ::pl::event::Dispatcher;
-using ::pl::shared::k8s::metadatapb::ResourceUpdate;
+using ::px::event::Dispatcher;
+using ::px::shared::k8s::metadatapb::ResourceUpdate;
 
 HeartbeatMessageHandler::HeartbeatMessageHandler(Dispatcher* d,
-                                                 pl::md::AgentMetadataStateManager* mds_manager,
+                                                 px::md::AgentMetadataStateManager* mds_manager,
                                                  RelationInfoManager* relation_info_manager,
                                                  Info* agent_info,
                                                  Manager::VizierNATSConnector* nats_conn)
@@ -148,13 +148,13 @@ Status HeartbeatMessageHandler::HandleMessage(std::unique_ptr<messages::VizierMe
 void HeartbeatMessageHandler::ConsumeAgentPIDUpdates(messages::AgentUpdateInfo* update_info) {
   while (auto pid_event = mds_manager_->GetNextPIDStatusEvent()) {
     switch (pid_event->type) {
-      case pl::md::PIDStatusEventType::kStarted: {
-        auto* ev = static_cast<pl::md::PIDStartedEvent*>(pid_event.get());
+      case px::md::PIDStatusEventType::kStarted: {
+        auto* ev = static_cast<px::md::PIDStartedEvent*>(pid_event.get());
         ProcessPIDStartedEvent(*ev, update_info);
         break;
       }
-      case pl::md::PIDStatusEventType::kTerminated: {
-        auto* ev = static_cast<pl::md::PIDTerminatedEvent*>(pid_event.get());
+      case px::md::PIDStatusEventType::kTerminated: {
+        auto* ev = static_cast<px::md::PIDTerminatedEvent*>(pid_event.get());
         ProcessPIDTerminatedEvent(*ev, update_info);
         break;
       }
@@ -164,7 +164,7 @@ void HeartbeatMessageHandler::ConsumeAgentPIDUpdates(messages::AgentUpdateInfo* 
   }
 }
 
-void HeartbeatMessageHandler::ProcessPIDStartedEvent(const pl::md::PIDStartedEvent& ev,
+void HeartbeatMessageHandler::ProcessPIDStartedEvent(const px::md::PIDStartedEvent& ev,
                                                      messages::AgentUpdateInfo* update_info) {
   auto* process_info = update_info->add_process_created();
 
@@ -178,7 +178,7 @@ void HeartbeatMessageHandler::ProcessPIDStartedEvent(const pl::md::PIDStartedEve
   process_info->set_cid(ev.pid_info.cid());
 }
 
-void HeartbeatMessageHandler::ProcessPIDTerminatedEvent(const pl::md::PIDTerminatedEvent& ev,
+void HeartbeatMessageHandler::ProcessPIDTerminatedEvent(const px::md::PIDTerminatedEvent& ev,
                                                         messages::AgentUpdateInfo* update_info) {
   auto process_info = update_info->add_process_terminated();
   process_info->set_stop_timestamp_ns(ev.stop_time_ns);
@@ -200,4 +200,4 @@ Status HeartbeatNackMessageHandler::HandleMessage(std::unique_ptr<messages::Vizi
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

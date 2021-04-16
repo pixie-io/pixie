@@ -57,7 +57,7 @@ void SomeFunctionWithPointerArgs(int* a, ABCStruct32* x) { x->a = *a; a++; }
 
 } // extern "C"
 
-namespace pl {
+namespace px {
 namespace testing {
 
 class Foo {
@@ -68,7 +68,7 @@ class Foo {
 };
 
 }  // namespace testing
-}  // namespace pl
+}  // namespace px
 
 int main() {
   OuterStruct x;
@@ -95,7 +95,7 @@ int main() {
             ABCStruct32{0xa, 0xb0, 0xc});
     std::cout << abc_mixed_sum.a << std::endl;
 
-    pl::testing::Foo foo;
+    px::testing::Foo foo;
     std::cout << foo.Bar(3) << std::endl;
 
     sleep(1);

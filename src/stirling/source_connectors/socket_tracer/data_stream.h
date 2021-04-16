@@ -13,7 +13,7 @@
 DECLARE_uint32(messages_expiration_duration_secs);
 DECLARE_uint32(messages_size_limit_bytes);
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 /**
@@ -260,4 +260,4 @@ inline std::string DebugString(const DataStream& d, std::string_view prefix) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

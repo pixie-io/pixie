@@ -2,7 +2,7 @@
 
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 
@@ -275,4 +275,4 @@ TEST(DataStreamTest, SizeAndGetPos) {
 
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

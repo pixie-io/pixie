@@ -7,7 +7,7 @@
 #include "src/vizier/services/agent/manager/manager.h"
 #include "src/vizier/services/query_broker/querybrokerpb/service.grpc.pb.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 
@@ -21,7 +21,7 @@ namespace agent {
 class ExecuteQueryMessageHandler : public Manager::MessageHandler {
  public:
   ExecuteQueryMessageHandler() = delete;
-  ExecuteQueryMessageHandler(pl::event::Dispatcher* dispatcher, Info* agent_info,
+  ExecuteQueryMessageHandler(px::event::Dispatcher* dispatcher, Info* agent_info,
                              Manager::VizierNATSConnector* nats_conn, carnot::Carnot* carnot);
   ~ExecuteQueryMessageHandler() override = default;
 
@@ -41,9 +41,9 @@ class ExecuteQueryMessageHandler : public Manager::MessageHandler {
   carnot::Carnot* carnot_;
 
   // Map from query_id -> Running query task.
-  absl::flat_hash_map<sole::uuid, pl::event::RunnableAsyncTaskUPtr> running_queries_;
+  absl::flat_hash_map<sole::uuid, px::event::RunnableAsyncTaskUPtr> running_queries_;
 };
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

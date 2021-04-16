@@ -13,7 +13,7 @@
 #include "src/stirling/core/source_connector.h"
 #include "src/stirling/source_connectors/system_stats/system_stats_table.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 class SystemStatsConnector : public SourceConnector {
@@ -52,4 +52,4 @@ class SystemStatsConnector : public SourceConnector {
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

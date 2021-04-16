@@ -30,7 +30,7 @@ void InitDumpOpts(llvm::DIDumpOptions* opts) {
 
 int main(int argc, char** argv) {
   gflags::SetUsageMessage(kProgramDescription);
-  pl::EnvironmentGuard env_guard(&argc, argv);
+  px::EnvironmentGuard env_guard(&argc, argv);
 
   std::error_code ec;
   llvm::ToolOutputFile OutputFile("-", ec, llvm::sys::fs::OF_Text);
@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
     exit(1);
   }
 
-  PL_ASSIGN_OR_EXIT(auto dwarf_reader, pl::stirling::obj_tools::DwarfReader::Create(
+  PL_ASSIGN_OR_EXIT(auto dwarf_reader, px::stirling::obj_tools::DwarfReader::Create(
                                            FLAGS_filename, /* index */ false));
   PL_ASSIGN_OR_EXIT(std::vector<llvm::DWARFDie> dies,
                     dwarf_reader->GetMatchingDIEs(FLAGS_die_name));

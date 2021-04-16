@@ -10,18 +10,18 @@
 #include "src/common/base/macros.h"
 #include "src/common/base/statuspb/status.pb.h"
 
-namespace pl {
+namespace px {
 
 class PL_MUST_USE_RESULT Status {
  public:
   // Success status.
   Status() = default;
   Status(const Status& s) noexcept;
-  Status(pl::statuspb::Code code, const std::string& msg);
-  Status(pl::statuspb::Code code, const std::string& msg,
+  Status(px::statuspb::Code code, const std::string& msg);
+  Status(px::statuspb::Code code, const std::string& msg,
          std::unique_ptr<google::protobuf::Message> ctx);
   // NOLINTNEXTLINE to make it easier to return status.
-  Status(const pl::statuspb::Status& status_pb);
+  Status(const px::statuspb::Status& status_pb);
 
   void operator=(const Status& s) noexcept;
 
@@ -31,7 +31,7 @@ class PL_MUST_USE_RESULT Status {
   // Return self, this makes it compatible with StatusOr<>.
   const Status& status() const { return *this; }
 
-  pl::statuspb::Code code() const { return ok() ? pl::statuspb::OK : state_->code; }
+  px::statuspb::Code code() const { return ok() ? px::statuspb::OK : state_->code; }
 
   const std::string& msg() const { return ok() ? empty_string() : state_->msg; }
 
@@ -45,17 +45,17 @@ class PL_MUST_USE_RESULT Status {
 
   static Status OK() { return Status(); }
 
-  pl::statuspb::Status ToProto() const;
-  void ToProto(pl::statuspb::Status* status_pb) const;
+  px::statuspb::Status ToProto() const;
+  void ToProto(px::statuspb::Status* status_pb) const;
 
  private:
   struct State {
     // Needed for a call in status.cc.
     State() {}
     State(const State& state) noexcept;
-    State(pl::statuspb::Code code, std::string msg, std::unique_ptr<google::protobuf::Any> context)
+    State(px::statuspb::Code code, std::string msg, std::unique_ptr<google::protobuf::Any> context)
         : code(code), msg(msg), context(std::move(context)) {}
-    State(pl::statuspb::Code code, std::string msg,
+    State(px::statuspb::Code code, std::string msg,
           std::unique_ptr<google::protobuf::Message> generic_pb_context)
         : code(code), msg(msg) {
       if (generic_pb_context == nullptr) {
@@ -64,7 +64,7 @@ class PL_MUST_USE_RESULT Status {
       context = std::make_unique<google::protobuf::Any>();
       context->PackFrom(*generic_pb_context);
     }
-    pl::statuspb::Code code;
+    px::statuspb::Code code;
     std::string msg;
     std::unique_ptr<google::protobuf::Any> context;
   };
@@ -123,11 +123,11 @@ inline Status StatusAdapter<Status>(const Status& s) noexcept {
 
 // Conversion of proto status message.
 template <>
-inline Status StatusAdapter<pl::statuspb::Status>(const pl::statuspb::Status& s) noexcept {
+inline Status StatusAdapter<px::statuspb::Status>(const px::statuspb::Status& s) noexcept {
   return Status(s);
 };
 
-}  // namespace pl
+}  // namespace px
 
 #define PL_RETURN_IF_ERROR_IMPL(__status_name__, __status) \
   do {                                                     \

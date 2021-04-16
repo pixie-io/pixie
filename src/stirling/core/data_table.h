@@ -12,7 +12,7 @@
 #include "src/common/base/mixins.h"
 #include "src/stirling/core/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 /**
@@ -265,4 +265,4 @@ class DataTable : public NotCopyable {
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

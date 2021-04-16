@@ -26,14 +26,14 @@ PL_SUPPRESS_WARNINGS_START()
 #include "blockingconcurrentqueue.h"
 PL_SUPPRESS_WARNINGS_END()
 
-namespace pl {
+namespace px {
 namespace md {
 
-using ResourceUpdate = pl::shared::k8s::metadatapb::ResourceUpdate;
-using PodUpdate = pl::shared::k8s::metadatapb::PodUpdate;
-using ContainerUpdate = pl::shared::k8s::metadatapb::ContainerUpdate;
-using ServiceUpdate = pl::shared::k8s::metadatapb::ServiceUpdate;
-using NamespaceUpdate = pl::shared::k8s::metadatapb::NamespaceUpdate;
+using ResourceUpdate = px::shared::k8s::metadatapb::ResourceUpdate;
+using PodUpdate = px::shared::k8s::metadatapb::PodUpdate;
+using ContainerUpdate = px::shared::k8s::metadatapb::ContainerUpdate;
+using ServiceUpdate = px::shared::k8s::metadatapb::ServiceUpdate;
+using NamespaceUpdate = px::shared::k8s::metadatapb::NamespaceUpdate;
 
 /**
  * AgentMetadataStateManager has all the metadata that is tracked on a per agent basis.
@@ -99,7 +99,7 @@ class AgentMetadataStateManagerImpl : public AgentMetadataStateManager {
 
   AgentMetadataStateManagerImpl(std::string_view hostname, uint32_t asid, std::string pod_name,
                                 sole::uuid agent_id, bool collects_data,
-                                const pl::system::Config& config,
+                                const px::system::Config& config,
                                 AgentMetadataFilter* metadata_filter)
       : pod_name_(pod_name),
         proc_parser_(config),
@@ -198,4 +198,4 @@ Status HandleNamespaceUpdate(const NamespaceUpdate& update, AgentMetadataState* 
                              AgentMetadataFilter* metadata_filter);
 
 }  // namespace md
-}  // namespace pl
+}  // namespace px

@@ -2,7 +2,7 @@
 #include "src/carnot/planner/compiler/ast_visitor.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -593,4 +593,4 @@ TEST_F(ProbeCompilerTest, config_update) {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

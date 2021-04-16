@@ -7,7 +7,7 @@
 #include "src/common/base/file.h"
 #include "src/common/base/logging.h"
 
-namespace pl {
+namespace px {
 
 std::string FileContentsOrDie(const std::string& filename) {
   return ReadFileToString(filename).ConsumeValueOrDie();
@@ -33,4 +33,4 @@ Status WriteFileFromString(const std::string& filename, std::string_view content
   return Status::OK();
 }
 
-}  // namespace pl
+}  // namespace px

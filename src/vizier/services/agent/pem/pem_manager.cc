@@ -3,7 +3,7 @@
 #include "src/vizier/services/agent/manager/exec.h"
 #include "src/vizier/services/agent/manager/manager.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 
@@ -16,7 +16,7 @@ Status PEMManager::PostRegisterHookImpl() {
 
   // Register the metadata callback for Stirling.
   stirling_->RegisterAgentMetadataCallback(
-      std::bind(&pl::md::AgentMetadataStateManager::CurrentAgentMetadataState, mds_manager()));
+      std::bind(&px::md::AgentMetadataStateManager::CurrentAgentMetadataState, mds_manager()));
 
   PL_RETURN_IF_ERROR(InitSchemas());
   PL_RETURN_IF_ERROR(stirling_->RunAsThread());
@@ -40,7 +40,7 @@ Status PEMManager::StopImpl(std::chrono::milliseconds) {
 }
 
 Status PEMManager::InitSchemas() {
-  pl::stirling::stirlingpb::Publish publish_pb;
+  px::stirling::stirlingpb::Publish publish_pb;
   stirling_->GetPublishProto(&publish_pb);
   auto subscribe_pb = stirling::SubscribeToAllInfoClasses(publish_pb);
   PL_RETURN_IF_ERROR(stirling_->SetSubscription(subscribe_pb));
@@ -65,4 +65,4 @@ Status PEMManager::InitSchemas() {
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

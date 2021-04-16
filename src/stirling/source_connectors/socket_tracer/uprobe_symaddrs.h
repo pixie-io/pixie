@@ -5,7 +5,7 @@
 #include "src/stirling/obj_tools/elf_tools.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 /**
@@ -36,4 +36,4 @@ StatusOr<struct go_tls_symaddrs_t> GoTLSSymAddrs(obj_tools::ElfReader* elf_reade
 StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(const std::filesystem::path& openssl_lib);
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

@@ -16,7 +16,7 @@
 #include "src/shared/types/column_wrapper.h"
 #include "src/table_store/table_store.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace plan {
 
@@ -340,4 +340,4 @@ class EmptySourceOperator : public Operator {
 
 }  // namespace plan
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

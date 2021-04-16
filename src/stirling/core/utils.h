@@ -2,7 +2,7 @@
 
 #include <chrono>
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 // Manages how often data sampling and pushing should be performed.
@@ -78,4 +78,4 @@ class SamplePushFrequencyManager {
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

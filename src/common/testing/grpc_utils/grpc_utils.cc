@@ -1,6 +1,6 @@
 #include "src/common/testing/grpc_utils/grpc_utils.h"
 
-namespace pl {
+namespace px {
 // The following are copied from
 // https://github.com/grpc/grpc/blob/v1.29.1/test/core/util/test_config.cc
 
@@ -96,4 +96,4 @@ void TestSleep(int64_t ms_to_wait) {
                                                     GPR_TIMESPAN)));
 }
 
-}  // namespace pl
+}  // namespace px

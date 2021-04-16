@@ -5,7 +5,7 @@
 
 #include "src/carnot/planner/rules/rules.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 class MockRule : public Rule {
@@ -21,4 +21,4 @@ class MockRule : public Rule {
 };
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

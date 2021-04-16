@@ -12,7 +12,7 @@
 #include "src/common/base/base.h"
 #include "src/common/system/system.h"
 
-namespace pl {
+namespace px {
 namespace system {
 
 /*
@@ -263,4 +263,4 @@ class ProcParser {
 StatusOr<int64_t> GetPIDStartTimeTicks(const std::filesystem::path& proc_pid_path);
 
 }  // namespace system
-}  // namespace pl
+}  // namespace px

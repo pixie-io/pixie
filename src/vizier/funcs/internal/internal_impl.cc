@@ -2,7 +2,7 @@
 #include "src/vizier/funcs/internal/debug.h"
 #include "src/vizier/funcs/internal/stack_trace.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace funcs {
 namespace internal {
@@ -18,4 +18,4 @@ void RegisterFuncsOrDie(carnot::udf::Registry* registry) {
 }  // namespace internal
 }  // namespace funcs
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

@@ -7,7 +7,7 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/event_generator.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 using ::testing::AllOf;
@@ -193,4 +193,4 @@ TEST_F(ConnStatsTest, DisabledConnTracker) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

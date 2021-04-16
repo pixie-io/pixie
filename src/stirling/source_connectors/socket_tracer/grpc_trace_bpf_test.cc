@@ -23,16 +23,16 @@ constexpr std::string_view kServerPath =
     "go_grpc_server_/"
     "go_grpc_server";
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 using ::grpc::Channel;
-using ::pl::stirling::grpc::kGRPCMessageHeaderSizeInBytes;
-using ::pl::stirling::protocols::http2::testing::HelloReply;
-using ::pl::stirling::protocols::http2::testing::HelloRequest;
-using ::pl::stirling::testing::FindRecordIdxMatchesPID;
-using ::pl::testing::proto::EqualsProto;
-using ::pl::types::ColumnWrapperRecordBatch;
+using ::px::stirling::grpc::kGRPCMessageHeaderSizeInBytes;
+using ::px::stirling::protocols::http2::testing::HelloReply;
+using ::px::stirling::protocols::http2::testing::HelloRequest;
+using ::px::stirling::testing::FindRecordIdxMatchesPID;
+using ::px::testing::proto::EqualsProto;
+using ::px::types::ColumnWrapperRecordBatch;
 using ::testing::AllOf;
 using ::testing::AnyOf;
 using ::testing::ElementsAre;
@@ -64,7 +64,7 @@ class GRPCServer {
   GRPCServer() = default;
 
   void LaunchServer(bool use_https) {
-    std::string server_path = pl::testing::BazelBinTestFilePath(kServerPath).string();
+    std::string server_path = px::testing::BazelBinTestFilePath(kServerPath).string();
     PL_CHECK_OK(fs::Exists(server_path));
 
     std::string https_flag = use_https ? "--https=true" : "--https=false";
@@ -90,7 +90,7 @@ class GRPCServer {
 class GRPCClient {
  public:
   void LaunchClient(bool use_https, int port) {
-    std::string client_path = pl::testing::BazelBinTestFilePath(kClientPath).string();
+    std::string client_path = px::testing::BazelBinTestFilePath(kClientPath).string();
     PL_CHECK_OK(fs::Exists(client_path));
 
     const std::string https_flag = use_https ? "--https=true" : "--https=false";
@@ -171,4 +171,4 @@ TEST_P(GRPCTraceTest, CaptureRPCTraceRecord) {
 INSTANTIATE_TEST_SUITE_P(SecurityModeTest, GRPCTraceTest, ::testing::Values(true, false));
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

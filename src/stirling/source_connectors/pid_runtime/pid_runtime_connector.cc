@@ -9,7 +9,7 @@
 
 BPF_SRC_STRVIEW(pidruntime_bcc_script, pidruntime);
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 Status PIDRuntimeConnector::InitImpl() {
@@ -58,6 +58,6 @@ void PIDRuntimeConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px
 
 #endif

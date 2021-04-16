@@ -14,7 +14,7 @@
 
 #include "src/carnot/docspb/docs.pb.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace docs {
@@ -35,4 +35,4 @@ struct DocExtractor {
 }  // namespace docs
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

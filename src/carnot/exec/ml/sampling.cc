@@ -8,7 +8,7 @@
 
 #include "src/carnot/exec/ml/sampling.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 namespace ml {
@@ -35,4 +35,4 @@ size_t randint(size_t high) { return rand() % high; }
 }  // namespace ml
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

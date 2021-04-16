@@ -10,7 +10,7 @@
 #include "src/common/perf/perf.h"
 #include "src/table_store/table_store.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -366,4 +366,4 @@ class SinkNode : public ExecNode {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

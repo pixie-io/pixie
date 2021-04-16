@@ -6,12 +6,12 @@
 constexpr std::string_view kBinaryPath =
     "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary";
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace dynamic_tracing {
 
 using ::google::protobuf::TextFormat;
-using ::pl::testing::proto::EqualsProto;
+using ::px::testing::proto::EqualsProto;
 
 constexpr std::string_view kLogicalProgram = R"(
 deployment_spec {
@@ -239,7 +239,7 @@ struct ProbeGenTestParam {
 
 class ProbeGenTest : public ::testing::TestWithParam<ProbeGenTestParam> {
  protected:
-  ProbeGenTest() : binary_path_(pl::testing::BazelBinTestFilePath(kBinaryPath)) {}
+  ProbeGenTest() : binary_path_(px::testing::BazelBinTestFilePath(kBinaryPath)) {}
 
   std::string binary_path_;
 };
@@ -277,4 +277,4 @@ TEST_F(ProbeGenTest, ErrorCases) {
 
 }  // namespace dynamic_tracing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

@@ -7,7 +7,7 @@
 #include "src/carnot/udf/type_inference.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace builtins {
 
@@ -722,4 +722,4 @@ class CountUDA : public udf::UDA {
 void RegisterMathOpsOrDie(udf::Registry* registry);
 }  // namespace builtins
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

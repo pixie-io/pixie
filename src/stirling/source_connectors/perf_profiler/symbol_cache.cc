@@ -2,7 +2,7 @@
 
 DEFINE_bool(stirling_profiler_symcache, true, "Enable the Stirling managed symbol cache.");
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 namespace {
@@ -37,4 +37,4 @@ const std::string& SymbolCache::LookupSym(ebpf::BPFStackTable* stack_traces, con
 void SymbolCache::Flush() { sym_cache_.clear(); }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

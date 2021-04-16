@@ -6,15 +6,15 @@
 DEFINE_string(binary, "", "Filename to list symbols");
 DEFINE_string(filter, "", "Symbol matching substring used to select symbols to print.");
 
-using ::pl::stirling::obj_tools::ElfReader;
-using ::pl::stirling::obj_tools::SymbolMatchType;
+using ::px::stirling::obj_tools::ElfReader;
+using ::px::stirling::obj_tools::SymbolMatchType;
 
 constexpr char kProgramDescription[] =
     "A tool that lists all the function symbols in a binary (similar to nm).";
 
 int main(int argc, char** argv) {
   gflags::SetUsageMessage(kProgramDescription);
-  pl::EnvironmentGuard env_guard(&argc, argv);
+  px::EnvironmentGuard env_guard(&argc, argv);
 
   if (FLAGS_binary.empty()) {
     LOG(INFO) << absl::Substitute(

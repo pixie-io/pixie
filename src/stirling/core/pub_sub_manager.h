@@ -9,7 +9,7 @@
 #include "src/stirling/core/info_class_manager.h"
 #include "src/stirling/proto/stirling.pb.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 class PubSubManager {
@@ -64,4 +64,4 @@ stirlingpb::Subscribe SubscribeToInfoClass(const stirlingpb::Publish& publish_pr
                                            std::string_view name);
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

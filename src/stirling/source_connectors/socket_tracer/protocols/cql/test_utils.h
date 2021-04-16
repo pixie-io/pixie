@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace cass {
@@ -55,4 +55,4 @@ static constexpr int kCQLLatencyIdx = kCQLTable.ColIndex("latency");
 }  // namespace cass
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

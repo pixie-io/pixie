@@ -5,7 +5,7 @@
 #include "src/common/base/base.h"
 #include "src/common/fs/fs_wrapper.h"
 
-namespace pl {
+namespace px {
 namespace system {
 
 DEFINE_string(sysfs_path, gflags::StringFromEnv("PL_SYSFS_PATH", "/sys/fs"),
@@ -113,4 +113,4 @@ const Config& Config::GetInstance() {
 void Config::ResetInstance() { g_instance = std::make_unique<ConfigImpl>(); }
 
 }  // namespace system
-}  // namespace pl
+}  // namespace px

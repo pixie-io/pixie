@@ -5,14 +5,14 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/obj_tools/testdata/dummy_exe_fixture.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace obj_tools {
 
 const DummyExeFixture kDummyExeFixture;
 
-using ::pl::stirling::obj_tools::ElfReader;
-using ::pl::stirling::obj_tools::SymbolMatchType;
+using ::px::stirling::obj_tools::ElfReader;
+using ::px::stirling::obj_tools::SymbolMatchType;
 using ::testing::ElementsAre;
 using ::testing::Field;
 using ::testing::IsEmpty;
@@ -21,7 +21,7 @@ using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
 
 TEST(ElfReaderTest, NonExistentPath) {
-  auto s = pl::stirling::obj_tools::ElfReader::Create("/bogus");
+  auto s = px::stirling::obj_tools::ElfReader::Create("/bogus");
   ASSERT_NOT_OK(s);
 }
 
@@ -78,7 +78,7 @@ TEST(ElfReaderTest, SymbolAddress) {
 
   // Extract the address from nm as the gold standard.
   int64_t expected_symbol_addr = -1;
-  std::string nm_out = pl::Exec(absl::StrCat("nm ", path)).ValueOrDie();
+  std::string nm_out = px::Exec(absl::StrCat("nm ", path)).ValueOrDie();
   std::vector<absl::string_view> nm_out_lines = absl::StrSplit(nm_out, '\n');
   for (auto& line : nm_out_lines) {
     if (line.find(symbol) != std::string::npos) {
@@ -109,9 +109,9 @@ TEST(ElfReaderTest, SymbolAddress) {
 
 TEST(ElfReaderTest, ExternalDebugSymbolsBuildID) {
   const std::string stripped_bin =
-      pl::testing::TestFilePath("src/stirling/obj_tools/testdata/stripped_dummy_exe");
+      px::testing::TestFilePath("src/stirling/obj_tools/testdata/stripped_dummy_exe");
   const std::string debug_dir =
-      pl::testing::TestFilePath("src/stirling/obj_tools/testdata/usr/lib/debug");
+      px::testing::TestFilePath("src/stirling/obj_tools/testdata/usr/lib/debug");
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
                        ElfReader::Create(stripped_bin, debug_dir));
@@ -122,9 +122,9 @@ TEST(ElfReaderTest, ExternalDebugSymbolsBuildID) {
 
 TEST(ElfReaderTest, ExternalDebugSymbolsDebugLink) {
   const std::string stripped_bin =
-      pl::testing::BazelBinTestFilePath("src/stirling/obj_tools/testdata/dummy_exe_debuglink");
+      px::testing::BazelBinTestFilePath("src/stirling/obj_tools/testdata/dummy_exe_debuglink");
   const std::string debug_dir =
-      pl::testing::TestFilePath("src/stirling/obj_tools/testdata/usr/lib/debug2");
+      px::testing::TestFilePath("src/stirling/obj_tools/testdata/usr/lib/debug2");
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
                        ElfReader::Create(stripped_bin, debug_dir));
@@ -136,7 +136,7 @@ TEST(ElfReaderTest, ExternalDebugSymbolsDebugLink) {
 TEST(ElfReaderTest, FuncByteCode) {
   {
     const std::string path =
-        pl::testing::TestFilePath("src/stirling/obj_tools/testdata/prebuilt_dummy_exe");
+        px::testing::TestFilePath("src/stirling/obj_tools/testdata/prebuilt_dummy_exe");
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
     ASSERT_OK_AND_ASSIGN(const std::vector<ElfReader::SymbolInfo> symbol_infos,
                          elf_reader->ListFuncSymbols("CanYouFindThis", SymbolMatchType::kExact));
@@ -149,9 +149,9 @@ TEST(ElfReaderTest, FuncByteCode) {
   }
   {
     const std::string stripped_bin =
-        pl::testing::TestFilePath("src/stirling/obj_tools/testdata/stripped_dummy_exe");
+        px::testing::TestFilePath("src/stirling/obj_tools/testdata/stripped_dummy_exe");
     const std::string debug_dir =
-        pl::testing::TestFilePath("src/stirling/obj_tools/testdata/usr/lib/debug");
+        px::testing::TestFilePath("src/stirling/obj_tools/testdata/usr/lib/debug");
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
                          ElfReader::Create(stripped_bin, debug_dir));
     ASSERT_OK_AND_ASSIGN(const std::vector<ElfReader::SymbolInfo> symbol_infos,
@@ -163,7 +163,7 @@ TEST(ElfReaderTest, FuncByteCode) {
 }
 
 TEST(ElfGolangItableTest, ExtractInterfaceTypes) {
-  const std::string kPath = pl::testing::BazelBinTestFilePath(
+  const std::string kPath = px::testing::BazelBinTestFilePath(
       "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary");
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(kPath));
@@ -206,4 +206,4 @@ TEST(ElfGolangItableTest, ExtractInterfaceTypes) {
 
 }  // namespace obj_tools
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

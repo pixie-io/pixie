@@ -9,7 +9,7 @@
 #include "src/stirling/stirling.h"
 #include "src/vizier/services/agent/manager/manager.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 
@@ -30,7 +30,7 @@ struct TracepointInfo {
 class TracepointManager : public Manager::MessageHandler {
  public:
   TracepointManager() = delete;
-  TracepointManager(pl::event::Dispatcher* dispatcher, Info* agent_info,
+  TracepointManager(px::event::Dispatcher* dispatcher, Info* agent_info,
                     Manager::VizierNATSConnector* nats_conn, stirling::Stirling* stirling,
                     table_store::TableStore* table_store,
                     RelationInfoManager* relation_info_manager);
@@ -46,7 +46,7 @@ class TracepointManager : public Manager::MessageHandler {
   Status HandleRemoveTracepointRequest(const messages::RemoveTracepointRequest& req);
   Status UpdateSchema(const stirling::stirlingpb::Publish& publish_proto);
 
-  pl::event::Dispatcher* dispatcher_;
+  px::event::Dispatcher* dispatcher_;
   Manager::VizierNATSConnector* nats_conn_;
   stirling::Stirling* stirling_;
   table_store::TableStore* table_store_;
@@ -60,4 +60,4 @@ class TracepointManager : public Manager::MessageHandler {
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

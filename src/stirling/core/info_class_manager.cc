@@ -6,7 +6,7 @@
 #include "src/stirling/core/info_class_manager.h"
 #include "src/stirling/core/source_connector.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 bool InfoClassManager::SamplingRequired() const { return sample_push_freq_mgr_.SamplingRequired(); }
@@ -48,4 +48,4 @@ stirlingpb::InfoClass InfoClassManager::ToProto() const {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

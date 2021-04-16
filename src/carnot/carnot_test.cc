@@ -15,7 +15,7 @@
 #include "src/common/testing/testing.h"
 #include "src/table_store/table_store.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 
 using exec::CarnotTestUtils;
@@ -1046,7 +1046,7 @@ TEST_F(CarnotTest, pass_logical_plan) {
 
   // Create a CompilerState obj using the relation map and grabbing the current time.
 
-  pl::StatusOr<std::unique_ptr<planner::RegistryInfo>> registry_info_or_s =
+  px::StatusOr<std::unique_ptr<planner::RegistryInfo>> registry_info_or_s =
       udfexporter::ExportUDFInfo();
   ASSERT_OK(registry_info_or_s);
   std::unique_ptr<planner::RegistryInfo> registry_info = registry_info_or_s.ConsumeValueOrDie();
@@ -1151,4 +1151,4 @@ TEST_F(CarnotTest, empty_source_test) {
   }
 }
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

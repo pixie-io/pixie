@@ -6,7 +6,7 @@
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/obj_tools/elf_tools.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace bpf_tools {
 
@@ -28,4 +28,4 @@ StatusOr<std::vector<UProbeSpec>> TransformGolangReturnProbe(const UProbeSpec& s
 
 }  // namespace bpf_tools
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

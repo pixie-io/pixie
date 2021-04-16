@@ -8,7 +8,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace fs {
 
 // These are wrappers around std::filesystem functions to convert error codes to Status.
@@ -20,7 +20,7 @@ Status CreateSymlink(const std::filesystem::path& target, const std::filesystem:
 
 Status CreateDirectories(const std::filesystem::path& dir);
 
-pl::StatusOr<std::filesystem::path> ReadSymlink(const std::filesystem::path& symlink);
+px::StatusOr<std::filesystem::path> ReadSymlink(const std::filesystem::path& symlink);
 
 /**
  * Joins multiple paths together.
@@ -79,6 +79,6 @@ struct PathSplit {
 std::vector<PathSplit> EnumerateParentPaths(const std::filesystem::path& path);
 
 }  // namespace fs
-}  // namespace pl
+}  // namespace px
 
 #endif

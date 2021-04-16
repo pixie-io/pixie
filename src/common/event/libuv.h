@@ -17,7 +17,7 @@
 #include "src/common/event/dispatcher.h"
 #include "src/common/event/event.h"
 
-namespace pl {
+namespace px {
 namespace event {
 
 class API;
@@ -109,4 +109,4 @@ class LibuvDispatcher : public Dispatcher {
 };
 
 }  // namespace event
-}  // namespace pl
+}  // namespace px

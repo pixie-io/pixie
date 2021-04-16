@@ -8,7 +8,7 @@
 
 #include "src/common/system/config.h"
 
-namespace pl {
+namespace px {
 namespace system {
 
 StatusOr<std::unique_ptr<ScopedNamespace>> ScopedNamespace::Create(int ns_pid,
@@ -65,4 +65,4 @@ void ScopedNamespace::ExitNamespace() {
 }
 
 }  // namespace system
-}  // namespace pl
+}  // namespace px

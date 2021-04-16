@@ -23,7 +23,7 @@
 #include "src/common/base/inet_utils.h"
 #include "src/common/system/scoped_namespace.h"
 
-namespace pl {
+namespace px {
 namespace system {
 
 //-----------------------------------------------------------------------------
@@ -511,4 +511,4 @@ void SocketInfoManager::Flush() {
 }
 
 }  // namespace system
-}  // namespace pl
+}  // namespace px

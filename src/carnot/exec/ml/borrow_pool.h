@@ -5,7 +5,7 @@
 
 #include <absl/base/internal/spinlock.h>
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 namespace ml {
@@ -56,4 +56,4 @@ class BorrowPool {
 }  // namespace ml
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

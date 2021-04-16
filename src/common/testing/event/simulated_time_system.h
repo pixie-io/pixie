@@ -12,7 +12,7 @@
 #include "src/common/event/dispatcher.h"
 #include "src/common/event/time_system.h"
 
-namespace pl {
+namespace px {
 namespace event {
 
 class SimulatedTimer;
@@ -172,4 +172,4 @@ class SimulatedScheduler : public Scheduler {
 };
 
 }  // namespace event
-}  // namespace pl
+}  // namespace px

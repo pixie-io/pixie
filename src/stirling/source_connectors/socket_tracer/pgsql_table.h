@@ -3,7 +3,7 @@
 #include "src/stirling/core/types.h"
 #include "src/stirling/source_connectors/socket_tracer/canonical_types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 // clang-format off
@@ -41,4 +41,4 @@ constexpr int kPGSQLRespIdx = kPGSQLTable.ColIndex("resp");
 constexpr int kPGSQLLatencyIdx = kPGSQLTable.ColIndex("latency");
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

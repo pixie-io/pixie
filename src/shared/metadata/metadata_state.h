@@ -14,7 +14,7 @@
 #include "src/shared/metadata/pids.h"
 #include "src/shared/upid/upid.h"
 
-namespace pl {
+namespace px {
 namespace md {
 
 using K8sMetadataObjectUPtr = std::unique_ptr<K8sMetadataObject>;
@@ -27,10 +27,10 @@ using AgentID = sole::uuid;
  */
 class K8sMetadataState : NotCopyable {
  public:
-  using PodUpdate = pl::shared::k8s::metadatapb::PodUpdate;
-  using ContainerUpdate = pl::shared::k8s::metadatapb::ContainerUpdate;
-  using ServiceUpdate = pl::shared::k8s::metadatapb::ServiceUpdate;
-  using NamespaceUpdate = pl::shared::k8s::metadatapb::NamespaceUpdate;
+  using PodUpdate = px::shared::k8s::metadatapb::PodUpdate;
+  using ContainerUpdate = px::shared::k8s::metadatapb::ContainerUpdate;
+  using ServiceUpdate = px::shared::k8s::metadatapb::ServiceUpdate;
+  using NamespaceUpdate = px::shared::k8s::metadatapb::NamespaceUpdate;
 
   // K8s names consist of both a namespace and name : <ns, name>.
   using K8sNameIdent = std::pair<std::string, std::string>;
@@ -317,4 +317,4 @@ class AgentMetadataState : NotCopyable {
 };
 
 }  // namespace md
-}  // namespace pl
+}  // namespace px

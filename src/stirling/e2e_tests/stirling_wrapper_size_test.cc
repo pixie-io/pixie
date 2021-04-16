@@ -6,7 +6,7 @@
 #include "src/common/base/base.h"
 #include "src/common/testing/test_environment.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 #ifdef __OPTIMIZE__
@@ -25,4 +25,4 @@ TEST(StirlingWrapperSizeTest, ExecutableSizeLimit) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

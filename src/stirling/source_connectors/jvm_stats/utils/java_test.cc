@@ -13,7 +13,7 @@
 #include "src/common/exec/subprocess.h"
 #include "src/common/testing/test_environment.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace java {
 
@@ -62,4 +62,4 @@ TEST(HsperfdataPathTest, ResultIsAsExpected) {
 
 }  // namespace java
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

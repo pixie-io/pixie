@@ -1,6 +1,6 @@
 #include "src/stirling/source_connectors/socket_tracer/conn_trackers_manager.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 //-----------------------------------------------------------------------------
@@ -85,7 +85,7 @@ uint64_t GetConnMapKey(uint32_t pid, uint32_t fd) {
 
 }  // namespace
 
-void ConnTrackersManager::UpdateProtocol(pl::stirling::ConnTracker* tracker,
+void ConnTrackersManager::UpdateProtocol(px::stirling::ConnTracker* tracker,
                                          std::optional<TrafficProtocol> old_protocol) {
   // If the tracker is ReadyForDestruction(), then it should not be a member of any protocol list.
   if (tracker->ReadyForDestruction()) {
@@ -282,4 +282,4 @@ ConnTrackersManager::TrackersList::TrackersListIterator::operator++() {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

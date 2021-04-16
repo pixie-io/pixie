@@ -10,10 +10,10 @@
 #include "src/stirling/source_connectors/perf_profiler/stack_traces_table.h"
 #include "src/stirling/testing/common.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
-using ::pl::testing::BazelBinTestFilePath;
+using ::px::testing::BazelBinTestFilePath;
 using testing::FindRecordIdxMatchesPIDs;
 
 class CPUPinnedBinaryRunner {
@@ -351,4 +351,4 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

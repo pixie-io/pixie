@@ -6,7 +6,7 @@
 
 #include "src/common/event/timer.h"
 
-namespace pl {
+namespace px {
 namespace event {
 
 // Alias to make it easier to reference.
@@ -50,4 +50,4 @@ class TimeSystem : public TimeSource {
 };
 
 }  // namespace event
-}  // namespace pl
+}  // namespace px

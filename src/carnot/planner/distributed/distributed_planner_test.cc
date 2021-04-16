@@ -15,11 +15,11 @@
 #include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/testing/protobuf.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
-using pl::testing::proto::EqualsProto;
+using px::testing::proto::EqualsProto;
 using ::testing::ContainsRegex;
 using ::testing::ElementsAre;
 using ::testing::UnorderedElementsAreArray;
@@ -359,4 +359,4 @@ TEST_F(DistributedPlannerUDTFTests, UDTFOnKelvinJoinWithUDTFOnPEM) {
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

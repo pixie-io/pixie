@@ -4,7 +4,7 @@
 
 #include "src/common/base/statusor.h"
 
-namespace pl {
+namespace px {
 namespace system {
 
 /**
@@ -39,4 +39,4 @@ class ScopedNamespace {
 };
 
 }  // namespace system
-}  // namespace pl
+}  // namespace px

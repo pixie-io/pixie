@@ -3,15 +3,15 @@
 
 #include "src/stirling/core/types.h"
 
-using ::pl::types::DataType;
-using ::pl::types::PatternType;
-using ::pl::types::SemanticType;
+using ::px::types::DataType;
+using ::px::types::PatternType;
+using ::px::types::SemanticType;
 
 using ::testing::IsEmpty;
 using ::testing::Pair;
 using ::testing::UnorderedElementsAre;
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 TEST(DataElementTest, data_element_proto_getters_test) {
@@ -89,4 +89,4 @@ TEST(DynamicDataTableSchemaTest, Create) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

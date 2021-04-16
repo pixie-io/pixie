@@ -10,7 +10,7 @@
 #include "src/shared/k8s/metadatapb/metadata.pb.h"
 #include "src/shared/upid/upid.h"
 
-namespace pl {
+namespace px {
 namespace md {
 
 /**
@@ -91,8 +91,8 @@ class K8sMetadataObject {
 
 enum class PodQOSClass : uint8_t { kUnknown = 0, kGuaranteed, kBestEffort, kBurstable };
 
-inline PodQOSClass ConvertToPodQOsClass(pl::shared::k8s::metadatapb::PodQOSClass pb_enum) {
-  using qos_pb = pl::shared::k8s::metadatapb::PodQOSClass;
+inline PodQOSClass ConvertToPodQOsClass(px::shared::k8s::metadatapb::PodQOSClass pb_enum) {
+  using qos_pb = px::shared::k8s::metadatapb::PodQOSClass;
   switch (pb_enum) {
     case qos_pb::QOS_CLASS_BURSTABLE:
       return PodQOSClass::kBurstable;
@@ -107,8 +107,8 @@ inline PodQOSClass ConvertToPodQOsClass(pl::shared::k8s::metadatapb::PodQOSClass
 
 enum class PodPhase : uint8_t { kUnknown = 0, kPending, kRunning, kSucceeded, kFailed };
 
-inline PodPhase ConvertToPodPhase(pl::shared::k8s::metadatapb::PodPhase pb_enum) {
-  using phase_pb = pl::shared::k8s::metadatapb::PodPhase;
+inline PodPhase ConvertToPodPhase(px::shared::k8s::metadatapb::PodPhase pb_enum) {
+  using phase_pb = px::shared::k8s::metadatapb::PodPhase;
   switch (pb_enum) {
     case phase_pb::PENDING:
       return PodPhase::kPending;
@@ -134,8 +134,8 @@ enum class PodConditionType : uint8_t {
 enum class PodConditionStatus : uint8_t { kUnknown = 0, kTrue, kFalse };
 
 inline PodConditionType ConvertToPodConditionType(
-    pl::shared::k8s::metadatapb::PodConditionType pb_enum) {
-  using type_pb = pl::shared::k8s::metadatapb::PodConditionType;
+    px::shared::k8s::metadatapb::PodConditionType pb_enum) {
+  using type_pb = px::shared::k8s::metadatapb::PodConditionType;
   switch (pb_enum) {
     case type_pb::POD_SCHEDULED:
       return PodConditionType::kPodScheduled;
@@ -153,8 +153,8 @@ inline PodConditionType ConvertToPodConditionType(
 }
 
 inline PodConditionStatus ConvertToPodConditionStatus(
-    pl::shared::k8s::metadatapb::PodConditionStatus pb_enum) {
-  using status_pb = pl::shared::k8s::metadatapb::PodConditionStatus;
+    px::shared::k8s::metadatapb::PodConditionStatus pb_enum) {
+  using status_pb = px::shared::k8s::metadatapb::PodConditionStatus;
   switch (pb_enum) {
     case status_pb::STATUS_TRUE:
       return PodConditionStatus::kTrue;
@@ -168,7 +168,7 @@ inline PodConditionStatus ConvertToPodConditionStatus(
 using PodConditions = absl::flat_hash_map<PodConditionType, PodConditionStatus>;
 
 inline PodConditions ConvertToPodConditions(
-    const google::protobuf::RepeatedPtrField<pl::shared::k8s::metadatapb::PodCondition>&
+    const google::protobuf::RepeatedPtrField<px::shared::k8s::metadatapb::PodCondition>&
         pod_conditions) {
   PodConditions conditions;
   for (const auto& condition : pod_conditions) {
@@ -182,8 +182,8 @@ enum class ContainerType : uint8_t { kUnknown = 0, kDocker, kCRIO };
 
 enum class ContainerState : uint8_t { kUnknown = 0, kRunning, kTerminated, kWaiting };
 
-inline ContainerType ConvertToContainerType(pl::shared::k8s::metadatapb::ContainerType pb_enum) {
-  using state_pb = pl::shared::k8s::metadatapb::ContainerType;
+inline ContainerType ConvertToContainerType(px::shared::k8s::metadatapb::ContainerType pb_enum) {
+  using state_pb = px::shared::k8s::metadatapb::ContainerType;
   switch (pb_enum) {
     case state_pb::CONTAINER_TYPE_DOCKER:
       return ContainerType::kDocker;
@@ -194,8 +194,8 @@ inline ContainerType ConvertToContainerType(pl::shared::k8s::metadatapb::Contain
   }
 }
 
-inline ContainerState ConvertToContainerState(pl::shared::k8s::metadatapb::ContainerState pb_enum) {
-  using state_pb = pl::shared::k8s::metadatapb::ContainerState;
+inline ContainerState ConvertToContainerState(px::shared::k8s::metadatapb::ContainerState pb_enum) {
+  using state_pb = px::shared::k8s::metadatapb::ContainerState;
   switch (pb_enum) {
     case state_pb::CONTAINER_STATE_RUNNING:
       return ContainerState::kRunning;
@@ -229,7 +229,7 @@ class PodInfo : public K8sMetadataObject {
         hostname_(hostname),
         pod_ip_(pod_ip) {}
 
-  explicit PodInfo(const pl::shared::k8s::metadatapb::PodUpdate& pod_update_info)
+  explicit PodInfo(const px::shared::k8s::metadatapb::PodUpdate& pod_update_info)
       : PodInfo(pod_update_info.uid(), pod_update_info.namespace_(), pod_update_info.name(),
                 ConvertToPodQOsClass(pod_update_info.qos_class()),
                 ConvertToPodPhase(pod_update_info.phase()),
@@ -326,7 +326,7 @@ class ContainerInfo {
         start_time_ns_(start_time_ns),
         stop_time_ns_(stop_time_ns) {}
 
-  explicit ContainerInfo(const pl::shared::k8s::metadatapb::ContainerUpdate& container_update_info)
+  explicit ContainerInfo(const px::shared::k8s::metadatapb::ContainerUpdate& container_update_info)
       : ContainerInfo(container_update_info.cid(), container_update_info.name(),
                       ConvertToContainerState(container_update_info.container_state()),
                       ConvertToContainerType(container_update_info.container_type()),
@@ -451,4 +451,4 @@ class NamespaceInfo : public K8sMetadataObject {
 };
 
 }  // namespace md
-}  // namespace pl
+}  // namespace px

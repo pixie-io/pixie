@@ -9,7 +9,7 @@
 #include <gperftools/malloc_extension.h>
 #endif
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace funcs {
 
@@ -99,4 +99,4 @@ class HeapGrowthStacksUDTF final : public carnot::udf::UDTF<HeapGrowthStacksUDTF
 
 }  // namespace funcs
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

@@ -6,13 +6,13 @@
 #include <absl/base/internal/spinlock.h>
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 /**
  * This class hangs onto pointer and will deallocate them upon destruction.
  *
  * Concepts and some code similar to Impala.
  */
-class ObjectPool final : public pl::NotCopyable {
+class ObjectPool final : public px::NotCopyable {
  public:
   ObjectPool() = default;
   explicit ObjectPool(std::string_view name) : name_(name) {
@@ -60,4 +60,4 @@ class ObjectPool final : public pl::NotCopyable {
   std::vector<Entity> obj_list_;
 };
 
-}  // namespace pl
+}  // namespace px

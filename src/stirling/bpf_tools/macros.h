@@ -1,6 +1,6 @@
 #pragma once
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 // Provides a string view into a char array included in the binary via objcopy.
@@ -25,4 +25,4 @@ namespace stirling {
 #endif
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

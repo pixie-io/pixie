@@ -16,13 +16,13 @@
 #include "src/common/testing/protobuf.h"
 #include "src/shared/metadata/metadata_filter.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
 using md::AgentMetadataFilter;
-using ::pl::testing::proto::EqualsProto;
-using ::pl::testing::proto::Partially;
+using ::px::testing::proto::EqualsProto;
+using ::px::testing::proto::Partially;
 using ::testing::Contains;
 using ::testing::ContainsRegex;
 using ::testing::ElementsAre;
@@ -620,4 +620,4 @@ TEST_F(CoordinatorTest, delete_dependent_nodes) {
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

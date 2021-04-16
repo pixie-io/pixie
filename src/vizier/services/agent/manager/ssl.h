@@ -5,7 +5,7 @@
 
 #include "src/common/event/nats.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 
@@ -37,9 +37,9 @@ class SSL {
   /*
    * Returns the defaul creds for NATS.
    */
-  static std::unique_ptr<pl::event::NATSTLSConfig> DefaultNATSCreds();
+  static std::unique_ptr<px::event::NATSTLSConfig> DefaultNATSCreds();
 };
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

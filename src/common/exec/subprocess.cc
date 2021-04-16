@@ -10,7 +10,7 @@
 #include "src/common/system/config.h"
 #include "src/common/system/proc_parser.h"
 
-namespace pl {
+namespace px {
 
 Status SubProcess::Start(const std::vector<std::string>& args, bool stderr_to_stdout) {
   DCHECK(!started_);
@@ -129,4 +129,4 @@ Status SubProcess::Stdout(std::string* out) {
   return Status::OK();
 }
 
-}  // namespace pl
+}  // namespace px

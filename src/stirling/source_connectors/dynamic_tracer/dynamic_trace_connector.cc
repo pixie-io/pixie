@@ -11,16 +11,16 @@
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dynamic_tracer.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 using ::google::protobuf::RepeatedPtrField;
 
-using ::pl::stirling::dynamic_tracing::ir::physical::Field;
-using ::pl::stirling::dynamic_tracing::ir::physical::Struct;
-using ::pl::stirling::dynamic_tracing::ir::physical::StructSpec;
-using ::pl::stirling::dynamic_tracing::ir::shared::ScalarType;
-using ::pl::utils::MemCpy;
+using ::px::stirling::dynamic_tracing::ir::physical::Field;
+using ::px::stirling::dynamic_tracing::ir::physical::Struct;
+using ::px::stirling::dynamic_tracing::ir::physical::StructSpec;
+using ::px::stirling::dynamic_tracing::ir::shared::ScalarType;
+using ::px::utils::MemCpy;
 
 namespace {
 
@@ -487,4 +487,4 @@ void DynamicTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tab
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

@@ -12,7 +12,7 @@
 #include "src/stirling/core/canonical_types.h"
 #include "src/stirling/core/source_connector.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 // clang-format off
@@ -97,4 +97,4 @@ constexpr DataTableSchema kNetworkStatsTable(
 // clang-format on
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

@@ -8,7 +8,7 @@
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -54,4 +54,4 @@ Status MapNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, size_
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

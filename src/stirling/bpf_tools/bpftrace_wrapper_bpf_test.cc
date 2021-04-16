@@ -4,11 +4,11 @@
 
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace bpf_tools {
 
-using ::pl::testing::status::StatusIs;
+using ::px::testing::status::StatusIs;
 using ::testing::HasSubstr;
 
 TEST(BPFTracerWrapperTest, MapRead) {
@@ -175,6 +175,6 @@ TEST(BPFTracerWrapperTest, InconsistentPrintfs) {
 
 }  // namespace bpf_tools
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px
 
 #endif

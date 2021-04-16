@@ -9,7 +9,7 @@
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/stirling.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 class StirlingBPFTest : public ::testing::Test {
@@ -66,4 +66,4 @@ TEST_F(StirlingBPFTest, CleanupTest) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

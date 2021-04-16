@@ -1,6 +1,6 @@
 #include "src/carnot/planner/objects/collection_object.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -47,4 +47,4 @@ std::vector<QLObjectPtr> ObjectAsCollection(QLObjectPtr obj) {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

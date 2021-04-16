@@ -4,7 +4,7 @@
 
 #include "src/table_store/table/table_store.h"
 
-namespace pl {
+namespace px {
 namespace table_store {
 
 std::unique_ptr<std::unordered_map<std::string, schema::Relation>> TableStore::GetRelationMap() {
@@ -37,7 +37,7 @@ StatusOr<Table*> TableStore::CreateNewTablet(uint64_t table_id, const types::Tab
 }
 
 Status TableStore::AppendData(uint64_t table_id, types::TabletID tablet_id,
-                              std::unique_ptr<pl::types::ColumnWrapperRecordBatch> record_batch) {
+                              std::unique_ptr<px::types::ColumnWrapperRecordBatch> record_batch) {
   Table* table = GetTable(table_id, tablet_id);
   // We create new tablets only if the table at `table_id` exists, otherwise errors out.
   if (table == nullptr) {
@@ -140,4 +140,4 @@ std::vector<uint64_t> TableStore::GetTableIDs() const {
 }
 
 }  // namespace table_store
-}  // namespace pl
+}  // namespace px

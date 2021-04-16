@@ -9,7 +9,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 /**
@@ -328,4 +328,4 @@ class StringSequence : public Sequence<std::string> {
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

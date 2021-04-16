@@ -5,7 +5,7 @@
 #include "src/common/system/proc_parser.h"
 #include "src/shared/upid/upid.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 /**
@@ -42,4 +42,4 @@ class ProcTracker : NotCopyMoveable {
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

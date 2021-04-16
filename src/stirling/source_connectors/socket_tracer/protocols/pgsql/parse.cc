@@ -12,7 +12,7 @@
 #include "src/common/base/base.h"
 #include "src/stirling/utils/binary_decoder.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace pgsql {
@@ -313,4 +313,4 @@ size_t FindFrameBoundary<pgsql::RegularMessage>(MessageType type, std::string_vi
 
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

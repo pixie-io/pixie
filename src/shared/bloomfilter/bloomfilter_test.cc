@@ -2,7 +2,7 @@
 
 #include "src/shared/bloomfilter/bloomfilter.h"
 
-namespace pl {
+namespace px {
 namespace bloomfilter {
 
 TEST(XXHash64BloomFilter, test_create) {
@@ -96,4 +96,4 @@ TEST(XXHash64BloomFilter, test_create_from_proto) {
 }
 
 }  // namespace bloomfilter
-}  // namespace pl
+}  // namespace px

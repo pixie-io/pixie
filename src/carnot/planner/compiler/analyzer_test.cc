@@ -12,7 +12,7 @@
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/parser/parser.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -985,4 +985,4 @@ TEST_F(AnalyzerTest, map_only_streaming_test) {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

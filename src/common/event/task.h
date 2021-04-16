@@ -8,7 +8,7 @@
 #include "src/common/base/base.h"
 #include "src/common/event/deferred_delete.h"
 
-namespace pl {
+namespace px {
 namespace event {
 
 /**
@@ -48,4 +48,4 @@ class RunnableAsyncTask : public DeferredDeletable {
 using RunnableAsyncTaskUPtr = std::unique_ptr<RunnableAsyncTask>;
 
 }  // namespace event
-}  // namespace pl
+}  // namespace px

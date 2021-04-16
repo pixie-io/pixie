@@ -10,7 +10,7 @@
 #include <absl/container/flat_hash_map.h>
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 
@@ -72,4 +72,4 @@ class ChanCache {
 };
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

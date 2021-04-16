@@ -6,7 +6,7 @@
 #include "src/table_store/table_store.h"
 #include "src/vizier/services/metadata/metadatapb/service.grpc.pb.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 // Forward declare manager to break circular dependence.
@@ -28,7 +28,7 @@ class VizierFuncFactoryContext : public NotCopyable {
   VizierFuncFactoryContext(const agent::Manager* agent_manager,
                            const std::shared_ptr<MDSStub>& mds_stub,
                            const std::shared_ptr<MDTPStub>& mdtp_stub,
-                           std::shared_ptr<::pl::table_store::TableStore> table_store,
+                           std::shared_ptr<::px::table_store::TableStore> table_store,
                            std::function<void(grpc::ClientContext* ctx)> add_grpc_auth)
       : agent_manager_(agent_manager),
         mds_stub_(mds_stub),
@@ -52,7 +52,7 @@ class VizierFuncFactoryContext : public NotCopyable {
     return mdtp_stub_;
   }
 
-  ::pl::table_store::TableStore* table_store() const { return table_store_.get(); }
+  ::px::table_store::TableStore* table_store() const { return table_store_.get(); }
 
   std::function<void(grpc::ClientContext*)> add_auth_to_grpc_context_func() const {
     CHECK(add_auth_to_grpc_context_func_);
@@ -63,10 +63,10 @@ class VizierFuncFactoryContext : public NotCopyable {
   const agent::Manager* agent_manager_ = nullptr;
   std::shared_ptr<MDSStub> mds_stub_ = nullptr;
   std::shared_ptr<MDTPStub> mdtp_stub_ = nullptr;
-  std::shared_ptr<::pl::table_store::TableStore> table_store_ = nullptr;
+  std::shared_ptr<::px::table_store::TableStore> table_store_ = nullptr;
   std::function<void(grpc::ClientContext*)> add_auth_to_grpc_context_func_;
 };
 
 }  // namespace funcs
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

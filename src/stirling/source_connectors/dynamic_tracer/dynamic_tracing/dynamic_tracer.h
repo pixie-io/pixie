@@ -6,7 +6,7 @@
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/physicalpb/physical.pb.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace dynamic_tracing {
 
@@ -31,4 +31,4 @@ StatusOr<BCCProgram> CompileProgram(ir::logical::TracepointDeployment* input_pro
 
 }  // namespace dynamic_tracing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

@@ -3,7 +3,7 @@
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 #include "src/stirling/source_connectors/seq_gen/seq_gen_connector.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 void RegisterTestSources(SourceRegistry* registry) {
@@ -45,4 +45,4 @@ TEST_F(SourceRegistryTest, register_sources) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

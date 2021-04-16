@@ -7,9 +7,9 @@
 #include "src/common/system/config.h"
 #include "src/common/system/proc_parser.h"
 
-using ::pl::system::ProcParser;
+using ::px::system::ProcParser;
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 StatusOr<std::filesystem::path> ProcExe(const std::filesystem::path& proc_pid) {
@@ -158,7 +158,7 @@ StatusOr<std::filesystem::path> FilePathResolver::ResolvePath(const std::filesys
 
 StatusOr<std::filesystem::path> GetSelfPath() {
   const system::Config& sysconfig = system::Config::GetInstance();
-  ::pl::system::ProcParser proc_parser(sysconfig);
+  ::px::system::ProcParser proc_parser(sysconfig);
   PL_ASSIGN_OR_RETURN(std::filesystem::path self_path, proc_parser.GetExePath(getpid()));
   PL_ASSIGN_OR_RETURN(std::unique_ptr<FilePathResolver> fp_resolver,
                       FilePathResolver::Create(getpid()));
@@ -167,4 +167,4 @@ StatusOr<std::filesystem::path> GetSelfPath() {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

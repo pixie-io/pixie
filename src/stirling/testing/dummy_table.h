@@ -7,7 +7,7 @@
 #include "src/stirling/core/data_table.h"
 #include "src/stirling/core/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace testing {
 
@@ -56,4 +56,4 @@ constexpr int kStringIdx = kDummyTable.ColIndex("string");
 
 }  // namespace testing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

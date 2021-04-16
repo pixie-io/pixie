@@ -8,7 +8,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace utils {
 
@@ -162,6 +162,6 @@ StatusOr<std::filesystem::path> FindOrInstallLinuxHeaders(
 
 }  // namespace utils
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px
 
 #endif

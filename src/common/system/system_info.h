@@ -6,7 +6,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace system {
 
 /**
@@ -16,4 +16,4 @@ namespace system {
 void LogSystemInfo();
 
 }  // namespace system
-}  // namespace pl
+}  // namespace px

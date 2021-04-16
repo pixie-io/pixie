@@ -11,7 +11,7 @@
 #include "src/shared/upid/upid.h"
 #include "src/stirling/utils/proc_tracker.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 /**
@@ -129,4 +129,4 @@ class StandaloneContext : public ConnectorContext {
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

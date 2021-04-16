@@ -4,7 +4,7 @@
 #include "src/common/base/base.h"
 #include "src/vizier/funcs/context/vizier_context.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace funcs {
 namespace md {
@@ -14,4 +14,4 @@ void RegisterFuncsOrDie(const VizierFuncFactoryContext& ctx, carnot::udf::Regist
 }  // namespace md
 }  // namespace funcs
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

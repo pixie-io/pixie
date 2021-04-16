@@ -9,11 +9,11 @@
 #include "src/carnot/planner/objects/pixie_module.h"
 #include "src/carnot/planner/objects/test_utils.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
-using ::pl::table_store::schema::Relation;
+using ::px::table_store::schema::Relation;
 using ::testing::ElementsAre;
 
 constexpr char kRegInfoProto[] = R"proto(
@@ -201,4 +201,4 @@ TEST_F(DefaultArgumentsTest, TestQLObject) {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

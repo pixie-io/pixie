@@ -13,7 +13,7 @@
 #include "src/carnot/planner/ir/time.h"
 #include "src/carnot/planner/metadata/metadata_handler.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -572,4 +572,4 @@ class ResolveStreamRule : public Rule {
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

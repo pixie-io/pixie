@@ -7,7 +7,7 @@
 #include <absl/strings/str_format.h>
 #include "src/common/datagen/datagen.h"
 
-namespace pl {
+namespace px {
 namespace table_store {
 
 inline std::vector<std::string> DefaultColumnNames(size_t num_columns) {
@@ -71,4 +71,4 @@ inline StatusOr<std::shared_ptr<Table>> CreateTable(
 }
 
 }  // namespace table_store
-}  // namespace pl
+}  // namespace px

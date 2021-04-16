@@ -14,7 +14,7 @@
 #include "src/common/base/logging.h"
 #include "src/common/testing/line_diff.h"
 
-namespace pl {
+namespace px {
 namespace testing {
 namespace proto {
 
@@ -112,4 +112,4 @@ inline ::testing::PolymorphicMatcher<ProtoMatcher> WithDifferencer(
 
 }  // namespace proto
 }  // namespace testing
-}  // namespace pl
+}  // namespace px

@@ -6,7 +6,7 @@
 
 #include "src/common/event/time_system.h"
 
-namespace pl {
+namespace px {
 namespace event {
 
 /**
@@ -32,4 +32,4 @@ class RealTimeSystem : public TimeSystem {
 };
 
 }  // namespace event
-}  // namespace pl
+}  // namespace px

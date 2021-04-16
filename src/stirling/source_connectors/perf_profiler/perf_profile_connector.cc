@@ -10,7 +10,7 @@
 
 BPF_SRC_STRVIEW(profiler_bcc_script, profiler);
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 PerfProfileConnector::PerfProfileConnector(std::string_view source_name)
@@ -241,4 +241,4 @@ void PerfProfileConnector::CreateRecords(const uint64_t timestamp_ns,
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

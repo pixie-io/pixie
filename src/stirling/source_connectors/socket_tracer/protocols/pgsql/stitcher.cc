@@ -10,7 +10,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/pgsql/parse.h"
 #include "src/stirling/utils/binary_decoder.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace pgsql {
@@ -441,4 +441,4 @@ RecordsWithErrorCount<pgsql::Record> StitchFrames(std::deque<pgsql::RegularMessa
 }  // namespace pgsql
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

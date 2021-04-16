@@ -15,13 +15,13 @@
 #include "src/stirling/source_connectors/jvm_stats/utils/hsperfdata.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace java {
 
-using ::pl::stirling::java::hsperf::ParseHsperfData;
-using ::pl::system::ProcParser;
-using ::pl::utils::LEndianBytesToInt;
+using ::px::stirling::java::hsperf::ParseHsperfData;
+using ::px::system::ProcParser;
+using ::px::utils::LEndianBytesToInt;
 
 Stats::Stats(std::vector<Stat> stats) : stats_(std::move(stats)) {}
 
@@ -128,4 +128,4 @@ StatusOr<std::filesystem::path> HsperfdataPath(pid_t pid) {
 
 }  // namespace java
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

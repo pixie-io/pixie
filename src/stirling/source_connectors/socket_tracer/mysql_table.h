@@ -6,13 +6,13 @@
 #include "src/stirling/source_connectors/socket_tracer/canonical_types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 static const std::map<int64_t, std::string_view> kMySQLReqCmdDecoder =
-    pl::EnumDefToMap<protocols::mysql::Command>();
+    px::EnumDefToMap<protocols::mysql::Command>();
 static const std::map<int64_t, std::string_view> kMySQLRespStatusDecoder =
-    pl::EnumDefToMap<protocols::mysql::RespStatus>();
+    px::EnumDefToMap<protocols::mysql::RespStatus>();
 
 // clang-format off
 static constexpr DataElement kMySQLElements[] = {
@@ -62,4 +62,4 @@ constexpr int kMySQLRespBodyIdx = kMySQLTable.ColIndex("resp_body");
 constexpr int kMySQLLatencyIdx = kMySQLTable.ColIndex("latency");
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

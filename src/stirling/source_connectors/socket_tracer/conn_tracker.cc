@@ -33,7 +33,7 @@ DEFINE_int64(
 
 DECLARE_int32(test_only_socket_trace_target_pid);
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 // Parse failure rate threshold, after which a connection tracker will be disabled.
@@ -900,4 +900,4 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

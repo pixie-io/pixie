@@ -15,24 +15,24 @@
 #include "src/stirling/obj_tools/elf_tools.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/sharedpb/shared.pb.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace dynamic_tracing {
 
 using ::google::protobuf::RepeatedPtrField;
 
-using ::pl::stirling::obj_tools::ArgInfo;
-using ::pl::stirling::obj_tools::LocationType;
-using ::pl::stirling::obj_tools::StructMemberInfo;
-using ::pl::stirling::obj_tools::StructSpecEntry;
-using ::pl::stirling::obj_tools::TypeInfo;
-using ::pl::stirling::obj_tools::VarType;
+using ::px::stirling::obj_tools::ArgInfo;
+using ::px::stirling::obj_tools::LocationType;
+using ::px::stirling::obj_tools::StructMemberInfo;
+using ::px::stirling::obj_tools::StructSpecEntry;
+using ::px::stirling::obj_tools::TypeInfo;
+using ::px::stirling::obj_tools::VarType;
 
-using ::pl::stirling::dynamic_tracing::ir::physical::MapVariable;
-using ::pl::stirling::dynamic_tracing::ir::physical::PtrLenVariable;
-using ::pl::stirling::dynamic_tracing::ir::physical::ScalarVariable;
-using ::pl::stirling::dynamic_tracing::ir::physical::StructVariable;
-using ::pl::stirling::dynamic_tracing::ir::physical::Variable;
+using ::px::stirling::dynamic_tracing::ir::physical::MapVariable;
+using ::px::stirling::dynamic_tracing::ir::physical::PtrLenVariable;
+using ::px::stirling::dynamic_tracing::ir::physical::ScalarVariable;
+using ::px::stirling::dynamic_tracing::ir::physical::StructVariable;
+using ::px::stirling::dynamic_tracing::ir::physical::Variable;
 
 //-----------------------------------------------------------------------------
 // Top-level code
@@ -1319,4 +1319,4 @@ Status Dwarvifier::ProcessOutputAction(const ir::logical::OutputAction& output_a
 
 }  // namespace dynamic_tracing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

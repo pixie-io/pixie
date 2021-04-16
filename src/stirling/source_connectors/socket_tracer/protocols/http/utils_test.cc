@@ -3,7 +3,7 @@
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/utils.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace http {
@@ -61,4 +61,4 @@ TEST(ParseHTTPHeaderFiltersAndMatchTest, FiltersAreAsExpectedAndMatchesWork) {
 }  // namespace http
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

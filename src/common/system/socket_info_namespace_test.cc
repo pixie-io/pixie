@@ -9,7 +9,7 @@
 #include "src/common/testing/test_utils/test_container.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace system {
 
 class NetNamespaceTest : public ::testing::Test {
@@ -163,4 +163,4 @@ TEST_F(NetNamespaceTest, SocketInfoManager) {
 }
 
 }  // namespace system
-}  // namespace pl
+}  // namespace px

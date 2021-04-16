@@ -13,7 +13,7 @@
 #include "src/carnot/planpb/test_proto.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace plan {
 
@@ -43,4 +43,4 @@ TEST_F(PlanWalkerTest, basic_tests) {
 
 }  // namespace plan
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -4,7 +4,7 @@
 
 #include "src/common/base/error.h"
 
-namespace pl {
+namespace px {
 
 StatusOr<std::string> Exec(std::string cmd) {
   std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.c_str(), "r"), pclose);
@@ -20,4 +20,4 @@ StatusOr<std::string> Exec(std::string cmd) {
   return result;
 }
 
-}  // namespace pl
+}  // namespace px

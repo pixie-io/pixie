@@ -25,11 +25,11 @@
 
 namespace {
 
-pl::StatusOr<std::string> GetHostname() {
+px::StatusOr<std::string> GetHostname() {
   char hostname[HOST_NAME_MAX];
   int err = gethostname(hostname, sizeof(hostname));
   if (err != 0) {
-    return pl::error::Unknown("Failed to get hostname");
+    return px::error::Unknown("Failed to get hostname");
   }
   return std::string(hostname);
 }
@@ -39,10 +39,10 @@ pl::StatusOr<std::string> GetHostname() {
 DEFINE_string(jwt_signing_key, gflags::StringFromEnv("PL_JWT_SIGNING_KEY", ""),
               "The JWT signing key for outgoing requests");
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
-using ::pl::event::Dispatcher;
+using ::px::event::Dispatcher;
 
 Manager::MDSServiceSPtr CreateMDSStub(std::string_view mds_addr,
                                       std::shared_ptr<grpc::ChannelCredentials> channel_creds) {
@@ -72,8 +72,8 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
                  int grpc_server_port, services::shared::agent::AgentCapabilities capabilities,
                  std::string_view nats_url, std::string_view mds_url)
     : grpc_channel_creds_(SSL::DefaultGRPCClientCreds()),
-      time_system_(std::make_unique<pl::event::RealTimeSystem>()),
-      api_(std::make_unique<pl::event::APIImpl>(time_system_.get())),
+      time_system_(std::make_unique<px::event::RealTimeSystem>()),
+      api_(std::make_unique<px::event::APIImpl>(time_system_.get())),
       dispatcher_(api_->AllocateDispatcher("manager")),
       nats_addr_(nats_url),
       table_store_(std::make_shared<table_store::TableStore>()),
@@ -86,10 +86,10 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
   }
 
   // Register Vizier specific and carnot builtin functions.
-  auto func_registry = std::make_unique<pl::carnot::udf::Registry>("vizier_func_registry");
-  ::pl::vizier::funcs::RegisterFuncsOrDie(func_context_, func_registry.get());
+  auto func_registry = std::make_unique<px::carnot::udf::Registry>("vizier_func_registry");
+  ::px::vizier::funcs::RegisterFuncsOrDie(func_context_, func_registry.get());
 
-  carnot_ = pl::carnot::Carnot::Create(
+  carnot_ = px::carnot::Carnot::Create(
                 agent_id, std::move(func_registry), table_store_,
                 std::bind(&Manager::ResultSinkStubGenerator, this, std::placeholders::_1,
                           std::placeholders::_2),
@@ -154,7 +154,7 @@ Status Manager::Init() {
 
 Status Manager::Run() {
   running_ = true;
-  dispatcher_->Run(pl::event::Dispatcher::RunType::Block);
+  dispatcher_->Run(px::event::Dispatcher::RunType::Block);
   running_ = false;
   return Status::OK();
 }
@@ -260,13 +260,13 @@ Status Manager::PostRegisterHook(uint32_t asid) {
   LOG_IF(FATAL, info_.asid != 0) << "Attempted to register existing agent with new ASID";
   info_.asid = asid;
 
-  mds_manager_ = std::make_unique<pl::md::AgentMetadataStateManagerImpl>(
+  mds_manager_ = std::make_unique<px::md::AgentMetadataStateManagerImpl>(
       info_.hostname, info_.asid, info_.pod_name, info_.agent_id,
-      info_.capabilities.collects_data(), pl::system::Config::GetInstance(),
+      info_.capabilities.collects_data(), px::system::Config::GetInstance(),
       agent_metadata_filter_.get());
   // Register the Carnot callback for metadata.
   carnot_->RegisterAgentMetadataCallback(
-      std::bind(&pl::md::AgentMetadataStateManager::CurrentAgentMetadataState, mds_manager_.get()));
+      std::bind(&px::md::AgentMetadataStateManager::CurrentAgentMetadataState, mds_manager_.get()));
 
   // Call the derived class post-register hook.
   PL_CHECK_OK(PostRegisterHookImpl());
@@ -313,7 +313,7 @@ std::unique_ptr<Manager::ResultSinkStub> Manager::ResultSinkStubGenerator(
     const std::string& remote_addr, const std::string& ssl_targetname) {
   auto chan = chan_cache_->GetChan(remote_addr);
   if (chan != nullptr) {
-    return pl::carnotpb::ResultSinkService::NewStub(chan);
+    return px::carnotpb::ResultSinkService::NewStub(chan);
   }
 
   grpc::ChannelArguments args;
@@ -329,7 +329,7 @@ std::unique_ptr<Manager::ResultSinkStub> Manager::ResultSinkStubGenerator(
 
   chan = grpc::CreateCustomChannel(remote_addr, grpc_channel_creds_, args);
   chan_cache_->Add(remote_addr, chan);
-  return pl::carnotpb::ResultSinkService::NewStub(chan);
+  return px::carnotpb::ResultSinkService::NewStub(chan);
 }
 
 Manager::MessageHandler::MessageHandler(Dispatcher* dispatcher, Info* agent_info,
@@ -358,4 +358,4 @@ void AddServiceTokenToClientContext(grpc::ClientContext* grpc_context) {
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

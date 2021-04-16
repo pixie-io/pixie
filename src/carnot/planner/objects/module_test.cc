@@ -6,7 +6,7 @@
 #include "src/carnot/planner/objects/module.h"
 #include "src/carnot/planner/objects/test_utils.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -67,4 +67,4 @@ TEST_F(ModuleTest, load_and_use_modules) {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

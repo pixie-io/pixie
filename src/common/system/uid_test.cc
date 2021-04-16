@@ -6,7 +6,7 @@
 #include "src/common/system/uid.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace system {
 
 using ::testing::ElementsAre;
@@ -26,4 +26,4 @@ TEST(ParsePasswdTest, ResultsAreAsExpected) {
 }
 
 }  // namespace system
-}  // namespace pl
+}  // namespace px

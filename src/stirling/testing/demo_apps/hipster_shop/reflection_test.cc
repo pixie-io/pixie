@@ -8,8 +8,8 @@ namespace demos {
 namespace hipster_shop {
 
 using ::google::protobuf::FileDescriptorSet;
-using ::pl::testing::proto::EqualsProto;
-using ::pl::testing::proto::Partially;
+using ::px::testing::proto::EqualsProto;
+using ::px::testing::proto::Partially;
 using ::testing::ElementsAre;
 
 TEST(GetFileDescriptorSetTest, HasAllServicesAndMessages) {

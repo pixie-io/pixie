@@ -17,12 +17,12 @@ NO_OPT_ATTR void BCCWrapperTestProbeTrigger() { return; }
 
 BPF_SRC_STRVIEW(get_tgid_start_time_bcc_script, get_tgid_start_time);
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace bpf_tools {
 
-using ::pl::testing::BazelBinTestFilePath;
-using ::pl::testing::TempDir;
+using ::px::testing::BazelBinTestFilePath;
+using ::px::testing::TempDir;
 
 constexpr char kBCCProgram[] = R"BCC(
   int foo(struct pt_regs* ctx) {
@@ -110,7 +110,7 @@ TEST(BCCWrapperTest, GetTGIDStartTime) {
 
   // Get the PID start time from /proc.
   ASSERT_OK_AND_ASSIGN(uint64_t expected_proc_pid_start_time,
-                       ::pl::system::GetPIDStartTimeTicks("/proc/self"));
+                       ::px::system::GetPIDStartTimeTicks("/proc/self"));
 
   ASSERT_OK_AND_ASSIGN(std::filesystem::path self_path, fs::ReadSymlink("/proc/self/exe"));
 
@@ -170,6 +170,6 @@ TEST(BCCWrapperTest, TestMapClearingAPIs) {
 
 }  // namespace bpf_tools
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px
 
 #endif

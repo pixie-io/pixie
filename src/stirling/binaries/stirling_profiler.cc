@@ -10,22 +10,22 @@
 #include "src/stirling/source_connectors/perf_profiler/stack_traces_table.h"
 #include "src/stirling/stirling.h"
 
-using ::pl::ProcessStatsMonitor;
+using ::px::ProcessStatsMonitor;
 
-using ::pl::Status;
-using ::pl::StatusOr;
+using ::px::Status;
+using ::px::StatusOr;
 
-using ::pl::stirling::IndexPublication;
-using ::pl::stirling::PerfProfileConnector;
-using ::pl::stirling::SourceRegistry;
-using ::pl::stirling::Stirling;
-using ::pl::stirling::stirlingpb::InfoClass;
-using ::pl::stirling::stirlingpb::Publish;
-using ::pl::stirling::stirlingpb::Subscribe;
+using ::px::stirling::IndexPublication;
+using ::px::stirling::PerfProfileConnector;
+using ::px::stirling::SourceRegistry;
+using ::px::stirling::Stirling;
+using ::px::stirling::stirlingpb::InfoClass;
+using ::px::stirling::stirlingpb::Publish;
+using ::px::stirling::stirlingpb::Subscribe;
 
-using ::pl::md::UPID;
-using ::pl::types::ColumnWrapperRecordBatch;
-using ::pl::types::TabletID;
+using ::px::md::UPID;
+using ::px::types::ColumnWrapperRecordBatch;
+using ::px::types::TabletID;
 
 struct Args {
   uint32_t pid = 0;
@@ -40,14 +40,14 @@ Args g_args;
 
 Status ParseArgs(int argc, char** argv) {
   if (argc != 2) {
-    return ::pl::error::Internal("Usage: ./stirling_profiler <pid>");
+    return ::px::error::Internal("Usage: ./stirling_profiler <pid>");
   }
 
   std::string_view pid_str(argv[1]);
 
   bool success = absl::SimpleAtoi(pid_str, &g_args.pid);
   if (!success) {
-    return ::pl::error::Internal("PID is not a valid number: $0", pid_str);
+    return ::px::error::Internal("PID is not a valid number: $0", pid_str);
   }
 
   return Status::OK();
@@ -61,18 +61,18 @@ Status StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
   const InfoClass& table_info = iter->second;
   CHECK_EQ(table_info.schema().name(), "stack_traces.beta");
 
-  auto& upid_col = (*record_batch)[pl::stirling::kStackTraceUPIDIdx];
-  auto& stack_trace_str_col = (*record_batch)[pl::stirling::kStackTraceStackTraceStrIdx];
-  auto& count_col = (*record_batch)[pl::stirling::kStackTraceCountIdx];
+  auto& upid_col = (*record_batch)[px::stirling::kStackTraceUPIDIdx];
+  auto& stack_trace_str_col = (*record_batch)[px::stirling::kStackTraceStackTraceStrIdx];
+  auto& count_col = (*record_batch)[px::stirling::kStackTraceCountIdx];
 
   std::string out;
   for (size_t i = 0; i < stack_trace_str_col->Size(); ++i) {
-    UPID upid(upid_col->Get<pl::types::UInt128Value>(i).val);
+    UPID upid(upid_col->Get<px::types::UInt128Value>(i).val);
 
     if (g_args.pid == upid.pid()) {
-      std::cout << stack_trace_str_col->Get<pl::types::StringValue>(i);
+      std::cout << stack_trace_str_col->Get<px::types::StringValue>(i);
       std::cout << " ";
-      std::cout << count_col->Get<pl::types::Int64Value>(i).val;
+      std::cout << count_col->Get<px::types::Int64Value>(i).val;
       std::cout << "\n";
     }
   }
@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
   signal(SIGTERM, SignalHandler);
   signal(SIGHUP, SignalHandler);
 
-  pl::EnvironmentGuard env_guard(&argc, argv);
+  px::EnvironmentGuard env_guard(&argc, argv);
 
   PL_EXIT_IF_ERROR(ParseArgs(argc, argv));
 
@@ -117,7 +117,7 @@ int main(int argc, char** argv) {
   Publish publication;
   stirling->GetPublishProto(&publication);
   IndexPublication(publication, &g_table_info_map);
-  PL_CHECK_OK(stirling->SetSubscription(pl::stirling::SubscribeToAllInfoClasses(publication)));
+  PL_CHECK_OK(stirling->SetSubscription(px::stirling::SubscribeToAllInfoClasses(publication)));
 
   // Start measuring process stats after init.
   ProcessStatsMonitor process_stats_monitor;

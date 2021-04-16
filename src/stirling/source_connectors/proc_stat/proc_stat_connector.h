@@ -7,7 +7,7 @@
 #include "src/stirling/core/canonical_types.h"
 #include "src/stirling/core/source_connector.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 class ProcStatConnector : public SourceConnector {
@@ -82,4 +82,4 @@ class ProcStatConnector : public SourceConnector {
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

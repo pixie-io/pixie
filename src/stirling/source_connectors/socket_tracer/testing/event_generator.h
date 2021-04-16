@@ -8,7 +8,7 @@
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/source_connectors/socket_tracer/testing/clock.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace testing {
 
@@ -188,4 +188,4 @@ void SetIPv6RemoteAddr(struct socket_control_event_t* conn, std::string_view add
 
 }  // namespace testing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

@@ -8,7 +8,7 @@
 #include "src/shared/schema/utils.h"
 #include "src/vizier/messages/messagespb/messages.pb.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 /**
@@ -52,4 +52,4 @@ class RelationInfoManager {
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

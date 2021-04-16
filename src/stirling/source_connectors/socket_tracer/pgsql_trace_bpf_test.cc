@@ -12,12 +12,12 @@
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
-using ::pl::stirling::testing::AccessRecordBatch;
-using ::pl::stirling::testing::FindRecordIdxMatchesPID;
-using ::pl::testing::BazelBinTestFilePath;
+using ::px::stirling::testing::AccessRecordBatch;
+using ::px::stirling::testing::FindRecordIdxMatchesPID;
+using ::px::testing::BazelBinTestFilePath;
 using ::testing::_;
 using ::testing::ElementsAre;
 using ::testing::HasSubstr;
@@ -78,7 +78,7 @@ TEST_F(PostgreSQLTraceTest, SelectQuery) {
                        "create table foo (field0 serial primary key);"
                        "insert into foo values (12345);"
                        "select * from foo;");
-  ASSERT_OK_AND_ASSIGN(const std::string create_table_output, pl::Exec(kCreateTableCmd));
+  ASSERT_OK_AND_ASSIGN(const std::string create_table_output, px::Exec(kCreateTableCmd));
   int32_t client_pid;
   ASSERT_TRUE(absl::SimpleAtoi(create_table_output, &client_pid));
 
@@ -185,7 +185,7 @@ TEST_F(PostgreSQLTraceTest, FunctionCall) {
         "      RETURN i + 1;\n"
         "END;\n"
         "\\$\\$ LANGUAGE plpgsql;");
-    ASSERT_OK_AND_ASSIGN(const std::string output, pl::Exec(cmd));
+    ASSERT_OK_AND_ASSIGN(const std::string output, px::Exec(cmd));
     int32_t client_pid;
     ASSERT_TRUE(absl::SimpleAtoi(output, &client_pid));
 
@@ -212,7 +212,7 @@ TEST_F(PostgreSQLTraceTest, FunctionCall) {
 
     const std::string cmd =
         absl::Substitute(kCmdTmpl, container_.container_name(), "select increment(1);");
-    ASSERT_OK_AND_ASSIGN(const std::string output, pl::Exec(cmd));
+    ASSERT_OK_AND_ASSIGN(const std::string output, px::Exec(cmd));
     int32_t client_pid;
     ASSERT_TRUE(absl::SimpleAtoi(output, &client_pid));
 
@@ -235,4 +235,4 @@ TEST_F(PostgreSQLTraceTest, FunctionCall) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

@@ -11,12 +11,12 @@ constexpr std::string_view kCppBinary = "src/stirling/obj_tools/testdata/dummy_e
 constexpr std::string_view kGoBinaryUnconventional =
     "src/stirling/obj_tools/testdata/sockshop_payments_service";
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace obj_tools {
 
 using ::llvm::DWARFDie;
-using ::pl::stirling::obj_tools::DwarfReader;
+using ::px::stirling::obj_tools::DwarfReader;
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
 using ::testing::Pair;
@@ -30,10 +30,10 @@ struct DwarfReaderTestParam {
 class DwarfReaderTest : public ::testing::TestWithParam<DwarfReaderTestParam> {
  protected:
   DwarfReaderTest()
-      : kCppBinaryPath(pl::testing::BazelBinTestFilePath(kCppBinary)),
-        kGoBinaryPath(pl::testing::BazelBinTestFilePath(kDummyGoBinary)),
-        kGoServerBinaryPath(pl::testing::BazelBinTestFilePath(kGoGRPCServer)),
-        kGoBinaryUnconventionalPath(pl::testing::TestFilePath(kGoBinaryUnconventional)) {}
+      : kCppBinaryPath(px::testing::BazelBinTestFilePath(kCppBinary)),
+        kGoBinaryPath(px::testing::BazelBinTestFilePath(kDummyGoBinary)),
+        kGoServerBinaryPath(px::testing::BazelBinTestFilePath(kGoGRPCServer)),
+        kGoBinaryUnconventionalPath(px::testing::TestFilePath(kGoBinaryUnconventional)) {}
 
   const std::string kCppBinaryPath;
   const std::string kGoBinaryPath;
@@ -42,7 +42,7 @@ class DwarfReaderTest : public ::testing::TestWithParam<DwarfReaderTestParam> {
 };
 
 TEST_F(DwarfReaderTest, NonExistentPath) {
-  auto s = pl::stirling::obj_tools::DwarfReader::Create("/bogus");
+  auto s = px::stirling::obj_tools::DwarfReader::Create("/bogus");
   ASSERT_NOT_OK(s);
 }
 
@@ -72,7 +72,7 @@ TEST_F(DwarfReaderTest, GetMatchingDIEs) {
                      IsEmpty());
 
   ASSERT_OK_AND_ASSIGN(
-      dies, dwarf_reader->GetMatchingDIEs("pl::testing::Foo::Bar", llvm::dwarf::DW_TAG_subprogram));
+      dies, dwarf_reader->GetMatchingDIEs("px::testing::Foo::Bar", llvm::dwarf::DW_TAG_subprogram));
   ASSERT_THAT(dies, SizeIs(1));
   EXPECT_EQ(dies[0].getTag(), llvm::dwarf::DW_TAG_subprogram);
   // Although the DIE does not have name attribute, DWARFDie::getShortName() walks
@@ -80,8 +80,8 @@ TEST_F(DwarfReaderTest, GetMatchingDIEs) {
   EXPECT_EQ(GetShortName(dies[0]), "Bar");
   EXPECT_THAT(std::string(GetLinkageName(dies[0])), ::testing::StrEq("_ZNK2pl7testing3Foo3BarEi"));
 
-  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("pl::testing::Foo::Bar", "this"), 8);
-  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("pl::testing::Foo::Bar", "i"), 4);
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("px::testing::Foo::Bar", "this"), 8);
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("px::testing::Foo::Bar", "i"), 4);
 
   ASSERT_OK_AND_ASSIGN(
       dies, dwarf_reader->GetMatchingDIEs("ABCStruct32", llvm::dwarf::DW_TAG_structure_type));
@@ -453,4 +453,4 @@ INSTANTIATE_TEST_SUITE_P(DwarfReaderParameterizedTest, DwarfReaderTest,
 
 }  // namespace obj_tools
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

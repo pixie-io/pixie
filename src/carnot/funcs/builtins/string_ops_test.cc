@@ -7,7 +7,7 @@
 #include "src/carnot/udf/test_utils.h"
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace builtins {
 
@@ -87,4 +87,4 @@ TEST(StringOps, BytesToHex) {
 
 }  // namespace builtins
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

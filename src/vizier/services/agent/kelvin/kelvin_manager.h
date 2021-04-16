@@ -7,7 +7,7 @@
 #include "src/vizier/services/agent/manager/manager.h"
 #include "src/vizier/services/query_broker/querybrokerpb/service.grpc.pb.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 
@@ -48,4 +48,4 @@ class KelvinManager : public Manager {
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

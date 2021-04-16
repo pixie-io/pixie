@@ -9,7 +9,7 @@
 #include "src/common/base/base.h"
 #include "src/table_store/schema/relation.h"
 
-namespace pl {
+namespace px {
 namespace table_store {
 namespace schema {
 
@@ -44,4 +44,4 @@ class Schema {
 
 }  // namespace schema
 }  // namespace table_store
-}  // namespace pl
+}  // namespace px

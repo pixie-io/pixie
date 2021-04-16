@@ -3,7 +3,7 @@
 #include "src/shared/schema/utils.h"
 #include "src/stirling/proto/stirling.pb.h"
 
-namespace pl {
+namespace px {
 
 using stirling::stirlingpb::InfoClass;
 using stirling::stirlingpb::Subscribe;
@@ -129,4 +129,4 @@ TEST(ConvertSubscribeProtoToRelationInfo, test_for_tablets_subscription) {
   EXPECT_EQ("another description", relation_info[1].desc);
 }
 
-}  // namespace pl
+}  // namespace px

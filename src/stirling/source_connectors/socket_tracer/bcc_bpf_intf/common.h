@@ -37,7 +37,7 @@ enum TrafficProtocol {
 
 #ifdef __cplusplus
 static const std::map<int64_t, std::string_view> kTrafficProtocolDecoder =
-    pl::EnumDefToMap<TrafficProtocol>();
+    px::EnumDefToMap<TrafficProtocol>();
 #endif
 
 struct protocol_message_t {
@@ -68,7 +68,7 @@ enum EndpointRole {
 
 #ifdef __cplusplus
 static const std::map<int64_t, std::string_view> kEndpointRoleDecoder =
-    pl::EnumDefToMap<EndpointRole>();
+    px::EnumDefToMap<EndpointRole>();
 #endif
 
 struct traffic_class_t {

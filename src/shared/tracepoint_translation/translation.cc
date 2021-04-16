@@ -1,6 +1,6 @@
 #include "src/shared/tracepoint_translation/translation.h"
 
-namespace pl {
+namespace px {
 namespace tracepoint {
 
 void CopyUPID(const carnot::planner::dynamic_tracing::ir::logical::UPID& in,
@@ -62,7 +62,7 @@ void CopyTracepoint(const carnot::planner::dynamic_tracing::ir::logical::Tracepo
   out->set_symbol(in.symbol());
   // We always set the type to Logical.
   out->set_type(
-      ::pl::stirling::dynamic_tracing::ir::shared::Tracepoint_Type::Tracepoint_Type_LOGICAL);
+      ::px::stirling::dynamic_tracing::ir::shared::Tracepoint_Type::Tracepoint_Type_LOGICAL);
 }
 
 void CopyProbe(const carnot::planner::dynamic_tracing::ir::logical::Probe& in,
@@ -136,4 +136,4 @@ void ConvertPlannerTracepointToStirlingTracepoint(
 }
 
 }  // namespace tracepoint
-}  // namespace pl
+}  // namespace px

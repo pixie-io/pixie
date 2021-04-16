@@ -13,7 +13,7 @@
 #include "src/common/base/macros.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto/greet.grpc.pb.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace http2 {
@@ -102,4 +102,4 @@ class ServiceRunner {
 }  // namespace http2
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

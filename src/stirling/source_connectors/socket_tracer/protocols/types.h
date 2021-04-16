@@ -11,7 +11,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/pgsql/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/redis/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 
@@ -28,4 +28,4 @@ using FrameDequeVariant = std::variant<std::monostate,
 
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

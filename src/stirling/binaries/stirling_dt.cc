@@ -12,23 +12,23 @@
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dynamic_tracer.h"
 #include "src/stirling/stirling.h"
 
-using ::pl::ProcessStatsMonitor;
+using ::px::ProcessStatsMonitor;
 
-using ::pl::Status;
-using ::pl::StatusOr;
+using ::px::Status;
+using ::px::StatusOr;
 
-using ::pl::stirling::IndexPublication;
-using ::pl::stirling::PrintRecordBatch;
-using ::pl::stirling::SourceRegistry;
-using ::pl::stirling::Stirling;
-using ::pl::stirling::stirlingpb::InfoClass;
-using ::pl::stirling::stirlingpb::Publish;
-using ::pl::stirling::stirlingpb::Subscribe;
+using ::px::stirling::IndexPublication;
+using ::px::stirling::PrintRecordBatch;
+using ::px::stirling::SourceRegistry;
+using ::px::stirling::Stirling;
+using ::px::stirling::stirlingpb::InfoClass;
+using ::px::stirling::stirlingpb::Publish;
+using ::px::stirling::stirlingpb::Subscribe;
 using DynamicTracepointDeployment =
-    ::pl::stirling::dynamic_tracing::ir::logical::TracepointDeployment;
+    ::px::stirling::dynamic_tracing::ir::logical::TracepointDeployment;
 
-using ::pl::types::ColumnWrapperRecordBatch;
-using ::pl::types::TabletID;
+using ::px::types::ColumnWrapperRecordBatch;
+using ::px::types::TabletID;
 
 // Put this in global space, so we can kill it in the signal handler.
 Stirling* g_stirling = nullptr;
@@ -43,7 +43,7 @@ Status StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
   // Find the table info from the publications.
   auto iter = g_table_info_map.find(table_id);
   if (iter == g_table_info_map.end()) {
-    return pl::error::Internal("Encountered unknown table id $0", table_id);
+    return px::error::Internal("Encountered unknown table id $0", table_id);
   }
   const InfoClass& table_info = iter->second;
 
@@ -91,7 +91,7 @@ tracepoints {
 
 StatusOr<TraceProgram> ParseArgs(int argc, char** argv) {
   if (argc != 3) {
-    return ::pl::error::Internal("Usage: ./stirling_dt <path to object file> <symbol>");
+    return ::px::error::Internal("Usage: ./stirling_dt <path to object file> <symbol>");
   }
 
   std::string_view path(argv[1]);
@@ -108,7 +108,7 @@ StatusOr<Publish> DeployTrace(Stirling* stirling, TraceProgram trace_program_str
   bool success =
       google::protobuf::TextFormat::ParseFromString(trace_program_str.text, trace_program.get());
   if (!success) {
-    return pl::error::Internal("Unable to parse trace file");
+    return px::error::Internal("Unable to parse trace file");
   }
 
   sole::uuid trace_id = sole::uuid4();
@@ -119,7 +119,7 @@ StatusOr<Publish> DeployTrace(Stirling* stirling, TraceProgram trace_program_str
   do {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     s = stirling->GetTracepointInfo(trace_id);
-  } while (!s.ok() && s.code() == pl::statuspb::Code::RESOURCE_UNAVAILABLE);
+  } while (!s.ok() && s.code() == px::statuspb::Code::RESOURCE_UNAVAILABLE);
 
   return s;
 }
@@ -131,7 +131,7 @@ int main(int argc, char** argv) {
   signal(SIGTERM, SignalHandler);
   signal(SIGHUP, SignalHandler);
 
-  pl::EnvironmentGuard env_guard(&argc, argv);
+  px::EnvironmentGuard env_guard(&argc, argv);
 
   PL_ASSIGN_OR_EXIT(TraceProgram trace_program, ParseArgs(argc, argv));
 
@@ -170,7 +170,7 @@ int main(int argc, char** argv) {
   }
 
   // Update the subscription to enable the new trace.
-  PL_CHECK_OK(stirling->SetSubscription(pl::stirling::SubscribeToAllInfoClasses(trace_pub)));
+  PL_CHECK_OK(stirling->SetSubscription(px::stirling::SubscribeToAllInfoClasses(trace_pub)));
 
   // Run Stirling.
   std::thread run_thread = std::thread(&Stirling::Run, stirling.get());

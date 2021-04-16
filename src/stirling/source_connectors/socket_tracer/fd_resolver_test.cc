@@ -7,7 +7,7 @@
 #include "src/common/system/tcp_socket.h"
 #include "src/stirling/source_connectors/socket_tracer/fd_resolver.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 class FDResolverTest : public ::testing::Test {
@@ -170,4 +170,4 @@ TEST_F(FDResolverTest, NewSocketSameFD) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

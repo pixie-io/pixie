@@ -9,16 +9,16 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/cql/frame_body_decoder.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/cql/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace cass {
 
-using ::pl::utils::ToJSONString;
+using ::px::utils::ToJSONString;
 
 namespace {
 std::string BytesToString(std::basic_string_view<uint8_t> x) {
-  return pl::BytesToString<bytes_format::HexCompact>(CreateStringView<char>(x));
+  return px::BytesToString<bytes_format::HexCompact>(CreateStringView<char>(x));
 }
 }  // namespace
 
@@ -430,4 +430,4 @@ RecordsWithErrorCount<Record> StitchFrames(std::deque<Frame>* req_frames,
 }  // namespace cass
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

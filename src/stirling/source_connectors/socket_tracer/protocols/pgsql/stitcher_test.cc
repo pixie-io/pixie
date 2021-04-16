@@ -6,7 +6,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/pgsql/parse.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/pgsql/test_data.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace pgsql {
@@ -216,4 +216,4 @@ INSTANTIATE_TEST_SUITE_P(
 }  // namespace pgsql
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

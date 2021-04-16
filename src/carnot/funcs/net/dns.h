@@ -5,7 +5,7 @@
 #define TBB_PREVIEW_CONCURRENT_LRU_CACHE 1
 #include "tbb/concurrent_lru_cache.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace funcs {
 namespace net {
@@ -54,4 +54,4 @@ class DNSCache {
 }  // namespace net
 }  // namespace funcs
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

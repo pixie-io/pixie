@@ -1,7 +1,7 @@
 #include "src/carnot/planner/objects/var_table.h"
 #include "src/carnot/planner/objects/funcobject.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -52,4 +52,4 @@ absl::flat_hash_map<std::string, std::shared_ptr<FuncObject>> VarTable::GetVisFu
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

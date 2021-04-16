@@ -9,12 +9,12 @@
 
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 
-using ::pl::table_store::schema::Relation;
-using ::pl::testing::proto::EqualsProto;
+using ::px::table_store::schema::Relation;
+using ::px::testing::proto::EqualsProto;
 
 class RelationInfoManagerTest : public ::testing::Test {
  protected:
@@ -27,7 +27,7 @@ const char* kAgentUpdateInfoSchemaNoTablets = R"proto(
 does_update_schema: true
 schema {
   name: "relation0"
-  desc: "desc0"  
+  desc: "desc0"
   columns {
     name: "time_"
     data_type: TIME64NS
@@ -76,7 +76,7 @@ const char* kAgentUpdateInfoSchemaHasTablets = R"proto(
 does_update_schema: true
 schema {
   name: "relation0"
-  desc: "desc0"  
+  desc: "desc0"
   columns {
     name: "time_"
     data_type: TIME64NS
@@ -90,7 +90,7 @@ schema {
 }
 schema {
   name: "relation1"
-  desc: "desc1"  
+  desc: "desc1"
   columns {
     name: "time_"
     data_type: TIME64NS
@@ -141,4 +141,4 @@ TEST_F(RelationInfoManagerTest, test_tabletization_keys) {
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

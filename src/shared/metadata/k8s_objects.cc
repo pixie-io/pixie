@@ -3,7 +3,7 @@
 #include <absl/strings/substitute.h>
 #include "src/shared/metadata/k8s_objects.h"
 
-namespace pl {
+namespace px {
 namespace md {
 
 std::string PodInfo::DebugString(int indent) const {
@@ -31,4 +31,4 @@ std::string NamespaceInfo::DebugString(int indent) const {
 }
 
 }  // namespace md
-}  // namespace pl
+}  // namespace px

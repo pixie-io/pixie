@@ -5,16 +5,16 @@
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
-using ::pl::stirling::testing::AccessRecordBatch;
-using ::pl::stirling::testing::ClientServerSystem;
-using ::pl::stirling::testing::ColWrapperSizeIs;
-using ::pl::stirling::testing::FindRecordIdxMatchesPID;
-using ::pl::stirling::testing::FindRecordsMatchingPID;
-using ::pl::stirling::testing::SendRecvScript;
-using ::pl::stirling::testing::TCPSocket;
+using ::px::stirling::testing::AccessRecordBatch;
+using ::px::stirling::testing::ClientServerSystem;
+using ::px::stirling::testing::ColWrapperSizeIs;
+using ::px::stirling::testing::FindRecordIdxMatchesPID;
+using ::px::stirling::testing::FindRecordsMatchingPID;
+using ::px::stirling::testing::SendRecvScript;
+using ::px::stirling::testing::TCPSocket;
 using ::testing::Each;
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
@@ -258,4 +258,4 @@ TEST_F(ConnStatsMidConnBPFTest, InferRole) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

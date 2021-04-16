@@ -40,7 +40,7 @@ DECLARE_bool(stirling_enable_redis_tracing);
 DECLARE_bool(stirling_disable_self_tracing);
 DECLARE_string(stirling_role_to_trace);
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrapper {
@@ -303,4 +303,4 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

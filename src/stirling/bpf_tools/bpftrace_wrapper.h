@@ -12,7 +12,7 @@
 #include "third_party/bpftrace/src/bpftrace.h"
 #include "third_party/bpftrace/src/driver.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace bpf_tools {
 
@@ -100,6 +100,6 @@ class BPFTraceWrapper {
 
 }  // namespace bpf_tools
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px
 
 #endif

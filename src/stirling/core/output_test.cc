@@ -3,12 +3,12 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/testing/dummy_table.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
-using ::pl::stirling::testing::DummyTableFixture;
+using ::px::stirling::testing::DummyTableFixture;
 
-namespace idx = ::pl::stirling::testing::dummy_table_idx;
+namespace idx = ::px::stirling::testing::dummy_table_idx;
 
 TEST(PrintRecordBatchTest, AllRecordsToString) {
   DummyTableFixture fixture;
@@ -29,4 +29,4 @@ TEST(PrintRecordBatchTest, AllRecordsToString) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

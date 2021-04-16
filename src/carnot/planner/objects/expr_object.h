@@ -5,7 +5,7 @@
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/objects/qlobject.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -43,4 +43,4 @@ class ExprObject : public QLObject {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

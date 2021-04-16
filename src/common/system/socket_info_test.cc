@@ -15,10 +15,10 @@
 #include "src/common/system/tcp_socket.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace system {
 
-using ::pl::testing::TestFilePath;
+using ::px::testing::TestFilePath;
 using ::testing::Contains;
 using ::testing::Not;
 using ::testing::Pair;
@@ -311,4 +311,4 @@ TEST_F(NetNamespaceTest, PIDsByNetNamespace) {
 }
 
 }  // namespace system
-}  // namespace pl
+}  // namespace px

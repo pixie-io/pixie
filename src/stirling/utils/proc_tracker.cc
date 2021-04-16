@@ -4,7 +4,7 @@
 
 #include "src/common/system/proc_parser.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 void ProcTracker::Update(absl::flat_hash_set<md::UPID> upids) {
@@ -22,4 +22,4 @@ void ProcTracker::Update(absl::flat_hash_set<md::UPID> upids) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

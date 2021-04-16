@@ -4,11 +4,11 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
-using ::pl::SubProcess;
-using ::pl::testing::BazelBinTestFilePath;
+using ::px::SubProcess;
+using ::px::testing::BazelBinTestFilePath;
 
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
@@ -17,7 +17,7 @@ using ::testing::Not;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
-using ::pl::stirling::testing::FindRecordIdxMatchesPID;
+using ::px::stirling::testing::FindRecordIdxMatchesPID;
 
 static constexpr std::string_view kRedisImagePath =
     "src/stirling/source_connectors/socket_tracer/testing/containers/redis_image.tar";
@@ -108,7 +108,7 @@ TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
   )";
   const std::string redis_cli_cmd =
       absl::Substitute(kRedisDockerCmdTmpl, container_.container_name(), kRedisCmds);
-  ASSERT_OK_AND_ASSIGN(const std::string output, pl::Exec(redis_cli_cmd));
+  ASSERT_OK_AND_ASSIGN(const std::string output, px::Exec(redis_cli_cmd));
   ASSERT_FALSE(output.empty());
 
   std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
@@ -171,7 +171,7 @@ TEST_F(RedisTraceBPFTest, VerifyPubSubCommands) {
   std::string redis_cli_cmd =
       absl::Substitute("docker run --rm --network=container:$0 redis redis-cli publish foo test",
                        container_.container_name());
-  ASSERT_OK_AND_ASSIGN(const std::string output, pl::Exec(redis_cli_cmd));
+  ASSERT_OK_AND_ASSIGN(const std::string output, px::Exec(redis_cli_cmd));
   ASSERT_FALSE(output.empty());
 
   std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
@@ -198,7 +198,7 @@ TEST_F(RedisTraceBPFTest, ScriptLoadAndEvalSHA) {
   std::string script_load_cmd = absl::Substitute(
       R"(docker run --rm --network=container:$0 redis redis-cli script load "return 1")",
       container_.container_name());
-  ASSERT_OK_AND_ASSIGN(std::string sha, pl::Exec(script_load_cmd));
+  ASSERT_OK_AND_ASSIGN(std::string sha, px::Exec(script_load_cmd));
   ASSERT_FALSE(sha.empty());
   // The output ends with \n.
   sha.pop_back();
@@ -206,7 +206,7 @@ TEST_F(RedisTraceBPFTest, ScriptLoadAndEvalSHA) {
   std::string evalsha_cmd = absl::Substitute(
       "docker run --rm --network=container:$0 redis redis-cli evalsha $1 2 1 1 2 2",
       container_.container_name(), sha);
-  ASSERT_OK_AND_ASSIGN(const std::string output, pl::Exec(evalsha_cmd));
+  ASSERT_OK_AND_ASSIGN(const std::string output, px::Exec(evalsha_cmd));
   ASSERT_FALSE(output.empty());
 
   std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
@@ -236,7 +236,7 @@ TEST_P(RedisTraceBPFTest, VerifyCommand) {
   std::string redis_cli_cmd =
       absl::Substitute("docker run --rm --network=container:$0 redis redis-cli $1",
                        container_.container_name(), redis_cmd);
-  ASSERT_OK_AND_ASSIGN(const std::string output, pl::Exec(redis_cli_cmd));
+  ASSERT_OK_AND_ASSIGN(const std::string output, px::Exec(redis_cli_cmd));
   ASSERT_FALSE(output.empty());
 
   std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
@@ -261,4 +261,4 @@ INSTANTIATE_TEST_SUITE_P(
         RedisTraceTestCase{"flushall", "FLUSHALL", "[]", "OK"}));
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

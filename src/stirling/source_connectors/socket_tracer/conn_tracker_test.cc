@@ -13,11 +13,11 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/test_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/event_generator.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 // Automatically converts ToString() to stream operator for gtest.
-using ::pl::operator<<;
+using ::px::operator<<;
 
 namespace http = protocols::http;
 namespace mysql = protocols::mysql;
@@ -786,4 +786,4 @@ INSTANTIATE_TEST_SUITE_P(AllProtocols, ConnTrackerStatsTest,
                                             ::testing::Values(kRoleClient, kRoleServer)));
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

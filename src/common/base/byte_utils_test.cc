@@ -6,7 +6,7 @@
 #include "src/common/base/byte_utils.h"
 #include "src/common/base/types.h"
 
-namespace pl {
+namespace px {
 namespace utils {
 
 TEST(UtilsTest, TestReverseArrayBytes) {
@@ -222,4 +222,4 @@ TEST(UtilsTest, MemCpy) {
 }
 
 }  // namespace utils
-}  // namespace pl
+}  // namespace px

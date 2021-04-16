@@ -2,7 +2,7 @@
 
 #include <vector>
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 
@@ -51,4 +51,4 @@ Status ChanCache::CleanupChans() {
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

@@ -1,6 +1,6 @@
 #include "src/carnot/exec/ml/transformer_executor.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 namespace ml {
@@ -87,4 +87,4 @@ void TransformerExecutor::Execute(std::string doc, std::string* out) {
 }  // namespace ml
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

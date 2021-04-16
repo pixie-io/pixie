@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace dynamic_tracing {
 
@@ -83,4 +83,4 @@ StatusOr<TMessageType> Prepare(std::string_view program_template, const std::str
 }  // namespace test_utils
 }  // namespace dynamic_tracing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

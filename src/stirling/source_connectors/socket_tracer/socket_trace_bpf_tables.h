@@ -8,7 +8,7 @@
 
 DECLARE_uint32(stirling_conn_map_cleanup_threshold);
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 class ConnInfoMapManager {
@@ -32,4 +32,4 @@ class ConnInfoMapManager {
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

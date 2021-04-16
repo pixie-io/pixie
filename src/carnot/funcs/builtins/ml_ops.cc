@@ -2,7 +2,7 @@
 #include "src/carnot/udf/registry.h"
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace builtins {
 
@@ -61,4 +61,4 @@ std::string write_ints_to_json(int* arr, int num) {
 
 }  // namespace builtins
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

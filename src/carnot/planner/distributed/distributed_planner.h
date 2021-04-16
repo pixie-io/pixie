@@ -12,7 +12,7 @@
 #include "src/carnot/planner/ir/pattern_match.h"
 #include "src/carnot/planner/rules/rule_executor.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
@@ -75,4 +75,4 @@ class DistributedPlanner : public NotCopyable, public Planner {
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

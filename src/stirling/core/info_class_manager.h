@@ -14,7 +14,7 @@
 #include "src/stirling/core/utils.h"
 #include "src/stirling/proto/stirling.pb.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 class ConnectorContext;
@@ -208,4 +208,4 @@ class InfoClassManager final : public NotCopyable {
 using InfoClassManagerVec = std::vector<std::unique_ptr<InfoClassManager>>;
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

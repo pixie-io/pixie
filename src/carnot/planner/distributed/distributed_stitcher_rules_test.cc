@@ -19,7 +19,7 @@
 #include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/uuid/uuid_utils.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
@@ -381,4 +381,4 @@ TEST_F(StitcherTest, stitch_all_togther_with_udtf) {
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

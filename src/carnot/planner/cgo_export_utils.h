@@ -24,13 +24,13 @@ char* PrepareResult(google::protobuf::Message* pb, int* result_len) {
 }
 // TMessage should be a proto type with a Status message.
 template <typename TMessage>
-void WrapStatus(TMessage* pb, const pl::Status& status) {
+void WrapStatus(TMessage* pb, const px::Status& status) {
   DCHECK(pb);
   status.ToProto(pb->mutable_status());
 }
 
 template <typename TMessage>
-char* ExitEarly(const pl::Status& status, int* result_len) {
+char* ExitEarly(const px::Status& status, int* result_len) {
   DCHECK(result_len != nullptr);
   TMessage pb;
   WrapStatus<TMessage>(&pb, status);
@@ -39,5 +39,5 @@ char* ExitEarly(const pl::Status& status, int* result_len) {
 
 template <typename TMessage>
 char* ExitEarly(const std::string& err, int* result_len) {
-  return ExitEarly<TMessage>(pl::error::InvalidArgument(err), result_len);
+  return ExitEarly<TMessage>(px::error::InvalidArgument(err), result_len);
 }

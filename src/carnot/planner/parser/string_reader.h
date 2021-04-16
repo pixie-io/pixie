@@ -12,7 +12,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -64,4 +64,4 @@ class StringReader : public pypa::Reader {
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

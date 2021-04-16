@@ -12,7 +12,7 @@
 #include "src/common/uuid/uuid.h"
 #include "src/shared/upid/upid.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -315,4 +315,4 @@ class MutationsIR {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

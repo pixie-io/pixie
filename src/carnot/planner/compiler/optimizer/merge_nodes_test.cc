@@ -12,7 +12,7 @@
 #include "src/carnot/planner/compiler/optimizer/merge_nodes.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -267,4 +267,4 @@ TEST_F(MergeNodesTest, limit_merge_different_relations_shouldnt_merge) {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

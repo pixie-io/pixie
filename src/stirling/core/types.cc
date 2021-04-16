@@ -1,6 +1,6 @@
 #include "src/stirling/core/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 stirlingpb::Element DataElement::ToProto() const {
@@ -59,4 +59,4 @@ void BackedDataElements::emplace_back(std::string name, std::string description,
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

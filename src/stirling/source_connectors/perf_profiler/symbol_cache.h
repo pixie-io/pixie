@@ -6,7 +6,7 @@
 
 DECLARE_bool(stirling_profiler_symcache);
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 /**
@@ -36,4 +36,4 @@ class SymbolCache {
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

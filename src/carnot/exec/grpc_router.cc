@@ -12,7 +12,7 @@
 #include "src/common/base/base.h"
 #include "src/common/uuid/uuid.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -98,8 +98,8 @@ void GRPCRouter::MarkResultStreamContextAsComplete(sole::uuid query_id,
 
 ::grpc::Status GRPCRouter::TransferResultChunk(
     ::grpc::ServerContext* context,
-    ::grpc::ServerReader<::pl::carnotpb::TransferResultChunkRequest>* reader,
-    ::pl::carnotpb::TransferResultChunkResponse* response) {
+    ::grpc::ServerReader<::px::carnotpb::TransferResultChunkRequest>* reader,
+    ::px::carnotpb::TransferResultChunkResponse* response) {
   PL_UNUSED(context);
   auto rb = std::make_unique<carnotpb::TransferResultChunkRequest>();
 
@@ -117,7 +117,7 @@ void GRPCRouter::MarkResultStreamContextAsComplete(sole::uuid query_id,
   bool registered_server_context = false;
 
   while (reader->Read(rb.get())) {
-    query_id = pl::ParseUUID(rb->query_id()).ConsumeValueOrDie();
+    query_id = px::ParseUUID(rb->query_id()).ConsumeValueOrDie();
     if (!registered_server_context) {
       RegisterResultStreamContext(query_id, context);
       registered_server_context = true;
@@ -195,7 +195,7 @@ Status GRPCRouter::RecordStats(const sole::uuid& query_id,
   }
   auto tracker = &it->second;
   for (const auto& agent : stats) {
-    auto agent_id = pl::ParseUUID(agent.agent_id()).ConsumeValueOrDie();
+    auto agent_id = px::ParseUUID(agent.agent_id()).ConsumeValueOrDie();
     // There are some cases where we get duplicate exec stats.
     if (tracker->seen_agents.contains(agent_id)) {
       continue;
@@ -286,4 +286,4 @@ void GRPCRouter::DeleteQuery(sole::uuid query_id) {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace pl {
+namespace px {
 
 /**
  * FatalErrorHandler is the interface to use for error handling
@@ -15,4 +15,4 @@ class FatalErrorHandlerInterface {
   virtual void OnFatalError() const = 0;
 };
 
-}  // namespace pl
+}  // namespace px

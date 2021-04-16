@@ -15,7 +15,7 @@
 
 #include "src/shared/scriptspb/scripts.pb.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -171,7 +171,7 @@ class FuncObject : public QLObject {
     return arg_types_;
   }
 
-  pl::shared::scriptspb::FuncArgsSpec CreateFuncArgsSpec() const;
+  px::shared::scriptspb::FuncArgsSpec CreateFuncArgsSpec() const;
 
   static bool IsFuncObject(const QLObjectPtr& ptr) { return ptr->type() == FuncType.type(); }
 
@@ -238,4 +238,4 @@ StatusOr<std::shared_ptr<FuncObject>> GetCallMethod(const pypa::AstPtr& ast, QLO
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

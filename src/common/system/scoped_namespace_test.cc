@@ -12,13 +12,13 @@
 using ::testing::Contains;
 using ::testing::Not;
 
-namespace pl {
+namespace px {
 namespace system {
 
 class DummyContainer : public ContainerRunner {
  public:
   DummyContainer()
-      : ContainerRunner(pl::testing::BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix,
+      : ContainerRunner(px::testing::BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -58,4 +58,4 @@ TEST(ScopedNamespaceTest, MountNamespace) {
 }
 
 }  // namespace system
-}  // namespace pl
+}  // namespace px

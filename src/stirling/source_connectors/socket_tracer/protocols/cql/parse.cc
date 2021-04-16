@@ -14,7 +14,7 @@
 // have the template implementations, while the private one would have functions in the cass
 // namespace.
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace cass {
@@ -79,4 +79,4 @@ size_t FindFrameBoundary<cass::Frame>(MessageType /*type*/, std::string_view /*b
 
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

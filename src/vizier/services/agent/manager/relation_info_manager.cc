@@ -2,7 +2,7 @@
 
 #include "src/vizier/services/agent/manager/relation_info_manager.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 Status RelationInfoManager::AddRelationInfo(RelationInfo relation_info) {
@@ -50,4 +50,4 @@ void RelationInfoManager::AddSchemaToUpdateInfo(messages::AgentUpdateInfo* updat
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

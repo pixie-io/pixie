@@ -5,7 +5,7 @@
 
 #include "src/common/base/byte_utils.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace cass {
@@ -637,4 +637,4 @@ StatusOr<EventResp> ParseEventResp(Frame* frame) {
 }  // namespace cass
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

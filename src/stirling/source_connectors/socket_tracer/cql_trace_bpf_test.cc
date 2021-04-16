@@ -15,17 +15,17 @@
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 #include "src/stirling/testing/common.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 namespace cass = protocols::cass;
 
-using ::pl::testing::BazelBinTestFilePath;
+using ::px::testing::BazelBinTestFilePath;
 
-using ::pl::stirling::testing::FindRecordIdxMatchesPID;
-using ::pl::stirling::testing::SocketTraceBPFTest;
-using ::pl::types::ColumnWrapper;
-using ::pl::types::ColumnWrapperRecordBatch;
+using ::px::stirling::testing::FindRecordIdxMatchesPID;
+using ::px::stirling::testing::SocketTraceBPFTest;
+using ::px::types::ColumnWrapper;
+using ::px::types::ColumnWrapperRecordBatch;
 
 using ::testing::AllOf;
 using ::testing::Eq;
@@ -397,7 +397,7 @@ TEST_F(CQLTraceTest, cqlsh_capture) {
   std::string cmd = absl::StrFormat(
       "docker exec %s bash -c 'cqlsh --protocol-version 4 -e quit & echo $! && wait'",
       container_.container_name());
-  ASSERT_OK_AND_ASSIGN(std::string out, pl::Exec(cmd));
+  ASSERT_OK_AND_ASSIGN(std::string out, px::Exec(cmd));
   int32_t client_pid;
   ASSERT_TRUE(absl::SimpleAtoi(out, &client_pid));
 
@@ -473,4 +473,4 @@ TEST_F(CQLTraceTest, cqlsh_capture) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

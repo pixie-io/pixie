@@ -4,7 +4,7 @@
 
 #include "src/common/base/statusor.h"
 
-namespace pl {
+namespace px {
 
 std::string FileContentsOrDie(const std::string& filename);
 StatusOr<std::string> ReadFileToString(const std::string& filename,
@@ -12,4 +12,4 @@ StatusOr<std::string> ReadFileToString(const std::string& filename,
 Status WriteFileFromString(const std::string& filename, std::string_view contents,
                            std::ios_base::openmode mode = std::ios_base::out);
 
-}  // namespace pl
+}  // namespace px

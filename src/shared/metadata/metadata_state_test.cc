@@ -5,7 +5,7 @@
 #include "src/common/base/test_utils.h"
 #include "src/shared/metadata/metadata_state.h"
 
-namespace pl {
+namespace px {
 namespace md {
 
 using ::testing::UnorderedElementsAre;
@@ -212,4 +212,4 @@ TEST(K8sMetadataStateTest, HandleNamespaceUpdate) {
 }
 
 }  // namespace md
-}  // namespace pl
+}  // namespace px

@@ -6,7 +6,7 @@
 
 #include "src/common/event/dispatcher.h"
 
-namespace pl {
+namespace px {
 namespace event {
 
 /**
@@ -31,4 +31,4 @@ class API {
 using APIUPtr = std::unique_ptr<API>;
 
 }  // namespace event
-}  // namespace pl
+}  // namespace px

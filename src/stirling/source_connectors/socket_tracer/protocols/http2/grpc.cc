@@ -8,7 +8,7 @@
 #include "src/common/base/base.h"
 #include "src/stirling/utils/binary_decoder.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace grpc {
 
@@ -68,4 +68,4 @@ std::string ParsePB(std::string_view str, std::optional<int> str_truncation_len)
 
 }  // namespace grpc
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

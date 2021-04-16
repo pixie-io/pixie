@@ -6,7 +6,7 @@
 #include "src/common/testing/test_environment.h"
 #include "src/common/testing/test_utils/container_runner.h"
 
-namespace pl {
+namespace px {
 
 // TODO(oazizi): Remove all uses to this container in favor of SleepContainer below.
 class DummyTestContainer : public ContainerRunner {
@@ -23,7 +23,7 @@ class DummyTestContainer : public ContainerRunner {
 class SleepContainer : public ContainerRunner {
  public:
   SleepContainer()
-      : ContainerRunner(pl::testing::BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix,
+      : ContainerRunner(px::testing::BazelBinTestFilePath(kBazelImageTar), kInstanceNamePrefix,
                         kReadyMessage) {}
 
  private:
@@ -33,4 +33,4 @@ class SleepContainer : public ContainerRunner {
   static constexpr std::string_view kReadyMessage = "started";
 };
 
-}  // namespace pl
+}  // namespace px

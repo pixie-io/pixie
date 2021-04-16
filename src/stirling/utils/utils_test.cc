@@ -3,7 +3,7 @@
 #include "src/common/base/base.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 TEST(RemoveRepeatingSuffixTest, RemoveChars) {
@@ -28,4 +28,4 @@ TEST(RemoveRepeatingSuffixTest, RemoveChars) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

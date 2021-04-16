@@ -7,7 +7,7 @@
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/data_stream_buffer.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 
@@ -47,4 +47,4 @@ std::vector<SocketDataEvent> CreateEvents(const std::vector<TStrType>& msgs) {
 
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

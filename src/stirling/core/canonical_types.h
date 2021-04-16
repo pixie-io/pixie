@@ -5,7 +5,7 @@
 
 #include "src/stirling/core/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace canonical_data_elements {
 
@@ -29,4 +29,4 @@ constexpr DataElement kUPID = {
 
 }  // namespace canonical_data_elements
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

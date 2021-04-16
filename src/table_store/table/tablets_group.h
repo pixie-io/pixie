@@ -9,7 +9,7 @@
 #include "src/table_store/schema/relation.h"
 #include "src/table_store/table/table.h"
 
-namespace pl {
+namespace px {
 namespace table_store {
 
 /**
@@ -69,4 +69,4 @@ class TabletsGroup {
 };
 
 }  // namespace table_store
-}  // namespace pl
+}  // namespace px

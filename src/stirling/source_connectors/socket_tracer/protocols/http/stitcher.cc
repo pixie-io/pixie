@@ -20,7 +20,7 @@ DEFINE_string(http_response_header_filters, "Content-Type:json,Content-Type:text
               "'Content-Type:json,Content-Type:text' will select a HTTP response "
               "with a Content-Type header whose value contains 'json' *or* 'text'.");
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace http {
@@ -50,7 +50,7 @@ void PreProcessMessage(Message* message) {
   // Replace body with decompressed version, if required.
   if (content_encoding_iter != message->headers.end() && content_encoding_iter->second == "gzip") {
     std::string_view body_strview(message->body);
-    auto bodyOrErr = pl::zlib::Inflate(body_strview);
+    auto bodyOrErr = px::zlib::Inflate(body_strview);
     if (!bodyOrErr.ok()) {
       LOG(WARNING) << "Unable to gunzip HTTP body.";
       message->body = "<Failed to gunzip body>";
@@ -63,4 +63,4 @@ void PreProcessMessage(Message* message) {
 }  // namespace http
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

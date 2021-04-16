@@ -11,7 +11,7 @@
 #include "src/carnot/planner/compiler/optimizer/limit_push_down.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -119,4 +119,4 @@ TEST_F(OperatorTests, multi_branch_union) {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

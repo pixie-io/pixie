@@ -7,7 +7,7 @@
 #include <absl/strings/str_format.h>
 #include "../../shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace table_store {
 namespace schema {
 
@@ -55,4 +55,4 @@ class RowDescriptor {
 
 }  // namespace schema
 }  // namespace table_store
-}  // namespace pl
+}  // namespace px

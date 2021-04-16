@@ -1,7 +1,7 @@
 #include "src/common/memory/object_pool.h"
 #include <gtest/gtest.h>
 
-namespace pl {
+namespace px {
 
 class TestObject {
  public:
@@ -61,4 +61,4 @@ TEST(object_pool_test, test_different_objects) {
   EXPECT_EQ(1, count2);
 }
 
-}  // namespace pl
+}  // namespace px

@@ -17,7 +17,7 @@
 #include "src/common/uuid/uuid.h"
 #include "src/shared/upid/upid.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
@@ -124,4 +124,4 @@ absl::flat_hash_set<int64_t> RemainingAgents(const OperatorToAgentSet& op_to_age
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

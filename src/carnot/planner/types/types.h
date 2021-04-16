@@ -15,13 +15,13 @@
 #include "src/shared/types/types.h"
 #include "src/table_store/schema/relation.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
-using pl::table_store::schema::Relation;
-using pl::types::DataType;
-using pl::types::SemanticType;
+using px::table_store::schema::Relation;
+using px::types::DataType;
+using px::types::SemanticType;
 
 class BaseType {
  public:
@@ -210,4 +210,4 @@ class TableType : public BaseType {
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

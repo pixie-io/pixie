@@ -12,7 +12,7 @@
 #include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planner/rules/rule_executor.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -62,4 +62,4 @@ class Optimizer : public RuleExecutor<IR> {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -7,7 +7,7 @@
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/physicalpb/physical.pb.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace dynamic_tracing {
 
@@ -67,4 +67,4 @@ struct BCCProgram {
 
 }  // namespace dynamic_tracing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

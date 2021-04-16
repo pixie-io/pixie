@@ -5,7 +5,7 @@
 #include "src/common/base/byte_utils.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace mysql {
@@ -125,4 +125,4 @@ Status DissectDateTimeParam(std::string_view msg, size_t* offset, std::string* p
 }  // namespace mysql
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

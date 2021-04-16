@@ -13,7 +13,7 @@
 #include "src/vizier/services/agent/manager/test_utils.h"
 #include "src/vizier/services/agent/pem/tracepoint_manager.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 
@@ -49,9 +49,9 @@ class TracepointManagerTest : public ::testing::Test {
     start_system_time_ = std::chrono::system_clock::now();
     time_system_ =
         std::make_unique<event::SimulatedTimeSystem>(start_monotonic_time_, start_system_time_);
-    api_ = std::make_unique<pl::event::APIImpl>(time_system_.get());
+    api_ = std::make_unique<px::event::APIImpl>(time_system_.get());
     dispatcher_ = api_->AllocateDispatcher("manager");
-    nats_conn_ = std::make_unique<FakeNATSConnector<pl::vizier::messages::VizierMessage>>();
+    nats_conn_ = std::make_unique<FakeNATSConnector<px::vizier::messages::VizierMessage>>();
 
     relation_info_manager_ = std::make_unique<RelationInfoManager>();
     agent_info_ = agent::Info{};
@@ -83,20 +83,20 @@ class TracepointManagerTest : public ::testing::Test {
   std::unique_ptr<event::Dispatcher> dispatcher_;
   std::unique_ptr<RelationInfoManager> relation_info_manager_;
   std::unique_ptr<TracepointManager> tracepoint_manager_;
-  std::unique_ptr<FakeNATSConnector<pl::vizier::messages::VizierMessage>> nats_conn_;
+  std::unique_ptr<FakeNATSConnector<px::vizier::messages::VizierMessage>> nats_conn_;
   table_store::TableStore table_store_;
   agent::Info agent_info_;
   stirling::MockStirling stirling_;
 };
 
 TEST_F(TracepointManagerTest, BadMessage) {
-  auto msg = std::make_unique<pl::vizier::messages::VizierMessage>();
+  auto msg = std::make_unique<px::vizier::messages::VizierMessage>();
   msg->mutable_heartbeat_ack()->set_sequence_number(0);
   EXPECT_NOT_OK(tracepoint_manager_->HandleMessage(std::move(msg)));
 }
 
 TEST_F(TracepointManagerTest, CreateTracepoint) {
-  auto msg = std::make_unique<pl::vizier::messages::VizierMessage>();
+  auto msg = std::make_unique<px::vizier::messages::VizierMessage>();
   auto* tracepoint_req = msg->mutable_tracepoint_message()->mutable_register_tracepoint_request();
   sole::uuid tracepoint_id = sole::uuid4();
   ToProto(tracepoint_id, tracepoint_req->mutable_id());
@@ -134,7 +134,7 @@ TEST_F(TracepointManagerTest, CreateTracepoint) {
 }
 
 TEST_F(TracepointManagerTest, CreateTracepointFailed) {
-  auto msg = std::make_unique<pl::vizier::messages::VizierMessage>();
+  auto msg = std::make_unique<px::vizier::messages::VizierMessage>();
   auto* tracepoint_req = msg->mutable_tracepoint_message()->mutable_register_tracepoint_request();
   sole::uuid tracepoint_id = sole::uuid4();
   ToProto(tracepoint_id, tracepoint_req->mutable_id());
@@ -167,7 +167,7 @@ TEST_F(TracepointManagerTest, CreateTracepointFailed) {
 
 TEST_F(TracepointManagerTest, CreateTracepointPreconditionFailed) {
   // Precondition failed happens when the binary does not exist on this machine.
-  auto msg = std::make_unique<pl::vizier::messages::VizierMessage>();
+  auto msg = std::make_unique<px::vizier::messages::VizierMessage>();
   auto* tracepoint_req = msg->mutable_tracepoint_message()->mutable_register_tracepoint_request();
   sole::uuid tracepoint_id = sole::uuid4();
   ToProto(tracepoint_id, tracepoint_req->mutable_id());
@@ -200,4 +200,4 @@ TEST_F(TracepointManagerTest, CreateTracepointPreconditionFailed) {
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

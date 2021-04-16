@@ -14,14 +14,14 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/event_parser.h"  // For FrameBase
 #include "src/stirling/utils/utils.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace mysql {
 
 // This automatically provides an operator<< when ToString() is defined.
 // Particularly useful for gtest.
-using ::pl::operator<<;
+using ::px::operator<<;
 
 /**
  * The MySQL parsing structure has 3 different levels of abstraction. From low to high level:
@@ -413,4 +413,4 @@ struct ProtocolTraits {
 }  // namespace mysql
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

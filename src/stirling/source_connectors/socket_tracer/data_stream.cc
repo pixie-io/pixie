@@ -14,7 +14,7 @@ DEFINE_uint32(messages_size_limit_bytes, 1024 * 1024,
               "for each direction, of each connection tracker. "
               "All cached messages are erased if this limit is breached.");
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 void DataStream::AddData(std::unique_ptr<SocketDataEvent> event) {
@@ -189,4 +189,4 @@ void DataStream::Reset() {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

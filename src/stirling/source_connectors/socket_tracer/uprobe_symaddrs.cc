@@ -12,10 +12,10 @@
 #include "src/stirling/obj_tools/dwarf_tools.h"
 #include "src/stirling/obj_tools/elf_tools.h"
 
-using ::pl::stirling::obj_tools::DwarfReader;
-using ::pl::stirling::obj_tools::ElfReader;
+using ::px::stirling::obj_tools::DwarfReader;
+using ::px::stirling::obj_tools::ElfReader;
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 //-----------------------------------------------------------------------------
@@ -574,4 +574,4 @@ StatusOr<struct openssl_symaddrs_t> OpenSSLSymAddrs(const std::filesystem::path&
 // (gdb) p s.wbio.num
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

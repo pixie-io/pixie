@@ -5,7 +5,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 
@@ -132,4 +132,4 @@ class DataStreamBuffer {
 
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

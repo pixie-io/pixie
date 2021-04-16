@@ -5,7 +5,7 @@
 #include "src/common/base/test_utils.h"
 #include "src/shared/upid/upid.h"
 
-namespace pl {
+namespace px {
 namespace md {
 
 using ::testing::ContainsRegex;
@@ -68,4 +68,4 @@ TEST(UPID, comparison) {
 }
 
 }  // namespace md
-}  // namespace pl
+}  // namespace px

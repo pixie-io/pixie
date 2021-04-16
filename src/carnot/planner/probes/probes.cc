@@ -3,7 +3,7 @@
 
 #include <utility>
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -249,4 +249,4 @@ void MutationsIR::EndProbe() { current_tracepoint_ = nullptr; }
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

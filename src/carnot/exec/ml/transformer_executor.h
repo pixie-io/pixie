@@ -11,7 +11,7 @@
 #include "src/carnot/exec/ml/model_executor.h"
 #include "src/common/base/utils.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 namespace ml {
@@ -46,4 +46,4 @@ class TransformerExecutor : public ModelExecutor {
 }  // namespace ml
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

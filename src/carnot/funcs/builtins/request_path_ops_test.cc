@@ -9,7 +9,7 @@
 #include "src/carnot/udf/test_utils.h"
 #include "src/common/base/test_utils.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace builtins {
 
@@ -179,4 +179,4 @@ TEST(RequestPathClusteringFit, merging_clusters_complicated) {
 
 }  // namespace builtins
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

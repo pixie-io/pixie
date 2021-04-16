@@ -4,7 +4,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 /**
@@ -36,7 +36,7 @@ class BinaryDecoder {
     if (buf_.size() < sizeof(TIntType)) {
       return error::ResourceUnavailable("Insufficient number of bytes.");
     }
-    TIntType val = ::pl::utils::BEndianBytesToInt<TIntType>(buf_);
+    TIntType val = ::px::utils::BEndianBytesToInt<TIntType>(buf_);
     buf_.remove_prefix(sizeof(TIntType));
     return val;
   }
@@ -90,4 +90,4 @@ class BinaryDecoder {
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

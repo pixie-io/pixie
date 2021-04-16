@@ -11,7 +11,7 @@
 #include "src/stirling/core/pub_sub_manager.h"
 #include "src/stirling/core/source_connector.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 using ::google::protobuf::TextFormat;
@@ -275,4 +275,4 @@ TEST_F(PubSubManagerTest, delta_subscribe_test) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

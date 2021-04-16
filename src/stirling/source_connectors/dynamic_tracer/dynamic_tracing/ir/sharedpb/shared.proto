@@ -72,14 +72,14 @@ message Tracepoint {
     // The name of the function. The format varies between languages.
     // In C++, it includes the fully qualified name of the function, including namespaces.
     // For example:
-    // namespace pl {
+    // namespace px {
     //   struct Foo {
     //     void Bar(int i) { ... }
     //     template <typename T> void Bar(T t) { ... }
     //   };
-    // }  // namespace pl
+    // }  // namespace px
     //
-    // pl::Foo::Bar points to the only member function of struct Foo.
+    // px::Foo::Bar points to the only member function of struct Foo.
     string name = 1;
     // The types of the parameters.
     // This only applies to C++ (or any languages that support function overloading).
@@ -87,7 +87,7 @@ message Tracepoint {
     // scalar types and composite types.
     //
     // Use the example above, these types are described in the function signature:
-    // pl::Foo::Bar(int)
+    // px::Foo::Bar(int)
     repeated string param_types = 2;
   }
   // Describes the target function to attach a Tracepoint.

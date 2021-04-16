@@ -12,7 +12,7 @@
 #include "src/carnot/plan/plan_fragment.h"
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace plan {
 
@@ -33,4 +33,4 @@ Status PlanWalker::Walk(Plan* plan) {
 
 }  // namespace plan
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

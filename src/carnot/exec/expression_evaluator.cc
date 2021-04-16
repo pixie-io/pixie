@@ -19,7 +19,7 @@
 #include "src/shared/types/types.h"
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -57,7 +57,7 @@ namespace {
 // Evaluate a scalar value to an arrow::Array.
 template <types::DataType T>
 std::shared_ptr<arrow::Array> EvalScalar(
-    arrow::MemoryPool* mem_pool, const typename pl::types::DataTypeTraits<T>::native_type& val,
+    arrow::MemoryPool* mem_pool, const typename px::types::DataTypeTraits<T>::native_type& val,
     size_t count) {
   typename types::DataTypeTraits<T>::arrow_builder_type builder(mem_pool);
   PL_CHECK_OK(builder.Reserve(count));
@@ -298,4 +298,4 @@ Status exec::ArrowNativeScalarExpressionEvaluator::EvaluateSingleExpression(
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

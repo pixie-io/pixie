@@ -17,7 +17,7 @@
 #include "src/carnot/planner/plannerpb/func_args.pb.h"
 #include "src/shared/scriptspb/scripts.pb.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -65,9 +65,9 @@ class ASTVisitor {
   /**
    * @brief Get the Vis Funcs Info spec from functions decorated with the vis decorator.
    *
-   * @return StatusOr<pl::shared::scriptspb::VisFuncsInfo> the
+   * @return StatusOr<px::shared::scriptspb::VisFuncsInfo> the
    */
-  virtual StatusOr<pl::shared::scriptspb::VisFuncsInfo> GetVisFuncsInfo() const = 0;
+  virtual StatusOr<px::shared::scriptspb::VisFuncsInfo> GetVisFuncsInfo() const = 0;
 
   /**
    * @brief Get the Main Func Args Spec.
@@ -96,4 +96,4 @@ class ASTVisitor {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

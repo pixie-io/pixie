@@ -4,7 +4,7 @@
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/source_connectors/perf_profiler/symbol_cache.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 TEST(SymbolCacheTest, Basic) {
@@ -46,4 +46,4 @@ TEST(SymbolCacheTest, Basic) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

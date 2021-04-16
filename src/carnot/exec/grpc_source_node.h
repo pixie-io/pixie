@@ -14,7 +14,7 @@
 
 #include "blockingconcurrentqueue.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -60,4 +60,4 @@ class GRPCSourceNode : public SourceNode {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

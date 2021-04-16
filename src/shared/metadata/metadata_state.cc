@@ -6,7 +6,7 @@
 
 #include "src/shared/metadata/metadata_state.h"
 
-namespace pl {
+namespace px {
 namespace md {
 
 const PodInfo* K8sMetadataState::PodInfoByID(UIDView pod_id) const {
@@ -310,4 +310,4 @@ std::string AgentMetadataState::DebugString(int indent_level) const {
 }
 
 }  // namespace md
-}  // namespace pl
+}  // namespace px

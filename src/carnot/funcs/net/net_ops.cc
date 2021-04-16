@@ -4,12 +4,12 @@
 #include "src/carnot/udf/registry.h"
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace funcs {
 namespace net {
 
-void RegisterNetOpsOrDie(pl::carnot::udf::Registry* registry) {
+void RegisterNetOpsOrDie(px::carnot::udf::Registry* registry) {
   CHECK(registry != nullptr);
   /*****************************************
    * Scalar UDFs.
@@ -24,4 +24,4 @@ void RegisterNetOpsOrDie(pl::carnot::udf::Registry* registry) {
 }  // namespace net
 }  // namespace funcs
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

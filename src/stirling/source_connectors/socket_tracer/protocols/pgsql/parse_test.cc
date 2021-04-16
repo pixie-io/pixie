@@ -6,7 +6,7 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/pgsql/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace pgsql {
@@ -278,4 +278,4 @@ TEST(FindFrameBoundaryTest, FindTag) {
 }  // namespace pgsql
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

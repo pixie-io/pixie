@@ -5,17 +5,17 @@
 #include "src/common/event/event.h"
 #include "src/common/event/nats.h"
 
-using pl::event::APIImpl;
-using pl::event::RealTimeSystem;
+using px::event::APIImpl;
+using px::event::RealTimeSystem;
 
-namespace pl {
+namespace px {
 namespace event {
 
 int g_compute_pi_destructor_count = 0;
 
 namespace {
 
-class ComputePi : public pl::event::AsyncTask {
+class ComputePi : public px::event::AsyncTask {
  public:
   ~ComputePi() { ++g_compute_pi_destructor_count; }
 
@@ -90,7 +90,7 @@ TEST_F(LibuvDispatcherTest, test_timed_events) {
 
   // This checks that timers can be re-enabled in the loop.
   int timer2_call_count = 0;
-  std::unique_ptr<pl::event::Timer> timer2;
+  std::unique_ptr<px::event::Timer> timer2;
   timer2 = dispatcher_->CreateTimer([&timer2, &timer2_call_count, &timer_done_count] {
     static int count = 0;
     ++timer2_call_count;
@@ -133,4 +133,4 @@ TEST_F(LibuvDispatcherTest, threadpool) {
 }
 
 }  // namespace event
-}  // namespace pl
+}  // namespace px

@@ -5,7 +5,7 @@
 #include "src/carnot/udf/test_utils.h"
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace builtins {
 
@@ -53,4 +53,4 @@ TEST(MathSketches, quantiles_int64) {
 
 }  // namespace builtins
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

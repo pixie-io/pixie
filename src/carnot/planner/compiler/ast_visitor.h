@@ -25,7 +25,7 @@
 #include "src/carnot/planner/probes/tracing_module.h"
 #include "src/shared/scriptspb/scripts.pb.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -579,4 +579,4 @@ class ASTVisitorImpl : public ASTVisitor {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

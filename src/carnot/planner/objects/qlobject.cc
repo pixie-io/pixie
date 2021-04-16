@@ -6,7 +6,7 @@
 #include "src/carnot/planner/objects/funcobject.h"
 #include "src/carnot/planner/objects/qlobject.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -70,4 +70,4 @@ Status QLObject::SetDocString(QLObjectPtr doc_string) {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -9,7 +9,7 @@
 #include "src/stirling/core/source_connector.h"
 #include "src/stirling/source_connectors/seq_gen/sequence_generator.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 /**
@@ -135,4 +135,4 @@ class SeqGenConnector : public SourceConnector {
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

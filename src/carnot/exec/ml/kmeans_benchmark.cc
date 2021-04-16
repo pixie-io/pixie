@@ -4,8 +4,8 @@
 #include "src/carnot/exec/ml/kmeans.h"
 #include "src/common/perf/perf.h"
 
-using pl::carnot::exec::ml::KMeans;
-using pl::carnot::exec::ml::WeightedPointSet;
+using px::carnot::exec::ml::KMeans;
+using px::carnot::exec::ml::WeightedPointSet;
 
 // NOLINTNEXTLINE : runtime/references.
 static void BM_KMeansFit(benchmark::State& state) {

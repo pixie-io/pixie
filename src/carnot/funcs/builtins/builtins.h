@@ -2,7 +2,7 @@
 
 #include "src/carnot/udf/registry.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace builtins {
 
@@ -10,4 +10,4 @@ void RegisterBuiltinsOrDie(udf::Registry* registry);
 
 }  // namespace builtins
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -9,7 +9,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace mysql {
@@ -89,4 +89,4 @@ inline RecordsWithErrorCount<mysql::Record> StitchFrames(std::deque<mysql::Packe
 
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

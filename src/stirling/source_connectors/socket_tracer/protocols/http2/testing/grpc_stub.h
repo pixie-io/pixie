@@ -12,7 +12,7 @@
 #include "src/common/base/base.h"
 #include "src/common/base/macros.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace testing {
 
@@ -99,4 +99,4 @@ class GRPCStub {
 
 }  // namespace testing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

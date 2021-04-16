@@ -12,7 +12,7 @@
 #include "src/common/uuid/uuid.h"
 #include "src/shared/upid/upid.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
@@ -209,4 +209,4 @@ StatusOr<bool> MapRemovableOperatorsRule::CheckUDTFSource(UDTFSourceIR* udtf_ir)
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

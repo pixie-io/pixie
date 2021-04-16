@@ -5,7 +5,7 @@
 #include "src/common/base/base.h"
 #include "src/table_store/schema/schema.h"
 
-namespace pl {
+namespace px {
 namespace table_store {
 namespace schema {
 
@@ -54,4 +54,4 @@ Status Schema::ToProto(schemapb::Schema* schema,
 
 }  // namespace schema
 }  // namespace table_store
-}  // namespace pl
+}  // namespace px

@@ -9,7 +9,7 @@
 #include "src/carnot/udf/base.h"
 #include "src/carnot/udf/registry.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -607,4 +607,4 @@ TEST_F(UnionNodeTest, ordered_timeout_hit) {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

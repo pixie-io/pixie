@@ -32,7 +32,7 @@
 //  alignment.
 //      - This is used to copy uint32_t lengths.
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 inline std::string ToString(const struct go_grpc_http2_header_event_t::header_attr_t& attr) {
@@ -62,7 +62,7 @@ struct HTTP2DataEvent {
   }
 
   std::string ToString() const {
-    return absl::Substitute("[attr=$0 payload=$1]", ::pl::stirling::ToString(attr),
+    return absl::Substitute("[attr=$0 payload=$1]", ::px::stirling::ToString(attr),
                             BytesToString<bytes_format::HexAsciiMix>(payload));
   }
 
@@ -103,7 +103,7 @@ struct HTTP2HeaderEvent {
   }
 
   std::string ToString() const {
-    return absl::Substitute("[attr=$0] [name=$1] [value=$2]", ::pl::stirling::ToString(attr), name,
+    return absl::Substitute("[attr=$0] [name=$1] [value=$2]", ::px::stirling::ToString(attr), name,
                             value);
   }
 
@@ -113,4 +113,4 @@ struct HTTP2HeaderEvent {
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

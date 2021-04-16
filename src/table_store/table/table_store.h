@@ -16,7 +16,7 @@
 #include "src/table_store/table/table.h"
 #include "src/table_store/table/tablets_group.h"
 
-namespace pl {
+namespace px {
 namespace table_store {
 
 // NameTablet used as a key containing a Table name and Tablet ID.
@@ -132,7 +132,7 @@ class TableStore {
    * @return Status: error if anything goes wrong during the process.
    */
   Status AppendData(uint64_t table_id, types::TabletID tablet_id,
-                    std::unique_ptr<pl::types::ColumnWrapperRecordBatch> record_batch);
+                    std::unique_ptr<px::types::ColumnWrapperRecordBatch> record_batch);
 
   Status SchemaAsProto(schemapb::Schema* schema) const;
 
@@ -180,4 +180,4 @@ class TableStore {
 };
 
 }  // namespace table_store
-}  // namespace pl
+}  // namespace px

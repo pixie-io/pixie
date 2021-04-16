@@ -3,7 +3,7 @@
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/cql/parse.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace cass {
@@ -147,4 +147,4 @@ TEST_F(CQLParserTest, VersionTooNew) {
 }  // namespace cass
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

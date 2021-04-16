@@ -1,7 +1,7 @@
 #include "src/common/base/logging.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 
 TEST(ECheckTest, check_true) {
   ECHECK(true);
@@ -43,4 +43,4 @@ TEST(ECheckTest, check_false) {
   EXPECT_DEBUG_DEATH(ECHECK_GT(1, 2), "");
 }
 
-}  // namespace pl
+}  // namespace px

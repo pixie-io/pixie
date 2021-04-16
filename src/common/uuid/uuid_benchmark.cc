@@ -2,7 +2,7 @@
 
 #include <sole.hpp>
 
-namespace pl {
+namespace px {
 
 // NOLINTNEXTLINE : runtime/references.
 static void BM_UUIDFromString(benchmark::State& state) {
@@ -42,4 +42,4 @@ BENCHMARK(BM_UUIDFromString);
 BENCHMARK(BM_UUIDFromBytes);
 BENCHMARK(BM_UUIDToString);
 BENCHMARK(BM_UUIDToBytes);
-}  // namespace pl
+}  // namespace px

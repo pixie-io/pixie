@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <queue>
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -511,4 +511,4 @@ StatusOr<bool> MergeNodesRule::Execute(IR* graph) {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

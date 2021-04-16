@@ -11,7 +11,7 @@
 #include "src/common/testing/testing.h"
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace udfexporter {
 using ::testing::_;
@@ -54,4 +54,4 @@ TEST_F(UDFExporterTest, docs_proto) {
 
 }  // namespace udfexporter
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

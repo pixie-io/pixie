@@ -5,7 +5,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace testing {
 
 using ::testing::StrEq;
@@ -66,4 +66,4 @@ l:b)"));
 }
 
 }  // namespace testing
-}  // namespace pl
+}  // namespace px

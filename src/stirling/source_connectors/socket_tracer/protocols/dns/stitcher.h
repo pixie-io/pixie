@@ -8,7 +8,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/dns/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace dns {
@@ -34,4 +34,4 @@ inline RecordsWithErrorCount<dns::Record> StitchFrames(std::deque<dns::Frame>* r
 
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

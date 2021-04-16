@@ -4,7 +4,7 @@
 
 #include "src/common/exec/subprocess.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace testing {
 
@@ -20,8 +20,8 @@ class GoHTTPFixture {
         "go_http_server_/"
         "go_http_server";
 
-    client_path_ = pl::testing::BazelBinTestFilePath(kClientPath);
-    server_path_ = pl::testing::BazelBinTestFilePath(kServerPath);
+    client_path_ = px::testing::BazelBinTestFilePath(kClientPath);
+    server_path_ = px::testing::BazelBinTestFilePath(kServerPath);
   }
 
   void LaunchServer() {
@@ -63,4 +63,4 @@ class GoHTTPFixture {
 
 }  // namespace testing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

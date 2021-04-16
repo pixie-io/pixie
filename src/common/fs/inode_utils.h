@@ -2,7 +2,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace fs {
 
 constexpr std::string_view kSocketInodePrefix = ConstStringView("socket:");
@@ -18,4 +18,4 @@ constexpr std::string_view kNetInodePrefix = ConstStringView("net:");
 StatusOr<uint32_t> ExtractInodeNum(std::string_view inode_type_prefix, std::string_view link_str);
 
 }  // namespace fs
-}  // namespace pl
+}  // namespace px

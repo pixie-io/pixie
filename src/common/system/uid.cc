@@ -8,7 +8,7 @@
 #include "src/common/base/error.h"
 #include "src/common/base/utils.h"
 
-namespace pl {
+namespace px {
 
 StatusOr<std::string> NameForUID(uid_t uid) {
   struct passwd pwd = {};
@@ -52,4 +52,4 @@ std::map<uid_t, std::string> ParsePasswd(std::string_view passwd_content) {
   return res;
 }
 
-}  // namespace pl
+}  // namespace px

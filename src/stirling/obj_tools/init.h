@@ -1,6 +1,6 @@
 #pragma once
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 /**
@@ -14,4 +14,4 @@ namespace stirling {
 void InitLLVMOnce();
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

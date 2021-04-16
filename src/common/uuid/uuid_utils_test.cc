@@ -2,10 +2,10 @@
 
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 
 TEST(ParseUUID, basic_test) {
-  pl::uuidpb::UUID uuid_pb;
+  px::uuidpb::UUID uuid_pb;
   uuid_pb.set_high_bits(0xea8aa095697f49f1);
   uuid_pb.set_low_bits(0xb127d50e5b6e2645);
   ASSERT_OK_AND_ASSIGN(auto parsed, ParseUUID(uuid_pb));
@@ -14,7 +14,7 @@ TEST(ParseUUID, basic_test) {
 
 TEST(ToProto, uuid_basic) {
   auto uuid = sole::rebuild("ea8aa095-697f-49f1-b127-d50e5b6e2645");
-  pl::uuidpb::UUID uuid_proto;
+  px::uuidpb::UUID uuid_proto;
   ToProto(uuid, &uuid_proto);
   EXPECT_EQ(0xea8aa095697f49f1, uuid_proto.high_bits());
   EXPECT_EQ(0xb127d50e5b6e2645, uuid_proto.low_bits());
@@ -23,7 +23,7 @@ TEST(ToProto, uuid_basic) {
 TEST(UUIDUtils, regression_test) {
   for (int i = 0; i < 1000; i++) {
     auto uuid = sole::uuid4();
-    pl::uuidpb::UUID uuid_proto;
+    px::uuidpb::UUID uuid_proto;
     ToProto(uuid, &uuid_proto);
     ASSERT_OK_AND_ASSIGN(auto res, ParseUUID(uuid_proto));
     EXPECT_EQ(res.str(), uuid.str());
@@ -37,4 +37,4 @@ TEST(UUIDUtils, clear_uuid_makes_uuid_zero) {
   EXPECT_EQ(0, uuid.cd);
 }
 
-}  // namespace pl
+}  // namespace px

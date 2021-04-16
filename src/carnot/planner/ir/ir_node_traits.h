@@ -4,7 +4,7 @@
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/types/types.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -111,4 +111,4 @@ class ExpressionTraits {
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -2,7 +2,7 @@
 
 #include "src/stirling/core/canonical_types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 constexpr char kTime[] = "time_";
@@ -61,4 +61,4 @@ DEFINE_IDX(kTotalHeapSize);
 DEFINE_IDX(kMaxHeapSize);
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

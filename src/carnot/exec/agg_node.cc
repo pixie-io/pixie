@@ -17,7 +17,7 @@
 #include "src/shared/types/type_utils.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -516,4 +516,4 @@ Status AggNode::CreateUDAInfoValues(std::vector<UDAInfo>* val, ExecState* exec_s
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

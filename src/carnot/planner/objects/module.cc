@@ -1,7 +1,7 @@
 #include "src/carnot/planner/objects/module.h"
 #include "src/carnot/planner/parser/parser.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -39,4 +39,4 @@ Status Module::Init(std::string_view module_text) {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

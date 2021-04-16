@@ -5,7 +5,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/redis/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace redis {
@@ -30,4 +30,4 @@ inline ParseState ParseFrame(MessageType type, std::string_view* buf, redis::Mes
 
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

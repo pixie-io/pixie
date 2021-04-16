@@ -6,12 +6,12 @@
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/socket_trace_bpf_test_fixture.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 namespace http = protocols::http;
 
-using ::pl::stirling::testing::SocketTraceBPFTest;
+using ::px::stirling::testing::SocketTraceBPFTest;
 
 using ::testing::ContainsRegex;
 using ::testing::HasSubstr;
@@ -128,4 +128,4 @@ INSTANTIATE_TEST_SUITE_P(AllTraceRoles, TraceRoleTest,
 // two cases.
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

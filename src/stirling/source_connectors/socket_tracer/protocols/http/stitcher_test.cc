@@ -3,7 +3,7 @@
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/stitcher.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace http {
@@ -39,4 +39,4 @@ TEST(PreProcessRecordTest, ContentHeaderIsNotAdded) {
 }  // namespace http
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

@@ -4,7 +4,7 @@
 
 #include "src/carnot/planner/dynamic_tracing/ir/logicalpb/logical.pb.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -18,4 +18,4 @@ StatusOr<carnot::planner::dynamic_tracing::ir::logical::TracepointDeployment> Co
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

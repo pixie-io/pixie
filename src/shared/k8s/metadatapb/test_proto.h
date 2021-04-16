@@ -12,7 +12,7 @@
 #include "src/common/base/base.h"
 #include "src/shared/k8s/metadatapb/metadata.pb.h"
 
-namespace pl {
+namespace px {
 namespace metadatapb {
 namespace testutils {
 /*
@@ -145,16 +145,16 @@ start_timestamp_ns: 7
 pod_ids: "1_uid"
 )";
 
-std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateRunningPodUpdatePB() {
-  auto update = std::make_unique<pl::shared::k8s::metadatapb::ResourceUpdate>();
+std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateRunningPodUpdatePB() {
+  auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
   auto update_proto = absl::Substitute(kResourceUpdateTmpl, "pod_update", kRunningPodUpdatePbTxt);
   CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
       << "Failed to parse proto";
   return update;
 }
 
-std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatingPodUpdatePB() {
-  auto update = std::make_unique<pl::shared::k8s::metadatapb::ResourceUpdate>();
+std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatingPodUpdatePB() {
+  auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
   auto update_proto =
       absl::Substitute(kResourceUpdateTmpl, "pod_update", kToBeTerminatedPodUpdatePbTxt);
   CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
@@ -162,8 +162,8 @@ std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatingPo
   return update;
 }
 
-std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatedPodUpdatePB() {
-  auto update = std::make_unique<pl::shared::k8s::metadatapb::ResourceUpdate>();
+std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatedPodUpdatePB() {
+  auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
   auto update_proto =
       absl::Substitute(kResourceUpdateTmpl, "pod_update", kTerminatedPodUpdatePbTxt);
   CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
@@ -171,8 +171,8 @@ std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatedPod
   return update;
 }
 
-std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateRunningContainerUpdatePB() {
-  auto update = std::make_unique<pl::shared::k8s::metadatapb::ResourceUpdate>();
+std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateRunningContainerUpdatePB() {
+  auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
   auto update_proto =
       absl::Substitute(kResourceUpdateTmpl, "container_update", kRunningContainerUpdatePbTxt);
   CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
@@ -180,8 +180,8 @@ std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateRunningContai
   return update;
 }
 
-std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatingContainerUpdatePB() {
-  auto update = std::make_unique<pl::shared::k8s::metadatapb::ResourceUpdate>();
+std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatingContainerUpdatePB() {
+  auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
   auto update_proto =
       absl::Substitute(kResourceUpdateTmpl, "container_update", kTerminatingContainerUpdatePbTxt);
   CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
@@ -189,8 +189,8 @@ std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatingCo
   return update;
 }
 
-std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatedContainerUpdatePB() {
-  auto update = std::make_unique<pl::shared::k8s::metadatapb::ResourceUpdate>();
+std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatedContainerUpdatePB() {
+  auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
   auto update_proto =
       absl::Substitute(kResourceUpdateTmpl, "container_update", kTerminatedContainerUpdatePbTxt);
   CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
@@ -198,8 +198,8 @@ std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatedCon
   return update;
 }
 
-std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateRunningServiceUpdatePB() {
-  auto update = std::make_unique<pl::shared::k8s::metadatapb::ResourceUpdate>();
+std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateRunningServiceUpdatePB() {
+  auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
   auto update_proto =
       absl::Substitute(kResourceUpdateTmpl, "service_update", kRunningServiceUpdatePbTxt);
   CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
@@ -207,8 +207,8 @@ std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateRunningServic
   return update;
 }
 
-std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatingServiceUpdatePB() {
-  auto update = std::make_unique<pl::shared::k8s::metadatapb::ResourceUpdate>();
+std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatingServiceUpdatePB() {
+  auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
   auto update_proto =
       absl::Substitute(kResourceUpdateTmpl, "service_update", kToBeTerminatedServiceUpdatePbTxt);
   CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
@@ -216,8 +216,8 @@ std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatingSe
   return update;
 }
 
-std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatedServiceUpdatePB() {
-  auto update = std::make_unique<pl::shared::k8s::metadatapb::ResourceUpdate>();
+std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatedServiceUpdatePB() {
+  auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
   auto update_proto =
       absl::Substitute(kResourceUpdateTmpl, "service_update", kTerminatedServiceUpdatePbTxt);
   CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
@@ -225,8 +225,8 @@ std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatedSer
   return update;
 }
 
-std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateServiceWithSamePodUpdatePB() {
-  auto update = std::make_unique<pl::shared::k8s::metadatapb::ResourceUpdate>();
+std::unique_ptr<px::shared::k8s::metadatapb::ResourceUpdate> CreateServiceWithSamePodUpdatePB() {
+  auto update = std::make_unique<px::shared::k8s::metadatapb::ResourceUpdate>();
   auto update_proto =
       absl::Substitute(kResourceUpdateTmpl, "service_update", kServiceWithDuplicatePodUpdatePbTxt);
   CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
@@ -236,4 +236,4 @@ std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateServiceWithSa
 
 }  // namespace testutils
 }  // namespace metadatapb
-}  // namespace pl
+}  // namespace px

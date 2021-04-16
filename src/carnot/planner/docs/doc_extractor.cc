@@ -1,6 +1,6 @@
 #include "src/carnot/planner/docs/doc_extractor.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace docs {
@@ -32,4 +32,4 @@ DocHolder DocExtractor::ExtractDoc(const compiler::QLObjectPtr& qobject) {
 }  // namespace docs
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

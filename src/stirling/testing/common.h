@@ -11,12 +11,12 @@
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/upid/upid.h"
 
-namespace pl {
+namespace px {
 
 namespace types {
 
 // Teach gMock to print out a SharedColumnWrapper.
-inline std::ostream& operator<<(std::ostream& os, const ::pl::types::SharedColumnWrapper& col) {
+inline std::ostream& operator<<(std::ostream& os, const ::px::types::SharedColumnWrapper& col) {
   os << absl::Substitute("size=$0", col->Size());
   return os;
 }
@@ -105,4 +105,4 @@ inline md::UPID PIDToUPID(pid_t pid) {
 
 }  // namespace testing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

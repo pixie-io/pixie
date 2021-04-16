@@ -25,7 +25,7 @@
 #include "src/shared/types/types.h"
 #include "src/table_store/table_store.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 
@@ -871,4 +871,4 @@ TEST_F(GRPCExecGraphTest, infinite_source_and_error_source) {
 
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

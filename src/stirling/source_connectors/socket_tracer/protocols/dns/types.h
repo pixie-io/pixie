@@ -9,7 +9,7 @@
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/event_parser.h"  // For FrameBase.
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace dns {
@@ -138,4 +138,4 @@ struct ProtocolTraits {
 }  // namespace dns
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

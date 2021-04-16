@@ -13,7 +13,7 @@
 #include "src/stirling/utils/binary_decoder.h"
 #include "src/stirling/utils/parse_state.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace dns {
@@ -82,4 +82,4 @@ size_t FindFrameBoundary<dns::Frame>(MessageType /*type*/, std::string_view /*bu
 
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

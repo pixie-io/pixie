@@ -10,7 +10,7 @@
 
 #include "src/common/system/tcp_socket.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace testing {
 
@@ -21,7 +21,7 @@ struct ReqAndResp {
   std::vector<std::string_view> resp;
 };
 using SendRecvScript = std::vector<ReqAndResp>;
-using TCPSocket = pl::system::TCPSocket;
+using TCPSocket = px::system::TCPSocket;
 
 class ClientServerSystem {
  public:
@@ -316,4 +316,4 @@ class ClientServerSystem {
 
 }  // namespace testing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

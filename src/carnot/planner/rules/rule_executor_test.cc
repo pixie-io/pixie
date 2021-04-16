@@ -12,7 +12,7 @@
 #include "src/carnot/planner/rules/rule_mock.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -166,4 +166,4 @@ TEST_F(RuleExecutorTest, exit_early) {
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

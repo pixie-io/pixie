@@ -4,10 +4,10 @@
 
 #include "src/common/testing/testing.h"
 
-using ::pl::testing::TestFilePath;
+using ::px::testing::TestFilePath;
 using ::testing::UnorderedElementsAre;
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 TEST(ListUPIDs, Basic) {
@@ -18,4 +18,4 @@ TEST(ListUPIDs, Basic) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

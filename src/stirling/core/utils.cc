@@ -1,6 +1,6 @@
 #include "src/stirling/core/utils.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 bool SamplePushFrequencyManager::SamplingRequired() const {
@@ -42,4 +42,4 @@ std::chrono::steady_clock::time_point SamplePushFrequencyManager::NextPushTime()
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

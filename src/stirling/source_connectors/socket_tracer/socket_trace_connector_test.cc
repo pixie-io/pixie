@@ -18,7 +18,7 @@
 #include "src/stirling/source_connectors/socket_tracer/testing/http2_stream_generator.h"
 #include "src/stirling/testing/common.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 namespace http = protocols::http;
@@ -28,11 +28,11 @@ namespace cass = protocols::cass;
 using ::testing::Each;
 using ::testing::ElementsAre;
 
-using ::pl::stirling::testing::ColWrapperSizeIs;
+using ::px::stirling::testing::ColWrapperSizeIs;
 
-using ::pl::stirling::testing::kFD;
-using ::pl::stirling::testing::kPID;
-using ::pl::stirling::testing::kPIDStartTimeTicks;
+using ::px::stirling::testing::kFD;
+using ::px::stirling::testing::kPID;
+using ::px::stirling::testing::kPIDStartTimeTicks;
 
 using RecordBatch = types::ColumnWrapperRecordBatch;
 
@@ -1818,4 +1818,4 @@ TEST_P(SocketTraceConnectorTest, HTTP2OldStream) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

@@ -13,7 +13,7 @@
 #include "src/common/base/base.h"
 #include "src/shared/types/types.h"
 
-namespace pl {
+namespace px {
 namespace datagen {
 
 template <typename T>
@@ -245,4 +245,4 @@ StatusOr<std::vector<types::StringValue>> CreateLargeStringData(
 }
 
 }  // namespace datagen
-}  // namespace pl
+}  // namespace px

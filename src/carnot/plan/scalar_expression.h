@@ -16,7 +16,7 @@
 #include "src/shared/types/types.h"
 #include "src/table_store/table_store.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace plan {
 
@@ -327,4 +327,4 @@ using ConstScalarExpressionVector = std::vector<std::shared_ptr<const ScalarExpr
 
 }  // namespace plan
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

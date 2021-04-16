@@ -8,7 +8,7 @@
 
 #include "src/common/base/statusor.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace java {
 
@@ -53,4 +53,4 @@ StatusOr<std::filesystem::path> HsperfdataPath(pid_t pid);
 
 }  // namespace java
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

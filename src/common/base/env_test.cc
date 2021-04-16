@@ -3,7 +3,7 @@
 
 #include "src/common/base/env.h"
 
-namespace pl {
+namespace px {
 
 using ::testing::IsEmpty;
 using ::testing::Not;
@@ -18,4 +18,4 @@ TEST(GetEnvTest, ResultsAreAsExpected) {
   EXPECT_EQ("test", value_or.value());
 }
 
-}  // namespace pl
+}  // namespace px

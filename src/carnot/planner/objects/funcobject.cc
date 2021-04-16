@@ -5,12 +5,12 @@
 #include "src/carnot/planner/objects/type_object.h"
 #include "src/carnot/planner/parser/parser.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
 
-using pl::shared::scriptspb::FuncArgsSpec;
+using px::shared::scriptspb::FuncArgsSpec;
 
 StatusOr<std::shared_ptr<FuncObject>> FuncObject::Create(
     std::string_view name, const std::vector<std::string>& arguments,
@@ -189,4 +189,4 @@ FuncArgsSpec FuncObject::CreateFuncArgsSpec() const {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

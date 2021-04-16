@@ -2,7 +2,7 @@
 
 #include <chrono>
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace testing {
 
@@ -27,4 +27,4 @@ class MockClock : public Clock {
 
 }  // namespace testing
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

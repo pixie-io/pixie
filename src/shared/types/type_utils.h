@@ -9,7 +9,7 @@
 #include "src/common/base/base.h"
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 
-namespace pl {
+namespace px {
 namespace types {
 
 inline std::string_view ToString(DataType type) { return magic_enum::enum_name(type); }
@@ -36,7 +36,7 @@ inline std::shared_ptr<arrow::DataType> DataTypeToArrowType(DataType type) {
 }
 
 }  // namespace types
-}  // namespace pl
+}  // namespace px
 
 // Internal utility macro that creates a single case statement and calls the
 // case macro for the type.
@@ -48,7 +48,7 @@ inline std::shared_ptr<arrow::DataType> DataTypeToArrowType(DataType type) {
 // Internal utility macro to generate the default case.
 #define PL_SWITCH_FOREACH_DATATYPE_DEFAULT_CASE(_dt_)            \
   default: {                                                     \
-    CHECK(0) << "Unknown Type: " << ::pl::types::ToString(_dt_); \
+    CHECK(0) << "Unknown Type: " << ::px::types::ToString(_dt_); \
   }
 
 /**
@@ -69,12 +69,12 @@ inline std::shared_ptr<arrow::DataType> DataTypeToArrowType(DataType type) {
   do {                                                                                \
     auto __dt_var__ = (_dt_);                                                         \
     switch (__dt_var__) {                                                             \
-      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::BOOLEAN, _CASE_MACRO_);  \
-      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::INT64, _CASE_MACRO_);    \
-      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::UINT128, _CASE_MACRO_);  \
-      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::TIME64NS, _CASE_MACRO_); \
-      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::FLOAT64, _CASE_MACRO_);  \
-      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::STRING, _CASE_MACRO_);   \
+      PL_SWITCH_FOREACH_DATATYPE_CASE(::px::types::DataType::BOOLEAN, _CASE_MACRO_);  \
+      PL_SWITCH_FOREACH_DATATYPE_CASE(::px::types::DataType::INT64, _CASE_MACRO_);    \
+      PL_SWITCH_FOREACH_DATATYPE_CASE(::px::types::DataType::UINT128, _CASE_MACRO_);  \
+      PL_SWITCH_FOREACH_DATATYPE_CASE(::px::types::DataType::TIME64NS, _CASE_MACRO_); \
+      PL_SWITCH_FOREACH_DATATYPE_CASE(::px::types::DataType::FLOAT64, _CASE_MACRO_);  \
+      PL_SWITCH_FOREACH_DATATYPE_CASE(::px::types::DataType::STRING, _CASE_MACRO_);   \
       PL_SWITCH_FOREACH_DATATYPE_DEFAULT_CASE(__dt_var__);                            \
     }                                                                                 \
   } while (0)

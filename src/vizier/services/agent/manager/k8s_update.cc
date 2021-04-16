@@ -6,11 +6,11 @@
 
 #include "src/vizier/services/agent/manager/manager.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace agent {
 
-K8sUpdateHandler::K8sUpdateHandler(Dispatcher* d, pl::md::AgentMetadataStateManager* mds_manager,
+K8sUpdateHandler::K8sUpdateHandler(Dispatcher* d, px::md::AgentMetadataStateManager* mds_manager,
                                    Info* agent_info, Manager::VizierNATSConnector* nats_conn,
                                    const std::string& update_selector, size_t max_update_queue_size)
     : MessageHandler(d, agent_info, nats_conn),
@@ -177,4 +177,4 @@ Status K8sUpdateHandler::HandleMessage(std::unique_ptr<messages::VizierMessage> 
 
 }  // namespace agent
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

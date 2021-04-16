@@ -14,9 +14,9 @@ const size_t kRangeEnd = 10'000'000;
 
 using ::google::protobuf::FileDescriptorSet;
 using ::google::protobuf::Message;
-using ::pl::benchmarks::ChargeRequest;
-using ::pl::grpc::MethodInputOutput;
-using ::pl::grpc::ServiceDescriptorDatabase;
+using ::px::benchmarks::ChargeRequest;
+using ::px::grpc::MethodInputOutput;
+using ::px::grpc::ServiceDescriptorDatabase;
 
 static ChargeRequest SampleChargeRequest() {
   ChargeRequest r;

@@ -6,7 +6,7 @@
 #include "src/stirling/core/canonical_types.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/common.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace canonical_data_elements {
 
@@ -46,4 +46,4 @@ constexpr DataElement kLatencyNS = {
 
 }  // namespace canonical_data_elements
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

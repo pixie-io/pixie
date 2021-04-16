@@ -6,7 +6,7 @@
 #include "src/common/base/macros.h"
 #include "src/common/base/mixins.h"
 
-namespace pl {
+namespace px {
 
 // Defer allow you to defer code (go-style)
 //
@@ -40,6 +40,6 @@ ScopedLambda<FnType> MakeScopedLambda(FnType fn) {
   return ScopedLambda<FnType>(std::move(fn));
 }
 
-}  // namespace pl
+}  // namespace px
 
-#define DEFER(...) auto PL_UNIQUE_NAME(varname) = pl::MakeScopedLambda([&] { __VA_ARGS__; });
+#define DEFER(...) auto PL_UNIQUE_NAME(varname) = px::MakeScopedLambda([&] { __VA_ARGS__; });

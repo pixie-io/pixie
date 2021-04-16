@@ -12,11 +12,11 @@
 #include "src/shared/metadatapb/metadata.pb.h"
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
-using ::pl::shared::metadatapb::MetadataType;
+using ::px::shared::metadatapb::MetadataType;
 
 class NameMetadataProperty : public MetadataProperty {
  public:
@@ -70,4 +70,4 @@ class MetadataHandler {
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -19,7 +19,7 @@
 #include "src/common/uuid/uuid.h"
 #include "src/vizier/services/agent/manager/manager.h"
 
-namespace pl {
+namespace px {
 namespace vizier {
 namespace funcs {
 namespace md {
@@ -69,7 +69,7 @@ template <typename TUDTF>
 class UDTFWithTableStoreFactory : public carnot::udf::UDTFFactory {
  public:
   UDTFWithTableStoreFactory() = delete;
-  explicit UDTFWithTableStoreFactory(const ::pl::table_store::TableStore* table_store)
+  explicit UDTFWithTableStoreFactory(const ::px::table_store::TableStore* table_store)
       : table_store_(table_store) {}
 
   std::unique_ptr<carnot::udf::AnyUDTF> Make() override {
@@ -77,7 +77,7 @@ class UDTFWithTableStoreFactory : public carnot::udf::UDTFFactory {
   }
 
  private:
-  const ::pl::table_store::TableStore* table_store_;
+  const ::px::table_store::TableStore* table_store_;
 };
 
 /**
@@ -102,8 +102,8 @@ class GetTables final : public carnot::udf::UDTF<GetTables> {
   }
 
   Status Init(FunctionContext*) {
-    pl::vizier::services::metadata::SchemaRequest req;
-    pl::vizier::services::metadata::SchemaResponse resp;
+    px::vizier::services::metadata::SchemaRequest req;
+    px::vizier::services::metadata::SchemaResponse resp;
 
     grpc::ClientContext ctx;
     add_context_authentication_func_(&ctx);
@@ -170,8 +170,8 @@ class GetTableSchemas final : public carnot::udf::UDTF<GetTableSchemas> {
   }
 
   Status Init(FunctionContext*) {
-    pl::vizier::services::metadata::SchemaRequest req;
-    pl::vizier::services::metadata::SchemaResponse resp;
+    px::vizier::services::metadata::SchemaRequest req;
+    px::vizier::services::metadata::SchemaResponse resp;
 
     grpc::ClientContext ctx;
     add_context_authentication_func_(&ctx);
@@ -259,8 +259,8 @@ class GetAgentStatus final : public carnot::udf::UDTF<GetAgentStatus> {
   }
 
   Status Init(FunctionContext*) {
-    pl::vizier::services::metadata::AgentInfoRequest req;
-    resp_ = std::make_unique<pl::vizier::services::metadata::AgentInfoResponse>();
+    px::vizier::services::metadata::AgentInfoRequest req;
+    resp_ = std::make_unique<px::vizier::services::metadata::AgentInfoResponse>();
 
     grpc::ClientContext ctx;
     add_context_authentication_func_(&ctx);
@@ -297,7 +297,7 @@ class GetAgentStatus final : public carnot::udf::UDTF<GetAgentStatus> {
 
  private:
   int idx_ = 0;
-  std::unique_ptr<pl::vizier::services::metadata::AgentInfoResponse> resp_;
+  std::unique_ptr<px::vizier::services::metadata::AgentInfoResponse> resp_;
   std::shared_ptr<MDSStub> stub_;
   std::function<void(grpc::ClientContext*)> add_context_authentication_func_;
 };
@@ -536,7 +536,7 @@ class GetDebugMDState final : public carnot::udf::UDTF<GetDebugMDState> {
 class GetDebugTableInfo final : public carnot::udf::UDTF<GetDebugTableInfo> {
  public:
   GetDebugTableInfo() = delete;
-  explicit GetDebugTableInfo(const ::pl::table_store::TableStore* table_store)
+  explicit GetDebugTableInfo(const ::px::table_store::TableStore* table_store)
       : table_store_(table_store) {}
   static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ALL_AGENTS; }
 
@@ -586,7 +586,7 @@ class GetDebugTableInfo final : public carnot::udf::UDTF<GetDebugTableInfo> {
   }
 
  private:
-  const ::pl::table_store::TableStore* table_store_;
+  const ::px::table_store::TableStore* table_store_;
   int current_idx_ = 0;
   std::vector<uint64_t> table_ids_;
 };
@@ -621,8 +621,8 @@ class GetTracepointStatus final : public carnot::udf::UDTF<GetTracepointStatus> 
   }
 
   Status Init(FunctionContext*) {
-    pl::vizier::services::metadata::GetTracepointInfoRequest req;
-    resp_ = std::make_unique<pl::vizier::services::metadata::GetTracepointInfoResponse>();
+    px::vizier::services::metadata::GetTracepointInfoRequest req;
+    resp_ = std::make_unique<px::vizier::services::metadata::GetTracepointInfoResponse>();
 
     grpc::ClientContext ctx;
     add_context_authentication_func_(&ctx);
@@ -707,7 +707,7 @@ class GetTracepointStatus final : public carnot::udf::UDTF<GetTracepointStatus> 
 
  private:
   int idx_ = 0;
-  std::unique_ptr<pl::vizier::services::metadata::GetTracepointInfoResponse> resp_;
+  std::unique_ptr<px::vizier::services::metadata::GetTracepointInfoResponse> resp_;
   std::shared_ptr<MDTPStub> stub_;
   std::function<void(grpc::ClientContext*)> add_context_authentication_func_;
 };
@@ -715,4 +715,4 @@ class GetTracepointStatus final : public carnot::udf::UDTF<GetTracepointStatus> 
 }  // namespace md
 }  // namespace funcs
 }  // namespace vizier
-}  // namespace pl
+}  // namespace px

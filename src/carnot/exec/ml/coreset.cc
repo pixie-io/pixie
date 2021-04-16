@@ -3,7 +3,7 @@
 #include "src/carnot/exec/ml/coreset.h"
 #include "src/carnot/exec/ml/sampling.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 namespace ml {
@@ -37,4 +37,4 @@ std::shared_ptr<KMeansCoreset> KMeansCoreset::FromWeightedPointSet(
 }  // namespace ml
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -7,7 +7,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/pgsql/types.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace pgsql {
@@ -46,4 +46,4 @@ inline RecordsWithErrorCount<pgsql::Record> StitchFrames(std::deque<pgsql::Regul
 
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

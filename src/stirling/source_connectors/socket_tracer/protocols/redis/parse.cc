@@ -14,7 +14,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/redis/types.h"
 #include "src/stirling/utils/binary_decoder.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 namespace redis {
@@ -204,4 +204,4 @@ ParseState ParseMessage(MessageType type, std::string_view* buf, Message* msg) {
 }  // namespace redis
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

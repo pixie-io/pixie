@@ -6,7 +6,7 @@
 
 #include "src/carnot/exec/ml/coreset.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace exec {
 namespace ml {
@@ -52,4 +52,4 @@ class KMeans {
 }  // namespace ml
 }  // namespace exec
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

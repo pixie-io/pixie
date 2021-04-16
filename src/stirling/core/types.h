@@ -12,13 +12,13 @@
 #include "src/shared/types/type_utils.h"
 #include "src/stirling/proto/stirling.pb.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 using DataPushCallback = std::function<Status(uint32_t, types::TabletID,
                                               std::unique_ptr<types::ColumnWrapperRecordBatch>)>;
 
-using AgentMetadataType = std::shared_ptr<const pl::md::AgentMetadataState>;
+using AgentMetadataType = std::shared_ptr<const px::md::AgentMetadataState>;
 
 /**
  * The callback function signature to fetch new metadata.
@@ -251,4 +251,4 @@ class DynamicDataTableSchema {
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

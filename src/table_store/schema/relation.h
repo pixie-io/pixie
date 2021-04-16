@@ -7,7 +7,7 @@
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
 #include "src/table_store/schemapb/schema.pb.h"
 
-namespace pl {
+namespace px {
 namespace table_store {
 namespace schema {
 
@@ -98,4 +98,4 @@ class Relation {
 
 }  // namespace schema
 }  // namespace table_store
-}  // namespace pl
+}  // namespace px

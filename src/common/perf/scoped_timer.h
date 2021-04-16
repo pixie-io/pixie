@@ -7,7 +7,7 @@
 #include "src/common/base/base.h"
 #include "src/common/perf/elapsed_timer.h"
 
-namespace pl {
+namespace px {
 
 /**
  * Times a particular function scope and prints the time to the log.
@@ -35,4 +35,4 @@ class ScopedTimer : public NotCopyable {
   std::string name_;
 };
 
-}  // namespace pl
+}  // namespace px

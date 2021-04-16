@@ -10,7 +10,7 @@
 
 #include "src/carnot/planner/dynamic_tracing/ir/logicalpb/logical.pb.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -19,9 +19,9 @@ StatusOr<carnot::planner::dynamic_tracing::ir::logical::TracepointDeployment> Co
     std::string_view query) {
   // Create a dummy compiler state; it doesn't affect the tracepoint compilation.
   // TODO(oazizi): Try inserting nullptr for registry_info.
-  pl::carnot::planner::RegistryInfo registry_info;
-  pl::carnot::planner::CompilerState dummy_compiler_state(
-      std::make_unique<pl::carnot::planner::RelationMap>(), &registry_info,
+  px::carnot::planner::RegistryInfo registry_info;
+  px::carnot::planner::CompilerState dummy_compiler_state(
+      std::make_unique<px::carnot::planner::RelationMap>(), &registry_info,
       // Time now isn't used to generate probes, but we still need to pass one in.
       /*time_now*/ 1552607213931245000,
       /*max_output_rows_per_table*/ 10000, "dummy_result_addr", /* SSL target name override */ "");
@@ -51,4 +51,4 @@ StatusOr<carnot::planner::dynamic_tracing::ir::logical::TracepointDeployment> Co
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

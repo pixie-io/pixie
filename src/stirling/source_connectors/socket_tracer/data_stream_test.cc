@@ -8,7 +8,7 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/event_generator.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 namespace http = protocols::http;
@@ -338,4 +338,4 @@ TEST_F(DataStreamTest, CannotSwitchType) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

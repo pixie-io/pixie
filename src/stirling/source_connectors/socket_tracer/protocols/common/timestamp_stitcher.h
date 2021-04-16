@@ -7,7 +7,7 @@
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace protocols {
 
@@ -76,4 +76,4 @@ RecordsWithErrorCount<TRecordType> StitchMessagesWithTimestampOrder(
 
 }  // namespace protocols
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

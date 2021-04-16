@@ -7,7 +7,7 @@
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/objects/funcobject.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -340,4 +340,4 @@ inline Status AddResultSink(IR* graph, const pypa::AstPtr& ast, std::string_view
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

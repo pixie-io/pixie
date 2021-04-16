@@ -18,19 +18,19 @@
 #include "src/table_store/schema/relation.h"
 #include "src/table_store/schemapb/schema.pb.h"
 
-using pl::carnot::planner::distributedpb::LogicalPlannerResult;
-using pl::carnot::planner::plannerpb::CompileMutationsResponse;
-using pl::shared::scriptspb::MainFuncSpecResult;
-using pl::shared::scriptspb::VisFuncsInfoResult;
+using px::carnot::planner::distributedpb::LogicalPlannerResult;
+using px::carnot::planner::plannerpb::CompileMutationsResponse;
+using px::shared::scriptspb::MainFuncSpecResult;
+using px::shared::scriptspb::VisFuncsInfoResult;
 
 PlannerPtr PlannerNew(const char* udf_info_data, int udf_info_len) {
   std::string udf_info_pb_str(udf_info_data, udf_info_data + udf_info_len);
-  pl::carnot::udfspb::UDFInfo udf_info_pb;
+  px::carnot::udfspb::UDFInfo udf_info_pb;
 
   bool did_udf_info_pb_load = udf_info_pb.ParseFromString(udf_info_pb_str);
   CHECK(did_udf_info_pb_load) << "Couldn't process the udf_info";
 
-  auto planner_or_s = pl::carnot::planner::LogicalPlanner::Create(udf_info_pb);
+  auto planner_or_s = px::carnot::planner::LogicalPlanner::Create(udf_info_pb);
   if (!planner_or_s.ok()) {
     return nullptr;
   }
@@ -47,14 +47,14 @@ PlannerPtr PlannerNew(const char* udf_info_data, int udf_info_len) {
     }                                                           \
   } while (false)
 
-pl::Status LoadProto(const std::string& serialized_proto, google::protobuf::Message* output,
+px::Status LoadProto(const std::string& serialized_proto, google::protobuf::Message* output,
                      const std::string& error_msg) {
   bool success = output->ParseFromString(serialized_proto);
   if (!success) {
     LOG(ERROR) << error_msg;
-    return pl::Status(pl::statuspb::INVALID_ARGUMENT, error_msg);
+    return px::Status(px::statuspb::INVALID_ARGUMENT, error_msg);
   }
-  return pl::Status::OK();
+  return px::Status::OK();
 }
 
 char* PlannerPlan(PlannerPtr planner_ptr, const char* planner_state_str_c,
@@ -67,24 +67,24 @@ char* PlannerPlan(PlannerPtr planner_ptr, const char* planner_state_str_c,
                                    query_request_str_c + query_request_str_len);
 
   // Load in the planner state protobuf.
-  pl::carnot::planner::distributedpb::LogicalPlannerState planner_state_pb;
+  px::carnot::planner::distributedpb::LogicalPlannerState planner_state_pb;
   PLANNER_RETURN_IF_ERROR(LogicalPlannerResult, resultLen,
                           LoadProto(planner_state_pb_str, &planner_state_pb,
                                     "Failed to process the logical planner state"));
 
   // Load in the query request protobuf.
-  pl::carnot::planner::plannerpb::QueryRequest query_request_pb;
+  px::carnot::planner::plannerpb::QueryRequest query_request_pb;
   PLANNER_RETURN_IF_ERROR(
       LogicalPlannerResult, resultLen,
       LoadProto(query_request_pb_str, &query_request_pb, "Failed to process the query request"));
 
-  auto planner = reinterpret_cast<pl::carnot::planner::LogicalPlanner*>(planner_ptr);
+  auto planner = reinterpret_cast<px::carnot::planner::LogicalPlanner*>(planner_ptr);
 
   auto distributed_plan_status = planner->Plan(planner_state_pb, query_request_pb);
   if (!distributed_plan_status.ok()) {
     return ExitEarly<LogicalPlannerResult>(distributed_plan_status.status(), resultLen);
   }
-  std::unique_ptr<pl::carnot::planner::distributed::DistributedPlan> distributed_plan =
+  std::unique_ptr<px::carnot::planner::distributed::DistributedPlan> distributed_plan =
       distributed_plan_status.ConsumeValueOrDie();
 
   // If the response is ok, then we can go ahead and set this up.
@@ -116,24 +116,24 @@ char* PlannerCompileMutations(PlannerPtr planner_ptr, const char* planner_state_
                                       mutation_request_str_c + mutation_request_str_len);
 
   // Load in the planner state protobuf.
-  pl::carnot::planner::distributedpb::LogicalPlannerState planner_state_pb;
+  px::carnot::planner::distributedpb::LogicalPlannerState planner_state_pb;
   PLANNER_RETURN_IF_ERROR(CompileMutationsResponse, resultLen,
                           LoadProto(planner_state_pb_str, &planner_state_pb,
                                     "Failed to parse the logical planner state"));
 
   // Load in the mutation request protobuf.
-  pl::carnot::planner::plannerpb::CompileMutationsRequest mutation_request_pb;
+  px::carnot::planner::plannerpb::CompileMutationsRequest mutation_request_pb;
   PLANNER_RETURN_IF_ERROR(CompileMutationsResponse, resultLen,
                           LoadProto(mutation_request_pb_str, &mutation_request_pb,
                                     "Failed to parse the mutation request"));
 
-  auto planner = reinterpret_cast<pl::carnot::planner::LogicalPlanner*>(planner_ptr);
+  auto planner = reinterpret_cast<px::carnot::planner::LogicalPlanner*>(planner_ptr);
 
   auto dynamic_trace_or_s = planner->CompileTrace(planner_state_pb, mutation_request_pb);
   if (!dynamic_trace_or_s.ok()) {
     return ExitEarly<CompileMutationsResponse>(dynamic_trace_or_s.status(), resultLen);
   }
-  std::unique_ptr<pl::carnot::planner::compiler::MutationsIR> trace =
+  std::unique_ptr<px::carnot::planner::compiler::MutationsIR> trace =
       dynamic_trace_or_s.ConsumeValueOrDie();
 
   // If the response is ok, then we can go ahead and set this up.
@@ -152,12 +152,12 @@ char* PlannerGetMainFuncArgsSpec(PlannerPtr planner_ptr, const char* query_reque
   DCHECK(query_request_str_c != nullptr);
   std::string query_request_pb_str(query_request_str_c,
                                    query_request_str_c + query_request_str_len);
-  pl::carnot::planner::plannerpb::QueryRequest query_request_pb;
+  px::carnot::planner::plannerpb::QueryRequest query_request_pb;
   PLANNER_RETURN_IF_ERROR(
       MainFuncSpecResult, resultLen,
       LoadProto(query_request_pb_str, &query_request_pb, "Failed to process the query request"));
 
-  auto planner = reinterpret_cast<pl::carnot::planner::LogicalPlanner*>(planner_ptr);
+  auto planner = reinterpret_cast<px::carnot::planner::LogicalPlanner*>(planner_ptr);
 
   auto main_args_spec_status = planner->GetMainFuncArgsSpec(query_request_pb);
   if (!main_args_spec_status.ok()) {
@@ -177,7 +177,7 @@ char* PlannerVisFuncsInfo(PlannerPtr planner_ptr, const char* script_str_c, int 
   DCHECK(script_str_c != nullptr);
   std::string script_str(script_str_c, script_str_c + script_str_len);
 
-  auto planner = reinterpret_cast<pl::carnot::planner::LogicalPlanner*>(planner_ptr);
+  auto planner = reinterpret_cast<px::carnot::planner::LogicalPlanner*>(planner_ptr);
 
   auto vis_funcs_info_or_s = planner->GetVisFuncsInfo(script_str);
   if (!vis_funcs_info_or_s.ok()) {
@@ -192,7 +192,7 @@ char* PlannerVisFuncsInfo(PlannerPtr planner_ptr, const char* script_str_c, int 
 }
 
 void PlannerFree(PlannerPtr planner_ptr) {
-  delete reinterpret_cast<pl::carnot::planner::LogicalPlanner*>(planner_ptr);
+  delete reinterpret_cast<px::carnot::planner::LogicalPlanner*>(planner_ptr);
 }
 
 void StrFree(char* str) { delete str; }

@@ -11,7 +11,7 @@
 #include "src/carnot/planner/rules/rule_executor.h"
 #include "src/carnot/planner/rules/rules.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -118,4 +118,4 @@ class Analyzer : public RuleExecutor<IR> {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

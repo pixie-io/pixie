@@ -10,7 +10,7 @@
 #include "src/common/system/proc_parser.h"
 #include "src/shared/metadata/metadata.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 using system::ProcParser;
@@ -161,6 +161,6 @@ Status SystemStatsConnector::GetNetworkStatsForPod(const system::ProcParser& pro
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px
 
 #endif

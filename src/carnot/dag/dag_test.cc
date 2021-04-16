@@ -10,11 +10,11 @@
 
 #include "src/common/testing/protobuf.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace plan {
 
-using ::pl::testing::proto::EqualsProto;
+using ::px::testing::proto::EqualsProto;
 using ::testing::AnyOf;
 using ::testing::ElementsAre;
 using ::testing::UnorderedElementsAre;
@@ -257,4 +257,4 @@ TEST_F(DAGTest, from_proto) {
 
 }  // namespace plan
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

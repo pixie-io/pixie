@@ -6,7 +6,7 @@
 #include "src/carnot/planner/objects/test_utils.h"
 #include "src/carnot/planner/objects/type_object.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace compiler {
@@ -41,4 +41,4 @@ TEST_F(CastHandlerTest, CastTest) {
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

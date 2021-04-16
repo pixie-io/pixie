@@ -24,12 +24,12 @@ extern "C" {
 NO_OPT_ATTR void StirlingProbeTrigger() { return; }
 }
 
-namespace pl {
+namespace px {
 namespace stirling {
 namespace utils {
 
-using ::pl::stirling::bpf_tools::BPFProbeAttachType;
-using ::pl::stirling::bpf_tools::UProbeSpec;
+using ::px::stirling::bpf_tools::BPFProbeAttachType;
+using ::px::stirling::bpf_tools::UProbeSpec;
 
 namespace {
 
@@ -139,7 +139,7 @@ StatusOr<TaskStructOffsets> ScanBufferForFields(const struct buf& buf,
 StatusOr<TaskStructOffsets> ResolveTaskStructOffsetsCore() {
   // Get the PID start time from /proc.
   PL_ASSIGN_OR_RETURN(uint64_t proc_pid_start_time,
-                      ::pl::system::GetPIDStartTimeTicks("/proc/self"));
+                      ::px::system::GetPIDStartTimeTicks("/proc/self"));
 
   PL_ASSIGN_OR_RETURN(std::filesystem::path self_path, GetSelfPath());
 
@@ -154,7 +154,7 @@ StatusOr<TaskStructOffsets> ResolveTaskStructOffsetsCore() {
                     .probe_fn = "task_struct_probe"};
 
   // Deploy the BPF program.
-  auto bcc = std::make_unique<pl::stirling::bpf_tools::BCCWrapper>();
+  auto bcc = std::make_unique<px::stirling::bpf_tools::BCCWrapper>();
   std::vector<std::string> cflags;
   // Important! Must tell BCCWrapper that we don't need linux headers, otherwise we may
   // enter an infinite loop if BCCWrapper tries to run the TaskStructResolver again.
@@ -277,4 +277,4 @@ StatusOr<TaskStructOffsets> ResolveTaskStructOffsets() {
 
 }  // namespace utils
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

@@ -7,14 +7,14 @@
 
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace grpc {
 
 using ::google::protobuf::FileDescriptorSet;
 using ::google::protobuf::Message;
 using ::google::protobuf::TextFormat;
 using ::google::protobuf::util::MessageDifferencer;
-using ::pl::testing::proto::EqualsProto;
+using ::px::testing::proto::EqualsProto;
 using ::testing::_;
 using ::testing::ElementsAre;
 using ::testing::Pair;
@@ -102,4 +102,4 @@ TEST_F(ServiceDescriptorDatabaseTest, AllServices) {
 }
 
 }  // namespace grpc
-}  // namespace pl
+}  // namespace px

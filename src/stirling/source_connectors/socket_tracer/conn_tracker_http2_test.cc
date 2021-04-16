@@ -6,7 +6,7 @@
 #include "src/common/base/types.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/http2_stream_generator.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 namespace http2 = protocols::http2;
@@ -451,4 +451,4 @@ TEST_F(ConnTrackerHTTP2Test, StreamIDJumpBack) {
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

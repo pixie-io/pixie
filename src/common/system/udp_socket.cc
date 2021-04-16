@@ -12,7 +12,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace system {
 
 // NOTE: Must convert CHECKs to Status if this code is ever used outside test code.
@@ -142,4 +142,4 @@ struct sockaddr_in UDPSocket::RecvMMsg(std::string* data, int flags) const {
 }
 
 }  // namespace system
-}  // namespace pl
+}  // namespace px

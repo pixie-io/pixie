@@ -9,7 +9,7 @@
 #include "src/carnot/planner/distributed/distributed_stitcher_rules.h"
 #include "src/carnot/planner/distributed/grpc_source_conversion.h"
 #include "src/carnot/planner/rules/rules.h"
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 namespace distributed {
@@ -71,4 +71,4 @@ StatusOr<std::unique_ptr<DistributedPlan>> DistributedPlanner::Plan(
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -1,6 +1,6 @@
 #include "src/stirling/core/connector_context.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 std::vector<CIDRBlock> AgentContext::GetClusterCIDRs() {
@@ -51,4 +51,4 @@ absl::flat_hash_set<md::UPID> ListUPIDs(const std::filesystem::path& proc_path, 
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

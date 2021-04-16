@@ -3,7 +3,7 @@
 #include "src/common/fs/inode_utils.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace fs {
 
 TEST(InodeUtils, ExtractInodeNum) {
@@ -20,4 +20,4 @@ TEST(InodeUtils, ExtractInodeNum) {
 }
 
 }  // namespace fs
-}  // namespace pl
+}  // namespace px

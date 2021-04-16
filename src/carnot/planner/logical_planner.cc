@@ -4,7 +4,7 @@
 
 #include "src/shared/scriptspb/scripts.pb.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace planner {
 
@@ -13,7 +13,7 @@ using table_store::schemapb::Schema;
 StatusOr<std::unique_ptr<RelationMap>> MakeRelationMapFromSchema(const Schema& schema_pb) {
   auto rel_map = std::make_unique<RelationMap>();
   for (auto& relation_pair : schema_pb.relation_map()) {
-    pl::table_store::schema::Relation rel;
+    px::table_store::schema::Relation rel;
     PL_RETURN_IF_ERROR(rel.FromProto(&relation_pair.second));
     rel_map->emplace(relation_pair.first, rel);
   }
@@ -24,7 +24,7 @@ StatusOr<std::unique_ptr<RelationMap>> MakeRelationMapFromDistributedState(
     const distributedpb::DistributedState& state_pb) {
   auto rel_map = std::make_unique<RelationMap>();
   for (const auto& schema_info : state_pb.schema_info()) {
-    pl::table_store::schema::Relation rel;
+    px::table_store::schema::Relation rel;
     PL_RETURN_IF_ERROR(rel.FromProto(&schema_info.relation()));
     rel_map->emplace(schema_info.name(), rel);
   }
@@ -40,7 +40,7 @@ StatusOr<std::unique_ptr<CompilerState>> CreateCompilerState(
   // Create a CompilerState obj using the relation map and grabbing the current time.
 
   return std::make_unique<planner::CompilerState>(
-      std::move(rel_map), registry_info, pl::CurrentTimeNS(), max_output_rows_per_table,
+      std::move(rel_map), registry_info, px::CurrentTimeNS(), max_output_rows_per_table,
       logical_state.result_address(), logical_state.result_ssl_targetname());
 }
 
@@ -101,7 +101,7 @@ StatusOr<shared::scriptspb::FuncArgsSpec> LogicalPlanner::GetMainFuncArgsSpec(
   return compiler_.GetMainFuncArgsSpec(query_request.query_str(), compiler_state.get());
 }
 
-StatusOr<pl::shared::scriptspb::VisFuncsInfo> LogicalPlanner::GetVisFuncsInfo(
+StatusOr<px::shared::scriptspb::VisFuncsInfo> LogicalPlanner::GetVisFuncsInfo(
     const std::string& script_str) {
   PL_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,
                       CreateCompilerState({}, registry_info_.get(), 0));
@@ -111,4 +111,4 @@ StatusOr<pl::shared::scriptspb::VisFuncsInfo> LogicalPlanner::GetVisFuncsInfo(
 
 }  // namespace planner
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

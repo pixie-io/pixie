@@ -4,7 +4,7 @@
 
 #include "src/common/base/base.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 namespace {
@@ -91,4 +91,4 @@ void ConnStats::RecordData(const struct upid_t& upid, const struct traffic_class
 }
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

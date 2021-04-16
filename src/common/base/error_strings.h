@@ -7,10 +7,10 @@
 
 #include "src/common/base/statuspb/status.pb.h"
 
-namespace pl {
+namespace px {
 namespace error {
 
-std::string CodeToString(pl::statuspb::Code code);
+std::string CodeToString(px::statuspb::Code code);
 
 }  // namespace error
-}  // namespace pl
+}  // namespace px

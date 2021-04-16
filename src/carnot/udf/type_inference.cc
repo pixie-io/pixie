@@ -2,20 +2,20 @@
 
 #include "src/common/base/hash_utils.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace udf {
 
 size_t ExplicitRule::Hash() const {
   auto int_hash = std::hash<int>{};
   size_t hash = 0;
-  hash = ::pl::HashCombine(hash, int_hash(static_cast<int>(udf_exec_type_)));
-  hash = ::pl::HashCombine(hash, int_hash(static_cast<int>(out_type_)));
+  hash = ::px::HashCombine(hash, int_hash(static_cast<int>(udf_exec_type_)));
+  hash = ::px::HashCombine(hash, int_hash(static_cast<int>(out_type_)));
   for (const auto& arg_type : init_arg_types_) {
-    hash = ::pl::HashCombine(hash, int_hash(static_cast<int>(arg_type)));
+    hash = ::px::HashCombine(hash, int_hash(static_cast<int>(arg_type)));
   }
   for (const auto& arg_type : exec_or_update_types_) {
-    hash = ::pl::HashCombine(hash, int_hash(static_cast<int>(arg_type)));
+    hash = ::px::HashCombine(hash, int_hash(static_cast<int>(arg_type)));
   }
   return hash;
 }
@@ -48,4 +48,4 @@ void ExplicitRule::ToProto(const std::string& name, udfspb::SemanticInferenceRul
 }
 }  // namespace udf
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

@@ -5,7 +5,7 @@
 
 #include <magic_enum.hpp>
 
-namespace pl {
+namespace px {
 
 /**
  * This function converts an enum definition to a map where the key is the value,
@@ -31,4 +31,4 @@ std::map<int64_t, std::string_view> EnumDefToMap() {
   return result;
 }
 
-}  // namespace pl
+}  // namespace px

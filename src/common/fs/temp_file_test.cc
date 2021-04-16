@@ -8,7 +8,7 @@
 #include "src/common/base/test_utils.h"
 #include "src/common/fs/temp_file.h"
 
-namespace pl {
+namespace px {
 namespace fs {
 
 TEST(TempFile, Basic) {
@@ -46,4 +46,4 @@ TEST(TempFile, ReferenceKeepsFileAccessible) {
 }
 
 }  // namespace fs
-}  // namespace pl
+}  // namespace px

@@ -2,11 +2,11 @@
 #include "src/carnot/udf/udf.h"
 #include "src/common/testing/testing.h"
 
-namespace pl {
+namespace px {
 namespace carnot {
 namespace udf {
 
-using ::pl::testing::proto::EqualsProto;
+using ::px::testing::proto::EqualsProto;
 
 auto constexpr scalarUDFExpectedDoc = R"(
 brief: "This function adds two numbers: c = a + b"
@@ -102,4 +102,4 @@ TEST(doc, uda_doc_builder) {
 
 }  // namespace udf
 }  // namespace carnot
-}  // namespace pl
+}  // namespace px

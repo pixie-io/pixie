@@ -8,7 +8,7 @@
 #include "src/stirling/core/source_connector.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/logicalpb/logical.pb.h"
 
-namespace pl {
+namespace px {
 namespace stirling {
 
 class DynamicBPFTraceConnector : public SourceConnector, public bpf_tools::BPFTraceWrapper {
@@ -43,4 +43,4 @@ class DynamicBPFTraceConnector : public SourceConnector, public bpf_tools::BPFTr
 };
 
 }  // namespace stirling
-}  // namespace pl
+}  // namespace px

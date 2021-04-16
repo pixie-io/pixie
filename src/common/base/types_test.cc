@@ -2,7 +2,7 @@
 
 #include "src/common/base/types.h"
 
-namespace pl {
+namespace px {
 namespace const_types_test {
 
 TEST(ConstStringViewTest, const_string_view) {
@@ -198,4 +198,4 @@ TEST(ContainerView, iterator) {
 }
 
 }  // namespace const_types_test
-}  // namespace pl
+}  // namespace px
