@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"px.dev/pixie/src/cloud/api/idprovider/testutils"
 	"px.dev/pixie/src/cloud/profile/controller/idmanager"
+	"px.dev/pixie/src/cloud/shared/idprovider/testutils"
 )
 
 func TestCreateKratos(t *testing.T) {

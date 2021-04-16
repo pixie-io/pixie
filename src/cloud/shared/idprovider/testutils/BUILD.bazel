@@ -3,11 +3,11 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "testutils",
     srcs = ["kratostest.go"],
-    importpath = "px.dev/pixie/src/cloud/api/idprovider/testutils",
+    importpath = "px.dev/pixie/src/cloud/shared/idprovider/testutils",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/cloud/api/idprovider",
-        "//src/cloud/api/idprovider/testutils/schema",
+        "//src/cloud/shared/idprovider",
+        "//src/cloud/shared/idprovider/testutils/schema",
         "@com_github_cenkalti_backoff_v3//:backoff",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_ory_dockertest_v3//:dockertest",

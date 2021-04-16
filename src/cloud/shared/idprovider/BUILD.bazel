@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "idprovider",
     srcs = ["client.go"],
-    importpath = "px.dev/pixie/src/cloud/api/idprovider",
+    importpath = "px.dev/pixie/src/cloud/shared/idprovider",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/cloud/profile/controller/idmanager",

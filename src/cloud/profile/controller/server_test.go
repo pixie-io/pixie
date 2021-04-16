@@ -15,7 +15,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"px.dev/pixie/src/api/public/uuidpb"
-	"px.dev/pixie/src/cloud/api/idprovider/testutils"
 	"px.dev/pixie/src/cloud/profile/controller"
 	mock_controller "px.dev/pixie/src/cloud/profile/controller/mock"
 	"px.dev/pixie/src/cloud/profile/datastore"
@@ -23,6 +22,7 @@ import (
 	profile "px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/cloud/project_manager/projectmanagerpb"
 	mock_projectmanager "px.dev/pixie/src/cloud/project_manager/projectmanagerpb/mock"
+	"px.dev/pixie/src/cloud/shared/idprovider/testutils"
 	"px.dev/pixie/src/shared/services/authcontext"
 	svcutils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils"

@@ -17,8 +17,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
-	"px.dev/pixie/src/cloud/api/idprovider"
-	"px.dev/pixie/src/cloud/api/idprovider/testutils/schema"
+	"px.dev/pixie/src/cloud/shared/idprovider"
+	"px.dev/pixie/src/cloud/shared/idprovider/testutils/schema"
 )
 
 // KratosServer manages a kratos instance deployed to docker for testing.

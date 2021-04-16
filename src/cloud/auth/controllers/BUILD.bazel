@@ -14,10 +14,10 @@ go_library(
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",
-        "//src/cloud/api/idprovider",
         "//src/cloud/auth/authenv",
         "//src/cloud/auth/authpb:auth_go_proto",
         "//src/cloud/profile/profilepb:service_go_proto",
+        "//src/cloud/shared/idprovider",
         "//src/shared/services",
         "//src/shared/services/authcontext",
         "//src/shared/services/handler",

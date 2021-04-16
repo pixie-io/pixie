@@ -6,6 +6,6 @@ go_library(
         "bindata.gen.go",
         "schema.go",
     ],
-    importpath = "px.dev/pixie/src/cloud/api/idprovider/testutils/schema",
-    visibility = ["//src/cloud/api/idprovider:__subpackages__"],
+    importpath = "px.dev/pixie/src/cloud/shared/idprovider/testutils/schema",
+    visibility = ["//src/cloud/shared/idprovider:__subpackages__"],
 )
