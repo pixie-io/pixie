@@ -57,7 +57,11 @@ final class ArcanistGolangCiLinter extends ArcanistExternalLinter {
     return $futures;
   }
 
-   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
+  public function shouldExpectCommandErrors() {
+    return true;
+  }
+
+  protected function parseLinterOutput($path, $err, $stdout, $stderr) {
     $report_dom = new DOMDocument();
     $ok = @$report_dom->loadXML($stdout);
 
