@@ -1052,3 +1052,37 @@ func TestProfileServer_GetOrgInfo(t *testing.T) {
 	assert.Equal(t, "someOrg", resp.OrgName)
 	assert.Equal(t, orgID, resp.ID)
 }
+
+func TestProfileServer_InviteUser(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+	mockReq := &profilepb.InviteUserRequest{
+		OrgID:          pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+		MustCreateUser: true,
+		Email:          "bobloblaw@lawblog.law",
+		FirstName:      "bob",
+		LastName:       "loblaw",
+	}
+
+	mockClients.MockProfile.EXPECT().InviteUser(gomock.Any(), mockReq).
+		Return(&profilepb.InviteUserResponse{
+			Email:      "bobloblaw@lawblog.law",
+			InviteLink: "withpixie.ai/invite&id=abcd",
+		}, nil)
+
+	profileServer := &controller.ProfileServer{mockClients.MockProfile}
+
+	resp, err := profileServer.InviteUser(ctx, &public_cloudapipb.InviteUserRequest{
+		Email:     "bobloblaw@lawblog.law",
+		FirstName: "bob",
+		LastName:  "loblaw",
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, mockReq.Email, resp.Email)
+	assert.Equal(t, "withpixie.ai/invite&id=abcd", resp.InviteLink)
+}

@@ -854,3 +854,38 @@ func (p *ProfileServer) GetOrgInfo(ctx context.Context, req *uuidpb.UUID) (*clou
 		OrgName: resp.OrgName,
 	}, nil
 }
+
+// InviteUser creates and returns an invite link for the org for the specified user info.
+func (p *ProfileServer) InviteUser(ctx context.Context, externalReq *public_cloudapipb.InviteUserRequest) (*public_cloudapipb.InviteUserResponse, error) {
+	ctx, err := contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	claimsOrgID := sCtx.Claims.GetUserClaims().OrgID
+	orgIDPb := pbutils.ProtoFromUUIDStrOrNil(claimsOrgID)
+	if orgIDPb == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Could not identify user's org")
+	}
+
+	internalReq := &profilepb.InviteUserRequest{
+		OrgID:          orgIDPb,
+		Email:          externalReq.Email,
+		FirstName:      externalReq.FirstName,
+		LastName:       externalReq.LastName,
+		MustCreateUser: true,
+	}
+	resp, err := p.ProfileServiceClient.InviteUser(ctx, internalReq)
+	if err != nil {
+		return nil, err
+	}
+
+	return &public_cloudapipb.InviteUserResponse{
+		Email:      resp.Email,
+		InviteLink: resp.InviteLink,
+	}, nil
+}
