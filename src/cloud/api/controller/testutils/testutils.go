@@ -7,6 +7,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/viper"
 
+	mock_publiccloudapipb "px.dev/pixie/src/api/public/cloudapipb/mock"
 	"px.dev/pixie/src/cloud/api/apienv"
 	"px.dev/pixie/src/cloud/api/controller"
 	mock_artifacttrackerpb "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb/mock"
@@ -23,6 +24,7 @@ type MockCloudClients struct {
 	MockVizierDeployKey   *mock_cloudapipb.MockVizierDeploymentKeyManagerServer
 	MockScriptMgr         *mock_cloudapipb.MockScriptMgrServer
 	MockAutocomplete      *mock_cloudapipb.MockAutocompleteServiceServer
+	MockOrg               *mock_publiccloudapipb.MockOrganizationServiceServer
 	MockAPIKey            *mock_cloudapipb.MockAPIKeyManagerServer
 }
 
@@ -34,12 +36,14 @@ func CreateTestGraphQLEnv(t *testing.T) (controller.GraphQLEnv, *MockCloudClient
 	vds := mock_cloudapipb.NewMockVizierDeploymentKeyManagerServer(ctrl)
 	sms := mock_cloudapipb.NewMockScriptMgrServer(ctrl)
 	as := mock_cloudapipb.NewMockAutocompleteServiceServer(ctrl)
+	os := mock_publiccloudapipb.NewMockOrganizationServiceServer(ctrl)
 	gqlEnv := controller.GraphQLEnv{
 		ArtifactTrackerServer: ats,
 		VizierClusterInfo:     vcs,
 		VizierDeployKeyMgr:    vds,
 		ScriptMgrServer:       sms,
 		AutocompleteServer:    as,
+		OrgServer:             os,
 	}
 	cleanup := func() {
 		if r := recover(); r != nil {
@@ -53,6 +57,7 @@ func CreateTestGraphQLEnv(t *testing.T) (controller.GraphQLEnv, *MockCloudClient
 		MockVizierDeployKey:   vds,
 		MockScriptMgr:         sms,
 		MockAutocomplete:      as,
+		MockOrg:               os,
 	}, cleanup
 }
 

@@ -10,6 +10,7 @@ import (
 	"github.com/graph-gophers/graphql-go/gqltesting"
 	"github.com/stretchr/testify/assert"
 
+	public_cloudapipb "px.dev/pixie/src/api/public/cloudapipb"
 	"px.dev/pixie/src/cloud/api/controller"
 	gqltestutils "px.dev/pixie/src/cloud/api/controller/testutils"
 	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
@@ -153,6 +154,45 @@ func TestUserSettingsResolver_UpdateUserSettings(t *testing.T) {
 			ExpectedResult: `
 				{
 					"UpdateUserSettings": true
+				}
+			`,
+		},
+	})
+}
+
+func TestUserSettingsResolver_InviteUser(t *testing.T) {
+	gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	mockClients.MockOrg.EXPECT().InviteUser(gomock.Any(), &public_cloudapipb.InviteUserRequest{
+		Email:     "test@test.com",
+		FirstName: "Tester",
+		LastName:  "Person",
+	}).Return(&public_cloudapipb.InviteUserResponse{
+		Email:      "test@test.com",
+		InviteLink: "https://pixie.ai/inviteLink",
+	}, nil)
+
+	gqlSchema := LoadSchema(gqlEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				mutation {
+					InviteUser(email: "test@test.com", firstName: "Tester", lastName: "Person" ) { 
+						email
+						inviteLink
+					}
+				}
+			`,
+			ExpectedResult: `
+				{
+					"InviteUser": {
+						"email": "test@test.com",
+						"inviteLink": "https://pixie.ai/inviteLink"
+					}
 				}
 			`,
 		},

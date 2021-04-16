@@ -6,6 +6,7 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/api/controller/testutils",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
+        "//src/api/public/cloudapipb/mock",
         "//src/cloud/api/apienv",
         "//src/cloud/api/controller",
         "//src/cloud/artifact_tracker/artifacttrackerpb/mock",

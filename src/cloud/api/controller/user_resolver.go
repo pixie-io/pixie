@@ -6,6 +6,7 @@ import (
 
 	"github.com/graph-gophers/graphql-go"
 
+	public_cloudapipb "px.dev/pixie/src/api/public/cloudapipb"
 	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/shared/services/authcontext"
 	pbutils "px.dev/pixie/src/utils"
@@ -153,4 +154,37 @@ func (q *QueryResolver) UpdateUserSettings(ctx context.Context, args *updateUser
 	}
 
 	return resp.OK, nil
+}
+
+type inviteUserArgs struct {
+	Email     string
+	FirstName string
+	LastName  string
+}
+
+// UserInviteResolver resolves a user invite.
+type UserInviteResolver struct {
+	Email      string
+	InviteLink string
+}
+
+// InviteUser invites the user with the given name and email address to the org by providing
+// an invite link.
+func (q *QueryResolver) InviteUser(ctx context.Context, args *inviteUserArgs) (*UserInviteResolver, error) {
+	grpcAPI := q.Env.OrgServer
+
+	resp, err := grpcAPI.InviteUser(ctx, &public_cloudapipb.InviteUserRequest{
+		Email:     args.Email,
+		FirstName: args.FirstName,
+		LastName:  args.LastName,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &UserInviteResolver{
+		Email:      resp.Email,
+		InviteLink: resp.InviteLink,
+	}, nil
 }

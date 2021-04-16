@@ -6,6 +6,7 @@ import (
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/relay"
 
+	public_cloudapipb "px.dev/pixie/src/api/public/cloudapipb"
 	"px.dev/pixie/src/cloud/api/controller/schema"
 	unauthenticatedschema "px.dev/pixie/src/cloud/api/controller/unauthenticated_schema"
 	"px.dev/pixie/src/cloud/cloudapipb"
@@ -20,6 +21,7 @@ type GraphQLEnv struct {
 	APIKeyMgr             cloudapipb.APIKeyManagerServer
 	ScriptMgrServer       cloudapipb.ScriptMgrServer
 	AutocompleteServer    cloudapipb.AutocompleteServiceServer
+	OrgServer             public_cloudapipb.OrganizationServiceServer
 
 	ProfileServiceClient profilepb.ProfileServiceClient
 }

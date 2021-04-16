@@ -193,6 +193,11 @@ type ClusterConnectionInfo {
   token: String!
 }
 
+type UserInvite {
+  email: String!
+  inviteLink: String!
+}
+
 type Mutation {
   CreateCluster: ClusterInfo @deprecated(reason: "Clusters are now created via px deploy")
   UpdateVizierConfig(clusterID: ID!, passthroughEnabled: Boolean): Boolean!
@@ -201,6 +206,7 @@ type Mutation {
   CreateAPIKey: APIKey!
   DeleteAPIKey(id: ID!): Boolean!
   UpdateUserSettings(keys: [String]!, values: [String]!): Boolean!
+  InviteUser(email: String!, firstName: String!, lastName: String!): UserInvite!
 }
 
 type CLIArtifact {

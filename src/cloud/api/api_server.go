@@ -231,6 +231,7 @@ func main() {
 		APIKeyMgr:             aks,
 		ScriptMgrServer:       sms,
 		AutocompleteServer:    as,
+		OrgServer:             profileServer,
 		ProfileServiceClient:  pc,
 	}
 
