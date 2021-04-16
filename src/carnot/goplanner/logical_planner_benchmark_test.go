@@ -373,7 +373,7 @@ const pxClusterJSON = `
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.RequestGraph",
+        "@type": "types.px.dev/px.vispb.RequestGraph",
         "requestorPodColumn": "requestor_pod",
         "responderPodColumn": "responder_pod",
         "requestorServiceColumn": "requestor_service",
@@ -406,7 +406,7 @@ const pxClusterJSON = `
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       }
     },
     {
@@ -427,7 +427,7 @@ const pxClusterJSON = `
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       }
     },
     {
@@ -448,7 +448,7 @@ const pxClusterJSON = `
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       }
     },
     {
@@ -469,7 +469,7 @@ const pxClusterJSON = `
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       }
     }
   ]
@@ -870,7 +870,7 @@ const pxPodJSON = `
       "name": "HTTP Requests",
       "globalFuncOutputName": "inbound_requests",
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "request_throughput",
@@ -896,7 +896,7 @@ const pxPodJSON = `
       "name": "HTTP Errors",
       "globalFuncOutputName": "inbound_requests",
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "errors_per_ns",
@@ -922,7 +922,7 @@ const pxPodJSON = `
       "name": "HTTP Latency",
       "globalFuncOutputName": "inbound_latency",
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "latency_p50",
@@ -954,7 +954,7 @@ const pxPodJSON = `
       "name": "CPU Usage",
       "globalFuncOutputName": "resource_timeseries",
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "cpu_usage",
@@ -992,7 +992,7 @@ const pxPodJSON = `
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       },
       "position": {
         "x": 4,
@@ -1017,7 +1017,7 @@ const pxPodJSON = `
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       },
       "position": {
         "x": 8,
@@ -1030,7 +1030,7 @@ const pxPodJSON = `
       "name": "Network Sent and Received",
       "globalFuncOutputName": "network_timeseries",
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "rx_bytes_per_ns",
@@ -1058,7 +1058,7 @@ const pxPodJSON = `
       "name": "Bytes Read",
       "globalFuncOutputName": "resource_timeseries",
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "total_disk_read_throughput",
@@ -1084,7 +1084,7 @@ const pxPodJSON = `
       "name": "Bytes Written",
       "globalFuncOutputName": "resource_timeseries",
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "total_disk_write_throughput",
@@ -1110,7 +1110,7 @@ const pxPodJSON = `
       "name": "Resident Set Size",
       "globalFuncOutputName": "resource_timeseries",
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "rss",
@@ -1136,7 +1136,7 @@ const pxPodJSON = `
       "name": "Virtual Memory Size",
       "globalFuncOutputName": "resource_timeseries",
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "vsize",
@@ -1174,7 +1174,7 @@ const pxPodJSON = `
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       },
       "position": {
         "x": 0,
@@ -1199,7 +1199,7 @@ const pxPodJSON = `
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       },
       "position": {
         "x": 0,

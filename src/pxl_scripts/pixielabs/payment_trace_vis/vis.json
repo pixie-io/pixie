@@ -43,7 +43,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "amount",
@@ -80,7 +80,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.BarChart",
+        "@type": "types.px.dev/px.vispb.BarChart",
         "bar": {
           "value": "count",
           "label": "amount"
@@ -111,7 +111,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       }
     }
   ]

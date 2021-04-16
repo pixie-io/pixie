@@ -39,7 +39,7 @@ var testLiveView = `{
 			}]
 		},
 		"displaySpec": {
-			"@type": "pixielabs.ai/pl.vispb.Table"
+			"@type": "types.px.dev/px.vispb.Table"
 		}
 	}]
 }`

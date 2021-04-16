@@ -215,7 +215,7 @@ class PresetQueriesTest : public ::testing::Test {
     auto resolver = std::unique_ptr<TypeResolver>(
         NewTypeResolverForDescriptorPool("pixielabs.ai", DescriptorPool::generated_pool()));
     auto status =
-        JsonToBinaryString(resolver.get(), "pixielabs.ai/pl.vispb.Vis", lv.vis_spec, &output);
+        JsonToBinaryString(resolver.get(), "types.px.dev/px.vispb.Vis", lv.vis_spec, &output);
     PL_CHECK_OK(status);
     // Finally parse protobuf serialization to struct.
     Vis vs;

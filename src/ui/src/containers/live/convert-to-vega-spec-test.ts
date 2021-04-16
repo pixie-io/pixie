@@ -298,7 +298,7 @@ function addHoverReverseTests(spec: Spec, expectedInteractivitySelector: string)
 describe('simple timeseries', () => {
   const valueFieldName = 'bytes_per_second';
   const input = {
-    '@type': 'pixielabs.ai/pl.vispb.TimeseriesChart',
+    '@type': 'types.px.dev/px.vispb.TimeseriesChart',
     timeseries: [
       {
         value: valueFieldName,
@@ -333,7 +333,7 @@ describe('simple timeseries', () => {
 describe('simple timeseries with y label bytes formatting', () => {
   const valueFieldName = 'bytes_per_second';
   const input = {
-    '@type': 'pixielabs.ai/pl.vispb.TimeseriesChart',
+    '@type': 'types.px.dev/px.vispb.TimeseriesChart',
     timeseries: [
       {
         value: valueFieldName,
@@ -355,7 +355,7 @@ describe('simple timeseries with y label bytes formatting', () => {
 describe('simple timeseries with y label duration formatting', () => {
   const valueFieldName = 'latency_ms';
   const input = {
-    '@type': 'pixielabs.ai/pl.vispb.TimeseriesChart',
+    '@type': 'types.px.dev/px.vispb.TimeseriesChart',
     timeseries: [
       {
         value: valueFieldName,
@@ -378,7 +378,7 @@ describe('timeseries with series', () => {
   const valueFieldName = 'bytes_per_second';
   const seriesFieldName = 'service';
   const input = {
-    '@type': 'pixielabs.ai/pl.vispb.TimeseriesChart',
+    '@type': 'types.px.dev/px.vispb.TimeseriesChart',
     timeseries: [
       {
         value: valueFieldName,
@@ -422,7 +422,7 @@ describe('timeseries with stacked series', () => {
   const valueFieldName = 'bytes_per_second';
   const seriesFieldName = 'service';
   const input = {
-    '@type': 'pixielabs.ai/pl.vispb.TimeseriesChart',
+    '@type': 'types.px.dev/px.vispb.TimeseriesChart',
     timeseries: [
       {
         value: valueFieldName,
@@ -469,7 +469,7 @@ describe('timeseries chart with multiple timeseries with different modes', () =>
   const firstValueField = 'bytes_per_second';
   const secondValueField = 'error_rate';
   const input = {
-    '@type': 'pixielabs.ai/pl.vispb.TimeseriesChart',
+    '@type': 'types.px.dev/px.vispb.TimeseriesChart',
     timeseries: [
       {
         value: firstValueField,
@@ -610,7 +610,7 @@ describe('simple bar', () => {
   const valueFieldName = 'num_errors';
   const labelFieldName = 'service';
   const input = {
-    '@type': 'pixielabs.ai/pl.vispb.BarChart',
+    '@type': 'types.px.dev/px.vispb.BarChart',
     bar: {
       label: labelFieldName,
       value: valueFieldName,
@@ -637,7 +637,7 @@ describe('simple veritcal bar', () => {
   const valueFieldName = 'num_errors';
   const labelFieldName = 'service';
   const input = {
-    '@type': 'pixielabs.ai/pl.vispb.BarChart',
+    '@type': 'types.px.dev/px.vispb.BarChart',
     bar: {
       label: labelFieldName,
       value: valueFieldName,
@@ -666,7 +666,7 @@ describe('bar with stackby', () => {
   const labelFieldName = 'service';
   const stackByFieldName = 'endpoint';
   const input = {
-    '@type': 'pixielabs.ai/pl.vispb.BarChart',
+    '@type': 'types.px.dev/px.vispb.BarChart',
     bar: {
       label: labelFieldName,
       value: valueFieldName,
@@ -696,7 +696,7 @@ describe('grouped bar', () => {
   const labelFieldName = 'service';
   const groupByFieldName = 'cluster';
   const input = {
-    '@type': 'pixielabs.ai/pl.vispb.BarChart',
+    '@type': 'types.px.dev/px.vispb.BarChart',
     bar: {
       label: labelFieldName,
       value: valueFieldName,
@@ -741,7 +741,7 @@ describe('grouped bar with stackby', () => {
   const groupByFieldName = 'cluster';
   const stackByFieldName = 'endpoint';
   const input = {
-    '@type': 'pixielabs.ai/pl.vispb.BarChart',
+    '@type': 'types.px.dev/px.vispb.BarChart',
     bar: {
       label: labelFieldName,
       value: valueFieldName,
@@ -786,7 +786,7 @@ describe('simple prebinned histogram', () => {
   const maxbins = 10;
   const minstep = 1;
   const input = {
-    '@type': 'pixielabs.ai/pl.vispb.HistogramChart',
+    '@type': 'types.px.dev/px.vispb.HistogramChart',
     histogram: {
       value: binFieldName,
       prebinCount: prebinFieldName,
@@ -922,7 +922,7 @@ const testInputVega: Spec = {
 describe('vega chart', () => {
   it('should output the inputted spec hydrated with the theme', () => {
     const input = {
-      '@type': 'pixielabs.ai/pl.vispb.VegaChart',
+      '@type': 'types.px.dev/px.vispb.VegaChart',
       spec: JSON.stringify(testInputVega),
     };
     const { spec } = convertWidgetDisplayToVegaSpec(input, 'mysource', DARK_THEME);
@@ -934,7 +934,7 @@ describe('vega chart', () => {
 
 describe('simple stacktraceFlameGraph', () => {
   const input = {
-    '@type': 'pixielabs.ai/pl.vispb.StackTraceFlameGraph',
+    '@type': 'types.px.dev/px.vispb.StackTraceFlameGraph',
     stacktraceColumn: 'stacktraces',
     countColumn: 'counts',
     percentageColumn: 'percent',

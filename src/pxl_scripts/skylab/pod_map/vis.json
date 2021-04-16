@@ -37,7 +37,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Graph",
+        "@type": "types.px.dev/px.vispb.Graph",
         "adjacencyList": {
           "fromColumn": "requestor",
           "toColumn": "responder"

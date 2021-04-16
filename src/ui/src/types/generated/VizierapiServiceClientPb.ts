@@ -1,5 +1,5 @@
 /**
- * @fileoverview gRPC-Web generated client stub for pl.api.vizierpb
+ * @fileoverview gRPC-Web generated client stub for px.api.vizierpb
  * @enhanceable
  * @public
  */
@@ -48,7 +48,7 @@ export class VizierServiceClient {
     metadata?: grpcWeb.Metadata) {
     return this.client_.serverStreaming(
       this.hostname_ +
-        '/pl.api.vizierpb.VizierService/ExecuteScript',
+        '/px.api.vizierpb.VizierService/ExecuteScript',
       request,
       metadata || {},
       this.methodInfoExecuteScript);
@@ -67,7 +67,7 @@ export class VizierServiceClient {
     metadata?: grpcWeb.Metadata) {
     return this.client_.serverStreaming(
       this.hostname_ +
-        '/pl.api.vizierpb.VizierService/HealthCheck',
+        '/px.api.vizierpb.VizierService/HealthCheck',
       request,
       metadata || {},
       this.methodInfoHealthCheck);

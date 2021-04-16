@@ -20,7 +20,7 @@
       },
       "globalFuncOutputName": "latencyTS",
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "latency_p99",
@@ -48,7 +48,7 @@
         "args": []
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       }
     },
     {
@@ -64,7 +64,7 @@
         "args": []
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       }
     }
   ]

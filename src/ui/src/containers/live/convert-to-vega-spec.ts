@@ -31,14 +31,14 @@ import { DISPLAY_TYPE_KEY, WidgetDisplay } from './vis';
 
 addPxTimeFormatExpression();
 
-const VEGA_CHART_TYPE = 'pixielabs.ai/pl.vispb.VegaChart';
+const VEGA_CHART_TYPE = 'types.px.dev/px.vispb.VegaChart';
 const VEGA_LITE_V4 = 'https://vega.github.io/schema/vega-lite/v4.json';
 const VEGA_V5 = 'https://vega.github.io/schema/vega/v5.json';
 const VEGA_SCHEMA = '$schema';
-export const TIMESERIES_CHART_TYPE = 'pixielabs.ai/pl.vispb.TimeseriesChart';
-export const BAR_CHART_TYPE = 'pixielabs.ai/pl.vispb.BarChart';
-export const HISTOGRAM_CHART_TYPE = 'pixielabs.ai/pl.vispb.HistogramChart';
-export const FLAMEGRAPH_CHART_TYPE = 'pixielabs.ai/pl.vispb.StackTraceFlameGraph';
+export const TIMESERIES_CHART_TYPE = 'types.px.dev/px.vispb.TimeseriesChart';
+export const BAR_CHART_TYPE = 'types.px.dev/px.vispb.BarChart';
+export const HISTOGRAM_CHART_TYPE = 'types.px.dev/px.vispb.HistogramChart';
+export const FLAMEGRAPH_CHART_TYPE = 'types.px.dev/px.vispb.StackTraceFlameGraph';
 
 export const COLOR_SCALE = 'color';
 const HOVER_LINE_OPACITY = 0.75;
@@ -2050,7 +2050,7 @@ function convertToStacktraceFlameGraph(
       enter: {
         fill: { scale: { datum: 'color' }, field: 'name' },
         tooltip: {
-          signal: `datum.fullPath !== "all" && (datum.percentage ? {"title": datum.name, "Samples": datum.count, 
+          signal: `datum.fullPath !== "all" && (datum.percentage ? {"title": datum.name, "Samples": datum.count,
             "${display.percentageLabel || 'Percentage'}": format(datum.percentage, ".2f") + "%"} :
             {"title": datum.name, "Samples": datum.count})`,
         },
