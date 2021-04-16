@@ -19,7 +19,7 @@
 		},
 		"git.ignoreSubmodules": true,
 		"go.formatFlags": [
-			"-local=pixielabs.ai"
+			"-local=px.dev"
 		],
 		"go.formatTool": "goimports",
 		"go.lintTool": "golangci-lint",
@@ -31,7 +31,7 @@
 			"build.directoryFilters": [
 				"-src/carnot/planner"
 			],
-			"formatting.local": "pixielabs.ai",
+			"formatting.local": "px.dev",
 			"ui.completion.usePlaceholders": true,
 		},
 	}

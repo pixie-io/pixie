@@ -36,7 +36,7 @@ final class ArcanistGoImportsLinter extends ArcanistExternalLinter {
   }
 
   protected function getMandatoryFlags() {
-    return array('-local=pixielabs.ai');
+    return array('-local=px.dev');
   }
 
   protected function buildFutures(array $paths) {
