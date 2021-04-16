@@ -78,7 +78,7 @@ fi
 
 write_artifacts_to_gcs() {
     output_path=$1
-    mac_binary=$(grep -oP -m 1 '(?<=pl\/).*px_darwin(?=\")' /tmp/darwin_build)
+    mac_binary=$(grep -oP -m 1 '(?<=px\/).*px_darwin(?=\")' /tmp/darwin_build)
     copy_artifact_to_gcs "$output_path" "$mac_binary" "cli_darwin_amd64_unsigned"
     copy_artifact_to_gcs "$output_path" "$linux_binary" "cli_linux_amd64"
 
