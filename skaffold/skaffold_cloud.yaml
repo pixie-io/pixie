@@ -98,6 +98,21 @@ profiles:
       path: k8s/cloud/nightly
   activation:
   - env: PL_BUILD_TYPE=nightly
+- name: create_admin_job
+  build:
+    artifacts:
+    - image: gcr.io/pl-dev-infra/cloud/job/create_admin_job_image
+      context: .
+      bazel:
+        target: //src/cloud/jobs/create_admin_user:create_admin_job_image.tar
+  patches:
+  - op: add
+    path: /build/artifacts/context=./bazel/args
+    value:
+    - --compilation_mode=dbg
+  - op: replace
+    path: /deploy/kustomize/paths
+    value: [k8s/cloud/oss_auth/job]
 - name: staging
   patches:
   - op: add

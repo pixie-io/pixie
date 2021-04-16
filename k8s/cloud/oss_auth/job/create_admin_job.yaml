@@ -1,0 +1,35 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-admin-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: create-admin-job
+        image: gcr.io/pl-dev-infra/cloud/job/create_admin_job_image
+        envFrom:
+        - configMapRef:
+            name: pl-tls-config
+        - configMapRef:
+            name: pl-domain-config
+        env:
+        - name: PL_JWT_SIGNING_KEY
+          valueFrom:
+            secretKeyRef:
+              name: cloud-auth-secrets
+              key: jwt-signing-key
+        - name: PL_PROFILE_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_PROFILE_SERVICE
+        volumeMounts:
+        - name: certs
+          mountPath: /certs
+      restartPolicy: Never
+      volumes:
+      - name: certs
+        secret:
+          secretName: service-tls-certs
