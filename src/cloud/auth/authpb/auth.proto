@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.services;
+package px.services;
 
 option go_package = "authpb";
 
@@ -11,7 +11,7 @@ import "src/api/public/uuidpb/uuid.proto";
 
 message AuthenticatedUserInfo {
   // User ID of the logged in user.
-  pl.uuidpb.UUID user_id = 1 [(gogoproto.customname) = "UserID"];
+  px.uuidpb.UUID user_id = 1 [(gogoproto.customname) = "UserID"];
   // Name of the logged in user.
   string first_name = 2;
   string last_name = 3;
@@ -50,7 +50,7 @@ message LoginReply {
   // create_user_if_not_exists is set in the LoginRequest.
   bool user_created = 3;
   // User ID of the logged in user.
-  pl.uuidpb.UUID user_id = 4 [(gogoproto.customname) = "UserID"];
+  px.uuidpb.UUID user_id = 4 [(gogoproto.customname) = "UserID"];
   // Information about the logged in user.
   AuthenticatedUserInfo user_info = 5;
   message OrgInfo {
@@ -77,11 +77,11 @@ message SignupReply {
   // True if a new org was created while processing the SignupRequest.
   bool org_created = 3;
   // User ID of the logged in user.
-  pl.uuidpb.UUID user_id = 4 [(gogoproto.customname) = "UserID"];
+  px.uuidpb.UUID user_id = 4 [(gogoproto.customname) = "UserID"];
   // Information about the logged in user.
   AuthenticatedUserInfo user_info = 5;
   // Org ID of the logged in user.
-  pl.uuidpb.UUID org_id = 6 [(gogoproto.customname) = "OrgID"];
+  px.uuidpb.UUID org_id = 6 [(gogoproto.customname) = "OrgID"];
 }
 
 message GetAugmentedAuthTokenRequest {

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.shared.bloomfilterpb;
+package px.shared.bloomfilterpb;
 
 option go_package = "bloomfilterpb";
 

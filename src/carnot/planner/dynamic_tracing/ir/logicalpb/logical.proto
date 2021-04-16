@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.carnot.planner.dynamic_tracing.ir.logical;
+package px.carnot.planner.dynamic_tracing.ir.logical;
 
 option go_package = "logicalpb";
 

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.stirling.stirlingpb;
+package px.stirling.stirlingpb;
 
 option go_package = "stirlingpb";
 

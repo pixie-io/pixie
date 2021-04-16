@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.vizier.services.metadata;
+package px.vizier.services.metadata;
 
 option go_package = "storepb";
 
@@ -18,20 +18,20 @@ import "src/shared/types/typespb/types.proto";
 message TracepointInfo {
   uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
   // The tracepoint deployment.
-  pl.carnot.planner.dynamic_tracing.ir.logical.TracepointDeployment tracepoint = 2;
+  px.carnot.planner.dynamic_tracing.ir.logical.TracepointDeployment tracepoint = 2;
   // The name of the tracepoint, not unique.
   string name = 3;
   // The desired state of the tracepoint, either running or terminated. The actual
   // state of the tracepoint is derived by the states of the individual agent tracepoints.
-  pl.statuspb.LifeCycleState expected_state = 4;
+  px.statuspb.LifeCycleState expected_state = 4;
 }
 
 // The agent's registration status for a particular tracepoint.
 message AgentTracepointStatus {
   // The state of the tracepoint.
-  pl.statuspb.LifeCycleState state = 1;
+  px.statuspb.LifeCycleState state = 1;
   // The status of the tracepoint, specified if the state of the tracepoint is not healthy.
-  pl.statuspb.Status status = 2;
+  px.statuspb.Status status = 2;
   uuidpb.UUID id = 3 [(gogoproto.customname) = "ID"];
   uuidpb.UUID agent_id = 4 [(gogoproto.customname) = "AgentID"];
 }
@@ -50,11 +50,11 @@ message TableInfo {
   int64 stop_timestamp_ns = 3 [(gogoproto.customname) = "StopTimestampNS"];
   message ColumnInfo {
     string name = 1;
-    pl.types.DataType data_type = 2;
-    pl.types.PatternType pattern_type = 3;
+    px.types.DataType data_type = 2;
+    px.types.PatternType pattern_type = 3;
     // The description of this column.
     string desc = 4;
-    pl.types.SemanticType semantic_type = 5;
+    px.types.SemanticType semantic_type = 5;
   }
   // The column info of the schema.
   repeated ColumnInfo columns = 4;
@@ -76,17 +76,17 @@ message ComputedSchema {
 // K8sResource contains a full update for a K8s resource.
 message K8sResource {
   oneof resource {
-    pl.shared.k8s.metadatapb.Pod pod = 1;
-    pl.shared.k8s.metadatapb.ContainerUpdate container = 2;
-    pl.shared.k8s.metadatapb.Service service = 3;
-    pl.shared.k8s.metadatapb.Endpoints endpoints = 4;
-    pl.shared.k8s.metadatapb.Namespace namespace = 5;
-    pl.shared.k8s.metadatapb.Node node = 6;
+    px.shared.k8s.metadatapb.Pod pod = 1;
+    px.shared.k8s.metadatapb.ContainerUpdate container = 2;
+    px.shared.k8s.metadatapb.Service service = 3;
+    px.shared.k8s.metadatapb.Endpoints endpoints = 4;
+    px.shared.k8s.metadatapb.Namespace namespace = 5;
+    px.shared.k8s.metadatapb.Node node = 6;
   }
 }
 
 // K8sResourceUpdate contains an update for a K8s resource, scoped down to just
 // the data that we need to send to our agents.
 message K8sResourceUpdate {
-  pl.shared.k8s.metadatapb.ResourceUpdate update = 1;
+  px.shared.k8s.metadatapb.ResourceUpdate update = 1;
 }

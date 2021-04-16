@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.carnot.planpb;
+package px.carnot.planpb;
 
 option go_package = "planpb";
 
@@ -134,7 +134,7 @@ message MemorySourceOperator {
   // The names for the columns.
   repeated string column_names = 3;
   // The types of the columns.
-  repeated pl.types.DataType column_types = 4;
+  repeated px.types.DataType column_types = 4;
   // The start time (can be omitted if not time series).
   google.protobuf.Int64Value start_time = 5;
   // The stop time (can be omitted if not time series).
@@ -151,17 +151,17 @@ message MemorySinkOperator {
   // Storage is organized as tables, this specifies the name of the table.
   string name = 1;
   // The types of the columns.
-  repeated pl.types.DataType column_types = 2;
+  repeated px.types.DataType column_types = 2;
   // The names of the columns.
   repeated string column_names = 3;
   // The semantic types of the columns.
-  repeated pl.types.SemanticType column_semantic_types = 4;
+  repeated px.types.SemanticType column_semantic_types = 4;
 }
 
 // Reads from a GRPC service that other machines send RowBatches to.
 message GRPCSourceOperator {
   // The types of the columns that the source generates.
-  repeated pl.types.DataType column_types = 1;
+  repeated px.types.DataType column_types = 1;
   // The names of the columns that the source generates.
   repeated string column_names = 2;
 }
@@ -179,11 +179,11 @@ message GRPCSinkOperator {
     string table_name = 1;
     // The following fields are used when destination is set to `table_name`.
     // The types of the columns.
-    repeated pl.types.DataType column_types = 2;
+    repeated px.types.DataType column_types = 2;
     // The names of the columns.
     repeated string column_names = 3;
     // The semantic types of the columns.
-    repeated pl.types.SemanticType column_semantic_types = 4;
+    repeated px.types.SemanticType column_semantic_types = 4;
   }
   // GRPCSinkOperator refers to its corresponding GRPCSourceOperator to each other via its DAG ID.
   oneof destination {
@@ -318,7 +318,7 @@ message EmptySourceOperator {
   // The names for the columns.
   repeated string column_names = 1;
   // The types of the columns.
-  repeated pl.types.DataType column_types = 2;
+  repeated px.types.DataType column_types = 2;
 }
 
 // Scalar expression is any single valued expression.
@@ -338,14 +338,14 @@ message ScalarValue {
   // We need to store the type to handle the null case and make sure we have the
   // "correct" null value. This type takes precedence on the one of value below.
   // If they mismatch a null value will be used.
-  pl.types.DataType data_type = 1;
+  px.types.DataType data_type = 1;
   oneof value {
     bool bool_value = 2;
     int64 int64_value = 3;
     double float64_value = 4;
     string string_value = 5;
     int64 time64_ns_value = 6;
-    pl.types.UInt128 uint128_value = 7;
+    px.types.UInt128 uint128_value = 7;
   }
   reserved 8;
 }
@@ -363,7 +363,7 @@ message ScalarFunc {
   repeated ScalarExpression args = 3;
   int64 id = 4;
   // The datatypes of the args.
-  repeated pl.types.DataType args_data_types = 5;
+  repeated px.types.DataType args_data_types = 5;
 }
 
 // AggregateExpressions perform an operator on a set of arguments and produce a single
@@ -384,7 +384,7 @@ message AggregateExpression {
   repeated Arg args = 5;
   int64 id = 6;
   // The datatypes of the args.
-  repeated pl.types.DataType args_data_types = 7;
+  repeated px.types.DataType args_data_types = 7;
 }
 
 // A column reference.

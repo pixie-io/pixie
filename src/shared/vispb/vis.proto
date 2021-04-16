@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.vispb;
+package px.vispb;
 
 option go_package = "vispb";
 

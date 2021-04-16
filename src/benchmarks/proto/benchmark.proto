@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.benchmarks;
+package px.benchmarks;
 
 option go_package = "benchmarkpb";
 

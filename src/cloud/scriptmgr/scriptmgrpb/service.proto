@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.services;
+package px.services;
 
 option go_package = "scriptmgrpb";
 
@@ -29,7 +29,7 @@ message GetLiveViewsReq {}
 // without having to return the contents for each live view.
 message LiveViewMetadata {
   // Unique ID of the live view.
-  pl.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
   // Short description of what the live view does.
   string desc = 2;
   // Name of the live view, currently all live view names are of the form `px/*`.
@@ -51,7 +51,7 @@ message GetLiveViewsResp {
 // This allows GetLiveViews to only return metadata and not content.
 message GetLiveViewContentsReq {
   // Unique ID of the live view to get the contents for.
-  pl.uuidpb.UUID live_view_id = 1 [(gogoproto.customname) = "LiveViewID"];
+  px.uuidpb.UUID live_view_id = 1 [(gogoproto.customname) = "LiveViewID"];
 }
 
 // GetLiveViewContentsResp returns the pxl script and vis contents of the live view specified
@@ -65,7 +65,7 @@ message GetLiveViewContentsResp {
   string pxl_contents = 2;
   // The vis specification for this live view. For each Widget in the View, specifies the layout in grid units,
   // which pxl func to call and with which arguments, and what the display specification is (chart, table, etc).
-  pl.vispb.Vis vis = 3;
+  px.vispb.Vis vis = 3;
 }
 
 // GetScriptsReq is the request message for getting a list of all scripts.
@@ -77,7 +77,7 @@ message GetScriptsReq {}
 // without having to return the contents of each script.
 message ScriptMetadata {
   // Unique ID of the script.
-  pl.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
   // Short description of what the script does.
   string desc = 2;
   // Name of the script, currently all script names are of the form `px/*`.
@@ -101,7 +101,7 @@ message GetScriptsResp {
 // This allows GetScripts to only return metadata and not content.
 message GetScriptContentsReq {
   // Unique ID of the script to get the contents for.
-  pl.uuidpb.UUID script_id = 1 [(gogoproto.customname) = "ScriptID"];
+  px.uuidpb.UUID script_id = 1 [(gogoproto.customname) = "ScriptID"];
 }
 
 // GetScriptContentsResp returns the pxl script contents of the script specified

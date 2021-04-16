@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.carnot.planner.compilerpb;
+package px.carnot.planner.compilerpb;
 
 option go_package = "compilerpb";
 
@@ -20,8 +20,8 @@ message CompilerError {
 }
 
 message CompilerResult {
-  pl.statuspb.Status status = 1;
-  pl.carnot.planpb.Plan logical_plan = 2;
+  px.statuspb.Status status = 1;
+  px.carnot.planpb.Plan logical_plan = 2;
 }
 
 message CompilerErrorGroup {

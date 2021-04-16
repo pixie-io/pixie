@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.stirling.protocols.http2.testing;
+package px.stirling.protocols.http2.testing;
 
 option go_package = "greetpb";
 

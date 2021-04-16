@@ -2,7 +2,7 @@
 
 syntax = "proto3";
 
-package pl.testpb;
+package px.testpb;
 
 option go_package = "testpb";
 

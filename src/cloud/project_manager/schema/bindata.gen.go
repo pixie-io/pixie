@@ -97,7 +97,7 @@ func _000001_create_sites_tableDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_create_sites_table.down.sql", size: 28, mode: os.FileMode(436), modTime: time.Unix(1618549179, 0)}
+	info := bindataFileInfo{name: "000001_create_sites_table.down.sql", size: 28, mode: os.FileMode(436), modTime: time.Unix(1603471763, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -117,7 +117,7 @@ func _000001_create_sites_tableUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_create_sites_table.up.sql", size: 167, mode: os.FileMode(436), modTime: time.Unix(1618549179, 0)}
+	info := bindataFileInfo{name: "000001_create_sites_table.up.sql", size: 167, mode: os.FileMode(436), modTime: time.Unix(1603471763, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -137,7 +137,7 @@ func _000002_create_site_name_columnDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000002_create_site_name_column.down.sql", size: 146, mode: os.FileMode(436), modTime: time.Unix(1618549179, 0)}
+	info := bindataFileInfo{name: "000002_create_site_name_column.down.sql", size: 146, mode: os.FileMode(436), modTime: time.Unix(1617598321, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -157,7 +157,7 @@ func _000002_create_site_name_columnUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000002_create_site_name_column.up.sql", size: 103, mode: os.FileMode(436), modTime: time.Unix(1618549179, 0)}
+	info := bindataFileInfo{name: "000002_create_site_name_column.up.sql", size: 103, mode: os.FileMode(436), modTime: time.Unix(1603471763, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -177,7 +177,7 @@ func _000003_rename_sites_to_projectsDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000003_rename_sites_to_projects.down.sql", size: 187, mode: os.FileMode(436), modTime: time.Unix(1618549179, 0)}
+	info := bindataFileInfo{name: "000003_rename_sites_to_projects.down.sql", size: 187, mode: os.FileMode(436), modTime: time.Unix(1603471763, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -197,7 +197,7 @@ func _000003_rename_sites_to_projectsUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000003_rename_sites_to_projects.up.sql", size: 209, mode: os.FileMode(436), modTime: time.Unix(1618549179, 0)}
+	info := bindataFileInfo{name: "000003_rename_sites_to_projects.up.sql", size: 209, mode: os.FileMode(436), modTime: time.Unix(1603471763, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

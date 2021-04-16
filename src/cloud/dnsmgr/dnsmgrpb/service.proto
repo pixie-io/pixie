@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.services;
+package px.services;
 
 option go_package = "dnsmgr";
 
@@ -14,7 +14,7 @@ service DNSMgrService {
 }
 
 message GetDNSAddressRequest {
-  pl.uuidpb.UUID cluster_id = 1 [(gogoproto.customname) = "ClusterID"];
+  px.uuidpb.UUID cluster_id = 1 [(gogoproto.customname) = "ClusterID"];
   string ip_address = 2 [(gogoproto.customname) = "IPAddress"];
 }
 

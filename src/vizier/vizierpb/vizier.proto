@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.api.internal.vizierpb;
+package px.api.internal.vizierpb;
 
 option go_package = "vizierpb";
 
@@ -317,7 +317,7 @@ message VizierPodStatus {
   // The name of the pod. Ex: vizier-pem-z26d8
   string name = 1;
   // The status of the pod.
-  pl.shared.k8s.metadatapb.PodStatus status = 2;
+  px.shared.k8s.metadatapb.PodStatus status = 2;
 }
 
 message DebugPodsRequest {

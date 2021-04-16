@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.public.cloudapi;
+package px.public.cloudapi;
 
 option go_package = "publiccloudapipb";
 
@@ -49,13 +49,13 @@ message ClusterConfigUpdate {
 // Request message for the GetCluster call.
 message GetClusterRequest {
   // Optional. If specified, get cluster info only for the specified cluster.
-  pl.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
 }
 
 // Request message for the GetClusterConnection call.
 message GetClusterConnectionRequest {
   // The ID of the cluster to get connection info.
-  pl.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
 }
 
 // Response message for the GetClusterConnection call.
@@ -79,7 +79,7 @@ enum ClusterStatus {
 
 message ClusterInfo {
   // The ID of the cluster.
-  pl.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
   // The status for the particular cluster.
   ClusterStatus status = 2;
   // The time in nanoseconds since the last heartbeat was sent by the
@@ -112,7 +112,7 @@ message GetClusterResponse {
 // Request message for the UpdateClusterConfig call.
 message UpdateClusterConfigRequest {
   // ID of the cluster to update. Required.
-  pl.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
   // The update to apply to the cluster's config.
   ClusterConfigUpdate config_update = 2;
 }

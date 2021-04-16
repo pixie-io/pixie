@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.shared.k8s.metadatapb;
+package px.shared.k8s.metadatapb;
 
 option go_package = "metadatapb";
 
@@ -344,7 +344,7 @@ message ContainerInfo {
 message ProcessInfo {
   // Name of the process.
   string name = 1;
-  pl.types.UInt128 upid = 2 [(gogoproto.customname) = "UPID"];
+  px.types.UInt128 upid = 2 [(gogoproto.customname) = "UPID"];
   // The server time in nanoseconds when the process started.
   int64 start_timestamp_ns = 4 [(gogoproto.customname) = "StartTimestampNS"];
   // The time in nanoseconds when the process stopped.
@@ -448,7 +448,7 @@ message NamespaceUpdate {
 
 message ProcessCreated {
   // The unique PID for this process. This PID is cluster unique in both space and time.
-  pl.types.UInt128 upid = 1 [(gogoproto.customname) = "UPID"];
+  px.types.UInt128 upid = 1 [(gogoproto.customname) = "UPID"];
   // DEPRECATED: This was PID, which can be derived from UPID.
   reserved 2;
   // The server time in nanoseconds when the process started.
@@ -461,7 +461,7 @@ message ProcessCreated {
 
 message ProcessTerminated {
   // The unique PID for this process. This PID is cluster unique in both space and time.
-  pl.types.UInt128 upid = 1 [(gogoproto.customname) = "UPID"];
+  px.types.UInt128 upid = 1 [(gogoproto.customname) = "UPID"];
   // The time in nanoseconds when the process stopped.
   int64 stop_timestamp_ns = 2 [(gogoproto.customname) = "StopTimestampNS"];
 }

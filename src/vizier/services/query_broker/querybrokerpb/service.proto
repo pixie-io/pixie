@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.vizier.services.query_broker.querybrokerpb;
+package px.vizier.services.query_broker.querybrokerpb;
 
 option go_package = "querybrokerpb";
 
@@ -14,7 +14,7 @@ import "src/table_store/schemapb/schema.proto";
 
 // The schema information per agent.
 message Schema {
-  repeated pl.table_store.schemapb.Relation relations = 1;
+  repeated px.table_store.schemapb.Relation relations = 1;
 }
 
 // The schema request.
@@ -30,10 +30,10 @@ message SchemaResponse {
 }
 
 message AgentQueryResponse {
-  pl.statuspb.Status status = 1;
+  px.statuspb.Status status = 1;
   // The ID of the returned query.
   uuidpb.UUID query_id = 2 [(gogoproto.customname) = "QueryID"];
-  pl.carnot.queryresultspb.QueryResult query_result = 3;
+  px.carnot.queryresultspb.QueryResult query_result = 3;
 }
 
 // AgentQueryResultRequest is a request from the agent to the query broker
@@ -49,10 +49,10 @@ message AgentQueryResultResponse {}
 message VizierQueryResponse {
   // Status message carries information
   // about any potential failures, ie compiler error failures
-  pl.statuspb.Status status = 2;
+  px.statuspb.Status status = 2;
   // The id for the query
   uuidpb.UUID query_id = 3 [(gogoproto.customname) = "QueryID"];
-  pl.carnot.queryresultspb.QueryResult query_result = 4;
+  px.carnot.queryresultspb.QueryResult query_result = 4;
   // Reserved for deprecated ResponsesByAgent.
   reserved 1;
 }

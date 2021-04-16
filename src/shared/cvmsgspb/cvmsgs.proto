@@ -10,7 +10,7 @@
 
 syntax = "proto3";
 
-package pl.cvmsgspb;
+package px.cvmsgspb;
 
 option go_package = "cvmsgspb";
 
@@ -113,7 +113,7 @@ message PodStatus {
   // The name of the pod. Ex: vizier-pem-z26d8
   string name = 1;
   // The status of the pod.
-  pl.shared.k8s.metadatapb.PodPhase status = 2;
+  px.shared.k8s.metadatapb.PodPhase status = 2;
   // The message for why the pod is in its current status.
   string status_message = 3;
   // A brief CamelCase message indicating details about why the pod is in this state.
@@ -144,7 +144,7 @@ message ContainerStatus {
   // The name of the container.
   string name = 1;
   // The current state of the container.
-  pl.shared.k8s.metadatapb.ContainerState state = 2;
+  px.shared.k8s.metadatapb.ContainerState state = 2;
   // The message for why the container is in its current status.
   string message = 3;
   // A brief CamelCase message indicating details about why the container is in this state.
@@ -219,7 +219,7 @@ message UpdateVizierConfigResponse {}
 // UpdateOrInstallVizierRequest is a request to install/update a vizier.
 message UpdateOrInstallVizierRequest {
   // The ID of the vizier to upgrade/install.
-  pl.uuidpb.UUID vizier_id = 1 [(gogoproto.customname) = "VizierID"];
+  px.uuidpb.UUID vizier_id = 1 [(gogoproto.customname) = "VizierID"];
   // The version to upgrade/install the cluster as. If no version is specified, we assume we should
   // upgrade to the latest version.
   string version = 2;
@@ -267,11 +267,11 @@ message C2VAPIStreamRequest {
   string token = 2;
   // The request.
   oneof msg {
-    pl.api.vizierpb.ExecuteScriptRequest exec_req = 3;
-    pl.api.vizierpb.HealthCheckRequest hc_req = 4;
+    px.api.vizierpb.ExecuteScriptRequest exec_req = 3;
+    px.api.vizierpb.HealthCheckRequest hc_req = 4;
     C2VAPIStreamCancel cancel_req = 5;
-    pl.api.internal.vizierpb.DebugLogRequest debug_log_req = 6;
-    pl.api.internal.vizierpb.DebugPodsRequest debug_pods_req = 7;
+    px.api.internal.vizierpb.DebugLogRequest debug_log_req = 6;
+    px.api.internal.vizierpb.DebugPodsRequest debug_pods_req = 7;
   }
 }
 
@@ -282,11 +282,11 @@ message V2CAPIStreamResponse {
   // The request ID is a GUID for the request.
   string request_id = 1 [(gogoproto.customname) = "RequestID"];
   oneof msg {
-    pl.api.vizierpb.ExecuteScriptResponse exec_resp = 2;
-    pl.api.vizierpb.HealthCheckResponse hc_resp = 3;
-    pl.api.vizierpb.Status status = 4;
-    pl.api.internal.vizierpb.DebugLogResponse debug_log_resp = 5;
-    pl.api.internal.vizierpb.DebugPodsResponse debug_pods_resp = 6;
+    px.api.vizierpb.ExecuteScriptResponse exec_resp = 2;
+    px.api.vizierpb.HealthCheckResponse hc_resp = 3;
+    px.api.vizierpb.Status status = 4;
+    px.api.internal.vizierpb.DebugLogResponse debug_log_resp = 5;
+    px.api.internal.vizierpb.DebugPodsResponse debug_pods_resp = 6;
   }
 }
 

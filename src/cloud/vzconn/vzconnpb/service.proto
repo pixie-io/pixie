@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.services;
+package px.services;
 
 option go_package = "vzconnpb";
 

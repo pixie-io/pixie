@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.common;
+package px.common;
 
 option go_package = "ping";
 

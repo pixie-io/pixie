@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.stirling.sockeventpb;
+package px.stirling.sockeventpb;
 
 option go_package = "sockeventpb";
 

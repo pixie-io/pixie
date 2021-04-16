@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.uuidpb;
+package px.uuidpb;
 
 option go_package = "uuidpb";
 

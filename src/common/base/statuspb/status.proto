@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.statuspb;
+package px.statuspb;
 
 option go_package = "statuspb";
 

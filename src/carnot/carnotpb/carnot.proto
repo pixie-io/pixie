@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.carnotpb;
+package px.carnotpb;
 
 option go_package = "carnotpb";
 
@@ -27,7 +27,7 @@ message TransferResultChunkRequest {
   message SinkResult {
     oneof result_contents {
       // The row batch data.
-      pl.table_store.schemapb.RowBatchData row_batch = 1;
+      px.table_store.schemapb.RowBatchData row_batch = 1;
       // This case is sent by a GRPCSink as soon as it makes the remote connection to the client
       // receiving its results. It is used by the client to identify the particular connection and
       // monitor that it has not been closed during query execution. It is also used to identify
@@ -49,9 +49,9 @@ message TransferResultChunkRequest {
     // Previously used for query timing info, which is part of QueryExecutionStats here.
     reserved 1;
     // Execution info across the entire query, sent by the top-level agent in the plan.
-    pl.carnot.queryresultspb.QueryExecutionStats execution_stats = 2;
+    px.carnot.queryresultspb.QueryExecutionStats execution_stats = 2;
     // Agent-specific execution stats, sent by every agent in the plan.
-    repeated pl.carnot.queryresultspb.AgentExecutionStats agent_execution_stats = 3;
+    repeated px.carnot.queryresultspb.AgentExecutionStats agent_execution_stats = 3;
   }
   oneof result {
     // `query_result` covers query result data sent from a GRPC sink (including the request

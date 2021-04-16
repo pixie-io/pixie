@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.cloudapi;
+package px.cloudapi;
 
 option go_package = "cloudapipb";
 
@@ -121,13 +121,13 @@ message GetDownloadLinkResponse {
 message CreateClusterRequest {}
 
 message CreateClusterResponse {
-  pl.uuidpb.UUID cluster_id = 1 [(gogoproto.customname) = "ClusterID"];
+  px.uuidpb.UUID cluster_id = 1 [(gogoproto.customname) = "ClusterID"];
 }
 
 // UpdateOrInstallClusterRequest is a request to update or install a Vizier cluster.
 message UpdateOrInstallClusterRequest {
   // The ID of the cluster to upgrade/install.
-  pl.uuidpb.UUID cluster_id = 1 [(gogoproto.customname) = "ClusterID"];
+  px.uuidpb.UUID cluster_id = 1 [(gogoproto.customname) = "ClusterID"];
   // The version to upgrade/install the cluster as. If no version is specified, we assume we should
   // upgrade to the latest version.
   string version = 2;
@@ -163,7 +163,7 @@ message VizierConfigUpdate {
 
 message GetClusterInfoRequest {
   // Optional. If specified, get cluster info only for the specified cluster.
-  pl.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
 }
 
 enum ClusterStatus {
@@ -194,7 +194,7 @@ message PodStatus {
   // The name of the pod. Ex: vizier-pem-z26d8
   string name = 1;
   // The status of the pod.
-  pl.shared.k8s.metadatapb.PodPhase status = 2;
+  px.shared.k8s.metadatapb.PodPhase status = 2;
   // The message for why the pod is in its current status.
   string status_message = 3;
   // A brief CamelCase message indicating details about why the pod is in this state.
@@ -212,7 +212,7 @@ message ContainerStatus {
   // The name of the container.
   string name = 1;
   // The current state of the container.
-  pl.shared.k8s.metadatapb.ContainerState state = 2;
+  px.shared.k8s.metadatapb.ContainerState state = 2;
   // The message for why the container is in its current status.
   string message = 3;
   // A brief CamelCase message indicating details about why the container is in this state.
@@ -222,7 +222,7 @@ message ContainerStatus {
 }
 
 message ClusterInfo {
-  pl.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
   ClusterStatus status = 2;
   int64 lastHeartbeatNs = 3;
   VizierConfig config = 4;
@@ -258,7 +258,7 @@ message GetClusterInfoResponse {
 }
 
 message GetClusterConnectionInfoRequest {
-  pl.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
 }
 
 message GetClusterConnectionInfoResponse {
@@ -267,7 +267,7 @@ message GetClusterConnectionInfoResponse {
 }
 
 message UpdateClusterVizierConfigRequest {
-  pl.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
   VizierConfigUpdate config_update = 2;
 }
 
@@ -425,7 +425,7 @@ message GetLiveViewContentsResp {
   string pxl_contents = 2;
   // The vis specification for this live view. For each Widget in the View, specifies the layout in grid units,
   // which pxl func to call and with which arguments, and what the display specification is (chart, table, etc).
-  pl.vispb.Vis vis = 3;
+  px.vispb.Vis vis = 3;
 }
 
 // GetScriptsReq is the request message for getting a list of all scripts.
@@ -585,13 +585,13 @@ message AutocompleteFieldResponse {
 
 service ProfileService {
   // Get more info about an org, given the org ID.
-  rpc GetOrgInfo(pl.uuidpb.UUID) returns (OrgInfo);
+  rpc GetOrgInfo(px.uuidpb.UUID) returns (OrgInfo);
 }
 
 // OrgInfo contains information about a company in our system.
 message OrgInfo {
   // The ID of the organization.
-  pl.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
   // The name of the organization.
   string org_name = 2;
 }

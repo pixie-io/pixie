@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.shared.scriptspb;
+package px.shared.scriptspb;
 
 option go_package = "scriptspb";
 
@@ -38,11 +38,11 @@ message VisFuncsInfo {
 }
 
 message VisFuncsInfoResult {
-  pl.statuspb.Status status = 1;
+  px.statuspb.Status status = 1;
   VisFuncsInfo info = 2;
 }
 
 message MainFuncSpecResult {
-  pl.statuspb.Status status = 1;
+  px.statuspb.Status status = 1;
   FuncArgsSpec main_func_spec = 2;
 }

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.stirling.tableenums.mysqlpb;
+package px.stirling.tableenums.mysqlpb;
 
 // enum Command provides the encoding used in the mysql_events::req_cmd column.
 // The encodings are the same as from MySQL spec.

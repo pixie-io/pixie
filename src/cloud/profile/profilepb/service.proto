@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.services;
+package px.services;
 
 option go_package = "profile";
 
@@ -9,12 +9,12 @@ import "src/api/public/uuidpb/uuid.proto";
 
 // Profile service tracks the user and organization profile information.
 service ProfileService {
-  rpc CreateUser(CreateUserRequest) returns (pl.uuidpb.UUID);
-  rpc GetUser(pl.uuidpb.UUID) returns (UserInfo);
+  rpc CreateUser(CreateUserRequest) returns (px.uuidpb.UUID);
+  rpc GetUser(px.uuidpb.UUID) returns (UserInfo);
   rpc GetUserByEmail(GetUserByEmailRequest) returns (UserInfo);
   // Creates the initial organization with the specified user as the owner.
   rpc CreateOrgAndUser(CreateOrgAndUserRequest) returns (CreateOrgAndUserResponse);
-  rpc GetOrg(pl.uuidpb.UUID) returns (OrgInfo);
+  rpc GetOrg(px.uuidpb.UUID) returns (OrgInfo);
   rpc GetOrgByDomain(GetOrgByDomainRequest) returns (OrgInfo);
   rpc UpdateUser(UpdateUserRequest) returns (UserInfo);
   rpc GetOrgs(GetOrgsRequest) returns (GetOrgsResponse);
@@ -29,9 +29,9 @@ service ProfileService {
 // UserInfo has information about a single end user in our system.
 message UserInfo {
   // The ID of the user.
-  pl.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
   // The ID of the organization that they belong to.
-  pl.uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
+  px.uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
   string username = 3;
   string first_name = 4;
   string last_name = 5;
@@ -46,7 +46,7 @@ message GetUserByEmailRequest {
 // OrgInfo contains information about a company in our system.
 message OrgInfo {
   // The ID of the organization.
-  pl.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
   // The name of the organization (this is currently the same as the domain_name below and is the
   // last part of the email).
   string org_name = 2;
@@ -55,7 +55,7 @@ message OrgInfo {
 }
 
 message CreateUserRequest {
-  pl.uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
+  px.uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
   string username = 2;
   string first_name = 3;
   string last_name = 4;
@@ -78,8 +78,8 @@ message CreateOrgAndUserRequest {
 }
 
 message CreateOrgAndUserResponse {
-  pl.uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
-  pl.uuidpb.UUID user_id = 2 [(gogoproto.customname) = "UserID"];
+  px.uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
+  px.uuidpb.UUID user_id = 2 [(gogoproto.customname) = "UserID"];
 }
 
 message GetOrgByDomainRequest {
@@ -94,14 +94,14 @@ message GetOrgsResponse {
 
 message UpdateUserRequest {
   // The ID of the user.
-  pl.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
   string profile_picture = 2;
 }
 
 // A request to get the user settings for a particular user.
 message GetUserSettingsRequest {
   // The ID of the user.
-  pl.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
   // The user setting keys to fetch.
   repeated string keys = 2;
 }
@@ -117,7 +117,7 @@ message GetUserSettingsResponse {
 // A request to update the user settings for a particular user.
 message UpdateUserSettingsRequest {
   // The ID of the user.
-  pl.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
   // The user setting keys to set.
   repeated string keys = 2;
   // The corresponding values to set. Must be the same length as the number of keys.
@@ -136,7 +136,7 @@ message InviteUserRequest {
 	string last_name = 3;
 
   // The ID of the organization to create the user for.
-  pl.uuidpb.UUID org_id = 4 [(gogoproto.customname) = "OrgID"];
+  px.uuidpb.UUID org_id = 4 [(gogoproto.customname) = "OrgID"];
   bool must_create_user = 5;
 }
 

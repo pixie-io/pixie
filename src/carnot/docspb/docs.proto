@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.carnot.docspb;
+package px.carnot.docspb;
 
 option go_package = "docspb";
 
@@ -57,7 +57,7 @@ message InternalPXLDocs {
   // the docstrings of their descendents.
   repeated DocstringNode docstring_nodes = 1;
   // The documentation of all UDFs.
-  pl.carnot.udfspb.Docs udf_docs = 2;
+  px.carnot.udfspb.Docs udf_docs = 2;
 }
 
 // Represents a single example.
@@ -134,5 +134,5 @@ message StructuredDocs {
   // Docs that store information about compile time functions.
   repeated CompileFnDoc compile_fn_docs = 6;
   // Information about udf docs.
-  pl.carnot.udfspb.Docs udf_docs = 4;
+  px.carnot.udfspb.Docs udf_docs = 4;
 }

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.carnot.planner.distributedpb;
+package px.carnot.planner.distributedpb;
 
 option go_package = "distributedpb";
 
@@ -17,12 +17,12 @@ message MetadataInfo {
   // A list of the metadata fields that are stored in MetadataInfo.
   // If we don't store a particular field in metadata_fields, the compiler shouldn't
   // use it for pruning query plans.
-  repeated pl.shared.metadatapb.MetadataType metadata_fields = 1;
+  repeated px.shared.metadatapb.MetadataType metadata_fields = 1;
   // A structure such as a bloom filter, that contains all of the values
   // for the carnot's metadata, such as container id, service name, pod id, namespace.
   // This structure may contain false positives but not false negatives.
   oneof filter {
-    pl.shared.bloomfilterpb.XXHash64BloomFilter xxhash64_bloom_filter = 2 [(gogoproto.customname) = "XXHash64BloomFilter"];
+    px.shared.bloomfilterpb.XXHash64BloomFilter xxhash64_bloom_filter = 2 [(gogoproto.customname) = "XXHash64BloomFilter"];
   }
 }
 
@@ -75,7 +75,7 @@ message SchemaInfo {
   // The name of the table.
   string name = 1;
   // The relation for the table.
-  pl.table_store.schemapb.Relation relation = 2;
+  px.table_store.schemapb.Relation relation = 2;
   // The list of agents that hold this schema.
   repeated uuidpb.UUID agent_list = 3;
 }
@@ -93,11 +93,11 @@ message DistributedState {
 // and which plans should execute on each Carnot instance.
 message DistributedPlan {
   // Map query broker address of Carnot instance to the Plan it will execute.
-  map<string, pl.carnot.planpb.Plan> qb_address_to_plan = 1;
+  map<string, px.carnot.planpb.Plan> qb_address_to_plan = 1;
   // Map from query broker address to the id used in the dag.
   map<string, uint64> qb_address_to_dag_id = 2;
   // The DAG describing the connections between the Distributed nodes.
-  pl.carnot.planpb.DAG dag = 3;
+  px.carnot.planpb.DAG dag = 3;
 }
 
 // LogicalPlannerState contains the information necessary to create the Logical
@@ -109,7 +109,7 @@ message LogicalPlannerState {
   // The distributed state of all Carnot instances in the system.
   DistributedState distributed_state = 2;
   // The query options for how the plans should be executed.
-  pl.carnot.planpb.PlanOptions plan_options = 3;
+  px.carnot.planpb.PlanOptions plan_options = 3;
   // The address to which the query results should be sent.
   string result_address = 4;
   // The SSL target override for the result address, if applicable.
@@ -118,6 +118,6 @@ message LogicalPlannerState {
 
 // The result for the planner. Contains a status to track any errors
 message LogicalPlannerResult {
-  pl.statuspb.Status status = 1;
+  px.statuspb.Status status = 1;
   DistributedPlan plan = 2;
 }

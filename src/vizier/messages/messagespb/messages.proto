@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.vizier.messages;
+package px.vizier.messages;
 
 option go_package = "messagespb";
 
@@ -52,14 +52,14 @@ message ConfigUpdateMessage {
 // A wrapper around all K8s metadata-related messages that can be sent over the message bus.
 message K8sMetadataMessage {
   oneof msg {
-    pl.shared.k8s.metadatapb.ResourceUpdate k8s_metadata_update = 1;
-    pl.shared.k8s.metadatapb.MissingK8sMetadataRequest missing_k8s_metadata_request = 2;
-    pl.shared.k8s.metadatapb.MissingK8sMetadataResponse missing_k8s_metadata_response = 3;
+    px.shared.k8s.metadatapb.ResourceUpdate k8s_metadata_update = 1;
+    px.shared.k8s.metadatapb.MissingK8sMetadataRequest missing_k8s_metadata_request = 2;
+    px.shared.k8s.metadatapb.MissingK8sMetadataResponse missing_k8s_metadata_response = 3;
   }
 }
 
 message RegisterAgentRequest {
-  pl.vizier.services.shared.agent.AgentInfo info = 1;
+  px.vizier.services.shared.agent.AgentInfo info = 1;
   // ASID is the agent short ID.
   // This field is used only when reregistering an agent, because the same ID needs
   // to be preserved.
@@ -78,14 +78,14 @@ message RegisterAgentResponse {
 // Struct representing the data that the agent has available to query.
 // Used by the compiler to selectively run queries on applicable agents only.
 message AgentDataInfo {
-  pl.carnot.planner.distributedpb.MetadataInfo metadata_info = 1;
+  px.carnot.planner.distributedpb.MetadataInfo metadata_info = 1;
 }
 
 message AgentUpdateInfo {
   // Schema holds information about tables on the agent.
-  repeated pl.vizier.services.metadata.TableInfo schema = 2;
-  repeated pl.shared.k8s.metadatapb.ProcessCreated process_created = 4;
-  repeated pl.shared.k8s.metadatapb.ProcessTerminated process_terminated = 5;
+  repeated px.vizier.services.metadata.TableInfo schema = 2;
+  repeated px.shared.k8s.metadatapb.ProcessCreated process_created = 4;
+  repeated px.shared.k8s.metadatapb.ProcessTerminated process_terminated = 5;
   // Whether the schema updates.
   bool does_update_schema = 6;
   AgentDataInfo data = 7;
@@ -103,7 +103,7 @@ message Heartbeat {
 }
 
 message MetadataUpdateInfo {
-  // repeated pl.shared.k8s.metadatapb.ResourceUpdate updates = 1;
+  // repeated px.shared.k8s.metadatapb.ResourceUpdate updates = 1;
   string service_cidr = 2 [(gogoproto.customname) = "ServiceCIDR"];
   repeated string pod_cidrs = 3 [(gogoproto.customname) = "PodCIDRs"];
   // Formerly used for K8s updates.
@@ -128,13 +128,13 @@ message ExecuteQueryRequest {
   uuidpb.UUID query_id = 1 [(gogoproto.customname) = "QueryID"];
   // Formerly used for query string.
   reserved 2;
-  pl.carnot.planpb.Plan plan = 3;
+  px.carnot.planpb.Plan plan = 3;
   bool analyze = 4;
 }
 
 // The request to register tracepoints on a PEM.
 message RegisterTracepointRequest {
-  pl.carnot.planner.dynamic_tracing.ir.logical.TracepointDeployment tracepoint_deployment = 1;
+  px.carnot.planner.dynamic_tracing.ir.logical.TracepointDeployment tracepoint_deployment = 1;
   uuidpb.UUID id = 2 [(gogoproto.customname) = "ID"];
 }
 
@@ -142,9 +142,9 @@ message RegisterTracepointRequest {
 message TracepointInfoUpdate {
   uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
   // The state of the tracepoint.
-  pl.statuspb.LifeCycleState state = 2;
+  px.statuspb.LifeCycleState state = 2;
   // The status of the tracepoint, specified if the state of the tracepoint is not healthy.
-  pl.statuspb.Status status = 3;
+  px.statuspb.Status status = 3;
   // The ID of the agent sending the update.
   uuidpb.UUID agent_id = 4 [(gogoproto.customname) = "AgentID"];
 }

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.stirling.dynamic_tracing.ir.physical;
+package px.stirling.dynamic_tracing.ir.physical;
 
 import "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/sharedpb/shared.proto";
 

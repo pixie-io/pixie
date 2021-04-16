@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.vizier.services.shared.agent;
+package px.vizier.services.shared.agent;
 
 option go_package = "agentpb";
 

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.vizier.services.metadata;
+package px.vizier.services.metadata;
 
 option go_package = "metadatapb";
 
@@ -40,7 +40,7 @@ message SchemaRequest {}
 // The schema response from the metadata service containing the schema that all
 // agents serve.
 message SchemaResponse {
-  pl.table_store.schemapb.Schema schema = 2;
+  px.table_store.schemapb.Schema schema = 2;
 }
 
 message AgentInfoRequest {}
@@ -52,10 +52,10 @@ message AgentInfoResponse {
 }
 
 message AgentMetadata {
-  pl.vizier.services.shared.agent.Agent agent = 1;
-  pl.vizier.services.shared.agent.AgentStatus status = 2;
+  px.vizier.services.shared.agent.Agent agent = 1;
+  px.vizier.services.shared.agent.AgentStatus status = 2;
   // Info that describes the carnot instance for the agent.
-  pl.carnot.planner.distributedpb.CarnotInfo carnot_info = 3;
+  px.carnot.planner.distributedpb.CarnotInfo carnot_info = 3;
 }
 
 message AgentUpdatesRequest {
@@ -74,9 +74,9 @@ message AgentUpdate {
     // True if the agent has been deleted.
     bool deleted = 2;
     // Updates to the agent's basic information.
-    pl.vizier.services.shared.agent.Agent agent = 3;
+    px.vizier.services.shared.agent.Agent agent = 3;
     // Updates to the agent's table data info.
-    pl.vizier.messages.AgentDataInfo data_info = 4;
+    px.vizier.messages.AgentDataInfo data_info = 4;
   }
 }
 
@@ -87,7 +87,7 @@ message AgentUpdatesResponse {
   // For a given batch of AgentUpdates, the AgentSchemas will always be sent last so that they don't
   // refer to an agent ID that the client hasn't heard about yet.
   // Also note the schema will always be sent in its entirety, so it will not be paginated.
-  repeated pl.carnot.planner.distributedpb.SchemaInfo agent_schemas = 2;
+  repeated px.carnot.planner.distributedpb.SchemaInfo agent_schemas = 2;
   // Whether or not the agent schemas have been updated. This is to differentiate between the case where
   // there are truly no AgentSchemas present and when there is no update to those agent schemas.
   bool agent_schemas_updated = 3;
@@ -100,7 +100,7 @@ message AgentUpdatesResponse {
 // The request to register tracepoints on all PEMs.
 message RegisterTracepointRequest {
   message TracepointRequest {
-    pl.carnot.planner.dynamic_tracing.ir.logical.TracepointDeployment tracepoint_deployment = 1;
+    px.carnot.planner.dynamic_tracing.ir.logical.TracepointDeployment tracepoint_deployment = 1;
     // The user-specified name for the tracepoint.
     string name = 2;
     // The TTL, in seconds, for how long we want the tracepoint to live.
@@ -112,14 +112,14 @@ message RegisterTracepointRequest {
 // The response to a RegisterTracepointRequest.
 message RegisterTracepointResponse {
   message TracepointStatus {
-    pl.statuspb.Status status = 1;
+    px.statuspb.Status status = 1;
     // The ID of the tracepoint. This should be the user-specified name for the tracepoint.
     uuidpb.UUID id = 2 [(gogoproto.customname) = "ID"];
     string name = 3;
   }
   repeated TracepointStatus tracepoints = 1;
   // Overall status of whether tracepoint registration requests were initiated with/without errors.
-  pl.statuspb.Status status = 2;
+  px.statuspb.Status status = 2;
 }
 
 // The request to check the status for a tracepoint with the given names.
@@ -134,13 +134,13 @@ message GetTracepointInfoResponse {
     // The tracepoint ID.
     uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
     // The state of the tracepoint.
-    pl.statuspb.LifeCycleState state = 2;
+    px.statuspb.LifeCycleState state = 2;
     // The status of the tracepoint, specified if the state of the tracepoint is not healthy.
-    repeated pl.statuspb.Status statuses = 3;
+    repeated px.statuspb.Status statuses = 3;
     string name = 4;
     // The desired state for the tracepoint. This can be used to determine whether
     // the tracepoint is just starting up or in the process of terminating.
-    pl.statuspb.LifeCycleState expected_state = 5;
+    px.statuspb.LifeCycleState expected_state = 5;
     repeated string schema_names = 6;
   }
   // List of tracepoint states.
@@ -157,7 +157,7 @@ message RemoveTracepointRequest {
 // The response to the tracepoint removal.
 message RemoveTracepointResponse {
   // Status of whether the tracepoint removal request was initiated with/without errors.
-  pl.statuspb.Status status = 1;
+  px.statuspb.Status status = 1;
 }
 
 // The request to update a config setting on a PEM.
@@ -173,5 +173,5 @@ message UpdateConfigRequest {
 // The response to the request to update a config setting on a PEM.
 message UpdateConfigResponse {
   // Overall status of whether the config update was initiated with/without errors.
-  pl.statuspb.Status status = 1;
+  px.statuspb.Status status = 1;
 }

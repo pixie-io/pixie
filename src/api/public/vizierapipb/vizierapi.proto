@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.api.vizierpb;
+package px.api.vizierpb;
 
 option go_package = "publicvizierapipb";
 

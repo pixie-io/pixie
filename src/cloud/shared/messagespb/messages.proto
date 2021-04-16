@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.cloud.shared.messages;
+package px.cloud.shared.messages;
 
 option go_package = "messagespb";
 

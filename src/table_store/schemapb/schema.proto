@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.table_store.schemapb;
+package px.table_store.schemapb;
 
 option go_package = "schemapb";
 
@@ -63,9 +63,9 @@ message RowBatchData {
 message Relation {
   message ColumnInfo {
     string column_name = 1;
-    pl.types.DataType column_type = 2;
+    px.types.DataType column_type = 2;
     string column_desc = 3;
-    pl.types.SemanticType column_semantic_type = 4;
+    px.types.SemanticType column_semantic_type = 4;
   }
   repeated ColumnInfo columns = 1;
   // Description of the table.

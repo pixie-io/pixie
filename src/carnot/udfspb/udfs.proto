@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.carnot.udfspb;
+package px.carnot.udfspb;
 
 option go_package = "udfspb";
 
@@ -13,12 +13,12 @@ message UDASpec {
   // The name of the function.
   string name = 1;
   // Will be an empty list if there is no init function.
-  repeated pl.types.DataType init_arg_types = 2;
+  repeated px.types.DataType init_arg_types = 2;
   // The argument types of the update function. UDAs are allowed to overload
   // based on these types.
-  repeated pl.types.DataType update_arg_types = 3;
+  repeated px.types.DataType update_arg_types = 3;
   // The argument types of the finalize return.
-  pl.types.DataType finalize_type = 4;
+  px.types.DataType finalize_type = 4;
   // Whether the UDA function can be run as part of a partial aggregate.
   bool supports_partial = 5;
 }
@@ -36,12 +36,12 @@ message ScalarUDFSpec {
   // The name of the function.
   string name = 1;
   // Will be an empty list if there is no init function.
-  repeated pl.types.DataType init_arg_types = 2;
+  repeated px.types.DataType init_arg_types = 2;
   // The argument types of the exec args. UDFs are allowed to overload based on
   // these types.
-  repeated pl.types.DataType exec_arg_types = 3;
+  repeated px.types.DataType exec_arg_types = 3;
   // The return type of the exec function.
-  pl.types.DataType return_type = 4;
+  px.types.DataType return_type = 4;
   // Which agents the UDF should execute on.
   UDFSourceExecutor executor = 5;
 }
@@ -74,10 +74,10 @@ message UDTFSourceSpec {
   // Argument object that contains name, and arg_type and the list.
   message Arg {
     string name = 1;
-    pl.types.DataType arg_type = 2;
-    pl.types.SemanticType semantic_type = 3;
+    px.types.DataType arg_type = 2;
+    px.types.SemanticType semantic_type = 3;
     // Optional value.
-    pl.carnot.planpb.ScalarValue default_value = 4;
+    px.carnot.planpb.ScalarValue default_value = 4;
   }
   // Name of the UDTFSource.
   string name = 1;
@@ -87,7 +87,7 @@ message UDTFSourceSpec {
   // Which agents the table function should execute on.
   UDTFSourceExecutor executor = 3;
   // The relation that this UDTF generates.
-  pl.table_store.schemapb.Relation relation = 4;
+  px.table_store.schemapb.Relation relation = 4;
 }
 
 enum UDFExecType {
@@ -100,14 +100,14 @@ message SemanticInferenceRule {
   UDFExecType udf_exec_type = 2;
   // Note that for all arg types (init, update or exec), ST_NONE will match any
   // semantic type.
-  repeated pl.types.SemanticType init_arg_types = 3;
+  repeated px.types.SemanticType init_arg_types = 3;
   // If this applies to a UDA then this will only have update_arg_types.
   // If it applies to a UDF then this will only have exec_arg_types.
-  repeated pl.types.SemanticType update_arg_types = 4;
-  repeated pl.types.SemanticType exec_arg_types = 5;
+  repeated px.types.SemanticType update_arg_types = 4;
+  repeated px.types.SemanticType exec_arg_types = 5;
   // This might turn into a repeated or something in the future, if we support
   // non-scalar udfs/udas.
-  pl.types.SemanticType output_type = 6;
+  px.types.SemanticType output_type = 6;
 }
 
 // IdentDoc is a documentation for a single identifier (argument or return value).

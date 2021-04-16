@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.go_grpc_tls_pl.server;
+package px.go_grpc_tls_pl.server;
 
 option go_package = "greetpb";
 

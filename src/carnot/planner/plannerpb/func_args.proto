@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package pl.carnot.planner.plannerpb;
+package px.carnot.planner.plannerpb;
 
 option go_package = "plannerpb";
 
@@ -94,7 +94,7 @@ message CompileMutationsResponse {
   // The Status of the Mutation Compilation Request. Holds an error with debug
   // information if the originating request had a bug, otherwise will be set to
   // OK.
-  pl.statuspb.Status status = 1;
+  px.statuspb.Status status = 1;
   // The set of mutations to run on the Vizier.
   repeated CompileMutation mutations = 2;
 }
