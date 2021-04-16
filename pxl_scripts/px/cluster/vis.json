@@ -26,7 +26,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.RequestGraph",
+        "@type": "types.px.dev/px.vispb.RequestGraph",
         "requestorPodColumn": "requestor_pod",
         "responderPodColumn": "responder_pod",
         "requestorServiceColumn": "requestor_service",
@@ -59,7 +59,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       }
     },
     {
@@ -80,7 +80,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       }
     },
     {
@@ -101,7 +101,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       }
     },
     {
@@ -122,7 +122,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       }
     }
   ]

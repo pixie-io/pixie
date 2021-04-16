@@ -72,7 +72,7 @@
       },
       "globalFuncOutputName": "dns_flow",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.Graph",
+        "@type": "types.px.dev/px.vispb.Graph",
         "adjacencyList": {
           "fromColumn": "pod",
           "toColumn": "qgroup"
@@ -101,7 +101,7 @@
       },
       "globalFuncOutputName": "dns_flow",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       }
     }
   ]

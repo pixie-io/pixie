@@ -52,7 +52,7 @@
       },
       "globalFuncOutputName": "JVM",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "young_gc_time",
@@ -78,7 +78,7 @@
       },
       "globalFuncOutputName": "JVM",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "full_gc_time",
@@ -104,7 +104,7 @@
       },
       "globalFuncOutputName": "JVM",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "used_heap_size",
@@ -130,7 +130,7 @@
       },
       "globalFuncOutputName": "JVM",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "max_heap_size",
@@ -156,7 +156,7 @@
       },
       "globalFuncOutputName": "JVM",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "total_heap_size",
@@ -198,7 +198,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       }
     }
   ]

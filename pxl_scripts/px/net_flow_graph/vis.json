@@ -71,7 +71,7 @@
       },
       "globalFuncOutputName": "net_flow",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.Graph",
+        "@type": "types.px.dev/px.vispb.Graph",
         "adjacencyList": {
           "fromColumn": "from_entity",
           "toColumn": "to_entity"
@@ -96,7 +96,7 @@
       },
       "globalFuncOutputName": "net_flow",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       }
     }
   ]

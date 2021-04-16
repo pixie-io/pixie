@@ -89,7 +89,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       }
     },
     {
@@ -102,7 +102,7 @@
       },
       "globalFuncOutputName": "resource_timeseries",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "cpu_usage",
@@ -127,7 +127,7 @@
       },
       "globalFuncOutputName": "resource_timeseries",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "total_disk_read_throughput",
@@ -152,7 +152,7 @@
       },
       "globalFuncOutputName": "resource_timeseries",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "total_disk_write_throughput",
@@ -177,7 +177,7 @@
       },
       "globalFuncOutputName": "network_stats",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "tx_bytes_per_ns",
@@ -202,7 +202,7 @@
       },
       "globalFuncOutputName": "network_stats",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "rx_bytes_per_ns",
@@ -227,7 +227,7 @@
       },
       "globalFuncOutputName": "resource_timeseries",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "rss",
@@ -253,7 +253,7 @@
       },
       "globalFuncOutputName": "resource_timeseries",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "vsize",
@@ -291,7 +291,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.StackTraceFlameGraph",
+        "@type": "types.px.dev/px.vispb.StackTraceFlameGraph",
         "stacktraceColumn": "stack_trace",
         "countColumn": "count",
         "percentageColumn": "percent",

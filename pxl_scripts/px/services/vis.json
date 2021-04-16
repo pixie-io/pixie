@@ -53,7 +53,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       }
     },
     {
@@ -66,7 +66,7 @@
       },
       "globalFuncOutputName": "inbound_service_let",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "request_throughput",
@@ -92,7 +92,7 @@
       },
       "globalFuncOutputName": "inbound_service_let",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "error_rate",
@@ -118,7 +118,7 @@
       },
       "globalFuncOutputName": "inbound_service_let",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "latency_p50",
@@ -144,7 +144,7 @@
       },
       "globalFuncOutputName": "inbound_service_let",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "latency_p90",
@@ -170,7 +170,7 @@
       },
       "globalFuncOutputName": "inbound_service_let",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "latency_p99",
@@ -208,7 +208,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.RequestGraph",
+        "@type": "types.px.dev/px.vispb.RequestGraph",
         "requestorPodColumn": "requestor_pod",
         "responderPodColumn": "responder_pod",
         "requestorServiceColumn": "requestor_service",
@@ -245,7 +245,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       }
     }
   ]

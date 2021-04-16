@@ -62,7 +62,7 @@
       },
       "globalFuncOutputName": "mysql_data",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       }
     }
   ]

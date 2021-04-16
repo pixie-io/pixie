@@ -42,7 +42,7 @@
       },
       "globalFuncOutputName": "LET",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "latency_p50",
@@ -68,7 +68,7 @@
       },
       "globalFuncOutputName": "LET",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "latency_p90",
@@ -94,7 +94,7 @@
       },
       "globalFuncOutputName": "LET",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "request_throughput",
@@ -120,7 +120,7 @@
       },
       "globalFuncOutputName": "LET",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "error_rate",
@@ -158,7 +158,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.BarChart",
+        "@type": "types.px.dev/px.vispb.BarChart",
         "bar": {
           "value": "count",
           "label": "http_resp_status",
@@ -188,7 +188,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.HistogramChart",
+        "@type": "types.px.dev/px.vispb.HistogramChart",
         "histogram": {
           "value": "request_latency",
           "prebinCount": "count",
@@ -231,7 +231,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       }
     },
     {
@@ -256,7 +256,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       }
     },
     {
@@ -281,7 +281,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.Graph",
+        "@type": "types.px.dev/px.vispb.Graph",
         "adjacencyList": {
           "fromColumn": "requestor",
           "toColumn": "responder"

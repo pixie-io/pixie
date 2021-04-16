@@ -63,7 +63,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       },
       "position": {
         "x": 0,
@@ -76,7 +76,7 @@
       "name": "HTTP Requests",
       "globalFuncOutputName": "inbound_let_timeseries",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "request_throughput",
@@ -102,7 +102,7 @@
       "name": "HTTP P50 Latency",
       "globalFuncOutputName": "inbound_let_timeseries",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "latency_p50",
@@ -128,7 +128,7 @@
       "name": "HTTP P90 Latency",
       "globalFuncOutputName": "inbound_let_timeseries",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "latency_p90",
@@ -154,7 +154,7 @@
       "name": "HTTP P99 Latency",
       "globalFuncOutputName": "inbound_let_timeseries",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "latency_p99",
@@ -180,7 +180,7 @@
       "name": "HTTP Request Error Rate",
       "globalFuncOutputName": "inbound_let_timeseries",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "error_rate",
@@ -206,7 +206,7 @@
       "name": "CPU Usage",
       "globalFuncOutputName": "resource_timeseries",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "cpu_usage",
@@ -232,7 +232,7 @@
       "name": "Resident Set Size",
       "globalFuncOutputName": "resource_timeseries",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "rss",
@@ -258,7 +258,7 @@
       "name": "Bytes Read from Storage",
       "globalFuncOutputName": "resource_timeseries",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "total_disk_read_throughput",
@@ -284,7 +284,7 @@
       "name": "Bytes Written to Storage",
       "globalFuncOutputName": "resource_timeseries",
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "total_disk_write_throughput",
@@ -322,7 +322,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/px.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table"
       },
       "position": {
         "x": 0,
