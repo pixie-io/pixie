@@ -1,3 +1,3 @@
 package vzconnpb
 
-//go:generate sh -c "mockgen px.dev/pixie/src/cloud/vzconn/vzconnpb VZConnServiceServer,VZConnServiceClient,VZConnService_NATSBridgeServer,VZConnService_NATSBridgeClient > mock/service_mock.gen.go"
+//go:generate mockgen -source=service.pb.go -destination=mock/service_mock.gen.go VZConnServiceServer,VZConnServiceClient,VZConnService_NATSBridgeServer,VZConnService_NATSBridgeClient

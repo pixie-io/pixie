@@ -9,13 +9,13 @@ import (
 
 	uuid "github.com/gofrs/uuid"
 	gomock "github.com/golang/mock/gomock"
-	pl_shared_k8s_metadatapb "px.dev/pixie/src/shared/k8s/metadatapb"
-	types "px.dev/pixie/src/shared/types/gotypes"
-	messages "px.dev/pixie/src/vizier/messages/messagespb"
+	metadatapb "px.dev/pixie/src/shared/k8s/metadatapb"
+	gotypes "px.dev/pixie/src/shared/types/gotypes"
+	messagespb "px.dev/pixie/src/vizier/messages/messagespb"
 	agent "px.dev/pixie/src/vizier/services/metadata/controllers/agent"
-	metadatapb "px.dev/pixie/src/vizier/services/metadata/metadatapb"
+	metadatapb0 "px.dev/pixie/src/vizier/services/metadata/metadatapb"
 	storepb "px.dev/pixie/src/vizier/services/metadata/storepb"
-	pl_vizier_services_shared_agent "px.dev/pixie/src/vizier/services/shared/agentpb"
+	agentpb "px.dev/pixie/src/vizier/services/shared/agentpb"
 )
 
 // MockStore is a mock of Store interface.
@@ -42,7 +42,7 @@ func (m *MockStore) EXPECT() *MockStoreMockRecorder {
 }
 
 // CreateAgent mocks base method.
-func (m *MockStore) CreateAgent(agentID uuid.UUID, a *pl_vizier_services_shared_agent.Agent) error {
+func (m *MockStore) CreateAgent(agentID uuid.UUID, a *agentpb.Agent) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateAgent", agentID, a)
 	ret0, _ := ret[0].(error)
@@ -85,10 +85,10 @@ func (mr *MockStoreMockRecorder) GetASID() *gomock.Call {
 }
 
 // GetAgent mocks base method.
-func (m *MockStore) GetAgent(agentID uuid.UUID) (*pl_vizier_services_shared_agent.Agent, error) {
+func (m *MockStore) GetAgent(agentID uuid.UUID) (*agentpb.Agent, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAgent", agentID)
-	ret0, _ := ret[0].(*pl_vizier_services_shared_agent.Agent)
+	ret0, _ := ret[0].(*agentpb.Agent)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -130,10 +130,10 @@ func (mr *MockStoreMockRecorder) GetAgentIDFromPodName(podName interface{}) *gom
 }
 
 // GetAgents mocks base method.
-func (m *MockStore) GetAgents() ([]*pl_vizier_services_shared_agent.Agent, error) {
+func (m *MockStore) GetAgents() ([]*agentpb.Agent, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAgents")
-	ret0, _ := ret[0].([]*pl_vizier_services_shared_agent.Agent)
+	ret0, _ := ret[0].([]*agentpb.Agent)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -145,10 +145,10 @@ func (mr *MockStoreMockRecorder) GetAgents() *gomock.Call {
 }
 
 // GetAgentsDataInfo mocks base method.
-func (m *MockStore) GetAgentsDataInfo() (map[uuid.UUID]*messages.AgentDataInfo, error) {
+func (m *MockStore) GetAgentsDataInfo() (map[uuid.UUID]*messagespb.AgentDataInfo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAgentsDataInfo")
-	ret0, _ := ret[0].(map[uuid.UUID]*messages.AgentDataInfo)
+	ret0, _ := ret[0].(map[uuid.UUID]*messagespb.AgentDataInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -175,10 +175,10 @@ func (mr *MockStoreMockRecorder) GetComputedSchema() *gomock.Call {
 }
 
 // GetProcesses mocks base method.
-func (m *MockStore) GetProcesses(upids []*types.UInt128) ([]*pl_shared_k8s_metadatapb.ProcessInfo, error) {
+func (m *MockStore) GetProcesses(upids []*gotypes.UInt128) ([]*metadatapb.ProcessInfo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetProcesses", upids)
-	ret0, _ := ret[0].([]*pl_shared_k8s_metadatapb.ProcessInfo)
+	ret0, _ := ret[0].([]*metadatapb.ProcessInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -204,7 +204,7 @@ func (mr *MockStoreMockRecorder) PruneComputedSchema() *gomock.Call {
 }
 
 // UpdateAgent mocks base method.
-func (m *MockStore) UpdateAgent(agentID uuid.UUID, a *pl_vizier_services_shared_agent.Agent) error {
+func (m *MockStore) UpdateAgent(agentID uuid.UUID, a *agentpb.Agent) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateAgent", agentID, a)
 	ret0, _ := ret[0].(error)
@@ -218,7 +218,7 @@ func (mr *MockStoreMockRecorder) UpdateAgent(agentID, a interface{}) *gomock.Cal
 }
 
 // UpdateAgentDataInfo mocks base method.
-func (m *MockStore) UpdateAgentDataInfo(agentID uuid.UUID, dataInfo *messages.AgentDataInfo) error {
+func (m *MockStore) UpdateAgentDataInfo(agentID uuid.UUID, dataInfo *messagespb.AgentDataInfo) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateAgentDataInfo", agentID, dataInfo)
 	ret0, _ := ret[0].(error)
@@ -232,7 +232,7 @@ func (mr *MockStoreMockRecorder) UpdateAgentDataInfo(agentID, dataInfo interface
 }
 
 // UpdateProcesses mocks base method.
-func (m *MockStore) UpdateProcesses(processes []*pl_shared_k8s_metadatapb.ProcessInfo) error {
+func (m *MockStore) UpdateProcesses(processes []*metadatapb.ProcessInfo) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateProcesses", processes)
 	ret0, _ := ret[0].(error)
@@ -374,10 +374,10 @@ func (mr *MockManagerMockRecorder) DeleteAgentUpdateCursor(cursorID interface{})
 }
 
 // GetActiveAgents mocks base method.
-func (m *MockManager) GetActiveAgents() ([]*pl_vizier_services_shared_agent.Agent, error) {
+func (m *MockManager) GetActiveAgents() ([]*agentpb.Agent, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetActiveAgents")
-	ret0, _ := ret[0].([]*pl_vizier_services_shared_agent.Agent)
+	ret0, _ := ret[0].([]*agentpb.Agent)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -404,10 +404,10 @@ func (mr *MockManagerMockRecorder) GetAgentIDForHostnamePair(hnPair interface{})
 }
 
 // GetAgentUpdates mocks base method.
-func (m *MockManager) GetAgentUpdates(cursorID uuid.UUID) ([]*metadatapb.AgentUpdate, *storepb.ComputedSchema, error) {
+func (m *MockManager) GetAgentUpdates(cursorID uuid.UUID) ([]*metadatapb0.AgentUpdate, *storepb.ComputedSchema, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAgentUpdates", cursorID)
-	ret0, _ := ret[0].([]*metadatapb.AgentUpdate)
+	ret0, _ := ret[0].([]*metadatapb0.AgentUpdate)
 	ret1, _ := ret[1].(*storepb.ComputedSchema)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
@@ -505,7 +505,7 @@ func (mr *MockManagerMockRecorder) NewAgentUpdateCursor() *gomock.Call {
 }
 
 // RegisterAgent mocks base method.
-func (m *MockManager) RegisterAgent(info *pl_vizier_services_shared_agent.Agent) (uint32, error) {
+func (m *MockManager) RegisterAgent(info *agentpb.Agent) (uint32, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RegisterAgent", info)
 	ret0, _ := ret[0].(uint32)

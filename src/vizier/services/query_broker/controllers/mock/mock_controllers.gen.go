@@ -7,13 +7,13 @@ package mock_controllers
 import (
 	reflect "reflect"
 
+	uuid "github.com/gofrs/uuid"
 	gomock "github.com/golang/mock/gomock"
-	"github.com/gofrs/uuid"
+	carnotpb "px.dev/pixie/src/carnot/carnotpb"
 	distributedpb "px.dev/pixie/src/carnot/planner/distributedpb"
 	plannerpb "px.dev/pixie/src/carnot/planner/plannerpb"
 	planpb "px.dev/pixie/src/carnot/planpb"
 	queryresultspb "px.dev/pixie/src/carnot/queryresultspb"
-	carnotpb "px.dev/pixie/src/carnot/carnotpb"
 	querybrokerpb "px.dev/pixie/src/vizier/services/query_broker/querybrokerpb"
 	tracker "px.dev/pixie/src/vizier/services/query_broker/tracker"
 )

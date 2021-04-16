@@ -8,8 +8,8 @@ import (
 	reflect "reflect"
 	time "time"
 
+	uuid "github.com/gofrs/uuid"
 	gomock "github.com/golang/mock/gomock"
-	"github.com/gofrs/uuid"
 	storepb "px.dev/pixie/src/vizier/services/metadata/storepb"
 )
 

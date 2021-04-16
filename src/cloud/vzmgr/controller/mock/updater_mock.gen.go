@@ -7,8 +7,8 @@ package mock_controller
 import (
 	reflect "reflect"
 
+	uuid "github.com/gofrs/uuid"
 	gomock "github.com/golang/mock/gomock"
-	"github.com/gofrs/uuid"
 	cvmsgspb "px.dev/pixie/src/shared/cvmsgspb"
 )
 
