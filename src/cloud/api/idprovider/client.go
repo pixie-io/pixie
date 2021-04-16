@@ -29,6 +29,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
+	"px.dev/pixie/src/cloud/profile/controller/idmanager"
 	"px.dev/pixie/src/shared/services/handler"
 )
 
@@ -43,6 +44,8 @@ func init() {
 	pflag.String("kratos_public_host", "http://kratos:4433", "The URL to access kratos internally.")
 	pflag.String("kratos_admin_host", "http://kratos:4434", "The URL to access kratos admin internally.")
 	pflag.String("kratos_browser_url", "https://work.dev.withpixie.dev/oauth/kratos", "The URL for kratos available from the browser.")
+	pflag.String("kratos_recovery_link_lifetime", "12h", "How long a kratos invite/recovery link should remain valid")
+	pflag.String("kratos_schema_id", "default", "The ID of the Kratos Schema we want to use.")
 }
 
 // IDProviderSessionKey is the key for the cookie session storing idp data.
@@ -66,6 +69,8 @@ type HydraKratosConfig struct {
 	HydraConsentPath string
 	// The OAuth client ID used to manage authorization with Hydra.
 	HydraClientID string
+	// Optional argument. If not set, will be created later on.
+	HTTPClient *http.Client
 }
 
 // HydraLoginStateKey is the hydra login state key.
@@ -100,6 +105,8 @@ type kratosPublicClientService interface {
 type kratosAdminClientService interface {
 	GetIdentity(params *kratosAdmin.GetIdentityParams) (*kratosAdmin.GetIdentityOK, error)
 	UpdateIdentity(params *kratosAdmin.UpdateIdentityParams) (*kratosAdmin.UpdateIdentityOK, error)
+	CreateIdentity(params *kratosAdmin.CreateIdentityParams) (*kratosAdmin.CreateIdentityCreated, error)
+	CreateRecoveryLink(params *kratosAdmin.CreateRecoveryLinkParams) (*kratosAdmin.CreateRecoveryLinkOK, error)
 }
 
 // HydraKratosClient implements the Client interface for the a Hydra and Kratos integration.
@@ -157,9 +164,13 @@ func createRuntime(path string, client *http.Client) (*httptransport.Runtime, er
 
 // NewHydraKratosClientFromConfig creates a new client from a config.
 func NewHydraKratosClientFromConfig(cfg *HydraKratosConfig) (*HydraKratosClient, error) {
-	httpClient, err := createHTTPClient()
-	if err != nil {
-		return nil, err
+	var err error
+	httpClient := cfg.HTTPClient
+	if httpClient == nil {
+		httpClient, err = createHTTPClient()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	hydraAdminRuntime, err := createRuntime(cfg.HydraAdminHost, httpClient)
@@ -654,4 +665,40 @@ func (c *HydraKratosClient) UpdateUserInfo(ctx context.Context, userID string, k
 	}
 
 	return convertIdentityToKratosUserInfo(resp.Payload)
+}
+
+// CreateInviteLink implements the idmanager.Manager interface function to create an account and return an InviteLink for the specified user in the specific org.
+func (c *HydraKratosClient) CreateInviteLink(ctx context.Context, req *idmanager.CreateInviteLinkRequest) (*idmanager.CreateInviteLinkResponse, error) {
+	schemaID := viper.GetString("kratos_schema_id")
+	idResp, err := c.kratosAdminClient.CreateIdentity(&kratosAdmin.CreateIdentityParams{
+		Context: ctx,
+		Body: &kratosModels.CreateIdentity{
+			SchemaID: &schemaID,
+			Traits: &KratosUserInfo{
+				Email:    req.Email,
+				PLOrgID:  req.PLOrgID,
+				PLUserID: req.PLUserID,
+			},
+		},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	recovery, err := c.kratosAdminClient.CreateRecoveryLink(&kratosAdmin.CreateRecoveryLinkParams{
+		Context: ctx,
+		Body: &kratosModels.CreateRecoveryLink{
+			ExpiresIn:  viper.GetString("kratos_recovery_link_lifetime"),
+			IdentityID: idResp.Payload.ID,
+		},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return &idmanager.CreateInviteLinkResponse{
+		Email:      req.Email,
+		InviteLink: *recovery.Payload.RecoveryLink,
+	}, nil
 }

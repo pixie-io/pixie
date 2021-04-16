@@ -1,0 +1,11 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "schema",
+    srcs = [
+        "bindata.gen.go",
+        "schema.go",
+    ],
+    importpath = "px.dev/pixie/src/cloud/api/idprovider/testutils/schema",
+    visibility = ["//src/cloud/api/idprovider:__subpackages__"],
+)

@@ -41,6 +41,14 @@ func (ka *fakeKratosAdminClient) UpdateIdentity(params *kratosAdmin.UpdateIdenti
 	return (*ka.updateIdentityFn)(params)
 }
 
+func (ka *fakeKratosAdminClient) CreateIdentity(params *kratosAdmin.CreateIdentityParams) (*kratosAdmin.CreateIdentityCreated, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (ka *fakeKratosAdminClient) CreateRecoveryLink(params *kratosAdmin.CreateRecoveryLinkParams) (*kratosAdmin.CreateRecoveryLinkOK, error) {
+	return nil, errors.New("not implemented")
+}
+
 func convertKratosUserInfoToIdentity(t *testing.T, ui *KratosUserInfo) *kratosModels.Identity {
 	return &kratosModels.Identity{
 		Traits: ui,

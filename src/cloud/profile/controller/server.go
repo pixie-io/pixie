@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"px.dev/pixie/src/api/public/uuidpb"
+	"px.dev/pixie/src/cloud/profile/controller/idmanager"
 	"px.dev/pixie/src/cloud/profile/datastore"
 	"px.dev/pixie/src/cloud/profile/profileenv"
 	profile "px.dev/pixie/src/cloud/profile/profilepb"
@@ -61,14 +62,15 @@ type UserSettingsDatastore interface {
 
 // Server is an implementation of GRPC server for profile service.
 type Server struct {
-	env profileenv.ProfileEnv
-	d   Datastore
-	uds UserSettingsDatastore
+	env       profileenv.ProfileEnv
+	d         Datastore
+	uds       UserSettingsDatastore
+	IDManager idmanager.Manager
 }
 
 // NewServer creates a new GRPC profile server.
-func NewServer(env profileenv.ProfileEnv, d Datastore, uds UserSettingsDatastore) *Server {
-	return &Server{env: env, d: d, uds: uds}
+func NewServer(env profileenv.ProfileEnv, d Datastore, uds UserSettingsDatastore, idm idmanager.Manager) *Server {
+	return &Server{env: env, d: d, uds: uds, IDManager: idm}
 }
 
 func userInfoToProto(u *datastore.UserInfo) *profile.UserInfo {
@@ -326,5 +328,43 @@ func (s *Server) UpdateUserSettings(ctx context.Context, req *profile.UpdateUser
 
 // InviteUser implements the Profile interface's InviteUser method.
 func (s *Server) InviteUser(ctx context.Context, req *profile.InviteUserRequest) (*profile.InviteUserResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "InviteUser not implemented")
+	userInfo, err := s.d.GetUserByEmail(req.Email)
+	var userID uuid.UUID
+	if err == datastore.ErrUserNotFound {
+		createUserReq := &profile.CreateUserRequest{
+			OrgID:     req.OrgID,
+			Username:  req.Email,
+			FirstName: req.FirstName,
+			LastName:  req.LastName,
+			Email:     req.Email,
+		}
+
+		userIDPb, err := s.CreateUser(ctx, createUserReq)
+		if err != nil {
+			return nil, err
+		}
+		userID = utils.UUIDFromProtoOrNil(userIDPb)
+	} else if err != nil {
+		return nil, err
+	} else if err == nil && req.MustCreateUser {
+		return nil, errors.New("cannot invite a user that already exists")
+	} else if err == nil {
+		userID = userInfo.ID
+	}
+
+	idpCreateAccReq := &idmanager.CreateInviteLinkRequest{
+		Email:    req.Email,
+		PLOrgID:  utils.ProtoToUUIDStr(req.OrgID),
+		PLUserID: userID.String(),
+	}
+
+	resp, err := s.IDManager.CreateInviteLink(ctx, idpCreateAccReq)
+	if err != nil {
+		return nil, err
+	}
+
+	return &profile.InviteUserResponse{
+		Email:      resp.Email,
+		InviteLink: resp.InviteLink,
+	}, nil
 }

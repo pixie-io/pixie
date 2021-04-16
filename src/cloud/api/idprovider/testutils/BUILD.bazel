@@ -1,0 +1,28 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "testutils",
+    srcs = ["kratostest.go"],
+    importpath = "px.dev/pixie/src/cloud/api/idprovider/testutils",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/cloud/api/idprovider",
+        "//src/cloud/api/idprovider/testutils/schema",
+        "@com_github_cenkalti_backoff_v3//:backoff",
+        "@com_github_gofrs_uuid//:uuid",
+        "@com_github_ory_dockertest_v3//:dockertest",
+        "@com_github_ory_dockertest_v3//docker",
+        "@com_github_sirupsen_logrus//:logrus",
+        "@in_gopkg_yaml_v2//:yaml_v2",
+    ],
+)
+
+go_test(
+    name = "testutils_test",
+    srcs = ["kratostest_test.go"],
+    embed = [":testutils"],
+    deps = [
+        "//src/cloud/profile/controller/idmanager",
+        "@com_github_stretchr_testify//assert",
+    ],
+)

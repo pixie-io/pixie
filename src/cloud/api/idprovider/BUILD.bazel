@@ -6,6 +6,7 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/api/idprovider",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
+        "//src/cloud/profile/controller/idmanager",
         "//src/shared/services/handler",
         "@com_github_go_openapi_runtime//:runtime",
         "@com_github_go_openapi_runtime//client",

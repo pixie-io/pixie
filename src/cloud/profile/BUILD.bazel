@@ -10,7 +10,9 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/profile",
     visibility = ["//visibility:private"],
     deps = [
+        "//src/cloud/api/idprovider",
         "//src/cloud/profile/controller",
+        "//src/cloud/profile/controller/idmanager",
         "//src/cloud/profile/datastore",
         "//src/cloud/profile/profileenv",
         "//src/cloud/profile/profilepb:service_go_proto",
@@ -22,6 +24,8 @@ go_library(
         "//src/shared/services/server",
         "@com_github_golang_migrate_migrate//source/go_bindata",
         "@com_github_sirupsen_logrus//:logrus",
+        "@com_github_spf13_pflag//:pflag",
+        "@com_github_spf13_viper//:viper",
     ],
 )
 

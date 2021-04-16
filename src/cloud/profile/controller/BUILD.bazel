@@ -3,6 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "controller",
     srcs = [
+        "auth0_manager.go",
         "mock.go",
         "server.go",
     ],
@@ -10,6 +11,7 @@ go_library(
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",
+        "//src/cloud/profile/controller/idmanager",
         "//src/cloud/profile/datastore",
         "//src/cloud/profile/profileenv",
         "//src/cloud/profile/profilepb:service_go_proto",
@@ -29,12 +31,15 @@ go_test(
     embed = [":controller"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",
+        "//src/cloud/api/idprovider/testutils",
         "//src/cloud/profile/controller/mock",
         "//src/cloud/profile/datastore",
         "//src/cloud/profile/profileenv",
         "//src/cloud/profile/profilepb:service_go_proto",
         "//src/cloud/project_manager/projectmanagerpb:service_go_proto",
         "//src/cloud/project_manager/projectmanagerpb/mock",
+        "//src/shared/services/authcontext",
+        "//src/shared/services/utils",
         "//src/utils",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_golang_mock//gomock",

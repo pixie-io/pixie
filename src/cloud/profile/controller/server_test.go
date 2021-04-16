@@ -2,8 +2,10 @@ package controller_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/gofrs/uuid"
 	"github.com/golang/mock/gomock"
@@ -13,6 +15,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"px.dev/pixie/src/api/public/uuidpb"
+	"px.dev/pixie/src/cloud/api/idprovider/testutils"
 	"px.dev/pixie/src/cloud/profile/controller"
 	mock_controller "px.dev/pixie/src/cloud/profile/controller/mock"
 	"px.dev/pixie/src/cloud/profile/datastore"
@@ -20,6 +23,8 @@ import (
 	profile "px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/cloud/project_manager/projectmanagerpb"
 	mock_projectmanager "px.dev/pixie/src/cloud/project_manager/projectmanagerpb/mock"
+	"px.dev/pixie/src/shared/services/authcontext"
+	svcutils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils"
 )
 
@@ -156,7 +161,7 @@ func TestServer_CreateUser(t *testing.T) {
 
 	for _, tc := range createUsertests {
 		t.Run(tc.name, func(t *testing.T) {
-			s := controller.NewServer(nil, d, nil)
+			s := controller.NewServer(nil, d, nil, nil)
 			if tc.makesCall {
 				req := &datastore.UserInfo{
 					OrgID:     testOrgUUID,
@@ -191,7 +196,7 @@ func TestServer_GetUser(t *testing.T) {
 
 	userUUID := uuid.Must(uuid.NewV4())
 	orgUUID := uuid.Must(uuid.NewV4())
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, d, nil, nil)
 
 	mockReply := &datastore.UserInfo{
 		ID:        userUUID,
@@ -224,7 +229,7 @@ func TestServer_GetUser_MissingUser(t *testing.T) {
 	d := mock_controller.NewMockDatastore(ctrl)
 
 	userUUID := uuid.Must(uuid.NewV4())
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, d, nil, nil)
 	d.EXPECT().
 		GetUser(userUUID).
 		Return(nil, nil)
@@ -243,7 +248,7 @@ func TestServer_GetUserByEmail(t *testing.T) {
 
 	userUUID := uuid.Must(uuid.NewV4())
 	orgUUID := uuid.Must(uuid.NewV4())
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, d, nil, nil)
 
 	mockReply := &datastore.UserInfo{
 		ID:        userUUID,
@@ -274,7 +279,7 @@ func TestServer_GetUserByEmail_MissingEmail(t *testing.T) {
 
 	d := mock_controller.NewMockDatastore(ctrl)
 
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, d, nil, nil)
 
 	d.EXPECT().
 		GetUserByEmail("foo@bar.com").
@@ -355,7 +360,7 @@ func TestServer_CreateOrgAndUser_SuccessCases(t *testing.T) {
 
 			env := profileenv.New(pm)
 
-			s := controller.NewServer(env, d, nil)
+			s := controller.NewServer(env, d, nil, nil)
 			exUserInfo := &datastore.UserInfo{
 				Username:  tc.req.User.Username,
 				FirstName: tc.req.User.FirstName,
@@ -467,7 +472,7 @@ func TestServer_CreateOrgAndUser_InvalidArgumentCases(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			pm := mock_projectmanager.NewMockProjectManagerServiceClient(ctrl)
 			env := profileenv.New(pm)
-			s := controller.NewServer(env, d, nil)
+			s := controller.NewServer(env, d, nil, nil)
 			resp, err := s.CreateOrgAndUser(context.Background(), tc.req)
 			assert.NotNil(t, err)
 			assert.Nil(t, resp)
@@ -509,7 +514,7 @@ func TestServer_CreateOrgAndUser_CreateProjectFailed(t *testing.T) {
 		},
 	}
 
-	s := controller.NewServer(env, d, nil)
+	s := controller.NewServer(env, d, nil, nil)
 	exUserInfo := &datastore.UserInfo{
 		Username:  req.User.Username,
 		FirstName: req.User.FirstName,
@@ -540,7 +545,7 @@ func TestServer_GetOrg(t *testing.T) {
 	d := mock_controller.NewMockDatastore(ctrl)
 
 	orgUUID := uuid.Must(uuid.NewV4())
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, d, nil, nil)
 
 	mockReply := &datastore.OrgInfo{
 		ID:         orgUUID,
@@ -569,7 +574,7 @@ func TestServer_GetOrgs(t *testing.T) {
 	orgUUID := uuid.Must(uuid.NewV4())
 	org2UUID := uuid.Must(uuid.NewV4())
 
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, d, nil, nil)
 
 	mockReply := []*datastore.OrgInfo{{
 		ID:         orgUUID,
@@ -605,7 +610,7 @@ func TestServer_GetOrg_MissingOrg(t *testing.T) {
 	d := mock_controller.NewMockDatastore(ctrl)
 
 	orgUUID := uuid.Must(uuid.NewV4())
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, d, nil, nil)
 
 	d.EXPECT().
 		GetOrg(orgUUID).
@@ -624,7 +629,7 @@ func TestServer_GetOrgByDomain(t *testing.T) {
 	d := mock_controller.NewMockDatastore(ctrl)
 
 	orgUUID := uuid.Must(uuid.NewV4())
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, d, nil, nil)
 
 	mockReply := &datastore.OrgInfo{
 		ID:         orgUUID,
@@ -652,7 +657,7 @@ func TestServer_GetOrgByDomain_MissingOrg(t *testing.T) {
 
 	d := mock_controller.NewMockDatastore(ctrl)
 
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, d, nil, nil)
 
 	d.EXPECT().
 		GetOrgByDomain("my-org.com").
@@ -673,7 +678,7 @@ func TestServer_DeleteOrgAndUsers(t *testing.T) {
 
 	d := mock_controller.NewMockDatastore(ctrl)
 
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, d, nil, nil)
 
 	orgUUID := uuid.Must(uuid.NewV4())
 
@@ -695,7 +700,7 @@ func TestServer_DeleteOrgAndUsers_MissingOrg(t *testing.T) {
 
 	d := mock_controller.NewMockDatastore(ctrl)
 
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, d, nil, nil)
 
 	orgUUID := uuid.Must(uuid.NewV4())
 	d.EXPECT().
@@ -714,7 +719,7 @@ func TestServer_UpdateUser(t *testing.T) {
 	d := mock_controller.NewMockDatastore(ctrl)
 
 	userID := uuid.Must(uuid.NewV4())
-	s := controller.NewServer(nil, d, nil)
+	s := controller.NewServer(nil, d, nil, nil)
 
 	profilePicture := "something"
 	newProfilePicture := "new"
@@ -755,7 +760,7 @@ func TestServer_GetUserSettings(t *testing.T) {
 
 	d := mock_controller.NewMockUserSettingsDatastore(ctrl)
 
-	s := controller.NewServer(nil, nil, d)
+	s := controller.NewServer(nil, nil, d, nil)
 
 	userID := uuid.Must(uuid.NewV4())
 	d.EXPECT().
@@ -777,7 +782,7 @@ func TestServer_UpdateUserSettings(t *testing.T) {
 
 	d := mock_controller.NewMockUserSettingsDatastore(ctrl)
 
-	s := controller.NewServer(nil, nil, d)
+	s := controller.NewServer(nil, nil, d, nil)
 
 	userID := uuid.Must(uuid.NewV4())
 
@@ -828,6 +833,117 @@ func TestServer_UpdateUserSettings(t *testing.T) {
 				require.NoError(t, err)
 				assert.NotNil(t, resp)
 				assert.Equal(t, true, resp.OK)
+			}
+		})
+	}
+}
+func CreateTestContext() context.Context {
+	sCtx := authcontext.New()
+	sCtx.Claims = svcutils.GenerateJWTForUser(
+		"6ba7b810-9dad-11d1-80b4-00c04fd430c9",
+		"6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+		"test@test.com",
+		time.Now(),
+		"pixie",
+	)
+	return authcontext.NewContext(context.Background(), sCtx)
+}
+
+func TestServer_CreateAccount(t *testing.T) {
+	userID := uuid.Must(uuid.NewV4())
+
+	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	ctx := CreateTestContext()
+	inviteUserTests := []struct {
+		name string
+		// MustCreateUser is passed as part of the request.
+		mustCreate bool
+		// Whether the user already exists.
+		doesUserExist bool
+		err           error
+	}{
+		{
+			name:          "invite_existing_user",
+			mustCreate:    false,
+			doesUserExist: true,
+			err:           nil,
+		},
+		{
+			name:          "error_must_create_but_user_exists",
+			mustCreate:    true,
+			doesUserExist: true,
+			err:           errors.New("cannot invite a user that already exists"),
+		},
+		{
+			name:          "create_user_if_does_not_exist",
+			mustCreate:    false,
+			doesUserExist: false,
+			err:           nil,
+		},
+		{
+			name:          "must_create_user_if_does_not_exist",
+			mustCreate:    true,
+			doesUserExist: false,
+			err:           nil,
+		},
+	}
+	for _, tc := range inviteUserTests {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			d := mock_controller.NewMockDatastore(ctrl)
+
+			kratos, err := testutils.NewKratosServer()
+			require.NoError(t, err)
+
+			defer kratos.CleanUp()
+
+			client, closeSrv, err := kratos.Serve()
+			require.NoError(t, err)
+			defer closeSrv()
+			assert.NotNil(t, client)
+			s := controller.NewServer(nil, d, nil, client)
+
+			req := &profile.InviteUserRequest{
+				MustCreateUser: tc.mustCreate,
+				OrgID:          utils.ProtoFromUUID(orgID),
+				Email:          "bobloblaw@lawblog.com",
+				FirstName:      "Bob",
+				LastName:       "Loblaw",
+			}
+
+			userInfo := &datastore.UserInfo{
+				OrgID:     orgID,
+				Username:  req.Email,
+				FirstName: req.FirstName,
+				LastName:  req.LastName,
+				Email:     req.Email,
+			}
+
+			if !tc.doesUserExist {
+				d.EXPECT().
+					GetUserByEmail("bobloblaw@lawblog.com").
+					Return(nil, datastore.ErrUserNotFound)
+				// We always create a user if one does not exist.
+				d.EXPECT().
+					CreateUser(userInfo).
+					Return(userID, nil)
+			} else {
+				d.EXPECT().
+					GetUserByEmail("bobloblaw@lawblog.com").
+					Return(userInfo, nil)
+			}
+
+			resp, err := s.InviteUser(ctx, req)
+
+			if tc.err == nil {
+				require.NoError(t, tc.err)
+				assert.Equal(t, resp.Email, req.Email)
+				assert.Regexp(t, "self-service/recovery/methods", resp.InviteLink)
+			} else {
+				assert.Equal(t, err, tc.err)
 			}
 		})
 	}

@@ -6,8 +6,12 @@ import (
 
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 
+	"px.dev/pixie/src/cloud/api/idprovider"
 	"px.dev/pixie/src/cloud/profile/controller"
+	"px.dev/pixie/src/cloud/profile/controller/idmanager"
 	"px.dev/pixie/src/cloud/profile/datastore"
 	"px.dev/pixie/src/cloud/profile/profileenv"
 	profile "px.dev/pixie/src/cloud/profile/profilepb"
@@ -18,6 +22,10 @@ import (
 	"px.dev/pixie/src/shared/services/pg"
 	"px.dev/pixie/src/shared/services/server"
 )
+
+func init() {
+	pflag.String("oauth_provider", "auth0", "The auth provider to user. Currently support 'auth0' or 'hydra'")
+}
 
 func main() {
 	services.SetupService("profile-service", 51500)
@@ -42,7 +50,23 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("Failed to set up profileenv")
 	}
-	svr := controller.NewServer(env, datastore, datastore)
+
+	var mgr idmanager.Manager
+	switch viper.GetString("oauth_provider") {
+	case "auth0":
+		mgr, err = controller.NewAuth0Manager()
+		if err != nil {
+			log.WithError(err).Fatal("Failed to initialize Auth0")
+		}
+	case "hydra":
+		mgr, err = idprovider.NewHydraKratosClient()
+		if err != nil {
+			log.WithError(err).Fatal("Failed to initialize hydraKratosConnector")
+		}
+	default:
+		log.Fatalf("Cannot initialize authProvider '%s'. Only 'auth0' and 'hydra' are supported.", viper.GetString("oauth_provider"))
+	}
+	svr := controller.NewServer(env, datastore, datastore, mgr)
 
 	s := server.NewPLServer(env, mux)
 	profile.RegisterProfileServiceServer(s.GRPCServer(), svr)
