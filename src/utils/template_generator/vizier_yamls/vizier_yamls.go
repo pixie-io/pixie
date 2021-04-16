@@ -9,9 +9,9 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
-	"pixielabs.ai/pixielabs/src/utils/shared/tar"
-	"pixielabs.ai/pixielabs/src/utils/shared/yamls"
+	"px.dev/pixie/src/utils/shared/k8s"
+	"px.dev/pixie/src/utils/shared/tar"
+	"px.dev/pixie/src/utils/shared/yamls"
 )
 
 const (

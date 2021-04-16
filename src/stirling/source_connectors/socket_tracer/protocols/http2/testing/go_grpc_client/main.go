@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	pb "pixielabs.ai/pixielabs/src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto"
+	pb "px.dev/pixie/src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto"
 )
 
 func mustCreateGrpcClientConn(address string, https bool) *grpc.ClientConn {

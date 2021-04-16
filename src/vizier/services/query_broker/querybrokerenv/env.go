@@ -1,6 +1,6 @@
 package querybrokerenv
 
-import "pixielabs.ai/pixielabs/src/shared/services/env"
+import "px.dev/pixie/src/shared/services/env"
 
 // QueryBrokerEnv is the interface for the Query Broker service environment.
 type QueryBrokerEnv interface {

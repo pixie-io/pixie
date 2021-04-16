@@ -13,9 +13,9 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 
-	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
-	"pixielabs.ai/pixielabs/src/utils/shared/yamls"
-	vizieryamls "pixielabs.ai/pixielabs/src/utils/template_generator/vizier_yamls"
+	"px.dev/pixie/src/utils/shared/k8s"
+	"px.dev/pixie/src/utils/shared/yamls"
+	vizieryamls "px.dev/pixie/src/utils/template_generator/vizier_yamls"
 )
 
 // LoadClusterSecretsCmd loads cluster secretss

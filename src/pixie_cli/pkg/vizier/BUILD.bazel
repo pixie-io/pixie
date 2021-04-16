@@ -12,7 +12,7 @@ go_library(
         "stream_adapter.go",
         "utils.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/vizier",
+    importpath = "px.dev/pixie/src/pixie_cli/pkg/vizier",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/public/vizierapipb:public_vizier_pl_go_proto",

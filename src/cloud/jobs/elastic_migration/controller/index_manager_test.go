@@ -10,9 +10,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/cloud/jobs/elastic_migration/controller"
-	"pixielabs.ai/pixielabs/src/cloud/jobs/elastic_migration/schema"
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
+	"px.dev/pixie/src/cloud/jobs/elastic_migration/controller"
+	"px.dev/pixie/src/cloud/jobs/elastic_migration/schema"
+	"px.dev/pixie/src/utils/testingutils"
 )
 
 var elasticClient *elastic.Client

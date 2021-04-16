@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"pixielabs.ai/pixielabs/src/api/go/pxapi/errdefs"
-	"pixielabs.ai/pixielabs/src/api/go/pxapi/types"
-	vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
+	"px.dev/pixie/src/api/go/pxapi/errdefs"
+	"px.dev/pixie/src/api/go/pxapi/types"
+	vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
 )
 
 type tableTracker struct {

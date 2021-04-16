@@ -7,8 +7,8 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 
-	"pixielabs.ai/pixielabs/src/api/go/pxapi/errdefs"
-	"pixielabs.ai/pixielabs/src/api/go/pxapi/types"
+	"px.dev/pixie/src/api/go/pxapi/errdefs"
+	"px.dev/pixie/src/api/go/pxapi/types"
 )
 
 // TableFormatter formats data as table.

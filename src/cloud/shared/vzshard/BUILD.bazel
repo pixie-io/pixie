@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "vzshard",
     srcs = ["vzshard.go"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/shared/vzshard",
+    importpath = "px.dev/pixie/src/cloud/shared/vzshard",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "@com_github_gofrs_uuid//:uuid",

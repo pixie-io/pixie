@@ -11,7 +11,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 	metadata "google.golang.org/grpc/metadata"
-	publicvizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
+	publicvizierapipb "px.dev/pixie/src/api/public/vizierapipb"
 )
 
 // MockisColumn_ColData is a mock of isColumn_ColData interface.

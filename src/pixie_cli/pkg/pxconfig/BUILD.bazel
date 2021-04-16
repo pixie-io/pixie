@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "pxconfig",
     srcs = ["config.go"],
-    importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxconfig",
+    importpath = "px.dev/pixie/src/pixie_cli/pkg/pxconfig",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/pixie_cli/pkg/utils",

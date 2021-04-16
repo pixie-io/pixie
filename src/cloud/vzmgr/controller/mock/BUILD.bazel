@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "mock",
     srcs = ["updater_mock.gen.go"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/vzmgr/controller/mock",
+    importpath = "px.dev/pixie/src/cloud/vzmgr/controller/mock",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",

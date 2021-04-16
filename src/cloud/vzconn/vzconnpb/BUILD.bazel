@@ -17,7 +17,7 @@ pl_proto_library(
 
 pl_go_proto_library(
     name = "service_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb",
+    importpath = "px.dev/pixie/src/cloud/vzconn/vzconnpb",
     proto = ":service_pl_proto",
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",

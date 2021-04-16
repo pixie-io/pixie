@@ -14,11 +14,11 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/schema"
-	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
-	vpb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
-	"pixielabs.ai/pixielabs/src/shared/artifacts/versionspb/utils"
-	"pixielabs.ai/pixielabs/src/shared/services/pg"
+	"px.dev/pixie/src/cloud/artifact_tracker/schema"
+	"px.dev/pixie/src/cloud/shared/pgmigrate"
+	vpb "px.dev/pixie/src/shared/artifacts/versionspb"
+	"px.dev/pixie/src/shared/artifacts/versionspb/utils"
+	"px.dev/pixie/src/shared/services/pg"
 )
 
 func init() {

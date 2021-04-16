@@ -14,17 +14,17 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 
-	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
-	"pixielabs.ai/pixielabs/src/carnot/carnotpb"
-	"pixielabs.ai/pixielabs/src/shared/services"
-	"pixielabs.ai/pixielabs/src/shared/services/healthz"
-	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
-	"pixielabs.ai/pixielabs/src/shared/services/server"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
-	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
-	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/ptproxy"
-	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerenv"
-	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/tracker"
+	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	"px.dev/pixie/src/carnot/carnotpb"
+	"px.dev/pixie/src/shared/services"
+	"px.dev/pixie/src/shared/services/healthz"
+	"px.dev/pixie/src/shared/services/httpmiddleware"
+	"px.dev/pixie/src/shared/services/server"
+	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
+	"px.dev/pixie/src/vizier/services/query_broker/controllers"
+	"px.dev/pixie/src/vizier/services/query_broker/ptproxy"
+	"px.dev/pixie/src/vizier/services/query_broker/querybrokerenv"
+	"px.dev/pixie/src/vizier/services/query_broker/tracker"
 )
 
 const (

@@ -23,11 +23,11 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
-	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-	version "pixielabs.ai/pixielabs/src/shared/goversion"
-	protoutils "pixielabs.ai/pixielabs/src/shared/k8s"
-	"pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	"pixielabs.ai/pixielabs/src/vizier/vizierpb"
+	"px.dev/pixie/src/shared/cvmsgspb"
+	version "px.dev/pixie/src/shared/goversion"
+	protoutils "px.dev/pixie/src/shared/k8s"
+	"px.dev/pixie/src/shared/k8s/metadatapb"
+	"px.dev/pixie/src/vizier/vizierpb"
 )
 
 // TODO(michellenguyen, PP-1702): Make namespace a flag that can be passed in.

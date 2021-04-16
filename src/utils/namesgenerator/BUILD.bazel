@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "namesgenerator",
     srcs = ["namesgenerator.go"],
-    importpath = "pixielabs.ai/pixielabs/src/utils/namesgenerator",
+    importpath = "px.dev/pixie/src/utils/namesgenerator",
     visibility = ["//src:__subpackages__"],
 )
 

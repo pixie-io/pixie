@@ -12,8 +12,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/components"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
+	"px.dev/pixie/src/pixie_cli/pkg/components"
+	"px.dev/pixie/src/pixie_cli/pkg/script"
 )
 
 const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-core.json"

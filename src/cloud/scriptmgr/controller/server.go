@@ -13,9 +13,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb"
-	pl_vispb "pixielabs.ai/pixielabs/src/shared/vispb"
-	"pixielabs.ai/pixielabs/src/utils"
+	"px.dev/pixie/src/cloud/scriptmgr/scriptmgrpb"
+	pl_vispb "px.dev/pixie/src/shared/vispb"
+	"px.dev/pixie/src/utils"
 )
 
 type scriptModel struct {

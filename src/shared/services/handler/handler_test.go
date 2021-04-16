@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/shared/services/env"
-	"pixielabs.ai/pixielabs/src/shared/services/handler"
+	"px.dev/pixie/src/shared/services/env"
+	"px.dev/pixie/src/shared/services/handler"
 )
 
 func TestHandler_ServeHTTP(t *testing.T) {

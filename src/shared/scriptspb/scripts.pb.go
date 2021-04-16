@@ -10,8 +10,8 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	statuspb "pixielabs.ai/pixielabs/src/common/base/statuspb"
-	typespb "pixielabs.ai/pixielabs/src/shared/types/typespb"
+	statuspb "px.dev/pixie/src/common/base/statuspb"
+	typespb "px.dev/pixie/src/shared/types/typespb"
 	reflect "reflect"
 	strings "strings"
 )

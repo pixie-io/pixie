@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 go_library(
     name = "load_certs_lib",
     srcs = ["load_certs.go"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/dnsmgr/load_certs",
+    importpath = "px.dev/pixie/src/cloud/dnsmgr/load_certs",
     visibility = ["//visibility:private"],
     deps = [
         "//src/cloud/dnsmgr/schema",

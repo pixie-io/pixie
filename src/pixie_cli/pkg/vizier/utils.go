@@ -8,10 +8,10 @@ import (
 	"github.com/gofrs/uuid"
 	"k8s.io/client-go/rest"
 
-	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	cliUtils "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
-	"pixielabs.ai/pixielabs/src/utils"
-	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
+	"px.dev/pixie/src/cloud/cloudapipb"
+	cliUtils "px.dev/pixie/src/pixie_cli/pkg/utils"
+	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils/shared/k8s"
 )
 
 // MustConnectDefaultVizier vizier will connect to default vizier based on parameters.

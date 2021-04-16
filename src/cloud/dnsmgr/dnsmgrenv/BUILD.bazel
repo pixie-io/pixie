@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "dnsmgrenv",
     srcs = ["env.go"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrenv",
+    importpath = "px.dev/pixie/src/cloud/dnsmgr/dnsmgrenv",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/shared/services/env",

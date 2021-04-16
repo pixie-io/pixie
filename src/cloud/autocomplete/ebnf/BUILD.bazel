@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "ebnf",
     srcs = ["ebnf_parser.go"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/autocomplete/ebnf",
+    importpath = "px.dev/pixie/src/cloud/autocomplete/ebnf",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "@com_github_alecthomas_participle//:participle",

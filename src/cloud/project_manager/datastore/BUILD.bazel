@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "datastore",
     srcs = ["datastore.go"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/project_manager/datastore",
+    importpath = "px.dev/pixie/src/cloud/project_manager/datastore",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "@com_github_gofrs_uuid//:uuid",

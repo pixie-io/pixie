@@ -13,7 +13,7 @@ go_library(
         "query_result_forwarder.go",
         "server.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers",
+    importpath = "px.dev/pixie/src/vizier/services/query_broker/controllers",
     # TODO(PP-2567): Fix this visibility.
     visibility = [
         "//src/carnot:__subpackages__",

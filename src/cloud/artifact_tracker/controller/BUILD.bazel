@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "controller",
     srcs = ["server.go"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/controller",
+    importpath = "px.dev/pixie/src/cloud/artifact_tracker/controller",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",

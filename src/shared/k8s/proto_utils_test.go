@@ -10,8 +10,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"pixielabs.ai/pixielabs/src/shared/k8s"
-	"pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	"px.dev/pixie/src/shared/k8s"
+	"px.dev/pixie/src/shared/k8s/metadatapb"
 )
 
 const ownerReferencePb = `

@@ -16,13 +16,13 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"pixielabs.ai/pixielabs/src/cloud/vzmgr/schema"
-	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzerrors"
-	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
-	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
-	"pixielabs.ai/pixielabs/src/shared/services/pgtest"
-	jwtutils "pixielabs.ai/pixielabs/src/shared/services/utils"
-	"pixielabs.ai/pixielabs/src/utils"
+	"px.dev/pixie/src/cloud/vzmgr/schema"
+	"px.dev/pixie/src/cloud/vzmgr/vzerrors"
+	"px.dev/pixie/src/cloud/vzmgr/vzmgrpb"
+	"px.dev/pixie/src/shared/services/authcontext"
+	"px.dev/pixie/src/shared/services/pgtest"
+	jwtutils "px.dev/pixie/src/shared/services/utils"
+	"px.dev/pixie/src/utils"
 )
 
 var (

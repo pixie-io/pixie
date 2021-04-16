@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/live"
+	"px.dev/pixie/src/pixie_cli/pkg/live"
 )
 
 type tabStop struct {

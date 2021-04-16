@@ -9,7 +9,7 @@ import (
 	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 
-	mdpb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	mdpb "px.dev/pixie/src/shared/k8s/metadatapb"
 )
 
 // VizierIndexer run the indexer for a single vizier index.

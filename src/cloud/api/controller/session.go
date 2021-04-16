@@ -6,7 +6,7 @@ import (
 
 	"github.com/gorilla/sessions"
 
-	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
+	"px.dev/pixie/src/cloud/api/apienv"
 )
 
 // GetDefaultSession loads the default session from the request. It will always return a valid session.

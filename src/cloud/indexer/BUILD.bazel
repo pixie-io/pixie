@@ -7,7 +7,7 @@ package(default_visibility = ["//src/cloud:__subpackages__"])
 go_library(
     name = "indexer_lib",
     srcs = ["indexer_server.go"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/indexer",
+    importpath = "px.dev/pixie/src/cloud/indexer",
     visibility = ["//visibility:private"],
     deps = [
         "//src/cloud/indexer/controllers",
@@ -36,7 +36,7 @@ go_binary(
 go_image(
     name = "indexer_server_image",
     binary = ":indexer_server",
-    importpath = "pixielabs.ai/pixielabs",
+    importpath = "px.dev/pixie",
     visibility = [
         "//k8s:__subpackages__",
         "//src/cloud:__subpackages__",

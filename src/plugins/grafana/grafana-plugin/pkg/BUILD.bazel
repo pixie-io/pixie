@@ -9,7 +9,7 @@ go_library(
         "main.go",
         "sample-plugin.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/plugins/grafana/grafana-plugin/pkg",
+    importpath = "px.dev/pixie/src/plugins/grafana/grafana-plugin/pkg",
     deps = [
         "//src/api/go/pxapi",
         "//src/api/go/pxapi/types",

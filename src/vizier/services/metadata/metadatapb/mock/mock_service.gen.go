@@ -9,7 +9,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 	metadata "google.golang.org/grpc/metadata"
-	metadatapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
+	metadatapb "px.dev/pixie/src/vizier/services/metadata/metadatapb"
 	reflect "reflect"
 )
 

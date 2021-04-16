@@ -7,7 +7,7 @@ package(default_visibility = ["//src/stirling:__subpackages__"])
 go_library(
     name = "server_lib",
     srcs = ["server.go"],
-    importpath = "pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/go_grpc_tls_pl/server",
+    importpath = "px.dev/pixie/src/stirling/testing/demo_apps/go_grpc_tls_pl/server",
     deps = [
         "//src/stirling/testing/demo_apps/go_grpc_tls_pl/server/greetpb:service_pl_go_proto",
         "@com_github_sirupsen_logrus//:logrus",

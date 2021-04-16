@@ -6,6 +6,6 @@ go_library(
         "bindata.gen.go",
         "schema.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/api/controller/unauthenticated_schema",
+    importpath = "px.dev/pixie/src/cloud/api/controller/unauthenticated_schema",
     visibility = ["//src/cloud:__subpackages__"],
 )

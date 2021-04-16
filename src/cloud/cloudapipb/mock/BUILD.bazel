@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "mock",
     srcs = ["cloudapi_mock.gen.go"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/cloudapipb/mock",
+    importpath = "px.dev/pixie/src/cloud/cloudapipb/mock",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",

@@ -7,7 +7,7 @@ go_library(
         "agent_store.go",
         "mock.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent",
+    importpath = "px.dev/pixie/src/vizier/services/metadata/controllers/agent",
     visibility = ["//src/vizier:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",

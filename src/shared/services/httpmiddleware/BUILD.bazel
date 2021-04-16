@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "httpmiddleware",
     srcs = ["middleware.go"],
-    importpath = "pixielabs.ai/pixielabs/src/shared/services/httpmiddleware",
+    importpath = "px.dev/pixie/src/shared/services/httpmiddleware",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/services/authcontext",

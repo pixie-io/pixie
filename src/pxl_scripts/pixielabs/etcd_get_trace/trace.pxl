@@ -7,7 +7,7 @@ table_name = 'key_trace3'
 tp_name = table_name
 
 
-@pxtrace.probe("pixielabs.ai/pixielabs/src/vizier/services/metadata/"
+@pxtrace.probe("px.dev/pixie/src/vizier/services/metadata/"
                "controllers/kvstore.(*EtcdStore).Get")
 def probe_func():
     return [{'key': pxtrace.ArgExpr("key")},

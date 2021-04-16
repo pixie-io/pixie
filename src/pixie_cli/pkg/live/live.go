@@ -16,11 +16,11 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/rivo/tview"
 
-	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/components"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/vizier"
+	"px.dev/pixie/src/cloud/cloudapipb"
+	"px.dev/pixie/src/pixie_cli/pkg/components"
+	"px.dev/pixie/src/pixie_cli/pkg/script"
+	"px.dev/pixie/src/pixie_cli/pkg/utils"
+	"px.dev/pixie/src/pixie_cli/pkg/vizier"
 )
 
 const (

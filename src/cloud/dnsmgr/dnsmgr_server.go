@@ -9,15 +9,15 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"pixielabs.ai/pixielabs/src/cloud/dnsmgr/controller"
-	"pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrenv"
-	dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
-	"pixielabs.ai/pixielabs/src/cloud/dnsmgr/schema"
-	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
-	"pixielabs.ai/pixielabs/src/shared/services"
-	"pixielabs.ai/pixielabs/src/shared/services/healthz"
-	"pixielabs.ai/pixielabs/src/shared/services/pg"
-	"pixielabs.ai/pixielabs/src/shared/services/server"
+	"px.dev/pixie/src/cloud/dnsmgr/controller"
+	"px.dev/pixie/src/cloud/dnsmgr/dnsmgrenv"
+	dnsmgrpb "px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
+	"px.dev/pixie/src/cloud/dnsmgr/schema"
+	"px.dev/pixie/src/cloud/shared/pgmigrate"
+	"px.dev/pixie/src/shared/services"
+	"px.dev/pixie/src/shared/services/healthz"
+	"px.dev/pixie/src/shared/services/pg"
+	"px.dev/pixie/src/shared/services/server"
 )
 
 func init() {

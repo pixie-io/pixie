@@ -14,14 +14,14 @@ import (
 	"github.com/gofrs/uuid"
 	"google.golang.org/grpc"
 
-	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
-	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/auth"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
-	"pixielabs.ai/pixielabs/src/shared/services"
-	"pixielabs.ai/pixielabs/src/shared/vispb"
-	"pixielabs.ai/pixielabs/src/utils"
-	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
+	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	"px.dev/pixie/src/cloud/cloudapipb"
+	"px.dev/pixie/src/pixie_cli/pkg/auth"
+	"px.dev/pixie/src/pixie_cli/pkg/script"
+	"px.dev/pixie/src/shared/services"
+	"px.dev/pixie/src/shared/vispb"
+	"px.dev/pixie/src/utils"
+	pl_api_vizierpb "px.dev/pixie/src/vizier/vizierpb"
 )
 
 const (

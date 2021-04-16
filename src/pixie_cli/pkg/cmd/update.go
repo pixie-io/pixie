@@ -13,15 +13,15 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/segmentio/analytics-go.v3"
 
-	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/components"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxanalytics"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxconfig"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/update"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/vizier"
-	version "pixielabs.ai/pixielabs/src/shared/goversion"
-	utils2 "pixielabs.ai/pixielabs/src/utils"
+	"px.dev/pixie/src/cloud/cloudapipb"
+	"px.dev/pixie/src/pixie_cli/pkg/components"
+	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
+	"px.dev/pixie/src/pixie_cli/pkg/pxconfig"
+	"px.dev/pixie/src/pixie_cli/pkg/update"
+	"px.dev/pixie/src/pixie_cli/pkg/utils"
+	"px.dev/pixie/src/pixie_cli/pkg/vizier"
+	version "px.dev/pixie/src/shared/goversion"
+	utils2 "px.dev/pixie/src/utils"
 )
 
 func init() {

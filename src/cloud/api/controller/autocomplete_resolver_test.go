@@ -6,8 +6,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/graph-gophers/graphql-go/gqltesting"
 
-	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
-	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	"px.dev/pixie/src/cloud/api/controller/testutils"
+	"px.dev/pixie/src/cloud/cloudapipb"
 )
 
 func TestAutocomplete(t *testing.T) {

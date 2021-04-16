@@ -6,7 +6,7 @@ go_library(
         "bindata.gen.go",
         "schema.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/schema",
+    importpath = "px.dev/pixie/src/cloud/artifact_tracker/schema",
     # TODO(PP-2567): This is used by src/utils/artifacts
     visibility = ["//src:__subpackages__"],
 )

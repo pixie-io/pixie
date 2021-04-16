@@ -17,9 +17,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/status"
 
-	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/components"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
+	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	"px.dev/pixie/src/pixie_cli/pkg/components"
+	"px.dev/pixie/src/pixie_cli/pkg/utils"
 )
 
 // StreamWriterFactorFunc is a stream writer factory.

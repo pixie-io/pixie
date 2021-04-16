@@ -5,7 +5,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 go_library(
     name = "stan_watcher_lib",
     srcs = ["stan_watcher.go"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/utils/stan_watcher",
+    importpath = "px.dev/pixie/src/cloud/utils/stan_watcher",
     visibility = ["//visibility:private"],
     deps = [
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",

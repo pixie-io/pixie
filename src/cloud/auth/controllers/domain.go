@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"pixielabs.ai/pixielabs/src/shared/services/handler"
+	"px.dev/pixie/src/shared/services/handler"
 )
 
 // Email domains from this list will create individual orgs.

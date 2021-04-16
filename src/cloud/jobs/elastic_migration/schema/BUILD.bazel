@@ -6,6 +6,6 @@ go_library(
         "bindata.gen.go",
         "schema.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/jobs/elastic_migration/schema",
+    importpath = "px.dev/pixie/src/cloud/jobs/elastic_migration/schema",
     visibility = ["//src/cloud:__subpackages__"],
 )

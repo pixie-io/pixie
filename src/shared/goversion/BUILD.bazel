@@ -21,7 +21,7 @@ unstamped_xdefs = {
 go_library(
     name = "goversion",
     srcs = ["version.go"],
-    importpath = "pixielabs.ai/pixielabs/src/shared/goversion",
+    importpath = "px.dev/pixie/src/shared/goversion",
     x_defs = select({
         "//bazel:stamped": stamped_xdefs,
         "//conditions:default": unstamped_xdefs,

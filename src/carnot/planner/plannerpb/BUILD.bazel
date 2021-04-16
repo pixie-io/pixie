@@ -33,7 +33,7 @@ pl_cc_proto_library(
 
 pl_go_proto_library(
     name = "func_args_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb",
+    importpath = "px.dev/pixie/src/carnot/planner/plannerpb",
     proto = ":func_args_pl_proto",
     deps = [
         "//src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_go_proto",

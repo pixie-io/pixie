@@ -19,14 +19,14 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	"pixielabs.ai/pixielabs/src/cloud/api/controller"
-	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
-	"pixielabs.ai/pixielabs/src/cloud/auth/authpb"
-	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
-	"pixielabs.ai/pixielabs/src/shared/services/handler"
-	pbutils "pixielabs.ai/pixielabs/src/utils"
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
+	"px.dev/pixie/src/api/public/uuidpb"
+	"px.dev/pixie/src/cloud/api/controller"
+	"px.dev/pixie/src/cloud/api/controller/testutils"
+	"px.dev/pixie/src/cloud/auth/authpb"
+	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
+	"px.dev/pixie/src/shared/services/handler"
+	pbutils "px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils/testingutils"
 )
 
 func TestGetServiceCredentials(t *testing.T) {

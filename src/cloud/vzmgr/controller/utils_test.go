@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/cloud/vzmgr/controller"
-	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-	"pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	"px.dev/pixie/src/cloud/vzmgr/controller"
+	"px.dev/pixie/src/shared/cvmsgspb"
+	"px.dev/pixie/src/shared/k8s/metadatapb"
 )
 
 func TestPodStatusScan(t *testing.T) {

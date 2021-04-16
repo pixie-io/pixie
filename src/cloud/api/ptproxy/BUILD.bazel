@@ -6,7 +6,7 @@ go_library(
         "request_proxyer.go",
         "vizier_pt_proxy.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/api/ptproxy",
+    importpath = "px.dev/pixie/src/cloud/api/ptproxy",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",

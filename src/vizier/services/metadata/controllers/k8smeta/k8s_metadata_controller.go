@@ -16,7 +16,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	"px.dev/pixie/src/vizier/services/metadata/storepb"
 )
 
 const (

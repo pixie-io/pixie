@@ -1,6 +1,6 @@
 package certmgrenv
 
-import "pixielabs.ai/pixielabs/src/shared/services/env"
+import "px.dev/pixie/src/shared/services/env"
 
 // CertMgrEnv is the interface for the certmgr service environment.
 type CertMgrEnv interface {

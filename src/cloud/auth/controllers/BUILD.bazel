@@ -10,7 +10,7 @@ go_library(
         "mock.go",
         "server.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/auth/controllers",
+    importpath = "px.dev/pixie/src/cloud/auth/controllers",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",

@@ -14,9 +14,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
-	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/pebbledb"
+	"px.dev/pixie/src/shared/k8s/metadatapb"
+	"px.dev/pixie/src/vizier/services/metadata/storepb"
+	"px.dev/pixie/src/vizier/utils/datastore/pebbledb"
 )
 
 func setupMDSTest(t *testing.T) (*pebbledb.DataStore, *Datastore, func()) {

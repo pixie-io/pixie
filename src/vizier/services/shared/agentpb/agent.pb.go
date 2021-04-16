@@ -10,7 +10,7 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
+	uuidpb "px.dev/pixie/src/api/public/uuidpb"
 	reflect "reflect"
 	strconv "strconv"
 	strings "strings"

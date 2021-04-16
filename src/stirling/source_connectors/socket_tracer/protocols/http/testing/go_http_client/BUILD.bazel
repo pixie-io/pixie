@@ -5,7 +5,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 go_library(
     name = "go_http_client_lib",
     srcs = ["main.go"],
-    importpath = "pixielabs.ai/pixielabs/src/stirling/source_connectors/socket_tracer/protocols/http/testing/go_http_client",
+    importpath = "px.dev/pixie/src/stirling/source_connectors/socket_tracer/protocols/http/testing/go_http_client",
     visibility = ["//visibility:private"],
 )
 

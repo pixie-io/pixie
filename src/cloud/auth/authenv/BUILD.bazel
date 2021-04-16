@@ -6,7 +6,7 @@ go_library(
         "env.go",
         "profile_client.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/auth/authenv",
+    importpath = "px.dev/pixie/src/cloud/auth/authenv",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/cloud/profile/profilepb:service_go_proto",

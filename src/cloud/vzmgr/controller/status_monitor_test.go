@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/cloud/vzmgr/controller"
+	"px.dev/pixie/src/cloud/vzmgr/controller"
 )
 
 func mustLoadStatusMonitorTestData(db *sqlx.DB) {

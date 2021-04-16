@@ -7,7 +7,7 @@ package(default_visibility = ["//src/cloud:__subpackages__"])
 go_library(
     name = "vzconn_lib",
     srcs = ["vzconn_server.go"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/vzconn",
+    importpath = "px.dev/pixie/src/cloud/vzconn",
     visibility = ["//visibility:private"],
     deps = [
         "//src/cloud/vzconn/bridge",
@@ -35,7 +35,7 @@ go_binary(
 go_image(
     name = "vzconn_server_image",
     binary = ":vzconn_server",
-    importpath = "pixielabs.ai/pixielabs",
+    importpath = "px.dev/pixie",
     visibility = [
         "//k8s:__subpackages__",
         "//src/cloud:__subpackages__",

@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"pixielabs.ai/pixielabs/src/shared/services/handler"
+	"px.dev/pixie/src/shared/services/handler"
 )
 
 // HTTPStatusFromCode converts a gRPC error code into the corresponding HTTP response status.

@@ -11,13 +11,13 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	pb "pixielabs.ai/pixielabs/src/cloud/auth/authpb"
-	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
-	"pixielabs.ai/pixielabs/src/shared/services"
-	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
-	"pixielabs.ai/pixielabs/src/shared/services/utils"
-	pbutils "pixielabs.ai/pixielabs/src/utils"
+	"px.dev/pixie/src/api/public/uuidpb"
+	pb "px.dev/pixie/src/cloud/auth/authpb"
+	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
+	"px.dev/pixie/src/shared/services"
+	"px.dev/pixie/src/shared/services/authcontext"
+	"px.dev/pixie/src/shared/services/utils"
+	pbutils "px.dev/pixie/src/utils"
 )
 
 const (

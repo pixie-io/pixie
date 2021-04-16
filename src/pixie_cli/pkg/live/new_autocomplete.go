@@ -8,10 +8,10 @@ import (
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 
-	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/auth"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/components"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
+	"px.dev/pixie/src/cloud/cloudapipb"
+	"px.dev/pixie/src/pixie_cli/pkg/auth"
+	"px.dev/pixie/src/pixie_cli/pkg/components"
+	"px.dev/pixie/src/pixie_cli/pkg/script"
 )
 
 // AutocompleteModal is a modal for autocomplete.

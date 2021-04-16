@@ -7,7 +7,7 @@ package(default_visibility = ["//src/cloud:__subpackages__"])
 go_library(
     name = "scriptmgr_lib",
     srcs = ["scriptmgr_server.go"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/scriptmgr",
+    importpath = "px.dev/pixie/src/cloud/scriptmgr",
     visibility = ["//visibility:private"],
     deps = [
         "//src/cloud/scriptmgr/controller",

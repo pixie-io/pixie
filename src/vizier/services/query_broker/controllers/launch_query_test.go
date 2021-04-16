@@ -10,12 +10,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
-	"pixielabs.ai/pixielabs/src/carnot/planpb"
-	"pixielabs.ai/pixielabs/src/utils"
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
-	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
-	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
+	"px.dev/pixie/src/carnot/planner/distributedpb"
+	"px.dev/pixie/src/carnot/planpb"
+	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils/testingutils"
+	messages "px.dev/pixie/src/vizier/messages/messagespb"
+	"px.dev/pixie/src/vizier/services/query_broker/controllers"
 )
 
 const queryIDStr = "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"

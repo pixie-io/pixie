@@ -10,7 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	"github.com/gofrs/uuid"
-	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	storepb "px.dev/pixie/src/vizier/services/metadata/storepb"
 )
 
 // MockagentMessenger is a mock of agentMessenger interface.

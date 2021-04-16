@@ -16,11 +16,11 @@ import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/watch"
 
-	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-	"pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
-	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
+	"px.dev/pixie/src/shared/cvmsgspb"
+	"px.dev/pixie/src/shared/k8s/metadatapb"
+	messages "px.dev/pixie/src/vizier/messages/messagespb"
+	"px.dev/pixie/src/vizier/services/metadata/storepb"
+	"px.dev/pixie/src/vizier/utils/messagebus"
 )
 
 // KelvinUpdateTopic is the topic that all kelvins updates are sent on.

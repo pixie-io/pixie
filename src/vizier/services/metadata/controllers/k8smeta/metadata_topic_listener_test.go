@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	"px.dev/pixie/src/shared/k8s/metadatapb"
+	messages "px.dev/pixie/src/vizier/messages/messagespb"
+	"px.dev/pixie/src/vizier/services/metadata/storepb"
 )
 
 type FakeStore struct{}

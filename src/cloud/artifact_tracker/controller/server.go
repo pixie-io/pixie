@@ -17,9 +17,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	apb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
-	vpb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
-	"pixielabs.ai/pixielabs/src/shared/artifacts/versionspb/utils"
+	apb "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
+	vpb "px.dev/pixie/src/shared/artifacts/versionspb"
+	"px.dev/pixie/src/shared/artifacts/versionspb/utils"
 )
 
 // URLSigner is the function used to sign urls.

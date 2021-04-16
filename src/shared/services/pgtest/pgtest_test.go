@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/shared/services/pgtest"
+	"px.dev/pixie/src/shared/services/pgtest"
 )
 
 func TestSetupTestDB(t *testing.T) {

@@ -13,8 +13,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
-	"pixielabs.ai/pixielabs/src/shared/services/env"
+	"px.dev/pixie/src/shared/services/authcontext"
+	"px.dev/pixie/src/shared/services/env"
 )
 
 var logrusEntry *log.Entry

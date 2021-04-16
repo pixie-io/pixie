@@ -1,4 +1,4 @@
-module pixielabs.ai/pixielabs
+module px.dev/pixie
 
 go 1.16
 

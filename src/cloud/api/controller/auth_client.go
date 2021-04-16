@@ -5,8 +5,8 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 
-	"pixielabs.ai/pixielabs/src/cloud/auth/authpb"
-	"pixielabs.ai/pixielabs/src/shared/services"
+	"px.dev/pixie/src/cloud/auth/authpb"
+	"px.dev/pixie/src/shared/services"
 )
 
 func init() {

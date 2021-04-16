@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "controllers",
     srcs = ["indexer.go"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/indexer/controllers",
+    importpath = "px.dev/pixie/src/cloud/indexer/controllers",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/cloud/indexer/md",

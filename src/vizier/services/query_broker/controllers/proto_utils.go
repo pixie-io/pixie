@@ -10,17 +10,17 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
-	"pixielabs.ai/pixielabs/src/carnot/carnotpb"
-	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
-	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
-	"pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
-	"pixielabs.ai/pixielabs/src/carnot/planpb"
-	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
-	"pixielabs.ai/pixielabs/src/common/base/statuspb"
-	"pixielabs.ai/pixielabs/src/shared/types/typespb"
-	"pixielabs.ai/pixielabs/src/table_store/schemapb"
-	"pixielabs.ai/pixielabs/src/utils"
+	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	"px.dev/pixie/src/carnot/carnotpb"
+	"px.dev/pixie/src/carnot/planner/compilerpb"
+	"px.dev/pixie/src/carnot/planner/distributedpb"
+	"px.dev/pixie/src/carnot/planner/plannerpb"
+	"px.dev/pixie/src/carnot/planpb"
+	"px.dev/pixie/src/carnot/queryresultspb"
+	"px.dev/pixie/src/common/base/statuspb"
+	"px.dev/pixie/src/shared/types/typespb"
+	"px.dev/pixie/src/table_store/schemapb"
+	"px.dev/pixie/src/utils"
 )
 
 var dataTypeToVizierDataType = map[typespb.DataType]public_vizierapipb.DataType{

@@ -10,7 +10,7 @@ go_library(
         "service_flags.go",
         "tls.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/shared/services",
+    importpath = "px.dev/pixie/src/shared/services",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/goversion",

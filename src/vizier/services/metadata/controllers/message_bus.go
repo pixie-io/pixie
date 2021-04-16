@@ -4,9 +4,9 @@ import (
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/k8smeta"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint"
+	"px.dev/pixie/src/vizier/services/metadata/controllers/agent"
+	"px.dev/pixie/src/vizier/services/metadata/controllers/k8smeta"
+	"px.dev/pixie/src/vizier/services/metadata/controllers/tracepoint"
 )
 
 const updateAgentTopic = "UpdateAgent"

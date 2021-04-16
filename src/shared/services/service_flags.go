@@ -15,7 +15,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	version "pixielabs.ai/pixielabs/src/shared/goversion"
+	version "px.dev/pixie/src/shared/goversion"
 )
 
 var (

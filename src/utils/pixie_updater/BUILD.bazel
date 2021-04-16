@@ -5,7 +5,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 go_library(
     name = "pixie_updater_lib",
     srcs = ["main.go"],
-    importpath = "pixielabs.ai/pixielabs/src/utils/pixie_updater",
+    importpath = "px.dev/pixie/src/utils/pixie_updater",
     visibility = ["//visibility:private"],
     deps = [
         "//src/shared/services",

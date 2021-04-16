@@ -21,11 +21,11 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/auth"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
-	version "pixielabs.ai/pixielabs/src/shared/goversion"
-	"pixielabs.ai/pixielabs/src/shared/services"
+	"px.dev/pixie/src/cloud/cloudapipb"
+	"px.dev/pixie/src/pixie_cli/pkg/auth"
+	"px.dev/pixie/src/pixie_cli/pkg/utils"
+	version "px.dev/pixie/src/shared/goversion"
+	"px.dev/pixie/src/shared/services"
 )
 
 func newATClient(cloudAddr string) (cloudapipb.ArtifactTrackerClient, error) {

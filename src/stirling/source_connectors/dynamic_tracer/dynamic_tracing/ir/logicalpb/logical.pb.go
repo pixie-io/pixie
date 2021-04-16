@@ -11,7 +11,7 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	sharedpb "pixielabs.ai/pixielabs/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/sharedpb"
+	sharedpb "px.dev/pixie/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/sharedpb"
 	reflect "reflect"
 	strings "strings"
 )

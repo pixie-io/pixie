@@ -7,7 +7,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
+	"px.dev/pixie/src/shared/cvmsgspb"
 )
 
 // PodStatuses Type to use in sqlx for the map of pod statuses.

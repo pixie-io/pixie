@@ -18,7 +18,7 @@ pl_cc_proto_library(
 pl_go_proto_library(
     name = "test_pl_go_proto",
     testonly = 1,
-    importpath = "pixielabs.ai/pixielabs/src/common/base/testproto",
+    importpath = "px.dev/pixie/src/common/base/testproto",
     proto = ":test_pl_proto",
     visibility = ["//src:__subpackages__"],
 )

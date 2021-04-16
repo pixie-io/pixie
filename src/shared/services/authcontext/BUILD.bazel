@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "authcontext",
     srcs = ["context.go"],
-    importpath = "pixielabs.ai/pixielabs/src/shared/services/authcontext",
+    importpath = "px.dev/pixie/src/shared/services/authcontext",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/services/jwtpb:jwt_go_proto",

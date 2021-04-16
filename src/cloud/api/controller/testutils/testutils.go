@@ -7,13 +7,13 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/viper"
 
-	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
-	"pixielabs.ai/pixielabs/src/cloud/api/controller"
-	mock_artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb/mock"
-	mock_auth "pixielabs.ai/pixielabs/src/cloud/auth/authpb/mock"
-	mock_cloudapipb "pixielabs.ai/pixielabs/src/cloud/cloudapipb/mock"
-	mock_profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb/mock"
-	mock_vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb/mock"
+	"px.dev/pixie/src/cloud/api/apienv"
+	"px.dev/pixie/src/cloud/api/controller"
+	mock_artifacttrackerpb "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb/mock"
+	mock_auth "px.dev/pixie/src/cloud/auth/authpb/mock"
+	mock_cloudapipb "px.dev/pixie/src/cloud/cloudapipb/mock"
+	mock_profilepb "px.dev/pixie/src/cloud/profile/profilepb/mock"
+	mock_vzmgrpb "px.dev/pixie/src/cloud/vzmgr/vzmgrpb/mock"
 )
 
 // MockCloudClients provides the mock grpc clients for the graphql test env.

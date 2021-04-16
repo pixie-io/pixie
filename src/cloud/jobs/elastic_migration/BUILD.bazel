@@ -6,7 +6,7 @@ load("@io_bazel_rules_k8s//k8s:object.bzl", "k8s_object")
 go_library(
     name = "elastic_migration_lib",
     srcs = ["job.go"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/jobs/elastic_migration",
+    importpath = "px.dev/pixie/src/cloud/jobs/elastic_migration",
     visibility = ["//visibility:private"],
     deps = [
         "//src/cloud/jobs/elastic_migration/controller",
@@ -27,7 +27,7 @@ go_binary(
 go_image(
     name = "elastic_migration_image",
     binary = ":elastic_migration",
-    importpath = "pixielabs.ai/pixielabs",
+    importpath = "px.dev/pixie",
 )
 
 container_push(

@@ -5,9 +5,9 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"pixielabs.ai/pixielabs/src/cloud/jobs/elastic_migration/controller"
-	"pixielabs.ai/pixielabs/src/cloud/jobs/elastic_migration/schema"
-	"pixielabs.ai/pixielabs/src/cloud/shared/esutils"
+	"px.dev/pixie/src/cloud/jobs/elastic_migration/controller"
+	"px.dev/pixie/src/cloud/jobs/elastic_migration/schema"
+	"px.dev/pixie/src/cloud/shared/esutils"
 )
 
 func init() {

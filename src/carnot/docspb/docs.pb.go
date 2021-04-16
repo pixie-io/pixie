@@ -9,7 +9,7 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	udfspb "pixielabs.ai/pixielabs/src/carnot/udfspb"
+	udfspb "px.dev/pixie/src/carnot/udfspb"
 	reflect "reflect"
 	strings "strings"
 )

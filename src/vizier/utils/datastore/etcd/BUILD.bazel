@@ -6,7 +6,7 @@ go_library(
         "etcd.go",
         "etcd_utils.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/vizier/utils/datastore/etcd",
+    importpath = "px.dev/pixie/src/vizier/utils/datastore/etcd",
     visibility = ["//src/vizier:__subpackages__"],
     deps = [
         "@io_etcd_go_etcd_api_v3//etcdserverpb",

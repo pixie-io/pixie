@@ -7,7 +7,7 @@ import (
 
 	"github.com/olivere/elastic/v7"
 
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
+	"px.dev/pixie/src/utils/testingutils"
 )
 
 var elasticClient *elastic.Client

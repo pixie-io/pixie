@@ -28,7 +28,7 @@ pl_cc_proto_library(
 
 pl_go_proto_library(
     name = "compiler_status_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/carnot/planner/compilerpb",
+    importpath = "px.dev/pixie/src/carnot/planner/compilerpb",
     proto = ":compiler_status_pl_proto",
     deps = [
         "//src/carnot/planpb:plan_pl_go_proto",

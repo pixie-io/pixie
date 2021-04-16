@@ -10,8 +10,8 @@ import (
 	"sort"
 	"sync"
 
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/auth"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
+	"px.dev/pixie/src/pixie_cli/pkg/auth"
+	"px.dev/pixie/src/pixie_cli/pkg/utils"
 )
 
 // BundleManager reads a script bundle.

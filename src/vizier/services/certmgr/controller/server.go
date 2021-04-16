@@ -10,11 +10,11 @@ import (
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 
-	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-	"pixielabs.ai/pixielabs/src/utils"
-	"pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrenv"
-	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
-	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
+	"px.dev/pixie/src/shared/cvmsgspb"
+	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/vizier/services/certmgr/certmgrenv"
+	certmgrpb "px.dev/pixie/src/vizier/services/certmgr/certmgrpb"
+	"px.dev/pixie/src/vizier/utils/messagebus"
 )
 
 // K8sAPI is responsible for handing k8s requests.

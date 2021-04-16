@@ -7,10 +7,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
-	pb "pixielabs.ai/pixielabs/src/shared/services/jwtpb"
-	"pixielabs.ai/pixielabs/src/shared/services/utils"
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
+	"px.dev/pixie/src/shared/services/authcontext"
+	pb "px.dev/pixie/src/shared/services/jwtpb"
+	"px.dev/pixie/src/shared/services/utils"
+	"px.dev/pixie/src/utils/testingutils"
 )
 
 func TestSessionCtx_UseJWTAuth(t *testing.T) {

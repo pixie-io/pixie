@@ -23,7 +23,7 @@ pl_cc_proto_library(
 
 pl_go_proto_library(
     name = "schema_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/table_store/schemapb",
+    importpath = "px.dev/pixie/src/table_store/schemapb",
     proto = ":schema_pl_proto",
     visibility = ["//src:__subpackages__"],
     deps = [

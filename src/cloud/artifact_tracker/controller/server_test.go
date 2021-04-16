@@ -18,12 +18,12 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	apb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
-	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/controller"
-	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/schema"
-	vpb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
-	"pixielabs.ai/pixielabs/src/shared/services/pgtest"
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
+	apb "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
+	"px.dev/pixie/src/cloud/artifact_tracker/controller"
+	"px.dev/pixie/src/cloud/artifact_tracker/schema"
+	vpb "px.dev/pixie/src/shared/artifacts/versionspb"
+	"px.dev/pixie/src/shared/services/pgtest"
+	"px.dev/pixie/src/utils/testingutils"
 )
 
 func TestMain(m *testing.M) {

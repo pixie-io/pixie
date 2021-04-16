@@ -7,9 +7,9 @@ import (
 	"github.com/gofrs/uuid"
 	log "github.com/sirupsen/logrus"
 
-	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
-	"pixielabs.ai/pixielabs/src/utils"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
+	"px.dev/pixie/src/carnot/planner/distributedpb"
+	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
 )
 
 // KelvinSSLTargetOverride the hostname used for SSL target override when sending data to Kelvin.

@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"pixielabs.ai/pixielabs/src/cloud/api/controller"
+	"px.dev/pixie/src/cloud/api/controller"
 )
 
 func TestPrettifyClusterName(t *testing.T) {

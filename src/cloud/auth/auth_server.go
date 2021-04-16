@@ -10,16 +10,16 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"pixielabs.ai/pixielabs/src/cloud/auth/apikey"
-	"pixielabs.ai/pixielabs/src/cloud/auth/authenv"
-	auth "pixielabs.ai/pixielabs/src/cloud/auth/authpb"
-	"pixielabs.ai/pixielabs/src/cloud/auth/controllers"
-	"pixielabs.ai/pixielabs/src/cloud/auth/schema"
-	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
-	"pixielabs.ai/pixielabs/src/shared/services"
-	"pixielabs.ai/pixielabs/src/shared/services/healthz"
-	"pixielabs.ai/pixielabs/src/shared/services/pg"
-	"pixielabs.ai/pixielabs/src/shared/services/server"
+	"px.dev/pixie/src/cloud/auth/apikey"
+	"px.dev/pixie/src/cloud/auth/authenv"
+	auth "px.dev/pixie/src/cloud/auth/authpb"
+	"px.dev/pixie/src/cloud/auth/controllers"
+	"px.dev/pixie/src/cloud/auth/schema"
+	"px.dev/pixie/src/cloud/shared/pgmigrate"
+	"px.dev/pixie/src/shared/services"
+	"px.dev/pixie/src/shared/services/healthz"
+	"px.dev/pixie/src/shared/services/pg"
+	"px.dev/pixie/src/shared/services/server"
 )
 
 func init() {

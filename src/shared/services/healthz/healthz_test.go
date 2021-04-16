@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/shared/services/healthz"
+	"px.dev/pixie/src/shared/services/healthz"
 )
 
 func TestInstallPathHandler(t *testing.T) {

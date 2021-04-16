@@ -8,11 +8,11 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
-	"pixielabs.ai/pixielabs/src/cloud/auth/authpb"
-	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
-	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
-	"pixielabs.ai/pixielabs/src/shared/services/env"
+	"px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
+	"px.dev/pixie/src/cloud/auth/authpb"
+	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
+	"px.dev/pixie/src/cloud/vzmgr/vzmgrpb"
+	"px.dev/pixie/src/shared/services/env"
 )
 
 func init() {

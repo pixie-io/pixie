@@ -13,10 +13,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	"pixielabs.ai/pixielabs/src/cloud/auth/authpb"
-	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
-	"pixielabs.ai/pixielabs/src/utils"
+	"px.dev/pixie/src/api/public/uuidpb"
+	"px.dev/pixie/src/cloud/auth/authpb"
+	"px.dev/pixie/src/shared/services/authcontext"
+	"px.dev/pixie/src/utils"
 )
 
 var (

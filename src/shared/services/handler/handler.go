@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"pixielabs.ai/pixielabs/src/shared/services/env"
+	"px.dev/pixie/src/shared/services/env"
 )
 
 // Error represents a handler error. It provides methods for a HTTP status

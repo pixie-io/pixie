@@ -7,7 +7,7 @@ go_library(
         "mock.go",
         "server.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/dnsmgr/controller",
+    importpath = "px.dev/pixie/src/cloud/dnsmgr/controller",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/cloud/dnsmgr/dnsmgrenv",

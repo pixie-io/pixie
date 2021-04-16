@@ -13,9 +13,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/cloud/project_manager/datastore"
-	"pixielabs.ai/pixielabs/src/cloud/project_manager/schema"
-	"pixielabs.ai/pixielabs/src/shared/services/pgtest"
+	"px.dev/pixie/src/cloud/project_manager/datastore"
+	"px.dev/pixie/src/cloud/project_manager/schema"
+	"px.dev/pixie/src/shared/services/pgtest"
 )
 
 var testOrgID1 = uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000")

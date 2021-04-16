@@ -36,7 +36,7 @@ message Time64NSColumn {
 
 // String data column.
 message StringColumn {
-  repeated bytes data = 1 [(gogoproto.customtype) = "pixielabs.ai/pixielabs/src/table_store/schemapb/types.StringData"];
+  repeated bytes data = 1 [(gogoproto.customtype) = "px.dev/pixie/src/table_store/schemapb/types.StringData"];
 }
 
 // A single column of data.

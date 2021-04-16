@@ -9,7 +9,7 @@ package(default_visibility = ["//visibility:private"])
 go_library(
     name = "licenses_lib",
     srcs = ["fetch_licenses.go"],
-    importpath = "pixielabs.ai/pixielabs/tools/licenses",
+    importpath = "px.dev/pixie/tools/licenses",
     visibility = ["//visibility:private"],
     deps = [
         "@com_github_google_go_github_v32//github",

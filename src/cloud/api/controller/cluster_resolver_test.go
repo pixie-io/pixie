@@ -10,13 +10,13 @@ import (
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/gqltesting"
 
-	"pixielabs.ai/pixielabs/src/cloud/api/controller"
-	"pixielabs.ai/pixielabs/src/cloud/api/controller/schema"
-	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
-	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
-	svcutils "pixielabs.ai/pixielabs/src/shared/services/utils"
-	"pixielabs.ai/pixielabs/src/utils"
+	"px.dev/pixie/src/cloud/api/controller"
+	"px.dev/pixie/src/cloud/api/controller/schema"
+	"px.dev/pixie/src/cloud/api/controller/testutils"
+	"px.dev/pixie/src/cloud/cloudapipb"
+	"px.dev/pixie/src/shared/services/authcontext"
+	svcutils "px.dev/pixie/src/shared/services/utils"
+	"px.dev/pixie/src/utils"
 )
 
 func CreateTestContext() context.Context {

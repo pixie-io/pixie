@@ -7,7 +7,7 @@ package(default_visibility = ["//src/cloud:__subpackages__"])
 go_library(
     name = "profile_lib",
     srcs = ["profile_server.go"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/profile",
+    importpath = "px.dev/pixie/src/cloud/profile",
     visibility = ["//visibility:private"],
     deps = [
         "//src/cloud/profile/controller",
@@ -33,7 +33,7 @@ go_binary(
 go_image(
     name = "profile_server_image",
     binary = ":profile_server",
-    importpath = "pixielabs.ai/pixielabs",
+    importpath = "px.dev/pixie",
     visibility = [
         "//k8s:__subpackages__",
         "//src/cloud:__subpackages__",

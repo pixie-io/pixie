@@ -10,7 +10,7 @@ go_library(
         "utils.go",
         "vizier_updater.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/vzmgr/controller",
+    importpath = "px.dev/pixie/src/cloud/vzmgr/controller",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",

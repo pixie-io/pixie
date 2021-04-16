@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/cloud/shared/esutils"
+	"px.dev/pixie/src/cloud/shared/esutils"
 )
 
 func cleanupTemplate(t *testing.T, templateName string) {

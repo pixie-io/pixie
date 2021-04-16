@@ -10,9 +10,9 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"pixielabs.ai/pixielabs/src/carnot/docspb"
-	docstring "pixielabs.ai/pixielabs/src/carnot/docstring/pkg"
-	"pixielabs.ai/pixielabs/src/shared/services"
+	"px.dev/pixie/src/carnot/docspb"
+	docstring "px.dev/pixie/src/carnot/docstring/pkg"
+	"px.dev/pixie/src/shared/services"
 )
 
 func init() {

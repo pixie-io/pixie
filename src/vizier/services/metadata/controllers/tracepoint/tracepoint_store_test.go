@@ -12,11 +12,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	"pixielabs.ai/pixielabs/src/common/base/statuspb"
-	"pixielabs.ai/pixielabs/src/utils"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
-	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/pebbledb"
+	"px.dev/pixie/src/api/public/uuidpb"
+	"px.dev/pixie/src/common/base/statuspb"
+	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/vizier/services/metadata/storepb"
+	"px.dev/pixie/src/vizier/utils/datastore/pebbledb"
 )
 
 func setupTest(t *testing.T) (*pebbledb.DataStore, *Datastore, func()) {

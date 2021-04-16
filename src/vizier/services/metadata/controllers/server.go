@@ -14,16 +14,16 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
-	"pixielabs.ai/pixielabs/src/common/base/statuspb"
-	"pixielabs.ai/pixielabs/src/table_store/schemapb"
-	"pixielabs.ai/pixielabs/src/utils"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
-	"pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
+	"px.dev/pixie/src/carnot/planner/distributedpb"
+	"px.dev/pixie/src/common/base/statuspb"
+	"px.dev/pixie/src/table_store/schemapb"
+	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/vizier/services/metadata/controllers/agent"
+	"px.dev/pixie/src/vizier/services/metadata/controllers/tracepoint"
+	"px.dev/pixie/src/vizier/services/metadata/metadataenv"
+	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
+	"px.dev/pixie/src/vizier/services/metadata/storepb"
+	"px.dev/pixie/src/vizier/services/shared/agentpb"
 )
 
 // UnhealthyAgentThreshold is the amount of time where an agent is considered unhealthy if

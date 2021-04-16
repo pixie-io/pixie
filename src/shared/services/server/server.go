@@ -20,8 +20,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	"pixielabs.ai/pixielabs/src/shared/services"
-	"pixielabs.ai/pixielabs/src/shared/services/env"
+	"px.dev/pixie/src/shared/services"
+	"px.dev/pixie/src/shared/services/env"
 )
 
 func isGRPCRequest(r *http.Request) bool {

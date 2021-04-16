@@ -6,7 +6,7 @@ go_library(
         "proto_utils.go",
         "upid.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/shared/k8s",
+    importpath = "px.dev/pixie/src/shared/k8s",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",

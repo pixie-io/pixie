@@ -9,8 +9,8 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 
-	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
-	"pixielabs.ai/pixielabs/src/shared/services"
+	"px.dev/pixie/src/cloud/vzconn/vzconnpb"
+	"px.dev/pixie/src/shared/services"
 )
 
 func init() {

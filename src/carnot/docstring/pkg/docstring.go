@@ -5,9 +5,9 @@ import (
 	re "regexp"
 	"strings"
 
-	"pixielabs.ai/pixielabs/src/carnot/docspb"
-	"pixielabs.ai/pixielabs/src/carnot/udfspb"
-	"pixielabs.ai/pixielabs/src/utils"
+	"px.dev/pixie/src/carnot/docspb"
+	"px.dev/pixie/src/carnot/udfspb"
+	"px.dev/pixie/src/utils"
 )
 
 // getMatch returns the regex match of Subexpname `name` in `s`.

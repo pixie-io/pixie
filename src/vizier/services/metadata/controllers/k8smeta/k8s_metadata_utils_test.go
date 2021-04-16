@@ -8,8 +8,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
-	"pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	"px.dev/pixie/src/shared/k8s/metadatapb"
+	"px.dev/pixie/src/vizier/services/metadata/storepb"
 )
 
 // This tests just the pod watcher, since the generated code for all of the watchers are

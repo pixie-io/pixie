@@ -24,12 +24,12 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
-	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
-	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
-	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-	"pixielabs.ai/pixielabs/src/utils"
-	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
-	"pixielabs.ai/pixielabs/src/vizier/vizierpb"
+	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	"px.dev/pixie/src/cloud/vzconn/vzconnpb"
+	"px.dev/pixie/src/shared/cvmsgspb"
+	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/vizier/utils/messagebus"
+	"px.dev/pixie/src/vizier/vizierpb"
 )
 
 const (

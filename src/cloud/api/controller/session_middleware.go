@@ -12,12 +12,12 @@ import (
 	"google.golang.org/grpc/status"
 	"gopkg.in/segmentio/analytics-go.v3"
 
-	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
-	"pixielabs.ai/pixielabs/src/cloud/auth/authpb"
-	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
-	"pixielabs.ai/pixielabs/src/shared/services/events"
-	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
-	"pixielabs.ai/pixielabs/src/shared/services/utils"
+	"px.dev/pixie/src/cloud/api/apienv"
+	"px.dev/pixie/src/cloud/auth/authpb"
+	"px.dev/pixie/src/shared/services/authcontext"
+	"px.dev/pixie/src/shared/services/events"
+	"px.dev/pixie/src/shared/services/httpmiddleware"
+	"px.dev/pixie/src/shared/services/utils"
 )
 
 var (

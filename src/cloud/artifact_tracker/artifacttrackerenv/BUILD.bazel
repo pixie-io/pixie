@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "artifacttrackerenv",
     srcs = ["env.go"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerenv",
+    importpath = "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerenv",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/shared/services/env",

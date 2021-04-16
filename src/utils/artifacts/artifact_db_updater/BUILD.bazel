@@ -6,7 +6,7 @@ load("@io_bazel_rules_k8s//k8s:object.bzl", "k8s_object")
 go_library(
     name = "artifact_db_updater_lib",
     srcs = ["main.go"],
-    importpath = "pixielabs.ai/pixielabs/src/utils/artifacts/artifact_db_updater",
+    importpath = "px.dev/pixie/src/utils/artifacts/artifact_db_updater",
     visibility = ["//visibility:private"],
     deps = [
         "//src/cloud/artifact_tracker/schema",

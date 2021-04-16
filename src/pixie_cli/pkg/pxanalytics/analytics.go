@@ -7,7 +7,7 @@ import (
 	"github.com/gofrs/uuid"
 	"gopkg.in/segmentio/analytics-go.v3"
 
-	version "pixielabs.ai/pixielabs/src/shared/goversion"
+	version "px.dev/pixie/src/shared/goversion"
 )
 
 const (

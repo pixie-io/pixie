@@ -7,7 +7,7 @@ package(default_visibility = ["//src/cloud:__subpackages__"])
 go_library(
     name = "auth_lib",
     srcs = ["auth_server.go"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/auth",
+    importpath = "px.dev/pixie/src/cloud/auth",
     visibility = ["//visibility:private"],
     deps = [
         "//src/cloud/auth/apikey",
@@ -36,7 +36,7 @@ go_binary(
 go_image(
     name = "auth_server_image",
     binary = ":auth_server",
-    importpath = "pixielabs.ai/pixielabs",
+    importpath = "px.dev/pixie",
     visibility = [
         "//k8s:__subpackages__",
         "//src/cloud:__subpackages__",

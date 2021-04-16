@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/cloud/autocomplete/ebnf"
+	"px.dev/pixie/src/cloud/autocomplete/ebnf"
 )
 
 type arg struct {

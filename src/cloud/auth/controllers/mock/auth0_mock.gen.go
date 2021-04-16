@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	controllers "pixielabs.ai/pixielabs/src/cloud/auth/controllers"
+	controllers "px.dev/pixie/src/cloud/auth/controllers"
 )
 
 // MockAuth0Connector is a mock of Auth0Connector interface.

@@ -37,7 +37,7 @@ pl_cc_proto_library(
 
 pl_go_proto_library(
     name = "distributed_plan_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/carnot/planner/distributedpb",
+    importpath = "px.dev/pixie/src/carnot/planner/distributedpb",
     proto = ":distributed_plan_pl_proto",
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",

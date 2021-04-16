@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	autocomplete "pixielabs.ai/pixielabs/src/cloud/autocomplete"
+	autocomplete "px.dev/pixie/src/cloud/autocomplete"
 )
 
 // MockSuggester is a mock of Suggester interface.

@@ -8,16 +8,16 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
-	controllers "pixielabs.ai/pixielabs/src/cloud/project_manager/controller"
-	"pixielabs.ai/pixielabs/src/cloud/project_manager/datastore"
-	"pixielabs.ai/pixielabs/src/cloud/project_manager/projectmanagerpb"
-	"pixielabs.ai/pixielabs/src/cloud/project_manager/schema"
-	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
-	"pixielabs.ai/pixielabs/src/shared/services"
-	"pixielabs.ai/pixielabs/src/shared/services/env"
-	"pixielabs.ai/pixielabs/src/shared/services/healthz"
-	"pixielabs.ai/pixielabs/src/shared/services/pg"
-	"pixielabs.ai/pixielabs/src/shared/services/server"
+	controllers "px.dev/pixie/src/cloud/project_manager/controller"
+	"px.dev/pixie/src/cloud/project_manager/datastore"
+	"px.dev/pixie/src/cloud/project_manager/projectmanagerpb"
+	"px.dev/pixie/src/cloud/project_manager/schema"
+	"px.dev/pixie/src/cloud/shared/pgmigrate"
+	"px.dev/pixie/src/shared/services"
+	"px.dev/pixie/src/shared/services/env"
+	"px.dev/pixie/src/shared/services/healthz"
+	"px.dev/pixie/src/shared/services/pg"
+	"px.dev/pixie/src/shared/services/server"
 )
 
 func main() {

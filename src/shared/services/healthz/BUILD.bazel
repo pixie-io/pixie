@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "healthz",
     srcs = ["healthz.go"],
-    importpath = "pixielabs.ai/pixielabs/src/shared/services/healthz",
+    importpath = "px.dev/pixie/src/shared/services/healthz",
     visibility = ["//src:__subpackages__"],
     deps = ["@com_github_sirupsen_logrus//:logrus"],
 )

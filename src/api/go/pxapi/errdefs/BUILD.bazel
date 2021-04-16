@@ -8,7 +8,7 @@ go_library(
         "err.go",
         "parsers.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/api/go/pxapi/errdefs",
+    importpath = "px.dev/pixie/src/api/go/pxapi/errdefs",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/public/vizierapipb:public_vizier_pl_go_proto",

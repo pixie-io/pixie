@@ -10,7 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
-	scriptmgrpb "pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb"
+	scriptmgrpb "px.dev/pixie/src/cloud/scriptmgr/scriptmgrpb"
 )
 
 // MockScriptMgrServiceClient is a mock of ScriptMgrServiceClient interface.

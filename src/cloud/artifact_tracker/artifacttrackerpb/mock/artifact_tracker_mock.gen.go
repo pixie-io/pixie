@@ -10,8 +10,8 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
-	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
-	versionspb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
+	artifacttrackerpb "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
+	versionspb "px.dev/pixie/src/shared/artifacts/versionspb"
 )
 
 // MockArtifactTrackerClient is a mock of ArtifactTrackerClient interface.

@@ -9,8 +9,8 @@ import (
 	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/gofrs/uuid"
 
-	jwt2 "pixielabs.ai/pixielabs/src/shared/services/jwtpb"
-	"pixielabs.ai/pixielabs/src/shared/services/utils"
+	jwt2 "px.dev/pixie/src/shared/services/jwtpb"
+	"px.dev/pixie/src/shared/services/utils"
 )
 
 type authContextKey struct{}

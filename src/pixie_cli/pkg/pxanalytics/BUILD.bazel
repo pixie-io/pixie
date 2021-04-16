@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "pxanalytics",
     srcs = ["analytics.go"],
-    importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxanalytics",
+    importpath = "px.dev/pixie/src/pixie_cli/pkg/pxanalytics",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/goversion",

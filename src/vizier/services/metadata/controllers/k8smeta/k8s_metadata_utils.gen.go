@@ -22,8 +22,8 @@ import (
 	// Blank import necessary for kubeConfig to work.
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-	protoutils "pixielabs.ai/pixielabs/src/shared/k8s"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	protoutils "px.dev/pixie/src/shared/k8s"
+	"px.dev/pixie/src/vizier/services/metadata/storepb"
 )
 
 func runtimeObjToPodList(o runtime.Object) *v1.PodList {

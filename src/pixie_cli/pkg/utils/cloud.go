@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	"pixielabs.ai/pixielabs/src/shared/services"
+	"px.dev/pixie/src/shared/services"
 )
 
 // GetCloudClientConnection gets the GRPC connection based on the cloud addr.

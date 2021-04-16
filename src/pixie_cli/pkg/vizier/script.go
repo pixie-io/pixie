@@ -12,11 +12,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"gopkg.in/segmentio/analytics-go.v3"
 
-	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxanalytics"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxconfig"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
+	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
+	"px.dev/pixie/src/pixie_cli/pkg/pxconfig"
+	"px.dev/pixie/src/pixie_cli/pkg/script"
+	"px.dev/pixie/src/pixie_cli/pkg/utils"
 )
 
 type taskWrapper struct {

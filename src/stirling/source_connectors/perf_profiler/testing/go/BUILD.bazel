@@ -5,7 +5,7 @@ package(default_visibility = ["//src/stirling:__subpackages__"])
 go_library(
     name = "go_lib",
     srcs = ["profiler_test_app_sqrt.go"],
-    importpath = "pixielabs.ai/pixielabs/src/stirling/source_connectors/perf_profiler/testing/go",
+    importpath = "px.dev/pixie/src/stirling/source_connectors/perf_profiler/testing/go",
 )
 
 go_binary(

@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
+	"px.dev/pixie/src/pixie_cli/pkg/script"
 )
 
 func init() {

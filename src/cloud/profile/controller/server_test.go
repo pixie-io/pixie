@@ -12,15 +12,15 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	"pixielabs.ai/pixielabs/src/cloud/profile/controller"
-	mock_controller "pixielabs.ai/pixielabs/src/cloud/profile/controller/mock"
-	"pixielabs.ai/pixielabs/src/cloud/profile/datastore"
-	"pixielabs.ai/pixielabs/src/cloud/profile/profileenv"
-	profile "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
-	"pixielabs.ai/pixielabs/src/cloud/project_manager/projectmanagerpb"
-	mock_projectmanager "pixielabs.ai/pixielabs/src/cloud/project_manager/projectmanagerpb/mock"
-	"pixielabs.ai/pixielabs/src/utils"
+	"px.dev/pixie/src/api/public/uuidpb"
+	"px.dev/pixie/src/cloud/profile/controller"
+	mock_controller "px.dev/pixie/src/cloud/profile/controller/mock"
+	"px.dev/pixie/src/cloud/profile/datastore"
+	"px.dev/pixie/src/cloud/profile/profileenv"
+	profile "px.dev/pixie/src/cloud/profile/profilepb"
+	"px.dev/pixie/src/cloud/project_manager/projectmanagerpb"
+	mock_projectmanager "px.dev/pixie/src/cloud/project_manager/projectmanagerpb/mock"
+	"px.dev/pixie/src/utils"
 )
 
 func TestServer_CreateUser(t *testing.T) {

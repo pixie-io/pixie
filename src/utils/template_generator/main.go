@@ -7,9 +7,9 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
-	"pixielabs.ai/pixielabs/src/utils/shared/yamls"
-	vizieryamls "pixielabs.ai/pixielabs/src/utils/template_generator/vizier_yamls"
+	"px.dev/pixie/src/utils/shared/k8s"
+	"px.dev/pixie/src/utils/shared/yamls"
+	vizieryamls "px.dev/pixie/src/utils/template_generator/vizier_yamls"
 )
 
 func init() {

@@ -21,7 +21,7 @@ pl_cc_proto_library(
 
 pl_go_proto_library(
     name = "docs_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/carnot/docspb",
+    importpath = "px.dev/pixie/src/carnot/docspb",
     proto = ":docs_pl_proto",
     deps = [
         "//src/carnot/udfspb:udfs_pl_go_proto",

@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "certmgrenv",
     srcs = ["env.go"],
-    importpath = "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrenv",
+    importpath = "px.dev/pixie/src/vizier/services/certmgr/certmgrenv",
     visibility = ["//src/vizier:__subpackages__"],
     deps = ["//src/shared/services/env"],
 )

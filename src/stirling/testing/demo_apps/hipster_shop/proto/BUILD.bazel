@@ -16,14 +16,14 @@ pl_cc_proto_library(
 
 pl_go_proto_library(
     name = "demo_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/hipster_shop/proto",
+    importpath = "px.dev/pixie/src/stirling/testing/demo_apps/hipster_shop/proto",
     proto = ":demo_pl_proto",
 )
 
 go_library(
     name = "proto",
     srcs = ["demo.pb.go"],
-    importpath = "pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/hipster_shop/proto",
+    importpath = "px.dev/pixie/src/stirling/testing/demo_apps/hipster_shop/proto",
     deps = [
         "@com_github_gogo_protobuf//proto",
         "@org_golang_google_grpc//:go_default_library",

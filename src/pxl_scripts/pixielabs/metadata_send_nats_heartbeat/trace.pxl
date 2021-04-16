@@ -5,7 +5,7 @@ table_name = 'hb7'
 tp_name = table_name
 
 
-@pxtrace.probe("pixielabs.ai/pixielabs/src/vizier/services/metadata/"
+@pxtrace.probe("px.dev/pixie/src/vizier/services/metadata/"
                "controllers.(*MessageBusController).sendMessage")
 def probe_func():
     return [{'latency': pxtrace.FunctionLatency()}]

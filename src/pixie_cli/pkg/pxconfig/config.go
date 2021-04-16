@@ -9,7 +9,7 @@ import (
 
 	"github.com/gofrs/uuid"
 
-	utils "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
+	utils "px.dev/pixie/src/pixie_cli/pkg/utils"
 )
 
 // ConfigInfo store the config about the CLI.

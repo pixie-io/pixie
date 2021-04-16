@@ -5,7 +5,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 go_library(
     name = "query_broker_lib",
     srcs = ["query_broker_server.go"],
-    importpath = "pixielabs.ai/pixielabs/src/vizier/services/query_broker",
+    importpath = "px.dev/pixie/src/vizier/services/query_broker",
     visibility = ["//visibility:private"],
     deps = [
         "//src/api/public/vizierapipb:public_vizier_pl_go_proto",

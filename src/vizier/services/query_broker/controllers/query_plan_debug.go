@@ -9,10 +9,10 @@ import (
 	"github.com/emicklei/dot"
 	"github.com/gofrs/uuid"
 
-	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
-	"pixielabs.ai/pixielabs/src/carnot/planpb"
-	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
-	"pixielabs.ai/pixielabs/src/utils"
+	"px.dev/pixie/src/carnot/planner/distributedpb"
+	"px.dev/pixie/src/carnot/planpb"
+	"px.dev/pixie/src/carnot/queryresultspb"
+	"px.dev/pixie/src/utils"
 )
 
 func styleGraphNodeForPlan(p *planpb.PlanNode, n dot.Node, extraDetails string) dot.Node {

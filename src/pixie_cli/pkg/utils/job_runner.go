@@ -3,7 +3,7 @@ package utils
 import (
 	"golang.org/x/sync/errgroup"
 
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/components"
+	"px.dev/pixie/src/pixie_cli/pkg/components"
 )
 
 // Task is an entity that can be run.

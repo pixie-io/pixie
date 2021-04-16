@@ -6,7 +6,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
 
-	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
+	"px.dev/pixie/src/carnot/planner/distributedpb"
 )
 
 func TestMutationExecutor_Execute(t *testing.T) {

@@ -11,7 +11,7 @@ go_library(
         "script.go",
         "well_known.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/script",
+    importpath = "px.dev/pixie/src/pixie_cli/pkg/script",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/pixie_cli/pkg/auth",

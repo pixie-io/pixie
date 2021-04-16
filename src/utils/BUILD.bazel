@@ -8,7 +8,7 @@ go_library(
         "genutils.go",
         "uuid.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/utils",
+    importpath = "px.dev/pixie/src/utils",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",

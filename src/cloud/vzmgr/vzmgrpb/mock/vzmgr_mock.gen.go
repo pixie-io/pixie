@@ -11,9 +11,9 @@ import (
 	types "github.com/gogo/protobuf/types"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
-	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
-	cvmsgspb "pixielabs.ai/pixielabs/src/shared/cvmsgspb"
+	uuidpb "px.dev/pixie/src/api/public/uuidpb"
+	vzmgrpb "px.dev/pixie/src/cloud/vzmgr/vzmgrpb"
+	cvmsgspb "px.dev/pixie/src/shared/cvmsgspb"
 )
 
 // MockVZMgrServiceClient is a mock of VZMgrServiceClient interface.

@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 go_library(
     name = "template_generator_lib",
     srcs = ["main.go"],
-    importpath = "pixielabs.ai/pixielabs/src/utils/template_generator",
+    importpath = "px.dev/pixie/src/utils/template_generator",
     visibility = ["//visibility:private"],
     deps = [
         "//src/utils/shared/k8s",

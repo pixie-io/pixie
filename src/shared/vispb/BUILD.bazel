@@ -19,7 +19,7 @@ pl_cc_proto_library(
 
 pl_go_proto_library(
     name = "vis_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/shared/vispb",
+    importpath = "px.dev/pixie/src/shared/vispb",
     proto = ":vis_pl_proto",
     visibility = ["//src:__subpackages__"],
     deps = [],

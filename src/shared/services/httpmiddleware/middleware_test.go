@@ -9,10 +9,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
-	"pixielabs.ai/pixielabs/src/shared/services/env"
-	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
+	"px.dev/pixie/src/shared/services/authcontext"
+	"px.dev/pixie/src/shared/services/env"
+	"px.dev/pixie/src/shared/services/httpmiddleware"
+	"px.dev/pixie/src/utils/testingutils"
 )
 
 func TestWithBearerAuthMiddleware(t *testing.T) {

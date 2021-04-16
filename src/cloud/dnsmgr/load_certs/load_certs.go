@@ -16,9 +16,9 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 
-	"pixielabs.ai/pixielabs/src/cloud/dnsmgr/schema"
-	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
-	"pixielabs.ai/pixielabs/src/shared/services/pg"
+	"px.dev/pixie/src/cloud/dnsmgr/schema"
+	"px.dev/pixie/src/cloud/shared/pgmigrate"
+	"px.dev/pixie/src/shared/services/pg"
 )
 
 type certInfo struct {

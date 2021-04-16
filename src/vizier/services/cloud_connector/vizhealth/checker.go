@@ -10,8 +10,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
 
-	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
-	utils2 "pixielabs.ai/pixielabs/src/shared/services/utils"
+	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	utils2 "px.dev/pixie/src/shared/services/utils"
 )
 
 const (

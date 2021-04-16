@@ -9,13 +9,13 @@ import (
 
 	uuid "github.com/gofrs/uuid"
 	gomock "github.com/golang/mock/gomock"
-	pl_shared_k8s_metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	types "pixielabs.ai/pixielabs/src/shared/types/gotypes"
-	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
-	agent "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent"
-	metadatapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
-	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
-	pl_vizier_services_shared_agent "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
+	pl_shared_k8s_metadatapb "px.dev/pixie/src/shared/k8s/metadatapb"
+	types "px.dev/pixie/src/shared/types/gotypes"
+	messages "px.dev/pixie/src/vizier/messages/messagespb"
+	agent "px.dev/pixie/src/vizier/services/metadata/controllers/agent"
+	metadatapb "px.dev/pixie/src/vizier/services/metadata/metadatapb"
+	storepb "px.dev/pixie/src/vizier/services/metadata/storepb"
+	pl_vizier_services_shared_agent "px.dev/pixie/src/vizier/services/shared/agentpb"
 )
 
 // MockStore is a mock of Store interface.

@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
+	"px.dev/pixie/src/pixie_cli/pkg/utils"
 )
 
 func TestVersionCompatible(t *testing.T) {

@@ -19,7 +19,7 @@ proto_library(
 go_proto_library(
     name = "auth_go_proto",
     compilers = ["@io_bazel_rules_go//proto:gogoslick_grpc"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/auth/authpb",
+    importpath = "px.dev/pixie/src/cloud/auth/authpb",
     proto = ":auth_proto",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [

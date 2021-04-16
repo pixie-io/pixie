@@ -20,9 +20,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
-	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
-	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
+	"px.dev/pixie/src/cloud/shared/vzshard"
+	"px.dev/pixie/src/cloud/vzconn/vzconnpb"
+	"px.dev/pixie/src/shared/cvmsgspb"
 )
 
 // DurableNATSChannels is a list of all the durable nats channels that need to be read and transmitted over the GRPC channel.

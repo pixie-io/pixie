@@ -7,7 +7,7 @@ package(default_visibility = ["//src/cloud:__subpackages__"])
 go_library(
     name = "dnsmgr_lib",
     srcs = ["dnsmgr_server.go"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/dnsmgr",
+    importpath = "px.dev/pixie/src/cloud/dnsmgr",
     visibility = ["//visibility:private"],
     deps = [
         "//src/cloud/dnsmgr/controller",
@@ -34,7 +34,7 @@ go_binary(
 go_image(
     name = "dnsmgr_server_image",
     binary = ":dnsmgr_server",
-    importpath = "pixielabs.ai/pixielabs",
+    importpath = "px.dev/pixie",
     visibility = [
         "//k8s:__subpackages__",
         "//src/cloud:__subpackages__",

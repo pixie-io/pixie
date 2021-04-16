@@ -5,7 +5,7 @@ package(default_visibility = ["//src/stirling:__subpackages__"])
 go_library(
     name = "certs_lib",
     srcs = ["cert_generator.go"],
-    importpath = "pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/go_grpc_tls_pl/certs",
+    importpath = "px.dev/pixie/src/stirling/testing/demo_apps/go_grpc_tls_pl/certs",
     visibility = ["//visibility:private"],
     deps = [
         "@com_github_spf13_pflag//:pflag",

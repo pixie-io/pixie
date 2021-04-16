@@ -17,15 +17,15 @@ import (
 	"golang.org/x/oauth2/jwt"
 	"google.golang.org/api/option"
 
-	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerenv"
-	atpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
-	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/controller"
-	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/schema"
-	"pixielabs.ai/pixielabs/src/cloud/shared/pgmigrate"
-	"pixielabs.ai/pixielabs/src/shared/services"
-	"pixielabs.ai/pixielabs/src/shared/services/healthz"
-	"pixielabs.ai/pixielabs/src/shared/services/pg"
-	"pixielabs.ai/pixielabs/src/shared/services/server"
+	"px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerenv"
+	atpb "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
+	"px.dev/pixie/src/cloud/artifact_tracker/controller"
+	"px.dev/pixie/src/cloud/artifact_tracker/schema"
+	"px.dev/pixie/src/cloud/shared/pgmigrate"
+	"px.dev/pixie/src/shared/services"
+	"px.dev/pixie/src/shared/services/healthz"
+	"px.dev/pixie/src/shared/services/pg"
+	"px.dev/pixie/src/shared/services/server"
 )
 
 func init() {

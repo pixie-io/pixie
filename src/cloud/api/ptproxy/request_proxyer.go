@@ -15,9 +15,9 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
-	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-	"pixielabs.ai/pixielabs/src/utils"
+	"px.dev/pixie/src/cloud/shared/vzshard"
+	"px.dev/pixie/src/shared/cvmsgspb"
+	"px.dev/pixie/src/utils"
 )
 
 var (

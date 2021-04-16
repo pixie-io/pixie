@@ -7,7 +7,7 @@ go_library(
         "errors.go",
         "grpc.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/vzconn/bridge",
+    importpath = "px.dev/pixie/src/cloud/vzconn/bridge",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/cloud/shared/vzshard",

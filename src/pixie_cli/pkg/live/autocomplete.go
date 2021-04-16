@@ -11,8 +11,8 @@ import (
 	"github.com/rivo/tview"
 	"github.com/sahilm/fuzzy"
 
-	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
+	"px.dev/pixie/src/cloud/cloudapipb"
+	"px.dev/pixie/src/pixie_cli/pkg/script"
 )
 
 // Very rudimentary tokenizer. Not going to be fully robust, but it should be fine for our purposes.

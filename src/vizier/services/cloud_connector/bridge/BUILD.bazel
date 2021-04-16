@@ -7,7 +7,7 @@ go_library(
         "vzconn_client.go",
         "vzinfo.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/bridge",
+    importpath = "px.dev/pixie/src/vizier/services/cloud_connector/bridge",
     visibility = ["//src/vizier:__subpackages__"],
     deps = [
         "//src/api/public/vizierapipb:public_vizier_pl_go_proto",

@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 go_library(
     name = "versions_gen_lib",
     srcs = ["main.go"],
-    importpath = "pixielabs.ai/pixielabs/src/utils/artifacts/versions_gen",
+    importpath = "px.dev/pixie/src/utils/artifacts/versions_gen",
     visibility = ["//visibility:private"],
     deps = [
         "//src/shared/artifacts/versionspb:versions_pl_go_proto",

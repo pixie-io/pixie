@@ -10,7 +10,7 @@ go_library(
         "uuid.go",
         "vizier.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/api/go/pxapi",
+    importpath = "px.dev/pixie/src/api/go/pxapi",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/go/pxapi/errdefs",

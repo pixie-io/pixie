@@ -8,8 +8,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"pixielabs.ai/pixielabs/src/api/go/pxapi/types"
-	vizierpb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
+	"px.dev/pixie/src/api/go/pxapi/types"
+	vizierpb "px.dev/pixie/src/api/public/vizierapipb"
 )
 
 func makeTableMetadata(schemaTypes ...types.DataType) *types.TableMetadata {

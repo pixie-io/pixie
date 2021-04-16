@@ -6,8 +6,8 @@ import (
 
 	"github.com/dgrijalva/jwt-go/v4"
 
-	pb "pixielabs.ai/pixielabs/src/shared/services/jwtpb"
-	"pixielabs.ai/pixielabs/src/shared/services/utils"
+	pb "px.dev/pixie/src/shared/services/jwtpb"
+	"px.dev/pixie/src/shared/services/utils"
 )
 
 // TestOrgID is a test org valid UUID

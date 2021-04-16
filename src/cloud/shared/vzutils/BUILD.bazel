@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "vzutils",
     srcs = ["vzwatcher.go"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/shared/vzutils",
+    importpath = "px.dev/pixie/src/cloud/shared/vzutils",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/cloud/shared/messages",

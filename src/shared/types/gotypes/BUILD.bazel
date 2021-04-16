@@ -5,7 +5,7 @@ package(default_visibility = ["//src:__subpackages__"])
 go_library(
     name = "go",
     srcs = ["types.go"],
-    importpath = "pixielabs.ai/pixielabs/src/shared/types/go",
+    importpath = "px.dev/pixie/src/shared/types/go",
     deps = [
         "//src/shared/types/typespb:types_pl_go_proto",
     ],
@@ -24,7 +24,7 @@ go_test(
 go_library(
     name = "gotypes",
     srcs = ["types.go"],
-    importpath = "pixielabs.ai/pixielabs/src/shared/types/gotypes",
+    importpath = "px.dev/pixie/src/shared/types/gotypes",
     deps = ["//src/shared/types/typespb:types_pl_go_proto"],
 )
 

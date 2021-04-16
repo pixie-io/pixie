@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/carnot/docspb"
+	"px.dev/pixie/src/carnot/docspb"
 )
 
 // Valid doc strings

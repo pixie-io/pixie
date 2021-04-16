@@ -10,7 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
-	dnsmgr "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
+	dnsmgr "px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
 )
 
 // MockDNSMgrServiceClient is a mock of DNSMgrServiceClient interface.

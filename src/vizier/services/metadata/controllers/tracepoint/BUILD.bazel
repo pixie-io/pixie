@@ -7,7 +7,7 @@ go_library(
         "tracepoint.go",
         "tracepoint_store.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint",
+    importpath = "px.dev/pixie/src/vizier/services/metadata/controllers/tracepoint",
     visibility = ["//src/vizier:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",

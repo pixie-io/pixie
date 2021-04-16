@@ -6,7 +6,7 @@ import (
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/graph-gophers/graphql-go"
 
-	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	"px.dev/pixie/src/cloud/cloudapipb"
 )
 
 // LiveViewMetadataResolver resolves metadata about a live view.

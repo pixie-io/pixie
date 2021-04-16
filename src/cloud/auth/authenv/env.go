@@ -3,8 +3,8 @@ package authenv
 import (
 	"github.com/spf13/viper"
 
-	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
-	"pixielabs.ai/pixielabs/src/shared/services/env"
+	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
+	"px.dev/pixie/src/shared/services/env"
 )
 
 // AuthEnv is the authenv use for the Authentication service.

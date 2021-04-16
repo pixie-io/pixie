@@ -8,10 +8,10 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/nats-io/nats.go"
 
-	"pixielabs.ai/pixielabs/src/carnot/planpb"
-	"pixielabs.ai/pixielabs/src/utils"
-	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
-	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
+	"px.dev/pixie/src/carnot/planpb"
+	"px.dev/pixie/src/utils"
+	messages "px.dev/pixie/src/vizier/messages/messagespb"
+	"px.dev/pixie/src/vizier/utils/messagebus"
 )
 
 // LaunchQuery launches a query by sending query fragments to relevant agents.

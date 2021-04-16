@@ -18,7 +18,7 @@ go_library(
         "session_middleware.go",
         "user_resolver.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/api/controller",
+    importpath = "px.dev/pixie/src/cloud/api/controller",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/api/public/cloudapipb:public_cloudapi_pl_go_proto",

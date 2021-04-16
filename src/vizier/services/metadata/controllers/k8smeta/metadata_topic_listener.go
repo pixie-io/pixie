@@ -10,10 +10,10 @@ import (
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 
-	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-	"pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
-	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
+	"px.dev/pixie/src/shared/cvmsgspb"
+	"px.dev/pixie/src/shared/k8s/metadatapb"
+	messages "px.dev/pixie/src/vizier/messages/messagespb"
+	"px.dev/pixie/src/vizier/utils/messagebus"
 )
 
 var (

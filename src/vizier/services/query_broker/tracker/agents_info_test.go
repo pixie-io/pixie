@@ -7,16 +7,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
-	"pixielabs.ai/pixielabs/src/shared/bloomfilterpb"
-	sharedmetadatapb "pixielabs.ai/pixielabs/src/shared/metadatapb"
-	"pixielabs.ai/pixielabs/src/table_store/schemapb"
-	"pixielabs.ai/pixielabs/src/utils"
-	"pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
-	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/tracker"
-	"pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
+	"px.dev/pixie/src/api/public/uuidpb"
+	"px.dev/pixie/src/carnot/planner/distributedpb"
+	"px.dev/pixie/src/shared/bloomfilterpb"
+	sharedmetadatapb "px.dev/pixie/src/shared/metadatapb"
+	"px.dev/pixie/src/table_store/schemapb"
+	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/vizier/messages/messagespb"
+	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
+	"px.dev/pixie/src/vizier/services/query_broker/tracker"
+	"px.dev/pixie/src/vizier/services/shared/agentpb"
 )
 
 func makeTestAgentIDs(t *testing.T) []*uuidpb.UUID {

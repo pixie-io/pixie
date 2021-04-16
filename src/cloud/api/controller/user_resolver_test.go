@@ -10,14 +10,14 @@ import (
 	"github.com/graph-gophers/graphql-go/gqltesting"
 	"github.com/stretchr/testify/assert"
 
-	"pixielabs.ai/pixielabs/src/cloud/api/controller"
-	gqltestutils "pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
-	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
-	mock_profile "pixielabs.ai/pixielabs/src/cloud/profile/profilepb/mock"
-	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
-	"pixielabs.ai/pixielabs/src/shared/services/utils"
-	pbutils "pixielabs.ai/pixielabs/src/utils"
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
+	"px.dev/pixie/src/cloud/api/controller"
+	gqltestutils "px.dev/pixie/src/cloud/api/controller/testutils"
+	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
+	mock_profile "px.dev/pixie/src/cloud/profile/profilepb/mock"
+	"px.dev/pixie/src/shared/services/authcontext"
+	"px.dev/pixie/src/shared/services/utils"
+	pbutils "px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils/testingutils"
 )
 
 func TestUserInfoResolver(t *testing.T) {

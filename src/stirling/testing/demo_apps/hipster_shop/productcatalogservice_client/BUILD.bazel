@@ -6,7 +6,7 @@ package(default_visibility = ["//src/stirling:__subpackages__"])
 go_library(
     name = "productcatalogservice_client_lib",
     srcs = ["client.go"],
-    importpath = "pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/hipster_shop/productcatalogservice_client",
+    importpath = "px.dev/pixie/src/stirling/testing/demo_apps/hipster_shop/productcatalogservice_client",
     deps = [
         "//src/stirling/testing/demo_apps/hipster_shop/proto:demo_pl_go_proto",
         "@com_github_sirupsen_logrus//:logrus",
@@ -22,5 +22,5 @@ go_binary(
 go_image(
     name = "productcatalogservice_client_image",
     binary = ":productcatalogservice_client",
-    importpath = "pixielabs.ai/pixielabs",
+    importpath = "px.dev/pixie",
 )

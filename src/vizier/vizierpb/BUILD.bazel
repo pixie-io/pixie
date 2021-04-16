@@ -27,7 +27,7 @@ pl_cc_proto_library(
 
 pl_go_proto_library(
     name = "vizier_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/vizier/vizierpb",
+    importpath = "px.dev/pixie/src/vizier/vizierpb",
     proto = ":vizier_pl_proto",
     deps = [
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",

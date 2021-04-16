@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
-	"pixielabs.ai/pixielabs/src/shared/services/env"
+	"px.dev/pixie/src/shared/services/authcontext"
+	"px.dev/pixie/src/shared/services/env"
 )
 
 // GetTokenFromBearer extracts a bearer token from the authorization header.

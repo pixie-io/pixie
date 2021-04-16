@@ -13,8 +13,8 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	schemapb "pixielabs.ai/pixielabs/src/table_store/schemapb"
+	uuidpb "px.dev/pixie/src/api/public/uuidpb"
+	schemapb "px.dev/pixie/src/table_store/schemapb"
 	reflect "reflect"
 	strings "strings"
 )

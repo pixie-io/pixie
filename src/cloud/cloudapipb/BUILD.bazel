@@ -19,7 +19,7 @@ pl_proto_library(
 
 pl_go_proto_library(
     name = "cloudapi_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/cloud/cloudapipb",
+    importpath = "px.dev/pixie/src/cloud/cloudapipb",
     proto = ":cloudapi_pl_proto",
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",

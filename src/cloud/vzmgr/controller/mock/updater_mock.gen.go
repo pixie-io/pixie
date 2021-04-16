@@ -9,7 +9,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	"github.com/gofrs/uuid"
-	cvmsgspb "pixielabs.ai/pixielabs/src/shared/cvmsgspb"
+	cvmsgspb "px.dev/pixie/src/shared/cvmsgspb"
 )
 
 // MockVzUpdater is a mock of VzUpdater interface.

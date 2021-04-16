@@ -12,7 +12,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
-	"pixielabs.ai/pixielabs/src/shared/services/pg"
+	"px.dev/pixie/src/shared/services/pg"
 )
 
 // SetupTestDB sets up a test database instance and applies migrations.

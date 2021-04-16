@@ -34,5 +34,5 @@ sudo nsenter -t 3269640 -n
 tshark -i any -O mysql -Y mysql
 
 # Terminal 3 - Run mysql client
-docker run --rm --pid=host --network=container:mysql_server_749245969612081 -v/home/oazizi/src/pixielabs.ai/pixielabs/src/stirling/source_connectors/socket_tracer/protocols/mysql/testing:/scripts --name mysql_client_749286353166542 bazel/src/stirling/testing/app_containers/mysql:mysql_connector_image /scripts/script.py
+docker run --rm --pid=host --network=container:mysql_server_749245969612081 -v/home/oazizi/src/px.dev/pixie/src/stirling/source_connectors/socket_tracer/protocols/mysql/testing:/scripts --name mysql_client_749286353166542 bazel/src/stirling/testing/app_containers/mysql:mysql_connector_image /scripts/script.py
 ```

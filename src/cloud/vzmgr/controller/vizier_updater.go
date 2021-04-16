@@ -17,12 +17,12 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/metadata"
 
-	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
-	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
-	"pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
-	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-	jwtutils "pixielabs.ai/pixielabs/src/shared/services/utils"
-	"pixielabs.ai/pixielabs/src/utils"
+	"px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
+	"px.dev/pixie/src/cloud/shared/vzshard"
+	"px.dev/pixie/src/shared/artifacts/versionspb"
+	"px.dev/pixie/src/shared/cvmsgspb"
+	jwtutils "px.dev/pixie/src/shared/services/utils"
+	"px.dev/pixie/src/utils"
 )
 
 // Updater is responsible for tracking and updating Viziers.

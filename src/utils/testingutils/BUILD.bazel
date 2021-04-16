@@ -11,7 +11,7 @@ go_library(
         "nats.go",
         "stan.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/utils/testingutils",
+    importpath = "px.dev/pixie/src/utils/testingutils",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/services/jwtpb:jwt_go_proto",

@@ -9,8 +9,8 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	logicalpb "pixielabs.ai/pixielabs/src/carnot/planner/dynamic_tracing/ir/logicalpb"
-	statuspb "pixielabs.ai/pixielabs/src/common/base/statuspb"
+	logicalpb "px.dev/pixie/src/carnot/planner/dynamic_tracing/ir/logicalpb"
+	statuspb "px.dev/pixie/src/common/base/statuspb"
 	reflect "reflect"
 	strings "strings"
 )

@@ -10,12 +10,12 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"pixielabs.ai/pixielabs/src/shared/services"
-	"pixielabs.ai/pixielabs/src/shared/services/healthz"
-	"pixielabs.ai/pixielabs/src/shared/services/server"
-	"pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrenv"
-	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
-	"pixielabs.ai/pixielabs/src/vizier/services/certmgr/controller"
+	"px.dev/pixie/src/shared/services"
+	"px.dev/pixie/src/shared/services/healthz"
+	"px.dev/pixie/src/shared/services/server"
+	"px.dev/pixie/src/vizier/services/certmgr/certmgrenv"
+	certmgrpb "px.dev/pixie/src/vizier/services/certmgr/certmgrpb"
+	"px.dev/pixie/src/vizier/services/certmgr/controller"
 )
 
 func init() {

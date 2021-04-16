@@ -9,7 +9,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	"github.com/gofrs/uuid"
-	datastore "pixielabs.ai/pixielabs/src/cloud/profile/datastore"
+	datastore "px.dev/pixie/src/cloud/profile/datastore"
 )
 
 // MockDatastore is a mock of Datastore interface.

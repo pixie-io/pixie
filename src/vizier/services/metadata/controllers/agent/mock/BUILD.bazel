@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "mock",
     srcs = ["mock_agent.gen.go"],
-    importpath = "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent/mock",
+    importpath = "px.dev/pixie/src/vizier/services/metadata/controllers/agent/mock",
     visibility = ["//src/vizier:__subpackages__"],
     deps = [
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",

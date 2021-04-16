@@ -22,16 +22,16 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 
-	proto1 "pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	public_vizierpb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
-	"pixielabs.ai/pixielabs/src/cloud/api/ptproxy"
-	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
-	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-	env2 "pixielabs.ai/pixielabs/src/shared/services/env"
-	"pixielabs.ai/pixielabs/src/shared/services/server"
-	"pixielabs.ai/pixielabs/src/utils"
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
-	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
+	proto1 "px.dev/pixie/src/api/public/uuidpb"
+	public_vizierpb "px.dev/pixie/src/api/public/vizierapipb"
+	"px.dev/pixie/src/cloud/api/ptproxy"
+	"px.dev/pixie/src/cloud/shared/vzshard"
+	"px.dev/pixie/src/shared/cvmsgspb"
+	env2 "px.dev/pixie/src/shared/services/env"
+	"px.dev/pixie/src/shared/services/server"
+	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils/testingutils"
+	pl_api_vizierpb "px.dev/pixie/src/vizier/vizierpb"
 )
 
 const (

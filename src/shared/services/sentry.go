@@ -10,8 +10,8 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	version "pixielabs.ai/pixielabs/src/shared/goversion"
-	"pixielabs.ai/pixielabs/src/shared/services/sentryhook"
+	version "px.dev/pixie/src/shared/goversion"
+	"px.dev/pixie/src/shared/services/sentryhook"
 )
 
 func init() {

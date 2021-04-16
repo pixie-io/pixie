@@ -7,9 +7,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzerrors"
-	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
-	"pixielabs.ai/pixielabs/src/utils"
+	"px.dev/pixie/src/cloud/vzmgr/vzerrors"
+	"px.dev/pixie/src/cloud/vzmgr/vzmgrpb"
+	"px.dev/pixie/src/utils"
 )
 
 // InfoFetcher fetches information about deployments using the key.

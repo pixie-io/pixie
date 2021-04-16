@@ -30,7 +30,7 @@ pl_cc_proto_library(
 
 pl_go_proto_library(
     name = "plan_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/carnot/planpb",
+    importpath = "px.dev/pixie/src/carnot/planpb",
     proto = ":plan_pl_proto",
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",

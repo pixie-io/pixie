@@ -18,12 +18,12 @@ import (
 	// Blank Import required by package.
 	_ "github.com/ianlancetaylor/cgosymbolizer"
 
-	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
-	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
-	"pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
-	"pixielabs.ai/pixielabs/src/carnot/udfspb"
-	"pixielabs.ai/pixielabs/src/common/base/statuspb"
-	"pixielabs.ai/pixielabs/src/shared/scriptspb"
+	"px.dev/pixie/src/carnot/planner/compilerpb"
+	"px.dev/pixie/src/carnot/planner/distributedpb"
+	"px.dev/pixie/src/carnot/planner/plannerpb"
+	"px.dev/pixie/src/carnot/udfspb"
+	"px.dev/pixie/src/common/base/statuspb"
+	"px.dev/pixie/src/shared/scriptspb"
 )
 
 // GoPlanner wraps the C Planner.

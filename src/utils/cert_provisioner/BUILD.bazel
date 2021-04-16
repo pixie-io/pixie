@@ -5,7 +5,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 go_library(
     name = "cert_provisioner_lib",
     srcs = ["main.go"],
-    importpath = "pixielabs.ai/pixielabs/src/utils/cert_provisioner",
+    importpath = "px.dev/pixie/src/utils/cert_provisioner",
     visibility = ["//visibility:private"],
     deps = [
         "//src/utils/shared/certs",

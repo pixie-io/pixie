@@ -15,10 +15,10 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-	"pixielabs.ai/pixielabs/src/shared/services"
-	"pixielabs.ai/pixielabs/src/shared/services/msgbus"
-	_ "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
+	"px.dev/pixie/src/shared/cvmsgspb"
+	"px.dev/pixie/src/shared/services"
+	"px.dev/pixie/src/shared/services/msgbus"
+	_ "px.dev/pixie/src/vizier/messages/messagespb"
 )
 
 func init() {

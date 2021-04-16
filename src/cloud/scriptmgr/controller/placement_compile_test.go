@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/controller"
+	"px.dev/pixie/src/cloud/scriptmgr/controller"
 )
 
 const placementJSONTxt = `{

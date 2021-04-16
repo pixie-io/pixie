@@ -13,9 +13,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
-	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-	"pixielabs.ai/pixielabs/src/shared/services"
-	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
+	"px.dev/pixie/src/shared/cvmsgspb"
+	"px.dev/pixie/src/shared/services"
+	messages "px.dev/pixie/src/vizier/messages/messagespb"
 )
 
 func connectNATS() *nats.Conn {

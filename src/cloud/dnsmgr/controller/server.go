@@ -10,9 +10,9 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/spf13/viper"
 
-	"pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrenv"
-	dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
-	"pixielabs.ai/pixielabs/src/utils"
+	"px.dev/pixie/src/cloud/dnsmgr/dnsmgrenv"
+	dnsmgrpb "px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
+	"px.dev/pixie/src/utils"
 )
 
 // ResourceRecordTTL is the TTL of the resource record in seconds.

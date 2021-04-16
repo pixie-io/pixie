@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 
-	"pixielabs.ai/pixielabs/src/shared/services/env"
+	"px.dev/pixie/src/shared/services/env"
 )
 
 func TestNew(t *testing.T) {

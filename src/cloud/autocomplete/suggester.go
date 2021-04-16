@@ -13,13 +13,13 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/metadata"
 
-	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	"pixielabs.ai/pixielabs/src/cloud/indexer/md"
-	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/script"
-	"pixielabs.ai/pixielabs/src/shared/services/utils"
-	pl_vispb "pixielabs.ai/pixielabs/src/shared/vispb"
-	pbutils "pixielabs.ai/pixielabs/src/utils"
+	"px.dev/pixie/src/cloud/cloudapipb"
+	"px.dev/pixie/src/cloud/indexer/md"
+	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
+	"px.dev/pixie/src/pixie_cli/pkg/script"
+	"px.dev/pixie/src/shared/services/utils"
+	pl_vispb "px.dev/pixie/src/shared/vispb"
+	pbutils "px.dev/pixie/src/utils"
 )
 
 // ElasticSuggester provides suggestions based on the given index in Elastic.

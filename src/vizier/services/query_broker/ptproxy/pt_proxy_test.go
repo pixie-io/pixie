@@ -18,10 +18,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/test/bufconn"
 
-	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
-	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
-	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/ptproxy"
+	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	"px.dev/pixie/src/shared/cvmsgspb"
+	"px.dev/pixie/src/utils/testingutils"
+	"px.dev/pixie/src/vizier/services/query_broker/ptproxy"
 )
 
 const (

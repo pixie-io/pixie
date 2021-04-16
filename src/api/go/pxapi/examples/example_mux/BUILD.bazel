@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 go_library(
     name = "example_mux_lib",
     srcs = ["example.go"],
-    importpath = "pixielabs.ai/pixielabs/src/api/go/pxapi/examples/example_mux",
+    importpath = "px.dev/pixie/src/api/go/pxapi/examples/example_mux",
     visibility = ["//visibility:private"],
     deps = [
         "//src/api/go/pxapi",

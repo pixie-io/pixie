@@ -11,11 +11,11 @@ import (
 	"github.com/stretchr/testify/require"
 	bunt "github.com/tidwall/buntdb"
 
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
-	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/badgerdb"
-	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/buntdb"
-	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/etcd"
-	"pixielabs.ai/pixielabs/src/vizier/utils/datastore/pebbledb"
+	"px.dev/pixie/src/utils/testingutils"
+	"px.dev/pixie/src/vizier/utils/datastore/badgerdb"
+	"px.dev/pixie/src/vizier/utils/datastore/buntdb"
+	"px.dev/pixie/src/vizier/utils/datastore/etcd"
+	"px.dev/pixie/src/vizier/utils/datastore/pebbledb"
 )
 
 func setupDatastore(t *testing.T, db Setter) {

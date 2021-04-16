@@ -10,8 +10,8 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
-	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	profile "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
+	uuidpb "px.dev/pixie/src/api/public/uuidpb"
+	profile "px.dev/pixie/src/cloud/profile/profilepb"
 )
 
 // MockProfileServiceClient is a mock of ProfileServiceClient interface.

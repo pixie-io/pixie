@@ -9,15 +9,15 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/carnot/goplanner"
-	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
-	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
-	logical "pixielabs.ai/pixielabs/src/carnot/planner/dynamic_tracing/ir/logicalpb"
-	"pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
-	"pixielabs.ai/pixielabs/src/carnot/udfspb"
-	"pixielabs.ai/pixielabs/src/common/base/statuspb"
-	"pixielabs.ai/pixielabs/src/shared/scriptspb"
-	funcs "pixielabs.ai/pixielabs/src/vizier/funcs/go"
+	"px.dev/pixie/src/carnot/goplanner"
+	"px.dev/pixie/src/carnot/planner/compilerpb"
+	"px.dev/pixie/src/carnot/planner/distributedpb"
+	logical "px.dev/pixie/src/carnot/planner/dynamic_tracing/ir/logicalpb"
+	"px.dev/pixie/src/carnot/planner/plannerpb"
+	"px.dev/pixie/src/carnot/udfspb"
+	"px.dev/pixie/src/common/base/statuspb"
+	"px.dev/pixie/src/shared/scriptspb"
+	funcs "px.dev/pixie/src/vizier/funcs/go"
 )
 
 const plannerStatePBStr = `

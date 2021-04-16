@@ -10,10 +10,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	"pixielabs.ai/pixielabs/src/cloud/project_manager/datastore"
-	"pixielabs.ai/pixielabs/src/cloud/project_manager/projectmanagerpb"
-	"pixielabs.ai/pixielabs/src/utils"
+	"px.dev/pixie/src/api/public/uuidpb"
+	"px.dev/pixie/src/cloud/project_manager/datastore"
+	"px.dev/pixie/src/cloud/project_manager/projectmanagerpb"
+	"px.dev/pixie/src/utils"
 )
 
 var projectRegex = regexp.MustCompile("^([a-z0-9])+(-[a-z0-9]+)*$")

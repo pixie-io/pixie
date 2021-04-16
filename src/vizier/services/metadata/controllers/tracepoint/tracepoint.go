@@ -10,12 +10,12 @@ import (
 	"github.com/gogo/protobuf/proto"
 	log "github.com/sirupsen/logrus"
 
-	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	"pixielabs.ai/pixielabs/src/carnot/planner/dynamic_tracing/ir/logicalpb"
-	"pixielabs.ai/pixielabs/src/common/base/statuspb"
-	"pixielabs.ai/pixielabs/src/utils"
-	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	"px.dev/pixie/src/api/public/uuidpb"
+	"px.dev/pixie/src/carnot/planner/dynamic_tracing/ir/logicalpb"
+	"px.dev/pixie/src/common/base/statuspb"
+	"px.dev/pixie/src/utils"
+	messages "px.dev/pixie/src/vizier/messages/messagespb"
+	"px.dev/pixie/src/vizier/services/metadata/storepb"
 )
 
 var (

@@ -23,7 +23,7 @@ pl_cc_proto_library(
 
 pl_go_proto_library(
     name = "agent_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb",
+    importpath = "px.dev/pixie/src/vizier/services/shared/agentpb",
     proto = ":agent_pl_proto",
     visibility = ["//src/vizier:__subpackages__"],
     deps = [

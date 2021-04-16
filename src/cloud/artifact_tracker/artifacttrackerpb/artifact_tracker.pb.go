@@ -15,7 +15,7 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	versionspb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
+	versionspb "px.dev/pixie/src/shared/artifacts/versionspb"
 	reflect "reflect"
 	strings "strings"
 )

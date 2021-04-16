@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	pb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	"pixielabs.ai/pixielabs/src/utils"
+	pb "px.dev/pixie/src/api/public/uuidpb"
+	"px.dev/pixie/src/utils"
 )
 
 const uuidStr = "ea8aa095-697f-49f1-b127-d50e5b6e2645"

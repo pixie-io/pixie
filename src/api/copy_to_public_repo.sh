@@ -85,7 +85,7 @@ function replace_go_paths() {
   # Replaces the import paths for protobufs into the new directory structure.
   for file in "$@"; do
     sed -i \
-      -e "s:pixielabs.ai/pixielabs:go.withpixie.dev/pixie:g" \
+      -e "s:px.dev/pixie:go.withpixie.dev/pixie:g" \
       "${file}"
   done
 }

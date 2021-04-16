@@ -11,14 +11,14 @@ import (
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 
-	"pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	types "pixielabs.ai/pixielabs/src/shared/types/gotypes"
-	"pixielabs.ai/pixielabs/src/utils"
-	"pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
-	metadata_servicepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
-	"pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
-	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
+	"px.dev/pixie/src/shared/k8s/metadatapb"
+	types "px.dev/pixie/src/shared/types/gotypes"
+	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/vizier/messages/messagespb"
+	metadata_servicepb "px.dev/pixie/src/vizier/services/metadata/metadatapb"
+	"px.dev/pixie/src/vizier/services/metadata/storepb"
+	"px.dev/pixie/src/vizier/services/shared/agentpb"
+	"px.dev/pixie/src/vizier/utils/messagebus"
 )
 
 // Store is the interface that a persistent datastore needs to implement for tracking

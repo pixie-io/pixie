@@ -14,8 +14,8 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	vispb "pixielabs.ai/pixielabs/src/shared/vispb"
+	uuidpb "px.dev/pixie/src/api/public/uuidpb"
+	vispb "px.dev/pixie/src/shared/vispb"
 	reflect "reflect"
 	strings "strings"
 )

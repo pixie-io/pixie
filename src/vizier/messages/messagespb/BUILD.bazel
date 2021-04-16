@@ -43,7 +43,7 @@ pl_cc_proto_library(
 
 pl_go_proto_library(
     name = "messages_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/vizier/messages/messagespb",
+    importpath = "px.dev/pixie/src/vizier/messages/messagespb",
     proto = ":messages_pl_proto",
     # TODO(PP-2567): This is used by src/cloud/utils/stan_watcher:stan_watcher_lib
     # consider moving or breaking the chain.

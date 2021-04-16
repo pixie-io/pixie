@@ -10,9 +10,9 @@ import (
 	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 
-	"pixielabs.ai/pixielabs/src/cloud/indexer/md"
-	"pixielabs.ai/pixielabs/src/cloud/shared/vzutils"
-	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
+	"px.dev/pixie/src/cloud/indexer/md"
+	"px.dev/pixie/src/cloud/shared/vzutils"
+	"px.dev/pixie/src/cloud/vzmgr/vzmgrpb"
 )
 
 // The topic on which updates are written to.

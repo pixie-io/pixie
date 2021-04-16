@@ -7,7 +7,7 @@ go_library(
         "json.go",
         "table.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/api/go/pxapi/errdefs/formatters",
+    importpath = "px.dev/pixie/src/api/go/pxapi/errdefs/formatters",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/go/pxapi/errdefs",

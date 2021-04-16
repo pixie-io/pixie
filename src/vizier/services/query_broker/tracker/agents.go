@@ -10,8 +10,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
 
-	utils2 "pixielabs.ai/pixielabs/src/shared/services/utils"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
+	utils2 "px.dev/pixie/src/shared/services/utils"
+	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
 )
 
 const (

@@ -8,7 +8,7 @@ go_library(
         "message_bus.go",
         "server.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers",
+    importpath = "px.dev/pixie/src/vizier/services/metadata/controllers",
     visibility = ["//src/vizier:__subpackages__"],
     deps = [
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",

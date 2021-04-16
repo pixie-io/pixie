@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	"px.dev/pixie/src/cloud/cloudapipb"
 )
 
 var actionToProtoMap = map[string]cloudapipb.AutocompleteActionType{

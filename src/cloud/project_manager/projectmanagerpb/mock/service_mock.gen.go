@@ -10,8 +10,8 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
-	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	projectmanagerpb "pixielabs.ai/pixielabs/src/cloud/project_manager/projectmanagerpb"
+	uuidpb "px.dev/pixie/src/api/public/uuidpb"
+	projectmanagerpb "px.dev/pixie/src/cloud/project_manager/projectmanagerpb"
 )
 
 // MockProjectManagerServiceClient is a mock of ProjectManagerServiceClient interface.

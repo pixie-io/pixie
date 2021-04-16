@@ -15,8 +15,8 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	cvmsgspb "pixielabs.ai/pixielabs/src/shared/cvmsgspb"
+	uuidpb "px.dev/pixie/src/api/public/uuidpb"
+	cvmsgspb "px.dev/pixie/src/shared/cvmsgspb"
 	reflect "reflect"
 	strings "strings"
 )

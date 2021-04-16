@@ -11,6 +11,6 @@ go_library(
         "bindata.gen.go",
         "schema.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/project_manager/schema",
+    importpath = "px.dev/pixie/src/cloud/project_manager/schema",
     visibility = ["//src/cloud:__subpackages__"],
 )

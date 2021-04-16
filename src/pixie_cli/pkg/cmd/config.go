@@ -10,10 +10,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	cliUtils "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/vizier"
-	"pixielabs.ai/pixielabs/src/utils"
+	"px.dev/pixie/src/cloud/cloudapipb"
+	cliUtils "px.dev/pixie/src/pixie_cli/pkg/utils"
+	"px.dev/pixie/src/pixie_cli/pkg/vizier"
+	"px.dev/pixie/src/utils"
 )
 
 func init() {

@@ -7,8 +7,8 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/graph-gophers/graphql-go"
 
-	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	"pixielabs.ai/pixielabs/src/utils"
+	"px.dev/pixie/src/cloud/cloudapipb"
+	"px.dev/pixie/src/utils"
 )
 
 // NanosPerSecond is the number of nanoseconds per second.

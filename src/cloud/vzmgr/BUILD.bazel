@@ -7,7 +7,7 @@ package(default_visibility = ["//src/cloud:__subpackages__"])
 go_library(
     name = "vzmgr_lib",
     srcs = ["vzmgr_server.go"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/vzmgr",
+    importpath = "px.dev/pixie/src/cloud/vzmgr",
     visibility = ["//visibility:private"],
     deps = [
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
@@ -42,7 +42,7 @@ go_binary(
 go_image(
     name = "vzmgr_server_image",
     binary = ":vzmgr_server",
-    importpath = "pixielabs.ai/pixielabs",
+    importpath = "px.dev/pixie",
     visibility = [
         "//k8s:__subpackages__",
         "//src/cloud:__subpackages__",

@@ -31,7 +31,7 @@ pl_cc_proto_library(
 
 pl_go_proto_library(
     name = "service_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb",
+    importpath = "px.dev/pixie/src/vizier/services/query_broker/querybrokerpb",
     proto = ":service_pl_proto",
     visibility = ["//src/vizier:__subpackages__"],
     deps = [

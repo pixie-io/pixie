@@ -11,14 +11,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/carnot/planner/dynamic_tracing/ir/logicalpb"
-	"pixielabs.ai/pixielabs/src/common/base/statuspb"
-	"pixielabs.ai/pixielabs/src/utils"
-	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
-	mock_agent "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent/mock"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint"
-	mock_tracepoint "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint/mock"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	"px.dev/pixie/src/carnot/planner/dynamic_tracing/ir/logicalpb"
+	"px.dev/pixie/src/common/base/statuspb"
+	"px.dev/pixie/src/utils"
+	messages "px.dev/pixie/src/vizier/messages/messagespb"
+	mock_agent "px.dev/pixie/src/vizier/services/metadata/controllers/agent/mock"
+	"px.dev/pixie/src/vizier/services/metadata/controllers/tracepoint"
+	mock_tracepoint "px.dev/pixie/src/vizier/services/metadata/controllers/tracepoint/mock"
+	"px.dev/pixie/src/vizier/services/metadata/storepb"
 )
 
 func TestCreateTracepoint(t *testing.T) {

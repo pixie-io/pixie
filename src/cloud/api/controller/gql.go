@@ -6,10 +6,10 @@ import (
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/relay"
 
-	"pixielabs.ai/pixielabs/src/cloud/api/controller/schema"
-	unauthenticatedschema "pixielabs.ai/pixielabs/src/cloud/api/controller/unauthenticated_schema"
-	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
+	"px.dev/pixie/src/cloud/api/controller/schema"
+	unauthenticatedschema "px.dev/pixie/src/cloud/api/controller/unauthenticated_schema"
+	"px.dev/pixie/src/cloud/cloudapipb"
+	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
 )
 
 // GraphQLEnv holds the GRPC API servers so the GraphQL server can call out to them.

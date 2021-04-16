@@ -13,10 +13,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"pixielabs.ai/pixielabs/src/utils/shared/certs"
-	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
-	yamlsutils "pixielabs.ai/pixielabs/src/utils/shared/yamls"
-	vizieryamls "pixielabs.ai/pixielabs/src/utils/template_generator/vizier_yamls"
+	"px.dev/pixie/src/utils/shared/certs"
+	"px.dev/pixie/src/utils/shared/k8s"
+	yamlsutils "px.dev/pixie/src/utils/shared/yamls"
+	vizieryamls "px.dev/pixie/src/utils/template_generator/vizier_yamls"
 )
 
 func init() {

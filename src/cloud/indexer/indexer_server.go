@@ -17,13 +17,13 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 
-	"pixielabs.ai/pixielabs/src/cloud/indexer/controllers"
-	"pixielabs.ai/pixielabs/src/cloud/indexer/md"
-	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
-	"pixielabs.ai/pixielabs/src/shared/services"
-	"pixielabs.ai/pixielabs/src/shared/services/env"
-	"pixielabs.ai/pixielabs/src/shared/services/healthz"
-	"pixielabs.ai/pixielabs/src/shared/services/server"
+	"px.dev/pixie/src/cloud/indexer/controllers"
+	"px.dev/pixie/src/cloud/indexer/md"
+	"px.dev/pixie/src/cloud/vzmgr/vzmgrpb"
+	"px.dev/pixie/src/shared/services"
+	"px.dev/pixie/src/shared/services/env"
+	"px.dev/pixie/src/shared/services/healthz"
+	"px.dev/pixie/src/shared/services/server"
 )
 
 func init() {

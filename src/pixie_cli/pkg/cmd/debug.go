@@ -12,10 +12,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/components"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/vizier"
-	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
+	"px.dev/pixie/src/pixie_cli/pkg/components"
+	"px.dev/pixie/src/pixie_cli/pkg/utils"
+	"px.dev/pixie/src/pixie_cli/pkg/vizier"
+	pl_api_vizierpb "px.dev/pixie/src/vizier/vizierpb"
 )
 
 func init() {

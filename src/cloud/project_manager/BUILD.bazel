@@ -7,7 +7,7 @@ package(default_visibility = ["//src/cloud:__subpackages__"])
 go_library(
     name = "project_manager_lib",
     srcs = ["project_manager_server.go"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/project_manager",
+    importpath = "px.dev/pixie/src/cloud/project_manager",
     visibility = ["//visibility:private"],
     deps = [
         "//src/cloud/project_manager/controller",
@@ -34,7 +34,7 @@ go_binary(
 go_image(
     name = "project_manager_server_image",
     binary = ":project_manager_server",
-    importpath = "pixielabs.ai/pixielabs",
+    importpath = "px.dev/pixie",
     visibility = [
         "//k8s:__subpackages__",
         "//src/cloud:__subpackages__",

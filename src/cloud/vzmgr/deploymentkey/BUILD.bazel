@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "deploymentkey",
     srcs = ["deployment_keys.go"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/vzmgr/deploymentkey",
+    importpath = "px.dev/pixie/src/cloud/vzmgr/deploymentkey",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",

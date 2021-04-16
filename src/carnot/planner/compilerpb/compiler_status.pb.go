@@ -9,8 +9,8 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
-	statuspb "pixielabs.ai/pixielabs/src/common/base/statuspb"
+	planpb "px.dev/pixie/src/carnot/planpb"
+	statuspb "px.dev/pixie/src/common/base/statuspb"
 	reflect "reflect"
 	strings "strings"
 )

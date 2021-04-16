@@ -5,7 +5,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 go_library(
     name = "cloud_connector_lib",
     srcs = ["cloud_connector_server.go"],
-    importpath = "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector",
+    importpath = "px.dev/pixie/src/vizier/services/cloud_connector",
     visibility = ["//visibility:private"],
     deps = [
         "//src/api/public/vizierapipb:public_vizier_pl_go_proto",

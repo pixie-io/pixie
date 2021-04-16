@@ -11,12 +11,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
-	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/k8smeta"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
+	"px.dev/pixie/src/shared/k8s/metadatapb"
+	"px.dev/pixie/src/utils/testingutils"
+	messages "px.dev/pixie/src/vizier/messages/messagespb"
+	"px.dev/pixie/src/vizier/services/metadata/controllers/k8smeta"
+	"px.dev/pixie/src/vizier/services/metadata/controllers/testutils"
+	"px.dev/pixie/src/vizier/services/metadata/storepb"
 )
 
 func createEndpointsObject() *storepb.K8SResource {

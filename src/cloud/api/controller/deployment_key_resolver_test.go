@@ -8,9 +8,9 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/graph-gophers/graphql-go/gqltesting"
 
-	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
-	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	"pixielabs.ai/pixielabs/src/utils"
+	"px.dev/pixie/src/cloud/api/controller/testutils"
+	"px.dev/pixie/src/cloud/cloudapipb"
+	"px.dev/pixie/src/utils"
 )
 
 func TestDeploymentKey(t *testing.T) {

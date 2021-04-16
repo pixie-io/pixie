@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "mock",
     srcs = ["carnot_mock.gen.go"],
-    importpath = "pixielabs.ai/pixielabs/src/carnot/carnotpb/mock",
+    importpath = "px.dev/pixie/src/carnot/carnotpb/mock",
     visibility = ["//src/vizier/services/query_broker:__subpackages__"],
     deps = [
         "//src/carnot/carnotpb:carnot_pl_go_proto",

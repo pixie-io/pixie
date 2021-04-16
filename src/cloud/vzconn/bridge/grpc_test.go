@@ -20,14 +20,14 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 
-	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
-	"pixielabs.ai/pixielabs/src/cloud/vzconn/bridge"
-	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
-	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
-	mock_vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb/mock"
-	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-	"pixielabs.ai/pixielabs/src/utils"
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
+	"px.dev/pixie/src/cloud/shared/vzshard"
+	"px.dev/pixie/src/cloud/vzconn/bridge"
+	"px.dev/pixie/src/cloud/vzconn/vzconnpb"
+	"px.dev/pixie/src/cloud/vzmgr/vzmgrpb"
+	mock_vzmgrpb "px.dev/pixie/src/cloud/vzmgr/vzmgrpb/mock"
+	"px.dev/pixie/src/shared/cvmsgspb"
+	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils/testingutils"
 )
 
 const bufSize = 1024 * 1024

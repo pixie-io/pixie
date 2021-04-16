@@ -11,7 +11,7 @@ go_library(
         "new_autocomplete.go",
         "utils.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/live",
+    importpath = "px.dev/pixie/src/pixie_cli/pkg/live",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",

@@ -10,13 +10,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/cloud/shared/messages"
-	"pixielabs.ai/pixielabs/src/cloud/shared/messagespb"
-	"pixielabs.ai/pixielabs/src/cloud/shared/vzutils"
-	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
-	mock_vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb/mock"
-	"pixielabs.ai/pixielabs/src/utils"
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
+	"px.dev/pixie/src/cloud/shared/messages"
+	"px.dev/pixie/src/cloud/shared/messagespb"
+	"px.dev/pixie/src/cloud/shared/vzutils"
+	"px.dev/pixie/src/cloud/vzmgr/vzmgrpb"
+	mock_vzmgrpb "px.dev/pixie/src/cloud/vzmgr/vzmgrpb/mock"
+	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils/testingutils"
 )
 
 func TestVzWatcher(t *testing.T) {

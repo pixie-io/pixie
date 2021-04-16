@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "apikey",
     srcs = ["api_key.go"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/auth/apikey",
+    importpath = "px.dev/pixie/src/cloud/auth/apikey",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",

@@ -19,7 +19,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
+	"px.dev/pixie/src/utils/shared/k8s"
 )
 
 func generateCA(certPath string, bitsize int) (*x509.Certificate, crypto.PrivateKey, error) {

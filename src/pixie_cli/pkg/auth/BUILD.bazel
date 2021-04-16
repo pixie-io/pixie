@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "auth",
     srcs = ["login.go"],
-    importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/auth",
+    importpath = "px.dev/pixie/src/pixie_cli/pkg/auth",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",

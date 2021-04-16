@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "vizier_yamls",
     srcs = ["vizier_yamls.go"],
-    importpath = "pixielabs.ai/pixielabs/src/utils/template_generator/vizier_yamls",
+    importpath = "px.dev/pixie/src/utils/template_generator/vizier_yamls",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/utils/shared/k8s",

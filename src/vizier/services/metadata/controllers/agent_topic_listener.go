@@ -10,13 +10,13 @@ import (
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 
-	"pixielabs.ai/pixielabs/src/common/base/statuspb"
-	"pixielabs.ai/pixielabs/src/utils"
-	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/agent"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint"
-	"pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
-	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
+	"px.dev/pixie/src/common/base/statuspb"
+	"px.dev/pixie/src/utils"
+	messages "px.dev/pixie/src/vizier/messages/messagespb"
+	"px.dev/pixie/src/vizier/services/metadata/controllers/agent"
+	"px.dev/pixie/src/vizier/services/metadata/controllers/tracepoint"
+	"px.dev/pixie/src/vizier/services/shared/agentpb"
+	"px.dev/pixie/src/vizier/utils/messagebus"
 )
 
 const (

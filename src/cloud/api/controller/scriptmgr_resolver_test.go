@@ -10,9 +10,9 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/graph-gophers/graphql-go/gqltesting"
 
-	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
-	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	pl_vispb "pixielabs.ai/pixielabs/src/shared/vispb"
+	"px.dev/pixie/src/cloud/api/controller/testutils"
+	"px.dev/pixie/src/cloud/cloudapipb"
+	pl_vispb "px.dev/pixie/src/shared/vispb"
 )
 
 func TestScriptMgrResolver(t *testing.T) {

@@ -6,12 +6,12 @@ import (
 	"github.com/nats-io/nats.go"
 	"google.golang.org/grpc"
 
-	proto1 "pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
-	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
-	jwt "pixielabs.ai/pixielabs/src/shared/services/jwtpb"
-	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
+	proto1 "px.dev/pixie/src/api/public/uuidpb"
+	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	"px.dev/pixie/src/shared/cvmsgspb"
+	"px.dev/pixie/src/shared/services/authcontext"
+	jwt "px.dev/pixie/src/shared/services/jwtpb"
+	pl_api_vizierpb "px.dev/pixie/src/vizier/vizierpb"
 )
 
 type vzmgrClient interface {

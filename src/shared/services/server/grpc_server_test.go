@@ -16,10 +16,10 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 
-	"pixielabs.ai/pixielabs/src/shared/services/env"
-	"pixielabs.ai/pixielabs/src/shared/services/server"
-	ping "pixielabs.ai/pixielabs/src/shared/services/testproto"
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
+	"px.dev/pixie/src/shared/services/env"
+	"px.dev/pixie/src/shared/services/server"
+	ping "px.dev/pixie/src/shared/services/testproto"
+	"px.dev/pixie/src/utils/testingutils"
 )
 
 const bufSize = 1024 * 1024

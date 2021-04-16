@@ -11,7 +11,7 @@ import (
 
 	"github.com/fatih/color"
 
-	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
+	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
 )
 
 // For p50, p99, etc.

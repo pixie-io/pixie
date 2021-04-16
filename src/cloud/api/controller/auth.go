@@ -16,14 +16,14 @@ import (
 	"google.golang.org/grpc/status"
 	"gopkg.in/segmentio/analytics-go.v3"
 
-	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
-	"pixielabs.ai/pixielabs/src/cloud/auth/authpb"
-	"pixielabs.ai/pixielabs/src/shared/services"
-	commonenv "pixielabs.ai/pixielabs/src/shared/services/env"
-	"pixielabs.ai/pixielabs/src/shared/services/events"
-	"pixielabs.ai/pixielabs/src/shared/services/handler"
-	"pixielabs.ai/pixielabs/src/shared/services/utils"
-	pbutils "pixielabs.ai/pixielabs/src/utils"
+	"px.dev/pixie/src/cloud/api/apienv"
+	"px.dev/pixie/src/cloud/auth/authpb"
+	"px.dev/pixie/src/shared/services"
+	commonenv "px.dev/pixie/src/shared/services/env"
+	"px.dev/pixie/src/shared/services/events"
+	"px.dev/pixie/src/shared/services/handler"
+	"px.dev/pixie/src/shared/services/utils"
+	pbutils "px.dev/pixie/src/utils"
 )
 
 // GetServiceCredentials returns JWT credentials for inter-service requests.

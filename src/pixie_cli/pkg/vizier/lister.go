@@ -12,12 +12,12 @@ import (
 	"github.com/gofrs/uuid"
 	"gopkg.in/segmentio/analytics-go.v3"
 
-	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/auth"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxanalytics"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxconfig"
-	cliUtils "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
-	"pixielabs.ai/pixielabs/src/utils"
+	"px.dev/pixie/src/cloud/cloudapipb"
+	"px.dev/pixie/src/pixie_cli/pkg/auth"
+	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
+	"px.dev/pixie/src/pixie_cli/pkg/pxconfig"
+	cliUtils "px.dev/pixie/src/pixie_cli/pkg/utils"
+	"px.dev/pixie/src/utils"
 )
 
 const proxyIPAddr = "https://127.0.0.1:31068"

@@ -4,7 +4,7 @@
     <option name="excludedPackages">
       <array>
         <option value="$PROJECT_DIR$/bazel-pixielabs" />
-        <option value="pixielabs.ai/pixielabs/bazel-pixielabs" />
+        <option value="px.dev/pixie/bazel-pixielabs" />
       </array>
     </option>
     <option name="groupStdlibImports" value="true" />

@@ -6,9 +6,9 @@ import (
 
 	"github.com/graph-gophers/graphql-go"
 
-	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
-	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
-	pbutils "pixielabs.ai/pixielabs/src/utils"
+	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
+	"px.dev/pixie/src/shared/services/authcontext"
+	pbutils "px.dev/pixie/src/utils"
 )
 
 // UserInfoResolver resolves user information.

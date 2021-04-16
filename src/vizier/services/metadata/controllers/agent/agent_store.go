@@ -13,15 +13,15 @@ import (
 	"github.com/gogo/protobuf/proto"
 	log "github.com/sirupsen/logrus"
 
-	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	"pixielabs.ai/pixielabs/src/shared/k8s"
-	"pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	types "pixielabs.ai/pixielabs/src/shared/types/gotypes"
-	"pixielabs.ai/pixielabs/src/utils"
-	"pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
-	"pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
-	"pixielabs.ai/pixielabs/src/vizier/utils/datastore"
+	"px.dev/pixie/src/api/public/uuidpb"
+	"px.dev/pixie/src/shared/k8s"
+	"px.dev/pixie/src/shared/k8s/metadatapb"
+	types "px.dev/pixie/src/shared/types/gotypes"
+	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/vizier/messages/messagespb"
+	"px.dev/pixie/src/vizier/services/metadata/storepb"
+	"px.dev/pixie/src/vizier/services/shared/agentpb"
+	"px.dev/pixie/src/vizier/utils/datastore"
 )
 
 const (

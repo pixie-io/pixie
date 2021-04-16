@@ -3,6 +3,6 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "testutils",
     srcs = ["test_proto.go"],
-    importpath = "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils",
+    importpath = "px.dev/pixie/src/vizier/services/metadata/controllers/testutils",
     visibility = ["//src/vizier:__subpackages__"],
 )

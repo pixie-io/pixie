@@ -5,7 +5,7 @@ import (
 
 	"github.com/gofrs/uuid"
 
-	"pixielabs.ai/pixielabs/src/cloud/auth/authenv"
+	"px.dev/pixie/src/cloud/auth/authenv"
 )
 
 // APIKeyMgr is the internal interface for managing API keys.

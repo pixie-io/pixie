@@ -8,7 +8,7 @@ import (
 	"github.com/dgrijalva/jwt-go/v4"
 	log "github.com/sirupsen/logrus"
 
-	jwt2 "pixielabs.ai/pixielabs/src/shared/services/jwtpb"
+	jwt2 "px.dev/pixie/src/shared/services/jwtpb"
 )
 
 // ClaimType represents the type of claims we allow in our system.

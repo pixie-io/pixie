@@ -9,15 +9,15 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 
-	"pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
-	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
-	"pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
-	"pixielabs.ai/pixielabs/src/carnot/planpb"
-	"pixielabs.ai/pixielabs/src/common/base/statuspb"
-	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
-	"pixielabs.ai/pixielabs/src/utils"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
+	"px.dev/pixie/src/api/public/uuidpb"
+	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	"px.dev/pixie/src/carnot/planner/distributedpb"
+	"px.dev/pixie/src/carnot/planner/plannerpb"
+	"px.dev/pixie/src/carnot/planpb"
+	"px.dev/pixie/src/common/base/statuspb"
+	"px.dev/pixie/src/shared/services/authcontext"
+	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
 )
 
 // TracepointMap stores a map from the name to tracepoint info.

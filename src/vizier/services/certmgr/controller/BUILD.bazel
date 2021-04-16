@@ -7,7 +7,7 @@ go_library(
         "mock.go",
         "server.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/vizier/services/certmgr/controller",
+    importpath = "px.dev/pixie/src/vizier/services/certmgr/controller",
     visibility = ["//src/vizier:__subpackages__"],
     deps = [
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",

@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/cloud/profile/datastore"
-	"pixielabs.ai/pixielabs/src/cloud/profile/schema"
-	"pixielabs.ai/pixielabs/src/shared/services/pgtest"
+	"px.dev/pixie/src/cloud/profile/datastore"
+	"px.dev/pixie/src/cloud/profile/schema"
+	"px.dev/pixie/src/shared/services/pgtest"
 )
 
 func TestMain(m *testing.M) {

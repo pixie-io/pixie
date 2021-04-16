@@ -20,7 +20,6 @@ WORKER_NODE = 'jenkins-worker-with-4.14-kernel'
   * was triggered by a phabricator run.
   */
 class PhabConnector {
-
   def jenkinsCtx
   def URL
   def repository

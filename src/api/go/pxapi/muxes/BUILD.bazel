@@ -6,7 +6,7 @@ go_library(
         "doc.go",
         "regex.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/api/go/pxapi/muxes",
+    importpath = "px.dev/pixie/src/api/go/pxapi/muxes",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/go/pxapi",

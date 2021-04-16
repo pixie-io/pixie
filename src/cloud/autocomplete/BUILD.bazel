@@ -7,7 +7,7 @@ go_library(
         "mock.go",
         "suggester.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/autocomplete",
+    importpath = "px.dev/pixie/src/cloud/autocomplete",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/cloud/autocomplete/ebnf",

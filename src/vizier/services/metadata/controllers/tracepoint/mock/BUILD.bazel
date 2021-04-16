@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "mock",
     srcs = ["mock_tracepoint.gen.go"],
-    importpath = "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/tracepoint/mock",
+    importpath = "px.dev/pixie/src/vizier/services/metadata/controllers/tracepoint/mock",
     visibility = ["//src/vizier:__subpackages__"],
     deps = [
         "//src/vizier/services/metadata/storepb:store_pl_go_proto",

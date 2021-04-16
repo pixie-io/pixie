@@ -7,7 +7,7 @@ package(default_visibility = ["//src/cloud:__subpackages__"])
 go_library(
     name = "artifact_tracker_lib",
     srcs = ["artifact_tracker_server.go"],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/artifact_tracker",
+    importpath = "px.dev/pixie/src/cloud/artifact_tracker",
     visibility = ["//visibility:private"],
     deps = [
         "//src/cloud/artifact_tracker/artifacttrackerenv",
@@ -40,7 +40,7 @@ go_binary(
 go_image(
     name = "artifact_tracker_server_image",
     binary = ":artifact_tracker",
-    importpath = "pixielabs.ai/pixielabs",
+    importpath = "px.dev/pixie",
     visibility = [
         "//k8s:__subpackages__",
         "//src/cloud:__subpackages__",

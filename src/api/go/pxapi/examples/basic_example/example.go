@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"pixielabs.ai/pixielabs/src/api/go/pxapi"
-	"pixielabs.ai/pixielabs/src/api/go/pxapi/errdefs"
-	"pixielabs.ai/pixielabs/src/api/go/pxapi/types"
+	"px.dev/pixie/src/api/go/pxapi"
+	"px.dev/pixie/src/api/go/pxapi/errdefs"
+	"px.dev/pixie/src/api/go/pxapi/types"
 )
 
 var (

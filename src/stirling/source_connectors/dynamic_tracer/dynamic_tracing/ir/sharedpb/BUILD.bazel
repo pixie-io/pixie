@@ -18,7 +18,7 @@ pl_cc_proto_library(
 
 pl_go_proto_library(
     name = "shared_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/sharedpb",
+    importpath = "px.dev/pixie/src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/sharedpb",
     proto = ":shared_pl_proto",
     deps = [
         "//src/shared/types/typespb:types_pl_go_proto",

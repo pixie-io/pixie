@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 go_library(
     name = "dev_dns_updater_lib",
     srcs = ["dev_dns_updater.go"],
-    importpath = "pixielabs.ai/pixielabs/src/utils/dev_dns_updater",
+    importpath = "px.dev/pixie/src/utils/dev_dns_updater",
     visibility = ["//visibility:private"],
     deps = [
         "@com_github_sirupsen_logrus//:logrus",

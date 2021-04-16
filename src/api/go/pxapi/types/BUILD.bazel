@@ -7,7 +7,7 @@ go_library(
         "schema.go",
         "types.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/api/go/pxapi/types",
+    importpath = "px.dev/pixie/src/api/go/pxapi/types",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/public/vizierapipb:public_vizier_pl_go_proto",

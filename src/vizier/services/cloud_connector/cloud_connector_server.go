@@ -12,16 +12,16 @@ import (
 	"google.golang.org/grpc"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
-	public_vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
-	"pixielabs.ai/pixielabs/src/shared/services"
-	"pixielabs.ai/pixielabs/src/shared/services/election"
-	"pixielabs.ai/pixielabs/src/shared/services/env"
-	"pixielabs.ai/pixielabs/src/shared/services/healthz"
-	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
-	"pixielabs.ai/pixielabs/src/shared/services/server"
-	controllers "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/bridge"
-	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/vizhealth"
-	internal_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
+	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	"px.dev/pixie/src/shared/services"
+	"px.dev/pixie/src/shared/services/election"
+	"px.dev/pixie/src/shared/services/env"
+	"px.dev/pixie/src/shared/services/healthz"
+	"px.dev/pixie/src/shared/services/httpmiddleware"
+	"px.dev/pixie/src/shared/services/server"
+	controllers "px.dev/pixie/src/vizier/services/cloud_connector/bridge"
+	"px.dev/pixie/src/vizier/services/cloud_connector/vizhealth"
+	internal_api_vizierpb "px.dev/pixie/src/vizier/vizierpb"
 )
 
 func init() {

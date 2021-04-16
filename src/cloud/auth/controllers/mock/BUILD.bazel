@@ -6,7 +6,7 @@ go_library(
         "auth0_mock.gen.go",
         "mock_apikeymgr.gen.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/auth/controllers/mock",
+    importpath = "px.dev/pixie/src/cloud/auth/controllers/mock",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/cloud/auth/controllers",

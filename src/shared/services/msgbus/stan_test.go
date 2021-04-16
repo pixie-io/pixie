@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/shared/services/msgbus"
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
+	"px.dev/pixie/src/shared/services/msgbus"
+	"px.dev/pixie/src/utils/testingutils"
 )
 
 func TestMustConnectSTAN(t *testing.T) {

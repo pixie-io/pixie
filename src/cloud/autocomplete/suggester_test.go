@@ -11,10 +11,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
-	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	"pixielabs.ai/pixielabs/src/cloud/indexer/md"
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
+	"px.dev/pixie/src/cloud/autocomplete"
+	"px.dev/pixie/src/cloud/cloudapipb"
+	"px.dev/pixie/src/cloud/indexer/md"
+	"px.dev/pixie/src/utils/testingutils"
 )
 
 var org1 = uuid.Must(uuid.NewV4())

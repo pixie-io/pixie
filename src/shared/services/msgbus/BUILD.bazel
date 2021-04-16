@@ -6,7 +6,7 @@ go_library(
         "nats.go",
         "stan.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/shared/services/msgbus",
+    importpath = "px.dev/pixie/src/shared/services/msgbus",
     visibility = ["//src:__subpackages__"],
     deps = [
         "@com_github_nats_io_nats_go//:nats_go",

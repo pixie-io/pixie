@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/zenazn/goji/web/mutil"
 
-	version "pixielabs.ai/pixielabs/src/shared/goversion"
+	version "px.dev/pixie/src/shared/goversion"
 )
 
 func init() {

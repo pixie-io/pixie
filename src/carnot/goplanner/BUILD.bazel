@@ -15,7 +15,7 @@ pl_cgo_library(
     ),
     cdeps = ["//src/carnot/planner:cgo_export"],
     cgo = True,
-    importpath = "pixielabs.ai/pixielabs/src/carnot/goplanner",
+    importpath = "px.dev/pixie/src/carnot/goplanner",
     deps = [
         "//src/carnot/planner/compilerpb:compiler_status_pl_go_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",

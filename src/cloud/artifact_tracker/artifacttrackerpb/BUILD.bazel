@@ -15,7 +15,7 @@ pl_proto_library(
 
 pl_go_proto_library(
     name = "artifact_tracker_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb",
+    importpath = "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb",
     proto = ":artifact_tracker_pl_proto",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [

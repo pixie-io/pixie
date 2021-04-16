@@ -3,6 +3,6 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "types",
     srcs = ["string_data.go"],
-    importpath = "pixielabs.ai/pixielabs/src/table_store/schemapb/types",
+    importpath = "px.dev/pixie/src/table_store/schemapb/types",
     visibility = ["//src:__subpackages__"],
 )

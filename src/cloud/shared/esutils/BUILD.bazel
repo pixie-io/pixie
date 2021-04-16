@@ -10,7 +10,7 @@ go_library(
         "index_template.go",
         "managed_index.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/cloud/shared/esutils",
+    importpath = "px.dev/pixie/src/cloud/shared/esutils",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "@com_github_olivere_elastic_v7//:elastic",

@@ -15,15 +15,15 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"pixielabs.ai/pixielabs/src/cloud/auth/authenv"
-	pb "pixielabs.ai/pixielabs/src/cloud/auth/authpb"
-	"pixielabs.ai/pixielabs/src/cloud/auth/controllers"
-	mock_controllers "pixielabs.ai/pixielabs/src/cloud/auth/controllers/mock"
-	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
-	mock_profile "pixielabs.ai/pixielabs/src/cloud/profile/profilepb/mock"
-	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
-	pbutils "pixielabs.ai/pixielabs/src/utils"
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
+	"px.dev/pixie/src/cloud/auth/authenv"
+	pb "px.dev/pixie/src/cloud/auth/authpb"
+	"px.dev/pixie/src/cloud/auth/controllers"
+	mock_controllers "px.dev/pixie/src/cloud/auth/controllers/mock"
+	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
+	mock_profile "px.dev/pixie/src/cloud/profile/profilepb/mock"
+	"px.dev/pixie/src/shared/services/authcontext"
+	pbutils "px.dev/pixie/src/utils"
+	"px.dev/pixie/src/utils/testingutils"
 )
 
 func getTestContext() context.Context {

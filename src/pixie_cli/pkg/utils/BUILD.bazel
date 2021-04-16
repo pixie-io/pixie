@@ -11,7 +11,7 @@ go_library(
         "cmd.go",
         "job_runner.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils",
+    importpath = "px.dev/pixie/src/pixie_cli/pkg/utils",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/pixie_cli/pkg/components",

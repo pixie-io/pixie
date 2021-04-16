@@ -13,7 +13,7 @@ import (
 	"gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
 
-	vpb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
+	vpb "px.dev/pixie/src/shared/artifacts/versionspb"
 )
 
 func init() {

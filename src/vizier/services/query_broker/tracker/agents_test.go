@@ -6,11 +6,11 @@ import (
 
 	"github.com/golang/mock/gomock"
 
-	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
-	mock_metadatapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb/mock"
-	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/tracker"
+	"px.dev/pixie/src/carnot/planner/distributedpb"
+	"px.dev/pixie/src/utils/testingutils"
+	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
+	mock_metadatapb "px.dev/pixie/src/vizier/services/metadata/metadatapb/mock"
+	"px.dev/pixie/src/vizier/services/query_broker/tracker"
 )
 
 type fakeAgentsInfo struct {

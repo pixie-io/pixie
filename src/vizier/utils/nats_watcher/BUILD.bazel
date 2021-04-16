@@ -5,7 +5,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 go_library(
     name = "nats_watcher_lib",
     srcs = ["nats_watcher.go"],
-    importpath = "pixielabs.ai/pixielabs/src/vizier/utils/nats_watcher",
+    importpath = "px.dev/pixie/src/vizier/utils/nats_watcher",
     visibility = ["//visibility:private"],
     deps = [
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",

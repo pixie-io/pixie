@@ -7,7 +7,7 @@ package(default_visibility = ["//src/stirling:__subpackages__"])
 go_library(
     name = "server_lib",
     srcs = ["https_server.go"],
-    importpath = "pixielabs.ai/pixielabs/src/stirling/testing/demo_apps/go_https/server",
+    importpath = "px.dev/pixie/src/stirling/testing/demo_apps/go_https/server",
     visibility = ["//visibility:private"],
     deps = [
         "@com_github_spf13_pflag//:pflag",

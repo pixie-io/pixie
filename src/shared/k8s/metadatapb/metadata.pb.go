@@ -12,7 +12,7 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	typespb "pixielabs.ai/pixielabs/src/shared/types/typespb"
+	typespb "px.dev/pixie/src/shared/types/typespb"
 	reflect "reflect"
 	strconv "strconv"
 	strings "strings"

@@ -6,7 +6,7 @@ go_library(
         "extract.go",
         "templates.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/utils/shared/yamls",
+    importpath = "px.dev/pixie/src/utils/shared/yamls",
     visibility = ["//src:__subpackages__"],
     deps = [
         "@com_github_evanphx_json_patch//:json-patch",

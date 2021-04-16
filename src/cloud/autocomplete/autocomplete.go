@@ -7,8 +7,8 @@ import (
 
 	"github.com/gofrs/uuid"
 
-	"pixielabs.ai/pixielabs/src/cloud/autocomplete/ebnf"
-	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	"px.dev/pixie/src/cloud/autocomplete/ebnf"
+	"px.dev/pixie/src/cloud/cloudapipb"
 )
 
 // CursorMarker is the string that is used to denote the position of the cursor in the formatted output string.

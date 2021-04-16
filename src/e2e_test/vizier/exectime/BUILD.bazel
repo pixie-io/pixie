@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 go_library(
     name = "exectime_lib",
     srcs = ["exectime_benchmark.go"],
-    importpath = "pixielabs.ai/pixielabs/src/e2e_test/vizier/exectime",
+    importpath = "px.dev/pixie/src/e2e_test/vizier/exectime",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/pixie_cli/pkg/script",

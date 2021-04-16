@@ -15,7 +15,7 @@ go_library(
     # Note we only import the bindata rule not the bindata file that's kept in this dir.
     # keep
     srcs = [":udf_info_bindata"],
-    importpath = "pixielabs.ai/pixielabs/src/vizier/funcs/go",
+    importpath = "px.dev/pixie/src/vizier/funcs/go",
     # TODO(PP-2567): This is used by src/carnot/goplanner
     # consider moving or breaking the chain.
     visibility = ["//src:__subpackages__"],

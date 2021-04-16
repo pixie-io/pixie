@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 
-	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
+	"px.dev/pixie/src/cloud/shared/vzshard"
 )
 
 func TestGenerateShardRange(t *testing.T) {

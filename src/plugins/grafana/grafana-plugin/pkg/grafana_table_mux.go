@@ -6,9 +6,9 @@ import (
 
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 
-	"pixielabs.ai/pixielabs/src/api/go/pxapi"
-	"pixielabs.ai/pixielabs/src/api/go/pxapi/types"
-	vizierapipb "pixielabs.ai/pixielabs/src/api/public/vizierapipb"
+	"px.dev/pixie/src/api/go/pxapi"
+	"px.dev/pixie/src/api/go/pxapi/types"
+	vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
 )
 
 // PixieToGrafanaTablePrinter satisfies the TableRecordHandler interface.

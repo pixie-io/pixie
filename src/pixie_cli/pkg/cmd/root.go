@@ -10,10 +10,10 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/segmentio/analytics-go.v3"
 
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxanalytics"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxconfig"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/update"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
+	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
+	"px.dev/pixie/src/pixie_cli/pkg/pxconfig"
+	"px.dev/pixie/src/pixie_cli/pkg/update"
+	"px.dev/pixie/src/pixie_cli/pkg/utils"
 )
 
 func init() {

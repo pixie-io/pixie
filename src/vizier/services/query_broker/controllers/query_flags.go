@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cast"
 
-	"pixielabs.ai/pixielabs/src/carnot/planpb"
+	"px.dev/pixie/src/carnot/planpb"
 )
 
 // The prefix which a PL Config line should begin with.

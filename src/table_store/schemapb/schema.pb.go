@@ -12,8 +12,8 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	typespb "pixielabs.ai/pixielabs/src/shared/types/typespb"
-	pixielabs_ai_pixielabs_src_table_store_schemapb_types "pixielabs.ai/pixielabs/src/table_store/schemapb/types"
+	typespb "px.dev/pixie/src/shared/types/typespb"
+	pixielabs_ai_pixielabs_src_table_store_schemapb_types "px.dev/pixie/src/table_store/schemapb/types"
 	reflect "reflect"
 	strings "strings"
 )
@@ -245,7 +245,7 @@ func (m *Time64NSColumn) GetData() []int64 {
 }
 
 type StringColumn struct {
-	Data []pixielabs_ai_pixielabs_src_table_store_schemapb_types.StringData `protobuf:"bytes,1,rep,name=data,proto3,customtype=pixielabs.ai/pixielabs/src/table_store/schemapb/types.StringData" json:"data,omitempty"`
+	Data []pixielabs_ai_pixielabs_src_table_store_schemapb_types.StringData `protobuf:"bytes,1,rep,name=data,proto3,customtype=px.dev/pixie/src/table_store/schemapb/types.StringData" json:"data,omitempty"`
 }
 
 func (m *StringColumn) Reset()      { *m = StringColumn{} }

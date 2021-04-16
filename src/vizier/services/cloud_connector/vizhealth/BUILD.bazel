@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "vizhealth",
     srcs = ["checker.go"],
-    importpath = "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/vizhealth",
+    importpath = "px.dev/pixie/src/vizier/services/cloud_connector/vizhealth",
     visibility = ["//src/vizier:__subpackages__"],
     deps = [
         "//src/api/public/vizierapipb:public_vizier_pl_go_proto",

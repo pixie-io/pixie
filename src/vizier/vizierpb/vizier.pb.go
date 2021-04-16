@@ -15,7 +15,7 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	metadatapb "px.dev/pixie/src/shared/k8s/metadatapb"
 	reflect "reflect"
 	strconv "strconv"
 	strings "strings"

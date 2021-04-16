@@ -14,13 +14,13 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
-	"pixielabs.ai/pixielabs/src/cloud/api/controller"
-	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
-	"pixielabs.ai/pixielabs/src/cloud/auth/authpb"
-	mock_auth "pixielabs.ai/pixielabs/src/cloud/auth/authpb/mock"
-	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
-	"pixielabs.ai/pixielabs/src/utils/testingutils"
+	"px.dev/pixie/src/cloud/api/apienv"
+	"px.dev/pixie/src/cloud/api/controller"
+	"px.dev/pixie/src/cloud/api/controller/testutils"
+	"px.dev/pixie/src/cloud/auth/authpb"
+	mock_auth "px.dev/pixie/src/cloud/auth/authpb/mock"
+	"px.dev/pixie/src/shared/services/authcontext"
+	"px.dev/pixie/src/utils/testingutils"
 )
 
 func callOKTestHandler(t *testing.T) http.Handler {

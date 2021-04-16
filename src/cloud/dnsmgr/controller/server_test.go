@@ -14,12 +14,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"pixielabs.ai/pixielabs/src/cloud/dnsmgr/controller"
-	mock_controller "pixielabs.ai/pixielabs/src/cloud/dnsmgr/controller/mock"
-	dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
-	"pixielabs.ai/pixielabs/src/cloud/dnsmgr/schema"
-	"pixielabs.ai/pixielabs/src/shared/services/pgtest"
-	"pixielabs.ai/pixielabs/src/utils"
+	"px.dev/pixie/src/cloud/dnsmgr/controller"
+	mock_controller "px.dev/pixie/src/cloud/dnsmgr/controller/mock"
+	dnsmgrpb "px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
+	"px.dev/pixie/src/cloud/dnsmgr/schema"
+	"px.dev/pixie/src/shared/services/pgtest"
+	"px.dev/pixie/src/utils"
 )
 
 func TestMain(m *testing.M) {

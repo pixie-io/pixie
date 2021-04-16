@@ -11,8 +11,8 @@ import (
 	types "github.com/gogo/protobuf/types"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
-	uuidpb "pixielabs.ai/pixielabs/src/api/public/uuidpb"
-	cloudapipb "pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	uuidpb "px.dev/pixie/src/api/public/uuidpb"
+	cloudapipb "px.dev/pixie/src/cloud/cloudapipb"
 )
 
 // MockAuthServiceClient is a mock of AuthServiceClient interface.

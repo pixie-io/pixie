@@ -3,7 +3,7 @@ package controllers
 import (
 	"context"
 
-	"pixielabs.ai/pixielabs/src/cloud/api/idprovider"
+	"px.dev/pixie/src/cloud/api/idprovider"
 )
 
 func transformKratosUserInfoToUserInfo(kratosUser *idprovider.KratosUserInfo) (*UserInfo, error) {

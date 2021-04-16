@@ -11,9 +11,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	"pixielabs.ai/pixielabs/src/utils/shared/tar"
-	"pixielabs.ai/pixielabs/src/utils/shared/yamls"
+	"px.dev/pixie/src/cloud/cloudapipb"
+	"px.dev/pixie/src/utils/shared/tar"
+	"px.dev/pixie/src/utils/shared/yamls"
 )
 
 func downloadFile(url string) (io.ReadCloser, error) {

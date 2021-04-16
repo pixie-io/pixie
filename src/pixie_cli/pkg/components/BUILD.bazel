@@ -10,7 +10,7 @@ go_library(
         "status.go",
         "table_renderer.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/pixie_cli/pkg/components",
+    importpath = "px.dev/pixie/src/pixie_cli/pkg/components",
     visibility = ["//src:__subpackages__"],
     deps = [
         "@com_github_fatih_color//:color",

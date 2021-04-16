@@ -16,6 +16,6 @@ pl_cc_proto_library(
 
 pl_go_proto_library(
     name = "benchmark_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/benchmarks/proto",
+    importpath = "px.dev/pixie/src/benchmarks/proto",
     proto = ":benchmark_pl_proto",
 )

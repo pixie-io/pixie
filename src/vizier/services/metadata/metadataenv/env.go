@@ -1,6 +1,6 @@
 package metadataenv
 
-import "pixielabs.ai/pixielabs/src/shared/services/env"
+import "px.dev/pixie/src/shared/services/env"
 
 // MetadataEnv is the interface for the Metadata service environment.
 type MetadataEnv interface {

@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "sentryhook",
     srcs = ["hook.go"],
-    importpath = "pixielabs.ai/pixielabs/src/shared/services/sentryhook",
+    importpath = "px.dev/pixie/src/shared/services/sentryhook",
     visibility = ["//src:__subpackages__"],
     deps = [
         "@com_github_getsentry_sentry_go//:sentry-go",

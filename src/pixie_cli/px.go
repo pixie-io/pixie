@@ -13,12 +13,12 @@ import (
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/segmentio/analytics-go.v3"
 
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/cmd"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxanalytics"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/pxconfig"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/sentryhook"
-	"pixielabs.ai/pixielabs/src/pixie_cli/pkg/utils"
-	version "pixielabs.ai/pixielabs/src/shared/goversion"
+	"px.dev/pixie/src/pixie_cli/pkg/cmd"
+	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
+	"px.dev/pixie/src/pixie_cli/pkg/pxconfig"
+	"px.dev/pixie/src/pixie_cli/pkg/sentryhook"
+	"px.dev/pixie/src/pixie_cli/pkg/utils"
+	version "px.dev/pixie/src/shared/goversion"
 )
 
 const sentryDSN = "https://ef3a781b5e7b42e282706fc541077f3a@sentry.io/4090453"

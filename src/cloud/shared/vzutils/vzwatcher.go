@@ -11,11 +11,11 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/metadata"
 
-	"pixielabs.ai/pixielabs/src/cloud/shared/messages"
-	"pixielabs.ai/pixielabs/src/cloud/shared/messagespb"
-	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
-	svcutils "pixielabs.ai/pixielabs/src/shared/services/utils"
-	"pixielabs.ai/pixielabs/src/utils"
+	"px.dev/pixie/src/cloud/shared/messages"
+	"px.dev/pixie/src/cloud/shared/messagespb"
+	"px.dev/pixie/src/cloud/vzmgr/vzmgrpb"
+	svcutils "px.dev/pixie/src/shared/services/utils"
+	"px.dev/pixie/src/utils"
 )
 
 // VizierHandlerFn is the function signature for the function that is run for active and newly connected Viziers.

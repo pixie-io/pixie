@@ -6,7 +6,7 @@ go_library(
         "grpc_server.go",
         "server.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/shared/services/server",
+    importpath = "px.dev/pixie/src/shared/services/server",
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/shared/services",
