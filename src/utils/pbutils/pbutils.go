@@ -51,12 +51,18 @@ const googleApis = "type.googleapis.com/"
 // LegacyMessageName converts the pixie proto message names into the old package name.
 // Currently a no-op.
 func LegacyMessageName(name string) string {
+	if strings.HasPrefix(name, "px.") {
+		return fmt.Sprintf("pl.%s", name[3:])
+	}
 	return name
 }
 
 // NextGenMessageName converts the pixie proto message names into the new package name.
 // Currently a no-op.
 func NextGenMessageName(name string) string {
+	if strings.HasPrefix(name, "pl.") {
+		return fmt.Sprintf("px.%s", name[3:])
+	}
 	return name
 }
 
