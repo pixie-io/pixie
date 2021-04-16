@@ -72,7 +72,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.StackTraceFlameGraph",
+        "@type": "pixielabs.ai/px.vispb.StackTraceFlameGraph",
         "stacktraceColumn": "stack_trace",
         "countColumn": "count",
         "percentageColumn": "percent",

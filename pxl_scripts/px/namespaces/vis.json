@@ -26,7 +26,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Table"
+        "@type": "pixielabs.ai/px.vispb.Table"
       }
     },
     {
@@ -47,7 +47,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Table"
+        "@type": "pixielabs.ai/px.vispb.Table"
       }
     }
   ]

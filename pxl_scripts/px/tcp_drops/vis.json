@@ -20,7 +20,7 @@
       },
       "globalFuncOutputName": "results",
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Graph",
+        "@type": "pixielabs.ai/px.vispb.Graph",
         "adjacencyList": {
           "fromColumn": "src",
           "toColumn": "dst"

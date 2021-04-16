@@ -52,7 +52,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Table"
+        "@type": "pixielabs.ai/px.vispb.Table"
       }
     },
     {
@@ -65,7 +65,7 @@
       },
       "globalFuncOutputName": "process_stats",
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "cpu_usage",
@@ -91,7 +91,7 @@
       },
       "globalFuncOutputName": "network_stats",
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "tx_bytes_per_ns",
@@ -117,7 +117,7 @@
       },
       "globalFuncOutputName": "network_stats",
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "rx_bytes_per_ns",
@@ -143,7 +143,7 @@
       },
       "globalFuncOutputName": "process_stats",
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "total_disk_read_throughput",
@@ -169,7 +169,7 @@
       },
       "globalFuncOutputName": "process_stats",
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "total_disk_write_throughput",
@@ -203,7 +203,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Table"
+        "@type": "pixielabs.ai/px.vispb.Table"
       }
     }
   ]

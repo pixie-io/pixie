@@ -85,7 +85,7 @@
       },
       "globalFuncOutputName": "pgsql_flow",
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Graph",
+        "@type": "pixielabs.ai/px.vispb.Graph",
         "adjacencyList": {
           "fromColumn": "source",
           "toColumn": "destination"
@@ -116,7 +116,7 @@
       },
       "globalFuncOutputName": "pgsql_summary_with_links",
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Table"
+        "@type": "pixielabs.ai/px.vispb.Table"
       }
     }
   ]

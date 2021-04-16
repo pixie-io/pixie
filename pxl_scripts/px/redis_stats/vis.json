@@ -42,7 +42,7 @@
       },
       "globalFuncOutputName": "LET",
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "latency_p50",
@@ -68,7 +68,7 @@
       },
       "globalFuncOutputName": "LET",
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "latency_p90",
@@ -94,7 +94,7 @@
       },
       "globalFuncOutputName": "LET",
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "latency_p99",
@@ -120,7 +120,7 @@
       },
       "globalFuncOutputName": "LET",
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "request_throughput",
@@ -158,7 +158,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "@type": "pixielabs.ai/px.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "throughput_total",
@@ -190,7 +190,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.HistogramChart",
+        "@type": "pixielabs.ai/px.vispb.HistogramChart",
         "histogram": {
           "value": "request_latency",
           "prebinCount": "count",
@@ -233,7 +233,7 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Table"
+        "@type": "pixielabs.ai/px.vispb.Table"
       }
     }
   ]
