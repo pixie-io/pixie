@@ -38,7 +38,7 @@ static void BM_dynamic_message_parsing(benchmark::State& state) {
   FileDescriptorSet fd_set;
   ChargeRequest::descriptor()->file()->CopyTo(fd_set.add_file());
   ServiceDescriptorDatabase db(fd_set);
-  MethodInputOutput in_out = db.GetMethodInputOutput("pl.benchmarks.PaymentService.Charge");
+  MethodInputOutput in_out = db.GetMethodInputOutput("px.benchmarks.PaymentService.Charge");
 
   for (auto _ : state) {
     for (size_t i = 0; i < static_cast<size_t>(state.range(0)); ++i) {

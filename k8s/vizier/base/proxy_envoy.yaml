@@ -43,6 +43,20 @@ data:
                       cluster: cloud_connector_service
                       timeout: 3600s
                   - match:
+                      prefix: "/px.vizier.services.query_broker"
+                    route:
+                      cluster: query_broker_service
+                  - match:
+                      prefix: "/px.api.vizierpb.VizierService"
+                    route:
+                      cluster: query_broker_service
+                      timeout: 3600s
+                  - match:
+                      prefix: "/px.api.internal.vizierpb.VizierDebugService"
+                    route:
+                      cluster: cloud_connector_service
+                      timeout: 3600s
+                  - match:
                       prefix: "/healthz"
                     route:
                       cluster: query_broker_service

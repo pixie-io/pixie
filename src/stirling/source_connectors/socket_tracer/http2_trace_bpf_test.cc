@@ -110,7 +110,7 @@ TEST_F(HTTP2TraceTest, Basic) {
 
     // TODO(oazizi): Add headers checking too.
     http::Record expected_record = {};
-    expected_record.req.req_path = "/pl.go_grpc_tls_pl.server.Greeter/SayHello";
+    expected_record.req.req_path = "/px.go_grpc_tls_pl.server.Greeter/SayHello";
     expected_record.req.req_method = "POST";
     expected_record.req.body = R"(1: "0")";
     expected_record.resp.resp_status = 200;

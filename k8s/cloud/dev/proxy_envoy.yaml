@@ -41,6 +41,11 @@ data:
                       cluster: api_service
                       timeout: 3600s
                   - match:
+                      prefix: "/px.api"
+                    route:
+                      cluster: api_service
+                      timeout: 3600s
+                  - match:
                       prefix: "/healthz"
                     route:
                       cluster: api_service

@@ -80,6 +80,8 @@ func main() {
 		DisableAuth: map[string]bool{
 			"/pl.services.VZConnService/NATSBridge":               true,
 			"/pl.services.VZConnService/RegisterVizierDeployment": true,
+			"/px.services.VZConnService/NATSBridge":               true,
+			"/px.services.VZConnService/RegisterVizierDeployment": true,
 		},
 	}
 

@@ -16,6 +16,7 @@ bpf_patterns=('^src\/stirling\/')
 # Set the default values for the flags.
 all_targets=false
 run_bpf_targets=false
+
 target_pattern="//..."
 commit_range=${commit_range:-$(git merge-base origin/main HEAD)".."}
 

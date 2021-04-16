@@ -79,6 +79,10 @@ func (s *PLServer) serveHTTP2() {
 	// If it's a GRPC request we use the GRPC handler, otherwise forward to the regular HTTP(/2) handler.
 	muxHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if isGRPCRequest(r) {
+			// TODO(vihang, PP-2613): Remove this path renaming once migration is done.
+			if strings.HasPrefix(r.URL.Path, "/pl.") {
+				r.URL.Path = fmt.Sprintf("/px.%s", r.URL.Path[4:])
+			}
 			s.grpcServer.ServeHTTP(w, r)
 			return
 		}

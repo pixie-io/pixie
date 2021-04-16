@@ -6,7 +6,7 @@ metadata:
 data:
 # yamllint disable
 # The embedded YAML file is messing up yaml-lint.
-# This is almost an exact copy of base/proxy_envoy.yaml, except with a different CORS suffix. This 
+# This is almost an exact copy of base/proxy_envoy.yaml, except with a different CORS suffix. This
 # is because kustomize can't do patches within the embedded YAML.
   envoy.yaml: >
     static_resources:
@@ -32,6 +32,11 @@ data:
                   routes:
                   - match:
                       prefix: "/pl.api"
+                    route:
+                      cluster: api_service
+                      timeout: 3600s
+                  - match:
+                      prefix: "/px.api"
                     route:
                       cluster: api_service
                       timeout: 3600s

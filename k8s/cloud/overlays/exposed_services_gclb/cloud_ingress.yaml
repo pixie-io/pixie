@@ -47,6 +47,42 @@ spec:
         backend:
           serviceName: cloud-proxy-service
           servicePort: 5555
+      - path: /px.services.VZConnService/*
+        backend:
+          serviceName: vzconn-service
+          servicePort: 51600
+      - path: /px.cloudapi.VizierImageAuthorization/*
+        backend:
+          serviceName: cloud-proxy-service
+          servicePort: 5555
+      - path: /px.cloudapi.ArtifactTracker/*
+        backend:
+          serviceName: cloud-proxy-service
+          servicePort: 5555
+      - path: /px.cloudapi.VizierClusterInfo/*
+        backend:
+          serviceName: cloud-proxy-service
+          servicePort: 5555
+      - path: /px.cloudapi.ProfileService/*
+        backend:
+          serviceName: cloud-proxy-service
+          servicePort: 5555
+      - path: /px.api.vizierpb.VizierService/*
+        backend:
+          serviceName: cloud-proxy-service
+          servicePort: 4444
+      - path: /px.cloudapi.VizierDeploymentKeyManager/*
+        backend:
+          serviceName: cloud-proxy-service
+          servicePort: 5555
+      - path: /px.cloudapi.APIKeyManager/*
+        backend:
+          serviceName: cloud-proxy-service
+          servicePort: 5555
+      - path: /px.public.cloudapi.ClusterManager/*
+        backend:
+          serviceName: cloud-proxy-service
+          servicePort: 5555
       - path: /*
         backend:
           serviceName: cloud-proxy-service
