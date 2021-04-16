@@ -1,0 +1,33 @@
+# This is the list of Pixie authors.
+
+# Names should be added to this file as one of
+#     Organization's name
+#     Individual's name <submission email address>
+#     Individual's name <submission email address> [alias] <email2> [alias] <emailN>
+#
+# If you wish to keep your @pixielabs.ai (or @newrelic.com) address hidden,
+# please still list <@pixielabs.ai> (or @newrelic) (with no user name)
+# in the list of aliases.
+#
+# (Note: there is no point in hiding it if it is mentioned
+# in the git log already.)
+#
+# For more details about the format, see git-check-mailmap(1)
+#
+# Please keep the list sorted.
+
+Hannah Troisi <htroisi@pixielabs.ai> <htroisi@newrelic.com>
+Ishan Mukherjee <ishan@pixielabs.ai> <imukherjee@pixielabs.ai> <imukherjee@newrelic.com>
+James Bartlett <james@pixielabs.ai> <jamesbartlett@pixielabs.ai> <jamesbartlett@newrelic.com>
+James Thomas <jthomas@pixielabs.ai> <jthomas@newrelic.com>
+John Peter Stevenson <jps@pixielabs.ai> <jstevenson@pixielabs.ai> <jstevenson@newrelic.com>
+Michelle Nguyen <michelle@pixielabs.ai> <michellenguyen@pixielabs.ai> <michellenguyen@newrelic.com>
+Natalie Serrino <nserrino@pixielabs.ai> <nserrino@newrelic.com>
+Nick Lanam <nick@pixielabs.ai> <nlanam@pixielabs.ai> <nlanam@newrelic.com>
+Omid Azizi <oazizi@pixielabs.ai> <oazizi@newrelic.com>
+Phillip Kuznetsov <philkuz@pixielabs.ai> <pkuznetsov@pixielabs.ai> <pkuznetsov@newrelic.com>
+Ryan Cheng <rcheng@pixielabs.ai> <rcheng@newrelic.com> <chengruizhe@pixielabs.ai>
+Vihang Mehta <vihang@pixielabs.ai> <vmehta@pixielabs.ai> <vmehta@newrelic.com>
+Vishal Jain <vjain@pixielabs.ai> <vjain@newrelic>
+Yaxiong Zhao <yzhao@pixielabs.ai> <yzhao@newrelic.com>
+Zain Asgar <zasgar@pixielabs.ai> <zasgar@newrelic.com>
