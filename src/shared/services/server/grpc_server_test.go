@@ -205,7 +205,7 @@ func TestGrpcServerUnary(t *testing.T) {
 			clientStream: false,
 			serverOpts: &server.GRPCServerOptions{
 				DisableAuth: map[string]bool{
-					"/pl.common.PingService/Ping": true,
+					"/px.common.PingService/Ping": true,
 				},
 			},
 		},

@@ -216,7 +216,7 @@ const failedPlannerResult = `
 status{
 	err_code: INVALID_ARGUMENT
 	context {
-		[type.googleapis.com/pl.carnot.planner.compilerpb.CompilerErrorGroup] {
+		[type.googleapis.com/px.carnot.planner.compilerpb.CompilerErrorGroup] {
 			errors {
 				line_col_error {
 					line: 1

@@ -78,7 +78,7 @@ TEST_F(DwarfReaderTest, GetMatchingDIEs) {
   // Although the DIE does not have name attribute, DWARFDie::getShortName() walks
   // DW_AT_specification attribute to find the name.
   EXPECT_EQ(GetShortName(dies[0]), "Bar");
-  EXPECT_THAT(std::string(GetLinkageName(dies[0])), ::testing::StrEq("_ZNK2pl7testing3Foo3BarEi"));
+  EXPECT_THAT(std::string(GetLinkageName(dies[0])), ::testing::StrEq("_ZNK2px7testing3Foo3BarEi"));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("px::testing::Foo::Bar", "this"), 8);
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("px::testing::Foo::Bar", "i"), 4);
