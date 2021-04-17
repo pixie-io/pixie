@@ -131,6 +131,8 @@ class StirlingImpl final : public Stirling {
 
   ~StirlingImpl() override;
 
+  void RegisterUserDebugSignalHandlers() override;
+
   // TODO(oazizi/yzhao): Consider lift this as an interface method into Stirling, making it
   // symmetric with Stop().
   Status Init();
@@ -154,6 +156,10 @@ class StirlingImpl final : public Stirling {
   bool IsRunning() const override;
   void Stop() override;
   void WaitForThreadJoin() override;
+
+  void ToggleDebug();
+  void EnablePIDTrace(int pid);
+  void DisablePIDTrace(int pid);
 
  private:
   // Create data source connectors from the registered sources.
@@ -220,6 +226,8 @@ class StirlingImpl final : public Stirling {
   absl::base_internal::SpinLock dynamic_trace_status_map_lock_;
   absl::flat_hash_map<sole::uuid, StatusOr<stirlingpb::Publish>> dynamic_trace_status_map_
       ABSL_GUARDED_BY(dynamic_trace_status_map_lock_);
+
+  int debug_level_ = 0;
 };
 
 StirlingImpl::StirlingImpl(std::unique_ptr<SourceRegistry> registry)
@@ -235,6 +243,53 @@ StirlingImpl::StirlingImpl(std::unique_ptr<SourceRegistry> registry)
 }
 
 StirlingImpl::~StirlingImpl() { Stop(); }
+
+StirlingImpl* g_stirling_ptr = nullptr;
+
+// Turn on/off the debug flag for all of Stirling.
+void UserSignalHandler(int /* signum */) {
+  if (g_stirling_ptr == nullptr) {
+    return;
+  }
+
+  g_stirling_ptr->ToggleDebug();
+}
+
+// Set flags in the Socket Tracer to start tracing the specified PID.
+void UserSignalHandler2(int /* signum */, siginfo_t* info, void* /* context */) {
+  if (g_stirling_ptr == nullptr) {
+    return;
+  }
+
+  int pid = info->si_int;
+  if (pid >= 0) {
+    LOG(INFO) << absl::Substitute("Enabling tracing of PID: $0", pid);
+    g_stirling_ptr->EnablePIDTrace(pid);
+  } else {
+    LOG(INFO) << absl::Substitute("Disabling tracing of PID: $0", -1 * pid);
+    g_stirling_ptr->DisablePIDTrace(pid);
+  }
+}
+
+void StirlingImpl::RegisterUserDebugSignalHandlers() {
+  g_stirling_ptr = this;
+
+  // Signal for USR1: Set-up a general debug signal that gets broadcast to all source connectors.
+  // Source connectors can enable logging of debug information as desired.
+  // Trigger this via `kill -USR1`
+  signal(SIGUSR1, UserSignalHandler);
+
+  // Signal for USR2: This is a PID-based signal that currently sets flags in the Socket Tracer,
+  // to enable connection tracing for the particular PID.
+  // This uses sigaction() instead of signal() because it needs to accept an integer.
+  // Note that `kill -USR2` will no longer work for this signal. Instead sigqueue must be used
+  // to send the signal.
+  struct sigaction sigaction_specs = {};
+  sigaction_specs.sa_sigaction = UserSignalHandler2;
+  sigaction_specs.sa_flags = SA_SIGINFO;
+  sigemptyset(&sigaction_specs.sa_mask);
+  sigaction(SIGUSR2, &sigaction_specs, NULL);
+}
 
 Status StirlingImpl::Init() {
   system::LogSystemInfo();
@@ -739,6 +794,30 @@ void StirlingImpl::Stop() {
     // Forge on, because death is imminent!
     LOG_IF(ERROR, !s.ok()) << absl::Substitute("Failed to stop source connector '$0', error: $1",
                                                source->source_name(), s.ToString());
+  }
+}
+
+void StirlingImpl::ToggleDebug() {
+  debug_level_ = (debug_level_ + 1) % 2;
+
+  // Lock not really required, but compiler is making sure we're safe.
+  absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
+  for (auto& s : sources_) {
+    s->SetDebugLevel(debug_level_);
+  }
+}
+
+void StirlingImpl::EnablePIDTrace(int pid) {
+  absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
+  for (auto& s : sources_) {
+    s->EnablePIDTrace(pid);
+  }
+}
+
+void StirlingImpl::DisablePIDTrace(int pid) {
+  absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
+  for (auto& s : sources_) {
+    s->DisablePIDTrace(pid);
   }
 }
 

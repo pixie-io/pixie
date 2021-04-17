@@ -78,11 +78,6 @@ struct SocketDataEvent {
 }  // namespace stirling
 }  // namespace px
 
-inline bool operator==(const struct conn_id_t& lhs, const struct conn_id_t& rhs) {
-  return lhs.upid.tgid == rhs.upid.tgid && lhs.upid.start_time_ticks == rhs.upid.start_time_ticks &&
-         lhs.fd == rhs.fd && lhs.tsid == rhs.tsid;
-}
-
 // This template is in global namespace to allow ABSL library to discover.
 template <typename H>
 H AbslHashValue(H h, const struct conn_id_t& key) {

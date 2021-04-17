@@ -85,6 +85,12 @@ class Stirling : public NotCopyable {
   static std::unique_ptr<Stirling> Create(std::unique_ptr<SourceRegistry> registry);
 
   /**
+   * Registers debug handlers on USR1/USR2.
+   * Will clobber any existing handlers, so make sure no other handlers on these signals exist.
+   */
+  virtual void RegisterUserDebugSignalHandlers() = 0;
+
+  /**
    * Registers probes defined inside a tracing program.
    */
   virtual void RegisterTracepoint(

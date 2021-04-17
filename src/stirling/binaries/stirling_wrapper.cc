@@ -307,6 +307,9 @@ int main(int argc, char** argv) {
   std::unique_ptr<Stirling> stirling = Stirling::Create(std::move(registry));
   g_stirling = stirling.get();
 
+  // Enable use of USR1/USR2 for controlling debug.
+  stirling->RegisterUserDebugSignalHandlers();
+
   // Get a publish proto message to subscribe from.
   Publish publication;
   stirling->GetPublishProto(&publication);

@@ -131,6 +131,10 @@ class SourceConnector : public NotCopyable {
   const SamplePushFrequencyManager& sample_push_mgr() const { return sample_push_freq_mgr_; }
   SamplePushFrequencyManager* mutable_sample_push_mgr() { return &sample_push_freq_mgr_; }
 
+  virtual void SetDebugLevel(int level) { debug_level_ = level; }
+  virtual void EnablePIDTrace(int pid) { pids_to_trace_.insert(pid); }
+  virtual void DisablePIDTrace(int pid) { pids_to_trace_.erase(pid); }
+
  protected:
   explicit SourceConnector(std::string_view source_name,
                            const ArrayView<DataTableSchema>& table_schemas)
@@ -145,7 +149,7 @@ class SourceConnector : public NotCopyable {
   virtual void TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
                                 DataTable* data_table) = 0;
   virtual void TransferDataImpl(ConnectorContext*, const std::vector<DataTable*>&) {
-    // TODO(yzhao): Change to pure virutal function after all subclasses are updated.
+    // TODO(yzhao): Change to pure virtual function after all subclasses are updated.
     LOG(DFATAL) << "TransferStreams() Unimplemented";
   }
 
@@ -166,6 +170,10 @@ class SourceConnector : public NotCopyable {
   const system::Config& sysconfig_ = system::Config::GetInstance();
 
   SamplePushFrequencyManager sample_push_freq_mgr_;
+
+  // Debug members.
+  int debug_level_ = 0;
+  absl::flat_hash_set<int> pids_to_trace_;
 
  private:
   std::atomic<State> state_ = State::kUninitialized;

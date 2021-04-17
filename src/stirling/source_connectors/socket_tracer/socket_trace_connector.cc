@@ -256,6 +256,22 @@ std::thread SocketTraceConnector::RunDeployUProbesThread(
   return {};
 }
 
+namespace {
+
+void DumpContext(ConnectorContext* ctx) {
+  auto& upids = ctx->GetUPIDs();
+
+  std::string upids_str;
+  for (const auto& upid : upids) {
+    upids_str += "\n  ";
+    upids_str += upid.String();
+  }
+
+  LOG(INFO) << absl::Substitute("List of UPIDs ($0): $1", upids.size(), upids_str);
+}
+
+}  // namespace
+
 void SocketTraceConnector::UpdateCommonState(ConnectorContext* ctx) {
   // Since events may be pushed into the perf buffer while reading it,
   // we establish a cutoff time before draining the perf buffer.
@@ -283,6 +299,11 @@ void SocketTraceConnector::UpdateCommonState(ConnectorContext* ctx) {
   // Can call this less frequently if it becomes a performance issue.
   // Trade-off is just how quickly we release memory and BPF map entries.
   conn_trackers_mgr_.CleanupTrackers();
+
+  // Periodically dump context. Dumps once a minute if connector sampling period is 100 ms.
+  if (debug_level_ > 0 && sample_push_freq_mgr_.sampling_count() % 600 == 0) {
+    DumpContext(ctx);
+  }
 }
 
 void SocketTraceConnector::CachedUpdateCommonState(ConnectorContext* ctx, uint32_t table_num) {
@@ -839,6 +860,15 @@ void SocketTraceConnector::WriteDataEvent(const SocketDataEvent& event) {
 // TransferData Helpers
 //-----------------------------------------------------------------------------
 
+void SocketTraceConnector::UpdateTrackerTraceLevel(ConnTracker* tracker) {
+  if (pids_to_trace_.contains(tracker->conn_id().upid.pid)) {
+    tracker->SetDebugTrace(2);
+  }
+  if (pids_to_trace_disable_.contains(tracker->conn_id().upid.pid)) {
+    tracker->SetDebugTrace(0);
+  }
+}
+
 void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table_num,
                                            DataTable* data_table) {
   std::vector<CIDRBlock> cluster_cidrs = ctx->GetClusterCIDRs();
@@ -867,6 +897,8 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
                                   magic_enum::enum_name(tracker->traffic_class().protocol),
                                   magic_enum::enum_name(tracker->state()));
 
+      UpdateTrackerTraceLevel(tracker);
+
       tracker->IterationPreTick(cluster_cidrs, proc_parser_.get(), socket_info_mgr_.get());
 
       if (transfer_spec.transfer_fn && transfer_spec.enabled) {
@@ -876,6 +908,9 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
       tracker->IterationPostTick();
     }
   }
+
+  // Once we've cleared all the debug trace levels for this pid, we can remove it from the list.
+  pids_to_trace_disable_.clear();
 }
 
 template <typename TProtocolTraits>

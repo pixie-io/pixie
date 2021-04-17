@@ -42,6 +42,7 @@
 constexpr int64_t kUnsetPIDFD = -1;
 DEFINE_int64(stirling_conn_trace_pid, kUnsetPIDFD, "Trace activity on this pid.");
 DEFINE_int64(stirling_conn_trace_fd, kUnsetPIDFD, "Trace activity on this fd.");
+
 DEFINE_bool(
     stirling_conn_disable_to_bpf, true,
     "Send information about connection tracking disablement to BPF, so it can stop sending data.");
@@ -389,6 +390,19 @@ bool ConnTracker::AllEventsReceived() const {
          stats_.Get(Stats::Key::kBytesRecv) == close_info_.recv_bytes;
 }
 
+namespace {
+
+bool ShouldTraceConn(const struct conn_id_t& conn_id) {
+  bool pid_match =
+      FLAGS_stirling_conn_trace_pid == conn_id.upid.pid ||
+      static_cast<uint32_t>(FLAGS_test_only_socket_trace_target_pid) == conn_id.upid.pid;
+  bool fd_match =
+      FLAGS_stirling_conn_trace_fd == kUnsetPIDFD || FLAGS_stirling_conn_trace_fd == conn_id.fd;
+  return pid_match && fd_match;
+}
+
+}  // namespace
+
 void ConnTracker::SetConnID(struct conn_id_t conn_id) {
   DCHECK(conn_id_.upid.pid == 0 || conn_id_.upid.pid == conn_id.upid.pid) << absl::Substitute(
       "Mismatched conn info: tracker=$0 event=$1", ToString(conn_id_), ToString(conn_id));
@@ -401,14 +415,14 @@ void ConnTracker::SetConnID(struct conn_id_t conn_id) {
       << absl::Substitute("Mismatched conn info: tracker=$0 event=$1", ToString(conn_id_),
                           ToString(conn_id));
 
-  conn_id_ = conn_id;
+  if (conn_id_ != conn_id) {
+    conn_id_ = conn_id;
 
-  if (conn_id_.upid.pid == FLAGS_stirling_conn_trace_pid ||
-      conn_id_.upid.pid == static_cast<uint32_t>(FLAGS_test_only_socket_trace_target_pid)) {
-    if (FLAGS_stirling_conn_trace_fd == kUnsetPIDFD ||
-        conn_id_.fd == FLAGS_stirling_conn_trace_fd) {
+    if (ShouldTraceConn(conn_id_)) {
       SetDebugTrace(2);
     }
+
+    CONN_TRACE(1) << "New connection tracker";
   }
 }
 

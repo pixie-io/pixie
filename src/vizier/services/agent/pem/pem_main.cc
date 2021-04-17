@@ -31,7 +31,6 @@ DEFINE_string(pod_name, gflags::StringFromEnv("PL_POD_NAME", ""),
 DEFINE_string(host_ip, gflags::StringFromEnv("PL_HOST_IP", ""),
               "The IP of the host this service is running on");
 
-using ::px::stirling::Stirling;
 using ::px::vizier::agent::Manager;
 using ::px::vizier::agent::PEMManager;
 

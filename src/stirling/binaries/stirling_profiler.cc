@@ -131,6 +131,9 @@ int main(int argc, char** argv) {
   g_stirling = stirling.get();
   stirling->RegisterDataPushCallback(StirlingWrapperCallback);
 
+  // Enable use of USR1/USR2 for controlling debug.
+  stirling->RegisterUserDebugSignalHandlers();
+
   // Get a publish proto message and subscribe to sources.
   Publish publication;
   stirling->GetPublishProto(&publication);

@@ -115,6 +115,11 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   Status TestOnlySetTargetPID(int64_t pid);
   Status DisableSelfTracing();
 
+  void DisablePIDTrace(int pid) override {
+    pids_to_trace_disable_.insert(pid);
+    SourceConnector::DisablePIDTrace(pid);
+  }
+
   /**
    * Gets a pointer to the most recent ConnTracker for the given pid and fd.
    *
@@ -223,14 +228,13 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   template <typename TProtocolTraits>
   void TransferStream(ConnectorContext* ctx, ConnTracker* tracker, DataTable* data_table);
 
+  void UpdateTrackerTraceLevel(ConnTracker* tracker);
+
   template <typename TRecordType>
   static void AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
                             TRecordType record, DataTable* data_table);
 
   std::thread RunDeployUProbesThread(const absl::flat_hash_set<md::UPID>& pids);
-
-  // Returns vector representing currently known cluster (pod and service) CIDRs.
-  std::vector<CIDRBlock> ClusterCIDRs(ConnectorContext* ctx);
 
   // Setups output file stream object writing to the input file path.
   void SetupOutput(const std::filesystem::path& file);
@@ -240,6 +244,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   ConnTrackersManager conn_trackers_mgr_;
 
   ConnStats connection_stats_;
+
+  absl::flat_hash_set<int> pids_to_trace_disable_;
 
   struct TransferSpec {
     // TODO(yzhao): Enabling protocol is essentially equivalent to subscribing to DataTable. They

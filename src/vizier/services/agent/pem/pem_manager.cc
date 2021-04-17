@@ -32,6 +32,9 @@ Status PEMManager::PostRegisterHookImpl() {
                                                 std::placeholders::_1, std::placeholders::_2,
                                                 std::placeholders::_3));
 
+  // Enable use of USR1/USR2 for controlling Stirling debug.
+  stirling_->RegisterUserDebugSignalHandlers();
+
   // Register the metadata callback for Stirling.
   stirling_->RegisterAgentMetadataCallback(
       std::bind(&px::md::AgentMetadataStateManager::CurrentAgentMetadataState, mds_manager()));

@@ -110,6 +110,12 @@ inline std::string ToString(const conn_id_t& conn_id) {
   return absl::Substitute("[pid=$0 start_time_ticks=$1 fd=$2 gen=$3]", conn_id.upid.pid,
                           conn_id.upid.start_time_ticks, conn_id.fd, conn_id.tsid);
 }
+
+inline bool operator==(const struct conn_id_t& a, const struct conn_id_t& b) {
+  return a.upid == b.upid && a.fd == b.fd && a.tsid == b.tsid;
+}
+
+inline bool operator!=(struct conn_id_t& a, struct conn_id_t& b) { return !(a == b); }
 #endif
 
 // Specifies the corresponding indexes of the entries of a per-cpu array.
