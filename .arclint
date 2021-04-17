@@ -149,6 +149,11 @@
         "(\\.json$)"
       ]
     },
+    "license": {
+      "type": "script-and-regex",
+      "script-and-regex.script": "./tools/licenses/checker.py -f",
+      "script-and-regex.regex": "/^(?P<file>[^\n]+):((?P<line>\\d),(?P<char>\\d)\n<<<<<\n(?P<original>.*)=====\n(?P<replacement>.*)>>>>>\n)$/s"
+    },
     "merge-conflict": {
       "type": "merge-conflict"
     },
