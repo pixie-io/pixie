@@ -2,4 +2,4 @@
 #Checks: "readability-redundant-*,readability-braces-around-statements,google-*,cppcoreguidelines-*"
 #Checks: "-clang-analyzer-cplusplus.NewDelete"
 #Checks: "-clang-analyzer-cplusplus.NewDeleteLeaks"
-Checks: "clang-diagnostic-*,abseil-*,bugprone-*,modernize-*,performance-*,-modernize-use-trailing-return-type"
+Checks: "clang-diagnostic-*,abseil-*,bugprone-*,modernize-*,performance-*,-modernize-use-trailing-return-type,-modernize-use-nodiscard,-modernize-concat-nested-namespaces"
