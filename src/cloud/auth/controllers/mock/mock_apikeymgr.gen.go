@@ -6,37 +6,36 @@ package mock_controllers
 
 import (
 	context "context"
-	reflect "reflect"
-
 	uuid "github.com/gofrs/uuid"
 	gomock "github.com/golang/mock/gomock"
 	controllers "px.dev/pixie/src/cloud/auth/controllers"
+	reflect "reflect"
 )
 
-// MockAPIKeyMgr is a mock of APIKeyMgr interface.
+// MockAPIKeyMgr is a mock of APIKeyMgr interface
 type MockAPIKeyMgr struct {
 	ctrl     *gomock.Controller
 	recorder *MockAPIKeyMgrMockRecorder
 }
 
-// MockAPIKeyMgrMockRecorder is the mock recorder for MockAPIKeyMgr.
+// MockAPIKeyMgrMockRecorder is the mock recorder for MockAPIKeyMgr
 type MockAPIKeyMgrMockRecorder struct {
 	mock *MockAPIKeyMgr
 }
 
-// NewMockAPIKeyMgr creates a new mock instance.
+// NewMockAPIKeyMgr creates a new mock instance
 func NewMockAPIKeyMgr(ctrl *gomock.Controller) *MockAPIKeyMgr {
 	mock := &MockAPIKeyMgr{ctrl: ctrl}
 	mock.recorder = &MockAPIKeyMgrMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use.
+// EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockAPIKeyMgr) EXPECT() *MockAPIKeyMgrMockRecorder {
 	return m.recorder
 }
 
-// FetchOrgUserIDUsingAPIKey mocks base method.
+// FetchOrgUserIDUsingAPIKey mocks base method
 func (m *MockAPIKeyMgr) FetchOrgUserIDUsingAPIKey(ctx context.Context, key string) (uuid.UUID, uuid.UUID, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FetchOrgUserIDUsingAPIKey", ctx, key)
@@ -46,36 +45,36 @@ func (m *MockAPIKeyMgr) FetchOrgUserIDUsingAPIKey(ctx context.Context, key strin
 	return ret0, ret1, ret2
 }
 
-// FetchOrgUserIDUsingAPIKey indicates an expected call of FetchOrgUserIDUsingAPIKey.
+// FetchOrgUserIDUsingAPIKey indicates an expected call of FetchOrgUserIDUsingAPIKey
 func (mr *MockAPIKeyMgrMockRecorder) FetchOrgUserIDUsingAPIKey(ctx, key interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchOrgUserIDUsingAPIKey", reflect.TypeOf((*MockAPIKeyMgr)(nil).FetchOrgUserIDUsingAPIKey), ctx, key)
 }
 
-// MockAuthProvider is a mock of AuthProvider interface.
+// MockAuthProvider is a mock of AuthProvider interface
 type MockAuthProvider struct {
 	ctrl     *gomock.Controller
 	recorder *MockAuthProviderMockRecorder
 }
 
-// MockAuthProviderMockRecorder is the mock recorder for MockAuthProvider.
+// MockAuthProviderMockRecorder is the mock recorder for MockAuthProvider
 type MockAuthProviderMockRecorder struct {
 	mock *MockAuthProvider
 }
 
-// NewMockAuthProvider creates a new mock instance.
+// NewMockAuthProvider creates a new mock instance
 func NewMockAuthProvider(ctrl *gomock.Controller) *MockAuthProvider {
 	mock := &MockAuthProvider{ctrl: ctrl}
 	mock.recorder = &MockAuthProviderMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use.
+// EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockAuthProvider) EXPECT() *MockAuthProviderMockRecorder {
 	return m.recorder
 }
 
-// GetUserIDFromToken mocks base method.
+// GetUserIDFromToken mocks base method
 func (m *MockAuthProvider) GetUserIDFromToken(token string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUserIDFromToken", token)
@@ -84,13 +83,13 @@ func (m *MockAuthProvider) GetUserIDFromToken(token string) (string, error) {
 	return ret0, ret1
 }
 
-// GetUserIDFromToken indicates an expected call of GetUserIDFromToken.
+// GetUserIDFromToken indicates an expected call of GetUserIDFromToken
 func (mr *MockAuthProviderMockRecorder) GetUserIDFromToken(token interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserIDFromToken", reflect.TypeOf((*MockAuthProvider)(nil).GetUserIDFromToken), token)
 }
 
-// GetUserInfo mocks base method.
+// GetUserInfo mocks base method
 func (m *MockAuthProvider) GetUserInfo(userID string) (*controllers.UserInfo, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUserInfo", userID)
@@ -99,13 +98,13 @@ func (m *MockAuthProvider) GetUserInfo(userID string) (*controllers.UserInfo, er
 	return ret0, ret1
 }
 
-// GetUserInfo indicates an expected call of GetUserInfo.
+// GetUserInfo indicates an expected call of GetUserInfo
 func (mr *MockAuthProviderMockRecorder) GetUserInfo(userID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserInfo", reflect.TypeOf((*MockAuthProvider)(nil).GetUserInfo), userID)
 }
 
-// SetPLMetadata mocks base method.
+// SetPLMetadata mocks base method
 func (m *MockAuthProvider) SetPLMetadata(userID, plOrgID, plUserID string) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetPLMetadata", userID, plOrgID, plUserID)
@@ -113,7 +112,7 @@ func (m *MockAuthProvider) SetPLMetadata(userID, plOrgID, plUserID string) error
 	return ret0
 }
 
-// SetPLMetadata indicates an expected call of SetPLMetadata.
+// SetPLMetadata indicates an expected call of SetPLMetadata
 func (mr *MockAuthProviderMockRecorder) SetPLMetadata(userID, plOrgID, plUserID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPLMetadata", reflect.TypeOf((*MockAuthProvider)(nil).SetPLMetadata), userID, plOrgID, plUserID)

@@ -40,7 +40,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 	userPb := utils.ProtoFromUUIDStrOrNil(userID)
 
 	// Setup expectations for the mocks.
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return(userID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
@@ -55,8 +55,6 @@ func TestServer_LoginNewUser(t *testing.T) {
 		OrgName: "testOrg",
 	}
 	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfo, nil)
-
-	a.EXPECT().GetClientID().Return("foo").AnyTimes()
 
 	// Add PL UserID to the response of the second call.
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
@@ -124,7 +122,7 @@ func TestServer_LoginNewUser_NoAutoCreate(t *testing.T) {
 	defer ctrl.Finish()
 
 	// Setup expectations for the mocks.
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
@@ -155,7 +153,7 @@ func TestServer_Login_OrgNameSpecified(t *testing.T) {
 	defer ctrl.Finish()
 
 	// Setup expectations for the mocks.
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
@@ -189,7 +187,7 @@ func TestServer_Login_MissingOrgError(t *testing.T) {
 	defer ctrl.Finish()
 
 	// Setup expectations for the mocks.
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
@@ -224,7 +222,7 @@ func TestServer_LoginNewUser_InvalidEmail(t *testing.T) {
 	defer ctrl.Finish()
 
 	// Setup expectations for the mocks.
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
@@ -255,7 +253,7 @@ func TestServer_LoginNewUser_SupportUserNoOrg(t *testing.T) {
 	defer ctrl.Finish()
 
 	// Setup expectations for the mocks.
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
@@ -296,7 +294,7 @@ func TestServer_LoginNewUser_SupportUser(t *testing.T) {
 		ID: orgPb,
 	}
 	// Setup expectations for the mocks.
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
@@ -342,7 +340,7 @@ func TestServer_LoginNewUser_InvalidOrg(t *testing.T) {
 	defer ctrl.Finish()
 
 	// Setup expectations for the mocks.
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
@@ -380,7 +378,7 @@ func TestServer_LoginNewUser_CreateUserFailed(t *testing.T) {
 	orgPb := utils.ProtoFromUUIDStrOrNil(orgID)
 
 	// Setup expectations for the mocks.
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
@@ -427,7 +425,7 @@ func TestServer_Login_BadToken(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("", errors.New("bad token"))
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
@@ -459,7 +457,7 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 	userPb := utils.ProtoFromUUIDStrOrNil(userID)
 
 	// Setup expectations for the mocks.
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo1 := &controllers.UserInfo{
@@ -517,7 +515,7 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 	userPb := utils.ProtoFromUUIDStrOrNil(userID)
 
 	// Setup expectations for the mocks.
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo1 := &controllers.UserInfo{
@@ -594,7 +592,7 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 
 func TestServer_GetAugmentedToken(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockUserInfo := &profilepb.UserInfo{
@@ -641,7 +639,7 @@ func TestServer_GetAugmentedToken(t *testing.T) {
 
 func TestServer_GetAugmentedToken_Service(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	viper.Set("jwt_signing_key", "jwtkey")
@@ -678,7 +676,7 @@ func TestServer_GetAugmentedToken_Service(t *testing.T) {
 
 func TestServer_GetAugmentedToken_NoOrg(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
@@ -713,7 +711,7 @@ func TestServer_GetAugmentedToken_NoOrg(t *testing.T) {
 
 func TestServer_GetAugmentedToken_NoUser(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
@@ -754,7 +752,7 @@ func TestServer_GetAugmentedToken_NoUser(t *testing.T) {
 
 func TestServer_GetAugmentedToken_MismatchedOrg(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
@@ -799,7 +797,7 @@ func TestServer_GetAugmentedToken_MismatchedOrg(t *testing.T) {
 
 func TestServer_GetAugmentedTokenBadSigningKey(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
@@ -828,7 +826,7 @@ func TestServer_GetAugmentedTokenBadSigningKey(t *testing.T) {
 
 func TestServer_GetAugmentedTokenBadToken(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
@@ -857,7 +855,7 @@ func TestServer_GetAugmentedTokenBadToken(t *testing.T) {
 
 func TestServer_GetAugmentedTokenSupportAccount(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockOrgInfo := &profilepb.OrgInfo{
@@ -898,7 +896,7 @@ func TestServer_GetAugmentedTokenSupportAccount(t *testing.T) {
 
 func TestServer_GetAugmentedTokenFromAPIKey(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 	apiKeyServer := mock_controllers.NewMockAPIKeyMgr(ctrl)
 	apiKeyServer.EXPECT().FetchOrgUserIDUsingAPIKey(gomock.Any(), "test_api").Return(uuid.FromStringOrNil(testingutils.TestOrgID), uuid.FromStringOrNil(testingutils.TestUserID), nil)
 
@@ -947,7 +945,7 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
 
 	// Setup expectations for the mocks.
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
@@ -956,10 +954,8 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 		LastName:  "last",
 	}
 
-	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
-
 	// Add PL UserID to the response of the second call.
-	a.EXPECT().GetClientID().Return("foo").AnyTimes()
+	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
 
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
 		Email:     "abc@gmail.com",
@@ -1029,7 +1025,7 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 	userPb := utils.ProtoFromUUIDStrOrNil(userID)
 
 	// Setup expectations for the mocks.
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
@@ -1041,8 +1037,6 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
 
 	// Add PL UserID to the response of the second call.
-	a.EXPECT().GetClientID().Return("foo").AnyTimes()
-
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
 		Email:     "abc@gmail.com",
 		FirstName: "first",
@@ -1110,7 +1104,7 @@ func TestServer_Signup_CreateUserOrgFailed(t *testing.T) {
 	defer ctrl.Finish()
 
 	// Setup expectations for the mocks.
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
@@ -1164,7 +1158,7 @@ func TestServer_Signup_UserAlreadyExists(t *testing.T) {
 	defer ctrl.Finish()
 
 	// Setup expectations for the mocks.
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{

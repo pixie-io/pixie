@@ -2,10 +2,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "mock",
-    srcs = [
-        "auth0_mock.gen.go",
-        "mock_apikeymgr.gen.go",
-    ],
+    srcs = ["mock_apikeymgr.gen.go"],
     importpath = "px.dev/pixie/src/cloud/auth/controllers/mock",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
