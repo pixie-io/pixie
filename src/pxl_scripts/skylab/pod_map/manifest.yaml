@@ -1,5 +1,0 @@
----
-short: Pod Communication Map
-long: >
-  Shows map of internal traffic between k8s pods.
-org_name: pixielabs.ai

@@ -1,7 +1,0 @@
----
-short: Inter-Service Analysis
-long: >
-  Gets service latency, error rate and throughput
-  according to another service. Edit the requestor filter to
-  the name of the incoming service you want to filter by.
-org_name: pixielabs.ai

@@ -1,6 +1,0 @@
----
-short: Metadata Service Heartbeat
-long: >
-  View traces the metadata service heartbeat function, yielding the agents that trigger
-  the RPC and the latency of the function.
-org_name: pixielabs.ai

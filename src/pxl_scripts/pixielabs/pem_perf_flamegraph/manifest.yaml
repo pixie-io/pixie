@@ -1,5 +1,0 @@
----
-short: PEM Flamegraph
-long: >
-  Shows stack traces where PEM is spending its time.
-org_name: pixielabs.ai
