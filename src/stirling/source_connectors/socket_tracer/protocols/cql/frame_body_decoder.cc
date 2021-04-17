@@ -242,12 +242,12 @@ StatusOr<Option> FrameBodyDecoder::ExtractOption() {
   }
   if (col_spec.type == DataType::kList || col_spec.type == DataType::kSet) {
     PL_ASSIGN_OR_RETURN(Option type, ExtractOption());
-    // TODO(oazizi): Throwing the result away. Record if desired.
+    // For now, we're throwing the result away. Could consider recording if desired.
   }
   if (col_spec.type == DataType::kMap) {
     PL_ASSIGN_OR_RETURN(Option key_type, ExtractOption());
     PL_ASSIGN_OR_RETURN(Option val_type, ExtractOption());
-    // TODO(oazizi): Throwing the result away. Record if desired.
+    // For now, we're throwing the result away. Could consider recording if desired.
   }
 
   // TODO(oazizi): Process kUDT and kTuple.

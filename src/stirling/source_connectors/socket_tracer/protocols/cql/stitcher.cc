@@ -93,7 +93,6 @@ Status ProcessQueryReq(Frame* req_frame, Request* req) {
   req->msg = r.query;
 
   // For now, just tag the parameter values to the end.
-  // TODO(oazizi): Make this prettier.
   if (!hex_values.empty()) {
     absl::StrAppend(&req->msg, "\n");
     absl::StrAppend(&req->msg, ToJSONString(hex_values));

@@ -176,7 +176,7 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
   // If parse state is kInvalid, then no amount of waiting is going to help us.
   // Reset the data right away to potentially unblock.
   if (parse_result.state == ParseState::kInvalid) {
-    // TODO(oazizi): Currently, we reset all the data. This is overly aggressive.
+    // Currently, we reset all the data.
     // Alternative is to find the next frame boundary, rather than discarding all data.
 
     // TODO(oazizi): A dedicated data_buffer_.Flush() implementation would be more efficient.

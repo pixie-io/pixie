@@ -46,8 +46,6 @@ void PIDRuntimeConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t
   DCHECK_LT(table_num, kTables.size())
       << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
 
-  // TODO(kgandhi): PL-452 There is an extra copy when calling get_table_offline. We should extract
-  // the key when it is a struct from the BPFHASHTable directly.
   std::vector<std::pair<uint16_t, pidruntime_val_t>> items =
       GetHashTable<uint16_t, pidruntime_val_t>("pid_cpu_time").get_table_offline();
 

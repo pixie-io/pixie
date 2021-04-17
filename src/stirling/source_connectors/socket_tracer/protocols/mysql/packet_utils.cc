@@ -32,7 +32,6 @@ bool IsEOFPacket(const Packet& packet, bool protocol_41) {
   // '\xfe' + warnings[2] + status_flags[2](If CLIENT_PROTOCOL_41).
   size_t expected_size = protocol_41 ? 5 : 1;
 
-  // TODO(oazizi): Remove static_cast once msg is converted to basic_string<uint8_t>.
   uint8_t header = packet.msg[0];
   return ((header == kRespHeaderEOF) && (packet.msg.size() == expected_size));
 }
@@ -46,7 +45,6 @@ bool IsEOFPacket(const Packet& packet) {
  */
 bool IsErrPacket(const Packet& packet) {
   // It's at least 3 bytes, '\xff' + error_code.
-  // TODO(oazizi): Remove static_cast once msg is converted to basic_string<uint8_t>.
   return packet.msg[0] == static_cast<char>(kRespHeaderErr) && (packet.msg.size() > 3);
 }
 
@@ -55,7 +53,6 @@ bool IsErrPacket(const Packet& packet) {
  * https://dev.mysql.com/doc/internals/en/packet-OK_Packet.html
  */
 bool IsOKPacket(const Packet& packet) {
-  // TODO(oazizi): Remove static_cast once msg is converted to basic_string<uint8_t>.
   constexpr uint8_t kOKPacketHeaderOffset = 1;
   uint8_t header = packet.msg[0];
 
@@ -191,7 +188,7 @@ Status ProcessBinaryResultsetRowPacket(const Packet& packet,
       case ColType::kDateTime:
       case ColType::kTimestamp:
       case ColType::kTime:
-        // TODO(chengaruizhe): Implement DissectDateTime correctly.
+        // TODO(chengruizhe): Implement DissectDateTime correctly.
         PL_RETURN_IF_ERROR(DissectDateTimeParam(packet.msg, &offset, &val));
         break;
       default:

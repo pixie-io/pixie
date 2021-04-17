@@ -114,7 +114,6 @@ int probe_ret_SSL_write(struct pt_regs* ctx) {
   uint64_t id = bpf_get_current_pid_tgid();
 
   const struct data_args_t* write_args = active_ssl_write_args_map.lookup(&id);
-  // TODO(oazizi): Signal to user-space on kInvalidFD to help track down issues quicker.
   if (write_args != NULL && write_args->fd != kInvalidFD) {
     process_openssl_data(ctx, id, kEgress, write_args);
   }

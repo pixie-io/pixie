@@ -42,7 +42,6 @@ namespace protocols {
  *
  * The underlying implementation is currently a simple string buffer, but this could be changed
  * in the future, as long as the data is maintained in a contiguous buffer.
- * TODO(oazizi): Investigate buffer that is better suited to the rolling window (slinky) model.
  */
 class DataStreamBuffer {
  public:

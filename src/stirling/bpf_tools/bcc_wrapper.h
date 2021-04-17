@@ -317,8 +317,6 @@ class BCCWrapper {
   Status DetachUProbe(const UProbeSpec& probe);
   Status ClosePerfBuffer(const PerfBufferSpec& perf_buffer);
   Status DetachPerfEvent(const PerfEventSpec& perf_event);
-  // TODO(yzhao): If there is a need to poll individual perf buffers at different occasions, we need
-  // to make this public.
   void PollPerfBuffer(std::string_view perf_buffer_name, int timeout_ms);
 
   // Detaches all kprobes/uprobes/perf buffers/perf events that were attached by the wrapper.

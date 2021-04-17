@@ -86,8 +86,8 @@ static __inline int32_t get_fd_from_io_writer_intf(void* io_writer_intf_ptr) {
   // In this case, it is implemented by tls.Conn, which could fit either io.Writer or net.Conn.
   // Since it is not a net.Conn interface, we need to perform an extra dereference to get
   // to a net.Conn interface that we can examine for the FD.
-  // TODO(oazizi): It may be possible that is implemented by some other Conn type,
-  //               but this code only works for tls.Conn.
+  // It may be possible that is implemented by some other Conn type,
+  // but this code only works for tls.Conn.
   // Still have to figure out how golang figures this out dynamically, given that
   // we're not seeing the expected interface type.
 

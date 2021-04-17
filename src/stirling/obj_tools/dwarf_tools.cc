@@ -93,7 +93,7 @@ std::string Dump(const llvm::DWARFDie& die) {
   return buf;
 }
 
-// TODO(oazizi): This will break on 32-bit binaries.
+// This will break on 32-bit binaries.
 // Use ELF to get the correct value.
 // https://superuser.com/questions/791506/how-to-determine-if-a-linux-binary-file-is-32-bit-or-64-bit
 uint8_t kAddressSize = sizeof(void*);

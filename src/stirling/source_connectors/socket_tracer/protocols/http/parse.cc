@@ -130,8 +130,6 @@ ParseState ParseBody(std::string_view* buf, Message* result) {
   const auto transfer_encoding_iter = result->headers.find(kTransferEncoding);
   if (transfer_encoding_iter != result->headers.end() &&
       transfer_encoding_iter->second == "chunked") {
-    // TODO(yzhao): Change to set default value in appending record batch instead of data for
-    // parsing.
     return ParseChunk(buf, result);
   }
 
@@ -144,7 +142,6 @@ ParseState ParseBody(std::string_view* buf, Message* result) {
   // not contain a payload body and the method semantics do not anticipate such a body."
   //
   // We apply this to all methods, since we have no better strategy in other cases.
-  // TODO(oazizi): Revisit this strategy if we see problems.
   if (result->type == MessageType::kRequest) {
     result->body = "";
     return ParseState::kSuccess;
@@ -155,7 +152,6 @@ ParseState ParseBody(std::string_view* buf, Message* result) {
   // so if no Content-Length or Transfer-Encoding are present,
   // assume they don't have a body.
   // See: https://tools.ietf.org/html/rfc2616#section-4.4
-  // TODO(oazizi): Are there more responses where we can assume no body?
   if ((result->resp_status >= 100 && result->resp_status < 200) || result->resp_status == 204 ||
       result->resp_status == 304) {
     result->body = "";
@@ -172,7 +168,6 @@ ParseState ParseBody(std::string_view* buf, Message* result) {
       // See: https://http2.github.io/http2-spec/#discover-http
       if (upgrade_iter->second == "h2c") {
         LOG(WARNING) << "HTTP upgrades to HTTP2 are not yet supported";
-        // TODO(oazizi/yzhao): Support upgrades to HTTP/2.
       }
 
       return ParseState::kEOS;
@@ -193,15 +188,11 @@ ParseState ParseBody(std::string_view* buf, Message* result) {
     // Only the body that is present at the time is emitted, since we don't
     // know if the data is actually complete or not without a length.
 
-    // TODO(yzhao): This assignment overwrites the default value "-". We should move the setting of
-    // default value outside of HTTP message parsing and into appending HTTP messages to record
-    // batch.
     result->body = *buf;
     buf->remove_prefix(buf->size());
     LOG_FIRST_N(WARNING, 10)
         << "HTTP message with no Content-Length or Transfer-Encoding may produce "
            "incomplete message bodies.";
-    // TODO(yzhao/oazizi): Revisit the implementation of this case.
     return ParseState::kSuccess;
   }
 

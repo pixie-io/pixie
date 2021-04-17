@@ -315,7 +315,7 @@ TEST_F(ConnTrackerTest, TrackerHTTP101Disable) {
   // Since we previously received connection Upgrade, this tracker should be disabled.
   // All future calls to ProcessToRecords() should produce no results.
 
-  // TODO(oazizi): This is a bad test beyond this point,
+  // This is a bad test beyond this point,
   // because a disabled tracker would never call ProcessToRecords again in Stirling.
   // Currently, this causes a warning to fire that states ProcessToRecords should not be
   // run on a stream at EOS.

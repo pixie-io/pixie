@@ -598,9 +598,6 @@ int conn_cleanup_uprobe(struct pt_regs* ctx) {
 //    Since no useful information is traced, just skip it. Will be treated as a case where we
 //    missed the accept.
 
-// TODO(oazizi): For consistency, may want to pull reading the return value out
-//               to the outer layer, just like the args.
-
 static __inline void process_syscall_open(struct pt_regs* ctx, uint64_t id) {
   int fd = PT_REGS_RC(ctx);
 

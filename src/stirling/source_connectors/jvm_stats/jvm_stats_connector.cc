@@ -51,8 +51,6 @@ void JVMStatsConnector::FindJavaUPIDs(const ConnectorContext& ctx) {
     // The host PID 1 is not a Java app. However, when later invoking HsperfdataPath(), it could be
     // confused to conclude that there is a hsperfdata file for PID 1, because of the limitations
     // of ResolveMountPoint().
-    //
-    // TODO(yzhao): Look for more robust mechanism.
     if (upid.pid() == 1) {
       continue;
     }

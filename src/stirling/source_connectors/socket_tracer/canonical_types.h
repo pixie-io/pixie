@@ -30,7 +30,6 @@ namespace canonical_data_elements {
 
 // clang-format off
 
-// TODO(PL-519): Use uint128 to represent IP addresses.
 constexpr DataElement kRemoteAddr = {
     "remote_addr",
     "IP address of the remote endpoint.",

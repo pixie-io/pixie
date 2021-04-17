@@ -16,8 +16,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# TODO(oazizi): Consider moving this to somewhere under common.
-
 # If not root, this command runs the provided command through sudo.
 # Meant to be used interactively when not root, since sudo will prompt for password.
 run_prompt_sudo() {

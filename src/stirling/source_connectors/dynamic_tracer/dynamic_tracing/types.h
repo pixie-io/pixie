@@ -63,7 +63,6 @@ struct BCCProgram {
     }
   };
 
-  // TODO(yzhao): We probably need kprobe_specs as well.
   std::vector<bpf_tools::UProbeSpec> uprobe_specs;
   std::vector<PerfBufferSpec> perf_buffer_specs;
   std::string code;
