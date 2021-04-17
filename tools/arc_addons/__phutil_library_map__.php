@@ -9,7 +9,6 @@
 phutil_register_library_map(array(
   '__library_version__' => 2,
   'class' => array(
-    'ArcaistTypescriptLinter' => 'ts/lint/ArcaistTypescriptLinter.php',
     'ArcanistBaseGenCheckerTestEngine' => 'pixielabs/unit/ArcanistBaseGenCheckerTestEngine.php',
     'ArcanistClangFormatLinter' => 'clang_format/lint/ArcanistClangFormatLinter.php',
     'ArcanistESLintLinter' => 'js/lint/ArcanistESLintLinter.php',
@@ -25,7 +24,6 @@ phutil_register_library_map(array(
   ),
   'function' => array(),
   'xmap' => array(
-    'ArcaistTypescriptLinter' => 'ArcanistExternalLinter',
     'ArcanistBaseGenCheckerTestEngine' => 'ArcanistUnitTestEngine',
     'ArcanistClangFormatLinter' => 'ArcanistExternalLinter',
     'ArcanistESLintLinter' => 'ArcanistExternalLinter',
