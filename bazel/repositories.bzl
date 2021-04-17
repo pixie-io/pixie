@@ -39,13 +39,13 @@ def _include_all_repo(name, **kwargs):
 def _com_llvm_lib():
     native.new_local_repository(
         name = "com_llvm_lib",
-        build_file = "third_party/llvm.BUILD",
+        build_file = "bazel/external/llvm.BUILD",
         path = "/opt/clang-11.1",
     )
 
     native.new_local_repository(
         name = "com_llvm_lib_libcpp",
-        build_file = "third_party/llvm.BUILD",
+        build_file = "bazel/external/llvm.BUILD",
         path = "/opt/clang-11.1-libc++",
     )
 
@@ -56,7 +56,7 @@ def _com_github_threadstacks():
     )
 
 def _cc_deps():
-    _bazel_repo("com_google_protobuf", patches = ["//third_party:protobuf.patch", "//third_party:protobuf_text_format.patch"], patch_args = ["-p1"])
+    _bazel_repo("com_google_protobuf", patches = ["//bazel/external:protobuf.patch", "//bazel/external:protobuf_text_format.patch"], patch_args = ["-p1"])
     _bazel_repo("com_google_benchmark")
     _bazel_repo("com_google_googletest")
     _bazel_repo("com_github_gflags_gflags")
@@ -68,22 +68,22 @@ def _cc_deps():
     _bazel_repo("rules_python")
 
     _include_all_repo("com_github_gperftools_gperftools", patch_cmds = ["./autogen.sh"])
-    _include_all_repo("com_github_nats_io_natsc", patches = ["//third_party:natsc.patch"], patch_args = ["-p1"])
-    _include_all_repo("com_github_libuv_libuv", patches = ["//third_party:libuv.patch"], patch_args = ["-p1"])
+    _include_all_repo("com_github_nats_io_natsc", patches = ["//bazel/external:natsc.patch"], patch_args = ["-p1"])
+    _include_all_repo("com_github_libuv_libuv", patches = ["//bazel/external:libuv.patch"], patch_args = ["-p1"])
     _include_all_repo("com_github_libarchive_libarchive")
 
-    _repo_impl("com_google_double_conversion", build_file = "//third_party:double_conversion.BUILD")
-    _repo_impl("com_github_rlyeh_sole", build_file = "//third_party:sole.BUILD")
-    _repo_impl("com_github_tencent_rapidjson", build_file = "//third_party:rapidjson.BUILD")
-    _repo_impl("com_github_ariafallah_csv_parser", build_file = "//third_party:csv_parser.BUILD")
-    _repo_impl("com_github_cameron314_concurrentqueue", build_file = "//third_party:concurrentqueue.BUILD")
-    _repo_impl("com_github_arun11299_cpp_jwt", build_file = "//third_party:cpp_jwt.BUILD")
-    _repo_impl("com_github_cyan4973_xxhash", build_file = "//third_party:xxhash.BUILD")
-    _repo_impl("com_github_nlohmann_json", build_file = "//third_party:nlohmann_json.BUILD")
+    _repo_impl("com_google_double_conversion", build_file = "//bazel/external:double_conversion.BUILD")
+    _repo_impl("com_github_rlyeh_sole", build_file = "//bazel/external:sole.BUILD")
+    _repo_impl("com_github_tencent_rapidjson", build_file = "//bazel/external:rapidjson.BUILD")
+    _repo_impl("com_github_ariafallah_csv_parser", build_file = "//bazel/external:csv_parser.BUILD")
+    _repo_impl("com_github_cameron314_concurrentqueue", build_file = "//bazel/external:concurrentqueue.BUILD")
+    _repo_impl("com_github_arun11299_cpp_jwt", build_file = "//bazel/external:cpp_jwt.BUILD")
+    _repo_impl("com_github_cyan4973_xxhash", build_file = "//bazel/external:xxhash.BUILD")
+    _repo_impl("com_github_nlohmann_json", build_file = "//bazel/external:nlohmann_json.BUILD")
     _repo_impl(
         "com_github_google_sentencepiece",
-        build_file = "//third_party:sentencepiece.BUILD",
-        patches = ["//third_party:sentencepiece.patch"],
+        build_file = "//bazel/external:sentencepiece.BUILD",
+        patches = ["//bazel/external:sentencepiece.patch"],
         patch_args = ["-p1"],
     )
 
@@ -126,10 +126,10 @@ def pl_deps():
 
     _repo_impl("io_bazel_rules_docker")
     _repo_impl("bazel_gazelle")
-    _repo_impl("com_github_grpc_grpc", patches = ["//third_party:grpc.patch"], patch_args = ["-p1"])
-    _repo_impl("com_intel_tbb", build_file = "@px//third_party:tbb.BUILD")
-    _repo_impl("com_google_farmhash", build_file = "@px//third_party:farmhash.BUILD")
-    _repo_impl("com_github_h2o_picohttpparser", build_file = "@px//third_party:picohttpparser.BUILD")
+    _repo_impl("com_github_grpc_grpc", patches = ["//bazel/external:grpc.patch"], patch_args = ["-p1"])
+    _repo_impl("com_intel_tbb", build_file = "//bazel/external:tbb.BUILD")
+    _repo_impl("com_google_farmhash", build_file = "//bazel/external:farmhash.BUILD")
+    _repo_impl("com_github_h2o_picohttpparser", build_file = "//bazel/external:picohttpparser.BUILD")
 
     _cc_deps()
     _go_deps()

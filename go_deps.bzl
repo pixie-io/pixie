@@ -2847,7 +2847,7 @@ def pl_go_dependencies():
         importpath = "github.com/sercand/kuberesolver/v3",
         patch_args = ["-p1"],
         patches = [
-            "//third_party:kuberesolver.patch",
+            "//bazel/external:kuberesolver.patch",
         ],
         sum = "h1:3PY7ntZyEzUhMri5sc9uX83mZ0QnlNAqlXS7l0anRiA=",
         version = "v3.0.0",
