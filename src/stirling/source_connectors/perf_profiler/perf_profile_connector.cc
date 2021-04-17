@@ -125,6 +125,9 @@ void PerfProfileConnector::CleanupSymbolCaches(const absl::flat_hash_set<md::UPI
     upid.pid = md_upid.pid();
     upid.start_time_ticks = md_upid.start_ts();
     upid_symbol_caches_.erase(upid);
+
+    stack_traces_a_->free_symcache(md_upid.pid());
+    stack_traces_b_->free_symcache(md_upid.pid());
   }
 }
 
