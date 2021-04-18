@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash -ex
 # This script finds all the Bazel targets based on which files are changed and flags passed in.
 
 # Go to the root of the repo
