@@ -129,6 +129,7 @@ matchers = [
         'exprs': [
             re.compile(r"^.*\.(cc|cpp|h|hpp|c)$"),
             re.compile(r"^.*\.(js|jsx|ts|tsx)$"),
+            re.compile(r"^.*\.(proto)$"),
         ],
         'wrapper': c_style_license_wrapper,
     },
@@ -160,6 +161,8 @@ matchers = [
     {
         'name': 'shell_with_shebang',
         'exprs': [
+            # PHP.
+            re.compile(r"^.*\.(php)$"),
             # Python.
             re.compile(r"^.*\.(py)$"),
             # Shell.
@@ -174,7 +177,7 @@ matchers = [
 
 
 def is_generated_code(file_path: str):
-    return file_path.endswith('.gen.go')
+    return file_path.endswith('.gen.go') or file_path.endswith('.pb.go')
 
 
 def is_skipped(file_path: str):
