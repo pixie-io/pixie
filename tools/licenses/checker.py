@@ -155,6 +155,8 @@ matchers = [
             re.compile(r"^Dockerfile\..*$"),
             # Makefiles.
             re.compile(r"^Makefile$"),
+            # PxL.
+            re.compile(r"^.*\.(pxl)$"),
         ],
         'wrapper': sh_style_license_wrapper,
     },
