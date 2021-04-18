@@ -292,6 +292,7 @@ def WithSourceCodeK8s(String suffix="${UUID.randomUUID()}", Closure body) {
       timeout(time: 60, unit: 'MINUTES') {
         container('gcloud') {
           unstashFromGCS(SRC_STASH_NAME)
+          sh 'cp ci/bes-k8s.bazelrc bes.bazelrc'
         }
         body()
       }
@@ -303,7 +304,6 @@ def WithSourceCodeAndTargetsK8s(String suffix="${UUID.randomUUID()}", Closure bo
   WithSourceCodeK8s(suffix) {
     container('gcloud') {
       unstashFromGCS(TARGETS_STASH_NAME)
-      sh 'cp ci/bes-k8s.bazelrc bes.bazelrc'
     }
     body()
   }
