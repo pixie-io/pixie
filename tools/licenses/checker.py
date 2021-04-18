@@ -115,7 +115,9 @@ def sh_style_license_wrapper(txt: str):
 
 
 def has_spdx(blob: str):
-    return re.match(r"^(//\s|\s*\s|#\s)SPDX-License-Identifier.*", blob) is not None
+    return ('\n# SPDX-License-Identifier:' in blob) or \
+           ('\n// SPDX-License-Identifier:' in blob) or \
+           ('\n * SPDX-License-Identifier:' in blob)
 
 
 shebang_regex = re.compile(r"^(#!.*)")

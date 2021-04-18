@@ -21,6 +21,7 @@
     "(^src/ui/src/types/generated/)",
     "(^third_party)",
     "(^tools/chef/site-cookbooks/)",
+    "(^tools/linters/cpplint)",
     "(c_cpp_properties.json$)",
     "(go\\.mod$)",
     "(go\\.sum$)",
