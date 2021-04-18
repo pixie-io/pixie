@@ -1,9 +1,8 @@
-
-
 ''' MySQL Data Tracer
 
 Shows the most recent MySQL messages in the cluster.
-'''import px
+'''
+import px
 
 
 def mysql_data(start: str, source_filter: str, destination_filter: str, num_head: int):

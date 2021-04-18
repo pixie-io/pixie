@@ -1,11 +1,10 @@
-
-
 ''' Namespaces Overview
 
 This view lists the namespaces on the current cluster and their pod and service counts.
 It also lists the high-level resource consumption by namespace.
 
-'''import px
+'''
+import px
 
 ns_per_ms = 1000 * 1000
 ns_per_s = 1000 * ns_per_ms

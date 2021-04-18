@@ -1,11 +1,10 @@
-
-
 '''Pods Overview
 
 List of Pods monitored by Pixie in a given Namespace with their high level application metrics
 (latency, error-rate & rps) and resource usage (cpu, writes, reads).
 
-'''import px
+'''
+import px
 
 
 ns_per_ms = 1000 * 1000

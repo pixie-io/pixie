@@ -1,8 +1,7 @@
-
-
 ''' DNS Queries filtered by query name.
 Lists all DNS queries filtered by a specific query name.
-'''import px
+'''
+import px
 
 def dns_requests(start: str, query_name_filter: str):
 

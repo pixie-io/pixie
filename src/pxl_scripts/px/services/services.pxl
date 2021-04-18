@@ -1,9 +1,8 @@
-
-
 ''' Services Overview
 
  This script gets an overview all of the services in `namespace`.
-'''import px
+'''
+import px
 
 ns_per_ms = 1000 * 1000
 ns_per_s = 1000 * ns_per_ms

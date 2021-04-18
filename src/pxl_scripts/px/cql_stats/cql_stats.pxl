@@ -1,11 +1,10 @@
-
-
 ''' CQL Pod LET metrics
 
 This live view calculates the latency, error rate, and throughput
 of a pod's CQL requests.
 
-'''import px
+'''
+import px
 
 # ----------------------------------------------------------------
 # Visualization Variables - No need to edit for basic configuration.

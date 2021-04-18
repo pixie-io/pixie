@@ -1,10 +1,9 @@
-
-
 ''' HTTP Data Tracer
 
 This script traces all HTTP/HTTP2 data on the cluster for a specified amount of time.
 An optional filter prints only those traces that include the specified service name.
-'''import px
+'''
+import px
 
 # ----------------------------------------------------------------
 # Script variables

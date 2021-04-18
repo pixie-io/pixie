@@ -1,9 +1,8 @@
-
-
 ''' Redis Data Tracer
 
 Shows the most recent Redis messages in the cluster.
-'''import px
+'''
+import px
 
 
 def redis_data(start: str, source_filter: str, destination_filter: str, num_head: int):

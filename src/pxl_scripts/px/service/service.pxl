@@ -1,9 +1,8 @@
-
-
 ''' Service Overview
 
  This script gets an overview of an individual service, summarizing its request statistics.
-'''import px
+'''
+import px
 
 ns_per_ms = 1000 * 1000
 ns_per_s = 1000 * ns_per_ms

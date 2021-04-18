@@ -1,9 +1,8 @@
-
-
 ''' Endpoints Overview
 
  This script gets an overview of all the endpoints in `service`.
-'''import px
+'''
+import px
 
 ns_per_ms = 1000 * 1000
 ns_per_s = 1000 * ns_per_ms

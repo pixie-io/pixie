@@ -1,9 +1,8 @@
-
-
 ''' PostgreSQL Overview Map
 
 Shows a graph of PostgreSQL requests in the cluster, with some latency information.
-'''import px
+'''
+import px
 
 ns_per_ms = 1000 * 1000
 ns_per_s = 1000 * ns_per_ms

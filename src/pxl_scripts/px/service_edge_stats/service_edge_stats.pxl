@@ -1,5 +1,3 @@
-
-
 ''' Service Edge LET stats
 
 This live view calculates LET between two Services.
@@ -9,7 +7,8 @@ Notes:
   at the moment.
   IE: if you have two svcs 'a' and 'a-db', setting `svc_name = 'a'`
   will still match `a-db`
-'''import px
+'''
+import px
 
 # ----------------------------------------------------------------
 # Visualization Variables - No need to edit for basic configuration.

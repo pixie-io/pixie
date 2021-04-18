@@ -1,10 +1,9 @@
-
-
 ''' MySQL Pod LET metrics
 
 This live view calculates the latency, error rate, and throughput
 for each connection to a MySQL database pod.
-'''import px
+'''
+import px
 
 # ----------------------------------------------------------------
 # Visualization Variables - No need to edit for basic configuration.

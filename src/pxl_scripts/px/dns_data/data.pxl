@@ -1,9 +1,8 @@
-
-
 ''' DNS Traffic Tracer
 
 This script traces all DNS traffic on the cluster for a specified amount of time.
-'''import px
+'''
+import px
 
 # ----------------------------------------------------------------
 # Script variables

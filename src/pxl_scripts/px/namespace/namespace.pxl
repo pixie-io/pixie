@@ -1,11 +1,10 @@
-
-
 ''' Namespace Overview
 
 This view gives a top-level summary of the pods and services in a given namespace,
 as well as a service map.
 
-'''import px
+'''
+import px
 
 
 # Flag to filter out requests that come from an unresolvable IP.

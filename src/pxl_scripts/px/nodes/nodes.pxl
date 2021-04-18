@@ -1,12 +1,11 @@
-
-
 ''' Nodes Overview
 
 This view summarizes the process and network stats for each node in a cluster.
 It computes CPU, memory consumption, as well as network traffic statistics, per node.
 It also displays a list of pods that were on each node during the time window.
 
-'''import px
+'''
+import px
 
 ns_per_ms = 1000 * 1000
 ns_per_s = 1000 * ns_per_ms

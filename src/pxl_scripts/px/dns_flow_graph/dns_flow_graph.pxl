@@ -1,8 +1,7 @@
-
-
 ''' DNS Overview Map
 Shows summary DNS requests in the cluster, with some latency information.
-'''import px
+'''
+import px
 
 
 # kube-dns.kube-system.svc.cluster.local -> kube-dns.kube-system

@@ -1,9 +1,8 @@
-
-
 ''' PostgreSQL Data Tracer
 
 Shows the most recent PostgreSQL messages in the cluster.
-'''import px
+'''
+import px
 
 
 def pgsql_data(start: str, source_filter: str, destination_filter: str, num_head: int):

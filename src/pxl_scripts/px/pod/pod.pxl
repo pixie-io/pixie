@@ -1,11 +1,10 @@
-
-
 '''Pod Overview
 
 Overview of a specific Pod monitored by Pixie with its high level application metrics
 (latency, error-rate & rps) and resource usage (cpu, writes, reads).
 
-'''import px
+'''
+import px
 
 ns_per_ms = 1000 * 1000
 ns_per_s = 1000 * ns_per_ms

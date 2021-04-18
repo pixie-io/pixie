@@ -1,9 +1,8 @@
-
-
 ''' Pod Edge LET stats
 
 This live view calculates LET between a requesting and responding pod.
-'''import px
+'''
+import px
 
 ns_per_ms = 1000 * 1000
 ns_per_s = 1000 * ns_per_ms

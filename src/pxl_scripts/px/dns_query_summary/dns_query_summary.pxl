@@ -1,8 +1,7 @@
-
-
 ''' DNS Overview Map
 Shows DNS requests made by pods, clustered by name prefix.
-'''import px
+'''
+import px
 
 
 def dns_queries(start: str, namespace: str, pod_filter: str, query_filter: str, dns_server_filter: str):

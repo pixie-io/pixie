@@ -1,10 +1,9 @@
-
-
 ''' HTTP Data Tracer Demo Script
 
 This script traces all HTTP/HTTP2 data on the cluster,
 and displays a very terse synopsis.
-'''import px
+'''
+import px
 
 # ----------------------------------------------------------------
 # Script variables

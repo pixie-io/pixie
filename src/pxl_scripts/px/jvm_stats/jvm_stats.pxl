@@ -1,5 +1,3 @@
-
-
 ''' jvm per Pod and filtered by Node.
 
 This live view summarizes the CPU percentage and network bytes
@@ -9,7 +7,8 @@ isolate data to only a single node.
 Notes:
 * Setting node_name is not exclusive at the moment.
 * Setting pod is not exclusive at the moment.
-'''import px
+'''
+import px
 
 # ----------------------------------------------------------------
 # Visualization Variables - No need to edit for basic configuration.

@@ -1,10 +1,9 @@
-
-
 '''CPU Flamegraph
 
 Performance profile visualization.
 
-'''import px
+'''
+import px
 
 
 def stacktraces(start_time: str, node: str, namespace: str, pod: str, pct_basis_entity: str):

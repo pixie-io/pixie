@@ -1,9 +1,8 @@
-
-
 ''' CQL Data Tracer
 
 This script traces all CQL (Cassandra) data on the cluster.
-'''import px
+'''
+import px
 
 
 def cql_data(start: str, num_head: int):

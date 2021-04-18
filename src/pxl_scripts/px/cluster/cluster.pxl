@@ -1,9 +1,9 @@
-
 ''' Cluster Overview
 
 This view lists the namespaces and the nodes that are available on the current cluster.
 
-'''import px
+'''
+import px
 
 
 ns_per_ms = 1000 * 1000
