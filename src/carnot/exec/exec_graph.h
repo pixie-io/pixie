@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 #include <algorithm>
+#include <condition_variable>
 #include <cstdint>
 #include <memory>
 #include <string>
