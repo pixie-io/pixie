@@ -80,8 +80,6 @@ distributed_state {
 }`
 
 const pxClusterPxl = `
-# Copyright (c) Pixie Labs, Inc.
-# Licensed under the Apache License, Version 2.0 (the "License")
 ''' Cluster Overview
 
 This view lists the namespaces and the nodes that are available on the current cluster.
@@ -476,9 +474,6 @@ const pxClusterJSON = `
 }
 `
 const pxPodPxl = `
-# Copyright (c) Pixie Labs, Inc.
-# Licensed under the Apache License, Version 2.0 (the "License")
-
 '''Pod Overview
 
 Overview of a specific Pod monitored by Pixie with its high level application metrics
