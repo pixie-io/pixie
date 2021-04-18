@@ -1,3 +1,21 @@
+/*
+ * Copyright 2018- The Pixie Authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 // Package bridge connects data between the vizier NATS domain and cloud nats domain by using a GRPC channel. Each Vizier
 // gets a dedicated subset of nats domain in the from v2c.<shard_id>.<cluster_id>.* and c2v.<shard_id>.<cluster_id>.*.
 // v2c = vizier to cloud messages, c2v = cloud to vizier messages. The shard ID is determined by the first byte
