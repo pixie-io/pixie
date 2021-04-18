@@ -38,6 +38,12 @@
       "script-and-regex.script": "./tools/linters/buildifier.sh",
       "script-and-regex.regex": "/^(?P<file>.*):(?P<line>\\d+): (?P<error>.*): (?P<message>.*)$/m"
     },
+    "clang-format": {
+      "type": "clang-format",
+      "include": [
+        "(\\.(m|h|mm|c|cc)$)"
+      ]
+    },
     "cpplint": {
       "type": "cpplint",
       "include": [
@@ -54,10 +60,13 @@
         "--linelength=100"
       ]
     },
-    "clang-format": {
-      "type": "clang-format",
+    "eslint-ui": {
+      "type": "eslint",
+      "bin": "./tools/linters/eslint_ui.sh",
+      "eslint.config": ".eslintrc.json",
+      "eslint.setup": "./tools/linters/eslint_setup.sh",
       "include": [
-        "(\\.(m|h|mm|c|cc)$)"
+        "(^src/ui/.*\\.(tsx|ts|js)$)"
       ]
     },
     "experimental-manual": {
@@ -70,6 +79,24 @@
     },
     "filename": {
       "type": "filename"
+    },
+    "flake8": {
+      "type": "flake8",
+      "flags": [
+        "--config=.flake8rc"
+      ],
+      "include": [
+        "(\\.py$)"
+      ]
+    },
+    "flake8-pxl": {
+      "type": "flake8",
+      "flags": [
+        "--config=.pxl.flake8rc"
+      ],
+      "include": [
+        "(\\.pxl$)"
+      ]
     },
     "gazelle": {
       "type": "script-and-regex",
@@ -86,6 +113,12 @@
         "(\\.go$)"
       ]
     },
+    "golangci-lint": {
+      "type": "golangci-lint",
+      "include": [
+        "(\\.go$)"
+      ]
+    },
     "golint": {
       "type": "golint",
       "include": [
@@ -94,12 +127,6 @@
     },
     "govet": {
       "type": "govet",
-      "include": [
-        "(\\.go$)"
-      ]
-    },
-    "golangci-lint": {
-      "type": "golangci-lint",
       "include": [
         "(\\.go$)"
       ]
@@ -125,24 +152,6 @@
     "merge-conflict": {
       "type": "merge-conflict"
     },
-    "flake8": {
-      "type": "flake8",
-      "flags": [
-        "--config=.flake8rc"
-      ],
-      "include": [
-        "(\\.py$)"
-      ]
-    },
-    "flake8-pxl": {
-      "type": "flake8",
-      "flags": [
-        "--config=.pxl.flake8rc"
-      ],
-      "include": [
-        "(\\.pxl$)"
-      ]
-    },
     "php": {
       "type": "php",
       "include": [
@@ -164,17 +173,17 @@
         "(^src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/physicalpb/physical\\.proto$)"
       ]
     },
+    "shellcheck": {
+      "type": "shellcheck",
+      "include": [
+        "(.*\\.sh$)"
+      ]
+    },
     "spelling": {
       "type": "spelling",
       "exclude": [
         "(.*\\.crt$)",
         "(.*\\.key$)"
-      ]
-    },
-    "shellcheck": {
-      "type": "shellcheck",
-      "include": [
-        "(.*\\.sh$)"
       ]
     },
     "xhpast": {
@@ -193,15 +202,6 @@
       ],
       "exclude": [
         "(^demos/)"
-      ]
-    },
-    "eslint-ui": {
-      "type": "eslint",
-      "bin": "./tools/linters/eslint_ui.sh",
-      "eslint.config": ".eslintrc.json",
-      "eslint.setup": "./tools/linters/eslint_setup.sh",
-      "include": [
-        "(^src/ui/.*\\.(tsx|ts|js)$)"
       ]
     }
   }
