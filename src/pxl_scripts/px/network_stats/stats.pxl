@@ -1,0 +1,10 @@
+import px
+
+t1 = px.DataFrame(table='network_stats', select=['time_', 'pod_id', 'rx_bytes',
+                                                 'rx_packets', 'rx_errors',
+                                                 'rx_drops', 'tx_bytes', 'tx_packets',
+                                                 'tx_errors', 'tx_drops'], start_time='-30s')
+
+t2 = t1.head(n=100)
+
+px.display(t2)

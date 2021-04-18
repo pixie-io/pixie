@@ -1,0 +1,32 @@
+
+
+''' HTTP Data Tracer
+
+This script traces all HTTP/HTTP2 data on the cluster for a specified amount of time.
+An optional filter prints only those traces that include the specified service name.
+'''import px
+
+# ----------------------------------------------------------------
+# Script variables
+# ----------------------------------------------------------------
+
+service_matcher = ''
+start_time = '-30s'
+max_num_records = 100
+
+# ----------------------------------------------------------------
+# Implementation
+# ----------------------------------------------------------------
+
+df = px.DataFrame(table='http_events', select=['time_', 'upid', 'remote_addr', 'remote_port',
+                                               'req_method', 'req_path', 'resp_status', 'resp_message',
+                                               'resp_body', 'latency'], start_time=start_time)
+
+df = df[df.req_method == 'POST']
+df.service = df.ctx['service']
+df = df.drop(columns=['upid'])
+
+df = df[px.contains(df['service'], service_matcher)]
+df = df.head(n=max_num_records)
+
+px.display(df)

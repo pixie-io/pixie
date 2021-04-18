@@ -1,0 +1,54 @@
+{
+  "variables": [],
+  "globalFuncs": [],
+  "widgets": [
+    {
+      "name": "Agg Functions",
+      "func": {
+        "name": "agg_funcs",
+        "args": []
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      },
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 3
+      }
+    },
+    {
+      "name": "Table Functions",
+      "func": {
+        "name": "table_funcs",
+        "args": []
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      },
+      "position": {
+        "x": 0,
+        "y": 3,
+        "w": 12,
+        "h": 3
+      }
+    },
+    {
+      "name": "Map Functions",
+      "func": {
+        "name": "map_funcs",
+        "args": []
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      },
+      "position": {
+        "x": 0,
+        "y": 6,
+        "w": 12,
+        "h": 4
+      }
+    }
+  ]
+}

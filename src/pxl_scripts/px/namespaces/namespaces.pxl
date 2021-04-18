@@ -1,0 +1,91 @@
+
+
+''' Namespaces Overview
+
+This view lists the namespaces on the current cluster and their pod and service counts.
+It also lists the high-level resource consumption by namespace.
+
+'''import px
+
+ns_per_ms = 1000 * 1000
+ns_per_s = 1000 * ns_per_ms
+# Window size to use on time_ column for bucketing.
+window_ns = px.DurationNanos(10 * ns_per_s)
+
+
+def namespaces_for_cluster(start_time: str):
+    ''' Gets a list of namespaces in the current cluster since `start_time`.
+
+    Args:
+    @start: Start time of the data to examine.
+    '''
+    df = px.DataFrame(table='process_stats', start_time=start_time)
+    df.service = df.ctx['service_name']
+    df.pod = df.ctx['pod_name']
+    df.namespace = df.ctx['namespace']
+    agg = df.groupby(['service', 'pod', 'namespace']).agg()
+    namespaces = agg.groupby('namespace').agg(
+        pod_count=('pod', px.count),
+        service_count=('service', px.count)
+    )
+    return namespaces
+
+
+def process_stats_by_namespace(start_time: str):
+    ''' Gets a summary of process stats by namespace since `start_time`.
+        Computes the total I/O consumption across the namespace since `start_time`.
+
+    Args:
+    @start: Start time of the data to examine.
+    '''
+
+    df = px.DataFrame(table='process_stats', start_time=start_time)
+    df.namespace = df.ctx['namespace']
+    df.timestamp = px.bin(df.time_, window_ns)
+
+    df = df.groupby(['upid', 'namespace', 'timestamp']).agg(
+        vsize=('vsize_bytes', px.mean),
+        rss=('rss_bytes', px.mean),
+        read_bytes_max=('read_bytes', px.max),
+        read_bytes_min=('read_bytes', px.min),
+        write_bytes_max=('write_bytes', px.max),
+        write_bytes_min=('write_bytes', px.min),
+        rchar_bytes_max=('rchar_bytes', px.max),
+        rchar_bytes_min=('rchar_bytes', px.min),
+        wchar_bytes_max=('wchar_bytes', px.max),
+        wchar_bytes_min=('wchar_bytes', px.min),
+    )
+
+    # Deltas computed across 1 time window
+    df.read_bytes = df.read_bytes_max - df.read_bytes_min
+    df.write_bytes = df.write_bytes_max - df.write_bytes_min
+    df.rchar_bytes = df.rchar_bytes_max - df.rchar_bytes_min
+    df.wchar_bytes = df.wchar_bytes_max - df.wchar_bytes_min
+
+    # For this aggregate, we sum up the values as we've already calculated the average/usage
+    # for the upids already.
+    df = df.groupby(['namespace', 'timestamp']).agg(
+        vsize=('vsize', px.sum),
+        rss=('rss', px.sum),
+        read_bytes=('read_bytes', px.sum),
+        write_bytes=('write_bytes', px.sum),
+        rchar_bytes=('rchar_bytes', px.sum),
+        wchar_bytes=('wchar_bytes', px.sum),
+    )
+
+    df.actual_disk_read_throughput = df.read_bytes / window_ns
+    df.actual_disk_write_throughput = df.write_bytes / window_ns
+    df.total_disk_read_throughput = df.rchar_bytes / window_ns
+    df.total_disk_write_throughput = df.wchar_bytes / window_ns
+
+    # Finally, we get the mean value across the total time window.
+    df = df.groupby('namespace').agg(
+        avg_vsize=('vsize', px.mean),
+        avg_rss=('rss', px.mean),
+        actual_disk_read_throughput=('actual_disk_read_throughput', px.mean),
+        actual_disk_write_throughput=('actual_disk_write_throughput', px.mean),
+        total_disk_read_throughput=('total_disk_read_throughput', px.mean),
+        total_disk_write_throughput=('total_disk_write_throughput', px.mean),
+    )
+
+    return df

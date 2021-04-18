@@ -1,0 +1,38 @@
+{
+  "variables": [],
+  "globalFuncs": [],
+  "widgets": [
+    {
+      "name": "Pixie Datasource Table Descriptions",
+      "func": {
+        "name": "table_desc",
+        "args": []
+      },
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 3
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      }
+    },
+    {
+      "name": "Pixie Datasource Table Schema",
+      "func": {
+        "name": "table_schema",
+        "args": []
+      },
+      "position": {
+        "x": 0,
+        "y": 3,
+        "w": 12,
+        "h": 4
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      }
+    }
+  ]
+}

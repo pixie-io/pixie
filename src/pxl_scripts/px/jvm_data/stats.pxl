@@ -1,0 +1,14 @@
+import px
+
+bytes_per_mb = 1024 * 1024
+
+df = px.DataFrame(table='jvm_stats', start_time='-1m')
+
+# Add additional fields
+df.pid = px.upid_to_pid(df.upid)
+df.cmdline = px.upid_to_cmdline(df.upid)
+df.used_heap_size = px.Bytes(df.used_heap_size)
+df.total_heap_size = px.Bytes(df.total_heap_size)
+df.max_heap_size = px.Bytes(df.max_heap_size)
+df = df[['time_', 'pid', 'used_heap_size', 'total_heap_size', 'max_heap_size', 'cmdline']]
+px.display(df)

@@ -1,0 +1,24 @@
+
+
+''' DNS Traffic Tracer
+
+This script traces all DNS traffic on the cluster for a specified amount of time.
+'''import px
+
+# ----------------------------------------------------------------
+# Script variables
+# ----------------------------------------------------------------
+start_time = '-30s'
+max_num_records = 1000
+
+# ----------------------------------------------------------------
+# Implementation
+# ----------------------------------------------------------------
+
+df = px.DataFrame(table='dns_events', start_time=start_time)
+
+df.pod = df.ctx['pod']
+df = df.drop(['upid', 'trace_role'])
+df = df.head(n=max_num_records)
+
+px.display(df)

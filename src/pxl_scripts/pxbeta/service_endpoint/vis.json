@@ -1,0 +1,179 @@
+{
+  "variables": [
+    {
+      "name": "start_time",
+      "type": "PX_STRING",
+      "description": "The relative start time of the window. Current time is assumed to be now",
+      "defaultValue": "-5m"
+    },
+    {
+      "name": "service",
+      "type": "PX_SERVICE",
+      "description": "The name of the service to get stats for. Format: ns/svc_name",
+      "defaultValue": ""
+    },
+    {
+      "name": "endpoint",
+      "type": "PX_STRING",
+      "description": "The endpoint to look at stats for. Format: /path/to/endpoint/*/more/path ",
+      "defaultValue": "/"
+    }
+  ],
+  "globalFuncs": [
+    {
+      "outputName": "endpoint_let_timeseries",
+      "func": {
+        "name": "endpoint_let_timeseries",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "service",
+            "variable": "service"
+          },
+          {
+            "name": "endpoint",
+            "variable": "endpoint"
+          }
+        ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "HTTP Requests",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "endpoint_let_timeseries",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "request_throughput",
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "request throughput"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "HTTP Errors",
+      "position": {
+        "x": 4,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "endpoint_let_timeseries",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "errors_per_ns",
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "error rate"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "HTTP Latency",
+      "position": {
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "endpoint_let_timeseries",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "latency_p50",
+            "mode": "MODE_LINE"
+          },
+          {
+            "value": "latency_p90",
+            "mode": "MODE_LINE"
+          },
+          {
+            "value": "latency_p99",
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Latency"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "HTTP Response Data Throughput",
+      "position": {
+        "x": 0,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "endpoint_let_timeseries",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "bytes_per_ns",
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Response data throughput"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "Sample of Slow Requests",
+      "position": {
+        "x": 4,
+        "y": 6,
+        "w": 8,
+        "h": 3
+      },
+      "func": {
+        "name": "endpoint_slow_requests",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "service",
+            "variable": "service"
+          },
+          {
+            "name": "endpoint",
+            "variable": "endpoint"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      }
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+---
+short: Network Flow
+long: >
+  The mapping of all outgoing connections for the specified k8s pods in the namespace.

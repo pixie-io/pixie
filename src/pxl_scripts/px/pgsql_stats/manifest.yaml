@@ -1,0 +1,5 @@
+---
+short: PostgreSQL Pod LET metrics
+long: >
+  This live view calculates the latency, error rate, and throughput
+  of a pod's PostgreSQL requests.

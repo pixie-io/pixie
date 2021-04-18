@@ -1,0 +1,5 @@
+---
+short: Namespaces Overview
+long: >
+  This view lists the namespaces on the current cluster and their pod and service counts.
+  It also lists the high-level resource consumption by namespace.

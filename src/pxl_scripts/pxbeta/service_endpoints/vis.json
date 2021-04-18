@@ -1,0 +1,191 @@
+{
+  "variables": [
+    {
+      "name": "start_time",
+      "type": "PX_STRING",
+      "description": "The relative start time of the window. Current time is assumed to be now",
+      "defaultValue": "-5m"
+    },
+    {
+      "name": "service",
+      "type": "PX_SERVICE",
+      "description": "The name of the service to get stats for.",
+      "defaultValue": "default"
+    }
+  ],
+  "globalFuncs": [
+    {
+      "outputName": "endpoint_let",
+      "func": {
+        "name": "endpoint_let",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "service",
+            "variable": "service"
+          }
+        ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Endpoints",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      },
+      "func": {
+        "name": "endpoints",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "service",
+            "variable": "service"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      }
+    },
+    {
+      "name": "HTTP Request Throughput",
+      "position": {
+        "x": 4,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "endpoint_let",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "request_throughput",
+            "mode": "MODE_LINE",
+            "series": "endpoint",
+            "stackBySeries": false
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "requests per second"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "HTTP Request Error Rate",
+      "position": {
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "endpoint_let",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "error_rate",
+            "mode": "MODE_LINE",
+            "series": "endpoint",
+            "stackBySeries": false
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "error rate (%)"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "HTTP P50 Latency",
+      "position": {
+        "x": 0,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "endpoint_let",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "latency_p50",
+            "mode": "MODE_LINE",
+            "series": "endpoint",
+            "stackBySeries": false
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Mean latency"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "HTTP P90 Latency",
+      "position": {
+        "x": 4,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "endpoint_let",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "latency_p90",
+            "mode": "MODE_LINE",
+            "series": "endpoint",
+            "stackBySeries": false
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Mean latency"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "HTTP P99 Latency",
+      "position": {
+        "x": 8,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "endpoint_let",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "latency_p99",
+            "mode": "MODE_LINE",
+            "series": "endpoint",
+            "stackBySeries": false
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Mean latency"
+        },
+        "xAxis": null
+      }
+    }
+  ]
+}

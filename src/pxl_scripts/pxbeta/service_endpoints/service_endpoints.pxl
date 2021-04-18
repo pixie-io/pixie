@@ -1,0 +1,114 @@
+
+
+''' Endpoints Overview
+
+ This script gets an overview of all the endpoints in `service`.
+'''import px
+
+ns_per_ms = 1000 * 1000
+ns_per_s = 1000 * ns_per_ms
+# Window size to use on time_ column for bucketing.
+window_ns = px.DurationNanos(10 * ns_per_s)
+# Flag to filter out requests that come from an unresolvable IP.
+filter_unresolved_inbound = False
+# Flag to filter out health checks from the data.
+filter_health_checks = False
+# Flag to filter out ready checks from the data.
+filter_ready_checks = False
+
+
+def endpoints(start_time: str, service: px.Service):
+    ''' Get a list of the endpoints in `service`.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+    @service: The service to filter on.
+
+    '''
+    df = endpoint_let_helper(start_time, service)
+    df = request_path_endpoint_clustering(df)
+    df = df.groupby(['endpoint']).agg()
+    df.endpoint = px.script_reference(df.endpoint, 'pxbeta/service_endpoint', {
+        'start_time': start_time,
+        'service': service,
+        'endpoint': df.endpoint,
+    })
+    return df
+
+def endpoint_let(start_time: str, service: px.Service):
+    ''' Compute the let as a timeseries for requests received by endpoints in `service`.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+    @service: The service to filter on.
+
+    '''
+
+    # Calculate LET for each svc edge in the svc graph over each time window.
+    # Each edge starts at a requester ('remote_addr') and ends at a
+    # responder service.
+
+    df = endpoint_let_helper(start_time, service)
+    df = request_path_endpoint_clustering(df)
+
+    df = df.groupby(['timestamp', 'endpoint']).agg(
+        latency_quantiles=('latency', px.quantiles),
+        error_rate=('failure', px.mean),
+        throughput_total=('latency', px.count),
+        inbound_bytes_total=('req_size', px.sum),
+        outbound_bytes_total=('resp_size', px.sum)
+    )
+
+    df.latency_p50 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p50')))
+    df.latency_p90 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p90')))
+    df.latency_p99 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p99')))
+
+    df.request_throughput = df.throughput_total / window_ns
+    df.inbound_throughput = df.inbound_bytes_total / window_ns
+    df.outbound_throughput = df.outbound_bytes_total / window_ns
+    df.error_rate = px.Percent(df.error_rate)
+    df.time_ = df.timestamp
+
+    return df[['time_', 'endpoint', 'latency_p50', 'latency_p90',
+               'latency_p99', 'request_throughput', 'error_rate',
+               'inbound_throughput', 'outbound_throughput']]
+
+
+def endpoint_let_helper(start_time: str, service: px.Service):
+    ''' Compute the let as a timeseries for requests received or by services in `namespace`.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+    @namespace: The namespace to filter on.
+    @groupby_cols: The columns to group on.
+
+    '''
+    df = px.DataFrame(table='http_events', start_time=start_time)
+    df.service = df.ctx['service']
+    df = df[px.contains(df.service, service)]
+    df.latency = df.latency
+    df.timestamp = px.bin(df.time_, window_ns)
+
+    df.req_size = px.Bytes(px.length(df.req_body))
+    df.resp_size = px.Bytes(px.length(df.resp_body))
+    df.failure = df.resp_status >= 400
+    filter_out_conds = ((df.req_path != '/health' or not filter_health_checks) and (
+        df.req_path != '/readyz' or not filter_ready_checks)) and (
+        df['remote_addr'] != '-' or not filter_unresolved_inbound)
+
+    df = df[filter_out_conds]
+    return df
+
+
+def request_path_endpoint_clustering(let_df):
+    clustering_df = let_df.agg(
+        clustering=("req_path", px._build_request_path_clusters)
+    )
+    merged_df = let_df.merge(
+        clustering_df, how="outer", right_on=[], left_on=[], suffixes=["", ""]
+    )
+    merged_df.endpoint = px._predict_request_path_cluster(
+        merged_df.req_path, merged_df.clustering
+    )
+    merged_df.drop(["clustering"])
+    return merged_df

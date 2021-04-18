@@ -1,0 +1,22 @@
+
+
+''' HTTP Data Tracer
+
+This script traces all HTTP/HTTP2 data on the cluster.
+'''import px
+
+
+def http_data(start: str, num_head: int):
+    df = px.DataFrame(table='http_events', start_time=start)
+
+    # Replace UPID with pod.
+    df.pod = df.ctx['pod']
+    df = df.drop(['upid'])
+
+    # Remove some columns.
+    df = df.drop(['trace_role', 'content_type', 'minor_version'])
+
+    # Restrict number of results.
+    df = df.head(num_head)
+
+    return df

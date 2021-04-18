@@ -1,0 +1,103 @@
+{
+  "variables": [
+    {
+      "name": "namespace",
+      "type": "PX_NAMESPACE",
+      "description": "The namespace to filter on"
+    },
+    {
+      "name": "start",
+      "type": "PX_STRING",
+      "description": "The start time of the window in time units before now.",
+      "defaultValue": "-5m"
+    },
+    {
+      "name": "from_entity_filter",
+      "type": "PX_STRING",
+      "description": "The partial string to match the 'from_entity' (source pod).",
+      "defaultValue": ""
+    },
+    {
+      "name": "to_entity_filter",
+      "type": "PX_STRING",
+      "description": "The partial string to match the 'to_entity' (destination service).",
+      "defaultValue": ""
+    },
+    {
+      "name": "throughput_filter",
+      "type": "PX_FLOAT64",
+      "description": "Filters out connections with total throughput less than the specified amount. Specified in B/sec.",
+      "defaultValue": "0.0"
+    }
+  ],
+  "globalFuncs": [
+    {
+      "outputName": "net_flow",
+      "func": {
+        "name": "net_flow_graph",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          },
+          {
+            "name": "ns",
+            "variable": "namespace"
+          },
+          {
+            "name": "from_entity_filter",
+            "variable": "from_entity_filter"
+          },
+          {
+            "name": "to_entity_filter",
+            "variable": "to_entity_filter"
+          },
+          {
+            "name": "throughput_filter",
+            "variable": "throughput_filter"
+          }
+        ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Net Flow Graph",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 4
+      },
+      "globalFuncOutputName": "net_flow",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Graph",
+        "adjacencyList": {
+          "fromColumn": "from_entity",
+          "toColumn": "to_entity"
+        },
+        "edgeWeightColumn": "bytes_total",
+        "edgeColorColumn": "bytes_total",
+        "edgeHoverInfo": [
+          "bytes_total",
+          "bytes_sent",
+          "bytes_recv"
+        ],
+        "edgeLength": 500
+      }
+    },
+    {
+      "name": "Table",
+      "position": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 4
+      },
+      "globalFuncOutputName": "net_flow",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      }
+    }
+  ]
+}

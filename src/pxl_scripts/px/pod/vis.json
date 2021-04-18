@@ -1,0 +1,456 @@
+{
+  "variables": [
+    {
+      "name": "start_time",
+      "type": "PX_STRING",
+      "description": "The relative start time of the window. Current time is assumed to be now",
+      "defaultValue": "-5m"
+    },
+    {
+      "name": "pod",
+      "type": "PX_POD",
+      "description": "The pod name to filter on. Format: <ns>/<pod_name>"
+    }
+  ],
+  "globalFuncs": [
+    {
+      "outputName": "inbound_latency",
+      "func": {
+        "name": "inbound_latency_timeseries",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      }
+    },
+    {
+      "outputName": "inbound_requests",
+      "func": {
+        "name": "inbound_request_timeseries_by_container",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      }
+    },
+    {
+      "outputName": "resource_timeseries",
+      "func": {
+        "name": "resource_timeseries",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      }
+    },
+    {
+      "outputName": "network_timeseries",
+      "func": {
+        "name": "network_timeseries",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "HTTP Requests",
+      "globalFuncOutputName": "inbound_requests",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "request_throughput",
+            "mode": "MODE_AREA",
+            "series": "container",
+            "stackBySeries": true
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "request throughput"
+        },
+        "xAxis": null
+      },
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "HTTP Errors",
+      "globalFuncOutputName": "inbound_requests",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "errors_per_ns",
+            "mode": "MODE_AREA",
+            "series": "container",
+            "stackBySeries": true
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "error rate"
+        },
+        "xAxis": null
+      },
+      "position": {
+        "x": 4,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "HTTP Latency",
+      "globalFuncOutputName": "inbound_latency",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "latency_p50",
+            "mode": "MODE_LINE"
+          },
+          {
+            "value": "latency_p90",
+            "mode": "MODE_LINE"
+          },
+          {
+            "value": "latency_p99",
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "milliseconds"
+        },
+        "xAxis": null
+      },
+      "position": {
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "CPU Usage",
+      "globalFuncOutputName": "resource_timeseries",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "cpu_usage",
+            "mode": "MODE_AREA",
+            "series": "container",
+            "stackBySeries": true
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "CPU usage"
+        },
+        "xAxis": null
+      },
+      "position": {
+        "x": 0,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "Containers List",
+      "func": {
+        "name": "containers",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      },
+      "position": {
+        "x": 4,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "Process List",
+      "func": {
+        "name": "processes",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      },
+      "position": {
+        "x": 8,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "Network Sent and Received",
+      "globalFuncOutputName": "network_timeseries",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "rx_bytes_per_ns",
+            "mode": "MODE_LINE"
+          },
+          {
+            "value": "tx_bytes_per_ns",
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Network throughput"
+        },
+        "xAxis": null
+      },
+      "position": {
+        "x": 0,
+        "y": 6,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "Bytes Read",
+      "globalFuncOutputName": "resource_timeseries",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "total_disk_read_throughput",
+            "mode": "MODE_AREA",
+            "series": "container",
+            "stackBySeries": true
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Disk Read Throughput"
+        },
+        "xAxis": null
+      },
+      "position": {
+        "x": 4,
+        "y": 6,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "Bytes Written",
+      "globalFuncOutputName": "resource_timeseries",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "total_disk_write_throughput",
+            "mode": "MODE_AREA",
+            "series": "container",
+            "stackBySeries": true
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Disk Write Throughput"
+        },
+        "xAxis": null
+      },
+      "position": {
+        "x": 8,
+        "y": 6,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "Resident Set Size",
+      "globalFuncOutputName": "resource_timeseries",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "rss",
+            "mode": "MODE_AREA",
+            "series": "container",
+            "stackBySeries": true
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "RSS"
+        },
+        "xAxis": null
+      },
+      "position": {
+        "x": 0,
+        "y": 9,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "Virtual Memory Size",
+      "globalFuncOutputName": "resource_timeseries",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "vsize",
+            "mode": "MODE_AREA",
+            "series": "container",
+            "stackBySeries": true
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "vsize"
+        },
+        "xAxis": null
+      },
+      "position": {
+        "x": 4,
+        "y": 9,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "Inbound Traffic to Pod",
+      "func": {
+        "name": "inbound_let_summary",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      },
+      "position": {
+        "x": 0,
+        "y": 12,
+        "w": 12,
+        "h": 3
+      }
+    },
+    {
+      "name": "Pod Metadata",
+      "func": {
+        "name": "node",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      },
+      "position": {
+        "x": 0,
+        "y": 15,
+        "w": 12,
+        "h": 2
+      }
+    },
+    {
+      "name": "Pod Performance Flamegraph",
+      "func": {
+        "name": "stacktraces",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.StackTraceFlameGraph",
+        "stacktraceColumn": "stack_trace",
+        "countColumn": "count",
+        "percentageColumn": "percent",
+        "podColumn": "pod",
+        "containerColumn": "container",
+        "pidColumn": "cmdline"
+      },
+      "position": {
+        "x": 0,
+        "y": 17,
+        "w": 12,
+        "h": 5
+      }
+    }
+  ]
+}

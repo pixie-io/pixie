@@ -1,0 +1,52 @@
+import px
+
+#
+# Returns the Total Resource Usage for each pod.
+#
+t1 = px.DataFrame(table='process_stats', start_time='-60s')
+t1.pod = t1.ctx['pod']
+
+upid_aggop = t1.groupby(['upid', 'pod']).agg(
+    vsize=('vsize_bytes', px.mean),
+    rss=('rss_bytes', px.mean),
+    # The following columns are all counters, so we take the maximum value.
+    cpu_utime_ns=('cpu_utime_ns', px.max),
+    cpu_ktime_ns=('cpu_ktime_ns', px.max),
+    read_bytes=('read_bytes', px.max),
+    write_bytes=('write_bytes', px.max),
+    rchar_bytes=('rchar_bytes', px.max),
+    wchar_bytes=('wchar_bytes', px.max),
+)
+
+# For this aggregate, we sum up the values as we've already calculated the average/usage
+# for the upids already.
+pod_aggop = upid_aggop.groupby('pod').agg(
+    cpu_utime_ns=('cpu_utime_ns', px.sum),
+    cpu_ktime_ns=('cpu_ktime_ns', px.sum),
+    vsize=('vsize', px.sum),
+    rss=('rss', px.sum),
+    read_bytes=('read_bytes', px.sum),
+    write_bytes=('write_bytes', px.sum),
+    rchar_bytes=('rchar_bytes', px.sum),
+    wchar_bytes=('wchar_bytes', px.sum),
+)
+
+# Format everything nicely.
+pod_aggop.pod_name = pod_aggop.pod
+pod_aggop.status = px.pod_name_to_status(pod_aggop.pod_name)
+pod_aggop['Created on'] = px.pod_name_to_start_time(pod_aggop.pod_name)
+pod_aggop['CPU User time'] = px.DurationNanos(pod_aggop.cpu_utime_ns)
+pod_aggop['CPU System time'] = px.DurationNanos(pod_aggop.cpu_ktime_ns)
+pod_aggop['Virtual Memory'] = pod_aggop.vsize
+pod_aggop['Average Memory'] = pod_aggop.rss
+pod_aggop['Read to IO'] = pod_aggop.read_bytes
+pod_aggop['Write to IO'] = pod_aggop.write_bytes
+pod_aggop['Characters Read'] = pod_aggop.rchar_bytes
+pod_aggop['Characters written'] = pod_aggop.wchar_bytes
+
+keep_columns = pod_aggop[['pod_name', 'status', 'Created on', 'CPU User time',
+                          'CPU System time', 'Virtual Memory',
+                          'Average Memory', 'Read to IO', 'Write to IO',
+                          'Characters Read', 'Characters written']]
+
+px.display(keep_columns)

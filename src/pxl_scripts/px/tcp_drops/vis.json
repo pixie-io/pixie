@@ -1,0 +1,41 @@
+{
+  "variables": [],
+  "globalFuncs": [
+    {
+      "outputName": "results",
+      "func": {
+        "name": "tcp_drops_func",
+        "args": []
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Results",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 5
+      },
+      "globalFuncOutputName": "results",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Graph",
+        "adjacencyList": {
+          "fromColumn": "src",
+          "toColumn": "dst"
+        },
+        "edgeWeightColumn": "drops",
+        "edgeColorColumn": "drops",
+        "edgeLength": 300,
+        "edgeThresholds": {
+          "mediumThreshold": 5,
+          "highThreshold": 50
+        },
+        "edgeHoverInfo": [
+          "drops"
+        ]
+      }
+    }
+  ]
+}

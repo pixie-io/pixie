@@ -1,0 +1,205 @@
+{
+  "variables": [
+    {
+      "name": "start",
+      "type": "PX_STRING",
+      "description": "The relative start time of the window. Current time is assumed to be now",
+      "defaultValue": "-5m"
+    },
+    {
+      "name": "node_name",
+      "type": "PX_STRING",
+      "description": "The full/partial hostname to fitler by",
+      "defaultValue": ""
+    },
+    {
+      "name": "pod",
+      "type": "PX_STRING",
+      "description": "The full/partial name of the pod to use as filter. Format: ns/pod_name",
+      "defaultValue": ""
+    }
+  ],
+  "globalFuncs": [
+    {
+      "outputName": "JVM",
+      "func": {
+        "name": "jvm_stats",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          },
+          {
+            "name": "node_name",
+            "variable": "node_name"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Young GC Time",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 3
+      },
+      "globalFuncOutputName": "JVM",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "young_gc_time",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Young GC Time"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "Full GC Time",
+      "position": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 3
+      },
+      "globalFuncOutputName": "JVM",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "full_gc_time",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Full GC Time"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "Used Heap Size",
+      "position": {
+        "x": 0,
+        "y": 3,
+        "w": 6,
+        "h": 3
+      },
+      "globalFuncOutputName": "JVM",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "used_heap_size",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Used Heap Size"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "Max Heap Size",
+      "position": {
+        "x": 6,
+        "y": 3,
+        "w": 6,
+        "h": 3
+      },
+      "globalFuncOutputName": "JVM",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "max_heap_size",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Max Heap Size (mb)"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "Total Heap Size",
+      "position": {
+        "x": 0,
+        "y": 6,
+        "w": 6,
+        "h": 3
+      },
+      "globalFuncOutputName": "JVM",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "total_heap_size",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Total Heap Size (mb)"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "Processes that use JVM",
+      "position": {
+        "x": 6,
+        "y": 6,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "cmd_pod_table",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          },
+          {
+            "name": "node_name",
+            "variable": "node_name"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      }
+    }
+  ]
+}

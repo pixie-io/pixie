@@ -1,0 +1,292 @@
+{
+  "variables": [
+    {
+      "name": "svc",
+      "type": "PX_SERVICE",
+      "description": "The full/partial name of the service to get stats for. Format: ns/svc_name",
+      "defaultValue": ""
+    },
+    {
+      "name": "start",
+      "type": "PX_STRING",
+      "description": "The relative start time of the window. Current time is assumed to be now",
+      "defaultValue": "-5m"
+    }
+  ],
+  "globalFuncs": [
+    {
+      "outputName": "LET",
+      "func": {
+        "name": "svc_let",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          },
+          {
+            "name": "svc",
+            "variable": "svc"
+          }
+        ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "p50 Latency",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "LET",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "latency_p50",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "P50 Latency"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "p90 Latency",
+      "position": {
+        "x": 4,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "LET",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "latency_p90",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "P90 Latency"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "Request Throughput",
+      "position": {
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "LET",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "request_throughput",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Request throughput"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "Request Error Rate",
+      "position": {
+        "x": 4,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "LET",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "error_rate",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Error Rate"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "Status Code Distribution",
+      "position": {
+        "x": 0,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      },
+      "func": {
+        "name": "http_code_histogram",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          },
+          {
+            "name": "svc",
+            "variable": "svc"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.BarChart",
+        "bar": {
+          "value": "count",
+          "label": "http_resp_status",
+          "horizontal": true
+        },
+        "xAxis": {
+          "label": "# of requests"
+        },
+        "yAxis": {
+          "label": "HTTP Status Code"
+        }
+      }
+    },
+    {
+      "name": "Request Latency Histogram",
+      "func": {
+        "name": "latency_histogram",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          },
+          {
+            "name": "svc",
+            "variable": "svc"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.HistogramChart",
+        "histogram": {
+          "value": "request_latency",
+          "prebinCount": "count",
+          "maxbins": 10,
+          "minstep": 50000000
+        },
+        "xAxis": {
+          "label": "Request Latency"
+        },
+        "yAxis": {
+          "label": "# of requests"
+        }
+      },
+      "position": {
+        "x": 8,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
+      "name": "Incoming Traffic",
+      "position": {
+        "x": 0,
+        "y": 6,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "incoming_edges",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          },
+          {
+            "name": "svc",
+            "variable": "svc"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      }
+    },
+    {
+      "name": "Outgoing Traffic",
+      "position": {
+        "x": 6,
+        "y": 6,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "outgoing_edges",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          },
+          {
+            "name": "svc",
+            "variable": "svc"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      }
+    },
+    {
+      "name": "Service Graph",
+      "position": {
+        "x": 0,
+        "y": 9,
+        "w": 12,
+        "h": 3
+      },
+      "func": {
+        "name": "svc_graph",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          },
+          {
+            "name": "svc",
+            "variable": "svc"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Graph",
+        "adjacencyList": {
+          "fromColumn": "requestor",
+          "toColumn": "responder"
+        }
+      }
+    }
+  ]
+}

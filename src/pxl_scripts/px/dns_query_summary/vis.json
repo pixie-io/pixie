@@ -1,0 +1,108 @@
+{
+  "variables": [
+    {
+      "name": "start",
+      "type": "PX_STRING",
+      "description": "The start time of the window in time units before now.",
+      "defaultValue": "-5m"
+    },
+    {
+      "name": "namespace",
+      "type": "PX_STRING",
+      "description": "The namespace to query.",
+      "defaultValue": ""
+    },
+    {
+      "name": "pod_filter",
+      "type": "PX_STRING",
+      "description": "Filter on DNS requests where the source pod contains the provided string.",
+      "defaultValue": ""
+    },
+    {
+      "name": "query_filter",
+      "type": "PX_STRING",
+      "description": "Filter on DNS requests where the query contains the provided string.",
+      "defaultValue": ""
+    },
+    {
+      "name": "dns_server_filter",
+      "type": "PX_STRING",
+      "description": "Filter on DNS requests where the target DNS server contains the provided string.",
+      "defaultValue": ""
+    }
+  ],
+  "globalFuncs": [
+    {
+      "outputName": "dns_flow",
+      "func": {
+        "name": "dns_queries",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          },
+          {
+            "name": "namespace",
+            "variable": "namespace"
+          },
+          {
+            "name": "pod_filter",
+            "variable": "pod_filter"
+          },
+          {
+            "name": "query_filter",
+            "variable": "query_filter"
+          },
+          {
+            "name": "dns_server_filter",
+            "variable": "dns_server_filter"
+          }
+        ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "DNS Flow Graph",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 4
+      },
+      "globalFuncOutputName": "dns_flow",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Graph",
+        "adjacencyList": {
+          "fromColumn": "pod",
+          "toColumn": "qgroup"
+        },
+        "edgeWeightColumn": "total",
+        "edgeColorColumn": "unresolved",
+        "edgeHoverInfo": [
+          "total",
+          "unresolved",
+          "nx_domain"
+        ],
+        "edgeThresholds": {
+          "mediumThreshold": 50,
+          "highThreshold": 90
+        },
+        "edgeLength": 500
+      }
+    },
+    {
+      "name": "Table",
+      "position": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 4
+      },
+      "globalFuncOutputName": "dns_flow",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      }
+    }
+  ]
+}

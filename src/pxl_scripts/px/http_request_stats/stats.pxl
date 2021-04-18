@@ -1,0 +1,55 @@
+import px
+
+t1 = px.DataFrame(table='http_events', start_time='-30s')
+
+t1.service = t1.ctx['service']
+t1.failure = t1.resp_status >= 400
+window = px.DurationNanos(px.seconds(5))
+t1.range_group = px.bin(t1.time_, window)
+
+quantiles_agg = t1.groupby('service').agg(
+    latency_quantiles=('latency', px.quantiles),
+    errors=('failure', px.mean),
+    throughput_total=('resp_status', px.count),
+)
+quantiles_agg.errors = px.Percent(quantiles_agg.errors)
+
+quantiles_agg.latency_p50 = px.DurationNanos(px.floor(
+    px.pluck_float64(quantiles_agg.latency_quantiles, 'p50')))
+quantiles_agg.latency_p90 = px.DurationNanos(px.floor(
+    px.pluck_float64(quantiles_agg.latency_quantiles, 'p90')))
+quantiles_agg.latency_p99 = px.DurationNanos(px.floor(
+    px.pluck_float64(quantiles_agg.latency_quantiles, 'p99')))
+quantiles_table = quantiles_agg[['service', 'latency_p50',
+                                 'latency_p90', 'latency_p99', 'errors', 'throughput_total']]
+
+# The Range aggregate to calcualte the requests per second.
+range_agg = t1.groupby(['service', 'range_group']).agg(
+    requests_per_window=('resp_status', px.count),
+)
+
+rps_table = range_agg.groupby('service').agg(
+    request_throughput=('requests_per_window', px.mean))
+
+joined_table = quantiles_table.merge(rps_table,
+                                     how='inner',
+                                     left_on=['service'],
+                                     right_on=['service'],
+                                     suffixes=['', '_x'])
+
+joined_table['latency(p50)'] = joined_table.latency_p50
+joined_table['latency(p90)'] = joined_table.latency_p90
+joined_table['latency(p99)'] = joined_table.latency_p99
+joined_table['throughput'] = joined_table.request_throughput / window
+joined_table['throughput total'] = joined_table.throughput_total
+
+joined_table = joined_table[[
+    'service',
+    'latency(p50)',
+    'latency(p90)',
+    'latency(p99)',
+    'errors',
+    'throughput',
+    'throughput total']]
+joined_table = joined_table[joined_table.service != '']
+px.display(joined_table)

@@ -1,0 +1,248 @@
+
+
+''' jvm per Pod and filtered by Node.
+
+This live view summarizes the CPU percentage and network bytes
+received and transmitted per Pod. On top of that, you can
+isolate data to only a single node.
+
+Notes:
+* Setting node_name is not exclusive at the moment.
+* Setting pod is not exclusive at the moment.
+'''import px
+
+# ----------------------------------------------------------------
+# Visualization Variables - No need to edit for basic configuration.
+# ----------------------------------------------------------------
+# K8s object is the abstraction to group on.
+# Options are ['pod', 'service'].
+k8s_object = 'pod'
+ns_per_ms = 1000 * 1000
+ns_per_s = 1000 * ns_per_ms
+# Window size to use on time_ column for bucketing.
+window_ns = px.DurationNanos(10 * ns_per_s)
+# Name of the node column to display.
+node_col = 'node_name'
+
+split_series_name = 'k8s'
+px.Node = str
+px.Pod = str
+# ----------------------------------------------------------------
+
+
+# ----------------------------------------------------------------
+# Visualization functions:
+#
+# These functions are formatted and ready for use in
+# the visualization speciciation, vis.json.
+# ----------------------------------------------------------------
+def node_table(start: str, node_name: px.Node, pod: px.Pod):
+    """ Gets the nodes that are picked up by the node and pod filters.
+
+    Args:
+    @start: Starting time of the data to examine.
+    @node_name: The partial name of the node(s) to display data for.
+    @pod: The partial name of the pod(s) to display data for.
+
+    Returns: A DataFrame that displays all nodes matching the node
+        and pod filters.
+    """
+    df = filtered_process_stats(start, node_name, pod)
+    # Aggregate on nodes to get unique node values.
+    nodes = df.groupby(node_col).agg(cc=(node_col, px.count))
+    return nodes.drop('cc')
+
+
+def jvm_stats(start: str, node_name: px.Node, pod: px.Pod):
+    """ Gets the JVM stats of pods that run on the matched nodes
+    and that match the pod name.
+
+    Args:
+    @start: Starting time of the data to examine.
+    @node_name: The partial name of the node(s) to display data for.
+    @pod: The partial name of the pod(s) to display data for.
+
+    Returns: A DataFrame of jvm stats per pod matched in the passed
+        in filters.
+    """
+    df = filtered_process_stats(start, node_name, pod)
+    # Calculate the CPU usage per window.
+    jvm_df = calculate_jvm(df, window_ns)
+    jvm_df[split_series_name] = jvm_df[k8s_object]
+    return jvm_df
+
+
+def cmd_pod_table(start: str, node_name: px.Node, pod: px.Pod):
+    """ Gets the pods that are picked up by the node and pod filters.
+
+    Args:
+    @start: Starting time of the data to examine.
+    @node_name: The partial name of the node(s) to display data for.
+    @pod: The partial name of the pod(s) to display data for.
+
+    Returns: A DataFrame that displays all pods matching the node
+        and pod filters.
+    """
+    df = filtered_process_stats(start, node_name, pod)
+    df.cmdline = px.upid_to_cmdline(df.upid)
+    # Aggregate on nodes to get unique node values.
+    pods = df.groupby([k8s_object, 'cmdline']).agg(cc=(k8s_object, px.count))
+    return pods.drop('cc')
+
+
+# ----------------------------------------------------------------
+# Utility functions:
+#
+# These are shared functions. We plan to support imports in v0.3,
+# which will allow these functions to be shared across multiple
+# scripts.
+# ----------------------------------------------------------------
+def filtered_process_stats(start: str, node_name: px.Node, pod: px.Pod):
+    """ Helper function that filters the process_stats tabel for data that
+    matches the pod and node filters.
+
+    Args:
+    @start: Starting time of the data to examine.
+    @node_name: The partial name of the node(s) to display data for.
+    @pod: The partial name of the pod(s) to display data for.
+
+    Returns: A process_stats data formatted for other functions and
+       filtered by matching pods located on nodes that match @node_name.
+
+    """
+
+    # Load and prepare the process_stats table to calculate CPU usage
+    # by pod.
+    process_df = px.DataFrame(table='jvm_stats', start_time=start)
+    process_df = format_jvm_table(process_df, window_ns)
+    process_df = filter_stats(process_df, node_name, pod)
+    return process_df
+
+
+def format_stats_table(df, window_size):
+    """ Format data and add semantic columns in stats tables.
+
+    Adds a binned timestamp field to aggregate on.
+    Works on "process_stats" and "net_stats"
+
+    Args:
+    @df: the input stats table.
+    @window_size: the size of the window in seconds to aggregate on.
+
+    Returns: formatted stats DataFrame.
+    """
+    df.timestamp = px.bin(df.time_, window_size)
+    return df
+
+
+def format_jvm_table(df, window_size):
+    """ Formats jvm_stats table.
+
+    Maps in a pod column, node column and converts
+    process-related metrics (cpu and memory) into a more readable
+    format.
+
+    Args:
+    @df: the input process_stats table.
+    @window_size: the size of the window in seconds to aggregate on.
+
+    Returns: formatted process_stats DataFrame.
+    """
+    df = format_stats_table(df, window_size)
+    df[node_col] = df.ctx['node_name']
+    df[k8s_object] = df.ctx[k8s_object]
+    return df
+
+
+def format_network_table(df, window_size):
+    """ Formats network_stats table.
+
+    Maps in a pod column, node column and converts
+    network-related metrics (transmitted and received bytes) into
+    a more readable format.
+
+    Args:
+    @df: the input network_stats table.
+    @window_size: the size of the window in seconds to
+      aggregate on.
+
+    Returns: formatted network_stats DataFrame.
+    """
+    df = format_stats_table(df, window_size)
+    df[node_col] = px.pod_id_to_node_name(df.pod_id)
+    df[k8s_object] = px.pod_id_to_pod_name(df.pod_id)
+    return df
+
+
+def filter_stats(df, node_filter, k8s_filter):
+    """ Filter stats tables based that match the semantic values.
+
+    Keep data from nodes that match @node_filter and
+    k8s_objects that match @k8s_filter.
+
+    Args:
+    @df: the input process table.
+    @node_filter: the partial name of nodes to match.
+    @k8s_filter: the partial name of k8s_object to match.
+
+    Returns: filtered stats DataFrame.
+    """
+    df = df[px.contains(df[node_col], node_filter)]
+    df = df[px.contains(df[k8s_object], k8s_filter)]
+    return df
+
+
+def calculate_jvm(df, window_size):
+    """ Calculate jvm statistics per window per k8s_object.
+
+    Calculates the value of critical JVM stats over each window
+    of size window_size. The GC time metrics (young_gc_time and
+    full_gc_time metrics) are monotically increasing counters,
+    so we need to get the beginning and end values in the window.
+    The other metrics are not counters, so we just take the mean
+    over the window.
+
+    Because jvm_stats is sharded by UPID (Unique PID), you must
+    calculate this value by PID first, then sum up per k8s_object
+    to get accurate results.
+
+    Args:
+    @df: the input jvm_stats table.
+    @window_size: the size of the window in seconds to
+      aggregate on.
+
+    Returns: Calculated JVM stats per window and pod/svc.
+    """
+    df.used_heap_size = px.Bytes(df.used_heap_size)
+    df.total_heap_size = px.Bytes(df.total_heap_size)
+    df.max_heap_size = px.Bytes(df.max_heap_size)
+    # Aggregate over each UPID, k8s_object, and window.
+    by_upid = df.groupby(['upid', k8s_object, 'timestamp']).agg(
+        young_gc_time_max=('young_gc_time', px.max),
+        young_gc_time_min=('young_gc_time', px.min),
+        full_gc_time_max=('full_gc_time', px.max),
+        full_gc_time_min=('full_gc_time', px.min),
+        used_heap_size=('used_heap_size', px.mean),
+        total_heap_size=('total_heap_size', px.mean),
+        max_heap_size=('max_heap_size', px.mean),
+    )
+
+    # Conver the counter metrics into accumulated values over the window.
+    by_upid.young_gc_time = by_upid.young_gc_time_max - by_upid.young_gc_time_min
+    by_upid.full_gc_time = by_upid.full_gc_time_max - by_upid.full_gc_time_min
+
+    # Then aggregate process individual process metrics into the overall
+    # k8s_object.
+    per_k8s = by_upid.groupby([k8s_object, 'timestamp']).agg(
+        young_gc_time=('young_gc_time', px.sum),
+        full_gc_time=('full_gc_time', px.sum),
+        used_heap_size=('used_heap_size', px.sum),
+        max_heap_size=('max_heap_size', px.sum),
+        total_heap_size=('total_heap_size', px.sum),
+    )
+    per_k8s.young_gc_time = px.DurationNanos(per_k8s.young_gc_time)
+    per_k8s.full_gc_time = px.DurationNanos(per_k8s.full_gc_time)
+
+    # Finally, calculate total (kernel + user time)  percentage used over window.
+    per_k8s['time_'] = per_k8s['timestamp']
+    return per_k8s

@@ -1,0 +1,86 @@
+{
+  "variables": [
+    {
+      "name": "start_time",
+      "type": "PX_STRING",
+      "description": "The relative start time of the window. Current time is assumed to be now",
+      "defaultValue": "-5m"
+    },
+    {
+      "name": "node",
+      "type": "PX_NODE",
+      "description": "The node to filter on.",
+      "defaultValue": ""
+    },
+    {
+      "name": "namespace",
+      "type": "PX_NAMESPACE",
+      "description": "The namespace to filter on.",
+      "defaultValue": ""
+    },
+    {
+      "name": "pod",
+      "type": "PX_POD",
+      "description": "The pod to filter on.",
+      "defaultValue": ""
+    },
+    {
+      "name": "pct_basis_entity",
+      "type": "PX_STRING",
+      "description": "When computing percentages, the entity to use as the quotient.",
+      "defaultValue": "node",
+      "validValues": [
+        "node",
+        "pod"
+      ]
+
+    }
+  ],
+  "globalFuncs": [],
+  "widgets": [
+    {
+      "name": "Flamegraph",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 6
+      },
+      "func": {
+        "name": "stacktraces",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "node",
+            "variable": "node"
+          },
+          {
+            "name": "namespace",
+            "variable": "namespace"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          },
+          {
+            "name": "pct_basis_entity",
+            "variable": "pct_basis_entity"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.StackTraceFlameGraph",
+        "stacktraceColumn": "stack_trace",
+        "countColumn": "count",
+        "percentageColumn": "percent",
+        "namespaceColumn": "namespace",
+        "podColumn": "pod",
+        "containerColumn": "container",
+        "pidColumn": "cmdline"
+      }
+    }
+  ]
+}

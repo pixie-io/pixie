@@ -1,0 +1,26 @@
+import px
+
+ns_per_ms = 1000 * 1000
+
+
+def events(t1, latency_col):
+    t1.latency_huge = t1[latency_col] > (10 * ns_per_ms)
+    t1.negative_latencies = t1[latency_col] < 0
+    return t1.groupby(['latency_huge', 'negative_latencies']).agg(count=(latency_col, px.count))
+
+
+t1 = px.DataFrame(table='http_events', start_time='-300s')
+px.display(events(t1, 'latency'), 'http_latencies')
+
+t1 = px.DataFrame(table='mysql_events', start_time='-300s')
+px.display(events(t1, 'latency'), 'mysql_latencies')
+
+t1 = px.DataFrame(table='process_stats', start_time='-30s')
+t1.cmd_line = px.upid_to_cmdline(t1.upid)
+t1 = t1[px.contains(t1.cmd_line, "java")]
+t1 = t1.head(1000)
+px.display(t1, 'java_processes')
+
+t1 = px.DataFrame(table='jvm_stats', start_time='-30s')
+t1.cmd_line = px.upid_to_cmdline(t1.upid)
+px.display(t1, 'jvm_stats')

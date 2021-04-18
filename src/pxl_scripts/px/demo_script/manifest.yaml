@@ -1,0 +1,3 @@
+---
+short: Demo of sampling HTTP data with a terse display
+long: Shows a sample of HTTP requests in the cluster with a very terse display format.

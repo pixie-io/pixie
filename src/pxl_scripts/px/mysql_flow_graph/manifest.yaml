@@ -1,0 +1,4 @@
+---
+short: MySQL Flow Graph
+long: >
+  Graph of MySQL messages in the cluster, with latency stats.

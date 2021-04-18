@@ -1,0 +1,83 @@
+{
+  "variables": [
+    {
+      "name": "start",
+      "type": "PX_STRING",
+      "description": "The start time of the window in time units before now.",
+      "defaultValue": "-5m"
+    },
+    {
+      "name": "from_entity_filter",
+      "type": "PX_STRING",
+      "description": "The partial string to match the 'from_entity' (source pod).",
+      "defaultValue": ""
+    },
+    {
+      "name": "to_entity_filter",
+      "type": "PX_STRING",
+      "description": "The partial string to match the 'to_entity' (destination service).",
+      "defaultValue": ""
+    }
+  ],
+  "globalFuncs": [
+    {
+      "outputName": "dns_flow",
+      "func": {
+        "name": "dns_flow_graph",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          },
+          {
+            "name": "from_entity_filter",
+            "variable": "from_entity_filter"
+          },
+          {
+            "name": "to_entity_filter",
+            "variable": "to_entity_filter"
+          }
+        ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "DNS Flow Graph",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 4
+      },
+      "globalFuncOutputName": "dns_flow",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Graph",
+        "adjacencyList": {
+          "fromColumn": "from_entity",
+          "toColumn": "to_entity"
+        },
+        "edgeWeightColumn": "latency_avg",
+        "edgeHoverInfo": [
+          "latency_avg",
+          "latency_max",
+          "count"
+        ],
+        "edgeLength": 500
+      }
+    },
+    {
+      "name": "Table",
+      "position": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 4
+      },
+      "globalFuncOutputName": "dns_flow",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      }
+    }
+  ]
+}

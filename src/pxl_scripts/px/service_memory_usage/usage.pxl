@@ -1,0 +1,47 @@
+import px
+
+###############################################################
+# The following can be edited to k8s object and name to match.
+###############################################################
+# The Kubernetes object to filter on.
+#    Options are ['pod', 'service']
+k8s_object = 'service'
+
+# If you want to filter the object by name, enter the partial
+# or full name here.
+match_name = ''
+###############################################################
+
+#
+# Get the Virtual memory usage and average memory for all of
+# the specified k8s objects in the cluster.
+#
+t1 = px.DataFrame(table='process_stats', start_time='-1m')
+t1.timestamp = px.bin(t1.time_, px.seconds(10))
+t1[k8s_object] = t1.ctx[k8s_object]
+
+t1 = t1[px.contains(t1[k8s_object], match_name)]
+
+upid_aggop = t1.groupby(['upid', k8s_object, 'timestamp']).agg(
+    vsize=('vsize_bytes', px.mean),
+    rss=('rss_bytes', px.mean),
+)
+
+# For this aggregate, we sum up the values as we've already calculated the average/usage
+# for the upids already, just need to do it for the entire service.
+aggop = upid_aggop.groupby([k8s_object, 'timestamp']).agg(
+    vsize=('vsize', px.sum),
+    rss=('rss', px.sum),
+)
+
+# Format column names.
+aggop['Virtual Memory'] = aggop.vsize
+aggop['Average Memory'] = aggop.rss
+keep_columns = aggop[[
+    k8s_object,
+    'timestamp',
+    'Virtual Memory',
+    'Average Memory'
+]]
+
+px.display(keep_columns)

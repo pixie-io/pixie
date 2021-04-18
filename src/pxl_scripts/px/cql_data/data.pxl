@@ -1,0 +1,19 @@
+
+
+''' CQL Data Tracer
+
+This script traces all CQL (Cassandra) data on the cluster.
+'''import px
+
+
+def cql_data(start: str, num_head: int):
+    df = px.DataFrame(table='cql_events', start_time=start)
+
+    # Replace UPID with pod.
+    df.pod = df.ctx['pod']
+    df = df.drop(['upid', 'trace_role'])
+
+    # Restrict number of results.
+    df = df.head(num_head)
+
+    return df

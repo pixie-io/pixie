@@ -1,0 +1,35 @@
+import px
+
+#
+# Get the Virtual memory usage and average memory for all processes in the k8s cluster.
+#
+t1 = px.DataFrame(table='process_stats', start_time='-30s')
+
+t1.timestamp = px.bin(t1.time_, px.seconds(10))
+t1.cmdline = px.upid_to_cmdline(t1.upid)
+
+aggop = t1.groupby(['upid', 'timestamp', 'cmdline']).agg(
+    vsize=('vsize_bytes', px.mean),
+    rss=('rss_bytes', px.mean),
+)
+
+# Format column names.
+aggop.pid = px.upid_to_pid(aggop.upid)
+aggop.asid = px.upid_to_asid(aggop.upid)
+aggop['Process Name'] = aggop.cmdline
+
+# Uncomment and replace number to filter on a specific pid.
+# aggop = aggop[aggop.pid == 4862]
+
+aggop['Virtual Memory'] = aggop.vsize
+aggop['Average Memory'] = aggop.rss
+keep_columns = aggop[[
+    'pid',
+    'Process Name',
+    'asid',
+    'timestamp',
+    'Virtual Memory',
+    'Average Memory'
+]]
+
+px.display(keep_columns)
