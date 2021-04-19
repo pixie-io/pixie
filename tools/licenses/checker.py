@@ -169,6 +169,8 @@ matchers = [
             re.compile(r"^Makefile$"),
             # PxL.
             re.compile(r"^.*\.(pxl)$"),
+            # Ruby.
+            re.compile(r"^.*\.(rb)$"),
         ],
         'wrapper': sh_style_license_wrapper,
     },
