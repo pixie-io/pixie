@@ -127,7 +127,9 @@ matchers = [
     {
         'name': 'c_style',
         'exprs': [
-            re.compile(r"^.*\.(cc|cpp|h|hpp|c)$"),
+            re.compile(r"^.*\.(cc|cpp|h|hpp|c|inl)$"),
+            re.compile(r"^.*\.(bt)$"),
+            re.compile(r"^.*\.(java)$"),
             re.compile(r"^.*\.(js|jsx|ts|tsx)$"),
             re.compile(r"^.*\.(proto)$"),
         ],
