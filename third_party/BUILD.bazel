@@ -180,16 +180,6 @@ cc_library(
 )
 
 cc_library(
-    name = "aes-min",
-    srcs = ["aes-min/aes-min.c"],
-    hdrs = ["aes-min/aes-min.h"],
-    copts = [
-        "-Wno-unused-function",
-    ],
-    visibility = ["//visibility:public"],
-)
-
-cc_library(
     name = "elfio",
     hdrs = glob(["ELFIO/elfio/*.hpp"]),
     includes = ["ELFIO"],

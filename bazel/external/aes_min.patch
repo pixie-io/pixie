@@ -1,0 +1,43 @@
+diff --git a/aes-min.c b/aes-min.c
+index 409c709..0aeb577 100644
+--- a/aes-min.c
++++ b/aes-min.c
+@@ -312,6 +312,26 @@ void aes128_otfks_decrypt_start_key(uint8_t p_key[AES128_KEY_SIZE])
+     }
+ }
+ 
++/* AES-128 decryption master key recovery.
++ *
++ * p_key must initially point to a starting key state for decryption, which is
++ * the last 16 bytes of the AES-128 key schedule. The master key is
++ * calculated on-the-fly in that buffer.
++ */
++void aes128_recover_key(uint8_t p_key[AES128_KEY_SIZE])
++{
++    uint_fast8_t    round;
++    uint8_t         rcon = AES128_KEY_SCHEDULE_LAST_RCON;
++
++    for (round = 0; round < AES128_NUM_ROUNDS; ++round)
++    {
++        aes128_key_schedule_inv_round(p_key, rcon);
++
++        /* Previous rcon */
++        rcon = aes_div2(rcon);
++    }
++}
++
+ /* AES-128 decryption with on-the-fly key schedule calculation.
+  *
+  * p_block points to a 16-byte buffer of encrypted data to decrypt. Decryption
+diff --git a/aes-min.h b/aes-min.h
+index 098a791..b803dab 100644
+--- a/aes-min.h
++++ b/aes-min.h
+@@ -59,6 +59,7 @@ void aes128_otfks_encrypt(uint8_t p_block[AES_BLOCK_SIZE], uint8_t p_key[AES128_
+ void aes128_otfks_decrypt(uint8_t p_block[AES_BLOCK_SIZE], uint8_t p_decrypt_start_key[AES128_KEY_SIZE]);
+ 
+ void aes128_otfks_decrypt_start_key(uint8_t p_key[AES128_KEY_SIZE]);
++void aes128_recover_key(uint8_t p_key[AES128_KEY_SIZE]);
+ 
+ 
+ #endif /* !defined(AES_MIN_H) */

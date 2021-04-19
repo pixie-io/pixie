@@ -229,4 +229,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/bazelbuild/rules_python/releases/download/0.1.0/rules_python-0.1.0.tar.gz"],
         sha256 = "b6d46438523a3ec0f3cead544190ee13223a52f6a6765a29eae7b7cc24cc83a0",
     ),
+    com_github_cmcqueen_aes_min = dict(
+        sha256 = "dd82d23976695d857924780c262952cdb12ddbb56e6bdaf5a2270dccc851d279",
+        strip_prefix = "aes-min-0.3.1",
+        urls = ["https://github.com/cmcqueen/aes-min/releases/download/0.3.1/aes-min-0.3.1.tar.gz"],
+    ),
 )

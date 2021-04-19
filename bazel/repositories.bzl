@@ -96,6 +96,7 @@ def _cc_deps():
     _repo_impl("com_github_arun11299_cpp_jwt", build_file = "//bazel/external:cpp_jwt.BUILD")
     _repo_impl("com_github_cyan4973_xxhash", build_file = "//bazel/external:xxhash.BUILD")
     _repo_impl("com_github_nlohmann_json", build_file = "//bazel/external:nlohmann_json.BUILD")
+    _repo_impl("com_github_cmcqueen_aes_min", patches = ["//bazel/external:aes_min.patch"], patch_args = ["-p1"], build_file = "//bazel/external:aes_min.BUILD")
     _repo_impl(
         "com_github_google_sentencepiece",
         build_file = "//bazel/external:sentencepiece.BUILD",
