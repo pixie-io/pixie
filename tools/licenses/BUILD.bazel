@@ -40,6 +40,13 @@ go_binary(
     visibility = ["//visibility:public"],
 )
 
+# We use empty place holder creds when not running stampped builds.
+# These targets are used to automatically generate the credits page.
+credential = select({
+    "//bazel:stamped": "//credentials/dev_infra:github_key",
+    "//conditions:default": "placeholder_creds.json",
+})
+
 fetch_licenses(
     name = "go_licenses",
     src = "//:pl_3p_go_sum",
@@ -49,7 +56,7 @@ fetch_licenses(
     }),
     fetch_tool = ":fetch_licenses",
     manual_licenses = "manual_licenses.json",
-    oauth_token = "//credentials/dev_infra:github_key",
+    oauth_token = credential,
     out_found = "go_licenses.json",
     out_missing = "go_licenses_missing.json",
     use_pkg_dev_go = True,
@@ -64,7 +71,7 @@ fetch_licenses(
     }),
     fetch_tool = ":fetch_licenses",
     manual_licenses = "manual_licenses.json",
-    oauth_token = "//credentials/dev_infra:github_key",
+    oauth_token = credential,
     out_found = "submodule_licenses.json",
     out_missing = "submodule_licenses_missing.json",
 )
@@ -78,7 +85,7 @@ fetch_licenses(
     }),
     fetch_tool = ":fetch_licenses",
     manual_licenses = "manual_licenses.json",
-    oauth_token = "//credentials/dev_infra:github_key",
+    oauth_token = credential,
     out_found = "deps_licenses.json",
     out_missing = "deps_licenses_missing.json",
 )
