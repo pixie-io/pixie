@@ -100,7 +100,17 @@ func main() {
 	saCfg := mustLoadServiceAccountConfig()
 	bucket := viper.GetString("artifact_bucket")
 	svr := controller.NewServer(db, stiface.AdaptClient(client), bucket, saCfg)
-	s := server.NewPLServer(env, mux)
+
+	serverOpts := &server.GRPCServerOptions{
+		DisableAuth: map[string]bool{
+			"/px.services.ArtifactTracker/GetArtifactList": true,
+			"/px.services.ArtifactTracker/GetDownloadLink": true,
+			"/pl.services.ArtifactTracker/GetArtifactList": true,
+			"/pl.services.ArtifactTracker/GetDownloadLink": true,
+		},
+	}
+
+	s := server.NewPLServerWithOptions(env, mux, serverOpts)
 	atpb.RegisterArtifactTrackerServer(s.GRPCServer(), svr)
 	s.Start()
 	s.StopOnInterrupt()

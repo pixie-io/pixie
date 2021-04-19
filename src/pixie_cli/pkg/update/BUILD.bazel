@@ -23,7 +23,6 @@ go_library(
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
-        "//src/pixie_cli/pkg/auth",
         "//src/pixie_cli/pkg/utils",
         "//src/shared/goversion",
         "//src/shared/services",
@@ -33,7 +32,6 @@ go_library(
         "@com_github_vbauerster_mpb_v4//:mpb",
         "@com_github_vbauerster_mpb_v4//decor",
         "@org_golang_google_grpc//:go_default_library",
-        "@org_golang_google_grpc//metadata",
         "@org_golang_x_sys//unix",
     ],
 )

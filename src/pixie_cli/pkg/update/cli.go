@@ -21,7 +21,6 @@ package update
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -37,10 +36,8 @@ import (
 	"github.com/vbauerster/mpb/v4/decor"
 	"golang.org/x/sys/unix"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
 
 	"px.dev/pixie/src/cloud/cloudapipb"
-	"px.dev/pixie/src/pixie_cli/pkg/auth"
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
 	version "px.dev/pixie/src/shared/goversion"
 	"px.dev/pixie/src/shared/services"
@@ -109,19 +106,12 @@ func (c *CLIUpdater) GetAvailableVersions(minVersion semver.Version) ([]string, 
 		Limit:        10,
 	}
 
-	creds, err := auth.LoadDefaultCredentials()
-	if err != nil {
-		return nil, err
-	}
-	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
-		fmt.Sprintf("bearer %s", creds.Token))
-
 	client, err := newATClient(c.cloudAddr)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := client.GetArtifactList(ctx, &req)
+	resp, err := client.GetArtifactList(context.Background(), &req)
 	if err != nil {
 		return nil, err
 	}
@@ -171,13 +161,12 @@ func (c *CLIUpdater) UpdateSelf(version string) error {
 		VersionStr:   version,
 	}
 
-	ctx := auth.CtxWithCreds(context.Background())
 	client, err := newATClient(c.cloudAddr)
 	if err != nil {
 		return err
 	}
 
-	resp, err := client.GetDownloadLink(ctx, &req)
+	resp, err := client.GetDownloadLink(context.Background(), &req)
 	if err != nil {
 		return err
 	}

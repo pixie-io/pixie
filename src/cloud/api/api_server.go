@@ -159,6 +159,12 @@ func main() {
 			}
 			return controller.GetAugmentedTokenGRPC(ctx, apiEnv)
 		},
+		DisableAuth: map[string]bool{
+			"/px.cloudapi.ArtifactTracker/GetArtifactList": true,
+			"/px.cloudapi.ArtifactTracker/GetDownloadLink": true,
+			"/pl.cloudapi.ArtifactTracker/GetArtifactList": true,
+			"/pl.cloudapi.ArtifactTracker/GetDownloadLink": true,
+		},
 	}
 
 	domainName := viper.GetString("domain_name")
