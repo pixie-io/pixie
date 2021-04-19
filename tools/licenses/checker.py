@@ -167,6 +167,8 @@ matchers = [
             re.compile(r"^Dockerfile\..*$"),
             # Makefiles.
             re.compile(r"^Makefile$"),
+            # Starlark..
+            re.compile(r"^.*\.(sky)$"),
             # PxL.
             re.compile(r"^.*\.(pxl)$"),
             # Ruby.
