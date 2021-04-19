@@ -17,7 +17,7 @@
 import pxtraceimport px
 
 # Adapted from https://github.com/iovisor/bpftrace/blob/master/tools/tcpretrans.bt
-program = """
+program = """  # noqa: E501
 // tcpretrans.bt Trace or count TCP retransmits
 //               For Linux, uses bpftrace and eBPF.
 //

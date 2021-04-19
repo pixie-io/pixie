@@ -19,6 +19,7 @@ Lists all DNS queries filtered by a specific query name.
 '''
 import px
 
+
 def dns_requests(start: str, query_name_filter: str):
 
     # The dns_events table pairs DNS requests with their responses.
@@ -38,7 +39,8 @@ def dns_requests(start: str, query_name_filter: str):
     # TODO: cleanup this logic when we support object types.
     df.req_body = px.pluck(df.req_body, 'queries')
     df.idx1 = px.find(df.req_body, '\"name\":')
-    df.query_name_partial = px.substring(df.req_body, df.idx1 + 8, px.length(df.req_body) - (df.idx1 + 8) - 3)
+    df.idz = px.length(df.req_body) - (df.idx1 + 8) - 3
+    df.query_name_partial = px.substring(df.req_body, df.idx1 + 8, df.idz)
     df.idx2 = px.find(df.query_name_partial, ',')
     df.dns_query_name = px.substring(df.query_name_partial, 0, df.idx2 - 1)
     df = df.drop(['idx1', 'idx2'])

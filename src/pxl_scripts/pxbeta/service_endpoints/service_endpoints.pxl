@@ -50,6 +50,7 @@ def endpoints(start_time: str, service: px.Service):
     })
     return df
 
+
 def endpoint_let(start_time: str, service: px.Service):
     ''' Compute the let as a timeseries for requests received by endpoints in `service`.
 

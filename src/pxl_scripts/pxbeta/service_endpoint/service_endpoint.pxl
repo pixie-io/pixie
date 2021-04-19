@@ -16,7 +16,8 @@
 
 ''' Endpoint Overview
 
- This script gets an overview of an individual endpoint on an individual service, summarizing its request statistics.
+ This script gets an overview of an individual endpoint on an
+ individual service, summarizing its request statistics.
 '''
 import px
 

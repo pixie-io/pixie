@@ -34,8 +34,9 @@ max_num_records = 100
 # ----------------------------------------------------------------
 
 df = px.DataFrame(table='http_events', select=['time_', 'upid', 'remote_addr', 'remote_port',
-                                               'req_method', 'req_path', 'resp_status', 'resp_message',
-                                               'resp_body', 'latency'], start_time=start_time)
+                                               'req_method', 'req_path', 'resp_status',
+                                               'resp_message', 'resp_body', 'latency'],
+                  start_time=start_time)
 
 df = df[df.req_method == 'POST']
 df.service = df.ctx['service']

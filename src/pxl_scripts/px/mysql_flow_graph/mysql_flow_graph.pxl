@@ -52,7 +52,8 @@ def mysql_flow_graph(start: str, ns: px.Namespace, source_filter: str, destinati
     df.latency_p99 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p99')))
     df.request_throughput = df.throughput_total / window_ns
 
-    df = df.groupby(['source', 'destination', 'is_source_pod_type', 'is_dest_pod_type', 'namespace']).agg(
+    df = df.groupby(['source', 'destination', 'is_source_pod_type', 'is_dest_pod_type',
+                     'namespace']).agg(
         latency_p50=('latency_p50', px.mean),
         latency_p90=('latency_p90', px.mean),
         latency_p99=('latency_p99', px.mean),
@@ -63,7 +64,8 @@ def mysql_flow_graph(start: str, ns: px.Namespace, source_filter: str, destinati
     return df
 
 
-def mysql_summary_with_links(start: str, ns: px.Namespace, source_filter: str, destination_filter: str):
+def mysql_summary_with_links(start: str, ns: px.Namespace, source_filter: str,
+                             destination_filter: str):
 
     df = mysql_flow_graph(start, ns, source_filter, destination_filter)
     df = add_source_dest_links(df, start)

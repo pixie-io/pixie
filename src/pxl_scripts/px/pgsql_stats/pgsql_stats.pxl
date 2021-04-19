@@ -74,11 +74,12 @@ def summary_pgsql_let(start: str, pod: px.Pod):
 
     df = pgsql_let_per_pod(start, pod, ['timestamp', 'source', 'destination', 'is_source_pod_type',
                                         'is_dest_pod_type', 'namespace'])
-    summary_df = summarize_LET(df, ['source', 'destination', 'is_source_pod_type', 'is_dest_pod_type',
-                                    'namespace'])
+    summary_df = summarize_LET(df, ['source', 'destination', 'is_source_pod_type',
+                                    'is_dest_pod_type', 'namespace'])
     summary_df_links = add_source_dest_links(summary_df, start)
 
-    return summary_df_links[['source', 'destination', 'request_throughput', 'latency', 'total_requests']]
+    return summary_df_links[['source', 'destination', 'request_throughput', 'latency',
+                             'total_requests']]
 
 
 def latency_histogram(start: str, pod: px.Pod):

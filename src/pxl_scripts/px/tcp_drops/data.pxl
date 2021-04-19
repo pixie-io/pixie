@@ -17,7 +17,7 @@
 import pxtraceimport px
 
 # Adapted from https://github.com/iovisor/bpftrace/blob/master/tools/tcpdrop.bt
-program = """
+program = """ # noqa: E501
 // tcpdrop.bt   Trace TCP kernel-dropped packets/segments.
 //              For Linux, uses bpftrace and eBPF.
 //

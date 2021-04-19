@@ -277,8 +277,8 @@ def format_LET_aggs(df):
 
     Converts the result of aggregates on windows into well-formatted metrics that
     can be visualized. Latency quantile values need to be extracted from the
-    quantiles struct, and then error_rate, request_throughput, and bytes_throughput are calculated as
-    a function of window size.
+    quantiles struct, and then error_rate, request_throughput, and bytes_throughput
+    are calculated as a function of window size.
 
 
     This function represents logic shared by LET calculators for MySQL and
