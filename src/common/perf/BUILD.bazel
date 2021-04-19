@@ -16,7 +16,10 @@
 
 load("//bazel:pl_build_system.bzl", "pl_cc_library_internal", "pl_cc_test")
 
-package(default_visibility = ["//src:__subpackages__"])
+package(default_visibility = [
+    "//experimental:__subpackages__",
+    "//src:__subpackages__",
+])
 
 pl_cc_library_internal(
     name = "cc_library",
