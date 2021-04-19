@@ -14,10 +14,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import pxtraceimport px
+# flake8: noqa:E501
+
+import pxtrace
+import px
 
 # Adapted from https://github.com/iovisor/bpftrace/blob/master/tools/tcpretrans.bt
-program = """  # noqa: E501
+program = """
 // tcpretrans.bt Trace or count TCP retransmits
 //               For Linux, uses bpftrace and eBPF.
 //
