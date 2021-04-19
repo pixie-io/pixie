@@ -47,7 +47,7 @@
       "exclude": [
         "(_objc\\.h$)"
       ],
-      "bin": "./tools/linters/cpplint/cpplint.py",
+      "bin": "./third_party/cpplint/cpplint.py",
       "flags": [
         "--filter=-build/c++11",
         "--filter=-build/c++14",

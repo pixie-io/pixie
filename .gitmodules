@@ -1,5 +1,5 @@
 [submodule "linters/cpplint"]
-	path = tools/linters/cpplint
+	path = third_party/cpplint
 	url = git@github.com:pixie-labs/cpplint.git
 [submodule "third_party/aes-min"]
 	path = third_party/aes-min
