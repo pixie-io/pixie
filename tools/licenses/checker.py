@@ -146,6 +146,16 @@ matchers = [
         ]
     },
     {
+        'name': 'php',
+        'exprs': [
+            re.compile(r"^.*\.(php)$"),
+        ],
+        'wrapper': c_style_license_wrapper,
+        'skip_lines': [
+            re.compile(r"^(<\?php)"),
+        ],
+    },
+    {
         'name': 'shell_without_shebang',
         'exprs': [
             # Bazel.
@@ -165,8 +175,6 @@ matchers = [
     {
         'name': 'shell_with_shebang',
         'exprs': [
-            # PHP.
-            re.compile(r"^.*\.(php)$"),
             # Python.
             re.compile(r"^.*\.(py)$"),
             # Shell.

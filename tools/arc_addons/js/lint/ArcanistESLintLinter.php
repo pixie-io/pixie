@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Copyright 2016 Pinterest, Inc.
  *
@@ -130,7 +131,7 @@ final class ArcanistESLintLinter extends ArcanistExternalLinter {
         // Skip file ignored warning: if a file is ignored by .eslintingore
         // but linted explicitly (by arcanist), a warning will be reported,
         // containing only: `{fatal:false,severity:1,message:...}`.
-        if (strpos($offense['message'], "File ignored ") === 0) {
+        if (strncmp($offense['message'], 'File ignored ', 13) === 0) {
           continue;
         }
 
@@ -153,8 +154,8 @@ final class ArcanistESLintLinter extends ArcanistExternalLinter {
     return $messages;
   }
 
-  private function mapSeverity($eslintSeverity) {
-    switch($eslintSeverity) {
+  private function mapSeverity($eslint_severity) {
+    switch ($eslint_severity) {
       case '0':
       case '1':
         return ArcanistLintSeverity::SEVERITY_WARNING;

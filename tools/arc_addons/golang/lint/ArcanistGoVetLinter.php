@@ -1,5 +1,21 @@
 <?php
 
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 /* Modified from the original by vihang@ */
 
 final class ArcanistGoVetLinter extends ArcanistExternalLinter {
@@ -52,13 +68,13 @@ final class ArcanistGoVetLinter extends ArcanistExternalLinter {
     $futures = array();
     foreach ($paths as $path) {
       // Get the package path from the file path.
-      $fPath = $this->getProjectRoot() . '/' . $path;
-      $splitPkgPath = explode('/', $fPath);
+      $file_path = $this->getProjectRoot().'/'.$path;
+      $split_pkg_path = explode('/', $file_path);
 
-      $pkgPath = join('/', array_slice($splitPkgPath, 0, sizeof($splitPkgPath) - 1)) . '/...';
+      $pkg_path = implode('/', array_slice($split_pkg_path, 0, count($split_pkg_path) - 1)).'/...';
 
       // Run go vet on the package path.
-      $future = new ExecFuture('%s %Ls %s', $executable, $flags, $pkgPath);
+      $future = new ExecFuture('%s %Ls %s', $executable, $flags, $pkg_path);
       $future->setEnv(array('CGO_ENABLED' => 0));
       $futures[$path] = $future;
     }
@@ -88,21 +104,21 @@ final class ArcanistGoVetLinter extends ArcanistExternalLinter {
       }
 
       if (count($matches) >= 4) {
-        $pIdx = 0;
+        $p_idx = 0;
         $found = false;
-        foreach ($matches as $idx=>$match) {
+        foreach ($matches as $idx => $match) {
           if ($match === $path) {
-            $pIDX = $idx;
+            $p_idx = $idx;
             $found = true;
           }
         }
 
-        if ($found && $pIdx < count($matches) - 2) {
-          $l = $matches[$pIdx+1];
-          $c = $matches[$pIdx+2];
+        if ($found && $p_idx < count($matches) - 2) {
+          $l = $matches[$p_idx + 1];
+          $c = $matches[$p_idx + 2];
 
           if (is_numeric($l) && is_numeric($c)) {
-            $desc = ucfirst(trim(implode(':', array_slice($matches, $pIdx+3))));
+            $desc = ucfirst(trim(implode(':', array_slice($matches, $p_idx + 3))));
             if (strlen($desc) === 0) {
               $desc = $line;
             }

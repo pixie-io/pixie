@@ -154,7 +154,8 @@
       "script-and-regex.script": "./tools/licenses/checker.py -f",
       "script-and-regex.regex": "/^(?P<file>[^\n]+)(?P<error>:)((?P<line>\\d),(?P<char>\\d)\n<<<<<\n(?P<original>.*)=====\n(?P<replacement>.*)>>>>>\n)$/s",
       "exclude": [
-        "(^tools/arc_addons)"
+        "(__phutil_library_init__.\\php$)",
+        "(__phutil_library_map__.\\php$)"
       ]
     },
     "merge-conflict": {
