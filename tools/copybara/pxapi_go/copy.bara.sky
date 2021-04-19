@@ -39,8 +39,8 @@ core.workflow(
     authoring = authoring.pass_thru("Copybara <copybara@pixielabs.ai>"),
     mode = "ITERATIVE",
     transformations = [
-        core.replace("px.dev/pixie/src/api/public", "px.dev/pxapi-go/pxpb", paths=glob(["**/*.go"])),
-        core.replace("px.dev/pixie/src/api/go/pxapi", "px.dev/pxapi-go", paths=glob(["**/*.go"])),
+        core.replace("px.dev/pixie/src/api/public", "px.dev/pxapi/pxpb", paths=glob(["**/*.go"])),
+        core.replace("px.dev/pixie/src/api/go/pxapi", "px.dev/pxapi", paths=glob(["**/*.go"])),
         core.move("src/api/public", "pxpb"),
         core.move("src/api/go/pxapi", ""),
         core.move("go.mod.tmpl", "go.mod"),

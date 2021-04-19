@@ -1,4 +1,4 @@
-module px.dev/pxapi-go
+module px.dev/pxapi
 
 go 1.16
 
