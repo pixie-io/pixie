@@ -14,14 +14,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+public_repo = "git@github.com:pixie-labs/pixie.git"
+api_repo = "git@github.com:pixie-labs/pxapi.go.git"
+
 core.workflow(
     name = "default",
     origin = git.origin(
-        url = "ssh://git@phab.corp.pixielabs.ai:222/source/pixielabs.git",
+        url = public_repo,
         ref = "main",
     ),
     destination = git.destination(
-        url = "git@github.com:pixie-labs/pxapi.go.git",
+        url = api_repo,
         fetch = "main",
         push = "main",
     ),
@@ -33,14 +36,12 @@ core.workflow(
         ],
         exclude = ["**/private/**", "*_private.*"],
     ),
-
     destination_files = glob(["**"]),
-
     authoring = authoring.pass_thru("Copybara <copybara@pixielabs.ai>"),
     mode = "ITERATIVE",
     transformations = [
-        core.replace("px.dev/pixie/src/api/public", "px.dev/pxapi/pxpb", paths=glob(["**/*.go"])),
-        core.replace("px.dev/pixie/src/api/go/pxapi", "px.dev/pxapi", paths=glob(["**/*.go"])),
+        core.replace("px.dev/pixie/src/api/public", "px.dev/pxapi/pxpb", paths = glob(["**/*.go"])),
+        core.replace("px.dev/pixie/src/api/go/pxapi", "px.dev/pxapi", paths = glob(["**/*.go"])),
         core.move("src/api/public", "pxpb"),
         core.move("src/api/go/pxapi", ""),
         core.move("go.mod.tmpl", "go.mod"),

@@ -29,7 +29,8 @@
         "(^third_party/.*\\.bzl$)",
         "(^third_party/BUILD\\.bazel$)",
         "(BUILD\\.bazel$)",
-        "(\\.bzl$)"
+        "(\\.bzl$)",
+        "(\\.sky$)"
       ],
       "script-and-regex.script": "./tools/linters/buildifier.sh",
       "script-and-regex.regex": "/^(?P<file>.*):(?P<line>\\d+): (?P<error>.*): (?P<message>.*)$/m"

@@ -14,14 +14,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+internal_repo = "ssh://git@phab.corp.pixielabs.ai:222/source/pixielabs.git"
+public_repo = "git@github.com:pixie-labs/pixie.git"
+
 core.workflow(
     name = "default",
     origin = git.origin(
-        url = "ssh://git@phab.corp.pixielabs.ai:222/source/pixielabs.git",
+        url = internal_repo,
         ref = "main",
     ),
     destination = git.destination(
-        url = "git@github.com:pixie-labs/pixie.tmp.git",
+        url = public_repo,
         fetch = "main",
         push = "main",
     ),
@@ -29,8 +32,12 @@ core.workflow(
         [
             "**",
         ],
-        exclude = ["**/private/**", "*_private.*",
-                   "credentials/**", "experimental/**"],
+        exclude = [
+            "**/private/**",
+            "*_private.*",
+            "credentials/**",
+            "experimental/**",
+        ],
     ),
     authoring = authoring.pass_thru("Copybara <copybara@pixielabs.ai>"),
     mode = "ITERATIVE",
