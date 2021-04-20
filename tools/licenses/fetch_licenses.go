@@ -308,7 +308,11 @@ func main() {
 	close(work)
 	wg.Wait()
 
-	var found, missing []*dependency
+	// Create slices instead of leaving this as nil so that
+	// JSON marshal will write [] into the output instead of null.
+	found := make([]*dependency, 0)
+	missing := make([]*dependency, 0)
+
 	for _, dep := range deps {
 		if dep.LicenseSPDX != "" {
 			found = append(found, dep)
