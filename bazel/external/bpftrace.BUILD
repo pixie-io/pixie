@@ -96,8 +96,8 @@ cc_library(
     visibility = ["//visibility:private"],
     deps = [
         ":bpftrace-parser",
-        "@com_llvm_lib//:llvm",
         "@com_github_iovisor_bcc//:bcc",
+        "@com_llvm_lib//:llvm",
     ],
 )
 

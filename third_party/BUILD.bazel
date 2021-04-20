@@ -15,11 +15,89 @@
 # SPDX-License-Identifier: Apache-2.0
 
 load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake", "configure_make")
+
+package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
 
 cc_library(
     name = "clang_tidy_stub",
     srcs = ["clang_tidy_stub.cc"],
-    visibility = ["//visibility:public"],
+)
+
+configure_make(
+    name = "gperftools_build",
+    configure_options = [
+        "--enable-shared=no",
+        "--disable-frame-pointers",
+        "--enable-libunwind",
+    ],
+    lib_source = "@com_github_gperftools_gperftools//:all",
+    linkopts = ["-lpthread"],
+    make_commands = ["make install-libLTLIBRARIES install-perftoolsincludeHEADERS"],
+    out_static_libs = select({
+        "//bazel:debug_tcmalloc": ["libtcmalloc_debug.a"],
+        "//conditions:default": ["libtcmalloc_and_profiler.a"],
+    }),
+)
+
+# Workaround for https://github.com/bazelbuild/rules_foreign_cc/issues/227
+cc_library(
+    name = "gperftools",
+    deps = [
+        "gperftools_build",
+    ],
+)
+
+cmake(
+    name = "natsc",
+    cache_entries = {
+        # This forces nats to link against boringssl instead of openssl.
+        # Since some of our services use both GRPC and nats, this lets
+        # us have a single SSL library.
+        "CMAKE_SYSTEM_PREFIX_PATH": "$EXT_BUILD_DEPS",
+        "NATS_BUILD_STREAMING": "OFF",
+    },
+    generate_crosstool_file = True,
+    lib_name = "libnats_static",
+    lib_source = "@com_github_nats_io_natsc//:all",
+    make_commands = [
+        "make nats_static",
+        "make install",
+    ],
+    deps = ["@boringssl//:ssl"],
+)
+
+cmake(
+    name = "libuv",
+    cache_entries = {
+        "BUILDING_UV_SHARED": "OFF",
+        "BUILD_TESTING": "OFF",
+        "USING_UV_SHARE": "OFF",
+    },
+    generate_crosstool_file = True,
+    lib_name = "libuv_a",
+    lib_source = "@com_github_libuv_libuv//:all",
+    make_commands = [
+        "make uv_a",
+        "make install",
+    ],
+)
+
+cmake(
+    name = "libarchive",
+    cache_entries = {
+        "ENABLE_CAT": "OFF",
+        "ENABLE_CAT_SHARED": "OFF",
+        "ENABLE_CNG": "OFF",
+        "ENABLE_CPIO": "OFF",
+        "ENABLE_CPIO_SHARED": "OFF",
+        "ENABLE_TAR": "OFF",
+        "ENABLE_TAR_SHARED": "OFF",
+        "ENABLE_TEST": "OFF",
+    },
+    generate_crosstool_file = True,
+    lib_name = "libarchive",
+    lib_source = "@com_github_libarchive_libarchive//:all",
 )

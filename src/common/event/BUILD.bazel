@@ -28,8 +28,8 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     deps = [
-        "//third_party/foreign_cc:libuv",
-        "//third_party/foreign_cc:natsc",
+        "//third_party:libuv",
+        "//third_party:natsc",
     ],
 )
 

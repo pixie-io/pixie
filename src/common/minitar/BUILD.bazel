@@ -31,7 +31,7 @@ pl_cc_library(
     hdrs = glob(["*.h"]),
     linkopts = ["-lz"],
     deps = [
-        "//third_party/foreign_cc:libarchive",
+        "//third_party:libarchive",
     ],
 )
 
@@ -64,5 +64,5 @@ cc_binary(
         "NO_LOOKUP",
     ],
     linkopts = ["-lz"],
-    deps = ["//third_party/foreign_cc:libarchive"],
+    deps = ["//third_party:libarchive"],
 )

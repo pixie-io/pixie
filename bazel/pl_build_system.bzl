@@ -276,7 +276,7 @@ def pl_cc_mock(name, **kargs):
 def tcmalloc_external_dep(repository):
     return select({
         repository + "//bazel:disable_tcmalloc": None,
-        "//conditions:default": "//third_party/foreign_cc:gperftools",
+        "//conditions:default": "//third_party:gperftools",
     })
 
 # As above, but wrapped in list form for adding to dep lists. This smell seems needed as
@@ -285,7 +285,7 @@ def tcmalloc_external_dep(repository):
 def tcmalloc_external_deps(repository):
     return select({
         repository + "//bazel:disable_tcmalloc": [],
-        "//conditions:default": ["//third_party/foreign_cc:gperftools"],
+        "//conditions:default": ["//third_party:gperftools"],
     })
 
 def pl_cgo_library(**kwargs):
