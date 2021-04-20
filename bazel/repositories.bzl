@@ -65,12 +65,6 @@ def _com_llvm_lib():
         path = "/opt/clang-11.1-libc++",
     )
 
-def _com_github_threadstacks():
-    native.local_repository(
-        name = "com_github_threadstacks",
-        path = "third_party/threadstacks",
-    )
-
 def _cc_deps():
     _bazel_repo("com_google_protobuf", patches = ["//bazel/external:protobuf.patch", "//bazel/external:protobuf_text_format.patch"], patch_args = ["-p1"])
     _bazel_repo("com_google_benchmark")
@@ -81,6 +75,7 @@ def _cc_deps():
     _bazel_repo("com_google_flatbuffers")
     _bazel_repo("org_tensorflow")
     _bazel_repo("com_github_neargye_magic_enum")
+    _bazel_repo("com_github_thoughtspot_threadstacks")
     _bazel_repo("rules_python")
 
     _include_all_repo("com_github_gperftools_gperftools", patch_cmds = ["./autogen.sh"])
@@ -101,7 +96,6 @@ def _cc_deps():
     _repo_impl("com_github_tdunning_t_digest", build_file = "//bazel/external:tdigest.BUILD")
     _repo_impl("com_github_tencent_rapidjson", build_file = "//bazel/external:rapidjson.BUILD")
     _repo_impl("com_github_vinzenz_libpypa", build_file = "//bazel/external:libpypa.BUILD")
-    _com_github_threadstacks()
     _repo_impl("com_google_double_conversion", build_file = "//bazel/external:double_conversion.BUILD")
     _repo_impl(
         "com_github_google_sentencepiece",

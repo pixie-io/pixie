@@ -27,6 +27,6 @@ pl_cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "//src/common/system:cc_library",
-        "@com_github_threadstacks//threadstacks:signal_handler",
+        "@com_github_thoughtspot_threadstacks//threadstacks:signal_handler",
     ],
 )

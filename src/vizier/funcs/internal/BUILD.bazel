@@ -35,6 +35,6 @@ pl_cc_library(
         "//src/carnot/udf:cc_library",
         "//src/shared/version:cc_library",
         "//src/vizier/funcs/context:cc_library",
-        "@com_github_threadstacks//threadstacks:signal_handler",
+        "@com_github_thoughtspot_threadstacks//threadstacks:signal_handler",
     ],
 )
