@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-internal_repo = "ssh://git@phab.corp.pixielabs.ai:222/source/pixielabs.git"
+internal_repo = "git@github.com:pixie-labs/pixielabs.git"
 public_repo = "git@github.com:pixie-labs/pixie.git"
 
 core.workflow(

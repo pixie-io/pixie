@@ -93,6 +93,7 @@ TARGETS_STASH_NAME = 'targets'
 DEV_DOCKER_IMAGE = 'pl-dev-infra/dev_image_with_extras'
 DEV_DOCKER_IMAGE_EXTRAS = 'pl-dev-infra/dev_image_with_extras'
 GCLOUD_DOCKER_IMAGE = 'google/cloud-sdk:287.0.0'
+COPYBARA_DOCKER_IMAGE = 'olivr/copybara@sha256:7c21a1cdd552e736abe5f55bcc24f92add6e220610d2688bf86452e4a284c329'
 GCS_STASH_BUCKET = 'px-jenkins-build-temp'
 
 K8S_PROD_CLUSTER = 'https://cloud-prod.internal.corp.pixielabs.ai'
@@ -118,6 +119,7 @@ isCLIBuildRun =  env.JOB_NAME.startsWith('pixie-release/cli/')
 isVizierBuildRun = env.JOB_NAME.startsWith('pixie-release/vizier/')
 isCloudStagingBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud-staging/')
 isCloudProdBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud/')
+isCopybaraPublic = env.JOB_NAME.startsWith('pixie-main/copybara-public')
 
 // Disable BPF runs on main because the flakiness makes it noisy.
 // Stirling team still gets coverage via dev runs for now.
@@ -493,6 +495,22 @@ def DefaultGCloudPodTemplate(String suffix, Closure body) {
       }
   }
 }
+
+
+def DefaultCopybaraPodTemplate(String suffix, Closure body) {
+  RetryOnK8sDownscale {
+    def label = "worker-copybara-${env.BUILD_TAG}-${suffix}"
+    podTemplate(label: label, cloud: 'devinfra-cluster', containers: [
+      containerTemplate(name: 'copybara', image: COPYBARA_DOCKER_IMAGE, command: 'cat', ttyEnabled: true),
+      containerTemplate(name: 'gcloud', image: GCLOUD_DOCKER_IMAGE, command: 'cat', ttyEnabled: true),
+    ]) {
+      node(label) {
+        body()
+      }
+    }
+  }
+}
+
 
 def DefaultBuildPodTemplate(String suffix, Closure body) {
   RetryOnK8sDownscale {
@@ -1153,6 +1171,29 @@ def buildScriptForCloudProdRelease = {
   postBuildActions()
 }
 
+def buildScriptForCopybaraPublic = {
+  try {
+    stage('Copybara it') {
+      DefaultCopybaraPodTemplate('public-copy') {
+        deleteDir()
+        checkout scm
+        container('copybara') {
+          sshagent (credentials: ['pixie-copybara-git']) {
+            sh "GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' ./ci/copybara_public_repo.sh"
+          }
+        }
+      }
+    }
+  }
+  catch (err) {
+    currentBuild.result = 'FAILURE'
+    echo "Exception thrown:\n ${err}"
+    echo 'Stacktrace:'
+    err.printStackTrace()
+  }
+}
+
+
 if (isNightlyTestRegressionRun) {
   buildScriptForNightlyTestRegression()
 } else if (isCLIBuildRun) {
@@ -1163,6 +1204,8 @@ if (isNightlyTestRegressionRun) {
   buildScriptForCloudStagingRelease()
 } else if (isCloudProdBuildRun) {
   buildScriptForCloudProdRelease()
-} else {
+} else if(isCopybaraPublic) {
+  buildScriptForCopybaraPublic()
+}else {
   buildScriptForCommits()
 }
