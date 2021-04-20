@@ -63,20 +63,6 @@ fetch_licenses(
 )
 
 fetch_licenses(
-    name = "submodule_licenses",
-    src = "//:pl_3p_submodules",
-    disallow_missing = select({
-        "//bazel:stamped": True,
-        "//conditions:default": False,
-    }),
-    fetch_tool = ":fetch_licenses",
-    manual_licenses = "manual_licenses.json",
-    oauth_token = credential,
-    out_found = "submodule_licenses.json",
-    out_missing = "submodule_licenses_missing.json",
-)
-
-fetch_licenses(
     name = "deps_licenses",
     src = "//:pl_3p_deps",
     disallow_missing = select({
@@ -94,7 +80,6 @@ genrule(
     name = "all_licenses",
     srcs = [
         "go_licenses.json",
-        "submodule_licenses.json",
         "deps_licenses.json",
         "//src/ui:npm_licenses",
     ],
@@ -104,7 +89,6 @@ genrule(
     cmd = """
         python3 $(location combine_licenses.py) \
             $(location go_licenses.json) \
-            $(location submodule_licenses.json) \
             $(location deps_licenses.json) \
             $(location //src/ui:npm_licenses) \
             --output $(location all_licenses.json)

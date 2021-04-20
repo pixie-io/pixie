@@ -270,3 +270,11 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/pixie-labs/bpftrace/archive/da17ebda1090b5e09dc89d69a3afdb580d486670.tar.gz"],
     ),
 )
+
+GIT_REPOSITORY_LOCATIONS = dict(
+    com_github_iovisor_bcc = dict(
+        remote = "https://github.com/pixie-labs/bcc.git",
+        commit = "c50098cadc54a602a7e423ae958dca8562ee2cf9",
+        shallow_since = "1618606641 -0700",
+    ),
+)

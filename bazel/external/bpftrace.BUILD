@@ -97,7 +97,7 @@ cc_library(
     deps = [
         ":bpftrace-parser",
         "@com_llvm_lib//:llvm",
-        "@px//third_party/foreign_cc:bcc",
+        "@com_github_iovisor_bcc//:bcc",
     ],
 )
 
@@ -123,7 +123,7 @@ cc_library(
     ],
     tags = ["linux_only"],
     deps = [
-        "@px//third_party/foreign_cc:bcc",
+        "@com_github_iovisor_bcc//:bcc",
     ],
 )
 

@@ -14,8 +14,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "new_git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-load(":repository_locations.bzl", "REPOSITORY_LOCATIONS")
+load(":repository_locations.bzl", "GIT_REPOSITORY_LOCATIONS", "REPOSITORY_LOCATIONS")
 
 # Make all contents of an external repository accessible under a filegroup.
 # Used for external HTTP archives, e.g. cares.
@@ -40,6 +41,30 @@ def _repo_impl(name, **kwargs):
         urls = location["urls"],
         sha256 = location["sha256"],
         strip_prefix = location.get("strip_prefix", ""),
+        **kwargs
+    )
+
+def _git_repo_impl(name, **kwargs):
+    # `existing_rule_keys` contains the names of repositories that have already
+    # been defined in the Bazel workspace. By skipping repos with existing keys,
+    # users can override dependency versions by using standard Bazel repository
+    # rules in their WORKSPACE files.
+    existing_rule_keys = native.existing_rules().keys()
+    if name in existing_rule_keys:
+        # This repository has already been defined, probably because the user
+        # wants to override the version. Do nothing.
+        return
+
+    location = GIT_REPOSITORY_LOCATIONS[name]
+
+    # HTTP tarball at a given URL. Add a BUILD file if requested.
+    new_git_repository(
+        name = name,
+        remote = location["remote"],
+        commit = location["commit"],
+        init_submodules = True,
+        recursive_init_submodules = True,
+        shallow_since = location.get("shallow_since", ""),
         **kwargs
     )
 
@@ -83,6 +108,8 @@ def _cc_deps():
     _include_all_repo("com_github_libuv_libuv", patches = ["//bazel/external:libuv.patch"], patch_args = ["-p1"])
     _include_all_repo("com_github_libarchive_libarchive")
 
+    _git_repo_impl("com_github_iovisor_bcc", build_file = "//bazel/external:bcc.BUILD")
+
     _repo_impl("com_github_apache_arrow", build_file = "//bazel/external:arrow.BUILD")
     _repo_impl("com_github_ariafallah_csv_parser", build_file = "//bazel/external:csv_parser.BUILD")
     _repo_impl("com_github_arun11299_cpp_jwt", build_file = "//bazel/external:cpp_jwt.BUILD")
@@ -118,6 +145,12 @@ def list_pl_deps(name):
             if url.startswith("https://github.com") or best_url == None:
                 best_url = url
         repo_urls.append(best_url)
+
+    for repo_name, repo_config in GIT_REPOSITORY_LOCATIONS.items():
+        remote = repo_config["remote"]
+        if remote.endswith(".git"):
+            remote = remote[:-len(".git")]
+        repo_urls.append(remote)
 
     native.genrule(
         name = name,

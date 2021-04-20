@@ -1,3 +1,0 @@
-[submodule "third_party/bcc"]
-	path = third_party/bcc
-	url = git@github.com:pixie-labs/bcc.git

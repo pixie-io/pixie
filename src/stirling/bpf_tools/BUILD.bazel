@@ -40,7 +40,7 @@ pl_cc_library(
         "//src/stirling/bpf_tools/bcc_bpf:task_struct_mem_read",
     ] + select({
         "@bazel_tools//src/conditions:linux_x86_64": [
-            "//third_party/foreign_cc:bcc",
+            "@com_github_iovisor_bcc//:bcc",
             "@com_github_iovisor_bpftrace//:bpftrace",
             "//:llvm",
         ],

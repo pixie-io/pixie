@@ -14,12 +14,36 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
 
 licenses(["notice"])
 
-cc_library(
-    name = "clang_tidy_stub",
-    srcs = ["clang_tidy_stub.cc"],
+filegroup(
+    name = "bcc_source",
+    srcs = glob(["**/*"]),
+)
+
+cmake(
+    name = "bcc",
+    generate_crosstool_file = True,
+    lib_name = "libbcc_static",
+    lib_source = ":bcc_source",
+    # These link opts are dependencies of bcc.
+    linkopts = [
+        # ELF binary parsing.
+        "-lelf",
+    ],
+    make_commands = [
+        "make -j$(nproc) -C src/cc install",
+    ],
+    out_static_libs = [
+        "libapi-static.a",
+        "libbcc.a",
+        "libbcc_bpf.a",
+        "libbcc-loader-static.a",
+        "libb_frontend.a",
+        "libclang_frontend.a",
+        "libusdt-static.a",
+    ],
     visibility = ["//visibility:public"],
 )
