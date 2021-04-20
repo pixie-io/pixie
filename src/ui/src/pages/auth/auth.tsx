@@ -27,11 +27,15 @@ import { SignupPage } from './signup';
 import { AuthCallbackPage } from './callback';
 import { LogoutPage } from './logout';
 import { CLIAuthCompletePage } from './cli-auth-complete';
+import { ErrorPage } from './password-error';
+import { PasswordRecoveryPage } from './password-recovery';
 
 export const AuthRouter = () => (
   <Router history={history}>
     <Switch>
       <Route exact path='/auth/password-login' component={PasswordLoginPage} />
+      <Route exact path='/auth/password/recovery' component={PasswordRecoveryPage} />
+      <Route exact path='/auth/password/error' component={ErrorPage} />
       <Route exact path='/auth/callback' component={AuthCallbackPage} />
       <Route exact path='/auth/login' component={LoginPage} />
       <Route exact path='/auth/signup' component={SignupPage} />

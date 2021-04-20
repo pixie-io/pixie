@@ -30,6 +30,12 @@ export abstract class OAuthProviderClient {
   // handleToken will get the token wherever it's stored by the OAuthProvider and pass it to the callback.
   abstract handleToken(): Promise<Token>;
 
-  // getPasswordLoginFlow returns the form structure.
+  // getPasswordLoginFlow returns the form structure for logging in.
   abstract getPasswordLoginFlow(): Promise<FormStructure>;
+
+  // getResetPasswordFlow returns the form to reset a password.
+  abstract getResetPasswordFlow(): Promise<FormStructure>;
+
+  // getError retrieves a specific error from the OAuthProvider's server.
+  abstract getError(): Promise<FormStructure>;
 }

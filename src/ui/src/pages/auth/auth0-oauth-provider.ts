@@ -73,4 +73,14 @@ export class Auth0Client extends OAuthProviderClient {
   async getPasswordLoginFlow(): Promise<FormStructure> {
     throw new Error('Password flow currently unavailable for Auth0');
   }
+
+  // eslint-disable-next-line class-methods-use-this
+  async getResetPasswordFlow(): Promise<FormStructure> {
+    throw new Error('Reset password flow currently unavailable for Auth0');
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  async getError(): Promise<FormStructure> {
+    throw new Error('error flow not supported for Auth0');
+  }
 }

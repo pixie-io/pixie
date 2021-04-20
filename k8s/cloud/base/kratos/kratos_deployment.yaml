@@ -59,21 +59,26 @@ spec:
         - name: SERVE_ADMIN_BASE_URL
           value: $(ADMIN_URL)/
         - name: SELFSERVICE_DEFAULT_BROWSER_RETURN_URL
-          value: $(FRONTEND_URL)/
+          value: $(AUTH_LOGIN_URL)/
         - name: HYDRA_LOGIN_URL
           value: https://$(PL_WORK_DOMAIN)/api/auth/oauth/login
         - name: SELFSERVICE_WHITELISTED_RETURN_URLS
           value: $(FRONTEND_URL)/,$(HYDRA_LOGIN_URL)
+        # The settings UI is where recovery and invite links redirect when resetting password.
+        # All other user settings must be changed via the Pixie API, not the self-service flow
+        # because that profile information is duplicated in Kratos and the Profile service.
         - name: SELFSERVICE_FLOWS_SETTINGS_UI_URL
-          value: $(FRONTEND_URL)/settings
-        - name: SELFSERVICE_FLOWS_VERIFICATION_UI_URL
-          value: $(FRONTEND_URL)/verification
+          value: https://$(PL_WORK_DOMAIN)/auth/password/recovery
+        - name: SELFSERVICE_FLOWS_SETTINGS_AFTER_PASSWORD_DEFAULT_BROWSER_RETURN_URL
+          value: https://$(PL_WORK_DOMAIN)/
         - name: SELFSERVICE_FLOWS_RECOVERY_UI_URL
-          value: $(FRONTEND_URL)/recovery
+          value: https://$(PL_WORK_DOMAIN)/auth/password/recovery
         - name: SELFSERVICE_FLOWS_LOGOUT_AFTER_DEFAULT_BROWSER_RETURN_URL
           value: $(AUTH_LOGIN_URL)
         - name: SELFSERVICE_FLOWS_LOGIN_UI_URL
           value: $(AUTH_LOGIN_URL)
+        - name: SELFSERVICE_FLOWS_ERROR_UI_URL
+          value: https://$(PL_WORK_DOMAIN)/auth/password/error
         image: oryd/kratos:v0.5.5
         imagePullPolicy: ""
         name: kratos

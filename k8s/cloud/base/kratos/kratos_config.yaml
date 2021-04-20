@@ -20,6 +20,9 @@ data:
         recovery:
           enabled: true
 
+        settings:
+          privileged_session_max_age: 15m
+
         registration:
           after:
             password:

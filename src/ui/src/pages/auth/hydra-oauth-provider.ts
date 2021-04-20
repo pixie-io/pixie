@@ -116,6 +116,41 @@ export class HydraClient extends OAuthProviderClient {
     };
   }
 
+  // eslint-disable-next-line class-methods-use-this
+  async getResetPasswordFlow(): Promise<FormStructure> {
+    const parsed = QueryString.parse(window.location.search);
+    const flow = parsed.flow as string;
+    if (flow == null) {
+      return displayErrorFormStructure(FlowIDError);
+    }
+    const { data } = await kratosClient.getSelfServiceSettingsFlow(flow);
+    const passwordMethods = data.methods.password;
+    if (passwordMethods == null) {
+      return displayErrorFormStructure(PasswordError);
+    }
+
+    return {
+      ...passwordMethods.config,
+      submitBtnText: 'Change Password',
+      errors: passwordMethods.config.messages,
+      // Kratos and browser redirects limits us to submit the login form
+      // through an XmlHttpRequest, the default HTML Form submit behavior.
+      defaultSubmit: true,
+    };
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  async getError(): Promise<FormStructure> {
+    const parsed = QueryString.parse(window.location.search);
+    const error = parsed.error as string;
+    if (error == null) {
+      return displayErrorFormStructure(new Error('server error'));
+    }
+    const { data } = await kratosClient.getSelfServiceError(error);
+
+    return displayErrorFormStructure(new Error(JSON.stringify(data)));
+  }
+
   private makeAndStoreState(): string {
     const state = randomString(48);
     window.localStorage.setItem(this.hydraStorageKey, state);
