@@ -19,7 +19,8 @@
     "(^src/ui/src/types/generated/)",
     "(c_cpp_properties.json$)",
     "(go\\.mod$)",
-    "(go\\.sum$)"
+    "(go\\.sum$)",
+    "(^third_party/cpplint/cpplint.py$)"
   ],
   "linters": {
     "build-linter": {
