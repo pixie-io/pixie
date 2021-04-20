@@ -26,8 +26,8 @@
     "build-linter": {
       "type": "script-and-regex",
       "include": [
-        "(^third_party/.*\\.bzl$)",
         "(^third_party/BUILD\\.bazel$)",
+        "(\\.BUILD$)",
         "(BUILD\\.bazel$)",
         "(\\.bzl$)",
         "(\\.sky$)"
