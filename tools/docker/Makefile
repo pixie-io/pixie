@@ -47,6 +47,10 @@ linux_headers_trimmed_gs_path := gs://pl-infra-dev-artifacts/$(linux_headers_tri
 CURL_IMAGE_VERSION := 1.0
 curl_image_tag := "gcr.io/pixie-prod/pixie-prod-artifacts/curl:$(CURL_IMAGE_VERSION)"
 
+## Copybara image parameters.
+COPYBARA_IMAGE_VERSION := 20210420
+copybara_image_tag := "gcr.io/pixie-prod/pixie-prod-artifacts/copybara:$(COPYBARA_IMAGE_VERSION)"
+
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 mkfile_dir := $(dir $(mkfile_path))
 
@@ -106,6 +110,12 @@ build_and_upload_curl_image:
 	cd $(mkfile_dir)/curl_image && \
 	$(DOCKER) build . -t $(curl_image_tag)
 	$(DOCKER) push $(curl_image_tag)
+
+.PHONY: build_and_upload_copybara_image
+build_and_upload_copybara_image:
+	cd $(mkfile_dir)/copybara && \
+	$(DOCKER) build . -t $(copybara_image_tag)
+	$(DOCKER) push $(copybara_image_tag)
 
 help: ## Print help for targets with comments.
 	@echo "Usage:"
