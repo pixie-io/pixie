@@ -1,0 +1,28 @@
+diff --git a/generate.sh b/generate.sh
+index 278925b..11928e9 100755
+--- a/generate.sh
++++ b/generate.sh
+@@ -30,13 +30,6 @@ readonly WORKSPACE="$(bazel info workspace)"
+ readonly EXEC_ROOT="$(bazel info execution_root)"
+ readonly COMPDB_FILE="${ASPECTS_DIR}/compile_commands.json"
+ 
+-readonly QUERY_CMD=(
+-  bazel query
+-    --noshow_progress
+-    --noshow_loading_progress
+-    'kind("cc_(library|binary|test|inc_library|proto_library)", //...) union kind("objc_(library|binary|test)", //...)'
+-)
+-
+ # Clean any previously generated files.
+ if [[ -e "${EXEC_ROOT}" ]]; then
+   find "${EXEC_ROOT}" -name '*.compile_commands.json' -delete
+@@ -48,8 +41,7 @@ bazel build \
+   --noshow_progress \
+   --noshow_loading_progress \
+   --output_groups="${OUTPUT_GROUPS}" \
+-  "$@" \
+-  $("${QUERY_CMD[@]}") > /dev/null
++  "$@" > /dev/null
+ 
+ echo "[" > "${COMPDB_FILE}"
+ find "${EXEC_ROOT}" -name '*.compile_commands.json' -exec bash -c 'cat "$1" && echo ,' _ {} \; \
