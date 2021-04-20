@@ -19,7 +19,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/dns/parse.h"
 
 #include <arpa/inet.h>
-#include <dnsparser.h>
+#include <dnsparser/include/dnsparser.h>
 #include <memory>
 #include <string_view>
 #include <utility>

@@ -79,22 +79,6 @@ cc_library(
 )
 
 cc_library(
-    name = "dnsparser",
-    srcs = glob([
-        "dnsparser/src/*.cpp",
-        "dnsparser/src/*.h",
-    ]),
-    hdrs = ["dnsparser/include/dnsparser.h"],
-    copts = [
-        "-Wno-unused-parameter",
-    ],
-    includes = [
-        "dnsparser/include",
-    ],
-    visibility = ["//visibility:public"],
-)
-
-cc_library(
     name = "elfio",
     hdrs = glob(["ELFIO/elfio/*.hpp"]),
     includes = ["ELFIO"],
