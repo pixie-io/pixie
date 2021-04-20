@@ -24,6 +24,7 @@
 #include "src/carnot/funcs/builtins/math_sketches.h"
 #include "src/carnot/funcs/builtins/ml_ops.h"
 #include "src/carnot/funcs/builtins/request_path_ops.h"
+#include "src/carnot/funcs/builtins/sql_ops.h"
 #include "src/carnot/funcs/builtins/string_ops.h"
 
 #include "src/carnot/udf/registry.h"
@@ -41,6 +42,7 @@ void RegisterBuiltinsOrDie(udf::Registry* registry) {
   RegisterStringOpsOrDie(registry);
   RegisterMLOpsOrDie(registry);
   RegisterRequestPathOpsOrDie(registry);
+  RegisterSQLOpsOrDie(registry);
 }
 
 }  // namespace builtins
