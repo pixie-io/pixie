@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import type * as React from 'react';
+
 import {
   AUTH_URI, AUTH_CLIENT_ID,
 } from 'containers/constants';
@@ -23,11 +25,12 @@ import ClientOAuth2 from 'client-oauth2';
 import { PublicApiFactory } from '@ory/kratos-client';
 import { FormStructure } from '@pixie-labs/components';
 import * as QueryString from 'query-string';
+import { HydraInvitationForm } from 'containers/admin/hydra-invitation-form';
 import { OAuthProviderClient, Token } from './oauth-provider';
 
 // Copied from auth0-js/src/helper/window.js
 function randomString(length) {
-  // eslint-disable-next-line
+  // eslint-disable-next-line no-var
   var bytes = new Uint8Array(length);
   const result = [];
   const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._~';
@@ -76,11 +79,11 @@ export class HydraClient extends OAuthProviderClient {
     this.hydraStorageKey = hydraStorageKey;
   }
 
-  loginRequest() {
+  loginRequest(): void {
     window.location.href = this.makeClient(this.makeAndStoreState(), /* isSignup */ false).token.getUri();
   }
 
-  signupRequest() {
+  signupRequest(): void {
     window.location.href = this.makeClient(this.makeAndStoreState(), /* isSignup */ true).token.getUri();
   }
 
@@ -149,6 +152,16 @@ export class HydraClient extends OAuthProviderClient {
     const { data } = await kratosClient.getSelfServiceError(error);
 
     return displayErrorFormStructure(new Error(JSON.stringify(data)));
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  isInvitationEnabled(): boolean {
+    return true;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  getInvitationComponent(): React.FC {
+    return HydraInvitationForm;
   }
 
   private makeAndStoreState(): string {

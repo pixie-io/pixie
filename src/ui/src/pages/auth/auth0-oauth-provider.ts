@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import type * as React from 'react';
+
 import auth0 from 'auth0-js';
 import {
   AUTH_CLIENT_ID, AUTH_URI,
@@ -82,5 +84,15 @@ export class Auth0Client extends OAuthProviderClient {
   // eslint-disable-next-line class-methods-use-this
   async getError(): Promise<FormStructure> {
     throw new Error('error flow not supported for Auth0');
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  isInvitationEnabled(): boolean {
+    return false;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  getInvitationComponent(): React.FC {
+    return undefined;
   }
 }

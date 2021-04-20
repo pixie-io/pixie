@@ -32,6 +32,7 @@ import { DeploymentKeysTable } from 'containers/admin/deployment-keys';
 import { APIKeysTable } from 'containers/admin/api-keys';
 import { ClustersTable } from 'containers/admin/clusters-list';
 import { StyledTab, StyledTabs } from 'containers/admin/utils';
+import { GetOAuthProvider } from 'pages/auth/utils';
 import { scrollbarStyles } from '@pixie-labs/components';
 import { useAPIKeys, useDeploymentKeys } from '@pixie-labs/api-react';
 
@@ -63,6 +64,11 @@ export const AdminOverview = withStyles((theme: Theme) => createStyles({
   const [{ createAPIKey }] = useAPIKeys();
   const [tab, setTab] = React.useState('clusters');
 
+  const authClient = React.useMemo(() => GetOAuthProvider(), []);
+  const InvitationTab = React.useMemo(
+    () => (authClient.getInvitationComponent() ?? (() => (<>This tab should not have been reachable.</>))),
+    [authClient]);
+
   return (
     <div className={classes.tabRoot}>
       <div className={classes.tabBar}>
@@ -73,9 +79,10 @@ export const AdminOverview = withStyles((theme: Theme) => createStyles({
           <StyledTab value='clusters' label='Clusters' />
           <StyledTab value='deployment-keys' label='Deployment Keys' />
           <StyledTab value='api-keys' label='API Keys' />
+          { authClient.isInvitationEnabled() && <StyledTab value='auth-invitation' label='Invitations' /> }
         </StyledTabs>
         {tab === 'deployment-keys'
-          && (
+        && (
           <Button
             onClick={() => createDeploymentKey()}
             className={classes.createButton}
@@ -85,9 +92,9 @@ export const AdminOverview = withStyles((theme: Theme) => createStyles({
           >
             New key
           </Button>
-          )}
+        )}
         {tab === 'api-keys'
-          && (
+        && (
           <Button
             onClick={() => createAPIKey()}
             className={classes.createButton}
@@ -97,13 +104,14 @@ export const AdminOverview = withStyles((theme: Theme) => createStyles({
           >
             New key
           </Button>
-          )}
+        )}
       </div>
       <div className={classes.tabContents}>
         <TableContainer className={classes.table}>
           {tab === 'clusters' && <ClustersTable />}
           {tab === 'deployment-keys' && <DeploymentKeysTable />}
           {tab === 'api-keys' && <APIKeysTable />}
+          {tab === 'auth-invitation' && <InvitationTab />}
         </TableContainer>
       </div>
     </div>

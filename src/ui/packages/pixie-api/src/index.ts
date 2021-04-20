@@ -63,6 +63,7 @@ export * from './testing';
 export {
   GQLQuery,
   GQLUserInfo,
+  GQLUserInvite,
   // Note: GQLUserSetting is not exposed because we already expose the more specific UserSettings from ./user-settings.
   // GQLUserSetting,
   GQLClusterInfo,

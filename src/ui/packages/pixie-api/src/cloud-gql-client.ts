@@ -40,7 +40,7 @@ import {
   GQLAutocompleteActionType,
   GQLAutocompleteEntityKind,
   GQLAutocompleteResult, GQLAutocompleteSuggestion, GQLClusterInfo,
-  GQLDeploymentKey, GQLUserInfo,
+  GQLDeploymentKey, GQLUserInfo, GQLUserInvite,
 } from './types/schema';
 import { DEFAULT_USER_SETTINGS, UserSettings } from './user-settings';
 
@@ -209,6 +209,22 @@ export class CloudClient {
       fetchPolicy: 'no-cache',
     });
     return data.deploymentKeys;
+  }
+
+  /**
+   * On authentication providers that allow one user to invite another to create an account,
+   * generates a link to send to the invitee. What that link specifically does is up to the auth provider.
+   */
+  async createUserInvitation(
+    givenName: string, familyName: string, email: string,
+  ): Promise<GQLUserInvite> {
+    type Input = { firstName: string, lastName: string, email: string };
+    type Output = { InviteUser: GQLUserInvite };
+    const { data } = await this.graphQL.mutate<Output, Input>({
+      mutation: USER_QUERIES.INVITE_USER,
+      variables: { firstName: givenName, lastName: givenName, email },
+    });
+    return data.InviteUser;
   }
 
   /**

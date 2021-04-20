@@ -740,6 +740,58 @@ export interface UserInviteToInviteLinkResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
+export interface GQLUserInviteTypeResolver<TParent = any> {
+  email?: UserInviteToEmailResolver<TParent>;
+  inviteLink?: UserInviteToInviteLinkResolver<TParent>;
+}
+
+export interface UserInviteToEmailResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface UserInviteToInviteLinkResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLUserInviteTypeResolver<TParent = any> {
+  email?: UserInviteToEmailResolver<TParent>;
+  inviteLink?: UserInviteToInviteLinkResolver<TParent>;
+}
+
+export interface UserInviteToEmailResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface UserInviteToInviteLinkResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLUserInviteTypeResolver<TParent = any> {
+  email?: UserInviteToEmailResolver<TParent>;
+  inviteLink?: UserInviteToInviteLinkResolver<TParent>;
+}
+
+export interface UserInviteToEmailResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface UserInviteToInviteLinkResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLUserInviteTypeResolver<TParent = any> {
+  email?: UserInviteToEmailResolver<TParent>;
+  inviteLink?: UserInviteToInviteLinkResolver<TParent>;
+}
+
+export interface UserInviteToEmailResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface UserInviteToInviteLinkResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
 export interface GQLMutationTypeResolver<TParent = any> {
   CreateCluster?: MutationToCreateClusterResolver<TParent>;
   UpdateVizierConfig?: MutationToUpdateVizierConfigResolver<TParent>;

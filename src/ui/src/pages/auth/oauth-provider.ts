@@ -16,6 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// Not actually using React in this class, but implementors may offer a component that does.
+import type * as React from 'react';
+
 import { FormStructure } from '@pixie-labs/components';
 
 export type Token = string;
@@ -38,4 +41,10 @@ export abstract class OAuthProviderClient {
 
   // getError retrieves a specific error from the OAuthProvider's server.
   abstract getError(): Promise<FormStructure>;
+
+  abstract isInvitationEnabled(): boolean;
+
+  /** If the provider supports invitations and they're enabled, it can return a React component to create them. */
+  // eslint-disable-next-line class-methods-use-this
+  abstract getInvitationComponent(): React.FC|undefined;
 }

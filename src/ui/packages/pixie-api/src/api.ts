@@ -225,6 +225,13 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
   listDeploymentKeys: CloudClient['listDeploymentKeys'] = () => this.gqlClient.listDeploymentKeys();
 
   /**
+   * On authentication providers that allow one user to invite another to create an account,
+   * generates a link to send to the invitee. What that link specifically does is up to the auth provider.
+   */
+  // eslint-disable-next-line max-len
+  createUserInvitation: CloudClient['createUserInvitation'] = (given, family, email) => this.gqlClient.createUserInvitation(given, family, email);
+
+  /**
    * Creates a function that can suggest complete commands for a cluster, such as a script to execute and its args.
    * For an example of this in use, check out CommandAutocomplete in @pixie-labs/components
    */

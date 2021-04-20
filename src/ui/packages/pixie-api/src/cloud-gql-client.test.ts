@@ -111,5 +111,17 @@ describe('Cloud client (GQL wrapper)', () => {
         },
       }));
     });
+
+    it('creates an invitation link', async () => {
+      const cloudClient = new CloudClient({ apiKey: '', uri: 'irrelevant' });
+      mutate.mockImplementation(() => Promise.resolve({
+        data: { InviteUser: { email: 'test@example.com', inviteLink: 'an HTTPS link' } },
+      }));
+
+      const invitation = await cloudClient.createUserInvitation('Test', 'McUser', 'test@example.com');
+      expect(invitation).toBeDefined();
+      expect(invitation.email).toBe('test@example.com');
+      expect(invitation.inviteLink).toBe('an HTTPS link');
+    });
   });
 });

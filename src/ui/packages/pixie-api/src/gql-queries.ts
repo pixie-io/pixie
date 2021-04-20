@@ -46,6 +46,14 @@ export const USER_QUERIES = {
       UpdateUserSettings(keys: [$key], values: [$value])
     }
   `,
+  INVITE_USER: gql`
+    mutation InviteUser($email: String!, $firstName: String!, $lastName: String!) {
+      InviteUser(email: $email, firstName: $firstName, lastName: $lastName) {
+        email
+        inviteLink
+      }
+    }
+  `,
 };
 
 export const API_KEY_QUERIES = {

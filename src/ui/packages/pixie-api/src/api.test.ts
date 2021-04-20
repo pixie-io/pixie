@@ -80,6 +80,7 @@ describe('Pixie TypeScript API Client', () => {
     ['createDeploymentKey'],
     ['listDeploymentKeys'],
     ['deleteDeploymentKey', 'foo'],
+    ['createUserInvitation', 'Test', 'Exampleton', 'test@example.com'],
     ['listClusters'],
     ['getClusterControlPlanePods'],
     ['getSetting', 'tourSeen'],
