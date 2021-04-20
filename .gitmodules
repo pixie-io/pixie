@@ -1,9 +1,6 @@
 [submodule "linters/cpplint"]
 	path = third_party/cpplint
 	url = git@github.com:pixie-labs/cpplint.git
-[submodule "third_party/arrow"]
-	path = third_party/arrow
-	url = git@github.com:pixie-labs/arrow.git
 [submodule "third_party/bcc"]
 	path = third_party/bcc
 	url = git@github.com:pixie-labs/bcc.git

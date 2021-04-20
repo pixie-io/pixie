@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "third_party/arrow/cpp/src/arrow/type.h"
+#include <arrow/type.h>
 
 #include <memory>
 #include <string>

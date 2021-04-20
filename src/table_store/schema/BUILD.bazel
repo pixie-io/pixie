@@ -28,7 +28,7 @@ pl_cc_library(
     deps = [
         "//src/shared/types:cc_library",
         "//src/table_store/schemapb:schema_pl_cc_proto",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
     ],
 )
 
@@ -50,6 +50,6 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/table_store/schemapb:schema_pl_cc_proto",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
     ],
 )

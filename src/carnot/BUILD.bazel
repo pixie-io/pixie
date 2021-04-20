@@ -85,7 +85,7 @@ pl_cc_binary(
         "//src/carnot/exec:test_utils",
         "//src/common/benchmark:cc_library",
         "//src/table_store:test_utils",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
     ],
 )
 

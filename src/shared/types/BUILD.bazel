@@ -30,7 +30,7 @@ pl_cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "//src/shared/types/typespb/wrapper:cc_library",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
         "@com_google_farmhash//:farmhash",
     ],
 )

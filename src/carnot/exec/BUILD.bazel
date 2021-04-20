@@ -45,7 +45,7 @@ pl_cc_library(
         "//src/common/uuid:cc_library",
         "//src/shared/types:cc_library",
         "//src/table_store/table:cc_library",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
         "@com_github_grpc_grpc//:grpc++",
         "@com_github_rlyeh_sole//:sole",
         "@com_google_absl//absl/container:node_hash_map",
@@ -57,7 +57,7 @@ pl_cc_test_library(
     hdrs = glob(["*test_utils.h"]),
     deps = [
         ":exec_node_test_helpers",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
     ],
 )
 
@@ -68,7 +68,7 @@ pl_cc_test(
         ":cc_library",
         ":test_utils",
         "//src/carnot/planpb:plan_testutils",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
     ],
 )
 
@@ -82,7 +82,7 @@ pl_cc_binary(
         "//src/carnot/planpb:plan_testutils",
         "//src/common/benchmark:cc_library",
         "//src/common/datagen:cc_library",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
         "@com_google_benchmark//:benchmark_main",
     ],
 )
@@ -103,7 +103,7 @@ pl_cc_test(
         ":exec_node_test_helpers",
         ":test_utils",
         "//src/carnot/planpb:plan_testutils",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
     ],
 )
 
@@ -115,7 +115,7 @@ pl_cc_test(
         ":exec_node_test_helpers",
         ":test_utils",
         "//src/carnot/planpb:plan_testutils",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
     ],
 )
 
@@ -127,7 +127,7 @@ pl_cc_test(
         ":exec_node_test_helpers",
         ":test_utils",
         "//src/carnot/planpb:plan_testutils",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
     ],
 )
 
@@ -139,7 +139,7 @@ pl_cc_test(
         ":exec_node_test_helpers",
         ":test_utils",
         "//src/carnot/planpb:plan_testutils",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
     ],
 )
 
@@ -151,7 +151,7 @@ pl_cc_test(
         ":exec_node_test_helpers",
         ":test_utils",
         "//src/carnot/planpb:plan_testutils",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
     ],
 )
 
@@ -163,7 +163,7 @@ pl_cc_test(
         ":exec_node_test_helpers",
         ":test_utils",
         "//src/carnot/planpb:plan_testutils",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
     ],
 )
 
@@ -175,7 +175,7 @@ pl_cc_test(
         ":exec_node_test_helpers",
         ":test_utils",
         "//src/carnot/planpb:plan_testutils",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
     ],
 )
 
@@ -187,7 +187,7 @@ pl_cc_test(
         ":exec_node_test_helpers",
         ":test_utils",
         "//src/carnot/planpb:plan_testutils",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
     ],
 )
 
@@ -199,7 +199,7 @@ pl_cc_test(
         ":exec_node_test_helpers",
         ":test_utils",
         "//src/carnot/planpb:plan_testutils",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
     ],
 )
 
@@ -211,7 +211,7 @@ pl_cc_test(
         ":exec_node_test_helpers",
         ":test_utils",
         "//src/carnot/planpb:plan_testutils",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
         "@com_github_grpc_grpc//:grpc++_test",
     ],
 )
@@ -223,7 +223,7 @@ pl_cc_test(
         ":cc_library",
         ":test_utils",
         "//src/carnot/planpb:plan_testutils",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
     ],
 )
 
@@ -242,7 +242,7 @@ pl_cc_test(
         ":cc_library",
         ":test_utils",
         "//src/carnot/planpb:plan_testutils",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
     ],
 )
 
@@ -265,6 +265,6 @@ pl_cc_test(
         ":exec_node_test_helpers",
         ":test_utils",
         "//src/carnot/planpb:plan_testutils",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
     ],
 )

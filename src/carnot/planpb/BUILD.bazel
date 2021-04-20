@@ -60,6 +60,6 @@ pl_cc_library(
     hdrs = ["test_proto.h"],
     deps = [
         ":plan_pl_cc_proto",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
     ],
 )

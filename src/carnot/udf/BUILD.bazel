@@ -41,7 +41,7 @@ pl_cc_library(
         "//src/shared/metadata:cc_library",
         "//src/shared/types:cc_library",
         "//src/shared/types/typespb/wrapper:cc_library",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
     ],
 )
 
@@ -91,7 +91,7 @@ pl_cc_binary(
         ":cc_library",
         "//src/common/benchmark:cc_library",
         "//src/common/datagen:cc_library",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
         "@com_google_benchmark//:benchmark_main",
     ],
 )

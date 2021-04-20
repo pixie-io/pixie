@@ -88,6 +88,7 @@ def _cc_deps():
     _include_all_repo("com_github_libuv_libuv", patches = ["//bazel/external:libuv.patch"], patch_args = ["-p1"])
     _include_all_repo("com_github_libarchive_libarchive")
 
+    _repo_impl("com_github_apache_arrow", build_file = "//bazel/external:arrow.BUILD")
     _repo_impl("com_google_double_conversion", build_file = "//bazel/external:double_conversion.BUILD")
     _repo_impl("com_github_rlyeh_sole", build_file = "//bazel/external:sole.BUILD")
     _repo_impl("com_github_tencent_rapidjson", build_file = "//bazel/external:rapidjson.BUILD")

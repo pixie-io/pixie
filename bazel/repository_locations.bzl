@@ -38,6 +38,11 @@ REPOSITORY_LOCATIONS = dict(
             "https://github.com/bazelbuild/rules_k8s/releases/download/v0.3.1/rules_k8s-v0.3.1.tar.gz",
         ],
     ),
+    com_github_apache_arrow = dict(
+        sha256 = "487ae884d035d9c8bbc052199268e6259d22cf502ee976e02661ee3f8e9468c0",
+        strip_prefix = "arrow-ecbb9de0b4c8739347f7ffa9e7aee7e46926bbab",
+        urls = ["https://github.com/pixie-labs/arrow/archive/ecbb9de0b4c8739347f7ffa9e7aee7e46926bbab.tar.gz"],
+    ),
     com_github_bazelbuild_buildtools = dict(
         sha256 = "a02ba93b96a8151b5d8d3466580f6c1f7e77212c4eb181cba53eb2cae7752a23",
         strip_prefix = "buildtools-3.5.0",

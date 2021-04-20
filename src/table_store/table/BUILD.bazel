@@ -29,7 +29,7 @@ pl_cc_library(
         "//src/shared/types:cc_library",
         "//src/table_store/schema:cc_library",
         "//src/table_store/schemapb:schema_pl_cc_proto",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
     ],
 )
 
@@ -38,7 +38,7 @@ pl_cc_test(
     srcs = ["table_test.cc"],
     deps = [
         ":cc_library",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
     ],
 )
 
@@ -47,7 +47,7 @@ pl_cc_test(
     srcs = ["table_store_test.cc"],
     deps = [
         ":cc_library",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
     ],
 )
 
@@ -56,6 +56,6 @@ pl_cc_test(
     srcs = ["tablets_group_test.cc"],
     deps = [
         ":cc_library",
-        "//third_party:arrow",
+        "@com_github_apache_arrow//:arrow",
     ],
 )
