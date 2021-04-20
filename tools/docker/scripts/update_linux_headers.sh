@@ -54,5 +54,5 @@ echo "-------------------------------------------------------------------------"
 for version in "${KERNEL_VERSIONS[@]}"; do
   filename="linux-headers-${version}-trimmed-${REV}.tar.gz"
   echo "$filename"
-  curl -sL "https://storage.googleapis.com/pl-infra-dev-artifacts/${filename}" | sha256sum
+  curl -sL "https://storage.googleapis.com/pixie-dev-public/${filename}" | sha256sum
 done

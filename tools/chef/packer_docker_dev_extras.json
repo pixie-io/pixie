@@ -21,8 +21,7 @@
     {
       "type": "chef-solo",
       "cookbook_paths": [
-        "cookbooks",
-        "site-cookbooks"
+        "cookbooks"
       ],
       "roles_path": "roles",
       "run_list": [

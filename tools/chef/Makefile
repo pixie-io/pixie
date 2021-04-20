@@ -31,7 +31,7 @@ LATEST_BASE_DEV_IMAGE 	    := $(shell cat $(BASE_DEV_IMAGE_VERSION_FILE))
 DEV_IMAGE_VERSION := $(shell date "+%Y%m%d%H%M")
 
 ## The repository where the images are stored.
-REPOSITORY := gcr.io/pl-dev-infra
+REPOSITORY := gcr.io/pixie-oss/pixie-dev-public
 
 .PHONY: build_and_push_base_dev_image
 build_and_push_base_dev_image:

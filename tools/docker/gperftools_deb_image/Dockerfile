@@ -15,7 +15,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Not very sensitive to version, just need something that can build C++ libraries with correct deps installed.
-FROM gcr.io/pl-dev-infra/dev_image_with_extras:201907212144 as build
+FROM gcr.io/pixie-oss/pixie-dev-public/dev_image_with_extras:202104202215 as build
 
 WORKDIR /tmp
 RUN curl -L -O  https://github.com/gperftools/gperftools/releases/download/gperftools-2.7/gperftools-2.7.tar.gz

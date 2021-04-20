@@ -151,7 +151,7 @@ def stirling_docker_images_setup():
         name = "python_mysql_connector_image",
         digest = "sha256:5f28e6eee56f40eb13cae7b7e2ccc305183ceb7be7ec44d862209d7f522cd316",
         registry = "gcr.io",
-        repository = "pl-dev-infra/python_mysql_connector",
+        repository = "pixie-oss/pixie-dev-public/python_mysql_connector",
     )
 
 def _docker_images_setup():
@@ -193,112 +193,112 @@ def _docker_images_setup():
 def _artifacts_setup():
     http_file(
         name = "linux_headers_4_14_176_tar_gz",
-        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-4.14.176-trimmed-pl3.tar.gz"],
-        sha256 = "67a59f55cb8592ed03719fedb925cdf7a2dc8529fcf9ab1002405540a855212c",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers-4.14.176-trimmed-pl3.tar.gz"],
+        sha256 = "08d4daeba7b4c81454be8cdd3d3da65b3bcae8fedf0f3787690c85310bf91664",
         downloaded_file_path = "linux-headers-4.14.176.tar.gz",
     )
 
     http_file(
         name = "linux_headers_4_15_18_tar_gz",
-        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-4.15.18-trimmed-pl3.tar.gz"],
-        sha256 = "0a82dea437d1798a88df95498892f9d14a5158f25184f42a90c5ce093645529d",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers-4.15.18-trimmed-pl3.tar.gz"],
+        sha256 = "4d8ba1fdfa2f085a32457a1f2656c2c9cfc75fa5410d508579d4c6c06cf3ee2f",
         downloaded_file_path = "linux-headers-4.15.18.tar.gz",
     )
 
     http_file(
         name = "linux_headers_4_16_18_tar_gz",
-        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-4.16.18-trimmed-pl3.tar.gz"],
-        sha256 = "738362e58aa11a51ff292c0520dd36ddfecc9ca1494c8b2841d01e51ceaf769a",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers-4.16.18-trimmed-pl3.tar.gz"],
+        sha256 = "ff41877f051f67653801e10e546e5e29d98fde9cc2ec7981a7217ba853f5ab33",
         downloaded_file_path = "linux-headers-4.16.18.tar.gz",
     )
 
     http_file(
         name = "linux_headers_4_17_19_tar_gz",
-        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-4.17.19-trimmed-pl3.tar.gz"],
-        sha256 = "38855fd5786fd459d92ce7193fc7379af2c1a7480e0bac95b0ba291fc08b4eea",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers-4.17.19-trimmed-pl3.tar.gz"],
+        sha256 = "b4924b84ca3703d788eb7962b3df30fa13788978326d8f9f3a2913da6154b0a0",
         downloaded_file_path = "linux-headers-4.17.19.tar.gz",
     )
 
     http_file(
         name = "linux_headers_4_18_20_tar_gz",
-        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-4.18.20-trimmed-pl3.tar.gz"],
-        sha256 = "efff57e9642ad968ceee4b7c0f7387fd2507499c12bda79b850b40fa35951265",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers-4.18.20-trimmed-pl3.tar.gz"],
+        sha256 = "7260e6e7c18baaaa9f49913a1c756ab431b03ad8caa0ca15b34bfaedb232509a",
         downloaded_file_path = "linux-headers-4.18.20.tar.gz",
     )
 
     http_file(
         name = "linux_headers_4_19_118_tar_gz",
-        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-4.19.118-trimmed-pl3.tar.gz"],
-        sha256 = "43253ad88cc276b293c0cbe35b684e5462af2ffa180775c0973b0e278b4f9ee6",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers-4.19.118-trimmed-pl3.tar.gz"],
+        sha256 = "bb41b959b34483f9206157e3195b7567c594d7595d3fdef94d579932684aed39",
         downloaded_file_path = "linux-headers-4.19.118.tar.gz",
     )
 
     http_file(
         name = "linux_headers_4_20_17_tar_gz",
-        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-4.20.17-trimmed-pl3.tar.gz"],
-        sha256 = "e87bdd101fd2441718a4f0999669d767c52247c4cb7294f71f9136b7eb723d78",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers-4.20.17-trimmed-pl3.tar.gz"],
+        sha256 = "8024a42ead5dd474aa8190896f070df7c4c08c77228b1f18143779aa0ab877c5",
         downloaded_file_path = "linux-headers-4.20.17.tar.gz",
     )
 
     http_file(
         name = "linux_headers_5_0_21_tar_gz",
-        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-5.0.21-trimmed-pl3.tar.gz"],
-        sha256 = "848a1135a69763bac3afff1c1bf9ac3ba63d04026479d146936d701619b44bb1",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers-5.0.21-trimmed-pl3.tar.gz"],
+        sha256 = "3d044deec38127c05de3951cc5521370f500e8b85faed0497c447356dbd3af49",
         downloaded_file_path = "linux-headers-5.0.21.tar.gz",
     )
 
     http_file(
         name = "linux_headers_5_1_21_tar_gz",
-        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-5.1.21-trimmed-pl3.tar.gz"],
-        sha256 = "4750ca03b38301f3627b47a4dc5690e6d5ba641c18a6eafdb37cb8f86614572f",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers-5.1.21-trimmed-pl3.tar.gz"],
+        sha256 = "0f1669f5100c3f3f1ccc448401ba7ef88388ae08ede540b23df3744b9e81d344",
         downloaded_file_path = "linux-headers-5.1.21.tar.gz",
     )
 
     http_file(
         name = "linux_headers_5_2_21_tar_gz",
-        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-5.2.21-trimmed-pl3.tar.gz"],
-        sha256 = "36c90df582a85c865e7fefe99db51fd82117c32bdd72452da5a47e73da8b7355",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers-5.2.21-trimmed-pl3.tar.gz"],
+        sha256 = "31207779809d6e3b118ca6dd00bde382744d8ff05f53918658f21ac1bac6a423",
         downloaded_file_path = "linux-headers-5.2.21.tar.gz",
     )
 
     http_file(
         name = "linux_headers_5_3_18_tar_gz",
-        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-5.3.18-trimmed-pl3.tar.gz"],
-        sha256 = "2e4b3eff995177122c4f28096f5a9a815fb2a1d0c025dc5340d6d86a9a7796e9",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers-5.3.18-trimmed-pl3.tar.gz"],
+        sha256 = "ddac47a719244aee65f18e0d05d80f063b8d28db54258243590a27509d691753",
         downloaded_file_path = "linux-headers-5.3.18.tar.gz",
     )
 
     http_file(
         name = "linux_headers_5_4_35_tar_gz",
-        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-5.4.35-trimmed-pl3.tar.gz"],
-        sha256 = "f371fc16c3542b6a7a47788693f00e743ec82996925c3dee7123c588e59210f7",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers-5.4.35-trimmed-pl3.tar.gz"],
+        sha256 = "b8eec62c5638642c4eb44f99cce5bf6862d3958e566733250c5e7aa4db2ccb13",
         downloaded_file_path = "linux-headers-5.4.35.tar.gz",
     )
 
     http_file(
         name = "timeconst_100",
-        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/timeconst_100.h"],
+        urls = ["https://storage.googleapis.com/pixie-dev-public/timeconst_100.h"],
         sha256 = "082496c45ab93af811732da56000caf5ffc9e6734ff633a2b348291f160ceb7e",
         downloaded_file_path = "timeconst_100.h",
     )
 
     http_file(
         name = "timeconst_250",
-        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/timeconst_250.h"],
+        urls = ["https://storage.googleapis.com/pixie-dev-public/timeconst_250.h"],
         sha256 = "0db01d74b846e39dca3612d96dee8b8f6addfaeb738cc4f5574086828487c2b9",
         downloaded_file_path = "timeconst_250.h",
     )
 
     http_file(
         name = "timeconst_300",
-        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/timeconst_300.h"],
+        urls = ["https://storage.googleapis.com/pixie-dev-public/timeconst_300.h"],
         sha256 = "91c6499df71695699a296b2fdcbb8c30e9bf35d024e048fa6d2305a8ac2af9ab",
         downloaded_file_path = "timeconst_300.h",
     )
 
     http_file(
         name = "timeconst_1000",
-        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/timeconst_1000.h"],
+        urls = ["https://storage.googleapis.com/pixie-dev-public/timeconst_1000.h"],
         sha256 = "da0ba6765f2969482bf8eaf21249552557fe4d6831749d9cfe4c25f4661f8726",
         downloaded_file_path = "timeconst_1000.h",
     )

@@ -16,16 +16,16 @@
 
 default['clang']               = {}
 default['clang']['deb']        =
-  'https://storage.googleapis.com/pl-infra-dev-artifacts/clang-11.1-pl1.deb'
+  'https://storage.googleapis.com/pixie-dev-public/clang-11.1-pl1.deb'
 default['clang']['deb_sha256'] =
-  'e43f55f53a347f65327c69a29465bd007737ae2a9b839319ad9ae5f658ccde99'
+  '545fb355f6a189cafc32aa49587ffaebbc3fa61253e0d8a5525b50941c8b1ebf'
 default['clang']['version']    = "11.1-pl1"
 
 default['gperftools']               = {}
 default['gperftools']['deb']        =
-  'https://storage.googleapis.com/pl-infra-dev-artifacts/gperftools-pixie-2.7-pl2.deb'
+  'https://storage.googleapis.com/pixie-dev-public/gperftools-pixie-2.7-pl2.deb'
 default['gperftools']['deb_sha256'] =
-  'f43a343a6eae52dfd9ef1a3e3a9fe14347587d05fa7397f9444b473a4a65e959'
+  '10f00d6ddde920c74c80eb966362fa234c1d97349ba186b51d05bb98e3fff72e'
 default['gperftools']['version']    = "2.7-pl2"
 
 default['gsutil']                  = {}

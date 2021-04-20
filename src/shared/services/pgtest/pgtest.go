@@ -76,7 +76,7 @@ func SetupTestDB(schemaSource *bindata.AssetSource) (*sqlx.DB, func(), error) {
 	}
 
 	viper.Set("postgres_port", resource.GetPort("5432/tcp"))
-	viper.Set("postgres_hostname", "localhost")
+	viper.Set("postgres_hostname", resource.Container.NetworkSettings.Gateway)
 	viper.Set("postgres_db", dbName)
 	viper.Set("postgres_username", "postgres")
 	viper.Set("postgres_password", "secret")

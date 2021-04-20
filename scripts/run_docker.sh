@@ -75,5 +75,5 @@ docker run --rm -it \
        -v "$HOME/.arcrc:/root/.arcrc" \
        -v "$GOPATH/src/pixielabs.ai:/pl/src/pixielabs.ai" \
        ${extra_args} \
-       "gcr.io/pl-dev-infra/dev_image_with_extras:$DOCKER_IMAGE_TAG" \
+       "gcr.io/pixie-oss/pixie-dev-public/dev_image_with_extras:$DOCKER_IMAGE_TAG" \
        bash

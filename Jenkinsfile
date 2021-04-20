@@ -89,11 +89,10 @@ phabConnector = PhabConnector.newInstance(this, 'https://phab.corp.pixielabs.ai'
 
 SRC_STASH_NAME = 'src'
 TARGETS_STASH_NAME = 'targets'
-// TODO(zasgar); Make this pl-dev-infra/dev_image after adding skaffold container.
-DEV_DOCKER_IMAGE = 'pl-dev-infra/dev_image_with_extras'
-DEV_DOCKER_IMAGE_EXTRAS = 'pl-dev-infra/dev_image_with_extras'
+DEV_DOCKER_IMAGE = 'pixie-oss/pixie-dev-public/dev_image_with_extras'
+DEV_DOCKER_IMAGE_EXTRAS = 'pixie-oss/pixie-dev-public/dev_image_with_extras'
 GCLOUD_DOCKER_IMAGE = 'google/cloud-sdk:287.0.0'
-COPYBARA_DOCKER_IMAGE = 'gcr.io/pixie-prod/pixie-prod-artifacts/copybara:20210420'
+COPYBARA_DOCKER_IMAGE = 'gcr.io/pixie-oss/pixie-dev-public/copybara:20210420'
 GCS_STASH_BUCKET = 'px-jenkins-build-temp'
 
 K8S_PROD_CLUSTER = 'https://cloud-prod.internal.corp.pixielabs.ai'

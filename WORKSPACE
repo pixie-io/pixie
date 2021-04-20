@@ -74,17 +74,17 @@ load("@io_bazel_toolchains//rules:gcs.bzl", "gcs_file")
 # Download model files
 gcs_file(
     name = "embedding_model",
-    bucket = "gs://pl-ml-data",
+    bucket = "gs://pixie-dev-public",
     downloaded_file_path = "embedding.proto",
-    file = "models/current-embedding-model.proto",
+    file = "ml-data/models/current-embedding-model.proto",
     sha256 = "a23c515c139670e71c0cad5c962f7e2d968fcc57ab251e49f4b5636134628813",
 )
 
 gcs_file(
     name = "sentencepiece_model",
-    bucket = "gs://pl-ml-data",
+    bucket = "gs://pixie-dev-public",
     downloaded_file_path = "sentencepiece.proto",
-    file = "models/current-sentencepiece-model.proto",
+    file = "ml-data/models/current-sentencepiece-model.proto",
     sha256 = "7e17e04ecc207d9204dc8755357f988bf77c135f7a34a88984943c8649d6a790",
 )
 

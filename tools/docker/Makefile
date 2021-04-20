@@ -24,32 +24,32 @@ SSH_PRIVATE_KEY := `cat $(SSH_PRIVATE_KEY_FILE)`
 ## Clang deb parameters
 CLANG_DEB_IMAGE_VERSION := 11.1-pl1
 clang_deb_fname := "clang-$(CLANG_DEB_IMAGE_VERSION).deb"
-clang_deb_gs_path :=  gs://pl-infra-dev-artifacts/$(clang_deb_fname)
-clang_deb_image_tag := "gcr.io/pl-dev-infra/clang_deb_image:$(CLANG_DEB_IMAGE_VERSION)"
+clang_deb_gs_path :=  gs://pixie-dev-public/$(clang_deb_fname)
+clang_deb_image_tag := "gcr.io/pixie-oss/pixie-dev-public/clang_deb_image:$(CLANG_DEB_IMAGE_VERSION)"
 
 ## Clang deb parameters
 GPERFTOOLS_DEB_IMAGE_VERSION := 2.7-pl2
 gperftools_deb_fname := "gperftools-pixie-$(GPERFTOOLS_DEB_IMAGE_VERSION).deb"
-gperftools_deb_gs_path :=  gs://pl-infra-dev-artifacts/$(gperftools_deb_fname)
-gperftools_deb_image_tag := "gcr.io/pl-dev-infra/gperftools_deb_image:$(GPERFTOOLS_DEB_IMAGE_VERSION)"
+gperftools_deb_gs_path :=  gs://pixie-dev-public/$(gperftools_deb_fname)
+gperftools_deb_image_tag := "gcr.io/pixie-oss/pixie-dev-public/gperftools_deb_image:$(GPERFTOOLS_DEB_IMAGE_VERSION)"
 
 ## Linux image parameters
 LINUX_MAJOR_VERSION ?= 5
 LINUX_KERNEL_VERSION ?= 5.3.18
 LINUX_HEADERS_REV ?= pl2
-linux_headers_image_tag := "gcr.io/pl-dev-infra/linux_headers_image:$(LINUX_KERNEL_VERSION)-$(LINUX_HEADERS_REV)"
+linux_headers_image_tag := "gcr.io/pixie-oss/pixie-dev-public:$(LINUX_KERNEL_VERSION)-$(LINUX_HEADERS_REV)"
 linux_headers_fname := linux-headers-$(LINUX_KERNEL_VERSION)-$(LINUX_HEADERS_REV).tar.gz
-linux_headers_gs_path := gs://pl-infra-dev-artifacts/$(linux_headers_fname)
+linux_headers_gs_path := gs://pixie-dev-public/$(linux_headers_fname)
 linux_headers_trimmed_fname := linux-headers-$(LINUX_KERNEL_VERSION)-trimmed-$(LINUX_HEADERS_REV).tar.gz
-linux_headers_trimmed_gs_path := gs://pl-infra-dev-artifacts/$(linux_headers_trimmed_fname)
+linux_headers_trimmed_gs_path := gs://pixie-dev-public/$(linux_headers_trimmed_fname)
 
 ## Curl image parameters.
 CURL_IMAGE_VERSION := 1.0
-curl_image_tag := "gcr.io/pixie-prod/pixie-prod-artifacts/curl:$(CURL_IMAGE_VERSION)"
+curl_image_tag := "gcr.io/pixie-oss/pixie-dev/curl:$(CURL_IMAGE_VERSION)"
 
 ## Copybara image parameters.
 COPYBARA_IMAGE_VERSION := 20210420
-copybara_image_tag := "gcr.io/pixie-prod/pixie-prod-artifacts/copybara:$(COPYBARA_IMAGE_VERSION)"
+copybara_image_tag := "gcr.io/pixie-oss/pixie-dev/copybara:$(COPYBARA_IMAGE_VERSION)"
 
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 mkfile_dir := $(dir $(mkfile_path))
@@ -64,7 +64,6 @@ build_clang_deb_image:
 upload_clang_deb: build_clang_deb_image ## Target to build and upload clang deb image
 	$(DOCKER) run --rm -e deb_name=$(clang_deb_fname) -v $(PWD):/image $(clang_deb_image_tag)
 	gsutil cp $(clang_deb_fname) $(clang_deb_gs_path)
-	gsutil acl ch -u allUsers:READER $(clang_deb_gs_path)
 	@echo "SHA: "
 	sha256sum $(clang_deb_fname)
 	rm -f $(clang_deb_fname)
@@ -78,7 +77,6 @@ build_gperftools_deb_image:
 upload_gperftools_deb: build_gperftools_deb_image ## Target to build and upload gperftools deb image
 	$(DOCKER) run --rm -e deb_name=$(gperftools_deb_fname) -v $(PWD):/image $(gperftools_deb_image_tag)
 	gsutil cp $(gperftools_deb_fname) $(gperftools_deb_gs_path)
-	gsutil acl ch -u allUsers:READER $(gperftools_deb_gs_path)
 	@echo "SHA: "
 	sha256sum $(gperftools_deb_fname)
 	rm -f $(gperftools_deb_fname)
@@ -93,14 +91,12 @@ upload_linux_headers: build_linux_headers_image ## Target to build and upload li
 	# Upload full headers.
 	scripts/docker-extract.sh $(linux_headers_image_tag) /pl/linux-headers-$(LINUX_KERNEL_VERSION).tar.gz $(linux_headers_fname)
 	gsutil cp $(linux_headers_fname) $(linux_headers_gs_path)
-	gsutil acl ch -u allUsers:READER $(linux_headers_gs_path)
 	@echo "SHA: "
 	sha256sum $(linux_headers_fname)
 	rm -f $(linux_headers_fname)
 	# Upload trimmed headers.
 	scripts/docker-extract.sh $(linux_headers_image_tag) /pl/linux-headers-$(LINUX_KERNEL_VERSION)-trimmed.tar.gz $(linux_headers_trimmed_fname)
 	gsutil cp $(linux_headers_trimmed_fname) $(linux_headers_trimmed_gs_path)
-	gsutil acl ch -u allUsers:READER $(linux_headers_trimmed_gs_path)
 	@echo "SHA: "
 	sha256sum $(linux_headers_trimmed_fname)
 	rm -f $(linux_headers_trimmed_fname)
