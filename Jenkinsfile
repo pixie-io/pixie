@@ -120,6 +120,7 @@ isVizierBuildRun = env.JOB_NAME.startsWith('pixie-release/vizier/')
 isCloudStagingBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud-staging/')
 isCloudProdBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud/')
 isCopybaraPublic = env.JOB_NAME.startsWith('pixie-main/copybara-public')
+isCopybaraPxAPI = env.JOB_NAME.startsWith('pixie-main/copybara-pxapi-go')
 
 // Disable BPF runs on main because the flakiness makes it noisy.
 // Stirling team still gets coverage via dev runs for now.
@@ -1171,10 +1172,11 @@ def buildScriptForCloudProdRelease = {
   postBuildActions()
 }
 
-def buildScriptForCopybaraPublic = {
+
+def buildScriptForCopybaraTemplate(String name, String copybaraFile) {
   try {
     stage('Copybara it') {
-      DefaultCopybaraPodTemplate('public-copy') {
+      DefaultCopybaraPodTemplate(name) {
         deleteDir()
         checkout scm
         container('copybara') {
@@ -1188,7 +1190,7 @@ def buildScriptForCopybaraPublic = {
               variable: 'COPYBARA_GPG_KEY_ID'),
             ]) {
               sh "GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' \
-              ./ci/run_copybara.sh tools/copybara/public/copy.bara.sky"
+              ./ci/run_copybara.sh ${copybaraFile}"
             }
           }
         }
@@ -1215,7 +1217,9 @@ if (isNightlyTestRegressionRun) {
 } else if (isCloudProdBuildRun) {
   buildScriptForCloudProdRelease()
 } else if(isCopybaraPublic) {
-  buildScriptForCopybaraPublic()
+  buildScriptForCopybaraTemplate("public-copy", "tools/copybara/public/copy.bara.sky")
+} else if(isCopybaraPxAPI) {
+  buildScriptForCopybaraTemplate("pxapi-copy", "tools/copybara/pxapi_go/copy.bara.sky")
 }else {
   buildScriptForCommits()
 }
