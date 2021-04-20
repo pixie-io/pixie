@@ -18,8 +18,10 @@
 
 import * as QueryString from 'query-string';
 import { OAUTH_PROVIDER } from 'containers/constants';
+import { FormStructure } from '@pixie-labs/components';
 import { HydraClient } from './hydra-oauth-provider';
 import { Auth0Client } from './auth0-oauth-provider';
+import { OAuthProviderClient } from './oauth-provider';
 
 export type AuthCallbackMode = 'cli_get' | 'cli_token' | 'ui';
 
@@ -78,7 +80,7 @@ const getRedirectURL = (isSignup: boolean) => {
   return redirectURL;
 };
 
-export const GetOAuthProvider = () => {
+export const GetOAuthProvider = (): OAuthProviderClient => {
   if (OAUTH_PROVIDER === 'auth0') {
     return new Auth0Client(getRedirectURL);
   }
@@ -90,3 +92,4 @@ export const GetOAuthProvider = () => {
 
 export const OAuthSignupRequest = () => GetOAuthProvider().signupRequest();
 export const OAuthLoginRequest = () => GetOAuthProvider().loginRequest();
+export const OAuthGetPasswordLoginFlow = (): Promise<FormStructure> => GetOAuthProvider().getPasswordLoginFlow();

@@ -20,6 +20,9 @@ import {
   AUTH_URI, AUTH_CLIENT_ID,
 } from 'containers/constants';
 import ClientOAuth2 from 'client-oauth2';
+import { PublicApiFactory } from '@ory/kratos-client';
+import { FormStructure } from '@pixie-labs/components';
+import * as QueryString from 'query-string';
 import { OAuthProviderClient, Token } from './oauth-provider';
 
 // Copied from auth0-js/src/helper/window.js
@@ -44,6 +47,24 @@ function randomString(length) {
 }
 
 const hydraStorageKey = 'hydra_auth_state';
+export const PasswordError = new Error('Kratos identity server error: Password method not found in flows.');
+export const FlowIDError = new Error('Auth server requires a flow parameter in the query string, but none were found.');
+
+const kratosClient = PublicApiFactory(null, '/oauth/kratos');
+
+// Renders a form with an error and no fields.
+const displayErrorFormStructure = (error: Error): FormStructure => ({
+  action: '/',
+  method: 'POST',
+  submitBtnText: 'Back To Login',
+  fields: [],
+  errors: [{ text: error.message }],
+  defaultSubmit: false,
+  onClick: () => {
+    window.location.href = '/auth/login';
+  },
+});
+
 export class HydraClient extends OAuthProviderClient {
   getRedirectURL: (boolean) => string;
 
@@ -69,6 +90,30 @@ export class HydraClient extends OAuthProviderClient {
         resolve(user.accessToken);
       }).catch((err) => reject(err));
     });
+  }
+
+  // Get the PasswordLoginFlow from Kratos.
+  // eslint-disable-next-line class-methods-use-this
+  async getPasswordLoginFlow(): Promise<FormStructure> {
+    const parsed = QueryString.parse(window.location.search);
+    const flow = parsed.flow as string;
+    if (flow == null) {
+      return displayErrorFormStructure(FlowIDError);
+    }
+    const { data } = await kratosClient.getSelfServiceLoginFlow(flow);
+    const passwordMethods = data.methods.password;
+    if (passwordMethods == null) {
+      return displayErrorFormStructure(PasswordError);
+    }
+
+    return {
+      ...passwordMethods.config,
+      submitBtnText: 'Login',
+      errors: passwordMethods.config.messages,
+      // Kratos and browser redirects limits us to submit the login form
+      // through an XmlHttpRequest, the default HTML Form submit behavior.
+      defaultSubmit: true,
+    };
   }
 
   private makeAndStoreState(): string {

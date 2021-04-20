@@ -20,6 +20,7 @@ import auth0 from 'auth0-js';
 import {
   AUTH_CLIENT_ID, AUTH_URI,
 } from 'containers/constants';
+import { FormStructure } from '@pixie-labs/components';
 import { OAuthProviderClient, Token } from './oauth-provider';
 
 function makeAuth0Client(): auth0.WebAuth {
@@ -66,5 +67,10 @@ export class Auth0Client extends OAuthProviderClient {
         resolve(authResult.accessToken);
       });
     });
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  async getPasswordLoginFlow(): Promise<FormStructure> {
+    throw new Error('Password flow currently unavailable for Auth0');
   }
 }

@@ -25,6 +25,7 @@
     "@babel/preset-react": "^7.12.5",
     "@babel/preset-typescript": "^7.12.1",
     "@babel/runtime-corejs3": "^7.12.5",
+    "@ory/kratos-client": "^v0.5.5-alpha.4",
     "@types/auth0-lock": "^11.4.7",
     "@types/d3": "^5.7.2",
     "@types/enzyme": "^3.1.13",
@@ -103,6 +104,7 @@
     "@material-ui/core": "^4.9.0",
     "@material-ui/icons": "^4.5.1",
     "@material-ui/lab": "^4.0.0-alpha.40",
+    "@ory/kratos-client": "^v0.5.5-alpha.4",
     "@pixie-labs/api": "1.0.0",
     "@pixie-labs/api-react": "1.0.0",
     "@pixie-labs/components": "1.0.0",
@@ -198,6 +200,7 @@
   },
   "resolutions": {
     "@types/react": "^17.0.3",
+    "axios": "^0.21.1",
     "http-proxy-middleware": "0.19.2",
     "jimp": "^0.10.3",
     "resize-img": "^2.0.0",

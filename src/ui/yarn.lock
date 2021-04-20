@@ -2109,6 +2109,13 @@
     mkdirp "^1.0.4"
     rimraf "^3.0.2"
 
+"@ory/kratos-client@^v0.5.5-alpha.4":
+  version "0.5.5-alpha.4"
+  resolved "https://registry.yarnpkg.com/@ory/kratos-client/-/kratos-client-0.5.5-alpha.4.tgz#cfc52d70dcddbb5ff18afdfb495040675910e41e"
+  integrity sha512-v/tbFPtISHDH8OjI/P9Vah+0eWWMHOVb4yvBtzf8Qo4JIPeBWo1UJTQGAltp1k43FtI8ofB7aQCwCGbS6zISLQ==
+  dependencies:
+    axios "^0.19.2"
+
 "@pmmmwh/react-refresh-webpack-plugin@^0.4.3":
   version "0.4.3"
   resolved "https://registry.yarnpkg.com/@pmmmwh/react-refresh-webpack-plugin/-/react-refresh-webpack-plugin-0.4.3.tgz#1eec460596d200c0236bf195b078a5d1df89b766"
@@ -4765,7 +4772,7 @@ axios-mock-adapter@^1.18.1:
     fast-deep-equal "^3.1.3"
     is-buffer "^2.0.3"
 
-axios@0.21.1:
+axios@0.21.1, axios@^0.19.2, axios@^0.21.1:
   version "0.21.1"
   resolved "https://registry.yarnpkg.com/axios/-/axios-0.21.1.tgz#22563481962f4d6bde9a76d516ef0e5d3c09b2b8"
   integrity sha512-dKQiRHxGD9PPRIUNIWvZhPTPpl1rf/OxTYKsqKUDjBwYylTvV7SjSHJb9ratfyzM6wCdLCOYLzs73qpg5c4iGA==

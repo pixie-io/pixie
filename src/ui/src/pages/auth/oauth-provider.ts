@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { FormStructure } from '@pixie-labs/components';
+
 export type Token = string;
 // OAuthProviderClient is the interface for OAuth providers such as Auth0 and ORY/Hydra.
 export abstract class OAuthProviderClient {
@@ -27,4 +29,7 @@ export abstract class OAuthProviderClient {
 
   // handleToken will get the token wherever it's stored by the OAuthProvider and pass it to the callback.
   abstract handleToken(): Promise<Token>;
+
+  // getPasswordLoginFlow returns the form structure.
+  abstract getPasswordLoginFlow(): Promise<FormStructure>;
 }
