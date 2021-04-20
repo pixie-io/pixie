@@ -69,7 +69,7 @@ StatusOr<const ConnTracker*> ConnTrackerGenerations::GetActive() const {
   return oldest_generation_;
 }
 
-int ConnTrackerGenerations::CleanupTrackers() {
+int ConnTrackerGenerations::CleanupGenerations() {
   int num_erased = 0;
 
   auto iter = generations_.begin();
@@ -183,7 +183,7 @@ void ConnTrackersManager::CleanupTrackers() {
   while (iter != conn_trackers_.end()) {
     auto& tracker_generations = iter->second;
 
-    int num_erased = tracker_generations.CleanupTrackers();
+    int num_erased = tracker_generations.CleanupGenerations();
 
     num_trackers_ -= num_erased;
     num_trackers_ready_for_destruction_ -= num_erased;

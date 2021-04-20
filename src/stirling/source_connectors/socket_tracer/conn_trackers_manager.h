@@ -58,7 +58,7 @@ class ConnTrackerGenerations {
   /**
    * Removes all trackers that are ReadyForDestruction().
    */
-  int CleanupTrackers();
+  int CleanupGenerations();
 
  private:
   // A map of TSID to ConnTrackers.
