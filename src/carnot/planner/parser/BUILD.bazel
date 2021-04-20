@@ -36,7 +36,7 @@ pl_cc_library(
         "//src/carnot/planner/compiler_state:cc_library",
         "//src/carnot/planner/compilerpb:compiler_status_pl_cc_proto",
         "//src/carnot/planner/ir:cc_library",
-        "//third_party:libpypa",
+        "@com_github_vinzenz_libpypa//:libpypa",
     ],
 )
 

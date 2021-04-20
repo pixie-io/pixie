@@ -20,7 +20,6 @@ load("//bazel:flex_bison.bzl", "genbison", "genflex")
 licenses(["notice"])
 
 exports_files([
-    "libpypa/COPYING",
     "arrow/LICENSE.txt",
 ])
 
@@ -40,36 +39,6 @@ cc_library(
     name = "clang_tidy_stub",
     srcs = ["clang_tidy_stub.cc"],
     visibility = ["//visibility:public"],
-)
-
-cc_library(
-    name = "libpypa",
-    srcs = [
-        "libpypa/src/pypa/ast/ast.cc",
-        "libpypa/src/pypa/ast/dump.cc",
-        "libpypa/src/pypa/filebuf.cc",
-        "libpypa/src/pypa/lexer/lexer.cc",
-        "libpypa/src/pypa/parser/make_string.cc",
-        "libpypa/src/pypa/parser/parser.cc",
-        "libpypa/src/pypa/parser/symbol_table.cc",
-    ],
-    hdrs = glob([
-        "libpypa/src/**/*.hh",
-        "libpypa/src/**/*.inl",
-    ]),
-    copts = [
-        "-Wno-unused-local-typedef",
-        "-Wno-unused-parameter",
-    ],
-    includes = ["libpypa/src"],
-    linkopts = [
-        "-lm",
-    ],
-    visibility = ["//visibility:public"],
-    deps = [
-        "@com_google_absl//absl/strings",
-        "@com_google_double_conversion//:double-conversion",
-    ],
 )
 
 # See README.md for special instructions on re-building bpftrace.

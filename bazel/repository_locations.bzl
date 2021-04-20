@@ -254,4 +254,9 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "t-digest-a8fd5a06978422e7b7f1778705aa4ee17891d4c1",
         urls = ["https://github.com/pixie-labs/t-digest/archive/a8fd5a06978422e7b7f1778705aa4ee17891d4c1.tar.gz"],
     ),
+    com_github_vinzenz_libpypa = dict(
+        sha256 = "d61a6d88b65a470973f0ec595f44b1238e92dfee9f71585d50842f8ef95c7af2",
+        strip_prefix = "libpypa-4cd45827d64cfa1e732e0b91182bf72f016a4e7f",
+        urls = ["https://github.com/pixie-labs/libpypa/archive/4cd45827d64cfa1e732e0b91182bf72f016a4e7f.tar.gz"],
+    ),
 )

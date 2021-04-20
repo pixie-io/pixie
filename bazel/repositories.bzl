@@ -100,6 +100,7 @@ def _cc_deps():
     _repo_impl("com_github_serge1_elfio", build_file = "//bazel/external:elfio.BUILD")
     _repo_impl("com_github_tdunning_t_digest", build_file = "//bazel/external:tdigest.BUILD")
     _repo_impl("com_github_tencent_rapidjson", build_file = "//bazel/external:rapidjson.BUILD")
+    _repo_impl("com_github_vinzenz_libpypa", build_file = "//bazel/external:libpypa.BUILD")
     _com_github_threadstacks()
     _repo_impl("com_google_double_conversion", build_file = "//bazel/external:double_conversion.BUILD")
     _repo_impl(
