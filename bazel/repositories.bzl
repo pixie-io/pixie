@@ -89,24 +89,24 @@ def _cc_deps():
     _include_all_repo("com_github_libarchive_libarchive")
 
     _repo_impl("com_github_apache_arrow", build_file = "//bazel/external:arrow.BUILD")
-    _repo_impl("com_github_packetzero_dnsparser", build_file = "//bazel/external:dnsparser.BUILD")
-    _repo_impl("com_google_double_conversion", build_file = "//bazel/external:double_conversion.BUILD")
-    _repo_impl("com_github_rlyeh_sole", build_file = "//bazel/external:sole.BUILD")
-    _repo_impl("com_github_tencent_rapidjson", build_file = "//bazel/external:rapidjson.BUILD")
     _repo_impl("com_github_ariafallah_csv_parser", build_file = "//bazel/external:csv_parser.BUILD")
-    _repo_impl("com_github_cameron314_concurrentqueue", build_file = "//bazel/external:concurrentqueue.BUILD")
     _repo_impl("com_github_arun11299_cpp_jwt", build_file = "//bazel/external:cpp_jwt.BUILD")
+    _repo_impl("com_github_cameron314_concurrentqueue", build_file = "//bazel/external:concurrentqueue.BUILD")
+    _repo_impl("com_github_cmcqueen_aes_min", patches = ["//bazel/external:aes_min.patch"], patch_args = ["-p1"], build_file = "//bazel/external:aes_min.BUILD")
     _repo_impl("com_github_cyan4973_xxhash", build_file = "//bazel/external:xxhash.BUILD")
     _repo_impl("com_github_nlohmann_json", build_file = "//bazel/external:nlohmann_json.BUILD")
-    _repo_impl("com_github_cmcqueen_aes_min", patches = ["//bazel/external:aes_min.patch"], patch_args = ["-p1"], build_file = "//bazel/external:aes_min.BUILD")
+    _repo_impl("com_github_packetzero_dnsparser", build_file = "//bazel/external:dnsparser.BUILD")
+    _repo_impl("com_github_rlyeh_sole", build_file = "//bazel/external:sole.BUILD")
+    _repo_impl("com_github_serge1_elfio", build_file = "//bazel/external:elfio.BUILD")
+    _repo_impl("com_github_tencent_rapidjson", build_file = "//bazel/external:rapidjson.BUILD")
+    _com_github_threadstacks()
+    _repo_impl("com_google_double_conversion", build_file = "//bazel/external:double_conversion.BUILD")
     _repo_impl(
         "com_github_google_sentencepiece",
         build_file = "//bazel/external:sentencepiece.BUILD",
         patches = ["//bazel/external:sentencepiece.patch"],
         patch_args = ["-p1"],
     )
-
-    _com_github_threadstacks()
 
 def _go_deps():
     # Add go specific imports here when necessary.

@@ -25,7 +25,7 @@
 
 #include <absl/container/flat_hash_map.h>
 
-#include "third_party/ELFIO/elfio/elfio.hpp"
+#include <elfio/elfio.hpp>
 
 #include "src/common/base/base.h"
 

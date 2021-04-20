@@ -78,13 +78,6 @@ cc_library(
     ],
 )
 
-cc_library(
-    name = "elfio",
-    hdrs = glob(["ELFIO/elfio/*.hpp"]),
-    includes = ["ELFIO"],
-    visibility = ["//visibility:public"],
-)
-
 # See README.md for special instructions on re-building bpftrace.
 cc_library(
     name = "bpftrace",

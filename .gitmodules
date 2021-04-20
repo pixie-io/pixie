@@ -16,6 +16,3 @@
 [submodule "third_party/threadstacks"]
 	path = third_party/threadstacks
 	url = git@github.com:pixie-labs/threadstacks.git
-[submodule "third_party/ELFIO"]
-	path = third_party/ELFIO
-	url = git@github.com:pixie-labs/ELFIO.git

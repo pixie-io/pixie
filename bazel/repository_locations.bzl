@@ -43,11 +43,6 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "arrow-ecbb9de0b4c8739347f7ffa9e7aee7e46926bbab",
         urls = ["https://github.com/pixie-labs/arrow/archive/ecbb9de0b4c8739347f7ffa9e7aee7e46926bbab.tar.gz"],
     ),
-    com_github_packetzero_dnsparser = dict(
-        sha256 = "bdf6c7f56f33725c1c32e672a4779576fb639dd2df565115778eb6be48296431",
-        strip_prefix = "dnsparser-77398ffc200765db1cea9000d9f550ea99a29f7b",
-        urls = ["https://github.com/pixie-labs/dnsparser/archive/77398ffc200765db1cea9000d9f550ea99a29f7b.tar.gz"],
-    ),
     com_github_bazelbuild_buildtools = dict(
         sha256 = "a02ba93b96a8151b5d8d3466580f6c1f7e77212c4eb181cba53eb2cae7752a23",
         strip_prefix = "buildtools-3.5.0",
@@ -57,6 +52,16 @@ REPOSITORY_LOCATIONS = dict(
         sha256 = "dccbdab796baa1043f04982147e67bb6e118fe610da2c65f88912d73987e700c",
         strip_prefix = "benchmark-1.5.2",
         urls = ["https://github.com/google/benchmark/archive/v1.5.2.tar.gz"],
+    ),
+    com_github_packetzero_dnsparser = dict(
+        sha256 = "bdf6c7f56f33725c1c32e672a4779576fb639dd2df565115778eb6be48296431",
+        strip_prefix = "dnsparser-77398ffc200765db1cea9000d9f550ea99a29f7b",
+        urls = ["https://github.com/pixie-labs/dnsparser/archive/77398ffc200765db1cea9000d9f550ea99a29f7b.tar.gz"],
+    ),
+    com_github_serge1_elfio = dict(
+        sha256 = "386bbeaac176683a68ee1941ab5b12dc381b7d43ff300cccca060047c2c9b291",
+        strip_prefix = "ELFIO-9a70dd299199477bf9f8319424922d0fa436c225",
+        urls = ["https://github.com/pixie-labs/ELFIO/archive/9a70dd299199477bf9f8319424922d0fa436c225.tar.gz"],
     ),
     bazel_skylib = dict(
         sha256 = "e5d90f0ec952883d56747b7604e2a15ee36e288bb556c3d0ed33e818a4d971f2",
