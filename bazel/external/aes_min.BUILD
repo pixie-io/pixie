@@ -22,10 +22,14 @@ exports_files(["LICENSE"])
 
 cc_library(
     name = "aes-min",
-    srcs = ["aes-min.c"],
+    srcs = [
+        "aes-min.c",
+        "aes-min.h",
+    ],
     hdrs = ["aes-min.h"],
     copts = [
         "-Wno-unused-function",
     ],
+    include_prefix = "aes-min",
     visibility = ["//visibility:public"],
 )
