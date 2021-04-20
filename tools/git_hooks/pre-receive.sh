@@ -19,17 +19,33 @@
 pattern='pixielabs\.ai$'
 
 while read -r _ newsha _; do
-	author=$(git log -1 --pretty=format:"%ae" "${newsha}")
-	committer=$(git log -1 --pretty=format:"%ce" "${newsha}")
-
-	if [[ "${author}" =~ ${pattern} && "${committer}" =~ ${pattern} ]]; then
-		exit 0
+	if [[ "${newsha}" == "0000000000000000000000000000000000000000" ]]; then
+		continue
 	fi
 
-	echo "======================================================================="
-	echo "Please set your gitconfig to use your pixielabs.ai email"
-	echo "Found author email: ${author}"
-	echo "Found committer email: ${committer}"
-	echo "======================================================================="
-	exit 1
+	author=$(git log -1 --pretty=format:"%ae" "${newsha}")
+	if [[ ! "${author}" =~ ${pattern} ]]; then
+		echo "======================================================================="
+		echo "Please set your gitconfig to use your pixielabs.ai email"
+		echo "Found author email: ${author}"
+		echo "======================================================================="
+		exit 1
+	fi
+
+	committer=$(git log -1 --pretty=format:"%ce" "${newsha}")
+	if [[ ! "${committer}" =~ ${pattern} ]]; then
+		echo "======================================================================="
+		echo "Please set your gitconfig to use your pixielabs.ai email"
+		echo "Found committer email: ${committer}"
+		echo "======================================================================="
+		exit 1
+	fi
+
+	gpg_sign=$(git log -1 --pretty=format:"%GG" "${newsha}")
+	if [[ ! "${gpg_sign}" =~ "Signature made" ]]; then
+		echo "======================================================================="
+		echo "Please GPG sign your commits"
+		echo "======================================================================="
+		exit 1
+	fi
 done
