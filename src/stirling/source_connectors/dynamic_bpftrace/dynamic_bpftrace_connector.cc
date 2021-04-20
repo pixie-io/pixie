@@ -20,6 +20,8 @@
 
 #include "src/stirling/source_connectors/dynamic_bpftrace/dynamic_bpftrace_connector.h"
 
+#include <bpftrace/src/ast/async_event_types.h>
+
 #include <utility>
 #include <vector>
 
@@ -27,7 +29,6 @@
 #include <absl/strings/ascii.h>
 
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
-#include "third_party/bpftrace/src/ast/async_event_types.h"
 
 namespace px {
 namespace stirling {

@@ -264,4 +264,9 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "threadstacks-94adbe26c4aaf9ca945fd7936670d40ec6f228fb",
         urls = ["https://github.com/pixie-labs/threadstacks/archive/94adbe26c4aaf9ca945fd7936670d40ec6f228fb.tar.gz"],
     ),
+    com_github_iovisor_bpftrace = dict(
+        sha256 = "8bd665c0ab7cc79794d4cd7a1c5553e8bd25b65215bb7b4b7c4f905067cf63ee",
+        strip_prefix = "bpftrace-da17ebda1090b5e09dc89d69a3afdb580d486670",
+        urls = ["https://github.com/pixie-labs/bpftrace/archive/da17ebda1090b5e09dc89d69a3afdb580d486670.tar.gz"],
+    ),
 )

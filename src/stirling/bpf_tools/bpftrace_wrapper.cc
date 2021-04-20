@@ -20,19 +20,18 @@
 
 #include "src/stirling/bpf_tools/bpftrace_wrapper.h"
 
+#include <bpftrace/src/ast/codegen_llvm.h>
+#include <bpftrace/src/ast/printer.h>
+#include <bpftrace/src/ast/semantic_analyser.h>
+#include <bpftrace/src/clang_parser.h>
+#include <bpftrace/src/driver.h>
+#include <bpftrace/src/procmon.h>
+#include <bpftrace/src/tracepoint_format_parser.h>
+
 #include <sstream>
 
 #include "src/common/base/base.h"
 #include "src/common/system/config.h"
-
-#include "third_party/bpftrace/src/ast/codegen_llvm.h"
-#include "third_party/bpftrace/src/ast/printer.h"
-#include "third_party/bpftrace/src/ast/semantic_analyser.h"
-#include "third_party/bpftrace/src/clang_parser.h"
-#include "third_party/bpftrace/src/driver.h"
-#include "third_party/bpftrace/src/procmon.h"
-#include "third_party/bpftrace/src/tracepoint_format_parser.h"
-
 #include "src/stirling/utils/linux_headers.h"
 
 namespace px {

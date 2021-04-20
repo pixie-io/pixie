@@ -20,15 +20,15 @@
 
 #ifdef __linux__
 
+#include <bpftrace/src/bpforc.h>
+#include <bpftrace/src/bpftrace.h>
+#include <bpftrace/src/driver.h>
+
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "src/common/base/base.h"
-
-#include "third_party/bpftrace/src/bpforc.h"
-#include "third_party/bpftrace/src/bpftrace.h"
-#include "third_party/bpftrace/src/driver.h"
 
 namespace px {
 namespace stirling {

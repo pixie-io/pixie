@@ -1,6 +1,3 @@
 [submodule "third_party/bcc"]
 	path = third_party/bcc
 	url = git@github.com:pixie-labs/bcc.git
-[submodule "third_party/bpftrace"]
-	path = third_party/bpftrace
-	url = git@github.com:pixie-labs/bpftrace.git
