@@ -10,9 +10,6 @@
 [submodule "third_party/libpypa"]
 	path = third_party/libpypa
 	url = git@github.com:pixie-labs/libpypa.git
-[submodule "third_party/tdigest"]
-	path = third_party/tdigest
-	url = git@github.com:pixie-labs/tdigest.git
 [submodule "third_party/threadstacks"]
 	path = third_party/threadstacks
 	url = git@github.com:pixie-labs/threadstacks.git

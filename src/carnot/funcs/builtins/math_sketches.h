@@ -23,7 +23,7 @@
 
 #include "src/carnot/udf/registry.h"
 #include "src/shared/types/types.h"
-#include "third_party/tdigest/tdigest.h"
+#include "tdigest/tdigest.h"
 
 namespace px {
 namespace carnot {

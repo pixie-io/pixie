@@ -249,4 +249,9 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "aes-min-0.3.1",
         urls = ["https://github.com/cmcqueen/aes-min/releases/download/0.3.1/aes-min-0.3.1.tar.gz"],
     ),
+    com_github_tdunning_t_digest = dict(
+        sha256 = "c9e889a7c3a4ffd601502bcb00bae3491e66e3dcf1f1ab2c13b7b66446f03758",
+        strip_prefix = "t-digest-a8fd5a06978422e7b7f1778705aa4ee17891d4c1",
+        urls = ["https://github.com/pixie-labs/t-digest/archive/a8fd5a06978422e7b7f1778705aa4ee17891d4c1.tar.gz"],
+    ),
 )

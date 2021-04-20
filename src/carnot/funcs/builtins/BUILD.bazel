@@ -34,8 +34,8 @@ pl_cc_library(
     deps = [
         "//src/carnot/exec/ml:cc_library",
         "//src/carnot/udf:cc_library",
-        "//third_party/tdigest",
         "@com_github_google_sentencepiece//:libsentencepiece",
+        "@com_github_tdunning_t_digest//:tdigest",
         "@com_github_tencent_rapidjson//:rapidjson",
     ],
 )
