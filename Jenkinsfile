@@ -93,7 +93,7 @@ TARGETS_STASH_NAME = 'targets'
 DEV_DOCKER_IMAGE = 'pl-dev-infra/dev_image_with_extras'
 DEV_DOCKER_IMAGE_EXTRAS = 'pl-dev-infra/dev_image_with_extras'
 GCLOUD_DOCKER_IMAGE = 'google/cloud-sdk:287.0.0'
-COPYBARA_DOCKER_IMAGE = 'olivr/copybara@sha256:7c21a1cdd552e736abe5f55bcc24f92add6e220610d2688bf86452e4a284c329'
+COPYBARA_DOCKER_IMAGE = 'gcr.io/pixie-prod/pixie-prod-artifacts/copybara:20210420'
 GCS_STASH_BUCKET = 'px-jenkins-build-temp'
 
 K8S_PROD_CLUSTER = 'https://cloud-prod.internal.corp.pixielabs.ai'
@@ -1178,8 +1178,18 @@ def buildScriptForCopybaraPublic = {
         deleteDir()
         checkout scm
         container('copybara') {
-          sshagent (credentials: ['pixie-copybara-git']) {
-            sh "GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' ./ci/copybara_public_repo.sh"
+        sshagent (credentials: ['pixie-copybara-git']) {
+          withCredentials([
+            file(
+              credentialsId: 'copybara-private-key-asc',
+              variable: 'COPYBARA_GPG_KEY_FILE'),
+            string(
+              credentialsId: 'copybara-gpg-key-id',
+              variable: 'COPYBARA_GPG_KEY_ID'),
+            ]) {
+              sh "GIT_SSH_COMMAND='ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' \
+              ./ci/run_copybara.sh tools/copybara/public/copy.bara.sky"
+            }
           }
         }
       }
