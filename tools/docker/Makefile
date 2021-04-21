@@ -45,11 +45,11 @@ linux_headers_trimmed_gs_path := gs://pixie-dev-public/$(linux_headers_trimmed_f
 
 ## Curl image parameters.
 CURL_IMAGE_VERSION := 1.0
-curl_image_tag := "gcr.io/pixie-oss/pixie-dev/curl:$(CURL_IMAGE_VERSION)"
+curl_image_tag := "gcr.io/pixie-oss/pixie-dev-public/curl:$(CURL_IMAGE_VERSION)"
 
 ## Copybara image parameters.
 COPYBARA_IMAGE_VERSION := 20210420
-copybara_image_tag := "gcr.io/pixie-oss/pixie-dev/copybara:$(COPYBARA_IMAGE_VERSION)"
+copybara_image_tag := "gcr.io/pixie-oss/pixie-dev-public/copybara:$(COPYBARA_IMAGE_VERSION)"
 
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 mkfile_dir := $(dir $(mkfile_path))
