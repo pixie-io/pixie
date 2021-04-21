@@ -205,6 +205,22 @@ class SplitPEMandKelvinOnlyUDFOperatorRule : public Rule {
       const absl::flat_hash_set<std::string>& used_column_names);
 };
 
+/**
+ * @brief This rule pushes limits as early in the IR as possible, without pushing them
+ * past PEM-only operators.
+ */
+class LimitPushdownRule : public Rule {
+ public:
+  explicit LimitPushdownRule(CompilerState* compiler_state)
+      : Rule(compiler_state, /*use_topo*/ true, /*reverse_topological_execution*/ false) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode*) override;
+
+ private:
+  StatusOr<absl::flat_hash_set<OperatorIR*>> NewLimitParents(OperatorIR* current_node);
+};
+
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
