@@ -22,7 +22,7 @@ import * as QueryString from 'query-string';
 import { AuthMessageBox } from '@pixie-labs/components';
 import { BasePage } from './base';
 
-export const CLIAuthCompletePage = () => {
+export const CLIAuthCompletePage: React.FC = () => {
   const params = QueryString.parse(window.location.search.substr(1));
 
   const title = params.err ? 'Authentication Failed' : 'Authentication Complete';

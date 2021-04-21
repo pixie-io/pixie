@@ -22,7 +22,7 @@ import * as RedirectUtils from 'utils/redirect-utils';
 import { BasePage } from './base';
 
 // eslint-disable-next-line react/prefer-stateless-function
-export const LogoutPage = () => {
+export const LogoutPage: React.FC = () => {
   // eslint-disable-next-line class-methods-use-this
   React.useEffect(() => {
     Axios.post('/api/auth/logout').then(() => {

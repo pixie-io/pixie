@@ -23,7 +23,7 @@ import * as QueryString from 'query-string';
 import { BasePage } from './base';
 import { OAuthGetPasswordRecoveryFlow } from './utils';
 
-export const PasswordRecoveryPage = ({ location }: RouteProps): JSX.Element => {
+export const PasswordRecoveryPage: React.FC = ({ location }: RouteProps) => {
   const parsed = QueryString.parse(location.search);
   const flow = parsed.flow as string;
   const [error, setError] = React.useState<Error>(null);

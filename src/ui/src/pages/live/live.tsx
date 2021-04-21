@@ -214,7 +214,7 @@ const ClusterLoadingComponent = (props: ClusterLoadingProps) => {
 // Timeout before we display the cluster as unhealthy, in milliseconds.
 const UNHEALTHY_CLUSTER_TIMEOUT = 5000;
 
-const LiveView = () => {
+const LiveView: React.FC = () => {
   const classes = useStyles();
 
   const {

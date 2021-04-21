@@ -23,7 +23,7 @@ import * as QueryString from 'query-string';
 import { BasePage } from './base';
 import { GetOAuthProvider } from './utils';
 
-export const ErrorPage = ({ location }: RouteProps): JSX.Element => {
+export const ErrorPage: React.FC = ({ location }: RouteProps) => {
   const parsed = QueryString.parse(location.search);
   const err = parsed.error as string;
   const [error, setError] = React.useState<Error>(null);

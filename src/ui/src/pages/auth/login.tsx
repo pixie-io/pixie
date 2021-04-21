@@ -21,7 +21,7 @@ import { AuthBox } from '@pixie-labs/components';
 import { BasePage } from './base';
 import { OAuthLoginRequest } from './utils';
 
-export const LoginPage = () => (
+export const LoginPage: React.FC = () => (
   <BasePage>
     <AuthBox
       variant='login'
