@@ -21,11 +21,9 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
@@ -38,17 +36,19 @@ import (
 // Define hardcoded PxL script.
 // TODO(vjain, PC-830): Get Pxl script from frontend instead of
 // hardcoding.
-var (
+const (
 	pxl = `
 import px
 df = px.DataFrame(table='process_stats', start_time='-1m')
-val = px.uint128("00000001-003d-3020-0000-000029ff124f")
+val = px.uint128("0000000c-0017-3ec0-0000-00001166ba10")
 df = df[df.upid == val]
 dfOne = df['time_','rss_bytes', 'vsize_bytes'].head(10)
 dfTwo = df['time_','major_faults'].head(10)
 px.display(dfOne)
 px.display(dfTwo)
 `
+	apiKeyStr       = "apiKey"
+	clusterIDKeyStr = "clusterId"
 )
 
 // newDatasource returns datasource.ServeOpts.
@@ -80,12 +80,13 @@ type PixieDatasource struct {
 // req contains the queries []DataQuery (where each query contains RefID
 // as a unique identifier). The QueryDataResponse contains a map of RefID
 // to the response for each query, and each response contains Frames ([]*Frame).
-func (td *PixieDatasource) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
+func (td *PixieDatasource) QueryData(ctx context.Context, req *backend.QueryDataRequest) (
+	*backend.QueryDataResponse, error) {
 	response := backend.NewQueryDataResponse()
 	// Loop over queries and execute them individually. Save the response
 	// in a hashmap with RefID as identifier.
 	for _, q := range req.Queries {
-		res, err := td.query(ctx, q)
+		res, err := td.query(ctx, q, req.PluginContext.DataSourceInstanceSettings.DecryptedSecureJSONData)
 		if err != nil {
 			return response, err
 		}
@@ -99,8 +100,8 @@ type queryModel struct {
 	Format string `json:"format"`
 }
 
-func (td *PixieDatasource) query(ctx context.Context, query backend.DataQuery) (*backend.DataResponse,
-	error) {
+func (td *PixieDatasource) query(ctx context.Context, query backend.DataQuery,
+	config map[string]string) (*backend.DataResponse, error) {
 	// Unmarshal the json into our queryModel.
 	var qm queryModel
 	err := json.Unmarshal(query.JSON, &qm)
@@ -113,12 +114,7 @@ func (td *PixieDatasource) query(ctx context.Context, query backend.DataQuery) (
 	}
 
 	// API Token.
-	// TODO(vjain, PC-830): get the API key and the cluster ID
-	// from the QueryDataRequest.
-	apiTokenStr, ok := os.LookupEnv("PX_API_KEY")
-	if !ok {
-		return nil, errors.New("failed to lookup Pixie API Key")
-	}
+	apiTokenStr := config[apiKeyStr]
 
 	// Create a Pixie client.
 	client, err := pxapi.NewClient(ctx, pxapi.WithAPIKey(apiTokenStr))
@@ -128,12 +124,7 @@ func (td *PixieDatasource) query(ctx context.Context, query backend.DataQuery) (
 	}
 
 	// Create a connection to the cluster.
-	// TODO(vjain, PC-830): get the API key and the cluster ID
-	// from the QueryDataRequest.
-	clusterIDStr, ok := os.LookupEnv("PX_CLUSTER_ID")
-	if !ok {
-		return nil, errors.New("failed to lookup Cluster Id")
-	}
+	clusterIDStr := config[clusterIDKeyStr]
 
 	vz, err := client.NewVizierClient(ctx, clusterIDStr)
 	if err != nil {

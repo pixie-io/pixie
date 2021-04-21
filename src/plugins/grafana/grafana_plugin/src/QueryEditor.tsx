@@ -56,7 +56,7 @@ export class QueryEditor extends PureComponent<Props> {
         />
         <FormField
           labelWidth={8}
-          value={queryText || ''}
+          value={queryText || ""}
           onChange={this.onQueryTextChange}
           label="Query Text"
           tooltip="Not used yet"

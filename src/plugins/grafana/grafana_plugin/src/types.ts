@@ -24,7 +24,7 @@ export interface MyQuery extends DataQuery {
 }
 
 export const defaultQuery: Partial<MyQuery> = {
-  constant: 6.5,
+  constant: 6.5
 };
 
 /**
@@ -39,4 +39,5 @@ export interface MyDataSourceOptions extends DataSourceJsonData {
  */
 export interface MySecureJsonData {
   apiKey?: string;
+  clusterId?: string;
 }
