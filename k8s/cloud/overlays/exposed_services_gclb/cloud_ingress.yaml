@@ -9,41 +9,13 @@ spec:
   rules:
   - http:
       paths:
-      - path: /pl.services.VZConnService/*
-        backend:
-          serviceName: vzconn-service
-          servicePort: 51600
-      - path: /pl.cloudapi.VizierImageAuthorization/*
-        backend:
-          serviceName: cloud-proxy-service
-          servicePort: 5555
       # GCP does not support multiple wildcards so unfortunately we need this for each
       # GRPC API service.
       - path: /pl.cloudapi.ArtifactTracker/*
         backend:
           serviceName: cloud-proxy-service
           servicePort: 5555
-      - path: /pl.cloudapi.VizierClusterInfo/*
-        backend:
-          serviceName: cloud-proxy-service
-          servicePort: 5555
       - path: /pl.cloudapi.ProfileService/*
-        backend:
-          serviceName: cloud-proxy-service
-          servicePort: 5555
-      - path: /pl.api.vizierpb.VizierService/*
-        backend:
-          serviceName: cloud-proxy-service
-          servicePort: 4444
-      - path: /pl.cloudapi.VizierDeploymentKeyManager/*
-        backend:
-          serviceName: cloud-proxy-service
-          servicePort: 5555
-      - path: /pl.cloudapi.APIKeyManager/*
-        backend:
-          serviceName: cloud-proxy-service
-          servicePort: 5555
-      - path: /pl.public.cloudapi.ClusterManager/*
         backend:
           serviceName: cloud-proxy-service
           servicePort: 5555

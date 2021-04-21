@@ -36,11 +36,6 @@ data:
                   domains: ["*"]
                   routes:
                   - match:
-                      prefix: "/pl.api"
-                    route:
-                      cluster: api_service
-                      timeout: 3600s
-                  - match:
                       prefix: "/px.api"
                     route:
                       cluster: api_service
