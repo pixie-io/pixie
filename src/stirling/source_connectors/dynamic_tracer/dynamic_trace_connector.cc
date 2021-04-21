@@ -290,10 +290,7 @@ class StructDecoder {
     // struct blob {
     //   uint64_t len;
     //   char buf[MAX_STR_LEN];
-    //   // To keep 4.14 kernel verifier happy we copy an extra byte.
-    //   // Keep a dummy character to absorb this garbage.
-    //   // We also use this extra byte to track if data has been truncated.
-    //   uint8_t dummy;
+    //   uint8_t truncated;
     // };
     //
     // TODO(oazizi): Find a better way to keep these in sync.
@@ -316,10 +313,7 @@ class StructDecoder {
     // struct byte_array {
     //   uint64_t len;
     //   uint8_t buf[MAX_BYTE_ARRAY_LEN];
-    //   // To keep 4.14 kernel verifier happy we copy an extra byte.
-    //   // Keep a dummy character to absorb this garbage.
-    //   // We also use this extra byte to track if data has been truncated.
-    //   uint8_t dummy;
+    //   uint8_t truncated;
     // };
     //
     // TODO(oazizi): Find a better way to keep these in sync.

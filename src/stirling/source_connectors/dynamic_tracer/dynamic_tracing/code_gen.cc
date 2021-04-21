@@ -305,24 +305,23 @@ StatusOr<std::vector<std::string>> GenPtrLenVariable(const PtrLenVariable& var) 
   // This trick won't cause a null dereference because it's just for the compiler
   // to find the size of the member; there is no real data access at run-time.
   // See https://stackoverflow.com/questions/3553296/sizeof-single-struct-member-in-c
-  code_lines.push_back(absl::Substitute(
-      "uint8_t $0_truncate__ = $0 > sizeof(((struct blob$1*)0)->buf);", var.len_var_name(), size));
-  code_lines.push_back(absl::Substitute(
-      "$0 = $0_truncate__ ? sizeof(((struct blob$1*)0)->buf) : $0;", var.len_var_name(), size));
-  code_lines.push_back(
-      absl::Substitute("$0 = $0 & $1; // Keep verifier happy.", var.len_var_name(), size - 1));
+  std::string sizeof_struct_blob = absl::Substitute("sizeof(((struct blob$0*)0)->buf)", size);
 
   code_lines.push_back(absl::Substitute("$0 $1 = {};", GetScalarTypeCName(var.type()), var.name()));
-  code_lines.push_back(absl::Substitute("$0.len = $1;", var.name(), var.len_var_name()));
+  code_lines.push_back(absl::Substitute("$0.truncated = $1 > $2;", var.name(), var.len_var_name(),
+                                        sizeof_struct_blob));
+  code_lines.push_back(absl::Substitute("$0.len = $0.truncated ? $2 : $1;", var.name(),
+                                        var.len_var_name(), sizeof_struct_blob));
 
+  code_lines.push_back("// Some black magic to keep BPF verifier of older kernels happy.");
+  code_lines.push_back(absl::Substitute("size_t $0_len_minus_1 = $0.len - 1;", var.name()));
   code_lines.push_back(
-      "// Read one extra byte to avoid passing a size of 0 to bpf_probe_read(), which causes "
-      "BPF verifier issues on kernel 4.14.");
+      absl::Substitute("asm volatile(\"\" : \"+r\"($0_len_minus_1) :);", var.name()));
   code_lines.push_back(
-      absl::Substitute("bpf_probe_read($0.buf, $0.len + 1, $1);", var.name(), var.ptr_var_name()));
-  code_lines.push_back("// Must write this after the buf probe read, otherwise may get clobbered.");
-  code_lines.push_back(
-      absl::Substitute("$0.dummy = $1_truncate__;", var.name(), var.len_var_name()));
+      absl::Substitute("if ($0_len_minus_1 < $1) {", var.name(), sizeof_struct_blob));
+  code_lines.push_back(absl::Substitute("  bpf_probe_read($0.buf, $0_len_minus_1 + 1, $1);",
+                                        var.name(), var.ptr_var_name()));
+  code_lines.push_back("}");
 
   return code_lines;
 }
@@ -940,16 +939,12 @@ std::vector<std::string> GenBlobType(std::string_view type_name, int size,
     overhead_size += sizeof(int8_t);
   }
 
-  code_lines.insert(
-      code_lines.end(),
-      {
-          absl::Substitute("  uint8_t buf[$0-sizeof(uint64_t)-$1];", size, overhead_size),
-          "  // To keep 4.14 kernel verifier happy, we copy an extra byte.",
-          "  // Keep a dummy character to absorb this garbage.",
-          "  // We also use this extra byte to track if data has been truncated.",
-          "  uint8_t dummy;",
-          "};",
-      });
+  code_lines.insert(code_lines.end(), {
+                                          absl::Substitute("  uint8_t buf[$0-sizeof(uint64_t)-$1];",
+                                                           size, overhead_size),
+                                          "  uint8_t truncated;",
+                                          "};",
+                                      });
 
   return code_lines;
 }
