@@ -154,8 +154,10 @@ TEST_F(ConnTrackersManagerTest, ChangeProtocolsWhileReadyForDestruction) {
 
 class ConnTrackerGenerationsTest : public ::testing::Test {
  protected:
+  ConnTrackerGenerationsTest() : tracker_pool(1024) {}
+
   std::pair<ConnTracker*, bool> GetOrCreateTracker(uint64_t tsid) {
-    auto [tracker, created] = tracker_gens_.GetOrCreate(tsid);
+    auto [tracker, created] = tracker_gens_.GetOrCreate(tsid, &tracker_pool);
     if (created) {
       struct conn_id_t conn_id = {};
       conn_id.tsid = tsid;
@@ -172,10 +174,11 @@ class ConnTrackerGenerationsTest : public ::testing::Test {
       }
     }
 
-    return tracker_gens_.CleanupGenerations();
+    return tracker_gens_.CleanupGenerations(&tracker_pool);
   }
 
   ConnTrackerGenerations tracker_gens_;
+  ConnTrackerPool tracker_pool;
 };
 
 TEST_F(ConnTrackerGenerationsTest, Basic) {

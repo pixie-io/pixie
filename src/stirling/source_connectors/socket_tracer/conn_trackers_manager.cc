@@ -25,7 +25,8 @@ namespace stirling {
 // ConnTrackerGenerations
 //-----------------------------------------------------------------------------
 
-std::pair<ConnTracker*, bool> ConnTrackerGenerations::GetOrCreate(uint64_t tsid) {
+std::pair<ConnTracker*, bool> ConnTrackerGenerations::GetOrCreate(uint64_t tsid,
+                                                                  ConnTrackerPool* tracker_pool) {
   std::unique_ptr<ConnTracker>& conn_tracker_ptr = generations_[tsid];
   bool created = false;
 
@@ -33,7 +34,7 @@ std::pair<ConnTracker*, bool> ConnTrackerGenerations::GetOrCreate(uint64_t tsid)
   // New trackers always have TSID == 0, while BPF should never generate a TSID of zero,
   // so we use this as a way of detecting new trackers.
   if (conn_tracker_ptr == nullptr) {
-    conn_tracker_ptr = std::make_unique<ConnTracker>();
+    conn_tracker_ptr = tracker_pool->Pop();
     created = true;
 
     // If there is a another generation for this conn map key,
@@ -69,7 +70,7 @@ StatusOr<const ConnTracker*> ConnTrackerGenerations::GetActive() const {
   return oldest_generation_;
 }
 
-int ConnTrackerGenerations::CleanupGenerations() {
+int ConnTrackerGenerations::CleanupGenerations(ConnTrackerPool* tracker_pool) {
   int num_erased = 0;
 
   auto iter = generations_.begin();
@@ -81,6 +82,9 @@ int ConnTrackerGenerations::CleanupGenerations() {
       if (tracker.get() == oldest_generation_) {
         oldest_generation_ = nullptr;
       }
+
+      tracker_pool->Recycle(std::move(tracker));
+
       generations_.erase(iter++);
       ++num_erased;
     } else {
@@ -97,11 +101,15 @@ int ConnTrackerGenerations::CleanupGenerations() {
 
 namespace {
 
+constexpr size_t kMaxConnTrackerPoolSize = 2048;
+
 uint64_t GetConnMapKey(uint32_t pid, uint32_t fd) {
   return (static_cast<uint64_t>(pid) << 32) | fd;
 }
 
 }  // namespace
+
+ConnTrackersManager::ConnTrackersManager() : trackers_pool_(kMaxConnTrackerPoolSize) {}
 
 void ConnTrackersManager::UpdateProtocol(px::stirling::ConnTracker* tracker,
                                          std::optional<TrafficProtocol> old_protocol) {
@@ -144,7 +152,7 @@ ConnTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t conn_i
   DCHECK_NE(conn_map_key, 0) << "Connection map key cannot be 0, pid must be wrong";
 
   ConnTrackerGenerations& conn_trackers = conn_trackers_[conn_map_key];
-  auto [conn_tracker_ptr, created] = conn_trackers.GetOrCreate(conn_id.tsid);
+  auto [conn_tracker_ptr, created] = conn_trackers.GetOrCreate(conn_id.tsid, &trackers_pool_);
 
   if (created) {
     ++num_trackers_;
@@ -183,7 +191,7 @@ void ConnTrackersManager::CleanupTrackers() {
   while (iter != conn_trackers_.end()) {
     auto& tracker_generations = iter->second;
 
-    int num_erased = tracker_generations.CleanupGenerations();
+    int num_erased = tracker_generations.CleanupGenerations(&trackers_pool_);
 
     num_trackers_ -= num_erased;
     num_trackers_ready_for_destruction_ -= num_erased;

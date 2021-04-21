@@ -50,6 +50,7 @@ typename TMapType::const_iterator MapLE(const TMapType& map, size_t key) {
 void DataStreamBuffer::Reset() {
   buffer_.clear();
   chunks_.clear();
+  timestamps_.clear();
   position_ = 0;
 }
 

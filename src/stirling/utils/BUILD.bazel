@@ -115,3 +115,9 @@ pl_cc_test(
         "//src/common/testing/test_utils:cc_library",
     ],
 )
+
+pl_cc_test(
+    name = "obj_pool_test",
+    srcs = ["obj_pool_test.cc"],
+    deps = [":cc_library"],
+)

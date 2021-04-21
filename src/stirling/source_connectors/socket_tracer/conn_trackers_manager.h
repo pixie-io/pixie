@@ -24,11 +24,15 @@
 #include <set>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "src/stirling/source_connectors/socket_tracer/conn_tracker.h"
+#include "src/stirling/utils/obj_pool.h"
 
 namespace px {
 namespace stirling {
+
+using ConnTrackerPool = ObjPool<ConnTracker>;
 
 /**
  * ConnTrackersGenerations is a container of tracker generations,
@@ -43,7 +47,7 @@ class ConnTrackerGenerations {
    *
    * @return The pointer to the conn_tracker and whether the tracker was newly created.
    */
-  std::pair<ConnTracker*, bool> GetOrCreate(uint64_t tsid);
+  std::pair<ConnTracker*, bool> GetOrCreate(uint64_t tsid, ConnTrackerPool* tracker_pool);
 
   bool Contains(uint64_t tsid) const;
 
@@ -57,8 +61,9 @@ class ConnTrackerGenerations {
 
   /**
    * Removes all trackers that are ReadyForDestruction().
+   * Removed trackers are pushed into the tracker pool for recycling.
    */
-  int CleanupGenerations();
+  int CleanupGenerations(ConnTrackerPool* tracker_pool);
 
  private:
   // A map of TSID to ConnTrackers.
@@ -78,6 +83,8 @@ class ConnTrackerGenerations {
  */
 class ConnTrackersManager {
  public:
+  ConnTrackersManager();
+
   /**
    * Get a connection tracker for the specified conn_id. If a tracker does not exist,
    * one will be created and returned.
@@ -203,6 +210,10 @@ class ConnTrackersManager {
   size_t num_trackers_ = 0;
   size_t num_trackers_ready_for_destruction_ = 0;
   size_t num_trackers_in_lists_ = 0;
+
+  // A pool of unused trackers that can be recycled.
+  // This is useful for avoiding memory reallocations.
+  ConnTrackerPool trackers_pool_;
 };
 
 }  // namespace stirling

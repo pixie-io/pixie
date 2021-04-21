@@ -94,7 +94,7 @@ std::string PerfProfileConnector::FoldedStackTraceString(ebpf::BPFStackTable* st
       // Some stack-traces have the address 0xcccccccccccccccc where one might
       // otherwise expect to find "main" or "start_thread". Given that this address
       // is not a "real" address, we filter it out here.
-      DCHECK(iter == user_addrs.rbegin()) << "Detectected sentinel address in unexpected location.";
+      DCHECK(iter == user_addrs.rbegin()) << "Detected sentinel address in unexpected location.";
       continue;
     }
     stack_trace_str += upid_symbol_cache.LookupSym(stack_traces, addr);
