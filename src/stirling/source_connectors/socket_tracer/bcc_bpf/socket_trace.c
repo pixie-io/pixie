@@ -433,32 +433,30 @@ static __inline void perf_submit_buf(struct pt_regs* ctx, const enum TrafficDire
     return;
   }
 
-  // Modify buf_size this way, to reduce the number of BPF instructions.
-  // Note that kMask is a constant that can be pulled out of the perf_submit_buf() loop,
-  // and so this reduces if-statements inside the loop, as long as the compiler is smart enough.
-  const uint32_t kMask = send_data ? 0xffffffff : 0;
-  buf_size = buf_size & kMask;
+  // Note that buf_size_minus_1 will be positive due to the if-statement above.
+  size_t buf_size_minus_1 = buf_size - 1;
 
   // Clang is too smart for us, and tries to remove some of the obvious hints we are leaving for the
   // BPF verifier. So we add this NOP volatile statement, so clang can't optimize away some of our
   // if-statements below.
-  // By telling clang that buf_size is both an input and output to some black box assembly
+  // By telling clang that buf_size_minus_1 is both an input and output to some black box assembly
   // code, clang has to discard any assumptions on what values this variable can take.
-  asm volatile("" : "+r"(buf_size) :);
+  asm volatile("" : "+r"(buf_size_minus_1) :);
 
-  // This is not possible, but is required for the verifier.
-  if (buf_size > MAX_MSG_SIZE) {
-    buf_size = 0;
+  buf_size = buf_size_minus_1 + 1;
+
+  // This if-statement check is redundant, but is required for the verifier.
+  // Buf size is always greater than 0, but the verifier doesn't know that.
+  // 4.14 kernels otherwise reject bpf_probe_read with size that they may think is zero.
+  if (buf_size_minus_1 < MAX_MSG_SIZE) {
+    if (send_data) {
+      bpf_probe_read(&event->msg, buf_size, buf);
+    } else {
+      buf_size = 0;
+    }
+    event->attr.msg_buf_size = buf_size;
+    socket_data_events.perf_submit(ctx, event, sizeof(event->attr) + buf_size);
   }
-
-  // Read an extra byte.
-  // Required for 4.14 kernels, which reject bpf_probe_read with size of zero.
-  // Note that event->msg is followed by event->unused, so the extra byte will not clobber
-  // anything in the case that buf_size==MAX_MSG_SIZE.
-  bpf_probe_read(&event->msg, buf_size + 1, buf);
-
-  event->attr.msg_buf_size = buf_size;
-  socket_data_events.perf_submit(ctx, event, sizeof(event->attr) + buf_size);
 }
 
 static __inline void perf_submit_wrapper(struct pt_regs* ctx, const enum TrafficDirection direction,

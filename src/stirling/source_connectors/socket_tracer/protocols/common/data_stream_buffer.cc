@@ -130,6 +130,9 @@ void DataStreamBuffer::Add(size_t pos, std::string_view data, uint64_t timestamp
   } else if (ppos_front < 0) {
     // Case 2: Data being added is straddling the front-side of the buffer. Cut-off the prefix.
 
+    VLOG(1) << absl::Substitute(
+        "Event is partially too far in the past [event pos=$0, current pos=$1].", pos, position_);
+
     ssize_t prefix = 0 - ppos_front;
     data.remove_prefix(prefix);
     pos += prefix;
@@ -150,6 +153,9 @@ void DataStreamBuffer::Add(size_t pos, std::string_view data, uint64_t timestamp
       // The movement of the buffer position will cause some bytes to "fall off",
       // remove those now.
       size_t remove_count = logical_size - capacity_;
+
+      VLOG(1) << absl::Substitute("Event bytes to be dropped [count=$0].", remove_count);
+
       RemovePrefix(remove_count);
       ppos_front -= remove_count;
       ppos_back -= remove_count;

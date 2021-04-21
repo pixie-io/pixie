@@ -378,6 +378,38 @@ TEST_F(SocketTraceBPFTest, StartTime) {
   EXPECT_GT(time_window_end, upid1.start_ts());
 }
 
+TEST_F(SocketTraceBPFTest, LargeMessages) {
+  ConfigureBPFCapture(TrafficProtocol::kProtocolHTTP, kRoleClient | kRoleServer);
+
+  std::string large_response =
+      "HTTP/1.1 200 OK\r\n"
+      "Content-Type: application/json; msg2\r\n"
+      "Content-Length: 131072\r\n"
+      "\r\n";
+  large_response += std::string(131072, '+');
+
+  testing::SendRecvScript script({
+      {{kHTTPReqMsg1}, {large_response}},
+  });
+  testing::ClientServerSystem system;
+  system.RunClientServer<&TCPSocket::Recv, &TCPSocket::Send>(script);
+
+  source_->PollPerfBuffers();
+
+  ASSERT_OK_AND_ASSIGN(const auto* client_tracker,
+                       GetConnTracker(system.ClientPID(), system.ClientFD()));
+  EXPECT_EQ(client_tracker->send_data().data_buffer().Head(), kHTTPReqMsg1);
+  EXPECT_THAT(std::string(client_tracker->recv_data().data_buffer().Head()), HasSubstr("+++++"));
+
+  // TODO(oazizi): The server version of this test fails because the server's send syscall
+  //               has a huge payload, but we're only able to trace CHUNK_LIMIT * MAX_MSG_SIZE
+  //               per syscall. Fortunately, servers in the wild appear to chunk their syscall data.
+  //  ASSERT_OK_AND_ASSIGN(const auto* server_tracker, GetConnTracker(system.ServerPID(),
+  //  system.ServerFD())); EXPECT_EQ(server_tracker->send_data().data_buffer().Head(),
+  //  kHTTPReqMsg1); EXPECT_THAT(std::string(server_tracker->recv_data().data_buffer().Head()),
+  //  HasSubstr("+++++"));
+}
+
 // Run a UDP-based client-server system.
 class UDPSocketTraceBPFTest : public SocketTraceBPFTest {
  protected:
@@ -529,10 +561,6 @@ TEST_F(SocketTraceServerSideBPFTest, ConnStatsUpdatedAfterConnTrackerDisabled) {
 
   ConfigureBPFCapture(kProtocolHTTP, kRoleClient | kRoleServer);
   DataTable data_table(kHTTPTable);
-
-  // Drain the perf buffers before stimulus activity.
-  // Otherwise, perf buffers may fill up, causing lost events and flaky test results.
-  source_->PollPerfBuffers();
 
   TCPSocket client;
   TCPSocket server;

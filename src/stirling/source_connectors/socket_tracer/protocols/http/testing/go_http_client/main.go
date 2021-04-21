@@ -21,15 +21,27 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"time"
 )
+
+var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func randStringRunes(n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
+}
 
 type helloReply struct {
 	Greeter string `json:"greeter"`
@@ -37,30 +49,51 @@ type helloReply struct {
 
 func main() {
 	address := flag.String("address", "localhost:50050", "Server end point.")
-	name := flag.String("name", "world", "The name to greet.")
+	reqType := flag.String("reqType", "get", "Type of request (get or post)")
+	name := flag.String("name", "world", "The name to greet, for GET requests.")
+	reqSize := flag.Int("reqSize", 128*1024, "The size of the request, for POST requests.")
 	count := flag.Int("count", 1, "The count of requests to make.")
 
 	flag.Parse()
 
+	values := map[string]string{}
+	values["name"] = "foo"
+	values["data"] = randStringRunes(*reqSize)
+	postBody, err := json.Marshal(values)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	for i := 0; i < *count; i++ {
-		resp, err := http.Get("http://" + *address + "/sayhello?name=" + url.QueryEscape(*name))
-		if err != nil {
-			panic(err)
-		}
+		if *reqType == "get" {
+			resp, err := http.Get("http://" + *address + "/sayhello?name=" + url.QueryEscape(*name))
+			if err != nil {
+				panic(err)
+			}
 
-		body, readErr := ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
-		if readErr != nil {
-			log.Fatal(readErr)
-		}
+			body, readErr := ioutil.ReadAll(resp.Body)
+			resp.Body.Close()
+			if readErr != nil {
+				log.Fatal(readErr)
+			}
 
-		reply := helloReply{}
-		jsonErr := json.Unmarshal(body, &reply)
-		if jsonErr != nil {
-			log.Fatal(jsonErr)
-		}
+			reply := helloReply{}
+			jsonErr := json.Unmarshal(body, &reply)
+			if jsonErr != nil {
+				log.Fatal(jsonErr)
+			}
 
-		fmt.Println(reply.Greeter)
+			fmt.Println(reply.Greeter)
+		} else if *reqType == "post" {
+			resp, err := http.Post("http://"+*address+"/post", "application/json", bytes.NewBuffer(postBody))
+			if err != nil {
+				panic(err)
+			}
+
+			fmt.Println(resp.Body)
+		} else {
+			log.Fatal("Did not understand reqType")
+		}
 		time.Sleep(time.Second)
 	}
 }

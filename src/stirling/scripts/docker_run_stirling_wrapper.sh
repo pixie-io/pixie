@@ -59,7 +59,7 @@ parse_args "$@"
 shift $((OPTIND -1))
 
 if [ "$USE_GCR" -eq "1" ]; then
-  bazel run //src/stirling:push_stirling_wrapper_image
+  bazel run //src/stirling/binaries:push_stirling_wrapper_image
   image_name=gcr.io/pl-dev-infra/stirling_wrapper:${USER}
   docker pull "$image_name"
 else

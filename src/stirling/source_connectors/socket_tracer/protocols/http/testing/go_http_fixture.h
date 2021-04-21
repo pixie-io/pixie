@@ -54,9 +54,23 @@ class GoHTTPFixture {
     ASSERT_NE(0, s_port_);
   }
 
-  void LaunchClient() {
-    ASSERT_OK(
-        c_.Start({client_path_, "-name=PixieLabs", absl::StrCat("-address=localhost:", s_port_)}));
+  void LaunchGetClient() {
+    ASSERT_OK(c_.Start({
+        client_path_,
+        absl::StrCat("-address=localhost:", s_port_),
+        "-reqType=get",
+        "-name=PixieLabs",
+    }));
+    EXPECT_EQ(0, c_.Wait()) << "Client should exit normally.";
+  }
+
+  void LaunchPostClient() {
+    ASSERT_OK(c_.Start({
+        client_path_,
+        absl::StrCat("-address=localhost:", s_port_),
+        "-reqType=post",
+        "-reqSize=131072",
+    }));
     EXPECT_EQ(0, c_.Wait()) << "Client should exit normally.";
   }
 

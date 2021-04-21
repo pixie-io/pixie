@@ -59,7 +59,10 @@ class GoHTTPTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ false
 TEST_F(GoHTTPTraceTest, RequestAndResponse) {
   StartTransferDataThread(kHTTPTableNum, kHTTPTable);
 
-  go_http_fixture_.LaunchClient();
+  // Uncomment to enable tracing:
+  // FLAGS_stirling_conn_trace_pid = go_http_fixture_.server_pid();
+
+  go_http_fixture_.LaunchGetClient();
 
   std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
   ASSERT_FALSE(tablets.empty());
@@ -98,6 +101,47 @@ TEST_F(GoHTTPTraceTest, RequestAndResponse) {
   EXPECT_EQ(record_batch[kHTTPRespBodySizeIdx]->Get<types::Int64Value>(target_record_idx).val, 31);
 }
 
+TEST_F(GoHTTPTraceTest, LargePostMessage) {
+  StartTransferDataThread(kHTTPTableNum, kHTTPTable);
+
+  // Uncomment to enable tracing:
+  // FLAGS_stirling_conn_trace_pid = go_http_fixture_.server_pid();
+
+  go_http_fixture_.LaunchPostClient();
+
+  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+  ASSERT_FALSE(tablets.empty());
+  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+
+  // By default, we do not trace the client.
+  EXPECT_THAT(
+      testing::FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, go_http_fixture_.client_pid()),
+      IsEmpty());
+
+  // We do expect to trace the server.
+  const std::vector<size_t> target_record_indices =
+      testing::FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, go_http_fixture_.server_pid());
+  ASSERT_THAT(target_record_indices, SizeIs(1));
+
+  const size_t target_record_idx = target_record_indices.front();
+
+  EXPECT_THAT(
+      std::string(record_batch[kHTTPReqHeadersIdx]->Get<types::StringValue>(target_record_idx)),
+      AllOf(HasSubstr(R"("Accept-Encoding":"gzip")"),
+            HasSubstr(absl::Substitute(R"(Host":"localhost:$0")", go_http_fixture_.server_port())),
+            ContainsRegex(R"(User-Agent":"Go-http-client/.+")")));
+  EXPECT_THAT(
+      std::string(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(target_record_idx)),
+      StrEq(
+          "{\"data\":"
+          "\"XVlBzgbaiCMRAjWwhTHctcuAxhxKQFDaFpLSjFbcXoEFfRsWxPLDnJObCsNVlgTeMaPEZQleQYhYzRyWJjPjzp"
+          "fRFEgmotaFetHsbZRjxAwnwekrBEmfdzdcEkXBAkjQZLCtTMtTCoaNatyyiNKAReKJyiXJrscctNswYNsGRussVm"
+          "aozFZBsbOJiFQGZsnwTKSmVoiGLOpbUOpEdKupdOMeRVjaRzLNTXYeUCWKsXbGyRAOmBTvKSJfjzaLbtZsyMGeuD"
+          "tRzQMDQiYCOhgHOvgSeycJPJHYNufNjJhhjUVRuSqfgqVMkPYVkURUpiFvIZRgBmyArKCtzkjkZIvaBjMkXVbWGv"
+          "bqzgexyALBsdjSGpngCwFkDifIBuufFMoWdiTskZoQJMqrTICTojIYxyeSxZyfroRODMbNDRZnPNRWCJPMHDtJmH"
+          "AYORsUfUMApsVgzHblmYYtEjVgwfFbbGGcnqbaEREunUZjQXmZOtaRLUtmYgmSVYB... [TRUNCATED]"));
+}
+
 struct TraceRoleTestParam {
   EndpointRole role;
   size_t client_records_count;
@@ -116,7 +160,7 @@ TEST_P(TraceRoleTest, VerifyRecordsCount) {
 
   StartTransferDataThread(kHTTPTableNum, kHTTPTable);
 
-  go_http_fixture_.LaunchClient();
+  go_http_fixture_.LaunchGetClient();
 
   std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
 

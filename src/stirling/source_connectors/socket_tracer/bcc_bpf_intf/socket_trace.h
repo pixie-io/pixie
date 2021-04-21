@@ -181,11 +181,6 @@ struct socket_data_event_t {
     uint32_t msg_buf_size;
   } attr;
   char msg[MAX_MSG_SIZE];
-  // IMPORTANT: This extra byte must follow char msg[MAX_MSG_SIZE].
-  // This is because we copy an extra byte during the bpf_probe_read in in perf_submit_buf(),
-  // which is, in turn, required to please the BPF verifier 4.14 kernels.
-  // This extra byte receives the extra garbage and prevent us from clobbering other memory.
-  char unused[1];
 };
 
 typedef enum {
