@@ -385,10 +385,21 @@ class UDPSocketTraceBPFTest : public SocketTraceBPFTest {
     SocketTraceBPFTest::SetUp();
     ConfigureBPFCapture(TrafficProtocol::kProtocolHTTP, kRoleClient | kRoleServer);
     server_.BindAndListen();
+
+    pid_ = getpid();
+    LOG(INFO) << absl::Substitute("PID=$0", pid_);
+
+    // Drain the perf buffers before beginning the test to make sure perf buffers are empty.
+    // Otherwise, the test may flake due to events not being received in user-space.
+    source_->PollPerfBuffers();
+
+    // Uncomment to enable tracing:
+    // FLAGS_stirling_conn_trace_pid = pid_;
   }
 
   UDPSocket client_;
   UDPSocket server_;
+  int pid_ = 0;
 };
 
 TEST_F(UDPSocketTraceBPFTest, UDPSendToRecvFrom) {
@@ -408,11 +419,11 @@ TEST_F(UDPSocketTraceBPFTest, UDPSendToRecvFrom) {
 
   source_->PollPerfBuffers();
 
-  ASSERT_OK_AND_ASSIGN(const auto* tracker, GetConnTracker(getpid(), client_.sockfd()));
+  ASSERT_OK_AND_ASSIGN(const auto* tracker, GetConnTracker(pid_, client_.sockfd()));
   EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPReqMsg1);
   EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPRespMsg1);
 
-  ASSERT_OK_AND_ASSIGN(tracker, GetConnTracker(getpid(), server_.sockfd()));
+  ASSERT_OK_AND_ASSIGN(tracker, GetConnTracker(pid_, server_.sockfd()));
   EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPRespMsg1);
   EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPReqMsg1);
 }
@@ -434,11 +445,11 @@ TEST_F(UDPSocketTraceBPFTest, UDPSendMsgRecvMsg) {
 
   source_->PollPerfBuffers();
 
-  ASSERT_OK_AND_ASSIGN(const auto* tracker, GetConnTracker(getpid(), client_.sockfd()));
+  ASSERT_OK_AND_ASSIGN(const auto* tracker, GetConnTracker(pid_, client_.sockfd()));
   EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPReqMsg1);
   EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPRespMsg1);
 
-  ASSERT_OK_AND_ASSIGN(tracker, GetConnTracker(getpid(), server_.sockfd()));
+  ASSERT_OK_AND_ASSIGN(tracker, GetConnTracker(pid_, server_.sockfd()));
   EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPRespMsg1);
   EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPReqMsg1);
 }
@@ -460,11 +471,11 @@ TEST_F(UDPSocketTraceBPFTest, UDPSendMMsgRecvMMsg) {
 
   source_->PollPerfBuffers();
 
-  ASSERT_OK_AND_ASSIGN(const auto* tracker, GetConnTracker(getpid(), client_.sockfd()));
+  ASSERT_OK_AND_ASSIGN(const auto* tracker, GetConnTracker(pid_, client_.sockfd()));
   EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPReqMsg1);
   EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPRespMsg1);
 
-  ASSERT_OK_AND_ASSIGN(tracker, GetConnTracker(getpid(), server_.sockfd()));
+  ASSERT_OK_AND_ASSIGN(tracker, GetConnTracker(pid_, server_.sockfd()));
   EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPRespMsg1);
   EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPReqMsg1);
 }
@@ -493,13 +504,13 @@ TEST_F(UDPSocketTraceBPFTest, NonBlockingRecv) {
 
   source_->PollPerfBuffers();
 
-  ASSERT_OK_AND_ASSIGN(const auto* tracker, GetConnTracker(getpid(), client_.sockfd()));
+  ASSERT_OK_AND_ASSIGN(const auto* tracker, GetConnTracker(pid_, client_.sockfd()));
   EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPReqMsg1);
   EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPRespMsg1);
   EXPECT_EQ(tracker->remote_endpoint().port(), ntohs(server_.sockaddr().sin_port));
   EXPECT_EQ(tracker->remote_endpoint().AddrStr(), "127.0.0.1");
 
-  ASSERT_OK_AND_ASSIGN(tracker, GetConnTracker(getpid(), server_.sockfd()));
+  ASSERT_OK_AND_ASSIGN(tracker, GetConnTracker(pid_, server_.sockfd()));
   EXPECT_EQ(tracker->send_data().data_buffer().Head(), kHTTPRespMsg1);
   EXPECT_EQ(tracker->recv_data().data_buffer().Head(), kHTTPReqMsg1);
   EXPECT_EQ(tracker->remote_endpoint().port(), ntohs(server_remote.sin_port));
@@ -552,6 +563,10 @@ TEST_F(SocketTraceServerSideBPFTest, ConnStatsUpdatedAfterConnTrackerDisabled) {
 
   ConfigureBPFCapture(kProtocolHTTP, kRoleClient | kRoleServer);
   DataTable data_table(kHTTPTable);
+
+  // Drain the perf buffers before stimulus activity.
+  // Otherwise, perf buffers may fill up, causing lost events and flaky test results.
+  source_->PollPerfBuffers();
 
   TCPSocket client;
   TCPSocket server;
