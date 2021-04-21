@@ -104,7 +104,8 @@ func SetupElastic() (*elastic.Client, func(), error) {
 	clientPort := resource.GetPort("9200/tcp")
 	var client *elastic.Client
 	err = pool.Retry(func() (err error) {
-		client, err = connectElastic(fmt.Sprintf("http://localhost:%s", clientPort), "elastic", esPass)
+		client, err = connectElastic(fmt.Sprintf("http://%s:%s",
+			resource.Container.NetworkSettings.Gateway, clientPort), "elastic", esPass)
 		if err != nil {
 			log.WithError(err).Errorf("Failed to connect to elasticsearch.")
 		}
