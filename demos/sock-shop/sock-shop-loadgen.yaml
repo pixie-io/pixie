@@ -24,7 +24,7 @@ spec:
         # The following form runs locust in web mode.
         # locust --host http://front-end.sock-shop.svc.cluster.local -f /config/locustfile.py
         args: ["-c", "100", "-r", "5", "--no-web", "-f", "/config/locustfile.py",
-               "--host", "http://front-end.sock-shop.svc.cluster.local"]
+               "--host", "http://front-end.px-sock-shop.svc.cluster.local"]
 
       initContainers:
       - name: wait-sock-shop
@@ -37,7 +37,7 @@ spec:
           done;']
         env:
         - name: SOCK_SHOP_HEALTH_ADDR
-          value: "http://orders.sock-shop.svc.cluster.local/health"
+          value: "http://orders.px-sock-shop.svc.cluster.local/health"
 
       nodeSelector:
         beta.kubernetes.io/os: linux
