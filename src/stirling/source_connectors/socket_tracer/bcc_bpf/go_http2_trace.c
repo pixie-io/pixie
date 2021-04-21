@@ -167,15 +167,27 @@ static __inline void fill_header_field(struct go_grpc_http2_header_event_t* even
   bpf_probe_read(&value, sizeof(struct gostring),
                  header_field_ptr + symaddrs->HeaderField_Value_offset);
 
-  // Note that we read one extra byte for name and value.
+  // Note that we have some black magic below with the string sizes.
   // This is to avoid passing a size of 0 to bpf_probe_read(),
   // which causes BPF verifier issues on kernel 4.14.
+  // The black magic include an asm volatile, because otherwise Clang
+  // will optimize our magic away.
 
-  event->name.size = BPF_LEN_CAP(name.len, HEADER_FIELD_STR_SIZE);
-  bpf_probe_read(event->name.msg, event->name.size + 1, name.ptr);
+  event->name.size = name.len < HEADER_FIELD_STR_SIZE ? name.len : HEADER_FIELD_STR_SIZE;
+  size_t name_size_minus_1 = event->name.size - 1;
+  asm volatile("" : "+r"(name_size_minus_1) :);
+  size_t name_size = name_size_minus_1 + 1;
+  if (name_size_minus_1 < HEADER_FIELD_STR_SIZE) {
+    bpf_probe_read(event->name.msg, name_size, name.ptr);
+  }
 
-  event->value.size = BPF_LEN_CAP(value.len, HEADER_FIELD_STR_SIZE);
-  bpf_probe_read(event->value.msg, event->value.size + 1, value.ptr);
+  event->value.size = value.len < HEADER_FIELD_STR_SIZE ? value.len : HEADER_FIELD_STR_SIZE;
+  size_t value_size_minus_1 = event->value.size - 1;
+  asm volatile("" : "+r"(value_size_minus_1) :);
+  size_t value_size = value_size_minus_1 + 1;
+  if (value_size_minus_1 < HEADER_FIELD_STR_SIZE) {
+    bpf_probe_read(event->value.msg, value_size, value.ptr);
+  }
 }
 
 static __inline void submit_headers(struct pt_regs* ctx, enum http2_probe_type_t probe_type,
