@@ -43,6 +43,7 @@ namespace distributed {
 using table_store::schema::Relation;
 using table_store::schemapb::Schema;
 using ::testing::_;
+using ::testing::ElementsAre;
 using ::testing::Return;
 using testutils::CreateTwoPEMsOneKelvinPlannerState;
 using testutils::DistributedRulesTest;
@@ -585,6 +586,208 @@ TEST_F(DistributedRulesTest, ScalarUDFRunOnPEMRuleTest) {
       rule_or_s.status(),
       HasCompilerError(
           "UDF 'kelvin_only' must execute after blocking nodes such as limit, agg, and join."));
+}
+
+using SplitPEMandKelvinOnlyUDFOperatorRuleTest = DistributedRulesTest;
+
+TEST_F(SplitPEMandKelvinOnlyUDFOperatorRuleTest, noop) {
+  // Kelvin-only plan
+  MemorySourceIR* src1 = MakeMemSource("http_events");
+  auto func1 = MakeEqualsFunc(MakeInt(3), MakeInt(2));
+  func1->SetOutputDataType(types::DataType::STRING);
+  MapIR* map1 = MakeMap(src1, {{"out", func1}});
+  MakeMemSink(map1, "foo", {});
+
+  SplitPEMandKelvinOnlyUDFOperatorRule rule(compiler_state_.get());
+
+  auto rule_or_s = rule.Execute(graph.get());
+  ASSERT_OK(rule_or_s);
+  ASSERT_FALSE(rule_or_s.ConsumeValueOrDie());
+}
+
+TEST_F(SplitPEMandKelvinOnlyUDFOperatorRuleTest, simple) {
+  // Kelvin-only plan
+  MemorySourceIR* src1 = MakeMemSource("http_events");
+  ASSERT_OK(
+      src1->SetRelation(Relation({types::STRING, types::STRING}, {"remote_addr", "req_path"})));
+  auto input1 = MakeColumn("remote_addr", 0);
+  auto input2 = MakeColumn("req_path", 0);
+  input1->ResolveColumnType(types::DataType::STRING);
+  input2->ResolveColumnType(types::DataType::STRING);
+  auto func1 = MakeFunc("pem_only", {input1});
+  auto func2 = MakeFunc("kelvin_only", {input2});
+  func1->SetOutputDataType(types::DataType::STRING);
+  func2->SetOutputDataType(types::DataType::STRING);
+  MapIR* map1 = MakeMap(src1, {{"pem", func1}, {"kelvin", func2}});
+  ASSERT_OK(map1->SetRelationFromExprs());
+  MemorySinkIR* sink = MakeMemSink(map1, "foo", {});
+
+  Relation existing_map_relation({types::STRING, types::STRING}, {"pem", "kelvin"});
+  EXPECT_EQ(map1->relation(), existing_map_relation);
+
+  SplitPEMandKelvinOnlyUDFOperatorRule rule(compiler_state_.get());
+  auto rule_or_s = rule.Execute(graph.get());
+  ASSERT_OK(rule_or_s);
+  ASSERT_TRUE(rule_or_s.ConsumeValueOrDie());
+
+  ASSERT_EQ(1, src1->Children().size());
+  EXPECT_NE(src1->Children()[0], map1);
+  EXPECT_MATCH(src1->Children()[0], Map());
+  auto new_map = static_cast<MapIR*>(src1->Children()[0]);
+  Relation expected_map_relation({types::STRING, types::STRING}, {"pem_only_0", "req_path"});
+  EXPECT_EQ(new_map->relation(), expected_map_relation);
+  EXPECT_THAT(new_map->parents(), ElementsAre(src1));
+  EXPECT_THAT(new_map->Children(), ElementsAre(map1));
+
+  // original map relation and children shouldn't have changed.
+  // pem_only func should now be a column projection.
+  EXPECT_EQ(map1->relation(), existing_map_relation);
+  EXPECT_EQ(2, map1->col_exprs().size());
+  EXPECT_EQ("pem", map1->col_exprs()[0].name);
+  EXPECT_MATCH(map1->col_exprs()[0].node, ColumnNode("pem_only_0"));
+  EXPECT_EQ("kelvin", map1->col_exprs()[1].name);
+  EXPECT_MATCH(map1->col_exprs()[1].node,
+               FuncNameAllArgsMatch("kelvin_only", ColumnNode("req_path")));
+  EXPECT_THAT(map1->parents(), ElementsAre(new_map));
+  EXPECT_THAT(map1->Children(), ElementsAre(sink));
+}
+
+TEST_F(SplitPEMandKelvinOnlyUDFOperatorRuleTest, nested) {
+  // Kelvin-only plan
+  MemorySourceIR* src1 = MakeMemSource("http_events");
+  ASSERT_OK(src1->SetRelation(Relation({types::STRING}, {"remote_addr"})));
+  auto input1 = MakeColumn("remote_addr", 0);
+  input1->ResolveColumnType(types::DataType::STRING);
+  auto func1 = MakeFunc("pem_only", {input1});
+  auto func2 = MakeFunc("kelvin_only", {func1});
+  func1->SetOutputDataType(types::DataType::STRING);
+  func2->SetOutputDataType(types::DataType::STRING);
+  MapIR* map1 = MakeMap(src1, {{"kelvin", func2}});
+  ASSERT_OK(map1->SetRelationFromExprs());
+  MemorySinkIR* sink = MakeMemSink(map1, "foo", {});
+
+  Relation existing_map_relation({types::STRING}, {"kelvin"});
+  EXPECT_EQ(map1->relation(), existing_map_relation);
+
+  SplitPEMandKelvinOnlyUDFOperatorRule rule(compiler_state_.get());
+  auto rule_or_s = rule.Execute(graph.get());
+  ASSERT_OK(rule_or_s);
+  ASSERT_TRUE(rule_or_s.ConsumeValueOrDie());
+
+  ASSERT_EQ(1, src1->Children().size());
+  EXPECT_NE(src1->Children()[0], map1);
+  EXPECT_MATCH(src1->Children()[0], Map());
+  auto new_map = static_cast<MapIR*>(src1->Children()[0]);
+  Relation expected_map_relation({types::STRING}, {"pem_only_0"});
+  EXPECT_EQ(expected_map_relation, new_map->relation());
+  EXPECT_THAT(new_map->parents(), ElementsAre(src1));
+  EXPECT_THAT(new_map->Children(), ElementsAre(map1));
+
+  // original map relation and children shouldn't have changed.
+  EXPECT_EQ(map1->relation(), existing_map_relation);
+  EXPECT_EQ(1, map1->col_exprs().size());
+  EXPECT_EQ("kelvin", map1->col_exprs()[0].name);
+  EXPECT_MATCH(map1->col_exprs()[0].node,
+               FuncNameAllArgsMatch("kelvin_only", ColumnNode("pem_only_0")));
+  EXPECT_THAT(map1->parents(), ElementsAre(new_map));
+  EXPECT_THAT(map1->Children(), ElementsAre(sink));
+}
+
+TEST_F(SplitPEMandKelvinOnlyUDFOperatorRuleTest, name_collision) {
+  // Kelvin-only plan
+  MemorySourceIR* src1 = MakeMemSource("http_events");
+  ASSERT_OK(src1->SetRelation(Relation({types::STRING}, {"pem_only_0"})));
+  auto input1 = MakeColumn("pem_only_0", 0);
+  input1->ResolveColumnType(types::DataType::STRING);
+  auto func1 = MakeFunc("pem_only", {input1});
+  auto func2 = MakeFunc("pem_only", {input1});
+  func1->SetOutputDataType(types::DataType::STRING);
+  func2->SetOutputDataType(types::DataType::STRING);
+  MapIR* map1 = MakeMap(src1, {{"pem1", func1}, {"pem2", func2}, {"pem_only_0", input1}});
+  ASSERT_OK(map1->SetRelationFromExprs());
+  MemorySinkIR* sink = MakeMemSink(map1, "foo", {});
+
+  Relation existing_map_relation({types::STRING, types::STRING, types::STRING},
+                                 {"pem1", "pem2", "pem_only_0"});
+  EXPECT_EQ(map1->relation(), existing_map_relation);
+
+  SplitPEMandKelvinOnlyUDFOperatorRule rule(compiler_state_.get());
+  auto rule_or_s = rule.Execute(graph.get());
+  ASSERT_OK(rule_or_s);
+  ASSERT_TRUE(rule_or_s.ConsumeValueOrDie());
+
+  ASSERT_EQ(1, src1->Children().size());
+  EXPECT_NE(src1->Children()[0], map1);
+  EXPECT_MATCH(src1->Children()[0], Map());
+  auto new_map = static_cast<MapIR*>(src1->Children()[0]);
+  Relation expected_map_relation({types::STRING, types::STRING, types::STRING},
+                                 {"pem_only_1", "pem_only_2", "pem_only_0"});
+  EXPECT_EQ(new_map->relation(), expected_map_relation);
+  EXPECT_THAT(new_map->parents(), ElementsAre(src1));
+  EXPECT_THAT(new_map->Children(), ElementsAre(map1));
+
+  // original map relation and children shouldn't have changed.
+  // pem_only func should now be a column projection.
+  EXPECT_EQ(map1->relation(), existing_map_relation);
+  EXPECT_EQ(3, map1->col_exprs().size());
+  EXPECT_EQ("pem1", map1->col_exprs()[0].name);
+  EXPECT_MATCH(map1->col_exprs()[0].node, ColumnNode("pem_only_1"));
+  EXPECT_EQ("pem2", map1->col_exprs()[1].name);
+  EXPECT_MATCH(map1->col_exprs()[1].node, ColumnNode("pem_only_2"));
+  EXPECT_EQ("pem_only_0", map1->col_exprs()[2].name);
+  EXPECT_MATCH(map1->col_exprs()[2].node, ColumnNode("pem_only_0"));
+  EXPECT_THAT(map1->parents(), ElementsAre(new_map));
+  EXPECT_THAT(map1->Children(), ElementsAre(sink));
+}
+
+TEST_F(SplitPEMandKelvinOnlyUDFOperatorRuleTest, filter) {
+  // Kelvin-only plan
+  MemorySourceIR* src1 = MakeMemSource("http_events");
+  ASSERT_OK(
+      src1->SetRelation(Relation({types::STRING, types::STRING}, {"remote_addr", "req_path"})));
+  auto input1 = MakeColumn("remote_addr", 0);
+  auto input2 = MakeColumn("req_path", 0);
+  input1->ResolveColumnType(types::DataType::STRING);
+  input2->ResolveColumnType(types::DataType::STRING);
+  auto func1 = MakeFunc("pem_only", {input1});
+  auto func2 = MakeFunc("kelvin_only", {input2});
+  func1->SetOutputDataType(types::DataType::STRING);
+  func2->SetOutputDataType(types::DataType::STRING);
+  auto func3 = MakeEqualsFunc(func1, func2);
+  func3->SetOutputDataType(types::DataType::BOOLEAN);
+  FilterIR* filter = MakeFilter(src1, func3);
+  ASSERT_OK(filter->SetRelation(src1->relation()));
+  MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
+
+  Relation existing_filter_relation({types::STRING, types::STRING}, {"remote_addr", "req_path"});
+  EXPECT_EQ(filter->relation(), existing_filter_relation);
+
+  SplitPEMandKelvinOnlyUDFOperatorRule rule(compiler_state_.get());
+  auto rule_or_s = rule.Execute(graph.get());
+  ASSERT_OK(rule_or_s);
+  ASSERT_TRUE(rule_or_s.ConsumeValueOrDie());
+
+  ASSERT_EQ(1, src1->Children().size());
+  EXPECT_NE(src1->Children()[0], filter);
+  EXPECT_MATCH(src1->Children()[0], Map());
+  auto new_map = static_cast<MapIR*>(src1->Children()[0]);
+  Relation expected_map_relation({types::STRING, types::STRING, types::STRING},
+                                 {"pem_only_0", "remote_addr", "req_path"});
+  EXPECT_THAT(new_map->relation(), UnorderedRelationMatches(expected_map_relation));
+  EXPECT_THAT(new_map->parents(), ElementsAre(src1));
+  EXPECT_THAT(new_map->Children(), ElementsAre(filter));
+
+  // original map relation and children shouldn't have changed.
+  // pem_only func should now be a column projection.
+  EXPECT_EQ(filter->relation(), existing_filter_relation);
+  EXPECT_MATCH(filter->filter_expr(), Func());
+  auto func = static_cast<FuncIR*>(filter->filter_expr());
+  EXPECT_EQ("equal", func->func_name());
+  EXPECT_EQ(2, func->args().size());
+  EXPECT_MATCH(func->args()[0], ColumnNode("pem_only_0"));
+  EXPECT_MATCH(func->args()[1], Func("kelvin_only"));
+  EXPECT_THAT(filter->parents(), ElementsAre(new_map));
+  EXPECT_THAT(filter->Children(), ElementsAre(sink));
 }
 
 }  // namespace distributed

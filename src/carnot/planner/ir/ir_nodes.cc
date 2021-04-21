@@ -514,6 +514,18 @@ Status MapIR::UpdateColExpr(std::string_view name, ExpressionIR* expr) {
   return error::Internal("Column $0 does not exist in Map", name);
 }
 
+Status MapIR::UpdateColExpr(ExpressionIR* old_expr, ExpressionIR* new_expr) {
+  PL_ASSIGN_OR_RETURN(auto expr_node, graph()->OptionallyCloneWithEdge(this, new_expr));
+  for (size_t i = 0; i < col_exprs_.size(); ++i) {
+    if (col_exprs_[i].node == old_expr) {
+      col_exprs_[i].node = expr_node;
+      PL_RETURN_IF_ERROR(graph()->DeleteEdge(this, old_expr));
+      return graph()->DeleteOrphansInSubtree(old_expr->id());
+    }
+  }
+  return error::Internal("Expression $0 does not exist in Map", old_expr->DebugString());
+}
+
 Status MapIR::Init(OperatorIR* parent, const ColExpressionVector& col_exprs,
                    bool keep_input_columns) {
   PL_RETURN_IF_ERROR(AddParent(parent));
@@ -1070,9 +1082,23 @@ Status FuncIR::UpdateArg(int64_t idx, ExpressionIR* arg) {
   ExpressionIR* old_arg = args_[idx];
   args_[idx] = arg;
   PL_RETURN_IF_ERROR(graph()->DeleteEdge(this, old_arg));
-  PL_RETURN_IF_ERROR(graph()->AddEdge(this, arg));
+  PL_RETURN_IF_ERROR(graph()->OptionallyCloneWithEdge(this, arg));
   PL_RETURN_IF_ERROR(graph()->DeleteOrphansInSubtree(old_arg->id()));
   return Status::OK();
+}
+
+Status FuncIR::UpdateArg(ExpressionIR* old_arg, ExpressionIR* new_arg) {
+  for (size_t i = 0; i < args_.size(); ++i) {
+    if (args_[i] != old_arg) {
+      continue;
+    }
+    args_[i] = new_arg;
+    PL_RETURN_IF_ERROR(graph()->DeleteEdge(this, old_arg));
+    PL_RETURN_IF_ERROR(graph()->OptionallyCloneWithEdge(this, new_arg));
+    PL_RETURN_IF_ERROR(graph()->DeleteOrphansInSubtree(old_arg->id()));
+    return Status::OK();
+  }
+  return error::Internal("Arg $0 does not exist in $1", old_arg->DebugString(), DebugString());
 }
 
 Status FuncIR::AddOrCloneArg(ExpressionIR* arg) {

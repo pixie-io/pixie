@@ -1071,6 +1071,7 @@ class FuncIR : public ExpressionIR {
     is_data_type_evaluated_ = true;
   }
   Status UpdateArg(int64_t idx, ExpressionIR* arg);
+  Status UpdateArg(ExpressionIR* old_arg, ExpressionIR* new_arg);
 
   Status AddArg(ExpressionIR* arg);
   // Adds the arg if it isn't already present in the func, otherwise clones it so that there is no
@@ -1466,6 +1467,7 @@ class MapIR : public OperatorIR {
   Status SetColExprs(const ColExpressionVector& exprs);
   Status AddColExpr(const ColumnExpression& expr);
   Status UpdateColExpr(std::string_view name, ExpressionIR* expr);
+  Status UpdateColExpr(ExpressionIR* old_expr, ExpressionIR* new_expr);
   Status ToProto(planpb::Operator*) const override;
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
@@ -1487,6 +1489,16 @@ class MapIR : public OperatorIR {
       expr_strings.push_back(absl::Substitute("$0=$1", expr.name, expr.node->DebugString()));
     }
     return absl::StrJoin(expr_strings, ",");
+  }
+
+  Status SetRelationFromExprs() {
+    Relation rel;
+    // Make a new relation with each of the expression key, type pairs.
+    for (auto& entry : col_exprs_) {
+      DCHECK(entry.node->IsDataTypeEvaluated());
+      rel.AddColumn(entry.node->EvaluatedDataType(), entry.name);
+    }
+    return SetRelation(rel);
   }
 
  protected:

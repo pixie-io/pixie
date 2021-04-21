@@ -1194,6 +1194,20 @@ constexpr char kPEMOnlyUDF[] = R"proto(
   executor: UDF_PEM
 )proto";
 
+constexpr char kKelvinOnlyWithArgUDF[] = R"proto(
+  name: "kelvin_only"
+  exec_arg_types: STRING
+  return_type: STRING
+  executor: UDF_KELVIN
+)proto";
+
+constexpr char kPEMOnlyWithArgUDF[] = R"proto(
+  name: "pem_only"
+  exec_arg_types: STRING
+  return_type: STRING
+  executor: UDF_PEM
+)proto";
+
 constexpr char kAllSchemas[] = R"proto(
 relation_map {
   key: "conn_stats"
@@ -1680,6 +1694,10 @@ udfspb::UDFInfo UDFInfoWithTestUDTF() {
       absl::Substitute("scalar_udfs{$0}", kKelvinOnlyUDF), &udf_info));
   CHECK(google::protobuf::TextFormat::MergeFromString(
       absl::Substitute("scalar_udfs{$0}", kPEMOnlyUDF), &udf_info));
+  CHECK(google::protobuf::TextFormat::MergeFromString(
+      absl::Substitute("scalar_udfs{$0}", kKelvinOnlyWithArgUDF), &udf_info));
+  CHECK(google::protobuf::TextFormat::MergeFromString(
+      absl::Substitute("scalar_udfs{$0}", kPEMOnlyWithArgUDF), &udf_info));
   CHECK(google::protobuf::TextFormat::MergeFromString(
       absl::Substitute("scalar_udfs{$0}", kAllAgentsUDF), &udf_info));
 

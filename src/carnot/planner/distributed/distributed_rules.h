@@ -185,6 +185,26 @@ class ScalarUDFsRunOnKelvinRule : public Rule {
   StatusOr<bool> Apply(IRNode* node) override;
 };
 
+/**
+ * @brief Splits Filters or Maps containing both Kelvin-only and PEM-only UDFs
+ * into a map containing PEM-only UDFs followed by a Filter/Map with the rest.
+ * This rule prevents PEM-only UDFs and Kelvin-only UDFs from being scheduled on
+ * the same operator.
+ */
+class SplitPEMandKelvinOnlyUDFOperatorRule : public Rule {
+ public:
+  explicit SplitPEMandKelvinOnlyUDFOperatorRule(CompilerState* compiler_state)
+      : Rule(compiler_state, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* node) override;
+
+ private:
+  StatusOr<absl::flat_hash_set<std::string>> OptionallyUpdateExpression(
+      IRNode* expr_parent, ExpressionIR* expr, MapIR* pem_only_map,
+      const absl::flat_hash_set<std::string>& used_column_names);
+};
+
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot

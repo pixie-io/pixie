@@ -429,16 +429,6 @@ StatusOr<bool> OperatorRelationRule::SetBlockingAgg(BlockingAggIR* agg_ir) const
   return true;
 }
 
-Relation RelationFromExprs(const ColExpressionVector& exprs) {
-  Relation rel;
-  // Make a new relation with each of the expression key, type pairs.
-  for (auto& entry : exprs) {
-    DCHECK(entry.node->IsDataTypeEvaluated());
-    rel.AddColumn(entry.node->EvaluatedDataType(), entry.name);
-  }
-  return rel;
-}
-
 StatusOr<bool> OperatorRelationRule::SetMap(MapIR* map_ir) const {
   DCHECK_EQ(map_ir->parents().size(), 1UL) << "There should be exactly one parent.";
   auto parent_relation = map_ir->parents()[0]->relation();
@@ -479,7 +469,7 @@ StatusOr<bool> OperatorRelationRule::SetMap(MapIR* map_ir) const {
     PL_RETURN_IF_ERROR(map_ir->SetColExprs(output_expressions));
   }
 
-  PL_RETURN_IF_ERROR(map_ir->SetRelation(RelationFromExprs(map_ir->col_exprs())));
+  PL_RETURN_IF_ERROR(map_ir->SetRelationFromExprs());
   return true;
 }
 
@@ -693,7 +683,7 @@ StatusOr<bool> DropToMapOperatorRule::DropToMap(DropIR* drop_ir) {
   PL_ASSIGN_OR_RETURN(MapIR * map_ir,
                       ir_graph->CreateNode<MapIR>(drop_ir->ast(), parent_op, col_exprs,
                                                   /* keep_input_columns */ false));
-  PL_RETURN_IF_ERROR(map_ir->SetRelation(RelationFromExprs(map_ir->col_exprs())));
+  PL_RETURN_IF_ERROR(map_ir->SetRelationFromExprs());
 
   // Update all of drop's dependencies to point to src.
   for (const auto& dep : drop_ir->Children()) {
