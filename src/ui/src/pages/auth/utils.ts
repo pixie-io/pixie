@@ -46,7 +46,6 @@ const getRedirectURL = (isSignup: boolean) => {
   const parsed = QueryString.parse(window.location.search.substring(1));
   if (parsed.local_mode && !!parsed.local_mode) {
     if (parsed.redirect_uri) {
-      // eslint-disable-next-line @typescript-eslint/camelcase
       redirectArgs.redirect_uri = typeof parsed.redirect_uri === 'string' && String(parsed.redirect_uri);
       redirectArgs.mode = 'cli_get';
     } else {
@@ -54,7 +53,6 @@ const getRedirectURL = (isSignup: boolean) => {
     }
   } else {
     if (parsed.redirect_uri && typeof parsed.redirect_uri === 'string') {
-      // eslint-disable-next-line @typescript-eslint/camelcase
       redirectArgs.redirect_uri = String(parsed.redirect_uri);
     }
     redirectArgs.mode = 'ui';
@@ -64,7 +62,6 @@ const getRedirectURL = (isSignup: boolean) => {
     redirectArgs.location = parsed.location;
   }
   if (parsed.org_name && typeof parsed.org_name === 'string') {
-    // eslint-disable-next-line @typescript-eslint/camelcase
     redirectArgs.org_name = parsed.org_name;
   }
   if (isSignup) {
@@ -90,7 +87,7 @@ export const GetOAuthProvider = (): OAuthProviderClient => {
   throw new Error(`OAUTH_PROVIDER ${OAUTH_PROVIDER} invalid. Expected hydra or auth0.`);
 };
 
-export const OAuthSignupRequest = () => GetOAuthProvider().signupRequest();
-export const OAuthLoginRequest = () => GetOAuthProvider().loginRequest();
+export const OAuthSignupRequest = (): void => GetOAuthProvider().signupRequest();
+export const OAuthLoginRequest = (): void => GetOAuthProvider().loginRequest();
 export const OAuthGetPasswordLoginFlow = (): Promise<FormStructure> => GetOAuthProvider().getPasswordLoginFlow();
 export const OAuthGetPasswordRecoveryFlow = (): Promise<FormStructure> => GetOAuthProvider().getResetPasswordFlow();

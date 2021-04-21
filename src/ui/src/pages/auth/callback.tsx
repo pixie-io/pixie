@@ -99,7 +99,7 @@ const trackAuthEvent = (event: string, id: string, email: string) => {
  * This component gets the token from Auth0 and either sends it to the CLI or
  * makes a request to Pixie cloud to perform a signup/login.
  */
-export const AuthCallbackPage = () => {
+export const AuthCallbackPage = (): JSX.Element => {
   const [config, setConfig] = React.useState<CallbackConfig>(null);
   const classes = useStyles();
 
@@ -174,9 +174,7 @@ export const AuthCallbackPage = () => {
 
       const location = params.location && String(params.location);
       const signup = !!params.signup;
-      // eslint-disable-next-line @typescript-eslint/camelcase
       const orgName = params.org_name && String(params.org_name);
-      // eslint-disable-next-line @typescript-eslint/camelcase
       const redirectURI = params.redirect_uri && String(params.redirect_uri);
 
       setConfig({

@@ -298,7 +298,6 @@ const Canvas = (props: CanvasProps) => {
   // to other live views, such as start time.
   const propagatedArgs = React.useMemo(() => {
     if (args.start_time) {
-      // eslint-disable-next-line @typescript-eslint/camelcase
       return { start_time: args.start_time };
     }
     return null;

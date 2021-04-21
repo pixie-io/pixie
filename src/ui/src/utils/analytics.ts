@@ -58,7 +58,7 @@ class Analytics {
 
   // eslint-disable-next-line class-methods-use-this
   load() {
-    // eslint-disable-next-line @typescript-eslint/camelcase,no-underscore-dangle
+    // eslint-disable-next-line no-underscore-dangle
     window.__pixie_cloud_version__ = PIXIE_CLOUD_VERSION;
     window.analytics.load(SEGMENT_UI_WRITE_KEY);
   }
