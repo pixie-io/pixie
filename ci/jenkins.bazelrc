@@ -33,8 +33,12 @@ test --remote_max_connections=128
 test --remote_retries=2
 
 # Limit resources, this is needed to stay under the K8s resource allocations.
-build --local_ram_resources=49152
-test --local_ram_resources=49152
+build --local_ram_resources=40000
+test --local_ram_resources=40000
 
 # We have 14 CPUs allocated.
+build --local_cpu_resources=14
 test --local_cpu_resources=14
+
+build --jobs 16
+test --jobs 16
