@@ -23,9 +23,9 @@ go_library(
     srcs = [
         "grafana_table_mux.go",
         "main.go",
-        "sample-plugin.go",
+        "pixie_plugin.go",
     ],
-    importpath = "px.dev/pixie/src/plugins/grafana/grafana-plugin/pkg",
+    importpath = "px.dev/pixie/src/plugins/grafana/grafana_plugin/pkg",
     deps = [
         "//src/api/go/pxapi",
         "//src/api/go/pxapi/types",
