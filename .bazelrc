@@ -11,7 +11,7 @@ build:clang --action_env=CC=/opt/clang-11.1/bin/clang
 build:clang --action_env=CXX=/opt/clang-11.1/bin/clang++
 
 # Get version information into the build.
-build --workspace_status_command=bazel/get_workspace_status
+build --workspace_status_command=bazel/get_workspace_status.sh
 
 # We only have support for python3 on the Ubuntu 20.04 image.
 build --host_force_python=PY3
