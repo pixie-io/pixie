@@ -358,14 +358,14 @@ TEST_F(ConnTrackerTest, DataEventsChangesCounter) {
 
   ConnTracker tracker;
 
-  EXPECT_EQ(0, tracker.stats().Get(ConnTracker::Stats::Key::kBytesRecv));
-  EXPECT_EQ(0, tracker.stats().Get(ConnTracker::Stats::Key::kBytesSent));
+  EXPECT_EQ(0, tracker.GetStat(ConnTracker::Stats::Key::kBytesRecv));
+  EXPECT_EQ(0, tracker.GetStat(ConnTracker::Stats::Key::kBytesSent));
 
   tracker.AddDataEvent(std::move(frame0));
   tracker.AddDataEvent(std::move(frame1));
 
-  EXPECT_EQ(kHTTPReq0.size(), tracker.stats().Get(ConnTracker::Stats::Key::kBytesRecv));
-  EXPECT_EQ(kHTTPResp0.size(), tracker.stats().Get(ConnTracker::Stats::Key::kBytesSent));
+  EXPECT_EQ(kHTTPReq0.size(), tracker.GetStat(ConnTracker::Stats::Key::kBytesRecv));
+  EXPECT_EQ(kHTTPResp0.size(), tracker.GetStat(ConnTracker::Stats::Key::kBytesSent));
 }
 
 TEST_F(ConnTrackerTest, HTTPStuckEventsAreRemoved) {

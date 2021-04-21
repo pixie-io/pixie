@@ -520,45 +520,11 @@ TEST_F(UDPSocketTraceBPFTest, NonBlockingRecv) {
 class SocketTraceServerSideBPFTest
     : public testing::SocketTraceBPFTest</* TClientSideTracing */ false> {};
 
-uint64_t GetConnStats(const ConnTracker& tracker, ConnTracker::Stats::Key key) {
-  return tracker.stats().Get(key);
-}
-
-uint64_t GetBytesSentTransferred(const ConnTracker& tracker) {
-  return GetConnStats(tracker, ConnTracker::Stats::Key::kBytesSentTransferred);
-}
-
-uint64_t GetBytesRecvTransferred(const ConnTracker& tracker) {
-  return GetConnStats(tracker, ConnTracker::Stats::Key::kBytesRecvTransferred);
-}
-
-uint64_t GetBytesSent(const ConnTracker& tracker) {
-  return GetConnStats(tracker, ConnTracker::Stats::Key::kBytesSent);
-}
-
-uint64_t GetBytesRecv(const ConnTracker& tracker) {
-  return GetConnStats(tracker, ConnTracker::Stats::Key::kBytesRecv);
-}
-
-uint64_t GetDataEventSent(const ConnTracker& tracker) {
-  return GetConnStats(tracker, ConnTracker::Stats::Key::kDataEventSent);
-}
-
-uint64_t GetDataEventRecv(const ConnTracker& tracker) {
-  return GetConnStats(tracker, ConnTracker::Stats::Key::kDataEventRecv);
-}
-
-uint64_t GetValidRecords(const ConnTracker& tracker) {
-  return GetConnStats(tracker, ConnTracker::Stats::Key::kValidRecords);
-}
-
-uint64_t GetInvalidRecords(const ConnTracker& tracker) {
-  return GetConnStats(tracker, ConnTracker::Stats::Key::kInvalidRecords);
-}
-
 // Tests that connection stats are updated after ConnTracker is disabled because of being
 // a client.
 TEST_F(SocketTraceServerSideBPFTest, ConnStatsUpdatedAfterConnTrackerDisabled) {
+  using Stat = ConnTracker::Stats::Key;
+
   auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.get());
 
   ConfigureBPFCapture(kProtocolHTTP, kRoleClient | kRoleServer);
@@ -594,20 +560,20 @@ TEST_F(SocketTraceServerSideBPFTest, ConnStatsUpdatedAfterConnTrackerDisabled) {
   ASSERT_OK_AND_ASSIGN(const ConnTracker* server_side_tracker,
                        socket_trace_connector->GetConnTracker(getpid(), server_endpoint->sockfd()));
 
-  EXPECT_EQ(GetBytesSent(*client_side_tracker), kHTTPReqMsg1.size());
-  EXPECT_EQ(GetBytesSentTransferred(*client_side_tracker), kHTTPReqMsg1.size());
-  EXPECT_EQ(GetDataEventSent(*client_side_tracker), 1);
-  EXPECT_EQ(GetDataEventRecv(*client_side_tracker), 1);
+  EXPECT_EQ(client_side_tracker->GetStat(Stat::kBytesSent), kHTTPReqMsg1.size());
+  EXPECT_EQ(client_side_tracker->GetStat(Stat::kBytesSentTransferred), kHTTPReqMsg1.size());
+  EXPECT_EQ(client_side_tracker->GetStat(Stat::kDataEventSent), 1);
+  EXPECT_EQ(client_side_tracker->GetStat(Stat::kDataEventRecv), 1);
   // No records are produced because client-side tracing is disabled in user-space.
-  EXPECT_EQ(GetValidRecords(*client_side_tracker), 0);
-  EXPECT_EQ(GetInvalidRecords(*client_side_tracker), 0);
+  EXPECT_EQ(client_side_tracker->GetStat(Stat::kValidRecords), 0);
+  EXPECT_EQ(client_side_tracker->GetStat(Stat::kInvalidRecords), 0);
 
-  EXPECT_EQ(GetBytesRecv(*server_side_tracker), kHTTPReqMsg1.size());
-  EXPECT_EQ(GetBytesRecvTransferred(*server_side_tracker), kHTTPReqMsg1.size());
-  EXPECT_EQ(GetDataEventSent(*server_side_tracker), 1);
-  EXPECT_EQ(GetDataEventRecv(*server_side_tracker), 1);
-  EXPECT_EQ(GetValidRecords(*server_side_tracker), 1);
-  EXPECT_EQ(GetInvalidRecords(*server_side_tracker), 0);
+  EXPECT_EQ(server_side_tracker->GetStat(Stat::kBytesRecv), kHTTPReqMsg1.size());
+  EXPECT_EQ(server_side_tracker->GetStat(Stat::kBytesRecvTransferred), kHTTPReqMsg1.size());
+  EXPECT_EQ(server_side_tracker->GetStat(Stat::kDataEventSent), 1);
+  EXPECT_EQ(server_side_tracker->GetStat(Stat::kDataEventRecv), 1);
+  EXPECT_EQ(server_side_tracker->GetStat(Stat::kValidRecords), 1);
+  EXPECT_EQ(server_side_tracker->GetStat(Stat::kInvalidRecords), 0);
 
   // Second write.
   // BPF should not even trace the write, because it should have been disabled from user-space.
@@ -620,22 +586,23 @@ TEST_F(SocketTraceServerSideBPFTest, ConnStatsUpdatedAfterConnTrackerDisabled) {
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
-  EXPECT_EQ(GetBytesSent(*client_side_tracker), kHTTPReqMsg1.size() + kHTTPReqMsg2.size())
-      << "Data sent were increased.";
-  EXPECT_EQ(GetBytesSentTransferred(*client_side_tracker), kHTTPReqMsg1.size())
-      << "Data were not transferred to user space, so the counter should be the same.";
-  EXPECT_EQ(GetDataEventSent(*client_side_tracker), 2);
-  EXPECT_EQ(GetDataEventRecv(*client_side_tracker), 2);
-  EXPECT_EQ(GetValidRecords(*client_side_tracker), 0);
-  EXPECT_EQ(GetInvalidRecords(*client_side_tracker), 0);
-
-  EXPECT_EQ(GetBytesRecv(*server_side_tracker), kHTTPReqMsg1.size() + kHTTPReqMsg2.size());
-  EXPECT_EQ(GetBytesRecvTransferred(*server_side_tracker),
+  EXPECT_EQ(client_side_tracker->GetStat(Stat::kBytesSent),
             kHTTPReqMsg1.size() + kHTTPReqMsg2.size());
-  EXPECT_EQ(GetDataEventSent(*server_side_tracker), 2);
-  EXPECT_EQ(GetDataEventRecv(*server_side_tracker), 2);
-  EXPECT_EQ(GetValidRecords(*server_side_tracker), 2);
-  EXPECT_EQ(GetInvalidRecords(*server_side_tracker), 0);
+  EXPECT_EQ(client_side_tracker->GetStat(Stat::kBytesSentTransferred), kHTTPReqMsg1.size())
+      << "Data transfer was disabled, so the counter should be the same.";
+  EXPECT_EQ(client_side_tracker->GetStat(Stat::kDataEventSent), 2);
+  EXPECT_EQ(client_side_tracker->GetStat(Stat::kDataEventRecv), 2);
+  EXPECT_EQ(client_side_tracker->GetStat(Stat::kValidRecords), 0);
+  EXPECT_EQ(client_side_tracker->GetStat(Stat::kInvalidRecords), 0);
+
+  EXPECT_EQ(server_side_tracker->GetStat(Stat::kBytesRecv),
+            kHTTPReqMsg1.size() + kHTTPReqMsg2.size());
+  EXPECT_EQ(server_side_tracker->GetStat(Stat::kBytesRecvTransferred),
+            kHTTPReqMsg1.size() + kHTTPReqMsg2.size());
+  EXPECT_EQ(server_side_tracker->GetStat(Stat::kDataEventSent), 2);
+  EXPECT_EQ(server_side_tracker->GetStat(Stat::kDataEventRecv), 2);
+  EXPECT_EQ(server_side_tracker->GetStat(Stat::kValidRecords), 2);
+  EXPECT_EQ(server_side_tracker->GetStat(Stat::kInvalidRecords), 0);
 }
 
 }  // namespace stirling

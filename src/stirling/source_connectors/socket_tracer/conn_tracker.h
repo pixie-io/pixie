@@ -421,7 +421,7 @@ class ConnTracker : NotCopyMoveable {
    */
   double StitchFailureRate() const;
 
-  const Stats& stats() const { return stats_; }
+  uint64_t GetStat(Stats::Key key) const { return stats_.Get(key); }
 
   /**
    * Initializes protocol state for a protocol.
