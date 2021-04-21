@@ -58,6 +58,6 @@ container_push(
     format = "Docker",
     image = ":vizier_updater_image",
     registry = "gcr.io",
-    repository = "pl-dev-infra/vizier/vizier_update_image",
+    repository = "pixie-oss/pixie-dev-public/vizier/vizier_update_image",
     tag = "{STABLE_BUILD_TAG}",
 )

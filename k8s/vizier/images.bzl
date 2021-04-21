@@ -14,16 +14,26 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-private_registry = "gcr.io/pl-dev-infra"
-public_registry = "gcr.io/pixie-prod"
+private_registry = "gcr.io/pixie-oss/pixie-dev-public"
+public_registry = "gcr.io/pixie-oss/pixie-prod-public"
 
-def image_map_with_bundle_version(image_map, public):
+# TODO(michellenguyen, PP-2630): Old vizier versions expect update_job images in the
+# old registry. Remove 5/6/21.
+old_public_registry = "gcr.io/pixie-prod"
+old_private_registry = "gcr.io/pl-dev-infra"
+
+def image_map_with_bundle_version(image_map, public, old_registry):
     with_version = {}
 
     for k, v in image_map.items():
         image_tag = k
-        if public:
+
+        if not public and old_registry:
+            image_tag = image_tag.replace(private_registry, old_private_registry)
+        if public and not old_registry:
             image_tag = image_tag.replace(private_registry, public_registry)
+        if public and old_registry:
+            image_tag = image_tag.replace(private_registry, old_public_registry)
         k_with_version = "{0}:{1}".format(image_tag, "$(BUNDLE_VERSION)")
         with_version[k_with_version] = v
 

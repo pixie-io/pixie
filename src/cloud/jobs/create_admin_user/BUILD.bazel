@@ -55,6 +55,6 @@ container_push(
     format = "Docker",
     image = ":create_admin_job_image",
     registry = "gcr.io",
-    repository = "pl-dev-infra/cloud/job/create_admin_job_image",
+    repository = "pixie-oss/pixie-dev-public/cloud/job/create_admin_job_image",
     tag = "{STABLE_BUILD_TAG}",
 )

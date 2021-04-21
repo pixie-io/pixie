@@ -16,7 +16,7 @@ spec:
         name: nats-watcher
     spec:
       containers:
-      - image: gcr.io/pl-dev-infra/vizier/nats_watcher_image:latest
+      - image: gcr.io/pixie-oss/pixie-dev-public/vizier/nats_watcher_image:latest
         name: nats-watcher
         env:
         - name: PL_SERVER_TLS_CERT

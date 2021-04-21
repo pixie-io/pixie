@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: updater
-        image: gcr.io/pl-dev-infra/utils/artifact_db_updater_image:latest
+        image: gcr.io/pixie-oss/pixie-dev-public/utils/artifact_db_updater_image:latest
         command: ["/busybox/sh", "-c"]
         args:
         - |

@@ -68,6 +68,6 @@ container_push(
     format = "Docker",
     image = ":artifact_tracker_server_image",
     registry = "gcr.io",
-    repository = "pl-dev-infra/cloud/artifact_tracker_server_image",
+    repository = "pixie-oss/pixie-dev-public/cloud/artifact_tracker_server_image",
     tag = "{STABLE_BUILD_TAG}",
 )
