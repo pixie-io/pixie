@@ -104,7 +104,7 @@ class SocketTraceBPFTest : public ::testing::Test {
   std::vector<TaggedRecordBatch> StopTransferDataThread() {
     // Give enough time for one more TransferData call by transfer_data_thread_,
     // so we make sure we've captured everything.
-    std::this_thread::sleep_for(kTransferDataPeriod);
+    std::this_thread::sleep_for(2 * kTransferDataPeriod);
 
     absl::base_internal::SpinLockHolder lock(&socket_tracer_state_lock_);
     CHECK(data_table_ != nullptr);
