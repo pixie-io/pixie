@@ -242,8 +242,9 @@ func (k *KratosServer) Serve() (*idprovider.HydraKratosClient, func(), error) {
 	// Get logs in parallel.
 	k.debugContainerLogs(resource)
 
-	kratosPublicHost := fmt.Sprintf("http://localhost:%s", resource.GetPort("4433/tcp"))
-	kratosAdminHost := fmt.Sprintf("http://localhost:%s", resource.GetPort("4434/tcp"))
+	hostname := resource.Container.NetworkSettings.Gateway
+	kratosPublicHost := fmt.Sprintf("http://%s:%s", hostname, resource.GetPort("4433/tcp"))
+	kratosAdminHost := fmt.Sprintf("http://%s:%s", hostname, resource.GetPort("4434/tcp"))
 	client, err := idprovider.NewHydraKratosClientFromConfig(&idprovider.HydraKratosConfig{
 		KratosPublicHost: kratosPublicHost,
 		KratosAdminHost:  kratosAdminHost,
