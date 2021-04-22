@@ -57,7 +57,8 @@ class HTTP2StreamsContainer : NotCopyMoveable {
    * Cleans up the HTTP2 events from BPF uprobes that are too old,
    * either because they are too far back in time, or too far back in bytes.
    */
-  void Cleanup(size_t size_limit_bytes, int expiration_duration_secs);
+  void Cleanup(size_t size_limit_bytes,
+               std::chrono::time_point<std::chrono::steady_clock> expiry_timestamp);
 
   /**
    * Erase n stream IDs from the head of the streams container.

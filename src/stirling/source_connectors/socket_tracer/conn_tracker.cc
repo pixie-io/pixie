@@ -356,7 +356,11 @@ ConnTracker::ProcessToRecords<protocols::http2::ProtocolTraits>() {
   protocols::http2::ProcessHTTP2Streams(&http2_server_streams_, IsZombie(), &result);
 
   UpdateResultStats(result);
-  Cleanup<protocols::http2::ProtocolTraits>();
+
+  auto size_limit_bytes = FLAGS_messages_size_limit_bytes;
+  auto expiry_timestamp = std::chrono::steady_clock::now() -
+                          std::chrono::seconds(FLAGS_messages_expiration_duration_secs);
+  Cleanup<protocols::http2::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
 
   return std::move(result.records);
 }

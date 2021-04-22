@@ -225,7 +225,11 @@ class ConnTracker : NotCopyMoveable {
     CONN_TRACE(1) << absl::Substitute("records=$0", result.records.size());
 
     UpdateResultStats(result);
-    Cleanup<TProtocolTraits>();
+
+    auto size_limit_bytes = FLAGS_messages_size_limit_bytes;
+    auto expiry_timestamp = std::chrono::steady_clock::now() -
+                            std::chrono::seconds(FLAGS_messages_expiration_duration_secs);
+    Cleanup<TProtocolTraits>(size_limit_bytes, expiry_timestamp);
 
     return result.records;
   }
@@ -456,18 +460,17 @@ class ConnTracker : NotCopyMoveable {
   }
 
   template <typename TProtocolTraits>
-  void Cleanup() {
+  void Cleanup(size_t size_limit_bytes,
+               std::chrono::time_point<std::chrono::steady_clock> expiry_timestamp) {
     using TFrameType = typename TProtocolTraits::frame_type;
     using TStateType = typename TProtocolTraits::state_type;
 
     if constexpr (std::is_same_v<TFrameType, protocols::http2::Stream>) {
-      http2_client_streams_.Cleanup(FLAGS_messages_size_limit_bytes,
-                                    FLAGS_messages_expiration_duration_secs);
-      http2_server_streams_.Cleanup(FLAGS_messages_size_limit_bytes,
-                                    FLAGS_messages_expiration_duration_secs);
+      http2_client_streams_.Cleanup(size_limit_bytes, expiry_timestamp);
+      http2_server_streams_.Cleanup(size_limit_bytes, expiry_timestamp);
     } else {
-      send_data_.CleanupFrames<TFrameType>();
-      recv_data_.CleanupFrames<TFrameType>();
+      send_data_.CleanupFrames<TFrameType>(size_limit_bytes, expiry_timestamp);
+      recv_data_.CleanupFrames<TFrameType>(size_limit_bytes, expiry_timestamp);
     }
 
     auto* state = protocol_state<TStateType>();

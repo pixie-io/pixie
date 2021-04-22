@@ -172,15 +172,15 @@ class DataStream : NotCopyMoveable {
    * Cleanup frames that are parsed from the BPF events, when the condition is right.
    */
   template <typename TFrameType>
-  void CleanupFrames() {
+  void CleanupFrames(size_t size_limit_bytes,
+                     std::chrono::time_point<std::chrono::steady_clock> expiry_timestamp) {
     size_t size = FramesSize<TFrameType>();
-    if (size > FLAGS_messages_size_limit_bytes) {
+    if (size > size_limit_bytes) {
       VLOG(1) << absl::Substitute("Messages cleared due to size limit ($0 > $1).", size,
                                   FLAGS_messages_size_limit_bytes);
       Frames<TFrameType>().clear();
     }
-    EraseExpiredFrames(std::chrono::seconds(FLAGS_messages_expiration_duration_secs),
-                       &Frames<TFrameType>());
+    EraseExpiredFrames(expiry_timestamp, &Frames<TFrameType>());
   }
 
   /**
@@ -201,19 +201,17 @@ class DataStream : NotCopyMoveable {
 
  private:
   template <typename TFrameType>
-  static void EraseExpiredFrames(std::chrono::seconds exp_dur, std::deque<TFrameType>* frames) {
-    auto now = std::chrono::steady_clock::now();
-
+  static void EraseExpiredFrames(
+      std::chrono::time_point<std::chrono::steady_clock> expiry_timestamp,
+      std::deque<TFrameType>* frames) {
     auto iter = frames->begin();
     for (; iter != frames->end(); ++iter) {
       auto frame_timestamp = std::chrono::time_point<std::chrono::steady_clock>(
           std::chrono::nanoseconds(iter->timestamp_ns));
-      auto frame_age = std::chrono::duration_cast<std::chrono::seconds>(now - frame_timestamp);
       // As messages are put into the list with monotonically increasing creation time stamp,
       // we can just stop at the first frame that is younger than the expiration duration.
-      //
       // TODO(yzhao): Benchmark with binary search and pick the faster one.
-      if (frame_age < exp_dur) {
+      if (expiry_timestamp < frame_timestamp) {
         break;
       }
     }

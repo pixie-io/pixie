@@ -29,10 +29,8 @@ namespace stirling {
 
 namespace {
 
-void EraseExpiredStreams(std::chrono::seconds exp_dur,
+void EraseExpiredStreams(std::chrono::time_point<std::chrono::steady_clock> expiry_timestamp,
                          absl::flat_hash_map<uint32_t, protocols::http2::Stream>* streams) {
-  auto now = std::chrono::steady_clock::now();
-
   auto iter = streams->begin();
   while (iter != streams->end()) {
     const auto& stream = iter->second;
@@ -40,8 +38,7 @@ void EraseExpiredStreams(std::chrono::seconds exp_dur,
     auto last_activity =
         std::chrono::time_point<std::chrono::steady_clock>(std::chrono::nanoseconds(timestamp_ns));
 
-    auto stream_age = std::chrono::duration_cast<std::chrono::seconds>(now - last_activity);
-    if (stream_age < exp_dur) {
+    if (expiry_timestamp < last_activity) {
       break;
     }
     streams->erase(iter++);
@@ -57,7 +54,8 @@ size_t HTTP2StreamsContainer::StreamsSize() {
   return size;
 }
 
-void HTTP2StreamsContainer::Cleanup(size_t size_limit_bytes, int expiration_duration_secs) {
+void HTTP2StreamsContainer::Cleanup(
+    size_t size_limit_bytes, std::chrono::time_point<std::chrono::steady_clock> expiry_timestamp) {
   size_t size = StreamsSize();
   if (size > size_limit_bytes) {
     VLOG(1) << absl::Substitute("HTTP2 streams cleared due to size limit ($0 > $1).", size,
@@ -65,7 +63,7 @@ void HTTP2StreamsContainer::Cleanup(size_t size_limit_bytes, int expiration_dura
     streams_.clear();
   }
 
-  EraseExpiredStreams(std::chrono::seconds(expiration_duration_secs), &streams_);
+  EraseExpiredStreams(expiry_timestamp, &streams_);
 }
 
 protocols::http2::HalfStream* HTTP2StreamsContainer::HalfStreamPtr(uint32_t stream_id,
