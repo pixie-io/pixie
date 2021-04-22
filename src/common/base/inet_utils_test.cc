@@ -126,6 +126,26 @@ TEST(ParseIPAddr, ipv4) {
   ASSERT_OK_AND_EQ(IPv4AddrToString(in_addr), "1.2.3.4");
 }
 
+TEST(InetAddr, ipv4) {
+  InetAddr addr;
+
+  ASSERT_OK(ParseIPAddress("1.2.3.4", &addr));
+  ASSERT_FALSE(addr.IsLoopback());
+
+  ASSERT_OK(ParseIPAddress("127.0.0.1", &addr));
+  ASSERT_TRUE(addr.IsLoopback());
+}
+
+TEST(InetAddr, ipv6) {
+  InetAddr addr;
+
+  ASSERT_OK(ParseIPAddress("2001:0db8:85a3:0000:0000:8a2e:0370:7334", &addr));
+  ASSERT_FALSE(addr.IsLoopback());
+
+  ASSERT_OK(ParseIPAddress("::1", &addr));
+  ASSERT_TRUE(addr.IsLoopback());
+}
+
 TEST(ParseIPAddr, ipv6) {
   // Test address.
   struct in6_addr in6_addr;

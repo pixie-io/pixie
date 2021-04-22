@@ -76,6 +76,19 @@ std::string InetAddr::AddrStr() const {
   }
 }
 
+bool InetAddr::IsLoopback() const {
+  switch (family) {
+    case InetAddrFamily::kUnspecified:
+      return false;
+    case InetAddrFamily::kIPv4:
+      return std::get<struct in_addr>(addr).s_addr == ntohl(INADDR_LOOPBACK);
+    case InetAddrFamily::kIPv6:
+      return std::get<struct in6_addr>(addr) == in6addr_loopback;
+    default:
+      return false;
+  }
+}
+
 StatusOr<std::string> IPv4AddrToString(const struct in_addr& in_addr) {
   char buf[INET_ADDRSTRLEN];
   if (inet_ntop(AF_INET, &in_addr, buf, INET_ADDRSTRLEN) == nullptr) {

@@ -81,6 +81,13 @@ std::string ToString(const struct sockaddr* sa);
 Status ParseIPv4Addr(std::string_view addr_str_view, struct in_addr* in_addr);
 Status ParseIPv6Addr(std::string_view addr_str_view, struct in6_addr* in6_addr);
 
+inline bool operator==(struct in_addr a, struct in_addr b) { return a.s_addr == b.s_addr; }
+
+inline bool operator==(const struct in6_addr& a, const struct in6_addr& b) {
+  return (a.s6_addr32[0] == b.s6_addr32[0]) && (a.s6_addr32[1] == b.s6_addr32[1]) &&
+         (a.s6_addr32[2] == b.s6_addr32[2]) && (a.s6_addr32[3] == b.s6_addr32[3]);
+}
+
 //-----------------------------------------------------------------------------
 // C++ versions of Linux types.
 //-----------------------------------------------------------------------------
@@ -92,6 +99,8 @@ struct InetAddr {
   std::variant<struct in_addr, struct in6_addr> addr;
 
   std::string AddrStr() const;
+
+  bool IsLoopback() const;
 };
 
 /**
@@ -150,10 +159,7 @@ struct SockAddrIPv6HashFn {
 
 struct SockAddrIPv6EqFn {
   size_t operator()(const SockAddrIPv6& a, const SockAddrIPv6& b) const {
-    return a.addr.s6_addr32[0] == b.addr.s6_addr32[0] &&
-           a.addr.s6_addr32[1] == b.addr.s6_addr32[1] &&
-           a.addr.s6_addr32[2] == b.addr.s6_addr32[2] &&
-           a.addr.s6_addr32[3] == b.addr.s6_addr32[3] && a.port == b.port;
+    return (a.addr == b.addr) && (a.port == b.port);
   }
 };
 

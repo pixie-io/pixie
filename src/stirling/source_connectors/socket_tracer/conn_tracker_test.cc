@@ -459,7 +459,26 @@ TEST_F(ConnTrackerTest, TrackerDisabledForIntraClusterRemoteEndpoint) {
   EXPECT_EQ(ConnTracker::State::kDisabled, tracker.state());
 }
 
-// Tests that ConnTrcker state is not updated when no cluster CIDR is specified.
+// Tests that tracker state is kDisabled if the remote address is localhost.
+TEST_F(ConnTrackerTest, TrackerDisabledForLocalhostRemoteEndpoint) {
+  testing::EventGenerator event_gen(&real_clock_);
+  struct socket_control_event_t conn = event_gen.InitConn();
+  conn.open.addr.sin6_addr = IN6ADDR_LOOPBACK_INIT;
+  conn.open.addr.sin6_family = AF_INET6;
+
+  CIDRBlock cidr;
+  ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
+  std::vector cidrs = {cidr};
+
+  ConnTracker tracker;
+  tracker.AddControlEvent(conn);
+  tracker.SetProtocol(kProtocolHTTP, "testing");
+  tracker.SetRole(kRoleClient, "testing");
+  tracker.IterationPreTick(cidrs, /*proc_parser*/ nullptr, /*connections*/ nullptr);
+  EXPECT_EQ(ConnTracker::State::kDisabled, tracker.state());
+}
+
+// Tests that ConnTracker state is not updated when no cluster CIDR is specified.
 TEST_F(ConnTrackerTest, TrackerCollectingForClientSideTracingWithNoCIDR) {
   testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn();

@@ -39,6 +39,9 @@
 #include "src/stirling/source_connectors/socket_tracer/conn_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/conn_trackers_manager.h"
 
+DEFINE_bool(treat_loopback_as_in_cluster, true,
+            "Whether loopback is treated as inside the cluster of not");
+
 constexpr int64_t kUnsetPIDFD = -1;
 DEFINE_int64(stirling_conn_trace_pid, kUnsetPIDFD, "Trace activity on this pid.");
 DEFINE_int64(stirling_conn_trace_fd, kUnsetPIDFD, "Trace activity on this fd.");
@@ -560,6 +563,11 @@ bool ConnTracker::IsRemoteAddrInCluster(const std::vector<CIDRBlock>& cluster_ci
       return true;
     }
   }
+
+  if (remote_addr.IsLoopback() && FLAGS_treat_loopback_as_in_cluster) {
+    return true;
+  }
+
   return false;
 }
 
