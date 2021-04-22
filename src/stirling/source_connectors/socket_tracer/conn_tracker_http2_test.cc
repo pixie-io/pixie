@@ -279,16 +279,19 @@ TEST_F(ConnTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterBreachingSizeLimit) {
   // Events with even stream IDs are put on recv_data_.
   header_event2->attr.stream_id = 8;
 
-  FLAGS_messages_size_limit_bytes = 10000;
+  int size_limit_bytes = 10000;
+  auto expiry_timestamp = std::chrono::steady_clock::now() - std::chrono::seconds(10000);
   tracker.AddHTTP2Header(std::move(header_event1));
   tracker.AddHTTP2Header(std::move(header_event2));
   tracker.ProcessToRecords<http2::ProtocolTraits>();
+  tracker.Cleanup<http2::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
 
   EXPECT_EQ(tracker.http2_client_streams_size(), 1);
   EXPECT_EQ(tracker.http2_server_streams_size(), 1);
 
-  FLAGS_messages_size_limit_bytes = 0;
+  size_limit_bytes = 0;
   tracker.ProcessToRecords<http2::ProtocolTraits>();
+  tracker.Cleanup<http2::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
   EXPECT_EQ(tracker.http2_client_streams_size(), 0);
   EXPECT_EQ(tracker.http2_server_streams_size(), 0);
 }
@@ -305,17 +308,20 @@ TEST_F(ConnTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterExpiration) {
   // Change the second to be a different stream ID.
   header_event2->attr.stream_id = 8;
 
-  FLAGS_messages_size_limit_bytes = 10000;
-  FLAGS_messages_expiration_duration_secs = 10000;
+  int size_limit_bytes = 10000;
+  auto expiry_timestamp = std::chrono::steady_clock::now() - std::chrono::seconds(10000);
   tracker.AddHTTP2Header(std::move(header_event1));
   tracker.AddHTTP2Header(std::move(header_event2));
   tracker.ProcessToRecords<http2::ProtocolTraits>();
+  tracker.Cleanup<http2::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
 
   EXPECT_EQ(tracker.http2_client_streams_size(), 1);
   EXPECT_EQ(tracker.http2_server_streams_size(), 1);
 
-  FLAGS_messages_expiration_duration_secs = 0;
+  size_limit_bytes = 10000;
+  expiry_timestamp = std::chrono::steady_clock::now();
   tracker.ProcessToRecords<http2::ProtocolTraits>();
+  tracker.Cleanup<http2::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
   EXPECT_EQ(tracker.http2_client_streams_size(), 0);
   EXPECT_EQ(tracker.http2_server_streams_size(), 0);
 }

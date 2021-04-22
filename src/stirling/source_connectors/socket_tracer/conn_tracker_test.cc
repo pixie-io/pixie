@@ -376,25 +376,34 @@ TEST_F(ConnTrackerTest, HTTPStuckEventsAreRemoved) {
 
   ConnTracker tracker;
 
+  // Set limit and expiry very large to make them non-factors.
+  int size_limit_bytes = 10000;
+  auto expiry_timestamp = std::chrono::steady_clock::now() - std::chrono::seconds(10000);
+
   tracker.AddDataEvent(std::move(data0));
   tracker.ProcessToRecords<http::ProtocolTraits>();
+  tracker.Cleanup<http::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
   EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
   tracker.ProcessToRecords<http::ProtocolTraits>();
+  tracker.Cleanup<http::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
   EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
   tracker.ProcessToRecords<http::ProtocolTraits>();
+  tracker.Cleanup<http::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
   EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
 
   // The 4th time, the stuck condition is detected and all data is purged.
   tracker.ProcessToRecords<http::ProtocolTraits>();
+  tracker.Cleanup<http::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
   EXPECT_TRUE(tracker.req_data()->Empty<http::Message>());
 
   // Now the stuck count is reset, so the event is kept.
   tracker.AddDataEvent(std::move(data1));
   tracker.ProcessToRecords<http::ProtocolTraits>();
+  tracker.Cleanup<http::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
   EXPECT_FALSE(tracker.req_data()->Empty<http::Message>());
 }
 
-TEST_F(ConnTrackerTest, HTTPMessagesErasedAfterExpiration) {
+TEST_F(ConnTrackerTest, MessagesErasedAfterExpiration) {
   testing::EventGenerator event_gen(&real_clock_);
   auto frame0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0);
   auto frame1 = event_gen.InitRecvEvent<kProtocolHTTP>(kHTTPResp0);
@@ -403,40 +412,20 @@ TEST_F(ConnTrackerTest, HTTPMessagesErasedAfterExpiration) {
 
   ConnTracker tracker;
 
-  FLAGS_messages_size_limit_bytes = 10000;
-  FLAGS_messages_expiration_duration_secs = 10000;
-
+  int size_limit_bytes = 10000;
+  auto expiry_timestamp = std::chrono::steady_clock::now() - std::chrono::seconds(10000);
   tracker.AddDataEvent(std::move(frame0));
   tracker.ProcessToRecords<http::ProtocolTraits>();
+  tracker.Cleanup<http::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
   EXPECT_THAT(tracker.req_frames<http::Message>(), SizeIs(1));
 
-  FLAGS_messages_expiration_duration_secs = 0;
-
+  expiry_timestamp = std::chrono::steady_clock::now();
   tracker.ProcessToRecords<http::ProtocolTraits>();
+  tracker.Cleanup<http::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
   EXPECT_THAT(tracker.req_frames<http::Message>(), IsEmpty());
 
   // TODO(yzhao): It's not possible to test the response messages, as they are immediately exported
   // without waiting for the requests.
-}
-
-TEST_F(ConnTrackerTest, MySQLMessagesErasedAfterExpiration) {
-  testing::EventGenerator event_gen(&real_clock_);
-  auto msg0 =
-      event_gen.InitSendEvent<kProtocolMySQL>(mysql::testutils::GenRawPacket(0, "\x03SELECT"));
-
-  ConnTracker tracker;
-
-  FLAGS_messages_size_limit_bytes = 10000;
-  FLAGS_messages_expiration_duration_secs = 10000;
-
-  tracker.AddDataEvent(std::move(msg0));
-  tracker.ProcessToRecords<mysql::ProtocolTraits>();
-  EXPECT_THAT(tracker.req_frames<mysql::Packet>(), SizeIs(1));
-
-  FLAGS_messages_expiration_duration_secs = 0;
-
-  tracker.ProcessToRecords<mysql::ProtocolTraits>();
-  EXPECT_THAT(tracker.req_frames<mysql::Packet>(), IsEmpty());
 }
 
 // Tests that tracker state is kDisabled if the remote address is in the cluster's CIDR range.

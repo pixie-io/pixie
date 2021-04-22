@@ -82,6 +82,13 @@ DEFINE_bool(stirling_enable_redis_tracing, true,
 DEFINE_bool(stirling_disable_self_tracing, true,
             "If true, stirling will not trace and process syscalls made by itself.");
 
+DEFINE_uint32(messages_expiration_duration_secs, 10 * 60,
+              "The duration for which a cached message to be erased.");
+DEFINE_uint32(messages_size_limit_bytes, 1024 * 1024,
+              "The limit of the size of the parsed messages, not the BPF events, "
+              "for each direction, of each connection tracker. "
+              "All cached messages are erased if this limit is breached.");
+
 BPF_SRC_STRVIEW(socket_trace_bcc_script, socket_trace);
 
 namespace px {
@@ -940,12 +947,14 @@ void SocketTraceConnector::TransferStream(ConnectorContext* ctx, ConnTracker* tr
   if (tracker->state() == ConnTracker::State::kTransferring) {
     // ProcessToRecords() parses raw events and produces messages in format that are expected by
     // table store. But those messages are not cached inside ConnTracker.
-    //
-    // TODO(yzhao): Consider caching produced messages if they are not transferred.
     auto result = tracker->ProcessToRecords<TProtocolTraits>();
     for (auto& msg : result) {
       AppendMessage(ctx, *tracker, std::move(msg), data_table);
     }
+
+    auto expiry_timestamp = std::chrono::steady_clock::now() -
+                            std::chrono::seconds(FLAGS_messages_expiration_duration_secs);
+    tracker->Cleanup<TProtocolTraits>(FLAGS_messages_size_limit_bytes, expiry_timestamp);
   }
 }
 

@@ -58,6 +58,9 @@ DECLARE_bool(stirling_enable_redis_tracing);
 DECLARE_bool(stirling_disable_self_tracing);
 DECLARE_string(stirling_role_to_trace);
 
+DECLARE_uint32(messages_expiration_duration_secs);
+DECLARE_uint32(messages_size_limit_bytes);
+
 namespace px {
 namespace stirling {
 

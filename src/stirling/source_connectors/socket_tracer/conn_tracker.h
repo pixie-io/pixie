@@ -227,11 +227,6 @@ class ConnTracker : NotCopyMoveable {
 
     UpdateResultStats(result);
 
-    auto size_limit_bytes = FLAGS_messages_size_limit_bytes;
-    auto expiry_timestamp = std::chrono::steady_clock::now() -
-                            std::chrono::seconds(FLAGS_messages_expiration_duration_secs);
-    Cleanup<TProtocolTraits>(size_limit_bytes, expiry_timestamp);
-
     return result.records;
   }
 

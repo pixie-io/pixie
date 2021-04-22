@@ -28,8 +28,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/data_stream_buffer.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/types.h"
 
-DECLARE_uint32(messages_expiration_duration_secs);
-DECLARE_uint32(messages_size_limit_bytes);
+DECLARE_uint32(datastream_buffer_size);
 
 namespace px {
 namespace stirling {
@@ -46,7 +45,7 @@ namespace stirling {
 class DataStream : NotCopyMoveable {
  public:
   // Make the underlying raw buffer size limit the same as the parsed frames byte limit.
-  DataStream() : data_buffer_(FLAGS_messages_size_limit_bytes) {}
+  DataStream() : data_buffer_(FLAGS_datastream_buffer_size) {}
 
   /**
    * Adds a raw (unparsed) chunk of data into the stream.
@@ -177,7 +176,7 @@ class DataStream : NotCopyMoveable {
     size_t size = FramesSize<TFrameType>();
     if (size > size_limit_bytes) {
       VLOG(1) << absl::Substitute("Messages cleared due to size limit ($0 > $1).", size,
-                                  FLAGS_messages_size_limit_bytes);
+                                  size_limit_bytes);
       Frames<TFrameType>().clear();
     }
     EraseExpiredFrames(expiry_timestamp, &Frames<TFrameType>());

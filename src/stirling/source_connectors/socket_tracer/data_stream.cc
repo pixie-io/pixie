@@ -25,12 +25,7 @@
 // of FindFrameBoundary() and ParseFrames().
 #include "src/stirling/source_connectors/socket_tracer/protocols/redis/parse.h"
 
-DEFINE_uint32(messages_expiration_duration_secs, 10 * 60,
-              "The duration for which a cached message to be erased.");
-DEFINE_uint32(messages_size_limit_bytes, 1024 * 1024,
-              "The limit of the size of the parsed messages, not the BPF events, "
-              "for each direction, of each connection tracker. "
-              "All cached messages are erased if this limit is breached.");
+DEFINE_uint32(datastream_buffer_size, 1024 * 1024, "The maximum size of a data stream buffer.");
 
 namespace px {
 namespace stirling {

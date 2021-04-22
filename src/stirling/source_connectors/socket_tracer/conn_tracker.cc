@@ -360,11 +360,6 @@ ConnTracker::ProcessToRecords<protocols::http2::ProtocolTraits>() {
 
   UpdateResultStats(result);
 
-  auto size_limit_bytes = FLAGS_messages_size_limit_bytes;
-  auto expiry_timestamp = std::chrono::steady_clock::now() -
-                          std::chrono::seconds(FLAGS_messages_expiration_duration_secs);
-  Cleanup<protocols::http2::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
-
   return std::move(result.records);
 }
 
