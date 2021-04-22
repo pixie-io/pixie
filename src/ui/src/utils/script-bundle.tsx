@@ -22,7 +22,6 @@ import * as QueryString from 'query-string';
 
 const PROD_SCRIPTS = 'https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-core.json';
 const OSS_SCRIPTS = 'https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-oss.json';
-const STAGING_SCRIPTS = 'https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-staging-core.json';
 
 export interface Script {
   id: string;
@@ -60,7 +59,7 @@ export function GetPxScripts(orgName: string): Promise<Script[]> {
   if (localStorageOSSBundle) {
     localStorageOSSBundle = bypassCacheURL(localStorageOSSBundle);
   }
-  const coreBundlePath = localStorageCoreBundle || (isStaging() ? STAGING_SCRIPTS : PROD_SCRIPTS);
+  const coreBundlePath = localStorageCoreBundle || PROD_SCRIPTS;
   const ossBundlePath = localStorageOSSBundle || OSS_SCRIPTS;
   const fetchPromises = [Axios({ method: 'get', url: coreBundlePath }), Axios({ method: 'get', url: ossBundlePath })];
   return Promise.all(fetchPromises).then((response) => {
