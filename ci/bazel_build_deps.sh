@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash -e
 
 # Copyright 2018- The Pixie Authors.
 #
@@ -24,7 +24,7 @@ cd "$(git rev-parse --show-toplevel)" || exit
 bazel_query="bazel query --keep_going --noshow_progress"
 
 # A list of patterns that will trigger a full build.
-poison_patterns=('^Jenkinsfile' '^ci\/' '^docker\.properties' '^\.bazelrc')
+poison_patterns=('^Jenkinsfile' '^ci\/' '^docker\.properties' '^\.bazelrc' '^BUILD.bazel')
 
 # A list of patterns that will guard BPF targets.
 # We won't run BPF targets unless there are changes to these patterns.
@@ -32,10 +32,8 @@ bpf_patterns=('^src\/stirling\/')
 
 # Set the default values for the flags.
 all_targets=false
-run_bpf_targets=false
 
-target_pattern="//..."
-commit_range=${commit_range:-$(git merge-base origin/main HEAD)".."}
+commit_range=$(git merge-base origin/main HEAD)
 
 ui_excludes="except //src/ui/..."
 bpf_excludes="except attr('tags', 'requires_bpf', //...)"
@@ -48,24 +46,15 @@ sanitizer_only="except attr('tags', 'no_asan', //...) \
   except attr('tags', 'no_msan', //...) \
   except attr('tags', 'no_tsan', //...)"
 
-usage() {
-  echo "Usage: $0 [ -a -t <target_pattern> -c <commit_range> ]" >&2
+function usage() {
+  echo "Usage: $0 [ -a ]" >&2
     echo " -a all_targets=${all_targets}" >&2
-    echo " -t target_pattern=${target_pattern}" >&2
-    echo " -c commit_range=${commit_range}" >&2
-
 }
 
-while getopts "aht:c:" option; do
+while getopts "ah" option; do
   case "${option}" in
     a )
        all_targets=true
-       ;;
-    c )
-       commit_range="$OPTARG.."
-       ;;
-    t )
-       target_pattern=$OPTARG
        ;;
     h ) # "help"
        usage
@@ -73,11 +62,6 @@ while getopts "aht:c:" option; do
        ;;
     \?)
        echo "Option '-$OPTARG' is not a valid option." >&2
-       usage
-       exit 1
-       ;;
-    : )
-       echo "Option '-$OPTARG' needs an argument." >&2
        usage
        exit 1
        ;;
@@ -102,47 +86,55 @@ done
 #     bazel_{buildables, tests}_bpf
 #     bazel_{buildables, tests}_bpf_sanitizer
 
-# Check patterns to trigger a full build and guard bpf targets.
-for file in $(git diff --name-only "${commit_range}" ); do
-  for pat in "${poison_patterns[@]}"; do
-    if [[ "$file" =~ ${pat} ]]; then
-      echo "File ${file} with ${pat} modified. Triggering full build"
-      all_targets=true
-      break
-    fi
-  done
-  for pat in "${bpf_patterns[@]}"; do
-    if [[ "$file" =~ ${pat} ]]; then
-      echo "File ${file} with ${pat} modified. Triggering bpf targets"
-      run_bpf_targets=true
-      break
-    fi
-  done
-done
+targets=()
+function compute_targets() {
+  if [ "${all_targets}" = "true" ]; then
+    targets=("//...")
+    return 0
+  fi
 
-# Determine the targets.
-if [ "${all_targets}" = "false" ]; then
-  # Get a list of the current files in package form by querying Bazel.
-  # This step is safe to run without looking at specific configs
-  # because it just translates file names to bazel packages.
-  files=()
+  changed_files=()
   for file in $(git diff --name-only "${commit_range}" ); do
-    mapfile -t file_targets < <(bazel query --noshow_progress "$file" 2>/dev/null || true)
-    for file_target in "${file_targets[@]}"; do
-      # TODO(vihang): This is subtly wrong. It doesn't handle changing the top level
-      # BUILD.bazel and also should be adding this special case to targets instead of rdeps.
-      if [[ "$file_target" =~ (.*):BUILD.bazel ]]; then
-        files+=("${BASH_REMATCH[1]}/...")
-      else
-        files+=("$file_target")
+    for pat in "${poison_patterns[@]}"; do
+      if [[ "$file" =~ ${pat} ]]; then
+        echo "File ${file} with ${pat} modified. Triggering full build"
+        targets=("//...")
+        return 0
+      fi
+    done
+
+    if [[ "$file" =~ (.*)/BUILD.bazel ]]; then
+      changed_files+=("${BASH_REMATCH[1]}/...")
+    else
+      # The following lines check to see if this file is used by
+      # any bazel targets and skip it otherwise.
+      # This filtering ensures that rdeps doesn't fail.
+      ret=0
+      bazel query --noshow_progress "$file" 2>/dev/null || ret=$?
+      if [[ ret -eq 0 ]]; then
+        changed_files+=("$file")
+      fi
+    fi
+  done
+
+  targets+=("rdeps(//..., set(${changed_files[*]}))")
+}
+
+run_bpf_targets=false
+function check_bpf_trigger() {
+  for file in $(git diff --name-only "${commit_range}" ); do
+    for pat in "${bpf_patterns[@]}"; do
+      if [[ "$file" =~ ${pat} ]]; then
+        echo "File ${file} with ${pat} modified. Triggering bpf targets"
+        run_bpf_targets=true
+        return 0
       fi
     done
   done
+}
 
-  targets="rdeps(${target_pattern}, set(${files[*]}))"
-else
-  targets="//..."
-fi
+compute_targets
+check_bpf_trigger
 
 buildables="kind(.*_binary, ${targets}) union kind(.*_library, ${targets}) ${default_excludes}"
 tests="kind(test, ${targets}) ${default_excludes}"
