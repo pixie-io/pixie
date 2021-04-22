@@ -984,7 +984,7 @@ def buildScriptForNightlyTestRegression = {
 def updateVersionsDB(String credsName, String clusterURL, String namespace) {
   WithSourceCodeK8s {
     container('pxbuild') {
-      unstash 'versions'
+      unstashFromGCS('versions')
       withKubeConfig([credentialsId: credsName,
                     serverUrl: clusterURL, namespace: namespace]) {
         sh './ci/update_artifact_db.sh'
@@ -1009,27 +1009,30 @@ def  buildScriptForCLIRelease = {
             container('pxbuild') {
               sh 'docker login -u pixielabs -p $DOCKER_TOKEN'
               sh './ci/cli_build_release.sh'
-              stash name: 'ci_scripts_signing', includes: 'ci/**'
-              stash name: 'versions', includes: 'src/utils/artifacts/artifact_db_updater/VERSIONS.json'
+              stashOnGCS('ci_scripts_signing', 'ci/**')
+              stashList.add('ci_scripts_signing')
+              stashOnGCS('versions', 'src/utils/artifacts/artifact_db_updater/VERSIONS.json')
+              stashList.add('versions')
             }
           }
         }
         stage('Sign Mac Binary') {
           node('macos') {
             deleteDir()
-            unstash 'ci_scripts_signing'
+            unstashFromGCS('ci_scripts_signing')
             withCredentials([string(credentialsId: 'pl_ac_passwd', variable: 'AC_PASSWD'),
               string(credentialsId: 'jenkins_keychain_pw', variable: 'JENKINSKEY')]) {
               sh './ci/cli_sign.sh'
               }
-            stash name: 'cli_darwin_amd64_signed', includes: 'cli_darwin_amd64*'
+            stashOnGCS('cli_darwin_amd64_signed', 'cli_darwin_amd64*')
+            stashList.add('cli_darwin_amd64_signed')
           }
         }
         stage('Upload Signed Binary') {
           node('macos') {
             WithSourceCodeFatalError {
               dockerStep('', devDockerImageExtrasWithTag) {
-                unstash 'cli_darwin_amd64_signed'
+                unstashFromGCS('cli_darwin_amd64_signed')
                 sh './ci/cli_upload_signed.sh'
               }
             }
@@ -1072,7 +1075,8 @@ vizierReleaseBuilders['Build & Push Artifacts'] = {
       withKubeConfig([credentialsId: K8S_PROD_CREDS,
               serverUrl: K8S_PROD_CLUSTER, namespace: 'default']) {
         sh './ci/vizier_build_release.sh'
-        stash name: 'versions', includes: 'src/utils/artifacts/artifact_db_updater/VERSIONS.json'
+        stashOnGCS('versions', 'src/utils/artifacts/artifact_db_updater/VERSIONS.json')
+        stashList.add('versions')
       }
     }
   }
