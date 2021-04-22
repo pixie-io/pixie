@@ -231,6 +231,12 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   template <typename TProtocolTraits>
   void TransferStream(ConnectorContext* ctx, ConnTracker* tracker, DataTable* data_table);
 
+  void SetIterationTime(std::chrono::time_point<std::chrono::steady_clock> time) {
+    DCHECK(time >= iteration_time_);
+    iteration_time_ = time;
+  }
+  std::chrono::time_point<std::chrono::steady_clock> IterationTime() { return iteration_time_; }
+
   void UpdateTrackerTraceLevel(ConnTracker* tracker);
 
   template <typename TRecordType>
@@ -272,6 +278,10 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // of another table.
   // A bit being set means that the table in question should skip a call to UpdateCommonState().
   std::bitset<kTables.size()> table_access_history_;
+
+  // The time at which TransferDataImpl() begin. Used as a universal timestamp for the iteration,
+  // to avoid too many calls to std::chrono::steady_clock::now().
+  std::chrono::time_point<std::chrono::steady_clock> iteration_time_;
 
   // Keep track of when the last perf buffer drain event was triggered.
   // Perf buffer draining is not atomic nor synchronous, so we want the time before draining.

@@ -336,6 +336,8 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
       << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
   DCHECK(data_table != nullptr);
 
+  SetIterationTime(std::chrono::steady_clock::now());
+
   CachedUpdateCommonState(ctx, table_num);
 
   if (table_num == kConnStatsTableNum) {
@@ -351,6 +353,8 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
 
 void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
                                             const std::vector<DataTable*>& data_tables) {
+  SetIterationTime(std::chrono::steady_clock::now());
+
   UpdateCommonState(ctx);
 
   DataTable* conn_stats_table = data_tables[kConnStatsTableNum];
@@ -952,8 +956,8 @@ void SocketTraceConnector::TransferStream(ConnectorContext* ctx, ConnTracker* tr
       AppendMessage(ctx, *tracker, std::move(msg), data_table);
     }
 
-    auto expiry_timestamp = std::chrono::steady_clock::now() -
-                            std::chrono::seconds(FLAGS_messages_expiration_duration_secs);
+    auto expiry_timestamp =
+        IterationTime() - std::chrono::seconds(FLAGS_messages_expiration_duration_secs);
     tracker->Cleanup<TProtocolTraits>(FLAGS_messages_size_limit_bytes, expiry_timestamp);
   }
 }
