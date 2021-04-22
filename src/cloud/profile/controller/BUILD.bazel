@@ -45,6 +45,9 @@ go_test(
     name = "controller_test",
     srcs = ["server_test.go"],
     embed = [":controller"],
+    tags = [
+        "manual",
+    ],
     deps = [
         "//src/api/public/uuidpb:uuid_pl_go_proto",
         "//src/cloud/profile/controller/mock",
