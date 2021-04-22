@@ -21,7 +21,7 @@
     "test": "jest",
     "install": "rollup -c",
     "storybook": "start-storybook -p 9001",
-    "storybook_static": "build-storybook -o storybook_static",
+    "storybook_static": "build-storybook -o storybook_static --quiet",
     "coverage": "jest --coverage"
   },
   "peerDependencies": {
