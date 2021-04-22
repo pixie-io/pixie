@@ -956,6 +956,8 @@ void SocketTraceConnector::TransferConnStats(ConnectorContext* ctx, DataTable* d
 
   auto& agg_stats = connection_stats_.mutable_agg_stats();
 
+  uint64_t time = AdjustedSteadyClockNowNS();
+
   auto iter = agg_stats.begin();
   while (iter != agg_stats.end()) {
     const auto& key = iter->first;
@@ -969,8 +971,6 @@ void SocketTraceConnector::TransferConnStats(ConnectorContext* ctx, DataTable* d
     // TODO(yzhao): Exports these records after several iterations.
     if (!stats.prev_bytes_sent.has_value() || !stats.prev_bytes_recv.has_value() ||
         stats.bytes_sent != stats.prev_bytes_sent || stats.bytes_recv != stats.prev_bytes_recv) {
-      uint64_t time = AdjustedSteadyClockNowNS();
-
       DataTable::RecordBuilder<&kConnStatsTable> r(data_table, time);
 
       r.Append<idx::kTime>(time);
