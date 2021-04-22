@@ -164,9 +164,9 @@ TEST_F(PostgreSQLTraceGoSQLxTest, GolangSqlxDemo) {
           Pair("PARSE [INSERT INTO person (first_name, last_name, email) VALUES ($1, $2, $3)]",
                "PARSE COMPLETE"),
           Pair("DESCRIBE [type=kStatement name=]", "ROW DESCRIPTION "),
-          Pair("BIND [portal= statement= parameters=[[formt=kText value=Jason], "
-               "[formt=kText value=Moiron], "
-               "[formt=kText value=jmoiron@jmoiron.net]] result_format_codes=[]]",
+          Pair("BIND [portal= statement= parameters=[[format=kText value=Jason], "
+               "[format=kText value=Moiron], "
+               "[format=kText value=jmoiron@jmoiron.net]] result_format_codes=[]]",
                "BIND COMPLETE"),
           Pair("EXECUTE [query=[INSERT INTO person (first_name, last_name, email) VALUES "
                "($1, $2, $3)], params=[Jason, Moiron, jmoiron@jmoiron.net]]",
@@ -180,7 +180,7 @@ TEST_F(PostgreSQLTraceGoSQLxTest, GolangSqlxDemo) {
                "type_modifier=-1 fmt_code=kText] "
                "[name=email table_oid=16384 attr_num=3 type_oid=25 type_size=-1 "
                "type_modifier=-1 fmt_code=kText]"),
-          Pair("BIND [portal= statement= parameters=[[formt=kText value=Jason]] "
+          Pair("BIND [portal= statement= parameters=[[format=kText value=Jason]] "
                "result_format_codes=[]]",
                "BIND COMPLETE"),
           Pair("EXECUTE [query=[SELECT * FROM person WHERE first_name=$1], params=[Jason]]",

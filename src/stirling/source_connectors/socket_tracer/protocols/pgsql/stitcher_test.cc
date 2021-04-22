@@ -139,11 +139,12 @@ TEST_F(StitchFramesTest, VerifySingleOutputMessage) {
   EXPECT_THAT(req_tses, ElementsAre(100, 101, 102, 103, 104, 105, 106));
   EXPECT_THAT(
       req_msgs,
-      ElementsAre(
-          "PARSE [SELECT * FROM person WHERE first_name=$1]", "DESCRIBE [type=kStatement name=]",
-          "BIND [portal= statement= parameters=[[formt=kText value=Jason]] result_format_codes=[]]",
-          "EXECUTE [query=[SELECT * FROM person WHERE first_name=$1], params=[Jason]]",
-          "QUERY [select * from table;]", "QUERY [drop table foo;]", "QUERY [ROLLBACK]"));
+      ElementsAre("PARSE [SELECT * FROM person WHERE first_name=$1]",
+                  "DESCRIBE [type=kStatement name=]",
+                  "BIND [portal= statement= parameters=[[format=kText value=Jason]] "
+                  "result_format_codes=[]]",
+                  "EXECUTE [query=[SELECT * FROM person WHERE first_name=$1], params=[Jason]]",
+                  "QUERY [select * from table;]", "QUERY [drop table foo;]", "QUERY [ROLLBACK]"));
 
   EXPECT_THAT(resp_tses, ElementsAre(110, 111, 113, 115, 118, 119, 120));
   EXPECT_THAT(resp_msgs,

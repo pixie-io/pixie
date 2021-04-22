@@ -164,7 +164,7 @@ struct Param {
   }
 
   std::string ToString() const {
-    return absl::Substitute("[formt=$0 value=$1]", magic_enum::enum_name(format_code), Value());
+    return absl::Substitute("[format=$0 value=$1]", magic_enum::enum_name(format_code), Value());
   }
 };
 
