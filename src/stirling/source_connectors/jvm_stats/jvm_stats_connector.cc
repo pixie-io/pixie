@@ -26,12 +26,9 @@
 
 #include "src/common/base/base.h"
 #include "src/common/base/byte_utils.h"
-#include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/proc_parser.h"
 #include "src/stirling/source_connectors/jvm_stats/jvm_stats_table.h"
-#include "src/stirling/source_connectors/jvm_stats/utils/hsperfdata.h"
 #include "src/stirling/source_connectors/jvm_stats/utils/java.h"
-#include "src/stirling/utils/proc_path_tools.h"
 #include "src/stirling/utils/proc_tracker.h"
 
 DEFINE_int32(
@@ -40,9 +37,6 @@ DEFINE_int32(
 
 namespace px {
 namespace stirling {
-
-using ::px::fs::Exists;
-using ::px::utils::LEndianBytesToInt;
 
 Status JVMStatsConnector::InitImpl() {
   sample_push_freq_mgr_.set_sampling_period(kSamplingPeriod);
