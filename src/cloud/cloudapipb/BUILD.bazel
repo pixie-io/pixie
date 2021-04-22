@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:proto_compile.bzl", "pl_go_proto_library", "pl_proto_library", "pl_py_grpc_library")
+load("//bazel:proto_compile.bzl", "pl_go_proto_library", "pl_proto_library")
 
 # TODO(PP-2567): This is used by src/utils/shared/artifacts
 # Break this chain and clamp down visibility.
@@ -25,8 +25,8 @@ pl_proto_library(
     srcs = ["cloudapi.proto"],
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_proto",
+        "//src/api/proto/vispb:vis_pl_proto",
         "//src/shared/k8s/metadatapb:metadata_pl_proto",
-        "//src/shared/vispb:vis_pl_proto",
         "@gogo_special_proto//github.com/gogo/protobuf/gogoproto",
     ],
 )
@@ -37,19 +37,8 @@ pl_go_proto_library(
     proto = ":cloudapi_pl_proto",
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
+        "//src/api/proto/vispb:vis_pl_go_proto",
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
-        "//src/shared/vispb:vis_pl_go_proto",
         "@com_github_gogo_protobuf//gogoproto:go_default_library",
-    ],
-)
-
-pl_py_grpc_library(
-    name = "cloudapi_pl_py_grpc",
-    imports = ["../../../"],
-    proto = ":cloudapi_pl_proto",
-    deps = [
-        "//src/api/proto/uuidpb:uuid_pl_py_proto",
-        "//src/shared/k8s/metadatapb:metadata_pl_py_proto",
-        "//src/shared/vispb:vis_pl_py_proto",
     ],
 )

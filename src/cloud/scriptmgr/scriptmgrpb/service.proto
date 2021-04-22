@@ -24,7 +24,7 @@ option go_package = "scriptmgrpb";
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/api/proto/uuidpb/uuid.proto";
-import "src/shared/vispb/vis.proto";
+import "src/api/proto/vispb/vis.proto";
 
 // ScriptMgrService service handles ingestion and access to scripts.
 service ScriptMgrService {

@@ -79,7 +79,7 @@ function update_all_build_labels() {
   # We only need the public one for TypeScript, and only two specific files.
   # The internal one that we're skipping is "//src/vizier/vizierpb:vizier_pl_grpc_web_proto"
   update_one_build_label "//src/api/proto/vizierapipb:vizier_pl_grpc_web_proto"
-  update_one_build_label "//src/shared/vispb:vis_pl_grpc_web_proto"
+  update_one_build_label "//src/api/proto/vispb:vis_pl_grpc_web_proto"
 }
 
 if [[ $# == 0 ]]; then

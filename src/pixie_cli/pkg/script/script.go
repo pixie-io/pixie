@@ -26,7 +26,7 @@ import (
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/spf13/viper"
 
-	"px.dev/pixie/src/shared/vispb"
+	"px.dev/pixie/src/api/proto/vispb"
 )
 
 // Arg is a single script argument.

@@ -31,8 +31,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	pl_vispb "px.dev/pixie/src/api/proto/vispb"
 	"px.dev/pixie/src/cloud/scriptmgr/scriptmgrpb"
-	pl_vispb "px.dev/pixie/src/shared/vispb"
 	"px.dev/pixie/src/utils"
 )
 

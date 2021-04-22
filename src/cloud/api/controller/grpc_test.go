@@ -32,6 +32,7 @@ import (
 
 	public_cloudapipb "px.dev/pixie/src/api/proto/cloudapipb"
 	"px.dev/pixie/src/api/proto/uuidpb"
+	pl_vispb "px.dev/pixie/src/api/proto/vispb"
 	"px.dev/pixie/src/cloud/api/controller"
 	"px.dev/pixie/src/cloud/api/controller/testutils"
 	"px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
@@ -46,7 +47,6 @@ import (
 	"px.dev/pixie/src/shared/artifacts/versionspb"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/k8s/metadatapb"
-	pl_vispb "px.dev/pixie/src/shared/vispb"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/pbutils"
 )

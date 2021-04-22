@@ -77,6 +77,7 @@ go_test(
     ],
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
+        "//src/api/proto/vispb:vis_pl_go_proto",
         "//src/api/proto/vizierapipb:public_vizier_pl_go_proto",
         "//src/carnot/goplanner:go_default_library",
         "//src/carnot/planner/compilerpb:compiler_status_pl_go_proto",
@@ -89,7 +90,6 @@ go_test(
         "//src/pixie_cli/pkg/script",
         "//src/pixie_cli/pkg/vizier",
         "//src/shared/scriptspb:scripts_pl_go_proto",
-        "//src/shared/vispb:vis_pl_go_proto",
         "//src/table_store/schemapb:schema_pl_go_proto",
         "//src/utils",
         "//src/vizier/funcs/go",

@@ -31,6 +31,7 @@ go_library(
     importpath = "px.dev/pixie/src/pixie_cli/pkg/vizier",
     visibility = ["//src:__subpackages__"],
     deps = [
+        "//src/api/proto/vispb:vis_pl_go_proto",
         "//src/api/proto/vizierapipb:public_vizier_pl_go_proto",
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
         "//src/pixie_cli/pkg/auth",
@@ -40,7 +41,6 @@ go_library(
         "//src/pixie_cli/pkg/script",
         "//src/pixie_cli/pkg/utils",
         "//src/shared/services",
-        "//src/shared/vispb:vis_pl_go_proto",
         "//src/utils",
         "//src/utils/shared/k8s",
         "//src/vizier/vizierpb:vizier_pl_go_proto",

@@ -26,8 +26,8 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/scriptmgr/controller",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
+        "//src/api/proto/vispb:vis_pl_go_proto",
         "//src/cloud/scriptmgr/scriptmgrpb:service_pl_go_proto",
-        "//src/shared/vispb:vis_pl_go_proto",
         "//src/utils",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_gogo_protobuf//jsonpb",
@@ -46,8 +46,8 @@ go_test(
     ],
     embed = [":controller"],
     deps = [
+        "//src/api/proto/vispb:vis_pl_go_proto",
         "//src/cloud/scriptmgr/scriptmgrpb:service_pl_go_proto",
-        "//src/shared/vispb:vis_pl_go_proto",
         "//src/utils",
         "//src/utils/testingutils",
         "@com_github_gofrs_uuid//:uuid",

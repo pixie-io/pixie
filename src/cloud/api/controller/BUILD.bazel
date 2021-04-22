@@ -95,6 +95,7 @@ go_test(
     deps = [
         "//src/api/proto/cloudapipb:public_cloudapi_pl_go_proto",
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
+        "//src/api/proto/vispb:vis_pl_go_proto",
         "//src/cloud/api/apienv",
         "//src/cloud/api/controller/schema",
         "//src/cloud/api/controller/testutils",
@@ -115,7 +116,6 @@ go_test(
         "//src/shared/services/authcontext",
         "//src/shared/services/handler",
         "//src/shared/services/utils",
-        "//src/shared/vispb:vis_pl_go_proto",
         "//src/utils",
         "//src/utils/pbutils",
         "//src/utils/testingutils",

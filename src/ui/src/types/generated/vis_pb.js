@@ -1,4 +1,4 @@
-// source: src/shared/vispb/vis.proto
+// source: src/api/proto/vispb/vis.proto
 /**
  * @fileoverview
  * @enhanceable
