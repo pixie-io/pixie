@@ -53,8 +53,6 @@ class CGroupMetadataReader : public NotCopyable {
                           std::string_view container_id, ContainerType container_type,
                           absl::flat_hash_set<uint32_t>* pid_set) const;
 
-  virtual bool PodDirExists(const PodInfo& pod_info) const;
-
  private:
   void InitPathTemplates(std::string_view sysfs_path);
 
@@ -75,6 +73,7 @@ class CGroupMetadataReader : public NotCopyable {
   int64_t ns_per_kernel_tick_;
   int64_t clock_realtime_offset_;
 
+  FRIEND_TEST(CGroupMetadataReaderTest, cgroup_pod_dir_path);
   FRIEND_TEST(CGroupMetadataReaderTest, cgroup_proc_file_path);
   FRIEND_TEST(CGroupMetadataReaderTest, cgroup_proc_file_path_alternate);
 };

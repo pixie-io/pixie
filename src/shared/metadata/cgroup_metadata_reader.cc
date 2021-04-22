@@ -167,10 +167,5 @@ Status CGroupMetadataReader::ReadPIDs(PodQOSClass qos_class, std::string_view po
   return Status::OK();
 }
 
-bool CGroupMetadataReader::PodDirExists(const PodInfo& pod_info) const {
-  auto pod_path = CGroupPodDirPath(pod_info.qos_class(), pod_info.uid());
-  return fs::Exists(pod_path).ok();
-}
-
 }  // namespace md
 }  // namespace px

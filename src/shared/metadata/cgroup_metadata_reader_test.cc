@@ -99,11 +99,13 @@ TEST_F(CGroupMetadataReaderTest, cgroup_proc_file_path) {
                                            ContainerType::kDocker));
 }
 
-TEST_F(CGroupMetadataReaderTest, cgroup_pod_exists) {
+TEST_F(CGroupMetadataReaderTest, cgroup_pod_dir_path) {
   PodInfo pod_info("abcd", "namespace", "pod-name", PodQOSClass::kBestEffort, PodPhase::kRunning,
                    {{PodConditionType::kReady, PodConditionStatus::kTrue}}, "pod status message",
                    "pod status reason", "testnode", "testpod", "1.1.1.1");
-  EXPECT_TRUE(md_reader_->PodDirExists(pod_info));
+
+  EXPECT_EQ(GetPathToTestDataFile("testdata/sysfs1/cgroup/cpu,cpuacct/kubepods/besteffort/podabcd"),
+            md_reader_->CGroupPodDirPath(pod_info.qos_class(), pod_info.uid()));
 }
 
 TEST_F(CGroupMetadataReaderTest, cgroup_proc_file_path_alternate) {

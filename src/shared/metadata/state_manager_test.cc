@@ -134,14 +134,6 @@ class FakePIDData : public MockCGroupMetadataReader {
 
     return error::NotFound("no found");
   }
-
-  bool PodDirExists(const PodInfo& pod_info) const override {
-    if (pod_info.uid() == "pod_id1") {
-      return true;
-    }
-
-    return false;
-  }
 };
 
 // Generates some test updates for entry into the AgentMetadataState.
