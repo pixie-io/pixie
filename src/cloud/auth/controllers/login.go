@@ -123,10 +123,21 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 		return nil, status.Error(codes.PermissionDenied, "user not found, please register.")
 	}
 
-	// Users can login without registering if their org already exists. If org doesn't exist, they must complete sign up flow.
-	orgInfo, err := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: domainName})
-	if err != nil || orgInfo == nil {
-		return nil, status.Error(codes.InvalidArgument, "organization not found, please register.")
+	hasOrg := userInfo.PLOrgID != ""
+	var orgInfo *profilepb.OrgInfo
+	// If the account has an org, use that instead of trying their domain.
+	if hasOrg {
+		orgPb := utils.ProtoFromUUIDStrOrNil(userInfo.PLOrgID)
+		orgInfo, err = pc.GetOrg(ctx, orgPb)
+		if err != nil {
+			return nil, status.Errorf(codes.PermissionDenied, "org info from user is corrupted. Talk to administrator to fix this. %v", err)
+		}
+	} else {
+		// Users can login without registering if their org already exists. If org doesn't exist, they must complete sign up flow.
+		orgInfo, err = pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: domainName})
+		if err != nil || orgInfo == nil {
+			return nil, status.Error(codes.InvalidArgument, "organization not found, please register.")
+		}
 	}
 
 	if newUser {

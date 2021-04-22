@@ -494,7 +494,7 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 		ID: orgPb,
 	}
 	mockProfile.EXPECT().
-		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@gmail.com"}).
+		GetOrg(gomock.Any(), orgPb).
 		Return(fakeOrgInfo, nil)
 	mockProfile.EXPECT().
 		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
@@ -568,7 +568,7 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 	}
 
 	mockProfile.EXPECT().
-		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@gmail.com"}).
+		GetOrg(gomock.Any(), orgPb).
 		Return(fakeOrgInfo, nil)
 
 	mockProfile.EXPECT().
@@ -1239,4 +1239,62 @@ func doSignupRequest(ctx context.Context, t *testing.T, server *controllers.Serv
 		AccessToken: "tokenabc",
 	}
 	return server.Signup(ctx, req)
+}
+
+func TestServer_LoginUserForOrgMembership(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	orgPb := utils.ProtoFromUUIDStrOrNil(orgID)
+	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	userPb := utils.ProtoFromUUIDStrOrNil(userID)
+
+	// Setup expectations for the mocks.
+	a := mock_controllers.NewMockAuthProvider(ctrl)
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
+
+	fakeUserInfo1 := &controllers.UserInfo{
+		Email:    "abc@gmail.com",
+		PLUserID: userID,
+		PLOrgID:  orgID,
+	}
+
+	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo1, nil)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockProfile.EXPECT().
+		GetUser(gomock.Any(), userPb).
+		Return(nil, nil)
+	fakeOrgInfo := &profilepb.OrgInfo{
+		ID: orgPb,
+	}
+	mockProfile.EXPECT().
+		GetOrg(gomock.Any(), orgPb).
+		Return(fakeOrgInfo, nil)
+	mockProfile.EXPECT().
+		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
+			ID:             userPb,
+			ProfilePicture: "",
+		}).
+		Return(nil, nil)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
+	env, err := authenv.New(mockProfile)
+	require.NoError(t, err)
+	s, err := controllers.NewServer(env, a, nil)
+	require.NoError(t, err)
+
+	resp, err := doLoginRequest(getTestContext(), t, s, "")
+	require.NoError(t, err)
+	assert.NotNil(t, resp)
+
+	// Make sure expiry time is in the future.
+	currentTime := time.Now().Unix()
+	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
+	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
+	assert.False(t, resp.UserCreated)
+	verifyToken(t, resp.Token, userID, orgID, resp.ExpiresAt, "jwtkey")
 }
