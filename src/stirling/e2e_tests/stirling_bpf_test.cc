@@ -68,8 +68,7 @@ TEST_F(StirlingBPFTest, CleanupTest) {
   ASSERT_OK(stirling_->RunAsThread());
 
   // Wait for thread to initialize.
-  // TODO(oazizi): This is not good. How do we know how much time is enough?
-  std::this_thread::sleep_for(std::chrono::seconds(1));
+  ASSERT_OK(stirling_->WaitUntilRunning(/* timeout */ std::chrono::seconds(5)));
 
   EXPECT_GT(SocketTraceConnector::num_attached_probes(), 0);
   EXPECT_GT(SocketTraceConnector::num_open_perf_buffers(), 0);

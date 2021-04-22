@@ -75,19 +75,6 @@ DEFINE_bool(enable_heap_profiler, false, "If true, heap profiling is enabled.");
 Stirling* g_stirling = nullptr;
 ProcessStatsMonitor* g_process_stats_monitor = nullptr;
 
-Status WaitForRunning(const Stirling& stirling) {
-  int count = 0;
-  while (!stirling.IsRunning()) {
-    ++count;
-    if (count == 10) {
-      return ::px::error::Internal("Stirling failed to reach running state.");
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  }
-
-  return Status::OK();
-}
-
 //-----------------------------------------------------------------------------
 // Callback/Printing Code
 //-----------------------------------------------------------------------------
@@ -335,7 +322,7 @@ int main(int argc, char** argv) {
   std::thread run_thread = std::thread(&Stirling::Run, stirling.get());
 
   // Wait until thread starts.
-  PL_CHECK_OK(WaitForRunning(*stirling));
+  PL_CHECK_OK(stirling->WaitUntilRunning(/* timeout */ std::chrono::seconds(5)));
 
   std::optional<TraceProgram> trace_program = GetTraceProgram();
 

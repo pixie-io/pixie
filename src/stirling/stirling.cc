@@ -154,6 +154,7 @@ class StirlingImpl final : public Stirling {
   void Run() override;
   Status RunAsThread() override;
   bool IsRunning() const override;
+  Status WaitUntilRunning(std::chrono::milliseconds timeout) const override;
   void Stop() override;
   void WaitForThreadJoin() override;
 
@@ -779,7 +780,20 @@ void StirlingImpl::RunCore() {
   running_ = false;
 }
 
-bool StirlingImpl::IsRunning() const { return run_enable_; }
+bool StirlingImpl::IsRunning() const { return running_; }
+
+Status StirlingImpl::WaitUntilRunning(std::chrono::milliseconds timeout) const {
+  const auto timeout_time = std::chrono::steady_clock::now() + timeout;
+
+  while (!IsRunning()) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    if (std::chrono::steady_clock::now() > timeout_time) {
+      break;
+    }
+  }
+
+  return IsRunning() ? Status::OK() : error::Internal("Stirling failed to reach running state.");
+}
 
 void StirlingImpl::Stop() {
   run_enable_ = false;

@@ -160,6 +160,13 @@ class Stirling : public NotCopyable {
   virtual bool IsRunning() const = 0;
 
   /**
+   * Blocks until Stirling has initialized, and spawned off its main thread.
+   * @param timeout Maximum time to wait until reaching running state.
+   * @return error if doesn't reach running state within the time limit.
+   */
+  virtual Status WaitUntilRunning(std::chrono::milliseconds timeout) const = 0;
+
+  /**
    * Wait for the running thread to terminate. Assumes previous call to RunThread().
    */
   virtual void WaitForThreadJoin() = 0;

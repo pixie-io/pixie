@@ -47,6 +47,7 @@ class MockStirling : public Stirling {
   MOCK_METHOD(void, Run, (), (override));
   MOCK_METHOD(Status, RunAsThread, (), (override));
   MOCK_METHOD(bool, IsRunning, (), (const override));
+  MOCK_METHOD(Status, WaitUntilRunning, (std::chrono::milliseconds timeout), (const override));
   MOCK_METHOD(void, WaitForThreadJoin, (), (override));
   MOCK_METHOD(void, Stop, (), (override));
 };
