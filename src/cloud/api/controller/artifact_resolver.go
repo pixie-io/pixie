@@ -22,7 +22,7 @@ import (
 	"context"
 	"fmt"
 
-	"px.dev/pixie/src/cloud/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudapipb"
 )
 
 // CLIArtifactResolver is the resolver responsible for resolving the CLI artifact.

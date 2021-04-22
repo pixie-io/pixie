@@ -24,8 +24,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/graph-gophers/graphql-go/gqltesting"
 
+	"px.dev/pixie/src/api/proto/cloudapipb"
 	"px.dev/pixie/src/cloud/api/controller/testutils"
-	"px.dev/pixie/src/cloud/cloudapipb"
 )
 
 func TestAutocomplete(t *testing.T) {
@@ -85,13 +85,13 @@ func TestAutocomplete(t *testing.T) {
 				query {
 					autocomplete(input: "px/svc_info svc:pl/test", cursorPos: 0, action: AAT_EDIT) {
 						formattedInput
-						isExecutable 
+						isExecutable
 						tabSuggestions {
-							tabIndex 
+							tabIndex
 							executableAfterSelect
 							suggestions {
-								kind 
-								name 
+								kind
+								name
 								description
 								matchedIndexes
 								state
@@ -107,10 +107,10 @@ func TestAutocomplete(t *testing.T) {
 						"isExecutable": false,
 						"tabSuggestions": [
 							{ "tabIndex": 2, "executableAfterSelect": false, "suggestions": []},
-							{ "tabIndex": 3, "executableAfterSelect": false, "suggestions": 
+							{ "tabIndex": 3, "executableAfterSelect": false, "suggestions":
 								[{"kind": "AEK_POD", "name": "svc_info_pod", "description": "this is a pod", "matchedIndexes": [0, 1, 2], "state": "AES_TERMINATED"}]
 							},
-							{ "tabIndex": 1, "executableAfterSelect": false, "suggestions": 
+							{ "tabIndex": 1, "executableAfterSelect": false, "suggestions":
 								[{"kind": "AEK_SVC", "name": "pl/test", "description": "this is a svc", "matchedIndexes": [5, 6, 7], "state": "AES_RUNNING"}]
 							}
 						]
@@ -159,8 +159,8 @@ func TestAutocompleteField(t *testing.T) {
 			Query: `
 				query {
 					autocompleteField(input: "px/svc_info", fieldType: AEK_SVC, clusterUID: "test") {
-						kind 
-						name 
+						kind
+						name
 						description
 						matchedIndexes
 						state
@@ -169,7 +169,7 @@ func TestAutocompleteField(t *testing.T) {
 			`,
 			ExpectedResult: `
 				{
-					"autocompleteField": 
+					"autocompleteField":
 						[
 						 {"kind": "AEK_SVC", "name": "px/svc_info", "description": "test", "matchedIndexes": [0, 1, 2], "state": "AES_TERMINATED"},
 						 {"kind": "AEK_SVC", "name": "px/svc_info2", "description": "test2", "matchedIndexes": [0, 1, 2], "state": "AES_RUNNING"}

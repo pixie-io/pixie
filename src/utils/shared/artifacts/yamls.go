@@ -29,7 +29,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"px.dev/pixie/src/cloud/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudapipb"
 	"px.dev/pixie/src/utils/shared/tar"
 	"px.dev/pixie/src/utils/shared/yamls"
 )

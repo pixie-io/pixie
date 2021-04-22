@@ -22,7 +22,7 @@ go_library(
     importpath = "px.dev/pixie/src/utils/shared/artifacts",
     visibility = ["//src:__subpackages__"],
     deps = [
-        "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
+        "//src/api/proto/cloudapipb:cloudapi_pl_go_proto",
         "//src/utils/shared/tar",
         "//src/utils/shared/yamls",
         "@org_golang_google_grpc//:go_default_library",

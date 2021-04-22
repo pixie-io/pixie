@@ -33,13 +33,12 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	public_cloudapipb "px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudapipb"
 	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
 	"px.dev/pixie/src/cloud/api/apienv"
 	"px.dev/pixie/src/cloud/api/controller"
 	"px.dev/pixie/src/cloud/api/ptproxy"
 	"px.dev/pixie/src/cloud/autocomplete"
-	"px.dev/pixie/src/cloud/cloudapipb"
 	"px.dev/pixie/src/cloud/shared/esutils"
 	"px.dev/pixie/src/cloud/shared/idprovider"
 	"px.dev/pixie/src/cloud/shared/vzshard"
@@ -184,7 +183,6 @@ func main() {
 
 	cis := &controller.VizierClusterInfo{VzMgr: vc, ArtifactTrackerClient: at}
 	cloudapipb.RegisterVizierClusterInfoServer(s.GRPCServer(), cis)
-	public_cloudapipb.RegisterClusterManagerServer(s.GRPCServer(), cis)
 
 	vdks := &controller.VizierDeploymentKeyServer{VzDeploymentKey: vk}
 	cloudapipb.RegisterVizierDeploymentKeyManagerServer(s.GRPCServer(), vdks)
@@ -245,8 +243,6 @@ func main() {
 
 	profileServer := &controller.ProfileServer{ProfileServiceClient: pc}
 	cloudapipb.RegisterProfileServiceServer(s.GRPCServer(), profileServer)
-
-	public_cloudapipb.RegisterOrganizationServiceServer(s.GRPCServer(), profileServer)
 
 	gqlEnv := controller.GraphQLEnv{
 		ArtifactTrackerServer: artifactTrackerServer,

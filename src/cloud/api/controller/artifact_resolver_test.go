@@ -26,8 +26,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/graph-gophers/graphql-go/gqltesting"
 
+	"px.dev/pixie/src/api/proto/cloudapipb"
 	"px.dev/pixie/src/cloud/api/controller/testutils"
-	"px.dev/pixie/src/cloud/cloudapipb"
 )
 
 func TestCLIArtifact(t *testing.T) {

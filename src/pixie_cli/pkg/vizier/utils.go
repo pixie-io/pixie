@@ -26,7 +26,7 @@ import (
 	"github.com/gofrs/uuid"
 	"k8s.io/client-go/rest"
 
-	"px.dev/pixie/src/cloud/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudapipb"
 	cliUtils "px.dev/pixie/src/pixie_cli/pkg/utils"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/shared/k8s"

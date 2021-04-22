@@ -45,8 +45,8 @@ go_library(
     importpath = "px.dev/pixie/src/pixie_cli/pkg/cmd",
     visibility = ["//src:__subpackages__"],
     deps = [
+        "//src/api/proto/cloudapipb:cloudapi_pl_go_proto",
         "//src/cloud/api/ptproxy",
-        "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
         "//src/pixie_cli/pkg/auth",
         "//src/pixie_cli/pkg/components",
         "//src/pixie_cli/pkg/live",

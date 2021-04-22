@@ -515,9 +515,9 @@ class Client:
 
         return self._cloud_channel_cache
 
-    def _get_cluster(self, request: cpb.GetClusterRequest) -> List[cpb.ClusterInfo]:
-        stub = cloudapi_pb2_grpc.ClusterManagerStub(self._get_cloud_channel())
-        response: cpb.GetClusterResponse = stub.GetCluster(request, metadata=[
+    def _get_cluster(self, request: cpb.GetClusterInfoRequest) -> List[cpb.ClusterInfo]:
+        stub = cloudapi_pb2_grpc.VizierClusterInfoStub(self._get_cloud_channel())
+        response: cpb.GetClusterInfoResponse = stub.GetClusterInfo(request, metadata=[
             ("pixie-api-key", self._token),
             ("pixie-api-client", "python")
         ])
@@ -526,7 +526,7 @@ class Client:
     def list_healthy_clusters(self) -> List[Cluster]:
         """ Lists all of the healthy clusters that you can access.  """
         healthy_clusters: List[Cluster] = []
-        for c in self._get_cluster(cpb.GetClusterConnectionRequest()):
+        for c in self._get_cluster(cpb.GetClusterConnectionInfoRequest()):
             if c.status != cpb.CS_HEALTHY:
                 continue
             healthy_clusters.append(
@@ -539,7 +539,7 @@ class Client:
         return healthy_clusters
 
     def _get_cluster_info(self, cluster_id: ClusterID) -> cpb.ClusterInfo:
-        request = cpb.GetClusterRequest(
+        request = cpb.GetClusterInfoRequest(
             id=uuid_pb_from_string(cluster_id)
         )
         return self._get_cluster(request)[0]
@@ -547,13 +547,13 @@ class Client:
     def _get_cluster_connection_info(
             self,
             cluster_id: ClusterID
-    ) -> cpb.GetClusterConnectionResponse:
+    ) -> cpb.GetClusterConnectionInfoResponse:
         channel = self._get_cloud_channel()
-        stub = cloudapi_pb2_grpc.ClusterManagerStub(channel)
-        request = cpb.GetClusterConnectionRequest(
+        stub = cloudapi_pb2_grpc.VizierClusterInfoStub(channel)
+        request = cpb.GetClusterConnectionInfoRequest(
             id=uuid_pb_from_string(cluster_id)
         )
-        response = stub.GetClusterConnection(request, metadata=[
+        response = stub.GetClusterConnectionInfo(request, metadata=[
             ("pixie-api-key", self._token),
             ("pixie-api-client", "python")
         ])

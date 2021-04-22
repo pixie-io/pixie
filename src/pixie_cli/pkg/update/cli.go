@@ -37,7 +37,7 @@ import (
 	"golang.org/x/sys/unix"
 	"google.golang.org/grpc"
 
-	"px.dev/pixie/src/cloud/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudapipb"
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
 	version "px.dev/pixie/src/shared/goversion"
 	"px.dev/pixie/src/shared/services"

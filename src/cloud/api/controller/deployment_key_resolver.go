@@ -25,7 +25,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/graph-gophers/graphql-go"
 
-	"px.dev/pixie/src/cloud/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudapipb"
 	"px.dev/pixie/src/utils"
 )
 

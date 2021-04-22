@@ -66,8 +66,8 @@ func clusterStatusToVizierStatus(status cloudapipb.ClusterStatus) VizierStatus {
 
 // ListViziers gets a list of Viziers registered with Pixie.
 func (c *Client) ListViziers(ctx context.Context) ([]*VizierInfo, error) {
-	req := &cloudapipb.GetClusterRequest{}
-	res, err := c.cmClient.GetCluster(c.cloudCtxWithMD(ctx), req)
+	req := &cloudapipb.GetClusterInfoRequest{}
+	res, err := c.cmClient.GetClusterInfo(c.cloudCtxWithMD(ctx), req)
 	if err != nil {
 		return nil, err
 	}
@@ -88,10 +88,10 @@ func (c *Client) ListViziers(ctx context.Context) ([]*VizierInfo, error) {
 
 // GetVizierInfo gets info about the given clusterID.
 func (c *Client) GetVizierInfo(ctx context.Context, clusterID string) (*VizierInfo, error) {
-	req := &cloudapipb.GetClusterRequest{
+	req := &cloudapipb.GetClusterInfoRequest{
 		ID: ProtoFromUUIDStrOrNil(clusterID),
 	}
-	res, err := c.cmClient.GetCluster(c.cloudCtxWithMD(ctx), req)
+	res, err := c.cmClient.GetClusterInfo(c.cloudCtxWithMD(ctx), req)
 	if err != nil {
 		return nil, err
 	}
@@ -112,11 +112,11 @@ func (c *Client) GetVizierInfo(ctx context.Context, clusterID string) (*VizierIn
 }
 
 // getConnectionInfo gets the connection info for a cluster using direct mode.
-func (c *Client) getConnectionInfo(ctx context.Context, clusterID string) (*cloudapipb.GetClusterConnectionResponse, error) {
-	req := &cloudapipb.GetClusterConnectionRequest{
+func (c *Client) getConnectionInfo(ctx context.Context, clusterID string) (*cloudapipb.GetClusterConnectionInfoResponse, error) {
+	req := &cloudapipb.GetClusterConnectionInfoRequest{
 		ID: ProtoFromUUIDStrOrNil(clusterID),
 	}
-	return c.cmClient.GetClusterConnection(c.cloudCtxWithMD(ctx), req)
+	return c.cmClient.GetClusterConnectionInfo(c.cloudCtxWithMD(ctx), req)
 }
 
 // VizierClient is the client for a single vizier.

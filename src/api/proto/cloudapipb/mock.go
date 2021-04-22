@@ -16,6 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package publiccloudapipb
+package cloudapipb
 
-//go:generate mockgen -source=cloudapi.pb.go -destination=mock/cloudapi_mock.gen.go OrganizationServiceServer
+//go:generate mockgen -source=cloudapi.pb.go -destination=mock/cloudapi_mock.gen.go OrganizationServiceServer,ArtifactTrackerServer,VizierClusterInfoServer,VizierDeploymentKeyManagerServer,ScriptMgrServer,AutocompleteServiceServer,APIKeyManagerServer

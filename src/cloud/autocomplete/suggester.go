@@ -31,8 +31,8 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/metadata"
 
+	"px.dev/pixie/src/api/proto/cloudapipb"
 	pl_vispb "px.dev/pixie/src/api/proto/vispb"
-	"px.dev/pixie/src/cloud/cloudapipb"
 	"px.dev/pixie/src/cloud/indexer/md"
 	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/pixie_cli/pkg/script"

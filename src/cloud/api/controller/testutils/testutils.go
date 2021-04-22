@@ -25,12 +25,11 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/viper"
 
-	mock_publiccloudapipb "px.dev/pixie/src/api/proto/cloudapipb/mock"
+	mock_cloudapipb "px.dev/pixie/src/api/proto/cloudapipb/mock"
 	"px.dev/pixie/src/cloud/api/apienv"
 	"px.dev/pixie/src/cloud/api/controller"
 	mock_artifacttrackerpb "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb/mock"
 	mock_auth "px.dev/pixie/src/cloud/auth/authpb/mock"
-	mock_cloudapipb "px.dev/pixie/src/cloud/cloudapipb/mock"
 	mock_profilepb "px.dev/pixie/src/cloud/profile/profilepb/mock"
 	mock_vzmgrpb "px.dev/pixie/src/cloud/vzmgr/vzmgrpb/mock"
 )
@@ -42,7 +41,7 @@ type MockCloudClients struct {
 	MockVizierDeployKey   *mock_cloudapipb.MockVizierDeploymentKeyManagerServer
 	MockScriptMgr         *mock_cloudapipb.MockScriptMgrServer
 	MockAutocomplete      *mock_cloudapipb.MockAutocompleteServiceServer
-	MockOrg               *mock_publiccloudapipb.MockOrganizationServiceServer
+	MockOrg               *mock_cloudapipb.MockOrganizationServiceServer
 	MockAPIKey            *mock_cloudapipb.MockAPIKeyManagerServer
 }
 
@@ -54,7 +53,7 @@ func CreateTestGraphQLEnv(t *testing.T) (controller.GraphQLEnv, *MockCloudClient
 	vds := mock_cloudapipb.NewMockVizierDeploymentKeyManagerServer(ctrl)
 	sms := mock_cloudapipb.NewMockScriptMgrServer(ctrl)
 	as := mock_cloudapipb.NewMockAutocompleteServiceServer(ctrl)
-	os := mock_publiccloudapipb.NewMockOrganizationServiceServer(ctrl)
+	os := mock_cloudapipb.NewMockOrganizationServiceServer(ctrl)
 	gqlEnv := controller.GraphQLEnv{
 		ArtifactTrackerServer: ats,
 		VizierClusterInfo:     vcs,

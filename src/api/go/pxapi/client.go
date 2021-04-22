@@ -62,7 +62,7 @@ type Client struct {
 	cloudAddr string
 
 	grpcConn *grpc.ClientConn
-	cmClient cloudapipb.ClusterManagerClient
+	cmClient cloudapipb.VizierClusterInfoClient
 	vizier   vizierapipb.VizierServiceClient
 }
 
@@ -94,7 +94,7 @@ func (c *Client) init(ctx context.Context) error {
 	}
 
 	c.grpcConn = conn
-	c.cmClient = cloudapipb.NewClusterManagerClient(conn)
+	c.cmClient = cloudapipb.NewVizierClusterInfoClient(conn)
 
 	c.vizier = vizierapipb.NewVizierServiceClient(conn)
 	return nil

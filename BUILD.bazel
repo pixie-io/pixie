@@ -44,7 +44,6 @@ gazelle(
 
 # TODO(zasgar): We should keep an eye on fixes to gazelle that make this automatic
 # Make gazelle resolve the proto paths correctly.
-# gazelle:resolve go px.dev/pixie/src/api/proto/cloudapipb //src/api/proto/cloudapipb:public_cloudapi_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/api/proto/uuidpb //src/api/proto/uuidpb:uuid_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/api/proto/vizierapipb //src/api/proto/vizierapipb:public_vizier_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/carnot/docspb //src/carnot/docspb:docs_pl_go_proto
@@ -58,7 +57,7 @@ gazelle(
 # gazelle:resolve go px.dev/pixie/src/carnot/carnotpb //src/carnot/carnotpb:carnot_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb //src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/cloud/auth/authpb //src/cloud/auth/authpb:auth_go_proto
-# gazelle:resolve go px.dev/pixie/src/cloud/cloudapipb //src/cloud/cloudapipb:cloudapi_pl_go_proto
+# gazelle:resolve go px.dev/pixie/src/api/proto/cloudapipb //src/api/proto/cloudapipb:cloudapi_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/cloud/project_manager/projectmanagerpb //src/cloud/project_manager/projectmanagerpb:service_go_proto
 # gazelle:resolve go px.dev/pixie/src/cloud/shared/messagespb //src/cloud/shared/messagespb:messages_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/cloud/vzconn/vzconnpb //src/cloud/vzconn/vzconnpb:service_pl_go_proto

@@ -32,17 +32,17 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	public_cloudapipb "px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudapipb"
 	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
 	"px.dev/pixie/src/cloud/auth/authpb"
 	"px.dev/pixie/src/cloud/autocomplete"
-	"px.dev/pixie/src/cloud/cloudapipb"
 	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/cloud/scriptmgr/scriptmgrpb"
 	"px.dev/pixie/src/cloud/vzmgr/vzmgrpb"
 	"px.dev/pixie/src/shared/artifacts/versionspb"
 	"px.dev/pixie/src/shared/cvmsgspb"
+	"px.dev/pixie/src/shared/k8s/metadatapb"
 	"px.dev/pixie/src/shared/services/authcontext"
 	srvutils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils"
@@ -238,6 +238,38 @@ func (v *VizierClusterInfo) GetClusterInfo(ctx context.Context, request *cloudap
 	return v.getClusterInfoForViziers(ctx, vzIDs)
 }
 
+func convertContainerState(cs metadatapb.ContainerState) cloudapipb.ContainerState {
+	switch cs {
+	case metadatapb.CONTAINER_STATE_RUNNING:
+		return cloudapipb.CONTAINER_STATE_RUNNING
+	case metadatapb.CONTAINER_STATE_TERMINATED:
+		return cloudapipb.CONTAINER_STATE_TERMINATED
+	case metadatapb.CONTAINER_STATE_WAITING:
+		return cloudapipb.CONTAINER_STATE_WAITING
+	case metadatapb.CONTAINER_STATE_UNKNOWN:
+		return cloudapipb.CONTAINER_STATE_UNKNOWN
+	default:
+		return cloudapipb.CONTAINER_STATE_UNKNOWN
+	}
+}
+
+func convertPodPhase(p metadatapb.PodPhase) cloudapipb.PodPhase {
+	switch p {
+	case metadatapb.PENDING:
+		return cloudapipb.PENDING
+	case metadatapb.RUNNING:
+		return cloudapipb.RUNNING
+	case metadatapb.SUCCEEDED:
+		return cloudapipb.SUCCEEDED
+	case metadatapb.FAILED:
+		return cloudapipb.FAILED
+	case metadatapb.PHASE_UNKNOWN:
+		return cloudapipb.PHASE_UNKNOWN
+	default:
+		return cloudapipb.PHASE_UNKNOWN
+	}
+}
+
 func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []*uuidpb.UUID) (*cloudapipb.GetClusterInfoResponse, error) {
 	resp := &cloudapipb.GetClusterInfoResponse{}
 
@@ -260,7 +292,7 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 			for _, container := range status.Containers {
 				containers = append(containers, &cloudapipb.ContainerStatus{
 					Name:      container.Name,
-					State:     container.State,
+					State:     convertContainerState(container.State),
 					Message:   container.Message,
 					Reason:    container.Reason,
 					CreatedAt: container.CreatedAt,
@@ -277,7 +309,7 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 
 			podStatuses[podName] = &cloudapipb.PodStatus{
 				Name:          status.Name,
-				Status:        status.Status,
+				Status:        convertPodPhase(status.Status),
 				StatusMessage: status.StatusMessage,
 				Reason:        status.Reason,
 				Containers:    containers,
@@ -362,91 +394,6 @@ func (v *VizierClusterInfo) UpdateClusterVizierConfig(ctx context.Context, req *
 	}
 
 	return &cloudapipb.UpdateClusterVizierConfigResponse{}, nil
-}
-
-// UpdateClusterConfig supports updates of config for a cluster
-func (v *VizierClusterInfo) UpdateClusterConfig(ctx context.Context, req *public_cloudapipb.UpdateClusterConfigRequest) (*public_cloudapipb.UpdateClusterConfigResponse, error) {
-	_, err := v.UpdateClusterVizierConfig(ctx, &cloudapipb.UpdateClusterVizierConfigRequest{
-		ID: req.ID,
-		ConfigUpdate: &cloudapipb.VizierConfigUpdate{
-			PassthroughEnabled: req.ConfigUpdate.PassthroughEnabled,
-			AutoUpdateEnabled:  req.ConfigUpdate.AutoUpdateEnabled,
-		},
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &public_cloudapipb.UpdateClusterConfigResponse{}, nil
-}
-
-func vizierStatusToPublicVizierStatus(s cloudapipb.ClusterStatus) public_cloudapipb.ClusterStatus {
-	switch s {
-	case cloudapipb.CS_HEALTHY:
-		return public_cloudapipb.CS_HEALTHY
-	case cloudapipb.CS_UNHEALTHY:
-		return public_cloudapipb.CS_UNHEALTHY
-	case cloudapipb.CS_DISCONNECTED:
-		return public_cloudapipb.CS_DISCONNECTED
-	case cloudapipb.CS_UPDATING:
-		return public_cloudapipb.CS_UPDATING
-	case cloudapipb.CS_CONNECTED:
-		return public_cloudapipb.CS_CONNECTED
-	case cloudapipb.CS_UPDATE_FAILED:
-		return public_cloudapipb.CS_UPDATE_FAILED
-	default:
-		return public_cloudapipb.CS_UNKNOWN
-	}
-}
-
-// GetCluster gets status info about the specified vizier.
-func (v *VizierClusterInfo) GetCluster(ctx context.Context, req *public_cloudapipb.GetClusterRequest) (*public_cloudapipb.GetClusterResponse, error) {
-	resp, err := v.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{
-		ID: req.ID,
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	clusters := make([]*public_cloudapipb.ClusterInfo, len(resp.Clusters))
-	for i, c := range resp.Clusters {
-		clusters[i] = &public_cloudapipb.ClusterInfo{
-			ID:              c.ID,
-			Status:          vizierStatusToPublicVizierStatus(c.Status),
-			LastHeartbeatNs: c.LastHeartbeatNs,
-			Config: &public_cloudapipb.ClusterConfig{
-				PassthroughEnabled: c.Config.PassthroughEnabled,
-				AutoUpdateEnabled:  c.Config.AutoUpdateEnabled,
-			},
-			ClusterName:          c.ClusterName,
-			ClusterVersion:       c.ClusterVersion,
-			VizierVersion:        c.VizierVersion,
-			NumNodes:             c.NumNodes,
-			NumInstrumentedNodes: c.NumInstrumentedNodes,
-		}
-	}
-
-	return &public_cloudapipb.GetClusterResponse{
-		Clusters: clusters,
-	}, nil
-}
-
-// GetClusterConnection is the public-facing call to get a cluster's connection info.
-func (v *VizierClusterInfo) GetClusterConnection(ctx context.Context, req *public_cloudapipb.GetClusterConnectionRequest) (*public_cloudapipb.GetClusterConnectionResponse, error) {
-	resp, err := v.GetClusterConnectionInfo(ctx, &cloudapipb.GetClusterConnectionInfoRequest{
-		ID: req.ID,
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &public_cloudapipb.GetClusterConnectionResponse{
-		IPAddress: resp.IPAddress,
-		Token:     resp.Token,
-	}, nil
 }
 
 // UpdateOrInstallCluster updates or installs the given vizier cluster to the specified version.
@@ -874,7 +821,7 @@ func (p *ProfileServer) GetOrgInfo(ctx context.Context, req *uuidpb.UUID) (*clou
 }
 
 // InviteUser creates and returns an invite link for the org for the specified user info.
-func (p *ProfileServer) InviteUser(ctx context.Context, externalReq *public_cloudapipb.InviteUserRequest) (*public_cloudapipb.InviteUserResponse, error) {
+func (p *ProfileServer) InviteUser(ctx context.Context, externalReq *cloudapipb.InviteUserRequest) (*cloudapipb.InviteUserResponse, error) {
 	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
@@ -902,7 +849,7 @@ func (p *ProfileServer) InviteUser(ctx context.Context, externalReq *public_clou
 		return nil, err
 	}
 
-	return &public_cloudapipb.InviteUserResponse{
+	return &cloudapipb.InviteUserResponse{
 		Email:      resp.Email,
 		InviteLink: resp.InviteLink,
 	}, nil

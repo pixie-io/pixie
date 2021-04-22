@@ -26,8 +26,8 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/graph-gophers/graphql-go/gqltesting"
 
+	"px.dev/pixie/src/api/proto/cloudapipb"
 	"px.dev/pixie/src/cloud/api/controller/testutils"
-	"px.dev/pixie/src/cloud/cloudapipb"
 	"px.dev/pixie/src/utils"
 )
 
@@ -221,7 +221,7 @@ func TestCreateDeploymentKey(t *testing.T) {
 						"id": "7ba7b810-9dad-11d1-80b4-00c04fd430c8",
 						"key": "foobar",
 						"createdAtMs": 1583776060001.2324,
-						"desc": "key description"				
+						"desc": "key description"
 					}
 				}
 			`,

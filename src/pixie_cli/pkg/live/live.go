@@ -34,7 +34,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/rivo/tview"
 
-	"px.dev/pixie/src/cloud/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudapipb"
 	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/pixie_cli/pkg/script"
 	"px.dev/pixie/src/pixie_cli/pkg/utils"

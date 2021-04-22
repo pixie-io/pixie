@@ -26,7 +26,7 @@ import (
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 
-	"px.dev/pixie/src/cloud/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudapipb"
 	"px.dev/pixie/src/pixie_cli/pkg/auth"
 	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/pixie_cli/pkg/script"

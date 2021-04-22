@@ -29,8 +29,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"px.dev/pixie/src/api/proto/cloudapipb"
 	"px.dev/pixie/src/cloud/autocomplete"
-	"px.dev/pixie/src/cloud/cloudapipb"
 	"px.dev/pixie/src/cloud/indexer/md"
 	"px.dev/pixie/src/utils/testingutils"
 )

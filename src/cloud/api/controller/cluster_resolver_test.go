@@ -28,10 +28,10 @@ import (
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/gqltesting"
 
+	"px.dev/pixie/src/api/proto/cloudapipb"
 	"px.dev/pixie/src/cloud/api/controller"
 	"px.dev/pixie/src/cloud/api/controller/schema"
 	"px.dev/pixie/src/cloud/api/controller/testutils"
-	"px.dev/pixie/src/cloud/cloudapipb"
 	"px.dev/pixie/src/shared/services/authcontext"
 	svcutils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils"

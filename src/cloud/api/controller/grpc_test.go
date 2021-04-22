@@ -30,7 +30,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	public_cloudapipb "px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudapipb"
 	"px.dev/pixie/src/api/proto/uuidpb"
 	pl_vispb "px.dev/pixie/src/api/proto/vispb"
 	"px.dev/pixie/src/cloud/api/controller"
@@ -39,7 +39,6 @@ import (
 	"px.dev/pixie/src/cloud/auth/authpb"
 	"px.dev/pixie/src/cloud/autocomplete"
 	mock_autocomplete "px.dev/pixie/src/cloud/autocomplete/mock"
-	"px.dev/pixie/src/cloud/cloudapipb"
 	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/cloud/scriptmgr/scriptmgrpb"
 	mock_scriptmgr "px.dev/pixie/src/cloud/scriptmgr/scriptmgrpb/mock"
@@ -121,7 +120,7 @@ func TestArtifactTracker_GetDownloadLink(t *testing.T) {
 	assert.Equal(t, "sha", resp.SHA256)
 }
 
-func TestVizierClusterInfo_GetClusterConnection(t *testing.T) {
+func TestVizierClusterInfo_GetClusterConnectionInfo(t *testing.T) {
 	clusterID := utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
 
 	ctrl := gomock.NewController(t)
@@ -140,7 +139,7 @@ func TestVizierClusterInfo_GetClusterConnection(t *testing.T) {
 		VzMgr: mockClients.MockVzMgr,
 	}
 
-	resp, err := vzClusterInfoServer.GetClusterConnection(ctx, &public_cloudapipb.GetClusterConnectionRequest{ID: clusterID})
+	resp, err := vzClusterInfoServer.GetClusterConnectionInfo(ctx, &cloudapipb.GetClusterConnectionInfoRequest{ID: clusterID})
 	require.NoError(t, err)
 	assert.Equal(t, "127.0.0.1", resp.IPAddress)
 	assert.Equal(t, "hello", resp.Token)
@@ -220,11 +219,11 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 	expectedPodStatuses := map[string]*cloudapipb.PodStatus{
 		"vizier-proxy": {
 			Name:   "vizier-proxy",
-			Status: metadatapb.RUNNING,
+			Status: cloudapipb.RUNNING,
 			Containers: []*cloudapipb.ContainerStatus{
 				{
 					Name:      "my-proxy-container",
-					State:     metadatapb.CONTAINER_STATE_RUNNING,
+					State:     cloudapipb.CONTAINER_STATE_RUNNING,
 					Message:   "container message",
 					Reason:    "container reason",
 					CreatedAt: &types.Timestamp{Seconds: 1561230620},
@@ -243,7 +242,7 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 		},
 		"vizier-query-broker": {
 			Name:      "vizier-query-broker",
-			Status:    metadatapb.RUNNING,
+			Status:    cloudapipb.RUNNING,
 			CreatedAt: nil,
 		},
 	}
@@ -1092,7 +1091,7 @@ func TestProfileServer_InviteUser(t *testing.T) {
 
 	profileServer := &controller.ProfileServer{mockClients.MockProfile}
 
-	resp, err := profileServer.InviteUser(ctx, &public_cloudapipb.InviteUserRequest{
+	resp, err := profileServer.InviteUser(ctx, &cloudapipb.InviteUserRequest{
 		Email:     "bobloblaw@lawblog.law",
 		FirstName: "bob",
 		LastName:  "loblaw",

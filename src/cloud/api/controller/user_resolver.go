@@ -24,7 +24,7 @@ import (
 
 	"github.com/graph-gophers/graphql-go"
 
-	public_cloudapipb "px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudapipb"
 	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/shared/services/authcontext"
 	"px.dev/pixie/src/utils"
@@ -191,7 +191,7 @@ type UserInviteResolver struct {
 func (q *QueryResolver) InviteUser(ctx context.Context, args *inviteUserArgs) (*UserInviteResolver, error) {
 	grpcAPI := q.Env.OrgServer
 
-	resp, err := grpcAPI.InviteUser(ctx, &public_cloudapipb.InviteUserRequest{
+	resp, err := grpcAPI.InviteUser(ctx, &cloudapipb.InviteUserRequest{
 		Email:     args.Email,
 		FirstName: args.FirstName,
 		LastName:  args.LastName,

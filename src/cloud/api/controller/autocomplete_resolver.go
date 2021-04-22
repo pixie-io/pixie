@@ -22,7 +22,7 @@ import (
 	"context"
 	"errors"
 
-	"px.dev/pixie/src/cloud/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudapipb"
 )
 
 var actionToProtoMap = map[string]cloudapipb.AutocompleteActionType{

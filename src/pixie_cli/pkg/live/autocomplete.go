@@ -29,7 +29,7 @@ import (
 	"github.com/rivo/tview"
 	"github.com/sahilm/fuzzy"
 
-	"px.dev/pixie/src/cloud/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudapipb"
 	"px.dev/pixie/src/pixie_cli/pkg/script"
 )
 

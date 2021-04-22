@@ -26,9 +26,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"px.dev/pixie/src/api/proto/cloudapipb"
 	"px.dev/pixie/src/cloud/autocomplete"
 	mock_autocomplete "px.dev/pixie/src/cloud/autocomplete/mock"
-	"px.dev/pixie/src/cloud/cloudapipb"
 )
 
 var orgID = uuid.Must(uuid.NewV4())
