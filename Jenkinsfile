@@ -993,7 +993,6 @@ def updateVersionsDB(String credsName, String clusterURL, String namespace) {
     }
   }
 }
-
 def  buildScriptForCLIRelease = {
   DefaultGCloudPodTemplate('root') {
     withCredentials([
@@ -1010,8 +1009,7 @@ def  buildScriptForCLIRelease = {
             container('pxbuild') {
               sh 'docker login -u pixielabs -p $DOCKER_TOKEN'
               sh './ci/cli_build_release.sh'
-              stashOnGCS('ci_scripts_signing', 'ci/**')
-              stashList.add('ci_scripts_signing')
+              stash name: 'ci_scripts_signing', includes: 'ci/**'
               stashOnGCS('versions', 'src/utils/artifacts/artifact_db_updater/VERSIONS.json')
               stashList.add('versions')
             }
@@ -1020,20 +1018,19 @@ def  buildScriptForCLIRelease = {
         stage('Sign Mac Binary') {
           node('macos') {
             deleteDir()
-            unstashFromGCS('ci_scripts_signing')
+            unstash 'ci_scripts_signing'
             withCredentials([string(credentialsId: 'pl_ac_passwd', variable: 'AC_PASSWD'),
               string(credentialsId: 'jenkins_keychain_pw', variable: 'JENKINSKEY')]) {
               sh './ci/cli_sign.sh'
               }
-            stashOnGCS('cli_darwin_amd64_signed', 'cli_darwin_amd64*')
-            stashList.add('cli_darwin_amd64_signed')
+            stash name: 'cli_darwin_amd64_signed', includes: 'cli_darwin_amd64*'
           }
         }
         stage('Upload Signed Binary') {
           node('macos') {
             WithSourceCodeFatalError {
               dockerStep('', devDockerImageExtrasWithTag) {
-                unstashFromGCS('cli_darwin_amd64_signed')
+                unstash 'cli_darwin_amd64_signed'
                 sh './ci/cli_upload_signed.sh'
               }
             }
