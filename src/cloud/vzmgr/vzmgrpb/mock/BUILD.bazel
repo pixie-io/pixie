@@ -22,7 +22,7 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/vzmgr/vzmgrpb/mock",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_go_proto",
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "@com_github_gogo_protobuf//types",

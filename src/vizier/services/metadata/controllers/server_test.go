@@ -39,7 +39,7 @@ import (
 	grpc_metadata "google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/test/bufconn"
 
-	"px.dev/pixie/src/api/public/uuidpb"
+	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/carnot/planner/distributedpb"
 	"px.dev/pixie/src/carnot/planner/dynamic_tracing/ir/logicalpb"
 	"px.dev/pixie/src/common/base/statuspb"

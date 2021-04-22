@@ -25,8 +25,8 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/api/ptproxy",
     visibility = ["//src:__subpackages__"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_go_proto",
-        "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
+        "//src/api/proto/vizierapipb:public_vizier_pl_go_proto",
         "//src/cloud/shared/vzshard",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/services/authcontext",
@@ -51,8 +51,8 @@ go_test(
     srcs = ["vizier_pt_proxy_test.go"],
     embed = [":ptproxy"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_go_proto",
-        "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
+        "//src/api/proto/vizierapipb:public_vizier_pl_go_proto",
         "//src/cloud/shared/vzshard",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/services/env",

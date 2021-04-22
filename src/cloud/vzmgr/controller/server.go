@@ -40,7 +40,7 @@ import (
 	"google.golang.org/grpc/status"
 	"gopkg.in/segmentio/analytics-go.v3"
 
-	"px.dev/pixie/src/api/public/uuidpb"
+	"px.dev/pixie/src/api/proto/uuidpb"
 	dnsmgr "px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
 	"px.dev/pixie/src/cloud/shared/messages"
 	"px.dev/pixie/src/cloud/shared/messagespb"

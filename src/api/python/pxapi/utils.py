@@ -16,7 +16,7 @@
 
 import uuid
 
-from src.api.public.uuidpb import uuid_pb2 as uuidpb
+from src.api.proto.uuidpb import uuid_pb2 as uuidpb
 
 
 def uuid_pb_from_string(id_str: str) -> uuidpb.UUID:

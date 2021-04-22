@@ -24,8 +24,8 @@ import (
 	"github.com/nats-io/nats.go"
 	"google.golang.org/grpc"
 
-	proto1 "px.dev/pixie/src/api/public/uuidpb"
-	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	proto1 "px.dev/pixie/src/api/proto/uuidpb"
+	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/services/authcontext"
 	jwt "px.dev/pixie/src/shared/services/jwtpb"

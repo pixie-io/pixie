@@ -28,7 +28,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"px.dev/pixie/src/api/public/uuidpb"
+	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/cloud/project_manager/datastore"
 	"px.dev/pixie/src/cloud/project_manager/projectmanagerpb"
 	"px.dev/pixie/src/utils"

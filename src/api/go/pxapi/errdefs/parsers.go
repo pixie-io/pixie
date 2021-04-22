@@ -23,7 +23,7 @@ import (
 
 	"google.golang.org/grpc/codes"
 
-	publicvizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	publicvizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
 )
 
 // ParseStatus parses the status field. Returns an error if exists.

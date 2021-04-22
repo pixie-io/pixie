@@ -30,7 +30,7 @@ import (
 	"google.golang.org/grpc"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
-	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/election"
 	"px.dev/pixie/src/shared/services/env"

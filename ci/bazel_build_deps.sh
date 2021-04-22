@@ -129,6 +129,8 @@ if [ "${all_targets}" = "false" ]; then
   for file in $(git diff --name-only "${commit_range}" ); do
     mapfile -t file_targets < <(bazel query --noshow_progress "$file" 2>/dev/null || true)
     for file_target in "${file_targets[@]}"; do
+      # TODO(vihang): This is subtly wrong. It doesn't handle changing the top level
+      # BUILD.bazel and also should be adding this special case to targets instead of rdeps.
       if [[ "$file_target" =~ (.*):BUILD.bazel ]]; then
         files+=("${BASH_REMATCH[1]}/...")
       else

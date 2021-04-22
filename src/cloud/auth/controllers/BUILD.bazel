@@ -29,7 +29,7 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/auth/controllers",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_go_proto",
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/cloud/auth/authenv",
         "//src/cloud/auth/authpb:auth_go_proto",
         "//src/cloud/profile/profilepb:service_go_proto",

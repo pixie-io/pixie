@@ -31,7 +31,7 @@ go_library(
     importpath = "px.dev/pixie/src/pixie_cli/pkg/vizier",
     visibility = ["//src:__subpackages__"],
     deps = [
-        "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
+        "//src/api/proto/vizierapipb:public_vizier_pl_go_proto",
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
         "//src/pixie_cli/pkg/auth",
         "//src/pixie_cli/pkg/components",
@@ -62,7 +62,7 @@ go_test(
     srcs = ["data_formatter_test.go"],
     embed = [":vizier"],
     deps = [
-        "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
+        "//src/api/proto/vizierapipb:public_vizier_pl_go_proto",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],

@@ -32,7 +32,7 @@ import (
 	"github.com/gofrs/uuid"
 	"google.golang.org/grpc"
 
-	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
 	"px.dev/pixie/src/cloud/cloudapipb"
 	"px.dev/pixie/src/pixie_cli/pkg/auth"
 	"px.dev/pixie/src/pixie_cli/pkg/script"

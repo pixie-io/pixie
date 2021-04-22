@@ -21,11 +21,11 @@ import asyncio
 from typing import AsyncGenerator, Awaitable, Callable, cast, \
     Dict, Generator, List, Literal, Union, Set
 
-from src.api.public.vizierapipb import vizierapi_pb2 as vpb
-from src.api.public.vizierapipb import vizierapi_pb2_grpc
+from src.api.proto.vizierapipb import vizierapi_pb2 as vpb
+from src.api.proto.vizierapipb import vizierapi_pb2_grpc
 
-from src.api.public.cloudapipb import cloudapi_pb2 as cpb
-from src.api.public.cloudapipb import cloudapi_pb2_grpc
+from src.api.proto.cloudapipb import cloudapi_pb2 as cpb
+from src.api.proto.cloudapipb import cloudapi_pb2_grpc
 
 from .data import (
     _TableStream,

@@ -18,13 +18,12 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "mock",
-    srcs = ["vizier_mock.gen.go"],
-    importpath = "px.dev/pixie/src/api/public/vizierapipb/mock",
-    visibility = ["//src:__subpackages__"],
+    srcs = ["cloudapi_mock.gen.go"],
+    importpath = "px.dev/pixie/src/api/proto/cloudapipb/mock",
+    visibility = ["//visibility:public"],
     deps = [
-        "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
+        "//src/api/proto/cloudapipb:public_cloudapi_pl_go_proto",
         "@com_github_golang_mock//gomock",
         "@org_golang_google_grpc//:go_default_library",
-        "@org_golang_google_grpc//metadata",
     ],
 )

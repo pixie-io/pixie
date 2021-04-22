@@ -25,7 +25,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/viper"
 
-	mock_publiccloudapipb "px.dev/pixie/src/api/public/cloudapipb/mock"
+	mock_publiccloudapipb "px.dev/pixie/src/api/proto/cloudapipb/mock"
 	"px.dev/pixie/src/cloud/api/apienv"
 	"px.dev/pixie/src/cloud/api/controller"
 	mock_artifacttrackerpb "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb/mock"

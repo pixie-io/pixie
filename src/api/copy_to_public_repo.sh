@@ -187,7 +187,7 @@ function main() {
 
   copy_go_runfiles "src/api/go" "${API_DIR}"
   copy_go_runfiles "src/api/go_examples" "${API_DIR}"
-  copy_go_runfiles "src/api/public" "${API_DIR}"
+  copy_go_runfiles "src/api/proto" "${API_DIR}"
   copy_go_runfiles "src/api/python_examples" "${API_DIR}"
 
   # -- begin loading prepend_licenses ---

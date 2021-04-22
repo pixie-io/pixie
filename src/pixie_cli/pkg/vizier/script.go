@@ -30,7 +30,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"gopkg.in/segmentio/analytics-go.v3"
 
-	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
 	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
 	"px.dev/pixie/src/pixie_cli/pkg/pxconfig"
 	"px.dev/pixie/src/pixie_cli/pkg/script"

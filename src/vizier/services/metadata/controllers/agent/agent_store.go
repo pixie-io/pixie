@@ -31,7 +31,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	log "github.com/sirupsen/logrus"
 
-	"px.dev/pixie/src/api/public/uuidpb"
+	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/shared/k8s"
 	"px.dev/pixie/src/shared/k8s/metadatapb"
 	types "px.dev/pixie/src/shared/types/gotypes"

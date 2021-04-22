@@ -22,7 +22,7 @@ pl_proto_library(
     srcs = ["agent.proto"],
     visibility = ["//src/vizier:__subpackages__"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_proto",
+        "//src/api/proto/uuidpb:uuid_pl_proto",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
     ],
 )
@@ -32,7 +32,7 @@ pl_cc_proto_library(
     proto = ":agent_pl_proto",
     visibility = ["//src/vizier:__subpackages__"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_cc_proto",
+        "//src/api/proto/uuidpb:uuid_pl_cc_proto",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
     ],
 )
@@ -43,6 +43,6 @@ pl_go_proto_library(
     proto = ":agent_pl_proto",
     visibility = ["//src/vizier:__subpackages__"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_go_proto",
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
     ],
 )

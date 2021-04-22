@@ -24,7 +24,7 @@ import (
 
 	"github.com/gofrs/uuid"
 
-	pb "px.dev/pixie/src/api/public/uuidpb"
+	pb "px.dev/pixie/src/api/proto/uuidpb"
 )
 
 var enc = binary.BigEndian

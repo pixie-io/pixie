@@ -26,7 +26,7 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
-import "src/api/public/uuidpb/uuid.proto";
+import "src/api/proto/uuidpb/uuid.proto";
 import "src/shared/k8s/metadatapb/metadata.proto";
 import "src/shared/vispb/vis.proto";
 

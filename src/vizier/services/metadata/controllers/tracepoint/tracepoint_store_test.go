@@ -30,7 +30,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"px.dev/pixie/src/api/public/uuidpb"
+	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/common/base/statuspb"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/vizier/services/metadata/storepb"

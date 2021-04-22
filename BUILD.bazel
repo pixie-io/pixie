@@ -42,9 +42,9 @@ gazelle(
 
 # TODO(zasgar): We should keep an eye on fixes to gazelle that make this automatic
 # Make gazelle resolve the proto paths correctly.
-# gazelle:resolve go px.dev/pixie/src/api/public/cloudapipb //src/api/public/cloudapipb:public_cloudapi_pl_go_proto
-# gazelle:resolve go px.dev/pixie/src/api/public/uuidpb //src/api/public/uuidpb:uuid_pl_go_proto
-# gazelle:resolve go px.dev/pixie/src/api/public/vizierapipb //src/api/public/vizierapipb:public_vizier_pl_go_proto
+# gazelle:resolve go px.dev/pixie/src/api/proto/cloudapipb //src/api/proto/cloudapipb:public_cloudapi_pl_go_proto
+# gazelle:resolve go px.dev/pixie/src/api/proto/uuidpb //src/api/proto/uuidpb:uuid_pl_go_proto
+# gazelle:resolve go px.dev/pixie/src/api/proto/vizierapipb //src/api/proto/vizierapipb:public_vizier_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/carnot/docspb //src/carnot/docspb:docs_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/carnot/planner/compilerpb //src/carnot/planner/compilerpb:compiler_status_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/carnot/planner/distributedpb //src/carnot/planner/distributedpb:distributed_plan_pl_go_proto

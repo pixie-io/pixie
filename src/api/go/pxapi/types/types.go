@@ -25,7 +25,7 @@ import (
 
 	"github.com/gofrs/uuid"
 
-	vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
 )
 
 // DataType referes to the underlying Pixie datatype.

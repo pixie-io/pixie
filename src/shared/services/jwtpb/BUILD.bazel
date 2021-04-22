@@ -24,7 +24,7 @@ proto_library(
     srcs = ["jwt.proto"],
     visibility = ["//src:__subpackages__"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_proto",
+        "//src/api/proto/uuidpb:uuid_pl_proto",
         "@gogo_special_proto//github.com/gogo/protobuf/gogoproto",
     ],
 )
@@ -36,7 +36,7 @@ go_proto_library(
     proto = ":jwt_proto",
     visibility = ["//src:__subpackages__"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_go_proto",
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "@com_github_gogo_protobuf//gogoproto:go_default_library",
     ],
 )

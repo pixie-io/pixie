@@ -28,7 +28,7 @@ import (
 	"github.com/graph-gophers/graphql-go/gqltesting"
 	"github.com/stretchr/testify/assert"
 
-	public_cloudapipb "px.dev/pixie/src/api/public/cloudapipb"
+	public_cloudapipb "px.dev/pixie/src/api/proto/cloudapipb"
 	"px.dev/pixie/src/cloud/api/controller"
 	gqltestutils "px.dev/pixie/src/cloud/api/controller/testutils"
 	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
@@ -199,7 +199,7 @@ func TestUserSettingsResolver_InviteUser(t *testing.T) {
 			Context: ctx,
 			Query: `
 				mutation {
-					InviteUser(email: "test@test.com", firstName: "Tester", lastName: "Person" ) { 
+					InviteUser(email: "test@test.com", firstName: "Tester", lastName: "Person" ) {
 						email
 						inviteLink
 					}

@@ -22,7 +22,7 @@ go_library(
     importpath = "px.dev/pixie/src/vizier/services/query_broker/ptproxy",
     visibility = ["//src/vizier:__subpackages__"],
     deps = [
-        "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
+        "//src/api/proto/vizierapipb:public_vizier_pl_go_proto",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/utils/pbutils",
         "@com_github_gogo_protobuf//proto",
@@ -39,7 +39,7 @@ go_test(
     srcs = ["pt_proxy_test.go"],
     embed = [":ptproxy"],
     deps = [
-        "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
+        "//src/api/proto/vizierapipb:public_vizier_pl_go_proto",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/utils/pbutils",
         "//src/utils/testingutils",

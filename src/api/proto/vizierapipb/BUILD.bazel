@@ -14,41 +14,47 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("//bazel:grpc_web.bzl", "pl_grpc_web_library")
+
 # gazelle:ignore
-
-load("//bazel:proto_compile.bzl", "pl_go_proto_library", "pl_proto_library", "pl_py_grpc_library")
-
-package(default_visibility = ["//src:__subpackages__"])
+load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library", "pl_py_grpc_library")
 
 pl_proto_library(
-    name = "cloudapi_pl_proto",
-    srcs = ["cloudapi.proto"],
+    name = "vizier_pl_proto",
+    srcs = ["vizierapi.proto"],
     visibility = ["//src:__subpackages__"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_proto",
-        "@gogo_special_proto//github.com/gogo/protobuf/gogoproto",
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
+    ],
+)
+
+pl_cc_proto_library(
+    name = "vizier_pl_cc_proto",
+    proto = ":vizier_pl_proto",
+    visibility = ["//src:__subpackages__"],
+    deps = [
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
     ],
 )
 
 pl_go_proto_library(
-    name = "public_cloudapi_pl_go_proto",
-    importpath = "px.dev/pixie/src/api/public/cloudapipb",
-    proto = ":cloudapi_pl_proto",
+    name = "public_vizier_pl_go_proto",
+    importpath = "px.dev/pixie/src/api/proto/vizierapipb",
+    proto = ":vizier_pl_proto",
     visibility = ["//src:__subpackages__"],
-    deps = [
-        "//src/api/public/uuidpb:uuid_pl_go_proto",
-        "@com_github_gogo_protobuf//gogoproto:go_default_library",
-    ],
+)
+
+pl_grpc_web_library(
+    name = "vizier_pl_grpc_web_proto",
+    proto = ":vizier_pl_proto",
+    visibility = ["//src:__subpackages__"],
 )
 
 pl_py_grpc_library(
-    name = "cloudapi_pl_py_grpc",
-    imports = ["../../../../"],
-    proto = ":cloudapi_pl_proto",
+    name = "vizier_pl_py_grpc",
+    imports = ["../../../"],
+    proto = ":vizier_pl_proto",
     visibility = ["//src:__subpackages__"],
-    deps = [
-        "//src/api/public/uuidpb:uuid_pl_py_proto",
-    ],
 )
 
 filegroup(

@@ -23,7 +23,7 @@ package px.vizier.services.query_broker.querybrokerpb;
 option go_package = "querybrokerpb";
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-import "src/api/public/uuidpb/uuid.proto";
+import "src/api/proto/uuidpb/uuid.proto";
 import "src/carnot/queryresultspb/query_results.proto";
 import "src/common/base/statuspb/status.proto";
 import "src/table_store/schemapb/schema.proto";

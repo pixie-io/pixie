@@ -32,7 +32,7 @@ core.workflow(
         [
             "src/api/go/pxapi/**",
             "src/api/go/pxapi/examples/**",
-            "src/api/public/**",
+            "src/api/proto/**",
         ],
         exclude = ["**/private/**", "*_private.*"],
     ),
@@ -40,9 +40,9 @@ core.workflow(
     authoring = authoring.pass_thru("Copybara <copybara@pixielabs.ai>"),
     mode = "ITERATIVE",
     transformations = [
-        core.replace("px.dev/pixie/src/api/public", "px.dev/pxapi/pxpb", paths = glob(["**/*.go", "**/BUILD.bazel"])),
+        core.replace("px.dev/pixie/src/api/proto", "px.dev/pxapi/proto", paths = glob(["**/*.go", "**/BUILD.bazel"])),
         core.replace("px.dev/pixie/src/api/go/pxapi", "px.dev/pxapi", paths = glob(["**/*.go", "**/BUILD.bazel"])),
-        core.move("src/api/public", "pxpb"),
+        core.move("src/api/proto", "proto"),
         core.move("src/api/go/pxapi", ""),
         core.move("go.mod.tmpl", "go.mod"),
         core.move("go.sum.tmpl", "go.sum"),

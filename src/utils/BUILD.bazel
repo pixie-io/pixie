@@ -27,7 +27,7 @@ go_library(
     importpath = "px.dev/pixie/src/utils",
     visibility = ["//src:__subpackages__"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_go_proto",
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_sirupsen_logrus//:logrus",
     ],
@@ -38,7 +38,7 @@ go_test(
     srcs = ["uuid_test.go"],
     embed = [":utils"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_go_proto",
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",

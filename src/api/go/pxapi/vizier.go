@@ -22,8 +22,8 @@ import (
 	"context"
 
 	"px.dev/pixie/src/api/go/pxapi/errdefs"
-	cloudapipb "px.dev/pixie/src/api/public/cloudapipb"
-	vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	cloudapipb "px.dev/pixie/src/api/proto/cloudapipb"
+	vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
 )
 
 // VizierStatus stores the enumeration of all vizier statuses.

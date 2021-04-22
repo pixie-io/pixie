@@ -23,7 +23,7 @@ go_library(
     srcs = ["main.go"],
     importpath = "px.dev/pixie/src/carnot/plandebugger",
     deps = [
-        "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
+        "//src/api/proto/vizierapipb:public_vizier_pl_go_proto",
         "//src/carnot/goplanner:go_default_library",
         "//src/carnot/planner/compilerpb:compiler_status_pl_go_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",

@@ -1,4 +1,4 @@
-// source: src/api/public/vizierapipb/vizierapi.proto
+// source: src/api/proto/vizierapipb/vizierapi.proto
 /**
  * @fileoverview
  * @enhanceable

@@ -30,8 +30,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	public_cloudapipb "px.dev/pixie/src/api/public/cloudapipb"
-	"px.dev/pixie/src/api/public/uuidpb"
+	public_cloudapipb "px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/cloud/api/controller"
 	"px.dev/pixie/src/cloud/api/controller/testutils"
 	"px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"

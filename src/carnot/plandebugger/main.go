@@ -28,7 +28,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	log "github.com/sirupsen/logrus"
 
-	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
 	"px.dev/pixie/src/carnot/goplanner"
 	"px.dev/pixie/src/carnot/planner/compilerpb"
 	"px.dev/pixie/src/carnot/planner/distributedpb"

@@ -42,7 +42,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"px.dev/pixie/src/api/public/uuidpb"
+	"px.dev/pixie/src/api/proto/uuidpb"
 	dnsmgrpb "px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
 	mock_dnsmgrpb "px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb/mock"
 	"px.dev/pixie/src/cloud/shared/messagespb"

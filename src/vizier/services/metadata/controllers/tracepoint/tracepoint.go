@@ -28,7 +28,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	log "github.com/sirupsen/logrus"
 
-	"px.dev/pixie/src/api/public/uuidpb"
+	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/carnot/planner/dynamic_tracing/ir/logicalpb"
 	"px.dev/pixie/src/common/base/statuspb"
 	"px.dev/pixie/src/utils"

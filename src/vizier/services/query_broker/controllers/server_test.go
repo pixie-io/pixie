@@ -30,8 +30,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
-	mock_public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb/mock"
+	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
+	mock_public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb/mock"
 	"px.dev/pixie/src/carnot/carnotpb"
 	mock_carnotpb "px.dev/pixie/src/carnot/carnotpb/mock"
 	"px.dev/pixie/src/carnot/planner/distributedpb"

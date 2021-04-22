@@ -22,7 +22,7 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/cloudapipb/mock",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_go_proto",
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
         "@com_github_gogo_protobuf//types",
         "@com_github_golang_mock//gomock",

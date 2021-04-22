@@ -42,7 +42,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
-	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
 	"px.dev/pixie/src/cloud/vzconn/vzconnpb"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/utils"

@@ -36,8 +36,8 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
-import "src/api/public/uuidpb/uuid.proto";
-import "src/api/public/vizierapipb/vizierapi.proto";
+import "src/api/proto/uuidpb/uuid.proto";
+import "src/api/proto/vizierapipb/vizierapi.proto";
 import "src/shared/k8s/metadatapb/metadata.proto";
 import "src/vizier/vizierpb/vizier.proto";
 

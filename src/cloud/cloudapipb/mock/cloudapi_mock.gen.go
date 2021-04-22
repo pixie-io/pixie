@@ -11,7 +11,7 @@ import (
 	types "github.com/gogo/protobuf/types"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
-	uuidpb "px.dev/pixie/src/api/public/uuidpb"
+	uuidpb "px.dev/pixie/src/api/proto/uuidpb"
 	cloudapipb "px.dev/pixie/src/cloud/cloudapipb"
 )
 

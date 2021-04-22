@@ -44,7 +44,7 @@ go_test(
     ],
     embed = [":tracker"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_go_proto",
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
         "//src/shared/bloomfilterpb:bloomfilter_pl_go_proto",
         "//src/shared/metadatapb:metadata_pl_go_proto",

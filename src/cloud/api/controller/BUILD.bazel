@@ -37,8 +37,8 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/api/controller",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
-        "//src/api/public/cloudapipb:public_cloudapi_pl_go_proto",
-        "//src/api/public/uuidpb:uuid_pl_go_proto",
+        "//src/api/proto/cloudapipb:public_cloudapi_pl_go_proto",
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/cloud/api/apienv",
         "//src/cloud/api/controller/schema",
         "//src/cloud/api/controller/unauthenticated_schema",
@@ -93,8 +93,8 @@ go_test(
     ],
     embed = [":controller"],
     deps = [
-        "//src/api/public/cloudapipb:public_cloudapi_pl_go_proto",
-        "//src/api/public/uuidpb:uuid_pl_go_proto",
+        "//src/api/proto/cloudapipb:public_cloudapi_pl_go_proto",
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/cloud/api/apienv",
         "//src/cloud/api/controller/schema",
         "//src/cloud/api/controller/testutils",

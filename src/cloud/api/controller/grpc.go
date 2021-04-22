@@ -32,8 +32,8 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	public_cloudapipb "px.dev/pixie/src/api/public/cloudapipb"
-	"px.dev/pixie/src/api/public/uuidpb"
+	public_cloudapipb "px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
 	"px.dev/pixie/src/cloud/auth/authpb"
 	"px.dev/pixie/src/cloud/autocomplete"

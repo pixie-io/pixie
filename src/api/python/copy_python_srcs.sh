@@ -23,9 +23,9 @@ function replace_pb_paths() {
   PROTO_NAMESPACE="pxapi"
   for file in "$@"; do
     sed -i \
-      -e "s/^from src.api.public.cloudapipb/from ${PROTO_NAMESPACE}.cloudapipb/g" \
-      -e "s/^from src.api.public.vizierapipb/from ${PROTO_NAMESPACE}.vizierapipb/g" \
-      -e "s/^from src.api.public.uuidpb/from ${PROTO_NAMESPACE}.uuidpb/g" \
+      -e "s/^from src.api.proto.cloudapipb/from ${PROTO_NAMESPACE}.cloudapipb/g" \
+      -e "s/^from src.api.proto.vizierapipb/from ${PROTO_NAMESPACE}.vizierapipb/g" \
+      -e "s/^from src.api.proto.uuidpb/from ${PROTO_NAMESPACE}.uuidpb/g" \
       "${file}"
   done
 }

@@ -33,7 +33,7 @@ pl_cc_proto_library(
 
 pl_go_proto_library(
     name = "uuid_pl_go_proto",
-    importpath = "px.dev/pixie/src/api/public/uuidpb",
+    importpath = "px.dev/pixie/src/api/proto/uuidpb",
     proto = ":uuid_pl_proto",
     visibility = ["//src:__subpackages__"],
 )

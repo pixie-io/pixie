@@ -27,7 +27,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"golang.org/x/sync/errgroup"
 
-	"px.dev/pixie/src/api/public/uuidpb"
+	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/vizier/services/metadata/storepb"
 	"px.dev/pixie/src/vizier/utils/datastore"

@@ -32,7 +32,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
 	"px.dev/pixie/src/carnot/carnotpb"
 	"px.dev/pixie/src/carnot/goplanner"
 	"px.dev/pixie/src/carnot/planner/distributedpb"

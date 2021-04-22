@@ -29,7 +29,7 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/vzmgr/controller",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_go_proto",
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
         "//src/cloud/dnsmgr/dnsmgrpb:service_go_proto",
         "//src/cloud/shared/messages",
@@ -73,7 +73,7 @@ go_test(
     ],
     embed = [":controller"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_go_proto",
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
         "//src/cloud/artifact_tracker/artifacttrackerpb/mock",
         "//src/cloud/dnsmgr/dnsmgrpb:service_go_proto",

@@ -29,7 +29,7 @@ import (
 
 	"github.com/fatih/color"
 
-	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
 )
 
 // For p50, p99, etc.

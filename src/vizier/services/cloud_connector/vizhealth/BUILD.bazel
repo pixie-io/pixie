@@ -22,7 +22,7 @@ go_library(
     importpath = "px.dev/pixie/src/vizier/services/cloud_connector/vizhealth",
     visibility = ["//src/vizier:__subpackages__"],
     deps = [
-        "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
+        "//src/api/proto/vizierapipb:public_vizier_pl_go_proto",
         "//src/shared/services/utils",
         "@com_github_sirupsen_logrus//:logrus",
         "@org_golang_google_grpc//metadata",

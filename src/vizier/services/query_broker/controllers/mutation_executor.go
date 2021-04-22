@@ -27,8 +27,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 
-	"px.dev/pixie/src/api/public/uuidpb"
-	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	"px.dev/pixie/src/api/proto/uuidpb"
+	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
 	"px.dev/pixie/src/carnot/planner/distributedpb"
 	"px.dev/pixie/src/carnot/planner/plannerpb"
 	"px.dev/pixie/src/carnot/planpb"

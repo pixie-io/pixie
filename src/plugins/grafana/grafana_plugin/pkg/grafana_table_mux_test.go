@@ -27,7 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"px.dev/pixie/src/api/go/pxapi/types"
-	vizierpb "px.dev/pixie/src/api/public/vizierapipb"
+	vizierpb "px.dev/pixie/src/api/proto/vizierapipb"
 )
 
 func makeTableMetadata(schemaTypes ...types.DataType) *types.TableMetadata {

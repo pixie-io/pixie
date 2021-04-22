@@ -35,7 +35,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/status"
 
-	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
 	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
 )

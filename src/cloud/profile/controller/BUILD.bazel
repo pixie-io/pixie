@@ -26,7 +26,7 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/profile/controller",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_go_proto",
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/cloud/profile/controller/idmanager",
         "//src/cloud/profile/datastore",
         "//src/cloud/profile/profileenv",
@@ -49,7 +49,7 @@ go_test(
         "manual",
     ],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_go_proto",
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/cloud/profile/controller/mock",
         "//src/cloud/profile/datastore",
         "//src/cloud/profile/profileenv",

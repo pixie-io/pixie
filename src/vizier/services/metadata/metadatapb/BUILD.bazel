@@ -22,7 +22,7 @@ pl_proto_library(
     srcs = ["service.proto"],
     visibility = ["//src/vizier:__subpackages__"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_proto",
+        "//src/api/proto/uuidpb:uuid_pl_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_proto",
         "//src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_proto",
         "//src/common/base/statuspb:status_pl_proto",
@@ -39,7 +39,7 @@ pl_cc_proto_library(
     proto = ":service_pl_proto",
     visibility = ["//src/vizier:__subpackages__"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_cc_proto",
+        "//src/api/proto/uuidpb:uuid_pl_cc_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_cc_proto",
         "//src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_cc_proto",
         "//src/common/base/statuspb:status_pl_cc_proto",
@@ -57,7 +57,7 @@ pl_go_proto_library(
     proto = ":service_pl_proto",
     visibility = ["//src/vizier:__subpackages__"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_go_proto",
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
         "//src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_go_proto",
         "//src/common/base/statuspb:status_pl_go_proto",

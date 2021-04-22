@@ -31,7 +31,7 @@
 #include <grpcpp/server.h>
 #include <gtest/gtest.h>
 
-#include "src/api/public/uuidpb/uuid.pb.h"
+#include "src/api/proto/uuidpb/uuid.pb.h"
 #include "src/carnot/exec/exec_node_mock.h"
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/exec/grpc_source_node.h"

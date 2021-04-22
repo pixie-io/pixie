@@ -106,17 +106,17 @@ function prepare_python_src() {
   echo "$(date) : === Preparing protos in dir: ${TMPDIR}"
   # vizierapipb subpackage setup.
   cp -LR \
-    "bazel-bin/${TOOLPATH}.runfiles/pl/src/api/public/vizierapipb" \
+    "bazel-bin/${TOOLPATH}.runfiles/pl/src/api/proto/vizierapipb" \
     "${PIXIEPKG}/vizierapipb"
 
   # cloudapipb subpackage setup.
   cp -LR \
-    "bazel-bin/${TOOLPATH}.runfiles/pl/src/api/public/cloudapipb" \
+    "bazel-bin/${TOOLPATH}.runfiles/pl/src/api/proto/cloudapipb" \
     "${PIXIEPKG}/cloudapipb"
 
   # uuidpb subpackage setup.
   cp -LR \
-    "bazel-bin/${TOOLPATH}.runfiles/pl/src/api/public/uuidpb" \
+    "bazel-bin/${TOOLPATH}.runfiles/pl/src/api/proto/uuidpb" \
     "${PIXIEPKG}/uuidpb"
 
   # Each subpackage needs an __init__.py to be discovered by setuptools.

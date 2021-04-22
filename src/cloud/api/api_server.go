@@ -33,8 +33,8 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	public_cloudapipb "px.dev/pixie/src/api/public/cloudapipb"
-	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	public_cloudapipb "px.dev/pixie/src/api/proto/cloudapipb"
+	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
 	"px.dev/pixie/src/cloud/api/apienv"
 	"px.dev/pixie/src/cloud/api/controller"
 	"px.dev/pixie/src/cloud/api/ptproxy"

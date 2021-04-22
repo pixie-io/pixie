@@ -32,7 +32,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"px.dev/pixie/src/api/public/uuidpb"
+	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/cloud/profile/controller"
 	mock_controller "px.dev/pixie/src/cloud/profile/controller/mock"
 	"px.dev/pixie/src/cloud/profile/datastore"

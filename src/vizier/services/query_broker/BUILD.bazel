@@ -24,7 +24,7 @@ go_library(
     importpath = "px.dev/pixie/src/vizier/services/query_broker",
     visibility = ["//visibility:private"],
     deps = [
-        "//src/api/public/vizierapipb:public_vizier_pl_go_proto",
+        "//src/api/proto/vizierapipb:public_vizier_pl_go_proto",
         "//src/carnot/carnotpb:carnot_pl_go_proto",
         "//src/shared/services",
         "//src/shared/services/healthz",

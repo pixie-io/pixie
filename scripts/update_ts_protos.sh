@@ -78,7 +78,7 @@ function update_all_build_labels() {
   # However, vizier_pl_grpc_web_proto exists in both internal and public dirs, which would cause a clash.
   # We only need the public one for TypeScript, and only two specific files.
   # The internal one that we're skipping is "//src/vizier/vizierpb:vizier_pl_grpc_web_proto"
-  update_one_build_label "//src/api/public/vizierapipb:vizier_pl_grpc_web_proto"
+  update_one_build_label "//src/api/proto/vizierapipb:vizier_pl_grpc_web_proto"
   update_one_build_label "//src/shared/vispb:vis_pl_grpc_web_proto"
 }
 

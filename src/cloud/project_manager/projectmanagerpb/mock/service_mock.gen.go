@@ -10,7 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
-	uuidpb "px.dev/pixie/src/api/public/uuidpb"
+	uuidpb "px.dev/pixie/src/api/proto/uuidpb"
 	projectmanagerpb "px.dev/pixie/src/cloud/project_manager/projectmanagerpb"
 )
 

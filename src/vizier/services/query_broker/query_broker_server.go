@@ -32,7 +32,7 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 
-	public_vizierapipb "px.dev/pixie/src/api/public/vizierapipb"
+	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
 	"px.dev/pixie/src/carnot/carnotpb"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/healthz"

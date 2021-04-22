@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"px.dev/pixie/src/api/public/uuidpb"
+	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/carnot/planner/distributedpb"
 	"px.dev/pixie/src/shared/bloomfilterpb"
 	sharedmetadatapb "px.dev/pixie/src/shared/metadatapb"

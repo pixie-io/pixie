@@ -26,7 +26,7 @@ go_library(
     importpath = "px.dev/pixie/src/vizier/services/metadata/controllers/tracepoint",
     visibility = ["//src/vizier:__subpackages__"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_go_proto",
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_go_proto",
         "//src/common/base/statuspb:status_pl_go_proto",
         "//src/utils",
@@ -48,7 +48,7 @@ go_test(
     ],
     embed = [":tracepoint"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_go_proto",
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/carnot/planner/dynamic_tracing/ir/logicalpb:logical_pl_go_proto",
         "//src/common/base/statuspb:status_pl_go_proto",
         "//src/utils",

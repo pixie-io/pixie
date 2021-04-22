@@ -26,7 +26,7 @@ go_library(
     importpath = "px.dev/pixie/src/vizier/services/metadata/controllers/agent",
     visibility = ["//src/vizier:__subpackages__"],
     deps = [
-        "//src/api/public/uuidpb:uuid_pl_go_proto",
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/shared/k8s",
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
         "//src/shared/types/gotypes",
