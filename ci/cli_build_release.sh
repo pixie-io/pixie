@@ -31,12 +31,16 @@ versions_file="${repo_path}/src/utils/artifacts/artifact_db_updater/VERSIONS.jso
 
 echo "The release tag is: ${release_tag}"
 linux_binary=bazel-bin/src/pixie_cli/px_/px
+darwin_package=bazel-bin/src/pixie_cli/px_darwin_pkg.tar
 docker_repo="pixielabs/px"
 
 bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
       --repo_path "${repo_path}" --artifact_name cli --versions_file "${versions_file}"
 
-bazel build -c opt --build_event_text_file=/tmp/darwin_build --stamp //src/pixie_cli:px_darwin
+# We write the darwin binary to a tar, because normal cross-compilation of the :px_darwin
+# binary does not write it to a bazel-bin location with a determinable path.
+bazel build -c opt --stamp //src/pixie_cli:px_darwin_pkg
+tar -xvf ${darwin_package}
 
 bazel build -c opt --stamp //src/pixie_cli:px
 
@@ -94,7 +98,7 @@ fi
 
 write_artifacts_to_gcs() {
     output_path=$1
-    mac_binary=$(grep -oP -m 1 '(?<=px\/).*px_darwin(?=\")' /tmp/darwin_build)
+    mac_binary="px_darwin"
     copy_artifact_to_gcs "$output_path" "$mac_binary" "cli_darwin_amd64_unsigned"
     copy_artifact_to_gcs "$output_path" "$linux_binary" "cli_linux_amd64"
 
