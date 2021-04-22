@@ -33,20 +33,8 @@ import (
 	"px.dev/pixie/src/api/go/pxapi"
 )
 
-// Define hardcoded PxL script.
-// TODO(vjain, PC-830): Get Pxl script from frontend instead of
-// hardcoding.
+// Define keys to retrieve configs passed from UI.
 const (
-	pxl = `
-import px
-df = px.DataFrame(table='process_stats', start_time='-1m')
-val = px.uint128("0000000c-0017-3ec0-0000-00001166ba10")
-df = df[df.upid == val]
-dfOne = df['time_','rss_bytes', 'vsize_bytes'].head(10)
-dfTwo = df['time_','major_faults'].head(10)
-px.display(dfOne)
-px.display(dfTwo)
-`
 	apiKeyStr       = "apiKey"
 	clusterIDKeyStr = "clusterId"
 )
@@ -97,7 +85,7 @@ func (td *PixieDatasource) QueryData(ctx context.Context, req *backend.QueryData
 }
 
 type queryModel struct {
-	Format string `json:"format"`
+	QueryText string `json:"queryText"`
 }
 
 func (td *PixieDatasource) query(ctx context.Context, query backend.DataQuery,
@@ -107,10 +95,6 @@ func (td *PixieDatasource) query(ctx context.Context, query backend.DataQuery,
 	err := json.Unmarshal(query.JSON, &qm)
 	if err != nil {
 		return nil, fmt.Errorf("Json Unmarshal Error %v", err)
-	}
-
-	if qm.Format == "" {
-		log.DefaultLogger.Warn("format is empty. defaulting to time series")
 	}
 
 	// API Token.
@@ -138,7 +122,7 @@ func (td *PixieDatasource) query(ctx context.Context, query backend.DataQuery,
 	tm := &PixieToGrafanaTableMux{}
 
 	// Execute the PxL script.
-	resultSet, err := vz.ExecuteScript(ctx, pxl, tm)
+	resultSet, err := vz.ExecuteScript(ctx, qm.QueryText, tm)
 	if err != nil && err != io.EOF {
 		log.DefaultLogger.Warn("Can't execute script.")
 		return nil, err

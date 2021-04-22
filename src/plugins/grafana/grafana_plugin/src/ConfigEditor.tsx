@@ -24,9 +24,9 @@ import { MyDataSourceOptions, MySecureJsonData } from './types';
 const { SecretFormField } = LegacyForms;
 
 interface Props
-  extends DataSourcePluginOptionsEditorProps<MyDataSourceOptions> {}
+  extends DataSourcePluginOptionsEditorProps<MyDataSourceOptions> { }
 
-interface State {}
+interface State { }
 
 export class ConfigEditor extends PureComponent<Props, State> {
   onAPIKeyChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -106,9 +106,7 @@ export class ConfigEditor extends PureComponent<Props, State> {
         <div className="gf-form-inline">
           <div className="gf-form">
             <SecretFormField
-              isConfigured={
-                (secureJsonFields?.clusterId) as boolean
-              }
+              isConfigured={secureJsonFields?.clusterId as boolean}
               value={secureJsonData.clusterId || ""}
               label="Cluster Id"
               placeholder="secure json field (backend only)"
