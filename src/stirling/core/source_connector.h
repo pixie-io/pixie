@@ -37,6 +37,8 @@
  * 3. Register the data source in the appropriate registry.
  */
 
+DECLARE_bool(stirling_source_connector_output_multiple_data_tables);
+
 namespace px {
 namespace stirling {
 

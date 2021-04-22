@@ -24,6 +24,11 @@
 
 #include "src/stirling/core/source_connector.h"
 
+DEFINE_bool(stirling_source_connector_output_multiple_data_tables, true,
+            "If true, source connectors that support outputting data to multiple data tables, "
+            "will output data to all data tables. "
+            "Temporary, will be removed once tested.");
+
 namespace px {
 namespace stirling {
 
@@ -50,7 +55,9 @@ void SourceConnector::TransferData(ConnectorContext* ctx, uint32_t table_num,
 void SourceConnector::TransferData(ConnectorContext* ctx,
                                    const std::vector<DataTable*>& data_tables) {
   DCHECK(ctx != nullptr);
+  DCHECK_EQ(data_tables.size(), num_tables()) << "DataTable objects must all be specified.";
   TransferDataImpl(ctx, data_tables);
+  sample_push_freq_mgr_.Sample();
 }
 
 Status SourceConnector::Stop() {

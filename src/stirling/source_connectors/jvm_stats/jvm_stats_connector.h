@@ -18,12 +18,12 @@
 
 #pragma once
 
-#include "src/stirling/core/source_connector.h"
-
-#include <absl/container/flat_hash_set.h>
 #include <map>
 #include <memory>
 #include <string_view>
+#include <vector>
+
+#include <absl/container/flat_hash_set.h>
 
 #include "src/common/base/base.h"
 #include "src/common/system/system.h"
@@ -44,15 +44,20 @@ class JVMStatsConnector : public SourceConnector {
  public:
   static constexpr auto kTables = MakeArray(kJVMStatsTable);
   static constexpr int kTableNum = SourceConnector::TableNum(kTables, kJVMStatsTable);
+  static constexpr auto kSamplingPeriod = std::chrono::milliseconds{1000};
+  static constexpr auto kPushPeriod = std::chrono::milliseconds{1000};
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new JVMStatsConnector(name));
   }
 
-  Status InitImpl() override { return Status::OK(); }
+  Status InitImpl() override;
   Status StopImpl() override { return Status::OK(); }
 
   void TransferDataImpl(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table) override;
+
+  bool output_multi_tables() const override;
+  void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
 
  private:
   explicit JVMStatsConnector(std::string_view source_name)

@@ -44,6 +44,12 @@ namespace stirling {
 using ::px::fs::Exists;
 using ::px::utils::LEndianBytesToInt;
 
+Status JVMStatsConnector::InitImpl() {
+  sample_push_freq_mgr_.set_sampling_period(kSamplingPeriod);
+  sample_push_freq_mgr_.set_push_period(kPushPeriod);
+  return Status::OK();
+}
+
 void JVMStatsConnector::FindJavaUPIDs(const ConnectorContext& ctx) {
   proc_tracker_.Update(ctx.GetUPIDs());
 
@@ -110,6 +116,19 @@ void JVMStatsConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_n
       ++iter;
     }
   }
+}
+
+bool JVMStatsConnector::output_multi_tables() const {
+  return FLAGS_stirling_source_connector_output_multiple_data_tables;
+}
+
+void JVMStatsConnector::TransferDataImpl(ConnectorContext* ctx,
+                                         const std::vector<DataTable*>& data_tables) {
+  DCHECK_EQ(data_tables.size(), 1) << "JVMStats have only one data table.";
+  DataTable* data_table = data_tables[0];
+  DCHECK(data_table != nullptr) << "JVMStats data table must be specified.";
+
+  TransferDataImpl(ctx, 0, data_table);
 }
 
 }  // namespace stirling

@@ -81,9 +81,6 @@ DEFINE_bool(stirling_enable_redis_tracing, true,
 
 DEFINE_bool(stirling_disable_self_tracing, true,
             "If true, stirling will not trace and process syscalls made by itself.");
-DEFINE_bool(stirling_socket_tracer_output_multiple_data_tables, true,
-            "If true, socket tracer can output data to multiple data tables. "
-            "Temporary, will be removed once tested.");
 
 BPF_SRC_STRVIEW(socket_trace_bcc_script, socket_trace);
 
@@ -347,8 +344,6 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
 
 void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
                                             const std::vector<DataTable*>& data_tables) {
-  DCHECK_EQ(data_tables.size(), num_tables()) << "DataTable objects must all be specified.";
-
   UpdateCommonState(ctx);
 
   DataTable* conn_stats_table = data_tables[kConnStatsTableNum];
@@ -394,12 +389,10 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
       conn_tracker->IterationPostTick();
     }
   }
-
-  sample_push_freq_mgr_.Sample();
 }
 
 bool SocketTraceConnector::output_multi_tables() const {
-  return FLAGS_stirling_socket_tracer_output_multiple_data_tables;
+  return FLAGS_stirling_source_connector_output_multiple_data_tables;
 }
 
 template <typename TValueType>
