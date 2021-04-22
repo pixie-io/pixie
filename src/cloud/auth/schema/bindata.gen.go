@@ -95,7 +95,7 @@ func _000001_add_api_keysDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_add_api_keys.down.sql", size: 31, mode: os.FileMode(436), modTime: time.Unix(1610145934, 0)}
+	info := bindataFileInfo{name: "000001_add_api_keys.down.sql", size: 31, mode: os.FileMode(436), modTime: time.Unix(1618706976, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -115,7 +115,7 @@ func _000001_add_api_keysUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_add_api_keys.up.sql", size: 624, mode: os.FileMode(436), modTime: time.Unix(1610145934, 0)}
+	info := bindataFileInfo{name: "000001_add_api_keys.up.sql", size: 624, mode: os.FileMode(436), modTime: time.Unix(1618706976, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -135,7 +135,7 @@ func _000002_create_pgcrypto_extensionDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000002_create_pgcrypto_extension.down.sql", size: 37, mode: os.FileMode(436), modTime: time.Unix(1610145934, 0)}
+	info := bindataFileInfo{name: "000002_create_pgcrypto_extension.down.sql", size: 37, mode: os.FileMode(436), modTime: time.Unix(1618706976, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -155,7 +155,7 @@ func _000002_create_pgcrypto_extensionUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000002_create_pgcrypto_extension.up.sql", size: 43, mode: os.FileMode(436), modTime: time.Unix(1610145934, 0)}
+	info := bindataFileInfo{name: "000002_create_pgcrypto_extension.up.sql", size: 43, mode: os.FileMode(436), modTime: time.Unix(1618706976, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

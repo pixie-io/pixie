@@ -19,7 +19,7 @@
 /**
   GraphQL Schema setup file.
 */
-//go:generate go-bindata -ignore=\.go -ignore=\.ts -ignore=\.sh -ignore=\.bazel -pkg=schema -o=bindata.gen.go ./...
+//go:generate go-bindata -modtime=0 -ignore=\.go -ignore=\.ts -ignore=\.sh -ignore=\.bazel -pkg=schema -o=bindata.gen.go ./...
 
 package schema
 

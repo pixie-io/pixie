@@ -101,7 +101,7 @@ func _000001_create_org_user_tablesDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_create_org_user_tables.down.sql", size: 55, mode: os.FileMode(436), modTime: time.Unix(1603471763, 0)}
+	info := bindataFileInfo{name: "000001_create_org_user_tables.down.sql", size: 55, mode: os.FileMode(436), modTime: time.Unix(1618706976, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -121,7 +121,7 @@ func _000001_create_org_user_tablesUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_create_org_user_tables.up.sql", size: 442, mode: os.FileMode(436), modTime: time.Unix(1603471763, 0)}
+	info := bindataFileInfo{name: "000001_create_org_user_tables.up.sql", size: 442, mode: os.FileMode(436), modTime: time.Unix(1618706976, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -141,7 +141,7 @@ func _000002_add_unique_constraint_emailDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000002_add_unique_constraint_email.down.sql", size: 48, mode: os.FileMode(436), modTime: time.Unix(1603471763, 0)}
+	info := bindataFileInfo{name: "000002_add_unique_constraint_email.down.sql", size: 48, mode: os.FileMode(436), modTime: time.Unix(1618706976, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -161,7 +161,7 @@ func _000002_add_unique_constraint_emailUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000002_add_unique_constraint_email.up.sql", size: 62, mode: os.FileMode(436), modTime: time.Unix(1603471763, 0)}
+	info := bindataFileInfo{name: "000002_add_unique_constraint_email.up.sql", size: 62, mode: os.FileMode(436), modTime: time.Unix(1618706976, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -181,7 +181,7 @@ func _000003_add_profile_pictureDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000003_add_profile_picture.down.sql", size: 47, mode: os.FileMode(436), modTime: time.Unix(1603471763, 0)}
+	info := bindataFileInfo{name: "000003_add_profile_picture.down.sql", size: 47, mode: os.FileMode(436), modTime: time.Unix(1618706976, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -201,7 +201,7 @@ func _000003_add_profile_pictureUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000003_add_profile_picture.up.sql", size: 60, mode: os.FileMode(436), modTime: time.Unix(1603471763, 0)}
+	info := bindataFileInfo{name: "000003_add_profile_picture.up.sql", size: 60, mode: os.FileMode(436), modTime: time.Unix(1618706976, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -221,7 +221,7 @@ func _000004_add_updated_created_atDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000004_add_updated_created_at.down.sql", size: 142, mode: os.FileMode(436), modTime: time.Unix(1603471763, 0)}
+	info := bindataFileInfo{name: "000004_add_updated_created_at.down.sql", size: 142, mode: os.FileMode(436), modTime: time.Unix(1618706976, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -241,7 +241,7 @@ func _000004_add_updated_created_atUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000004_add_updated_created_at.up.sql", size: 749, mode: os.FileMode(436), modTime: time.Unix(1603471763, 0)}
+	info := bindataFileInfo{name: "000004_add_updated_created_at.up.sql", size: 749, mode: os.FileMode(436), modTime: time.Unix(1618706976, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -261,7 +261,7 @@ func _000005_create_user_settings_tableDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000005_create_user_settings_table.down.sql", size: 36, mode: os.FileMode(436), modTime: time.Unix(1605910834, 0)}
+	info := bindataFileInfo{name: "000005_create_user_settings_table.down.sql", size: 36, mode: os.FileMode(436), modTime: time.Unix(1618706976, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -281,7 +281,7 @@ func _000005_create_user_settings_tableUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000005_create_user_settings_table.up.sql", size: 192, mode: os.FileMode(436), modTime: time.Unix(1605910834, 0)}
+	info := bindataFileInfo{name: "000005_create_user_settings_table.up.sql", size: 192, mode: os.FileMode(436), modTime: time.Unix(1618706976, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
