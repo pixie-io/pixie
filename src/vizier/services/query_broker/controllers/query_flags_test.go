@@ -28,24 +28,18 @@ import (
 )
 
 const validQueryWithFlag = `
+import px
+
 #px:set analyze=true
 #px:set max_output_rows_per_table=9999
 
-t1 = dataframe(table='http_events').range(start='-30s')
-
-t1['service'] = t1.ctx['service']
-t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
-t1['failure'] = t1['http_resp_status'] >= 400
-t1['range_group'] = pl.subtract(t1['time_'], pl.modulo(t1['time_'], 1000000000))
+df = px.DataFrame(table='process_stats', start_time='-5s')
 `
 
 const validQueryWithoutFlag = `
-t1 = dataframe(table='http_events').range(start='-30s')
+import px
 
-t1['service'] = t1.ctx['service']
-t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
-t1['failure'] = t1['http_resp_status'] >= 400
-t1['range_group'] = pl.subtract(t1['time_'], pl.modulo(t1['time_'], 1000000000))
+df = px.DataFrame(table='process_stats', start_time='-5s')
 `
 
 const invalidFlag1 = `

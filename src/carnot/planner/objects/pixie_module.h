@@ -258,8 +258,7 @@ class PixieModule : public QLObject {
 };
 
 /**
- * @brief Implements the pl.display() logic.
- *
+ * @brief Implements the px.display() logic.
  */
 class DisplayHandler {
  public:
@@ -290,7 +289,7 @@ class DebugDisplayHandler {
 };
 
 /**
- * @brief Implements the pl.now(), pl.minutes(), pl.hours(), etc.
+ * @brief Implements the px.now(), px.minutes(), px.hours(), etc.
  *
  */
 class CompileTimeFuncHandler {

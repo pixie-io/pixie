@@ -103,7 +103,7 @@ class QLObject {
    * @brief Gets the method that runs when the instantiated object is Called Directly
    * ie
    * ```
-   * df = pl.DataFrame(...)
+   * df = px.DataFrame(...)
    * # dataframe object called
    * df()
    * ```
@@ -121,7 +121,7 @@ class QLObject {
    * @brief Get the method that runs when this object is called with a subscript.
    * ie
    * ```
-   * df = pl.DataFrame(...)
+   * df = px.DataFrame(...)
    * a = dataframe[12 == 2]
    * ```
    *
