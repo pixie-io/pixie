@@ -19,7 +19,6 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "tracepoint",
     srcs = [
-        "mock.go",
         "tracepoint.go",
         "tracepoint_store.go",
     ],

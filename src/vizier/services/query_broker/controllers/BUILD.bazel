@@ -21,7 +21,6 @@ go_library(
     srcs = [
         "errors.go",
         "launch_query.go",
-        "mock.go",
         "mutation_executor.go",
         "proto_utils.go",
         "query_flags.go",

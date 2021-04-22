@@ -14,9 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# gazelle:ignore
-
-load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("@rules_cc//cc:defs.bzl", "cc_library")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
@@ -43,7 +41,7 @@ cc_library(
 
 go_binary(
     name = "dummy_go_binary",
-    srcs = ["dummy_go_binary.go"],
+    embed = [":testdata_lib"],
     # To force no optimizations and no inlining, we need to pass -N -l
     gc_goopts = [
         "-N",
@@ -109,3 +107,12 @@ genrule(
 )
 
 #------------------------------------------------------------------------------
+
+go_library(
+    name = "testdata_lib",
+    srcs = [
+        "dummy_exe_fixture.h",
+        "dummy_go_binary.go",
+    ],
+    importpath = "px.dev/pixie/src/stirling/obj_tools/testdata",
+)

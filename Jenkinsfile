@@ -4,6 +4,7 @@
 import java.net.URLEncoder
 import jenkins.model.Jenkins
 
+
 // Choose a label from configuration here:
 // https://jenkins.corp.pixielabs.ai/configureClouds/
 //

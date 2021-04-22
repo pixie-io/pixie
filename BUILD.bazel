@@ -34,6 +34,8 @@ gazelle(
 # gazelle:exclude third_party
 # gazelle:exclude src/ui/node_modules
 # gazelle:go_naming_convention import
+# gazelle:exclude **/*.pb.go
+# gazelle:exclude **/mock.go
 
 # Make gazelle not generate proto files. We need to use gogo proto and this does
 # not seem to work automatically right now. Keep an eye out on issue:

@@ -14,7 +14,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# gazelle:ignore
 package(default_visibility = ["//src:__subpackages__"])
 
 filegroup(

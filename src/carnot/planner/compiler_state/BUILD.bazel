@@ -16,7 +16,6 @@
 
 load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 
-# gazelle:ignore
 package(default_visibility = ["//src/carnot:__subpackages__"])
 
 pl_cc_library(

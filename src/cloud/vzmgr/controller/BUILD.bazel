@@ -20,7 +20,6 @@ go_library(
     name = "controller",
     srcs = [
         "metadata_reader.go",
-        "mock.go",
         "server.go",
         "status_monitor.go",
         "utils.go",

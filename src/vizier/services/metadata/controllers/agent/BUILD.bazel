@@ -21,7 +21,6 @@ go_library(
     srcs = [
         "agent.go",
         "agent_store.go",
-        "mock.go",
     ],
     importpath = "px.dev/pixie/src/vizier/services/metadata/controllers/agent",
     visibility = ["//src/vizier:__subpackages__"],

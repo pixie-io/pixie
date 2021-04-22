@@ -20,7 +20,6 @@ go_library(
     name = "autocomplete",
     srcs = [
         "autocomplete.go",
-        "mock.go",
         "suggester.go",
     ],
     importpath = "px.dev/pixie/src/cloud/autocomplete",

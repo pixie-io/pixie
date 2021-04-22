@@ -20,7 +20,6 @@ go_library(
     name = "controller",
     srcs = [
         "k8s_api.go",
-        "mock.go",
         "server.go",
     ],
     importpath = "px.dev/pixie/src/vizier/services/certmgr/controller",

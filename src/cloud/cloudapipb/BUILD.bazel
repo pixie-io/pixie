@@ -14,8 +14,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# gazelle:ignore
-
 load("//bazel:proto_compile.bzl", "pl_go_proto_library", "pl_proto_library", "pl_py_grpc_library")
 
 # TODO(PP-2567): This is used by src/utils/shared/artifacts

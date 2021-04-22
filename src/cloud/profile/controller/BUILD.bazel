@@ -20,7 +20,6 @@ go_library(
     name = "controller",
     srcs = [
         "auth0_manager.go",
-        "mock.go",
         "server.go",
     ],
     importpath = "px.dev/pixie/src/cloud/profile/controller",

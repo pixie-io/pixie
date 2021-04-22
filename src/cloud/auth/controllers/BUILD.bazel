@@ -23,7 +23,6 @@ go_library(
         "domain.go",
         "hydra_kratos_auth.go",
         "login.go",
-        "mock.go",
         "server.go",
     ],
     importpath = "px.dev/pixie/src/cloud/auth/controllers",
