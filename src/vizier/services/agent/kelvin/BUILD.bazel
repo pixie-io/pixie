@@ -60,7 +60,7 @@ container_push(
     format = "Docker",
     image = ":kelvin_image",
     registry = "gcr.io",
-    repository = "pixie-oss/pixie-dev-public/vizier/kelvin_image",
+    repository = "pl-dev-infra/vizier/kelvin_image",
     tag = "{STABLE_BUILD_TAG}",
 )
 
@@ -69,6 +69,6 @@ container_push(
     format = "Docker",
     image = ":kelvin_image",
     registry = "gcr.io",
-    repository = "pixie-oss/pixie-dev-public/vizier/kelvin_image",
+    repository = "pl-dev-infra/vizier/kelvin_image",
     tag = "{BUILD_USER}",
 )

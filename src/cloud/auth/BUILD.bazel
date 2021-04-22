@@ -64,6 +64,6 @@ container_push(
     format = "Docker",
     image = ":auth_server_image",
     registry = "gcr.io",
-    repository = "pixie-oss/pixie-dev-public/cloud/auth_server_image",
+    repository = "pl-dev-infra/cloud/auth_server_image",
     tag = "{STABLE_BUILD_TAG}",
 )

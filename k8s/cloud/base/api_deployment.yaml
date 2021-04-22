@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: api-server
-        image: gcr.io/pixie-oss/pixie-dev-public/cloud/api_server_image
+        image: gcr.io/pl-dev-infra/cloud/api_server_image
         ports:
         - containerPort: 51200
         readinessProbe:

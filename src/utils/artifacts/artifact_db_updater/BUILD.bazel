@@ -72,7 +72,7 @@ container_image(
 
 k8s_object(
     name = "artifact_db_updater_job",
-    images = {"gcr.io/pixie-oss/pixie-dev-public/utils/artifact_db_updater_image:latest": ":artifact_db_updater_image"},
+    images = {"gcr.io/pl-dev-infra/utils/artifact_db_updater_image:latest": ":artifact_db_updater_image"},
     kind = "Job",
     tags = ["manual"],
     template = ":artifact_db_updater_job.yaml",

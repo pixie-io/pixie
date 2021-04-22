@@ -64,6 +64,6 @@ container_push(
     format = "Docker",
     image = ":indexer_server_image",
     registry = "gcr.io",
-    repository = "pixie-oss/pixie-dev-public/cloud/indexer_server_image",
+    repository = "pl-dev-infra/cloud/indexer_server_image",
     tag = "{STABLE_BUILD_TAG}",
 )

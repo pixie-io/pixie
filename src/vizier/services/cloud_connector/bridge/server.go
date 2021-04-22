@@ -77,7 +77,7 @@ spec:
       serviceAccountName: updater-service-account
       containers:
       - name: updater
-        image: gcr.io/pixie-oss/pixie-dev-public/vizier/vizier_updater_image:__VIZIER_UPDATER_IMAGE_TAG__
+        image: gcr.io/pl-dev-infra/vizier/vizier_updater_image:__VIZIER_UPDATER_IMAGE_TAG__
         envFrom:
         - configMapRef:
             name: pl-cloud-config

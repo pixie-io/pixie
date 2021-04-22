@@ -59,6 +59,6 @@ container_push(
     format = "Docker",
     image = ":scriptmgr_server_image",
     registry = "gcr.io",
-    repository = "pixie-oss/pixie-dev-public/cloud/scriptmgr_server_image",
+    repository = "pl-dev-infra/cloud/scriptmgr_server_image",
     tag = "{STABLE_BUILD_TAG}",
 )

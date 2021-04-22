@@ -62,6 +62,6 @@ container_push(
     format = "Docker",
     image = ":dnsmgr_server_image",
     registry = "gcr.io",
-    repository = "pixie-oss/pixie-dev-public/cloud/dnsmgr_server_image",
+    repository = "pl-dev-infra/cloud/dnsmgr_server_image",
     tag = "{STABLE_BUILD_TAG}",
 )

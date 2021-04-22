@@ -57,6 +57,6 @@ container_push(
     format = "Docker",
     image = ":cert_provisioner_image",
     registry = "gcr.io",
-    repository = "pixie-oss/pixie-dev-public/vizier/cert_provisioner_image",
+    repository = "pl-dev-infra/vizier/cert_provisioner_image",
     tag = "{STABLE_BUILD_TAG}",
 )

@@ -99,7 +99,7 @@ func mustInitEtcdDatastore() (*etcd.DataStore, func()) {
 func mustInitPebbleDatastore() *pebbledb.DataStore {
 	pebbleDb, err := pebble.Open(pebbleOpenDir, &pebble.Options{})
 	if err != nil {
-		log.WithError(err).Fatal("Failed to open pebble database. ")
+		log.WithError(err).Fatal("Failed to open pebble database.")
 	}
 	return pebbledb.New(pebbleDb, pebbledbTTLDuration)
 }

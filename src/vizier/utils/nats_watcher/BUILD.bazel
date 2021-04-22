@@ -53,6 +53,6 @@ container_push(
     format = "Docker",
     image = ":nats_watcher_image",
     registry = "gcr.io",
-    repository = "pixie-oss/pixie-dev-public/vizier/nats_watcher",
+    repository = "pl-dev-infra/vizier/nats_watcher",
     tag = "{STABLE_BUILD_TAG}",
 )

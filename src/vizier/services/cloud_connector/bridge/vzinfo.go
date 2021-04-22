@@ -53,8 +53,8 @@ const plNamespace = "pl"
 
 const k8sStateUpdatePeriod = 10 * time.Second
 
-const privateImageRepo = "gcr.io/pixie-oss/pixie-dev-public"
-const publicImageRepo = "gcr.io/pixie-oss/pixie-prod-public"
+const privateImageRepo = "gcr.io/pl-dev-infra"
+const publicImageRepo = "gcr.io/pixie-prod"
 
 // K8sJobHandler manages k8s jobs.
 type K8sJobHandler interface {
