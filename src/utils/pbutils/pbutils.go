@@ -52,15 +52,11 @@ import (
 
 const googleApis = "type.googleapis.com/"
 
-// LegacyMessageName converts the pixie proto message names into the old package name.
-// Currently a no-op.
-func LegacyMessageName(name string) string {
-	return name
-}
-
 // NextGenMessageName converts the pixie proto message names into the new package name.
-// Currently a no-op.
 func NextGenMessageName(name string) string {
+	if strings.HasPrefix(name, "pl.") {
+		return fmt.Sprintf("px.%s", name[3:])
+	}
 	return name
 }
 
@@ -77,7 +73,7 @@ func AnyMessageName(any *types.Any) (string, error) {
 	if slash < 0 {
 		return "", fmt.Errorf("message type url %q is invalid", any.TypeUrl)
 	}
-	return LegacyMessageName(any.TypeUrl[slash+1:]), nil
+	return NextGenMessageName(any.TypeUrl[slash+1:]), nil
 }
 
 // MarshalAny takes the protocol buffer and encodes it into google.protobuf.Any.
@@ -86,7 +82,7 @@ func MarshalAny(pb proto.Message) (*types.Any, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &types.Any{TypeUrl: googleApis + LegacyMessageName(proto.MessageName(pb)), Value: value}, nil
+	return &types.Any{TypeUrl: googleApis + NextGenMessageName(proto.MessageName(pb)), Value: value}, nil
 }
 
 // DynamicAny is a value that can be passed to UnmarshalAny to automatically
