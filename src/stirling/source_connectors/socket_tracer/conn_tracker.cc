@@ -35,6 +35,7 @@
 #include "src/common/base/inet_utils.h"
 #include "src/common/system/socket_info.h"
 #include "src/common/system/system.h"
+#include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/common.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/go_grpc_types.hpp"
 #include "src/stirling/source_connectors/socket_tracer/conn_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/conn_trackers_manager.h"
@@ -89,7 +90,7 @@ void ConnTracker::AddControlEvent(const socket_control_event_t& event) {
 void ConnTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
   if (open_info_.timestamp_ns != 0) {
     CONN_TRACE(1) << absl::Substitute("[PL-985] Clobbering existing ConnOpenEvent $0.",
-                                      ToString(conn_event.conn_id));
+                                      ::ToString(conn_event.conn_id));
   }
 
   SetConnID(conn_event.conn_id);
@@ -117,7 +118,7 @@ void ConnTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
 void ConnTracker::AddConnCloseEvent(const close_event_t& close_event) {
   if (close_info_.timestamp_ns != 0) {
     CONN_TRACE(1) << absl::Substitute("Clobbering existing ConnCloseEvent $0.",
-                                      ToString(close_event.conn_id));
+                                      ::ToString(close_event.conn_id));
   }
 
   SetConnID(close_event.conn_id);
@@ -276,7 +277,7 @@ void ConnTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
     if (half_stream_ptr->end_stream()) {
       CONN_TRACE(1) << absl::Substitute(
           "Duplicate end_stream flag in header. stream_id: $0, conn_id: $1", hdr->attr.stream_id,
-          ToString(hdr->attr.conn_id));
+          ::ToString(hdr->attr.conn_id));
     }
 
     half_stream_ptr->AddEndStream();
@@ -340,7 +341,7 @@ void ConnTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
   if (half_stream_ptr->end_stream() && data->attr.end_stream) {
     CONN_TRACE(1) << absl::Substitute(
         "Duplicate end_stream flag in data. stream_id: $0, conn_id: $1", data->attr.stream_id,
-        ToString(data->attr.conn_id));
+        ::ToString(data->attr.conn_id));
   }
 
   half_stream_ptr->AddData(data->payload);
@@ -407,15 +408,15 @@ bool ShouldTraceConn(const struct conn_id_t& conn_id) {
 
 void ConnTracker::SetConnID(struct conn_id_t conn_id) {
   DCHECK(conn_id_.upid.pid == 0 || conn_id_.upid.pid == conn_id.upid.pid) << absl::Substitute(
-      "Mismatched conn info: tracker=$0 event=$1", ToString(conn_id_), ToString(conn_id));
+      "Mismatched conn info: tracker=$0 event=$1", ::ToString(conn_id_), ::ToString(conn_id));
   DCHECK(conn_id_.fd == 0 || conn_id_.fd == conn_id.fd) << absl::Substitute(
-      "Mismatched conn info: tracker=$0 event=$1", ToString(conn_id_), ToString(conn_id));
+      "Mismatched conn info: tracker=$0 event=$1", ::ToString(conn_id_), ::ToString(conn_id));
   DCHECK(conn_id_.tsid == 0 || conn_id_.tsid == conn_id.tsid) << absl::Substitute(
-      "Mismatched conn info: tracker=$0 event=$1", ToString(conn_id_), ToString(conn_id));
+      "Mismatched conn info: tracker=$0 event=$1", ::ToString(conn_id_), ::ToString(conn_id));
   DCHECK(conn_id_.upid.start_time_ticks == 0 ||
          conn_id_.upid.start_time_ticks == conn_id.upid.start_time_ticks)
-      << absl::Substitute("Mismatched conn info: tracker=$0 event=$1", ToString(conn_id_),
-                          ToString(conn_id));
+      << absl::Substitute("Mismatched conn info: tracker=$0 event=$1", ::ToString(conn_id_),
+                          ::ToString(conn_id));
 
   if (conn_id_ != conn_id) {
     conn_id_ = conn_id;
@@ -435,7 +436,7 @@ bool ConnTracker::SetRole(EndpointRole role, std::string_view reason) {
       CONN_TRACE(2) << absl::Substitute(
           "Not allowed to change the role of an active ConnTracker: $0, old role: $1, new "
           "role: $2",
-          ToString(conn_id_), magic_enum::enum_name(traffic_class_.role),
+          ::ToString(conn_id_), magic_enum::enum_name(traffic_class_.role),
           magic_enum::enum_name(role));
     }
 
@@ -492,7 +493,7 @@ void ConnTracker::CheckTracker() {
   if (death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1) {
     CONN_TRACE(1) << absl::Substitute(
         "Did not expect new event more than 1 sampling iteration after Close. Connection=$0.",
-        ToString(conn_id_));
+        ::ToString(conn_id_));
   }
 }
 
@@ -720,13 +721,11 @@ void ConnTracker::IterationPostTick() {
   }
 
   VLOG(1) << absl::Substitute(
-      "$0 protocol=$1 state=$2 send_invalid_frames=$3 send_valid_frames=$4 send_raw_data_gaps=$5 "
-      "recv_invalid_frames=$6 recv_valid_frames=$7, recv_raw_data_gaps=$8\n",
-      ToString(conn_id_), magic_enum::enum_name(traffic_class().protocol),
-      magic_enum::enum_name(state()), send_data().stat_invalid_frames(),
-      send_data().stat_valid_frames(), send_data().stat_raw_data_gaps(),
-      recv_data().stat_invalid_frames(), recv_data().stat_valid_frames(),
-      recv_data().stat_raw_data_gaps());
+      "$0 send_invalid_frames=$1 send_valid_frames=$2 send_raw_data_gaps=$3 "
+      "recv_invalid_frames=$4 recv_valid_frames=$5, recv_raw_data_gaps=$6\n",
+      ToString(), send_data().stat_invalid_frames(), send_data().stat_valid_frames(),
+      send_data().stat_raw_data_gaps(), recv_data().stat_invalid_frames(),
+      recv_data().stat_valid_frames(), recv_data().stat_raw_data_gaps());
 
   if ((send_data().ParseFailureRate() > kParseFailureRateThreshold) ||
       (recv_data().ParseFailureRate() > kParseFailureRateThreshold)) {
@@ -936,6 +935,13 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
 
   // No need for the resolver anymore, so free its memory.
   conn_resolver_.reset();
+}
+
+std::string ConnTracker::ToString() const {
+  return absl::Substitute("conn_id=$0 state=$1 remote_addr=$2:$3 protocol=$4",
+                          ::ToString(conn_id()), magic_enum::enum_name(state()),
+                          remote_endpoint().AddrStr(), remote_endpoint().port(),
+                          magic_enum::enum_name(traffic_class().protocol));
 }
 
 }  // namespace stirling

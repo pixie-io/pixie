@@ -116,7 +116,7 @@ void ConnTrackersManager::UpdateProtocol(px::stirling::ConnTracker* tracker,
   // If the tracker is ReadyForDestruction(), then it should not be a member of any protocol list.
   if (tracker->ReadyForDestruction()) {
     // Since it is not part of any protocol list, it should not have a back pointer to one.
-    DCHECK(!tracker->back_pointer_.has_value());
+    DCHECK(!tracker->back_pointer_.has_value()) << tracker->ToString();
     return;
   }
 
@@ -258,12 +258,9 @@ std::string ConnTrackersManager::DebugInfo() const {
       ConnTracker* tracker = *iter;
 
       absl::StrAppend(&out,
-                      absl::Substitute(
-                          "   conn_id=$0 protocol=$1 state=$2 zombie=$3 ready_for_destruction=$4\n",
-                          ToString(tracker->conn_id()),
-                          magic_enum::enum_name(tracker->traffic_class().protocol),
-                          magic_enum::enum_name(tracker->state()), tracker->IsZombie(),
-                          tracker->ReadyForDestruction()));
+                      absl::Substitute("   conn_tracker=$0 zombie=$1 ready_for_destruction=$2\n",
+                                       tracker->ToString(), tracker->IsZombie(),
+                                       tracker->ReadyForDestruction()));
     }
   }
 
