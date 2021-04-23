@@ -1,4 +1,4 @@
-#!/bin/bash -ex
+#!/bin/bash -e
 
 # Copyright 2018- The Pixie Authors.
 #
@@ -16,64 +16,38 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-function usage() {
-  echo "run_docker.sh [--extra_args=<DEV_DOCKER_EXTRA_ARGS>]"
-}
+# Script Usage:
+# run_docker.sh <cmd to run in docker container>
 
 script_dir="$(dirname "$0")"
+workspace_root=$(realpath "${script_dir}/../")
 
-# Read variables from docker.properties file.
-dockerPropertiesFile="$script_dir/../docker.properties"
-if [ -f "$dockerPropertiesFile" ]
-then
-  while IFS='=' read -r key value
-  do
-    eval ${key}=\${value}
-  done < "$dockerPropertiesFile"
-else
-  echo "$dockerPropertiesFile not found."
+# Docker image information.
+docker_image_base=gcr.io/pixie-oss/pixie-dev-public/dev_image_with_extras
+version=$(grep DOCKER_IMAGE_TAG "${workspace_root}/docker.properties" | cut -d= -f2)
+docker_image_with_tag="${docker_image_base}:${version}"
+
+IFS=' '
+# Read the environment variable and set it to an array. This allows
+# us to use an array access in the later command.
+read -ra PX_RUN_DOCKER_EXTRA_ARGS <<< "${PX_RUN_DOCKER_EXTRA_ARGS}"
+
+configs=(-v "$HOME/.config:/root/.config" \
+  -v "$HOME/.ssh:/root/.ssh" \
+  -v "$HOME/.kube:/root/.kube" \
+  -v "$HOME/.gitconfig:/root/.gitconfig" \
+  -v "$HOME/.arcrc:/root/.arcrc")
+
+exec_cmd=("/usr/bin/bash")
+if [ $# -ne 0 ]; then
+  exec_cmd=("${exec_cmd[@]}" "-c" "$*")
 fi
 
-# Parse arguments.
-while [ "$1" != "" ]; do
-    PARAM=`echo "$1" | awk -F= '{print $1}'`
-    VALUE=`echo "$1" | awk -F= '{print $2}'`
-    case $PARAM in
-        -e | --extra_args)
-            extra_args=$VALUE
-            ;;
-        *)
-            echo "ERROR: unknown parameter \"$PARAM\""
-            usage
-            exit 1
-            ;;
-    esac
-    shift
-done
-
-# See src/stirling/README.md, under "Stirling docker container environment" for
-# an explanation of Stirling requirements.
-stirling_flags="--privileged
-                -v /:/host
-                -v /sys:/sys
-                -v /var/lib/docker:/var/lib/docker
-                --pid=host
-                --network=host
-                --env PL_HOST_PATH=/host"
-
 # Disable quoting check to use stirling_flags, otherwise the flag values are treated as one string.
-# shellcheck disable=SC2086
 docker run --rm -it \
-       ${stirling_flags} \
-       -v /var/run/docker.sock:/var/run/docker.sock \
-       -v "$HOME/.config:/root/.config" \
-       -v "$HOME/.ssh:/root/.ssh" \
-       -v "$HOME/.minikube:/root/.minikube" \
-       -v "$HOME/.minikube:$HOME/.minikube" \
-       -v "$HOME/.kube:/root/.kube" \
-       -v "$HOME/.gitconfig:/root/.gitconfig" \
-       -v "$HOME/.arcrc:/root/.arcrc" \
-       -v "$GOPATH/src/pixielabs.ai:/pl/src/pixielabs.ai" \
-       ${extra_args} \
-       "gcr.io/pixie-oss/pixie-dev-public/dev_image_with_extras:$DOCKER_IMAGE_TAG" \
-       bash
+  "${configs[@]}" \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v "${workspace_root}:/pl/src/px.dev/pixie" \
+  "${PX_RUN_DOCKER_EXTRA_ARGS[@]}" \
+  "${docker_image_with_tag}" \
+  "${exec_cmd[@]}"
