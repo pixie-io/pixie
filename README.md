@@ -103,7 +103,7 @@ Check out our [install guides](https://docs.pixielabs.ai/installing-pixie/instal
 
 `px scripts list`
 
-<br> Check out our [pxl_scripts](pxl_scripts) repo for more examples.
+<br> Check out our [pxl_scripts](src/pxl_scripts) folder for more examples.
 
 <br clear="all">
 
@@ -130,7 +130,7 @@ Example with http_data:
 
 `px run px/http_data -o json| jq -r .`
 
-More examples [here](pxl_scripts)
+More examples [here](src/pxl_scripts)
 
 <br>_To see more script examples and learn how to write your own, check out our [docs](https://work.withpixie.ai/docs) for more guides_
 
