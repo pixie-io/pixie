@@ -40,5 +40,6 @@ go_test(
     deps = [
         "//src/cloud/profile/controller/idmanager",
         "@com_github_stretchr_testify//assert",
+        "@com_github_stretchr_testify//require",
     ],
 )

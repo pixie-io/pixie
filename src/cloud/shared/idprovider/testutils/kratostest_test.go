@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"px.dev/pixie/src/cloud/profile/controller/idmanager"
 	"px.dev/pixie/src/cloud/shared/idprovider/testutils"
@@ -31,17 +32,13 @@ import (
 func TestCreateKratos(t *testing.T) {
 	server, err := testutils.NewKratosServer()
 
-	if err != nil {
-		t.Fatal("failed to create server")
-	}
+	require.NoError(t, err)
 
 	defer server.CleanUp()
 
 	client, closeServer, err := server.Serve()
 	defer closeServer()
-	if err != nil {
-		t.Fatal("failed to start server")
-	}
+	require.NoError(t, err)
 
 	// Simple test that should pass if the client is setup properly.
 	email := "bobloblaw@lawblog.com"
@@ -53,8 +50,6 @@ func TestCreateKratos(t *testing.T) {
 			PLOrgID:  "lawblow.com",
 		},
 	)
-	if err != nil {
-		t.Fatal("failed to call client")
-	}
+	require.NoError(t, err)
 	assert.Equal(t, idResp.Email, email)
 }

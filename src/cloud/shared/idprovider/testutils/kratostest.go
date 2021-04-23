@@ -21,7 +21,6 @@ package testutils
 import (
 	"context"
 	"fmt"
-	"html/template"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -43,7 +42,6 @@ import (
 type KratosServer struct {
 	pool            *dockertest.Pool
 	dockerDirectory string
-	dockerFile      string
 	volumeName      string
 	containerName   string
 }
@@ -67,6 +65,10 @@ func NewKratosServer() (*KratosServer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp dir: %v", err)
 	}
+	err = os.Chmod(kratosConfDir, 0777)
+	if err != nil {
+		return nil, fmt.Errorf("failed to chmod: %v", err)
+	}
 
 	id, err := uuid.NewV4()
 	if err != nil {
@@ -89,27 +91,9 @@ func NewKratosServer() (*KratosServer, error) {
 	if err := srv.prepareDockerDirectory(kratosConfig); err != nil {
 		return nil, err
 	}
-	// Clean up the volume first in case any have been around. Will not fail if no volume exists.
-	if err := srv.removeVolumeIfExists(); err != nil {
-		return nil, err
-	}
-
-	// Run the migration server.
-	if err := srv.migrate(time.Minute); err != nil {
-		return nil, fmt.Errorf("\"%w\" while migrating the server", err)
-	}
 
 	return srv, nil
 }
-
-const dockerfileText = `
-FROM oryd/kratos:v0.5.5-sqlite
-
-COPY {{.KratosYml}} /etc/config/kratos/kratos.yml
-COPY {{.IdentityJSON}} /etc/config/kratos/identity.schema.json
-`
-
-var dockerfileTmpl = template.Must(template.New("dockerfile").Parse(dockerfileText))
 
 func (k *KratosServer) prepareDockerDirectory(cfg *kratosConfigStruct) error {
 	kratosConfFile := "kratos.yml"
@@ -123,114 +107,12 @@ func (k *KratosServer) prepareDockerDirectory(cfg *kratosConfigStruct) error {
 		return fmt.Errorf("\"%w\" while writing identitySchema", err)
 	}
 
-	k.dockerFile = filepath.Join(k.dockerDirectory, "Dockerfile")
-	f, err := os.Create(k.dockerFile)
-	if err != nil {
-		return fmt.Errorf("\"%w\" while creating Dockerfile", err)
-	}
-
-	err = dockerfileTmpl.Execute(f, struct {
-		KratosYml    string
-		IdentityJSON string
-	}{
-		KratosYml:    kratosConfFile,
-		IdentityJSON: identityFile,
-	})
-	if err != nil {
-		return fmt.Errorf("\"%w\" while writing dockerfile", err)
-	}
-
 	return nil
-}
-
-func (k *KratosServer) removeVolumeIfExists() error {
-	// remove volume.
-	err := k.pool.Client.RemoveVolumeWithOptions(docker.RemoveVolumeOptions{Name: k.volumeName})
-	// Not an error, the volume was cleaned up
-	if err == docker.ErrNoSuchVolume {
-		return nil
-	}
-	return err
-}
-
-func (k *KratosServer) killContainerIfExists() error {
-	err := k.pool.Client.KillContainer(docker.KillContainerOptions{ID: k.containerName})
-	if err == nil {
-		return nil
-	}
-	// Ignore errors where the container has already stopped running.
-	if _, ok := err.(*docker.NoSuchContainer); ok {
-		return nil
-	} else if _, ok := err.(*docker.ContainerNotRunning); ok {
-		return nil
-	}
-
-	return err
 }
 
 // CleanUp removes all remaining state on the system if it exists.
 func (k *KratosServer) CleanUp() {
 	os.RemoveAll(k.dockerDirectory)
-	err := k.removeVolumeIfExists()
-	if err != nil {
-		// Special case where the docker container is still alive.
-		if err == docker.ErrVolumeInUse {
-			err := k.killContainerIfExists()
-			if err != nil {
-				log.WithError(err).Fatal("Failed to kill container")
-			}
-			return
-		}
-		log.WithError(err).Fatal("Failed to clean up volume")
-	}
-}
-
-func (k *KratosServer) migrate(cleanupTimeout time.Duration) error {
-	resource, closeContainer, err := k.runKratosContainer([]string{"migrate", "sql", "-e", "--yes"})
-	if err != nil {
-		return err
-	}
-
-	// If logrus is in debug mode, will tail the container logs into logrus.
-	k.debugContainerLogs(resource)
-
-	// Check the Kratos.
-	ch := make(chan struct{})
-	errorCh := make(chan error)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	go func() {
-		_, err := k.pool.Client.WaitContainerWithContext(resource.Container.ID, ctx)
-		if err != nil {
-			errorCh <- err
-			return
-		}
-
-		ch <- struct{}{}
-	}()
-
-	// Handle waiting for the migration.
-	timeout := time.NewTicker(cleanupTimeout)
-	defer timeout.Stop()
-	for {
-		select {
-		// Error while waiting.
-		case err := <-errorCh:
-			closeContainer()
-			close(ch)
-			close(errorCh)
-			return err
-		// Timeout
-		case <-timeout.C:
-			closeContainer()
-			close(ch)
-			close(errorCh)
-			return fmt.Errorf("migration timed out")
-		// Success
-		case <-ch:
-			return nil
-		}
-	}
 }
 
 // Serve will start the main server and return a HydraKratosClient that can talk with that server.
@@ -282,33 +164,24 @@ func (k *KratosServer) Serve() (*idprovider.HydraKratosClient, func(), error) {
 }
 
 func (k *KratosServer) runKratosContainer(cmdParts []string) (*dockertest.Resource, func(), error) {
-	// Need to use the absolute path for the dockerfile
-	dockerfileAbsPath, err := filepath.Abs(k.dockerFile)
-	if err != nil {
-		return nil, nil, fmt.Errorf("\"%w\" while getting abs", err)
-	}
-
-	resource, err := k.pool.BuildAndRunWithOptions(dockerfileAbsPath,
+	resource, err := k.pool.RunWithOptions(
 		&dockertest.RunOptions{
-			Name: k.containerName,
-			Cmd:  append([]string{"-c", "/etc/config/kratos/kratos.yml"}, cmdParts...),
+			Repository: "oryd/kratos",
+			Tag:        "v0.5.5-sqlite",
+			Name:       k.containerName,
+			Cmd:        append([]string{"-c", "/home/ory/kratos/kratos.yml"}, cmdParts...),
+			Mounts: []string{
+				fmt.Sprintf("%s:%s", k.dockerDirectory, "/home/ory/kratos"),
+			},
 			Env: []string{
-				"DSN=sqlite:///var/lib/sqlite/db.sqlite?_fk=true&mode=rwc",
+				"DSN=memory",
 				"SELFSERVICE_DEFAULT_BROWSER_RETURN_URL=https://work.withpixie.ai/",
+				"IDENTITY_DEFAULT_SCHEMA_URL=file:///home/ory/kratos/identity.schema.json",
 			},
 			ExposedPorts: []string{"4433", "4434"},
-			// Mounts:       []string{fmt.Sprintf("%s:/etc/config/kratos/", kratosConfDir)},
 		}, func(config *docker.HostConfig) {
 			config.AutoRemove = true
 			config.RestartPolicy = docker.RestartPolicy{Name: "no"}
-			config.Mounts = []docker.HostMount{
-				{
-					Target:   "/var/lib/sqlite",
-					Source:   k.volumeName,
-					ReadOnly: false,
-					Type:     "volume",
-				},
-			}
 			config.CPUCount = 1
 			config.Memory = 32 * 1024 * 1024
 			config.MemorySwap = 0
