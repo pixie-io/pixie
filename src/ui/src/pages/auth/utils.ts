@@ -89,5 +89,3 @@ export const GetOAuthProvider = (): OAuthProviderClient => {
 
 export const OAuthSignupRequest = (): void => GetOAuthProvider().signupRequest();
 export const OAuthLoginRequest = (): void => GetOAuthProvider().loginRequest();
-export const OAuthGetPasswordLoginFlow = (): Promise<FormStructure> => GetOAuthProvider().getPasswordLoginFlow();
-export const OAuthGetPasswordRecoveryFlow = (): Promise<FormStructure> => GetOAuthProvider().getResetPasswordFlow();

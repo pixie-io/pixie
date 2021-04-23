@@ -21,16 +21,17 @@ import { PixienautForm, FormStructure } from '@pixie-labs/components';
 import { RouteProps } from 'react-router';
 import * as QueryString from 'query-string';
 import { BasePage } from './base';
-import { OAuthGetPasswordRecoveryFlow } from './utils';
+import { GetOAuthProvider } from './utils';
 
 export const PasswordRecoveryPage: React.FC = ({ location }: RouteProps) => {
   const parsed = QueryString.parse(location.search);
   const flow = parsed.flow as string;
   const [error, setError] = React.useState<Error>(null);
   const [method, setMethod] = React.useState<FormStructure>(null);
+  const authClient = React.useMemo(() => GetOAuthProvider(), []);
 
   React.useEffect(() => {
-    OAuthGetPasswordRecoveryFlow().then((m) => {
+    authClient.getResetPasswordFlow().then((m) => {
       setMethod(m);
       setError(null);
     }).catch((e) => setError(e));
