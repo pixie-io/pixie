@@ -19,8 +19,7 @@
 // This file has the auth pages that we exposes to the users to login, signup
 // and related error pages.
 import * as React from 'react';
-import history from 'utils/pl-history';
-import { Route, Router, Switch } from 'react-router';
+import { Route, Switch } from 'react-router';
 import { LoginPage } from './login';
 import { PasswordLoginPage } from './password-login';
 import { SignupPage } from './signup';
@@ -30,17 +29,15 @@ import { CLIAuthCompletePage } from './cli-auth-complete';
 import { ErrorPage } from './password-error';
 import { PasswordRecoveryPage } from './password-recovery';
 
-export const AuthRouter = () => (
-  <Router history={history}>
-    <Switch>
-      <Route exact path='/auth/password-login' component={PasswordLoginPage} />
-      <Route exact path='/auth/password/recovery' component={PasswordRecoveryPage} />
-      <Route exact path='/auth/password/error' component={ErrorPage} />
-      <Route exact path='/auth/callback' component={AuthCallbackPage} />
-      <Route exact path='/auth/login' component={LoginPage} />
-      <Route exact path='/auth/signup' component={SignupPage} />
-      <Route exact path='/auth/cli-auth-complete' component={CLIAuthCompletePage} />
-      <Route exact path='/auth/logout' component={LogoutPage} />
-    </Switch>
-  </Router>
+export const AuthRouter: React.FC = () => (
+  <Switch>
+    <Route exact path='/auth/password-login' component={PasswordLoginPage} />
+    <Route exact path='/auth/password/recovery' component={PasswordRecoveryPage} />
+    <Route exact path='/auth/password/error' component={ErrorPage} />
+    <Route exact path='/auth/callback' component={AuthCallbackPage} />
+    <Route exact path='/auth/login' component={LoginPage} />
+    <Route exact path='/auth/signup' component={SignupPage} />
+    <Route exact path='/auth/cli-auth-complete' component={CLIAuthCompletePage} />
+    <Route exact path='/auth/logout' component={LogoutPage} />
+  </Switch>
 );

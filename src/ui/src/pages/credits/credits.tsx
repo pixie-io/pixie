@@ -18,18 +18,17 @@
 
 import { buildClass, scrollbarStyles } from '@pixie-labs/components';
 
-import { StyleRulesCallback, Theme, withStyles } from '@material-ui/core/styles';
-import Button from '@material-ui/core/Button';
+import {
+  Theme, makeStyles, createStyles, Button,
+} from '@material-ui/core';
 
 import * as React from 'react';
-import { Route, Router, Switch } from 'react-router-dom';
 import { LiveViewButton } from 'containers/admin/utils';
 import NavBars from 'containers/App/nav-bars';
-import history from 'utils/pl-history';
 
 import licenseJson from './licenses.json';
 
-const styles: StyleRulesCallback<Theme, {}> = (theme: Theme) => ({
+const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
     height: '100%',
     width: '100%',
@@ -88,25 +87,34 @@ const styles: StyleRulesCallback<Theme, {}> = (theme: Theme) => ({
       visibility: 'hidden',
     },
   },
-});
+}));
 
-const CreditsPage = withStyles(styles)(({ children, classes }: any) => (
-  <div className={classes.root}>
-    <NavBars>
-      <div className={classes.title}>
-        <div className={classes.titleText}>Credits</div>
+interface LicenseEntry {
+  name: string;
+  spdxID: string;
+  url?: string;
+  licenseText?: string;
+}
+
+const CreditsPage: React.FC = ({ children }) => {
+  const classes = useStyles();
+  return (
+    <div className={classes.root}>
+      <NavBars>
+        <div className={classes.title}>
+          <div className={classes.titleText}>Credits</div>
+        </div>
+        <LiveViewButton />
+      </NavBars>
+      <div className={classes.main}>
+        {children}
       </div>
-      <LiveViewButton />
-    </NavBars>
-    <div className={classes.main}>
-      {children}
     </div>
-  </div>
-));
+  );
+};
 
-const LicenseEntryRow = withStyles(styles)(({
-  name, url, licenseText, classes,
-}: LicenseEntry & { classes }) => {
+const LicenseEntryRow: React.FC<LicenseEntry> = ({ name, url, licenseText }) => {
+  const classes = useStyles();
   const [showLicense, setShowLicense] = React.useState(false);
   return (
     <div className={classes.row}>
@@ -137,15 +145,11 @@ const LicenseEntryRow = withStyles(styles)(({
         ) : null}
     </div>
   );
-});
+};
 
-interface LicenseEntry {
-  name: string;
-  url: string;
-  licenseText: string;
-}
+const Credits: React.FC<{ licenses: LicenseEntry[] }> = ({ licenses }) => {
+  const classes = useStyles();
 
-const Credits = withStyles(styles)(({ licenses, classes }: any) => {
   if (!licenses) {
     return (<div> not found </div>);
   }
@@ -161,20 +165,12 @@ const Credits = withStyles(styles)(({ licenses, classes }: any) => {
       </div>
     </>
   );
-});
+};
 
-const CreditsOverviewPage = () => (
+const CreditsOverviewPage: React.FC = () => (
   <CreditsPage>
     <Credits licenses={licenseJson} />
   </CreditsPage>
 );
 
-export default function CreditsView() {
-  return (
-    <Router history={history}>
-      <Switch>
-        <Route exact path='/credits' component={CreditsOverviewPage} />
-      </Switch>
-    </Router>
-  );
-}
+export default CreditsOverviewPage;

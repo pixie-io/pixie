@@ -20,9 +20,8 @@ import * as React from 'react';
 
 import {
   createStyles,
-  withStyles,
+  makeStyles,
   Theme,
-  WithStyles,
 } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
 import TableContainer from '@material-ui/core/TableContainer';
@@ -35,8 +34,11 @@ import { StyledTab, StyledTabs } from 'containers/admin/utils';
 import { GetOAuthProvider } from 'pages/auth/utils';
 import { scrollbarStyles } from '@pixie-labs/components';
 import { useAPIKeys, useDeploymentKeys } from '@pixie-labs/api-react';
+import {
+  Route, Switch, useHistory, useLocation, useRouteMatch,
+} from 'react-router-dom';
 
-export const AdminOverview = withStyles((theme: Theme) => createStyles({
+const useStyles = makeStyles((theme: Theme) => createStyles({
   createButton: {
     margin: theme.spacing(1),
   },
@@ -59,29 +61,42 @@ export const AdminOverview = withStyles((theme: Theme) => createStyles({
   table: {
     paddingBottom: '1px', // Prevent an incorrect height calculation that shows a second scrollbar
   },
-}))(({ classes }: WithStyles) => {
+}));
+
+export const AdminOverview: React.FC = () => {
+  const history = useHistory();
+  const location = useLocation();
+  const { path } = useRouteMatch();
   const [{ createDeploymentKey }] = useDeploymentKeys();
   const [{ createAPIKey }] = useAPIKeys();
-  const [tab, setTab] = React.useState('clusters');
+  // Path can be just /, or can be /trailing/slash. Thus variable length logic.
+  const [tab, setTab] = React.useState(location.pathname.slice(path.length > 1 ? path.length + 1 : 0));
+
+  function navTab(newTab: string) {
+    setTab(newTab);
+    history.push(newTab);
+  }
 
   const authClient = React.useMemo(() => GetOAuthProvider(), []);
   const InvitationTab = React.useMemo(
     () => (authClient.getInvitationComponent() ?? (() => (<>This tab should not have been reachable.</>))),
     [authClient]);
 
+  const classes = useStyles();
+
   return (
     <div className={classes.tabRoot}>
       <div className={classes.tabBar}>
         <StyledTabs
           value={tab}
-          onChange={(event, newTab) => setTab(newTab)}
+          onChange={(event, newTab) => navTab(newTab)}
         >
           <StyledTab value='clusters' label='Clusters' />
           <StyledTab value='deployment-keys' label='Deployment Keys' />
           <StyledTab value='api-keys' label='API Keys' />
           { authClient.isInvitationEnabled() && <StyledTab value='auth-invitation' label='Invitations' /> }
         </StyledTabs>
-        {tab === 'deployment-keys'
+        {tab.endsWith('deployment-keys')
         && (
           <Button
             onClick={() => createDeploymentKey()}
@@ -93,7 +108,7 @@ export const AdminOverview = withStyles((theme: Theme) => createStyles({
             New key
           </Button>
         )}
-        {tab === 'api-keys'
+        {tab.endsWith('api-keys')
         && (
           <Button
             onClick={() => createAPIKey()}
@@ -108,12 +123,14 @@ export const AdminOverview = withStyles((theme: Theme) => createStyles({
       </div>
       <div className={classes.tabContents}>
         <TableContainer className={classes.table}>
-          {tab === 'clusters' && <ClustersTable />}
-          {tab === 'deployment-keys' && <DeploymentKeysTable />}
-          {tab === 'api-keys' && <APIKeysTable />}
-          {tab === 'auth-invitation' && <InvitationTab />}
+          <Switch>
+            <Route exact path={`${path}/clusters`} component={ClustersTable} />
+            <Route exact path={`${path}/deployment-keys`} component={DeploymentKeysTable} />
+            <Route exact path={`${path}/api-keys`} component={APIKeysTable} />
+            <Route exact path={`${path}/invite`} component={InvitationTab} />
+          </Switch>
         </TableContainer>
       </div>
     </div>
   );
-});
+};

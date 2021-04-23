@@ -25,7 +25,7 @@ import { useHistory, useParams } from 'react-router';
 import { Link } from 'react-router-dom';
 import { dataFromProto } from 'utils/result-data-utils';
 
-import { Theme, withStyles } from '@material-ui/core/styles';
+import { Theme, createStyles, makeStyles } from '@material-ui/core/styles';
 import MaterialBreadcrumbs from '@material-ui/core/Breadcrumbs';
 import IconButton from '@material-ui/core/IconButton';
 import Table from '@material-ui/core/Table';
@@ -37,7 +37,12 @@ import TableRow from '@material-ui/core/TableRow';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 
-import { ExecutionStateUpdate, GQLClusterStatus as ClusterStatus, GQLPodStatus as PodStatus } from '@pixie-labs/api';
+import {
+  ExecutionStateUpdate,
+  GQLClusterStatus as ClusterStatus,
+  GQLPodStatus as PodStatus,
+  GQLContainerStatus as ContainerStatus, VizierQueryResult,
+} from '@pixie-labs/api';
 import { useListClusters, useClusterControlPlanePods } from '@pixie-labs/api-react';
 import { BehaviorSubject } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
@@ -48,7 +53,7 @@ import {
   StyledTab, StyledTableCell, StyledTableHeaderCell, StyledTabs,
 } from './utils';
 
-const StyledBreadcrumbLink = withStyles((theme: Theme) => ({
+const useLinkStyles = makeStyles((theme: Theme) => createStyles({
   root: {
     ...theme.typography.body2,
     display: 'flex',
@@ -58,11 +63,13 @@ const StyledBreadcrumbLink = withStyles((theme: Theme) => ({
     height: theme.spacing(3),
     color: theme.palette.foreground.grey5,
   },
-}))(({ classes, children, to }: any) => (
-  <Link className={classes.root} to={to}>{children}</Link>
-));
+}));
+const StyledBreadcrumbLink: React.FC<{ to: string }> = (({ children, to }) => {
+  const classes = useLinkStyles();
+  return <Link className={classes.root} to={to}>{children}</Link>;
+});
 
-const StyledBreadcrumbs = withStyles((theme: Theme) => ({
+const useBreadcrumbsStyles = makeStyles((theme: Theme) => createStyles({
   root: {
     display: 'flex',
     paddingTop: theme.spacing(1),
@@ -78,11 +85,15 @@ const StyledBreadcrumbs = withStyles((theme: Theme) => ({
     fontWeight: 1000,
     width: theme.spacing(1),
   },
-}))(({ classes, children }: any) => (
-  <MaterialBreadcrumbs classes={classes}>
-    {children}
-  </MaterialBreadcrumbs>
-));
+}));
+const StyledBreadcrumbs: React.FC = ({ children }) => {
+  const classes = useBreadcrumbsStyles();
+  return (
+    <MaterialBreadcrumbs classes={classes}>
+      {children}
+    </MaterialBreadcrumbs>
+  );
+};
 
 const AGENT_STATUS_SCRIPT = `import px
 px.display(px.GetAgentStatus())`;
@@ -99,6 +110,12 @@ interface AgentDisplay {
   uptime: string;
 }
 
+interface AgentDisplayState {
+  error?: string;
+  data: Array<unknown>;
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function formatAgent(agentInfo): AgentDisplay {
   const now = new Date();
   const agentID = agentInfo.agent_id;
@@ -147,11 +164,6 @@ const AgentsTableContent = ({ agents }) => {
   );
 };
 
-interface AgentDisplayState {
-  error?: string;
-  data: Array<{}>;
-}
-
 const AgentsTable = () => {
   const { client } = React.useContext(ClientContext);
   const [state, setState] = React.useState<AgentDisplayState>({ data: [] });
@@ -162,7 +174,7 @@ const AgentsTable = () => {
     }
     const executionSubject = new BehaviorSubject<ExecutionStateUpdate|null>(null);
     const fetchAgentStatus = () => {
-      const onResults = (results) => {
+      const onResults = (results: VizierQueryResult) => {
         if (!results.schemaOnly) {
           if (results.tables.length !== 1) {
             if (results.status) {
@@ -213,40 +225,37 @@ const AgentsTable = () => {
   return <AgentsTableContent agents={state.data} />;
 };
 
-const formatPodStatus = ({
-  name, status, message, reason, containers, events,
-}: PodStatus) => ({
-  name,
-  status,
-  message,
-  reason,
-  statusGroup: podStatusGroup(status),
-  containers: containers.map((container) => ({
-    name: container.name,
-    state: container.state,
-    message: container.message,
-    reason: container.reason,
+interface GroupedPodStatus extends Omit<PodStatus, 'containers'> {
+  statusGroup: StatusGroup;
+  containers: Array<ContainerStatus & { statusGroup: StatusGroup }>;
+}
+
+const formatPodStatus = (podStatus: PodStatus): GroupedPodStatus => ({
+  ...podStatus,
+  statusGroup: podStatusGroup(podStatus.status),
+  containers: podStatus.containers.map((container) => ({
+    ...container,
     statusGroup: containerStatusGroup(container.state),
-  })),
-  events: events.map((event) => ({
-    message: event.message,
   })),
 });
 
 const none = '<none>';
 
-const ExpandablePodRow = withStyles((theme: Theme) => ({
+const useRowStyles = makeStyles((theme: Theme) => createStyles({
   messageAndReason: {
     ...theme.typography.body2,
   },
   eventList: {
     marginTop: 0,
   },
-}))(({ podStatus, classes }: any) => {
+}));
+
+const ExpandablePodRow: React.FC<{ podStatus: GroupedPodStatus }> = (({ podStatus }) => {
   const {
     name, status, statusGroup, message, reason, containers, events,
   } = podStatus;
   const [open, setOpen] = React.useState(false);
+  const classes = useRowStyles();
 
   return (
     // Fragment shorthand syntax does not support key, which is needed to prevent
@@ -417,7 +426,7 @@ const ClusterDetailsNavigation = ({ selectedClusterName }) => {
   );
 };
 
-export const ClusterDetails = withStyles((theme: Theme) => ({
+const useClusterDetailStyles = makeStyles((theme: Theme) => createStyles({
   error: {
     ...theme.typography.body1,
     padding: 20,
@@ -428,8 +437,11 @@ export const ClusterDetails = withStyles((theme: Theme) => ({
   container: {
     maxHeight: 800,
   },
-}))(({ classes }: any) => {
-  const { name } = useParams();
+}));
+
+export const ClusterDetails: React.FC = () => {
+  const classes = useClusterDetailStyles();
+  const { name } = useParams<{ name: string }>();
   const clusterName = decodeURIComponent(name);
 
   const [tab, setTab] = React.useState('agents');
@@ -510,4 +522,4 @@ export const ClusterDetails = withStyles((theme: Theme) => ({
       </div>
     </div>
   );
-});
+};

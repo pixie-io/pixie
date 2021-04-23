@@ -18,23 +18,20 @@
 
 import { scrollbarStyles } from '@pixie-labs/components';
 import {
-  withStyles,
   Theme,
   createStyles,
-  WithStyles,
+  makeStyles,
 } from '@material-ui/core/styles';
 
 import * as React from 'react';
-import { Route, Router, Switch } from 'react-router-dom';
+import { Route, Switch, Redirect } from 'react-router-dom';
 import { LiveViewButton } from 'containers/admin/utils';
 import { AdminOverview } from 'containers/admin/admin-overview';
 import { ClusterDetails } from 'containers/admin/cluster-details';
 import NavBars from 'containers/App/nav-bars';
-import history from 'utils/pl-history';
-import { PropsWithChildren } from 'react';
 import { SidebarContext } from 'context/sidebar-context';
 
-export const AdminPage = withStyles((theme: Theme) => createStyles({
+const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
     height: '100%',
     width: '100%',
@@ -62,21 +59,26 @@ export const AdminPage = withStyles((theme: Theme) => createStyles({
     color: theme.palette.foreground.grey5,
     fontWeight: theme.typography.fontWeightBold,
   },
-}))(({ children, classes }: PropsWithChildren<WithStyles>) => (
-  <div className={classes.root}>
-    <SidebarContext.Provider value={{ inLiveView: false }}>
-      <NavBars>
-        <div className={classes.title}>
-          <div className={classes.titleText}>Admin</div>
-        </div>
-        <LiveViewButton />
-      </NavBars>
-    </SidebarContext.Provider>
-    <div className={classes.main}>
-      { children }
+}));
+
+export const AdminPage: React.FC = ({ children }) => {
+  const classes = useStyles();
+  return (
+    <div className={classes.root}>
+      <SidebarContext.Provider value={{ inLiveView: false }}>
+        <NavBars>
+          <div className={classes.title}>
+            <div className={classes.titleText}>Admin</div>
+          </div>
+          <LiveViewButton />
+        </NavBars>
+      </SidebarContext.Provider>
+      <div className={classes.main}>
+        { children }
+      </div>
     </div>
-  </div>
-));
+  );
+};
 
 const AdminOverviewPage = () => (
   <AdminPage>
@@ -90,13 +92,12 @@ const ClusterDetailsPage = () => (
   </AdminPage>
 );
 
-export default function AdminView() {
-  return (
-    <Router history={history}>
-      <Switch>
-        <Route exact path='/admin' component={AdminOverviewPage} />
-        <Route exact path='/admin/clusters/:name' component={ClusterDetailsPage} />
-      </Switch>
-    </Router>
-  );
-}
+const AdminView: React.FC = () => (
+  <Switch>
+    <Route exact path='/admin/clusters/:name' component={ClusterDetailsPage} />
+    <Redirect exact from='/admin' to='/admin/clusters' />
+    <Route path='/admin' component={AdminOverviewPage} />
+  </Switch>
+);
+
+export default AdminView;

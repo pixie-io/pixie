@@ -23,7 +23,7 @@ import {
 import { formatUInt128Protobuf } from './format-data';
 import { nanoToMilliSeconds } from './time';
 
-export function ResultsToCsv(results) {
+export function ResultsToCsv(results: string): string {
   const jsonResults = JSON.parse(results);
   let csvStr = '';
 
@@ -52,7 +52,7 @@ export function ResultsToCsv(results) {
   return csvStr;
 }
 
-export function columnFromProto(column: Column): any[] {
+export function columnFromProto(column: Column): (number | boolean | string)[] {
   if (column.hasBooleanData()) {
     return column.getBooleanData().getDataList();
   } if (column.hasInt64Data()) {
