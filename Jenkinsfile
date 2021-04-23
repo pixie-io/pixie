@@ -114,6 +114,7 @@ stashList = []
 // Flag controlling if coverage job is enabled.
 isMainCodeReviewRun =  (env.JOB_NAME == 'pixie-dev/main-phab-test')
 isMainRun =  (env.JOB_NAME == 'pixie-main/build-and-test-all')
+isOSSMainRun =  (env.JOB_NAME == 'pixie-oss/build-and-test-all')
 isNightlyTestRegressionRun = (env.JOB_NAME == 'pixie-main/nightly-test-regression')
 isCLIBuildRun =  env.JOB_NAME.startsWith('pixie-release/cli/')
 isVizierBuildRun = env.JOB_NAME.startsWith('pixie-release/vizier/')
@@ -729,7 +730,7 @@ def generateTestTargets = {
 preBuild['Process Dependencies'] = {
   WithSourceCodeK8s('process-deps') {
     container('pxbuild') {
-      if (isMainRun || isNightlyTestRegressionRun) {
+      if (isMainRun || isNightlyTestRegressionRun || isOSSMainRun) {
         sh '''
         ./ci/bazel_build_deps.sh -a
         wc -l bazel_*
@@ -746,7 +747,7 @@ preBuild['Process Dependencies'] = {
   }
 }
 
-if (isMainRun) {
+if (isMainRun || isOSSMainRun) {
   // Only run coverage on main runs.
   builders['Build & Test (gcc:coverage)'] = {
     WithSourceCodeAndTargetsK8s('coverage') {
@@ -758,7 +759,9 @@ if (isMainRun) {
       }
     }
   }
+}
 
+if (isMainRun) {
   // Only run LSIF on main runs.
   builders['LSIF (sourcegraph)'] = {
     WithSourceCodeAndTargetsK8s('lsif') {
