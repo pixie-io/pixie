@@ -64,8 +64,9 @@ func SetupEtcd() (*clientv3.Client, func()) {
 
 	var client *clientv3.Client
 	if err = pool.Retry(func() (err error) {
+		hostname := resource.Container.NetworkSettings.Gateway
 		client, err = clientv3.New(clientv3.Config{
-			Endpoints:   []string{fmt.Sprintf("http://localhost:%s", clientPort)},
+			Endpoints:   []string{fmt.Sprintf("http://%s:%s", hostname, clientPort)},
 			DialTimeout: 5 * time.Second,
 		})
 		if err != nil {
