@@ -1,0 +1,20 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vizier-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: vizier-operator
+  template:
+    metadata:
+      labels:
+        name: vizier-operator
+        plane: control
+    spec:
+      serviceAccountName: pixie-operator-service-account
+      containers:
+      - name: app
+        image: gcr.io/pl-dev-infra/vizier/operator_image:latest
