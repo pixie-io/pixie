@@ -748,12 +748,22 @@ preBuild['Process Dependencies'] = {
 }
 
 if (isMainRun || isOSSMainRun) {
+  def codecovToken = 'pixie-codecov-token'
+  if (isOSSMainRun) {
+    codecovToken = 'pixie-oss-codecov-token'
+  }
   // Only run coverage on main runs.
   builders['Build & Test (gcc:coverage)'] = {
     WithSourceCodeAndTargetsK8s('coverage') {
       container('pxbuild') {
         warnError('Coverage command failed') {
-          sh "ci/collect_coverage.sh -u -t ${CODECOV_TOKEN} -b main -c `cat GIT_COMMIT`"
+          withCredentials([
+            string(
+              credentialsId: codecovToken,
+              variable: 'CODECOV_TOKEN')
+          ]) {
+            sh "ci/collect_coverage.sh -u -t ${CODECOV_TOKEN} -b main -c `cat GIT_COMMIT`"
+          }
         }
         createBazelStash('build-gcc-coverage-testlogs')
       }
