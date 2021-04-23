@@ -17,6 +17,7 @@
  */
 
 export { AuthBox } from './components/auth/auth-box';
+export { GoogleButton } from './components/auth/google-button';
 export {
   Form, FormProps, FormField, FormStructure, PixienautForm, PixienautFormProps,
 } from './components/form/form';

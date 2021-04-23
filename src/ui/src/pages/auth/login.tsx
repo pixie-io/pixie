@@ -17,16 +17,23 @@
  */
 
 import * as React from 'react';
-import { AuthBox } from '@pixie-labs/components';
+import { AuthBox, GoogleButton } from '@pixie-labs/components';
 import { BasePage } from './base';
 import { OAuthLoginRequest } from './utils';
 
 export const LoginPage: React.FC = () => (
   <BasePage>
     <AuthBox
-      variant='login'
       toggleURL={`/auth/signup${window.location.search}`}
-      onPrimaryButtonClick={OAuthLoginRequest}
-    />
+      title='Login'
+      body='Welcome back to Pixie!'
+      buttonCaption="Don't have an account yet?"
+      buttonText='Sign Up'
+    >
+      <GoogleButton
+        text='Login with Google'
+        onClick={OAuthLoginRequest}
+      />
+    </AuthBox>
   </BasePage>
 );

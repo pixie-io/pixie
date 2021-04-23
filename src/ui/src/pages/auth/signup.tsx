@@ -20,7 +20,7 @@ import {
   createStyles, Theme, WithStyles, withStyles,
 } from '@material-ui/core';
 import * as React from 'react';
-import { AuthBox, SignupMarcom } from '@pixie-labs/components';
+import { AuthBox, GoogleButton, SignupMarcom } from '@pixie-labs/components';
 import { BasePage } from './base';
 import { OAuthSignupRequest } from './utils';
 
@@ -47,11 +47,20 @@ export const SignupPage = withStyles(styles)(({ classes }: WithStyles<typeof sty
       </div>
       <div>
         <AuthBox
-          variant='signup'
           toggleURL={`/auth/login${window.location.search}`}
-          onPrimaryButtonClick={OAuthSignupRequest}
+          title='Get Started'
+          // Need to encapsulate so that newline is properly escaped.
+          body={`Pixie Community is Free Forever.
+          No Credit Card Needed.`}
+          buttonCaption='Already have an account?'
+          buttonText='Login'
           showTOSDisclaimer
-        />
+        >
+          <GoogleButton
+            text='Sign-up with Google'
+            onClick={OAuthSignupRequest}
+          />
+        </AuthBox>
       </div>
     </div>
   </BasePage>
