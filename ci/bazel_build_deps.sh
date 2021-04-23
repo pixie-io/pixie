@@ -35,13 +35,18 @@ all_targets=false
 
 commit_range=$(git merge-base origin/main HEAD)
 
+experimental_exclude=""
+if [[ -d experimental ]]; then
+    experimental_exclude="except //experimental/..."
+fi
+
 ui_excludes="except //src/ui/..."
 bpf_excludes="except attr('tags', 'requires_bpf', //...)"
 default_go_transition_binary="attr('goos', 'auto', //...) union attr('goarch', 'auto', //...)"
 go_xcompile_excludes="except (kind(go_transition_binary, //...) except (${default_go_transition_binary}))"
 default_excludes="except attr('tags', 'manual', //...) \
-  except //third_party/... \
-  except //experimental/..."
+  except //third_party/... ${experimental_exclude}"
+
 sanitizer_only="except attr('tags', 'no_asan', //...) \
   except attr('tags', 'no_msan', //...) \
   except attr('tags', 'no_tsan', //...)"
