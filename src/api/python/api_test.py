@@ -749,6 +749,7 @@ class TestClient(unittest.TestCase):
             loop.run_until_complete(
                 run_script_and_tasks(script_executor, [test_utils.iterate_and_pass(http_tb)]))
 
+    @unittest.skip("PP-2660 - Test fails in docker environment")
     def test_direct_conns(self) -> None:
         # Test the direct connections.
 
