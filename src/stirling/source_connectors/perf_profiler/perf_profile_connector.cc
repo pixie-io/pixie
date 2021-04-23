@@ -191,12 +191,14 @@ uint64_t PerfProfileConnector::SymbolicStackTraceID(
 }
 
 PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces(
-    ebpf::BPFStackTable* stack_traces, ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo) {
+    ConnectorContext* ctx, ebpf::BPFStackTable* stack_traces,
+    ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo) {
   // TODO(jps): switch from using get_table_offline() to directly stepping through
   // the histogram data structure. Inline populating our own data structures with this.
   // Avoid an unnecessary copy of the information in local stack_trace_keys_and_counts.
   StackTraceHisto symbolic_histogram;
   uint64_t cum_sum_count = 0;
+  const uint32_t asid = ctx->GetASID();
 
   // Here we want to "consume" the table, not just "read" it. Pasing "clear_table=true"
   // into get_table_offline() clears each entry while walking the table and copying
@@ -207,8 +209,10 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
   for (const auto& [stack_trace_key, count] : histo->get_table_offline(kClearTable)) {
     cum_sum_count += count;
 
+    const md::UPID upid(asid, stack_trace_key.upid.pid, stack_trace_key.upid.start_time_ticks);
+
     std::string stack_trace_str = FoldedStackTraceString(stack_traces, stack_trace_key);
-    SymbolicStackTrace symbolic_stack_trace = {stack_trace_key.upid, std::move(stack_trace_str)};
+    SymbolicStackTrace symbolic_stack_trace = {upid, std::move(stack_trace_str)};
     symbolic_histogram[symbolic_stack_trace] += count;
 
     // TODO(jps): If we see a perf. issue with having two maps keyed by symbolic-stack-trace,
@@ -234,24 +238,21 @@ void PerfProfileConnector::CreateRecords(const uint64_t timestamp_ns,
   constexpr size_t kMaxStackDepth = 64;
   constexpr size_t kMaxStackTraceSize = kMaxStackDepth * kMaxSymbolSize;
 
-  const uint32_t asid = ctx->GetASID();
-
   // Stack traces from kernel/BPF are ordered lists of instruction pointers (addresses).
   // AggregateStackTraces() will collapse some of those into identical symbolic stack traces;
   // for example, consider the following two stack traces from BPF:
   // p0, p1, p2 => main;qux;baz   # both p2 & p3 point into baz.
   // p0, p1, p3 => main;qux;baz
 
-  StackTraceHisto stack_trace_histogram = AggregateStackTraces(stack_traces, histo);
+  StackTraceHisto stack_trace_histogram = AggregateStackTraces(ctx, stack_traces, histo);
 
   for (const auto& [key, count] : stack_trace_histogram) {
     DataTable::RecordBuilder<&kStackTraceTable> r(data_table, timestamp_ns);
 
     const uint64_t stack_trace_id = SymbolicStackTraceID(key);
-    const md::UPID upid(asid, key.upid.pid, key.upid.start_time_ticks);
 
     r.Append<r.ColIndex("time_")>(timestamp_ns);
-    r.Append<r.ColIndex("upid")>(upid.value());
+    r.Append<r.ColIndex("upid")>(key.upid.value());
     r.Append<r.ColIndex("stack_trace_id")>(stack_trace_id);
     r.Append<r.ColIndex("stack_trace"), kMaxStackTraceSize>(key.stack_trace_str);
     r.Append<r.ColIndex("count")>(count);

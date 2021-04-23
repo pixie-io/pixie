@@ -63,7 +63,7 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   //
   // SymbolicStackTrace will serve as a key to the unique stack-trace-id (an integer) in Stirling.
   struct SymbolicStackTrace {
-    const struct upid_t upid;
+    const md::UPID upid;
     const std::string stack_trace_str;
 
     template <typename H>
@@ -95,7 +95,7 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   uint64_t SymbolicStackTraceID(const SymbolicStackTrace& symbolic_stack_trace);
 
-  StackTraceHisto AggregateStackTraces(ebpf::BPFStackTable* stack_traces,
+  StackTraceHisto AggregateStackTraces(ConnectorContext* ctx, ebpf::BPFStackTable* stack_traces,
                                        ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo);
 
   std::string FoldedStackTraceString(ebpf::BPFStackTable* stack_traces,
