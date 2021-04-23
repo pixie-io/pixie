@@ -31,6 +31,10 @@ static constexpr DataElement kPGSQLElements[] = {
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
         canonical_data_elements::kTraceRole,
+        {"req_cmd", "PostgreSQL request command code",
+         types::DataType::STRING,
+         types::SemanticType::ST_NONE,
+         types::PatternType::GENERAL_ENUM},
         {"req", "PostgreSQL request body",
          types::DataType::STRING,
          types::SemanticType::ST_NONE,
@@ -56,6 +60,7 @@ static constexpr auto kPGSQLTable =
 constexpr int kPGSQLUPIDIdx = kPGSQLTable.ColIndex("upid");
 constexpr int kPGSQLReqIdx = kPGSQLTable.ColIndex("req");
 constexpr int kPGSQLRespIdx = kPGSQLTable.ColIndex("resp");
+constexpr int kPGSQLReqCmdIdx = kPGSQLTable.ColIndex("req_cmd");
 constexpr int kPGSQLLatencyIdx = kPGSQLTable.ColIndex("latency");
 
 }  // namespace stirling

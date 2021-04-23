@@ -370,6 +370,7 @@ Status HandleExecute(const RegularMessage& msg, MsgDeqIter* resps_begin,
   auto status = expr;                                     \
   if (status.ok()) {                                      \
     RegularMessage req;                                   \
+    req.tag = cur_iter->tag;                              \
     req.timestamp_ns = req_resp.req.timestamp_ns;         \
     DCHECK_NE(req.timestamp_ns, 0);                       \
     req.payload = req_resp.req.ToString();                \

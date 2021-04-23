@@ -124,9 +124,11 @@ TEST_F(StitchFramesTest, VerifySingleOutputMessage) {
 
   std::vector<uint64_t> req_tses;
   std::vector<std::string> req_msgs;
+  std::vector<Tag> req_tags;
   for (const auto& record : records_and_err_count.records) {
     req_tses.push_back(record.req.timestamp_ns);
     req_msgs.push_back(record.req.payload);
+    req_tags.push_back(record.req.tag);
   }
 
   std::vector<uint64_t> resp_tses;
@@ -139,12 +141,13 @@ TEST_F(StitchFramesTest, VerifySingleOutputMessage) {
   EXPECT_THAT(req_tses, ElementsAre(100, 101, 102, 103, 104, 105, 106));
   EXPECT_THAT(
       req_msgs,
-      ElementsAre("PARSE [SELECT * FROM person WHERE first_name=$1]",
-                  "DESCRIBE [type=kStatement name=]",
-                  "BIND [portal= statement= parameters=[[format=kText value=Jason]] "
-                  "result_format_codes=[]]",
-                  "EXECUTE [query=[SELECT * FROM person WHERE first_name=$1], params=[Jason]]",
-                  "QUERY [select * from table;]", "QUERY [drop table foo;]", "QUERY [ROLLBACK]"));
+      ElementsAre(
+          "SELECT * FROM person WHERE first_name=$1", "type=kStatement name=",
+          "portal= statement= parameters=[[format=kText value=Jason]] result_format_codes=[]",
+          "query=[SELECT * FROM person WHERE first_name=$1] params=[Jason]", "select * from table;",
+          "drop table foo;", "ROLLBACK"));
+  EXPECT_THAT(req_tags, ElementsAre(Tag::kParse, Tag::kDesc, Tag::kBind, Tag::kExecute, Tag::kQuery,
+                                    Tag::kQuery, Tag::kQuery));
 
   EXPECT_THAT(resp_tses, ElementsAre(110, 111, 113, 115, 118, 119, 120));
   EXPECT_THAT(resp_msgs,

@@ -773,6 +773,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("resp")>(std::move(entry.resp.payload));
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
+  r.Append<r.ColIndex("req_cmd")>(ToString(entry.req.tag, /* is_req */ true));
 #ifndef NDEBUG
   r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
 #endif

@@ -51,7 +51,6 @@ enum class Tag : char {
   kCopyDone = 'c',
 
   // F.
-  kDataRow = 'D',
   kQuery = 'Q',
   kCopyFail = 'f',
   kClose = 'C',
@@ -63,6 +62,7 @@ enum class Tag : char {
   kExecute = 'E',
 
   // B.
+  kDataRow = 'D',
   kReadyForQuery = 'Z',
   kCopyOutResponse = 'H',
   kCopyInResponse = 'G',
@@ -86,6 +86,56 @@ enum class Tag : char {
 inline std::ostream& operator<<(std::ostream& os, Tag tag) {
   os << static_cast<char>(tag) << ":" << magic_enum::enum_name(tag);
   return os;
+}
+
+inline std::string ToString(Tag tag, bool is_req) {
+#define TAG_CASE(tag, name) \
+  case tag:                 \
+    return name;
+
+  if (is_req) {
+    switch (tag) {
+      TAG_CASE(Tag::kCopyData, "Copy Data")
+      TAG_CASE(Tag::kCopyDone, "Copy Done")
+      TAG_CASE(Tag::kQuery, "Query")
+      TAG_CASE(Tag::kCopyFail, "Copy Fail")
+      TAG_CASE(Tag::kClose, "Close")
+      TAG_CASE(Tag::kBind, "Bind")
+      TAG_CASE(Tag::kPasswd, "Password Message")
+      TAG_CASE(Tag::kParse, "Parse")
+      TAG_CASE(Tag::kDesc, "Describe")
+      TAG_CASE(Tag::kSync, "Sync")
+      TAG_CASE(Tag::kExecute, "Execute")
+      TAG_CASE(Tag::kUnknown, "Unknown")
+      default:
+        DCHECK(false) << "Request tag " << magic_enum::enum_name(tag) << " has no ToString case";
+        return "Unknown";
+    }
+  } else {
+    switch (tag) {
+      TAG_CASE(Tag::kCopyData, "Copy Data")
+      TAG_CASE(Tag::kCopyDone, "Copy Done")
+      TAG_CASE(Tag::kDataRow, "Data Row")
+      TAG_CASE(Tag::kReadyForQuery, "Ready For Query")
+      TAG_CASE(Tag::kCopyOutResponse, "Copy Out Response")
+      TAG_CASE(Tag::kCopyInResponse, "Copy In Response")
+      TAG_CASE(Tag::kErrResp, "Error Response")
+      TAG_CASE(Tag::kCmdComplete, "Command Complete")
+      TAG_CASE(Tag::kCloseComplete, "Close Complete")
+      TAG_CASE(Tag::kBindComplete, "Bind Complete")
+      TAG_CASE(Tag::kKey, "Backend Key Data")
+      TAG_CASE(Tag::kAuth, "Authentication")
+      TAG_CASE(Tag::kParseComplete, "Parse Complete")
+      TAG_CASE(Tag::kParamDesc, "Parameter Description")
+      TAG_CASE(Tag::kRowDesc, "Row Description")
+      TAG_CASE(Tag::kNoData, "No Data")
+      TAG_CASE(Tag::kUnknown, "Unknown")
+      default:
+        DCHECK(false) << "Response tag " << magic_enum::enum_name(tag) << " has no ToString case";
+        return "Unknown";
+    }
+  }
+#undef TAG_CASE
 }
 
 /**
@@ -189,10 +239,10 @@ struct BindRequest {
   };
 
   std::string ToString() const {
-    return absl::Substitute(
-        "BIND [portal=$0 statement=$1 parameters=[$2] result_format_codes=[$3]]", dest_portal_name,
-        src_prepared_stat_name, absl::StrJoin(params, ", ", ToStringFormatter<Param>()),
-        absl::StrJoin(res_col_fmt_codes, ", ", FmtCodeFormatter()));
+    return absl::Substitute("portal=$0 statement=$1 parameters=[$2] result_format_codes=[$3]",
+                            dest_portal_name, src_prepared_stat_name,
+                            absl::StrJoin(params, ", ", ToStringFormatter<Param>()),
+                            absl::StrJoin(res_col_fmt_codes, ", ", FmtCodeFormatter()));
   }
 };
 
@@ -209,7 +259,7 @@ struct Parse {
   std::string_view query;
   std::vector<int32_t> param_type_oids;
 
-  std::string ToString() const { return absl::Substitute("PARSE [$0]", query); }
+  std::string ToString() const { return std::string(query); }
 };
 
 struct RowDesc {
@@ -263,7 +313,7 @@ struct Desc {
   std::string name;
 
   std::string ToString() const {
-    return absl::Substitute("DESCRIBE [type=$0 name=$1]", magic_enum::enum_name(type), name);
+    return absl::Substitute("type=$0 name=$1", magic_enum::enum_name(type), name);
   }
 };
 
@@ -364,7 +414,7 @@ struct QueryReqResp {
 
     std::string_view query;
 
-    std::string ToString() const { return absl::Substitute("QUERY [$0]", query); }
+    std::string ToString() const { return std::string(query); }
   };
 
   struct QueryResp {
@@ -458,8 +508,7 @@ struct Exec {
     for (const auto& p : params) {
       param_strs.emplace_back(p.Value());
     }
-    return absl::Substitute("EXECUTE [query=[$0], params=[$1]]", query,
-                            absl::StrJoin(param_strs, ", "));
+    return absl::Substitute("query=[$0] params=[$1]", query, absl::StrJoin(param_strs, ", "));
   }
 };
 

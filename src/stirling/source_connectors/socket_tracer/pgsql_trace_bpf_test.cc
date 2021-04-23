@@ -23,6 +23,7 @@
 
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include "src/common/exec/exec.h"
 #include "src/common/testing/test_utils/container_runner.h"
@@ -33,6 +34,7 @@
 namespace px {
 namespace stirling {
 
+using protocols::pgsql::Tag;
 using ::px::stirling::testing::AccessRecordBatch;
 using ::px::stirling::testing::FindRecordIdxMatchesPID;
 using ::px::testing::BazelBinTestFilePath;
@@ -128,12 +130,33 @@ class PostgreSQLTraceGoSQLxTest
   GolangSQLxContainer sqlx_container_;
 };
 
-std::vector<std::pair<std::string, std::string>> RecordBatchToPairs(
+struct ReqRespCmd {
+  std::string req;
+  std::string resp;
+  std::string req_cmd;
+
+  ReqRespCmd(std::string request, std::string response, std::string request_command)
+      : req(std::move(request)), resp(std::move(response)), req_cmd(std::move(request_command)) {}
+  ReqRespCmd(std::string request, std::string response, Tag tag)
+      : ReqRespCmd(std::move(request), std::move(response), ToString(tag, /* is_req */ true)) {}
+};
+
+bool operator==(const ReqRespCmd& a, const ReqRespCmd& b) {
+  return a.req == b.req && a.resp == b.resp && a.req_cmd == b.req_cmd;
+}
+
+std::ostream& operator<<(std::ostream& os, const ReqRespCmd& req_resp_cmd) {
+  os << "(" << req_resp_cmd.req_cmd << ", " << req_resp_cmd.req << ", " << req_resp_cmd.resp << ")";
+  return os;
+}
+
+std::vector<ReqRespCmd> RecordBatchToReqRespCmds(
     const types::ColumnWrapperRecordBatch& record_batch, const std::vector<size_t>& indices) {
-  std::vector<std::pair<std::string, std::string>> res;
+  std::vector<ReqRespCmd> res;
   for (size_t i : indices) {
-    res.push_back({AccessRecordBatch<types::StringValue>(record_batch, kPGSQLReqIdx, i),
-                   AccessRecordBatch<types::StringValue>(record_batch, kPGSQLRespIdx, i)});
+    res.emplace_back(AccessRecordBatch<types::StringValue>(record_batch, kPGSQLReqIdx, i),
+                     AccessRecordBatch<types::StringValue>(record_batch, kPGSQLRespIdx, i),
+                     AccessRecordBatch<types::StringValue>(record_batch, kPGSQLReqCmdIdx, i));
   }
   return res;
 }
@@ -157,39 +180,41 @@ TEST_F(PostgreSQLTraceGoSQLxTest, GolangSqlxDemo) {
       FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, sqlx_container_.process_pid());
 
   EXPECT_THAT(
-      RecordBatchToPairs(record_batch, indices),
+      RecordBatchToReqRespCmds(record_batch, indices),
       ElementsAre(
-          Pair("QUERY [CREATE TABLE IF NOT EXISTS person (\n"
-               "    first_name text,\n"
-               "    last_name text,\n"
-               "    email text\n)]",
-               "CREATE TABLE"),
-          Pair("QUERY [BEGIN READ WRITE]", "BEGIN"),
-          Pair("PARSE [INSERT INTO person (first_name, last_name, email) VALUES ($1, $2, $3)]",
-               "PARSE COMPLETE"),
-          Pair("DESCRIBE [type=kStatement name=]", "ROW DESCRIPTION "),
-          Pair("BIND [portal= statement= parameters=[[format=kText value=Jason], "
-               "[format=kText value=Moiron], "
-               "[format=kText value=jmoiron@jmoiron.net]] result_format_codes=[]]",
-               "BIND COMPLETE"),
-          Pair("EXECUTE [query=[INSERT INTO person (first_name, last_name, email) VALUES "
-               "($1, $2, $3)], params=[Jason, Moiron, jmoiron@jmoiron.net]]",
-               "INSERT 0 1"),
-          Pair("QUERY [COMMIT]", "COMMIT"),
-          Pair("PARSE [SELECT * FROM person WHERE first_name=$1]", "PARSE COMPLETE"),
-          Pair("DESCRIBE [type=kStatement name=]",
-               "ROW DESCRIPTION [name=first_name table_oid=16384 attr_num=1 type_oid=25 "
-               "type_size=-1 type_modifier=-1 fmt_code=kText] "
-               "[name=last_name table_oid=16384 attr_num=2 type_oid=25 type_size=-1 "
-               "type_modifier=-1 fmt_code=kText] "
-               "[name=email table_oid=16384 attr_num=3 type_oid=25 type_size=-1 "
-               "type_modifier=-1 fmt_code=kText]"),
-          Pair("BIND [portal= statement= parameters=[[format=kText value=Jason]] "
-               "result_format_codes=[]]",
-               "BIND COMPLETE"),
-          Pair("EXECUTE [query=[SELECT * FROM person WHERE first_name=$1], params=[Jason]]",
-               "Jason,Moiron,jmoiron@jmoiron.net\n"
-               "SELECT 1")));
+          ReqRespCmd("CREATE TABLE IF NOT EXISTS person (\n"
+                     "    first_name text,\n"
+                     "    last_name text,\n"
+                     "    email text\n)",
+                     "CREATE TABLE", Tag::kQuery),
+          ReqRespCmd("BEGIN READ WRITE", "BEGIN", Tag::kQuery),
+          ReqRespCmd("INSERT INTO person (first_name, last_name, email) VALUES ($1, $2, $3)",
+                     "PARSE COMPLETE", Tag::kParse),
+          ReqRespCmd("type=kStatement name=", "ROW DESCRIPTION ", Tag::kDesc),
+          ReqRespCmd("portal= statement= parameters=[[format=kText value=Jason], "
+                     "[format=kText value=Moiron], "
+                     "[format=kText value=jmoiron@jmoiron.net]] result_format_codes=[]",
+                     "BIND COMPLETE", Tag::kBind),
+          ReqRespCmd("query=[INSERT INTO person (first_name, last_name, email) VALUES "
+                     "($1, $2, $3)] params=[Jason, Moiron, jmoiron@jmoiron.net]",
+                     "INSERT 0 1", Tag::kExecute),
+          ReqRespCmd("COMMIT", "COMMIT", Tag::kQuery),
+          ReqRespCmd("SELECT * FROM person WHERE first_name=$1", "PARSE COMPLETE", Tag::kParse),
+          ReqRespCmd("type=kStatement name=",
+                     "ROW DESCRIPTION [name=first_name table_oid=16384 attr_num=1 type_oid=25 "
+                     "type_size=-1 type_modifier=-1 fmt_code=kText] "
+                     "[name=last_name table_oid=16384 attr_num=2 type_oid=25 type_size=-1 "
+                     "type_modifier=-1 fmt_code=kText] "
+                     "[name=email table_oid=16384 attr_num=3 type_oid=25 type_size=-1 "
+                     "type_modifier=-1 fmt_code=kText]",
+                     Tag::kDesc),
+          ReqRespCmd("portal= statement= parameters=[[format=kText value=Jason]] "
+                     "result_format_codes=[]",
+                     "BIND COMPLETE", Tag::kBind),
+          ReqRespCmd("query=[SELECT * FROM person WHERE first_name=$1] params=[Jason]",
+                     "Jason,Moiron,jmoiron@jmoiron.net\n"
+                     "SELECT 1",
+                     Tag::kExecute)));
 }
 
 TEST_F(PostgreSQLTraceTest, FunctionCall) {
@@ -222,14 +247,16 @@ TEST_F(PostgreSQLTraceTest, FunctionCall) {
 
     EXPECT_THAT(
         std::string(AccessRecordBatch<types::StringValue>(record_batch, kPGSQLReqIdx, indices[0])),
-        StrEq("QUERY [CREATE OR REPLACE FUNCTION increment(i integer) RETURNS integer AS $$\n"
+        StrEq("CREATE OR REPLACE FUNCTION increment(i integer) RETURNS integer AS $$\n"
               "BEGIN\n"
               "      RETURN i + 1;\n"
               "END;\n"
-              "$$ LANGUAGE plpgsql;]"));
+              "$$ LANGUAGE plpgsql;"));
     EXPECT_THAT(
         std::string(AccessRecordBatch<types::StringValue>(record_batch, kPGSQLRespIdx, indices[0])),
         StrEq("CREATE FUNCTION"));
+    EXPECT_THAT(AccessRecordBatch<types::StringValue>(record_batch, kPGSQLReqCmdIdx, indices[0]),
+                StrEq(ToString(Tag::kQuery, /* is_req */ true)));
   }
   {
     StartTransferDataThread();
@@ -251,7 +278,7 @@ TEST_F(PostgreSQLTraceTest, FunctionCall) {
 
     EXPECT_THAT(
         std::string(AccessRecordBatch<types::StringValue>(record_batch, kPGSQLReqIdx, indices[0])),
-        StrEq("QUERY [select increment(1);]"));
+        StrEq("select increment(1);"));
     EXPECT_THAT(
         std::string(AccessRecordBatch<types::StringValue>(record_batch, kPGSQLRespIdx, indices[0])),
         StrEq("increment\n"
