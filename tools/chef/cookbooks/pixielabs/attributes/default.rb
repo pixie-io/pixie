@@ -32,6 +32,10 @@ default['gsutil']                  = {}
 default['gsutil']['download_path'] = 'https://storage.googleapis.com/pub/gsutil_4.54.tar.gz'
 default['gsutil']['sha256']        = 'a6698479af8dc26e2ed809102e9e5d813f475bca44ce7007ed4e25ee79a3289c'
 
+default['antlr'] = {}
+default['antlr']['download_path'] = 'https://www.antlr.org/download/antlr-4.9-complete.jar'
+default['antlr']['sha256'] = 'bd11b2464bc8aee5f51b119dff617101b77fa729540ee7f08241a6a672e6bc81'
+
 default['skaffold']                  = {}
 default['kubectl']                   = {}
 default['bazel']                     = {}
@@ -49,6 +53,7 @@ default['src']                       = {}
 default['lsif-go']                   = {}
 default['golangci-lint']             = {}
 default['helm']                      = {}
+
 
 if node[:platform] == 'ubuntu'
   default['bazel']['download_path'] =
