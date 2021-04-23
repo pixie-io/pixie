@@ -14,23 +14,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# flake8: noqa
+load("@rules_python//python:defs.bzl", "py_library")
 
-from .data import Row
-
-from .client import (
-    vpb,
-    cpb,
-    cloudapi_pb2_grpc,
-    vizierapi_pb2_grpc,
-    Client,
-    ScriptExecutor,
-    Conn,
-    ClusterID,
-    TableSub,
-    TableSubGenerator,
-)
-
-from .errors import (
-    PxLError
+py_library(
+    name = "test_utils",
+    testonly = True,
+    srcs = ["test_utils.py"],
+    imports = ["../../"],
+    srcs_version = "PY3",
+    visibility = ["//src/api/python/tests:__subpackages__"],
+    deps = [
+        "//src/api/python/pxapi:pxapi_library",
+    ],
 )

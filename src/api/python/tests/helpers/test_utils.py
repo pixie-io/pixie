@@ -14,11 +14,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import List, Any
-from src.api.python.pxapi import vpb
-from src.api.python import pxapi
-
 import grpc
+from typing import List, Any
+
+from pxapi import vpb
+import pxapi
+
 
 cluster_uuid1 = "10000000-0000-0000-0000-000000000001"
 cluster_uuid2 = "10000000-0000-0000-0000-000000000002"

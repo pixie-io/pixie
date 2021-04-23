@@ -14,14 +14,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import unittest
-import json
 import asyncio
+import json
+import unittest
 from typing import List, Any
 
+from pxapi import data, vpb
 
-import data
-from data import vpb
 import test_utils as utils
 
 

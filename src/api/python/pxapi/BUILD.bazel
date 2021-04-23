@@ -14,19 +14,20 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@rules_python//python:defs.bzl", "py_library", "py_test")
+load("@rules_python//python:defs.bzl", "py_library")
 load("@vizier_api_python_deps//:requirements.bzl", "requirement")
 
 py_library(
-    name = "py_library",
-    srcs = glob(
-        ["*.py"],
-        exclude = [
-            "*_test.py",
-            "test_utils.py",
-        ],
-    ),
-    visibility = ["//src:__subpackages__"],
+    name = "pxapi_library",
+    srcs = [
+        "__init__.py",
+        "client.py",
+        "data.py",
+        "errors.py",
+        "utils.py",
+    ],
+    srcs_version = "PY3",
+    visibility = ["//src/api/python:__subpackages__"],
     deps = [
         "//src/api/proto/cloudapipb:cloudapi_pl_py_grpc",
         "//src/api/proto/vizierapipb:vizier_pl_py_grpc",
@@ -35,19 +36,4 @@ py_library(
         requirement("grpcio-tools"),
         requirement("protobuf"),
     ],
-)
-
-py_library(
-    name = "py_test_library",
-    testonly = True,
-    srcs = ["test_utils.py"],
-    visibility = ["//src:__subpackages__"],
-    deps = [":py_library"],
-)
-
-py_test(
-    name = "data_test",
-    srcs = ["data_test.py"],
-    visibility = ["//src:__subpackages__"],
-    deps = [":py_test_library"],
 )

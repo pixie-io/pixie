@@ -89,12 +89,16 @@ gcs_file(
 )
 
 # Setup the environment for the open-source python API.
-load("@rules_python//python:pip.bzl", "pip_install")
+load("@rules_python//python:pip.bzl", "pip_parse")
 
-pip_install(
+pip_parse(
     name = "vizier_api_python_deps",
-    requirements = "//src/api/python:requirements.txt",
+    requirements_lock = "//src/api/python:requirements.txt",
 )
+
+load("@vizier_api_python_deps//:requirements.bzl", "install_deps")
+
+install_deps()
 
 # gazelle:repo bazel_gazelle
 

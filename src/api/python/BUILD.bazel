@@ -14,31 +14,55 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@rules_python//python:defs.bzl", "py_test")
+load("@px//src/api/python:wheel_upload.bzl", "wheel_upload")
+load("@rules_python//python:packaging.bzl", "py_wheel")
 
-sh_library(
-    name = "copy_python_api_sh",
-    srcs = ["copy_python_srcs.sh"],
-    data = [
-        "//src/api/python/pxapi:py_library",
+py_wheel(
+    name = "pxapi",
+    author = "The Pixie Authors",
+    author_email = "help@pixielabs.ai",
+    classifiers = [
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+        "Operating System :: OS Independent",
+        "License :: OSI Approved :: Apache Software License",
+        "Typing :: Typed",
     ],
-    visibility = ["//src:__subpackages__"],
+    description_file = ":README.rst",
+    distribution = "pxapi",
+    license = "Apache-2.0",
+    platform = "any",
+    python_requires = ">=3.8",
+    python_tag = "py3",
+    requires = [
+        "gogo-python==0.0.1",
+        "grpcio==1.37.0",
+        "grpcio-tools==1.37.0",
+        "pip==20.0.2",
+        "pkg-resources==0.0.0",
+        "protobuf==3.15.8",
+        "setuptools==44.0.0",
+        "six==1.15.0",
+    ],
+    strip_path_prefixes = ["src/api/python/"],
+    version = "0.3.0",
+    deps = [
+        "//src/api/proto/cloudapipb:cloudapi_pl_py_grpc",
+        "//src/api/proto/uuidpb:uuid_pl_py_proto",
+        "//src/api/proto/vispb:vis_pl_py_proto",
+        "//src/api/proto/vizierapipb:vizier_pl_py_grpc",
+        "//src/api/python/pxapi:pxapi_library",
+    ],
 )
 
-sh_binary(
-    name = "build_pip_package",
-    srcs = ["build_pip_package.sh"],
-    deps = [
-        ":copy_python_api_sh",
-    ],
+wheel_upload(
+    name = "upload_testpypi_wheel",
+    repository = "testpypi",
+    wheel = ":pxapi",
 )
 
-py_test(
-    name = "api_test",
-    srcs = ["api_test.py"],
-    visibility = ["//src:__subpackages__"],
-    deps = [
-        "//src/api/python/pxapi:py_library",
-        "//src/api/python/pxapi:py_test_library",
-    ],
+wheel_upload(
+    name = "upload_pypi_wheel",
+    repository = "pypi",
+    wheel = ":pxapi",
 )

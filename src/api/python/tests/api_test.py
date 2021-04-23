@@ -14,15 +14,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from pxapi import cloudapi_pb2_grpc, cpb, vizierapi_pb2_grpc, vpb, test_utils, utils
-import pxapi
-import unittest
-import grpc
 import asyncio
+import grpc
+import unittest
 import uuid
+
 from concurrent import futures
 from typing import List, Any, Coroutine, Dict
 
+from pxapi import cloudapi_pb2_grpc, cpb, vizierapi_pb2_grpc, vpb, utils
+import pxapi
+
+import test_utils
 
 ACCESS_TOKEN = "12345678-0000-0000-0000-987654321012"
 pxl_script = """

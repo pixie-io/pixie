@@ -14,12 +14,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import asyncio
 import grpc
 import grpc.aio
-from urllib.parse import urlparse
-import asyncio
+
 from typing import AsyncGenerator, Awaitable, Callable, cast, \
     Dict, Generator, List, Literal, Union, Set
+from urllib.parse import urlparse
 
 from src.api.proto.vizierapipb import vizierapi_pb2 as vpb
 from src.api.proto.vizierapipb import vizierapi_pb2_grpc
