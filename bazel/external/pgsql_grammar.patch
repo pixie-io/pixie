@@ -1,0 +1,430 @@
+diff --git a/apgdiff/antlr-src/SQLLexer.g4 b/apgdiff/antlr-src/PostgresSQLLexer.g4
+similarity index 96%
+rename from apgdiff/antlr-src/SQLLexer.g4
+rename to apgdiff/antlr-src/PostgresSQLLexer.g4
+index 1990aa64c..4753e9bed 100644
+--- a/apgdiff/antlr-src/SQLLexer.g4
++++ b/apgdiff/antlr-src/PostgresSQLLexer.g4
+@@ -16,18 +16,20 @@
+  limitations under the License.
+  */
+ 
+-lexer grammar SQLLexer;
++lexer grammar PostgresSQLLexer;
+ 
+ @header {
+-package cz.startnet.utils.pgdiff.parsers.antlr;
+-import java.util.ArrayDeque;
+-import java.util.Deque;
++#include <algorithm>
++#include <cctype>
++#include <deque>
++#include <string>
++#include "absl/strings/str_replace.h"
+ }
+ 
+ @members {
+ /* This field stores the tags which are used to detect the end of a dollar-quoted string literal.
+ */
+-private final Deque<String> _tags = new ArrayDeque<String>();
++  std::deque<std::string> _tags;
+ }
+ 
+     /*
+@@ -505,7 +507,7 @@ private final Deque<String> _tags = new ArrayDeque<String>();
+ 
+     CASE: [cC] [aA] [sS] [eE];
+     CAST: [cC] [aA] [sS] [tT];
+-    CHECK: [cC] [hH] [eE] [cC] [kK];
++    CHECK_TOKEN: [cC] [hH] [eE] [cC] [kK];
+     COLLATE: [cC] [oO] [lL] [lL] [aA] [tT] [eE];
+     COLUMN: [cC] [oO] [lL] [uU] [mM] [nN];
+     CONSTRAINT: [cC] [oO] [nN] [sS] [tT] [rR] [aA] [iI] [nN] [tT];
+@@ -550,7 +552,7 @@ private final Deque<String> _tags = new ArrayDeque<String>();
+     LOCALTIMESTAMP: [lL] [oO] [cC] [aA] [lL] [tT] [iI] [mM] [eE] [sS] [tT] [aA] [mM] [pP];
+ 
+     NOT: [nN] [oO] [tT];
+-    NULL: [nN] [uU] [lL] [lL];
++    NULL_TOKEN: [nN] [uU] [lL] [lL];
+ 
+     OFFSET: [oO] [fF] [fF] [sS] [eE] [tT];
+     ON: [oO] [nN];
+@@ -639,8 +641,8 @@ private final Deque<String> _tags = new ArrayDeque<String>();
+ 
+     JSON: [jJ] [sS] [oO] [nN]; 
+ 
+-    LC_COLLATE: [lL] [cC] UNDERLINE [cC] [oO] [lL] [lL] [aA] [tT] [eE];
+-    LC_CTYPE: [lL] [cC] UNDERLINE [cC] [tT] [yY] [pP] [eE]; 
++    LC_COLLATE_TOKEN: [lL] [cC] UNDERLINE [cC] [oO] [lL] [lL] [aA] [tT] [eE];
++    LC_CTYPE_TOKEN: [lL] [cC] UNDERLINE [cC] [tT] [yY] [pP] [eE]; 
+     LEFTARG: [lL] [eE] [fF] [tT] [aA] [rR] [gG];
+     LEXIZE: [lL] [eE] [xX] [iI] [zZ] [eE];
+     LEXTYPES: [lL] [eE] [xX] [tT] [yY] [pP] [eE] [sS];
+@@ -742,7 +744,7 @@ private final Deque<String> _tags = new ArrayDeque<String>();
+ 
+     INFO: [iI] [nN] [fF] [oO];
+ 
+-    LOG: [lL] [oO] [gG];
++    LOG_TOKEN: [lL] [oO] [gG];
+     LOOP: [lL] [oO] [oO] [pP];
+ 
+     MESSAGE: [mM] [eE] [sS] [sS] [aA] [gG] [eE];
+@@ -829,8 +831,8 @@ fragment
+ OperatorBasic
+     : [+*<>=]
+     // check so that comment start sequences are not matched by this
+-    | '-' {_input.LA(1) != '-'}?
+-    | '/' {_input.LA(1) != '*'}?;
++    | '-' {_input->LA(1) != '-'}?
++    | '/' {_input->LA(1) != '*'}?;
+ fragment
+ OperatorBasicEnd: [*/<>=];
+ fragment
+@@ -844,7 +846,7 @@ Digit : '0'..'9';
+ REAL_NUMBER
+     // fail double dots into a separate token
+     // otherwise 1..10 would lex into 2 numbers
+-    :   Digit+ '.' {_input.LA(1) != '.'}?
++    :   Digit+ '.' {_input->LA(1) != '.'}?
+     |   Digit+ '.' Digit+ EXPONENT?
+     |   Digit+ '.' EXPONENT
+     |   '.' Digit+ EXPONENT?
+@@ -864,7 +866,13 @@ DOLLAR_NUMBER
+ Identifier
+     : IdentifierStartChar IdentifierChar*
+     // always lowercase unquoted ids
+-        { setText(getText().toLowerCase(java.util.Locale.ROOT)); }
++        { 
++          {
++            auto __tx = getText();
++            std::transform(__tx.begin(), __tx.end(), __tx.begin(), [](unsigned char c) { return tolower(c); });
++            setText(__tx);
++          }
++        }
+     ;
+ fragment
+ IdentifierStartChar
+@@ -873,9 +881,11 @@ IdentifierStartChar
+     | // these are the valid characters from 0x80 to 0xFF
+     [\u00AA\u00B5\u00BA\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF]
+     | // these are the letters above 0xFF which only need a single UTF-16 code unit
+-    [\u0100-\uD7FF\uE000-\uFFFF] {Character.isLetter((char)_input.LA(-1))}?
++    [\u0100-\uD7FF\uE000-\uFFFF] {isalpha(_input->LA(-1))}?
+     | // letters which require multiple UTF-16 code units
+-    [\uD800-\uDBFF] [\uDC00-\uDFFF] {Character.isLetter(Character.toCodePoint((char)_input.LA(-2), (char)_input.LA(-1)))}?
++    // [\uD800-\uDBFF] [\uDC00-\uDFFF] {Character.isLetter(Character.toCodePoint((char)_input->LA(-2), (char)_input->LA(-1)))}?
++    // TODO(james): implement above Java line for c++.
++    [\uD800-\uDBFF] [\uDC00-\uDFFF] {false}?
+     ;
+ fragment
+ IdentifierChar
+@@ -897,8 +907,10 @@ QuotedIdentifier
+     : UnterminatedQuotedIdentifier '"'
+     // unquote so that we may always call getText() and not worry about quotes
+         {
+-            String __tx = getText();
+-            setText(__tx.substring(1, __tx.length() - 1).replace("\"\"", "\""));
++          {
++            auto __tx = getText();
++            setText(absl::StrReplaceAll(__tx.substr(1, __tx.length() - 1), {{"\"\"", "\""}}));
++          }
+         }
+     ;
+ // This is a quoted identifier which only contains valid characters but is not terminated
+@@ -937,7 +949,7 @@ EXPONENT : ('e'|'E') ('+'|'-')? Digit+ ;
+ 
+ // Dollar-quoted String Constants (§4.1.2.4)
+ BeginDollarStringConstant
+-    : '$' Tag? '$' {_tags.push(getText());} -> pushMode(DollarQuotedStringMode)
++    : '$' Tag? '$' {_tags.push_back(getText());} -> pushMode(DollarQuotedStringMode)
+     ;
+ 
+ fragment
+@@ -983,5 +995,5 @@ Text_between_Dollar
+     ;
+ 
+ EndDollarStringConstant
+-    : '$' Tag? '$' {getText().equals(_tags.peek())}? {_tags.pop();} -> popMode
++    : '$' Tag? '$' {getText().compare(_tags.back()) == 0}? {_tags.pop_back();} -> popMode
+     ;
+diff --git a/apgdiff/antlr-src/SQLParser.g4 b/apgdiff/antlr-src/PostgresSQLParser.g4
+similarity index 98%
+rename from apgdiff/antlr-src/SQLParser.g4
+rename to apgdiff/antlr-src/PostgresSQLParser.g4
+index 9bd3569f0..28a9415cf 100644
+--- a/apgdiff/antlr-src/SQLParser.g4
++++ b/apgdiff/antlr-src/PostgresSQLParser.g4
+@@ -1,17 +1,14 @@
+-parser grammar SQLParser;
++parser grammar PostgresSQLParser;
+ 
+ options {
+-    language=Java;
+-    tokenVocab=SQLLexer;
++    tokenVocab=PostgresSQLLexer;
+ }
+ 
+-@header {package cz.startnet.utils.pgdiff.parsers.antlr;}
+-
+ // to start parsing, it is recommended to use only rules with EOF
+ // this eliminates the ambiguous parsing options and speeds up the process
+ /******* Start symbols *******/
+ 
+-sql
++root
+     : BOM? SEMI_COLON* (statement (SEMI_COLON+ | EOF))* EOF
+     ;
+ 
+@@ -408,7 +405,7 @@ column_action
+     | ADD identity_body
+     | set_def_column
+     | drop_def
+-    | (set=SET | DROP) NOT NULL
++    | (set=SET | DROP) NOT NULL_TOKEN
+     | DROP IDENTITY if_exists?
+     | DROP EXPRESSION if_exists?
+     | SET storage_parameter
+@@ -453,7 +450,7 @@ table_initialy_immed
+     ;
+ 
+ function_actions_common
+-    : (CALLED | RETURNS NULL) ON NULL INPUT
++    : (CALLED | RETURNS NULL_TOKEN) ON NULL_TOKEN INPUT
+     | TRANSFORM transform_for_type (COMMA transform_for_type)*
+     | STRICT
+     | IMMUTABLE
+@@ -582,7 +579,7 @@ alter_domain_statement
+     : DOMAIN name=schema_qualified_name
+     (set_def_column
+     | drop_def
+-    | (SET | DROP) NOT NULL
++    | (SET | DROP) NOT NULL_TOKEN
+     | ADD dom_constraint=domain_constraint (NOT not_valid=VALID)?
+     | drop_constraint
+     | RENAME CONSTRAINT schema_qualified_name TO schema_qualified_name
+@@ -734,7 +731,7 @@ create_server_statement
+ create_fts_dictionary_statement
+     : TEXT SEARCH DICTIONARY name=schema_qualified_name
+     LEFT_PAREN
+-        TEMPLATE EQUAL template=schema_qualified_name (COMMA option_with_value)*
++        TEMPLATE EQUAL templ=schema_qualified_name (COMMA option_with_value)*
+     RIGHT_PAREN
+     ;
+ 
+@@ -781,7 +778,7 @@ alter_collation_statement
+     ;
+ 
+ collation_option
+-    : (LOCALE | LC_COLLATE | LC_CTYPE | PROVIDER | VERSION) EQUAL (character_string | identifier)
++    : (LOCALE | LC_COLLATE_TOKEN | LC_CTYPE_TOKEN | PROVIDER | VERSION) EQUAL (character_string | identifier)
+     | DETERMINISTIC EQUAL boolean_value
+     ;
+ 
+@@ -884,7 +881,7 @@ target_operator
+     ;
+ 
+ domain_constraint
+-    : (CONSTRAINT name=identifier)? (CHECK LEFT_PAREN vex RIGHT_PAREN | NOT? NULL)
++    : (CONSTRAINT name=identifier)? (CHECK_TOKEN LEFT_PAREN vex RIGHT_PAREN | NOT? NULL_TOKEN)
+     ;
+ 
+ create_transform_statement
+@@ -920,7 +917,7 @@ user_or_role_or_group_common_option
+     | CREATEROLE | NOCREATEROLE
+     | INHERIT | NOINHERIT
+     | LOGIN | NOLOGIN
+-    | ENCRYPTED? PASSWORD (password=Character_String_Literal | NULL)
++    | ENCRYPTED? PASSWORD (password=Character_String_Literal | NULL_TOKEN)
+     | VALID UNTIL date_time=Character_String_Literal
+     ;
+ 
+@@ -972,7 +969,7 @@ create_operator_statement
+     ;
+ 
+ operator_name
+-    : (schema_name=identifier DOT)? operator=all_simple_op
++    : (schema_name=identifier DOT)? opertr=all_simple_op
+     ;
+ 
+ operator_option
+@@ -1153,11 +1150,11 @@ role_name_with_group
+     ;
+ 
+ comment_on_statement
+-    : COMMENT ON comment_member_object IS (character_string | NULL)
++    : COMMENT ON comment_member_object IS (character_string | NULL_TOKEN)
+     ;
+ 
+ security_label
+-    : SECURITY LABEL (FOR (identifier | character_string))? ON label_member_object IS (character_string | NULL)
++    : SECURITY LABEL (FOR (identifier | character_string))? ON label_member_object IS (character_string | NULL_TOKEN)
+     ;
+ 
+ comment_member_object
+@@ -1307,12 +1304,12 @@ create_policy_statement
+     (AS (PERMISSIVE | RESTRICTIVE))?
+     (FOR event=(ALL | SELECT | INSERT | UPDATE | DELETE))?
+     (TO user_name (COMMA user_name)*)?
+-    (USING using=vex)? (WITH CHECK check=vex)?
++    (USING using_val=vex)? (WITH CHECK_TOKEN check=vex)?
+     ;
+ 
+ alter_policy_statement
+     : POLICY identifier ON schema_qualified_name rename_to
+-    | POLICY identifier ON schema_qualified_name (TO user_name (COMMA user_name)*)? (USING vex)? (WITH CHECK vex)?
++    | POLICY identifier ON schema_qualified_name (TO user_name (COMMA user_name)*)? (USING vex)? (WITH CHECK_TOKEN vex)?
+     ;
+ 
+ drop_policy_statement
+@@ -1468,13 +1465,13 @@ copy_option
+     | OIDS truth_value?
+     | FREEZE truth_value?
+     | DELIMITER AS? Character_String_Literal
+-    | NULL AS? Character_String_Literal
++    | NULL_TOKEN AS? Character_String_Literal
+     | HEADER truth_value?
+     | QUOTE Character_String_Literal
+     | ESCAPE Character_String_Literal
+     | FORCE QUOTE (MULTIPLY | identifier_list)
+     | FORCE_QUOTE (MULTIPLY | LEFT_PAREN identifier_list RIGHT_PAREN)
+-    | FORCE NOT NULL identifier_list
++    | FORCE NOT NULL_TOKEN identifier_list
+     | FORCE_NOT_NULL LEFT_PAREN identifier_list RIGHT_PAREN
+     | FORCE_NULL LEFT_PAREN identifier_list RIGHT_PAREN
+     | ENCODING Character_String_Literal
+@@ -1504,7 +1501,7 @@ view_columns
+     ;
+ 
+ with_check_option
+-    : WITH (CASCADED|LOCAL)? CHECK OPTION
++    : WITH (CASCADED|LOCAL)? CHECK_TOKEN OPTION
+     ;
+ 
+ create_database_statement
+@@ -1512,7 +1509,7 @@ create_database_statement
+     ;
+ 
+ create_database_option
+-    : (OWNER | TEMPLATE | ENCODING | LOCALE | LC_COLLATE | LC_CTYPE | TABLESPACE) EQUAL? (character_string | identifier | DEFAULT)
++    : (OWNER | TEMPLATE | ENCODING | LOCALE | LC_COLLATE_TOKEN | LC_CTYPE_TOKEN | TABLESPACE) EQUAL? (character_string | identifier | DEFAULT)
+     | alter_database_option
+     ;
+ 
+@@ -1659,9 +1656,9 @@ constr_body
+             LEFT_PAREN index_column WITH all_op (COMMA index_column WITH all_op)* RIGHT_PAREN
+             index_parameters (where=WHERE exp=vex)?
+     | (FOREIGN KEY names_in_parens)? REFERENCES schema_qualified_name ref=names_in_parens?
+-        (MATCH (FULL | PARTIAL | SIMPLE) | ON (DELETE | UPDATE) action)*
+-    | CHECK LEFT_PAREN expression=vex RIGHT_PAREN (NO INHERIT)?
+-    | NOT? NULL
++        (MATCH (FULL | PARTIAL | SIMPLE) | ON (DELETE | UPDATE) action__)*
++    | CHECK_TOKEN LEFT_PAREN expression=vex RIGHT_PAREN (NO INHERIT)?
++    | NOT? NULL_TOKEN
+     | (UNIQUE | PRIMARY KEY) col=names_in_parens? index_parameters
+     | DEFAULT default_expr=vex
+     | identity_body
+@@ -1731,9 +1728,9 @@ set_tablespace
+     : SET TABLESPACE identifier NOWAIT?
+     ;
+ 
+-action
++action__
+     : cascade_restrict
+-    | SET (NULL | DEFAULT)
++    | SET (NULL_TOKEN | DEFAULT)
+     | NO ACTION
+     ;
+ 
+@@ -2272,7 +2269,7 @@ tokens_reserved
+     | BOTH
+     | CASE
+     | CAST
+-    | CHECK
++    | CHECK_TOKEN
+     | COLLATE
+     | COLUMN
+     | CONSTRAINT
+@@ -2309,7 +2306,7 @@ tokens_reserved
+     | LOCALTIME
+     | LOCALTIMESTAMP
+     | NOT
+-    | NULL
++    | NULL_TOKEN
+     | OFFSET
+     | ON
+     | ONLY
+@@ -2377,8 +2374,8 @@ tokens_nonkeyword
+     | INTERNALLENGTH
+     | IS_TEMPLATE
+     | JSON
+-    | LC_COLLATE
+-    | LC_CTYPE
++    | LC_COLLATE_TOKEN
++    | LC_CTYPE_TOKEN
+     | LEFTARG
+     | LEXIZE
+     | LEXTYPES
+@@ -2460,7 +2457,7 @@ tokens_nonkeyword
+     | GET
+     | HINT
+     | INFO
+-    | LOG
++    | LOG_TOKEN
+     | LOOP
+     | MESSAGE
+     | NOTICE
+@@ -2573,7 +2570,7 @@ vex
+   | vex NOT? (LIKE | ILIKE | SIMILAR TO) vex
+   | vex NOT? (LIKE | ILIKE | SIMILAR TO) vex ESCAPE vex
+   | vex (LTH | GTH | LEQ | GEQ | EQUAL | NOT_EQUAL) vex
+-  | vex IS NOT? (truth_value | NULL)
++  | vex IS NOT? (truth_value | NULL_TOKEN)
+   | vex IS NOT? DISTINCT FROM vex
+   | vex IS NOT? DOCUMENT
+   | vex IS NOT? UNKNOWN
+@@ -2627,8 +2624,8 @@ value_expression_primary
+   : unsigned_value_specification
+   | LEFT_PAREN select_stmt_no_parens RIGHT_PAREN indirection_list?
+   | case_expression
+-  | NULL
+   | MULTIPLY
++  | NULL_TOKEN
+   // technically incorrect since ANY cannot be value expression
+   // but fixing this would require to write a vex rule duplicating all operators
+   // like vex (op|op|op|...) comparison_mod
+@@ -2740,7 +2737,7 @@ xml_function
+     ;
+ 
+ xml_table_column
+-    : name=identifier (data_type (PATH vex)? (DEFAULT vex)? (NOT? NULL)? | FOR ORDINALITY)
++    : name=identifier (data_type (PATH vex)? (DEFAULT vex)? (NOT? NULL_TOKEN)? | FOR ORDINALITY)
+     ;
+ 
+ comparison_mod
+@@ -3016,7 +3013,7 @@ declaration
+     ;
+ 
+ type_declaration
+-    : CONSTANT? data_type_dec collate_identifier? (NOT NULL)? ((DEFAULT | COLON_EQUAL | EQUAL) vex)?
++    : CONSTANT? data_type_dec collate_identifier? (NOT NULL_TOKEN)? ((DEFAULT | COLON_EQUAL | EQUAL) vex)?
+     | ALIAS FOR (identifier | DOLLAR_NUMBER)
+     | (NO? SCROLL)? CURSOR (LEFT_PAREN arguments_list RIGHT_PAREN)? (FOR | IS) select_stmt
+     ;
+@@ -3055,7 +3052,7 @@ base_statement
+     : assign_stmt
+     | PERFORM perform_stmt
+     | GET (CURRENT | STACKED)? DIAGNOSTICS diagnostic_option (COMMA diagnostic_option)*
+-    | NULL
++    | NULL_TOKEN
+     ;
+ 
+ var
+@@ -3121,7 +3118,7 @@ message_statement
+ 
+ log_level
+     : DEBUG
+-    | LOG
++    | LOG_TOKEN
+     | INFO
+     | NOTICE
+     | WARNING

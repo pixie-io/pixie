@@ -1,0 +1,338 @@
+diff --git a/sql/mysql/Positive-Technologies/MySqlLexer.g4 b/sql/mysql/Positive-Technologies/MySQLLexer.g4
+similarity index 99%
+rename from sql/mysql/Positive-Technologies/MySqlLexer.g4
+rename to sql/mysql/Positive-Technologies/MySQLLexer.g4
+index 98dd6d8d..10dd0d1a 100644
+--- a/sql/mysql/Positive-Technologies/MySqlLexer.g4
++++ b/sql/mysql/Positive-Technologies/MySQLLexer.g4
+@@ -23,7 +23,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ THE SOFTWARE.
+ */
+ 
+-lexer grammar MySqlLexer;
++lexer grammar MySQLLexer;
+ 
+ channels { MYSQLCOMMENT, ERRORCHANNEL }
+ 
+@@ -59,7 +59,7 @@ CASE:                                'CASE';
+ CAST:                                'CAST';
+ CHANGE:                              'CHANGE';
+ CHARACTER:                           'CHARACTER';
+-CHECK:                               'CHECK';
++CHECK_TOKEN:                         'CHECK';
+ COLLATE:                             'COLLATE';
+ COLUMN:                              'COLUMN';
+ CONDITION:                           'CONDITION';
+@@ -811,7 +811,7 @@ ASYMMETRIC_SIGN:                     'ASYMMETRIC_SIGN';
+ ASYMMETRIC_VERIFY:                   'ASYMMETRIC_VERIFY';
+ ATAN:                                'ATAN';
+ ATAN2:                               'ATAN2';
+-BENCHMARK:                           'BENCHMARK';
++BENCHMARK_TOKEN:                     'BENCHMARK';
+ BIN:                                 'BIN';
+ BIT_COUNT:                           'BIT_COUNT';
+ BIT_LENGTH:                          'BIT_LENGTH';
+@@ -915,7 +915,7 @@ LINESTRINGFROMWKB:                   'LINESTRINGFROMWKB';
+ LN:                                  'LN';
+ LOAD_FILE:                           'LOAD_FILE';
+ LOCATE:                              'LOCATE';
+-LOG:                                 'LOG';
++LOG_TOKEN:                           'LOG';
+ LOG10:                               'LOG10';
+ LOG2:                                'LOG2';
+ LOWER:                               'LOWER';
+@@ -1145,6 +1145,8 @@ DOUBLE_QUOTE_SYMB:                   '"';
+ REVERSE_QUOTE_SYMB:                  '`';
+ COLON_SYMB:                          ':';
+ 
++PARAM_MARKER:                        '?';
++
+ fragment QUOTE_SYMB
+     : SINGLE_QUOTE_SYMB | DOUBLE_QUOTE_SYMB | REVERSE_QUOTE_SYMB
+     ;
+diff --git a/sql/mysql/Positive-Technologies/MySqlParser.g4 b/sql/mysql/Positive-Technologies/MySQLParser.g4
+similarity index 93%
+rename from sql/mysql/Positive-Technologies/MySqlParser.g4
+rename to sql/mysql/Positive-Technologies/MySQLParser.g4
+index 6110ba86..9ac133f7 100644
+--- a/sql/mysql/Positive-Technologies/MySqlParser.g4
++++ b/sql/mysql/Positive-Technologies/MySQLParser.g4
+@@ -23,9 +23,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ THE SOFTWARE.
+ */
+ 
+-parser grammar MySqlParser;
++parser grammar MySQLParser;
+ 
+-options { tokenVocab=MySqlLexer; }
++options { tokenVocab=MySQLLexer; }
+ 
+ 
+ // Top Level Description
+@@ -241,7 +241,7 @@ createView
+       ownerStatement?
+       (SQL SECURITY secContext=(DEFINER | INVOKER))?
+       VIEW fullId ('(' uidList ')')? AS selectStatement
+-      (WITH checkOption=(CASCADED | LOCAL)? CHECK OPTION)?
++      (WITH checkOption=(CASCADED | LOCAL)? CHECK_TOKEN OPTION)?
+     ;
+ 
+ // details
+@@ -361,7 +361,7 @@ columnConstraint
+     | (GENERATED ALWAYS)? AS '(' expression ')' (VIRTUAL | STORED)? #generatedColumnConstraint
+     | SERIAL DEFAULT VALUE                                          #serialDefaultColumnConstraint
+     | (CONSTRAINT name=uid?)?
+-      CHECK '(' expression ')'                                      #checkColumnConstraint
++      CHECK_TOKEN '(' expression ')'                                      #checkColumnConstraint
+     ;
+ 
+ tableConstraint
+@@ -375,7 +375,7 @@ tableConstraint
+       FOREIGN KEY index=uid? indexColumnNames
+       referenceDefinition                                           #foreignKeyTableConstraint
+     | (CONSTRAINT name=uid?)?
+-      CHECK '(' expression ')'                                      #checkTableConstraint
++      CHECK_TOKEN '(' expression ')'                                      #checkTableConstraint
+     ;
+ 
+ referenceDefinition
+@@ -583,7 +583,7 @@ alterView
+       ownerStatement?
+       (SQL SECURITY secContext=(DEFINER | INVOKER))?
+       VIEW fullId ('(' uidList ')')? AS selectStatement
+-      (WITH checkOpt=(CASCADED | LOCAL)? CHECK OPTION)?
++      (WITH checkOpt=(CASCADED | LOCAL)? CHECK_TOKEN OPTION)?
+     ;
+ 
+ // details
+@@ -607,7 +607,7 @@ alterSpecification
+       indexColumnNames indexOption*                                 #alterByAddSpecialIndex
+     | ADD (CONSTRAINT name=uid?)? FOREIGN KEY
+       indexName=uid? indexColumnNames referenceDefinition           #alterByAddForeignKey
+-    | ADD (CONSTRAINT name=uid?)? CHECK '(' expression ')'          #alterByAddCheckTableConstraint
++    | ADD (CONSTRAINT name=uid?)? CHECK_TOKEN '(' expression ')'          #alterByAddCheckTableConstraint
+     | ALGORITHM '='? algType=(DEFAULT | INPLACE | COPY)             #alterBySetAlgorithm
+     | ALTER COLUMN? uid
+       (SET DEFAULT defaultValue | DROP DEFAULT)                     #alterByChangeDefault
+@@ -619,7 +619,7 @@ alterSpecification
+     | MODIFY COLUMN?
+       uid columnDefinition (FIRST | AFTER uid)?                     #alterByModifyColumn
+     | DROP COLUMN? uid RESTRICT?                                    #alterByDropColumn
+-    | DROP (CONSTRAINT | CHECK) uid                                 #alterByDropConstraintCheck
++    | DROP (CONSTRAINT | CHECK_TOKEN) uid                                 #alterByDropConstraintCheck
+     | DROP PRIMARY KEY                                              #alterByDropPrimaryKey
+     | RENAME indexFormat=(INDEX | KEY) uid TO uid                   #alterByRenameIndex
+     | ALTER INDEX uid (VISIBLE | INVISIBLE)                         #alterByAlterIndexVisibility
+@@ -653,7 +653,7 @@ alterSpecification
+     | EXCHANGE PARTITION uid WITH TABLE tableName
+       (validationFormat=(WITH | WITHOUT) VALIDATION)?               #alterByExchangePartition
+     | ANALYZE PARTITION (uidList | ALL)                             #alterByAnalyzePartition
+-    | CHECK PARTITION (uidList | ALL)                               #alterByCheckPartition
++    | CHECK_TOKEN PARTITION (uidList | ALL)                               #alterByCheckPartition
+     | OPTIMIZE PARTITION (uidList | ALL)                            #alterByOptimizePartition
+     | REBUILD PARTITION (uidList | ALL)                             #alterByRebuildPartition
+     | REPAIR PARTITION (uidList | ALL)                              #alterByRepairPartition
+@@ -994,9 +994,7 @@ queryExpressionNointo
+ 
+ querySpecification
+     : SELECT selectSpec* selectElements selectIntoExpression?
+-      fromClause? groupByClause? havingClause? orderByClause? limitClause?
+-    | SELECT selectSpec* selectElements
+-    fromClause? groupByClause? havingClause? orderByClause? limitClause? selectIntoExpression?
++      fromClause? groupByClause? havingClause? orderByClause? limitClause? selectIntoExpression?
+     ;
+ 
+ querySpecificationNointo
+@@ -1029,8 +1027,6 @@ selectElements
+ 
+ selectElement
+     : fullId '.' '*'                                                #selectStarElement
+-    | fullColumnName (AS? uid)?                                     #selectColumnElement
+-    | functionCall (AS? uid)?                                       #selectFunctionElement
+     | (LOCAL_ID VAR_ASSIGN)? expression (AS? uid)?                  #selectExpressionElement
+     ;
+ 
+@@ -1622,7 +1618,7 @@ analyzeTable
+     ;
+ 
+ checkTable
+-    : CHECK TABLE tables checkTableOption*
++    : CHECK_TOKEN TABLE tables checkTableOption*
+     ;
+ 
+ checksumTable
+@@ -1942,6 +1938,7 @@ userName
+ mysqlVariable
+     : LOCAL_ID
+     | GLOBAL_ID
++    | PARAM_MARKER
+     ;
+ 
+ charsetName
+@@ -1997,7 +1994,6 @@ simpleId
+     : ID
+     | charsetNameBase
+     | transactionLevelBase
+-    | engineName
+     | privilegesBase
+     | intervalTypeBase
+     | dataTypeBase
+@@ -2189,102 +2185,7 @@ ifNotExists
+ //    Functions
+ 
+ functionCall
+-    : specificFunction                                              #specificFunctionCall
+-    | aggregateWindowedFunction                                     #aggregateFunctionCall
+-    | scalarFunctionName '(' functionArgs? ')'                      #scalarFunctionCall
+-    | fullId '(' functionArgs? ')'                                  #udfFunctionCall
+-    | passwordFunctionClause                                        #passwordFunctionCall
+-    ;
+-
+-specificFunction
+-    : (
+-      CURRENT_DATE | CURRENT_TIME | CURRENT_TIMESTAMP
+-      | CURRENT_USER | LOCALTIME
+-      ) ('(' ')')?                                                  #simpleFunctionCall
+-    | CONVERT '(' expression separator=',' convertedDataType ')'    #dataTypeFunctionCall
+-    | CONVERT '(' expression USING charsetName ')'                  #dataTypeFunctionCall
+-    | CAST '(' expression AS convertedDataType ')'                  #dataTypeFunctionCall
+-    | VALUES '(' fullColumnName ')'                                 #valuesFunctionCall
+-    | CASE expression caseFuncAlternative+
+-      (ELSE elseArg=functionArg)? END                               #caseFunctionCall
+-    | CASE caseFuncAlternative+
+-      (ELSE elseArg=functionArg)? END                               #caseFunctionCall
+-    | CHAR '(' functionArgs  (USING charsetName)? ')'               #charFunctionCall
+-    | POSITION
+-      '('
+-          (
+-            positionString=stringLiteral
+-            | positionExpression=expression
+-          )
+-          IN
+-          (
+-            inString=stringLiteral
+-            | inExpression=expression
+-          )
+-      ')'                                                           #positionFunctionCall
+-    | (SUBSTR | SUBSTRING)
+-      '('
+-        (
+-          sourceString=stringLiteral
+-          | sourceExpression=expression
+-        ) FROM
+-        (
+-          fromDecimal=decimalLiteral
+-          | fromExpression=expression
+-        )
+-        (
+-          FOR
+-          (
+-            forDecimal=decimalLiteral
+-            | forExpression=expression
+-          )
+-        )?
+-      ')'                                                           #substrFunctionCall
+-    | TRIM
+-      '('
+-        positioinForm=(BOTH | LEADING | TRAILING)
+-        (
+-          sourceString=stringLiteral
+-          | sourceExpression=expression
+-        )?
+-        FROM
+-        (
+-          fromString=stringLiteral
+-          | fromExpression=expression
+-        )
+-      ')'                                                           #trimFunctionCall
+-    | TRIM
+-      '('
+-        (
+-          sourceString=stringLiteral
+-          | sourceExpression=expression
+-        )
+-        FROM
+-        (
+-          fromString=stringLiteral
+-          | fromExpression=expression
+-        )
+-      ')'                                                           #trimFunctionCall
+-    | WEIGHT_STRING
+-      '('
+-        (stringLiteral | expression)
+-        (AS stringFormat=(CHAR | BINARY)
+-        '(' decimalLiteral ')' )?  levelsInWeightString?
+-      ')'                                                           #weightFunctionCall
+-    | EXTRACT
+-      '('
+-        intervalType
+-        FROM
+-        (
+-          sourceString=stringLiteral
+-          | sourceExpression=expression
+-        )
+-      ')'                                                           #extractFunctionCall
+-    | GET_FORMAT
+-      '('
+-        datetimeFormat=(DATE | TIME | DATETIME)
+-        ',' stringLiteral
+-      ')'                                                           #getFormatFunctionCall
++    : fullId '(' functionArgs? ')'                                  #udfFunctionCall
+     ;
+ 
+ caseFuncAlternative
+@@ -2303,23 +2204,6 @@ levelInWeightListElement
+     : decimalLiteral orderType=(ASC | DESC | REVERSE)?
+     ;
+ 
+-aggregateWindowedFunction
+-    : (AVG | MAX | MIN | SUM)
+-      '(' aggregator=(ALL | DISTINCT)? functionArg ')'
+-    | COUNT '(' (starArg='*' | aggregator=ALL? functionArg) ')'
+-    | COUNT '(' aggregator=DISTINCT functionArgs ')'
+-    | (
+-        BIT_AND | BIT_OR | BIT_XOR | STD | STDDEV | STDDEV_POP
+-        | STDDEV_SAMP | VAR_POP | VAR_SAMP | VARIANCE
+-      ) '(' aggregator=ALL? functionArg ')'
+-    | GROUP_CONCAT '('
+-        aggregator=DISTINCT? functionArgs
+-        (ORDER BY
+-          orderByExpression (',' orderByExpression)*
+-        )? (SEPARATOR separator=STRING_LITERAL)?
+-      ')'
+-    ;
+-
+ scalarFunctionName
+     : functionNameBase
+     | ASCII | CURDATE | CURRENT_DATE | CURRENT_TIME
+@@ -2334,10 +2218,10 @@ passwordFunctionClause
+     ;
+ 
+ functionArgs
+-    : (constant | fullColumnName | functionCall | expression)
++    : expression
+     (
+       ','
+-      (constant | fullColumnName | functionCall | expression)
++      expression
+     )*
+     ;
+ 
+@@ -2518,7 +2402,7 @@ functionNameBase
+     | AREA | ASBINARY | ASIN | ASTEXT | ASWKB | ASWKT
+     | ASYMMETRIC_DECRYPT | ASYMMETRIC_DERIVE
+     | ASYMMETRIC_ENCRYPT | ASYMMETRIC_SIGN | ASYMMETRIC_VERIFY
+-    | ATAN | ATAN2 | BENCHMARK | BIN | BIT_COUNT | BIT_LENGTH
++    | ATAN | ATAN2 | BENCHMARK_TOKEN | BIN | BIT_COUNT | BIT_LENGTH
+     | BUFFER | CEIL | CEILING | CENTROID | CHARACTER_LENGTH
+     | CHARSET | CHAR_LENGTH | COERCIBILITY | COLLATION
+     | COMPRESS | CONCAT | CONCAT_WS | CONNECTION_ID | CONV
+@@ -2544,7 +2428,7 @@ functionNameBase
+     | IS_IPV4_MAPPED | IS_IPV6 | IS_USED_LOCK | LAST_INSERT_ID
+     | LCASE | LEAST | LEFT | LENGTH | LINEFROMTEXT | LINEFROMWKB
+     | LINESTRING | LINESTRINGFROMTEXT | LINESTRINGFROMWKB | LN
+-    | LOAD_FILE | LOCATE | LOG | LOG10 | LOG2 | LOWER | LPAD
++    | LOAD_FILE | LOCATE | LOG_TOKEN | LOG10 | LOG2 | LOWER | LPAD
+     | LTRIM | MAKEDATE | MAKETIME | MAKE_SET | MASTER_POS_WAIT
+     | MBRCONTAINS | MBRDISJOINT | MBREQUAL | MBRINTERSECTS
+     | MBROVERLAPS | MBRTOUCHES | MBRWITHIN | MD5 | MICROSECOND

@@ -269,6 +269,21 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "bpftrace-da17ebda1090b5e09dc89d69a3afdb580d486670",
         urls = ["https://github.com/pixie-labs/bpftrace/archive/da17ebda1090b5e09dc89d69a3afdb580d486670.tar.gz"],
     ),
+    com_github_antlr_antlr4 = dict(
+        urls = ["https://github.com/antlr/antlr4/archive/refs/tags/4.9.2.tar.gz"],
+        strip_prefix = "antlr4-4.9.2",
+        sha256 = "6c86ebe2f3583ac19b199e704bdff9d70379f12347f7f2f1efa38051cd9a18cf",
+    ),
+    com_github_antlr_grammars_v4 = dict(
+        urls = ["https://github.com/antlr/grammars-v4/archive/e53d7a1228505bfc80d8637808ef60e7eea92cc2.tar.gz"],
+        strip_prefix = "grammars-v4-e53d7a1228505bfc80d8637808ef60e7eea92cc2",
+        sha256 = "9858e4a9944cac85830e6cf8edd9d567227af96d8b75f0b31accc525ec842c30",
+    ),
+    com_github_pgcodekeeper_pgcodekeeper = dict(
+        urls = ["https://github.com/pgcodekeeper/pgcodekeeper/archive/refs/tags/v5.11.3.tar.gz"],
+        strip_prefix = "pgcodekeeper-5.11.3",
+        sha256 = "b80d88f447566733f887a2c21ad6072751297459e79fa5acfc99e5db3a9418a1",
+    ),
 )
 
 GIT_REPOSITORY_LOCATIONS = dict(
