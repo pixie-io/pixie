@@ -25,6 +25,9 @@ final class ArcanistGoGenCheckerTestEngine extends ArcanistBaseGenCheckerTestEng
     'genny' => '/(?<=-out )(.*)(?=\.gen\.go)/',
   );
 
+  // These go generate commands should be ignored.
+  private $goGenerateIgnore = array('controller-gen');
+
   public function getEngineConfigurationName() {
     return 'go-gen-checker';
   }
@@ -49,7 +52,7 @@ final class ArcanistGoGenCheckerTestEngine extends ArcanistBaseGenCheckerTestEng
         if (strpos($line, '//go:generate') !== false) {
           $command = preg_split('/\s+/', $line)[1];
 
-          if (!array_key_exists($command, $this->goGenerateMap)) {
+          if (!array_key_exists($command, $this->goGenerateMap) && !in_array($command, $this->goGenerateIgnore)) {
             $res = new ArcanistUnitTestResult();
             $res->setName(get_class($this));
             $res->setResult(ArcanistUnitTestResult::RESULT_FAIL);
@@ -57,6 +60,10 @@ final class ArcanistGoGenCheckerTestEngine extends ArcanistBaseGenCheckerTestEng
               ' an entry in $goGenerateMap in tools/arc_addons/pixielabs/unit/ArcanistGoGenCheckerTestEngine.php, '.
               'where the key is '.$command.' and the value is a regex for the name of the generated output file.');
             $test_results[] = $res;
+            break;
+          }
+
+          if (in_array($command, $this->goGenerateIgnore)) {
             break;
           }
 

@@ -119,8 +119,10 @@ require (
 	k8s.io/cli-runtime v0.20.5
 	k8s.io/client-go v0.20.5
 	k8s.io/klog/v2 v2.8.0
+	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7 // indirect
 	k8s.io/kubectl v0.20.5
 	k8s.io/utils v0.0.0-20210305010621-2afb4311ab10 // indirect
+	sigs.k8s.io/controller-runtime v0.8.3
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.0 // indirect
 	sigs.k8s.io/yaml v1.2.0
 )

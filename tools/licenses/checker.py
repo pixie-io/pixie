@@ -193,7 +193,8 @@ matchers = [
 
 
 def is_generated_code(file_path: str):
-    return file_path.endswith('.gen.go') or file_path.endswith('.pb.go')
+    return file_path.endswith('.gen.go') or file_path.endswith('.pb.go') or file_path.endswith(
+        '.deepcopy.go')
 
 
 def is_skipped(file_path: str):
