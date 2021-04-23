@@ -1,0 +1,23 @@
+apiVersion: skaffold/v2alpha3
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/pl-dev-infra/vizier/operator_image
+    context: .
+    bazel:
+      target: //src/operator:operator_image.tar
+  tagPolicy:
+    dateTime: {}
+deploy:
+  kustomize:
+    paths:
+    - k8s/operator/deployment/base/
+profiles:
+- name: minikube
+  patches:
+  - op: replace
+    path: /build/local
+    value:
+      push: false
+  activation:
+  - kubeContext: minikube
