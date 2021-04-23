@@ -1,3 +1,5 @@
+[![Go Reference](https://pkg.go.dev/badge/px.dev/pxapi.svg)](https://pkg.go.dev/px.dev/pxapi)
+
 ## Pixie Go API
 
 `px.dev/pxapi` is a API for interacting with Pixie, a no-instrumentation Kubernetes observability platform.
