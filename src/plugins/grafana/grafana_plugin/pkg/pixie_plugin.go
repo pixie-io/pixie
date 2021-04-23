@@ -24,6 +24,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
@@ -33,11 +35,26 @@ import (
 	"px.dev/pixie/src/api/go/pxapi"
 )
 
-// Define keys to retrieve configs passed from UI.
+// GrafanaMacro is a type which defines a macro.
+type GrafanaMacro string
+
 const (
+	// Define keys to retrieve configs passed from UI.
 	apiKeyStr       = "apiKey"
 	clusterIDKeyStr = "clusterId"
+	// timeFromMacro is the start of the time range of a query.
+	timeFromMacro GrafanaMacro = "$__timeFrom()"
+	// timeToMacro is the end of the time range of a query.
+	timeToMacro GrafanaMacro = "$__timeTo()"
 )
+
+// replaceTimeMacroInQueryText takes the query text (PxL script to execute)
+// and replaces the time macros with the relevant time objects.
+func replaceTimeMacroInQueryText(queryText string, grafanaMacro GrafanaMacro,
+	timeReplacement time.Time) string {
+	tStr := fmt.Sprintf("%d", timeReplacement.UnixNano())
+	return strings.ReplaceAll(queryText, string(grafanaMacro), tStr)
+}
 
 // newDatasource returns datasource.ServeOpts.
 func newDatasource() datasource.ServeOpts {
@@ -120,6 +137,12 @@ func (td *PixieDatasource) query(ctx context.Context, query backend.DataQuery,
 
 	// Create TableMuxer to accept results table.
 	tm := &PixieToGrafanaTableMux{}
+
+	// Update macros in query text.
+	qm.QueryText = replaceTimeMacroInQueryText(qm.QueryText, timeFromMacro,
+		query.TimeRange.From)
+	qm.QueryText = replaceTimeMacroInQueryText(qm.QueryText, timeToMacro,
+		query.TimeRange.To)
 
 	// Execute the PxL script.
 	resultSet, err := vz.ExecuteScript(ctx, qm.QueryText, tm)
