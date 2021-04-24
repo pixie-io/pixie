@@ -54,6 +54,7 @@ import withAutoSizer, { WithAutoSizerProps } from 'utils/autosizer';
 import { ExpandedIcon } from 'components/icons/expanded';
 import { UnexpandedIcon } from 'components/icons/unexpanded';
 import { Button, Checkbox, FormControlLabel } from '@material-ui/core';
+import { useScrollPosition } from 'utils/use-scroll-position';
 import {
   MAX_COL_PX_WIDTH,
   MIN_COL_PX_WIDTH,
@@ -229,9 +230,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-export interface ExpandedRows {
-  [key: number]: boolean;
-}
+export type ExpandedRows = Record<number, boolean>;
 
 export type CellAlignment = 'center' | 'start' | 'end';
 
@@ -261,20 +260,6 @@ export interface SortState {
   dataKey: string;
   direction: SortDirectionType;
 }
-
-const DataTable = withAutoSizer<DataTableProps>(
-  // eslint-disable-next-line react/display-name
-  React.memo<WithAutoSizerProps<DataTableProps>>((props) => {
-    const { width, height } = props;
-    if (width === 0 || height === 0) {
-      return null;
-    }
-    return <InternalDataTable {...props} />;
-  }));
-
-(DataTable as React.FC).displayName = 'DataTable';
-
-export { DataTable };
 
 interface ColumnDisplaySelectorProps {
   options: string[];
@@ -546,7 +531,7 @@ const InternalDataTable = ({
   // doesn't affect the geometry of the element it scrolls. In that case, the scrollbar has a width of 0.
   const scrollbarWidth = React.useMemo<number>(() => {
     const scroller: HTMLElement = tableWrapper.current?.querySelector(
-      '.ReactVirtualized__Table__Grid'
+      '.ReactVirtualized__Table__Grid',
     );
     if (!scroller) return 0;
     return scroller.offsetWidth - scroller.clientWidth;
@@ -573,7 +558,7 @@ const InternalDataTable = ({
   React.useEffect(() => {
     // Using direct DOM manipulation as we're messing with internals of a third-party component that doesn't expose refs
     const header: HTMLDivElement = tableWrapper.current?.querySelector(
-      '.ReactVirtualized__Table__headerRow'
+      '.ReactVirtualized__Table__headerRow',
     );
     if (!header || !scroller) return () => {};
 
@@ -709,12 +694,19 @@ const InternalDataTable = ({
     [highlightedRow, expandedRowState, classes],
   );
 
+  const { scrollLeft: throttledScrollLeft } = useScrollPosition(scroller);
+
   const rowRenderer: TableRowRenderer = React.useCallback(
     (props: TableRowProps) => {
-      const { style } = props;
-      style.width = '100%';
+      const { style: rowStyle } = props;
+      rowStyle.width = '100%';
+      const expansionStyle: React.CSSProperties = {
+        width: scroller?.clientWidth ?? '100%',
+        position: 'relative',
+        left: throttledScrollLeft,
+      };
       return (
-        <div className={classes.rowContainer} key={props.key} style={style}>
+        <div className={classes.rowContainer} key={props.key} style={rowStyle}>
           {defaultTableRowRenderer({
             ...props,
             key: '',
@@ -722,7 +714,7 @@ const InternalDataTable = ({
           })}
 
           {expandable && expandedRowState[props.index] && (
-            <div className={classes.expandedCell}>
+            <div className={classes.expandedCell} style={expansionStyle}>
               {expandedRenderer(rowGetter(props.index))}
             </div>
           )}
@@ -736,6 +728,8 @@ const InternalDataTable = ({
       expandedRenderer,
       expandable,
       rowGetter,
+      scroller?.clientWidth,
+      throttledScrollLeft,
     ],
   );
 
@@ -836,3 +830,17 @@ const InternalDataTable = ({
     </div>
   );
 };
+
+const DataTable = withAutoSizer<DataTableProps>(
+  // eslint-disable-next-line react/display-name
+  React.memo<WithAutoSizerProps<DataTableProps>>((props) => {
+    const { width, height } = props;
+    if (width === 0 || height === 0) {
+      return null;
+    }
+    return <InternalDataTable {...props} />;
+  }));
+
+(DataTable as React.FC).displayName = 'DataTable';
+
+export { DataTable };
