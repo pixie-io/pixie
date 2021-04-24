@@ -46,6 +46,8 @@ const (
 	timeFromMacro GrafanaMacro = "$__timeFrom()"
 	// timeToMacro is the end of the time range of a query.
 	timeToMacro GrafanaMacro = "$__timeTo()"
+	// intervalMacro is the suggested duration between time points.
+	intervalMacro GrafanaMacro = "$__interval"
 )
 
 // replaceTimeMacroInQueryText takes the query text (PxL script to execute)
@@ -54,6 +56,14 @@ func replaceTimeMacroInQueryText(queryText string, grafanaMacro GrafanaMacro,
 	timeReplacement time.Time) string {
 	tStr := fmt.Sprintf("%d", timeReplacement.UnixNano())
 	return strings.ReplaceAll(queryText, string(grafanaMacro), tStr)
+}
+
+// replaceIntervalMacroInQueryText takes the query text and replaces
+// interval macro with interval duration specified in Grafana UI.
+func replaceIntervalMacroInQueryText(queryText string, grafanaMacro GrafanaMacro,
+	intervalDuration time.Duration) string {
+	intervalStr := fmt.Sprintf("%d", intervalDuration.Nanoseconds())
+	return strings.ReplaceAll(queryText, string(grafanaMacro), intervalStr)
 }
 
 // newDatasource returns datasource.ServeOpts.
@@ -143,6 +153,8 @@ func (td *PixieDatasource) query(ctx context.Context, query backend.DataQuery,
 		query.TimeRange.From)
 	qm.QueryText = replaceTimeMacroInQueryText(qm.QueryText, timeToMacro,
 		query.TimeRange.To)
+	qm.QueryText = replaceIntervalMacroInQueryText(qm.QueryText, intervalMacro,
+		query.Interval)
 
 	// Execute the PxL script.
 	resultSet, err := vz.ExecuteScript(ctx, qm.QueryText, tm)
