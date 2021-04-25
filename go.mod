@@ -41,6 +41,7 @@ require (
 	github.com/golang-migrate/migrate v3.5.4+incompatible
 	github.com/golang/mock v1.5.0
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/google/go-containerregistry v0.4.1
 	github.com/google/go-github/v32 v32.1.0
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.2.0 // indirect
