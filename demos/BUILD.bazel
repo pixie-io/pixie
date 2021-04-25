@@ -46,6 +46,6 @@ demo_upload(
 demo_upload(
     name = "upload_prod_demo",
     archives = ARCHIVES,
-    bucket = "gs://pl-infra-dev-artifacts/dev-demo-apps",
+    bucket = "gs://pixie-prod-artifacts/prod-demo-apps",
     manifest = "manifest.json",
 )
