@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/stirling/source_connectors/perf_profiler/symbol_cache.h"
+#include "src/stirling/source_connectors/perf_profiler/symbolizer.h"
 
 DEFINE_bool(stirling_profiler_symcache, true, "Enable the Stirling managed symbol cache.");
 
@@ -24,6 +24,7 @@ namespace px {
 namespace stirling {
 
 namespace {
+
 const std::string& SymbolOrAddr(ebpf::BPFStackTable* stack_traces, const uintptr_t addr,
                                 const int pid) {
   static constexpr std::string_view kUnknown = "[UNKNOWN]";
@@ -36,7 +37,12 @@ const std::string& SymbolOrAddr(ebpf::BPFStackTable* stack_traces, const uintptr
 }
 }  // namespace
 
-const std::string& SymbolCache::LookupSym(ebpf::BPFStackTable* stack_traces, const uintptr_t addr) {
+const std::string& Symbolizer::LookupSym(ebpf::BPFStackTable* stack_traces, const uintptr_t addr) {
+  if (!enable_symbolization_) {
+    static std::string just_addr;
+    just_addr = absl::StrFormat("0x%016llx", addr);
+    return just_addr;
+  }
   if (!FLAGS_stirling_profiler_symcache) {
     return SymbolOrAddr(stack_traces, addr, pid_);
   }
@@ -52,7 +58,7 @@ const std::string& SymbolCache::LookupSym(ebpf::BPFStackTable* stack_traces, con
   return sym_iter->second;
 }
 
-void SymbolCache::Flush() { sym_cache_.clear(); }
+void Symbolizer::FlushCache() { sym_cache_.clear(); }
 
 }  // namespace stirling
 }  // namespace px

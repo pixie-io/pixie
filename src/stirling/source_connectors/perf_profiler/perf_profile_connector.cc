@@ -32,7 +32,9 @@ namespace px {
 namespace stirling {
 
 PerfProfileConnector::PerfProfileConnector(std::string_view source_name)
-    : SourceConnector(source_name, kTables), kernel_symbol_cache_(SymbolCache::kKernelPID) {}
+    : SourceConnector(source_name, kTables),
+      dummy_symbolizer_(/*pid*/ 0, /*enable symbolization*/ false),
+      kernel_symbolizer_(Symbolizer::kKernelPID, /*enable symbolization*/ true) {}
 
 Status PerfProfileConnector::InitImpl() {
   const size_t ncpus = get_nprocs_conf();
@@ -67,7 +69,8 @@ Status PerfProfileConnector::StopImpl() {
   return Status::OK();
 }
 
-std::string PerfProfileConnector::FoldedStackTraceString(ebpf::BPFStackTable* stack_traces,
+std::string PerfProfileConnector::FoldedStackTraceString(const bool symbolize,
+                                                         ebpf::BPFStackTable* stack_traces,
                                                          const stack_trace_key_t& key) {
   // Here, we read the list of addresses from stack_traces and convert that
   // list into a "folded" symbolic stack trace string. In line with this,
@@ -76,11 +79,12 @@ std::string PerfProfileConnector::FoldedStackTraceString(ebpf::BPFStackTable* st
   constexpr std::string_view kSeparator = ";";
   constexpr uint64_t kSentinelAddr = 0xcccccccccccccccc;
 
-  SymbolCache& upid_symbol_cache =
-      upid_symbol_caches_.try_emplace(key.upid, key.upid.pid).first->second;
-
   std::string stack_trace_str;
   // TODO(oazizi): Add a stack_trace_str.reserve() heuristic.
+
+  auto& symbolizer = symbolize
+                         ? symbolizers_.try_emplace(key.upid, key.upid.pid, symbolize).first->second
+                         : dummy_symbolizer_;
 
   // Clear the stack-traces map as we go along here; this has lower overhead
   // compared to first reading the stack-traces map, then using clear_table_non_atomic().
@@ -97,7 +101,7 @@ std::string PerfProfileConnector::FoldedStackTraceString(ebpf::BPFStackTable* st
       DCHECK(iter == user_addrs.rbegin()) << "Detected sentinel address in unexpected location.";
       continue;
     }
-    stack_trace_str += upid_symbol_cache.LookupSym(stack_traces, addr);
+    stack_trace_str += symbolizer.LookupSym(stack_traces, addr);
     stack_trace_str += kSeparator;
   }
 
@@ -105,7 +109,7 @@ std::string PerfProfileConnector::FoldedStackTraceString(ebpf::BPFStackTable* st
   auto kernel_addrs = stack_traces->get_stack_addr(key.kernel_stack_id, kClearStackId);
   for (auto iter = kernel_addrs.rbegin(); iter != kernel_addrs.rend(); ++iter) {
     const auto& addr = *iter;
-    stack_trace_str += kernel_symbol_cache_.LookupSym(stack_traces, addr);
+    stack_trace_str += kernel_symbolizer_.LookupSym(stack_traces, addr);
     stack_trace_str += kKSymSuffix;
     stack_trace_str += kSeparator;
   }
@@ -137,12 +141,12 @@ Status PerfProfileConnector::ProcessBPFStackTraces(ConnectorContext* ctx, DataTa
   return Status::OK();
 }
 
-void PerfProfileConnector::CleanupSymbolCaches(const absl::flat_hash_set<md::UPID>& deleted_upids) {
+void PerfProfileConnector::CleanupSymbolizers(const absl::flat_hash_set<md::UPID>& deleted_upids) {
   for (const auto& md_upid : deleted_upids) {
     struct upid_t upid;
     upid.pid = md_upid.pid();
     upid.start_time_ticks = md_upid.start_ts();
-    upid_symbol_caches_.erase(upid);
+    symbolizers_.erase(upid);
 
     stack_traces_a_->free_symcache(md_upid.pid());
     stack_traces_b_->free_symcache(md_upid.pid());
@@ -174,7 +178,7 @@ void PerfProfileConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
   DCHECK_EQ(push_count, read_and_clear_count_) << "stack trace handshake protocol out of sync.";
 
   proc_tracker_.Update(ctx->GetUPIDs());
-  CleanupSymbolCaches(proc_tracker_.deleted_upids());
+  CleanupSymbolizers(proc_tracker_.deleted_upids());
 }
 
 uint64_t PerfProfileConnector::SymbolicStackTraceID(
@@ -198,7 +202,9 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
   // Avoid an unnecessary copy of the information in local stack_trace_keys_and_counts.
   StackTraceHisto symbolic_histogram;
   uint64_t cum_sum_count = 0;
+
   const uint32_t asid = ctx->GetASID();
+  const absl::flat_hash_set<md::UPID>& upids_for_symbolization = ctx->GetUPIDs();
 
   // Here we want to "consume" the table, not just "read" it. Pasing "clear_table=true"
   // into get_table_offline() clears each entry while walking the table and copying
@@ -211,7 +217,8 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
 
     const md::UPID upid(asid, stack_trace_key.upid.pid, stack_trace_key.upid.start_time_ticks);
 
-    std::string stack_trace_str = FoldedStackTraceString(stack_traces, stack_trace_key);
+    const bool symbolize = upids_for_symbolization.contains(upid);
+    std::string stack_trace_str = FoldedStackTraceString(symbolize, stack_traces, stack_trace_key);
     SymbolicStackTrace symbolic_stack_trace = {upid, std::move(stack_trace_str)};
     symbolic_histogram[symbolic_stack_trace] += count;
 

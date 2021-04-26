@@ -30,7 +30,7 @@
 #include "src/stirling/core/types.h"
 #include "src/stirling/source_connectors/perf_profiler/bcc_bpf_intf/stack_event.h"
 #include "src/stirling/source_connectors/perf_profiler/stack_traces_table.h"
-#include "src/stirling/source_connectors/perf_profiler/symbol_cache.h"
+#include "src/stirling/source_connectors/perf_profiler/symbolizer.h"
 
 namespace px {
 namespace stirling {
@@ -98,10 +98,10 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   StackTraceHisto AggregateStackTraces(ConnectorContext* ctx, ebpf::BPFStackTable* stack_traces,
                                        ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo);
 
-  std::string FoldedStackTraceString(ebpf::BPFStackTable* stack_traces,
+  std::string FoldedStackTraceString(const bool symbolize, ebpf::BPFStackTable* stack_traces,
                                      const stack_trace_key_t& key);
 
-  void CleanupSymbolCaches(const absl::flat_hash_set<md::UPID>& deleted_upids);
+  void CleanupSymbolizers(const absl::flat_hash_set<md::UPID>& deleted_upids);
 
   // data structures shared with BPF:
   std::unique_ptr<ebpf::BPFStackTable> stack_traces_a_;
@@ -120,9 +120,19 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Tracks unique stack trace ids, for the lifetime of Stirling:
   StackTraceIDMap stack_trace_ids_;
 
-  // Cache of symbols.
-  absl::flat_hash_map<struct upid_t, SymbolCache> upid_symbol_caches_;
-  SymbolCache kernel_symbol_cache_;
+  // At the discretion of its policy, a symbolizer will either:
+  // ... return the symbol given an address,
+  // ... or just stringify the address (i.e. to avoid the cost of symbol lookup).
+  // The symbolizer may maintain a set of symbol cache to make a best effort at
+  // reducing the cost of symbol lookup.
+  // Symbolizers are created with a specific policy on a per upid basis.
+  absl::flat_hash_map<struct upid_t, Symbolizer> symbolizers_;
+
+  // Some special case symbolizers:
+  // ... 1. A symbolizer that has the policy of "do not symbolize," and
+  // ... 2. a dedicated symbolizer for kernel syms.
+  Symbolizer dummy_symbolizer_;
+  Symbolizer kernel_symbolizer_;
 
   // Keeps track of processes. Used to find destroyed processes on which to perform clean-up.
   // TODO(oazizi): Investigate ways of sharing across source_connectors.

@@ -28,16 +28,26 @@ namespace px {
 namespace stirling {
 
 /**
- * A Stirling managed cache of symbols.
- * While BCC has its own cache as well, it's expensive to use.
+ * Symbolizer, based on its "enable_symbolization" policy either:
+ * ... provides a resolved symbol based on (pid, address), or,
+ * ... returns a stringified version of the address.
+ *
+ * When enable_symbolization=true, Symbolizer uses BCC to resolve the
+ * symbols in the underlying object code.
+ #
+ * If FLAGS_stirling_profiler_symcache==true, Symbolizer
+ * keeps its own symbol cache to reduce the cost of symbol lookup.
+ * While BCC has its own symbol cache, the bcc cache is expensive to use.
+ *
  */
-class SymbolCache {
+class Symbolizer {
  public:
-  explicit SymbolCache(int pid) : pid_(pid) {}
+  explicit Symbolizer(const int pid, const bool enable_symbolization)
+      : pid_(pid), enable_symbolization_(enable_symbolization) {}
 
   const std::string& LookupSym(ebpf::BPFStackTable* stack_traces, const uintptr_t addr);
 
-  void Flush();
+  void FlushCache();
 
   int64_t stat_accesses() { return stat_accesses_; }
   int64_t stat_hits() { return stat_hits_; }
@@ -47,6 +57,8 @@ class SymbolCache {
 
  private:
   const int pid_;
+  const bool enable_symbolization_;
+
   absl::flat_hash_map<uintptr_t, std::string> sym_cache_;
 
   int64_t stat_accesses_ = 0;

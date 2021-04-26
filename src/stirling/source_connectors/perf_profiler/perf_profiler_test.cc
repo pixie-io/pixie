@@ -59,7 +59,6 @@ class PerfProfileBPFTest : public ::testing::Test {
   void SetUp() override {
     source_ = PerfProfileConnector::Create("perf_profile_connector");
     ASSERT_OK(source_->Init());
-    ctx_ = std::make_unique<StandaloneContext>();
   }
 
   void TearDown() override { ASSERT_OK(source_->Stop()); }
@@ -99,6 +98,11 @@ class PerfProfileBPFTest : public ::testing::Test {
       const uint32_t cpu_idx = kNumSubProcesses * test_idx + sub_process_idx;
       sub_processes[sub_process_idx].Run(app_path, cpu_idx);
     }
+
+    // We wait until here to create the connector context, i.e. so that it
+    // finds the upids that belong to the sub-processes that we have just created.
+    ctx_ = std::make_unique<StandaloneContext>();
+
     return sub_processes;
   }
 
