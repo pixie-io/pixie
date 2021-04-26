@@ -23,6 +23,7 @@ import {
   AUTH_CLIENT_ID, AUTH_URI,
 } from 'containers/constants';
 import { FormStructure } from '@pixie-labs/components';
+import { Auth0Buttons } from 'containers/auth/auth0-buttons';
 import { OAuthProviderClient, Token } from './oauth-provider';
 
 function makeAuth0Client(): auth0.WebAuth {
@@ -79,6 +80,20 @@ export class Auth0Client extends OAuthProviderClient {
   // eslint-disable-next-line class-methods-use-this
   async getResetPasswordFlow(): Promise<FormStructure> {
     throw new Error('Reset password flow currently unavailable for Auth0');
+  }
+
+  getLoginButtons(): React.ReactElement {
+    return Auth0Buttons({
+      googleButtonText: 'Login with Google',
+      onGoogleButtonClick: () => this.loginRequest(),
+    });
+  }
+
+  getSignupButtons(): React.ReactElement {
+    return Auth0Buttons({
+      googleButtonText: 'Sign-up with Google',
+      onGoogleButtonClick: () => this.signupRequest(),
+    });
   }
 
   // eslint-disable-next-line class-methods-use-this

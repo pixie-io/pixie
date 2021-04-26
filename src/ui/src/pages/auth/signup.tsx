@@ -20,9 +20,9 @@ import {
   createStyles, Theme, WithStyles, withStyles,
 } from '@material-ui/core';
 import * as React from 'react';
-import { AuthBox, GoogleButton, SignupMarcom } from '@pixie-labs/components';
+import { AuthBox, SignupMarcom } from '@pixie-labs/components';
 import { BasePage } from './base';
-import { OAuthSignupRequest } from './utils';
+import { GetOAuthProvider } from './utils';
 
 const styles = ({ breakpoints }: Theme) => createStyles({
   root: {
@@ -39,29 +39,32 @@ const styles = ({ breakpoints }: Theme) => createStyles({
   },
 });
 
-export const SignupPage = withStyles(styles)(({ classes }: WithStyles<typeof styles>) => (
-  <BasePage>
-    <div className={classes.root}>
-      <div className={classes.marketingBlurb}>
-        <SignupMarcom />
-      </div>
-      <div>
-        <AuthBox
-          toggleURL={`/auth/login${window.location.search}`}
-          title='Get Started'
-          // Need to encapsulate so that newline is properly escaped.
-          body={`Pixie Community is Free Forever.
+export const SignupPage = withStyles(styles)(({ classes }: WithStyles<typeof styles>) => {
+  const authClient = React.useMemo(() => GetOAuthProvider(), []);
+  const buttons = React.useMemo(
+    () => (authClient.getSignupButtons()),
+    [authClient]);
+  return (
+    <BasePage>
+      <div className={classes.root}>
+        <div className={classes.marketingBlurb}>
+          <SignupMarcom />
+        </div>
+        <div>
+          <AuthBox
+            toggleURL={`/auth/login${window.location.search}`}
+            title='Get Started'
+            // Need to encapsulate so that newline is properly escaped.
+            body={`Pixie Community is Free Forever.
           No Credit Card Needed.`}
-          buttonCaption='Already have an account?'
-          buttonText='Login'
-          showTOSDisclaimer
-        >
-          <GoogleButton
-            text='Sign-up with Google'
-            onClick={OAuthSignupRequest}
-          />
-        </AuthBox>
+            buttonCaption='Already have an account?'
+            buttonText='Login'
+            showTOSDisclaimer
+          >
+            {buttons}
+          </AuthBox>
+        </div>
       </div>
-    </div>
-  </BasePage>
-));
+    </BasePage>
+  );
+});

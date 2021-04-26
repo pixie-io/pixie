@@ -17,26 +17,18 @@
  */
 
 import * as React from 'react';
-import { AuthBox } from '@pixie-labs/components';
-import { BasePage } from './base';
-import { GetOAuthProvider } from './utils';
+import { GoogleButton } from '@pixie-labs/components';
 
-export const LoginPage: React.FC = () => {
-  const authClient = React.useMemo(() => GetOAuthProvider(), []);
-  const buttons = React.useMemo(
-    () => (authClient.getLoginButtons()),
-    [authClient]);
-  return (
-    <BasePage>
-      <AuthBox
-        toggleURL={`/auth/signup${window.location.search}`}
-        title='Login'
-        body='Welcome back to Pixie!'
-        buttonCaption="Don't have an account yet?"
-        buttonText='Sign Up'
-      >
-        {buttons}
-      </AuthBox>
-    </BasePage>
-  );
-};
+export interface Auth0ButtonsProps {
+  googleButtonText: string;
+  onGoogleButtonClick: () => void;
+}
+
+export const Auth0Buttons: React.FC<Auth0ButtonsProps> = ({ googleButtonText, onGoogleButtonClick }) => (
+  <>
+    <GoogleButton
+      text={googleButtonText}
+      onClick={onGoogleButtonClick}
+    />
+  </>
+);

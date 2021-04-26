@@ -26,6 +26,7 @@ import { PublicApiFactory } from '@ory/kratos-client';
 import { FormStructure } from '@pixie-labs/components';
 import * as QueryString from 'query-string';
 import { HydraInvitationForm } from 'containers/admin/hydra-invitation-form';
+import { HydraButtons, RejectHydraSignup } from 'containers/auth/hydra-buttons';
 import { OAuthProviderClient, Token } from './oauth-provider';
 
 // Copied from auth0-js/src/helper/window.js
@@ -162,6 +163,18 @@ export class HydraClient extends OAuthProviderClient {
   // eslint-disable-next-line class-methods-use-this
   getInvitationComponent(): React.FC {
     return HydraInvitationForm;
+  }
+
+  getLoginButtons(): React.ReactElement {
+    return HydraButtons({
+      onUsernamePasswordButtonClick: () => this.loginRequest(),
+      usernamePasswordText: 'Login',
+    });
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  getSignupButtons(): React.ReactElement {
+    return RejectHydraSignup({});
   }
 
   private makeAndStoreState(): string {

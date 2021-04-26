@@ -22,29 +22,28 @@ import type * as React from 'react';
 import { FormStructure } from '@pixie-labs/components';
 
 export type Token = string;
-// OAuthProviderClient is the interface for OAuth providers such as Auth0 and ORY/Hydra.
+/** OAuthProviderClient is the interface for OAuth providers such as Auth0 and ORY/Hydra. */
 export abstract class OAuthProviderClient {
-  // loginRequest starts the login process for the OAuthProvider by redirecting the window.
-  abstract loginRequest(): void;
-
-  // SignupRequest starts the signup process for the OAuthProvider by redirecting the window.
-  abstract signupRequest(): void;
-
-  // handleToken will get the token wherever it's stored by the OAuthProvider and pass it to the callback.
+  /** handleToken will get the token wherever it's stored by the OAuthProvider and pass it to the callback. */
   abstract handleToken(): Promise<Token>;
 
-  // getPasswordLoginFlow returns the form structure for logging in.
+  /** getPasswordLoginFlow returns the form structure for logging in. */
   abstract getPasswordLoginFlow(): Promise<FormStructure>;
 
-  // getResetPasswordFlow returns the form to reset a password.
+  /** getResetPasswordFlow returns the form to reset a password. */
   abstract getResetPasswordFlow(): Promise<FormStructure>;
 
-  // getError retrieves a specific error from the OAuthProvider's server.
+  /** getError retrieves a specific error from the OAuthProvider's server. */
   abstract getError(): Promise<FormStructure>;
 
   abstract isInvitationEnabled(): boolean;
 
   /** If the provider supports invitations and they're enabled, it can return a React component to create them. */
-  // eslint-disable-next-line class-methods-use-this
-  abstract getInvitationComponent(): React.FC|undefined;
+  abstract getInvitationComponent(): React.FC | undefined;
+
+  /** Gets the login buttons for this OAuthProvider. */
+  abstract getLoginButtons(): React.ReactElement;
+
+  /** Gets the signup buttons for this OAuthProvider. */
+  abstract getSignupButtons(): React.ReactElement;
 }

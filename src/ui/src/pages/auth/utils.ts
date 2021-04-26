@@ -86,6 +86,3 @@ export const GetOAuthProvider = (): OAuthProviderClient => {
   }
   throw new Error(`OAUTH_PROVIDER ${OAUTH_PROVIDER} invalid. Expected hydra or auth0.`);
 };
-
-export const OAuthSignupRequest = (): void => GetOAuthProvider().signupRequest();
-export const OAuthLoginRequest = (): void => GetOAuthProvider().loginRequest();
