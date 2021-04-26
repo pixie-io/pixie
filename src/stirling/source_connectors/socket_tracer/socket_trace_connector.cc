@@ -336,7 +336,7 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
       << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
   DCHECK(data_table != nullptr);
 
-  SetIterationTime(std::chrono::steady_clock::now());
+  set_iteration_start_time(std::chrono::steady_clock::now());
 
   CachedUpdateCommonState(ctx, table_num);
 
@@ -353,7 +353,7 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
 
 void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
                                             const std::vector<DataTable*>& data_tables) {
-  SetIterationTime(std::chrono::steady_clock::now());
+  set_iteration_start_time(std::chrono::steady_clock::now());
 
   UpdateCommonState(ctx);
 
@@ -393,7 +393,8 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
         continue;
       }
 
-      conn_tracker->IterationPreTick(cluster_cidrs, proc_parser_.get(), socket_info_mgr_.get());
+      conn_tracker->IterationPreTick(iteration_start_time_, cluster_cidrs, proc_parser_.get(),
+                                     socket_info_mgr_.get());
       if (transfer_spec.enabled && transfer_spec.transfer_fn) {
         transfer_spec.transfer_fn(*this, ctx, conn_tracker.get(), data_table);
       }
@@ -529,6 +530,7 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
 
   ConnTracker& tracker = conn_trackers_mgr_.GetOrCreateConnTracker(event->attr.conn_id);
   tracker.set_conn_stats(&connection_stats_);
+  tracker.set_current_time(iteration_start_time_);
 
   tracker.AddDataEvent(std::move(event));
 }
@@ -540,6 +542,7 @@ void SocketTraceConnector::AcceptControlEvent(socket_control_event_t event) {
   // conn_id is a common field of open & close.
   ConnTracker& tracker = conn_trackers_mgr_.GetOrCreateConnTracker(event.open.conn_id);
   tracker.set_conn_stats(&connection_stats_);
+  tracker.set_current_time(iteration_start_time_);
 
   tracker.AddControlEvent(event);
 }
@@ -549,6 +552,7 @@ void SocketTraceConnector::AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> e
 
   ConnTracker& tracker = conn_trackers_mgr_.GetOrCreateConnTracker(event->attr.conn_id);
   tracker.set_conn_stats(&connection_stats_);
+  tracker.set_current_time(iteration_start_time_);
 
   tracker.AddHTTP2Header(std::move(event));
 }
@@ -558,6 +562,7 @@ void SocketTraceConnector::AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event
 
   ConnTracker& tracker = conn_trackers_mgr_.GetOrCreateConnTracker(event->attr.conn_id);
   tracker.set_conn_stats(&connection_stats_);
+  tracker.set_current_time(iteration_start_time_);
 
   tracker.AddHTTP2Data(std::move(event));
 }
@@ -929,7 +934,8 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
 
       UpdateTrackerTraceLevel(tracker);
 
-      tracker->IterationPreTick(cluster_cidrs, proc_parser_.get(), socket_info_mgr_.get());
+      tracker->IterationPreTick(iteration_start_time_, cluster_cidrs, proc_parser_.get(),
+                                socket_info_mgr_.get());
 
       if (transfer_spec.transfer_fn && transfer_spec.enabled) {
         transfer_spec.transfer_fn(*this, ctx, tracker, data_table);
@@ -957,7 +963,7 @@ void SocketTraceConnector::TransferStream(ConnectorContext* ctx, ConnTracker* tr
     }
 
     auto expiry_timestamp =
-        IterationTime() - std::chrono::seconds(FLAGS_messages_expiration_duration_secs);
+        iteration_start_time_ - std::chrono::seconds(FLAGS_messages_expiration_duration_secs);
     tracker->Cleanup<TProtocolTraits>(FLAGS_messages_size_limit_bytes, expiry_timestamp);
   }
 }

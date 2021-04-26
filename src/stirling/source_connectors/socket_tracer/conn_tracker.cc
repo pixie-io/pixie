@@ -484,7 +484,7 @@ bool ConnTracker::SetProtocol(TrafficProtocol protocol, std::string_view reason)
 void ConnTracker::UpdateTimestamps(uint64_t bpf_timestamp) {
   last_bpf_timestamp_ns_ = std::max(last_bpf_timestamp_ns_, bpf_timestamp);
 
-  last_update_timestamp_ = std::chrono::steady_clock::now();
+  last_update_timestamp_ = current_time_;
 
   idle_iteration_ = false;
 }
@@ -671,9 +671,12 @@ void ConnTracker::ExportInitialConnStats() {
                           stats_.Get(Stats::Key::kBytesRecv));
 }
 
-void ConnTracker::IterationPreTick(const std::vector<CIDRBlock>& cluster_cidrs,
-                                   system::ProcParser* proc_parser,
-                                   system::SocketInfoManager* socket_info_mgr) {
+void ConnTracker::IterationPreTick(
+    const std::chrono::time_point<std::chrono::steady_clock>& iteration_time,
+    const std::vector<CIDRBlock>& cluster_cidrs, system::ProcParser* proc_parser,
+    system::SocketInfoManager* socket_info_mgr) {
+  set_current_time(iteration_time);
+
   // Assume no activity. This flag will be flipped if there is any activity during the iteration.
   idle_iteration_ = true;
 
@@ -772,14 +775,13 @@ void ConnTracker::HandleInactivity() {
     idle_iteration_threshold_ += std::min(idle_iteration_threshold_, kMinCheckPeriod);
   }
 
-  auto now = std::chrono::steady_clock::now();
-  if (now > last_update_timestamp_ + InactivityDuration()) {
+  if (current_time_ > last_update_timestamp_ + InactivityDuration()) {
     // Flush the data buffers. Even if connection is still alive,
     // it is unlikely that any new data is a continuation of existing data in any meaningful way.
     Reset();
 
     // Reset timestamp so we don't enter this loop if statement again for some time.
-    last_update_timestamp_ = now;
+    last_update_timestamp_ = current_time_;
   }
 }
 

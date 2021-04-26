@@ -55,10 +55,12 @@ using testing::kHTTPUpgradeResp;
 
 class ConnTrackerTest : public ::testing::Test {
  protected:
-  ConnTrackerTest() : event_gen_(&real_clock_) {}
+  ConnTrackerTest() : event_gen_(&real_clock_), now_(std::chrono::steady_clock::now()) {}
 
   testing::RealClock real_clock_;
   testing::EventGenerator event_gen_;
+
+  std::chrono::time_point<std::chrono::steady_clock> now_;
 };
 
 TEST_F(ConnTrackerTest, timestamp_test) {
@@ -444,7 +446,7 @@ TEST_F(ConnTrackerTest, TrackerDisabledForIntraClusterRemoteEndpoint) {
   tracker.AddControlEvent(conn);
   tracker.SetProtocol(kProtocolHTTP, "testing");
   tracker.SetRole(kRoleClient, "testing");
-  tracker.IterationPreTick(cidrs, /*proc_parser*/ nullptr, /*connections*/ nullptr);
+  tracker.IterationPreTick(now_, cidrs, /*proc_parser*/ nullptr, /*connections*/ nullptr);
   EXPECT_EQ(ConnTracker::State::kDisabled, tracker.state());
 }
 
@@ -463,7 +465,7 @@ TEST_F(ConnTrackerTest, TrackerDisabledForLocalhostRemoteEndpoint) {
   tracker.AddControlEvent(conn);
   tracker.SetProtocol(kProtocolHTTP, "testing");
   tracker.SetRole(kRoleClient, "testing");
-  tracker.IterationPreTick(cidrs, /*proc_parser*/ nullptr, /*connections*/ nullptr);
+  tracker.IterationPreTick(now_, cidrs, /*proc_parser*/ nullptr, /*connections*/ nullptr);
   EXPECT_EQ(ConnTracker::State::kDisabled, tracker.state());
 }
 
@@ -477,7 +479,8 @@ TEST_F(ConnTrackerTest, TrackerCollectingForClientSideTracingWithNoCIDR) {
   tracker.AddControlEvent(conn);
   tracker.SetProtocol(kProtocolHTTP, "testing");
   tracker.SetRole(kRoleClient, "testing");
-  tracker.IterationPreTick(/*cluster_cidrs*/ {}, /*proc_parser*/ nullptr, /*connections*/ nullptr);
+  tracker.IterationPreTick(now_, /*cluster_cidrs*/ {}, /*proc_parser*/ nullptr,
+                           /*connections*/ nullptr);
   EXPECT_EQ(ConnTracker::State::kCollecting, tracker.state());
 }
 
@@ -493,7 +496,7 @@ TEST_F(ConnTrackerTest, TrackerDisabledForUnixDomainSocket) {
 
   ConnTracker tracker;
   tracker.AddControlEvent(conn);
-  tracker.IterationPreTick(cidrs, /*proc_parser*/ nullptr, /*connections*/ nullptr);
+  tracker.IterationPreTick(now_, cidrs, /*proc_parser*/ nullptr, /*connections*/ nullptr);
   EXPECT_EQ(ConnTracker::State::kDisabled, tracker.state());
 }
 
@@ -510,7 +513,7 @@ TEST_F(ConnTrackerTest, TrackerDisabledForOtherSockAddrFamily) {
 
   ConnTracker tracker;
   tracker.AddControlEvent(conn);
-  tracker.IterationPreTick(cidrs, /*proc_parser*/ nullptr, /*connections*/ nullptr);
+  tracker.IterationPreTick(now_, cidrs, /*proc_parser*/ nullptr, /*connections*/ nullptr);
   EXPECT_EQ(ConnTracker::State::kDisabled, tracker.state());
 }
 
@@ -528,7 +531,7 @@ TEST_F(ConnTrackerTest, TrackerDisabledAfterMapping) {
     tracker.AddControlEvent(conn);
     tracker.SetProtocol(kProtocolHTTP, "testing");
     tracker.SetRole(kRoleClient, "testing");
-    tracker.IterationPreTick({cidr}, /*proc_parser*/ nullptr, /*connections*/ nullptr);
+    tracker.IterationPreTick(now_, {cidr}, /*proc_parser*/ nullptr, /*connections*/ nullptr);
     EXPECT_EQ(ConnTracker::State::kDisabled, tracker.state())
         << "Got: " << magic_enum::enum_name(tracker.state());
   }
@@ -544,7 +547,7 @@ TEST_F(ConnTrackerTest, TrackerDisabledAfterMapping) {
     tracker.AddControlEvent(conn);
     tracker.SetProtocol(kProtocolHTTP, "testing");
     tracker.SetRole(kRoleClient, "testing");
-    tracker.IterationPreTick({cidr}, /*proc_parser*/ nullptr, /*connections*/ nullptr);
+    tracker.IterationPreTick(now_, {cidr}, /*proc_parser*/ nullptr, /*connections*/ nullptr);
     EXPECT_EQ(ConnTracker::State::kDisabled, tracker.state())
         << "Got: " << magic_enum::enum_name(tracker.state());
   }

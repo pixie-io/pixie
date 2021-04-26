@@ -370,6 +370,11 @@ class ConnTracker : NotCopyMoveable {
    */
   bool ReadyForDestruction() const;
 
+  void set_current_time(std::chrono::time_point<std::chrono::steady_clock> time) {
+    DCHECK(time >= current_time_);
+    current_time_ = time;
+  }
+
   /**
    * Performs any preprocessing that should happen per iteration on this
    * connection tracker.
@@ -378,7 +383,8 @@ class ConnTracker : NotCopyMoveable {
    * @param proc_parser Pointer to a proc_parser for access to /proc filesystem.
    * @param connections A map of inodes to endpoint information.
    */
-  void IterationPreTick(const std::vector<CIDRBlock>& cluster_cidrs,
+  void IterationPreTick(const std::chrono::time_point<std::chrono::steady_clock>& iteration_time,
+                        const std::vector<CIDRBlock>& cluster_cidrs,
                         system::ProcParser* proc_parser,
                         system::SocketInfoManager* socket_info_mgr);
 
@@ -587,6 +593,8 @@ class ConnTracker : NotCopyMoveable {
   // The timestamp of the last activity on this connection.
   // Recorded as the latest timestamp on a BPF event.
   uint64_t last_bpf_timestamp_ns_ = 0;
+
+  std::chrono::time_point<std::chrono::steady_clock> current_time_;
 
   // The timestamp of the last update on this connection which alters the states.
   //
