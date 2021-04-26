@@ -31,7 +31,7 @@ namespace stirling {
 Status ProcStatConnector::InitImpl() {
   std::ifstream input_file(kProcStatFileName);
   if (!input_file.good()) {
-    return error::NotFound("[$0] Unable to access $1", source_name(), kProcStatFileName.string());
+    return error::NotFound("[$0] Unable to access $1", name(), kProcStatFileName.string());
   }
 
   auto parsed_str = GetProcParams();

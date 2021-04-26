@@ -338,7 +338,7 @@ Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source, bool dyn
 
   for (uint32_t i = 0; i < source->num_tables(); ++i) {
     const DataTableSchema& schema = source->TableSchema(i);
-    LOG(INFO) << "Adding info class " << schema.name();
+    LOG(INFO) << absl::Substitute("Adding info class for $0: $1", source->name(), schema.name());
 
     // Step 2: Create the info class manager.
     auto mgr = std::make_unique<InfoClassManager>(
@@ -369,7 +369,7 @@ Status StirlingImpl::RemoveSource(std::string_view source_name) {
   // Find the source.
   auto source_iter = std::find_if(sources_.begin(), sources_.end(),
                                   [&source_name](const std::unique_ptr<SourceConnector>& s) {
-                                    return s->source_name() == source_name;
+                                    return s->name() == source_name;
                                   });
   if (source_iter == sources_.end()) {
     return error::Internal("RemoveSource(): could not find source with name=$0", source_name);
@@ -455,8 +455,8 @@ void StirlingImpl::DeployDynamicTraceConnector(
   ASSIGN_OR_RETURN_ERROR(std::unique_ptr<SourceConnector> source,
                          CreateDynamicSourceConnector(trace_id, program.get()));
 
-  LOG(INFO) << absl::Substitute("DynamicTraceConnector [$0] created in $1 ms.",
-                                source->source_name(), timer.ElapsedTime_us() / 1000.0);
+  LOG(INFO) << absl::Substitute("DynamicTraceConnector [$0] created in $1 ms.", source->name(),
+                                timer.ElapsedTime_us() / 1000.0);
 
   // Cache table schema name as source will be moved below.
   std::string output_name(source->TableSchema(0).name());
@@ -807,7 +807,7 @@ void StirlingImpl::Stop() {
 
     // Forge on, because death is imminent!
     LOG_IF(ERROR, !s.ok()) << absl::Substitute("Failed to stop source connector '$0', error: $1",
-                                               source->source_name(), s.ToString());
+                                               source->name(), s.ToString());
   }
 }
 

@@ -45,7 +45,7 @@ TEST_F(SourceRegistryTest, register_sources) {
     ASSERT_NE(registry_.sources().end(), iter);
     auto source_fn = element.create_source_fn;
     auto source = source_fn(name);
-    EXPECT_EQ(name, source->source_name());
+    EXPECT_EQ(name, source->name());
   }
 
   {
@@ -55,7 +55,7 @@ TEST_F(SourceRegistryTest, register_sources) {
     auto element = iter->second;
     auto source_fn = element.create_source_fn;
     auto source = source_fn(name);
-    EXPECT_EQ(name, source->source_name());
+    EXPECT_EQ(name, source->name());
   }
 
   auto all_sources = registry_.sources();

@@ -92,7 +92,7 @@ class SourceConnector : public NotCopyable {
    */
   virtual bool output_multi_tables() const { return false; }
 
-  const std::string& source_name() const { return source_name_; }
+  const std::string& name() const { return source_name_; }
 
   uint32_t num_tables() const { return table_schemas_.size(); }
 
