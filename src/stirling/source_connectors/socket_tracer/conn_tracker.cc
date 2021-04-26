@@ -484,7 +484,7 @@ bool ConnTracker::SetProtocol(TrafficProtocol protocol, std::string_view reason)
 void ConnTracker::UpdateTimestamps(uint64_t bpf_timestamp) {
   last_bpf_timestamp_ns_ = std::max(last_bpf_timestamp_ns_, bpf_timestamp);
 
-  last_update_timestamp_ = current_time_;
+  last_activity_timestamp_ = current_time_;
 
   idle_iteration_ = false;
 }
@@ -626,10 +626,11 @@ void ConnTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs) {
         // TODO(yzhao): Incorporate parsing to detect message type, and back fill the role.
         // This is useful for Redis, for which eBPF protocol resolution cannot detect message type.
         Disable("Could not determine role for traffic because connection resolution failed.");
-      } else if (conn_resolver_ == nullptr ||
-                 last_update_timestamp_ != conn_resolver_->prev_infer_timestamp()) {
-        CONN_TRACE(2)
-            << "Protocol role was not inferred from BPF, waiting for user space inference result.";
+      } else {
+        if (!idle_iteration_) {
+          CONN_TRACE(2) << "Protocol role was not inferred from BPF, waiting for user space "
+                           "inference result.";
+        }
       }
       break;
   }
@@ -775,13 +776,13 @@ void ConnTracker::HandleInactivity() {
     idle_iteration_threshold_ += std::min(idle_iteration_threshold_, kMinCheckPeriod);
   }
 
-  if (current_time_ > last_update_timestamp_ + InactivityDuration()) {
+  if (current_time_ > last_activity_timestamp_ + InactivityDuration()) {
     // Flush the data buffers. Even if connection is still alive,
     // it is unlikely that any new data is a continuation of existing data in any meaningful way.
     Reset();
 
     // Reset timestamp so we don't enter this loop if statement again for some time.
-    last_update_timestamp_ = current_time_;
+    last_activity_timestamp_ = current_time_;
   }
 }
 
@@ -875,14 +876,11 @@ void ConnTracker::InferConnInfo(system::ProcParser* proc_parser,
     return;
   }
 
-  // TODO(yzhao): Skip calling InferFDLink() if prev_infer_timestamp == infer_timestamp.
-  auto prev_infer_timestamp = prev_sockinfo_infer_timestamp_;
-  auto infer_timestamp = last_update_timestamp_;
-  std::optional<std::string_view> fd_link_opt = conn_resolver_->InferFDLink(infer_timestamp);
-  prev_sockinfo_infer_timestamp_ = infer_timestamp;
+  std::optional<std::string_view> fd_link_opt =
+      conn_resolver_->InferFDLink(last_activity_timestamp_);
   if (!fd_link_opt.has_value()) {
-    if (infer_timestamp != prev_infer_timestamp) {
-      // Only trace if there has been new activities since last inference.
+    if (!idle_iteration_) {
+      // Only trace if there has been new activity.
       CONN_TRACE(2) << "FD link info not available yet. Need more time determine the fd link and "
                        "resolve the connection.";
     }

@@ -314,7 +314,7 @@ class ConnTracker : NotCopyMoveable {
    * steady_clock).
    */
   std::chrono::time_point<std::chrono::steady_clock> last_update_timestamp() {
-    return last_update_timestamp_;
+    return last_activity_timestamp_;
   }
 
   /**
@@ -597,14 +597,12 @@ class ConnTracker : NotCopyMoveable {
   std::chrono::time_point<std::chrono::steady_clock> current_time_;
 
   // The timestamp of the last update on this connection which alters the states.
-  //
-  // Recorded as the latest touch time on the ConnTracker.
+  // Recorded as the latest activity time on the ConnTracker.
   // Currently using steady clock, so cannot be used meaningfully for logging real times.
-  // This can be changed in the future if required.
-  std::chrono::time_point<std::chrono::steady_clock> last_update_timestamp_;
+  std::chrono::time_point<std::chrono::steady_clock> last_activity_timestamp_;
 
-  // The timestamp of the previous attempt of sockinfo inference.
-  std::chrono::time_point<std::chrono::steady_clock> prev_sockinfo_infer_timestamp_;
+  // Filter for less spammy trace logs.
+  bool suppress_fd_link_log_ = false;
 
   // Some idleness checks used to trigger checks for closed connections.
   // The threshold undergoes an exponential backoff if connection is not closed.
