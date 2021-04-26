@@ -23,12 +23,6 @@ load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps")
 
 grpc_deps()
 
-# gazelle:repo bazel_gazelle
-load("//:go_deps.bzl", "pl_go_dependencies")
-
-# gazelle:repository_macro go_deps.bzl%pl_go_dependencies
-pl_go_dependencies()
-
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 
 go_rules_dependencies()
@@ -105,3 +99,10 @@ pip_parse(
 load("@vizier_api_python_deps//:requirements.bzl", "install_deps")
 
 install_deps()
+
+# gazelle:repo bazel_gazelle
+
+load("//:go_deps.bzl", "pl_go_dependencies")
+
+# gazelle:repository_macro go_deps.bzl%pl_go_dependencies
+pl_go_dependencies()
