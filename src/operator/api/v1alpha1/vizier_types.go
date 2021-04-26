@@ -25,6 +25,7 @@
 package v1alpha1
 
 import (
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -32,12 +33,59 @@ import (
 type VizierSpec struct {
 	// Version is the desired version of the Vizier instance.
 	Version string `json:"version,omitempty"`
+	// DeployKey is the deploy key associated with the Vizier instance. This is used to link the Vizier to a
+	// specific user/org.
+	DeployKey string `json:"deployKey"`
+	// UseEtcdOperator specifies whether the metadata service should use etcd for storage.
+	UseEtcdOperator bool `json:"useEtcdOperator,omitempty"`
+	// ClusterName is a name for the Vizier instance, usually specifying which cluster the Vizier is
+	// deployed to. If not specified, a random name will be generated.
+	ClusterName string `json:"clusterName,omitempty"`
+	// CloudAddr is the address of the cloud instance that the Vizier should be pointing to.
+	CloudAddr string `json:"cloudAddr,omitempty"`
+	// DevCloudNamespace should be specified only for dev versions of Pixie cloud which have no ingress to help
+	// redirect traffic to the correct service. The DevCloudNamespace is the namespace that the dev Pixie cloud is
+	// running on, for example: "plc-dev".
+	DevCloudNamespace string `json:"devCloudNamespace,omitempty"`
+	// PemMemoryLimit is a memory limit applied specifically to PEM pods.
+	PemMemoryLimit string `json:"pemMemoryLimit,omitempty"`
+	// Pod defines the policy for creating Vizier pods.
+	Pod *PodPolicy `json:"pod,omitempty"`
 }
 
 // VizierStatus defines the observed state of Vizier
 type VizierStatus struct {
 	// Version is the actual version of the Vizier instance.
 	Version string `json:"version,omitempty"`
+	// VizierPhase is a high-level summary of where the Vizier is in its lifecycle.
+	VizierPhase VizierPhase `json:"vizierPhase,omitempty"`
+	// Message is a human-readable message with details about why the Vizier is in this condition.
+	Message string `json:"message,omitempty"`
+}
+
+// VizierPhase is a high-level summary of where the Vizier is in its lifecycle.
+type VizierPhase string
+
+const (
+	// VizierPhaseNone indicates that the vizier phase is unknown.
+	VizierPhaseNone VizierPhase = ""
+	// VizierPhasePending indicates that the vizier is either in the process of creating or updating.
+	VizierPhasePending = "Pending"
+	// VizierPhaseRunning indicates that all vizier resources have been deployed.
+	VizierPhaseRunning = "Running"
+	// VizierPhaseFailed indicates that some vizier resources have failed to deploy.
+	VizierPhaseFailed = "Failed"
+)
+
+// PodPolicy defines the policy for creating Vizier pods.
+type PodPolicy struct {
+	// Labels specifies the labels to attach to pods the operator creates.
+	Labels map[string]string `json:"labels,omitempty"`
+	// Annotations specifies the annotations to attach to pods the operator creates.
+	Annotations map[string]string `json:"annotations,omitempty"`
+	// Resources is the resource requirements for a container.
+	// This field cannot be updated once the cluster is created.
+	Resources v1.ResourceRequirements `json:"resources,omitempty"`
 }
 
 // +kubebuilder:object:root=true
