@@ -52,14 +52,6 @@ import (
 
 const googleApis = "type.googleapis.com/"
 
-// NextGenMessageName converts the pixie proto message names into the new package name.
-func NextGenMessageName(name string) string {
-	if strings.HasPrefix(name, "pl.") {
-		return fmt.Sprintf("px.%s", name[3:])
-	}
-	return name
-}
-
 // AnyMessageName returns the name of the message contained in a google.protobuf.Any message.
 //
 // Note that regular type assertions should be done using the Is
@@ -73,7 +65,7 @@ func AnyMessageName(any *types.Any) (string, error) {
 	if slash < 0 {
 		return "", fmt.Errorf("message type url %q is invalid", any.TypeUrl)
 	}
-	return NextGenMessageName(any.TypeUrl[slash+1:]), nil
+	return any.TypeUrl[slash+1:], nil
 }
 
 // MarshalAny takes the protocol buffer and encodes it into google.protobuf.Any.
@@ -82,7 +74,7 @@ func MarshalAny(pb proto.Message) (*types.Any, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &types.Any{TypeUrl: googleApis + NextGenMessageName(proto.MessageName(pb)), Value: value}, nil
+	return &types.Any{TypeUrl: googleApis + proto.MessageName(pb), Value: value}, nil
 }
 
 // DynamicAny is a value that can be passed to UnmarshalAny to automatically
@@ -137,7 +129,7 @@ func UnmarshalAny(any *types.Any, pb proto.Message) error {
 	}
 
 	mname := proto.MessageName(pb)
-	if NextGenMessageName(aname) != mname {
+	if aname != mname {
 		return fmt.Errorf("mismatched message type: got %q want %q", aname, mname)
 	}
 	return proto.Unmarshal(any.Value, pb)
@@ -152,5 +144,5 @@ func Is(any *types.Any, pb proto.Message) bool {
 	}
 	name := proto.MessageName(pb)
 	prefix := len(any.TypeUrl) - len(name)
-	return prefix >= 1 && any.TypeUrl[prefix-1] == '/' && NextGenMessageName(any.TypeUrl[prefix:]) == name
+	return prefix >= 1 && any.TypeUrl[prefix-1] == '/' && any.TypeUrl[prefix:] == name
 }
