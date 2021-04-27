@@ -93,6 +93,7 @@ usage() {
   echo " -m <string> : machine type [default: ${MACHINE_TYPE}]"
   echo " -i <string> : base image [default: ${IMAGE_NAME}] (can also use COS)"
   echo " -d <int>    : disk size per node (GB) [default: ${DISK_SIZE}]"
+  echo " -z <string> : zone [default: ${ZONE}]"
   echo "Example: $0 -c dev-cluster-000 -n 4 -i UBUNTU"
   exit
 }
@@ -106,7 +107,7 @@ parse_args() {
 
   local OPTIND
   # Process the command line arguments.
-  while getopts "pbsfc:n:m:i:d:" opt; do
+  while getopts "pbsfc:n:m:i:d:z:" opt; do
     case ${opt} in
       f)
         AUTOSCALING=false
@@ -127,6 +128,9 @@ parse_args() {
         ;;
       d)
         DISK_SIZE=$OPTARG
+        ;;
+      z)
+        ZONE=$OPTARG
         ;;
       p)
         set_prod_cluster_config
