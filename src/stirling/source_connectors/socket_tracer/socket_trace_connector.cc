@@ -377,28 +377,22 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
     data_table->SetConsumeRecordsCutoffTime(perf_buffer_drain_time_);
   }
 
-  // TODO(yzhao): Can have a ConnTrackersManager::GetAllConnTrackers() to return all ConnTracker
-  // objects, and hide generations.
-  for (const auto& [conn_id, conn_tracker_gen] :
-       conn_trackers_mgr_.conn_id_to_conn_tracker_generations()) {
-    for (auto& [tsid, conn_tracker] : conn_tracker_gen.generations()) {
-      DCHECK_LT(conn_tracker->traffic_class().protocol, protocol_transfer_specs_.size());
-      const auto& transfer_spec = protocol_transfer_specs_[conn_tracker->traffic_class().protocol];
+  for (const auto& conn_tracker : conn_trackers_mgr_.active_trackers()) {
+    const auto& transfer_spec = protocol_transfer_specs_[conn_tracker->traffic_class().protocol];
 
-      DataTable* data_table = data_tables[transfer_spec.table_num];
-      if (data_table == nullptr) {
-        continue;
-      }
-
-      UpdateTrackerTraceLevel(conn_tracker.get());
-
-      conn_tracker->IterationPreTick(iteration_start_time_, cluster_cidrs, proc_parser_.get(),
-                                     socket_info_mgr_.get());
-      if (transfer_spec.enabled && transfer_spec.transfer_fn) {
-        transfer_spec.transfer_fn(*this, ctx, conn_tracker.get(), data_table);
-      }
-      conn_tracker->IterationPostTick();
+    DataTable* data_table = data_tables[transfer_spec.table_num];
+    if (data_table == nullptr) {
+      continue;
     }
+
+    UpdateTrackerTraceLevel(conn_tracker);
+
+    conn_tracker->IterationPreTick(iteration_start_time_, cluster_cidrs, proc_parser_.get(),
+                                   socket_info_mgr_.get());
+    if (transfer_spec.enabled && transfer_spec.transfer_fn) {
+      transfer_spec.transfer_fn(*this, ctx, conn_tracker, data_table);
+    }
+    conn_tracker->IterationPostTick();
   }
 
   // Once we've cleared all the debug trace levels for this pid, we can remove it from the list.

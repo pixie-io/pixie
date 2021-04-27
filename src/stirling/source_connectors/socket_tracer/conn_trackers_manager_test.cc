@@ -28,30 +28,27 @@ class ConnTrackersManagerTest : public ::testing::Test {
  protected:
   ConnTrackersManagerTest() : rng_(37), probability_dist_(0.0, 1.0) {}
 
-  ConnTrackersManager trackers_;
+  ConnTrackersManager trackers_mgr_;
 
   std::default_random_engine rng_;
   std::uniform_real_distribution<double> probability_dist_;
 
   void CleanupTrackers() {
     VLOG(1) << "CleanupTrackers";
-    trackers_.CleanupTrackers();
+    trackers_mgr_.CleanupTrackers();
   }
 
   void TransferStreamsProxy(double mark_for_death_probability, int death_countdown) {
-    for (const auto& [conn_id, conn_tracker_gen] :
-         trackers_.conn_id_to_conn_tracker_generations()) {
-      for (auto& [tsid, tracker] : conn_tracker_gen.generations()) {
-        if (probability_dist_(rng_) < mark_for_death_probability) {
-          tracker->MarkForDeath(death_countdown);
-        }
+    for (auto& tracker : trackers_mgr_.active_trackers()) {
+      if (probability_dist_(rng_) < mark_for_death_probability) {
+        tracker->MarkForDeath(death_countdown);
       }
     }
   }
 
   void TrackerEvent(struct conn_id_t conn_id, TrafficProtocol protocol) {
     VLOG(1) << "TrackerEvent";
-    ConnTracker& tracker = trackers_.GetOrCreateConnTracker(conn_id);
+    ConnTracker& tracker = trackers_mgr_.GetOrCreateConnTracker(conn_id);
     tracker.SetConnID(conn_id);
     tracker.SetProtocol(protocol, "for testing");
   }
@@ -59,6 +56,7 @@ class ConnTrackersManagerTest : public ::testing::Test {
 
 // This is a stress on ConnTrackersManager.
 // Each iteration, a different action is taken, and the consistency of the structure is checked.
+// The test also relies on the ConnTrackersManager internal checks (e.g. DebugChecks()).
 // ASAN runs can also identify issues while being stressed.
 TEST_F(ConnTrackersManagerTest, Fuzz) {
   constexpr int kIters = 1000000;
@@ -93,8 +91,6 @@ TEST_F(ConnTrackersManagerTest, Fuzz) {
     } else {
       CleanupTrackers();
     }
-
-    ASSERT_OK(trackers_.TestOnlyCheckConsistency());
   }
 }
 

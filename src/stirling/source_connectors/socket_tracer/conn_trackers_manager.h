@@ -92,16 +92,13 @@ class ConnTrackersManager {
    */
   ConnTracker& GetOrCreateConnTracker(struct conn_id_t conn_id);
 
+  const std::list<ConnTracker*>& active_trackers() const { return active_trackers_; }
+
   /**
    * Returns the latest generation of a connection tracker for the given pid and fd.
    * If there is no tracker for {pid, fd}, returns error::NotFound.
    */
   StatusOr<const ConnTracker*> GetConnTracker(uint32_t pid, uint32_t fd) const;
-
-  /**
-   * If a connection tracker has its protocol changed, then one must manually call this function.
-   */
-  void UpdateProtocol(ConnTracker* tracker);
 
   /**
    * Deletes trackers that are ReadyForDestruction().
@@ -111,21 +108,9 @@ class ConnTrackersManager {
   void CleanupTrackers();
 
   /**
-   * Checks the consistency of the data structures.
-   * Useful for catching bugs. Meant for use in testing.
-   * Could be expensive if called too regularly in production.
-   * See DebugChecks() for simpler checks that can be used in production.
-   */
-  Status TestOnlyCheckConsistency() const;
-
-  /**
    * Returns extensive debug information about the connection trackers.
    */
   std::string DebugInfo() const;
-
-  const auto& conn_id_to_conn_tracker_generations() const {
-    return conn_id_to_conn_tracker_generations_;
-  }
 
  private:
   // Simple consistency DCHECKs meant for enforcing invariants.
@@ -134,13 +119,9 @@ class ConnTrackersManager {
   // A map from conn_id (PID+FD+TSID) to tracker. This is for easy update on BPF events.
   // Structured as two nested maps to be explicit about "generations" of trackers per PID+FD.
   // Key is {PID, FD} for outer map, and tsid for inner map.
-  absl::flat_hash_map<uint64_t, ConnTrackerGenerations> conn_id_to_conn_tracker_generations_;
+  absl::flat_hash_map<uint64_t, ConnTrackerGenerations> conn_id_tracker_generations_;
 
-  // A set of lists of pointers to all the contained trackers, organized by protocol
-  // This is for easy access to the trackers during TransferData().
-  // Key is protocol.
-  // TODO(jps): Convert to vector?
-  absl::flat_hash_map<TrafficProtocol, std::list<ConnTracker*>> conn_trackers_by_protocol_;
+  std::list<ConnTracker*> active_trackers_;
 
   // Keep track of total number of trackers, and other counts.
   // Used to check for consistency.

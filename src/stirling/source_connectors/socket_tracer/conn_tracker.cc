@@ -473,9 +473,6 @@ bool ConnTracker::SetProtocol(TrafficProtocol protocol, std::string_view reason)
 
   TrafficProtocol old_protocol = traffic_class_.protocol;
   traffic_class_.protocol = protocol;
-  if (manager_ != nullptr) {
-    manager_->UpdateProtocol(this);
-  }
   CONN_TRACE(1) << absl::Substitute("Protocol changed: $0->$1", magic_enum::enum_name(old_protocol),
                                     magic_enum::enum_name(protocol));
   return true;
