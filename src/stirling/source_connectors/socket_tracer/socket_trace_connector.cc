@@ -16,8 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifdef __linux__
-
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
 
 #include <sys/types.h>
@@ -1040,5 +1038,3 @@ void SocketTraceConnector::TransferConnStats(ConnectorContext* ctx, DataTable* d
 
 }  // namespace stirling
 }  // namespace px
-
-#endif

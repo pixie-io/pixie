@@ -16,8 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifdef __linux__
-
 #include "src/stirling/source_connectors/pid_runtime/pid_runtime_connector.h"
 
 #include <string>
@@ -73,7 +71,17 @@ void PIDRuntimeConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t
   }
 }
 
+void PIDRuntimeConnector::TransferDataImpl(ConnectorContext* /* ctx */,
+                                           const std::vector<DataTable*>& data_tables) {
+  DCHECK_EQ(data_tables.size(), 1);
+  DataTable* data_table = data_tables[0];
+
+  if (data_table == nullptr) {
+    return;
+  }
+
+  TransferDataImpl(nullptr, 0, data_table);
+}
+
 }  // namespace stirling
 }  // namespace px
-
-#endif
