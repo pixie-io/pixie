@@ -32,7 +32,7 @@ import (
 	"github.com/gofrs/uuid"
 	"google.golang.org/grpc"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/api/proto/vispb"
 	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
 	"px.dev/pixie/src/pixie_cli/pkg/auth"
@@ -58,7 +58,7 @@ type Connector struct {
 }
 
 // NewConnector returns a new connector.
-func NewConnector(cloudAddr string, vzInfo *cloudapipb.ClusterInfo, conn *ConnectionInfo) (*Connector, error) {
+func NewConnector(cloudAddr string, vzInfo *cloudpb.ClusterInfo, conn *ConnectionInfo) (*Connector, error) {
 	c := &Connector{
 		id: utils.UUIDFromProtoOrNil(vzInfo.ID),
 	}

@@ -22,7 +22,7 @@ import (
 	"context"
 	"fmt"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 )
 
 // CLIArtifactResolver is the resolver responsible for resolving the CLI artifact.
@@ -35,20 +35,20 @@ type cliArtifactArgs struct {
 	ArtifactType *string
 }
 
-func artifactTypeToProto(a *string) cloudapipb.ArtifactType {
+func artifactTypeToProto(a *string) cloudpb.ArtifactType {
 	switch *a {
 	case "AT_LINUX_AMD64":
-		return cloudapipb.AT_LINUX_AMD64
+		return cloudpb.AT_LINUX_AMD64
 	case "AT_DARWIN_AMD64":
-		return cloudapipb.AT_DARWIN_AMD64
+		return cloudpb.AT_DARWIN_AMD64
 	case "AT_CONTAINER_SET_YAMLS":
-		return cloudapipb.AT_CONTAINER_SET_YAMLS
+		return cloudpb.AT_CONTAINER_SET_YAMLS
 	case "AT_CONTAINER_SET_LINUX_AMD64":
-		return cloudapipb.AT_CONTAINER_SET_LINUX_AMD64
+		return cloudpb.AT_CONTAINER_SET_LINUX_AMD64
 	case "AT_CONTAINER_SET_TEMPLATE_YAMLS":
-		return cloudapipb.AT_CONTAINER_SET_TEMPLATE_YAMLS
+		return cloudpb.AT_CONTAINER_SET_TEMPLATE_YAMLS
 	default:
-		return cloudapipb.AT_UNKNOWN
+		return cloudpb.AT_UNKNOWN
 	}
 }
 
@@ -58,7 +58,7 @@ func (q *QueryResolver) CLIArtifact(ctx context.Context, args *cliArtifactArgs) 
 
 	artifactTypePb := artifactTypeToProto(args.ArtifactType)
 
-	artifactReq := &cloudapipb.GetArtifactListRequest{
+	artifactReq := &cloudpb.GetArtifactListRequest{
 		ArtifactType: artifactTypePb,
 		ArtifactName: "cli",
 		Limit:        1,
@@ -76,7 +76,7 @@ func (q *QueryResolver) CLIArtifact(ctx context.Context, args *cliArtifactArgs) 
 		return nil, fmt.Errorf("Got unexpected number of artifacts: %d", len(cliInfo.Artifact))
 	}
 
-	linkReq := &cloudapipb.GetDownloadLinkRequest{
+	linkReq := &cloudpb.GetDownloadLinkRequest{
 		ArtifactName: "cli",
 		ArtifactType: artifactTypePb,
 		VersionStr:   cliInfo.Artifact[0].VersionStr,
@@ -112,12 +112,12 @@ type ArtifactsInfoResolver struct {
 func (q *QueryResolver) Artifacts(ctx context.Context, args *artifactsArgs) (*ArtifactsInfoResolver, error) {
 	grpcAPI := q.Env.ArtifactTrackerServer
 
-	artifactType := cloudapipb.AT_LINUX_AMD64
+	artifactType := cloudpb.AT_LINUX_AMD64
 	if *args.ArtifactName == "vizier" {
-		artifactType = cloudapipb.AT_CONTAINER_SET_LINUX_AMD64
+		artifactType = cloudpb.AT_CONTAINER_SET_LINUX_AMD64
 	}
 
-	artifactReq := &cloudapipb.GetArtifactListRequest{
+	artifactReq := &cloudpb.GetArtifactListRequest{
 		ArtifactType: artifactType,
 		ArtifactName: *args.ArtifactName,
 	}

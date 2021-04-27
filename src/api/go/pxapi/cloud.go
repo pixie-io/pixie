@@ -22,7 +22,7 @@ import (
 	"context"
 
 	"px.dev/pixie/src/api/go/pxapi/errdefs"
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 )
 
 // VizierStatus stores the enumeration of all vizier statuses.
@@ -50,13 +50,13 @@ type VizierInfo struct {
 	DirectAccess bool
 }
 
-func clusterStatusToVizierStatus(status cloudapipb.ClusterStatus) VizierStatus {
+func clusterStatusToVizierStatus(status cloudpb.ClusterStatus) VizierStatus {
 	switch status {
-	case cloudapipb.CS_HEALTHY:
+	case cloudpb.CS_HEALTHY:
 		return VizierStatusHealthy
-	case cloudapipb.CS_UNHEALTHY:
+	case cloudpb.CS_UNHEALTHY:
 		return VizierStatusUnhealthy
-	case cloudapipb.CS_DISCONNECTED:
+	case cloudpb.CS_DISCONNECTED:
 		return VizierStatusDisconnected
 	default:
 		return VizierStatusUnknown
@@ -65,7 +65,7 @@ func clusterStatusToVizierStatus(status cloudapipb.ClusterStatus) VizierStatus {
 
 // ListViziers gets a list of Viziers registered with Pixie.
 func (c *Client) ListViziers(ctx context.Context) ([]*VizierInfo, error) {
-	req := &cloudapipb.GetClusterInfoRequest{}
+	req := &cloudpb.GetClusterInfoRequest{}
 	res, err := c.cmClient.GetClusterInfo(c.cloudCtxWithMD(ctx), req)
 	if err != nil {
 		return nil, err
@@ -87,7 +87,7 @@ func (c *Client) ListViziers(ctx context.Context) ([]*VizierInfo, error) {
 
 // GetVizierInfo gets info about the given clusterID.
 func (c *Client) GetVizierInfo(ctx context.Context, clusterID string) (*VizierInfo, error) {
-	req := &cloudapipb.GetClusterInfoRequest{
+	req := &cloudpb.GetClusterInfoRequest{
 		ID: ProtoFromUUIDStrOrNil(clusterID),
 	}
 	res, err := c.cmClient.GetClusterInfo(c.cloudCtxWithMD(ctx), req)
@@ -111,17 +111,17 @@ func (c *Client) GetVizierInfo(ctx context.Context, clusterID string) (*VizierIn
 }
 
 // getConnectionInfo gets the connection info for a cluster using direct mode.
-func (c *Client) getConnectionInfo(ctx context.Context, clusterID string) (*cloudapipb.GetClusterConnectionInfoResponse, error) {
-	req := &cloudapipb.GetClusterConnectionInfoRequest{
+func (c *Client) getConnectionInfo(ctx context.Context, clusterID string) (*cloudpb.GetClusterConnectionInfoResponse, error) {
+	req := &cloudpb.GetClusterConnectionInfoRequest{
 		ID: ProtoFromUUIDStrOrNil(clusterID),
 	}
 	return c.cmClient.GetClusterConnectionInfo(c.cloudCtxWithMD(ctx), req)
 }
 
 // CreateDeployKey creates a new deploy key, with an optional description.
-func (c *Client) CreateDeployKey(ctx context.Context, desc string) (*cloudapipb.DeploymentKey, error) {
-	keyMgr := cloudapipb.NewVizierDeploymentKeyManagerClient(c.grpcConn)
-	req := &cloudapipb.CreateDeploymentKeyRequest{
+func (c *Client) CreateDeployKey(ctx context.Context, desc string) (*cloudpb.DeploymentKey, error) {
+	keyMgr := cloudpb.NewVizierDeploymentKeyManagerClient(c.grpcConn)
+	req := &cloudpb.CreateDeploymentKeyRequest{
 		Desc: desc,
 	}
 	dk, err := keyMgr.Create(c.cloudCtxWithMD(ctx), req)

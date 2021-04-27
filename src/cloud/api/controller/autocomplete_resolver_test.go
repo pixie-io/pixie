@@ -24,7 +24,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/graph-gophers/graphql-go/gqltesting"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/cloud/api/controller/testutils"
 )
 
@@ -33,43 +33,43 @@ func TestAutocomplete(t *testing.T) {
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	mockClients.MockAutocomplete.EXPECT().Autocomplete(gomock.Any(), &cloudapipb.AutocompleteRequest{
+	mockClients.MockAutocomplete.EXPECT().Autocomplete(gomock.Any(), &cloudpb.AutocompleteRequest{
 		Input:     "px/svc_info svc:pl/test",
 		CursorPos: 0,
-		Action:    cloudapipb.AAT_EDIT,
+		Action:    cloudpb.AAT_EDIT,
 	}).
-		Return(&cloudapipb.AutocompleteResponse{
+		Return(&cloudpb.AutocompleteResponse{
 			FormattedInput: "${2:run} ${3:$0px/svc_info} ${1:svc:pl/test}",
 			IsExecutable:   false,
-			TabSuggestions: []*cloudapipb.TabSuggestion{
+			TabSuggestions: []*cloudpb.TabSuggestion{
 				{
 					TabIndex:              2,
 					ExecutableAfterSelect: false,
-					Suggestions:           []*cloudapipb.AutocompleteSuggestion{},
+					Suggestions:           []*cloudpb.AutocompleteSuggestion{},
 				},
 				{
 					TabIndex:              3,
 					ExecutableAfterSelect: false,
-					Suggestions: []*cloudapipb.AutocompleteSuggestion{
+					Suggestions: []*cloudpb.AutocompleteSuggestion{
 						{
-							Kind:           cloudapipb.AEK_POD,
+							Kind:           cloudpb.AEK_POD,
 							Name:           "svc_info_pod",
 							Description:    "this is a pod",
 							MatchedIndexes: []int64{0, 1, 2},
-							State:          cloudapipb.AES_TERMINATED,
+							State:          cloudpb.AES_TERMINATED,
 						},
 					},
 				},
 				{
 					TabIndex:              1,
 					ExecutableAfterSelect: false,
-					Suggestions: []*cloudapipb.AutocompleteSuggestion{
+					Suggestions: []*cloudpb.AutocompleteSuggestion{
 						{
-							Kind:           cloudapipb.AEK_SVC,
+							Kind:           cloudpb.AEK_SVC,
 							Name:           "pl/test",
 							Description:    "this is a svc",
 							MatchedIndexes: []int64{5, 6, 7},
-							State:          cloudapipb.AES_RUNNING,
+							State:          cloudpb.AES_RUNNING,
 						},
 					},
 				},
@@ -126,27 +126,27 @@ func TestAutocompleteField(t *testing.T) {
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	mockClients.MockAutocomplete.EXPECT().AutocompleteField(gomock.Any(), &cloudapipb.AutocompleteFieldRequest{
+	mockClients.MockAutocomplete.EXPECT().AutocompleteField(gomock.Any(), &cloudpb.AutocompleteFieldRequest{
 		Input:            "px/svc_info",
-		FieldType:        cloudapipb.AEK_SVC,
-		RequiredArgTypes: []cloudapipb.AutocompleteEntityKind{},
+		FieldType:        cloudpb.AEK_SVC,
+		RequiredArgTypes: []cloudpb.AutocompleteEntityKind{},
 		ClusterUID:       "test",
 	}).
-		Return(&cloudapipb.AutocompleteFieldResponse{
-			Suggestions: []*cloudapipb.AutocompleteSuggestion{
+		Return(&cloudpb.AutocompleteFieldResponse{
+			Suggestions: []*cloudpb.AutocompleteSuggestion{
 				{
-					Kind:           cloudapipb.AEK_SVC,
+					Kind:           cloudpb.AEK_SVC,
 					Name:           "px/svc_info",
 					Description:    "test",
 					MatchedIndexes: []int64{0, 1, 2},
-					State:          cloudapipb.AES_TERMINATED,
+					State:          cloudpb.AES_TERMINATED,
 				},
 				{
-					Kind:           cloudapipb.AEK_SVC,
+					Kind:           cloudpb.AEK_SVC,
 					Name:           "px/svc_info2",
 					Description:    "test2",
 					MatchedIndexes: []int64{0, 1, 2},
-					State:          cloudapipb.AES_RUNNING,
+					State:          cloudpb.AES_RUNNING,
 				},
 			},
 		}, nil)

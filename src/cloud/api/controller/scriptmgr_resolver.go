@@ -24,7 +24,7 @@ import (
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/graph-gophers/graphql-go"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 )
 
 // LiveViewMetadataResolver resolves metadata about a live view.
@@ -38,7 +38,7 @@ type LiveViewMetadataResolver struct {
 func (q *QueryResolver) LiveViews(ctx context.Context) ([]LiveViewMetadataResolver, error) {
 	grpcAPI := q.Env.ScriptMgrServer
 
-	req := &cloudapipb.GetLiveViewsReq{}
+	req := &cloudpb.GetLiveViewsReq{}
 
 	resp, err := grpcAPI.GetLiveViews(ctx, req)
 	if err != nil {
@@ -71,7 +71,7 @@ type liveViewContentsArgs struct {
 func (q *QueryResolver) LiveViewContents(ctx context.Context, args *liveViewContentsArgs) (*LiveViewContentsResolver, error) {
 	grpcAPI := q.Env.ScriptMgrServer
 
-	req := &cloudapipb.GetLiveViewContentsReq{
+	req := &cloudpb.GetLiveViewContentsReq{
 		LiveViewID: string(args.ID),
 	}
 	resp, err := grpcAPI.GetLiveViewContents(ctx, req)
@@ -111,7 +111,7 @@ type ScriptMetadataResolver struct {
 func (q *QueryResolver) Scripts(ctx context.Context) ([]ScriptMetadataResolver, error) {
 	grpcAPI := q.Env.ScriptMgrServer
 
-	req := &cloudapipb.GetScriptsReq{}
+	req := &cloudpb.GetScriptsReq{}
 
 	resp, err := grpcAPI.GetScripts(ctx, req)
 	if err != nil {
@@ -144,7 +144,7 @@ type scriptContentsArgs struct {
 func (q *QueryResolver) ScriptContents(ctx context.Context, args *scriptContentsArgs) (*ScriptContentsResolver, error) {
 	grpcAPI := q.Env.ScriptMgrServer
 
-	req := &cloudapipb.GetScriptContentsReq{
+	req := &cloudpb.GetScriptContentsReq{
 		ScriptID: string(args.ID),
 	}
 	resp, err := grpcAPI.GetScriptContents(ctx, req)

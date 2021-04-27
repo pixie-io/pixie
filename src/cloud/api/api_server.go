@@ -33,7 +33,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
 	"px.dev/pixie/src/cloud/api/apienv"
 	"px.dev/pixie/src/cloud/api/controller"
@@ -174,21 +174,21 @@ func main() {
 	s := server.NewPLServerWithOptions(env, handlers.CORS(services.DefaultCORSConfig(allowedOrigins)...)(mux), serverOpts)
 
 	imageAuthServer := &controller.VizierImageAuthServer{}
-	cloudapipb.RegisterVizierImageAuthorizationServer(s.GRPCServer(), imageAuthServer)
+	cloudpb.RegisterVizierImageAuthorizationServer(s.GRPCServer(), imageAuthServer)
 
 	artifactTrackerServer := controller.ArtifactTrackerServer{
 		ArtifactTrackerClient: at,
 	}
-	cloudapipb.RegisterArtifactTrackerServer(s.GRPCServer(), artifactTrackerServer)
+	cloudpb.RegisterArtifactTrackerServer(s.GRPCServer(), artifactTrackerServer)
 
 	cis := &controller.VizierClusterInfo{VzMgr: vc, ArtifactTrackerClient: at}
-	cloudapipb.RegisterVizierClusterInfoServer(s.GRPCServer(), cis)
+	cloudpb.RegisterVizierClusterInfoServer(s.GRPCServer(), cis)
 
 	vdks := &controller.VizierDeploymentKeyServer{VzDeploymentKey: vk}
-	cloudapipb.RegisterVizierDeploymentKeyManagerServer(s.GRPCServer(), vdks)
+	cloudpb.RegisterVizierDeploymentKeyManagerServer(s.GRPCServer(), vdks)
 
 	aks := &controller.APIKeyServer{APIKeyClient: ak}
-	cloudapipb.RegisterAPIKeyManagerServer(s.GRPCServer(), aks)
+	cloudpb.RegisterAPIKeyManagerServer(s.GRPCServer(), aks)
 
 	vpt := ptproxy.NewVizierPassThroughProxy(nc, vc)
 	public_vizierapipb.RegisterVizierServiceServer(s.GRPCServer(), vpt)
@@ -199,7 +199,7 @@ func main() {
 		log.WithError(err).Fatal("Failed to init scriptmgr client.")
 	}
 	sms := &controller.ScriptMgrServer{ScriptMgr: sm}
-	cloudapipb.RegisterScriptMgrServer(s.GRPCServer(), sms)
+	cloudpb.RegisterScriptMgrServer(s.GRPCServer(), sms)
 
 	esSuggester, err := autocomplete.NewElasticSuggester(es, "scripts", pc)
 	if err != nil {
@@ -239,10 +239,10 @@ func main() {
 	defer close(quitCh)
 
 	as := &controller.AutocompleteServer{Suggester: esSuggester}
-	cloudapipb.RegisterAutocompleteServiceServer(s.GRPCServer(), as)
+	cloudpb.RegisterAutocompleteServiceServer(s.GRPCServer(), as)
 
 	profileServer := &controller.ProfileServer{ProfileServiceClient: pc}
-	cloudapipb.RegisterProfileServiceServer(s.GRPCServer(), profileServer)
+	cloudpb.RegisterProfileServiceServer(s.GRPCServer(), profileServer)
 
 	gqlEnv := controller.GraphQLEnv{
 		ArtifactTrackerServer: artifactTrackerServer,

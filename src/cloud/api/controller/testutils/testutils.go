@@ -25,7 +25,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/viper"
 
-	mock_cloudapipb "px.dev/pixie/src/api/proto/cloudapipb/mock"
+	mock_cloudpb "px.dev/pixie/src/api/proto/cloudpb/mock"
 	"px.dev/pixie/src/cloud/api/apienv"
 	"px.dev/pixie/src/cloud/api/controller"
 	mock_artifacttrackerpb "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb/mock"
@@ -36,24 +36,24 @@ import (
 
 // MockCloudClients provides the mock grpc clients for the graphql test env.
 type MockCloudClients struct {
-	MockArtifact          *mock_cloudapipb.MockArtifactTrackerServer
-	MockVizierClusterInfo *mock_cloudapipb.MockVizierClusterInfoServer
-	MockVizierDeployKey   *mock_cloudapipb.MockVizierDeploymentKeyManagerServer
-	MockScriptMgr         *mock_cloudapipb.MockScriptMgrServer
-	MockAutocomplete      *mock_cloudapipb.MockAutocompleteServiceServer
-	MockOrg               *mock_cloudapipb.MockOrganizationServiceServer
-	MockAPIKey            *mock_cloudapipb.MockAPIKeyManagerServer
+	MockArtifact          *mock_cloudpb.MockArtifactTrackerServer
+	MockVizierClusterInfo *mock_cloudpb.MockVizierClusterInfoServer
+	MockVizierDeployKey   *mock_cloudpb.MockVizierDeploymentKeyManagerServer
+	MockScriptMgr         *mock_cloudpb.MockScriptMgrServer
+	MockAutocomplete      *mock_cloudpb.MockAutocompleteServiceServer
+	MockOrg               *mock_cloudpb.MockOrganizationServiceServer
+	MockAPIKey            *mock_cloudpb.MockAPIKeyManagerServer
 }
 
 // CreateTestGraphQLEnv creates a test graphql environment and mock clients.
 func CreateTestGraphQLEnv(t *testing.T) (controller.GraphQLEnv, *MockCloudClients, func()) {
 	ctrl := gomock.NewController(t)
-	ats := mock_cloudapipb.NewMockArtifactTrackerServer(ctrl)
-	vcs := mock_cloudapipb.NewMockVizierClusterInfoServer(ctrl)
-	vds := mock_cloudapipb.NewMockVizierDeploymentKeyManagerServer(ctrl)
-	sms := mock_cloudapipb.NewMockScriptMgrServer(ctrl)
-	as := mock_cloudapipb.NewMockAutocompleteServiceServer(ctrl)
-	os := mock_cloudapipb.NewMockOrganizationServiceServer(ctrl)
+	ats := mock_cloudpb.NewMockArtifactTrackerServer(ctrl)
+	vcs := mock_cloudpb.NewMockVizierClusterInfoServer(ctrl)
+	vds := mock_cloudpb.NewMockVizierDeploymentKeyManagerServer(ctrl)
+	sms := mock_cloudpb.NewMockScriptMgrServer(ctrl)
+	as := mock_cloudpb.NewMockAutocompleteServiceServer(ctrl)
+	os := mock_cloudpb.NewMockOrganizationServiceServer(ctrl)
 	gqlEnv := controller.GraphQLEnv{
 		ArtifactTrackerServer: ats,
 		VizierClusterInfo:     vcs,

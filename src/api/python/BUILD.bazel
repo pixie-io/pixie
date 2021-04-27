@@ -47,7 +47,7 @@ py_wheel(
     strip_path_prefixes = ["src/api/python/"],
     version = "0.3.0",
     deps = [
-        "//src/api/proto/cloudapipb:cloudapi_pl_py_grpc",
+        "//src/api/proto/cloudpb:cloudapi_pl_py_grpc",
         "//src/api/proto/uuidpb:uuid_pl_py_proto",
         "//src/api/proto/vispb:vis_pl_py_proto",
         "//src/api/proto/vizierapipb:vizier_pl_py_grpc",

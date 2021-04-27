@@ -25,8 +25,8 @@ from urllib.parse import urlparse
 from src.api.proto.vizierapipb import vizierapi_pb2 as vpb
 from src.api.proto.vizierapipb import vizierapi_pb2_grpc
 
-from src.api.proto.cloudapipb import cloudapi_pb2 as cpb
-from src.api.proto.cloudapipb import cloudapi_pb2_grpc
+from src.api.proto.cloudpb import cloudapi_pb2 as cpb
+from src.api.proto.cloudpb import cloudapi_pb2_grpc
 
 from .data import (
     _TableStream,

@@ -34,7 +34,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/rivo/tview"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/pixie_cli/pkg/script"
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
@@ -120,7 +120,7 @@ type Modal interface {
 }
 
 // New creates a new live view.
-func New(br *script.BundleManager, viziers []*vizier.Connector, cloudAddr string, aClient cloudapipb.AutocompleteServiceClient,
+func New(br *script.BundleManager, viziers []*vizier.Connector, cloudAddr string, aClient cloudpb.AutocompleteServiceClient,
 	execScript *script.ExecutableScript, useNewAC bool, clusterID uuid.UUID) (*View, error) {
 	// App is the top level view. The layout is approximately as follows:
 	//  ------------------------------------------

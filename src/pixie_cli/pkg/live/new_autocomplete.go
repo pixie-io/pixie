@@ -26,7 +26,7 @@ import (
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/pixie_cli/pkg/auth"
 	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/pixie_cli/pkg/script"
@@ -38,23 +38,23 @@ type AutocompleteModal interface {
 	SetScriptExecFunc(func(s *script.ExecutableScript))
 }
 
-var protoToKindLabelMap = map[cloudapipb.AutocompleteEntityKind]string{
-	cloudapipb.AEK_SVC:       "svc",
-	cloudapipb.AEK_POD:       "pod",
-	cloudapipb.AEK_SCRIPT:    "script",
-	cloudapipb.AEK_NAMESPACE: "ns",
+var protoToKindLabelMap = map[cloudpb.AutocompleteEntityKind]string{
+	cloudpb.AEK_SVC:       "svc",
+	cloudpb.AEK_POD:       "pod",
+	cloudpb.AEK_SCRIPT:    "script",
+	cloudpb.AEK_NAMESPACE: "ns",
 }
 
 type suggestion struct {
 	name string
 	desc string
-	kind cloudapipb.AutocompleteEntityKind
+	kind cloudpb.AutocompleteEntityKind
 
 	matchedIndexes []int
 }
 
 type autocompleter interface {
-	GetSuggestions(string, int, cloudapipb.AutocompleteActionType) ([]*TabStop, map[int][]suggestion, bool, error)
+	GetSuggestions(string, int, cloudpb.AutocompleteActionType) ([]*TabStop, map[int][]suggestion, bool, error)
 }
 
 // autcompleteModal is the autocomplete modal.
@@ -234,11 +234,11 @@ func (m *tabAutocompleteModal) selectSuggestion(app *tview.Application, s sugges
 		newStr += currentString[m.boundaries[m.tabStopIndex].right:]
 	}
 
-	m.updateInput(app, newStr, newCursorPos, cloudapipb.AAT_SELECT)
+	m.updateInput(app, newStr, newCursorPos, cloudpb.AAT_SELECT)
 	app.SetFocus(m.input)
 }
 
-func (m *tabAutocompleteModal) updateInput(app *tview.Application, text string, inCursorPos int, action cloudapipb.AutocompleteActionType) {
+func (m *tabAutocompleteModal) updateInput(app *tview.Application, text string, inCursorPos int, action cloudpb.AutocompleteActionType) {
 	tabStops, suggestions, isExecutable, err := m.s.ac.GetSuggestions(text, inCursorPos, action)
 	if err != nil {
 		return
@@ -323,7 +323,7 @@ func (m *tabAutocompleteModal) handleBackspace(app *tview.Application) bool {
 		newCursor = m.boundaries[m.tabStopIndex].right
 	}
 	if len(curText) > 0 && string(curText[m.input.GetCursorPos()-1]) == ":" { // User is deleting a label.
-		m.updateInput(app, m.input.GetText()[:currBoundaries.left]+" "+m.input.GetText()[currBoundaries.right+1:], newCursor, cloudapipb.AAT_EDIT)
+		m.updateInput(app, m.input.GetText()[:currBoundaries.left]+" "+m.input.GetText()[currBoundaries.right+1:], newCursor, cloudpb.AAT_EDIT)
 		return true
 	}
 	return false
@@ -333,10 +333,10 @@ func (m *tabAutocompleteModal) handleBackspace(app *tview.Application) bool {
 func (m *tabAutocompleteModal) Show(app *tview.Application) tview.Primitive {
 	// Start with suggestions based on empty input.
 	app.SetFocus(m.input)
-	m.updateInput(app, "", m.input.GetCursorPos(), cloudapipb.AAT_EDIT)
+	m.updateInput(app, "", m.input.GetCursorPos(), cloudpb.AAT_EDIT)
 
 	m.input.SetChangedFunc(func(currentText string) {
-		m.updateInput(app, currentText, m.input.GetCursorPos(), cloudapipb.AAT_EDIT)
+		m.updateInput(app, currentText, m.input.GetCursorPos(), cloudpb.AAT_EDIT)
 	})
 
 	m.input.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -445,18 +445,18 @@ func (m *tabAutocompleteModal) SetScriptExecFunc(f func(s *script.ExecutableScri
 func (m *tabAutocompleteModal) Close(app *tview.Application) {}
 
 type cloudAutocompleter struct {
-	client cloudapipb.AutocompleteServiceClient
+	client cloudpb.AutocompleteServiceClient
 }
 
-func newCloudAutocompleter(client cloudapipb.AutocompleteServiceClient) *cloudAutocompleter {
+func newCloudAutocompleter(client cloudpb.AutocompleteServiceClient) *cloudAutocompleter {
 	return &cloudAutocompleter{
 		client,
 	}
 }
 
 // GetSuggestions returns the tabstops for the given input string, action, and cursor position.
-func (a *cloudAutocompleter) GetSuggestions(input string, cursor int, action cloudapipb.AutocompleteActionType) ([]*TabStop, map[int][]suggestion, bool, error) {
-	req := &cloudapipb.AutocompleteRequest{
+func (a *cloudAutocompleter) GetSuggestions(input string, cursor int, action cloudpb.AutocompleteActionType) ([]*TabStop, map[int][]suggestion, bool, error) {
+	req := &cloudpb.AutocompleteRequest{
 		Input:     input,
 		CursorPos: int64(cursor),
 		Action:    action,

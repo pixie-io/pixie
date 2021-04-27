@@ -30,7 +30,7 @@ import (
 	"github.com/gofrs/uuid"
 	"gopkg.in/segmentio/analytics-go.v3"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/pixie_cli/pkg/auth"
 	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
 	"px.dev/pixie/src/pixie_cli/pkg/pxconfig"
@@ -70,7 +70,7 @@ func selectVizierOrProxy(vizierAddr string) (string, error) {
 
 // Lister allows fetching information about Viziers from the cloud.
 type Lister struct {
-	vc cloudapipb.VizierClusterInfoClient
+	vc cloudpb.VizierClusterInfoClient
 }
 
 // ConnectionInfo has connection info about a Vizier.
@@ -90,10 +90,10 @@ func NewLister(cloudAddr string) (*Lister, error) {
 }
 
 // GetViziersInfo returns information about connected viziers.
-func (l *Lister) GetViziersInfo() ([]*cloudapipb.ClusterInfo, error) {
+func (l *Lister) GetViziersInfo() ([]*cloudpb.ClusterInfo, error) {
 	ctx := auth.CtxWithCreds(context.Background())
 
-	c, err := l.vc.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{})
+	c, err := l.vc.GetClusterInfo(ctx, &cloudpb.GetClusterInfoRequest{})
 	if err != nil {
 		return nil, err
 	}
@@ -101,11 +101,11 @@ func (l *Lister) GetViziersInfo() ([]*cloudapipb.ClusterInfo, error) {
 }
 
 // GetVizierInfo returns information about a connected vizier.
-func (l *Lister) GetVizierInfo(id uuid.UUID) ([]*cloudapipb.ClusterInfo, error) {
+func (l *Lister) GetVizierInfo(id uuid.UUID) ([]*cloudpb.ClusterInfo, error) {
 	ctx := auth.CtxWithCreds(context.Background())
 	clusterIDPb := utils.ProtoFromUUID(id)
 
-	c, err := l.vc.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{ID: clusterIDPb})
+	c, err := l.vc.GetClusterInfo(ctx, &cloudpb.GetClusterInfoRequest{ID: clusterIDPb})
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func (l *Lister) GetVizierInfo(id uuid.UUID) ([]*cloudapipb.ClusterInfo, error) 
 func (l *Lister) GetVizierConnection(id uuid.UUID) (*ConnectionInfo, error) {
 	ctx := auth.CtxWithCreds(context.Background())
 
-	ci, err := l.vc.GetClusterConnectionInfo(ctx, &cloudapipb.GetClusterConnectionInfoRequest{
+	ci, err := l.vc.GetClusterConnectionInfo(ctx, &cloudpb.GetClusterConnectionInfoRequest{
 		ID: utils.ProtoFromUUID(id),
 	})
 	if err != nil {
@@ -156,7 +156,7 @@ func (l *Lister) GetVizierConnection(id uuid.UUID) (*ConnectionInfo, error) {
 }
 
 // UpdateVizierConfig updates the config for the given Vizier.
-func (l *Lister) UpdateVizierConfig(req *cloudapipb.UpdateClusterVizierConfigRequest) error {
+func (l *Lister) UpdateVizierConfig(req *cloudpb.UpdateClusterVizierConfigRequest) error {
 	ctx := auth.CtxWithCreds(context.Background())
 	_, err := l.vc.UpdateClusterVizierConfig(ctx, req)
 	return err

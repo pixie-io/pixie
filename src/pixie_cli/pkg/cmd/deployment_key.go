@@ -28,7 +28,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/pixie_cli/pkg/auth"
 	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
@@ -129,7 +129,7 @@ var ListDeployKeyCmd = &cobra.Command{
 	},
 }
 
-func getClientAndContext(cloudAddr string) (cloudapipb.VizierDeploymentKeyManagerClient, context.Context, error) {
+func getClientAndContext(cloudAddr string) (cloudpb.VizierDeploymentKeyManagerClient, context.Context, error) {
 	// Get grpc connection to cloud.
 	cloudConn, err := utils.GetCloudClientConnection(cloudAddr)
 	if err != nil {
@@ -138,7 +138,7 @@ func getClientAndContext(cloudAddr string) (cloudapipb.VizierDeploymentKeyManage
 	}
 
 	// Get client for deployKeyMgr.
-	deployMgrClient := cloudapipb.NewVizierDeploymentKeyManagerClient(cloudConn)
+	deployMgrClient := cloudpb.NewVizierDeploymentKeyManagerClient(cloudConn)
 
 	ctxWithCreds := auth.CtxWithCreds(context.Background())
 	return deployMgrClient, ctxWithCreds, nil
@@ -150,7 +150,7 @@ func generateDeployKey(cloudAddr string, desc string) (string, string, error) {
 		return "", "", err
 	}
 
-	resp, err := deployMgrClient.Create(ctxWithCreds, &cloudapipb.CreateDeploymentKeyRequest{Desc: desc})
+	resp, err := deployMgrClient.Create(ctxWithCreds, &cloudpb.CreateDeploymentKeyRequest{Desc: desc})
 	if err != nil {
 		return "", "", err
 	}
@@ -168,13 +168,13 @@ func deleteDeployKey(cloudAddr string, keyID uuid.UUID) error {
 	return err
 }
 
-func listDeployKeys(cloudAddr string) ([]*cloudapipb.DeploymentKey, error) {
+func listDeployKeys(cloudAddr string) ([]*cloudpb.DeploymentKey, error) {
 	deployMgrClient, ctxWithCreds, err := getClientAndContext(cloudAddr)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := deployMgrClient.List(ctxWithCreds, &cloudapipb.ListDeploymentKeyRequest{})
+	resp, err := deployMgrClient.List(ctxWithCreds, &cloudpb.ListDeploymentKeyRequest{})
 	if err != nil {
 		return nil, err
 	}

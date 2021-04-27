@@ -26,7 +26,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/graph-gophers/graphql-go/gqltesting"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/cloud/api/controller/testutils"
 )
 
@@ -36,23 +36,23 @@ func TestCLIArtifact(t *testing.T) {
 	ctx := context.Background()
 
 	mockClients.MockArtifact.EXPECT().GetArtifactList(gomock.Any(),
-		&cloudapipb.GetArtifactListRequest{
+		&cloudpb.GetArtifactListRequest{
 			ArtifactName: "cli",
 			Limit:        1,
-			ArtifactType: cloudapipb.AT_LINUX_AMD64,
+			ArtifactType: cloudpb.AT_LINUX_AMD64,
 		}).
-		Return(&cloudapipb.ArtifactSet{
+		Return(&cloudpb.ArtifactSet{
 			Name: "cli",
-			Artifact: []*cloudapipb.Artifact{{
+			Artifact: []*cloudpb.Artifact{{
 				VersionStr: "test",
 			}},
 		}, nil)
 
-	mockClients.MockArtifact.EXPECT().GetDownloadLink(gomock.Any(), &cloudapipb.GetDownloadLinkRequest{
-		ArtifactType: cloudapipb.AT_LINUX_AMD64,
+	mockClients.MockArtifact.EXPECT().GetDownloadLink(gomock.Any(), &cloudpb.GetDownloadLinkRequest{
+		ArtifactType: cloudpb.AT_LINUX_AMD64,
 		VersionStr:   "test",
 		ArtifactName: "cli",
-	}).Return(&cloudapipb.GetDownloadLinkResponse{
+	}).Return(&cloudpb.GetDownloadLinkResponse{
 		Url:    "http://pixie.com/cli_url",
 		SHA256: "http://pixie.com/sha256",
 	}, nil)
@@ -88,13 +88,13 @@ func TestArtifacts_CLI(t *testing.T) {
 	ctx := context.Background()
 
 	mockClients.MockArtifact.EXPECT().GetArtifactList(gomock.Any(),
-		&cloudapipb.GetArtifactListRequest{
+		&cloudpb.GetArtifactListRequest{
 			ArtifactName: "cli",
-			ArtifactType: cloudapipb.AT_LINUX_AMD64,
+			ArtifactType: cloudpb.AT_LINUX_AMD64,
 		}).
-		Return(&cloudapipb.ArtifactSet{
+		Return(&cloudpb.ArtifactSet{
 			Name: "cli",
-			Artifact: []*cloudapipb.Artifact{{
+			Artifact: []*cloudpb.Artifact{{
 				VersionStr: "1.2.3",
 				Changelog:  "a changelog",
 				Timestamp:  &types.Timestamp{Seconds: 10},
@@ -149,13 +149,13 @@ func TestArtifacts_Vizier(t *testing.T) {
 	ctx := context.Background()
 
 	mockClients.MockArtifact.EXPECT().GetArtifactList(gomock.Any(),
-		&cloudapipb.GetArtifactListRequest{
+		&cloudpb.GetArtifactListRequest{
 			ArtifactName: "vizier",
-			ArtifactType: cloudapipb.AT_CONTAINER_SET_LINUX_AMD64,
+			ArtifactType: cloudpb.AT_CONTAINER_SET_LINUX_AMD64,
 		}).
-		Return(&cloudapipb.ArtifactSet{
+		Return(&cloudpb.ArtifactSet{
 			Name: "vizier",
-			Artifact: []*cloudapipb.Artifact{{
+			Artifact: []*cloudpb.Artifact{{
 				VersionStr: "1.2.3",
 				Changelog:  "a changelog",
 				Timestamp:  &types.Timestamp{Seconds: 10},

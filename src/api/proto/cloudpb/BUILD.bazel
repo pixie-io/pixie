@@ -31,7 +31,7 @@ pl_proto_library(
 
 pl_go_proto_library(
     name = "cloudapi_pl_go_proto",
-    importpath = "px.dev/pixie/src/api/proto/cloudapipb",
+    importpath = "px.dev/pixie/src/api/proto/cloudpb",
     proto = ":cloudapi_pl_proto",
     visibility = ["//src:__subpackages__"],
     deps = [

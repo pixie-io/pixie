@@ -29,7 +29,7 @@ py_library(
     srcs_version = "PY3",
     visibility = ["//src/api/python:__subpackages__"],
     deps = [
-        "//src/api/proto/cloudapipb:cloudapi_pl_py_grpc",
+        "//src/api/proto/cloudpb:cloudapi_pl_py_grpc",
         "//src/api/proto/vizierapipb:vizier_pl_py_grpc",
         requirement("gogo-python"),
         requirement("grpcio"),

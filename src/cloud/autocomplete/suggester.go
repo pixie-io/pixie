@@ -31,7 +31,7 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/metadata"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	pl_vispb "px.dev/pixie/src/api/proto/vispb"
 	"px.dev/pixie/src/cloud/indexer/md"
 	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
@@ -51,26 +51,26 @@ type ElasticSuggester struct {
 	bundleMu   sync.Mutex
 }
 
-var protoToElasticLabelMap = map[cloudapipb.AutocompleteEntityKind]string{
-	cloudapipb.AEK_SVC:       "service",
-	cloudapipb.AEK_POD:       "pod",
-	cloudapipb.AEK_SCRIPT:    "script",
-	cloudapipb.AEK_NAMESPACE: "script",
+var protoToElasticLabelMap = map[cloudpb.AutocompleteEntityKind]string{
+	cloudpb.AEK_SVC:       "service",
+	cloudpb.AEK_POD:       "pod",
+	cloudpb.AEK_SCRIPT:    "script",
+	cloudpb.AEK_NAMESPACE: "script",
 }
 
-var elasticLabelToProtoMap = map[string]cloudapipb.AutocompleteEntityKind{
-	"service":   cloudapipb.AEK_SVC,
-	"pod":       cloudapipb.AEK_POD,
-	"script":    cloudapipb.AEK_SCRIPT,
-	"namespace": cloudapipb.AEK_NAMESPACE,
+var elasticLabelToProtoMap = map[string]cloudpb.AutocompleteEntityKind{
+	"service":   cloudpb.AEK_SVC,
+	"pod":       cloudpb.AEK_POD,
+	"script":    cloudpb.AEK_SCRIPT,
+	"namespace": cloudpb.AEK_NAMESPACE,
 }
 
-var elasticStateToProtoMap = map[md.ESMDEntityState]cloudapipb.AutocompleteEntityState{
-	md.ESMDEntityStateUnknown:    cloudapipb.AES_UNKNOWN,
-	md.ESMDEntityStatePending:    cloudapipb.AES_PENDING,
-	md.ESMDEntityStateRunning:    cloudapipb.AES_RUNNING,
-	md.ESMDEntityStateFailed:     cloudapipb.AES_FAILED,
-	md.ESMDEntityStateTerminated: cloudapipb.AES_TERMINATED,
+var elasticStateToProtoMap = map[md.ESMDEntityState]cloudpb.AutocompleteEntityState{
+	md.ESMDEntityStateUnknown:    cloudpb.AES_UNKNOWN,
+	md.ESMDEntityStatePending:    cloudpb.AES_PENDING,
+	md.ESMDEntityStateRunning:    cloudpb.AES_RUNNING,
+	md.ESMDEntityStateFailed:     cloudpb.AES_FAILED,
+	md.ESMDEntityStateTerminated: cloudpb.AES_TERMINATED,
 }
 
 func getServiceCredentials(signingKey string) (string, error) {
@@ -93,8 +93,8 @@ type SuggestionRequest struct {
 	OrgID        uuid.UUID
 	ClusterUID   string
 	Input        string
-	AllowedKinds []cloudapipb.AutocompleteEntityKind
-	AllowedArgs  []cloudapipb.AutocompleteEntityKind
+	AllowedKinds []cloudpb.AutocompleteEntityKind
+	AllowedArgs  []cloudpb.AutocompleteEntityKind
 }
 
 // SuggestionResult contains results for an autocomplete request.
@@ -190,21 +190,21 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 
 	// Parse scripts to prepare for matching. This is temporary until we have script indexing.
 	scripts := []string{}
-	scriptArgMap := make(map[string][]cloudapipb.AutocompleteEntityKind)
+	scriptArgMap := make(map[string][]cloudpb.AutocompleteEntityKind)
 	scriptArgNames := make(map[string][]string)
 	if br != nil {
 		for _, s := range br.GetScripts() {
 			scripts = append(scripts, s.ScriptName)
-			scriptArgMap[s.ScriptName] = make([]cloudapipb.AutocompleteEntityKind, 0)
+			scriptArgMap[s.ScriptName] = make([]cloudpb.AutocompleteEntityKind, 0)
 			for _, a := range s.Vis.Variables {
-				aKind := cloudapipb.AEK_UNKNOWN
+				aKind := cloudpb.AEK_UNKNOWN
 				if a.Type == pl_vispb.PX_POD {
-					aKind = cloudapipb.AEK_POD
+					aKind = cloudpb.AEK_POD
 				} else if a.Type == pl_vispb.PX_SERVICE {
-					aKind = cloudapipb.AEK_SVC
+					aKind = cloudpb.AEK_SVC
 				}
 
-				if aKind != cloudapipb.AEK_UNKNOWN {
+				if aKind != cloudpb.AEK_UNKNOWN {
 					scriptArgMap[s.ScriptName] = append(scriptArgMap[s.ScriptName], aKind)
 					scriptArgNames[s.ScriptName] = append(scriptArgNames[s.ScriptName], a.Name)
 				}
@@ -217,7 +217,7 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 		scriptResults := make([]*Suggestion, 0)
 		if br != nil {
 			for _, t := range reqs[i].AllowedKinds {
-				if t == cloudapipb.AEK_SCRIPT { // Script is an allowed type for this tabstop, so we should find matching scripts.
+				if t == cloudpb.AEK_SCRIPT { // Script is an allowed type for this tabstop, so we should find matching scripts.
 					matches := fuzzy.Find(reqs[i].Input, scripts)
 
 					if reqs[i].Input == "" { // The input is empty, so none of the scripts will match using the fuzzy search.
@@ -258,7 +258,7 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 							}
 							scriptResults = append(scriptResults, &Suggestion{
 								Name:           m.Str,
-								Kind:           cloudapipb.AEK_SCRIPT,
+								Kind:           cloudpb.AEK_SCRIPT,
 								Desc:           script.LongDoc,
 								ArgNames:       scriptNames,
 								ArgKinds:       scriptArgs,
@@ -316,7 +316,7 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 	return resps, nil
 }
 
-func (e *ElasticSuggester) getQueryForRequest(orgID uuid.UUID, clusterUID string, input string, allowedKinds []cloudapipb.AutocompleteEntityKind, allowedArgs []cloudapipb.AutocompleteEntityKind) *elastic.BoolQuery {
+func (e *ElasticSuggester) getQueryForRequest(orgID uuid.UUID, clusterUID string, input string, allowedKinds []cloudpb.AutocompleteEntityKind, allowedArgs []cloudpb.AutocompleteEntityKind) *elastic.BoolQuery {
 	q := elastic.NewBoolQuery()
 
 	q.Should(e.getMDEntityQuery(orgID, clusterUID, input, allowedKinds))
@@ -325,7 +325,7 @@ func (e *ElasticSuggester) getQueryForRequest(orgID uuid.UUID, clusterUID string
 	return q
 }
 
-func (e *ElasticSuggester) getMDEntityQuery(orgID uuid.UUID, clusterUID string, input string, allowedKinds []cloudapipb.AutocompleteEntityKind) *elastic.BoolQuery {
+func (e *ElasticSuggester) getMDEntityQuery(orgID uuid.UUID, clusterUID string, input string, allowedKinds []cloudpb.AutocompleteEntityKind) *elastic.BoolQuery {
 	entityQuery := elastic.NewBoolQuery()
 	entityQuery.Must(elastic.NewTermQuery("_index", md.IndexName))
 

@@ -32,7 +32,7 @@ go_library(
     deps = [
         "//src/api/go/pxapi/errdefs",
         "//src/api/go/pxapi/types",
-        "//src/api/proto/cloudapipb:cloudapi_pl_go_proto",
+        "//src/api/proto/cloudpb:cloudapi_pl_go_proto",
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/api/proto/vizierapipb:public_vizier_pl_go_proto",
         "@com_github_gofrs_uuid//:uuid",

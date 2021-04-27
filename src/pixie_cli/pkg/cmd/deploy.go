@@ -39,7 +39,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/pixie_cli/pkg/auth"
 	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
@@ -171,18 +171,18 @@ func init() {
 	DeployCmd.Flags().MarkHidden("dev_cloud_namespace")
 }
 
-func newVizAuthClient(conn *grpc.ClientConn) cloudapipb.VizierImageAuthorizationClient {
-	return cloudapipb.NewVizierImageAuthorizationClient(conn)
+func newVizAuthClient(conn *grpc.ClientConn) cloudpb.VizierImageAuthorizationClient {
+	return cloudpb.NewVizierImageAuthorizationClient(conn)
 }
 
-func newArtifactTrackerClient(conn *grpc.ClientConn) cloudapipb.ArtifactTrackerClient {
-	return cloudapipb.NewArtifactTrackerClient(conn)
+func newArtifactTrackerClient(conn *grpc.ClientConn) cloudpb.ArtifactTrackerClient {
+	return cloudpb.NewArtifactTrackerClient(conn)
 }
 
 func mustGetImagePullSecret(conn *grpc.ClientConn) string {
 	// Make rpc request to the cloud to get creds.
 	client := newVizAuthClient(conn)
-	req := &cloudapipb.GetImageCredentialsRequest{}
+	req := &cloudpb.GetImageCredentialsRequest{}
 	ctxWithCreds := auth.CtxWithCreds(context.Background())
 	resp, err := client.GetImageCredentials(ctxWithCreds, req)
 	if err != nil {
@@ -204,9 +204,9 @@ func mustReadCredsFile(credsFile string) string {
 func getLatestVizierVersion(conn *grpc.ClientConn) (string, error) {
 	client := newArtifactTrackerClient(conn)
 
-	req := &cloudapipb.GetArtifactListRequest{
+	req := &cloudpb.GetArtifactListRequest{
 		ArtifactName: "vizier",
-		ArtifactType: cloudapipb.AT_CONTAINER_SET_YAMLS,
+		ArtifactType: cloudpb.AT_CONTAINER_SET_YAMLS,
 		Limit:        1,
 	}
 	ctxWithCreds := auth.CtxWithCreds(context.Background())
@@ -630,9 +630,9 @@ func waitForHealthCheck(cloudAddr string, clusterID uuid.UUID, clientset *kubern
 }
 
 func waitForCluster(ctx context.Context, conn *grpc.ClientConn, clusterID uuid.UUID) error {
-	client := cloudapipb.NewVizierClusterInfoClient(conn)
+	client := cloudpb.NewVizierClusterInfoClient(conn)
 
-	req := &cloudapipb.GetClusterInfoRequest{
+	req := &cloudpb.GetClusterInfoRequest{
 		ID: utils2.ProtoFromUUID(clusterID),
 	}
 
@@ -646,7 +646,7 @@ func waitForCluster(ctx context.Context, conn *grpc.ClientConn, clusterID uuid.U
 			if err != nil {
 				return err
 			}
-			if len(resp.Clusters) > 0 && resp.Clusters[0].Status != cloudapipb.CS_DISCONNECTED {
+			if len(resp.Clusters) > 0 && resp.Clusters[0].Status != cloudpb.CS_DISCONNECTED {
 				return nil
 			}
 		case <-ctx.Done():
@@ -656,9 +656,9 @@ func waitForCluster(ctx context.Context, conn *grpc.ClientConn, clusterID uuid.U
 }
 
 func initiateUpdate(ctx context.Context, conn *grpc.ClientConn, clusterID uuid.UUID, version string, redeployEtcd bool) error {
-	client := cloudapipb.NewVizierClusterInfoClient(conn)
+	client := cloudpb.NewVizierClusterInfoClient(conn)
 
-	req := &cloudapipb.UpdateOrInstallClusterRequest{
+	req := &cloudpb.UpdateOrInstallClusterRequest{
 		ClusterID:    utils2.ProtoFromUUID(clusterID),
 		Version:      version,
 		RedeployEtcd: redeployEtcd,

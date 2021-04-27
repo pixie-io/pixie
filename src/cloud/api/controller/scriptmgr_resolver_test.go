@@ -27,7 +27,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/graph-gophers/graphql-go/gqltesting"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/cloud/api/controller/testutils"
 )
 
@@ -44,9 +44,9 @@ func TestScriptMgrResolver(t *testing.T) {
 		{
 			name:     "GetLiveViews returns correct graphql",
 			endpoint: "GetLiveViews",
-			req:      &cloudapipb.GetLiveViewsReq{},
-			resp: &cloudapipb.GetLiveViewsResp{
-				LiveViews: []*cloudapipb.LiveViewMetadata{
+			req:      &cloudpb.GetLiveViewsReq{},
+			resp: &cloudpb.GetLiveViewsResp{
+				LiveViews: []*cloudpb.LiveViewMetadata{
 					{
 						ID:   "test-id-1",
 						Name: "1",
@@ -91,11 +91,11 @@ func TestScriptMgrResolver(t *testing.T) {
 		// {
 		// 	name:     "GetLiveViewContents returns correct graphql",
 		// 	endpoint: "GetLiveViewContents",
-		// 	req: &cloudapipb.GetLiveViewContentsReq{
+		// 	req: &cloudpb.GetLiveViewContentsReq{
 		// 		LiveViewID: "test-id-1",
 		// 	},
-		// 	resp: &cloudapipb.GetLiveViewContentsResp{
-		// 		Metadata: &cloudapipb.LiveViewMetadata{
+		// 	resp: &cloudpb.GetLiveViewContentsResp{
+		// 		Metadata: &cloudpb.LiveViewMetadata{
 		// 			ID:   "test-id-1",
 		// 			Name: "1",
 		// 			Desc: "1 desc",
@@ -150,9 +150,9 @@ func TestScriptMgrResolver(t *testing.T) {
 		{
 			name:     "GetScripts returns correct graphql",
 			endpoint: "GetScripts",
-			req:      &cloudapipb.GetScriptsReq{},
-			resp: &cloudapipb.GetScriptsResp{
-				Scripts: []*cloudapipb.ScriptMetadata{
+			req:      &cloudpb.GetScriptsReq{},
+			resp: &cloudpb.GetScriptsResp{
+				Scripts: []*cloudpb.ScriptMetadata{
 					{
 						ID:          "test-id-1",
 						Name:        "1",
@@ -200,11 +200,11 @@ func TestScriptMgrResolver(t *testing.T) {
 		{
 			name:     "GetScriptContents returns correct graphql",
 			endpoint: "GetScriptContents",
-			req: &cloudapipb.GetScriptContentsReq{
+			req: &cloudpb.GetScriptContentsReq{
 				ScriptID: "test-id-1",
 			},
-			resp: &cloudapipb.GetScriptContentsResp{
-				Metadata: &cloudapipb.ScriptMetadata{
+			resp: &cloudpb.GetScriptContentsResp{
+				Metadata: &cloudpb.ScriptMetadata{
 					ID:          "test-id-1",
 					Name:        "1",
 					Desc:        "1 desc",

@@ -27,7 +27,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/graph-gophers/graphql-go"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/utils"
 )
 
@@ -44,7 +44,7 @@ func timestampProtoToNanos(ts *types.Timestamp) int64 {
 	return ts.Seconds*NanosPerSecond + int64(ts.Nanos)
 }
 
-func containerStatusToResolver(containerStatus *cloudapipb.ContainerStatus) (*ContainerStatusResolver, error) {
+func containerStatusToResolver(containerStatus *cloudpb.ContainerStatus) (*ContainerStatusResolver, error) {
 	if containerStatus == nil {
 		return nil, errors.New("got nil container status")
 	}
@@ -62,7 +62,7 @@ func containerStatusToResolver(containerStatus *cloudapipb.ContainerStatus) (*Co
 	return resolver, nil
 }
 
-func podStatusToResolver(podStatus *cloudapipb.PodStatus) (*PodStatusResolver, error) {
+func podStatusToResolver(podStatus *cloudpb.PodStatus) (*PodStatusResolver, error) {
 	if podStatus == nil {
 		return nil, errors.New("got nil pod status")
 	}
@@ -100,7 +100,7 @@ func podStatusToResolver(podStatus *cloudapipb.PodStatus) (*PodStatusResolver, e
 	return resolver, nil
 }
 
-func k8sEventToResolver(event *cloudapipb.K8SEvent) (*K8sEventResolver, error) {
+func k8sEventToResolver(event *cloudpb.K8SEvent) (*K8sEventResolver, error) {
 	if event == nil {
 		return nil, errors.New("got nil k8s event")
 	}
@@ -119,7 +119,7 @@ func k8sEventToResolver(event *cloudapipb.K8SEvent) (*K8sEventResolver, error) {
 	return resolver, nil
 }
 
-func clusterInfoToResolver(cluster *cloudapipb.ClusterInfo) (*ClusterInfoResolver, error) {
+func clusterInfoToResolver(cluster *cloudpb.ClusterInfo) (*ClusterInfoResolver, error) {
 	clusterID, err := utils.UUIDFromProto(cluster.ID)
 	if err != nil {
 		return nil, err
@@ -158,7 +158,7 @@ func clusterInfoToResolver(cluster *cloudapipb.ClusterInfo) (*ClusterInfoResolve
 // Clusters lists all of the clusters.
 func (q *QueryResolver) Clusters(ctx context.Context) ([]*ClusterInfoResolver, error) {
 	grpcAPI := q.Env.VizierClusterInfo
-	resp, err := grpcAPI.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{})
+	resp, err := grpcAPI.GetClusterInfo(ctx, &cloudpb.GetClusterInfoRequest{})
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +177,7 @@ func (q *QueryResolver) Clusters(ctx context.Context) ([]*ClusterInfoResolver, e
 // Cluster resolves cluster information.
 func (q *QueryResolver) Cluster(ctx context.Context, args *clusterArgs) (*ClusterInfoResolver, error) {
 	grpcAPI := q.Env.VizierClusterInfo
-	res, err := grpcAPI.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{
+	res, err := grpcAPI.GetClusterInfo(ctx, &cloudpb.GetClusterInfoRequest{
 		ID: utils.ProtoFromUUIDStrOrNil(string(args.ID)),
 	})
 	if err != nil {
@@ -211,9 +211,9 @@ type updateVizierConfigArgs struct {
 func (q *QueryResolver) UpdateVizierConfig(ctx context.Context, args *updateVizierConfigArgs) (bool, error) {
 	grpcAPI := q.Env.VizierClusterInfo
 
-	req := &cloudapipb.UpdateClusterVizierConfigRequest{
+	req := &cloudpb.UpdateClusterVizierConfigRequest{
 		ID:           utils.ProtoFromUUIDStrOrNil(string(args.ClusterID)),
-		ConfigUpdate: &cloudapipb.VizierConfigUpdate{},
+		ConfigUpdate: &cloudpb.VizierConfigUpdate{},
 	}
 
 	if args.PassthroughEnabled != nil {
@@ -310,7 +310,7 @@ func (p *PodStatusResolver) Events() []*K8sEventResolver {
 // ClusterInfoResolver is the resolver responsible for cluster info.
 type ClusterInfoResolver struct {
 	clusterID               uuid.UUID
-	status                  cloudapipb.ClusterStatus
+	status                  cloudpb.ClusterStatus
 	lastHeartbeatNs         float64
 	vizierConfig            *VizierConfigResolver
 	vizierVersion           *string
@@ -388,7 +388,7 @@ func (q *QueryResolver) ClusterConnection(ctx context.Context, args *clusterArgs
 	grpcAPI := q.Env.VizierClusterInfo
 
 	clusterID := utils.ProtoFromUUIDStrOrNil(string(args.ID))
-	info, err := grpcAPI.GetClusterConnectionInfo(ctx, &cloudapipb.GetClusterConnectionInfoRequest{
+	info, err := grpcAPI.GetClusterConnectionInfo(ctx, &cloudpb.GetClusterConnectionInfoRequest{
 		ID: clusterID,
 	})
 	if err != nil {

@@ -28,7 +28,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	cliUtils "px.dev/pixie/src/pixie_cli/pkg/utils"
 	"px.dev/pixie/src/pixie_cli/pkg/vizier"
 	"px.dev/pixie/src/utils"
@@ -124,7 +124,7 @@ var UpdateConfigCmd = &cobra.Command{
 			return // No config settings specified.
 		}
 
-		update := &cloudapipb.VizierConfigUpdate{}
+		update := &cloudpb.VizierConfigUpdate{}
 
 		if ptEnabled != "" {
 			if pt, err := strconv.ParseBool(ptEnabled); err == nil {
@@ -141,7 +141,7 @@ var UpdateConfigCmd = &cobra.Command{
 			}
 		}
 
-		req := &cloudapipb.UpdateClusterVizierConfigRequest{
+		req := &cloudpb.UpdateClusterVizierConfigRequest{
 			ID:           clusterIDPb,
 			ConfigUpdate: update,
 		}

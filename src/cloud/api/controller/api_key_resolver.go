@@ -25,7 +25,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/graph-gophers/graphql-go"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/utils"
 )
 
@@ -60,14 +60,14 @@ func (d *APIKeyResolver) Desc() string {
 // CreateAPIKey creates a new API key.
 func (q *QueryResolver) CreateAPIKey(ctx context.Context) (*APIKeyResolver, error) {
 	grpcAPI := q.Env.APIKeyMgr
-	res, err := grpcAPI.Create(ctx, &cloudapipb.CreateAPIKeyRequest{})
+	res, err := grpcAPI.Create(ctx, &cloudpb.CreateAPIKeyRequest{})
 	if err != nil {
 		return nil, err
 	}
 	return apiKeyToResolver(res)
 }
 
-func apiKeyToResolver(key *cloudapipb.APIKey) (*APIKeyResolver, error) {
+func apiKeyToResolver(key *cloudpb.APIKey) (*APIKeyResolver, error) {
 	keyID, err := utils.UUIDFromProto(key.ID)
 	if err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ func apiKeyToResolver(key *cloudapipb.APIKey) (*APIKeyResolver, error) {
 // APIKeys lists all of the API keys.
 func (q *QueryResolver) APIKeys(ctx context.Context) ([]*APIKeyResolver, error) {
 	grpcAPI := q.Env.APIKeyMgr
-	res, err := grpcAPI.List(ctx, &cloudapipb.ListAPIKeyRequest{})
+	res, err := grpcAPI.List(ctx, &cloudpb.ListAPIKeyRequest{})
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ type getOrDeleteAPIKeyArgs struct {
 // APIKey gets a specific API key.
 func (q *QueryResolver) APIKey(ctx context.Context, args *getOrDeleteAPIKeyArgs) (*APIKeyResolver, error) {
 	grpcAPI := q.Env.APIKeyMgr
-	res, err := grpcAPI.Get(ctx, &cloudapipb.GetAPIKeyRequest{
+	res, err := grpcAPI.Get(ctx, &cloudpb.GetAPIKeyRequest{
 		ID: utils.ProtoFromUUIDStrOrNil(string(args.ID)),
 	})
 	if err != nil {

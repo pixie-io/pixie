@@ -20,7 +20,7 @@ syntax = "proto3";
 
 package px.cloudapi;
 
-option go_package = "cloudapipb";
+option go_package = "cloudpb";
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/empty.proto";

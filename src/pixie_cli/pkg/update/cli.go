@@ -37,13 +37,13 @@ import (
 	"golang.org/x/sys/unix"
 	"google.golang.org/grpc"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
 	version "px.dev/pixie/src/shared/goversion"
 	"px.dev/pixie/src/shared/services"
 )
 
-func newATClient(cloudAddr string) (cloudapipb.ArtifactTrackerClient, error) {
+func newATClient(cloudAddr string) (cloudpb.ArtifactTrackerClient, error) {
 	isInternal := strings.ContainsAny(cloudAddr, "cluster.local")
 
 	dialOpts, err := services.GetGRPCClientDialOptsServerSideTLS(isInternal)
@@ -56,17 +56,17 @@ func newATClient(cloudAddr string) (cloudapipb.ArtifactTrackerClient, error) {
 		return nil, err
 	}
 
-	return cloudapipb.NewArtifactTrackerClient(c), nil
+	return cloudpb.NewArtifactTrackerClient(c), nil
 }
 
-func getArtifactTypes() cloudapipb.ArtifactType {
+func getArtifactTypes() cloudpb.ArtifactType {
 	switch runtime.GOOS {
 	case "darwin":
-		return cloudapipb.AT_DARWIN_AMD64
+		return cloudpb.AT_DARWIN_AMD64
 	case "linux":
-		return cloudapipb.AT_LINUX_AMD64
+		return cloudpb.AT_LINUX_AMD64
 	}
-	return cloudapipb.AT_UNKNOWN
+	return cloudpb.AT_UNKNOWN
 }
 
 // UpdatesAvailable returns the version if updates are available, otherwise empty string.
@@ -100,7 +100,7 @@ func NewCLIUpdater(cloudAddr string) *CLIUpdater {
 
 // GetAvailableVersions returns a list (max 10) of available versions > specified version.
 func (c *CLIUpdater) GetAvailableVersions(minVersion semver.Version) ([]string, error) {
-	req := cloudapipb.GetArtifactListRequest{
+	req := cloudpb.GetArtifactListRequest{
 		ArtifactName: "cli",
 		ArtifactType: getArtifactTypes(),
 		Limit:        10,
@@ -155,7 +155,7 @@ func (c *CLIUpdater) IsUpdatable() (bool, error) {
 
 // UpdateSelf updates the CLI to the specified version.
 func (c *CLIUpdater) UpdateSelf(version string) error {
-	req := cloudapipb.GetDownloadLinkRequest{
+	req := cloudpb.GetDownloadLinkRequest{
 		ArtifactName: "cli",
 		ArtifactType: getArtifactTypes(),
 		VersionStr:   version,

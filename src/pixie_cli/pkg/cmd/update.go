@@ -31,7 +31,7 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/segmentio/analytics-go.v3"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
 	"px.dev/pixie/src/pixie_cli/pkg/pxconfig"
@@ -167,7 +167,7 @@ var VizierUpdateCmd = &cobra.Command{
 						if err != nil {
 							return err
 						}
-						if clusterInfo.Status == cloudapipb.CS_HEALTHY {
+						if clusterInfo.Status == cloudpb.CS_HEALTHY {
 							updateVersion, err := semver.Parse(versionString)
 							if err != nil {
 								return err

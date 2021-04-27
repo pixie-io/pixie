@@ -26,7 +26,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/graph-gophers/graphql-go/gqltesting"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/cloud/api/controller/testutils"
 	"px.dev/pixie/src/utils"
 )
@@ -45,11 +45,11 @@ func TestDeploymentKey(t *testing.T) {
 	}
 
 	mockClients.MockVizierDeployKey.EXPECT().
-		Get(gomock.Any(), &cloudapipb.GetDeploymentKeyRequest{
+		Get(gomock.Any(), &cloudpb.GetDeploymentKeyRequest{
 			ID: utils.ProtoFromUUIDStrOrNil(keyID),
 		}).
-		Return(&cloudapipb.GetDeploymentKeyResponse{
-			Key: &cloudapipb.DeploymentKey{
+		Return(&cloudpb.GetDeploymentKeyResponse{
+			Key: &cloudpb.DeploymentKey{
 				ID:        utils.ProtoFromUUIDStrOrNil(keyID),
 				Key:       "foobar",
 				CreatedAt: createTimePb,
@@ -113,9 +113,9 @@ func TestDeploymentKeys(t *testing.T) {
 
 	// Inserted keys are not sorted by creation time.
 	mockClients.MockVizierDeployKey.EXPECT().
-		List(gomock.Any(), &cloudapipb.ListDeploymentKeyRequest{}).
-		Return(&cloudapipb.ListDeploymentKeyResponse{
-			Keys: []*cloudapipb.DeploymentKey{
+		List(gomock.Any(), &cloudpb.ListDeploymentKeyRequest{}).
+		Return(&cloudpb.ListDeploymentKeyResponse{
+			Keys: []*cloudpb.DeploymentKey{
 				{
 					ID:        utils.ProtoFromUUIDStrOrNil(key1ID),
 					Key:       "abc",
@@ -192,8 +192,8 @@ func TestCreateDeploymentKey(t *testing.T) {
 	}
 
 	mockClients.MockVizierDeployKey.EXPECT().
-		Create(gomock.Any(), &cloudapipb.CreateDeploymentKeyRequest{}).
-		Return(&cloudapipb.DeploymentKey{
+		Create(gomock.Any(), &cloudpb.CreateDeploymentKeyRequest{}).
+		Return(&cloudpb.DeploymentKey{
 			ID:        utils.ProtoFromUUIDStrOrNil(keyID),
 			Key:       "foobar",
 			CreatedAt: createTimePb,

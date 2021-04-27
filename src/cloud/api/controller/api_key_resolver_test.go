@@ -26,7 +26,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/graph-gophers/graphql-go/gqltesting"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/cloud/api/controller/testutils"
 	"px.dev/pixie/src/utils"
 )
@@ -45,11 +45,11 @@ func TestAPIKey(t *testing.T) {
 	}
 
 	mockClients.MockAPIKey.EXPECT().
-		Get(gomock.Any(), &cloudapipb.GetAPIKeyRequest{
+		Get(gomock.Any(), &cloudpb.GetAPIKeyRequest{
 			ID: utils.ProtoFromUUIDStrOrNil(keyID),
 		}).
-		Return(&cloudapipb.GetAPIKeyResponse{
-			Key: &cloudapipb.APIKey{
+		Return(&cloudpb.GetAPIKeyResponse{
+			Key: &cloudpb.APIKey{
 				ID:        utils.ProtoFromUUIDStrOrNil(keyID),
 				Key:       "foobar",
 				CreatedAt: createTimePb,
@@ -113,9 +113,9 @@ func TestAPIKeys(t *testing.T) {
 
 	// Inserted keys are not sorted by creation time.
 	mockClients.MockAPIKey.EXPECT().
-		List(gomock.Any(), &cloudapipb.ListAPIKeyRequest{}).
-		Return(&cloudapipb.ListAPIKeyResponse{
-			Keys: []*cloudapipb.APIKey{
+		List(gomock.Any(), &cloudpb.ListAPIKeyRequest{}).
+		Return(&cloudpb.ListAPIKeyResponse{
+			Keys: []*cloudpb.APIKey{
 				{
 					ID:        utils.ProtoFromUUIDStrOrNil(key1ID),
 					Key:       "abc",
@@ -192,8 +192,8 @@ func TestCreateAPIKey(t *testing.T) {
 	}
 
 	mockClients.MockAPIKey.EXPECT().
-		Create(gomock.Any(), &cloudapipb.CreateAPIKeyRequest{}).
-		Return(&cloudapipb.APIKey{
+		Create(gomock.Any(), &cloudpb.CreateAPIKeyRequest{}).
+		Return(&cloudpb.APIKey{
 			ID:        utils.ProtoFromUUIDStrOrNil(keyID),
 			Key:       "foobar",
 			CreatedAt: createTimePb,

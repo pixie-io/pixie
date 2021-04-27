@@ -25,7 +25,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/graph-gophers/graphql-go"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/utils"
 )
 
@@ -63,14 +63,14 @@ func (d *DeploymentKeyResolver) Desc() string {
 // CreateDeploymentKey creates a new deployment key.
 func (q *QueryResolver) CreateDeploymentKey(ctx context.Context) (*DeploymentKeyResolver, error) {
 	grpcAPI := q.Env.VizierDeployKeyMgr
-	res, err := grpcAPI.Create(ctx, &cloudapipb.CreateDeploymentKeyRequest{})
+	res, err := grpcAPI.Create(ctx, &cloudpb.CreateDeploymentKeyRequest{})
 	if err != nil {
 		return nil, err
 	}
 	return deploymentKeyToResolver(res)
 }
 
-func deploymentKeyToResolver(key *cloudapipb.DeploymentKey) (*DeploymentKeyResolver, error) {
+func deploymentKeyToResolver(key *cloudpb.DeploymentKey) (*DeploymentKeyResolver, error) {
 	keyID, err := utils.UUIDFromProto(key.ID)
 	if err != nil {
 		return nil, err
@@ -87,7 +87,7 @@ func deploymentKeyToResolver(key *cloudapipb.DeploymentKey) (*DeploymentKeyResol
 // DeploymentKeys lists all of the deployment keys.
 func (q *QueryResolver) DeploymentKeys(ctx context.Context) ([]*DeploymentKeyResolver, error) {
 	grpcAPI := q.Env.VizierDeployKeyMgr
-	res, err := grpcAPI.List(ctx, &cloudapipb.ListDeploymentKeyRequest{})
+	res, err := grpcAPI.List(ctx, &cloudpb.ListDeploymentKeyRequest{})
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ type getOrDeleteDeployKeyArgs struct {
 // DeploymentKey gets a specific deployment key.
 func (q *QueryResolver) DeploymentKey(ctx context.Context, args *getOrDeleteDeployKeyArgs) (*DeploymentKeyResolver, error) {
 	grpcAPI := q.Env.VizierDeployKeyMgr
-	res, err := grpcAPI.Get(ctx, &cloudapipb.GetDeploymentKeyRequest{
+	res, err := grpcAPI.Get(ctx, &cloudpb.GetDeploymentKeyRequest{
 		ID: utils.ProtoFromUUIDStrOrNil(string(args.ID)),
 	})
 	if err != nil {

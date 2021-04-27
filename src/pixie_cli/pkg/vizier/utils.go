@@ -26,7 +26,7 @@ import (
 	"github.com/gofrs/uuid"
 	"k8s.io/client-go/rest"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	cliUtils "px.dev/pixie/src/pixie_cli/pkg/utils"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/shared/k8s"
@@ -43,7 +43,7 @@ func MustConnectDefaultVizier(cloudAddr string, allClusters bool, clusterID uuid
 }
 
 // GetVizierList gets a list of all viziers.
-func GetVizierList(cloudAddr string) ([]*cloudapipb.ClusterInfo, error) {
+func GetVizierList(cloudAddr string) ([]*cloudpb.ClusterInfo, error) {
 	l, err := NewLister(cloudAddr)
 	if err != nil {
 		return nil, err
@@ -60,7 +60,7 @@ func GetVizierList(cloudAddr string) ([]*cloudapipb.ClusterInfo, error) {
 	return vzInfo, nil
 }
 
-func createVizierConnection(cloudAddr string, vzInfo *cloudapipb.ClusterInfo) (*Connector, error) {
+func createVizierConnection(cloudAddr string, vzInfo *cloudpb.ClusterInfo) (*Connector, error) {
 	l, err := NewLister(cloudAddr)
 	if err != nil {
 		return nil, err
@@ -128,7 +128,7 @@ func FirstHealthyVizier(cloudAddr string) (uuid.UUID, error) {
 
 	// Find the first healthy vizier by default.
 	for _, vz := range vzInfo {
-		if vz.Status == cloudapipb.CS_HEALTHY {
+		if vz.Status == cloudpb.CS_HEALTHY {
 			return utils.UUIDFromProtoOrNil(vz.ID), nil
 		}
 	}
@@ -169,7 +169,7 @@ func GetCurrentOrFirstHealthyVizier(cloudAddr string) (uuid.UUID, error) {
 		if err != nil {
 			cliUtils.WithError(err).Error("The current cluster in the kubeconfig not found within this org.")
 			clusterID = uuid.Nil
-		} else if clusterInfo.Status != cloudapipb.CS_HEALTHY {
+		} else if clusterInfo.Status != cloudpb.CS_HEALTHY {
 			cliUtils.WithError(err).Errorf("'%s'in the kubeconfig's Pixie instance is unhealthy.", clusterInfo.PrettyClusterName)
 			clusterID = uuid.Nil
 		}
@@ -206,7 +206,7 @@ func ConnectionToVizierByID(cloudAddr string, clusterID uuid.UUID) (*Connector, 
 }
 
 // GetVizierInfo returns the info about the vizier running on the specified cluster, if it exists.
-func GetVizierInfo(cloudAddr string, clusterID uuid.UUID) (*cloudapipb.ClusterInfo, error) {
+func GetVizierInfo(cloudAddr string, clusterID uuid.UUID) (*cloudpb.ClusterInfo, error) {
 	vzInfos, err := GetVizierList(cloudAddr)
 	if err != nil {
 		return nil, err
@@ -230,7 +230,7 @@ func ConnectToAllViziers(cloudAddr string) ([]*Connector, error) {
 
 	var conns []*Connector
 	for _, vzInfo := range vzInfos {
-		if vzInfo.Status != cloudapipb.CS_HEALTHY {
+		if vzInfo.Status != cloudpb.CS_HEALTHY {
 			continue
 		}
 		c, err := createVizierConnection(cloudAddr, vzInfo)

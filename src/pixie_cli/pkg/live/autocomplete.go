@@ -29,7 +29,7 @@ import (
 	"github.com/rivo/tview"
 	"github.com/sahilm/fuzzy"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/pixie_cli/pkg/script"
 )
 
@@ -157,7 +157,7 @@ func (m *autocompleteModal) validateScriptAndArgs(s string) (*script.ExecutableS
 // Show shows the modal.
 func (m *autocompleteModal) Show(app *tview.Application) tview.Primitive {
 	// Start with suggestions based on empty input.
-	_, suggestionMap, _, _ := m.s.ac.GetSuggestions("", 0, cloudapipb.AAT_UNKNOWN)
+	_, suggestionMap, _, _ := m.s.ac.GetSuggestions("", 0, cloudpb.AAT_UNKNOWN)
 	if suggestionMap != nil {
 		m.suggestions = suggestionMap[0]
 	}
@@ -194,7 +194,7 @@ func (m *autocompleteModal) Show(app *tview.Application) tview.Primitive {
 
 	m.ib.SetChangedFunc(func(currentText string) {
 		commandAndArgs := stripColors(currentText)
-		_, suggestionMap, _, _ := m.s.ac.GetSuggestions(commandAndArgs, 0, cloudapipb.AAT_UNKNOWN)
+		_, suggestionMap, _, _ := m.s.ac.GetSuggestions(commandAndArgs, 0, cloudpb.AAT_UNKNOWN)
 		if suggestionMap != nil {
 			m.suggestions = suggestionMap[0]
 		}
@@ -284,7 +284,7 @@ func (f *fuzzyAutocompleter) isValidScript(scriptName string) bool {
 }
 
 // GetSuggestions returns a list of suggestions.
-func (f *fuzzyAutocompleter) GetSuggestions(input string, cursor int, action cloudapipb.AutocompleteActionType) ([]*TabStop, map[int][]suggestion, bool, error) {
+func (f *fuzzyAutocompleter) GetSuggestions(input string, cursor int, action cloudpb.AutocompleteActionType) ([]*TabStop, map[int][]suggestion, bool, error) {
 	f.shouldAppend = false
 	inputArr := cmdTokenizer(input)
 	suggestionMap := make(map[int][]suggestion)

@@ -40,7 +40,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"gopkg.in/segmentio/analytics-go.v3"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
 	"px.dev/pixie/src/pixie_cli/pkg/pxconfig"
@@ -416,7 +416,7 @@ func (p *PixieCloudLogin) getRefreshToken(accessToken string) (*RefreshToken, er
 		if err != nil {
 			return nil, err
 		}
-		client := cloudapipb.NewProfileServiceClient(conn)
+		client := cloudpb.NewProfileServiceClient(conn)
 		ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
 			fmt.Sprintf("bearer %s", refreshToken.Token))
 		ctx, cancel := context.WithTimeout(ctx, 2*time.Second)

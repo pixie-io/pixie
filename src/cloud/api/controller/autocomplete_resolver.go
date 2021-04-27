@@ -22,43 +22,43 @@ import (
 	"context"
 	"errors"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 )
 
-var actionToProtoMap = map[string]cloudapipb.AutocompleteActionType{
-	"AAT_UNKNOWN": cloudapipb.AAT_UNKNOWN,
-	"AAT_EDIT":    cloudapipb.AAT_EDIT,
-	"AAT_SELECT":  cloudapipb.AAT_SELECT,
+var actionToProtoMap = map[string]cloudpb.AutocompleteActionType{
+	"AAT_UNKNOWN": cloudpb.AAT_UNKNOWN,
+	"AAT_EDIT":    cloudpb.AAT_EDIT,
+	"AAT_SELECT":  cloudpb.AAT_SELECT,
 }
 
-var protoToKindMap = map[cloudapipb.AutocompleteEntityKind]string{
-	cloudapipb.AEK_UNKNOWN:   "AEK_UNKNOWN",
-	cloudapipb.AEK_POD:       "AEK_POD",
-	cloudapipb.AEK_SVC:       "AEK_SVC",
-	cloudapipb.AEK_SCRIPT:    "AEK_SCRIPT",
-	cloudapipb.AEK_NAMESPACE: "AEK_NAMESPACE",
+var protoToKindMap = map[cloudpb.AutocompleteEntityKind]string{
+	cloudpb.AEK_UNKNOWN:   "AEK_UNKNOWN",
+	cloudpb.AEK_POD:       "AEK_POD",
+	cloudpb.AEK_SVC:       "AEK_SVC",
+	cloudpb.AEK_SCRIPT:    "AEK_SCRIPT",
+	cloudpb.AEK_NAMESPACE: "AEK_NAMESPACE",
 }
 
-var kindToProtoMap = map[string]cloudapipb.AutocompleteEntityKind{
-	"AEK_UNKNOWN":   cloudapipb.AEK_UNKNOWN,
-	"AEK_POD":       cloudapipb.AEK_POD,
-	"AEK_SVC":       cloudapipb.AEK_SVC,
-	"AEK_SCRIPT":    cloudapipb.AEK_SCRIPT,
-	"AEK_NAMESPACE": cloudapipb.AEK_NAMESPACE,
+var kindToProtoMap = map[string]cloudpb.AutocompleteEntityKind{
+	"AEK_UNKNOWN":   cloudpb.AEK_UNKNOWN,
+	"AEK_POD":       cloudpb.AEK_POD,
+	"AEK_SVC":       cloudpb.AEK_SVC,
+	"AEK_SCRIPT":    cloudpb.AEK_SCRIPT,
+	"AEK_NAMESPACE": cloudpb.AEK_NAMESPACE,
 }
 
-var protoToStateMap = map[cloudapipb.AutocompleteEntityState]string{
-	cloudapipb.AES_UNKNOWN:    "AES_UNKNOWN",
-	cloudapipb.AES_PENDING:    "AES_PENDING",
-	cloudapipb.AES_RUNNING:    "AES_RUNNING",
-	cloudapipb.AES_FAILED:     "AES_FAILED",
-	cloudapipb.AES_TERMINATED: "AES_TERMINATED",
+var protoToStateMap = map[cloudpb.AutocompleteEntityState]string{
+	cloudpb.AES_UNKNOWN:    "AES_UNKNOWN",
+	cloudpb.AES_PENDING:    "AES_PENDING",
+	cloudpb.AES_RUNNING:    "AES_RUNNING",
+	cloudpb.AES_FAILED:     "AES_FAILED",
+	cloudpb.AES_TERMINATED: "AES_TERMINATED",
 }
 
 // AutocompleteField is the resolver for autocompleting a single field.
 func (q *QueryResolver) AutocompleteField(ctx context.Context, args *autocompleteFieldArgs) (*[]*AutocompleteSuggestion, error) {
 	grpcAPI := q.Env.AutocompleteServer
-	allowedArgs := make([]cloudapipb.AutocompleteEntityKind, 0)
+	allowedArgs := make([]cloudpb.AutocompleteEntityKind, 0)
 	if args.RequiredArgTypes != nil {
 		for _, a := range *args.RequiredArgTypes {
 			allowedArgs = append(allowedArgs, kindToProtoMap[*a])
@@ -73,7 +73,7 @@ func (q *QueryResolver) AutocompleteField(ctx context.Context, args *autocomplet
 		clusterUID = *(args.ClusterUID)
 	}
 
-	res, err := grpcAPI.AutocompleteField(ctx, &cloudapipb.AutocompleteFieldRequest{
+	res, err := grpcAPI.AutocompleteField(ctx, &cloudpb.AutocompleteFieldRequest{
 		Input:            *args.Input,
 		FieldType:        kindToProtoMap[*args.FieldType],
 		RequiredArgTypes: allowedArgs,
@@ -112,7 +112,7 @@ func (q *QueryResolver) Autocomplete(ctx context.Context, args *autocompleteArgs
 	}
 
 	grpcAPI := q.Env.AutocompleteServer
-	res, err := grpcAPI.Autocomplete(ctx, &cloudapipb.AutocompleteRequest{
+	res, err := grpcAPI.Autocomplete(ctx, &cloudpb.AutocompleteRequest{
 		Input:      *args.Input,
 		CursorPos:  int64(*args.CursorPos),
 		Action:     actionToProtoMap[*args.Action],

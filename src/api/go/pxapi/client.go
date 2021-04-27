@@ -30,7 +30,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"px.dev/pixie/src/api/go/pxapi/types"
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
 )
 
@@ -62,7 +62,7 @@ type Client struct {
 	cloudAddr string
 
 	grpcConn *grpc.ClientConn
-	cmClient cloudapipb.VizierClusterInfoClient
+	cmClient cloudpb.VizierClusterInfoClient
 	vizier   vizierapipb.VizierServiceClient
 }
 
@@ -94,7 +94,7 @@ func (c *Client) init(ctx context.Context) error {
 	}
 
 	c.grpcConn = conn
-	c.cmClient = cloudapipb.NewVizierClusterInfoClient(conn)
+	c.cmClient = cloudpb.NewVizierClusterInfoClient(conn)
 
 	c.vizier = vizierapipb.NewVizierServiceClient(conn)
 	return nil

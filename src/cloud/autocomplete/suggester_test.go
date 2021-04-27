@@ -29,7 +29,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/cloud/autocomplete"
 	"px.dev/pixie/src/cloud/indexer/md"
 	"px.dev/pixie/src/utils/testingutils"
@@ -149,10 +149,10 @@ func TestGetSuggestions(t *testing.T) {
 				{
 					Input: "test",
 					OrgID: org1,
-					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
-						cloudapipb.AEK_SVC,
+					AllowedKinds: []cloudpb.AutocompleteEntityKind{
+						cloudpb.AEK_SVC,
 					},
-					AllowedArgs: []cloudapipb.AutocompleteEntityKind{},
+					AllowedArgs: []cloudpb.AutocompleteEntityKind{},
 				},
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
@@ -161,11 +161,11 @@ func TestGetSuggestions(t *testing.T) {
 					Suggestions: []*autocomplete.Suggestion{
 						{
 							Name: "pl/testService",
-							Kind: cloudapipb.AEK_SVC,
+							Kind: cloudpb.AEK_SVC,
 						},
 						{
 							Name: "anotherNS/testService",
-							Kind: cloudapipb.AEK_SVC,
+							Kind: cloudpb.AEK_SVC,
 						},
 					},
 				},
@@ -177,10 +177,10 @@ func TestGetSuggestions(t *testing.T) {
 				{
 					Input: "pl/testService",
 					OrgID: org1,
-					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
-						cloudapipb.AEK_SVC,
+					AllowedKinds: []cloudpb.AutocompleteEntityKind{
+						cloudpb.AEK_SVC,
 					},
-					AllowedArgs: []cloudapipb.AutocompleteEntityKind{},
+					AllowedArgs: []cloudpb.AutocompleteEntityKind{},
 				},
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
@@ -189,7 +189,7 @@ func TestGetSuggestions(t *testing.T) {
 					Suggestions: []*autocomplete.Suggestion{
 						{
 							Name: "pl/testService",
-							Kind: cloudapipb.AEK_SVC,
+							Kind: cloudpb.AEK_SVC,
 						},
 					},
 				},
@@ -201,10 +201,10 @@ func TestGetSuggestions(t *testing.T) {
 				{
 					Input: "pl/tss",
 					OrgID: org1,
-					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
-						cloudapipb.AEK_SVC,
+					AllowedKinds: []cloudpb.AutocompleteEntityKind{
+						cloudpb.AEK_SVC,
 					},
-					AllowedArgs: []cloudapipb.AutocompleteEntityKind{},
+					AllowedArgs: []cloudpb.AutocompleteEntityKind{},
 				},
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
@@ -213,7 +213,7 @@ func TestGetSuggestions(t *testing.T) {
 					Suggestions: []*autocomplete.Suggestion{
 						{
 							Name: "pl/testService",
-							Kind: cloudapipb.AEK_SVC,
+							Kind: cloudpb.AEK_SVC,
 						},
 					},
 				},
@@ -225,10 +225,10 @@ func TestGetSuggestions(t *testing.T) {
 				{
 					Input: "t-Po",
 					OrgID: org1,
-					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
-						cloudapipb.AEK_POD,
+					AllowedKinds: []cloudpb.AutocompleteEntityKind{
+						cloudpb.AEK_POD,
 					},
-					AllowedArgs: []cloudapipb.AutocompleteEntityKind{},
+					AllowedArgs: []cloudpb.AutocompleteEntityKind{},
 				},
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
@@ -237,8 +237,8 @@ func TestGetSuggestions(t *testing.T) {
 					Suggestions: []*autocomplete.Suggestion{
 						{
 							Name:  "anotherNS/test-Pod",
-							Kind:  cloudapipb.AEK_POD,
-							State: cloudapipb.AES_RUNNING,
+							Kind:  cloudpb.AEK_POD,
+							State: cloudpb.AES_RUNNING,
 						},
 					},
 				},
@@ -250,10 +250,10 @@ func TestGetSuggestions(t *testing.T) {
 				{
 					Input: "Po",
 					OrgID: org1,
-					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
-						cloudapipb.AEK_POD,
+					AllowedKinds: []cloudpb.AutocompleteEntityKind{
+						cloudpb.AEK_POD,
 					},
-					AllowedArgs: []cloudapipb.AutocompleteEntityKind{},
+					AllowedArgs: []cloudpb.AutocompleteEntityKind{},
 				},
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
@@ -262,8 +262,8 @@ func TestGetSuggestions(t *testing.T) {
 					Suggestions: []*autocomplete.Suggestion{
 						{
 							Name:  "anotherNS/test-Pod",
-							Kind:  cloudapipb.AEK_POD,
-							State: cloudapipb.AES_RUNNING,
+							Kind:  cloudpb.AEK_POD,
+							State: cloudpb.AES_RUNNING,
 						},
 					},
 				},
@@ -275,10 +275,10 @@ func TestGetSuggestions(t *testing.T) {
 				{
 					Input: "test",
 					OrgID: org1,
-					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
-						cloudapipb.AEK_SVC, cloudapipb.AEK_POD,
+					AllowedKinds: []cloudpb.AutocompleteEntityKind{
+						cloudpb.AEK_SVC, cloudpb.AEK_POD,
 					},
-					AllowedArgs: []cloudapipb.AutocompleteEntityKind{},
+					AllowedArgs: []cloudpb.AutocompleteEntityKind{},
 				},
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
@@ -287,16 +287,16 @@ func TestGetSuggestions(t *testing.T) {
 					Suggestions: []*autocomplete.Suggestion{
 						{
 							Name: "pl/testService",
-							Kind: cloudapipb.AEK_SVC,
+							Kind: cloudpb.AEK_SVC,
 						},
 						{
 							Name: "anotherNS/testService",
-							Kind: cloudapipb.AEK_SVC,
+							Kind: cloudpb.AEK_SVC,
 						},
 						{
 							Name:  "anotherNS/test-Pod",
-							Kind:  cloudapipb.AEK_POD,
-							State: cloudapipb.AES_RUNNING,
+							Kind:  cloudpb.AEK_POD,
+							State: cloudpb.AES_RUNNING,
 						},
 					},
 				},
@@ -309,10 +309,10 @@ func TestGetSuggestions(t *testing.T) {
 					Input:      "test",
 					ClusterUID: "test",
 					OrgID:      org1,
-					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
-						cloudapipb.AEK_SVC, cloudapipb.AEK_POD,
+					AllowedKinds: []cloudpb.AutocompleteEntityKind{
+						cloudpb.AEK_SVC, cloudpb.AEK_POD,
 					},
-					AllowedArgs: []cloudapipb.AutocompleteEntityKind{},
+					AllowedArgs: []cloudpb.AutocompleteEntityKind{},
 				},
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
@@ -321,7 +321,7 @@ func TestGetSuggestions(t *testing.T) {
 					Suggestions: []*autocomplete.Suggestion{
 						{
 							Name: "anotherNS/testService",
-							Kind: cloudapipb.AEK_SVC,
+							Kind: cloudpb.AEK_SVC,
 						},
 					},
 				},
@@ -333,18 +333,18 @@ func TestGetSuggestions(t *testing.T) {
 				{
 					Input: "pl/testService",
 					OrgID: org1,
-					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
-						cloudapipb.AEK_SVC,
+					AllowedKinds: []cloudpb.AutocompleteEntityKind{
+						cloudpb.AEK_SVC,
 					},
-					AllowedArgs: []cloudapipb.AutocompleteEntityKind{},
+					AllowedArgs: []cloudpb.AutocompleteEntityKind{},
 				},
 				{
 					Input: "test",
 					OrgID: org1,
-					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
-						cloudapipb.AEK_SVC,
+					AllowedKinds: []cloudpb.AutocompleteEntityKind{
+						cloudpb.AEK_SVC,
 					},
-					AllowedArgs: []cloudapipb.AutocompleteEntityKind{},
+					AllowedArgs: []cloudpb.AutocompleteEntityKind{},
 				},
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
@@ -353,7 +353,7 @@ func TestGetSuggestions(t *testing.T) {
 					Suggestions: []*autocomplete.Suggestion{
 						{
 							Name: "pl/testService",
-							Kind: cloudapipb.AEK_SVC,
+							Kind: cloudpb.AEK_SVC,
 						},
 					},
 				},
@@ -362,11 +362,11 @@ func TestGetSuggestions(t *testing.T) {
 					Suggestions: []*autocomplete.Suggestion{
 						{
 							Name: "pl/testService",
-							Kind: cloudapipb.AEK_SVC,
+							Kind: cloudpb.AEK_SVC,
 						},
 						{
 							Name: "anotherNS/testService",
-							Kind: cloudapipb.AEK_SVC,
+							Kind: cloudpb.AEK_SVC,
 						},
 					},
 				},
@@ -378,10 +378,10 @@ func TestGetSuggestions(t *testing.T) {
 				{
 					Input: "",
 					OrgID: org1,
-					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
-						cloudapipb.AEK_SVC,
+					AllowedKinds: []cloudpb.AutocompleteEntityKind{
+						cloudpb.AEK_SVC,
 					},
-					AllowedArgs: []cloudapipb.AutocompleteEntityKind{},
+					AllowedArgs: []cloudpb.AutocompleteEntityKind{},
 				},
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
@@ -390,15 +390,15 @@ func TestGetSuggestions(t *testing.T) {
 					Suggestions: []*autocomplete.Suggestion{
 						{
 							Name: "pl/testService",
-							Kind: cloudapipb.AEK_SVC,
+							Kind: cloudpb.AEK_SVC,
 						},
 						{
 							Name: "anotherNS/testService",
-							Kind: cloudapipb.AEK_SVC,
+							Kind: cloudpb.AEK_SVC,
 						},
 						{
 							Name: "pl/abcd",
-							Kind: cloudapipb.AEK_SVC,
+							Kind: cloudpb.AEK_SVC,
 						},
 					},
 				},
@@ -410,10 +410,10 @@ func TestGetSuggestions(t *testing.T) {
 				{
 					Input: "pl/",
 					OrgID: org1,
-					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
-						cloudapipb.AEK_SVC,
+					AllowedKinds: []cloudpb.AutocompleteEntityKind{
+						cloudpb.AEK_SVC,
 					},
-					AllowedArgs: []cloudapipb.AutocompleteEntityKind{},
+					AllowedArgs: []cloudpb.AutocompleteEntityKind{},
 				},
 			},
 			expectedResults: []*autocomplete.SuggestionResult{
@@ -422,11 +422,11 @@ func TestGetSuggestions(t *testing.T) {
 					Suggestions: []*autocomplete.Suggestion{
 						{
 							Name: "pl/testService",
-							Kind: cloudapipb.AEK_SVC,
+							Kind: cloudpb.AEK_SVC,
 						},
 						{
 							Name: "pl/abcd",
-							Kind: cloudapipb.AEK_SVC,
+							Kind: cloudpb.AEK_SVC,
 						},
 					},
 				},

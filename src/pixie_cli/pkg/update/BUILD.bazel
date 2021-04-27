@@ -22,7 +22,7 @@ go_library(
     importpath = "px.dev/pixie/src/pixie_cli/pkg/update",
     visibility = ["//src:__subpackages__"],
     deps = [
-        "//src/api/proto/cloudapipb:cloudapi_pl_go_proto",
+        "//src/api/proto/cloudpb:cloudapi_pl_go_proto",
         "//src/pixie_cli/pkg/utils",
         "//src/shared/goversion",
         "//src/shared/services",

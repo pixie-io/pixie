@@ -27,7 +27,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/pixie_cli/pkg/live"
 	"px.dev/pixie/src/pixie_cli/pkg/script"
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
@@ -100,7 +100,7 @@ var LiveCmd = &cobra.Command{
 			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
 			log.WithError(err).Fatal("Could not connect to cloud")
 		}
-		aClient := cloudapipb.NewAutocompleteServiceClient(cloudConn)
+		aClient := cloudpb.NewAutocompleteServiceClient(cloudConn)
 		allClusters, _ := cmd.Flags().GetBool("all-clusters")
 		selectedCluster, _ := cmd.Flags().GetString("cluster")
 		clusterUUID := uuid.FromStringOrNil(selectedCluster)

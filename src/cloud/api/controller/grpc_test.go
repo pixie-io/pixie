@@ -30,7 +30,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/api/proto/uuidpb"
 	pl_vispb "px.dev/pixie/src/api/proto/vispb"
 	"px.dev/pixie/src/cloud/api/controller"
@@ -75,10 +75,10 @@ func TestArtifactTracker_GetArtifactList(t *testing.T) {
 		ArtifactTrackerClient: mockClients.MockArtifact,
 	}
 
-	resp, err := artifactTrackerServer.GetArtifactList(ctx, &cloudapipb.GetArtifactListRequest{
+	resp, err := artifactTrackerServer.GetArtifactList(ctx, &cloudpb.GetArtifactListRequest{
 		ArtifactName: "cli",
 		Limit:        1,
-		ArtifactType: cloudapipb.AT_LINUX_AMD64,
+		ArtifactType: cloudpb.AT_LINUX_AMD64,
 	})
 
 	require.NoError(t, err)
@@ -109,10 +109,10 @@ func TestArtifactTracker_GetDownloadLink(t *testing.T) {
 		ArtifactTrackerClient: mockClients.MockArtifact,
 	}
 
-	resp, err := artifactTrackerServer.GetDownloadLink(ctx, &cloudapipb.GetDownloadLinkRequest{
+	resp, err := artifactTrackerServer.GetDownloadLink(ctx, &cloudpb.GetDownloadLinkRequest{
 		ArtifactName: "cli",
 		VersionStr:   "version",
-		ArtifactType: cloudapipb.AT_LINUX_AMD64,
+		ArtifactType: cloudpb.AT_LINUX_AMD64,
 	})
 
 	require.NoError(t, err)
@@ -139,7 +139,7 @@ func TestVizierClusterInfo_GetClusterConnectionInfo(t *testing.T) {
 		VzMgr: mockClients.MockVzMgr,
 	}
 
-	resp, err := vzClusterInfoServer.GetClusterConnectionInfo(ctx, &cloudapipb.GetClusterConnectionInfoRequest{ID: clusterID})
+	resp, err := vzClusterInfoServer.GetClusterConnectionInfo(ctx, &cloudpb.GetClusterConnectionInfoRequest{ID: clusterID})
 	require.NoError(t, err)
 	assert.Equal(t, "127.0.0.1", resp.IPAddress)
 	assert.Equal(t, "hello", resp.Token)
@@ -214,22 +214,22 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 		VzMgr: mockClients.MockVzMgr,
 	}
 
-	resp, err := vzClusterInfoServer.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{})
+	resp, err := vzClusterInfoServer.GetClusterInfo(ctx, &cloudpb.GetClusterInfoRequest{})
 
-	expectedPodStatuses := map[string]*cloudapipb.PodStatus{
+	expectedPodStatuses := map[string]*cloudpb.PodStatus{
 		"vizier-proxy": {
 			Name:   "vizier-proxy",
-			Status: cloudapipb.RUNNING,
-			Containers: []*cloudapipb.ContainerStatus{
+			Status: cloudpb.RUNNING,
+			Containers: []*cloudpb.ContainerStatus{
 				{
 					Name:      "my-proxy-container",
-					State:     cloudapipb.CONTAINER_STATE_RUNNING,
+					State:     cloudpb.CONTAINER_STATE_RUNNING,
 					Message:   "container message",
 					Reason:    "container reason",
 					CreatedAt: &types.Timestamp{Seconds: 1561230620},
 				},
 			},
-			Events: []*cloudapipb.K8SEvent{
+			Events: []*cloudpb.K8SEvent{
 				{
 					Message:   "this is a test event",
 					FirstTime: &types.Timestamp{Seconds: 1561230620},
@@ -242,7 +242,7 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 		},
 		"vizier-query-broker": {
 			Name:      "vizier-query-broker",
-			Status:    cloudapipb.RUNNING,
+			Status:    cloudpb.RUNNING,
 			CreatedAt: nil,
 		},
 	}
@@ -251,7 +251,7 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 	assert.Equal(t, 1, len(resp.Clusters))
 	cluster := resp.Clusters[0]
 	assert.Equal(t, cluster.ID, clusterID)
-	assert.Equal(t, cluster.Status, cloudapipb.CS_HEALTHY)
+	assert.Equal(t, cluster.Status, cloudpb.CS_HEALTHY)
 	assert.Equal(t, cluster.LastHeartbeatNs, int64(1305646598000000000))
 	assert.Equal(t, cluster.Config.PassthroughEnabled, false)
 	assert.Equal(t, cluster.Config.AutoUpdateEnabled, true)
@@ -322,7 +322,7 @@ func TestVizierClusterInfo_GetClusterInfoDuplicates(t *testing.T) {
 		VzMgr: mockClients.MockVzMgr,
 	}
 
-	resp, err := vzClusterInfoServer.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{})
+	resp, err := vzClusterInfoServer.GetClusterInfo(ctx, &cloudpb.GetClusterInfoRequest{})
 
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(resp.Clusters))
@@ -364,7 +364,7 @@ func TestVizierClusterInfo_GetClusterInfoWithID(t *testing.T) {
 		VzMgr: mockClients.MockVzMgr,
 	}
 
-	resp, err := vzClusterInfoServer.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{
+	resp, err := vzClusterInfoServer.GetClusterInfo(ctx, &cloudpb.GetClusterInfoRequest{
 		ID: clusterID,
 	})
 
@@ -372,7 +372,7 @@ func TestVizierClusterInfo_GetClusterInfoWithID(t *testing.T) {
 	assert.Equal(t, 1, len(resp.Clusters))
 	cluster := resp.Clusters[0]
 	assert.Equal(t, cluster.ID, clusterID)
-	assert.Equal(t, cluster.Status, cloudapipb.CS_HEALTHY)
+	assert.Equal(t, cluster.Status, cloudpb.CS_HEALTHY)
 	assert.Equal(t, cluster.LastHeartbeatNs, int64(1305646598000000000))
 	assert.Equal(t, cluster.Config.PassthroughEnabled, false)
 	assert.Equal(t, cluster.Config.AutoUpdateEnabled, true)
@@ -403,9 +403,9 @@ func TestVizierClusterInfo_UpdateClusterVizierConfig(t *testing.T) {
 		VzMgr: mockClients.MockVzMgr,
 	}
 
-	resp, err := vzClusterInfoServer.UpdateClusterVizierConfig(ctx, &cloudapipb.UpdateClusterVizierConfigRequest{
+	resp, err := vzClusterInfoServer.UpdateClusterVizierConfig(ctx, &cloudpb.UpdateClusterVizierConfigRequest{
 		ID: clusterID,
-		ConfigUpdate: &cloudapipb.VizierConfigUpdate{
+		ConfigUpdate: &cloudpb.VizierConfigUpdate{
 			PassthroughEnabled: &types.BoolValue{Value: true},
 			AutoUpdateEnabled:  &types.BoolValue{Value: false},
 		},
@@ -446,7 +446,7 @@ func TestVizierClusterInfo_UpdateOrInstallCluster(t *testing.T) {
 		ArtifactTrackerClient: mockClients.MockArtifact,
 	}
 
-	resp, err := vzClusterInfoServer.UpdateOrInstallCluster(ctx, &cloudapipb.UpdateOrInstallClusterRequest{
+	resp, err := vzClusterInfoServer.UpdateOrInstallCluster(ctx, &cloudpb.UpdateOrInstallClusterRequest{
 		ClusterID: clusterID,
 		Version:   "0.1.30",
 	})
@@ -476,7 +476,7 @@ func TestVizierDeploymentKeyServer_Create(t *testing.T) {
 		VzDeploymentKey: mockClients.MockVzDeployKey,
 	}
 
-	resp, err := vzDeployKeyServer.Create(ctx, &cloudapipb.CreateDeploymentKeyRequest{Desc: "test key"})
+	resp, err := vzDeployKeyServer.Create(ctx, &cloudpb.CreateDeploymentKeyRequest{Desc: "test key"})
 	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, resp.ID, vzresp.ID)
@@ -510,7 +510,7 @@ func TestVizierDeploymentKeyServer_List(t *testing.T) {
 		VzDeploymentKey: mockClients.MockVzDeployKey,
 	}
 
-	resp, err := vzDeployKeyServer.List(ctx, &cloudapipb.ListDeploymentKeyRequest{})
+	resp, err := vzDeployKeyServer.List(ctx, &cloudpb.ListDeploymentKeyRequest{})
 	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	for i, key := range resp.Keys {
@@ -547,7 +547,7 @@ func TestVizierDeploymentKeyServer_Get(t *testing.T) {
 	vzDeployKeyServer := &controller.VizierDeploymentKeyServer{
 		VzDeploymentKey: mockClients.MockVzDeployKey,
 	}
-	resp, err := vzDeployKeyServer.Get(ctx, &cloudapipb.GetDeploymentKeyRequest{
+	resp, err := vzDeployKeyServer.Get(ctx, &cloudpb.GetDeploymentKeyRequest{
 		ID: id,
 	})
 	require.NoError(t, err)
@@ -601,7 +601,7 @@ func TestAPIKeyServer_Create(t *testing.T) {
 		APIKeyClient: mockClients.MockAPIKey,
 	}
 
-	resp, err := vzAPIKeyServer.Create(ctx, &cloudapipb.CreateAPIKeyRequest{Desc: "test key"})
+	resp, err := vzAPIKeyServer.Create(ctx, &cloudpb.CreateAPIKeyRequest{Desc: "test key"})
 	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, resp.ID, vzresp.ID)
@@ -635,7 +635,7 @@ func TestAPIKeyServer_List(t *testing.T) {
 		APIKeyClient: mockClients.MockAPIKey,
 	}
 
-	resp, err := vzAPIKeyServer.List(ctx, &cloudapipb.ListAPIKeyRequest{})
+	resp, err := vzAPIKeyServer.List(ctx, &cloudpb.ListAPIKeyRequest{})
 	require.NoError(t, err)
 	assert.NotNil(t, resp)
 	for i, key := range resp.Keys {
@@ -672,7 +672,7 @@ func TestAPIKeyServer_Get(t *testing.T) {
 	vzAPIKeyServer := &controller.APIKeyServer{
 		APIKeyClient: mockClients.MockAPIKey,
 	}
-	resp, err := vzAPIKeyServer.Get(ctx, &cloudapipb.GetAPIKeyRequest{
+	resp, err := vzAPIKeyServer.Get(ctx, &cloudpb.GetAPIKeyRequest{
 		ID: id,
 	})
 	require.NoError(t, err)
@@ -721,15 +721,15 @@ func TestAutocompleteService_Autocomplete(t *testing.T) {
 				OrgID:        orgID,
 				ClusterUID:   "test",
 				Input:        "px/svc_info",
-				AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD, cloudapipb.AEK_SVC, cloudapipb.AEK_NAMESPACE, cloudapipb.AEK_SCRIPT},
-				AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
+				AllowedKinds: []cloudpb.AutocompleteEntityKind{cloudpb.AEK_POD, cloudpb.AEK_SVC, cloudpb.AEK_NAMESPACE, cloudpb.AEK_SCRIPT},
+				AllowedArgs:  []cloudpb.AutocompleteEntityKind{},
 			},
 			{
 				OrgID:        orgID,
 				ClusterUID:   "test",
 				Input:        "pl/test",
-				AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD, cloudapipb.AEK_SVC, cloudapipb.AEK_NAMESPACE, cloudapipb.AEK_SCRIPT},
-				AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
+				AllowedKinds: []cloudpb.AutocompleteEntityKind{cloudpb.AEK_POD, cloudpb.AEK_SVC, cloudpb.AEK_NAMESPACE, cloudpb.AEK_SCRIPT},
+				AllowedArgs:  []cloudpb.AutocompleteEntityKind{},
 			},
 		},
 	}
@@ -742,7 +742,7 @@ func TestAutocompleteService_Autocomplete(t *testing.T) {
 						Name:     "px/svc_info",
 						Score:    1,
 						ArgNames: []string{"svc_name"},
-						ArgKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
+						ArgKinds: []cloudpb.AutocompleteEntityKind{cloudpb.AEK_SVC},
 					},
 				},
 				ExactMatch: true,
@@ -774,10 +774,10 @@ func TestAutocompleteService_Autocomplete(t *testing.T) {
 		Suggester: s,
 	}
 
-	resp, err := autocompleteServer.Autocomplete(ctx, &cloudapipb.AutocompleteRequest{
+	resp, err := autocompleteServer.Autocomplete(ctx, &cloudpb.AutocompleteRequest{
 		Input:      "px/svc_info pl/test",
 		CursorPos:  0,
-		Action:     cloudapipb.AAT_EDIT,
+		Action:     cloudpb.AAT_EDIT,
 		ClusterUID: "test",
 	})
 	require.NoError(t, err)
@@ -803,8 +803,8 @@ func TestAutocompleteService_AutocompleteField(t *testing.T) {
 				OrgID:        orgID,
 				ClusterUID:   "test",
 				Input:        "px/svc_info",
-				AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
-				AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
+				AllowedKinds: []cloudpb.AutocompleteEntityKind{cloudpb.AEK_SVC},
+				AllowedArgs:  []cloudpb.AutocompleteEntityKind{},
 			},
 		},
 	}
@@ -815,12 +815,12 @@ func TestAutocompleteService_AutocompleteField(t *testing.T) {
 				{
 					Name:  "px/svc_info",
 					Score: 1,
-					State: cloudapipb.AES_RUNNING,
+					State: cloudpb.AES_RUNNING,
 				},
 				{
 					Name:  "px/svc_info2",
 					Score: 1,
-					State: cloudapipb.AES_TERMINATED,
+					State: cloudpb.AES_TERMINATED,
 				},
 			},
 			ExactMatch: true,
@@ -838,9 +838,9 @@ func TestAutocompleteService_AutocompleteField(t *testing.T) {
 		Suggester: s,
 	}
 
-	resp, err := autocompleteServer.AutocompleteField(ctx, &cloudapipb.AutocompleteFieldRequest{
+	resp, err := autocompleteServer.AutocompleteField(ctx, &cloudpb.AutocompleteFieldRequest{
 		Input:      "px/svc_info",
-		FieldType:  cloudapipb.AEK_SVC,
+		FieldType:  cloudpb.AEK_SVC,
 		ClusterUID: "test",
 	})
 	require.NoError(t, err)
@@ -881,7 +881,7 @@ func TestScriptMgr(t *testing.T) {
 		expectedResp proto.Message
 	}{
 		{
-			name:     "GetLiveViews correctly translates from scriptmgrpb to cloudapipb.",
+			name:     "GetLiveViews correctly translates from scriptmgrpb to cloudpb.",
 			endpoint: "GetLiveViews",
 			smReq:    &scriptmgrpb.GetLiveViewsReq{},
 			smResp: &scriptmgrpb.GetLiveViewsResp{
@@ -898,9 +898,9 @@ func TestScriptMgr(t *testing.T) {
 					},
 				},
 			},
-			req: &cloudapipb.GetLiveViewsReq{},
-			expectedResp: &cloudapipb.GetLiveViewsResp{
-				LiveViews: []*cloudapipb.LiveViewMetadata{
+			req: &cloudpb.GetLiveViewsReq{},
+			expectedResp: &cloudpb.GetLiveViewsResp{
+				LiveViews: []*cloudpb.LiveViewMetadata{
 					{
 						ID:   ID1.String(),
 						Name: "liveview1",
@@ -915,7 +915,7 @@ func TestScriptMgr(t *testing.T) {
 			},
 		},
 		{
-			name:     "GetLiveViewContents correctly translates between scriptmgr and cloudapipb.",
+			name:     "GetLiveViewContents correctly translates between scriptmgr and cloudpb.",
 			endpoint: "GetLiveViewContents",
 			smReq: &scriptmgrpb.GetLiveViewContentsReq{
 				LiveViewID: utils.ProtoFromUUID(ID1),
@@ -929,11 +929,11 @@ func TestScriptMgr(t *testing.T) {
 				PxlContents: "liveview1 pxl",
 				Vis:         testVis,
 			},
-			req: &cloudapipb.GetLiveViewContentsReq{
+			req: &cloudpb.GetLiveViewContentsReq{
 				LiveViewID: ID1.String(),
 			},
-			expectedResp: &cloudapipb.GetLiveViewContentsResp{
-				Metadata: &cloudapipb.LiveViewMetadata{
+			expectedResp: &cloudpb.GetLiveViewContentsResp{
+				Metadata: &cloudpb.LiveViewMetadata{
 					ID:   ID1.String(),
 					Name: "liveview1",
 					Desc: "liveview1 desc",
@@ -943,7 +943,7 @@ func TestScriptMgr(t *testing.T) {
 			},
 		},
 		{
-			name:     "GetScripts correctly translates between scriptmgr and cloudapipb.",
+			name:     "GetScripts correctly translates between scriptmgr and cloudpb.",
 			endpoint: "GetScripts",
 			smReq:    &scriptmgrpb.GetScriptsReq{},
 			smResp: &scriptmgrpb.GetScriptsResp{
@@ -962,9 +962,9 @@ func TestScriptMgr(t *testing.T) {
 					},
 				},
 			},
-			req: &cloudapipb.GetScriptsReq{},
-			expectedResp: &cloudapipb.GetScriptsResp{
-				Scripts: []*cloudapipb.ScriptMetadata{
+			req: &cloudpb.GetScriptsReq{},
+			expectedResp: &cloudpb.GetScriptsResp{
+				Scripts: []*cloudpb.ScriptMetadata{
 					{
 						ID:          ID1.String(),
 						Name:        "script1",
@@ -981,7 +981,7 @@ func TestScriptMgr(t *testing.T) {
 			},
 		},
 		{
-			name:     "GetScriptContents correctly translates between scriptmgr and cloudapipb.",
+			name:     "GetScriptContents correctly translates between scriptmgr and cloudpb.",
 			endpoint: "GetScriptContents",
 			smReq: &scriptmgrpb.GetScriptContentsReq{
 				ScriptID: utils.ProtoFromUUID(ID1),
@@ -995,11 +995,11 @@ func TestScriptMgr(t *testing.T) {
 				},
 				Contents: "Script1 pxl",
 			},
-			req: &cloudapipb.GetScriptContentsReq{
+			req: &cloudpb.GetScriptContentsReq{
 				ScriptID: ID1.String(),
 			},
-			expectedResp: &cloudapipb.GetScriptContentsResp{
-				Metadata: &cloudapipb.ScriptMetadata{
+			expectedResp: &cloudpb.GetScriptContentsResp{
+				Metadata: &cloudpb.ScriptMetadata{
 					ID:          ID1.String(),
 					Name:        "Script1",
 					Desc:        "Script1 desc",
@@ -1091,7 +1091,7 @@ func TestProfileServer_InviteUser(t *testing.T) {
 
 	profileServer := &controller.ProfileServer{mockClients.MockProfile}
 
-	resp, err := profileServer.InviteUser(ctx, &cloudapipb.InviteUserRequest{
+	resp, err := profileServer.InviteUser(ctx, &cloudpb.InviteUserRequest{
 		Email:     "bobloblaw@lawblog.law",
 		FirstName: "bob",
 		LastName:  "loblaw",

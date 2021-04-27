@@ -29,7 +29,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/utils/shared/tar"
 	"px.dev/pixie/src/utils/shared/yamls"
 )
@@ -44,13 +44,13 @@ func downloadFile(url string) (io.ReadCloser, error) {
 }
 
 func downloadVizierYAMLs(conn *grpc.ClientConn, authToken, versionStr string, templated bool) (io.ReadCloser, error) {
-	client := cloudapipb.NewArtifactTrackerClient(conn)
-	at := cloudapipb.AT_CONTAINER_SET_YAMLS
+	client := cloudpb.NewArtifactTrackerClient(conn)
+	at := cloudpb.AT_CONTAINER_SET_YAMLS
 	if templated {
-		at = cloudapipb.AT_CONTAINER_SET_TEMPLATE_YAMLS
+		at = cloudpb.AT_CONTAINER_SET_TEMPLATE_YAMLS
 	}
 
-	req := &cloudapipb.GetDownloadLinkRequest{
+	req := &cloudpb.GetDownloadLinkRequest{
 		ArtifactName: "vizier",
 		VersionStr:   versionStr,
 		ArtifactType: at,

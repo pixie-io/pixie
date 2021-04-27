@@ -28,7 +28,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/pixie_cli/pkg/auth"
 	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
@@ -129,7 +129,7 @@ var ListAPIKeyCmd = &cobra.Command{
 	},
 }
 
-func getAPIKeyClientAndContext(cloudAddr string) (cloudapipb.APIKeyManagerClient, context.Context, error) {
+func getAPIKeyClientAndContext(cloudAddr string) (cloudpb.APIKeyManagerClient, context.Context, error) {
 	// Get grpc connection to cloud.
 	cloudConn, err := utils.GetCloudClientConnection(cloudAddr)
 	if err != nil {
@@ -138,7 +138,7 @@ func getAPIKeyClientAndContext(cloudAddr string) (cloudapipb.APIKeyManagerClient
 	}
 
 	// Get client for apiKeyMgr.
-	apiKeyMgr := cloudapipb.NewAPIKeyManagerClient(cloudConn)
+	apiKeyMgr := cloudpb.NewAPIKeyManagerClient(cloudConn)
 
 	ctxWithCreds := auth.CtxWithCreds(context.Background())
 	return apiKeyMgr, ctxWithCreds, nil
@@ -150,7 +150,7 @@ func generateAPIKey(cloudAddr string, desc string) (string, string, error) {
 		return "", "", err
 	}
 
-	resp, err := apiKeyMgr.Create(ctxWithCreds, &cloudapipb.CreateAPIKeyRequest{Desc: desc})
+	resp, err := apiKeyMgr.Create(ctxWithCreds, &cloudpb.CreateAPIKeyRequest{Desc: desc})
 	if err != nil {
 		return "", "", err
 	}
@@ -168,13 +168,13 @@ func deleteAPIKey(cloudAddr string, keyID uuid.UUID) error {
 	return err
 }
 
-func listAPIKeys(cloudAddr string) ([]*cloudapipb.APIKey, error) {
+func listAPIKeys(cloudAddr string) ([]*cloudpb.APIKey, error) {
 	apiKeyMgr, ctxWithCreds, err := getAPIKeyClientAndContext(cloudAddr)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := apiKeyMgr.List(ctxWithCreds, &cloudapipb.ListAPIKeyRequest{})
+	resp, err := apiKeyMgr.List(ctxWithCreds, &cloudpb.ListAPIKeyRequest{})
 	if err != nil {
 		return nil, err
 	}

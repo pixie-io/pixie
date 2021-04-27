@@ -28,7 +28,7 @@ import (
 	"github.com/graph-gophers/graphql-go/gqltesting"
 	"github.com/stretchr/testify/assert"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/cloud/api/controller"
 	gqltestutils "px.dev/pixie/src/cloud/api/controller/testutils"
 	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
@@ -183,11 +183,11 @@ func TestUserSettingsResolver_InviteUser(t *testing.T) {
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	mockClients.MockOrg.EXPECT().InviteUser(gomock.Any(), &cloudapipb.InviteUserRequest{
+	mockClients.MockOrg.EXPECT().InviteUser(gomock.Any(), &cloudpb.InviteUserRequest{
 		Email:     "test@test.com",
 		FirstName: "Tester",
 		LastName:  "Person",
-	}).Return(&cloudapipb.InviteUserResponse{
+	}).Return(&cloudpb.InviteUserResponse{
 		Email:      "test@test.com",
 		InviteLink: "https://pixie.ai/inviteLink",
 	}, nil)

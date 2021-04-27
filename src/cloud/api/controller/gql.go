@@ -24,7 +24,7 @@ import (
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/relay"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/cloud/api/controller/schema"
 	unauthenticatedschema "px.dev/pixie/src/cloud/api/controller/unauthenticated_schema"
 	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
@@ -32,13 +32,13 @@ import (
 
 // GraphQLEnv holds the GRPC API servers so the GraphQL server can call out to them.
 type GraphQLEnv struct {
-	ArtifactTrackerServer cloudapipb.ArtifactTrackerServer
-	VizierClusterInfo     cloudapipb.VizierClusterInfoServer
-	VizierDeployKeyMgr    cloudapipb.VizierDeploymentKeyManagerServer
-	APIKeyMgr             cloudapipb.APIKeyManagerServer
-	ScriptMgrServer       cloudapipb.ScriptMgrServer
-	AutocompleteServer    cloudapipb.AutocompleteServiceServer
-	OrgServer             cloudapipb.OrganizationServiceServer
+	ArtifactTrackerServer cloudpb.ArtifactTrackerServer
+	VizierClusterInfo     cloudpb.VizierClusterInfoServer
+	VizierDeployKeyMgr    cloudpb.VizierDeploymentKeyManagerServer
+	APIKeyMgr             cloudpb.APIKeyManagerServer
+	ScriptMgrServer       cloudpb.ScriptMgrServer
+	AutocompleteServer    cloudpb.AutocompleteServiceServer
+	OrgServer             cloudpb.OrganizationServiceServer
 
 	ProfileServiceClient profilepb.ProfileServiceClient
 }

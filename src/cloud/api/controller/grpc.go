@@ -32,7 +32,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
 	"px.dev/pixie/src/cloud/auth/authpb"
@@ -57,7 +57,7 @@ func init() {
 type VizierImageAuthServer struct{}
 
 // GetImageCredentials fetches image credentials for vizier.
-func (v VizierImageAuthServer) GetImageCredentials(context.Context, *cloudapipb.GetImageCredentialsRequest) (*cloudapipb.GetImageCredentialsResponse, error) {
+func (v VizierImageAuthServer) GetImageCredentials(context.Context, *cloudpb.GetImageCredentialsRequest) (*cloudpb.GetImageCredentialsResponse, error) {
 	// These creds are just for internal use. All official releases are written to a public registry.
 	p := viper.GetString("vizier_image_secret_path")
 	f := viper.GetString("vizier_image_secret_file")
@@ -72,7 +72,7 @@ func (v VizierImageAuthServer) GetImageCredentials(context.Context, *cloudapipb.
 		return nil, status.Error(codes.Internal, "failed to read creds file")
 	}
 
-	return &cloudapipb.GetImageCredentialsResponse{Creds: string(b)}, nil
+	return &cloudpb.GetImageCredentialsResponse{Creds: string(b)}, nil
 }
 
 // ArtifactTrackerServer is the GRPC server responsible for providing access to artifacts.
@@ -80,37 +80,37 @@ type ArtifactTrackerServer struct {
 	ArtifactTrackerClient artifacttrackerpb.ArtifactTrackerClient
 }
 
-func getArtifactTypeFromCloudProto(a cloudapipb.ArtifactType) versionspb.ArtifactType {
+func getArtifactTypeFromCloudProto(a cloudpb.ArtifactType) versionspb.ArtifactType {
 	switch a {
-	case cloudapipb.AT_LINUX_AMD64:
+	case cloudpb.AT_LINUX_AMD64:
 		return versionspb.AT_LINUX_AMD64
-	case cloudapipb.AT_DARWIN_AMD64:
+	case cloudpb.AT_DARWIN_AMD64:
 		return versionspb.AT_DARWIN_AMD64
-	case cloudapipb.AT_CONTAINER_SET_YAMLS:
+	case cloudpb.AT_CONTAINER_SET_YAMLS:
 		return versionspb.AT_CONTAINER_SET_YAMLS
-	case cloudapipb.AT_CONTAINER_SET_LINUX_AMD64:
+	case cloudpb.AT_CONTAINER_SET_LINUX_AMD64:
 		return versionspb.AT_CONTAINER_SET_LINUX_AMD64
-	case cloudapipb.AT_CONTAINER_SET_TEMPLATE_YAMLS:
+	case cloudpb.AT_CONTAINER_SET_TEMPLATE_YAMLS:
 		return versionspb.AT_CONTAINER_SET_TEMPLATE_YAMLS
 	default:
 		return versionspb.AT_UNKNOWN
 	}
 }
 
-func getArtifactTypeFromVersionsProto(a versionspb.ArtifactType) cloudapipb.ArtifactType {
+func getArtifactTypeFromVersionsProto(a versionspb.ArtifactType) cloudpb.ArtifactType {
 	switch a {
 	case versionspb.AT_LINUX_AMD64:
-		return cloudapipb.AT_LINUX_AMD64
+		return cloudpb.AT_LINUX_AMD64
 	case versionspb.AT_DARWIN_AMD64:
-		return cloudapipb.AT_DARWIN_AMD64
+		return cloudpb.AT_DARWIN_AMD64
 	case versionspb.AT_CONTAINER_SET_YAMLS:
-		return cloudapipb.AT_CONTAINER_SET_YAMLS
+		return cloudpb.AT_CONTAINER_SET_YAMLS
 	case versionspb.AT_CONTAINER_SET_LINUX_AMD64:
-		return cloudapipb.AT_CONTAINER_SET_LINUX_AMD64
+		return cloudpb.AT_CONTAINER_SET_LINUX_AMD64
 	case versionspb.AT_CONTAINER_SET_TEMPLATE_YAMLS:
-		return cloudapipb.AT_CONTAINER_SET_TEMPLATE_YAMLS
+		return cloudpb.AT_CONTAINER_SET_TEMPLATE_YAMLS
 	default:
-		return cloudapipb.AT_UNKNOWN
+		return cloudpb.AT_UNKNOWN
 	}
 }
 
@@ -120,7 +120,7 @@ func getServiceCredentials(signingKey string) (string, error) {
 }
 
 // GetArtifactList gets the set of artifact versions for the given artifact.
-func (a ArtifactTrackerServer) GetArtifactList(ctx context.Context, req *cloudapipb.GetArtifactListRequest) (*cloudapipb.ArtifactSet, error) {
+func (a ArtifactTrackerServer) GetArtifactList(ctx context.Context, req *cloudpb.GetArtifactListRequest) (*cloudpb.ArtifactSet, error) {
 	atReq := &artifacttrackerpb.GetArtifactListRequest{
 		ArtifactType: getArtifactTypeFromCloudProto(req.ArtifactType),
 		ArtifactName: req.ArtifactName,
@@ -139,13 +139,13 @@ func (a ArtifactTrackerServer) GetArtifactList(ctx context.Context, req *cloudap
 		return nil, err
 	}
 
-	cloudpbArtifacts := make([]*cloudapipb.Artifact, len(resp.Artifact))
+	cloudpbArtifacts := make([]*cloudpb.Artifact, len(resp.Artifact))
 	for i, artifact := range resp.Artifact {
-		availableArtifacts := make([]cloudapipb.ArtifactType, len(artifact.AvailableArtifacts))
+		availableArtifacts := make([]cloudpb.ArtifactType, len(artifact.AvailableArtifacts))
 		for j, a := range artifact.AvailableArtifacts {
 			availableArtifacts[j] = getArtifactTypeFromVersionsProto(a)
 		}
-		cloudpbArtifacts[i] = &cloudapipb.Artifact{
+		cloudpbArtifacts[i] = &cloudpb.Artifact{
 			Timestamp:          artifact.Timestamp,
 			CommitHash:         artifact.CommitHash,
 			VersionStr:         artifact.VersionStr,
@@ -154,14 +154,14 @@ func (a ArtifactTrackerServer) GetArtifactList(ctx context.Context, req *cloudap
 		}
 	}
 
-	return &cloudapipb.ArtifactSet{
+	return &cloudpb.ArtifactSet{
 		Name:     resp.Name,
 		Artifact: cloudpbArtifacts,
 	}, nil
 }
 
 // GetDownloadLink gets the download link for the given artifact.
-func (a ArtifactTrackerServer) GetDownloadLink(ctx context.Context, req *cloudapipb.GetDownloadLinkRequest) (*cloudapipb.GetDownloadLinkResponse, error) {
+func (a ArtifactTrackerServer) GetDownloadLink(ctx context.Context, req *cloudpb.GetDownloadLinkRequest) (*cloudpb.GetDownloadLinkResponse, error) {
 	atReq := &artifacttrackerpb.GetDownloadLinkRequest{
 		ArtifactName: req.ArtifactName,
 		VersionStr:   req.VersionStr,
@@ -180,7 +180,7 @@ func (a ArtifactTrackerServer) GetDownloadLink(ctx context.Context, req *cloudap
 		return nil, err
 	}
 
-	return &cloudapipb.GetDownloadLinkResponse{
+	return &cloudpb.GetDownloadLinkResponse{
 		Url:        resp.Url,
 		SHA256:     resp.SHA256,
 		ValidUntil: resp.ValidUntil,
@@ -203,12 +203,12 @@ func contextWithAuthToken(ctx context.Context) (context.Context, error) {
 }
 
 // CreateCluster creates a cluster for the current org.
-func (v *VizierClusterInfo) CreateCluster(ctx context.Context, request *cloudapipb.CreateClusterRequest) (*cloudapipb.CreateClusterResponse, error) {
+func (v *VizierClusterInfo) CreateCluster(ctx context.Context, request *cloudpb.CreateClusterRequest) (*cloudpb.CreateClusterResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "Deprecated. Please use `px deploy`")
 }
 
 // GetClusterInfo returns information about Vizier clusters.
-func (v *VizierClusterInfo) GetClusterInfo(ctx context.Context, request *cloudapipb.GetClusterInfoRequest) (*cloudapipb.GetClusterInfoResponse, error) {
+func (v *VizierClusterInfo) GetClusterInfo(ctx context.Context, request *cloudpb.GetClusterInfoRequest) (*cloudpb.GetClusterInfoResponse, error) {
 	sCtx, err := authcontext.FromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -238,40 +238,40 @@ func (v *VizierClusterInfo) GetClusterInfo(ctx context.Context, request *cloudap
 	return v.getClusterInfoForViziers(ctx, vzIDs)
 }
 
-func convertContainerState(cs metadatapb.ContainerState) cloudapipb.ContainerState {
+func convertContainerState(cs metadatapb.ContainerState) cloudpb.ContainerState {
 	switch cs {
 	case metadatapb.CONTAINER_STATE_RUNNING:
-		return cloudapipb.CONTAINER_STATE_RUNNING
+		return cloudpb.CONTAINER_STATE_RUNNING
 	case metadatapb.CONTAINER_STATE_TERMINATED:
-		return cloudapipb.CONTAINER_STATE_TERMINATED
+		return cloudpb.CONTAINER_STATE_TERMINATED
 	case metadatapb.CONTAINER_STATE_WAITING:
-		return cloudapipb.CONTAINER_STATE_WAITING
+		return cloudpb.CONTAINER_STATE_WAITING
 	case metadatapb.CONTAINER_STATE_UNKNOWN:
-		return cloudapipb.CONTAINER_STATE_UNKNOWN
+		return cloudpb.CONTAINER_STATE_UNKNOWN
 	default:
-		return cloudapipb.CONTAINER_STATE_UNKNOWN
+		return cloudpb.CONTAINER_STATE_UNKNOWN
 	}
 }
 
-func convertPodPhase(p metadatapb.PodPhase) cloudapipb.PodPhase {
+func convertPodPhase(p metadatapb.PodPhase) cloudpb.PodPhase {
 	switch p {
 	case metadatapb.PENDING:
-		return cloudapipb.PENDING
+		return cloudpb.PENDING
 	case metadatapb.RUNNING:
-		return cloudapipb.RUNNING
+		return cloudpb.RUNNING
 	case metadatapb.SUCCEEDED:
-		return cloudapipb.SUCCEEDED
+		return cloudpb.SUCCEEDED
 	case metadatapb.FAILED:
-		return cloudapipb.FAILED
+		return cloudpb.FAILED
 	case metadatapb.PHASE_UNKNOWN:
-		return cloudapipb.PHASE_UNKNOWN
+		return cloudpb.PHASE_UNKNOWN
 	default:
-		return cloudapipb.PHASE_UNKNOWN
+		return cloudpb.PHASE_UNKNOWN
 	}
 }
 
-func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []*uuidpb.UUID) (*cloudapipb.GetClusterInfoResponse, error) {
-	resp := &cloudapipb.GetClusterInfoResponse{}
+func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []*uuidpb.UUID) (*cloudpb.GetClusterInfoResponse, error) {
+	resp := &cloudpb.GetClusterInfoResponse{}
 
 	cNames := make(map[string]int)
 	vzInfoResp, err := v.VzMgr.GetVizierInfos(ctx, &vzmgrpb.GetVizierInfosRequest{
@@ -286,11 +286,11 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 		if vzInfo == nil || vzInfo.VizierID == nil {
 			continue
 		}
-		podStatuses := make(map[string]*cloudapipb.PodStatus)
+		podStatuses := make(map[string]*cloudpb.PodStatus)
 		for podName, status := range vzInfo.ControlPlanePodStatuses {
-			var containers []*cloudapipb.ContainerStatus
+			var containers []*cloudpb.ContainerStatus
 			for _, container := range status.Containers {
-				containers = append(containers, &cloudapipb.ContainerStatus{
+				containers = append(containers, &cloudpb.ContainerStatus{
 					Name:      container.Name,
 					State:     convertContainerState(container.State),
 					Message:   container.Message,
@@ -298,16 +298,16 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 					CreatedAt: container.CreatedAt,
 				})
 			}
-			var events []*cloudapipb.K8SEvent
+			var events []*cloudpb.K8SEvent
 			for _, ev := range status.Events {
-				events = append(events, &cloudapipb.K8SEvent{
+				events = append(events, &cloudpb.K8SEvent{
 					Message:   ev.Message,
 					LastTime:  ev.LastTime,
 					FirstTime: ev.FirstTime,
 				})
 			}
 
-			podStatuses[podName] = &cloudapipb.PodStatus{
+			podStatuses[podName] = &cloudpb.PodStatus{
 				Name:          status.Name,
 				Status:        convertPodPhase(status.Status),
 				StatusMessage: status.StatusMessage,
@@ -327,11 +327,11 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 			cNames[prettyName] = 1
 		}
 
-		resp.Clusters = append(resp.Clusters, &cloudapipb.ClusterInfo{
+		resp.Clusters = append(resp.Clusters, &cloudpb.ClusterInfo{
 			ID:              vzInfo.VizierID,
 			Status:          s,
 			LastHeartbeatNs: vzInfo.LastHeartbeatNs,
-			Config: &cloudapipb.VizierConfig{
+			Config: &cloudpb.VizierConfig{
 				PassthroughEnabled: vzInfo.Config.PassthroughEnabled,
 				AutoUpdateEnabled:  vzInfo.Config.AutoUpdateEnabled,
 			},
@@ -357,7 +357,7 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 }
 
 // GetClusterConnectionInfo returns information about connections to Vizier cluster.
-func (v *VizierClusterInfo) GetClusterConnectionInfo(ctx context.Context, request *cloudapipb.GetClusterConnectionInfoRequest) (*cloudapipb.GetClusterConnectionInfoResponse, error) {
+func (v *VizierClusterInfo) GetClusterConnectionInfo(ctx context.Context, request *cloudpb.GetClusterConnectionInfoRequest) (*cloudpb.GetClusterConnectionInfoResponse, error) {
 	id := request.ID
 	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
@@ -369,14 +369,14 @@ func (v *VizierClusterInfo) GetClusterConnectionInfo(ctx context.Context, reques
 		return nil, err
 	}
 
-	return &cloudapipb.GetClusterConnectionInfoResponse{
+	return &cloudpb.GetClusterConnectionInfoResponse{
 		IPAddress: ci.IPAddress,
 		Token:     ci.Token,
 	}, nil
 }
 
 // UpdateClusterVizierConfig supports updates of VizierConfig for a cluster
-func (v *VizierClusterInfo) UpdateClusterVizierConfig(ctx context.Context, req *cloudapipb.UpdateClusterVizierConfigRequest) (*cloudapipb.UpdateClusterVizierConfigResponse, error) {
+func (v *VizierClusterInfo) UpdateClusterVizierConfig(ctx context.Context, req *cloudpb.UpdateClusterVizierConfigRequest) (*cloudpb.UpdateClusterVizierConfigResponse, error) {
 	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
@@ -393,11 +393,11 @@ func (v *VizierClusterInfo) UpdateClusterVizierConfig(ctx context.Context, req *
 		return nil, err
 	}
 
-	return &cloudapipb.UpdateClusterVizierConfigResponse{}, nil
+	return &cloudpb.UpdateClusterVizierConfigResponse{}, nil
 }
 
 // UpdateOrInstallCluster updates or installs the given vizier cluster to the specified version.
-func (v *VizierClusterInfo) UpdateOrInstallCluster(ctx context.Context, req *cloudapipb.UpdateOrInstallClusterRequest) (*cloudapipb.UpdateOrInstallClusterResponse, error) {
+func (v *VizierClusterInfo) UpdateOrInstallCluster(ctx context.Context, req *cloudpb.UpdateOrInstallClusterRequest) (*cloudpb.UpdateOrInstallClusterResponse, error) {
 	if req.Version == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "version cannot be empty")
 	}
@@ -428,27 +428,27 @@ func (v *VizierClusterInfo) UpdateOrInstallCluster(ctx context.Context, req *clo
 		return nil, err
 	}
 
-	return &cloudapipb.UpdateOrInstallClusterResponse{
+	return &cloudpb.UpdateOrInstallClusterResponse{
 		UpdateStarted: resp.UpdateStarted,
 	}, nil
 }
 
-func vzStatusToClusterStatus(s cvmsgspb.VizierStatus) cloudapipb.ClusterStatus {
+func vzStatusToClusterStatus(s cvmsgspb.VizierStatus) cloudpb.ClusterStatus {
 	switch s {
 	case cvmsgspb.VZ_ST_HEALTHY:
-		return cloudapipb.CS_HEALTHY
+		return cloudpb.CS_HEALTHY
 	case cvmsgspb.VZ_ST_UNHEALTHY:
-		return cloudapipb.CS_UNHEALTHY
+		return cloudpb.CS_UNHEALTHY
 	case cvmsgspb.VZ_ST_DISCONNECTED:
-		return cloudapipb.CS_DISCONNECTED
+		return cloudpb.CS_DISCONNECTED
 	case cvmsgspb.VZ_ST_UPDATING:
-		return cloudapipb.CS_UPDATING
+		return cloudpb.CS_UPDATING
 	case cvmsgspb.VZ_ST_CONNECTED:
-		return cloudapipb.CS_CONNECTED
+		return cloudpb.CS_CONNECTED
 	case cvmsgspb.VZ_ST_UPDATE_FAILED:
-		return cloudapipb.CS_UPDATE_FAILED
+		return cloudpb.CS_UPDATE_FAILED
 	default:
-		return cloudapipb.CS_UNKNOWN
+		return cloudpb.CS_UNKNOWN
 	}
 }
 
@@ -457,8 +457,8 @@ type VizierDeploymentKeyServer struct {
 	VzDeploymentKey vzmgrpb.VZDeploymentKeyServiceClient
 }
 
-func deployKeyToCloudAPI(key *vzmgrpb.DeploymentKey) *cloudapipb.DeploymentKey {
-	return &cloudapipb.DeploymentKey{
+func deployKeyToCloudAPI(key *vzmgrpb.DeploymentKey) *cloudpb.DeploymentKey {
+	return &cloudpb.DeploymentKey{
 		ID:        key.ID,
 		Key:       key.Key,
 		CreatedAt: key.CreatedAt,
@@ -467,7 +467,7 @@ func deployKeyToCloudAPI(key *vzmgrpb.DeploymentKey) *cloudapipb.DeploymentKey {
 }
 
 // Create creates a new deploy key in vzmgr.
-func (v *VizierDeploymentKeyServer) Create(ctx context.Context, req *cloudapipb.CreateDeploymentKeyRequest) (*cloudapipb.DeploymentKey, error) {
+func (v *VizierDeploymentKeyServer) Create(ctx context.Context, req *cloudpb.CreateDeploymentKeyRequest) (*cloudpb.DeploymentKey, error) {
 	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
@@ -481,7 +481,7 @@ func (v *VizierDeploymentKeyServer) Create(ctx context.Context, req *cloudapipb.
 }
 
 // List lists all of the deploy keys in vzmgr.
-func (v *VizierDeploymentKeyServer) List(ctx context.Context, req *cloudapipb.ListDeploymentKeyRequest) (*cloudapipb.ListDeploymentKeyResponse, error) {
+func (v *VizierDeploymentKeyServer) List(ctx context.Context, req *cloudpb.ListDeploymentKeyRequest) (*cloudpb.ListDeploymentKeyResponse, error) {
 	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
@@ -491,17 +491,17 @@ func (v *VizierDeploymentKeyServer) List(ctx context.Context, req *cloudapipb.Li
 	if err != nil {
 		return nil, err
 	}
-	var keys []*cloudapipb.DeploymentKey
+	var keys []*cloudpb.DeploymentKey
 	for _, key := range resp.Keys {
 		keys = append(keys, deployKeyToCloudAPI(key))
 	}
-	return &cloudapipb.ListDeploymentKeyResponse{
+	return &cloudpb.ListDeploymentKeyResponse{
 		Keys: keys,
 	}, nil
 }
 
 // Get fetches a specific deploy key in vzmgr.
-func (v *VizierDeploymentKeyServer) Get(ctx context.Context, req *cloudapipb.GetDeploymentKeyRequest) (*cloudapipb.GetDeploymentKeyResponse, error) {
+func (v *VizierDeploymentKeyServer) Get(ctx context.Context, req *cloudpb.GetDeploymentKeyRequest) (*cloudpb.GetDeploymentKeyResponse, error) {
 	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
@@ -513,7 +513,7 @@ func (v *VizierDeploymentKeyServer) Get(ctx context.Context, req *cloudapipb.Get
 	if err != nil {
 		return nil, err
 	}
-	return &cloudapipb.GetDeploymentKeyResponse{
+	return &cloudpb.GetDeploymentKeyResponse{
 		Key: deployKeyToCloudAPI(resp.Key),
 	}, nil
 }
@@ -532,8 +532,8 @@ type APIKeyServer struct {
 	APIKeyClient authpb.APIKeyServiceClient
 }
 
-func apiKeyToCloudAPI(key *authpb.APIKey) *cloudapipb.APIKey {
-	return &cloudapipb.APIKey{
+func apiKeyToCloudAPI(key *authpb.APIKey) *cloudpb.APIKey {
+	return &cloudpb.APIKey{
 		ID:        key.ID,
 		Key:       key.Key,
 		CreatedAt: key.CreatedAt,
@@ -542,7 +542,7 @@ func apiKeyToCloudAPI(key *authpb.APIKey) *cloudapipb.APIKey {
 }
 
 // Create creates a new API key.
-func (v *APIKeyServer) Create(ctx context.Context, req *cloudapipb.CreateAPIKeyRequest) (*cloudapipb.APIKey, error) {
+func (v *APIKeyServer) Create(ctx context.Context, req *cloudpb.CreateAPIKeyRequest) (*cloudpb.APIKey, error) {
 	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
@@ -556,7 +556,7 @@ func (v *APIKeyServer) Create(ctx context.Context, req *cloudapipb.CreateAPIKeyR
 }
 
 // List lists all of the API keys in vzmgr.
-func (v *APIKeyServer) List(ctx context.Context, req *cloudapipb.ListAPIKeyRequest) (*cloudapipb.ListAPIKeyResponse, error) {
+func (v *APIKeyServer) List(ctx context.Context, req *cloudpb.ListAPIKeyRequest) (*cloudpb.ListAPIKeyResponse, error) {
 	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
@@ -566,17 +566,17 @@ func (v *APIKeyServer) List(ctx context.Context, req *cloudapipb.ListAPIKeyReque
 	if err != nil {
 		return nil, err
 	}
-	var keys []*cloudapipb.APIKey
+	var keys []*cloudpb.APIKey
 	for _, key := range resp.Keys {
 		keys = append(keys, apiKeyToCloudAPI(key))
 	}
-	return &cloudapipb.ListAPIKeyResponse{
+	return &cloudpb.ListAPIKeyResponse{
 		Keys: keys,
 	}, nil
 }
 
 // Get fetches a specific API key.
-func (v *APIKeyServer) Get(ctx context.Context, req *cloudapipb.GetAPIKeyRequest) (*cloudapipb.GetAPIKeyResponse, error) {
+func (v *APIKeyServer) Get(ctx context.Context, req *cloudpb.GetAPIKeyRequest) (*cloudpb.GetAPIKeyResponse, error) {
 	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
@@ -588,7 +588,7 @@ func (v *APIKeyServer) Get(ctx context.Context, req *cloudapipb.GetAPIKeyRequest
 	if err != nil {
 		return nil, err
 	}
-	return &cloudapipb.GetAPIKeyResponse{
+	return &cloudpb.GetAPIKeyResponse{
 		Key: apiKeyToCloudAPI(resp.Key),
 	}, nil
 }
@@ -608,7 +608,7 @@ type AutocompleteServer struct {
 }
 
 // Autocomplete returns a formatted string and autocomplete suggestions.
-func (a *AutocompleteServer) Autocomplete(ctx context.Context, req *cloudapipb.AutocompleteRequest) (*cloudapipb.AutocompleteResponse, error) {
+func (a *AutocompleteServer) Autocomplete(ctx context.Context, req *cloudpb.AutocompleteRequest) (*cloudpb.AutocompleteResponse, error) {
 	sCtx, err := authcontext.FromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -624,7 +624,7 @@ func (a *AutocompleteServer) Autocomplete(ctx context.Context, req *cloudapipb.A
 		return nil, err
 	}
 
-	return &cloudapipb.AutocompleteResponse{
+	return &cloudpb.AutocompleteResponse{
 		FormattedInput: fmtString,
 		IsExecutable:   executable,
 		TabSuggestions: suggestions,
@@ -632,7 +632,7 @@ func (a *AutocompleteServer) Autocomplete(ctx context.Context, req *cloudapipb.A
 }
 
 // AutocompleteField returns suggestions for a single field.
-func (a *AutocompleteServer) AutocompleteField(ctx context.Context, req *cloudapipb.AutocompleteFieldRequest) (*cloudapipb.AutocompleteFieldResponse, error) {
+func (a *AutocompleteServer) AutocompleteField(ctx context.Context, req *cloudpb.AutocompleteFieldRequest) (*cloudpb.AutocompleteFieldResponse, error) {
 	sCtx, err := authcontext.FromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -643,7 +643,7 @@ func (a *AutocompleteServer) AutocompleteField(ctx context.Context, req *cloudap
 		return nil, err
 	}
 
-	allowedArgs := []cloudapipb.AutocompleteEntityKind{}
+	allowedArgs := []cloudpb.AutocompleteEntityKind{}
 	if req.RequiredArgTypes != nil {
 		allowedArgs = req.RequiredArgTypes
 	}
@@ -652,7 +652,7 @@ func (a *AutocompleteServer) AutocompleteField(ctx context.Context, req *cloudap
 		{
 			OrgID:        orgID,
 			Input:        req.Input,
-			AllowedKinds: []cloudapipb.AutocompleteEntityKind{req.FieldType},
+			AllowedKinds: []cloudpb.AutocompleteEntityKind{req.FieldType},
 			AllowedArgs:  allowedArgs,
 			ClusterUID:   req.ClusterUID,
 		},
@@ -665,9 +665,9 @@ func (a *AutocompleteServer) AutocompleteField(ctx context.Context, req *cloudap
 		return nil, status.Error(codes.Internal, "failed to get autocomplete suggestions")
 	}
 
-	acSugg := make([]*cloudapipb.AutocompleteSuggestion, len(suggestions[0].Suggestions))
+	acSugg := make([]*cloudpb.AutocompleteSuggestion, len(suggestions[0].Suggestions))
 	for j, s := range suggestions[0].Suggestions {
-		acSugg[j] = &cloudapipb.AutocompleteSuggestion{
+		acSugg[j] = &cloudpb.AutocompleteSuggestion{
 			Kind:           s.Kind,
 			Name:           s.Name,
 			Description:    s.Desc,
@@ -676,7 +676,7 @@ func (a *AutocompleteServer) AutocompleteField(ctx context.Context, req *cloudap
 		}
 	}
 
-	return &cloudapipb.AutocompleteFieldResponse{
+	return &cloudpb.AutocompleteFieldResponse{
 		Suggestions: acSugg,
 	}, nil
 }
@@ -687,7 +687,7 @@ type ScriptMgrServer struct {
 }
 
 // GetLiveViews returns a list of all available live views.
-func (s *ScriptMgrServer) GetLiveViews(ctx context.Context, req *cloudapipb.GetLiveViewsReq) (*cloudapipb.GetLiveViewsResp, error) {
+func (s *ScriptMgrServer) GetLiveViews(ctx context.Context, req *cloudpb.GetLiveViewsReq) (*cloudpb.GetLiveViewsResp, error) {
 	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
@@ -697,11 +697,11 @@ func (s *ScriptMgrServer) GetLiveViews(ctx context.Context, req *cloudapipb.GetL
 	if err != nil {
 		return nil, err
 	}
-	resp := &cloudapipb.GetLiveViewsResp{
-		LiveViews: make([]*cloudapipb.LiveViewMetadata, len(smResp.LiveViews)),
+	resp := &cloudpb.GetLiveViewsResp{
+		LiveViews: make([]*cloudpb.LiveViewMetadata, len(smResp.LiveViews)),
 	}
 	for i, liveView := range smResp.LiveViews {
-		resp.LiveViews[i] = &cloudapipb.LiveViewMetadata{
+		resp.LiveViews[i] = &cloudpb.LiveViewMetadata{
 			ID:   utils.UUIDFromProtoOrNil(liveView.ID).String(),
 			Name: liveView.Name,
 			Desc: liveView.Desc,
@@ -711,7 +711,7 @@ func (s *ScriptMgrServer) GetLiveViews(ctx context.Context, req *cloudapipb.GetL
 }
 
 // GetLiveViewContents returns the pxl script, vis info, and metdata for a live view.
-func (s *ScriptMgrServer) GetLiveViewContents(ctx context.Context, req *cloudapipb.GetLiveViewContentsReq) (*cloudapipb.GetLiveViewContentsResp, error) {
+func (s *ScriptMgrServer) GetLiveViewContents(ctx context.Context, req *cloudpb.GetLiveViewContentsReq) (*cloudpb.GetLiveViewContentsResp, error) {
 	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
@@ -725,8 +725,8 @@ func (s *ScriptMgrServer) GetLiveViewContents(ctx context.Context, req *cloudapi
 		return nil, err
 	}
 
-	return &cloudapipb.GetLiveViewContentsResp{
-		Metadata: &cloudapipb.LiveViewMetadata{
+	return &cloudpb.GetLiveViewContentsResp{
+		Metadata: &cloudpb.LiveViewMetadata{
 			ID:   req.LiveViewID,
 			Name: smResp.Metadata.Name,
 			Desc: smResp.Metadata.Desc,
@@ -737,7 +737,7 @@ func (s *ScriptMgrServer) GetLiveViewContents(ctx context.Context, req *cloudapi
 }
 
 // GetScripts returns a list of all available scripts.
-func (s *ScriptMgrServer) GetScripts(ctx context.Context, req *cloudapipb.GetScriptsReq) (*cloudapipb.GetScriptsResp, error) {
+func (s *ScriptMgrServer) GetScripts(ctx context.Context, req *cloudpb.GetScriptsReq) (*cloudpb.GetScriptsResp, error) {
 	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
@@ -748,11 +748,11 @@ func (s *ScriptMgrServer) GetScripts(ctx context.Context, req *cloudapipb.GetScr
 	if err != nil {
 		return nil, err
 	}
-	resp := &cloudapipb.GetScriptsResp{
-		Scripts: make([]*cloudapipb.ScriptMetadata, len(smResp.Scripts)),
+	resp := &cloudpb.GetScriptsResp{
+		Scripts: make([]*cloudpb.ScriptMetadata, len(smResp.Scripts)),
 	}
 	for i, script := range smResp.Scripts {
-		resp.Scripts[i] = &cloudapipb.ScriptMetadata{
+		resp.Scripts[i] = &cloudpb.ScriptMetadata{
 			ID:          utils.UUIDFromProtoOrNil(script.ID).String(),
 			Name:        script.Name,
 			Desc:        script.Desc,
@@ -763,7 +763,7 @@ func (s *ScriptMgrServer) GetScripts(ctx context.Context, req *cloudapipb.GetScr
 }
 
 // GetScriptContents returns the pxl string of the script.
-func (s *ScriptMgrServer) GetScriptContents(ctx context.Context, req *cloudapipb.GetScriptContentsReq) (*cloudapipb.GetScriptContentsResp, error) {
+func (s *ScriptMgrServer) GetScriptContents(ctx context.Context, req *cloudpb.GetScriptContentsReq) (*cloudpb.GetScriptContentsResp, error) {
 	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
@@ -776,8 +776,8 @@ func (s *ScriptMgrServer) GetScriptContents(ctx context.Context, req *cloudapipb
 	if err != nil {
 		return nil, err
 	}
-	return &cloudapipb.GetScriptContentsResp{
-		Metadata: &cloudapipb.ScriptMetadata{
+	return &cloudpb.GetScriptContentsResp{
+		Metadata: &cloudpb.ScriptMetadata{
 			ID:          req.ScriptID,
 			Name:        smResp.Metadata.Name,
 			Desc:        smResp.Metadata.Desc,
@@ -793,7 +793,7 @@ type ProfileServer struct {
 }
 
 // GetOrgInfo gets the org info for a given org ID.
-func (p *ProfileServer) GetOrgInfo(ctx context.Context, req *uuidpb.UUID) (*cloudapipb.OrgInfo, error) {
+func (p *ProfileServer) GetOrgInfo(ctx context.Context, req *uuidpb.UUID) (*cloudpb.OrgInfo, error) {
 	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
@@ -814,14 +814,14 @@ func (p *ProfileServer) GetOrgInfo(ctx context.Context, req *uuidpb.UUID) (*clou
 		return nil, err
 	}
 
-	return &cloudapipb.OrgInfo{
+	return &cloudpb.OrgInfo{
 		ID:      resp.ID,
 		OrgName: resp.OrgName,
 	}, nil
 }
 
 // InviteUser creates and returns an invite link for the org for the specified user info.
-func (p *ProfileServer) InviteUser(ctx context.Context, externalReq *cloudapipb.InviteUserRequest) (*cloudapipb.InviteUserResponse, error) {
+func (p *ProfileServer) InviteUser(ctx context.Context, externalReq *cloudpb.InviteUserRequest) (*cloudpb.InviteUserResponse, error) {
 	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
@@ -849,7 +849,7 @@ func (p *ProfileServer) InviteUser(ctx context.Context, externalReq *cloudapipb.
 		return nil, err
 	}
 
-	return &cloudapipb.InviteUserResponse{
+	return &cloudpb.InviteUserResponse{
 		Email:      resp.Email,
 		InviteLink: resp.InviteLink,
 	}, nil

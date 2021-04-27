@@ -28,7 +28,7 @@ import (
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/gqltesting"
 
-	"px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/cloud/api/controller"
 	"px.dev/pixie/src/cloud/api/controller/schema"
 	"px.dev/pixie/src/cloud/api/controller/testutils"
@@ -56,11 +56,11 @@ func TestClusterInfo(t *testing.T) {
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	clusterInfo := &cloudapipb.ClusterInfo{
+	clusterInfo := &cloudpb.ClusterInfo{
 		ID:              utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
-		Status:          cloudapipb.CS_HEALTHY,
+		Status:          cloudpb.CS_HEALTHY,
 		LastHeartbeatNs: 4 * 1000 * 1000,
-		Config: &cloudapipb.VizierConfig{
+		Config: &cloudpb.VizierConfig{
 			PassthroughEnabled: false,
 		},
 		VizierVersion:  "vzVersion",
@@ -70,11 +70,11 @@ func TestClusterInfo(t *testing.T) {
 	}
 
 	mockClients.MockVizierClusterInfo.EXPECT().
-		GetClusterInfo(gomock.Any(), &cloudapipb.GetClusterInfoRequest{
+		GetClusterInfo(gomock.Any(), &cloudpb.GetClusterInfoRequest{
 			ID: clusterInfo.ID,
 		}).
-		Return(&cloudapipb.GetClusterInfoResponse{
-			Clusters: []*cloudapipb.ClusterInfo{clusterInfo},
+		Return(&cloudpb.GetClusterInfoResponse{
+			Clusters: []*cloudpb.ClusterInfo{clusterInfo},
 		}, nil)
 
 	gqlSchema := LoadSchema(gqlEnv)
@@ -126,10 +126,10 @@ func TestClusterConnectionInfo(t *testing.T) {
 	clusterID := utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
 
 	mockClients.MockVizierClusterInfo.EXPECT().
-		GetClusterConnectionInfo(gomock.Any(), &cloudapipb.GetClusterConnectionInfoRequest{
+		GetClusterConnectionInfo(gomock.Any(), &cloudpb.GetClusterConnectionInfoRequest{
 			ID: clusterID,
 		}).
-		Return(&cloudapipb.GetClusterConnectionInfoResponse{
+		Return(&cloudpb.GetClusterConnectionInfoResponse{
 			IPAddress: "127.0.0.1",
 			Token:     "this-is-a-token",
 		}, nil)
@@ -165,13 +165,13 @@ func TestUpdateClusterVizierConfig(t *testing.T) {
 	ctx := CreateTestContext()
 
 	mockClients.MockVizierClusterInfo.EXPECT().
-		UpdateClusterVizierConfig(gomock.Any(), &cloudapipb.UpdateClusterVizierConfigRequest{
+		UpdateClusterVizierConfig(gomock.Any(), &cloudpb.UpdateClusterVizierConfigRequest{
 			ID: utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
-			ConfigUpdate: &cloudapipb.VizierConfigUpdate{
+			ConfigUpdate: &cloudpb.VizierConfigUpdate{
 				PassthroughEnabled: &types.BoolValue{Value: true},
 			},
 		}).
-		Return(&cloudapipb.UpdateClusterVizierConfigResponse{}, nil)
+		Return(&cloudpb.UpdateClusterVizierConfigResponse{}, nil)
 
 	gqlSchema := LoadSchema(gqlEnv)
 	gqltesting.RunTests(t, []*gqltesting.Test{
@@ -198,11 +198,11 @@ func TestUpdateClusterVizierConfigNoUpdates(t *testing.T) {
 	ctx := CreateTestContext()
 
 	mockClients.MockVizierClusterInfo.EXPECT().
-		UpdateClusterVizierConfig(gomock.Any(), &cloudapipb.UpdateClusterVizierConfigRequest{
+		UpdateClusterVizierConfig(gomock.Any(), &cloudpb.UpdateClusterVizierConfigRequest{
 			ID:           utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
-			ConfigUpdate: &cloudapipb.VizierConfigUpdate{},
+			ConfigUpdate: &cloudpb.VizierConfigUpdate{},
 		}).
-		Return(&cloudapipb.UpdateClusterVizierConfigResponse{}, nil)
+		Return(&cloudpb.UpdateClusterVizierConfigResponse{}, nil)
 
 	gqlSchema := LoadSchema(gqlEnv)
 	gqltesting.RunTests(t, []*gqltesting.Test{
