@@ -49,7 +49,6 @@ import (
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/pbutils"
 	"px.dev/pixie/src/utils/testingutils"
-	pl_api_vizierpb "px.dev/pixie/src/vizier/vizierpb"
 )
 
 const (
@@ -73,7 +72,7 @@ func createTestState(t *testing.T) (*testState, func(t *testing.T)) {
 	nc, natsCleanup := testingutils.MustStartTestNATS(t)
 
 	vizierpb.RegisterVizierServiceServer(s, ptproxy.NewVizierPassThroughProxy(nc, &fakeVzMgr{}))
-	pl_api_vizierpb.RegisterVizierDebugServiceServer(s, ptproxy.NewVizierPassThroughProxy(nc, &fakeVzMgr{}))
+	vizierpb.RegisterVizierDebugServiceServer(s, ptproxy.NewVizierPassThroughProxy(nc, &fakeVzMgr{}))
 
 	eg := errgroup.Group{}
 	eg.Go(func() error { return s.Serve(lis) })
@@ -458,7 +457,7 @@ func TestVizierPassThroughProxy_DebugLog(t *testing.T) {
 	ts, cleanup := createTestState(t)
 	defer cleanup(t)
 
-	client := pl_api_vizierpb.NewVizierDebugServiceClient(ts.conn)
+	client := vizierpb.NewVizierDebugServiceClient(ts.conn)
 	validTestToken := testingutils.GenerateTestJWTToken(t, viper.GetString("jwt_signing_key"))
 
 	testCases := []struct {
@@ -469,7 +468,7 @@ func TestVizierPassThroughProxy_DebugLog(t *testing.T) {
 		respFromVizier []*cvmsgspb.V2CAPIStreamResponse
 
 		expGRPCError     error
-		expGRPCResponses []*pl_api_vizierpb.DebugLogResponse
+		expGRPCResponses []*vizierpb.DebugLogResponse
 	}{
 		{
 			name: "Normal Stream",
@@ -478,15 +477,15 @@ func TestVizierPassThroughProxy_DebugLog(t *testing.T) {
 			authToken: validTestToken,
 			respFromVizier: []*cvmsgspb.V2CAPIStreamResponse{
 				{
-					Msg: &cvmsgspb.V2CAPIStreamResponse_DebugLogResp{DebugLogResp: &pl_api_vizierpb.DebugLogResponse{Data: "test log 1"}},
+					Msg: &cvmsgspb.V2CAPIStreamResponse_DebugLogResp{DebugLogResp: &vizierpb.DebugLogResponse{Data: "test log 1"}},
 				},
 				{
-					Msg: &cvmsgspb.V2CAPIStreamResponse_DebugLogResp{DebugLogResp: &pl_api_vizierpb.DebugLogResponse{Data: "test log 2"}},
+					Msg: &cvmsgspb.V2CAPIStreamResponse_DebugLogResp{DebugLogResp: &vizierpb.DebugLogResponse{Data: "test log 2"}},
 				},
 			},
 
 			expGRPCError: nil,
-			expGRPCResponses: []*pl_api_vizierpb.DebugLogResponse{
+			expGRPCResponses: []*vizierpb.DebugLogResponse{
 				{Data: "test log 1"},
 				{Data: "test log 2"},
 			},
@@ -504,14 +503,14 @@ func TestVizierPassThroughProxy_DebugLog(t *testing.T) {
 			ctx, cancel := context.WithCancel(ctx)
 			defer cancel()
 			resp, err := client.DebugLog(ctx,
-				&pl_api_vizierpb.DebugLogRequest{ClusterID: tc.clusterID})
+				&vizierpb.DebugLogRequest{ClusterID: tc.clusterID})
 			require.NoError(t, err)
 
 			fv := newFakeVizier(t, uuid.FromStringOrNil(tc.clusterID), ts.nc)
 			fv.Run(t, tc.respFromVizier)
 			defer fv.Stop()
 
-			grpcDataCh := make(chan *pl_api_vizierpb.DebugLogResponse)
+			grpcDataCh := make(chan *vizierpb.DebugLogResponse)
 			var gotReadErr error
 			var eg errgroup.Group
 			eg.Go(func() error {
@@ -531,7 +530,7 @@ func TestVizierPassThroughProxy_DebugLog(t *testing.T) {
 				}
 			})
 
-			responses := make([]*pl_api_vizierpb.DebugLogResponse, 0)
+			responses := make([]*vizierpb.DebugLogResponse, 0)
 			eg.Go(func() error {
 				timeout := time.NewTimer(defaultTimeout)
 				defer timeout.Stop()
@@ -577,7 +576,7 @@ func TestVizierPassThroughProxy_DebugPods(t *testing.T) {
 	ts, cleanup := createTestState(t)
 	defer cleanup(t)
 
-	client := pl_api_vizierpb.NewVizierDebugServiceClient(ts.conn)
+	client := vizierpb.NewVizierDebugServiceClient(ts.conn)
 	validTestToken := testingutils.GenerateTestJWTToken(t, viper.GetString("jwt_signing_key"))
 
 	testCases := []struct {
@@ -588,7 +587,7 @@ func TestVizierPassThroughProxy_DebugPods(t *testing.T) {
 		respFromVizier []*cvmsgspb.V2CAPIStreamResponse
 
 		expGRPCError     error
-		expGRPCResponses []*pl_api_vizierpb.DebugPodsResponse
+		expGRPCResponses []*vizierpb.DebugPodsResponse
 	}{
 		{
 			name: "Normal Stream",
@@ -598,14 +597,14 @@ func TestVizierPassThroughProxy_DebugPods(t *testing.T) {
 			respFromVizier: []*cvmsgspb.V2CAPIStreamResponse{
 				{
 					Msg: &cvmsgspb.V2CAPIStreamResponse_DebugPodsResp{
-						DebugPodsResp: &pl_api_vizierpb.DebugPodsResponse{
-							ControlPlanePods: []*pl_api_vizierpb.VizierPodStatus{
-								&pl_api_vizierpb.VizierPodStatus{
+						DebugPodsResp: &vizierpb.DebugPodsResponse{
+							ControlPlanePods: []*vizierpb.VizierPodStatus{
+								&vizierpb.VizierPodStatus{
 									Name: "one pod",
 								},
 							},
-							DataPlanePods: []*pl_api_vizierpb.VizierPodStatus{
-								&pl_api_vizierpb.VizierPodStatus{
+							DataPlanePods: []*vizierpb.VizierPodStatus{
+								&vizierpb.VizierPodStatus{
 									Name: "another pod",
 								},
 							},
@@ -615,15 +614,15 @@ func TestVizierPassThroughProxy_DebugPods(t *testing.T) {
 			},
 
 			expGRPCError: nil,
-			expGRPCResponses: []*pl_api_vizierpb.DebugPodsResponse{
-				&pl_api_vizierpb.DebugPodsResponse{
-					ControlPlanePods: []*pl_api_vizierpb.VizierPodStatus{
-						&pl_api_vizierpb.VizierPodStatus{
+			expGRPCResponses: []*vizierpb.DebugPodsResponse{
+				&vizierpb.DebugPodsResponse{
+					ControlPlanePods: []*vizierpb.VizierPodStatus{
+						&vizierpb.VizierPodStatus{
 							Name: "one pod",
 						},
 					},
-					DataPlanePods: []*pl_api_vizierpb.VizierPodStatus{
-						&pl_api_vizierpb.VizierPodStatus{
+					DataPlanePods: []*vizierpb.VizierPodStatus{
+						&vizierpb.VizierPodStatus{
 							Name: "another pod",
 						},
 					},
@@ -643,14 +642,14 @@ func TestVizierPassThroughProxy_DebugPods(t *testing.T) {
 			ctx, cancel := context.WithCancel(ctx)
 			defer cancel()
 			resp, err := client.DebugPods(ctx,
-				&pl_api_vizierpb.DebugPodsRequest{ClusterID: tc.clusterID})
+				&vizierpb.DebugPodsRequest{ClusterID: tc.clusterID})
 			assert.Nil(t, err)
 
 			fv := newFakeVizier(t, uuid.FromStringOrNil(tc.clusterID), ts.nc)
 			fv.Run(t, tc.respFromVizier)
 			defer fv.Stop()
 
-			grpcDataCh := make(chan *pl_api_vizierpb.DebugPodsResponse)
+			grpcDataCh := make(chan *vizierpb.DebugPodsResponse)
 			var gotReadErr error
 			var eg errgroup.Group
 			eg.Go(func() error {
@@ -670,7 +669,7 @@ func TestVizierPassThroughProxy_DebugPods(t *testing.T) {
 				}
 			})
 
-			var responses []*pl_api_vizierpb.DebugPodsResponse
+			var responses []*vizierpb.DebugPodsResponse
 			eg.Go(func() error {
 				timeout := time.NewTimer(defaultTimeout)
 				defer timeout.Stop()

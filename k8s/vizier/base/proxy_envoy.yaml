@@ -38,7 +38,7 @@ data:
                       cluster: query_broker_service
                       timeout: 3600s
                   - match:
-                      prefix: "/px.api.internal.vizierpb.VizierDebugService"
+                      prefix: "/px.api.vizierpb.VizierDebugService"
                     route:
                       cluster: cloud_connector_service
                       timeout: 3600s

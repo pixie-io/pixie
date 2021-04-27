@@ -39,7 +39,6 @@ import (
 	"px.dev/pixie/src/pixie_cli/pkg/script"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/utils"
-	pl_api_vizierpb "px.dev/pixie/src/vizier/vizierpb"
 )
 
 const (
@@ -52,7 +51,7 @@ type Connector struct {
 	id                 uuid.UUID
 	conn               *grpc.ClientConn
 	vz                 vizierpb.VizierServiceClient
-	vzDebug            pl_api_vizierpb.VizierDebugServiceClient
+	vzDebug            vizierpb.VizierDebugServiceClient
 	vzToken            string
 	passthroughEnabled bool
 }
@@ -84,7 +83,7 @@ func NewConnector(cloudAddr string, vzInfo *cloudpb.ClusterInfo, conn *Connectio
 	}
 
 	c.vz = vizierpb.NewVizierServiceClient(c.conn)
-	c.vzDebug = pl_api_vizierpb.NewVizierDebugServiceClient(c.conn)
+	c.vzDebug = vizierpb.NewVizierDebugServiceClient(c.conn)
 
 	return c, nil
 }
@@ -273,7 +272,7 @@ type DebugLogResponse struct {
 
 // DebugLogRequest sends a debug log request and returns data in a chan.
 func (c *Connector) DebugLogRequest(ctx context.Context, podName string, prev bool, container string) (chan *DebugLogResponse, error) {
-	reqPB := &pl_api_vizierpb.DebugLogRequest{
+	reqPB := &vizierpb.DebugLogRequest{
 		ClusterID: c.id.String(),
 		PodName:   podName,
 		Previous:  prev,
@@ -326,14 +325,14 @@ func (c *Connector) DebugLogRequest(ctx context.Context, podName string, prev bo
 
 // DebugPodsResponse contains information about debug logs.
 type DebugPodsResponse struct {
-	ControlPlanePods []*pl_api_vizierpb.VizierPodStatus
-	DataPlanePods    []*pl_api_vizierpb.VizierPodStatus
+	ControlPlanePods []*vizierpb.VizierPodStatus
+	DataPlanePods    []*vizierpb.VizierPodStatus
 	Err              error
 }
 
 // DebugPodsRequest sends a debug pods request and returns data in a chan.
 func (c *Connector) DebugPodsRequest(ctx context.Context) (chan *DebugPodsResponse, error) {
-	reqPB := &pl_api_vizierpb.DebugPodsRequest{
+	reqPB := &vizierpb.DebugPodsRequest{
 		ClusterID: c.id.String(),
 	}
 	if c.passthroughEnabled {

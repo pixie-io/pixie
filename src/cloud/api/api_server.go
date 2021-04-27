@@ -48,7 +48,6 @@ import (
 	"px.dev/pixie/src/shared/services/handler"
 	"px.dev/pixie/src/shared/services/healthz"
 	"px.dev/pixie/src/shared/services/server"
-	pl_api_vizierpb "px.dev/pixie/src/vizier/vizierpb"
 )
 
 const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-core.json"
@@ -192,7 +191,7 @@ func main() {
 
 	vpt := ptproxy.NewVizierPassThroughProxy(nc, vc)
 	vizierpb.RegisterVizierServiceServer(s.GRPCServer(), vpt)
-	pl_api_vizierpb.RegisterVizierDebugServiceServer(s.GRPCServer(), vpt)
+	vizierpb.RegisterVizierDebugServiceServer(s.GRPCServer(), vpt)
 
 	sm, err := apienv.NewScriptMgrServiceClient()
 	if err != nil {

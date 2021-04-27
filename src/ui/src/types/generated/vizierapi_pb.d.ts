@@ -760,6 +760,172 @@ export namespace HealthCheckResponse {
   }
 }
 
+export class DebugLogRequest extends jspb.Message {
+  getClusterId(): string;
+  setClusterId(value: string): DebugLogRequest;
+
+  getPodName(): string;
+  setPodName(value: string): DebugLogRequest;
+
+  getPrevious(): boolean;
+  setPrevious(value: boolean): DebugLogRequest;
+
+  getContainer(): string;
+  setContainer(value: string): DebugLogRequest;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): DebugLogRequest.AsObject;
+  static toObject(includeInstance: boolean, msg: DebugLogRequest): DebugLogRequest.AsObject;
+  static serializeBinaryToWriter(message: DebugLogRequest, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): DebugLogRequest;
+  static deserializeBinaryFromReader(message: DebugLogRequest, reader: jspb.BinaryReader): DebugLogRequest;
+}
+
+export namespace DebugLogRequest {
+  export type AsObject = {
+    clusterId: string,
+    podName: string,
+    previous: boolean,
+    container: string,
+  }
+}
+
+export class DebugLogResponse extends jspb.Message {
+  getData(): string;
+  setData(value: string): DebugLogResponse;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): DebugLogResponse.AsObject;
+  static toObject(includeInstance: boolean, msg: DebugLogResponse): DebugLogResponse.AsObject;
+  static serializeBinaryToWriter(message: DebugLogResponse, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): DebugLogResponse;
+  static deserializeBinaryFromReader(message: DebugLogResponse, reader: jspb.BinaryReader): DebugLogResponse;
+}
+
+export namespace DebugLogResponse {
+  export type AsObject = {
+    data: string,
+  }
+}
+
+export class ContainerStatus extends jspb.Message {
+  getName(): string;
+  setName(value: string): ContainerStatus;
+
+  getContainerState(): ContainerState;
+  setContainerState(value: ContainerState): ContainerStatus;
+
+  getMessage(): string;
+  setMessage(value: string): ContainerStatus;
+
+  getReason(): string;
+  setReason(value: string): ContainerStatus;
+
+  getStartTimestampNs(): number;
+  setStartTimestampNs(value: number): ContainerStatus;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): ContainerStatus.AsObject;
+  static toObject(includeInstance: boolean, msg: ContainerStatus): ContainerStatus.AsObject;
+  static serializeBinaryToWriter(message: ContainerStatus, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ContainerStatus;
+  static deserializeBinaryFromReader(message: ContainerStatus, reader: jspb.BinaryReader): ContainerStatus;
+}
+
+export namespace ContainerStatus {
+  export type AsObject = {
+    name: string,
+    containerState: ContainerState,
+    message: string,
+    reason: string,
+    startTimestampNs: number,
+  }
+}
+
+export class VizierPodStatus extends jspb.Message {
+  getName(): string;
+  setName(value: string): VizierPodStatus;
+
+  getPhase(): PodPhase;
+  setPhase(value: PodPhase): VizierPodStatus;
+
+  getMessage(): string;
+  setMessage(value: string): VizierPodStatus;
+
+  getReason(): string;
+  setReason(value: string): VizierPodStatus;
+
+  getCreatedAt(): number;
+  setCreatedAt(value: number): VizierPodStatus;
+
+  getContainerStatusesList(): Array<ContainerStatus>;
+  setContainerStatusesList(value: Array<ContainerStatus>): VizierPodStatus;
+  clearContainerStatusesList(): VizierPodStatus;
+  addContainerStatuses(value?: ContainerStatus, index?: number): ContainerStatus;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): VizierPodStatus.AsObject;
+  static toObject(includeInstance: boolean, msg: VizierPodStatus): VizierPodStatus.AsObject;
+  static serializeBinaryToWriter(message: VizierPodStatus, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): VizierPodStatus;
+  static deserializeBinaryFromReader(message: VizierPodStatus, reader: jspb.BinaryReader): VizierPodStatus;
+}
+
+export namespace VizierPodStatus {
+  export type AsObject = {
+    name: string,
+    phase: PodPhase,
+    message: string,
+    reason: string,
+    createdAt: number,
+    containerStatusesList: Array<ContainerStatus.AsObject>,
+  }
+}
+
+export class DebugPodsRequest extends jspb.Message {
+  getClusterId(): string;
+  setClusterId(value: string): DebugPodsRequest;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): DebugPodsRequest.AsObject;
+  static toObject(includeInstance: boolean, msg: DebugPodsRequest): DebugPodsRequest.AsObject;
+  static serializeBinaryToWriter(message: DebugPodsRequest, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): DebugPodsRequest;
+  static deserializeBinaryFromReader(message: DebugPodsRequest, reader: jspb.BinaryReader): DebugPodsRequest;
+}
+
+export namespace DebugPodsRequest {
+  export type AsObject = {
+    clusterId: string,
+  }
+}
+
+export class DebugPodsResponse extends jspb.Message {
+  getDataPlanePodsList(): Array<VizierPodStatus>;
+  setDataPlanePodsList(value: Array<VizierPodStatus>): DebugPodsResponse;
+  clearDataPlanePodsList(): DebugPodsResponse;
+  addDataPlanePods(value?: VizierPodStatus, index?: number): VizierPodStatus;
+
+  getControlPlanePodsList(): Array<VizierPodStatus>;
+  setControlPlanePodsList(value: Array<VizierPodStatus>): DebugPodsResponse;
+  clearControlPlanePodsList(): DebugPodsResponse;
+  addControlPlanePods(value?: VizierPodStatus, index?: number): VizierPodStatus;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): DebugPodsResponse.AsObject;
+  static toObject(includeInstance: boolean, msg: DebugPodsResponse): DebugPodsResponse.AsObject;
+  static serializeBinaryToWriter(message: DebugPodsResponse, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): DebugPodsResponse;
+  static deserializeBinaryFromReader(message: DebugPodsResponse, reader: jspb.BinaryReader): DebugPodsResponse;
+}
+
+export namespace DebugPodsResponse {
+  export type AsObject = {
+    dataPlanePodsList: Array<VizierPodStatus.AsObject>,
+    controlPlanePodsList: Array<VizierPodStatus.AsObject>,
+  }
+}
+
 export enum DataType { 
   DATA_TYPE_UNKNOWN = 0,
   BOOLEAN = 1,
@@ -805,4 +971,17 @@ export enum LifeCycleState {
   RUNNING_STATE = 2,
   FAILED_STATE = 3,
   TERMINATED_STATE = 4,
+}
+export enum ContainerState { 
+  CONTAINER_STATE_UNKNOWN = 0,
+  CONTAINER_STATE_RUNNING = 1,
+  CONTAINER_STATE_TERMINATED = 2,
+  CONTAINER_STATE_WAITING = 3,
+}
+export enum PodPhase { 
+  PHASE_UNKNOWN = 0,
+  PENDING = 1,
+  RUNNING = 2,
+  SUCCEEDED = 3,
+  FAILED = 4,
 }

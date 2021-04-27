@@ -30,10 +30,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
 	"px.dev/pixie/src/pixie_cli/pkg/vizier"
-	pl_api_vizierpb "px.dev/pixie/src/vizier/vizierpb"
 )
 
 func init() {
@@ -126,7 +126,7 @@ var DebugLogCmd = &cobra.Command{
 	},
 }
 
-func fetchVizierPods(cloudAddr, selectedCluster, plane string) ([]*pl_api_vizierpb.VizierPodStatus, error) {
+func fetchVizierPods(cloudAddr, selectedCluster, plane string) ([]*vizierpb.VizierPodStatus, error) {
 	clusterID := uuid.FromStringOrNil(selectedCluster)
 	showCtrl := plane == "all" || plane == "control"
 	showData := plane == "all" || plane == "data"
@@ -153,7 +153,7 @@ func fetchVizierPods(cloudAddr, selectedCluster, plane string) ([]*pl_api_vizier
 		return nil, err
 	}
 
-	var results []*pl_api_vizierpb.VizierPodStatus
+	var results []*vizierpb.VizierPodStatus
 
 	for v := range resp {
 		if v != nil {
@@ -188,8 +188,7 @@ var DebugPodsCmd = &cobra.Command{
 		defer w.Finish()
 		w.SetHeader("pods", []string{"Name", "Phase", "Message", "Reason", "Start Time"})
 		for _, pod := range pods {
-			t := time.Unix(pod.Status.CreatedAt.Seconds, int64(pod.Status.CreatedAt.Nanos))
-			_ = w.Write([]interface{}{pod.Name, pod.Status.Phase, pod.Status.Message, pod.Status.Reason, t})
+			_ = w.Write([]interface{}{pod.Name, pod.Phase, pod.Message, pod.Reason, time.Unix(0, pod.CreatedAt)})
 		}
 	},
 }
@@ -211,9 +210,8 @@ var DebugContainersCmd = &cobra.Command{
 		defer w.Finish()
 		w.SetHeader("pods", []string{"Name", "Pod", "State", "Message", "Reason", "Start Time"})
 		for _, pod := range pods {
-			for _, container := range pod.Status.ContainerStatuses {
-				t := time.Unix(0, container.StartTimestampNS)
-				_ = w.Write([]interface{}{container.Name, pod.Name, container.ContainerState, container.Message, container.Reason, t})
+			for _, container := range pod.ContainerStatuses {
+				_ = w.Write([]interface{}{container.Name, pod.Name, container.ContainerState, container.Message, container.Reason, time.Unix(0, container.StartTimestampNS)})
 			}
 		}
 	},

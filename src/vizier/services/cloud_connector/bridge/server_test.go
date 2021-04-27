@@ -38,6 +38,7 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 	batchv1 "k8s.io/api/batch/v1"
 
+	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/cloud/vzconn/vzconnpb"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/k8s/metadatapb"
@@ -45,7 +46,6 @@ import (
 	"px.dev/pixie/src/utils/pbutils"
 	"px.dev/pixie/src/utils/testingutils"
 	"px.dev/pixie/src/vizier/services/cloud_connector/bridge"
-	"px.dev/pixie/src/vizier/vizierpb"
 )
 
 const bufSize = 1024 * 1024

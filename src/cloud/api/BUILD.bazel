@@ -39,7 +39,6 @@ go_library(
         "//src/shared/services/handler",
         "//src/shared/services/healthz",
         "//src/shared/services/server",
-        "//src/vizier/vizierpb:vizier_pl_go_proto",
         "@com_github_gorilla_handlers//:handlers",
         "@com_github_nats_io_nats_go//:nats_go",
         "@com_github_sirupsen_logrus//:logrus",

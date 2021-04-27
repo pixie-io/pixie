@@ -39,7 +39,6 @@ import "google/protobuf/wrappers.proto";
 import "src/api/proto/uuidpb/uuid.proto";
 import "src/api/proto/vizierpb/vizierapi.proto";
 import "src/shared/k8s/metadatapb/metadata.proto";
-import "src/vizier/vizierpb/vizier.proto";
 
 // Message to register a new Vizier.
 message RegisterVizierRequest {
@@ -288,9 +287,10 @@ message C2VAPIStreamRequest {
     px.api.vizierpb.ExecuteScriptRequest exec_req = 3;
     px.api.vizierpb.HealthCheckRequest hc_req = 4;
     C2VAPIStreamCancel cancel_req = 5;
-    px.api.internal.vizierpb.DebugLogRequest debug_log_req = 6;
-    px.api.internal.vizierpb.DebugPodsRequest debug_pods_req = 7;
+    px.api.vizierpb.DebugLogRequest debug_log_req = 8;
+    px.api.vizierpb.DebugPodsRequest debug_pods_req = 9;
   }
+  reserved 6, 7;
 }
 
 // C2VAPIStreamCancel cancels the pending request and terminates.
@@ -303,9 +303,10 @@ message V2CAPIStreamResponse {
     px.api.vizierpb.ExecuteScriptResponse exec_resp = 2;
     px.api.vizierpb.HealthCheckResponse hc_resp = 3;
     px.api.vizierpb.Status status = 4;
-    px.api.internal.vizierpb.DebugLogResponse debug_log_resp = 5;
-    px.api.internal.vizierpb.DebugPodsResponse debug_pods_resp = 6;
+    px.api.vizierpb.DebugLogResponse debug_log_resp = 7;
+    px.api.vizierpb.DebugPodsResponse debug_pods_resp = 8;
   }
+  reserved 5, 6;
 }
 
 // V2CMessage is an envelope message for the top-level v2c.* NATS channel on the cloud side.

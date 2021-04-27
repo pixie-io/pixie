@@ -391,3 +391,73 @@ service VizierService {
   // purposes, users should only need `ExecuteScript()` and can safely ignore this call.
   rpc HealthCheck(HealthCheckRequest) returns (stream HealthCheckResponse);
 }
+
+message DebugLogRequest {
+  // The UUID of the cluster encoded as a string with dashes.
+  string cluster_id = 1 [ (gogoproto.customname) = "ClusterID" ];
+  // The Vizier pod name we want to log.
+  string pod_name = 2;
+  // Return the log for the previous instance instead of the current active one.
+  bool previous = 3;
+  // The name of the container to get logs from. If none is specified and there is only a
+  // single container on the pod, then that one is chosen.
+  string container = 4;
+}
+
+message DebugLogResponse {
+  // A chunk of the log response data.
+  string data = 2;
+}
+
+enum ContainerState {
+  CONTAINER_STATE_UNKNOWN = 0;
+  CONTAINER_STATE_RUNNING = 1;
+  CONTAINER_STATE_TERMINATED = 2;
+  CONTAINER_STATE_WAITING = 3;
+}
+
+message ContainerStatus {
+  string name = 1;
+  ContainerState container_state = 2;
+  string message = 3;
+  string reason = 4;
+  int64 start_timestamp_ns = 5 [ (gogoproto.customname) = "StartTimestampNS" ];
+}
+
+enum PodPhase {
+  PHASE_UNKNOWN = 0;
+  PENDING = 1;
+  RUNNING = 2;
+  SUCCEEDED = 3;
+  FAILED = 4;
+}
+
+message VizierPodStatus {
+  // The name of the pod. Ex: vizier-pem-z26d8
+  string name = 1;
+  PodPhase phase = 2;
+  string message = 3;
+  string reason = 4;
+  int64 created_at = 5;
+  repeated ContainerStatus container_statuses = 6;
+}
+
+message DebugPodsRequest {
+  // The UUID of the cluster encoded as a string with dashes.
+  string cluster_id = 1 [ (gogoproto.customname) = "ClusterID" ];
+}
+
+message DebugPodsResponse {
+  // A list of the Vizier agent pods and their statuses.
+  repeated VizierPodStatus data_plane_pods = 1;
+  // A list of the Vizier control plane pods and their statuses.
+  repeated VizierPodStatus control_plane_pods = 2;
+}
+
+// Service used to run debug commands on Vizier.
+service VizierDebugService {
+  // Get a debug log for a specific vizier pod.
+  rpc DebugLog(DebugLogRequest) returns (stream DebugLogResponse);
+  // Returns a list of Vizier pods and their statuses.
+  rpc DebugPods(DebugPodsRequest) returns (stream DebugPodsResponse);
+}

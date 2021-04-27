@@ -75,3 +75,62 @@ export class VizierServiceClient {
 
 }
 
+export class VizierDebugServiceClient {
+  client_: grpcWeb.AbstractClientBase;
+  hostname_: string;
+  credentials_: null | { [index: string]: string; };
+  options_: null | { [index: string]: any; };
+
+  constructor (hostname: string,
+               credentials?: null | { [index: string]: string; },
+               options?: null | { [index: string]: any; }) {
+    if (!options) options = {};
+    if (!credentials) credentials = {};
+    options['format'] = 'text';
+
+    this.client_ = new grpcWeb.GrpcWebClientBase(options);
+    this.hostname_ = hostname;
+    this.credentials_ = credentials;
+    this.options_ = options;
+  }
+
+  methodInfoDebugLog = new grpcWeb.AbstractClientBase.MethodInfo(
+    src_api_proto_vizierpb_vizierapi_pb.DebugLogResponse,
+    (request: src_api_proto_vizierpb_vizierapi_pb.DebugLogRequest) => {
+      return request.serializeBinary();
+    },
+    src_api_proto_vizierpb_vizierapi_pb.DebugLogResponse.deserializeBinary
+  );
+
+  debugLog(
+    request: src_api_proto_vizierpb_vizierapi_pb.DebugLogRequest,
+    metadata?: grpcWeb.Metadata) {
+    return this.client_.serverStreaming(
+      this.hostname_ +
+        '/px.api.vizierpb.VizierDebugService/DebugLog',
+      request,
+      metadata || {},
+      this.methodInfoDebugLog);
+  }
+
+  methodInfoDebugPods = new grpcWeb.AbstractClientBase.MethodInfo(
+    src_api_proto_vizierpb_vizierapi_pb.DebugPodsResponse,
+    (request: src_api_proto_vizierpb_vizierapi_pb.DebugPodsRequest) => {
+      return request.serializeBinary();
+    },
+    src_api_proto_vizierpb_vizierapi_pb.DebugPodsResponse.deserializeBinary
+  );
+
+  debugPods(
+    request: src_api_proto_vizierpb_vizierapi_pb.DebugPodsRequest,
+    metadata?: grpcWeb.Metadata) {
+    return this.client_.serverStreaming(
+      this.hostname_ +
+        '/px.api.vizierpb.VizierDebugService/DebugPods',
+      request,
+      metadata || {},
+      this.methodInfoDebugPods);
+  }
+
+}
+

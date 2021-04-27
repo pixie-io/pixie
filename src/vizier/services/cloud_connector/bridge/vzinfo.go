@@ -41,11 +41,11 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
+	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	version "px.dev/pixie/src/shared/goversion"
 	protoutils "px.dev/pixie/src/shared/k8s"
 	"px.dev/pixie/src/shared/k8s/metadatapb"
-	"px.dev/pixie/src/vizier/vizierpb"
 )
 
 const k8sStateUpdatePeriod = 10 * time.Second
@@ -226,71 +226,65 @@ func (v *K8sVizierInfo) GetVizierPodLogs(podName string, previous bool, containe
 	return string(rawResp), nil
 }
 
+func convertPodPhase(p metadatapb.PodPhase) vizierpb.PodPhase {
+	switch p {
+	case metadatapb.PENDING:
+		return vizierpb.PENDING
+	case metadatapb.RUNNING:
+		return vizierpb.RUNNING
+	case metadatapb.SUCCEEDED:
+		return vizierpb.SUCCEEDED
+	case metadatapb.FAILED:
+		return vizierpb.FAILED
+	case metadatapb.PHASE_UNKNOWN:
+		return vizierpb.PHASE_UNKNOWN
+	default:
+		return vizierpb.PHASE_UNKNOWN
+	}
+}
+
+func convertContainerState(p metadatapb.ContainerState) vizierpb.ContainerState {
+	switch p {
+	case metadatapb.CONTAINER_STATE_RUNNING:
+		return vizierpb.CONTAINER_STATE_RUNNING
+	case metadatapb.CONTAINER_STATE_TERMINATED:
+		return vizierpb.CONTAINER_STATE_TERMINATED
+	case metadatapb.CONTAINER_STATE_WAITING:
+		return vizierpb.CONTAINER_STATE_WAITING
+	case metadatapb.CONTAINER_STATE_UNKNOWN:
+		return vizierpb.CONTAINER_STATE_UNKNOWN
+	default:
+		return vizierpb.CONTAINER_STATE_UNKNOWN
+	}
+}
+
 func (v *K8sVizierInfo) toVizierPodStatus(p *corev1.Pod) (*vizierpb.VizierPodStatus, error) {
 	podPb, err := protoutils.PodToProto(p)
 	if err != nil {
 		return nil, err
 	}
 
-	status := metadatapb.PHASE_UNKNOWN
-	msg := ""
-	reason := ""
-	containers := make([]*metadatapb.ContainerStatus, 0)
+	podStatus := &vizierpb.VizierPodStatus{
+		Name:      podPb.Metadata.Name,
+		CreatedAt: podPb.Metadata.CreationTimestampNS,
+	}
+
 	if podPb.Status != nil {
-		status = podPb.Status.Phase
-		msg = podPb.Status.Message
-		reason = podPb.Status.Reason
+		podStatus.Phase = convertPodPhase(podPb.Status.Phase)
+		podStatus.Message = podPb.Status.Message
+		podStatus.Reason = podPb.Status.Reason
 		for _, c := range podPb.Status.ContainerStatuses {
-			containers = append(containers, &metadatapb.ContainerStatus{
+			podStatus.ContainerStatuses = append(podStatus.ContainerStatuses, &vizierpb.ContainerStatus{
 				Name:             c.Name,
 				Message:          c.Message,
 				Reason:           c.Reason,
-				ContainerState:   c.ContainerState,
+				ContainerState:   convertContainerState(c.ContainerState),
 				StartTimestampNS: c.StartTimestampNS,
-				StopTimestampNS:  c.StopTimestampNS,
 			})
 		}
 	}
-	name := podPb.Metadata.Name
-	ns := v.ns
-	events := make([]*metadatapb.K8SEvent, 0)
 
-	eventsInterface := v.clientset.CoreV1().Events(v.ns)
-	selector := eventsInterface.GetFieldSelector(&name, &ns, nil, nil)
-	options := metav1.ListOptions{FieldSelector: selector.String()}
-	evs, err := eventsInterface.List(context.Background(), options)
-	if err != nil {
-		return nil, err
-	}
-
-	// Limit to last 5 events.
-	start := len(evs.Items) - 5
-	if start < 0 {
-		start = 0
-	}
-	end := len(evs.Items)
-
-	for start < end {
-		e := evs.Items[start]
-		events = append(events, &metadatapb.K8SEvent{
-			Message:   e.Message,
-			FirstTime: nanosToTimestampProto(e.FirstTimestamp.UnixNano()),
-			LastTime:  nanosToTimestampProto(e.LastTimestamp.UnixNano()),
-		})
-		start++
-	}
-
-	return &vizierpb.VizierPodStatus{
-		Name: name,
-		Status: &metadatapb.PodStatus{
-			Phase:             status,
-			Message:           msg,
-			Reason:            reason,
-			ContainerStatuses: containers,
-			CreatedAt:         nanosToTimestampProto(podPb.Metadata.CreationTimestampNS),
-			Events:            events,
-		},
-	}, nil
+	return podStatus, nil
 }
 
 // GetVizierPods gets the Vizier pods and their statuses.

@@ -923,3 +923,601 @@ func (mr *MockVizierService_HealthCheckServerMockRecorder) SetTrailer(arg0 inter
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTrailer", reflect.TypeOf((*MockVizierService_HealthCheckServer)(nil).SetTrailer), arg0)
 }
+
+// MockVizierDebugServiceClient is a mock of VizierDebugServiceClient interface.
+type MockVizierDebugServiceClient struct {
+	ctrl     *gomock.Controller
+	recorder *MockVizierDebugServiceClientMockRecorder
+}
+
+// MockVizierDebugServiceClientMockRecorder is the mock recorder for MockVizierDebugServiceClient.
+type MockVizierDebugServiceClientMockRecorder struct {
+	mock *MockVizierDebugServiceClient
+}
+
+// NewMockVizierDebugServiceClient creates a new mock instance.
+func NewMockVizierDebugServiceClient(ctrl *gomock.Controller) *MockVizierDebugServiceClient {
+	mock := &MockVizierDebugServiceClient{ctrl: ctrl}
+	mock.recorder = &MockVizierDebugServiceClientMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockVizierDebugServiceClient) EXPECT() *MockVizierDebugServiceClientMockRecorder {
+	return m.recorder
+}
+
+// DebugLog mocks base method.
+func (m *MockVizierDebugServiceClient) DebugLog(ctx context.Context, in *vizierpb.DebugLogRequest, opts ...grpc.CallOption) (vizierpb.VizierDebugService_DebugLogClient, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DebugLog", varargs...)
+	ret0, _ := ret[0].(vizierpb.VizierDebugService_DebugLogClient)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DebugLog indicates an expected call of DebugLog.
+func (mr *MockVizierDebugServiceClientMockRecorder) DebugLog(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DebugLog", reflect.TypeOf((*MockVizierDebugServiceClient)(nil).DebugLog), varargs...)
+}
+
+// DebugPods mocks base method.
+func (m *MockVizierDebugServiceClient) DebugPods(ctx context.Context, in *vizierpb.DebugPodsRequest, opts ...grpc.CallOption) (vizierpb.VizierDebugService_DebugPodsClient, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "DebugPods", varargs...)
+	ret0, _ := ret[0].(vizierpb.VizierDebugService_DebugPodsClient)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DebugPods indicates an expected call of DebugPods.
+func (mr *MockVizierDebugServiceClientMockRecorder) DebugPods(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DebugPods", reflect.TypeOf((*MockVizierDebugServiceClient)(nil).DebugPods), varargs...)
+}
+
+// MockVizierDebugService_DebugLogClient is a mock of VizierDebugService_DebugLogClient interface.
+type MockVizierDebugService_DebugLogClient struct {
+	ctrl     *gomock.Controller
+	recorder *MockVizierDebugService_DebugLogClientMockRecorder
+}
+
+// MockVizierDebugService_DebugLogClientMockRecorder is the mock recorder for MockVizierDebugService_DebugLogClient.
+type MockVizierDebugService_DebugLogClientMockRecorder struct {
+	mock *MockVizierDebugService_DebugLogClient
+}
+
+// NewMockVizierDebugService_DebugLogClient creates a new mock instance.
+func NewMockVizierDebugService_DebugLogClient(ctrl *gomock.Controller) *MockVizierDebugService_DebugLogClient {
+	mock := &MockVizierDebugService_DebugLogClient{ctrl: ctrl}
+	mock.recorder = &MockVizierDebugService_DebugLogClientMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockVizierDebugService_DebugLogClient) EXPECT() *MockVizierDebugService_DebugLogClientMockRecorder {
+	return m.recorder
+}
+
+// CloseSend mocks base method.
+func (m *MockVizierDebugService_DebugLogClient) CloseSend() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CloseSend")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CloseSend indicates an expected call of CloseSend.
+func (mr *MockVizierDebugService_DebugLogClientMockRecorder) CloseSend() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloseSend", reflect.TypeOf((*MockVizierDebugService_DebugLogClient)(nil).CloseSend))
+}
+
+// Context mocks base method.
+func (m *MockVizierDebugService_DebugLogClient) Context() context.Context {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Context")
+	ret0, _ := ret[0].(context.Context)
+	return ret0
+}
+
+// Context indicates an expected call of Context.
+func (mr *MockVizierDebugService_DebugLogClientMockRecorder) Context() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockVizierDebugService_DebugLogClient)(nil).Context))
+}
+
+// Header mocks base method.
+func (m *MockVizierDebugService_DebugLogClient) Header() (metadata.MD, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Header")
+	ret0, _ := ret[0].(metadata.MD)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Header indicates an expected call of Header.
+func (mr *MockVizierDebugService_DebugLogClientMockRecorder) Header() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Header", reflect.TypeOf((*MockVizierDebugService_DebugLogClient)(nil).Header))
+}
+
+// Recv mocks base method.
+func (m *MockVizierDebugService_DebugLogClient) Recv() (*vizierpb.DebugLogResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Recv")
+	ret0, _ := ret[0].(*vizierpb.DebugLogResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Recv indicates an expected call of Recv.
+func (mr *MockVizierDebugService_DebugLogClientMockRecorder) Recv() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Recv", reflect.TypeOf((*MockVizierDebugService_DebugLogClient)(nil).Recv))
+}
+
+// RecvMsg mocks base method.
+func (m_2 *MockVizierDebugService_DebugLogClient) RecvMsg(m interface{}) error {
+	m_2.ctrl.T.Helper()
+	ret := m_2.ctrl.Call(m_2, "RecvMsg", m)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RecvMsg indicates an expected call of RecvMsg.
+func (mr *MockVizierDebugService_DebugLogClientMockRecorder) RecvMsg(m interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockVizierDebugService_DebugLogClient)(nil).RecvMsg), m)
+}
+
+// SendMsg mocks base method.
+func (m_2 *MockVizierDebugService_DebugLogClient) SendMsg(m interface{}) error {
+	m_2.ctrl.T.Helper()
+	ret := m_2.ctrl.Call(m_2, "SendMsg", m)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendMsg indicates an expected call of SendMsg.
+func (mr *MockVizierDebugService_DebugLogClientMockRecorder) SendMsg(m interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockVizierDebugService_DebugLogClient)(nil).SendMsg), m)
+}
+
+// Trailer mocks base method.
+func (m *MockVizierDebugService_DebugLogClient) Trailer() metadata.MD {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Trailer")
+	ret0, _ := ret[0].(metadata.MD)
+	return ret0
+}
+
+// Trailer indicates an expected call of Trailer.
+func (mr *MockVizierDebugService_DebugLogClientMockRecorder) Trailer() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Trailer", reflect.TypeOf((*MockVizierDebugService_DebugLogClient)(nil).Trailer))
+}
+
+// MockVizierDebugService_DebugPodsClient is a mock of VizierDebugService_DebugPodsClient interface.
+type MockVizierDebugService_DebugPodsClient struct {
+	ctrl     *gomock.Controller
+	recorder *MockVizierDebugService_DebugPodsClientMockRecorder
+}
+
+// MockVizierDebugService_DebugPodsClientMockRecorder is the mock recorder for MockVizierDebugService_DebugPodsClient.
+type MockVizierDebugService_DebugPodsClientMockRecorder struct {
+	mock *MockVizierDebugService_DebugPodsClient
+}
+
+// NewMockVizierDebugService_DebugPodsClient creates a new mock instance.
+func NewMockVizierDebugService_DebugPodsClient(ctrl *gomock.Controller) *MockVizierDebugService_DebugPodsClient {
+	mock := &MockVizierDebugService_DebugPodsClient{ctrl: ctrl}
+	mock.recorder = &MockVizierDebugService_DebugPodsClientMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockVizierDebugService_DebugPodsClient) EXPECT() *MockVizierDebugService_DebugPodsClientMockRecorder {
+	return m.recorder
+}
+
+// CloseSend mocks base method.
+func (m *MockVizierDebugService_DebugPodsClient) CloseSend() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CloseSend")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CloseSend indicates an expected call of CloseSend.
+func (mr *MockVizierDebugService_DebugPodsClientMockRecorder) CloseSend() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloseSend", reflect.TypeOf((*MockVizierDebugService_DebugPodsClient)(nil).CloseSend))
+}
+
+// Context mocks base method.
+func (m *MockVizierDebugService_DebugPodsClient) Context() context.Context {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Context")
+	ret0, _ := ret[0].(context.Context)
+	return ret0
+}
+
+// Context indicates an expected call of Context.
+func (mr *MockVizierDebugService_DebugPodsClientMockRecorder) Context() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockVizierDebugService_DebugPodsClient)(nil).Context))
+}
+
+// Header mocks base method.
+func (m *MockVizierDebugService_DebugPodsClient) Header() (metadata.MD, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Header")
+	ret0, _ := ret[0].(metadata.MD)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Header indicates an expected call of Header.
+func (mr *MockVizierDebugService_DebugPodsClientMockRecorder) Header() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Header", reflect.TypeOf((*MockVizierDebugService_DebugPodsClient)(nil).Header))
+}
+
+// Recv mocks base method.
+func (m *MockVizierDebugService_DebugPodsClient) Recv() (*vizierpb.DebugPodsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Recv")
+	ret0, _ := ret[0].(*vizierpb.DebugPodsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Recv indicates an expected call of Recv.
+func (mr *MockVizierDebugService_DebugPodsClientMockRecorder) Recv() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Recv", reflect.TypeOf((*MockVizierDebugService_DebugPodsClient)(nil).Recv))
+}
+
+// RecvMsg mocks base method.
+func (m_2 *MockVizierDebugService_DebugPodsClient) RecvMsg(m interface{}) error {
+	m_2.ctrl.T.Helper()
+	ret := m_2.ctrl.Call(m_2, "RecvMsg", m)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RecvMsg indicates an expected call of RecvMsg.
+func (mr *MockVizierDebugService_DebugPodsClientMockRecorder) RecvMsg(m interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockVizierDebugService_DebugPodsClient)(nil).RecvMsg), m)
+}
+
+// SendMsg mocks base method.
+func (m_2 *MockVizierDebugService_DebugPodsClient) SendMsg(m interface{}) error {
+	m_2.ctrl.T.Helper()
+	ret := m_2.ctrl.Call(m_2, "SendMsg", m)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendMsg indicates an expected call of SendMsg.
+func (mr *MockVizierDebugService_DebugPodsClientMockRecorder) SendMsg(m interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockVizierDebugService_DebugPodsClient)(nil).SendMsg), m)
+}
+
+// Trailer mocks base method.
+func (m *MockVizierDebugService_DebugPodsClient) Trailer() metadata.MD {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Trailer")
+	ret0, _ := ret[0].(metadata.MD)
+	return ret0
+}
+
+// Trailer indicates an expected call of Trailer.
+func (mr *MockVizierDebugService_DebugPodsClientMockRecorder) Trailer() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Trailer", reflect.TypeOf((*MockVizierDebugService_DebugPodsClient)(nil).Trailer))
+}
+
+// MockVizierDebugServiceServer is a mock of VizierDebugServiceServer interface.
+type MockVizierDebugServiceServer struct {
+	ctrl     *gomock.Controller
+	recorder *MockVizierDebugServiceServerMockRecorder
+}
+
+// MockVizierDebugServiceServerMockRecorder is the mock recorder for MockVizierDebugServiceServer.
+type MockVizierDebugServiceServerMockRecorder struct {
+	mock *MockVizierDebugServiceServer
+}
+
+// NewMockVizierDebugServiceServer creates a new mock instance.
+func NewMockVizierDebugServiceServer(ctrl *gomock.Controller) *MockVizierDebugServiceServer {
+	mock := &MockVizierDebugServiceServer{ctrl: ctrl}
+	mock.recorder = &MockVizierDebugServiceServerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockVizierDebugServiceServer) EXPECT() *MockVizierDebugServiceServerMockRecorder {
+	return m.recorder
+}
+
+// DebugLog mocks base method.
+func (m *MockVizierDebugServiceServer) DebugLog(arg0 *vizierpb.DebugLogRequest, arg1 vizierpb.VizierDebugService_DebugLogServer) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DebugLog", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DebugLog indicates an expected call of DebugLog.
+func (mr *MockVizierDebugServiceServerMockRecorder) DebugLog(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DebugLog", reflect.TypeOf((*MockVizierDebugServiceServer)(nil).DebugLog), arg0, arg1)
+}
+
+// DebugPods mocks base method.
+func (m *MockVizierDebugServiceServer) DebugPods(arg0 *vizierpb.DebugPodsRequest, arg1 vizierpb.VizierDebugService_DebugPodsServer) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DebugPods", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DebugPods indicates an expected call of DebugPods.
+func (mr *MockVizierDebugServiceServerMockRecorder) DebugPods(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DebugPods", reflect.TypeOf((*MockVizierDebugServiceServer)(nil).DebugPods), arg0, arg1)
+}
+
+// MockVizierDebugService_DebugLogServer is a mock of VizierDebugService_DebugLogServer interface.
+type MockVizierDebugService_DebugLogServer struct {
+	ctrl     *gomock.Controller
+	recorder *MockVizierDebugService_DebugLogServerMockRecorder
+}
+
+// MockVizierDebugService_DebugLogServerMockRecorder is the mock recorder for MockVizierDebugService_DebugLogServer.
+type MockVizierDebugService_DebugLogServerMockRecorder struct {
+	mock *MockVizierDebugService_DebugLogServer
+}
+
+// NewMockVizierDebugService_DebugLogServer creates a new mock instance.
+func NewMockVizierDebugService_DebugLogServer(ctrl *gomock.Controller) *MockVizierDebugService_DebugLogServer {
+	mock := &MockVizierDebugService_DebugLogServer{ctrl: ctrl}
+	mock.recorder = &MockVizierDebugService_DebugLogServerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockVizierDebugService_DebugLogServer) EXPECT() *MockVizierDebugService_DebugLogServerMockRecorder {
+	return m.recorder
+}
+
+// Context mocks base method.
+func (m *MockVizierDebugService_DebugLogServer) Context() context.Context {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Context")
+	ret0, _ := ret[0].(context.Context)
+	return ret0
+}
+
+// Context indicates an expected call of Context.
+func (mr *MockVizierDebugService_DebugLogServerMockRecorder) Context() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockVizierDebugService_DebugLogServer)(nil).Context))
+}
+
+// RecvMsg mocks base method.
+func (m_2 *MockVizierDebugService_DebugLogServer) RecvMsg(m interface{}) error {
+	m_2.ctrl.T.Helper()
+	ret := m_2.ctrl.Call(m_2, "RecvMsg", m)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RecvMsg indicates an expected call of RecvMsg.
+func (mr *MockVizierDebugService_DebugLogServerMockRecorder) RecvMsg(m interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockVizierDebugService_DebugLogServer)(nil).RecvMsg), m)
+}
+
+// Send mocks base method.
+func (m *MockVizierDebugService_DebugLogServer) Send(arg0 *vizierpb.DebugLogResponse) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Send", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Send indicates an expected call of Send.
+func (mr *MockVizierDebugService_DebugLogServerMockRecorder) Send(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockVizierDebugService_DebugLogServer)(nil).Send), arg0)
+}
+
+// SendHeader mocks base method.
+func (m *MockVizierDebugService_DebugLogServer) SendHeader(arg0 metadata.MD) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SendHeader", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendHeader indicates an expected call of SendHeader.
+func (mr *MockVizierDebugService_DebugLogServerMockRecorder) SendHeader(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendHeader", reflect.TypeOf((*MockVizierDebugService_DebugLogServer)(nil).SendHeader), arg0)
+}
+
+// SendMsg mocks base method.
+func (m_2 *MockVizierDebugService_DebugLogServer) SendMsg(m interface{}) error {
+	m_2.ctrl.T.Helper()
+	ret := m_2.ctrl.Call(m_2, "SendMsg", m)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendMsg indicates an expected call of SendMsg.
+func (mr *MockVizierDebugService_DebugLogServerMockRecorder) SendMsg(m interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockVizierDebugService_DebugLogServer)(nil).SendMsg), m)
+}
+
+// SetHeader mocks base method.
+func (m *MockVizierDebugService_DebugLogServer) SetHeader(arg0 metadata.MD) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetHeader", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetHeader indicates an expected call of SetHeader.
+func (mr *MockVizierDebugService_DebugLogServerMockRecorder) SetHeader(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetHeader", reflect.TypeOf((*MockVizierDebugService_DebugLogServer)(nil).SetHeader), arg0)
+}
+
+// SetTrailer mocks base method.
+func (m *MockVizierDebugService_DebugLogServer) SetTrailer(arg0 metadata.MD) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetTrailer", arg0)
+}
+
+// SetTrailer indicates an expected call of SetTrailer.
+func (mr *MockVizierDebugService_DebugLogServerMockRecorder) SetTrailer(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTrailer", reflect.TypeOf((*MockVizierDebugService_DebugLogServer)(nil).SetTrailer), arg0)
+}
+
+// MockVizierDebugService_DebugPodsServer is a mock of VizierDebugService_DebugPodsServer interface.
+type MockVizierDebugService_DebugPodsServer struct {
+	ctrl     *gomock.Controller
+	recorder *MockVizierDebugService_DebugPodsServerMockRecorder
+}
+
+// MockVizierDebugService_DebugPodsServerMockRecorder is the mock recorder for MockVizierDebugService_DebugPodsServer.
+type MockVizierDebugService_DebugPodsServerMockRecorder struct {
+	mock *MockVizierDebugService_DebugPodsServer
+}
+
+// NewMockVizierDebugService_DebugPodsServer creates a new mock instance.
+func NewMockVizierDebugService_DebugPodsServer(ctrl *gomock.Controller) *MockVizierDebugService_DebugPodsServer {
+	mock := &MockVizierDebugService_DebugPodsServer{ctrl: ctrl}
+	mock.recorder = &MockVizierDebugService_DebugPodsServerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockVizierDebugService_DebugPodsServer) EXPECT() *MockVizierDebugService_DebugPodsServerMockRecorder {
+	return m.recorder
+}
+
+// Context mocks base method.
+func (m *MockVizierDebugService_DebugPodsServer) Context() context.Context {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Context")
+	ret0, _ := ret[0].(context.Context)
+	return ret0
+}
+
+// Context indicates an expected call of Context.
+func (mr *MockVizierDebugService_DebugPodsServerMockRecorder) Context() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockVizierDebugService_DebugPodsServer)(nil).Context))
+}
+
+// RecvMsg mocks base method.
+func (m_2 *MockVizierDebugService_DebugPodsServer) RecvMsg(m interface{}) error {
+	m_2.ctrl.T.Helper()
+	ret := m_2.ctrl.Call(m_2, "RecvMsg", m)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RecvMsg indicates an expected call of RecvMsg.
+func (mr *MockVizierDebugService_DebugPodsServerMockRecorder) RecvMsg(m interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockVizierDebugService_DebugPodsServer)(nil).RecvMsg), m)
+}
+
+// Send mocks base method.
+func (m *MockVizierDebugService_DebugPodsServer) Send(arg0 *vizierpb.DebugPodsResponse) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Send", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Send indicates an expected call of Send.
+func (mr *MockVizierDebugService_DebugPodsServerMockRecorder) Send(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockVizierDebugService_DebugPodsServer)(nil).Send), arg0)
+}
+
+// SendHeader mocks base method.
+func (m *MockVizierDebugService_DebugPodsServer) SendHeader(arg0 metadata.MD) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SendHeader", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendHeader indicates an expected call of SendHeader.
+func (mr *MockVizierDebugService_DebugPodsServerMockRecorder) SendHeader(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendHeader", reflect.TypeOf((*MockVizierDebugService_DebugPodsServer)(nil).SendHeader), arg0)
+}
+
+// SendMsg mocks base method.
+func (m_2 *MockVizierDebugService_DebugPodsServer) SendMsg(m interface{}) error {
+	m_2.ctrl.T.Helper()
+	ret := m_2.ctrl.Call(m_2, "SendMsg", m)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendMsg indicates an expected call of SendMsg.
+func (mr *MockVizierDebugService_DebugPodsServerMockRecorder) SendMsg(m interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockVizierDebugService_DebugPodsServer)(nil).SendMsg), m)
+}
+
+// SetHeader mocks base method.
+func (m *MockVizierDebugService_DebugPodsServer) SetHeader(arg0 metadata.MD) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetHeader", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetHeader indicates an expected call of SetHeader.
+func (mr *MockVizierDebugService_DebugPodsServerMockRecorder) SetHeader(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetHeader", reflect.TypeOf((*MockVizierDebugService_DebugPodsServer)(nil).SetHeader), arg0)
+}
+
+// SetTrailer mocks base method.
+func (m *MockVizierDebugService_DebugPodsServer) SetTrailer(arg0 metadata.MD) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetTrailer", arg0)
+}
+
+// SetTrailer indicates an expected call of SetTrailer.
+func (mr *MockVizierDebugService_DebugPodsServerMockRecorder) SetTrailer(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTrailer", reflect.TypeOf((*MockVizierDebugService_DebugPodsServer)(nil).SetTrailer), arg0)
+}

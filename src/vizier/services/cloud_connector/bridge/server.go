@@ -42,13 +42,12 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
-	public_vizierapipb "px.dev/pixie/src/api/proto/vizierpb"
+	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/cloud/vzconn/vzconnpb"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/pbutils"
 	"px.dev/pixie/src/vizier/utils/messagebus"
-	"px.dev/pixie/src/vizier/vizierpb"
 )
 
 const (
@@ -479,7 +478,7 @@ func (s *Bridge) sendPTStatusMessage(reqID string, code codes.Code, message stri
 	resp := &cvmsgspb.V2CAPIStreamResponse{
 		RequestID: reqID,
 		Msg: &cvmsgspb.V2CAPIStreamResponse_Status{
-			Status: &public_vizierapipb.Status{
+			Status: &vizierpb.Status{
 				Code:    int32(code),
 				Message: message,
 			},

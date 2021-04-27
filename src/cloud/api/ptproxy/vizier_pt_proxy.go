@@ -29,7 +29,6 @@ import (
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/services/authcontext"
 	jwt "px.dev/pixie/src/shared/services/jwtpb"
-	pl_api_vizierpb "px.dev/pixie/src/vizier/vizierpb"
 )
 
 type vzmgrClient interface {
@@ -83,7 +82,7 @@ func (v *VizierPassThroughProxy) HealthCheck(req *vizierpb.HealthCheckRequest, s
 }
 
 // DebugLog is the GRPC stream method to fetch debug logs from vizier.
-func (v *VizierPassThroughProxy) DebugLog(req *pl_api_vizierpb.DebugLogRequest, srv pl_api_vizierpb.VizierDebugService_DebugLogServer) error {
+func (v *VizierPassThroughProxy) DebugLog(req *vizierpb.DebugLogRequest, srv vizierpb.VizierDebugService_DebugLogServer) error {
 	rp, err := newRequestProxyer(v.vc, v.nc, true, req, srv)
 	if err != nil {
 		return err
@@ -99,7 +98,7 @@ func (v *VizierPassThroughProxy) DebugLog(req *pl_api_vizierpb.DebugLogRequest, 
 }
 
 // DebugPods is the GRPC method to fetch the list of Vizier pods (and statuses) from a cluster.
-func (v *VizierPassThroughProxy) DebugPods(req *pl_api_vizierpb.DebugPodsRequest, srv pl_api_vizierpb.VizierDebugService_DebugPodsServer) error {
+func (v *VizierPassThroughProxy) DebugPods(req *vizierpb.DebugPodsRequest, srv vizierpb.VizierDebugService_DebugPodsServer) error {
 	rp, err := newRequestProxyer(v.vc, v.nc, true, req, srv)
 	if err != nil {
 		return err
