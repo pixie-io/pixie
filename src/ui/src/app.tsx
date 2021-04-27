@@ -16,8 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import './wdyr';
-
 import { DARK_THEME, SnackbarProvider, VersionInfo } from '@pixie-labs/components';
 import Vizier from 'containers/App/vizier';
 import PixieCookieBanner from 'common/cookie-banner';
@@ -40,6 +38,9 @@ import { AuthRouter } from 'pages/auth/auth';
 import 'typeface-roboto';
 import 'typeface-roboto-mono';
 import { PixieAPIContextProvider, useIsAuthenticated } from '@pixie-labs/api-react';
+
+// This side-effect-only import has to be a `require`, or else it gets erroneously optimized away during compilation.
+require('./wdyr');
 
 const RedirectWithArgs = (props) => {
   const {

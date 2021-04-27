@@ -18,8 +18,18 @@
 
 import React from 'react';
 
+// eslint-disable-next-line no-undef
 if (process.env.NODE_ENV === 'development') {
-  // eslint-disable-next-line global-require
+  // eslint-disable-next-line global-require,no-undef
   const whyDidYouRender = require('@welldone-software/why-did-you-render');
-  whyDidYouRender(React, {});
+  // To use this on a FunctionComponent, attach `whyDidYouRender = true` to it. You may also set `whyDidYouRender` to
+  // an object like this one to override the defaults. Details: https://github.com/welldone-software/why-did-you-render
+  whyDidYouRender(React, {
+    trackAllPureComponents: false,
+    collapseGroups: true,
+    // The defaults (#058, #00F, and #F00 respectively) have illegible contrast ratios in dev tools and vs each other.
+    titleColor: '#21AFA5',
+    diffNameColor: '#09F',
+    diffPathColor: '#FA8072',
+  });
 }
