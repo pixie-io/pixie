@@ -25,7 +25,7 @@ import (
 	"google.golang.org/grpc"
 
 	proto1 "px.dev/pixie/src/api/proto/uuidpb"
-	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
+	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/services/authcontext"
 	jwt "px.dev/pixie/src/shared/services/jwtpb"
@@ -50,7 +50,7 @@ func NewVizierPassThroughProxy(nc *nats.Conn, vc vzmgrClient) *VizierPassThrough
 }
 
 // ExecuteScript is the GRPC stream method.
-func (v *VizierPassThroughProxy) ExecuteScript(req *public_vizierapipb.ExecuteScriptRequest, srv public_vizierapipb.VizierService_ExecuteScriptServer) error {
+func (v *VizierPassThroughProxy) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.VizierService_ExecuteScriptServer) error {
 	rp, err := newRequestProxyer(v.vc, v.nc, false, req, srv)
 	if err != nil {
 		return err
@@ -66,7 +66,7 @@ func (v *VizierPassThroughProxy) ExecuteScript(req *public_vizierapipb.ExecuteSc
 }
 
 // HealthCheck is the GRPC stream method.
-func (v *VizierPassThroughProxy) HealthCheck(req *public_vizierapipb.HealthCheckRequest, srv public_vizierapipb.VizierService_HealthCheckServer) error {
+func (v *VizierPassThroughProxy) HealthCheck(req *vizierpb.HealthCheckRequest, srv vizierpb.VizierService_HealthCheckServer) error {
 	rp, err := newRequestProxyer(v.vc, v.nc, false, req, srv)
 	if err != nil {
 		return err

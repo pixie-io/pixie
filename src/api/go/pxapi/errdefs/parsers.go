@@ -23,11 +23,11 @@ import (
 
 	"google.golang.org/grpc/codes"
 
-	publicvizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
+	"px.dev/pixie/src/api/proto/vizierpb"
 )
 
 // ParseStatus parses the status field. Returns an error if exists.
-func ParseStatus(s *publicvizierapipb.Status) error {
+func ParseStatus(s *vizierpb.Status) error {
 	if s == nil || s.Code == int32(codes.OK) {
 		return nil
 	}
@@ -37,7 +37,7 @@ func ParseStatus(s *publicvizierapipb.Status) error {
 		hasCompilerErrors := false
 		for _, d := range details {
 			switch e := d.Error.(type) {
-			case *publicvizierapipb.ErrorDetails_CompilerError:
+			case *vizierpb.ErrorDetails_CompilerError:
 				errs = append(errs, newCompilerErrorWithDetails(e.CompilerError))
 				hasCompilerErrors = true
 			default:

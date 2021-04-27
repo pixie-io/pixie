@@ -27,7 +27,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"px.dev/pixie/src/api/proto/uuidpb"
-	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
+	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/carnot/goplanner"
 	"px.dev/pixie/src/carnot/planner/distributedpb"
 	"px.dev/pixie/src/carnot/planner/plannerpb"
@@ -1345,7 +1345,7 @@ func getExecRequest(pxlScript, visJSON string) (*plannerpb.QueryRequest, error) 
 	if err != nil {
 		return nil, err
 	}
-	vpb := &public_vizierapipb.ExecuteScriptRequest{
+	vpb := &vizierpb.ExecuteScriptRequest{
 		QueryStr:  pxlScript,
 		ExecFuncs: funcs,
 	}

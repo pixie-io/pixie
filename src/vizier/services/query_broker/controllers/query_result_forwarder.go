@@ -28,7 +28,7 @@ import (
 	"github.com/gofrs/uuid"
 	log "github.com/sirupsen/logrus"
 
-	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
+	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/carnot/carnotpb"
 	"px.dev/pixie/src/carnot/planner/distributedpb"
 	"px.dev/pixie/src/carnot/planpb"
@@ -218,7 +218,7 @@ type QueryResultForwarder interface {
 	// Blocks until the stream (& the agent stream) has completed, been cancelled, or experienced an error.
 	// Returns error for any error received.
 	StreamResults(ctx context.Context, queryID uuid.UUID,
-		resultCh chan *public_vizierapipb.ExecuteScriptResponse,
+		resultCh chan *vizierpb.ExecuteScriptResponse,
 		compilationTimeNs int64,
 		queryPlanOpts *QueryPlanOpts) error
 
@@ -275,7 +275,7 @@ const maxQueryPlanStringSize = 1024*1024 - maxQueryPlanBufferSize
 
 // StreamResults streams results from the agent streams to the client stream.
 func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uuid.UUID,
-	resultCh chan *public_vizierapipb.ExecuteScriptResponse,
+	resultCh chan *vizierpb.ExecuteScriptResponse,
 	compilationTimeNs int64, queryPlanOpts *QueryPlanOpts) error {
 	f.activeQueriesMutex.Lock()
 	activeQuery, present := f.activeQueries[queryID]

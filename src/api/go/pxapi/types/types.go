@@ -25,15 +25,15 @@ import (
 
 	"github.com/gofrs/uuid"
 
-	vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
+	"px.dev/pixie/src/api/proto/vizierpb"
 )
 
 // DataType referes to the underlying Pixie datatype.
-type DataType = vizierapipb.DataType
+type DataType = vizierpb.DataType
 
 // SemanticType stores semantic information about the underlying data. For example, the value represents a throughput,
 // or K8s entity, etc.
-type SemanticType = vizierapipb.SemanticType
+type SemanticType = vizierpb.SemanticType
 
 // Datum is a base type use to wrap all underlying Pixie types.
 type Datum interface {
@@ -255,7 +255,7 @@ func (v UInt128Value) Value() []byte {
 }
 
 // ScanUInt128 stores the passed in proto UInt128.
-func (v *UInt128Value) ScanUInt128(data *vizierapipb.UInt128) {
+func (v *UInt128Value) ScanUInt128(data *vizierpb.UInt128) {
 	b2 := v.b[8:]
 	binary.BigEndian.PutUint64(v.b, data.High)
 	binary.BigEndian.PutUint64(b2, data.Low)

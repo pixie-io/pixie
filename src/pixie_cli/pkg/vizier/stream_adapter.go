@@ -35,25 +35,25 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/status"
 
-	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
+	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
 )
 
 // StreamWriterFactorFunc is a stream writer factory.
-type StreamWriterFactorFunc = func(md *public_vizierapipb.ExecuteScriptResponse_MetaData) components.OutputStreamWriter
+type StreamWriterFactorFunc = func(md *vizierpb.ExecuteScriptResponse_MetaData) components.OutputStreamWriter
 
 // TableInfo contains the information about a table.
 type TableInfo struct {
 	w          components.OutputStreamWriter
 	ID         string
-	relation   *public_vizierapipb.Relation
+	relation   *vizierpb.Relation
 	timeColIdx int
 }
 
 // ExecData contains information from script executions.
 type ExecData struct {
-	Resp      *public_vizierapipb.ExecuteScriptResponse
+	Resp      *vizierpb.ExecuteScriptResponse
 	ClusterID uuid.UUID
 	Err       error
 }
@@ -61,13 +61,13 @@ type ExecData struct {
 // StreamOutputAdapter adapts the vizier output to the StreamWriters.
 type StreamOutputAdapter struct {
 	tableNameToInfo     map[string]*TableInfo
-	execStats           *public_vizierapipb.QueryExecutionStats
+	execStats           *vizierpb.QueryExecutionStats
 	streamWriterFactory StreamWriterFactorFunc
 	wg                  sync.WaitGroup
 	enableFormat        bool
 	format              string
 	formatters          map[string]DataFormatter
-	mutationInfo        *public_vizierapipb.MutationInfo
+	mutationInfo        *vizierpb.MutationInfo
 
 	// This is used to track table/ID -> names across multiple clusters.
 	tabledIDToName map[string]string
@@ -90,7 +90,7 @@ const FormatInMemory string = "inmemory"
 
 // NewStreamOutputAdapterWithFactory creates a new vizier output adapter factory.
 func NewStreamOutputAdapterWithFactory(ctx context.Context, stream chan *ExecData, format string,
-	factoryFunc func(*public_vizierapipb.ExecuteScriptResponse_MetaData) components.OutputStreamWriter) *StreamOutputAdapter {
+	factoryFunc func(*vizierpb.ExecuteScriptResponse_MetaData) components.OutputStreamWriter) *StreamOutputAdapter {
 	enableFormat := format != "json" && format != FormatInMemory
 
 	adapter := &StreamOutputAdapter{
@@ -110,7 +110,7 @@ func NewStreamOutputAdapterWithFactory(ctx context.Context, stream chan *ExecDat
 
 // NewStreamOutputAdapter creates a new vizier output adapter.
 func NewStreamOutputAdapter(ctx context.Context, stream chan *ExecData, format string) *StreamOutputAdapter {
-	factoryFunc := func(md *public_vizierapipb.ExecuteScriptResponse_MetaData) components.OutputStreamWriter {
+	factoryFunc := func(md *vizierpb.ExecuteScriptResponse_MetaData) components.OutputStreamWriter {
 		return components.CreateStreamWriter(format, os.Stdout)
 	}
 	return NewStreamOutputAdapterWithFactory(ctx, stream, format, factoryFunc)
@@ -140,7 +140,7 @@ func (v *StreamOutputAdapter) WaitForCompletion() error {
 }
 
 // ExecStats returns the reported execution stats. This function is only valid with format = inmemory and after Finish.
-func (v *StreamOutputAdapter) ExecStats() (*public_vizierapipb.QueryExecutionStats, error) {
+func (v *StreamOutputAdapter) ExecStats() (*vizierpb.QueryExecutionStats, error) {
 	if v.execStats == nil {
 		return nil, fmt.Errorf("ExecStats not found")
 	}
@@ -148,7 +148,7 @@ func (v *StreamOutputAdapter) ExecStats() (*public_vizierapipb.QueryExecutionSta
 }
 
 // MutationInfo returns the mutation info. This function is only valid after Finish.
-func (v *StreamOutputAdapter) MutationInfo() (*public_vizierapipb.MutationInfo, error) {
+func (v *StreamOutputAdapter) MutationInfo() (*vizierpb.MutationInfo, error) {
 	if v.mutationInfo == nil {
 		return nil, fmt.Errorf("MutationInfo not found")
 	}
@@ -245,9 +245,9 @@ func (v *StreamOutputAdapter) handleStream(ctx context.Context, stream chan *Exe
 			v.totalBytes += msg.Resp.Size()
 			var err error
 			switch res := msg.Resp.Result.(type) {
-			case *public_vizierapipb.ExecuteScriptResponse_MetaData:
+			case *vizierpb.ExecuteScriptResponse_MetaData:
 				err = v.handleMetadata(ctx, res)
-			case *public_vizierapipb.ExecuteScriptResponse_Data:
+			case *vizierpb.ExecuteScriptResponse_Data:
 				err = v.handleData(ctx, res)
 			default:
 				err = fmt.Errorf("unhandled response type" + reflect.TypeOf(msg.Resp.Result).String())
@@ -266,28 +266,28 @@ func (v *StreamOutputAdapter) TotalBytes() int {
 }
 
 // getNumRows returns the number of rows in the input column.
-func getNumRows(in *public_vizierapipb.Column) int {
+func getNumRows(in *vizierpb.Column) int {
 	switch u := in.ColData.(type) {
-	case *public_vizierapipb.Column_StringData:
+	case *vizierpb.Column_StringData:
 		return len(u.StringData.Data)
-	case *public_vizierapipb.Column_Float64Data:
+	case *vizierpb.Column_Float64Data:
 		return len(u.Float64Data.Data)
-	case *public_vizierapipb.Column_Int64Data:
+	case *vizierpb.Column_Int64Data:
 		return len(u.Int64Data.Data)
-	case *public_vizierapipb.Column_Time64NsData:
+	case *vizierpb.Column_Time64NsData:
 		return len(u.Time64NsData.Data)
-	case *public_vizierapipb.Column_BooleanData:
+	case *vizierpb.Column_BooleanData:
 		return len(u.BooleanData.Data)
-	case *public_vizierapipb.Column_Uint128Data:
+	case *vizierpb.Column_Uint128Data:
 		return len(u.Uint128Data.Data)
 	}
 	return 0
 }
 
-// getNativeTypedValue returns the plucked data as a Go not public_vizierapipb type.
+// getNativeTypedValue returns the plucked data as a Go not vizierpb type.
 func (v *StreamOutputAdapter) getNativeTypedValue(tableInfo *TableInfo, rowIdx int, colIdx int, data interface{}) interface{} {
 	switch u := data.(type) {
-	case *public_vizierapipb.Column_StringData:
+	case *vizierpb.Column_StringData:
 		s := u.StringData.Data[rowIdx]
 		if f, err := strconv.ParseFloat(s, 64); err == nil {
 			return f
@@ -296,20 +296,20 @@ func (v *StreamOutputAdapter) getNativeTypedValue(tableInfo *TableInfo, rowIdx i
 			return i
 		}
 		return u.StringData.Data[rowIdx]
-	case *public_vizierapipb.Column_Float64Data:
+	case *vizierpb.Column_Float64Data:
 		return u.Float64Data.Data[rowIdx]
-	case *public_vizierapipb.Column_Int64Data:
+	case *vizierpb.Column_Int64Data:
 		// TODO(zasgar): We really should not need this, but some of our operations convert time
 		// to int64. We need to maintain types in the engine/compiler so that proper type casting can be done.
 		if colIdx == tableInfo.timeColIdx {
 			return time.Unix(0, u.Int64Data.Data[rowIdx])
 		}
 		return u.Int64Data.Data[rowIdx]
-	case *public_vizierapipb.Column_Time64NsData:
+	case *vizierpb.Column_Time64NsData:
 		return time.Unix(0, u.Time64NsData.Data[rowIdx])
-	case *public_vizierapipb.Column_BooleanData:
+	case *vizierpb.Column_BooleanData:
 		return u.BooleanData.Data[rowIdx]
-	case *public_vizierapipb.Column_Uint128Data:
+	case *vizierpb.Column_Uint128Data:
 		b := make([]byte, 16)
 		b2 := b[8:]
 		binary.BigEndian.PutUint64(b, u.Uint128Data.Data[rowIdx].High)
@@ -321,11 +321,11 @@ func (v *StreamOutputAdapter) getNativeTypedValue(tableInfo *TableInfo, rowIdx i
 	return nil
 }
 
-func (v *StreamOutputAdapter) parseError(ctx context.Context, s *public_vizierapipb.Status) error {
+func (v *StreamOutputAdapter) parseError(ctx context.Context, s *vizierpb.Status) error {
 	var compilerErrors []string
 	if s.ErrorDetails != nil {
 		for _, ed := range s.ErrorDetails {
-			if e, ok := ed.Error.(*public_vizierapipb.ErrorDetails_CompilerError); ok {
+			if e, ok := ed.Error.(*vizierpb.ErrorDetails_CompilerError); ok {
 				compilerErrors = append(compilerErrors,
 					fmt.Sprintf("L%d : C%d  %s\n",
 						e.CompilerError.Line, e.CompilerError.Column,
@@ -345,16 +345,16 @@ func (v *StreamOutputAdapter) parseError(ctx context.Context, s *public_vizierap
 	return newScriptExecutionError(CodeUnknown, "Script execution error:"+s.Message)
 }
 
-func (v *StreamOutputAdapter) handleExecutionStats(ctx context.Context, es *public_vizierapipb.QueryExecutionStats) error {
+func (v *StreamOutputAdapter) handleExecutionStats(ctx context.Context, es *vizierpb.QueryExecutionStats) error {
 	v.execStats = es
 	return nil
 }
 
-func (v *StreamOutputAdapter) handleMutationInfo(ctx context.Context, mi *public_vizierapipb.MutationInfo) {
+func (v *StreamOutputAdapter) handleMutationInfo(ctx context.Context, mi *vizierpb.MutationInfo) {
 	v.mutationInfo = mi
 }
 
-func (v *StreamOutputAdapter) handleData(ctx context.Context, d *public_vizierapipb.ExecuteScriptResponse_Data) error {
+func (v *StreamOutputAdapter) handleData(ctx context.Context, d *vizierpb.ExecuteScriptResponse_Data) error {
 	if d.Data.ExecutionStats != nil {
 		err := v.handleExecutionStats(ctx, d.Data.ExecutionStats)
 		if err != nil {
@@ -403,7 +403,7 @@ func (v *StreamOutputAdapter) handleData(ctx context.Context, d *public_vizierap
 	return nil
 }
 
-func (v *StreamOutputAdapter) handleMetadata(ctx context.Context, md *public_vizierapipb.ExecuteScriptResponse_MetaData) error {
+func (v *StreamOutputAdapter) handleMetadata(ctx context.Context, md *vizierpb.ExecuteScriptResponse_MetaData) error {
 	tableName := md.MetaData.Name
 	newWriter := v.streamWriterFactory(md)
 

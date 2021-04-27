@@ -28,7 +28,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
 
-	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
+	"px.dev/pixie/src/api/proto/vizierpb"
 	utils2 "px.dev/pixie/src/shared/services/utils"
 )
 
@@ -41,17 +41,17 @@ const (
 type Checker struct {
 	quitCh     chan bool
 	signingKey string
-	vzClient   public_vizierapipb.VizierServiceClient
+	vzClient   vizierpb.VizierServiceClient
 	wg         sync.WaitGroup
 
 	hcRestMu         sync.Mutex
-	latestHCResp     *public_vizierapipb.HealthCheckResponse
+	latestHCResp     *vizierpb.HealthCheckResponse
 	latestHCRespTime time.Time
 }
 
 // NewChecker creates and starts a Vizier Checker. Stop must be called when done to prevent leaking
 // goroutines making requests to Vizier.
-func NewChecker(signingKey string, vzClient public_vizierapipb.VizierServiceClient) *Checker {
+func NewChecker(signingKey string, vzClient vizierpb.VizierServiceClient) *Checker {
 	c := &Checker{
 		quitCh:     make(chan bool),
 		signingKey: signingKey,
@@ -116,7 +116,7 @@ func (c *Checker) run() {
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
 
-		resp, err := c.vzClient.HealthCheck(ctx, &public_vizierapipb.HealthCheckRequest{})
+		resp, err := c.vzClient.HealthCheck(ctx, &vizierpb.HealthCheckRequest{})
 		if err != nil {
 			handleFailure(err)
 			time.Sleep(hcRetryInterval)
@@ -156,7 +156,7 @@ func (c *Checker) Stop() {
 	c.updateHCResp(nil)
 }
 
-func (c *Checker) updateHCResp(resp *public_vizierapipb.HealthCheckResponse) {
+func (c *Checker) updateHCResp(resp *vizierpb.HealthCheckResponse) {
 	c.hcRestMu.Lock()
 	defer c.hcRestMu.Unlock()
 

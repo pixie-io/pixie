@@ -34,7 +34,7 @@ import (
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/api/proto/vispb"
-	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
+	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/pixie_cli/pkg/auth"
 	"px.dev/pixie/src/pixie_cli/pkg/script"
 	"px.dev/pixie/src/shared/services"
@@ -51,7 +51,7 @@ type Connector struct {
 	// The ID of the vizier.
 	id                 uuid.UUID
 	conn               *grpc.ClientConn
-	vz                 public_vizierapipb.VizierServiceClient
+	vz                 vizierpb.VizierServiceClient
 	vzDebug            pl_api_vizierpb.VizierDebugServiceClient
 	vzToken            string
 	passthroughEnabled bool
@@ -83,7 +83,7 @@ func NewConnector(cloudAddr string, vzInfo *cloudpb.ClusterInfo, conn *Connectio
 		return nil, err
 	}
 
-	c.vz = public_vizierapipb.NewVizierServiceClient(c.conn)
+	c.vz = vizierpb.NewVizierServiceClient(c.conn)
 	c.vzDebug = pl_api_vizierpb.NewVizierDebugServiceClient(c.conn)
 
 	return c, nil
@@ -133,11 +133,11 @@ func lookupVariable(variable string, computedArgs []script.Arg) (string, error) 
 	return "", fmt.Errorf("variable '%s' not found", variable)
 }
 
-func makeFuncToExecute(f *vispb.Widget_Func, computedArgs []script.Arg, name string) (*public_vizierapipb.ExecuteScriptRequest_FuncToExecute, error) {
-	execFunc := &public_vizierapipb.ExecuteScriptRequest_FuncToExecute{}
+func makeFuncToExecute(f *vispb.Widget_Func, computedArgs []script.Arg, name string) (*vizierpb.ExecuteScriptRequest_FuncToExecute, error) {
+	execFunc := &vizierpb.ExecuteScriptRequest_FuncToExecute{}
 	execFunc.FuncName = f.Name
 
-	execFunc.ArgValues = make([]*public_vizierapipb.ExecuteScriptRequest_FuncToExecute_ArgValue, len(f.Args))
+	execFunc.ArgValues = make([]*vizierpb.ExecuteScriptRequest_FuncToExecute_ArgValue, len(f.Args))
 	for idx, arg := range f.Args {
 		var value string
 		var err error
@@ -154,7 +154,7 @@ func makeFuncToExecute(f *vispb.Widget_Func, computedArgs []script.Arg, name str
 			return nil, fmt.Errorf("Value not found")
 		}
 
-		execFunc.ArgValues[idx] = &public_vizierapipb.ExecuteScriptRequest_FuncToExecute_ArgValue{
+		execFunc.ArgValues[idx] = &vizierpb.ExecuteScriptRequest_FuncToExecute_ArgValue{
 			Name:  arg.Name,
 			Value: value,
 		}
@@ -169,12 +169,12 @@ func makeFuncToExecute(f *vispb.Widget_Func, computedArgs []script.Arg, name str
 }
 
 // GetFuncsToExecute extracts the funcs to execute from the script.
-func GetFuncsToExecute(script *script.ExecutableScript) ([]*public_vizierapipb.ExecuteScriptRequest_FuncToExecute, error) {
+func GetFuncsToExecute(script *script.ExecutableScript) ([]*vizierpb.ExecuteScriptRequest_FuncToExecute, error) {
 	if script.Vis == nil {
-		return []*public_vizierapipb.ExecuteScriptRequest_FuncToExecute{}, nil
+		return []*vizierpb.ExecuteScriptRequest_FuncToExecute{}, nil
 	}
 	// Accumulate the global function definitions.
-	execFuncs := []*public_vizierapipb.ExecuteScriptRequest_FuncToExecute{}
+	execFuncs := []*vizierpb.ExecuteScriptRequest_FuncToExecute{}
 	computedArgs, err := script.ComputedArgs()
 	if err != nil {
 		return nil, err
@@ -184,7 +184,7 @@ func GetFuncsToExecute(script *script.ExecutableScript) ([]*public_vizierapipb.E
 		for _, f := range script.Vis.GlobalFuncs {
 			execFunc, err := makeFuncToExecute(f.Func, computedArgs, f.OutputName)
 			if err != nil {
-				return []*public_vizierapipb.ExecuteScriptRequest_FuncToExecute{}, err
+				return []*vizierpb.ExecuteScriptRequest_FuncToExecute{}, err
 			}
 			execFuncs = append(execFuncs, execFunc)
 		}
@@ -202,7 +202,7 @@ func GetFuncsToExecute(script *script.ExecutableScript) ([]*public_vizierapipb.E
 
 		execFunc, err := makeFuncToExecute(f, computedArgs, w.Name)
 		if err != nil {
-			return []*public_vizierapipb.ExecuteScriptRequest_FuncToExecute{}, err
+			return []*vizierpb.ExecuteScriptRequest_FuncToExecute{}, err
 		}
 		execFuncs = append(execFuncs, execFunc)
 	}
@@ -226,7 +226,7 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.Exec
 		return nil, err
 	}
 
-	reqPB := &public_vizierapipb.ExecuteScriptRequest{
+	reqPB := &vizierpb.ExecuteScriptRequest{
 		QueryStr:  scriptStr,
 		ClusterID: c.id.String(),
 		ExecFuncs: execFuncs,

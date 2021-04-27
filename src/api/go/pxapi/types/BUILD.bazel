@@ -26,7 +26,7 @@ go_library(
     importpath = "px.dev/pixie/src/api/go/pxapi/types",
     visibility = ["//src:__subpackages__"],
     deps = [
-        "//src/api/proto/vizierapipb:public_vizier_pl_go_proto",
+        "//src/api/proto/vizierpb:vizier_pl_go_proto",
         "@com_github_gofrs_uuid//:uuid",
     ],
 )

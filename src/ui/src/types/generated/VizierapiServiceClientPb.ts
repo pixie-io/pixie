@@ -13,7 +13,7 @@
 
 import * as grpcWeb from 'grpc-web';
 
-import * as src_api_proto_vizierapipb_vizierapi_pb from './vizierapi_pb';
+import * as src_api_proto_vizierpb_vizierapi_pb from './vizierapi_pb';
 
 
 export class VizierServiceClient {
@@ -36,15 +36,15 @@ export class VizierServiceClient {
   }
 
   methodInfoExecuteScript = new grpcWeb.AbstractClientBase.MethodInfo(
-    src_api_proto_vizierapipb_vizierapi_pb.ExecuteScriptResponse,
-    (request: src_api_proto_vizierapipb_vizierapi_pb.ExecuteScriptRequest) => {
+    src_api_proto_vizierpb_vizierapi_pb.ExecuteScriptResponse,
+    (request: src_api_proto_vizierpb_vizierapi_pb.ExecuteScriptRequest) => {
       return request.serializeBinary();
     },
-    src_api_proto_vizierapipb_vizierapi_pb.ExecuteScriptResponse.deserializeBinary
+    src_api_proto_vizierpb_vizierapi_pb.ExecuteScriptResponse.deserializeBinary
   );
 
   executeScript(
-    request: src_api_proto_vizierapipb_vizierapi_pb.ExecuteScriptRequest,
+    request: src_api_proto_vizierpb_vizierapi_pb.ExecuteScriptRequest,
     metadata?: grpcWeb.Metadata) {
     return this.client_.serverStreaming(
       this.hostname_ +
@@ -55,15 +55,15 @@ export class VizierServiceClient {
   }
 
   methodInfoHealthCheck = new grpcWeb.AbstractClientBase.MethodInfo(
-    src_api_proto_vizierapipb_vizierapi_pb.HealthCheckResponse,
-    (request: src_api_proto_vizierapipb_vizierapi_pb.HealthCheckRequest) => {
+    src_api_proto_vizierpb_vizierapi_pb.HealthCheckResponse,
+    (request: src_api_proto_vizierpb_vizierapi_pb.HealthCheckRequest) => {
       return request.serializeBinary();
     },
-    src_api_proto_vizierapipb_vizierapi_pb.HealthCheckResponse.deserializeBinary
+    src_api_proto_vizierpb_vizierapi_pb.HealthCheckResponse.deserializeBinary
   );
 
   healthCheck(
-    request: src_api_proto_vizierapipb_vizierapi_pb.HealthCheckRequest,
+    request: src_api_proto_vizierpb_vizierapi_pb.HealthCheckRequest,
     metadata?: grpcWeb.Metadata) {
     return this.client_.serverStreaming(
       this.hostname_ +

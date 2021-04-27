@@ -25,7 +25,7 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//src/api/proto/cloudpb:cloudapi_pl_go_proto",
-        "//src/api/proto/vizierapipb:public_vizier_pl_go_proto",
+        "//src/api/proto/vizierpb:vizier_pl_go_proto",
         "//src/cloud/api/apienv",
         "//src/cloud/api/controller",
         "//src/cloud/api/ptproxy",

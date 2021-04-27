@@ -26,7 +26,7 @@ import (
 
 	"px.dev/pixie/src/api/go/pxapi"
 	"px.dev/pixie/src/api/go/pxapi/types"
-	vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
+	"px.dev/pixie/src/api/proto/vizierpb"
 )
 
 // PixieToGrafanaTablePrinter satisfies the TableRecordHandler interface.
@@ -43,22 +43,22 @@ func (t *PixieToGrafanaTablePrinter) HandleInit(ctx context.Context, metadata ty
 	// Create new fields (columns) for the frame.
 	for _, col := range metadata.ColInfo {
 		switch colType := col.Type; colType {
-		case vizierapipb.BOOLEAN:
+		case vizierpb.BOOLEAN:
 			t.frame.Fields = append(t.frame.Fields,
 				data.NewField(col.Name, nil, []bool{}))
-		case vizierapipb.INT64:
+		case vizierpb.INT64:
 			t.frame.Fields = append(t.frame.Fields,
 				data.NewField(col.Name, nil, []int64{}))
-		case vizierapipb.TIME64NS:
+		case vizierpb.TIME64NS:
 			t.frame.Fields = append(t.frame.Fields,
 				data.NewField(col.Name, nil, []time.Time{}))
-		case vizierapipb.FLOAT64:
+		case vizierpb.FLOAT64:
 			t.frame.Fields = append(t.frame.Fields,
 				data.NewField(col.Name, nil, []float64{}))
-		case vizierapipb.STRING:
+		case vizierpb.STRING:
 			t.frame.Fields = append(t.frame.Fields,
 				data.NewField(col.Name, nil, []string{}))
-		case vizierapipb.UINT128:
+		case vizierpb.UINT128:
 			// Use a UUID style string representation for uint128
 			// since Grafana fields do not support uint128
 			t.frame.Fields = append(t.frame.Fields,
@@ -73,17 +73,17 @@ func (t *PixieToGrafanaTablePrinter) HandleInit(ctx context.Context, metadata ty
 func (t *PixieToGrafanaTablePrinter) HandleRecord(ctx context.Context, r *types.Record) error {
 	for colIdx, d := range r.Data {
 		switch d.Type() {
-		case vizierapipb.BOOLEAN:
+		case vizierpb.BOOLEAN:
 			t.frame.Fields[colIdx].Append(d.(*types.BooleanValue).Value())
-		case vizierapipb.INT64:
+		case vizierpb.INT64:
 			t.frame.Fields[colIdx].Append(d.(*types.Int64Value).Value())
-		case vizierapipb.UINT128:
+		case vizierpb.UINT128:
 			t.frame.Fields[colIdx].Append(d.(*types.UInt128Value).String())
-		case vizierapipb.FLOAT64:
+		case vizierpb.FLOAT64:
 			t.frame.Fields[colIdx].Append(d.(*types.Float64Value).Value())
-		case vizierapipb.STRING:
+		case vizierpb.STRING:
 			t.frame.Fields[colIdx].Append(d.(*types.StringValue).Value())
-		case vizierapipb.TIME64NS:
+		case vizierpb.TIME64NS:
 			t.frame.Fields[colIdx].Append(d.(*types.Time64NSValue).Value())
 		}
 	}

@@ -26,7 +26,7 @@ go_library(
     importpath = "px.dev/pixie/src/vizier/services/cloud_connector/bridge",
     visibility = ["//src/vizier:__subpackages__"],
     deps = [
-        "//src/api/proto/vizierapipb:public_vizier_pl_go_proto",
+        "//src/api/proto/vizierpb:vizier_pl_go_proto",
         "//src/cloud/vzconn/vzconnpb:service_pl_go_proto",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/goversion",

@@ -40,7 +40,7 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 
 	proto1 "px.dev/pixie/src/api/proto/uuidpb"
-	public_vizierpb "px.dev/pixie/src/api/proto/vizierapipb"
+	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/cloud/api/ptproxy"
 	"px.dev/pixie/src/cloud/shared/vzshard"
 	"px.dev/pixie/src/shared/cvmsgspb"
@@ -72,7 +72,7 @@ func createTestState(t *testing.T) (*testState, func(t *testing.T)) {
 
 	nc, natsCleanup := testingutils.MustStartTestNATS(t)
 
-	public_vizierpb.RegisterVizierServiceServer(s, ptproxy.NewVizierPassThroughProxy(nc, &fakeVzMgr{}))
+	vizierpb.RegisterVizierServiceServer(s, ptproxy.NewVizierPassThroughProxy(nc, &fakeVzMgr{}))
 	pl_api_vizierpb.RegisterVizierDebugServiceServer(s, ptproxy.NewVizierPassThroughProxy(nc, &fakeVzMgr{}))
 
 	eg := errgroup.Group{}
@@ -115,7 +115,7 @@ func TestVizierPassThroughProxy_ExecuteScript(t *testing.T) {
 	ts, cleanup := createTestState(t)
 	defer cleanup(t)
 
-	client := public_vizierpb.NewVizierServiceClient(ts.conn)
+	client := vizierpb.NewVizierServiceClient(ts.conn)
 	validTestToken := testingutils.GenerateTestJWTToken(t, viper.GetString("jwt_signing_key"))
 
 	testCases := []struct {
@@ -126,7 +126,7 @@ func TestVizierPassThroughProxy_ExecuteScript(t *testing.T) {
 		respFromVizier []*cvmsgspb.V2CAPIStreamResponse
 
 		expGRPCError     error
-		expGRPCResponses []*public_vizierpb.ExecuteScriptResponse
+		expGRPCResponses []*vizierpb.ExecuteScriptResponse
 	}{
 		{
 			name: "Missing auth token",
@@ -183,15 +183,15 @@ func TestVizierPassThroughProxy_ExecuteScript(t *testing.T) {
 			authToken: validTestToken,
 			respFromVizier: []*cvmsgspb.V2CAPIStreamResponse{
 				{
-					Msg: &cvmsgspb.V2CAPIStreamResponse_ExecResp{ExecResp: &public_vizierpb.ExecuteScriptResponse{QueryID: "abc"}},
+					Msg: &cvmsgspb.V2CAPIStreamResponse_ExecResp{ExecResp: &vizierpb.ExecuteScriptResponse{QueryID: "abc"}},
 				},
 				{
-					Msg: &cvmsgspb.V2CAPIStreamResponse_ExecResp{ExecResp: &public_vizierpb.ExecuteScriptResponse{QueryID: "abc"}},
+					Msg: &cvmsgspb.V2CAPIStreamResponse_ExecResp{ExecResp: &vizierpb.ExecuteScriptResponse{QueryID: "abc"}},
 				},
 			},
 
 			expGRPCError: nil,
-			expGRPCResponses: []*public_vizierpb.ExecuteScriptResponse{
+			expGRPCResponses: []*vizierpb.ExecuteScriptResponse{
 				{
 					QueryID: "abc",
 				},
@@ -213,14 +213,14 @@ func TestVizierPassThroughProxy_ExecuteScript(t *testing.T) {
 			ctx, cancel := context.WithCancel(ctx)
 			defer cancel()
 			resp, err := client.ExecuteScript(ctx,
-				&public_vizierpb.ExecuteScriptRequest{ClusterID: tc.clusterID})
+				&vizierpb.ExecuteScriptRequest{ClusterID: tc.clusterID})
 			require.NoError(t, err)
 
 			fv := newFakeVizier(t, uuid.FromStringOrNil(tc.clusterID), ts.nc)
 			fv.Run(t, tc.respFromVizier)
 			defer fv.Stop()
 
-			grpcDataCh := make(chan *public_vizierpb.ExecuteScriptResponse)
+			grpcDataCh := make(chan *vizierpb.ExecuteScriptResponse)
 			var gotReadErr error
 			var eg errgroup.Group
 			eg.Go(func() error {
@@ -240,7 +240,7 @@ func TestVizierPassThroughProxy_ExecuteScript(t *testing.T) {
 				}
 			})
 
-			var responses []*public_vizierpb.ExecuteScriptResponse
+			var responses []*vizierpb.ExecuteScriptResponse
 			eg.Go(func() error {
 				timeout := time.NewTimer(defaultTimeout)
 				defer timeout.Stop()
@@ -289,7 +289,7 @@ func TestVizierPassThroughProxy_HealthCheck(t *testing.T) {
 	ts, cleanup := createTestState(t)
 	defer cleanup(t)
 
-	client := public_vizierpb.NewVizierServiceClient(ts.conn)
+	client := vizierpb.NewVizierServiceClient(ts.conn)
 	validTestToken := testingutils.GenerateTestJWTToken(t, viper.GetString("jwt_signing_key"))
 
 	testCases := []struct {
@@ -300,7 +300,7 @@ func TestVizierPassThroughProxy_HealthCheck(t *testing.T) {
 		respFromVizier []*cvmsgspb.V2CAPIStreamResponse
 
 		expGRPCError     error
-		expGRPCResponses []*public_vizierpb.HealthCheckResponse
+		expGRPCResponses []*vizierpb.HealthCheckResponse
 	}{
 		{
 			name: "Missing auth token",
@@ -357,17 +357,17 @@ func TestVizierPassThroughProxy_HealthCheck(t *testing.T) {
 			authToken: validTestToken,
 			respFromVizier: []*cvmsgspb.V2CAPIStreamResponse{
 				{
-					Msg: &cvmsgspb.V2CAPIStreamResponse_HcResp{HcResp: &public_vizierpb.HealthCheckResponse{Status: &public_vizierpb.Status{Code: 0}}},
+					Msg: &cvmsgspb.V2CAPIStreamResponse_HcResp{HcResp: &vizierpb.HealthCheckResponse{Status: &vizierpb.Status{Code: 0}}},
 				},
 				{
-					Msg: &cvmsgspb.V2CAPIStreamResponse_HcResp{HcResp: &public_vizierpb.HealthCheckResponse{Status: &public_vizierpb.Status{Code: 1}}},
+					Msg: &cvmsgspb.V2CAPIStreamResponse_HcResp{HcResp: &vizierpb.HealthCheckResponse{Status: &vizierpb.Status{Code: 1}}},
 				},
 			},
 
 			expGRPCError: nil,
-			expGRPCResponses: []*public_vizierpb.HealthCheckResponse{
-				{Status: &public_vizierpb.Status{Code: 0}},
-				{Status: &public_vizierpb.Status{Code: 1}},
+			expGRPCResponses: []*vizierpb.HealthCheckResponse{
+				{Status: &vizierpb.Status{Code: 0}},
+				{Status: &vizierpb.Status{Code: 1}},
 			},
 		},
 	}
@@ -383,14 +383,14 @@ func TestVizierPassThroughProxy_HealthCheck(t *testing.T) {
 			ctx, cancel := context.WithCancel(ctx)
 			defer cancel()
 			resp, err := client.HealthCheck(ctx,
-				&public_vizierpb.HealthCheckRequest{ClusterID: tc.clusterID})
+				&vizierpb.HealthCheckRequest{ClusterID: tc.clusterID})
 			require.NoError(t, err)
 
 			fv := newFakeVizier(t, uuid.FromStringOrNil(tc.clusterID), ts.nc)
 			fv.Run(t, tc.respFromVizier)
 			defer fv.Stop()
 
-			grpcDataCh := make(chan *public_vizierpb.HealthCheckResponse)
+			grpcDataCh := make(chan *vizierpb.HealthCheckResponse)
 			var gotReadErr error
 
 			var eg errgroup.Group
@@ -411,7 +411,7 @@ func TestVizierPassThroughProxy_HealthCheck(t *testing.T) {
 				}
 			})
 
-			var responses []*public_vizierpb.HealthCheckResponse
+			var responses []*vizierpb.HealthCheckResponse
 			eg.Go(func() error {
 				timeout := time.NewTimer(defaultTimeout)
 				defer timeout.Stop()
@@ -838,7 +838,7 @@ func (f *fakeVizier) Run(t *testing.T, responses []*cvmsgspb.V2CAPIStreamRespons
 				// Send completion message.
 				fin := &cvmsgspb.V2CAPIStreamResponse{
 					RequestID: req.RequestID,
-					Msg: &cvmsgspb.V2CAPIStreamResponse_Status{Status: &public_vizierpb.Status{
+					Msg: &cvmsgspb.V2CAPIStreamResponse_Status{Status: &vizierpb.Status{
 						Code: 0,
 					}},
 				}

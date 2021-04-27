@@ -30,7 +30,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"gopkg.in/segmentio/analytics-go.v3"
 
-	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
+	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
 	"px.dev/pixie/src/pixie_cli/pkg/pxconfig"
 	"px.dev/pixie/src/pixie_cli/pkg/script"
@@ -90,22 +90,22 @@ func RunScriptAndOutputResults(ctx context.Context, conns []*Connector, execScri
 	}
 
 	// Retry the mutation and use a jobrunner to show state.
-	taskChs := make([]chan public_vizierapipb.LifeCycleState, len(mutationInfo.States))
+	taskChs := make([]chan vizierpb.LifeCycleState, len(mutationInfo.States))
 	tasks := make([]utils.Task, len(mutationInfo.States))
 	for i, mutation := range mutationInfo.States {
 		tasks[i] = newTaskWrapper(fmt.Sprintf("Deploying %s", mutation.Name), func() error {
 			for s := range taskChs[i] {
-				if s == public_vizierapipb.FAILED_STATE {
+				if s == vizierpb.FAILED_STATE {
 					return errors.New("Could not deploy tracepoint")
 				}
-				if s == public_vizierapipb.RUNNING_STATE {
+				if s == vizierpb.RUNNING_STATE {
 					return nil
 				}
 			}
 			// Channel was closed and we never saw a running state.
 			return errors.New("Could not deploy tracepoint")
 		})
-		taskChs[i] = make(chan public_vizierapipb.LifeCycleState, 10)
+		taskChs[i] = make(chan vizierpb.LifeCycleState, 10)
 	}
 
 	schemaCh := make(chan bool, 10)

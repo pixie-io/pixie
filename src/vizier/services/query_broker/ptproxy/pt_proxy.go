@@ -34,7 +34,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
+	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/utils/pbutils"
 )
@@ -53,7 +53,7 @@ type RequestState struct {
 // PassThroughProxy listens to NATS for any stream API requests and makes the necessary grpc
 // requests to downstream services.
 type PassThroughProxy struct {
-	vzClient public_vizierapipb.VizierServiceClient
+	vzClient vizierpb.VizierServiceClient
 	nc       *nats.Conn
 	requests map[string]*RequestState
 	mu       sync.Mutex // Mutex for requests map.
@@ -69,7 +69,7 @@ type Stream interface {
 }
 
 // NewPassThroughProxy creates a new stream API listener.
-func NewPassThroughProxy(nc *nats.Conn, vzClient public_vizierapipb.VizierServiceClient) (*PassThroughProxy, error) {
+func NewPassThroughProxy(nc *nats.Conn, vzClient vizierpb.VizierServiceClient) (*PassThroughProxy, error) {
 	requests := make(map[string]*RequestState)
 	quitCh := make(chan bool)
 	// Buffer channel so we don't drop passthrough requests.
@@ -224,7 +224,7 @@ func formatStatusMessage(reqID string, code codes.Code, message string) *cvmsgsp
 	return &cvmsgspb.V2CAPIStreamResponse{
 		RequestID: reqID,
 		Msg: &cvmsgspb.V2CAPIStreamResponse_Status{
-			Status: &public_vizierapipb.Status{
+			Status: &vizierpb.Status{
 				Code:    int32(code),
 				Message: message,
 			},
@@ -290,13 +290,13 @@ func (s *PassThroughProxy) Close() {
 
 // ExecuteScriptStream is a wrapper around the executeScript stream.
 type ExecuteScriptStream struct {
-	vzClient public_vizierapipb.VizierServiceClient
-	stream   public_vizierapipb.VizierService_ExecuteScriptClient
+	vzClient vizierpb.VizierServiceClient
+	stream   vizierpb.VizierService_ExecuteScriptClient
 	reqID    string
 }
 
 // NewExecuteScriptStream creates a new executeScriptStream.
-func NewExecuteScriptStream(vzClient public_vizierapipb.VizierServiceClient) *ExecuteScriptStream {
+func NewExecuteScriptStream(vzClient vizierpb.VizierServiceClient) *ExecuteScriptStream {
 	return &ExecuteScriptStream{vzClient: vzClient}
 }
 
@@ -333,13 +333,13 @@ func (e *ExecuteScriptStream) Recv() (*cvmsgspb.V2CAPIStreamResponse, error) {
 
 // HealthCheckStream is a wrapper around the health check stream.
 type HealthCheckStream struct {
-	vzClient public_vizierapipb.VizierServiceClient
-	stream   public_vizierapipb.VizierService_HealthCheckClient
+	vzClient vizierpb.VizierServiceClient
+	stream   vizierpb.VizierService_HealthCheckClient
 	reqID    string
 }
 
 // NewHealthCheckStream creates a new healthCheckStream.
-func NewHealthCheckStream(vzClient public_vizierapipb.VizierServiceClient) *HealthCheckStream {
+func NewHealthCheckStream(vzClient vizierpb.VizierServiceClient) *HealthCheckStream {
 	return &HealthCheckStream{vzClient: vzClient}
 }
 

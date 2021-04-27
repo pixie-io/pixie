@@ -32,7 +32,7 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 
-	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
+	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/carnot/carnotpb"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/healthz"
@@ -59,7 +59,7 @@ func init() {
 }
 
 // NewVizierServiceClient creates a new vz RPC client stub.
-func NewVizierServiceClient(port uint) (public_vizierapipb.VizierServiceClient, error) {
+func NewVizierServiceClient(port uint) (vizierpb.VizierServiceClient, error) {
 	dialOpts, err := services.GetGRPCClientDialOpts()
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func NewVizierServiceClient(port uint) (public_vizierapipb.VizierServiceClient, 
 		return nil, err
 	}
 
-	return public_vizierapipb.NewVizierServiceClient(vzChannel), nil
+	return vizierpb.NewVizierServiceClient(vzChannel), nil
 }
 
 func main() {
@@ -172,7 +172,7 @@ func main() {
 		httpmiddleware.WithBearerAuthMiddleware(env, mux), maxMsgSize)
 
 	carnotpb.RegisterResultSinkServiceServer(s.GRPCServer(), svr)
-	public_vizierapipb.RegisterVizierServiceServer(s.GRPCServer(), svr)
+	vizierpb.RegisterVizierServiceServer(s.GRPCServer(), svr)
 
 	// For the passthrough proxy we create a GRPC client to the current server. It appears really
 	// hard to emulate the streaming GRPC connection and this helps keep the API straightforward.

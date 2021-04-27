@@ -22,7 +22,7 @@ pl_proto_library(
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_proto",
-        "//src/api/proto/vizierapipb:vizier_pl_proto",
+        "//src/api/proto/vizierpb:vizier_pl_proto",
         "//src/shared/k8s/metadatapb:metadata_pl_proto",
         "//src/vizier/vizierpb:vizier_pl_proto",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
@@ -35,7 +35,7 @@ pl_cc_proto_library(
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_cc_proto",
-        "//src/api/proto/vizierapipb:vizier_pl_cc_proto",
+        "//src/api/proto/vizierpb:vizier_pl_cc_proto",
         "//src/shared/k8s/metadatapb:metadata_pl_cc_proto",
         "//src/vizier/vizierpb:vizier_pl_cc_proto",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
@@ -49,7 +49,7 @@ pl_go_proto_library(
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
-        "//src/api/proto/vizierapipb:public_vizier_pl_go_proto",
+        "//src/api/proto/vizierpb:vizier_pl_go_proto",
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
         "//src/vizier/vizierpb:vizier_pl_go_proto",
     ],

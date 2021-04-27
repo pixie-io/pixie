@@ -21,7 +21,7 @@ package pxapi
 import (
 	"context"
 
-	vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
+	"px.dev/pixie/src/api/proto/vizierpb"
 )
 
 // VizierClient is the client for a single vizier.
@@ -29,12 +29,12 @@ type VizierClient struct {
 	cloud    *Client
 	vizierID string
 
-	vzClient vizierapipb.VizierServiceClient
+	vzClient vizierpb.VizierServiceClient
 }
 
 // ExecuteScript runs the script on vizier.
 func (v *VizierClient) ExecuteScript(ctx context.Context, pxl string, mux TableMuxer) (*ScriptResults, error) {
-	req := &vizierapipb.ExecuteScriptRequest{
+	req := &vizierpb.ExecuteScriptRequest{
 		ClusterID: v.vizierID,
 		QueryStr:  pxl,
 	}

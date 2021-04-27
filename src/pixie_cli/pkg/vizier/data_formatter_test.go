@@ -26,37 +26,37 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
+	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/pixie_cli/pkg/vizier"
 )
 
 func TestBasic(t *testing.T) {
-	relation := &public_vizierapipb.Relation{
-		Columns: []*public_vizierapipb.Relation_ColumnInfo{
+	relation := &vizierpb.Relation{
+		Columns: []*vizierpb.Relation_ColumnInfo{
 			{
 				ColumnName:         "bool",
-				ColumnType:         public_vizierapipb.BOOLEAN,
-				ColumnSemanticType: public_vizierapipb.ST_NONE,
+				ColumnType:         vizierpb.BOOLEAN,
+				ColumnSemanticType: vizierpb.ST_NONE,
 			},
 			{
 				ColumnName:         "int",
-				ColumnType:         public_vizierapipb.INT64,
-				ColumnSemanticType: public_vizierapipb.ST_NONE,
+				ColumnType:         vizierpb.INT64,
+				ColumnSemanticType: vizierpb.ST_NONE,
 			},
 			{
 				ColumnName:         "float",
-				ColumnType:         public_vizierapipb.FLOAT64,
-				ColumnSemanticType: public_vizierapipb.ST_NONE,
+				ColumnType:         vizierpb.FLOAT64,
+				ColumnSemanticType: vizierpb.ST_NONE,
 			},
 			{
 				ColumnName:         "string",
-				ColumnType:         public_vizierapipb.STRING,
-				ColumnSemanticType: public_vizierapipb.ST_NONE,
+				ColumnType:         vizierpb.STRING,
+				ColumnSemanticType: vizierpb.ST_NONE,
 			},
 			{
 				ColumnName:         "time",
-				ColumnType:         public_vizierapipb.TIME64NS,
-				ColumnSemanticType: public_vizierapipb.ST_NONE,
+				ColumnType:         vizierpb.TIME64NS,
+				ColumnSemanticType: vizierpb.ST_NONE,
 			},
 		},
 	}
@@ -85,17 +85,17 @@ func TestBasic(t *testing.T) {
 }
 
 func TestDuration(t *testing.T) {
-	relation := &public_vizierapipb.Relation{
-		Columns: []*public_vizierapipb.Relation_ColumnInfo{
+	relation := &vizierpb.Relation{
+		Columns: []*vizierpb.Relation_ColumnInfo{
 			{
 				ColumnName:         "bool",
-				ColumnType:         public_vizierapipb.BOOLEAN,
-				ColumnSemanticType: public_vizierapipb.ST_NONE,
+				ColumnType:         vizierpb.BOOLEAN,
+				ColumnSemanticType: vizierpb.ST_NONE,
 			},
 			{
 				ColumnName:         "duration",
-				ColumnType:         public_vizierapipb.INT64,
-				ColumnSemanticType: public_vizierapipb.ST_DURATION_NS,
+				ColumnType:         vizierpb.INT64,
+				ColumnSemanticType: vizierpb.ST_DURATION_NS,
 			},
 		},
 	}
@@ -112,12 +112,12 @@ func TestDuration(t *testing.T) {
 }
 
 func TestBytes(t *testing.T) {
-	relation := &public_vizierapipb.Relation{
-		Columns: []*public_vizierapipb.Relation_ColumnInfo{
+	relation := &vizierpb.Relation{
+		Columns: []*vizierpb.Relation_ColumnInfo{
 			{
 				ColumnName:         "bytes",
-				ColumnType:         public_vizierapipb.INT64,
-				ColumnSemanticType: public_vizierapipb.ST_BYTES,
+				ColumnType:         vizierpb.INT64,
+				ColumnSemanticType: vizierpb.ST_BYTES,
 			},
 		},
 	}
@@ -132,17 +132,17 @@ func TestBytes(t *testing.T) {
 }
 
 func TestThroughput(t *testing.T) {
-	relation := &public_vizierapipb.Relation{
-		Columns: []*public_vizierapipb.Relation_ColumnInfo{
+	relation := &vizierpb.Relation{
+		Columns: []*vizierpb.Relation_ColumnInfo{
 			{
 				ColumnName:         "throughput",
-				ColumnType:         public_vizierapipb.FLOAT64,
-				ColumnSemanticType: public_vizierapipb.ST_THROUGHPUT_PER_NS,
+				ColumnType:         vizierpb.FLOAT64,
+				ColumnSemanticType: vizierpb.ST_THROUGHPUT_PER_NS,
 			},
 			{
 				ColumnName:         "throughput_bytes",
-				ColumnType:         public_vizierapipb.FLOAT64,
-				ColumnSemanticType: public_vizierapipb.ST_THROUGHPUT_BYTES_PER_NS,
+				ColumnType:         vizierpb.FLOAT64,
+				ColumnSemanticType: vizierpb.ST_THROUGHPUT_BYTES_PER_NS,
 			},
 		},
 	}
@@ -157,12 +157,12 @@ func TestThroughput(t *testing.T) {
 }
 
 func TestPercent(t *testing.T) {
-	relation := &public_vizierapipb.Relation{
-		Columns: []*public_vizierapipb.Relation_ColumnInfo{
+	relation := &vizierpb.Relation{
+		Columns: []*vizierpb.Relation_ColumnInfo{
 			{
 				ColumnName:         "percent",
-				ColumnType:         public_vizierapipb.FLOAT64,
-				ColumnSemanticType: public_vizierapipb.ST_PERCENT,
+				ColumnType:         vizierpb.FLOAT64,
+				ColumnSemanticType: vizierpb.ST_PERCENT,
 			},
 		},
 	}
@@ -175,17 +175,17 @@ func TestPercent(t *testing.T) {
 }
 
 func TestQuantiles(t *testing.T) {
-	relation := &public_vizierapipb.Relation{
-		Columns: []*public_vizierapipb.Relation_ColumnInfo{
+	relation := &vizierpb.Relation{
+		Columns: []*vizierpb.Relation_ColumnInfo{
 			{
 				ColumnName:         "quantiles",
-				ColumnType:         public_vizierapipb.STRING,
-				ColumnSemanticType: public_vizierapipb.ST_QUANTILES,
+				ColumnType:         vizierpb.STRING,
+				ColumnSemanticType: vizierpb.ST_QUANTILES,
 			},
 			{
 				ColumnName:         "quantiles_duration_ns",
-				ColumnType:         public_vizierapipb.STRING,
-				ColumnSemanticType: public_vizierapipb.ST_DURATION_NS_QUANTILES,
+				ColumnType:         vizierpb.STRING,
+				ColumnSemanticType: vizierpb.ST_DURATION_NS_QUANTILES,
 			},
 		},
 	}

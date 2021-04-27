@@ -21,7 +21,7 @@ package errdefs
 import (
 	"fmt"
 
-	publicvizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
+	"px.dev/pixie/src/api/proto/vizierpb"
 )
 
 // CompilerMultiError is an implementation of a multi-error for compiler messages.
@@ -92,7 +92,7 @@ func (e compilerErrorWithDetails) Message() string {
 	return e.message
 }
 
-func newCompilerErrorWithDetails(e *publicvizierapipb.CompilerError) compilerErrorWithDetails {
+func newCompilerErrorWithDetails(e *vizierpb.CompilerError) compilerErrorWithDetails {
 	return compilerErrorWithDetails{
 		line:    int64(e.Line),
 		column:  int64(e.Column),

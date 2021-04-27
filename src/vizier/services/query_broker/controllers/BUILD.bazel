@@ -37,7 +37,7 @@ go_library(
     ],
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
-        "//src/api/proto/vizierapipb:public_vizier_pl_go_proto",
+        "//src/api/proto/vizierpb:vizier_pl_go_proto",
         "//src/carnot/carnotpb:carnot_pl_go_proto",
         "//src/carnot/goplanner:go_default_library",
         "//src/carnot/planner/compilerpb:compiler_status_pl_go_proto",
@@ -85,8 +85,8 @@ go_test(
     ],
     embed = [":controllers"],
     deps = [
-        "//src/api/proto/vizierapipb:public_vizier_pl_go_proto",
-        "//src/api/proto/vizierapipb/mock",
+        "//src/api/proto/vizierpb:vizier_pl_go_proto",
+        "//src/api/proto/vizierpb/mock",
         "//src/carnot/carnotpb:carnot_pl_go_proto",
         "//src/carnot/carnotpb/mock",
         "//src/carnot/planner/compilerpb:compiler_status_pl_go_proto",

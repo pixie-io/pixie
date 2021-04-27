@@ -31,7 +31,7 @@ import (
 	"google.golang.org/grpc"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 
-	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
+	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/election"
 	"px.dev/pixie/src/shared/services/env"
@@ -54,7 +54,7 @@ func init() {
 	pflag.String("cluster_name", "", "The name of the user's K8s cluster")
 	pflag.String("deploy_key", "", "The deploy key for the cluster")
 }
-func newVzServiceClient() (public_vizierapipb.VizierServiceClient, error) {
+func newVzServiceClient() (vizierpb.VizierServiceClient, error) {
 	dialOpts, err := services.GetGRPCClientDialOpts()
 	if err != nil {
 		return nil, err
@@ -67,7 +67,7 @@ func newVzServiceClient() (public_vizierapipb.VizierServiceClient, error) {
 		return nil, err
 	}
 
-	return public_vizierapipb.NewVizierServiceClient(qbChannel), nil
+	return vizierpb.NewVizierServiceClient(qbChannel), nil
 }
 
 func main() {

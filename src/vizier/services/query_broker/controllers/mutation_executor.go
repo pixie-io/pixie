@@ -28,7 +28,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"px.dev/pixie/src/api/proto/uuidpb"
-	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
+	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/carnot/planner/distributedpb"
 	"px.dev/pixie/src/carnot/planner/plannerpb"
 	"px.dev/pixie/src/carnot/planpb"
@@ -75,7 +75,7 @@ func NewMutationExecutor(
 
 // Execute runs the mutation. On unknown errors it will return an error, otherwise we return a status message
 // that has more context about the error message.
-func (m *MutationExecutor) Execute(ctx context.Context, req *public_vizierapipb.ExecuteScriptRequest, planOpts *planpb.PlanOptions) (*statuspb.Status, error) {
+func (m *MutationExecutor) Execute(ctx context.Context, req *vizierpb.ExecuteScriptRequest, planOpts *planpb.PlanOptions) (*statuspb.Status, error) {
 	convertedReq, err := VizierQueryRequestToPlannerMutationRequest(req)
 	if err != nil {
 		return nil, err
@@ -212,7 +212,7 @@ func (m *MutationExecutor) Execute(ctx context.Context, req *public_vizierapipb.
 }
 
 // MutationInfo returns the summarized mutation information.
-func (m *MutationExecutor) MutationInfo(ctx context.Context) (*public_vizierapipb.MutationInfo, error) {
+func (m *MutationExecutor) MutationInfo(ctx context.Context) (*vizierpb.MutationInfo, error) {
 	req := &metadatapb.GetTracepointInfoRequest{
 		IDs: make([]*uuidpb.UUID, 0),
 	}
@@ -229,14 +229,14 @@ func (m *MutationExecutor) MutationInfo(ctx context.Context) (*public_vizierapip
 	if err != nil {
 		return nil, err
 	}
-	mutationInfo := &public_vizierapipb.MutationInfo{
-		Status: &public_vizierapipb.Status{Code: 0},
-		States: make([]*public_vizierapipb.MutationInfo_MutationState, len(resp.Tracepoints)),
+	mutationInfo := &vizierpb.MutationInfo{
+		Status: &vizierpb.Status{Code: 0},
+		States: make([]*vizierpb.MutationInfo_MutationState, len(resp.Tracepoints)),
 	}
 
 	ready := true
 	for idx, tp := range resp.Tracepoints {
-		mutationInfo.States[idx] = &public_vizierapipb.MutationInfo_MutationState{
+		mutationInfo.States[idx] = &vizierpb.MutationInfo_MutationState{
 			ID:    utils.UUIDFromProtoOrNil(tp.ID).String(),
 			State: convertLifeCycleStateToVizierLifeCycleState(tp.State),
 			Name:  tp.Name,
@@ -247,7 +247,7 @@ func (m *MutationExecutor) MutationInfo(ctx context.Context) (*public_vizierapip
 	}
 
 	if !ready {
-		mutationInfo.Status = &public_vizierapipb.Status{
+		mutationInfo.Status = &vizierpb.Status{
 			Code:    int32(codes.Unavailable),
 			Message: "probe installation in progress",
 		}
@@ -255,7 +255,7 @@ func (m *MutationExecutor) MutationInfo(ctx context.Context) (*public_vizierapip
 	}
 
 	if !m.isSchemaReady() {
-		mutationInfo.Status = &public_vizierapipb.Status{
+		mutationInfo.Status = &vizierpb.Status{
 			Code:    int32(codes.Unavailable),
 			Message: "Schema is not ready yet",
 		}

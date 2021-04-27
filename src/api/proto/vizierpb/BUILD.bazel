@@ -36,8 +36,8 @@ pl_cc_proto_library(
 )
 
 pl_go_proto_library(
-    name = "public_vizier_pl_go_proto",
-    importpath = "px.dev/pixie/src/api/proto/vizierapipb",
+    name = "vizier_pl_go_proto",
+    importpath = "px.dev/pixie/src/api/proto/vizierpb",
     proto = ":vizier_pl_proto",
     visibility = ["//src:__subpackages__"],
 )

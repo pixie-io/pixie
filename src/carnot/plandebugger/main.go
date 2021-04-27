@@ -28,7 +28,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	log "github.com/sirupsen/logrus"
 
-	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
+	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/carnot/goplanner"
 	"px.dev/pixie/src/carnot/planner/compilerpb"
 	"px.dev/pixie/src/carnot/planner/distributedpb"
@@ -741,7 +741,7 @@ px.display(df2.groupby('http_resp_status').agg(count=('http_resp_status', px.cou
 
 `
 
-func convertExecFuncs(inputFuncs []*public_vizierapipb.ExecuteScriptRequest_FuncToExecute) []*plannerpb.FuncToExecute {
+func convertExecFuncs(inputFuncs []*vizierpb.ExecuteScriptRequest_FuncToExecute) []*plannerpb.FuncToExecute {
 	funcs := make([]*plannerpb.FuncToExecute, len(inputFuncs))
 	for i, f := range inputFuncs {
 		args := make([]*plannerpb.FuncToExecute_ArgValue, len(f.ArgValues))

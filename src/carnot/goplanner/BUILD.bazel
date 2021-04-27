@@ -78,7 +78,7 @@ go_test(
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/api/proto/vispb:vis_pl_go_proto",
-        "//src/api/proto/vizierapipb:public_vizier_pl_go_proto",
+        "//src/api/proto/vizierpb:vizier_pl_go_proto",
         "//src/carnot/goplanner:go_default_library",
         "//src/carnot/planner/compilerpb:compiler_status_pl_go_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",

@@ -30,7 +30,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
+	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/carnot/carnotpb"
 	"px.dev/pixie/src/carnot/planner/distributedpb"
 	"px.dev/pixie/src/carnot/planpb"
@@ -58,7 +58,7 @@ func makeInitiateTableRequest(queryID uuid.UUID, tableName string) *carnotpb.Tra
 }
 
 func makeRowBatchResult(t *testing.T, queryID uuid.UUID, tableName string, tableID string,
-	eos bool) (*public_vizierapipb.RowBatchData, *carnotpb.TransferResultChunkRequest) {
+	eos bool) (*vizierpb.RowBatchData, *carnotpb.TransferResultChunkRequest) {
 	rb := new(schemapb.RowBatchData)
 	if err := proto.UnmarshalText(rowBatchPb, rb); err != nil {
 		t.Fatalf("Cannot unmarshal proto %v", err)
@@ -86,7 +86,7 @@ func makeRowBatchResult(t *testing.T, queryID uuid.UUID, tableName string, table
 	}
 }
 
-func makeExecStatsResult(t *testing.T, queryID uuid.UUID) (*public_vizierapipb.QueryExecutionStats,
+func makeExecStatsResult(t *testing.T, queryID uuid.UUID) (*vizierpb.QueryExecutionStats,
 	*carnotpb.TransferResultChunkRequest) {
 	execStats := &queryresultspb.QueryExecutionStats{
 		Timing: &queryresultspb.QueryTimingInfo{
@@ -147,8 +147,8 @@ func TestStreamResultsSimple(t *testing.T) {
 	expectedTables["foo"] = "123"
 	expectedTables["bar"] = "456"
 
-	var results []*public_vizierapipb.ExecuteScriptResponse
-	resultCh := make(chan *public_vizierapipb.ExecuteScriptResponse)
+	var results []*vizierpb.ExecuteScriptResponse
+	resultCh := make(chan *vizierpb.ExecuteScriptResponse)
 	doneCh := make(chan bool)
 
 	go func() {
@@ -208,8 +208,8 @@ func TestStreamResultsAgentCancel(t *testing.T) {
 	expectedTables["foo"] = "123"
 	expectedTables["bar"] = "456"
 
-	var results []*public_vizierapipb.ExecuteScriptResponse
-	resultCh := make(chan *public_vizierapipb.ExecuteScriptResponse)
+	var results []*vizierpb.ExecuteScriptResponse
+	resultCh := make(chan *vizierpb.ExecuteScriptResponse)
 	doneCh := make(chan bool)
 
 	go func() {
@@ -268,8 +268,8 @@ func TestStreamResultsClientContextCancel(t *testing.T) {
 	expectedTables["foo"] = "123"
 	expectedTables["bar"] = "456"
 
-	var results []*public_vizierapipb.ExecuteScriptResponse
-	resultCh := make(chan *public_vizierapipb.ExecuteScriptResponse)
+	var results []*vizierpb.ExecuteScriptResponse
+	resultCh := make(chan *vizierpb.ExecuteScriptResponse)
 	doneCh := make(chan bool)
 
 	go func() {
@@ -326,8 +326,8 @@ func TestStreamResultsQueryPlan(t *testing.T) {
 	expectedTables["foo"] = "123"
 	expectedTables["bar"] = "456"
 
-	var results []*public_vizierapipb.ExecuteScriptResponse
-	resultCh := make(chan *public_vizierapipb.ExecuteScriptResponse)
+	var results []*vizierpb.ExecuteScriptResponse
+	resultCh := make(chan *vizierpb.ExecuteScriptResponse)
 	doneCh := make(chan bool)
 
 	go func() {
@@ -410,8 +410,8 @@ func TestStreamResultsWrongQueryID(t *testing.T) {
 	expectedTables["foo"] = "123"
 	expectedTables["bar"] = "456"
 
-	var results []*public_vizierapipb.ExecuteScriptResponse
-	resultCh := make(chan *public_vizierapipb.ExecuteScriptResponse)
+	var results []*vizierpb.ExecuteScriptResponse
+	resultCh := make(chan *vizierpb.ExecuteScriptResponse)
 	doneCh := make(chan bool)
 
 	go func() {
@@ -462,8 +462,8 @@ func TestStreamResultsResultsBeforeInitialization(t *testing.T) {
 	expectedTables["foo"] = "123"
 	expectedTables["bar"] = "456"
 
-	var results []*public_vizierapipb.ExecuteScriptResponse
-	resultCh := make(chan *public_vizierapipb.ExecuteScriptResponse)
+	var results []*vizierpb.ExecuteScriptResponse
+	resultCh := make(chan *vizierpb.ExecuteScriptResponse)
 	doneCh := make(chan bool)
 
 	go func() {
@@ -508,8 +508,8 @@ func TestStreamResultsNeverInitializedTable(t *testing.T) {
 	expectedTables["foo"] = "123"
 	expectedTables["bar"] = "456"
 
-	var results []*public_vizierapipb.ExecuteScriptResponse
-	resultCh := make(chan *public_vizierapipb.ExecuteScriptResponse)
+	var results []*vizierpb.ExecuteScriptResponse
+	resultCh := make(chan *vizierpb.ExecuteScriptResponse)
 	doneCh := make(chan bool)
 
 	go func() {

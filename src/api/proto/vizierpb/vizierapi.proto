@@ -20,7 +20,7 @@ syntax = "proto3";
 
 package px.api.vizierpb;
 
-option go_package = "publicvizierapipb";
+option go_package = "vizierpb";
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 

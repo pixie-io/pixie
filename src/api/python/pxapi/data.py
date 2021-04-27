@@ -21,7 +21,7 @@ import uuid
 from collections import OrderedDict
 from typing import Callable, Any, List, AsyncGenerator, Union
 
-from src.api.proto.vizierapipb import vizierapi_pb2 as vpb
+from src.api.proto.vizierpb import vizierapi_pb2 as vpb
 
 
 # Function that transforms a Column (a oneof field in the proto)

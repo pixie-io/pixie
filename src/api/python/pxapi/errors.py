@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from src.api.proto.vizierapipb import vizierapi_pb2 as vpb
+from src.api.proto.vizierpb import vizierapi_pb2 as vpb
 
 
 class PxLError(Exception):

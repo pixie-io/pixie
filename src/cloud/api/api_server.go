@@ -34,7 +34,7 @@ import (
 	"github.com/spf13/viper"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
-	public_vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
+	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/cloud/api/apienv"
 	"px.dev/pixie/src/cloud/api/controller"
 	"px.dev/pixie/src/cloud/api/ptproxy"
@@ -191,7 +191,7 @@ func main() {
 	cloudpb.RegisterAPIKeyManagerServer(s.GRPCServer(), aks)
 
 	vpt := ptproxy.NewVizierPassThroughProxy(nc, vc)
-	public_vizierapipb.RegisterVizierServiceServer(s.GRPCServer(), vpt)
+	vizierpb.RegisterVizierServiceServer(s.GRPCServer(), vpt)
 	pl_api_vizierpb.RegisterVizierDebugServiceServer(s.GRPCServer(), vpt)
 
 	sm, err := apienv.NewScriptMgrServiceClient()

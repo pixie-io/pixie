@@ -26,7 +26,7 @@ go_library(
     visibility = ["//src:__subpackages__"],
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
-        "//src/api/proto/vizierapipb:public_vizier_pl_go_proto",
+        "//src/api/proto/vizierpb:vizier_pl_go_proto",
         "//src/cloud/shared/vzshard",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/services/authcontext",
@@ -52,7 +52,7 @@ go_test(
     embed = [":ptproxy"],
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
-        "//src/api/proto/vizierapipb:public_vizier_pl_go_proto",
+        "//src/api/proto/vizierpb:vizier_pl_go_proto",
         "//src/cloud/shared/vzshard",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/services/env",

@@ -26,7 +26,7 @@ import (
 
 	"px.dev/pixie/src/api/go/pxapi/errdefs"
 	"px.dev/pixie/src/api/go/pxapi/types"
-	vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
+	"px.dev/pixie/src/api/proto/vizierpb"
 )
 
 type tableTracker struct {
@@ -48,7 +48,7 @@ type ResultsStats struct {
 
 // ScriptResults tracks the results of a script, and provides mechanisms to cancel, etc.
 type ScriptResults struct {
-	c      vizierapipb.VizierService_ExecuteScriptClient
+	c      vizierpb.VizierService_ExecuteScriptClient
 	cancel context.CancelFunc
 	closed bool
 
@@ -107,14 +107,14 @@ func (s *ScriptResults) Stream() error {
 	return streamErr
 }
 
-func (s *ScriptResults) handleGRPCMsg(ctx context.Context, resp *vizierapipb.ExecuteScriptResponse) error {
+func (s *ScriptResults) handleGRPCMsg(ctx context.Context, resp *vizierpb.ExecuteScriptResponse) error {
 	if err := errdefs.ParseStatus(resp.Status); err != nil {
 		return err
 	}
 	switch v := resp.Result.(type) {
-	case *vizierapipb.ExecuteScriptResponse_MetaData:
+	case *vizierpb.ExecuteScriptResponse_MetaData:
 		return s.handleTableMetadata(ctx, v)
-	case *vizierapipb.ExecuteScriptResponse_Data:
+	case *vizierpb.ExecuteScriptResponse_Data:
 		if v.Data != nil {
 			if v.Data.Batch != nil {
 				return s.handleTableRowbatch(ctx, v.Data.Batch)
@@ -149,7 +149,7 @@ func (s *ScriptResults) run() error {
 	}
 }
 
-func (s *ScriptResults) handleTableMetadata(ctx context.Context, md *vizierapipb.ExecuteScriptResponse_MetaData) error {
+func (s *ScriptResults) handleTableMetadata(ctx context.Context, md *vizierpb.ExecuteScriptResponse_MetaData) error {
 	qmd := md.MetaData
 
 	// New table, check and see if we are already tracking it.
@@ -199,7 +199,7 @@ func (s *ScriptResults) handleTableMetadata(ctx context.Context, md *vizierapipb
 	return nil
 }
 
-func (s *ScriptResults) handleTableRowbatch(ctx context.Context, b *vizierapipb.RowBatchData) error {
+func (s *ScriptResults) handleTableRowbatch(ctx context.Context, b *vizierpb.RowBatchData) error {
 	tracker, ok := s.tableIDToTracker[b.TableID]
 	if !ok {
 		return errdefs.ErrInternalMissingTableMetadata
@@ -231,17 +231,17 @@ func (s *ScriptResults) handleTableRowbatch(ctx context.Context, b *vizierapipb.
 		// So we lookup the data type and then create a row pointer that corresponds to the correct
 		// value type.
 		switch tracker.md.ColInfo[colIdx].Type {
-		case vizierapipb.BOOLEAN:
+		case vizierpb.BOOLEAN:
 			row[colIdx] = types.NewBooleanValue(&colSchema)
-		case vizierapipb.INT64:
+		case vizierpb.INT64:
 			row[colIdx] = types.NewInt64Value(&colSchema)
-		case vizierapipb.TIME64NS:
+		case vizierpb.TIME64NS:
 			row[colIdx] = types.NewTime64NSValue(&colSchema)
-		case vizierapipb.FLOAT64:
+		case vizierpb.FLOAT64:
 			row[colIdx] = types.NewFloat64Value(&colSchema)
-		case vizierapipb.STRING:
+		case vizierpb.STRING:
 			row[colIdx] = types.NewStringValue(&colSchema)
-		case vizierapipb.UINT128:
+		case vizierpb.UINT128:
 			row[colIdx] = types.NewUint128Value(&colSchema)
 		}
 	}
@@ -266,39 +266,39 @@ func (s *ScriptResults) handleTableRowbatch(ctx context.Context, b *vizierapipb.
 	return nil
 }
 
-func extractDataFromCol(colData []*vizierapipb.Column, rowIdx, colIdx int64, row []types.Datum) error {
+func extractDataFromCol(colData []*vizierpb.Column, rowIdx, colIdx int64, row []types.Datum) error {
 	switch colTyped := colData[colIdx].ColData.(type) {
-	case *vizierapipb.Column_BooleanData:
+	case *vizierpb.Column_BooleanData:
 		dCasted, ok := row[colIdx].(*types.BooleanValue)
 		if !ok {
 			return errdefs.ErrInternalMismatchedType
 		}
 		dCasted.ScanBool(colTyped.BooleanData.Data[rowIdx])
-	case *vizierapipb.Column_Int64Data:
+	case *vizierpb.Column_Int64Data:
 		dCasted, ok := row[colIdx].(*types.Int64Value)
 		if !ok {
 			return errdefs.ErrInternalMismatchedType
 		}
 		dCasted.ScanInt64(colTyped.Int64Data.Data[rowIdx])
-	case *vizierapipb.Column_Time64NsData:
+	case *vizierpb.Column_Time64NsData:
 		dCasted, ok := row[colIdx].(*types.Time64NSValue)
 		if !ok {
 			return errdefs.ErrInternalMismatchedType
 		}
 		dCasted.ScanInt64(colTyped.Time64NsData.Data[rowIdx])
-	case *vizierapipb.Column_Float64Data:
+	case *vizierpb.Column_Float64Data:
 		dCasted, ok := row[colIdx].(*types.Float64Value)
 		if !ok {
 			return errdefs.ErrInternalMismatchedType
 		}
 		dCasted.ScanFloat64(colTyped.Float64Data.Data[rowIdx])
-	case *vizierapipb.Column_StringData:
+	case *vizierpb.Column_StringData:
 		dCasted, ok := row[colIdx].(*types.StringValue)
 		if !ok {
 			return errdefs.ErrInternalMismatchedType
 		}
 		dCasted.ScanString(colTyped.StringData.Data[rowIdx])
-	case *vizierapipb.Column_Uint128Data:
+	case *vizierpb.Column_Uint128Data:
 		dCasted, ok := row[colIdx].(*types.UInt128Value)
 		if !ok {
 			return errdefs.ErrInternalMismatchedType
@@ -310,7 +310,7 @@ func extractDataFromCol(colData []*vizierapipb.Column, rowIdx, colIdx int64, row
 	return nil
 }
 
-func (s *ScriptResults) handleStats(ctx context.Context, qes *vizierapipb.QueryExecutionStats) error {
+func (s *ScriptResults) handleStats(ctx context.Context, qes *vizierpb.QueryExecutionStats) error {
 	s.stats.BytesProcessed += qes.BytesProcessed
 	s.stats.RecordsProcessed += qes.RecordsProcessed
 	s.stats.CompilationTime = time.Duration(qes.Timing.CompilationTimeNs) * time.Nanosecond

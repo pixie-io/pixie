@@ -50,7 +50,7 @@ py_wheel(
         "//src/api/proto/cloudpb:cloudapi_pl_py_grpc",
         "//src/api/proto/uuidpb:uuid_pl_py_proto",
         "//src/api/proto/vispb:vis_pl_py_proto",
-        "//src/api/proto/vizierapipb:vizier_pl_py_grpc",
+        "//src/api/proto/vizierpb:vizier_pl_py_grpc",
         "//src/api/python/pxapi:pxapi_library",
     ],
 )

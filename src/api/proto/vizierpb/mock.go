@@ -16,6 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package publicvizierapipb
+package vizierpb
 
 //go:generate mockgen -source=vizierapi.pb.go -destination=mock/vizier_mock.gen.go VizierService_ExecuteScriptServer
