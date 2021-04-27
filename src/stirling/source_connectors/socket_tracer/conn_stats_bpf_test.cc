@@ -49,7 +49,10 @@ constexpr int kRoleIdx = conn_stats_idx::kRole;
 
 // Turn off client-side tracing. Unlike data tracing, conn-stats should still trace client-side even
 // with the client-side tracing turned off.
-class ConnStatsBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ false> {};
+class ConnStatsBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ false> {
+ public:
+  ConnStatsBPFTest() { FLAGS_stirling_conn_stats_sampling_ratio = 1; }
+};
 
 TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
   StartTransferDataThread(SocketTraceConnector::kConnStatsTableNum, kConnStatsTable);
@@ -204,7 +207,8 @@ TEST_F(ConnStatsMidConnBPFTest, DidNotSeeConnEstablishment) {
   }
 }
 
-TEST_F(ConnStatsMidConnBPFTest, InferRole) {
+// TODO(oazizi): Re-enable in D8444.
+TEST_F(ConnStatsMidConnBPFTest, DISABLED_InferRole) {
   // TODO(oazizi): Connection inference is tied to HTTP table. Decouple.
   StartTransferDataThread(SocketTraceConnector::kHTTPTableNum, kHTTPTable);
 

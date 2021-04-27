@@ -560,7 +560,13 @@ TEST_F(SocketTraceServerSideBPFTest, ConnStatsUpdatedAfterConnTrackerDisabled) {
   auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.get());
 
   ConfigureBPFCapture(kProtocolHTTP, kRoleClient | kRoleServer);
-  DataTable data_table(kHTTPTable);
+
+  std::vector<std::unique_ptr<DataTable>> data_tables;
+  std::vector<DataTable*> data_table_ptrs;
+  for (const auto& table_schema : SocketTraceConnector::kTables) {
+    data_tables.emplace_back(std::make_unique<DataTable>(table_schema));
+    data_table_ptrs.push_back(data_tables.back().get());
+  }
 
   TCPSocket client;
   TCPSocket server;
@@ -581,7 +587,7 @@ TEST_F(SocketTraceServerSideBPFTest, ConnStatsUpdatedAfterConnTrackerDisabled) {
   ASSERT_TRUE(client.Recv(&msg));
 
   sleep(1);
-  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), data_table_ptrs);
 
   ASSERT_OK_AND_ASSIGN(const ConnTracker* client_side_tracker,
                        socket_trace_connector->GetConnTracker(getpid(), client.sockfd()));
@@ -612,7 +618,7 @@ TEST_F(SocketTraceServerSideBPFTest, ConnStatsUpdatedAfterConnTrackerDisabled) {
   ASSERT_TRUE(client.Recv(&msg));
   sleep(1);
 
-  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), data_table_ptrs);
 
   EXPECT_EQ(client_side_tracker->GetStat(Stat::kBytesSent),
             kHTTPReqMsg1.size() + kHTTPReqMsg2.size());

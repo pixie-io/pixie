@@ -38,17 +38,13 @@ class ConnTrackersManagerTest : public ::testing::Test {
     trackers_.CleanupTrackers();
   }
 
-  void TransferStreamsProxy(TrafficProtocol protocol, double mark_for_death_probabilty,
-                            int death_countdown) {
-    VLOG(1) << absl::Substitute("TransferStreamsProxy $0 $1", magic_enum::enum_name(protocol),
-                                mark_for_death_probabilty);
-    ConnTrackersManager::TrackersList conn_trackers_list =
-        trackers_.ConnTrackersForProtocol(protocol);
-
-    for (auto iter = conn_trackers_list.begin(); iter != conn_trackers_list.end(); ++iter) {
-      ConnTracker* tracker = *iter;
-      if (probability_dist_(rng_) < mark_for_death_probabilty) {
-        tracker->MarkForDeath(death_countdown);
+  void TransferStreamsProxy(double mark_for_death_probability, int death_countdown) {
+    for (const auto& [conn_id, conn_tracker_gen] :
+         trackers_.conn_id_to_conn_tracker_generations()) {
+      for (auto& [tsid, tracker] : conn_tracker_gen.generations()) {
+        if (probability_dist_(rng_) < mark_for_death_probability) {
+          tracker->MarkForDeath(death_countdown);
+        }
       }
     }
   }
@@ -93,63 +89,13 @@ TEST_F(ConnTrackersManagerTest, Fuzz) {
     } else if (x < 0.95) {
       int death_countdown = death_countdown_dist(rng_);
       double mark_for_death_prob = probability_dist_(rng_);
-      TransferStreamsProxy(protocol.value(), mark_for_death_prob, death_countdown);
+      TransferStreamsProxy(mark_for_death_prob, death_countdown);
     } else {
       CleanupTrackers();
     }
 
     ASSERT_OK(trackers_.TestOnlyCheckConsistency());
   }
-}
-
-// This test case is inspired from an elusive bug that caused memory corruption issues due to
-// heap-use-after-free. It was caught by the Fuzz test and boiled down to a simple sequence here.
-// Now that we don't allow a tracker to be in multiple lists, it is less likely to trigger.
-TEST_F(ConnTrackersManagerTest, ChangeProtocolsWhileReadyForDestruction) {
-  struct conn_id_t conn_id = {{{5}, 0}, 1, 12345};
-  constexpr int kDeathCountdown = 0;
-  constexpr double kMarkForDeathProb = 1.0;
-
-  LOG(INFO) << "Add a new event into unknown protocol list.";
-  TrackerEvent(conn_id, kProtocolUnknown);
-  LOG(INFO) << trackers_.DebugInfo();
-  ASSERT_OK(trackers_.TestOnlyCheckConsistency())
-      << "Inconsistent state after adding new event with kProtocolUnknown.";
-
-  LOG(INFO) << "Make tracker ReadyForDestruction by processing the unknown protocols list.";
-  TransferStreamsProxy(kProtocolUnknown, kMarkForDeathProb, kDeathCountdown);
-  LOG(INFO) << trackers_.DebugInfo();
-  ASSERT_OK(trackers_.TestOnlyCheckConsistency())
-      << "Inconsistent state after TransferStreams on kProtocolUnknown.";
-
-  LOG(INFO) << "Process HTTP protocols list. This should have no effect.";
-  TransferStreamsProxy(kProtocolHTTP, kMarkForDeathProb, kDeathCountdown);
-  LOG(INFO) << trackers_.DebugInfo();
-  ASSERT_OK(trackers_.TestOnlyCheckConsistency())
-      << "Inconsistent state after TransferStreams on kProtocolHTTP.";
-
-  LOG(INFO) << "A new event moves the tracker to the HTTP list.";
-  TrackerEvent(conn_id, kProtocolHTTP);
-  LOG(INFO) << trackers_.DebugInfo();
-  ASSERT_OK(trackers_.TestOnlyCheckConsistency())
-      << "Inconsistent state after updating tracker to kProtocolHTTP.";
-
-  LOG(INFO) << "Process unknown protocols list.";
-  TransferStreamsProxy(kProtocolUnknown, kMarkForDeathProb, kDeathCountdown);
-  LOG(INFO) << trackers_.DebugInfo();
-  ASSERT_OK(trackers_.TestOnlyCheckConsistency())
-      << "Inconsistent state after TransferStreams on kProtocolUnknown.";
-
-  LOG(INFO) << "CleanupTrackers. The tracker is removed, so it better not be in any lists.";
-  CleanupTrackers();
-  LOG(INFO) << trackers_.DebugInfo();
-  ASSERT_OK(trackers_.TestOnlyCheckConsistency()) << "Inconsistent state after CleanupTrackers.";
-
-  LOG(INFO) << "Process HTTP protocols list.";
-  TransferStreamsProxy(kProtocolHTTP, kMarkForDeathProb, kDeathCountdown);
-  LOG(INFO) << trackers_.DebugInfo();
-  ASSERT_OK(trackers_.TestOnlyCheckConsistency())
-      << "Inconsistent state after TransferStreams on kProtocolHTTP.";
 }
 
 class ConnTrackerGenerationsTest : public ::testing::Test {

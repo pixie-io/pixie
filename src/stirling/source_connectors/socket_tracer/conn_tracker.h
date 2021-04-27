@@ -640,10 +640,6 @@ class ConnTracker : NotCopyMoveable {
   template <typename TProtocolTraits>
   friend std::string DebugString(const ConnTracker& c, std::string_view prefix);
 
-  // A back pointer to the list in ConnTrackersManager where this tracker is stored.
-  // This member variable is managed completely by ConnTrackersManager.
-  std::optional<std::list<ConnTracker*>::iterator> back_pointer_;
-
   // A pointer to the conn trackers manager, used for notifying a protocol change.
   ConnTrackersManager* manager_ = nullptr;
 

@@ -88,19 +88,30 @@ class SocketTraceBPFTest : public ::testing::Test {
   }
 
   void StartTransferDataThread(int table_num, const DataTableSchema& schema) {
-    data_table_ = std::make_unique<DataTable>(schema);
-    transfer_data_thread_ = std::thread(
-        [this](int table_num, DataTable* data_table) {
-          transfer_enable_ = true;
-          while (transfer_enable_) {
-            {
-              absl::base_internal::SpinLockHolder lock(&socket_tracer_state_lock_);
-              source_->TransferData(ctx_.get(), table_num, data_table);
-            }
-            std::this_thread::sleep_for(kTransferDataPeriod);
-          }
-        },
-        table_num, data_table_.get());
+    // TODO(oazizi): Remove schema.
+    PL_UNUSED(schema);
+
+    table_num_ = table_num;
+
+    data_tables_.clear();
+    data_table_uptrs_.clear();
+
+    for (const auto& table : SocketTraceConnector::kTables) {
+      auto data_table = std::make_unique<DataTable>(table);
+      data_tables_.push_back(data_table.get());
+      data_table_uptrs_.push_back(std::move(data_table));
+    }
+
+    transfer_data_thread_ = std::thread([this]() {
+      transfer_enable_ = true;
+      while (transfer_enable_) {
+        {
+          absl::base_internal::SpinLockHolder lock(&socket_tracer_state_lock_);
+          source_->TransferData(ctx_.get(), data_tables_);
+        }
+        std::this_thread::sleep_for(kTransferDataPeriod);
+      }
+    });
 
     while (!transfer_enable_) {
     }
@@ -115,11 +126,11 @@ class SocketTraceBPFTest : public ::testing::Test {
     std::this_thread::sleep_for(2 * kTransferDataPeriod);
 
     absl::base_internal::SpinLockHolder lock(&socket_tracer_state_lock_);
-    CHECK(data_table_ != nullptr);
     CHECK(transfer_data_thread_.joinable());
     transfer_enable_ = false;
     transfer_data_thread_.join();
-    return data_table_->ConsumeRecords();
+    CHECK_NE(table_num_, -1);
+    return data_tables_[table_num_]->ConsumeRecords();
   }
 
   static constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
@@ -131,7 +142,9 @@ class SocketTraceBPFTest : public ::testing::Test {
   std::unique_ptr<StandaloneContext> ctx_;
   std::atomic<bool> transfer_enable_ = false;
   std::thread transfer_data_thread_;
-  std::unique_ptr<DataTable> data_table_;
+  int table_num_ = -1;
+  std::vector<std::unique_ptr<DataTable>> data_table_uptrs_;
+  std::vector<DataTable*> data_tables_;
 
   static constexpr std::chrono::milliseconds kTransferDataPeriod{100};
 };

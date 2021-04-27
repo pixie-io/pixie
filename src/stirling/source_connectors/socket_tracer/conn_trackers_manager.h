@@ -93,75 +93,6 @@ class ConnTrackersManager {
   ConnTracker& GetOrCreateConnTracker(struct conn_id_t conn_id);
 
   /**
-   * A TrackersList consists of a list of trackers.
-   * It can only be created via ConnTrackersForProtocol(), such that it returns a list
-   * of trackers that have the requested protocol.
-   *
-   * Usage model example:
-   * ConnTrackersManager::TrackersList http_conn_trackers =
-   *     conn_trackers_mgr.ConnTrackersForProtocol(kProtocolHTTP);
-   *
-   * for (auto iter = http_conn_trackers.begin(); iter != http_conn_trackers.end(); ++iter) {
-   *   ConnTracker* tracker = *iter;
-   *
-   *   // Relevant actions on tracker go here.
-   * }
-   */
-  class TrackersList {
-   public:
-    /**
-     * A custom iterator for going through the list of trackers for a given protocol.
-     * This iterator automatically handles removing trackers whose protocol has changed
-     * (currently this should only be possible from kProtocolUnknown), and the removal of
-     * trackers that are ReadyForDestruction().
-     */
-    class TrackersListIterator {
-     public:
-      bool operator!=(const TrackersListIterator& other);
-
-      ConnTracker* operator*();
-
-      // Prefix increment operator.
-      TrackersListIterator operator++();
-
-     private:
-      TrackersListIterator(std::list<ConnTracker*>* trackers,
-                           std::list<ConnTracker*>::iterator iter,
-                           ConnTrackersManager* conn_trackers_manager);
-
-      std::list<ConnTracker*>* trackers_;
-      std::list<ConnTracker*>::iterator iter_;
-      ConnTrackersManager* conn_trackers_manager_;
-
-      friend class TrackersList;
-    };
-
-    TrackersListIterator begin() {
-      return TrackersListIterator(list_, list_->begin(), conn_trackers_mgr_);
-    }
-
-    TrackersListIterator end() {
-      return TrackersListIterator(list_, list_->end(), conn_trackers_mgr_);
-    }
-
-   private:
-    TrackersList(std::list<ConnTracker*>* list, ConnTrackersManager* conn_trackers_mgr)
-        : list_(list), conn_trackers_mgr_(conn_trackers_mgr) {}
-
-    std::list<ConnTracker*>* list_;
-    ConnTrackersManager* conn_trackers_mgr_;
-
-    friend class ConnTrackersManager;
-  };
-
-  /**
-   * Returns a list of all the trackers that belong to a particular protocol.
-   */
-  TrackersList ConnTrackersForProtocol(TrafficProtocol protocol) {
-    return TrackersList(&conn_trackers_by_protocol_[protocol], this);
-  }
-
-  /**
    * Returns the latest generation of a connection tracker for the given pid and fd.
    * If there is no tracker for {pid, fd}, returns error::NotFound.
    */
@@ -169,9 +100,8 @@ class ConnTrackersManager {
 
   /**
    * If a connection tracker has its protocol changed, then one must manually call this function.
-   * TODO(oazizi): Find a cleaner/more automatic way that can avoid this call altogether.
    */
-  void UpdateProtocol(ConnTracker* tracker, std::optional<TrafficProtocol> old_protocol);
+  void UpdateProtocol(ConnTracker* tracker);
 
   /**
    * Deletes trackers that are ReadyForDestruction().
@@ -216,7 +146,6 @@ class ConnTrackersManager {
   // Used to check for consistency.
   size_t num_trackers_ = 0;
   size_t num_trackers_ready_for_destruction_ = 0;
-  size_t num_trackers_in_lists_ = 0;
 
   // A pool of unused trackers that can be recycled.
   // This is useful for avoiding memory reallocations.

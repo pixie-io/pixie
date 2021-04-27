@@ -47,7 +47,7 @@
 #include "src/stirling/utils/proc_path_tools.h"
 #include "src/stirling/utils/proc_tracker.h"
 
-DECLARE_uint32(stirling_socket_trace_sampling_period_millis);
+DECLARE_uint32(stirling_conn_stats_sampling_ratio);
 DECLARE_string(perf_buffer_events_output_path);
 DECLARE_bool(stirling_enable_http_tracing);
 DECLARE_bool(stirling_enable_http2_tracing);
@@ -81,9 +81,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static constexpr auto kSamplingPeriod = std::chrono::milliseconds{100};
   // TODO(yzhao): This is not used right now. Eventually use this to control data push frequency.
   static constexpr auto kPushPeriod = std::chrono::milliseconds{1000};
-  // 50 X less often than the normal sampling frequency. Based on the conn_stats_table.h's
-  // sampling period of 5 seconds, and other tables' 100 miliseconds.
-  static constexpr size_t kConnStatsSamplingRatio = 50;
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new SocketTraceConnector(name));

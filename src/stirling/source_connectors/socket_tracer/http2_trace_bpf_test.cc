@@ -89,7 +89,11 @@ class HTTP2TraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing 
   GRPCClientContainer client_;
 };
 
-TEST_F(HTTP2TraceTest, Basic) {
+// TODO(oazizi): Re-enable in D8444.
+TEST_F(HTTP2TraceTest, DISABLED_Basic) {
+  // This test also checks conn_stats, so make sure we push records frequently.
+  FLAGS_stirling_conn_stats_sampling_ratio = 1;
+
   StartTransferDataThread(SocketTraceConnector::kHTTPTableNum, kHTTPTable);
 
   // Run the client in the network of the server, so they can connect to each other.
@@ -149,7 +153,7 @@ TEST_F(HTTP2TraceTest, Basic) {
 
     const types::ColumnWrapperRecordBatch& rb = tablets[0].records;
 
-    auto indices = FindRecordIdxMatchesPID(rb, kHTTPUPIDIdx, server_.process_pid());
+    auto indices = FindRecordIdxMatchesPID(rb, conn_stats_idx::kUPID, server_.process_pid());
     ASSERT_THAT(indices, SizeIs(1));
 
     int conn_open =

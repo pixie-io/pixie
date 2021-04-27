@@ -52,6 +52,12 @@
 #include "src/stirling/utils/linux_headers.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
+// 50 X less often than the normal sampling frequency. Based on the conn_stats_table.h's
+// sampling period of 5 seconds, and other tables' 100 milliseconds.
+DEFINE_uint32(
+    stirling_conn_stats_sampling_ratio, 50,
+    "Ratio of how frequently conn_stats_table is populated relative to the base sampling period");
+
 DEFINE_int32(test_only_socket_trace_target_pid, kTraceAllTGIDs, "The process to trace.");
 // TODO(yzhao): If we ever need to write all events from different perf buffers, then we need either
 // write to different files for individual perf buffers, or create a protobuf message with an oneof
@@ -337,25 +343,9 @@ void SocketTraceConnector::UpdateTrackerTraceLevel(ConnTracker* tracker) {
   }
 }
 
-void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
-                                            DataTable* data_table) {
-  DCHECK_LT(table_num, kTables.size())
-      << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
-  DCHECK(data_table != nullptr);
-
-  set_iteration_start_time(std::chrono::steady_clock::now());
-
-  CachedUpdateCommonState(ctx, table_num);
-
-  if (table_num == kConnStatsTableNum) {
-    // Connection stats table does not follow the convention of tables for data streams.
-    // So we handle it separately.
-    TransferConnStats(ctx, data_table);
-  } else {
-    data_table->SetConsumeRecordsCutoffTime(perf_buffer_drain_time_);
-
-    TransferStreams(ctx, table_num, data_table);
-  }
+void SocketTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t /* table_num */,
+                                            DataTable* /* data_table */) {
+  DCHECK(false) << "Deprecated";
 }
 
 void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
@@ -366,7 +356,7 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
 
   DataTable* conn_stats_table = data_tables[kConnStatsTableNum];
   if (conn_stats_table != nullptr &&
-      sample_push_freq_mgr_.sampling_count() % kConnStatsSamplingRatio == 0) {
+      sample_push_freq_mgr_.sampling_count() % FLAGS_stirling_conn_stats_sampling_ratio == 0) {
     TransferConnStats(ctx, conn_stats_table);
   }
 
@@ -906,51 +896,6 @@ void SocketTraceConnector::WriteDataEvent(const SocketDataEvent& event) {
 //-----------------------------------------------------------------------------
 // TransferData Helpers
 //-----------------------------------------------------------------------------
-
-void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table_num,
-                                           DataTable* data_table) {
-  std::vector<CIDRBlock> cluster_cidrs = ctx->GetClusterCIDRs();
-
-  // Iterate through protocols to find protocols that belong to this table.
-  // This is more efficient than going through all trackers, because
-  // we can choose to only go through the relevant protocol tracker lists.
-  for (size_t i = 0; i < protocol_transfer_specs_.size(); ++i) {
-    const auto& transfer_spec = protocol_transfer_specs_[i];
-
-    if (transfer_spec.table_num != table_num) {
-      continue;
-    }
-
-    auto protocol = magic_enum::enum_cast<TrafficProtocol>(i);
-    DCHECK(protocol.has_value());
-
-    ConnTrackersManager::TrackersList conn_trackers_list =
-        conn_trackers_mgr_.ConnTrackersForProtocol(protocol.value());
-
-    for (auto iter = conn_trackers_list.begin(); iter != conn_trackers_list.end(); ++iter) {
-      ConnTracker* tracker = *iter;
-
-      VLOG(1) << absl::Substitute("Connection conn_id=$0 protocol=$1 state=$2\n",
-                                  ToString(tracker->conn_id()),
-                                  magic_enum::enum_name(tracker->traffic_class().protocol),
-                                  magic_enum::enum_name(tracker->state()));
-
-      UpdateTrackerTraceLevel(tracker);
-
-      tracker->IterationPreTick(iteration_start_time_, cluster_cidrs, proc_parser_.get(),
-                                socket_info_mgr_.get());
-
-      if (transfer_spec.transfer_fn && transfer_spec.enabled) {
-        transfer_spec.transfer_fn(*this, ctx, tracker, data_table);
-      }
-
-      tracker->IterationPostTick();
-    }
-  }
-
-  // Once we've cleared all the debug trace levels for this pid, we can remove it from the list.
-  pids_to_trace_disable_.clear();
-}
 
 template <typename TProtocolTraits>
 void SocketTraceConnector::TransferStream(ConnectorContext* ctx, ConnTracker* tracker,

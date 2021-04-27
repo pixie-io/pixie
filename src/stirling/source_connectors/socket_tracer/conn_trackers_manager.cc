@@ -111,38 +111,10 @@ uint64_t GetConnMapKey(uint32_t pid, uint32_t fd) {
 
 ConnTrackersManager::ConnTrackersManager() : trackers_pool_(kMaxConnTrackerPoolSize) {}
 
-void ConnTrackersManager::UpdateProtocol(px::stirling::ConnTracker* tracker,
-                                         std::optional<TrafficProtocol> old_protocol) {
-  // If the tracker is ReadyForDestruction(), then it should not be a member of any protocol list.
+void ConnTrackersManager::UpdateProtocol(px::stirling::ConnTracker* tracker) {
   if (tracker->ReadyForDestruction()) {
-    // Since it is not part of any protocol list, it should not have a back pointer to one.
-    DCHECK(!tracker->back_pointer_.has_value()) << tracker->ToString();
     return;
   }
-
-  if (old_protocol.has_value()) {
-    // If an old protocol is specified, then the tracker should also have been set up
-    // with a back pointer to its list.
-    DCHECK(tracker->back_pointer_.has_value());
-
-    if (old_protocol.value() == tracker->traffic_class().protocol) {
-      // Didn't really move, so nothing to update.
-      return;
-    }
-
-    // Remove tracker from previous list.
-    conn_trackers_by_protocol_[old_protocol.value()].erase(tracker->back_pointer_.value());
-    --num_trackers_in_lists_;
-  } else {
-    // If no old protocol is specified, the the tracker should not be in any list.
-    // Currently, this should only be possible on initialization of a new tracker.
-    DCHECK(!tracker->back_pointer_.has_value());
-  }
-
-  // Add tracker to new list based on its current protocol.
-  conn_trackers_by_protocol_[tracker->traffic_class().protocol].push_back(tracker);
-  tracker->back_pointer_ = --conn_trackers_by_protocol_[tracker->traffic_class().protocol].end();
-  ++num_trackers_in_lists_;
 
   DebugChecks();
 }
@@ -157,7 +129,7 @@ ConnTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t conn_i
   if (created) {
     ++num_trackers_;
     conn_tracker_ptr->manager_ = this;
-    UpdateProtocol(conn_tracker_ptr, {});
+    UpdateProtocol(conn_tracker_ptr);
   }
 
   DebugChecks();
@@ -242,9 +214,7 @@ Status ConnTrackersManager::TestOnlyCheckConsistency() const {
   return Status::OK();
 }
 
-void ConnTrackersManager::DebugChecks() const {
-  DCHECK_EQ(num_trackers_, num_trackers_in_lists_ + num_trackers_ready_for_destruction_);
-}
+void ConnTrackersManager::DebugChecks() const {}
 
 std::string ConnTrackersManager::DebugInfo() const {
   std::string out;
@@ -265,43 +235,6 @@ std::string ConnTrackersManager::DebugInfo() const {
   }
 
   return out;
-}
-
-//-----------------------------------------------------------------------------
-// TrackersListIterator
-//-----------------------------------------------------------------------------
-
-ConnTrackersManager::TrackersList::TrackersListIterator::TrackersListIterator(
-    std::list<ConnTracker*>* trackers, std::list<ConnTracker*>::iterator iter,
-    ConnTrackersManager* conn_trackers_manager)
-    : trackers_(trackers), iter_(iter), conn_trackers_manager_(conn_trackers_manager) {}
-
-bool ConnTrackersManager::TrackersList::TrackersListIterator::operator!=(
-    const TrackersListIterator& other) {
-  return other.iter_ != this->iter_;
-}
-
-ConnTracker* ConnTrackersManager::TrackersList::TrackersListIterator::operator*() {
-  ConnTracker* tracker = *iter_;
-  // Since a tracker can only become ready for destruction in a previous iteration via operator++,
-  // and because operator++ would remove such trackers,  we don't expect to see any trackers are
-  // ReadyForDestruction here.
-  DCHECK(!tracker->ReadyForDestruction());
-  return tracker;
-}
-
-ConnTrackersManager::TrackersList::TrackersListIterator
-ConnTrackersManager::TrackersList::TrackersListIterator::operator++() {
-  if ((*iter_)->ReadyForDestruction()) {
-    (*iter_)->back_pointer_.reset();
-    trackers_->erase(iter_++);
-    --conn_trackers_manager_->num_trackers_in_lists_;
-    ++conn_trackers_manager_->num_trackers_ready_for_destruction_;
-  } else {
-    ++iter_;
-  }
-
-  return *this;
 }
 
 }  // namespace stirling
