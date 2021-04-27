@@ -108,14 +108,14 @@ function compute_targets() {
       fi
     done
 
-    if [[ "$file" =~ (.*)/BUILD.bazel ]]; then
+    if [[ "$file" =~ (.*)/BUILD.bazel && -f "$file" ]]; then
       changed_files+=("${BASH_REMATCH[1]}/...")
     else
       # The following lines check to see if this file is used by
       # any bazel targets and skip it otherwise.
       # This filtering ensures that rdeps doesn't fail.
       ret=0
-      bazel query --noshow_progress "$file" 2>/dev/null || ret=$?
+      bazel query --noshow_progress "$file" 1>/dev/null 2>/dev/null || ret=$?
       if [[ ret -eq 0 ]]; then
         changed_files+=("$file")
       fi
