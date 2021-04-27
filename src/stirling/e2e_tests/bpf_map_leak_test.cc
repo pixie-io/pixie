@@ -83,7 +83,7 @@ TEST_F(BPFMapLeakTest, unclosed_connection) {
   // And because it was killed, it should have leaked a BPF map entry.
 
   // For testing, make sure Stirling cleans up BPF entries right away.
-  // Without this flag, Stirling delays clean-up to acccumulate a clean-up batch.
+  // Without this flag, Stirling delays clean-up to accumulate a clean-up batch.
   FLAGS_stirling_conn_map_cleanup_threshold = 1;
 
   DataTable data_table(kHTTPTable);

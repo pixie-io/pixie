@@ -330,6 +330,15 @@ void SocketTraceConnector::CachedUpdateCommonState(ConnectorContext* ctx, uint32
   table_access_history_.reset(table_num);
 }
 
+void SocketTraceConnector::UpdateTrackerTraceLevel(ConnTracker* tracker) {
+  if (pids_to_trace_.contains(tracker->conn_id().upid.pid)) {
+    tracker->SetDebugTrace(2);
+  }
+  if (pids_to_trace_disable_.contains(tracker->conn_id().upid.pid)) {
+    tracker->SetDebugTrace(0);
+  }
+}
+
 void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
                                             DataTable* data_table) {
   DCHECK_LT(table_num, kTables.size())
@@ -393,6 +402,8 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
         continue;
       }
 
+      UpdateTrackerTraceLevel(conn_tracker.get());
+
       conn_tracker->IterationPreTick(iteration_start_time_, cluster_cidrs, proc_parser_.get(),
                                      socket_info_mgr_.get());
       if (transfer_spec.enabled && transfer_spec.transfer_fn) {
@@ -401,6 +412,9 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
       conn_tracker->IterationPostTick();
     }
   }
+
+  // Once we've cleared all the debug trace levels for this pid, we can remove it from the list.
+  pids_to_trace_disable_.clear();
 }
 
 bool SocketTraceConnector::output_multi_tables() const {
@@ -894,15 +908,6 @@ void SocketTraceConnector::WriteDataEvent(const SocketDataEvent& event) {
 //-----------------------------------------------------------------------------
 // TransferData Helpers
 //-----------------------------------------------------------------------------
-
-void SocketTraceConnector::UpdateTrackerTraceLevel(ConnTracker* tracker) {
-  if (pids_to_trace_.contains(tracker->conn_id().upid.pid)) {
-    tracker->SetDebugTrace(2);
-  }
-  if (pids_to_trace_disable_.contains(tracker->conn_id().upid.pid)) {
-    tracker->SetDebugTrace(0);
-  }
-}
 
 void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table_num,
                                            DataTable* data_table) {
