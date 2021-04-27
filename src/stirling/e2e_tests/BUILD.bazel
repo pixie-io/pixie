@@ -34,6 +34,7 @@ pl_cc_test(
     timeout = "moderate",
     srcs = ["bpf_map_leak_test.cc"],
     data = ["//src/stirling/source_connectors/socket_tracer/protocols/http/testing/leaky_cpp_http_server:leaky_http_server"],
+    flaky = True,
     tags = [
         "requires_bpf",
     ],
@@ -109,6 +110,7 @@ sh_test(
         "//src/stirling/binaries:stirling_wrapper",
         "//src/stirling/testing:tcpdrop_bpftrace_script",
     ],
+    flaky = True,
     tags = [
         "requires_bpf",
         # Run exclusive, otherwise BPF probe cleaner may conflict with open probes of other instances,
@@ -133,6 +135,7 @@ sh_test(
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_client",
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/go_grpc_server",
     ],
+    flaky = True,
     tags = [
         "requires_bpf",
         # Run exclusive, otherwise BPF probe cleaner may conflict with open probes of other instances,

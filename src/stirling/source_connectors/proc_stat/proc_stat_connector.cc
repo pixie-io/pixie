@@ -114,5 +114,17 @@ void ProcStatConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t t
   r.Append<r.ColIndex("idle_percent")>(cpu_usage_.idle_percent);
 }
 
+void ProcStatConnector::TransferDataImpl(ConnectorContext* ctx,
+                                         const std::vector<DataTable*>& data_tables) {
+  DCHECK_EQ(data_tables.size(), 1);
+  auto* data_table = data_tables[0];
+
+  if (data_table == nullptr) {
+    return;
+  }
+
+  TransferDataImpl(ctx, /*table_num*/ 0, data_table);
+}
+
 }  // namespace stirling
 }  // namespace px

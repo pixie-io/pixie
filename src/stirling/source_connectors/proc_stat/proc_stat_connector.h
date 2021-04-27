@@ -57,6 +57,11 @@ class ProcStatConnector : public SourceConnector {
   explicit ProcStatConnector(std::string_view name) : SourceConnector(name, kTables) {}
   Status InitImpl() override;
   void TransferDataImpl(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table) override;
+  bool output_multi_tables() const override {
+    return FLAGS_stirling_source_connector_output_multiple_data_tables;
+  }
+  void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
+
   Status StopImpl() override { return Status::OK(); }
 
   /**
