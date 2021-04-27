@@ -46,6 +46,8 @@ var templateTypes = []string{"daemonsets", "deployments", "statefulsets"}
 // YAMLTmplArguments is a wrapper around YAMLTmplValues.
 type YAMLTmplArguments struct {
 	Values *map[string]interface{}
+	// Release values represent special fields that are filled out by Helm.
+	Release *map[string]interface{}
 }
 
 // ExecuteTemplatedYAMLs takes a template YAML and applies the given template values to it.
@@ -132,6 +134,30 @@ func TemplateScopeMatcher(obj map[string]interface{}, resourceType string) bool 
 		}
 	}
 	return false
+}
+
+// GenerateServiceAccountSubjectMatcher matches the resource definition containing a service account subject with the given name.
+func GenerateServiceAccountSubjectMatcher(subjectName string) TemplateMatchFn {
+	fn := func(obj map[string]interface{}, resourceType string) bool {
+		if subjects, ok := obj["subjects"]; ok {
+			subjList, ok := subjects.([]interface{})
+			if !ok {
+				return false
+			}
+
+			for _, s := range subjList {
+				subject, ok := s.(map[string]interface{})
+				if !ok {
+					continue
+				}
+				if subject["name"] == subjectName {
+					return true
+				}
+			}
+		}
+		return false
+	}
+	return fn
 }
 
 // GenerateContainerNameMatcherFn creates a matcher function for matching the resource if the resource has a pod

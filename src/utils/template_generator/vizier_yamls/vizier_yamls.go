@@ -57,22 +57,30 @@ type VizierTmplValues struct {
 	UseEtcdOperator   bool
 	BootstrapVersion  string
 	PEMMemoryLimit    string
+	Namespace         string
 }
 
-// VizierTmplValuesToMap converts the vizier template values to a map which can be used to fill out a template.
-func VizierTmplValuesToMap(tmplValues *VizierTmplValues) *map[string]interface{} {
-	return &map[string]interface{}{
-		"deployKey":         tmplValues.DeployKey,
-		"customAnnotations": tmplValues.CustomAnnotations,
-		"customLabels":      tmplValues.CustomLabels,
-		"cloudAddr":         tmplValues.CloudAddr,
-		"clusterName":       tmplValues.ClusterName,
-		"cloudUpdateAddr":   tmplValues.CloudUpdateAddr,
-		"useEtcdOperator":   tmplValues.UseEtcdOperator,
-		"bootstrapVersion":  tmplValues.BootstrapVersion,
-		"pemMemoryLimit":    tmplValues.PEMMemoryLimit,
+// VizierTmplValuesToArgs converts the vizier template values to args which can be used to fill out a template.
+func VizierTmplValuesToArgs(tmplValues *VizierTmplValues) *yamls.YAMLTmplArguments {
+	return &yamls.YAMLTmplArguments{
+		Values: &map[string]interface{}{
+			"deployKey":         tmplValues.DeployKey,
+			"customAnnotations": tmplValues.CustomAnnotations,
+			"customLabels":      tmplValues.CustomLabels,
+			"cloudAddr":         tmplValues.CloudAddr,
+			"clusterName":       tmplValues.ClusterName,
+			"cloudUpdateAddr":   tmplValues.CloudUpdateAddr,
+			"useEtcdOperator":   tmplValues.UseEtcdOperator,
+			"bootstrapVersion":  tmplValues.BootstrapVersion,
+			"pemMemoryLimit":    tmplValues.PEMMemoryLimit,
+		},
+		Release: &map[string]interface{}{
+			"Namespace": tmplValues.Namespace,
+		},
 	}
 }
+
+var nsTmpl = `{{ if .Release.Namespace }}{{ .Release.Namespace }}{{ else }}pl{{ end }}`
 
 // These are template options that should be applied to each resource in the Vizier YAMLs, such as annotations and labels.
 var GlobalTemplateOptions = []*yamls.K8sTemplateOptions{
@@ -117,6 +125,17 @@ var GlobalTemplateOptions = []*yamls.K8sTemplateOptions{
         {{ $kv._0 }}: "{{ $kv._1 }}"
         {{- end}}
         {{end}}{{end}}`,
+	},
+	{
+		Patch:         `{"metadata": { "namespace": "__PX_NAMESPACE__" } }`,
+		Placeholder:   "__PX_NAMESPACE__",
+		TemplateValue: nsTmpl,
+	},
+	{
+		TemplateMatcher: yamls.GenerateServiceAccountSubjectMatcher("default"),
+		Patch:           `{ "subjects": [{ "name": "default", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
+		Placeholder:     "__PX_SUBJECT_NAMESPACE__",
+		TemplateValue:   nsTmpl,
 	},
 }
 
@@ -262,7 +281,7 @@ func GenerateSecretsYAML(clientset *kubernetes.Clientset, ns string, imagePullSe
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cluster-config"),
 			Patch:           `{"data": { "PL_MD_ETCD_SERVER": "__PL_MD_ETCD_SERVER__"} }`,
 			Placeholder:     "__PL_MD_ETCD_SERVER__",
-			TemplateValue:   `{{ if .Values.useEtcdOperator }}"https://pl-etcd-client.pl.svc:2379"{{else}}"https://etcd.pl.svc:2379"{{end}}`,
+			TemplateValue:   fmt.Sprintf(`{{ if .Values.useEtcdOperator }}"https://pl-etcd-client.%s.svc:2379"{{else}}"https://etcd.%s.svc:2379"{{end}}`, nsTmpl, nsTmpl),
 		},
 		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cloud-connector-bootstrap-config"),
@@ -279,7 +298,20 @@ func GenerateSecretsYAML(clientset *kubernetes.Clientset, ns string, imagePullSe
 }
 
 func generateVzDepsYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string) (string, string, error) {
-	natsYAML, err := yamls.TemplatizeK8sYAML(clientset, yamlMap[natsYAMLPath], GlobalTemplateOptions)
+	natsYAML, err := yamls.TemplatizeK8sYAML(clientset, yamlMap[natsYAMLPath], append(GlobalTemplateOptions, []*yamls.K8sTemplateOptions{
+		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl:nats-operator-binding"),
+			Patch:           `{ "subjects": [{ "name": "nats-operator", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
+			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
+			TemplateValue:   nsTmpl,
+		},
+		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl:nats-server-binding"),
+			Patch:           `{ "subjects": [{ "name": "nats-server", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
+			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
+			TemplateValue:   nsTmpl,
+		},
+	}...))
 	if err != nil {
 		return "", "", err
 	}
@@ -309,6 +341,30 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string,
 			Patch:           `{"spec": { "template": { "spec": { "containers": [{ "name": "pem", "resources": { "limits": { "memory": "__PX_MEMORY_LIMIT__"} } }] } } } }`,
 			Placeholder:     "__PX_MEMORY_LIMIT__",
 			TemplateValue:   fmt.Sprintf(`{{ if .Values.pemMemoryLimit }}"{{ .Values.pemMemoryLimit }}"{{else}}"%s"{{end}}`, defaultMemoryLimit),
+		},
+		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("proxy-envoy-config"),
+			Patch:           `{}`,
+			Placeholder:     ".pl.svc",
+			TemplateValue:   fmt.Sprintf(".%s.svc", nsTmpl),
+		},
+		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-psp-binding"),
+			Patch:           `{ "subjects": [{ "name": "updater-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
+			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
+			TemplateValue:   nsTmpl,
+		},
+		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-updater-binding"),
+			Patch:           `{ "subjects": [{ "name": "updater-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
+			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
+			TemplateValue:   nsTmpl,
+		},
+		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cloud-connector-binding"),
+			Patch:           `{ "subjects": [{ "name": "cloud-conn-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
+			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
+			TemplateValue:   nsTmpl,
 		},
 	}...)
 	if imagePullCreds != "" {

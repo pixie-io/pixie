@@ -144,7 +144,7 @@ func init() {
 	DeployCmd.Flags().StringP("secret_name", "s", "pl-image-secret", "The name of the secret used to access the Pixie images")
 	viper.BindPFlag("credentials_file", DeployCmd.Flags().Lookup("credentials_file"))
 
-	DeployCmd.Flags().StringP("namespace", "n", "pl", "The namespace to install K8s secrets to")
+	DeployCmd.Flags().StringP("namespace", "n", "pl", "The namespace to deploy Vizier to")
 	viper.BindPFlag("namespace", DeployCmd.Flags().Lookup("namespace"))
 
 	DeployCmd.Flags().StringP("dev_cloud_namespace", "m", "", "The namespace of Pixie Cloud, if running Cloud on minikube")
@@ -409,15 +409,13 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		UseEtcdOperator:   useEtcdOperator,
 		BootstrapVersion:  inputVersionStr,
 		PEMMemoryLimit:    pemMemoryLimit,
+		Namespace:         namespace,
 	}
 
 	clusterName, _ := cmd.Flags().GetString("cluster_name")
 	setTemplateConfigValues(kubeAPIConfig.CurrentContext, tmplValues, cloudAddr, devCloudNS, clusterName)
-	yamlArgs := &yamlsutils.YAMLTmplArguments{
-		Values: vizieryamls.VizierTmplValuesToMap(tmplValues),
-	}
 
-	yamls, err := yamlsutils.ExecuteTemplatedYAMLs(templatedYAMLs, yamlArgs)
+	yamls, err := yamlsutils.ExecuteTemplatedYAMLs(templatedYAMLs, vizieryamls.VizierTmplValuesToArgs(tmplValues))
 	if err != nil {
 		log.WithError(err).Fatal("Failed to fill in templated deployment YAMLs")
 	}

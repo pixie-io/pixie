@@ -124,10 +124,9 @@ func main() {
 		CustomLabels:      viper.GetString("custom_labels"),
 		UseEtcdOperator:   etcdOperatorEnabled,
 		PEMMemoryLimit:    viper.GetString("pem_memory_limit"),
+		Namespace:         ns,
 	}
-	yamls, err := yamlsutils.ExecuteTemplatedYAMLs(templatedYAMLs, &yamlsutils.YAMLTmplArguments{
-		Values: vizieryamls.VizierTmplValuesToMap(tmplValues),
-	})
+	yamls, err := yamlsutils.ExecuteTemplatedYAMLs(templatedYAMLs, vizieryamls.VizierTmplValuesToArgs(tmplValues))
 	if err != nil {
 		log.WithError(err).Fatalf("Failed to execute templates")
 	}

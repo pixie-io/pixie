@@ -100,12 +100,11 @@ func main() {
 	tmplValues := &vizieryamls.VizierTmplValues{
 		CustomAnnotations: viper.GetString("custom_annotations"),
 		CustomLabels:      viper.GetString("custom_labels"),
+		Namespace:         ns,
 	}
 	yamls, err := yamlsutils.ExecuteTemplatedYAMLs([]*yamlsutils.YAMLFile{
 		{Name: "certs", YAML: templatedYAML},
-	}, &yamlsutils.YAMLTmplArguments{
-		Values: vizieryamls.VizierTmplValuesToMap(tmplValues),
-	})
+	}, vizieryamls.VizierTmplValuesToArgs(tmplValues))
 	if err != nil {
 		log.WithError(err).Fatal("Failed to fill in templated deployment YAMLs")
 	}

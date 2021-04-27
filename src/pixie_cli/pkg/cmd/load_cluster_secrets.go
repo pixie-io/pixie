@@ -86,14 +86,12 @@ func LoadClusterSecrets(clientset *kubernetes.Clientset, cloudAddr string, deplo
 	// Fill in template values.
 	tmplValues := &vizieryamls.VizierTmplValues{
 		DeployKey: deployKey,
+		Namespace: namespace,
 	}
 	kubeAPIConfig := k8s.GetClientAPIConfig()
 	setTemplateConfigValues(kubeAPIConfig.CurrentContext, tmplValues, cloudAddr, devCloudNamespace, "")
 
-	yamlArgs := &yamls.YAMLTmplArguments{
-		Values: vizieryamls.VizierTmplValuesToMap(tmplValues),
-	}
-	yamls, err := yamls.ExecuteTemplatedYAMLs([]*yamls.YAMLFile{{YAML: templatedYAML}}, yamlArgs)
+	yamls, err := yamls.ExecuteTemplatedYAMLs([]*yamls.YAMLFile{{YAML: templatedYAML}}, vizieryamls.VizierTmplValuesToArgs(tmplValues))
 	if err != nil {
 		log.WithError(err).Fatal("Failed to fill in templated deployment YAMLs")
 	}
