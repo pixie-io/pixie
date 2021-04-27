@@ -24,7 +24,6 @@ import (
 	"strconv"
 	"strings"
 
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"px.dev/pixie/src/utils/shared/k8s"
@@ -146,11 +145,6 @@ func GenerateTemplatedDeployYAMLsWithTar(clientset *kubernetes.Clientset, tarPat
 
 // GenerateTemplatedDeployYAMLs generates the YAMLs that should be run when deploying Pixie using the provided YAML map.
 func GenerateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string, versionStr string, ns string, imagePullSecretName string, imagePullCreds string) ([]*yamls.YAMLFile, error) {
-	nsYAML, err := generateNamespaceYAML(clientset, ns)
-	if err != nil {
-		return nil, err
-	}
-
 	secretsYAML, err := GenerateSecretsYAML(clientset, ns, imagePullSecretName, imagePullCreds, versionStr, false)
 	if err != nil {
 		return nil, err
@@ -167,10 +161,6 @@ func GenerateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, yamlMap map[s
 	}
 
 	return []*yamls.YAMLFile{
-		{
-			Name: "namespace",
-			YAML: nsYAML,
-		},
 		{
 			Name: "secrets",
 			YAML: secretsYAML,
@@ -192,25 +182,6 @@ func GenerateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, yamlMap map[s
 			YAML: persistentVzYAML,
 		},
 	}, nil
-}
-
-// generateNamespaceYAML creates the YAML for the namespace Pixie is deployed in.
-func generateNamespaceYAML(clientset *kubernetes.Clientset, namespace string) (string, error) {
-	ns := &v1.Namespace{}
-	ns.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Namespace"))
-	ns.Name = namespace
-
-	origYAML, err := k8s.ConvertResourceToYAML(ns)
-	if err != nil {
-		return "", err
-	}
-
-	nsYAML, err := yamls.TemplatizeK8sYAML(clientset, origYAML, GlobalTemplateOptions)
-	if err != nil {
-		return "", err
-	}
-
-	return nsYAML, nil
 }
 
 // GenerateSecretsYAML creates the YAML for Pixie secrets.

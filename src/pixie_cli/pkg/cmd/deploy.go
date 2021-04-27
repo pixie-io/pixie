@@ -36,6 +36,8 @@ import (
 	"google.golang.org/grpc"
 	"gopkg.in/segmentio/analytics-go.v3"
 	v1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -476,7 +478,16 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	}
 
 	namespaceJob := newTaskWrapper("Creating namespace", func() error {
-		return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(yamlMap["namespace"]), false)
+		// Create namespace, if needed.
+		ns := &v1.Namespace{}
+		ns.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Namespace"))
+		ns.Name = namespace
+
+		_, err = clientset.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
+		if err != nil && k8serrors.IsAlreadyExists(err) {
+			return nil
+		}
+		return err
 	})
 
 	clusterRoleJob := newTaskWrapper("Deleting stale Pixie objects, if any", func() error {

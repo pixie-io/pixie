@@ -25,7 +25,6 @@ go_library(
         "//src/utils/shared/k8s",
         "//src/utils/shared/tar",
         "//src/utils/shared/yamls",
-        "@io_k8s_api//core/v1:core",
         "@io_k8s_client_go//kubernetes",
     ],
 )
