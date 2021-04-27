@@ -14,8 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:grpc_web.bzl", "pl_grpc_web_library")
-load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library", "pl_py_grpc_library")
+load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
 
 # TODO(PP-2567): This is used by src/shared/cvmsgspb/cvmsgs.proto
 # Break this chain and clamp down visibility.
@@ -46,15 +45,4 @@ pl_go_proto_library(
     deps = [
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
     ],
-)
-
-pl_grpc_web_library(
-    name = "vizier_pl_grpc_web_proto",
-    proto = ":vizier_pl_proto",
-)
-
-pl_py_grpc_library(
-    name = "vizier_pl_py_grpc",
-    imports = ["../../../"],
-    proto = ":vizier_pl_proto",
 )

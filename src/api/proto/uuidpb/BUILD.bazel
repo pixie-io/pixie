@@ -42,12 +42,3 @@ pl_py_proto_library(
     proto = ":uuid_pl_proto",
     visibility = ["//src:__subpackages__"],
 )
-
-filegroup(
-    name = "pbfiles",
-    srcs = glob([
-        "*.pb.go",
-        "*.proto",
-    ]),
-    visibility = ["//src:__subpackages__"],
-)
