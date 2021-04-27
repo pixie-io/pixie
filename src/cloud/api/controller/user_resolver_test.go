@@ -93,6 +93,7 @@ func TestUserInfoResolver(t *testing.T) {
 			assert.Equal(t, "test@test.com", resolver.Email())
 			assert.Equal(t, graphql.ID(userID), resolver.ID())
 			assert.Equal(t, "testOrg", resolver.OrgName())
+			assert.Equal(t, testingutils.TestOrgID, resolver.OrgID())
 			assert.Equal(t, test.expectedPicture, resolver.Picture())
 			assert.Equal(t, test.expectedName, resolver.Name())
 		})

@@ -21,23 +21,17 @@ package autocomplete
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/gofrs/uuid"
 	"github.com/olivere/elastic/v7"
 	"github.com/sahilm/fuzzy"
-	"github.com/spf13/viper"
-	"google.golang.org/grpc/metadata"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	pl_vispb "px.dev/pixie/src/api/proto/vispb"
 	"px.dev/pixie/src/cloud/indexer/md"
 	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/pixie_cli/pkg/script"
-	srvutils "px.dev/pixie/src/shared/services/utils"
-	"px.dev/pixie/src/utils"
 )
 
 // ElasticSuggester provides suggestions based on the given index in Elastic.
@@ -46,9 +40,7 @@ type ElasticSuggester struct {
 	scriptIndexName string
 	pc              profilepb.ProfileServiceClient
 	// This is temporary, and will be removed once we start indexing scripts.
-	br         *script.BundleManager
-	orgMapping map[uuid.UUID]string
-	bundleMu   sync.Mutex
+	br *script.BundleManager
 }
 
 var protoToElasticLabelMap = map[cloudpb.AutocompleteEntityKind]string{
@@ -73,18 +65,12 @@ var elasticStateToProtoMap = map[md.ESMDEntityState]cloudpb.AutocompleteEntitySt
 	md.ESMDEntityStateTerminated: cloudpb.AES_TERMINATED,
 }
 
-func getServiceCredentials(signingKey string) (string, error) {
-	claims := srvutils.GenerateJWTForService("API Service", viper.GetString("domain_name"))
-	return srvutils.SignJWTClaims(claims, signingKey)
-}
-
 // NewElasticSuggester creates a suggester based on an elastic index.
 func NewElasticSuggester(client *elastic.Client, scriptIndex string, pc profilepb.ProfileServiceClient) (*ElasticSuggester, error) {
 	return &ElasticSuggester{
 		client:          client,
 		scriptIndexName: scriptIndex,
 		pc:              pc,
-		orgMapping:      make(map[uuid.UUID]string),
 	}, nil
 }
 
@@ -129,40 +115,13 @@ func parseHighlightIndexes(highlightStr string, offset int) []int64 {
 }
 
 // UpdateScriptBundle updates the script bundle used to populate the suggester's script suggestions.
-func (e *ElasticSuggester) UpdateScriptBundle(br *script.BundleManager) error {
-	orgMapping := make(map[uuid.UUID]string)
-	if br != nil {
-		// Generate mapping from orgID -> orgName. This is temporary until we have a script indexer.
-		serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
-		if err != nil {
-			return err
-		}
-		ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
-			fmt.Sprintf("bearer %s", serviceAuthToken))
-		resp, err := e.pc.GetOrgs(ctx, &profilepb.GetOrgsRequest{})
-		if err != nil {
-			return err
-		}
-
-		for _, org := range resp.Orgs {
-			orgMapping[utils.UUIDFromProtoOrNil(org.ID)] = org.OrgName
-		}
-	}
-
-	e.bundleMu.Lock()
-	defer e.bundleMu.Unlock()
-	e.orgMapping = orgMapping
+func (e *ElasticSuggester) UpdateScriptBundle(br *script.BundleManager) {
 	e.br = br
-
-	return nil
 }
 
 // GetSuggestions get suggestions for the given input using Elastic.
 func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*SuggestionResult, error) {
-	e.bundleMu.Lock()
 	br := e.br
-	orgMapping := e.orgMapping
-	e.bundleMu.Unlock()
 
 	resps := make([]*SuggestionResult, len(reqs))
 
@@ -234,7 +193,7 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 						scriptArgs := scriptArgMap[m.Str]
 						scriptNames := scriptArgNames[m.Str]
 						valid := true
-						if script.OrgName != "" && orgMapping[reqs[i].OrgID] != script.OrgName {
+						if script.OrgID != reqs[i].OrgID.String() {
 							valid = false
 						}
 

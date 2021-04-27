@@ -17,7 +17,6 @@
  */
 
 import Axios from 'axios';
-import { isStaging } from 'utils/env';
 import * as QueryString from 'query-string';
 
 const PROD_SCRIPTS = 'https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-core.json';
@@ -38,7 +37,7 @@ interface ScriptJSON {
   vis: string;
   LongDoc: string;
   hidden: boolean;
-  orgName: string;
+  orgID: string;
 }
 
 // bypassCacheURL adds a timestamp to the URL to bypass the disk-cache.
@@ -50,7 +49,7 @@ function bypassCacheURL(url: string) {
   return QueryString.stringifyUrl(queryURL);
 }
 
-export function GetPxScripts(orgName: string): Promise<Script[]> {
+export function GetPxScripts(orgID: string, orgName: string): Promise<Script[]> {
   let localStorageCoreBundle = localStorage.getItem('px-custom-core-bundle-path');
   let localStorageOSSBundle = localStorage.getItem('px-custom-oss-bundle-path');
   if (localStorageCoreBundle) {
@@ -66,11 +65,25 @@ export function GetPxScripts(orgName: string): Promise<Script[]> {
     const scripts = [];
     response.forEach((resp) => {
       Object.entries(resp.data.scripts as ScriptJSON[]).forEach(([id, s]) => {
-        if (s.orgName && orgName !== s.orgName) {
+        if (s.orgID && orgID !== s.orgID) {
           return;
         }
+        let prettyID = id;
+        if (id.startsWith('org_id/')) {
+          if (!orgName) {
+            return;
+          }
+          const splits = id.split('/', 3);
+          if (splits.length < 3) {
+            return;
+          }
+          if (splits[1] !== orgID) {
+            return;
+          }
+          prettyID = `${orgName}/${splits[2]}`;
+        }
         scripts.push({
-          id,
+          id: prettyID,
           title: s.ShortDoc,
           code: s.pxl,
           vis: s.vis,

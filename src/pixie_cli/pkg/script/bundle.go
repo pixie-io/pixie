@@ -24,7 +24,7 @@ type pixieScript struct {
 	Placement string `json:"placement"`
 	ShortDoc  string `json:"ShortDoc"`
 	LongDoc   string `json:"LongDoc"`
-	OrgName   string `json:"orgName"`
+	OrgID     string `json:"orgID"`
 	Hidden    bool   `json:"hidden"`
 }
 

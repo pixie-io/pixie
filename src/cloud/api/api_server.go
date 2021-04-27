@@ -210,15 +210,12 @@ func main() {
 	updateBundle := func() {
 		// Requiring the bundle manager in the API service is temporary until we
 		// start indexing scripts.
-		br, bundleErr = script.NewBundleManagerWithOrgName([]string{defaultBundleFile, ossBundleFile}, "")
+		br, bundleErr = script.NewBundleManagerWithOrg([]string{defaultBundleFile, ossBundleFile}, "", "")
 		if bundleErr != nil {
 			log.WithError(bundleErr).Error("Failed to init bundle manager")
 			br = nil
 		}
-		err := esSuggester.UpdateScriptBundle(br)
-		if err != nil {
-			log.WithError(err).Error("Failed to update script bundle for suggester")
-		}
+		esSuggester.UpdateScriptBundle(br)
 	}
 
 	quitCh := make(chan bool)

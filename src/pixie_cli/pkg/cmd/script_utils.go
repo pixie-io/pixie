@@ -67,8 +67,8 @@ func listBundleScripts(br *script.BundleManager, format string) {
 
 	// Sort show org scripts show up first.
 	sort.Slice(scripts, func(i, j int) bool {
-		if len(scripts[i].OrgName) != 0 || len(scripts[j].OrgName) != 0 {
-			return scripts[i].OrgName > scripts[j].OrgName
+		if len(scripts[i].OrgID) != 0 || len(scripts[j].OrgID) != 0 {
+			return scripts[i].OrgID > scripts[j].OrgID
 		}
 		return scripts[i].ScriptName < scripts[j].ScriptName
 	})

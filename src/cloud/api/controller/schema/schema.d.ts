@@ -36,6 +36,7 @@ export interface GQLUserInfo {
   email: string;
   picture: string;
   orgName: string;
+  orgID: string;
 }
 
 export interface GQLUserSetting {
@@ -287,6 +288,7 @@ export interface GQLUserInfoTypeResolver<TParent = any> {
   email?: UserInfoToEmailResolver<TParent>;
   picture?: UserInfoToPictureResolver<TParent>;
   orgName?: UserInfoToOrgNameResolver<TParent>;
+  orgID?: UserInfoToOrgIDResolver<TParent>;
 }
 
 export interface UserInfoToIdResolver<TParent = any, TResult = any> {
@@ -306,6 +308,10 @@ export interface UserInfoToPictureResolver<TParent = any, TResult = any> {
 }
 
 export interface UserInfoToOrgNameResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface UserInfoToOrgIDResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 

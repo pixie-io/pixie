@@ -31,13 +31,9 @@ go_library(
         "//src/cloud/indexer/md",
         "//src/cloud/profile/profilepb:service_go_proto",
         "//src/pixie_cli/pkg/script",
-        "//src/shared/services/utils",
-        "//src/utils",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_olivere_elastic_v7//:elastic",
         "@com_github_sahilm_fuzzy//:fuzzy",
-        "@com_github_spf13_viper//:viper",
-        "@org_golang_google_grpc//metadata",
     ],
 )
 

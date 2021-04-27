@@ -21,11 +21,13 @@ package script
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"sort"
+	"strings"
 	"sync"
 
 	"px.dev/pixie/src/pixie_cli/pkg/auth"
@@ -48,7 +50,7 @@ func pixieScriptToExecutableScript(scriptName string, script *pixieScript) (*Exe
 		LongDoc:      script.LongDoc,
 		Vis:          vs,
 		ScriptString: script.Pxl,
-		OrgName:      script.OrgName,
+		OrgID:        script.OrgID,
 		Hidden:       script.Hidden,
 	}, nil
 }
@@ -67,8 +69,8 @@ func isValidURL(toTest string) bool {
 	return true
 }
 
-// NewBundleManagerWithOrgName reads the json bundle and initializes the bundle reader for a specific org.
-func NewBundleManagerWithOrgName(bundleFiles []string, orgName string) (*BundleManager, error) {
+// NewBundleManagerWithOrg reads the json bundle and initializes the bundle reader for a specific org.
+func NewBundleManagerWithOrg(bundleFiles []string, orgID, orgName string) (*BundleManager, error) {
 	var wg sync.WaitGroup
 	wg.Add(len(bundleFiles))
 	bundles := make([]*bundle, len(bundleFiles))
@@ -114,8 +116,22 @@ func NewBundleManagerWithOrgName(bundleFiles []string, orgName string) (*BundleM
 	for _, b := range bundles {
 		if b != nil {
 			for k, script := range b.Scripts {
-				if len(script.OrgName) == 0 || script.OrgName == orgName || orgName == "" {
-					filtered[k] = script
+				if len(script.OrgID) == 0 || script.OrgID == orgID {
+					prettyID := k
+					if strings.HasPrefix(k, "org_id/") {
+						if orgName == "" {
+							continue
+						}
+						splits := strings.SplitN(k, "/", 3)
+						if len(splits) < 3 {
+							continue
+						}
+						if splits[1] != orgID {
+							continue
+						}
+						prettyID = fmt.Sprintf("%s/%s", orgName, splits[2])
+					}
+					filtered[prettyID] = script
 				}
 			}
 		}
@@ -130,7 +146,7 @@ func NewBundleManagerWithOrgName(bundleFiles []string, orgName string) (*BundleM
 func NewBundleManager(bundleFiles []string) (*BundleManager, error) {
 	// TODO(zasgar): Refactor user login state, etc.
 	authInfo := auth.MustLoadDefaultCredentials()
-	return NewBundleManagerWithOrgName(bundleFiles, authInfo.OrgName)
+	return NewBundleManagerWithOrg(bundleFiles, authInfo.OrgID, authInfo.OrgName)
 }
 
 // GetScripts returns metadata about available scripts.

@@ -79,6 +79,11 @@ func (u *UserInfoResolver) Picture() string {
 	return u.UserInfo.ProfilePicture
 }
 
+// OrgID returns the user's org id.
+func (u *UserInfoResolver) OrgID() string {
+	return u.SessionCtx.Claims.GetUserClaims().OrgID
+}
+
 // OrgName returns the user's org name.
 func (u *UserInfoResolver) OrgName() string {
 	orgID := u.SessionCtx.Claims.GetUserClaims().OrgID

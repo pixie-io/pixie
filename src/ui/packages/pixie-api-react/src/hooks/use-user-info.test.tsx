@@ -37,6 +37,7 @@ describe('useUserInfo hook for user profile data', () => {
           name: 'Jamie Doe',
           picture: '',
           orgName: 'ExampleCorp',
+          orgID: '00112233-4455-6677-8899-aabbccddeeff',
         },
       },
     },

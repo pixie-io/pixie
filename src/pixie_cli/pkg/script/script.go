@@ -42,7 +42,7 @@ type ExecutableScript struct {
 	ShortDoc     string
 	LongDoc      string
 	Vis          *vispb.Vis
-	OrgName      string
+	OrgID        string
 	Hidden       bool
 	// Marks if this script is local rather than hosted.
 	IsLocal bool

@@ -15,6 +15,7 @@ type UserInfo {
   email: String!
   picture: String!
   orgName: String!
+  orgID: String!
 }
 
 type UserSetting {
@@ -210,8 +211,8 @@ type Mutation {
 }
 
 type CLIArtifact {
-    url: String!
-    sha256: String!
+  url: String!
+  sha256: String!
 }
 
 type ArtifactsInfo {

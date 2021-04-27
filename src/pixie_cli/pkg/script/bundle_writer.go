@@ -36,13 +36,14 @@ import (
 type BundleWriter struct {
 	basePaths   []string
 	searchPaths []string
+	private     bool
 }
 
 type manifestSpec struct {
-	Short   string  `yaml:"short"`
-	Long    string  `yaml:"long"`
-	OrgName *string `yaml:"org_name"`
-	Hidden  *bool   `yaml:"hidden"`
+	Short  string  `yaml:"short"`
+	Long   string  `yaml:"long"`
+	OrgID  *string `yaml:"org_id"`
+	Hidden *bool   `yaml:"hidden"`
 }
 
 // fileExists checks if a file exists and is not a directory before we
@@ -56,10 +57,11 @@ func fileExists(filename string) bool {
 }
 
 // NewBundleWriter created a new BundleWriter.
-func NewBundleWriter(searchPaths []string, basePaths []string) *BundleWriter {
+func NewBundleWriter(searchPaths []string, basePaths []string, private bool) *BundleWriter {
 	return &BundleWriter{
 		basePaths:   basePaths,
 		searchPaths: searchPaths,
+		private:     private,
 	}
 }
 
@@ -123,8 +125,8 @@ func (b BundleWriter) parseBundleScripts(basePath string) (*pixieScript, error) 
 
 	ps.ShortDoc = manifest.Short
 	ps.LongDoc = manifest.Long
-	if manifest.OrgName != nil {
-		ps.OrgName = *manifest.OrgName
+	if manifest.OrgID != nil {
+		ps.OrgID = *manifest.OrgID
 	}
 	if manifest.Hidden != nil {
 		ps.Hidden = *manifest.Hidden
@@ -151,6 +153,9 @@ func (b *BundleWriter) Write(outFile string) error {
 				ps, err := b.parseBundleScripts(absDir)
 				if err != nil {
 					return err
+				}
+				if b.private {
+					scriptName = fmt.Sprintf("org_id/%s%s", ps.OrgID, strings.TrimPrefix(scriptName, bp))
 				}
 
 				if _, has := bundle.Scripts[scriptName]; has {

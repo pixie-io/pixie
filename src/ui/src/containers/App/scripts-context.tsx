@@ -48,7 +48,7 @@ export const ScriptsContextProvider = (props) => {
 
   React.useEffect(() => {
     if (!user || loading || error) return;
-    GetPxScripts(user.orgName).then((list) => {
+    GetPxScripts(user.orgID, user.orgName).then((list) => {
       const availableScripts = new Map<string, Script>(list.map((script) => [script.id, script]));
       availableScripts.set(SCRATCH_SCRIPT.id, SCRATCH_SCRIPT);
       setScripts(availableScripts);
@@ -57,7 +57,7 @@ export const ScriptsContextProvider = (props) => {
     });
     // Monitoring the user's ID and their org rather than the whole object, to avoid excess renders.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, user?.orgName, loading, error]);
+  }, [user?.id, user?.orgID, user?.orgName, loading, error]);
 
   const reallyLoading = loading || nextScripts !== scripts;
   const context = React.useMemo(() => ({ scripts, loading: reallyLoading }), [scripts, reallyLoading]);

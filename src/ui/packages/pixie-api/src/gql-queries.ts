@@ -30,6 +30,7 @@ export const USER_QUERIES = {
         name
         picture
         orgName
+        orgID
       }
     }
   `,
@@ -135,7 +136,7 @@ export const CLUSTER_QUERIES = {
         vizierConfig {
           passthroughEnabled
         }
-        
+
       }
     }
   `,

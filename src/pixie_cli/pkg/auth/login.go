@@ -171,6 +171,8 @@ type PixieCloudLogin struct {
 	CloudAddr  string
 	// OrgName: Selection is only valid for "pixie.support", will be removed when RBAC is supported.
 	OrgName string
+	// OrgID: Selection is only valid for "pixie.support", will be removed when RBAC is supported.
+	OrgID string
 }
 
 // Run either launches the browser or prints out the URL for auth.
@@ -399,6 +401,7 @@ func (p *PixieCloudLogin) getRefreshToken(accessToken string) (*RefreshToken, er
 	}
 
 	refreshToken.SupportAccount = p.OrgName != ""
+	refreshToken.OrgID = p.OrgID
 	refreshToken.OrgName = p.OrgName
 
 	if refreshToken.OrgName == "" {
@@ -410,6 +413,8 @@ func (p *PixieCloudLogin) getRefreshToken(accessToken string) (*RefreshToken, er
 				orgID, _ = sc["OrgID"].(string)
 			}
 		}
+
+		refreshToken.OrgID = orgID
 
 		uuidProto := utils.ProtoFromUUIDStrOrNil(orgID)
 		conn, err := utils2.GetCloudClientConnection(p.CloudAddr)
@@ -436,6 +441,7 @@ type RefreshToken struct {
 	ExpiresAt      int64  `json:"expiresAt"`
 	SupportAccount bool   `json:"supportAccount,omitempty"`
 	OrgName        string `json:"orgName,omitempty"`
+	OrgID          string `json:"orgID,omitempty"`
 }
 
 func (p *PixieCloudLogin) getAuthURL() *url.URL {
