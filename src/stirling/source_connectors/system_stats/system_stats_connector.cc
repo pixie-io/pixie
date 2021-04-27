@@ -142,6 +142,19 @@ void SystemStatsConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
   }
 }
 
+void SystemStatsConnector::TransferDataImpl(ConnectorContext* ctx,
+                                            const std::vector<DataTable*>& data_tables) {
+  DCHECK_EQ(data_tables.size(), 2);
+
+  if (data_tables[kProcStatsTableNum] != nullptr) {
+    TransferProcessStatsTable(ctx, data_tables[kProcStatsTableNum]);
+  }
+
+  if (data_tables[kNetStatsTableNum] != nullptr) {
+    TransferNetworkStatsTable(ctx, data_tables[kNetStatsTableNum]);
+  }
+}
+
 Status SystemStatsConnector::GetNetworkStatsForPod(const system::ProcParser& proc_parser,
                                                    const md::PodInfo& pod_info,
                                                    const md::K8sMetadataState& k8s_metadata_state,

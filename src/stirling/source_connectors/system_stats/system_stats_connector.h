@@ -38,6 +38,8 @@ class SystemStatsConnector : public SourceConnector {
  public:
   static constexpr std::string_view kName = "system_stats";
   static constexpr auto kTables = MakeArray(kProcessStatsTable, kNetworkStatsTable);
+  static constexpr uint32_t kProcStatsTableNum = TableNum(kTables, kProcessStatsTable);
+  static constexpr uint32_t kNetStatsTableNum = TableNum(kTables, kNetworkStatsTable);
 
   SystemStatsConnector() = delete;
   ~SystemStatsConnector() override = default;
@@ -51,6 +53,10 @@ class SystemStatsConnector : public SourceConnector {
   Status StopImpl() override;
 
   void TransferDataImpl(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table) override;
+  bool output_multi_tables() const override {
+    return FLAGS_stirling_source_connector_output_multiple_data_tables;
+  }
+  void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
 
  protected:
   explicit SystemStatsConnector(std::string_view source_name)
