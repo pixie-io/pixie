@@ -46,15 +46,16 @@ import (
 )
 
 const (
-	plMDSAddr           = "vizier-metadata.pl.svc:50400"
-	querybrokerHostname = "vizier-query-broker.pl.svc"
+	querybrokerHostname = "vizier-query-broker"
 )
 
 func init() {
-	pflag.String("cloud_connector_addr", "vizier-cloud-connector.pl.svc:50800", "The address to the cloud connector")
 	pflag.String("cluster_id", "", "The Cluster ID to use for Pixie Cloud")
 	pflag.String("pod_ip_address", "", "The IP address of this pod to allow the agent to connect to this"+
 		" particular query broker instance across multiple requests")
+	pflag.String("mds_service", "vizier-metadata", "The metadata service name")
+	pflag.String("mds_port", "50400", "The querybroker service port")
+	pflag.String("pod_namespace", "pl", "The namespace this pod runs in.")
 }
 
 // NewVizierServiceClient creates a new vz RPC client stub.
@@ -94,7 +95,8 @@ func main() {
 	if podAddr == "" {
 		log.Fatal("Expected to receive pod IP address.")
 	}
-	env, err := querybrokerenv.New(fmt.Sprintf("%s:%d", podAddr, servicePort), querybrokerHostname, "vizier")
+	qbHostname := fmt.Sprintf("%s.%s.svc", querybrokerHostname, viper.GetString("pod_namespace"))
+	env, err := querybrokerenv.New(fmt.Sprintf("%s:%d", podAddr, servicePort), qbHostname, "vizier")
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create api environment.")
 	}
@@ -114,10 +116,11 @@ func main() {
 	bOpts.MaxElapsedTime = 5 * time.Minute
 
 	var mdsConn *grpc.ClientConn
+	mdsAddr := fmt.Sprintf("%s.%s.svc:%s", viper.GetString("mds_service"), viper.GetString("pod_namespace"), viper.GetString("mds_port"))
 	err = backoff.Retry(func() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		mdsConn, err = grpc.DialContext(ctx, plMDSAddr, dialOpts...)
+		mdsConn, err = grpc.DialContext(ctx, mdsAddr, dialOpts...)
 		if !errors.Is(err, context.DeadlineExceeded) {
 			// Any errors that aren't timeouts are treated as permanent errors.
 			return backoff.Permanent(err)

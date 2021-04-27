@@ -83,7 +83,15 @@ func loadCA(caCert string, caKey string) (*x509.Certificate, crypto.PrivateKey, 
 	return ca, caPair.PrivateKey, nil
 }
 
-func generateCertificate(certPath string, certName string, caCert *x509.Certificate, caKey crypto.PrivateKey, bitsize int) error {
+func generateCertificate(certPath string, certName string, caCert *x509.Certificate, caKey crypto.PrivateKey, bitsize int, namespace string) error {
+	vizierDNSNames := []string{
+		fmt.Sprintf("*.%s.svc", namespace),
+		fmt.Sprintf("*.%s.svc.cluster.local", namespace),
+		"pl-etcd",
+		fmt.Sprintf("*.pl-etcd.%s.svc", namespace),
+		fmt.Sprintf("*.pl-etcd.%s.svc.cluster.local", namespace),
+	}
+
 	// Prepare certificate.
 	cert := &x509.Certificate{
 		SerialNumber: big.NewInt(1658),
@@ -99,23 +107,18 @@ func generateCertificate(certPath string, certName string, caCert *x509.Certific
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		BasicConstraintsValid: true,
 		// Localhost must be here because etcd relies on it.
-		DNSNames: []string{
+		DNSNames: append([]string{
 			"*.local",
-			"*.pl.svc",
-			"*.pl.svc.cluster.local",
 			"*.plc",
 			"*.plc.svc.cluster.local",
 			"*.plc-dev",
 			"*.plc-dev.svc.cluster.local",
 			"*.plc-staging",
 			"*.plc-testing",
-			"pl-etcd",
-			"*.pl-etcd.pl.svc",
-			"*.pl-etcd.pl.svc.cluster.local",
 			"pl-nats",
 			"*.pl-nats",
 			"localhost",
-		},
+		}, vizierDNSNames...),
 	}
 	privateKey, err := rsa.GenerateKey(rand.Reader, bitsize)
 	if err != nil {
@@ -160,7 +163,7 @@ func signCertificate(certPath string, certName string, cert *x509.Certificate, c
 	return nil
 }
 
-func generateCerts(certPath string, caCertPath string, caKeyPath string, bitsize int) error {
+func generateCerts(certPath string, caCertPath string, caKeyPath string, bitsize int, namespace string) error {
 	var ca *x509.Certificate
 	var caKey crypto.PrivateKey
 	var err error
@@ -178,13 +181,13 @@ func generateCerts(certPath string, caCertPath string, caKeyPath string, bitsize
 	}
 
 	// Generate server certificate.
-	err = generateCertificate(certPath, "server", ca, caKey, bitsize)
+	err = generateCertificate(certPath, "server", ca, caKey, bitsize, namespace)
 	if err != nil {
 		return err
 	}
 
 	// Generate client certificate.
-	err = generateCertificate(certPath, "client", ca, caKey, bitsize)
+	err = generateCertificate(certPath, "client", ca, caKey, bitsize, namespace)
 	if err != nil {
 		return err
 	}
@@ -224,7 +227,7 @@ func generateCertYAMLs(certPath string, caCertPath string, caKeyPath string, nam
 		}
 	}()
 
-	err = generateCerts(certPath, caCertPath, caKeyPath, bitsize)
+	err = generateCerts(certPath, caCertPath, caKeyPath, bitsize, namespace)
 	if err != nil {
 		return "", err
 	}

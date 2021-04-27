@@ -48,9 +48,6 @@ import (
 	"px.dev/pixie/src/vizier/vizierpb"
 )
 
-// TODO(michellenguyen, PP-1702): Make namespace a flag that can be passed in.
-const plNamespace = "pl"
-
 const k8sStateUpdatePeriod = 10 * time.Second
 
 const privateImageRepo = "gcr.io/pl-dev-infra"
@@ -63,6 +60,7 @@ type K8sJobHandler interface {
 
 // K8sVizierInfo is responsible for fetching Vizier information through K8s.
 type K8sVizierInfo struct {
+	ns                   string
 	clientset            *kubernetes.Clientset
 	clusterVersion       string
 	clusterName          string
@@ -74,7 +72,7 @@ type K8sVizierInfo struct {
 }
 
 // NewK8sVizierInfo creates a new K8sVizierInfo.
-func NewK8sVizierInfo(clusterName string) (*K8sVizierInfo, error) {
+func NewK8sVizierInfo(clusterName, ns string) (*K8sVizierInfo, error) {
 	// There is a specific config for services running in the cluster.
 	kubeConfig, err := rest.InClusterConfig()
 	if err != nil {
@@ -102,6 +100,7 @@ func NewK8sVizierInfo(clusterName string) (*K8sVizierInfo, error) {
 	}
 
 	vzInfo := &K8sVizierInfo{
+		ns:             ns,
 		clientset:      clientset,
 		clusterVersion: clusterVersion,
 		clusterName:    clusterName,
@@ -134,7 +133,7 @@ func (v *K8sVizierInfo) GetVizierClusterInfo() (*cvmsgspb.VizierClusterInfo, err
 
 // GetAddress gets the external address of Vizier's proxy service.
 func (v *K8sVizierInfo) GetAddress() (string, int32, error) {
-	proxySvc, err := v.clientset.CoreV1().Services(plNamespace).Get(context.Background(), "vizier-proxy-service", metav1.GetOptions{})
+	proxySvc, err := v.clientset.CoreV1().Services(v.ns).Get(context.Background(), "vizier-proxy-service", metav1.GetOptions{})
 	if err != nil {
 		return "", int32(0), err
 	}
@@ -219,7 +218,7 @@ func nanosToTimestampProto(nanos int64) *types.Timestamp {
 
 // GetVizierPodLogs gets the k8s logs for the Vizier pod with the given name.
 func (v *K8sVizierInfo) GetVizierPodLogs(podName string, previous bool, container string) (string, error) {
-	resp := v.clientset.CoreV1().Pods(plNamespace).GetLogs(podName, &corev1.PodLogOptions{Previous: previous, Container: container}).Do(context.Background())
+	resp := v.clientset.CoreV1().Pods(v.ns).GetLogs(podName, &corev1.PodLogOptions{Previous: previous, Container: container}).Do(context.Background())
 	rawResp, err := resp.Raw()
 	if err != nil {
 		return "", err
@@ -253,10 +252,10 @@ func (v *K8sVizierInfo) toVizierPodStatus(p *corev1.Pod) (*vizierpb.VizierPodSta
 		}
 	}
 	name := podPb.Metadata.Name
-	ns := plNamespace
+	ns := v.ns
 	events := make([]*metadatapb.K8SEvent, 0)
 
-	eventsInterface := v.clientset.CoreV1().Events(plNamespace)
+	eventsInterface := v.clientset.CoreV1().Events(v.ns)
 	selector := eventsInterface.GetFieldSelector(&name, &ns, nil, nil)
 	options := metav1.ListOptions{FieldSelector: selector.String()}
 	evs, err := eventsInterface.List(context.Background(), options)
@@ -297,14 +296,14 @@ func (v *K8sVizierInfo) toVizierPodStatus(p *corev1.Pod) (*vizierpb.VizierPodSta
 // GetVizierPods gets the Vizier pods and their statuses.
 func (v *K8sVizierInfo) GetVizierPods() ([]*vizierpb.VizierPodStatus, []*vizierpb.VizierPodStatus, error) {
 	// Get only control-plane pods.
-	rawControlPodsList, err := v.clientset.CoreV1().Pods(plNamespace).List(context.Background(), metav1.ListOptions{
+	rawControlPodsList, err := v.clientset.CoreV1().Pods(v.ns).List(context.Background(), metav1.ListOptions{
 		LabelSelector: "plane=control",
 	})
 	if err != nil {
 		return nil, nil, err
 	}
 	// Get only data-plane pods.
-	rawDataPodsList, err := v.clientset.CoreV1().Pods(plNamespace).List(context.Background(), metav1.ListOptions{
+	rawDataPodsList, err := v.clientset.CoreV1().Pods(v.ns).List(context.Background(), metav1.ListOptions{
 		LabelSelector: "plane=data",
 	})
 
@@ -337,14 +336,14 @@ func (v *K8sVizierInfo) UpdateK8sState() {
 		return
 	}
 	// Get only control-plane pods.
-	cpPodsList, err := v.clientset.CoreV1().Pods(plNamespace).List(context.Background(), metav1.ListOptions{
+	cpPodsList, err := v.clientset.CoreV1().Pods(v.ns).List(context.Background(), metav1.ListOptions{
 		LabelSelector: "plane=control",
 	})
 	if err != nil {
 		return
 	}
 	// Get only pem.
-	pemPodsList, err := v.clientset.CoreV1().Pods(plNamespace).List(context.Background(), metav1.ListOptions{
+	pemPodsList, err := v.clientset.CoreV1().Pods(v.ns).List(context.Background(), metav1.ListOptions{
 		LabelSelector: "name=vizier-pem",
 	})
 	if err != nil {
@@ -389,10 +388,10 @@ func (v *K8sVizierInfo) UpdateK8sState() {
 			}
 		}
 		name := podPb.Metadata.Name
-		ns := plNamespace
+		ns := v.ns
 		events := make([]*cvmsgspb.K8SEvent, 0)
 
-		eventsInterface := v.clientset.CoreV1().Events(plNamespace)
+		eventsInterface := v.clientset.CoreV1().Events(v.ns)
 		selector := eventsInterface.GetFieldSelector(&name, &ns, nil, nil)
 		options := metav1.ListOptions{FieldSelector: selector.String()}
 		evs, err := eventsInterface.List(context.Background(), options)
@@ -487,8 +486,7 @@ func (v *K8sVizierInfo) ParseJobYAML(yamlStr string, imageTag map[string]string,
 
 // LaunchJob starts the specified job.
 func (v *K8sVizierInfo) LaunchJob(j *batchv1.Job) (*batchv1.Job, error) {
-	// TODO(michellenguyen, PP-1702): Don't hardcode namespace
-	job, err := v.clientset.BatchV1().Jobs("pl").Create(context.Background(), j, metav1.CreateOptions{})
+	job, err := v.clientset.BatchV1().Jobs(v.ns).Create(context.Background(), j, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -499,7 +497,7 @@ func (v *K8sVizierInfo) LaunchJob(j *batchv1.Job) (*batchv1.Job, error) {
 // CreateSecret creates the K8s secret.
 func (v *K8sVizierInfo) CreateSecret(name string, literals map[string]string) error {
 	// Attempt to delete the secret first, if it already exists.
-	err := v.clientset.CoreV1().Secrets(plNamespace).Delete(context.Background(), name, metav1.DeleteOptions{})
+	err := v.clientset.CoreV1().Secrets(v.ns).Delete(context.Background(), name, metav1.DeleteOptions{})
 	if err != nil {
 		log.WithError(err).Info("Failed to delete secret, possibly because it may not exist")
 	}
@@ -514,7 +512,7 @@ func (v *K8sVizierInfo) CreateSecret(name string, literals map[string]string) er
 		secret.Data[k] = []byte(v)
 	}
 
-	_, err = v.clientset.CoreV1().Secrets(plNamespace).Create(context.Background(), secret, metav1.CreateOptions{})
+	_, err = v.clientset.CoreV1().Secrets(v.ns).Create(context.Background(), secret, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -525,14 +523,14 @@ func (v *K8sVizierInfo) CreateSecret(name string, literals map[string]string) er
 func (v *K8sVizierInfo) DeleteJob(name string) error {
 	policy := metav1.DeletePropagationBackground
 
-	return v.clientset.BatchV1().Jobs(plNamespace).Delete(context.Background(), name, metav1.DeleteOptions{
+	return v.clientset.BatchV1().Jobs(v.ns).Delete(context.Background(), name, metav1.DeleteOptions{
 		PropagationPolicy: &policy,
 	})
 }
 
 // GetJob gets the job with the specified name.
 func (v *K8sVizierInfo) GetJob(name string) (*batchv1.Job, error) {
-	return v.clientset.BatchV1().Jobs(plNamespace).Get(context.Background(), name, metav1.GetOptions{})
+	return v.clientset.BatchV1().Jobs(v.ns).Get(context.Background(), name, metav1.GetOptions{})
 }
 
 // CleanupCronJob periodically cleans up any completed jobs that were run by the specified cronjob.
@@ -543,14 +541,14 @@ func (v *K8sVizierInfo) CleanupCronJob(cronJob string, duration time.Duration, q
 	for {
 		select {
 		case <-ticker.C:
-			jobs, err := v.clientset.BatchV1().Jobs(plNamespace).List(context.Background(), metav1.ListOptions{})
+			jobs, err := v.clientset.BatchV1().Jobs(v.ns).List(context.Background(), metav1.ListOptions{})
 			if err != nil {
 				log.WithError(err).Error("Could not list jobs")
 				continue
 			}
 			for _, j := range jobs.Items {
 				if len(j.ObjectMeta.OwnerReferences) > 0 && j.ObjectMeta.OwnerReferences[0].Name == cronJob && j.Status.Succeeded == 1 {
-					err = v.clientset.BatchV1().Jobs(plNamespace).Delete(context.Background(), j.ObjectMeta.Name, metav1.DeleteOptions{
+					err = v.clientset.BatchV1().Jobs(v.ns).Delete(context.Background(), j.ObjectMeta.Name, metav1.DeleteOptions{
 						PropagationPolicy: &policy,
 					})
 					if err != nil {
@@ -566,7 +564,7 @@ func (v *K8sVizierInfo) CleanupCronJob(cronJob string, duration time.Duration, q
 
 // WaitForJobCompletion waits for the job with given name to complete.
 func (v *K8sVizierInfo) WaitForJobCompletion(name string) (bool, error) {
-	watcher := cache.NewListWatchFromClient(v.clientset.BatchV1().RESTClient(), "jobs", plNamespace, fields.OneTermEqualSelector("metadata.name", name))
+	watcher := cache.NewListWatchFromClient(v.clientset.BatchV1().RESTClient(), "jobs", v.ns, fields.OneTermEqualSelector("metadata.name", name))
 
 	w, err := watcher.Watch(metav1.ListOptions{})
 	if err != nil {
@@ -589,12 +587,12 @@ func (v *K8sVizierInfo) WaitForJobCompletion(name string) (bool, error) {
 
 // UpdateClusterID updates the cluster ID in the cluster secrets.
 func (v *K8sVizierInfo) UpdateClusterID(id string) error {
-	s, err := v.clientset.CoreV1().Secrets(plNamespace).Get(context.Background(), "pl-cluster-secrets", metav1.GetOptions{})
+	s, err := v.clientset.CoreV1().Secrets(v.ns).Get(context.Background(), "pl-cluster-secrets", metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 	s.Data["cluster-id"] = []byte(id)
 
-	_, err = v.clientset.CoreV1().Secrets(plNamespace).Update(context.Background(), s, metav1.UpdateOptions{})
+	_, err = v.clientset.CoreV1().Secrets(v.ns).Update(context.Background(), s, metav1.UpdateOptions{})
 	return err
 }

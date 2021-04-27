@@ -20,6 +20,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -44,12 +45,12 @@ import (
 
 func init() {
 	pflag.String("cluster_id", "", "The Cluster ID to use for Pixie Cloud")
-	pflag.String("certmgr_service", "vizier-certmgr.pl.svc:50900", "The cert manager service url (load balancer/list is ok)")
 	pflag.String("nats_url", "pl-nats", "The URL of NATS")
 	pflag.Duration("max_expected_clock_skew", 2000, "Duration in ms of expected maximum clock skew in a cluster")
 	pflag.Duration("renew_period", 5000, "Duration in ms of the time to wait to renew lease")
-	pflag.String("pod_namespace", "pl", "The namespace this pod runs in. Used for leader elections")
-	pflag.String("qb_service", "vizier-query-broker.pl.svc:50300", "The querybroker service url (load balancer/list is ok)")
+	pflag.String("pod_namespace", "pl", "The namespace this pod runs in.")
+	pflag.String("qb_service", "vizier-query-broker", "The querybroker service url (load balancer/list is ok)")
+	pflag.String("qb_port", "50300", "The querybroker service port")
 	pflag.String("cluster_name", "", "The name of the user's K8s cluster")
 	pflag.String("deploy_key", "", "The deploy key for the cluster")
 }
@@ -59,7 +60,9 @@ func newVzServiceClient() (public_vizierapipb.VizierServiceClient, error) {
 		return nil, err
 	}
 
-	qbChannel, err := grpc.Dial(viper.GetString("qb_service"), dialOpts...)
+	qbAddr := fmt.Sprintf("%s.%s.svc:%s", viper.GetString("qb_service"), viper.GetString("pod_namespace"), viper.GetString("qb_port"))
+
+	qbChannel, err := grpc.Dial(qbAddr, dialOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +86,7 @@ func main() {
 
 	deployKey := viper.GetString("deploy_key")
 
-	vzInfo, err := controllers.NewK8sVizierInfo(viper.GetString("cluster_name"))
+	vzInfo, err := controllers.NewK8sVizierInfo(viper.GetString("cluster_name"), viper.GetString("pod_namespace"))
 	if err != nil {
 		log.WithError(err).Fatal("Could not get k8s info")
 	}

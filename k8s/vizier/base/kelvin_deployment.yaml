@@ -56,6 +56,10 @@ spec:
             secretKeyRef:
               key: jwt-signing-key
               name: pl-cluster-secrets
+        - name: PL_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         - name: TCMALLOC_SAMPLE_PARAMETER
           value: "1048576"
         ports:

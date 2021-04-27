@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/gofrs/uuid"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -174,6 +175,7 @@ func makeTestAgentDataInfo() []*messagespb.AgentDataInfo {
 func TestAgentsInfo_UpdateAgentsInfo(t *testing.T) {
 	// This test tries out various agent state updates together and in a row to make sure
 	// that they all interact with each other properly.
+	viper.Set("pod_namespace", "pl")
 	testSchema := makeTestSchema(t)
 	uuidpbs := makeTestAgentIDs(t)
 	var uuids []uuid.UUID

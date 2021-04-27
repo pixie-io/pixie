@@ -44,6 +44,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
+        - name: PL_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         envFrom:
         - configMapRef:
             name: pl-tls-config

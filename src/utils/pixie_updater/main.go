@@ -143,7 +143,7 @@ func main() {
 	}
 
 	// Update update role first.
-	err = k8s.ApplyYAMLForResourceTypes(clientset, kubeConfig, "pl", strings.NewReader(yamlMap[vzYaml]), []string{"clusterroles"}, true)
+	err = k8s.ApplyYAMLForResourceTypes(clientset, kubeConfig, ns, strings.NewReader(yamlMap[vzYaml]), []string{"clusterroles"}, true)
 	if err != nil {
 		log.WithError(err).Fatalf("Failed to update updater clusterroles")
 	}
@@ -177,14 +177,14 @@ func main() {
 	if viper.GetBool("bootstrap_mode") {
 		log.Info("Deploying NATS")
 
-		err = retryDeploy(clientset, kubeConfig, "pl", yamlMap[natsYAML])
+		err = retryDeploy(clientset, kubeConfig, ns, yamlMap[natsYAML])
 		if err != nil {
 			log.WithError(err).Fatalf("Failed to deploy NATS")
 		}
 
 		if etcdOperatorEnabled {
 			log.Info("Deploying etcd operator")
-			err = retryDeploy(clientset, kubeConfig, "pl", yamlMap[etcdYAML])
+			err = retryDeploy(clientset, kubeConfig, ns, yamlMap[etcdYAML])
 			if err != nil {
 				log.WithError(err).Fatalf("Failed to deploy etcd operator")
 			}
@@ -232,13 +232,13 @@ func main() {
 		}
 
 		// Retry deploy of etcd operator if flag is enabled.
-		err = retryDeploy(clientset, kubeConfig, "pl", yamlMap[etcdYAML])
+		err = retryDeploy(clientset, kubeConfig, ns, yamlMap[etcdYAML])
 		if err != nil {
 			log.WithError(err).Fatalf("Failed to redeploy etcd operator.")
 		}
 	}
 
-	err = k8s.ApplyYAML(clientset, kubeConfig, "pl", strings.NewReader(yamlMap[vzYaml]), true)
+	err = k8s.ApplyYAML(clientset, kubeConfig, ns, strings.NewReader(yamlMap[vzYaml]), true)
 	if err != nil {
 		log.WithError(err).Fatalf("Failed to install vizier")
 	}

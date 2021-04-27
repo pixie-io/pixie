@@ -24,6 +24,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 
 	"px.dev/pixie/src/carnot/planner/distributedpb"
 	"px.dev/pixie/src/utils"
@@ -33,7 +34,7 @@ import (
 // KelvinSSLTargetOverride the hostname used for SSL target override when sending data to Kelvin.
 // Note: This value may differ in the future. When that happens, this should instead come from the
 // Kelvins themselves. rather than this variable, when Kelvins send their updated state.
-const KelvinSSLTargetOverride = "kelvin.pl.svc"
+const KelvinSSLTargetOverride = "kelvin.%s.svc"
 
 // AgentsInfo tracks information about the distributed state of the system.
 type AgentsInfo interface {
@@ -208,6 +209,6 @@ func makeKelvinCarnotInfo(agentID uuid.UUID, grpcAddress string, asid uint32) *d
 		AcceptsRemoteSources: true,
 		// When we support persistent storage, Kelvins will also have MetadataInfo.
 		MetadataInfo:  nil,
-		SSLTargetName: KelvinSSLTargetOverride,
+		SSLTargetName: fmt.Sprintf(KelvinSSLTargetOverride, viper.GetString("pod_namespace")),
 	}
 }

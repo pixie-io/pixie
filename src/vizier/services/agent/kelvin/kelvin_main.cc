@@ -31,8 +31,14 @@
 DEFINE_string(nats_url, gflags::StringFromEnv("PL_NATS_URL", "pl-nats"),
               "The host address of the nats cluster");
 
-DEFINE_string(mds_addr, gflags::StringFromEnv("PL_MDS_ADDR", "vizier-metadata.pl.svc:50400"),
-              "The host address of the MDS");
+DEFINE_string(mds_addr, gflags::StringFromEnv("PL_MDS_SVC_NAME", "vizier-metadata"),
+              "The service name of MDS");
+
+DEFINE_string(mds_port, gflags::StringFromEnv("PL_MDS_PORT", "50400"),
+              "The port of the metadata service");
+
+DEFINE_string(namespace, gflags::StringFromEnv("PL_NAMESPACE", "pl"),
+              "The namespace of the Vizier instance");
 
 DEFINE_string(pod_ip, gflags::StringFromEnv("PL_POD_IP", ""),
               "The IP address of the pod this controller is running on");
@@ -110,6 +116,9 @@ int main(int argc, char** argv) {
   }
 
   std::string addr = absl::Substitute("$0:$1", FLAGS_pod_ip, FLAGS_rpc_port);
+
+  std::string mds_addr =
+      absl::Substitute("$0.$1.svc:$2", FLAGS_mds_addr, FLAGS_namespace, FLAGS_mds_port);
 
   auto manager = KelvinManager::Create(agent_id, FLAGS_pod_name, FLAGS_host_ip, addr,
                                        FLAGS_rpc_port, FLAGS_nats_url, FLAGS_mds_addr)

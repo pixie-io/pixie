@@ -93,6 +93,10 @@ spec:
             secretKeyRef:
               name: pl-update-job-secrets
               key: cloud-token
+        - name: PL_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         - name: PL_VIZIER_VERSION
           value: __PL_VIZIER_VERSION__
         - name: PL_REDEPLOY_ETCD

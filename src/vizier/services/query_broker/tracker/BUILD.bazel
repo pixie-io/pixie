@@ -32,6 +32,7 @@ go_library(
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_gogo_protobuf//types",
         "@com_github_sirupsen_logrus//:logrus",
+        "@com_github_spf13_viper//:viper",
         "@org_golang_google_grpc//metadata",
     ],
 )
@@ -57,6 +58,7 @@ go_test(
         "//src/vizier/services/shared/agentpb:agent_pl_go_proto",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_golang_mock//gomock",
+        "@com_github_spf13_viper//:viper",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
     ],

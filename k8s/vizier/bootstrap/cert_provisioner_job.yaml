@@ -11,6 +11,11 @@ spec:
       containers:
       - name: provisioner
         image: gcr.io/pl-dev-infra/vizier/cert_provisioner_image:latest
+        env:
+        - name: PL_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         envFrom:
         - configMapRef:
             name: pl-cloud-config
