@@ -20,6 +20,7 @@ go_library(
     name = "pxapi",
     srcs = [
         "client.go",
+        "cloud.go",
         "doc.go",
         "opts.go",
         "results.go",

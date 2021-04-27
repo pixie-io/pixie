@@ -30,7 +30,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"px.dev/pixie/src/api/go/pxapi/types"
-	cloudapipb "px.dev/pixie/src/api/proto/cloudapipb"
+	"px.dev/pixie/src/api/proto/cloudapipb"
 	vizierapipb "px.dev/pixie/src/api/proto/vizierapipb"
 )
 
