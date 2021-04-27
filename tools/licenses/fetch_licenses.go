@@ -74,7 +74,7 @@ type dependency struct {
 	LicenseText string `json:"licenseText,omitempty"`
 }
 
-func readData(filename string) (map[string]*dependency, error) {
+func readData(filename string) (map[string]dependency, error) {
 	licenseFile, err := os.Open(filename)
 	if err != nil {
 		return nil, err
@@ -88,9 +88,9 @@ func readData(filename string) (map[string]*dependency, error) {
 		return nil, err
 	}
 
-	licenses := make(map[string]*dependency)
+	licenses := make(map[string]dependency)
 	for _, dep := range deps {
-		licenses[dep.Name] = &dep
+		licenses[dep.Name] = dep
 	}
 	return licenses, nil
 }
@@ -219,7 +219,7 @@ func tryFetchPkgGoDevLicense(ctx context.Context, dep *dependency) {
 	}
 }
 
-func tryFetchJSONManualLicense(dep *dependency, manual map[string]*dependency) {
+func tryFetchJSONManualLicense(dep *dependency, manual map[string]dependency) {
 	if dep.LicenseSPDX != "" {
 		// A previous fetcher was successful, so don't do anything here.
 		return
@@ -246,7 +246,7 @@ func main() {
 		log.Fatal("Must specfy --json_output")
 	}
 
-	var manual map[string]*dependency
+	var manual map[string]dependency
 	var err error
 	if *jsonManualInput != "" {
 		manual, err = readData(*jsonManualInput)
@@ -291,7 +291,7 @@ func main() {
 
 	for i := 0; i < 12; i++ {
 		wg.Add(1)
-		go func(ctx context.Context, client *github.Client, manual map[string]*dependency) {
+		go func(ctx context.Context, client *github.Client, manual map[string]dependency) {
 			defer wg.Done()
 			for dep := range work {
 				tryFetchGithubLicense(ctx, client, dep)
