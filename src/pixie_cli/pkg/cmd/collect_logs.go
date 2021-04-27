@@ -20,6 +20,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -27,11 +28,12 @@ import (
 	"github.com/spf13/viper"
 
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
+	"px.dev/pixie/src/pixie_cli/pkg/vizier"
 	"px.dev/pixie/src/utils/shared/k8s"
 )
 
 func init() {
-	CollectLogsCmd.Flags().StringP("namespace", "n", "pl", "The namespace to install K8s secrets to")
+	CollectLogsCmd.Flags().StringP("namespace", "n", "pl", "The namespace vizier is deployed in")
 	viper.BindPFlag("namespace", CollectLogsCmd.Flags().Lookup("namespace"))
 }
 
@@ -40,7 +42,27 @@ var CollectLogsCmd = &cobra.Command{
 	Use:   "collect-logs",
 	Short: "Collect pixie logs on the cluster",
 	Run: func(cmd *cobra.Command, args []string) {
-		c := k8s.NewLogCollector(viper.GetString("namespace"))
+		ns, _ := cmd.Flags().GetString("namespace")
+		nsSet := cmd.Flags().Changed("namespace")
+
+		kubeConfig := k8s.GetConfig()
+		clientset := k8s.GetClientset(kubeConfig)
+
+		if !nsSet {
+			vzNs, err := vizier.FindVizierNamespace(clientset)
+			if err != nil {
+				utils.WithError(err).Error("Failed to get Vizier namespace")
+				os.Exit(1)
+			}
+			ns = vzNs
+		}
+
+		if ns == "" {
+			utils.Info("Cannot find running Vizier instance")
+			os.Exit(0)
+		}
+
+		c := k8s.NewLogCollector(ns)
 		fName := fmt.Sprintf("pixie_logs_%s.zip", time.Now().Format("20060102150405"))
 		err := c.CollectPixieLogs(fName)
 		if err != nil {

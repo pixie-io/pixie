@@ -31,6 +31,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
+	"px.dev/pixie/src/pixie_cli/pkg/vizier"
 )
 
 // DeleteCmd is the "delete" command.
@@ -40,6 +41,10 @@ var DeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		clobberAll, _ := cmd.Flags().GetBool("clobber")
 		ns, _ := cmd.Flags().GetString("namespace")
+		nsSet := cmd.Flags().Changed("namespace")
+		if !nsSet {
+			ns = ""
+		}
 		deletePixie(ns, clobberAll)
 	},
 }
@@ -55,6 +60,22 @@ func init() {
 func deletePixie(ns string, clobberAll bool) {
 	kubeConfig := k8s.GetConfig()
 	clientset := k8s.GetClientset(kubeConfig)
+
+	// Try to find the namespace where Pixie is deployed, if no namespace was specified.
+	if ns == "" {
+		vzNs, err := vizier.FindVizierNamespace(clientset)
+		if err != nil {
+			utils.WithError(err).Error("Failed to get Vizier namespace")
+			os.Exit(1)
+		}
+		ns = vzNs
+	}
+
+	if ns == "" {
+		utils.Info("Cannot find running Vizier instance")
+		os.Exit(0)
+	}
+
 	od := k8s.ObjectDeleter{
 		Namespace:  ns,
 		Clientset:  clientset,

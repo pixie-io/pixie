@@ -47,6 +47,8 @@ go_library(
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_sirupsen_logrus//:logrus",
         "@in_gopkg_segmentio_analytics_go_v3//:analytics-go_v3",
+        "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
+        "@io_k8s_client_go//kubernetes",
         "@io_k8s_client_go//rest",
         "@org_golang_google_grpc//:go_default_library",
         "@org_golang_google_grpc//codes",

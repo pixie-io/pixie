@@ -19,11 +19,14 @@
 package vizier
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
 
 	"github.com/gofrs/uuid"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
@@ -31,6 +34,22 @@ import (
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/shared/k8s"
 )
+
+// FindVizierNamespace looks for the namespace that the vizier is running in for the current context.
+func FindVizierNamespace(clientset *kubernetes.Clientset) (string, error) {
+	vzPods, err := clientset.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{
+		LabelSelector: "component=vizier",
+	})
+	if err != nil {
+		return "", err
+	}
+
+	if len(vzPods.Items) == 0 {
+		return "", nil
+	}
+
+	return vzPods.Items[0].Namespace, nil
+}
 
 // MustConnectDefaultVizier vizier will connect to default vizier based on parameters.
 func MustConnectDefaultVizier(cloudAddr string, allClusters bool, clusterID uuid.UUID) []*Connector {
