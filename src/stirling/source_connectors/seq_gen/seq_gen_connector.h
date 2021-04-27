@@ -35,6 +35,8 @@ namespace stirling {
  */
 class SeqGenConnector : public SourceConnector {
  public:
+  static constexpr std::string_view kName = "sequences";
+
   ~SeqGenConnector() override = default;
 
   // clang-format off

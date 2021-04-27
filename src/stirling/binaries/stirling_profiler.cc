@@ -126,7 +126,7 @@ int main(int argc, char** argv) {
 
   // Make Stirling.
   auto registry = std::make_unique<SourceRegistry>();
-  registry->RegisterOrDie<PerfProfileConnector>("perf_profiler");
+  registry->RegisterOrDie<PerfProfileConnector>();
   std::unique_ptr<Stirling> stirling = Stirling::Create(std::move(registry));
   g_stirling = stirling.get();
   stirling->RegisterDataPushCallback(StirlingWrapperCallback);

@@ -35,6 +35,7 @@ namespace stirling {
 
 class PIDRuntimeConnector : public SourceConnector, public bpf_tools::BCCWrapper {
  public:
+  static constexpr std::string_view kName = "bcc_cpu_stat";
   // clang-format off
   static constexpr DataElement kElements[] = {
       canonical_data_elements::kTime,

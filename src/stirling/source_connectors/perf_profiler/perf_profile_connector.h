@@ -37,6 +37,7 @@ namespace stirling {
 
 class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrapper {
  public:
+  static constexpr std::string_view kName = "perf_profiler";
   static constexpr auto kTables = MakeArray(kStackTraceTable);
   static constexpr uint32_t kPerfProfileTableNum = TableNum(kTables, kStackTraceTable);
 

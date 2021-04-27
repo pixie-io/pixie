@@ -34,7 +34,7 @@ class StirlingBPFTest : public ::testing::Test {
  protected:
   void SetUp() override {
     std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>();
-    registry->RegisterOrDie<SocketTraceConnector>("socket_trace_connector");
+    registry->RegisterOrDie<SocketTraceConnector>();
 
     // Make Stirling.
     stirling_ = Stirling::Create(std::move(registry));

@@ -36,6 +36,7 @@ namespace stirling {
 
 class SystemStatsConnector : public SourceConnector {
  public:
+  static constexpr std::string_view kName = "system_stats";
   static constexpr auto kTables = MakeArray(kProcessStatsTable, kNetworkStatsTable);
 
   SystemStatsConnector() = delete;

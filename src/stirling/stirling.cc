@@ -61,45 +61,45 @@ namespace {
 // All sources, include experimental and deprecated ones.
 std::unique_ptr<SourceRegistry> CreateAllSourceRegistry() {
   auto registry = std::make_unique<SourceRegistry>();
-  registry->RegisterOrDie<JVMStatsConnector>("jvm_stats");
-  registry->RegisterOrDie<PIDRuntimeConnector>("bcc_cpu_stat");
-  registry->RegisterOrDie<ProcStatConnector>("proc_stat");
-  registry->RegisterOrDie<SeqGenConnector>("sequences");
-  registry->RegisterOrDie<SocketTraceConnector>("socket_tracer");
-  registry->RegisterOrDie<SystemStatsConnector>("system_stats");
-  registry->RegisterOrDie<PerfProfileConnector>("perf_profiler");
+  registry->RegisterOrDie<JVMStatsConnector>();
+  registry->RegisterOrDie<PIDRuntimeConnector>();
+  registry->RegisterOrDie<ProcStatConnector>();
+  registry->RegisterOrDie<SeqGenConnector>();
+  registry->RegisterOrDie<SocketTraceConnector>();
+  registry->RegisterOrDie<SystemStatsConnector>();
+  registry->RegisterOrDie<PerfProfileConnector>();
   return registry;
 }
 
 // All sources used in production.
 std::unique_ptr<SourceRegistry> CreateProdSourceRegistry() {
   auto registry = std::make_unique<SourceRegistry>();
-  registry->RegisterOrDie<JVMStatsConnector>("jvm_stats");
-  registry->RegisterOrDie<SocketTraceConnector>("socket_tracer");
-  registry->RegisterOrDie<SystemStatsConnector>("system_stats");
-  registry->RegisterOrDie<PerfProfileConnector>("perf_profiler");
+  registry->RegisterOrDie<JVMStatsConnector>();
+  registry->RegisterOrDie<SocketTraceConnector>();
+  registry->RegisterOrDie<SystemStatsConnector>();
+  registry->RegisterOrDie<PerfProfileConnector>();
   return registry;
 }
 
 // All sources used in production, that produce traces.
 std::unique_ptr<SourceRegistry> CreateTracerSourceRegistry() {
   auto registry = std::make_unique<SourceRegistry>();
-  registry->RegisterOrDie<SocketTraceConnector>("socket_tracer");
+  registry->RegisterOrDie<SocketTraceConnector>();
   return registry;
 }
 
 // All sources used in production, that produce metrics.
 std::unique_ptr<SourceRegistry> CreateMetricsSourceRegistry() {
   auto registry = std::make_unique<SourceRegistry>();
-  registry->RegisterOrDie<JVMStatsConnector>("jvm_stats");
-  registry->RegisterOrDie<SystemStatsConnector>("system_stats");
+  registry->RegisterOrDie<JVMStatsConnector>();
+  registry->RegisterOrDie<SystemStatsConnector>();
   return registry;
 }
 
 // The stack trace profiler.
 std::unique_ptr<SourceRegistry> CreatePerfProfilerRegistry() {
   auto registry = std::make_unique<SourceRegistry>();
-  registry->RegisterOrDie<PerfProfileConnector>("perf_profiler");
+  registry->RegisterOrDie<PerfProfileConnector>();
   return registry;
 }
 }  // namespace
@@ -232,16 +232,7 @@ class StirlingImpl final : public Stirling {
 };
 
 StirlingImpl::StirlingImpl(std::unique_ptr<SourceRegistry> registry)
-    : config_(std::make_unique<PubSubManager>()), registry_(std::move(registry)) {
-  LOG(INFO) << "Creating Stirling";
-
-  std::string msg = "Stirling: Registered sources: [ ";
-  for (const auto& registered_source : registry_->sources()) {
-    absl::StrAppend(&msg, registered_source.first, " ");
-  }
-  absl::StrAppend(&msg, "]");
-  LOG(INFO) << msg;
-}
+    : config_(std::make_unique<PubSubManager>()), registry_(std::move(registry)) {}
 
 StirlingImpl::~StirlingImpl() { Stop(); }
 
@@ -836,10 +827,14 @@ void StirlingImpl::DisablePIDTrace(int pid) {
 }
 
 std::unique_ptr<Stirling> Stirling::Create(std::unique_ptr<SourceRegistry> registry) {
-  // Create Stirling object.
+  std::string msg = "Creating Stirling, registered sources:";
+  for (const auto& registered_source : registry->sources()) {
+    absl::StrAppend(&msg, "\n", registered_source.first);
+  }
+  LOG(INFO) << msg;
+
   auto stirling = std::unique_ptr<StirlingImpl>(new StirlingImpl(std::move(registry)));
 
-  // Initialize Stirling (brings-up all source connectors).
   PL_CHECK_OK(stirling->Init());
 
   return stirling;

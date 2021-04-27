@@ -34,7 +34,7 @@ class StirlingComponentTest : public ::testing::Test {
  protected:
   void SetUp() override {
     registry_ = std::make_unique<SourceRegistry>();
-    registry_->RegisterOrDie<SeqGenConnector>("test_connector");
+    registry_->RegisterOrDie<SeqGenConnector>();
     data_collector_ = Stirling::Create(std::move(registry_));
   }
 

@@ -42,6 +42,7 @@ namespace stirling {
 // /tmp directory. It's supported by almost all JVM from major vendors.
 class JVMStatsConnector : public SourceConnector {
  public:
+  static constexpr std::string_view kName = "jvm_stats";
   static constexpr auto kTables = MakeArray(kJVMStatsTable);
   static constexpr int kTableNum = SourceConnector::TableNum(kTables, kJVMStatsTable);
   static constexpr auto kSamplingPeriod = std::chrono::milliseconds{1000};

@@ -66,6 +66,7 @@ namespace stirling {
 
 class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrapper {
  public:
+  static constexpr std::string_view kName = "socket_tracer";
   static constexpr auto kTables = MakeArray(kConnStatsTable, kHTTPTable, kMySQLTable, kCQLTable,
                                             kPGSQLTable, kDNSTable, kRedisTable);
 

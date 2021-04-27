@@ -63,25 +63,28 @@ class SourceRegistry : public NotCopyable {
    * @return Status
    */
   template <typename TSourceConnector>
-  Status Register(const std::string& name) {
+  Status Register(std::string_view name = {}) {
+    if (name.empty()) {
+      name = TSourceConnector::kName;
+    }
     // Create registry element from template
     SourceRegistry::RegistryElement element(TSourceConnector::Create, TSourceConnector::kTables);
     if (sources_map_.find(name) != sources_map_.end()) {
       return error::AlreadyExists("The data source with name \"$0\" already exists", name);
     }
-    sources_map_.insert({name, element});
+    sources_map_.insert({std::string(name), element});
 
     return Status::OK();
   }
 
   template <typename TSourceConnector>
-  void RegisterOrDie(const std::string& name) {
+  void RegisterOrDie(std::string_view name = {}) {
     auto status = Register<TSourceConnector>(name);
     PL_CHECK_OK(status);
   }
 
  protected:
-  std::unordered_map<std::string, RegistryElement> sources_map_;
+  absl::flat_hash_map<std::string, RegistryElement> sources_map_;
 };
 
 }  // namespace stirling
