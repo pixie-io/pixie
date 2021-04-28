@@ -204,9 +204,9 @@ def is_skipped(file_path: str):
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Check/Fix license info in file')
-    parser.add_argument('-f', required=True, type=str, help='the name of the file to check. '
-                                                            'If a directory is specified files are'
-                                                            ' checked recursively.')
+    parser.add_argument('-f', required=True, type=str, help='the name of the file to check. ')
+    parser.add_argument('-a', required=False, action='store_true', default=False,
+                        help='automatically fix the file')
     return parser.parse_args(sys.argv[1:])
 
 
@@ -233,6 +233,18 @@ class AddLicenseDiff:
         s += self._txt + '\n'
         s += ">>>>>"
         return s
+
+    def fix(self, filepath):
+        file_lines = None
+        with open(filepath, 'r') as f:
+            file_lines = f.readlines()
+
+        with open(filepath, 'w') as f:
+            for idx, l in enumerate(file_lines):
+                # The line is 1 indexed.
+                if (idx + 1) == self._start_line:
+                    f.write(self._txt + '\n')
+                f.write(l)
 
 
 def generate_diff_if_needed(path):
@@ -298,12 +310,16 @@ def main():
     args = parse_args()
 
     path = args.f
+    autofix = args.a
     if os.path.isfile(path):
         diff = generate_diff_if_needed(path)
         if diff is not None:
-            print(diff.phabricator())
+            if autofix:
+                diff.fix(path)
+            else:
+                print(diff.phabricator())
     else:
-        logging.fatal('-f arguments is required and needs to be either a file or a directory')
+        logging.fatal('-f argument is required and needs to be a file')
 
 
 if __name__ == '__main__':
