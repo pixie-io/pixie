@@ -132,6 +132,7 @@ matchers = [
             re.compile(r"^.*\.(java)$"),
             re.compile(r"^.*\.(js|jsx|ts|tsx)$"),
             re.compile(r"^.*\.(proto)$"),
+            re.compile(r"^.*\.(css|scss)$"),
         ],
         'wrapper': c_style_license_wrapper,
     },
