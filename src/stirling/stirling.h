@@ -20,6 +20,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <sole.hpp>
 
@@ -35,7 +36,7 @@ namespace stirling {
 /**
  * Specifies a set of sources to initialize as part of a source registry.
  */
-enum class SourceRegistrySpecifier {
+enum class SourceConnectorGroup {
   // No static sources.
   kNone,
 
@@ -56,13 +57,25 @@ enum class SourceRegistrySpecifier {
 };
 
 /**
- * Create a predefined source registry set. See SourceRegistrySpecifier for details.
- *
- * @param sources Specifier to indicate which pre-set source registry set is desired.
- * @return unique_ptr to the source registry containing all the sources to initialize.
+ * Returns the set of source names for the specified group.
  */
-std::unique_ptr<SourceRegistry> CreateSourceRegistry(
-    SourceRegistrySpecifier sources = SourceRegistrySpecifier::kProd);
+absl::flat_hash_set<std::string_view> GetSourceNamesForGroup(SourceConnectorGroup group);
+
+/**
+ * Returns a source registry registered with the specified sources.
+ */
+StatusOr<std::unique_ptr<SourceRegistry>> CreateSourceRegistry(
+    const absl::flat_hash_set<std::string_view>& source_names);
+
+/**
+ * Returns a source registry registered with all prod sources.
+ */
+std::unique_ptr<SourceRegistry> CreateProdSourceRegistry();
+
+/**
+ * Returns the set of names of all production source connectors.
+ */
+absl::flat_hash_set<std::string_view> GetProdSourceNames();
 
 /**
  * The data collector collects data from various different 'sources',

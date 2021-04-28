@@ -37,6 +37,7 @@ Status SourceConnector::Init() {
     return error::Internal("Cannot re-initialize a connector [current state = $0].",
                            magic_enum::enum_name(static_cast<State>(state_)));
   }
+  LOG(INFO) << absl::Substitute("Initializing source connector: $0", name());
   Status s = InitImpl();
   state_ = s.ok() ? State::kActive : State::kErrors;
   return s;

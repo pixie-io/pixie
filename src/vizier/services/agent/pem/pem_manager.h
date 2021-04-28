@@ -46,7 +46,7 @@ class PEMManager : public Manager {
   PEMManager(sole::uuid agent_id, std::string_view pod_name, std::string_view host_ip,
              std::string_view nats_url)
       : PEMManager(agent_id, host_ip, pod_name, nats_url,
-                   px::stirling::Stirling::Create(px::stirling::CreateSourceRegistry())) {}
+                   px::stirling::Stirling::Create(px::stirling::CreateProdSourceRegistry())) {}
 
   PEMManager(sole::uuid agent_id, std::string_view pod_name, std::string_view host_ip,
              std::string_view nats_url, std::unique_ptr<stirling::Stirling> stirling)

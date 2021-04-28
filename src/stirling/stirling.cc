@@ -58,71 +58,60 @@ namespace stirling {
 
 namespace {
 
-// All sources, include experimental and deprecated ones.
-std::unique_ptr<SourceRegistry> CreateAllSourceRegistry() {
-  auto registry = std::make_unique<SourceRegistry>();
-  registry->RegisterOrDie<JVMStatsConnector>();
-  registry->RegisterOrDie<PIDRuntimeConnector>();
-  registry->RegisterOrDie<ProcStatConnector>();
-  registry->RegisterOrDie<SeqGenConnector>();
-  registry->RegisterOrDie<SocketTraceConnector>();
-  registry->RegisterOrDie<SystemStatsConnector>();
-  registry->RegisterOrDie<PerfProfileConnector>();
-  return registry;
-}
+#define REGISTRY_PAIR(source) \
+  { source::kName, SourceRegistry::CreateRegistryElement<source>() }
+const absl::flat_hash_map<std::string_view, SourceRegistry::RegistryElement> kAllSources = {
+    REGISTRY_PAIR(JVMStatsConnector),    REGISTRY_PAIR(PIDRuntimeConnector),
+    REGISTRY_PAIR(ProcStatConnector),    REGISTRY_PAIR(SeqGenConnector),
+    REGISTRY_PAIR(SocketTraceConnector), REGISTRY_PAIR(SystemStatsConnector),
+    REGISTRY_PAIR(PerfProfileConnector),
+};
+#undef REGISTRY_PAIR
 
-// All sources used in production.
-std::unique_ptr<SourceRegistry> CreateProdSourceRegistry() {
-  auto registry = std::make_unique<SourceRegistry>();
-  registry->RegisterOrDie<JVMStatsConnector>();
-  registry->RegisterOrDie<SocketTraceConnector>();
-  registry->RegisterOrDie<SystemStatsConnector>();
-  registry->RegisterOrDie<PerfProfileConnector>();
-  return registry;
-}
-
-// All sources used in production, that produce traces.
-std::unique_ptr<SourceRegistry> CreateTracerSourceRegistry() {
-  auto registry = std::make_unique<SourceRegistry>();
-  registry->RegisterOrDie<SocketTraceConnector>();
-  return registry;
-}
-
-// All sources used in production, that produce metrics.
-std::unique_ptr<SourceRegistry> CreateMetricsSourceRegistry() {
-  auto registry = std::make_unique<SourceRegistry>();
-  registry->RegisterOrDie<JVMStatsConnector>();
-  registry->RegisterOrDie<SystemStatsConnector>();
-  return registry;
-}
-
-// The stack trace profiler.
-std::unique_ptr<SourceRegistry> CreatePerfProfilerRegistry() {
-  auto registry = std::make_unique<SourceRegistry>();
-  registry->RegisterOrDie<PerfProfileConnector>();
-  return registry;
-}
 }  // namespace
 
-std::unique_ptr<SourceRegistry> CreateSourceRegistry(SourceRegistrySpecifier sources) {
-  switch (sources) {
-    case SourceRegistrySpecifier::kNone:
-      return std::make_unique<SourceRegistry>();
-    case SourceRegistrySpecifier::kTracers:
-      return px::stirling::CreateTracerSourceRegistry();
-    case SourceRegistrySpecifier::kMetrics:
-      return px::stirling::CreateMetricsSourceRegistry();
-    case SourceRegistrySpecifier::kProd:
-      return px::stirling::CreateProdSourceRegistry();
-    case SourceRegistrySpecifier::kAll:
-      return px::stirling::CreateAllSourceRegistry();
-    case SourceRegistrySpecifier::kProfiler:
-      return px::stirling::CreatePerfProfilerRegistry();
+absl::flat_hash_set<std::string_view> GetSourceNamesForGroup(SourceConnectorGroup group) {
+  switch (group) {
+    case SourceConnectorGroup::kNone:
+      return {};
+    case SourceConnectorGroup::kProd:
+      return {SocketTraceConnector::kName, SystemStatsConnector::kName, PerfProfileConnector::kName,
+              JVMStatsConnector::kName};
+    case SourceConnectorGroup::kAll:
+      return {JVMStatsConnector::kName,   PIDRuntimeConnector::kName,  ProcStatConnector::kName,
+              SeqGenConnector::kName,     SocketTraceConnector::kName, SystemStatsConnector::kName,
+              PerfProfileConnector::kName};
+    case SourceConnectorGroup::kTracers:
+      return {SocketTraceConnector::kName};
+    case SourceConnectorGroup::kMetrics:
+      return {JVMStatsConnector::kName, SystemStatsConnector::kName};
+    case SourceConnectorGroup::kProfiler:
+      return {PerfProfileConnector::kName};
     default:
       // To keep GCC happy.
       DCHECK(false);
-      return nullptr;
+      return {};
   }
+}
+
+StatusOr<std::unique_ptr<SourceRegistry>> CreateSourceRegistry(
+    const absl::flat_hash_set<std::string_view>& source_names) {
+  auto result = std::make_unique<SourceRegistry>();
+
+  for (auto name : source_names) {
+    auto iter = kAllSources.find(name);
+    if (iter == kAllSources.end()) {
+      return error::InvalidArgument("Source name $0 is not available.");
+    }
+    PL_RETURN_IF_ERROR(result->Register(iter->first, iter->second));
+  }
+
+  return result;
+}
+
+std::unique_ptr<SourceRegistry> CreateProdSourceRegistry() {
+  return CreateSourceRegistry(GetSourceNamesForGroup(SourceConnectorGroup::kProd))
+      .ConsumeValueOrDie();
 }
 
 class StirlingImpl final : public Stirling {
@@ -329,7 +318,7 @@ Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source, bool dyn
 
   for (uint32_t i = 0; i < source->num_tables(); ++i) {
     const DataTableSchema& schema = source->TableSchema(i);
-    LOG(INFO) << absl::Substitute("Adding info class for $0: $1", source->name(), schema.name());
+    LOG(INFO) << absl::Substitute("Adding info class: [$0/$1]", source->name(), schema.name());
 
     // Step 2: Create the info class manager.
     auto mgr = std::make_unique<InfoClassManager>(
@@ -832,11 +821,10 @@ void StirlingImpl::DisablePIDTrace(int pid) {
 }
 
 std::unique_ptr<Stirling> Stirling::Create(std::unique_ptr<SourceRegistry> registry) {
-  std::string msg = "Creating Stirling, registered sources:";
-  for (const auto& registered_source : registry->sources()) {
-    absl::StrAppend(&msg, "\n", registered_source.first);
-  }
-  LOG(INFO) << msg;
+  LOG(INFO) << absl::Substitute(
+      "Creating Stirling, registered sources: [$0]",
+      absl::StrJoin(registry->sources(), ", ",
+                    [](std::string* out, const auto& v) { absl::StrAppend(out, v.first); }));
 
   auto stirling = std::unique_ptr<StirlingImpl>(new StirlingImpl(std::move(registry)));
 

@@ -46,20 +46,23 @@ using ::px::StatusOr;
 
 using ::px::stirling::IndexPublication;
 using ::px::stirling::PrintRecordBatch;
+using ::px::stirling::SourceConnectorGroup;
 using ::px::stirling::SourceRegistry;
-using ::px::stirling::SourceRegistrySpecifier;
 using ::px::stirling::Stirling;
 using ::px::stirling::stirlingpb::InfoClass;
 using ::px::stirling::stirlingpb::Publish;
 using ::px::stirling::stirlingpb::Subscribe;
-using DynamicTracepointDeployment =
-    ::px::stirling::dynamic_tracing::ir::logical::TracepointDeployment;
-
 using ::px::types::ColumnWrapperRecordBatch;
 using ::px::types::TabletID;
 
-DEFINE_string(sources, "kProd",
+using DynamicTracepointDeployment =
+    ::px::stirling::dynamic_tracing::ir::logical::TracepointDeployment;
+
+DEFINE_string(source_group, "kProd",
               "[kAll|kProd|kMetrics|kTracers|kProfiler] Choose sources to enable.");
+DEFINE_string(sources, "",
+              "The source connectors to register, find them in the header files of "
+              "source connector classes");
 DEFINE_string(trace, "",
               "Dynamic trace to deploy. Either (1) the path to a file containing PxL or IR trace "
               "spec, or (2) <path to object file>:<symbol_name> for full-function tracing.");
@@ -274,15 +277,29 @@ int main(int argc, char** argv) {
     // In dynamic tracing mode, don't load any other sources.
     // Presumably, user only wants their dynamic trace.
     LOG(INFO) << "Dynamic Trace provided. All other data sources will be disabled.";
-    FLAGS_sources = "kNone";
+    FLAGS_sources = "";
+    FLAGS_source_group = "";
   }
 
-  std::optional<SourceRegistrySpecifier> sources =
-      magic_enum::enum_cast<SourceRegistrySpecifier>(FLAGS_sources);
-  if (!sources.has_value()) {
-    LOG(ERROR) << absl::Substitute("$0 is not a valid source register specifier", FLAGS_sources);
+  absl::flat_hash_set<std::string_view> source_names;
+
+  if (!FLAGS_source_group.empty()) {
+    std::optional<SourceConnectorGroup> group =
+        magic_enum::enum_cast<SourceConnectorGroup>(FLAGS_source_group);
+    if (!group.has_value()) {
+      LOG(ERROR) << absl::Substitute("$0 is not a valid source register specifier",
+                                     FLAGS_source_group);
+    }
+    source_names = GetSourceNamesForGroup(group.value());
   }
-  std::unique_ptr<SourceRegistry> registry = px::stirling::CreateSourceRegistry(sources.value());
+
+  if (!FLAGS_sources.empty()) {
+    // --sources overrides --source_group.
+    source_names = absl::StrSplit(FLAGS_sources, ",", absl::SkipWhitespace());
+  }
+
+  std::unique_ptr<SourceRegistry> registry =
+      px::stirling::CreateSourceRegistry(source_names).ConsumeValueOrDie();
 
   if (!FLAGS_print_record_batches.empty()) {
     // controls which tables are dumped to STDOUT
