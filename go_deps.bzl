@@ -142,12 +142,6 @@ def pl_go_dependencies():
         sum = "h1:xK2lYat7ZLaVVcIuj82J8kIro4V6kDe0AUDFboUCwcg=",
         version = "v1.0.0",
     )
-    go_repository(
-        name = "com_github_apache_arrow_go_arrow",
-        importpath = "github.com/apache/arrow/go/arrow",
-        sum = "h1:rbe942bXzd2vnds4y9fYQL8X4yFltXoZsKW7KtG+TFM=",
-        version = "v0.0.0-20210223225224-5bea62493d91",
-    )
 
     go_repository(
         name = "com_github_apache_thrift",
@@ -376,18 +370,6 @@ def pl_go_dependencies():
         sum = "h1:glEXhBS5PSLLv4IXzLA5yPRVX4bilULVyxxbrfOtDAk=",
         version = "v0.2.1",
     )
-    go_repository(
-        name = "com_github_centrifugal_centrifuge_go",
-        importpath = "github.com/centrifugal/centrifuge-go",
-        sum = "h1:y3EMYwB3hpp6IUKq6aWuSmijKBmeCm6cekZYWzP25Ms=",
-        version = "v0.7.1",
-    )
-    go_repository(
-        name = "com_github_centrifugal_protocol",
-        importpath = "github.com/centrifugal/protocol",
-        sum = "h1:3Tu1iNoKfEw5xkJotKm2or0vhyOl4HtfPbGSDnEWoGA=",
-        version = "v0.3.5",
-    )
 
     go_repository(
         name = "com_github_certifi_gocertifi",
@@ -413,12 +395,6 @@ def pl_go_dependencies():
         importpath = "github.com/chai2010/gettext-go",
         sum = "h1:7aWHqerlJ41y6FOsEUvknqgXnGmJyJSbjhAWq5pO4F8=",
         version = "v0.0.0-20160711120539-c6fed771bfd5",
-    )
-    go_repository(
-        name = "com_github_cheekybits_genny",
-        importpath = "github.com/cheekybits/genny",
-        sum = "h1:uGGa4nei+j20rOSeDeP5Of12XVm7TGUd4dJA9RDitfE=",
-        version = "v1.0.0",
     )
 
     go_repository(
@@ -1518,12 +1494,6 @@ def pl_go_dependencies():
         sum = "h1:+/TMaTYc4QFitKJxsQ7Yye35DkWvkdLcvGKqM+x0Ufc=",
         version = "v1.4.2",
     )
-    go_repository(
-        name = "com_github_grafana_grafana_plugin_sdk_go",
-        importpath = "github.com/grafana/grafana-plugin-sdk-go",
-        sum = "h1:kiPS3NqR+KOvHrc32EkX7D40JON3+GYZ6Nm2WOtCElQ=",
-        version = "v0.91.0",
-    )
 
     go_repository(
         name = "com_github_graph_gophers_graphql_go",
@@ -1620,12 +1590,6 @@ def pl_go_dependencies():
         sum = "h1:sNCoNyDEvN1xa+X0baata4RdcpKwcMS6DH+xwfqPgjw=",
         version = "v0.0.1",
     )
-    go_repository(
-        name = "com_github_hashicorp_go_plugin",
-        importpath = "github.com/hashicorp/go-plugin",
-        sum = "h1:mgDpq0PkoK5gck2w4ivaMpWRHv/matdOR4xmeScmf/w=",
-        version = "v1.2.2",
-    )
 
     go_repository(
         name = "com_github_hashicorp_go_retryablehttp",
@@ -1719,12 +1683,6 @@ def pl_go_dependencies():
         importpath = "github.com/hashicorp/serf",
         sum = "h1:YZ7UKsJv+hKjqGVUUbtE3HNj79Eln2oQ75tniF6iPt0=",
         version = "v0.8.2",
-    )
-    go_repository(
-        name = "com_github_hashicorp_yamux",
-        importpath = "github.com/hashicorp/yamux",
-        sum = "h1:kJCB4vdITiW1eC1vq2e6IsrXKrZit1bv/TDYFGMp4BQ=",
-        version = "v0.0.0-20181012175058-2f1d1f20f75d",
     )
 
     go_repository(
@@ -1850,12 +1808,6 @@ def pl_go_dependencies():
         importpath = "github.com/jessevdk/go-flags",
         sum = "h1:4IU2WS7AumrZ/40jfhf4QVDMsQwqA7VEHozFRrGARJA=",
         version = "v1.4.0",
-    )
-    go_repository(
-        name = "com_github_jhump_protoreflect",
-        importpath = "github.com/jhump/protoreflect",
-        sum = "h1:h5jfMVslIg6l29nsMs0D8Wj17RDVdNYti0vDN/PZZoE=",
-        version = "v1.6.0",
     )
 
     go_repository(
@@ -2143,12 +2095,6 @@ def pl_go_dependencies():
         sum = "h1:QIbQXiugsb+q10B+MI+7DI1oQLdmnep86tWFlaaUAac=",
         version = "v1.0.3",
     )
-    go_repository(
-        name = "com_github_magefile_mage",
-        importpath = "github.com/magefile/mage",
-        sum = "h1:C/55Ywp9BpgVVclD3lRnSYCwXTYxmSppIgLeDYlNuls=",
-        version = "v1.11.0",
-    )
 
     go_repository(
         name = "com_github_magiconair_properties",
@@ -2203,12 +2149,6 @@ def pl_go_dependencies():
         importpath = "github.com/Masterminds/sprig/v3",
         sum = "h1:17jRggJu518dr3QaafizSXOjKYp94wKfABxUmyxvxX8=",
         version = "v3.2.2",
-    )
-    go_repository(
-        name = "com_github_mattetti_filebuffer",
-        importpath = "github.com/mattetti/filebuffer",
-        sum = "h1:gG7pyfnSIZCxdoKq+cPa8T0hhYtD9NxCdI4D7PTjRLM=",
-        version = "v1.0.1",
     )
 
     go_repository(
@@ -3802,12 +3742,6 @@ def pl_go_dependencies():
         replace = "google.golang.org/grpc",
         sum = "h1:cmUfbeGKnz9+2DD/UYsMQXeqbHZqZDs4eQwW0sFOpBY=",
         version = "v1.36.1",
-    )
-    go_repository(
-        name = "org_golang_google_grpc_cmd_protoc_gen_go_grpc",
-        importpath = "google.golang.org/grpc/cmd/protoc-gen-go-grpc",
-        sum = "h1:MZjUhWVLZHiPPNKvwdt31HZVHrASfgk1ScV3vVTKbDo=",
-        version = "v0.0.0-20200910201057-6591123024b3",
     )
 
     go_repository(

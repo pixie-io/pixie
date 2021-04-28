@@ -47,7 +47,6 @@ require (
 	github.com/googleapis/google-cloud-go-testing v0.0.0-20191008195207-8e1d251e947d
 	github.com/gorilla/handlers v1.4.2
 	github.com/gorilla/sessions v1.1.3
-	github.com/grafana/grafana-plugin-sdk-go v0.91.0
 	github.com/graph-gophers/graphql-go v0.0.0-20190225005345-3e8838d4614c
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.2
 	github.com/hashicorp/go-hclog v0.15.0 // indirect
@@ -76,6 +75,8 @@ require (
 	github.com/ory/hydra-client-go v1.9.2
 	github.com/ory/kratos-client-go v0.5.4-alpha.1
 	github.com/phayes/freeport v0.0.0-20171002181615-b8543db493a5
+	github.com/prometheus/client_golang v1.10.0 // indirect
+	github.com/prometheus/common v0.20.0 // indirect
 	github.com/rivo/tview v0.0.0-20200404204604-ca37f83cb2e7
 	github.com/rivo/uniseg v0.1.0
 	github.com/sahilm/fuzzy v0.1.0
