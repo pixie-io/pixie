@@ -47,10 +47,6 @@ class SocketTraceBPFTest : public ::testing::Test {
     // Cause Uprobes to deploy in a blocking manner.
     // We don't return until the first set of uprobes has successfully deployed.
     RefreshContext(/* blocking_deploy_uprobes */ true);
-
-    // Drain the perf buffers before stimulus activity.
-    // Otherwise, perf buffers may fill up, causing lost events and flaky test results.
-    source_->PollPerfBuffers();
   }
 
   void TearDown() override { ASSERT_OK(source_->Stop()); }
@@ -96,6 +92,10 @@ class SocketTraceBPFTest : public ::testing::Test {
       data_tables_.push_back(data_table.get());
       data_table_uptrs_.push_back(std::move(data_table));
     }
+
+    // Drain the perf buffers before starting the thread.
+    // Otherwise, perf buffers may already be full, causing lost events and flaky test results.
+    source_->PollPerfBuffers();
 
     transfer_data_thread_ = std::thread([this]() {
       transfer_enable_ = true;
