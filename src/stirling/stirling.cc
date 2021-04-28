@@ -346,9 +346,14 @@ Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source, bool dyn
     info_class_mgrs_.push_back(std::move(mgr));
   }
 
+  std::vector<DataTable*> data_tables;
+  // Needs to make sure the required number of DataTable objects are fed to
+  // SourceConnector::TransferData() even if subscription was not specified yet.
+  data_tables.resize(mgrs.size(), nullptr);
+
   source_output_map_[source.get()] = {std::move(mgrs),
                                       // DataTable objects are created after subscribing.
-                                      {}};
+                                      std::move(data_tables)};
   sources_.push_back(std::move(source));
 
   return Status::OK();

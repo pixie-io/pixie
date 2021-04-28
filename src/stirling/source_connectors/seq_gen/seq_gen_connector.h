@@ -36,8 +36,8 @@ namespace stirling {
 class SeqGenConnector : public SourceConnector {
  public:
   static constexpr std::string_view kName = "sequences";
-
-  ~SeqGenConnector() override = default;
+  static constexpr auto kSamplingPeriod = std::chrono::milliseconds{500};
+  static constexpr auto kPushPeriod = std::chrono::milliseconds{1000};
 
   // clang-format off
   static constexpr DataElement kElementsSeq0[] = {
@@ -127,10 +127,20 @@ class SeqGenConnector : public SourceConnector {
         table1_lin_seq_(2, 2),
         table1_mod8_seq_(8),
         rng_(37) {}
+  ~SeqGenConnector() override = default;
 
-  Status InitImpl() override { return Status::OK(); }
+  Status InitImpl() override {
+    sample_push_freq_mgr_.set_sampling_period(kSamplingPeriod);
+    sample_push_freq_mgr_.set_push_period(kPushPeriod);
+    return Status::OK();
+  }
 
-  void TransferDataImpl(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table) override;
+  void TransferDataImpl(ConnectorContext* /*ctx*/, uint32_t /*table_num*/,
+                        DataTable* /*data_table*/) override {
+    DCHECK(false) << "Deprecated, do not use";
+  }
+  bool output_multi_tables() const override { return true; }
+  void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
 
   Status StopImpl() override { return Status::OK(); }
 

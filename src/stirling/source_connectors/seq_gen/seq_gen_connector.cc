@@ -21,20 +21,20 @@
 namespace px {
 namespace stirling {
 
-void SeqGenConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t table_num,
-                                       DataTable* data_table) {
-  std::uniform_int_distribution<uint32_t> num_rows_dist(num_rows_min_, num_rows_max_);
-  uint32_t num_records = num_rows_dist(rng_);
+void SeqGenConnector::TransferDataImpl(ConnectorContext* /* ctx */,
+                                       const std::vector<DataTable*>& data_tables) {
+  DCHECK_EQ(data_tables.size(), 2);
 
-  switch (table_num) {
-    case kSeq0TableNum:
-      TransferDataTable0(num_records, data_table);
-      break;
-    case kSeq1TableNum:
-      TransferDataTable1(num_records, data_table);
-      break;
-    default:
-      LOG(FATAL) << absl::Substitute("Cannot handle the specified table_num $0", table_num);
+  std::uniform_int_distribution<uint32_t> num_rows_dist(num_rows_min_, num_rows_max_);
+
+  if (data_tables[kSeq0TableNum] != nullptr) {
+    uint32_t num_records = num_rows_dist(rng_);
+    TransferDataTable0(num_records, data_tables[kSeq0TableNum]);
+  }
+
+  if (data_tables[kSeq1TableNum] != nullptr) {
+    uint32_t num_records = num_rows_dist(rng_);
+    TransferDataTable1(num_records, data_tables[kSeq1TableNum]);
   }
 }
 
