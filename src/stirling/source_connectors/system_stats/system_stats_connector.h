@@ -37,6 +37,8 @@ namespace stirling {
 class SystemStatsConnector : public SourceConnector {
  public:
   static constexpr std::string_view kName = "system_stats";
+  static constexpr auto kSamplingPeriod = std::chrono::milliseconds{1000};
+  static constexpr auto kPushPeriod = std::chrono::milliseconds{1000};
   static constexpr auto kTables = MakeArray(kProcessStatsTable, kNetworkStatsTable);
   static constexpr uint32_t kProcStatsTableNum = TableNum(kTables, kProcessStatsTable);
   static constexpr uint32_t kNetStatsTableNum = TableNum(kTables, kNetworkStatsTable);

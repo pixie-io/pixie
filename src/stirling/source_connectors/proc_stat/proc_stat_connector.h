@@ -31,6 +31,8 @@ namespace stirling {
 class ProcStatConnector : public SourceConnector {
  public:
   static constexpr std::string_view kName = "proc_stat";
+  static constexpr auto kSamplingPeriod = std::chrono::milliseconds{100};
+  static constexpr auto kPushPeriod = std::chrono::milliseconds{1000};
   // clang-format off
   static constexpr DataElement kElements[] = {
       canonical_data_elements::kTime,

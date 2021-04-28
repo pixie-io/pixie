@@ -33,7 +33,11 @@ namespace stirling {
 
 using system::ProcParser;
 
-Status SystemStatsConnector::InitImpl() { return Status::OK(); }
+Status SystemStatsConnector::InitImpl() {
+  sample_push_freq_mgr_.set_sampling_period(kSamplingPeriod);
+  sample_push_freq_mgr_.set_push_period(kPushPeriod);
+  return Status::OK();
+}
 
 Status SystemStatsConnector::StopImpl() { return Status::OK(); }
 
