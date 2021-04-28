@@ -53,6 +53,10 @@ apt_pkg_list = [
   # Needed by Clang-10.
   'libz3-4',
   'libz3-dev',
+
+  # Needed by ANTLR4.
+  'pkg-config',
+  'uuid-dev',
 ]
 
 apt_package apt_pkg_list do
