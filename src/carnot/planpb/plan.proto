@@ -49,12 +49,11 @@ message Plan {
   DAG dag = 1;
   // List of plan fragments referenced by the DAG.
   repeated PlanFragment nodes = 2;
-  // DEPRECATED: Whether or not the plan is a distributed plan.
-  bool distributed = 3 [deprecated = true];
   // Options about how the plan should be executed.
   PlanOptions plan_options = 4;
   // The incoming connections to this node.
   repeated uuidpb.UUID incoming_agent_ids = 5 [(gogoproto.customname) = "IncomingAgentIDs"];
+  reserved 3;
 }
 
 // Each plan fragment is a DAG represented in a format similar to an adjacency

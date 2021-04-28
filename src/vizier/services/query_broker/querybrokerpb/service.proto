@@ -71,6 +71,5 @@ message VizierQueryResponse {
   // The id for the query
   uuidpb.UUID query_id = 3 [(gogoproto.customname) = "QueryID"];
   px.carnot.queryresultspb.QueryResult query_result = 4;
-  // Reserved for deprecated ResponsesByAgent.
   reserved 1;
 }

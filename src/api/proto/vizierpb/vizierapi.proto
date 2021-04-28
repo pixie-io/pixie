@@ -214,12 +214,11 @@ message Status {
   // user-facing error message should be localized and sent in the
   // [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
   string message = 2;
-  // Reserved for deprecated Details.
-  reserved 3;
   // The details about the particular error. A Status can be an error status and have 0
   // elements in the error_details. However, if the Status.code is OK (Status.code == 0),
   // error_details should be empty as well.
   repeated ErrorDetails error_details = 4;
+  reserved 3;
 }
 
 // This is a proto representation for common lifecycle states.
@@ -258,8 +257,6 @@ message ScalarValue {
 message ExecuteScriptRequest {
   // query_str is the string representation of the query to run.
   string query_str = 1;
-  // Old arg_values deprecated.
-  reserved 2;
   // The UUID of the cluster encoded as a string with dashes.
   string cluster_id = 3 [(gogoproto.customname) = "ClusterID"];
   // FuncToExecute specifies the name and arguments of a function to execute.
@@ -297,6 +294,7 @@ message ExecuteScriptRequest {
   // If unset, any mutation will be ignored.
   // If the mutated state is already ready, the script will also be executed.
   bool mutation = 5;
+  reserved 2;
 }
 
 // Tracks information about query execution time.

@@ -81,8 +81,7 @@ message LoginReply {
 message SignupRequest {
   // The auth0 access token.
   string access_token = 1;
-  // The email of the user, this needs to match the auth0 info or the request, otherwise it will be aborted.
-  string user_email = 2 [deprecated = true];
+  reserved 2;
 }
 
 message SignupReply {

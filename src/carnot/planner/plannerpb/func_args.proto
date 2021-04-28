@@ -58,13 +58,12 @@ message FuncToExecute {
 message QueryRequest {
   // query_str is the string representation of the query to run.
   string query_str = 1;
-  // old arg_values have been deprecated.
-  reserved 2;
   // exec_funcs is a list of functions to execute.
   // If any functions specified cannot be found the planner will return a compiler error.
   repeated FuncToExecute exec_funcs = 3;
   // TODO(zasgar): Add proto query.
 
+  reserved 2;
 }
 
 // CompileMutationRequest represents any request that compiles to a mutation of

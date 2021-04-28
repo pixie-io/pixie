@@ -279,12 +279,11 @@ message TimeseriesChart {
     bool stack_by_series = 3;
     // Mode represents the visual display mode for this timeseries.
     enum Mode {
-      // MODE_BAR has been deprecated, if you want a bar timeseries, you should use BarChart.
-      reserved 1;
       MODE_UNKNOWN = 0;
       MODE_LINE = 2;
       MODE_POINT = 3;
       MODE_AREA = 4;
+      reserved 1;
     }
     Mode mode = 4;
   }

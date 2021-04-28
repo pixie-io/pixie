@@ -300,7 +300,6 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 						u := &metadatapb.ResourceUpdate{}
 						err := proto.Unmarshal(idxMessage.Data, u)
 						require.NoError(t, err)
-						assert.Equal(t, test.expectedIndexerUpdates[numUpdates].PrevResourceVersion, u.PrevResourceVersion)
 						numUpdates++
 					case <-time.After(2 * time.Second):
 						t.Fatal("Timed out")

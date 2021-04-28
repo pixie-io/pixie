@@ -568,10 +568,9 @@ message ResourceUpdate {
     NamespaceUpdate namespace_update = 6;
     NodeUpdate node_update = 7;
   }
-  string resource_version = 4; // To be deprecated.
-  string prev_resource_version = 5; // To be deprecated.
   int64 update_version = 8;
   int64 prev_update_version = 9;
+  reserved 4, 5;
 }
 
 // A request for all k8s updates relevant to the given IP, starting with the "from" update version,

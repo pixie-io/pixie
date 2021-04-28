@@ -92,7 +92,7 @@ func kratos_configYaml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "kratos_config.yaml", size: 2100, mode: os.FileMode(436), modTime: time.Unix(1619557891, 0)}
+	info := bindataFileInfo{name: "kratos_config.yaml", size: 2100, mode: os.FileMode(436), modTime: time.Unix(1620759510, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
