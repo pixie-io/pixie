@@ -103,148 +103,153 @@ export const AuthCallbackPage: React.FC = () => {
   const [config, setConfig] = React.useState<CallbackConfig>(null);
   const classes = useStyles();
 
-  React.useEffect(() => {
-    const setErr = (errType: ErrorType, errMsg: string) => {
-      setConfig((c) => ({
-        ...c,
-        err: {
-          errorType: errType,
-          errMessage: errMsg,
-        },
-        loading: false,
-      }));
-    };
+  const setErr = (errType: ErrorType, errMsg: string) => {
+    setConfig((c) => ({
+      ...c,
+      err: {
+        errorType: errType,
+        errMessage: errMsg,
+      },
+      loading: false,
+    }));
+  };
 
-    const handleHTTPError = (err: AxiosError) => {
-      if (err.code === '401' || err.code === '403' || err.code === '404') {
-        setErr('auth', err.response.data);
-      } else {
-        setErr('internal', err.response.data);
-      }
-    };
+  const handleHTTPError = (err: AxiosError) => {
+    if (err.code === '401' || err.code === '403' || err.code === '404') {
+      setErr('auth', err.response.data);
+    } else {
+      setErr('internal', err.response.data);
+    }
+  };
 
-    const performSignup = async (accessToken: string) => {
-      try {
-        const response = await Axios.post('/api/auth/signup', { accessToken });
-        await trackAuthEvent('User signed up', response.data.userInfo.userID, response.data.userInfo.email);
-        return true;
-      } catch (err) {
-        analytics.track('User signup failed', { error: err.response.data });
-        handleHTTPError(err as AxiosError);
-        return false;
-      }
-    };
+  const performSignup = async (accessToken: string) => {
+    try {
+      const response = await Axios.post('/api/auth/signup', { accessToken });
+      await trackAuthEvent('User signed up', response.data.userInfo.userID, response.data.userInfo.email);
+      return true;
+    } catch (err) {
+      analytics.track('User signup failed', { error: err.response.data });
+      handleHTTPError(err as AxiosError);
+      return false;
+    }
+  };
 
-    const performUILogin = async (accessToken: string, orgName: string) => {
-      try {
-        const response = await Axios.post('/api/auth/login', {
-          accessToken,
-          orgName,
-        });
-        await trackAuthEvent('User logged in', response.data.userInfo.userID, response.data.userInfo.email);
-        return true;
-      } catch (err) {
-        analytics.track('User signup failed', { error: err.response.data });
-        handleHTTPError(err as AxiosError);
-        return false;
-      }
-    };
-
-    const sendTokenToCLI = async (accessToken: string, redirectURI: string) => {
-      try {
-        const response = await redirectGet(redirectURI, { accessToken });
-        return response.status === 200 && response.data === 'OK';
-      } catch (error) {
-        handleHTTPError(error as AxiosError);
-        // If there's an error, we just return a failure.
-        return false;
-      }
-    };
-    const handleAccessToken = (accessToken: string) => {
-      const params = QueryString.parse(window.location.search.substr(1));
-      let mode: AuthCallbackMode;
-      switch (params.mode) {
-        case 'cli_get':
-        case 'cli_token':
-        case 'ui':
-          ({ mode } = params);
-          break;
-        default:
-          mode = 'ui';
-      }
-
-      const location = params.location && String(params.location);
-      const signup = !!params.signup;
-      const orgName = params.org_name && String(params.org_name);
-      const redirectURI = params.redirect_uri && String(params.redirect_uri);
-
-      setConfig({
-        mode,
-        signup,
-        token: accessToken,
-        loading: true,
+  const performUILogin = async (accessToken: string, orgName: string) => {
+    try {
+      const response = await Axios.post('/api/auth/login', {
+        accessToken,
+        orgName,
       });
+      await trackAuthEvent('User logged in', response.data.userInfo.userID, response.data.userInfo.email);
+      return true;
+    } catch (err) {
+      analytics.track('User login failed', { error: err.response.data });
+      handleHTTPError(err as AxiosError);
+      return false;
+    }
+  };
 
-      const doAuth = async () => {
-        let signupSuccess = false;
-        let loginSuccess = false;
+  const sendTokenToCLI = async (accessToken: string, redirectURI: string) => {
+    try {
+      const response = await redirectGet(redirectURI, { accessToken });
+      return response.status === 200 && response.data === 'OK';
+    } catch (error) {
+      handleHTTPError(error as AxiosError)
+      // If there's an error, we just return a failure.
+      return false;
+    }
+  };
 
-        if (signup) {
-          // We always need to perform signup, even if the mode is CLI.
-          signupSuccess = await performSignup(accessToken);
+  const doAuth = async (
+    mode: AuthCallbackMode,
+    signup: boolean,
+    redirectURI: string,
+    location: string,
+    orgName: string,
+    accessToken: string,
+  ) => {
+    let signupSuccess = false;
+    let loginSuccess = false;
+
+    if (signup) {
+      // We always need to perform signup, even if the mode is CLI.
+      signupSuccess = await performSignup(accessToken);
+    }
+    // eslint-disable-next-line default-case
+    switch (mode) {
+      case 'cli_get':
+        loginSuccess = await sendTokenToCLI(accessToken, redirectURI);
+        if (loginSuccess) {
+          setConfig((c) => ({
+            ...c,
+            loading: false,
+          }));
+          RedirectUtils.redirect('/auth/cli-auth-complete', {});
+          return;
         }
-        // eslint-disable-next-line default-case
-        switch (mode) {
-          case 'cli_get':
-            loginSuccess = await sendTokenToCLI(accessToken, redirectURI);
-            if (loginSuccess) {
-              setConfig((c) => ({
-                ...c,
-                loading: false,
-              }));
-              RedirectUtils.redirect('/auth/cli-auth-complete', {});
-              return;
-            }
 
-            // Don't fallback to manual auth if there is an actual
-            // authentication error.
-            if (config.err?.errorType === 'auth') {
-              break;
-            }
-
-            mode = 'cli_token';
-            // If it fails, switch to token auth.
-            setConfig((c) => ({
-              ...c,
-              mode,
-            }));
-            break;
-          case 'cli_token':
-            // Nothing to do, it will just render.
-            break;
-          case 'ui':
-            if (!signup) {
-              loginSuccess = await performUILogin(accessToken, orgName);
-            }
-            // We just need to redirect if in signup or login were successful since
-            // the cookies are installed.
-            if ((signup && signupSuccess) || loginSuccess) {
-              RedirectUtils.redirect(redirectURI || location || '/', {});
-            }
+        // Don't fallback to manual auth if there is an actual
+        // authentication error.
+        if (config.err?.errorType === 'auth') {
+          break;
         }
 
+        // If it fails, switch to token auth.
         setConfig((c) => ({
           ...c,
-          loading: false,
+          mode: 'cli_token',
         }));
-      };
+        break;
+      case 'cli_token':
+        // Nothing to do, it will just render.
+        break;
+      case 'ui':
+        if (!signup) {
+          loginSuccess = await performUILogin(accessToken, orgName);
+        }
+        // We just need to redirect if in signup or login were successful since
+        // the cookies are installed.
+        if ((signup && signupSuccess) || loginSuccess) {
+          RedirectUtils.redirect(redirectURI || location || '/', {});
+        }
+    }
 
-      doAuth();
-    };
+    setConfig((c) => ({
+      ...c,
+      loading: false,
+    }));
+  };
 
-    GetOAuthProvider().handleToken().then((a: Token) => {
-      handleAccessToken(a);
-    }).catch((err) => {
+  const handleAccessToken = (accessToken: string) => {
+    const params = QueryString.parse(window.location.search.substr(1));
+    let mode: AuthCallbackMode;
+    switch (params.mode) {
+      case 'cli_get':
+      case 'cli_token':
+      case 'ui':
+        ({ mode } = params);
+        break;
+      default:
+        mode = 'ui';
+    }
+
+    const location = params.location && String(params.location);
+    const signup = !!params.signup;
+    const orgName = params.org_name && String(params.org_name);
+    const redirectURI = params.redirect_uri && String(params.redirect_uri);
+
+    setConfig({
+      mode,
+      signup,
+      token: accessToken,
+      loading: true,
+    });
+
+    doAuth(mode, signup, redirectURI, location, orgName, accessToken);
+  };
+
+  React.useEffect(() => {
+    GetOAuthProvider().handleToken().then(handleAccessToken).catch((err) => {
       setErr('internal', `${err}`);
     });
   }, []);
