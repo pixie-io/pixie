@@ -115,6 +115,10 @@ func AuthSignupHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 			if s.Code() == codes.Unauthenticated {
 				return handler.NewStatusError(http.StatusUnauthorized, s.Message())
 			}
+
+			if s.Code() == codes.NotFound {
+				return handler.NewStatusError(http.StatusNotFound, s.Message())
+			}
 		}
 
 		return services.HTTPStatusFromError(err, "Failed to signup")

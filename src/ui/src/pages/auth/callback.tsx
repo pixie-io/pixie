@@ -116,7 +116,7 @@ export const AuthCallbackPage: React.FC = () => {
     };
 
     const handleHTTPError = (err: AxiosError) => {
-      if (err.code === '401' || err.code === '403') {
+      if (err.code === '401' || err.code === '403' || err.code === '404') {
         setErr('auth', err.response.data);
       } else {
         setErr('internal', err.response.data);
@@ -155,6 +155,7 @@ export const AuthCallbackPage: React.FC = () => {
         const response = await redirectGet(redirectURI, { accessToken });
         return response.status === 200 && response.data === 'OK';
       } catch (error) {
+        handleHTTPError(error as AxiosError);
         // If there's an error, we just return a failure.
         return false;
       }
@@ -204,6 +205,13 @@ export const AuthCallbackPage: React.FC = () => {
               RedirectUtils.redirect('/auth/cli-auth-complete', {});
               return;
             }
+
+            // Don't fallback to manual auth if there is an actual
+            // authentication error.
+            if (config.err?.errorType === 'auth') {
+              break;
+            }
+
             mode = 'cli_token';
             // If it fails, switch to token auth.
             setConfig((c) => ({

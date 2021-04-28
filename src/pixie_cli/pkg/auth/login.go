@@ -55,6 +55,7 @@ var errUserChallengeTimeout = errors.New("timeout waiting for user")
 var errBrowserFailed = errors.New("browser failed to open")
 var errServerListenerFailed = errors.New("failed to start up local server")
 var errTokenUnauthorized = errors.New("failed to obtain token")
+var errUserNotRegistered = errors.New("user is not registered. Please sign up")
 var localServerRedirectURL = "http://localhost:8085/auth_complete"
 var localServerPort = int32(8085)
 
@@ -187,6 +188,9 @@ func (p *PixieCloudLogin) Run() (*RefreshToken, error) {
 		switch err {
 		case nil:
 			return refreshToken, nil
+		case errUserNotRegistered:
+			utils2.Error("Failed to authenticate. Please refer to UI for further instructions.")
+			os.Exit(1)
 		case errUserChallengeTimeout:
 			utils2.Error("Timeout waiting for response from browser. Perhaps try --manual mode.")
 			os.Exit(1)
@@ -221,7 +225,12 @@ func addCORSHeaders(res http.ResponseWriter) {
 }
 
 func sendError(w http.ResponseWriter, err error) {
-	w.WriteHeader(http.StatusInternalServerError)
+	if errors.Is(err, errUserNotRegistered) {
+		w.WriteHeader(http.StatusNotFound)
+	} else {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+
 	fmt.Fprint(w, err.Error())
 }
 
@@ -392,6 +401,11 @@ func (p *PixieCloudLogin) getRefreshToken(accessToken string) (*RefreshToken, er
 		}
 		return nil, errors.New(string(bodyBytes))
 	}
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, errUserNotRegistered
+	}
+
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("Request for token failed with status %d", resp.StatusCode)
 	}

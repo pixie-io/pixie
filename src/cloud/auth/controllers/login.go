@@ -120,7 +120,7 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 
 	// If we can't find the user and aren't in auto create mode.
 	if newUser && !in.CreateUserIfNotExists {
-		return nil, status.Error(codes.PermissionDenied, "user not found, please register.")
+		return nil, status.Error(codes.NotFound, "user not found, please register.")
 	}
 
 	hasOrg := userInfo.PLOrgID != ""
@@ -136,7 +136,7 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 		// Users can login without registering if their org already exists. If org doesn't exist, they must complete sign up flow.
 		orgInfo, err = pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: domainName})
 		if err != nil || orgInfo == nil {
-			return nil, status.Error(codes.InvalidArgument, "organization not found, please register.")
+			return nil, status.Error(codes.NotFound, "organization not found, please register.")
 		}
 	}
 
