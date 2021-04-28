@@ -89,46 +89,43 @@ class HTTP2TraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing 
   GRPCClientContainer client_;
 };
 
-// TODO(oazizi): Re-enable in D8444.
-TEST_F(HTTP2TraceTest, DISABLED_Basic) {
+TEST_F(HTTP2TraceTest, Basic) {
   // This test also checks conn_stats, so make sure we push records frequently.
   FLAGS_stirling_conn_stats_sampling_ratio = 1;
 
-  StartTransferDataThread(SocketTraceConnector::kHTTPTableNum, kHTTPTable);
+  StartTransferDataThread();
 
   // Run the client in the network of the server, so they can connect to each other.
   PL_CHECK_OK(
       client_.Run(10, {absl::Substitute("--network=container:$0", server_.container_name())}));
   client_.Wait();
 
-  // We do not expect this sleep to be required, but it appears to be necessary for Jenkins.
-  // TODO(oazizi): Figure out why.
-  sleep(3);
-
-  // Grab the data from Stirling.
-  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
-  ASSERT_FALSE(tablets.empty());
-  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+  StopTransferDataThread();
 
   {
+    // Grab the data from Stirling.
+    std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
+    ASSERT_FALSE(tablets.empty());
+    types::ColumnWrapperRecordBatch rb = tablets[0].records;
+
     const std::vector<size_t> target_record_indices =
-        FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, server_.process_pid());
+        FindRecordIdxMatchesPID(rb, kHTTPUPIDIdx, server_.process_pid());
 
     // For Debug:
     for (const auto& idx : target_record_indices) {
-      uint32_t pid = record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(idx).High64();
-      std::string req_path = record_batch[kHTTPReqPathIdx]->Get<types::StringValue>(idx);
-      std::string req_method = record_batch[kHTTPReqMethodIdx]->Get<types::StringValue>(idx);
-      std::string req_body = record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(idx);
+      uint32_t pid = rb[kHTTPUPIDIdx]->Get<types::UInt128Value>(idx).High64();
+      std::string req_path = rb[kHTTPReqPathIdx]->Get<types::StringValue>(idx);
+      std::string req_method = rb[kHTTPReqMethodIdx]->Get<types::StringValue>(idx);
+      std::string req_body = rb[kHTTPReqBodyIdx]->Get<types::StringValue>(idx);
 
-      int resp_status = record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(idx).val;
-      std::string resp_message = record_batch[kHTTPRespMessageIdx]->Get<types::StringValue>(idx);
-      std::string resp_body = record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(idx);
+      int resp_status = rb[kHTTPRespStatusIdx]->Get<types::Int64Value>(idx).val;
+      std::string resp_message = rb[kHTTPRespMessageIdx]->Get<types::StringValue>(idx);
+      std::string resp_body = rb[kHTTPRespBodyIdx]->Get<types::StringValue>(idx);
       VLOG(1) << absl::Substitute("$0 $1 $2 $3 $4 $5 $6", pid, req_method, req_path, req_body,
                                   resp_status, resp_message, resp_body);
     }
 
-    std::vector<http::Record> records = ToRecordVector(record_batch, target_record_indices);
+    std::vector<http::Record> records = ToRecordVector(rb, target_record_indices);
 
     // TODO(oazizi): Add headers checking too.
     http::Record expected_record = {};
@@ -140,15 +137,13 @@ TEST_F(HTTP2TraceTest, DISABLED_Basic) {
     expected_record.resp.body = R"(1: "Hello 0")";
 
     EXPECT_THAT(records, Contains(EqHTTPRecord(expected_record)));
+
+    EXPECT_THAT(FindRecordIdxMatchesPID(rb, kHTTPUPIDIdx, client_.process_pid()), IsEmpty());
   }
 
-  EXPECT_THAT(FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, client_.process_pid()),
-              IsEmpty());
-
   {
-    StartTransferDataThread(SocketTraceConnector::kConnStatsTableNum, kConnStatsTable);
-    std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
-
+    std::vector<TaggedRecordBatch> tablets =
+        ConsumeRecords(SocketTraceConnector::kConnStatsTableNum);
     ASSERT_FALSE(tablets.empty());
 
     const types::ColumnWrapperRecordBatch& rb = tablets[0].records;
@@ -213,15 +208,17 @@ class ProductCatalogServiceTraceTest
 };
 
 TEST_F(ProductCatalogServiceTraceTest, Basic) {
-  StartTransferDataThread(SocketTraceConnector::kHTTPTableNum, kHTTPTable);
+  StartTransferDataThread();
 
   // Run the client in the network of the server, so they can connect to each other.
   PL_CHECK_OK(
       client_.Run(10, {absl::Substitute("--network=container:$0", server_.container_name())}));
   client_.Wait();
 
+  StopTransferDataThread();
+
   // Grab the data from Stirling.
-  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
   ASSERT_FALSE(tablets.empty());
   const types::ColumnWrapperRecordBatch& rb = tablets[0].records;
 

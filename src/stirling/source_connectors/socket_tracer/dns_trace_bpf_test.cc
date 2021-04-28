@@ -69,7 +69,7 @@ class DNSTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {
 //-----------------------------------------------------------------------------
 
 TEST_F(DNSTraceTest, Capture) {
-  StartTransferDataThread(SocketTraceConnector::kDNSTableNum, kDNSTable);
+  StartTransferDataThread();
 
   // Uncomment to enable tracing:
   // FLAGS_stirling_conn_trace_pid = container_.process_pid();
@@ -82,8 +82,10 @@ TEST_F(DNSTraceTest, Capture) {
   ASSERT_OK_AND_ASSIGN(std::string out, px::Exec(cmd));
   LOG(INFO) << out;
 
+  StopTransferDataThread();
+
   // Grab the data from Stirling.
-  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kDNSTableNum);
   ASSERT_FALSE(tablets.empty());
 
   types::ColumnWrapperRecordBatch rb = tablets[0].records;

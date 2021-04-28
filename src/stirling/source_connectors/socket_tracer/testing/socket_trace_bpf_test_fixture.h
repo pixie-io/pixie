@@ -87,12 +87,7 @@ class SocketTraceBPFTest : public ::testing::Test {
     }
   }
 
-  void StartTransferDataThread(int table_num, const DataTableSchema& schema) {
-    // TODO(oazizi): Remove schema.
-    PL_UNUSED(schema);
-
-    table_num_ = table_num;
-
+  void StartTransferDataThread() {
     data_tables_.clear();
     data_table_uptrs_.clear();
 
@@ -120,7 +115,7 @@ class SocketTraceBPFTest : public ::testing::Test {
     std::this_thread::sleep_for(kTransferDataPeriod);
   }
 
-  std::vector<TaggedRecordBatch> StopTransferDataThread() {
+  void StopTransferDataThread() {
     // Give enough time for one more TransferData call by transfer_data_thread_,
     // so we make sure we've captured everything.
     std::this_thread::sleep_for(2 * kTransferDataPeriod);
@@ -129,8 +124,10 @@ class SocketTraceBPFTest : public ::testing::Test {
     CHECK(transfer_data_thread_.joinable());
     transfer_enable_ = false;
     transfer_data_thread_.join();
-    CHECK_NE(table_num_, -1);
-    return data_tables_[table_num_]->ConsumeRecords();
+  }
+
+  std::vector<TaggedRecordBatch> ConsumeRecords(int table_num) {
+    return data_tables_[table_num]->ConsumeRecords();
   }
 
   static constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
@@ -142,7 +139,6 @@ class SocketTraceBPFTest : public ::testing::Test {
   std::unique_ptr<StandaloneContext> ctx_;
   std::atomic<bool> transfer_enable_ = false;
   std::thread transfer_data_thread_;
-  int table_num_ = -1;
   std::vector<std::unique_ptr<DataTable>> data_table_uptrs_;
   std::vector<DataTable*> data_tables_;
 

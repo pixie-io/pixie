@@ -85,7 +85,7 @@ class PostgreSQLTraceTest : public testing::SocketTraceBPFTest</* TClientSideTra
 // capability because it's running a query from start to finish, which always establish new
 // connections.
 TEST_F(PostgreSQLTraceTest, SelectQuery) {
-  StartTransferDataThread(SocketTraceConnector::kPGSQLTableNum, kPGSQLTable);
+  StartTransferDataThread();
 
   // --pid host is required to access the correct PID.
   constexpr char kCmdTmpl[] =
@@ -100,7 +100,9 @@ TEST_F(PostgreSQLTraceTest, SelectQuery) {
   int32_t client_pid;
   ASSERT_TRUE(absl::SimpleAtoi(create_table_output, &client_pid));
 
-  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+  StopTransferDataThread();
+
+  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kPGSQLTableNum);
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
   auto indices = FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, client_pid);
@@ -138,12 +140,14 @@ std::vector<std::pair<std::string, std::string>> RecordBatchToPairs(
 
 // Executes a demo golang app that queries PostgreSQL database with sqlx.
 TEST_F(PostgreSQLTraceGoSQLxTest, GolangSqlxDemo) {
-  StartTransferDataThread(SocketTraceConnector::kPGSQLTableNum, kPGSQLTable);
+  StartTransferDataThread();
 
   PL_CHECK_OK(sqlx_container_.Run(
       10, {absl::Substitute("--network=container:$0", pgsql_container_.container_name())}));
 
-  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+  StopTransferDataThread();
+
+  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kPGSQLTableNum);
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
@@ -194,7 +198,7 @@ TEST_F(PostgreSQLTraceTest, FunctionCall) {
       "docker run --pid host --rm -e PGPASSWORD=docker --network=container:$0 postgres bash -c "
       R"('psql -h localhost -U postgres -c "$1" &>/dev/null & echo $$! && wait')";
   {
-    StartTransferDataThread(SocketTraceConnector::kPGSQLTableNum, kPGSQLTable);
+    StartTransferDataThread();
 
     const std::string cmd = absl::Substitute(
         kCmdTmpl, container_.container_name(),
@@ -207,7 +211,9 @@ TEST_F(PostgreSQLTraceTest, FunctionCall) {
     int32_t client_pid;
     ASSERT_TRUE(absl::SimpleAtoi(output, &client_pid));
 
-    std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+    StopTransferDataThread();
+
+    std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kPGSQLTableNum);
     ASSERT_FALSE(tablets.empty());
     types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
@@ -226,7 +232,7 @@ TEST_F(PostgreSQLTraceTest, FunctionCall) {
         StrEq("CREATE FUNCTION"));
   }
   {
-    StartTransferDataThread(SocketTraceConnector::kPGSQLTableNum, kPGSQLTable);
+    StartTransferDataThread();
 
     const std::string cmd =
         absl::Substitute(kCmdTmpl, container_.container_name(), "select increment(1);");
@@ -234,7 +240,9 @@ TEST_F(PostgreSQLTraceTest, FunctionCall) {
     int32_t client_pid;
     ASSERT_TRUE(absl::SimpleAtoi(output, &client_pid));
 
-    std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+    StopTransferDataThread();
+
+    std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kPGSQLTableNum);
     ASSERT_FALSE(tablets.empty());
     types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 

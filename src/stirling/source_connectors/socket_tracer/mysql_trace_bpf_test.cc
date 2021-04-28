@@ -428,15 +428,17 @@ std::vector<mysql::Record> GetTargetRecords(const types::ColumnWrapperRecordBatc
 
 TEST_F(MySQLTraceTest, mysql_capture) {
   {
-    StartTransferDataThread(SocketTraceConnector::kMySQLTableNum, kMySQLTable);
+    StartTransferDataThread();
 
     ASSERT_OK_AND_ASSIGN(
         int32_t client_pid,
         RunSQLScript(
             "src/stirling/source_connectors/socket_tracer/protocols/mysql/testing/script.sql"));
 
+    StopTransferDataThread();
+
     // Grab the data from Stirling.
-    std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+    std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kMySQLTableNum);
     ASSERT_FALSE(tablets.empty());
     types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
@@ -455,14 +457,16 @@ TEST_F(MySQLTraceTest, mysql_capture) {
   }
 
   {
-    StartTransferDataThread(SocketTraceConnector::kMySQLTableNum, kMySQLTable);
+    StartTransferDataThread();
 
     ASSERT_OK_AND_ASSIGN(int32_t client_pid,
                          RunSQLScript("src/stirling/source_connectors/socket_tracer/protocols/"
                                       "mysql/testing/prepare_execute.sql"));
 
+    StopTransferDataThread();
+
     // Grab the data from Stirling.
-    std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+    std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kMySQLTableNum);
     ASSERT_FALSE(tablets.empty());
     types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
@@ -482,7 +486,7 @@ TEST_F(MySQLTraceTest, mysql_capture) {
   }
 
   {
-    StartTransferDataThread(SocketTraceConnector::kMySQLTableNum, kMySQLTable);
+    StartTransferDataThread();
 
     ASSERT_OK_AND_ASSIGN(
         int32_t client_pid,
@@ -492,8 +496,10 @@ TEST_F(MySQLTraceTest, mysql_capture) {
     // Sleep a little more, just to be safe.
     sleep(1);
 
+    StopTransferDataThread();
+
     // Grab the data from Stirling.
-    std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+    std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kMySQLTableNum);
     ASSERT_FALSE(tablets.empty());
     types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 

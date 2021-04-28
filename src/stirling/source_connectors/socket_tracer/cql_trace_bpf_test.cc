@@ -406,7 +406,7 @@ Number of rows = 1)",
 //-----------------------------------------------------------------------------
 
 TEST_F(CQLTraceTest, cqlsh_capture) {
-  StartTransferDataThread(SocketTraceConnector::kCQLTableNum, kCQLTable);
+  StartTransferDataThread();
 
   // Run cqlsh as a way of generating traffic.
   // As part of it's startup code, it will perform a bunch of CQL transactions,
@@ -419,8 +419,11 @@ TEST_F(CQLTraceTest, cqlsh_capture) {
   int32_t client_pid;
   ASSERT_TRUE(absl::SimpleAtoi(out, &client_pid));
 
+  StopTransferDataThread();
+
   // Grab the data from Stirling.
-  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kCQLTableNum);
+
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 

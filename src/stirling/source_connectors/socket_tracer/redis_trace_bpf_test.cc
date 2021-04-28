@@ -97,7 +97,7 @@ std::vector<RedisTraceRecord> GetRedisTraceRecords(
 
 // Verifies that batched commands can be traced correctly.
 TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
-  StartTransferDataThread(SocketTraceConnector::kRedisTableNum, kRedisTable);
+  StartTransferDataThread();
 
   constexpr std::string_view kRedisDockerCmdTmpl =
       R"(docker run --rm --network=container:$0 redis bash -c "echo '$1' | redis-cli")";
@@ -129,7 +129,9 @@ TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
   ASSERT_OK_AND_ASSIGN(const std::string output, px::Exec(redis_cli_cmd));
   ASSERT_FALSE(output.empty());
 
-  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+  StopTransferDataThread();
+
+  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kRedisTableNum);
 
   ASSERT_FALSE(tablets.empty());
 
@@ -179,7 +181,7 @@ TEST_F(RedisTraceBPFTest, VerifyBatchedCommands) {
 
 // Verifies that pub/sub commands can be traced correctly.
 TEST_F(RedisTraceBPFTest, VerifyPubSubCommands) {
-  StartTransferDataThread(SocketTraceConnector::kRedisTableNum, kRedisTable);
+  StartTransferDataThread();
 
   ContainerRunner redis_sub_client(BazelBinTestFilePath(kRedisImagePath), "redis_sub_client", "");
   redis_sub_client.Run(60,
@@ -192,7 +194,9 @@ TEST_F(RedisTraceBPFTest, VerifyPubSubCommands) {
   ASSERT_OK_AND_ASSIGN(const std::string output, px::Exec(redis_cli_cmd));
   ASSERT_FALSE(output.empty());
 
-  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+  StopTransferDataThread();
+
+  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kRedisTableNum);
 
   ASSERT_FALSE(tablets.empty());
 
@@ -211,7 +215,7 @@ TEST_F(RedisTraceBPFTest, VerifyPubSubCommands) {
 // We need to test this separately because we need the returned script sha from script load
 // to assemble the evalsha command.
 TEST_F(RedisTraceBPFTest, ScriptLoadAndEvalSHA) {
-  StartTransferDataThread(SocketTraceConnector::kRedisTableNum, kRedisTable);
+  StartTransferDataThread();
 
   std::string script_load_cmd = absl::Substitute(
       R"(docker run --rm --network=container:$0 redis redis-cli script load "return 1")",
@@ -227,7 +231,9 @@ TEST_F(RedisTraceBPFTest, ScriptLoadAndEvalSHA) {
   ASSERT_OK_AND_ASSIGN(const std::string output, px::Exec(evalsha_cmd));
   ASSERT_FALSE(output.empty());
 
-  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+  StopTransferDataThread();
+
+  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kRedisTableNum);
 
   ASSERT_FALSE(tablets.empty());
 
@@ -247,7 +253,7 @@ TEST_F(RedisTraceBPFTest, ScriptLoadAndEvalSHA) {
 
 // Verifies individual commands.
 TEST_P(RedisTraceBPFTest, VerifyCommand) {
-  StartTransferDataThread(SocketTraceConnector::kRedisTableNum, kRedisTable);
+  StartTransferDataThread();
 
   std::string_view redis_cmd = GetParam().cmd;
 
@@ -257,7 +263,9 @@ TEST_P(RedisTraceBPFTest, VerifyCommand) {
   ASSERT_OK_AND_ASSIGN(const std::string output, px::Exec(redis_cli_cmd));
   ASSERT_FALSE(output.empty());
 
-  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+  StopTransferDataThread();
+
+  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kRedisTableNum);
 
   ASSERT_FALSE(tablets.empty());
 

@@ -143,11 +143,13 @@ TEST_P(GRPCTraceTest, CaptureRPCTraceRecord) {
   // Deploy uprobes on the newly launched server.
   RefreshContext(/* blocking_deploy_uprobes */ true);
 
-  StartTransferDataThread(SocketTraceConnector::kHTTPTableNum, kHTTPTable);
+  StartTransferDataThread();
 
   client_.LaunchClient(use_https, server_.port());
 
-  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+  StopTransferDataThread();
+
+  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
   ASSERT_FALSE(tablets.empty());
   const types::ColumnWrapperRecordBatch& rb = tablets[0].records;
   const std::vector<size_t> target_record_indices =

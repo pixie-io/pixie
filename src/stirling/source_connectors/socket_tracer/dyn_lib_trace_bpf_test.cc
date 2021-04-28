@@ -119,7 +119,7 @@ TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
   // Makes the test run much faster.
   FLAGS_stirling_disable_self_tracing = true;
 
-  StartTransferDataThread(SocketTraceConnector::kHTTPTableNum, kHTTPTable);
+  StartTransferDataThread();
 
   NginxContainer server;
   RubyContainer client;
@@ -183,7 +183,9 @@ TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
     }
     client.Wait();
 
-    std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+    StopTransferDataThread();
+
+    std::vector<TaggedRecordBatch> tablets = ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
     ASSERT_FALSE(tablets.empty());
     types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 

@@ -168,7 +168,7 @@ typedef ::testing::Types<NginxOpenSSL_1_1_0_Container, NginxOpenSSL_1_1_1_Contai
 TYPED_TEST_SUITE(OpenSSLTraceTest, NginxImplementations);
 
 TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
-  this->StartTransferDataThread(SocketTraceConnector::kHTTPTableNum, kHTTPTable);
+  this->StartTransferDataThread();
 
   // Make an SSL request with curl.
   // Because the server uses a self-signed certificate, curl will normally refuse to connect.
@@ -184,8 +184,11 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
 
   int worker_pid = this->NginxWorkerPID();
 
+  this->StopTransferDataThread();
+
   // Grab the data from Stirling.
-  std::vector<TaggedRecordBatch> tablets = this->StopTransferDataThread();
+  std::vector<TaggedRecordBatch> tablets =
+      this->ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
@@ -213,7 +216,7 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
 }
 
 TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
-  this->StartTransferDataThread(SocketTraceConnector::kHTTPTableNum, kHTTPTable);
+  this->StartTransferDataThread();
 
   // Make multiple requests and make sure we capture all of them.
   std::string rb_script = R"(
@@ -246,8 +249,11 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
 
   int worker_pid = this->NginxWorkerPID();
 
+  this->StopTransferDataThread();
+
   // Grab the data from Stirling.
-  std::vector<TaggedRecordBatch> tablets = this->StopTransferDataThread();
+  std::vector<TaggedRecordBatch> tablets =
+      this->ConsumeRecords(SocketTraceConnector::kHTTPTableNum);
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 

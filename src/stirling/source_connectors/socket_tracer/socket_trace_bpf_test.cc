@@ -123,7 +123,7 @@ TEST_P(NonVecSyscallTests, NonVecSyscalls) {
                                 magic_enum::enum_name(p.syscall_pair), p.trace_role);
   ConfigureBPFCapture(kProtocolHTTP, p.trace_role);
 
-  StartTransferDataThread(kHTTPTableNum, kHTTPTable);
+  StartTransferDataThread();
 
   testing::SendRecvScript script({
       {{kHTTPReqMsg1}, {kHTTPRespMsg1}},
@@ -143,7 +143,9 @@ TEST_P(NonVecSyscallTests, NonVecSyscalls) {
                                      magic_enum::enum_name(p.syscall_pair));
   }
 
-  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+  StopTransferDataThread();
+
+  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
   ASSERT_FALSE(tablets.empty());
 
   if (p.trace_role & kRoleClient) {
@@ -202,7 +204,7 @@ TEST_P(IOVecSyscallTests, IOVecSyscalls) {
   LOG(INFO) << absl::Substitute("$0 $1", magic_enum::enum_name(p.syscall_pair), p.trace_role);
   ConfigureBPFCapture(kProtocolHTTP, p.trace_role);
 
-  StartTransferDataThread(kHTTPTableNum, kHTTPTable);
+  StartTransferDataThread();
 
   testing::SendRecvScript script({
       {{kHTTPReqMsg1},
@@ -224,7 +226,9 @@ TEST_P(IOVecSyscallTests, IOVecSyscalls) {
                                      magic_enum::enum_name(p.syscall_pair));
   }
 
-  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+  StopTransferDataThread();
+
+  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
   ASSERT_FALSE(tablets.empty());
 
   if (p.trace_role & kRoleServer) {
@@ -294,7 +298,7 @@ TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
 TEST_F(SocketTraceBPFTest, MultipleConnections) {
   ConfigureBPFCapture(TrafficProtocol::kProtocolHTTP, kRoleClient);
 
-  StartTransferDataThread(kHTTPTableNum, kHTTPTable);
+  StartTransferDataThread();
 
   // Two separate connections.
 
@@ -310,7 +314,9 @@ TEST_F(SocketTraceBPFTest, MultipleConnections) {
   testing::ClientServerSystem system2;
   system2.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(script2);
 
-  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+  StopTransferDataThread();
+
+  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
   ASSERT_FALSE(tablets.empty());
 
   {
@@ -334,7 +340,7 @@ TEST_F(SocketTraceBPFTest, MultipleConnections) {
 TEST_F(SocketTraceBPFTest, StartTime) {
   ConfigureBPFCapture(TrafficProtocol::kProtocolHTTP, kRoleClient);
 
-  StartTransferDataThread(kHTTPTableNum, kHTTPTable);
+  StartTransferDataThread();
 
   testing::SendRecvScript script({
       {{kHTTPReqMsg1}, {kHTTPRespMsg1}},
@@ -360,7 +366,9 @@ TEST_F(SocketTraceBPFTest, StartTime) {
   auto time_window_start = time_window_start_tp.time_since_epoch().count() / kDivFactor;
   auto time_window_end = time_window_end_tp.time_since_epoch().count() / kDivFactor;
 
-  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+  StopTransferDataThread();
+
+  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
   ASSERT_FALSE(tablets.empty());
   ColumnWrapperRecordBatch records =
       FindRecordsMatchingPID(tablets[0].records, kHTTPUPIDIdx, system.ClientPID());

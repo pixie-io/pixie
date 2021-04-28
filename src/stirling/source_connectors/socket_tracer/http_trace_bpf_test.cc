@@ -57,14 +57,16 @@ class GoHTTPTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ false
 };
 
 TEST_F(GoHTTPTraceTest, RequestAndResponse) {
-  StartTransferDataThread(kHTTPTableNum, kHTTPTable);
+  StartTransferDataThread();
 
   // Uncomment to enable tracing:
   // FLAGS_stirling_conn_trace_pid = go_http_fixture_.server_pid();
 
   go_http_fixture_.LaunchGetClient();
 
-  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+  StopTransferDataThread();
+
+  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
@@ -102,14 +104,16 @@ TEST_F(GoHTTPTraceTest, RequestAndResponse) {
 }
 
 TEST_F(GoHTTPTraceTest, LargePostMessage) {
-  StartTransferDataThread(kHTTPTableNum, kHTTPTable);
+  StartTransferDataThread();
 
   // Uncomment to enable tracing:
   // FLAGS_stirling_conn_trace_pid = go_http_fixture_.server_pid();
 
   go_http_fixture_.LaunchPostClient();
 
-  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+  StopTransferDataThread();
+
+  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
@@ -158,11 +162,13 @@ TEST_P(TraceRoleTest, VerifyRecordsCount) {
   ASSERT_NE(nullptr, socket_trace_connector);
   EXPECT_OK(socket_trace_connector->UpdateBPFProtocolTraceRole(kProtocolHTTP, param.role));
 
-  StartTransferDataThread(kHTTPTableNum, kHTTPTable);
+  StartTransferDataThread();
 
   go_http_fixture_.LaunchGetClient();
 
-  std::vector<TaggedRecordBatch> tablets = StopTransferDataThread();
+  StopTransferDataThread();
+
+  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
 
   std::vector<size_t> client_record_ids;
   std::vector<size_t> server_record_ids;
