@@ -36,9 +36,6 @@ func init() {
 	viper.BindPFlag("search_path", CreateBundle.Flags().Lookup("search_path"))
 	CreateBundle.MarkFlagRequired("search_path")
 
-	CreateBundle.Flags().BoolP("private", "p", false, "Whether this bundle is private.")
-	viper.BindPFlag("private", CreateBundle.Flags().Lookup("private"))
-
 	CreateBundle.Flags().StringP("out", "o", "-", "The output file")
 	viper.BindPFlag("out", CreateBundle.Flags().Lookup("out"))
 }
@@ -53,10 +50,9 @@ var CreateBundle = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		basePaths, _ := cmd.Flags().GetStringArray("base")
 		searchPaths, _ := cmd.Flags().GetStringArray("search_path")
-		private, _ := cmd.Flags().GetBool("private")
 
 		out, _ := cmd.Flags().GetString("out")
-		b := script.NewBundleWriter(searchPaths, basePaths, private)
+		b := script.NewBundleWriter(searchPaths, basePaths)
 		err := b.Write(out)
 		if err != nil {
 			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.

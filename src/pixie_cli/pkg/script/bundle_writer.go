@@ -36,7 +36,6 @@ import (
 type BundleWriter struct {
 	basePaths   []string
 	searchPaths []string
-	private     bool
 }
 
 type manifestSpec struct {
@@ -57,11 +56,10 @@ func fileExists(filename string) bool {
 }
 
 // NewBundleWriter created a new BundleWriter.
-func NewBundleWriter(searchPaths []string, basePaths []string, private bool) *BundleWriter {
+func NewBundleWriter(searchPaths []string, basePaths []string) *BundleWriter {
 	return &BundleWriter{
 		basePaths:   basePaths,
 		searchPaths: searchPaths,
-		private:     private,
 	}
 }
 
@@ -154,7 +152,8 @@ func (b *BundleWriter) Write(outFile string) error {
 				if err != nil {
 					return err
 				}
-				if b.private {
+
+				if ps.OrgID != "" {
 					scriptName = fmt.Sprintf("org_id/%s%s", ps.OrgID, strings.TrimPrefix(scriptName, bp))
 				}
 
