@@ -26,30 +26,22 @@
 
 #include <absl/container/flat_hash_map.h>
 #include <absl/strings/match.h>
-#include <google/protobuf/empty.pb.h>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/delimited_message_util.h>
-#include <google/protobuf/util/json_util.h>
 #include <magic_enum.hpp>
 
 #include "src/common/base/base.h"
 #include "src/common/base/utils.h"
-#include "src/common/grpcutils/utils.h"
 #include "src/common/json/json.h"
 #include "src/common/system/socket_info.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/stirling/bpf_tools/macros.h"
-#include "src/stirling/obj_tools/dwarf_tools.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/go_grpc_types.hpp"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
-#include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
 #include "src/stirling/source_connectors/socket_tracer/conn_stats.h"
 #include "src/stirling/source_connectors/socket_tracer/proto/sock_event.pb.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/common/event_parser.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/utils.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/grpc.h"
-#include "src/stirling/source_connectors/socket_tracer/uprobe_symaddrs.h"
-#include "src/stirling/utils/linux_headers.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
 // 50 X less often than the normal sampling frequency. Based on the conn_stats_table.h's
@@ -531,10 +523,10 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
 
 void SocketTraceConnector::AcceptControlEvent(socket_control_event_t event) {
   // timestamp_ns is a common field of open and close fields.
-  event.open.timestamp_ns += ClockRealTimeOffset();
+  event.timestamp_ns += ClockRealTimeOffset();
 
   // conn_id is a common field of open & close.
-  ConnTracker& tracker = conn_trackers_mgr_.GetOrCreateConnTracker(event.open.conn_id);
+  ConnTracker& tracker = conn_trackers_mgr_.GetOrCreateConnTracker(event.conn_id);
   tracker.set_conn_stats(&connection_stats_);
   tracker.set_current_time(iteration_start_time_);
 

@@ -74,7 +74,7 @@ class SocketTraceBPFTest : public ::testing::Test {
       PL_CHECK_OK(ctx_->SetClusterCIDR("1.2.3.4/32"));
 
       // Treat loopback as outside the cluster so we also interpret localhost connections
-      // as leaving the cluste, which means client-side tracing will also apply.
+      // as leaving the cluster, which means client-side tracing will also apply.
       FLAGS_treat_loopback_as_in_cluster = false;
     }
 

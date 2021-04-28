@@ -77,8 +77,6 @@ struct conn_info_t {
 // This struct is a subset of conn_info_t. It is used to communicate connect/accept events.
 // See conn_info_t for descriptions of the members.
 struct conn_event_t {
-  uint64_t timestamp_ns;     // Must be shared with close_event_t.
-  struct conn_id_t conn_id;  // Must be shared with close_event_t.
   struct sockaddr_in6 addr;
   enum EndpointRole role;
 };
@@ -86,9 +84,6 @@ struct conn_event_t {
 // This struct is a subset of conn_info_t. It is used to communicate close events.
 // See conn_info_t for descriptions of the members.
 struct close_event_t {
-  uint64_t timestamp_ns;     // Must be shared with conn_event_t.
-  struct conn_id_t conn_id;  // Must be shared with conn_event_t.
-
   // The number of bytes written and read at time of close.
   uint64_t wr_bytes;
   uint64_t rd_bytes;
@@ -190,6 +185,8 @@ typedef enum {
 
 struct socket_control_event_t {
   ControlEventType type;
+  uint64_t timestamp_ns;
+  struct conn_id_t conn_id;
   union {
     struct conn_event_t open;
     struct close_event_t close;
@@ -216,17 +213,17 @@ inline std::string ToString(const socket_data_event_t::attr_t& attr) {
 }
 
 inline std::string ToString(const close_event_t& event) {
-  return absl::Substitute("[ts=$0 conn_id=$1 wr_bytes=$2 rd_bytes=$3]", event.timestamp_ns,
-                          ToString(event.conn_id), event.wr_bytes, event.rd_bytes);
+  return absl::Substitute("[wr_bytes=$0 rd_bytes=$1]", event.wr_bytes, event.rd_bytes);
 }
 
 inline std::string ToString(const conn_event_t& event) {
-  return absl::Substitute("[ts=$0 conn_id=$1 addr=$2]", event.timestamp_ns, ToString(event.conn_id),
+  return absl::Substitute("[addr=$0]",
                           ::px::ToString(reinterpret_cast<const struct sockaddr*>(&event.addr)));
 }
 
 inline std::string ToString(const socket_control_event_t& event) {
-  return absl::Substitute("[type=$0 $1]", magic_enum::enum_name(event.type),
+  return absl::Substitute("[type=$0 ts=$1 conn_id=$2 $3]", magic_enum::enum_name(event.type),
+                          event.timestamp_ns, ToString(event.conn_id),
                           event.type == kConnOpen ? ToString(event.open) : ToString(event.close));
 }
 

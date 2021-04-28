@@ -75,36 +75,32 @@ ConnTracker::~ConnTracker() {
 }
 
 void ConnTracker::AddControlEvent(const socket_control_event_t& event) {
+  SetConnID(event.conn_id);
+  CheckTracker();
+  UpdateTimestamps(event.timestamp_ns);
+
   switch (event.type) {
     case kConnOpen:
-      AddConnOpenEvent(event.open);
+      AddConnOpenEvent(event.open, event.timestamp_ns);
       break;
     case kConnClose:
-      AddConnCloseEvent(event.close);
+      AddConnCloseEvent(event.close, event.timestamp_ns);
       break;
     default:
       LOG(DFATAL) << "Unknown control event type: " << event.type;
   }
 }
 
-void ConnTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
+void ConnTracker::AddConnOpenEvent(const conn_event_t& conn_event, uint64_t timestamp_ns) {
   if (open_info_.timestamp_ns != 0) {
-    CONN_TRACE(1) << absl::Substitute("[PL-985] Clobbering existing ConnOpenEvent $0.",
-                                      ::ToString(conn_event.conn_id));
+    CONN_TRACE(1) << absl::Substitute("Clobbering existing ConnOpenEvent.");
   }
-
-  SetConnID(conn_event.conn_id);
-
-  CheckTracker();
-
-  UpdateTimestamps(conn_event.timestamp_ns);
-
-  open_info_.timestamp_ns = conn_event.timestamp_ns;
+  open_info_.timestamp_ns = timestamp_ns;
 
   PopulateSockAddr(reinterpret_cast<const struct sockaddr*>(&conn_event.addr),
                    &open_info_.remote_addr);
 
-  SetRole(conn_event.role, "inferred from conn_open");
+  SetRole(conn_event.role, "Inferred from conn_open.");
 
   CONN_TRACE(1) << absl::Substitute("conn_open af=$0 addr=$1",
                                     magic_enum::enum_name(open_info_.remote_addr.family),
@@ -115,19 +111,12 @@ void ConnTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
   }
 }
 
-void ConnTracker::AddConnCloseEvent(const close_event_t& close_event) {
+void ConnTracker::AddConnCloseEvent(const close_event_t& close_event, uint64_t timestamp_ns) {
   if (close_info_.timestamp_ns != 0) {
-    CONN_TRACE(1) << absl::Substitute("Clobbering existing ConnCloseEvent $0.",
-                                      ::ToString(close_event.conn_id));
+    CONN_TRACE(1) << absl::Substitute("Clobbering existing ConnCloseEvent.");
   }
+  close_info_.timestamp_ns = timestamp_ns;
 
-  SetConnID(close_event.conn_id);
-
-  CheckTracker();
-
-  UpdateTimestamps(close_event.timestamp_ns);
-
-  close_info_.timestamp_ns = close_event.timestamp_ns;
   close_info_.send_bytes = close_event.wr_bytes;
   close_info_.recv_bytes = close_event.rd_bytes;
 

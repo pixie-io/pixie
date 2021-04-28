@@ -43,11 +43,11 @@ class EventGenerator {
   struct socket_control_event_t InitConn(EndpointRole role = kRoleUnknown) {
     struct socket_control_event_t conn_event {};
     conn_event.type = kConnOpen;
-    conn_event.open.timestamp_ns = clock_->now();
-    conn_event.open.conn_id.upid.pid = pid_;
-    conn_event.open.conn_id.fd = fd_;
-    conn_event.open.conn_id.tsid = ++tsid_;
-    conn_event.open.conn_id.upid.start_time_ticks = kPIDStartTimeTicks;
+    conn_event.timestamp_ns = clock_->now();
+    conn_event.conn_id.upid.pid = pid_;
+    conn_event.conn_id.fd = fd_;
+    conn_event.conn_id.tsid = ++tsid_;
+    conn_event.conn_id.upid.start_time_ticks = kPIDStartTimeTicks;
     conn_event.open.addr.sin6_family = AF_INET;
     conn_event.open.role = role;
     return conn_event;
@@ -106,11 +106,11 @@ class EventGenerator {
   socket_control_event_t InitClose() {
     struct socket_control_event_t close_event {};
     close_event.type = kConnClose;
-    close_event.close.timestamp_ns = clock_->now();
-    close_event.close.conn_id.upid.pid = pid_;
-    close_event.close.conn_id.fd = fd_;
-    close_event.close.conn_id.tsid = tsid_;
-    close_event.close.conn_id.upid.start_time_ticks = kPIDStartTimeTicks;
+    close_event.timestamp_ns = clock_->now();
+    close_event.conn_id.upid.pid = pid_;
+    close_event.conn_id.fd = fd_;
+    close_event.conn_id.tsid = tsid_;
+    close_event.conn_id.upid.start_time_ticks = kPIDStartTimeTicks;
     close_event.close.rd_bytes = recv_pos_;
     close_event.close.wr_bytes = send_pos_;
     return close_event;

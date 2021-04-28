@@ -1356,7 +1356,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ClientTest) {
 
   auto conn = event_gen.InitConn();
 
-  testing::StreamEventGenerator frame_generator(&real_clock_, conn.open.conn_id, 7);
+  testing::StreamEventGenerator frame_generator(&real_clock_, conn.conn_id, 7);
 
   source_->AcceptControlEvent(conn);
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "post"));
@@ -1398,7 +1398,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ServerTest) {
 
   auto conn = event_gen.InitConn();
 
-  testing::StreamEventGenerator frame_generator(&real_clock_, conn.open.conn_id, 8);
+  testing::StreamEventGenerator frame_generator(&real_clock_, conn.conn_id, 8);
 
   source_->AcceptControlEvent(conn);
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":method", "post"));
@@ -1439,7 +1439,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2PartialStream) {
 
   auto conn = event_gen.InitConn();
 
-  testing::StreamEventGenerator frame_generator(&real_clock_, conn.open.conn_id, 7);
+  testing::StreamEventGenerator frame_generator(&real_clock_, conn.conn_id, 7);
 
   source_->AcceptControlEvent(conn);
   // Request headers are missing to model mid-stream capture.
@@ -1468,7 +1468,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ResponseOnly) {
 
   auto conn = event_gen.InitConn();
 
-  testing::StreamEventGenerator frame_generator(&real_clock_, conn.open.conn_id, 7);
+  testing::StreamEventGenerator frame_generator(&real_clock_, conn.conn_id, 7);
 
   source_->AcceptControlEvent(conn);
   // Request missing to model mid-stream capture.
@@ -1495,7 +1495,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2SpanAcrossTransferData) {
 
   auto conn = event_gen.InitConn();
 
-  testing::StreamEventGenerator frame_generator(&real_clock_, conn.open.conn_id, 7);
+  testing::StreamEventGenerator frame_generator(&real_clock_, conn.conn_id, 7);
 
   source_->AcceptControlEvent(conn);
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "post"));
@@ -1539,7 +1539,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2SequentialStreams) {
   source_->AcceptControlEvent(conn);
 
   for (auto stream_id : stream_ids) {
-    testing::StreamEventGenerator frame_generator(&real_clock_, conn.open.conn_id, stream_id);
+    testing::StreamEventGenerator frame_generator(&real_clock_, conn.conn_id, stream_id);
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "post"));
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai"));
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic"));
@@ -1584,7 +1584,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ParallelStreams) {
 
   for (auto stream_id : stream_ids) {
     frame_generators.insert(
-        {stream_id, testing::StreamEventGenerator(&real_clock_, conn.open.conn_id, stream_id)});
+        {stream_id, testing::StreamEventGenerator(&real_clock_, conn.conn_id, stream_id)});
   }
 
   for (auto stream_id : stream_ids) {
@@ -1648,7 +1648,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2StreamSandwich) {
 
   uint32_t stream_id = 7;
 
-  testing::StreamEventGenerator frame_generator(&real_clock_, conn.open.conn_id, stream_id);
+  testing::StreamEventGenerator frame_generator(&real_clock_, conn.conn_id, stream_id);
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "post"));
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai"));
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic"));
@@ -1660,7 +1660,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2StreamSandwich) {
 
   {
     uint32_t stream_id2 = 9;
-    testing::StreamEventGenerator frame_generator2(&real_clock_, conn.open.conn_id, stream_id2);
+    testing::StreamEventGenerator frame_generator2(&real_clock_, conn.conn_id, stream_id2);
     source_->AcceptHTTP2Header(frame_generator2.GenHeader<kHeaderEventWrite>(":method", "post"));
     source_->AcceptHTTP2Header(frame_generator2.GenHeader<kHeaderEventWrite>(":host", "pixie.ai"));
     source_->AcceptHTTP2Header(frame_generator2.GenHeader<kHeaderEventWrite>(":path", "/magic"));
@@ -1717,7 +1717,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2StreamIDRace) {
   source_->AcceptControlEvent(conn);
 
   for (auto stream_id : stream_ids) {
-    testing::StreamEventGenerator frame_generator(&real_clock_, conn.open.conn_id, stream_id);
+    testing::StreamEventGenerator frame_generator(&real_clock_, conn.conn_id, stream_id);
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "post"));
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai"));
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic"));
@@ -1772,7 +1772,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2OldStream) {
   source_->AcceptControlEvent(conn);
 
   for (auto stream_id : stream_ids) {
-    testing::StreamEventGenerator frame_generator(&real_clock_, conn.open.conn_id, stream_id);
+    testing::StreamEventGenerator frame_generator(&real_clock_, conn.conn_id, stream_id);
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":method", "post"));
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai"));
     source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic"));

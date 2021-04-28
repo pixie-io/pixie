@@ -353,25 +353,25 @@ static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, uint32_
     return;
   }
 
-  struct socket_control_event_t conn_event = {};
-  conn_event.type = kConnOpen;
-  conn_event.open.timestamp_ns = bpf_ktime_get_ns();
-  conn_event.open.conn_id = conn_info.conn_id;
-  conn_event.open.addr = conn_info.addr;
-  conn_event.open.role = conn_info.traffic_class.role;
+  struct socket_control_event_t control_event = {};
+  control_event.type = kConnOpen;
+  control_event.timestamp_ns = bpf_ktime_get_ns();
+  control_event.conn_id = conn_info.conn_id;
+  control_event.open.addr = conn_info.addr;
+  control_event.open.role = conn_info.traffic_class.role;
 
-  socket_control_events.perf_submit(ctx, &conn_event, sizeof(struct socket_control_event_t));
+  socket_control_events.perf_submit(ctx, &control_event, sizeof(struct socket_control_event_t));
 }
 
 static __inline void submit_close_event(struct pt_regs* ctx, struct conn_info_t* conn_info) {
-  struct socket_control_event_t close_event = {};
-  close_event.type = kConnClose;
-  close_event.close.timestamp_ns = bpf_ktime_get_ns();
-  close_event.close.conn_id = conn_info->conn_id;
-  close_event.close.rd_bytes = conn_info->rd_bytes;
-  close_event.close.wr_bytes = conn_info->wr_bytes;
+  struct socket_control_event_t control_event = {};
+  control_event.type = kConnClose;
+  control_event.timestamp_ns = bpf_ktime_get_ns();
+  control_event.conn_id = conn_info->conn_id;
+  control_event.close.rd_bytes = conn_info->rd_bytes;
+  control_event.close.wr_bytes = conn_info->wr_bytes;
 
-  socket_control_events.perf_submit(ctx, &close_event, sizeof(struct socket_control_event_t));
+  socket_control_events.perf_submit(ctx, &control_event, sizeof(struct socket_control_event_t));
 }
 
 // TODO(yzhao): We can write a test for this, by define a dummy bpf_probe_read() function. Similar
