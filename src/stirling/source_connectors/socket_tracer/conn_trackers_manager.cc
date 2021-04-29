@@ -18,6 +18,10 @@
 
 #include "src/stirling/source_connectors/socket_tracer/conn_trackers_manager.h"
 
+DEFINE_double(
+    stirling_conn_tracker_cleanup_threshold, 0.2,
+    "Percentage of trackers that are ready for destruction that will trigger a memory cleanup");
+
 namespace px {
 namespace stirling {
 
@@ -162,21 +166,27 @@ void ConnTrackersManager::CleanupTrackers() {
     }
   }
 
-  // Outer loop iterates through tracker sets (keyed by PID+FD),
-  // while inner loop iterates through generations of trackers for that PID+FD pair.
-  auto iter = conn_id_tracker_generations_.begin();
-  while (iter != conn_id_tracker_generations_.end()) {
-    auto& tracker_generations = iter->second;
+  // As a performance optimization, we only clean up trackers once we reach a certain threshold
+  // of trackers that are ready for destruction.
+  // Trade-off is just how quickly we release memory and BPF map entries.
+  double percent_destroyable = 1.0 * num_trackers_ready_for_destruction_ / num_trackers_;
+  if (percent_destroyable > FLAGS_stirling_conn_tracker_cleanup_threshold) {
+    // Outer loop iterates through tracker sets (keyed by PID+FD),
+    // while inner loop iterates through generations of trackers for that PID+FD pair.
+    auto iter = conn_id_tracker_generations_.begin();
+    while (iter != conn_id_tracker_generations_.end()) {
+      auto& tracker_generations = iter->second;
 
-    int num_erased = tracker_generations.CleanupGenerations(&trackers_pool_);
+      int num_erased = tracker_generations.CleanupGenerations(&trackers_pool_);
 
-    num_trackers_ -= num_erased;
-    num_trackers_ready_for_destruction_ -= num_erased;
+      num_trackers_ -= num_erased;
+      num_trackers_ready_for_destruction_ -= num_erased;
 
-    if (tracker_generations.empty()) {
-      conn_id_tracker_generations_.erase(iter++);
-    } else {
-      ++iter;
+      if (tracker_generations.empty()) {
+        conn_id_tracker_generations_.erase(iter++);
+      } else {
+        ++iter;
+      }
     }
   }
 

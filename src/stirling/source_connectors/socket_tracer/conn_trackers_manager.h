@@ -29,6 +29,8 @@
 #include "src/stirling/source_connectors/socket_tracer/conn_tracker.h"
 #include "src/stirling/utils/obj_pool.h"
 
+DECLARE_double(stirling_conn_tracker_cleanup_threshold);
+
 namespace px {
 namespace stirling {
 

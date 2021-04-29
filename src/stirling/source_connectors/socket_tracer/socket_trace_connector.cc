@@ -305,8 +305,6 @@ void SocketTraceConnector::UpdateCommonState(ConnectorContext* ctx) {
     thread.detach();
   }
 
-  // Can call this less frequently if it becomes a performance issue.
-  // Trade-off is just how quickly we release memory and BPF map entries.
   conn_trackers_mgr_.CleanupTrackers();
 
   // Periodically dump context. Dumps once a minute if connector sampling period is 100 ms.

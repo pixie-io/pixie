@@ -82,6 +82,9 @@ TEST_F(BPFMapLeakTest, unclosed_connection) {
   // At this point, server should have been traced.
   // And because it was killed, it should have leaked a BPF map entry.
 
+  // For testing, make sure Stirling cleans up conn trackers right away.
+  FLAGS_stirling_conn_tracker_cleanup_threshold = 0.0;
+
   // For testing, make sure Stirling cleans up BPF entries right away.
   // Without this flag, Stirling delays clean-up to accumulate a clean-up batch.
   FLAGS_stirling_conn_map_cleanup_threshold = 1;
