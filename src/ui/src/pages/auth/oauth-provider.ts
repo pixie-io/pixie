@@ -46,4 +46,7 @@ export abstract class OAuthProviderClient {
 
   /** Gets the signup buttons for this OAuthProvider. */
   abstract getSignupButtons(): React.ReactElement;
+
+  /** Make a request when the username signup flow is complete. */
+  abstract usernameSignupCompleteRequest(): void;
 }

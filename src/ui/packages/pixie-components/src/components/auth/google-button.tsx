@@ -19,10 +19,7 @@
 // This is the primary auth box, which has either the login or signin variant.
 import * as React from 'react';
 import {
-  Button,
-  createStyles,
-  Theme,
-  makeStyles,
+  Button, createStyles, Theme, makeStyles,
 } from '@material-ui/core';
 import { GoogleIcon } from 'components/icons/google';
 
@@ -31,6 +28,7 @@ const useStyles = makeStyles(({ spacing }: Theme) => createStyles({
     paddingTop: spacing(1),
     paddingBottom: spacing(1),
     textTransform: 'capitalize',
+    width: '70%',
   },
 }));
 
@@ -39,7 +37,10 @@ export interface GoogleButtonProps {
   onClick: () => void;
 }
 
-export const GoogleButton: React.FC<GoogleButtonProps> = ({ text, onClick }: GoogleButtonProps) => {
+export const GoogleButton: React.FC<GoogleButtonProps> = ({
+  text,
+  onClick,
+}: GoogleButtonProps) => {
   const classes = useStyles();
   return (
     <Button

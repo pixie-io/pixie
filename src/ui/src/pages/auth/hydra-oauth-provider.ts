@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/*  eslint-disable class-methods-use-this */
+
 import type * as React from 'react';
 
 import {
@@ -97,7 +99,6 @@ export class HydraClient extends OAuthProviderClient {
   }
 
   // Get the PasswordLoginFlow from Kratos.
-  // eslint-disable-next-line class-methods-use-this
   async getPasswordLoginFlow(): Promise<FormStructure> {
     const parsed = QueryString.parse(window.location.search);
     const flow = parsed.flow as string;
@@ -120,7 +121,6 @@ export class HydraClient extends OAuthProviderClient {
     };
   }
 
-  // eslint-disable-next-line class-methods-use-this
   async getResetPasswordFlow(): Promise<FormStructure> {
     const parsed = QueryString.parse(window.location.search);
     const flow = parsed.flow as string;
@@ -143,7 +143,6 @@ export class HydraClient extends OAuthProviderClient {
     };
   }
 
-  // eslint-disable-next-line class-methods-use-this
   async getError(): Promise<FormStructure> {
     const parsed = QueryString.parse(window.location.search);
     const error = parsed.error as string;
@@ -155,12 +154,10 @@ export class HydraClient extends OAuthProviderClient {
     return displayErrorFormStructure(new Error(JSON.stringify(data)));
   }
 
-  // eslint-disable-next-line class-methods-use-this
   isInvitationEnabled(): boolean {
     return true;
   }
 
-  // eslint-disable-next-line class-methods-use-this
   getInvitationComponent(): React.FC {
     return HydraInvitationForm;
   }
@@ -172,9 +169,12 @@ export class HydraClient extends OAuthProviderClient {
     });
   }
 
-  // eslint-disable-next-line class-methods-use-this
   getSignupButtons(): React.ReactElement {
     return RejectHydraSignup({});
+  }
+
+  usernameSignupCompleteRequest(): void {
+    throw new Error('not a valid endpoint for hydra');
   }
 
   private makeAndStoreState(): string {

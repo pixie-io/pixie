@@ -19,10 +19,7 @@
 // This is the primary auth box, which has either the login or signin variant.
 import * as React from 'react';
 import {
-  Button,
-  createStyles,
-  Theme,
-  makeStyles,
+  Button, createStyles, Theme, makeStyles,
 } from '@material-ui/core';
 
 const useStyles = makeStyles(({ spacing }: Theme) => createStyles({
@@ -30,6 +27,7 @@ const useStyles = makeStyles(({ spacing }: Theme) => createStyles({
     paddingTop: spacing(1),
     paddingBottom: spacing(1),
     textTransform: 'capitalize',
+    width: '70%',
   },
 }));
 
@@ -37,7 +35,10 @@ export interface UsernamePasswordButtonProps {
   text: string;
   onClick: () => void;
 }
-export const UsernamePasswordButton: React.FC<UsernamePasswordButtonProps> = ({ text, onClick }) => {
+export const UsernamePasswordButton: React.FC<UsernamePasswordButtonProps> = ({
+  text,
+  onClick,
+}) => {
   const classes = useStyles();
   return (
     <Button
