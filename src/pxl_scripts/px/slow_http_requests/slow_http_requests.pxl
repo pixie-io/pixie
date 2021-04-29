@@ -48,4 +48,4 @@ def namespace_slow_requests(start_time: str, namespace: px.Namespace):
     requests = requests[requests.latency >= px.floor(requests.service_p99)]
     return requests[['time_', 'service', 'pod', 'latency', 'req_method',
                      'req_path', 'resp_status', 'remote_addr', 'remote_port',
-                     'resp_message', 'resp_body']].head(1000)
+                     'resp_body']].head(1000)

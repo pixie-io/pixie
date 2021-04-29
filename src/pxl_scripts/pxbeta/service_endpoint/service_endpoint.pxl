@@ -81,7 +81,7 @@ def endpoint_slow_requests(start_time: str, service: px.Service, endpoint: str):
     return requests[['time_', 'pod', 'latency', 'req_method',
                      'req_path', 'req_body', 'resp_status',
                      'remote_addr', 'remote_port',
-                     'resp_message', 'resp_body']].head(100)
+                     'resp_body']].head(100)
 
 
 def let_helper(start_time: str, service: px.Service):
