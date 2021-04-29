@@ -39,7 +39,7 @@ const useStyles = makeStyles(({ spacing, palette }: Theme) => createStyles({
   title: {
     color: palette.foreground.two,
     paddingTop: spacing(1),
-    paddingBottom: spacing(3),
+    paddingBottom: spacing(2),
     marginBottom: spacing(1.25),
   },
   subtitle: {
@@ -54,7 +54,7 @@ const useStyles = makeStyles(({ spacing, palette }: Theme) => createStyles({
     flexFlow: 'row nowrap',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: spacing(3),
+    marginTop: spacing(1),
     paddingTop: spacing(1),
     borderTop: `1px solid ${palette.foreground.grey1}`,
   },
