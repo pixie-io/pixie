@@ -647,17 +647,16 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
 
   std::string path = req_stream->headers().ValueByKey(protocols::http2::headers::kPath);
 
-  HTTPContentType content_type;
-  std::string req_data;
-  std::string resp_data;
+  HTTPContentType content_type = HTTPContentType::kUnknown;
+
+  std::string req_data = req_stream->ConsumeData();
+  std::string resp_data = resp_stream->ConsumeData();
+  size_t req_data_size = req_data.size();
+  size_t resp_data_size = resp_data.size();
   if (record.HasGRPCContentType()) {
     content_type = HTTPContentType::kGRPC;
-    req_data = ParsePB(req_stream->ConsumeData(), kMaxPBStringLen);
-    resp_data = ParsePB(resp_stream->ConsumeData(), kMaxPBStringLen);
-  } else {
-    content_type = HTTPContentType::kUnknown;
-    req_data = req_stream->ConsumeData();
-    resp_data = resp_stream->ConsumeData();
+    req_data = ParsePB(req_data, kMaxPBStringLen);
+    resp_data = ParsePB(resp_data, kMaxPBStringLen);
   }
 
   DataTable::RecordBuilder<&kHTTPTable> r(data_table, resp_stream->timestamp_ns);
@@ -678,9 +677,9 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("resp_status")>(resp_status);
   // TODO(yzhao): Populate the following field from headers.
   r.Append<r.ColIndex("resp_message")>("OK");
-  r.Append<r.ColIndex("req_body_size")>(req_data.size());
+  r.Append<r.ColIndex("req_body_size")>(req_data_size);
   r.Append<r.ColIndex("req_body"), kMaxBodyBytes>(std::move(req_data));
-  r.Append<r.ColIndex("resp_body_size")>(resp_data.size());
+  r.Append<r.ColIndex("resp_body_size")>(resp_data_size);
   r.Append<r.ColIndex("resp_body"), kMaxBodyBytes>(std::move(resp_data));
   r.Append<r.ColIndex("latency")>(
       CalculateLatency(req_stream->timestamp_ns, resp_stream->timestamp_ns));
