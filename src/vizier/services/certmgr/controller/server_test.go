@@ -28,7 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	certmgrpb "px.dev/pixie/src/vizier/services/certmgr/certmgrpb"
+	"px.dev/pixie/src/vizier/services/certmgr/certmgrpb"
 	"px.dev/pixie/src/vizier/services/certmgr/controller"
 	mock_controller "px.dev/pixie/src/vizier/services/certmgr/controller/mock"
 )

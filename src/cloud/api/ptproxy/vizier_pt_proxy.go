@@ -24,16 +24,16 @@ import (
 	"github.com/nats-io/nats.go"
 	"google.golang.org/grpc"
 
-	proto1 "px.dev/pixie/src/api/proto/uuidpb"
+	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/services/authcontext"
-	jwt "px.dev/pixie/src/shared/services/jwtpb"
+	"px.dev/pixie/src/shared/services/jwtpb"
 )
 
 type vzmgrClient interface {
-	GetVizierInfo(ctx context.Context, in *proto1.UUID, opts ...grpc.CallOption) (*cvmsgspb.VizierInfo, error)
-	GetVizierConnectionInfo(ctx context.Context, in *proto1.UUID, opts ...grpc.CallOption) (*cvmsgspb.VizierConnectionInfo, error)
+	GetVizierInfo(ctx context.Context, in *uuidpb.UUID, opts ...grpc.CallOption) (*cvmsgspb.VizierInfo, error)
+	GetVizierConnectionInfo(ctx context.Context, in *uuidpb.UUID, opts ...grpc.CallOption) (*cvmsgspb.VizierConnectionInfo, error)
 }
 
 // VizierPassThroughProxy implements the VizierAPI and allows proxying the data to the actual
@@ -112,7 +112,7 @@ func (v *VizierPassThroughProxy) DebugPods(req *vizierpb.DebugPodsRequest, srv v
 	return rp.Run()
 }
 
-func getCredsFromCtx(ctx context.Context) (string, *jwt.JWTClaims, error) {
+func getCredsFromCtx(ctx context.Context) (string, *jwtpb.JWTClaims, error) {
 	aCtx, err := authcontext.FromContext(ctx)
 	if err != nil {
 		return "", nil, err

@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"px.dev/pixie/src/shared/services/authcontext"
-	pb "px.dev/pixie/src/shared/services/jwtpb"
+	"px.dev/pixie/src/shared/services/jwtpb"
 	"px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils/testingutils"
 )
@@ -46,7 +46,7 @@ func TestSessionCtx_ValidClaims(t *testing.T) {
 	tests := []struct {
 		name          string
 		expiryFromNow time.Duration
-		claims        *pb.JWTClaims
+		claims        *jwtpb.JWTClaims
 		isValid       bool
 	}{
 		{
@@ -98,7 +98,7 @@ func TestSessionCtx_ValidClaims(t *testing.T) {
 		{
 			name:    "claims with no type",
 			isValid: false,
-			claims: &pb.JWTClaims{
+			claims: &jwtpb.JWTClaims{
 				Subject:   "test subject",
 				Audience:  "withpixie.ai",
 				IssuedAt:  time.Now().Unix(),

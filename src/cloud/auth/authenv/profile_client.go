@@ -23,7 +23,7 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 
-	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
+	"px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/shared/services"
 )
 

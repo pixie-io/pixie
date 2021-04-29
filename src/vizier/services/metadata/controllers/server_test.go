@@ -45,7 +45,7 @@ import (
 	"px.dev/pixie/src/common/base/statuspb"
 	"px.dev/pixie/src/shared/bloomfilterpb"
 	sharedmetadatapb "px.dev/pixie/src/shared/metadatapb"
-	env2 "px.dev/pixie/src/shared/services/env"
+	"px.dev/pixie/src/shared/services/env"
 	"px.dev/pixie/src/shared/services/server"
 	"px.dev/pixie/src/shared/types/typespb"
 	"px.dev/pixie/src/utils"
@@ -899,7 +899,7 @@ func TestGetAgentUpdates(t *testing.T) {
 
 	srv := controllers.NewServer(mdEnv, mockAgtMgr, nil)
 
-	env := env2.New("withpixie.ai")
+	env := env.New("withpixie.ai")
 	s := server.CreateGRPCServer(env, &server.GRPCServerOptions{})
 	metadatapb.RegisterMetadataServiceServer(s, srv)
 	lis := bufconn.Listen(1024 * 1024)

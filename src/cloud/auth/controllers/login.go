@@ -30,8 +30,8 @@ import (
 	"google.golang.org/grpc/status"
 
 	"px.dev/pixie/src/api/proto/uuidpb"
-	pb "px.dev/pixie/src/cloud/auth/authpb"
-	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
+	"px.dev/pixie/src/cloud/auth/authpb"
+	"px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/authcontext"
 	srvutils "px.dev/pixie/src/shared/services/utils"
@@ -83,7 +83,7 @@ func (s *Server) updateAuthProviderUser(authUserID string, orgID string, userID 
 }
 
 // Login uses the AuthProvider to authenticate and login the user. Errors out if their org doesn't exist.
-func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply, error) {
+func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.LoginReply, error) {
 	userID, userInfo, err := s.getUserInfoFromToken(in.AccessToken)
 	if err != nil {
 		return nil, err
@@ -161,24 +161,24 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 
 	userID = userInfo.PLUserID
 
-	return &pb.LoginReply{
+	return &authpb.LoginReply{
 		Token:       token,
 		ExpiresAt:   expiresAt.Unix(),
 		UserCreated: newUser,
-		UserInfo: &pb.AuthenticatedUserInfo{
+		UserInfo: &authpb.AuthenticatedUserInfo{
 			UserID:    utils.ProtoFromUUIDStrOrNil(userID),
 			FirstName: userInfo.FirstName,
 			LastName:  userInfo.LastName,
 			Email:     userInfo.Email,
 		},
-		OrgInfo: &pb.LoginReply_OrgInfo{
+		OrgInfo: &authpb.LoginReply_OrgInfo{
 			OrgName: orgInfo.OrgName,
 			OrgID:   utils.UUIDFromProtoOrNil(orgInfo.ID).String(),
 		},
 	}, nil
 }
 
-func (s *Server) loginSupportUser(ctx context.Context, in *pb.LoginRequest, userInfo *UserInfo) (*pb.LoginReply, error) {
+func (s *Server) loginSupportUser(ctx context.Context, in *authpb.LoginRequest, userInfo *UserInfo) (*authpb.LoginReply, error) {
 	if in.OrgName == "" {
 		return nil, status.Error(codes.InvalidArgument, "orgName is required for Pixie Support accounts")
 	}
@@ -200,17 +200,17 @@ func (s *Server) loginSupportUser(ctx context.Context, in *pb.LoginRequest, user
 		return nil, status.Error(codes.Internal, "failed to generate token")
 	}
 
-	return &pb.LoginReply{
+	return &authpb.LoginReply{
 		Token:       token,
 		ExpiresAt:   expiresAt.Unix(),
 		UserCreated: false,
-		UserInfo: &pb.AuthenticatedUserInfo{
+		UserInfo: &authpb.AuthenticatedUserInfo{
 			UserID:    utils.ProtoFromUUID(userID),
 			FirstName: userInfo.FirstName,
 			LastName:  userInfo.LastName,
 			Email:     userInfo.Email,
 		},
-		OrgInfo: &pb.LoginReply_OrgInfo{
+		OrgInfo: &authpb.LoginReply_OrgInfo{
 			OrgName: orgInfo.OrgName,
 			OrgID:   orgID.String(),
 		},
@@ -218,7 +218,7 @@ func (s *Server) loginSupportUser(ctx context.Context, in *pb.LoginRequest, user
 }
 
 // Signup uses the AuthProvider to authenticate and sign up the user. It autocreates the org if the org doesn't exist.
-func (s *Server) Signup(ctx context.Context, in *pb.SignupRequest) (*pb.SignupReply, error) {
+func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.SignupReply, error) {
 	userID, userInfo, err := s.getUserInfoFromToken(in.AccessToken)
 	if err != nil {
 		return nil, err
@@ -260,11 +260,11 @@ func (s *Server) Signup(ctx context.Context, in *pb.SignupRequest) (*pb.SignupRe
 		return nil, status.Error(codes.Internal, "failed to generate token")
 	}
 
-	return &pb.SignupReply{
+	return &authpb.SignupReply{
 		Token:      token,
 		ExpiresAt:  expiresAt.Unix(),
 		OrgCreated: newOrg,
-		UserInfo: &pb.AuthenticatedUserInfo{
+		UserInfo: &authpb.AuthenticatedUserInfo{
 			UserID:    utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID),
 			FirstName: userInfo.FirstName,
 			LastName:  userInfo.LastName,
@@ -331,7 +331,7 @@ func (s *Server) createUser(ctx context.Context, userID string, userInfo *UserIn
 }
 
 // GetAugmentedTokenForAPIKey produces an augmented token for the user given a API key.
-func (s *Server) GetAugmentedTokenForAPIKey(ctx context.Context, in *pb.GetAugmentedTokenForAPIKeyRequest) (*pb.GetAugmentedTokenForAPIKeyResponse, error) {
+func (s *Server) GetAugmentedTokenForAPIKey(ctx context.Context, in *authpb.GetAugmentedTokenForAPIKeyRequest) (*authpb.GetAugmentedTokenForAPIKeyResponse, error) {
 	// Find the org/user associated with the token.
 	orgID, userID, err := s.apiKeyMgr.FetchOrgUserIDUsingAPIKey(ctx, in.APIKey)
 	if err != nil {
@@ -361,7 +361,7 @@ func (s *Server) GetAugmentedTokenForAPIKey(ctx context.Context, in *pb.GetAugme
 		return nil, status.Errorf(codes.Internal, "Failed to generate auth token")
 	}
 
-	resp := &pb.GetAugmentedTokenForAPIKeyResponse{
+	resp := &authpb.GetAugmentedTokenForAPIKeyResponse{
 		Token:     token,
 		ExpiresAt: claims.ExpiresAt,
 	}
@@ -370,8 +370,8 @@ func (s *Server) GetAugmentedTokenForAPIKey(ctx context.Context, in *pb.GetAugme
 
 // GetAugmentedToken produces augmented tokens for the user based on passed in credentials.
 func (s *Server) GetAugmentedToken(
-	ctx context.Context, in *pb.GetAugmentedAuthTokenRequest) (
-	*pb.GetAugmentedAuthTokenResponse, error) {
+	ctx context.Context, in *authpb.GetAugmentedAuthTokenRequest) (
+	*authpb.GetAugmentedAuthTokenResponse, error) {
 	// Check the incoming token and make sure it's valid.
 	aCtx := authcontext.New()
 
@@ -426,7 +426,7 @@ func (s *Server) GetAugmentedToken(
 	}
 	// TODO(zasgar): This should actually do ACL's, etc. at some point.
 	// Generate a new augmented auth token with additional information.
-	resp := &pb.GetAugmentedAuthTokenResponse{
+	resp := &authpb.GetAugmentedAuthTokenResponse{
 		Token:     augmentedToken,
 		ExpiresAt: claims.ExpiresAt,
 	}

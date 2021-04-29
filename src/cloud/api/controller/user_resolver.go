@@ -25,7 +25,7 @@ import (
 	"github.com/graph-gophers/graphql-go"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
-	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
+	"px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/shared/services/authcontext"
 	"px.dev/pixie/src/utils"
 )

@@ -30,7 +30,7 @@ import (
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/k8s/metadatapb"
 	"px.dev/pixie/src/utils/pbutils"
-	messages "px.dev/pixie/src/vizier/messages/messagespb"
+	"px.dev/pixie/src/vizier/messages/messagespb"
 	"px.dev/pixie/src/vizier/utils/messagebus"
 )
 
@@ -98,7 +98,7 @@ func (m *MetadataTopicListener) processMessages() {
 	}
 }
 
-// Stop stops processing any metadata messages.
+// Stop stops processing any metadata messagespb.
 func (m *MetadataTopicListener) Stop() {
 	m.once.Do(func() {
 		close(m.quitCh)
@@ -118,7 +118,7 @@ func (m *MetadataTopicListener) ProcessMessage(msg *nats.Msg) error {
 }
 
 func (m *MetadataTopicListener) processAgentMessage(msg *nats.Msg) error {
-	vzMsg := &messages.VizierMessage{}
+	vzMsg := &messagespb.VizierMessage{}
 	err := proto.Unmarshal(msg.Data, vzMsg)
 	if err != nil {
 		return err
@@ -137,10 +137,10 @@ func (m *MetadataTopicListener) processAgentMessage(msg *nats.Msg) error {
 	}
 
 	for _, batch := range batches {
-		resp := &messages.VizierMessage{
-			Msg: &messages.VizierMessage_K8SMetadataMessage{
-				K8SMetadataMessage: &messages.K8SMetadataMessage{
-					Msg: &messages.K8SMetadataMessage_MissingK8SMetadataResponse{
+		resp := &messagespb.VizierMessage{
+			Msg: &messagespb.VizierMessage_K8SMetadataMessage{
+				K8SMetadataMessage: &messagespb.K8SMetadataMessage{
+					Msg: &messagespb.K8SMetadataMessage_MissingK8SMetadataResponse{
 						MissingK8SMetadataResponse: &metadatapb.MissingK8SMetadataResponse{
 							Updates:              batch,
 							FirstUpdateAvailable: firstAvailable,

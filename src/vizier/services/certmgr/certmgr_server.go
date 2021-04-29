@@ -32,7 +32,7 @@ import (
 	"px.dev/pixie/src/shared/services/healthz"
 	"px.dev/pixie/src/shared/services/server"
 	"px.dev/pixie/src/vizier/services/certmgr/certmgrenv"
-	certmgrpb "px.dev/pixie/src/vizier/services/certmgr/certmgrpb"
+	"px.dev/pixie/src/vizier/services/certmgr/certmgrpb"
 	"px.dev/pixie/src/vizier/services/certmgr/controller"
 )
 

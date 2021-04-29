@@ -28,9 +28,9 @@ import (
 	"github.com/sahilm/fuzzy"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
-	pl_vispb "px.dev/pixie/src/api/proto/vispb"
+	"px.dev/pixie/src/api/proto/vispb"
 	"px.dev/pixie/src/cloud/indexer/md"
-	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
+	"px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/pixie_cli/pkg/script"
 )
 
@@ -157,9 +157,9 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 			scriptArgMap[s.ScriptName] = make([]cloudpb.AutocompleteEntityKind, 0)
 			for _, a := range s.Vis.Variables {
 				aKind := cloudpb.AEK_UNKNOWN
-				if a.Type == pl_vispb.PX_POD {
+				if a.Type == vispb.PX_POD {
 					aKind = cloudpb.AEK_POD
-				} else if a.Type == pl_vispb.PX_SERVICE {
+				} else if a.Type == vispb.PX_SERVICE {
 					aKind = cloudpb.AEK_SVC
 				}
 

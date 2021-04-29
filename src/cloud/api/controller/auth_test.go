@@ -41,7 +41,7 @@ import (
 	"px.dev/pixie/src/cloud/api/controller"
 	"px.dev/pixie/src/cloud/api/controller/testutils"
 	"px.dev/pixie/src/cloud/auth/authpb"
-	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
+	"px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/shared/services/handler"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/testingutils"

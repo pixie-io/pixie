@@ -34,7 +34,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pl_vispb "px.dev/pixie/src/api/proto/vispb"
+	"px.dev/pixie/src/api/proto/vispb"
 	"px.dev/pixie/src/cloud/scriptmgr/controller"
 	"px.dev/pixie/src/cloud/scriptmgr/scriptmgrpb"
 	"px.dev/pixie/src/utils"
@@ -191,7 +191,7 @@ func TestScriptMgr_GetLiveViewContents(t *testing.T) {
 				return
 			}
 
-			var vis pl_vispb.Vis
+			var vis vispb.Vis
 			err = jsonpb.UnmarshalString(testBundle["scripts"][tc.liveViewName]["vis"], &vis)
 			require.NoError(t, err)
 			// Make sure a future bug in the test doesn't accidentally expect the "0 value" for Vis.

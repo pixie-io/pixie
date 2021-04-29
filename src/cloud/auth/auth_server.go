@@ -30,7 +30,7 @@ import (
 
 	"px.dev/pixie/src/cloud/auth/apikey"
 	"px.dev/pixie/src/cloud/auth/authenv"
-	auth "px.dev/pixie/src/cloud/auth/authpb"
+	"px.dev/pixie/src/cloud/auth/authpb"
 	"px.dev/pixie/src/cloud/auth/controllers"
 	"px.dev/pixie/src/cloud/auth/schema"
 	"px.dev/pixie/src/cloud/shared/pgmigrate"
@@ -107,8 +107,8 @@ func main() {
 	}
 
 	s := server.NewPLServer(env, mux)
-	auth.RegisterAuthServiceServer(s.GRPCServer(), svr)
-	auth.RegisterAPIKeyServiceServer(s.GRPCServer(), apiKeyMgr)
+	authpb.RegisterAuthServiceServer(s.GRPCServer(), svr)
+	authpb.RegisterAPIKeyServiceServer(s.GRPCServer(), apiKeyMgr)
 
 	s.Start()
 	s.StopOnInterrupt()

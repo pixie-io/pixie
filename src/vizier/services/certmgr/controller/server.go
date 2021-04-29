@@ -31,7 +31,7 @@ import (
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/pbutils"
 	"px.dev/pixie/src/vizier/services/certmgr/certmgrenv"
-	certmgrpb "px.dev/pixie/src/vizier/services/certmgr/certmgrpb"
+	"px.dev/pixie/src/vizier/services/certmgr/certmgrpb"
 	"px.dev/pixie/src/vizier/utils/messagebus"
 )
 

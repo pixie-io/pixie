@@ -31,7 +31,7 @@ import (
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/utils/pbutils"
-	messages "px.dev/pixie/src/vizier/messages/messagespb"
+	"px.dev/pixie/src/vizier/messages/messagespb"
 )
 
 func connectNATS() *nats.Conn {
@@ -89,7 +89,7 @@ func handleV2CMessage(m *nats.Msg) {
 }
 
 func handleNATSMessage(m *nats.Msg) {
-	pb := &messages.VizierMessage{}
+	pb := &messagespb.VizierMessage{}
 	err := proto.Unmarshal(m.Data, pb)
 
 	if err != nil {

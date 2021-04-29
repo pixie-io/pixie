@@ -37,7 +37,7 @@ import (
 	mock_controller "px.dev/pixie/src/cloud/profile/controller/mock"
 	"px.dev/pixie/src/cloud/profile/datastore"
 	"px.dev/pixie/src/cloud/profile/profileenv"
-	profile "px.dev/pixie/src/cloud/profile/profilepb"
+	"px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/cloud/project_manager/projectmanagerpb"
 	mock_projectmanager "px.dev/pixie/src/cloud/project_manager/projectmanagerpb/mock"
 	"px.dev/pixie/src/cloud/shared/idprovider/testutils"
@@ -57,7 +57,7 @@ func TestServer_CreateUser(t *testing.T) {
 	createUsertests := []struct {
 		name      string
 		makesCall bool
-		userInfo  *profile.CreateUserRequest
+		userInfo  *profilepb.CreateUserRequest
 
 		expectErr  bool
 		expectCode codes.Code
@@ -66,7 +66,7 @@ func TestServer_CreateUser(t *testing.T) {
 		{
 			name:      "valid request",
 			makesCall: true,
-			userInfo: &profile.CreateUserRequest{
+			userInfo: &profilepb.CreateUserRequest{
 				OrgID:     utils.ProtoFromUUID(testOrgUUID),
 				Username:  "foobar",
 				FirstName: "foo",
@@ -80,7 +80,7 @@ func TestServer_CreateUser(t *testing.T) {
 		{
 			name:      "invalid orgid",
 			makesCall: false,
-			userInfo: &profile.CreateUserRequest{
+			userInfo: &profilepb.CreateUserRequest{
 				OrgID:     &uuidpb.UUID{},
 				Username:  "foobar",
 				FirstName: "foo",
@@ -94,7 +94,7 @@ func TestServer_CreateUser(t *testing.T) {
 		{
 			name:      "invalid username",
 			makesCall: false,
-			userInfo: &profile.CreateUserRequest{
+			userInfo: &profilepb.CreateUserRequest{
 				OrgID:     utils.ProtoFromUUID(testOrgUUID),
 				Username:  "",
 				FirstName: "foo",
@@ -108,7 +108,7 @@ func TestServer_CreateUser(t *testing.T) {
 		{
 			name:      "empty first name is ok",
 			makesCall: true,
-			userInfo: &profile.CreateUserRequest{
+			userInfo: &profilepb.CreateUserRequest{
 				OrgID:     utils.ProtoFromUUID(testOrgUUID),
 				Username:  "foobar",
 				FirstName: "",
@@ -122,7 +122,7 @@ func TestServer_CreateUser(t *testing.T) {
 		{
 			name:      "empty email",
 			makesCall: false,
-			userInfo: &profile.CreateUserRequest{
+			userInfo: &profilepb.CreateUserRequest{
 				OrgID:     utils.ProtoFromUUID(testOrgUUID),
 				Username:  "foobar",
 				FirstName: "foo",
@@ -136,7 +136,7 @@ func TestServer_CreateUser(t *testing.T) {
 		{
 			name:      "banned email",
 			makesCall: false,
-			userInfo: &profile.CreateUserRequest{
+			userInfo: &profilepb.CreateUserRequest{
 				OrgID:     utils.ProtoFromUUID(testOrgUUID),
 				Username:  "foobar",
 				FirstName: "foo",
@@ -150,7 +150,7 @@ func TestServer_CreateUser(t *testing.T) {
 		{
 			name:      "allowed email",
 			makesCall: true,
-			userInfo: &profile.CreateUserRequest{
+			userInfo: &profilepb.CreateUserRequest{
 				OrgID:     utils.ProtoFromUUID(testOrgUUID),
 				Username:  "foobar",
 				FirstName: "foo",
@@ -164,7 +164,7 @@ func TestServer_CreateUser(t *testing.T) {
 		{
 			name:      "invalid email",
 			makesCall: false,
-			userInfo: &profile.CreateUserRequest{
+			userInfo: &profilepb.CreateUserRequest{
 				OrgID:     utils.ProtoFromUUID(testOrgUUID),
 				Username:  "foobar",
 				FirstName: "foo",
@@ -283,7 +283,7 @@ func TestServer_GetUserByEmail(t *testing.T) {
 
 	resp, err := s.GetUserByEmail(
 		context.Background(),
-		&profile.GetUserByEmailRequest{Email: "foo@bar.com"})
+		&profilepb.GetUserByEmailRequest{Email: "foo@bar.com"})
 
 	require.NoError(t, err)
 	assert.Equal(t, resp.ID, utils.ProtoFromUUID(userUUID))
@@ -305,7 +305,7 @@ func TestServer_GetUserByEmail_MissingEmail(t *testing.T) {
 
 	resp, err := s.GetUserByEmail(
 		context.Background(),
-		&profile.GetUserByEmailRequest{Email: "foo@bar.com"})
+		&profilepb.GetUserByEmailRequest{Email: "foo@bar.com"})
 
 	assert.Nil(t, resp)
 	assert.NotNil(t, err)
@@ -322,42 +322,42 @@ func TestServer_CreateOrgAndUser_SuccessCases(t *testing.T) {
 	testUUID := uuid.Must(uuid.NewV4())
 	createOrgUserTest := []struct {
 		name string
-		req  *profile.CreateOrgAndUserRequest
-		resp *profile.CreateOrgAndUserResponse
+		req  *profilepb.CreateOrgAndUserRequest
+		resp *profilepb.CreateOrgAndUserResponse
 	}{
 		{
 			name: "valid request",
-			req: &profile.CreateOrgAndUserRequest{
-				Org: &profile.CreateOrgAndUserRequest_Org{
+			req: &profilepb.CreateOrgAndUserRequest{
+				Org: &profilepb.CreateOrgAndUserRequest_Org{
 					OrgName:    "my-org",
 					DomainName: "my-org.com",
 				},
-				User: &profile.CreateOrgAndUserRequest_User{
+				User: &profilepb.CreateOrgAndUserRequest_User{
 					Username:  "foobar",
 					FirstName: "foo",
 					LastName:  "bar",
 					Email:     "foo@bar.com",
 				},
 			},
-			resp: &profile.CreateOrgAndUserResponse{
+			resp: &profilepb.CreateOrgAndUserResponse{
 				OrgID:  utils.ProtoFromUUID(testOrgUUID),
 				UserID: utils.ProtoFromUUID(testUUID),
 			},
 		}, {
 			name: "allowed email",
-			req: &profile.CreateOrgAndUserRequest{
-				Org: &profile.CreateOrgAndUserRequest_Org{
+			req: &profilepb.CreateOrgAndUserRequest{
+				Org: &profilepb.CreateOrgAndUserRequest_Org{
 					OrgName:    "my-org",
 					DomainName: "my-org.com",
 				},
-				User: &profile.CreateOrgAndUserRequest_User{
+				User: &profilepb.CreateOrgAndUserRequest_User{
 					Username:  "foobar",
 					FirstName: "foo",
 					LastName:  "",
 					Email:     "foo@gmail.com",
 				},
 			},
-			resp: &profile.CreateOrgAndUserResponse{
+			resp: &profilepb.CreateOrgAndUserResponse{
 				OrgID:  utils.ProtoFromUUID(testOrgUUID),
 				UserID: utils.ProtoFromUUID(testUUID),
 			},
@@ -407,16 +407,16 @@ func TestServer_CreateOrgAndUser_InvalidArgumentCases(t *testing.T) {
 
 	createOrgUserTest := []struct {
 		name string
-		req  *profile.CreateOrgAndUserRequest
+		req  *profilepb.CreateOrgAndUserRequest
 	}{
 		{
 			name: "invalid org name",
-			req: &profile.CreateOrgAndUserRequest{
-				Org: &profile.CreateOrgAndUserRequest_Org{
+			req: &profilepb.CreateOrgAndUserRequest{
+				Org: &profilepb.CreateOrgAndUserRequest_Org{
 					OrgName:    "",
 					DomainName: "my-org.com",
 				},
-				User: &profile.CreateOrgAndUserRequest_User{
+				User: &profilepb.CreateOrgAndUserRequest_User{
 					Username:  "foobar",
 					FirstName: "foo",
 					LastName:  "bar",
@@ -426,12 +426,12 @@ func TestServer_CreateOrgAndUser_InvalidArgumentCases(t *testing.T) {
 		},
 		{
 			name: "invalid domain name",
-			req: &profile.CreateOrgAndUserRequest{
-				Org: &profile.CreateOrgAndUserRequest_Org{
+			req: &profilepb.CreateOrgAndUserRequest{
+				Org: &profilepb.CreateOrgAndUserRequest_Org{
 					OrgName:    "my-org",
 					DomainName: "",
 				},
-				User: &profile.CreateOrgAndUserRequest_User{
+				User: &profilepb.CreateOrgAndUserRequest_User{
 					Username:  "foobar",
 					FirstName: "foo",
 					LastName:  "bar",
@@ -441,12 +441,12 @@ func TestServer_CreateOrgAndUser_InvalidArgumentCases(t *testing.T) {
 		},
 		{
 			name: "invalid username",
-			req: &profile.CreateOrgAndUserRequest{
-				Org: &profile.CreateOrgAndUserRequest_Org{
+			req: &profilepb.CreateOrgAndUserRequest{
+				Org: &profilepb.CreateOrgAndUserRequest_Org{
 					OrgName:    "my-org",
 					DomainName: "my-org.com",
 				},
-				User: &profile.CreateOrgAndUserRequest_User{
+				User: &profilepb.CreateOrgAndUserRequest_User{
 					Username:  "",
 					FirstName: "foo",
 					LastName:  "bar",
@@ -456,12 +456,12 @@ func TestServer_CreateOrgAndUser_InvalidArgumentCases(t *testing.T) {
 		},
 		{
 			name: "missing email",
-			req: &profile.CreateOrgAndUserRequest{
-				Org: &profile.CreateOrgAndUserRequest_Org{
+			req: &profilepb.CreateOrgAndUserRequest{
+				Org: &profilepb.CreateOrgAndUserRequest_Org{
 					OrgName:    "my-org",
 					DomainName: "my-org.com",
 				},
-				User: &profile.CreateOrgAndUserRequest_User{
+				User: &profilepb.CreateOrgAndUserRequest_User{
 					Username:  "foobar",
 					FirstName: "foo",
 					LastName:  "bar",
@@ -471,12 +471,12 @@ func TestServer_CreateOrgAndUser_InvalidArgumentCases(t *testing.T) {
 		},
 		{
 			name: "banned email",
-			req: &profile.CreateOrgAndUserRequest{
-				Org: &profile.CreateOrgAndUserRequest_Org{
+			req: &profilepb.CreateOrgAndUserRequest{
+				Org: &profilepb.CreateOrgAndUserRequest_Org{
 					OrgName:    "my-org",
 					DomainName: "my-org.com",
 				},
-				User: &profile.CreateOrgAndUserRequest_User{
+				User: &profilepb.CreateOrgAndUserRequest_User{
 					Username:  "foobar",
 					FirstName: "foo",
 					LastName:  "bar",
@@ -519,12 +519,12 @@ func TestServer_CreateOrgAndUser_CreateProjectFailed(t *testing.T) {
 
 	env := profileenv.New(pm)
 
-	req := &profile.CreateOrgAndUserRequest{
-		Org: &profile.CreateOrgAndUserRequest_Org{
+	req := &profilepb.CreateOrgAndUserRequest{
+		Org: &profilepb.CreateOrgAndUserRequest_Org{
 			OrgName:    "my-org",
 			DomainName: "my-org.com",
 		},
-		User: &profile.CreateOrgAndUserRequest_User{
+		User: &profilepb.CreateOrgAndUserRequest_User{
 			Username:  "foobar",
 			FirstName: "foo",
 			LastName:  "bar",
@@ -609,7 +609,7 @@ func TestServer_GetOrgs(t *testing.T) {
 		GetOrgs().
 		Return(mockReply, nil)
 
-	resp, err := s.GetOrgs(context.Background(), &profile.GetOrgsRequest{})
+	resp, err := s.GetOrgs(context.Background(), &profilepb.GetOrgsRequest{})
 
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(resp.Orgs))
@@ -661,7 +661,7 @@ func TestServer_GetOrgByDomain(t *testing.T) {
 
 	resp, err := s.GetOrgByDomain(
 		context.Background(),
-		&profile.GetOrgByDomainRequest{DomainName: "my-org.com"})
+		&profilepb.GetOrgByDomainRequest{DomainName: "my-org.com"})
 
 	require.NoError(t, err)
 	assert.Equal(t, resp.ID, utils.ProtoFromUUID(orgUUID))
@@ -683,7 +683,7 @@ func TestServer_GetOrgByDomain_MissingOrg(t *testing.T) {
 
 	resp, err := s.GetOrgByDomain(
 		context.Background(),
-		&profile.GetOrgByDomainRequest{DomainName: "my-org.com"})
+		&profilepb.GetOrgByDomainRequest{DomainName: "my-org.com"})
 
 	assert.Nil(t, resp)
 	assert.NotNil(t, err)
@@ -765,7 +765,7 @@ func TestServer_UpdateUser(t *testing.T) {
 
 	resp, err := s.UpdateUser(
 		context.Background(),
-		&profile.UpdateUserRequest{ID: utils.ProtoFromUUID(userID), ProfilePicture: "new"})
+		&profilepb.UpdateUserRequest{ID: utils.ProtoFromUUID(userID), ProfilePicture: "new"})
 
 	require.NoError(t, err)
 	assert.Equal(t, resp.ID, utils.ProtoFromUUID(userID))
@@ -785,7 +785,7 @@ func TestServer_GetUserSettings(t *testing.T) {
 		GetUserSettings(userID, []string{"test", "another_key"}).
 		Return([]string{"a", "b"}, nil)
 
-	resp, err := s.GetUserSettings(context.Background(), &profile.GetUserSettingsRequest{
+	resp, err := s.GetUserSettings(context.Background(), &profilepb.GetUserSettingsRequest{
 		ID:   utils.ProtoFromUUID(userID),
 		Keys: []string{"test", "another_key"},
 	})
@@ -839,7 +839,7 @@ func TestServer_UpdateUserSettings(t *testing.T) {
 					Return(nil)
 			}
 
-			resp, err := s.UpdateUserSettings(context.Background(), &profile.UpdateUserSettingsRequest{
+			resp, err := s.UpdateUserSettings(context.Background(), &profilepb.UpdateUserSettingsRequest{
 				ID:     utils.ProtoFromUUID(userID),
 				Keys:   tc.keys,
 				Values: tc.values,
@@ -924,7 +924,7 @@ func TestServer_InviteUser(t *testing.T) {
 			assert.NotNil(t, client)
 			s := controller.NewServer(nil, d, nil, client)
 
-			req := &profile.InviteUserRequest{
+			req := &profilepb.InviteUserRequest{
 				MustCreateUser: tc.mustCreate,
 				OrgID:          utils.ProtoFromUUID(orgID),
 				Email:          "bobloblaw@lawblog.com",

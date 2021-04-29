@@ -21,7 +21,7 @@ package authenv
 import (
 	"github.com/spf13/viper"
 
-	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
+	"px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/shared/services/env"
 )
 

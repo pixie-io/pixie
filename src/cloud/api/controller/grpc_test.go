@@ -32,14 +32,14 @@ import (
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/api/proto/uuidpb"
-	pl_vispb "px.dev/pixie/src/api/proto/vispb"
+	"px.dev/pixie/src/api/proto/vispb"
 	"px.dev/pixie/src/cloud/api/controller"
 	"px.dev/pixie/src/cloud/api/controller/testutils"
 	"px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
 	"px.dev/pixie/src/cloud/auth/authpb"
 	"px.dev/pixie/src/cloud/autocomplete"
 	mock_autocomplete "px.dev/pixie/src/cloud/autocomplete/mock"
-	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
+	"px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/cloud/scriptmgr/scriptmgrpb"
 	mock_scriptmgr "px.dev/pixie/src/cloud/scriptmgr/scriptmgrpb/mock"
 	"px.dev/pixie/src/cloud/vzmgr/vzmgrpb"
@@ -855,15 +855,15 @@ func toAny(t *testing.T, msg proto.Message) *types.Any {
 }
 
 func TestScriptMgr(t *testing.T) {
-	var testVis = &pl_vispb.Vis{
-		Widgets: []*pl_vispb.Widget{
+	var testVis = &vispb.Vis{
+		Widgets: []*vispb.Widget{
 			{
-				FuncOrRef: &pl_vispb.Widget_Func_{
-					Func: &pl_vispb.Widget_Func{
+				FuncOrRef: &vispb.Widget_Func_{
+					Func: &vispb.Widget_Func{
 						Name: "my_func",
 					},
 				},
-				DisplaySpec: toAny(t, &pl_vispb.VegaChart{
+				DisplaySpec: toAny(t, &vispb.VegaChart{
 					Spec: "{}",
 				}),
 			},

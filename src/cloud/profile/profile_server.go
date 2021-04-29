@@ -31,7 +31,7 @@ import (
 	"px.dev/pixie/src/cloud/profile/controller/idmanager"
 	"px.dev/pixie/src/cloud/profile/datastore"
 	"px.dev/pixie/src/cloud/profile/profileenv"
-	profile "px.dev/pixie/src/cloud/profile/profilepb"
+	"px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/cloud/profile/schema"
 	"px.dev/pixie/src/cloud/shared/idprovider"
 	"px.dev/pixie/src/cloud/shared/pgmigrate"
@@ -87,7 +87,7 @@ func main() {
 	svr := controller.NewServer(env, datastore, datastore, mgr)
 
 	s := server.NewPLServer(env, mux)
-	profile.RegisterProfileServiceServer(s.GRPCServer(), svr)
+	profilepb.RegisterProfileServiceServer(s.GRPCServer(), svr)
 	s.Start()
 	s.StopOnInterrupt()
 }

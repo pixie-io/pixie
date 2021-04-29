@@ -30,7 +30,7 @@ import (
 
 	"px.dev/pixie/src/common/base/statuspb"
 	"px.dev/pixie/src/utils"
-	messages "px.dev/pixie/src/vizier/messages/messagespb"
+	"px.dev/pixie/src/vizier/messages/messagespb"
 	"px.dev/pixie/src/vizier/services/metadata/controllers/agent"
 	"px.dev/pixie/src/vizier/services/metadata/controllers/tracepoint"
 	"px.dev/pixie/src/vizier/services/shared/agentpb"
@@ -83,7 +83,7 @@ type AgentTopicListener struct {
 	sendMessage SendMessageFn
 
 	// Map from agent ID -> the agentHandler that's responsible for handling that particular
-	// agent's messages.
+	// agent's messagespb.
 	agentMap *concurrentAgentMap
 }
 
@@ -141,7 +141,7 @@ func (a *AgentTopicListener) Initialize() error {
 
 // HandleMessage handles a message on the agent topic.
 func (a *AgentTopicListener) HandleMessage(msg *nats.Msg) error {
-	pb := &messages.VizierMessage{}
+	pb := &messagespb.VizierMessage{}
 	err := proto.Unmarshal(msg.Data, pb)
 	if err != nil {
 		log.WithError(err).Error("Failed to unmarshal vizier message")
@@ -155,11 +155,11 @@ func (a *AgentTopicListener) HandleMessage(msg *nats.Msg) error {
 	}
 
 	switch m := pb.Msg.(type) {
-	case *messages.VizierMessage_Heartbeat:
+	case *messagespb.VizierMessage_Heartbeat:
 		a.forwardAgentHeartBeat(m.Heartbeat, msg)
-	case *messages.VizierMessage_RegisterAgentRequest:
+	case *messagespb.VizierMessage_RegisterAgentRequest:
 		a.forwardAgentRegisterRequest(m.RegisterAgentRequest, msg)
-	case *messages.VizierMessage_TracepointMessage:
+	case *messagespb.VizierMessage_TracepointMessage:
 		a.onAgentTracepointMessage(m.TracepointMessage)
 	default:
 		log.WithField("message-type", reflect.TypeOf(pb.Msg).String()).
@@ -169,7 +169,7 @@ func (a *AgentTopicListener) HandleMessage(msg *nats.Msg) error {
 }
 
 // SendMessageToAgent sends the given message to the agent over the NATS agent channel.
-func (a *AgentTopicListener) SendMessageToAgent(agentID uuid.UUID, msg messages.VizierMessage) error {
+func (a *AgentTopicListener) SendMessageToAgent(agentID uuid.UUID, msg messagespb.VizierMessage) error {
 	topic := messagebus.AgentUUIDTopic(agentID)
 	b, err := msg.Marshal()
 	if err != nil {
@@ -200,7 +200,7 @@ func (a *AgentTopicListener) createAgentHandler(agentID uuid.UUID) *AgentHandler
 	return newAgentHandler
 }
 
-func (a *AgentTopicListener) forwardAgentHeartBeat(m *messages.Heartbeat, msg *nats.Msg) {
+func (a *AgentTopicListener) forwardAgentHeartBeat(m *messagespb.Heartbeat, msg *nats.Msg) {
 	// Check if this is a known agent and forward it to that agentHandler if it exists.
 	// Otherwise, send back a NACK because the agent doesn't exist.
 	agentID, err := utils.UUIDFromProto(m.AgentID)
@@ -216,9 +216,9 @@ func (a *AgentTopicListener) forwardAgentHeartBeat(m *messages.Heartbeat, msg *n
 	} else {
 		log.WithField("agentID", agentID.String()).Info("Received heartbeat for agent whose agenthandler doesn't exist. Sending NACK.")
 		// Agent does not exist in handler map. Send NACK asking agent to reregister.
-		resp := messages.VizierMessage{
-			Msg: &messages.VizierMessage_HeartbeatNack{
-				HeartbeatNack: &messages.HeartbeatNack{
+		resp := messagespb.VizierMessage{
+			Msg: &messagespb.VizierMessage_HeartbeatNack{
+				HeartbeatNack: &messagespb.HeartbeatNack{
 					Reregister: true,
 				},
 			},
@@ -230,7 +230,7 @@ func (a *AgentTopicListener) forwardAgentHeartBeat(m *messages.Heartbeat, msg *n
 	}
 }
 
-func (a *AgentTopicListener) forwardAgentRegisterRequest(m *messages.RegisterAgentRequest, msg *nats.Msg) {
+func (a *AgentTopicListener) forwardAgentRegisterRequest(m *messagespb.RegisterAgentRequest, msg *nats.Msg) {
 	agentID, err := utils.UUIDFromProto(m.Info.AgentID)
 	if err != nil {
 		log.WithError(err).Error("Could not parse UUID from proto.")
@@ -260,9 +260,9 @@ func (a *AgentTopicListener) deleteAgent(agentID uuid.UUID) {
 	// timeout window, and so we assume the agent is likely in
 	// a bad state and probably needs to be recreated. This NACK
 	// will get the agent to kill itself.
-	resp := messages.VizierMessage{
-		Msg: &messages.VizierMessage_HeartbeatNack{
-			HeartbeatNack: &messages.HeartbeatNack{
+	resp := messagespb.VizierMessage{
+		Msg: &messagespb.VizierMessage_HeartbeatNack{
+			HeartbeatNack: &messagespb.HeartbeatNack{
 				Reregister: false,
 			},
 		},
@@ -274,9 +274,9 @@ func (a *AgentTopicListener) deleteAgent(agentID uuid.UUID) {
 	a.agentMap.delete(agentID)
 }
 
-func (a *AgentTopicListener) onAgentTracepointMessage(pbMessage *messages.TracepointMessage) {
+func (a *AgentTopicListener) onAgentTracepointMessage(pbMessage *messagespb.TracepointMessage) {
 	switch m := pbMessage.Msg.(type) {
-	case *messages.TracepointMessage_TracepointInfoUpdate:
+	case *messagespb.TracepointMessage_TracepointInfoUpdate:
 		a.onAgentTracepointInfoUpdate(m.TracepointInfoUpdate)
 	default:
 		log.WithField("message-type", reflect.TypeOf(pbMessage.Msg).String()).
@@ -284,14 +284,14 @@ func (a *AgentTopicListener) onAgentTracepointMessage(pbMessage *messages.Tracep
 	}
 }
 
-func (a *AgentTopicListener) onAgentTracepointInfoUpdate(m *messages.TracepointInfoUpdate) {
+func (a *AgentTopicListener) onAgentTracepointInfoUpdate(m *messagespb.TracepointInfoUpdate) {
 	err := a.tpMgr.UpdateAgentTracepointStatus(m.ID, m.AgentID, m.State, m.Status)
 	if err != nil {
 		log.WithError(err).Error("Could not update agent tracepoint status")
 	}
 }
 
-// Stop stops processing any agent messages.
+// Stop stops processing any agent messagespb.
 func (a *AgentTopicListener) Stop() {
 	// Grab all the handlers in one go since calling stop will modify the map and need
 	// the write mutex to be held.
@@ -333,16 +333,16 @@ func (ah *AgentHandler) processMessages() {
 			log.WithField("agentID", ah.id.String()).Info("Quit called on agent handler, deleting agent")
 			return
 		case msg := <-ah.MsgChannel:
-			pb := &messages.VizierMessage{}
+			pb := &messagespb.VizierMessage{}
 			err := proto.Unmarshal(msg.Data, pb)
 			if err != nil {
 				continue
 			}
 
 			switch m := pb.Msg.(type) {
-			case *messages.VizierMessage_Heartbeat:
+			case *messagespb.VizierMessage_Heartbeat:
 				ah.onAgentHeartbeat(m.Heartbeat)
-			case *messages.VizierMessage_RegisterAgentRequest:
+			case *messagespb.VizierMessage_RegisterAgentRequest:
 				ah.onAgentRegisterRequest(m.RegisterAgentRequest)
 			default:
 				log.WithField("message-type", reflect.TypeOf(pb.Msg).String()).
@@ -360,7 +360,7 @@ func (ah *AgentHandler) processMessages() {
 	}
 }
 
-func (ah *AgentHandler) onAgentRegisterRequest(m *messages.RegisterAgentRequest) {
+func (ah *AgentHandler) onAgentRegisterRequest(m *messagespb.RegisterAgentRequest) {
 	// Create RegisterAgentResponse.
 	agentID := ah.id
 	log.WithField("agent", agentID.String()).Infof("Received AgentRegisterRequest for agent")
@@ -400,9 +400,9 @@ func (ah *AgentHandler) onAgentRegisterRequest(m *messages.RegisterAgentRequest)
 		log.WithError(err).Error("Could not create agent.")
 		return
 	}
-	resp := messages.VizierMessage{
-		Msg: &messages.VizierMessage_RegisterAgentResponse{
-			RegisterAgentResponse: &messages.RegisterAgentResponse{
+	resp := messagespb.VizierMessage{
+		Msg: &messagespb.VizierMessage_RegisterAgentResponse{
+			RegisterAgentResponse: &messagespb.RegisterAgentResponse{
 				ASID: asid,
 			},
 		},
@@ -435,16 +435,16 @@ func (ah *AgentHandler) onAgentRegisterRequest(m *messages.RegisterAgentRequest)
 	}()
 }
 
-func (ah *AgentHandler) onAgentHeartbeat(m *messages.Heartbeat) {
+func (ah *AgentHandler) onAgentHeartbeat(m *messagespb.Heartbeat) {
 	agentID := ah.id
 
 	// Update agent's heartbeat in agent manager.
 	err := ah.agtMgr.UpdateHeartbeat(agentID)
 	if err != nil {
 		log.WithError(err).Error("Could not update agent heartbeat.")
-		resp := messages.VizierMessage{
-			Msg: &messages.VizierMessage_HeartbeatNack{
-				HeartbeatNack: &messages.HeartbeatNack{
+		resp := messagespb.VizierMessage{
+			Msg: &messagespb.VizierMessage_HeartbeatNack{
+				HeartbeatNack: &messagespb.HeartbeatNack{
 					Reregister: true,
 				},
 			},
@@ -457,11 +457,11 @@ func (ah *AgentHandler) onAgentHeartbeat(m *messages.Heartbeat) {
 	}
 
 	// Create heartbeat ACK message.
-	resp := messages.VizierMessage{
-		Msg: &messages.VizierMessage_HeartbeatAck{
-			HeartbeatAck: &messages.HeartbeatAck{
+	resp := messagespb.VizierMessage{
+		Msg: &messagespb.VizierMessage_HeartbeatAck{
+			HeartbeatAck: &messagespb.HeartbeatAck{
 				Time: time.Now().UnixNano(),
-				UpdateInfo: &messages.MetadataUpdateInfo{
+				UpdateInfo: &messagespb.MetadataUpdateInfo{
 					ServiceCIDR: ah.agtMgr.GetServiceCIDR(),
 					PodCIDRs:    ah.agtMgr.GetPodCIDRs(),
 				},

@@ -27,7 +27,7 @@ import (
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/cloud/api/controller/schema"
 	unauthenticatedschema "px.dev/pixie/src/cloud/api/controller/unauthenticated_schema"
-	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
+	"px.dev/pixie/src/cloud/profile/profilepb"
 )
 
 // GraphQLEnv holds the GRPC API servers so the GraphQL server can call out to them.

@@ -32,7 +32,7 @@ import (
 	"px.dev/pixie/src/carnot/planner/dynamic_tracing/ir/logicalpb"
 	"px.dev/pixie/src/common/base/statuspb"
 	"px.dev/pixie/src/utils"
-	messages "px.dev/pixie/src/vizier/messages/messagespb"
+	"px.dev/pixie/src/vizier/messages/messagespb"
 	mock_agent "px.dev/pixie/src/vizier/services/metadata/controllers/agent/mock"
 	"px.dev/pixie/src/vizier/services/metadata/controllers/tracepoint"
 	mock_tracepoint "px.dev/pixie/src/vizier/services/metadata/controllers/tracepoint/mock"
@@ -423,11 +423,11 @@ func TestRegisterTracepoint(t *testing.T) {
 		},
 	}
 
-	tracepointReq := messages.VizierMessage{
-		Msg: &messages.VizierMessage_TracepointMessage{
-			TracepointMessage: &messages.TracepointMessage{
-				Msg: &messages.TracepointMessage_RegisterTracepointRequest{
-					RegisterTracepointRequest: &messages.RegisterTracepointRequest{
+	tracepointReq := messagespb.VizierMessage{
+		Msg: &messagespb.VizierMessage_TracepointMessage{
+			TracepointMessage: &messagespb.TracepointMessage{
+				Msg: &messagespb.TracepointMessage_RegisterTracepointRequest{
+					RegisterTracepointRequest: &messagespb.RegisterTracepointRequest{
 						TracepointDeployment: program,
 						ID:                   utils.ProtoFromUUID(tracepointID),
 					},
@@ -580,7 +580,7 @@ func TestTTLExpiration(t *testing.T) {
 
 	var seenDeletions []string
 	msgHandler := func(msg []byte) error {
-		vzMsg := &messages.VizierMessage{}
+		vzMsg := &messagespb.VizierMessage{}
 		err := proto.Unmarshal(msg, vzMsg)
 		require.NoError(t, err)
 		req := vzMsg.GetTracepointMessage().GetRemoveTracepointRequest()

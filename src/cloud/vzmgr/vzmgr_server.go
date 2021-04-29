@@ -31,7 +31,7 @@ import (
 	"google.golang.org/grpc"
 
 	"px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
-	dnsmgrpb "px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
+	"px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
 	"px.dev/pixie/src/cloud/shared/pgmigrate"
 	"px.dev/pixie/src/cloud/vzmgr/controller"
 	"px.dev/pixie/src/cloud/vzmgr/deployment"

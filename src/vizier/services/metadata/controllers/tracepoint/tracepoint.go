@@ -32,7 +32,7 @@ import (
 	"px.dev/pixie/src/carnot/planner/dynamic_tracing/ir/logicalpb"
 	"px.dev/pixie/src/common/base/statuspb"
 	"px.dev/pixie/src/utils"
-	messages "px.dev/pixie/src/vizier/messages/messagespb"
+	"px.dev/pixie/src/vizier/messages/messagespb"
 	"px.dev/pixie/src/vizier/services/metadata/storepb"
 )
 
@@ -155,11 +155,11 @@ func (m *Manager) terminateTracepoint(id uuid.UUID) error {
 	}
 
 	// Send termination messages to PEMs.
-	tracepointReq := messages.VizierMessage{
-		Msg: &messages.VizierMessage_TracepointMessage{
-			TracepointMessage: &messages.TracepointMessage{
-				Msg: &messages.TracepointMessage_RemoveTracepointRequest{
-					RemoveTracepointRequest: &messages.RemoveTracepointRequest{
+	tracepointReq := messagespb.VizierMessage{
+		Msg: &messagespb.VizierMessage_TracepointMessage{
+			TracepointMessage: &messagespb.TracepointMessage{
+				Msg: &messagespb.TracepointMessage_RemoveTracepointRequest{
+					RemoveTracepointRequest: &messagespb.RemoveTracepointRequest{
 						ID: utils.ProtoFromUUID(id),
 					},
 				},
@@ -297,11 +297,11 @@ func (m *Manager) UpdateAgentTracepointStatus(tracepointID *uuidpb.UUID, agentID
 
 // RegisterTracepoint sends requests to the given agents to register the specified tracepoint.
 func (m *Manager) RegisterTracepoint(agentIDs []uuid.UUID, tracepointID uuid.UUID, tracepointDeployment *logicalpb.TracepointDeployment) error {
-	tracepointReq := messages.VizierMessage{
-		Msg: &messages.VizierMessage_TracepointMessage{
-			TracepointMessage: &messages.TracepointMessage{
-				Msg: &messages.TracepointMessage_RegisterTracepointRequest{
-					RegisterTracepointRequest: &messages.RegisterTracepointRequest{
+	tracepointReq := messagespb.VizierMessage{
+		Msg: &messagespb.VizierMessage_TracepointMessage{
+			TracepointMessage: &messagespb.TracepointMessage{
+				Msg: &messagespb.TracepointMessage_RegisterTracepointRequest{
+					RegisterTracepointRequest: &messagespb.RegisterTracepointRequest{
 						TracepointDeployment: tracepointDeployment,
 						ID:                   utils.ProtoFromUUID(tracepointID),
 					},

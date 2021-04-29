@@ -28,7 +28,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"px.dev/pixie/src/shared/k8s/metadatapb"
-	messages "px.dev/pixie/src/vizier/messages/messagespb"
+	"px.dev/pixie/src/vizier/messages/messagespb"
 	"px.dev/pixie/src/vizier/services/metadata/storepb"
 )
 
@@ -156,9 +156,9 @@ func TestMetadataTopicListener_ProcessAgentMessage(t *testing.T) {
 	updateCh := make(chan *K8sResourceMessage)
 	mdh := NewHandler(updateCh, mds, nil)
 
-	sentUpdates := make([]*messages.VizierMessage, 0)
+	sentUpdates := make([]*messagespb.VizierMessage, 0)
 	mdTL, err := NewMetadataTopicListener(mdh, func(topic string, b []byte) error {
-		vzMsg := &messages.VizierMessage{}
+		vzMsg := &messagespb.VizierMessage{}
 		err := proto.Unmarshal(b, vzMsg)
 		if err != nil {
 			return err
@@ -168,10 +168,10 @@ func TestMetadataTopicListener_ProcessAgentMessage(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	req := messages.VizierMessage{
-		Msg: &messages.VizierMessage_K8SMetadataMessage{
-			K8SMetadataMessage: &messages.K8SMetadataMessage{
-				Msg: &messages.K8SMetadataMessage_MissingK8SMetadataRequest{
+	req := messagespb.VizierMessage{
+		Msg: &messagespb.VizierMessage_K8SMetadataMessage{
+			K8SMetadataMessage: &messagespb.K8SMetadataMessage{
+				Msg: &messagespb.K8SMetadataMessage_MissingK8SMetadataRequest{
 					MissingK8SMetadataRequest: &metadatapb.MissingK8SMetadataRequest{
 						Selector:          "127.0.0.1",
 						FromUpdateVersion: 102,

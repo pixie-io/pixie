@@ -29,7 +29,7 @@ import (
 
 	"px.dev/pixie/src/cloud/dnsmgr/controller"
 	"px.dev/pixie/src/cloud/dnsmgr/dnsmgrenv"
-	dnsmgrpb "px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
+	"px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
 	"px.dev/pixie/src/cloud/dnsmgr/schema"
 	"px.dev/pixie/src/cloud/shared/pgmigrate"
 	"px.dev/pixie/src/shared/services"

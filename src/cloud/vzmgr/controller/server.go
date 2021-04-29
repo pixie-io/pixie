@@ -41,7 +41,7 @@ import (
 	"gopkg.in/segmentio/analytics-go.v3"
 
 	"px.dev/pixie/src/api/proto/uuidpb"
-	dnsmgr "px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
+	"px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
 	"px.dev/pixie/src/cloud/shared/messages"
 	"px.dev/pixie/src/cloud/shared/messagespb"
 	"px.dev/pixie/src/cloud/shared/vzshard"
@@ -69,7 +69,7 @@ type HandleNATSMessageFunc func(*cvmsgspb.V2CMessage)
 type Server struct {
 	db            *sqlx.DB
 	dbKey         string
-	dnsMgrClient  dnsmgr.DNSMgrServiceClient
+	dnsMgrClient  dnsmgrpb.DNSMgrServiceClient
 	nc            *nats.Conn
 	natsCh        chan *nats.Msg
 	natsSubs      []*nats.Subscription
@@ -85,7 +85,7 @@ type VzUpdater interface {
 }
 
 // New creates a new server.
-func New(db *sqlx.DB, dbKey string, dnsMgrClient dnsmgr.DNSMgrServiceClient, nc *nats.Conn, updater VzUpdater) *Server {
+func New(db *sqlx.DB, dbKey string, dnsMgrClient dnsmgrpb.DNSMgrServiceClient, nc *nats.Conn, updater VzUpdater) *Server {
 	natsSubs := make([]*nats.Subscription, 0)
 	natsCh := make(chan *nats.Msg, 1024)
 	msgHandlerMap := make(map[string]HandleNATSMessageFunc)
@@ -754,7 +754,7 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 
 	addr := req.Address
 	if req.Address != "" {
-		dnsMgrReq := &dnsmgr.GetDNSAddressRequest{
+		dnsMgrReq := &dnsmgrpb.GetDNSAddressRequest{
 			ClusterID: req.VizierID,
 			IPAddress: req.Address,
 		}
@@ -903,7 +903,7 @@ func (s *Server) HandleSSLRequest(v2cMsg *cvmsgspb.V2CMessage) {
 		return
 	}
 
-	dnsMgrReq := &dnsmgr.GetSSLCertsRequest{ClusterID: req.VizierID}
+	dnsMgrReq := &dnsmgrpb.GetSSLCertsRequest{ClusterID: req.VizierID}
 	resp, err := s.dnsMgrClient.GetSSLCerts(ctx, dnsMgrReq)
 	if err != nil {
 		log.WithError(err).Error("Could not get SSL certs")

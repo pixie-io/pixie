@@ -16,6 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package dnsmgr
+package dnsmgrpb
 
 //go:generate mockgen -source=service.pb.go -destination=mock/dnsmgr_mock.gen.go DNSMgrServiceClient

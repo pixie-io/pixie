@@ -23,15 +23,15 @@ import (
 
 	"github.com/gofrs/uuid"
 
-	pb "px.dev/pixie/src/api/proto/uuidpb"
+	"px.dev/pixie/src/api/proto/uuidpb"
 )
 
 var enc = binary.BigEndian
 
 // ProtoFromUUIDStrOrNil generates proto from string representation of a UUID (nil value is used if parsing fails).
-func ProtoFromUUIDStrOrNil(u string) *pb.UUID {
+func ProtoFromUUIDStrOrNil(u string) *uuidpb.UUID {
 	data := uuid.FromStringOrNil(u).Bytes()
-	p := &pb.UUID{
+	p := &uuidpb.UUID{
 		HighBits: enc.Uint64(data[0:8]),
 		LowBits:  enc.Uint64(data[8:16]),
 	}
@@ -39,7 +39,7 @@ func ProtoFromUUIDStrOrNil(u string) *pb.UUID {
 }
 
 // ProtoToUUIDStr generates an expensive string representation of a UUID proto.
-func ProtoToUUIDStr(pb *pb.UUID) string {
+func ProtoToUUIDStr(pb *uuidpb.UUID) string {
 	b := make([]byte, 16)
 	enc.PutUint64(b[0:], pb.HighBits)
 	enc.PutUint64(b[8:], pb.LowBits)

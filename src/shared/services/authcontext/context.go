@@ -27,7 +27,7 @@ import (
 	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/gofrs/uuid"
 
-	jwt2 "px.dev/pixie/src/shared/services/jwtpb"
+	"px.dev/pixie/src/shared/services/jwtpb"
 	"px.dev/pixie/src/shared/services/utils"
 )
 
@@ -36,7 +36,7 @@ type authContextKey struct{}
 // AuthContext stores sessions specific information.
 type AuthContext struct {
 	AuthToken string
-	Claims    *jwt2.JWTClaims
+	Claims    *jwtpb.JWTClaims
 	Path      string
 }
 

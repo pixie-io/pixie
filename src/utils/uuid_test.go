@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	pb "px.dev/pixie/src/api/proto/uuidpb"
+	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/utils"
 )
 
@@ -60,7 +60,7 @@ func TestProtoFromUUIDStrOrNil_InValidUUID(t *testing.T) {
 }
 
 func TestUUIDFromProto_BitsValidUUID(t *testing.T) {
-	proto := &pb.UUID{
+	proto := &uuidpb.UUID{
 		HighBits: hi,
 		LowBits:  lo,
 	}
@@ -75,7 +75,7 @@ func TestUUIDFromProto_BitsValidUUID(t *testing.T) {
 }
 
 func TestUUIDFromProto_EmptyUUID(t *testing.T) {
-	proto := &pb.UUID{}
+	proto := &uuidpb.UUID{}
 	_, err := utils.UUIDFromProto(proto)
 	assert.NotNil(t, err)
 	assert.Contains(t, err.Error(), "uuid data in proto is nil")

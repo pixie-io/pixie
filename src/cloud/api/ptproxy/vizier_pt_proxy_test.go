@@ -39,12 +39,12 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 
-	proto1 "px.dev/pixie/src/api/proto/uuidpb"
+	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/cloud/api/ptproxy"
 	"px.dev/pixie/src/cloud/shared/vzshard"
 	"px.dev/pixie/src/shared/cvmsgspb"
-	env2 "px.dev/pixie/src/shared/services/env"
+	"px.dev/pixie/src/shared/services/env"
 	"px.dev/pixie/src/shared/services/server"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/pbutils"
@@ -66,7 +66,7 @@ type testState struct {
 
 func createTestState(t *testing.T) (*testState, func(t *testing.T)) {
 	lis := bufconn.Listen(bufSize)
-	env := env2.New("withpixie.ai")
+	env := env.New("withpixie.ai")
 	s := server.CreateGRPCServer(env, &server.GRPCServerOptions{})
 
 	nc, natsCleanup := testingutils.MustStartTestNATS(t)
@@ -712,7 +712,7 @@ func TestVizierPassThroughProxy_DebugPods(t *testing.T) {
 
 type fakeVzMgr struct{}
 
-func (v *fakeVzMgr) GetVizierInfo(ctx context.Context, in *proto1.UUID, opts ...grpc.CallOption) (*cvmsgspb.VizierInfo, error) {
+func (v *fakeVzMgr) GetVizierInfo(ctx context.Context, in *uuidpb.UUID, opts ...grpc.CallOption) (*cvmsgspb.VizierInfo, error) {
 	bakedResponses := map[string]struct {
 		info *cvmsgspb.VizierInfo
 		err  error
@@ -751,7 +751,7 @@ func (v *fakeVzMgr) GetVizierInfo(ctx context.Context, in *proto1.UUID, opts ...
 	return results.info, results.err
 }
 
-func (v *fakeVzMgr) GetVizierConnectionInfo(ctx context.Context, in *proto1.UUID, opts ...grpc.CallOption) (*cvmsgspb.VizierConnectionInfo, error) {
+func (v *fakeVzMgr) GetVizierConnectionInfo(ctx context.Context, in *uuidpb.UUID, opts ...grpc.CallOption) (*cvmsgspb.VizierConnectionInfo, error) {
 	bakedResponses := map[string]struct {
 		info *cvmsgspb.VizierConnectionInfo
 		err  error

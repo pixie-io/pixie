@@ -31,7 +31,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	pl_vispb "px.dev/pixie/src/api/proto/vispb"
+	"px.dev/pixie/src/api/proto/vispb"
 	"px.dev/pixie/src/cloud/scriptmgr/scriptmgrpb"
 	"px.dev/pixie/src/utils"
 )
@@ -47,7 +47,7 @@ type liveViewModel struct {
 	name        string
 	desc        string
 	pxlContents string
-	vis         *pl_vispb.Vis
+	vis         *vispb.Vis
 }
 
 type scriptStore struct {
@@ -91,7 +91,7 @@ func NewServer(bundleBucket string, bundlePath string, sc stiface.Client) *Serve
 func (s *Server) addLiveView(name string, bundleScript *pixieScript) error {
 	id := uuid.NewV5(s.SeedUUID, name)
 
-	var vis pl_vispb.Vis
+	var vis vispb.Vis
 	err := jsonpb.UnmarshalString(bundleScript.Vis, &vis)
 	if err != nil {
 		return err

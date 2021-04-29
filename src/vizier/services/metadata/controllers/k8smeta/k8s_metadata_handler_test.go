@@ -31,7 +31,7 @@ import (
 
 	"px.dev/pixie/src/shared/k8s/metadatapb"
 	"px.dev/pixie/src/utils/testingutils"
-	messages "px.dev/pixie/src/vizier/messages/messagespb"
+	"px.dev/pixie/src/vizier/messages/messagespb"
 	"px.dev/pixie/src/vizier/services/metadata/controllers/k8smeta"
 	"px.dev/pixie/src/vizier/services/metadata/controllers/testutils"
 	"px.dev/pixie/src/vizier/services/metadata/storepb"
@@ -403,10 +403,10 @@ func TestHandler_ProcessUpdates(t *testing.T) {
 	mdh := k8smeta.NewHandler(updateCh, mds, nc)
 	defer mdh.Stop()
 
-	expectedMsg := &messages.VizierMessage{
-		Msg: &messages.VizierMessage_K8SMetadataMessage{
-			K8SMetadataMessage: &messages.K8SMetadataMessage{
-				Msg: &messages.K8SMetadataMessage_K8SMetadataUpdate{
+	expectedMsg := &messagespb.VizierMessage{
+		Msg: &messagespb.VizierMessage_K8SMetadataMessage{
+			K8SMetadataMessage: &messagespb.K8SMetadataMessage{
+				Msg: &messagespb.K8SMetadataMessage_K8SMetadataUpdate{
 					K8SMetadataUpdate: &metadatapb.ResourceUpdate{
 						Update: &metadatapb.ResourceUpdate_NamespaceUpdate{
 							NamespaceUpdate: &metadatapb.NamespaceUpdate{
@@ -426,7 +426,7 @@ func TestHandler_ProcessUpdates(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	_, err := nc.Subscribe(fmt.Sprintf("%s/%s", k8smeta.K8sMetadataUpdateChannel, k8smeta.KelvinUpdateTopic), func(msg *nats.Msg) {
-		m := &messages.VizierMessage{}
+		m := &messagespb.VizierMessage{}
 		err := proto.Unmarshal(msg.Data, m)
 		require.NoError(t, err)
 		assert.Equal(t, int64(3), m.GetK8SMetadataMessage().GetK8SMetadataUpdate().PrevUpdateVersion)
@@ -437,7 +437,7 @@ func TestHandler_ProcessUpdates(t *testing.T) {
 	require.NoError(t, err)
 	wg.Add(1)
 	_, err = nc.Subscribe(fmt.Sprintf("%s/127.0.0.1", k8smeta.K8sMetadataUpdateChannel), func(msg *nats.Msg) {
-		m := &messages.VizierMessage{}
+		m := &messagespb.VizierMessage{}
 		err := proto.Unmarshal(msg.Data, m)
 		require.NoError(t, err)
 		assert.Equal(t, int64(5), m.GetK8SMetadataMessage().GetK8SMetadataUpdate().PrevUpdateVersion)

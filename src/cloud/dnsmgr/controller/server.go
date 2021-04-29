@@ -29,7 +29,7 @@ import (
 	"github.com/spf13/viper"
 
 	"px.dev/pixie/src/cloud/dnsmgr/dnsmgrenv"
-	dnsmgrpb "px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
+	"px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
 	"px.dev/pixie/src/utils"
 )
 

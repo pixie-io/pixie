@@ -27,7 +27,7 @@ import (
 
 	"github.com/gofrs/uuid"
 
-	utils "px.dev/pixie/src/pixie_cli/pkg/utils"
+	"px.dev/pixie/src/pixie_cli/pkg/utils"
 )
 
 // ConfigInfo store the config about the CLI.

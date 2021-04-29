@@ -34,10 +34,10 @@ import (
 	"google.golang.org/grpc/status"
 
 	"px.dev/pixie/src/cloud/auth/authenv"
-	pb "px.dev/pixie/src/cloud/auth/authpb"
+	"px.dev/pixie/src/cloud/auth/authpb"
 	"px.dev/pixie/src/cloud/auth/controllers"
 	mock_controllers "px.dev/pixie/src/cloud/auth/controllers/mock"
-	profilepb "px.dev/pixie/src/cloud/profile/profilepb"
+	"px.dev/pixie/src/cloud/profile/profilepb"
 	mock_profile "px.dev/pixie/src/cloud/profile/profilepb/mock"
 	"px.dev/pixie/src/shared/services/authcontext"
 	"px.dev/pixie/src/utils"
@@ -636,7 +636,7 @@ func TestServer_GetAugmentedToken(t *testing.T) {
 
 	claims := testingutils.GenerateTestClaims(t)
 	token := testingutils.SignPBClaims(t, claims, "jwtkey")
-	req := &pb.GetAugmentedAuthTokenRequest{
+	req := &authpb.GetAugmentedAuthTokenRequest{
 		Token: token,
 	}
 	sCtx := authcontext.New()
@@ -668,7 +668,7 @@ func TestServer_GetAugmentedToken_Service(t *testing.T) {
 
 	claims := testingutils.GenerateTestServiceClaims(t, "vzmgr")
 	token := testingutils.SignPBClaims(t, claims, "jwtkey")
-	req := &pb.GetAugmentedAuthTokenRequest{
+	req := &authpb.GetAugmentedAuthTokenRequest{
 		Token: token,
 	}
 	sCtx := authcontext.New()
@@ -712,7 +712,7 @@ func TestServer_GetAugmentedToken_NoOrg(t *testing.T) {
 
 	claims := testingutils.GenerateTestClaims(t)
 	token := testingutils.SignPBClaims(t, claims, "jwtkey")
-	req := &pb.GetAugmentedAuthTokenRequest{
+	req := &authpb.GetAugmentedAuthTokenRequest{
 		Token: token,
 	}
 	sCtx := authcontext.New()
@@ -753,7 +753,7 @@ func TestServer_GetAugmentedToken_NoUser(t *testing.T) {
 
 	claims := testingutils.GenerateTestClaims(t)
 	token := testingutils.SignPBClaims(t, claims, "jwtkey")
-	req := &pb.GetAugmentedAuthTokenRequest{
+	req := &authpb.GetAugmentedAuthTokenRequest{
 		Token: token,
 	}
 	sCtx := authcontext.New()
@@ -798,7 +798,7 @@ func TestServer_GetAugmentedToken_MismatchedOrg(t *testing.T) {
 
 	claims := testingutils.GenerateTestClaims(t)
 	token := testingutils.SignPBClaims(t, claims, "jwtkey")
-	req := &pb.GetAugmentedAuthTokenRequest{
+	req := &authpb.GetAugmentedAuthTokenRequest{
 		Token: token,
 	}
 	sCtx := authcontext.New()
@@ -829,7 +829,7 @@ func TestServer_GetAugmentedTokenBadSigningKey(t *testing.T) {
 
 	claims := testingutils.GenerateTestClaims(t)
 	token := testingutils.SignPBClaims(t, claims, "jwtkey1")
-	req := &pb.GetAugmentedAuthTokenRequest{
+	req := &authpb.GetAugmentedAuthTokenRequest{
 		Token: token,
 	}
 	resp, err := s.GetAugmentedToken(context.Background(), req)
@@ -858,7 +858,7 @@ func TestServer_GetAugmentedTokenBadToken(t *testing.T) {
 
 	claims := testingutils.GenerateTestClaims(t)
 	token := testingutils.SignPBClaims(t, claims, "jwtkey")
-	req := &pb.GetAugmentedAuthTokenRequest{
+	req := &authpb.GetAugmentedAuthTokenRequest{
 		Token: token + "a",
 	}
 	resp, err := s.GetAugmentedToken(context.Background(), req)
@@ -893,7 +893,7 @@ func TestServer_GetAugmentedTokenSupportAccount(t *testing.T) {
 
 	claims := testingutils.GenerateTestClaimsWithEmail(t, "test@pixie.support")
 	token := testingutils.SignPBClaims(t, claims, "jwtkey")
-	req := &pb.GetAugmentedAuthTokenRequest{
+	req := &authpb.GetAugmentedAuthTokenRequest{
 		Token: token,
 	}
 	sCtx := authcontext.New()
@@ -936,7 +936,7 @@ func TestServer_GetAugmentedTokenFromAPIKey(t *testing.T) {
 	s, err := controllers.NewServer(env, a, apiKeyServer)
 	require.NoError(t, err)
 
-	req := &pb.GetAugmentedTokenForAPIKeyRequest{
+	req := &authpb.GetAugmentedTokenForAPIKeyRequest{
 		APIKey: "test_api",
 	}
 	resp, err := s.GetAugmentedTokenForAPIKey(context.Background(), req)
@@ -1217,8 +1217,8 @@ func verifyToken(t *testing.T, token, expectedUserID string, expectedOrgID strin
 	assert.Equal(t, expectedExpiry, int64(claims["exp"].(float64)))
 }
 
-func doLoginRequest(ctx context.Context, t *testing.T, server *controllers.Server, orgName string) (*pb.LoginReply, error) {
-	req := &pb.LoginRequest{
+func doLoginRequest(ctx context.Context, t *testing.T, server *controllers.Server, orgName string) (*authpb.LoginReply, error) {
+	req := &authpb.LoginRequest{
 		AccessToken:           "tokenabc",
 		CreateUserIfNotExists: true,
 		OrgName:               orgName,
@@ -1226,16 +1226,16 @@ func doLoginRequest(ctx context.Context, t *testing.T, server *controllers.Serve
 	return server.Login(ctx, req)
 }
 
-func doLoginRequestNoAutoCreate(ctx context.Context, t *testing.T, server *controllers.Server) (*pb.LoginReply, error) {
-	req := &pb.LoginRequest{
+func doLoginRequestNoAutoCreate(ctx context.Context, t *testing.T, server *controllers.Server) (*authpb.LoginReply, error) {
+	req := &authpb.LoginRequest{
 		AccessToken:           "tokenabc",
 		CreateUserIfNotExists: false,
 	}
 	return server.Login(ctx, req)
 }
 
-func doSignupRequest(ctx context.Context, t *testing.T, server *controllers.Server) (*pb.SignupReply, error) {
-	req := &pb.SignupRequest{
+func doSignupRequest(ctx context.Context, t *testing.T, server *controllers.Server) (*authpb.SignupReply, error) {
+	req := &authpb.SignupRequest{
 		AccessToken: "tokenabc",
 	}
 	return server.Signup(ctx, req)

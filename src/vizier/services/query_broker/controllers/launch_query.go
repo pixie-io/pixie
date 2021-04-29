@@ -28,7 +28,7 @@ import (
 
 	"px.dev/pixie/src/carnot/planpb"
 	"px.dev/pixie/src/utils"
-	messages "px.dev/pixie/src/vizier/messages/messagespb"
+	"px.dev/pixie/src/vizier/messages/messagespb"
 	"px.dev/pixie/src/vizier/utils/messagebus"
 )
 
@@ -49,9 +49,9 @@ func LaunchQuery(queryID uuid.UUID, natsConn *nats.Conn, planMap map[uuid.UUID]*
 	broadcastToAgent := func(agentID uuid.UUID, logicalPlan *planpb.Plan) {
 		defer wg.Done()
 		// Create NATS message containing the query string.
-		msg := messages.VizierMessage{
-			Msg: &messages.VizierMessage_ExecuteQueryRequest{
-				ExecuteQueryRequest: &messages.ExecuteQueryRequest{
+		msg := messagespb.VizierMessage{
+			Msg: &messagespb.VizierMessage_ExecuteQueryRequest{
+				ExecuteQueryRequest: &messagespb.ExecuteQueryRequest{
 					QueryID: queryIDPB,
 					Plan:    logicalPlan,
 					Analyze: analyze,

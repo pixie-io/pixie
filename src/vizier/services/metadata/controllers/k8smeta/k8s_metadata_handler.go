@@ -36,7 +36,7 @@ import (
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/k8s/metadatapb"
 	"px.dev/pixie/src/utils/pbutils"
-	messages "px.dev/pixie/src/vizier/messages/messagespb"
+	"px.dev/pixie/src/vizier/messages/messagespb"
 	"px.dev/pixie/src/vizier/services/metadata/storepb"
 	"px.dev/pixie/src/vizier/utils/messagebus"
 )
@@ -293,10 +293,10 @@ func (m *Handler) processUpdates() {
 func (m *Handler) sendUpdate(update *metadatapb.ResourceUpdate, topic string) error {
 	channel := getK8sUpdateChannel(topic)
 
-	msg := &messages.VizierMessage{
-		Msg: &messages.VizierMessage_K8SMetadataMessage{
-			K8SMetadataMessage: &messages.K8SMetadataMessage{
-				Msg: &messages.K8SMetadataMessage_K8SMetadataUpdate{
+	msg := &messagespb.VizierMessage{
+		Msg: &messagespb.VizierMessage_K8SMetadataMessage{
+			K8SMetadataMessage: &messagespb.K8SMetadataMessage{
+				Msg: &messagespb.K8SMetadataMessage_K8SMetadataUpdate{
 					K8SMetadataUpdate: update,
 				},
 			},

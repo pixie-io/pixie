@@ -34,7 +34,7 @@ import (
 	"px.dev/pixie/src/common/base/statuspb"
 	"px.dev/pixie/src/shared/k8s/metadatapb"
 	"px.dev/pixie/src/utils"
-	messages "px.dev/pixie/src/vizier/messages/messagespb"
+	"px.dev/pixie/src/vizier/messages/messagespb"
 	"px.dev/pixie/src/vizier/services/metadata/controllers"
 	"px.dev/pixie/src/vizier/services/metadata/controllers/agent"
 	mock_agent "px.dev/pixie/src/vizier/services/metadata/controllers/agent/mock"
@@ -52,9 +52,9 @@ func assertSendMessageUncalled(t *testing.T) controllers.SendMessageFn {
 	}
 }
 
-func assertSendMessageCalledWith(t *testing.T, expTopic string, expMsg messages.VizierMessage) controllers.SendMessageFn {
+func assertSendMessageCalledWith(t *testing.T, expTopic string, expMsg messagespb.VizierMessage) controllers.SendMessageFn {
 	return func(topic string, b []byte) error {
-		msg := &messages.VizierMessage{}
+		msg := &messagespb.VizierMessage{}
 		err := proto.Unmarshal(b, msg)
 
 		require.NoError(t, err)
@@ -99,9 +99,9 @@ func TestAgentRegisterRequest(t *testing.T) {
 	}
 
 	sendMsg := assertSendMessageCalledWith(t, "Agent/"+testutils.NewAgentUUID,
-		messages.VizierMessage{
-			Msg: &messages.VizierMessage_RegisterAgentResponse{
-				RegisterAgentResponse: &messages.RegisterAgentResponse{
+		messagespb.VizierMessage{
+			Msg: &messagespb.VizierMessage_RegisterAgentResponse{
+				RegisterAgentResponse: &messagespb.RegisterAgentResponse{
 					ASID: 1,
 				},
 			},
@@ -139,7 +139,7 @@ func TestAgentRegisterRequest(t *testing.T) {
 			return nil, nil
 		})
 
-	req := new(messages.VizierMessage)
+	req := new(messagespb.VizierMessage)
 	if err := proto.UnmarshalText(testutils.RegisterAgentRequestPB, req); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -177,9 +177,9 @@ func TestKelvinRegisterRequest(t *testing.T) {
 	}
 
 	sendMsg := assertSendMessageCalledWith(t, "Agent/"+testutils.KelvinAgentUUID,
-		messages.VizierMessage{
-			Msg: &messages.VizierMessage_RegisterAgentResponse{
-				RegisterAgentResponse: &messages.RegisterAgentResponse{
+		messagespb.VizierMessage{
+			Msg: &messagespb.VizierMessage_RegisterAgentResponse{
+				RegisterAgentResponse: &messagespb.RegisterAgentResponse{
 					ASID: 1,
 				},
 			},
@@ -217,7 +217,7 @@ func TestKelvinRegisterRequest(t *testing.T) {
 			return nil, nil
 		})
 
-	req := new(messages.VizierMessage)
+	req := new(messagespb.VizierMessage)
 	if err := proto.UnmarshalText(testutils.RegisterKelvinRequestPB, req); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -252,9 +252,9 @@ func TestAgentReRegisterRequest(t *testing.T) {
 	}
 
 	sendMsg := assertSendMessageCalledWith(t, "Agent/"+testutils.PurgedAgentUUID,
-		messages.VizierMessage{
-			Msg: &messages.VizierMessage_RegisterAgentResponse{
-				RegisterAgentResponse: &messages.RegisterAgentResponse{
+		messagespb.VizierMessage{
+			Msg: &messagespb.VizierMessage_RegisterAgentResponse{
+				RegisterAgentResponse: &messagespb.RegisterAgentResponse{
 					ASID: 159,
 				},
 			},
@@ -293,7 +293,7 @@ func TestAgentReRegisterRequest(t *testing.T) {
 			return nil, nil
 		})
 
-	req := new(messages.VizierMessage)
+	req := new(messagespb.VizierMessage)
 	if err := proto.UnmarshalText(testutils.ReregisterPurgedAgentRequestPB, req); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -329,7 +329,7 @@ func TestAgentRegisterRequestInvalidUUID(t *testing.T) {
 	atl, _, _, cleanup := setup(t, assertSendMessageUncalled(t))
 	defer cleanup()
 
-	req := new(messages.VizierMessage)
+	req := new(messagespb.VizierMessage)
 	if err := proto.UnmarshalText(testutils.InvalidRegisterAgentRequestPB, req); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -347,7 +347,7 @@ func TestAgentCreateFailed(t *testing.T) {
 	atl, mockAgtMgr, _, cleanup := setup(t, assertSendMessageUncalled(t))
 	defer cleanup()
 
-	req := new(messages.VizierMessage)
+	req := new(messagespb.VizierMessage)
 	if err := proto.UnmarshalText(testutils.RegisterAgentRequestPB, req); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -381,7 +381,7 @@ func TestAgentCreateFailed(t *testing.T) {
 
 func TestAgentHeartbeat(t *testing.T) {
 	// Create request and expected response protos.
-	req := new(messages.VizierMessage)
+	req := new(messagespb.VizierMessage)
 	if err := proto.UnmarshalText(testutils.HeartbeatPB, req); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -389,7 +389,7 @@ func TestAgentHeartbeat(t *testing.T) {
 	reqPb, err := req.Marshal()
 	require.NoError(t, err)
 
-	resp := new(messages.VizierMessage)
+	resp := new(messagespb.VizierMessage)
 	if err := proto.UnmarshalText(testutils.HeartbeatAckPB, resp); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -399,13 +399,13 @@ func TestAgentHeartbeat(t *testing.T) {
 	// Set up mock.
 	var wg sync.WaitGroup
 	atl, mockAgtMgr, _, cleanup := setup(t, func(topic string, b []byte) error {
-		msg := messages.VizierMessage{}
+		msg := messagespb.VizierMessage{}
 		if err := proto.Unmarshal(b, &msg); err != nil {
 			t.Fatal("Cannot Unmarshal protobuf.")
 		}
 		// Don't assert on exact timing.
-		assert.Greater(t, msg.Msg.(*messages.VizierMessage_HeartbeatAck).HeartbeatAck.Time, now)
-		msg.Msg.(*messages.VizierMessage_HeartbeatAck).HeartbeatAck.Time = 0
+		assert.Greater(t, msg.Msg.(*messagespb.VizierMessage_HeartbeatAck).HeartbeatAck.Time, now)
+		msg.Msg.(*messagespb.VizierMessage_HeartbeatAck).HeartbeatAck.Time = 0
 		assert.Equal(t, *resp, msg)
 		assert.Equal(t, "Agent/"+testutils.UnhealthyKelvinAgentUUID, topic)
 		wg.Done()
@@ -434,7 +434,7 @@ func TestAgentHeartbeat(t *testing.T) {
 	createdProcesses[0] = &metadatapb.ProcessCreated{
 		CID: "test",
 	}
-	agentUpdatePb := &messages.AgentUpdateInfo{
+	agentUpdatePb := &messagespb.AgentUpdateInfo{
 		ProcessCreated: createdProcesses,
 	}
 
@@ -457,15 +457,15 @@ func TestAgentHeartbeat(t *testing.T) {
 
 func TestAgentHeartbeat_Failed(t *testing.T) {
 	sendMsg := assertSendMessageCalledWith(t, "Agent/"+testutils.UnhealthyKelvinAgentUUID,
-		messages.VizierMessage{
-			Msg: &messages.VizierMessage_HeartbeatNack{
-				HeartbeatNack: &messages.HeartbeatNack{
+		messagespb.VizierMessage{
+			Msg: &messagespb.VizierMessage_HeartbeatNack{
+				HeartbeatNack: &messagespb.HeartbeatNack{
 					Reregister: true,
 				},
 			},
 		})
 
-	req := new(messages.VizierMessage)
+	req := new(messagespb.VizierMessage)
 	if err := proto.UnmarshalText(testutils.HeartbeatPB, req); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -500,7 +500,7 @@ func TestEmptyMessage(t *testing.T) {
 	// Set up mock.
 	atl, _, _, cleanup := setup(t, assertSendMessageUncalled(t))
 	defer cleanup()
-	req := new(messages.VizierMessage)
+	req := new(messagespb.VizierMessage)
 	reqPb, err := req.Marshal()
 	require.NoError(t, err)
 
@@ -515,7 +515,7 @@ func TestUnhandledMessage(t *testing.T) {
 	atl, _, _, cleanup := setup(t, assertSendMessageUncalled(t))
 	defer cleanup()
 
-	req := new(messages.VizierMessage)
+	req := new(messagespb.VizierMessage)
 	if err := proto.UnmarshalText(testutils.HeartbeatAckPB, req); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -545,11 +545,11 @@ func TestAgentTracepointInfoUpdate(t *testing.T) {
 		}).
 		Return(nil)
 
-	req := &messages.VizierMessage{
-		Msg: &messages.VizierMessage_TracepointMessage{
-			TracepointMessage: &messages.TracepointMessage{
-				Msg: &messages.TracepointMessage_TracepointInfoUpdate{
-					TracepointInfoUpdate: &messages.TracepointInfoUpdate{
+	req := &messagespb.VizierMessage{
+		Msg: &messagespb.VizierMessage_TracepointMessage{
+			TracepointMessage: &messagespb.TracepointMessage{
+				Msg: &messagespb.TracepointMessage_TracepointInfoUpdate{
+					TracepointInfoUpdate: &messagespb.TracepointInfoUpdate{
 						ID:      utils.ProtoFromUUID(tpID),
 						AgentID: utils.ProtoFromUUID(agentID),
 						State:   statuspb.RUNNING_STATE,
@@ -572,9 +572,9 @@ func TestAgentStop(t *testing.T) {
 	require.NoError(t, err)
 
 	sendMsg := assertSendMessageCalledWith(t, "Agent/"+testutils.NewAgentUUID,
-		messages.VizierMessage{
-			Msg: &messages.VizierMessage_HeartbeatNack{
-				HeartbeatNack: &messages.HeartbeatNack{
+		messagespb.VizierMessage{
+			Msg: &messagespb.VizierMessage_HeartbeatNack{
+				HeartbeatNack: &messagespb.HeartbeatNack{
 					Reregister: false,
 				},
 			},

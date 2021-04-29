@@ -26,7 +26,7 @@ import (
 	"github.com/dgrijalva/jwt-go/v4"
 	log "github.com/sirupsen/logrus"
 
-	jwt2 "px.dev/pixie/src/shared/services/jwtpb"
+	"px.dev/pixie/src/shared/services/jwtpb"
 )
 
 // ClaimType represents the type of claims we allow in our system.
@@ -44,7 +44,7 @@ const (
 )
 
 // PBToMapClaims maps protobuf claims to map claims.
-func PBToMapClaims(pb *jwt2.JWTClaims) jwt.MapClaims {
+func PBToMapClaims(pb *jwtpb.JWTClaims) jwt.MapClaims {
 	claims := jwt.MapClaims{}
 
 	// Standard claims.
@@ -60,13 +60,13 @@ func PBToMapClaims(pb *jwt2.JWTClaims) jwt.MapClaims {
 	claims["Scopes"] = strings.Join(pb.Scopes, ",")
 
 	switch m := pb.CustomClaims.(type) {
-	case *jwt2.JWTClaims_UserClaims:
+	case *jwtpb.JWTClaims_UserClaims:
 		claims["UserID"] = m.UserClaims.UserID
 		claims["OrgID"] = m.UserClaims.OrgID
 		claims["Email"] = m.UserClaims.Email
-	case *jwt2.JWTClaims_ServiceClaims:
+	case *jwtpb.JWTClaims_ServiceClaims:
 		claims["ServiceID"] = m.ServiceClaims.ServiceID
-	case *jwt2.JWTClaims_ClusterClaims:
+	case *jwtpb.JWTClaims_ClusterClaims:
 		claims["ClusterID"] = m.ClusterClaims.ClusterID
 	default:
 		log.WithField("type", m).Error("Could not find claims type")
@@ -76,13 +76,13 @@ func PBToMapClaims(pb *jwt2.JWTClaims) jwt.MapClaims {
 }
 
 // GetClaimsType gets the type of the given claim.
-func GetClaimsType(c *jwt2.JWTClaims) ClaimType {
+func GetClaimsType(c *jwtpb.JWTClaims) ClaimType {
 	switch c.CustomClaims.(type) {
-	case *jwt2.JWTClaims_UserClaims:
+	case *jwtpb.JWTClaims_UserClaims:
 		return UserClaimType
-	case *jwt2.JWTClaims_ServiceClaims:
+	case *jwtpb.JWTClaims_ServiceClaims:
 		return ServiceClaimType
-	case *jwt2.JWTClaims_ClusterClaims:
+	case *jwtpb.JWTClaims_ClusterClaims:
 		return ClusterClaimType
 	default:
 		return UnknownClaimType
@@ -90,8 +90,8 @@ func GetClaimsType(c *jwt2.JWTClaims) ClaimType {
 }
 
 // MapClaimsToPB tkes a MapClaims and converts it to a protobuf.
-func MapClaimsToPB(claims jwt.MapClaims) (*jwt2.JWTClaims, error) {
-	p := &jwt2.JWTClaims{}
+func MapClaimsToPB(claims jwt.MapClaims) (*jwtpb.JWTClaims, error) {
+	p := &jwtpb.JWTClaims{}
 	var ok bool
 
 	// Standard claims.
@@ -139,26 +139,26 @@ func MapClaimsToPB(claims jwt.MapClaims) (*jwt2.JWTClaims, error) {
 	// Custom claims.
 	switch {
 	case claims["UserID"] != nil:
-		userClaims := &jwt2.UserJWTClaims{
+		userClaims := &jwtpb.UserJWTClaims{
 			UserID: claims["UserID"].(string),
 			OrgID:  claims["OrgID"].(string),
 			Email:  claims["Email"].(string),
 		}
-		p.CustomClaims = &jwt2.JWTClaims_UserClaims{
+		p.CustomClaims = &jwtpb.JWTClaims_UserClaims{
 			UserClaims: userClaims,
 		}
 	case claims["ServiceID"] != nil:
-		serviceClaims := &jwt2.ServiceJWTClaims{
+		serviceClaims := &jwtpb.ServiceJWTClaims{
 			ServiceID: claims["ServiceID"].(string),
 		}
-		p.CustomClaims = &jwt2.JWTClaims_ServiceClaims{
+		p.CustomClaims = &jwtpb.JWTClaims_ServiceClaims{
 			ServiceClaims: serviceClaims,
 		}
 	case claims["ClusterID"] != nil:
-		clusterClaims := &jwt2.ClusterJWTClaims{
+		clusterClaims := &jwtpb.ClusterJWTClaims{
 			ClusterID: claims["ClusterID"].(string),
 		}
-		p.CustomClaims = &jwt2.JWTClaims_ClusterClaims{
+		p.CustomClaims = &jwtpb.JWTClaims_ClusterClaims{
 			ClusterClaims: clusterClaims,
 		}
 	}
@@ -167,8 +167,8 @@ func MapClaimsToPB(claims jwt.MapClaims) (*jwt2.JWTClaims, error) {
 }
 
 // GenerateJWTForUser creates a protobuf claims for the given user.
-func GenerateJWTForUser(userID string, orgID string, email string, expiresAt time.Time, audience string) *jwt2.JWTClaims {
-	claims := jwt2.JWTClaims{
+func GenerateJWTForUser(userID string, orgID string, email string, expiresAt time.Time, audience string) *jwtpb.JWTClaims {
+	claims := jwtpb.JWTClaims{
 		Subject: userID,
 		// Standard claims.
 		Audience:  audience,
@@ -177,8 +177,8 @@ func GenerateJWTForUser(userID string, orgID string, email string, expiresAt tim
 		Issuer:    "PL",
 		Scopes:    []string{"user"},
 	}
-	claims.CustomClaims = &jwt2.JWTClaims_UserClaims{
-		UserClaims: &jwt2.UserJWTClaims{
+	claims.CustomClaims = &jwtpb.JWTClaims_UserClaims{
+		UserClaims: &jwtpb.UserJWTClaims{
 			Email:  email,
 			UserID: userID,
 			OrgID:  orgID,
@@ -188,15 +188,15 @@ func GenerateJWTForUser(userID string, orgID string, email string, expiresAt tim
 }
 
 // GenerateJWTForService creates a protobuf claims for the given service.
-func GenerateJWTForService(serviceID string, audience string) *jwt2.JWTClaims {
-	pbClaims := jwt2.JWTClaims{
+func GenerateJWTForService(serviceID string, audience string) *jwtpb.JWTClaims {
+	pbClaims := jwtpb.JWTClaims{
 		Audience:  audience,
 		Subject:   serviceID,
 		Issuer:    "PL",
 		ExpiresAt: time.Now().Add(time.Minute * 10).Unix(),
 		Scopes:    []string{"service"},
-		CustomClaims: &jwt2.JWTClaims_ServiceClaims{
-			ServiceClaims: &jwt2.ServiceJWTClaims{
+		CustomClaims: &jwtpb.JWTClaims_ServiceClaims{
+			ServiceClaims: &jwtpb.ServiceJWTClaims{
 				ServiceID: serviceID,
 			},
 		},
@@ -205,8 +205,8 @@ func GenerateJWTForService(serviceID string, audience string) *jwt2.JWTClaims {
 }
 
 // GenerateJWTForCluster creates a protobuf claims for the given cluster.
-func GenerateJWTForCluster(clusterID string, audience string) *jwt2.JWTClaims {
-	pbClaims := jwt2.JWTClaims{
+func GenerateJWTForCluster(clusterID string, audience string) *jwtpb.JWTClaims {
+	pbClaims := jwtpb.JWTClaims{
 		Audience:  audience,
 		ExpiresAt: time.Now().Add(time.Hour).Unix(),
 		// The IssuedAt begins earlier, to give leeway for user's clusters
@@ -216,8 +216,8 @@ func GenerateJWTForCluster(clusterID string, audience string) *jwt2.JWTClaims {
 		Issuer:    "pixielabs.ai",
 		Subject:   "pixielabs.ai/vizier",
 		Scopes:    []string{"cluster"},
-		CustomClaims: &jwt2.JWTClaims_ClusterClaims{
-			ClusterClaims: &jwt2.ClusterJWTClaims{
+		CustomClaims: &jwtpb.JWTClaims_ClusterClaims{
+			ClusterClaims: &jwtpb.ClusterJWTClaims{
 				ClusterID: clusterID,
 			},
 		},
@@ -226,7 +226,7 @@ func GenerateJWTForCluster(clusterID string, audience string) *jwt2.JWTClaims {
 }
 
 // SignJWTClaims signs the claim using the given signing key.
-func SignJWTClaims(claims *jwt2.JWTClaims, signingKey string) (string, error) {
+func SignJWTClaims(claims *jwtpb.JWTClaims, signingKey string) (string, error) {
 	mc := PBToMapClaims(claims)
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, mc).SignedString([]byte(signingKey))
 }

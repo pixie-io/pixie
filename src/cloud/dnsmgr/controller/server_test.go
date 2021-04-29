@@ -34,7 +34,7 @@ import (
 
 	"px.dev/pixie/src/cloud/dnsmgr/controller"
 	mock_controller "px.dev/pixie/src/cloud/dnsmgr/controller/mock"
-	dnsmgrpb "px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
+	"px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
 	"px.dev/pixie/src/cloud/dnsmgr/schema"
 	"px.dev/pixie/src/shared/services/pgtest"
 	"px.dev/pixie/src/utils"

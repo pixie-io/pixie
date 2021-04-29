@@ -25,12 +25,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	jwt2 "px.dev/pixie/src/shared/services/jwtpb"
+	"px.dev/pixie/src/shared/services/jwtpb"
 	"px.dev/pixie/src/shared/services/utils"
 )
 
 func TestPBToMapClaims_User(t *testing.T) {
-	p := &jwt2.JWTClaims{
+	p := &jwtpb.JWTClaims{
 		Audience:  "audience",
 		ExpiresAt: 100,
 		JTI:       "jti",
@@ -42,12 +42,12 @@ func TestPBToMapClaims_User(t *testing.T) {
 	}
 
 	// User claims.
-	userClaims := &jwt2.UserJWTClaims{
+	userClaims := &jwtpb.UserJWTClaims{
 		UserID: "user_id",
 		OrgID:  "org_id",
 		Email:  "user@email.com",
 	}
-	p.CustomClaims = &jwt2.JWTClaims_UserClaims{
+	p.CustomClaims = &jwtpb.JWTClaims_UserClaims{
 		UserClaims: userClaims,
 	}
 
@@ -67,7 +67,7 @@ func TestPBToMapClaims_User(t *testing.T) {
 }
 
 func TestPBToMapClaims_Service(t *testing.T) {
-	p := &jwt2.JWTClaims{
+	p := &jwtpb.JWTClaims{
 		Audience:  "audience",
 		ExpiresAt: 100,
 		JTI:       "jti",
@@ -79,10 +79,10 @@ func TestPBToMapClaims_Service(t *testing.T) {
 	}
 
 	// Service claims.
-	svcClaims := &jwt2.ServiceJWTClaims{
+	svcClaims := &jwtpb.ServiceJWTClaims{
 		ServiceID: "service_id",
 	}
-	p.CustomClaims = &jwt2.JWTClaims_ServiceClaims{
+	p.CustomClaims = &jwtpb.JWTClaims_ServiceClaims{
 		ServiceClaims: svcClaims,
 	}
 
@@ -100,7 +100,7 @@ func TestPBToMapClaims_Service(t *testing.T) {
 }
 
 func TestPBToMapClaims_Cluster(t *testing.T) {
-	p := &jwt2.JWTClaims{
+	p := &jwtpb.JWTClaims{
 		Audience:  "audience",
 		ExpiresAt: 100,
 		JTI:       "jti",
@@ -112,10 +112,10 @@ func TestPBToMapClaims_Cluster(t *testing.T) {
 	}
 
 	// Cluster claims.
-	clusterClaims := &jwt2.ClusterJWTClaims{
+	clusterClaims := &jwtpb.ClusterJWTClaims{
 		ClusterID: "cluster_id",
 	}
-	p.CustomClaims = &jwt2.JWTClaims_ClusterClaims{
+	p.CustomClaims = &jwtpb.JWTClaims_ClusterClaims{
 		ClusterClaims: clusterClaims,
 	}
 
@@ -133,7 +133,7 @@ func TestPBToMapClaims_Cluster(t *testing.T) {
 }
 
 func TestGetClaimsType(t *testing.T) {
-	p := &jwt2.JWTClaims{
+	p := &jwtpb.JWTClaims{
 		Audience:  "audience",
 		ExpiresAt: 100,
 		JTI:       "jti",
@@ -145,12 +145,12 @@ func TestGetClaimsType(t *testing.T) {
 	}
 
 	// User claims.
-	userClaims := &jwt2.UserJWTClaims{
+	userClaims := &jwtpb.UserJWTClaims{
 		UserID: "user_id",
 		OrgID:  "org_id",
 		Email:  "user@email.com",
 	}
-	p.CustomClaims = &jwt2.JWTClaims_UserClaims{
+	p.CustomClaims = &jwtpb.JWTClaims_UserClaims{
 		UserClaims: userClaims,
 	}
 

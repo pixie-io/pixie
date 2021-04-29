@@ -27,7 +27,7 @@ import (
 	"px.dev/pixie/src/carnot/planner/distributedpb"
 	"px.dev/pixie/src/carnot/planner/plannerpb"
 	"px.dev/pixie/src/carnot/udfspb"
-	statuspb "px.dev/pixie/src/common/base/statuspb"
+	"px.dev/pixie/src/common/base/statuspb"
 	"px.dev/pixie/src/shared/scriptspb"
 )
 

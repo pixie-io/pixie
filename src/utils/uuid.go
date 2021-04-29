@@ -24,13 +24,13 @@ import (
 
 	"github.com/gofrs/uuid"
 
-	pb "px.dev/pixie/src/api/proto/uuidpb"
+	"px.dev/pixie/src/api/proto/uuidpb"
 )
 
 var enc = binary.BigEndian
 
 // UUIDFromProto converts a proto message to uuid.
-func UUIDFromProto(pb *pb.UUID) (uuid.UUID, error) {
+func UUIDFromProto(pb *uuidpb.UUID) (uuid.UUID, error) {
 	if pb == nil {
 		return uuid.Nil, errors.New("nil proto given")
 	}
@@ -44,15 +44,15 @@ func UUIDFromProto(pb *pb.UUID) (uuid.UUID, error) {
 }
 
 // UUIDFromProtoOrNil converts a proto message to uuid if error sets to nil uuid.
-func UUIDFromProtoOrNil(pb *pb.UUID) uuid.UUID {
+func UUIDFromProtoOrNil(pb *uuidpb.UUID) uuid.UUID {
 	u, _ := UUIDFromProto(pb)
 	return u
 }
 
 // ProtoFromUUID converts a UUID to proto.
-func ProtoFromUUID(u uuid.UUID) *pb.UUID {
+func ProtoFromUUID(u uuid.UUID) *uuidpb.UUID {
 	data := u.Bytes()
-	p := &pb.UUID{
+	p := &uuidpb.UUID{
 		HighBits: enc.Uint64(data[0:8]),
 		LowBits:  enc.Uint64(data[8:16]),
 	}
@@ -60,12 +60,12 @@ func ProtoFromUUID(u uuid.UUID) *pb.UUID {
 }
 
 // ProtoFromUUIDStrOrNil generates proto from string representation of a UUID (nil value is used if parsing fails).
-func ProtoFromUUIDStrOrNil(u string) *pb.UUID {
+func ProtoFromUUIDStrOrNil(u string) *uuidpb.UUID {
 	return ProtoFromUUID(uuid.FromStringOrNil(u))
 }
 
 // ProtoToUUIDStr generates an expensive string representation of a UUID proto.
-func ProtoToUUIDStr(pb *pb.UUID) string {
+func ProtoToUUIDStr(pb *uuidpb.UUID) string {
 	return UUIDFromProtoOrNil(pb).String()
 }
 
@@ -75,7 +75,7 @@ func IsNilUUID(u uuid.UUID) bool {
 }
 
 // IsNilUUIDProto tells you if the given UUID is nil.
-func IsNilUUIDProto(pb *pb.UUID) bool {
+func IsNilUUIDProto(pb *uuidpb.UUID) bool {
 	if pb == nil {
 		return true
 	}

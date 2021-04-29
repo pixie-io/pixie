@@ -29,7 +29,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"px.dev/pixie/src/api/proto/vizierpb"
-	utils2 "px.dev/pixie/src/shared/services/utils"
+	"px.dev/pixie/src/shared/services/utils"
 )
 
 const (
@@ -108,8 +108,8 @@ func (c *Checker) run() {
 		default:
 		}
 
-		claims := utils2.GenerateJWTForService("cloud_conn", "vizier")
-		token, _ := utils2.SignJWTClaims(claims, c.signingKey)
+		claims := utils.GenerateJWTForService("cloud_conn", "vizier")
+		token, _ := utils.SignJWTClaims(claims, c.signingKey)
 
 		ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
 			fmt.Sprintf("bearer %s", token))

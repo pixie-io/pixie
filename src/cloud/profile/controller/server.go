@@ -34,7 +34,7 @@ import (
 	"px.dev/pixie/src/cloud/profile/controller/idmanager"
 	"px.dev/pixie/src/cloud/profile/datastore"
 	"px.dev/pixie/src/cloud/profile/profileenv"
-	profile "px.dev/pixie/src/cloud/profile/profilepb"
+	"px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/cloud/project_manager/projectmanagerpb"
 	"px.dev/pixie/src/utils"
 )
@@ -91,12 +91,12 @@ func NewServer(env profileenv.ProfileEnv, d Datastore, uds UserSettingsDatastore
 	return &Server{env: env, d: d, uds: uds, IDManager: idm}
 }
 
-func userInfoToProto(u *datastore.UserInfo) *profile.UserInfo {
+func userInfoToProto(u *datastore.UserInfo) *profilepb.UserInfo {
 	profilePicture := ""
 	if u.ProfilePicture != nil {
 		profilePicture = *u.ProfilePicture
 	}
-	return &profile.UserInfo{
+	return &profilepb.UserInfo{
 		ID:             utils.ProtoFromUUID(u.ID),
 		OrgID:          utils.ProtoFromUUID(u.OrgID),
 		Username:       u.Username,
@@ -107,8 +107,8 @@ func userInfoToProto(u *datastore.UserInfo) *profile.UserInfo {
 	}
 }
 
-func orgInfoToProto(o *datastore.OrgInfo) *profile.OrgInfo {
-	return &profile.OrgInfo{
+func orgInfoToProto(o *datastore.OrgInfo) *profilepb.OrgInfo {
+	return &profilepb.OrgInfo{
 		ID:         utils.ProtoFromUUID(o.ID),
 		OrgName:    o.OrgName,
 		DomainName: o.DomainName,
@@ -142,7 +142,7 @@ func toExternalError(err error) error {
 }
 
 // CreateUser is the GRPC method to create  new user.
-func (s *Server) CreateUser(ctx context.Context, req *profile.CreateUserRequest) (*uuidpb.UUID, error) {
+func (s *Server) CreateUser(ctx context.Context, req *profilepb.CreateUserRequest) (*uuidpb.UUID, error) {
 	userInfo := &datastore.UserInfo{
 		OrgID:     utils.UUIDFromProtoOrNil(req.OrgID),
 		Username:  req.Username,
@@ -164,7 +164,7 @@ func (s *Server) CreateUser(ctx context.Context, req *profile.CreateUserRequest)
 }
 
 // GetUser is the GRPC method to get a user.
-func (s *Server) GetUser(ctx context.Context, req *uuidpb.UUID) (*profile.UserInfo, error) {
+func (s *Server) GetUser(ctx context.Context, req *uuidpb.UUID) (*profilepb.UserInfo, error) {
 	uid := utils.UUIDFromProtoOrNil(req)
 	userInfo, err := s.d.GetUser(uid)
 	if err != nil {
@@ -177,7 +177,7 @@ func (s *Server) GetUser(ctx context.Context, req *uuidpb.UUID) (*profile.UserIn
 }
 
 // GetUserByEmail is the GRPC method to get a user by email.
-func (s *Server) GetUserByEmail(ctx context.Context, req *profile.GetUserByEmailRequest) (*profile.UserInfo, error) {
+func (s *Server) GetUserByEmail(ctx context.Context, req *profilepb.GetUserByEmailRequest) (*profilepb.UserInfo, error) {
 	userInfo, err := s.d.GetUserByEmail(req.Email)
 	if err != nil {
 		return nil, toExternalError(err)
@@ -186,7 +186,7 @@ func (s *Server) GetUserByEmail(ctx context.Context, req *profile.GetUserByEmail
 }
 
 // CreateOrgAndUser is the GRPC method to create a new org and user.
-func (s *Server) CreateOrgAndUser(ctx context.Context, req *profile.CreateOrgAndUserRequest) (*profile.CreateOrgAndUserResponse, error) {
+func (s *Server) CreateOrgAndUser(ctx context.Context, req *profilepb.CreateOrgAndUserRequest) (*profilepb.CreateOrgAndUserResponse, error) {
 	orgInfo := &datastore.OrgInfo{
 		DomainName: req.Org.DomainName,
 		OrgName:    req.Org.OrgName,
@@ -236,7 +236,7 @@ func (s *Server) CreateOrgAndUser(ctx context.Context, req *profile.CreateOrgAnd
 		return nil, status.Error(codes.Internal, fmt.Sprintf("Could not register project %s", DefaultProjectName))
 	}
 
-	resp := &profile.CreateOrgAndUserResponse{
+	resp := &profilepb.CreateOrgAndUserResponse{
 		UserID: utils.ProtoFromUUID(userID),
 		OrgID:  utils.ProtoFromUUID(orgID),
 	}
@@ -245,7 +245,7 @@ func (s *Server) CreateOrgAndUser(ctx context.Context, req *profile.CreateOrgAnd
 }
 
 // GetOrg is the GRPC method to get an org by ID.
-func (s *Server) GetOrg(ctx context.Context, req *uuidpb.UUID) (*profile.OrgInfo, error) {
+func (s *Server) GetOrg(ctx context.Context, req *uuidpb.UUID) (*profilepb.OrgInfo, error) {
 	orgID := utils.UUIDFromProtoOrNil(req)
 	orgInfo, err := s.d.GetOrg(orgID)
 	if err != nil {
@@ -258,21 +258,21 @@ func (s *Server) GetOrg(ctx context.Context, req *uuidpb.UUID) (*profile.OrgInfo
 }
 
 // GetOrgs is the GRPC method to get all orgs. This should only be used internally.
-func (s *Server) GetOrgs(ctx context.Context, req *profile.GetOrgsRequest) (*profile.GetOrgsResponse, error) {
+func (s *Server) GetOrgs(ctx context.Context, req *profilepb.GetOrgsRequest) (*profilepb.GetOrgsResponse, error) {
 	orgs, err := s.d.GetOrgs()
 	if err != nil {
 		return nil, err
 	}
-	orgProtos := make([]*profile.OrgInfo, len(orgs))
+	orgProtos := make([]*profilepb.OrgInfo, len(orgs))
 	for i, o := range orgs {
 		orgProtos[i] = orgInfoToProto(o)
 	}
 
-	return &profile.GetOrgsResponse{Orgs: orgProtos}, nil
+	return &profilepb.GetOrgsResponse{Orgs: orgProtos}, nil
 }
 
 // GetOrgByDomain gets an org by domain name.
-func (s *Server) GetOrgByDomain(ctx context.Context, req *profile.GetOrgByDomainRequest) (*profile.OrgInfo, error) {
+func (s *Server) GetOrgByDomain(ctx context.Context, req *profilepb.GetOrgByDomainRequest) (*profilepb.OrgInfo, error) {
 	orgInfo, err := s.d.GetOrgByDomain(req.DomainName)
 	if err != nil {
 		return nil, toExternalError(err)
@@ -290,7 +290,7 @@ func (s *Server) DeleteOrgAndUsers(ctx context.Context, req *uuidpb.UUID) error 
 }
 
 // UpdateUser updates a user's info.
-func (s *Server) UpdateUser(ctx context.Context, req *profile.UpdateUserRequest) (*profile.UserInfo, error) {
+func (s *Server) UpdateUser(ctx context.Context, req *profilepb.UpdateUserRequest) (*profilepb.UserInfo, error) {
 	userID := utils.UUIDFromProtoOrNil(req.ID)
 	userInfo, err := s.d.GetUser(userID)
 	if err != nil {
@@ -312,7 +312,7 @@ func (s *Server) UpdateUser(ctx context.Context, req *profile.UpdateUserRequest)
 }
 
 // GetUserSettings gets the user settings for the given user.
-func (s *Server) GetUserSettings(ctx context.Context, req *profile.GetUserSettingsRequest) (*profile.GetUserSettingsResponse, error) {
+func (s *Server) GetUserSettings(ctx context.Context, req *profilepb.GetUserSettingsRequest) (*profilepb.GetUserSettingsResponse, error) {
 	userID := utils.UUIDFromProtoOrNil(req.ID)
 
 	values, err := s.uds.GetUserSettings(userID, req.Keys)
@@ -320,7 +320,7 @@ func (s *Server) GetUserSettings(ctx context.Context, req *profile.GetUserSettin
 		return nil, err
 	}
 
-	resp := &profile.GetUserSettingsResponse{
+	resp := &profilepb.GetUserSettingsResponse{
 		Keys:   req.Keys,
 		Values: values,
 	}
@@ -329,7 +329,7 @@ func (s *Server) GetUserSettings(ctx context.Context, req *profile.GetUserSettin
 }
 
 // UpdateUserSettings updates the given keys and values for the specified user.
-func (s *Server) UpdateUserSettings(ctx context.Context, req *profile.UpdateUserSettingsRequest) (*profile.UpdateUserSettingsResponse, error) {
+func (s *Server) UpdateUserSettings(ctx context.Context, req *profilepb.UpdateUserSettingsRequest) (*profilepb.UpdateUserSettingsResponse, error) {
 	userID := utils.UUIDFromProtoOrNil(req.ID)
 
 	if len(req.Keys) != len(req.Values) {
@@ -341,15 +341,15 @@ func (s *Server) UpdateUserSettings(ctx context.Context, req *profile.UpdateUser
 		return nil, err
 	}
 
-	return &profile.UpdateUserSettingsResponse{OK: true}, nil
+	return &profilepb.UpdateUserSettingsResponse{OK: true}, nil
 }
 
 // InviteUser implements the Profile interface's InviteUser method.
-func (s *Server) InviteUser(ctx context.Context, req *profile.InviteUserRequest) (*profile.InviteUserResponse, error) {
+func (s *Server) InviteUser(ctx context.Context, req *profilepb.InviteUserRequest) (*profilepb.InviteUserResponse, error) {
 	userInfo, err := s.d.GetUserByEmail(req.Email)
 	var userID uuid.UUID
 	if err == datastore.ErrUserNotFound {
-		createUserReq := &profile.CreateUserRequest{
+		createUserReq := &profilepb.CreateUserRequest{
 			OrgID:     req.OrgID,
 			Username:  req.Email,
 			FirstName: req.FirstName,
@@ -381,7 +381,7 @@ func (s *Server) InviteUser(ctx context.Context, req *profile.InviteUserRequest)
 		return nil, err
 	}
 
-	return &profile.InviteUserResponse{
+	return &profilepb.InviteUserResponse{
 		Email:      resp.Email,
 		InviteLink: resp.InviteLink,
 	}, nil

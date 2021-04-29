@@ -43,7 +43,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"px.dev/pixie/src/api/proto/uuidpb"
-	dnsmgrpb "px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
+	"px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb"
 	mock_dnsmgrpb "px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb/mock"
 	"px.dev/pixie/src/cloud/shared/messagespb"
 	"px.dev/pixie/src/cloud/vzmgr/controller"

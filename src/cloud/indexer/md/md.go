@@ -27,7 +27,7 @@ import (
 	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 
-	mdpb "px.dev/pixie/src/shared/k8s/metadatapb"
+	"px.dev/pixie/src/shared/k8s/metadatapb"
 )
 
 // VizierIndexer run the indexer for a single vizier index.
@@ -88,7 +88,7 @@ func (v *VizierIndexer) Stop() {
 	}
 }
 
-func (v *VizierIndexer) nsUpdateToEMD(u *mdpb.ResourceUpdate, nsUpdate *mdpb.NamespaceUpdate) *EsMDEntity {
+func (v *VizierIndexer) nsUpdateToEMD(u *metadatapb.ResourceUpdate, nsUpdate *metadatapb.NamespaceUpdate) *EsMDEntity {
 	return &EsMDEntity{
 		OrgID:              v.orgID.String(),
 		VizierID:           v.vizierID.String(),
@@ -105,15 +105,15 @@ func (v *VizierIndexer) nsUpdateToEMD(u *mdpb.ResourceUpdate, nsUpdate *mdpb.Nam
 	}
 }
 
-func podPhaseToState(podUpdate *mdpb.PodUpdate) ESMDEntityState {
+func podPhaseToState(podUpdate *metadatapb.PodUpdate) ESMDEntityState {
 	switch podUpdate.Phase {
-	case mdpb.PENDING:
+	case metadatapb.PENDING:
 		return ESMDEntityStatePending
-	case mdpb.RUNNING:
+	case metadatapb.RUNNING:
 		return ESMDEntityStateRunning
-	case mdpb.SUCCEEDED:
+	case metadatapb.SUCCEEDED:
 		return ESMDEntityStateTerminated
-	case mdpb.FAILED:
+	case metadatapb.FAILED:
 		return ESMDEntityStateFailed
 	default:
 		return ESMDEntityStateUnknown
@@ -127,7 +127,7 @@ func getStateFromTimestamps(stopTimestamp int64) ESMDEntityState {
 	return ESMDEntityStateRunning
 }
 
-func (v *VizierIndexer) podUpdateToEMD(u *mdpb.ResourceUpdate, podUpdate *mdpb.PodUpdate) *EsMDEntity {
+func (v *VizierIndexer) podUpdateToEMD(u *metadatapb.ResourceUpdate, podUpdate *metadatapb.PodUpdate) *EsMDEntity {
 	return &EsMDEntity{
 		OrgID:              v.orgID.String(),
 		VizierID:           v.vizierID.String(),
@@ -144,7 +144,7 @@ func (v *VizierIndexer) podUpdateToEMD(u *mdpb.ResourceUpdate, podUpdate *mdpb.P
 	}
 }
 
-func (v *VizierIndexer) serviceUpdateToEMD(u *mdpb.ResourceUpdate, serviceUpdate *mdpb.ServiceUpdate) *EsMDEntity {
+func (v *VizierIndexer) serviceUpdateToEMD(u *metadatapb.ResourceUpdate, serviceUpdate *metadatapb.ServiceUpdate) *EsMDEntity {
 	if serviceUpdate.PodIDs == nil {
 		serviceUpdate.PodIDs = make([]string, 0)
 	}
@@ -164,13 +164,13 @@ func (v *VizierIndexer) serviceUpdateToEMD(u *mdpb.ResourceUpdate, serviceUpdate
 	}
 }
 
-func (v *VizierIndexer) resourceUpdateToEMD(update *mdpb.ResourceUpdate) *EsMDEntity {
+func (v *VizierIndexer) resourceUpdateToEMD(update *metadatapb.ResourceUpdate) *EsMDEntity {
 	switch update.Update.(type) {
-	case *mdpb.ResourceUpdate_NamespaceUpdate:
+	case *metadatapb.ResourceUpdate_NamespaceUpdate:
 		return v.nsUpdateToEMD(update, update.GetNamespaceUpdate())
-	case *mdpb.ResourceUpdate_PodUpdate:
+	case *metadatapb.ResourceUpdate_PodUpdate:
 		return v.podUpdateToEMD(update, update.GetPodUpdate())
-	case *mdpb.ResourceUpdate_ServiceUpdate:
+	case *metadatapb.ResourceUpdate_ServiceUpdate:
 		return v.serviceUpdateToEMD(update, update.GetServiceUpdate())
 	default:
 		log.Errorf("Unknown entity types: %v", update)
@@ -190,7 +190,7 @@ ctx._source.state = params.state;
 `
 
 func (v *VizierIndexer) stanMessageHandler(msg *stan.Msg) {
-	ru := mdpb.ResourceUpdate{}
+	ru := metadatapb.ResourceUpdate{}
 	err := ru.Unmarshal(msg.Data)
 	if err != nil { // We received an invalid message through stan.
 		log.WithError(err).Error("Could not unmarshal message from stan")
@@ -221,7 +221,7 @@ func (v *VizierIndexer) stanMessageHandler(msg *stan.Msg) {
 }
 
 // HandleResourceUpdate indexes the resource update in elastic.
-func (v *VizierIndexer) HandleResourceUpdate(update *mdpb.ResourceUpdate) error {
+func (v *VizierIndexer) HandleResourceUpdate(update *metadatapb.ResourceUpdate) error {
 	esEntity := v.resourceUpdateToEMD(update)
 	if esEntity == nil { // We are not handling this resource yet.
 		return nil

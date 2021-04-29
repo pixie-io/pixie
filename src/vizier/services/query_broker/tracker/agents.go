@@ -28,7 +28,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
 
-	utils2 "px.dev/pixie/src/shared/services/utils"
+	"px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
 )
 
@@ -142,8 +142,8 @@ type updateOrError struct {
 func (a *Agents) streamUpdates() (chan updateOrError, func(), error) {
 	log.Trace("Streaming agent state.")
 
-	claims := utils2.GenerateJWTForService("metadata_tracker", "vizier")
-	token, _ := utils2.SignJWTClaims(claims, a.signingKey)
+	claims := utils.GenerateJWTForService("metadata_tracker", "vizier")
+	token, _ := utils.SignJWTClaims(claims, a.signingKey)
 
 	ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
 		fmt.Sprintf("bearer %s", token))

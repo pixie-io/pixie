@@ -24,7 +24,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go/v4"
 
-	pb "px.dev/pixie/src/shared/services/jwtpb"
+	"px.dev/pixie/src/shared/services/jwtpb"
 	"px.dev/pixie/src/shared/services/utils"
 )
 
@@ -35,24 +35,24 @@ const TestOrgID string = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 const TestUserID string = "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
 
 // GenerateTestClaimsWithDuration generates valid test user claims for a specified duration.
-func GenerateTestClaimsWithDuration(t *testing.T, duration time.Duration, email string) *pb.JWTClaims {
+func GenerateTestClaimsWithDuration(t *testing.T, duration time.Duration, email string) *jwtpb.JWTClaims {
 	claims := utils.GenerateJWTForUser(TestUserID, TestOrgID, email, time.Now().Add(duration), "withpixie.ai")
 	return claims
 }
 
 // GenerateTestServiceClaims generates valid test service claims for a specified duration.
-func GenerateTestServiceClaims(t *testing.T, service string) *pb.JWTClaims {
+func GenerateTestServiceClaims(t *testing.T, service string) *jwtpb.JWTClaims {
 	claims := utils.GenerateJWTForService(service, "withpixie.ai")
 	return claims
 }
 
 // GenerateTestClaims generates valid test user claims valid for 60 minutes
-func GenerateTestClaims(t *testing.T) *pb.JWTClaims {
+func GenerateTestClaims(t *testing.T) *jwtpb.JWTClaims {
 	return GenerateTestClaimsWithDuration(t, time.Minute*60, "test@test.com")
 }
 
 // GenerateTestClaimsWithEmail generates valid test user claims for the given email.
-func GenerateTestClaimsWithEmail(t *testing.T, email string) *pb.JWTClaims {
+func GenerateTestClaimsWithEmail(t *testing.T, email string) *jwtpb.JWTClaims {
 	return GenerateTestClaimsWithDuration(t, time.Minute*60, email)
 }
 
@@ -69,7 +69,7 @@ func GenerateTestJWTTokenWithDuration(t *testing.T, signingKey string, timeout t
 }
 
 // SignPBClaims signs our protobuf claims after converting to json.
-func SignPBClaims(t *testing.T, claims *pb.JWTClaims, signingKey string) string {
+func SignPBClaims(t *testing.T, claims *jwtpb.JWTClaims, signingKey string) string {
 	mc := utils.PBToMapClaims(claims)
 	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, mc).SignedString([]byte(signingKey))
 	if err != nil {

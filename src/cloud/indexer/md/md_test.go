@@ -31,7 +31,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"px.dev/pixie/src/cloud/indexer/md"
-	mdpb "px.dev/pixie/src/shared/k8s/metadatapb"
+	"px.dev/pixie/src/shared/k8s/metadatapb"
 	"px.dev/pixie/src/utils/testingutils"
 )
 
@@ -65,16 +65,16 @@ func TestMain(m *testing.M) {
 func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 	tests := []struct {
 		name            string
-		updates         []*mdpb.ResourceUpdate
+		updates         []*metadatapb.ResourceUpdate
 		updateKind      string
 		expectedResults []*md.EsMDEntity
 	}{
 		{
 			name: "namespace update",
-			updates: []*mdpb.ResourceUpdate{
+			updates: []*metadatapb.ResourceUpdate{
 				{
-					Update: &mdpb.ResourceUpdate_NamespaceUpdate{
-						NamespaceUpdate: &mdpb.NamespaceUpdate{
+					Update: &metadatapb.ResourceUpdate_NamespaceUpdate{
+						NamespaceUpdate: &metadatapb.NamespaceUpdate{
 							UID:              "100",
 							Name:             "testns",
 							StartTimestampNS: 1000,
@@ -104,15 +104,15 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 		},
 		{
 			name: "pod update",
-			updates: []*mdpb.ResourceUpdate{
+			updates: []*metadatapb.ResourceUpdate{
 				{
-					Update: &mdpb.ResourceUpdate_PodUpdate{
-						PodUpdate: &mdpb.PodUpdate{
+					Update: &metadatapb.ResourceUpdate_PodUpdate{
+						PodUpdate: &metadatapb.PodUpdate{
 							UID:              "300",
 							Name:             "test-pod",
 							StartTimestampNS: 1000,
 							StopTimestampNS:  0,
-							Phase:            mdpb.PENDING,
+							Phase:            metadatapb.PENDING,
 						},
 					},
 					UpdateVersion:     2,
@@ -139,10 +139,10 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 		},
 		{
 			name: "svc update",
-			updates: []*mdpb.ResourceUpdate{
+			updates: []*metadatapb.ResourceUpdate{
 				{
-					Update: &mdpb.ResourceUpdate_ServiceUpdate{
-						ServiceUpdate: &mdpb.ServiceUpdate{
+					Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+						ServiceUpdate: &metadatapb.ServiceUpdate{
 							UID:              "200",
 							Name:             "test-service",
 							StartTimestampNS: 1000,
@@ -173,10 +173,10 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 		},
 		{
 			name: "out of order svc update",
-			updates: []*mdpb.ResourceUpdate{
+			updates: []*metadatapb.ResourceUpdate{
 				{
-					Update: &mdpb.ResourceUpdate_ServiceUpdate{
-						ServiceUpdate: &mdpb.ServiceUpdate{
+					Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+						ServiceUpdate: &metadatapb.ServiceUpdate{
 							UID:              "200",
 							Name:             "test-service",
 							StartTimestampNS: 1000,
@@ -187,8 +187,8 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 					PrevUpdateVersion: 1,
 				},
 				{
-					Update: &mdpb.ResourceUpdate_ServiceUpdate{
-						ServiceUpdate: &mdpb.ServiceUpdate{
+					Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+						ServiceUpdate: &metadatapb.ServiceUpdate{
 							UID:              "200",
 							Name:             "test-service",
 							StartTimestampNS: 1000,
@@ -219,10 +219,10 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 		},
 		{
 			name: "in order svc update",
-			updates: []*mdpb.ResourceUpdate{
+			updates: []*metadatapb.ResourceUpdate{
 				{
-					Update: &mdpb.ResourceUpdate_ServiceUpdate{
-						ServiceUpdate: &mdpb.ServiceUpdate{
+					Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+						ServiceUpdate: &metadatapb.ServiceUpdate{
 							UID:              "200",
 							Name:             "test-service",
 							StartTimestampNS: 1000,
@@ -233,8 +233,8 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 					PrevUpdateVersion: 1,
 				},
 				{
-					Update: &mdpb.ResourceUpdate_ServiceUpdate{
-						ServiceUpdate: &mdpb.ServiceUpdate{
+					Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+						ServiceUpdate: &metadatapb.ServiceUpdate{
 							UID:              "200",
 							Name:             "test-service",
 							StartTimestampNS: 1000,
@@ -246,8 +246,8 @@ func TestVizierIndexer_ResourceUpdate(t *testing.T) {
 					PrevUpdateVersion: 2,
 				},
 				{
-					Update: &mdpb.ResourceUpdate_ServiceUpdate{
-						ServiceUpdate: &mdpb.ServiceUpdate{
+					Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+						ServiceUpdate: &metadatapb.ServiceUpdate{
 							UID:              "200",
 							Name:             "test-service",
 							StartTimestampNS: 1000,
