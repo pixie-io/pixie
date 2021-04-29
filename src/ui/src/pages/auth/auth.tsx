@@ -28,7 +28,6 @@ import { LogoutPage } from './logout';
 import { CLIAuthCompletePage } from './cli-auth-complete';
 import { ErrorPage } from './password-error';
 import { PasswordRecoveryPage } from './password-recovery';
-import { SignupCompletePage } from './signup-complete';
 
 export const AuthRouter: React.FC = () => (
   <Switch>
@@ -40,6 +39,5 @@ export const AuthRouter: React.FC = () => (
     <Route exact path='/auth/signup' component={SignupPage} />
     <Route exact path='/auth/cli-auth-complete' component={CLIAuthCompletePage} />
     <Route exact path='/auth/logout' component={LogoutPage} />
-    <Route exact path='/auth/signup-complete' component={SignupCompletePage} />
   </Switch>
 );

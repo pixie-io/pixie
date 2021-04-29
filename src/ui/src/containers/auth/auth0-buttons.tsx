@@ -17,43 +17,18 @@
  */
 
 import * as React from 'react';
-import { GoogleButton, UsernamePasswordButton } from '@pixie-labs/components';
-
-import { createStyles, Theme, makeStyles } from '@material-ui/core';
+import { GoogleButton } from '@pixie-labs/components';
 
 export interface Auth0ButtonsProps {
-  action: 'Sign-Up' | 'Login';
+  googleButtonText: string;
   onGoogleButtonClick: () => void;
-  onUsernamePasswordButtonClick: () => void;
 }
-const useStyles = makeStyles(({ spacing }: Theme) => createStyles({
-  button: {
-    width: '100%',
-    marginTop: spacing(0.5),
-    marginBottom: spacing(0.5),
-  },
-}));
 
-export const Auth0Buttons: React.FC<Auth0ButtonsProps> = ({
-  action,
-  onGoogleButtonClick,
-  onUsernamePasswordButtonClick,
-}) => {
-  const classes = useStyles();
-  return (
-    <>
-      <div className={classes.button}>
-        <UsernamePasswordButton
-          text={`${action} with Password`}
-          onClick={onUsernamePasswordButtonClick}
-        />
-      </div>
-      <div className={classes.button}>
-        <GoogleButton
-          text={`${action} with Google`}
-          onClick={onGoogleButtonClick}
-        />
-      </div>
-    </>
-  );
-};
+export const Auth0Buttons: React.FC<Auth0ButtonsProps> = ({ googleButtonText, onGoogleButtonClick }) => (
+  <>
+    <GoogleButton
+      text={googleButtonText}
+      onClick={onGoogleButtonClick}
+    />
+  </>
+);
