@@ -43,7 +43,11 @@ using TCPSocket = px::system::TCPSocket;
 
 class ClientServerSystem {
  public:
-  ClientServerSystem() { server_.BindAndListen(); }
+  ClientServerSystem(
+      std::chrono::milliseconds server_response_latency = std::chrono::milliseconds{0})
+      : server_response_latency_(server_response_latency) {
+    server_.BindAndListen();
+  }
 
   /**
    * Create and run a client-server system with the provided send-recv script.
@@ -208,17 +212,19 @@ class ClientServerSystem {
    * &TCPSocket::Write).
    * @param socket: client or server socket.
    */
-#define RunServerImpl(script, socket)         \
-  for (const auto& x : script) {              \
-    /* Receive request */                     \
-    size_t expected_size = 0;                 \
-    for (const auto& req : x.req) {           \
-      expected_size += req.size();            \
-    }                                         \
-    RecvData<TRecvFn>(socket, expected_size); \
-                                              \
-    /* Send response. */                      \
-    SendData<TSendFn>(socket, x.resp);        \
+#define RunServerImpl(script, socket)                      \
+  for (const auto& x : script) {                           \
+    /* Receive request */                                  \
+    size_t expected_size = 0;                              \
+    for (const auto& req : x.req) {                        \
+      expected_size += req.size();                         \
+    }                                                      \
+    RecvData<TRecvFn>(socket, expected_size);              \
+                                                           \
+    std::this_thread::sleep_for(server_response_latency_); \
+                                                           \
+    /* Send response. */                                   \
+    SendData<TSendFn>(socket, x.resp);                     \
   }
 
   template <bool (TCPSocket::*TRecvFn)(std::string*) const,
@@ -286,14 +292,15 @@ class ClientServerSystem {
    * On even-phases, it will expect to receive the script value.
    * On odd-phases, it will send the script value.
    */
-#define SpawnServerImpl(script)                         \
-  server_pid_ = getpid();                               \
-  LOG(INFO) << "Server PID: " << server_pid_;           \
-  server_thread_ = std::thread([this, script]() {       \
-    std::unique_ptr<TCPSocket> conn = server_.Accept(); \
-    server_fd_ = conn->sockfd();                        \
-    RunServer<TRecvFn, TSendFn>(script, *conn);         \
-    server_.Close();                                    \
+#define SpawnServerImpl(script)                            \
+  server_pid_ = getpid();                                  \
+  LOG(INFO) << "Server PID: " << server_pid_;              \
+  server_thread_ = std::thread([this, script]() {          \
+    std::this_thread::sleep_for(server_response_latency_); \
+    std::unique_ptr<TCPSocket> conn = server_.Accept();    \
+    server_fd_ = conn->sockfd();                           \
+    RunServer<TRecvFn, TSendFn>(script, *conn);            \
+    server_.Close();                                       \
   });
 
   template <bool (TCPSocket::*TRecvFn)(std::string*) const,
@@ -318,6 +325,12 @@ class ClientServerSystem {
     server_thread_.join();
     waitpid(client_pid_, 0, 0);
   }
+
+  // Sometimes we want to model longer lived connections; this variable allows the server
+  // to add an artificial delay for this purpose.
+  // This is particularly important in tests where a new connection needs to be detected
+  // before tracing can begin (see StandaloneContext).
+  std::chrono::milliseconds server_response_latency_;
 
   TCPSocket client_;
   TCPSocket server_;

@@ -57,10 +57,13 @@ class ConnStatsBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracin
 TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
   StartTransferDataThread();
 
-  ClientServerSystem cs;
-  SendRecvScript script;
-  script.push_back({{"req1"}, {"resp1"}});
-  script.push_back({{"req2"}, {"resp2"}});
+  SendRecvScript script = {{{"req1"}, {"resp1"}}, {{"req2"}, {"resp2"}}};
+
+  // The server needs to be slow, so that the client is alive long enough for it to be discovered
+  // by the TransferDataThread.
+  std::chrono::milliseconds server_response_latency{200};
+
+  ClientServerSystem cs(server_response_latency);
   cs.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(script);
 
   StopTransferDataThread();
@@ -73,15 +76,19 @@ TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
   // Check server-side stats.
   {
     auto indices = FindRecordIdxMatchesPID(rb, kUPIDIdx, cs.ServerPID());
-    ASSERT_THAT(indices, SizeIs(1));
+    ASSERT_FALSE(indices.empty());
 
-    int conn_open = AccessRecordBatch<types::Int64Value>(rb, kConnOpenIdx, indices[0]).val;
-    int conn_close = AccessRecordBatch<types::Int64Value>(rb, kConnCloseIdx, indices[0]).val;
-    int bytes_sent = AccessRecordBatch<types::Int64Value>(rb, kBytesSentIdx, indices[0]).val;
-    int bytes_rcvd = AccessRecordBatch<types::Int64Value>(rb, kBytesRecvIdx, indices[0]).val;
-    int addr_family = AccessRecordBatch<types::Int64Value>(rb, kAddrFamilyIdx, indices[0]).val;
-    int protocol = AccessRecordBatch<types::Int64Value>(rb, kProtocolIdx, indices[0]).val;
-    int role = AccessRecordBatch<types::Int64Value>(rb, kRoleIdx, indices[0]).val;
+    // ConnStats may have produced various updates during the lifetime of the ClientServerSystem.
+    // Grab the last record, which has the final information.
+    int idx = indices.back();
+
+    int conn_open = AccessRecordBatch<types::Int64Value>(rb, kConnOpenIdx, idx).val;
+    int conn_close = AccessRecordBatch<types::Int64Value>(rb, kConnCloseIdx, idx).val;
+    int bytes_sent = AccessRecordBatch<types::Int64Value>(rb, kBytesSentIdx, idx).val;
+    int bytes_rcvd = AccessRecordBatch<types::Int64Value>(rb, kBytesRecvIdx, idx).val;
+    int addr_family = AccessRecordBatch<types::Int64Value>(rb, kAddrFamilyIdx, idx).val;
+    int protocol = AccessRecordBatch<types::Int64Value>(rb, kProtocolIdx, idx).val;
+    int role = AccessRecordBatch<types::Int64Value>(rb, kRoleIdx, idx).val;
 
     EXPECT_THAT(conn_open, 1);
     EXPECT_THAT(conn_close, 1);
@@ -95,15 +102,19 @@ TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
   // Check client-side stats.
   {
     auto indices = FindRecordIdxMatchesPID(rb, kUPIDIdx, cs.ClientPID());
-    ASSERT_THAT(indices, SizeIs(1));
+    ASSERT_FALSE(indices.empty());
 
-    int conn_open = AccessRecordBatch<types::Int64Value>(rb, kConnOpenIdx, indices[0]).val;
-    int conn_close = AccessRecordBatch<types::Int64Value>(rb, kConnCloseIdx, indices[0]).val;
-    int bytes_sent = AccessRecordBatch<types::Int64Value>(rb, kBytesSentIdx, indices[0]).val;
-    int bytes_rcvd = AccessRecordBatch<types::Int64Value>(rb, kBytesRecvIdx, indices[0]).val;
-    int addr_family = AccessRecordBatch<types::Int64Value>(rb, kAddrFamilyIdx, indices[0]).val;
-    int protocol = AccessRecordBatch<types::Int64Value>(rb, kProtocolIdx, indices[0]).val;
-    int role = AccessRecordBatch<types::Int64Value>(rb, kRoleIdx, indices[0]).val;
+    // ConnStats may have produced various updates during the lifetime of the ClientServerSystem.
+    // Grab the last record, which has the final information.
+    int idx = indices.back();
+
+    int conn_open = AccessRecordBatch<types::Int64Value>(rb, kConnOpenIdx, idx).val;
+    int conn_close = AccessRecordBatch<types::Int64Value>(rb, kConnCloseIdx, idx).val;
+    int bytes_sent = AccessRecordBatch<types::Int64Value>(rb, kBytesSentIdx, idx).val;
+    int bytes_rcvd = AccessRecordBatch<types::Int64Value>(rb, kBytesRecvIdx, idx).val;
+    int addr_family = AccessRecordBatch<types::Int64Value>(rb, kAddrFamilyIdx, idx).val;
+    int protocol = AccessRecordBatch<types::Int64Value>(rb, kProtocolIdx, idx).val;
+    int role = AccessRecordBatch<types::Int64Value>(rb, kRoleIdx, idx).val;
 
     EXPECT_THAT(conn_open, 1);
     EXPECT_THAT(conn_close, 1);
@@ -123,7 +134,12 @@ TEST_F(ConnStatsBPFTest, RoleFromConnectAccept) {
 
   // No data transfer, since we want to see if we can infer role from connect/accept syscalls.
   testing::SendRecvScript script({});
-  testing::ClientServerSystem system;
+
+  // The server needs to be slow, so that the client is alive long enough for it to be discovered
+  // by the TransferDataThread.
+  std::chrono::milliseconds server_response_latency{200};
+
+  ClientServerSystem system(server_response_latency);
   system.RunClientServer<&TCPSocket::Recv, &TCPSocket::Send>(script);
 
   StopTransferDataThread();

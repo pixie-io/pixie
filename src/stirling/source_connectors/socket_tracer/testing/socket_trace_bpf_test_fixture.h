@@ -64,19 +64,7 @@ class SocketTraceBPFTest : public ::testing::Test {
   void RefreshContext(bool blocking_deploy_uprobes = false) {
     absl::base_internal::SpinLockHolder lock(&socket_tracer_state_lock_);
 
-    ctx_ = std::make_unique<StandaloneContext>();
-
-    // Normally, Stirling will be setup to think that all traffic is within the cluster,
-    // which means only server-side tracing will kick in.
-    if (TEnableClientSideTracing) {
-      // This makes the Stirling interpret all traffic as leaving the cluster,
-      // which means client-side tracing will also apply.
-      PL_CHECK_OK(ctx_->SetClusterCIDR("1.2.3.4/32"));
-
-      // Treat loopback as outside the cluster so we also interpret localhost connections
-      // as leaving the cluster, which means client-side tracing will also apply.
-      FLAGS_treat_loopback_as_in_cluster = false;
-    }
+    RefreshContextCore();
 
     if (blocking_deploy_uprobes) {
       source_->InitContext(ctx_.get());
@@ -102,6 +90,7 @@ class SocketTraceBPFTest : public ::testing::Test {
       while (transfer_enable_) {
         {
           absl::base_internal::SpinLockHolder lock(&socket_tracer_state_lock_);
+          RefreshContextCore();
           source_->TransferData(ctx_.get(), data_tables_);
         }
         std::this_thread::sleep_for(kTransferDataPeriod);
@@ -143,6 +132,21 @@ class SocketTraceBPFTest : public ::testing::Test {
   std::vector<DataTable*> data_tables_;
 
   static constexpr std::chrono::milliseconds kTransferDataPeriod{100};
+
+ private:
+  void RefreshContextCore() {
+    ctx_ = std::make_unique<StandaloneContext>();
+
+    if (TEnableClientSideTracing) {
+      // This makes the Stirling interpret all traffic as leaving the cluster,
+      // which means client-side tracing will also apply.
+      PL_CHECK_OK(ctx_->SetClusterCIDR("1.2.3.4/32"));
+
+      // Treat loopback as outside the cluster so we also interpret localhost connections
+      // as leaving the cluster, which means client-side tracing will also apply.
+      FLAGS_treat_loopback_as_in_cluster = false;
+    }
+  }
 };
 
 }  // namespace testing

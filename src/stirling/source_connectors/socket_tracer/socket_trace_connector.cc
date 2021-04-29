@@ -918,14 +918,20 @@ void SocketTraceConnector::TransferConnStats(ConnectorContext* ctx, DataTable* d
       LOG_FIRST_N(WARNING, 10) << "Connection open should not be smaller than connection close.";
     }
 
+    md::UPID upid(ctx->GetASID(), key.upid.tgid, key.upid.start_time_ticks);
+    bool active_upid = upids.contains(upid);
+    bool tracked_upid = active_upid || stats.prev_bytes_sent.has_value();
+
+    bool activity = !stats.prev_bytes_sent.has_value() || !stats.prev_bytes_recv.has_value() ||
+                    stats.bytes_sent != stats.prev_bytes_sent ||
+                    stats.bytes_recv != stats.prev_bytes_recv;
+
     // Only export this record if there are actual changes.
     // TODO(yzhao): Exports these records after several iterations.
-    if (!stats.prev_bytes_sent.has_value() || !stats.prev_bytes_recv.has_value() ||
-        stats.bytes_sent != stats.prev_bytes_sent || stats.bytes_recv != stats.prev_bytes_recv) {
+    if (tracked_upid && activity) {
       DataTable::RecordBuilder<&kConnStatsTable> r(data_table, time);
 
       r.Append<idx::kTime>(time);
-      md::UPID upid(ctx->GetASID(), key.upid.tgid, key.upid.start_time_ticks);
       r.Append<idx::kUPID>(upid.value());
       r.Append<idx::kRemoteAddr>(key.remote_addr);
       r.Append<idx::kRemotePort>(key.remote_port);
@@ -951,11 +957,8 @@ void SocketTraceConnector::TransferConnStats(ConnectorContext* ctx, DataTable* d
       stats.prev_bytes_recv = stats.bytes_recv;
     }
 
-    // Remove data for exited upids. Do this after exporting data so that the last records are
-    // exported.
-    md::UPID current_upid(ctx->GetASID(), key.upid.tgid, key.upid.start_time_ticks);
-    if (!upids.contains(current_upid)) {
-      // NOTE: absl doesn't support iter = agg_stats.erase(iter), so must use this style.
+    // Remove data for exited upids. Do this after exporting final record.
+    if (!active_upid) {
       agg_stats.erase(iter++);
       continue;
     }
