@@ -51,20 +51,6 @@ class GreeterService final : public Greeter::Service {
   }
 };
 
-class Greeter2Service final : public Greeter2::Service {
- public:
-  ::grpc::Status SayHi(::grpc::ServerContext* /*context*/, const HelloRequest* request,
-                       HelloReply* response) override {
-    response->set_message(absl::StrCat("Hi ", request->name(), "!"));
-    return ::grpc::Status::OK;
-  }
-  ::grpc::Status SayHiAgain(::grpc::ServerContext* /*context*/, const HelloRequest* request,
-                            HelloReply* response) override {
-    response->set_message(absl::StrCat("Hi ", request->name(), "!"));
-    return ::grpc::Status::OK;
-  }
-};
-
 class StreamingGreeterService final : public StreamingGreeter::Service {
  public:
   ::grpc::Status SayHelloServerStreaming(::grpc::ServerContext* /*context*/,

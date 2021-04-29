@@ -29,6 +29,12 @@ service Greeter {
   rpc SayHelloAgain(HelloRequest) returns (HelloReply);
 }
 
+service StreamingGreeter {
+  rpc SayHelloClientStreaming(stream HelloRequest) returns (HelloReply);
+  rpc SayHelloServerStreaming(HelloRequest) returns (stream HelloReply);
+  rpc SayHelloBidirStreaming(stream HelloRequest) returns (stream HelloReply);
+}
+
 // The request message containing the user's name.
 message HelloRequest {
   string name = 1;
@@ -39,15 +45,4 @@ message HelloRequest {
 // The response message containing the greetings
 message HelloReply {
   string message = 1;
-}
-
-service Greeter2 {
-  rpc SayHi(HelloRequest) returns (HelloReply);
-  rpc SayHiAgain(HelloRequest) returns (HelloReply);
-}
-
-service StreamingGreeter {
-  rpc SayHelloClientStreaming(stream HelloRequest) returns (HelloReply);
-  rpc SayHelloServerStreaming(HelloRequest) returns (stream HelloReply);
-  rpc SayHelloBidirStreaming(stream HelloRequest) returns (stream HelloReply);
 }
