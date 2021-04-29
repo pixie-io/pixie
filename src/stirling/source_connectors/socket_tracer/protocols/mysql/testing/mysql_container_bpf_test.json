@@ -73,7 +73,7 @@
     },
     {
         "req_cmd": "\u0017",
-        "req_msg": "INSERT INTO employees (first_name, last_name, gender) VALUES (First0, Last0, M)",
+        "req_msg": "query=[INSERT INTO employees (first_name, last_name, gender) VALUES (?, ?, ?)] params=[First0, Last0, M]",
         "req_timestamp": 0,
         "resp_status": "\u0002",
         "resp_msg": "",
@@ -89,7 +89,7 @@
     },
     {
         "req_cmd": "\u0017",
-        "req_msg": "INSERT INTO employees (first_name, last_name, gender) VALUES (First1, Last1, F)",
+        "req_msg": "query=[INSERT INTO employees (first_name, last_name, gender) VALUES (?, ?, ?)] params=[First1, Last1, F]",
         "req_timestamp": 0,
         "resp_status": "\u0002",
         "resp_msg": "",
@@ -105,7 +105,7 @@
     },
     {
         "req_cmd": "\u0017",
-        "req_msg": "INSERT INTO employees (first_name, last_name, gender) VALUES (First2, Last2, M)",
+        "req_msg": "query=[INSERT INTO employees (first_name, last_name, gender) VALUES (?, ?, ?)] params=[First2, Last2, M]",
         "req_timestamp": 0,
         "resp_status": "\u0002",
         "resp_msg": "",
@@ -145,7 +145,7 @@
     },
     {
         "req_cmd": "\u0017",
-        "req_msg": "SELECT * FROM employees",
+        "req_msg": "query=[SELECT * FROM employees] params=[]",
         "req_timestamp": 0,
         "resp_status": "\u0002",
         "resp_msg": "Resultset rows = 3",

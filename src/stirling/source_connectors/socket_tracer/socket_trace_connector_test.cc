@@ -861,11 +861,11 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
       "BY id ORDER BY ?";
 
   std::string expected_entry1 =
-      "SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock "
+      "query=[SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock "
       "JOIN sock_tag ON "
-      "sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE tag.name=brown "
+      "sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE tag.name=? "
       "GROUP "
-      "BY id ORDER BY id";
+      "BY id ORDER BY ?] params=[brown, id]";
 
   EXPECT_THAT(ToStringVector(record_batch[kMySQLReqBodyIdx]),
               ElementsAre(expected_entry0, expected_entry1));

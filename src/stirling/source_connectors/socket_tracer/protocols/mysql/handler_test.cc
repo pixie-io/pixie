@@ -153,9 +153,10 @@ TEST(HandleStmtExecuteRequest, Basic) {
                    ParseState::kSuccess);
   EXPECT_EQ(entry.req.cmd, Command::kStmtExecute);
   EXPECT_EQ(entry.req.msg,
-            "SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock JOIN sock_tag "
+            "query=[SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock JOIN "
+            "sock_tag "
             "ON sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE "
-            "tag.name=brown GROUP BY id ORDER BY id");
+            "tag.name=? GROUP BY id ORDER BY ?] params=[brown, id]");
 }
 
 TEST(HandleStringRequest, Basic) {

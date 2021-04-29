@@ -380,23 +380,17 @@ StatusOr<ParseState> HandleNonStringRequest(const Packet& req_packet, Record* en
 namespace {
 std::string CombinePrepareExecute(std::string_view stmt_prepare_request,
                                   const std::vector<StmtExecuteParam>& params) {
-  size_t offset = 0;
-  size_t count = 0;
-  std::string result;
-
-  for (size_t index = stmt_prepare_request.find("?", offset); index != std::string::npos;
-       index = stmt_prepare_request.find("?", offset)) {
-    if (count >= params.size()) {
-      LOG(WARNING) << "Unequal number of stmt exec parameters for stmt prepare.";
-      break;
+  std::string result = absl::Substitute("query=[$0] params=[", stmt_prepare_request);
+  // Implements absl::StrJoin manually to avoid the extra copies going from
+  // std::vector<StmtExecuteParam> to std::vector<std::string> and then std::string via
+  // absl::StrJoin.
+  for (const auto& [i, param] : Enumerate(params)) {
+    result += param.value;
+    if (i < params.size() - 1) {
+      result += ", ";
     }
-    absl::StrAppend(&result, stmt_prepare_request.substr(offset, index - offset),
-                    params[count].value);
-    count++;
-    offset = index + 1;
   }
-  result += stmt_prepare_request.substr(offset);
-
+  result += "]";
   return result;
 }
 
