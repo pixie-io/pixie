@@ -142,7 +142,7 @@ export const DeployInstructions = () => {
           <div className={classes.buttons}>
             <Button
               className={classes.button}
-              href='https://slackin.withpixie.ai/'
+              href='https://slackin.px.dev/'
               variant='outlined'
               color='primary'
               size='large'
