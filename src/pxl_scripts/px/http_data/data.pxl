@@ -24,12 +24,13 @@ import px
 def http_data(start: str, num_head: int):
     df = px.DataFrame(table='http_events', start_time=start)
 
-    # Replace UPID with pod.
+    df.namespace = df.ctx['namespace']
+    df.node = df.ctx['node']
     df.pod = df.ctx['pod']
-    df = df.drop(['upid'])
+    df.pid = px.upid_to_pid(df.upid)
 
     # Remove some columns.
-    df = df.drop(['trace_role', 'content_type', 'minor_version'])
+    df = df.drop(['upid', 'trace_role', 'content_type', 'minor_version'])
 
     # Restrict number of results.
     df = df.head(num_head)
