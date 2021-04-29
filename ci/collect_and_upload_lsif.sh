@@ -80,10 +80,9 @@ LSIF_GO_OUT="go.dump.lsif"
   --output="${LSIF_GO_OUT}"
 upload_to_sourcegraph "${LSIF_GO_OUT}"
 
-# Disabling TS LSIF upload until sourcegraph fix their fork of lsif-tsc.
-# LSIF_TS_OUT="ts.dump.lsif"
-# lsif-tsc --out "${LSIF_TS_OUT}" -p src/ui
-# upload_to_sourcegraph "${LSIF_TS_OUT}"
+LSIF_TS_OUT="ts.dump.lsif"
+lsif-tsc --out "${LSIF_TS_OUT}" -p src/ui
+upload_to_sourcegraph "${LSIF_TS_OUT}"
 
 LSIF_CPP_OUT="cpp.dump.lsif"
 mapfile -t < <(bazel query \
