@@ -27,8 +27,6 @@ if [ $# -ne 0 ]; then
     has_minikube_profile=true
 fi
 
-workspace=$(bazel info workspace)
-
 profile_args_str=""
 if [ "${has_minikube_profile}" = true ]; then
     profile_args_str="-p $profile"

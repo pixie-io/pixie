@@ -21,42 +21,45 @@
 ## Bazel command to use.
 BAZEL     := bazel
 
-## Minikube command to use.
-MINIKUBE  := minikube
+# make-lazy converts a recursive variable, which is evaluated every time it's
+# referenced, to a lazy variable, which is evaluated only the first time it's
+# used. See: http://blog.jgc.org/2016/07/lazy-gnu-make-variables.html
+override make-lazy = $(eval $1 = $$(eval $1 := $(value $1))$$($1))
 
-WORKSPACE := $$(bazel info workspace)
-
-## Skaffold command to use.
-SKAFFOLD := skaffold
-
-SKAFFOLD_DIR := $(WORKSPACE)/skaffold
+# Color support.
+yellow = $(shell { tput setaf 3 || tput AF 3; } 2>/dev/null)
+cyan = $(shell { tput setaf 6 || tput AF 6; } 2>/dev/null)
+term-reset = $(shell { tput sgr0 || tput me; } 2>/dev/null)
+$(call make-lazy,yellow)
+$(call make-lazy,cyan)
+$(call make-lazy,term-reset)
 
 .PHONY: clean
-clean:
+clean: ## Remove the bazel build directories.
 	$(BAZEL) clean
 
 .PHONY: pristine
-pristine:
+pristine: ## Remove the bazel build directories and purge the build cache.
 	$(BAZEL) clean --expunge
 
 .PHONY: build
-build: ## Run the full build (except UI).
+build: ## Run the full build.
 	$(BAZEL) build //...
 
 .PHONY: test
-test: ## Run all the tests (except UI).
+test: ## Run all the tests.
 	$(BAZEL) test //... ${BAZEL_TEST_EXTRA_ARGS}
 
 .PHONY: test-opt
-test-opt: ## Run all the tests (except UI), optimized build.
+test-opt: ## Run all the tests, optimized build.
 	$(BAZEL) test -c opt //... ${BAZEL_TEST_EXTRA_ARGS}
 
 .PHONY: test-asan
-test-asan: ## Run all the tests (except UI), with address sanitizer.
+test-asan: ## Run all the tests, with address sanitizer.
 	$(BAZEL) test --config=asan //... ${BAZEL_TEST_EXTRA_ARGS}
 
 .PHONY: test-tsan
-test-tsan: ## Run all the tests (except UI),  with thread sanitizer.
+test-tsan: ## Run all the tests, with thread sanitizer.
 	$(BAZEL) test --config=tsan //... ${BAZEL_TEST_EXTRA_ARGS}
 
 .PHONY: go-mod-tidy
@@ -68,22 +71,22 @@ go-mod-ensure: ## Ensure that go dependencies exist.
 	go mod download
 
 .PHONY: gazelle-repos
-gazelle-repos: go.mod
+gazelle-repos: go.mod ## Run gazelle and generate build rules for new deps in go.mod, and go.sum.
 	$(BAZEL) run //:gazelle -- update-repos -from_file=go.mod -prune -to_macro=go_deps.bzl%pl_go_dependencies
 
 .PHONY: gazelle
-gazelle: gazelle-repos
+gazelle: gazelle-repos ## Run gazelle and autofix bazel dependencies for go targets.
 	$(BAZEL) run //:gazelle -- fix
 
 .PHONY: buildifier
-buildifier:
+buildifier: ## Run bazel buildtools buildifier to format build files.
 	$(BAZEL) run //:buildifier
 
 .PHONY: go-setup
 go-setup: go-mod-tidy go-mod-ensure gazelle ## Run go setup to regenrate modules/build files.
 
 dev-env-start: ## Start K8s dev environment.
-	$(WORKSPACE)/scripts/setup_dev_k8s.sh
+	./scripts/setup_dev_k8s.sh
 
 dev-env-stop: ## Stop dev environment.
 	$(MINIKUBE) stop
