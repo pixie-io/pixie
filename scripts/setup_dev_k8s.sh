@@ -16,6 +16,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+set -e
+
 vm_driver=kvm2
 memory=8192
 cpus=8
