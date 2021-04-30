@@ -1,0 +1,5 @@
+---
+short: Normalized SQL Queries
+long: >
+  This live view calculates the latency, error rate, and throughput
+  of each distinct normalized SQL Query. Only supports Postgres or MySQL.

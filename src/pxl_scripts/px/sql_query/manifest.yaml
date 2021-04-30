@@ -1,0 +1,6 @@
+---
+short: SQL Query Params
+long: >
+  This live view calculates the latency, error rate, and throughput
+  of each distinct parameter set for a given normalized SQL query.
+  Only supports PostgresSQL or MySQL.
