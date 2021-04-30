@@ -1,3 +1,4 @@
+#!/bin/bash -e
 # Copyright 2018- The Pixie Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,8 +44,10 @@ retry() {
 
 ensure_namespace() {
   ns=$1
-  kubectl get namespaces ${ns} > /dev/null 2> /dev/null
-  if [ $? -ne 0 ]; then
+  # Wrapping as such avoids sending an error code in case ns is not found. Useful for scripts that set -e.
+  ret=0
+  kubectl get namespaces "${ns}" > /dev/null 2> /dev/null || ret=$?
+  if [[ ret -ne 0 ]]; then
     kubectl create namespace ${ns}
   fi
 }
