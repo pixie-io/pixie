@@ -75,8 +75,8 @@ spec:
               key: PL_ELASTIC_SERVICE
         - name: PL_SEGMENT_WRITE_KEY
           valueFrom:
-            secretKeyRef:
-              name: segment-secrets
+            configMapKeyRef:
+              name: segment-config
               key: write-key
         - name: PL_VIZIER_IMAGE_SECRET_PATH
           value: /vizier-image-secret

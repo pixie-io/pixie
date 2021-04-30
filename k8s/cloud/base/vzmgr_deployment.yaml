@@ -69,8 +69,8 @@ spec:
               key: PL_POSTGRES_PASSWORD
         - name: PL_SEGMENT_WRITE_KEY
           valueFrom:
-            secretKeyRef:
-              name: segment-secrets
+            configMapKeyRef:
+              name: segment-config
               key: write-key
         volumeMounts:
         - name: certs

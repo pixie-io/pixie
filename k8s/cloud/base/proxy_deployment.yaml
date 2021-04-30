@@ -59,8 +59,8 @@ spec:
               key: PL_API_SERVICE_HTTP
         - name: PL_SEGMENT_UI_WRITE_KEY
           valueFrom:
-            secretKeyRef:
-              name: segment-secrets
+            configMapKeyRef:
+              name: segment-config
               key: ui-write-key
         volumeMounts:
         - name: certs
