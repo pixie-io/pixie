@@ -71,7 +71,8 @@ func main() {
 	)
 
 	if err != nil {
-		log.WithError(err).Fatal("Failed to connect to Cloud DNS service")
+		log.WithError(err).Info("Failed to connect to Cloud DNS service. Unable to generate DNS records for Direct mode.")
+		dnsService = nil
 	}
 
 	svr := controller.NewServer(env, dnsService, db)

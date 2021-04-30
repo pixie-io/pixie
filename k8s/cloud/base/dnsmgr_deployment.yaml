@@ -67,3 +67,4 @@ spec:
       - name: cloud-dns-secrets
         secret:
           secretName: cloud-dns-secrets
+          optional: true
