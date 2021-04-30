@@ -14,6 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
 genrule(
     name = "mysql_parser_gen",
     srcs = glob(["sql/mysql/Positive-Technologies/*.g4"]),
@@ -45,8 +47,8 @@ cc_library(
         "mysql_parser/MySQLParserBaseListener.h",
         "mysql_parser/MySQLParserListener.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "@com_github_antlr_antlr4//:libantlr",
     ],
-    visibility = ["//visibility:public"],
 )

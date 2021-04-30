@@ -14,6 +14,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@rules_cc//cc:defs.bzl", "cc_library")
+
 genrule(
     name = "pgsql_parser_gen",
     srcs = [
@@ -48,9 +50,9 @@ cc_library(
         "pgsql_parser/PostgresSQLParserBaseListener.h",
         "pgsql_parser/PostgresSQLParserListener.h",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "@com_github_antlr_antlr4//:libantlr",
-        "@com_google_absl//absl/strings:strings",
+        "@com_google_absl//absl/strings",
     ],
-    visibility = ["//visibility:public"],
 )

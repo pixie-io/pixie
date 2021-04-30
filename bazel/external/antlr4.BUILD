@@ -32,6 +32,6 @@ cmake(
     out_static_libs = [
         "libantlr4-runtime.a",
     ],
-    working_directory = "runtime/Cpp",
     visibility = ["//visibility:public"],
+    working_directory = "runtime/Cpp",
 )
