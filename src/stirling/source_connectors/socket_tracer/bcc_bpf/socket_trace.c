@@ -383,17 +383,15 @@ static __inline void submit_close_event(struct pt_regs* ctx, struct conn_info_t*
 // If send_data is false, only the metadata is sent for accounting purposes (used for connection
 // stats).
 static __inline void perf_submit_buf(struct pt_regs* ctx, const enum TrafficDirection direction,
-                                     const char* buf, size_t buf_size,
+                                     const char* buf, size_t buf_size, size_t offset,
                                      struct conn_info_t* conn_info,
                                      struct socket_data_event_t* event, bool send_data) {
   switch (direction) {
     case kEgress:
-      event->attr.pos = conn_info->wr_bytes;
-      conn_info->wr_bytes += buf_size;
+      event->attr.pos = conn_info->wr_bytes + offset;
       break;
     case kIngress:
-      event->attr.pos = conn_info->rd_bytes;
-      conn_info->rd_bytes += buf_size;
+      event->attr.pos = conn_info->rd_bytes + offset;
       break;
   }
 
@@ -463,34 +461,16 @@ static __inline void perf_submit_wrapper(struct pt_regs* ctx, const enum Traffic
                                          const char* buf, const size_t buf_size,
                                          struct conn_info_t* conn_info,
                                          struct socket_data_event_t* event, bool send_data) {
-  int bytes_remaining = buf_size;
+  int bytes_sent = 0;
   unsigned int i;
 
 #pragma unroll
   for (i = 0; i < CHUNK_LIMIT; ++i) {
-    if (bytes_remaining >= MAX_MSG_SIZE) {
-      perf_submit_buf(ctx, direction, buf + i * MAX_MSG_SIZE, MAX_MSG_SIZE, conn_info, event,
-                      send_data);
-      bytes_remaining = bytes_remaining - MAX_MSG_SIZE;
-    } else if (bytes_remaining > 0) {
-      perf_submit_buf(ctx, direction, buf + i * MAX_MSG_SIZE, bytes_remaining, conn_info, event,
-                      send_data);
-      bytes_remaining = 0;
-    }
-  }
-
-  // If the message is too long, then we can't transmit it all.
-  // But we still want to record an accurate number of bytes transmitted on the connection.
-  //
-  // If bytes_remaining is non-zero here, it will appear as missing data in socket_trace_connector,
-  // which is exactly what we want it to believe.
-  switch (direction) {
-    case kEgress:
-      conn_info->wr_bytes += bytes_remaining;
-      break;
-    case kIngress:
-      conn_info->rd_bytes += bytes_remaining;
-      break;
+    const int bytes_remaining = buf_size - bytes_sent;
+    const size_t current_size = bytes_remaining > MAX_MSG_SIZE ? MAX_MSG_SIZE : bytes_remaining;
+    perf_submit_buf(ctx, direction, buf + bytes_sent, current_size, bytes_sent, conn_info, event,
+                    send_data);
+    bytes_sent += current_size;
   }
 }
 
@@ -512,31 +492,20 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx, const enum TrafficD
   // array order. That means they read or fill iov[0], then iov[1], and so on. They return the total
   // size of the written or read data. Therefore, when loop through the buffers, both the number of
   // buffers and the total size need to be checked. More details can be found on their man pages.
-  unsigned int bytes_remaining = total_size;
+  int bytes_sent = 0;
 #pragma unroll
-  for (unsigned int i = 0; i < LOOP_LIMIT && i < iovlen && bytes_remaining > 0; ++i) {
+  for (unsigned int i = 0; i < LOOP_LIMIT && i < iovlen && bytes_sent < total_size; ++i) {
     struct iovec iov_cpy;
     bpf_probe_read(&iov_cpy, sizeof(struct iovec), &iov[i]);
 
+    const int bytes_remaining = total_size - bytes_sent;
     const size_t iov_size = iov_cpy.iov_len < bytes_remaining ? iov_cpy.iov_len : bytes_remaining;
 
     // TODO(oazizi/yzhao): Should switch this to go through perf_submit_wrapper.
-    perf_submit_buf(ctx, direction, iov_cpy.iov_base, iov_size, conn_info, event, send_data);
-    bytes_remaining -= iov_size;
-  }
-
-  // If the message is too long, then we can't transmit it all.
-  // But we still want to record an accurate number of bytes transmitted on the connection.
-  //
-  // If bytes_remaining is non-zero here, it will appear as missing data in socket_trace_connector,
-  // which is exactly what we want it to believe.
-  switch (direction) {
-    case kEgress:
-      conn_info->wr_bytes += bytes_remaining;
-      break;
-    case kIngress:
-      conn_info->rd_bytes += bytes_remaining;
-      break;
+    //                     We don't have the BPF instruction count to do so right now.
+    perf_submit_buf(ctx, direction, iov_cpy.iov_base, iov_size, bytes_sent, conn_info, event,
+                    send_data);
+    bytes_sent += iov_size;
   }
 }
 
@@ -780,6 +749,16 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
     // probes respectively. Consider remove one copy.
     perf_submit_iovecs(ctx, direction, args->iov, args->iovlen, bytes_count, conn_info, event,
                        send_data);
+  }
+
+  // Update state of the connection.
+  switch (direction) {
+    case kEgress:
+      conn_info->wr_bytes += bytes_count;
+      break;
+    case kIngress:
+      conn_info->rd_bytes += bytes_count;
+      break;
   }
 
   return;
