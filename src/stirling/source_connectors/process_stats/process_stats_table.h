@@ -79,40 +79,5 @@ constexpr DataTableSchema kProcessStatsTable(
 //      DataTableSchema("process_stats", "CPU, memory and IO metrics for processes",
 //      kProcessStatsElements, kProcessStatsTabletizationKey);
 
-// clang-format off
-constexpr DataElement kNetworkStatsElements[] = {
-        canonical_data_elements::kTime,
-        {"pod_id", "The ID of the pod",
-         types::DataType::STRING, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
-        {"rx_bytes", "Received network traffic in bytes of the pod",
-         types::DataType::INT64, types::SemanticType::ST_BYTES, types::PatternType::METRIC_COUNTER},
-        {"rx_packets", "Number of received network packets of the pod",
-         types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_COUNTER},
-        {"rx_errors", "Number of network receive errors of the pod",
-         types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_COUNTER},
-        {"rx_drops", "Number of dropped network packets being received of the pod",
-         types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_COUNTER},
-        {"tx_bytes", "Transmitted network traffic of the pod",
-         types::DataType::INT64, types::SemanticType::ST_BYTES, types::PatternType::METRIC_COUNTER},
-        {"tx_packets", "Number of transmitted network packets of the pod",
-         types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_COUNTER},
-        {"tx_errors", "Number of network transmit errors of the pod",
-         types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_COUNTER},
-        {"tx_drops", "Number of dropped network packets being transmitted of the pod",
-         types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_COUNTER},
-};
-
-constexpr DataTableSchema kNetworkStatsTable(
-    "network_stats",
-    "Network-layer RX/TX stats, grouped by pod. This table contains aggregate statistics "
-    "measured at the network device interface. For connection-level information, including the "
-    "remote endpoints with which a pod is communicating, see the Connection-Level Stats "
-    "(conn_stats) table.",
-    kNetworkStatsElements,
-    std::chrono::milliseconds{1000},
-    std::chrono::milliseconds{1000}
-);
-// clang-format on
-
 }  // namespace stirling
 }  // namespace px

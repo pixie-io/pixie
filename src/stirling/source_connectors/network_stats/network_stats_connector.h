@@ -29,25 +29,24 @@
 #include "src/shared/metadata/metadata.h"
 #include "src/stirling/core/canonical_types.h"
 #include "src/stirling/core/source_connector.h"
-#include "src/stirling/source_connectors/system_stats/system_stats_table.h"
+#include "src/stirling/source_connectors/network_stats/network_stats_table.h"
 
 namespace px {
 namespace stirling {
 
-class SystemStatsConnector : public SourceConnector {
+class NetworkStatsConnector : public SourceConnector {
  public:
-  static constexpr std::string_view kName = "system_stats";
+  static constexpr std::string_view kName = "network_stats";
   static constexpr auto kSamplingPeriod = std::chrono::milliseconds{1000};
   static constexpr auto kPushPeriod = std::chrono::milliseconds{1000};
-  static constexpr auto kTables = MakeArray(kProcessStatsTable, kNetworkStatsTable);
-  static constexpr uint32_t kProcStatsTableNum = TableNum(kTables, kProcessStatsTable);
+  static constexpr auto kTables = MakeArray(kNetworkStatsTable);
   static constexpr uint32_t kNetStatsTableNum = TableNum(kTables, kNetworkStatsTable);
 
-  SystemStatsConnector() = delete;
-  ~SystemStatsConnector() override = default;
+  NetworkStatsConnector() = delete;
+  ~NetworkStatsConnector() override = default;
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
-    return std::unique_ptr<SourceConnector>(new SystemStatsConnector(name));
+    return std::unique_ptr<SourceConnector>(new NetworkStatsConnector(name));
   }
 
   Status InitImpl() override;
@@ -61,13 +60,12 @@ class SystemStatsConnector : public SourceConnector {
   void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
 
  protected:
-  explicit SystemStatsConnector(std::string_view source_name)
+  explicit NetworkStatsConnector(std::string_view source_name)
       : SourceConnector(source_name, kTables) {
     proc_parser_ = std::make_unique<system::ProcParser>(sysconfig_);
   }
 
  private:
-  void TransferProcessStatsTable(ConnectorContext* ctx, DataTable* data_table);
   void TransferNetworkStatsTable(ConnectorContext* ctx, DataTable* data_table);
 
   static Status GetNetworkStatsForPod(const system::ProcParser& proc_parser,

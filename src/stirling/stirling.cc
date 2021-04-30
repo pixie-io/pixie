@@ -44,12 +44,13 @@
 #include "src/stirling/source_connectors/dynamic_bpftrace/dynamic_bpftrace_connector.h"
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_trace_connector.h"
 #include "src/stirling/source_connectors/jvm_stats/jvm_stats_connector.h"
+#include "src/stirling/source_connectors/network_stats/network_stats_connector.h"
 #include "src/stirling/source_connectors/perf_profiler/perf_profile_connector.h"
 #include "src/stirling/source_connectors/pid_runtime/pid_runtime_connector.h"
 #include "src/stirling/source_connectors/proc_stat/proc_stat_connector.h"
+#include "src/stirling/source_connectors/process_stats/process_stats_connector.h"
 #include "src/stirling/source_connectors/seq_gen/seq_gen_connector.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
-#include "src/stirling/source_connectors/system_stats/system_stats_connector.h"
 
 #include "src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/dynamic_tracer.h"
 
@@ -61,38 +62,60 @@ namespace {
 #define REGISTRY_PAIR(source) \
   { source::kName, SourceRegistry::CreateRegistryElement<source>() }
 const absl::flat_hash_map<std::string_view, SourceRegistry::RegistryElement> kAllSources = {
-    REGISTRY_PAIR(JVMStatsConnector),    REGISTRY_PAIR(PIDRuntimeConnector),
-    REGISTRY_PAIR(ProcStatConnector),    REGISTRY_PAIR(SeqGenConnector),
-    REGISTRY_PAIR(SocketTraceConnector), REGISTRY_PAIR(SystemStatsConnector),
-    REGISTRY_PAIR(PerfProfileConnector),
+    REGISTRY_PAIR(JVMStatsConnector),     REGISTRY_PAIR(PIDRuntimeConnector),
+    REGISTRY_PAIR(ProcStatConnector),     REGISTRY_PAIR(SeqGenConnector),
+    REGISTRY_PAIR(SocketTraceConnector),  REGISTRY_PAIR(ProcessStatsConnector),
+    REGISTRY_PAIR(NetworkStatsConnector), REGISTRY_PAIR(PerfProfileConnector),
 };
 #undef REGISTRY_PAIR
 
 }  // namespace
 
+// clang-format off
 absl::flat_hash_set<std::string_view> GetSourceNamesForGroup(SourceConnectorGroup group) {
   switch (group) {
     case SourceConnectorGroup::kNone:
       return {};
     case SourceConnectorGroup::kProd:
-      return {SocketTraceConnector::kName, SystemStatsConnector::kName, PerfProfileConnector::kName,
-              JVMStatsConnector::kName};
+      return {
+        ProcessStatsConnector::kName,
+        NetworkStatsConnector::kName,
+        JVMStatsConnector::kName,
+        SocketTraceConnector::kName,
+        PerfProfileConnector::kName
+      };
     case SourceConnectorGroup::kAll:
-      return {JVMStatsConnector::kName,   PIDRuntimeConnector::kName,  ProcStatConnector::kName,
-              SeqGenConnector::kName,     SocketTraceConnector::kName, SystemStatsConnector::kName,
-              PerfProfileConnector::kName};
+      return {
+        ProcessStatsConnector::kName,
+        NetworkStatsConnector::kName,
+        JVMStatsConnector::kName,
+        PIDRuntimeConnector::kName,
+        ProcStatConnector::kName,
+        SeqGenConnector::kName,
+        SocketTraceConnector::kName,
+        PerfProfileConnector::kName
+      };
     case SourceConnectorGroup::kTracers:
-      return {SocketTraceConnector::kName};
+      return {
+        SocketTraceConnector::kName
+      };
     case SourceConnectorGroup::kMetrics:
-      return {JVMStatsConnector::kName, SystemStatsConnector::kName};
+      return {
+        ProcessStatsConnector::kName,
+        NetworkStatsConnector::kName,
+        JVMStatsConnector::kName
+      };
     case SourceConnectorGroup::kProfiler:
-      return {PerfProfileConnector::kName};
+      return {
+        PerfProfileConnector::kName
+      };
     default:
       // To keep GCC happy.
       DCHECK(false);
       return {};
   }
 }
+// clang-format on
 
 StatusOr<std::unique_ptr<SourceRegistry>> CreateSourceRegistry(
     const absl::flat_hash_set<std::string_view>& source_names) {
