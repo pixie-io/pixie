@@ -25,7 +25,12 @@ printenv
 security unlock-keychain -p "$JENKINSKEY" login.keychain
 
 release_tag=${TAG_NAME##*/v}
-ARTIFACT_BASE_PATH=https://storage.googleapis.com/pixie-prod-artifacts/cli
+bucket="pixie-dev-public"
+if [[ $release_tag == *"-"* ]]; then
+  bucket="pixie-prod-artifacts"
+fi
+ARTIFACT_BASE_PATH="https://storage.googleapis.com/${bucket}/cli"
+
 url="${ARTIFACT_BASE_PATH}/${release_tag}/cli_darwin_amd64_unsigned"
 
 rm -f cli_darwin_amd64_unsigned

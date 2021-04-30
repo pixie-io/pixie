@@ -24,10 +24,15 @@ set -u
 
 CLOUD_ADDR=${PL_CLOUD_ADDR:-"work.withpixie.ai"}
 DEFAULT_INSTALL_PATH=/usr/local/bin
-ARTIFACT_BASE_PATH="https://storage.googleapis.com/pixie-prod-artifacts/cli"
 ARTIFACT_NAME=cli_darwin_amd64
 USE_VERSION=${PL_CLI_VERSION:-latest}
 USER_INSTALL_PATH="$HOME/bin"
+ARTIFACT_BUCKET="pixie-dev-public"
+if [[ $USE_VERSION == *"-"* ]]; then
+  ARTIFACT_BUCKET="pixie-prod-artifacts"
+fi
+ARTIFACT_BASE_PATH="https://storage.googleapis.com/${ARTIFACT_BUCKET}/cli"
+
 
 PIXIE_BANNER="
   ___  _       _

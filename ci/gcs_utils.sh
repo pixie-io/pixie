@@ -25,6 +25,8 @@ copy_artifact_to_gcs() {
     sha256sum "${binary_path}" | awk '{print $1}' > sha
     gsutil -h 'Content-Disposition:filename=px' cp "${binary_path}" "${output_path}/${name}"
     gsutil cp sha "${output_path}/${name}.sha256"
-    gsutil acl ch -u allUsers:READER "${output_path}/${name}"
-    gsutil acl ch -u allUsers:READER "${output_path}/${name}.sha256"
+    # Updating the ACL for a specific object will error if there are top-level permissions
+    # applied to the bucket.
+    gsutil acl ch -u allUsers:READER "${output_path}/${name}" || true
+    gsutil acl ch -u allUsers:READER "${output_path}/${name}.sha256" || true
 }

@@ -109,10 +109,16 @@ write_artifacts_to_gcs() {
     fi
 }
 
-output_path="gs://pixie-prod-artifacts/cli/${release_tag}"
+public="True"
+bucket="pixie-dev-public"
+if [[ $release_tag == *"-"* ]]; then
+  public="False"
+  bucket="pixie-prod-artifacts"
+fi
+output_path="gs://${bucket}/cli/${release_tag}"
 write_artifacts_to_gcs "$output_path"
 # Check to see if it's production build. If so we should also write it to the latest directory.
-if [[ ! "$release_tag" == *"-"* ]]; then
-    output_path="gs://pixie-prod-artifacts/cli/latest"
+if [[ $public == "True" ]]; then
+    output_path="gs://pixie-dev-public/cli/latest"
     write_artifacts_to_gcs "$output_path"
 fi
