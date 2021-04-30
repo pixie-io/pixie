@@ -21,11 +21,11 @@ function usage() {
   # Disable the printing on each echo.
   set +x
   echo "Usage:"
-  echo "$0 namespace [--load_oss_auth] --help"
+  echo "$0 namespace [--load_ory_auth] --help"
   echo ""
   echo "    namespace             The namespace where we want to load the db"
   echo "                              Required."
-  echo "    --load_oss_auth       Whether to load the oss auth database or not."
+  echo "    --load_ory_auth       Whether to load the oss auth database or not."
   echo "                              Optional."
   echo ""
   exit 1
@@ -37,7 +37,7 @@ if [ $# -lt 1 ]; then
 fi
 
 namespace=""
-load_oss_auth=0
+load_ory_auth=0
 repo_path=$(pwd)
 versions_file="$(pwd)/src/utils/artifacts/artifact_db_updater/VERSIONS.json"
 certs_path=$(pwd)/credentials/certs
@@ -45,8 +45,8 @@ while true; do
     if [[ "$1" == "--help" ]]; then
         usage
         exit 1
-    elif [[ "$1" == "--load_oss_auth" ]]; then
-        load_oss_auth=1
+    elif [[ "$1" == "--load_ory_auth" ]]; then
+        load_ory_auth=1
     else
         namespace=$1
     fi
@@ -82,7 +82,7 @@ bazel run -c opt //src/cloud/dnsmgr/load_certs:load_certs -- \
     --certs_path "${certs_path}" --postgres_db "pl"
 
 # Run the kratos and hydra migrate jobs.
-if [[ $load_oss_auth -ne 0 ]]; then
+if [[ $load_ory_auth -ne 0 ]]; then
     kubectl apply -n "${namespace}" -f "${repo_path}/k8s/cloud/base/kratos/kratos_migrate.yaml"
     kubectl apply -n "${namespace}" -f "${repo_path}/k8s/cloud/base/hydra/hydra_migrate.yaml"
 fi

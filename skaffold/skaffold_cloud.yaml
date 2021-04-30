@@ -71,15 +71,11 @@ profiles:
     - --compilation_mode=dbg
   activation:
   - command: dev
-- name: oss_auth
+- name: ory_auth
   patches:
-  - op: add
-    path: /build/artifacts/context=./bazel/args
-    value:
-    - --compilation_mode=dbg
   - op: replace
     path: /deploy/kustomize/paths
-    value: [k8s/cloud/oss_auth]
+    value: [k8s/cloud/ory_auth]
 - name: nightly
   patches:
   - op: add
@@ -112,7 +108,7 @@ profiles:
     - --compilation_mode=dbg
   - op: replace
     path: /deploy/kustomize/paths
-    value: [k8s/cloud/oss_auth/job]
+    value: [k8s/cloud/ory_auth/job]
 - name: staging
   patches:
   - op: add

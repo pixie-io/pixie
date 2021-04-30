@@ -30,16 +30,20 @@ make dev-env-start
     ```
     ./scripts/deploy_cloud_prereqs.sh plc-dev dev
     ```
-2. Deploy the Pixie Cloud services and deployments. Note to change the profile depending on whether you are deploying to minikube or another K8s environment.
+2. Deploy the Pixie Cloud services and deployments. Note to add profile flags for whether you're running a dev build, minikube env, or want to use ory_auth in place of auth0.
 
     ```
-    skaffold dev -f skaffold/skaffold_cloud.yaml -p (dev|minikube|oss_auth)
+    # note: Profile args are not exclusive.
+    # -p dev enables the dev profile
+    # -p minikube enables the minikube profile
+    # -p ory_auth enables the ory authentication deployment. Not including this uses auth0 by default.
+    skaffold dev -f skaffold/skaffold_cloud.yaml (-p dev) (-p minikube) (-p ory_auth)
     ```
 3. Load basic artifacts into the database.
 
     ```
-    # --load_oss_auth only works for skaffold cloud's started with `-p oss_auth`.
-    ./scripts/load_dev_db.sh plc-dev [--load_oss_auth]
+    # --load_ory_auth only works for skaffold cloud's started with `-p ory_auth`.
+    ./scripts/load_dev_db.sh plc-dev [--load_ory_auth]
     ```
 4. Update `/etc/hosts` so that it knows to point `dev.withpixie.dev` to your running dev cloud instance. The `dev_dns_updater` will do this process for you.
 
@@ -47,7 +51,7 @@ make dev-env-start
     bazel run //src/utils/dev_dns_updater:dev_dns_updater -- --domain-name "dev.withpixie.dev"
     ```
 
-5. (`oss_auth` only) Create the admin user and get link to update password
+5. (`ory_auth` only) Create the admin user and get link to update password
     ```
     skaffold dev -f skaffold/skaffold_cloud.yaml -p create_admin_job
     ```
@@ -56,7 +60,7 @@ make dev-env-start
     ...
     [create-admin-job-hssrl create-admin-job] time="2021-04-19T19:35:56Z" level=info msg="Please go to 'https://work.dev.withpixie.dev/oauth/kratos/self-service/recovery/methods/link?flow=31e0cef8-43ad-4a7a-b2e8-1d59a1101527&token=RRwpPGtJXzuNFjffxize1HZppp7oS3e3' to set password for 'admin@default.com'" func=main.main file="src/cloud/jobs/create_admin_user/main.go:100"
     ```
-6. (`oss_auth` only) Create Hydra OAuth Client
+6. (`ory_auth` only) Create Hydra OAuth Client
    ```
     $ export HYDRA_POD=$(kubectl get pods -nplc-dev -l name=hydra --template '{{range .items}}{{.metadata.name}}{{end}}')
     $ export HYDRA_SECRET=<your secret here>
