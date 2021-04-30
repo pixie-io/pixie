@@ -23,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 	"time"
@@ -173,34 +172,8 @@ func init() {
 	DeployCmd.Flags().MarkHidden("dev_cloud_namespace")
 }
 
-func newVizAuthClient(conn *grpc.ClientConn) cloudpb.VizierImageAuthorizationClient {
-	return cloudpb.NewVizierImageAuthorizationClient(conn)
-}
-
 func newArtifactTrackerClient(conn *grpc.ClientConn) cloudpb.ArtifactTrackerClient {
 	return cloudpb.NewArtifactTrackerClient(conn)
-}
-
-func mustGetImagePullSecret(conn *grpc.ClientConn) string {
-	// Make rpc request to the cloud to get creds.
-	client := newVizAuthClient(conn)
-	req := &cloudpb.GetImageCredentialsRequest{}
-	ctxWithCreds := auth.CtxWithCreds(context.Background())
-	resp, err := client.GetImageCredentials(ctxWithCreds, req)
-	if err != nil {
-		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
-		log.WithError(err).Fatal("Failed to fetch image credentials")
-	}
-	return resp.Creds
-}
-
-func mustReadCredsFile(credsFile string) string {
-	credsData, err := ioutil.ReadFile(credsFile)
-	if err != nil {
-		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
-		log.WithError(err).Fatal(fmt.Sprintf("Could not read file: %s", credsFile))
-	}
-	return string(credsData)
 }
 
 func getLatestVizierVersion(conn *grpc.ClientConn) (string, error) {
@@ -318,7 +291,6 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	}
 
 	namespace, _ := cmd.Flags().GetString("namespace")
-	credsFile, _ := cmd.Flags().GetString("credentials_file")
 	devCloudNS := viper.GetString("dev_cloud_namespace")
 	cloudAddr := viper.GetString("cloud_addr")
 
@@ -361,31 +333,14 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	kubeAPIConfig := k8s.GetClientAPIConfig()
 	clientset := k8s.GetClientset(kubeConfig)
 
-	var credsData string
-	if credsFile == "" {
-		credsData = mustGetImagePullSecret(cloudConn)
-	} else {
-		credsData = mustReadCredsFile(credsFile)
-	}
-	secretName, _ := cmd.Flags().GetString("secret_name")
 	creds := auth.MustLoadDefaultCredentials()
 
 	utils.Infof("Generating YAMLs for Pixie")
 
 	var templatedYAMLs []*yamlsutils.YAMLFile
-	// Attempt to fetch templated YAMLs first. These should exist for newly released versions of Vizier (0.5.33+).
 	templatedYAMLs, err = artifacts.FetchVizierTemplates(cloudConn, creds.Token, versionString)
 	if err != nil {
-		// Fetch the untemplated YAMLs and templatize them on the fly.
-		vzYamls, err := artifacts.FetchVizierYAMLMap(cloudConn, creds.Token, versionString)
-		if err != nil {
-			log.WithError(err).Fatal("Could not fetch Vizier YAMLs")
-		}
-		templatedYAMLs, err = vizieryamls.GenerateTemplatedDeployYAMLs(clientset, vzYamls, versionString, namespace, secretName, credsData)
-		if err != nil {
-			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
-			log.WithError(err).Fatal("failed to generate deployment YAMLs")
-		}
+		log.WithError(err).Fatal("Could not fetch Vizier YAMLs")
 	}
 
 	// useEtcdOperator is true then deploy operator. Otherwise: If defaultStorageExists, then
