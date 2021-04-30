@@ -37,6 +37,7 @@ go_test(
     name = "testutils_test",
     srcs = ["kratostest_test.go"],
     embed = [":testutils"],
+    tags = ["manual"],
     deps = [
         "//src/cloud/profile/controller/idmanager",
         "@com_github_stretchr_testify//assert",

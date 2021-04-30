@@ -37,8 +37,9 @@ func TestCreateKratos(t *testing.T) {
 	defer server.CleanUp()
 
 	client, closeServer, err := server.Serve()
-	defer closeServer()
 	require.NoError(t, err)
+	defer closeServer()
+	assert.NotNil(t, client)
 
 	// Simple test that should pass if the client is setup properly.
 	email := "bobloblaw@lawblog.com"
