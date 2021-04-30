@@ -57,29 +57,32 @@ while true; do
     fi
 done
 
-
+# Port-forward to a different port than postgres to avoid problems.
+# If you are having troubles in the future, check overlapping `sudo lsof -i :<postgres_port>`
+# (substitute manually) and edit the script to a different port if it's not empty
+postgres_port=35432
 # Port-forward the postgres pod.
 postgres_pod=$(kubectl get pod --namespace "$namespace" --selector="name=postgres" \
     --output jsonpath='{.items[0].metadata.name}')
-kubectl port-forward pods/"$postgres_pod" 5432:5432 -n "$namespace" &
+kubectl port-forward pods/"$postgres_pod" ${postgres_port}:5432 -n "$namespace" &
 
 # Update database with Vizier versions.
 bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
       --repo_path "${repo_path}" --artifact_name vizier --versions_file "${versions_file}"
 bazel run -c opt //src/utils/artifacts/artifact_db_updater:artifact_db_updater -- \
-    --versions_file "${versions_file}" --postgres_db "pl"
+    --versions_file "${versions_file}" --postgres_db "pl" --postgres_port "${postgres_port}"
 
 # Update database with CLI versions.
 bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
       --repo_path "${repo_path}" --artifact_name cli --versions_file "${versions_file}"
 bazel run -c opt //src/utils/artifacts/artifact_db_updater:artifact_db_updater -- \
-    --versions_file "${versions_file}" --postgres_db "pl"
+    --versions_file "${versions_file}" --postgres_db "pl" --postgres_port "${postgres_port}"
 
 git checkout main "$versions_file"
 
 # Update database with SSL certs.
 bazel run -c opt //src/cloud/dnsmgr/load_certs:load_certs -- \
-    --certs_path "${certs_path}" --postgres_db "pl"
+    --certs_path "${certs_path}" --postgres_db "pl" --postgres_port "${postgres_port}"
 
 # Run the kratos and hydra migrate jobs.
 if [[ $load_ory_auth -ne 0 ]]; then
