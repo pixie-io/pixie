@@ -1,12 +1,12 @@
 # If changing this file, make sure to also update the ENV in tools/chef/packer_docker_dev.json.
 # DO NOT EDIT! This is an automatically generated file by Chef and may be changed.
 export CLANG_PATH=/opt/clang-11.1
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH
 export PATH=/opt/google-cloud-sdk/bin:$PATH
 export PATH=/opt/node/bin:$PATH
 export PATH=/opt/phab/arcanist/bin:$PATH
-export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH
 export PATH=${CLANG_PATH}/bin:$PATH
-export PATH=/opt/golang/bin/:$PATH
+export PATH=/opt/golang/bin:$PATH
 export LD_LIBRARY_PATH=${CLANG_PATH}/lib:${LD_LIBRARY_PATH}
 
 export CC=clang
