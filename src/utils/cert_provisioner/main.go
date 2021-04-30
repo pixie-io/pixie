@@ -88,7 +88,7 @@ func main() {
 		log.WithError(err).Fatal("Could not update cluster secrets")
 	}
 
-	certYAMLs, err := certs.DefaultGenerateCertYAMLs(ns)
+	certYAMLs, err := certs.GenerateVizierCertYAMLs(ns)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to generate cert YAMLs")
 	}

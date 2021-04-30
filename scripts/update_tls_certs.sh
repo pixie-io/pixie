@@ -63,9 +63,7 @@ fi
 
 workspace=$(bazel info workspace 2> /dev/null)
 pushd "${dir}"
-bazel run //src/pixie_cli:px -- install-certs --namespace="$namespace"
-kubectl -n "${namespace}" get secrets service-tls-certs -o yaml | \
-  python "${workspace}/scripts/decode_yaml_secret.py" > out.unenc.yaml
-sops --encrypt out.unenc.yaml > service_tls_certs.yaml
-rm out.unenc.yaml
+bazel run //src/pixie_cli:px -- create-cloud-certs --namespace="$namespace" > certs.yaml
+sops --encrypt certs.yaml > service_tls_certs.yaml
+rm certs.yaml
 popd

@@ -21,9 +21,5 @@ go_library(
     srcs = ["certs.go"],
     importpath = "px.dev/pixie/src/utils/shared/certs",
     visibility = ["//src:__subpackages__"],
-    deps = [
-        "//src/utils/shared/k8s",
-        "@io_k8s_client_go//kubernetes",
-        "@io_k8s_client_go//rest",
-    ],
+    deps = ["//src/utils/shared/k8s"],
 )

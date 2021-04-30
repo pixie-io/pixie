@@ -48,7 +48,7 @@ func init() {
 	RootCmd.AddCommand(VersionCmd)
 	RootCmd.AddCommand(AuthCmd)
 	RootCmd.AddCommand(CollectLogsCmd)
-	RootCmd.AddCommand(InstallCertsCmd)
+	RootCmd.AddCommand(CreateCloudCertsCmd)
 	RootCmd.AddCommand(DemoCmd)
 	RootCmd.AddCommand(DeployCmd)
 	RootCmd.AddCommand(DeleteCmd)
