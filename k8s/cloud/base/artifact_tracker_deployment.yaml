@@ -67,3 +67,4 @@ spec:
       - name: artifact-access-sa
         secret:
           secretName: artifact-access-sa
+          optional: true

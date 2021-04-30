@@ -125,7 +125,7 @@ func mustLoadTestData(db *sqlx.DB) {
 func TestServer_GetArtifactList(t *testing.T) {
 	mustLoadTestData(db)
 
-	server := controller.NewServer(db, nil, "bucket", nil)
+	server := controller.NewServer(db, nil, "bucket", "release-bucket", nil)
 
 	testCases := []struct {
 		name         string
@@ -251,7 +251,7 @@ func TestServer_GetDownloadLink(t *testing.T) {
 	mustLoadTestData(db)
 	storageClient := mustSetupFakeBucket(t)
 
-	server := controller.NewServer(db, storageClient, "test-bucket", &jwt.Config{
+	server := controller.NewServer(db, storageClient, "test-bucket", "test-release", &jwt.Config{
 		Email:      "test@test.com",
 		PrivateKey: []byte("the-key"),
 	})

@@ -48,20 +48,21 @@ import (
 
 func init() {
 	pflag.String("artifact_bucket", "pl-artifacts", "The name of the artifact bucket.")
+	pflag.String("release_artifact_bucket", "pl-artifacts", "The name of the artifact bucket containing official releases.")
 	pflag.String("sa_key_path", "/creds/service_account.json", "The path to the service account JSON file.")
 }
 
-func mustLoadServiceAccountConfig() *jwt.Config {
+func loadServiceAccountConfig() *jwt.Config {
 	saKeyFile := viper.GetString("sa_key_path")
 	saKey, err := ioutil.ReadFile(saKeyFile)
 
 	if err != nil {
-		log.Fatalln(err)
+		return nil
 	}
 
 	saCfg, err := google.JWTConfigFromJSON(saKey)
 	if err != nil {
-		log.Fatalln(err)
+		return nil
 	}
 	return saCfg
 }
@@ -88,8 +89,17 @@ func main() {
 	mux.Handle("/debug/", http.DefaultServeMux)
 	healthz.RegisterDefaultChecks(mux)
 
+	saCfg := loadServiceAccountConfig()
+
 	ctx := context.Background()
-	client, err := storage.NewClient(ctx, option.WithCredentialsFile(viper.GetString("sa_key_path")))
+	var client *storage.Client
+	var err error
+
+	if saCfg != nil {
+		client, err = storage.NewClient(ctx, option.WithCredentialsFile(viper.GetString("sa_key_path")))
+	} else {
+		client, err = storage.NewClient(ctx)
+	}
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize GCS client.")
 	}
@@ -97,9 +107,9 @@ func main() {
 	env := artifacttrackerenv.New()
 
 	db := mustLoadDB()
-	saCfg := mustLoadServiceAccountConfig()
 	bucket := viper.GetString("artifact_bucket")
-	svr := controller.NewServer(db, stiface.AdaptClient(client), bucket, saCfg)
+	releaseBucket := viper.GetString("release_artifact_bucket")
+	svr := controller.NewServer(db, stiface.AdaptClient(client), bucket, releaseBucket, saCfg)
 
 	serverOpts := &server.GRPCServerOptions{
 		DisableAuth: map[string]bool{

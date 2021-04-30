@@ -48,12 +48,13 @@ type Server struct {
 	db             *sqlx.DB
 	sc             stiface.Client
 	artifactBucket string
+	releaseBucket  string
 	gcsSA          *jwt.Config
 }
 
 // NewServer creates a new artifact tracker server.
-func NewServer(db *sqlx.DB, client stiface.Client, bucket string, gcsSA *jwt.Config) *Server {
-	return &Server{db: db, sc: client, artifactBucket: bucket, gcsSA: gcsSA}
+func NewServer(db *sqlx.DB, client stiface.Client, bucket string, releaseBucket string, gcsSA *jwt.Config) *Server {
+	return &Server{db: db, sc: client, artifactBucket: bucket, releaseBucket: releaseBucket, gcsSA: gcsSA}
 }
 
 // GetArtifactList returns a list of artifacts matching the passed in criteria.
@@ -189,22 +190,45 @@ func (s *Server) GetDownloadLink(ctx context.Context, in *apb.GetDownloadLinkReq
 
 	// Artifact found, generate the download link.
 	// location: gs://<artifact_bucket>/cli/2019.10.03-1/cli_linux_amd64
-	objectPath := path.Join(name, versionStr, fmt.Sprintf("%s_%s", name, downloadSuffix(at)))
-	url, err := URLSigner(s.artifactBucket, objectPath, &storage.SignedURLOptions{
-		GoogleAccessID: s.gcsSA.Email,
-		PrivateKey:     s.gcsSA.PrivateKey,
-		Method:         "GET",
-		Expires:        expires,
-		Scheme:         0,
-	})
 
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to sign download URL")
+	// If the version is not an official release, it is contained in a private bucket which requires creds to
+	// generate a signed URL.
+	release := !strings.Contains(versionStr, "-")
+	bucket := s.artifactBucket
+	if release {
+		bucket = s.releaseBucket
 	}
+	if !release && s.gcsSA == nil {
+		return nil, status.Error(codes.Internal, "Could not get download URL for non-release build without creds")
+	}
+
+	var url string
+	objectPath := path.Join(name, versionStr, fmt.Sprintf("%s_%s", name, downloadSuffix(at)))
+	if !release {
+		url, err = URLSigner(bucket, objectPath, &storage.SignedURLOptions{
+			GoogleAccessID: s.gcsSA.Email,
+			PrivateKey:     s.gcsSA.PrivateKey,
+			Method:         "GET",
+			Expires:        expires,
+			Scheme:         0,
+		})
+
+		if err != nil {
+			return nil, status.Error(codes.Internal, "failed to sign download URL")
+		}
+	} else {
+		attr, err := s.sc.Bucket(bucket).Object(objectPath).Attrs(ctx)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "failed to get URL")
+		}
+		url = attr.MediaLink
+	}
+
 	tpb, _ := types.TimestampProto(expires)
 
 	sha256ObjectPath := objectPath + ".sha256"
-	r, err := s.sc.Bucket(s.artifactBucket).Object(sha256ObjectPath).NewReader(ctx)
+	r, err := s.sc.Bucket(bucket).Object(sha256ObjectPath).NewReader(ctx)
+
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to fetch sha256 file")
 	}
