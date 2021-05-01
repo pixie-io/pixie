@@ -1,0 +1,7 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pl-support-access-config
+data:
+  PL_SUPPORT_ACCESS_ENABLED: "true"

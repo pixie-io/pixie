@@ -36,6 +36,8 @@ spec:
             name: pl-db-config
         - configMapRef:
             name: pl-domain-config
+        - configMapRef:
+            name: pl-support-access-config  
         env:
         - name: PL_JWT_SIGNING_KEY
           valueFrom:

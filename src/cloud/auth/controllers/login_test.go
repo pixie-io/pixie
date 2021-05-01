@@ -286,6 +286,7 @@ func TestServer_LoginNewUser_SupportUserNoOrg(t *testing.T) {
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
+	viper.Set("support_access_enabled", true)
 
 	env, err := authenv.New(mockProfile)
 	require.NoError(t, err)

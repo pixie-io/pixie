@@ -99,6 +99,10 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 
 	// If account is a Pixie support account, we don't want to create a new user.
 	if domainName == SupportAccountDomain {
+		accessEnabled := viper.GetBool("support_access_enabled")
+		if !accessEnabled {
+			return nil, status.Error(codes.PermissionDenied, "Support account does not have access credentials.")
+		}
 		return s.loginSupportUser(ctx, in, userInfo)
 	} else if in.OrgName != "" {
 		return nil, status.Error(codes.InvalidArgument, "orgName param not permitted for non Pixie support accounts")

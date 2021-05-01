@@ -35,3 +35,4 @@ resources:
 - scriptmgr_deployment.yaml
 - scriptmgr_service.yaml
 - scriptmgr_config.yaml
+- support_access_config.yaml
