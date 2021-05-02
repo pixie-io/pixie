@@ -127,8 +127,8 @@ void ConnTracker::AddConnCloseEvent(const close_event_t& close_event, uint64_t t
 
 void ConnTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   SetConnID(event->attr.conn_id);
-  bool role_changed = SetRole(event->attr.traffic_class.role, "inferred from data_event");
-  SetProtocol(event->attr.traffic_class.protocol, "inferred from data_event");
+  bool role_changed = SetRole(event->attr.role, "inferred from data_event");
+  SetProtocol(event->attr.protocol, "inferred from data_event");
 
   // If role has just resolved, it may be time to inform conn stats.
   if (role_changed && ShouldExportToConnStats()) {
@@ -150,11 +150,11 @@ void ConnTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
 
   // TODO(yzhao): Change to let userspace resolve the connection type and signal back to BPF.
   // Then we need at least one data event to let ConnTracker know the field descriptor.
-  if (event->attr.traffic_class.protocol == kProtocolUnknown) {
+  if (event->attr.protocol == kProtocolUnknown) {
     return;
   }
 
-  if (event->attr.traffic_class.protocol != traffic_class_.protocol) {
+  if (event->attr.protocol != protocol_) {
     return;
   }
 
@@ -200,7 +200,7 @@ void ConnTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
   SetConnID(hdr->attr.conn_id);
   SetProtocol(kProtocolHTTP2, "inferred from http2 headers");
 
-  if (traffic_class_.protocol != kProtocolHTTP2) {
+  if (protocol_ != kProtocolHTTP2) {
     return;
   }
 
@@ -240,7 +240,7 @@ void ConnTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
       return;
   }
 
-  if (traffic_class_.role == kRoleUnknown) {
+  if (role_ == kRoleUnknown) {
     EndpointRole role = InferHTTP2Role(write_event, hdr);
     bool role_changed = SetRole(role, "Inferred from http2 header");
     if (role_changed && ShouldExportToConnStats()) {
@@ -281,7 +281,7 @@ void ConnTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
   SetConnID(data->attr.conn_id);
   SetProtocol(kProtocolHTTP2, "inferred from http2 data");
 
-  if (traffic_class_.protocol != kProtocolHTTP2) {
+  if (protocol_ != kProtocolHTTP2) {
     return;
   }
 
@@ -420,13 +420,12 @@ void ConnTracker::SetConnID(struct conn_id_t conn_id) {
 
 bool ConnTracker::SetRole(EndpointRole role, std::string_view reason) {
   // Don't allow changing active role, unless it is from unknown to something else.
-  if (traffic_class_.role != kRoleUnknown) {
-    if (role != kRoleUnknown && traffic_class_.role != role) {
+  if (role_ != kRoleUnknown) {
+    if (role != kRoleUnknown && role_ != role) {
       CONN_TRACE(2) << absl::Substitute(
           "Not allowed to change the role of an active ConnTracker: $0, old role: $1, new "
           "role: $2",
-          ::ToString(conn_id_), magic_enum::enum_name(traffic_class_.role),
-          magic_enum::enum_name(role));
+          ::ToString(conn_id_), magic_enum::enum_name(role_), magic_enum::enum_name(role));
     }
 
     // Role did not change.
@@ -435,9 +434,9 @@ bool ConnTracker::SetRole(EndpointRole role, std::string_view reason) {
 
   if (role != kRoleUnknown) {
     CONN_TRACE(1) << absl::Substitute("Role updated $0 -> $1, reason=[$2]]",
-                                      magic_enum::enum_name(traffic_class_.role),
-                                      magic_enum::enum_name(role), reason);
-    traffic_class_.role = role;
+                                      magic_enum::enum_name(role_), magic_enum::enum_name(role),
+                                      reason);
+    role_ = role;
     return true;
   }
 
@@ -448,20 +447,20 @@ bool ConnTracker::SetRole(EndpointRole role, std::string_view reason) {
 // Returns false if protocol change was not allowed.
 bool ConnTracker::SetProtocol(TrafficProtocol protocol, std::string_view reason) {
   // No change, so we're all good.
-  if (traffic_class_.protocol == protocol) {
+  if (protocol_ == protocol) {
     return true;
   }
 
   // Changing the active protocol of a connection tracker is not allowed.
-  if (traffic_class_.protocol != kProtocolUnknown) {
+  if (protocol_ != kProtocolUnknown) {
     CONN_TRACE(2) << absl::Substitute(
         "Not allowed to change the protocol of an active ConnTracker: $0->$1, reason=[$2]",
-        magic_enum::enum_name(traffic_class_.protocol), magic_enum::enum_name(protocol), reason);
+        magic_enum::enum_name(protocol_), magic_enum::enum_name(protocol), reason);
     return false;
   }
 
-  TrafficProtocol old_protocol = traffic_class_.protocol;
-  traffic_class_.protocol = protocol;
+  TrafficProtocol old_protocol = protocol_;
+  protocol_ = protocol;
   CONN_TRACE(1) << absl::Substitute("Protocol changed: $0->$1", magic_enum::enum_name(old_protocol),
                                     magic_enum::enum_name(protocol));
   return true;
@@ -484,8 +483,8 @@ void ConnTracker::CheckTracker() {
 }
 
 DataStream* ConnTracker::req_data() {
-  DCHECK_NE(traffic_class_.role, kRoleUnknown);
-  switch (traffic_class_.role) {
+  DCHECK_NE(role_, kRoleUnknown);
+  switch (role_) {
     case kRoleClient:
       return &send_data_;
     case kRoleServer:
@@ -496,8 +495,8 @@ DataStream* ConnTracker::req_data() {
 }
 
 DataStream* ConnTracker::resp_data() {
-  DCHECK_NE(traffic_class_.role, kRoleUnknown);
-  switch (traffic_class_.role) {
+  DCHECK_NE(role_, kRoleUnknown);
+  switch (role_) {
     case kRoleClient:
       return &recv_data_;
     case kRoleServer:
@@ -563,7 +562,7 @@ void ConnTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs) {
     return;
   }
 
-  switch (traffic_class().role) {
+  switch (role()) {
     case EndpointRole::kRoleServer:
       if (state() == State::kCollecting) {
         state_ = State::kTransferring;
@@ -574,7 +573,7 @@ void ConnTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs) {
       // TODO(oazizi/PL-1498): Remove this once service-side MySQL tracing is fixed.
       // TODO(oazizi): Remove DNS from this as well. Just keeping it in here for the demo,
       //               so we have more data in the tables.
-      if (traffic_class().protocol == kProtocolMySQL || traffic_class().protocol == kProtocolDNS) {
+      if (protocol() == kProtocolMySQL || protocol() == kProtocolDNS) {
         state_ = State::kTransferring;
         break;
       }
@@ -644,7 +643,7 @@ bool ConnTracker::ShouldExportToConnStats() const {
 
   bool endpoint_resolved = remote_endpoint().family == SockAddrFamily::kIPv4 ||
                            remote_endpoint().family == SockAddrFamily::kIPv6;
-  bool role_resolved = (traffic_class_.role != kRoleUnknown);
+  bool role_resolved = (role_ != kRoleUnknown);
 
   return endpoint_resolved && role_resolved;
 }
@@ -652,9 +651,9 @@ bool ConnTracker::ShouldExportToConnStats() const {
 void ConnTracker::ExportInitialConnStats() {
   conn_stats_->AddConnOpenEvent(*this);
 
-  conn_stats_->RecordData(conn_id_.upid, traffic_class_, kEgress, remote_endpoint(),
+  conn_stats_->RecordData(conn_id_.upid, protocol_, role_, kEgress, remote_endpoint(),
                           stats_.Get(Stats::Key::kBytesSent));
-  conn_stats_->RecordData(conn_id_.upid, traffic_class_, kIngress, remote_endpoint(),
+  conn_stats_->RecordData(conn_id_.upid, protocol_, role_, kIngress, remote_endpoint(),
                           stats_.Get(Stats::Key::kBytesRecv));
 }
 
@@ -720,12 +719,12 @@ void ConnTracker::IterationPostTick() {
   if ((send_data().ParseFailureRate() > kParseFailureRateThreshold) ||
       (recv_data().ParseFailureRate() > kParseFailureRateThreshold)) {
     Disable(absl::Substitute("Connection does not appear parseable as protocol $0",
-                             magic_enum::enum_name(traffic_class().protocol)));
+                             magic_enum::enum_name(protocol())));
   }
 
   if (StitchFailureRate() > kStitchFailureRateThreshold) {
     Disable(absl::Substitute("Connection does not appear to produce valid records of protocol $0",
-                             magic_enum::enum_name(traffic_class().protocol)));
+                             magic_enum::enum_name(protocol())));
   }
 }
 
@@ -927,7 +926,7 @@ std::string ConnTracker::ToString() const {
   return absl::Substitute("conn_id=$0 state=$1 remote_addr=$2:$3 protocol=$4",
                           ::ToString(conn_id()), magic_enum::enum_name(state()),
                           remote_endpoint().AddrStr(), remote_endpoint().port(),
-                          magic_enum::enum_name(traffic_class().protocol));
+                          magic_enum::enum_name(protocol()));
 }
 
 }  // namespace stirling

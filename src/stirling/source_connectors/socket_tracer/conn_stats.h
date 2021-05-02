@@ -67,7 +67,8 @@ class ConnStats {
   };
 
   struct Stats {
-    traffic_class_t traffic_class = {};
+    TrafficProtocol protocol = kProtocolUnknown;
+    EndpointRole role = kRoleUnknown;
     SockAddrFamily addr_family = SockAddrFamily::kUnspecified;
 
     uint64_t conn_open = 0;
@@ -83,8 +84,9 @@ class ConnStats {
 
     std::string ToString() const {
       return absl::Substitute(
-          "[conn_open=$0 conn_close=$1 bytes_sent=$2 bytes_recv=$3 traffic_class=$4]", conn_open,
-          conn_close, bytes_sent, bytes_recv, ::ToString(traffic_class));
+          "[conn_open=$0 conn_close=$1 bytes_sent=$2 bytes_recv=$3 protocol=$4 role=$5]", conn_open,
+          conn_close, bytes_sent, bytes_recv, magic_enum::enum_name(protocol),
+          magic_enum::enum_name(role));
     }
   };
 
@@ -94,11 +96,11 @@ class ConnStats {
   void AddConnCloseEvent(const ConnTracker& tracker);
   void AddDataEvent(const ConnTracker& tracker, const SocketDataEvent& event);
 
-  void RecordData(const struct upid_t& upid, const struct traffic_class_t& traffic_class,
+  void RecordData(const struct upid_t& upid, TrafficProtocol protocol, EndpointRole role,
                   TrafficDirection direction, const SockAddr& remote_endpoint, size_t size);
 
  private:
-  void RecordConn(const struct conn_id_t& conn_id, const struct traffic_class_t& traffic_class,
+  void RecordConn(const struct conn_id_t& conn_id, TrafficProtocol protocol, EndpointRole role,
                   const SockAddr& remote_endpoint, bool is_open);
 
   absl::flat_hash_map<AggKey, Stats> agg_stats_;

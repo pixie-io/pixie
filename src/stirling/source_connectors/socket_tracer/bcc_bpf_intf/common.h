@@ -89,13 +89,6 @@ static const std::map<int64_t, std::string_view> kEndpointRoleDecoder =
     px::EnumDefToMap<EndpointRole>();
 #endif
 
-struct traffic_class_t {
-  // The protocol of traffic on the connection (HTTP, MySQL, etc.).
-  enum TrafficProtocol protocol;
-  // Classify traffic as requests, responses or mixed.
-  enum EndpointRole role;
-};
-
 struct conn_id_t {
   // The unique identifier of the pid/tgid.
   struct upid_t upid;

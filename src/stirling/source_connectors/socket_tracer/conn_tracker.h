@@ -235,7 +235,7 @@ class ConnTracker : NotCopyMoveable {
   std::deque<TFrameType>& req_frames() {
     return req_data()->Frames<TFrameType>();
   }
-  // TODO(yzhao): req_data() requires traffic_class_.role to be set. But HTTP2 uprobe tracing does
+  // TODO(yzhao): req_data() requires role_ to be set. But HTTP2 uprobe tracing does
   // not set that. So send_data() is created. Investigate more unified approach.
   template <typename TFrameType>
   const std::deque<TFrameType>& send_frames() const {
@@ -259,7 +259,8 @@ class ConnTracker : NotCopyMoveable {
   }
 
   const conn_id_t& conn_id() const { return conn_id_; }
-  const traffic_class_t& traffic_class() const { return traffic_class_; }
+  TrafficProtocol protocol() const { return protocol_; }
+  EndpointRole role() const { return role_; }
 
   /**
    * Get remote IP endpoint of the connection.
@@ -567,14 +568,8 @@ class ConnTracker : NotCopyMoveable {
 
   struct conn_id_t conn_id_ = {};
 
-  // TODO(oazizi): Protocol and role are getting decoupled, as role now may come from conn event,
-  //               and protocol comes from data.
-  //               So flatten traffic_class_:
-  //                    TrafficProtocol protocol_ = kProtocolUnknown;
-  //                    EndpointRole role_ = kRoleUnknown;
-  struct traffic_class_t traffic_class_ {
-    kProtocolUnknown, kRoleUnknown
-  };
+  TrafficProtocol protocol_ = kProtocolUnknown;
+  EndpointRole role_ = kRoleUnknown;
   SocketOpen open_info_;
   SocketClose close_info_;
 
@@ -663,8 +658,7 @@ std::string DebugString(const ConnTracker& c, std::string_view prefix) {
   info += absl::Substitute("state=$0\n", magic_enum::enum_name(c.state()));
   info += absl::Substitute("$0remote_addr=$1:$2\n", prefix, c.remote_endpoint().AddrStr(),
                            c.remote_endpoint().port());
-  info += absl::Substitute("$0protocol=$1\n", prefix,
-                           magic_enum::enum_name(c.traffic_class().protocol));
+  info += absl::Substitute("$0protocol=$1\n", prefix, magic_enum::enum_name(c.protocol()));
   info += absl::Substitute("$0recv queue\n", prefix);
   info += absl::Substitute("$0send queue\n", prefix);
   if constexpr (std::is_same_v<TFrameType, protocols::http2::Stream>) {

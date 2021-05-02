@@ -68,8 +68,8 @@ class EventGenerator {
                                                  std::string_view msg) {
     socket_data_event_t event = {};
     event.attr.direction = direction;
-    event.attr.traffic_class.protocol = TProtocol;
-    event.attr.traffic_class.role = TRole;
+    event.attr.protocol = TProtocol;
+    event.attr.role = TRole;
     event.attr.timestamp_ns = clock_->now();
     event.attr.conn_id.upid.pid = pid_;
     event.attr.conn_id.fd = fd_;
@@ -89,8 +89,8 @@ class EventGenerator {
                                                  std::string_view msg) {
     auto res =
         InitDataEvent<kProtocolUnknown, kRoleUnknown>(TrafficDirection::kEgress, &send_pos_, msg);
-    res->attr.traffic_class.protocol = protocol;
-    res->attr.traffic_class.role = role;
+    res->attr.protocol = protocol;
+    res->attr.role = role;
     return res;
   }
 
@@ -98,8 +98,8 @@ class EventGenerator {
                                                  std::string_view msg) {
     auto res =
         InitDataEvent<kProtocolUnknown, kRoleUnknown>(TrafficDirection::kIngress, &recv_pos_, msg);
-    res->attr.traffic_class.protocol = protocol;
-    res->attr.traffic_class.role = role;
+    res->attr.protocol = protocol;
+    res->attr.role = role;
     return res;
   }
 

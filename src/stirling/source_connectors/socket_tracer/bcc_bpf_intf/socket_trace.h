@@ -45,9 +45,11 @@ struct conn_info_t {
   // IP address of the remote endpoint.
   struct sockaddr_in6 addr;
 
-  // The protocol and message type of traffic on the connection (HTTP/Req, HTTP/Resp, MySQL/Req,
-  // etc.).
-  struct traffic_class_t traffic_class;
+  // The protocol of traffic on the connection (HTTP, MySQL, etc.).
+  enum TrafficProtocol protocol;
+
+  // Classify traffic as requests, responses or mixed.
+  enum EndpointRole role;
 
   // Whether the connection uses SSL.
   bool ssl;
@@ -152,24 +154,35 @@ struct socket_data_event_t {
   struct attr_t {
     // The timestamp when syscall completed (return probe was triggered).
     uint64_t timestamp_ns;
+
     // Connection identifier (PID, FD, etc.).
     struct conn_id_t conn_id;
-    // The protocol on the connection (HTTP, MySQL, etc.), and the server-client role.
-    struct traffic_class_t traffic_class;
+
+    // The protocol of traffic on the connection (HTTP, MySQL, etc.).
+    enum TrafficProtocol protocol;
+
+    // The server-client role.
+    enum EndpointRole role;
+
     // The type of the actual data that the msg field encodes, which is used by the caller
     // to determine how to interpret the data.
     enum TrafficDirection direction;
+
     // Whether the traffic was collected from an encrypted channel.
     bool ssl;
+
     // Represents the syscall or function that produces this event.
     enum source_function_t source_fn;
+
     // A 0-based position number for this event on the connection, in terms of byte position.
     // The position is for the first byte of this message.
     // Note that write/send have separate sequences than read/recv.
     uint64_t pos;
+
     // The size of the original message. We use this to truncate msg field to minimize the amount
     // of data being transferred.
     uint32_t msg_size;
+
     // The amount of data actually being sent to user space. This may be less than msg_size if
     // data had to be truncated, or if the data was stripped because we only want to send metadata
     // (e.g. if the connection data tracking has been disabled).
@@ -199,17 +212,13 @@ struct socket_control_event_t {
 
 #include "src/common/base/base.h"
 
-inline std::string ToString(const traffic_class_t& tcls) {
-  return absl::Substitute("[protocol=$0 role=$1]", magic_enum::enum_name(tcls.protocol),
-                          magic_enum::enum_name(tcls.role));
-}
-
 inline std::string ToString(const socket_data_event_t::attr_t& attr) {
   return absl::Substitute(
-      "[ts=$0 conn_id=$1 tcls=$2 dir=$3 ssl=$4 source_fn=$5 pos=$6 size=$7 buf_size=$8]",
-      attr.timestamp_ns, ToString(attr.conn_id), ToString(attr.traffic_class),
-      magic_enum::enum_name(attr.direction), attr.ssl, magic_enum::enum_name(attr.source_fn),
-      attr.pos, attr.msg_size, attr.msg_buf_size);
+      "[ts=$0 conn_id=$1 protocol=$2 role=$3 dir=$4 ssl=$5 source_fn=$6 pos=$7 size=$8 "
+      "buf_size=$9]",
+      attr.timestamp_ns, ToString(attr.conn_id), magic_enum::enum_name(attr.protocol),
+      magic_enum::enum_name(attr.role), magic_enum::enum_name(attr.direction), attr.ssl,
+      magic_enum::enum_name(attr.source_fn), attr.pos, attr.msg_size, attr.msg_buf_size);
 }
 
 inline std::string ToString(const close_event_t& event) {

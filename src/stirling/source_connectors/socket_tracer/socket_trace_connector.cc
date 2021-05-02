@@ -368,7 +368,7 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
   }
 
   for (const auto& conn_tracker : conn_trackers_mgr_.active_trackers()) {
-    const auto& transfer_spec = protocol_transfer_specs_[conn_tracker->traffic_class().protocol];
+    const auto& transfer_spec = protocol_transfer_specs_[conn_tracker->protocol()];
 
     DataTable* data_table = data_tables[transfer_spec.table_num];
     if (data_table == nullptr) {
@@ -592,7 +592,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   // But std::move is not allowed because we re-use conn object.
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
-  r.Append<r.ColIndex("trace_role")>(conn_tracker.traffic_class().role);
+  r.Append<r.ColIndex("trace_role")>(conn_tracker.role());
   r.Append<r.ColIndex("major_version")>(1);
   r.Append<r.ColIndex("minor_version")>(resp_message.minor_version);
   r.Append<r.ColIndex("content_type")>(static_cast<uint64_t>(content_type));
@@ -624,7 +624,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
 
   // Depending on whether the traced entity was the requestor or responder,
   // we need to flip the interpretation of the half-streams.
-  if (conn_tracker.traffic_class().role == kRoleClient) {
+  if (conn_tracker.role() == kRoleClient) {
     req_stream = &record.send;
     resp_stream = &record.recv;
   } else {
@@ -659,7 +659,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
-  r.Append<r.ColIndex("trace_role")>(conn_tracker.traffic_class().role);
+  r.Append<r.ColIndex("trace_role")>(conn_tracker.role());
   r.Append<r.ColIndex("major_version")>(2);
   // HTTP2 does not define minor version.
   r.Append<r.ColIndex("minor_version")>(0);
@@ -694,7 +694,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
-  r.Append<r.ColIndex("trace_role")>(conn_tracker.traffic_class().role);
+  r.Append<r.ColIndex("trace_role")>(conn_tracker.role());
   r.Append<r.ColIndex("req_cmd")>(static_cast<uint64_t>(entry.req.cmd));
   r.Append<r.ColIndex("req_body"), kMaxBodyBytes>(std::move(entry.req.msg));
   r.Append<r.ColIndex("resp_status")>(static_cast<uint64_t>(entry.resp.status));
@@ -717,7 +717,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
-  r.Append<r.ColIndex("trace_role")>(conn_tracker.traffic_class().role);
+  r.Append<r.ColIndex("trace_role")>(conn_tracker.role());
   r.Append<r.ColIndex("req_op")>(static_cast<uint64_t>(entry.req.op));
   r.Append<r.ColIndex("req_body"), kMaxBodyBytes>(std::move(entry.req.msg));
   r.Append<r.ColIndex("resp_op")>(static_cast<uint64_t>(entry.resp.op));
@@ -740,7 +740,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
-  r.Append<r.ColIndex("trace_role")>(conn_tracker.traffic_class().role);
+  r.Append<r.ColIndex("trace_role")>(conn_tracker.role());
   r.Append<r.ColIndex("req_header")>(entry.req.header);
   r.Append<r.ColIndex("req_body")>(entry.req.query);
   r.Append<r.ColIndex("resp_header")>(entry.resp.header);
@@ -763,7 +763,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
-  r.Append<r.ColIndex("trace_role")>(conn_tracker.traffic_class().role);
+  r.Append<r.ColIndex("trace_role")>(conn_tracker.role());
   r.Append<r.ColIndex("req")>(std::move(entry.req.payload));
   r.Append<r.ColIndex("resp")>(std::move(entry.resp.payload));
   r.Append<r.ColIndex("latency")>(
@@ -797,16 +797,17 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
+  EndpointRole role = conn_tracker.role();
+  if (entry.role_swapped) {
+    role = SwapEndpointRole(role);
+  }
+
   DataTable::RecordBuilder<&kRedisTable> r(data_table, entry.resp.timestamp_ns);
   r.Append<r.ColIndex("time_")>(entry.resp.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
-  if (entry.role_swapped) {
-    r.Append<r.ColIndex("trace_role")>(SwapEndpointRole(conn_tracker.traffic_class().role));
-  } else {
-    r.Append<r.ColIndex("trace_role")>(conn_tracker.traffic_class().role);
-  }
+  r.Append<r.ColIndex("trace_role")>(role);
   r.Append<r.ColIndex("req_cmd")>(std::string(entry.req.command));
   r.Append<r.ColIndex("req_args")>(std::string(entry.req.payload));
   r.Append<r.ColIndex("resp")>(std::string(entry.resp.payload));
@@ -839,8 +840,8 @@ void SocketDataEventToPB(const SocketDataEvent& event, sockeventpb::SocketDataEv
       event.attr.conn_id.upid.start_time_ticks);
   pb->mutable_attr()->mutable_conn_id()->set_fd(event.attr.conn_id.fd);
   pb->mutable_attr()->mutable_conn_id()->set_generation(event.attr.conn_id.tsid);
-  pb->mutable_attr()->mutable_traffic_class()->set_protocol(event.attr.traffic_class.protocol);
-  pb->mutable_attr()->mutable_traffic_class()->set_role(event.attr.traffic_class.role);
+  pb->mutable_attr()->set_protocol(event.attr.protocol);
+  pb->mutable_attr()->set_role(event.attr.role);
   pb->mutable_attr()->set_direction(event.attr.direction);
   pb->mutable_attr()->set_pos(event.attr.pos);
   pb->mutable_attr()->set_msg_size(event.attr.msg_size);
@@ -931,8 +932,8 @@ void SocketTraceConnector::TransferConnStats(ConnectorContext* ctx, DataTable* d
       r.Append<idx::kRemoteAddr>(key.remote_addr);
       r.Append<idx::kRemotePort>(key.remote_port);
       r.Append<idx::kAddrFamily>(static_cast<int>(stats.addr_family));
-      r.Append<idx::kProtocol>(stats.traffic_class.protocol);
-      r.Append<idx::kRole>(stats.traffic_class.role);
+      r.Append<idx::kProtocol>(stats.protocol);
+      r.Append<idx::kRole>(stats.role);
       r.Append<idx::kConnOpen>(stats.conn_open);
       r.Append<idx::kConnClose>(stats.conn_close);
       r.Append<idx::kConnActive>(stats.conn_open - stats.conn_close);

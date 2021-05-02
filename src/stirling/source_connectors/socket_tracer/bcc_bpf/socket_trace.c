@@ -191,7 +191,7 @@ static __inline struct conn_info_t* get_or_create_conn_info(uint32_t tgid, uint3
   uint64_t tgid_fd = gen_tgid_fd(tgid, fd);
   struct conn_info_t new_conn_info = {};
   // NOTE: BCC code defaults to 0, because kRoleUnknown is not 0, must explicitly initialize.
-  new_conn_info.traffic_class.role = kRoleUnknown;
+  new_conn_info.role = kRoleUnknown;
   new_conn_info.addr.sin6_family = AF_UNKNOWN;
   init_conn_id(tgid, fd, &new_conn_info.conn_id);
   return conn_info_map.lookup_or_init(&tgid_fd, &new_conn_info);
@@ -220,7 +220,8 @@ static __inline struct socket_data_event_t* fill_event(enum source_function_t sr
   event->attr.ssl = conn_info->ssl;
   event->attr.direction = direction;
   event->attr.conn_id = conn_info->conn_id;
-  event->attr.traffic_class = conn_info->traffic_class;
+  event->attr.protocol = conn_info->protocol;
+  event->attr.role = conn_info->role;
   return event;
 }
 
@@ -238,7 +239,7 @@ static __inline bool should_trace_sockaddr_family(sa_family_t sa_family) {
 //
 // TODO(yzhao): Remove protocol detection threshold.
 static __inline bool protocol_detection_passes_threshold(const struct conn_info_t* conn_info) {
-  if (conn_info->traffic_class.protocol == kProtocolPGSQL) {
+  if (conn_info->protocol == kProtocolPGSQL) {
     // Since some protocols are hard to infer from a single event, we track the inference stats over
     // time, and then use the match rate to determine whether we really want to consider it to be of
     // the protocol or not. This helps reduce polluting events to user-space.
@@ -252,15 +253,14 @@ static __inline bool protocol_detection_passes_threshold(const struct conn_info_
 
 // If this returns false, we still will trace summary stats.
 static __inline bool should_trace_protocol_data(const struct conn_info_t* conn_info) {
-  if (conn_info->traffic_class.protocol == kProtocolUnknown ||
-      !protocol_detection_passes_threshold(conn_info)) {
+  if (conn_info->protocol == kProtocolUnknown || !protocol_detection_passes_threshold(conn_info)) {
     return false;
   }
 
-  uint32_t protocol = conn_info->traffic_class.protocol;
+  uint32_t protocol = conn_info->protocol;
   uint64_t kZero = 0;
   uint64_t control = *control_map.lookup_or_init(&protocol, &kZero);
-  return control & conn_info->traffic_class.role;
+  return control & conn_info->role;
 }
 
 static __inline bool is_stirling_tgid(const uint32_t tgid) {
@@ -284,15 +284,9 @@ static __inline bool should_trace_tgid(const uint32_t tgid) {
   return *target_tgid == tgid;
 }
 
-// TODO(oazizi): This function should go away once the protocol is identified externally.
-//               Also, could move this function into the header file, so we can test it.
 static __inline void update_traffic_class(struct conn_info_t* conn_info,
                                           enum TrafficDirection direction, const char* buf,
                                           size_t count) {
-  // TODO(oazizi): Future architecture should have user-land provide the traffic_class.
-  // TODO(oazizi): conn_info currently works only if tracing on the send or recv side of a process,
-  //               but not both simultaneously, because we need to mark two traffic classes.
-
   if (conn_info == NULL) {
     return;
   }
@@ -307,15 +301,15 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info,
   }
 
   // Update protocol if not set.
-  if (conn_info->traffic_class.protocol == kProtocolUnknown) {
-    conn_info->traffic_class.protocol = inferred_protocol.protocol;
+  if (conn_info->protocol == kProtocolUnknown) {
+    conn_info->protocol = inferred_protocol.protocol;
     conn_info->protocol_match_count = 1;
-  } else if (conn_info->traffic_class.protocol == inferred_protocol.protocol) {
+  } else if (conn_info->protocol == inferred_protocol.protocol) {
     conn_info->protocol_match_count += 1;
   }
 
   // Update role if not set.
-  if (conn_info->traffic_class.role == kRoleUnknown &&
+  if (conn_info->role == kRoleUnknown &&
       // As of 2020-01, Redis protocol detection doesn't implement message type detection.
       // There could be more protocols without message type detection in the future.
       inferred_protocol.type != kUnknown) {
@@ -326,9 +320,9 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info,
     //    kEgress    KResponse      => Server
     //    kIngress   kRequest       => Server
     //    kIngress   kResponse      => Client
-    conn_info->traffic_class.role = ((direction == kEgress) ^ (inferred_protocol.type == kResponse))
-                                        ? kRoleClient
-                                        : kRoleServer;
+    conn_info->role = ((direction == kEgress) ^ (inferred_protocol.type == kResponse))
+                          ? kRoleClient
+                          : kRoleServer;
   }
 }
 
@@ -340,7 +334,7 @@ static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, uint32_
                                      const struct sockaddr* addr, enum EndpointRole role) {
   struct conn_info_t conn_info = {};
   conn_info.addr = *((struct sockaddr_in6*)addr);
-  conn_info.traffic_class.role = role;
+  conn_info.role = role;
   init_conn_id(tgid, fd, &conn_info.conn_id);
 
   uint64_t tgid_fd = gen_tgid_fd(tgid, fd);
@@ -358,7 +352,7 @@ static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, uint32_
   control_event.timestamp_ns = bpf_ktime_get_ns();
   control_event.conn_id = conn_info.conn_id;
   control_event.open.addr = conn_info.addr;
-  control_event.open.role = conn_info.traffic_class.role;
+  control_event.open.role = conn_info.role;
 
   socket_control_events.perf_submit(ctx, &control_event, sizeof(struct socket_control_event_t));
 }
