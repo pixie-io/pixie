@@ -270,7 +270,8 @@ void UserSignalHandler2(int /* signum */, siginfo_t* info, void* /* context */) 
     LOG(INFO) << absl::Substitute("Enabling tracing of PID: $0", pid);
     g_stirling_ptr->EnablePIDTrace(pid);
   } else {
-    LOG(INFO) << absl::Substitute("Disabling tracing of PID: $0", -1 * pid);
+    pid = -1 * pid;
+    LOG(INFO) << absl::Substitute("Disabling tracing of PID: $0", pid);
     g_stirling_ptr->DisablePIDTrace(pid);
   }
 }

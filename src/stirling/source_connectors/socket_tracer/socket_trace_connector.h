@@ -117,8 +117,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   Status DisableSelfTracing();
 
   void DisablePIDTrace(int pid) override {
-    pids_to_trace_disable_.insert(pid);
     SourceConnector::DisablePIDTrace(pid);
+    pids_to_trace_disable_.insert(pid);
   }
 
   /**
@@ -213,10 +213,9 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Initialize protocol_transfer_specs_.
   void InitProtocolTransferSpecs();
 
+  ConnTracker& GetOrCreateConnTracker(struct conn_id_t conn_id);
+
   // Events from BPF.
-  // TODO(oazizi/yzhao): These all operate based on pass-by-value, which copies.
-  //                     The Handle* functions should call make_unique() of new corresponding
-  //                     objects, and these functions should take unique_ptrs.
   void AcceptDataEvent(std::unique_ptr<SocketDataEvent> event);
   void AcceptControlEvent(socket_control_event_t event);
   void AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> event);
@@ -229,13 +228,11 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   template <typename TProtocolTraits>
   void TransferStream(ConnectorContext* ctx, ConnTracker* tracker, DataTable* data_table);
 
-  void set_iteration_start_time(std::chrono::time_point<std::chrono::steady_clock> time) {
-    DCHECK(time >= iteration_start_time_);
-    iteration_start_time_ = time;
+  void set_iteration_time(std::chrono::time_point<std::chrono::steady_clock> time) {
+    DCHECK(time >= iteration_time_);
+    iteration_time_ = time;
   }
-  std::chrono::time_point<std::chrono::steady_clock> iteration_start_time() {
-    return iteration_start_time_;
-  }
+  std::chrono::time_point<std::chrono::steady_clock> iteration_time() { return iteration_time_; }
 
   void UpdateTrackerTraceLevel(ConnTracker* tracker);
 
@@ -281,7 +278,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   // The time at which TransferDataImpl() begin. Used as a universal timestamp for the iteration,
   // to avoid too many calls to std::chrono::steady_clock::now().
-  std::chrono::time_point<std::chrono::steady_clock> iteration_start_time_;
+  std::chrono::time_point<std::chrono::steady_clock> iteration_time_;
 
   // Keep track of when the last perf buffer drain event was triggered.
   // Perf buffer draining is not atomic nor synchronous, so we want the time before draining.

@@ -115,7 +115,7 @@ inline bool operator==(const struct conn_id_t& a, const struct conn_id_t& b) {
   return a.upid == b.upid && a.fd == b.fd && a.tsid == b.tsid;
 }
 
-inline bool operator!=(struct conn_id_t& a, struct conn_id_t& b) { return !(a == b); }
+inline bool operator!=(const struct conn_id_t& a, const struct conn_id_t& b) { return !(a == b); }
 #endif
 
 // Specifies the corresponding indexes of the entries of a per-cpu array.
