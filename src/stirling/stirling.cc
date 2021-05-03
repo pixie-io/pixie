@@ -257,7 +257,10 @@ enum class SignalOpCode {
   kPIDTrace = 2,
 };
 
-void ProcessSetDebugLevelOpcode(int level) { g_stirling_ptr->SetDebugLevel(level); }
+void ProcessSetDebugLevelOpcode(int level) {
+  LOG(INFO) << absl::Substitute("Setting debug level to $0", level);
+  g_stirling_ptr->SetDebugLevel(level);
+}
 
 void ProcessPIDTraceOpcode(int pid) {
   if (pid >= 0) {
@@ -345,6 +348,7 @@ Status StirlingImpl::Init() {
   // in order to skip cleaning up those probes.
   LOG_IF(WARNING, !s.ok()) << absl::Substitute("Kprobe Cleaner failed. Message $0", s.msg());
   PL_RETURN_IF_ERROR(CreateSourceConnectors());
+  LOG(INFO) << "Stirling successfully initialized.";
   return Status::OK();
 }
 

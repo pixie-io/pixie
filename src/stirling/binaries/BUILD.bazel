@@ -105,3 +105,8 @@ container_push(
     repository = "pl-dev-infra/stirling_profiler",
     tag = "{BUILD_USER}",
 )
+
+cc_binary(
+    name = "stirling_ctrl",
+    srcs = ["stirling_ctrl.c"],
+)

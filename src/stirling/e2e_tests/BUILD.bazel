@@ -203,6 +203,26 @@ sh_test(
 )
 
 sh_test(
+    name = "stirling_signal_test",
+    srcs = ["stirling_signal_test.sh"],
+    args = [
+        "$(location //src/stirling/binaries:stirling_wrapper)",
+        "$(location //src/stirling/binaries:stirling_ctrl)",
+    ],
+    data = [
+        "//src/stirling/binaries:stirling_ctrl",
+        "//src/stirling/binaries:stirling_wrapper",
+    ],
+    tags = [
+        "requires_bpf",
+        # Run exclusive, otherwise BPF probe cleaner may conflict with open probes of other instances,
+        # which will emit warnings, that will then be considered a test failure.
+        "exclusive",
+    ],
+    deps = ["//src/stirling/scripts:sh_library"],
+)
+
+sh_test(
     name = "probe_cleaner_test",
     srcs = ["probe_cleaner_test.sh"],
     args = [
