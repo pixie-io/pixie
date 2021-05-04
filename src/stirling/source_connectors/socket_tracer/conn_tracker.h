@@ -494,6 +494,8 @@ class ConnTracker : NotCopyMoveable {
 
   void SetConnID(struct conn_id_t conn_id);
 
+  void SetRemoteAddr(const struct sockaddr_in6 addr, std::string_view reason);
+
   // Returns false if the protocol change is disallowed.
   bool SetProtocol(TrafficProtocol protocol, std::string_view reason);
 
