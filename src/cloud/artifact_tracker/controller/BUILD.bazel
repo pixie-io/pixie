@@ -29,6 +29,7 @@ go_library(
         "@com_github_googleapis_google_cloud_go_testing//storage/stiface",
         "@com_github_jmoiron_sqlx//:sqlx",
         "@com_github_lib_pq//:pq",
+        "@com_github_spf13_viper//:viper",
         "@com_google_cloud_go_storage//:storage",
         "@org_golang_google_grpc//codes",
         "@org_golang_google_grpc//status",

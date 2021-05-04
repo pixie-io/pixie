@@ -31,6 +31,7 @@ import (
 	"github.com/googleapis/google-cloud-go-testing/storage/stiface"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
+	"github.com/spf13/viper"
 	"golang.org/x/oauth2/jwt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -42,6 +43,11 @@ import (
 
 // URLSigner is the function used to sign urls.
 var URLSigner = storage.SignedURL
+
+const (
+	vizierArtifactName = "vizier"
+	cliArtifactName    = "cli"
+)
 
 // Server is the controller for the artifact tracker service.
 type Server struct {
@@ -57,6 +63,37 @@ func NewServer(db *sqlx.DB, client stiface.Client, bucket string, releaseBucket 
 	return &Server{db: db, sc: client, artifactBucket: bucket, releaseBucket: releaseBucket, gcsSA: gcsSA}
 }
 
+func (s *Server) getArtifactListSpecifiedVizier() (*vpb.ArtifactSet, error) {
+	return &vpb.ArtifactSet{
+		Name: vizierArtifactName,
+		Artifact: []*vpb.Artifact{
+			&vpb.Artifact{
+				VersionStr: viper.GetString("vizier_version"),
+				AvailableArtifacts: []vpb.ArtifactType{
+					vpb.AT_CONTAINER_SET_YAMLS,
+					vpb.AT_CONTAINER_SET_TEMPLATE_YAMLS,
+					vpb.AT_CONTAINER_SET_LINUX_AMD64,
+				},
+			},
+		},
+	}, nil
+}
+
+func (s *Server) getArtifactListSpecifiedCLI() (*vpb.ArtifactSet, error) {
+	return &vpb.ArtifactSet{
+		Name: cliArtifactName,
+		Artifact: []*vpb.Artifact{
+			&vpb.Artifact{
+				VersionStr: viper.GetString("cli_version"),
+				AvailableArtifacts: []vpb.ArtifactType{
+					vpb.AT_LINUX_AMD64,
+					vpb.AT_DARWIN_AMD64,
+				},
+			},
+		},
+	}, nil
+}
+
 // GetArtifactList returns a list of artifacts matching the passed in criteria.
 func (s *Server) GetArtifactList(ctx context.Context, in *apb.GetArtifactListRequest) (*vpb.ArtifactSet, error) {
 	name := in.ArtifactName
@@ -65,6 +102,13 @@ func (s *Server) GetArtifactList(ctx context.Context, in *apb.GetArtifactListReq
 
 	if at == utils.ATUnknown {
 		return nil, status.Error(codes.InvalidArgument, "artifact type cannot be unknown")
+	}
+
+	// If a particular vizier or CLI version is specified, we don't need to make a call to the DB.
+	if name == vizierArtifactName && viper.GetString("vizier_version") != "" {
+		return s.getArtifactListSpecifiedVizier()
+	} else if name == cliArtifactName && viper.GetString("cli_version") != "" {
+		return s.getArtifactListSpecifiedCLI()
 	}
 
 	type dbResult struct {
@@ -168,22 +212,34 @@ func (s *Server) GetDownloadLink(ctx context.Context, in *apb.GetDownloadLinkReq
 		return nil, status.Error(codes.InvalidArgument, "artifact type cannot be downloaded")
 	}
 
-	query := `SELECT
-                1
-              FROM artifacts
-              WHERE artifact_name=$1
-                    AND $2=ANY(available_artifacts)
-                    AND version_str=$3
-	          LIMIT 1;`
+	// If a specific vizier or CLI version is specified, check that the requested version matches. Otherwise, if no version is specified
+	// then we check the DB to see if the version exists.
+	if (at == vpb.AT_CONTAINER_SET_YAMLS || at == vpb.AT_CONTAINER_SET_TEMPLATE_YAMLS) && viper.GetString("vizier_version") != "" {
+		if versionStr != viper.GetString("vizier_version") {
+			return nil, status.Error(codes.NotFound, "artifact not found")
+		}
+	} else if (at == vpb.AT_DARWIN_AMD64 || at == vpb.AT_LINUX_AMD64) && viper.GetString("cli_version") != "" {
+		if versionStr != viper.GetString("cli_version") {
+			return nil, status.Error(codes.NotFound, "artifact not found")
+		}
+	} else {
+		query := `SELECT
+					1
+				FROM artifacts
+				WHERE artifact_name=$1
+						AND $2=ANY(available_artifacts)
+						AND version_str=$3
+				LIMIT 1;`
 
-	rows, err := s.db.Query(query, name, utils.ToArtifactTypeDB(at), versionStr)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to query database")
-	}
-	defer rows.Close()
+		rows, err := s.db.Query(query, name, utils.ToArtifactTypeDB(at), versionStr)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "failed to query database")
+		}
+		defer rows.Close()
 
-	if !rows.Next() {
-		return nil, status.Error(codes.NotFound, "artifact not found")
+		if !rows.Next() {
+			return nil, status.Error(codes.NotFound, "artifact not found")
+		}
 	}
 
 	expires := time.Now().Add(time.Minute * 60)
@@ -203,6 +259,7 @@ func (s *Server) GetDownloadLink(ctx context.Context, in *apb.GetDownloadLinkReq
 	}
 
 	var url string
+	var err error
 	objectPath := path.Join(name, versionStr, fmt.Sprintf("%s_%s", name, downloadSuffix(at)))
 	if !release {
 		url, err = URLSigner(bucket, objectPath, &storage.SignedURLOptions{
