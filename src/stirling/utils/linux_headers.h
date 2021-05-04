@@ -18,8 +18,6 @@
 
 #pragma once
 
-#ifdef __linux__
-
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -181,5 +179,3 @@ StatusOr<std::filesystem::path> FindOrInstallLinuxHeaders(
 }  // namespace utils
 }  // namespace stirling
 }  // namespace px
-
-#endif

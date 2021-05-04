@@ -18,8 +18,6 @@
 
 #pragma once
 
-#ifdef __linux__
-
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -98,5 +96,3 @@ std::vector<PathSplit> EnumerateParentPaths(const std::filesystem::path& path);
 
 }  // namespace fs
 }  // namespace px
-
-#endif

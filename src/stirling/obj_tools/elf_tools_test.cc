@@ -89,7 +89,6 @@ TEST(ElfReaderTest, ListSymbolsSuffixMatch) {
                      ElementsAre(SymbolNameIs("CanYouFindThis")));
 }
 
-#ifdef __linux__
 TEST(ElfReaderTest, SymbolAddress) {
   const std::string path = kDummyExeFixture.Path().string();
   const std::string_view symbol = "CanYouFindThis";
@@ -123,7 +122,6 @@ TEST(ElfReaderTest, SymbolAddress) {
     ASSERT_FALSE(addr.has_value());
   }
 }
-#endif
 
 TEST(ElfReaderTest, ExternalDebugSymbolsBuildID) {
   const std::string stripped_bin =

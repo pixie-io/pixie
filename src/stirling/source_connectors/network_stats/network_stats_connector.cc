@@ -16,7 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifdef __linux__
 #include "src/stirling/source_connectors/network_stats/network_stats_connector.h"
 
 #include <chrono>
@@ -134,5 +133,3 @@ Status NetworkStatsConnector::GetNetworkStatsForPod(const system::ProcParser& pr
 
 }  // namespace stirling
 }  // namespace px
-
-#endif

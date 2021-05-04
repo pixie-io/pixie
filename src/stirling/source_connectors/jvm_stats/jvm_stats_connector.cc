@@ -16,8 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifdef __linux__
-
 #include "src/stirling/source_connectors/jvm_stats/jvm_stats_connector.h"
 
 #include <string>
@@ -127,5 +125,3 @@ void JVMStatsConnector::TransferDataImpl(ConnectorContext* ctx,
 
 }  // namespace stirling
 }  // namespace px
-
-#endif

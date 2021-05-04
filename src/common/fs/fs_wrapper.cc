@@ -16,8 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifdef __linux__
-
 #include <system_error>
 
 #include "src/common/fs/fs_wrapper.h"
@@ -229,5 +227,3 @@ std::vector<PathSplit> EnumerateParentPaths(const std::filesystem::path& path) {
 
 }  // namespace fs
 }  // namespace px
-
-#endif

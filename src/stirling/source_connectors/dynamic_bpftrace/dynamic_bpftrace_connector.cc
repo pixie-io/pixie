@@ -16,8 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifdef __linux__
-
 #include "src/stirling/source_connectors/dynamic_bpftrace/dynamic_bpftrace_connector.h"
 
 #include <bpftrace/src/ast/async_event_types.h>
@@ -382,5 +380,3 @@ void DynamicBPFTraceConnector::HandleEvent(uint8_t* data) {
 
 }  // namespace stirling
 }  // namespace px
-
-#endif

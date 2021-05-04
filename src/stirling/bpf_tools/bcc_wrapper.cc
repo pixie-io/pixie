@@ -16,8 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifdef __linux__
-
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 
 #include <linux/perf_event.h>
@@ -386,5 +384,3 @@ void BCCWrapper::Close() {
 }  // namespace bpf_tools
 }  // namespace stirling
 }  // namespace px
-
-#endif

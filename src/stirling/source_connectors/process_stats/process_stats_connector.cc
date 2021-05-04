@@ -16,7 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifdef __linux__
 #include "src/stirling/source_connectors/process_stats/process_stats_connector.h"
 
 #include <chrono>
@@ -112,5 +111,3 @@ void ProcessStatsConnector::TransferDataImpl(ConnectorContext* ctx,
 
 }  // namespace stirling
 }  // namespace px
-
-#endif

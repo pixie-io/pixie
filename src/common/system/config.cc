@@ -32,7 +32,6 @@ DEFINE_string(sysfs_path, gflags::StringFromEnv("PL_SYSFS_PATH", "/sys/fs"),
 DEFINE_string(host_path, gflags::StringFromEnv("PL_HOST_PATH", ""),
               "The path to the host root directory.");
 
-#ifdef __linux__
 #include <ctime>
 
 class ConfigImpl final : public Config {
@@ -85,37 +84,6 @@ class ConfigImpl final : public Config {
         kSecToNanosecFactor * (real_time.tv_sec - time.tv_sec) + real_time.tv_nsec - time.tv_nsec;
   }
 };
-
-#else
-
-class ConfigImpl final : public Config {
- public:
-  bool HasConfig() const override { return false; }
-
-  int64_t PageSize() const override { LOG(FATAL) << "PageSize() is not implemented on this OS."; }
-
-  int64_t KernelTicksPerSecond() const override {
-    LOG(FATAL) << "KernelTicksPerSecond() is not implemented on this OS.";
-  }
-
-  uint64_t ClockRealTimeOffset() const override {
-    LOG(FATAL) << "ClockRealTimeOffset() is not implemented on this OS.";
-  }
-
-  std::filesystem::path host_path() const override {
-    LOG(FATAL) << "host_path() is not implemented on this OS.";
-  }
-
-  std::filesystem::path sysfs_path() const override {
-    LOG(FATAL) << "sysfs_path() is not implemented on this OS.";
-  }
-
-  std::filesystem::path proc_path() const override {
-    LOG(FATAL) << "proc_path() is not implemented on this OS.";
-  }
-};
-
-#endif
 
 namespace {
 std::unique_ptr<ConfigImpl> g_instance;

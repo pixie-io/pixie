@@ -16,8 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifdef __linux__
-
 #include "src/stirling/bpf_tools/bpftrace_wrapper.h"
 
 #include <bpftrace/src/ast/codegen_llvm.h>
@@ -240,5 +238,3 @@ bpftrace::BPFTraceMap BPFTraceWrapper::GetBPFMap(const std::string& name) {
 }  // namespace bpf_tools
 }  // namespace stirling
 }  // namespace px
-
-#endif

@@ -18,8 +18,6 @@
 
 #pragma once
 
-#ifdef __linux__
-
 #include <bcc/BPF.h>
 // Including bcc/BPF.h creates some conflicts with llvm.
 // So must remove this stray define for things to work.
@@ -353,5 +351,3 @@ class BCCWrapper {
 }  // namespace bpf_tools
 }  // namespace stirling
 }  // namespace px
-
-#endif

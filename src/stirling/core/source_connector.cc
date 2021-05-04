@@ -16,7 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifdef __linux__
 #include <cstring>
 #include <ctime>
 
@@ -79,5 +78,3 @@ Status SourceConnector::Stop() {
 
 }  // namespace stirling
 }  // namespace px
-
-#endif

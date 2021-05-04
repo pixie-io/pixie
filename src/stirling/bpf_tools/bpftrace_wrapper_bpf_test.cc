@@ -16,8 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifdef __linux__
-
 #include "src/stirling/bpf_tools/bpftrace_wrapper.h"
 
 #include "src/common/testing/testing.h"
@@ -194,5 +192,3 @@ TEST(BPFTracerWrapperTest, InconsistentPrintfs) {
 }  // namespace bpf_tools
 }  // namespace stirling
 }  // namespace px
-
-#endif

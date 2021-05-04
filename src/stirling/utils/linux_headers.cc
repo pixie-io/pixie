@@ -16,8 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifdef __linux__
-
 #include "src/stirling/utils/linux_headers.h"
 
 #include <sys/utsname.h>
@@ -518,5 +516,3 @@ StatusOr<std::filesystem::path> FindOrInstallLinuxHeaders(
 }  // namespace utils
 }  // namespace stirling
 }  // namespace px
-
-#endif

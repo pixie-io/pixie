@@ -18,8 +18,6 @@
 
 #pragma once
 
-#ifdef __linux__
-
 #include <bpftrace/src/bpforc.h>
 #include <bpftrace/src/bpftrace.h>
 #include <bpftrace/src/driver.h>
@@ -119,5 +117,3 @@ class BPFTraceWrapper {
 }  // namespace bpf_tools
 }  // namespace stirling
 }  // namespace px
-
-#endif

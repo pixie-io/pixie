@@ -16,7 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#ifdef __linux__
 #include <algorithm>
 #include <cstring>
 #include <ctime>
@@ -126,5 +125,3 @@ void PIDCPUUseBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, u
 
 }  // namespace stirling
 }  // namespace px
-
-#endif
