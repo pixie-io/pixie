@@ -492,6 +492,8 @@ class ConnTracker : NotCopyMoveable {
     conn_info_map_mgr_ = conn_info_map_mgr;
   }
 
+  void SetConnID(struct conn_id_t conn_id);
+
   // Returns false if the protocol change is disallowed.
   bool SetProtocol(TrafficProtocol protocol, std::string_view reason);
 
@@ -528,7 +530,6 @@ class ConnTracker : NotCopyMoveable {
   void AddConnOpenEvent(const conn_event_t& conn_info, uint64_t timestamp_ns);
   void AddConnCloseEvent(const close_event_t& close_event, uint64_t timestamp_ns);
 
-  void SetConnID(struct conn_id_t conn_id);
   void UpdateTimestamps(uint64_t bpf_timestamp);
 
   // Called when any events were received for a connection.

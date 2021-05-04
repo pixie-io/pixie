@@ -40,6 +40,12 @@ using ::testing::UnorderedElementsAre;
 
 class ConnTrackerHTTP2Test : public ::testing::Test {
  protected:
+  void SetUp() override { tracker_.SetConnID(kConnID); }
+
+  const conn_id_t kConnID = {
+      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 3, .tsid = 21};
+
+  ConnTracker tracker_;
   testing::RealClock real_clock_;
 };
 
@@ -56,21 +62,17 @@ auto EqHTTP2Record(const protocols::http2::Stream& x) {
 }
 
 TEST_F(ConnTrackerHTTP2Test, BasicData) {
-  ConnTracker tracker;
-
-  const conn_id_t kConnID = {
-      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .tsid = 0};
   const int kStreamID = 7;
   auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
   std::unique_ptr<HTTP2DataEvent> data_frame;
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("Request", /* end_stream */ true);
-  tracker.AddHTTP2Data(std::move(data_frame));
+  tracker_.AddHTTP2Data(std::move(data_frame));
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Response", /* end_stream */ true);
-  tracker.AddHTTP2Data(std::move(data_frame));
+  tracker_.AddHTTP2Data(std::move(data_frame));
 
-  std::vector<http2::Record> records = tracker.ProcessToRecords<http2::ProtocolTraits>();
+  std::vector<http2::Record> records = tracker_.ProcessToRecords<http2::ProtocolTraits>();
 
   ASSERT_EQ(records.size(), 1);
   EXPECT_EQ(records[0].send.data(), "Request");
@@ -78,27 +80,23 @@ TEST_F(ConnTrackerHTTP2Test, BasicData) {
 }
 
 TEST_F(ConnTrackerHTTP2Test, BasicHeader) {
-  ConnTracker tracker;
-
-  const conn_id_t kConnID = {
-      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .tsid = 0};
   const int kStreamID = 7;
   auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
   std::unique_ptr<HTTP2HeaderEvent> header_event;
 
   header_event = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
-  tracker.AddHTTP2Header(std::move(header_event));
+  tracker_.AddHTTP2Header(std::move(header_event));
 
   header_event = frame_generator.GenEndStreamHeader<kHeaderEventWrite>();
-  tracker.AddHTTP2Header(std::move(header_event));
+  tracker_.AddHTTP2Header(std::move(header_event));
 
   header_event = frame_generator.GenHeader<kHeaderEventRead>(":status", "200");
-  tracker.AddHTTP2Header(std::move(header_event));
+  tracker_.AddHTTP2Header(std::move(header_event));
 
   header_event = frame_generator.GenEndStreamHeader<kHeaderEventRead>();
-  tracker.AddHTTP2Header(std::move(header_event));
+  tracker_.AddHTTP2Header(std::move(header_event));
 
-  std::vector<http2::Record> records = tracker.ProcessToRecords<http2::ProtocolTraits>();
+  std::vector<http2::Record> records = tracker_.ProcessToRecords<http2::ProtocolTraits>();
 
   ASSERT_EQ(records.size(), 1);
   EXPECT_THAT(records[0].send.headers(), UnorderedElementsAre(Pair(":method", "post")));
@@ -106,27 +104,23 @@ TEST_F(ConnTrackerHTTP2Test, BasicHeader) {
 }
 
 TEST_F(ConnTrackerHTTP2Test, MultipleDataFrames) {
-  ConnTracker tracker;
-
-  const conn_id_t kConnID = {
-      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .tsid = 0};
   const int kStreamID = 7;
   auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
   std::unique_ptr<HTTP2DataEvent> data_frame;
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("Req");
-  tracker.AddHTTP2Data(std::move(data_frame));
+  tracker_.AddHTTP2Data(std::move(data_frame));
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("uest", /* end_stream */ true);
-  tracker.AddHTTP2Data(std::move(data_frame));
+  tracker_.AddHTTP2Data(std::move(data_frame));
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Resp");
-  tracker.AddHTTP2Data(std::move(data_frame));
+  tracker_.AddHTTP2Data(std::move(data_frame));
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("onse", /* end_stream */ true);
-  tracker.AddHTTP2Data(std::move(data_frame));
+  tracker_.AddHTTP2Data(std::move(data_frame));
 
-  std::vector<http2::Record> records = tracker.ProcessToRecords<http2::ProtocolTraits>();
+  std::vector<http2::Record> records = tracker_.ProcessToRecords<http2::ProtocolTraits>();
 
   ASSERT_EQ(records.size(), 1);
   EXPECT_EQ(records[0].send.data(), "Request");
@@ -134,43 +128,39 @@ TEST_F(ConnTrackerHTTP2Test, MultipleDataFrames) {
 }
 
 TEST_F(ConnTrackerHTTP2Test, MixedHeadersAndData) {
-  ConnTracker tracker;
-
-  const conn_id_t kConnID = {
-      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .tsid = 0};
   const int kStreamID = 7;
   auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
   std::unique_ptr<HTTP2DataEvent> data_frame;
   std::unique_ptr<HTTP2HeaderEvent> header_event;
 
   header_event = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
-  tracker.AddHTTP2Header(std::move(header_event));
+  tracker_.AddHTTP2Header(std::move(header_event));
 
   header_event = frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai");
-  tracker.AddHTTP2Header(std::move(header_event));
+  tracker_.AddHTTP2Header(std::move(header_event));
 
   header_event = frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic");
-  tracker.AddHTTP2Header(std::move(header_event));
+  tracker_.AddHTTP2Header(std::move(header_event));
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("Req");
-  tracker.AddHTTP2Data(std::move(data_frame));
+  tracker_.AddHTTP2Data(std::move(data_frame));
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("uest", /* end_stream */ true);
-  tracker.AddHTTP2Data(std::move(data_frame));
+  tracker_.AddHTTP2Data(std::move(data_frame));
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Resp");
-  tracker.AddHTTP2Data(std::move(data_frame));
+  tracker_.AddHTTP2Data(std::move(data_frame));
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("onse");
-  tracker.AddHTTP2Data(std::move(data_frame));
+  tracker_.AddHTTP2Data(std::move(data_frame));
 
   header_event = frame_generator.GenHeader<kHeaderEventRead>(":status", "200");
-  tracker.AddHTTP2Header(std::move(header_event));
+  tracker_.AddHTTP2Header(std::move(header_event));
 
   header_event = frame_generator.GenEndStreamHeader<kHeaderEventRead>();
-  tracker.AddHTTP2Header(std::move(header_event));
+  tracker_.AddHTTP2Header(std::move(header_event));
 
-  std::vector<http2::Record> records = tracker.ProcessToRecords<http2::ProtocolTraits>();
+  std::vector<http2::Record> records = tracker_.ProcessToRecords<http2::ProtocolTraits>();
 
   ASSERT_EQ(records.size(), 1);
   EXPECT_EQ(records[0].send.data(), "Request");
@@ -183,10 +173,6 @@ TEST_F(ConnTrackerHTTP2Test, MixedHeadersAndData) {
 
 // This test models capturing data mid-stream, where we may have missed the request headers.
 TEST_F(ConnTrackerHTTP2Test, MidStreamCapture) {
-  ConnTracker tracker;
-
-  const conn_id_t kConnID = {
-      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .tsid = 0};
   const int kStreamID = 7;
   auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
   std::unique_ptr<HTTP2DataEvent> data_frame;
@@ -195,24 +181,24 @@ TEST_F(ConnTrackerHTTP2Test, MidStreamCapture) {
   // Note that request headers are missing.
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("Req");
-  tracker.AddHTTP2Data(std::move(data_frame));
+  tracker_.AddHTTP2Data(std::move(data_frame));
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventWrite>("uest", /* end_stream */ true);
-  tracker.AddHTTP2Data(std::move(data_frame));
+  tracker_.AddHTTP2Data(std::move(data_frame));
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Resp");
-  tracker.AddHTTP2Data(std::move(data_frame));
+  tracker_.AddHTTP2Data(std::move(data_frame));
 
   data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("onse");
-  tracker.AddHTTP2Data(std::move(data_frame));
+  tracker_.AddHTTP2Data(std::move(data_frame));
 
   header_event = frame_generator.GenHeader<kHeaderEventRead>(":status", "200");
-  tracker.AddHTTP2Header(std::move(header_event));
+  tracker_.AddHTTP2Header(std::move(header_event));
 
   header_event = frame_generator.GenEndStreamHeader<kHeaderEventRead>();
-  tracker.AddHTTP2Header(std::move(header_event));
+  tracker_.AddHTTP2Header(std::move(header_event));
 
-  std::vector<http2::Record> records = tracker.ProcessToRecords<http2::ProtocolTraits>();
+  std::vector<http2::Record> records = tracker_.ProcessToRecords<http2::ProtocolTraits>();
 
   ASSERT_EQ(records.size(), 1);
   EXPECT_THAT(records[0].send.data(), StrEq("Request"));
@@ -227,9 +213,10 @@ TEST_F(ConnTrackerHTTP2Test, MidStreamCapture) {
 // which could be because we have currently hard-coded dwarf info values.
 TEST_F(ConnTrackerHTTP2Test, ZeroFD) {
   ConnTracker tracker;
-
   const conn_id_t kConnID = {
-      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 0, .tsid = 3};
+      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 0, .tsid = 21};
+  tracker.SetConnID(kConnID);
+
   const int kStreamID = 7;
   auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
   std::unique_ptr<HTTP2DataEvent> data_frame;
@@ -268,10 +255,6 @@ TEST_F(ConnTrackerHTTP2Test, ZeroFD) {
 }
 
 TEST_F(ConnTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterBreachingSizeLimit) {
-  ConnTracker tracker;
-
-  const conn_id_t kConnID = {
-      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .tsid = 0};
   const int kStreamID = 7;
   auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
   auto header_event1 = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
@@ -281,26 +264,22 @@ TEST_F(ConnTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterBreachingSizeLimit) {
 
   int size_limit_bytes = 10000;
   auto expiry_timestamp = std::chrono::steady_clock::now() - std::chrono::seconds(10000);
-  tracker.AddHTTP2Header(std::move(header_event1));
-  tracker.AddHTTP2Header(std::move(header_event2));
-  tracker.ProcessToRecords<http2::ProtocolTraits>();
-  tracker.Cleanup<http2::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
+  tracker_.AddHTTP2Header(std::move(header_event1));
+  tracker_.AddHTTP2Header(std::move(header_event2));
+  tracker_.ProcessToRecords<http2::ProtocolTraits>();
+  tracker_.Cleanup<http2::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
 
-  EXPECT_EQ(tracker.http2_client_streams_size(), 1);
-  EXPECT_EQ(tracker.http2_server_streams_size(), 1);
+  EXPECT_EQ(tracker_.http2_client_streams_size(), 1);
+  EXPECT_EQ(tracker_.http2_server_streams_size(), 1);
 
   size_limit_bytes = 0;
-  tracker.ProcessToRecords<http2::ProtocolTraits>();
-  tracker.Cleanup<http2::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
-  EXPECT_EQ(tracker.http2_client_streams_size(), 0);
-  EXPECT_EQ(tracker.http2_server_streams_size(), 0);
+  tracker_.ProcessToRecords<http2::ProtocolTraits>();
+  tracker_.Cleanup<http2::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
+  EXPECT_EQ(tracker_.http2_client_streams_size(), 0);
+  EXPECT_EQ(tracker_.http2_server_streams_size(), 0);
 }
 
 TEST_F(ConnTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterExpiration) {
-  ConnTracker tracker;
-
-  const conn_id_t kConnID = {
-      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .tsid = 0};
   const int kStreamID = 7;
   auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
   auto header_event1 = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
@@ -310,29 +289,25 @@ TEST_F(ConnTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterExpiration) {
 
   int size_limit_bytes = 10000;
   auto expiry_timestamp = std::chrono::steady_clock::now() - std::chrono::seconds(10000);
-  tracker.AddHTTP2Header(std::move(header_event1));
-  tracker.AddHTTP2Header(std::move(header_event2));
-  tracker.ProcessToRecords<http2::ProtocolTraits>();
-  tracker.Cleanup<http2::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
+  tracker_.AddHTTP2Header(std::move(header_event1));
+  tracker_.AddHTTP2Header(std::move(header_event2));
+  tracker_.ProcessToRecords<http2::ProtocolTraits>();
+  tracker_.Cleanup<http2::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
 
-  EXPECT_EQ(tracker.http2_client_streams_size(), 1);
-  EXPECT_EQ(tracker.http2_server_streams_size(), 1);
+  EXPECT_EQ(tracker_.http2_client_streams_size(), 1);
+  EXPECT_EQ(tracker_.http2_server_streams_size(), 1);
 
   size_limit_bytes = 10000;
   expiry_timestamp = std::chrono::steady_clock::now();
-  tracker.ProcessToRecords<http2::ProtocolTraits>();
-  tracker.Cleanup<http2::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
-  EXPECT_EQ(tracker.http2_client_streams_size(), 0);
-  EXPECT_EQ(tracker.http2_server_streams_size(), 0);
+  tracker_.ProcessToRecords<http2::ProtocolTraits>();
+  tracker_.Cleanup<http2::ProtocolTraits>(size_limit_bytes, expiry_timestamp);
+  EXPECT_EQ(tracker_.http2_client_streams_size(), 0);
+  EXPECT_EQ(tracker_.http2_server_streams_size(), 0);
 }
 
 TEST_F(ConnTrackerHTTP2Test, StreamIDJumpAhead) {
-  ConnTracker tracker;
-
   // The first stream is ordinary.
   {
-    const conn_id_t kConnID = {
-        .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 3, .tsid = 21};
     const uint32_t kStreamID = 7;
     auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
 
@@ -340,33 +315,31 @@ TEST_F(ConnTrackerHTTP2Test, StreamIDJumpAhead) {
     std::unique_ptr<HTTP2HeaderEvent> header_event;
 
     header_event = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
-    tracker.AddHTTP2Header(std::move(header_event));
+    tracker_.AddHTTP2Header(std::move(header_event));
 
     header_event = frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai");
-    tracker.AddHTTP2Header(std::move(header_event));
+    tracker_.AddHTTP2Header(std::move(header_event));
 
     header_event = frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic");
-    tracker.AddHTTP2Header(std::move(header_event));
+    tracker_.AddHTTP2Header(std::move(header_event));
 
     data_frame =
         frame_generator.GenDataFrame<kDataFrameEventWrite>("Request", /* end_stream */ true);
-    tracker.AddHTTP2Data(std::move(data_frame));
+    tracker_.AddHTTP2Data(std::move(data_frame));
 
     data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Response");
-    tracker.AddHTTP2Data(std::move(data_frame));
+    tracker_.AddHTTP2Data(std::move(data_frame));
 
     header_event = frame_generator.GenHeader<kHeaderEventRead>(":status", "200");
-    tracker.AddHTTP2Header(std::move(header_event));
+    tracker_.AddHTTP2Header(std::move(header_event));
 
     header_event = frame_generator.GenEndStreamHeader<kHeaderEventRead>();
-    tracker.AddHTTP2Header(std::move(header_event));
+    tracker_.AddHTTP2Header(std::move(header_event));
   }
 
   // And now another stream which jumps stream IDs for some reason.
   // This stream ID has to have the same even/oddness.
   {
-    const conn_id_t kConnID = {
-        .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 3, .tsid = 21};
     const uint32_t kStreamID = 100007;
     auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
 
@@ -374,29 +347,29 @@ TEST_F(ConnTrackerHTTP2Test, StreamIDJumpAhead) {
     std::unique_ptr<HTTP2HeaderEvent> header_event;
 
     header_event = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
-    tracker.AddHTTP2Header(std::move(header_event));
+    tracker_.AddHTTP2Header(std::move(header_event));
 
     header_event = frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai");
-    tracker.AddHTTP2Header(std::move(header_event));
+    tracker_.AddHTTP2Header(std::move(header_event));
 
     header_event = frame_generator.GenHeader<kHeaderEventWrite>(":path", "/wormhole");
-    tracker.AddHTTP2Header(std::move(header_event));
+    tracker_.AddHTTP2Header(std::move(header_event));
 
     data_frame =
         frame_generator.GenDataFrame<kDataFrameEventWrite>("Request", /* end_stream */ true);
-    tracker.AddHTTP2Data(std::move(data_frame));
+    tracker_.AddHTTP2Data(std::move(data_frame));
 
     data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Long ways from home");
-    tracker.AddHTTP2Data(std::move(data_frame));
+    tracker_.AddHTTP2Data(std::move(data_frame));
 
     header_event = frame_generator.GenHeader<kHeaderEventRead>(":status", "200");
-    tracker.AddHTTP2Header(std::move(header_event));
+    tracker_.AddHTTP2Header(std::move(header_event));
 
     header_event = frame_generator.GenEndStreamHeader<kHeaderEventRead>();
-    tracker.AddHTTP2Header(std::move(header_event));
+    tracker_.AddHTTP2Header(std::move(header_event));
   }
 
-  std::vector<http2::Record> records = tracker.ProcessToRecords<http2::ProtocolTraits>();
+  std::vector<http2::Record> records = tracker_.ProcessToRecords<http2::ProtocolTraits>();
 
   http2::Record expected_record0;
   expected_record0.send.AddHeader(":method", "post");
@@ -423,12 +396,8 @@ TEST_F(ConnTrackerHTTP2Test, StreamIDJumpAhead) {
 }
 
 TEST_F(ConnTrackerHTTP2Test, StreamIDJumpBack) {
-  ConnTracker tracker;
-
   // The first stream is ordinary.
   {
-    const conn_id_t kConnID = {
-        .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 3, .tsid = 21};
     const uint32_t kStreamID = 100007;
     auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
 
@@ -436,33 +405,31 @@ TEST_F(ConnTrackerHTTP2Test, StreamIDJumpBack) {
     std::unique_ptr<HTTP2HeaderEvent> header_event;
 
     header_event = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
-    tracker.AddHTTP2Header(std::move(header_event));
+    tracker_.AddHTTP2Header(std::move(header_event));
 
     header_event = frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai");
-    tracker.AddHTTP2Header(std::move(header_event));
+    tracker_.AddHTTP2Header(std::move(header_event));
 
     header_event = frame_generator.GenHeader<kHeaderEventWrite>(":path", "/magic");
-    tracker.AddHTTP2Header(std::move(header_event));
+    tracker_.AddHTTP2Header(std::move(header_event));
 
     data_frame =
         frame_generator.GenDataFrame<kDataFrameEventWrite>("Request", /* end_stream */ true);
-    tracker.AddHTTP2Data(std::move(data_frame));
+    tracker_.AddHTTP2Data(std::move(data_frame));
 
     data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Response");
-    tracker.AddHTTP2Data(std::move(data_frame));
+    tracker_.AddHTTP2Data(std::move(data_frame));
 
     header_event = frame_generator.GenHeader<kHeaderEventRead>(":status", "200");
-    tracker.AddHTTP2Header(std::move(header_event));
+    tracker_.AddHTTP2Header(std::move(header_event));
 
     header_event = frame_generator.GenEndStreamHeader<kHeaderEventRead>();
-    tracker.AddHTTP2Header(std::move(header_event));
+    tracker_.AddHTTP2Header(std::move(header_event));
   }
 
   // And now another stream which jumps stream IDs for some reason.
   // This stream ID has to have the same even/oddness.
   {
-    const conn_id_t kConnID = {
-        .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 3, .tsid = 21};
     const uint32_t kStreamID = 7;
     auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
 
@@ -470,29 +437,29 @@ TEST_F(ConnTrackerHTTP2Test, StreamIDJumpBack) {
     std::unique_ptr<HTTP2HeaderEvent> header_event;
 
     header_event = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
-    tracker.AddHTTP2Header(std::move(header_event));
+    tracker_.AddHTTP2Header(std::move(header_event));
 
     header_event = frame_generator.GenHeader<kHeaderEventWrite>(":host", "pixie.ai");
-    tracker.AddHTTP2Header(std::move(header_event));
+    tracker_.AddHTTP2Header(std::move(header_event));
 
     header_event = frame_generator.GenHeader<kHeaderEventWrite>(":path", "/wormhole");
-    tracker.AddHTTP2Header(std::move(header_event));
+    tracker_.AddHTTP2Header(std::move(header_event));
 
     data_frame =
         frame_generator.GenDataFrame<kDataFrameEventWrite>("Request", /* end_stream */ true);
-    tracker.AddHTTP2Data(std::move(data_frame));
+    tracker_.AddHTTP2Data(std::move(data_frame));
 
     data_frame = frame_generator.GenDataFrame<kDataFrameEventRead>("Long ways from home");
-    tracker.AddHTTP2Data(std::move(data_frame));
+    tracker_.AddHTTP2Data(std::move(data_frame));
 
     header_event = frame_generator.GenHeader<kHeaderEventRead>(":status", "200");
-    tracker.AddHTTP2Header(std::move(header_event));
+    tracker_.AddHTTP2Header(std::move(header_event));
 
     header_event = frame_generator.GenEndStreamHeader<kHeaderEventRead>();
-    tracker.AddHTTP2Header(std::move(header_event));
+    tracker_.AddHTTP2Header(std::move(header_event));
   }
 
-  std::vector<http2::Record> records = tracker.ProcessToRecords<http2::ProtocolTraits>();
+  std::vector<http2::Record> records = tracker_.ProcessToRecords<http2::ProtocolTraits>();
 
   http2::Record expected_record0;
   expected_record0.send.AddHeader(":method", "post");

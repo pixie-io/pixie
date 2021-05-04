@@ -75,7 +75,6 @@ ConnTracker::~ConnTracker() {
 }
 
 void ConnTracker::AddControlEvent(const socket_control_event_t& event) {
-  SetConnID(event.conn_id);
   CheckTracker();
   UpdateTimestamps(event.timestamp_ns);
 
@@ -126,7 +125,6 @@ void ConnTracker::AddConnCloseEvent(const close_event_t& close_event, uint64_t t
 }
 
 void ConnTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
-  SetConnID(event->attr.conn_id);
   bool role_changed = SetRole(event->attr.role, "inferred from data_event");
   SetProtocol(event->attr.protocol, "inferred from data_event");
 
@@ -197,7 +195,6 @@ EndpointRole InferHTTP2Role(bool write_event, const std::unique_ptr<HTTP2HeaderE
 }
 
 void ConnTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
-  SetConnID(hdr->attr.conn_id);
   SetProtocol(kProtocolHTTP2, "inferred from http2 headers");
 
   if (protocol_ != kProtocolHTTP2) {
@@ -278,7 +275,6 @@ void ConnTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
 }
 
 void ConnTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
-  SetConnID(data->attr.conn_id);
   SetProtocol(kProtocolHTTP2, "inferred from http2 data");
 
   if (protocol_ != kProtocolHTTP2) {

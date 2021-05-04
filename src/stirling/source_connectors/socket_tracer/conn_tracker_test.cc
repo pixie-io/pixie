@@ -704,7 +704,14 @@ class ConnTrackerStatsTest
     : public ConnTrackerTest,
       public ::testing::WithParamInterface<std::tuple<TrafficProtocol, EndpointRole>> {
  protected:
-  void SetUp() override { tracker_.set_conn_stats(&conn_stats_); }
+  void SetUp() override {
+    tracker_.set_conn_stats(&conn_stats_);
+    struct conn_id_t conn_id = {};
+    conn_id.upid.pid = testing::kPID;
+    conn_id.upid.start_time_ticks = testing::kPIDStartTimeTicks;
+    conn_id.fd = testing::kFD;
+    tracker_.SetConnID(conn_id);
+  }
 
   ConnStats conn_stats_;
   ConnTracker tracker_;

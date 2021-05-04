@@ -126,6 +126,7 @@ ConnTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t conn_i
     ++num_trackers_;
     active_trackers_.push_back(conn_tracker_ptr);
     conn_tracker_ptr->manager_ = this;
+    conn_tracker_ptr->SetConnID(conn_id);
   }
 
   DebugChecks();

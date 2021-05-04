@@ -60,7 +60,14 @@ TEST(HashTest, CanBeUsedInFlatHashMap) {
 
 class ConnStatsTest : public ::testing::Test {
  protected:
-  ConnStatsTest() : event_gen_(&mock_clock_) { tracker_.set_conn_stats(&conn_stats_); }
+  ConnStatsTest() : event_gen_(&mock_clock_) {
+    tracker_.set_conn_stats(&conn_stats_);
+    struct conn_id_t conn_id = {};
+    conn_id.upid.pid = testing::kPID;
+    conn_id.upid.start_time_ticks = testing::kPIDStartTimeTicks;
+    conn_id.fd = testing::kFD;
+    tracker_.SetConnID(conn_id);
+  }
 
   ConnStats conn_stats_;
   ConnTracker tracker_;

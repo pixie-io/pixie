@@ -49,7 +49,6 @@ class ConnTrackersManagerTest : public ::testing::Test {
   void TrackerEvent(struct conn_id_t conn_id, TrafficProtocol protocol) {
     VLOG(1) << "TrackerEvent";
     ConnTracker& tracker = trackers_mgr_.GetOrCreateConnTracker(conn_id);
-    tracker.SetConnID(conn_id);
     tracker.SetProtocol(protocol, "for testing");
   }
 };
