@@ -17,8 +17,40 @@ spec:
       labels:
         name: kratos
     spec:
+      initContainers:
+      - name: migrate
+        args:
+        - -c
+        - /etc/config/kratos/kratos.yml
+        - migrate
+        - sql
+        - -e
+        - --yes
+        envFrom:
+        - configMapRef:
+            name: pl-db-config
+        env:
+        - name: PL_POSTGRES_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: pl-db-secrets
+              key: PL_POSTGRES_USERNAME
+        - name: PL_POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pl-db-secrets
+              key: PL_POSTGRES_PASSWORD
+        - name: DSN
+          # yamllint disable-line rule:line-length
+          value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
+        image: oryd/kratos:v0.5.5
+        resources: {}
+        volumeMounts:
+        - mountPath: /etc/config/kratos
+          name: config
       containers:
-      - args:
+      - name: server
+        args:
         - serve
         - -c
         - /etc/config/kratos/kratos.yml
@@ -80,8 +112,6 @@ spec:
         - name: SELFSERVICE_FLOWS_ERROR_UI_URL
           value: https://$(PL_WORK_DOMAIN)/auth/password/error
         image: oryd/kratos:v0.5.5
-        imagePullPolicy: ""
-        name: kratos
         ports:
         - containerPort: 4433
         - containerPort: 4434

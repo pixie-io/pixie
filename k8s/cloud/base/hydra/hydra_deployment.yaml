@@ -17,8 +17,50 @@ spec:
       labels:
         name: hydra
     spec:
+      initContainers:
+      - name: migrate
+        args:
+        - migrate
+        - -c
+        - /etc/config/hydra/hydra.yml
+        - sql
+        - -e
+        - --yes
+        envFrom:
+        - configMapRef:
+            name: pl-db-config
+        env:
+        - name: PL_POSTGRES_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: pl-db-secrets
+              key: PL_POSTGRES_USERNAME
+        - name: PL_POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pl-db-secrets
+              key: PL_POSTGRES_PASSWORD
+        - name: OIDC_SUBJECT_IDENTIFIERS_PAIRWISE_SALT
+          valueFrom:
+            secretKeyRef:
+              name: pl-hydra-secrets
+              key: OIDC_SUBJECT_IDENTIFIERS_PAIRWISE_SALT
+        - name: SECRETS_SYSTEM
+          valueFrom:
+            secretKeyRef:
+              name: pl-hydra-secrets
+              key: SECRETS_SYSTEM
+        - name: HYDRA_DATABASE
+          value: hydra
+        - name: DSN
+          # yamllint disable-line rule:line-length
+          value: postgres://$(PL_POSTGRES_USERNAME):$(PL_POSTGRES_PASSWORD)@$(PL_POSTGRES_HOSTNAME):$(PL_POSTGRES_PORT)/$(PL_POSTGRES_DB)?sslmode=disable&max_conns=20&max_idle_conns=4
+        image: oryd/hydra:v1.9.2-sqlite
+        volumeMounts:
+        - mountPath: /etc/config/hydra
+          name: config
       containers:
-      - name: hydra
+      - name: server
         image: oryd/hydra:v1.9.2-sqlite
         args:
         - serve
@@ -74,7 +116,6 @@ spec:
           value: $(HYDRA_URL)
         - name: URLS_SELF_ISSUER
           value: $(HYDRA_URL)
-        imagePullPolicy: ""
         ports:
         - containerPort: 4444
         - containerPort: 4445
@@ -84,6 +125,7 @@ spec:
           mountPath: /etc/config/hydra
         - name: certs
           mountPath: /certs
+        resources: {}
       restartPolicy: Always
       volumes:
       - name: config
