@@ -1,0 +1,10 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+commonLabels:
+  app: pl-cloud
+namespace: plc
+resources:
+- postgres_persistent_volume.yaml
+- postgres_deployment.yaml
+- postgres_service.yaml

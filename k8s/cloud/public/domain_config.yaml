@@ -1,0 +1,7 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pl-domain-config
+data:
+  PL_DOMAIN_NAME: dev.withpixie.dev

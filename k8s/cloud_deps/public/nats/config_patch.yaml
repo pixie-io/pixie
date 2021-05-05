@@ -1,0 +1,35 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nats-config
+data:
+# yamllint disable
+  nats.conf: |
+    pid_file: "/var/run/nats/nats.pid"
+    http: 8222
+
+    tls {
+      ca_file: "/etc/nats-server-tls-certs/ca.crt",
+      cert_file: "/etc/nats-server-tls-certs/server.crt",
+      key_file: "/etc/nats-server-tls-certs/server.key",
+      timeout: 3
+    }
+    cluster {
+      port: 6222
+      routes [
+        nats://pl-nats-0.pl-nats:6222
+        nats://pl-nats-1.pl-nats:6222
+      ]
+
+      tls {
+        ca_file: "/etc/nats-server-tls-certs/ca.crt",
+        cert_file: "/etc/nats-server-tls-certs/server.crt",
+        key_file: "/etc/nats-server-tls-certs/server.key",
+        timeout: 3
+      }
+
+      advertise: $CLUSTER_ADVERTISE
+      connect_retries: 30
+    }
+# yamllint enable

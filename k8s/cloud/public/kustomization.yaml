@@ -1,0 +1,66 @@
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+commonLabels:
+  app: pl-cloud
+namespace: plc
+replicas:
+- name: api-server
+  count: 1
+- name: auth-server
+  count: 1
+- name: profile-server
+  count: 1
+- name: cloud-proxy
+  count: 1
+- name: project-manager-server
+  count: 1
+- name: vzmgr-server
+  count: 1
+- name: scriptmgr-server
+  count: 1
+resources:
+- ../base
+- ../base/ory_auth
+- ../overlays/exposed_services_ilb
+patchesStrategicMerge:
+- artifact_tracker_versions.yaml
+- domain_config.yaml
+- proxy_envoy.yaml
+images:
+- name: gcr.io/pl-dev-infra/cloud/api_server_image
+  newName: gcr.io/pixie-oss/pixie-prod-public/cloud/api_server_image
+  newTag: 2021-05-04_01-15-32.307_UTC
+- name: gcr.io/pl-dev-infra/cloud/artifact_tracker_server_image
+  newName: gcr.io/pixie-oss/pixie-prod-public/cloud/artifact_tracker_server_image
+  newTag: 2021-05-04_01-15-32.307_UTC
+- name: gcr.io/pl-dev-infra/cloud/auth_server_image
+  newName: gcr.io/pixie-oss/pixie-prod-public/cloud/auth_server_image
+  newTag: 2021-05-04_01-15-32.307_UTC
+- name: gcr.io/pl-dev-infra/cloud/proxy_server_image
+  newName: gcr.io/pixie-oss/pixie-prod-public/cloud/proxy_server_image
+  newTag: 2021-05-04_01-15-32.307_UTC
+- name: gcr.io/pl-dev-infra/cloud/dnsmgr_server_image
+  newName: gcr.io/pixie-oss/pixie-prod-public/cloud/dnsmgr_server_image
+  newTag: 2021-05-04_01-15-32.307_UTC
+- name: gcr.io/pl-dev-infra/cloud/indexer_server_image
+  newName: gcr.io/pixie-oss/pixie-prod-public/cloud/indexer_server_image
+  newTag: 2021-05-04_01-15-32.307_UTC
+- name: gcr.io/pl-dev-infra/cloud/profile_server_image
+  newName: gcr.io/pixie-oss/pixie-prod-public/cloud/profile_server_image
+  newTag: 2021-05-04_01-15-32.307_UTC
+- name: gcr.io/pl-dev-infra/cloud/project_manager_server_image
+  newName: gcr.io/pixie-oss/pixie-prod-public/cloud/project_manager_server_image
+  newTag: 2021-05-04_01-15-32.307_UTC
+- name: gcr.io/pl-dev-infra/cloud/scriptmgr_server_image
+  newName: gcr.io/pixie-oss/pixie-prod-public/cloud/scriptmgr_server_image
+  newTag: 2021-05-04_01-15-32.307_UTC
+- name: gcr.io/pl-dev-infra/cloud/vzconn_server_image
+  newName: gcr.io/pixie-oss/pixie-prod-public/cloud/vzconn_server_image
+  newTag: 2021-05-04_01-15-32.307_UTC
+- name: gcr.io/pl-dev-infra/cloud/vzmgr_server_image
+  newName: gcr.io/pixie-oss/pixie-prod-public/cloud/vzmgr_server_image
+  newTag: 2021-05-04_01-15-32.307_UTC
+- name: gcr.io/pl-dev-infra/cloud/job/create_admin_job_image
+  newName: gcr.io/pixie-oss/pixie-prod-public/cloud/job/create_admin_job_image
+  newTag: 2021-05-04_01-15-32.307_UTC

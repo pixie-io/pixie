@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+spec:
+  template:
+    metadata:
+      labels:
+        name: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:11.1
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: pl
+        - name: POSTGRES_USER
+          value: pl
+        - name: POSTGRES_PASSWORD
+          value: pl
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          subPath: data
+          name: postgres-pv-claim
+      volumes:
+      - name: postgres-pv-claim
+        persistentVolumeClaim:
+          claimName: postgres-pv-claim
