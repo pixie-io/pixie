@@ -38,7 +38,7 @@ def fqdn_list(start: str):
     df.req_body = px.pluck(df.req_body, 'queries')
     df.idx1 = px.find(df.req_body, '\"name\":')
     df.idz = px.length(df.req_body) - (df.idx1 + 8) - 3
-    df.fqdn_partial = px.substring(df.req_body, df.idx1 + 8, idz)
+    df.fqdn_partial = px.substring(df.req_body, df.idx1 + 8, df.idz)
     df.idx2 = px.find(df.fqdn_partial, ',')
     df.fqdn = px.substring(df.fqdn_partial, 0, df.idx2 - 1)
 
