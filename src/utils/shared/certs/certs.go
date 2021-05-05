@@ -124,6 +124,7 @@ func getVizierDNSNamesForNamespace(namespace string) []string {
 		fmt.Sprintf("*.pl-etcd.%s.svc.cluster.local", namespace),
 		"pl-nats",
 		"pl-etcd",
+		"localhost",
 	}
 }
 
