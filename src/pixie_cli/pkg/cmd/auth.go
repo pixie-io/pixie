@@ -72,7 +72,7 @@ var LoginCmd = &cobra.Command{
 		}
 		if err = auth.SaveRefreshToken(refreshToken); err != nil {
 			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
-			log.WithError(err).Fatal("Failed to persists auth token")
+			log.WithError(err).Fatal("Failed to persist auth token")
 		}
 
 		if token, _ := jwt.Parse(refreshToken.Token, nil); token != nil {

@@ -213,7 +213,7 @@ func createNewCobraCommand() *cobra.Command {
 					utils.WithError(err).Error("Cannot execute script")
 					os.Exit(1)
 				default:
-					log.WithError(err).Error("Failed to execute script")
+					utils.WithError(err).Error("Failed to execute script")
 					os.Exit(1)
 				}
 			}

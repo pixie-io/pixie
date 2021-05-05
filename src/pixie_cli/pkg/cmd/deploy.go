@@ -271,8 +271,8 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 				Properties: analytics.NewProperties().
 					Set("error", err.Error()),
 			})
-			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
-			log.WithError(err).Fatalln("Check pre-check has failed. To bypass pass in --check=false.")
+			utils.WithError(err).Error("Check pre-check has failed. To bypass pass in --check=false.")
+			os.Exit(1)
 		}
 
 		if checkOnly {
@@ -298,7 +298,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	cloudConn, err := utils.GetCloudClientConnection(cloudAddr)
 	if err != nil {
 		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
-		log.Fatalln(err)
+		log.WithError(err).Fatalln("Failed to get grpc connection to cloud")
 	}
 
 	versionString := viper.GetString("use_version")
@@ -483,7 +483,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 				Set("err", err.Error()),
 		})
 		// Using log.Fatal rather than CLI log in order to track this error in Sentry.
-		log.Fatal("Failed to deploy Vizier")
+		log.WithError(err).Fatal("Failed to deploy Vizier")
 	}
 
 	clusterID := deploy(cloudConn, versionString, clientset, kubeConfig, vzYaml, namespace)
@@ -584,8 +584,8 @@ func waitForHealthCheck(cloudAddr string, clusterID uuid.UUID, clientset *kubern
 			Properties: analytics.NewProperties().
 				Set("err", err.Error()),
 		})
-		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
-		log.WithError(err).Fatal("Failed Pixie healthcheck")
+		utils.WithError(err).Error("Failed Pixie healthcheck")
+		os.Exit(1)
 	}
 	_ = pxanalytics.Client().Enqueue(&analytics.Track{
 		UserId: pxconfig.Cfg().UniqueClientID,
@@ -675,7 +675,7 @@ func deploy(cloudConn *grpc.ClientConn, version string, clientset *kubernetes.Cl
 	err := vzJr.RunAndMonitor()
 	if err != nil {
 		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
-		log.Fatal("Failed to deploy Vizier")
+		log.WithError(err).Fatal("Failed to deploy Vizier")
 	}
 	return clusterID
 }
