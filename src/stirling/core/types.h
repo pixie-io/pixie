@@ -254,7 +254,7 @@ class DynamicDataTableSchema {
       : name_(name),
         desc_(desc),
         elements_(std::move(elements)),
-        table_schema_(name_, desc, elements_.elements()) {}
+        table_schema_(name_, desc_, elements_.elements()) {}
 
   std::string name_;
   std::string desc_;
