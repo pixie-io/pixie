@@ -1,0 +1,11 @@
+---
+# Lists of referenceable services.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pl-ory-service-config
+data:
+  # By default the hydra services are not enabled, but we need the configmap to avoid
+  # a deployment failure.
+  PL_HYDRA_SERVICE: ""
+  PL_KRATOS_SERVICE: ""

@@ -73,9 +73,14 @@ profiles:
   - command: dev
 - name: ory_auth
   patches:
-  - op: replace
+  - op: add
     path: /deploy/kustomize/paths
-    value: [k8s/cloud/ory_auth]
+    value: [k8s/cloud/dev/ory_auth]
+- name: ory_auth_prod
+  patches:
+  - op: add
+    path: /deploy/kustomize/paths
+    value: [k8s/cloud/base/ory_auth]
 - name: nightly
   patches:
   - op: add
@@ -108,7 +113,7 @@ profiles:
     - --compilation_mode=dbg
   - op: replace
     path: /deploy/kustomize/paths
-    value: [k8s/cloud/ory_auth/job]
+    value: [k8s/cloud/base/ory_auth/job]
 - name: staging
   patches:
   - op: add

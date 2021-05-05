@@ -35,6 +35,8 @@ spec:
         - configMapRef:
             name: pl-service-config
         - configMapRef:
+            name: pl-ory-service-config
+        - configMapRef:
             name: pl-ld-config
         - configMapRef:
             name: pl-analytics-config

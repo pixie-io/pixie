@@ -1,0 +1,9 @@
+---
+# Lists of referenceable services.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pl-ory-service-config
+data:
+  PL_HYDRA_SERVICE: hydra.plc.svc.cluster.local:4444
+  PL_KRATOS_SERVICE: kratos.plc.svc.cluster.local:4433

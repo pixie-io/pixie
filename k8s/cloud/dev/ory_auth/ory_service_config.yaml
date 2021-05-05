@@ -3,7 +3,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: pl-service-config
+  name: pl-ory-service-config
 data:
   PL_HYDRA_SERVICE: hydra.plc-dev.svc.cluster.local:4444
   PL_KRATOS_SERVICE: kratos.plc-dev.svc.cluster.local:4433

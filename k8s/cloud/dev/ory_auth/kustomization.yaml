@@ -5,9 +5,6 @@ commonLabels:
   app: pl-cloud
 namespace: plc-dev
 resources:
-- ../dev
-- ../base/hydra
-- ../base/kratos
-- oauth_config.yaml
+- ../../base/ory_auth
 patchesStrategicMerge:
-- service_config.yaml
+- ory_service_config.yaml
