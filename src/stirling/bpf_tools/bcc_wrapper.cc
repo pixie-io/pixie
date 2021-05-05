@@ -238,6 +238,28 @@ Status BCCWrapper::AttachSamplingProbes(const ArrayView<SamplingProbeSpec>& prob
   return Status::OK();
 }
 
+// This will replace the XDP program previously-attached on the the same device.
+// Newer kernel allows attaching multiple XDP programs on the same device:
+// https://lwn.net/Articles/801478/
+Status BCCWrapper::AttachXDP(const std::string& dev_name, const std::string& fn_name) {
+  int fn_fd = -1;
+  ebpf::StatusTuple load_status = bpf_.load_func(fn_name, BPF_PROG_TYPE_XDP, fn_fd);
+
+  if (!load_status.ok()) {
+    return StatusAdapter(load_status);
+  }
+
+  int res_fd = bpf_attach_xdp(dev_name.c_str(), fn_fd, /*flags*/ 0);
+
+  if (res_fd < 0) {
+    bpf_.unload_func(fn_name);
+    return error::Internal("Unable to attach xdp program for device $0 using $1, errorno: $2",
+                           dev_name, fn_name, res_fd);
+  }
+
+  return Status::OK();
+}
+
 // TODO(PL-1294): This can fail in rare cases. See the cited issue. Find the root cause.
 Status BCCWrapper::DetachKProbe(const KProbeSpec& probe) {
   VLOG(1) << "Detaching kprobe: " << probe.ToString();

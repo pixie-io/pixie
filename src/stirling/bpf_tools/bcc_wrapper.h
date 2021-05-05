@@ -255,6 +255,11 @@ class BCCWrapper {
   Status AttachSamplingProbes(const ArrayView<SamplingProbeSpec>& probes);
 
   /**
+   * Convenience function that attaches a XDP program.
+   */
+  Status AttachXDP(const std::string& dev_name, const std::string& fn_name);
+
+  /**
    * Convenience function that opens multiple perf buffers.
    * @param probes Vector of perf buffer descriptors.
    * @param cb_cookie Raw pointer returned on callback, typically used for tracking context.
