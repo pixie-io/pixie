@@ -30,9 +30,11 @@ import { BasePage } from './base';
 import { AuthCallbackMode, GetOAuthProvider } from './utils';
 import { Token } from './oauth-provider';
 
-const redirectGet = async (url, data) => {
+const redirectGet = async (url: string, data: { accessToken: string }) => {
+  // TODO(philkuz) (PC-883) remove the data from the query string.
   const fullURL = QueryString.stringifyUrl({ url, query: data });
-  return Axios.get(fullURL);
+  // Send token header to enable CORS check. Token is still allowed with Pixie CLI.
+  return Axios.get(fullURL, { headers: { token: data.accessToken } });
 };
 
 type ErrorType = 'internal' | 'auth';
@@ -154,7 +156,7 @@ export const AuthCallbackPage: React.FC = () => {
       const response = await redirectGet(redirectURI, { accessToken });
       return response.status === 200 && response.data === 'OK';
     } catch (error) {
-      handleHTTPError(error as AxiosError)
+      handleHTTPError(error as AxiosError);
       // If there's an error, we just return a failure.
       return false;
     }
