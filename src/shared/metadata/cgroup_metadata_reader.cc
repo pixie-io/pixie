@@ -50,36 +50,41 @@ void CGroupMetadataReader::InitPathTemplates(std::string_view sysfs_path) {
   // Note that as we create these templates, we often substitute in unresolved parameters by using
   // $0. For example, the pod ID is left as a template parameter to be resolved later.
 
-  // Attempt assuming naming scheme #1.
-  constexpr char kSysfsCpuAcctPath1[] = "cgroup/cpu,cpuacct/kubepods";
-  std::string cgroup_kubepods_base_path = absl::Substitute("$0/$1", sysfs_path, kSysfsCpuAcctPath1);
-  if (fs::Exists(cgroup_kubepods_base_path).ok()) {
-    cgroup_kubepod_guaranteed_path_template_ =
-        absl::Substitute("$0/pod$1", cgroup_kubepods_base_path, "$0");
-    cgroup_kubepod_besteffort_path_template_ =
-        absl::Substitute("$0/besteffort/pod$1", cgroup_kubepods_base_path, "$0");
-    cgroup_kubepod_burstable_path_template_ =
-        absl::Substitute("$0/burstable/pod$1", cgroup_kubepods_base_path, "$0");
-    container_template_ = "/$0/$1";
-    cgroup_kubepod_convert_dashes_ = false;
-    return;
-  }
+  // Different hosts may mount different cgroup dirs. Try a couple for robustness.
+  const std::vector<std::string> cgroup_dirs = {"cpu,cpuacct", "cpu", "pids"};
 
-  // Attempt assuming naming scheme #2.
-  constexpr char kSysfsCpuAcctPath2[] = "cgroup/cpu,cpuacct/kubepods.slice";
-  cgroup_kubepods_base_path = absl::Substitute("$0/$1", sysfs_path, kSysfsCpuAcctPath2);
-  if (fs::Exists(cgroup_kubepods_base_path).ok()) {
-    cgroup_kubepod_guaranteed_path_template_ =
-        absl::Substitute("$0/kubepods-pod$1.slice", cgroup_kubepods_base_path, "$0");
-    cgroup_kubepod_besteffort_path_template_ =
-        absl::Substitute("$0/kubepods-besteffort.slice/kubepods-besteffort-pod$1.slice",
-                         cgroup_kubepods_base_path, "$0");
-    cgroup_kubepod_burstable_path_template_ =
-        absl::Substitute("$0/kubepods-burstable.slice/kubepods-burstable-pod$1.slice",
-                         cgroup_kubepods_base_path, "$0");
-    container_template_ = "/$2-$0.scope/$1";
-    cgroup_kubepod_convert_dashes_ = true;
-    return;
+  for (const auto& cgroup_dir : cgroup_dirs) {
+    // Attempt assuming naming scheme #1.
+    std::string cgroup_kubepods_base_path =
+        absl::Substitute("$0/cgroup/$1/kubepods", sysfs_path, cgroup_dir);
+    if (fs::Exists(cgroup_kubepods_base_path).ok()) {
+      cgroup_kubepod_guaranteed_path_template_ =
+          absl::Substitute("$0/pod$1", cgroup_kubepods_base_path, "$0");
+      cgroup_kubepod_besteffort_path_template_ =
+          absl::Substitute("$0/besteffort/pod$1", cgroup_kubepods_base_path, "$0");
+      cgroup_kubepod_burstable_path_template_ =
+          absl::Substitute("$0/burstable/pod$1", cgroup_kubepods_base_path, "$0");
+      container_template_ = "/$0/$1";
+      cgroup_kubepod_convert_dashes_ = false;
+      return;
+    }
+
+    // Attempt assuming naming scheme #2.
+    cgroup_kubepods_base_path =
+        absl::Substitute("$0/cgroup/$1/kubepods.slice", sysfs_path, cgroup_dir);
+    if (fs::Exists(cgroup_kubepods_base_path).ok()) {
+      cgroup_kubepod_guaranteed_path_template_ =
+          absl::Substitute("$0/kubepods-pod$1.slice", cgroup_kubepods_base_path, "$0");
+      cgroup_kubepod_besteffort_path_template_ =
+          absl::Substitute("$0/kubepods-besteffort.slice/kubepods-besteffort-pod$1.slice",
+                           cgroup_kubepods_base_path, "$0");
+      cgroup_kubepod_burstable_path_template_ =
+          absl::Substitute("$0/kubepods-burstable.slice/kubepods-burstable-pod$1.slice",
+                           cgroup_kubepods_base_path, "$0");
+      container_template_ = "/$2-$0.scope/$1";
+      cgroup_kubepod_convert_dashes_ = true;
+      return;
+    }
   }
 
   LOG(ERROR) << absl::Substitute("Could not find kubepods slice under sysfs ($0)", sysfs_path);
