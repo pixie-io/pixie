@@ -131,20 +131,20 @@ export class CloudClient {
   /**
    * Implementation detail for forming a connection to a cluster for health check and script execution requests.
    */
-  async getClusterConnection(id: string, noCache = false): Promise<ClusterConnection> {
+  async getClusterConnection(id: string, refresh = false): Promise<ClusterConnection> {
     const { data } = await this.graphQL.query<GetClusterConnResults>({
       query: CLUSTER_QUERIES.GET_CLUSTER_CONN,
       variables: { id },
-      fetchPolicy: noCache ? 'network-only' : 'cache-first',
+      fetchPolicy: refresh ? 'network-only' : undefined,
     });
     return data.clusterConnection;
   }
 
   /** Fetches a list of all available clusters. */
-  async listClusters(): Promise<GQLClusterInfo[]> {
+  async listClusters(refresh = false): Promise<GQLClusterInfo[]> {
     const { data } = await this.graphQL.query<{ clusters: GQLClusterInfo[] }>({
       query: CLUSTER_QUERIES.LIST_CLUSTERS,
-      fetchPolicy: 'network-only',
+      fetchPolicy: refresh ? 'network-only' : undefined,
     });
     return data.clusters;
   }

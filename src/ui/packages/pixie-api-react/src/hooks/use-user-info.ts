@@ -20,10 +20,10 @@ import { useQuery } from '@apollo/client/react';
 import { USER_QUERIES, GQLUserInfo } from '@pixie-labs/api';
 import { ImmutablePixieQueryResult } from '../utils/types';
 
-export function useUserInfo(): ImmutablePixieQueryResult<GQLUserInfo> {
+export function useUserInfo(refresh = false): ImmutablePixieQueryResult<GQLUserInfo> {
   const { loading, data, error } = useQuery<{ user: GQLUserInfo }>(
     USER_QUERIES.GET_USER_INFO,
-    { fetchPolicy: 'network-only' },
+    { fetchPolicy: refresh ? 'network-only' : undefined },
   );
 
   return [data?.user, loading, error];

@@ -19,6 +19,7 @@
 import * as React from 'react';
 import { GetPxScripts, Script } from 'utils/script-bundle';
 import { useUserInfo } from '@pixie-labs/api-react';
+import { makeCancellable } from 'utils/cancellable-promise';
 
 export interface ScriptsContextProps {
   scripts: Map<string, Script>;
@@ -47,14 +48,20 @@ export const ScriptsContextProvider: React.FC = ({ children }) => {
   let nextScripts = scripts;
 
   React.useEffect(() => {
-    if (!user || loading || error) return;
-    GetPxScripts(user.orgID, user.orgName).then((list) => {
+    if (!user || loading || error) return () => {};
+
+    const getter = makeCancellable(GetPxScripts(user.orgID, user.orgName));
+    getter.then((list) => {
+      if (!user || loading || error) return;
       const availableScripts = new Map<string, Script>(list.map((script) => [script.id, script]));
       availableScripts.set(SCRATCH_SCRIPT.id, SCRATCH_SCRIPT);
       setScripts(availableScripts);
       // eslint-disable-next-line react-hooks/exhaustive-deps
       nextScripts = availableScripts;
-    });
+    }).catch((reason?: Error) => { if (reason?.message !== 'cancelled') throw reason; });
+
+    return getter.cancel;
+
     // Monitoring the user's ID and their org rather than the whole object, to avoid excess renders.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, user?.orgID, user?.orgName, loading, error]);

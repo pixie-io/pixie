@@ -52,17 +52,20 @@ export const ResultsContextProvider: React.FC = ({ children }) => {
     setResults({ tables: {} });
   };
 
+  const serializedResults = React.useMemo(() => JSON.stringify(results), [results]);
+  const context = React.useMemo(() => ({
+    ...results,
+    setResults,
+    clearResults,
+    loading,
+    streaming,
+    setLoading,
+    setStreaming,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [serializedResults, setResults, clearResults, loading, streaming, setLoading, setStreaming]);
+
   return (
-    <ResultsContext.Provider value={{
-      ...results,
-      setResults,
-      clearResults,
-      loading,
-      streaming,
-      setLoading,
-      setStreaming,
-    }}
-    >
+    <ResultsContext.Provider value={context}>
       {children}
     </ResultsContext.Provider>
   );
