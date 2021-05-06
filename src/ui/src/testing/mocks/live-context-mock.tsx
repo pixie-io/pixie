@@ -100,6 +100,7 @@ export const LIVE_CONTEXT_DEFAULTS: Required<MockProps> = {
     saveEditorAndExecute: jest.fn(),
     parseVisOrShowError: jest.fn(),
     argsForVisOrShowError: jest.fn(),
+    readyToExecute: true,
   },
   scripts: {
     scripts: new Map(),

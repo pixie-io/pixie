@@ -36,7 +36,8 @@ export function ScriptLoader(): null {
   const [loadState, setLoadState] = React.useState<LoadScriptState>('unloaded');
   const { scripts, loading: loadingScripts } = React.useContext(ScriptsContext);
   const {
-    pxl, vis, args, id, liveViewPage, setScript, execute, parseVisOrShowError, argsForVisOrShowError,
+    pxl, vis, args, id,
+    liveViewPage, setScript, execute, parseVisOrShowError, argsForVisOrShowError, readyToExecute,
   } = React.useContext(ScriptContext);
 
   const { clearResults } = React.useContext(ResultsContext);
@@ -64,7 +65,7 @@ export function ScriptLoader(): null {
 
   React.useEffect(() => {
     const subscription = urlParams.onChange.subscribe((urlInfo) => {
-      if (loadingScripts) return;
+      if (!readyToExecute || loadingScripts) return;
 
       const { pathname } = urlInfo;
       const urlArgs = urlInfo.args;
@@ -134,6 +135,6 @@ export function ScriptLoader(): null {
       subscription.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scripts, loadingScripts]);
+  }, [scripts, loadingScripts, readyToExecute]);
   return null;
 }

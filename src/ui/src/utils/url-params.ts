@@ -19,25 +19,8 @@
 import * as QueryString from 'query-string';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { argsEquals, Arguments } from 'utils/args-utils';
-
-interface Location {
-  search: string;
-  protocol: string;
-  host: string;
-  pathname: string;
-}
-
-interface History {
-  pushState(data: any, title: string, url?: string): void;
-  replaceState(data: any, title: string, url?: string): void;
-}
-
-export interface Window {
-  location: Location;
-  history: History;
-  addEventListener: typeof window.addEventListener;
-  removeEventListener: typeof window.removeEventListener;
-}
+import type { History, LocationState } from 'history';
+import plHistory from './pl-history';
 
 interface Params {
   args: Arguments;
@@ -61,7 +44,7 @@ export class URLParams {
 
   private prevParams: Params;
 
-  constructor(private readonly privateWindow: Window) {
+  constructor(private readonly privateWindow: typeof globalThis, private readonly history: History<LocationState>) {
     this.syncWithPathname();
     this.syncWithQueryParams();
     const params = {
@@ -75,16 +58,19 @@ export class URLParams {
     this.onChange = this.subject;
   }
 
-  private toURL(pathname: string, id: string, diff: string, args: Arguments) {
+  // eslint-disable-next-line class-methods-use-this
+  private toPathObject(pathname: string, id: string, diff: string, args: Arguments) {
     const params = {
       ...(id ? { script: id } : {}),
       ...(diff ? { diff } : {}),
       ...args,
     };
-    const { protocol, host } = this.privateWindow.location;
     const newQueryString = QueryString.stringify(params);
     const search = newQueryString ? `?${newQueryString}` : '';
-    return `${protocol}//${host}${pathname}${search}`;
+    return {
+      pathname,
+      search,
+    };
   }
 
   private syncWithQueryParams() {
@@ -113,26 +99,28 @@ export class URLParams {
     return this.privateWindow.location.pathname;
   }
 
-  private updateURL() {
-    const newurl = this.toURL(this.pathname, this.scriptId, this.scriptDiff, this.args);
-    this.privateWindow.history.replaceState({ path: newurl }, '', newurl);
+  private pathEqualsPrevious(): boolean {
+    return this.pathname && this.pathname === this.prevParams.pathname
+    && this.scriptId === this.prevParams.scriptId
+    && this.scriptDiff === this.prevParams.scriptDiff
+    && argsEquals(this.args, this.prevParams.args);
   }
 
-  private commitURL() {
+  private updatePathObject() {
+    if (this.pathEqualsPrevious()) return;
+    const newPath = this.toPathObject(this.pathname, this.scriptId, this.scriptDiff, this.args);
+    this.history.replace(newPath);
+  }
+
+  private commitPathObject() {
     // Don't push the state if the params haven't changed.
-    if (
-      this.pathname && this.prevParams.pathname
-      && this.scriptId === this.prevParams.scriptId
-      && this.scriptDiff === this.prevParams.scriptDiff
-      && argsEquals(this.args, this.prevParams.args)) {
-      return;
-    }
-    const newurl = this.toURL(this.pathname, this.scriptId, this.scriptDiff, this.args);
-    const oldurl = this.toURL(this.prevParams.pathname, this.prevParams.scriptId, this.prevParams.scriptDiff,
+    if (this.pathEqualsPrevious()) return;
+    const newPath = this.toPathObject(this.pathname, this.scriptId, this.scriptDiff, this.args);
+    const oldPath = this.toPathObject(this.prevParams.pathname, this.prevParams.scriptId, this.prevParams.scriptDiff,
       this.prevParams.args);
     // Restore the current history state to the previous one, otherwise we would just be pushing the same state again.
-    this.privateWindow.history.replaceState({ path: oldurl }, '', oldurl);
-    this.privateWindow.history.pushState({ path: newurl }, '', newurl);
+    this.history.replace(oldPath);
+    this.history.push(newPath);
     this.prevParams = {
       pathname: this.pathname,
       scriptId: this.scriptId,
@@ -143,20 +131,20 @@ export class URLParams {
 
   setPathname(pathname: string): void {
     this.pathname = pathname;
-    this.updateURL();
+    this.updatePathObject();
   }
 
   setArgs(newArgs: Arguments): void {
     // Omit the script and diff fields of newArgs.
     const { script, diff, ...args } = newArgs;
     this.args = args;
-    this.updateURL();
+    this.updatePathObject();
   }
 
   setScript(id: string, diff: string): void {
     this.scriptId = id;
     this.scriptDiff = diff;
-    this.updateURL();
+    this.updatePathObject();
   }
 
   commitAll(newId: string, newDiff: string, newArgs: Arguments): void {
@@ -165,7 +153,7 @@ export class URLParams {
     this.scriptId = newId;
     this.scriptDiff = newDiff;
     this.args = args;
-    this.commitURL();
+    this.commitPathObject();
   }
 
   // TODO(nserrino): deprecate this.
@@ -181,4 +169,4 @@ export class URLParams {
   }
 }
 
-export default new URLParams(window);
+export default new URLParams(window, plHistory);

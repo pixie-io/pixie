@@ -23,15 +23,13 @@ import {
   LIVE_VIEW_SCRIPT_ARGS_KEY, LIVE_VIEW_SCRIPT_ID_KEY, LIVE_VIEW_PIXIE_SCRIPT_KEY,
   LIVE_VIEW_VIS_SPEC_KEY, useSessionStorage,
 } from 'common/storage';
-import ClientContext from 'common/vizier-grpc-client-context';
+import VizierGRPCClientContext from 'common/vizier-grpc-client-context';
 import {
   VizierQueryError, GRPCStatusCode, BatchDataUpdate, VizierTable as Table,
   containsMutation, isStreaming, VizierQueryFunc, ExecutionStateUpdate,
 } from '@pixie-labs/api';
 
 import * as React from 'react';
-import { withRouter } from 'react-router';
-import { Location } from 'history';
 
 import {
   parseVis, toJSON, Vis, getQueryFuncs, validateVis,
@@ -48,6 +46,7 @@ import {
 } from 'containers/live-widgets/utils/live-view-params';
 
 import { checkExhaustive } from 'utils/check-exhaustive';
+import { useLocation } from 'react-router-dom';
 import { SetStateFunc } from './common';
 
 import { ResultsContext } from './results-context';
@@ -94,6 +93,7 @@ export interface ScriptContextProps {
   saveEditorAndExecute: () => void;
   parseVisOrShowError: (json: string) => Vis | null;
   argsForVisOrShowError: (vis: Vis, args: Arguments, scriptId?: string) => Arguments;
+  readyToExecute: boolean;
 }
 
 export const ScriptContext = React.createContext<ScriptContextProps>(null);
@@ -109,10 +109,13 @@ function getTitleOfScript(scriptId: string, scripts: Map<string, Script>): strin
   return scriptId;
 }
 
-const ScriptContextProvider: React.FC<{ location: Location }> = ({ location, children }) => {
+const ScriptContextProvider: React.FC = ({ children }) => {
+  const location = useLocation();
+
   const { scripts } = React.useContext(ScriptsContext);
   const { selectedClusterName, setClusterByName, selectedClusterPrettyName } = React.useContext(ClusterContext);
-  const { client, healthy } = React.useContext(ClientContext);
+  const { client, healthy } = React.useContext(VizierGRPCClientContext);
+  const readyToExecute = client && healthy;
   const {
     setResults, setLoading, setStreaming, clearResults, tables: currentResultTables,
   } = React.useContext(ResultsContext);
@@ -633,6 +636,7 @@ const ScriptContextProvider: React.FC<{ location: Location }> = ({ location, chi
         setCancelExecution,
 
         argsForVisOrShowError,
+        readyToExecute,
       }}
     >
       {children}
@@ -640,4 +644,4 @@ const ScriptContextProvider: React.FC<{ location: Location }> = ({ location, chi
   );
 };
 
-export default withRouter(ScriptContextProvider);
+export default ScriptContextProvider;
