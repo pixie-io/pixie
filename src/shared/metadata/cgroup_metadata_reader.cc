@@ -133,6 +133,9 @@ std::string CGroupMetadataReader::CGroupProcFilePath(PodQOSClass qos_class, std:
     case ContainerType::kDocker:
       containerType = "docker";
       break;
+    case ContainerType::kContainerd:
+      containerType = "cri-containerd";
+      break;
     default:
       // By default, assume any unknown container type is a docker image, to account
       // for older ContainerUpdates which may not have a type.

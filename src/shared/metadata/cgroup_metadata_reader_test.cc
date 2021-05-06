@@ -160,6 +160,17 @@ TEST_F(CGroupMetadataReaderTest, cgroup_proc_file_path_alternate) {
                 PodQOSClass::kBurstable, "5a1d1140-a486-478c-afae-bbc975ff9c3b",
                 "2b41fe4bb7a365960f1e7ed6c09651252b29387b44c9e14ad17e3bc392e7c640",
                 ContainerType::kCRIO));
+
+  EXPECT_EQ(
+      GetPathToTestDataFile(
+          "testdata/sysfs2/cgroup/cpu,cpuacct/kubepods.slice/kubepods-burstable.slice/"
+          "kubepods-burstable-pod5a1d1140_a486_478c_afae_bbc975ff9c3b.slice/"
+          "cri-containerd-2b41fe4bb7a365960f1e7ed6c09651252b29387b44c9e14ad17e3bc392e7c640.scope/"
+          "cgroup.procs"),
+      md_reader_->CGroupProcFilePath(
+          PodQOSClass::kBurstable, "5a1d1140-a486-478c-afae-bbc975ff9c3b",
+          "2b41fe4bb7a365960f1e7ed6c09651252b29387b44c9e14ad17e3bc392e7c640",
+          ContainerType::kContainerd));
 }
 
 TEST_F(CGroupMetadataReaderTest, read_pid_list_alternate) {

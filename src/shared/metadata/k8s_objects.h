@@ -196,7 +196,7 @@ inline PodConditions ConvertToPodConditions(
   return conditions;
 }
 
-enum class ContainerType : uint8_t { kUnknown = 0, kDocker, kCRIO };
+enum class ContainerType : uint8_t { kUnknown = 0, kDocker, kCRIO, kContainerd };
 
 enum class ContainerState : uint8_t { kUnknown = 0, kRunning, kTerminated, kWaiting };
 
@@ -207,6 +207,8 @@ inline ContainerType ConvertToContainerType(px::shared::k8s::metadatapb::Contain
       return ContainerType::kDocker;
     case state_pb::CONTAINER_TYPE_CRIO:
       return ContainerType::kCRIO;
+    case state_pb::CONTAINER_TYPE_CONTAINERD:
+      return ContainerType::kContainerd;
     default:
       return ContainerType::kUnknown;
   }

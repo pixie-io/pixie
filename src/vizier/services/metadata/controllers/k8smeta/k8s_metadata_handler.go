@@ -813,6 +813,8 @@ func formatContainerID(cid string) (metadatapb.ContainerType, string) {
 		containerType = metadatapb.CONTAINER_TYPE_CRIO
 	case "docker":
 		containerType = metadatapb.CONTAINER_TYPE_DOCKER
+	case "containerd":
+		containerType = metadatapb.CONTAINER_TYPE_CONTAINERD
 	default:
 	}
 

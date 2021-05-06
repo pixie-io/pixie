@@ -412,6 +412,7 @@ enum ContainerType {
   CONTAINER_TYPE_UNKNOWN = 0;
   CONTAINER_TYPE_DOCKER = 1;
   CONTAINER_TYPE_CRIO = 2;
+  CONTAINER_TYPE_CONTAINERD = 3;
 }
 
 // ContainerUpdate contains information about running containers.
