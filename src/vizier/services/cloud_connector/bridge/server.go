@@ -113,8 +113,6 @@ spec:
         volumeMounts:
         - name: certs
           mountPath: /certs
-      imagePullSecrets:
-      - name: pl-image-secret
       volumes:
       - name: certs
         secret:

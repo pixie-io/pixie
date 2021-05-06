@@ -26,7 +26,6 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 
-	"px.dev/pixie/src/utils/shared/k8s"
 	"px.dev/pixie/src/utils/shared/tar"
 	"px.dev/pixie/src/utils/shared/yamls"
 )
@@ -148,7 +147,7 @@ func getSentryDSN(vizierVersion string) string {
 }
 
 // GenerateTemplatedDeployYAMLsWithTar generates the YAMLs that should be run when deploying Pixie using the provided tar file.
-func GenerateTemplatedDeployYAMLsWithTar(clientset *kubernetes.Clientset, tarPath string, versionStr string, ns string, imagePullSecretName string, imagePullCreds string) ([]*yamls.YAMLFile, error) {
+func GenerateTemplatedDeployYAMLsWithTar(clientset *kubernetes.Clientset, tarPath string, versionStr string, ns string) ([]*yamls.YAMLFile, error) {
 	file, err := os.Open(tarPath)
 	if err != nil {
 		return nil, err
@@ -159,12 +158,12 @@ func GenerateTemplatedDeployYAMLsWithTar(clientset *kubernetes.Clientset, tarPat
 		return nil, err
 	}
 
-	return GenerateTemplatedDeployYAMLs(clientset, yamlMap, versionStr, ns, imagePullSecretName, imagePullCreds)
+	return GenerateTemplatedDeployYAMLs(clientset, yamlMap, versionStr, ns)
 }
 
 // GenerateTemplatedDeployYAMLs generates the YAMLs that should be run when deploying Pixie using the provided YAML map.
-func GenerateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string, versionStr string, ns string, imagePullSecretName string, imagePullCreds string) ([]*yamls.YAMLFile, error) {
-	secretsYAML, err := GenerateSecretsYAML(clientset, ns, imagePullSecretName, imagePullCreds, versionStr, false)
+func GenerateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string, versionStr string, ns string) ([]*yamls.YAMLFile, error) {
+	secretsYAML, err := GenerateSecretsYAML(clientset, ns, versionStr, false)
 	if err != nil {
 		return nil, err
 	}
@@ -174,7 +173,7 @@ func GenerateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, yamlMap map[s
 		return nil, err
 	}
 
-	etcdVzYAML, persistentVzYAML, err := generateVzYAMLs(clientset, yamlMap, imagePullSecretName, imagePullCreds)
+	etcdVzYAML, persistentVzYAML, err := generateVzYAMLs(clientset, yamlMap)
 	if err != nil {
 		return nil, err
 	}
@@ -204,21 +203,8 @@ func GenerateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, yamlMap map[s
 }
 
 // GenerateSecretsYAML creates the YAML for Pixie secrets.
-func GenerateSecretsYAML(clientset *kubernetes.Clientset, ns string, imagePullSecretName string, imagePullCreds string, versionStr string, bootstrapMode bool) (string, error) {
+func GenerateSecretsYAML(clientset *kubernetes.Clientset, ns string, versionStr string, bootstrapMode bool) (string, error) {
 	dockerYAML := ""
-
-	// Only add docker image secrets if specified.
-	if imagePullCreds != "" {
-		dockerSecret, err := k8s.CreateDockerConfigJSONSecret(ns, imagePullSecretName, imagePullCreds)
-		if err != nil {
-			return "", err
-		}
-		dYaml, err := k8s.ConvertResourceToYAML(dockerSecret)
-		if err != nil {
-			return "", err
-		}
-		dockerYAML = dYaml
-	}
 
 	csYAMLs, err := generateClusterSecretYAMLs(getSentryDSN(versionStr), bootstrapMode)
 	if err != nil {
@@ -330,7 +316,7 @@ func generateVzDepsYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]str
 	return natsYAML, wrappedEtcd, nil
 }
 
-func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string, imagePullSecretName string, imagePullCreds string) (string, string, error) {
+func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string) (string, string, error) {
 	if _, ok := yamlMap[vizierMetadataPersistYAMLPath]; !ok {
 		return "", "", fmt.Errorf("Cannot generate YAMLS for specified Vizier version. Please update to latest Vizier version instead.  ")
 	}
@@ -367,14 +353,6 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string,
 			TemplateValue:   nsTmpl,
 		},
 	}...)
-	if imagePullCreds != "" {
-		tmplOptions = append(tmplOptions, &yamls.K8sTemplateOptions{
-			TemplateMatcher: yamls.TemplateScopeMatcher,
-			Patch:           `{"spec": { "template": { "spec": { "imagePullSecrets": [{"name": "__PL_IMAGE_PULL_CREDS__"}] } } } }`,
-			Placeholder:     "__PL_IMAGE_PULL_CREDS__",
-			TemplateValue:   imagePullSecretName,
-		})
-	}
 
 	persistentYAML, err := yamls.TemplatizeK8sYAML(clientset, yamlMap[vizierMetadataPersistYAMLPath], tmplOptions)
 

@@ -137,12 +137,6 @@ func init() {
 	DeployCmd.Flags().BoolP("check_only", "", false, "Only run check and exit.")
 	viper.BindPFlag("check_only", DeployCmd.Flags().Lookup("check_only"))
 
-	DeployCmd.Flags().StringP("credentials_file", "f", "", "Location of the Pixie credentials file")
-	viper.BindPFlag("credentials_file", DeployCmd.Flags().Lookup("credentials_file"))
-
-	DeployCmd.Flags().StringP("secret_name", "s", "pl-image-secret", "The name of the secret used to access the Pixie images")
-	viper.BindPFlag("credentials_file", DeployCmd.Flags().Lookup("credentials_file"))
-
 	DeployCmd.Flags().StringP("namespace", "n", "pl", "The namespace to deploy Vizier to")
 	viper.BindPFlag("namespace", DeployCmd.Flags().Lookup("namespace"))
 

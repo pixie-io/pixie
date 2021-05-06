@@ -19,8 +19,6 @@
 package main
 
 import (
-	"strings"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -35,7 +33,6 @@ func init() {
 	pflag.String("out", "", "The output path")
 	pflag.String("version", "", "The version string for the YAMLs")
 	pflag.String("namespace", "pl", "The namespace to install K8s secrets to")
-	pflag.String("image_secret_name", "pl-image-secret", "The name of the imagePullSecrets")
 }
 
 func main() {
@@ -49,7 +46,6 @@ func main() {
 	out := viper.GetString("out")
 	version := viper.GetString("version")
 	namespace := viper.GetString("namespace")
-	imageSecretName := viper.GetString("image_secret_name")
 
 	if len(base) == 0 {
 		log.Fatalln("Base YAML path (--base) is required")
@@ -68,15 +64,7 @@ func main() {
 	kubeConfig := k8s.GetConfig()
 	clientset := k8s.GetClientset(kubeConfig)
 
-	imagePullCreds := ""
-	if strings.Contains(version, "-") { // Check if the version is an rc, if so, read and include the image pull secrets.
-		secret := k8s.GetSecret(clientset, "plc", "vizier-image-secret")
-		if secret != nil {
-			imagePullCreds = string(secret.Data["vizier_image_secret.json"])
-		}
-	}
-
-	templatedYAMLs, err := vizieryamls.GenerateTemplatedDeployYAMLsWithTar(clientset, base, version, namespace, imageSecretName, imagePullCreds)
+	templatedYAMLs, err := vizieryamls.GenerateTemplatedDeployYAMLsWithTar(clientset, base, version, namespace)
 	if err != nil {
 		log.WithError(err).Fatal("failed to generate templated deployment YAMLs")
 	}
