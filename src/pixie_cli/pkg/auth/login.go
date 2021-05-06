@@ -271,9 +271,7 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 			results <- result{nil, err}
 			return
 		}
-
-		q := r.URL.Query()
-		accessToken := q.Get("accessToken")
+		accessToken := r.Header.Get("token")
 		if accessToken == "" {
 			err := errors.New("missing code, assuming auth failed")
 			sendError(w, err)
