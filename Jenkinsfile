@@ -1135,13 +1135,6 @@ def deployWithSkaffold(String profile, String namespace, String skaffoldFile) {
           sh "skaffold build -p ${profile} -f ${skaffoldFile} --cache-artifacts=false"
           sh "skaffold build -q -o '{{json .}}' -p ${profile} -f ${skaffoldFile} --cache-artifacts=false > manifest.json"
           sh "skaffold deploy -p ${profile} --build-artifacts=manifest.json -f ${skaffoldFile}"
-          sh 'bazel build //src/pixie_cli:px'
-          sh 'mv bazel-bin/src/pixie_cli/px_/px /usr/local/bin/'
-          dir ('src/pxl_scripts/private') {
-            if (profile == 'prod') {
-              sh 'make update_bundle'
-            }
-          }
         }
       }
     }
