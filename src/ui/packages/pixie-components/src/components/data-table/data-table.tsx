@@ -151,6 +151,11 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   end: {
     justifyContent: 'flex-end',
   },
+  fill: {
+    '& > *': {
+      width: '100%',
+    },
+  },
   sortIcon: {
     width: theme.spacing(3),
     paddingLeft: theme.spacing(1),
@@ -232,7 +237,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 
 export type ExpandedRows = Record<number, boolean>;
 
-export type CellAlignment = 'center' | 'start' | 'end';
+export type CellAlignment = 'center' | 'start' | 'end' | 'fill';
 
 export interface ColumnProps {
   dataKey: string;

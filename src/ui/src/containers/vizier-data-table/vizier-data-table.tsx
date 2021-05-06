@@ -38,6 +38,14 @@ import { parseRows } from './parsers';
 import { vizierCellRenderer } from './renderers';
 import { getSortFunc } from './sort-funcs';
 
+// Note: if an alignment exists for both a column's semantic type and its data type, the semantic type takes precedence.
+const SemanticAlignmentMap = new Map<SemanticType, CellAlignment>(
+  [
+    [SemanticType.ST_QUANTILES, 'fill'],
+    [SemanticType.ST_DURATION_NS_QUANTILES, 'fill'],
+  ],
+);
+
 const DataAlignmentMap = new Map<DataType, CellAlignment>(
   [
     [DataType.BOOLEAN, 'center'],
@@ -86,7 +94,7 @@ interface VizierDataTableProps {
   propagatedArgs?: Arguments;
 }
 
-export const VizierDataTable = (props: VizierDataTableProps) => {
+export const VizierDataTable: React.FC<VizierDataTableProps> = (props) => {
   const {
     table, prettyRender = false, expandable = false, expandedRenderer,
     clusterName = null,
@@ -139,7 +147,7 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
       const colProps: ColumnProps = {
         dataKey: displayInfo.columnName,
         label: titleFromInfo(displayInfo),
-        align: DataAlignmentMap.get(displayInfo.type) || 'start',
+        align: SemanticAlignmentMap.get(displayInfo.semanticType) ?? DataAlignmentMap.get(displayInfo.type) ?? 'start',
         cellRenderer: vizierCellRenderer(displayInfo, updateColumnDisplay, prettyRender,
           theme, clusterName, rows, propagatedArgs),
       };
@@ -148,7 +156,7 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
       }
       return colProps;
     })
-  ), [columnDisplayInfos, clusterName, prettyRender, propagatedArgs, rows]);
+  ), [columnDisplayInfos, clusterName, prettyRender, propagatedArgs, rows, theme]);
 
   const rowGetter = React.useCallback(
     (i) => rows[i],
@@ -215,7 +223,23 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-export const VizierDataTableWithDetails = (props: { table: Table }) => {
+interface VizierDataRowDetailsProps {
+  data?: any;
+}
+
+const VizierDataRowDetails: React.FC<VizierDataRowDetailsProps> = ({ data }) => {
+  const classes = useStyles();
+  if (!data) {
+    return null;
+  }
+  return (
+    <div className={classes.details}>
+      <JSONData data={data} multiline />
+    </div>
+  );
+};
+
+export const VizierDataTableWithDetails: React.FC<{ table: Table }> = (props) => {
   const [details, setDetails] = React.useState(null);
 
   const onRowSelection = React.useCallback((row) => {
@@ -234,22 +258,6 @@ export const VizierDataTableWithDetails = (props: { table: Table }) => {
         <VizierDataTable prettyRender expandable={false} table={props.table} onRowSelectionChanged={onRowSelection} />
       </div>
       <VizierDataRowDetails data={details} />
-    </div>
-  );
-};
-
-interface VizierDataRowDetailsProps {
-  data?: any;
-}
-
-const VizierDataRowDetails = ({ data }: VizierDataRowDetailsProps) => {
-  const classes = useStyles();
-  if (!data) {
-    return null;
-  }
-  return (
-    <div className={classes.details}>
-      <JSONData data={data} multiline />
     </div>
   );
 };

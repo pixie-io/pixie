@@ -46,7 +46,7 @@ interface QuantilesBoxWhiskerFields {
   whiskerFill: string;
 }
 
-const makeSpec = (fields: QuantilesBoxWhiskerFields): VisualizationSpec => {
+const makeSpec = (fields: QuantilesBoxWhiskerFields, chartWidth: number): VisualizationSpec => {
   const {
     p50,
     p90,
@@ -67,7 +67,7 @@ const makeSpec = (fields: QuantilesBoxWhiskerFields): VisualizationSpec => {
 
   return {
     $schema: 'https://vega.github.io/schema/vega/v5.json',
-    width: 200,
+    width: chartWidth,
     style: 'cell',
     data: [
       {
@@ -302,14 +302,21 @@ const styles = (theme: Theme) => createStyles({
     alignItems: 'center',
   },
   vegaWrapper: {
+    flex: '0 1 100%',
+    // Doing this prevents the chart from even trying to overflow, and allows correct calculation of its intended width.
+    overflowX: 'hidden',
+  },
+  vega: {
     // It seems like ReactVega automatically inserts 5 px padding on the bottom of charts,
     // and there isn't a clear way to turn this off.
     marginTop: 5,
+    width: '100%',
   },
   label: {
     textAlign: 'right',
     justifyContent: 'flex-end',
-    width: 100,
+    width: '4rem',
+    flex: '0 0 auto',
     marginLeft: 5,
     marginRight: 10,
   },
@@ -333,7 +340,7 @@ interface QuantilesBoxWhiskerProps extends WithStyles<typeof styles> {
   onChangePercentile?: (percentile: SelectedPercentile) => void;
 }
 
-const QuantilesBoxWhiskerImpl = (props: QuantilesBoxWhiskerProps) => {
+const QuantilesBoxWhiskerImpl: React.FC<QuantilesBoxWhiskerProps> = (props) => {
   const {
     classes,
     p50,
@@ -383,6 +390,11 @@ const QuantilesBoxWhiskerImpl = (props: QuantilesBoxWhiskerProps) => {
     }
   }
 
+  // Vega's chart sets an explicit width on its canvas, even in responsive mode. It doesn't figure out the right width
+  // when it's in a flex child and tries to grow too large. Telling it how wide its container is fixes this.
+  const container = React.useRef<HTMLDivElement>(null);
+  const chartWidth = container.current?.clientWidth ?? 0;
+
   const spec = makeSpec({
     p50,
     p90,
@@ -399,7 +411,7 @@ const QuantilesBoxWhiskerImpl = (props: QuantilesBoxWhiskerProps) => {
     p99HoverFill,
     barFill: theme.palette.primary.dark,
     whiskerFill: theme.palette.text.primary,
-  });
+  }, chartWidth);
 
   const tooltipHandler = new Handler({
     offsetY: -15,
@@ -408,17 +420,19 @@ const QuantilesBoxWhiskerImpl = (props: QuantilesBoxWhiskerProps) => {
 
   return (
     <div className={classes.root}>
-      <Vega
-        className={classes.vegaWrapper}
-        signalListeners={{
-          p50Click: () => changePercentileIfDifferent('p50'),
-          p90Click: () => changePercentileIfDifferent('p90'),
-          p99Click: () => changePercentileIfDifferent('p99'),
-        }}
-        spec={spec}
-        actions={false}
-        tooltip={tooltipHandler}
-      />
+      <div className={classes.vegaWrapper} ref={container}>
+        <Vega
+          className={classes.vega}
+          signalListeners={{
+            p50Click: () => changePercentileIfDifferent('p50'),
+            p90Click: () => changePercentileIfDifferent('p90'),
+            p99Click: () => changePercentileIfDifferent('p99'),
+          }}
+          spec={spec}
+          actions={false}
+          tooltip={tooltipHandler}
+        />
+      </div>
       <span className={classes.label} style={{ color: selectedPercentileFill }}>
         {selectedPercentileDisplay}
       </span>
