@@ -302,6 +302,12 @@ export const AuthCallbackPage: React.FC = () => {
         errorMessage = 'We hit a snag in creating an account. Please try again later.';
         ctaMessage = 'Back to Sign Up';
         ctaDestination = '/auth/signup';
+      } else if (config.err.errMessage.match(/.*organization.*not.*found.*/g)
+        || config.err.errMessage.match(/.*user.*not.*found.*/g)) {
+        errorMessage = 'We hit a snag trying to authenticate you. User not registered. Please sign up.';
+        // If user or organization not found, direct to sign up page first.
+        ctaMessage = 'Go to Sign Up';
+        ctaDestination = '/auth/signup';
       } else {
         errorMessage = 'We hit a snag trying to authenticate you. Please try again later.';
         ctaMessage = 'Back to Log In';
