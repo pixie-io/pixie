@@ -91,7 +91,7 @@ export class HydraClient extends OAuthProviderClient {
   handleToken(): Promise<Token> {
     return new Promise<Token>((resolve, reject) => {
       this.makeClient(this.getStoredState(), false).token.getToken(window.location).then((user) => {
-        resolve(user.accessToken);
+        resolve({ accessToken: user.accessToken, isEmailUnverified: false });
       }).catch((err) => reject(err));
     });
   }

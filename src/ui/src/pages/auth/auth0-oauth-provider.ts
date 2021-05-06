@@ -64,10 +64,14 @@ export class Auth0Client extends OAuthProviderClient {
     return new Promise<Token>((resolve, reject) => {
       makeAuth0Client().parseHash({ hash: window.location.hash }, (errStatus, authResult) => {
         if (errStatus) {
-          reject(new Error(`${errStatus.error} - ${errStatus.errorDescription}`));
+          if (errStatus.errorDescription.match(/Please.*verify.*your.*email.*before.*logging.*in/g)) {
+            resolve({ isEmailUnverified: true });
+          } else {
+            reject(new Error(`${errStatus.error} - ${errStatus.errorDescription}`));
+          }
           return;
         }
-        resolve(authResult.accessToken);
+        resolve({ accessToken: authResult.accessToken, isEmailUnverified: false });
       });
     });
   }

@@ -50,6 +50,7 @@ interface CallbackConfig {
   token?: string;
   loading?: boolean;
   err?: ErrorDetails;
+  isEmailUnverified?: boolean;
 }
 
 const CLICodeBox = ({ code }) => (
@@ -222,7 +223,7 @@ export const AuthCallbackPage: React.FC = () => {
     }));
   };
 
-  const handleAccessToken = (accessToken: string) => {
+  const handleAccessToken = (token: Token) => {
     const params = QueryString.parse(window.location.search.substr(1));
     let mode: AuthCallbackMode;
     switch (params.mode) {
@@ -243,11 +244,23 @@ export const AuthCallbackPage: React.FC = () => {
     setConfig({
       mode,
       signup,
-      token: accessToken,
+      token: token?.accessToken,
       loading: true,
+      isEmailUnverified: token.isEmailUnverified,
     });
 
-    doAuth(mode, signup, redirectURI, location, orgName, accessToken);
+    if (!token?.accessToken) {
+      setConfig({
+        mode,
+        signup,
+        token: token?.accessToken,
+        loading: false,
+        isEmailUnverified: token.isEmailUnverified,
+      });
+      return;
+    }
+
+    doAuth(mode, signup, redirectURI, location, orgName, token?.accessToken);
   };
 
   React.useEffect(() => {
@@ -255,6 +268,27 @@ export const AuthCallbackPage: React.FC = () => {
       setErr('internal', `${err}`);
     });
   }, []);
+
+  const renderUnverifiedEmailMessage = () => {
+    const ctaMessage = 'Back to Sign Up';
+    const ctaDestination = '/auth/signup';
+    const cta = (
+      <div className={classes.ctaGutter}>
+        <Link to={ctaDestination} component={CtaButton}>
+          {ctaMessage}
+        </Link>
+      </div>
+    );
+
+    return (
+      <AuthMessageBox
+        error='recoverable'
+        title='Check your inbox to finish signup.'
+        message='We sent a signup link to your email.'
+        cta={cta}
+      />
+    );
+  };
 
   const renderError = () => {
     const title = config.signup ? 'Failed to Sign Up' : 'Failed to Log In';
@@ -297,6 +331,7 @@ export const AuthCallbackPage: React.FC = () => {
       />
     );
   };
+
   const renderLoadingMessage = () => (
     <AuthMessageBox
       title='Authenticating'
@@ -307,6 +342,10 @@ export const AuthCallbackPage: React.FC = () => {
     />
   );
   const renderMessage = () => {
+    if (config.isEmailUnverified) {
+      return renderUnverifiedEmailMessage();
+    }
+
     if (config.mode === 'cli_token') {
       return (
         <CLICodeBox
