@@ -52,7 +52,12 @@ type ServiceURLParams = {
   service: string;
 };
 
-export type EntityURLParams = {} | NamespaceURLParams | NodeURLParams | PodURLParams | ServiceURLParams;
+export type EntityURLParams =
+  | Record<string, string>
+  | NamespaceURLParams
+  | NodeURLParams
+  | PodURLParams
+  | ServiceURLParams;
 
 export interface EntityPage {
   clusterName?: string;
@@ -128,7 +133,7 @@ function matchAndExtractEntity<T>(path: string, page: LiveViewPage) {
 
 export function matchLiveViewEntity(path: string): EntityPage {
   // cluster
-  const clusterMatch = matchAndExtractEntity<{}>(
+  const clusterMatch = matchAndExtractEntity<Record<string, never>>(
     path, LiveViewPage.Cluster,
   );
   if (clusterMatch) {
@@ -142,7 +147,7 @@ export function matchLiveViewEntity(path: string): EntityPage {
   if (namespaceMatch) {
     return namespaceMatch;
   }
-  const namespacesMatch = matchAndExtractEntity<{}>(
+  const namespacesMatch = matchAndExtractEntity<Record<string, never>>(
     path, LiveViewPage.Namespaces,
   );
   if (namespacesMatch) {
@@ -155,7 +160,7 @@ export function matchLiveViewEntity(path: string): EntityPage {
   if (nodeMatch) {
     return nodeMatch;
   }
-  const nodesMatch = matchAndExtractEntity<{}>(
+  const nodesMatch = matchAndExtractEntity<Record<string, never>>(
     path, LiveViewPage.Nodes,
   );
   if (nodesMatch) {

@@ -24,7 +24,9 @@ import { ResultsContextProvider } from 'context/results-context';
 import ScriptContextProvider from 'context/script-context';
 import { LiveTourContextProvider } from 'containers/App/live-tour';
 
-export const withLiveViewContext = (Component) => function LiveViewContextProvider() {
+export const withLiveViewContext = (
+  Component: React.ComponentType,
+) => function LiveViewContextProvider(): React.ReactElement {
   return (
     <LayoutContextProvider>
       <DataDrawerContextProvider>

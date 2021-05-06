@@ -85,7 +85,7 @@ const useSelectedCluster = () => {
 // Convenience routes: sends `/scratch`, `/script/http_data`, and others to the appropriate Live url.
 // eslint-disable-next-line react/require-default-props
 const ScriptShortcut = ({ toNamespace = '', toScript = '' }: { toNamespace?: string; toScript?: string }) => {
-  const { namespace, scriptId } = useParams();
+  const { namespace, scriptId } = useParams<Record<string, string>>();
   let fullId = `${toNamespace || namespace || 'px'}/`;
   const normalized = (toScript || scriptId || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
   if (['scratch', 'scratchpad', 'scratch-pad', 'scratch-script'].includes(normalized)) {
@@ -120,12 +120,12 @@ const Vizier = () => {
   const showSnackbar = useSnackbar();
 
   const {
-    loading, error, cluster, numClusters,
+    loading: clusterLoading, error: clusterError, cluster, numClusters,
   } = useSelectedCluster();
 
-  if (loading) { return <div>Loading...</div>; }
+  if (clusterLoading) { return <div>Loading...</div>; }
 
-  const errMsg = error?.message;
+  const errMsg = clusterError?.message;
   if (errMsg) {
     // This is an error with pixie cloud, it is probably not relevant to the user.
     // Show a generic error message instead.
@@ -153,7 +153,7 @@ const Vizier = () => {
   );
 };
 
-export default function WithClusterBanner() {
+export default function WithClusterBanner(): React.ReactElement {
   const showSnackbar = useSnackbar();
 
   const [clusterId, setClusterId] = storage.useSessionStorage(storage.CLUSTER_ID_KEY, '');
@@ -195,7 +195,7 @@ export default function WithClusterBanner() {
         custom: {
           orgName: userOrg,
         },
-      });
+      }).then();
     }
   }, [ldClient, userEmail, userOrg]);
 

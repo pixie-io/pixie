@@ -39,7 +39,7 @@ export const SCRATCH_SCRIPT: Script = {
   hidden: false,
 };
 
-export const ScriptsContextProvider = (props) => {
+export const ScriptsContextProvider: React.FC = ({ children }) => {
   const [user, loading, error] = useUserInfo();
   const [scripts, setScripts] = React.useState<Map<string, Script>>(new Map([['initial', {} as Script]]));
 
@@ -64,7 +64,7 @@ export const ScriptsContextProvider = (props) => {
 
   return (
     <ScriptsContext.Provider value={context}>
-      {props.children}
+      {children}
     </ScriptsContext.Provider>
   );
 };

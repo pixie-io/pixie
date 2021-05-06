@@ -32,7 +32,7 @@ import {
 
 type LoadScriptState = 'unloaded' | 'url-loaded' | 'url-skipped' | 'context-loaded';
 
-export function ScriptLoader() {
+export function ScriptLoader(): null {
   const [loadState, setLoadState] = React.useState<LoadScriptState>('unloaded');
   const { scripts, loading: loadingScripts } = React.useContext(ScriptsContext);
   const {
@@ -49,17 +49,15 @@ export function ScriptLoader() {
 
   // Execute the default scripts if script was not loaded from the URL.
   React.useEffect(() => {
-    if (loadState === 'url-skipped') {
-      if (pxl && vis) {
-        execute({
-          pxl,
-          vis,
-          args,
-          id,
-          liveViewPage,
-        });
-        setLoadState('context-loaded');
-      }
+    if (loadState === 'url-skipped' && pxl && vis) {
+      execute({
+        pxl,
+        vis,
+        args,
+        id,
+        liveViewPage,
+      });
+      setLoadState('context-loaded');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [execute, loadState, pxl, vis]);

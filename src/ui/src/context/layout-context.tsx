@@ -42,7 +42,7 @@ export interface LayoutContextProps {
 
 export const LayoutContext = React.createContext<LayoutContextProps>(null);
 
-export const LayoutContextProvider = (props) => {
+export const LayoutContextProvider: React.FC = ({ children }) => {
   const [editorSplitsSizes, setEditorSplitSizes] = storage.useLocalStorage<Splits>(
     storage.LIVE_VIEW_EDITOR_SPLITS_KEY, [40, 60],
   );
@@ -81,7 +81,7 @@ export const LayoutContextProvider = (props) => {
         isMobile,
       }}
     >
-      {props.children}
+      {children}
     </LayoutContext.Provider>
   );
 };

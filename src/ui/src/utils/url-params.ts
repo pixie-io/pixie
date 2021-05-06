@@ -57,7 +57,7 @@ export class URLParams {
 
   onChange: Observable<Params>;
 
-  private subject: BehaviorSubject<Params>;
+  private readonly subject: BehaviorSubject<Params>;
 
   private prevParams: Params;
 
@@ -141,25 +141,25 @@ export class URLParams {
     };
   }
 
-  setPathname(pathname: string) {
+  setPathname(pathname: string): void {
     this.pathname = pathname;
     this.updateURL();
   }
 
-  setArgs(newArgs: Arguments) {
+  setArgs(newArgs: Arguments): void {
     // Omit the script and diff fields of newArgs.
     const { script, diff, ...args } = newArgs;
     this.args = args;
     this.updateURL();
   }
 
-  setScript(id: string, diff: string) {
+  setScript(id: string, diff: string): void {
     this.scriptId = id;
     this.scriptDiff = diff;
     this.updateURL();
   }
 
-  commitAll(newId: string, newDiff: string, newArgs: Arguments) {
+  commitAll(newId: string, newDiff: string, newArgs: Arguments): void {
     // Omit the script and diff fields of newArgs.
     const { script, diff, ...args } = newArgs;
     this.scriptId = newId;
@@ -169,7 +169,7 @@ export class URLParams {
   }
 
   // TODO(nserrino): deprecate this.
-  triggerOnChange() {
+  triggerOnChange(): void {
     this.syncWithPathname();
     this.syncWithQueryParams();
     this.subject.next({

@@ -44,7 +44,7 @@ export interface ResultsContextProps extends Results {
 
 export const ResultsContext = React.createContext<ResultsContextProps>(null);
 
-export const ResultsContextProvider = (props) => {
+export const ResultsContextProvider: React.FC = ({ children }) => {
   const [results, setResults] = React.useState<Results>({ tables: {} });
   const [loading, setLoading] = React.useState(false);
   const [streaming, setStreaming] = React.useState(false);
@@ -63,7 +63,7 @@ export const ResultsContextProvider = (props) => {
       setStreaming,
     }}
     >
-      {props.children}
+      {children}
     </ResultsContext.Provider>
   );
 };

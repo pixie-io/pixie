@@ -26,11 +26,12 @@ import {
 import ClientContext from 'common/vizier-grpc-client-context';
 import {
   VizierQueryError, GRPCStatusCode, BatchDataUpdate, VizierTable as Table,
-  containsMutation, isStreaming, VizierQueryFunc,
+  containsMutation, isStreaming, VizierQueryFunc, ExecutionStateUpdate,
 } from '@pixie-labs/api';
 
 import * as React from 'react';
 import { withRouter } from 'react-router';
+import { Location } from 'history';
 
 import {
   parseVis, toJSON, Vis, getQueryFuncs, validateVis,
@@ -108,9 +109,7 @@ function getTitleOfScript(scriptId: string, scripts: Map<string, Script>): strin
   return scriptId;
 }
 
-const ScriptContextProvider = (props) => {
-  const { location } = props;
-
+const ScriptContextProvider: React.FC<{ location: Location }> = ({ location, children }) => {
   const { scripts } = React.useContext(ScriptsContext);
   const { selectedClusterName, setClusterByName, selectedClusterPrettyName } = React.useContext(ClusterContext);
   const { client, healthy } = React.useContext(ClientContext);
@@ -204,7 +203,7 @@ const ScriptContextProvider = (props) => {
     if (location.pathname !== '/live') {
       urlParams.triggerOnChange();
     }
-  }, [location]);
+  }, [location.pathname]);
 
   // Logic to update entity paths when live view page or cluster changes.
 
@@ -238,10 +237,7 @@ const ScriptContextProvider = (props) => {
   // Note that this function does not update args, so it should only be called
   // when variables will not be modified (such as for layouts).
   const setVis = (newVis: Vis) => {
-    let visToSet = newVis;
-    if (!newVis) {
-      visToSet = emptyVis();
-    }
+    const visToSet = newVis ?? emptyVis();
     setVisJSONBase(toJSON(visToSet));
     setVisBase(visToSet);
   };
@@ -446,7 +442,7 @@ const ScriptContextProvider = (props) => {
             execArgs.pxl,
             queryFuncs,
             mutation,
-          ).subscribe((update) => {
+          ).subscribe((update: ExecutionStateUpdate) => {
             switch (update.event.type) {
               case 'start':
                 setCancelExecution(() => () => {
@@ -472,8 +468,7 @@ const ScriptContextProvider = (props) => {
               case 'cancel':
                 break;
               default:
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                checkExhaustive(update.event!.type);
+                checkExhaustive(update.event);
                 break;
             }
           });
@@ -524,7 +519,7 @@ const ScriptContextProvider = (props) => {
         execArgs.pxl,
         queryFuncs,
         mutation,
-      ).subscribe((update) => {
+      ).subscribe((update: ExecutionStateUpdate) => {
         switch (update.event.type) {
           case 'start':
             setCancelExecution(() => () => {
@@ -557,8 +552,7 @@ const ScriptContextProvider = (props) => {
           case 'cancel':
             break;
           default:
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            checkExhaustive(update.event!.type);
+            checkExhaustive(update.event);
             break;
         }
       });
@@ -641,7 +635,7 @@ const ScriptContextProvider = (props) => {
         argsForVisOrShowError,
       }}
     >
-      {props.children}
+      {children}
     </ScriptContext.Provider>
   );
 };
