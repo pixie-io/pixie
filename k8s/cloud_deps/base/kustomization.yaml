@@ -5,6 +5,5 @@ commonLabels:
   component: cloud-deps
 resources:
 - elastic
-- kibana
 - nats
 - stan
