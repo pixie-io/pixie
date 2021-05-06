@@ -32,6 +32,9 @@ const (
 	durationBeforeDisconnect = 20 * time.Second
 	// How often to update the database.
 	updateInterval = 5 * time.Second
+	// If a cluster is an UPDATING state, the amount of time since the last heartbeat at
+	// which we can consider it disconnected.
+	durationBeforeUpdateDisconnect = 10 * time.Minute
 )
 
 // StatusMonitor is responsible for maintaining status information of vizier clusters.
@@ -83,13 +86,12 @@ func (s *StatusMonitor) UpdateDBEntries() {
      SET
        status='DISCONNECTED',
        address=''
-     WHERE last_heartbeat < NOW() - INTERVAL '%f seconds' AND status != 'UPDATING';`
-
+     WHERE (last_heartbeat < NOW() - INTERVAL '%f seconds' AND status != 'UPDATING' AND status != 'DISCONNECTED')
+	 OR (last_heartbeat < NOW() - INTERVAL '%f seconds' AND status = 'UPDATING');`
 	// Variable substitution does not seem to work for intervals. Since we control this entire
 	// query and input data it should be safe to add the value to the query using
 	// a format directive.
-	query = fmt.Sprintf(query, durationBeforeDisconnect.Seconds())
-
+	query = fmt.Sprintf(query, durationBeforeDisconnect.Seconds(), durationBeforeUpdateDisconnect.Seconds())
 	res, err := s.db.Exec(query)
 	if err != nil {
 		log.WithError(err).Error("Failed to update database, ignoring (will retry in next tick)")
