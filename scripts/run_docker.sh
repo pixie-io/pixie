@@ -43,7 +43,6 @@ if [ $# -ne 0 ]; then
   exec_cmd=("${exec_cmd[@]}" "-c" "$*")
 fi
 
-# Disable quoting check to use stirling_flags, otherwise the flag values are treated as one string.
 docker run --rm -it \
   "${configs[@]}" \
   -v /var/run/docker.sock:/var/run/docker.sock \

@@ -276,6 +276,55 @@ def _artifacts_setup():
     )
 
     http_file(
+        name = "linux_headers_5_5_19_tar_gz",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers-5.5.19-trimmed-pl3.tar.gz"],
+        sha256 = "3a8e2eded3645cbab6e495246616dbe0700bc9d39359cbf7859d402fcb339e34",
+        downloaded_file_path = "linux-headers-5.5.19.tar.gz",
+    )
+
+    http_file(
+        name = "linux_headers_5_6_19_tar_gz",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers-5.6.19-trimmed-pl3.tar.gz"],
+        sha256 = "ca3485b6f61696efbaf748f1edc9f307b9a0c7b208b545145277687f97e7e6f5",
+        downloaded_file_path = "linux-headers-5.6.19.tar.gz",
+    )
+
+    http_file(
+        name = "linux_headers_5_7_19_tar_gz",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers-5.7.19-trimmed-pl3.tar.gz"],
+        sha256 = "40a1484c3af86f7ef6e9f7bc497f2fdf6a9e052f0d80cff58f40f6dd4f53d158",
+        downloaded_file_path = "linux-headers-5.7.19.tar.gz",
+    )
+
+    http_file(
+        name = "linux_headers_5_8_18_tar_gz",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers-5.8.18-trimmed-pl3.tar.gz"],
+        sha256 = "fc7f5ac376e3af8b16f608dec7da5ce95e3dc78b87a172d545597e2800e5e7bf",
+        downloaded_file_path = "linux-headers-5.8.18.tar.gz",
+    )
+
+    http_file(
+        name = "linux_headers_5_9_16_tar_gz",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers-5.9.16-trimmed-pl3.tar.gz"],
+        sha256 = "2d68890188ff4b20c28704cda7e774afdd4729b15a2376f8677105d4851459f5",
+        downloaded_file_path = "linux-headers-5.9.16.tar.gz",
+    )
+
+    http_file(
+        name = "linux_headers_5_10_34_tar_gz",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers-5.10.34-trimmed-pl3.tar.gz"],
+        sha256 = "2dcf53abec0f49bffa5b5ceb65465c6d41ce620d304666955d37cd0f1d9e53f5",
+        downloaded_file_path = "linux-headers-5.10.34.tar.gz",
+    )
+
+    http_file(
+        name = "linux_headers_5_11_18_tar_gz",
+        urls = ["https://storage.googleapis.com/pixie-dev-public/linux-headers-5.11.18-trimmed-pl3.tar.gz"],
+        sha256 = "1ba2d5db17e2c913e8e0f0f99be35a83ffba89dd10cfe9d8051d9d8f3b7a75e4",
+        downloaded_file_path = "linux-headers-5.11.18.tar.gz",
+    )
+
+    http_file(
         name = "timeconst_100",
         urls = ["https://storage.googleapis.com/pixie-dev-public/timeconst_100.h"],
         sha256 = "082496c45ab93af811732da56000caf5ffc9e6734ff633a2b348291f160ceb7e",

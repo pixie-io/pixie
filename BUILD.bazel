@@ -158,6 +158,13 @@ linux_headers_tarballs = [
     "@linux_headers_5_2_21_tar_gz//file:file",
     "@linux_headers_5_3_18_tar_gz//file:file",
     "@linux_headers_5_4_35_tar_gz//file:file",
+    "@linux_headers_5_5_19_tar_gz//file:file",
+    "@linux_headers_5_6_19_tar_gz//file:file",
+    "@linux_headers_5_7_19_tar_gz//file:file",
+    "@linux_headers_5_8_18_tar_gz//file:file",
+    "@linux_headers_5_9_16_tar_gz//file:file",
+    "@linux_headers_5_10_34_tar_gz//file:file",
+    "@linux_headers_5_11_18_tar_gz//file:file",
 ]
 
 linux_timeconst_files = [

@@ -88,17 +88,19 @@ build_linux_headers_image:
 
 .PHONY: upload_linux_headers
 upload_linux_headers: build_linux_headers_image ## Target to build and upload linux headers image
-	# Upload full headers.
+	# Extract headers from build containers.
 	scripts/docker-extract.sh $(linux_headers_image_tag) /pl/linux-headers-$(LINUX_KERNEL_VERSION).tar.gz $(linux_headers_fname)
-	gsutil cp $(linux_headers_fname) $(linux_headers_gs_path)
+	scripts/docker-extract.sh $(linux_headers_image_tag) /pl/linux-headers-$(LINUX_KERNEL_VERSION)-trimmed.tar.gz $(linux_headers_trimmed_fname)
+	# Print SHAs for convenience.
 	@echo "SHA: "
 	sha256sum $(linux_headers_fname)
-	rm -f $(linux_headers_fname)
-	# Upload trimmed headers.
-	scripts/docker-extract.sh $(linux_headers_image_tag) /pl/linux-headers-$(LINUX_KERNEL_VERSION)-trimmed.tar.gz $(linux_headers_trimmed_fname)
-	gsutil cp $(linux_headers_trimmed_fname) $(linux_headers_trimmed_gs_path)
 	@echo "SHA: "
 	sha256sum $(linux_headers_trimmed_fname)
+	# Upload.
+	gsutil cp $(linux_headers_fname) $(linux_headers_gs_path)
+	gsutil cp $(linux_headers_trimmed_fname) $(linux_headers_trimmed_gs_path)
+	# Cleanup.
+	rm -f $(linux_headers_fname)
 	rm -f $(linux_headers_trimmed_fname)
 
 .PHONY: build_and_upload_curl_image
