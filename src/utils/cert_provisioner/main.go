@@ -43,6 +43,8 @@ func init() {
 	pflag.String("custom_annotations", "", "Custom annotations that should be attached to the vizier resources")
 }
 
+const clusterSecretJWTKey = "jwt-signing-key"
+
 func main() {
 	pflag.Parse()
 
@@ -65,8 +67,9 @@ func main() {
 
 	ns := viper.GetString("namespace")
 	s := k8s.GetSecret(clientset, ns, "proxy-tls-certs")
+	jwtSecret := k8s.GetSecret(clientset, ns, "pl-cluster-secrets")
 
-	if s != nil {
+	if s != nil && jwtSecret != nil && jwtSecret.Data[clusterSecretJWTKey] != nil {
 		log.Info("Certs already exist... Exiting job")
 		return
 	}
@@ -81,7 +84,7 @@ func main() {
 	if s == nil {
 		log.Fatal("pl-cluster-secrets does not exist")
 	}
-	s.Data["jwt-signing-key"] = []byte(fmt.Sprintf("%x", jwtSigningKey))
+	s.Data[clusterSecretJWTKey] = []byte(fmt.Sprintf("%x", jwtSigningKey))
 
 	_, err = clientset.CoreV1().Secrets(ns).Update(context.Background(), s, metav1.UpdateOptions{})
 	if err != nil {
