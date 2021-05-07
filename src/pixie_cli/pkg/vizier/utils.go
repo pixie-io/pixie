@@ -22,7 +22,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/gofrs/uuid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -55,8 +54,7 @@ func FindVizierNamespace(clientset *kubernetes.Clientset) (string, error) {
 func MustConnectDefaultVizier(cloudAddr string, allClusters bool, clusterID uuid.UUID) []*Connector {
 	c, err := ConnectDefaultVizier(cloudAddr, allClusters, clusterID)
 	if err != nil {
-		cliUtils.WithError(err).Error("Failed to connect to vizier")
-		os.Exit(1)
+		cliUtils.WithError(err).Fatal("Failed to connect to vizier")
 	}
 	return c
 }

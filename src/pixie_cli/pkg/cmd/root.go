@@ -154,7 +154,6 @@ func Execute() {
 			UserId: pxconfig.Cfg().UniqueClientID,
 			Event:  "Exec Error",
 		})
-		utils.WithError(err).Error("Error executing command")
-		os.Exit(1)
+		utils.WithError(err).Fatal("Error executing command")
 	}
 }

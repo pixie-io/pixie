@@ -194,8 +194,7 @@ func deleteCmd(cmd *cobra.Command, args []string) {
 		log.WithError(err).Fatal("Could not download manifest file")
 	}
 	if _, ok := manifest[appName]; !ok {
-		utils.Errorf("%s is not a supported demo app", appName)
-		os.Exit(1)
+		utils.Fatalf("%s is not a supported demo app", appName)
 	}
 
 	kubeAPIConfig := k8s.GetClientAPIConfig()
@@ -203,13 +202,11 @@ func deleteCmd(cmd *cobra.Command, args []string) {
 	utils.Infof("Deleting demo app %s from the following cluster: %s", appName, currentCluster)
 	clusterOk := components.YNPrompt("Is the cluster correct?", true)
 	if !clusterOk {
-		utils.Error("Cluster is not correct. Aborting.")
-		os.Exit(1)
+		utils.Fatal("Cluster is not correct. Aborting.")
 	}
 
 	if !namespaceExists(appName) {
-		utils.Errorf("Namespace %s does not exist on cluster %s", appName, currentCluster)
-		os.Exit(1)
+		utils.Fatalf("Namespace %s does not exist on cluster %s", appName, currentCluster)
 	}
 
 	if err = deleteDemoApp(appName); err != nil {
@@ -246,8 +243,7 @@ func deployCmd(cmd *cobra.Command, args []string) {
 	appSpec, ok := manifest[appName]
 	// When a demo app is deprecated, its contents will be set to null in manifest.json.
 	if !ok || appSpec == nil {
-		utils.Errorf("%s is not a supported demo app", appName)
-		os.Exit(1)
+		utils.Fatalf("%s is not a supported demo app", appName)
 	}
 	instructions := strings.Join(appSpec.Instructions, "\n")
 
@@ -279,8 +275,7 @@ func deployCmd(cmd *cobra.Command, args []string) {
 			// Using log.Errorf rather than CLI log in order to track this unexpected error in Sentry.
 			log.WithError(err).Errorf("Error deleting namespace %s", appName)
 		}
-		utils.Error("Failed to deploy demo application.")
-		os.Exit(1)
+		utils.Fatal("Failed to deploy demo application.")
 	}
 
 	utils.Infof("Successfully deployed demo app %s to cluster %s.", args[0], currentCluster)

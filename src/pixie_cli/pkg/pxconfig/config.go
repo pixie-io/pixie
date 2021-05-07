@@ -104,22 +104,19 @@ func Cfg() *ConfigInfo {
 	once.Do(func() {
 		configPath, err := ensureDefaultConfigFilePath()
 		if err != nil {
-			utils.WithError(err).Error("Failed to load/create config file path")
-			os.Exit(1)
+			utils.WithError(err).Fatal("Failed to load/create config file path")
 		}
 		_, err = os.Stat(configPath)
 		if os.IsNotExist(err) {
 			// Write the default config.
 			if config, err = writeDefaultConfig(configPath); err != nil {
-				utils.WithError(err).Error("Failed to create default config")
-				os.Exit(1)
+				utils.WithError(err).Fatal("Failed to create default config")
 			}
 			return
 		}
 
 		if config, err = readDefaultConfig(configPath); err != nil {
-			utils.WithError(err).Error("Failed to read config file")
-			os.Exit(1)
+			utils.WithError(err).Fatal("Failed to read config file")
 		}
 	})
 	return config

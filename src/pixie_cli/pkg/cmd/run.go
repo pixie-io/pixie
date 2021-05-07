@@ -141,8 +141,7 @@ func createNewCobraCommand() *cobra.Command {
 
 			if scriptFile == "" {
 				if len(args) == 0 {
-					utils.Error("Expected script_name with script args.")
-					os.Exit(1)
+					utils.Fatal("Expected script_name with script args.")
 				}
 				scriptName := args[0]
 				execScript = br.MustGetScript(scriptName)
@@ -150,8 +149,7 @@ func createNewCobraCommand() *cobra.Command {
 			} else {
 				execScript, err = loadScriptFromFile(scriptFile)
 				if err != nil {
-					utils.WithError(err).Error("Failed to get query string")
-					os.Exit(1)
+					utils.WithError(err).Fatal("Failed to get query string")
 				}
 				scriptArgs = args
 			}
@@ -162,17 +160,16 @@ func createNewCobraCommand() *cobra.Command {
 					if err == flag.ErrHelp {
 						os.Exit(0)
 					}
-					utils.WithError(err).Error("Failed to parse script flags")
-					os.Exit(1)
+					utils.WithError(err).Fatal("Failed to parse script flags")
 				}
 				err := execScript.UpdateFlags(fs)
 				if err != nil {
 					if errors.Is(err, script.ErrMissingRequiredArgument) {
 						utils.Errorf("Missing required argument, please look at help below on how to pass in required arguments\n")
 						cmd.Help()
+						os.Exit(1)
 					}
-					utils.WithError(err).Error("Error parsing script flags")
-					os.Exit(1)
+					utils.WithError(err).Fatal("Error parsing script flags")
 				}
 			}
 
@@ -183,8 +180,7 @@ func createNewCobraCommand() *cobra.Command {
 			if !allClusters && clusterID == uuid.Nil {
 				clusterID, err = vizier.GetCurrentOrFirstHealthyVizier(cloudAddr)
 				if err != nil {
-					utils.WithError(err).Error("Could not fetch healthy vizier")
-					os.Exit(1)
+					utils.WithError(err).Fatal("Could not fetch healthy vizier")
 				}
 			}
 
@@ -210,11 +206,9 @@ func createNewCobraCommand() *cobra.Command {
 				case ok && vzErr.Code() == vizier.CodeCanceled:
 					utils.Info("Script was cancelled. Exiting.")
 				case err == ptproxy.ErrNotAvailable:
-					utils.WithError(err).Error("Cannot execute script")
-					os.Exit(1)
+					utils.WithError(err).Fatal("Cannot execute script")
 				default:
-					utils.WithError(err).Error("Failed to execute script")
-					os.Exit(1)
+					utils.WithError(err).Fatal("Failed to execute script")
 				}
 			}
 

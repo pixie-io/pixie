@@ -85,14 +85,12 @@ var DeleteAPIKeyCmd = &cobra.Command{
 		cloudAddr := viper.GetString("cloud_addr")
 		id, _ := cmd.Flags().GetString("id")
 		if id == "" {
-			utils.Error("API key ID must be specified using --id flag")
-			os.Exit(1)
+			utils.Fatal("API key ID must be specified using --id flag")
 		}
 
 		idUUID, err := uuid.FromString(id)
 		if err != nil {
-			utils.WithError(err).Error("Invalid API key ID")
-			os.Exit(1)
+			utils.WithError(err).Fatal("Invalid API key ID")
 		}
 
 		err = deleteAPIKey(cloudAddr, idUUID)

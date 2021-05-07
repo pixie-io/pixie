@@ -73,8 +73,7 @@ var DebugLogCmd = &cobra.Command{
 	Short: "Show log for vizier pods",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
-			utils.Error("Must supply a single argument pod name")
-			os.Exit(1)
+			utils.Fatal("Must supply a single argument pod name")
 		}
 
 		podName := args[0]
@@ -88,8 +87,7 @@ var DebugLogCmd = &cobra.Command{
 		if clusterID == uuid.Nil {
 			clusterID, err = getVizier(cloudAddr)
 			if err != nil {
-				utils.WithError(err).Error("Could not fetch healthy vizier")
-				os.Exit(1)
+				utils.WithError(err).Fatal("Could not fetch healthy vizier")
 			}
 		}
 
@@ -99,8 +97,7 @@ var DebugLogCmd = &cobra.Command{
 
 		conn, err := vizier.ConnectionToVizierByID(cloudAddr, clusterID)
 		if err != nil {
-			utils.WithError(err).Error("Could not connect to vizier")
-			os.Exit(1)
+			utils.WithError(err).Fatal("Could not connect to vizier")
 		}
 
 		prev, _ := cmd.Flags().GetBool("previous")
@@ -108,15 +105,13 @@ var DebugLogCmd = &cobra.Command{
 		defer cleanup()
 		resp, err := conn.DebugLogRequest(ctx, podName, prev, container)
 		if err != nil {
-			utils.WithError(err).Error("Logging failed")
-			os.Exit(1)
+			utils.WithError(err).Fatal("Logging failed")
 		}
 
 		for v := range resp {
 			if v != nil {
 				if v.Err != nil {
-					utils.WithError(v.Err).Error("Failed to get logs")
-					os.Exit(1)
+					utils.WithError(v.Err).Fatal("Failed to get logs")
 				} else {
 					fmt.Printf("%s", strings.ReplaceAll(v.Data, "\n",
 						fmt.Sprintf("\n%s ", color.GreenString("[%s]", podName))))
@@ -181,8 +176,7 @@ var DebugPodsCmd = &cobra.Command{
 		plane, _ := cmd.Flags().GetString("plane")
 		pods, err := fetchVizierPods(cloudAddr, selectedCluster, plane)
 		if err != nil {
-			utils.WithError(err).Error("Could not fetch Vizier pods")
-			os.Exit(1)
+			utils.WithError(err).Fatal("Could not fetch Vizier pods")
 		}
 		w := components.CreateStreamWriter("table", os.Stdout)
 		defer w.Finish()
@@ -203,8 +197,7 @@ var DebugContainersCmd = &cobra.Command{
 		plane, _ := cmd.Flags().GetString("plane")
 		pods, err := fetchVizierPods(cloudAddr, selectedCluster, plane)
 		if err != nil {
-			utils.WithError(err).Error("Could not fetch Vizier pods")
-			os.Exit(1)
+			utils.WithError(err).Fatal("Could not fetch Vizier pods")
 		}
 		w := components.CreateStreamWriter("table", os.Stdout)
 		defer w.Finish()

@@ -51,8 +51,7 @@ var CollectLogsCmd = &cobra.Command{
 		if !nsSet {
 			vzNs, err := vizier.FindVizierNamespace(clientset)
 			if err != nil {
-				utils.WithError(err).Error("Failed to get Vizier namespace")
-				os.Exit(1)
+				utils.WithError(err).Fatal("Failed to get Vizier namespace")
 			}
 			ns = vzNs
 		}

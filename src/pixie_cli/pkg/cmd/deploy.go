@@ -231,8 +231,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	if customLabels != "" {
 		lm, err := k8s.KeyValueStringToMap(customLabels)
 		if err != nil {
-			utils.Error("--labels must be specified through the following format: label1=value1,label2=value2")
-			os.Exit(1)
+			utils.WithError(err).Fatal("--labels must be specified through the following format: label1=value1,label2=value2")
 		}
 		labelMap = lm
 	}
@@ -240,21 +239,18 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	for _, l := range BlockListedLabels {
 		if _, ok := labelMap[l]; ok {
 			joinedLabels := strings.Join(BlockListedLabels, ", ")
-			utils.Error(fmt.Sprintf("Custom labels must not be one of: %s.", joinedLabels))
-			os.Exit(1)
+			utils.Fatalf("Custom labels must not be one of: %s.", joinedLabels)
 		}
 	}
 	if customAnnotations != "" {
 		_, err := k8s.KeyValueStringToMap(customAnnotations)
 		if err != nil {
-			utils.Error("--annotations must be specified through the following format: annotation1=value1,annotation2=value2")
-			os.Exit(1)
+			utils.WithError(err).Fatal("--annotations must be specified through the following format: annotation1=value1,annotation2=value2")
 		}
 	}
 
 	if deployKey == "" && extractPath != "" {
-		utils.Error("--deploy_key must be specified when running with --extract_yaml. Please run px deploy-key create.")
-		os.Exit(1)
+		utils.Fatal("--deploy_key must be specified when running with --extract_yaml. Please run px deploy-key create.")
 	}
 
 	if (check || checkOnly) && extractPath == "" {
@@ -271,8 +267,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 				Properties: analytics.NewProperties().
 					Set("error", err.Error()),
 			})
-			utils.WithError(err).Error("Check pre-check has failed. To bypass pass in --check=false.")
-			os.Exit(1)
+			utils.WithError(err).Fatal("Check pre-check has failed. To bypass pass in --check=false.")
 		}
 
 		if checkOnly {
@@ -584,8 +579,7 @@ func waitForHealthCheck(cloudAddr string, clusterID uuid.UUID, clientset *kubern
 			Properties: analytics.NewProperties().
 				Set("err", err.Error()),
 		})
-		utils.WithError(err).Error("Failed Pixie healthcheck")
-		os.Exit(1)
+		utils.WithError(err).Fatal("Failed Pixie healthcheck")
 	}
 	_ = pxanalytics.Client().Enqueue(&analytics.Track{
 		UserId: pxconfig.Cfg().UniqueClientID,

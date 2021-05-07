@@ -85,14 +85,12 @@ var DeleteDeployKeyCmd = &cobra.Command{
 		cloudAddr := viper.GetString("cloud_addr")
 		id := viper.GetString("id")
 		if id == "" {
-			utils.Error("Deployment key ID must be specified using --id flag")
-			os.Exit(1)
+			utils.Fatal("Deployment key ID must be specified using --id flag")
 		}
 
 		idUUID, err := uuid.FromString(id)
 		if err != nil {
-			utils.WithError(err).Error("Invalid deployment key ID")
-			os.Exit(1)
+			utils.WithError(err).Fatal("Invalid deployment key ID")
 		}
 
 		err = deleteDeployKey(cloudAddr, idUUID)

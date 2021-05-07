@@ -187,8 +187,7 @@ func (b BundleManager) GetScript(scriptName string) (*ExecutableScript, error) {
 func (b BundleManager) MustGetScript(scriptName string) *ExecutableScript {
 	es, err := b.GetScript(scriptName)
 	if err != nil {
-		utils.WithError(err).Error("Failed to get script")
-		os.Exit(1)
+		utils.WithError(err).Fatal("Failed to get script")
 	}
 	return es
 }

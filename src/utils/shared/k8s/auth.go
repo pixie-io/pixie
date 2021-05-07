@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
@@ -62,7 +61,9 @@ func init() {
 			}
 		}
 		if defaultKubeConfig == "" {
-			log.Fatalln("Failed to find valid config in KUBECONFIG env. Is it formatted correctly?")
+			// Don't use log.Fatal, because it will send an error to Sentry when invoked from the CLI.
+			fmt.Println("Failed to find valid config in KUBECONFIG env. Is it formatted correctly?")
+			os.Exit(1)
 		}
 	} else if home := homeDir(); home != "" {
 		defaultKubeConfig = filepath.Join(home, ".kube", "config")
@@ -77,7 +78,9 @@ func init() {
 func GetClientset(config *rest.Config) *kubernetes.Clientset {
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		log.WithError(err).Fatal("Could not create k8s clientset")
+		// Don't use log.Fatal, because it will send an error to Sentry when invoked from the CLI.
+		fmt.Printf("Could not create k8s clientset: %s\n", err.Error())
+		os.Exit(1)
 	}
 	return clientset
 }
@@ -86,7 +89,9 @@ func GetClientset(config *rest.Config) *kubernetes.Clientset {
 func GetDiscoveryClient(config *rest.Config) *discovery.DiscoveryClient {
 	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
 	if err != nil {
-		log.WithError(err).Fatal("Could not create k8s discovery client")
+		// Don't use log.Fatal, because it will send an error to Sentry when invoked from the CLI.
+		fmt.Printf("Could not create k8s discovery client: %s\n", err.Error())
+		os.Exit(1)
 	}
 
 	return discoveryClient
@@ -97,7 +102,9 @@ func GetConfig() *rest.Config {
 	// use the current context in kubeconfig
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
-		log.WithError(err).Fatal("Could not build kubeconfig")
+		// Don't use log.Fatal, because it will send an error to Sentry when invoked from the CLI.
+		fmt.Printf("Could not build kubeconfig: %s\n", err.Error())
+		os.Exit(1)
 	}
 
 	return config

@@ -19,7 +19,6 @@
 package cmd
 
 import (
-	"os"
 	"strconv"
 
 	"github.com/gofrs/uuid"
@@ -83,8 +82,7 @@ var GetConfigCmd = &cobra.Command{
 		}
 
 		if len(vzInfo) == 0 {
-			cliUtils.Errorf("Invalid cluster ID: %s", clusterID)
-			os.Exit(1)
+			cliUtils.Fatalf("Invalid cluster ID: %s", clusterID)
 		}
 
 		cliUtils.Infof("%s: %t", "PassthroughEnabled", vzInfo[0].Config.PassthroughEnabled)

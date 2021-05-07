@@ -85,8 +85,7 @@ var VizierUpdateCmd = &cobra.Command{
 		if len(clusterStr) > 0 {
 			u, err := uuid.FromString(clusterStr)
 			if err != nil {
-				utils.WithError(err).Error("Failed to parse cluster argument")
-				os.Exit(1)
+				utils.WithError(err).Fatal("Failed to parse cluster argument")
 			}
 			clusterID = u
 		}
@@ -102,14 +101,12 @@ var VizierUpdateCmd = &cobra.Command{
 		if clusterID == uuid.Nil {
 			clusterID, err = vizier.GetCurrentOrFirstHealthyVizier(cloudAddr)
 			if err != nil {
-				utils.WithError(err).Error("Failed to select cluster")
-				os.Exit(1)
+				utils.WithError(err).Fatal("Failed to select cluster")
 			}
 		}
 		clusterInfo, err := vizier.GetVizierInfo(cloudAddr, clusterID)
 		if err != nil {
-			utils.WithError(err).Errorf("Failed to get info for cluster: %s", clusterID.String())
-			os.Exit(1)
+			utils.WithError(err).Fatalf("Failed to get info for cluster: %s", clusterID.String())
 		}
 
 		utils.Infof("Updating Pixie on the following cluster: %s", clusterInfo.ClusterName)
@@ -132,9 +129,8 @@ var VizierUpdateCmd = &cobra.Command{
 		if sv, err := semver.Parse(clusterInfo.VizierVersion); err == nil {
 			svNew := semver.MustParse(versionString)
 			if svNew.Compare(sv) < 0 {
-				utils.Errorf("Cannot upgrade current version %s to requested older version %s",
+				utils.Fatalf("Cannot upgrade current version %s to requested older version %s",
 					sv.String(), svNew.String())
-				os.Exit(1)
 			}
 		}
 
@@ -233,8 +229,7 @@ var CLIUpdateCmd = &cobra.Command{
 			currentSemver := version.GetVersion().Semver()
 			versions, err := updater.GetAvailableVersions(currentSemver)
 			if err != nil {
-				utils.Error("Cannot determine new versions to update to.")
-				os.Exit(1)
+				utils.WithError(err).Fatal("Cannot determine new versions to update to.")
 			}
 			if len(versions) == 0 {
 				utils.Info("No updates available")
@@ -242,8 +237,7 @@ var CLIUpdateCmd = &cobra.Command{
 			}
 
 			if ok, err := updater.IsUpdatable(); !ok || err != nil {
-				utils.Error("Cannot perform update, it's likely the file is not in a writable path.")
-				os.Exit(1)
+				utils.Fatal("Cannot perform update, it's likely the file is not in a writable path.")
 				// TODO(zasgar): Provide a means to update this as well.
 			}
 			selectedVersion = versions[0]
@@ -260,8 +254,7 @@ var CLIUpdateCmd = &cobra.Command{
 func mustInstallVersion(u *update.CLIUpdater, v string) {
 	err := u.UpdateSelf(v)
 	if err != nil {
-		utils.Error("Failed to apply update.")
-		os.Exit(1)
+		utils.WithError(err).Fatal("Failed to apply update.")
 	}
 	utils.Info("Update completed successfully.")
 }

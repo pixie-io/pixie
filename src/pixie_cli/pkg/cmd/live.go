@@ -68,8 +68,7 @@ var LiveCmd = &cobra.Command{
 		} else {
 			execScript, err = loadScriptFromFile(scriptFile)
 			if err != nil {
-				utils.WithError(err).Error("Failed to get query string")
-				os.Exit(1)
+				utils.WithError(err).Fatal("Failed to get query string")
 			}
 			scriptArgs = args
 		}
@@ -84,13 +83,11 @@ var LiveCmd = &cobra.Command{
 					if err == flag.ErrHelp {
 						os.Exit(0)
 					}
-					utils.WithError(err).Error("Failed to parse script flags")
-					os.Exit(1)
+					utils.WithError(err).Fatal("Failed to parse script flags")
 				}
 				err := execScript.UpdateFlags(fs)
 				if err != nil {
-					utils.WithError(err).Error("Error parsing script flags")
-					os.Exit(1)
+					utils.WithError(err).Fatal("Error parsing script flags")
 				}
 			}
 		}
@@ -107,21 +104,18 @@ var LiveCmd = &cobra.Command{
 		if !allClusters && clusterUUID == uuid.Nil {
 			clusterUUID, err = vizier.GetCurrentOrFirstHealthyVizier(cloudAddr)
 			if err != nil {
-				utils.WithError(err).Error("Could not fetch healthy vizier")
-				os.Exit(1)
+				utils.WithError(err).Fatal("Could not fetch healthy vizier")
 			}
 		}
 
 		viziers := vizier.MustConnectDefaultVizier(cloudAddr, allClusters, clusterUUID)
 		lv, err := live.New(br, viziers, cloudAddr, aClient, execScript, useNewAC, clusterUUID)
 		if err != nil {
-			utils.WithError(err).Error("Failed to initialize live view")
-			os.Exit(1)
+			utils.WithError(err).Fatal("Failed to initialize live view")
 		}
 
 		if err := lv.Run(); err != nil {
-			utils.WithError(err).Error("Failed to run live view")
-			os.Exit(1)
+			utils.WithError(err).Fatal("Failed to run live view")
 		}
 	},
 }

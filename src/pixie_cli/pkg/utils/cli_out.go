@@ -73,6 +73,16 @@ func Error(str string) {
 	defaultCLIOutput.Error(str)
 }
 
+// Fatalf prints the input string to stderr formatted with the input args.
+func Fatalf(format string, args ...interface{}) {
+	defaultCLIOutput.Fatalf(format, args...)
+}
+
+// Fatal prints the input string to stderr.
+func Fatal(str string) {
+	defaultCLIOutput.Fatal(str)
+}
+
 // WithColor returns a struct that can be used to log text to the CLI
 // in a specific color.
 func (c *CLIOutputEntry) WithColor(textColor *color.Color) *CLIOutputEntry {
@@ -122,4 +132,16 @@ func (c *CLIOutputEntry) Errorf(format string, args ...interface{}) {
 // Error prints the input string to stderr.
 func (c *CLIOutputEntry) Error(str string) {
 	c.write(os.Stderr, str)
+}
+
+// Fatalf prints the input string to stderr formatted with the input args.
+func (c *CLIOutputEntry) Fatalf(format string, args ...interface{}) {
+	c.write(os.Stderr, format, args...)
+	os.Exit(1)
+}
+
+// Fatal prints the input string to stderr.
+func (c *CLIOutputEntry) Fatal(str string) {
+	c.write(os.Stderr, str)
+	os.Exit(1)
 }

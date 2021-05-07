@@ -70,8 +70,7 @@ var GetPEMsCmd = &cobra.Command{
 		if !allClusters && clusterID == uuid.Nil {
 			clusterID, err = vizier.GetCurrentOrFirstHealthyVizier(cloudAddr)
 			if err != nil {
-				cliUtils.WithError(err).Error("Could not fetch healthy vizier")
-				os.Exit(1)
+				cliUtils.WithError(err).Fatal("Could not fetch healthy vizier")
 			}
 		}
 
@@ -80,8 +79,7 @@ var GetPEMsCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 		if err := vizier.RunScriptAndOutputResults(ctx, conns, execScript, format); err != nil {
-			cliUtils.Errorf("Script failed: %s", vizier.FormatErrorMessage(err))
-			os.Exit(1)
+			cliUtils.Fatalf("Script failed: %s", vizier.FormatErrorMessage(err))
 		}
 	},
 }

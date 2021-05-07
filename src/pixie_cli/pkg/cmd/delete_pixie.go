@@ -65,8 +65,7 @@ func deletePixie(ns string, clobberAll bool) {
 	if ns == "" {
 		vzNs, err := vizier.FindVizierNamespace(clientset)
 		if err != nil {
-			utils.WithError(err).Error("Failed to get Vizier namespace")
-			os.Exit(1)
+			utils.WithError(err).Fatal("Failed to get Vizier namespace")
 		}
 		ns = vzNs
 	}
@@ -101,6 +100,6 @@ func deletePixie(ns string, clobberAll bool) {
 	delJr := utils.NewSerialTaskRunner(tasks)
 	err := delJr.RunAndMonitor()
 	if err != nil {
-		os.Exit(1)
+		utils.WithError(err).Fatal("Error deleting Pixie")
 	}
 }
