@@ -183,6 +183,13 @@ static __inline void init_conn_id(uint32_t tgid, uint32_t fd, struct conn_id_t* 
   conn_id->tsid = bpf_ktime_get_ns();
 }
 
+static __inline void init_conn_info(uint32_t tgid, uint32_t fd, struct conn_info_t* conn_info) {
+  init_conn_id(tgid, fd, &conn_info->conn_id);
+  // NOTE: BCC code defaults to 0, because kRoleUnknown is not 0, must explicitly initialize.
+  conn_info->role = kRoleUnknown;
+  conn_info->addr.sin6_family = AF_UNKNOWN;
+}
+
 // Be careful calling this function. The automatic creation of BPF map entries can result in a
 // BPF map leak if called on unwanted probes.
 // How do we make sure we don't leak then? ConnInfoMapManager.ReleaseResources() will clean-up
@@ -190,10 +197,7 @@ static __inline void init_conn_id(uint32_t tgid, uint32_t fd, struct conn_id_t* 
 static __inline struct conn_info_t* get_or_create_conn_info(uint32_t tgid, uint32_t fd) {
   uint64_t tgid_fd = gen_tgid_fd(tgid, fd);
   struct conn_info_t new_conn_info = {};
-  // NOTE: BCC code defaults to 0, because kRoleUnknown is not 0, must explicitly initialize.
-  new_conn_info.role = kRoleUnknown;
-  new_conn_info.addr.sin6_family = AF_UNKNOWN;
-  init_conn_id(tgid, fd, &new_conn_info.conn_id);
+  init_conn_info(tgid, fd, &new_conn_info);
   return conn_info_map.lookup_or_init(&tgid_fd, &new_conn_info);
 }
 
@@ -333,9 +337,11 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info,
 static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, uint32_t fd,
                                      const struct sockaddr* addr, enum EndpointRole role) {
   struct conn_info_t conn_info = {};
-  conn_info.addr = *((struct sockaddr_in6*)addr);
+  init_conn_info(tgid, fd, &conn_info);
+  if (addr != NULL) {
+    conn_info.addr = *((struct sockaddr_in6*)addr);
+  }
   conn_info.role = role;
-  init_conn_id(tgid, fd, &conn_info.conn_id);
 
   uint64_t tgid_fd = gen_tgid_fd(tgid, fd);
   conn_info_map.update(&tgid_fd, &conn_info);
