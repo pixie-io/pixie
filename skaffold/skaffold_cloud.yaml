@@ -81,24 +81,6 @@ profiles:
   - op: add
     path: /deploy/kustomize/paths
     value: [k8s/cloud/base/ory_auth]
-- name: nightly
-  patches:
-  - op: add
-    path: /build/artifacts/context=./bazel/args
-    value:
-    - --compilation_mode=opt
-  - op: add
-    path: /build/tagPolicy
-    value:
-      dateTime: null
-      envTemplate:
-        template: '{{.IMAGE_NAME}}:{{.PL_IMAGE_TAG}}'
-  - op: replace
-    path: /deploy/kustomize
-    value:
-      path: k8s/cloud/nightly
-  activation:
-  - env: PL_BUILD_TYPE=nightly
 - name: create_admin_job
   build:
     artifacts:
@@ -127,17 +109,6 @@ profiles:
     value: [k8s/cloud/staging]
   activation:
   - env: PL_BUILD_TYPE=staging
-- name: prod_old
-  patches:
-  - op: add
-    path: /build/artifacts/context=./bazel/args
-    value:
-    - --compilation_mode=opt
-  - op: replace
-    path: /deploy/kustomize/paths
-    value: [k8s/cloud/prod]
-  activation:
-  - env: PL_BUILD_TYPE=prod_old
 - name: prod
   patches:
   - op: add
@@ -151,15 +122,3 @@ profiles:
     value: [k8s/cloud/prod]
   activation:
   - env: PL_BUILD_TYPE=prod
-- name: testing
-  patches:
-  - op: add
-    path: /build/artifacts/context=./bazel/args
-    value:
-    - --compilation_mode=dbg
-  - op: replace
-    path: /deploy/kustomize
-    value:
-      path: k8s/cloud/testing
-  activation:
-  - env: PL_BUILD_TYPE=testing
