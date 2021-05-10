@@ -177,9 +177,16 @@ Status BCCWrapper::InitBPFProgram(std::string_view bpf_program, std::vector<std:
 Status BCCWrapper::AttachKProbe(const KProbeSpec& probe) {
   VLOG(1) << "Deploying kprobe: " << probe.ToString();
   DCHECK(probe.attach_type != BPFProbeAttachType::kReturnInsts);
-  PL_RETURN_IF_ERROR(bpf_.attach_kprobe(
-      bpf_.get_syscall_fnname(std::string(probe.kernel_fn)), std::string(probe.probe_fn),
-      0 /* offset */, static_cast<bpf_probe_attach_type>(probe.attach_type), kKprobeMaxActive));
+
+  auto target = std::string(probe.kernel_fn);
+
+  if (probe.is_syscall) {
+    target = bpf_.get_syscall_fnname(target);
+  }
+
+  PL_RETURN_IF_ERROR(bpf_.attach_kprobe(target, std::string(probe.probe_fn), 0 /* offset */,
+                                        static_cast<bpf_probe_attach_type>(probe.attach_type),
+                                        kKprobeMaxActive));
   kprobes_.push_back(probe);
   ++num_attached_kprobes_;
   return Status::OK();

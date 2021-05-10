@@ -87,6 +87,9 @@ struct KProbeSpec {
   // Name of user-provided function to run when event is triggered.
   std::string_view probe_fn;
 
+  // If true the kernel_fn is the short name of a syscall.
+  bool is_syscall = true;
+
   std::string ToString() const {
     return absl::Substitute("[kernel_function=$0 type=$1 probe=$2]", kernel_fn,
                             magic_enum::enum_name(attach_type), probe_fn);
