@@ -269,7 +269,11 @@ func GetClusterIDFromKubeConfig(config *rest.Config) uuid.UUID {
 	if clientset == nil {
 		return uuid.Nil
 	}
-	s := k8s.GetSecret(clientset, "pl", "pl-cluster-secrets")
+	vzNs, err := FindVizierNamespace(clientset)
+	if err != nil || vzNs == "" {
+		return uuid.Nil
+	}
+	s := k8s.GetSecret(clientset, vzNs, "pl-cluster-secrets")
 	if s == nil {
 		return uuid.Nil
 	}
