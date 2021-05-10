@@ -53,9 +53,14 @@ const int kTrafficInferenceThresholdDen = 5;
 // when the number of samples is low.
 const int kTrafficInferenceBias = 5;
 
+// This is the amount of activity required on a connection before a new ConnStats event
+// is reported to user-space. It applies to read and write traffic combined.
+const int kConnStatsDataThreshold = 65536;
+
 // This is the perf buffer for BPF program to export data from kernel to user space.
 BPF_PERF_OUTPUT(socket_data_events);
 BPF_PERF_OUTPUT(socket_control_events);
+BPF_PERF_OUTPUT(conn_stats_events);
 
 // This output is used to export notification of processes that have performed an mmap.
 BPF_PERF_OUTPUT(mmap_events);
@@ -142,7 +147,8 @@ BPF_HASH(active_close_args_map, uint64_t, struct close_args_t);
 
 // BPF programs are limited to a 512-byte stack. We store this value per CPU
 // and use it as a heap allocated value.
-BPF_PERCPU_ARRAY(data_buffer_heap, struct socket_data_event_t, 1);
+BPF_PERCPU_ARRAY(socket_data_event_buffer_heap, struct socket_data_event_t, 1);
+BPF_PERCPU_ARRAY(conn_stats_event_buffer_heap, struct conn_stats_event_t, 1);
 
 // This array records singular values that are used by probes. We group them together to reduce the
 // number of arrays with only 1 element.
@@ -211,11 +217,11 @@ static __inline void set_conn_as_ssl(uint64_t id, uint32_t fd) {
   conn_info->ssl = true;
 }
 
-static __inline struct socket_data_event_t* fill_event(enum source_function_t src_fn,
-                                                       enum TrafficDirection direction,
-                                                       const struct conn_info_t* conn_info) {
+static __inline struct socket_data_event_t* fill_socket_data_event(
+    enum source_function_t src_fn, enum TrafficDirection direction,
+    const struct conn_info_t* conn_info) {
   uint32_t kZero = 0;
-  struct socket_data_event_t* event = data_buffer_heap.lookup(&kZero);
+  struct socket_data_event_t* event = socket_data_event_buffer_heap.lookup(&kZero);
   if (event == NULL) {
     return NULL;
   }
@@ -226,6 +232,24 @@ static __inline struct socket_data_event_t* fill_event(enum source_function_t sr
   event->attr.conn_id = conn_info->conn_id;
   event->attr.protocol = conn_info->protocol;
   event->attr.role = conn_info->role;
+  return event;
+}
+
+static __inline struct conn_stats_event_t* fill_conn_stats_event(
+    const struct conn_info_t* conn_info) {
+  uint32_t kZero = 0;
+  struct conn_stats_event_t* event = conn_stats_event_buffer_heap.lookup(&kZero);
+  if (event == NULL) {
+    return NULL;
+  }
+
+  event->conn_id = conn_info->conn_id;
+  event->addr = conn_info->addr;
+  event->role = conn_info->role;
+  event->wr_bytes = conn_info->wr_bytes;
+  event->rd_bytes = conn_info->rd_bytes;
+  event->conn_events = 0;
+  event->timestamp_ns = bpf_ktime_get_ns();
   return event;
 }
 
@@ -734,7 +758,7 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
   bool send_data = !is_stirling_tgid(tgid) && should_trace_protocol_data(conn_info) &&
                    (conn_disabled_tsid == NULL || conn_info->conn_id.tsid > *conn_disabled_tsid);
 
-  struct socket_data_event_t* event = fill_event(args->source_fn, direction, conn_info);
+  struct socket_data_event_t* event = fill_socket_data_event(args->source_fn, direction, conn_info);
   if (event == NULL) {
     // event == NULL not expected to ever happen.
     return;
@@ -759,6 +783,20 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
     case kIngress:
       conn_info->rd_bytes += bytes_count;
       break;
+  }
+
+  // Only send event if there's been enough of a change.
+  // TODO(oazizi): Add elapsed time since last send as a triggering condition too.
+  uint64_t total_bytes = conn_info->wr_bytes + conn_info->rd_bytes;
+  bool meets_activity_threshold =
+      total_bytes >= conn_info->last_reported_bytes + kConnStatsDataThreshold;
+  if (meets_activity_threshold) {
+    struct conn_stats_event_t* event = fill_conn_stats_event(conn_info);
+    if (event != NULL) {
+      conn_stats_events.perf_submit(ctx, event, sizeof(struct conn_stats_event_t));
+    }
+
+    conn_info->last_reported_bytes = conn_info->rd_bytes + conn_info->wr_bytes;
   }
 
   return;
@@ -815,9 +853,16 @@ static __inline void process_syscall_close(struct pt_regs* ctx, uint64_t id,
 
   // Only submit event to user-space if there was a corresponding open or data event reported.
   // This is to avoid polluting the perf buffer.
-  if (conn_info->addr.sin6_family != AF_UNKNOWN || conn_info->wr_bytes != 0 ||
+  if (should_trace_sockaddr_family(conn_info->addr.sin6_family) || conn_info->wr_bytes != 0 ||
       conn_info->rd_bytes != 0) {
     submit_close_event(ctx, conn_info);
+
+    // Report final conn stats event for this connection.
+    struct conn_stats_event_t* event = fill_conn_stats_event(conn_info);
+    if (event != NULL) {
+      event->conn_events = event->conn_events | CONN_CLOSE;
+      conn_stats_events.perf_submit(ctx, event, sizeof(struct conn_stats_event_t));
+    }
   }
 
   conn_info_map.delete(&tgid_fd);

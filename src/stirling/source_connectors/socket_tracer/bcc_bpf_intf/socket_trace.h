@@ -54,14 +54,13 @@ struct conn_info_t {
   // Whether the connection uses SSL.
   bool ssl;
 
-  // TODO(yzhao): Following fields are only internal tracking only, and is not needed when
-  // submitting a new connection. Consider separate these data with the above data that is pushed to
-  // perf buffer.
-
-  // The number of bytes written on this connection.
+  // The number of bytes written/read on this connection.
   uint64_t wr_bytes;
-  // The number of bytes read on this connection.
   uint64_t rd_bytes;
+
+  // The previously reported values of bytes written/read.
+  // Used for determining when to send updated conn_stats values.
+  uint64_t last_reported_bytes;
 
   // The number of bytes written by application (for uprobe) on this connection.
   uint64_t app_wr_bytes;
@@ -148,9 +147,6 @@ enum source_function_t {
 struct socket_data_event_t {
   // We split attributes into a separate struct, because BPF gets upset if you do lots of
   // size arithmetic. This makes it so that it's attributes followed by message.
-  //
-  // TODO(yzhao): When adding http2_frame_offset, use a union, so that it allows adding similar data
-  // for other protocols.
   struct attr_t {
     // The timestamp when syscall completed (return probe was triggered).
     uint64_t timestamp_ns;
@@ -189,6 +185,30 @@ struct socket_data_event_t {
     uint32_t msg_buf_size;
   } attr;
   char msg[MAX_MSG_SIZE];
+};
+
+#define CONN_OPEN (1 << 0)
+#define CONN_CLOSE (1 << 1)
+
+struct conn_stats_event_t {
+  // The timestamp of the stats event.
+  uint64_t timestamp_ns;
+
+  struct conn_id_t conn_id;
+
+  // IP address of the remote endpoint.
+  struct sockaddr_in6 addr;
+
+  // The server-client role.
+  enum EndpointRole role;
+
+  // The number of bytes written on this connection.
+  uint64_t wr_bytes;
+  // The number of bytes read on this connection.
+  uint64_t rd_bytes;
+
+  // Bitmask of flags specifying whether conn open or close have been observed.
+  uint32_t conn_events;
 };
 
 typedef enum {
