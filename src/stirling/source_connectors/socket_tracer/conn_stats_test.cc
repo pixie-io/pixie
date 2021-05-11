@@ -28,6 +28,9 @@
 namespace px {
 namespace stirling {
 
+// Automatically converts ToString() to stream operator for gtest.
+using ::px::operator<<;
+
 using ::testing::AllOf;
 using ::testing::Field;
 using ::testing::IsEmpty;

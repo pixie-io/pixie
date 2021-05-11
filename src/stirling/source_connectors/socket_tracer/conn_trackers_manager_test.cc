@@ -95,7 +95,9 @@ TEST_F(ConnTrackersManagerTest, Fuzz) {
 
 class ConnTrackerGenerationsTest : public ::testing::Test {
  protected:
-  ConnTrackerGenerationsTest() : tracker_pool(1024) {}
+  ConnTrackerGenerationsTest() : tracker_pool(1024) {
+    FLAGS_stirling_check_proc_for_conn_close = false;
+  }
 
   std::pair<ConnTracker*, bool> GetOrCreateTracker(uint64_t tsid) {
     auto [tracker, created] = tracker_gens_.GetOrCreate(tsid, &tracker_pool);

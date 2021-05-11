@@ -108,7 +108,7 @@ TEST_F(BPFMapLeakTest, unclosed_connection) {
 
   sleep(kInactivitySeconds);
 
-  // This TranfserData should cause the connection tracker to be marked for death.
+  // This TransferData should cause the connection tracker to be marked for death.
   source_->TransferData(ctx_.get(), data_table_ptrs);
 
   // One more iteration for the tracker to be destroyed and to release the BPF map entry.

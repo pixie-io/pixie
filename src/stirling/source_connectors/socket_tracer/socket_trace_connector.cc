@@ -353,33 +353,28 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
   std::vector<CIDRBlock> cluster_cidrs = ctx->GetClusterCIDRs();
 
   for (size_t i = 0; i < data_tables.size(); ++i) {
-    if (i == kConnStatsTableNum) {
-      // conn_stats table does not need cutoff time, because its timestamps are assigned
-      // artificially.
-      continue;
-    }
     DataTable* data_table = data_tables[i];
     if (data_table == nullptr) {
       continue;
     }
+
     // Ensure records are within the time window, in order to ensure the order between record
-    // batches.
-    data_table->SetConsumeRecordsCutoffTime(perf_buffer_drain_time_);
+    // batches. Exception: conn_stats table does not need cutoff time, because its timestamps
+    // are assigned artificially.
+    if (i != kConnStatsTableNum) {
+      data_table->SetConsumeRecordsCutoffTime(perf_buffer_drain_time_);
+    }
   }
 
   for (const auto& conn_tracker : conn_trackers_mgr_.active_trackers()) {
     const auto& transfer_spec = protocol_transfer_specs_[conn_tracker->protocol()];
-
     DataTable* data_table = data_tables[transfer_spec.table_num];
-    if (data_table == nullptr) {
-      continue;
-    }
 
     UpdateTrackerTraceLevel(conn_tracker);
 
     conn_tracker->IterationPreTick(iteration_time_, cluster_cidrs, proc_parser_.get(),
                                    socket_info_mgr_.get());
-    if (transfer_spec.enabled && transfer_spec.transfer_fn) {
+    if (transfer_spec.enabled && transfer_spec.transfer_fn && data_table != nullptr) {
       transfer_spec.transfer_fn(*this, ctx, conn_tracker, data_table);
     }
     conn_tracker->IterationPostTick();
@@ -900,10 +895,9 @@ void SocketTraceConnector::TransferConnStats(ConnectorContext* ctx, DataTable* d
   namespace idx = ::px::stirling::conn_stats_idx;
 
   absl::flat_hash_set<md::UPID> upids = ctx->GetUPIDs();
+  uint64_t time = AdjustedSteadyClockNowNS();
 
   auto& agg_stats = connection_stats_.mutable_agg_stats();
-
-  uint64_t time = AdjustedSteadyClockNowNS();
 
   auto iter = agg_stats.begin();
   while (iter != agg_stats.end()) {
