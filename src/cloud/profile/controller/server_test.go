@@ -966,3 +966,50 @@ func TestServer_InviteUser(t *testing.T) {
 		})
 	}
 }
+
+func TestServer_GetUsersInOrg(t *testing.T) {
+	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	otherOrgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c7")
+	userID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9")
+
+	ctx := CreateTestContext()
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := mock_controller.NewMockDatastore(ctrl)
+	s := controller.NewServer(nil, d, nil, nil)
+
+	d.EXPECT().
+		GetUsersInOrg(orgID).
+		Return([]*datastore.UserInfo{
+			&datastore.UserInfo{
+				OrgID:      orgID,
+				Username:   "test@test.com",
+				FirstName:  "first",
+				LastName:   "last",
+				Email:      "test@test.com",
+				IsApproved: true,
+				ID:         userID,
+			},
+		}, nil)
+
+	resp, err := s.GetUsersInOrg(ctx, &profilepb.GetUsersInOrgRequest{
+		OrgID: utils.ProtoFromUUID(orgID),
+	})
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(resp.Users))
+	assert.Equal(t, &profilepb.UserInfo{
+		OrgID:      utils.ProtoFromUUID(orgID),
+		ID:         utils.ProtoFromUUID(userID),
+		Username:   "test@test.com",
+		FirstName:  "first",
+		LastName:   "last",
+		Email:      "test@test.com",
+		IsApproved: true,
+	}, resp.Users[0])
+
+	_, err = s.GetUsersInOrg(ctx, &profilepb.GetUsersInOrgRequest{
+		OrgID: utils.ProtoFromUUID(otherOrgID),
+	})
+	assert.NotNil(t, err)
+}

@@ -31,6 +31,7 @@ go_library(
         "//src/cloud/profile/profileenv",
         "//src/cloud/profile/profilepb:service_pl_go_proto",
         "//src/cloud/project_manager/projectmanagerpb:service_pl_go_proto",
+        "//src/shared/services/authcontext",
         "//src/utils",
         "@com_github_badoux_checkmail//:checkmail",
         "@com_github_gofrs_uuid//:uuid",

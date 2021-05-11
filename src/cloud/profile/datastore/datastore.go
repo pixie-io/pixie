@@ -268,6 +268,27 @@ func (d *Datastore) createOrgUsingTxn(txn *sqlx.Tx, orgInfo *OrgInfo) (uuid.UUID
 	return uuid.Nil, errors.New("failed to read org id from the database")
 }
 
+// GetUsersInOrg gets all users in the given org.
+func (d *Datastore) GetUsersInOrg(orgID uuid.UUID) ([]*UserInfo, error) {
+	query := `SELECT * from users WHERE org_id=$1`
+	rows, err := d.db.Queryx(query, orgID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	users := make([]*UserInfo, 0)
+	for rows.Next() {
+		var uInfo UserInfo
+		err := rows.StructScan(&uInfo)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, &uInfo)
+	}
+	return users, nil
+}
+
 // UpdateUser updates the user in the database.
 func (d *Datastore) UpdateUser(userInfo *UserInfo) error {
 	query := `UPDATE users SET profile_picture = :profile_picture WHERE id = :id`

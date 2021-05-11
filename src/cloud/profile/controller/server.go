@@ -36,6 +36,7 @@ import (
 	"px.dev/pixie/src/cloud/profile/profileenv"
 	"px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/cloud/project_manager/projectmanagerpb"
+	"px.dev/pixie/src/shared/services/authcontext"
 	"px.dev/pixie/src/utils"
 )
 
@@ -68,6 +69,9 @@ type Datastore interface {
 
 	// GetOrgs gets all the orgs.
 	GetOrgs() ([]*datastore.OrgInfo, error)
+
+	// GetUsersInOrg gets all of the users in the given org.
+	GetUsersInOrg(uuid.UUID) ([]*datastore.UserInfo, error)
 }
 
 // UserSettingsDatastore is the interface used to the backing store for user settings.
@@ -104,6 +108,7 @@ func userInfoToProto(u *datastore.UserInfo) *profilepb.UserInfo {
 		LastName:       u.LastName,
 		Email:          u.Email,
 		ProfilePicture: profilePicture,
+		IsApproved:     u.IsApproved,
 	}
 }
 
@@ -389,5 +394,28 @@ func (s *Server) InviteUser(ctx context.Context, req *profilepb.InviteUserReques
 
 // GetUsersInOrg gets the users in the requested org, given that the requestor has permissions.
 func (s *Server) GetUsersInOrg(ctx context.Context, req *profilepb.GetUsersInOrgRequest) (*profilepb.GetUsersInOrgResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	claimsOrgID := uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID)
+	reqOrgID := utils.UUIDFromProtoOrNil(req.OrgID)
+
+	if claimsOrgID != reqOrgID {
+		return nil, errors.New("Unauthorized to get users for org")
+	}
+
+	users, err := s.d.GetUsersInOrg(reqOrgID)
+	if err != nil {
+		return nil, err
+	}
+
+	usersProto := make([]*profilepb.UserInfo, len(users))
+	for i, u := range users {
+		usersProto[i] = userInfoToProto(u)
+	}
+
+	return &profilepb.GetUsersInOrgResponse{
+		Users: usersProto,
+	}, nil
 }
