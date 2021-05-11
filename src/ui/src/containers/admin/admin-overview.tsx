@@ -94,7 +94,7 @@ export const AdminOverview: React.FC = () => {
           <StyledTab value='clusters' label='Clusters' />
           <StyledTab value='deployment-keys' label='Deployment Keys' />
           <StyledTab value='api-keys' label='API Keys' />
-          { authClient.isInvitationEnabled() && <StyledTab value='auth-invitation' label='Invitations' /> }
+          { authClient.isInvitationEnabled() && <StyledTab value='invite' label='Invitations' /> }
         </StyledTabs>
         {tab.endsWith('deployment-keys')
         && (
