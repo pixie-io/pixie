@@ -37,6 +37,7 @@ export interface GQLUserInfo {
   picture: string;
   orgName: string;
   orgID: string;
+  isApproved: boolean;
 }
 
 export interface GQLUserSetting {
@@ -92,6 +93,7 @@ export interface GQLAPIKey {
 export interface GQLQuery {
   user: GQLUserInfo;
   userSettings: Array<GQLUserSetting | null>;
+  orgUsers: Array<GQLUserInfo | null>;
   cluster: GQLClusterInfo;
   clusters: Array<GQLClusterInfo>;
   clusterConnection: GQLClusterConnectionInfo;
@@ -289,6 +291,7 @@ export interface GQLUserInfoTypeResolver<TParent = any> {
   picture?: UserInfoToPictureResolver<TParent>;
   orgName?: UserInfoToOrgNameResolver<TParent>;
   orgID?: UserInfoToOrgIDResolver<TParent>;
+  isApproved?: UserInfoToIsApprovedResolver<TParent>;
 }
 
 export interface UserInfoToIdResolver<TParent = any, TResult = any> {
@@ -312,6 +315,10 @@ export interface UserInfoToOrgNameResolver<TParent = any, TResult = any> {
 }
 
 export interface UserInfoToOrgIDResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface UserInfoToIsApprovedResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
@@ -377,6 +384,7 @@ export interface APIKeyToDescResolver<TParent = any, TResult = any> {
 export interface GQLQueryTypeResolver<TParent = any> {
   user?: QueryToUserResolver<TParent>;
   userSettings?: QueryToUserSettingsResolver<TParent>;
+  orgUsers?: QueryToOrgUsersResolver<TParent>;
   cluster?: QueryToClusterResolver<TParent>;
   clusters?: QueryToClustersResolver<TParent>;
   clusterConnection?: QueryToClusterConnectionResolver<TParent>;
@@ -403,6 +411,10 @@ export interface QueryToUserSettingsArgs {
 }
 export interface QueryToUserSettingsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: QueryToUserSettingsArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToOrgUsersResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface QueryToClusterArgs {

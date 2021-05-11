@@ -217,3 +217,58 @@ func TestUserSettingsResolver_InviteUser(t *testing.T) {
 		},
 	})
 }
+
+func TestUserSettingsResolver_OrgUsers(t *testing.T) {
+	gqlEnv, _, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	ctrl := gomock.NewController(t)
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockProfile.EXPECT().
+		GetUsersInOrg(gomock.Any(), &profilepb.GetUsersInOrgRequest{
+			OrgID: utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
+		}).
+		Return(&profilepb.GetUsersInOrgResponse{
+			Users: []*profilepb.UserInfo{
+				&profilepb.UserInfo{
+					FirstName:  "first",
+					LastName:   "last",
+					IsApproved: false,
+					Email:      "user@test.com",
+				},
+				&profilepb.UserInfo{
+					FirstName:  "test",
+					LastName:   "user",
+					IsApproved: true,
+					Email:      "test@test.com",
+				},
+			},
+		}, nil)
+	gqlEnv.ProfileServiceClient = mockProfile
+	gqlSchema := LoadSchema(gqlEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				query {
+					orgUsers {
+						name
+						email
+						isApproved
+					}
+				}
+			`,
+			ExpectedResult: `
+				{
+					"orgUsers":
+						[
+						 {"name": "first last", "email": "user@test.com", "isApproved": false},
+						 {"name": "test user", "email": "test@test.com", "isApproved": true}
+						]
+				}
+			`,
+		},
+	})
+}

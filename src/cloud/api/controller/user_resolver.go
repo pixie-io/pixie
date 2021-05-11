@@ -55,6 +55,9 @@ func (q *QueryResolver) User(ctx context.Context) (*UserInfoResolver, error) {
 
 // ID returns the user id.
 func (u *UserInfoResolver) ID() graphql.ID {
+	if u.UserInfo != nil && u.UserInfo.ID != nil {
+		return graphql.ID(utils.ProtoToUUIDStr(u.UserInfo.ID))
+	}
 	return graphql.ID(u.SessionCtx.Claims.GetUserClaims().UserID)
 }
 
@@ -68,6 +71,10 @@ func (u *UserInfoResolver) Name() string {
 
 // Email returns the user email.
 func (u *UserInfoResolver) Email() string {
+	if u.UserInfo != nil && u.UserInfo.Email != "" {
+		return u.UserInfo.Email
+	}
+
 	return u.SessionCtx.Claims.GetUserClaims().Email
 }
 
@@ -94,6 +101,11 @@ func (u *UserInfoResolver) OrgName() string {
 	}
 
 	return org.OrgName
+}
+
+// IsApproved returns whether the user has been approved by an admin user.
+func (u *UserInfoResolver) IsApproved() bool {
+	return u.UserInfo.IsApproved
 }
 
 // UserSettingResolver resolves a user setting.
@@ -210,4 +222,26 @@ func (q *QueryResolver) InviteUser(ctx context.Context, args *inviteUserArgs) (*
 		Email:      resp.Email,
 		InviteLink: resp.InviteLink,
 	}, nil
+}
+
+// OrgUsers gets the users in the org in the given context.
+func (q *QueryResolver) OrgUsers(ctx context.Context) ([]*UserInfoResolver, error) {
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	grpcAPI := q.Env.ProfileServiceClient
+	resp, err := grpcAPI.GetUsersInOrg(ctx, &profilepb.GetUsersInOrgRequest{
+		OrgID: utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().OrgID),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	userResolvers := make([]*UserInfoResolver, len(resp.Users))
+	for i := range resp.Users {
+		userResolvers[i] = &UserInfoResolver{sCtx, &q.Env, ctx, resp.Users[i]}
+	}
+
+	return userResolvers, nil
 }

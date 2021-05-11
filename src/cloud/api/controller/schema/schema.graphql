@@ -16,6 +16,7 @@ type UserInfo {
   picture: String!
   orgName: String!
   orgID: String!
+  isApproved: Boolean!
 }
 
 type UserSetting {
@@ -75,6 +76,7 @@ type APIKey {
 type Query {
   user: UserInfo!
   userSettings(keys: [String]!): [UserSetting]!
+  orgUsers: [UserInfo]!
   cluster(id: ID!): ClusterInfo!
   clusters: [ClusterInfo!]!
   clusterConnection(id: ID!): ClusterConnectionInfo!
