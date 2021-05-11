@@ -38,7 +38,6 @@ Try our [community beta](https://work.withpixie.ai/signup) and join our communit
 
 </details>
 
-
 ## Quick Start
 
 Review Pixie's [requirements](https://docs.pixielabs.ai/installing-pixie/requirements/) to make sure that your Kubernetes cluster is supported.
@@ -46,7 +45,6 @@ Review Pixie's [requirements](https://docs.pixielabs.ai/installing-pixie/require
 #### Signup
 
 Visit our [product page](https://work.withpixie.ai/) and signup with your google account.
-
 
 #### Install CLI
 
@@ -67,6 +65,7 @@ If you don't already have a K8s cluster available, you can use Minikube to set-u
 More detailed instructions are available [here](https://docs.pixielabs.ai/installing-pixie/install-guides/minikube-setup/).
 
 Start a demo-app:
+
 - Deploy [Weaveworks'](https://www.weave.works/) [sock-shop](https://github.com/microservices-demo/microservices-demo) demo app by running `px demo deploy px-sock-shop`
 
 #### 🚀 Deploy Pixie
@@ -80,7 +79,6 @@ Alternatively, you can deploy with [YAML](https://docs.pixielabs.ai/installing-p
 <br>
 
 Check out our [install guides](https://docs.pixielabs.ai/installing-pixie/install-guides/) and [walkthrough videos](https://www.youtube.com/watch?v=iMh2f8abTYU) for alternate install schemes.
-
 
 ## Get Instant Auto-Telemetry
 
@@ -120,7 +118,6 @@ You can view them by clicking on the URLs prompted by `px` or by visiting:
 
 <br clear="all">
 
-
 #### Pipe Pixie dust into any tool
 
 <img src="./.readme_assets/cli_demo.svg" alt="CLI Demo" width="425" align="right">
@@ -155,8 +152,8 @@ _For more information on Pixie Platform's architecture, check out our [docs](htt
 
 ## Resources
 
-- [Website](https://pixie.io)
-- [Documentation](https://docs.pixie.io)
+- [Website](https://px.dev)
+- [Documentation](https://docs.px.dev)
 - [Community Slack](https://slackin.withpixie.ai/)
 - [Issue Tracker](https://github.com/pixie-labs/pixie/issues)
 - [Youtube](https://www.youtube.com/channel/UCOMCDRvBVNIS0lCyOmst7eg/videos)
@@ -166,7 +163,6 @@ _For more information on Pixie Platform's architecture, check out our [docs](htt
 Pixie was started by a San Francisco based startup, Pixie Labs Inc. Our north star is to build a new generation of intelligent products which empower developers to engineer the future. We were acquired by New Relic in 2020.
 
 [New Relic, Inc.](https://newrelic.com) open sourced Pixie in April 2021.
-
 
 ## License
 
