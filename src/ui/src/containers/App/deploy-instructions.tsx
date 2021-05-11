@@ -16,8 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import NavBars from 'containers/App/nav-bars';
 import { CodeRenderer, Spinner } from '@pixie-labs/components';
-import ProfileMenu from 'containers/profile-menu/profile-menu';
 import * as logoImage from 'images/pixie-logo.svg';
 import * as React from 'react';
 
@@ -97,10 +97,9 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     alignItems: 'center',
     flexDirection: 'column',
   },
-  profileMenu: {
-    position: 'fixed',
-    top: theme.spacing(1),
-    right: theme.spacing(1),
+  navBar: {
+    left: 0,
+    position: 'absolute',
   },
 }));
 
@@ -109,7 +108,9 @@ export const DeployInstructions = () => {
 
   return (
     <div className={classes.container}>
-      <ProfileMenu className={classes.profileMenu} />
+      <div className={classes.navBar}>
+        <NavBars />
+      </div>
       <Card className={classes.dialog}>
         <div className={classes.content}>
           <span className={classes.header}>Install Pixie</span>
