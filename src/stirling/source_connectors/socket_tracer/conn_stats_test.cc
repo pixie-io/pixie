@@ -90,10 +90,9 @@ auto StatsIs(int open, int close, int sent, int recv) {
 // Tests that aggregated records for client side events are correctly put into ConnStats.
 TEST_F(ConnStatsTest, ClientSizeAggregationRecord) {
   struct socket_control_event_t conn = event_gen_.InitConn(kRoleClient);
-  auto* sockaddr = reinterpret_cast<struct sockaddr_in*>(&conn.open.addr);
-  sockaddr->sin_family = AF_INET;
-  sockaddr->sin_port = 54321;
-  sockaddr->sin_addr.s_addr = 0x01010101;  // 1.1.1.1
+  conn.open.addr.in4.sin_family = AF_INET;
+  conn.open.addr.in4.sin_port = 54321;
+  conn.open.addr.in4.sin_addr.s_addr = 0x01010101;  // 1.1.1.1
 
   auto frame1 = event_gen_.InitSendEvent(kProtocolHTTP, kRoleClient, "abc");
   auto frame2 = event_gen_.InitSendEvent(kProtocolHTTP, kRoleClient, "def");
@@ -141,10 +140,9 @@ TEST_F(ConnStatsTest, ClientSizeAggregationRecord) {
 // Tests that aggregated records for server side events are correctly put into ConnStats.
 TEST_F(ConnStatsTest, ServerSizeAggregationRecord) {
   struct socket_control_event_t conn = event_gen_.InitConn(kRoleServer);
-  auto* sockaddr = reinterpret_cast<struct sockaddr_in*>(&conn.open.addr);
-  sockaddr->sin_family = AF_INET;
-  sockaddr->sin_port = 54321;
-  sockaddr->sin_addr.s_addr = 0x01010101;  // 1.1.1.1
+  conn.open.addr.in4.sin_family = AF_INET;
+  conn.open.addr.in4.sin_port = 54321;
+  conn.open.addr.in4.sin_addr.s_addr = 0x01010101;  // 1.1.1.1
 
   auto frame1 = event_gen_.InitSendEvent(kProtocolHTTP, kRoleServer, "abc");
   auto frame2 = event_gen_.InitSendEvent(kProtocolHTTP, kRoleServer, "def");
@@ -201,10 +199,9 @@ TEST_F(ConnStatsTest, NoEventsIfNoRemoteAddr) {
 // Tests that disabled ConnTracker still reports data.
 TEST_F(ConnStatsTest, DisabledConnTracker) {
   struct socket_control_event_t conn = event_gen_.InitConn();
-  auto* sockaddr = reinterpret_cast<struct sockaddr_in*>(&conn.open.addr);
-  sockaddr->sin_family = AF_INET;
-  sockaddr->sin_port = 54321;
-  sockaddr->sin_addr.s_addr = 0x01010101;  // 1.1.1.1
+  conn.open.addr.in4.sin_family = AF_INET;
+  conn.open.addr.in4.sin_port = 54321;
+  conn.open.addr.in4.sin_addr.s_addr = 0x01010101;  // 1.1.1.1
 
   auto frame1 = event_gen_.InitSendEvent(kProtocolHTTP, kRoleClient, "abc");
 

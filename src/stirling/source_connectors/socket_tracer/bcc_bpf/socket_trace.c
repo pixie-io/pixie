@@ -25,7 +25,6 @@
 
 // LINT_C_FILE: Do not remove this line. It ensures cpplint treats this as a C file.
 
-#include <linux/in6.h>
 #include <linux/socket.h>
 
 #define socklen_t size_t
@@ -193,7 +192,7 @@ static __inline void init_conn_info(uint32_t tgid, uint32_t fd, struct conn_info
   init_conn_id(tgid, fd, &conn_info->conn_id);
   // NOTE: BCC code defaults to 0, because kRoleUnknown is not 0, must explicitly initialize.
   conn_info->role = kRoleUnknown;
-  conn_info->addr.sin6_family = AF_UNKNOWN;
+  conn_info->addr.sa.sa_family = AF_UNKNOWN;
 }
 
 // Be careful calling this function. The automatic creation of BPF map entries can result in a
@@ -363,7 +362,7 @@ static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, uint32_
   struct conn_info_t conn_info = {};
   init_conn_info(tgid, fd, &conn_info);
   if (addr != NULL) {
-    conn_info.addr = *((struct sockaddr_in6*)addr);
+    conn_info.addr = *((union sockaddr_t*)addr);
   }
   conn_info.role = role;
 
@@ -736,7 +735,7 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
   // Why UNKNOWN? Because we may have failed to trace the initial connection.
   // Also, it's very important to send the UNKNOWN cases to user-space,
   // otherwise we may have a BPF map leak from the earlier call to get_or_create_conn_info().
-  if (!should_trace_sockaddr_family(conn_info->addr.sin6_family)) {
+  if (!should_trace_sockaddr_family(conn_info->addr.sa.sa_family)) {
     return;
   }
 
@@ -853,7 +852,7 @@ static __inline void process_syscall_close(struct pt_regs* ctx, uint64_t id,
 
   // Only submit event to user-space if there was a corresponding open or data event reported.
   // This is to avoid polluting the perf buffer.
-  if (should_trace_sockaddr_family(conn_info->addr.sin6_family) || conn_info->wr_bytes != 0 ||
+  if (should_trace_sockaddr_family(conn_info->addr.sa.sa_family) || conn_info->wr_bytes != 0 ||
       conn_info->rd_bytes != 0) {
     submit_close_event(ctx, conn_info);
 

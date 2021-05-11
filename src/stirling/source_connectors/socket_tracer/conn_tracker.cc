@@ -413,9 +413,9 @@ void ConnTracker::SetConnID(struct conn_id_t conn_id) {
   }
 }
 
-void ConnTracker::SetRemoteAddr(const struct sockaddr_in6 addr, std::string_view reason) {
+void ConnTracker::SetRemoteAddr(const union sockaddr_t addr, std::string_view reason) {
   DCHECK(open_info_.remote_addr.family == SockAddrFamily::kUnspecified);
-  PopulateSockAddr(reinterpret_cast<const struct sockaddr*>(&addr), &open_info_.remote_addr);
+  PopulateSockAddr(&addr.sa, &open_info_.remote_addr);
   CONN_TRACE(1) << absl::Substitute("RemoteAddr updated $0, reason=[$1]",
                                     open_info_.remote_addr.AddrStr(), reason);
 }

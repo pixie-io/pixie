@@ -454,8 +454,8 @@ TEST_F(ConnTrackerTest, TrackerDisabledForIntraClusterRemoteEndpoint) {
 TEST_F(ConnTrackerTest, TrackerDisabledForLocalhostRemoteEndpoint) {
   testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn();
-  conn.open.addr.sin6_addr = IN6ADDR_LOOPBACK_INIT;
-  conn.open.addr.sin6_family = AF_INET6;
+  conn.open.addr.in6.sin6_addr = IN6ADDR_LOOPBACK_INIT;
+  conn.open.addr.in6.sin6_family = AF_INET6;
 
   CIDRBlock cidr;
   ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
@@ -488,7 +488,7 @@ TEST_F(ConnTrackerTest, TrackerCollectingForClientSideTracingWithNoCIDR) {
 TEST_F(ConnTrackerTest, TrackerDisabledForUnixDomainSocket) {
   testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn();
-  conn.open.addr.sin6_family = AF_UNIX;
+  conn.open.addr.in6.sin6_family = AF_UNIX;
 
   CIDRBlock cidr;
   ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
@@ -505,7 +505,7 @@ TEST_F(ConnTrackerTest, TrackerDisabledForOtherSockAddrFamily) {
   testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn();
   // Any non-IP family works for testing purposes.
-  conn.open.addr.sin6_family = AF_NETLINK;
+  conn.open.addr.in6.sin6_family = AF_NETLINK;
 
   CIDRBlock cidr;
   ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));

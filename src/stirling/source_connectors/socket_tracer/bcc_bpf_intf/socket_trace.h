@@ -18,7 +18,9 @@
 
 #pragma once
 
+#include <linux/in.h>
 #include <linux/in6.h>
+#include <linux/socket.h>
 
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/common.h"
 
@@ -34,7 +36,11 @@ const char kControlValuesArrayName[] = "control_values";
 #define CONN_CLEANUP_ITERS 90
 const int kMaxConnMapCleanupItems = CONN_CLEANUP_ITERS;
 
-// TODO(yzhao): Investigate the performance cost of misaligned memory access (8 vs. 4 bytes).
+union sockaddr_t {
+  struct sockaddr sa;
+  struct sockaddr_in in4;
+  struct sockaddr_in6 in6;
+};
 
 // This struct contains information collected when a connection is established,
 // via an accept() syscall.
@@ -43,7 +49,7 @@ struct conn_info_t {
   struct conn_id_t conn_id;
 
   // IP address of the remote endpoint.
-  struct sockaddr_in6 addr;
+  union sockaddr_t addr;
 
   // The protocol of traffic on the connection (HTTP, MySQL, etc.).
   enum TrafficProtocol protocol;
@@ -78,7 +84,7 @@ struct conn_info_t {
 // This struct is a subset of conn_info_t. It is used to communicate connect/accept events.
 // See conn_info_t for descriptions of the members.
 struct conn_event_t {
-  struct sockaddr_in6 addr;
+  union sockaddr_t addr;
   enum EndpointRole role;
 };
 
@@ -197,7 +203,7 @@ struct conn_stats_event_t {
   struct conn_id_t conn_id;
 
   // IP address of the remote endpoint.
-  struct sockaddr_in6 addr;
+  union sockaddr_t addr;
 
   // The server-client role.
   enum EndpointRole role;
