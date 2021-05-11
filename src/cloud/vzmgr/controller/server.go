@@ -382,6 +382,10 @@ func (s *Server) GetVizierInfos(ctx context.Context, req *vzmgrpb.GetVizierInfos
 	}
 	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
 
+	if len(req.VizierIDs) == 0 {
+		return &vzmgrpb.GetVizierInfosResponse{}, nil
+	}
+
 	ids := make([]uuid.UUID, len(req.VizierIDs))
 	for i, id := range req.VizierIDs {
 		ids[i] = utils.UUIDFromProtoOrNil(id)
