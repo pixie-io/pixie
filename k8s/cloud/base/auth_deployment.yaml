@@ -38,6 +38,8 @@ spec:
             name: pl-domain-config
         - configMapRef:
             name: pl-support-access-config  
+        - configMapRef:
+            name: pl-ory-service-config
         env:
         - name: PL_JWT_SIGNING_KEY
           valueFrom:
@@ -49,11 +51,13 @@ spec:
             secretKeyRef:
               name: cloud-auth0-secrets
               key: auth0-client-id
+              optional: true
         - name: PL_AUTH0_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
               name: cloud-auth0-secrets
               key: auth0-client-secret
+              optional: true
         - name: PL_PROFILE_SERVICE
           valueFrom:
             configMapKeyRef:

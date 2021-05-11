@@ -32,6 +32,8 @@ spec:
             name: pl-tls-config
         - configMapRef:
             name: pl-domain-config
+        - configMapRef:
+            name: pl-ory-service-config
         env:
         - name: PL_JWT_SIGNING_KEY
           valueFrom:
@@ -95,6 +97,8 @@ spec:
           value: work.$(PL_DOMAIN_NAME)
         - name: PL_KRATOS_BROWSER_URL
           value: https://$(PL_WORK_DOMAIN)/oauth/kratos
+        - name: PL_HYDRA_BROWSER_URL
+          value: https://$(PL_WORK_DOMAIN)/oauth/hydra
         volumeMounts:
         - name: certs
           mountPath: /certs

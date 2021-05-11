@@ -7,5 +7,5 @@ namespace: plc
 resources:
 - ./hydra
 - ./kratos
+- ./job
 - oauth_config.yaml
-- ory_service_config.yaml

@@ -24,5 +24,6 @@ resources:
 - ../overlays/exposed_services_ilb
 patchesStrategicMerge:
 - db_config.yaml
-- service_config.yaml
+- ory_service_config.yaml
 - proxy_envoy.yaml
+- service_config.yaml

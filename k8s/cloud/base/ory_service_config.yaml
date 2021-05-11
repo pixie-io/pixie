@@ -1,11 +1,14 @@
 ---
-# Lists of referenceable services.
+# Lists of referenceable ORY services.
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: pl-ory-service-config
 data:
-  # By default the hydra services are not enabled, but we need the configmap to avoid
-  # a deployment failure.
-  PL_HYDRA_SERVICE: ""
-  PL_KRATOS_SERVICE: ""
+  PL_HYDRA_SERVICE: hydra.plc.svc.cluster.local:4444
+  PL_KRATOS_SERVICE: kratos.plc.svc.cluster.local:4433
+  PL_HYDRA_PUBLIC_HOST: https://hydra.plc.svc.cluster.local:4444
+  PL_HYDRA_ADMIN_HOST: https://hydra.plc.svc.cluster.local:4445
+  # Kratos only support http at the moment.
+  PL_KRATOS_PUBLIC_HOST: http://kratos.plc.svc.cluster.local:4433
+  PL_KRATOS_ADMIN_HOST: http://kratos.plc.svc.cluster.local:4434

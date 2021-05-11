@@ -6,5 +6,3 @@ commonLabels:
 namespace: plc-dev
 resources:
 - ../../base/ory_auth
-patchesStrategicMerge:
-- ory_service_config.yaml
