@@ -36,6 +36,7 @@ service ProfileService {
   rpc GetOrgByDomain(GetOrgByDomainRequest) returns (OrgInfo);
   rpc UpdateUser(UpdateUserRequest) returns (UserInfo);
   rpc GetOrgs(GetOrgsRequest) returns (GetOrgsResponse);
+  rpc GetUsersInOrg(GetUsersInOrgRequest) returns (GetUsersInOrgResponse);
   // Calls for handling user settings.
   rpc GetUserSettings(GetUserSettingsRequest) returns (GetUserSettingsResponse);
   rpc UpdateUserSettings(UpdateUserSettingsRequest) returns (UpdateUserSettingsResponse);
@@ -55,6 +56,7 @@ message UserInfo {
   string last_name = 5;
   string email = 6;
   string profile_picture = 7;
+  bool is_approved = 8;
 }
 
 message GetUserByEmailRequest {
@@ -161,4 +163,17 @@ message InviteUserRequest {
 message InviteUserResponse {
 	string email = 1;
 	string invite_link = 2;
+}
+
+// A request to get all users in the given org. This org must match the user's org,
+// verified in the augmented token.
+message GetUsersInOrgRequest {
+  // The org to get the users of.
+  px.uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
+}
+
+// The response to a GetUsersInOrgRequest.
+message GetUsersInOrgResponse {
+  // The users in the requested org.
+  repeated UserInfo users = 1;
 }

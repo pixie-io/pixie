@@ -386,3 +386,8 @@ func (s *Server) InviteUser(ctx context.Context, req *profilepb.InviteUserReques
 		InviteLink: resp.InviteLink,
 	}, nil
 }
+
+// GetUsersInOrg gets the users in the requested org, given that the requestor has permissions.
+func (s *Server) GetUsersInOrg(ctx context.Context, req *profilepb.GetUsersInOrgRequest) (*profilepb.GetUsersInOrgResponse, error) {
+	return nil, errors.New("Not yet implemented")
+}
