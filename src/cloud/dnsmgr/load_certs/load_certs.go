@@ -54,7 +54,7 @@ type SSLCert struct {
 
 func init() {
 	pflag.String("certs_path", "../../../../credentials/certs", "The path to the certs")
-	pflag.String("env_type", "dev", "The env type (dev, testing, nightly, staging, prod")
+	pflag.String("env_type", "dev", "The env type (dev, staging, prod")
 	pflag.String("domain_name_suffix", "clusters.dev.withpixie.dev", "The suffix of the domain name to strip out")
 	pflag.Bool("update_only", false, "Whether the script should update_only")
 }

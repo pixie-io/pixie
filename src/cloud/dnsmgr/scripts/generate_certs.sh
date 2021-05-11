@@ -66,14 +66,13 @@ function create_uuid_certs() {
 }
 
 # Prepare the output file.
-echo "Creating the dev, testing, and nightly certificates"
+echo "Creating the dev certificates"
 
 # Save the original gcp project.
 ORIGINAL_GCP_PROJECT=$(gcloud config get-value project)
 gcloud config set project pl-dev-infra
 export GCE_PROJECT="pl-dev-infra"
 create_cert "default" "clusters.dev.withpixie.dev"
-create_cert "default" "clusters.testing.withpixie.dev"
 
 
 echo "Creating the production certificates."

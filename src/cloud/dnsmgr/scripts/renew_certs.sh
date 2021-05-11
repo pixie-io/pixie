@@ -69,12 +69,11 @@ renew_certs "clusters.withpixie.ai"
 renew_certs "clusters.staging.withpixie.dev"
 
 # Prepare the output file.
-echo "Renewing the dev, testing, and nightly certificates"
+echo "Renewing the dev certificates"
 
 gcloud config set project pl-dev-infra
 export GCE_PROJECT="pl-dev-infra"
 renew_certs "clusters.dev.withpixie.dev"
-renew_certs "clusters.testing.withpixie.dev"
 
 # Return to the original GCP project.
 gcloud config set project "${ORIGINAL_GCP_PROJECT}"
