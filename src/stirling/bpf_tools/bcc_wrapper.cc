@@ -178,15 +178,9 @@ Status BCCWrapper::AttachKProbe(const KProbeSpec& probe) {
   VLOG(1) << "Deploying kprobe: " << probe.ToString();
   DCHECK(probe.attach_type != BPFProbeAttachType::kReturnInsts);
 
-  auto target = std::string(probe.kernel_fn);
-
-  if (probe.is_syscall) {
-    target = bpf_.get_syscall_fnname(target);
-  }
-
-  PL_RETURN_IF_ERROR(bpf_.attach_kprobe(target, std::string(probe.probe_fn), 0 /* offset */,
-                                        static_cast<bpf_probe_attach_type>(probe.attach_type),
-                                        kKprobeMaxActive));
+  PL_RETURN_IF_ERROR(
+      bpf_.attach_kprobe(GetKProbeTargetName(probe), std::string(probe.probe_fn), 0 /* offset */,
+                         static_cast<bpf_probe_attach_type>(probe.attach_type), kKprobeMaxActive));
   kprobes_.push_back(probe);
   ++num_attached_kprobes_;
   return Status::OK();
@@ -268,7 +262,7 @@ Status BCCWrapper::AttachXDP(const std::string& dev_name, const std::string& fn_
 // TODO(PL-1294): This can fail in rare cases. See the cited issue. Find the root cause.
 Status BCCWrapper::DetachKProbe(const KProbeSpec& probe) {
   VLOG(1) << "Detaching kprobe: " << probe.ToString();
-  PL_RETURN_IF_ERROR(bpf_.detach_kprobe(bpf_.get_syscall_fnname(std::string(probe.kernel_fn)),
+  PL_RETURN_IF_ERROR(bpf_.detach_kprobe(GetKProbeTargetName(probe),
                                         static_cast<bpf_probe_attach_type>(probe.attach_type)));
   --num_attached_kprobes_;
   return Status::OK();
@@ -366,6 +360,14 @@ void BCCWrapper::DetachPerfEvents() {
     LOG_IF(ERROR, !res.ok()) << res.msg();
   }
   perf_events_.clear();
+}
+
+std::string BCCWrapper::GetKProbeTargetName(const KProbeSpec& probe) {
+  auto target = std::string(probe.kernel_fn);
+  if (probe.is_syscall) {
+    target = bpf_.get_syscall_fnname(target);
+  }
+  return target;
 }
 
 void BCCWrapper::PollPerfBuffer(std::string_view perf_buffer_name, int timeout_ms) {

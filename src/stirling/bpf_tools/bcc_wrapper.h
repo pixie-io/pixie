@@ -332,6 +332,9 @@ class BCCWrapper {
   void ClosePerfBuffers();
   void DetachPerfEvents();
 
+  // Returns the name that identifies the target to attach this k-probe.
+  std::string GetKProbeTargetName(const KProbeSpec& probe);
+
   std::vector<KProbeSpec> kprobes_;
   std::vector<UProbeSpec> uprobes_;
   std::vector<PerfBufferSpec> perf_buffers_;
