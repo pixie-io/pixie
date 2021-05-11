@@ -52,7 +52,6 @@ func init() {
 	RootCmd.AddCommand(DemoCmd)
 	RootCmd.AddCommand(DeployCmd)
 	RootCmd.AddCommand(DeleteCmd)
-	RootCmd.AddCommand(LoadClusterSecretsCmd)
 	RootCmd.AddCommand(UpdateCmd)
 	RootCmd.AddCommand(ProxyCmd)
 	RootCmd.AddCommand(RunCmd)
