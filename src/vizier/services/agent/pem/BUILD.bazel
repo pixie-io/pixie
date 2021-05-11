@@ -75,7 +75,7 @@ container_push(
     format = "Docker",
     image = ":pem_image",
     registry = "gcr.io",
-    repository = "pl-dev-infra/vizier/pem_image",
+    repository = "pixie-oss/pixie-dev/vizier/pem_image",
     tag = "{STABLE_BUILD_TAG}",
 )
 
@@ -84,6 +84,6 @@ container_push(
     format = "Docker",
     image = ":pem_image",
     registry = "gcr.io",
-    repository = "pl-dev-infra/vizier/pem_image",
+    repository = "pixie-oss/pixie-dev/vizier/pem_image",
     tag = "{BUILD_USER}",
 )

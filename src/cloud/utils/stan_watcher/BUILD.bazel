@@ -57,6 +57,6 @@ container_push(
     format = "Docker",
     image = ":stan_watcher_image",
     registry = "gcr.io",
-    repository = "pl-dev-infra/cloud/stan_watcher",
+    repository = "pixie-oss/pixie-dev/cloud/stan_watcher",
     tag = "{STABLE_BUILD_TAG}",
 )

@@ -956,7 +956,7 @@ def buildScriptForNightlyTestRegression = {
                           namespace: 'pl']) {
             sh """
             skaffold run --profile=opt --filename=skaffold/skaffold_vizier.yaml \
-            --label=commit=\$(git rev-parse HEAD) --cache-artifacts=false
+            --label=commit=\$(git rev-parse HEAD) --cache-artifacts=false --default-repo='gcr.io/pl-dev-infra'
             """
           }
         }
@@ -1122,7 +1122,7 @@ def buildScriptForVizierRelease = {
   postBuildActions()
 }
 
-def deployWithSkaffold(String profile, String namespace, String skaffoldFile) {
+def pushAndDeployCloud(String profile, String namespace) {
   WithSourceCodeK8s {
     container('pxbuild') {
       withKubeConfig([credentialsId: K8S_PROD_CREDS,
@@ -1132,9 +1132,11 @@ def deployWithSkaffold(String profile, String namespace, String skaffoldFile) {
             credentialsId: 'pl-dev-infra-jenkins-sa-json',
             variable: 'GOOGLE_APPLICATION_CREDENTIALS')
         ]) {
-          sh "skaffold build -p ${profile} -f ${skaffoldFile} --cache-artifacts=false"
-          sh "skaffold build -q -o '{{json .}}' -p ${profile} -f ${skaffoldFile} --cache-artifacts=false > manifest.json"
-          sh "skaffold deploy -p ${profile} --build-artifacts=manifest.json -f ${skaffoldFile}"
+          if (profile == 'prod') {
+            sh './ci/cloud_build_release.sh -r'
+          } else {
+            sh './ci/cloud_build_release.sh'
+          }
         }
       }
     }
@@ -1147,7 +1149,7 @@ def buildScriptForCloudStagingRelease = {
       checkoutAndInitialize()
     }
     stage('Build & Push Artifacts') {
-      deployWithSkaffold('staging', 'plc-staging', 'skaffold/skaffold_cloud.yaml')
+      pushAndDeployCloud('staging', 'plc-staging')
     }
   }
   catch (err) {
@@ -1166,7 +1168,7 @@ def buildScriptForCloudProdRelease = {
       checkoutAndInitialize()
     }
     stage('Build & Push Artifacts') {
-      deployWithSkaffold('prod', 'plc', 'skaffold/skaffold_cloud.yaml')
+      pushAndDeployCloud('prod', 'plc')
     }
   }
   catch (err) {

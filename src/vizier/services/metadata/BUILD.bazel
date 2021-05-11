@@ -70,6 +70,6 @@ container_push(
     format = "Docker",
     image = ":metadata_server_image",
     registry = "gcr.io",
-    repository = "pl-dev-infra/vizier/metadata_server_image",
+    repository = "pixie-oss/pixie-dev/vizier/metadata_server_image",
     tag = "{STABLE_BUILD_TAG}",
 )

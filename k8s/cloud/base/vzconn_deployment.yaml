@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: vzconn-server
-        image: gcr.io/pl-dev-infra/cloud/vzconn_server_image
+        image: gcr.io/pixie-oss/pixie-dev/cloud/vzconn_server_image
         ports:
         - containerPort: 51600
         readinessProbe:

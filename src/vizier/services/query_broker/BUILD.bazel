@@ -65,6 +65,6 @@ container_push(
     format = "Docker",
     image = ":query_broker_server_image",
     registry = "gcr.io",
-    repository = "pl-dev-infra/vizier/query_broker_server_image",
+    repository = "pixie-oss/pixie-dev/vizier/query_broker_server_image",
     tag = "{STABLE_BUILD_TAG}",
 )

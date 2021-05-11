@@ -40,6 +40,10 @@ output_path="gs://${bucket}/vizier/${release_tag}"
 
 bazel run --stamp -c opt --define BUNDLE_VERSION="${release_tag}" \
     --stamp --define public="${public}" //k8s/vizier:vizier_images_push
+# TODO(michellenguyen, PP-2630): Old vizier versions expect update_job images in the
+# old registry. For now, we push to both registries. Remove 5/20/21.
+bazel run --stamp -c opt --define BUNDLE_VERSION="${release_tag}" \
+    --stamp --define public="${public}" //k8s/vizier:vizier_images_push_old
 bazel build --stamp -c opt --define BUNDLE_VERSION="${release_tag}" \
     --stamp --define public="${public}" //k8s/vizier:vizier_yamls
 

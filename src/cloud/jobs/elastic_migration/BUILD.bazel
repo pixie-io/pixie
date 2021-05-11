@@ -51,7 +51,7 @@ container_push(
     format = "Docker",
     image = ":elastic_migration_image",
     registry = "gcr.io",
-    repository = "pl-dev-infra/cloud/elastic_migration_image",
+    repository = "pixie-oss/pixie-dev/cloud/elastic_migration_image",
     tag = "{STABLE_BUILD_TAG}",
 )
 
@@ -66,7 +66,7 @@ container_push(
 
 k8s_object(
     name = "create_es_index_dev",
-    images = {"gcr.io/pl-dev-infra/cloud/elastic_migration_image:latest": ":elastic_migration_image"},
+    images = {"gcr.io/pixie-oss/pixie-dev/cloud/elastic_migration_image:latest": ":elastic_migration_image"},
     kind = "job",
     substitutions = {
         "{es_index}": "$(es_index)",
@@ -79,7 +79,7 @@ k8s_object(
 
 k8s_object(
     name = "create_es_index_staging",
-    images = {"gcr.io/pl-dev-infra/cloud/elastic_migration_image:latest": ":elastic_migration_image"},
+    images = {"gcr.io/pixie-oss/pixie-dev/cloud/elastic_migration_image:latest": ":elastic_migration_image"},
     kind = "job",
     substitutions = {
         "{es_index}": "$(es_index)",
@@ -92,7 +92,7 @@ k8s_object(
 
 k8s_object(
     name = "create_es_index_prod",
-    images = {"gcr.io/pl-dev-infra/cloud/elastic_migration_image:latest": ":elastic_migration_image"},
+    images = {"gcr.io/pixie-oss/pixie-prod/cloud/elastic_migration_image:latest": ":elastic_migration_image"},
     kind = "job",
     substitutions = {
         "{es_index}": "$(es_index)",

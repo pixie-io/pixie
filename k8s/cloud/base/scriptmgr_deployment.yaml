@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: scriptmgr-server
-        image: gcr.io/pl-dev-infra/cloud/scriptmgr_server_image
+        image: gcr.io/pixie-oss/pixie-dev/cloud/scriptmgr_server_image
         ports:
         - containerPort: 52000
         readinessProbe:

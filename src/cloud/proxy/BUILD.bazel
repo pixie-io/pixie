@@ -80,6 +80,6 @@ container_push(
     format = "Docker",
     image = ":proxy_dev_server_image",
     registry = "gcr.io",
-    repository = "pl-dev-infra/cloud/proxy_dev_image",
+    repository = "pixie-oss/pixie-dev/cloud/proxy_dev_image",
     tag = "{STABLE_BUILD_TAG}",
 )

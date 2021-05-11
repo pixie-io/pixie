@@ -65,6 +65,6 @@ container_push(
     format = "Docker",
     image = ":profile_server_image",
     registry = "gcr.io",
-    repository = "pl-dev-infra/cloud/profile_server_image",
+    repository = "pixie-oss/pixie-dev/cloud/profile_server_image",
     tag = "{STABLE_BUILD_TAG}",
 )
