@@ -6,6 +6,23 @@ metadata:
 spec:
   template:
     spec:
+      initContainers:
+      - name: kratos-wait
+        image: gcr.io/pixie-prod/pixie-prod-artifacts/curl:1.0
+        # yamllint disable
+        command: ['sh', '-c', 'set -x;
+          URL="${PL_KRATOS_PUBLIC_HOST}/health/ready";
+          until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
+            echo "waiting for ${URL}"
+            sleep 2;
+          done;
+        ']
+        env:
+        - name: PL_KRATOS_PUBLIC_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: pl-ory-service-config
+              key: PL_KRATOS_PUBLIC_HOST
       containers:
       - name: create-admin-job
         image: gcr.io/pl-dev-infra/cloud/job/create_admin_job_image
