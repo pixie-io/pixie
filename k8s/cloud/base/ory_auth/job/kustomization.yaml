@@ -6,3 +6,4 @@ commonLabels:
 namespace: plc
 resources:
 - create_admin_job.yaml
+- create_hydra_client_job.yaml

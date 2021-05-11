@@ -1,0 +1,61 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-hydra-client-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: create-hydra-client-job
+        image: oryd/hydra:v1.9.2-sqlite
+        args:
+        - clients
+        - create
+        - --endpoint
+        - $(PL_HYDRA_ADMIN_HOST)
+        - --id
+        - auth-code-client
+        - --secret
+        - $(HYDRA_CLIENT_SECRET)
+        - --grant-types
+        - authorization_code,refresh_token,implicit
+        - --response-types
+        - code,id_token,token
+        - --scope
+        - openid,offline,notifications,gist,vizier
+        - --callbacks
+        - https://$(PL_DOMAIN_NAME)/oauth/auth/callback
+        - --callbacks
+        - https://work.$(PL_DOMAIN_NAME)/auth/callback?mode=ui
+        - --callbacks
+        - https://work.$(PL_DOMAIN_NAME)/auth/callback?mode=ui\&signup=true
+        - --callbacks
+        - https://work.$(PL_DOMAIN_NAME)/auth/callback?mode=cli_get\&redirect_uri=http%3A%2F%2Flocalhost%3A8085%2Fauth_complete
+        - --callbacks
+        - http://localhost:8085/auth_complete
+        - --callbacks
+        - https://work.$(PL_DOMAIN_NAME)/auth/callback?mode=cli_token
+        - --callbacks
+        - https://work.$(PL_DOMAIN_NAME):8080/auth/callback?mode=ui
+        - --callbacks
+        - https://work.$(PL_DOMAIN_NAME):8080/auth/callback?mode=ui\&signup=true
+        - --callbacks
+        - https://work.$(PL_DOMAIN_NAME):8080/auth/callback?mode=cli_token
+        - --callbacks
+        - https://work.$(PL_DOMAIN_NAME):8080/auth/callback?mode=cli_get
+        - --callbacks
+        - https://work.$(PL_DOMAIN_NAME):8080/auth/callback?mode=cli_get\&redirect_uri=http%3A%2F%2Flocalhost%3A8085%2Fauth_complete
+        - --skip-tls-verify
+        envFrom:
+        - configMapRef:
+            name: pl-ory-service-config
+        - configMapRef:
+            name: pl-domain-config
+        env:
+        - name: HYDRA_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: pl-hydra-secrets
+              key: CLIENT_SECRET
+      restartPolicy: Never
