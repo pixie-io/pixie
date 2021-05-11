@@ -10,6 +10,8 @@
 // 000004_add_updated_created_at.up.sql
 // 000005_create_user_settings_table.down.sql
 // 000005_create_user_settings_table.up.sql
+// 000006_add_approved_column.down.sql
+// 000006_add_approved_column.up.sql
 package schema
 
 import (
@@ -101,7 +103,7 @@ func _000001_create_org_user_tablesDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_create_org_user_tables.down.sql", size: 55, mode: os.FileMode(436), modTime: time.Unix(1619557891, 0)}
+	info := bindataFileInfo{name: "000001_create_org_user_tables.down.sql", size: 55, mode: os.FileMode(436), modTime: time.Unix(1566246369, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -121,7 +123,7 @@ func _000001_create_org_user_tablesUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_create_org_user_tables.up.sql", size: 442, mode: os.FileMode(436), modTime: time.Unix(1619557891, 0)}
+	info := bindataFileInfo{name: "000001_create_org_user_tables.up.sql", size: 442, mode: os.FileMode(436), modTime: time.Unix(1566499465, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -141,7 +143,7 @@ func _000002_add_unique_constraint_emailDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000002_add_unique_constraint_email.down.sql", size: 48, mode: os.FileMode(436), modTime: time.Unix(1619557891, 0)}
+	info := bindataFileInfo{name: "000002_add_unique_constraint_email.down.sql", size: 48, mode: os.FileMode(436), modTime: time.Unix(1575417868, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -161,7 +163,7 @@ func _000002_add_unique_constraint_emailUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000002_add_unique_constraint_email.up.sql", size: 62, mode: os.FileMode(436), modTime: time.Unix(1619557891, 0)}
+	info := bindataFileInfo{name: "000002_add_unique_constraint_email.up.sql", size: 62, mode: os.FileMode(436), modTime: time.Unix(1570640344, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -181,7 +183,7 @@ func _000003_add_profile_pictureDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000003_add_profile_picture.down.sql", size: 47, mode: os.FileMode(436), modTime: time.Unix(1619557891, 0)}
+	info := bindataFileInfo{name: "000003_add_profile_picture.down.sql", size: 47, mode: os.FileMode(436), modTime: time.Unix(1592421721, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -201,7 +203,7 @@ func _000003_add_profile_pictureUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000003_add_profile_picture.up.sql", size: 60, mode: os.FileMode(436), modTime: time.Unix(1619557891, 0)}
+	info := bindataFileInfo{name: "000003_add_profile_picture.up.sql", size: 60, mode: os.FileMode(436), modTime: time.Unix(1592421721, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -221,7 +223,7 @@ func _000004_add_updated_created_atDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000004_add_updated_created_at.down.sql", size: 142, mode: os.FileMode(436), modTime: time.Unix(1619557891, 0)}
+	info := bindataFileInfo{name: "000004_add_updated_created_at.down.sql", size: 142, mode: os.FileMode(436), modTime: time.Unix(1592421721, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -241,7 +243,7 @@ func _000004_add_updated_created_atUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000004_add_updated_created_at.up.sql", size: 749, mode: os.FileMode(436), modTime: time.Unix(1619557891, 0)}
+	info := bindataFileInfo{name: "000004_add_updated_created_at.up.sql", size: 749, mode: os.FileMode(436), modTime: time.Unix(1592421721, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -261,7 +263,7 @@ func _000005_create_user_settings_tableDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000005_create_user_settings_table.down.sql", size: 36, mode: os.FileMode(436), modTime: time.Unix(1619557891, 0)}
+	info := bindataFileInfo{name: "000005_create_user_settings_table.down.sql", size: 36, mode: os.FileMode(436), modTime: time.Unix(1606103049, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -281,7 +283,47 @@ func _000005_create_user_settings_tableUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000005_create_user_settings_table.up.sql", size: 192, mode: os.FileMode(436), modTime: time.Unix(1619557891, 0)}
+	info := bindataFileInfo{name: "000005_create_user_settings_table.up.sql", size: 192, mode: os.FileMode(436), modTime: time.Unix(1606103049, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000006_add_approved_columnDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\x2d\x4e\x2d\x2a\xe6\x72\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x53\xc8\x2c\x8e\x4f\x2c\x28\x28\xca\x2f\x4b\x4d\xb1\xe6\x02\x04\x00\x00\xff\xff\x6e\xb4\x3a\x00\x2b\x00\x00\x00")
+
+func _000006_add_approved_columnDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000006_add_approved_columnDownSql,
+		"000006_add_approved_column.down.sql",
+	)
+}
+
+func _000006_add_approved_columnDownSql() (*asset, error) {
+	bytes, err := _000006_add_approved_columnDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000006_add_approved_column.down.sql", size: 43, mode: os.FileMode(436), modTime: time.Unix(1620756592, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000006_add_approved_columnUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\x2d\x4e\x2d\x2a\xe6\x72\x74\x71\x51\x70\xf6\xf7\x09\xf5\xf5\x53\x50\xc8\x2c\x8e\x4f\x2c\x28\x28\xca\x2f\x4b\x4d\x51\x70\xf2\xf7\xf7\x71\x75\xf4\x53\x70\x71\x75\x73\x0c\xf5\x09\x51\x48\x4b\xcc\x29\x4e\xb5\xe6\x02\x04\x00\x00\xff\xff\xdf\xce\xd8\x56\x41\x00\x00\x00")
+
+func _000006_add_approved_columnUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000006_add_approved_columnUpSql,
+		"000006_add_approved_column.up.sql",
+	)
+}
+
+func _000006_add_approved_columnUpSql() (*asset, error) {
+	bytes, err := _000006_add_approved_columnUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000006_add_approved_column.up.sql", size: 65, mode: os.FileMode(436), modTime: time.Unix(1620756728, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -348,6 +390,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000004_add_updated_created_at.up.sql":        _000004_add_updated_created_atUpSql,
 	"000005_create_user_settings_table.down.sql":  _000005_create_user_settings_tableDownSql,
 	"000005_create_user_settings_table.up.sql":    _000005_create_user_settings_tableUpSql,
+	"000006_add_approved_column.down.sql":         _000006_add_approved_columnDownSql,
+	"000006_add_approved_column.up.sql":           _000006_add_approved_columnUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -401,6 +445,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000004_add_updated_created_at.up.sql":        &bintree{_000004_add_updated_created_atUpSql, map[string]*bintree{}},
 	"000005_create_user_settings_table.down.sql":  &bintree{_000005_create_user_settings_tableDownSql, map[string]*bintree{}},
 	"000005_create_user_settings_table.up.sql":    &bintree{_000005_create_user_settings_tableUpSql, map[string]*bintree{}},
+	"000006_add_approved_column.down.sql":         &bintree{_000006_add_approved_columnDownSql, map[string]*bintree{}},
+	"000006_add_approved_column.up.sql":           &bintree{_000006_add_approved_columnUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory

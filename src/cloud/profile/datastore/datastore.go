@@ -40,6 +40,7 @@ type UserInfo struct {
 	ProfilePicture *string    `db:"profile_picture"`
 	UpdatedAt      *time.Time `db:"updated_at"`
 	CreatedAt      *time.Time `db:"created_at"`
+	IsApproved     bool       `db:"is_approved"`
 }
 
 // OrgInfo tracks information about an organization.
