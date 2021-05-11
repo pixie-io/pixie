@@ -20,7 +20,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -33,7 +32,7 @@ import (
 )
 
 func init() {
-	CollectLogsCmd.Flags().StringP("namespace", "n", "pl", "The namespace vizier is deployed in")
+	CollectLogsCmd.Flags().StringP("namespace", "n", "", "The namespace vizier is deployed in")
 	viper.BindPFlag("namespace", CollectLogsCmd.Flags().Lookup("namespace"))
 }
 
@@ -43,22 +42,8 @@ var CollectLogsCmd = &cobra.Command{
 	Short: "Collect pixie logs on the cluster",
 	Run: func(cmd *cobra.Command, args []string) {
 		ns, _ := cmd.Flags().GetString("namespace")
-		nsSet := cmd.Flags().Changed("namespace")
-
-		kubeConfig := k8s.GetConfig()
-		clientset := k8s.GetClientset(kubeConfig)
-
-		if !nsSet {
-			vzNs, err := vizier.FindVizierNamespace(clientset)
-			if err != nil {
-				utils.WithError(err).Fatal("Failed to get Vizier namespace")
-			}
-			ns = vzNs
-		}
-
 		if ns == "" {
-			utils.Info("Cannot find running Vizier instance")
-			os.Exit(0)
+			ns = vizier.MustFindVizierNamespace()
 		}
 
 		c := k8s.NewLogCollector(ns)

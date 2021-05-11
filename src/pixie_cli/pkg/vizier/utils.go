@@ -22,6 +22,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/gofrs/uuid"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,6 +49,22 @@ func FindVizierNamespace(clientset *kubernetes.Clientset) (string, error) {
 	}
 
 	return vzPods.Items[0].Namespace, nil
+}
+
+// MustFindVizierNamespace exits the current program if a Vizier namespace can't be found.
+func MustFindVizierNamespace() string {
+	kubeConfig := k8s.GetConfig()
+	clientset := k8s.GetClientset(kubeConfig)
+	vzNs, err := FindVizierNamespace(clientset)
+	if err != nil {
+		fmt.Printf("Failed to get Vizier namespace: %s\n", err.Error())
+		os.Exit(1)
+	}
+	if vzNs == "" {
+		fmt.Println("Cannot find running Vizier instance")
+		os.Exit(0)
+	}
+	return vzNs
 }
 
 // MustConnectDefaultVizier vizier will connect to default vizier based on parameters.

@@ -19,7 +19,6 @@
 package cmd
 
 import (
-	"os"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -41,9 +40,8 @@ var DeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		clobberAll, _ := cmd.Flags().GetBool("clobber")
 		ns, _ := cmd.Flags().GetString("namespace")
-		nsSet := cmd.Flags().Changed("namespace")
-		if !nsSet {
-			ns = ""
+		if ns == "" {
+			ns = vizier.MustFindVizierNamespace()
 		}
 		deletePixie(ns, clobberAll)
 	},
@@ -53,27 +51,13 @@ func init() {
 	DeleteCmd.Flags().BoolP("clobber", "d", false, "Whether to delete all dependencies in the cluster")
 	viper.BindPFlag("clobber", DeleteCmd.Flags().Lookup("clobber"))
 
-	DeleteCmd.Flags().StringP("namespace", "n", "pl", "The namespace where pixie is located")
+	DeleteCmd.Flags().StringP("namespace", "n", "", "The namespace where pixie is located")
 	viper.BindPFlag("namespace", DeleteCmd.Flags().Lookup("namespace"))
 }
 
 func deletePixie(ns string, clobberAll bool) {
 	kubeConfig := k8s.GetConfig()
 	clientset := k8s.GetClientset(kubeConfig)
-
-	// Try to find the namespace where Pixie is deployed, if no namespace was specified.
-	if ns == "" {
-		vzNs, err := vizier.FindVizierNamespace(clientset)
-		if err != nil {
-			utils.WithError(err).Fatal("Failed to get Vizier namespace")
-		}
-		ns = vzNs
-	}
-
-	if ns == "" {
-		utils.Info("Cannot find running Vizier instance")
-		os.Exit(0)
-	}
 
 	od := k8s.ObjectDeleter{
 		Namespace:  ns,

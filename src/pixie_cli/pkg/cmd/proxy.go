@@ -27,11 +27,12 @@ import (
 	"github.com/spf13/viper"
 
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
+	"px.dev/pixie/src/pixie_cli/pkg/vizier"
 	"px.dev/pixie/src/utils/shared/k8s"
 )
 
 func init() {
-	ProxyCmd.Flags().StringP("namespace", "n", "pl", "The namespace to install K8s secrets to")
+	ProxyCmd.Flags().StringP("namespace", "n", "", "The namespace to install K8s secrets to")
 	viper.BindPFlag("namespace", ProxyCmd.Flags().Lookup("namespace"))
 }
 
@@ -41,6 +42,10 @@ var ProxyCmd = &cobra.Command{
 	Short: "Create a proxy connection to Pixie's vizier",
 	Run: func(cmd *cobra.Command, args []string) {
 		ns, _ := cmd.Flags().GetString("namespace")
+		if ns == "" {
+			ns = vizier.MustFindVizierNamespace()
+		}
+
 		p := k8s.NewVizierProxy(ns)
 		if err := p.Run(); err != nil {
 			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
