@@ -33,7 +33,10 @@ pl_cc_test(
     name = "bpf_map_leak_test",
     timeout = "moderate",
     srcs = ["bpf_map_leak_test.cc"],
-    data = ["//src/stirling/source_connectors/socket_tracer/protocols/http/testing/leaky_cpp_http_server:leaky_http_server"],
+    data = [
+        "//src/stirling/testing/demo_apps/leaky_http_server:server",
+        "//src/stirling/testing/demo_apps/leaky_http_unix_socket_server:server",
+    ],
     flaky = True,
     tags = [
         "requires_bpf",

@@ -41,18 +41,17 @@ using ::testing::Contains;
 using ::testing::Key;
 using ::testing::Not;
 
-constexpr std::string_view kServerPath =
-    "src/stirling/source_connectors/socket_tracer/protocols/http/testing/leaky_cpp_http_server/"
-    "leaky_http_server";
+class BPFMapLeakTest : public SocketTraceBPFTest<>,
+                       public ::testing::WithParamInterface<std::string_view> {};
 
-using BPFMapLeakTest = SocketTraceBPFTest<>;
+TEST_P(BPFMapLeakTest, UnclosedConnection) {
+  std::string_view server_path_param = GetParam();
 
-TEST_F(BPFMapLeakTest, unclosed_connection) {
   const int kInactivitySeconds = 10;
   ConnTracker::set_inactivity_duration(std::chrono::seconds(kInactivitySeconds));
 
   // Create and run the server with a leaky FD.
-  std::filesystem::path server_path = BazelBinTestFilePath(kServerPath);
+  std::filesystem::path server_path = BazelBinTestFilePath(server_path_param);
   ASSERT_OK(fs::Exists(server_path));
 
   SubProcess server;
@@ -75,7 +74,7 @@ TEST_F(BPFMapLeakTest, unclosed_connection) {
 
   // Now kill the server, which should cause a BPF map entry to leak.
   LOG(INFO) << "Killing server";
-  server.Kill();
+  server.Signal(SIGINT);
 
   sleep(1);
 
@@ -118,6 +117,16 @@ TEST_F(BPFMapLeakTest, unclosed_connection) {
   entries = conn_info_map.get_table_offline();
   EXPECT_THAT(entries, Not(Contains(Key(server_bpf_map_key))));
 }
+
+constexpr std::string_view kTCPServerPath =
+    "src/stirling/testing/demo_apps/leaky_http_server/server";
+// constexpr std::string_view kUnixServerPath =
+// "src/stirling/testing/demo_apps/leaky_http_unix_socket_server/server";
+
+INSTANTIATE_TEST_SUITE_P(SocketTypeSuite, BPFMapLeakTest, ::testing::Values(kTCPServerPath));
+
+// TODO(oazizi): Add kUnixServerPath into the test suite after fixing the BPF map leak with Unix
+//               domain sockets.
 
 }  // namespace stirling
 }  // namespace px

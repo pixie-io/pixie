@@ -776,7 +776,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   testing::EventGenerator event_gen(&mock_clock_, real_pid, real_fd);
   struct socket_control_event_t conn0 = event_gen.InitConn();
 
-  // An incomplete message means it shouldn't be parseable (we don't want TranfserData to succeed).
+  // An incomplete message means it shouldn't be parseable (we don't want TransferData to succeed).
   std::unique_ptr<SocketDataEvent> conn0_req_event =
       event_gen.InitSendEvent<kProtocolHTTP>("GET /index.html HTTP/1.1\r\n");
 
