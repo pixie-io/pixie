@@ -48,7 +48,7 @@ var DeleteCmd = &cobra.Command{
 }
 
 func init() {
-	DeleteCmd.Flags().BoolP("clobber", "d", false, "Whether to delete all dependencies in the cluster")
+	DeleteCmd.Flags().BoolP("clobber", "d", true, "Whether to delete all dependencies in the cluster")
 	viper.BindPFlag("clobber", DeleteCmd.Flags().Lookup("clobber"))
 
 	DeleteCmd.Flags().StringP("namespace", "n", "", "The namespace where pixie is located")
