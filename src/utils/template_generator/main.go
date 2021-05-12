@@ -32,7 +32,6 @@ func init() {
 	pflag.String("base", "", "Path to the tar containing the base Vizier YAMLs")
 	pflag.String("out", "", "The output path")
 	pflag.String("version", "", "The version string for the YAMLs")
-	pflag.String("namespace", "pl", "The namespace to install K8s secrets to")
 }
 
 func main() {
@@ -45,7 +44,6 @@ func main() {
 	base := viper.GetString("base")
 	out := viper.GetString("out")
 	version := viper.GetString("version")
-	namespace := viper.GetString("namespace")
 
 	if len(base) == 0 {
 		log.Fatalln("Base YAML path (--base) is required")
@@ -64,7 +62,7 @@ func main() {
 	kubeConfig := k8s.GetConfig()
 	clientset := k8s.GetClientset(kubeConfig)
 
-	templatedYAMLs, err := vizieryamls.GenerateTemplatedDeployYAMLsWithTar(clientset, base, version, namespace)
+	templatedYAMLs, err := vizieryamls.GenerateTemplatedDeployYAMLsWithTar(clientset, base, version)
 	if err != nil {
 		log.WithError(err).Fatal("failed to generate templated deployment YAMLs")
 	}

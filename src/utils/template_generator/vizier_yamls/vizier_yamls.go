@@ -147,7 +147,7 @@ func getSentryDSN(vizierVersion string) string {
 }
 
 // GenerateTemplatedDeployYAMLsWithTar generates the YAMLs that should be run when deploying Pixie using the provided tar file.
-func GenerateTemplatedDeployYAMLsWithTar(clientset *kubernetes.Clientset, tarPath string, versionStr string, ns string) ([]*yamls.YAMLFile, error) {
+func GenerateTemplatedDeployYAMLsWithTar(clientset *kubernetes.Clientset, tarPath string, versionStr string) ([]*yamls.YAMLFile, error) {
 	file, err := os.Open(tarPath)
 	if err != nil {
 		return nil, err
@@ -158,12 +158,12 @@ func GenerateTemplatedDeployYAMLsWithTar(clientset *kubernetes.Clientset, tarPat
 		return nil, err
 	}
 
-	return GenerateTemplatedDeployYAMLs(clientset, yamlMap, versionStr, ns)
+	return GenerateTemplatedDeployYAMLs(clientset, yamlMap, versionStr)
 }
 
 // GenerateTemplatedDeployYAMLs generates the YAMLs that should be run when deploying Pixie using the provided YAML map.
-func GenerateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string, versionStr string, ns string) ([]*yamls.YAMLFile, error) {
-	secretsYAML, err := GenerateSecretsYAML(clientset, ns, versionStr, false)
+func GenerateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string, versionStr string) ([]*yamls.YAMLFile, error) {
+	secretsYAML, err := GenerateSecretsYAML(clientset, versionStr, false)
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +203,7 @@ func GenerateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, yamlMap map[s
 }
 
 // GenerateSecretsYAML creates the YAML for Pixie secrets.
-func GenerateSecretsYAML(clientset *kubernetes.Clientset, ns string, versionStr string, bootstrapMode bool) (string, error) {
+func GenerateSecretsYAML(clientset *kubernetes.Clientset, versionStr string, bootstrapMode bool) (string, error) {
 	dockerYAML := ""
 
 	csYAMLs, err := generateClusterSecretYAMLs(getSentryDSN(versionStr), bootstrapMode)
