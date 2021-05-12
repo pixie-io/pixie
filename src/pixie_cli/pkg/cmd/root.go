@@ -39,6 +39,9 @@ func init() {
 	RootCmd.PersistentFlags().StringP("cloud_addr", "a", "withpixie.ai:443", "The address of Pixie Cloud")
 	viper.BindPFlag("cloud_addr", RootCmd.PersistentFlags().Lookup("cloud_addr"))
 
+	RootCmd.PersistentFlags().StringP("dev_cloud_namespace", "m", "", "The namespace of Pixie Cloud, if using a cluster local cloud.")
+	viper.BindPFlag("dev_cloud_namespace", RootCmd.PersistentFlags().Lookup("dev_cloud_namespace"))
+
 	RootCmd.PersistentFlags().BoolP("y", "y", false, "Whether to accept all user input")
 	viper.BindPFlag("y", RootCmd.PersistentFlags().Lookup("y"))
 
@@ -68,6 +71,7 @@ func init() {
 	RootCmd.AddCommand(DebugCmd)
 	// Super secret flags for Pixies.
 	RootCmd.PersistentFlags().MarkHidden("cloud_addr")
+	RootCmd.PersistentFlags().MarkHidden("dev_cloud_namespace")
 }
 
 // nolint:errcheck
@@ -96,11 +100,9 @@ var RootCmd = &cobra.Command{
 
 		if e, has := os.LookupEnv("PL_TESTING_ENV"); has {
 			printTestingBanner()
-			if e == "dev" {
+			if e == "dev" && !viper.IsSet("dev_cloud_namespace") {
 				// Setting this to the most likely default if not already set.
-				if viper.GetString("dev_cloud_namespace") == "" {
-					viper.Set("dev_cloud_namespace", "plc-dev")
-				}
+				viper.Set("dev_cloud_namespace", "plc-dev")
 			}
 		}
 

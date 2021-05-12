@@ -146,9 +146,6 @@ func init() {
 	DeployCmd.Flags().StringP("namespace", "n", "pl", "The namespace to deploy Vizier to")
 	viper.BindPFlag("namespace", DeployCmd.Flags().Lookup("namespace"))
 
-	DeployCmd.Flags().StringP("dev_cloud_namespace", "m", "", "The namespace of Pixie Cloud, if running Cloud on minikube")
-	viper.BindPFlag("dev_cloud_namespace", DeployCmd.Flags().Lookup("dev_cloud_namespace"))
-
 	DeployCmd.Flags().StringP("deploy_key", "k", "", "The deploy key to use to deploy Pixie")
 	viper.BindPFlag("deploy_key", DeployCmd.Flags().Lookup("deploy_key"))
 
@@ -169,7 +166,6 @@ func init() {
 
 	// Super secret flags for Pixies.
 	DeployCmd.Flags().MarkHidden("namespace")
-	DeployCmd.Flags().MarkHidden("dev_cloud_namespace")
 }
 
 func newArtifactTrackerClient(conn *grpc.ClientConn) cloudpb.ArtifactTrackerClient {
