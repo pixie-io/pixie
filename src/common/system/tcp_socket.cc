@@ -70,6 +70,17 @@ void TCPSocket::BindAndListen(int port) {
       << "Failed to listen socket, error message: " << strerror(errno);
 }
 
+std::unique_ptr<TCPSocket> TCPSocket::AcceptWithNullAddr() {
+  auto new_conn = std::unique_ptr<TCPSocket>(new TCPSocket(0));
+
+  new_conn->sockfd_ = accept4(sockfd_, /*addr*/ nullptr, /*addr_len*/ nullptr, /*flags*/ 0);
+  CHECK(new_conn->sockfd_ >= 0) << "Failed to accept, error message: " << strerror(errno);
+  LOG(INFO) << absl::Substitute("Accept(): remote_port=$0 on local_port=$1",
+                                ntohs(new_conn->port()), ntohs(port()));
+
+  return new_conn;
+}
+
 std::unique_ptr<TCPSocket> TCPSocket::Accept() {
   auto new_conn = std::unique_ptr<TCPSocket>(new TCPSocket(0));
 

@@ -372,7 +372,7 @@ static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, uint32_
   // While we keep all sa_family types in conn_info_map,
   // we only send connections with supported protocols to user-space.
   // We use the same filter function to avoid sending data of unwanted connections as well.
-  if (!should_trace_sockaddr_family(addr->sa_family)) {
+  if (!should_trace_sockaddr_family(conn_info.addr.sa.sa_family)) {
     return;
   }
 

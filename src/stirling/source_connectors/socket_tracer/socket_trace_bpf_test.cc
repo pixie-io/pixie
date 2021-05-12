@@ -51,8 +51,10 @@ using ::px::system::UDPSocket;
 using ::px::types::ColumnWrapperRecordBatch;
 using ::testing::Each;
 using ::testing::ElementsAre;
+using ::testing::Gt;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
+using ::testing::SizeIs;
 using ::testing::StrEq;
 
 constexpr std::string_view kHTTPReqMsg1 = R"(GET /endpoint1 HTTP/1.1
@@ -416,6 +418,76 @@ TEST_F(SocketTraceBPFTest, LargeMessages) {
   //  system.ServerFD())); EXPECT_EQ(server_tracker->send_data().data_buffer().Head(),
   //  kHTTPReqMsg1); EXPECT_THAT(std::string(server_tracker->recv_data().data_buffer().Head()),
   //  HasSubstr("+++++"));
+}
+
+// Tests that accept4() with a NULL sock_addr result argument.
+TEST_F(SocketTraceBPFTest, TestAccept4WithNullRemoteAddr) {
+  StartTransferDataThread();
+
+  TCPSocket client;
+  TCPSocket server;
+
+  std::thread server_thread([&server]() {
+    server.BindAndListen();
+    auto conn = server.AcceptWithNullAddr();
+
+    std::string data;
+
+    conn->Read(&data);
+    conn->Write(kHTTPRespMsg1);
+
+    conn->Read(&data);
+    conn->Write(kHTTPRespMsg1);
+
+    conn->Read(&data);
+    conn->Write(kHTTPRespMsg1);
+  });
+
+  std::thread client_thread([&client, &server]() {
+    client.Connect(server);
+
+    std::string data;
+
+    client.Write(kHTTPReqMsg1);
+    client.Read(&data);
+    // Separate req & resp such that they are handled in different TransferData() call.
+    // That ensures the socket info resolution to work correctly.
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+    client.Write(kHTTPReqMsg1);
+    client.Read(&data);
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+    client.Write(kHTTPReqMsg1);
+    client.Read(&data);
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+    client.Close();
+  });
+
+  server_thread.join();
+  client_thread.join();
+
+  StopTransferDataThread();
+
+  std::vector<TaggedRecordBatch> tablets = ConsumeRecords(kHTTPTableNum);
+  ASSERT_FALSE(tablets.empty());
+  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+
+  const std::vector<size_t> target_record_indices =
+      testing::FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, getpid());
+  EXPECT_THAT(target_record_indices, SizeIs(Gt(0)));
+
+  const size_t target_record_idx = target_record_indices.back();
+
+  EXPECT_THAT(
+      std::string(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(target_record_idx)),
+      HasSubstr(R"(Content-Type":"application/json; msg1)"));
+  // Make sure that the socket info resolution works.
+  EXPECT_THAT(
+      std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(target_record_idx)),
+      // On IPv6 host, localhost is resolved to ::1.
+      AnyOf(HasSubstr("127.0.0.1"), HasSubstr("::1")));
 }
 
 // Run a UDP-based client-server system.

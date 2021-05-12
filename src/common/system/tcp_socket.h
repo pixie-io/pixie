@@ -39,6 +39,9 @@ class TCPSocket {
 
   void BindAndListen(int port = 0);
   std::unique_ptr<TCPSocket> Accept();
+  // Calls accept4() with NULL remote addr argument.
+  std::unique_ptr<TCPSocket> AcceptWithNullAddr();
+
   void Connect(const TCPSocket& addr);
   void Close();
 

@@ -414,10 +414,14 @@ void ConnTracker::SetConnID(struct conn_id_t conn_id) {
 }
 
 void ConnTracker::SetRemoteAddr(const union sockaddr_t addr, std::string_view reason) {
-  DCHECK(open_info_.remote_addr.family == SockAddrFamily::kUnspecified);
-  PopulateSockAddr(&addr.sa, &open_info_.remote_addr);
-  CONN_TRACE(1) << absl::Substitute("RemoteAddr updated $0, reason=[$1]",
-                                    open_info_.remote_addr.AddrStr(), reason);
+  if (open_info_.remote_addr.family == SockAddrFamily::kUnspecified) {
+    PopulateSockAddr(&addr.sa, &open_info_.remote_addr);
+    if (addr.sa.sa_family == AF_UNKNOWN) {
+      open_info_.remote_addr.family = SockAddrFamily::kUnspecified;
+    }
+    CONN_TRACE(1) << absl::Substitute("RemoteAddr updated $0, reason=[$1]",
+                                      open_info_.remote_addr.AddrStr(), reason);
+  }
 }
 
 bool ConnTracker::SetRole(EndpointRole role, std::string_view reason) {
@@ -463,8 +467,9 @@ bool ConnTracker::SetProtocol(TrafficProtocol protocol, std::string_view reason)
 
   TrafficProtocol old_protocol = protocol_;
   protocol_ = protocol;
-  CONN_TRACE(1) << absl::Substitute("Protocol changed: $0->$1", magic_enum::enum_name(old_protocol),
-                                    magic_enum::enum_name(protocol));
+  CONN_TRACE(1) << absl::Substitute("Protocol changed: $0->$1, reason=[$2]",
+                                    magic_enum::enum_name(old_protocol),
+                                    magic_enum::enum_name(protocol), reason);
   return true;
 }
 
