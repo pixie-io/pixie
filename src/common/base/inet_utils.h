@@ -175,8 +175,8 @@ struct SockAddr {
   int port() const;
 
   std::string ToString() const {
-    return absl::Substitute("[family=$0 addr=$1 port=$2]", magic_enum::enum_name(family),
-                            std::get<SockAddrIPv4>(addr).AddrStr(), port());
+    return absl::Substitute("[family=$0 addr=$1 port=$2]", magic_enum::enum_name(family), AddrStr(),
+                            port());
   }
 
   StatusOr<InetAddr> ToInetAddr() {
