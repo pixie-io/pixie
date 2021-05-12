@@ -197,6 +197,11 @@ emph "Installing PX CLI:"
 read -r -p "Install Path [${DEFAULT_INSTALL_PATH}]: " INSTALL_PATH
 INSTALL_PATH=${INSTALL_PATH:-${DEFAULT_INSTALL_PATH}}
 
+if [[ "$INSTALL_PATH" != /* ]]
+then
+  abort "Install Path must be absolute path: [/xxx]"
+
+fi
 if exists_but_not_writable "${INSTALL_PATH}"; then
     abort "${INSTALL_PATH} is not writable or does not exist."
 fi
