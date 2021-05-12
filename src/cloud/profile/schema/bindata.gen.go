@@ -14,6 +14,7 @@
 // 000006_add_approved_column.up.sql
 // 000007_add_enable_approvals_column.down.sql
 // 000007_add_enable_approvals_column.up.sql
+// 000008_insert_default_user_value.up.sql
 package schema
 
 import (
@@ -345,7 +346,7 @@ func _000007_add_enable_approvals_columnDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000007_add_enable_approvals_column.down.sql", size: 47, mode: os.FileMode(436), modTime: time.Unix(1620951288, 0)}
+	info := bindataFileInfo{name: "000007_add_enable_approvals_column.down.sql", size: 47, mode: os.FileMode(436), modTime: time.Unix(1620951653, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -365,7 +366,27 @@ func _000007_add_enable_approvals_columnUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000007_add_enable_approvals_column.up.sql", size: 68, mode: os.FileMode(436), modTime: time.Unix(1620951288, 0)}
+	info := bindataFileInfo{name: "000007_add_enable_approvals_column.up.sql", size: 68, mode: os.FileMode(436), modTime: time.Unix(1620951653, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000008_insert_default_user_valueUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x0a\x0d\x70\x71\x0c\x71\x55\x28\x2d\x4e\x2d\x2a\x56\x08\x76\x0d\x51\xc8\x2c\x8e\x4f\x2c\x28\x28\xca\x2f\x4b\x4d\x51\xb0\x55\x28\x29\x2a\x4d\xb5\xe6\x02\x04\x00\x00\xff\xff\x83\xb9\x30\x99\x25\x00\x00\x00")
+
+func _000008_insert_default_user_valueUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000008_insert_default_user_valueUpSql,
+		"000008_insert_default_user_value.up.sql",
+	)
+}
+
+func _000008_insert_default_user_valueUpSql() (*asset, error) {
+	bytes, err := _000008_insert_default_user_valueUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000008_insert_default_user_value.up.sql", size: 37, mode: os.FileMode(436), modTime: time.Unix(1620951869, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -436,6 +457,7 @@ var _bindata = map[string]func() (*asset, error){
 	"000006_add_approved_column.up.sql":           _000006_add_approved_columnUpSql,
 	"000007_add_enable_approvals_column.down.sql": _000007_add_enable_approvals_columnDownSql,
 	"000007_add_enable_approvals_column.up.sql":   _000007_add_enable_approvals_columnUpSql,
+	"000008_insert_default_user_value.up.sql":     _000008_insert_default_user_valueUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -493,6 +515,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000006_add_approved_column.up.sql":           &bintree{_000006_add_approved_columnUpSql, map[string]*bintree{}},
 	"000007_add_enable_approvals_column.down.sql": &bintree{_000007_add_enable_approvals_columnDownSql, map[string]*bintree{}},
 	"000007_add_enable_approvals_column.up.sql":   &bintree{_000007_add_enable_approvals_columnUpSql, map[string]*bintree{}},
+	"000008_insert_default_user_value.up.sql":     &bintree{_000008_insert_default_user_valueUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory

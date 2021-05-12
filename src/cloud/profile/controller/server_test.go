@@ -63,6 +63,8 @@ func TestServer_CreateUser(t *testing.T) {
 		expectErr  bool
 		expectCode codes.Code
 		respID     *uuidpb.UUID
+
+		enableApprovals bool
 	}{
 		{
 			name:      "valid request",
@@ -74,9 +76,10 @@ func TestServer_CreateUser(t *testing.T) {
 				LastName:  "bar",
 				Email:     "foo@bar.com",
 			},
-			expectErr:  false,
-			expectCode: codes.OK,
-			respID:     utils.ProtoFromUUID(testUUID),
+			expectErr:       false,
+			expectCode:      codes.OK,
+			respID:          utils.ProtoFromUUID(testUUID),
+			enableApprovals: false,
 		},
 		{
 			name:      "invalid orgid",
@@ -88,9 +91,10 @@ func TestServer_CreateUser(t *testing.T) {
 				LastName:  "bar",
 				Email:     "foo@bar.com",
 			},
-			expectErr:  true,
-			expectCode: codes.InvalidArgument,
-			respID:     nil,
+			expectErr:       true,
+			expectCode:      codes.InvalidArgument,
+			respID:          nil,
+			enableApprovals: false,
 		},
 		{
 			name:      "invalid username",
@@ -102,9 +106,10 @@ func TestServer_CreateUser(t *testing.T) {
 				LastName:  "bar",
 				Email:     "foo@bar.com",
 			},
-			expectErr:  true,
-			expectCode: codes.InvalidArgument,
-			respID:     nil,
+			expectErr:       true,
+			expectCode:      codes.InvalidArgument,
+			respID:          nil,
+			enableApprovals: false,
 		},
 		{
 			name:      "empty first name is ok",
@@ -116,9 +121,10 @@ func TestServer_CreateUser(t *testing.T) {
 				LastName:  "bar",
 				Email:     "foo@bar.com",
 			},
-			expectErr:  false,
-			expectCode: codes.OK,
-			respID:     utils.ProtoFromUUID(testUUID),
+			expectErr:       false,
+			expectCode:      codes.OK,
+			respID:          utils.ProtoFromUUID(testUUID),
+			enableApprovals: false,
 		},
 		{
 			name:      "empty email",
@@ -130,9 +136,10 @@ func TestServer_CreateUser(t *testing.T) {
 				LastName:  "bar",
 				Email:     "",
 			},
-			expectErr:  true,
-			expectCode: codes.InvalidArgument,
-			respID:     nil,
+			expectErr:       true,
+			expectCode:      codes.InvalidArgument,
+			respID:          nil,
+			enableApprovals: false,
 		},
 		{
 			name:      "banned email",
@@ -144,9 +151,10 @@ func TestServer_CreateUser(t *testing.T) {
 				LastName:  "bar",
 				Email:     "foo@blocklist.com",
 			},
-			expectErr:  true,
-			expectCode: codes.InvalidArgument,
-			respID:     nil,
+			expectErr:       true,
+			expectCode:      codes.InvalidArgument,
+			respID:          nil,
+			enableApprovals: false,
 		},
 		{
 			name:      "allowed email",
@@ -158,9 +166,10 @@ func TestServer_CreateUser(t *testing.T) {
 				LastName:  "bar",
 				Email:     "foo@gmail.com",
 			},
-			expectErr:  false,
-			expectCode: codes.OK,
-			respID:     utils.ProtoFromUUID(testUUID),
+			expectErr:       false,
+			expectCode:      codes.OK,
+			respID:          utils.ProtoFromUUID(testUUID),
+			enableApprovals: false,
 		},
 		{
 			name:      "invalid email",
@@ -172,22 +181,46 @@ func TestServer_CreateUser(t *testing.T) {
 				LastName:  "bar",
 				Email:     "foo.com",
 			},
-			expectErr:  true,
-			expectCode: codes.InvalidArgument,
-			respID:     nil,
+			expectErr:       true,
+			expectCode:      codes.InvalidArgument,
+			respID:          nil,
+			enableApprovals: false,
+		},
+		{
+			name:      "enable approvals properly sets users info",
+			makesCall: true,
+			userInfo: &profilepb.CreateUserRequest{
+				OrgID:     utils.ProtoFromUUID(testOrgUUID),
+				Username:  "foobar",
+				FirstName: "",
+				LastName:  "bar",
+				Email:     "foo@bar.com",
+			},
+			expectErr:       false,
+			expectCode:      codes.OK,
+			respID:          utils.ProtoFromUUID(testUUID),
+			enableApprovals: true,
 		},
 	}
 
 	for _, tc := range createUsertests {
 		t.Run(tc.name, func(t *testing.T) {
 			s := controller.NewServer(nil, d, nil, nil)
+			if utils.UUIDFromProtoOrNil(tc.userInfo.OrgID) != uuid.Nil {
+				d.EXPECT().
+					GetOrg(testOrgUUID).
+					Return(&datastore.OrgInfo{
+						EnableApprovals: tc.enableApprovals,
+					}, nil)
+			}
 			if tc.makesCall {
 				req := &datastore.UserInfo{
-					OrgID:     testOrgUUID,
-					Username:  tc.userInfo.Username,
-					FirstName: tc.userInfo.FirstName,
-					LastName:  tc.userInfo.LastName,
-					Email:     tc.userInfo.Email,
+					OrgID:      testOrgUUID,
+					Username:   tc.userInfo.Username,
+					FirstName:  tc.userInfo.FirstName,
+					LastName:   tc.userInfo.LastName,
+					Email:      tc.userInfo.Email,
+					IsApproved: !tc.enableApprovals,
 				}
 				d.EXPECT().
 					CreateUser(req).
