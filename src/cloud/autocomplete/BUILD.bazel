@@ -29,7 +29,7 @@ go_library(
         "//src/api/proto/vispb:vis_pl_go_proto",
         "//src/cloud/autocomplete/ebnf",
         "//src/cloud/indexer/md",
-        "//src/cloud/profile/profilepb:service_go_proto",
+        "//src/cloud/profile/profilepb:service_pl_go_proto",
         "//src/pixie_cli/pkg/script",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_olivere_elastic_v7//:elastic",

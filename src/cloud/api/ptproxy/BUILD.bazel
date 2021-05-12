@@ -30,7 +30,7 @@ go_library(
         "//src/cloud/shared/vzshard",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/services/authcontext",
-        "//src/shared/services/jwtpb:jwt_go_proto",
+        "//src/shared/services/jwtpb:jwt_pl_go_proto",
         "//src/utils",
         "//src/utils/pbutils",
         "@com_github_gofrs_uuid//:uuid",

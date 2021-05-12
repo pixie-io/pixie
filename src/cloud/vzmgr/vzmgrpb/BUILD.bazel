@@ -35,6 +35,5 @@ pl_go_proto_library(
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
-        "@com_github_gogo_protobuf//gogoproto:go_default_library",
     ],
 )

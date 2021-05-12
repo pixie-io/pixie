@@ -22,7 +22,7 @@ go_library(
     importpath = "px.dev/pixie/src/shared/services/utils",
     visibility = ["//src:__subpackages__"],
     deps = [
-        "//src/shared/services/jwtpb:jwt_go_proto",
+        "//src/shared/services/jwtpb:jwt_pl_go_proto",
         "@com_github_dgrijalva_jwt_go_v4//:jwt-go",
         "@com_github_sirupsen_logrus//:logrus",
     ],
@@ -33,7 +33,7 @@ go_test(
     srcs = ["claims_test.go"],
     embed = [":utils"],
     deps = [
-        "//src/shared/services/jwtpb:jwt_go_proto",
+        "//src/shared/services/jwtpb:jwt_pl_go_proto",
         "@com_github_dgrijalva_jwt_go_v4//:jwt-go",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",

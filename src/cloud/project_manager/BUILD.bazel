@@ -28,7 +28,7 @@ go_library(
     deps = [
         "//src/cloud/project_manager/controller",
         "//src/cloud/project_manager/datastore",
-        "//src/cloud/project_manager/projectmanagerpb:service_go_proto",
+        "//src/cloud/project_manager/projectmanagerpb:service_pl_go_proto",
         "//src/cloud/project_manager/schema",
         "//src/cloud/shared/pgmigrate",
         "//src/shared/services",

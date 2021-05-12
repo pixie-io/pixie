@@ -14,11 +14,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
-load("@rules_proto//proto:defs.bzl", "proto_library")
+load("//bazel:proto_compile.bzl", "pl_go_proto_library", "pl_proto_library")
 
-proto_library(
-    name = "ping_proto",
+pl_proto_library(
+    name = "ping_pl_proto",
     srcs = ["ping.proto"],
     visibility = ["//src:__subpackages__"],
     deps = [
@@ -26,13 +25,9 @@ proto_library(
     ],
 )
 
-go_proto_library(
-    name = "ping_go_proto",
-    compilers = ["@io_bazel_rules_go//proto:gogoslick_grpc"],
+pl_go_proto_library(
+    name = "ping_pl_go_proto",
     importpath = "px.dev/pixie/src/shared/services/testproto",
-    proto = ":ping_proto",
+    proto = ":ping_pl_proto",
     visibility = ["//src:__subpackages__"],
-    deps = [
-        "@com_github_gogo_protobuf//gogoproto:go_default_library",
-    ],
 )

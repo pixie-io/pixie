@@ -28,7 +28,7 @@ go_library(
     deps = [
         "//src/cloud/dnsmgr/controller",
         "//src/cloud/dnsmgr/dnsmgrenv",
-        "//src/cloud/dnsmgr/dnsmgrpb:service_go_proto",
+        "//src/cloud/dnsmgr/dnsmgrpb:service_pl_go_proto",
         "//src/cloud/dnsmgr/schema",
         "//src/cloud/shared/pgmigrate",
         "//src/shared/services",

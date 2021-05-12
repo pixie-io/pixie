@@ -26,7 +26,7 @@ go_library(
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/cloud/dnsmgr/dnsmgrenv",
-        "//src/cloud/dnsmgr/dnsmgrpb:service_go_proto",
+        "//src/cloud/dnsmgr/dnsmgrpb:service_pl_go_proto",
         "//src/utils",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_jmoiron_sqlx//:sqlx",
@@ -42,7 +42,7 @@ go_test(
     embed = [":controller"],
     deps = [
         "//src/cloud/dnsmgr/controller/mock",
-        "//src/cloud/dnsmgr/dnsmgrpb:service_go_proto",
+        "//src/cloud/dnsmgr/dnsmgrpb:service_pl_go_proto",
         "//src/cloud/dnsmgr/schema",
         "//src/shared/services/pgtest",
         "//src/utils",

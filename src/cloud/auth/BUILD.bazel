@@ -28,7 +28,7 @@ go_library(
     deps = [
         "//src/cloud/auth/apikey",
         "//src/cloud/auth/authenv",
-        "//src/cloud/auth/authpb:auth_go_proto",
+        "//src/cloud/auth/authpb:auth_pl_go_proto",
         "//src/cloud/auth/controllers",
         "//src/cloud/auth/schema",
         "//src/cloud/shared/pgmigrate",

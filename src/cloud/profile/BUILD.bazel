@@ -30,7 +30,7 @@ go_library(
         "//src/cloud/profile/controller/idmanager",
         "//src/cloud/profile/datastore",
         "//src/cloud/profile/profileenv",
-        "//src/cloud/profile/profilepb:service_go_proto",
+        "//src/cloud/profile/profilepb:service_pl_go_proto",
         "//src/cloud/profile/schema",
         "//src/cloud/shared/idprovider",
         "//src/cloud/shared/pgmigrate",

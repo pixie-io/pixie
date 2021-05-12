@@ -22,7 +22,7 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/profile/profileenv",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
-        "//src/cloud/project_manager/projectmanagerpb:service_go_proto",
+        "//src/cloud/project_manager/projectmanagerpb:service_pl_go_proto",
         "//src/shared/services",
         "//src/shared/services/env",
         "@com_github_spf13_pflag//:pflag",

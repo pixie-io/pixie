@@ -25,7 +25,7 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/auth/authenv",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
-        "//src/cloud/profile/profilepb:service_go_proto",
+        "//src/cloud/profile/profilepb:service_pl_go_proto",
         "//src/shared/services",
         "//src/shared/services/env",
         "@com_github_spf13_pflag//:pflag",

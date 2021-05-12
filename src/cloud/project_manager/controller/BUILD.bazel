@@ -24,7 +24,7 @@ go_library(
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/cloud/project_manager/datastore",
-        "//src/cloud/project_manager/projectmanagerpb:service_go_proto",
+        "//src/cloud/project_manager/projectmanagerpb:service_pl_go_proto",
         "//src/utils",
         "@com_github_gofrs_uuid//:uuid",
         "@org_golang_google_grpc//codes",
@@ -38,7 +38,7 @@ go_test(
     embed = [":controller"],
     deps = [
         "//src/cloud/project_manager/datastore",
-        "//src/cloud/project_manager/projectmanagerpb:service_go_proto",
+        "//src/cloud/project_manager/projectmanagerpb:service_pl_go_proto",
         "//src/utils",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_stretchr_testify//assert",

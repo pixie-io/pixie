@@ -22,7 +22,7 @@ go_library(
     importpath = "px.dev/pixie/src/shared/services/authcontext",
     visibility = ["//src:__subpackages__"],
     deps = [
-        "//src/shared/services/jwtpb:jwt_go_proto",
+        "//src/shared/services/jwtpb:jwt_pl_go_proto",
         "//src/shared/services/utils",
         "@com_github_dgrijalva_jwt_go_v4//:jwt-go",
         "@com_github_gofrs_uuid//:uuid",
@@ -34,7 +34,7 @@ go_test(
     srcs = ["context_test.go"],
     embed = [":authcontext"],
     deps = [
-        "//src/shared/services/jwtpb:jwt_go_proto",
+        "//src/shared/services/jwtpb:jwt_pl_go_proto",
         "//src/shared/services/utils",
         "//src/utils/testingutils",
         "@com_github_stretchr_testify//assert",

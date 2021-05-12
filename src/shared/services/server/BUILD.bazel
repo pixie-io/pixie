@@ -49,7 +49,7 @@ go_test(
     embed = [":server"],
     deps = [
         "//src/shared/services/env",
-        "//src/shared/services/testproto:ping_go_proto",
+        "//src/shared/services/testproto:ping_pl_go_proto",
         "//src/utils/testingutils",
         "@com_github_spf13_viper//:viper",
         "@com_github_stretchr_testify//assert",

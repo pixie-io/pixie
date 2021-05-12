@@ -29,7 +29,7 @@ go_library(
         "//src/utils",
         "//src/utils/pbutils",
         "//src/vizier/services/certmgr/certmgrenv",
-        "//src/vizier/services/certmgr/certmgrpb:service_go_proto",
+        "//src/vizier/services/certmgr/certmgrpb:service_pl_go_proto",
         "//src/vizier/utils/messagebus",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_nats_io_nats_go//:nats_go",
@@ -48,7 +48,7 @@ go_test(
     srcs = ["server_test.go"],
     embed = [":controller"],
     deps = [
-        "//src/vizier/services/certmgr/certmgrpb:service_go_proto",
+        "//src/vizier/services/certmgr/certmgrpb:service_pl_go_proto",
         "//src/vizier/services/certmgr/controller/mock",
         "@com_github_gofrs_uuid//:uuid",
         "@com_github_golang_mock//gomock",

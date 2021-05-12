@@ -14,11 +14,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
-load("@rules_proto//proto:defs.bzl", "proto_library")
+load("//bazel:proto_compile.bzl", "pl_go_proto_library", "pl_proto_library")
 
-proto_library(
-    name = "service_proto",
+pl_proto_library(
+    name = "service_pl_proto",
     srcs = ["service.proto"],
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
@@ -27,14 +26,12 @@ proto_library(
     ],
 )
 
-go_proto_library(
-    name = "service_go_proto",
-    compilers = ["@io_bazel_rules_go//proto:gogoslick_grpc"],
+pl_go_proto_library(
+    name = "service_pl_go_proto",
     importpath = "px.dev/pixie/src/cloud/profile/profilepb",
-    proto = ":service_proto",
+    proto = ":service_pl_proto",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
-        "@com_github_gogo_protobuf//gogoproto:go_default_library",
     ],
 )

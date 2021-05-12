@@ -30,7 +30,7 @@ go_library(
     importpath = "px.dev/pixie/src/utils/testingutils",
     visibility = ["//src:__subpackages__"],
     deps = [
-        "//src/shared/services/jwtpb:jwt_go_proto",
+        "//src/shared/services/jwtpb:jwt_pl_go_proto",
         "//src/shared/services/utils",
         "@com_github_cenkalti_backoff_v3//:backoff",
         "@com_github_dgrijalva_jwt_go_v4//:jwt-go",
