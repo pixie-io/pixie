@@ -81,6 +81,12 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "unix_socket_test",
+    srcs = ["unix_socket_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
     name = "socket_info_test",
     srcs = ["socket_info_test.cc"],
     data = ["//src/common/system/testdata:proc_fs"],
