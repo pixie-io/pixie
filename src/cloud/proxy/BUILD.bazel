@@ -49,13 +49,24 @@ container_layer(
     ],
 )
 
+container_layer(
+    name = "entrypoint",
+    directory = "/scripts",
+    files = [
+        "entrypoint.sh",
+    ],
+)
+
 container_image(
     name = "proxy_prod_server_image",
     base = "@openresty//image",
+    cmd = ["/scripts/entrypoint.sh"],
+    entrypoint = ["/bin/bash"],
     layers = [
         ":conf",
         ":ui_assets",
         ":installer",
+        ":entrypoint",
     ],
     visibility = [
         "//k8s:__subpackages__",
@@ -66,8 +77,11 @@ container_image(
 container_image(
     name = "proxy_dev_server_image",
     base = "@openresty//image",
+    cmd = ["/scripts/entrypoint.sh"],
+    entrypoint = ["/bin/bash"],
     layers = [
         ":conf",
+        ":entrypoint",
     ],
     visibility = [
         "//k8s:__subpackages__",
