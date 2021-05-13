@@ -120,6 +120,8 @@ message VizierHeartbeat {
   int32 num_nodes = 11;
   // The total number of  nodes on the cluster that have pems.
   int32 num_instrumented_nodes = 12;
+  // Whether autoupdate is disabled/enabled.
+  bool disable_auto_update = 13;
 }
 
 // TODO(nserrino), PP-2512: Deprecate and replace with vizierpb's VizierPodStatus,
