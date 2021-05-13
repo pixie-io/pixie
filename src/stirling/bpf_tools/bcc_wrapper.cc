@@ -186,6 +186,15 @@ Status BCCWrapper::AttachKProbe(const KProbeSpec& probe) {
   return Status::OK();
 }
 
+Status BCCWrapper::AttachTracepoint(const TracepointSpec& probe) {
+  VLOG(1) << "Deploying tracepoint: " << probe.ToString();
+
+  PL_RETURN_IF_ERROR(bpf_.attach_tracepoint(probe.tracepoint, probe.probe_fn));
+  tracepoints_.push_back(probe);
+  ++num_attached_tracepoints_;
+  return Status::OK();
+}
+
 Status BCCWrapper::AttachUProbe(const UProbeSpec& probe) {
   VLOG(1) << "Deploying uprobe: " << probe.ToString();
   // TODO(oazizi): Natively support this attach type in BCCWrapper.
@@ -280,6 +289,15 @@ Status BCCWrapper::DetachUProbe(const UProbeSpec& probe) {
   return Status::OK();
 }
 
+Status BCCWrapper::DetachTracepoint(const TracepointSpec& probe) {
+  VLOG(1) << "Detaching tracepoint " << probe.ToString();
+
+  PL_RETURN_IF_ERROR(bpf_.detach_tracepoint(probe.tracepoint));
+
+  --num_attached_tracepoints_;
+  return Status::OK();
+}
+
 void BCCWrapper::DetachKProbes() {
   for (const auto& p : kprobes_) {
     auto res = DetachKProbe(p);
@@ -294,6 +312,14 @@ void BCCWrapper::DetachUProbes() {
     LOG_IF(ERROR, !res.ok()) << res.msg();
   }
   uprobes_.clear();
+}
+
+void BCCWrapper::DetachTracepoints() {
+  for (const auto& t : tracepoints_) {
+    auto res = DetachTracepoint(t);
+    LOG_IF(ERROR, !res.ok()) << res.msg();
+  }
+  tracepoints_.clear();
 }
 
 Status BCCWrapper::OpenPerfBuffer(const PerfBufferSpec& perf_buffer, void* cb_cookie) {
@@ -388,6 +414,7 @@ void BCCWrapper::Close() {
   ClosePerfBuffers();
   DetachKProbes();
   DetachUProbes();
+  DetachTracepoints();
 }
 
 }  // namespace bpf_tools

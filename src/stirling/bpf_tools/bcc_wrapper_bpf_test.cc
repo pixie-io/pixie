@@ -222,6 +222,25 @@ TEST(BCCWrapperTest, LoadXDP) {
   ASSERT_OK(bcc_wrapper.AttachXDP("lo", "udpfilter"));
 }
 
+TEST(BCCWrapper, Tracepoint) {
+  bpf_tools::BCCWrapper bcc_wrapper;
+
+  std::string_view program = R"(
+int on_sched_process_exit(struct tracepoint__sched__sched_process_exit* args) {
+    uint64_t id = bpf_get_current_pid_tgid();
+    uint32_t tgid = id >> 32;
+    uint32_t pid = id;
+    bpf_trace_printk("process_exit: %d %d\n", tgid, pid);
+    return 0;
+}
+  )";
+
+  bpf_tools::TracepointSpec probe_spec{"sched:sched_process_exit", "on_sched_process_exit"};
+
+  ASSERT_OK(bcc_wrapper.InitBPFProgram(program));
+  ASSERT_OK(bcc_wrapper.AttachTracepoint(probe_spec));
+}
+
 }  // namespace bpf_tools
 }  // namespace stirling
 }  // namespace px

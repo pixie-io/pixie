@@ -124,6 +124,18 @@ struct UProbeSpec {
 };
 
 /**
+ * Describes a probe on a pre-defined kernel tracepoint.
+ */
+struct TracepointSpec {
+  std::string tracepoint;
+  std::string probe_fn;
+
+  std::string ToString() const {
+    return absl::Substitute("[tracepoint=$0 probe=$1]", tracepoint, probe_fn);
+  }
+};
+
+/**
  * Describes a sampling probe that triggers according to a time period.
  * This is in contrast to KProbes and UProbes, which trigger based on
  * a code event.
@@ -209,6 +221,13 @@ class BCCWrapper {
    * @return Error if probe fails to attach.
    */
   Status AttachUProbe(const UProbeSpec& probe);
+
+  /**
+   * Attach a single tracepoint
+   * @param probe Specifications of the tracepoint (attach point, trace function, etc.).
+   * @return Error if probe fails to attach.
+   */
+  Status AttachTracepoint(const TracepointSpec& probe);
 
   /**
    * Attach a single sampling probe.
@@ -321,6 +340,7 @@ class BCCWrapper {
 
   Status DetachKProbe(const KProbeSpec& probe);
   Status DetachUProbe(const UProbeSpec& probe);
+  Status DetachTracepoint(const TracepointSpec& probe);
   Status ClosePerfBuffer(const PerfBufferSpec& perf_buffer);
   Status DetachPerfEvent(const PerfEventSpec& perf_event);
   void PollPerfBuffer(std::string_view perf_buffer_name, int timeout_ms);
@@ -329,6 +349,7 @@ class BCCWrapper {
   // If any fails to detach, an error is logged, and the function continues.
   void DetachKProbes();
   void DetachUProbes();
+  void DetachTracepoints();
   void ClosePerfBuffers();
   void DetachPerfEvents();
 
@@ -337,6 +358,7 @@ class BCCWrapper {
 
   std::vector<KProbeSpec> kprobes_;
   std::vector<UProbeSpec> uprobes_;
+  std::vector<TracepointSpec> tracepoints_;
   std::vector<PerfBufferSpec> perf_buffers_;
   std::vector<PerfEventSpec> perf_events_;
 
@@ -350,6 +372,7 @@ class BCCWrapper {
   // here.
   inline static size_t num_attached_kprobes_;
   inline static size_t num_attached_uprobes_;
+  inline static size_t num_attached_tracepoints_;
   inline static size_t num_open_perf_buffers_;
   inline static size_t num_attached_perf_events_;
 };
