@@ -233,7 +233,7 @@ func (d *Datastore) DeleteOrgAndUsers(orgID uuid.UUID) error {
 }
 
 func (d *Datastore) createUserUsingTxn(txn *sqlx.Tx, userInfo *UserInfo) (uuid.UUID, error) {
-	query := `INSERT INTO users (org_id, username, first_name, last_name, email) VALUES (:org_id, :username, :first_name, :last_name, :email) RETURNING id`
+	query := `INSERT INTO users (org_id, username, first_name, last_name, email, is_approved) VALUES (:org_id, :username, :first_name, :last_name, :email, :is_approved) RETURNING id`
 	row, err := txn.NamedQuery(query, userInfo)
 	if err != nil {
 		return uuid.Nil, err

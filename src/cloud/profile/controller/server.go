@@ -202,6 +202,8 @@ func (s *Server) CreateOrgAndUser(ctx context.Context, req *profilepb.CreateOrgA
 		FirstName: req.User.FirstName,
 		LastName:  req.User.LastName,
 		Email:     req.User.Email,
+		// By default, the creating user is the owner and should be approved.
+		IsApproved: true,
 	}
 	if len(orgInfo.DomainName) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "invalid domain name")

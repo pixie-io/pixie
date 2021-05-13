@@ -380,10 +380,11 @@ func TestServer_CreateOrgAndUser_SuccessCases(t *testing.T) {
 
 			s := controller.NewServer(env, d, nil, nil)
 			exUserInfo := &datastore.UserInfo{
-				Username:  tc.req.User.Username,
-				FirstName: tc.req.User.FirstName,
-				LastName:  tc.req.User.LastName,
-				Email:     tc.req.User.Email,
+				Username:   tc.req.User.Username,
+				FirstName:  tc.req.User.FirstName,
+				LastName:   tc.req.User.LastName,
+				Email:      tc.req.User.Email,
+				IsApproved: true,
 			}
 			exOrg := &datastore.OrgInfo{
 				DomainName: tc.req.Org.DomainName,
@@ -534,10 +535,11 @@ func TestServer_CreateOrgAndUser_CreateProjectFailed(t *testing.T) {
 
 	s := controller.NewServer(env, d, nil, nil)
 	exUserInfo := &datastore.UserInfo{
-		Username:  req.User.Username,
-		FirstName: req.User.FirstName,
-		LastName:  req.User.LastName,
-		Email:     req.User.Email,
+		Username:   req.User.Username,
+		FirstName:  req.User.FirstName,
+		LastName:   req.User.LastName,
+		Email:      req.User.Email,
+		IsApproved: true,
 	}
 	exOrg := &datastore.OrgInfo{
 		DomainName: req.Org.DomainName,
