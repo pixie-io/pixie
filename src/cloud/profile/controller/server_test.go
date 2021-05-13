@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
+	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -738,40 +739,126 @@ func TestServer_UpdateUser(t *testing.T) {
 
 	d := mock_controller.NewMockDatastore(ctrl)
 
-	userID := uuid.Must(uuid.NewV4())
-	s := controller.NewServer(nil, d, nil, nil)
-
-	profilePicture := "something"
-	newProfilePicture := "new"
-	mockReply := &datastore.UserInfo{
-		ID:             userID,
-		FirstName:      "first",
-		LastName:       "last",
-		ProfilePicture: &profilePicture,
+	updateUserTest := []struct {
+		name              string
+		userID            string
+		userOrg           string
+		updatedProfilePic string
+		updatedIsApproved bool
+		shouldReject      bool
+	}{
+		{
+			name:              "user can update their own profile picture",
+			userID:            "6ba7b810-9dad-11d1-80b4-00c04fd430c9",
+			userOrg:           "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			updatedProfilePic: "new",
+			updatedIsApproved: false,
+			shouldReject:      false,
+		},
+		{
+			name:              "admin can update another's profile picture",
+			userID:            "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			userOrg:           "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			updatedProfilePic: "new",
+			updatedIsApproved: false,
+			shouldReject:      false,
+		},
+		{
+			name:              "user cannot update their own isApproved",
+			userID:            "6ba7b810-9dad-11d1-80b4-00c04fd430c9",
+			userOrg:           "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			updatedProfilePic: "new",
+			updatedIsApproved: true,
+			shouldReject:      true,
+		},
+		{
+			name:              "user cannot update user from another org",
+			userID:            "6ba7b810-9dad-11d1-80b4-00c04fd430c9",
+			userOrg:           "7ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			updatedProfilePic: "new",
+			updatedIsApproved: false,
+			shouldReject:      true,
+		},
+		{
+			name:              "user cannot update user from another org",
+			userID:            "6ba7b810-9dad-11d1-80b4-00c04fd430c9",
+			userOrg:           "7ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			updatedProfilePic: "something",
+			updatedIsApproved: true,
+			shouldReject:      true,
+		},
+		{
+			name:              "user should approve other user in org",
+			userID:            "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			userOrg:           "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			updatedProfilePic: "something",
+			updatedIsApproved: true,
+			shouldReject:      false,
+		},
 	}
 
-	mockUpdateReq := &datastore.UserInfo{
-		ID:             userID,
-		FirstName:      "first",
-		LastName:       "last",
-		ProfilePicture: &newProfilePicture,
+	for _, tc := range updateUserTest {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := CreateTestContext()
+			s := controller.NewServer(nil, d, nil, nil)
+			userID := uuid.FromStringOrNil(tc.userID)
+
+			// This is the original user's info.
+			profilePicture := "something"
+			originalUserInfo := &datastore.UserInfo{
+				ID:             userID,
+				FirstName:      "first",
+				LastName:       "last",
+				ProfilePicture: &profilePicture,
+				IsApproved:     false,
+				OrgID:          uuid.FromStringOrNil(tc.userOrg),
+			}
+
+			req := &profilepb.UpdateUserRequest{
+				ID: utils.ProtoFromUUID(userID),
+			}
+
+			mockUpdateReq := &datastore.UserInfo{
+				ID:             userID,
+				FirstName:      "first",
+				LastName:       "last",
+				ProfilePicture: &profilePicture,
+				IsApproved:     false,
+				OrgID:          uuid.FromStringOrNil(tc.userOrg),
+			}
+
+			if tc.updatedProfilePic != profilePicture {
+				req.DisplayPicture = &types.StringValue{Value: tc.updatedProfilePic}
+				mockUpdateReq.ProfilePicture = &tc.updatedProfilePic
+			}
+
+			if tc.updatedIsApproved != originalUserInfo.IsApproved {
+				req.IsApproved = &types.BoolValue{Value: tc.updatedIsApproved}
+				mockUpdateReq.IsApproved = tc.updatedIsApproved
+			}
+
+			d.EXPECT().
+				GetUser(userID).
+				Return(originalUserInfo, nil)
+
+			if !tc.shouldReject {
+				d.EXPECT().
+					UpdateUser(mockUpdateReq).
+					Return(nil)
+			}
+
+			resp, err := s.UpdateUser(ctx, req)
+
+			if !tc.shouldReject {
+				require.NoError(t, err)
+				assert.Equal(t, resp.ID, utils.ProtoFromUUID(userID))
+				assert.Equal(t, resp.ProfilePicture, tc.updatedProfilePic)
+				assert.Equal(t, resp.IsApproved, tc.updatedIsApproved)
+			} else {
+				assert.NotNil(t, err)
+			}
+		})
 	}
-
-	d.EXPECT().
-		GetUser(userID).
-		Return(mockReply, nil)
-
-	d.EXPECT().
-		UpdateUser(mockUpdateReq).
-		Return(nil)
-
-	resp, err := s.UpdateUser(
-		context.Background(),
-		&profilepb.UpdateUserRequest{ID: utils.ProtoFromUUID(userID), ProfilePicture: "new"})
-
-	require.NoError(t, err)
-	assert.Equal(t, resp.ID, utils.ProtoFromUUID(userID))
-	assert.Equal(t, resp.ProfilePicture, "new")
 }
 
 func TestServer_GetUserSettings(t *testing.T) {

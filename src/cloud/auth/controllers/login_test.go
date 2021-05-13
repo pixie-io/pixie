@@ -26,6 +26,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go/v4"
 	"github.com/gofrs/uuid"
+	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
@@ -106,7 +107,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 	mockProfile.EXPECT().
 		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
 			ID:             userPb,
-			ProfilePicture: "something",
+			DisplayPicture: &types.StringValue{Value: "something"},
 		}).
 		Return(nil, nil)
 
@@ -500,7 +501,7 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 	mockProfile.EXPECT().
 		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
 			ID:             userPb,
-			ProfilePicture: "",
+			DisplayPicture: &types.StringValue{Value: ""},
 		}).
 		Return(nil, nil)
 
@@ -585,7 +586,7 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 	mockProfile.EXPECT().
 		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
 			ID:             userPb,
-			ProfilePicture: "",
+			DisplayPicture: &types.StringValue{Value: ""},
 		}).
 		Return(nil, nil)
 
@@ -1276,7 +1277,7 @@ func TestServer_LoginUserForOrgMembership(t *testing.T) {
 	mockProfile.EXPECT().
 		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
 			ID:             userPb,
-			ProfilePicture: "",
+			DisplayPicture: &types.StringValue{Value: ""},
 		}).
 		Return(nil, nil)
 

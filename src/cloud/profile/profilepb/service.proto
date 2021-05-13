@@ -23,6 +23,7 @@ package px.services;
 option go_package = "profilepb";
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "google/protobuf/wrappers.proto";
 import "src/api/proto/uuidpb/uuid.proto";
 
 // Profile service tracks the user and organization profile information.
@@ -115,7 +116,11 @@ message GetOrgsResponse {
 message UpdateUserRequest {
   // The ID of the user.
   px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
-  string profile_picture = 2;
+  google.protobuf.StringValue display_picture = 3;
+  google.protobuf.BoolValue is_approved = 4;
+  // This used to be `profile_picture` which has been replaced with `display_picture`
+  // which correctly uses google's StringValues.
+  reserved 2;
 }
 
 // A request to get the user settings for a particular user.

@@ -302,13 +302,14 @@ func TestDatastore(t *testing.T) {
 
 		userID := "123e4567-e89b-12d3-a456-426655440001"
 		profilePicture := "http://somepicture"
-		err := d.UpdateUser(&datastore.UserInfo{ID: uuid.FromStringOrNil(userID), FirstName: "first", LastName: "last", ProfilePicture: &profilePicture})
+		err := d.UpdateUser(&datastore.UserInfo{ID: uuid.FromStringOrNil(userID), FirstName: "first", LastName: "last", ProfilePicture: &profilePicture, IsApproved: true})
 		require.NoError(t, err)
 
 		userInfoFetched, err := d.GetUser(uuid.FromStringOrNil(userID))
 		require.NoError(t, err)
 		require.NotNil(t, userInfoFetched)
 		assert.Equal(t, "http://somepicture", *userInfoFetched.ProfilePicture)
+		assert.Equal(t, true, userInfoFetched.IsApproved)
 	})
 
 	t.Run("Get user settings", func(t *testing.T) {

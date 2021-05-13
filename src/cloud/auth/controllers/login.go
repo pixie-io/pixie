@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
+	"github.com/gogo/protobuf/types"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -153,7 +154,7 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 
 	// Update user's profile photo.
 	upb := utils.ProtoFromUUIDStrOrNil(userInfo.PLUserID)
-	_, err = pc.UpdateUser(ctx, &profilepb.UpdateUserRequest{ID: upb, ProfilePicture: userInfo.Picture})
+	_, err = pc.UpdateUser(ctx, &profilepb.UpdateUserRequest{ID: upb, DisplayPicture: &types.StringValue{Value: userInfo.Picture}})
 	if err != nil {
 		return nil, err
 	}

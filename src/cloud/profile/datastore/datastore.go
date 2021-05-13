@@ -291,7 +291,7 @@ func (d *Datastore) GetUsersInOrg(orgID uuid.UUID) ([]*UserInfo, error) {
 
 // UpdateUser updates the user in the database.
 func (d *Datastore) UpdateUser(userInfo *UserInfo) error {
-	query := `UPDATE users SET profile_picture = :profile_picture WHERE id = :id`
+	query := `UPDATE users SET profile_picture = :profile_picture, is_approved = :is_approved WHERE id = :id`
 	row, err := d.db.NamedQuery(query, userInfo)
 	if err != nil {
 		return err
