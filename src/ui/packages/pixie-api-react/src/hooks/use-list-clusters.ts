@@ -17,12 +17,9 @@
  */
 
 import { useQuery } from '@apollo/client/react';
-import { WatchQueryFetchPolicy } from '@apollo/client';
 import { CLUSTER_QUERIES, GQLClusterInfo } from '@pixie-labs/api';
 // noinspection ES6PreferShortImport
 import { ImmutablePixieQueryResult } from '../utils/types';
-
-let loadedAtLeastOnce = false;
 
 /**
  * Retrieves a listing of currently-available clusters to run Pixie scripts on.
@@ -32,16 +29,12 @@ let loadedAtLeastOnce = false;
  * const [clusters, loading, error] = useListClusters();
  * ```
  */
-export function useListClusters(refresh = false): ImmutablePixieQueryResult<GQLClusterInfo[]> {
-  let fetchPolicy: WatchQueryFetchPolicy = loadedAtLeastOnce ? undefined : 'cache-and-network';
-  if (refresh) fetchPolicy = 'network-only';
+export function useListClusters(): ImmutablePixieQueryResult<GQLClusterInfo[]> {
   // TODO(nick): This doesn't get the entire GQLClusterInfo, nor does useClusterControlPlanePods. Use Pick<...>.
   const { data, loading, error } = useQuery<{ clusters: GQLClusterInfo[] }>(
     CLUSTER_QUERIES.LIST_CLUSTERS,
-    { fetchPolicy },
+    { pollInterval: 2500, fetchPolicy: 'network-only' },
   );
-
-  if (!loadedAtLeastOnce && !loading && !error) loadedAtLeastOnce = true;
 
   return [data?.clusters, loading, error];
 }

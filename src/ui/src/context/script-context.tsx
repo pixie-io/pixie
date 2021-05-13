@@ -122,16 +122,15 @@ const ScriptContextProvider: React.FC = ({ children }) => {
   const { editorPanelOpen } = React.useContext(LayoutContext);
   const showSnackbar = useSnackbar();
 
-  const entity = React.useMemo(() => matchLiveViewEntity(location.pathname), [location.pathname]);
+  const entity = matchLiveViewEntity(location.pathname);
   const [liveViewPage, setLiveViewPage] = React.useState<LiveViewPage>(entity.page);
   const [visEditorText, setVisEditorText] = React.useState<string>(null);
   const [pxlEditorText, setPxlEditorText] = React.useState<string>(null);
 
   const [cancelExecution, setCancelExecution] = React.useState<() => void>();
 
-  // Args that aren't part of an entity. For hooks depending on this frequently-rebuilt object, use the serialized form.
+  // Args that are not part of an entity.
   const [args, setArgs] = useSessionStorage<Arguments | null>(LIVE_VIEW_SCRIPT_ARGS_KEY, entity.params);
-  const serializedArgs = React.useMemo(() => JSON.stringify(args), [args]);
 
   const [pxl, setPxl] = useSessionStorage(LIVE_VIEW_PIXIE_SCRIPT_KEY, '');
   const [id, setId] = useSessionStorage(LIVE_VIEW_SCRIPT_ID_KEY,
@@ -152,7 +151,7 @@ const ScriptContextProvider: React.FC = ({ children }) => {
     return emptyVis();
   });
 
-  const parseVisOrShowError = React.useMemo(() => (json: string): Vis | null => {
+  const parseVisOrShowError = (json: string): Vis | null => {
     if (!json || !json.trim().length) {
       return emptyVis();
     }
@@ -162,18 +161,17 @@ const ScriptContextProvider: React.FC = ({ children }) => {
     }
     setResults({ tables: {}, error: new VizierQueryError('vis', 'Error parsing VisSpec') });
     return null;
-  }, [setResults]);
+  };
 
-  const argsForVisOrShowError = React.useMemo(() => (visIn: Vis, argsIn: Arguments, scriptId?: string): Arguments => {
-    const argValueErr = validateArgValues(visIn, argsIn);
+  const argsForVisOrShowError = (visToUse: Vis, argsToUse: Arguments, scriptId?: string): Arguments => {
+    const argValueErr = validateArgValues(visToUse, argsToUse);
     if (argValueErr) {
       setResults({ tables: {}, error: argValueErr });
       return null;
     }
 
-    return argsForVis(visIn, argsIn, scriptId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return argsForVis(visToUse, argsToUse, scriptId);
+  };
 
   React.useEffect(() => {
     const newArgs = argsForVis(vis, args);
@@ -181,8 +179,7 @@ const ScriptContextProvider: React.FC = ({ children }) => {
     if (!argsEquals(newArgs, args)) {
       setArgs(newArgs);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vis, serializedArgs, setArgs]);
+  }, [vis, args, setArgs]);
 
   // title is dependent on whether or not we are in an entity page.
   const title = React.useMemo(() => {
@@ -191,8 +188,7 @@ const ScriptContextProvider: React.FC = ({ children }) => {
       entityParams, selectedClusterPrettyName);
     document.title = newTitle;
     return newTitle;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [liveViewPage, scripts, id, serializedArgs, selectedClusterPrettyName]);
+  }, [liveViewPage, scripts, id, args, selectedClusterPrettyName]);
 
   // Logic to set cluster
 
@@ -225,7 +221,7 @@ const ScriptContextProvider: React.FC = ({ children }) => {
     urlParams.setPathname(toEntityPathname(entityURL));
     // DO NOT ADD clearResults() it destroys the UI.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedClusterName, liveViewPage, serializedArgs]);
+  }, [selectedClusterName, liveViewPage, args]);
 
   React.useEffect(() => {
     const scriptID = liveViewPage === LiveViewPage.Default ? id : '';
@@ -237,24 +233,21 @@ const ScriptContextProvider: React.FC = ({ children }) => {
   React.useEffect(() => {
     const nonEntityArgs = getNonEntityParams(liveViewPage, args);
     urlParams.setArgs(nonEntityArgs);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [liveViewPage, serializedArgs]);
+  }, [liveViewPage, args]);
 
   // Logic to update vis spec.
 
   // Note that this function does not update args, so it should only be called
   // when variables will not be modified (such as for layouts).
-  const setVis = React.useMemo(() => (newVis: Vis) => {
+  const setVis = (newVis: Vis) => {
     const visToSet = newVis ?? emptyVis();
     setVisJSONBase(toJSON(visToSet));
     setVisBase(visToSet);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  };
 
   // Logic to update the full script
-  const setScript = React.useMemo(() => (
-    newVis: Vis, newPxl: string, newArgs: Arguments, newID: string, newLiveViewPage?: LiveViewPage,
-  ) => {
+  const setScript = (newVis: Vis, newPxl: string, newArgs: Arguments, newID: string,
+    newLiveViewPage?: LiveViewPage) => {
     setVis(newVis);
     setPxl(newPxl);
     setArgs(newArgs);
@@ -262,15 +255,15 @@ const ScriptContextProvider: React.FC = ({ children }) => {
     if (newLiveViewPage != null) {
       setLiveViewPage(newLiveViewPage);
     }
-  }, [setArgs, setId, setPxl, setVis]);
+  };
 
   // Logic to commit the URL to the history.
-  const commitURL = React.useMemo(() => (page: LiveViewPage, urlId: string, urlArgs: Arguments) => {
+  const commitURL = (page: LiveViewPage, urlId: string, urlArgs: Arguments) => {
     // Only show the script as a query arg when we are not on an entity page.
     const scriptId = page === LiveViewPage.Default ? (urlId || '') : '';
     const nonEntityArgs = getNonEntityParams(page, urlArgs);
     urlParams.commitAll(scriptId, '', nonEntityArgs);
-  }, []);
+  };
 
   const execute = (execArgs: ExecuteArguments) => {
     cancelExecution?.();
@@ -570,7 +563,7 @@ const ScriptContextProvider: React.FC = ({ children }) => {
   };
 
   // Parses the editor and returns an ExecuteArguments object.
-  const getExecArgsFromEditor = React.useCallback((): ExecuteArguments => {
+  const getExecArgsFromEditor = (): ExecuteArguments => {
     let execArgs: ExecuteArguments = {
       pxl,
       vis,
@@ -608,54 +601,44 @@ const ScriptContextProvider: React.FC = ({ children }) => {
       return null;
     }
     return execArgs;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    serializedArgs, argsForVisOrShowError, editorPanelOpen, id, liveViewPage,
-    parseVisOrShowError, pxl, pxlEditorText, vis, visEditorText,
-  ]);
+  };
 
-  const saveEditorAndExecute = React.useMemo(() => () => {
+  const saveEditorAndExecute = () => {
     const execArgs = getExecArgsFromEditor();
     if (execArgs) {
       setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);
       execute(execArgs);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const context = React.useMemo(() => ({
-    liveViewPage,
-    args,
-    setArgs,
-    pxlEditorText,
-    visEditorText,
-    setPxlEditorText,
-    setVisEditorText,
-    vis,
-    setVis,
-    visJSON,
-    parseVisOrShowError,
-    pxl,
-    setPxl,
-    title,
-    id,
-    setScript,
-    execute,
-    saveEditorAndExecute,
-    cancelExecution,
-    setCancelExecution,
-
-    argsForVisOrShowError,
-    readyToExecute,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [
-    serializedArgs, argsForVisOrShowError, cancelExecution, id, liveViewPage, parseVisOrShowError,
-    pxl, pxlEditorText, saveEditorAndExecute, setArgs, setPxl,
-    setScript, setVis, title, visEditorText, visJSON, readyToExecute,
-  ]);
+  };
 
   return (
-    <ScriptContext.Provider value={context}>
+    <ScriptContext.Provider
+      value={{
+        liveViewPage,
+        args,
+        setArgs,
+        pxlEditorText,
+        visEditorText,
+        setPxlEditorText,
+        setVisEditorText,
+        vis,
+        setVis,
+        visJSON,
+        parseVisOrShowError,
+        pxl,
+        setPxl,
+        title,
+        id,
+        setScript,
+        execute,
+        saveEditorAndExecute,
+        cancelExecution,
+        setCancelExecution,
+
+        argsForVisOrShowError,
+        readyToExecute,
+      }}
+    >
       {children}
     </ScriptContext.Provider>
   );

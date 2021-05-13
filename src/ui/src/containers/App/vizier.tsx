@@ -76,10 +76,7 @@ const ClusterBanner = () => {
 const useSelectedCluster = () => {
   const [clusters, loading, error] = useListClusters();
   const { selectedCluster } = React.useContext(ClusterContext);
-  const cluster = React.useMemo(
-    () => clusters?.find((c) => c.id === selectedCluster),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [selectedCluster, loading]);
+  const cluster = clusters?.find((c) => c.id === selectedCluster);
   return {
     loading, cluster, numClusters: clusters?.length ?? 0, error,
   };
@@ -167,7 +164,7 @@ export default function WithClusterBanner(): React.ReactElement {
 
   const cluster: Cluster = (clusterId && clusters?.find((c) => c.id === clusterId)) || selectCluster(clusters ?? []);
 
-  const clusterContext = React.useMemo(() => ({
+  const context = React.useMemo(() => ({
     selectedCluster: clusterId,
     selectedClusterName: cluster?.clusterName,
     selectedClusterPrettyName: cluster?.prettyClusterName,
@@ -178,8 +175,7 @@ export default function WithClusterBanner(): React.ReactElement {
       const newClusterId = foundId || clusterId;
       setClusterId(newClusterId);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [clusterId, cluster?.clusterUID, setClusterId, loadingClusters]);
+  }), [clusterId, cluster?.clusterName, cluster?.prettyClusterName, cluster?.clusterUID, setClusterId, clusters]);
 
   const userEmail = user?.email;
   const userOrg = user?.orgName;
@@ -221,7 +217,7 @@ export default function WithClusterBanner(): React.ReactElement {
   }
 
   return (
-    <ClusterContext.Provider value={clusterContext}>
+    <ClusterContext.Provider value={context}>
       <UserContext.Provider value={userContext}>
         <ClusterBanner />
         <Switch>

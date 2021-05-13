@@ -55,7 +55,7 @@ describe('useListClusters hook for fetching available clusters', () => {
     happyMocks: good,
     sadMocks: bad,
     useHookUnderTest: () => {
-      const [clusters, loading, error] = useListClusters(true);
+      const [clusters, loading, error] = useListClusters();
       return { payload: clusters, loading, error };
     },
     getPayloadFromMock: (mock) => (mock as typeof good[0]).result.data.clusters,

@@ -67,25 +67,20 @@ export const LayoutContextProvider: React.FC = ({ children }) => {
     }
   }, [isMobile, setEditorPanelOpen]);
 
-  /* eslint-disable react-hooks/exhaustive-deps */
-  const context = React.useMemo(() => ({
-    editorSplitsSizes,
-    editorPanelOpen,
-    setEditorSplitSizes,
-    setEditorPanelOpen,
-    dataDrawerSplitsSizes,
-    dataDrawerOpen,
-    setDataDrawerSplitsSizes,
-    setDataDrawerOpen,
-    isMobile,
-  }), [
-    editorSplitsSizes[0], editorSplitsSizes[1], editorPanelOpen, setEditorSplitSizes, setEditorPanelOpen,
-    dataDrawerSplitsSizes[0], dataDrawerSplitsSizes[1], setDataDrawerOpen, isMobile,
-  ]);
-  /* eslint-enable react-hooks/exhaustive-deps */
-
   return (
-    <LayoutContext.Provider value={context}>
+    <LayoutContext.Provider
+      value={{
+        editorSplitsSizes,
+        editorPanelOpen,
+        setEditorSplitSizes,
+        setEditorPanelOpen,
+        dataDrawerSplitsSizes,
+        dataDrawerOpen,
+        setDataDrawerSplitsSizes,
+        setDataDrawerOpen,
+        isMobile,
+      }}
+    >
       {children}
     </LayoutContext.Provider>
   );
