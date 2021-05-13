@@ -302,22 +302,26 @@ func TestServer_UpdateVizierConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, infoResp)
 	assert.Equal(t, infoResp.Config.PassthroughEnabled, true)
+}
 
-	resp, err = s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
+func TestServer_UpdateVizierConfig_AutoUpdate(t *testing.T) {
+	mustLoadTestData(db)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
+
+	s := controller.New(db, "test", mockDNSClient, nil, nil)
+	vzIDpb := utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001")
+
+	_, err := s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
 		VizierID: vzIDpb,
 		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
 			AutoUpdateEnabled: &types.BoolValue{Value: false},
 		},
 	})
-	require.NoError(t, err)
-	require.NotNil(t, resp)
-
-	// Check that the value was actually updated.
-	infoResp, err = s.GetVizierInfo(CreateTestContext(), vzIDpb)
-	require.NoError(t, err)
-	require.NotNil(t, infoResp)
-	assert.Equal(t, infoResp.Config.PassthroughEnabled, true)
-	assert.Equal(t, infoResp.Config.AutoUpdateEnabled, false)
+	require.NotNil(t, err)
+	assert.Equal(t, status.Code(err), codes.InvalidArgument)
 }
 
 func TestServer_UpdateVizierConfig_WrongOrg(t *testing.T) {

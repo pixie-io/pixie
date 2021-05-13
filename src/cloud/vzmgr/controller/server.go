@@ -528,7 +528,7 @@ func (s *Server) UpdateVizierConfig(ctx context.Context, req *cvmsgspb.UpdateViz
 	}
 
 	if req.ConfigUpdate.AutoUpdateEnabled != nil {
-		auEnabled = req.ConfigUpdate.AutoUpdateEnabled.Value
+		return nil, status.Error(codes.InvalidArgument, "Deprecated. Please configure auto-update through Vizier pl-cluster-config ConfigMap.")
 	}
 
 	query := `

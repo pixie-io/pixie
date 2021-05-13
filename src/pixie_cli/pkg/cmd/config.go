@@ -147,7 +147,8 @@ var UpdateConfigCmd = &cobra.Command{
 		err = l.UpdateVizierConfig(req)
 		if err != nil {
 			cliUtils.Errorf("Error updating config: %s", err.Error())
+		} else {
+			cliUtils.Info("Successfully updated config")
 		}
-		cliUtils.Info("Successfully updated config")
 	},
 }
