@@ -24,13 +24,13 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/services"
-	"px.dev/pixie/src/utils/pbutils"
 	"px.dev/pixie/src/vizier/messages/messagespb"
 )
 
@@ -72,8 +72,8 @@ func handleV2CMessage(m *nats.Msg) {
 		log.Errorf("Invalid msg: %s", proto.MarshalTextString(pb))
 	}
 
-	var dyn pbutils.DynamicAny
-	if err := pbutils.UnmarshalAny(pb.Msg, &dyn); err != nil {
+	var dyn types.DynamicAny
+	if err := types.UnmarshalAny(pb.Msg, &dyn); err != nil {
 		log.WithError(err).Error("Failed to unmarshal inner message.")
 		return
 	}

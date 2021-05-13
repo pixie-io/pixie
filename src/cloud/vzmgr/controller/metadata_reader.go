@@ -26,6 +26,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/types"
 	"github.com/jmoiron/sqlx"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/stan.go"
@@ -37,7 +38,6 @@ import (
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/k8s/metadatapb"
 	"px.dev/pixie/src/utils"
-	"px.dev/pixie/src/utils/pbutils"
 )
 
 // The topic on which to make metadata requests.
@@ -296,7 +296,7 @@ func readMetadataUpdate(data []byte) (*metadatapb.ResourceUpdate, error) {
 		return nil, err
 	}
 	updateMsg := &metadatapb.ResourceUpdate{}
-	err = pbutils.UnmarshalAny(v2cMsg.Msg, updateMsg)
+	err = types.UnmarshalAny(v2cMsg.Msg, updateMsg)
 	if err != nil {
 		log.WithError(err).Error("Could not unmarshal metadata update message")
 		return nil, err
@@ -311,7 +311,7 @@ func readMetadataResponse(data []byte) (*metadatapb.MissingK8SMetadataResponse, 
 		return nil, err
 	}
 	updates := &metadatapb.MissingK8SMetadataResponse{}
-	err = pbutils.UnmarshalAny(v2cMsg.Msg, updates)
+	err = types.UnmarshalAny(v2cMsg.Msg, updates)
 	if err != nil {
 		log.WithError(err).Error("Could not unmarshal metadata response message")
 		return nil, err
@@ -320,7 +320,7 @@ func readMetadataResponse(data []byte) (*metadatapb.MissingK8SMetadataResponse, 
 }
 
 func wrapMetadataRequest(vizierID uuid.UUID, req *metadatapb.MissingK8SMetadataRequest) ([]byte, error) {
-	reqAnyMsg, err := pbutils.MarshalAny(req)
+	reqAnyMsg, err := types.MarshalAny(req)
 	if err != nil {
 		return nil, err
 	}

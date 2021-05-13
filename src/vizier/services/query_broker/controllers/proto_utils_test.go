@@ -23,6 +23,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -37,7 +38,6 @@ import (
 	"px.dev/pixie/src/shared/types/typespb"
 	"px.dev/pixie/src/table_store/schemapb"
 	"px.dev/pixie/src/utils"
-	"px.dev/pixie/src/utils/pbutils"
 	"px.dev/pixie/src/vizier/services/query_broker/controllers"
 )
 
@@ -287,7 +287,7 @@ func TestCompilerErrorStatusToVizierStatus(t *testing.T) {
 	compilerEG := &compilerpb.CompilerErrorGroup{
 		Errors: errs,
 	}
-	compilerEGAny, err := pbutils.MarshalAny(compilerEG)
+	compilerEGAny, err := types.MarshalAny(compilerEG)
 	require.NoError(t, err)
 	sv := &statuspb.Status{
 		Context: compilerEGAny,

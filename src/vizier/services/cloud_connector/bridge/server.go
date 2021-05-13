@@ -46,7 +46,6 @@ import (
 	"px.dev/pixie/src/cloud/vzconn/vzconnpb"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/utils"
-	"px.dev/pixie/src/utils/pbutils"
 	"px.dev/pixie/src/vizier/utils/messagebus"
 )
 
@@ -403,7 +402,7 @@ func (s *Bridge) RunStream() {
 
 func (s *Bridge) handleUpdateMessage(msg *types.Any) error {
 	pb := &cvmsgspb.UpdateOrInstallVizierRequest{}
-	err := pbutils.UnmarshalAny(msg, pb)
+	err := types.UnmarshalAny(msg, pb)
 	if err != nil {
 		log.WithError(err).Error("Could not unmarshal update req message")
 		return err
@@ -444,7 +443,7 @@ func (s *Bridge) handleUpdateMessage(msg *types.Any) error {
 	m := cvmsgspb.UpdateOrInstallVizierResponse{
 		UpdateStarted: true,
 	}
-	reqAnyMsg, err := pbutils.MarshalAny(&m)
+	reqAnyMsg, err := types.MarshalAny(&m)
 	if err != nil {
 		return err
 	}
@@ -478,7 +477,7 @@ func (s *Bridge) sendPTStatusMessage(reqID string, code codes.Code, message stri
 		},
 	}
 	// Wrap message in V2C message.
-	reqAnyMsg, err := pbutils.MarshalAny(resp)
+	reqAnyMsg, err := types.MarshalAny(resp)
 	if err != nil {
 		log.WithError(err).Info("Failed to marshal any")
 		return
@@ -503,7 +502,7 @@ func (s *Bridge) sendDebugStreamResponse(reqID string, resps []*cvmsgspb.V2CAPIS
 
 	for _, resp := range resps {
 		// Wrap message in V2C message.
-		reqAnyMsg, err := pbutils.MarshalAny(resp)
+		reqAnyMsg, err := types.MarshalAny(resp)
 		if err != nil {
 			log.WithError(err).Info("Failed to marshal any")
 			return err
@@ -617,7 +616,7 @@ func (s *Bridge) doRegistrationHandshake(stream vzconnpb.VZConnService_NATSBridg
 				log.Error("Unexpected message type while waiting for ACK")
 			}
 			registerAck := &cvmsgspb.RegisterVizierAck{}
-			err = pbutils.UnmarshalAny(resp.Msg, registerAck)
+			err = types.UnmarshalAny(resp.Msg, registerAck)
 			if err != nil {
 				return err
 			}
@@ -882,7 +881,7 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 
 			if bridgeMsg.Topic == "VizierPassthroughRequest" {
 				pb := &cvmsgspb.C2VAPIStreamRequest{}
-				err := pbutils.UnmarshalAny(bridgeMsg.Msg, pb)
+				err := types.UnmarshalAny(bridgeMsg.Msg, pb)
 				if err != nil {
 					log.WithError(err).Error("Could not unmarshal c2v stream req message")
 					return err
@@ -983,7 +982,7 @@ func (s *Bridge) publishPTBridgeCh(topic string, msg *types.Any) error {
 }
 
 func (s *Bridge) publishProtoToBridgeCh(topic string, msg proto.Message) error {
-	anyMsg, err := pbutils.MarshalAny(msg)
+	anyMsg, err := types.MarshalAny(msg)
 	if err != nil {
 		return err
 	}
@@ -992,7 +991,7 @@ func (s *Bridge) publishProtoToBridgeCh(topic string, msg proto.Message) error {
 }
 
 func (s *Bridge) publishBridgeSync(stream vzconnpb.VZConnService_NATSBridgeClient, topic string, msg proto.Message) error {
-	anyMsg, err := pbutils.MarshalAny(msg)
+	anyMsg, err := types.MarshalAny(msg)
 	if err != nil {
 		return err
 	}

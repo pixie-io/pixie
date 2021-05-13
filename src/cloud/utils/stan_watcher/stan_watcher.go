@@ -35,7 +35,6 @@ import (
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/msgbus"
-	"px.dev/pixie/src/utils/pbutils"
 	_ "px.dev/pixie/src/vizier/messages/messagespb"
 )
 
@@ -98,8 +97,8 @@ func handleMessage(subject string, data []byte, messageType string) {
 		return
 	}
 
-	var dyn pbutils.DynamicAny
-	if err := pbutils.UnmarshalAny(msg.GetMsg(), &dyn); err != nil {
+	var dyn types.DynamicAny
+	if err := types.UnmarshalAny(msg.GetMsg(), &dyn); err != nil {
 		log.WithError(err).Error("Failed to unmarshal inner message.")
 		return
 	}

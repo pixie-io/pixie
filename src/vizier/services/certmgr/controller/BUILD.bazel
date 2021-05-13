@@ -27,11 +27,11 @@ go_library(
     deps = [
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/utils",
-        "//src/utils/pbutils",
         "//src/vizier/services/certmgr/certmgrenv",
         "//src/vizier/services/certmgr/certmgrpb:service_pl_go_proto",
         "//src/vizier/utils/messagebus",
         "@com_github_gofrs_uuid//:uuid",
+        "@com_github_gogo_protobuf//types",
         "@com_github_nats_io_nats_go//:nats_go",
         "@com_github_sirupsen_logrus//:logrus",
         "@io_k8s_api//core/v1:core",

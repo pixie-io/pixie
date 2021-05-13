@@ -26,6 +26,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/stan.go"
 	"github.com/stretchr/testify/assert"
@@ -35,7 +36,6 @@ import (
 	"px.dev/pixie/src/cloud/vzmgr/controller"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/k8s/metadatapb"
-	"px.dev/pixie/src/utils/pbutils"
 	"px.dev/pixie/src/utils/testingutils"
 )
 
@@ -235,7 +235,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 					err := proto.Unmarshal(msg.Data, c2vMsg)
 					require.NoError(t, err)
 					req := &metadatapb.MissingK8SMetadataRequest{}
-					err = pbutils.UnmarshalAny(c2vMsg.Msg, req)
+					err = types.UnmarshalAny(c2vMsg.Msg, req)
 					require.NoError(t, err)
 					if len(test.missingMetadataCalls) <= batch {
 						assert.FailNow(t, "unexpected missingmetadatarequest call", req)
@@ -247,7 +247,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 
 					// Send response.
 					for _, r := range test.missingMetadataCalls[batch].responses {
-						anyUpdates, err := pbutils.MarshalAny(r)
+						anyUpdates, err := types.MarshalAny(r)
 						require.NoError(t, err)
 						v2cMsg := cvmsgspb.V2CMessage{
 							Msg: anyUpdates,
@@ -279,7 +279,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 
 				for _, update := range test.stanMetadataUpdates {
 					// Publish update to STAN channel.
-					anyInitUpdate, err := pbutils.MarshalAny(update)
+					anyInitUpdate, err := types.MarshalAny(update)
 					require.NoError(t, err)
 					v2cMsg := cvmsgspb.V2CMessage{
 						Msg: anyInitUpdate,

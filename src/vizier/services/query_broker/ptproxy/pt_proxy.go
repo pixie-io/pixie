@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -36,7 +37,6 @@ import (
 
 	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/shared/cvmsgspb"
-	"px.dev/pixie/src/utils/pbutils"
 )
 
 // PassthroughRequestChannel is the NATS channel over which stream API requests are sent.
@@ -116,7 +116,7 @@ func (s *PassThroughProxy) handleMessage(msg *nats.Msg) error {
 
 	// Determine if it is a request or cancellation.
 	req := &cvmsgspb.C2VAPIStreamRequest{}
-	err = pbutils.UnmarshalAny(c2vMsg.Msg, req)
+	err = types.UnmarshalAny(c2vMsg.Msg, req)
 	if err != nil {
 		log.WithError(err).Error("Could not unmarshal req message")
 		return err
@@ -235,7 +235,7 @@ func formatStatusMessage(reqID string, code codes.Code, message string) *cvmsgsp
 func (s *PassThroughProxy) sendMessage(reqID string, msg *cvmsgspb.V2CAPIStreamResponse) {
 	topic := fmt.Sprintf("v2c.reply-%s", reqID)
 	// Wrap message in V2C message.
-	reqAnyMsg, err := pbutils.MarshalAny(msg)
+	reqAnyMsg, err := types.MarshalAny(msg)
 	if err != nil {
 		log.WithError(err).Info("Failed to marshal any")
 		return

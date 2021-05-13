@@ -47,7 +47,6 @@ import (
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/shared/k8s/metadatapb"
 	"px.dev/pixie/src/utils"
-	"px.dev/pixie/src/utils/pbutils"
 )
 
 func TestArtifactTracker_GetArtifactList(t *testing.T) {
@@ -849,7 +848,7 @@ func TestAutocompleteService_AutocompleteField(t *testing.T) {
 }
 
 func toAny(t *testing.T, msg proto.Message) *types.Any {
-	any, err := pbutils.MarshalAny(msg)
+	any, err := types.MarshalAny(msg)
 	require.NoError(t, err)
 	return any
 }

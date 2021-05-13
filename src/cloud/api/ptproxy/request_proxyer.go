@@ -25,6 +25,7 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
@@ -35,7 +36,6 @@ import (
 	"px.dev/pixie/src/cloud/shared/vzshard"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	"px.dev/pixie/src/utils"
-	"px.dev/pixie/src/utils/pbutils"
 )
 
 var (
@@ -175,7 +175,7 @@ func (p requestProxyer) prepareVizierRequest() *cvmsgspb.C2VAPIStreamRequest {
 }
 
 func (p requestProxyer) marshallAsC2VMsg(msg proto.Message) ([]byte, error) {
-	anyPB, err := pbutils.MarshalAny(msg)
+	anyPB, err := types.MarshalAny(msg)
 	if err != nil {
 		return nil, err
 	}
@@ -262,7 +262,7 @@ func (p *requestProxyer) processNatsMsg(msg *nats.Msg) error {
 	}
 
 	resp := cvmsgspb.V2CAPIStreamResponse{}
-	err = pbutils.UnmarshalAny(v2c.Msg, &resp)
+	err = types.UnmarshalAny(v2c.Msg, &resp)
 	if err != nil {
 		log.WithError(err).Error("Failed to unmarshall response, bailing...")
 		return err

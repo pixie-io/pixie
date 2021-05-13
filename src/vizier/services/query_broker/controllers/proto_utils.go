@@ -39,7 +39,6 @@ import (
 	"px.dev/pixie/src/shared/types/typespb"
 	"px.dev/pixie/src/table_store/schemapb"
 	"px.dev/pixie/src/utils"
-	"px.dev/pixie/src/utils/pbutils"
 )
 
 var dataTypeToVizierDataType = map[typespb.DataType]vizierpb.DataType{
@@ -192,10 +191,10 @@ func StatusToVizierStatus(s *statuspb.Status) *vizierpb.Status {
 
 func getErrorsFromStatusContext(ctx *types.Any) []*vizierpb.ErrorDetails {
 	errorPB := &compilerpb.CompilerErrorGroup{}
-	if !pbutils.Is(ctx, errorPB) {
+	if !types.Is(ctx, errorPB) {
 		return nil
 	}
-	err := pbutils.UnmarshalAny(ctx, errorPB)
+	err := types.UnmarshalAny(ctx, errorPB)
 	if err != nil {
 		return nil
 	}

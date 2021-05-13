@@ -41,7 +41,6 @@ import (
 	"px.dev/pixie/src/shared/cvmsgspb"
 	jwtutils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils"
-	"px.dev/pixie/src/utils/pbutils"
 )
 
 // Updater is responsible for tracking and updating Viziers.
@@ -184,7 +183,7 @@ func (u *Updater) updateOrInstallVizier(vizierID uuid.UUID, version string, rede
 		Token:        tokenString,
 		RedeployEtcd: redeployEtcd,
 	}
-	reqAnyMsg, err := pbutils.MarshalAny(req)
+	reqAnyMsg, err := types.MarshalAny(req)
 	if err != nil {
 		return nil, err
 	}

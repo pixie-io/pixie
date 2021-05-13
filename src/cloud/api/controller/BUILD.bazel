@@ -116,7 +116,6 @@ go_test(
         "//src/shared/services/handler",
         "//src/shared/services/utils",
         "//src/utils",
-        "//src/utils/pbutils",
         "//src/utils/testingutils",
         "@com_github_dgrijalva_jwt_go_v4//:jwt-go",
         "@com_github_gofrs_uuid//:uuid",
