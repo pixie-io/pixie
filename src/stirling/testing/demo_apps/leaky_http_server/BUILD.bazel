@@ -22,3 +22,11 @@ pl_cc_binary(
     visibility = ["//src/stirling:__subpackages__"],
     deps = ["//src/common/system:cc_library"],
 )
+
+pl_cc_binary(
+    name = "pthread_server",
+    srcs = ["server.cc"],
+    defines = ["PTHREAD_IMPL"],
+    visibility = ["//src/stirling:__subpackages__"],
+    deps = ["//src/common/system:cc_library"],
+)

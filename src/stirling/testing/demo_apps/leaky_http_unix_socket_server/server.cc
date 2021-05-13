@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <pthread.h>
+
 #include <csignal>
 #include <memory>
 
@@ -37,19 +39,18 @@ char response[] =
 UnixSocket g_socket;
 
 void SignalHandler(int /* signum */) {
+  // Clean-up the filesystem...we don't want to leave trash.
   if (!g_socket.path().empty()) {
     unlink(g_socket.path().data());
   }
+
+  // To make sure we leak map entries, abort instead of exit.
+  // Otherwise, destructors will call close().
+  abort();
 }
 
-int main(int argc, char** argv) {
-  px::EnvironmentGuard env_guard(&argc, argv);
-
-  signal(SIGINT, SignalHandler);
-
-  std::string unix_socket_path =
-      absl::Substitute("/tmp/leaky_unix_sock_$0.server",
-                       std::chrono::steady_clock::now().time_since_epoch().count());
+void* RunServer(void*) {
+  std::string unix_socket_path = "/tmp/leaky_unix_sock.server";
   g_socket.BindAndListen(unix_socket_path);
 
   LOG(INFO) << absl::Substitute("Listening for connections on: $0", unix_socket_path);
@@ -71,4 +72,26 @@ int main(int argc, char** argv) {
   }
 
   g_socket.Close();
+}
+
+int main(int argc, char** argv) {
+  px::EnvironmentGuard env_guard(&argc, argv);
+
+  signal(SIGINT, SignalHandler);
+
+  // One can build this server with or without pthreads.
+  // See BUILD.bazel, where this define is controlled.
+  // We use the different versions to stress our tests.
+#ifdef PTHREAD_IMPL
+  // Create a pthread to handle the work.
+  // Note that the main thread will exit while the spawned thread lives on.
+  // This is to stress usage models for our tests.
+  pthread_t tid;
+  int err = pthread_create(&tid, nullptr, &RunServer, nullptr);
+  CHECK_EQ(err, 0);
+
+  pthread_exit(0);
+#else
+  RunServer(nullptr);
+#endif
 }

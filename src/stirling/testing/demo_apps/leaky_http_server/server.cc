@@ -16,13 +16,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <pthread.h>
+
+#include <csignal>
 #include <memory>
 
 #include "src/common/system/tcp_socket.h"
 
 #include "src/common/base/base.h"
 
-using px::system::TCPSocket;
+using ::px::system::TCPSocket;
 
 // Note that Content-Length is 1 byte extra,
 // so that the connection does not close after writing the response.
@@ -33,9 +36,13 @@ char response[] =
     "\r\n"
     "Goodbye, world!\r\n";
 
-int main(int argc, char** argv) {
-  px::EnvironmentGuard env_guard(&argc, argv);
+void SignalHandler(int /* signum */) {
+  // To make sure we leak map entries, abort instead of exit.
+  // Otherwise, destructors will call close().
+  abort();
+}
 
+void* RunServer(void*) {
   TCPSocket socket;
 
   int one = 1;
@@ -63,4 +70,26 @@ int main(int argc, char** argv) {
   }
 
   socket.Close();
+}
+
+int main(int argc, char** argv) {
+  px::EnvironmentGuard env_guard(&argc, argv);
+
+  signal(SIGINT, SignalHandler);
+
+  // One can build this server with or without pthreads.
+  // See BUILD.bazel, where this define is controlled.
+  // We use the different versions to stress our tests.
+#ifdef PTHREAD_IMPL
+  // Create a pthread to handle the work.
+  // Note that the main thread will exit while the spawned thread lives on.
+  // This is to stress usage models for our tests.
+  pthread_t tid;
+  int err = pthread_create(&tid, nullptr, &RunServer, nullptr);
+  CHECK_EQ(err, 0);
+
+  pthread_exit(0);
+#else
+  RunServer(nullptr);
+#endif
 }
