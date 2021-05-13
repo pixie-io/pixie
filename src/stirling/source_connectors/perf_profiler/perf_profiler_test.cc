@@ -99,10 +99,6 @@ class PerfProfileBPFTest : public ::testing::Test {
       sub_processes[sub_process_idx].Run(app_path, cpu_idx);
     }
 
-    // We wait until here to create the connector context, i.e. so that it
-    // finds the upids that belong to the sub-processes that we have just created.
-    ctx_ = std::make_unique<StandaloneContext>();
-
     return sub_processes;
   }
 
@@ -259,10 +255,10 @@ class PerfProfileBPFTest : public ::testing::Test {
     column_ptrs_populated_ = true;
   }
 
-  std::chrono::duration<double> RunTest() {
+  std::chrono::duration<double> RunTest(const std::chrono::seconds test_run_time) {
     constexpr std::chrono::milliseconds t_sleep = kStackTraceTableSamplingPeriod;
     const auto start_time = std::chrono::steady_clock::now();
-    const auto stop_time = start_time + kTestRunTime;
+    const auto stop_time = start_time + test_run_time;
 
     // Continuously poke Stirling TransferData() using the underlying schema periodicity;
     // break from this loop when the elapsed time exceeds the targeted run time.
@@ -297,7 +293,6 @@ class PerfProfileBPFTest : public ::testing::Test {
 
   // To reduce variance in results, we add more run-time or add sub-processes:
   static constexpr uint64_t kNumSubProcesses = 4;
-  static constexpr std::chrono::seconds kTestRunTime = std::chrono::seconds(120);
 };
 
 TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
@@ -313,14 +308,19 @@ TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
   key2x_ = "runtime.goexit;runtime.main;main.main;main.sqrtOf1e39;main.sqrt";
   key1x_ = "runtime.goexit;runtime.main;main.main;main.sqrtOf1e18;main.sqrt";
 
-  // Populated expected_stack_traces_ with the keys for this test:
+  // Populate expected_stack_traces_ with the keys for this test:
   expected_stack_traces_.insert(key2x_);
   expected_stack_traces_.insert(key1x_);
 
   // Start they toy apps as sub-processes, then,
   // for a certain amount of time (kTestRunTime), collect data using RunTest().
   auto sub_processes = StartSubProcesses<CPUPinnedBinaryRunner>(bazel_app_path, kTestIdx);
-  const std::chrono::duration<double> elapsed_time = RunTest();
+
+  // We wait until here to create the connector context, i.e. so that perf_profile_connector
+  // finds the upids that belong to the sub-processes that we have just created.
+  ctx_ = std::make_unique<StandaloneContext>();
+
+  const std::chrono::duration<double> elapsed_time = RunTest(std::chrono::seconds(120));
 
   // Pull the data into this test (as columns_) using ConsumeRecords(), and
   // find the row indices that belong to our sub-processes using GetTargetRowIdxs().
@@ -349,14 +349,19 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
   key2x_ = "__libc_start_main;main;fib52();fib(unsigned long)";
   key1x_ = "__libc_start_main;main;fib27();fib(unsigned long)";
 
-  // Populated expected_stack_traces_ with the keys for this test:
+  // Populate expected_stack_traces_ with the keys for this test:
   expected_stack_traces_.insert(key2x_);
   expected_stack_traces_.insert(key1x_);
 
   // Start they toy apps as sub-processes, then,
   // for a certain amount of time, collect data using RunTest().
   auto sub_processes = StartSubProcesses<CPUPinnedBinaryRunner>(bazel_app_path, kTestIdx);
-  const std::chrono::duration<double> elapsed_time = RunTest();
+
+  // We wait until here to create the connector context, i.e. so that perf_profile_connector
+  // finds the upids that belong to the sub-processes that we have just created.
+  ctx_ = std::make_unique<StandaloneContext>();
+
+  const std::chrono::duration<double> elapsed_time = RunTest(std::chrono::seconds(120));
 
   // Pull the data into this test (as columns_) using ConsumeRecords(), and
   // find the row indices that belong to our sub-processes using GetTargetRowIdxs().
@@ -370,6 +375,40 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
   ASSERT_NO_FATAL_FAILURE(PopulateObservedStackTraces(target_row_idxs));
   ASSERT_NO_FATAL_FAILURE(CheckExpectedVsObservedStackTraces());
   ASSERT_NO_FATAL_FAILURE(CheckExpectedStackTraceCounts(kNumSubProcesses, elapsed_time));
+}
+
+TEST_F(PerfProfileBPFTest, TestOutOfContext) {
+  // Needs to be unique across test fixtures because we use this to map
+  // into CPU index. If non-unique, two or more different test fixtures
+  // will run their toy apps. on the same CPU.
+  constexpr uint32_t kTestIdx = 2;
+
+  const std::filesystem::path bazel_app_path = BazelCCTestAppPath("profiler_test_app_fib");
+
+  // For this test case, we create the connector context *before*
+  // starting sub-processes. For this reason, the perf_profile_connector
+  // will consider the sub-processes as "out-of-context" and not symbolize them.
+  ctx_ = std::make_unique<StandaloneContext>();
+
+  // Populate expected_stack_traces_ with the keys for this test,
+  // in this case, just "<not symbolized>" (see note above about the "context"):
+  expected_stack_traces_.insert(profiler::kNotSymbolizedMessage);
+
+  // Start they toy apps as sub-processes, then,
+  // for a certain amount of time, collect data using RunTest().
+  auto sub_processes = StartSubProcesses<CPUPinnedBinaryRunner>(bazel_app_path, kTestIdx);
+  RunTest(std::chrono::seconds(30));
+
+  // Pull the data into this test (as columns_) using ConsumeRecords(), and
+  // find the row indices that belong to our sub-processes using GetTargetRowIdxs().
+  ASSERT_NO_FATAL_FAILURE(ConsumeRecords());
+  const std::vector<size_t> target_row_idxs = GetTargetRowIdxs(sub_processes);
+
+  // Populate the cumulative sum & the observed stack traces histo,
+  // then check observed vs. expected stack traces key set:
+  ASSERT_NO_FATAL_FAILURE(CheckStackTraceIDsInvariance());
+  ASSERT_NO_FATAL_FAILURE(PopulateCumulativeSum(target_row_idxs));
+  ASSERT_NO_FATAL_FAILURE(PopulateObservedStackTraces(target_row_idxs));
 }
 
 }  // namespace stirling

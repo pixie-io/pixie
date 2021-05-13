@@ -18,8 +18,10 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
 
+#include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 
 DECLARE_bool(stirling_profiler_symcache);
@@ -27,39 +29,73 @@ DECLARE_bool(stirling_profiler_symcache);
 namespace px {
 namespace stirling {
 
+namespace profiler {
+static constexpr uint32_t kKernelPIDAsU32 = ~0;
+static constexpr upid_t kKernelUPID = {.pid = kKernelPIDAsU32, .start_time_ticks = 0};
+}  // namespace profiler
+
 /**
- * Symbolizer, based on its "enable_symbolization" policy either:
- * ... provides a resolved symbol based on (pid, address), or,
- * ... returns a stringified version of the address.
+ * Symbol wraps a std::string for the sole and express purpose of
+ * enabling <some map>::try_emplace() to *not* call into bcc_symbolizer->get_addr_symbol()
+ * if the key already exists in that map. If we provide the symbol directly to try_emplace,
+ * then get_addr_symbol() is called (costing extra work).
+ */
+class Symbol {
+ public:
+  Symbol(ebpf::BPFStackTable* bcc_symbolizer, const uintptr_t addr, const int pid)
+      : symbol_(SymbolOrAddrIfUnknown(bcc_symbolizer, addr, pid)) {}
+
+  inline const std::string& symbol() const { return symbol_; }
+
+ private:
+  static std::string SymbolOrAddrIfUnknown(ebpf::BPFStackTable* bcc_symbolizer,
+                                           const uintptr_t addr, const int pid) {
+    static constexpr std::string_view kUnknown = "[UNKNOWN]";
+    std::string sym_or_addr = bcc_symbolizer->get_addr_symbol(addr, pid);
+    if (sym_or_addr == kUnknown) {
+      sym_or_addr = absl::StrFormat("0x%016llx", addr);
+    }
+    return sym_or_addr;
+  }
+
+  const std::string symbol_;
+};
+
+/**
+ * Symbolizer: provides an API to resolve a program address to a symbol.
+ * If FLAGS_stirling_profiler_symcache==true, it attempts to find the symbol
+ * in its own symbol cache (i.e. because we believe the BCC side symbol
+ * cache is less efficient).
  *
- * When enable_symbolization=true, Symbolizer uses BCC to resolve the
- * symbols in the underlying object code.
- #
- * If FLAGS_stirling_profiler_symcache==true, Symbolizer
- * keeps its own symbol cache to reduce the cost of symbol lookup.
- * While BCC has its own symbol cache, the bcc cache is expensive to use.
+ * Symbolizer creates a 'bpf stack table' solely to gain access to the BCC
+ * symbolization API (the underlying BPF shared map and BPF program are not used).
+ *
+ * A typical use case looks like this:
+ *   auto symbolize_fn = symbolizer.GetSymbolizerFn(upid);
+ *   const std::string symbol = symbolize_fn(addr);
  *
  */
-class Symbolizer {
+class Symbolizer : public bpf_tools::BCCWrapper, public NotCopyMoveable {
  public:
-  explicit Symbolizer(const int pid, const bool enable_symbolization)
-      : pid_(pid), enable_symbolization_(enable_symbolization) {}
+  Status Init();
+  void FlushCache(const struct upid_t& upid);
 
-  const std::string& LookupSym(ebpf::BPFStackTable* stack_traces, const uintptr_t addr);
-
-  void FlushCache();
+  std::function<const std::string&(const uintptr_t addr)> GetSymbolizerFn(
+      const struct upid_t& upid);
 
   int64_t stat_accesses() { return stat_accesses_; }
   int64_t stat_hits() { return stat_hits_; }
 
-  // BCC's symbol resolver assumes the kernel PID is -1.
-  static constexpr int kKernelPID = -1;
-
  private:
-  const int pid_;
-  const bool enable_symbolization_;
+  const std::string& Symbolize(absl::flat_hash_map<uintptr_t, Symbol>* symbol_cache, const int pid,
+                               const uintptr_t addr);
 
-  absl::flat_hash_map<uintptr_t, std::string> sym_cache_;
+  // We will use this exclusively to gain access to the BCC symbolization API;
+  // i.e. while this does create a shared BPF "stack trace" map, we do not use that.
+  std::unique_ptr<ebpf::BPFStackTable> bcc_symbolizer_;
+
+  absl::flat_hash_map<struct upid_t, std::unique_ptr<absl::flat_hash_map<uintptr_t, Symbol> > >
+      symbol_caches_;
 
   int64_t stat_accesses_ = 0;
   int64_t stat_hits_ = 0;

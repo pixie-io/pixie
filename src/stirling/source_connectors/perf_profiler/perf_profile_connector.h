@@ -35,6 +35,10 @@
 namespace px {
 namespace stirling {
 
+namespace profiler {
+static constexpr std::string_view kNotSymbolizedMessage = "<not symbolized>";
+}  // namespace profiler
+
 class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrapper {
  public:
   static constexpr std::string_view kName = "perf_profiler";
@@ -121,19 +125,11 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Tracks unique stack trace ids, for the lifetime of Stirling:
   StackTraceIDMap stack_trace_ids_;
 
-  // At the discretion of its policy, a symbolizer will either:
-  // ... return the symbol given an address,
-  // ... or just stringify the address (i.e. to avoid the cost of symbol lookup).
-  // The symbolizer may maintain a set of symbol cache to make a best effort at
-  // reducing the cost of symbol lookup.
-  // Symbolizers are created with a specific policy on a per upid basis.
-  absl::flat_hash_map<struct upid_t, Symbolizer> symbolizers_;
-
-  // Some special case symbolizers:
-  // ... 1. A symbolizer that has the policy of "do not symbolize," and
-  // ... 2. a dedicated symbolizer for kernel syms.
-  Symbolizer dummy_symbolizer_;
-  Symbolizer kernel_symbolizer_;
+  // The symbolizer has an instance of a BPF stack table (internally),
+  // solely to gain access to the BCC symbolization API. Depending on the
+  // value of FLAGS_stirling_profiler_symcache, symbolizer will attempt (or not)
+  // to find the symbol in its internally managed symbol cache.
+  Symbolizer symbolizer_;
 
   // Keeps track of processes. Used to find destroyed processes on which to perform clean-up.
   // TODO(oazizi): Investigate ways of sharing across source_connectors.

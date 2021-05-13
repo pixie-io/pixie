@@ -32,9 +32,7 @@ namespace px {
 namespace stirling {
 
 PerfProfileConnector::PerfProfileConnector(std::string_view source_name)
-    : SourceConnector(source_name, kTables),
-      dummy_symbolizer_(/*pid*/ 0, /*enable symbolization*/ false),
-      kernel_symbolizer_(Symbolizer::kKernelPID, /*enable symbolization*/ true) {}
+    : SourceConnector(source_name, kTables) {}
 
 Status PerfProfileConnector::InitImpl() {
   const size_t ncpus = get_nprocs_conf();
@@ -50,6 +48,7 @@ Status PerfProfileConnector::InitImpl() {
 
   stack_traces_a_ = std::make_unique<ebpf::BPFStackTable>(GetStackTable("stack_traces_a"));
   stack_traces_b_ = std::make_unique<ebpf::BPFStackTable>(GetStackTable("stack_traces_b"));
+
   histogram_a_ = std::make_unique<ebpf::BPFHashTable<stack_trace_key_t, uint64_t>>(
       GetHashTable<stack_trace_key_t, uint64_t>("histogram_a"));
   histogram_b_ = std::make_unique<ebpf::BPFHashTable<stack_trace_key_t, uint64_t>>(
@@ -58,7 +57,9 @@ Status PerfProfileConnector::InitImpl() {
       std::make_unique<ebpf::BPFArrayTable<uint64_t>>(GetArrayTable<uint64_t>("profiler_state"));
 
   LOG(INFO) << "PerfProfiler: Stack trace profiling sampling probe successfully deployed.";
-  return Status::OK();
+
+  // Made it here w/ no problems; now init the symbolizer & return its status.
+  return symbolizer_.Init();
 }
 
 Status PerfProfileConnector::StopImpl() {
@@ -74,10 +75,7 @@ void PerfProfileConnector::CleanupSymbolizers(const absl::flat_hash_set<md::UPID
     struct upid_t upid;
     upid.pid = md_upid.pid();
     upid.start_time_ticks = md_upid.start_ts();
-    symbolizers_.erase(upid);
-
-    stack_traces_a_->free_symcache(md_upid.pid());
-    stack_traces_b_->free_symcache(md_upid.pid());
+    symbolizer_.FlushCache(upid);
   }
 }
 
@@ -97,6 +95,12 @@ uint64_t PerfProfileConnector::SymbolicStackTraceID(
 std::string PerfProfileConnector::FoldedStackTraceString(const bool symbolize,
                                                          ebpf::BPFStackTable* stack_traces,
                                                          const stack_trace_key_t& key) {
+  if (!symbolize) {
+    stack_traces->clear_stack_id(key.user_stack_id);
+    stack_traces->clear_stack_id(key.kernel_stack_id);
+    return std::string(profiler::kNotSymbolizedMessage);
+  }
+
   // Here, we read the list of addresses from stack_traces and convert that
   // list into a "folded" symbolic stack trace string. In line with this,
   // we also clear the entries in stack_traces.
@@ -104,12 +108,11 @@ std::string PerfProfileConnector::FoldedStackTraceString(const bool symbolize,
   constexpr std::string_view kSeparator = ";";
   constexpr uint64_t kSentinelAddr = 0xcccccccccccccccc;
 
-  std::string stack_trace_str;
   // TODO(oazizi): Add a stack_trace_str.reserve() heuristic.
+  std::string stack_trace_str;
 
-  auto& symbolizer = symbolize
-                         ? symbolizers_.try_emplace(key.upid, key.upid.pid, symbolize).first->second
-                         : dummy_symbolizer_;
+  auto u_symbolize_fn = symbolizer_.GetSymbolizerFn(key.upid);
+  auto k_symbolize_fn = symbolizer_.GetSymbolizerFn(profiler::kKernelUPID);
 
   // Clear the stack-traces map as we go along here; this has lower overhead
   // compared to first reading the stack-traces map, then using clear_table_non_atomic().
@@ -126,7 +129,7 @@ std::string PerfProfileConnector::FoldedStackTraceString(const bool symbolize,
       DCHECK(iter == user_addrs.rbegin()) << "Detected sentinel address in unexpected location.";
       continue;
     }
-    stack_trace_str += symbolizer.LookupSym(stack_traces, addr);
+    stack_trace_str += u_symbolize_fn(addr);
     stack_trace_str += kSeparator;
   }
 
@@ -134,7 +137,7 @@ std::string PerfProfileConnector::FoldedStackTraceString(const bool symbolize,
   auto kernel_addrs = stack_traces->get_stack_addr(key.kernel_stack_id, kClearStackId);
   for (auto iter = kernel_addrs.rbegin(); iter != kernel_addrs.rend(); ++iter) {
     const auto& addr = *iter;
-    stack_trace_str += kernel_symbolizer_.LookupSym(stack_traces, addr);
+    stack_trace_str += k_symbolize_fn(addr);
     stack_trace_str += kKSymSuffix;
     stack_trace_str += kSeparator;
   }
