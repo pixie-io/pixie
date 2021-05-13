@@ -1031,6 +1031,7 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) chan *cvmsgspb.VizierHeart
 			Status:                 s.currentStatus(),
 			BootstrapMode:          viper.GetBool("bootstrap_mode"),
 			BootstrapVersion:       viper.GetString("bootstrap_version"),
+			DisableAutoUpdate:      viper.GetBool("disable_auto_update"),
 		}
 		select {
 		case <-s.quitCh:

@@ -57,6 +57,7 @@ type VizierTmplValues struct {
 	BootstrapVersion  string
 	PEMMemoryLimit    string
 	Namespace         string
+	DisableAutoUpdate bool
 }
 
 // VizierTmplValuesToArgs converts the vizier template values to args which can be used to fill out a template.
@@ -72,6 +73,7 @@ func VizierTmplValuesToArgs(tmplValues *VizierTmplValues) *yamls.YAMLTmplArgumen
 			"useEtcdOperator":   tmplValues.UseEtcdOperator,
 			"bootstrapVersion":  tmplValues.BootstrapVersion,
 			"pemMemoryLimit":    tmplValues.PEMMemoryLimit,
+			"disableAutoUpdate": tmplValues.DisableAutoUpdate,
 		},
 		Release: &map[string]interface{}{
 			"Namespace": tmplValues.Namespace,
@@ -238,6 +240,12 @@ func GenerateSecretsYAML(clientset *kubernetes.Clientset, versionStr string, boo
 			Patch:           `{"data": { "PX_MEMORY_LIMIT": "__PX_MEMORY_LIMIT__"} }`,
 			Placeholder:     "__PX_MEMORY_LIMIT__",
 			TemplateValue:   `"{{ .Values.pemMemoryLimit }}"`,
+		},
+		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cluster-config"),
+			Patch:           `{"data": { "PL_DISABLE_AUTO_UPDATE": "__PL_DISABLE_AUTO_UPDATE__"} }`,
+			Placeholder:     "__PL_DISABLE_AUTO_UPDATE__",
+			TemplateValue:   `{{ if .Values.disableAutoUpdate }}"{{ .Values.disableAutoUpdate }}"{{ else }}"false"{{ end }}`,
 		},
 		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cloud-config"),

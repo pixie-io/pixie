@@ -52,6 +52,7 @@ func init() {
 	pflag.String("qb_port", "50300", "The querybroker service port")
 	pflag.String("cluster_name", "", "The name of the user's K8s cluster")
 	pflag.String("deploy_key", "", "The deploy key for the cluster")
+	pflag.Bool("disable_auto_update", false, "Whether auto-update should be disabled")
 }
 func newVzServiceClient() (vizierpb.VizierServiceClient, error) {
 	dialOpts, err := services.GetGRPCClientDialOpts()
