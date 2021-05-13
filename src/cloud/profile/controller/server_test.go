@@ -869,7 +869,8 @@ func CreateTestContext() context.Context {
 	return authcontext.NewContext(context.Background(), sCtx)
 }
 
-func TestServer_InviteUser(t *testing.T) {
+// TODO(philkuz,PP-2668) Re-enable test when kratostest is less flakey.
+func DISABLEDTestServerInviteUser(t *testing.T) {
 	userID := uuid.Must(uuid.NewV4())
 
 	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
