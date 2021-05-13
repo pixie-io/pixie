@@ -22,23 +22,23 @@ namespace="plc"
 
 kubectl create secret generic -n "${namespace}" \
   cloud-auth-secrets \
-  --from-literal=jwt-signing-key="$(LC_CTYPE=C; < /dev/urandom tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1)"
+  --from-literal=jwt-signing-key="$(LANG=C; < /dev/urandom tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1)"
 
 kubectl create secret generic -n "${namespace}" \
   pl-hydra-secrets \
-  --from-literal=SECRETS_SYSTEM="$(LC_CTYPE=C; < /dev/urandom tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1)" \
-  --from-literal=OIDC_SUBJECT_IDENTIFIERS_PAIRWISE_SALT="$(LC_CTYPE=C; < /dev/urandom tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1)" \
-  --from-literal=CLIENT_SECRET="$(LC_CTYPE=C; < /dev/urandom tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1)"
+  --from-literal=SECRETS_SYSTEM="$(LANG=C; < /dev/urandom tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1)" \
+  --from-literal=OIDC_SUBJECT_IDENTIFIERS_PAIRWISE_SALT="$(LANG=C; < /dev/urandom tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1)" \
+  --from-literal=CLIENT_SECRET="$(LANG=C; < /dev/urandom tr -dc 'a-zA-Z0-9' | fold -w 64 | head -n 1)"
 
 kubectl create secret generic -n "${namespace}" \
   pl-db-secrets \
   --from-literal=PL_POSTGRES_USERNAME="pl" \
   --from-literal=PL_POSTGRES_PASSWORD="pl" \
-  --from-literal=database-key="$(LC_CTYPE=C; < /dev/urandom tr -dc 'a-zA-Z0-9#$%&().' | fold -w 24 | head -n 1)"
+  --from-literal=database-key="$(LANG=C; < /dev/urandom tr -dc 'a-zA-Z0-9#$%&().' | fold -w 24 | head -n 1)"
 
 kubectl create secret generic -n "${namespace}" \
   cloud-session-secrets \
-  --from-literal=session-key="$(LC_CTYPE=C; < /dev/urandom tr -dc 'a-zA-Z0-9' | fold -w 24 | head -n 1)"
+  --from-literal=session-key="$(LANG=C; < /dev/urandom tr -dc 'a-zA-Z0-9' | fold -w 24 | head -n 1)"
 
 SERVICE_TLS_CERTS="$(mktemp -d)"
 pushd "${SERVICE_TLS_CERTS}" || exit 1
