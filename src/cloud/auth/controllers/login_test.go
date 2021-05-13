@@ -478,7 +478,7 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return(userID, nil)
 
 	fakeUserInfo1 := &controllers.UserInfo{
 		Email:    "abc@gmail.com",
@@ -486,7 +486,7 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 		PLOrgID:  orgID,
 	}
 
-	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo1, nil)
+	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfo1, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockProfile.EXPECT().
@@ -536,7 +536,7 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return(userID, nil)
 
 	fakeUserInfo1 := &controllers.UserInfo{
 		Email:     "abc@gmail.com",
@@ -546,7 +546,7 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 		PLOrgID:   orgID,
 	}
 
-	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo1, nil)
+	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfo1, nil)
 
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
 		Email:     "abc@gmail.com",
@@ -554,11 +554,11 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 		LastName:  "last",
 	}
 
-	a.EXPECT().SetPLMetadata("userid", gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
+	a.EXPECT().SetPLMetadata(userID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.PLUserID = plid
 		fakeUserInfoSecondRequest.PLOrgID = plorgid
 	}).Return(nil)
-	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfoSecondRequest, nil)
+	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfoSecondRequest, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockProfile.EXPECT().
@@ -966,7 +966,7 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return(userID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:     "abc@gmail.com",
@@ -975,18 +975,18 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 	}
 
 	// Add PL UserID to the response of the second call.
-	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfo, nil)
 
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
 		Email:     "abc@gmail.com",
 		FirstName: "first",
 		LastName:  "last",
 	}
-	a.EXPECT().SetPLMetadata("userid", gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
+	a.EXPECT().SetPLMetadata(userID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.PLUserID = plid
 		fakeUserInfoSecondRequest.PLOrgID = plorgid
 	}).Return(nil)
-	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfoSecondRequest, nil)
+	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfoSecondRequest, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
@@ -1046,7 +1046,7 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return(userID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
 		Email:     "abc@gmail.com",
@@ -1054,7 +1054,7 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 		LastName:  "last",
 	}
 
-	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
+	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfo, nil)
 
 	// Add PL UserID to the response of the second call.
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
@@ -1062,11 +1062,11 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 		FirstName: "first",
 		LastName:  "last",
 	}
-	a.EXPECT().SetPLMetadata("userid", gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
+	a.EXPECT().SetPLMetadata(userID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.PLUserID = plid
 		fakeUserInfoSecondRequest.PLOrgID = plorgid
 	}).Return(nil)
-	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfoSecondRequest, nil)
+	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfoSecondRequest, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
@@ -1254,7 +1254,7 @@ func TestServer_LoginUserForOrgMembership(t *testing.T) {
 
 	// Setup expectations for the mocks.
 	a := mock_controllers.NewMockAuthProvider(ctrl)
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return(userID, nil)
 
 	fakeUserInfo1 := &controllers.UserInfo{
 		Email:    "abc@gmail.com",
@@ -1262,7 +1262,7 @@ func TestServer_LoginUserForOrgMembership(t *testing.T) {
 		PLOrgID:  orgID,
 	}
 
-	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo1, nil)
+	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfo1, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 	mockProfile.EXPECT().
