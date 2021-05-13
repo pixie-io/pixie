@@ -772,14 +772,13 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	}
 
 	// Fetch previous status.
-	statusQuery := `SELECT i.status, i.vizier_version, c.cluster_name, c.cluster_version, c.org_id, i.auto_update_enabled from vizier_cluster_info AS i INNER JOIN vizier_cluster as c ON c.id = i.vizier_cluster_id WHERE i.vizier_cluster_id=$1`
+	statusQuery := `SELECT i.status, i.vizier_version, c.cluster_name, c.cluster_version, c.org_id from vizier_cluster_info AS i INNER JOIN vizier_cluster as c ON c.id = i.vizier_cluster_id WHERE i.vizier_cluster_id=$1`
 	var prevInfo struct {
-		Status            string    `db:"status"`
-		Version           string    `db:"vizier_version"`
-		ClusterVersion    string    `db:"cluster_version"`
-		ClusterName       string    `db:"cluster_name"`
-		OrgID             uuid.UUID `db:"org_id"`
-		AutoUpdateEnabled bool      `db:"auto_update_enabled"`
+		Status         string    `db:"status"`
+		Version        string    `db:"vizier_version"`
+		ClusterVersion string    `db:"cluster_version"`
+		ClusterName    string    `db:"cluster_name"`
+		OrgID          uuid.UUID `db:"org_id"`
 	}
 	rows, err := s.db.Queryx(statusQuery, vizierID)
 	if err != nil {
@@ -796,8 +795,8 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	query := `
     UPDATE vizier_cluster_info
     SET last_heartbeat = NOW(), status = $1, address= $2, control_plane_pod_statuses= $3,
-    	num_nodes = $4, num_instrumented_nodes = $5
-    WHERE vizier_cluster_id = $6`
+    	num_nodes = $4, num_instrumented_nodes = $5, auto_update_enabled = $6
+    WHERE vizier_cluster_id = $7`
 
 	vzStatus := "HEALTHY"
 	if req.Address == "" {
@@ -843,7 +842,7 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	}
 
 	_, err = s.db.Exec(query, vzStatus, addr, PodStatuses(req.PodStatuses), req.NumNodes,
-		req.NumInstrumentedNodes, vizierID)
+		req.NumInstrumentedNodes, !req.DisableAutoUpdate, vizierID)
 	if err != nil {
 		log.WithError(err).Error("Could not update vizier heartbeat")
 	}
@@ -852,7 +851,7 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	}
 
 	if !req.BootstrapMode {
-		if prevInfo.AutoUpdateEnabled && !s.updater.VersionUpToDate(prevInfo.Version) {
+		if !req.DisableAutoUpdate && !s.updater.VersionUpToDate(prevInfo.Version) {
 			s.updater.AddToUpdateQueue(vizierID)
 		}
 		return

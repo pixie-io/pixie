@@ -531,6 +531,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 		checkVersion               bool
 		checkDB                    bool
 		versionUpdated             bool
+		disableAutoUpdate          bool
 	}{
 		{
 			name:                      "valid vizier",
@@ -549,6 +550,25 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			numInstrumentedNodes:    3,
 			checkVersion:            true,
 			checkDB:                 true,
+		},
+		{
+			name:                      "valid vizier, no autoupdate",
+			expectGetDNSAddressCalled: true,
+			dnsAddressResponse: &dnsmgrpb.GetDNSAddressResponse{
+				DNSAddress: "abc.clusters.dev.withpixie.dev",
+			},
+			dnsAddressError:         nil,
+			vizierID:                "123e4567-e89b-12d3-a456-426655440001",
+			hbAddress:               "127.0.0.1",
+			hbPort:                  123,
+			updatedClusterStatus:    "HEALTHY",
+			expectedClusterAddress:  "abc.clusters.dev.withpixie.dev:123",
+			controlPlanePodStatuses: testPodStatuses,
+			numNodes:                4,
+			numInstrumentedNodes:    3,
+			checkVersion:            false,
+			checkDB:                 true,
+			disableAutoUpdate:       true,
 		},
 		{
 			name:                      "valid vizier dns failed",
@@ -589,6 +609,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			status:                    cvmsgspb.VZ_ST_UPDATING,
 			checkVersion:              false,
 			checkDB:                   false,
+			disableAutoUpdate:         true,
 		},
 		{
 			name:                      "bootstrap vizier",
@@ -658,6 +679,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 				PodStatuses:          tc.controlPlanePodStatuses,
 				NumNodes:             tc.numNodes,
 				NumInstrumentedNodes: tc.numInstrumentedNodes,
+				DisableAutoUpdate:    tc.disableAutoUpdate,
 			}
 			nestedAny, err := pbutils.MarshalAny(nestedMsg)
 			if err != nil {
@@ -672,7 +694,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 
 			// Check database.
 			clusterQuery := `
-			SELECT status, address, control_plane_pod_statuses, num_nodes, num_instrumented_nodes
+			SELECT status, address, control_plane_pod_statuses, num_nodes, num_instrumented_nodes, auto_update_enabled
 			FROM vizier_cluster_info WHERE vizier_cluster_id=$1`
 			var clusterInfo struct {
 				Status                  string                 `db:"status"`
@@ -680,6 +702,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 				ControlPlanePodStatuses controller.PodStatuses `db:"control_plane_pod_statuses"`
 				NumNodes                int32                  `db:"num_nodes"`
 				NumInstrumentedNodes    int32                  `db:"num_instrumented_nodes"`
+				AutoUpdateEnabled       bool                   `db:"auto_update_enabled"`
 			}
 			clusterID, err := uuid.FromString(tc.vizierID)
 			require.NoError(t, err)
@@ -691,6 +714,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			assert.Equal(t, tc.expectedClusterAddress, clusterInfo.Address)
 			assert.Equal(t, tc.numNodes, clusterInfo.NumNodes)
 			assert.Equal(t, tc.numInstrumentedNodes, clusterInfo.NumInstrumentedNodes)
+			assert.Equal(t, !tc.disableAutoUpdate, clusterInfo.AutoUpdateEnabled)
 		})
 	}
 }
