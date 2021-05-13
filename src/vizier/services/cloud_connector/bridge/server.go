@@ -359,11 +359,6 @@ func (s *Bridge) RunStream() {
 			err := natsSub.Unsubscribe()
 			log.WithError(err).Error("Failed to unsubscribe from NATS")
 		}()
-		// Set large limits on message size and count.
-		err = natsSub.SetPendingLimits(1e7, 1e7)
-		if err != nil {
-			log.WithError(err).Error("Failed to send NATS message limits")
-		}
 	}
 
 	// Check if there is an existing update job. If so, then set the status to "UPDATING".
