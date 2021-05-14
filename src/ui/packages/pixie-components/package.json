@@ -20,8 +20,6 @@
     "start": "rollup -c -w",
     "test": "jest",
     "install": "rollup -c",
-    "storybook": "start-storybook -p 9001",
-    "storybook_static": "build-storybook -o storybook_static --quiet",
     "coverage": "jest --coverage"
   },
   "peerDependencies": {
@@ -48,11 +46,6 @@
     "@rollup/plugin-commonjs": "^16.0.0",
     "@rollup/plugin-node-resolve": "^10.0.0",
     "@rollup/plugin-url": "^5.0.1",
-    "@storybook/addon-essentials": "^6.0.28",
-    "@storybook/addons": "^6.0.28",
-    "@storybook/react": "^6.0.28",
-    "@storybook/source-loader": "^6.0.28",
-    "@storybook/theming": "^6.0.28",
     "@svgr/rollup": "^5.4.0",
     "@testing-library/react-hooks": "^3.3.0",
     "@types/jest": "24.0.18",

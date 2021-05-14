@@ -16,8 +16,6 @@
     "start": "rollup -c -w",
     "test": "jest",
     "install": "rollup -c",
-    "storybook": "start-storybook -p 9001",
-    "storybook_static": "build-storybook -o storybook_static",
     "coverage": "jest --coverage"
   },
   "dependencies": {

@@ -11,9 +11,6 @@
     "packages": [
       "packages/pixie-*",
       "packages/samples/*"
-    ],
-    "nohoist": [
-      "@pixie-labs/components/**/@storybook/*"
     ]
   },
   "devDependencies": {
@@ -204,7 +201,6 @@
     "http-proxy-middleware": "0.19.2",
     "jimp": "^0.10.3",
     "resize-img": "^2.0.0",
-    "react-dev-utils": "^11.0.4",
     "vega-functions": "5.12.0"
   }
 }

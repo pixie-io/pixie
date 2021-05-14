@@ -242,8 +242,6 @@ def codeReviewPostBuild = {
   } else {
     phabConnector.sendBuildStatus('fail')
   }
-  phabConnector.addArtifactLink(env.BUILD_URL + '/ui-storybook', 'storybook.uri', 'Storybook')
-
   phabConnector.addArtifactLink(env.BUILD_URL + '/doxygen', 'doxygen.uri', 'Doxygen')
 }
 
@@ -423,16 +421,6 @@ def processAllExtractedBazelLogs() {
   })
 }
 
-def publishStoryBook() {
-  publishHTML([allowMissing: true,
-    alwaysLinkToLastBuild: true,
-    keepAll: true,
-    reportDir: 'build-ui-storybook-static/storybook_static',
-    reportFiles: 'index.html',
-    reportName: 'ui-storybook'
-  ])
-}
-
 def publishDoxygenDocs() {
   publishHTML([allowMissing: true,
     alwaysLinkToLastBuild: true,
@@ -583,13 +571,6 @@ def buildAndTestOptWithUI = {
           variable: 'GOOGLE_APPLICATION_CREDENTIALS')
       ]) {
         bazelCICmd('build-opt', 'clang', 'opt', 'clang_opt', '--action_env=GOOGLE_APPLICATION_CREDENTIALS')
-
-        def storybookBundle = 'bazel-bin/src/ui/ui-storybook-bundle.tar.gz'
-        if (shFileExists(storybookBundle)) {
-          sh "tar -zxf ${storybookBundle}"
-          stashOnGCS('build-ui-storybook-static', 'storybook_static')
-          stashList.add('build-ui-storybook-static')
-        }
       }
     }
   }
@@ -829,7 +810,6 @@ def archiveBuildArtifacts = {
       // causes the test publisher to mark as failed.
       sh 'find . -name test_attempts -type d -exec rm -rf {} +'
 
-      publishStoryBook()
       publishDoxygenDocs()
 
       // Archive clang-tidy logs.

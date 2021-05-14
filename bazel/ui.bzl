@@ -132,31 +132,6 @@ def _pl_ui_test_impl(ctx):
         ),
     ]
 
-def _pl_storybook_archive_impl(ctx):
-    all_files = list(ctx.files.srcs)
-
-    cmd = ui_shared_cmds_start + [
-        "export OUTPUT_PATH=" + ctx.outputs.out.path,
-        "tar -zxf ${BASE_PATH}/" + ctx.file.deps.path,
-        "yarn workspace @pixie-labs/components storybook_static",
-        # Write the outputs to the correct location so Bazel can find them.
-        "pushd packages/pixie-components",
-        "tar -czf ${BASE_PATH}/${OUTPUT_PATH} storybook_static",
-        "popd",
-    ] + ui_shared_cmds_finish
-
-    ctx.actions.run_shell(
-        inputs = all_files + ctx.files.deps,
-        outputs = [ctx.outputs.out],
-        command = " && ".join(cmd),
-        env = {
-            "BASE_PATH": "$$PWD",
-            "UILIB_PATH": ctx.attr.uilib_base,
-        },
-        progress_message =
-            "Generating storybook bundle %s" % ctx.outputs.out.short_path,
-    )
-
 def _pl_deps_licenses_impl(ctx):
     all_files = list(ctx.files.srcs)
 
@@ -235,23 +210,6 @@ pl_ui_test = rule(
         ),
     }),
     test = True,
-)
-
-pl_storybook_archive = rule(
-    implementation = _pl_storybook_archive_impl,
-    attrs = dict({
-        "deps": attr.label(allow_single_file = True),
-        "srcs": attr.label_list(
-            mandatory = True,
-            allow_files = True,
-        ),
-        "uilib_base": attr.string(
-            doc = "This is a slight hack that requires the basepath to package.json relative to TOT to be specified",
-        ),
-    }),
-    outputs = {
-        "out": "%{name}.tar.gz",
-    },
 )
 
 pl_deps_licenses = rule(

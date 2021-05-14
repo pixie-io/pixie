@@ -17,7 +17,6 @@
 load(
     "//bazel:ui.bzl",
     "pl_deps_licenses",
-    "pl_storybook_archive",
     "pl_ui_test",
     "pl_webpack_deps",
     "pl_webpack_library",
@@ -70,13 +69,6 @@ pl_webpack_library(
 pl_ui_test(
     name = "ui-tests",
     srcs = UI_SRCS + COMPONENT_SRCS,
-    uilib_base = "src/ui",
-    deps = ":ui-deps",
-)
-
-pl_storybook_archive(
-    name = "ui-storybook-bundle",
-    srcs = COMPONENT_SRCS,
     uilib_base = "src/ui",
     deps = ":ui-deps",
 )
