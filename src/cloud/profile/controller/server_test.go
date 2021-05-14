@@ -1168,8 +1168,9 @@ func DISABLEDTestServerInviteUser(t *testing.T) {
 		// MustCreateUser is passed as part of the request.
 		mustCreate bool
 		// Whether the user already exists.
-		doesUserExist bool
-		err           error
+		doesUserExist   bool
+		err             error
+		EnableApprovals bool
 	}{
 		{
 			name:          "invite_existing_user",
@@ -1194,6 +1195,13 @@ func DISABLEDTestServerInviteUser(t *testing.T) {
 			mustCreate:    true,
 			doesUserExist: false,
 			err:           nil,
+		},
+		{
+			name:            "enable_user_if_invited",
+			mustCreate:      true,
+			doesUserExist:   false,
+			err:             nil,
+			EnableApprovals: true,
 		},
 	}
 	for _, tc := range inviteUserTests {
@@ -1223,14 +1231,20 @@ func DISABLEDTestServerInviteUser(t *testing.T) {
 			}
 
 			userInfo := &datastore.UserInfo{
-				OrgID:     orgID,
-				Username:  req.Email,
-				FirstName: req.FirstName,
-				LastName:  req.LastName,
-				Email:     req.Email,
+				OrgID:      orgID,
+				Username:   req.Email,
+				FirstName:  req.FirstName,
+				LastName:   req.LastName,
+				Email:      req.Email,
+				IsApproved: !tc.EnableApprovals,
 			}
 
 			if !tc.doesUserExist {
+				d.EXPECT().
+					GetOrg(orgID).
+					Return(&datastore.OrgInfo{
+						EnableApprovals: tc.EnableApprovals,
+					}, nil)
 				d.EXPECT().
 					GetUserByEmail("bobloblaw@lawblog.com").
 					Return(nil, datastore.ErrUserNotFound)
@@ -1238,6 +1252,20 @@ func DISABLEDTestServerInviteUser(t *testing.T) {
 				d.EXPECT().
 					CreateUser(userInfo).
 					Return(userID, nil)
+				d.EXPECT().
+					GetUser(userID).
+					Return(userInfo, nil)
+				d.EXPECT().
+					UpdateUser(
+						&datastore.UserInfo{
+							OrgID:      orgID,
+							Username:   req.Email,
+							FirstName:  req.FirstName,
+							LastName:   req.LastName,
+							Email:      req.Email,
+							IsApproved: true,
+						}).
+					Return(nil)
 			} else {
 				d.EXPECT().
 					GetUserByEmail("bobloblaw@lawblog.com").

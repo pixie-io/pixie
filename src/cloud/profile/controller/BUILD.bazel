@@ -36,6 +36,7 @@ go_library(
         "//src/utils",
         "@com_github_badoux_checkmail//:checkmail",
         "@com_github_gofrs_uuid//:uuid",
+        "@com_github_gogo_protobuf//types",
         "@org_golang_google_grpc//codes",
         "@org_golang_google_grpc//metadata",
         "@org_golang_google_grpc//status",

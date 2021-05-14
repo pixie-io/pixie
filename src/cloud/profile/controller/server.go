@@ -26,6 +26,7 @@ import (
 
 	"github.com/badoux/checkmail"
 	"github.com/gofrs/uuid"
+	"github.com/gogo/protobuf/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -411,6 +412,17 @@ func (s *Server) InviteUser(ctx context.Context, req *profilepb.InviteUserReques
 			return nil, err
 		}
 		userID = utils.UUIDFromProtoOrNil(userIDPb)
+
+		// Auto-approve user.
+		_, err = s.UpdateUser(ctx, &profilepb.UpdateUserRequest{
+			ID: userIDPb,
+			IsApproved: &types.BoolValue{
+				Value: true,
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
 	} else if err != nil {
 		return nil, err
 	} else if err == nil && req.MustCreateUser {
