@@ -16,14 +16,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export * from './use-api-keys';
-export * from './use-autocomplete';
-export * from './use-autocomplete-field';
-export * from './use-cluster-control-plane-pods';
-export * from './use-deployment-keys';
-export * from './use-is-authenticated';
-export * from './use-invitation';
-export * from './use-list-clusters';
-export * from './use-setting';
-export * from './use-user-info';
-export * from './use-org-users';
+import { useQuery } from '@apollo/client/react';
+import { USER_QUERIES, GQLUserInfo } from '@pixie-labs/api';
+// noinspection ES6PreferShortImport
+import { ImmutablePixieQueryGuaranteedResult } from '../utils/types';
+
+/**
+ * Retrieves a listing of users in the org.
+ */
+export function useOrgUsers(): ImmutablePixieQueryGuaranteedResult<GQLUserInfo[]> {
+  const { loading, data, error } = useQuery<{ orgUsers: GQLUserInfo[] }>(
+    USER_QUERIES.GET_ORG_USERS,
+    { pollInterval: 2000 },
+  );
+
+  return [data?.orgUsers, loading, error];
+}

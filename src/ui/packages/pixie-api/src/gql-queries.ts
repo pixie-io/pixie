@@ -55,6 +55,21 @@ export const USER_QUERIES = {
       }
     }
   `,
+  GET_ORG_USERS: gql`
+    {
+      orgUsers {
+        id
+        name
+        email
+        isApproved
+      }
+    }
+  `,
+  SET_USER_INFO: gql`
+    mutation UpdateUser ($id: ID!, $isApproved: Boolean) {
+      UpdateUser(userInfo: {id: $id, isApproved: $isApproved})
+    }
+  `,
 };
 
 export const API_KEY_QUERIES = {

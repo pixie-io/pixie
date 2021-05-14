@@ -16,15 +16,35 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useQuery } from '@apollo/client/react';
+import * as React from 'react';
+import { useQuery, useMutation } from '@apollo/client/react';
 import { USER_QUERIES, GQLUserInfo } from '@pixie-labs/api';
 import { ImmutablePixieQueryResult } from '../utils/types';
 
-export function useUserInfo(): ImmutablePixieQueryResult<GQLUserInfo> {
+interface UserInfoHookResult {
+  updateUserInfo: (id: string, isApproved: boolean) => Promise<void>;
+  user: GQLUserInfo;
+}
+
+export function useUserInfo(): ImmutablePixieQueryResult<UserInfoHookResult> {
   const { loading, data, error } = useQuery<{ user: GQLUserInfo }>(
     USER_QUERIES.GET_USER_INFO,
     { fetchPolicy: 'network-only' },
   );
 
-  return [data?.user, loading, error];
+  const [updater] = useMutation<void, { id: string, isApproved: boolean }>(USER_QUERIES.SET_USER_INFO);
+
+  // Waiting for state to settle ensures we don't change the result object's identity more than once.
+  const resultIsStable = !loading && (error || data);
+
+  // Abstracting away Apollo details, create resolves with the new ID string and delete accepts a string.
+  // If an error occurs, it still falls through in the form of a rejected promise that .catch() will see.
+  const result: UserInfoHookResult = React.useMemo(() => ({
+    updateUserInfo: (id: string, isApproved: boolean) => updater({ variables: { id, isApproved } }).then(() => {}),
+    user: loading || error || !data?.user ? undefined : data.user,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [resultIsStable]);
+
+  // Forcing the result to only present once it's settled, to avoid bouncy definitions.
+  return [result, loading, error];
 }

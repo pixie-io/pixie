@@ -40,7 +40,7 @@ export const SCRATCH_SCRIPT: Script = {
 };
 
 export const ScriptsContextProvider: React.FC = ({ children }) => {
-  const [user, loading, error] = useUserInfo();
+  const [{ user }, loading, error] = useUserInfo();
   const [scripts, setScripts] = React.useState<Map<string, Script>>(new Map([['initial', {} as Script]]));
 
   // Lets us know if there is a pending setScripts. If there is, we're technically still loading for one more render.

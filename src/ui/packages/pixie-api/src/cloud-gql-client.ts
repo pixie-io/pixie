@@ -305,4 +305,13 @@ export class CloudClient {
     });
     return data.user;
   }
+
+  /** Fetches a list of users in the org. */
+  async getOrgUsers(): Promise<GQLUserInfo[]> {
+    const { data } = await this.graphQL.query<{ users: GQLUserInfo[] }>({
+      query: USER_QUERIES.GET_ORG_USERS,
+      fetchPolicy: 'network-only',
+    });
+    return data.users;
+  }
 }

@@ -35,6 +35,7 @@ describe('Cloud client (GQL wrapper)', () => {
       ['listDeploymentKeys'],
       ['listClusters'],
       ['getClusterControlPlanePods'],
+      ['getOrgUsers'],
     ];
 
     it.each(querySubjects)('%s queries GraphQL', async (name: keyof CloudClient, ...args: any[]) => {

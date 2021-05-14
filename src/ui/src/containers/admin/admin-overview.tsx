@@ -29,6 +29,7 @@ import Add from '@material-ui/icons/Add';
 
 import { DeploymentKeysTable } from 'containers/admin/deployment-keys';
 import { APIKeysTable } from 'containers/admin/api-keys';
+import { UsersTable } from 'containers/admin/org-users';
 import { ClustersTable } from 'containers/admin/clusters-list';
 import { StyledTab, StyledTabs } from 'containers/admin/utils';
 import { GetOAuthProvider } from 'pages/auth/utils';
@@ -94,6 +95,7 @@ export const AdminOverview: React.FC = () => {
           <StyledTab value='clusters' label='Clusters' />
           <StyledTab value='deployment-keys' label='Deployment Keys' />
           <StyledTab value='api-keys' label='API Keys' />
+          <StyledTab value='users' label='Users' />
           { authClient.isInvitationEnabled() && <StyledTab value='invite' label='Invitations' /> }
         </StyledTabs>
         {tab.endsWith('deployment-keys')
@@ -128,6 +130,7 @@ export const AdminOverview: React.FC = () => {
             <Route exact path={`${path}/deployment-keys`} component={DeploymentKeysTable} />
             <Route exact path={`${path}/api-keys`} component={APIKeysTable} />
             <Route exact path={`${path}/invite`} component={InvitationTab} />
+            <Route exact path={`${path}/users`} component={UsersTable} />
           </Switch>
         </TableContainer>
       </div>

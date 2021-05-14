@@ -376,7 +376,7 @@ const SideBar = ({ classes }) => {
 
   const { selectedClusterName } = React.useContext(ClusterContext);
   const { user } = React.useContext(UserContext);
-  const [userInfo] = useUserInfo();
+  const [{ user: userInfo }] = useUserInfo();
 
   const navItems = React.useMemo(() => (
     [{

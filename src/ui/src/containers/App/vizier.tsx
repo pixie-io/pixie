@@ -54,7 +54,7 @@ const useStyles = makeStyles(() => createStyles({
 
 const ClusterBanner = () => {
   const classes = useStyles();
-  const [user, loading, error] = useUserInfo();
+  const [{ user }, loading, error] = useUserInfo();
 
   if (loading || error) {
     return null;
@@ -158,7 +158,7 @@ export default function WithClusterBanner(): React.ReactElement {
 
   const [clusterId, setClusterId] = storage.useSessionStorage(storage.CLUSTER_ID_KEY, '');
   const [clusters, loadingClusters, clusterError] = useListClusters();
-  const [user, loadingUser, userError] = useUserInfo();
+  const [{ user }, loadingUser, userError] = useUserInfo();
 
   const ldClient = useLDClient();
 
