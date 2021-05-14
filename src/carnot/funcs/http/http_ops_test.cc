@@ -16,24 +16,24 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/carnot/funcs/funcs.h"
+#include <gtest/gtest.h>
 
-#include "src/carnot/funcs/builtins/builtins.h"
 #include "src/carnot/funcs/http/http_ops.h"
-#include "src/carnot/funcs/metadata/metadata_ops.h"
-#include "src/carnot/funcs/net/net_ops.h"
+#include "src/carnot/udf/test_utils.h"
+#include "src/common/base/base.h"
 
 namespace px {
 namespace carnot {
 namespace funcs {
+namespace http {
 
-void RegisterFuncsOrDie(udf::Registry* registry) {
-  builtins::RegisterBuiltinsOrDie(registry);
-  metadata::RegisterMetadataOpsOrDie(registry);
-  net::RegisterNetOpsOrDie(registry);
-  http::RegisterHTTPOpsOrDie(registry);
+TEST(HTTPOps, basic) {
+  auto udf_tester = udf::UDFTester<HTTPRespMessageUDF>();
+  udf_tester.ForInput(400).Expect("Bad Request");
+  udf_tester.ForInput(0).Expect("Unassigned");
 }
 
+}  // namespace http
 }  // namespace funcs
 }  // namespace carnot
 }  // namespace px

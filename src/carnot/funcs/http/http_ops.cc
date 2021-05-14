@@ -16,24 +16,30 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/carnot/funcs/funcs.h"
+#include <string>
 
-#include "src/carnot/funcs/builtins/builtins.h"
 #include "src/carnot/funcs/http/http_ops.h"
-#include "src/carnot/funcs/metadata/metadata_ops.h"
-#include "src/carnot/funcs/net/net_ops.h"
+#include "src/carnot/udf/registry.h"
+#include "src/common/base/base.h"
 
 namespace px {
 namespace carnot {
 namespace funcs {
+namespace http {
 
-void RegisterFuncsOrDie(udf::Registry* registry) {
-  builtins::RegisterBuiltinsOrDie(registry);
-  metadata::RegisterMetadataOpsOrDie(registry);
-  net::RegisterNetOpsOrDie(registry);
-  http::RegisterHTTPOpsOrDie(registry);
+void RegisterHTTPOpsOrDie(px::carnot::udf::Registry* registry) {
+  CHECK(registry != nullptr);
+  /*****************************************
+   * Scalar UDFs.
+   *****************************************/
+  registry->RegisterOrDie<HTTPRespMessageUDF>("http_resp_message");
+
+  /*****************************************
+   * Aggregate UDFs.
+   *****************************************/
 }
 
+}  // namespace http
 }  // namespace funcs
 }  // namespace carnot
 }  // namespace px

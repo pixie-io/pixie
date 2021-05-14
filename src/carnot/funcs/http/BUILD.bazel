@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library")
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 
 package(default_visibility = ["//src:__subpackages__"])
 
@@ -26,12 +26,15 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     deps = [
-        "//src/carnot/funcs/builtins:cc_library",
-        "//src/carnot/funcs/http:cc_library",
-        "//src/carnot/funcs/metadata:cc_library",
-        "//src/carnot/funcs/net:cc_library",
         "//src/carnot/udf:cc_library",
-        "//src/shared/metadata:cc_library",
-        "@com_github_tencent_rapidjson//:rapidjson",
+    ],
+)
+
+pl_cc_test(
+    name = "http_ops_test",
+    srcs = ["http_ops_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/udf:udf_testutils",
     ],
 )
