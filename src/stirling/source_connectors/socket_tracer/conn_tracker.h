@@ -124,6 +124,50 @@ class ConnTracker : NotCopyMoveable {
     kDisabled,
   };
 
+  class ConnStatsTracker {
+   public:
+    void set_closed(bool closed) { closed_ = closed; }
+
+    void set_bytes_recv(int64_t bytes_recv) { bytes_recv_ = bytes_recv; }
+
+    void set_bytes_sent(int64_t bytes_sent) { bytes_sent_ = bytes_sent; }
+
+    int bytes_recv() { return bytes_recv_; }
+    int bytes_sent() { return bytes_sent_; }
+    int closed() { return closed_; }
+
+    bool OpenSinceLastRead() {
+      bool val = true - last_reported_open_;
+      last_reported_open_ = true;
+      return val;
+    }
+    bool CloseSinceLastRead() {
+      bool val = closed_ - last_reported_close_;
+      last_reported_close_ = closed_;
+      return val;
+    }
+    int BytesRecvSinceLastRead() {
+      int64_t val = bytes_recv_ - last_reported_bytes_recv_;
+      last_reported_bytes_recv_ = bytes_recv_;
+      return val;
+    }
+    int BytesSentSinceLastRead() {
+      int64_t val = bytes_sent_ - last_reported_bytes_sent_;
+      last_reported_bytes_sent_ = bytes_sent_;
+      return val;
+    }
+
+   private:
+    int64_t bytes_recv_ = 0;
+    int64_t bytes_sent_ = 0;
+    bool closed_ = false;
+
+    int64_t last_reported_bytes_recv_ = 0;
+    int64_t last_reported_bytes_sent_ = 0;
+    bool last_reported_open_ = false;
+    bool last_reported_close_ = false;
+  };
+
   static constexpr std::chrono::seconds kDefaultInactivityDuration{300};
 
   /**
@@ -163,6 +207,13 @@ class ConnTracker : NotCopyMoveable {
    * @param event The data event from BPF.
    */
   void AddDataEvent(std::unique_ptr<SocketDataEvent> event);
+
+  /**
+   * Registers a BPF connection stats event into the tracker.
+   *
+   * @param event The data event from BPF.
+   */
+  void AddConnStats(const conn_stats_event_t& event);
 
   /**
    * Add a recorded HTTP2 header (name-value pair).
@@ -261,6 +312,7 @@ class ConnTracker : NotCopyMoveable {
   const conn_id_t& conn_id() const { return conn_id_; }
   TrafficProtocol protocol() const { return protocol_; }
   EndpointRole role() const { return role_; }
+  ConnStatsTracker& conn_stats() { return beta_conn_stats_; }
 
   /**
    * Get remote IP endpoint of the connection.
@@ -575,6 +627,8 @@ class ConnTracker : NotCopyMoveable {
   EndpointRole role_ = kRoleUnknown;
   SocketOpen open_info_;
   SocketClose close_info_;
+  ConnStatsTracker beta_conn_stats_;
+  uint64_t last_conn_stats_update_ = 0;
 
   // The data collected by the stream, one per direction.
   DataStream send_data_;

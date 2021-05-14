@@ -686,6 +686,64 @@ TEST_F(ConnTrackerTest, DisabledDueToStitchingFailureRate) {
   EXPECT_EQ(records.size(), 0);
 }
 
+TEST_F(ConnTrackerTest, ConnStats) {
+  ConnTracker tracker;
+
+  constexpr struct conn_id_t kConnID0 = {
+      .upid = {.pid = 12345, .start_time_ticks = 1000},
+      .fd = 3,
+      .tsid = 111110,
+  };
+
+  struct conn_stats_event_t conn_stats_event;
+  conn_stats_event.timestamp_ns = 0;
+  conn_stats_event.conn_id = kConnID0;
+  conn_stats_event.role = kRoleClient;
+  reinterpret_cast<struct sockaddr_in*>(&conn_stats_event.addr)->sin_family = AF_INET;
+  reinterpret_cast<struct sockaddr_in*>(&conn_stats_event.addr)->sin_port = htons(80);
+  reinterpret_cast<struct sockaddr_in*>(&conn_stats_event.addr)->sin_addr.s_addr =
+      0x01010101;  // 1.1.1.1
+  conn_stats_event.conn_events = 0;
+  conn_stats_event.rd_bytes = 0;
+  conn_stats_event.wr_bytes = 0;
+
+  conn_stats_event.timestamp_ns += 1;
+  conn_stats_event.conn_events |= CONN_OPEN;
+  conn_stats_event.rd_bytes += 10;
+  conn_stats_event.wr_bytes += 20;
+  tracker.AddConnStats(conn_stats_event);
+
+  EXPECT_EQ(tracker.conn_stats().OpenSinceLastRead(), 1);
+  EXPECT_EQ(tracker.conn_stats().CloseSinceLastRead(), 0);
+  EXPECT_EQ(tracker.conn_stats().BytesRecvSinceLastRead(), 10);
+  EXPECT_EQ(tracker.conn_stats().BytesSentSinceLastRead(), 20);
+
+  conn_stats_event.timestamp_ns += 1;
+  conn_stats_event.rd_bytes += 10;
+  conn_stats_event.wr_bytes += 20;
+  tracker.AddConnStats(conn_stats_event);
+
+  conn_stats_event.timestamp_ns += 1;
+  conn_stats_event.rd_bytes += 30;
+  conn_stats_event.wr_bytes += 70;
+  tracker.AddConnStats(conn_stats_event);
+
+  EXPECT_EQ(tracker.conn_stats().OpenSinceLastRead(), 0);
+  EXPECT_EQ(tracker.conn_stats().CloseSinceLastRead(), 0);
+  EXPECT_EQ(tracker.conn_stats().BytesRecvSinceLastRead(), 40);
+  EXPECT_EQ(tracker.conn_stats().BytesSentSinceLastRead(), 90);
+
+  conn_stats_event.timestamp_ns += 1;
+  conn_stats_event.conn_events |= CONN_CLOSE;
+  conn_stats_event.wr_bytes += 50;
+  tracker.AddConnStats(conn_stats_event);
+
+  EXPECT_EQ(tracker.conn_stats().OpenSinceLastRead(), 0);
+  EXPECT_EQ(tracker.conn_stats().CloseSinceLastRead(), 1);
+  EXPECT_EQ(tracker.conn_stats().BytesRecvSinceLastRead(), 0);
+  EXPECT_EQ(tracker.conn_stats().BytesSentSinceLastRead(), 50);
+}
+
 auto AggKeyIs(int tgid, std::string remote_addr) {
   return AllOf(Field(&ConnStats::AggKey::upid, Field(&upid_t::tgid, tgid)),
                Field(&ConnStats::AggKey::remote_addr, remote_addr));

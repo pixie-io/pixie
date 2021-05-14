@@ -170,6 +170,33 @@ void ConnTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   }
 }
 
+void ConnTracker::AddConnStats(const conn_stats_event_t& event) {
+  SetRole(event.role, "inferred from conn_stats event");
+  SetRemoteAddr(event.addr, "conn_stats event");
+  UpdateTimestamps(event.timestamp_ns);
+
+  CONN_TRACE(1) << absl::Substitute("ConnStats timestamp=$0 wr=$1 rd=$2 close=$3",
+                                    event.timestamp_ns, event.wr_bytes, event.rd_bytes,
+                                    event.conn_events & CONN_CLOSE);
+
+  DCHECK_NE(event.timestamp_ns, last_conn_stats_update_);
+  if (event.timestamp_ns > last_conn_stats_update_) {
+    DCHECK_GE(static_cast<int>(event.conn_events & CONN_CLOSE), beta_conn_stats_.closed());
+    DCHECK_GE(static_cast<int>(event.rd_bytes), beta_conn_stats_.bytes_recv());
+    DCHECK_GE(static_cast<int>(event.wr_bytes), beta_conn_stats_.bytes_sent());
+
+    beta_conn_stats_.set_bytes_recv(event.rd_bytes);
+    beta_conn_stats_.set_bytes_sent(event.wr_bytes);
+    beta_conn_stats_.set_closed(event.conn_events & CONN_CLOSE);
+
+    last_conn_stats_update_ = event.timestamp_ns;
+  } else {
+    DCHECK_LE(static_cast<int>(event.conn_events & CONN_CLOSE), beta_conn_stats_.closed());
+    DCHECK_LE(static_cast<int>(event.rd_bytes), beta_conn_stats_.bytes_recv());
+    DCHECK_LE(static_cast<int>(event.wr_bytes), beta_conn_stats_.bytes_sent());
+  }
+}
+
 protocols::http2::HalfStream* ConnTracker::HalfStreamPtr(uint32_t stream_id, bool write_event) {
   // Client-initiated streams have odd stream IDs.
   // Server-initiated streams have even stream IDs.
