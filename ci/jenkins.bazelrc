@@ -6,7 +6,6 @@ common --announce_rc
 # a given Jenkins runs.
 common --keep_going
 
-build --build_metadata=ROLE=CI
 build --build_metadata=HOST=jenkins-worker
 build --build_metadata=USER=jenkins
 build --build_metadata=REPO_URL=https://github.com/pixie-labs/pixielabs/

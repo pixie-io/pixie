@@ -247,9 +247,16 @@ def codeReviewPostBuild = {
 
 def writeBazelRCFile() {
   sh 'cp ci/jenkins.bazelrc jenkins.bazelrc'
-  if (!isMainCodeReviewRun) {
+  if (!isMainRun) {
+    // Don't upload to remote cache if this is not running main.
     sh '''
     echo "build --remote_upload_local_results=false" >> jenkins.bazelrc
+    '''
+  } else {
+    // Only set ROLE=CI if this is running on main. This controls the whether this
+    // run contributes to the test matrix at https://bb.corp.pixielabs.ai/tests/
+    sh '''
+    echo "build --build_metadata=ROLE=CI" >> jenkins.bazelrc
     '''
   }
   withCredentials([
