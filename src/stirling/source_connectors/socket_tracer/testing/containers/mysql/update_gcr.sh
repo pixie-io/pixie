@@ -17,7 +17,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Increment this number on every upload.
-version=1.1
+version=1.2
 tag="gcr.io/pixie-oss/pixie-dev-public/python_mysql_connector:$version"
 
 docker build . -t $tag

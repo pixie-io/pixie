@@ -151,7 +151,6 @@ class MySQLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> 
 
     // The first line of the output should be pid=<pid> (the container's python init is set-up to
     // print this automatically). Parse out the client PID from this line.
-
     std::vector<std::string_view> lines = absl::StrSplit(out, "\n");
     if (lines.empty()) {
       return error::Internal("Expected output from command.");
