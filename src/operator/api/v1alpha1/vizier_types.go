@@ -18,9 +18,8 @@
 
 // Generate the code for deep-copying the CRD in go.
 //go:generate controller-gen object
-// Generate the CRD YAMLs. The generated crd/px.dev_viziers.yaml should be moved to k8s/operator/crd/base:
-// `mv crd/px.dev_viziers.yaml ./k8s/operator/crd/base/px.dev_viziers.yaml`
-//go:generate controller-gen crd:trivialVersions=true rbac:roleName=operator-role webhook output:crd:artifacts:config=crd
+// Generate the CRD YAMLs.
+//go:generate controller-gen crd:trivialVersions=true rbac:roleName=operator-role webhook output:crd:artifacts:config=crd output:crd:dir:=../../../../k8s/operator/crd/base
 
 package v1alpha1
 
