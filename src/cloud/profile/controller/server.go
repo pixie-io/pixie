@@ -37,6 +37,7 @@ import (
 	"px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/cloud/project_manager/projectmanagerpb"
 	"px.dev/pixie/src/shared/services/authcontext"
+	claimsutils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils"
 )
 
@@ -310,8 +311,16 @@ func (s *Server) UpdateUser(ctx context.Context, req *profilepb.UpdateUserReques
 	if err != nil {
 		return nil, err
 	}
-	claimsOrgID := uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID)
-	claimsUserID := uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().UserID)
+
+	var claimsOrgID uuid.UUID
+	var claimsUserID uuid.UUID
+	checkUserClaims := false
+
+	if claimsutils.GetClaimsType(sCtx.Claims) == claimsutils.UserClaimType {
+		claimsOrgID = uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID)
+		claimsUserID = uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().UserID)
+		checkUserClaims = true
+	}
 
 	userID := utils.UUIDFromProtoOrNil(req.ID)
 	userInfo, err := s.d.GetUser(userID)
@@ -322,7 +331,7 @@ func (s *Server) UpdateUser(ctx context.Context, req *profilepb.UpdateUserReques
 	// Users should be able to update their userInfo, or another user's info only if they are an admin user
 	// in the org. Once we have RBAC, this should be updated to account for the latter.
 	if req.DisplayPicture != nil {
-		if userInfo.OrgID != claimsOrgID {
+		if checkUserClaims && userInfo.OrgID != claimsOrgID {
 			return nil, status.Error(codes.PermissionDenied, "User does not have permissions to update user field")
 		}
 		userInfo.ProfilePicture = &req.DisplayPicture.Value
@@ -331,7 +340,7 @@ func (s *Server) UpdateUser(ctx context.Context, req *profilepb.UpdateUserReques
 	// Admin users should be able to approve other users in the org. Once RBAC is implemented, we should change this
 	// to check whether the user is actually an admin.
 	if req.IsApproved != nil {
-		if claimsUserID == userID || userInfo.OrgID != claimsOrgID {
+		if checkUserClaims && (claimsUserID == userID || userInfo.OrgID != claimsOrgID) {
 			return nil, status.Error(codes.PermissionDenied, "User does not have permissions to approve user")
 		}
 		userInfo.IsApproved = req.IsApproved.Value
