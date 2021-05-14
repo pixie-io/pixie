@@ -83,6 +83,19 @@ func (s *Server) updateAuthProviderUser(authUserID string, orgID string, userID 
 	return userInfo, nil
 }
 
+func (s *Server) isUserApproved(ctx context.Context, userID string, orgInfo *profilepb.OrgInfo) (bool, error) {
+	pc := s.env.ProfileClient()
+	// If the org does not have approvals enabled, users are auto-approved by default.
+	if !orgInfo.EnableApprovals {
+		return true, nil
+	}
+	user, err := pc.GetUser(ctx, utils.ProtoFromUUIDStrOrNil(userID))
+	if err != nil {
+		return false, err
+	}
+	return user.IsApproved, nil
+}
+
 // Login uses the AuthProvider to authenticate and login the user. Errors out if their org doesn't exist.
 func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.LoginReply, error) {
 	userID, userInfo, err := s.getUserInfoFromToken(in.AccessToken)
@@ -150,6 +163,14 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	isApproved, err := s.isUserApproved(ctx, userInfo.PLUserID, orgInfo)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if !isApproved {
+		return nil, status.Error(codes.PermissionDenied, "user not yet approved to log in. Please request user approval from your org admin")
 	}
 
 	// Update user's profile photo.
@@ -257,6 +278,14 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 		orgID = orgInfo.ID
 		if err != nil {
 			return nil, err
+		}
+		// If the organization is not new, the user might not be approved, we should check.
+		isApproved, err := s.isUserApproved(ctx, userInfo.PLUserID, orgInfo)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		if !isApproved {
+			return nil, status.Error(codes.PermissionDenied, "user not yet approved to log in. Contact org admin")
 		}
 	}
 

@@ -1300,3 +1300,128 @@ func TestServer_LoginUserForOrgMembership(t *testing.T) {
 	assert.False(t, resp.UserCreated)
 	verifyToken(t, resp.Token, userID, orgID, resp.ExpiresAt, "jwtkey")
 }
+
+func TestServer_Signup_UserNotApproved(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// Setup expectations for the mocks.
+	a := mock_controllers.NewMockAuthProvider(ctrl)
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return(testingutils.TestUserID, nil)
+
+	fakeUserInfo := &controllers.UserInfo{
+		Email:     "abc@gmail.com",
+		FirstName: "first",
+		LastName:  "last",
+	}
+
+	a.EXPECT().GetUserInfo(testingutils.TestUserID).Return(fakeUserInfo, nil)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+
+	mockProfile.EXPECT().
+		GetUserByEmail(gomock.Any(), &profilepb.GetUserByEmailRequest{Email: "abc@gmail.com"}).
+		Return(nil, errors.New("doesnt exist"))
+
+	fakeOrgInfo := &profilepb.OrgInfo{
+		ID:              utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
+		EnableApprovals: true,
+	}
+
+	mockProfile.EXPECT().
+		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@gmail.com"}).
+		Return(fakeOrgInfo, nil)
+
+	mockProfile.EXPECT().CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
+		OrgID:     utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
+		Username:  "abc@gmail.com",
+		FirstName: "first",
+		LastName:  "last",
+		Email:     "abc@gmail.com",
+	}).Return(utils.ProtoFromUUIDStrOrNil(testingutils.TestUserID), nil)
+
+	mockUserInfo := &profilepb.UserInfo{
+		ID:         utils.ProtoFromUUIDStrOrNil(testingutils.TestUserID),
+		OrgID:      utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
+		Email:      "testUser@pixielabs.ai",
+		IsApproved: false,
+	}
+
+	mockProfile.EXPECT().
+		GetUser(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestUserID)).
+		Return(mockUserInfo, nil)
+
+	fakeUserInfoSecondRequest := &controllers.UserInfo{
+		Email:     "abc@gmail.com",
+		FirstName: "first",
+		LastName:  "last",
+	}
+	a.EXPECT().SetPLMetadata(testingutils.TestUserID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
+		fakeUserInfoSecondRequest.PLUserID = plid
+		fakeUserInfoSecondRequest.PLOrgID = plorgid
+	}).Return(nil)
+	a.EXPECT().GetUserInfo(testingutils.TestUserID).Return(fakeUserInfoSecondRequest, nil)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
+	env, err := authenv.New(mockProfile)
+	require.NoError(t, err)
+	s, err := controllers.NewServer(env, a, nil)
+	require.NoError(t, err)
+
+	resp, err := doSignupRequest(getTestContext(), t, s)
+	assert.Nil(t, resp)
+	assert.Regexp(t, "user not yet approved to log in", err)
+}
+
+func TestServer_Login_UserNotApproved(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	a := mock_controllers.NewMockAuthProvider(ctrl)
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return(testingutils.TestUserID, nil)
+
+	fakeUserInfo := &controllers.UserInfo{
+		Email:     "abc@gmail.com",
+		FirstName: "first",
+		LastName:  "last",
+		PLUserID:  testingutils.TestUserID,
+		PLOrgID:   testingutils.TestOrgID,
+	}
+
+	a.EXPECT().GetUserInfo(testingutils.TestUserID).Return(fakeUserInfo, nil)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	orgPb := utils.ProtoFromUUIDStrOrNil(orgID)
+	fakeOrgInfo := &profilepb.OrgInfo{
+		ID:              orgPb,
+		EnableApprovals: true,
+	}
+
+	mockProfile.EXPECT().
+		GetOrg(gomock.Any(), orgPb).
+		Return(fakeOrgInfo, nil)
+
+	mockProfile.EXPECT().
+		GetUser(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestUserID)).
+		Times(2).
+		Return(&profilepb.UserInfo{
+			ID:         utils.ProtoFromUUIDStrOrNil(testingutils.TestUserID),
+			OrgID:      utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
+			IsApproved: false,
+		}, nil)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
+	env, err := authenv.New(mockProfile)
+	require.NoError(t, err)
+	s, err := controllers.NewServer(env, a, nil)
+	require.NoError(t, err)
+
+	resp, err := doLoginRequest(getTestContext(), t, s, "")
+	assert.Nil(t, resp)
+	assert.Regexp(t, "user not yet approved to log in", err)
+}
