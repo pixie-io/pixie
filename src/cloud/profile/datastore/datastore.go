@@ -271,7 +271,7 @@ func (d *Datastore) createOrgUsingTxn(txn *sqlx.Tx, orgInfo *OrgInfo) (uuid.UUID
 
 // GetUsersInOrg gets all users in the given org.
 func (d *Datastore) GetUsersInOrg(orgID uuid.UUID) ([]*UserInfo, error) {
-	query := `SELECT * from users WHERE org_id=$1`
+	query := `SELECT * from users WHERE org_id=$1 order by created_at desc`
 	rows, err := d.db.Queryx(query, orgID)
 	if err != nil {
 		return nil, err
