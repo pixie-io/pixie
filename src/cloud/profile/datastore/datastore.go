@@ -293,13 +293,26 @@ func (d *Datastore) GetUsersInOrg(orgID uuid.UUID) ([]*UserInfo, error) {
 // UpdateUser updates the user in the database.
 func (d *Datastore) UpdateUser(userInfo *UserInfo) error {
 	query := `UPDATE users SET profile_picture = :profile_picture, is_approved = :is_approved WHERE id = :id`
-	row, err := d.db.NamedQuery(query, userInfo)
-	if err != nil {
-		return err
-	}
-	defer row.Close()
+	_, err := d.db.NamedExec(query, userInfo)
+	return err
+}
 
-	return nil
+// UpdateOrg updates the org in the database.
+func (d *Datastore) UpdateOrg(orgInfo *OrgInfo) error {
+	query := `UPDATE orgs SET enable_approvals = :enable_approvals WHERE id = :id`
+	_, err := d.db.NamedExec(query, orgInfo)
+	return err
+}
+
+// ApproveAllOrgUsers sets all users is_approved column to true in an org.
+func (d *Datastore) ApproveAllOrgUsers(orgID uuid.UUID) error {
+	query := `UPDATE users SET is_approved = true WHERE org_id = :org_id`
+	_, err := d.db.NamedExec(query, struct {
+		OrgID uuid.UUID `db:"org_id"`
+	}{
+		OrgID: orgID,
+	})
+	return err
 }
 
 // UserSetting is a key-value setting for a user configuration.

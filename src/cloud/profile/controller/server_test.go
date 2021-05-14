@@ -894,6 +894,173 @@ func TestServer_UpdateUser(t *testing.T) {
 	}
 }
 
+func TestServer_UpdateOrg(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := mock_controller.NewMockDatastore(ctrl)
+
+	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	s := controller.NewServer(nil, d, nil, nil)
+
+	mockReply := &datastore.OrgInfo{
+		ID:              orgID,
+		EnableApprovals: false,
+	}
+
+	mockUpdateReq := &datastore.OrgInfo{
+		ID:              orgID,
+		EnableApprovals: true,
+	}
+
+	d.EXPECT().
+		GetOrg(orgID).
+		Return(mockReply, nil)
+
+	d.EXPECT().
+		UpdateOrg(mockUpdateReq).
+		Return(nil)
+
+	resp, err := s.UpdateOrg(
+		CreateTestContext(),
+		&profilepb.UpdateOrgRequest{
+			ID:              utils.ProtoFromUUID(orgID),
+			EnableApprovals: &types.BoolValue{Value: true},
+		})
+
+	require.NoError(t, err)
+	assert.Equal(t, resp.ID, utils.ProtoFromUUID(orgID))
+	assert.Equal(t, resp.EnableApprovals, true)
+}
+
+func TestServer_UpdateOrg_DisableApprovals(t *testing.T) {
+	// Disabling approvals now causes all existing users to become approved.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := mock_controller.NewMockDatastore(ctrl)
+
+	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	s := controller.NewServer(nil, d, nil, nil)
+
+	mockReply := &datastore.OrgInfo{
+		ID: orgID,
+		// Start with approvals enabled.
+		EnableApprovals: true,
+	}
+
+	mockUpdateReq := &datastore.OrgInfo{
+		ID: orgID,
+		// Disable approvals.
+		EnableApprovals: false,
+	}
+
+	d.EXPECT().
+		GetOrg(orgID).
+		Return(mockReply, nil)
+
+	d.EXPECT().
+		UpdateOrg(mockUpdateReq).
+		Return(nil)
+
+	d.EXPECT().
+		ApproveAllOrgUsers(orgID).
+		Return(nil)
+
+	resp, err := s.UpdateOrg(
+		CreateTestContext(),
+		&profilepb.UpdateOrgRequest{
+			ID: utils.ProtoFromUUID(orgID),
+			// Disable approvals.
+			EnableApprovals: &types.BoolValue{Value: false},
+		})
+
+	require.NoError(t, err)
+	assert.Equal(t, resp.ID, utils.ProtoFromUUID(orgID))
+	assert.Equal(t, resp.EnableApprovals, false)
+
+	// TODO go through all users and get approvals.
+}
+
+func TestServer_UpdateOrg_NoChangeInState(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := mock_controller.NewMockDatastore(ctrl)
+
+	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	s := controller.NewServer(nil, d, nil, nil)
+
+	mockReply := &datastore.OrgInfo{
+		ID:              orgID,
+		EnableApprovals: true,
+	}
+
+	d.EXPECT().
+		GetOrg(orgID).
+		Return(mockReply, nil)
+
+	resp, err := s.UpdateOrg(
+		CreateTestContext(),
+		&profilepb.UpdateOrgRequest{
+			ID:              utils.ProtoFromUUID(orgID),
+			EnableApprovals: &types.BoolValue{Value: true},
+		},
+	)
+
+	require.NoError(t, err)
+	assert.Equal(t, resp.ID, utils.ProtoFromUUID(orgID))
+	assert.Equal(t, resp.EnableApprovals, true)
+}
+
+func TestServer_UpdateOrg_EnableApprovalsIsNull(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := mock_controller.NewMockDatastore(ctrl)
+
+	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	s := controller.NewServer(nil, d, nil, nil)
+
+	mockReply := &datastore.OrgInfo{
+		ID:              orgID,
+		EnableApprovals: true,
+	}
+
+	d.EXPECT().
+		GetOrg(orgID).
+		Return(mockReply, nil)
+
+	resp, err := s.UpdateOrg(
+		CreateTestContext(),
+		&profilepb.UpdateOrgRequest{
+			ID: utils.ProtoFromUUID(orgID),
+		},
+	)
+
+	require.NoError(t, err)
+	assert.Equal(t, resp.ID, utils.ProtoFromUUID(orgID))
+	assert.Equal(t, resp.EnableApprovals, true)
+}
+
+func TestServer_UpdateOrg_RequestBlockedForUserOutsideOrg(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := mock_controller.NewMockDatastore(ctrl)
+
+	s := controller.NewServer(nil, d, nil, nil)
+	_, err := s.UpdateOrg(
+		CreateTestContext(),
+		&profilepb.UpdateOrgRequest{
+			// Random org that doesn't match org claims in context.
+			ID: utils.ProtoFromUUID(uuid.Must(uuid.NewV4())),
+		},
+	)
+
+	require.Regexp(t, "user does not have permission", err)
+}
+
 func TestServer_GetUserSettings(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

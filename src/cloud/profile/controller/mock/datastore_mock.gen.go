@@ -35,6 +35,20 @@ func (m *MockDatastore) EXPECT() *MockDatastoreMockRecorder {
 	return m.recorder
 }
 
+// ApproveAllOrgUsers mocks base method.
+func (m *MockDatastore) ApproveAllOrgUsers(arg0 uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ApproveAllOrgUsers", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ApproveAllOrgUsers indicates an expected call of ApproveAllOrgUsers.
+func (mr *MockDatastoreMockRecorder) ApproveAllOrgUsers(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApproveAllOrgUsers", reflect.TypeOf((*MockDatastore)(nil).ApproveAllOrgUsers), arg0)
+}
+
 // CreateUser mocks base method.
 func (m *MockDatastore) CreateUser(arg0 *datastore.UserInfo) (uuid.UUID, error) {
 	m.ctrl.T.Helper()
@@ -168,6 +182,20 @@ func (m *MockDatastore) GetUsersInOrg(arg0 uuid.UUID) ([]*datastore.UserInfo, er
 func (mr *MockDatastoreMockRecorder) GetUsersInOrg(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersInOrg", reflect.TypeOf((*MockDatastore)(nil).GetUsersInOrg), arg0)
+}
+
+// UpdateOrg mocks base method.
+func (m *MockDatastore) UpdateOrg(arg0 *datastore.OrgInfo) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateOrg", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateOrg indicates an expected call of UpdateOrg.
+func (mr *MockDatastoreMockRecorder) UpdateOrg(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrg", reflect.TypeOf((*MockDatastore)(nil).UpdateOrg), arg0)
 }
 
 // UpdateUser mocks base method.

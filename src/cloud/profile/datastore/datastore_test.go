@@ -69,9 +69,9 @@ func mustLoadTestData(db *sqlx.DB) {
 
 	insertOrgQuery := `INSERT INTO orgs (id, org_name, domain_name, enable_approvals) VALUES ($1, $2, $3, $4)`
 	db.MustExec(insertOrgQuery, "123e4567-e89b-12d3-a456-426655440000", "my-org", "my-org.com", "false")
-	insertUserQuery := `INSERT INTO users (id, org_id, username, first_name, last_name, email) VALUES ($1, $2, $3, $4, $5, $6)`
-	db.MustExec(insertUserQuery, "123e4567-e89b-12d3-a456-426655440001", "123e4567-e89b-12d3-a456-426655440000", "person@my-org.com", "first", "last", "person@my-org.com")
-	db.MustExec(insertUserQuery, "123e4567-e89b-12d3-a456-426655440002", "123e4567-e89b-12d3-a456-426655440000", "person2@my-org.com", "first2", "last2", "person2@my-org.com")
+	insertUserQuery := `INSERT INTO users (id, org_id, username, first_name, last_name, email, is_approved) VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	db.MustExec(insertUserQuery, "123e4567-e89b-12d3-a456-426655440001", "123e4567-e89b-12d3-a456-426655440000", "person@my-org.com", "first", "last", "person@my-org.com", "true")
+	db.MustExec(insertUserQuery, "123e4567-e89b-12d3-a456-426655440002", "123e4567-e89b-12d3-a456-426655440000", "person2@my-org.com", "first2", "last2", "person2@my-org.com", "false")
 
 	insertUserSetting := `INSERT INTO user_settings (user_id, key, value) VALUES ($1, $2, $3)`
 	db.MustExec(insertUserSetting, "123e4567-e89b-12d3-a456-426655440001", "some_setting", "test")
@@ -302,14 +302,15 @@ func TestDatastore(t *testing.T) {
 
 		userID := "123e4567-e89b-12d3-a456-426655440001"
 		profilePicture := "http://somepicture"
-		err := d.UpdateUser(&datastore.UserInfo{ID: uuid.FromStringOrNil(userID), FirstName: "first", LastName: "last", ProfilePicture: &profilePicture, IsApproved: true})
+		// Original should be IsApproved -> true.
+		err := d.UpdateUser(&datastore.UserInfo{ID: uuid.FromStringOrNil(userID), FirstName: "first", LastName: "last", ProfilePicture: &profilePicture, IsApproved: false})
 		require.NoError(t, err)
 
 		userInfoFetched, err := d.GetUser(uuid.FromStringOrNil(userID))
 		require.NoError(t, err)
 		require.NotNil(t, userInfoFetched)
 		assert.Equal(t, "http://somepicture", *userInfoFetched.ProfilePicture)
-		assert.Equal(t, true, userInfoFetched.IsApproved)
+		assert.Equal(t, false, userInfoFetched.IsApproved)
 	})
 
 	t.Run("Get user settings", func(t *testing.T) {
@@ -359,5 +360,35 @@ func TestDatastore(t *testing.T) {
 		users, err := d.GetUsersInOrg(uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"))
 		require.NoError(t, err)
 		assert.Equal(t, 2, len(users))
+	})
+
+	t.Run("update org", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db)
+
+		orgID := "123e4567-e89b-12d3-a456-426655440000"
+		require.NoError(t, d.UpdateOrg(&datastore.OrgInfo{
+			ID:              uuid.FromStringOrNil(orgID),
+			EnableApprovals: true,
+		}))
+
+		orgInfoFetched, err := d.GetOrg(uuid.FromStringOrNil(orgID))
+		require.NoError(t, err)
+		require.NotNil(t, orgInfoFetched)
+		assert.True(t, orgInfoFetched.EnableApprovals)
+	})
+
+	t.Run("approve all users", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db)
+
+		orgID := uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000")
+		require.NoError(t, d.ApproveAllOrgUsers(orgID))
+
+		users, err := d.GetUsersInOrg(orgID)
+		require.NoError(t, err)
+		assert.Equal(t, 2, len(users))
+		assert.True(t, users[0].IsApproved)
+		assert.True(t, users[1].IsApproved)
 	})
 }

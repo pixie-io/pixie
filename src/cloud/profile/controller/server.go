@@ -67,6 +67,11 @@ type Datastore interface {
 	DeleteOrgAndUsers(uuid.UUID) error
 	// UpdateUser updates the user info.
 	UpdateUser(*datastore.UserInfo) error
+	// ApproveAllOrgUsers sets is_approved for all users.
+	ApproveAllOrgUsers(uuid.UUID) error
+
+	// UpdateOrg updates the orgs info.
+	UpdateOrg(*datastore.OrgInfo) error
 
 	// GetOrgs gets all the orgs.
 	GetOrgs() ([]*datastore.OrgInfo, error)
@@ -115,9 +120,10 @@ func userInfoToProto(u *datastore.UserInfo) *profilepb.UserInfo {
 
 func orgInfoToProto(o *datastore.OrgInfo) *profilepb.OrgInfo {
 	return &profilepb.OrgInfo{
-		ID:         utils.ProtoFromUUID(o.ID),
-		OrgName:    o.OrgName,
-		DomainName: o.DomainName,
+		ID:              utils.ProtoFromUUID(o.ID),
+		OrgName:         o.OrgName,
+		DomainName:      o.DomainName,
+		EnableApprovals: o.EnableApprovals,
 	}
 }
 
@@ -460,5 +466,46 @@ func (s *Server) GetUsersInOrg(ctx context.Context, req *profilepb.GetUsersInOrg
 
 // UpdateOrg updates an orgs info.
 func (s *Server) UpdateOrg(ctx context.Context, req *profilepb.UpdateOrgRequest) (*profilepb.OrgInfo, error) {
-	return nil, status.Error(codes.Unimplemented, "UpdateOrg not implemented yet")
+	id := utils.UUIDFromProtoOrNil(req.ID)
+	if id == uuid.Nil {
+		return nil, status.Error(codes.InvalidArgument, "org ID improperly formatted")
+	}
+	// Check to make sure the user is authorized to update org.
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Only check the claims type for users.
+	if claimsutils.GetClaimsType(sCtx.Claims) == claimsutils.UserClaimType {
+		claimsOrgID := uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID)
+
+		if id != claimsOrgID {
+			return nil, status.Error(codes.PermissionDenied, "user does not have permissions to update org field")
+		}
+	}
+
+	// Get OrgInfo.
+	orgInfo, err := s.d.GetOrg(id)
+	if err != nil {
+		return nil, toExternalError(err)
+	}
+
+	// If the values are the same, no need to update.
+	if req.EnableApprovals == nil || orgInfo.EnableApprovals == req.EnableApprovals.Value {
+		return orgInfoToProto(orgInfo), nil
+	}
+
+	orgInfo.EnableApprovals = req.EnableApprovals.Value
+	if err := s.d.UpdateOrg(orgInfo); err != nil {
+		return nil, toExternalError(err)
+	}
+	// If EnableApprovals has changed to false, we flip the flag for all users to approve them.
+	if !orgInfo.EnableApprovals {
+		err = s.d.ApproveAllOrgUsers(id)
+		if err != nil {
+			return nil, toExternalError(err)
+		}
+	}
+	return orgInfoToProto(orgInfo), nil
 }
