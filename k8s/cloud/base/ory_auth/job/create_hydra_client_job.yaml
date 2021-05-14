@@ -6,6 +6,23 @@ metadata:
 spec:
   template:
     spec:
+      initContainers:
+      - name: hydra-wait
+        image: gcr.io/pixie-prod/pixie-prod-artifacts/curl:1.0
+        # yamllint disable
+        command: ['sh', '-c', 'set -x;
+          URL="${PL_HYDRA_PUBLIC_HOST}/health/ready";
+          until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
+            echo "waiting for ${URL}"
+            sleep 2;
+          done;
+        ']
+        env:
+        - name: PL_HYDRA_PUBLIC_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: pl-ory-service-config
+              key: PL_HYDRA_PUBLIC_HOST
       containers:
       - name: create-hydra-client-job
         image: oryd/hydra:v1.9.2-sqlite
