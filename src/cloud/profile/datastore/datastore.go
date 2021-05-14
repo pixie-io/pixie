@@ -45,9 +45,10 @@ type UserInfo struct {
 
 // OrgInfo tracks information about an organization.
 type OrgInfo struct {
-	ID         uuid.UUID `db:"id"`
-	OrgName    string    `db:"org_name"`
-	DomainName string    `db:"domain_name"`
+	ID              uuid.UUID `db:"id"`
+	OrgName         string    `db:"org_name"`
+	DomainName      string    `db:"domain_name"`
+	EnableApprovals bool      `db:"enable_approvals"`
 }
 
 // Datastore is a postgres backed storage for entities.
