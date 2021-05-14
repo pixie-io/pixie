@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/gqltesting"
@@ -173,6 +174,39 @@ func TestUserSettingsResolver_UpdateUserSettings(t *testing.T) {
 			ExpectedResult: `
 				{
 					"UpdateUserSettings": true
+				}
+			`,
+		},
+	})
+}
+
+func TestUserSettingsResolver_UpdateUser(t *testing.T) {
+	_, mockClients, cleanup := gqltestutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	mockClients.MockProfile.EXPECT().UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
+		ID:         utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9"),
+		IsApproved: &types.BoolValue{Value: true},
+	}).Return(nil, nil)
+
+	gqlEnv := controller.GraphQLEnv{
+		ProfileServiceClient: mockClients.MockProfile,
+	}
+
+	gqlSchema := LoadSchema(gqlEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				mutation {
+					UpdateUser(userInfo: {id: "6ba7b810-9dad-11d1-80b4-00c04fd430c9", isApproved: true })
+				}
+			`,
+			ExpectedResult: `
+				{
+					"UpdateUser": true
 				}
 			`,
 		},

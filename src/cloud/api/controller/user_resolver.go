@@ -22,6 +22,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/gogo/protobuf/types"
 	"github.com/graph-gophers/graphql-go"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
@@ -189,6 +190,36 @@ func (q *QueryResolver) UpdateUserSettings(ctx context.Context, args *updateUser
 	}
 
 	return resp.OK, nil
+}
+
+// UpdateUser updates the user info.
+func (q *QueryResolver) UpdateUser(ctx context.Context, args *updateUserArgs) (bool, error) {
+	req := &profilepb.UpdateUserRequest{
+		ID: utils.ProtoFromUUIDStrOrNil(string(args.UserInfo.ID)),
+	}
+
+	if args.UserInfo.ProfilePicture != nil {
+		req.DisplayPicture = &types.StringValue{Value: *args.UserInfo.ProfilePicture}
+	}
+	if args.UserInfo.IsApproved != nil {
+		req.IsApproved = &types.BoolValue{Value: *args.UserInfo.IsApproved}
+	}
+
+	_, err := q.Env.ProfileServiceClient.UpdateUser(ctx, req)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+type updateUserArgs struct {
+	UserInfo *editableUserInfo
+}
+
+type editableUserInfo struct {
+	ID             graphql.ID
+	ProfilePicture *string
+	IsApproved     *bool
 }
 
 type inviteUserArgs struct {

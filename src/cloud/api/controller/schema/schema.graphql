@@ -210,6 +210,13 @@ type Mutation {
   DeleteAPIKey(id: ID!): Boolean!
   UpdateUserSettings(keys: [String]!, values: [String]!): Boolean!
   InviteUser(email: String!, firstName: String!, lastName: String!): UserInvite!
+  UpdateUser(userInfo: EditableUserInfo): Boolean!
+}
+
+input EditableUserInfo {
+  id: ID! 
+  profilePicture: String
+  isApproved: Boolean
 }
 
 type CLIArtifact {
