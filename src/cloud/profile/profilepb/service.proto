@@ -36,6 +36,7 @@ service ProfileService {
   rpc GetOrg(px.uuidpb.UUID) returns (OrgInfo);
   rpc GetOrgByDomain(GetOrgByDomainRequest) returns (OrgInfo);
   rpc UpdateUser(UpdateUserRequest) returns (UserInfo);
+  rpc UpdateOrg(UpdateOrgRequest) returns (OrgInfo);
   rpc GetOrgs(GetOrgsRequest) returns (GetOrgsResponse);
   rpc GetUsersInOrg(GetUsersInOrgRequest) returns (GetUsersInOrgResponse);
   // Calls for handling user settings.
@@ -73,6 +74,8 @@ message OrgInfo {
   string org_name = 2;
   // The last part of their email.
   string domain_name = 3;
+  // Whether this org requires admin approval to authorize new users.
+  bool enable_approvals = 4;
 }
 
 message CreateUserRequest {
@@ -121,6 +124,13 @@ message UpdateUserRequest {
   // This used to be `profile_picture` which has been replaced with `display_picture`
   // which correctly uses google's StringValues.
   reserved 2;
+}
+
+message UpdateOrgRequest {
+  // The ID of the org.
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  // Whether to enable/disable the requirement for admins to approve new users.
+  google.protobuf.BoolValue enable_approvals = 2;
 }
 
 // A request to get the user settings for a particular user.

@@ -237,6 +237,26 @@ func (mr *MockProfileServiceClientMockRecorder) InviteUser(ctx, in interface{}, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InviteUser", reflect.TypeOf((*MockProfileServiceClient)(nil).InviteUser), varargs...)
 }
 
+// UpdateOrg mocks base method.
+func (m *MockProfileServiceClient) UpdateOrg(ctx context.Context, in *profilepb.UpdateOrgRequest, opts ...grpc.CallOption) (*profilepb.OrgInfo, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateOrg", varargs...)
+	ret0, _ := ret[0].(*profilepb.OrgInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateOrg indicates an expected call of UpdateOrg.
+func (mr *MockProfileServiceClientMockRecorder) UpdateOrg(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrg", reflect.TypeOf((*MockProfileServiceClient)(nil).UpdateOrg), varargs...)
+}
+
 // UpdateUser mocks base method.
 func (m *MockProfileServiceClient) UpdateUser(ctx context.Context, in *profilepb.UpdateUserRequest, opts ...grpc.CallOption) (*profilepb.UserInfo, error) {
 	m.ctrl.T.Helper()
@@ -448,6 +468,21 @@ func (m *MockProfileServiceServer) InviteUser(arg0 context.Context, arg1 *profil
 func (mr *MockProfileServiceServerMockRecorder) InviteUser(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InviteUser", reflect.TypeOf((*MockProfileServiceServer)(nil).InviteUser), arg0, arg1)
+}
+
+// UpdateOrg mocks base method.
+func (m *MockProfileServiceServer) UpdateOrg(arg0 context.Context, arg1 *profilepb.UpdateOrgRequest) (*profilepb.OrgInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateOrg", arg0, arg1)
+	ret0, _ := ret[0].(*profilepb.OrgInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateOrg indicates an expected call of UpdateOrg.
+func (mr *MockProfileServiceServerMockRecorder) UpdateOrg(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrg", reflect.TypeOf((*MockProfileServiceServer)(nil).UpdateOrg), arg0, arg1)
 }
 
 // UpdateUser mocks base method.

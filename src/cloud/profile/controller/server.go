@@ -457,3 +457,8 @@ func (s *Server) GetUsersInOrg(ctx context.Context, req *profilepb.GetUsersInOrg
 		Users: usersProto,
 	}, nil
 }
+
+// UpdateOrg updates an orgs info.
+func (s *Server) UpdateOrg(ctx context.Context, req *profilepb.UpdateOrgRequest) (*profilepb.OrgInfo, error) {
+	return nil, status.Error(codes.Unimplemented, "UpdateOrg not implemented yet")
+}
