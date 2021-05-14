@@ -40,6 +40,12 @@ export interface GQLUserInfo {
   isApproved: boolean;
 }
 
+export interface GQLOrgInfo {
+  id: string;
+  name: string;
+  enableApprovals: boolean;
+}
+
 export interface GQLUserSetting {
   key: string;
   value: string;
@@ -92,6 +98,7 @@ export interface GQLAPIKey {
 
 export interface GQLQuery {
   user: GQLUserInfo;
+  org: GQLOrgInfo;
   userSettings: Array<GQLUserSetting | null>;
   orgUsers: Array<GQLUserInfo | null>;
   cluster: GQLClusterInfo;
@@ -274,6 +281,7 @@ export interface GQLScriptContents {
  */
 export interface GQLResolver {
   UserInfo?: GQLUserInfoTypeResolver;
+  OrgInfo?: GQLOrgInfoTypeResolver;
   UserSetting?: GQLUserSettingTypeResolver;
   DeploymentKey?: GQLDeploymentKeyTypeResolver;
   APIKey?: GQLAPIKeyTypeResolver;
@@ -332,6 +340,24 @@ export interface UserInfoToOrgIDResolver<TParent = any, TResult = any> {
 }
 
 export interface UserInfoToIsApprovedResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLOrgInfoTypeResolver<TParent = any> {
+  id?: OrgInfoToIdResolver<TParent>;
+  name?: OrgInfoToNameResolver<TParent>;
+  enableApprovals?: OrgInfoToEnableApprovalsResolver<TParent>;
+}
+
+export interface OrgInfoToIdResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface OrgInfoToNameResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface OrgInfoToEnableApprovalsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
@@ -396,6 +422,7 @@ export interface APIKeyToDescResolver<TParent = any, TResult = any> {
 
 export interface GQLQueryTypeResolver<TParent = any> {
   user?: QueryToUserResolver<TParent>;
+  org?: QueryToOrgResolver<TParent>;
   userSettings?: QueryToUserSettingsResolver<TParent>;
   orgUsers?: QueryToOrgUsersResolver<TParent>;
   cluster?: QueryToClusterResolver<TParent>;
@@ -416,6 +443,10 @@ export interface GQLQueryTypeResolver<TParent = any> {
 }
 
 export interface QueryToUserResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToOrgResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
