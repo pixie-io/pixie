@@ -27,3 +27,4 @@ export * from './use-list-clusters';
 export * from './use-setting';
 export * from './use-user-info';
 export * from './use-org-users';
+export * from './use-org-info';

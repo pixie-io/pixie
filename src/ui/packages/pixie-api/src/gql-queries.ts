@@ -72,6 +72,23 @@ export const USER_QUERIES = {
   `,
 };
 
+export const ORG_QUERIES = {
+  GET_ORG_INFO: gql`
+    {
+      org {
+        id
+        name
+        enableApprovals
+      }
+    }
+  `,
+  SET_ORG_INFO: gql`
+    mutation UpdateOrg ($id: ID!, $enableApprovals: Boolean) {
+      UpdateOrg(orgInfo: {id: $id, enableApprovals: $enableApprovals})
+    }
+  `,
+};
+
 export const API_KEY_QUERIES = {
   LIST_API_KEYS: gql`
     {

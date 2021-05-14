@@ -32,6 +32,7 @@ export {
   DEPLOYMENT_KEY_QUERIES,
   CLUSTER_QUERIES,
   AUTOCOMPLETE_QUERIES,
+  ORG_QUERIES,
 } from './gql-queries';
 
 // Note: GQLUserSetting is not exposed because UserSettings is more specific.
@@ -64,6 +65,7 @@ export {
   GQLQuery,
   GQLUserInfo,
   GQLUserInvite,
+  GQLOrgInfo,
   // Note: GQLUserSetting is not exposed because we already expose the more specific UserSettings from ./user-settings.
   // GQLUserSetting,
   GQLClusterInfo,
@@ -92,6 +94,7 @@ export {
   GQLResolver,
   GQLQueryTypeResolver,
   GQLUserInfoTypeResolver,
+  GQLOrgInfoTypeResolver,
   GQLUserSettingTypeResolver,
   GQLClusterInfoTypeResolver,
   GQLVizierConfigTypeResolver,
