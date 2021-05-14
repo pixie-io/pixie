@@ -560,6 +560,10 @@ bool ConnTracker::IsRemoteAddrInCluster(const std::vector<CIDRBlock>& cluster_ci
 }
 
 void ConnTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs) {
+  if (state_ == State::kDisabled) {
+    return;
+  }
+
   // Don't handle anything but IP domain sockets.
   // Unspecified means we haven't figure out the SockAddrFamily yet, so let those through.
   if (open_info_.remote_addr.family != SockAddrFamily::kIPv4 &&
@@ -672,12 +676,6 @@ void ConnTracker::IterationPreTick(
 
   // Assume no activity. This flag will be flipped if there is any activity during the iteration.
   idle_iteration_ = true;
-
-  // Might not always be true, but for now there's nothing IterationPreTick does that
-  // should be applied to a disabled tracker. This is in contrast to IterationPostTick.
-  if (state_ == State::kDisabled) {
-    return;
-  }
 
   // If remote_addr is missing, it means the connect/accept was not traced.
   // Attempt to infer the connection information, to populate remote_addr.
