@@ -420,8 +420,11 @@ TEST_F(SocketTraceBPFTest, LargeMessages) {
   //  HasSubstr("+++++"));
 }
 
+using NullRemoteAddrTest = testing::SocketTraceBPFTest</* TClientSideTracing */ false>;
+
 // Tests that accept4() with a NULL sock_addr result argument.
-TEST_F(SocketTraceBPFTest, TestAccept4WithNullRemoteAddr) {
+// TODO(yzhao): Think about how can we reliably test BPF's IPv6 code path.
+TEST_F(NullRemoteAddrTest, Accept4WithNullRemoteAddr) {
   StartTransferDataThread();
 
   TCPSocket client;
@@ -435,12 +438,6 @@ TEST_F(SocketTraceBPFTest, TestAccept4WithNullRemoteAddr) {
 
     conn->Read(&data);
     conn->Write(kHTTPRespMsg1);
-
-    conn->Read(&data);
-    conn->Write(kHTTPRespMsg1);
-
-    conn->Read(&data);
-    conn->Write(kHTTPRespMsg1);
   });
 
   std::thread client_thread([&client, &server]() {
@@ -450,23 +447,20 @@ TEST_F(SocketTraceBPFTest, TestAccept4WithNullRemoteAddr) {
 
     client.Write(kHTTPReqMsg1);
     client.Read(&data);
-    // Separate req & resp such that they are handled in different TransferData() call.
-    // That ensures the socket info resolution to work correctly.
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
-    client.Write(kHTTPReqMsg1);
-    client.Read(&data);
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
-    client.Write(kHTTPReqMsg1);
-    client.Read(&data);
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
-    client.Close();
   });
 
   server_thread.join();
   client_thread.join();
+
+  struct sockaddr_in client_sockaddr = {};
+  socklen_t client_sockaddr_len = sizeof(client_sockaddr);
+
+  // Get the remote port seen by server from client's local port.
+  ASSERT_EQ(getsockname(client.sockfd(), reinterpret_cast<struct sockaddr*>(&client_sockaddr),
+                        &client_sockaddr_len),
+            0);
+  // Close after getting the sockaddr from fd, otherwise getsockname() wont work.
+  client.Close();
 
   StopTransferDataThread();
 
@@ -483,11 +477,13 @@ TEST_F(SocketTraceBPFTest, TestAccept4WithNullRemoteAddr) {
   EXPECT_THAT(
       std::string(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(target_record_idx)),
       HasSubstr(R"(Content-Type":"application/json; msg1)"));
+  ASSERT_OK_AND_ASSIGN(std::string remote_addr, IPv4AddrToString(client_sockaddr.sin_addr));
   // Make sure that the socket info resolution works.
   EXPECT_THAT(
       std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(target_record_idx)),
-      // On IPv6 host, localhost is resolved to ::1.
-      AnyOf(HasSubstr("127.0.0.1"), HasSubstr("::1")));
+      StrEq(remote_addr));
+  EXPECT_EQ(record_batch[kHTTPRemotePortIdx]->Get<types::Int64Value>(target_record_idx),
+            ntohs(client_sockaddr.sin_port));
 }
 
 // Run a UDP-based client-server system.

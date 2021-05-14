@@ -25,7 +25,10 @@
 
 // LINT_C_FILE: Do not remove this line. It ensures cpplint treats this as a C file.
 
+#include <linux/in6.h>
+#include <linux/net.h>
 #include <linux/socket.h>
+#include <net/inet_sock.h>
 
 #define socklen_t size_t
 
@@ -75,6 +78,7 @@ struct connect_args_t {
 
 struct accept_args_t {
   struct sockaddr* addr;
+  struct socket* sock_alloc_socket;
 };
 
 struct data_args_t {
@@ -357,12 +361,43 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info,
  * Perf submit functions
  ***********************************************************/
 
+static __inline void read_sockaddr_kernel(struct conn_info_t* conn_info,
+                                          const struct socket* socket) {
+  // The use of bpf_probe_read_kernel() is required since BCC cannot insert them as expected.
+  struct sock* sk = NULL;
+  bpf_probe_read_kernel(&sk, sizeof(sk), &socket->sk);
+
+  struct sock_common* sk_common = &sk->__sk_common;
+  uint16_t family = -1;
+  uint16_t port = -1;
+
+  bpf_probe_read_kernel(&family, sizeof(family), &sk_common->skc_family);
+  bpf_probe_read_kernel(&port, sizeof(port), &sk_common->skc_dport);
+
+  if (family == AF_INET) {
+    conn_info->addr.in4.sin_family = family;
+    conn_info->addr.in4.sin_port = port;
+
+    uint32_t* addr = &conn_info->addr.in4.sin_addr.s_addr;
+    bpf_probe_read_kernel(addr, sizeof(*addr), &sk_common->skc_daddr);
+  } else if (family == AF_INET6) {
+    conn_info->addr.in6.sin6_family = family;
+    conn_info->addr.in6.sin6_port = port;
+
+    struct in6_addr* addr = &conn_info->addr.in6.sin6_addr;
+    bpf_probe_read_kernel(&addr, sizeof(*addr), &sk_common->skc_v6_daddr);
+  }
+}
+
 static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, uint32_t fd,
-                                     const struct sockaddr* addr, enum EndpointRole role) {
+                                     const struct sockaddr* addr, const struct socket* socket,
+                                     enum EndpointRole role) {
   struct conn_info_t conn_info = {};
   init_conn_info(tgid, fd, &conn_info);
   if (addr != NULL) {
     conn_info.addr = *((union sockaddr_t*)addr);
+  } else if (socket != NULL) {
+    read_sockaddr_kernel(&conn_info, socket);
   }
   conn_info.role = role;
 
@@ -623,7 +658,7 @@ static __inline void process_syscall_connect(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  submit_new_conn(ctx, tgid, (uint32_t)args->fd, args->addr, kRoleClient);
+  submit_new_conn(ctx, tgid, (uint32_t)args->fd, args->addr, /*socket*/ NULL, kRoleClient);
 }
 
 static __inline void process_syscall_accept(struct pt_regs* ctx, uint64_t id,
@@ -639,7 +674,7 @@ static __inline void process_syscall_accept(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  submit_new_conn(ctx, tgid, (uint32_t)ret_fd, args->addr, kRoleServer);
+  submit_new_conn(ctx, tgid, (uint32_t)ret_fd, args->addr, args->sock_alloc_socket, kRoleServer);
 }
 
 // TODO(oazizi): This is badly broken (but better than before).
@@ -682,7 +717,7 @@ static __inline void process_implicit_conn(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  submit_new_conn(ctx, tgid, (uint32_t)args->fd, args->addr, kRoleUnknown);
+  submit_new_conn(ctx, tgid, (uint32_t)args->fd, args->addr, /*socket*/ NULL, kRoleUnknown);
 }
 
 static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t id,
@@ -927,7 +962,7 @@ int syscall__probe_entry_accept(struct pt_regs* ctx, int sockfd, struct sockaddr
   uint64_t id = bpf_get_current_pid_tgid();
 
   // Stash arguments.
-  struct accept_args_t accept_args;
+  struct accept_args_t accept_args = {};
   accept_args.addr = addr;
   active_accept_args_map.update(&id, &accept_args);
 
@@ -953,7 +988,7 @@ int syscall__probe_entry_accept4(struct pt_regs* ctx, int sockfd, struct sockadd
   uint64_t id = bpf_get_current_pid_tgid();
 
   // Stash arguments.
-  struct accept_args_t accept_args;
+  struct accept_args_t accept_args = {};
   accept_args.addr = addr;
   active_accept_args_map.update(&id, &accept_args);
 
@@ -1477,6 +1512,26 @@ int syscall__probe_entry_mmap(struct pt_regs* ctx) {
   upid.start_time_ticks = get_tgid_start_time();
 
   mmap_events.perf_submit(ctx, &upid, sizeof(upid));
+
+  return 0;
+}
+
+// Trace kernel function:
+// struct socket *sock_alloc(void)
+// which is called inside accept4() syscall to allocate socket data structure.
+// Only need a return probe, as the function does not accept any arguments.
+int probe_ret_sock_alloc(struct pt_regs* ctx) {
+  uint64_t id = bpf_get_current_pid_tgid();
+
+  // Only trace sock_alloc() called by accept()/accept4().
+  struct accept_args_t* accept_args = active_accept_args_map.lookup(&id);
+  if (accept_args == NULL) {
+    return 0;
+  }
+
+  if (accept_args->sock_alloc_socket == NULL) {
+    accept_args->sock_alloc_socket = (struct socket*)PT_REGS_RC(ctx);
+  }
 
   return 0;
 }

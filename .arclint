@@ -11,7 +11,7 @@
     "(^credentials\/.*\\.yaml)",
     "(^docs/customer/)",
     "(^experimental/users/)",
-    "(^src/stirling/bpf_tools/bcc_bpf/system-headers/linux)",
+    "(^src/stirling/bpf_tools/bcc_bpf/system-headers)",
     "(^src/stirling/mysql/testing/.*\\.json$)",
     "(^src/ui/offline_package_cache)",
     "(^src/ui/packages/pixie-api/src/types/generated/)",
