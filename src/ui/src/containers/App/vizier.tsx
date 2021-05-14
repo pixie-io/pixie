@@ -25,6 +25,7 @@ import AdminView from 'pages/admin/admin';
 import CreditsView from 'pages/credits/credits';
 import { SCRATCH_SCRIPT, ScriptsContextProvider } from 'containers/App/scripts-context';
 import LiveView from 'pages/live/live';
+import NewLiveView from 'pages/live/new-live';
 import * as React from 'react';
 import { Redirect, Route, Switch } from 'react-router-dom';
 import { useParams, useLocation } from 'react-router';
@@ -39,6 +40,12 @@ import { LIVE_VIEW_SCRIPT_ID_KEY, useSessionStorage } from 'common/storage';
 import { DeployInstructions } from './deploy-instructions';
 import { selectCluster } from './cluster-info';
 import { RouteNotFound } from './route-not-found';
+
+/*
+ * TODO(nick,PC-917): Do not turn this on in a published diff until all of PC-917 is addressed by it.
+ *  Upon doing so, remove the old paths entirely. Test _extremely_ thoroughly.
+ */
+const USE_SIMPLIFIED_ROUTING = false;
 
 const useStyles = makeStyles(() => createStyles({
   banner: {
@@ -147,7 +154,7 @@ const Vizier = () => {
       clusterStatus={errMsg ? ClusterStatus.CS_UNKNOWN : status}
     >
       <ScriptsContextProvider>
-        <LiveView />
+        { USE_SIMPLIFIED_ROUTING ? <NewLiveView /> : <LiveView />}
       </ScriptsContextProvider>
     </VizierGRPCClientProvider>
   );
@@ -156,7 +163,12 @@ const Vizier = () => {
 export default function WithClusterBanner(): React.ReactElement {
   const showSnackbar = useSnackbar();
 
-  const [clusterId, setClusterId] = storage.useSessionStorage(storage.CLUSTER_ID_KEY, '');
+  // USE_SIMPLIFIED_ROUTING is a compile-time const, so the rules of hooks are not violated - the order is consistent.
+  const [clusterId, setClusterId] = USE_SIMPLIFIED_ROUTING
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    ? React.useState<string>('')
+    : storage.useSessionStorage(storage.CLUSTER_ID_KEY, '');
+
   const [clusters, loadingClusters, clusterError] = useListClusters();
   const [{ user }, loadingUser, userError] = useUserInfo();
 
@@ -164,8 +176,8 @@ export default function WithClusterBanner(): React.ReactElement {
 
   const cluster: Cluster = (clusterId && clusters?.find((c) => c.id === clusterId)) || selectCluster(clusters ?? []);
 
-  const context = React.useMemo(() => ({
-    selectedCluster: clusterId,
+  const clusterContext = React.useMemo(() => ({
+    selectedCluster: cluster?.id,
     selectedClusterName: cluster?.clusterName,
     selectedClusterPrettyName: cluster?.prettyClusterName,
     selectedClusterUID: cluster?.clusterUID,
@@ -217,7 +229,7 @@ export default function WithClusterBanner(): React.ReactElement {
   }
 
   return (
-    <ClusterContext.Provider value={context}>
+    <ClusterContext.Provider value={clusterContext}>
       <UserContext.Provider value={userContext}>
         <ClusterBanner />
         <Switch>
