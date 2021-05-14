@@ -213,6 +213,39 @@ func TestUserSettingsResolver_UpdateUser(t *testing.T) {
 	})
 }
 
+func TestUserSettingsResolver_UpdateOrg(t *testing.T) {
+	_, mockClients, cleanup := gqltestutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	mockClients.MockProfile.EXPECT().UpdateOrg(gomock.Any(), &profilepb.UpdateOrgRequest{
+		ID:              utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9"),
+		EnableApprovals: &types.BoolValue{Value: true},
+	}).Return(nil, nil)
+
+	gqlEnv := controller.GraphQLEnv{
+		ProfileServiceClient: mockClients.MockProfile,
+	}
+
+	gqlSchema := LoadSchema(gqlEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				mutation {
+					UpdateOrg(orgInfo: {id: "6ba7b810-9dad-11d1-80b4-00c04fd430c9", enableApprovals: true })
+				}
+			`,
+			ExpectedResult: `
+				{
+					"UpdateOrg": true
+				}
+			`,
+		},
+	})
+}
+
 func TestUserSettingsResolver_InviteUser(t *testing.T) {
 	gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
 	defer cleanup()

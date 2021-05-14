@@ -211,12 +211,18 @@ type Mutation {
   UpdateUserSettings(keys: [String]!, values: [String]!): Boolean!
   InviteUser(email: String!, firstName: String!, lastName: String!): UserInvite!
   UpdateUser(userInfo: EditableUserInfo): Boolean!
+  UpdateOrg(orgInfo: EditableOrgInfo): Boolean!
 }
 
 input EditableUserInfo {
-  id: ID! 
+  id: ID!
   profilePicture: String
   isApproved: Boolean
+}
+
+input EditableOrgInfo {
+  id: ID!
+  enableApprovals: Boolean
 }
 
 type CLIArtifact {

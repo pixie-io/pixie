@@ -205,6 +205,7 @@ func (q *QueryResolver) UpdateUser(ctx context.Context, args *updateUserArgs) (b
 		req.IsApproved = &types.BoolValue{Value: *args.UserInfo.IsApproved}
 	}
 
+	// TODO(philkuz)(PC-924) Use a graphQL API instead of ProfileServiceClient.
 	_, err := q.Env.ProfileServiceClient.UpdateUser(ctx, req)
 	if err != nil {
 		return false, err
@@ -275,4 +276,33 @@ func (q *QueryResolver) OrgUsers(ctx context.Context) ([]*UserInfoResolver, erro
 	}
 
 	return userResolvers, nil
+}
+
+// UpdateOrg updates the org info.
+func (q *QueryResolver) UpdateOrg(ctx context.Context, args *updateOrgArgs) (bool, error) {
+	req := &profilepb.UpdateOrgRequest{
+		ID: utils.ProtoFromUUIDStrOrNil(string(args.OrgInfo.ID)),
+	}
+
+	if args.OrgInfo.EnableApprovals != nil {
+		req.EnableApprovals = &types.BoolValue{
+			Value: *args.OrgInfo.EnableApprovals,
+		}
+	}
+
+	// TODO(philkuz)(PC-921) Use a graphQL API instead of ProfileServiceClient.
+	_, err := q.Env.ProfileServiceClient.UpdateOrg(ctx, req)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+type updateOrgArgs struct {
+	OrgInfo *editableOrgInfo
+}
+
+type editableOrgInfo struct {
+	ID              graphql.ID
+	EnableApprovals *bool
 }

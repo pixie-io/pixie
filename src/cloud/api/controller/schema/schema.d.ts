@@ -209,12 +209,18 @@ export interface GQLMutation {
   UpdateUserSettings: boolean;
   InviteUser: GQLUserInvite;
   UpdateUser: boolean;
+  UpdateOrg: boolean;
 }
 
 export interface GQLEditableUserInfo {
   id: string;
   profilePicture?: string;
   isApproved?: boolean;
+}
+
+export interface GQLEditableOrgInfo {
+  id: string;
+  enableApprovals?: boolean;
 }
 
 export interface GQLCLIArtifact {
@@ -775,6 +781,7 @@ export interface GQLMutationTypeResolver<TParent = any> {
   UpdateUserSettings?: MutationToUpdateUserSettingsResolver<TParent>;
   InviteUser?: MutationToInviteUserResolver<TParent>;
   UpdateUser?: MutationToUpdateUserResolver<TParent>;
+  UpdateOrg?: MutationToUpdateOrgResolver<TParent>;
 }
 
 export interface MutationToCreateClusterResolver<TParent = any, TResult = any> {
@@ -833,6 +840,13 @@ export interface MutationToUpdateUserArgs {
 }
 export interface MutationToUpdateUserResolver<TParent = any, TResult = any> {
   (parent: TParent, args: MutationToUpdateUserArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface MutationToUpdateOrgArgs {
+  orgInfo?: GQLEditableOrgInfo;
+}
+export interface MutationToUpdateOrgResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: MutationToUpdateOrgArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface GQLCLIArtifactTypeResolver<TParent = any> {
