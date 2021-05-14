@@ -441,18 +441,30 @@ TEST_F(MySQLTraceTest, mysql_capture) {
     ASSERT_FALSE(tablets.empty());
     types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
-    // Check client-side tracing results.
     if (!FLAGS_tracing_mode) {
-      std::vector<mysql::Record> records = GetTargetRecords(record_batch, client_pid);
+      // Check client-side tracing results.
+      std::vector<mysql::Record> client_records = GetTargetRecords(record_batch, client_pid);
 
-      EXPECT_THAT(records, UnorderedElementsAre(
-                               EqMySQLRecord(kRecordInit), EqMySQLRecord(kRecordScript1Cmd1),
+      EXPECT_THAT(
+          client_records,
+          UnorderedElementsAre(EqMySQLRecord(kRecordInit), EqMySQLRecord(kRecordScript1Cmd1),
                                EqMySQLRecord(kRecordScript1Cmd2), EqMySQLRecord(kRecordScript1Cmd3),
                                EqMySQLRecord(kRecordScript1Cmd4), EqMySQLRecord(kRecordScript1Cmd5),
                                EqMySQLRecord(kRecordScript1Cmd6)));
-    }
 
-    // TODO(oazizi): Check server-side tracing results.
+      // Check server-side tracing results.
+      std::vector<mysql::Record> server_records =
+          GetTargetRecords(record_batch, server_.process_pid());
+
+      // Here, the Init Record is omitted on purpose, because MySQL server reads in 4-byte header
+      // and the rest of the packet in 2 different reads. To avoid complicating BPF code, we choose
+      // to loss the first packet on the server side, which is used for protocol inference.
+      EXPECT_THAT(server_records,
+                  UnorderedElementsAre(
+                      EqMySQLRecord(kRecordScript1Cmd1), EqMySQLRecord(kRecordScript1Cmd2),
+                      EqMySQLRecord(kRecordScript1Cmd3), EqMySQLRecord(kRecordScript1Cmd4),
+                      EqMySQLRecord(kRecordScript1Cmd5), EqMySQLRecord(kRecordScript1Cmd6)));
+    }
   }
 
   {
@@ -469,19 +481,29 @@ TEST_F(MySQLTraceTest, mysql_capture) {
     ASSERT_FALSE(tablets.empty());
     types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
-    // Check client-side tracing results.
     if (!FLAGS_tracing_mode) {
-      std::vector<mysql::Record> records = GetTargetRecords(record_batch, client_pid);
+      // Check client-side tracing results.
+      std::vector<mysql::Record> client_records = GetTargetRecords(record_batch, client_pid);
 
-      EXPECT_THAT(records, UnorderedElementsAre(
-                               EqMySQLRecord(kRecordInit), EqMySQLRecord(kRecordScript2Cmd1),
+      EXPECT_THAT(
+          client_records,
+          UnorderedElementsAre(EqMySQLRecord(kRecordInit), EqMySQLRecord(kRecordScript2Cmd1),
                                EqMySQLRecord(kRecordScript2Cmd2), EqMySQLRecord(kRecordScript2Cmd3),
                                EqMySQLRecord(kRecordScript2Cmd4), EqMySQLRecord(kRecordScript2Cmd5),
                                EqMySQLRecord(kRecordScript2Cmd6), EqMySQLRecord(kRecordScript2Cmd7),
                                EqMySQLRecord(kRecordScript2Cmd8)));
-    }
 
-    // TODO(oazizi): Check server-side tracing results.
+      // Check server-side tracing results.
+      std::vector<mysql::Record> server_records =
+          GetTargetRecords(record_batch, server_.process_pid());
+
+      EXPECT_THAT(server_records,
+                  UnorderedElementsAre(
+                      EqMySQLRecord(kRecordScript2Cmd1), EqMySQLRecord(kRecordScript2Cmd2),
+                      EqMySQLRecord(kRecordScript2Cmd3), EqMySQLRecord(kRecordScript2Cmd4),
+                      EqMySQLRecord(kRecordScript2Cmd5), EqMySQLRecord(kRecordScript2Cmd6),
+                      EqMySQLRecord(kRecordScript2Cmd7), EqMySQLRecord(kRecordScript2Cmd8)));
+    }
   }
 
   {

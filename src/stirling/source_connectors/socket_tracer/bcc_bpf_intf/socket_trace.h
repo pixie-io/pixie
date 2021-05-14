@@ -79,6 +79,12 @@ struct conn_info_t {
   int32_t protocol_match_count;
   // How many times traffic inference has been applied on this connection.
   int32_t protocol_total_count;
+
+  // Keep the header of the last packet suspected to be MySQL. MySQL server does 2 separate read
+  // syscalls, first to read the header, and second the body of the packet. Thus, we keep a state.
+  // Length(3 bytes) + seq_number(1 byte).
+  size_t prev_count;
+  char prev_buf[4];
 };
 
 // This struct is a subset of conn_info_t. It is used to communicate connect/accept events.

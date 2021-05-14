@@ -29,6 +29,7 @@
 
 #include "src/stirling/bpf_tools/bcc_bpf/utils.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/common.h"
+#include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.h"
 
 static __inline enum MessageType infer_http_message(const char* buf, size_t count) {
   // Smallest HTTP response is 17 characters:
@@ -225,12 +226,22 @@ static __inline enum MessageType infer_pgsql_message(const char* buf, size_t cou
 //      .                                       .
 //      +----------------------------------------
 // TODO(oazizi/yzhao): This produces too many false positives. Add stronger protocol detection.
-static __inline enum MessageType infer_mysql_message(const char* buf, size_t count) {
+static __inline enum MessageType infer_mysql_message(const char* buf, size_t count,
+                                                     struct conn_info_t* conn_info) {
   static const uint8_t kComQuery = 0x03;
   static const uint8_t kComConnect = 0x0b;
   static const uint8_t kComStmtPrepare = 0x16;
   static const uint8_t kComStmtExecute = 0x17;
   static const uint8_t kComStmtClose = 0x19;
+
+  // Second statement checks whether suspected header matches the length of current packet.
+  bool use_prev_buf = (conn_info->prev_count == 4) && (*((uint32_t*)conn_info->prev_buf) == count);
+
+  if (use_prev_buf) {
+    // Check the header_state to find out if the header has been read. MySQL server tends to
+    // read in the 4 byte header and the rest of the packet in a separate read.
+    count += 4;
+  }
 
   // MySQL packets start with a 3-byte packet length and a 1-byte packet number.
   // The 5th byte on a request contains a command that tells the type.
@@ -238,13 +249,14 @@ static __inline enum MessageType infer_mysql_message(const char* buf, size_t cou
     return kUnknown;
   }
 
-  // Convert 3-byte length to uint32_t.
+  // Convert 3-byte length to uint32_t. But since the 4th byte is supposed to be \x00, directly
+  // casting 4-bytes is correct.
   // NOLINTNEXTLINE: readability/casting
-  uint32_t len = *((uint32_t*)buf);
+  uint32_t len = use_prev_buf ? *((uint32_t*)conn_info->prev_buf) : *((uint32_t*)buf);
   len = len & 0x00ffffff;
 
-  uint8_t seq = buf[3];
-  uint8_t com = buf[4];
+  uint8_t seq = use_prev_buf ? conn_info->prev_buf[3] : buf[3];
+  uint8_t com = use_prev_buf ? buf[0] : buf[4];
 
   // The packet number of a request should always be 0.
   if (seq != 0) {
@@ -355,7 +367,8 @@ static __inline bool is_redis_message(const char* buf, size_t count) {
   return true;
 }
 
-static __inline struct protocol_message_t infer_protocol(const char* buf, size_t count) {
+static __inline struct protocol_message_t infer_protocol(const char* buf, size_t count,
+                                                         struct conn_info_t* conn_info) {
   struct protocol_message_t inferred_message;
   inferred_message.protocol = kProtocolUnknown;
   inferred_message.type = kUnknown;
@@ -366,7 +379,7 @@ static __inline struct protocol_message_t infer_protocol(const char* buf, size_t
     inferred_message.protocol = kProtocolCQL;
   } else if ((inferred_message.type = infer_pgsql_message(buf, count)) != kUnknown) {
     inferred_message.protocol = kProtocolPGSQL;
-  } else if ((inferred_message.type = infer_mysql_message(buf, count)) != kUnknown) {
+  } else if ((inferred_message.type = infer_mysql_message(buf, count, conn_info)) != kUnknown) {
     inferred_message.protocol = kProtocolMySQL;
   } else if ((inferred_message.type = infer_dns_message(buf, count)) != kUnknown) {
     inferred_message.protocol = kProtocolDNS;
@@ -374,6 +387,14 @@ static __inline struct protocol_message_t infer_protocol(const char* buf, size_t
     // For Redis, the message type is left to be kUnknown.
     // The message types are then inferred via traffic direction and client/server role.
     inferred_message.protocol = kProtocolRedis;
+  }
+
+  conn_info->prev_count = count;
+  if (count == 4) {
+    conn_info->prev_buf[0] = buf[0];
+    conn_info->prev_buf[1] = buf[1];
+    conn_info->prev_buf[2] = buf[2];
+    conn_info->prev_buf[3] = buf[3];
   }
 
   return inferred_message;

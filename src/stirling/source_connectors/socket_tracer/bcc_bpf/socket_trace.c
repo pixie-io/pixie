@@ -320,7 +320,7 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info,
   conn_info->protocol_total_count += 1;
 
   // Try to infer connection type (protocol) based on data.
-  struct protocol_message_t inferred_protocol = infer_protocol(buf, count);
+  struct protocol_message_t inferred_protocol = infer_protocol(buf, count, conn_info);
 
   // Could not infer the traffic.
   if (inferred_protocol.protocol == kProtocolUnknown) {
