@@ -27,7 +27,8 @@ import (
 
 // Email domains from this list will create individual orgs.
 var emailDomainExcludeOrgGroupList = map[string]bool{
-	"gmail.com": true,
+	"gmail.com":      true,
+	"googlemail.com": true,
 }
 
 // GetDomainNameFromEmail gets the domain name from the provided email.
