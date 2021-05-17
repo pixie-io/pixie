@@ -80,8 +80,8 @@ if node[:platform] == 'ubuntu'
   default['minikube']['sha256']        =
     '3121f933bf8d608befb24628a045ce536658738c14618504ba46c92e656ea6b5'
 
-  default['nodejs']['download_path'] = 'https://nodejs.org/dist/v12.16.1/node-v12.16.1-linux-x64.tar.gz'
-  default['nodejs']['sha256']        = 'b2d9787da97d6c0d5cbf24c69fdbbf376b19089f921432c5a61aa323bc070bea'
+  default['nodejs']['download_path'] = 'https://nodejs.org/dist/v16.1.0/node-v16.1.0-linux-x64.tar.xz'
+  default['nodejs']['sha256']        = '94d14ed1871a69e3dedd3a54d8c547c978b49566892616a227bf8be2f171a8a8'
 
   default['packer']['download_path'] = 'https://releases.hashicorp.com/packer/1.3.2/packer_1.3.2_linux_amd64.zip'
   default['packer']['sha256']        = '5e51808299135fee7a2e664b09f401b5712b5ef18bd4bad5bc50f4dcd8b149a1'
@@ -156,8 +156,8 @@ elsif node[:platform] == 'mac_os_x'
     'https://github.com/kubernetes/minikube/releases/download/v1.9.2/minikube-darwin-amd64'
   default['minikube']['sha256']        = 'f27016246850b3145e1509e98f7ed060fd9575ac4d455c7bdc15277734372e85'
 
-  default['nodejs']['download_path'] = 'https://nodejs.org/dist/v12.16.1/node-v12.16.1-darwin-x64.tar.gz'
-  default['nodejs']['sha256']        = '34895bce210ca4b3cf19cd480e6563588880dd7f5d798f3782e3650580d35920'
+  default['nodejs']['download_path'] = 'https://nodejs.org/dist/v16.1.0/node-v16.1.0-darwin-x64.tar.gz'
+  default['nodejs']['sha256']        = '22525ecc3b91f4d9a5d44dffe061cdb23f1a3e4a5555552e7940987883a93547'
 
   default['packer']['download_path'] = 'https://releases.hashicorp.com/packer/1.3.2/packer_1.3.2_darwin_amd64.zip'
   default['packer']['sha256']        = '1c2433239d801b017def8e66bbff4be3e7700b70248261b0abff2cd9c980bf5b'
