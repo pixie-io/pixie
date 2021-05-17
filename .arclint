@@ -101,6 +101,9 @@
         "(BUILD\\.bazel$)",
         "(\\.go$)"
       ],
+      "exclude": [
+        "(^src/stirling/private/blogs/.*\\.go$)"
+      ],
       "script-and-regex.script": "./tools/linters/gazelle.sh",
       "script-and-regex.regex": "/^(?P<severity>[[:alpha:]]+)\n(?P<file>[^\n]+)\n(?P<message>[^\n]+)\n((?P<line>\\d),(?P<char>\\d)\n<<<<<\n(?P<original>.*)=====\n(?P<replacement>.*)>>>>>\n)$/s"
     },
