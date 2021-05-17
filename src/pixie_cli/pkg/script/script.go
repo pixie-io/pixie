@@ -56,9 +56,6 @@ func (e ExecutableScript) LiveViewLink(clusterID *string) string {
 		return ""
 	}
 	cloudAddr := viper.GetString("cloud_addr")
-	if len(cloudAddr) == 0 {
-		cloudAddr = "withpixie.ai"
-	}
 
 	urlPath := "/live/script"
 	if clusterID != nil {
@@ -67,7 +64,7 @@ func (e ExecutableScript) LiveViewLink(clusterID *string) string {
 
 	u := url.URL{
 		Scheme: "https",
-		Host:   cloudAddr,
+		Host:   fmt.Sprintf("work.%s", cloudAddr),
 		Path:   urlPath,
 	}
 

@@ -89,17 +89,19 @@ var DeployCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, s, a...)
 		}
 		u := color.New(color.Underline).Sprintf
-		b := color.New(color.Bold)
+		b := color.New(color.Bold).Sprintf
 		g := color.GreenString
 
+		cloudAddr := viper.GetString("cloud_addr")
+
 		fmt.Fprint(os.Stderr, "\n")
-		p(color.CyanString("==> ") + b.Sprint("Next Steps:\n"))
+		p(color.CyanString("==> ") + b("Next Steps:\n"))
 		p("\nRun some scripts using the %s cli. For example: \n", g("px"))
 		p("- %s : to show pre-installed scripts.\n", g("px script list"))
 		p("- %s : to run service info for sock-shop demo application (service selection coming soon!).\n",
 			g("px run %s", script.ServiceStatsScript))
-		p("\nCheck out our docs: %s.\n", u("https://work.withpixie.ai/docs"))
-		p("\nVisit : %s to use Pixie's UI.\n", u("https://work.withpixie.ai"))
+		p("\nCheck out our docs: %s.\n", u("https://work.%s/docs", cloudAddr))
+		p("\nVisit : %s to use Pixie's UI.\n", u("https://work.%s", cloudAddr))
 	},
 	Run: runDeployCmd,
 }
