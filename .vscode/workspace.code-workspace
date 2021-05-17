@@ -34,5 +34,8 @@
 			"formatting.local": "px.dev",
 			"ui.completion.usePlaceholders": true,
 		},
+		"search.exclude": {
+			"**/dist": true
+		},
 	}
 }

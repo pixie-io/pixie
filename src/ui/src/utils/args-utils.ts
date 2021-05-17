@@ -124,3 +124,37 @@ export function validateArgValues(vis: Vis, args: Arguments): VizierQueryError {
   }
   return null;
 }
+
+// This is exactly the same as validateArgValues but also adds validation to check if
+// required args (args that must be provided by the user and have no defaults) are present or not.
+export function validateRequiredArgs(vis: Vis, args: Arguments): VizierQueryError {
+  if (!vis) {
+    return null;
+  }
+  let inArgs = args;
+  if (!args) {
+    inArgs = {};
+  }
+  const errors = [];
+  for (const variable of vis.variables) {
+    const rawVal: string|string[] = inArgs[variable.name] != null ? inArgs[variable.name] : variable.defaultValue;
+    if (!variable.defaultValue && !rawVal) {
+      errors.push(`Missing value for required '${variable.name}'.`);
+    }
+    if (variable.validValues && variable.validValues.length) {
+      const vals: string[] = Array.isArray(rawVal) ? rawVal : [rawVal];
+      for (const val of vals) {
+        const validValuesSet = new Set(variable.validValues);
+        if (!validValuesSet.has(val)) {
+          errors.push(`Value '${val}' passed in for '${variable.name}' is not in `
+              + `the set of valid values '${variable.validValues.join(', ')}'.`);
+        }
+      }
+    }
+  }
+
+  if (errors.length > 0) {
+    return new VizierQueryError('vis', errors);
+  }
+  return null;
+}

@@ -20,6 +20,7 @@ import * as React from 'react';
 import { VizierContextRouter } from 'containers/App/vizier-routing';
 import { ScriptsContextProvider } from 'containers/App/scripts-context';
 import { ScriptContext, ScriptContextProvider } from 'context/new-script-context';
+import LiveViewBreadcrumbs from 'containers/live/new-breadcrumbs';
 import { ScriptLoader } from 'containers/live/new-script-loader';
 import { Button } from '@material-ui/core';
 import { Link } from 'react-router-dom';
@@ -101,6 +102,7 @@ const LiveView: React.FC = () => {
                 {JSON.stringify(args)}
                 )
               </pre>
+              <LiveViewBreadcrumbs />
               <Button
                 component={Link}
                 variant='contained'

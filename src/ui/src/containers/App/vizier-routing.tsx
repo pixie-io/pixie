@@ -23,13 +23,13 @@ import {
 import * as QueryString from 'query-string';
 import plHistory from 'utils/pl-history';
 import { LocationDescriptorObject } from 'history';
+import { ClusterContext } from 'common/cluster-context';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'containers/App/scripts-context';
 import { parseVis, Vis } from 'containers/live/vis';
 import { RouteNotFound } from 'containers/App/route-not-found';
 import { selectCluster } from 'containers/App/cluster-info';
 import { useListClusters } from '@pixie-labs/api-react';
 import { useSnackbar } from '@pixie-labs/components';
-import { ClusterContext } from 'common/cluster-context';
 
 export interface VizierRouteContextProps {
   scriptId: string;
@@ -51,9 +51,9 @@ const SCRIPT_ROUTES = new Map<string, string>([
   ['px/namespaces',   '/clusters/:cluster/namespaces'],
   ['px/namespace',    '/clusters/:cluster/namespaces/:namespace'],
   ['px/pods',         '/clusters/:cluster/namespaces/:namespace/pods'],
-  ['px/pod',          '/clusters/:cluster/namespaces/:namespace/pods/:pod'],
+  // ['px/pod',          '/clusters/:cluster/namespaces/:namespace/pods/:pod'],
   ['px/services',     '/clusters/:cluster/namespaces/:namespace/services'],
-  ['px/service',      '/clusters/:cluster/namespaces/:namespace/services/:service'],
+  // ['px/service',      '/clusters/:cluster/namespaces/:namespace/services/:service'],
   // TODO(nick,PC-917): Make sure this is still compatible with updated special logic for the scratch script.
   [SCRATCH_SCRIPT.id, '/clusters/:cluster/scratch'],
   /* eslint-enable no-multi-spaces */
