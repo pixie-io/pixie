@@ -876,6 +876,12 @@ def pl_go_dependencies():
         sum = "h1:Q7juDM0QtcnhCpeyLGQKyg4TOIghuNXrkL32pHAUMxo=",
         version = "v1.1.0",
     )
+    go_repository(
+        name = "com_github_felixge_httpsnoop",
+        importpath = "github.com/felixge/httpsnoop",
+        sum = "h1:lvB5Jl89CsZtGIWuTcDM1E/vkVs49/Ml7JJe07l8SPQ=",
+        version = "v1.0.1",
+    )
 
     go_repository(
         name = "com_github_flosch_pongo2",
@@ -1464,8 +1470,8 @@ def pl_go_dependencies():
     go_repository(
         name = "com_github_gorilla_handlers",
         importpath = "github.com/gorilla/handlers",
-        sum = "h1:0QniY0USkHQ1RGCLfKxeNHK9bkDHGRYGNDFBCS+YARg=",
-        version = "v1.4.2",
+        sum = "h1:9lRY6j8DEeeBT10CvO9hGW0gmky0BprnvDI5vfhUHH4=",
+        version = "v1.5.1",
     )
 
     go_repository(
@@ -1484,8 +1490,8 @@ def pl_go_dependencies():
     go_repository(
         name = "com_github_gorilla_sessions",
         importpath = "github.com/gorilla/sessions",
-        sum = "h1:uXoZdcdA5XdXF3QzuSlheVRUvjl+1rKY7zBXL68L9RU=",
-        version = "v1.1.3",
+        sum = "h1:DHd3rPN5lE3Ts3D8rKkQ8x/0kqfeNmBAaiSi+o7FsgI=",
+        version = "v1.2.1",
     )
 
     go_repository(
