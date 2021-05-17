@@ -43,6 +43,10 @@ export const Avatar = (props: AvatarProps) => {
     />
   );
 };
+Avatar.defaultProps = {
+  picture: '',
+  className: '',
+};
 
 export const ProfileMenuWrapper = ({
   classes,

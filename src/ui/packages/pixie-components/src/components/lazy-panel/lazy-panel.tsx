@@ -70,3 +70,6 @@ export const LazyPanel = (props: LazyPanelProps) => {
     </div>
   );
 };
+LazyPanel.defaultProps = {
+  className: '',
+};

@@ -75,7 +75,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 
 const shortcutKeys = Object.values(getKeyMap()).map((keyBinding) => keyBinding.sequence);
 
-const VisEditor = ({ visible }: {visible: boolean}) => {
+const VisEditor = ({ visible }: { visible: boolean }) => {
   const classes = useStyles();
   const { visJSON, setVisEditorText } = React.useContext(ScriptContext);
 
@@ -107,7 +107,7 @@ const VisEditor = ({ visible }: {visible: boolean}) => {
   );
 };
 
-const ScriptEditor = ({ visible }: {visible: boolean}) => {
+const ScriptEditor = ({ visible }: { visible: boolean }) => {
   const classes = useStyles();
   const { pxl, setPxlEditorText } = React.useContext(ScriptContext);
   const editorRef = React.createRef<CodeEditor>();
@@ -156,7 +156,7 @@ const StyledTab = withStyles((theme: Theme) => createStyles({
   },
 }))(Tab);
 
-const LiveViewEditor = ({ visible }: {visible: boolean}) => {
+const LiveViewEditor = ({ visible }: { visible: boolean }) => {
   const classes = useStyles();
   const [tab, setTab] = React.useState('pixie');
   const { setEditorPanelOpen, editorPanelOpen } = React.useContext(LayoutContext);

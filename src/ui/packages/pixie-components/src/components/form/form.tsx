@@ -54,6 +54,7 @@ const styles = ({ spacing, typography }: Theme) => createStyles({
  */
 export interface FormFieldMessage {
   // The context object of the message.
+  // eslint-disable-next-line
   context?: object;
   // The text of the actual message.
   text?: string;
@@ -77,6 +78,7 @@ export interface FormField {
   // Type is the equivalent of `<input type=\"{{.Type}}\">`
   type: string;
   // Value is the equivalent of `<input value=\"{{.Value}}\">`
+  // eslint-disable-next-line
   value?: object;
 }
 
@@ -115,7 +117,7 @@ interface FormFieldProps extends WithStyles<typeof styles>, FormField {
   onChange?: (e: any) => void;
 }
 
-const FormField = (props: FormFieldProps) => {
+const FormFieldImpl = (props: FormFieldProps) => {
   const { onChange } = props;
   const field = props as FormField;
   // TODO(philkuz) figure out how to keep the value set OR wipe the value away beforehand to avoid this.
@@ -136,6 +138,9 @@ const FormField = (props: FormFieldProps) => {
       {...value}
     />
   );
+};
+FormFieldImpl.defaultProps = {
+  onChange: null,
 };
 
 export interface FormProps extends WithStyles<typeof styles>, FormStructure {
@@ -177,7 +182,7 @@ export const Form = withStyles(styles)((props: FormProps) => {
 
       <form method={method} action={action} onSubmit={onSubmit}>
         {fields.map((f) => (
-          <FormField
+          <FormFieldImpl
             key={f.name}
             classes={classes}
             onChange={onChange}

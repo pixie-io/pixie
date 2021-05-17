@@ -52,6 +52,25 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
+interface ExecutionMetricProps {
+  metricName: string;
+  metricValue: string;
+}
+
+const ExecutionMetric = (props: ExecutionMetricProps) => {
+  const classes = useStyles();
+  return (
+    <div className={classes.metric}>
+      <div className={classes.value}>
+        {props.metricValue}
+      </div>
+      <div className={classes.name}>
+        {props.metricName}
+      </div>
+    </div>
+  );
+};
+
 const ExecutionStats = () => {
   const { stats } = React.useContext(ResultsContext);
   const classes = useStyles();
@@ -82,25 +101,6 @@ const ExecutionStats = () => {
       <ExecutionMetric metricName='Records Processed' metricValue={numRecords} />
       <ExecutionMetric metricName='Execution Time' metricValue={executionTime} />
       <ExecutionMetric metricName='Compilation Time' metricValue={compilationTime} />
-    </div>
-  );
-};
-
-interface ExecutionMetricProps {
-  metricName: string;
-  metricValue: string;
-}
-
-const ExecutionMetric = (props: ExecutionMetricProps) => {
-  const classes = useStyles();
-  return (
-    <div className={classes.metric}>
-      <div className={classes.value}>
-        {props.metricValue}
-      </div>
-      <div className={classes.name}>
-        {props.metricName}
-      </div>
     </div>
   );
 };

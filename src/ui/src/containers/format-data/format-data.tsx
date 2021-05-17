@@ -75,6 +75,7 @@ const jsonStyles = (theme: Theme) => createStyles({
   },
 });
 
+/* eslint-disable @typescript-eslint/no-use-before-define */
 const JSONBase = React.memo<JSONDataProps>((props) => {
   const indentation = props.indentation ? props.indentation : 0;
   const { classes, multiline } = props;
@@ -162,6 +163,7 @@ const JSONBase = React.memo<JSONDataProps>((props) => {
     </span>
   );
 });
+/* eslint-enable @typescript-eslint/no-use-before-define */
 // linter needs this for React.memo components.
 JSONBase.displayName = 'JSONBase';
 

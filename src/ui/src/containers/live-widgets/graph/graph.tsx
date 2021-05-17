@@ -76,73 +76,6 @@ interface GraphWidgetProps {
 const INVALID_NODE_TYPES = [SemanticType.ST_SCRIPT_REFERENCE, SemanticType.ST_HTTP_RESP_MESSAGE];
 const LATENCY_TYPES = [SemanticType.ST_DURATION_NS, SemanticType.ST_THROUGHPUT_PER_NS];
 
-export const GraphWidget = (props: GraphWidgetProps) => {
-  const { display, data, relation } = props;
-  if (display.dotColumn && data.length > 0) {
-    return (
-      <Graph dot={data[0][display.dotColumn]} />
-    );
-  } if (display.adjacencyList && display.adjacencyList.fromColumn && display.adjacencyList.toColumn) {
-    let errorMsg = '';
-
-    const toColInfo = colInfoFromName(relation, display.adjacencyList.toColumn);
-    if (toColInfo && INVALID_NODE_TYPES.includes(toColInfo.semType)) {
-      errorMsg = `${display.adjacencyList.toColumn} cannot be used as the source column`;
-    }
-    const fromColInfo = colInfoFromName(relation, display.adjacencyList.fromColumn);
-    if (fromColInfo && INVALID_NODE_TYPES.includes(fromColInfo.semType)) {
-      errorMsg = `${display.adjacencyList.fromColumn} cannot be used as the destination column`;
-    }
-    const colorColInfo = colInfoFromName(relation, display.edgeColorColumn);
-    const edgeHoverInfo = [];
-    if (display.edgeHoverInfo && display.edgeHoverInfo.length > 0) {
-      for (const e of display.edgeHoverInfo) {
-        const info = colInfoFromName(relation, e);
-        if (info) { // Only push valid column infos. The user may pass in an invalid column name in the vis spec.
-          edgeHoverInfo.push(info);
-        }
-      }
-    }
-    if (toColInfo && fromColInfo && !errorMsg) {
-      return (
-        <Graph
-          {...display}
-          data={data}
-          toCol={toColInfo}
-          fromCol={fromColInfo}
-          edgeColorColumn={colorColInfo}
-          propagatedArgs={props.propagatedArgs}
-          edgeHoverInfo={edgeHoverInfo}
-        />
-      );
-    }
-
-    if (!toColInfo) {
-      errorMsg = `${display.adjacencyList.toColumn} column does not exist`;
-    } else if (!fromColInfo) {
-      errorMsg = `${display.adjacencyList.fromColumn} column does not exist`;
-    }
-
-    return <div>{errorMsg}</div>;
-  }
-  return <div key={props.display.dotColumn}>Invalid spec for graph</div>;
-};
-
-interface GraphProps {
-  dot?: any;
-  data?: any[];
-  toCol?: ColInfo;
-  fromCol?: ColInfo;
-  propagatedArgs?: Arguments;
-  edgeWeightColumn?: string;
-  nodeWeightColumn?: string;
-  edgeColorColumn?: ColInfo;
-  edgeThresholds?: EdgeThresholds;
-  edgeHoverInfo?: ColInfo[];
-  edgeLength?: number;
-  enableDefaultHierarchy?: boolean;
-}
-
 const useStyles = makeStyles(() => createStyles({
   root: {
     width: '100%',
@@ -163,13 +96,6 @@ const useStyles = makeStyles(() => createStyles({
     },
   },
 }));
-
-interface GraphData {
-  nodes: visData.DataSet<Node>;
-  edges: visData.DataSet<Edge>;
-  idToSemType: {[ key: string ]: SemanticType};
-  propagatedArgs?: Arguments;
-}
 
 function getColorForEdge(col: ColInfo, val: number, thresholds: EdgeThresholds): GaugeLevel {
   if (!thresholds && LATENCY_TYPES.includes(col.semType)) {
@@ -344,3 +270,94 @@ export const Graph = (props: GraphProps) => {
     </div>
   );
 };
+Graph.defaultProps = {
+  dot: null,
+  data: null,
+  toCol: null,
+  fromCol: null,
+  propagatedArgs: null,
+  edgeWeightColumn: '',
+  nodeWeightColumn: '',
+  edgeColorColumn: '',
+  edgeThresholds: null,
+  edgeHoverInfo: null,
+  edgeLength: 0,
+  enableDefaultHierarchy: false,
+};
+
+export const GraphWidget = (props: GraphWidgetProps): React.ReactElement => {
+  const { display, data, relation } = props;
+  if (display.dotColumn && data.length > 0) {
+    return (
+      <Graph dot={data[0][display.dotColumn]} />
+    );
+  } if (display.adjacencyList && display.adjacencyList.fromColumn && display.adjacencyList.toColumn) {
+    let errorMsg = '';
+
+    const toColInfo = colInfoFromName(relation, display.adjacencyList.toColumn);
+    if (toColInfo && INVALID_NODE_TYPES.includes(toColInfo.semType)) {
+      errorMsg = `${display.adjacencyList.toColumn} cannot be used as the source column`;
+    }
+    const fromColInfo = colInfoFromName(relation, display.adjacencyList.fromColumn);
+    if (fromColInfo && INVALID_NODE_TYPES.includes(fromColInfo.semType)) {
+      errorMsg = `${display.adjacencyList.fromColumn} cannot be used as the destination column`;
+    }
+    const colorColInfo = colInfoFromName(relation, display.edgeColorColumn);
+    const edgeHoverInfo = [];
+    if (display.edgeHoverInfo && display.edgeHoverInfo.length > 0) {
+      for (const e of display.edgeHoverInfo) {
+        const info = colInfoFromName(relation, e);
+        if (info) { // Only push valid column infos. The user may pass in an invalid column name in the vis spec.
+          edgeHoverInfo.push(info);
+        }
+      }
+    }
+    if (toColInfo && fromColInfo && !errorMsg) {
+      return (
+        <Graph
+          {...display}
+          data={data}
+          toCol={toColInfo}
+          fromCol={fromColInfo}
+          edgeColorColumn={colorColInfo}
+          propagatedArgs={props.propagatedArgs}
+          edgeHoverInfo={edgeHoverInfo}
+        />
+      );
+    }
+
+    if (!toColInfo) {
+      errorMsg = `${display.adjacencyList.toColumn} column does not exist`;
+    } else if (!fromColInfo) {
+      errorMsg = `${display.adjacencyList.fromColumn} column does not exist`;
+    }
+
+    return <div>{errorMsg}</div>;
+  }
+  return <div key={props.display.dotColumn}>Invalid spec for graph</div>;
+};
+GraphWidget.defaultProps = {
+  propagatedArgs: null,
+};
+
+interface GraphProps {
+  dot?: any;
+  data?: any[];
+  toCol?: ColInfo;
+  fromCol?: ColInfo;
+  propagatedArgs?: Arguments;
+  edgeWeightColumn?: string;
+  nodeWeightColumn?: string;
+  edgeColorColumn?: ColInfo;
+  edgeThresholds?: EdgeThresholds;
+  edgeHoverInfo?: ColInfo[];
+  edgeLength?: number;
+  enableDefaultHierarchy?: boolean;
+}
+
+interface GraphData {
+  nodes: visData.DataSet<Node>;
+  edges: visData.DataSet<Edge>;
+  idToSemType: { [ key: string ]: SemanticType };
+  propagatedArgs?: Arguments;
+}

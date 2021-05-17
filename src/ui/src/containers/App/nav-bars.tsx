@@ -26,7 +26,6 @@ import SideBar from 'containers/App/sidebar';
 const styles = () => createStyles({});
 
 interface NavBarsProps extends WithStyles<typeof styles> {
-  appBarContents?: React.ReactNode;
   children?: React.ReactNode;
 }
 
@@ -37,5 +36,8 @@ const NavBars = ({
     <SideBar />
   </>
 );
+NavBars.defaultProps = {
+  children: null,
+};
 
 export default withStyles(styles)(NavBars);

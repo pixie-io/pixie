@@ -176,5 +176,9 @@ const ResizableDrawerImpl = ({
     </>
   );
 };
+ResizableDrawerImpl.defaultProps = {
+  children: null,
+  otherContent: null,
+};
 
 export const ResizableDrawer = withStyles(styles)(ResizableDrawerImpl);

@@ -36,7 +36,8 @@ export const LiveTourContext = React.createContext<LiveTourContextProps>({
   tourOpen: false,
   setTourOpen: () => {},
 });
-export const LiveTourContextProvider = ({ children }: PropsWithChildren<{}>) => {
+export const LiveTourContextProvider = ({ children }: PropsWithChildren<Record<string, unknown>>)
+: React.ReactElement => {
   const [tourOpen, setTourOpen] = React.useState<boolean>(false);
   return <LiveTourContext.Provider value={{ tourOpen, setTourOpen }}>{children}</LiveTourContext.Provider>;
 };

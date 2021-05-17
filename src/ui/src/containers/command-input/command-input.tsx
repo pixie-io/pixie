@@ -70,7 +70,7 @@ const useHintStyles = makeStyles((theme: Theme) => (createStyles({
   },
 })));
 
-const PixieCommandSubmitHint: React.FC<{execute: () => void; disabled: boolean}> = ({ execute, disabled }) => {
+const PixieCommandSubmitHint: React.FC<{ execute: () => void; disabled: boolean }> = ({ execute, disabled }) => {
   const classes = useHintStyles();
   const disabledHint = 'Enter a valid command, then click or press Shift+Enter';
   const activeHint = 'Click or press Shift+Enter to run';

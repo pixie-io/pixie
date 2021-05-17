@@ -234,7 +234,7 @@ const DialogDropdown = ({
             return true;
           });
           const mapped: CompletionItem[] = deduped.map((item) => ({
-            type: 'item' as 'item',
+            type: 'item',
             id: item.value,
             description: item.description,
             icon: item.icon,
@@ -247,7 +247,7 @@ const DialogDropdown = ({
           // already typed an existing option.
           if (!requireCompletion && !seenNames.has(input)) {
             mapped.unshift({
-              type: 'item' as 'item',
+              type: 'item',
               id: input,
               description: '',
               icon: '',
@@ -376,6 +376,12 @@ const Breadcrumb = ({
       </div>
     </div>
   );
+};
+Breadcrumb.defaultProps = {
+  getListItems: null,
+  onSelect: null,
+  omitKey: false,
+  placeholder: '',
 };
 
 interface BreadcrumbListItem {

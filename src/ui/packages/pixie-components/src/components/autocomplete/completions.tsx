@@ -136,74 +136,12 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-export const Completions: React.FC<CompletionsProps> = (props) => {
-  const {
-    items, activeItem, onActiveChange, onSelection, className,
-  } = props;
-  const classes = useStyles();
-
-  const description = (() => {
-    for (let i = 0; i < items.length; ++i) {
-      const item = items[i];
-      if (item.type === 'item' && item.id === activeItem) {
-        return item.description || null;
-      }
-    }
-    return null;
-  })();
-
-  return (
-    <div className={buildClass(classes.root, className)}>
-      <div className={classes.items}>
-        {items.map((item, i) => {
-          switch (item.type) {
-            case 'header':
-              return (
-                <div key={`header-${i}`} className={classes.header}>
-                  {item.header}
-                </div>
-              );
-            case 'item':
-              return (
-                <Completion
-                  key={item.id}
-                  active={item.id === activeItem}
-                  onSelection={onSelection}
-                  onActiveChange={onActiveChange}
-                  {...item}
-                />
-              );
-            default:
-              throw new Error('unknown type');
-          }
-        })}
-      </div>
-      {description && (
-        <div className={classes.description}>
-          <div className={classes.header}>Description</div>
-          {description}
-        </div>
-      )}
-    </div>
-  );
-};
-
 type CompletionProps = Omit<CompletionItem, 'type'> & {
   active: boolean;
   onSelection: (id: string) => void;
   onActiveChange: (id: string) => void;
   /** If set, this will replace the default icon for the completion's type. */
   icon?: React.ReactNode;
-};
-
-export const Completion: React.FC<CompletionProps> = (props) => {
-  const { title } = props;
-
-  if (!title) {
-    return null;
-  }
-  // Need an internal component because of useEffect.
-  return <CompletionInternal {...props} />;
 };
 
 const CompletionInternal = (props: CompletionProps) => {
@@ -311,3 +249,68 @@ const CompletionInternal = (props: CompletionProps) => {
   );
 };
 CompletionInternal.displayName = 'CompletionInternal';
+CompletionInternal.defaultProps = {
+  icon: null,
+};
+
+export const Completion: React.FC<CompletionProps> = (props) => {
+  const { title } = props;
+
+  if (!title) {
+    return null;
+  }
+  // Need an internal component because of useEffect.
+  return <CompletionInternal {...props} />;
+};
+
+export const Completions: React.FC<CompletionsProps> = (props) => {
+  const {
+    items, activeItem, onActiveChange, onSelection, className,
+  } = props;
+  const classes = useStyles();
+
+  const description = (() => {
+    for (let i = 0; i < items.length; ++i) {
+      const item = items[i];
+      if (item.type === 'item' && item.id === activeItem) {
+        return item.description || null;
+      }
+    }
+    return null;
+  })();
+
+  return (
+    <div className={buildClass(classes.root, className)}>
+      <div className={classes.items}>
+        {items.map((item, i) => {
+          switch (item.type) {
+            case 'header':
+              return (
+                <div key={`header-${i}`} className={classes.header}>
+                  {item.header}
+                </div>
+              );
+            case 'item':
+              return (
+                <Completion
+                  key={item.id}
+                  active={item.id === activeItem}
+                  onSelection={onSelection}
+                  onActiveChange={onActiveChange}
+                  {...item}
+                />
+              );
+            default:
+              throw new Error('unknown type');
+          }
+        })}
+      </div>
+      {description && (
+        <div className={classes.description}>
+          <div className={classes.header}>Description</div>
+          {description}
+        </div>
+      )}
+    </div>
+  );
+};

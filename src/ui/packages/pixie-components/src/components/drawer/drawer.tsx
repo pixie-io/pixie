@@ -114,5 +114,9 @@ const FixedSizeDrawerImpl = ({
     </div>
   );
 };
+FixedSizeDrawerImpl.defaultProps = {
+  children: null,
+  otherContent: null,
+};
 
 export const FixedSizeDrawer = withStyles(styles)(FixedSizeDrawerImpl);

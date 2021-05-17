@@ -94,7 +94,7 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
   const [network, setNetwork] = React.useState<Network>(null);
   const [graph, setGraph] = React.useState<RequestGraph>(null);
 
-  const [colInfos, setColInfos] = React.useState<{[key: string]: ColInfo}>({});
+  const [colInfos, setColInfos] = React.useState<{ [key: string]: ColInfo }>({});
 
   const [clusteredMode, setClusteredMode] = React.useState<boolean>(true);
   const [hierarchyEnabled, setHierarchyEnabled] = React.useState<boolean>(false);
@@ -328,4 +328,7 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
       </div>
     </div>
   );
+};
+RequestGraphWidget.defaultProps = {
+  propagatedArgs: null,
 };
