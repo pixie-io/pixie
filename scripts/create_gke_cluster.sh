@@ -169,7 +169,7 @@ fi
 
 gcloud beta container --project "${PROJECT}" clusters create "${CLUSTER_NAME}" \
  --zone "${ZONE}" \
- --username "admin" \
+ --no-enable-basic-auth \
  --machine-type "${MACHINE_TYPE}" \
  --image-type ${IMAGE_NAME} \
  --disk-type "pd-ssd" \
