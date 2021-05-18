@@ -17,24 +17,30 @@
  */
 
 import * as React from 'react';
-import { VizierContextRouter, VizierRouteContext } from 'containers/App/vizier-routing';
+import { VizierContextRouter } from 'containers/App/vizier-routing';
 import { ScriptsContextProvider } from 'containers/App/scripts-context';
-import { ScriptContextProvider } from 'context/new-script-context';
+import { ScriptContext, ScriptContextProvider } from 'context/new-script-context';
 import { ScriptLoader } from 'containers/live/new-script-loader';
 import { Button } from '@material-ui/core';
 import { Link } from 'react-router-dom';
 import { ClusterContext } from 'common/cluster-context';
+import { ResultsContext, ResultsContextProvider } from 'context/results-context';
 
 const LiveView: React.FC = () => {
   const { selectedClusterName } = React.useContext(ClusterContext);
-  const { script, args, routeFor } = React.useContext(VizierRouteContext);
-  const nextRoute = (script === 'px/cluster')
+  const { script, args, routeFor } = React.useContext(ScriptContext);
+  const results = React.useContext(ResultsContext);
+
+  if (!selectedClusterName || !script || !args) return null;
+
+  const nextRoute = (script.id === 'px/cluster')
     ? routeFor('px/pod', { cluster: 'fooCluster', namespace: 'barNamespace', pod: 'bazPod' })
     : routeFor('px/cluster', { cluster: selectedClusterName }); // Ensure that the defaults work
+
   return (
     <div style={{ display: 'flex', flexFlow: 'column nowrap' }}>
-      <pre>
-        {script}
+      <pre style={{ overflow: 'auto', maxWidth: '100vw', maxHeight: '40vh' }}>
+        {script.id}
         (
         {JSON.stringify(args)}
         )
@@ -47,6 +53,14 @@ const LiveView: React.FC = () => {
       >
         Try another route
       </Button>
+      <h2>Script body</h2>
+      <pre style={{ overflow: 'auto', maxWidth: '100vw', maxHeight: '40vh' }}>{JSON.stringify(script, null, 2)}</pre>
+      { results.tables && (
+      <>
+        <h2>Results of latest script run</h2>
+        <pre style={{ overflow: 'auto', maxWidth: '100vw', maxHeight: '40vh' }}>{JSON.stringify(results, null, 2)}</pre>
+      </>
+      )}
     </div>
   );
 };
@@ -56,10 +70,12 @@ const LiveView: React.FC = () => {
 const ContextualizedLiveView: React.FC = () => (
   <ScriptsContextProvider>
     <VizierContextRouter>
-      <ScriptContextProvider>
-        <ScriptLoader />
-        <LiveView />
-      </ScriptContextProvider>
+      <ResultsContextProvider>
+        <ScriptContextProvider>
+          <ScriptLoader />
+          <LiveView />
+        </ScriptContextProvider>
+      </ResultsContextProvider>
     </VizierContextRouter>
   </ScriptsContextProvider>
 );

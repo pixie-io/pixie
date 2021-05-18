@@ -18,15 +18,15 @@
 
 import * as React from 'react';
 import { ScriptContext } from 'context/new-script-context';
-import { VizierRouteContext } from 'containers/App/vizier-routing';
 
 /**
  * Automatically runs the selected script whenever it changes, the args change, or the vis spec changes.
  * @constructor
  */
 export const ScriptLoader: React.FC = () => {
-  const { script: scriptId, args } = React.useContext(VizierRouteContext);
-  const { script } = React.useContext(ScriptContext);
+  const {
+    script, args, execute, cancelExecution,
+  } = React.useContext(ScriptContext);
 
   // Sorting keys to ensure stability between identical objects when the route might change their ordering.
   // Sorting the keys in this way loses nested properties, so we're only doing it for args (vis is already stable).
@@ -35,16 +35,16 @@ export const ScriptLoader: React.FC = () => {
 
   React.useEffect(() => {
     // Wait for everything to be set first.
-    if (script == null || args == null || script?.vis == null || scriptId !== script.id) return;
+    if (script == null || args == null || script?.vis == null) return;
 
     /*
      * TODO(nick,PC-917): Run the script only if hasMutation is false. Copy most of the logic from old ScriptLoader.
      *  Re-run if the PxL, scriptID, cluster, vis, or args have changed. ScriptContext.execute handles ResultsContext.
      *  Note: cluster is part of args right now; there's another task in ScriptContext to pull it up a level.
      */
-    const defaults = (script?.vis.variables || []).reduce((a, c) => ({ ...a, [c.name]: c.defaultValue }), {});
-    // eslint-disable-next-line no-console
-    console.debug(`${scriptId}==${script.id}(${JSON.stringify(args)}) with defaults ${JSON.stringify(defaults)}`);
+
+    cancelExecution?.();
+    if (script && serializedArgs) execute();
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [script, serializedArgs, serializedVis]);

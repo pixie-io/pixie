@@ -29,14 +29,15 @@ import { RouteNotFound } from 'containers/App/route-not-found';
 import { selectCluster } from 'containers/App/cluster-info';
 import { useListClusters } from '@pixie-labs/api-react';
 import { useSnackbar } from '@pixie-labs/components';
+import { ClusterContext } from 'common/cluster-context';
 
 export interface VizierRouteContextProps {
-  script: string;
+  scriptId: string;
   cluster: string;
   args: Record<string, string|string[]>;
-  push: (script: string, args: Record<string, string|string[]>) => void;
-  replace: (script: string, args: Record<string, string|string[]>) => void;
-  routeFor: (script: string, args: Record<string, string|string[]>) => LocationDescriptorObject;
+  push: (scriptId: string, args: Record<string, string|string[]>) => void;
+  replace: (scriptId: string, args: Record<string, string|string[]>) => void;
+  routeFor: (scriptId: string, args: Record<string, string|string[]>) => LocationDescriptorObject;
 }
 
 export const VizierRouteContext = React.createContext<VizierRouteContextProps>(null);
@@ -94,8 +95,10 @@ const useRouteValidityCheck = (clusterName: string): 'wait'|'valid'|'invalid' =>
 const VizierRoute: React.FC<
 Omit<VizierRouteContextProps, 'args'|'cluster'> & { defaultArgs: Record<string, string> }
 > = ({
-  script, defaultArgs, push, replace, routeFor, children,
+  scriptId, defaultArgs, push, replace, routeFor, children,
 }) => {
+  const { setClusterByName } = React.useContext(ClusterContext);
+
   const argsFromMatch = useParams<Record<string, string>>();
   const argsFromSearch = QueryString.parse(useLocation().search);
   const args: Record<string, string|string[]> = {
@@ -113,12 +116,12 @@ Omit<VizierRouteContextProps, 'args'|'cluster'> & { defaultArgs: Record<string, 
   // Sorting keys ensures that the stringified object looks the same regardless of the order of operations that built it
   const serializedArgs = JSON.stringify(args, Object.keys(args ?? {}).sort());
   const context: VizierRouteContextProps = React.useMemo(() => ({
-    script, args, cluster, push, replace, routeFor,
+    scriptId, args, cluster, push, replace, routeFor,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [script, push, replace, serializedArgs]);
+  }), [scriptId, push, replace, serializedArgs]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const expectedRoute = React.useMemo(() => routeFor(script, args), [script, routeFor, serializedArgs]);
+  const expectedRoute = React.useMemo(() => routeFor(scriptId, args), [scriptId, routeFor, serializedArgs]);
   const actualRoute = useLocation();
 
   const showSnackbar = useSnackbar();
@@ -143,6 +146,8 @@ Omit<VizierRouteContextProps, 'args'|'cluster'> & { defaultArgs: Record<string, 
     return null;
   }
 
+  setClusterByName(cluster);
+
   // Consistency: ensure that the route matches the context. Same cluster, script, and args.
   if (actualRoute.search.slice(actualRoute.search.indexOf('?') + 1) !== expectedRoute.search) {
     return <Redirect to={expectedRoute} />;
@@ -162,24 +167,24 @@ export const VizierContextRouter: React.FC = ({ children }) => {
 
   const { scripts: availableScripts, loading: loadingAvailableScripts } = React.useContext(ScriptsContext);
 
-  const defaultArgsForScript: (script: string) => Record<string, string|undefined> = React.useCallback((script) => {
+  const defaultArgsForScript: (scriptId: string) => Record<string, string|undefined> = React.useCallback((scriptId) => {
     if (loadingAvailableScripts) return {};
-    const vis: Vis = parseVis(availableScripts.get(script)?.vis ?? '');
+    const vis: Vis = parseVis(availableScripts.get(scriptId)?.vis ?? '');
     return (vis?.variables ?? []).reduce((a, c) => ({
       ...a,
       [c.name]: c.defaultValue,
     }), {} as Record<string, string|undefined>);
   }, [availableScripts, loadingAvailableScripts]);
 
-  const routeFor = React.useCallback((script: string, args: Record<string, string>): LocationDescriptorObject => {
+  const routeFor = React.useCallback((scriptId: string, args: Record<string, string>): LocationDescriptorObject => {
     const queryParams: Record<string, string> = {};
-    let route = `${base}${SCRIPT_ROUTES.get(script)}`;
-    if (!route) {
+    let route = `${base}${SCRIPT_ROUTES.get(scriptId)}`;
+    if (!SCRIPT_ROUTES.has(scriptId)) {
       route = `${base}${SCRIPT_ROUTES.get('px/cluster')}`;
-      queryParams.script = script;
+      queryParams.script = scriptId;
     }
 
-    for (const [key, value] of Object.entries({ ...defaultArgsForScript(script), ...args })) {
+    for (const [key, value] of Object.entries({ ...defaultArgsForScript(scriptId), ...args })) {
       if (route.includes(`:${key}`)) {
         route = route.replace(new RegExp(`:${key}\\??`), value);
       } else {
@@ -189,21 +194,21 @@ export const VizierContextRouter: React.FC = ({ children }) => {
 
     const unmatched = extractUnmatchedRouteParams(route);
     if (unmatched.length) {
-      throw new Error(`routeFor(${script}, ${JSON.stringify(args)}) is missing arg(s): ${unmatched.join(', ')}`);
+      throw new Error(`routeFor(${scriptId}, ${JSON.stringify(args)}) is missing arg(s): ${unmatched.join(', ')}`);
     }
 
     return { pathname: route, search: QueryString.stringify(queryParams) };
   }, [base, defaultArgsForScript]);
 
-  const push: (script: string, args: Record<string, string>) => void = React.useMemo(() => (script, args) => {
-    const route = routeFor(script, { ...defaultArgsForScript(script), ...args });
+  const push: (scriptId: string, args: Record<string, string>) => void = React.useMemo(() => (scriptId, args) => {
+    const route = routeFor(scriptId, { ...defaultArgsForScript(scriptId), ...args });
     if (route.pathname !== plHistory.location.pathname || route.search !== plHistory.location.search) {
       plHistory.push(route);
     }
   }, [defaultArgsForScript, routeFor]);
 
-  const replace: (script: string, args: Record<string, string>) => void = React.useMemo(() => (script, args) => {
-    const route = routeFor(script, { ...defaultArgsForScript(script), ...args });
+  const replace: (scriptId: string, args: Record<string, string>) => void = React.useMemo(() => (scriptId, args) => {
+    const route = routeFor(scriptId, { ...defaultArgsForScript(scriptId), ...args });
     if (route.pathname !== plHistory.location.pathname || route.search !== plHistory.location.search) {
       plHistory.replace(route);
     }
@@ -221,7 +226,7 @@ export const VizierContextRouter: React.FC = ({ children }) => {
           path={`${base}${route}`}
           render={() => (
             <VizierRoute
-              script={scriptId}
+              scriptId={scriptId}
               push={push}
               replace={replace}
               routeFor={routeFor}
