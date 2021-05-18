@@ -26,7 +26,7 @@ import * as React from 'react';
 import { LiveViewButton } from 'containers/admin/utils';
 import NavBars from 'containers/App/nav-bars';
 
-import licenseJson from './licenses.json';
+import licenseJson from 'configurable/licenses.json';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {

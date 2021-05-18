@@ -23,6 +23,7 @@ import {
   createStyles, Theme, WithStyles, withStyles,
 } from '@material-ui/core';
 import { AuthFooter } from '@pixie-labs/components';
+import { Copyright } from 'configurable/copyright';
 import * as pixieLogo from '../../../assets/images/pixie-logo.svg';
 import * as StarsPNG from './stars.png';
 
@@ -79,6 +80,6 @@ export const BasePage = withStyles(styles)(({ children, classes }: BasePageProps
     <div className={classes.content}>
       {children}
     </div>
-    <AuthFooter />
+    <AuthFooter copyright={Copyright} />
   </div>
 ));

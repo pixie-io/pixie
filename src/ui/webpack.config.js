@@ -181,6 +181,12 @@ const webpackConfig = {
       '.png',
     ],
     modules: ['node_modules', resolve('./src'), resolve('./assets')],
+    alias: {
+      configurable: [
+        resolve(__dirname, 'src/configurables/private/'),
+        resolve(__dirname, 'src/configurables/base/'),
+      ],
+    },
   },
   optimization: {
     splitChunks: {

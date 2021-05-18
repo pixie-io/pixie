@@ -2,6 +2,10 @@
   "compilerOptions": {
     "baseUrl": "./src",
     "paths": {
+      "configurable/*": [
+        "configurables/private/*",
+        "configurables/base/*"
+      ],
       "*": [
         "*",
         "../packages/pixie-components/dist/*",
