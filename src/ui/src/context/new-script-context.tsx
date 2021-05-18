@@ -151,11 +151,11 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
     baseScript: uneditedScript,
     manuallyEdited,
     setPxl: (pxl: string) => {
-      setScript({ ...script, code: pxl });
+      setScript((s) => ({ ...s, code: pxl }));
       setManuallyEdited(true);
     },
     setVis: (vis: string) => {
-      setScript({ ...script, vis: parseVis(vis) });
+      setScript((s) => ({ ...s, vis: parseVis(vis) }));
       setManuallyEdited(true);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
