@@ -704,6 +704,12 @@ void ConnTracker::IterationPreTick(
   // Assume no activity. This flag will be flipped if there is any activity during the iteration.
   idle_iteration_ = true;
 
+  // Might not always be true, but for now there's nothing IterationPreTick does that
+  // should be applied to a disabled tracker. This is in contrast to IterationPostTick.
+  if (state_ == State::kDisabled) {
+    return;
+  }
+
   // If remote_addr is missing, it means the connect/accept was not traced.
   // Attempt to infer the connection information, to populate remote_addr.
   if (open_info_.remote_addr.family == SockAddrFamily::kUnspecified && socket_info_mgr != nullptr) {
