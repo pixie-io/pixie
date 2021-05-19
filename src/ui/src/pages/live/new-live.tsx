@@ -26,10 +26,52 @@ import { Link } from 'react-router-dom';
 import { ClusterContext } from 'common/cluster-context';
 import { ResultsContext, ResultsContextProvider } from 'context/results-context';
 
+import { EditorSplitPanel } from 'containers/editor/new-editor';
+import { scrollbarStyles } from '@pixie-labs/components';
+import {
+  createStyles, makeStyles, Theme,
+} from '@material-ui/core/styles';
+import { LayoutContextProvider } from 'context/layout-context';
+import EditorContextProvider, { EditorContext } from 'context/editor-context';
+
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  root: {
+    height: '100%',
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    backgroundColor: theme.palette.background.default,
+    color: theme.palette.text.primary,
+    ...scrollbarStyles(theme),
+  },
+  content: {
+    marginLeft: theme.spacing(6),
+    marginTop: theme.spacing(2),
+    display: 'flex',
+    flex: 1,
+    minWidth: 0,
+    minHeight: 0,
+    flexDirection: 'column',
+    [theme.breakpoints.down('sm')]: {
+      // Sidebar is disabled.
+      marginLeft: 0,
+    },
+  },
+}));
+
 const LiveView: React.FC = () => {
+  const classes = useStyles();
   const { selectedClusterName } = React.useContext(ClusterContext);
   const { script, args, routeFor } = React.useContext(ScriptContext);
   const results = React.useContext(ResultsContext);
+  const { saveEditor } = React.useContext(EditorContext);
+
+  const visSlice = React.useMemo(() => {
+    if (!script) {
+      return '';
+    }
+    return JSON.stringify(script, null, 2);
+  }, [script]);
 
   if (!selectedClusterName || !script || !args) return null;
 
@@ -38,29 +80,44 @@ const LiveView: React.FC = () => {
     : routeFor('px/cluster', { cluster: selectedClusterName }); // Ensure that the defaults work
 
   return (
-    <div style={{ display: 'flex', flexFlow: 'column nowrap' }}>
-      <pre style={{ overflow: 'auto', maxWidth: '100vw', maxHeight: '40vh' }}>
-        {script.id}
-        (
-        {JSON.stringify(args)}
-        )
-      </pre>
-      <Button
-        component={Link}
-        variant='contained'
-        color='primary'
-        to={nextRoute}
-      >
-        Try another route
-      </Button>
-      <h2>Script body</h2>
-      <pre style={{ overflow: 'auto', maxWidth: '100vw', maxHeight: '40vh' }}>{JSON.stringify(script, null, 2)}</pre>
-      { results.tables && (
-      <>
-        <h2>Results of latest script run</h2>
-        <pre style={{ overflow: 'auto', maxWidth: '100vw', maxHeight: '40vh' }}>{JSON.stringify(results, null, 2)}</pre>
-      </>
-      )}
+    <div className={classes.root}>
+      <div className={classes.content}>
+        <EditorSplitPanel>
+          <div style={{ display: 'flex', flexFlow: 'column nowrap' }}>
+            <pre style={{ overflow: 'auto', maxWidth: '100vw', maxHeight: '40vh' }}>
+              {script.id}
+              (
+              {JSON.stringify(args)}
+              )
+            </pre>
+            <Button
+              component={Link}
+              variant='contained'
+              color='primary'
+              to={nextRoute}
+            >
+              Try another route
+            </Button>
+            <Button
+              variant='contained'
+              color='secondary'
+              onClick={saveEditor}
+            >
+              Save Pxl
+            </Button>
+            <h2>Script body</h2>
+            <pre style={{ overflow: 'auto', maxWidth: '100vw', maxHeight: '40vh' }}>{visSlice}</pre>
+            {results.tables && (
+              <>
+                <h2>Results of latest script run</h2>
+                <pre style={{ overflow: 'auto', maxWidth: '100vw', maxHeight: '40vh' }}>
+                  {JSON.stringify(results, null, 2)}
+                </pre>
+              </>
+            )}
+          </div>
+        </EditorSplitPanel>
+      </div>
     </div>
   );
 };
@@ -68,16 +125,20 @@ const LiveView: React.FC = () => {
 // TODO(nick,PC-917): withLiveViewContext needs a new version too that can do this. Complexity: VizierContextRouter
 //  isn't just a context, it does manipulate behavior. Should it be in there? It's midway inside the stack; hard to move
 const ContextualizedLiveView: React.FC = () => (
-  <ScriptsContextProvider>
-    <VizierContextRouter>
-      <ResultsContextProvider>
-        <ScriptContextProvider>
-          <ScriptLoader />
-          <LiveView />
-        </ScriptContextProvider>
-      </ResultsContextProvider>
-    </VizierContextRouter>
-  </ScriptsContextProvider>
+  <LayoutContextProvider>
+    <ScriptsContextProvider>
+      <VizierContextRouter>
+        <ResultsContextProvider>
+          <ScriptContextProvider>
+            <EditorContextProvider>
+              <ScriptLoader />
+              <LiveView />
+            </EditorContextProvider>
+          </ScriptContextProvider>
+        </ResultsContextProvider>
+      </VizierContextRouter>
+    </ScriptsContextProvider>
+  </LayoutContextProvider>
 );
 
 export default ContextualizedLiveView;
