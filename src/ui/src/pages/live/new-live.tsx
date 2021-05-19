@@ -27,15 +27,21 @@ import { Link } from 'react-router-dom';
 import { ClusterContext } from 'common/cluster-context';
 import { ResultsContext, ResultsContextProvider } from 'context/results-context';
 
+import Canvas from 'containers/live/new-canvas';
 import { EditorSplitPanel } from 'containers/editor/new-editor';
-import { scrollbarStyles } from '@pixie-labs/components';
+import { scrollbarStyles, EditIcon } from '@pixie-labs/components';
 import {
-  makeStyles, Theme,
+  makeStyles, Theme, createStyles,
 } from '@material-ui/core/styles';
-import { createStyles } from '@material-ui/styles';
+import Tooltip from '@material-ui/core/Tooltip';
+import IconButton from '@material-ui/core/IconButton';
+import MoveIcon from '@material-ui/icons/OpenWith';
 import { LayoutContext, LayoutContextProvider } from 'context/layout-context';
 import EditorContextProvider, { EditorContext } from 'context/editor-context';
 import LiveViewShortcutsProvider from 'containers/live/shortcuts';
+import { DataDrawerSplitPanel } from 'containers/data-drawer/data-drawer';
+import { DataDrawerContextProvider } from 'context/data-drawer-context';
+import NavBars from 'containers/App/nav-bars';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -60,7 +66,88 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
       marginLeft: 0,
     },
   },
+  title: {
+    ...theme.typography.h3,
+    marginLeft: theme.spacing(3),
+    marginBottom: theme.spacing(0),
+    color: theme.palette.primary.main,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  mainPanel: {
+    flex: 1,
+    minHeight: 0,
+  },
+  moveWidgetToggle: {
+    border: 'none',
+    borderRadius: '50%',
+    color: theme.palette.action.active,
+  },
+  editorPanel: {
+    display: 'flex',
+    flexDirection: 'row',
+    minHeight: 0,
+  },
+  canvas: {
+    overflowY: 'auto',
+    overflowX: 'hidden',
+    marginLeft: theme.spacing(0.5),
+    height: '100%',
+    width: '100%',
+  },
+  hidden: {
+    display: 'none',
+  },
+  iconActive: {
+    width: theme.spacing(2),
+    color: theme.palette.primary.main,
+  },
+  iconInactive: {
+    width: theme.spacing(2),
+    color: theme.palette.foreground.grey1,
+  },
+  iconButton: {
+    marginRight: theme.spacing(1),
+    padding: theme.spacing(0.5),
+  },
+  iconPanel: {
+    marginTop: 0,
+    marginLeft: theme.spacing(3),
+    [theme.breakpoints.down('sm')]: {
+      display: 'none',
+    },
+  },
 }));
+
+const ScriptOptions = ({
+  classes, widgetsMoveable, setWidgetsMoveable,
+}) => {
+  const {
+    editorPanelOpen, setEditorPanelOpen, isMobile,
+  } = React.useContext(LayoutContext);
+  return (
+    <>
+      {
+        !isMobile
+        && (
+          <div className={classes.iconPanel}>
+            <Tooltip title={`${editorPanelOpen ? 'Close' : 'Open'} editor`} className={classes.iconButton}>
+              <IconButton className={classes.iconButton} onClick={() => setEditorPanelOpen(!editorPanelOpen)}>
+                <EditIcon className={editorPanelOpen ? classes.iconActive : classes.iconInactive} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title={`${widgetsMoveable ? 'Disable' : 'Enable'} move widgets`} className={classes.iconButton}>
+              <IconButton onClick={() => setWidgetsMoveable(!widgetsMoveable)}>
+                <MoveIcon className={widgetsMoveable ? classes.iconActive : classes.iconInactive} />
+              </IconButton>
+            </Tooltip>
+          </div>
+        )
+      }
+    </>
+  );
+};
 
 const LiveView: React.FC = () => {
   const classes = useStyles();
@@ -68,7 +155,8 @@ const LiveView: React.FC = () => {
   const { script, args, routeFor } = React.useContext(ScriptContext);
   const results = React.useContext(ResultsContext);
   const { saveEditor } = React.useContext(EditorContext);
-  const { setEditorPanelOpen } = React.useContext(LayoutContext);
+  const { setEditorPanelOpen, setDataDrawerOpen } = React.useContext(LayoutContext);
+  const [widgetsMoveable, setWidgetsMoveable] = React.useState(false);
 
   const visSlice = React.useMemo(() => {
     if (!script) {
@@ -81,9 +169,11 @@ const LiveView: React.FC = () => {
     'toggle-editor': () => setEditorPanelOpen((editable) => !editable),
     execute: () => saveEditor(),
     // TODO(philkuz,PC-917) enable the other commands when their components are added in.
-    'toggle-data-drawer': () => {},
+    'toggle-data-drawer': () => setDataDrawerOpen((open) => !open),
     'pixie-command': () => {},
   };
+
+  const canvasRef = React.useRef<HTMLDivElement>(null);
 
   if (!selectedClusterName || !script || !args) return null;
 
@@ -93,25 +183,17 @@ const LiveView: React.FC = () => {
 
   return (
     <div className={classes.root}>
-      <div className={classes.content}>
-        <LiveViewShortcutsProvider handlers={hotkeyHandlers}>
+      <LiveViewShortcutsProvider handlers={hotkeyHandlers}>
+        <NavBars />
+        <div className={classes.content}>
+          <LiveViewBreadcrumbs />
           <EditorSplitPanel>
+            <ScriptOptions
+              classes={classes}
+              widgetsMoveable={widgetsMoveable}
+              setWidgetsMoveable={setWidgetsMoveable}
+            />
             <div style={{ display: 'flex', flexFlow: 'column nowrap' }}>
-              <pre style={{ overflow: 'auto', maxWidth: '100vw', maxHeight: '40vh' }}>
-                {script.id}
-                (
-                {JSON.stringify(args)}
-                )
-              </pre>
-              <LiveViewBreadcrumbs />
-              <Button
-                component={Link}
-                variant='contained'
-                color='primary'
-                to={nextRoute}
-              >
-                Try another route
-              </Button>
               <Button
                 variant='contained'
                 color='secondary'
@@ -119,20 +201,20 @@ const LiveView: React.FC = () => {
               >
                 Save Pxl
               </Button>
-              <h2>Script body</h2>
-              <pre style={{ overflow: 'auto', maxWidth: '100vw', maxHeight: '40vh' }}>{visSlice}</pre>
-              {results.tables && (
-                <>
-                  <h2>Results of latest script run</h2>
-                  <pre style={{ overflow: 'auto', maxWidth: '100vw', maxHeight: '40vh' }}>
-                    {JSON.stringify(results, null, 2)}
-                  </pre>
-                </>
-              )}
             </div>
+            {
+              results.loading ? (<div> loading </div>) : (
+
+                <DataDrawerSplitPanel className={classes.mainPanel}>
+                  <div className={classes.canvas} ref={canvasRef}>
+                    <Canvas editable={widgetsMoveable} parentRef={canvasRef} />
+                  </div>
+                </DataDrawerSplitPanel>
+              )
+            }
           </EditorSplitPanel>
-        </LiveViewShortcutsProvider>
-      </div>
+        </div>
+      </LiveViewShortcutsProvider>
     </div>
   );
 };
@@ -141,18 +223,20 @@ const LiveView: React.FC = () => {
 //  isn't just a context, it does manipulate behavior. Should it be in there? It's midway inside the stack; hard to move
 const ContextualizedLiveView: React.FC = () => (
   <LayoutContextProvider>
-    <ScriptsContextProvider>
-      <VizierContextRouter>
-        <ResultsContextProvider>
-          <ScriptContextProvider>
-            <EditorContextProvider>
-              <ScriptLoader />
-              <LiveView />
-            </EditorContextProvider>
-          </ScriptContextProvider>
-        </ResultsContextProvider>
-      </VizierContextRouter>
-    </ScriptsContextProvider>
+    <DataDrawerContextProvider>
+      <ScriptsContextProvider>
+        <VizierContextRouter>
+          <ResultsContextProvider>
+            <ScriptContextProvider>
+              <EditorContextProvider>
+                <ScriptLoader />
+                <LiveView />
+              </EditorContextProvider>
+            </ScriptContextProvider>
+          </ResultsContextProvider>
+        </VizierContextRouter>
+      </ScriptsContextProvider>
+    </DataDrawerContextProvider>
   </LayoutContextProvider>
 );
 

@@ -149,20 +149,33 @@ export function toLayout(widgets: Widget[], isMobile: boolean): Layout[] {
   });
 }
 
+function samePosition(oldPos: ChartPosition, newPos: ChartPosition): boolean {
+  if (oldPos == null && newPos != null) {
+    return false;
+  }
+  return oldPos === newPos
+    || oldPos.x === newPos.x
+    || oldPos.y === newPos.y
+    || oldPos.w === newPos.w
+    || oldPos.h === newPos.h;
+}
+
 export function updatePositions(visSpec: Vis, positions: ChartPosition[]): Vis {
-  return {
-    variables: visSpec.variables,
-    globalFuncs: visSpec.globalFuncs,
-    widgets: positions.map((position, i) => ({
-      ...visSpec.widgets[i],
-      position: {
-        x: position.x,
-        y: position.y,
-        w: position.w,
-        h: position.h,
-      },
-    })),
-  };
+  let different = false;
+  const newVis = { variables: [...visSpec.variables], globalFuncs: [...visSpec.globalFuncs], widgets: [] };
+  for (let i = 0; i < positions.length; i++) {
+    const position = positions[i];
+    const widget = visSpec.widgets[i];
+    if (!samePosition(visSpec.widgets[i].position, position)) {
+      different = true;
+    }
+    newVis.widgets.push({ ...widget, position: { ...position } });
+  }
+  // Only return a newVis if the widgets were changed, otherwise we want to preserve object identity.
+  if (different) {
+    return newVis;
+  }
+  return visSpec;
 }
 
 // Helper function to generate a default layout for tables without vis specs.

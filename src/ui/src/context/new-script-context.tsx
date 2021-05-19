@@ -184,7 +184,7 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
             error: resultsContext.error,
             stats: resultsContext.stats,
             mutationInfo: resultsContext.mutationInfo,
-            tables: update.results.tables.reduce((a, c) => ({ ...a, [c.id]: c }), {}),
+            tables: update.results.tables.reduce((a, c) => ({ ...a, [c.name]: c }), {}),
           });
           break;
         case 'metadata':
@@ -197,7 +197,7 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
               error: resultsContext.error,
               stats: update.results.executionStats,
               mutationInfo: resultsContext.mutationInfo,
-              tables: update.results.tables.reduce((a, c) => ({ ...a, [c.id]: c }), {}),
+              tables: update.results.tables.reduce((a, c) => ({ ...a, [c.name]: c }), {}),
             });
           }
           // Query completed normally
