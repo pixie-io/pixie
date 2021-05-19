@@ -173,7 +173,8 @@ func (v *VizierIndexer) resourceUpdateToEMD(update *metadatapb.ResourceUpdate) *
 	case *metadatapb.ResourceUpdate_ServiceUpdate:
 		return v.serviceUpdateToEMD(update, update.GetServiceUpdate())
 	default:
-		log.Errorf("Unknown entity types: %v", update)
+		// We don't care about any other update types.
+		// Notably containerUpdates and nodeUpdates.
 		return nil
 	}
 }
