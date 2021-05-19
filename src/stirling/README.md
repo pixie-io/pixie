@@ -109,6 +109,25 @@ If any additional flags become required, be sure to update at least the followin
  - `src/stirling/scripts/docker_run_stirling_wrapper.sh`
  - `src/stirling/e2e_tests`: files that run stirling in a container
 
+## Dynamically installed Linux headers in Stirling's BPF runtime
+
+Stirling's BPF runtime requires kernel headers to compile the BPF code. If the target host does not
+have kernel headers pre-installed, Stirling looks for the appropriate headers package bundled with
+the PEM image, and extracts them to the correct path inside the container.
+
+In order to limit the size of the PEM image, only a subset of kernel versions are included.
+Stirling picks the headers package with the closest version number to the host's kernel version.
+
+As a result, the dynamically-installed kernel headers might not exactly match the host kernel. This
+may result in unexpected runtime behavior if certain structs are not the right match.  For instance,
+in places where Stirling's BPF code accesses kernel data structures, an accessed member's offset in
+a struct may have changed between versions, and the byte code compiled with an older version of the
+kernel headers would result in accessing wrong data.  More rarely, the BPF code compilation may fail
+altogether if struct member names have changed.
+
+To avoid such issues, we manually examine the history of the kernel data structures accessed in
+Stirling's BPF code, and make sure the correct linux headers version are included in the PEM image.
+
 ## FAQ
 
 ### Why do some of my records have exactly the same latency?
