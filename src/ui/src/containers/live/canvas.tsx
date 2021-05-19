@@ -37,6 +37,7 @@ import {
   alpha, makeStyles, Theme, useTheme,
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
+import Paper from '@material-ui/core/Paper';
 
 import Vega from 'containers/live-widgets/vega/vega';
 import { LayoutContext } from 'context/layout-context';
@@ -60,7 +61,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   gridItem: {
     padding: theme.spacing(0.8),
-    backgroundColor: theme.palette.background.six,
+    backgroundColor: theme.palette.background.four,
     boxShadow: '2px 2px 2px rgba(0, 0, 0, 0.31)',
     borderRadius: '5px',
     border: theme.palette.border.unFocused,
@@ -366,15 +367,15 @@ const Canvas = (props: CanvasProps) => {
 
       if (loading) {
         widgets.push(
-          <div key={widgetName} className={className}>
+          <Paper key={widgetName} className={className} elevation={1}>
             <div className={classes.spinner}><Spinner /></div>
-          </div>,
+          </Paper>,
         );
         return;
       }
 
       widgets.push(
-        <div key={widgetName} className={className}>
+        <Paper key={widgetName} className={className}>
           <WidgetDisplay
             display={display}
             table={table}
@@ -383,7 +384,7 @@ const Canvas = (props: CanvasProps) => {
             propagatedArgs={propagatedArgs}
             emptyTableMsg={emptyTableMsg}
           />
-        </div>,
+        </Paper>,
       );
     });
     return widgets;
@@ -416,10 +417,10 @@ const Canvas = (props: CanvasProps) => {
       >
         {
           Object.entries(tables).map(([tableName, table]) => (
-            <div key={tableName} className={className}>
+            <Paper elevation={1} key={tableName} className={className}>
               <div className={classes.widgetTitle}>{tableName}</div>
               <QueryResultTable data={table} propagatedArgs={propagatedArgs} />
-            </div>
+            </Paper>
           ))
         }
       </Grid>

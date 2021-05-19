@@ -22,7 +22,7 @@ import * as logoImage from 'images/pixie-logo.svg';
 import * as React from 'react';
 
 import Button from '@material-ui/core/Button';
-import Card from '@material-ui/core/Card';
+import Paper from '@material-ui/core/Paper';
 import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 
@@ -112,7 +112,7 @@ export const DeployInstructions = () => {
       <div className={classes.navBar}>
         <NavBars />
       </div>
-      <Card className={classes.dialog}>
+      <Paper className={classes.dialog} elevation={1}>
         <div className={classes.content}>
           <span className={classes.header}>Install Pixie</span>
           <CodeRenderer
@@ -146,19 +146,17 @@ export const DeployInstructions = () => {
               className={classes.button}
               href='https://slackin.px.dev/'
               variant='outlined'
-              color='primary'
               size='large'
             >
               Slack
             </Button>
-            <Button className={classes.button} href='/docs' variant='outlined' color='primary' size='large'>
+            <Button className={classes.button} href='/docs' variant='outlined' size='large'>
               Docs
             </Button>
             <Button
               className={classes.button}
               href='https://github.com/pixie-labs/pixie'
               variant='outlined'
-              color='primary'
               size='large'
             >
               Github
@@ -166,7 +164,7 @@ export const DeployInstructions = () => {
           </div>
         </div>
         <img className={classes.logo} src={logoImage} style={{ width: '55px' }} />
-      </Card>
+      </Paper>
     </div>
   );
 };
@@ -180,7 +178,7 @@ export const ClusterInstructions = (props: ClusterInstructionsProps) => {
 
   return (
     <div className={classes.container}>
-      <Card className={classes.dialog}>
+      <Paper className={classes.dialog} elevation={1}>
         <div className={classes.content}>
           <div className={classes.centered}>
             <p>{props.message}</p>
@@ -188,7 +186,7 @@ export const ClusterInstructions = (props: ClusterInstructionsProps) => {
           </div>
         </div>
         <img className={classes.logo} src={logoImage} style={{ width: '55px' }} />
-      </Card>
+      </Paper>
     </div>
   );
 };

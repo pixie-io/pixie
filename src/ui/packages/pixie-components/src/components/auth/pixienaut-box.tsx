@@ -23,6 +23,7 @@ import {
   WithStyles,
   withStyles,
 } from '@material-ui/core';
+import Paper from '@material-ui/core/Paper';
 import { createStyles } from '@material-ui/styles';
 import { PixienautBalloonSvg } from './pixienaut-balloon';
 import { PixienautOctopusSvg } from './pixienaut-octopus';
@@ -124,13 +125,13 @@ export const PixienautBox = withStyles(styles)(({ classes, children, image = 'ba
     ),
   };
   return (
-    <div className={classes.root}>
+    <Paper className={classes.root} elevation={1}>
       <div className={classes.splashImageContainer}>
         {pixienautScenarios[image]}
       </div>
       <div className={classes.content}>
         {children}
       </div>
-    </div>
+    </Paper>
   );
 });

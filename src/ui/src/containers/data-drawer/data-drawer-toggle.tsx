@@ -26,6 +26,7 @@ import {
   makeStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
+import Paper from '@material-ui/core/Paper';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
 
@@ -44,6 +45,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.palette.sideBar.color,
+    backgroundImage: 'none',
     borderTop: theme.palette.border.unFocused,
     cursor: 'pointer',
     boxShadow: '0px -4px 4px #00000042',
@@ -165,7 +167,7 @@ export const DataDrawerToggle = (props: DataDrawerToggleProps) => {
   const activeTabExists = activeTab && tabs.some((tab) => tab.title === activeTab);
 
   return (
-    <div className={classes.root} onClick={toggle}>
+    <Paper className={classes.root} onClick={toggle} elevation={14}>
       {
         opened ? <DownIcon className={classes.toggleIcon} /> : <UpIcon className={classes.toggleIcon} />
       }
@@ -197,6 +199,6 @@ export const DataDrawerToggle = (props: DataDrawerToggleProps) => {
         }
       </StyledTabs>
       <PixieLogo className={classes.pixieLogo} />
-    </div>
+    </Paper>
   );
 };

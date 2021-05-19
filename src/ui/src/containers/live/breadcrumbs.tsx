@@ -22,6 +22,7 @@ import {
   Theme, withStyles,
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
+import Paper from '@material-ui/core/Paper';
 import { GQLClusterStatus as ClusterStatus, containsMutation } from '@pixie-labs/api';
 import { useListClusters, useAutocompleteFieldSuggester } from '@pixie-labs/api-react';
 
@@ -264,7 +265,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
   }
 
   return (
-    <div className={classes.root}>
+    <Paper className={classes.root} elevation={2}>
       <PixieCommandIcon fontSize='large' className={classes.pixieIcon} />
       <div className={classes.verticalLine} />
       <div className={classes.breadcrumbs}>
@@ -279,7 +280,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
         </div>
       </div>
       <ExecuteScriptButton />
-    </div>
+    </Paper>
   );
 };
 
