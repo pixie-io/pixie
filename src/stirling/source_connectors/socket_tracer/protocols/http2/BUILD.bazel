@@ -45,5 +45,6 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto:greet_pl_cc_proto",
+        "//src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto:multi_fields_pl_cc_proto",
     ],
 )

@@ -37,3 +37,13 @@ pl_cc_proto_library(
         "@com_github_grpc_grpc//:grpc++",
     ],
 )
+
+pl_proto_library(
+    name = "multi_fields_pl_proto",
+    srcs = ["multi_fields.proto"],
+)
+
+pl_cc_proto_library(
+    name = "multi_fields_pl_cc_proto",
+    proto = ":multi_fields_pl_proto",
+)

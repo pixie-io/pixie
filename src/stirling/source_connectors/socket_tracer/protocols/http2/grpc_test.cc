@@ -21,13 +21,16 @@
 #include "src/common/base/base.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto/greet.pb.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/http2/testing/proto/multi_fields.pb.h"
 
 namespace px {
 namespace stirling {
 namespace grpc {
 
+using ::google::protobuf::TextFormat;
 using ::px::stirling::protocols::http2::testing::HelloReply;
 using ::px::stirling::protocols::http2::testing::HelloRequest;
+using ::px::stirling::protocols::http2::testing::MultiFieldsMessage;
 using ::testing::HasSubstr;
 using ::testing::StrEq;
 
@@ -91,6 +94,35 @@ TEST(ParsePB, LongStringTruncation) {
       "truncated.");
   EXPECT_THAT(ParsePB(data, 32),
               StrEq(R"(1: "This is a long string. It is so ...<truncated>...")"));
+}
+
+// Tests that ParsePB() can parse partial serialized message, and produces partial text format.
+TEST(ParsePb, ParsingPartialMessage) {
+  const std::string program_protobuf = R"proto(
+                                       b: true
+                                       i32: 100
+                                       i64: 200
+                                       f: 1.2345
+                                       bs: "1234"
+                                       str: "string"
+                                       )proto";
+  MultiFieldsMessage multi_fields_msg;
+
+  ASSERT_TRUE(TextFormat::ParseFromString(program_protobuf, &multi_fields_msg));
+  std::string data = multi_fields_msg.SerializeAsString();
+
+  ASSERT_GT(data.size(), 10);
+  // Truncate data to 100 bytes.
+  data.resize(10);
+
+  // gRPC payload has 5 bytes header: <compression 1 byte> + <size 4 bytes>.
+  std::string_view grpc_payload_header = CreateStringView<char>("\x00\x00\x00\x00\x0A");
+  std::string message = absl::StrCat(grpc_payload_header, data);
+
+  EXPECT_THAT(ParsePB(message), StrEq(R"(1: 1
+2: 100
+3: 200
+4: 0x00000419)"));
 }
 
 }  // namespace grpc

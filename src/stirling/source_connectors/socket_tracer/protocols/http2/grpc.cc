@@ -36,8 +36,28 @@ using ::google::protobuf::TextFormat;
 
 namespace {
 
-Status PBWireToText(std::string_view message, google::protobuf::Message* pb, std::string* text,
-                    std::optional<int> str_truncation_len) {
+// Text format protobuf are not valid JSON. One obvious issue is that TextFormat uses unquoted
+// field numbers as key: {1: "some string"}, which is not allowed in JSON.
+Status PBWireToText(std::string_view message, TextFormat::Printer* pb_printer, std::string* text) {
+  Empty empty_pb;
+  const bool parse_succeeded = empty_pb.ParsePartialFromArray(message.data(), message.size());
+  // Proceed to print text format protobuf even if the parse failed. This allows producing partial
+  // message.
+  const bool print_succeeded = pb_printer->PrintToString(empty_pb, text);
+  if (!parse_succeeded) {
+    return error::InvalidArgument("Failed to parse the serialized protobuf message");
+  }
+  if (!print_succeeded) {
+    return error::InvalidArgument("Failed to print protobuf message to text format");
+  }
+  return Status::OK();
+}
+
+// Parses the gRPC payload into text format protobuf. In addition to parsing protobuf messages, this
+// function extracts compression and length field, and also handles multiple concatenated payloads
+// as well.
+Status GRPCPBWireToText(std::string_view message, std::string* text,
+                        std::optional<int> str_truncation_len) {
   if (message.size() < kGRPCMessageHeaderSizeInBytes) {
     return error::InvalidArgument(
         "The gRPC message does not have enough data. "
@@ -50,6 +70,8 @@ Status PBWireToText(std::string_view message, google::protobuf::Message* pb, std
   TextFormat::Printer pb_printer;
   pb_printer.SetTruncateStringFieldLongerThan(str_truncation_len.value_or(0));
 
+  Status status;
+
   while (!decoder.eof()) {
     PL_ASSIGN_OR_RETURN(uint8_t compressed_flag, decoder.ExtractInt<uint8_t>());
     if (compressed_flag == 1) {
@@ -58,30 +80,26 @@ Status PBWireToText(std::string_view message, google::protobuf::Message* pb, std
     PL_ASSIGN_OR_RETURN(uint32_t len, decoder.ExtractInt<uint32_t>());
     PL_ASSIGN_OR_RETURN(std::string_view data, decoder.ExtractString<char>(len));
 
-    const bool succeeded = pb->ParseFromArray(data.data(), data.size());
-    if (!succeeded) {
-      return error::InvalidArgument("Failed to parse the serialized protobuf message");
-    }
-
     std::string pb_str;
-    if (!pb_printer.PrintToString(*pb, &pb_str)) {
-      return error::InvalidArgument("Failed to print protobuf message to text format");
-    }
+    // Include the most recent status.
+    status = PBWireToText(data, &pb_printer, &pb_str);
+
     text->append(pb_str);
   }
-  return Status::OK();
+  return status;
 }
 
 }  // namespace
 
 // TODO(yzhao): Support reflection to get message types instead of empty message.
 std::string ParsePB(std::string_view str, std::optional<int> str_truncation_len) {
-  Empty empty;
   std::string text;
-  Status s = PBWireToText(str, &empty, &text, str_truncation_len);
+  Status s = GRPCPBWireToText(str, &text, str_truncation_len);
   absl::StripTrailingAsciiWhitespace(&text);
-
-  return s.ok() ? text : "<Failed to parse protobuf>";
+  if (!s.ok() && text.empty()) {
+    return "<Failed to parse protobuf>";
+  }
+  return text;
 }
 
 }  // namespace grpc
