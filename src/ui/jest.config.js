@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+const esModules = ['@material-ui/core', '@babel/runtime/helpers/esm'].join('|');
+
 module.exports = {
   globals: {
     window: true,
@@ -49,8 +51,9 @@ module.exports = {
   },
   resolver: null,
   transform: {
-    '^.+\\.jsx?$': 'babel-jest',
     '^.+\\.tsx?$': 'ts-jest',
+    [`node_modules/(${esModules}).*\\.jsx?$`]: './jest-esm-transform',
+    '^.+\\.jsx?$': 'babel-jest',
     '^.+\\.toml$': 'jest-raw-loader',
   },
   testRegex: '.*test\\.(ts|tsx|js|jsx)$',
@@ -58,6 +61,9 @@ module.exports = {
     'default',
     'jest-junit',
   ],
+  // We need to specify the inverse of the esModules above, to make sure
+  // we don't use the default (ignore all node modules).
+  transformIgnorePatterns: [`/node_modules/(?!${esModules})`],
   collectCoverageFrom: [
     'src/**/*.ts',
     'src/**/*.tsx',

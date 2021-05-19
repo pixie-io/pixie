@@ -37,6 +37,7 @@
         "devDependencies": [
           "**/*test.ts",
           "**/*test.tsx",
+          "jest-esm-transform.js",
           "src/testing/**/*",
           "packages/**/src/testing/*",
           "packages/**/rollup.config.js",

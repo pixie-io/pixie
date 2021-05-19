@@ -27,6 +27,7 @@ package(default_visibility = ["//src:__subpackages__"])
 UI_DEP_PACKAGES = [
     "yarn.lock",
     "package.json",
+    ".babelrc.json",
     ".yarnrc",
 ] + glob([
     "offline_package_cache/**",

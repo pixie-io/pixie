@@ -1,9 +1,9 @@
 {
-  "presets": ["@babel/react", "@babel/typescript", ["@babel/env", { "modules": false }]],
+  "presets": ["@babel/preset-env", "@babel/preset-react", "@babel/typescript"],
   "plugins": [
     "@babel/plugin-proposal-class-properties",
     "@babel/plugin-proposal-object-rest-spread",
     "@babel/plugin-proposal-private-methods",
-    "react-hot-loader/babel" // Enables React code to work with HMR.
+    "react-hot-loader/babel"
   ]
 }
