@@ -30,7 +30,6 @@ export const UseKeyListStyles = makeStyles((theme: Theme) => createStyles({
     fontWeight: theme.typography.fontWeightLight,
     fontSize: '14px',
     color: theme.palette.foreground.one,
-    backgroundColor: theme.palette.foreground.grey3,
     borderWidth: 8,
     borderColor: theme.palette.background.default,
   },
@@ -62,7 +61,6 @@ export const KeyListItemText = withStyles((theme: Theme) => createStyles({
 
 export const KeyListMenu = withStyles((theme: Theme) => createStyles({
   paper: {
-    backgroundColor: theme.palette.foreground.grey3,
     borderWidth: 8,
     borderColor: theme.palette.background.default,
   },

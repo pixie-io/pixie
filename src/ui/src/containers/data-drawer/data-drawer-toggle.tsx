@@ -44,11 +44,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.palette.sideBar.color,
-    backgroundImage: 'none',
-    borderTop: theme.palette.border.unFocused,
     cursor: 'pointer',
-    boxShadow: '0px -4px 4px #00000042',
     zIndex: 100,
   },
   toggleIcon: {

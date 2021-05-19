@@ -21,7 +21,7 @@ import * as React from 'react';
 
 import Drawer from '@material-ui/core/Drawer';
 import {
-  alpha, withStyles, Theme,
+  withStyles, Theme,
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 
@@ -84,9 +84,6 @@ const styles = (
     width: spacing(7),
     height: spacing(7),
   },
-  divider: {
-    backgroundColor: palette.foreground.grey2,
-  },
   docked: {
     position: 'absolute',
   },
@@ -99,10 +96,6 @@ const styles = (
     width: spacing(6),
     zIndex: 1300,
     overflowX: 'hidden',
-    backgroundColor: palette.sideBar.color,
-    boxShadow: `${spacing(0.25)}px 0px ${spacing(1)}px `
-      + `${alpha(palette.sideBar.colorShadow, palette.sideBar.colorShadowOpacity)}`,
-    borderRight: palette.border.unFocused,
     paddingBottom: spacing(2),
     [breakpoints.down('sm')]: {
       display: 'none',
@@ -126,17 +119,10 @@ const styles = (
       duration: transitions.duration.enteringScreen,
     }),
     overflowX: 'hidden',
-    backgroundColor: palette.sideBar.color,
-    boxShadow: `${spacing(0.25)}px 0px ${spacing(1)}px `
-      + `${alpha(palette.sideBar.colorShadow, palette.sideBar.colorShadowOpacity)}`,
     paddingBottom: spacing(2),
   },
   expandedProfile: {
     flexDirection: 'column',
-  },
-  icon: {
-    color: palette.foreground.white,
-    fill: palette.foreground.white,
   },
   listIcon: {
     paddingLeft: spacing(1.5),
@@ -157,9 +143,6 @@ const styles = (
     textOverflow: 'ellipsis',
     overflow: 'hidden',
     marginLeft: spacing(0.5),
-  },
-  sidebarToggleIcon: {
-    color: palette.foreground.two,
   },
   sidebarToggle: {
     position: 'absolute',
@@ -206,7 +189,6 @@ const SideBarExternalLinkItem = ({
 const StyledListItemText = withStyles((theme: Theme) => createStyles({
   primary: {
     ...theme.typography.body2,
-    color: theme.palette.text.primary,
   },
 }))(ListItemText);
 
@@ -356,7 +338,7 @@ const ProfileItem = ({
 const HamburgerMenu = ({ classes, onToggle, logoLinkTo }) => (
   <ListItem button onClick={onToggle} key='Menu' className={classes.listIcon}>
     <ListItemIcon>
-      <Menu className={classes.icon} />
+      <Menu />
     </ListItemIcon>
     <ListItemIcon>
       <Button
@@ -381,12 +363,12 @@ const SideBar = ({ classes }) => {
 
   const navItems = React.useMemo(() => (
     [{
-      icon: <ClusterIcon className={classes.icon} />,
+      icon: <ClusterIcon />,
       link: toEntityPathname({ params: {}, clusterName: selectedClusterName, page: LiveViewPage.Cluster }),
       text: 'Cluster',
     },
     {
-      icon: <NamespaceIcon className={classes.icon} />,
+      icon: <NamespaceIcon />,
       link: toEntityPathname({ params: {}, clusterName: selectedClusterName, page: LiveViewPage.Namespaces }),
       text: 'Namespaces',
     }]
@@ -398,7 +380,7 @@ const SideBar = ({ classes }) => {
       <div className={classes.compactHamburger}>
         <ListItem button onClick={toggleSidebar} key='Menu' className={classes.listIcon}>
           <ListItemIcon>
-            <Menu className={classes.icon} />
+            <Menu />
           </ListItemIcon>
         </ListItem>
       </div>
@@ -439,7 +421,7 @@ const SideBar = ({ classes }) => {
                    }
                 >
                   <ListItem button key='announcements' className={classes.listIcon}>
-                    <ListItemIcon><AnnouncementIcon className={classes.icon} /></ListItemIcon>
+                    <ListItemIcon><AnnouncementIcon /></ListItemIcon>
                     <ListItemText primary='Announcements' />
                   </ListItem>
                 </AnnounceKit>
@@ -450,14 +432,14 @@ const SideBar = ({ classes }) => {
           <SideBarExternalLinkItem
             key='Docs'
             classes={classes}
-            icon={<DocsIcon className={classes.icon} />}
+            icon={<DocsIcon />}
             link={`https://docs.${DOMAIN_NAME}`}
             text='Docs'
           />
           { CONTACT_ENABLED && (
             <Tooltip title='Help'>
               <ListItem button id='intercom-trigger' className={classes.listIcon}>
-                <ListItemIcon><HelpIcon className={classes.icon} /></ListItemIcon>
+                <ListItemIcon><HelpIcon /></ListItemIcon>
                 <ListItemText primary='Help' />
               </ListItem>
             </Tooltip>

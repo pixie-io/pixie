@@ -53,7 +53,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     position: 'sticky',
     top: 0,
     display: 'flex',
-    background: theme.palette.background.default, // Match the background of the content area to make it look attached.
     zIndex: 1, // Without this, inputs and icons in the table layer on top and break the illusion.
     paddingBottom: theme.spacing(1), // Aligns the visual size of the tab bar with the margin above it.
   },
@@ -107,7 +106,6 @@ export const AdminOverview: React.FC = () => {
             className={classes.createButton}
             variant='outlined'
             startIcon={<Add />}
-            color='primary'
           >
             New key
           </Button>
@@ -119,7 +117,6 @@ export const AdminOverview: React.FC = () => {
             className={classes.createButton}
             variant='outlined'
             startIcon={<Add />}
-            color='primary'
           >
             New key
           </Button>

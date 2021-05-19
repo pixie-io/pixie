@@ -55,21 +55,18 @@ import {
 const useStyles = makeStyles((theme: Theme) => createStyles({
   grid: {
     '& .react-grid-item.react-grid-placeholder': {
-      backgroundColor: theme.palette.foreground.grey1,
       borderRadius: theme.spacing(0.5),
     },
   },
   gridItem: {
     padding: theme.spacing(0.8),
-    backgroundColor: theme.palette.background.four,
-    boxShadow: '2px 2px 2px rgba(0, 0, 0, 0.31)',
     borderRadius: '5px',
-    border: theme.palette.border.unFocused,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'stretch',
   },
   editable: {
+    border: theme.palette.border.unFocused,
     boxShadow: theme.shadows[10],
     borderColor: alpha(theme.palette.primary.dark, 0.50),
     cursor: 'move',

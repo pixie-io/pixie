@@ -35,7 +35,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     width: '100%',
     display: 'flex',
     flexDirection: 'column',
-    backgroundColor: theme.palette.background.default,
     color: theme.palette.text.primary,
     ...scrollbarStyles(theme),
   },

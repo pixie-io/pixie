@@ -18,7 +18,6 @@
 
 import * as React from 'react';
 import {
-  alpha,
   Theme,
   WithStyles,
   withStyles,
@@ -31,12 +30,10 @@ import { PixienautToiletSvg } from './pixienaut-toilet';
 
 const styles = ({ spacing, palette, breakpoints }: Theme) => createStyles({
   root: {
-    backgroundColor: alpha(palette.foreground.grey3, 0.8),
     paddingLeft: spacing(5),
     paddingRight: spacing(5),
     paddingTop: spacing(0),
     paddingBottom: spacing(1),
-    boxShadow: `0px ${spacing(0.25)}px ${spacing(2)}px rgba(0, 0, 0, 0.6)`,
     borderRadius: spacing(3),
     minWidth: '370px',
     maxWidth: breakpoints.values.xs,

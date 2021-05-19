@@ -34,7 +34,6 @@ import ExecutionStats from './execution-stats';
 const useStyles = makeStyles((theme: Theme) => createStyles({
   splits: {
     '& .gutter': {
-      backgroundColor: theme.palette.background.three,
     },
   },
   drawerRoot: {
@@ -42,7 +41,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     display: 'flex',
     flexDirection: 'column',
     flex: 1,
-    backgroundColor: theme.palette.background.default,
   },
   execStats: {
     flex: 1,
@@ -54,7 +52,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     marginRight: theme.spacing(4),
     flex: 1,
     minHeight: 0,
-    backgroundColor: theme.palette.background.six,
   },
   spinner: {
     position: 'absolute',

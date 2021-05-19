@@ -71,7 +71,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     color: theme.palette.text.primary,
     '& > .ReactVirtualized__Table__headerRow': {
       ...theme.typography.caption,
-      backgroundColor: theme.palette.foreground.grey2,
       display: 'flex',
       width: 'var(--header-width) !important',
       position: 'relative',

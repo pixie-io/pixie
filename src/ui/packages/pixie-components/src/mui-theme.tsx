@@ -221,8 +221,8 @@ export const DARK_THEME = createTheme({
       white: '#ffffff',
     },
     background: {
-      default: '#161616',
-      paper: '#292929',
+      default: '#121212',
+      paper: '#121212',
       one: '#121212',
       two: '#212324',
       three: '#353535',

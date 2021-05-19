@@ -50,14 +50,11 @@ const styles = (({ shape, palette, spacing }: Theme) => createStyles({
     marginRight: spacing(3.5),
     marginLeft: spacing(3),
     marginBottom: spacing(1),
-    background: palette.background.three,
     // This adds a scroll to the breadcrumbs on overflow,
     // but it's hard for the user to know it exists. Perhaps we can
     // consider adding a scroll effect or something to make it easier to
     // discover.
     borderRadius: shape.borderRadius,
-    boxShadow: '4px 4px 4px rgba(0, 0, 0, 0.25)',
-    border: palette.border.unFocused,
   },
   spacer: {
     flex: 1,

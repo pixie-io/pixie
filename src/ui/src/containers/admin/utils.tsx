@@ -124,7 +124,6 @@ export const StyledTabs = withStyles((theme: Theme) => createStyles({
     flex: 1,
   },
   indicator: {
-    backgroundColor: theme.palette.primary.main,
     height: '4px',
   },
 }))(Tabs);
@@ -153,7 +152,6 @@ export const StyledTableCell = withStyles((theme: Theme) => createStyles({
     fontWeight: theme.typography.fontWeightLight,
     fontSize: '14px',
     color: theme.palette.foreground.one,
-    backgroundColor: theme.palette.foreground.grey3,
     borderWidth: theme.spacing(1),
     borderColor: theme.palette.background.default,
   },
