@@ -18,8 +18,9 @@
 
 import { StatusGroup } from '@pixie-labs/components';
 import {
-  createStyles, makeStyles, Theme, withStyles,
+  makeStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 import Button from '@material-ui/core/Button';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
@@ -112,7 +113,7 @@ export function containerStatusGroup(status: string): StatusGroup {
 export const AdminTooltip = ({ children, title }) => {
   const classes = tooltipStyles();
   return (
-    <Tooltip title={title} placement='bottom' interactive classes={classes}>
+    <Tooltip title={title} placement='bottom' classes={classes}>
       {children}
     </Tooltip>
   );

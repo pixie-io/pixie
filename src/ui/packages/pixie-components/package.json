@@ -82,6 +82,10 @@
     "vega-tooltip": "^0.25.0"
   },
   "dependencies": {
+    "@emotion/react": "^11.4.0",
+    "@emotion/styled": "^11.3.0",
+    "@material-ui/core": "^5.0.0-alpha.33",
+    "@material-ui/styles": "^5.0.0-alpha.33",
     "clsx": "^1.0.4"
   }
 }

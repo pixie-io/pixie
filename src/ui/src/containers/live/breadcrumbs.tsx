@@ -19,8 +19,9 @@
 import * as React from 'react';
 
 import {
-  createStyles, Theme, withStyles,
+  Theme, withStyles,
 } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 import { GQLClusterStatus as ClusterStatus, containsMutation } from '@pixie-labs/api';
 import { useListClusters, useAutocompleteFieldSuggester } from '@pixie-labs/api-react';
 
@@ -96,10 +97,15 @@ const LiveViewBreadcrumbs = ({ classes }) => {
   const clusterIds = React.useMemo(() => clusters?.map((c) => c.id), [clusters]);
 
   type MemoCrumbs = { entityBreadcrumbs: BreadcrumbOptions[]; argBreadcrumbs: BreadcrumbOptions[] };
+
+  // For useMemo dependencies below, see https://github.com/facebook/react/issues/20204
+  const collapsedClusterIds = clusterIds?.join(',');
+  const collapsedScriptIds = scriptIds?.join(',');
+
   const { entityBreadcrumbs, argBreadcrumbs }: MemoCrumbs = React.useMemo(() => {
-    // eslint-disable-next-line no-shadow
+    // eslint-disable-next-line @typescript-eslint/no-shadow
     const entityBreadcrumbs: BreadcrumbOptions[] = [];
-    // eslint-disable-next-line no-shadow
+    // eslint-disable-next-line @typescript-eslint/no-shadow
     const argBreadcrumbs: BreadcrumbOptions[] = [];
 
     if (loading || !clusters || error) return { entityBreadcrumbs, argBreadcrumbs };
@@ -251,7 +257,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
 
     return { entityBreadcrumbs, argBreadcrumbs };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, id, clusterIds?.join(','), scriptIds?.join(','), args, selectedCluster, getCompletions]);
+  }, [loading, id, collapsedClusterIds, collapsedScriptIds, args, selectedCluster, getCompletions]);
 
   if (loading) {
     return (<div>Loading...</div>);

@@ -19,10 +19,10 @@
 import * as React from 'react';
 
 import {
-  createStyles,
   makeStyles,
   Theme,
 } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 import Button from '@material-ui/core/Button';
 import TableContainer from '@material-ui/core/TableContainer';
 import Add from '@material-ui/icons/Add';

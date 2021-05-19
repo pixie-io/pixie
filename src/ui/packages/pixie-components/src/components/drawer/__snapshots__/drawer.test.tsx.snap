@@ -37,13 +37,13 @@ initialize {
         "namespace": "http://www.w3.org/1999/xhtml",
         "next": Node {
           "attribs": Object {
-            "class": "MuiDrawer-root MuiDrawer-docked FixedSizeDrawerImpl-dockedHorizontal-6",
+            "class": "MuiDrawer-root FixedSizeDrawerImpl-dockedHorizontal-6 MuiDrawer-docked css-7ik032-MuiDrawer-docked",
             "style": "width:50px",
           },
           "children": Array [
             Node {
               "attribs": Object {
-                "class": "MuiPaper-root MuiDrawer-paper FixedSizeDrawerImpl-drawerPaper-4 MuiDrawer-paperAnchorLeft MuiDrawer-paperAnchorDockedLeft MuiPaper-elevation0",
+                "class": "MuiPaper-root MuiPaper-elevation MuiPaper-elevation0 FixedSizeDrawerImpl-drawerPaper-4 MuiDrawer-paper MuiDrawer-paperAnchorLeft MuiDrawer-paperAnchorDockedLeft css-12i7wg6-MuiPaper-root-MuiDrawer-paper",
                 "style": "visibility:hidden",
               },
               "children": Array [
@@ -133,13 +133,13 @@ initialize {
       },
       Node {
         "attribs": Object {
-          "class": "MuiDrawer-root MuiDrawer-docked FixedSizeDrawerImpl-dockedHorizontal-6",
+          "class": "MuiDrawer-root FixedSizeDrawerImpl-dockedHorizontal-6 MuiDrawer-docked css-7ik032-MuiDrawer-docked",
           "style": "width:50px",
         },
         "children": Array [
           Node {
             "attribs": Object {
-              "class": "MuiPaper-root MuiDrawer-paper FixedSizeDrawerImpl-drawerPaper-4 MuiDrawer-paperAnchorLeft MuiDrawer-paperAnchorDockedLeft MuiPaper-elevation0",
+              "class": "MuiPaper-root MuiPaper-elevation MuiPaper-elevation0 FixedSizeDrawerImpl-drawerPaper-4 MuiDrawer-paper MuiDrawer-paperAnchorLeft MuiDrawer-paperAnchorDockedLeft css-12i7wg6-MuiPaper-root-MuiDrawer-paper",
               "style": "visibility:hidden",
             },
             "children": Array [

@@ -23,8 +23,9 @@ import Button from '@material-ui/core/Button';
 import Grid from '@material-ui/core/Grid';
 
 import {
-  createStyles, Theme, withStyles, WithStyles,
+  Theme, withStyles, WithStyles,
 } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 import { MutationInfo, LifeCycleState } from 'types/generated/vizierapi_pb';
 import { StatusCell } from '@pixie-labs/components';
 import ListItem from '@material-ui/core/ListItem';

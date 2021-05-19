@@ -25,8 +25,9 @@ import * as React from 'react';
 import { ClusterContext } from 'common/cluster-context';
 
 import {
-  Button, createStyles, makeStyles, Theme, Tooltip,
+  Button, makeStyles, Theme, Tooltip,
 } from '@material-ui/core';
+import { createStyles } from '@material-ui/styles';
 import Card from '@material-ui/core/Card';
 import Modal from '@material-ui/core/Modal';
 

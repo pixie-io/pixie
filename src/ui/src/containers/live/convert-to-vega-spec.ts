@@ -1774,7 +1774,7 @@ function addHoverMarks(spec: VgSpec, dataName: string, theme: Theme) {
 
 function hydrateSpecWithTheme(spec: VgSpec, theme: Theme) {
   spec.background = theme.palette.background.six;
-  spec.padding = theme.spacing(2);
+  spec.padding = 16;
   spec.config = {
     ...spec.config,
     style: {
@@ -1823,7 +1823,7 @@ function hydrateSpecWithTheme(spec: VgSpec, theme: Theme) {
       labelColor: theme.palette.text.primary,
       labelFont: 'Roboto',
       labelFontSize: 14,
-      labelPadding: theme.spacing(0.5),
+      labelPadding: 4,
       tickColor: theme.palette.foreground.grey4,
       tickSize: 10,
       tickWidth: 1,
@@ -1831,7 +1831,7 @@ function hydrateSpecWithTheme(spec: VgSpec, theme: Theme) {
       titleFont: 'Roboto',
       titleFontSize: 15,
       // titleFontWeight: theme.typography.fontWeightRegular,
-      titlePadding: theme.spacing(3),
+      titlePadding: 24,
     },
     axisY: {
       grid: true,
@@ -1844,7 +1844,7 @@ function hydrateSpecWithTheme(spec: VgSpec, theme: Theme) {
       domain: true,
       domainColor: theme.palette.foreground.grey4,
       tickOpacity: 0,
-      tickSize: theme.spacing(0.5),
+      tickSize: 4,
       gridColor: theme.palette.foreground.grey4,
       gridWidth: 0.5,
     },
@@ -1985,7 +1985,7 @@ function convertToStacktraceFlameGraph(
         type: 'formula',
         as: 'displayedName',
         expr: `(datum.y0 - datum.y1) > ${STACKTRACE_LABEL_PX} && (datum.x1 - datum.x0) >
-          ${STACKTRACE_LABEL_PX + theme.spacing(1)} ?
+          ${STACKTRACE_LABEL_PX + 168} ?
           truncate(datum.name, 1.5 * (datum.x1 - datum.x0)/(${STACKTRACE_LABEL_PX}) - 1) : ""`,
       },
       {
@@ -2084,7 +2084,7 @@ function convertToStacktraceFlameGraph(
       },
       hover: {
         stroke: { value: theme.palette.common.white },
-        strokeWidth: { value: theme.spacing(0.3) },
+        strokeWidth: { value: 2.4 },
         zindex: { value: 1 },
       },
       exit: {},
@@ -2100,7 +2100,7 @@ function convertToStacktraceFlameGraph(
       enter: {
         baseline: { value: 'middle' },
         fontSize: { value: STACKTRACE_LABEL_PX },
-        dx: { value: theme.spacing(1) },
+        dx: { value: 8 },
         font: { value: 'Roboto Mono' },
         fontWeight: { value: 400 },
         fill: { value: theme.palette.background.four },
@@ -2111,7 +2111,7 @@ function convertToStacktraceFlameGraph(
         dy: { value: -12.5 },
         text: {
           signal: `(scale("x", datum.x1) - scale("x", datum.x0)) >
-            ${STACKTRACE_LABEL_PX + theme.spacing(1)} ? truncate(datum.name,
+            ${STACKTRACE_LABEL_PX + 8} ? truncate(datum.name,
             1.5 * (scale("x", datum.x1) - scale("x", datum.x0)) /
             ${STACKTRACE_LABEL_PX} - 1) : ""`,
         },

@@ -20,10 +20,11 @@ import { ClusterContext } from 'common/cluster-context';
 import { VizierTable as Table } from '@pixie-labs/api';
 import * as React from 'react';
 import {
-  createStyles, Theme, Typography,
+  Theme, Typography,
   withStyles,
   WithStyles,
 } from '@material-ui/core';
+import { createStyles } from '@material-ui/styles';
 import { IndexRange } from 'react-virtualized';
 import { Arguments } from 'utils/args-utils';
 import { VizierDataTable } from '../../vizier-data-table/vizier-data-table';

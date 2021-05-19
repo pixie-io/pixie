@@ -24,8 +24,9 @@ import { isValidAnalytics } from 'utils/env';
 import { AuthMessageBox } from '@pixie-labs/components';
 import { Link } from 'react-router-dom';
 import {
-  Button, ButtonProps, createStyles, makeStyles, Theme,
+  Button, ButtonProps, makeStyles, Theme,
 } from '@material-ui/core';
+import { createStyles } from '@material-ui/styles';
 import { BasePage } from './base';
 import { AuthCallbackMode, GetOAuthProvider } from './utils';
 import { Token } from './oauth-provider';

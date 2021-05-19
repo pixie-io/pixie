@@ -19,7 +19,8 @@
 import * as React from 'react';
 
 import Link from '@material-ui/core/Link';
-import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import { makeStyles, Theme } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 import { VizierQueryError } from '@pixie-labs/api';
 import { CONTACT_ENABLED } from 'containers/constants';
 

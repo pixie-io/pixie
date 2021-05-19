@@ -107,7 +107,6 @@ export const APIKeyRow = ({ apiKey }) => {
           open={open}
           onClose={closeMenu}
           anchorEl={anchorEl}
-          getContentAnchorEl={null}
           anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         >
           <MenuItem key='show' alignItems='center' onClick={() => setShowKey(!showKey)}>

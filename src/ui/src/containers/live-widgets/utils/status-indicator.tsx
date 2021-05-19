@@ -103,7 +103,7 @@ export function toStatusIndicator(status: any, semanticType: SemanticType) {
   }
 
   return (
-    <Tooltip title={tooltipMsg} interactive>
+    <Tooltip title={tooltipMsg}>
       <div>
         <StatusCell statusGroup={statusGroup} />
       </div>

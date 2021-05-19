@@ -20,7 +20,8 @@ import UnknownIcon from '@material-ui/icons/Brightness1';
 import HealthyIcon from '@material-ui/icons/CheckCircle';
 import UnhealthyIcon from '@material-ui/icons/Error';
 import PendingIcon from '@material-ui/icons/WatchLater';
-import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import { makeStyles, Theme } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 import * as React from 'react';
 
 export type StatusGroup = 'healthy' | 'unhealthy' | 'pending' | 'unknown';

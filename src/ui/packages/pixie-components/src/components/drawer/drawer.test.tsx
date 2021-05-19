@@ -18,7 +18,8 @@
 
 import * as React from 'react';
 import { render } from 'enzyme';
-import { createMuiTheme, MuiThemeProvider } from '@material-ui/core';
+import { ThemeProvider } from '@material-ui/core';
+import { createTheme } from '@material-ui/core/styles';
 import { FixedSizeDrawer } from './drawer';
 
 describe('<FixedSizeDrawer/>', () => {
@@ -26,7 +27,7 @@ describe('<FixedSizeDrawer/>', () => {
     const otherContent = <div>Other content. Some text goes here.</div>;
 
     const wrapper = render(
-      <MuiThemeProvider theme={createMuiTheme()}>
+      <ThemeProvider theme={createTheme()}>
         <FixedSizeDrawer
           drawerDirection='left'
           drawerSize='50px'
@@ -36,7 +37,7 @@ describe('<FixedSizeDrawer/>', () => {
         >
           <div>Drawer contents</div>
         </FixedSizeDrawer>
-      </MuiThemeProvider>,
+      </ThemeProvider>,
     );
     expect(wrapper).toMatchSnapshot();
   });

@@ -25,8 +25,9 @@ import Tooltip from '@material-ui/core/Tooltip';
 import { ResultsContext } from 'context/results-context';
 import { ScriptContext } from 'context/script-context';
 import {
-  Button, createStyles, Theme, withStyles, WithStyles,
+  Button, Theme, withStyles, WithStyles,
 } from '@material-ui/core';
+import { createStyles } from '@material-ui/styles';
 
 const styles = ({ breakpoints, typography }: Theme) => createStyles({
   buttonText: {

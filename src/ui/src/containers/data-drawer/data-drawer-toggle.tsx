@@ -23,8 +23,9 @@ import { ResultsContext } from 'context/results-context';
 import * as React from 'react';
 
 import {
-  createStyles, makeStyles, Theme, withStyles,
+  makeStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
 
@@ -79,10 +80,10 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     opacity: 1,
     color: theme.palette.foreground.three,
     minWidth: 0,
-    paddingLeft: `${theme.spacing(1.4)}px !important`,
-    paddingRight: `${theme.spacing(1.4)}px !important`,
-    paddingTop: `${theme.spacing(0.7)}px !important`,
-    paddingBottom: `${theme.spacing(0.7)}px !important`,
+    paddingLeft: `${theme.spacing(1.4)} !important`,
+    paddingRight: `${theme.spacing(1.4)} !important`,
+    paddingTop: `${theme.spacing(0.7)} !important`,
+    paddingBottom: `${theme.spacing(0.7)} !important`,
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },

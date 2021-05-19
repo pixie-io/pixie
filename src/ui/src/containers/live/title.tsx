@@ -19,7 +19,8 @@
 import { buildClass } from '@pixie-labs/components';
 import * as React from 'react';
 
-import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import { makeStyles, Theme } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 
 import { ScriptContext } from '../../context/script-context';
 

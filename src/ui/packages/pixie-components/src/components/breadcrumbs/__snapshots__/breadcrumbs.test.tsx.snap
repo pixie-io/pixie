@@ -60,7 +60,8 @@ initialize {
                           Node {
                             "attribs": Object {
                               "aria-hidden": "true",
-                              "class": "MuiSvgIcon-root",
+                              "class": "MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root",
+                              "data-testid": "ArrowDropDownIcon",
                               "focusable": "false",
                               "viewBox": "0 0 24 24",
                             },
@@ -93,12 +94,14 @@ initialize {
                             "x-attribsNamespace": Object {
                               "aria-hidden": undefined,
                               "class": undefined,
+                              "data-testid": undefined,
                               "focusable": undefined,
                               "viewBox": undefined,
                             },
                             "x-attribsPrefix": Object {
                               "aria-hidden": undefined,
                               "class": undefined,
+                              "data-testid": undefined,
                               "focusable": undefined,
                               "viewBox": undefined,
                             },
@@ -160,7 +163,8 @@ initialize {
                         Node {
                           "attribs": Object {
                             "aria-hidden": "true",
-                            "class": "MuiSvgIcon-root",
+                            "class": "MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root",
+                            "data-testid": "ArrowDropDownIcon",
                             "focusable": "false",
                             "viewBox": "0 0 24 24",
                           },
@@ -193,12 +197,14 @@ initialize {
                           "x-attribsNamespace": Object {
                             "aria-hidden": undefined,
                             "class": undefined,
+                            "data-testid": undefined,
                             "focusable": undefined,
                             "viewBox": undefined,
                           },
                           "x-attribsPrefix": Object {
                             "aria-hidden": undefined,
                             "class": undefined,
+                            "data-testid": undefined,
                             "focusable": undefined,
                             "viewBox": undefined,
                           },
@@ -260,7 +266,8 @@ initialize {
                       Node {
                         "attribs": Object {
                           "aria-hidden": "true",
-                          "class": "MuiSvgIcon-root",
+                          "class": "MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root",
+                          "data-testid": "ArrowDropDownIcon",
                           "focusable": "false",
                           "viewBox": "0 0 24 24",
                         },
@@ -293,12 +300,14 @@ initialize {
                         "x-attribsNamespace": Object {
                           "aria-hidden": undefined,
                           "class": undefined,
+                          "data-testid": undefined,
                           "focusable": undefined,
                           "viewBox": undefined,
                         },
                         "x-attribsPrefix": Object {
                           "aria-hidden": undefined,
                           "class": undefined,
+                          "data-testid": undefined,
                           "focusable": undefined,
                           "viewBox": undefined,
                         },
@@ -451,7 +460,8 @@ initialize {
                             Node {
                               "attribs": Object {
                                 "aria-hidden": "true",
-                                "class": "MuiSvgIcon-root",
+                                "class": "MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root",
+                                "data-testid": "ArrowDropDownIcon",
                                 "focusable": "false",
                                 "viewBox": "0 0 24 24",
                               },
@@ -484,12 +494,14 @@ initialize {
                               "x-attribsNamespace": Object {
                                 "aria-hidden": undefined,
                                 "class": undefined,
+                                "data-testid": undefined,
                                 "focusable": undefined,
                                 "viewBox": undefined,
                               },
                               "x-attribsPrefix": Object {
                                 "aria-hidden": undefined,
                                 "class": undefined,
+                                "data-testid": undefined,
                                 "focusable": undefined,
                                 "viewBox": undefined,
                               },
@@ -551,7 +563,8 @@ initialize {
                           Node {
                             "attribs": Object {
                               "aria-hidden": "true",
-                              "class": "MuiSvgIcon-root",
+                              "class": "MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root",
+                              "data-testid": "ArrowDropDownIcon",
                               "focusable": "false",
                               "viewBox": "0 0 24 24",
                             },
@@ -584,12 +597,14 @@ initialize {
                             "x-attribsNamespace": Object {
                               "aria-hidden": undefined,
                               "class": undefined,
+                              "data-testid": undefined,
                               "focusable": undefined,
                               "viewBox": undefined,
                             },
                             "x-attribsPrefix": Object {
                               "aria-hidden": undefined,
                               "class": undefined,
+                              "data-testid": undefined,
                               "focusable": undefined,
                               "viewBox": undefined,
                             },
@@ -651,7 +666,8 @@ initialize {
                         Node {
                           "attribs": Object {
                             "aria-hidden": "true",
-                            "class": "MuiSvgIcon-root",
+                            "class": "MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root",
+                            "data-testid": "ArrowDropDownIcon",
                             "focusable": "false",
                             "viewBox": "0 0 24 24",
                           },
@@ -684,12 +700,14 @@ initialize {
                           "x-attribsNamespace": Object {
                             "aria-hidden": undefined,
                             "class": undefined,
+                            "data-testid": undefined,
                             "focusable": undefined,
                             "viewBox": undefined,
                           },
                           "x-attribsPrefix": Object {
                             "aria-hidden": undefined,
                             "class": undefined,
+                            "data-testid": undefined,
                             "focusable": undefined,
                             "viewBox": undefined,
                           },
@@ -1123,7 +1141,8 @@ initialize {
                           Node {
                             "attribs": Object {
                               "aria-hidden": "true",
-                              "class": "MuiSvgIcon-root",
+                              "class": "MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root",
+                              "data-testid": "ArrowDropDownIcon",
                               "focusable": "false",
                               "viewBox": "0 0 24 24",
                             },
@@ -1156,12 +1175,14 @@ initialize {
                             "x-attribsNamespace": Object {
                               "aria-hidden": undefined,
                               "class": undefined,
+                              "data-testid": undefined,
                               "focusable": undefined,
                               "viewBox": undefined,
                             },
                             "x-attribsPrefix": Object {
                               "aria-hidden": undefined,
                               "class": undefined,
+                              "data-testid": undefined,
                               "focusable": undefined,
                               "viewBox": undefined,
                             },
@@ -1223,7 +1244,8 @@ initialize {
                         Node {
                           "attribs": Object {
                             "aria-hidden": "true",
-                            "class": "MuiSvgIcon-root",
+                            "class": "MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root",
+                            "data-testid": "ArrowDropDownIcon",
                             "focusable": "false",
                             "viewBox": "0 0 24 24",
                           },
@@ -1256,12 +1278,14 @@ initialize {
                           "x-attribsNamespace": Object {
                             "aria-hidden": undefined,
                             "class": undefined,
+                            "data-testid": undefined,
                             "focusable": undefined,
                             "viewBox": undefined,
                           },
                           "x-attribsPrefix": Object {
                             "aria-hidden": undefined,
                             "class": undefined,
+                            "data-testid": undefined,
                             "focusable": undefined,
                             "viewBox": undefined,
                           },
@@ -1323,7 +1347,8 @@ initialize {
                       Node {
                         "attribs": Object {
                           "aria-hidden": "true",
-                          "class": "MuiSvgIcon-root",
+                          "class": "MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root",
+                          "data-testid": "ArrowDropDownIcon",
                           "focusable": "false",
                           "viewBox": "0 0 24 24",
                         },
@@ -1356,12 +1381,14 @@ initialize {
                         "x-attribsNamespace": Object {
                           "aria-hidden": undefined,
                           "class": undefined,
+                          "data-testid": undefined,
                           "focusable": undefined,
                           "viewBox": undefined,
                         },
                         "x-attribsPrefix": Object {
                           "aria-hidden": undefined,
                           "class": undefined,
+                          "data-testid": undefined,
                           "focusable": undefined,
                           "viewBox": undefined,
                         },
@@ -1776,7 +1803,8 @@ initialize {
                             Node {
                               "attribs": Object {
                                 "aria-hidden": "true",
-                                "class": "MuiSvgIcon-root",
+                                "class": "MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root",
+                                "data-testid": "ArrowDropDownIcon",
                                 "focusable": "false",
                                 "viewBox": "0 0 24 24",
                               },
@@ -1809,12 +1837,14 @@ initialize {
                               "x-attribsNamespace": Object {
                                 "aria-hidden": undefined,
                                 "class": undefined,
+                                "data-testid": undefined,
                                 "focusable": undefined,
                                 "viewBox": undefined,
                               },
                               "x-attribsPrefix": Object {
                                 "aria-hidden": undefined,
                                 "class": undefined,
+                                "data-testid": undefined,
                                 "focusable": undefined,
                                 "viewBox": undefined,
                               },
@@ -1876,7 +1906,8 @@ initialize {
                           Node {
                             "attribs": Object {
                               "aria-hidden": "true",
-                              "class": "MuiSvgIcon-root",
+                              "class": "MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root",
+                              "data-testid": "ArrowDropDownIcon",
                               "focusable": "false",
                               "viewBox": "0 0 24 24",
                             },
@@ -1909,12 +1940,14 @@ initialize {
                             "x-attribsNamespace": Object {
                               "aria-hidden": undefined,
                               "class": undefined,
+                              "data-testid": undefined,
                               "focusable": undefined,
                               "viewBox": undefined,
                             },
                             "x-attribsPrefix": Object {
                               "aria-hidden": undefined,
                               "class": undefined,
+                              "data-testid": undefined,
                               "focusable": undefined,
                               "viewBox": undefined,
                             },
@@ -1976,7 +2009,8 @@ initialize {
                         Node {
                           "attribs": Object {
                             "aria-hidden": "true",
-                            "class": "MuiSvgIcon-root",
+                            "class": "MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root",
+                            "data-testid": "ArrowDropDownIcon",
                             "focusable": "false",
                             "viewBox": "0 0 24 24",
                           },
@@ -2009,12 +2043,14 @@ initialize {
                           "x-attribsNamespace": Object {
                             "aria-hidden": undefined,
                             "class": undefined,
+                            "data-testid": undefined,
                             "focusable": undefined,
                             "viewBox": undefined,
                           },
                           "x-attribsPrefix": Object {
                             "aria-hidden": undefined,
                             "class": undefined,
+                            "data-testid": undefined,
                             "focusable": undefined,
                             "viewBox": undefined,
                           },
@@ -2438,7 +2474,8 @@ initialize {
                             Node {
                               "attribs": Object {
                                 "aria-hidden": "true",
-                                "class": "MuiSvgIcon-root",
+                                "class": "MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root",
+                                "data-testid": "ArrowDropDownIcon",
                                 "focusable": "false",
                                 "viewBox": "0 0 24 24",
                               },
@@ -2471,12 +2508,14 @@ initialize {
                               "x-attribsNamespace": Object {
                                 "aria-hidden": undefined,
                                 "class": undefined,
+                                "data-testid": undefined,
                                 "focusable": undefined,
                                 "viewBox": undefined,
                               },
                               "x-attribsPrefix": Object {
                                 "aria-hidden": undefined,
                                 "class": undefined,
+                                "data-testid": undefined,
                                 "focusable": undefined,
                                 "viewBox": undefined,
                               },
@@ -2538,7 +2577,8 @@ initialize {
                           Node {
                             "attribs": Object {
                               "aria-hidden": "true",
-                              "class": "MuiSvgIcon-root",
+                              "class": "MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root",
+                              "data-testid": "ArrowDropDownIcon",
                               "focusable": "false",
                               "viewBox": "0 0 24 24",
                             },
@@ -2571,12 +2611,14 @@ initialize {
                             "x-attribsNamespace": Object {
                               "aria-hidden": undefined,
                               "class": undefined,
+                              "data-testid": undefined,
                               "focusable": undefined,
                               "viewBox": undefined,
                             },
                             "x-attribsPrefix": Object {
                               "aria-hidden": undefined,
                               "class": undefined,
+                              "data-testid": undefined,
                               "focusable": undefined,
                               "viewBox": undefined,
                             },
@@ -2638,7 +2680,8 @@ initialize {
                         Node {
                           "attribs": Object {
                             "aria-hidden": "true",
-                            "class": "MuiSvgIcon-root",
+                            "class": "MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root",
+                            "data-testid": "ArrowDropDownIcon",
                             "focusable": "false",
                             "viewBox": "0 0 24 24",
                           },
@@ -2671,12 +2714,14 @@ initialize {
                           "x-attribsNamespace": Object {
                             "aria-hidden": undefined,
                             "class": undefined,
+                            "data-testid": undefined,
                             "focusable": undefined,
                             "viewBox": undefined,
                           },
                           "x-attribsPrefix": Object {
                             "aria-hidden": undefined,
                             "class": undefined,
+                            "data-testid": undefined,
                             "focusable": undefined,
                             "viewBox": undefined,
                           },
@@ -2831,7 +2876,8 @@ initialize {
                               Node {
                                 "attribs": Object {
                                   "aria-hidden": "true",
-                                  "class": "MuiSvgIcon-root",
+                                  "class": "MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root",
+                                  "data-testid": "ArrowDropDownIcon",
                                   "focusable": "false",
                                   "viewBox": "0 0 24 24",
                                 },
@@ -2864,12 +2910,14 @@ initialize {
                                 "x-attribsNamespace": Object {
                                   "aria-hidden": undefined,
                                   "class": undefined,
+                                  "data-testid": undefined,
                                   "focusable": undefined,
                                   "viewBox": undefined,
                                 },
                                 "x-attribsPrefix": Object {
                                   "aria-hidden": undefined,
                                   "class": undefined,
+                                  "data-testid": undefined,
                                   "focusable": undefined,
                                   "viewBox": undefined,
                                 },
@@ -2931,7 +2979,8 @@ initialize {
                             Node {
                               "attribs": Object {
                                 "aria-hidden": "true",
-                                "class": "MuiSvgIcon-root",
+                                "class": "MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root",
+                                "data-testid": "ArrowDropDownIcon",
                                 "focusable": "false",
                                 "viewBox": "0 0 24 24",
                               },
@@ -2964,12 +3013,14 @@ initialize {
                               "x-attribsNamespace": Object {
                                 "aria-hidden": undefined,
                                 "class": undefined,
+                                "data-testid": undefined,
                                 "focusable": undefined,
                                 "viewBox": undefined,
                               },
                               "x-attribsPrefix": Object {
                                 "aria-hidden": undefined,
                                 "class": undefined,
+                                "data-testid": undefined,
                                 "focusable": undefined,
                                 "viewBox": undefined,
                               },
@@ -3031,7 +3082,8 @@ initialize {
                           Node {
                             "attribs": Object {
                               "aria-hidden": "true",
-                              "class": "MuiSvgIcon-root",
+                              "class": "MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root",
+                              "data-testid": "ArrowDropDownIcon",
                               "focusable": "false",
                               "viewBox": "0 0 24 24",
                             },
@@ -3064,12 +3116,14 @@ initialize {
                             "x-attribsNamespace": Object {
                               "aria-hidden": undefined,
                               "class": undefined,
+                              "data-testid": undefined,
                               "focusable": undefined,
                               "viewBox": undefined,
                             },
                             "x-attribsPrefix": Object {
                               "aria-hidden": undefined,
                               "class": undefined,
+                              "data-testid": undefined,
                               "focusable": undefined,
                               "viewBox": undefined,
                             },

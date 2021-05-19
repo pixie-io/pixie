@@ -18,7 +18,8 @@
 
 import * as React from 'react';
 
-import { createStyles, makeStyles, Theme } from '@material-ui/core';
+import { makeStyles, Theme } from '@material-ui/core';
+import { createStyles } from '@material-ui/styles';
 import Button from '@material-ui/core/Button';
 import IconButton from '@material-ui/core/IconButton';
 import Snackbar from '@material-ui/core/Snackbar';
@@ -101,7 +102,6 @@ export const SnackbarProvider: React.FC = (props) => {
               state.action();
               hideSnackbar();
             }}
-            color='primary'
           >
             {state.actionTitle}
           </Button>
@@ -121,6 +121,7 @@ export const SnackbarProvider: React.FC = (props) => {
         {props.children}
       </SnackbarContext.Provider>
       <Snackbar
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         ContentProps={{ className: classes.snackbar, classes: snackbarClasses }}
         open={state.opened}
         onClose={hideSnackbar}

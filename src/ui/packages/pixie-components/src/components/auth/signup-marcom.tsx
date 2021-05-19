@@ -21,12 +21,12 @@ import {
   Grid,
   WithStyles,
   withStyles,
-  createStyles,
   Theme,
   Typography,
   Container,
-  fade,
+  alpha,
 } from '@material-ui/core';
+import { createStyles } from '@material-ui/styles';
 
 import { CPPIcon } from 'components/logos/cpp';
 import { GolangIcon } from 'components/logos/golang';
@@ -50,11 +50,11 @@ const styles = ({ palette, spacing }: Theme) => createStyles({
     display: 'flex',
     marginTop: spacing(5),
     alignItems: 'center',
-    background: `linear-gradient(180deg, ${fade(
+    background: `linear-gradient(180deg, ${alpha(
       palette.background.two,
       0.87,
     )},
-    ${fade(palette.background.three, 0.22)})`,
+    ${alpha(palette.background.three, 0.22)})`,
     boxShadow: `2px 2px 2px 0px ${palette.background.default}`,
     paddingLeft: spacing(2),
     paddingRight: spacing(2),
@@ -74,7 +74,7 @@ export const SignupMarcom = withStyles(styles)(
           container
           direction='column'
           spacing={4}
-          justify='flex-start'
+          justifyContent='flex-start'
           alignItems='center'
         >
           <Grid item>

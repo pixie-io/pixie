@@ -19,8 +19,9 @@
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import {
-  createStyles, Theme, withStyles, WithStyles,
+  Theme, withStyles, WithStyles,
 } from '@material-ui/core';
+import { createStyles } from '@material-ui/styles';
 import { Arguments } from 'utils/args-utils';
 import { SemanticType } from 'types/generated/vizierapi_pb';
 import { scriptToEntityURL, toEntityURL, toSingleEntityPage } from './live-view-params';

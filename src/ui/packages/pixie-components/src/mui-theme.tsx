@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createMuiTheme, Theme } from '@material-ui/core/styles';
+import { createTheme, Theme } from '@material-ui/core/styles';
 
 declare module '@material-ui/core/styles/createPalette' {
   interface TypeBackground {
@@ -122,7 +122,7 @@ export const scrollbarStyles = (theme: Theme) => {
   };
 };
 
-export const DARK_THEME = createMuiTheme({
+export const DARK_THEME = createTheme({
   shape: {
     leftRoundedBorderRadius: {
       large: '10px 0px 0px 10px',
@@ -165,7 +165,7 @@ export const DARK_THEME = createMuiTheme({
     },
   },
   palette: {
-    type: 'dark',
+    mode: 'dark',
     border: {
       focused: '1px solid rgba(255, 255, 255, 0.2)',
       unFocused: '1px solid rgba(255, 255, 255, 0.1)',
@@ -276,10 +276,12 @@ export const DARK_THEME = createMuiTheme({
       primary: '#39A8F5',
     },
   },
-  overrides: {
+  components: {
     MuiDivider: {
-      root: {
-        backgroundColor: '#353535', // background three.
+      styleOverrides: {
+        root: {
+          backgroundColor: '#353535', // background three.
+        },
       },
     },
   },

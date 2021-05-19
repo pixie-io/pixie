@@ -30,8 +30,9 @@ import { ResultsContext, ResultsContextProvider } from 'context/results-context'
 import { EditorSplitPanel } from 'containers/editor/new-editor';
 import { scrollbarStyles } from '@pixie-labs/components';
 import {
-  createStyles, makeStyles, Theme,
+  makeStyles, Theme,
 } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 import { LayoutContext, LayoutContextProvider } from 'context/layout-context';
 import EditorContextProvider, { EditorContext } from 'context/editor-context';
 import LiveViewShortcutsProvider from 'containers/live/shortcuts';

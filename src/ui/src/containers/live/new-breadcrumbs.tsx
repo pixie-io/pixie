@@ -19,8 +19,9 @@
 import * as React from 'react';
 
 import {
-  createStyles, Theme, withStyles,
+  Theme, withStyles,
 } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 import { GQLClusterStatus as ClusterStatus } from '@pixie-labs/api';
 import { useListClusters, useAutocompleteFieldSuggester } from '@pixie-labs/api-react';
 

@@ -20,11 +20,12 @@ import * as React from 'react';
 import { CodeEditor, LazyPanel, ResizableDrawer } from '@pixie-labs/components';
 
 import {
-  createStyles, makeStyles, Theme, withStyles,
+  makeStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
 import ChevronRight from '@material-ui/icons/ChevronRight';
+import { createStyles } from '@material-ui/styles';
 
 import { getKeyMap } from 'containers/live/shortcuts';
 import { LayoutContext } from 'context/layout-context';

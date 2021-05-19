@@ -25,7 +25,8 @@ import { useHistory, useParams } from 'react-router';
 import { Link } from 'react-router-dom';
 import { dataFromProto } from 'utils/result-data-utils';
 
-import { Theme, createStyles, makeStyles } from '@material-ui/core/styles';
+import { Theme, makeStyles } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 import MaterialBreadcrumbs from '@material-ui/core/Breadcrumbs';
 import IconButton from '@material-ui/core/IconButton';
 import Table from '@material-ui/core/Table';

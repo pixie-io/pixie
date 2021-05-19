@@ -31,7 +31,8 @@ import { Redirect, Route, Switch } from 'react-router-dom';
 import { useParams, useLocation } from 'react-router';
 import * as QueryString from 'query-string';
 
-import { createStyles, makeStyles } from '@material-ui/core/styles';
+import { makeStyles } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 import { useLDClient } from 'launchdarkly-react-client-sdk';
 import { GQLClusterInfo as Cluster, GQLClusterStatus as ClusterStatus } from '@pixie-labs/api';
 import { useListClusters, useUserInfo } from '@pixie-labs/api-react';

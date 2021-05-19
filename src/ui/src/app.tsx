@@ -27,8 +27,10 @@ import { isProd, PIXIE_CLOUD_VERSION } from 'utils/env';
 import history from 'utils/pl-history';
 
 import {
-  createStyles, ThemeProvider, withStyles,
+  ThemeProvider, withStyles,
 } from '@material-ui/core/styles';
+import StyledEngineProvider from '@material-ui/core/StyledEngineProvider';
+import { createStyles } from '@material-ui/styles';
 
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
@@ -134,9 +136,11 @@ if (LD_CLIENT_ID !== '') {
 }
 
 ReactDOM.render(
-  <ThemeProvider theme={DARK_THEME}>
-    <CssBaseline />
-    <PixieAPIContextProvider apiKey=''>
-      <StyledApp />
-    </PixieAPIContextProvider>
-  </ThemeProvider>, document.getElementById('root'));
+  <StyledEngineProvider injectFirst>
+    <ThemeProvider theme={DARK_THEME}>
+      <CssBaseline />
+      <PixieAPIContextProvider apiKey=''>
+        <StyledApp />
+      </PixieAPIContextProvider>
+    </ThemeProvider>
+  </StyledEngineProvider>, document.getElementById('root'));

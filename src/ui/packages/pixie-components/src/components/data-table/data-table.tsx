@@ -38,12 +38,12 @@ import {
 } from 'react-virtualized';
 
 import {
-  createStyles,
-  fade,
+  alpha,
   makeStyles,
   Theme,
   useTheme,
 } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 import Tooltip from '@material-ui/core/Tooltip';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
@@ -115,7 +115,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     display: 'flex',
     alignItems: 'baseline',
     height: theme.spacing(6),
-    lineHeight: `${theme.spacing(6)}px`,
+    lineHeight: theme.spacing(6),
     margin: '0 !important',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
@@ -129,7 +129,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     paddingLeft: theme.spacing(1.5),
     paddingRight: 0,
     height: theme.spacing(5),
-    lineHeight: `${theme.spacing(5)}px`,
+    lineHeight: theme.spacing(5),
   },
   clickable: {
     cursor: 'pointer',
@@ -139,7 +139,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   highlightable: {
     '&:hover': {
-      backgroundColor: `${fade(theme.palette.foreground.grey2, 0.42)}`,
+      backgroundColor: `${alpha(theme.palette.foreground.grey2, 0.42)}`,
     },
   },
   center: {
@@ -293,7 +293,7 @@ const ColumnDisplaySelector: React.FC<ColumnDisplaySelectorProps> = ({ options, 
           <MenuItem key={dataKey} button onClick={() => toggleOption(dataKey)}>
             <FormControlLabel
               className={classes.noPointerEvents}
-              control={<Checkbox disableRipple checked={selected.includes(dataKey)} />}
+              control={<Checkbox color='secondary' disableRipple checked={selected.includes(dataKey)} />}
               label={dataKey}
             />
           </MenuItem>
@@ -399,7 +399,7 @@ const InternalDataTable = ({
     [classes],
   );
 
-  const defaultCellHeight = compact ? theme.spacing(5) : theme.spacing(6);
+  const defaultCellHeight = compact ? 40 : 48;
   const computeRowHeight = React.useCallback(
     ({ index }) => (expandedRowState[index] ? EXPANDED_ROW_HEIGHT : defaultCellHeight),
     [defaultCellHeight, expandedRowState],

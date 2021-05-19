@@ -18,11 +18,11 @@
 
 import * as React from 'react';
 import {
-  createStyles,
   Theme,
   WithStyles,
   withStyles,
 } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 import { formatBoolData, formatFloat64Data, formatUInt128Protobuf } from 'utils/format-data';
 import {
   GaugeLevel,

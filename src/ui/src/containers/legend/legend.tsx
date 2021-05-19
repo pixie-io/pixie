@@ -21,10 +21,10 @@ import * as React from 'react';
 import { CSSProperties } from 'react';
 
 import { IconButton, Tooltip } from '@material-ui/core';
-import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import { makeStyles, Theme } from '@material-ui/core/styles';
 import KeyboardArrowLeftIcon from '@material-ui/icons/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
-
+import { createStyles } from '@material-ui/styles';
 import { LegendData, LegendEntry } from './legend-data';
 
 const NUM_ROWS = 2;
@@ -63,6 +63,7 @@ interface LegendProps {
   data: LegendData;
   vegaOrigin: number[];
   chartWidth: number;
+  // eslint-disable-next-line react/no-unused-prop-types
   name: string;
   interactState: LegendInteractState;
   setInteractState: (s: LegendInteractState) => void;
@@ -257,7 +258,7 @@ const Legend = React.memo((props: LegendProps) => {
           <div style={styles} className={classes.colorContainer}>
             <div className={classes.colorCircle} style={colorStyles} />
           </div>
-          <Tooltip title={entry.key} interactive enterDelay={1500}>
+          <Tooltip title={entry.key} enterDelay={1500}>
             <div style={styles} className={classes.key}>{entry.key === 'undefined' ? 'Unknown' : entry.key}</div>
           </Tooltip>
           <div style={styles} className={classes.val}>{entry.val}</div>

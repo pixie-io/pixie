@@ -21,11 +21,11 @@ import { useLocation } from 'react-router';
 import { PixienautBox } from '@pixie-labs/components';
 import {
   Button,
-  createStyles,
   makeStyles,
   Theme,
   Typography,
 } from '@material-ui/core';
+import { createStyles } from '@material-ui/styles';
 
 const useStyles = makeStyles(({ palette, spacing }: Theme) => createStyles({
   title: {

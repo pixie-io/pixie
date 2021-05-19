@@ -21,11 +21,11 @@ import * as React from 'react';
 import Split from 'react-split';
 
 import {
-  createStyles,
   makeStyles,
   Theme,
   useTheme,
 } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 
 interface SplitPaneContextProps {
   togglePane: (id: string) => void;

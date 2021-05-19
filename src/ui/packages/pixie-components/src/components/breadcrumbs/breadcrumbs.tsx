@@ -18,12 +18,12 @@
 
 import * as React from 'react';
 import {
-  createStyles,
   Theme,
   WithStyles,
   withStyles,
   ThemeProvider,
 } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
 import { Card, Popover } from '@material-ui/core';
 import createTypography from '@material-ui/core/styles/createTypography';
@@ -117,8 +117,8 @@ const styles = ({
     position: 'absolute',
     width: spacing(3),
     height: spacing(3),
-    top: -1 * spacing(1.5),
-    right: -1 * spacing(1.6),
+    top: spacing(-1.5),
+    right: spacing(-1.6),
     background: palette.foreground.grey3,
     transform: 'rotate(45deg)',
     borderRadius: spacing(0.4),
@@ -127,8 +127,8 @@ const styles = ({
     position: 'absolute',
     width: spacing(3),
     height: spacing(3),
-    bottom: `-${spacing(1.5)}px`,
-    right: `-${spacing(1.6)}px`,
+    bottom: spacing(-1.5),
+    right: spacing(-1.6),
     background: palette.foreground.grey3,
     transform: 'rotate(45deg)',
     borderRadius: spacing(0.4),
@@ -137,7 +137,7 @@ const styles = ({
     position: 'absolute',
     width: spacing(3),
     height: spacing(3),
-    left: `-${spacing(1.5)}px`,
+    left: spacing(-1.5),
     background: palette.foreground.grey3,
     transform: 'rotate(45deg)',
     borderRadius: spacing(0.4),
@@ -272,7 +272,7 @@ const DialogDropdown = ({
       typography: createTypography(theme.palette, {
         fontSize: theme.typography.fontSize * 0.8,
       }),
-      spacing: createSpacing((factor) => factor * 0.8 * theme.spacing(1)),
+      spacing: createSpacing((factor) => theme.spacing(factor * 0.8 * 1)),
     }),
   [],
   );
@@ -284,7 +284,6 @@ const DialogDropdown = ({
       keepMounted
       open={Boolean(anchorEl)}
       onClose={onClose}
-      getContentAnchorEl={null}
       anchorOrigin={{
         vertical: 'bottom',
         horizontal: 'left',

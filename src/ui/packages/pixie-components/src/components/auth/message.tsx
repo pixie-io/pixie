@@ -18,19 +18,19 @@
 
 import * as React from 'react';
 import {
-  createStyles,
-  fade,
+  alpha,
   Theme,
   Typography,
   withStyles,
   WithStyles,
 } from '@material-ui/core';
+import { createStyles } from '@material-ui/styles';
 import { CodeRenderer } from 'components/code-renderer/code-renderer';
 import { PixienautBox, PixienautBoxProps } from './pixienaut-box';
 
 const styles = ({ palette, spacing }: Theme) => createStyles({
   root: {
-    backgroundColor: fade(palette.foreground.grey3, 0.8),
+    backgroundColor: alpha(palette.foreground.grey3, 0.8),
     paddingLeft: spacing(6),
     paddingRight: spacing(6),
     paddingTop: spacing(10),

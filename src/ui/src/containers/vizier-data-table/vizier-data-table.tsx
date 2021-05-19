@@ -27,9 +27,10 @@ import { DataType, SemanticType } from 'types/generated/vizierapi_pb';
 import noop from 'utils/noop';
 import { dataFromProto } from 'utils/result-data-utils';
 import {
-  createStyles, makeStyles,
+  makeStyles,
   useTheme, Theme,
 } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 import { IndexRange } from 'react-virtualized';
 import { Arguments } from 'utils/args-utils';
 

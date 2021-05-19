@@ -21,8 +21,9 @@ import * as React from 'react';
 
 import IconButton from '@material-ui/core/IconButton';
 import MUIModal from '@material-ui/core/Modal';
-import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import { makeStyles, Theme } from '@material-ui/core/styles';
 import CloseButton from '@material-ui/icons/Close';
+import { createStyles } from '@material-ui/styles';
 
 interface ModalTrigerProps {
   trigger: React.ReactNode;

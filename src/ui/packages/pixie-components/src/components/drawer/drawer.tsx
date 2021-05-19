@@ -18,7 +18,8 @@
 
 import * as React from 'react';
 import Drawer from '@material-ui/core/Drawer';
-import { createStyles, WithStyles, withStyles } from '@material-ui/core/styles';
+import { WithStyles, withStyles } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 
 export type DrawerDirection = 'top' | 'bottom' | 'left' | 'right';
 

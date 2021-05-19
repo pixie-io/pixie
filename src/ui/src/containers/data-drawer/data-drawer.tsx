@@ -24,8 +24,9 @@ import * as React from 'react';
 import { VizierDataTableWithDetails } from 'containers/vizier-data-table/vizier-data-table';
 
 import {
-  createStyles, makeStyles, Theme,
+  makeStyles, Theme,
 } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 
 import { DataDrawerToggle, STATS_TAB_NAME } from './data-drawer-toggle';
 import ExecutionStats from './execution-stats';

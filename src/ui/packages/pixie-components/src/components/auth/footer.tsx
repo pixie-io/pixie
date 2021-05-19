@@ -18,11 +18,11 @@
 
 import * as React from 'react';
 import {
-  createStyles,
   Theme,
   Typography,
   makeStyles,
 } from '@material-ui/core';
+import { createStyles } from '@material-ui/styles';
 
 const useStyles = makeStyles(({ spacing, breakpoints, palette }: Theme) => createStyles({
   root: {
@@ -53,9 +53,10 @@ const useStyles = makeStyles(({ spacing, breakpoints, palette }: Theme) => creat
     justifyContent: 'flex-end',
   },
   text: {
-    padding: `0 ${spacing(3)}px`,
+    padding: `0 ${spacing(3)}`,
     color: palette.foreground.three,
     textDecoration: 'none',
+    fontSize: '0.875rem', // 14px
   },
 }));
 

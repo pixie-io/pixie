@@ -19,9 +19,9 @@
 import { scrollbarStyles } from '@pixie-labs/components';
 import {
   Theme,
-  createStyles,
   makeStyles,
 } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 
 import * as React from 'react';
 import { Route, Switch, Redirect } from 'react-router-dom';

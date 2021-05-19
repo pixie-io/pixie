@@ -34,8 +34,9 @@ import { VizierErrorDetails } from 'common/errors';
 import { VizierQueryError, containsMutation } from '@pixie-labs/api';
 
 import {
-  createStyles, fade, makeStyles, Theme, useTheme,
+  alpha, makeStyles, Theme, useTheme,
 } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 
 import Vega from 'containers/live-widgets/vega/vega';
 import { LayoutContext } from 'context/layout-context';
@@ -69,7 +70,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   editable: {
     boxShadow: theme.shadows[10],
-    borderColor: fade(theme.palette.primary.dark, 0.50),
+    borderColor: alpha(theme.palette.primary.dark, 0.50),
     cursor: 'move',
     '& > *': {
       pointerEvents: 'none',
@@ -405,13 +406,13 @@ const Canvas = (props: CanvasProps) => {
     displayGrid = (
       <Grid
         layout={tableLayout.layout}
-        rowHeight={tableLayout.rowHeight - theme.spacing(5)}
+        rowHeight={tableLayout.rowHeight - 40}
         cols={tableLayout.numCols}
         className={buildClass(classes.grid, errorOpen && error && classes.blur)}
         onLayoutChange={updateDefaultLayout}
         isDraggable={props.editable}
         isResizable={props.editable}
-        margin={[theme.spacing(2.5), theme.spacing(2.5)]}
+        margin={[20, 20]}
       >
         {
           Object.entries(tables).map(([tableName, table]) => (
@@ -432,7 +433,7 @@ const Canvas = (props: CanvasProps) => {
         onLayoutChange={updateLayoutInVis}
         isDraggable={props.editable}
         isResizable={props.editable}
-        margin={[theme.spacing(2.5), theme.spacing(2.5)]}
+        margin={[20, 20]}
       >
         {charts}
       </Grid>

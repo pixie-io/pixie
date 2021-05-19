@@ -26,11 +26,11 @@ import {
 } from 'vis-network/standalone';
 import * as React from 'react';
 import {
-  createStyles,
   makeStyles,
   Theme,
   useTheme,
 } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 import { useHistory } from 'react-router';
 import { ClusterContext } from 'common/cluster-context';
 import { Arguments } from 'utils/args-utils';

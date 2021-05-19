@@ -64,7 +64,6 @@ export const ProfileMenuWrapper = ({
     onClose={onCloseMenu}
     onBlur={onCloseMenu}
     anchorEl={anchorEl}
-    getContentAnchorEl={null}
     anchorOrigin={anchorOrigin}
   >
     <MenuItem

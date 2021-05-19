@@ -18,8 +18,9 @@
 
 import * as React from 'react';
 import {
-  createStyles, WithStyles, withStyles, Theme,
+  WithStyles, withStyles,
 } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 
 import SideBar from 'containers/App/sidebar';
 

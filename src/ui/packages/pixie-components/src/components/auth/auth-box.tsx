@@ -20,12 +20,12 @@
 import * as React from 'react';
 import {
   Button,
-  createStyles,
   Link,
   Theme,
   Typography,
   makeStyles,
 } from '@material-ui/core';
+import { createStyles } from '@material-ui/styles';
 import { PixienautBox } from './pixienaut-box';
 
 const useStyles = makeStyles(({ spacing, palette }: Theme) => createStyles({

@@ -18,7 +18,8 @@
 
 import * as React from 'react';
 import { PropsWithChildren } from 'react';
-import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import { makeStyles, Theme } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 import Tooltip from '@material-ui/core/Tooltip';
 import { Dialog } from '@material-ui/core';
 import CloseButton from '@material-ui/icons/Close';

@@ -20,7 +20,8 @@ import * as React from 'react';
 import { WidgetDisplay } from 'containers/live/vis';
 
 import { data as visData, Network } from 'vis-network/standalone';
-import { createStyles, makeStyles, useTheme } from '@material-ui/core/styles';
+import { makeStyles, useTheme } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 import { toEntityURL, toSingleEntityPage } from 'containers/live-widgets/utils/live-view-params';
 import { ClusterContext } from 'common/cluster-context';
 import { SemanticType, Relation } from 'types/generated/vizierapi_pb';

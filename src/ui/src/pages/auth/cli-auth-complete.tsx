@@ -36,7 +36,7 @@ export const CLIAuthCompletePage: React.FC = () => {
           container
           direction='row'
           spacing={0}
-          justify='space-evenly'
+          justifyContent='space-evenly'
           alignItems='center'
         >
           <Grid item>

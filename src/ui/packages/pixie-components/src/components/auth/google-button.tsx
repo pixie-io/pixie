@@ -20,10 +20,10 @@
 import * as React from 'react';
 import {
   Button,
-  createStyles,
   Theme,
   makeStyles,
 } from '@material-ui/core';
+import { createStyles } from '@material-ui/styles';
 import { GoogleIcon } from 'components/icons/google';
 
 const useStyles = makeStyles(({ spacing }: Theme) => createStyles({

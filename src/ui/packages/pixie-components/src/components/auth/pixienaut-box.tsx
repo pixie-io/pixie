@@ -18,19 +18,19 @@
 
 import * as React from 'react';
 import {
-  createStyles,
-  fade,
+  alpha,
   Theme,
   WithStyles,
   withStyles,
 } from '@material-ui/core';
+import { createStyles } from '@material-ui/styles';
 import { PixienautBalloonSvg } from './pixienaut-balloon';
 import { PixienautOctopusSvg } from './pixienaut-octopus';
 import { PixienautToiletSvg } from './pixienaut-toilet';
 
 const styles = ({ spacing, palette, breakpoints }: Theme) => createStyles({
   root: {
-    backgroundColor: fade(palette.foreground.grey3, 0.8),
+    backgroundColor: alpha(palette.foreground.grey3, 0.8),
     paddingLeft: spacing(5),
     paddingRight: spacing(5),
     paddingTop: spacing(0),

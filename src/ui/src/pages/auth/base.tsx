@@ -20,8 +20,9 @@
 // middle part of the page which has either a dialog, or marcom information.
 import * as React from 'react';
 import {
-  createStyles, Theme, WithStyles, withStyles,
+  Theme, WithStyles, withStyles,
 } from '@material-ui/core';
+import { createStyles } from '@material-ui/styles';
 import { AuthFooter } from '@pixie-labs/components';
 import { Copyright } from 'configurable/copyright';
 import * as pixieLogo from '../../../assets/images/pixie-logo.svg';

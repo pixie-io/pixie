@@ -19,9 +19,9 @@
 import * as React from 'react';
 import { UsernamePasswordButton } from '@pixie-labs/components';
 import {
-  createStyles,
   makeStyles,
 } from '@material-ui/core';
+import { createStyles } from '@material-ui/styles';
 
 export interface HydraButtonsProps {
   usernamePasswordText: string;

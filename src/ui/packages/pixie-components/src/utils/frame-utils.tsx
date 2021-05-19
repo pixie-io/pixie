@@ -20,11 +20,11 @@ import * as React from 'react';
 
 import {
   Box,
-  createStyles,
   Theme,
   WithStyles,
   withStyles,
 } from '@material-ui/core';
+import { createStyles } from '@material-ui/styles';
 
 const styles = ({ palette, spacing }: Theme) => createStyles({
   root: {

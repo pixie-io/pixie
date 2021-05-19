@@ -17,10 +17,10 @@
  */
 
 import {
-  createStyles,
   makeStyles,
   Theme,
 } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 import Button from '@material-ui/core/Button';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';

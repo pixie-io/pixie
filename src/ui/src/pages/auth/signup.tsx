@@ -17,8 +17,9 @@
  */
 
 import {
-  createStyles, Theme, WithStyles, withStyles,
+  Theme, WithStyles, withStyles,
 } from '@material-ui/core';
+import { createStyles } from '@material-ui/styles';
 import * as React from 'react';
 import { AuthBox, SignupMarcom } from '@pixie-labs/components';
 import { BasePage } from './base';

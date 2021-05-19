@@ -19,8 +19,9 @@
 import { buildClass, scrollbarStyles } from '@pixie-labs/components';
 
 import {
-  Theme, makeStyles, createStyles, Button,
+  Theme, makeStyles, Button,
 } from '@material-ui/core';
+import { createStyles } from '@material-ui/styles';
 
 import * as React from 'react';
 import { LiveViewButton } from 'containers/admin/utils';
@@ -123,7 +124,6 @@ const LicenseEntryRow: React.FC<LicenseEntry> = ({ name, url, licenseText }) => 
       </div>
       <div className={classes.creditsShow}>
         <Button
-          color='primary'
           onClick={() => setShowLicense((show) => !show)}
           className={buildClass(classes.button, !licenseText && 'hidden')}
         >
@@ -132,7 +132,7 @@ const LicenseEntryRow: React.FC<LicenseEntry> = ({ name, url, licenseText }) => 
             {' '}
           </div>
         </Button>
-        <Button href={url} color='primary' className={buildClass(classes.button, !url && 'hidden')}>homepage</Button>
+        <Button href={url} className={buildClass(classes.button, !url && 'hidden')}>homepage</Button>
       </div>
       {showLicense
         ? (

@@ -17,8 +17,9 @@
  */
 
 import {
-  createStyles, makeStyles, Theme, withStyles,
+  makeStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
 import Menu from '@material-ui/core/Menu';

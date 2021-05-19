@@ -40,8 +40,9 @@ import noop from 'utils/noop';
 import { View } from 'vega-typings';
 
 import {
-  createStyles, makeStyles, useTheme, Theme,
+  makeStyles, useTheme, Theme,
 } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 
 import { formatFloat64Data } from 'utils/format-data';
 import { TimeSeriesContext } from '../context/time-series-context';
@@ -75,10 +76,11 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 }));
 
 interface VegaProps {
-  data: Array<{}>;
+  data: Array<Record<string, unknown>>;
   relation: Relation;
   tableName: string;
   display: ChartDisplay;
+  // eslint-disable-next-line react/require-default-props
   className?: string;
 }
 
@@ -104,7 +106,7 @@ function getCleanerForSemanticType(semType: SemanticType) {
   }
 }
 
-function cleanInputData(relation: Relation, data: Array<{}>) {
+function cleanInputData(relation: Relation, data: Array<Record<string, unknown>>) {
   const columnToCleaner = _.fromPairs(relation.getColumnsList().map((colInfo) => {
     const colName = colInfo.getColumnName();
     const colST = colInfo.getColumnSemanticType();

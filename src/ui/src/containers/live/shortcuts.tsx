@@ -22,8 +22,9 @@ import { isMac } from 'utils/detect-os';
 
 import Card from '@material-ui/core/Card';
 import Modal from '@material-ui/core/Modal';
-import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import { makeStyles, Theme } from '@material-ui/core/styles';
 import { Handlers, KeyMap, ShortcutsContextProps } from 'context/shortcuts-context';
+import { createStyles } from '@material-ui/styles';
 
 type LiveHotKeyAction =
   'pixie-command' |

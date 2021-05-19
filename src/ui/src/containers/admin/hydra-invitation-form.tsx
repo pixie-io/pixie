@@ -20,7 +20,8 @@ import * as React from 'react';
 import { OAUTH_PROVIDER } from 'containers/constants';
 import { Form, FormField } from '@pixie-labs/components';
 import { useInvitation } from '@pixie-labs/api-react';
-import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import { makeStyles, Theme } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   invitationRow: {
