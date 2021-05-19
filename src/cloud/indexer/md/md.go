@@ -63,7 +63,15 @@ func (v *VizierIndexer) Run(topic string) {
 		WithField("ClusterUID", v.k8sUID).
 		Info("Starting Indexer")
 
-	sub, err := v.sc.Subscribe(topic, v.stanMessageHandler, stan.DurableName("indexer"), stan.SetManualAckMode(), stan.DeliverAllAvailable())
+	// The use of a QueueSubscribe instead of a Subscribe here is a slight gotcha.
+	// As of writing this, we only have one indexer pod running, however skaffold deploys bring up new
+	// pods and wait for them to stabilize before terminating old pods. Hence we must use a unique UUID
+	// for the stan clientID.
+	// Using a queue group with the IndexName is a way to indicate that we don't care about any ack-ed
+	// messages that have alredy been process by this version of the index. (Without a queue, the fact
+	// that we have a new clientID and this is a durable subscription means that we'd get all messages
+	// on connect.)
+	sub, err := v.sc.QueueSubscribe(topic, IndexName, v.stanMessageHandler, stan.DurableName("indexer"), stan.SetManualAckMode(), stan.MaxInflight(50))
 	if err != nil {
 		log.WithError(err).Error("Failed to subscribe")
 	}
