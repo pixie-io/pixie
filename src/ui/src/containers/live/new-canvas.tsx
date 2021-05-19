@@ -34,8 +34,10 @@ import { VizierErrorDetails } from 'common/errors';
 import { VizierQueryError, containsMutation } from '@pixie-labs/api';
 
 import {
-  createStyles, fade, makeStyles, Theme, useTheme,
+  alpha, makeStyles, Theme, useTheme,
 } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
+import Paper from '@material-ui/core/Paper';
 
 import Vega from 'containers/live-widgets/vega/vega';
 import { LayoutContext } from 'context/layout-context';
@@ -53,23 +55,20 @@ import {
 const useStyles = makeStyles((theme: Theme) => createStyles({
   grid: {
     '& .react-grid-item.react-grid-placeholder': {
-      backgroundColor: theme.palette.foreground.grey1,
       borderRadius: theme.spacing(0.5),
     },
   },
   gridItem: {
     padding: theme.spacing(0.8),
-    backgroundColor: theme.palette.background.six,
-    boxShadow: '2px 2px 2px rgba(0, 0, 0, 0.31)',
     borderRadius: '5px',
-    border: theme.palette.border.unFocused,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'stretch',
   },
   editable: {
+    border: theme.palette.border.unFocused,
     boxShadow: theme.shadows[10],
-    borderColor: fade(theme.palette.primary.dark, 0.50),
+    borderColor: alpha(theme.palette.primary.dark, 0.50),
     cursor: 'move',
     '& > *': {
       pointerEvents: 'none',
@@ -372,15 +371,15 @@ const Canvas = (props: CanvasProps) => {
 
       if (loading) {
         widgets.push(
-          <div key={widgetName} className={className}>
+          <Paper key={widgetName} className={className} elevation={1}>
             <div className={classes.spinner}><Spinner /></div>
-          </div>,
+          </Paper>,
         );
         return;
       }
 
       widgets.push(
-        <div key={widgetName} className={className}>
+        <Paper key={widgetName} className={className}>
           <WidgetDisplay
             display={display}
             table={table}
@@ -389,7 +388,7 @@ const Canvas = (props: CanvasProps) => {
             propagatedArgs={propagatedArgs}
             emptyTableMsg={emptyTableMsg}
           />
-        </div>,
+        </Paper>,
       );
     });
     return widgets;
@@ -413,20 +412,20 @@ const Canvas = (props: CanvasProps) => {
     displayGrid = (
       <Grid
         layout={tableLayout.layout}
-        rowHeight={tableLayout.rowHeight - theme.spacing(5)}
+        rowHeight={tableLayout.rowHeight - 40}
         cols={tableLayout.numCols}
         className={buildClass(classes.grid, errorOpen && error && classes.blur)}
         onLayoutChange={updateDefaultLayout}
         isDraggable={props.editable}
         isResizable={props.editable}
-        margin={[theme.spacing(2.5), theme.spacing(2.5)]}
+        margin={[20, 20]}
       >
         {
           Object.entries(tables).map(([tableName, table]) => (
-            <div key={tableName} className={className}>
+            <Paper elevation={1} key={tableName} className={className}>
               <div className={classes.widgetTitle}>{tableName}</div>
               <QueryResultTable data={table} propagatedArgs={propagatedArgs} />
-            </div>
+            </Paper>
           ))
         }
       </Grid>
@@ -440,7 +439,7 @@ const Canvas = (props: CanvasProps) => {
         onLayoutChange={updateLayoutInVis}
         isDraggable={props.editable}
         isResizable={props.editable}
-        margin={[theme.spacing(2.5), theme.spacing(2.5)]}
+        margin={[20, 20]}
       >
         {charts}
       </Grid>

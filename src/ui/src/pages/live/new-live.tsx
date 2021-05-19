@@ -31,8 +31,9 @@ import Canvas from 'containers/live/new-canvas';
 import { EditorSplitPanel } from 'containers/editor/new-editor';
 import { scrollbarStyles, EditIcon } from '@pixie-labs/components';
 import {
-  makeStyles, Theme, createStyles,
+  makeStyles, Theme,
 } from '@material-ui/core/styles';
+import { createStyles } from '@material-ui/styles';
 import Tooltip from '@material-ui/core/Tooltip';
 import IconButton from '@material-ui/core/IconButton';
 import MoveIcon from '@material-ui/icons/OpenWith';
@@ -49,7 +50,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     width: '100%',
     display: 'flex',
     flexDirection: 'column',
-    backgroundColor: theme.palette.background.default,
     color: theme.palette.text.primary,
     ...scrollbarStyles(theme),
   },
