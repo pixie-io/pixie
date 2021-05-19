@@ -31,8 +31,9 @@ import { scrollbarStyles } from '@pixie-labs/components';
 import {
   createStyles, makeStyles, Theme,
 } from '@material-ui/core/styles';
-import { LayoutContextProvider } from 'context/layout-context';
+import { LayoutContext, LayoutContextProvider } from 'context/layout-context';
 import EditorContextProvider, { EditorContext } from 'context/editor-context';
+import LiveViewShortcutsProvider from 'containers/live/shortcuts';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -65,6 +66,7 @@ const LiveView: React.FC = () => {
   const { script, args, routeFor } = React.useContext(ScriptContext);
   const results = React.useContext(ResultsContext);
   const { saveEditor } = React.useContext(EditorContext);
+  const { setEditorPanelOpen } = React.useContext(LayoutContext);
 
   const visSlice = React.useMemo(() => {
     if (!script) {
@@ -73,50 +75,60 @@ const LiveView: React.FC = () => {
     return JSON.stringify(script, null, 2);
   }, [script]);
 
+  const hotkeyHandlers = {
+    'toggle-editor': () => setEditorPanelOpen((editable) => !editable),
+    execute: () => saveEditor(),
+    // TODO(philkuz,PC-917) enable the other commands when their components are added in.
+    'toggle-data-drawer': () => {},
+    'pixie-command': () => {},
+  };
+
   if (!selectedClusterName || !script || !args) return null;
 
   const nextRoute = (script.id === 'px/cluster')
-    ? routeFor('px/pod', { cluster: 'fooCluster', namespace: 'barNamespace', pod: 'bazPod' })
+    ? routeFor('px/pod', { cluster: selectedClusterName, namespace: 'barNamespace', pod: 'bazPod' })
     : routeFor('px/cluster', { cluster: selectedClusterName }); // Ensure that the defaults work
 
   return (
     <div className={classes.root}>
       <div className={classes.content}>
-        <EditorSplitPanel>
-          <div style={{ display: 'flex', flexFlow: 'column nowrap' }}>
-            <pre style={{ overflow: 'auto', maxWidth: '100vw', maxHeight: '40vh' }}>
-              {script.id}
-              (
-              {JSON.stringify(args)}
-              )
-            </pre>
-            <Button
-              component={Link}
-              variant='contained'
-              color='primary'
-              to={nextRoute}
-            >
-              Try another route
-            </Button>
-            <Button
-              variant='contained'
-              color='secondary'
-              onClick={saveEditor}
-            >
-              Save Pxl
-            </Button>
-            <h2>Script body</h2>
-            <pre style={{ overflow: 'auto', maxWidth: '100vw', maxHeight: '40vh' }}>{visSlice}</pre>
-            {results.tables && (
-              <>
-                <h2>Results of latest script run</h2>
-                <pre style={{ overflow: 'auto', maxWidth: '100vw', maxHeight: '40vh' }}>
-                  {JSON.stringify(results, null, 2)}
-                </pre>
-              </>
-            )}
-          </div>
-        </EditorSplitPanel>
+        <LiveViewShortcutsProvider handlers={hotkeyHandlers}>
+          <EditorSplitPanel>
+            <div style={{ display: 'flex', flexFlow: 'column nowrap' }}>
+              <pre style={{ overflow: 'auto', maxWidth: '100vw', maxHeight: '40vh' }}>
+                {script.id}
+                (
+                {JSON.stringify(args)}
+                )
+              </pre>
+              <Button
+                component={Link}
+                variant='contained'
+                color='primary'
+                to={nextRoute}
+              >
+                Try another route
+              </Button>
+              <Button
+                variant='contained'
+                color='secondary'
+                onClick={saveEditor}
+              >
+                Save Pxl
+              </Button>
+              <h2>Script body</h2>
+              <pre style={{ overflow: 'auto', maxWidth: '100vw', maxHeight: '40vh' }}>{visSlice}</pre>
+              {results.tables && (
+                <>
+                  <h2>Results of latest script run</h2>
+                  <pre style={{ overflow: 'auto', maxWidth: '100vw', maxHeight: '40vh' }}>
+                    {JSON.stringify(results, null, 2)}
+                  </pre>
+                </>
+              )}
+            </div>
+          </EditorSplitPanel>
+        </LiveViewShortcutsProvider>
       </div>
     </div>
   );
