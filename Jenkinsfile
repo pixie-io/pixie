@@ -318,16 +318,12 @@ def WithSourceCodeAndTargetsK8s(String suffix="${UUID.randomUUID()}", Closure bo
   }
 }
 
-def WithSourceCodeDocker(String stashName = SRC_STASH_NAME, Closure body) {
-  warnError('Script failed') {
-    WithSourceCodeFatalError(stashName, body)
-  }
-}
-
 def WithSourceCodeAndTargetsDocker(String stashName = SRC_STASH_NAME, Closure body) {
-  WithSourceCodeFatalError(stashName) {
-    unstashFromGCS(TARGETS_STASH_NAME)
-    body()
+  warnError('Script failed') {
+    WithSourceCodeFatalError(stashName) {
+      unstashFromGCS(TARGETS_STASH_NAME)
+      body()
+    }
   }
 }
 
@@ -385,18 +381,16 @@ def runBazelCmd(String f) {
   */
 def bazelCICmd(String name, String targetConfig='clang', String targetCompilationMode='opt',
                String targetsSuffix, String bazelRunExtraArgs='') {
-  warnError('Bazel command failed') {
-    def buildableFile = "bazel_buildables_${targetsSuffix}"
-    def testFile = "bazel_tests_${targetsSuffix}"
+  def buildableFile = "bazel_buildables_${targetsSuffix}"
+  def testFile = "bazel_tests_${targetsSuffix}"
 
-    def args = "-c ${targetCompilationMode} --config=${targetConfig} --build_metadata=COMMIT_SHA=\$(git rev-parse HEAD) ${bazelRunExtraArgs}"
+  def args = "-c ${targetCompilationMode} --config=${targetConfig} --build_metadata=COMMIT_SHA=\$(git rev-parse HEAD) ${bazelRunExtraArgs}"
 
-    if (runBazelCmd("build ${args} --target_pattern_file ${buildableFile}") != 0) {
-      throw new Exception('Bazel run failed')
-    }
-    if (runBazelCmd("test ${args} --target_pattern_file ${testFile}") != 0) {
-      throw new Exception('Bazel test failed')
-    }
+  if (runBazelCmd("build ${args} --target_pattern_file ${buildableFile}") != 0) {
+    throw new Exception('Bazel run failed')
+  }
+  if (runBazelCmd("test ${args} --target_pattern_file ${testFile}") != 0) {
+    throw new Exception('Bazel test failed')
   }
   createBazelStash("${name}-testlogs")
 }
