@@ -36,10 +36,38 @@ import (
 // The topic on which updates are written to.
 const indexerMetadataTopic = "MetadataIndex"
 
+type concurrentIndexersMap struct {
+	unsafeMap map[string]*md.VizierIndexer
+	mapMu     sync.RWMutex
+}
+
+func (c *concurrentIndexersMap) read(uid string) *md.VizierIndexer {
+	c.mapMu.RLock()
+	defer c.mapMu.RUnlock()
+	return c.unsafeMap[uid]
+}
+
+func (c *concurrentIndexersMap) write(uid string, vz *md.VizierIndexer) {
+	c.mapMu.Lock()
+	defer c.mapMu.Unlock()
+	c.unsafeMap[uid] = vz
+}
+
+func (c *concurrentIndexersMap) values() []*md.VizierIndexer {
+	c.mapMu.RLock()
+	defer c.mapMu.RUnlock()
+	allIndexers := make([]*md.VizierIndexer, len(c.unsafeMap))
+	i := 0
+	for _, vz := range c.unsafeMap {
+		allIndexers[i] = vz
+		i++
+	}
+	return allIndexers
+}
+
 // Indexer manages the state for which clusters are already being indexed.
 type Indexer struct {
-	clusters   map[string]*md.VizierIndexer // Map from cluster UID->indexer.
-	clustersMu sync.Mutex
+	clusters *concurrentIndexersMap // Map from cluster UID->indexer.
 
 	sc stan.Conn
 	es *elastic.Client
@@ -56,7 +84,7 @@ func NewIndexer(nc *nats.Conn, vzmgrClient vzmgrpb.VZMgrServiceClient, sc stan.C
 	}
 
 	i := &Indexer{
-		clusters: make(map[string]*md.VizierIndexer),
+		clusters: &concurrentIndexersMap{unsafeMap: make(map[string]*md.VizierIndexer)},
 		watcher:  watcher,
 		sc:       sc,
 		es:       es,
@@ -72,32 +100,24 @@ func NewIndexer(nc *nats.Conn, vzmgrClient vzmgrpb.VZMgrServiceClient, sc stan.C
 
 // Stop stops the indexer.
 func (i *Indexer) Stop() {
-	i.clustersMu.Lock()
-	defer i.clustersMu.Unlock()
-
 	// Stop the watcher.
 	i.watcher.Stop()
 
 	// Stop the indexers for the individual clusters.
-	for _, v := range i.clusters {
-		if v != nil {
-			v.Stop()
-		}
+	for _, v := range i.clusters.values() {
+		v.Stop()
 	}
 }
 
 func (i *Indexer) handleVizier(id uuid.UUID, orgID uuid.UUID, uid string) error {
-	i.clustersMu.Lock()
-	defer i.clustersMu.Unlock()
-
-	if val, ok := i.clusters[uid]; ok && val != nil {
+	if val := i.clusters.read(uid); val != nil {
 		log.WithField("UID", uid).Info("Already running indexer for cluster")
 		return nil
 	}
 
 	// Start indexer.
 	vzIndexer := md.NewVizierIndexer(id, orgID, uid, i.sc, i.es)
-	i.clusters[uid] = vzIndexer
+	i.clusters.write(uid, vzIndexer)
 	go vzIndexer.Run(fmt.Sprintf("%s.%s", indexerMetadataTopic, uid))
 
 	return nil
