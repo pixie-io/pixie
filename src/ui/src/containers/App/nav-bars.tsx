@@ -23,6 +23,7 @@ import {
 import { createStyles } from '@material-ui/styles';
 
 import SideBar from 'containers/App/sidebar';
+import { TopBar } from 'containers/App/topbar';
 
 const styles = () => createStyles({});
 
@@ -32,11 +33,19 @@ interface NavBarsProps extends WithStyles<typeof styles> {
 
 const NavBars = ({
   classes, children,
-}: NavBarsProps) => (
-  <>
-    <SideBar />
-  </>
-);
+}: NavBarsProps) => {
+  const [sidebarOpen, setSidebarOpen] = React.useState<boolean>(false);
+  const toggleSidebar = React.useCallback(() => setSidebarOpen((opened) => !opened), []);
+
+  return (
+    <>
+      <TopBar toggleSidebar={toggleSidebar}>
+        {children}
+      </TopBar>
+      <SideBar open={sidebarOpen} toggle={toggleSidebar} />
+    </>
+  );
+};
 NavBars.defaultProps = {
   children: null,
 };

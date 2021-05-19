@@ -73,28 +73,18 @@ const styles = (
       left: spacing(4),
     },
   },
-  avatarSm: {
-    backgroundColor: palette.primary.main,
-    width: spacing(4),
-    height: spacing(4),
-    alignItems: 'center',
-  },
-  avatarLg: {
-    backgroundColor: palette.primary.main,
-    width: spacing(7),
-    height: spacing(7),
-  },
   docked: {
     position: 'absolute',
   },
   drawerClose: {
-    border: 'none',
+    borderRightWidth: spacing(0.2),
+    borderRightStyle: 'solid',
     transition: transitions.create('width', {
       easing: transitions.easing.sharp,
       duration: transitions.duration.leavingScreen,
     }),
-    width: spacing(6),
-    zIndex: 1300,
+    width: spacing(8),
+    zIndex: 1000,
     overflowX: 'hidden',
     paddingBottom: spacing(2),
     [breakpoints.down('sm')]: {
@@ -109,9 +99,10 @@ const styles = (
     },
   },
   drawerOpen: {
-    border: 'none',
+    borderRightWidth: spacing(0.2),
+    borderRightStyle: 'solid',
     width: spacing(29),
-    zIndex: 1300,
+    zIndex: 1000,
     flexShrink: 0,
     whiteSpace: 'nowrap',
     transition: transitions.create('width', {
@@ -125,7 +116,7 @@ const styles = (
     flexDirection: 'column',
   },
   listIcon: {
-    paddingLeft: spacing(1.5),
+    paddingLeft: spacing(2.5),
     paddingTop: spacing(1),
     paddingBottom: spacing(1),
   },
@@ -186,155 +177,6 @@ const SideBarExternalLinkItem = ({
   </Tooltip>
 );
 
-const StyledListItemText = withStyles((theme: Theme) => createStyles({
-  primary: {
-    ...theme.typography.body2,
-  },
-}))(ListItemText);
-
-const StyledListItemIcon = withStyles(() => createStyles({
-  root: {
-    minWidth: '30px',
-  },
-}))(ListItemIcon);
-
-const ProfileItem = ({
-  classes, userInfo, setSidebarOpen,
-}) => {
-  const [open, setOpen] = React.useState<boolean>(false);
-  const { setTourOpen } = React.useContext(LiveTourContext);
-  const [tourSeen, setTourSeen, loadingTourSeen] = useSetting('tourSeen');
-  const [wasSidebarOpenBeforeTour, setWasSidebarOpenBeforeTour] = React.useState<boolean>(false);
-  const [wasDrawerOpenBeforeTour, setWasDrawerOpenBeforeTour] = React.useState<boolean>(false);
-  const { setDataDrawerOpen } = React.useContext(LayoutContext) ?? { setDataDrawerOpen: () => {} };
-  const [anchorEl, setAnchorEl] = React.useState(null);
-  const shortcuts = React.useContext(LiveShortcutsContext);
-  const { inLiveView } = React.useContext(SidebarContext);
-
-  const openMenu = React.useCallback((event) => {
-    setOpen(true);
-    setAnchorEl(event.currentTarget);
-  }, []);
-
-  const closeMenu = React.useCallback(() => {
-    setOpen(false);
-    setAnchorEl(null);
-  }, []);
-
-  const openTour = () => {
-    setTourOpen(true);
-    setSidebarOpen((current) => {
-      setWasSidebarOpenBeforeTour(current);
-      return false;
-    });
-    setDataDrawerOpen((current) => {
-      setWasDrawerOpenBeforeTour(current);
-      return false;
-    });
-  };
-
-  const closeTour = () => {
-    setTourOpen(false);
-    setSidebarOpen(wasSidebarOpenBeforeTour);
-    setDataDrawerOpen(wasDrawerOpenBeforeTour);
-  };
-
-  React.useEffect(() => {
-    if (!loadingTourSeen && tourSeen !== true && inLiveView) {
-      openTour();
-      setTourSeen(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadingTourSeen, tourSeen, inLiveView]);
-
-  let name = '';
-  let picture = '';
-  let email = '';
-  let id = '';
-  if (userInfo) {
-    ({
-      name, picture, email, id,
-    } = userInfo);
-  }
-
-  React.useEffect(() => {
-    if (id) {
-      analytics.identify(id, { email });
-    }
-  }, [id, email]);
-
-  return (
-    <>
-      <LiveTourDialog onClose={closeTour} />
-      <ListItem button key='Profile' className={classes.profileIcon} onClick={openMenu}>
-        <ListItemIcon>
-          <Avatar
-            name={name}
-            picture={picture}
-            className={classes.avatarSm}
-          />
-        </ListItemIcon>
-        <ListItemText
-          primary={name}
-          secondary={email}
-          classes={{ primary: classes.profileText, secondary: classes.profileText }}
-        />
-      </ListItem>
-      <ProfileMenuWrapper
-        classes={classes}
-        open={open}
-        onCloseMenu={closeMenu}
-        anchorEl={anchorEl}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        name={name}
-        email={email}
-        picture={picture}
-      >
-        <MenuItem key='admin' button component={Link} to='/admin'>
-          <StyledListItemIcon>
-            <SettingsIcon />
-          </StyledListItemIcon>
-          <StyledListItemText primary='Admin' />
-        </MenuItem>
-        {
-          inLiveView && (
-            [
-              (
-                <MenuItem key='tour' button component='button' onClick={openTour} className={classes.hideOnMobile}>
-                  <StyledListItemIcon>
-                    <ExploreIcon />
-                  </StyledListItemIcon>
-                  <StyledListItemText primary='Tour' />
-                </MenuItem>
-              ),
-              (
-                <MenuItem key='shortcuts' button component='button' onClick={() => shortcuts['show-help'].handler()}>
-                  <StyledListItemIcon>
-                    <KeyboardIcon />
-                  </StyledListItemIcon>
-                  <StyledListItemText primary='Keyboard Shortcuts' />
-                </MenuItem>
-              ),
-            ]
-          )
-        }
-        <MenuItem key='credits' button component={Link} to='/credits'>
-          <StyledListItemIcon>
-            <CodeIcon />
-          </StyledListItemIcon>
-          <StyledListItemText primary='Credits' />
-        </MenuItem>
-        <MenuItem key='logout' button component={Link} to='/logout'>
-          <StyledListItemIcon>
-            <LogoutIcon />
-          </StyledListItemIcon>
-          <StyledListItemText primary='Logout' />
-        </MenuItem>
-      </ProfileMenuWrapper>
-    </>
-  );
-};
-
 const HamburgerMenu = ({ classes, onToggle, logoLinkTo }) => (
   <ListItem button onClick={onToggle} key='Menu' className={classes.listIcon}>
     <ListItemIcon>
@@ -353,10 +195,7 @@ const HamburgerMenu = ({ classes, onToggle, logoLinkTo }) => (
   </ListItem>
 );
 
-const SideBar = ({ classes }) => {
-  const [sidebarOpen, setSidebarOpen] = React.useState<boolean>(false);
-  const toggleSidebar = React.useCallback(() => setSidebarOpen((opened) => !opened), []);
-
+const SideBar = ({ classes, open, toggle }) => {
   const { selectedClusterName } = React.useContext(ClusterContext);
   const { user } = React.useContext(UserContext);
   const [{ user: userInfo }] = useUserInfo();
@@ -378,7 +217,7 @@ const SideBar = ({ classes }) => {
   return (
     <>
       <div className={classes.compactHamburger}>
-        <ListItem button onClick={toggleSidebar} key='Menu' className={classes.listIcon}>
+        <ListItem button onClick={toggle} key='Menu' className={classes.listIcon}>
           <ListItemIcon>
             <Menu />
           </ListItemIcon>
@@ -386,14 +225,14 @@ const SideBar = ({ classes }) => {
       </div>
       <Drawer
         variant='permanent'
-        className={sidebarOpen ? classes.drawerOpen : classes.drawerClose}
+        className={open ? classes.drawerOpen : classes.drawerClose}
         classes={{
-          paper: sidebarOpen ? classes.drawerOpen : classes.drawerClose,
+          paper: open ? classes.drawerOpen : classes.drawerClose,
           docked: classes.docked,
         }}
       >
         <List>
-          <HamburgerMenu key='Menu' classes={classes} onToggle={toggleSidebar} logoLinkTo='/live' />
+          <HamburgerMenu key='Menu' classes={classes} onToggle={toggle} logoLinkTo='/live' />
         </List>
         <List>
           {navItems.map(({ icon, link, text }) => (
@@ -444,7 +283,6 @@ const SideBar = ({ classes }) => {
               </ListItem>
             </Tooltip>
           )}
-          <ProfileItem classes={classes} userInfo={userInfo} setSidebarOpen={setSidebarOpen} />
         </List>
       </Drawer>
     </>

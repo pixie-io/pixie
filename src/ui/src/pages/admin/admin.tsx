@@ -48,8 +48,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     marginLeft: theme.spacing(6),
     flex: 1,
     minHeight: 0,
-    borderTopStyle: 'solid',
-    borderTopWidth: theme.spacing(0.25),
     padding: theme.spacing(1),
   },
   titleText: {
