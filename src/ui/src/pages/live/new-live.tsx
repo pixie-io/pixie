@@ -248,8 +248,8 @@ const LiveView: React.FC = () => {
   const hotkeyHandlers = {
     'toggle-editor': () => setEditorPanelOpen((editable) => !editable),
     execute: () => saveEditor(),
-    // TODO(philkuz,PC-917) enable the other commands when their components are added in.
     'toggle-data-drawer': () => setDataDrawerOpen((open) => !open),
+    // TODO(philkuz,PC-917) Pixie Command shortcut has been removed while we work to resolve its quirks.
     'pixie-command': () => {},
   };
 
@@ -279,6 +279,14 @@ const LiveView: React.FC = () => {
       setHasStartedLoadingCluster(true);
     }
   }, [results.loading, setHasStartedLoadingCluster]);
+
+  React.useEffect(() => {
+    if (!results.loading && hasStartedLoadingCluster) {
+      setHasFinishedLoadingCluster(true);
+    }
+  }, [results.loading, hasStartedLoadingCluster, setHasFinishedLoadingCluster]);
+
+  const clusterUnhealthy = !clustersLoading && clusterStatus !== ClusterStatus.CS_HEALTHY;
 
   // Opens the editor if the current script is a scratch script.
   React.useEffect(() => {
@@ -321,14 +329,6 @@ const LiveView: React.FC = () => {
     };
   }, [setWidgetsMoveable]);
 
-  React.useEffect(() => {
-    if (!results.loading && hasStartedLoadingCluster) {
-      setHasFinishedLoadingCluster(true);
-    }
-  }, [results.loading, hasStartedLoadingCluster, setHasFinishedLoadingCluster]);
-
-  const clusterUnhealthy = !clustersLoading && clusterStatus !== ClusterStatus.CS_HEALTHY;
-
   if (!selectedClusterName || !script || !args) return null;
 
   return (
@@ -336,7 +336,6 @@ const LiveView: React.FC = () => {
       <LiveViewShortcutsProvider handlers={hotkeyHandlers}>
         <NavBars>
           <div className={classes.spacer} />
-
           <ScriptOptions
             classes={classes}
             widgetsMoveable={widgetsMoveable}
