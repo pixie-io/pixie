@@ -40,7 +40,7 @@ import { ResultsContext, ResultsContextProvider } from 'context/results-context'
 import { ClusterInstructions } from 'containers/App/deploy-instructions';
 import NavBars from 'containers/App/nav-bars';
 import { VizierContextRouter } from 'containers/App/vizier-routing';
-import { ScriptsContextProvider } from 'containers/App/scripts-context';
+import { ScriptsContextProvider, SCRATCH_SCRIPT } from 'containers/App/scripts-context';
 import { DataDrawerSplitPanel } from 'containers/data-drawer/data-drawer';
 import { EditorSplitPanel } from 'containers/editor/new-editor';
 import Canvas from 'containers/live/new-canvas';
@@ -218,10 +218,10 @@ const LiveView: React.FC = () => {
   const classes = useStyles();
 
   const { selectedClusterName, selectedClusterPrettyName } = React.useContext(ClusterContext);
-  const { script, args } = React.useContext(ScriptContext);
+  const { script, args, cancelExecution } = React.useContext(ScriptContext);
   const results = React.useContext(ResultsContext);
   const { saveEditor } = React.useContext(EditorContext);
-  const { setEditorPanelOpen, setDataDrawerOpen } = React.useContext(LayoutContext);
+  const { isMobile, setEditorPanelOpen, setDataDrawerOpen } = React.useContext(LayoutContext);
   const [widgetsMoveable, setWidgetsMoveable] = React.useState(false);
 
   // These two variables track whether a script has been executed on a cluster.
@@ -279,6 +279,47 @@ const LiveView: React.FC = () => {
       setHasStartedLoadingCluster(true);
     }
   }, [results.loading, setHasStartedLoadingCluster]);
+
+  // Opens the editor if the current script is a scratch script.
+  React.useEffect(() => {
+    if (script?.id === SCRATCH_SCRIPT.id && script?.code === SCRATCH_SCRIPT.code) {
+      setEditorPanelOpen(true);
+    }
+  }, [script?.code, script?.id, setEditorPanelOpen]);
+
+  // Cancel execution if the window unloads.
+  React.useEffect(() => {
+    const listener = () => {
+      cancelExecution?.();
+    };
+
+    window.addEventListener('beforeunload', listener);
+
+    return () => {
+      window.removeEventListener('beforeunload', listener);
+    };
+  }, [cancelExecution]);
+
+  // Hides the movable widgets button on mobile.
+  React.useEffect(() => {
+    if (isMobile) {
+      setWidgetsMoveable(false);
+    }
+  }, [isMobile]);
+
+  // Enable escape key to stop setting widgets as movable.
+  React.useEffect(() => {
+    const handleEsc = (event) => {
+      if (event.keyCode === 27) {
+        setWidgetsMoveable(false);
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+
+    return () => {
+      window.removeEventListener('keydown', handleEsc);
+    };
+  }, [setWidgetsMoveable]);
 
   React.useEffect(() => {
     if (!results.loading && hasStartedLoadingCluster) {
