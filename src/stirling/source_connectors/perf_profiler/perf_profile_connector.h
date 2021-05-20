@@ -30,6 +30,7 @@
 #include "src/stirling/core/types.h"
 #include "src/stirling/source_connectors/perf_profiler/bcc_bpf_intf/stack_event.h"
 #include "src/stirling/source_connectors/perf_profiler/stack_traces_table.h"
+#include "src/stirling/source_connectors/perf_profiler/stringifier.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizer.h"
 
 namespace px {
@@ -102,9 +103,6 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   StackTraceHisto AggregateStackTraces(ConnectorContext* ctx, ebpf::BPFStackTable* stack_traces,
                                        ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo);
-
-  std::string FoldedStackTraceString(const bool symbolize, ebpf::BPFStackTable* stack_traces,
-                                     const stack_trace_key_t& key);
 
   void CleanupSymbolizers(const absl::flat_hash_set<md::UPID>& deleted_upids);
 

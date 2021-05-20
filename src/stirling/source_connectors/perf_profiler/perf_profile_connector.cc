@@ -92,64 +92,6 @@ uint64_t PerfProfileConnector::SymbolicStackTraceID(
   }
 }
 
-std::string PerfProfileConnector::FoldedStackTraceString(const bool symbolize,
-                                                         ebpf::BPFStackTable* stack_traces,
-                                                         const stack_trace_key_t& key) {
-  if (!symbolize) {
-    stack_traces->clear_stack_id(key.user_stack_id);
-    stack_traces->clear_stack_id(key.kernel_stack_id);
-    return std::string(profiler::kNotSymbolizedMessage);
-  }
-
-  // Here, we read the list of addresses from stack_traces and convert that
-  // list into a "folded" symbolic stack trace string. In line with this,
-  // we also clear the entries in stack_traces.
-  constexpr std::string_view kKSymSuffix = "_[k]";
-  constexpr std::string_view kSeparator = ";";
-  constexpr uint64_t kSentinelAddr = 0xcccccccccccccccc;
-
-  // TODO(oazizi): Add a stack_trace_str.reserve() heuristic.
-  std::string stack_trace_str;
-
-  auto u_symbolize_fn = symbolizer_.GetSymbolizerFn(key.upid);
-  auto k_symbolize_fn = symbolizer_.GetSymbolizerFn(profiler::kKernelUPID);
-
-  // Clear the stack-traces map as we go along here; this has lower overhead
-  // compared to first reading the stack-traces map, then using clear_table_non_atomic().
-  constexpr bool kClearStackId = true;
-
-  // Add user stack.
-  auto user_addrs = stack_traces->get_stack_addr(key.user_stack_id, kClearStackId);
-  for (auto iter = user_addrs.rbegin(); iter != user_addrs.rend(); ++iter) {
-    const auto& addr = *iter;
-    if (addr == kSentinelAddr) {
-      // Some stack-traces have the address 0xcccccccccccccccc where one might
-      // otherwise expect to find "main" or "start_thread". Given that this address
-      // is not a "real" address, we filter it out here.
-      DCHECK(iter == user_addrs.rbegin()) << "Detected sentinel address in unexpected location.";
-      continue;
-    }
-    stack_trace_str += u_symbolize_fn(addr);
-    stack_trace_str += kSeparator;
-  }
-
-  // Add kernel stack.
-  auto kernel_addrs = stack_traces->get_stack_addr(key.kernel_stack_id, kClearStackId);
-  for (auto iter = kernel_addrs.rbegin(); iter != kernel_addrs.rend(); ++iter) {
-    const auto& addr = *iter;
-    stack_trace_str += k_symbolize_fn(addr);
-    stack_trace_str += kKSymSuffix;
-    stack_trace_str += kSeparator;
-  }
-
-  // Remove trailing separator.
-  if (!stack_trace_str.empty()) {
-    stack_trace_str.pop_back();
-  }
-
-  return stack_trace_str;
-}
-
 PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces(
     ConnectorContext* ctx, ebpf::BPFStackTable* stack_traces,
     ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo) {
@@ -162,21 +104,40 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
   const uint32_t asid = ctx->GetASID();
   const absl::flat_hash_set<md::UPID>& upids_for_symbolization = ctx->GetUPIDs();
 
-  // Here we want to "consume" the table, not just "read" it. Pasing "clear_table=true"
+  // Create a new stringifer for this iteration of the continuous perf profiler.
+  Stringifier stringifier(&symbolizer_, stack_traces);
+
+  // Here we "consume" the table (vs. just "reading" it). Passing "clear_table=true"
   // into get_table_offline() clears each entry while walking the table and copying
-  // out the data. This has a significant performance boost vs. using clear_table_non_atomic()
+  // out the data. This shows a significant performance boost vs. using clear_table_non_atomic()
   // after the table has been read.
   constexpr bool kClearTable = true;
 
   for (const auto& [stack_trace_key, count] : histo->get_table_offline(kClearTable)) {
-    cum_sum_count += count;
+    std::string stack_trace_str;
 
     const md::UPID upid(asid, stack_trace_key.upid.pid, stack_trace_key.upid.start_time_ticks);
-
     const bool symbolize = upids_for_symbolization.contains(upid);
-    std::string stack_trace_str = FoldedStackTraceString(symbolize, stack_traces, stack_trace_key);
+
+    if (symbolize) {
+      // The stringifier clears stack-ids out of the stack traces table when it
+      // first encounters them. If a stack-id is reused by a different stack-trace-key,
+      // the stringifier returns its memoized stack trace string. Because the stack-ids
+      // are not stable across profiler iterations, we create and destroy a stringifer
+      // on each profiler iteration.
+      stack_trace_str = stringifier.FoldedStackTraceString(stack_trace_key);
+    } else {
+      // If we do not stringifiy this stack trace, we still need to clear
+      // its entry from the stack traces table.
+      stack_traces->clear_stack_id(stack_trace_key.user_stack_id);
+      stack_traces->clear_stack_id(stack_trace_key.kernel_stack_id);
+      stack_trace_str = std::string(profiler::kNotSymbolizedMessage);
+    }
+
     SymbolicStackTrace symbolic_stack_trace = {upid, std::move(stack_trace_str)};
+
     symbolic_histogram[symbolic_stack_trace] += count;
+    cum_sum_count += count;
 
     // TODO(jps): If we see a perf. issue with having two maps keyed by symbolic-stack-trace,
     // refactor such that creating/finding symoblic-stack-trace-id and count aggregation
