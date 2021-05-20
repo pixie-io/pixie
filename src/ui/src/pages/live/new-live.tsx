@@ -17,32 +17,38 @@
  */
 
 import * as React from 'react';
-import { VizierContextRouter } from 'containers/App/vizier-routing';
-import { ScriptsContextProvider } from 'containers/App/scripts-context';
-import { ScriptContext, ScriptContextProvider } from 'context/new-script-context';
-import LiveViewBreadcrumbs from 'containers/live/new-breadcrumbs';
-import { ScriptLoader } from 'containers/live/new-script-loader';
-import { Button } from '@material-ui/core';
-import { Link } from 'react-router-dom';
-import { ClusterContext } from 'common/cluster-context';
-import { ResultsContext, ResultsContextProvider } from 'context/results-context';
 
-import Canvas from 'containers/live/new-canvas';
-import { EditorSplitPanel } from 'containers/editor/new-editor';
 import { scrollbarStyles, EditIcon } from '@pixie-labs/components';
+import { GQLClusterStatus as ClusterStatus } from '@pixie-labs/api';
 import {
   makeStyles, Theme,
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
-import Tooltip from '@material-ui/core/Tooltip';
-import IconButton from '@material-ui/core/IconButton';
+import {
+  Button, Link, Tooltip, IconButton,
+} from '@material-ui/core';
+import { Alert, AlertTitle } from '@material-ui/lab';
 import MoveIcon from '@material-ui/icons/OpenWith';
-import { LayoutContext, LayoutContextProvider } from 'context/layout-context';
-import EditorContextProvider, { EditorContext } from 'context/editor-context';
-import LiveViewShortcutsProvider from 'containers/live/shortcuts';
-import { DataDrawerSplitPanel } from 'containers/data-drawer/data-drawer';
+
+import { ClusterContext } from 'common/cluster-context';
 import { DataDrawerContextProvider } from 'context/data-drawer-context';
+import EditorContextProvider, { EditorContext } from 'context/editor-context';
+import { LayoutContext, LayoutContextProvider } from 'context/layout-context';
+import { ScriptContext, ScriptContextProvider } from 'context/new-script-context';
+import { ResultsContext, ResultsContextProvider } from 'context/results-context';
+
+import { ClusterInstructions } from 'containers/App/deploy-instructions';
 import NavBars from 'containers/App/nav-bars';
+import { VizierContextRouter } from 'containers/App/vizier-routing';
+import { ScriptsContextProvider } from 'containers/App/scripts-context';
+import { DataDrawerSplitPanel } from 'containers/data-drawer/data-drawer';
+import { EditorSplitPanel } from 'containers/editor/new-editor';
+import Canvas from 'containers/live/new-canvas';
+import LiveViewBreadcrumbs from 'containers/live/new-breadcrumbs';
+import { ScriptLoader } from 'containers/live/new-script-loader';
+import LiveViewShortcutsProvider from 'containers/live/shortcuts';
+import { CONTACT_ENABLED } from 'containers/constants';
+import { useListClusters } from '@pixie-labs/api-react';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -148,22 +154,92 @@ const ScriptOptions = ({
     </>
   );
 };
+interface ClusterLoadingProps {
+  clusterUnhealthy: boolean;
+  clusterStatus: ClusterStatus;
+  clusterName: string | null;
+}
+
+const ClusterLoadingComponent = (props: ClusterLoadingProps) => {
+  // Options:
+  // 1. Name of the cluster
+  const formatStatus = React.useMemo(
+    () => props.clusterStatus.replace('CS_', '').toLowerCase(),
+    [props.clusterStatus]);
+
+  const actionMsg = React.useMemo(
+    (): JSX.Element => {
+      if (props.clusterStatus === ClusterStatus.CS_DISCONNECTED) {
+        return (<div>Please redeploy Pixie to the cluster or choose another cluster.</div>);
+      }
+
+      if (CONTACT_ENABLED) {
+        return (
+          <div>
+            <div>
+              Need help?&nbsp;
+              <Link id='intercom-trigger'>Chat with us</Link>
+              .
+            </div>
+          </div>
+        );
+      }
+      return <div />;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [props.clusterStatus, props.clusterName]);
+
+  return (
+    <>
+      {props.clusterUnhealthy ? (
+        <div>
+          <Alert severity='error'>
+            <AlertTitle>
+              {`Cluster '${props.clusterName}' unavailable`}
+            </AlertTitle>
+            <div>
+              {`Pixie instrumentation on '${props.clusterName}' is ${formatStatus}.`}
+            </div>
+            {actionMsg}
+          </Alert>
+        </div>
+      ) : (
+        <ClusterInstructions message='Connecting to cluster...' />
+      )}
+    </>
+  );
+};
 
 const LiveView: React.FC = () => {
   const classes = useStyles();
-  const { selectedClusterName } = React.useContext(ClusterContext);
-  const { script, args, routeFor } = React.useContext(ScriptContext);
+
+  const { selectedClusterName, selectedClusterPrettyName } = React.useContext(ClusterContext);
+  const { script, args } = React.useContext(ScriptContext);
   const results = React.useContext(ResultsContext);
   const { saveEditor } = React.useContext(EditorContext);
   const { setEditorPanelOpen, setDataDrawerOpen } = React.useContext(LayoutContext);
   const [widgetsMoveable, setWidgetsMoveable] = React.useState(false);
 
-  const visSlice = React.useMemo(() => {
-    if (!script) {
-      return '';
+  // These two variables track whether a script has been executed on a cluster.
+  // When the first script starts executing, hasStartedLoading shall be set true.
+  // When that script stops, hasFinishedLoading shall be set true.
+  // When the cluster changes, both are set false.
+  const [hasStartedLoadingCluster, setHasStartedLoadingCluster] = React.useState<boolean>(false);
+  const [hasFinishedLoadingCluster, setHasFinishedLoadingCluster] = React.useState<boolean>(false);
+
+  const [clusters, clustersLoading, error] = useListClusters();
+
+  const clusterStatus: ClusterStatus = React.useMemo(() => {
+    if (error || clustersLoading || !clusters) {
+      return ClusterStatus.CS_UNKNOWN;
     }
-    return JSON.stringify(script, null, 2);
-  }, [script]);
+
+    const cluster = clusters.find((c) => c.clusterName === selectedClusterName);
+    if (!cluster) {
+      return ClusterStatus.CS_UNKNOWN;
+    }
+    return cluster.status;
+  }, [clusters, clustersLoading, error, selectedClusterName]);
 
   const hotkeyHandlers = {
     'toggle-editor': () => setEditorPanelOpen((editable) => !editable),
@@ -175,11 +251,40 @@ const LiveView: React.FC = () => {
 
   const canvasRef = React.useRef<HTMLDivElement>(null);
 
-  if (!selectedClusterName || !script || !args) return null;
+  // The following three useEffects determine how much a user has
+  // interacted with a cluster. We need to show a connecting modal
+  // when the user has not successfully made a connection. When they
+  // do successfully connect with the cluster, subsequent scripts
+  // executed should not cause the connecting modal to show up.
+  //
+  // The effects should execute actions sequentially whenever a user
+  // selects a new Cluster for their live session.
 
-  const nextRoute = (script.id === 'px/cluster')
-    ? routeFor('px/pod', { cluster: selectedClusterName, namespace: 'barNamespace', pod: 'bazPod' })
-    : routeFor('px/cluster', { cluster: selectedClusterName }); // Ensure that the defaults work
+  // 1. we set both loading variables as false. No scripts have started/finished
+  // 2. When the script loading beings, we flag the cluster as starting.
+  // 3. Once the script has finished loading, we flag the first load as finished.
+  //
+  React.useEffect(() => {
+    // When we reset the cluster name, we reset this to false as results.loading will always trail.
+    setHasStartedLoadingCluster(false);
+    setHasFinishedLoadingCluster(false);
+  }, [selectedClusterPrettyName, setHasStartedLoadingCluster]);
+
+  React.useEffect(() => {
+    if (results.loading) {
+      setHasStartedLoadingCluster(true);
+    }
+  }, [results.loading, setHasStartedLoadingCluster]);
+
+  React.useEffect(() => {
+    if (!results.loading && hasStartedLoadingCluster) {
+      setHasFinishedLoadingCluster(true);
+    }
+  }, [results.loading, hasStartedLoadingCluster, setHasFinishedLoadingCluster]);
+
+  const clusterUnhealthy = !clustersLoading && clusterStatus !== ClusterStatus.CS_HEALTHY;
+
+  if (!selectedClusterName || !script || !args) return null;
 
   return (
     <div className={classes.root}>
@@ -203,7 +308,15 @@ const LiveView: React.FC = () => {
               </Button>
             </div>
             {
-              results.loading ? (<div> loading </div>) : (
+              !hasFinishedLoadingCluster || clusterUnhealthy ? (
+                <div className='center-content'>
+                  <ClusterLoadingComponent
+                    clusterUnhealthy={clusterUnhealthy}
+                    clusterStatus={clusterStatus}
+                    clusterName={selectedClusterPrettyName}
+                  />
+                </div>
+              ) : (
 
                 <DataDrawerSplitPanel className={classes.mainPanel}>
                   <div className={classes.canvas} ref={canvasRef}>
