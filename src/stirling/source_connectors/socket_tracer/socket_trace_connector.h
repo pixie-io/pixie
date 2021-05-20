@@ -204,9 +204,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // https://stackoverflow.com/questions/686217/maximum-on-http-header-values
   inline static constexpr size_t kMaxHTTPHeadersBytes = 8192;
 
-  // Only sample the head of the body, to save space.
-  inline static constexpr size_t kMaxBodyBytes = 512;
-
   // Protobuf printer will limit strings to this length.
   inline static constexpr size_t kMaxPBStringLen = 64;
 

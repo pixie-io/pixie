@@ -78,7 +78,9 @@ Status GRPCPBWireToText(std::string_view message, std::string* text,
       return error::Unimplemented("Compressed data is not implemented");
     }
     PL_ASSIGN_OR_RETURN(uint32_t len, decoder.ExtractInt<uint32_t>());
-    PL_ASSIGN_OR_RETURN(std::string_view data, decoder.ExtractString<char>(len));
+    // Only extract remaining data if the data is truncated.
+    PL_ASSIGN_OR_RETURN(std::string_view data, decoder.ExtractString<char>(std::min(
+                                                   static_cast<size_t>(len), decoder.BufSize())));
 
     std::string pb_str;
     // Include the most recent status.

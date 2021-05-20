@@ -43,6 +43,7 @@ using ::px::stirling::testing::ToRecordVector;
 using ::testing::Gt;
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
+using ::testing::UnorderedElementsAre;
 
 //-----------------------------------------------------------------------------
 // Test Stimulus: Server and Client
@@ -222,27 +223,26 @@ TEST_F(ProductCatalogServiceTraceTest, Basic) {
   ASSERT_FALSE(tablets.empty());
   const types::ColumnWrapperRecordBatch& rb = tablets[0].records;
 
+  const std::vector<size_t> target_record_indices =
+      FindRecordIdxMatchesPID(rb, kHTTPUPIDIdx, server_.process_pid());
+
+  std::vector<size_t> req_body_sizes;
+  std::vector<size_t> resp_body_sizes;
+
+  for (const auto& idx : target_record_indices) {
+    PL_LOG_VAR(ToString(kHTTPTable.ToProto(), rb, idx));
+    req_body_sizes.push_back(
+        AccessRecordBatch<types::Int64Value>(rb, kHTTPReqBodySizeIdx, idx).val);
+    resp_body_sizes.push_back(
+        AccessRecordBatch<types::Int64Value>(rb, kHTTPRespBodySizeIdx, idx).val);
+  }
+  EXPECT_THAT(req_body_sizes, UnorderedElementsAre(5, 17, 17));
+  EXPECT_THAT(resp_body_sizes, UnorderedElementsAre(147, 150, 1439));
+
   {
-    const std::vector<size_t> target_record_indices =
-        FindRecordIdxMatchesPID(rb, kHTTPUPIDIdx, server_.process_pid());
-
-    // For Debug:
-    for (const auto& idx : target_record_indices) {
-      uint32_t pid = rb[kHTTPUPIDIdx]->Get<types::UInt128Value>(idx).High64();
-      std::string req_path = rb[kHTTPReqPathIdx]->Get<types::StringValue>(idx);
-      std::string req_method = rb[kHTTPReqMethodIdx]->Get<types::StringValue>(idx);
-      std::string req_body = rb[kHTTPReqBodyIdx]->Get<types::StringValue>(idx);
-
-      int resp_status = rb[kHTTPRespStatusIdx]->Get<types::Int64Value>(idx).val;
-      std::string resp_message = rb[kHTTPRespMessageIdx]->Get<types::StringValue>(idx);
-      std::string resp_body = rb[kHTTPRespBodyIdx]->Get<types::StringValue>(idx);
-      LOG(INFO) << absl::Substitute("$0 $1 $2 $3 $4 $5 $6", pid, req_method, req_path, req_body,
-                                    resp_status, resp_message, resp_body);
-    }
-
     std::vector<http::Record> records = ToRecordVector(rb, target_record_indices);
 
-    EXPECT_EQ(records.size(), 3);
+    EXPECT_THAT(records, SizeIs(3));
 
     http::Record expected_record1 = {};
     expected_record1.req.req_path = "/hipstershop.ProductCatalogService/ListProducts";
@@ -250,6 +250,10 @@ TEST_F(ProductCatalogServiceTraceTest, Basic) {
     expected_record1.req.body = R"()";
     expected_record1.resp.resp_status = 200;
     expected_record1.resp.resp_message = "OK";
+
+    // Note that the truncation is applied in 2 places below:
+    // 1. Inside string parsing, where the field #1 has a string truncated.
+    // 2. The whole message was truncated as well.
     expected_record1.resp.body = R"(1 {
   1: "OLJCESPC7Z"
   2: "Vintage Typewriter"
@@ -277,7 +281,16 @@ TEST_F(ProductCatalogServiceTraceTest, Basic) {
 }
 1 {
   1: "1YMWWN1N4O"
-  2: "H... [TRUNCATED])";
+  2: "Home Barista Kit"
+  3: "Always wanted to brew coffee with Chemex and Aeropress at home?"
+  4: "/static/img/products/barista-kit.jpg"
+  5 {
+    1: "USD"
+    2: 124
+  }
+  6: "cookware"
+}
+1: "\n\nL9ECAV7KIM\022\tTerrari"... [TRUNCATED])";
 
     http::Record expected_record2 = {};
     expected_record2.req.req_path = "/hipstershop.ProductCatalogService/GetProduct";

@@ -52,7 +52,7 @@ TEST(ParseProtobufTest, VariousCornerCasesInInput) {
   EXPECT_THAT(ParsePB("aa"), StrEq("<Failed to parse protobuf>"));
   EXPECT_THAT(ParsePB("aaa"), StrEq("<Failed to parse protobuf>"));
   EXPECT_THAT(ParsePB("aaaa"), StrEq("<Failed to parse protobuf>"));
-  EXPECT_THAT(ParsePB("aaaaa"), StrEq("<Failed to parse protobuf>"));
+  EXPECT_THAT(ParsePB("aaaaa"), StrEq(""));
   {
     std::string text;
     std::string_view s = CreateStringView<char>("\x00\x00\x00\x00\x00");

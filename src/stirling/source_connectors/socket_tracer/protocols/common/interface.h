@@ -29,6 +29,9 @@ namespace px {
 namespace stirling {
 namespace protocols {
 
+// Only sample the head of the body, to save space.
+constexpr size_t kMaxBodyBytes = 512;
+
 /**
  * Struct that should be the return type of ParseFrames() API in protocol pipeline stitchers.
  * @tparam TRecord Record type of the protocol.

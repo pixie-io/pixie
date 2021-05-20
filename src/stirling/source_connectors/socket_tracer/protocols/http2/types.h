@@ -82,6 +82,8 @@ struct HalfStream {
   const NVMap& headers() const { return headers_; }
   const NVMap& trailers() const { return trailers_; }
   bool end_stream() const { return end_stream_; }
+  bool data_truncated() const { return data_truncated_; }
+  size_t original_data_size() const { return original_data_size_; }
 
   // After calling ConsumeData(), the HalfStream is no longer valid.
   // ByteSize() and other calls may be wrong.
@@ -106,8 +108,19 @@ struct HalfStream {
   }
 
   void AddData(std::string_view val) {
-    byte_size_ += val.size();
-    data_ += val;
+    original_data_size_ += val.size();
+
+    size_t size_to_add = val.size();
+
+    if (size_to_add + data_.size() > kMaxBodyBytes) {
+      size_to_add = kMaxBodyBytes - data_.size();
+      data_truncated_ = true;
+    }
+
+    if (size_to_add > 0) {
+      byte_size_ += size_to_add;
+      data_ += val.substr(0, size_to_add);
+    }
   }
 
   void AddEndStream() { end_stream_ = true; }
@@ -119,9 +132,11 @@ struct HalfStream {
   }
 
   std::string ToString() const {
-    return absl::Substitute("[headers=$0] [data=$1] [trailers=$2] [end_stream=$3]",
-                            headers_.ToString(), BytesToString<bytes_format::HexAsciiMix>(data_),
-                            trailers_.ToString(), end_stream_);
+    return absl::Substitute(
+        "[headers=$0 data=$1 trailers=$2 end_stream=$3 byte_size=$4 original_data_size=$5 "
+        "data_truncated=$6]",
+        headers_.ToString(), BytesToString<bytes_format::HexAsciiMix>(data_), trailers_.ToString(),
+        end_stream_, byte_size_, original_data_size_, data_truncated_);
   }
 
   uint64_t timestamp_ns = 0;
@@ -132,6 +147,11 @@ struct HalfStream {
   NVMap trailers_;
   bool end_stream_ = false;
   size_t byte_size_ = 0;
+
+  // Record the size of data (excluding headers), which used for truncation.
+  size_t original_data_size_ = 0;
+  // If true, means data has been discarded to stay within the limit.
+  bool data_truncated_ = false;
 };
 
 // This class represents an HTTP2 stream (https://http2.github.io/http2-spec/#StreamsLayer).
