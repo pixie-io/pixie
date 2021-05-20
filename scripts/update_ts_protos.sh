@@ -45,7 +45,7 @@ function copy() {
     apiTypesDir="src/ui/packages/pixie-api/src/types/generated"
 
     # TODO(nick): pixie-api may not require all grpc_web protos; we should not copy over unused files.
-    abs_paths=$(find "bazel-bin/${srcPath}" -iregex ".*/[^/]*_pb.*[tj]s")
+    abs_paths=$(find "bazel-bin/${srcPath}" -iregex ".*/[^/]*pb.*\.[tj]s")
     if [[ "${abs_paths}" == "" ]]; then
       echo "Failed to locate TypeScript and Javascript Proto files in bazel-bin/${srcPath}"
       return 1
