@@ -60,7 +60,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     ...scrollbarStyles(theme),
   },
   content: {
-    marginLeft: theme.spacing(6),
+    marginLeft: theme.spacing(8),
     marginTop: theme.spacing(2),
     display: 'flex',
     flex: 1,
@@ -71,6 +71,9 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
       // Sidebar is disabled.
       marginLeft: 0,
     },
+  },
+  spacer: {
+    flex: 1,
   },
   title: {
     ...theme.typography.h3,
@@ -289,15 +292,18 @@ const LiveView: React.FC = () => {
   return (
     <div className={classes.root}>
       <LiveViewShortcutsProvider handlers={hotkeyHandlers}>
-        <NavBars />
+        <NavBars>
+          <div className={classes.spacer} />
+
+          <ScriptOptions
+            classes={classes}
+            widgetsMoveable={widgetsMoveable}
+            setWidgetsMoveable={setWidgetsMoveable}
+          />
+        </NavBars>
         <div className={classes.content}>
           <LiveViewBreadcrumbs />
           <EditorSplitPanel>
-            <ScriptOptions
-              classes={classes}
-              widgetsMoveable={widgetsMoveable}
-              setWidgetsMoveable={setWidgetsMoveable}
-            />
             <div style={{ display: 'flex', flexFlow: 'column nowrap' }}>
               <Button
                 variant='contained'
