@@ -28,10 +28,14 @@ import { scriptToEntityURL, toEntityURL, toSingleEntityPage } from './live-view-
 
 const styles = ({ palette }: Theme) => createStyles({
   root: {
-    color: palette.secondary.main,
-    textDecoration: 'underline',
+    '&:hover': {
+      color: palette.secondary.main,
+      textDecoration: 'underline',
+      opacity: 0.7,
+    },
+    textDecoration: 'none',
+    color: palette.text.primary,
     backgroundColor: 'transparent',
-    opacity: 0.7,
   },
 });
 
