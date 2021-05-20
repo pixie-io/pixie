@@ -497,6 +497,11 @@ export class Table extends jspb.Message {
   clearDisplayColumnsList(): Table;
   addDisplayColumns(value?: Table.ColumnDisplay, index?: number): Table.ColumnDisplay;
 
+  getGutterColumn(): Table.ColumnDisplay | undefined;
+  setGutterColumn(value?: Table.ColumnDisplay): Table;
+  hasGutterColumn(): boolean;
+  clearGutterColumn(): Table;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): Table.AsObject;
   static toObject(includeInstance: boolean, msg: Table): Table.AsObject;
@@ -508,6 +513,7 @@ export class Table extends jspb.Message {
 export namespace Table {
   export type AsObject = {
     displayColumnsList: Array<Table.ColumnDisplay.AsObject>,
+    gutterColumn?: Table.ColumnDisplay.AsObject,
   }
 
   export class ColumnDisplay extends jspb.Message {

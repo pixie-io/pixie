@@ -4160,7 +4160,8 @@ proto.px.vispb.Table.prototype.toObject = function(opt_includeInstance) {
 proto.px.vispb.Table.toObject = function(includeInstance, msg) {
   var f, obj = {
     displayColumnsList: jspb.Message.toObjectList(msg.getDisplayColumnsList(),
-    proto.px.vispb.Table.ColumnDisplay.toObject, includeInstance)
+    proto.px.vispb.Table.ColumnDisplay.toObject, includeInstance),
+    gutterColumn: (f = msg.getGutterColumn()) && proto.px.vispb.Table.ColumnDisplay.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -4202,6 +4203,11 @@ proto.px.vispb.Table.deserializeBinaryFromReader = function(msg, reader) {
       reader.readMessage(value,proto.px.vispb.Table.ColumnDisplay.deserializeBinaryFromReader);
       msg.addDisplayColumns(value);
       break;
+    case 2:
+      var value = new proto.px.vispb.Table.ColumnDisplay;
+      reader.readMessage(value,proto.px.vispb.Table.ColumnDisplay.deserializeBinaryFromReader);
+      msg.setGutterColumn(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -4235,6 +4241,14 @@ proto.px.vispb.Table.serializeBinaryToWriter = function(message, writer) {
   if (f.length > 0) {
     writer.writeRepeatedMessage(
       1,
+      f,
+      proto.px.vispb.Table.ColumnDisplay.serializeBinaryToWriter
+    );
+  }
+  f = message.getGutterColumn();
+  if (f != null) {
+    writer.writeMessage(
+      2,
       f,
       proto.px.vispb.Table.ColumnDisplay.serializeBinaryToWriter
     );
@@ -4480,6 +4494,43 @@ proto.px.vispb.Table.prototype.addDisplayColumns = function(opt_value, opt_index
  */
 proto.px.vispb.Table.prototype.clearDisplayColumnsList = function() {
   return this.setDisplayColumnsList([]);
+};
+
+
+/**
+ * optional ColumnDisplay gutter_column = 2;
+ * @return {?proto.px.vispb.Table.ColumnDisplay}
+ */
+proto.px.vispb.Table.prototype.getGutterColumn = function() {
+  return /** @type{?proto.px.vispb.Table.ColumnDisplay} */ (
+    jspb.Message.getWrapperField(this, proto.px.vispb.Table.ColumnDisplay, 2));
+};
+
+
+/**
+ * @param {?proto.px.vispb.Table.ColumnDisplay|undefined} value
+ * @return {!proto.px.vispb.Table} returns this
+*/
+proto.px.vispb.Table.prototype.setGutterColumn = function(value) {
+  return jspb.Message.setWrapperField(this, 2, value);
+};
+
+
+/**
+ * Clears the message field making it undefined.
+ * @return {!proto.px.vispb.Table} returns this
+ */
+proto.px.vispb.Table.prototype.clearGutterColumn = function() {
+  return this.setGutterColumn(undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {boolean}
+ */
+proto.px.vispb.Table.prototype.hasGutterColumn = function() {
+  return jspb.Message.getField(this, 2) != null;
 };
 
 
