@@ -3,7 +3,8 @@
 # PXL Scripts Overview
 
 Pixie open sources all of its scripts, which serve as examples of scripting in the PxL language.
-To learn more about PxL, take a look at our [documentation](https://docs.pixielabs.ai/pxl).
+To learn more about PxL, take a look at our [documentation](https://docs.px.dev/using-pixie/pxl-overview/).
+
 - px/[agent_status](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/px/agent_status): This script gets the status of all the pixie agents (PEMs/Collectors) running.
 - px/[cluster](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/px/cluster): This view lists the namespaces and the node that are available on the current cluster.
 - px/[cql_data](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/px/cql_data): Shows a sample of CQL (Cassandra) requests in the cluster.
