@@ -87,6 +87,7 @@ TEST_P(BPFMapLeakTest, UnclosedConnection) {
   // For testing, make sure Stirling cleans up BPF entries right away.
   // Without this flag, Stirling delays clean-up to accumulate a clean-up batch.
   FLAGS_stirling_conn_map_cleanup_threshold = 1;
+  FLAGS_stirling_conn_stats_sampling_ratio = 1;
 
   testing::DataTables data_tables(SocketTraceConnector::kTables);
 
@@ -103,6 +104,9 @@ TEST_P(BPFMapLeakTest, UnclosedConnection) {
   sleep(kInactivitySeconds);
 
   // This TransferData should cause the connection tracker to be marked for death.
+  source_->TransferData(ctx_.get(), data_tables.tables());
+
+  // One iteration for ConnStats to approve the death.
   source_->TransferData(ctx_.get(), data_tables.tables());
 
   // One more iteration for the tracker to be destroyed and to release the BPF map entry.

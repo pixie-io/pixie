@@ -63,165 +63,7 @@ TEST(HashTest, CanBeUsedInFlatHashMap) {
 
 class ConnStatsTest : public ::testing::Test {
  protected:
-  ConnStatsTest() : event_gen_(&mock_clock_) {
-    tracker_.set_conn_stats(&conn_stats_);
-    struct conn_id_t conn_id = {};
-    conn_id.upid.pid = testing::kPID;
-    conn_id.upid.start_time_ticks = testing::kPIDStartTimeTicks;
-    conn_id.fd = testing::kFD;
-    tracker_.SetConnID(conn_id);
-  }
-
-  ConnStats conn_stats_;
-  ConnTracker tracker_;
-
-  testing::MockClock mock_clock_;
-  testing::EventGenerator event_gen_;
-};
-
-auto AggKeyIs(int tgid, std::string_view remote_addr) {
-  return AllOf(Field(&ConnStats::AggKey::upid, Field(&upid_t::tgid, tgid)),
-               Field(&ConnStats::AggKey::remote_addr, remote_addr));
-}
-
-auto StatsIs(int open, int close, int sent, int recv) {
-  return AllOf(
-      Field(&ConnStats::Stats::conn_open, open), Field(&ConnStats::Stats::conn_close, close),
-      Field(&ConnStats::Stats::bytes_sent, sent), Field(&ConnStats::Stats::bytes_recv, recv));
-}
-
-// Tests that aggregated records for client side events are correctly put into ConnStats.
-TEST_F(ConnStatsTest, ClientSizeAggregationRecord) {
-  struct socket_control_event_t conn = event_gen_.InitConn(kRoleClient);
-  conn.open.addr.in4.sin_family = AF_INET;
-  conn.open.addr.in4.sin_port = 54321;
-  conn.open.addr.in4.sin_addr.s_addr = 0x01010101;  // 1.1.1.1
-
-  auto frame1 = event_gen_.InitSendEvent(kProtocolHTTP, kRoleClient, "abc");
-  auto frame2 = event_gen_.InitSendEvent(kProtocolHTTP, kRoleClient, "def");
-  auto frame3 = event_gen_.InitRecvEvent(kProtocolHTTP, kRoleClient, "1234");
-  auto frame4 = event_gen_.InitRecvEvent(kProtocolHTTP, kRoleClient, "5");
-  auto frame5 = event_gen_.InitRecvEvent(kProtocolHTTP, kRoleClient, "6789");
-
-  struct socket_control_event_t close_event = event_gen_.InitClose();
-
-  // This sets up the remote address and port.
-  tracker_.AddControlEvent(conn);
-
-  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
-              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 0, 0, 0))));
-
-  tracker_.AddDataEvent(std::move(frame1));
-
-  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
-              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 0, 3, 0))));
-
-  tracker_.AddDataEvent(std::move(frame2));
-  tracker_.AddDataEvent(std::move(frame3));
-  tracker_.AddDataEvent(std::move(frame4));
-
-  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
-              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 0, 6, 5))));
-
-  tracker_.AddDataEvent(std::move(frame5));
-
-  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
-              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 0, 6, 9))));
-
-  tracker_.AddControlEvent(close_event);
-
-  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
-              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 1, 6, 9))));
-
-  // Tests that after receiving conn close event for a connection, another same close event won't
-  // increment the connection.
-  tracker_.AddControlEvent(close_event);
-  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
-              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 1, 6, 9))));
-}
-
-// Tests that aggregated records for server side events are correctly put into ConnStats.
-TEST_F(ConnStatsTest, ServerSizeAggregationRecord) {
-  struct socket_control_event_t conn = event_gen_.InitConn(kRoleServer);
-  conn.open.addr.in4.sin_family = AF_INET;
-  conn.open.addr.in4.sin_port = 54321;
-  conn.open.addr.in4.sin_addr.s_addr = 0x01010101;  // 1.1.1.1
-
-  auto frame1 = event_gen_.InitSendEvent(kProtocolHTTP, kRoleServer, "abc");
-  auto frame2 = event_gen_.InitSendEvent(kProtocolHTTP, kRoleServer, "def");
-  auto frame3 = event_gen_.InitRecvEvent(kProtocolHTTP, kRoleServer, "1234");
-  auto frame4 = event_gen_.InitRecvEvent(kProtocolHTTP, kRoleServer, "5");
-  auto frame5 = event_gen_.InitRecvEvent(kProtocolHTTP, kRoleServer, "6789");
-
-  struct socket_control_event_t close_event = event_gen_.InitClose();
-
-  // This sets up the remote address and port.
-  tracker_.AddControlEvent(conn);
-
-  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
-              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 0, 0, 0))));
-
-  tracker_.AddDataEvent(std::move(frame1));
-
-  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
-              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 0, 3, 0))));
-
-  tracker_.AddDataEvent(std::move(frame2));
-  tracker_.AddDataEvent(std::move(frame3));
-  tracker_.AddDataEvent(std::move(frame4));
-
-  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
-              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 0, 6, 5))));
-
-  tracker_.AddDataEvent(std::move(frame5));
-
-  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
-              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 0, 6, 9))));
-
-  tracker_.AddControlEvent(close_event);
-
-  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
-              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 1, 6, 9))));
-
-  // Tests that after receiving conn close event for a connection, another same close event won't
-  // increment the connection.
-  tracker_.AddControlEvent(close_event);
-  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
-              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 1, 6, 9))));
-}
-
-// Tests that any connection trackers with no remote endpoint do not report conn stats events.
-TEST_F(ConnStatsTest, NoEventsIfNoRemoteAddr) {
-  auto frame1 = event_gen_.InitSendEvent(kProtocolHTTP, kRoleClient, "foo");
-
-  tracker_.AddDataEvent(std::move(frame1));
-
-  EXPECT_THAT(conn_stats_.mutable_agg_stats(), IsEmpty());
-}
-
-// Tests that disabled ConnTracker still reports data.
-TEST_F(ConnStatsTest, DisabledConnTracker) {
-  struct socket_control_event_t conn = event_gen_.InitConn();
-  conn.open.addr.in4.sin_family = AF_INET;
-  conn.open.addr.in4.sin_port = 54321;
-  conn.open.addr.in4.sin_addr.s_addr = 0x01010101;  // 1.1.1.1
-
-  auto frame1 = event_gen_.InitSendEvent(kProtocolHTTP, kRoleClient, "abc");
-
-  // Main test sequence.
-  tracker_.AddControlEvent(conn);
-  tracker_.Disable("test");
-  tracker_.AddDataEvent(std::move(frame1));
-
-  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
-              ElementsAre(Pair(AggKeyIs(12345, "1.1.1.1"), StatsIs(1, 0, 3, 0))));
-}
-
-namespace beta {
-
-class BetaConnStatsTest : public ::testing::Test {
- protected:
-  BetaConnStatsTest() : conn_stats_(&conn_trackers_mgr_) {}
+  ConnStatsTest() : conn_stats_(&conn_trackers_mgr_) {}
 
   ConnTrackersManager conn_trackers_mgr_;
   ConnStats conn_stats_;
@@ -242,7 +84,7 @@ auto StatsIs(int open, int close, int sent, int recv) {
 // Model the arrival of ConnStats events from BPF into the trackers,
 // then check that the various events are aggregated properly by UpdateStats()
 // to generate stats snapshots at different time intervals.
-TEST_F(BetaConnStatsTest, Basic) {
+TEST_F(ConnStatsTest, Basic) {
   constexpr struct conn_id_t kConnID0 = {
       .upid = {.pid = 12345, .start_time_ticks = 1000},
       .fd = 3,
@@ -317,7 +159,7 @@ TEST_F(BetaConnStatsTest, Basic) {
 //   Client0 -> Server (1st connection)
 //   Client0 -> Server (2nd connection)
 //   Client1 -> Server (1st connection)
-TEST_F(BetaConnStatsTest, ServerSide) {
+TEST_F(ConnStatsTest, ServerSide) {
   // First connection from Client 0.
   constexpr struct conn_id_t kConnID0 = {
       .upid = {.pid = 12345, .start_time_ticks = 1000},
@@ -409,7 +251,7 @@ TEST_F(BetaConnStatsTest, ServerSide) {
 //   Client -> Server0 (1st connection)
 //   Client -> Server0 (2nd connection)
 //   Client -> Server1 (1st connection)
-TEST_F(BetaConnStatsTest, ClientSide) {
+TEST_F(ConnStatsTest, ClientSide) {
   // First connection to Server 0.
   constexpr struct conn_id_t kConnID0 = {
       .upid = {.pid = 11111, .start_time_ticks = 1000},
@@ -497,7 +339,7 @@ TEST_F(BetaConnStatsTest, ClientSide) {
 }
 
 // Tests that any connection trackers with no remote endpoint do not report conn stats events.
-TEST_F(BetaConnStatsTest, NoEventsIfNoRemoteAddr) {
+TEST_F(ConnStatsTest, NoEventsIfNoRemoteAddr) {
   constexpr struct conn_id_t kConnID0 = {
       .upid = {.pid = 11111, .start_time_ticks = 1000},
       .fd = 3,
@@ -524,7 +366,7 @@ TEST_F(BetaConnStatsTest, NoEventsIfNoRemoteAddr) {
 }
 
 // Tests that disabled ConnTracker still reports data.
-TEST_F(BetaConnStatsTest, DisabledConnTracker) {
+TEST_F(ConnStatsTest, DisabledConnTracker) {
   constexpr struct conn_id_t kConnID0 = {
       .upid = {.pid = 11111, .start_time_ticks = 1000},
       .fd = 3,
@@ -553,8 +395,6 @@ TEST_F(BetaConnStatsTest, DisabledConnTracker) {
   EXPECT_THAT(conn_stats_.UpdateStats(),
               ElementsAre(Pair(AggKeyIs(11111, "1.1.1.1", 80), StatsIs(1, 1, 200, 100))));
 }
-
-}  // namespace beta
 
 }  // namespace stirling
 }  // namespace px

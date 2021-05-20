@@ -115,6 +115,7 @@ class ConnTrackerGenerationsTest : public ::testing::Test {
       for (int i = 0; i < ConnTracker::kDeathCountdownIters; ++i) {
         tracker->IterationPostTick();
       }
+      tracker->MarkFinalConnStatsReported();
     }
 
     return tracker_gens_.CleanupGenerations(&tracker_pool);

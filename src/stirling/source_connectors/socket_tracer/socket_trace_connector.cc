@@ -94,7 +94,9 @@ using ::px::stirling::protocols::kMaxBodyBytes;
 using ::px::utils::ToJSONString;
 
 SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
-    : SourceConnector(source_name, kTables), uprobe_mgr_(this) {
+    : SourceConnector(source_name, kTables),
+      connection_stats_(&conn_trackers_mgr_),
+      uprobe_mgr_(this) {
   proc_parser_ = std::make_unique<system::ProcParser>(system::Config::GetInstance());
   InitProtocolTransferSpecs();
 }
@@ -447,6 +449,16 @@ void SocketTraceConnector::HandleControlEventLoss(void* /*cb_cookie*/, uint64_t 
   VLOG(1) << ProbeLossMessage("socket_control_events", lost);
 }
 
+void SocketTraceConnector::HandleConnStatsEvent(void* cb_cookie, void* data, int /*data_size*/) {
+  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
+  auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
+  connector->AcceptConnStatsEvent(*static_cast<const conn_stats_event_t*>(data));
+}
+
+void SocketTraceConnector::HandleConnStatsEventLoss(void* /*cb_cookie*/, uint64_t lost) {
+  VLOG(1) << ProbeLossMessage("conn_stats_events", lost);
+}
+
 void SocketTraceConnector::HandleMMapEvent(void* cb_cookie, void* data, int /*data_size*/) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
@@ -502,7 +514,6 @@ void SocketTraceConnector::HandleHTTP2DataLoss(void* /*cb_cookie*/, uint64_t los
 
 ConnTracker& SocketTraceConnector::GetOrCreateConnTracker(struct conn_id_t conn_id) {
   ConnTracker& tracker = conn_trackers_mgr_.GetOrCreateConnTracker(conn_id);
-  tracker.set_conn_stats(&connection_stats_);
   tracker.set_current_time(iteration_time_);
   UpdateTrackerTraceLevel(&tracker);
   return tracker;
@@ -525,6 +536,13 @@ void SocketTraceConnector::AcceptControlEvent(socket_control_event_t event) {
 
   ConnTracker& tracker = GetOrCreateConnTracker(event.conn_id);
   tracker.AddControlEvent(event);
+}
+
+void SocketTraceConnector::AcceptConnStatsEvent(conn_stats_event_t event) {
+  event.timestamp_ns += ClockRealTimeOffset();
+
+  ConnTracker& tracker = conn_trackers_mgr_.GetOrCreateConnTracker(event.conn_id);
+  tracker.AddConnStats(event);
 }
 
 void SocketTraceConnector::AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> event) {
@@ -904,28 +922,25 @@ void SocketTraceConnector::TransferConnStats(ConnectorContext* ctx, DataTable* d
   absl::flat_hash_set<md::UPID> upids = ctx->GetUPIDs();
   uint64_t time = AdjustedSteadyClockNowNS();
 
-  auto& agg_stats = connection_stats_.mutable_agg_stats();
+  auto& agg_stats = connection_stats_.UpdateStats();
 
   auto iter = agg_stats.begin();
   while (iter != agg_stats.end()) {
     const auto& key = iter->first;
     auto& stats = iter->second;
 
-    if (stats.conn_open < stats.conn_close) {
-      LOG_FIRST_N(WARNING, 10) << "Connection open should not be smaller than connection close.";
-    }
+    DCHECK_GE(stats.conn_open, stats.conn_close);
 
-    md::UPID upid(ctx->GetASID(), key.upid.tgid, key.upid.start_time_ticks);
+    md::UPID upid(ctx->GetASID(), key.upid.pid, key.upid.start_time_ticks);
     bool active_upid = upids.contains(upid);
-    bool tracked_upid = active_upid || stats.prev_bytes_sent.has_value();
 
-    bool activity = !stats.prev_bytes_sent.has_value() || !stats.prev_bytes_recv.has_value() ||
-                    stats.bytes_sent != stats.prev_bytes_sent ||
-                    stats.bytes_recv != stats.prev_bytes_recv;
+    bool activity = connection_stats_.Active(stats);
+
+    VLOG(1) << absl::Substitute("upid=$0 active=$1 previously_active=$2", upid.String(),
+                                active_upid, stats.reported);
 
     // Only export this record if there are actual changes.
-    // TODO(yzhao): Exports these records after several iterations.
-    if (tracked_upid && activity) {
+    if ((active_upid || stats.reported) && activity) {
       DataTable::RecordBuilder<&kConnStatsTable> r(data_table, time);
 
       r.Append<idx::kTime>(time);
@@ -938,26 +953,23 @@ void SocketTraceConnector::TransferConnStats(ConnectorContext* ctx, DataTable* d
       r.Append<idx::kConnOpen>(stats.conn_open);
       r.Append<idx::kConnClose>(stats.conn_close);
       r.Append<idx::kConnActive>(stats.conn_open - stats.conn_close);
-      // TODO(yzhao/oazizi): This is a bug, because the stats only reflect the bytes of BPF events
-      //                     that made it through the perf buffer; lost events are not included.
-      //                     A better approach is to have BPF events update the cumulative number of
-      //                     bytes transferred,  and use that here directly. We already have a
-      //                     ticket to convert seq numbers to bytes transferred, so we could kill
-      //                     two birds with one stone.
       r.Append<idx::kBytesSent>(stats.bytes_sent);
       r.Append<idx::kBytesRecv>(stats.bytes_recv);
 #ifndef NDEBUG
       r.Append<idx::kPxInfo>("");
 #endif
 
-      stats.prev_bytes_sent = stats.bytes_sent;
-      stats.prev_bytes_recv = stats.bytes_recv;
+      stats.reported = true;
     }
 
-    // Remove data for exited upids. Do this after exporting final record.
-    if (!active_upid) {
-      agg_stats.erase(iter++);
-      continue;
+    // Check for pids that may have died.
+    if (!active_upid && !activity) {
+      const auto& sysconfig = system::Config::GetInstance();
+      std::filesystem::path pid_file = sysconfig.proc_path() / std::to_string(key.upid.pid);
+      if (!fs::Exists(pid_file).ok()) {
+        agg_stats.erase(iter++);
+        continue;
+      }
     }
 
     // This is at the bottom, in order to avoid accidentally forgetting increment the iterator.

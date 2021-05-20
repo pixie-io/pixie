@@ -45,99 +45,14 @@ ConnStats::AggKey BuildAggKey(const upid_t& upid, EndpointRole role,
 
 }  // namespace
 
-void ConnStats::AddConnOpenEvent(const ConnTracker& tracker) {
-  const conn_id_t& conn_id = tracker.conn_id();
-  const TrafficProtocol protocol = tracker.protocol();
-  const EndpointRole role = tracker.role();
-  const SockAddr& remote_endpoint = tracker.remote_endpoint();
-  const bool is_open = true;
-
-  RecordConn(conn_id, protocol, role, remote_endpoint, is_open);
-}
-
-void ConnStats::AddConnCloseEvent(const ConnTracker& tracker) {
-  const conn_id_t& conn_id = tracker.conn_id();
-  const TrafficProtocol protocol = tracker.protocol();
-  const EndpointRole role = tracker.role();
-  const SockAddr& remote_endpoint = tracker.remote_endpoint();
-  const bool is_open = false;
-
-  RecordConn(conn_id, protocol, role, remote_endpoint, is_open);
-}
-
-void ConnStats::AddDataEvent(const ConnTracker& tracker, const SocketDataEvent& event) {
-  const upid_t& upid = event.attr.conn_id.upid;
-  const TrafficProtocol protocol = tracker.protocol();
-  const EndpointRole role = tracker.role();
-  const TrafficDirection dir = event.attr.direction;
-  const SockAddr& remote_endpoint = tracker.remote_endpoint();
-  const size_t size = event.attr.msg_size;
-
-  RecordData(upid, protocol, role, dir, remote_endpoint, size);
-}
-
-void ConnStats::RecordConn(const struct conn_id_t& conn_id, TrafficProtocol protocol,
-                           EndpointRole role, const SockAddr& remote_endpoint, bool is_open) {
-  AggKey key = BuildAggKey(conn_id.upid, role, remote_endpoint);
-
-  auto& stats = agg_stats_[key];
-
-  if (is_open) {
-    ++stats.conn_open;
-    stats.protocol = protocol;
-    stats.role = role;
-    stats.addr_family = remote_endpoint.family;
-
-  } else {
-    ++stats.conn_close;
-  }
-}
-
-void ConnStats::RecordData(const struct upid_t& upid, TrafficProtocol protocol, EndpointRole role,
-                           TrafficDirection direction, const SockAddr& remote_endpoint,
-                           size_t size) {
-  AggKey key = BuildAggKey(upid, role, remote_endpoint);
-  auto& stats = agg_stats_[key];
-
-  stats.protocol = protocol;
-  stats.role = role;
-
-  switch (direction) {
-    case TrafficDirection::kEgress:
-      stats.bytes_sent += size;
-      break;
-    case TrafficDirection::kIngress:
-      stats.bytes_recv += size;
-      break;
-  }
-}
-
-namespace beta {
-
-namespace {
-
-ConnStats::AggKey BuildAggKey(const upid_t& upid, EndpointRole role,
-                              const SockAddr& remote_endpoint) {
-  // Both local UPID and remote endpoint must be fully specified.
-  DCHECK_NE(upid.pid, 0);
-  DCHECK_NE(upid.start_time_ticks, 0);
-  DCHECK(remote_endpoint.family != SockAddrFamily::kUnspecified);
-  DCHECK(role != kRoleUnknown);
-  return {
-      .upid = upid,
-      .remote_addr = remote_endpoint.AddrStr(),
-      // Set port to 0 if this event is from a server process.
-      // This avoids creating excessive amount of records from changing ports of K8s services.
-      .remote_port = role == kRoleServer ? 0 : remote_endpoint.port(),
-  };
-}
-
-}  // namespace
-
 absl::flat_hash_map<ConnStats::AggKey, ConnStats::Stats>& ConnStats::UpdateStats() {
   ++update_counter_;
 
   for (const auto& tracker : conn_trackers_mgr_->active_trackers()) {
+    if (tracker->IsZombie()) {
+      tracker->MarkFinalConnStatsReported();
+    }
+
     if (!(tracker->remote_endpoint().family == SockAddrFamily::kIPv4 ||
           tracker->remote_endpoint().family == SockAddrFamily::kIPv6) ||
         tracker->role() == kRoleUnknown) {
@@ -165,8 +80,6 @@ absl::flat_hash_map<ConnStats::AggKey, ConnStats::Stats>& ConnStats::UpdateStats
 
   return agg_stats_;
 }
-
-}  // namespace beta
 
 }  // namespace stirling
 }  // namespace px

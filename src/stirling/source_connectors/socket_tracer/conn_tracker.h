@@ -54,8 +54,7 @@ DECLARE_int64(stirling_check_proc_for_conn_close);
 namespace px {
 namespace stirling {
 
-// Forward declaration to avoid circular include of conn_stats.h and conn_tracker.h.
-class ConnStats;
+// Forward declaration to avoid circular include and conn_tracker.h.
 class ConnTrackersManager;
 
 /**
@@ -192,8 +191,6 @@ class ConnTracker : NotCopyMoveable {
 
   ~ConnTracker();
 
-  void set_conn_stats(ConnStats* conn_stats) { conn_stats_ = conn_stats; }
-
   /**
    * Registers a BPF connection control event into the tracker.
    *
@@ -312,7 +309,7 @@ class ConnTracker : NotCopyMoveable {
   const conn_id_t& conn_id() const { return conn_id_; }
   TrafficProtocol protocol() const { return protocol_; }
   EndpointRole role() const { return role_; }
-  ConnStatsTracker& conn_stats() { return beta_conn_stats_; }
+  ConnStatsTracker& conn_stats() { return conn_stats_; }
 
   /**
    * Get remote IP endpoint of the connection.
@@ -416,6 +413,11 @@ class ConnTracker : NotCopyMoveable {
    * @return true if this tracker is on its death countdown.
    */
   bool IsZombie() const;
+
+  /**
+   * Marks the ConnTracker as having reported its final conn stats event.
+   */
+  void MarkFinalConnStatsReported() { final_conn_stats_reported_ = true; }
 
   /**
    * Whether this ConnTracker can be destroyed.
@@ -595,8 +597,6 @@ class ConnTracker : NotCopyMoveable {
   void UpdateState(const std::vector<CIDRBlock>& cluster_cidrs);
 
   void UpdateDataStats(const SocketDataEvent& event);
-  bool ShouldExportToConnStats() const;
-  void ExportInitialConnStats();
 
   template <typename TFrameType>
   void DataStreamsToFrames() {
@@ -627,8 +627,9 @@ class ConnTracker : NotCopyMoveable {
   EndpointRole role_ = kRoleUnknown;
   SocketOpen open_info_;
   SocketClose close_info_;
-  ConnStatsTracker beta_conn_stats_;
+  ConnStatsTracker conn_stats_;
   uint64_t last_conn_stats_update_ = 0;
+  bool final_conn_stats_reported_ = false;
 
   // The data collected by the stream, one per direction.
   DataStream send_data_;
@@ -668,8 +669,6 @@ class ConnTracker : NotCopyMoveable {
 
   // Iterations before the tracker can be killed.
   int32_t death_countdown_ = -1;
-
-  ConnStats* conn_stats_ = nullptr;
 
   Stats stats_;
 

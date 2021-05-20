@@ -628,9 +628,10 @@ TEST_F(UDPSocketTraceBPFTest, NonBlockingRecv) {
 class SocketTraceServerSideBPFTest
     : public testing::SocketTraceBPFTest</* TClientSideTracing */ false> {};
 
-// Tests that connection stats are updated after ConnTracker is disabled because of being
-// a client.
-TEST_F(SocketTraceServerSideBPFTest, ConnStatsUpdatedAfterConnTrackerDisabled) {
+// Tests stats for a disabled ConnTracker.
+// Now that ConnStats is tracked independently, these stats are expected to stop
+// updating after the tracker is disabled.
+TEST_F(SocketTraceServerSideBPFTest, StatsDisabledTracker) {
   using Stat = ConnTracker::Stats::Key;
 
   auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.get());
@@ -696,12 +697,11 @@ TEST_F(SocketTraceServerSideBPFTest, ConnStatsUpdatedAfterConnTrackerDisabled) {
 
   source_->TransferData(ctx_.get(), data_table_ptrs);
 
-  EXPECT_EQ(client_side_tracker->GetStat(Stat::kBytesSent),
-            kHTTPReqMsg1.size() + kHTTPReqMsg2.size());
+  EXPECT_EQ(client_side_tracker->GetStat(Stat::kBytesSent), kHTTPReqMsg1.size());
   EXPECT_EQ(client_side_tracker->GetStat(Stat::kBytesSentTransferred), kHTTPReqMsg1.size())
       << "Data transfer was disabled, so the counter should be the same.";
-  EXPECT_EQ(client_side_tracker->GetStat(Stat::kDataEventSent), 2);
-  EXPECT_EQ(client_side_tracker->GetStat(Stat::kDataEventRecv), 2);
+  EXPECT_EQ(client_side_tracker->GetStat(Stat::kDataEventSent), 1);
+  EXPECT_EQ(client_side_tracker->GetStat(Stat::kDataEventRecv), 1);
   EXPECT_EQ(client_side_tracker->GetStat(Stat::kValidRecords), 0);
   EXPECT_EQ(client_side_tracker->GetStat(Stat::kInvalidRecords), 0);
 

@@ -91,9 +91,6 @@ class HTTP2TraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing 
 };
 
 TEST_F(HTTP2TraceTest, Basic) {
-  // This test also checks conn_stats, so make sure we push records frequently.
-  FLAGS_stirling_conn_stats_sampling_ratio = 1;
-
   StartTransferDataThread();
 
   // Run the client in the network of the server, so they can connect to each other.
@@ -140,32 +137,6 @@ TEST_F(HTTP2TraceTest, Basic) {
     EXPECT_THAT(records, Contains(EqHTTPRecord(expected_record)));
 
     EXPECT_THAT(FindRecordIdxMatchesPID(rb, kHTTPUPIDIdx, client_.process_pid()), IsEmpty());
-  }
-
-  {
-    std::vector<TaggedRecordBatch> tablets =
-        ConsumeRecords(SocketTraceConnector::kConnStatsTableNum);
-    ASSERT_FALSE(tablets.empty());
-
-    const types::ColumnWrapperRecordBatch& rb = tablets[0].records;
-
-    auto indices = FindRecordIdxMatchesPID(rb, conn_stats_idx::kUPID, server_.process_pid());
-    ASSERT_THAT(indices, SizeIs(1));
-
-    int conn_open =
-        AccessRecordBatch<types::Int64Value>(rb, conn_stats_idx::kConnOpen, indices[0]).val;
-    int conn_close =
-        AccessRecordBatch<types::Int64Value>(rb, conn_stats_idx::kConnClose, indices[0]).val;
-    int bytes_sent =
-        AccessRecordBatch<types::Int64Value>(rb, conn_stats_idx::kBytesSent, indices[0]).val;
-    int bytes_rcvd =
-        AccessRecordBatch<types::Int64Value>(rb, conn_stats_idx::kBytesRecv, indices[0]).val;
-    EXPECT_THAT(conn_open, 1);
-    // TODO(oazizi/yzhao): Causing flakiness. Investigate.
-    // EXPECT_THAT(conn_close, 1);
-    PL_UNUSED(conn_close);
-    EXPECT_THAT(bytes_sent, Gt(1800));
-    EXPECT_THAT(bytes_rcvd, Gt(600));
   }
 }
 

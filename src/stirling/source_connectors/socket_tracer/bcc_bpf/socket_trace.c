@@ -438,12 +438,10 @@ static __inline void submit_close_event(struct pt_regs* ctx, struct conn_info_t*
 // Writes the input buf to event, and submits the event to the corresponding perf buffer.
 // Returns the bytes output from the input buf. Note that is not the total bytes submitted to the
 // perf buffer, which includes additional metadata.
-// If send_data is false, only the metadata is sent for accounting purposes (used for connection
-// stats).
 static __inline void perf_submit_buf(struct pt_regs* ctx, const enum TrafficDirection direction,
                                      const char* buf, size_t buf_size, size_t offset,
                                      struct conn_info_t* conn_info,
-                                     struct socket_data_event_t* event, bool send_data) {
+                                     struct socket_data_event_t* event) {
   switch (direction) {
     case kEgress:
       event->attr.pos = conn_info->wr_bytes + offset;
@@ -505,11 +503,7 @@ static __inline void perf_submit_buf(struct pt_regs* ctx, const enum TrafficDire
   // Buf size is always greater than 0, but the verifier doesn't know that.
   // 4.14 kernels otherwise reject bpf_probe_read with size that they may think is zero.
   if (buf_size_minus_1 < MAX_MSG_SIZE) {
-    if (send_data) {
-      bpf_probe_read(&event->msg, buf_size, buf);
-    } else {
-      buf_size = 0;
-    }
+    bpf_probe_read(&event->msg, buf_size, buf);
     event->attr.msg_buf_size = buf_size;
     socket_data_events.perf_submit(ctx, event, sizeof(event->attr) + buf_size);
   }
@@ -518,7 +512,7 @@ static __inline void perf_submit_buf(struct pt_regs* ctx, const enum TrafficDire
 static __inline void perf_submit_wrapper(struct pt_regs* ctx, const enum TrafficDirection direction,
                                          const char* buf, const size_t buf_size,
                                          struct conn_info_t* conn_info,
-                                         struct socket_data_event_t* event, bool send_data) {
+                                         struct socket_data_event_t* event) {
   int bytes_sent = 0;
   unsigned int i;
 
@@ -526,8 +520,7 @@ static __inline void perf_submit_wrapper(struct pt_regs* ctx, const enum Traffic
   for (i = 0; i < CHUNK_LIMIT; ++i) {
     const int bytes_remaining = buf_size - bytes_sent;
     const size_t current_size = bytes_remaining > MAX_MSG_SIZE ? MAX_MSG_SIZE : bytes_remaining;
-    perf_submit_buf(ctx, direction, buf + bytes_sent, current_size, bytes_sent, conn_info, event,
-                    send_data);
+    perf_submit_buf(ctx, direction, buf + bytes_sent, current_size, bytes_sent, conn_info, event);
     bytes_sent += current_size;
   }
 }
@@ -535,7 +528,7 @@ static __inline void perf_submit_wrapper(struct pt_regs* ctx, const enum Traffic
 static __inline void perf_submit_iovecs(struct pt_regs* ctx, const enum TrafficDirection direction,
                                         const struct iovec* iov, const size_t iovlen,
                                         const size_t total_size, struct conn_info_t* conn_info,
-                                        struct socket_data_event_t* event, bool send_data) {
+                                        struct socket_data_event_t* event) {
   // NOTE: The loop index 'i' used to be int. BPF verifier somehow conclude that msg_size inside
   // perf_submit_buf(), after a series of assignment, and passed into a function call, can be
   // negative.
@@ -561,8 +554,7 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx, const enum TrafficD
 
     // TODO(oazizi/yzhao): Should switch this to go through perf_submit_wrapper.
     //                     We don't have the BPF instruction count to do so right now.
-    perf_submit_buf(ctx, direction, iov_cpy.iov_base, iov_size, bytes_sent, conn_info, event,
-                    send_data);
+    perf_submit_buf(ctx, direction, iov_cpy.iov_base, iov_size, bytes_sent, conn_info, event);
     bytes_sent += iov_size;
   }
 }
@@ -792,21 +784,23 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
   bool send_data = !is_stirling_tgid(tgid) && should_trace_protocol_data(conn_info) &&
                    (conn_disabled_tsid == NULL || conn_info->conn_id.tsid > *conn_disabled_tsid);
 
-  struct socket_data_event_t* event = fill_socket_data_event(args->source_fn, direction, conn_info);
-  if (event == NULL) {
-    // event == NULL not expected to ever happen.
-    return;
-  }
+  if (send_data) {
+    struct socket_data_event_t* event =
+        fill_socket_data_event(args->source_fn, direction, conn_info);
+    if (event == NULL) {
+      // event == NULL not expected to ever happen.
+      return;
+    }
 
-  // TODO(yzhao): Same TODO for split the interface.
-  if (!vecs) {
-    perf_submit_wrapper(ctx, direction, args->buf, bytes_count, conn_info, event, send_data);
-  } else {
-    // TODO(yzhao): iov[0] is copied twice, once in calling update_traffic_class(), and here.
-    // This happens to the write probes as well, but the calls are placed in the entry and return
-    // probes respectively. Consider remove one copy.
-    perf_submit_iovecs(ctx, direction, args->iov, args->iovlen, bytes_count, conn_info, event,
-                       send_data);
+    // TODO(yzhao): Same TODO for split the interface.
+    if (!vecs) {
+      perf_submit_wrapper(ctx, direction, args->buf, bytes_count, conn_info, event);
+    } else {
+      // TODO(yzhao): iov[0] is copied twice, once in calling update_traffic_class(), and here.
+      // This happens to the write probes as well, but the calls are placed in the entry and return
+      // probes respectively. Consider remove one copy.
+      perf_submit_iovecs(ctx, direction, args->iov, args->iovlen, bytes_count, conn_info, event);
+    }
   }
 
   // Update state of the connection.

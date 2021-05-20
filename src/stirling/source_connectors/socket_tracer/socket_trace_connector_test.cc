@@ -188,6 +188,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
     ConnTracker::set_inactivity_duration(ConnTracker::kDefaultInactivityDuration);
 
     FLAGS_stirling_check_proc_for_conn_close = false;
+    FLAGS_stirling_conn_stats_sampling_ratio = 1;
 
     data_tables_ = std::make_unique<testing::DataTables>(SocketTraceConnector::kTables);
 
