@@ -1432,6 +1432,62 @@ class PodIPToServiceIDUDF : public ScalarUDF {
   }
 };
 
+inline bool EqualsOrArrayContains(const std::string& input, const std::string& value) {
+  rapidjson::Document doc;
+  doc.Parse(input.c_str());
+  if (!doc.IsArray()) {
+    return input == value;
+  }
+  for (rapidjson::SizeType i = 0; i < doc.Size(); ++i) {
+    if (!doc[i].IsString()) {
+      return false;
+    }
+    auto str = doc[i].GetString();
+    if (str == value) {
+      return true;
+    }
+  }
+  return false;
+}
+
+class HasServiceNameUDF : public ScalarUDF {
+ public:
+  BoolValue Exec(FunctionContext*, StringValue service, StringValue value) {
+    return EqualsOrArrayContains(service, value);
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Determine if a particular service name is present")
+        .Details(
+            "Checks to see if a given service is present. Can include matching an individual "
+            "service, or checking against a list of services.")
+        .Example("df = df[px.has_service_name(df.ctx[\"service\"], \"kube-system/kube-dns\")]")
+        .Arg("service", "The service to check")
+        .Arg("value", "The value to check for in service")
+        .Returns("True if value is present in service, otherwise false");
+  }
+};
+
+class HasServiceIDUDF : public ScalarUDF {
+ public:
+  BoolValue Exec(FunctionContext*, StringValue service, StringValue value) {
+    return EqualsOrArrayContains(service, value);
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Determine if a particular service ID is present")
+        .Details(
+            "Checks to see if a given service ID is present. Can include matching an individual "
+            "service ID, or checking against a list of service IDs.")
+        .Example(
+            "df = df[px.has_service_id(df.ctx[\"service_id\"], "
+            "\"c5f103ab-349e-49e4-8162-3b74f2c07693\")]")
+        .Arg("service_id", "The service ID to check")
+        .Arg("value", "The value to check for in service")
+        .Returns("True if value is present in service_id, otherwise false");
+  }
+};
+
 void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry);
 
 }  // namespace metadata
