@@ -39,6 +39,7 @@ pl_cc_library(
         "//src/carnot/planpb:plan_pl_cc_proto",
         "//src/common/uuid:cc_library",
         "//src/shared/metadatapb:metadata_pl_cc_proto",
+        "@com_github_tencent_rapidjson//:rapidjson",
     ],
 )
 

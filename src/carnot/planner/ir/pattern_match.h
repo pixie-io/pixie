@@ -1099,6 +1099,29 @@ struct SemanticTypeMatch : public ParentMatch {
 
 inline SemanticTypeMatch ASID() { return SemanticTypeMatch(types::ST_ASID); }
 
+/**
+ * @brief Match a service containment or equality expression.
+ *
+ * @tparam expression_type: the type of the node to match (must be an expression).
+ * @tparam Resolved: expected resolution of pattern.
+ */
+struct ServiceMatcher : public ParentMatch {
+  ServiceMatcher() : ParentMatch(IRNodeType::kAny) {}
+
+  bool Match(const IRNode* node) const override {
+    if (!Func("has_service_id").Match(node) && !Func("has_service_name").Match(node)) {
+      return false;
+    }
+    auto func = static_cast<const FuncIR*>(node);
+    if (func->args().size() != 2) {
+      return false;
+    }
+    auto service_id = MetadataExpression(MetadataType::SERVICE_ID).Match(func->args()[0]);
+    auto service_name = MetadataExpression(MetadataType::SERVICE_NAME).Match(func->args()[0]);
+    return (service_id || service_name) && String().Match(func->args()[1]);
+  }
+};
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace px

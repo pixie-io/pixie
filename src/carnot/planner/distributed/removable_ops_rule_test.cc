@@ -132,7 +132,7 @@ import px
 
 # and (only agent 1)
 t1 = px.DataFrame(table='http_events')
-t1 = t1[t1.ctx['pod_id'] == 'agent1_pod' or t1.ctx['service_id'] == 'agent2_service']
+t1 = t1[t1.ctx['pod_id'] == 'agent1_pod' or px.has_service_id(t1.ctx['service_id'], 'agent2_service')]
 px.display(t1, 't1')
 )pxl";
 
@@ -150,7 +150,7 @@ import px
 
 # mixed (only agent 2)
 t2 = px.DataFrame(table='http_events')
-t2 = t2['agent2_service' == t2.ctx['service_id'] and ('agent2_service' == t2.ctx['service_id'] or 3 == 3)]
+t2 = t2['["agent2_service", "other"]' == t2.ctx['service_id'] and ('agent2_service' == t2.ctx['service_id'] or 3 == 3)]
 px.display(t2, 't2')
 
 )pxl";

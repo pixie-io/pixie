@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <rapidjson/document.h>
+
 #include <algorithm>
 #include <memory>
 #include <queue>
@@ -104,7 +106,9 @@ class ASIDMatcher : public FilterExpressionMatcher {
 class StringBloomFilterMatcher : public FilterExpressionMatcher {
  public:
   static bool MatchExpr(ExpressionIR* expr) {
-    return Match(expr, Equals(MetadataExpression(), String()));
+    auto string_equality = Match(expr, Equals(MetadataExpression(), String()));
+    auto service_matcher = Match(expr, ServiceMatcher());
+    return string_equality || service_matcher;
   }
 
   static std::unique_ptr<FilterExpressionMatcher> Create() {
@@ -120,8 +124,30 @@ class StringBloomFilterMatcher : public FilterExpressionMatcher {
     if (!md_filter->metadata_types().contains(md_type_)) {
       return true;
     }
-    // The filter is removed if we don't contain the entity.
-    return md_filter->ContainsEntity(md_type_, val_);
+
+    // For cases like the following,
+    // df.ctx['service'] == '["pl/svc1", "pl/svc2"]',
+    // We would still like the expression to work.
+    // However, the metadata filters will only store individual services,
+    // not the JSON array. As a result, in the planner we will check for the
+    // presence for either service in the Carnot instance when pruning the plan.
+
+    rapidjson::Document doc;
+    doc.Parse(val_.c_str());
+    if (!doc.IsArray()) {
+      return md_filter->ContainsEntity(md_type_, val_);
+    }
+
+    for (rapidjson::SizeType i = 0; i < doc.Size(); ++i) {
+      if (!doc[i].IsString()) {
+        return false;
+      }
+      auto str = doc[i].GetString();
+      if (md_filter->ContainsEntity(md_type_, str)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   void ParseExpression(ExpressionIR* expr) override {
