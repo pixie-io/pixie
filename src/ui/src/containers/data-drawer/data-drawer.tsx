@@ -22,14 +22,18 @@ import { LayoutContext } from 'context/layout-context';
 import { ResultsContext } from 'context/results-context';
 import * as React from 'react';
 import { VizierDataTableWithDetails } from 'containers/vizier-data-table/vizier-data-table';
-
+import DownIcon from '@material-ui/icons/KeyboardArrowDown';
+import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 import {
-  makeStyles, Theme,
+  makeStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
-
-import { DataDrawerToggle, STATS_TAB_NAME } from './data-drawer-toggle';
+import Tab from '@material-ui/core/Tab';
+import Tabs from '@material-ui/core/Tabs';
+import Fab from '@material-ui/core/Fab';
 import ExecutionStats from './execution-stats';
+
+export const STATS_TAB_NAME = 'stats';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   splits: {
@@ -41,6 +45,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     display: 'flex',
     flexDirection: 'column',
     flex: 1,
+    pointerEvents: 'auto',
   },
   execStats: {
     flex: 1,
@@ -60,17 +65,105 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     transform: 'translate(-50%, -50%)',
   },
   otherContent: {
+    height: '100%',
     display: 'flex',
     flexDirection: 'column',
-    height: '100%',
+  },
+  spacer: {
+    flex: 1,
+  },
+  emptyLabel: {
+    display: 'none',
+  },
+  label: {
+    paddingLeft: theme.spacing(2),
+    paddingRight: theme.spacing(2),
+  },
+  selectedTabLabel: {
+    color: `${theme.palette.primary.light} !important`,
+  },
+  dataTabLabel: {
+    '&:after': {
+      content: '""',
+      background: theme.palette.foreground.three,
+      opacity: 0.4,
+      position: 'absolute',
+      height: theme.spacing(2.6),
+      width: theme.spacing(0.25),
+      right: 0,
+    },
+    opacity: 1,
+    color: theme.palette.foreground.three,
+    minWidth: 0,
+    paddingLeft: `${theme.spacing(1.4)} !important`,
+    paddingRight: `${theme.spacing(1.4)} !important`,
+    paddingTop: `${theme.spacing(0.7)} !important`,
+    paddingBottom: `${theme.spacing(0.7)} !important`,
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  statsTabLabel: {
+    '&:focus': {
+      color: `${theme.palette.primary.light} !important`,
+    },
+    color: theme.palette.foreground.three,
+  },
+  toggle: {
+    display: 'flex',
+    justifyContent: 'center',
+    pointerEvents: 'auto',
+  },
+  fab: {
+    height: theme.spacing(2),
+    zIndex: 100,
+  },
+  drawer: {
+    pointerEvents: 'auto',
+    display: 'flex',
+    flexDirection: 'column',
     width: '100%',
   },
 }));
 
+const TabSpacer = (props) => (<div className={props.classes.spacer} />);
+
+const StyledTabs = withStyles((theme: Theme) => createStyles({
+  root: {
+    minHeight: theme.spacing(4),
+  },
+  indicator: {
+    backgroundColor: theme.palette.foreground.one,
+  },
+}))(Tabs);
+
+const StyledTab = withStyles((theme: Theme) => createStyles({
+  root: {
+    minHeight: theme.spacing(4),
+    padding: 0,
+    textTransform: 'none',
+    '&:focus': {
+      color: theme.palette.foreground.two,
+    },
+    color: `${theme.palette.primary.dark}80`, // Make text darker by lowering opacity to 50%.
+    ...theme.typography.subtitle1,
+    fontWeight: 400,
+    maxWidth: 300,
+  },
+  wrapper: {
+    alignItems: 'flex-start',
+  },
+
+}))(Tab);
+
 const DataDrawer = ({ open, activeTab, setActiveTab }) => {
   const classes = useStyles();
-  const { loading, tables } = React.useContext(ResultsContext);
-
+  const { loading, stats, tables } = React.useContext(ResultsContext);
+  const onTabChange = (event, newTab) => {
+    setActiveTab(newTab);
+    if (open && newTab !== activeTab) {
+      event.stopPropagation();
+    }
+  };
   const tabs = React.useMemo(() => Object.keys(tables).map((tableName) => ({
     title: tableName,
     content: <VizierDataTableWithDetails table={tables[tableName]} />,
@@ -84,31 +177,75 @@ const DataDrawer = ({ open, activeTab, setActiveTab }) => {
     }
   }
 
+  React.useEffect(() => {
+    if (tabs.length > 0 && activeTab === '') {
+      setActiveTab(tabs[0].title);
+    }
+  }, [tabs, setActiveTab, activeTab]);
+
+  const handleClick = React.useCallback((event) => {
+    if (event.target.className.baseVal?.includes('SvgIcon')) {
+      // Clicking the scroll icon should not trigger the drawer to open/close.
+      event.stopPropagation();
+    }
+  }, []);
+
+  const activeTabExists = activeTab && tabs.some((tab) => tab.title === activeTab);
+
   return (
-    <div className={classes.drawerRoot}>
-      {
-        (loading && open) && <div className={classes.spinner}><Spinner /></div>
-      }
-      {
-        !loading && (
-          <>
-            {
-              tabs.map((tab) => (
-                <LazyPanel
-                  key={tab.title}
-                  className={classes.resultTable}
-                  show={open && activeTab === tab.title}
-                >
-                  {tab.content}
-                </LazyPanel>
-              ))
-            }
-            <LazyPanel className={classes.execStats} show={open && activeTab === STATS_TAB_NAME}>
-              <ExecutionStats />
-            </LazyPanel>
-          </>
-        )
-      }
+    <div className={classes.drawer}>
+      <StyledTabs
+        value={activeTabExists ? activeTab : ''}
+        onChange={onTabChange}
+        variant='scrollable'
+        scrollButtons='auto'
+        onClick={handleClick}
+      >
+        <StyledTab className={classes.emptyLabel} value='' />
+        {tabs.map((tab) => (
+          <StyledTab
+            key={tab.title}
+            className={`${classes.dataTabLabel} ${tab.title !== activeTab ? '' : classes.selectedTabLabel}`}
+            value={tab.title}
+            label={tab.title}
+          />
+        ))}
+        <TabSpacer classes={classes} />
+        {
+          stats ? (
+            <StyledTab
+              className={classes.statsTabLabel}
+              value={STATS_TAB_NAME}
+              label='Execution Stats'
+            />
+          ) : null
+        }
+      </StyledTabs>
+      <div className={classes.drawerRoot}>
+        {
+          (loading && open) && <div className={classes.spinner}><Spinner /></div>
+        }
+        {
+          !loading && (
+            <>
+              {
+                tabs.map((tab) => (
+                  <LazyPanel
+                    key={tab.title}
+                    className={classes.resultTable}
+                    show={open && activeTab === tab.title}
+                  >
+                    {tab.content}
+                  </LazyPanel>
+                ))
+              }
+              <LazyPanel className={classes.execStats} show={open && activeTab === STATS_TAB_NAME}>
+                <ExecutionStats />
+              </LazyPanel>
+            </>
+          )
+        }
+      </div>
     </div>
   );
 };
@@ -123,13 +260,12 @@ export const DataDrawerSplitPanel = (props) => {
 
   const contents = (
     <div className={classes.otherContent}>
-      {props.children}
-      <DataDrawerToggle
-        opened={dataDrawerOpen}
-        toggle={toggleDrawerOpen}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-      />
+      <div className={classes.spacer} />
+      <div className={classes.toggle}>
+        <Fab className={classes.fab} onClick={toggleDrawerOpen} variant='extended' size='medium'>
+          { dataDrawerOpen ? <DownIcon /> : <UpIcon /> }
+        </Fab>
+      </div>
     </div>
   );
 

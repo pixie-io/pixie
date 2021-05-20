@@ -42,6 +42,7 @@ const styles = ({ spacing }: Theme) => createStyles({
     height: spacing(1),
     zIndex: 1500,
     position: 'absolute',
+    pointerEvents: 'auto',
   },
   horizontalDragHandle: {
     cursor: 'col-resize',
@@ -49,6 +50,7 @@ const styles = ({ spacing }: Theme) => createStyles({
     width: spacing(1),
     zIndex: 1500,
     position: 'absolute',
+    pointerEvents: 'auto',
   },
 });
 

@@ -30,11 +30,11 @@ const styles = () => createStyles({
     minHeight: 0,
     minWidth: 0,
     position: 'relative',
+    height: '100%',
   },
   otherContent: {
     flex: 1,
     display: 'flex',
-    width: '100%',
   },
   drawerContents: {
     display: 'flex',

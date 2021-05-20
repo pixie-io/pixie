@@ -70,6 +70,8 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
       // Sidebar is disabled.
       marginLeft: 0,
     },
+    overflowY: 'auto',
+    overflowX: 'hidden',
   },
   spacer: {
     flex: 1,
@@ -83,9 +85,12 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     overflow: 'hidden',
     textOverflow: 'ellipsis',
   },
-  mainPanel: {
-    flex: 1,
-    minHeight: 0,
+  dataDrawer: {
+    width: `calc(100% - ${theme.spacing(8)})`,
+    position: 'absolute',
+    pointerEvents: 'none',
+    marginLeft: theme.spacing(8),
+    height: '100%',
   },
   moveWidgetToggle: {
     border: 'none',
@@ -98,11 +103,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     minHeight: 0,
   },
   canvas: {
-    overflowY: 'auto',
-    overflowX: 'hidden',
     marginLeft: theme.spacing(0.5),
-    height: '100%',
-    width: '100%',
   },
   hidden: {
     display: 'none',
@@ -307,11 +308,13 @@ const LiveView: React.FC = () => {
             setWidgetsMoveable={setWidgetsMoveable}
           />
         </NavBars>
-        <div className={classes.content}>
-          <LiveViewBreadcrumbs />
-          <EditorSplitPanel className={classes.editorPanel}>
+        <div className={classes.dataDrawer}>
+          <DataDrawerSplitPanel />
+        </div>
+        <EditorSplitPanel className={classes.editorPanel}>
+          <div className={classes.content}>
+            <LiveViewBreadcrumbs />
             <>
-              <LiveViewTitle className={classes.title} />
               {
                 loading ? (
                   <div className='center-content'>
@@ -328,18 +331,16 @@ const LiveView: React.FC = () => {
                 ) : (
                   <>
                     <ScriptLoader />
-                    <DataDrawerSplitPanel className={classes.mainPanel}>
-                      <div className={classes.canvas} ref={canvasRef}>
-                        <Canvas editable={widgetsMoveable} parentRef={canvasRef} />
-                      </div>
-                    </DataDrawerSplitPanel>
+                    <div className={classes.canvas} ref={canvasRef}>
+                      <Canvas editable={widgetsMoveable} parentRef={canvasRef} />
+                    </div>
                     <CommandInput open={commandReallyOpen} onClose={toggleCommandOpen} />
                   </>
                 )
               }
             </>
-          </EditorSplitPanel>
-        </div>
+          </div>
+        </EditorSplitPanel>
       </LiveViewShortcutsProvider>
     </div>
   );
