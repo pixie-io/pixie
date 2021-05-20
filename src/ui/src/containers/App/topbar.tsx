@@ -193,8 +193,8 @@ const TopBarImpl = ({
   return (
     <AppBar className={classes.container} position='static'>
       <Toolbar>
-        <IconButton edge='start' color='inherit' aria-label='menu' sx={{ mr: 2 }}>
-          <MenuIcon className={classes.menu} onClick={toggleSidebar} />
+        <IconButton edge='start' color='inherit' aria-label='menu' sx={{ mr: 2 }} onClick={toggleSidebar}>
+          <MenuIcon className={classes.menu} />
         </IconButton>
         <PixieLogo className={classes.logo} />
         <div className={classes.contents}>
