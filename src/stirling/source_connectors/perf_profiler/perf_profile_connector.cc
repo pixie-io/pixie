@@ -113,6 +113,8 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
   // after the table has been read.
   constexpr bool kClearTable = true;
 
+  absl::flat_hash_set<int> k_stack_ids_to_remove;
+
   for (const auto& [stack_trace_key, count] : histo->get_table_offline(kClearTable)) {
     std::string stack_trace_str;
 
@@ -128,9 +130,16 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
       stack_trace_str = stringifier.FoldedStackTraceString(stack_trace_key);
     } else {
       // If we do not stringifiy this stack trace, we still need to clear
-      // its entry from the stack traces table.
-      stack_traces->clear_stack_id(stack_trace_key.user_stack_id);
-      stack_traces->clear_stack_id(stack_trace_key.kernel_stack_id);
+      // its entry from the stack traces table. It is safe to do so immediately
+      // for the user stack-id, but we need to allow the kernel stack-id to remain
+      // in the stack-traces table in case it gets used by a stack trace that we
+      // have not yet encountered on this iteration, but will need to symbolize.
+      if (stack_trace_key.user_stack_id >= 0) {
+        stack_traces->clear_stack_id(stack_trace_key.user_stack_id);
+      }
+      if (stack_trace_key.kernel_stack_id >= 0) {
+        k_stack_ids_to_remove.insert(stack_trace_key.kernel_stack_id);
+      }
       stack_trace_str = std::string(profiler::kNotSymbolizedMessage);
     }
 
@@ -150,6 +159,13 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
     // ... count_and_id.count += count;
     // alternate impl. is a map from "stack-trace-id" => "count & symbolic-stack-trace"
   }
+
+  // Clear any kernel stack-ids, that were potentially not already cleared,
+  // out of the stack traces table.
+  for (const int k_stack_id : k_stack_ids_to_remove) {
+    stack_traces->clear_stack_id(k_stack_id);
+  }
+
   VLOG(1) << "PerfProfileConnector::AggregateStackTraces(): cum_sum_count: " << cum_sum_count;
   return symbolic_histogram;
 }
