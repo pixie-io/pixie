@@ -26,10 +26,10 @@ import {
   containsMutation, ExecutionStateUpdate, isStreaming, VizierQueryError, ClusterConfig,
 } from '@pixie-labs/api';
 import { Observable } from 'rxjs';
-import { ClusterContext } from 'common/cluster-context';
 import { checkExhaustive } from 'utils/check-exhaustive';
 import { ResultsContext } from 'context/results-context';
 import { useSnackbar } from '@pixie-labs/components';
+import { validateArgs } from 'utils/new-args-utils';
 
 export interface ParsedScript extends Omit<Script, 'vis'> {
   visString: string;
@@ -47,6 +47,12 @@ export interface ScriptContextProps {
    * Updates the script (including manual user edits) and args that will be used if execute() is called.
    */
   setScriptAndArgs: (script: Script|ParsedScript, args: Record<string, string|string[]>) => void;
+  /**
+   * True if and only if the current args satisfy the current script's vis spec. That means:
+   * - All args exist in the vis spec, and have valid values.
+   * - All variables in the vis spec either have a default value, or are provided in args.
+   */
+  argsValid: boolean;
   /** Use for clickable <Link>s. Provides a route that, when navigated to, would setScriptAndArgs to match. */
   routeFor: VizierRouteContextProps['routeFor'];
   /** Runs the currently selected scripts, with the current args and any user-made edits to the PXL/Vis/etc. */
@@ -62,6 +68,7 @@ export interface ScriptContextProps {
 export const ScriptContext = React.createContext<ScriptContextProps>({
   script: null,
   args: {},
+  argsValid: false,
   setScriptAndArgs: () => {},
   routeFor: () => ({}),
   execute: () => {},
@@ -71,26 +78,25 @@ export const ScriptContext = React.createContext<ScriptContextProps>({
 export const ScriptContextProvider: React.FC = ({ children }) => {
   const apiClient = React.useContext(PixieAPIContext);
   const {
-    scriptId, args, push, routeFor,
+    scriptId, clusterName, args, push, routeFor,
   } = React.useContext(VizierRouteContext);
   const { scripts: availableScripts, loading: loadingAvailableScripts } = React.useContext(ScriptsContext);
   const resultsContext = React.useContext(ResultsContext);
   const showSnackbar = useSnackbar();
 
-  const { selectedCluster: clusterId } = React.useContext(ClusterContext);
   const [clusters, loadingClusters] = useListClusters();
   const clusterConfig: ClusterConfig|null = React.useMemo(() => {
     if (loadingClusters || !clusters.length) return null;
-    const selected = clusters.find((c) => c.id === clusterId);
+    const selected = clusters.find((c) => c.clusterName === clusterName);
     if (!selected) return null;
 
     const passthroughClusterAddress = selected.vizierConfig.passthroughEnabled ? window.location.origin : undefined;
     return selected ? {
-      id: clusterId,
+      id: selected.id,
       attachCredentials: true,
       passthroughClusterAddress,
     } : null;
-  }, [clusters, loadingClusters, clusterId]);
+  }, [clusters, loadingClusters, clusterName]);
 
   const [script, setScript] = React.useState<ParsedScript>(null);
 
@@ -105,6 +111,8 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
   }, [scriptId, loadingAvailableScripts, availableScripts]);
 
   const serializedArgs = JSON.stringify(args, Object.keys(args ?? {}).sort());
+  // TODO(nick,PC-917): Once cluster is separated from args in VizierRoutingContext, use args as-is here.
+  const cleanedArgs = { ...args, cluster: undefined, script: undefined };
 
   // Per-execution minutia
   const [runningExecution, setRunningExecution] = React.useState<Observable<ExecutionStateUpdate>|null>(null);
@@ -116,8 +124,6 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
   const readyToExecute = !loadingClusters && !loadingAvailableScripts;
   const [awaitingExecution, setAwaitingExecution] = React.useState(false);
 
-  // TODO(nick,PC-917): Export this in the context once it works and updates ResultsContext appropriately
-  //  Must retain the validation logic for the vis spec (should that live outside of this file too? In vis.tsx even?)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const execute: () => void = React.useMemo(() => () => {
     if (!readyToExecute) {
@@ -130,6 +136,18 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
       throw new Error('Tried to execute before script, cluster connection, and/or args were ready!');
     }
 
+    // TODO(nick,PC-917): Once cluster is separated from args in VizierRoutingContext, use args as-is here.
+    const validationError = validateArgs(script.vis, cleanedArgs);
+    if (validationError != null) {
+      const details = Array.isArray(validationError.details) ? validationError.details : [validationError.details];
+      if (Array.isArray(validationError.details)) {
+        showSnackbar({ message: `Could not run script, args were invalid:\n${details.join('\n')}` });
+      } else {
+        showSnackbar({ message: `Could not run script, args were invalid: ${details}` });
+      }
+      return;
+    }
+
     // TODO(nick,PC-917): If hasMutation is true, execute needs to be in a retry loop (or just always do that?)
     if (hasMutation) throw new Error('Not yet implemented: running scripts with mutations in new ScriptContext');
 
@@ -138,8 +156,8 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
     const execution = apiClient.executeScript(
       clusterConfig,
       script.code,
-      // TODO(nick,PC-917): Once cluster is separated from args in VizierRoutingContext, just pass args as-is here.
-      getQueryFuncs(script.vis, { ...args, cluster: undefined }),
+      // TODO(nick,PC-917): Once cluster is separated from args in VizierRoutingContext, use args as-is here.
+      getQueryFuncs(script.vis, cleanedArgs),
     );
     setRunningExecution(execution);
     resultsContext.clearResults();
@@ -157,13 +175,6 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
     }
   }, [readyToExecute, awaitingExecution, execute]);
 
-  /*
-   * TODO(nick): Copy over most of the basic behaviors from the old ScriptContext here. Simplify where feasible.
-   *  In particular, merge the mutations and non-mutation paths if possible (difference is mostly about retries).
-   *  Set data in ResultsContext (new ResultsContextProvider has to wrap new ScriptContextProvider to do that).
-   *  Test if unsubscribing in cleanup like below is sufficient to dodge the timeout issue from the last version.
-   *  If it isn't, might need to be able to cancel the call instead in cleanup. What implications does that have?
-   */
   React.useEffect(() => {
     const subscription = runningExecution?.subscribe((update: ExecutionStateUpdate) => {
       switch (update.event.type) {
@@ -250,8 +261,6 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
       }
     });
     return () => {
-      // TODO(nick,PC-917): Are there consequences to cancelling execution here? This cleanup fn gets called whenever
-      //  the active execution changes (safe) and when the component unmounts (also safe); are there other scenarios?
       cancelExecution?.();
       subscription?.unsubscribe();
     };
@@ -262,6 +271,7 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
   const context: ScriptContextProps = React.useMemo(() => ({
     script,
     args,
+    argsValid: !!script && !!args && validateArgs(script.vis, cleanedArgs) == null,
     setScriptAndArgs: (newScript: Script|ParsedScript, newArgs: Record<string, string|string[]> = args) => {
       if (typeof newScript.vis === 'string') {
         setScript({ ...newScript, visString: newScript.vis, vis: parseVis(newScript.vis || '{}') });

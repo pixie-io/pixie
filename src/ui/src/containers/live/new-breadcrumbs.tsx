@@ -31,12 +31,9 @@ import {
   PixieCommandIcon, StatusCell,
 } from '@pixie-labs/components';
 import { ClusterContext } from 'common/cluster-context';
-import {
-  argsForVis, getArgTypesForVis, getArgVariableMap,
-  Arguments, validateRequiredArgs,
-} from 'utils/args-utils';
+import { argVariableMap, argTypesForVis } from 'utils/new-args-utils';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'containers/App/scripts-context';
-import { ParsedScript, ScriptContext } from 'context/new-script-context';
+import { ScriptContext } from 'context/new-script-context';
 import { pxTypeToEntityType, entityStatusGroup } from 'containers/command-input/autocomplete-utils';
 import { clusterStatusGroup } from 'containers/admin/utils';
 import ExecuteScriptButton from './new-execute-button';
@@ -87,42 +84,9 @@ const LiveViewBreadcrumbs = ({ classes }) => {
   const { selectedCluster, setCluster, selectedClusterUID } = React.useContext(ClusterContext);
   const { scripts } = React.useContext(ScriptsContext);
 
-  const [script, setScript] = React.useState<ParsedScript>(null);
-  const [args, setArgs] = React.useState<Arguments>({});
-
   const {
-    args: contextArgs, script: contextScript, setScriptAndArgs,
+    args, script, setScriptAndArgs,
   } = React.useContext(ScriptContext);
-
-  const stringifiedArgs = JSON.stringify(args);
-  React.useEffect(() => {
-    if (!script) {
-      return;
-    }
-    const selectedVis = script.vis;
-
-    const argValueErr = validateRequiredArgs(selectedVis, args);
-    const parsedArgs = {
-      ...argsForVis(selectedVis, {
-        // Grab the namespace if it exists on a service or pod argument.
-        // namespace: optionallyGetNamespace(args),
-        ...args,
-      }, script?.id),
-      cluster: args.cluster,
-    };
-    setArgs(parsedArgs);
-
-    if (argValueErr || (script === contextScript && JSON.stringify(parsedArgs) === stringifiedArgs)) {
-      return;
-    }
-    setScriptAndArgs(script, parsedArgs);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [script, stringifiedArgs]);
-
-  React.useEffect(() => {
-    setScript(contextScript);
-    setArgs(contextArgs);
-  }, [contextScript, contextArgs]);
 
   const getCompletions = useAutocompleteFieldSuggester(selectedClusterUID);
 
@@ -163,16 +127,14 @@ const LiveViewBreadcrumbs = ({ classes }) => {
     });
 
     // Add args to breadcrumbs.
-    const argTypes = getArgTypesForVis(script?.vis);
+    const argTypes = argTypesForVis(script?.vis);
+    const variables = argVariableMap(script?.vis);
 
-    const argVariableMap = getArgVariableMap(script?.vis);
-
-    Object.entries(args).filter(
-      ([argName]) => argName !== 'script' && argName !== 'cluster',
-    ).forEach(([argName, argVal]) => {
+    // TODO(nick,PC-917): Once cluster is separated from args in VizierRoutingContext, use args as-is here.
+    for (const [argName, argVal] of Object.entries(args).filter(([name]) => !['script', 'cluster'].includes(name))) {
       // Only add suggestions if validValues are specified. Otherwise, the dropdown is populated with autocomplete
       // entities or has no elements and the user must manually type in values.
-      const variable: Variable = argVariableMap[argName];
+      const variable: Variable = variables[argName];
 
       const argProps = {
         title: argName,
@@ -180,8 +142,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
         selectable: true,
         allowTyping: true,
         onSelect: (newVal) => {
-          const newArgs = { ...args, [argName]: newVal };
-          setArgs(newArgs);
+          setScriptAndArgs(script, { ...args, [argName]: newVal });
         },
         getListItems: null,
         requireCompletion: false,
@@ -222,7 +183,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
       } else {
         entityBreadcrumbs.push(argProps);
       }
-    });
+    }
 
     // Add script at end of breadcrumbs.
     entityBreadcrumbs.push({
@@ -232,7 +193,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
       allowTyping: true,
       getListItems: async (input) => {
         // Turns "  px/be_spoke-  " into "px/bespoke"
-        const normalize = (s: string) => s.trim().toLowerCase().replace(/[^a-z0-9/]+/gi, '');
+        const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9/]+/gi, '');
         const normalizedInput = normalize(input);
         const normalizedScratchId = normalize(SCRATCH_SCRIPT.id);
 
@@ -258,11 +219,11 @@ const LiveViewBreadcrumbs = ({ classes }) => {
       onSelect: (newVal) => {
         const newScript = scripts.get(newVal);
         const selectedVis = parseVis(newScript.vis);
-        setScript({
+        setScriptAndArgs({
           ...newScript,
           visString: newScript.vis,
           vis: selectedVis,
-        });
+        }, args);
       },
     });
 

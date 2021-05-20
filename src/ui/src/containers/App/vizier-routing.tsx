@@ -33,7 +33,7 @@ import { useSnackbar } from '@pixie-labs/components';
 
 export interface VizierRouteContextProps {
   scriptId: string;
-  cluster: string;
+  clusterName: string;
   args: Record<string, string|string[]>;
   push: (scriptId: string, args: Record<string, string|string[]>) => void;
   replace: (scriptId: string, args: Record<string, string|string[]>) => void;
@@ -93,9 +93,9 @@ const useRouteValidityCheck = (clusterName: string): 'wait'|'valid'|'invalid' =>
 };
 
 const VizierRoute: React.FC<
-Omit<VizierRouteContextProps, 'args'|'cluster'> & { defaultArgs: Record<string, string> }
+Omit<VizierRouteContextProps, 'args'> & { defaultArgs: Record<string, string> }
 > = ({
-  scriptId, defaultArgs, push, replace, routeFor, children,
+  scriptId, clusterName, defaultArgs, push, replace, routeFor, children,
 }) => {
   const { setClusterByName } = React.useContext(ClusterContext);
 
@@ -107,36 +107,37 @@ Omit<VizierRouteContextProps, 'args'|'cluster'> & { defaultArgs: Record<string, 
     ...argsFromSearch,
   };
 
-  // This is not a script arg, but it is used to run every script. Thus, it gets its own context property.
-  // TODO(nick): Make cluster an arg to routeFor, push, and replace; ScriptContext to control via ClusterContext.
-  //  Need to keep track of the selected cluster in ClusterContext, determine the default (first healthy atm) there too?
-  const cluster: string = Array.isArray(args.cluster) ? args.cluster[0] : args.cluster;
-  // delete args.cluster; // TODO(nick): Can't do this before updating params to routeFor and friends.
+  // Special case: if there isn't a specific route for a script, the script to use is in the search.
+  if (argsFromSearch.script) {
+    // eslint-disable-next-line no-param-reassign
+    scriptId = Array.isArray(argsFromSearch.script) ? argsFromSearch.script[0] : argsFromSearch.script;
+  }
+  delete args.script;
 
   // Sorting keys ensures that the stringified object looks the same regardless of the order of operations that built it
   const serializedArgs = JSON.stringify(args, Object.keys(args ?? {}).sort());
   const context: VizierRouteContextProps = React.useMemo(() => ({
-    scriptId, args, cluster, push, replace, routeFor,
+    scriptId, clusterName, args, push, replace, routeFor,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [scriptId, push, replace, serializedArgs]);
+  }), [scriptId, clusterName, serializedArgs, push, replace, routeFor, serializedArgs]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const expectedRoute = React.useMemo(() => routeFor(scriptId, args), [scriptId, routeFor, serializedArgs]);
   const actualRoute = useLocation();
 
   const showSnackbar = useSnackbar();
-  const routeValidity = useRouteValidityCheck(cluster);
+  const routeValidity = useRouteValidityCheck(clusterName);
 
   // Only show this once per check.
   React.useEffect(() => {
     if (routeValidity === 'invalid') {
       showSnackbar?.({
-        message: `Pixie can't find cluster "${cluster}". Please check spelling and whether Pixie can reach it.`,
+        message: `Pixie can't find cluster "${clusterName}". Please check spelling and whether Pixie can reach it.`,
         action: () => plHistory.push('/'),
         actionTitle: 'Home',
       });
     }
-  }, [cluster, showSnackbar, routeValidity]);
+  }, [clusterName, showSnackbar, routeValidity]);
 
   if (routeValidity === 'wait') {
     return null;
@@ -146,7 +147,7 @@ Omit<VizierRouteContextProps, 'args'|'cluster'> & { defaultArgs: Record<string, 
     return null;
   }
 
-  setClusterByName(cluster);
+  setClusterByName(clusterName);
 
   // Consistency: ensure that the route matches the context. Same cluster, script, and args.
   if (actualRoute.search.slice(actualRoute.search.indexOf('?') + 1) !== expectedRoute.search) {
@@ -164,6 +165,7 @@ export const VizierContextRouter: React.FC = ({ children }) => {
 
   const [clusters] = useListClusters();
   const defaultCluster = React.useMemo(() => selectCluster(clusters ?? []), [clusters])?.clusterName;
+  const { selectedClusterName } = React.useContext(ClusterContext);
 
   const { scripts: availableScripts, loading: loadingAvailableScripts } = React.useContext(ScriptsContext);
 
@@ -180,11 +182,12 @@ export const VizierContextRouter: React.FC = ({ children }) => {
     const queryParams: Record<string, string> = {};
     let route = `${base}${SCRIPT_ROUTES.get(scriptId)}`;
     if (!SCRIPT_ROUTES.has(scriptId)) {
-      route = `${base}${SCRIPT_ROUTES.get('px/cluster')}`;
+      route = `${base}/clusters/:cluster/script`;
       queryParams.script = scriptId;
     }
 
-    for (const [key, value] of Object.entries({ ...defaultArgsForScript(scriptId), ...args })) {
+    const fullRouteArgs = { ...defaultArgsForScript(scriptId), cluster: selectedClusterName, ...args };
+    for (const [key, value] of Object.entries(fullRouteArgs)) {
       if (route.includes(`:${key}`)) {
         route = route.replace(new RegExp(`:${key}\\??`), value);
       } else {
@@ -198,7 +201,7 @@ export const VizierContextRouter: React.FC = ({ children }) => {
     }
 
     return { pathname: route, search: QueryString.stringify(queryParams) };
-  }, [base, defaultArgsForScript]);
+  }, [base, defaultArgsForScript, selectedClusterName]);
 
   const push: (scriptId: string, args: Record<string, string>) => void = React.useMemo(() => (scriptId, args) => {
     const route = routeFor(scriptId, { ...defaultArgsForScript(scriptId), ...args });
@@ -219,6 +222,27 @@ export const VizierContextRouter: React.FC = ({ children }) => {
   return (
     <Switch>
       <Redirect exact from={base} to={`${base}/clusters/${defaultCluster}`} />
+      <Route
+        exact
+        path={`${base}/clusters/:cluster/script`}
+        render={({ match, location }) => {
+          let scriptId = QueryString.parse(location.search).script;
+          if (Array.isArray(scriptId)) scriptId = scriptId[0];
+          if (!scriptId) return <Redirect to={`${base}/clusters/${selectedClusterName}`} />;
+          return (
+            <VizierRoute
+              scriptId={scriptId}
+              clusterName={match.params.cluster}
+              push={push}
+              replace={replace}
+              routeFor={routeFor}
+              defaultArgs={defaultArgsForScript(scriptId)}
+            >
+              {children}
+            </VizierRoute>
+          );
+        }}
+      />
       {[...SCRIPT_ROUTES.entries()].map(([scriptId, route]) => (
         <Route
           exact
@@ -227,6 +251,7 @@ export const VizierContextRouter: React.FC = ({ children }) => {
           render={() => (
             <VizierRoute
               scriptId={scriptId}
+              clusterName={selectedClusterName}
               push={push}
               replace={replace}
               routeFor={routeFor}

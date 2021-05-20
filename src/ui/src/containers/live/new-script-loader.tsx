@@ -18,6 +18,9 @@
 
 import * as React from 'react';
 import { ScriptContext } from 'context/new-script-context';
+import { containsMutation } from '@pixie-labs/api';
+import { SCRATCH_SCRIPT } from 'containers/App/scripts-context';
+import { useSnackbar } from '@pixie-labs/components';
 
 /**
  * Automatically runs the selected script whenever it changes, the args change, or the vis spec changes.
@@ -25,8 +28,9 @@ import { ScriptContext } from 'context/new-script-context';
  */
 export const ScriptLoader: React.FC = () => {
   const {
-    script, args, execute, cancelExecution,
+    script, args, execute, cancelExecution, argsValid,
   } = React.useContext(ScriptContext);
+  const showSnackbar = useSnackbar();
 
   // Sorting keys to ensure stability between identical objects when the route might change their ordering.
   // Sorting the keys in this way loses nested properties, so we're only doing it for args (vis is already stable).
@@ -37,14 +41,21 @@ export const ScriptLoader: React.FC = () => {
     // Wait for everything to be set first.
     if (script == null || args == null || script?.vis == null) return;
 
-    /*
-     * TODO(nick,PC-917): Run the script only if hasMutation is false. Copy most of the logic from old ScriptLoader.
-     *  Re-run if the PxL, scriptID, cluster, vis, or args have changed. ScriptContext.execute handles ResultsContext.
-     *  Note: cluster is part of args right now; there's another task in ScriptContext to pull it up a level.
-     */
-
     cancelExecution?.();
-    if (script && serializedArgs) execute();
+    const hasMutation = containsMutation(script.code);
+    if (
+      script
+      && script.id !== SCRATCH_SCRIPT.id
+      && !hasMutation
+      && serializedArgs
+      && argsValid
+    ) {
+      try {
+        execute();
+      } catch (e) {
+        showSnackbar({ message: `Could not execute script: ${e.message}` });
+      }
+    }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [script, serializedArgs, serializedVis]);
