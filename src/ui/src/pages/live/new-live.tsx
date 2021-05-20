@@ -25,7 +25,7 @@ import {
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import {
-  Button, Link, Tooltip, IconButton,
+  Link, Tooltip, IconButton,
 } from '@material-ui/core';
 import { Alert, AlertTitle } from '@material-ui/lab';
 import MoveIcon from '@material-ui/icons/OpenWith';
@@ -349,15 +349,6 @@ const LiveView: React.FC = () => {
         <EditorSplitPanel>
           <div className={classes.content}>
             <LiveViewBreadcrumbs />
-            <div style={{ display: 'flex', flexFlow: 'column nowrap' }}>
-              <Button
-                variant='contained'
-                color='secondary'
-                onClick={saveEditor}
-              >
-                Save Pxl
-              </Button>
-            </div>
             {
               !hasFinishedLoadingCluster || clusterUnhealthy ? (
                 <div className='center-content'>

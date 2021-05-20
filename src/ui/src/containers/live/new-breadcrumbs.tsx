@@ -22,6 +22,7 @@ import {
   Theme, withStyles,
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
+import Paper from '@material-ui/core/Paper';
 import { GQLClusterStatus as ClusterStatus } from '@pixie-labs/api';
 import { useListClusters, useAutocompleteFieldSuggester } from '@pixie-labs/api-react';
 
@@ -38,6 +39,7 @@ import { SCRATCH_SCRIPT, ScriptsContext } from 'containers/App/scripts-context';
 import { ParsedScript, ScriptContext } from 'context/new-script-context';
 import { pxTypeToEntityType, entityStatusGroup } from 'containers/command-input/autocomplete-utils';
 import { clusterStatusGroup } from 'containers/admin/utils';
+import ExecuteScriptButton from './new-execute-button';
 import { parseVis, Variable } from './vis';
 
 const styles = (({ shape, palette, spacing }: Theme) => createStyles({
@@ -273,7 +275,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
   }
 
   return (
-    <div className={classes.root}>
+    <Paper className={classes.root} elevation={2}>
       <PixieCommandIcon fontSize='large' className={classes.pixieIcon} />
       <div className={classes.verticalLine} />
       <div className={classes.breadcrumbs}>
@@ -287,7 +289,8 @@ const LiveViewBreadcrumbs = ({ classes }) => {
           />
         </div>
       </div>
-    </div>
+      <ExecuteScriptButton />
+    </Paper>
   );
 };
 
