@@ -51,12 +51,6 @@ import {
   DOMAIN_NAME, ANNOUNCEMENT_ENABLED,
   ANNOUNCE_WIDGET_URL, CONTACT_ENABLED,
 } from 'containers/constants';
-import { LiveShortcutsContext } from 'containers/live/shortcuts';
-import { SidebarContext } from 'context/sidebar-context';
-import { LiveTourContext, LiveTourDialog } from 'containers/App/live-tour';
-import ExploreIcon from '@material-ui/icons/Explore';
-import { useSetting, useUserInfo } from '@pixie-labs/api-react';
-import { LayoutContext } from 'context/layout-context';
 import { Button } from '@material-ui/core';
 
 const styles = (
@@ -196,23 +190,33 @@ const HamburgerMenu = ({ classes, onToggle, logoLinkTo }) => (
 );
 
 const SideBar = ({ classes, open, toggle }) => {
-  const { selectedClusterName } = React.useContext(ClusterContext);
+  const clusterContext = React.useContext(ClusterContext);
   const { user } = React.useContext(UserContext);
-  const [{ user: userInfo }] = useUserInfo();
 
-  const navItems = React.useMemo(() => (
-    [{
+  const navItems = React.useMemo(() => {
+    if (!clusterContext) {
+      return [];
+    }
+    return [{
       icon: <ClusterIcon />,
-      link: toEntityPathname({ params: {}, clusterName: selectedClusterName, page: LiveViewPage.Cluster }),
+      link: toEntityPathname({
+        params: {},
+        clusterName: clusterContext?.selectedClusterName,
+        page: LiveViewPage.Cluster,
+      }),
       text: 'Cluster',
     },
     {
       icon: <NamespaceIcon />,
-      link: toEntityPathname({ params: {}, clusterName: selectedClusterName, page: LiveViewPage.Namespaces }),
+      link: toEntityPathname({
+        params: {},
+        clusterName: clusterContext?.selectedClusterName,
+        page: LiveViewPage.Namespaces,
+      }),
       text: 'Namespaces',
-    }]
+    }];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  ), [selectedClusterName]);
+  }, [clusterContext?.selectedClusterName]);
 
   return (
     <>
@@ -275,7 +279,7 @@ const SideBar = ({ classes, open, toggle }) => {
             link={`https://docs.${DOMAIN_NAME}`}
             text='Docs'
           />
-          { CONTACT_ENABLED && (
+          {CONTACT_ENABLED && (
             <Tooltip title='Help'>
               <ListItem button id='intercom-trigger' className={classes.listIcon}>
                 <ListItemIcon><HelpIcon /></ListItemIcon>
