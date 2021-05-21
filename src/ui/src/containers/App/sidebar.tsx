@@ -64,7 +64,7 @@ const styles = (
     '& .announcekit-widget-badge': {
       position: 'absolute !important',
       top: spacing(2),
-      left: spacing(4),
+      left: spacing(5),
     },
   },
   docked: {
@@ -152,7 +152,7 @@ const styles = (
 const SideBarInternalLinkItem = ({
   classes, icon, link, text,
 }) => (
-  <Tooltip title={text}>
+  <Tooltip title={text} disableInteractive>
     <ListItem button component={Link} to={link} key={text} className={classes.listIcon}>
       <ListItemIcon>{icon}</ListItemIcon>
       <ListItemText primary={text} />
@@ -163,7 +163,7 @@ const SideBarInternalLinkItem = ({
 const SideBarExternalLinkItem = ({
   classes, icon, link, text,
 }) => (
-  <Tooltip title={text}>
+  <Tooltip title={text} disableInteractive>
     <ListItem button component='a' href={link} key={text} className={classes.listIcon} target='_blank'>
       <ListItemIcon>{icon}</ListItemIcon>
       <ListItemText primary={text} />
@@ -245,7 +245,7 @@ const SideBar = ({ classes, open, toggle }) => {
         </List>
         <div className={classes.spacer} />
         <List>
-          <Tooltip title='Announcements'>
+          <Tooltip title='Announcements' disableInteractive>
             <div className={classes.announcekit}>
               {
                 ANNOUNCEMENT_ENABLED && (
@@ -280,7 +280,7 @@ const SideBar = ({ classes, open, toggle }) => {
             text='Docs'
           />
           {CONTACT_ENABLED && (
-            <Tooltip title='Help'>
+            <Tooltip title='Help' disableInteractive>
               <ListItem button id='intercom-trigger' className={classes.listIcon}>
                 <ListItemIcon><HelpIcon /></ListItemIcon>
                 <ListItemText primary='Help' />
