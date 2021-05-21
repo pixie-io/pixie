@@ -29,7 +29,7 @@ import { Observable } from 'rxjs';
 import { checkExhaustive } from 'utils/check-exhaustive';
 import { ResultsContext } from 'context/results-context';
 import { useSnackbar } from '@pixie-labs/components';
-import { validateArgs } from 'utils/new-args-utils';
+import { argsForVis, validateArgs } from 'utils/new-args-utils';
 
 export interface ParsedScript extends Omit<Script, 'vis'> {
   visString: string;
@@ -273,12 +273,12 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
     args,
     argsValid: !!script && !!args && validateArgs(script.vis, cleanedArgs) == null,
     setScriptAndArgs: (newScript: Script|ParsedScript, newArgs: Record<string, string|string[]> = args) => {
-      if (typeof newScript.vis === 'string') {
-        setScript({ ...newScript, visString: newScript.vis, vis: parseVis(newScript.vis || '{}') });
-      } else {
-        setScript(newScript as ParsedScript);
-      }
-      push(newScript.id, newArgs);
+      const parsedScript = typeof newScript.vis !== 'string'
+        ? (newScript as ParsedScript)
+        : { ...newScript, visString: newScript.vis, vis: parseVis(newScript.vis || '{}') };
+      setScript(parsedScript);
+
+      push(newScript.id, argsForVis(parsedScript.vis, newArgs));
     },
     routeFor: (s, a) => routeFor(s, a),
     execute,

@@ -77,26 +77,18 @@ export function validateArgs(vis: Vis, args: Arguments): VizierQueryError|null {
 }
 
 /**
- * Extracts the default values of every variable in the given vis spec.
- * Required variables, which don't specify a default value, are present with an undefined value in the returned object.
- */
-export function defaultValues(vis: Vis): Record<string, string|undefined> {
-  return vis.variables.reduce((a, c) => ({ ...a, [c.name]: c.defaultValue }), {});
-}
-
-/**
  * Merges the given arguments with the defaults for the given Vis spec. Strips/ignores extraneous args.
  * This does NOT check validateArgPresenceAndValues; it's recommended to check that first if trying to run a script.
  */
 export function argsForVis(vis: Vis, args: Arguments): Arguments {
-  if (!vis.variables.length || !Object.keys(args).length) {
+  if (!vis.variables.length) {
     return {};
   }
 
   const outArgs: Arguments = {};
   for (const { name, defaultValue } of vis.variables) {
     // Note: if defaultValue is undefined, the arg is required.
-    outArgs[name] = args[name] ?? defaultValue;
+    outArgs[name] = args[name] ?? defaultValue ?? '';
   }
 
   return outArgs;
