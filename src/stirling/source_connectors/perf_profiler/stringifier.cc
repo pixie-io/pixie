@@ -49,7 +49,8 @@ std::string Stringifier::BuildStackTraceString(const int stack_id, const struct 
 
   // Get the stack trace (as a vector of addresses) from the shared BPF stack trace table.
   const std::vector<uintptr_t> addrs = stack_traces_->get_stack_addr(stack_id, kClearStackId);
-  DCHECK(addrs.size() > 0) << absl::Substitute("stack_id: $0, upid.pid: $1", stack_id, upid.pid);
+  VLOG_IF(1, addrs.size() == 0) << absl::Substitute(
+      "[empty_stack_trace] stack_id: $0, upid.pid: $1", stack_id, static_cast<int>(upid.pid));
 
   // Build the folded stack trace string.
   for (auto iter = addrs.rbegin(); iter != addrs.rend(); ++iter) {
@@ -63,8 +64,10 @@ std::string Stringifier::BuildStackTraceString(const int stack_id, const struct 
     stack_trace_str += stringifier::kSeparator;
   }
 
-  // Remove trailing separator.
-  stack_trace_str.pop_back();
+  if (!stack_trace_str.empty()) {
+    // Remove trailing separator.
+    stack_trace_str.pop_back();
+  }
 
   return stack_trace_str;
 }
