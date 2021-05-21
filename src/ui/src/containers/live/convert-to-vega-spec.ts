@@ -1773,7 +1773,6 @@ function addHoverMarks(spec: VgSpec, dataName: string, theme: Theme) {
 }
 
 function hydrateSpecWithTheme(spec: VgSpec, theme: Theme) {
-  spec.background = theme.palette.background.six;
   spec.padding = 16;
   spec.config = {
     ...spec.config,
