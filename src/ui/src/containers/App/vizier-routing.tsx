@@ -20,16 +20,15 @@ import * as React from 'react';
 import {
   Switch, Route, Redirect, useParams, useLocation,
 } from 'react-router-dom';
+import { RouteChildrenProps, generatePath } from 'react-router';
 import * as QueryString from 'query-string';
 import plHistory from 'utils/pl-history';
 import { LocationDescriptorObject } from 'history';
 import { ClusterContext } from 'common/cluster-context';
-import { SCRATCH_SCRIPT, ScriptsContext } from 'containers/App/scripts-context';
-import { parseVis, Vis } from 'containers/live/vis';
+import { SCRATCH_SCRIPT } from 'containers/App/scripts-context';
 import { RouteNotFound } from 'containers/App/route-not-found';
 import { selectCluster } from 'containers/App/cluster-info';
 import { useListClusters } from '@pixie-labs/api-react';
-import { useSnackbar } from '@pixie-labs/components';
 
 export interface VizierRouteContextProps {
   scriptId: string;
@@ -42,77 +41,51 @@ export interface VizierRouteContextProps {
 
 export const VizierRouteContext = React.createContext<VizierRouteContextProps>(null);
 
-/** Some scripts have special mnemonic routes. They are vanity URLs for /clusters/:cluster/script?... and map as such */
-const SCRIPT_ROUTES = new Map<string, string>([
+/** Some scripts have special mnemonic routes. They are vanity URLs for /clusters/:cluster?... and map as such */
+const VANITY_ROUTES = new Map<string, string>([
   /* eslint-disable no-multi-spaces */
-  ['px/cluster',      '/clusters/:cluster'],
-  ['px/nodes',        '/clusters/:cluster/nodes'],
-  ['px/node',         '/clusters/:cluster/nodes/:node'],
-  ['px/namespaces',   '/clusters/:cluster/namespaces'],
-  ['px/namespace',    '/clusters/:cluster/namespaces/:namespace'],
-  ['px/pods',         '/clusters/:cluster/namespaces/:namespace/pods'],
-  // ['px/pod',          '/clusters/:cluster/namespaces/:namespace/pods/:pod'],
-  ['px/services',     '/clusters/:cluster/namespaces/:namespace/services'],
-  // ['px/service',      '/clusters/:cluster/namespaces/:namespace/services/:service'],
-  // TODO(nick,PC-917): Make sure this is still compatible with updated special logic for the scratch script.
-  [SCRATCH_SCRIPT.id, '/clusters/:cluster/scratch'],
+  ['/live/clusters/:cluster/nodes',                                   'px/nodes'],
+  ['/live/clusters/:cluster/nodes/:node',                             'px/node'],
+  ['/live/clusters/:cluster/namespaces',                              'px/namespaces'],
+  ['/live/clusters/:cluster/namespaces/:namespace',                   'px/namespace'],
+  ['/live/clusters/:cluster/namespaces/:namespace/pods',              'px/pods'],
+  ['/live/clusters/:cluster/namespaces/:namespace/pods/:pod',         'px/pod'],
+  ['/live/clusters/:cluster/namespaces/:namespace/services',          'px/services'],
+  ['/live/clusters/:cluster/namespaces/:namespace/services/:service', 'px/service'],
+  ['/live/clusters/:cluster/scratch',                                 SCRATCH_SCRIPT.id],
   /* eslint-enable no-multi-spaces */
 ]);
 
-/**
- * Extracts the names of any unpopulated React Router route parameters, like ':a/:b?/c/d/:e' -> ['a', 'b', 'e']
- * If an empty array is returned, all parameters in the route have been populated.
- * Useful for checking that a route is fully specified before navigating to it.
- */
-function extractUnmatchedRouteParams(route: string): string[] {
-  const unmatchedParamFinder = /(^|\/):([a-zA-Z\d]+)\??(?=($|\/))/g; // Finds path segments that look like :foo or :foo?
-  const unmatched: string[] = [];
-  let match;
-  do {
-    match = unmatchedParamFinder.exec(route)?.[2];
-    if (match) unmatched.push(match);
-  } while (match);
-  return unmatched;
-}
+const VizierVanityRerouter = ({ match, location }: RouteChildrenProps) => {
+  const scriptId = VANITY_ROUTES.get(match.path);
+  const argsFromSearch = QueryString.parse(useLocation().search);
+  const { cluster, ...argsFromMatch } = useParams<Record<string, string>>();
 
-/**
- * Checks the semantics of a route before visiting it. The following rules are checked:
- * - The cluster is specified, and Pixie is aware of it
- */
-const useRouteValidityCheck = (clusterName: string): 'wait'|'valid'|'invalid' => {
-  const [clusters, loadingClusters, clusterError] = useListClusters();
-
-  const found: boolean = React.useMemo(
-    () => !!(clusters || []).find((c) => c.clusterName === clusterName),
-    [clusterName, clusters],
-  );
-
-  if (loadingClusters) return 'wait';
-  if (clusterError || !found) return 'invalid';
-  return 'valid';
+  if (scriptId === 'px/pod' && argsFromMatch.namespace != null && argsFromMatch.pod != null) {
+    argsFromMatch.pod = `${argsFromMatch.namespace}/${argsFromMatch.pod}`;
+    delete argsFromMatch.namespace;
+  }
+  if (scriptId === 'px/service' && argsFromMatch.namespace != null && argsFromMatch.service != null) {
+    argsFromMatch.service = `${argsFromMatch.namespace}/${argsFromMatch.service}`;
+    delete argsFromMatch.namespace;
+  }
+  const queryParams: Record<string, string | string[]> = {
+    ...argsFromMatch,
+    ...argsFromSearch,
+    ...{ script: scriptId },
+  };
+  const params = QueryString.stringify(queryParams);
+  const newPath = generatePath(`/live/clusters/:cluster\\?${params}`, { cluster });
+  return <Redirect exact from={`${location.pathname}`} to={`${newPath}`} />;
 };
 
-const VizierRoute: React.FC<
-Omit<VizierRouteContextProps, 'args'> & { defaultArgs: Record<string, string> }
-> = ({
-  scriptId, clusterName, defaultArgs, push, replace, routeFor, children,
+const VizierRoute: React.FC< Omit<VizierRouteContextProps, 'args' | 'scriptId'> > = ({
+  clusterName, push, replace, routeFor, children,
 }) => {
   const { setClusterByName } = React.useContext(ClusterContext);
 
-  const argsFromMatch = useParams<Record<string, string>>();
-  const argsFromSearch = QueryString.parse(useLocation().search);
-  const args: Record<string, string|string[]> = {
-    ...defaultArgs,
-    ...argsFromMatch,
-    ...argsFromSearch,
-  };
-
-  // Special case: if there isn't a specific route for a script, the script to use is in the search.
-  if (argsFromSearch.script) {
-    // eslint-disable-next-line no-param-reassign
-    scriptId = Array.isArray(argsFromSearch.script) ? argsFromSearch.script[0] : argsFromSearch.script;
-  }
-  delete args.script;
+  const { script, ...args } = QueryString.parse(useLocation().search);
+  const scriptId = Array.isArray(script) ? script[0] : (script ?? 'px/cluster');
 
   // Sorting keys ensures that the stringified object looks the same regardless of the order of operations that built it
   const serializedArgs = JSON.stringify(args, Object.keys(args ?? {}).sort());
@@ -121,38 +94,7 @@ Omit<VizierRouteContextProps, 'args'> & { defaultArgs: Record<string, string> }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [scriptId, clusterName, serializedArgs, push, replace, routeFor, serializedArgs]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const expectedRoute = React.useMemo(() => routeFor(scriptId, args), [scriptId, routeFor, serializedArgs]);
-  const actualRoute = useLocation();
-
-  const showSnackbar = useSnackbar();
-  const routeValidity = useRouteValidityCheck(clusterName);
-
-  // Only show this once per check.
-  React.useEffect(() => {
-    if (routeValidity === 'invalid') {
-      showSnackbar?.({
-        message: `Pixie can't find cluster "${clusterName}". Please check spelling and whether Pixie can reach it.`,
-        action: () => plHistory.push('/'),
-        actionTitle: 'Home',
-      });
-    }
-  }, [clusterName, showSnackbar, routeValidity]);
-
-  if (routeValidity === 'wait') {
-    return null;
-  }
-
-  if (routeValidity === 'invalid') {
-    return null;
-  }
-
   setClusterByName(clusterName);
-
-  // Consistency: ensure that the route matches the context. Same cluster, script, and args.
-  if (actualRoute.search.slice(actualRoute.search.indexOf('?') + 1) !== expectedRoute.search) {
-    return <Redirect to={expectedRoute} />;
-  }
 
   return (
     <VizierRouteContext.Provider value={context}>{children}</VizierRouteContext.Provider>
@@ -160,109 +102,61 @@ Omit<VizierRouteContextProps, 'args'> & { defaultArgs: Record<string, string> }
 };
 
 export const VizierContextRouter: React.FC = ({ children }) => {
-  // TODO(nick): When upgrading React Router to >= v6, routes nest by default and the base is no longer needed here.
-  const base = React.useMemo(() => '/live', []);
-
   const [clusters] = useListClusters();
   const defaultCluster = React.useMemo(() => selectCluster(clusters ?? []), [clusters])?.clusterName;
   const { selectedClusterName } = React.useContext(ClusterContext);
 
-  const { scripts: availableScripts, loading: loadingAvailableScripts } = React.useContext(ScriptsContext);
-
-  const defaultArgsForScript: (scriptId: string) => Record<string, string|undefined> = React.useCallback((scriptId) => {
-    if (loadingAvailableScripts) return {};
-    const vis: Vis = parseVis(availableScripts.get(scriptId)?.vis ?? '');
-    return (vis?.variables ?? []).reduce((a, c) => ({
-      ...a,
-      [c.name]: c.defaultValue,
-    }), {} as Record<string, string|undefined>);
-  }, [availableScripts, loadingAvailableScripts]);
-
   const routeFor = React.useCallback((scriptId: string, args: Record<string, string>): LocationDescriptorObject => {
-    const queryParams: Record<string, string> = {};
-    let route = `${base}${SCRIPT_ROUTES.get(scriptId)}`;
-    if (!SCRIPT_ROUTES.has(scriptId)) {
-      route = `${base}/clusters/:cluster/script`;
-      queryParams.script = scriptId;
-    }
-
-    const fullRouteArgs = { ...defaultArgsForScript(scriptId), cluster: selectedClusterName, ...args };
-    for (const [key, value] of Object.entries(fullRouteArgs)) {
-      if (route.includes(`:${key}`)) {
-        route = route.replace(new RegExp(`:${key}\\??`), value);
-      } else {
-        queryParams[key] = value;
-      }
-    }
-
-    const unmatched = extractUnmatchedRouteParams(route);
-    if (unmatched.length) {
-      throw new Error(`routeFor(${scriptId}, ${JSON.stringify(args)}) is missing arg(s): ${unmatched.join(', ')}`);
-    }
-
+    const route = `/live/clusters/${selectedClusterName}`;
+    const queryParams: Record<string, string> = {
+      ...args,
+      ...{ script: scriptId },
+    };
     return { pathname: route, search: QueryString.stringify(queryParams) };
-  }, [base, defaultArgsForScript, selectedClusterName]);
+  }, [selectedClusterName]);
 
   const push: (scriptId: string, args: Record<string, string>) => void = React.useMemo(() => (scriptId, args) => {
-    const route = routeFor(scriptId, { ...defaultArgsForScript(scriptId), ...args });
+    const route = routeFor(scriptId, args);
     if (route.pathname !== plHistory.location.pathname || route.search !== plHistory.location.search) {
       plHistory.push(route);
     }
-  }, [defaultArgsForScript, routeFor]);
+  }, [routeFor]);
 
   const replace: (scriptId: string, args: Record<string, string>) => void = React.useMemo(() => (scriptId, args) => {
-    const route = routeFor(scriptId, { ...defaultArgsForScript(scriptId), ...args });
+    const route = routeFor(scriptId, args);
     if (route.pathname !== plHistory.location.pathname || route.search !== plHistory.location.search) {
       plHistory.replace(route);
     }
-  }, [defaultArgsForScript, routeFor]);
+  }, [routeFor]);
 
   if (defaultCluster == null) return null; // Wait for things to be ready
 
   return (
     <Switch>
-      <Redirect exact from={base} to={`${base}/clusters/${defaultCluster}`} />
+      <Redirect exact from='/live' to={`/live/clusters/${defaultCluster}`} />
+      {[...VANITY_ROUTES.keys()].map((route) => (
+        <Route exact key={route} path={route} component={VizierVanityRerouter} />
+      ))}
       <Route
         exact
-        path={`${base}/clusters/:cluster/script`}
+        path='/live/clusters/:cluster'
         render={({ match, location }) => {
           let scriptId = QueryString.parse(location.search).script;
           if (Array.isArray(scriptId)) scriptId = scriptId[0];
-          if (!scriptId) return <Redirect to={`${base}/clusters/${selectedClusterName}`} />;
+          if (!scriptId) scriptId = 'px/cluster';
           return (
             <VizierRoute
-              scriptId={scriptId}
               clusterName={match.params.cluster}
               push={push}
               replace={replace}
               routeFor={routeFor}
-              defaultArgs={defaultArgsForScript(scriptId)}
             >
               {children}
             </VizierRoute>
           );
         }}
       />
-      {[...SCRIPT_ROUTES.entries()].map(([scriptId, route]) => (
-        <Route
-          exact
-          key={scriptId}
-          path={`${base}${route}`}
-          render={() => (
-            <VizierRoute
-              scriptId={scriptId}
-              clusterName={selectedClusterName}
-              push={push}
-              replace={replace}
-              routeFor={routeFor}
-              defaultArgs={defaultArgsForScript(scriptId)}
-            >
-              {children}
-            </VizierRoute>
-          )}
-        />
-      ))}
-      <Route path={`${base}/*`} component={RouteNotFound} />
+      <Route path='/live/*' component={RouteNotFound} />
     </Switch>
   );
 };

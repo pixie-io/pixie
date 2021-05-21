@@ -95,7 +95,9 @@ const webpackConfig = {
     hot: true,
     writeToDisk: true,
     publicPath: '/static',
-    historyApiFallback: true,
+    historyApiFallback: {
+      disableDotRule: true,
+    },
     proxy: [],
   },
   entry: {
