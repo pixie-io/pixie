@@ -100,6 +100,8 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   navBar: {
     left: 0,
+    top: 0,
+    width: '100%',
     position: 'absolute',
   },
 }));
