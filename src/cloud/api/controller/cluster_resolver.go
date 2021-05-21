@@ -192,6 +192,29 @@ func (q *QueryResolver) Cluster(ctx context.Context, args *clusterArgs) (*Cluste
 	return clusterInfoToResolver(res.Clusters[0])
 }
 
+type clusterNameArgs struct {
+	Name string
+}
+
+// ClusterByName resolves cluster information given a cluster name.
+func (q *QueryResolver) ClusterByName(ctx context.Context, args *clusterNameArgs) (*ClusterInfoResolver, error) {
+	grpcAPI := q.Env.VizierClusterInfo
+	res, err := grpcAPI.GetClusterInfo(ctx, &cloudpb.GetClusterInfoRequest{})
+	if err != nil {
+		return nil, err
+	}
+	if len(res.Clusters) == 0 {
+		return nil, errors.New("org has no matching clusters")
+	}
+
+	for _, c := range res.Clusters {
+		if c.ClusterName == args.Name {
+			return clusterInfoToResolver(c)
+		}
+	}
+	return nil, errors.New("Could not find cluster with name")
+}
+
 // VizierConfigResolver is the resolver responsible for config belonging to the given cluster.
 type VizierConfigResolver struct {
 	passthroughEnabled *bool

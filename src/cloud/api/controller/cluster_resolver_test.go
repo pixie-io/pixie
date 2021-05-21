@@ -118,6 +118,84 @@ func TestClusterInfo(t *testing.T) {
 	})
 }
 
+func TestClusterInfoByName(t *testing.T) {
+	gqlEnv, mockClients, cleanup := testutils.CreateTestGraphQLEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	clusterInfo := &cloudpb.ClusterInfo{
+		ID:              utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+		Status:          cloudpb.CS_HEALTHY,
+		LastHeartbeatNs: 4 * 1000 * 1000,
+		Config: &cloudpb.VizierConfig{
+			PassthroughEnabled: false,
+		},
+		VizierVersion:  "vzVersion",
+		ClusterVersion: "clusterVersion",
+		ClusterName:    "clusterName",
+		ClusterUID:     "clusterUID",
+	}
+
+	unmatchedClusterInfo := &cloudpb.ClusterInfo{
+		ID:              utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c9"),
+		Status:          cloudpb.CS_HEALTHY,
+		LastHeartbeatNs: 4 * 1000 * 1000,
+		Config: &cloudpb.VizierConfig{
+			PassthroughEnabled: false,
+		},
+		VizierVersion:  "vzVersion",
+		ClusterVersion: "clusterVersion2",
+		ClusterName:    "clusterName2",
+		ClusterUID:     "clusterUID2",
+	}
+
+	mockClients.MockVizierClusterInfo.EXPECT().
+		GetClusterInfo(gomock.Any(), &cloudpb.GetClusterInfoRequest{}).
+		Return(&cloudpb.GetClusterInfoResponse{
+			Clusters: []*cloudpb.ClusterInfo{unmatchedClusterInfo, clusterInfo},
+		}, nil)
+
+	gqlSchema := LoadSchema(gqlEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				query {
+					clusterByName(name: "clusterName") {
+						id
+						status
+						lastHeartbeatMs
+						vizierConfig {
+							passthroughEnabled
+						}
+						vizierVersion
+						clusterVersion
+						clusterName
+						clusterUID
+					}
+				}
+			`,
+			ExpectedResult: `
+				{
+					"clusterByName": {
+						"id":"7ba7b810-9dad-11d1-80b4-00c04fd430c8",
+						"status": "CS_HEALTHY",
+						"lastHeartbeatMs": 4,
+						"vizierConfig": {
+							"passthroughEnabled": false
+						},
+						"vizierVersion": "vzVersion",
+						"clusterVersion": "clusterVersion",
+						"clusterName": "clusterName",
+						"clusterUID": "clusterUID"
+					}
+				}
+			`,
+		},
+	})
+}
+
 func TestClusterConnectionInfo(t *testing.T) {
 	gqlEnv, mockClients, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()

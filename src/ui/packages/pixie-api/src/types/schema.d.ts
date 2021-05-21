@@ -102,6 +102,7 @@ export interface GQLQuery {
   userSettings: Array<GQLUserSetting | null>;
   orgUsers: Array<GQLUserInfo | null>;
   cluster: GQLClusterInfo;
+  clusterByName: GQLClusterInfo;
   clusters: Array<GQLClusterInfo>;
   clusterConnection: GQLClusterConnectionInfo;
   cliArtifact: GQLCLIArtifact;
@@ -426,6 +427,7 @@ export interface GQLQueryTypeResolver<TParent = any> {
   userSettings?: QueryToUserSettingsResolver<TParent>;
   orgUsers?: QueryToOrgUsersResolver<TParent>;
   cluster?: QueryToClusterResolver<TParent>;
+  clusterByName?: QueryToClusterByNameResolver<TParent>;
   clusters?: QueryToClustersResolver<TParent>;
   clusterConnection?: QueryToClusterConnectionResolver<TParent>;
   cliArtifact?: QueryToCliArtifactResolver<TParent>;
@@ -466,6 +468,13 @@ export interface QueryToClusterArgs {
 }
 export interface QueryToClusterResolver<TParent = any, TResult = any> {
   (parent: TParent, args: QueryToClusterArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToClusterByNameArgs {
+  name: string;
+}
+export interface QueryToClusterByNameResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: QueryToClusterByNameArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface QueryToClustersResolver<TParent = any, TResult = any> {

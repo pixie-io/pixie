@@ -85,6 +85,7 @@ type Query {
   userSettings(keys: [String]!): [UserSetting]!
   orgUsers: [UserInfo]!
   cluster(id: ID!): ClusterInfo!
+  clusterByName(name: String!): ClusterInfo!
   clusters: [ClusterInfo!]!
   clusterConnection(id: ID!): ClusterConnectionInfo!
   cliArtifact(artifactType: ArtifactType): CLIArtifact!
