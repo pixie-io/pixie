@@ -88,12 +88,7 @@ TEST_P(BPFMapLeakTest, UnclosedConnection) {
   // Without this flag, Stirling delays clean-up to accumulate a clean-up batch.
   FLAGS_stirling_conn_map_cleanup_threshold = 1;
 
-  std::vector<std::unique_ptr<DataTable>> data_tables;
-  std::vector<DataTable*> data_table_ptrs;
-  for (const auto& table_schema : SocketTraceConnector::kTables) {
-    data_tables.emplace_back(std::make_unique<DataTable>(table_schema));
-    data_table_ptrs.push_back(data_tables.back().get());
-  }
+  testing::DataTables data_tables(SocketTraceConnector::kTables);
 
   auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.get());
   ebpf::BPFHashTable<uint64_t, struct conn_info_t> conn_info_map =
@@ -101,17 +96,17 @@ TEST_P(BPFMapLeakTest, UnclosedConnection) {
   std::vector<std::pair<uint64_t, struct conn_info_t>> entries;
 
   // Confirm that the leaked BPF map entry exists.
-  source_->TransferData(ctx_.get(), data_table_ptrs);
+  source_->TransferData(ctx_.get(), data_tables.tables());
   entries = conn_info_map.get_table_offline();
   EXPECT_THAT(entries, Contains(Key(server_bpf_map_key)));
 
   sleep(kInactivitySeconds);
 
   // This TransferData should cause the connection tracker to be marked for death.
-  source_->TransferData(ctx_.get(), data_table_ptrs);
+  source_->TransferData(ctx_.get(), data_tables.tables());
 
   // One more iteration for the tracker to be destroyed and to release the BPF map entry.
-  source_->TransferData(ctx_.get(), data_table_ptrs);
+  source_->TransferData(ctx_.get(), data_tables.tables());
 
   // Check that the leaked BPF map entry is removed.
   entries = conn_info_map.get_table_offline();

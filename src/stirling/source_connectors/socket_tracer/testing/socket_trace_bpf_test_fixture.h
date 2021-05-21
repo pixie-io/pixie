@@ -72,14 +72,7 @@ class SocketTraceBPFTest : public ::testing::Test {
   }
 
   void StartTransferDataThread() {
-    data_tables_.clear();
-    data_table_uptrs_.clear();
-
-    for (const auto& table : SocketTraceConnector::kTables) {
-      auto data_table = std::make_unique<DataTable>(table);
-      data_tables_.push_back(data_table.get());
-      data_table_uptrs_.push_back(std::move(data_table));
-    }
+    data_tables_ = std::make_unique<DataTables>(SocketTraceConnector::kTables);
 
     // Drain the perf buffers before starting the thread.
     // Otherwise, perf buffers may already be full, causing lost events and flaky test results.
@@ -91,7 +84,7 @@ class SocketTraceBPFTest : public ::testing::Test {
         {
           absl::base_internal::SpinLockHolder lock(&socket_tracer_state_lock_);
           RefreshContextCore();
-          source_->TransferData(ctx_.get(), data_tables_);
+          source_->TransferData(ctx_.get(), data_tables_->tables());
         }
         std::this_thread::sleep_for(kTransferDataPeriod);
       }
@@ -116,7 +109,7 @@ class SocketTraceBPFTest : public ::testing::Test {
   }
 
   std::vector<TaggedRecordBatch> ConsumeRecords(int table_num) {
-    return data_tables_[table_num]->ConsumeRecords();
+    return (*data_tables_)[table_num]->ConsumeRecords();
   }
 
   static constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
@@ -128,8 +121,7 @@ class SocketTraceBPFTest : public ::testing::Test {
   std::unique_ptr<StandaloneContext> ctx_;
   std::atomic<bool> transfer_enable_ = false;
   std::thread transfer_data_thread_;
-  std::vector<std::unique_ptr<DataTable>> data_table_uptrs_;
-  std::vector<DataTable*> data_tables_;
+  std::unique_ptr<DataTables> data_tables_;
 
   static constexpr std::chrono::milliseconds kTransferDataPeriod{100};
 

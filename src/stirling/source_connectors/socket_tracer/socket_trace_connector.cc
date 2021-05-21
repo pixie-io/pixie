@@ -355,14 +355,11 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
 
   for (size_t i = 0; i < data_tables.size(); ++i) {
     DataTable* data_table = data_tables[i];
-    if (data_table == nullptr) {
-      continue;
-    }
 
     // Ensure records are within the time window, in order to ensure the order between record
     // batches. Exception: conn_stats table does not need cutoff time, because its timestamps
     // are assigned artificially.
-    if (i != kConnStatsTableNum) {
+    if (i != kConnStatsTableNum && data_table != nullptr) {
       data_table->SetConsumeRecordsCutoffTime(perf_buffer_drain_time_);
     }
   }
