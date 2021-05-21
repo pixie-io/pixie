@@ -34,7 +34,7 @@ filter_ready_checks = True
 
 def pods_for_service(start_time: str, service: px.Service):
     df = px.DataFrame(table='process_stats', start_time=start_time)
-    df = df[df.ctx['service'] == service]
+    df = df[px.has_service_name(df.ctx['service'], service)]
     df.pod = df.ctx['pod_name']
     df = df.groupby('pod').agg()
     df.pod_create_time = px.pod_name_to_start_time(df.pod)
@@ -51,7 +51,7 @@ def inbound_let_timeseries(start_time: str, service: px.Service):
 
     '''
     df = let_helper(start_time)
-    df = df[df.service == service]
+    df = df[px.has_service_name(df.service, service)]
 
     df = df.groupby(['timestamp']).agg(
         latency_quantiles=('latency', px.quantiles),
@@ -83,7 +83,7 @@ def inbound_let_summary(start_time: str, service: px.Service):
     @service: The service to filter on.
     '''
     df = let_summary_helper(start_time)
-    df = df[df.responder == service]
+    df = df[px.has_service_name(df.responder, service)]
     return df.drop('responder')
 
 
@@ -95,7 +95,7 @@ def outbound_let_summary(start_time: str, service: px.Service):
     @service: The service to filter on.
     '''
     df = let_summary_helper(start_time)
-    df = df[df.requestor == service]
+    df = df[px.has_service_name(df.requestor, service)]
     return df.drop(['requestor', 'remote_addr'])
 
 
@@ -124,7 +124,7 @@ def let_summary_helper(start_time: str):
 
 def service_slow_requests(start_time: str, service: px.Service):
     df = let_helper(start_time)
-    df = df[df.service == service]
+    df = df[px.has_service_name(df.service, service)]
     quantiles = df.groupby('service').agg(
         latency_quantiles=('latency', px.quantiles)
     )
