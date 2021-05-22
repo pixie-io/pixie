@@ -143,7 +143,7 @@ export class CloudClient {
   /** Fetches a list of all available clusters. */
   async listClusters(): Promise<GQLClusterInfo[]> {
     const { data } = await this.graphQL.query<{ clusters: GQLClusterInfo[] }>({
-      query: CLUSTER_QUERIES.LIST_CLUSTERS,
+      query: CLUSTER_QUERIES.LIST_CLUSTERS_VERBOSE,
       fetchPolicy: 'network-only',
     });
     return data.clusters;

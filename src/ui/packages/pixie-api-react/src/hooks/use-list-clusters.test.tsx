@@ -19,12 +19,46 @@
 import { CLUSTER_QUERIES } from '@pixie-labs/api';
 import { ApolloError } from '@apollo/client';
 import { itPassesBasicHookTests } from '../testing/hook-testing-boilerplate';
-import { useListClusters } from './use-list-clusters';
+import { useListClusters, useListClustersVerbose } from './use-list-clusters';
 
 describe('useListClusters hook for fetching available clusters', () => {
   const good = [{
     request: {
       query: CLUSTER_QUERIES.LIST_CLUSTERS,
+    },
+    result: {
+      data: {
+        clusters: {
+          id: 'foo',
+          clusterUID: 'abc-def',
+          clusterName: 'Foo',
+          prettyClusterName: 'Foo Erikson',
+          status: 'Testing',
+        },
+      },
+    },
+  }];
+
+  const bad = [{
+    request: { query: CLUSTER_QUERIES.LIST_CLUSTERS },
+    error: new ApolloError({ errorMessage: 'Request failed!' }),
+  }];
+
+  itPassesBasicHookTests({
+    happyMocks: good,
+    sadMocks: bad,
+    useHookUnderTest: () => {
+      const [clusters, loading, error] = useListClusters();
+      return { payload: clusters, loading, error };
+    },
+    getPayloadFromMock: (mock) => (mock as typeof good[0]).result.data.clusters,
+  });
+});
+
+describe('useListClustersVerbose hook for fetching available clusters', () => {
+  const good = [{
+    request: {
+      query: CLUSTER_QUERIES.LIST_CLUSTERS_VERBOSE,
     },
     result: {
       data: {
@@ -47,7 +81,7 @@ describe('useListClusters hook for fetching available clusters', () => {
   }];
 
   const bad = [{
-    request: { query: CLUSTER_QUERIES.LIST_CLUSTERS },
+    request: { query: CLUSTER_QUERIES.LIST_CLUSTERS_VERBOSE },
     error: new ApolloError({ errorMessage: 'Request failed!' }),
   }];
 
@@ -55,7 +89,7 @@ describe('useListClusters hook for fetching available clusters', () => {
     happyMocks: good,
     sadMocks: bad,
     useHookUnderTest: () => {
-      const [clusters, loading, error] = useListClusters();
+      const [clusters, loading, error] = useListClustersVerbose();
       return { payload: clusters, loading, error };
     },
     getPayloadFromMock: (mock) => (mock as typeof good[0]).result.data.clusters,

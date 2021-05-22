@@ -26,7 +26,7 @@ import TableRow from '@material-ui/core/TableRow';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { GaugeLevel } from 'utils/metric-thresholds';
-import { useListClusters } from '@pixie-labs/api-react';
+import { useListClustersVerbose } from '@pixie-labs/api-react';
 import {
   AdminTooltip, clusterStatusGroup, convertHeartbeatMS, getClusterDetailsURL,
   StyledTableCell, StyledTableHeaderCell, StyledLeftTableCell, StyledRightTableCell,
@@ -132,7 +132,7 @@ export const ClustersTable = withStyles((theme: Theme) => ({
     padding: theme.spacing(1),
   },
 }))(({ classes }: any) => {
-  const [clustersRaw, loading, error] = useListClusters();
+  const [clustersRaw, loading, error] = useListClustersVerbose();
   if (loading) {
     return <div className={classes.error}>Loading...</div>;
   }

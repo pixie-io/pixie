@@ -35,7 +35,7 @@ import { makeStyles } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import { useLDClient } from 'launchdarkly-react-client-sdk';
 import { GQLClusterInfo as Cluster, GQLClusterStatus as ClusterStatus } from '@pixie-labs/api';
-import { useListClusters, useUserInfo } from '@pixie-labs/api-react';
+import { useListClusters, useListClustersVerbose, useUserInfo } from '@pixie-labs/api-react';
 import { scriptToEntityURL } from 'containers/live-widgets/utils/live-view-params';
 import { LIVE_VIEW_SCRIPT_ID_KEY, useSessionStorage } from 'common/storage';
 import { DeployInstructions } from './deploy-instructions';
@@ -82,7 +82,7 @@ const ClusterBanner = () => {
 };
 
 const useSelectedCluster = () => {
-  const [clusters, loading, error] = useListClusters();
+  const [clusters, loading, error] = useListClustersVerbose();
   const { selectedCluster } = React.useContext(ClusterContext);
   const cluster = clusters?.find((c) => c.id === selectedCluster);
   return {

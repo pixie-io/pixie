@@ -44,7 +44,7 @@ import {
   GQLPodStatus as PodStatus,
   GQLContainerStatus as ContainerStatus, VizierQueryResult,
 } from '@pixie-labs/api';
-import { useListClusters, useClusterControlPlanePods } from '@pixie-labs/api-react';
+import { useListClustersVerbose, useClusterControlPlanePods } from '@pixie-labs/api-react';
 import { BehaviorSubject } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
 import {
@@ -446,7 +446,7 @@ export const ClusterDetails: React.FC = () => {
   const clusterName = decodeURIComponent(name);
 
   const [tab, setTab] = React.useState('agents');
-  const [clusters, loading, error] = useListClusters();
+  const [clusters, loading, error] = useListClustersVerbose();
 
   if (loading) {
     return <div className={classes.error}>Loading...</div>;

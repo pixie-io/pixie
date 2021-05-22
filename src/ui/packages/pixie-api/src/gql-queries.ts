@@ -152,7 +152,7 @@ export const CLUSTER_QUERIES = {
       }
     }
   `,
-  LIST_CLUSTERS: gql`
+  LIST_CLUSTERS_VERBOSE: gql`
     {
       clusters {
         id
@@ -168,7 +168,17 @@ export const CLUSTER_QUERIES = {
         vizierConfig {
           passthroughEnabled
         }
-
+      }
+    }
+  `,
+  LIST_CLUSTERS: gql`
+    {
+      clusters {
+        id
+        clusterUID
+        clusterName
+        prettyClusterName
+        status
       }
     }
   `,

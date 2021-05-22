@@ -21,7 +21,7 @@ import { VizierRouteContext, VizierRouteContextProps } from 'containers/App/vizi
 import { ScriptsContext } from 'containers/App/scripts-context';
 import { getQueryFuncs, parseVis, Vis } from 'containers/live/vis';
 import { Script } from 'utils/script-bundle';
-import { PixieAPIContext, useListClusters } from '@pixie-labs/api-react';
+import { PixieAPIContext, useListClustersVerbose } from '@pixie-labs/api-react';
 import {
   containsMutation, ExecutionStateUpdate, isStreaming, VizierQueryError, ClusterConfig,
 } from '@pixie-labs/api';
@@ -84,7 +84,7 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
   const resultsContext = React.useContext(ResultsContext);
   const showSnackbar = useSnackbar();
 
-  const [clusters, loadingClusters] = useListClusters();
+  const [clusters, loadingClusters] = useListClustersVerbose();
   const clusterConfig: ClusterConfig|null = React.useMemo(() => {
     if (loadingClusters || !clusters.length) return null;
     const selected = clusters.find((c) => c.clusterName === clusterName);

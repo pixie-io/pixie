@@ -29,6 +29,16 @@ import { ImmutablePixieQueryResult } from '../utils/types';
  * const [clusters, loading, error] = useListClusters();
  * ```
  */
+export function useListClustersVerbose(): ImmutablePixieQueryResult<GQLClusterInfo[]> {
+  // TODO(nick): This doesn't get the entire GQLClusterInfo, nor does useClusterControlPlanePods. Use Pick<...>.
+  const { data, loading, error } = useQuery<{ clusters: GQLClusterInfo[] }>(
+    CLUSTER_QUERIES.LIST_CLUSTERS_VERBOSE,
+    { pollInterval: 2500, fetchPolicy: 'network-only' },
+  );
+
+  return [data?.clusters, loading, error];
+}
+
 export function useListClusters(): ImmutablePixieQueryResult<GQLClusterInfo[]> {
   // TODO(nick): This doesn't get the entire GQLClusterInfo, nor does useClusterControlPlanePods. Use Pick<...>.
   const { data, loading, error } = useQuery<{ clusters: GQLClusterInfo[] }>(
