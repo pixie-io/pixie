@@ -29,7 +29,6 @@ import { createStyles } from '@material-ui/styles';
 const useStyles = makeStyles((theme: Theme) => createStyles({
   dialog: {
     width: '700px',
-    height: '60%',
   },
   content: {
     padding: theme.spacing(6),
@@ -40,6 +39,13 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
+  },
+  root: {
+    display: 'flex',
+    alignItems: 'center',
+    width: '100%',
+    flexDirection: 'column',
+    height: '100%',
   },
   header: {
     ...theme.typography.h5,
@@ -98,11 +104,13 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     alignItems: 'center',
     flexDirection: 'column',
   },
-  navBar: {
-    left: 0,
-    top: 0,
+  centeredDialog: {
+    display: 'flex',
+    alignItems: 'center',
+    flexDirection: 'column',
+    height: '100%',
     width: '100%',
-    position: 'absolute',
+    justifyContent: 'center',
   },
 }));
 
@@ -110,63 +118,63 @@ export const DeployInstructions = () => {
   const classes = useStyles();
 
   return (
-    <div className={classes.container}>
-      <div className={classes.navBar}>
-        <NavBars />
+    <div className={classes.root}>
+      <NavBars />
+      <div className={classes.centeredDialog}>
+        <Paper className={classes.dialog} elevation={1}>
+          <div className={classes.content}>
+            <span className={classes.header}>Install Pixie</span>
+            <CodeRenderer
+              code={`bash -c "$(curl -fsSL ${window.location.origin}/install.sh)"`}
+              language='bash'
+            />
+            <div className={classes.instructions}>
+              Run this in a macOS Terminal or Linux shell to install Pixie in your K8s cluster.
+              Share with your admin if you don&apos;t have access.
+              <br />
+              <br />
+              <span>
+                Or, click&nbsp;
+                <a className={classes.instructionLink} href='/docs/installing-pixie/quick-start/'>here</a>
+                &nbsp;for more options for installing the CLI.
+              </span>
+            </div>
+            <div className={classes.linksHeader}>Don&apos;t have K8s?</div>
+            <ul className={classes.list}>
+              <li className={classes.listItem}>
+                <a className={classes.linkItem} href='/docs/installing-pixie/install-guides'>
+                  Set up a quick local K8s sandbox
+                </a>
+              </li>
+              <li className={classes.listItem}>
+                <a className={classes.linkItem} href='/docs/installing-pixie/quick-start'>Set up a demo app</a>
+              </li>
+            </ul>
+            <div className={classes.buttons}>
+              <Button
+                className={classes.button}
+                href='https://slackin.px.dev/'
+                variant='outlined'
+                size='large'
+              >
+                Slack
+              </Button>
+              <Button className={classes.button} href='/docs' variant='outlined' size='large'>
+                Docs
+              </Button>
+              <Button
+                className={classes.button}
+                href='https://github.com/pixie-labs/pixie'
+                variant='outlined'
+                size='large'
+              >
+                Github
+              </Button>
+            </div>
+          </div>
+          <img className={classes.logo} src={logoImage} style={{ width: '55px' }} />
+        </Paper>
       </div>
-      <Paper className={classes.dialog} elevation={1}>
-        <div className={classes.content}>
-          <span className={classes.header}>Install Pixie</span>
-          <CodeRenderer
-            code={`bash -c "$(curl -fsSL ${window.location.origin}/install.sh)"`}
-            language='bash'
-          />
-          <div className={classes.instructions}>
-            Run this in a macOS Terminal or Linux shell to install Pixie in your K8s cluster.
-            Share with your admin if you don&apos;t have access.
-            <br />
-            <br />
-            <span>
-              Or, click&nbsp;
-              <a className={classes.instructionLink} href='/docs/installing-pixie/quick-start/'>here</a>
-              &nbsp;for more options for installing the CLI.
-            </span>
-          </div>
-          <div className={classes.linksHeader}>Don&apos;t have K8s?</div>
-          <ul className={classes.list}>
-            <li className={classes.listItem}>
-              <a className={classes.linkItem} href='/docs/installing-pixie/install-guides'>
-                Set up a quick local K8s sandbox
-              </a>
-            </li>
-            <li className={classes.listItem}>
-              <a className={classes.linkItem} href='/docs/installing-pixie/quick-start'>Set up a demo app</a>
-            </li>
-          </ul>
-          <div className={classes.buttons}>
-            <Button
-              className={classes.button}
-              href='https://slackin.px.dev/'
-              variant='outlined'
-              size='large'
-            >
-              Slack
-            </Button>
-            <Button className={classes.button} href='/docs' variant='outlined' size='large'>
-              Docs
-            </Button>
-            <Button
-              className={classes.button}
-              href='https://github.com/pixie-labs/pixie'
-              variant='outlined'
-              size='large'
-            >
-              Github
-            </Button>
-          </div>
-        </div>
-        <img className={classes.logo} src={logoImage} style={{ width: '55px' }} />
-      </Paper>
     </div>
   );
 };

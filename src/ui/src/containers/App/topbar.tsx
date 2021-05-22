@@ -210,7 +210,6 @@ export const TopBar = withStyles((theme: Theme) => createStyles({
   container: {
     zIndex: 1300,
     backgroundColor: theme.palette.background.paper,
-    position: 'absolute',
   },
   logo: {
     width: theme.spacing(8),
