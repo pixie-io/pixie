@@ -30,16 +30,14 @@ import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
-import AnnouncementIcon from '@material-ui/icons/Announcement';
+import CampaignIcon from '@material-ui/icons/Campaign';
 import Menu from '@material-ui/icons/Menu';
-import MenuItem from '@material-ui/core/MenuItem';
 import Tooltip from '@material-ui/core/Tooltip';
 
 import { Link } from 'react-router-dom';
 
 import { ClusterContext } from 'common/cluster-context';
 import UserContext from 'common/user-context';
-import KeyboardIcon from '@material-ui/icons/Keyboard';
 import {
   Avatar, ProfileMenuWrapper,
   ClusterIcon, CodeIcon, DocsIcon,
@@ -114,6 +112,9 @@ const styles = (
     paddingLeft: spacing(2.5),
     paddingTop: spacing(1),
     paddingBottom: spacing(1),
+    '& > div': {
+      color: palette.text.primary,
+    },
   },
   pixieLogo: {
     fill: palette.primary.main,
@@ -265,7 +266,7 @@ const SideBar = ({ classes, open, toggle }) => {
                    }
                 >
                   <ListItem button key='announcements' className={classes.listIcon}>
-                    <ListItemIcon><AnnouncementIcon /></ListItemIcon>
+                    <ListItemIcon><CampaignIcon /></ListItemIcon>
                     <ListItemText primary='Announcements' />
                   </ListItem>
                 </AnnounceKit>
