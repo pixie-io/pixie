@@ -196,7 +196,7 @@ const TopBarImpl = ({
         <IconButton edge='start' color='inherit' aria-label='menu' sx={{ mr: 2 }} onClick={toggleSidebar}>
           <MenuIcon className={classes.menu} />
         </IconButton>
-        <Logo classes={classes} />
+        <Link to='/'><Logo classes={classes} /></Link>
         <div className={classes.contents}>
           { children }
         </div>
