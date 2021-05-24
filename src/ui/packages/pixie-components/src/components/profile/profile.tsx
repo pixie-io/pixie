@@ -72,7 +72,7 @@ export const ProfileMenuWrapper = ({
       button={false}
       className={classes.expandedProfile}
     >
-      <Avatar name={name} picture={picture} className={classes.avatarLg} />
+      <Avatar name={name} picture={picture} className={classes.avatarSm} />
       <ListItemText
         primary={name}
         secondary={email}

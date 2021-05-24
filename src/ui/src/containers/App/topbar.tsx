@@ -96,13 +96,14 @@ const ProfileItem = ({
     setDataDrawerOpen(wasDrawerOpenBeforeTour);
   };
 
-  React.useEffect(() => {
-    if (!loadingTourSeen && tourSeen !== true && inLiveView) {
-      openTour();
-      setTourSeen(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadingTourSeen, tourSeen, inLiveView]);
+  // TODO(nick, PC-955): Fixup and re-enable the tour. The UI redesign broke the tour.
+  // React.useEffect(() => {
+  //   if (!loadingTourSeen && tourSeen !== true && inLiveView) {
+  //     openTour();
+  //     setTourSeen(true);
+  //   }
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [loadingTourSeen, tourSeen, inLiveView]);
 
   let name = '';
   let picture = '';
@@ -149,16 +150,17 @@ const ProfileItem = ({
         {
           inLiveView && (
             [
+              // TODO(nick, PC-955): Fixup and re-enable the tour. The UI redesign broke the tour.
+              // (
+              //   <MenuItem key='tour' button component='a' onClick={openTour} className={classes.hideOnMobile}>
+              //     <StyledListItemIcon>
+              //       <ExploreIcon />
+              //     </StyledListItemIcon>
+              //     <StyledListItemText primary='Tour' />
+              //   </MenuItem>
+              // ),
               (
-                <MenuItem key='tour' button component='button' onClick={openTour} className={classes.hideOnMobile}>
-                  <StyledListItemIcon>
-                    <ExploreIcon />
-                  </StyledListItemIcon>
-                  <StyledListItemText primary='Tour' />
-                </MenuItem>
-              ),
-              (
-                <MenuItem key='shortcuts' button component='button' onClick={() => shortcuts['show-help'].handler()}>
+                <MenuItem key='shortcuts' button component='a' onClick={() => shortcuts['show-help'].handler()}>
                   <StyledListItemIcon>
                     <KeyboardIcon />
                   </StyledListItemIcon>
@@ -222,9 +224,12 @@ export const TopBar = withStyles((theme: Theme) => createStyles({
   },
   avatarSm: {
     backgroundColor: theme.palette.primary.main,
-    width: theme.spacing(5),
-    height: theme.spacing(5),
+    width: theme.spacing(4),
+    height: theme.spacing(4),
     alignItems: 'center',
     cursor: 'pointer',
+  },
+  centeredListItemText: {
+    paddingLeft: theme.spacing(1),
   },
 }))(TopBarImpl);
