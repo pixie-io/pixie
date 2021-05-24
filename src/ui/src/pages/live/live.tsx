@@ -48,6 +48,8 @@ import { ScriptLoader } from 'containers/live/script-loader';
 import LiveViewShortcutsProvider from 'containers/live/shortcuts';
 import { CONTACT_ENABLED } from 'containers/constants';
 import { useListClusters } from '@pixie-labs/api-react';
+import ExecuteScriptButton from 'containers/live/execute-button';
+import ClusterSelector from 'containers/live/cluster-selector';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -75,6 +77,9 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   spacer: {
     flex: 1,
+  },
+  execute: {
+    display: 'flex',
   },
   title: {
     ...theme.typography.h3,
@@ -335,12 +340,16 @@ const LiveView: React.FC = () => {
     <div className={classes.root}>
       <LiveViewShortcutsProvider handlers={hotkeyHandlers}>
         <NavBars>
+          <ClusterSelector />
           <div className={classes.spacer} />
           <ScriptOptions
             classes={classes}
             widgetsMoveable={widgetsMoveable}
             setWidgetsMoveable={setWidgetsMoveable}
           />
+          <div className={classes.execute}>
+            <ExecuteScriptButton />
+          </div>
         </NavBars>
         <div className={classes.dataDrawer}>
           <DataDrawerSplitPanel />

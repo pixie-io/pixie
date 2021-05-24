@@ -45,7 +45,7 @@ const styles = ({ breakpoints, typography }: Theme) => createStyles({
 const StyledButton = withStyles((theme: Theme) => createStyles({
   root: {
     height: '100%',
-    borderRadius: `0 ${theme.shape.borderRadius}px ${theme.shape.borderRadius}px 0px`,
+    borderRadius: theme.shape.borderRadius,
   },
 }))(Button);
 

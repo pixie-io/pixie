@@ -22,21 +22,16 @@ import {
   Theme, withStyles,
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
-import Paper from '@material-ui/core/Paper';
-import { GQLClusterStatus as ClusterStatus } from '@pixie-labs/api';
-import { useListClusters, useAutocompleteFieldSuggester } from '@pixie-labs/api-react';
+import { useAutocompleteFieldSuggester } from '@pixie-labs/api-react';
 
 import {
-  Breadcrumbs, BreadcrumbOptions,
-  PixieCommandIcon, StatusCell,
+  Breadcrumbs, BreadcrumbOptions, StatusCell,
 } from '@pixie-labs/components';
 import { ClusterContext } from 'common/cluster-context';
 import { argVariableMap, argTypesForVis } from 'utils/args-utils';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'containers/App/scripts-context';
 import { ScriptContext } from 'context/script-context';
 import { pxTypeToEntityType, entityStatusGroup } from 'containers/command-input/autocomplete-utils';
-import { clusterStatusGroup } from 'containers/admin/utils';
-import ExecuteScriptButton from './execute-button';
 import { parseVisSilently, Variable } from './vis';
 
 const styles = (({ shape, palette, spacing }: Theme) => createStyles({
@@ -73,15 +68,14 @@ const styles = (({ shape, palette, spacing }: Theme) => createStyles({
     padding: 0,
   },
   breadcrumbs: {
-    width: '100%',
-    overflow: 'hidden',
     display: 'flex',
+    marginLeft: spacing(3),
+    marginRight: spacing(3),
   },
 }));
 
 const LiveViewBreadcrumbs = ({ classes }) => {
-  const [clusters, loading, error] = useListClusters();
-  const { selectedCluster, setCluster, selectedClusterUID } = React.useContext(ClusterContext);
+  const { selectedCluster, selectedClusterUID } = React.useContext(ClusterContext);
   const { scripts } = React.useContext(ScriptsContext);
 
   const {
@@ -91,9 +85,8 @@ const LiveViewBreadcrumbs = ({ classes }) => {
   const getCompletions = useAutocompleteFieldSuggester(selectedClusterUID);
 
   const scriptIds = React.useMemo(() => [...scripts.keys()], [scripts]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const clusterIds = React.useMemo(() => clusters?.map((c) => c.id), [clusters]);
-  const collapsedClusterIds = clusterIds?.join(',');
+
+  // For useMemo dependencies below, see https://github.com/facebook/react/issues/20204
   const collapsedScriptIds = scriptIds?.join(',');
 
   type MemoCrumbs = { entityBreadcrumbs: BreadcrumbOptions[]; argBreadcrumbs: BreadcrumbOptions[] };
@@ -103,27 +96,47 @@ const LiveViewBreadcrumbs = ({ classes }) => {
     // eslint-disable-next-line @typescript-eslint/no-shadow
     const argBreadcrumbs: BreadcrumbOptions[] = [];
 
-    if (loading || !clusters || error) return { entityBreadcrumbs, argBreadcrumbs };
-
-    // Cluster always goes first in breadcrumbs.
-    const clusterName = clusters.find((c) => c.id === selectedCluster)?.prettyClusterName || 'unknown cluster';
-    const clusterNameToID: Record<string, string> = {};
-    clusters.forEach((c) => {
-      clusterNameToID[c.prettyClusterName] = c.id;
-    });
+    // Add script at beginning of breadcrumbs.
     entityBreadcrumbs.push({
-      title: 'cluster',
-      value: clusterName,
+      title: 'script',
+      value: script?.id,
       selectable: true,
-      // eslint-disable-next-line
-      getListItems: async (input) => (clusters.filter((c) => c.status !== ClusterStatus.CS_DISCONNECTED
-        && c.prettyClusterName.includes(input))
-        .map((c) => ({ value: c.prettyClusterName, icon: <StatusCell statusGroup={clusterStatusGroup(c.status)} /> }))
-      ),
-      onSelect: (input) => {
-        setCluster(clusterNameToID[input]);
+      allowTyping: true,
+      divider: true,
+      getListItems: async (input) => {
+        // Turns "  px/be_spoke-  " into "px/bespoke"
+        const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9/]+/gi, '');
+        const normalizedInput = normalize(input);
+        const normalizedScratchId = normalize(SCRATCH_SCRIPT.id);
+
+        const ids = !input ? [...scriptIds] : scriptIds.filter((s) => {
+          const ns = normalize(s);
+          return ns === normalizedScratchId || ns.indexOf(normalizedInput) >= 0;
+        });
+
+        // The scratch script should always appear at the top of the list for visibility. It doesn't get auto-selected
+        // unless it's the only thing in the list.
+        const scratchIndex = scriptIds.indexOf(SCRATCH_SCRIPT.id);
+        if (scratchIndex !== -1) {
+          scriptIds.splice(scratchIndex, 1);
+          scriptIds.unshift(SCRATCH_SCRIPT.id);
+        }
+
+        return ids.map((scriptId) => ({
+          value: scriptId,
+          description: scripts.get(scriptId).description,
+          autoSelectPriority: scriptId === SCRATCH_SCRIPT.id ? -1 : 0,
+        }));
       },
-      requireCompletion: true,
+      onSelect: (newVal) => {
+        const newScript = scripts.get(newVal);
+        const selectedVis = parseVisSilently(newScript.vis);
+        setScriptAndArgs({
+          ...newScript,
+          visString: newScript.vis,
+          vis: selectedVis,
+        }, args);
+      },
     });
 
     // Add args to breadcrumbs.
@@ -184,73 +197,22 @@ const LiveViewBreadcrumbs = ({ classes }) => {
       }
     }
 
-    // Add script at end of breadcrumbs.
-    entityBreadcrumbs.push({
-      title: 'script',
-      value: script?.id,
-      selectable: true,
-      allowTyping: true,
-      getListItems: async (input) => {
-        // Turns "  px/be_spoke-  " into "px/bespoke"
-        const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9/]+/gi, '');
-        const normalizedInput = normalize(input);
-        const normalizedScratchId = normalize(SCRATCH_SCRIPT.id);
-
-        const ids = !input ? [...scriptIds] : scriptIds.filter((s) => {
-          const ns = normalize(s);
-          return ns === normalizedScratchId || ns.indexOf(normalizedInput) >= 0;
-        });
-
-        // The scratch script should always appear at the top of the list for visibility. It doesn't get auto-selected
-        // unless it's the only thing in the list.
-        const scratchIndex = scriptIds.indexOf(SCRATCH_SCRIPT.id);
-        if (scratchIndex !== -1) {
-          scriptIds.splice(scratchIndex, 1);
-          scriptIds.unshift(SCRATCH_SCRIPT.id);
-        }
-
-        return ids.map((scriptId) => ({
-          value: scriptId,
-          description: scripts.get(scriptId).description,
-          autoSelectPriority: scriptId === SCRATCH_SCRIPT.id ? -1 : 0,
-        }));
-      },
-      onSelect: (newVal) => {
-        const newScript = scripts.get(newVal);
-        const selectedVis = parseVisSilently(newScript.vis);
-        setScriptAndArgs({
-          ...newScript,
-          visString: newScript.vis,
-          vis: selectedVis,
-        }, args);
-      },
-    });
-
     return { entityBreadcrumbs, argBreadcrumbs };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, script?.id, collapsedClusterIds, collapsedScriptIds, args, selectedCluster, getCompletions]);
-
-  if (loading) {
-    return (<div>Loading...</div>);
-  }
+  }, [script?.id, collapsedScriptIds, args, selectedCluster, getCompletions]);
 
   return (
-    <Paper className={classes.root} elevation={2}>
-      <PixieCommandIcon fontSize='large' className={classes.pixieIcon} />
-      <div className={classes.verticalLine} />
+    <>
       <div className={classes.breadcrumbs}>
         <Breadcrumbs
           breadcrumbs={entityBreadcrumbs}
         />
         <div className={classes.spacer} />
-        <div>
-          <Breadcrumbs
-            breadcrumbs={argBreadcrumbs}
-          />
-        </div>
+        <Breadcrumbs
+          breadcrumbs={argBreadcrumbs}
+        />
       </div>
-      <ExecuteScriptButton />
-    </Paper>
+    </>
   );
 };
 

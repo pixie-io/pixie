@@ -90,6 +90,8 @@ export { ModalTrigger } from './components/modal/modal';
 
 export { Avatar, ProfileMenuWrapper } from './components/profile/profile';
 
+export { Select } from './components/select/select';
+
 export {
   SelectedPercentile,
   QuantilesBoxWhisker,

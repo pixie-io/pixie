@@ -21,6 +21,7 @@ import {
   Theme,
   WithStyles,
   withStyles,
+  makeStyles,
   ThemeProvider,
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
@@ -33,6 +34,7 @@ import { CompletionItem } from 'components/autocomplete/completions';
 import { Autocomplete } from 'components/autocomplete/autocomplete';
 import useIsMounted from 'utils/use-is-mounted';
 import { AutocompleteContext } from 'components/autocomplete/autocomplete-context';
+import Paper from '@material-ui/core/Paper';
 
 const styles = ({
   spacing, typography, palette, breakpoints,
@@ -43,11 +45,12 @@ const styles = ({
     '&::-webkit-scrollbar': {
       display: 'none',
     },
-    display: 'inline-block',
     [breakpoints.down('sm')]: {
       overflowX: 'scroll',
       display: 'flex',
     },
+    display: 'flex',
+    alignItems: 'center',
   },
   breadcrumb: {
     display: 'inline-flex',
@@ -76,13 +79,13 @@ const styles = ({
     ...typography.body2,
     display: 'inline-block',
     color: palette.text.primary,
-    height: spacing(3),
+    height: spacing(5),
   },
   content: {
     display: 'flex',
     alignItems: 'center',
     paddingLeft: spacing(1),
-    height: spacing(3),
+    height: spacing(5),
   },
   dropdownArrow: {
     cursor: 'pointer',
@@ -160,9 +163,18 @@ const styles = ({
   icon: {
     minWidth: spacing(4),
   },
+  divider: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: palette.foreground.three,
+    height: '75%',
+    width: '1px',
+    opacity: 0.4,
+  },
 });
 
-interface DialogDropdownProps extends WithStyles<typeof styles> {
+interface DialogDropdownProps {
   onSelect: (input: string) => void;
   getListItems: (input: string) => Promise<BreadcrumbListItem[]>;
   onClose: () => void;
@@ -170,14 +182,29 @@ interface DialogDropdownProps extends WithStyles<typeof styles> {
   placeholder: string;
 }
 
-const DialogDropdown = ({
-  classes,
+const useDialogStyles = makeStyles(() => createStyles({
+  card: {
+    width: '608px',
+  },
+  autocomplete: {
+    maxHeight: '60vh',
+  },
+  completionsContainer: {
+    // 80% as wide as the Command Input, and using 80% of the fontSize and 80% of the spacing
+    maxWidth: '608px',
+    maxHeight: '60vh',
+  },
+}));
+
+export const DialogDropdown: React.FC<DialogDropdownProps> = ({
   placeholder,
   onSelect,
   onClose,
   getListItems,
   anchorEl,
 }: DialogDropdownProps) => {
+  const classes = useDialogStyles();
+
   const mounted = useIsMounted();
   const { allowTyping, requireCompletion } = React.useContext(AutocompleteContext);
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -364,7 +391,6 @@ const Breadcrumb = ({
           )}
           {!selectable && <div className={classes.spacer} />}
           <DialogDropdown
-            classes={classes}
             placeholder={placeholder || 'Filter...'}
             onSelect={onSelect}
             onClose={onClose}
@@ -383,7 +409,7 @@ Breadcrumb.defaultProps = {
   placeholder: '',
 };
 
-interface BreadcrumbListItem {
+export interface BreadcrumbListItem {
   value: string;
   description?: string;
   icon?: React.ReactNode;
@@ -400,6 +426,7 @@ export interface BreadcrumbOptions {
   onSelect?: (input: string) => void;
   requireCompletion?: boolean;
   placeholder?: string;
+  divider?: boolean;
 }
 
 interface BreadcrumbsProps extends WithStyles<typeof styles> {
@@ -412,22 +439,27 @@ const BreadcrumbsImpl = ({ classes, breadcrumbs }: BreadcrumbsProps) => {
     AutocompleteContext,
   );
   return (
-    <div className={classes.breadcrumbs}>
-      {breadcrumbs.map((breadcrumb, i) => (
-        // Key is needed to prevent a console error when a key is missing in a list element.
-        <AutocompleteContext.Provider
-          key={`i-${breadcrumb.title}`}
-          value={{
-            allowTyping: breadcrumb.allowTyping ?? allowTyping,
-            requireCompletion:
-              breadcrumb.requireCompletion ?? requireCompletion,
-            onOpen: 'clear',
-          }}
-        >
-          <Breadcrumb key={i} classes={classes} {...breadcrumb} />
-        </AutocompleteContext.Provider>
-      ))}
-    </div>
+    <Paper elevation={2}>
+      <div className={classes.breadcrumbs}>
+        {breadcrumbs.map((breadcrumb, i) => (
+          // Key is needed to prevent a console error when a key is missing in a list element.
+          <AutocompleteContext.Provider
+            key={`i-${breadcrumb.title}`}
+            value={{
+              allowTyping: breadcrumb.allowTyping ?? allowTyping,
+              requireCompletion:
+                breadcrumb.requireCompletion ?? requireCompletion,
+              onOpen: 'clear',
+            }}
+          >
+            <Breadcrumb key={i} classes={classes} {...breadcrumb} />
+            {
+              breadcrumb.divider && i !== breadcrumbs.length - 1 && <div className={classes.divider} />
+            }
+          </AutocompleteContext.Provider>
+        ))}
+      </div>
+    </Paper>
   );
 };
 
