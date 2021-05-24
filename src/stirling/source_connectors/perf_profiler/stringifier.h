@@ -38,7 +38,7 @@ static constexpr std::string_view kKernSuffix = "_[k]";
 
 // The drop message indicates that the kernel had a hash table collision
 // and dropped tracking of one stack trace.
-static constexpr std::string_view kDropMessage = "<kernel data drop>";
+static constexpr std::string_view kDropMessage = "<stack trace lost>";
 }  // namespace stringifier
 
 // Stringifier serves two purposes:
