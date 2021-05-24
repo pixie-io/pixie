@@ -31,13 +31,13 @@ import {
   PixieCommandIcon, StatusCell,
 } from '@pixie-labs/components';
 import { ClusterContext } from 'common/cluster-context';
-import { argVariableMap, argTypesForVis } from 'utils/new-args-utils';
+import { argVariableMap, argTypesForVis } from 'utils/args-utils';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'containers/App/scripts-context';
 import { ScriptContext } from 'context/new-script-context';
 import { pxTypeToEntityType, entityStatusGroup } from 'containers/command-input/autocomplete-utils';
 import { clusterStatusGroup } from 'containers/admin/utils';
 import ExecuteScriptButton from './new-execute-button';
-import { parseVis, Variable } from './vis';
+import { parseVisSilently, Variable } from './vis';
 
 const styles = (({ shape, palette, spacing }: Theme) => createStyles({
   root: {
@@ -117,7 +117,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
       selectable: true,
       // eslint-disable-next-line
       getListItems: async (input) => (clusters.filter((c) => c.status !== ClusterStatus.CS_DISCONNECTED
-              && c.prettyClusterName.includes(input))
+        && c.prettyClusterName.includes(input))
         .map((c) => ({ value: c.prettyClusterName, icon: <StatusCell statusGroup={clusterStatusGroup(c.status)} /> }))
       ),
       onSelect: (input) => {
@@ -130,8 +130,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
     const argTypes = argTypesForVis(script?.vis);
     const variables = argVariableMap(script?.vis);
 
-    // TODO(nick,PC-917): Once cluster is separated from args in VizierRoutingContext, use args as-is here.
-    for (const [argName, argVal] of Object.entries(args).filter(([name]) => !['script', 'cluster'].includes(name))) {
+    for (const [argName, argVal] of Object.entries(args)) {
       // Only add suggestions if validValues are specified. Otherwise, the dropdown is populated with autocomplete
       // entities or has no elements and the user must manually type in values.
       const variable: Variable = variables[argName];
@@ -218,7 +217,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
       },
       onSelect: (newVal) => {
         const newScript = scripts.get(newVal);
-        const selectedVis = parseVis(newScript.vis);
+        const selectedVis = parseVisSilently(newScript.vis);
         setScriptAndArgs({
           ...newScript,
           visString: newScript.vis,

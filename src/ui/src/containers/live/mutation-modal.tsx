@@ -32,7 +32,7 @@ import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
 import { CircularProgress } from '@material-ui/core';
-import { ScriptContext } from 'context/script-context';
+import { ScriptContext } from 'context/new-script-context';
 
 import * as moonwalkerSVG from '../../../assets/images/moonwalker.svg';
 

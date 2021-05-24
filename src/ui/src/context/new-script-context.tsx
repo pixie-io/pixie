@@ -17,19 +17,26 @@
  */
 
 import * as React from 'react';
-import { VizierRouteContext, VizierRouteContextProps } from 'containers/App/vizier-routing';
-import { ScriptsContext } from 'containers/App/scripts-context';
-import { getQueryFuncs, parseVis, Vis } from 'containers/live/vis';
+import { VizierRouteContext } from 'containers/App/vizier-routing';
+import { SCRATCH_SCRIPT, ScriptsContext } from 'containers/App/scripts-context';
+import {
+  getQueryFuncs, parseVis, parseVisSilently, Vis,
+} from 'containers/live/vis';
 import { Script } from 'utils/script-bundle';
 import { PixieAPIContext, useListClustersVerbose } from '@pixie-labs/api-react';
 import {
-  containsMutation, ExecutionStateUpdate, isStreaming, VizierQueryError, ClusterConfig,
+  containsMutation, ExecutionStateUpdate, isStreaming, VizierQueryError, ClusterConfig, GRPCStatusCode,
+  VizierTable as Table,
 } from '@pixie-labs/api';
 import { Observable } from 'rxjs';
 import { checkExhaustive } from 'utils/check-exhaustive';
 import { ResultsContext } from 'context/results-context';
 import { useSnackbar } from '@pixie-labs/components';
-import { argsForVis, validateArgs } from 'utils/new-args-utils';
+import { argsForVis, validateArgs } from 'utils/args-utils';
+import { ClusterContext } from 'common/cluster-context';
+
+const NUM_MUTATION_RETRIES = 5;
+const MUTATION_RETRY_MS = 5000; // 5s.
 
 export interface ParsedScript extends Omit<Script, 'vis'> {
   visString: string;
@@ -42,19 +49,22 @@ export interface ScriptContextProps {
    */
   script: ParsedScript;
   /** Args that will be passed to the current script if it's executed. Mirrored from VizierRouteContext. */
-  args: Record<string, string|string[]>;
+  args: Record<string, string | string[]>;
   /**
-   * Updates the script (including manual user edits) and args that will be used if execute() is called.
+   * Updates the script and args that will be used if execute() is called.
    */
-  setScriptAndArgs: (script: Script|ParsedScript, args: Record<string, string|string[]>) => void;
+  setScriptAndArgs: (script: Script | ParsedScript, args: Record<string, string | string[]>) => void;
+  /**
+   * Updates the script and args that will be used if execute() is called by a user manually running execute
+   * through the hot-key or button.
+   */
+  setScriptAndArgsManually: (script: Script | ParsedScript, args: Record<string, string | string[]>) => void;
   /**
    * True if and only if the current args satisfy the current script's vis spec. That means:
    * - All args exist in the vis spec, and have valid values.
    * - All variables in the vis spec either have a default value, or are provided in args.
    */
   argsValid: boolean;
-  /** Use for clickable <Link>s. Provides a route that, when navigated to, would setScriptAndArgs to match. */
-  routeFor: VizierRouteContextProps['routeFor'];
   /** Runs the currently selected scripts, with the current args and any user-made edits to the PXL/Vis/etc. */
   execute: () => void;
   /**
@@ -63,14 +73,16 @@ export interface ScriptContextProps {
    * navigating away from the live view entirely or for certain error scenarios.
    */
   cancelExecution: () => void;
+  manual: boolean;
 }
 
 export const ScriptContext = React.createContext<ScriptContextProps>({
   script: null,
   args: {},
   argsValid: false,
+  manual: false,
   setScriptAndArgs: () => {},
-  routeFor: () => ({}),
+  setScriptAndArgsManually: () => {},
   execute: () => {},
   cancelExecution: () => {},
 });
@@ -78,14 +90,15 @@ export const ScriptContext = React.createContext<ScriptContextProps>({
 export const ScriptContextProvider: React.FC = ({ children }) => {
   const apiClient = React.useContext(PixieAPIContext);
   const {
-    scriptId, clusterName, args, push, routeFor,
+    scriptId, args, push,
   } = React.useContext(VizierRouteContext);
+  const { selectedClusterName: clusterName } = React.useContext(ClusterContext);
   const { scripts: availableScripts, loading: loadingAvailableScripts } = React.useContext(ScriptsContext);
   const resultsContext = React.useContext(ResultsContext);
   const showSnackbar = useSnackbar();
 
   const [clusters, loadingClusters] = useListClustersVerbose();
-  const clusterConfig: ClusterConfig|null = React.useMemo(() => {
+  const clusterConfig: ClusterConfig | null = React.useMemo(() => {
     if (loadingClusters || !clusters.length) return null;
     const selected = clusters.find((c) => c.clusterName === clusterName);
     if (!selected) return null;
@@ -99,24 +112,34 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
   }, [clusters, loadingClusters, clusterName]);
 
   const [script, setScript] = React.useState<ParsedScript>(null);
+  const [manual, setManual] = React.useState(false);
 
   // When the user changes the script entirely (like via breadcrumbs or a fresh navigation): reset PXL, vis, etc.
   React.useEffect(() => {
     if (!loadingAvailableScripts && availableScripts.has(scriptId)) {
       const scriptObj = availableScripts.get(scriptId);
-      if (scriptObj.id && scriptObj.vis && scriptObj.code) {
-        setScript({ ...scriptObj, visString: scriptObj.vis, vis: parseVis(scriptObj.vis || '{}') });
+      if (!scriptObj) {
+        return;
+      }
+      if (scriptObj.id === SCRATCH_SCRIPT.id) {
+        setScript((prevScript) => {
+          if (prevScript) {
+            return prevScript;
+          }
+          return { ...scriptObj, visString: scriptObj.vis, vis: parseVisSilently(scriptObj.vis || '{}') };
+        });
+      } else {
+        setScript({ ...scriptObj, visString: scriptObj.vis, vis: parseVisSilently(scriptObj.vis || '{}') });
       }
     }
   }, [scriptId, loadingAvailableScripts, availableScripts]);
 
   const serializedArgs = JSON.stringify(args, Object.keys(args ?? {}).sort());
-  // TODO(nick,PC-917): Once cluster is separated from args in VizierRoutingContext, use args as-is here.
-  const cleanedArgs = { ...args, cluster: undefined, script: undefined };
 
   // Per-execution minutia
-  const [runningExecution, setRunningExecution] = React.useState<Observable<ExecutionStateUpdate>|null>(null);
-  const [cancelExecution, setCancelExecution] = React.useState<() => void|null>(null);
+  const [runningExecution, setRunningExecution] = React.useState<Observable<ExecutionStateUpdate> | null>(null);
+  const [cancelExecution, setCancelExecution] = React.useState<() => void | null>(null);
+  const [numExecutionTries, setNumExecutionTries] = React.useState(0);
   const [hasMutation, setHasMutation] = React.useState(false);
 
   // Timing: execute can be called before the API has finished returning all needed data, because VizierRoutingContext
@@ -132,12 +155,23 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
     }
 
     if (!apiClient) throw new Error('Tried to execute a script before PixieAPIClient was ready!');
-    if (!script?.vis || !clusterConfig || !args) {
+    if (!script || !clusterConfig || !args) {
       throw new Error('Tried to execute before script, cluster connection, and/or args were ready!');
     }
 
-    // TODO(nick,PC-917): Once cluster is separated from args in VizierRoutingContext, use args as-is here.
-    const validationError = validateArgs(script.vis, cleanedArgs);
+    // Parse Vis for any possible formatting errors that would otherwise be silenly ignored.
+    try {
+      parseVis(script.visString);
+    } catch (e) {
+      resultsContext.setResults({
+        error: new VizierQueryError('vis', ['While parsing Vis Spec: ', e.toString()]),
+        tables: {},
+      });
+      return;
+    }
+
+    // TODO(philkuz, PC-917) we should probably send to the resultsContext as an error instead of showSnackbar.
+    const validationError = validateArgs(script.vis, args);
     if (validationError != null) {
       const details = Array.isArray(validationError.details) ? validationError.details : [validationError.details];
       if (Array.isArray(validationError.details)) {
@@ -148,16 +182,23 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
       return;
     }
 
-    // TODO(nick,PC-917): If hasMutation is true, execute needs to be in a retry loop (or just always do that?)
-    if (hasMutation) throw new Error('Not yet implemented: running scripts with mutations in new ScriptContext');
+    if (containsMutation(script.code) && manual) {
+      setNumExecutionTries(NUM_MUTATION_RETRIES);
+    } else if (containsMutation(script.code) && !manual) {
+      // We should call execute() even when the mutation wasn't manually executed.
+      // This will trigger the proper loading states so that if someone directly
+      // opened the page to a mutation script, their cluster loading state resolves properly.
+      setNumExecutionTries(0);
+    } else {
+      setNumExecutionTries(1);
+    }
 
     cancelExecution?.();
 
     const execution = apiClient.executeScript(
       clusterConfig,
       script.code,
-      // TODO(nick,PC-917): Once cluster is separated from args in VizierRoutingContext, use args as-is here.
-      getQueryFuncs(script.vis, cleanedArgs),
+      getQueryFuncs(script.vis, args),
     );
     setRunningExecution(execution);
     resultsContext.clearResults();
@@ -165,7 +206,7 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
     resultsContext.setStreaming(isStreaming(script.code));
     setHasMutation(containsMutation(script.code));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiClient, script, clusterConfig, serializedArgs, cancelExecution, scriptId, resultsContext]);
+  }, [apiClient, script, clusterConfig, serializedArgs, cancelExecution, scriptId, resultsContext, manual]);
 
   // As above: delay first execution if required information isn't ready yet.
   React.useEffect(() => {
@@ -176,32 +217,68 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
   }, [readyToExecute, awaitingExecution, execute]);
 
   React.useEffect(() => {
+    if (numExecutionTries <= 0) {
+      resultsContext.setLoading(false);
+      return () => {};
+    }
+
+    const timeout = setTimeout(() => {
+      if (hasMutation) {
+        setNumExecutionTries(numExecutionTries - 1);
+      }
+    }, MUTATION_RETRY_MS);
+
+    let cleanup = () => {};
+
     const subscription = runningExecution?.subscribe((update: ExecutionStateUpdate) => {
       switch (update.event.type) {
         case 'start':
+          // Cleanup is called when the React hook is cleaned up. This contains a subset
+          // of the functions called when an execution is cancelled. This is to handle
+          // retries for mutations, since the script loading/mutation/streaming state
+          // should not be completely reset.
+          cleanup = () => {
+            update.cancel();
+            setCancelExecution(null);
+          };
           setCancelExecution(() => () => {
             update.cancel();
             setHasMutation(false);
             resultsContext.setStreaming(false);
             resultsContext.setLoading(false);
+            setNumExecutionTries(0);
             setCancelExecution(null);
           });
           break;
         case 'data':
-          // TODO(nick): update.event.data has a bunch of batch updates that include partial table updates.
-          //  Use that, like we do in the old ScriptContext, to update a memoized list instead of replacing it on every
-          //  update. This is a performance improvement (also check if that's still true with the simplified run logic).
+          for (const updateBatch of update.event.data) {
+            const table: Table = resultsContext.tables[updateBatch.id];
+            if (!table) {
+              resultsContext.tables[updateBatch.id] = { ...updateBatch, data: [updateBatch.batch] };
+            } else {
+              table.data.push(updateBatch.batch);
+            }
+          }
           resultsContext.setResults({
             error: resultsContext.error,
             stats: resultsContext.stats,
             mutationInfo: resultsContext.mutationInfo,
-            tables: update.results.tables.reduce((a, c) => ({ ...a, [c.name]: c }), {}),
+            tables: resultsContext.tables,
           });
+          if (resultsContext.streaming) {
+            resultsContext.setLoading(false);
+          }
           break;
         case 'metadata':
         case 'mutation-info':
         case 'status':
         case 'stats':
+          // Mutation schema not ready yet.
+          if (hasMutation && update.results.mutationInfo?.getStatus().getCode() === GRPCStatusCode.Unavailable) {
+            resultsContext.setResults({ tables: {}, mutationInfo: update.results.mutationInfo });
+            break;
+          }
+
           // TODO(nick): Same performance improvement for tables (though this event happens once, maybe best to refresh)
           if (update.results && (resultsContext.streaming || update.results.executionStats)) {
             resultsContext.setResults({
@@ -218,6 +295,7 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
             setCancelExecution(null);
             resultsContext.setLoading(false);
             resultsContext.setStreaming(false);
+            setNumExecutionTries(0);
             setHasMutation(false);
             analytics.track('Query Execution', {
               status: 'success',
@@ -234,6 +312,7 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
           const errMsg = error.message;
           resultsContext.setLoading(false);
           resultsContext.setStreaming(false);
+          setNumExecutionTries(numExecutionTries - 1);
 
           analytics.track('Query Execution', {
             status: 'failed',
@@ -261,30 +340,41 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
       }
     });
     return () => {
-      cancelExecution?.();
+      clearTimeout(timeout);
+      cleanup();
       subscription?.unsubscribe();
     };
     // ONLY watch runningExecution for this. This effect only subscribes/unsubscribes from it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [runningExecution]);
+  }, [runningExecution, numExecutionTries]);
 
   const context: ScriptContextProps = React.useMemo(() => ({
     script,
     args,
-    argsValid: !!script && !!args && validateArgs(script.vis, cleanedArgs) == null,
-    setScriptAndArgs: (newScript: Script|ParsedScript, newArgs: Record<string, string|string[]> = args) => {
+    argsValid: !!script && !!args && validateArgs(script.vis, args) == null,
+    manual,
+    setScriptAndArgs: (newScript: Script | ParsedScript, newArgs: Record<string, string | string[]> = args) => {
       const parsedScript = typeof newScript.vis !== 'string'
         ? (newScript as ParsedScript)
-        : { ...newScript, visString: newScript.vis, vis: parseVis(newScript.vis || '{}') };
+        : { ...newScript, visString: newScript.vis, vis: parseVisSilently(newScript.vis || '{}') };
       setScript(parsedScript);
+      setManual(false);
 
-      push(newScript.id, argsForVis(parsedScript.vis, newArgs));
+      push(clusterName, newScript.id, argsForVis(parsedScript.vis, newArgs));
     },
-    routeFor: (s, a) => routeFor(s, a),
+    setScriptAndArgsManually: (newScript: Script | ParsedScript, newArgs: Record<string, string | string[]> = args) => {
+      const parsedScript = typeof newScript.vis !== 'string'
+        ? (newScript as ParsedScript)
+        : { ...newScript, visString: newScript.vis, vis: parseVisSilently(newScript.vis || '{}') };
+      setScript(parsedScript);
+      setManual(true);
+
+      push(clusterName, newScript.id, argsForVis(parsedScript.vis, newArgs));
+    },
     execute,
     cancelExecution: (cancelExecution ?? (() => {})),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [script, execute, serializedArgs]);
+  }), [script, execute, serializedArgs, clusterName]);
 
   return <ScriptContext.Provider value={context}>{children}</ScriptContext.Provider>;
 };

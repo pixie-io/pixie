@@ -39,8 +39,7 @@ import { ResultsContext, ResultsContextProvider } from 'context/results-context'
 
 import { ClusterInstructions } from 'containers/App/deploy-instructions';
 import NavBars from 'containers/App/nav-bars';
-import { VizierContextRouter } from 'containers/App/vizier-routing';
-import { ScriptsContextProvider, SCRATCH_SCRIPT } from 'containers/App/scripts-context';
+import { SCRATCH_SCRIPT } from 'containers/App/scripts-context';
 import { DataDrawerSplitPanel } from 'containers/data-drawer/data-drawer';
 import { EditorSplitPanel } from 'containers/editor/new-editor';
 import Canvas from 'containers/live/new-canvas';
@@ -105,6 +104,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   canvas: {
     marginLeft: theme.spacing(0.5),
+    height: '100%',
   },
   hidden: {
     display: 'none',
@@ -329,7 +329,7 @@ const LiveView: React.FC = () => {
     };
   }, [setWidgetsMoveable]);
 
-  if (!selectedClusterName || !script || !args) return null;
+  if (!selectedClusterName || !args) return null;
 
   return (
     <div className={classes.root}>
@@ -348,8 +348,9 @@ const LiveView: React.FC = () => {
         <EditorSplitPanel>
           <div className={classes.content}>
             <LiveViewBreadcrumbs />
-            {
-              !hasFinishedLoadingCluster || clusterUnhealthy ? (
+            {/* eslint-disable-next-line no-nested-ternary */}
+            {!script ? (<div> Script name invalid, choose a new script in the dropdown</div>)
+              : (!hasFinishedLoadingCluster || clusterUnhealthy ? (
                 <div className='center-content'>
                   <ClusterLoadingComponent
                     clusterUnhealthy={clusterUnhealthy}
@@ -361,8 +362,7 @@ const LiveView: React.FC = () => {
                 <div className={classes.canvas} ref={canvasRef}>
                   <Canvas editable={widgetsMoveable} parentRef={canvasRef} />
                 </div>
-              )
-            }
+              ))}
           </div>
         </EditorSplitPanel>
       </LiveViewShortcutsProvider>
@@ -370,23 +370,17 @@ const LiveView: React.FC = () => {
   );
 };
 
-// TODO(nick,PC-917): withLiveViewContext needs a new version too that can do this. Complexity: VizierContextRouter
-//  isn't just a context, it does manipulate behavior. Should it be in there? It's midway inside the stack; hard to move
 const ContextualizedLiveView: React.FC = () => (
   <LayoutContextProvider>
     <DataDrawerContextProvider>
-      <ScriptsContextProvider>
-        <VizierContextRouter>
-          <ResultsContextProvider>
-            <ScriptContextProvider>
-              <EditorContextProvider>
-                <ScriptLoader />
-                <LiveView />
-              </EditorContextProvider>
-            </ScriptContextProvider>
-          </ResultsContextProvider>
-        </VizierContextRouter>
-      </ScriptsContextProvider>
+      <ResultsContextProvider>
+        <ScriptContextProvider>
+          <EditorContextProvider>
+            <ScriptLoader />
+            <LiveView />
+          </EditorContextProvider>
+        </ScriptContextProvider>
+      </ResultsContextProvider>
     </DataDrawerContextProvider>
   </LayoutContextProvider>
 );

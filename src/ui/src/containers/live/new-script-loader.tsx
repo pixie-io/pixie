@@ -17,9 +17,9 @@
  */
 
 import * as React from 'react';
+import { ClusterContext } from 'common/cluster-context';
 import { ScriptContext } from 'context/new-script-context';
 import { containsMutation } from '@pixie-labs/api';
-import { SCRATCH_SCRIPT } from 'containers/App/scripts-context';
 import { useSnackbar } from '@pixie-labs/components';
 
 /**
@@ -28,8 +28,10 @@ import { useSnackbar } from '@pixie-labs/components';
  */
 export const ScriptLoader: React.FC = () => {
   const {
-    script, args, execute, cancelExecution, argsValid,
+    script, args, execute, cancelExecution, argsValid, manual,
   } = React.useContext(ScriptContext);
+  const { selectedClusterName: clusterName } = React.useContext(ClusterContext);
+
   const showSnackbar = useSnackbar();
 
   // Sorting keys to ensure stability between identical objects when the route might change their ordering.
@@ -39,14 +41,11 @@ export const ScriptLoader: React.FC = () => {
 
   React.useEffect(() => {
     // Wait for everything to be set first.
-    if (script == null || args == null || script?.vis == null) return;
-
+    if (script == null || args == null) return;
     cancelExecution?.();
-    const hasMutation = containsMutation(script.code);
+
     if (
       script
-      && script.id !== SCRATCH_SCRIPT.id
-      && !hasMutation
       && serializedArgs
       && argsValid
     ) {
@@ -58,7 +57,7 @@ export const ScriptLoader: React.FC = () => {
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [script, serializedArgs, serializedVis]);
+  }, [script, serializedArgs, serializedVis, clusterName, manual]);
 
   return null;
 };

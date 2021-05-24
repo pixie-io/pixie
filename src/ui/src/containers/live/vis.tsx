@@ -19,7 +19,7 @@
 import {
   VizierQueryError, VizierQueryArg, VizierQueryFunc, GRPCStatusCode,
 } from '@pixie-labs/api';
-import { ArgTypeMap, getArgTypesForVis } from 'utils/args-utils';
+import { ArgTypeMap, argTypesForVis } from 'utils/args-utils';
 
 import { Status } from 'types/generated/vizierapi_pb';
 import { ChartPosition } from './layout';
@@ -71,21 +71,32 @@ export interface Vis {
   globalFuncs: GlobalFunc[];
 }
 
+// Parses vis and errors out instead of silently hiding the error.
 export function parseVis(json: string): Vis {
+  // If the json string is empty, we should return a null.
+  if (!json) {
+    return null;
+  }
+  const parsed = JSON.parse(json);
+  if (typeof parsed !== 'object') {
+    throw new VizierQueryError('vis', 'did not parse object');
+  }
+  if (!parsed.variables) {
+    parsed.variables = [];
+  }
+  if (!parsed.widgets) {
+    parsed.widgets = [];
+  }
+  if (!parsed.globalFuncs) {
+    parsed.globalFuncs = [];
+  }
+  return parsed as Vis;
+}
+
+// Parses Vis from string and squashes any error that occurs.
+export function parseVisSilently(json: string): Vis {
   try {
-    const parsed = JSON.parse(json);
-    if (typeof parsed === 'object') {
-      if (!parsed.variables) {
-        parsed.variables = [];
-      }
-      if (!parsed.widgets) {
-        parsed.widgets = [];
-      }
-      if (!parsed.globalFuncs) {
-        parsed.globalFuncs = [];
-      }
-      return parsed as Vis;
-    }
+    return parseVis(json);
   } catch (e) {
     // Tslint doesn't allow empty blocks.
   }
@@ -186,7 +197,7 @@ export function getQueryFuncs(vis: Vis, variableValues: VariableValues): VizierQ
     ...defaults,
     ...variableValues,
   };
-  const argTypes = getArgTypesForVis(vis);
+  const argTypes = argTypesForVis(vis);
   const valsOrDefaults = preprocessVariables(unprocessedValsOrDefaults, argTypes);
 
   let visGlobalFuncs = vis.globalFuncs;

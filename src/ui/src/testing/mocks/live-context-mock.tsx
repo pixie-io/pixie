@@ -23,9 +23,8 @@ import { DARK_THEME } from '@pixie-labs/components';
 import { LayoutContext, LayoutContextProps } from 'context/layout-context';
 import { LiveTourContext, LiveTourContextProps } from 'containers/App/live-tour';
 import { ResultsContext, ResultsContextProps } from 'context/results-context';
-import { ScriptContext, ScriptContextProps } from 'context/script-context';
+import { ScriptContext, ScriptContextProps } from 'context/new-script-context';
 import { ScriptsContext, ScriptsContextProps } from 'containers/App/scripts-context';
-import { LiveViewPage } from 'containers/live-widgets/utils/live-view-params';
 import { ClusterContext, ClusterContextProps } from 'common/cluster-context';
 import VizierGRPCClientContext, { VizierGRPCClientContextProps } from 'common/vizier-grpc-client-context';
 import { GQLClusterStatus as ClusterStatus } from '@pixie-labs/api';
@@ -76,35 +75,29 @@ export const LIVE_CONTEXT_DEFAULTS: Required<MockProps> = {
     tables: {},
   },
   script: {
-    liveViewPage: LiveViewPage.Default,
-    args: {},
-    setArgs: jest.fn(),
-    visJSON: undefined, // Actual default
-    vis: {
-      variables: [],
-      widgets: [],
-      globalFuncs: [],
+    script: {
+      id: '',
+      title: '',
+      code: '',
+      visString: '',
+      vis: {
+        variables: [],
+        widgets: [],
+        globalFuncs: [],
+      },
     },
-    setVis: jest.fn(),
-    setCancelExecution: jest.fn(),
-    pxlEditorText: null, // Actual default
-    visEditorText: null, // Actual default
-    setVisEditorText: jest.fn(),
-    setPxlEditorText: jest.fn(),
-    pxl: '',
-    setPxl: jest.fn(),
-    title: '',
-    id: '',
-    setScript: jest.fn(),
+    args: {},
+    setScriptAndArgs: jest.fn(),
+    setScriptAndArgsManually: jest.fn(),
+    manual: false,
+    argsValid: true,
     execute: jest.fn(),
-    saveEditorAndExecute: jest.fn(),
-    parseVisOrShowError: jest.fn(),
-    argsForVisOrShowError: jest.fn(),
-    readyToExecute: true,
+    cancelExecution: jest.fn(),
   },
   scripts: {
     scripts: new Map(),
     loading: false,
+    setScratchScript: jest.fn(),
   },
   cluster: {
     selectedCluster: '',
@@ -112,7 +105,6 @@ export const LIVE_CONTEXT_DEFAULTS: Required<MockProps> = {
     selectedClusterName: '',
     selectedClusterPrettyName: '',
     setCluster: jest.fn(),
-    setClusterByName: jest.fn(),
   },
 };
 

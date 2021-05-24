@@ -21,18 +21,12 @@ import { Variable, Vis } from 'containers/live/vis';
 
 export type Arguments = Record<string, string|string[]>;
 
+/** Deep equality test for two sets of script arguments */
 export function argsEquals(args1: Arguments, args2: Arguments): boolean {
-  if (args1 === args2) {
-    return true;
-  }
+  if (args1 === args2) return true;
+  if (args1 === null || args2 === null) return false;
+  if (Object.keys(args1).length !== Object.keys(args2).length) return false;
 
-  if (args1 === null || args2 === null) {
-    return false;
-  }
-
-  if (Object.keys(args1).length !== Object.keys(args2).length) {
-    return false;
-  }
   const args1Map = new Map(Object.entries(args1));
   for (const [key, val] of Object.entries(args2)) {
     if (args1Map.get(key) !== val) {
@@ -40,32 +34,63 @@ export function argsEquals(args1: Arguments, args2: Arguments): boolean {
     }
     args1Map.delete(key);
   }
-  if (args1Map.size !== 0) {
-    return false;
-  }
-  return true;
+
+  return args1Map.size === 0;
 }
 
-// Populate arguments either from defaultValues or from the input args.
-export function argsForVis(vis: Vis, args: Arguments, scriptId?: string): Arguments {
-  if (!vis) {
+/**
+ * Checks that all variables in the vis spec are specified with valid values (or have a default), and that no extra
+ * args were provided that don't exist in the vis spec.
+ */
+export function validateArgs(vis: Vis, args: Arguments): VizierQueryError|null {
+  if (!vis?.variables.length) {
+    return null;
+  }
+
+  const errors: string[] = [];
+
+  for (const { name, defaultValue, validValues } of vis?.variables) {
+    if (defaultValue == null && (args[name] == null || args[name] === '')) {
+      errors.push(`Missing value for required arg ${name}.`);
+    } else if (validValues?.length) {
+      let vals = defaultValue ?? args[name];
+      if (!Array.isArray(vals)) vals = [vals];
+      for (const val of vals) {
+        if (!validValues.includes(val)) {
+          errors.push(`Arg ${name} does not permit value ${val}. Allowed values: ${validValues.join(', ')}`);
+        }
+      }
+    }
+  }
+
+  const knownVars = vis.variables.map((v) => v.name);
+  for (const argName of Object.keys(args)) {
+    if (!knownVars.includes(argName) && args[argName] !== undefined) {
+      errors.push(`Unrecognized arg ${argName} was provided.`);
+    }
+  }
+
+  if (errors.length > 0) {
+    return new VizierQueryError('vis', errors);
+  }
+  return null;
+}
+
+/**
+ * Merges the given arguments with the defaults for the given Vis spec. Strips/ignores extraneous args.
+ * This does NOT check validateArgPresenceAndValues; it's recommended to check that first if trying to run a script.
+ */
+export function argsForVis(vis: Vis, args: Arguments): Arguments {
+  if (!vis?.variables.length) {
     return {};
   }
-  let inArgs = args;
+
   const outArgs: Arguments = {};
-  if (!args) {
-    inArgs = {};
+  for (const { name, defaultValue } of vis.variables) {
+    // Note: if defaultValue is undefined, the arg is required.
+    outArgs[name] = args[name] ?? defaultValue ?? '';
   }
-  for (const variable of vis.variables) {
-    const val = inArgs[variable.name] != null ? inArgs[variable.name] : variable.defaultValue;
-    outArgs[variable.name] = val;
-  }
-  if (inArgs.script) {
-    outArgs.script = inArgs.script;
-  }
-  if (scriptId) {
-    outArgs.script = scriptId;
-  }
+
   return outArgs;
 }
 
@@ -73,88 +98,24 @@ export interface ArgTypeMap {
   [arg: string]: string;
 }
 
-// Get the types of the given args, according to the provided vis spec.
-export function getArgTypesForVis(vis: Vis): ArgTypeMap {
-  const types: ArgTypeMap = {};
+/** Extracts the type of each variable in the given vis spec. */
+export function argTypesForVis(vis: Vis): ArgTypeMap {
+  if (!vis?.variables.length) {
+    return {};
+  }
 
-  vis.variables.forEach((v) => {
-    types[v.name] = v.type;
-  });
-  return types;
+  return vis.variables.reduce((a, c) => ({ ...a, [c.name]: c.type }), {});
 }
 
 export interface ArgToVariableMap {
   [arg: string]: Variable;
 }
 
-export function getArgVariableMap(vis: Vis): ArgToVariableMap {
-  const map: ArgToVariableMap = {};
-
-  vis.variables.forEach((v) => {
-    map[v.name] = v;
-  });
-  return map;
-}
-
-export function validateArgValues(vis: Vis, args: Arguments): VizierQueryError {
-  if (!vis) {
-    return null;
-  }
-  let inArgs = args;
-  if (!args) {
-    inArgs = {};
-  }
-  const errors = [];
-  for (const variable of vis.variables) {
-    const rawVal: string|string[] = inArgs[variable.name] != null ? inArgs[variable.name] : variable.defaultValue;
-    if (variable.validValues && variable.validValues.length) {
-      const vals: string[] = Array.isArray(rawVal) ? rawVal : [rawVal];
-      for (const val of vals) {
-        const validValuesSet = new Set(variable.validValues);
-        if (!validValuesSet.has(val)) {
-          errors.push(`Value '${val}' passed in for '${variable.name}' is not in `
-              + `the set of valid values '${variable.validValues.join(', ')}'.`);
-        }
-      }
-    }
+/** Creates a record of variable name -> variable definition from the given vis spec. */
+export function argVariableMap(vis: Vis): ArgToVariableMap {
+  if (!vis?.variables.length) {
+    return {};
   }
 
-  if (errors.length > 0) {
-    return new VizierQueryError('vis', errors);
-  }
-  return null;
-}
-
-// This is exactly the same as validateArgValues but also adds validation to check if
-// required args (args that must be provided by the user and have no defaults) are present or not.
-export function validateRequiredArgs(vis: Vis, args: Arguments): VizierQueryError {
-  if (!vis) {
-    return null;
-  }
-  let inArgs = args;
-  if (!args) {
-    inArgs = {};
-  }
-  const errors = [];
-  for (const variable of vis.variables) {
-    const rawVal: string|string[] = inArgs[variable.name] != null ? inArgs[variable.name] : variable.defaultValue;
-    if (!variable.defaultValue && !rawVal) {
-      errors.push(`Missing value for required '${variable.name}'.`);
-    }
-    if (variable.validValues && variable.validValues.length) {
-      const vals: string[] = Array.isArray(rawVal) ? rawVal : [rawVal];
-      for (const val of vals) {
-        const validValuesSet = new Set(variable.validValues);
-        if (!validValuesSet.has(val)) {
-          errors.push(`Value '${val}' passed in for '${variable.name}' is not in `
-              + `the set of valid values '${variable.validValues.join(', ')}'.`);
-        }
-      }
-    }
-  }
-
-  if (errors.length > 0) {
-    return new VizierQueryError('vis', errors);
-  }
-  return null;
+  return vis.variables.reduce((a, c) => ({ ...a, [c.name]: c }), {});
 }

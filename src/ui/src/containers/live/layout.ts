@@ -80,7 +80,7 @@ function mobileWidgetPositions(numWidgets: number) {
 
 // addLayout is only called in the non-mobile case.
 export function addLayout(visSpec: Vis): Vis {
-  for (let i = 0; i < visSpec.widgets.length; ++i) {
+  for (let i = 0; i < visSpec?.widgets.length; ++i) {
     const widget = visSpec.widgets[i];
     if (!widget.position) {
       const positions = defaultWidgetPositions(visSpec.widgets.length);
@@ -104,6 +104,10 @@ function widgetName(widget: Widget, widgetIndex: number): string {
 // Generates the layout of a Live View, with mobile-specific layout that follow the overall
 // order of the vis spec positions but tiles it differently.
 export function toLayout(widgets: Widget[], isMobile: boolean): Layout[] {
+  if (widgets == null) { // Script has no vis spec.
+    return [];
+  }
+
   const nonMobileLayout = widgets.map((widget, i) => ({
     ...widget.position,
     i: widgetName(widget, i),

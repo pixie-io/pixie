@@ -18,9 +18,11 @@
 
 import * as React from 'react';
 
+import { SCRATCH_SCRIPT, ScriptsContext } from 'containers/App/scripts-context';
 import { SetStateFunc } from './common';
 
 import { ScriptContext } from './new-script-context';
+import { LayoutContext } from './layout-context';
 
 export interface EditorContextProps {
   setVisEditorText: SetStateFunc<string>;
@@ -32,15 +34,31 @@ export const EditorContext = React.createContext<EditorContextProps>(null);
 
 const EditorContextProvider: React.FC = ({ children }) => {
   const {
-    script, setScriptAndArgs, args,
+    script, setScriptAndArgsManually, args,
   } = React.useContext(ScriptContext);
+
+  const {
+    setScratchScript,
+  } = React.useContext(ScriptsContext);
+
+  const {
+    editorPanelOpen,
+  } = React.useContext(LayoutContext);
+
   const [visEditorText, setVisEditorText] = React.useState<string>('');
   const [pxlEditorText, setPxlEditorText] = React.useState<string>('');
 
   // Saves the editor values in the script.
   const saveEditor = React.useCallback(() => {
-    setScriptAndArgs({ ...script, code: pxlEditorText, vis: visEditorText }, args);
-  }, [setScriptAndArgs, script, args, pxlEditorText, visEditorText]);
+    const id = editorPanelOpen ? SCRATCH_SCRIPT.id : script.id;
+    const scratchScript = {
+      ...script, id, code: pxlEditorText, vis: visEditorText,
+    };
+    if (editorPanelOpen) {
+      setScratchScript(scratchScript);
+    }
+    setScriptAndArgsManually(scratchScript, args);
+  }, [setScratchScript, setScriptAndArgsManually, script, args, editorPanelOpen, pxlEditorText, visEditorText]);
 
   // Update the text when the script changes, but not edited.
   React.useEffect(() => {

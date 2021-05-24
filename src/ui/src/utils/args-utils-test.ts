@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { argsEquals, argsForVis, getArgTypesForVis } from 'utils/args-utils';
+import { argsEquals, argsForVis, argTypesForVis } from 'utils/args-utils';
 
 describe('argsEquals', () => {
   it('returns true for objects with same keys and values', () => {
@@ -123,35 +123,9 @@ describe('argsForVis', () => {
 
     expect(argsForVis(vis, args)).toEqual({ foo: 'default foo', bar: 'bar' });
   });
-
-  it('fills the arg with the original script ID if one wasn\'t provided', () => {
-    const vis = {
-      widgets: [],
-      globalFuncs: [],
-      variables: [
-        { name: 'foo', type: 'foo', defaultValue: 'default foo' },
-      ],
-    };
-    const args = { foo: 'foo', script: 'original' };
-
-    expect(argsForVis(vis, args)).toEqual({ foo: 'foo', script: 'original' });
-  });
-
-  it('it uses the provided script ID', () => {
-    const vis = {
-      widgets: [],
-      globalFuncs: [],
-      variables: [
-        { name: 'foo', type: 'foo', defaultValue: 'default foo' },
-      ],
-    };
-    const args = { foo: 'foo', script: 'original' };
-
-    expect(argsForVis(vis, args, 'newScript')).toEqual({ foo: 'foo', script: 'newScript' });
-  });
 });
 
-describe('getArgTypesForVis', () => {
+describe('argTypesForVis', () => {
   it('returns a map with the correct arg types', () => {
     const vis = {
       widgets: [],
@@ -160,6 +134,6 @@ describe('getArgTypesForVis', () => {
         { name: 'foo', type: 'foobar' },
       ],
     };
-    expect(getArgTypesForVis(vis)).toEqual({ foo: 'foobar' });
+    expect(argTypesForVis(vis)).toEqual({ foo: 'foobar' });
   });
 });

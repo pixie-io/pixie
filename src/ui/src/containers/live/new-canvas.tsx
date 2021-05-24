@@ -350,7 +350,7 @@ const Canvas = (props: CanvasProps) => {
     loading && classes.loading,
   );
 
-  const layout = React.useMemo(() => toLayout(script.vis.widgets, isMobile), [script.vis, isMobile]);
+  const layout = React.useMemo(() => toLayout(script.vis?.widgets, isMobile), [script.vis, isMobile]);
   const [errorOpen, setErrorOpen] = React.useState(false);
 
   const emptyTableMsg = React.useMemo(() => {
@@ -362,7 +362,7 @@ const Canvas = (props: CanvasProps) => {
 
   const charts = React.useMemo(() => {
     const widgets = [];
-    script.vis.widgets.forEach((widget, i) => {
+    script.vis?.widgets.forEach((widget, i) => {
       const widgetLayout = layout[i];
       const display = widget.displaySpec;
       const tableName = widgetTableName(widget, i);

@@ -23,6 +23,7 @@ import { useUserInfo } from '@pixie-labs/api-react';
 export interface ScriptsContextProps {
   scripts: Map<string, Script>;
   loading: boolean;
+  setScratchScript: (Script) => void,
 }
 
 export const ScriptsContext = React.createContext<ScriptsContextProps>(null);
@@ -50,7 +51,8 @@ export const ScriptsContextProvider: React.FC = ({ children }) => {
     if (!user || loading || error) return;
     GetPxScripts(user.orgID, user.orgName).then((list) => {
       const availableScripts = new Map<string, Script>(list.map((script) => [script.id, script]));
-      availableScripts.set(SCRATCH_SCRIPT.id, SCRATCH_SCRIPT);
+      const scratchScript = scripts.get(SCRATCH_SCRIPT.id) ?? SCRATCH_SCRIPT;
+      availableScripts.set(SCRATCH_SCRIPT.id, scratchScript);
       setScripts(availableScripts);
       // eslint-disable-next-line react-hooks/exhaustive-deps
       nextScripts = availableScripts;
@@ -59,8 +61,18 @@ export const ScriptsContextProvider: React.FC = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, user?.orgID, user?.orgName, loading, error]);
 
+  const setScratchScript = React.useCallback((script: Script) => {
+    setScripts((currScripts) => {
+      const newScripts = currScripts;
+      newScripts.set(SCRATCH_SCRIPT.id, script);
+      return newScripts;
+    });
+  }, []);
+
   const reallyLoading = loading || nextScripts !== scripts;
-  const context = React.useMemo(() => ({ scripts, loading: reallyLoading }), [scripts, reallyLoading]);
+  const context = React.useMemo(() => (
+    { scripts, loading: reallyLoading, setScratchScript }
+  ), [scripts, reallyLoading, setScratchScript]);
 
   return (
     <ScriptsContext.Provider value={context}>

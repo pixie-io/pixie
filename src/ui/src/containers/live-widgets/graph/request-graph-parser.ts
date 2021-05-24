@@ -33,7 +33,7 @@ export interface Entity {
 
   // Display configuration.
   shape?: string;
-  image?: { selected?: string; unselected?: string};
+  image?: { selected?: string; unselected?: string };
 }
 
 export interface Edge {

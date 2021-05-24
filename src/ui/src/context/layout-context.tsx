@@ -16,7 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as storage from 'common/storage';
 import * as React from 'react';
 
 import { useTheme } from '@material-ui/core/styles';
@@ -43,21 +42,11 @@ export interface LayoutContextProps {
 export const LayoutContext = React.createContext<LayoutContextProps>(null);
 
 export const LayoutContextProvider: React.FC = ({ children }) => {
-  const [editorSplitsSizes, setEditorSplitSizes] = storage.useLocalStorage<Splits>(
-    storage.LIVE_VIEW_EDITOR_SPLITS_KEY, [40, 60],
-  );
-  const [editorPanelOpen, setEditorPanelOpen] = storage.useLocalStorage<boolean>(
-    storage.LIVE_VIEW_EDITOR_OPENED_KEY, false,
-  );
+  const [editorSplitsSizes, setEditorSplitSizes] = React.useState<Splits>([40, 60]);
+  const [editorPanelOpen, setEditorPanelOpen] = React.useState<boolean>(false);
 
-  const [dataDrawerSplitsSizes, setDataDrawerSplitsSizes] = storage.useLocalStorage<Splits>(
-    storage.LIVE_VIEW_DATA_DRAWER_SPLITS_KEY,
-    [60, 40],
-  );
-  const [dataDrawerOpen, setDataDrawerOpen] = storage.useLocalStorage<boolean>(
-    storage.LIVE_VIEW_DATA_DRAWER_OPENED_KEY,
-    false,
-  );
+  const [dataDrawerSplitsSizes, setDataDrawerSplitsSizes] = React.useState<Splits>([60, 40]);
+  const [dataDrawerOpen, setDataDrawerOpen] = React.useState<boolean>(false);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('xs')); // width < 600px
