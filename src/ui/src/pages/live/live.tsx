@@ -62,7 +62,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   content: {
     marginLeft: theme.spacing(8),
-    marginTop: theme.spacing(2),
+    paddingTop: theme.spacing(2),
     display: 'flex',
     flex: 1,
     minWidth: 0,
