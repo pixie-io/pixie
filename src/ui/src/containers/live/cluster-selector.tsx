@@ -27,7 +27,7 @@ const ClusterSelector: React.FC = () => {
   const [clusters, loading, error] = useListClusters();
   const { selectedCluster, setCluster } = React.useContext(ClusterContext);
 
-  if (loading || !clusters || error) return (<div>Loading...</div>);
+  if (loading || !clusters || error) return (<></>);
 
   const clusterName = clusters.find((c) => c.id === selectedCluster)?.prettyClusterName || 'unknown cluster';
   const clusterNameToID: Record<string, string> = {};
