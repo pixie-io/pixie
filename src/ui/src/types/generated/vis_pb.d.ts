@@ -492,15 +492,8 @@ export namespace VegaChart {
 }
 
 export class Table extends jspb.Message {
-  getDisplayColumnsList(): Array<Table.ColumnDisplay>;
-  setDisplayColumnsList(value: Array<Table.ColumnDisplay>): Table;
-  clearDisplayColumnsList(): Table;
-  addDisplayColumns(value?: Table.ColumnDisplay, index?: number): Table.ColumnDisplay;
-
-  getGutterColumn(): Table.ColumnDisplay | undefined;
-  setGutterColumn(value?: Table.ColumnDisplay): Table;
-  hasGutterColumn(): boolean;
-  clearGutterColumn(): Table;
+  getGutterColumn(): string;
+  setGutterColumn(value: string): Table;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): Table.AsObject;
@@ -512,39 +505,8 @@ export class Table extends jspb.Message {
 
 export namespace Table {
   export type AsObject = {
-    displayColumnsList: Array<Table.ColumnDisplay.AsObject>,
-    gutterColumn?: Table.ColumnDisplay.AsObject,
+    gutterColumn: string,
   }
-
-  export class ColumnDisplay extends jspb.Message {
-    getName(): string;
-    setName(value: string): ColumnDisplay;
-
-    getDisplayTitle(): string;
-    setDisplayTitle(value: string): ColumnDisplay;
-
-    getColumnCase(): ColumnDisplay.ColumnCase;
-
-    serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): ColumnDisplay.AsObject;
-    static toObject(includeInstance: boolean, msg: ColumnDisplay): ColumnDisplay.AsObject;
-    static serializeBinaryToWriter(message: ColumnDisplay, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): ColumnDisplay;
-    static deserializeBinaryFromReader(message: ColumnDisplay, reader: jspb.BinaryReader): ColumnDisplay;
-  }
-
-  export namespace ColumnDisplay {
-    export type AsObject = {
-      name: string,
-      displayTitle: string,
-    }
-
-    export enum ColumnCase { 
-      COLUMN_NOT_SET = 0,
-      NAME = 1,
-    }
-  }
-
 }
 
 export class Graph extends jspb.Message {

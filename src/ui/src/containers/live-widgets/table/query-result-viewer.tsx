@@ -17,6 +17,7 @@
  */
 
 import { ClusterContext } from 'common/cluster-context';
+import { WidgetDisplay } from 'containers/live/vis';
 import { VizierTable as Table } from '@pixie-labs/api';
 import * as React from 'react';
 import {
@@ -55,12 +56,19 @@ const styles = ({ spacing }: Theme) => createStyles({
   },
 });
 
+export interface QueryResultTableDisplay extends WidgetDisplay {
+  gutterColumn?: string,
+}
+
 export interface QueryResultTableProps extends WithStyles<typeof styles> {
+  display: QueryResultTableDisplay;
   data: Table;
   propagatedArgs: Arguments;
 }
 
-const QueryResultTableBare = (({ data, classes, propagatedArgs }: QueryResultTableProps) => {
+const QueryResultTableBare = (({
+  display, data, classes, propagatedArgs,
+}: QueryResultTableProps) => {
   const { selectedClusterName } = React.useContext(ClusterContext);
   const ExpandedRowRenderer = (rowData: any) => (
     <JSONData
@@ -101,6 +109,7 @@ const QueryResultTableBare = (({ data, classes, propagatedArgs }: QueryResultTab
           expandable
           expandedRenderer={ExpandedRowRenderer}
           prettyRender
+          gutterColumn={display.gutterColumn}
           clusterName={selectedClusterName}
           onRowsRendered={(info: IndexRange) => {
             setIndexRange(info);

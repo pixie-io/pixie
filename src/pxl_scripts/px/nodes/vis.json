@@ -203,7 +203,8 @@
         ]
       },
       "displaySpec": {
-        "@type": "types.px.dev/px.vispb.Table"
+        "@type": "types.px.dev/px.vispb.Table",
+        "gutterColumn": "status"
       }
     }
   ]

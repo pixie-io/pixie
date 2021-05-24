@@ -24,7 +24,7 @@ import { GraphDisplay, GraphWidget } from 'containers/live-widgets/graph/graph';
 import { RequestGraphDisplay, RequestGraphWidget } from 'containers/live-widgets/graph/request-graph';
 
 import { TimeSeriesContext, withTimeSeriesContextProvider } from 'containers/live-widgets/context/time-series-context';
-import { QueryResultTable } from 'containers/live-widgets/table/query-result-viewer';
+import { QueryResultTableDisplay, QueryResultTable } from 'containers/live-widgets/table/query-result-viewer';
 import * as React from 'react';
 import * as GridLayout from 'react-grid-layout';
 import { resizeEvent, triggerResize } from 'utils/resize';
@@ -167,7 +167,11 @@ const WidgetDisplay = ({
     return (
       <>
         <div className={classes.widgetTitle}>{widgetName}</div>
-        <QueryResultTable data={table} propagatedArgs={propagatedArgs} />
+        <QueryResultTable
+          display={display as QueryResultTableDisplay}
+          data={table}
+          propagatedArgs={propagatedArgs}
+        />
       </>
     );
   }
@@ -424,7 +428,7 @@ const Canvas = (props: CanvasProps) => {
           Object.entries(tables).map(([tableName, table]) => (
             <Paper elevation={1} key={tableName} className={className}>
               <div className={classes.widgetTitle}>{tableName}</div>
-              <QueryResultTable data={table} propagatedArgs={propagatedArgs} />
+              <QueryResultTable display={{} as QueryResultTableDisplay} data={table} propagatedArgs={propagatedArgs} />
             </Paper>
           ))
         }

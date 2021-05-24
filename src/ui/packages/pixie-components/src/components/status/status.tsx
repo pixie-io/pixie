@@ -28,15 +28,19 @@ export type StatusGroup = 'healthy' | 'unhealthy' | 'pending' | 'unknown';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   unhealthy: {
+    verticalAlign: 'text-bottom',
     color: theme.palette.error.main,
   },
   healthy: {
+    verticalAlign: 'text-bottom',
     color: theme.palette.success.main,
   },
   pending: {
+    verticalAlign: 'text-bottom',
     color: theme.palette.warning.main,
   },
   unknown: {
+    verticalAlign: 'text-bottom',
     color: theme.palette.foreground.grey1,
   },
 }));

@@ -41,7 +41,6 @@ import {
   alpha,
   makeStyles,
   Theme,
-  useTheme,
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import Tooltip from '@material-ui/core/Tooltip';
@@ -179,6 +178,20 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   gutterHeader: {
     display: 'flex',
+    width: '100%',
+    overflow: 'hidden',
+  },
+  gutterCell: {
+    paddingLeft: '2px',
+    flex: 'auto',
+    alignItems: 'center',
+    minWidth: theme.spacing(2.5),
+    display: 'flex',
+    height: '100%',
+    borderRight: 'none !important',
+  },
+  expanderHeader: {
+    display: 'flex',
     justifyContent: 'center',
     position: 'relative',
     width: '100%',
@@ -191,7 +204,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   noPointerEvents: {
     pointerEvents: 'none',
   },
-  gutterCell: {
+  expanderCell: {
     paddingLeft: '0px',
     flex: 'auto',
     alignItems: 'center',
@@ -248,6 +261,7 @@ export interface ColumnProps {
 
 interface DataTableProps {
   columns: ColumnProps[];
+  gutterColumn?: ColumnProps;
   onRowClick?: (rowIndex: number) => void;
   rowGetter: (rowIndex: number) => { [key: string]: React.ReactNode };
   onSort?: (sort: SortState) => void;
@@ -307,6 +321,7 @@ const ColumnDisplaySelector: React.FC<ColumnDisplaySelectorProps> = ({ options, 
 
 const InternalDataTable = ({
   columns,
+  gutterColumn,
   onRowClick = () => {},
   rowCount,
   width,
@@ -321,7 +336,6 @@ const InternalDataTable = ({
   onRowsRendered = () => {},
 }: WithAutoSizerProps<DataTableProps>) => {
   const classes = useStyles();
-  const theme = useTheme();
 
   const [widthOverrides, setColumnWidthOverride] = React.useState<
   ColWidthOverrides
@@ -424,7 +438,7 @@ const InternalDataTable = ({
   React.useEffect(() => {
     let sortKey;
     for (let i = 0; i < columns.length; ++i) {
-      // Don't use an empty label which may be a gutter column.
+      // Don't use an empty label which may be a expander column.
       if (columns[i].label) {
         sortKey = columns[i].dataKey;
         break;
@@ -662,7 +676,26 @@ const InternalDataTable = ({
 
   const gutterHeaderRenderer: TableHeaderRenderer = React.useCallback(
     (props: TableHeaderProps) => (
-      <div key={props.dataKey} className={classes.gutterHeader}>
+      props.columnData ? <div key={props.dataKey} className={classes.gutterHeader} /> : <></>
+    ),
+    [classes.gutterHeader],
+  );
+
+  const gutterCellRenderer: TableCellRenderer = React.useCallback(
+    (props: TableCellProps) => (
+      <>
+        <div className={classes.gutterCell}>
+          {props.columnData?.cellRenderer
+              && props.columnData.cellRenderer(props.cellData)}
+        </div>
+      </>
+    ),
+    [classes.gutterCell],
+  );
+
+  const expanderHeaderRenderer: TableHeaderRenderer = React.useCallback(
+    (props: TableHeaderProps) => (
+      <div key={props.dataKey} className={classes.expanderHeader}>
         <ColumnDisplaySelector
           options={columns.map((c) => c.dataKey)}
           selected={shownColumns}
@@ -670,16 +703,16 @@ const InternalDataTable = ({
         />
       </div>
     ),
-    [columns, shownColumns, classes.gutterHeader],
+    [columns, shownColumns, classes.expanderHeader],
   );
 
-  const gutterCellRenderer: TableCellRenderer = React.useCallback(
+  const expanderCellRenderer: TableCellRenderer = React.useCallback(
     (props: TableCellProps) => {
       // Hide the icon by default unless:
       //  1. It's been expanded.
       //  2. The row has been highlighted.
       const cls = buildClass(
-        classes.gutterCell,
+        classes.expanderCell,
         !(
           highlightedRow === props.rowIndex || expandedRowState[props.rowIndex]
         ) && classes.hidden,
@@ -767,6 +800,7 @@ const InternalDataTable = ({
     [classes, headerRendererCommon, resizeColumn],
   );
   const gutterClass = buildClass(compact && classes.compact, classes.gutterCell);
+  const expanderClass = buildClass(compact && classes.compact, classes.expanderCell);
   return (
     <div ref={tableWrapper}>
       <Table
@@ -794,15 +828,28 @@ const InternalDataTable = ({
       >
         {expandable && (
           <Column
-            key='gutter'
-            dataKey='gutter'
+            key='expander'
+            dataKey='expander'
+            label=''
+            headerClassName={expanderClass}
+            className={expanderClass}
+            headerRenderer={expanderHeaderRenderer}
+            cellRenderer={expanderCellRenderer}
+            width={4 /* width for chevron */}
+            columnData={null}
+          />
+        )}
+        {gutterColumn && (
+          <Column
+            key={gutterColumn.dataKey}
+            dataKey={gutterColumn.dataKey}
             label=''
             headerClassName={gutterClass}
             className={gutterClass}
             headerRenderer={gutterHeaderRenderer}
             cellRenderer={gutterCellRenderer}
-            width={4 /* width for chevron */}
-            columnData={null}
+            width={26 /* width for gutter */}
+            columnData={gutterColumn}
           />
         )}
         {columns.filter((col) => shownColumns.includes(col.dataKey)).map((col, i) => {

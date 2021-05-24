@@ -22,6 +22,7 @@ import {
   buildClass,
 } from '@pixie-labs/components';
 import { JSONData } from 'containers/format-data/format-data';
+import { STATUS_TYPES } from 'containers/live-widgets/utils';
 import * as React from 'react';
 import { DataType, SemanticType } from 'types/generated/vizierapi_pb';
 import noop from 'utils/noop';
@@ -90,6 +91,7 @@ interface VizierDataTableProps {
   expandable?: boolean;
   expandedRenderer?: (rowIndex: number) => JSX.Element;
   clusterName?: string;
+  gutterColumn?: string;
   onRowSelectionChanged?: (row: any) => void;
   onRowsRendered?: (range: IndexRange) => void;
   propagatedArgs?: Arguments;
@@ -99,6 +101,7 @@ export const VizierDataTable: React.FC<VizierDataTableProps> = (props) => {
   const {
     table, prettyRender = false, expandable = false, expandedRenderer,
     clusterName = null,
+    gutterColumn = null,
     onRowSelectionChanged = noop,
     onRowsRendered = () => { },
     propagatedArgs = null,
@@ -135,8 +138,21 @@ export const VizierDataTable: React.FC<VizierDataTableProps> = (props) => {
   }, [table, dataLength, clusterName, prettyRender]);
 
   const theme = useTheme();
-  const dataTableCols = React.useMemo((): ColumnProps[] => (
-    [...columnDisplayInfos.values()].map((displayInfo: ColumnDisplayInfo) => {
+  const [dataTableCols, gutterCol] = React.useMemo(() => {
+    const allInfos = [...columnDisplayInfos.values()];
+
+    const gutterInfo = allInfos.find((displayInfo: ColumnDisplayInfo) => (
+      displayInfo.columnName === gutterColumn && STATUS_TYPES.has(displayInfo.semanticType)
+    ));
+
+    const remainingInfos = allInfos.filter((displayInfo: ColumnDisplayInfo) => (
+      displayInfo.columnName !== gutterInfo?.columnName
+    ));
+
+    const displayInfoToProps = (displayInfo: ColumnDisplayInfo) => {
+      if (!displayInfo) {
+        return null;
+      }
       // Some cells give the power to update the display state for the whole column.
       // This function is the handle that allows them to do that.
       const updateColumnDisplay = ((newColumnDisplay: ColumnDisplayInfo) => {
@@ -156,8 +172,10 @@ export const VizierDataTable: React.FC<VizierDataTableProps> = (props) => {
         colProps.width = getWidthOverride(displayInfo.semanticType, displayInfo.type);
       }
       return colProps;
-    })
-  ), [columnDisplayInfos, clusterName, prettyRender, propagatedArgs, rows, theme]);
+    };
+
+    return [[...remainingInfos].map(displayInfoToProps), displayInfoToProps(gutterInfo)];
+  }, [columnDisplayInfos, gutterColumn, clusterName, prettyRender, propagatedArgs, rows, theme]);
 
   const rowGetter = React.useCallback(
     (i) => rows[i],
@@ -189,6 +207,7 @@ export const VizierDataTable: React.FC<VizierDataTableProps> = (props) => {
       rowGetter={rowGetter}
       rowCount={rows.length}
       columns={dataTableCols}
+      gutterColumn={gutterCol}
       compact
       onSort={onSort}
       onRowClick={onRowSelect}

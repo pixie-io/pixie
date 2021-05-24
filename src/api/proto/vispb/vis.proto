@@ -306,24 +306,10 @@ message VegaChart {
 
 // Table the spec for displaying the output as a table.
 message Table {
-  // ColumnDisplay gives the display options for a given column.
-  message ColumnDisplay {
-    oneof column {
-      // name refers to the name of an output column.
-      string name = 1;
-    }
-    // display_title provides a pretty name to give the column in the UI.
-    string display_title = 3;
-  }
-
-  // display_columns, when provided, gives a list of columns and their display options.
-  // When not provided, all columns of the output table are displayed noramlly.
-  repeated ColumnDisplay display_columns = 1;
-
-  // gutter_column, when provides makes the field a part of the gutter. It needs to of a type
-  // that can be converted to a status icon. The column is supressed from the view if it's part of the
-  // gutter.
-  ColumnDisplay gutter_column = 2;
+  // gutter_column, when provided makes this column a part of the gutter.
+  // It needs to of a type that can be converted to a status icon.
+  // The column is supressed from the view if it's part of the gutter.
+  string gutter_column = 1;
 }
 
 // Graph the spec for displaying the output as a graph.
