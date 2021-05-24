@@ -29,7 +29,6 @@ import { createStyles } from '@material-ui/styles';
 import {
   Avatar, ProfileMenuWrapper, CodeIcon,
   LogoutIcon, SettingsIcon,
-  PixieLogo,
 } from '@pixie-labs/components';
 import { useSetting, useUserInfo } from '@pixie-labs/api-react';
 import { LiveShortcutsContext } from 'containers/live/shortcuts';
@@ -42,6 +41,7 @@ import MenuItem from '@material-ui/core/MenuItem';
 import ExploreIcon from '@material-ui/icons/Explore';
 import KeyboardIcon from '@material-ui/icons/Keyboard';
 import { Link } from 'react-router-dom';
+import { Logo } from 'configurable/logo';
 
 const StyledListItemText = withStyles((theme: Theme) => createStyles({
   primary: {
@@ -196,7 +196,7 @@ const TopBarImpl = ({
         <IconButton edge='start' color='inherit' aria-label='menu' sx={{ mr: 2 }} onClick={toggleSidebar}>
           <MenuIcon className={classes.menu} />
         </IconButton>
-        <PixieLogo className={classes.logo} />
+        <Logo classes={classes} />
         <div className={classes.contents}>
           { children }
         </div>
@@ -212,7 +212,6 @@ export const TopBar = withStyles((theme: Theme) => createStyles({
     backgroundColor: theme.palette.background.paper,
   },
   logo: {
-    width: theme.spacing(8),
     color: theme.palette.foreground.three,
   },
   contents: {
