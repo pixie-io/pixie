@@ -1,4 +1,6 @@
 *.pb.* -diff
 *.gen.go -diff
+*_pb.js -diff
+*_pb.d.ts -diff
 go_deps.bzl -diff
 *.pxl linguist-language=python
