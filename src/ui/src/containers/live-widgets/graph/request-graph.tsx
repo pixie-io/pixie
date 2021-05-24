@@ -20,8 +20,14 @@ import * as React from 'react';
 import { WidgetDisplay } from 'containers/live/vis';
 
 import { data as visData, Network } from 'vis-network/standalone';
-import { makeStyles, useTheme } from '@material-ui/core/styles';
+import { makeStyles, useTheme, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
+import AccountTreeIcon from '@material-ui/icons/AccountTree';
+import WorkspacesIcon from '@material-ui/icons/Workspaces';
+import SpeedIcon from '@material-ui/icons/Speed';
+import ErrorOutlineIcon from '@material-ui/icons/ErrorOutline';
+import IconButton from '@material-ui/core/IconButton';
+import Tooltip from '@material-ui/core/Tooltip';
 import { toEntityURL, toSingleEntityPage } from 'containers/live-widgets/utils/live-view-params';
 import { ClusterContext } from 'common/cluster-context';
 import { SemanticType, Relation } from 'types/generated/vizierapi_pb';
@@ -63,7 +69,7 @@ interface RequestGraphProps {
   propagatedArgs?: Arguments;
 }
 
-const useStyles = makeStyles(() => createStyles({
+const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
     width: '100%',
     height: '100%',
@@ -80,6 +86,14 @@ const useStyles = makeStyles(() => createStyles({
     minHeight: 0,
     '& > .vis-active': {
       boxShadow: 'none',
+    },
+  },
+  enabled: {
+    color: theme.palette.common.white,
+  },
+  buttonContainer: {
+    '& > .MuiIconButton-root': {
+      marginRight: theme.spacing(2),
     },
   },
 }));
@@ -307,25 +321,34 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
   return (
     <div className={`${classes.root} ${focused ? 'focus' : ''}`} onFocus={toggleFocus} onBlur={toggleFocus}>
       <div className={classes.container} ref={ref} />
-      <div>
-        <Button
-          size='small'
-          onClick={toggleColor}
-        >
-          {colorByLatency ? 'Color by error rate' : 'Color by latency'}
-        </Button>
-        <Button
-          size='small'
-          onClick={toggleHierarchy}
-        >
-          {hierarchyEnabled ? 'Disable hierarchy' : 'Enable hierarchy'}
-        </Button>
-        <Button
-          size='small'
-          onClick={toggleMode}
-        >
-          {clusteredMode ? 'Disable clustering' : 'Cluster by service'}
-        </Button>
+      <div className={classes.buttonContainer}>
+        <Tooltip title={colorByLatency ? 'Colored by latency' : 'Colored by Error Rate'}>
+          <IconButton
+            size='small'
+            onClick={toggleColor}
+            className={classes.enabled}
+          >
+            {colorByLatency ? <SpeedIcon /> : <ErrorOutlineIcon />}
+          </IconButton>
+        </Tooltip>
+        <Tooltip title={hierarchyEnabled ? 'Hierarchy enabled' : 'Hierarchy disabled'}>
+          <IconButton
+            size='small'
+            onClick={toggleHierarchy}
+            className={hierarchyEnabled ? classes.enabled : ''}
+          >
+            <WorkspacesIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title={clusteredMode ? 'Clustered by service' : 'Clustering disabled'}>
+          <IconButton
+            size='small'
+            onClick={toggleMode}
+            className={clusteredMode ? classes.enabled : ''}
+          >
+            <AccountTreeIcon />
+          </IconButton>
+        </Tooltip>
       </div>
     </div>
   );
