@@ -62,9 +62,9 @@ func (e ExecutableScript) LiveViewLink(clusterID *string) string {
 	}
 	cloudAddr := viper.GetString("cloud_addr")
 
-	urlPath := "/live/script"
+	urlPath := "/live"
 	if clusterID != nil {
-		urlPath = fmt.Sprintf("/live/clusters/%s/script", url.PathEscape(*clusterID))
+		urlPath = fmt.Sprintf("/live/clusters/%s", url.PathEscape(*clusterID))
 	}
 
 	u := url.URL{
