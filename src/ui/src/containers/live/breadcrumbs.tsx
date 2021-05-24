@@ -32,6 +32,7 @@ import { argVariableMap, argTypesForVis } from 'utils/args-utils';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'containers/App/scripts-context';
 import { ScriptContext } from 'context/script-context';
 import { pxTypeToEntityType, entityStatusGroup } from 'containers/command-input/autocomplete-utils';
+import TimeArgDetail from 'configurable/time-arg-detail';
 import { parseVisSilently, Variable } from './vis';
 
 const styles = (({ shape, palette, spacing }: Theme) => createStyles({
@@ -159,6 +160,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
         getListItems: null,
         requireCompletion: false,
         placeholder: variable?.description,
+        explanation: null,
       };
 
       if (variable && typeof variable.defaultValue === 'undefined') {
@@ -191,6 +193,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
       // (such as nodes), since they are not yet supported in autocomplete. Until that is fixed, this is hard-coded
       // for now.
       if (argName === 'start_time' || argName === 'start') {
+        argProps.explanation = TimeArgDetail;
         argBreadcrumbs.push(argProps);
       } else {
         entityBreadcrumbs.push(argProps);

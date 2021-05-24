@@ -180,9 +180,10 @@ interface DialogDropdownProps {
   onClose: () => void;
   anchorEl: HTMLElement;
   placeholder: string;
+  explanation?: React.ReactNode;
 }
 
-const useDialogStyles = makeStyles(() => createStyles({
+const useDialogStyles = makeStyles((theme) => createStyles({
   card: {
     width: '608px',
   },
@@ -194,6 +195,12 @@ const useDialogStyles = makeStyles(() => createStyles({
     maxWidth: '608px',
     maxHeight: '60vh',
   },
+  explanationContainer: {
+    backgroundColor: theme.palette.foreground.grey3,
+    padding: theme.spacing(2),
+    borderTop: 'solid 1px',
+    borderColor: theme.palette.background.three,
+  },
 }));
 
 export const DialogDropdown: React.FC<DialogDropdownProps> = ({
@@ -202,6 +209,7 @@ export const DialogDropdown: React.FC<DialogDropdownProps> = ({
   onClose,
   getListItems,
   anchorEl,
+  explanation,
 }: DialogDropdownProps) => {
   const classes = useDialogStyles();
 
@@ -339,10 +347,21 @@ export const DialogDropdown: React.FC<DialogDropdownProps> = ({
               getCompletions={getCompletions}
             />
           </AutocompleteContext.Provider>
+          {
+            explanation != null
+            && (
+              <div className={classes.explanationContainer}>
+                { explanation }
+              </div>
+            )
+          }
         </Card>
       </ThemeProvider>
     </Popover>
   );
+};
+DialogDropdown.defaultProps = {
+  explanation: null,
 };
 
 interface BreadcrumbProps extends WithStyles<typeof styles> {
@@ -353,6 +372,7 @@ interface BreadcrumbProps extends WithStyles<typeof styles> {
   onSelect?: (input: string) => void;
   omitKey?: boolean;
   placeholder?: string;
+  explanation?: React.ReactElement;
 }
 
 const Breadcrumb = ({
@@ -364,6 +384,7 @@ const Breadcrumb = ({
   onSelect,
   omitKey,
   placeholder,
+  explanation,
 }: BreadcrumbProps) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
@@ -396,6 +417,7 @@ const Breadcrumb = ({
             onClose={onClose}
             getListItems={getListItems}
             anchorEl={anchorEl}
+            explanation={explanation}
           />
         </div>
       </div>
@@ -407,6 +429,7 @@ Breadcrumb.defaultProps = {
   onSelect: null,
   omitKey: false,
   placeholder: '',
+  explanation: null,
 };
 
 export interface BreadcrumbListItem {
