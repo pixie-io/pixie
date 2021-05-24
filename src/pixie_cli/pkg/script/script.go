@@ -22,12 +22,17 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"strings"
 
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/spf13/viper"
 
 	"px.dev/pixie/src/api/proto/vispb"
 )
+
+var jsonUnmashaler = &jsonpb.Unmarshaler{
+	AllowUnknownFields: true,
+}
 
 // Arg is a single script argument.
 type Arg struct {
@@ -81,7 +86,8 @@ func (e ExecutableScript) LiveViewLink(clusterID *string) string {
 // ParseVisSpec parses the spec return nil on failure.
 func ParseVisSpec(specJSON string) (*vispb.Vis, error) {
 	var pb vispb.Vis
-	if err := jsonpb.UnmarshalString(specJSON, &pb); err != nil && err != io.EOF {
+	err := jsonUnmashaler.Unmarshal(strings.NewReader(specJSON), &pb)
+	if err != nil && err != io.EOF {
 		return nil, err
 	}
 	return &pb, nil
