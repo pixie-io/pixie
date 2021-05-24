@@ -23,7 +23,7 @@ import { useSnackbar } from '@pixie-labs/components';
 import AdminView from 'pages/admin/admin';
 import CreditsView from 'pages/credits/credits';
 import { SCRATCH_SCRIPT, ScriptsContextProvider } from 'containers/App/scripts-context';
-import NewLiveView from 'pages/live/new-live';
+import LiveView from 'pages/live/live';
 import * as React from 'react';
 import { Redirect, Route, Switch } from 'react-router-dom';
 import { generatePath } from 'react-router';
@@ -137,7 +137,7 @@ const Vizier = () => {
       passthroughEnabled={cluster?.vizierConfig.passthroughEnabled}
       clusterStatus={errMsg ? ClusterStatus.CS_UNKNOWN : status}
     >
-      <NewLiveView />
+      <LiveView />
     </VizierGRPCClientProvider>
   );
 };

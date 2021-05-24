@@ -21,7 +21,7 @@ import * as React from 'react';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'containers/App/scripts-context';
 import { SetStateFunc } from './common';
 
-import { ScriptContext } from './new-script-context';
+import { ScriptContext } from './script-context';
 import { LayoutContext } from './layout-context';
 
 export interface EditorContextProps {

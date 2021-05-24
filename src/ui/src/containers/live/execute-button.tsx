@@ -24,7 +24,7 @@ import Tooltip from '@material-ui/core/Tooltip';
 
 import { ResultsContext } from 'context/results-context';
 import { EditorContext } from 'context/editor-context';
-import { ScriptContext } from 'context/new-script-context';
+import { ScriptContext } from 'context/script-context';
 import {
   Button, Theme, withStyles, WithStyles,
 } from '@material-ui/core';

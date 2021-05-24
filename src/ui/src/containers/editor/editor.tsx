@@ -29,7 +29,7 @@ import { createStyles } from '@material-ui/styles';
 
 import { getKeyMap } from 'containers/live/shortcuts';
 import { LayoutContext } from 'context/layout-context';
-import { ScriptContext } from 'context/new-script-context';
+import { ScriptContext } from 'context/script-context';
 import { EditorContext } from 'context/editor-context';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({

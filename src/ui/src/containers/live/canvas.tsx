@@ -42,7 +42,7 @@ import Paper from '@material-ui/core/Paper';
 import Vega from 'containers/live-widgets/vega/vega';
 import { LayoutContext } from 'context/layout-context';
 import { ResultsContext } from 'context/results-context';
-import { ScriptContext } from 'context/new-script-context';
+import { ScriptContext } from 'context/script-context';
 import MutationModal from './mutation-modal';
 import {
   addLayout, addTableLayout, getGridWidth, Layout, toLayout, updatePositions,

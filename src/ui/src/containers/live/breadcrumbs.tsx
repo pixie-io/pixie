@@ -33,10 +33,10 @@ import {
 import { ClusterContext } from 'common/cluster-context';
 import { argVariableMap, argTypesForVis } from 'utils/args-utils';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'containers/App/scripts-context';
-import { ScriptContext } from 'context/new-script-context';
+import { ScriptContext } from 'context/script-context';
 import { pxTypeToEntityType, entityStatusGroup } from 'containers/command-input/autocomplete-utils';
 import { clusterStatusGroup } from 'containers/admin/utils';
-import ExecuteScriptButton from './new-execute-button';
+import ExecuteScriptButton from './execute-button';
 import { parseVisSilently, Variable } from './vis';
 
 const styles = (({ shape, palette, spacing }: Theme) => createStyles({

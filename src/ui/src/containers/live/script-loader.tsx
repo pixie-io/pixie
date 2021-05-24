@@ -18,8 +18,7 @@
 
 import * as React from 'react';
 import { ClusterContext } from 'common/cluster-context';
-import { ScriptContext } from 'context/new-script-context';
-import { containsMutation } from '@pixie-labs/api';
+import { ScriptContext } from 'context/script-context';
 import { useSnackbar } from '@pixie-labs/components';
 
 /**
