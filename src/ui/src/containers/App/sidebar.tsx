@@ -52,6 +52,7 @@ import {
   ANNOUNCE_WIDGET_URL, CONTACT_ENABLED,
 } from 'containers/constants';
 import { Button } from '@material-ui/core';
+import { SidebarFooter } from 'configurable/sidebar-footer';
 
 const styles = (
   {
@@ -287,6 +288,7 @@ const SideBar = ({ classes, open, toggle }) => {
               </ListItem>
             </Tooltip>
           )}
+          <SidebarFooter />
         </List>
       </Drawer>
     </>
