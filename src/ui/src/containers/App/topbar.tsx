@@ -196,7 +196,7 @@ const TopBarImpl = ({
         <IconButton edge='start' color='inherit' aria-label='menu' sx={{ mr: 2 }} onClick={toggleSidebar}>
           <MenuIcon className={classes.menu} />
         </IconButton>
-        <Link to='/'><Logo classes={classes} /></Link>
+        <Link to='/'><Logo /></Link>
         <div className={classes.contents}>
           { children }
         </div>
@@ -210,9 +210,6 @@ export const TopBar = withStyles((theme: Theme) => createStyles({
   container: {
     zIndex: 1300,
     backgroundColor: theme.palette.background.paper,
-  },
-  logo: {
-    color: theme.palette.foreground.three,
   },
   contents: {
     display: 'flex',

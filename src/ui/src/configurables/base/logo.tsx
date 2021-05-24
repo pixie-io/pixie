@@ -17,14 +17,25 @@
  */
 
 import * as React from 'react';
+import {
+  makeStyles,
+} from '@material-ui/core';
+import { createStyles } from '@material-ui/styles';
 import * as logo from '../../../assets/images/pixie-oss.svg';
 
-interface LogoProps {
-  classes: any,
-}
+const useStyles = makeStyles(() => createStyles({
+  logo: {
+    height: '100%',
+    display: 'flex',
+  },
+}));
 
-export const Logo: React.FC<LogoProps> = ({ classes }) => (
-  <div className={classes.logo}>
-    <img src={logo} />
-  </div>
-);
+export const Logo = (): React.ReactElement => {
+  const classes = useStyles();
+
+  return (
+    <div className={classes.logo}>
+      <img src={logo} />
+    </div>
+  );
+};
