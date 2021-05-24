@@ -55,6 +55,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     display: 'flex',
     zIndex: 1, // Without this, inputs and icons in the table layer on top and break the illusion.
     paddingBottom: theme.spacing(1), // Aligns the visual size of the tab bar with the margin above it.
+    backgroundColor: theme.palette.background.paper,
   },
   tabContents: {
     margin: theme.spacing(1),
