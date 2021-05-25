@@ -1900,12 +1900,35 @@ function generateColorScale(baseColor: string, overlayColor: string, overlayAlph
 
 const OVERLAY_COLOR = '#121212';
 const OVERLAY_ALPHA = 0.04;
-const OVERLAY_LEVELS = 1;// 5;
-const STACKTRACE_LABEL_PX = 16;
-const RECTANGLE_HEIGHT_PX = 32;
+const OVERLAY_LEVELS = 1;
 function convertToStacktraceFlameGraph(
   display: StacktraceFlameGraphDisplay,
   source: string, theme: Theme): VegaSpecWithProps {
+  // Size of font for the labels on each stacktrace.
+  const STACKTRACE_LABEL_PX = 16;
+  // Height of each stacktrace rectangle.
+  const RECTANGLE_HEIGHT_PX = 32;
+
+  // Proportion of the view height reserved for the minimap.
+  const MINIMAP_HEIGHT_PERCENT = 0.1;
+
+  // Any traces with less samples than this will be filtered out of the view.
+  const MIN_SAMPLE_COUNT = 5;
+
+  // Height of rectangle separating the minimap and the main view.
+  const SEPARATOR_HEIGHT = 15;
+  const SEPARATOR_COLOR = '#242424';
+
+  const MINIMAP_GREY_OUT_COLOR = 'gray';
+  const SLIDER_COLOR = 'white';
+  const SLIDER_NORMAL_WIDTH = 2;
+  const SLIDER_HOVER_WIDTH = 8;
+  const SLIDER_HITBOX_WIDTH = 14;
+  // Colors for the stacktrace rectangles, depending on category of the trace.
+  const KERNEL_FILL_COLOR = '#98DF8A';
+  const APP_FILL_COLOR = '#31D0F3';
+  const K8S_FILL_COLOR = '#4796C1';
+
   if (!display.stacktraceColumn) {
     throw new Error('StackTraceFlamegraph must have an entry for property stacktraceColumn');
   }
@@ -1922,7 +1945,7 @@ function convertToStacktraceFlameGraph(
   });
   addSignal(spec, {
     name: 'main_height',
-    update: 'height * 0.9',
+    update: `height * ${1.0 - MINIMAP_HEIGHT_PERCENT}`,
   });
   addSignal(spec, {
     name: 'minimap_width',
@@ -1930,7 +1953,7 @@ function convertToStacktraceFlameGraph(
   });
   addSignal(spec, {
     name: 'minimap_height',
-    update: 'height * 0.1',
+    update: `height * ${MINIMAP_HEIGHT_PERCENT}`,
   });
 
   // Add data and transforms.
@@ -1954,7 +1977,7 @@ function convertToStacktraceFlameGraph(
       },
       {
         type: 'filter',
-        expr: 'datum.count > 5',
+        expr: `datum.count > ${MIN_SAMPLE_COUNT}`,
       },
       // Sets y values based on a fixed height rectangle.
       {
@@ -1994,8 +2017,6 @@ function convertToStacktraceFlameGraph(
       },
     ],
   });
-  addDataSource(spec, { name: 'grid_x_store' });
-  addDataSource(spec, { name: 'grid_y_store' });
 
   addSignal(spec, {
     name: 'unit',
@@ -2005,21 +2026,17 @@ function convertToStacktraceFlameGraph(
     ],
   });
 
-  addSignal(spec, {
-    name: 'global_grid_x',
-    update: 'data("grid_x_store")[0] && data("grid_x_store")[0].grid',
-  });
-  addSignal(spec, {
-    name: 'global_grid_y',
-    update: 'data("grid_y_store")[0] && data("grid_y_store")[0].grid',
-  });
-
   const minimapGroup = addMark(spec, {
     type: 'group',
     name: 'minimap_group',
     style: 'cell',
     encode: {
-      enter: { x: { value: 0 }, clip: { value: true }, stroke: { value: 'gray' } },
+      enter: {
+        x: { value: 0 },
+        clip: { value: true },
+        stroke: { value: 'gray' },
+        strokeForeground: { value: true },
+      },
       update: {
         width: { signal: 'minimap_width' },
         height: { signal: 'minimap_height' },
@@ -2035,12 +2052,11 @@ function convertToStacktraceFlameGraph(
         x: { value: 0 },
         x2: { signal: 'main_width' },
         y: { signal: 'minimap_height' },
-        y2: { signal: 'minimap_height + 15' },
-        fill: { value: '#242424' },
+        y2: { signal: `minimap_height + ${SEPARATOR_HEIGHT}` },
+        fill: { value: SEPARATOR_COLOR },
       },
     },
   });
-  const paddingPx = 0;
   const mainGroup = addMark(spec, {
     type: 'group',
     name: 'stacktrace_group',
@@ -2049,11 +2065,12 @@ function convertToStacktraceFlameGraph(
       enter: {
         clip: { value: true },
         stroke: { value: 'gray' },
+        strokeForeground: { value: true },
       },
       update: {
         width: { signal: 'main_width' },
-        height: { signal: `main_height + ${paddingPx}` },
-        y: { signal: 'minimap_height + 15' },
+        height: { signal: 'main_height' },
+        y: { signal: `minimap_height + ${SEPARATOR_HEIGHT}` },
       },
     },
   });
@@ -2107,7 +2124,7 @@ function convertToStacktraceFlameGraph(
       update: {
         x: { scale: 'x', field: 'x0' },
         y: { scale: 'y', field: 'y0' },
-        dy: { value: -12.5 },
+        dy: { value: -(RECTANGLE_HEIGHT_PX / 2) },
         text: {
           signal: `(scale("x", datum.x1) - scale("x", datum.x0)) >
             ${STACKTRACE_LABEL_PX + 8} ? truncate(datum.name,
@@ -2118,20 +2135,24 @@ function convertToStacktraceFlameGraph(
     },
   });
 
-  // Add pan/zoom signals to main group.
-  addSignal(mainGroup, {
+  // Add signals for controlling pan/zoom.
+  addSignal(spec, {
     name: 'grid_x',
     init: '[0, main_width]',
     on: [
+      // Handle panning on main view.
       {
         events: { signal: 'grid_translate_delta' },
         update: `clampRange(panLinear(grid_translate_anchor.extent_x, -grid_translate_delta.x / main_width),
           0, main_width)`,
       },
+      // handle scroll wheel zooming.
       {
         events: { signal: 'grid_zoom_delta' },
-        update: 'clampRange(zoomLinear(domain("x"), grid_zoom_anchor.x, grid_zoom_delta), 0, main_width)',
+        update: `((grid_x[1] - grid_x[0]) > 1 || grid_zoom_delta > 1) ?
+        clampRange(zoomLinear(domain("x"), grid_zoom_anchor.x, grid_zoom_delta), 0, main_width) : grid_x`,
       },
+      // Handle ctrl+click to zoom in.
       {
         events: {
           source: 'scope',
@@ -2139,11 +2160,59 @@ function convertToStacktraceFlameGraph(
           markname: 'stacktrace_rect',
           filter: ['event.ctrlKey || event.metaKey', 'event.button === 0'],
         },
-        update: 'clampRange([datum.x0 - 50, datum.x1 + 50], 0, main_width)',
+        update: `clampRange(
+          [datum.x0 - ((datum.x1 - datum.x0) / 2), datum.x1 + ((datum.x1 - datum.x0) / 2)], 0, main_width)`,
+      },
+      // Handle click + drag on minimap to select new section.
+      {
+        events: [
+          { signal: 'minimap_anchor' },
+          { signal: 'minimap_second_point' },
+        ],
+        update: `(minimap_anchor.x && minimap_second_point.x && minimap_slider_anchor.invalid) ?
+          [min(minimap_anchor.x, minimap_second_point.x), max(minimap_anchor.x, minimap_second_point.x)] : grid_x`,
+      },
+      // Handle click on selection and drag to pan in minimap.
+      {
+        events: { signal: 'minimap_translate_delta' },
+        update: `(!minimap_anchor.x) ? 
+          clampRange([
+            minimap_translate_anchor.extent_x[0] + minimap_translate_delta.x,
+            minimap_translate_anchor.extent_x[1] + minimap_translate_delta.x], 0, minimap_width) : grid_x`,
+      },
+      // Handle click + drag on left/right sliders in the minimap.
+      {
+        events: {
+          source: 'window',
+          type: 'mousemove',
+          consume: true,
+          between: [
+            {
+              source: 'scope',
+              type: 'mousedown',
+              filter: `event.item && event.item.mark && 
+                (event.item.mark.name === "left_slider_hitbox" || event.item.mark.name === "right_slider_hitbox")`,
+            },
+            {
+              source: 'window',
+              type: 'mouseup',
+            },
+          ],
+        },
+        update: `(minimap_slider_anchor.left) ? [min(x(group()), grid_x[1] - 1), grid_x[1]] : 
+          [grid_x[0], max(x(group()), grid_x[0]+1)]`,
+      },
+      {
+        events: {
+          source: 'view',
+          type: 'dblclick',
+        },
+        update: '[0, main_width]',
       },
     ],
   });
-  addSignal(mainGroup, {
+
+  addSignal(spec, {
     name: 'grid_y',
     update: '[y_extent[1] - main_height, y_extent[1]]',
     on: [
@@ -2156,19 +2225,30 @@ function convertToStacktraceFlameGraph(
         update: `clampRange(panLinear(grid_translate_anchor.extent_y, -grid_translate_delta.y / main_height),
           y_extent[0], y_extent[1])`,
       },
+      {
+        events: {
+          source: 'view',
+          type: 'dblclick',
+        },
+        update: '[y_extent[1] - main_height, y_extent[1]]',
+      },
     ],
   });
-  addSignal(mainGroup, {
+  addSignal(spec, {
     name: 'grid_translate_anchor',
     value: {},
     on: [
       {
-        events: [{ source: 'scope', type: 'mousedown' }],
+        events: [{
+          source: 'scope',
+          type: 'mousedown',
+          filter: 'group() && group().mark && group().mark.name === "stacktrace_group"',
+        }],
         update: '{x: event.x, y: event.y, extent_x: domain("x"), extent_y: domain("y")}',
       },
     ],
   });
-  addSignal(mainGroup, {
+  addSignal(spec, {
     name: 'grid_translate_delta',
     value: {},
     on: [
@@ -2179,7 +2259,11 @@ function convertToStacktraceFlameGraph(
             type: 'mousemove',
             consume: true,
             between: [
-              { source: 'scope', type: 'mousedown' },
+              {
+                source: 'scope',
+                type: 'mousedown',
+                filter: 'group() && group().mark && group().mark.name === "stacktrace_group"',
+              },
               { source: 'window', type: 'mouseup' },
             ],
           },
@@ -2188,7 +2272,7 @@ function convertToStacktraceFlameGraph(
       },
     ],
   });
-  addSignal(mainGroup, {
+  addSignal(spec, {
     name: 'grid_zoom_anchor',
     on: [
       {
@@ -2197,7 +2281,7 @@ function convertToStacktraceFlameGraph(
       },
     ],
   });
-  addSignal(mainGroup, {
+  addSignal(spec, {
     name: 'grid_zoom_delta',
     on: [
       {
@@ -2207,23 +2291,126 @@ function convertToStacktraceFlameGraph(
       },
     ],
   });
-  addSignal(mainGroup, {
-    name: 'grid_x_modify',
-    init: 'modify("grid_x_store", {grid: grid_x}, true)',
+
+  addSignal(spec, {
+    name: 'minimap_anchor',
+    value: {},
     on: [
       {
-        events: { signal: 'grid_x' },
-        update: 'modify("grid_x_store", {grid: grid_x}, true)',
+        events: {
+          source: 'scope',
+          type: 'mousedown',
+          filter: 'group() && group().mark && group().mark.name === "minimap_group"',
+        },
+        update: `(x(group()) < grid_x[0] || grid_x[1] < x(group())) ?
+          {x: clamp(x(group()), 0, minimap_width)} : minimap_anchor`,
+      },
+      {
+        events: { source: 'window', type: 'mouseup' },
+        update: '{}',
       },
     ],
   });
-  addSignal(mainGroup, {
-    name: 'grid_y_modify',
-    init: 'modify("grid_y_store", {grid: grid_y}, true)',
+
+  addSignal(spec, {
+    name: 'minimap_second_point',
+    value: {},
     on: [
       {
-        events: { signal: 'grid_y' },
-        update: 'modify("grid_y_store", {grid: grid_y}, true)',
+        events: {
+          source: 'window',
+          type: 'mousemove',
+          consume: true,
+          between: [
+            {
+              source: 'scope',
+              type: 'mousedown',
+              filter: 'group() && group().mark && group().mark.name === "minimap_group"',
+            },
+            { source: 'window', type: 'mouseup' },
+          ],
+        },
+        update: '{x: clamp(x(group()), 0, minimap_width)}',
+      },
+      {
+        events: {
+          source: 'scope',
+          type: 'mousedown',
+          filter: 'group() && group().mark && group().mark.name === "minimap_group"',
+        },
+        update: `(x(group()) < grid_x[0] || grid_x[1] < x(group())) ?
+          {x: clamp(x(group()), 0, minimap_width)} : minimap_anchor`,
+      },
+      {
+        events: {
+          source: 'window',
+          type: 'mouseup',
+        },
+        update: '{}',
+      },
+    ],
+  });
+
+  addSignal(spec, {
+    name: 'minimap_translate_anchor',
+    value: {},
+    on: [
+      {
+        events: {
+          source: 'scope',
+          type: 'mousedown',
+          filter: 'group() && group().mark && group().mark.name === "minimap_group"',
+        },
+        update: '{x: event.x, extent_x: domain("x")}',
+      },
+    ],
+  });
+
+  addSignal(spec, {
+    name: 'minimap_translate_delta',
+    value: {},
+    on: [
+      {
+        events: {
+          source: 'window',
+          type: 'mousemove',
+          consume: true,
+          between: [
+            {
+              source: 'scope',
+              type: 'mousedown',
+              filter: 'group() && group().mark && group().mark.name === "minimap_group"',
+            },
+            {
+              source: 'window',
+              type: 'mouseup',
+            },
+          ],
+        },
+        update: '{x: event.x - minimap_translate_anchor.x}',
+      },
+    ],
+  });
+
+  addSignal(spec, {
+    name: 'minimap_slider_anchor',
+    value: {},
+    on: [
+      {
+        events: {
+          source: 'scope',
+          type: 'mousedown',
+          filter: `event.item && event.item.mark && 
+            (event.item.mark.name === "left_slider_hitbox" || event.item.mark.name === "right_slider_hitbox")`,
+        },
+        update: '{left: event.item.mark.name === "left_slider_hitbox"}',
+      },
+      {
+        events: {
+          source: 'scope',
+          type: 'mouseup',
+        },
+        update: '{invalid: true}',
       },
     ],
   });
@@ -2248,14 +2435,14 @@ function convertToStacktraceFlameGraph(
     type: 'rect',
     name: 'grey_out_left',
     encode: {
-      enter: { fill: { value: 'gray' }, fillOpacity: { value: 0.7 } },
+      enter: { fill: { value: MINIMAP_GREY_OUT_COLOR }, fillOpacity: { value: 0.7 } },
       update: {
         x: {
           value: 0,
         },
         x2: {
           scale: 'x_minimap',
-          signal: '(global_grid_x) ? global_grid_x[0] : 0',
+          signal: '(grid_x) ? grid_x[0] : 0',
         },
         y: {
           value: 0,
@@ -2270,11 +2457,11 @@ function convertToStacktraceFlameGraph(
     type: 'rect',
     name: 'grey_out_right',
     encode: {
-      enter: { fill: { value: 'gray' }, fillOpacity: { value: 0.7 } },
+      enter: { fill: { value: MINIMAP_GREY_OUT_COLOR }, fillOpacity: { value: 0.7 } },
       update: {
         x: {
           scale: 'x_minimap',
-          signal: '(global_grid_x) ? global_grid_x[1] : minimap_width',
+          signal: '(grid_x) ? grid_x[1] : minimap_width',
         },
         x2: {
           signal: 'minimap_width',
@@ -2288,101 +2475,163 @@ function convertToStacktraceFlameGraph(
       },
     },
   });
-
-  // Add pan/zoom signals to main group.
-  addSignal(minimapGroup, {
-    name: 'grid_x',
-    init: '[0, main_width]',
+  addMark(minimapGroup, {
+    type: 'rect',
+    name: 'left_slider',
+    encode: {
+      enter: {
+        fill: { value: SLIDER_COLOR },
+      },
+      update: {
+        x: {
+          scale: 'x_minimap',
+          signal: '(grid_x) ? grid_x[0] - (left_slider_size / 2) : 0',
+        },
+        width: { signal: 'left_slider_size' },
+        y: { value: 0 },
+        y2: { signal: 'minimap_height' },
+      },
+    },
+  });
+  addMark(minimapGroup, {
+    type: 'rect',
+    name: 'right_slider',
+    encode: {
+      enter: {
+        fill: { value: SLIDER_COLOR },
+      },
+      update: {
+        x: {
+          scale: 'x_minimap',
+          signal: '(grid_x) ? grid_x[1] - (right_slider_size / 2) : 0',
+        },
+        width: { signal: 'right_slider_size' },
+        y: { value: 0 },
+        y2: { signal: 'minimap_height' },
+      },
+    },
+  });
+  addMark(minimapGroup, {
+    type: 'rect',
+    name: 'left_slider_hitbox',
+    encode: {
+      enter: {
+        fill: { value: 'transparent' },
+      },
+      update: {
+        x: {
+          scale: 'x_minimap',
+          signal: `(grid_x) ? grid_x[0] - ${SLIDER_HITBOX_WIDTH / 2} : 0`,
+        },
+        width: { value: SLIDER_HITBOX_WIDTH },
+        y: { value: 0 },
+        y2: { signal: 'minimap_height' },
+      },
+    },
+  });
+  addMark(minimapGroup, {
+    type: 'rect',
+    name: 'right_slider_hitbox',
+    encode: {
+      enter: {
+        fill: { value: 'transparent' },
+      },
+      update: {
+        x: {
+          scale: 'x_minimap',
+          signal: `(grid_x) ? grid_x[1] - ${SLIDER_HITBOX_WIDTH / 2} : 0`,
+        },
+        width: { value: SLIDER_HITBOX_WIDTH },
+        y: { value: 0 },
+        y2: { signal: 'minimap_height' },
+      },
+    },
+  });
+  addSignal(spec, {
+    name: 'left_slider_size',
+    value: SLIDER_NORMAL_WIDTH,
     on: [
       {
-        events: { signal: 'grid_translate_delta' },
-        update: `clampRange(panLinear(grid_translate_anchor.extent_x, grid_translate_delta.x / main_width),
-          0, main_width)`,
+        events: {
+          source: 'scope',
+          type: 'mouseover',
+          markname: 'left_slider_hitbox',
+        },
+        update: `${SLIDER_HOVER_WIDTH}`,
       },
       {
-        events: { signal: 'grid_zoom_delta' },
-        update: 'clampRange(zoomLinear(domain("x"), grid_zoom_anchor.x, grid_zoom_delta), 0, main_width)',
+        events: {
+          source: 'scope',
+          type: 'mouseout',
+          markname: 'left_slider_hitbox',
+        },
+        update: `${SLIDER_NORMAL_WIDTH}`,
+      },
+      {
+        events: {
+          source: 'window',
+          type: 'mousemove',
+          between: [
+            {
+              source: 'scope',
+              type: 'mousedown',
+              filter: 'event.item && event.item.mark && event.item.mark.name === "left_slider_hitbox"',
+            },
+            {
+              source: 'window',
+              type: 'mouseup',
+            },
+          ],
+        },
+        update: `${SLIDER_HOVER_WIDTH}`,
+      },
+      {
+        events: { source: 'window', type: 'mouseup' },
+        update: `${SLIDER_NORMAL_WIDTH}`,
       },
     ],
   });
-  addSignal(minimapGroup, {
-    name: 'grid_y',
-    update: '[y_extent[1] - main_height, y_extent[1]]',
+  addSignal(spec, {
+    name: 'right_slider_size',
+    value: SLIDER_NORMAL_WIDTH,
     on: [
       {
-        events: { signal: 'grid_translate_delta' },
-        update: `clampRange(panLinear(grid_translate_anchor.extent_y, grid_translate_delta.y / minimap_height),
-          y_extent[0], y_extent[1])`,
+        events: {
+          source: 'scope',
+          type: 'mouseover',
+          markname: 'right_slider_hitbox',
+        },
+        update: `${SLIDER_HOVER_WIDTH}`,
       },
-
-    ],
-  });
-  addSignal(minimapGroup, {
-    name: 'grid_translate_anchor',
-    value: {},
-    on: [
       {
-        events: [{ source: 'scope', type: 'mousedown' }],
-        update: '{x: event.x, y: event.y, extent_x: domain("x"), extent_y: domain("y")}',
+        events: {
+          source: 'scope',
+          type: 'mouseout',
+          markname: 'right_slider_hitbox',
+        },
+        update: `${SLIDER_NORMAL_WIDTH}`,
       },
-    ],
-  });
-  addSignal(minimapGroup, {
-    name: 'grid_translate_delta',
-    value: {},
-    on: [
       {
-        events: [
-          {
-            source: 'window',
-            type: 'mousemove',
-            consume: true,
-            between: [
-              { source: 'scope', type: 'mousedown' },
-              { source: 'window', type: 'mouseup' },
-            ],
-          },
-        ],
-        update: '{x: grid_translate_anchor.x - event.x, y: grid_translate_anchor.y - event.y}',
+        events: {
+          source: 'window',
+          type: 'mousemove',
+          between: [
+            {
+              source: 'scope',
+              type: 'mousedown',
+              filter: 'event.item && event.item.mark && event.item.mark.name === "right_slider_hitbox"',
+            },
+            {
+              source: 'window',
+              type: 'mouseup',
+            },
+          ],
+        },
+        update: `${SLIDER_HOVER_WIDTH}`,
       },
-    ],
-  });
-  addSignal(minimapGroup, {
-    name: 'grid_zoom_anchor',
-    on: [
       {
-        events: [{ source: 'scope', type: 'wheel', consume: true }],
-        update: '{x: invert("x_minimap", x(unit)), y: invert("y_minimap", y(unit))}',
-      },
-    ],
-  });
-  addSignal(minimapGroup, {
-    name: 'grid_zoom_delta',
-    on: [
-      {
-        events: [{ source: 'scope', type: 'wheel', consume: true }],
-        force: true,
-        update: 'pow(1.001, event.deltaY * pow(16, event.deltaMode))',
-      },
-    ],
-  });
-  addSignal(minimapGroup, {
-    name: 'grid_x_modify',
-    init: 'modify("grid_x_store", {grid: grid_x}, true)',
-    on: [
-      {
-        events: { signal: 'grid_x' },
-        update: 'modify("grid_x_store", {grid: grid_x}, true)',
-      },
-    ],
-  });
-  addSignal(minimapGroup, {
-    name: 'grid_y_modify',
-    init: 'modify("grid_y_store", {grid: grid_y}, true)',
-    on: [
-      {
-        events: { signal: 'grid_y' },
-        update: 'modify("grid_y_store", {grid: grid_y}, true)',
+        events: { source: 'window', type: 'mouseup' },
+        update: `${SLIDER_NORMAL_WIDTH}`,
       },
     ],
   });
@@ -2391,7 +2640,7 @@ function convertToStacktraceFlameGraph(
     name: 'x',
     type: 'linear',
     domain: [0, { signal: 'main_width' }],
-    domainRaw: { signal: 'global_grid_x' },
+    domainRaw: { signal: 'grid_x' },
     range: [0, { signal: 'main_width' }],
     zero: false,
   });
@@ -2399,8 +2648,8 @@ function convertToStacktraceFlameGraph(
     name: 'y',
     type: 'linear',
     domain: [{ signal: 'y_extent[1] - main_height' }, { signal: 'y_extent[1]' }],
-    domainRaw: { signal: 'global_grid_y' },
-    range: [paddingPx, { signal: `main_height + ${paddingPx}` }],
+    domainRaw: { signal: 'grid_y' },
+    range: [0, { signal: 'main_height' }],
     zero: false,
   });
 
@@ -2424,31 +2673,31 @@ function convertToStacktraceFlameGraph(
     name: 'kernel',
     type: 'ordinal',
     domain: { data: TRANSFORMED_DATA_SOURCE_NAME, field: 'name' },
-    range: generateColorScale('#BBe7A5', OVERLAY_COLOR, OVERLAY_ALPHA, OVERLAY_LEVELS),
+    range: generateColorScale(KERNEL_FILL_COLOR, OVERLAY_COLOR, OVERLAY_ALPHA, OVERLAY_LEVELS),
   });
   addScale(spec, {
     name: 'c',
     type: 'ordinal',
     domain: { data: TRANSFORMED_DATA_SOURCE_NAME, field: 'name' },
-    range: generateColorScale('#79D0FF', OVERLAY_COLOR, OVERLAY_ALPHA, OVERLAY_LEVELS),
+    range: generateColorScale(APP_FILL_COLOR, OVERLAY_COLOR, OVERLAY_ALPHA, OVERLAY_LEVELS),
   });
   addScale(spec, {
     name: 'other',
     type: 'ordinal',
     domain: { data: TRANSFORMED_DATA_SOURCE_NAME, field: 'name' },
-    range: generateColorScale('#79D0FF', OVERLAY_COLOR, OVERLAY_ALPHA, OVERLAY_LEVELS),
+    range: generateColorScale(APP_FILL_COLOR, OVERLAY_COLOR, OVERLAY_ALPHA, OVERLAY_LEVELS),
   });
   addScale(spec, {
     name: 'go',
     type: 'ordinal',
     domain: { data: TRANSFORMED_DATA_SOURCE_NAME, field: 'name' },
-    range: generateColorScale('#79D0FF', OVERLAY_COLOR, OVERLAY_ALPHA, OVERLAY_LEVELS),
+    range: generateColorScale(APP_FILL_COLOR, OVERLAY_COLOR, OVERLAY_ALPHA, OVERLAY_LEVELS),
   });
   addScale(spec, {
     name: 'k8s',
     type: 'ordinal',
     domain: { data: TRANSFORMED_DATA_SOURCE_NAME, field: 'name' },
-    range: generateColorScale('#549CC6', OVERLAY_COLOR, OVERLAY_ALPHA, OVERLAY_LEVELS),
+    range: generateColorScale(K8S_FILL_COLOR, OVERLAY_COLOR, OVERLAY_ALPHA, OVERLAY_LEVELS),
   });
 
   const preprocess = (data: Array<Record<string, any>>): Array<Record<string, any>> => {
