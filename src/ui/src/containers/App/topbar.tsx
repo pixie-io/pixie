@@ -186,21 +186,21 @@ const ProfileItem = ({
 };
 
 const TopBarImpl = ({
-  classes, children, toggleSidebar,
+  classes, children, toggleSidebar, setSidebarOpen,
 }) => {
   const [{ user: userInfo }] = useUserInfo();
 
   return (
     <AppBar className={classes.container} position='static'>
       <Toolbar>
-        <IconButton edge='start' color='inherit' aria-label='menu' sx={{ mr: 2 }} onClick={() => toggleSidebar()}>
+        <IconButton edge='start' color='inherit' aria-label='menu' sx={{ mr: 2 }} onClick={toggleSidebar}>
           <MenuIcon className={classes.menu} />
         </IconButton>
         <Link to='/'><Logo /></Link>
         <div className={classes.contents}>
           { children }
         </div>
-        <ProfileItem classes={classes} userInfo={userInfo} setSidebarOpen={toggleSidebar} />
+        <ProfileItem classes={classes} userInfo={userInfo} setSidebarOpen={setSidebarOpen} />
       </Toolbar>
     </AppBar>
   );

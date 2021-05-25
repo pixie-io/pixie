@@ -31,7 +31,6 @@ import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
 import CampaignIcon from '@material-ui/icons/Campaign';
-import Menu from '@material-ui/icons/Menu';
 import Tooltip from '@material-ui/core/Tooltip';
 
 import { Link } from 'react-router-dom';
@@ -39,17 +38,13 @@ import { Link } from 'react-router-dom';
 import { ClusterContext } from 'common/cluster-context';
 import UserContext from 'common/user-context';
 import {
-  Avatar, ProfileMenuWrapper,
-  ClusterIcon, CodeIcon, DocsIcon,
-  LogoutIcon, NamespaceIcon, SettingsIcon,
-  PixieLogo,
+  ClusterIcon, DocsIcon, NamespaceIcon,
 } from '@pixie-labs/components';
 import { toEntityPathname, LiveViewPage } from 'containers/live-widgets/utils/live-view-params';
 import {
   DOMAIN_NAME, ANNOUNCEMENT_ENABLED,
   ANNOUNCE_WIDGET_URL, CONTACT_ENABLED,
 } from 'containers/constants';
-import { Button } from '@material-ui/core';
 import { SidebarFooter } from 'configurable/sidebar-footer';
 
 const styles = (
@@ -66,9 +61,6 @@ const styles = (
       left: spacing(5),
     },
   },
-  docked: {
-    position: 'absolute',
-  },
   drawerClose: {
     borderRightWidth: spacing(0.2),
     borderRightStyle: 'solid',
@@ -77,9 +69,8 @@ const styles = (
       duration: transitions.duration.leavingScreen,
     }),
     width: spacing(8),
-    zIndex: 1000,
+    zIndex: 1250,
     overflowX: 'hidden',
-    paddingBottom: spacing(2),
     [breakpoints.down('sm')]: {
       display: 'none',
     },
@@ -95,7 +86,7 @@ const styles = (
     borderRightWidth: spacing(0.2),
     borderRightStyle: 'solid',
     width: spacing(29),
-    zIndex: 1000,
+    zIndex: 1250,
     flexShrink: 0,
     whiteSpace: 'nowrap',
     transition: transitions.create('width', {
@@ -103,7 +94,6 @@ const styles = (
       duration: transitions.duration.enteringScreen,
     }),
     overflowX: 'hidden',
-    paddingBottom: spacing(2),
   },
   expandedProfile: {
     flexDirection: 'column',
@@ -115,6 +105,9 @@ const styles = (
     '& > div': {
       color: palette.text.primary,
     },
+  },
+  clippedItem: {
+    height: spacing(6),
   },
   pixieLogo: {
     fill: palette.primary.main,
@@ -173,25 +166,7 @@ const SideBarExternalLinkItem = ({
   </Tooltip>
 );
 
-const HamburgerMenu = ({ classes, onToggle, logoLinkTo }) => (
-  <ListItem button onClick={onToggle} key='Menu' className={classes.listIcon}>
-    <ListItemIcon>
-      <Menu />
-    </ListItemIcon>
-    <ListItemIcon>
-      <Button
-        component={Link}
-        disabled={window.location.pathname.startsWith(logoLinkTo)}
-        to={logoLinkTo}
-        variant='text'
-      >
-        <PixieLogo className={classes.pixieLogo} />
-      </Button>
-    </ListItemIcon>
-  </ListItem>
-);
-
-const SideBar = ({ classes, open, toggle }) => {
+const SideBar = ({ classes, open }) => {
   const clusterContext = React.useContext(ClusterContext);
   const { user } = React.useContext(UserContext);
 
@@ -222,23 +197,15 @@ const SideBar = ({ classes, open, toggle }) => {
 
   return (
     <>
-      <div className={classes.compactHamburger}>
-        <ListItem button onClick={toggle} key='Menu' className={classes.listIcon}>
-          <ListItemIcon>
-            <Menu />
-          </ListItemIcon>
-        </ListItem>
-      </div>
       <Drawer
         variant='permanent'
         className={open ? classes.drawerOpen : classes.drawerClose}
         classes={{
           paper: open ? classes.drawerOpen : classes.drawerClose,
-          docked: classes.docked,
         }}
       >
         <List>
-          <HamburgerMenu key='Menu' classes={classes} onToggle={toggle} logoLinkTo='/live' />
+          <ListItem button className={classes.clippedItem} />
         </List>
         <List>
           {navItems.map(({ icon, link, text }) => (

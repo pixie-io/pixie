@@ -23,17 +23,14 @@ import { TopBar } from 'containers/App/topbar';
 
 const NavBars: React.FC = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = React.useState<boolean>(false);
-  const toggleSidebar = React.useMemo(
-    () => (val?: boolean|((prev: boolean) => boolean)) => (
-      setSidebarOpen((opened) => (typeof val === 'function' ? val(opened) : val) ?? !opened)
-    ), []);
+  const toggleSidebar = () => setSidebarOpen((open) => !open);
 
   return (
     <>
-      <TopBar toggleSidebar={toggleSidebar}>
+      <TopBar toggleSidebar={toggleSidebar} setSidebarOpen={setSidebarOpen}>
         {children}
       </TopBar>
-      <SideBar open={sidebarOpen} toggle={toggleSidebar} />
+      <SideBar open={sidebarOpen} />
     </>
   );
 };
