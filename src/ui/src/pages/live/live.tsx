@@ -18,8 +18,9 @@
 
 import * as React from 'react';
 
-import { scrollbarStyles, EditIcon } from '@pixie-labs/components';
+import { scrollbarStyles, EditIcon, Footer } from '@pixie-labs/components';
 import { GQLClusterStatus as ClusterStatus } from '@pixie-labs/api';
+import { useListClusters } from '@pixie-labs/api-react';
 import {
   makeStyles, Theme,
 } from '@material-ui/core/styles';
@@ -30,6 +31,7 @@ import {
 import { Alert, AlertTitle } from '@material-ui/lab';
 import MoveIcon from '@material-ui/icons/OpenWith';
 
+import { Copyright } from 'configurable/copyright';
 import { ClusterContext } from 'common/cluster-context';
 import { DataDrawerContextProvider } from 'context/data-drawer-context';
 import EditorContextProvider, { EditorContext } from 'context/editor-context';
@@ -47,7 +49,6 @@ import LiveViewBreadcrumbs from 'containers/live/breadcrumbs';
 import { ScriptLoader } from 'containers/live/script-loader';
 import LiveViewShortcutsProvider from 'containers/live/shortcuts';
 import { CONTACT_ENABLED } from 'containers/constants';
-import { useListClusters } from '@pixie-labs/api-react';
 import ExecuteScriptButton from 'containers/live/execute-button';
 import ClusterSelector from 'containers/live/cluster-selector';
 
@@ -60,11 +61,17 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     color: theme.palette.text.primary,
     ...scrollbarStyles(theme),
   },
-  content: {
+  main: {
+    flexGrow: 1,
+    display: 'flex',
+    flexFlow: 'column nowrap',
+    overflow: 'auto',
+  },
+  mainContent: {
     marginLeft: theme.spacing(8),
     paddingTop: theme.spacing(2),
     display: 'flex',
-    flex: 1,
+    flex: '1 0 auto',
     minWidth: 0,
     minHeight: 0,
     flexDirection: 'column',
@@ -74,6 +81,10 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     },
     overflowY: 'auto',
     overflowX: 'hidden',
+  },
+  mainFooter: {
+    marginLeft: theme.spacing(8),
+    flex: '0 0 auto',
   },
   spacer: {
     flex: 1,
@@ -355,23 +366,28 @@ const LiveView: React.FC = () => {
           <DataDrawerSplitPanel />
         </div>
         <EditorSplitPanel>
-          <div className={classes.content}>
-            <LiveViewBreadcrumbs />
-            {/* eslint-disable-next-line no-nested-ternary */}
-            {!script ? (<div> Script name invalid, choose a new script in the dropdown</div>)
-              : (!hasFinishedLoadingCluster || clusterUnhealthy ? (
-                <div className='center-content'>
-                  <ClusterLoadingComponent
-                    clusterUnhealthy={clusterUnhealthy}
-                    clusterStatus={clusterStatus}
-                    clusterName={selectedClusterPrettyName}
-                  />
-                </div>
-              ) : (
-                <div className={classes.canvas} ref={canvasRef}>
-                  <Canvas editable={widgetsMoveable} parentRef={canvasRef} />
-                </div>
-              ))}
+          <div className={classes.main}>
+            <div className={classes.mainContent}>
+              <LiveViewBreadcrumbs />
+              {/* eslint-disable-next-line no-nested-ternary */}
+              {!script ? (<div> Script name invalid, choose a new script in the dropdown</div>)
+                : (!hasFinishedLoadingCluster || clusterUnhealthy ? (
+                  <div className='center-content'>
+                    <ClusterLoadingComponent
+                      clusterUnhealthy={clusterUnhealthy}
+                      clusterStatus={clusterStatus}
+                      clusterName={selectedClusterPrettyName}
+                    />
+                  </div>
+                ) : (
+                  <div className={classes.canvas} ref={canvasRef}>
+                    <Canvas editable={widgetsMoveable} parentRef={canvasRef} />
+                  </div>
+                ))}
+            </div>
+            <div className={classes.mainFooter}>
+              <Footer copyright={Copyright} />
+            </div>
           </div>
         </EditorSplitPanel>
       </LiveViewShortcutsProvider>

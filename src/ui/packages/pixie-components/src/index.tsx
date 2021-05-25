@@ -22,7 +22,6 @@ export { UsernamePasswordButton } from './components/auth/username-password-butt
 export {
   Form, FormProps, FormField, FormStructure, PixienautForm, PixienautFormProps,
 } from './components/form/form';
-export { AuthFooter } from './components/auth/footer';
 export { AuthMessageBoxProps, AuthMessageBox } from './components/auth/message';
 export {
   PixienautBoxProps,
@@ -83,6 +82,8 @@ export { ColWidthOverrides } from './components/data-table/table-resizer';
 
 export { FixedSizeDrawer } from './components/drawer/drawer';
 export { ResizableDrawer } from './components/drawer/resizable-drawer';
+
+export { Footer } from './components/footer/footer';
 
 export { LazyPanel } from './components/lazy-panel/lazy-panel';
 

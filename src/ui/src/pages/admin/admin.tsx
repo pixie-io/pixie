@@ -16,7 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { scrollbarStyles } from '@pixie-labs/components';
+import { scrollbarStyles, Footer } from '@pixie-labs/components';
+import { Copyright } from 'configurable/copyright';
 import {
   Theme,
   makeStyles,
@@ -49,6 +50,15 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     flex: 1,
     minHeight: 0,
     padding: theme.spacing(1),
+    display: 'flex',
+    flexFlow: 'column nowrap',
+    overflow: 'auto',
+  },
+  mainBlock: {
+    flex: '1 0 auto',
+  },
+  mainFooter: {
+    flex: '0 0 auto',
   },
   titleText: {
     ...theme.typography.h6,
@@ -70,7 +80,12 @@ export const AdminPage: React.FC = ({ children }) => {
         </NavBars>
       </SidebarContext.Provider>
       <div className={classes.main}>
-        { children }
+        <div className={classes.mainBlock}>
+          { children }
+        </div>
+        <div className={classes.mainFooter}>
+          <Footer copyright={Copyright} />
+        </div>
       </div>
     </div>
   );

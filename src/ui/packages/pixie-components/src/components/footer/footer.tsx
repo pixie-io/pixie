@@ -17,14 +17,10 @@
  */
 
 import * as React from 'react';
-import {
-  Theme,
-  Typography,
-  makeStyles,
-} from '@material-ui/core';
+import { Theme, Typography, makeStyles } from '@material-ui/core';
 import { createStyles } from '@material-ui/styles';
 
-const useStyles = makeStyles(({ spacing, breakpoints, palette }: Theme) => createStyles({
+const useDefaultStyles = makeStyles(({ spacing, breakpoints, palette }: Theme) => createStyles({
   root: {
     display: 'flex',
     flexFlow: 'row wrap',
@@ -60,12 +56,19 @@ const useStyles = makeStyles(({ spacing, breakpoints, palette }: Theme) => creat
   },
 }));
 
-export interface AuthFooterProps {
-  copyright: React.ReactNode;
+export interface FooterProps {
+  copyright: React.ReactNode,
+  /** Defaults to a layout with Terms & Conditions and Privacy Policy to the left; copyright to the right. */
+  classes?: ReturnType<typeof useDefaultStyles>,
 }
 
-export const AuthFooter: React.FC<AuthFooterProps> = ({ copyright }: AuthFooterProps) => {
-  const classes = useStyles();
+export const Footer: React.FC<FooterProps> = ({
+  classes: overrideClasses,
+  copyright,
+}) => {
+  const defaultClasses = useDefaultStyles();
+  const classes = overrideClasses ?? defaultClasses;
+
   return (
     <div className={classes.root}>
       <div className={classes.left}>
