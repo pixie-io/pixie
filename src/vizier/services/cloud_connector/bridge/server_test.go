@@ -206,6 +206,10 @@ func (f *FakeVZInfo) GetClusterUID() (string, error) {
 	return "fake-uid", nil
 }
 
+func (f *FakeVZInfo) GetClusterID() (string, error) {
+	return "fake-id", nil
+}
+
 func (f *FakeVZInfo) UpdateClusterID(string) error {
 	return nil
 }

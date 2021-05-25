@@ -9,6 +9,7 @@ patches:
 - path: patch_sentry.yaml
   target:
     kind: Deployment
+    labelSelector: vizier-bootstrap!=true
 resources:
 - ../bootstrap
 - proxy_envoy.yaml

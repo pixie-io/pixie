@@ -70,6 +70,20 @@ func newVzServiceClient() (vizierpb.VizierServiceClient, error) {
 	return vizierpb.NewVizierServiceClient(qbChannel), nil
 }
 
+// Checks to see if the cloud connector has successfully assigned a cluster ID.
+type readinessCheck struct {
+	vzInfo controllers.VizierInfo
+}
+
+func (r *readinessCheck) Name() string {
+	return "cluster-id"
+}
+
+func (r *readinessCheck) Check() error {
+	_, err := r.vzInfo.GetClusterID()
+	return err
+}
+
 func main() {
 	services.SetupService("cloud-connector", 50800)
 	services.SetupSSLClientFlags()
@@ -144,7 +158,10 @@ func main() {
 	defer svr.Stop()
 
 	mux := http.NewServeMux()
+	// Set up healthz endpoint.
 	healthz.RegisterDefaultChecks(mux)
+	// Set up readyz endpoint.
+	healthz.InstallPathHandler(mux, "/readyz", &readinessCheck{vzInfo})
 
 	e := env.New("vizier")
 	s := server.NewPLServer(e,

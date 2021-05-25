@@ -147,6 +147,7 @@ type VizierInfo interface {
 	DeleteJob(string) error
 	GetJob(string) (*batchv1.Job, error)
 	GetClusterUID() (string, error)
+	GetClusterID() (string, error)
 	UpdateClusterID(string) error
 	GetVizierPodLogs(string, bool, string) (string, error)
 	GetVizierPods() ([]*vizierpb.VizierPodStatus, []*vizierpb.VizierPodStatus, error)

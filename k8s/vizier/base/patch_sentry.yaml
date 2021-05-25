@@ -5,6 +5,23 @@ metadata:
 spec:
   template:
     spec:
+      initContainers:
+      - name: cc-wait
+        image: gcr.io/pixie-prod/pixie-prod-artifacts/curl:1.0
+        # yamllint disable
+        command: ['sh', '-c', 'set -x;
+          URL="https://${SERVICE_NAME}:${SERVICE_PORT}/readyz";
+          until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
+            echo "waiting for ${URL}"
+            sleep 2;
+          done;
+        ']
+        env:
+          # The name of the service that Kelvin must connect with before becoming available.
+        - name: SERVICE_NAME
+          value: "vizier-cloud-connector"
+        - name: SERVICE_PORT
+          value: "50800"
       containers:
       - name: app
         env:

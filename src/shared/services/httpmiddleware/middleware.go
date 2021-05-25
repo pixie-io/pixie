@@ -20,6 +20,7 @@
 package httpmiddleware
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -48,11 +49,24 @@ func GetTokenFromBearer(r *http.Request) (string, bool) {
 	return authHeader[len(bearerSchema):], true
 }
 
+var healthEndpoints []string = []string{
+	"/healthz", "/readyz",
+}
+
+func isHealthEndpoint(input string) bool {
+	for _, healthEndpoint := range healthEndpoints {
+		if strings.HasPrefix(input, fmt.Sprintf("%s/", healthEndpoint)) || input == healthEndpoint {
+			return true
+		}
+	}
+	return false
+}
+
 // WithBearerAuthMiddleware checks for valid bearer auth or rejects the request.
 // This middleware should be use on all services (except auth/api) to validate our tokens.
 func WithBearerAuthMiddleware(env env.Env, next http.Handler) http.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/healthz/") || r.URL.Path == "/healthz" {
+		if isHealthEndpoint(r.URL.Path) {
 			// Skip auth for healthcheck endpoints.
 			next.ServeHTTP(w, r)
 			return
