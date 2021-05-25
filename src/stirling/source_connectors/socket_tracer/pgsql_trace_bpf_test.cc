@@ -82,6 +82,37 @@ class PostgreSQLTraceTest : public testing::SocketTraceBPFTest</* TClientSideTra
   PostgreSQLContainer container_;
 };
 
+struct ReqRespCmd {
+  std::string req;
+  std::string resp;
+  std::string req_cmd;
+
+  ReqRespCmd(std::string request, std::string response, std::string request_command)
+      : req(std::move(request)), resp(std::move(response)), req_cmd(std::move(request_command)) {}
+  ReqRespCmd(std::string request, std::string response, Tag tag)
+      : ReqRespCmd(std::move(request), std::move(response), ToString(tag, /* is_req */ true)) {}
+};
+
+bool operator==(const ReqRespCmd& a, const ReqRespCmd& b) {
+  return a.req == b.req && a.resp == b.resp && a.req_cmd == b.req_cmd;
+}
+
+std::ostream& operator<<(std::ostream& os, const ReqRespCmd& req_resp_cmd) {
+  os << "(" << req_resp_cmd.req_cmd << ", " << req_resp_cmd.req << ", " << req_resp_cmd.resp << ")";
+  return os;
+}
+
+std::vector<ReqRespCmd> RecordBatchToReqRespCmds(
+    const types::ColumnWrapperRecordBatch& record_batch, const std::vector<size_t>& indices) {
+  std::vector<ReqRespCmd> res;
+  for (size_t i : indices) {
+    res.emplace_back(AccessRecordBatch<types::StringValue>(record_batch, kPGSQLReqIdx, i),
+                     AccessRecordBatch<types::StringValue>(record_batch, kPGSQLRespIdx, i),
+                     AccessRecordBatch<types::StringValue>(record_batch, kPGSQLReqCmdIdx, i));
+  }
+  return res;
+}
+
 // TODO(yzhao): We want to test Stirling's behavior when intercept the middle of the traffic.
 // One way is to let SubProcess able to accept STDIN after launching. This test does not have that
 // capability because it's running a query from start to finish, which always establish new
@@ -119,54 +150,16 @@ TEST_F(PostgreSQLTraceTest, SelectQuery) {
               StrEq("CREATE TABLE"));
 }
 
-class PostgreSQLTraceGoSQLxTest
-    : public testing::SocketTraceBPFTest</* TClientSideTracing */ true> {
- protected:
-  PostgreSQLTraceGoSQLxTest() {
-    PL_CHECK_OK(pgsql_container_.Run(150, {"--env=POSTGRES_PASSWORD=docker"}));
-  }
-
-  PostgreSQLContainer pgsql_container_;
-  GolangSQLxContainer sqlx_container_;
-};
-
-struct ReqRespCmd {
-  std::string req;
-  std::string resp;
-  std::string req_cmd;
-
-  ReqRespCmd(std::string request, std::string response, std::string request_command)
-      : req(std::move(request)), resp(std::move(response)), req_cmd(std::move(request_command)) {}
-  ReqRespCmd(std::string request, std::string response, Tag tag)
-      : ReqRespCmd(std::move(request), std::move(response), ToString(tag, /* is_req */ true)) {}
-};
-
-bool operator==(const ReqRespCmd& a, const ReqRespCmd& b) {
-  return a.req == b.req && a.resp == b.resp && a.req_cmd == b.req_cmd;
-}
-
-std::ostream& operator<<(std::ostream& os, const ReqRespCmd& req_resp_cmd) {
-  os << "(" << req_resp_cmd.req_cmd << ", " << req_resp_cmd.req << ", " << req_resp_cmd.resp << ")";
-  return os;
-}
-
-std::vector<ReqRespCmd> RecordBatchToReqRespCmds(
-    const types::ColumnWrapperRecordBatch& record_batch, const std::vector<size_t>& indices) {
-  std::vector<ReqRespCmd> res;
-  for (size_t i : indices) {
-    res.emplace_back(AccessRecordBatch<types::StringValue>(record_batch, kPGSQLReqIdx, i),
-                     AccessRecordBatch<types::StringValue>(record_batch, kPGSQLRespIdx, i),
-                     AccessRecordBatch<types::StringValue>(record_batch, kPGSQLReqCmdIdx, i));
-  }
-  return res;
-}
-
 // Executes a demo golang app that queries PostgreSQL database with sqlx.
-TEST_F(PostgreSQLTraceGoSQLxTest, GolangSqlxDemo) {
+TEST_F(PostgreSQLTraceTest, GolangSqlxDemo) {
+  // Uncomment to enable tracing:
+  FLAGS_stirling_conn_trace_pid = container_.process_pid();
+
   StartTransferDataThread();
 
-  PL_CHECK_OK(sqlx_container_.Run(
-      10, {absl::Substitute("--network=container:$0", pgsql_container_.container_name())}));
+  GolangSQLxContainer sqlx_container;
+  PL_CHECK_OK(sqlx_container.Run(
+      10, {absl::Substitute("--network=container:$0", container_.container_name())}));
 
   StopTransferDataThread();
 
@@ -177,7 +170,7 @@ TEST_F(PostgreSQLTraceGoSQLxTest, GolangSqlxDemo) {
   // Select only the records from the client side. Stirling captures both client and server side
   // traffic because of the remote address is outside of the cluster.
   const auto indices =
-      FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, sqlx_container_.process_pid());
+      FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, sqlx_container.process_pid());
 
   EXPECT_THAT(
       RecordBatchToReqRespCmds(record_batch, indices),
