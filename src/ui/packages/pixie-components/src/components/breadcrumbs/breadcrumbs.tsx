@@ -174,7 +174,7 @@ const styles = ({
   },
 });
 
-interface DialogDropdownProps {
+export interface DialogDropdownProps {
   onSelect: (input: string) => void;
   getListItems: (input: string) => Promise<BreadcrumbListItem[]>;
   onClose: () => void;
@@ -210,7 +210,7 @@ export const DialogDropdown: React.FC<DialogDropdownProps> = ({
   getListItems,
   anchorEl,
   explanation,
-}: DialogDropdownProps) => {
+}) => {
   const classes = useDialogStyles();
 
   const mounted = useIsMounted();
@@ -218,9 +218,7 @@ export const DialogDropdown: React.FC<DialogDropdownProps> = ({
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   if (anchorEl && inputRef.current) {
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 100);
+    inputRef.current?.focus();
   }
 
   const onCompletionSelected = React.useCallback(
@@ -307,7 +305,7 @@ export const DialogDropdown: React.FC<DialogDropdownProps> = ({
       typography: createTypography(theme.palette, {
         fontSize: theme.typography.fontSize * 0.8,
       }),
-      spacing: createSpacing((factor) => theme.spacing(factor * 0.8 * 1)),
+      spacing: createSpacing((factor) => theme.spacing(factor * 0.8)),
     }),
   [],
   );
@@ -360,11 +358,8 @@ export const DialogDropdown: React.FC<DialogDropdownProps> = ({
     </Popover>
   );
 };
-DialogDropdown.defaultProps = {
-  explanation: null,
-};
 
-interface BreadcrumbProps extends WithStyles<typeof styles> {
+export interface BreadcrumbProps extends WithStyles<typeof styles> {
   title: string;
   value: string;
   selectable: boolean;
@@ -375,7 +370,7 @@ interface BreadcrumbProps extends WithStyles<typeof styles> {
   explanation?: React.ReactElement;
 }
 
-const Breadcrumb = ({
+const Breadcrumb: React.FC<BreadcrumbProps> = ({
   classes,
   title,
   value,
@@ -385,7 +380,7 @@ const Breadcrumb = ({
   omitKey,
   placeholder,
   explanation,
-}: BreadcrumbProps) => {
+}) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
   const handleClick = React.useCallback(
@@ -397,6 +392,8 @@ const Breadcrumb = ({
 
   const onClose = React.useCallback(() => {
     setAnchorEl(null);
+    // The input from the autocomplete retains focus despite being hidden otherwise.
+    (document.activeElement as HTMLElement)?.blur();
   }, [setAnchorEl]);
 
   return (
@@ -424,13 +421,6 @@ const Breadcrumb = ({
     </div>
   );
 };
-Breadcrumb.defaultProps = {
-  getListItems: null,
-  onSelect: null,
-  omitKey: false,
-  placeholder: '',
-  explanation: null,
-};
 
 export interface BreadcrumbListItem {
   value: string;
@@ -452,11 +442,11 @@ export interface BreadcrumbOptions {
   divider?: boolean;
 }
 
-interface BreadcrumbsProps extends WithStyles<typeof styles> {
+export interface BreadcrumbsProps extends WithStyles<typeof styles> {
   breadcrumbs: BreadcrumbOptions[];
 }
 
-const BreadcrumbsImpl = ({ classes, breadcrumbs }: BreadcrumbsProps) => {
+const BreadcrumbsImpl: React.FC<BreadcrumbsProps> = ({ classes, breadcrumbs }) => {
   // In case a breadcrumb doesn't override, give it the nearest context's values.
   const { allowTyping, requireCompletion } = React.useContext(
     AutocompleteContext,
