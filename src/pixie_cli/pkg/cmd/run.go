@@ -234,7 +234,7 @@ func createNewCobraCommand() *cobra.Command {
 				}
 				b := color.New(color.Bold).Sprint
 				u := color.New(color.Underline).Sprint
-				p("\n%s %s: %s.\n", color.CyanString("\n==> "),
+				p("\n%s %s: %s\n", color.CyanString("\n==> "),
 					b("Live UI"), u(lvl))
 			}
 		},
