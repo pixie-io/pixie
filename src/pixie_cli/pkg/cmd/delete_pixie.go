@@ -19,18 +19,20 @@
 package cmd
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
-	"px.dev/pixie/src/utils/shared/k8s"
 
 	// Blank import necessary for kubeConfig to work.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
 	"px.dev/pixie/src/pixie_cli/pkg/vizier"
+	"px.dev/pixie/src/utils/shared/k8s"
 )
 
 // DeleteCmd is the "delete" command.
@@ -57,6 +59,7 @@ func init() {
 
 func deletePixie(ns string, clobberAll bool) {
 	kubeConfig := k8s.GetConfig()
+	kubeAPIConfig := k8s.GetClientAPIConfig()
 	clientset := k8s.GetClientset(kubeConfig)
 
 	od := k8s.ObjectDeleter{
@@ -67,6 +70,19 @@ func deletePixie(ns string, clobberAll bool) {
 	}
 
 	tasks := make([]utils.Task, 0)
+
+	currentCluster := kubeAPIConfig.CurrentContext
+	var noClobberInfo string
+	if clobberAll {
+		utils.WithColor(color.New(color.FgRed)).Infof("This action will delete the entire '%s' namespace.", ns)
+		noClobberInfo = " For a partial deletion which preserves the namespace, try `px delete --clobber=false`."
+	}
+	prompt := fmt.Sprintf("Confirm to proceed on cluster %s.", currentCluster)
+	proceed := components.YNPrompt(prompt, true)
+	if !proceed {
+		utils.Errorf("User exited.%s", noClobberInfo)
+		return
+	}
 
 	if clobberAll {
 		tasks = append(tasks, newTaskWrapper("Deleting namespace", od.DeleteNamespace))
