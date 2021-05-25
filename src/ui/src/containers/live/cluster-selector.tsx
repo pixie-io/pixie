@@ -75,6 +75,7 @@ const ClusterSelector: React.FC = () => {
         value: c.clusterName,
         icon: <StatusCell statusGroup={clusterStatusGroup(c.status)} />,
       }))
+      .sort((clusterA, clusterB) => clusterA.title.localeCompare(clusterB.title))
   ), [clusters]);
 
   if (loading || !clusters || error) return (<></>);
