@@ -102,6 +102,7 @@ declare module '@material-ui/core/styles/shape' {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export const scrollbarStyles = (theme: Theme) => {
   const commonStyle = (color) => ({
     borderRadius: theme.spacing(1.0),
@@ -281,6 +282,13 @@ export const DARK_THEME = createTheme({
       styleOverrides: {
         root: {
           backgroundColor: '#353535', // background three.
+        },
+      },
+    },
+    MuiMenuItem: {
+      styleOverrides: {
+        root: {
+          width: '100%',
         },
       },
     },

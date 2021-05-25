@@ -56,10 +56,9 @@ function buildBackdropMask(s: Spacing) {
   // x, y, w, h.
   const punchouts: string[][] = [
     /* eslint-disable no-multi-spaces */
-    [`${s(9)}px`, `${s(3)}px`,                `calc(100vw - ${s(12)}px)`, `${s(4.5)}px`], // Top bar
-    ['left',      `${s(8)}px`,                `${s(6)}px`,                `${s(12)}px`],  // Upper part of sidebar
-    ['left',      `calc(100vh - ${s(36)}px)`, `${s(6)}px`,                `${s(36)}px`],  // Bottom part of sidebar
-    [`${s(6)}px`, `calc(100vh - ${s(6)}px)`,  '100vw',                    `${s(6)}px`],   // Drawer
+    [s(8),         'top',                   '100vw', s(16)],   // Top bars (both of them)
+    ['left',       s(8),                    s(8),    '100vh'], // Sidebar
+    ['calc(50vw)', `calc(100vh - ${s(3)})`, s(8),    s(3)],    // Drawer button
     /* eslint-enable no-multi-spaces */
   ];
   // Draws white everywhere except the punchout locations. Without this, the
@@ -140,7 +139,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   topBarRight: {
     top: theme.spacing(16),
-    right: theme.spacing(16),
+    right: theme.spacing(24),
     textAlign: 'right',
   },
   topBarRightArrow: {
@@ -170,15 +169,16 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     transform: 'translate(-100%, -100%)',
   },
   dataDrawer: {
-    bottom: theme.spacing(10),
-    right: theme.spacing(16),
-    textAlign: 'right',
+    bottom: theme.spacing(12),
+    left: `calc(50% + ${theme.spacing(4)})`, // Center of the main area rather than of the viewport
+    transform: 'translate(-50%, 0)',
+    textAlign: 'center',
   },
   dataDrawerArrow: {
     position: 'absolute',
-    right: 0,
-    top: theme.spacing(1),
-    transform: 'translate(100%, 0)',
+    left: '50%',
+    bottom: theme.spacing(0.5),
+    transform: 'translate(-50%, 100%)',
   },
 }));
 
@@ -224,7 +224,7 @@ const LiveTourArrow: React.FC<LiveTourArrowProps> = ({
  * Contents of the tour for Live pages. Meant to exist within a fullscreen MUIDialog.
  * @constructor
  */
-export const LiveTour = () => {
+export const LiveTour: React.FC = () => {
   const classes = useStyles();
   // TODO(nick): On mobile, the layout is entirely different (and as of this writing, core functionality is unavailable)
   //  For now, this is hidden for those users (the component to open this hides).
@@ -283,19 +283,17 @@ export const LiveTour = () => {
         />
         <h3>Pixie Info / Settings</h3>
         <div>Docs</div>
-        { CONTACT_ENABLED
-          && <div>Help</div>}
-        <div>Admin / Cluster Status</div>
+        { CONTACT_ENABLED && <div>Help</div>}
       </div>
       <div className={classes.dataDrawer}>
         <LiveTourArrow
-          path='M 10 10 Q 80 10, 80 80'
-          tipX={80}
-          tipY={80}
+          path='M 10 10 L 10 80'
+          tipX={10}
+          tipY={75}
           tipAngleDeg={225}
           className={classes.dataDrawerArrow}
-          width={90}
-          height={90}
+          width={20}
+          height={75}
         />
         <h3>Data Drawer</h3>
         <p>Inspect the raw data (Ctrl/Cmd+D).</p>
@@ -313,7 +311,7 @@ interface LiveTourDialogProps {
   onClose: () => void;
 }
 
-export const LiveTourDialog = ({ onClose }: LiveTourDialogProps) => {
+export const LiveTourDialog: React.FC<LiveTourDialogProps> = ({ onClose }) => {
   const classes = useStyles();
   const { tourOpen } = React.useContext(LiveTourContext);
   return (

@@ -51,6 +51,7 @@ import LiveViewShortcutsProvider from 'containers/live/shortcuts';
 import { CONTACT_ENABLED } from 'containers/constants';
 import ExecuteScriptButton from 'containers/live/execute-button';
 import ClusterSelector from 'containers/live/cluster-selector';
+import { LiveTourContextProvider } from 'containers/App/live-tour';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -397,16 +398,18 @@ const LiveView: React.FC = () => {
 
 const ContextualizedLiveView: React.FC = () => (
   <LayoutContextProvider>
-    <DataDrawerContextProvider>
-      <ResultsContextProvider>
-        <ScriptContextProvider>
-          <EditorContextProvider>
-            <ScriptLoader />
-            <LiveView />
-          </EditorContextProvider>
-        </ScriptContextProvider>
-      </ResultsContextProvider>
-    </DataDrawerContextProvider>
+    <LiveTourContextProvider>
+      <DataDrawerContextProvider>
+        <ResultsContextProvider>
+          <ScriptContextProvider>
+            <EditorContextProvider>
+              <ScriptLoader />
+              <LiveView />
+            </EditorContextProvider>
+          </ScriptContextProvider>
+        </ResultsContextProvider>
+      </DataDrawerContextProvider>
+    </LiveTourContextProvider>
   </LayoutContextProvider>
 );
 
