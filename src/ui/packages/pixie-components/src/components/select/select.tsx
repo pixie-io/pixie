@@ -18,6 +18,9 @@
 
 import * as React from 'react';
 import {
+  Theme,
+} from '@material-ui/core';
+import {
   WithStyles,
   withStyles,
 } from '@material-ui/core/styles';
@@ -26,7 +29,7 @@ import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
 import { DialogDropdown, BreadcrumbListItem } from 'components/breadcrumbs/breadcrumbs';
 import { AutocompleteContext } from 'components/autocomplete/autocomplete-context';
 
-const styles = () => createStyles({
+const styles = (theme: Theme) => createStyles({
   root: {
     color: 'white',
     display: 'flex',
@@ -37,6 +40,7 @@ const styles = () => createStyles({
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
+    marginLeft: theme.spacing(-0.1),
   },
 });
 

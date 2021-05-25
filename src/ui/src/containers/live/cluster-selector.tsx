@@ -17,13 +17,35 @@
  */
 
 import * as React from 'react';
+import {
+  Theme, makeStyles,
+} from '@material-ui/core';
+import { createStyles } from '@material-ui/styles';
 import { ClusterContext } from 'common/cluster-context';
 import { useListClusters } from '@pixie-labs/api-react';
 import { StatusCell, Select } from '@pixie-labs/components';
 import { GQLClusterStatus as ClusterStatus } from '@pixie-labs/api';
 import { clusterStatusGroup } from 'containers/admin/utils';
 
+const useStyles = makeStyles(({ spacing, palette }: Theme) => createStyles({
+  label: {
+    marginRight: spacing(0.5),
+    justifyContent: 'center',
+    display: 'flex',
+    alignItems: 'center',
+    color: palette.common.white,
+    fontWeight: 800,
+  },
+  container: {
+    display: 'flex',
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
+}));
+
 const ClusterSelector: React.FC = () => {
+  const classes = useStyles();
+
   const [clusters, loading, error] = useListClusters();
   const { selectedCluster, setCluster } = React.useContext(ClusterContext);
 
@@ -36,18 +58,24 @@ const ClusterSelector: React.FC = () => {
   });
 
   return (
-    <Select
-      value={clusterName}
-      // eslint-disable-next-line
-      getListItems={async (input) => (clusters.filter((c) => c.status !== ClusterStatus.CS_DISCONNECTED
-        && c.prettyClusterName.includes(input))
-        .map((c) => ({ value: c.prettyClusterName, icon: <StatusCell statusGroup={clusterStatusGroup(c.status)} /> }))
-      )}
-      onSelect={(input) => {
-        setCluster(clusterNameToID[input]);
-      }}
-      requireCompletion
-    />
+    <div className={classes.container}>
+      <div className={classes.label}>Cluster:</div>
+      <Select
+        value={clusterName}
+        // eslint-disable-next-line
+        getListItems={async (input) => (clusters.filter((c) => c.status !== ClusterStatus.CS_DISCONNECTED
+          && c.prettyClusterName.includes(input))
+          .map((c) => ({
+            value: c.prettyClusterName,
+            icon: <StatusCell statusGroup={clusterStatusGroup(c.status)} />,
+          }))
+        )}
+        onSelect={(input) => {
+          setCluster(clusterNameToID[input]);
+        }}
+        requireCompletion
+      />
+    </div>
   );
 };
 

@@ -216,8 +216,8 @@ export const TopBar = withStyles((theme: Theme) => createStyles({
   contents: {
     display: 'flex',
     flex: 1,
-    paddingRight: theme.spacing(3),
-    paddingLeft: theme.spacing(3),
+    paddingRight: theme.spacing(4),
+    paddingLeft: theme.spacing(4),
   },
   menu: {
     color: theme.palette.common.white,
