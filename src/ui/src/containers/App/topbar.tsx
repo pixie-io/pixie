@@ -96,14 +96,13 @@ const ProfileItem = ({
     setDataDrawerOpen(wasDrawerOpenBeforeTour);
   };
 
-  // TODO(nick, PC-955): Fixup and re-enable the tour. The UI redesign broke the tour.
-  // React.useEffect(() => {
-  //   if (!loadingTourSeen && tourSeen !== true && inLiveView) {
-  //     openTour();
-  //     setTourSeen(true);
-  //   }
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, [loadingTourSeen, tourSeen, inLiveView]);
+  React.useEffect(() => {
+    if (!loadingTourSeen && tourSeen !== true && inLiveView) {
+      openTour();
+      setTourSeen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingTourSeen, tourSeen, inLiveView]);
 
   let name = '';
   let picture = '';
@@ -150,15 +149,14 @@ const ProfileItem = ({
         {
           inLiveView && (
             [
-              // TODO(nick, PC-955): Fixup and re-enable the tour. The UI redesign broke the tour.
-              // (
-              //   <MenuItem key='tour' button component='a' onClick={openTour} className={classes.hideOnMobile}>
-              //     <StyledListItemIcon>
-              //       <ExploreIcon />
-              //     </StyledListItemIcon>
-              //     <StyledListItemText primary='Tour' />
-              //   </MenuItem>
-              // ),
+              (
+                <MenuItem key='tour' button component='a' onClick={openTour} className={classes.hideOnMobile}>
+                  <StyledListItemIcon>
+                    <ExploreIcon />
+                  </StyledListItemIcon>
+                  <StyledListItemText primary='Tour' />
+                </MenuItem>
+              ),
               (
                 <MenuItem key='shortcuts' button component='a' onClick={() => shortcuts['show-help'].handler()}>
                   <StyledListItemIcon>
