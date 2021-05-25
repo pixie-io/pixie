@@ -90,7 +90,6 @@ export const LIVE_CONTEXT_DEFAULTS: Required<MockProps> = {
     setScriptAndArgs: jest.fn(),
     setScriptAndArgsManually: jest.fn(),
     manual: false,
-    argsValid: true,
     execute: jest.fn(),
     cancelExecution: jest.fn(),
   },

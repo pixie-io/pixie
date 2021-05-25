@@ -59,12 +59,6 @@ export interface ScriptContextProps {
    * through the hot-key or button.
    */
   setScriptAndArgsManually: (script: Script | ParsedScript, args: Record<string, string | string[]>) => void;
-  /**
-   * True if and only if the current args satisfy the current script's vis spec. That means:
-   * - All args exist in the vis spec, and have valid values.
-   * - All variables in the vis spec either have a default value, or are provided in args.
-   */
-  argsValid: boolean;
   /** Runs the currently selected scripts, with the current args and any user-made edits to the PXL/Vis/etc. */
   execute: () => void;
   /**
@@ -79,7 +73,6 @@ export interface ScriptContextProps {
 export const ScriptContext = React.createContext<ScriptContextProps>({
   script: null,
   args: {},
-  argsValid: false,
   manual: false,
   setScriptAndArgs: () => {},
   setScriptAndArgsManually: () => {},
@@ -170,15 +163,12 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
       return;
     }
 
-    // TODO(philkuz, PC-917) we should probably send to the resultsContext as an error instead of showSnackbar.
     const validationError = validateArgs(script.vis, args);
     if (validationError != null) {
-      const details = Array.isArray(validationError.details) ? validationError.details : [validationError.details];
-      if (Array.isArray(validationError.details)) {
-        showSnackbar({ message: `Could not run script, args were invalid:\n${details.join('\n')}` });
-      } else {
-        showSnackbar({ message: `Could not run script, args were invalid: ${details}` });
-      }
+      resultsContext.setResults({
+        error: validationError,
+        tables: {},
+      });
       return;
     }
 
@@ -351,7 +341,6 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
   const context: ScriptContextProps = React.useMemo(() => ({
     script,
     args,
-    argsValid: !!script && !!args && validateArgs(script.vis, args) == null,
     manual,
     setScriptAndArgs: (newScript: Script | ParsedScript, newArgs: Record<string, string | string[]> = args) => {
       const parsedScript = typeof newScript.vis !== 'string'

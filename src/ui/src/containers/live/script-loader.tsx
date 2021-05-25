@@ -27,7 +27,7 @@ import { useSnackbar } from '@pixie-labs/components';
  */
 export const ScriptLoader: React.FC = () => {
   const {
-    script, args, execute, cancelExecution, argsValid, manual,
+    script, args, execute, cancelExecution, manual,
   } = React.useContext(ScriptContext);
   const { selectedClusterName: clusterName } = React.useContext(ClusterContext);
 
@@ -46,7 +46,6 @@ export const ScriptLoader: React.FC = () => {
     if (
       script
       && serializedArgs
-      && argsValid
     ) {
       try {
         execute();
