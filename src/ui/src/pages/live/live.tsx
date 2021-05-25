@@ -372,7 +372,7 @@ const LiveView: React.FC = () => {
               <LiveViewBreadcrumbs />
               {/* eslint-disable-next-line no-nested-ternary */}
               {!script ? (<div> Script name invalid, choose a new script in the dropdown</div>)
-                : (!hasFinishedLoadingCluster || clusterUnhealthy ? (
+                : (results?.error == null && (!hasFinishedLoadingCluster || clusterUnhealthy) ? (
                   <div className='center-content'>
                     <ClusterLoadingComponent
                       clusterUnhealthy={clusterUnhealthy}
