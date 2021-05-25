@@ -337,7 +337,7 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
             onClick={toggleHierarchy}
             className={hierarchyEnabled ? classes.enabled : ''}
           >
-            <WorkspacesIcon />
+            <AccountTreeIcon />
           </IconButton>
         </Tooltip>
         <Tooltip title={clusteredMode ? 'Clustered by service' : 'Clustering disabled'}>
@@ -346,7 +346,7 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
             onClick={toggleMode}
             className={clusteredMode ? classes.enabled : ''}
           >
-            <AccountTreeIcon />
+            <WorkspacesIcon />
           </IconButton>
         </Tooltip>
       </div>
