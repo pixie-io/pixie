@@ -80,7 +80,7 @@ const routeFor = (
   scriptId: string,
   args: Record<string, string>,
 ): LocationDescriptorObject => {
-  const route = `/live/clusters/${clusterName}`;
+  const route = `/live/clusters/${encodeURIComponent(clusterName)}`;
   const queryParams: Record<string, string> = {
     ...args,
     ...{ script: scriptId },
@@ -133,7 +133,7 @@ export const VizierContextRouter: React.FC = ({ children }) => {
           // Special handling only if a default cluster is available and path is /live w/o args.
           // Otherwise we want to render the VizierRoute which eventually renders something helpful for new users.
           if (defaultCluster && location.pathname === '/live') {
-            return (<Redirect exact from='/live' to={`/live/clusters/${defaultCluster}`} />);
+            return (<Redirect exact from='/live' to={`/live/clusters/${encodeURIComponent(defaultCluster)}`} />);
           }
           const { script: queryScriptId, ...queryParams } = QueryString.parse(location.search);
           let scriptId = VANITY_ROUTES.get(match.path) ?? 'px/cluster';
@@ -162,7 +162,7 @@ export const VizierContextRouter: React.FC = ({ children }) => {
             <VizierRoute
               scriptId={scriptId}
               args={args}
-              clusterName={cluster}
+              clusterName={decodeURIComponent(cluster)}
               push={push}
               replace={replace}
               routeFor={routeFor}
