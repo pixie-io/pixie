@@ -72,48 +72,94 @@ namespace stirling {
 struct SocketDataEvent {
   SocketDataEvent() : attr{}, msg{} {}
   explicit SocketDataEvent(const void* data) {
-    // Work around the memory alignment issue by using memcopy, instead of structure assignment.
-    //
-    // A known fact is that perf buffer's memory region is 8 bytes aligned. But each submission
-    // has 2 parts, a 4 bytes size, and the following region with the specified size.
-    //
-    // When submitting memory to perf buffer, the memory region must be at least align on 4 bytes.
-    // See http://man7.org/linux/man-pages/man2/perf_event_open.2.html (search for size, data[size],
-    // which is what's used by BCC when open perf buffer.
-    memcpy(&attr, static_cast<const char*>(data) + offsetof(socket_data_event_t, attr),
-           sizeof(socket_data_event_t::attr_t));
+    auto data_ptr = static_cast<const char*>(data);
 
-    // The length header of the first Kafka packet on the server side will be dropped in bpf
-    // due to protocol inference. We send the length header in attributes instead, and adjust pos
-    // forward by 4 bytes.
+    // Pointers into relevant sub-fields within the socket_data_event_t struct.
+    auto attr_ptr = data_ptr + offsetof(socket_data_event_t, attr);
+    auto msg_ptr = data_ptr + offsetof(socket_data_event_t, msg);
+
+    // The perf buffer's payload is not 8-byte aligned.
+    // Each submission has 2 parts: a 4 bytes size, and the subsequent payload.
+    // To avoid unaligned accesses, we must copy anything that has an 8 byte member.
+    memcpy(&attr, attr_ptr, sizeof(socket_data_event_t::attr_t));
+
+    // Strings only require 1-byte alignment, so safe to use string_view here instead of copy.
+    msg = std::string_view(msg_ptr, attr.msg_buf_size);
+  }
+
+  // The servers of certain protocols (e.g. Kafka) read the length headers of frames separately
+  // from the payload. In these cases, the protocol inference misses the header of the first frame.
+  // This header is encoded in the attributes instead.
+  // We account for this with a separate header event.
+  std::unique_ptr<SocketDataEvent> ExtractHeaderEvent() {
+    std::unique_ptr<SocketDataEvent> header_event_ptr;
+
     if (attr.prepend_length_header) {
-      char buf[4];
-      px::utils::IntToLEndianBytes(attr.length_header, buf);
-      msg.assign(buf, 4);
-      attr.pos -= 4;
-    }
-    // Use attr.msg_buf_size to only copy the data included in the buffer.
-    // msg_buf_size may differ from msg_size when the message has been truncated or
-    // when only metadata is being sent (e.g. unknown protocols or disabled trackers).
-    msg.append(static_cast<const char*>(data) + offsetof(socket_data_event_t, msg),
-               attr.msg_buf_size);
+      VLOG(1) << "Adding header event";
 
-    // Hack: Create a filler event for sendfile data.
-    // We need a better long-term solution for this,
-    // since we aren't able to directly trace the data.
-    if (attr.msg_buf_size != attr.msg_size) {
-      DCHECK_GT(attr.msg_size, attr.msg_buf_size);
+      constexpr int kHeaderBufSize = 4;
+
+      header_event_ptr = std::make_unique<SocketDataEvent>();
+      header_event_ptr->attr = attr;
+      header_event_ptr->attr.pos = attr.pos - kHeaderBufSize;
+      header_event_ptr->attr.msg_buf_size = kHeaderBufSize;
+      header_event_ptr->attr.msg_size = kHeaderBufSize;
+
+      // Take the length_header from the original, fix byte ordering, and place
+      // into length_header of the header_event.
+      char header[kHeaderBufSize];
+      px::utils::IntToLEndianBytes(attr.length_header, header);
+      memcpy(&header_event_ptr->attr.length_header, header, kHeaderBufSize);
+
+      header_event_ptr->msg = std::string_view(reinterpret_cast<char*>(&header_event_ptr->attr.length_header), kHeaderBufSize);
+
+      // We've extracted the header event, so remove these attributes from the original event.
+      attr.prepend_length_header = false;
+      attr.length_header = 0;
+    }
+
+    return header_event_ptr;
+  }
+
+  // For events that which couldn't transfer all its data, we have two options:
+  //  1) A missing event.
+  //  2) A filler event.
+  // A desired filler event is indicated by a msg_size > msg_buf_size when creating the BPF event.
+  //
+  // A filler event is used in particular for sendfile data.
+  // We need a better long-term solution for this,
+  // since we aren't able to directly trace the data.
+  std::unique_ptr<SocketDataEvent> ExtractFillerEvent() {
+    std::unique_ptr<SocketDataEvent> filler_event_ptr;
+
+    DCHECK_GE(attr.msg_size, attr.msg_buf_size);
+
+    if (attr.msg_size > attr.msg_buf_size) {
       VLOG(1) << "Adding filler to event";
 
       // Limit the size so we don't have huge allocations.
       constexpr uint32_t kMaxFilledSizeBytes = 1 * 1024 * 1024;
+      static char kZeros[kMaxFilledSizeBytes] = {0};
 
-      size_t filled_size = std::min(attr.msg_size, kMaxFilledSizeBytes);
-      msg.resize(filled_size, 0);
-      if (attr.msg_size > kMaxFilledSizeBytes) {
-        VLOG(1) << absl::Substitute("Event too large: $0", attr.msg_size);
+      size_t filler_size = attr.msg_size - attr.msg_buf_size;
+      if (filler_size > kMaxFilledSizeBytes) {
+        VLOG(1) << absl::Substitute("Truncating filler event: $0->$1", filler_size,
+                                    kMaxFilledSizeBytes);
+        filler_size = kMaxFilledSizeBytes;
       }
+
+      filler_event_ptr = std::make_unique<SocketDataEvent>();
+      filler_event_ptr->attr = attr;
+      filler_event_ptr->attr.pos = attr.pos + attr.msg_buf_size;
+      filler_event_ptr->attr.msg_buf_size = filler_size;
+      filler_event_ptr->attr.msg_size = filler_size;
+      filler_event_ptr->msg = std::string_view(kZeros, filler_size);
+
+      // We've created the filler event, so adjust the original event accordingly.
+      attr.msg_size = attr.msg_buf_size;
     }
+
+    return filler_event_ptr;
   }
 
   std::string ToString() const {
@@ -122,15 +168,13 @@ struct SocketDataEvent {
   }
 
   socket_data_event_t::attr_t attr;
-  // TODO(oazizi/yzhao): Eventually, we will write the data into a buffer that can be used for later
-  // parsing. By then, msg can be changed to string_view.
-  std::string msg;
+  std::string_view msg;
 };
 
 }  // namespace stirling
 }  // namespace px
 
-// This template is in global namespace to allow ABSL library to discover.
+// This template is in global namespace to allow absl to discover it.
 template <typename H>
 H AbslHashValue(H h, const struct conn_id_t& key) {
   return H::combine(std::move(h), key.upid.tgid, key.upid.start_time_ticks, key.fd, key.tsid);

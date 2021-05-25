@@ -59,7 +59,6 @@ using ::px::operator<<;
 
 struct Packet : public FrameBase {
   uint8_t sequence_id = 0;
-  // TODO(oazizi): Convert to std::basic_string<uint8_t>.
   std::string msg;
 
   size_t ByteSize() const override { return sizeof(Packet) + msg.size(); }

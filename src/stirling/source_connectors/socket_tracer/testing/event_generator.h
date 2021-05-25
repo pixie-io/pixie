@@ -22,6 +22,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/source_connectors/socket_tracer/testing/clock.h"
@@ -71,7 +72,8 @@ class EventGenerator {
   template <traffic_protocol_t TProtocol, endpoint_role_t TRole>
   std::unique_ptr<SocketDataEvent> InitDataEvent(traffic_direction_t direction, uint64_t* pos,
                                                  std::string_view msg) {
-    socket_data_event_t event = {};
+    data_events_.push_back(std::make_unique<struct socket_data_event_t>());
+    struct socket_data_event_t& event = *data_events_.back();
     event.attr.direction = direction;
     event.attr.protocol = TProtocol;
     event.attr.role = TRole;
@@ -129,6 +131,10 @@ class EventGenerator {
   uint64_t tsid_ = 0;
   uint64_t send_pos_ = 0;
   uint64_t recv_pos_ = 0;
+
+  // Keep a handle on all created data_events, because SocketDataEvent has string_views into it.
+  // Normally, the source memory would be in the perf buffer and would be stable for the iteration.
+  std::vector<std::unique_ptr<struct socket_data_event_t>> data_events_;
 };
 
 constexpr std::string_view kHTTPReq0 =

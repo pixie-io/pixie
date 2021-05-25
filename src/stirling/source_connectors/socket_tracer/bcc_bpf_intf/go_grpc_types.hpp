@@ -66,11 +66,14 @@ struct HTTP2DataEvent {
   explicit HTTP2DataEvent(const void* data) {
     auto data_ptr = static_cast<const char*>(data);
 
-    memcpy(&attr, data_ptr + offsetof(go_grpc_data_event_t, attr), sizeof(go_grpc_event_attr_t));
-    memcpy(&data_attr, data_ptr + offsetof(go_grpc_data_event_t, data_attr), sizeof(go_grpc_data_event_t::data_attr_t));
-
+    auto attr_ptr = data_ptr + offsetof(go_grpc_data_event_t, attr);
+    auto data_attr_ptr = data_ptr + offsetof(go_grpc_data_event_t, data_attr);
     auto payload_ptr = data_ptr + offsetof(go_grpc_data_event_t, data);
-    payload.assign(payload_ptr, data_attr.data_buf_size);
+
+    memcpy(&attr, attr_ptr, sizeof(go_grpc_event_attr_t));
+    memcpy(&data_attr, data_attr_ptr, sizeof(go_grpc_data_event_t::data_attr_t));
+
+    payload = std::string_view(payload_ptr, data_attr.data_buf_size);
   }
 
   std::string ToString() const {
@@ -81,7 +84,7 @@ struct HTTP2DataEvent {
 
   go_grpc_event_attr_t attr;
   go_grpc_data_event_t::data_attr_t data_attr;
-  std::string payload;
+  std::string_view payload;
 };
 
 struct HTTP2HeaderEvent {
@@ -103,14 +106,14 @@ struct HTTP2HeaderEvent {
     uint32_t name_len = *reinterpret_cast<const uint32_t*>(name_len_ptr);
 
     // Copy name string (char) -- requires 1-byte alignment.
-    name.assign(name_data_ptr,
+    name = std::string_view(name_data_ptr,
                 std::min<uint32_t>(name_len, sizeof(go_grpc_http2_header_event_t::name)));
 
     // Copy value length (uint32_t) -- requires 4-byte alignment.
     uint32_t value_len = *reinterpret_cast<const uint32_t*>(value_len_ptr);
 
     // Copy value string (char) -- requires 1-byte alignment.
-    value.assign(value_data_ptr,
+    value = std::string_view(value_data_ptr,
                  std::min<uint32_t>(value_len, sizeof(go_grpc_http2_header_event_t::value)));
   }
 
@@ -120,8 +123,8 @@ struct HTTP2HeaderEvent {
   }
 
   go_grpc_event_attr_t attr;
-  std::string name;
-  std::string value;
+  std::string_view name;
+  std::string_view value;
 };
 
 }  // namespace stirling

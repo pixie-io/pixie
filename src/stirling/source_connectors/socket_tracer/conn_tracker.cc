@@ -296,7 +296,7 @@ void ConnTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
     return;
   }
 
-  half_stream_ptr->AddHeader(std::move(hdr->name), std::move(hdr->value));
+  half_stream_ptr->AddHeader(std::string(hdr->name), std::string(hdr->value));
   half_stream_ptr->UpdateTimestamp(hdr->attr.timestamp_ns);
 }
 

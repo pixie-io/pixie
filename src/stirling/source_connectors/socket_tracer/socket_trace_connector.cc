@@ -679,9 +679,31 @@ Status SocketTraceConnector::DisableSelfTracing() {
 void SocketTraceConnector::HandleDataEvent(void* cb_cookie, void* data, int data_size) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
-  auto data_event_ptr = std::make_unique<SocketDataEvent>(data);
   connector->stats_.Increment(StatKey::kPollSocketDataEventSize, data_size);
-  connector->AcceptDataEvent(std::move(data_event_ptr));
+
+  std::unique_ptr<SocketDataEvent> data_event_ptr = std::make_unique<SocketDataEvent>(data);
+
+  // The servers of certain protocols (e.g. Kafka) read the length headers of frames separately
+  // from the payload. In these cases, the protocol inference misses the header of the first frame.
+  // This header is encoded in the attributes instead.
+  // We account for this with a separate header event.
+  std::unique_ptr<SocketDataEvent> header_event_ptr = data_event_ptr->ExtractHeaderEvent();
+
+  // In some scenarios when we are unable to trace the data (notably including sendfile syscalls),
+  // we create a filler event instead. This is important to Kafka, for example,
+  // where the sendfile data is in the payload and the protocol parser can still succeed
+  // as lonog as it is properly accounted for.
+  std::unique_ptr<SocketDataEvent> filler_event_ptr = data_event_ptr->ExtractFillerEvent();
+
+  if (header_event_ptr) {
+    connector->AcceptDataEvent(std::move(header_event_ptr));
+  }
+  if (data_event_ptr && !data_event_ptr->msg.empty()) {
+    connector->AcceptDataEvent(std::move(data_event_ptr));
+  }
+  if (filler_event_ptr) {
+    connector->AcceptDataEvent(std::move(filler_event_ptr));
+  }
 }
 
 void SocketTraceConnector::HandleDataEventLoss(void* cb_cookie, uint64_t lost) {
@@ -1184,7 +1206,7 @@ void SocketDataEventToPB(const SocketDataEvent& event, sockeventpb::SocketDataEv
   pb->mutable_attr()->set_direction(event.attr.direction);
   pb->mutable_attr()->set_pos(event.attr.pos);
   pb->mutable_attr()->set_msg_size(event.attr.msg_size);
-  pb->set_msg(event.msg);
+  pb->set_msg(std::string(event.msg));
 }
 }  // namespace
 

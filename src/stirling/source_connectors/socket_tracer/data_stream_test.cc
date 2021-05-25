@@ -329,7 +329,8 @@ TEST_F(DataStreamTest, Stress) {
         // Occasionally drop an event (don't do anything inside this if statement).
       } else if (p < 0.02) {
         // Occasionally corrupt the data.
-        random_shuffle(event->msg.begin(), event->msg.end());
+        std::random_shuffle(const_cast<char*>(event->msg.begin()),
+                            const_cast<char*>(event->msg.end()));
         stream.AddData(std::move(event));
       } else if (p < 0.03) {
         // Occasionally reset the stream.
