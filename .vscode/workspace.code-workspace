@@ -9,6 +9,7 @@
 		"bazel.buildifierFixOnFormat": true,
 		"bazel.enableCodeLens": true,
 		"bazel.queriesShareServer": true,
+		"editor.tabSize": 2,
 		"files.associations": {
 			".arclint": "json",
 			".arcconfig": "json",
@@ -26,6 +27,7 @@
 		"go.toolsEnvVars": {
 			"CGO_ENABLED": 0
 		},
+		"go.toolsManagement.autoUpdate": true,
 		"gopls": {
 			"build.allowModfileModifications": true,
 			"build.directoryFilters": [
