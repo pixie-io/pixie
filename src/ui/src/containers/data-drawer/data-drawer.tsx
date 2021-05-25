@@ -116,6 +116,11 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   fab: {
     height: theme.spacing(2),
     zIndex: 100,
+    borderTopLeftRadius: theme.spacing(1),
+    borderTopRightRadius: theme.spacing(1),
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    backgroundColor: theme.palette.foreground.three,
   },
   drawer: {
     pointerEvents: 'auto',
