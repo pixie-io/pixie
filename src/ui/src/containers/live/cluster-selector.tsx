@@ -49,30 +49,36 @@ const ClusterSelector: React.FC = () => {
   const [clusters, loading, error] = useListClusters();
   const { selectedCluster, setCluster } = React.useContext(ClusterContext);
 
-  if (loading || !clusters || error) return (<></>);
+  const clusterName = React.useMemo(
+    () => clusters?.find((c) => c.id === selectedCluster)?.prettyClusterName || 'unknown cluster',
+    [clusters, selectedCluster]);
 
-  const clusterName = clusters.find((c) => c.id === selectedCluster)?.prettyClusterName || 'unknown cluster';
-  const clusterNameToID: Record<string, string> = {};
-  clusters.forEach((c) => {
-    clusterNameToID[c.prettyClusterName] = c.id;
-  });
+  const clusterNameIdMap = React.useMemo(
+    () => new Map<string, string>(clusters?.map((c) => [c.prettyClusterName, c.id])),
+    [clusters]);
+
+  const getListItems = React.useCallback(async (input: string) => (
+    clusters
+      ?.filter((c) => c.status !== ClusterStatus.CS_DISCONNECTED && c.prettyClusterName.includes(input))
+      .map((c) => ({
+        value: c.prettyClusterName,
+        icon: <StatusCell statusGroup={clusterStatusGroup(c.status)} />,
+      }))
+  ), [clusters]);
+
+  const onSelect = React.useCallback(
+    (input: string) => setCluster(clusterNameIdMap.get(input)),
+    [clusterNameIdMap, setCluster]);
+
+  if (loading || !clusters || error) return (<></>);
 
   return (
     <div className={classes.container}>
       <div className={classes.label}>Cluster:</div>
       <Select
         value={clusterName}
-        // eslint-disable-next-line
-        getListItems={async (input) => (clusters.filter((c) => c.status !== ClusterStatus.CS_DISCONNECTED
-          && c.prettyClusterName.includes(input))
-          .map((c) => ({
-            value: c.prettyClusterName,
-            icon: <StatusCell statusGroup={clusterStatusGroup(c.status)} />,
-          }))
-        )}
-        onSelect={(input) => {
-          setCluster(clusterNameToID[input]);
-        }}
+        getListItems={getListItems}
+        onSelect={onSelect}
         requireCompletion
       />
     </div>
