@@ -25,6 +25,7 @@ import {
   useTheme,
   withStyles,
   WithStyles,
+  makeStyles,
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 
@@ -277,7 +278,7 @@ const makeSpec = (fields: QuantilesBoxWhiskerFields, chartWidth: number): Visual
   };
 };
 
-const styles = (theme: Theme) => createStyles({
+const useStyles = makeStyles((theme: Theme) => createStyles({
   '@global': {
     // This style is used to override vega-tooltip default style.
     // ...custom-theme maps to theme: 'custom' in the options below.
@@ -320,11 +321,11 @@ const styles = (theme: Theme) => createStyles({
     marginLeft: 5,
     marginRight: 10,
   },
-});
+}));
 
 export type SelectedPercentile = 'p50' | 'p90' | 'p99';
 
-interface QuantilesBoxWhiskerProps extends WithStyles<typeof styles> {
+interface QuantilesBoxWhiskerProps {
   p50: number;
   p90: number;
   p99: number;
@@ -340,9 +341,8 @@ interface QuantilesBoxWhiskerProps extends WithStyles<typeof styles> {
   onChangePercentile?: (percentile: SelectedPercentile) => void;
 }
 
-const QuantilesBoxWhiskerImpl: React.FC<QuantilesBoxWhiskerProps> = (props) => {
+export const QuantilesBoxWhisker: React.FC<QuantilesBoxWhiskerProps> = (props) => {
   const {
-    classes,
     p50,
     p90,
     p99,
@@ -356,6 +356,8 @@ const QuantilesBoxWhiskerImpl: React.FC<QuantilesBoxWhiskerProps> = (props) => {
     selectedPercentile,
     onChangePercentile,
   } = props;
+
+  const classes = useStyles();
   const theme = useTheme();
   let p50Fill = theme.palette.text.secondary;
   let p90Fill = theme.palette.text.secondary;
@@ -439,5 +441,3 @@ const QuantilesBoxWhiskerImpl: React.FC<QuantilesBoxWhiskerProps> = (props) => {
     </div>
   );
 };
-
-export const QuantilesBoxWhisker = withStyles(styles)(QuantilesBoxWhiskerImpl);
