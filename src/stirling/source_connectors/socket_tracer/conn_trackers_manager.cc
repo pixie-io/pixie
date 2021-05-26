@@ -123,7 +123,7 @@ ConnTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t conn_i
   auto [conn_tracker_ptr, created] = conn_trackers.GetOrCreate(conn_id.tsid, &trackers_pool_);
 
   if (created) {
-    ++num_trackers_;
+    stats_.Increment(StatKey::kTotal);
     active_trackers_.push_back(conn_tracker_ptr);
     conn_tracker_ptr->manager_ = this;
     conn_tracker_ptr->SetConnID(conn_id);
@@ -160,7 +160,7 @@ void ConnTrackersManager::CleanupTrackers() {
       const auto& tracker = *iter;
       if (tracker->ReadyForDestruction()) {
         active_trackers_.erase(iter++);
-        ++num_trackers_ready_for_destruction_;
+        stats_.Increment(StatKey::kReadyForDestruction);
       } else {
         ++iter;
       }
@@ -170,7 +170,8 @@ void ConnTrackersManager::CleanupTrackers() {
   // As a performance optimization, we only clean up trackers once we reach a certain threshold
   // of trackers that are ready for destruction.
   // Trade-off is just how quickly we release memory and BPF map entries.
-  double percent_destroyable = 1.0 * num_trackers_ready_for_destruction_ / num_trackers_;
+  double percent_destroyable =
+      1.0 * stats_.Get(StatKey::kReadyForDestruction) / stats_.Get(StatKey::kTotal);
   if (percent_destroyable > FLAGS_stirling_conn_tracker_cleanup_threshold) {
     // Outer loop iterates through tracker sets (keyed by PID+FD),
     // while inner loop iterates through generations of trackers for that PID+FD pair.
@@ -180,8 +181,8 @@ void ConnTrackersManager::CleanupTrackers() {
 
       int num_erased = tracker_generations.CleanupGenerations(&trackers_pool_);
 
-      num_trackers_ -= num_erased;
-      num_trackers_ready_for_destruction_ -= num_erased;
+      stats_.Decrement(StatKey::kTotal, num_erased);
+      stats_.Decrement(StatKey::kReadyForDestruction, num_erased);
 
       if (tracker_generations.empty()) {
         conn_id_tracker_generations_.erase(iter++);
@@ -195,18 +196,23 @@ void ConnTrackersManager::CleanupTrackers() {
 }
 
 void ConnTrackersManager::DebugChecks() const {
-  DCHECK_EQ(num_trackers_, active_trackers_.size() + num_trackers_ready_for_destruction_);
+  DCHECK_EQ(stats_.Get(StatKey::kTotal),
+            active_trackers_.size() + stats_.Get(StatKey::kReadyForDestruction));
 }
 
 std::string ConnTrackersManager::DebugInfo() const {
   std::string out;
 
-  out += absl::Substitute("trackers: allocated=$0 active=$1\n", num_trackers_,
+  out += absl::Substitute("trackers: allocated=$0 active=$1\n", stats_.Get(StatKey::kTotal),
                           active_trackers_.size());
   for (const auto& tracker : active_trackers_) {
     out +=
         absl::Substitute("  conn_tracker=$0 zombie=$1 ready_for_destruction=$2\n",
                          tracker->ToString(), tracker->IsZombie(), tracker->ReadyForDestruction());
+  }
+
+  for (auto key : magic_enum::enum_values<StatKey>()) {
+    absl::StrAppend(&out, absl::Substitute("$0=$1\n", magic_enum::enum_name(key), stats_.Get(key)));
   }
 
   return out;

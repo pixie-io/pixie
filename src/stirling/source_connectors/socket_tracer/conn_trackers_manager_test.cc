@@ -24,6 +24,8 @@
 namespace px {
 namespace stirling {
 
+using ::testing::StrEq;
+
 class ConnTrackersManagerTest : public ::testing::Test {
  protected:
   ConnTrackersManagerTest() : rng_(37), probability_dist_(0.0, 1.0) {}
@@ -91,6 +93,14 @@ TEST_F(ConnTrackersManagerTest, Fuzz) {
       CleanupTrackers();
     }
   }
+}
+
+// Tests that the DebugInfo() returns expected text.
+TEST_F(ConnTrackersManagerTest, DebugInfo) {
+  EXPECT_THAT(trackers_mgr_.DebugInfo(), StrEq("trackers: allocated=0 active=0\n"
+                                               "kTotal=0\n"
+                                               "kReadyForDestruction=0\n"
+                                               "kActive=0\n"));
 }
 
 class ConnTrackerGenerationsTest : public ::testing::Test {

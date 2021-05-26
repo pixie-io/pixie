@@ -28,6 +28,7 @@
 
 #include "src/stirling/source_connectors/socket_tracer/conn_tracker.h"
 #include "src/stirling/utils/obj_pool.h"
+#include "src/stirling/utils/stat_counter.h"
 
 DECLARE_double(stirling_conn_tracker_cleanup_threshold);
 
@@ -126,14 +127,18 @@ class ConnTrackersManager {
 
   std::list<ConnTracker*> active_trackers_;
 
-  // Keep track of total number of trackers, and other counts.
-  // Used to check for consistency.
-  size_t num_trackers_ = 0;
-  size_t num_trackers_ready_for_destruction_ = 0;
-
   // A pool of unused trackers that can be recycled.
   // This is useful for avoiding memory reallocations.
   ConnTrackerPool trackers_pool_;
+
+  enum class StatKey {
+    kTotal,
+    kReadyForDestruction,
+    kActive,
+  };
+
+  // Records statistics of ConnTracker for reporting and consistency check.
+  utils::StatCounter<StatKey> stats_;
 };
 
 }  // namespace stirling
