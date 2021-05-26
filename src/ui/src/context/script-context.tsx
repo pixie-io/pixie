@@ -23,7 +23,7 @@ import {
   getQueryFuncs, parseVis, parseVisSilently, Vis,
 } from 'containers/live/vis';
 import { Script } from 'utils/script-bundle';
-import { PixieAPIContext, useListClustersVerbose } from '@pixie-labs/api-react';
+import { PixieAPIContext, useListClusters, useClusterPassthroughInfo } from '@pixie-labs/api-react';
 import {
   containsMutation, ExecutionStateUpdate, isStreaming, VizierQueryError, ClusterConfig, GRPCStatusCode,
   VizierTable as Table,
@@ -90,19 +90,25 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
   const resultsContext = React.useContext(ResultsContext);
   const showSnackbar = useSnackbar();
 
-  const [clusters, loadingClusters] = useListClustersVerbose();
-  const clusterConfig: ClusterConfig | null = React.useMemo(() => {
-    if (loadingClusters || !clusters.length) return null;
-    const selected = clusters.find((c) => c.clusterName === clusterName);
-    if (!selected) return null;
+  const [clusters, loadingClusters] = useListClusters();
 
-    const passthroughClusterAddress = selected.vizierConfig.passthroughEnabled ? window.location.origin : undefined;
-    return selected ? {
-      id: selected.id,
+  const selectedClusterID = React.useMemo(() => {
+    const selected = clusters?.find((c) => c.clusterName === clusterName);
+    return selected?.id;
+  }, [clusters, clusterName]);
+
+  const [clusterInfo, loadingClusterInfo] = useClusterPassthroughInfo(selectedClusterID ?? '');
+
+  const clusterConfig: ClusterConfig | null = React.useMemo(() => {
+    if (loadingClusterInfo || !clusterInfo) return null;
+
+    const passthroughClusterAddress = clusterInfo.vizierConfig.passthroughEnabled ? window.location.origin : undefined;
+    return {
+      id: clusterInfo.id,
       attachCredentials: true,
       passthroughClusterAddress,
-    } : null;
-  }, [clusters, loadingClusters, clusterName]);
+    };
+  }, [clusterInfo, loadingClusterInfo]);
 
   const [script, setScript] = React.useState<ParsedScript>(null);
   const [manual, setManual] = React.useState(false);

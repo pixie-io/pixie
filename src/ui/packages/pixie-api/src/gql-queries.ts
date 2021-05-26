@@ -182,6 +182,16 @@ export const CLUSTER_QUERIES = {
       }
     }
   `,
+  CLUSTER_PASSTHROUGH_INFO: gql`
+    query GetClusterPassthroughInfo($id: ID!) {
+      cluster(id: $id) {
+        id
+        vizierConfig {
+          passthroughEnabled
+        }
+      }
+    }
+  `,
   // TODO(nserrino,PC-471): Update to filtered lookup on clusterName once that graphql endpoint has landed.
   GET_CLUSTER_CONTROL_PLANE_PODS: gql`
     {

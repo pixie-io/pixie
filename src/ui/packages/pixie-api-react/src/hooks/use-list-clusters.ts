@@ -39,6 +39,15 @@ export function useListClustersVerbose(): ImmutablePixieQueryResult<GQLClusterIn
   return [data?.clusters, loading, error];
 }
 
+export function useClusterPassthroughInfo(id: string): ImmutablePixieQueryResult<GQLClusterInfo> {
+  const { data, loading, error } = useQuery<{ cluster: GQLClusterInfo }, { id: string }>(
+    CLUSTER_QUERIES.CLUSTER_PASSTHROUGH_INFO,
+    { variables: { id } },
+  );
+
+  return [data?.cluster, loading, error];
+}
+
 export function useListClusters(): ImmutablePixieQueryResult<GQLClusterInfo[]> {
   // TODO(nick): This doesn't get the entire GQLClusterInfo, nor does useClusterControlPlanePods. Use Pick<...>.
   const { data, loading, error } = useQuery<{ clusters: GQLClusterInfo[] }>(

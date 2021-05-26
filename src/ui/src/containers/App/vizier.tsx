@@ -33,7 +33,7 @@ import { makeStyles } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import { useLDClient } from 'launchdarkly-react-client-sdk';
 import { GQLClusterInfo as Cluster, GQLClusterStatus as ClusterStatus } from '@pixie-labs/api';
-import { useListClusters, useListClustersVerbose, useUserInfo } from '@pixie-labs/api-react';
+import { useListClusters, useClusterPassthroughInfo, useUserInfo } from '@pixie-labs/api-react';
 import { DeployInstructions } from './deploy-instructions';
 import { selectCluster } from './cluster-info';
 import { RouteNotFound } from './route-not-found';
@@ -99,11 +99,14 @@ const ScriptShortcut = ({ match, location }) => {
 
 // Selects a default cluster if one hasn't already been selected by the user.
 const useSelectedCluster = () => {
-  const [clusters, loading, error] = useListClustersVerbose();
+  const [clusters, loading1, error1] = useListClusters();
   const { selectedCluster } = React.useContext(ClusterContext);
-  const cluster = clusters?.find((c) => c.id === selectedCluster);
+  const [cluster, loading2, error2] = useClusterPassthroughInfo(selectedCluster ?? '');
   return {
-    loading, cluster, numClusters: clusters?.length ?? 0, error,
+    loading: loading1 || loading2,
+    cluster,
+    numClusters: clusters?.length ?? 0,
+    error: error1 ?? error2,
   };
 };
 
