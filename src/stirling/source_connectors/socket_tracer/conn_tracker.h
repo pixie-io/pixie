@@ -39,9 +39,9 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/http2_streams_container.h"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_bpf_tables.h"
-
 // Include all specializations of the StitchFrames() template specializations for all protocols.
 #include "src/stirling/source_connectors/socket_tracer/protocols/stitchers.h"
+#include "src/stirling/utils/stat_counter.h"
 
 DECLARE_bool(treat_loopback_as_in_cluster);
 DECLARE_int64(stirling_conn_trace_pid);
@@ -85,29 +85,22 @@ struct SocketClose {
  */
 class ConnTracker : NotCopyMoveable {
  public:
-  struct Stats {
-    enum class Key {
-      // The number of sent/received data events.
-      kDataEventSent = 0,
-      kDataEventRecv,
+  enum class StatKey {
+    // The number of sent/received data events.
+    kDataEventSent,
+    kDataEventRecv,
 
-      // The number of sent/received bytes.
-      kBytesSent,
-      kBytesRecv,
+    // The number of sent/received bytes.
+    kBytesSent,
+    kBytesRecv,
 
-      // The number of sent/received bytes that were transferred to user-space.
-      kBytesSentTransferred,
-      kBytesRecvTransferred,
+    // The number of sent/received bytes that were transferred to user-space.
+    kBytesSentTransferred,
+    kBytesRecvTransferred,
 
-      // The number of valid/invalid records.
-      kValidRecords,
-      kInvalidRecords,
-    };
-
-    void Increment(Key key, int count = 1) { counts[static_cast<int>(key)] += count; }
-    uint64_t Get(Key key) const { return counts[static_cast<int>(key)]; }
-
-    std::vector<uint64_t> counts = std::vector<uint64_t>(magic_enum::enum_count<Key>(), 0);
+    // The number of valid/invalid records.
+    kValidRecords,
+    kInvalidRecords,
   };
 
   // State values change monotonically from lower to higher values; and cannot change reversely.
@@ -479,7 +472,7 @@ class ConnTracker : NotCopyMoveable {
    */
   double StitchFailureRate() const;
 
-  uint64_t GetStat(Stats::Key key) const { return stats_.Get(key); }
+  uint64_t GetStat(StatKey key) const { return stats_.Get(key); }
 
   /**
    * Initializes protocol state for a protocol.
@@ -611,8 +604,8 @@ class ConnTracker : NotCopyMoveable {
 
   template <typename TRecordType>
   void UpdateResultStats(const protocols::RecordsWithErrorCount<TRecordType>& result) {
-    stats_.Increment(Stats::Key::kInvalidRecords, result.error_count);
-    stats_.Increment(Stats::Key::kValidRecords, result.records.size());
+    stats_.Increment(StatKey::kInvalidRecords, result.error_count);
+    stats_.Increment(StatKey::kValidRecords, result.records.size());
   }
 
   int debug_trace_level_ = 0;
@@ -670,7 +663,7 @@ class ConnTracker : NotCopyMoveable {
   // Iterations before the tracker can be killed.
   int32_t death_countdown_ = -1;
 
-  Stats stats_;
+  utils::StatCounter<StatKey> stats_;
 
   // Connection trackers need to keep a state because there can be information between
   // needed from previous requests/responses needed to parse or render current request.

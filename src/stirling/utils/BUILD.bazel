@@ -121,3 +121,9 @@ pl_cc_test(
     srcs = ["obj_pool_test.cc"],
     deps = [":cc_library"],
 )
+
+pl_cc_test(
+    name = "stat_counter_test",
+    srcs = ["stat_counter_test.cc"],
+    deps = [":cc_library"],
+)

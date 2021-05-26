@@ -381,8 +381,8 @@ void ConnTracker::Disable(std::string_view reason) {
 
 bool ConnTracker::AllEventsReceived() const {
   return close_info_.timestamp_ns != 0 &&
-         stats_.Get(Stats::Key::kBytesSent) == close_info_.send_bytes &&
-         stats_.Get(Stats::Key::kBytesRecv) == close_info_.recv_bytes;
+         stats_.Get(StatKey::kBytesSent) == static_cast<int64_t>(close_info_.send_bytes) &&
+         stats_.Get(StatKey::kBytesRecv) == static_cast<int64_t>(close_info_.recv_bytes);
 }
 
 namespace {
@@ -639,14 +639,14 @@ void ConnTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs) {
 void ConnTracker::UpdateDataStats(const SocketDataEvent& event) {
   switch (event.attr.direction) {
     case TrafficDirection::kEgress: {
-      stats_.Increment(Stats::Key::kDataEventSent, 1);
-      stats_.Increment(Stats::Key::kBytesSent, event.attr.msg_size);
-      stats_.Increment(Stats::Key::kBytesSentTransferred, event.attr.msg_buf_size);
+      stats_.Increment(StatKey::kDataEventSent, 1);
+      stats_.Increment(StatKey::kBytesSent, event.attr.msg_size);
+      stats_.Increment(StatKey::kBytesSentTransferred, event.attr.msg_buf_size);
     } break;
     case TrafficDirection::kIngress: {
-      stats_.Increment(Stats::Key::kDataEventRecv, 1);
-      stats_.Increment(Stats::Key::kBytesRecv, event.attr.msg_size);
-      stats_.Increment(Stats::Key::kBytesRecvTransferred, event.attr.msg_buf_size);
+      stats_.Increment(StatKey::kDataEventRecv, 1);
+      stats_.Increment(StatKey::kBytesRecv, event.attr.msg_size);
+      stats_.Increment(StatKey::kBytesRecvTransferred, event.attr.msg_buf_size);
     } break;
   }
 }
@@ -761,8 +761,7 @@ void ConnTracker::HandleInactivity() {
 }
 
 double ConnTracker::StitchFailureRate() const {
-  int total_attempts =
-      stats_.Get(Stats::Key::kInvalidRecords) + stats_.Get(Stats::Key::kValidRecords);
+  int total_attempts = stats_.Get(StatKey::kInvalidRecords) + stats_.Get(StatKey::kValidRecords);
 
   // Don't report rates until there some meaningful amount of events.
   // - Avoids division by zero.
@@ -771,7 +770,7 @@ double ConnTracker::StitchFailureRate() const {
     return 0.0;
   }
 
-  return 1.0 * stats_.Get(Stats::Key::kInvalidRecords) / total_attempts;
+  return 1.0 * stats_.Get(StatKey::kInvalidRecords) / total_attempts;
 }
 
 namespace {

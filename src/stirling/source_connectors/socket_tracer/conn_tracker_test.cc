@@ -342,32 +342,20 @@ TEST_F(ConnTrackerTest, TrackerHTTP101Disable) {
   ASSERT_TRUE(tracker.IsZombie());
 }
 
-TEST(StatsTest, Increment) {
-  ConnTracker::Stats stats;
-
-  EXPECT_EQ(0, stats.Get(ConnTracker::Stats::Key::kDataEventSent));
-
-  stats.Increment(ConnTracker::Stats::Key::kDataEventSent);
-  EXPECT_EQ(1, stats.Get(ConnTracker::Stats::Key::kDataEventSent));
-
-  stats.Increment(ConnTracker::Stats::Key::kDataEventSent, 5);
-  EXPECT_EQ(6, stats.Get(ConnTracker::Stats::Key::kDataEventSent));
-}
-
 TEST_F(ConnTrackerTest, DataEventsChangesCounter) {
   auto frame0 = event_gen_.InitRecvEvent<kProtocolHTTP>(kHTTPReq0);
   auto frame1 = event_gen_.InitSendEvent<kProtocolHTTP>(kHTTPResp0);
 
   ConnTracker tracker;
 
-  EXPECT_EQ(0, tracker.GetStat(ConnTracker::Stats::Key::kBytesRecv));
-  EXPECT_EQ(0, tracker.GetStat(ConnTracker::Stats::Key::kBytesSent));
+  EXPECT_EQ(0, tracker.GetStat(ConnTracker::StatKey::kBytesRecv));
+  EXPECT_EQ(0, tracker.GetStat(ConnTracker::StatKey::kBytesSent));
 
   tracker.AddDataEvent(std::move(frame0));
   tracker.AddDataEvent(std::move(frame1));
 
-  EXPECT_EQ(kHTTPReq0.size(), tracker.GetStat(ConnTracker::Stats::Key::kBytesRecv));
-  EXPECT_EQ(kHTTPResp0.size(), tracker.GetStat(ConnTracker::Stats::Key::kBytesSent));
+  EXPECT_EQ(kHTTPReq0.size(), tracker.GetStat(ConnTracker::StatKey::kBytesRecv));
+  EXPECT_EQ(kHTTPResp0.size(), tracker.GetStat(ConnTracker::StatKey::kBytesSent));
 }
 
 TEST_F(ConnTrackerTest, HTTPStuckEventsAreRemoved) {

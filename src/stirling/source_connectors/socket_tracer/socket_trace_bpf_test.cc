@@ -632,7 +632,7 @@ class SocketTraceServerSideBPFTest
 // Now that ConnStats is tracked independently, these stats are expected to stop
 // updating after the tracker is disabled.
 TEST_F(SocketTraceServerSideBPFTest, StatsDisabledTracker) {
-  using Stat = ConnTracker::Stats::Key;
+  using Stat = ConnTracker::StatKey;
 
   auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.get());
 
