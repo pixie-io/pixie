@@ -51,6 +51,9 @@ class ConnTrackerGenerations {
    */
   std::pair<ConnTracker*, bool> GetOrCreate(uint64_t tsid, ConnTrackerPool* tracker_pool);
 
+  /**
+   * Return true if a ConnTracker created at the specified time stamp exists.
+   */
   bool Contains(uint64_t tsid) const;
 
   /**
@@ -74,8 +77,6 @@ class ConnTrackerGenerations {
 
   // Keep a pointer to the ConnTracker generation with the highest TSID.
   ConnTracker* oldest_generation_ = nullptr;
-
-  friend class ConnTrackerGenerationsTest;
 };
 
 /**

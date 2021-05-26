@@ -111,7 +111,7 @@ class ConnTrackerGenerationsTest : public ::testing::Test {
 
   int CleanupTrackers() {
     // Simulate elapsed iterations, which cause trackers to become ReadyForDestruction().
-    for (auto& [tsid, tracker] : tracker_gens_.generations_) {
+    for (auto& [tsid, tracker] : tracker_gens_.generations()) {
       for (int i = 0; i < ConnTracker::kDeathCountdownIters; ++i) {
         tracker->IterationPostTick();
       }
