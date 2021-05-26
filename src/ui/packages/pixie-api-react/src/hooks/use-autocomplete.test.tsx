@@ -106,7 +106,7 @@ describe('useAutocomplete to suggest available entities from user input', () => 
    * those into Promise objects.
    */
 
-  const Consumer: React.FC<{action: GQLAutocompleteActionType}> = ({ action }) => {
+  const Consumer: React.FC<{ action: GQLAutocompleteActionType }> = ({ action }) => {
     const [result, setResult] = React.useState<GQLAutocompleteResult>(null);
     const [error, setError] = React.useState<ApolloError>(null);
     const runAutocomplete = useAutocomplete('fooCluster');

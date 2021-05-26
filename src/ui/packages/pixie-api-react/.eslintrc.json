@@ -12,6 +12,15 @@
   "settings": {
     "import/extensions": [".js", ".jsx", ".ts", ".tsx", ".mjs"]
   },
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaFeatures": {
+      "jsx": true
+    },
+    "ecmaVersion": 2020,
+    "sourceType": "module",
+    "project": ["./tsconfig.json"]
+  },
   "globals": {
     "BigInt": true,
     "Atomics": "readonly",
@@ -64,15 +73,6 @@
         "plugin:react/recommended",
         "plugin:@typescript-eslint/recommended"
       ],
-      "parser": "@typescript-eslint/parser",
-      "parserOptions": {
-        "ecmaFeatures": {
-          "jsx": true
-        },
-        "ecmaVersion": 2020,
-        "sourceType": "module",
-        "project": ["./tsconfig.json"]
-      },
       "plugins": [
         "jest",
         "react",

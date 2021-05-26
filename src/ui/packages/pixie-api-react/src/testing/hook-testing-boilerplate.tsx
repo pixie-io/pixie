@@ -50,7 +50,8 @@ interface BasicHookTestOptions {
   getPayloadFromMock: (mock: MockedResponse) => any;
 }
 
-export function defineConsumer(hookRunner: BasicHookTestOptions['useHookUnderTest']) {
+/** Helper function. Creates a function component that simply invokes and renders the result of the given hook. */
+export function defineConsumer(hookRunner: BasicHookTestOptions['useHookUnderTest']): React.FC {
   const Consumer: React.FC = () => {
     const payload = hookRunner();
     return <>{ JSON.stringify(payload) }</>;
@@ -63,7 +64,7 @@ export function defineConsumer(hookRunner: BasicHookTestOptions['useHookUnderTes
  * Those tests have a lot of boilerplate; this function builds them for you.
  * @param opts
  */
-export function itPassesBasicHookTests(opts: BasicHookTestOptions) {
+export function itPassesBasicHookTests(opts: BasicHookTestOptions): void {
   describe('Common Pixie React hook tests', () => {
     afterEach(cleanup);
 
