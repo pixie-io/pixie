@@ -48,7 +48,7 @@ function getUserFacingMessage(errType: VizierQueryErrorType): string {
     case 'execution':
       return 'Failed to execute script';
     case 'server':
-      return 'Unexpected error';
+      return 'Server error';
     default:
       // Not reached
       return 'Unknown error';
