@@ -28,7 +28,7 @@ import { PixienautBalloonSvg } from './pixienaut-balloon';
 import { PixienautOctopusSvg } from './pixienaut-octopus';
 import { PixienautToiletSvg } from './pixienaut-toilet';
 
-const styles = ({ spacing, palette, breakpoints }: Theme) => createStyles({
+const styles = ({ spacing, breakpoints }: Theme) => createStyles({
   root: {
     paddingLeft: spacing(5),
     paddingRight: spacing(5),

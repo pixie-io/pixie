@@ -21,7 +21,7 @@ import * as React from 'react';
 
 import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
-export const PixieCommandHint = (props: SvgIconProps) => (
+export const PixieCommandHint: React.FC<SvgIconProps> = (props) => (
   <SvgIcon {...props} viewBox='0 0 924 283' fill='none' xmlns='http://www.w3.org/2000/svg'>
     <path
       d='M819 82H777.5V136C777.5 143.5 776 146.5 768 146.5H741V121.5L689 165L741 207V182H773C803.5 182 819 167 819 139V82Z'

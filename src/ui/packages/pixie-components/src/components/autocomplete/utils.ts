@@ -65,7 +65,7 @@ export interface TabStop {
 
 // getDisplayStringFromTabStops parses the tabstops to get the display text
 // that is shown to the user in the input box.
-export const getDisplayStringFromTabStops = (tabStops) => {
+export const getDisplayStringFromTabStops = (tabStops: TabStop[]): string => {
   let str = '';
   tabStops.forEach((ts, index) => {
     if (ts.Label !== undefined) {
@@ -86,13 +86,13 @@ export const getDisplayStringFromTabStops = (tabStops) => {
 // Tracks information about the tabstop, such as what the formatted input should look like and the boundaries of
 // each tabstop in the display string.
 export class TabStopParser {
-  private tabStops;
+  private tabStops: TabStop[];
 
-  private tabBoundaries;
+  private tabBoundaries: [number, number][];
 
-  private input;
+  private input: Array<{ type: 'key'|'value', value: string }>;
 
-  private initialCursor;
+  private initialCursor: number;
 
   constructor(tabStops: Array<TabStop>) {
     this.parseTabStopInfo(tabStops);
@@ -131,11 +131,11 @@ export class TabStopParser {
     this.initialCursor = cursorPos;
   };
 
-  public getInitialCursor = () => this.initialCursor;
+  public getInitialCursor = (): number => this.initialCursor;
 
-  public getTabBoundaries = () => this.tabBoundaries;
+  public getTabBoundaries = (): [number, number][] => this.tabBoundaries;
 
-  public getInput = () => this.input;
+  public getInput = (): Array<{ type: 'key'|'value', value: string }> => this.input;
 
   // Find the tabstop that the cursor is currently in.
   public getActiveTab = (cursorPos: number): number => {
@@ -154,11 +154,11 @@ export class TabStopParser {
   // mutate the contents of the current tabstops.
   public handleCompletionSelection = (
     cursorPos: number,
-    completion,
+    completion: { title: CompletionTitle, type: string, index?: number },
   ): [string, number] => {
     const activeTab = this.getActiveTab(cursorPos);
 
-    const newTStops = [];
+    const newTStops: TabStop[] = [];
     let newCursorPos = -1;
 
     this.tabStops.forEach((ts, i) => {
@@ -183,7 +183,7 @@ export class TabStopParser {
           Index: ts.Index,
           Label: ts.Label,
           Value: ts.Value,
-          CursorPosition: ts.Cursor,
+          CursorPosition: ts.CursorPosition,
         });
       }
     });
@@ -262,7 +262,7 @@ export class TabStopParser {
     this.tabStops.forEach((ts, i) => {
       if (i === activeTab) {
         let value = ts.Value;
-        let tsCursor = -1;
+        let tsCursor: number;
         const pos = cursorPos - 1 - this.tabBoundaries[i][0];
         if (value != null) {
           value = ts.Value.substring(0, pos) + char + ts.Value.substring(pos);

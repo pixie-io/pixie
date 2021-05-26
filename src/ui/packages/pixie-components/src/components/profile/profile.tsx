@@ -18,9 +18,10 @@
 
 import * as React from 'react';
 
+import { WithStyles } from '@material-ui/core';
 import BaseAvatar from '@material-ui/core/Avatar';
 import ListItemText from '@material-ui/core/ListItemText';
-import Menu from '@material-ui/core/Menu';
+import Menu, { MenuProps } from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
 
 interface AvatarProps {
@@ -29,7 +30,7 @@ interface AvatarProps {
   className?: string;
 }
 
-export const Avatar = (props: AvatarProps) => {
+export const Avatar: React.FC<AvatarProps> = (props) => {
   // When the picture is an empty string, the fallback letter-style avatar of alt isn't used.
   // That only happens when the picture field is an invalid link.
   if (!props.picture && props.name.length > 0) {
@@ -43,12 +44,15 @@ export const Avatar = (props: AvatarProps) => {
     />
   );
 };
-Avatar.defaultProps = {
-  picture: '',
-  className: '',
-};
 
-export const ProfileMenuWrapper = ({
+interface ProfileMenuWrapperProps extends WithStyles<any>, Pick<MenuProps, 'anchorOrigin'|'open'|'anchorEl'> {
+  onCloseMenu: () => void;
+  name: string;
+  email: string;
+  picture?: string;
+}
+
+export const ProfileMenuWrapper: React.FC<ProfileMenuWrapperProps> = ({
   classes,
   children,
   anchorOrigin,

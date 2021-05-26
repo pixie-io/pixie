@@ -49,8 +49,7 @@ const useStyles = makeStyles(() => createStyles({
 }));
 
 // LazyPanel is a component that renders the content lazily.
-export const LazyPanel = (props: LazyPanelProps) => {
-  const { show, className, children } = props;
+export const LazyPanel: React.FC<LazyPanelProps> = ({ show, className, children }) => {
   const [rendered, setRendered] = React.useState(false);
   const classes = useStyles();
 

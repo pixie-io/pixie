@@ -20,7 +20,7 @@ import * as React from 'react';
 
 import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
-export const NamespaceIcon = (props: SvgIconProps) => (
+export const NamespaceIcon: React.FC<SvgIconProps> = (props) => (
   <SvgIcon {...props} viewBox='0 0 26 25'>
     <path
       d='M25 1H1V24H25V1Z'

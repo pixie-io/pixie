@@ -18,7 +18,7 @@
 
 import * as React from 'react';
 
-export const RustIcon = (props) => (
+export const RustIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   /* eslint-disable max-len */
   <svg
     {...props}

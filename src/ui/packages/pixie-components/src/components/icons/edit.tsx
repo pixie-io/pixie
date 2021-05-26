@@ -20,7 +20,7 @@ import * as React from 'react';
 
 import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
-export const EditIcon = (props: SvgIconProps) => (
+export const EditIcon: React.FC<SvgIconProps> = (props) => (
   <SvgIcon {...props} viewBox='0 0 21 21'>
     <path d='M20.408 1.70718L18.9938 0.292969L7.29297 11.9938L8.70718 13.408L20.408 1.70718Z' />
     <path

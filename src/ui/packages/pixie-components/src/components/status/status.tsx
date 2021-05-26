@@ -45,7 +45,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-export const StatusCell = ({ statusGroup }: { statusGroup: StatusGroup }) => {
+export const StatusCell: React.FC<{ statusGroup: StatusGroup }> = ({ statusGroup }) => {
   const classes = useStyles();
   switch (statusGroup) {
     case 'healthy':

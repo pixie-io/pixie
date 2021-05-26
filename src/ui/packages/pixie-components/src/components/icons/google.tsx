@@ -20,7 +20,7 @@ import * as React from 'react';
 
 import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
-export const GoogleIcon = (props: SvgIconProps) => (
+export const GoogleIcon: React.FC<SvgIconProps> = (props) => (
   <SvgIcon
     {...props}
     width='16'

@@ -59,23 +59,19 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
   private editorRef: MonacoEditorTypes.ICodeEditor;
 
   // Holder for code in the editor.
-  private code;
+  private code: string;
 
-  constructor(props) {
+  constructor(props: CodeEditorProps) {
     super(props);
     this.state = {
-      // eslint-disable-next-line react/no-unused-state
+      /* eslint-disable react/no-unused-state */
       extraEditorClassName: buildClass(this.props.className),
-      // eslint-disable-next-line react/no-unused-state
       lineDecorationsWidth: 0,
-      // eslint-disable-next-line react/no-unused-state
       scrollBeyondLastColumn: 0,
-      // eslint-disable-next-line react/no-unused-state
       scrollBeyondLastLine: 0,
-      // eslint-disable-next-line react/no-unused-state
       fontFamily: 'Roboto Mono, monospace',
-      // eslint-disable-next-line react/no-unused-state
       editorModule: null, // editorModule is the object containing MonacoEditor.
+      /* eslint-enable react/no-unused-state */
     };
     this.onChange = this.onChange.bind(this);
     this.onEditorMount = this.onEditorMount.bind(this);
@@ -87,7 +83,7 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
     });
   }
 
-  componentDidMount() {
+  componentDidMount(): Promise<void> {
     return import(/* webpackPrefetch: true */ 'react-monaco-editor').then(
       ({ default: MonacoEditor }) => {
         this.setState({ editorModule: MonacoEditor });
@@ -95,20 +91,13 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
     );
   }
 
-  componentDidUpdate(prevProps) {
-    // TODO(nick) investigate why this causes the rest of the view to bounce.
-    // if (this.props.visible && this.props.visible !== prevProps.visible && this.editorRef) {
-    //   this.editorRef.focus();
-    // }
-  }
-
-  onChange(code) {
+  onChange(code: string): void {
     if (this.props.onChange) {
       this.props.onChange(code);
     }
   }
 
-  onEditorMount(editor) {
+  onEditorMount(editor: MonacoEditorTypes.ICodeEditor): void {
     this.editorRef = editor;
     if (this.editorRef && this.props.visible) {
       this.editorRef.focus();
@@ -129,7 +118,7 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
     return '';
   };
 
-  changeEditorValue = (code) => {
+  changeEditorValue = (code: string): void => {
     if (!code) {
       return;
     }
@@ -149,7 +138,7 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
     this.editorRef.setPosition(pos);
   };
 
-  render() {
+  render(): React.ReactElement {
     if (!this.state.editorModule) {
       return (
         <div className={this.props.spinnerClass}>

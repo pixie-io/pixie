@@ -18,7 +18,7 @@
 
 import React from 'react';
 
-export const PixienautToiletSvg = (props) => (
+export const PixienautToiletSvg: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   /* eslint-disable max-len */
   <svg {...props} width='882' height='1045' viewBox='0 0 882 1045' fill='none' xmlns='http://www.w3.org/2000/svg'>
     <path

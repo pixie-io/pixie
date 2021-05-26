@@ -76,20 +76,15 @@ interface SplitContainerState {
 
 // Split pane component that supports resizing of vertial panes and headers for collapsing panes.
 // Currently this component only supports 2 panes (only 1 pane is collapsed at a time).
-export const SplitContainer = (
-  props: React.PropsWithChildren<SplitContainerProps>,
-) => {
+export const SplitContainer: React.FC<SplitContainerProps> = (props) => {
   const classes = useStyles();
   const theme = useTheme();
   const splitRef = React.useRef(null);
   const minPaneHeight = theme.spacing(5);
-  const children = Array.isArray(props.children)
-    ? props.children
-    : [props.children];
-  const onSizeChange = props.onSizeChange
-    || (() => {
-      /* noop */
-    });
+  const children = React.useMemo(() => (
+    Array.isArray(props.children) ? props.children : [props.children]
+  ), [props.children]);
+  const onSizeChange = React.useMemo(() => (props.onSizeChange || (() => {})), [props.onSizeChange]);
   const initialSizes = React.useMemo(() => {
     if (props.initialSizes && props.initialSizes.length === children.length) {
       let sum = 0;

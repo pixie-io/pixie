@@ -20,7 +20,7 @@ import * as React from 'react';
 
 import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
-export const ClusterIcon = (props: SvgIconProps) => (
+export const ClusterIcon: React.FC<SvgIconProps> = (props) => (
   <SvgIcon {...props} viewBox='0 0 24 24'>
     <path
       d={`M23.3468 14.6178C23.3243 14.6178 23.3243 14.6178 23.3468

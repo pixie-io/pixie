@@ -17,7 +17,7 @@
  */
 
 /** Sign-agnostic minimum (closest value to zero) */
-export function smallest(first: number, ...others: number[]) {
+export function smallest(first: number, ...others: number[]): number {
   let found: number = null;
   for (const val of [first, ...others]) {
     if (found === null || Math.abs(val) < Math.abs(found)) {
@@ -36,7 +36,7 @@ export function clamp(target: number, min: number, max: number): number {
 }
 
 /** If `lists` looks like an NxM matrix, this sums a target column. */
-export function sumColumn(columnIndex: number, matrix: number[][]) {
+export function sumColumn(columnIndex: number, matrix: number[][]): number {
   return matrix.reduce((total, list) => total + list[columnIndex], 0);
 }
 

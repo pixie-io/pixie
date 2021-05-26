@@ -20,7 +20,7 @@ import * as React from 'react';
 
 import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
-export const ServiceIcon = (props: SvgIconProps) => (
+export const ServiceIcon: React.FC<SvgIconProps> = (props) => (
   <SvgIcon {...props} viewBox='0 0 32 32'>
     <path
       d={`M10.3056 6H21.6924V11.0448H10.3056V6ZM2.6001

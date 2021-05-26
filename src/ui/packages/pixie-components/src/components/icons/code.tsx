@@ -20,7 +20,7 @@ import * as React from 'react';
 
 import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
-export const CodeIcon = (props: SvgIconProps) => (
+export const CodeIcon: React.FC<SvgIconProps> = (props) => (
   <SvgIcon
     {...props}
     width='14'

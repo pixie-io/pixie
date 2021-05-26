@@ -18,7 +18,7 @@
 
 import * as React from 'react';
 
-export const AuthErrorSvg = (props) => (
+export const AuthErrorSvg: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg {...props} width={77} height={69} viewBox='0 0 77 69' fill='none'>
     <path
       d={`M33.9651 7.68709C35.9355 4.27187 40.8645 4.27188 42.8349 7.68711L72.3701 58.8814C74.3393
