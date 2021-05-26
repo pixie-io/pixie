@@ -18,7 +18,7 @@
 
 import { DARK_THEME, SnackbarProvider, VersionInfo } from '@pixie-labs/components';
 import Vizier from 'containers/App/vizier';
-import PixieCookieBanner from 'common/cookie-banner';
+import PixieCookieBanner from 'configurable/cookie-banner';
 import { LD_CLIENT_ID } from 'containers/constants';
 import {
   Redirect, Route, Router, Switch,
