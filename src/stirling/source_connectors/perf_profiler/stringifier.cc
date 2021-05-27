@@ -55,8 +55,9 @@ std::string Stringifier::BuildStackTraceString(const int stack_id, const struct 
   // Build the folded stack trace string.
   for (auto iter = addrs.rbegin(); iter != addrs.rend(); ++iter) {
     const auto& addr = *iter;
-    if (addr == kSentinelAddr) {
-      DCHECK(iter == addrs.rbegin()) << "Detected sentinel address in unexpected location.";
+    if (addr == kSentinelAddr && iter == addrs.rbegin()) {
+      // Remove sentinel values at the root of the stack trace.
+      // Sentinel values can occur in other spots (though it's rare); leave those ones in.
       continue;
     }
     stack_trace_str += symbolize_fn(addr);
