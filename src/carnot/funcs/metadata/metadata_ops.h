@@ -38,11 +38,21 @@ namespace funcs {
 namespace metadata {
 
 using ScalarUDF = px::carnot::udf::ScalarUDF;
+using K8sNameIdentView = px::md::K8sMetadataState::K8sNameIdentView;
 
 namespace internal {
 inline rapidjson::GenericStringRef<char> StringRef(std::string_view s) {
   return rapidjson::GenericStringRef<char>(s.data(), s.size());
 }
+
+inline StatusOr<K8sNameIdentView> K8sName(std::string_view name) {
+  std::vector<std::string_view> name_parts = absl::StrSplit(name, "/");
+  if (name_parts.size() != 2) {
+    return error::Internal("Malformed K8s name: $0", name);
+  }
+  return std::make_pair(name_parts[0], name_parts[1]);
+}
+
 }  // namespace internal
 
 inline const px::md::AgentMetadataState* GetMetadataState(px::carnot::udf::FunctionContext* ctx) {
@@ -120,12 +130,7 @@ class PodNameToPodIDUDF : public ScalarUDF {
 
   static StringValue GetPodID(const px::md::AgentMetadataState* md, StringValue pod_name) {
     // This UDF expects the pod name to be in the format of "<ns>/<pod-name>".
-    std::vector<std::string_view> name_parts = absl::StrSplit(pod_name, "/");
-    if (name_parts.size() != 2) {
-      return "";
-    }
-
-    auto pod_name_view = std::make_pair(name_parts[0], name_parts[1]);
+    PL_ASSIGN_OR(auto pod_name_view, internal::K8sName(pod_name), return "");
     auto pod_id = md->k8s_metadata_state().PodIDByName(pod_name_view);
     return pod_id;
   }
@@ -189,11 +194,8 @@ class PodNameToNamespaceUDF : public ScalarUDF {
  public:
   StringValue Exec(FunctionContext*, StringValue pod_name) {
     // This UDF expects the pod name to be in the format of "<ns>/<pod-name>".
-    std::vector<std::string_view> name_parts = absl::StrSplit(pod_name, "/");
-    if (name_parts.size() != 2) {
-      return "";
-    }
-    return std::string(name_parts[0]);
+    PL_ASSIGN_OR(auto k8s_name_view, internal::K8sName(pod_name), return "");
+    return std::string(k8s_name_view.first);
   }
 
   static udf::InfRuleVec SemanticInferenceRules() {
@@ -409,14 +411,8 @@ class ServiceNameToServiceIDUDF : public ScalarUDF {
   StringValue Exec(FunctionContext* ctx, StringValue service_name) {
     auto md = GetMetadataState(ctx);
     // This UDF expects the service name to be in the format of "<ns>/<service-name>".
-    std::vector<std::string_view> name_parts = absl::StrSplit(service_name, "/");
-    if (name_parts.size() != 2) {
-      return "";
-    }
-
-    auto service_name_view = std::make_pair(name_parts[0], name_parts[1]);
+    PL_ASSIGN_OR(auto service_name_view, internal::K8sName(service_name), return "");
     auto service_id = md->k8s_metadata_state().ServiceIDByName(service_name_view);
-
     return service_id;
   }
   static udf::ScalarUDFDocBuilder Doc() {
@@ -437,11 +433,8 @@ class ServiceNameToNamespaceUDF : public ScalarUDF {
  public:
   StringValue Exec(FunctionContext*, StringValue service_name) {
     // This UDF expects the service name to be in the format of "<ns>/<svc-name>".
-    std::vector<std::string_view> name_parts = absl::StrSplit(service_name, "/");
-    if (name_parts.size() != 2) {
-      return "";
-    }
-    return std::string(name_parts[0]);
+    PL_ASSIGN_OR(auto service_name_view, internal::K8sName(service_name), return "");
+    return std::string(service_name_view.first);
   }
 
   static udf::InfRuleVec SemanticInferenceRules() {
@@ -714,12 +707,7 @@ class PodNameToServiceNameUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
 
     // This UDF expects the pod name to be in the format of "<ns>/<pod-name>".
-    std::vector<std::string_view> name_parts = absl::StrSplit(pod_name, "/");
-    if (name_parts.size() != 2) {
-      return "";
-    }
-
-    auto pod_name_view = std::make_pair(name_parts[0], name_parts[1]);
+    PL_ASSIGN_OR(auto pod_name_view, internal::K8sName(pod_name), return "");
     auto pod_id = md->k8s_metadata_state().PodIDByName(pod_name_view);
 
     const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
@@ -765,12 +753,7 @@ class PodNameToServiceIDUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
 
     // This UDF expects the pod name to be in the format of "<ns>/<pod-name>".
-    std::vector<std::string_view> name_parts = absl::StrSplit(pod_name, "/");
-    if (name_parts.size() != 2) {
-      return "";
-    }
-
-    auto pod_name_view = std::make_pair(name_parts[0], name_parts[1]);
+    PL_ASSIGN_OR(auto pod_name_view, internal::K8sName(pod_name), return "");
     auto pod_id = md->k8s_metadata_state().PodIDByName(pod_name_view);
 
     const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
