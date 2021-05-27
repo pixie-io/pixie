@@ -28,8 +28,8 @@ const tabStopIndexRegex = /{[0-9]+/g; // Match any number following a brace: ${_
 const tabStopLabelRegex = /:(.*?):/; // Match any text between two colons :__:
 const tabStopValueRegex = /:([^:]*?)}/; // Match any text following a colon before a brace :__}
 
-export function ParseFormatStringToTabStops(input: string) {
-  const tabStops = [];
+export function ParseFormatStringToTabStops(input: string): TabStop[] {
+  const tabStops: TabStop[] = [];
 
   const parsedTS = [...input.match(tabStopRegex)]; // Tokenize into tabstops.
   parsedTS.forEach((ts) => {

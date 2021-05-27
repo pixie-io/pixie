@@ -67,9 +67,9 @@ export interface RequestGraph {
  * Parses the data passed in on the request graph.
  */
 export class RequestGraphParser {
-  private readonly entities = new Array<Entity>();
+  private readonly entities: Entity[] = [];
 
-  private readonly edges = new Array<Edge>();
+  private readonly edges: Edge[] = [];
 
   // Keeps a mapping from pod to node. We use the pod name as identifier
   // since it's the lowest level and guaranteed to be unique.
@@ -83,15 +83,15 @@ export class RequestGraphParser {
     this.parseInputData(data, display);
   }
 
-  public getEdges() {
+  public getEdges(): Edge[] {
     return this.edges;
   }
 
-  public getEntities() {
+  public getEntities(): Entity[] {
     return this.entities;
   }
 
-  public getServiceList() {
+  public getServiceList(): string[] {
     return Object.keys(this.hasSvc);
   }
 

@@ -53,8 +53,6 @@ describe('formatters Test', () => {
 });
 
 describe('DurationRenderer test', () => {
-  const baseComponent = DurationRenderer({ data: 20 * 1000 * 1000 });
-
   it('should render correctly for low latency', () => {
     const component = DurationRenderer({ data: 20 * 1000 * 1000 });
     const wrapper = mount(component);

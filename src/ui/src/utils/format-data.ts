@@ -41,7 +41,7 @@ export function formatFloat64Data(val: number, formatStr = '0[.]00'): string {
   return num;
 }
 
-export function looksLikeLatencyCol(colName: string, semType: SemanticType, colType: DataType) {
+export function looksLikeLatencyCol(colName: string, semType: SemanticType, colType: DataType): boolean {
   if (colType !== DataType.FLOAT64) {
     return false;
   }
@@ -55,7 +55,7 @@ export function looksLikeLatencyCol(colName: string, semType: SemanticType, colT
   return !!colNameLC.match(/p\d{0,2}$/);
 }
 
-export function looksLikeCPUCol(colName: string, semType: SemanticType, colType: DataType) {
+export function looksLikeCPUCol(colName: string, semType: SemanticType, colType: DataType): boolean {
   if (colType !== DataType.FLOAT64) {
     return false;
   }
@@ -69,7 +69,7 @@ export function looksLikeCPUCol(colName: string, semType: SemanticType, colType:
   return !!colNameLC.match(/p\d{0,2}$/);
 }
 
-export function looksLikeAlertCol(colName: string, colType: DataType) {
+export function looksLikeAlertCol(colName: string, colType: DataType): boolean {
   if (colType !== DataType.BOOLEAN) {
     return false;
   }
@@ -121,7 +121,7 @@ export function getDataRenderer(type: DataType): (any) => string {
   }
 }
 
-const stringSortFunc = (a, b) => a.localeCompare(b);
+const stringSortFunc = (a: string, b: string) => a.localeCompare(b);
 
 // We send integers as string to make sure we don't have lossy 64-bit integers.
 const intSortFunc = (a, b) => Number(a) - Number(b);
@@ -155,7 +155,7 @@ const sortFuncForType = (type: DataType) => {
   }
 };
 
-export const getDataSortFunc = (type: DataType, ascending: boolean) => {
+export const getDataSortFunc = (type: DataType, ascending: boolean): ((a: any, b: any) => number) => {
   const f = sortFuncForType(type);
   return (a: any, b: any) => (ascending ? f(a, b) : -f(a, b));
 };

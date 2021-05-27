@@ -18,7 +18,6 @@
 
 import * as QueryString from 'query-string';
 import { OAUTH_PROVIDER } from 'containers/constants';
-import { FormStructure } from '@pixie-labs/components';
 import { HydraClient } from './hydra-oauth-provider';
 import { Auth0Client } from './auth0-oauth-provider';
 import { OAuthProviderClient } from './oauth-provider';

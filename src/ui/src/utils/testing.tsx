@@ -16,10 +16,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as React from 'react';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { shallow } from 'enzyme';
 import { act } from 'react-dom/test-utils';
 
-export async function shallowAsync(component) {
+export async function shallowAsync(component: React.ReactElement): Promise<ReturnType<typeof shallow>> {
   let wrapper;
   await act(async () => {
     wrapper = shallow(component);
@@ -27,6 +29,4 @@ export async function shallowAsync(component) {
   return wrapper;
 }
 
-export const noop = () => {
-  // noop
-};
+export const noop = (): void => {};

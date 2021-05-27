@@ -31,6 +31,7 @@ import VisibilityOff from '@material-ui/icons/VisibilityOff';
 import { distanceInWords } from 'date-fns';
 import * as React from 'react';
 import { useDeploymentKeys } from '@pixie-labs/api-react';
+import { GQLDeploymentKey } from '@pixie-labs/api';
 import {
   AdminTooltip, StyledTableCell, StyledTableHeaderCell,
   StyledLeftTableCell, StyledRightTableCell,
@@ -47,7 +48,7 @@ interface DeploymentKeyDisplay {
   desc: string;
 }
 
-export function formatDeploymentKey(depKey): DeploymentKeyDisplay {
+export function formatDeploymentKey(depKey: GQLDeploymentKey): DeploymentKeyDisplay {
   const now = new Date();
   return {
     id: depKey.id,
@@ -58,7 +59,7 @@ export function formatDeploymentKey(depKey): DeploymentKeyDisplay {
   };
 }
 
-export const DeploymentKeyRow = ({ deploymentKey }) => {
+export const DeploymentKeyRow: React.FC<{ deploymentKey: DeploymentKeyDisplay }> = ({ deploymentKey }) => {
   const classes = UseKeyListStyles();
   const [showKey, setShowKey] = React.useState(false);
 
@@ -141,7 +142,7 @@ export const DeploymentKeyRow = ({ deploymentKey }) => {
   );
 };
 
-export const DeploymentKeysTable = () => {
+export const DeploymentKeysTable: React.FC = () => {
   const classes = UseKeyListStyles();
   const [{ deploymentKeys: rawDeploymentKeys }, loading, error] = useDeploymentKeys();
 

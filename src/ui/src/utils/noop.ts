@@ -16,8 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const noop = () => {
-  // noop
-};
+const noop = (): void => {};
 
 export default noop;

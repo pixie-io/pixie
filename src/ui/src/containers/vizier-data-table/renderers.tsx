@@ -49,16 +49,18 @@ import { getLatencyNSLevel, getColor } from 'utils/metric-thresholds';
 import { Theme } from '@material-ui/core/styles';
 import { ColumnDisplayInfo, QuantilesDisplayState } from './column-display-info';
 
+interface Quant { p50: number; p90: number; p99: number; }
+
 // Expects a p99 field in colName.
 export function getMaxQuantile(rows: any[], colName: string): number {
-  let max;
+  let max: number = null;
   for (let i = 0; i < rows.length; ++i) {
     const row = rows[i];
     if (row[colName]) {
       const { p99 } = row[colName];
       if (p99 != null) {
         if (max != null) {
-          max = Math.max(max, p99);
+          max = Math.max(max ?? Number.NEGATIVE_INFINITY, p99);
         } else {
           max = p99;
         }
@@ -69,8 +71,12 @@ export function getMaxQuantile(rows: any[], colName: string): number {
 }
 
 // Expects data to contain floats in p50, p90, and p99 fields.
-export function quantilesRenderer(display: ColumnDisplayInfo, theme: Theme,
-  updateDisplay: (ColumnDisplayInfo) => void, rows: any[]) {
+export function quantilesRenderer(
+  display: ColumnDisplayInfo,
+  theme: Theme,
+  updateDisplay: (ColumnDisplayInfo) => void,
+  rows: any[],
+): (v: Quant) => React.ReactElement {
   const max = getMaxQuantile(rows, display.columnName);
 
   return function renderer(val) {
@@ -114,8 +120,12 @@ function dataWithUnitsToString(dataWithUnits: DataWithUnits): string {
 }
 
 // Expects data to contain p50, p90, and p99 fields.
-export function durationQuantilesRenderer(display: ColumnDisplayInfo, theme: Theme,
-  updateDisplay: (ColumnDisplayInfo) => void, rows: any[]) {
+export function durationQuantilesRenderer(
+  display: ColumnDisplayInfo,
+  theme: Theme,
+  updateDisplay: (ColumnDisplayInfo) => void,
+  rows: any[],
+): (val: Quant) => React.ReactElement {
   const max = getMaxQuantile(rows, display.columnName);
 
   return function renderer(val) {
@@ -169,7 +179,7 @@ function renderWrapper(RendererFunc: any /* TODO(zasgar): revisit this typing */
 
 const statusRenderer = (st: SemanticType) => (v: string) => toStatusIndicator(v, st);
 
-const serviceRendererFuncGen = (clusterName: string, propagatedArgs?: Arguments) => (v) => {
+const serviceRendererFuncGen = (clusterName: string, propagatedArgs?: Arguments) => function Service(v) {
   try {
     // Hack to handle cases like "['pl/service1', 'pl/service2']" which show up for pods that are part of 2 services.
     const parsedArray = JSON.parse(v);
@@ -202,18 +212,19 @@ const entityRenderer = (st: SemanticType, clusterName: string, propagatedArgs?: 
   if (st === SemanticType.ST_SERVICE_NAME) {
     return serviceRendererFuncGen(clusterName, propagatedArgs);
   }
-  const entity = (v) => (
-    <EntityLink
-      entity={v}
-      semanticType={st}
-      clusterName={clusterName}
-      propagatedParams={propagatedArgs}
-    />
-  );
-  return entity;
+  return function Entity(v) {
+    return (
+      <EntityLink
+        entity={v}
+        semanticType={st}
+        clusterName={clusterName}
+        propagatedParams={propagatedArgs}
+      />
+    );
+  };
 };
 
-const scriptReferenceRenderer = (clusterName: string) => ((v) => {
+const scriptReferenceRenderer = (clusterName: string) => (function Reference(v) {
   const { script, label, args } = v;
   return (
     <ScriptReference label={label} script={script} args={args} clusterName={clusterName} />
@@ -223,8 +234,15 @@ const scriptReferenceRenderer = (clusterName: string) => ((v) => {
 const CPUDataWrapper = (data: any) => <CPUData data={data} />;
 const AlertDataWrapper = (data: any) => <AlertData data={data} />;
 
-export const prettyCellRenderer = (display: ColumnDisplayInfo, updateDisplay: (ColumnDisplayInfo) => void,
-  clusterName: string, rows: any[], theme: Theme, propagatedArgs?: Arguments) => {
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function prettyCellRenderer(
+  display: ColumnDisplayInfo,
+  updateDisplay: (ColumnDisplayInfo) => void,
+  clusterName: string,
+  rows: any[],
+  theme: Theme,
+  propagatedArgs?: Arguments,
+) {
   const dt = display.type;
   const st = display.semanticType;
   const name = display.columnName;
@@ -287,12 +305,20 @@ export const prettyCellRenderer = (display: ColumnDisplayInfo, updateDisplay: (C
       return v;
     }
   };
-};
+}
 
-export const vizierCellRenderer = (display: ColumnDisplayInfo, updateDisplay: (ColumnDisplayInfo) => void,
-  prettyRender: boolean, theme: Theme, clusterName: string, rows: any[], propagatedArgs?: Arguments) => {
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function vizierCellRenderer(
+  display: ColumnDisplayInfo,
+  updateDisplay: (ColumnDisplayInfo) => void,
+  prettyRender: boolean,
+  theme: Theme,
+  clusterName: string,
+  rows: any[],
+  propagatedArgs?: Arguments,
+) {
   if (prettyRender) {
     return prettyCellRenderer(display, updateDisplay, clusterName, rows, theme, propagatedArgs);
   }
   return getDataRenderer(display.type);
-};
+}

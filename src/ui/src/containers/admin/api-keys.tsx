@@ -31,6 +31,7 @@ import VisibilityOff from '@material-ui/icons/VisibilityOff';
 import { distanceInWords } from 'date-fns';
 import * as React from 'react';
 import { useAPIKeys } from '@pixie-labs/api-react';
+import { GQLAPIKey } from '@pixie-labs/api';
 import {
   AdminTooltip, StyledTableCell, StyledTableHeaderCell,
   StyledLeftTableCell, StyledRightTableCell,
@@ -47,7 +48,7 @@ interface APIKeyDisplay {
   desc: string;
 }
 
-export function formatAPIKey(apiKey): APIKeyDisplay {
+export function formatAPIKey(apiKey: GQLAPIKey): APIKeyDisplay {
   const now = new Date();
   return {
     id: apiKey.id,
@@ -58,7 +59,7 @@ export function formatAPIKey(apiKey): APIKeyDisplay {
   };
 }
 
-export const APIKeyRow = ({ apiKey }) => {
+export const APIKeyRow: React.FC<{ apiKey: APIKeyDisplay }> = ({ apiKey }) => {
   const classes = UseKeyListStyles();
   const [showKey, setShowKey] = React.useState(false);
 
@@ -141,7 +142,7 @@ export const APIKeyRow = ({ apiKey }) => {
   );
 };
 
-export const APIKeysTable = () => {
+export const APIKeysTable: React.FC = () => {
   const classes = UseKeyListStyles();
   const [{ apiKeys: apiKeysRaw }, loading, error] = useAPIKeys();
   if (loading) {

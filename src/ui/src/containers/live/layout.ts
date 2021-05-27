@@ -44,7 +44,7 @@ const MOBILE_GRID_WIDTH = 4;
 const MOBILE_NUM_COLS = 1;
 const MOBILE_WIDGET_HEIGHT = 2;
 
-export function getGridWidth(isMobile: boolean) {
+export function getGridWidth(isMobile: boolean): number {
   return isMobile ? MOBILE_GRID_WIDTH : DEFAULT_GRID_WIDTH;
 }
 

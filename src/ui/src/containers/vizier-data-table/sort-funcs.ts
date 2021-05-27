@@ -33,7 +33,7 @@ import { ColumnDisplayInfo, QuantilesDisplayState } from './column-display-info'
  * @param ascending If true, "bigger" values are sorted to the bottom. If false, they're sorted to the top.
  */
 export function fieldSortFunc(fieldName: string, ascending: boolean) {
-  return (a, b) => {
+  return (a: Record<string, unknown>, b: Record<string, unknown>): number => {
     const aVal = a?.[fieldName];
     const bVal = b?.[fieldName];
 
@@ -63,7 +63,7 @@ export function fieldSortFunc(fieldName: string, ascending: boolean) {
         result = Number(aVal) - Number(bVal);
         break;
       case 'string':
-        result = aVal.localeCompare(bVal);
+        result = (aVal as string).localeCompare(bVal as string);
         break;
       case 'object':
       case 'function':
@@ -78,7 +78,10 @@ export function fieldSortFunc(fieldName: string, ascending: boolean) {
   };
 }
 
-export function getSortFunc(display: ColumnDisplayInfo, direction: SortDirectionType) {
+export function getSortFunc(
+  display: ColumnDisplayInfo,
+  direction: SortDirectionType,
+): (a: unknown, b: unknown) => number {
   const ascending = direction === SortDirection.ASC;
 
   let f;

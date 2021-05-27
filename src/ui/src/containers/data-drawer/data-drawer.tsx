@@ -255,7 +255,7 @@ const DataDrawer = ({ open, activeTab, setActiveTab }) => {
   );
 };
 
-export const DataDrawerSplitPanel = (props) => {
+export const DataDrawerSplitPanel: React.FC = () => {
   const classes = useStyles();
 
   const { dataDrawerOpen, setDataDrawerOpen } = React.useContext(LayoutContext);

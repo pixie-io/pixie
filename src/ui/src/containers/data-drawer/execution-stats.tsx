@@ -72,7 +72,7 @@ const ExecutionMetric = (props: ExecutionMetricProps) => {
   );
 };
 
-const ExecutionStats = () => {
+const ExecutionStats: React.FC = () => {
   const { stats } = React.useContext(ResultsContext);
   const classes = useStyles();
 

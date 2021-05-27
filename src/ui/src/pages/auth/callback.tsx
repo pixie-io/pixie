@@ -73,10 +73,10 @@ const CtaButton = ({ children, ...props }: ButtonProps) => (
   <Button color='primary' variant='contained' {...props}>{children}</Button>
 );
 
-const trackAuthEvent = (event: string, id: string, email: string) => {
+const trackAuthEvent = (event: string, id: string, email: string): Promise<void> => {
   if (isValidAnalytics()) {
     return Promise.race([
-      new Promise((resolve, reject) => { // Wait for analytics to be sent out before redirecting.
+      new Promise<void>((resolve, reject) => { // Wait for analytics to be sent out before redirecting.
         analytics.track(event, (err) => {
           if (err) {
             reject();
@@ -89,7 +89,7 @@ const trackAuthEvent = (event: string, id: string, email: string) => {
       // Wait a maximum of 4s before redirecting. If it takes this long, it probably means that
       // something in Segment failed to initialize/send.
       new Promise((resolve) => setTimeout(resolve, 4000)),
-    ]);
+    ]).then();
   }
 
   return Promise.resolve();
@@ -259,13 +259,14 @@ export const AuthCallbackPage: React.FC = () => {
       return;
     }
 
-    doAuth(mode, signup, redirectURI, location, orgName, token?.accessToken);
+    doAuth(mode, signup, redirectURI, location, orgName, token?.accessToken).then();
   };
 
   React.useEffect(() => {
     GetOAuthProvider().handleToken().then(handleAccessToken).catch((err) => {
       setErr('internal', `${err}`);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const renderUnverifiedEmailMessage = () => {

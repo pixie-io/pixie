@@ -139,13 +139,15 @@ const buildTimeHashMap = (hoverData: ValidHoverDatum[], sortBy: (key: string) =>
   hoverData.forEach((datum) => {
     const rest: UnformattedLegendEntry[] = Object.entries(datum).map((entry) => ({ key: entry[0], val: entry[1] }))
       .filter((item) => item.key !== 'time' && item.key !== 'sum');
+    // noinspection UnnecessaryLocalVariableJS
     const sortedRest = _.sortBy(rest, (item) => sortBy(item.key));
     timeHashMap[datum.time] = sortedRest;
   });
   return timeHashMap;
 };
 
-export const buildHoverDataCache = (hoverData): HoverDataCache => {
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export const buildHoverDataCache = (hoverData: any): HoverDataCache => {
   if (!Array.isArray(hoverData)) {
     return null;
   }

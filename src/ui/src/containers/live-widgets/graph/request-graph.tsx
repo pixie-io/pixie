@@ -31,7 +31,6 @@ import Tooltip from '@material-ui/core/Tooltip';
 import { toEntityURL, toSingleEntityPage } from 'containers/live-widgets/utils/live-view-params';
 import { ClusterContext } from 'common/cluster-context';
 import { SemanticType, Relation } from 'types/generated/vizierapi_pb';
-import Button from '@material-ui/core/Button';
 import { useHistory } from 'react-router-dom';
 import { Arguments } from 'utils/args-utils';
 import { formatFloat64Data } from 'utils/format-data';
@@ -98,13 +97,13 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-export const RequestGraphWidget = (props: RequestGraphProps) => {
+export const RequestGraphWidget: React.FC<RequestGraphProps> = ({
+  data, relation, display, propagatedArgs,
+}) => {
   const { selectedClusterName } = React.useContext(ClusterContext);
   const history = useHistory();
 
   const ref = React.useRef<HTMLDivElement>();
-  const { data, relation } = props;
-  const { display } = props;
 
   const [network, setNetwork] = React.useState<Network>(null);
   const [graph, setGraph] = React.useState<RequestGraph>(null);
@@ -216,7 +215,7 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
       network.setOptions(opts);
     }
     return hierEnabled;
-  }), [network]);
+  }), [graphOpts, network]);
 
   const toggleColor = React.useCallback(() => setColorByLatency((enabled) => {
     const latencyColor = !enabled;
@@ -229,7 +228,7 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
       });
     }
     return latencyColor;
-  }), [graph]);
+  }), [theme, graph]);
 
   const toggleFocus = React.useCallback(() => setFocused((enabled) => !enabled), []);
 
@@ -303,10 +302,10 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
         : graph.nodes.get(network.getNodesInCluster(params.nodes[0]))[0].service;
       const semType = !clusteredMode ? SemanticType.ST_POD_NAME : SemanticType.ST_SERVICE_NAME;
       const page = toSingleEntityPage(nodeName, semType, selectedClusterName);
-      const pathname = toEntityURL(page, props.propagatedArgs);
+      const pathname = toEntityURL(page, propagatedArgs);
       history.push(pathname);
     }
-  }, [history, selectedClusterName, clusteredMode, network, graph, props.propagatedArgs]);
+  }, [history, selectedClusterName, clusteredMode, network, graph, propagatedArgs]);
 
   // This function needs to dynamically change on 'network' every time clusteredMode is updated,
   // so we assign it separately from where Network is created.

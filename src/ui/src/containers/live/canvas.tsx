@@ -34,7 +34,7 @@ import { VizierErrorDetails } from 'common/errors';
 import { VizierQueryError, containsMutation } from '@pixie-labs/api';
 
 import {
-  alpha, makeStyles, Theme, useTheme,
+  alpha, makeStyles, Theme,
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import Paper from '@material-ui/core/Paper';
@@ -261,7 +261,6 @@ interface CanvasProps {
 
 const Canvas = (props: CanvasProps) => {
   const classes = useStyles();
-  const theme = useTheme();
   const {
     tables, loading, error, mutationInfo,
   } = React.useContext(ResultsContext);

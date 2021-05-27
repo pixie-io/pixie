@@ -16,16 +16,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { GQLClusterInfo, GQLClusterStatus } from '@pixie-labs/api';
 import { formatClusters } from './clusters-list';
 
 describe('formatClusters', () => {
   it('correctly formats cluster info', () => {
-    const clusterResults = [
+    const clusterResults: GQLClusterInfo[] = [
       {
         id: '5b27f024-1234-4d07-b28d-84ab8d88e1a3',
         clusterName: '456',
         prettyClusterName: 'pretty-456',
-        status: 'CS_DISCONNECTED',
+        status: GQLClusterStatus.CS_DISCONNECTED,
         clusterVersion: 'versionABC',
         vizierVersion: '0.2.4-pre-master.64',
         vizierConfig: {
@@ -34,12 +35,13 @@ describe('formatClusters', () => {
         lastHeartbeatMs: 23424332349024.02,
         numNodes: 0,
         numInstrumentedNodes: 4,
+        controlPlanePodStatuses: [],
       },
       {
         id: '5b27f024-eccb-4d07-b28d-84ab8d88e6a3',
         clusterName: '123',
         prettyClusterName: 'pretty-123',
-        status: 'CS_HEALTHY',
+        status: GQLClusterStatus.CS_HEALTHY,
         clusterVersion: 'versionABC',
         vizierVersion: '0.2.4-pre-master.64',
         vizierConfig: {
@@ -48,12 +50,13 @@ describe('formatClusters', () => {
         lastHeartbeatMs: 32349024.02,
         numNodes: 0,
         numInstrumentedNodes: 4,
+        controlPlanePodStatuses: [],
       },
       {
         id: '5b27f024-eccb-4d07-b28d-84ab8d88e6a3',
         clusterName: '789',
         prettyClusterName: 'pretty-789',
-        status: 'CS_DISCONNECTED',
+        status: GQLClusterStatus.CS_DISCONNECTED,
         clusterVersion: 'versionABC',
         vizierVersion: '0.2.4-pre-master.64',
         vizierConfig: {
@@ -62,12 +65,13 @@ describe('formatClusters', () => {
         lastHeartbeatMs: 32349024.02,
         numNodes: 0,
         numInstrumentedNodes: 4,
+        controlPlanePodStatuses: [],
       },
       {
         id: '1e3a32fc-caa4-5d81-e33d-10de7d77f1b2',
         clusterName: 'xyz',
         prettyClusterName: 'pretty-xyz',
-        status: 'CS_UPDATE_FAILED',
+        status: GQLClusterStatus.CS_UPDATE_FAILED,
         clusterVersion: 'versionDEF',
         vizierVersion: '0.2.4+Distribution.d98403c.20200515173726.1',
         vizierConfig: {
@@ -76,6 +80,7 @@ describe('formatClusters', () => {
         lastHeartbeatMs: 24.92,
         numNodes: 8,
         numInstrumentedNodes: 8,
+        controlPlanePodStatuses: [],
       },
     ];
     expect(formatClusters(clusterResults)).toStrictEqual([

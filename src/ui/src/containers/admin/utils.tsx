@@ -110,7 +110,9 @@ export function containerStatusGroup(status: string): StatusGroup {
   }
 }
 
-export const AdminTooltip = ({ children, title }) => {
+export const AdminTooltip = ({
+  children, title,
+}: { children: React.ReactElement, title: string }): React.ReactElement => {
   const classes = tooltipStyles();
   return (
     <Tooltip title={title} placement='bottom' classes={classes}>
@@ -119,7 +121,7 @@ export const AdminTooltip = ({ children, title }) => {
   );
 };
 
-export const StyledTabs = withStyles((theme: Theme) => createStyles({
+export const StyledTabs = withStyles(() => createStyles({
   root: {
     flex: 1,
   },

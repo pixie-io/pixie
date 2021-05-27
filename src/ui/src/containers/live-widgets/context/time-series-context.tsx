@@ -30,7 +30,7 @@ interface TimeSeriesContextProps {
 
 export const TimeSeriesContext = React.createContext<TimeSeriesContextProps>(null);
 
-export const TimeSeriesContextProvider = (props) => {
+export const TimeSeriesContextProvider: React.FC = ({ children }) => {
   const [hoverTime, setHoverTime] = React.useState<number | null>(null);
   const [timeseriesDomain, setTimeseriesDomain] = React.useState<Domain | null>(null);
 
@@ -43,13 +43,13 @@ export const TimeSeriesContextProvider = (props) => {
 
   return (
     <TimeSeriesContext.Provider value={context}>
-      {props.children}
+      {children}
     </TimeSeriesContext.Provider>
   );
 };
 
 export function withTimeSeriesContextProvider<P>(Component: React.ComponentType<P>) {
-  return function TimeSeriesContextProviderHOC(props: P) {
+  return function TimeSeriesContextProviderHOC(props: P): React.ReactElement {
     return (
       <TimeSeriesContextProvider>
         <Component {...props} />

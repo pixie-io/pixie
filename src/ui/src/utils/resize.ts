@@ -20,7 +20,7 @@ export const resizeEvent = new Event('resize');
 
 let called = false;
 
-export function triggerResize() {
+export function triggerResize(): void {
   if (called) {
     return;
   }

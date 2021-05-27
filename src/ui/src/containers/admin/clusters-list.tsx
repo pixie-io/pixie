@@ -27,6 +27,7 @@ import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { GaugeLevel } from 'utils/metric-thresholds';
 import { useListClustersVerbose } from '@pixie-labs/api-react';
+import { GQLClusterInfo } from '@pixie-labs/api';
 import {
   AdminTooltip, clusterStatusGroup, convertHeartbeatMS, getClusterDetailsURL,
   StyledTableCell, StyledTableHeaderCell, StyledLeftTableCell, StyledRightTableCell,
@@ -103,7 +104,7 @@ function formatCluster(clusterInfo): ClusterDisplay {
   };
 }
 
-export function formatClusters(clusterInfos): ClusterDisplay[] {
+export function formatClusters(clusterInfos: GQLClusterInfo[]): ClusterDisplay[] {
   return clusterInfos
     .filter((cluster) => cluster.lastHeartbeatMs < INACTIVE_AGENT_THRESHOLD_MS)
     .map((cluster) => formatCluster(cluster))

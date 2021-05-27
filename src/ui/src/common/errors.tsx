@@ -36,12 +36,11 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-export const VizierErrorDetails = (props: { error: Error }) => {
-  const { error } = props;
+export const VizierErrorDetails: React.FC<{ error: Error }> = ({ error }) => {
   const classes = useStyles();
   const { details } = error as VizierQueryError;
 
-  let errorDetails = null;
+  let errorDetails: JSX.Element;
 
   if (typeof details === 'string') {
     errorDetails = <div className={classes.errorRow}>{details}</div>;

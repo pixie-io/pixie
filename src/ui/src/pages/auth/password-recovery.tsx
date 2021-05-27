@@ -35,7 +35,7 @@ export const PasswordRecoveryPage: React.FC = ({ location }: RouteProps) => {
       setMethod(m);
       setError(null);
     }).catch((e) => setError(e));
-  }, [flow]);
+  }, [authClient, flow]);
 
   return (
     <BasePage>

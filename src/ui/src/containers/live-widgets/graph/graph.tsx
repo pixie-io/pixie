@@ -27,7 +27,6 @@ import {
 import * as React from 'react';
 import {
   makeStyles,
-  Theme,
   useTheme,
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
@@ -111,7 +110,7 @@ function getColorForEdge(col: ColInfo, val: number, thresholds: EdgeThresholds):
   return val > highThreshold ? 'high' : 'med';
 }
 
-export const Graph = (props: GraphProps) => {
+export const Graph: React.FC<GraphProps> = (props) => {
   const {
     dot, toCol, fromCol, data, propagatedArgs, edgeWeightColumn,
     nodeWeightColumn, edgeColorColumn, edgeThresholds, edgeHoverInfo, edgeLength, enableDefaultHierarchy,
@@ -139,6 +138,7 @@ export const Graph = (props: GraphProps) => {
         history.push(pathname);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [graph, history, selectedClusterName]);
 
   const ref = React.useRef<HTMLDivElement>();
@@ -205,7 +205,7 @@ export const Graph = (props: GraphProps) => {
         let edgeInfo = '';
         edgeHoverInfo.forEach((info, i) => {
           if (info != null) {
-            let val = '';
+            let val: string;
             if (info.semType === SemanticType.ST_NONE || info.semType === SemanticType.ST_UNSPECIFIED) {
               val = formatByDataType(info.type, d[info.name]);
             } else {
@@ -224,6 +224,7 @@ export const Graph = (props: GraphProps) => {
     setGraph({
       nodes, edges, idToSemType,
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dot, data, toCol, fromCol]);
 
   // Load the data.
@@ -269,20 +270,6 @@ export const Graph = (props: GraphProps) => {
       </div>
     </div>
   );
-};
-Graph.defaultProps = {
-  dot: null,
-  data: null,
-  toCol: null,
-  fromCol: null,
-  propagatedArgs: null,
-  edgeWeightColumn: '',
-  nodeWeightColumn: '',
-  edgeColorColumn: '',
-  edgeThresholds: null,
-  edgeHoverInfo: null,
-  edgeLength: 0,
-  enableDefaultHierarchy: false,
 };
 
 export const GraphWidget = (props: GraphWidgetProps): React.ReactElement => {

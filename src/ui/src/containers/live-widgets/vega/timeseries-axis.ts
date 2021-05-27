@@ -22,9 +22,9 @@ import { scale, tickValues } from 'vega-scale';
 import { textMetrics } from 'vega-scenegraph';
 
 declare module 'vega-scale' {
-  // eslint-disable-next-line no-shadow
+  // eslint-disable-next-line @typescript-eslint/no-shadow
   export function scale(type: string, scale?: any, metadata?: any);
-  // eslint-disable-next-line no-shadow
+  // eslint-disable-next-line @typescript-eslint/no-shadow
   export function tickValues(scale: any, count: number);
 }
 
@@ -124,8 +124,10 @@ function AmPmFormatter(): LabelsFormatter {
   };
 }
 
-export function prepareLabels(domain: any, width: number, numTicks: number, overlapBuffer: number,
-  font: string, fontSize: number): Label[] {
+export function prepareLabels(
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+  domain: any, width: number, numTicks: number, overlapBuffer: number, font: string, fontSize: number,
+): Label[] {
   // Gets the true tick values that will be generated.
   const s = scale('time')();
   s.domain(domain);
@@ -166,7 +168,7 @@ export function prepareLabels(domain: any, width: number, numTicks: number, over
 }
 
 // This adds the pxTimeFormat function to the passed in vega Module.
-export function addPxTimeFormatExpression() {
+export function addPxTimeFormatExpression(): void {
   const domainFn = vega.expressionFunction('domain');
 
   // let currentWidth = 0;

@@ -28,7 +28,7 @@ interface DataDrawerContextProps {
 
 export const DataDrawerContext = React.createContext<DataDrawerContextProps>(null);
 
-export const DataDrawerContextProvider = (props) => {
+export const DataDrawerContextProvider: React.FC = ({ children }) => {
   const [activeTab, setActiveTab] = React.useState<string>('');
   const { setDataDrawerOpen } = React.useContext(LayoutContext);
   const openDrawerTab = (tab: string) => {
@@ -38,7 +38,7 @@ export const DataDrawerContextProvider = (props) => {
 
   return (
     <DataDrawerContext.Provider value={{ activeTab, setActiveTab, openDrawerTab }}>
-      {props.children}
+      {children}
     </DataDrawerContext.Provider>
   );
 };

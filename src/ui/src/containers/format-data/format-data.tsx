@@ -34,7 +34,7 @@ import { DataType, SemanticType } from 'types/generated/vizierapi_pb';
 
 const JSON_INDENT_PX = 16;
 
-export const AlertDataBase = ({ data, classes }) => (
+export const AlertDataBase: React.FC<WithStyles & { data: any }> = ({ data, classes }) => (
   <div className={classes[`${data}`]}>{formatBoolData(data)}</div>
 );
 
@@ -84,6 +84,7 @@ const JSONBase = React.memo<JSONDataProps>((props) => {
 
   if (cls === 'string') {
     try {
+      // noinspection UnnecessaryLocalVariableJS
       const parsedJson = JSON.parse(data);
       data = parsedJson;
     } catch {
@@ -212,7 +213,7 @@ export const CPUData = withStyles(gaugeStyles, {
   <GaugeDataBase classes={classes} data={data} getLevel={getCPULevel} />
 ));
 
-export const PortRendererBase = ({ data, classes }) => (
+export const PortRendererBase: React.FC<WithStyles & { data: any }> = ({ data, classes }) => (
   <>
     <span className={classes.value}>{data}</span>
   </>
@@ -291,8 +292,11 @@ const RenderValueWithUnits = withStyles(() => ({
   },
 }))(RenderValueWithUnitsBase);
 
-export const BytesRenderer = ({ data }: { data: number }) => <RenderValueWithUnits data={formatBytes(data)} />;
-export const DurationRenderer = ({ data }: { data: number }) => (
+export const BytesRenderer: React.FC<{ data: number }> = ({ data }) => (
+  <RenderValueWithUnits data={formatBytes(data)} />
+);
+
+export const DurationRenderer: React.FC<{ data: number }> = ({ data }) => (
   <GaugeData
     data={<RenderValueWithUnits data={formatDuration(data)} />}
     level={getLatencyNSLevel(data)}
@@ -358,13 +362,15 @@ interface PercentRendererProps {
   data: number;
 }
 
-export const PercentRenderer = ({ data }: PercentRendererProps) => <RenderValueWithUnits data={formatPercent(data)} />;
+export const PercentRenderer: React.FC<PercentRendererProps> = ({ data }) => (
+  <RenderValueWithUnits data={formatPercent(data)} />
+);
 
-export const ThroughputRenderer = ({ data }: PercentRendererProps) => (
+export const ThroughputRenderer: React.FC<PercentRendererProps> = ({ data }) => (
   <RenderValueWithUnits data={formatThroughput(data)} />
 );
 
-export const ThroughputBytesRenderer = ({ data }: PercentRendererProps) => (
+export const ThroughputBytesRenderer: React.FC<PercentRendererProps> = ({ data }) => (
   <RenderValueWithUnits data={formatThroughputBytes(data)} />
 );
 
@@ -393,6 +399,7 @@ export const getFormatFnMetadata = (semType: SemanticType): FormatFnMetadata => 
   return null;
 };
 
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export const formatBySemType = (semType: SemanticType, val: any): DataWithUnits => {
   const formatFnMd = getFormatFnMetadata(semType);
   if (formatFnMd) {
@@ -404,6 +411,7 @@ export const formatBySemType = (semType: SemanticType, val: any): DataWithUnits 
   };
 };
 
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export const formatByDataType = (dataType: DataType, val: any): string => {
   switch (dataType) {
     case DataType.FLOAT64:

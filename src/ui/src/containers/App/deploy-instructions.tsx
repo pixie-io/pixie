@@ -114,7 +114,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-export const DeployInstructions = () => {
+export const DeployInstructions: React.FC = () => {
   const classes = useStyles();
 
   return (
@@ -172,7 +172,7 @@ export const DeployInstructions = () => {
               </Button>
             </div>
           </div>
-          <img className={classes.logo} src={logoImage} style={{ width: '55px' }} />
+          <img alt='logo' className={classes.logo} src={logoImage} style={{ width: '55px' }} />
         </Paper>
       </div>
     </div>
@@ -183,7 +183,7 @@ interface ClusterInstructionsProps {
   message: string;
 }
 
-export const ClusterInstructions = (props: ClusterInstructionsProps) => {
+export const ClusterInstructions: React.FC<ClusterInstructionsProps> = ({ message }) => {
   const classes = useStyles();
 
   return (
@@ -191,11 +191,11 @@ export const ClusterInstructions = (props: ClusterInstructionsProps) => {
       <Paper className={classes.dialog} elevation={1}>
         <div className={classes.content}>
           <div className={classes.centered}>
-            <p>{props.message}</p>
+            <p>{message}</p>
             <Spinner />
           </div>
         </div>
-        <img className={classes.logo} src={logoImage} style={{ width: '55px' }} />
+        <img alt='logo' className={classes.logo} src={logoImage} style={{ width: '55px' }} />
       </Paper>
     </div>
   );

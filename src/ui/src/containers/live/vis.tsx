@@ -157,6 +157,7 @@ function preprocessVariables(variableValues: VariableValues, argTypes: ArgTypeMa
     if (argTypes[argName] === 'PX_STRING_LIST') {
       const elms = argVal.toString().split(',');
       const listJoined = elms.map((elm) => `'${elm}'`).join(',');
+      // noinspection UnnecessaryLocalVariableJS
       const listRepr = `[${listJoined}]\n`;
       processedVariables[argName] = listRepr;
       break;
@@ -221,7 +222,7 @@ export function getQueryFuncs(vis: Vis, variableValues: VariableValues): VizierQ
   return globalFuncs.concat(widgetFuncs);
 }
 
-export function toJSON(vis: Vis) {
+export function toJSON(vis: Vis): string {
   return JSON.stringify(vis, null, 2);
 }
 

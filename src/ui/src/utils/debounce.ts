@@ -16,11 +16,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export function debounce(func: (...args: Array<{}>) => void, wait: number) {
+export function debounce<P extends any[] = any[]>(func: (...args: P) => void, wait: number): (...args: P) => void {
   let timeout;
   let context;
   let lastArgs;
-  return function call(...args: Array<{}>) {
+  return function call(...args: P): void {
     context = this;
     lastArgs = args;
     const onTimeout = () => {

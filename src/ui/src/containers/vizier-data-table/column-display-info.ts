@@ -23,7 +23,7 @@ export interface QuantilesDisplayState {
   selectedPercentile: SelectedPercentile;
 }
 
-type TypeSpecificDisplayState = QuantilesDisplayState | {};
+type TypeSpecificDisplayState = QuantilesDisplayState | Record<string, unknown>;
 
 function defaultDisplayState(st: SemanticType) {
   if (st === SemanticType.ST_QUANTILES || st === SemanticType.ST_DURATION_NS_QUANTILES) {
@@ -42,17 +42,16 @@ export interface ColumnDisplayInfo {
 
 export function displayInfoFromColumn(col: Relation.ColumnInfo): ColumnDisplayInfo {
   const st = col.getColumnSemanticType();
-  const displayInfo: ColumnDisplayInfo = {
+  return {
     columnName: col.getColumnName(),
     baseTitle: col.getColumnName(),
     type: col.getColumnType(),
     semanticType: st,
     displayState: defaultDisplayState(st),
   };
-  return displayInfo;
 }
 
-export function titleFromInfo(col: ColumnDisplayInfo) {
+export function titleFromInfo(col: ColumnDisplayInfo): string {
   if (col.semanticType === SemanticType.ST_QUANTILES || col.semanticType === SemanticType.ST_DURATION_NS_QUANTILES) {
     const quantilesState = col.displayState as QuantilesDisplayState;
     const selectedPercentile = quantilesState.selectedPercentile || 'p99';
