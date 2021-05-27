@@ -224,20 +224,12 @@ TEST_F(AgentMetadataStateTest, initialize_md_state) {
   EXPECT_EQ("running message", container_info->state_message());
   EXPECT_EQ("running reason", container_info->state_reason());
 
-  EXPECT_THAT(state->services_by_name(),
-              UnorderedElementsAre(Pair(Pair("pl", "service1"), "service_id1")));
-  EXPECT_EQ("service_id1", state->ServiceIDByName({"pl", "service1"}));
-
   auto* service_info = state->ServiceInfoByID("service_id1");
   ASSERT_NE(nullptr, service_info);
   EXPECT_EQ(1000, service_info->start_time_ns());
   EXPECT_EQ("service_id1", service_info->uid());
   EXPECT_EQ("service1", service_info->name());
   EXPECT_EQ("pl", service_info->ns());
-
-  EXPECT_THAT(state->namespaces_by_name(),
-              UnorderedElementsAre(Pair(Pair("pl", "pl"), "namespace_1")));
-  EXPECT_EQ("namespace_1", state->NamespaceIDByName({"pl", "pl"}));
 
   auto* ns_info = state->NamespaceInfoByID("namespace_1");
   ASSERT_NE(nullptr, ns_info);
