@@ -37,6 +37,7 @@ go_library(
         "@com_github_spf13_pflag//:pflag",
         "@com_github_spf13_viper//:viper",
         "@com_google_cloud_go_storage//:storage",
+        "@org_golang_google_api//option",
     ],
 )
 

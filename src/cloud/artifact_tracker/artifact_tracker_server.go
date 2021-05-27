@@ -100,7 +100,7 @@ func main() {
 	if saCfg != nil {
 		client, err = storage.NewClient(ctx, option.WithCredentialsFile(viper.GetString("sa_key_path")))
 	} else {
-		client, err = storage.NewClient(ctx)
+		client, err = storage.NewClient(ctx, option.WithoutAuthentication())
 	}
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize GCS client.")

@@ -28,6 +28,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"google.golang.org/api/option"
 
 	"px.dev/pixie/src/cloud/scriptmgr/controller"
 	"px.dev/pixie/src/cloud/scriptmgr/scriptmgrpb"
@@ -55,7 +56,7 @@ func main() {
 
 	s := server.NewPLServer(env.New(viper.GetString("domain_name")), mux)
 
-	client, err := storage.NewClient(context.Background())
+	client, err := storage.NewClient(context.Background(), option.WithoutAuthentication())
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize GCS client.")
 	}
