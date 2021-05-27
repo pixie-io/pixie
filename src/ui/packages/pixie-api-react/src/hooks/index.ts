@@ -24,6 +24,7 @@ export * from './use-deployment-keys';
 export * from './use-is-authenticated';
 export * from './use-invitation';
 export * from './use-list-clusters';
+export * from './use-query';
 export * from './use-setting';
 export * from './use-user-info';
 export * from './use-org-users';
