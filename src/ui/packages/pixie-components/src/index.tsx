@@ -20,7 +20,7 @@ export { AuthBox } from './components/auth/auth-box';
 export { GoogleButton } from './components/auth/google-button';
 export { UsernamePasswordButton } from './components/auth/username-password-button';
 export {
-  Form, FormProps, FormField, FormStructure, PixienautForm, PixienautFormProps,
+  Form, FormField, FormStructure, PixienautForm,
 } from './components/form/form';
 export { AuthMessageBoxProps, AuthMessageBox } from './components/auth/message';
 export {

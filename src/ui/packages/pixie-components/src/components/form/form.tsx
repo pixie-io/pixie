@@ -21,23 +21,22 @@ import * as React from 'react';
 import {
   Button,
   Theme,
-  withStyles,
-  WithStyles,
+  makeStyles,
   TextField,
 } from '@material-ui/core';
 import { createStyles } from '@material-ui/styles';
 
 import { PixienautBox, PixienautImage } from 'components/auth/pixienaut-box';
 
-const styles = ({ spacing, typography }: Theme) => createStyles({
+const useStyles = makeStyles(({ spacing, typography }: Theme) => createStyles({
   button: {
-    marginTop: spacing(2),
-    paddingTop: spacing(1),
-    paddingBottom: spacing(1),
+    padding: spacing(1.5),
+    margin: `${spacing(2)} 0 ${spacing(4)}`,
     textTransform: 'uppercase',
   },
   formField: {
     display: 'block',
+    marginBottom: spacing(2),
   },
   inputLabel: {
     textTransform: 'capitalize',
@@ -46,8 +45,10 @@ const styles = ({ spacing, typography }: Theme) => createStyles({
     color: 'red',
     fontSize: typography.fontSize,
     fontFamily: typography.fontFamily,
+    whiteSpace: 'pre',
+    marginBottom: spacing(4),
   },
-});
+}));
 
 /**
  * Represents a message that should be shown above a field.
@@ -107,29 +108,25 @@ export interface FormStructure {
   defaultSubmit?: boolean;
 }
 
-export const composeMessages = (messages?: Array<FormFieldMessage>): string | null => {
-  if (!messages) {
-    return null;
-  }
-  return messages.map((m) => m.text).join('\n');
-};
+export const composeMessages = (messages?: FormFieldMessage[]): string | null => (
+  messages?.map((m) => m.text).join('\n') ?? null
+);
 
-interface FormFieldProps extends WithStyles<typeof styles>, FormField {
+interface FormFieldProps extends FormField {
   onChange?: (e: any) => void;
 }
 
-const FormFieldImpl = (props: FormFieldProps) => {
-  const { onChange } = props;
-  const field = props as FormField;
+const FormFieldImpl: React.FC<FormFieldProps> = ({ onChange, children, ...field }) => {
+  const classes = useStyles();
   // TODO(philkuz) figure out how to keep the value set OR wipe the value away beforehand to avoid this.
   // If the value is set beforehand, you can't edit the field.
   const isHidden = field.type === 'hidden';
   const value = field.value && isHidden ? { value: field.value } : {};
   return (
     <TextField
-      className={props.classes.formField}
+      className={classes.formField}
       label={isHidden ? null : field.name}
-      InputLabelProps={{ className: props.classes.inputLabel }}
+      InputLabelProps={{ className: classes.inputLabel }}
       name={field.name}
       onChange={onChange}
       disabled={field.disabled}
@@ -140,26 +137,18 @@ const FormFieldImpl = (props: FormFieldProps) => {
     />
   );
 };
-FormFieldImpl.defaultProps = {
-  onChange: null,
-};
 
-export interface FormProps extends WithStyles<typeof styles>, FormStructure {
-
-}
-
-export const Form = withStyles(styles)((props: FormProps) => {
-  const {
-    submitBtnText,
-    action,
-    fields,
-    method,
-    classes,
-    onClick,
-    onChange,
-    defaultSubmit,
-    errors,
-  } = props;
+export const Form: React.FC<FormStructure> = ({
+  submitBtnText,
+  action,
+  fields,
+  method,
+  onClick,
+  onChange,
+  defaultSubmit,
+  errors,
+}) => {
+  const classes = useStyles();
 
   const onSubmit = (e) => {
     if (onClick != null) {
@@ -185,7 +174,6 @@ export const Form = withStyles(styles)((props: FormProps) => {
         {fields.map((f) => (
           <FormFieldImpl
             key={f.name}
-            classes={classes}
             onChange={onChange}
             {...f}
           />
@@ -203,20 +191,15 @@ export const Form = withStyles(styles)((props: FormProps) => {
       </form>
     </>
   );
-});
+};
 
-export interface PixienautFormProps extends WithStyles<typeof styles> {
-  // The internal form that we should render.
-  formProps: FormStructure;
-}
-
-export const PixienautForm = withStyles(styles)(({ classes, formProps }: PixienautFormProps) => {
+export const PixienautForm: React.FC<{ formProps: FormStructure }> = ({ formProps }) => {
   const hasError = formProps.errors != null;
   const image: PixienautImage = hasError ? 'octopus' : 'balloon';
 
   return (
     <PixienautBox image={image}>
-      <Form classes={classes} {...formProps} />
+      <Form {...formProps} />
     </PixienautBox>
   );
-});
+};
