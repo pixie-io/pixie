@@ -17,7 +17,7 @@
  */
 
 import { GQLClusterInfo as Cluster, GQLClusterStatus as ClusterStatus } from '@pixie-labs/api';
-import { selectCluster } from './cluster-info';
+import { selectClusterName } from './cluster-info';
 
 describe('selectCluster', () => {
   const commonClusterProps = {
@@ -57,7 +57,7 @@ describe('selectCluster', () => {
       },
     ];
 
-    expect(selectCluster(clusters)).toStrictEqual({ ...clusters[1] });
+    expect(selectClusterName(clusters)).toStrictEqual(clusters[1].clusterName);
   });
 
   it('should select the right default cluster with no ClusterStatus.CS_HEALTHY clusters', () => {
@@ -88,6 +88,6 @@ describe('selectCluster', () => {
       },
     ];
 
-    expect(selectCluster(clusters)).toStrictEqual({ ...clusters[2] });
+    expect(selectClusterName(clusters)).toStrictEqual(clusters[2].clusterName);
   });
 });

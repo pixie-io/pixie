@@ -26,7 +26,7 @@ import { LocationDescriptorObject } from 'history';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'containers/App/scripts-context';
 import { parseVisSilently } from 'containers/live/vis';
 import { RouteNotFound } from 'containers/App/route-not-found';
-import { selectCluster } from 'containers/App/cluster-info';
+import { selectClusterName } from 'containers/App/cluster-info';
 import { useListClusters } from '@pixie-labs/api-react';
 import { argsForVis } from 'utils/args-utils';
 
@@ -118,7 +118,7 @@ const replace = (
 
 export const VizierContextRouter: React.FC = ({ children }) => {
   const [clusters, loadingCluster] = useListClusters();
-  const defaultCluster = React.useMemo(() => selectCluster(clusters ?? []), [clusters])?.clusterName;
+  const defaultCluster = React.useMemo(() => selectClusterName(clusters ?? []), [clusters]);
 
   const { scripts: availableScripts, loading: loadingAvailableScripts } = React.useContext(ScriptsContext);
 

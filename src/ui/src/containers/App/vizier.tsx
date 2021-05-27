@@ -36,7 +36,7 @@ import { GQLClusterInfo as Cluster, GQLClusterStatus as ClusterStatus, GQLUserIn
 import { useListClusters, useClusterPassthroughInfo, useQuery } from '@pixie-labs/api-react';
 import { gql } from '@apollo/client';
 import { DeployInstructions } from './deploy-instructions';
-import { selectCluster } from './cluster-info';
+import { selectClusterName } from './cluster-info';
 import { RouteNotFound } from './route-not-found';
 import { VizierRouteContext, VizierContextRouter } from './vizier-routing';
 
@@ -71,7 +71,7 @@ const ClusterWarningBanner: React.FC<{ user: Pick<GQLUserInfo, 'email' | 'orgNam
 // Convenience routes: sends `/scratch`, `/script/http_data`, and others to the appropriate Live url.
 const ScriptShortcut = ({ match, location }) => {
   const [clusters] = useListClusters();
-  const cluster = React.useMemo(() => selectCluster(clusters ?? []), [clusters])?.clusterName;
+  const cluster = React.useMemo(() => selectClusterName(clusters ?? []), [clusters]);
 
   if (cluster == null) return null; // Wait for things to be ready
 
