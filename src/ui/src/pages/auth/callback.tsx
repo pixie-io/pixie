@@ -77,10 +77,7 @@ const trackAuthEvent = (event: string, id: string, email: string): Promise<void>
   if (isValidAnalytics()) {
     return Promise.race([
       new Promise<void>((resolve, reject) => { // Wait for analytics to be sent out before redirecting.
-        analytics.track(event, (err) => {
-          if (err) {
-            reject();
-          }
+        analytics.track(event, () => {
           analytics.identify(id, { email }, {}, () => {
             resolve();
           });
@@ -125,30 +122,32 @@ export const AuthCallbackPage: React.FC = () => {
   };
 
   const performSignup = async (accessToken: string) => {
+    let response = null;
     try {
-      const response = await Axios.post('/api/auth/signup', { accessToken });
-      await trackAuthEvent('User signed up', response.data.userInfo.userID, response.data.userInfo.email);
-      return true;
+      response = await Axios.post('/api/auth/signup', { accessToken });
     } catch (err) {
       analytics.track('User signup failed', { error: err.response.data });
       handleHTTPError(err as AxiosError);
       return false;
     }
+    await trackAuthEvent('User signed up', response.data.userInfo.userID, response.data.userInfo.email);
+    return true;
   };
 
   const performUILogin = async (accessToken: string, orgName: string) => {
+    let response = null;
     try {
-      const response = await Axios.post('/api/auth/login', {
+      response = await Axios.post('/api/auth/login', {
         accessToken,
         orgName,
       });
-      await trackAuthEvent('User logged in', response.data.userInfo.userID, response.data.userInfo.email);
-      return true;
     } catch (err) {
       analytics.track('User login failed', { error: err.response.data });
       handleHTTPError(err as AxiosError);
       return false;
     }
+    await trackAuthEvent('User logged in', response.data.userInfo.userID, response.data.userInfo.email);
+    return true;
   };
 
   const sendTokenToCLI = async (accessToken: string, redirectURI: string) => {
