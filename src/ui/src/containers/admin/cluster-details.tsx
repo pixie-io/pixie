@@ -18,6 +18,7 @@
 
 import * as React from 'react';
 
+import { gql } from '@apollo/client';
 import ClientContext, { VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
 import { Breadcrumbs, StatusCell, StatusGroup } from '@pixie-labs/components';
 import { distanceInWords } from 'date-fns';
@@ -40,11 +41,12 @@ import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 
 import {
   ExecutionStateUpdate,
+  GQLClusterInfo,
   GQLClusterStatus as ClusterStatus,
   GQLPodStatus as PodStatus,
   GQLContainerStatus as ContainerStatus, VizierQueryResult,
 } from '@pixie-labs/api';
-import { useListClustersVerbose, useClusterControlPlanePods } from '@pixie-labs/api-react';
+import { useQuery } from '@pixie-labs/api-react';
 import { BehaviorSubject } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
 import {
@@ -171,9 +173,9 @@ const AgentsTable = () => {
 
   React.useEffect(() => {
     if (!client) {
-      return () => { }; // noop
+      return () => {}; // noop
     }
-    const executionSubject = new BehaviorSubject<ExecutionStateUpdate|null>(null);
+    const executionSubject = new BehaviorSubject<ExecutionStateUpdate | null>(null);
     const fetchAgentStatus = () => {
       const onResults = (results: VizierQueryResult) => {
         if (!results.schemaOnly) {
@@ -351,20 +353,13 @@ const ExpandablePodRow: React.FC<{ podStatus: GroupedPodStatus }> = (({ podStatu
   );
 });
 
-const ControlPlanePodsTable = ({ selectedClusterName }) => {
-  const [clusters, loading] = useClusterControlPlanePods();
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-  const cluster = clusters?.find((c) => c.clusterName === selectedClusterName);
+const ControlPlanePodsTable: React.FC<{
+  cluster: Pick<GQLClusterInfo, 'id' | 'clusterName' | 'controlPlanePodStatuses'>
+}> = ({ cluster }) => {
   if (!cluster) {
     return (
       <div>
-        Cluster
-        {' '}
-        {selectedClusterName}
-        {' '}
-        not found.
+        Cluster not found.
       </div>
     );
   }
@@ -387,13 +382,25 @@ const ControlPlanePodsTable = ({ selectedClusterName }) => {
   );
 };
 
-const ClusterDetailsNavigation = ({ selectedClusterName }) => {
+const ClusterDetailsNavigationBreadcrumbs = ({ selectedClusterName }) => {
   const history = useHistory();
-  const [clusters, loading] = useClusterControlPlanePods();
+  const { data, loading, error } = useQuery<{
+    clusters: Pick<GQLClusterInfo, 'id' | 'clusterName' | 'prettyClusterName' | 'status'>[],
+  }>(gql`
+    query clusterNavigationData{
+      clusters {
+        clusterName
+        prettyClusterName
+        status
+      }
+    }
+  `, {});
+  const clusters = data?.clusters;
 
-  if (loading || !clusters) {
-    return (<div>Loading...</div>);
+  if (loading || error || !clusters) {
+    return (<Breadcrumbs breadcrumbs={[]} />);
   }
+
   // Cluster always goes first in breadcrumbs.
   const clusterPrettyNameToFullName = {};
   let selectedClusterPrettyName = 'unknown cluster';
@@ -418,13 +425,7 @@ const ClusterDetailsNavigation = ({ selectedClusterName }) => {
       history.push(getClusterDetailsURL(clusterPrettyNameToFullName[input]));
     },
   }];
-  return (
-    <StyledBreadcrumbs>
-      <StyledBreadcrumbLink to='/admin'>Admin</StyledBreadcrumbLink>
-      <StyledBreadcrumbLink to='/admin'>Clusters</StyledBreadcrumbLink>
-      <Breadcrumbs breadcrumbs={breadcrumbs} />
-    </StyledBreadcrumbs>
-  );
+  return (<Breadcrumbs breadcrumbs={breadcrumbs} />);
 };
 
 const useClusterDetailStyles = makeStyles((theme: Theme) => createStyles({
@@ -440,13 +441,40 @@ const useClusterDetailStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-export const ClusterDetails: React.FC = () => {
+const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) => {
   const classes = useClusterDetailStyles();
-  const { name } = useParams<{ name: string }>();
-  const clusterName = decodeURIComponent(name);
-
   const [tab, setTab] = React.useState('agents');
-  const [clusters, loading, error] = useListClustersVerbose();
+
+  const { data, loading, error } = useQuery<{
+    clusterByName: Pick<GQLClusterInfo, 'id' | 'clusterName' | 'vizierConfig' | 'status' | 'controlPlanePodStatuses'>
+  }>(
+    gql`
+    query GetClusterByName($name: String!) {
+      clusterByName(name: $name) {
+          id
+          clusterName
+          status
+          vizierConfig {
+            passthroughEnabled
+          }
+          controlPlanePodStatuses {
+            name
+            status
+            message
+            reason
+            containers {
+              name
+              state
+              reason
+              message
+            }
+            events {
+              message
+            }
+          }
+      }
+    }`, { variables: { name: clusterName } },
+  );
 
   if (loading) {
     return <div className={classes.error}>Loading...</div>;
@@ -454,19 +482,16 @@ export const ClusterDetails: React.FC = () => {
   if (error) {
     return <div className={classes.error}>{error.toString()}</div>;
   }
-  if (!clusters) {
-    return <div className={classes.error}>No clusters found.</div>;
-  }
 
-  const cluster = clusters.find((c) => c.clusterName === clusterName);
+  const cluster = data?.clusterByName;
+
   if (!cluster) {
     return (
       <>
-        <ClusterDetailsNavigation selectedClusterName={clusterName} />
         <div className={classes.error}>
           Cluster
           {' '}
-          {name}
+          {clusterName}
           {' '}
           not found.
         </div>
@@ -477,8 +502,7 @@ export const ClusterDetails: React.FC = () => {
   const statusGroup = clusterStatusGroup(cluster.status);
 
   return (
-    <div>
-      <ClusterDetailsNavigation selectedClusterName={clusterName} />
+    <>
       <StyledTabs
         value={tab}
         onChange={(event, newTab) => setTab(newTab)}
@@ -516,11 +540,27 @@ export const ClusterDetails: React.FC = () => {
           tab === 'control-plane-pods'
           && (
             <TableContainer className={classes.container}>
-              <ControlPlanePodsTable selectedClusterName={clusterName} />
+              <ControlPlanePodsTable cluster={cluster} />
             </TableContainer>
           )
         }
       </div>
+    </>
+  );
+};
+
+export const ClusterDetails: React.FC = () => {
+  const { name } = useParams<{ name: string }>();
+  const clusterName = decodeURIComponent(name);
+
+  return (
+    <div>
+      <StyledBreadcrumbs>
+        <StyledBreadcrumbLink to='/admin'>Admin</StyledBreadcrumbLink>
+        <StyledBreadcrumbLink to='/admin'>Clusters</StyledBreadcrumbLink>
+        <ClusterDetailsNavigationBreadcrumbs selectedClusterName={clusterName} />
+      </StyledBreadcrumbs>
+      <ClusterDetailsTabs clusterName={clusterName} />
     </div>
   );
 };
