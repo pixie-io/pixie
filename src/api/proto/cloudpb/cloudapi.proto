@@ -40,6 +40,9 @@ import "src/api/proto/vispb/vis.proto";
 service OrganizationService {
   // Create an Invite Link that a new user can follow to create a password for their account.
   rpc InviteUser(InviteUserRequest) returns (InviteUserResponse);
+  rpc GetOrg(px.uuidpb.UUID) returns (OrgInfo);
+  rpc UpdateOrg(UpdateOrgRequest) returns (OrgInfo);
+  rpc GetUsersInOrg(GetUsersInOrgRequest) returns (GetUsersInOrgResponse);
 }
 
 message InviteUserRequest {
@@ -631,4 +634,42 @@ message OrgInfo {
   px.uuidpb.UUID id = 1 [ (gogoproto.customname) = "ID" ];
   // The name of the organization.
   string org_name = 2;
+  // The last part of their email.
+  string domain_name = 3;
+  // Whether this org requires admin approval to authorize new users.
+  bool enable_approvals = 4;
+}
+
+message UpdateOrgRequest {
+  // The ID of the org.
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  // Whether to enable/disable the requirement for admins to approve new users.
+  google.protobuf.BoolValue enable_approvals = 2;
+}
+
+// A request to get all users in the given org. This org must match the user's org,
+// verified in the augmented token.
+message GetUsersInOrgRequest {
+  // The org to get the users of.
+  px.uuidpb.UUID org_id = 1 [(gogoproto.customname) = "OrgID"];
+}
+
+// The response to a GetUsersInOrgRequest.
+message GetUsersInOrgResponse {
+  // The users in the requested org.
+  repeated UserInfo users = 1;
+}
+
+// UserInfo has information about a single end user in our system.
+message UserInfo {
+  // The ID of the user.
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  // The ID of the organization that they belong to.
+  px.uuidpb.UUID org_id = 2 [(gogoproto.customname) = "OrgID"];
+  string username = 3;
+  string first_name = 4;
+  string last_name = 5;
+  string email = 6;
+  string profile_picture = 7;
+  bool is_approved = 8;
 }

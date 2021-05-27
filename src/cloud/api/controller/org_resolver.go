@@ -69,8 +69,8 @@ func (q *QueryResolver) OrgUsers(ctx context.Context) ([]*UserInfoResolver, erro
 	if err != nil {
 		return nil, err
 	}
-	grpcAPI := q.Env.ProfileServiceClient
-	resp, err := grpcAPI.GetUsersInOrg(ctx, &profilepb.GetUsersInOrgRequest{
+	grpcAPI := q.Env.OrgServer
+	resp, err := grpcAPI.GetUsersInOrg(ctx, &cloudpb.GetUsersInOrgRequest{
 		OrgID: utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().OrgID),
 	})
 	if err != nil {
@@ -78,8 +78,17 @@ func (q *QueryResolver) OrgUsers(ctx context.Context) ([]*UserInfoResolver, erro
 	}
 
 	userResolvers := make([]*UserInfoResolver, len(resp.Users))
-	for i := range resp.Users {
-		userResolvers[i] = &UserInfoResolver{sCtx, &q.Env, ctx, resp.Users[i]}
+	for idx, user := range resp.Users {
+		userResolvers[idx] = &UserInfoResolver{sCtx, &q.Env, ctx, &profilepb.UserInfo{
+			ID:             user.ID,
+			OrgID:          user.OrgID,
+			Username:       user.Username,
+			FirstName:      user.FirstName,
+			LastName:       user.LastName,
+			Email:          user.Email,
+			ProfilePicture: user.ProfilePicture,
+			IsApproved:     user.IsApproved,
+		}}
 	}
 
 	return userResolvers, nil
@@ -87,7 +96,7 @@ func (q *QueryResolver) OrgUsers(ctx context.Context) ([]*UserInfoResolver, erro
 
 // UpdateOrg updates the org info.
 func (q *QueryResolver) UpdateOrg(ctx context.Context, args *updateOrgArgs) (bool, error) {
-	req := &profilepb.UpdateOrgRequest{
+	req := &cloudpb.UpdateOrgRequest{
 		ID: utils.ProtoFromUUIDStrOrNil(string(args.OrgInfo.ID)),
 	}
 
@@ -97,8 +106,8 @@ func (q *QueryResolver) UpdateOrg(ctx context.Context, args *updateOrgArgs) (boo
 		}
 	}
 
-	// TODO(philkuz)(PC-921) Use a graphQL API instead of ProfileServiceClient.
-	_, err := q.Env.ProfileServiceClient.UpdateOrg(ctx, req)
+	grpcAPI := q.Env.OrgServer
+	_, err := grpcAPI.UpdateOrg(ctx, req)
 	if err != nil {
 		return false, err
 	}
@@ -119,7 +128,7 @@ type OrgInfoResolver struct {
 	SessionCtx *authcontext.AuthContext
 	GQLEnv     *GraphQLEnv
 	ctx        context.Context
-	OrgInfo    *profilepb.OrgInfo
+	OrgInfo    *cloudpb.OrgInfo
 }
 
 // Org resolves org information.
@@ -128,12 +137,11 @@ func (q *QueryResolver) Org(ctx context.Context) (*OrgInfoResolver, error) {
 	if err != nil {
 		return nil, err
 	}
-	grpcAPI := q.Env.ProfileServiceClient
+	grpcAPI := q.Env.OrgServer
 	orgInfo, err := grpcAPI.GetOrg(ctx, utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().OrgID))
 	if err != nil {
 		orgInfo = nil
 	}
-
 	return &OrgInfoResolver{sCtx, &q.Env, ctx, orgInfo}, nil
 }
 

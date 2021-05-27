@@ -240,6 +240,9 @@ func main() {
 	profileServer := &controller.ProfileServer{ProfileServiceClient: pc}
 	cloudpb.RegisterProfileServiceServer(s.GRPCServer(), profileServer)
 
+	os := &controller.OrganizationServiceServer{ProfileServiceClient: pc}
+	cloudpb.RegisterOrganizationServiceServer(s.GRPCServer(), os)
+
 	gqlEnv := controller.GraphQLEnv{
 		ArtifactTrackerServer: artifactTrackerServer,
 		VizierClusterInfo:     cis,
@@ -247,7 +250,7 @@ func main() {
 		APIKeyMgr:             aks,
 		ScriptMgrServer:       sms,
 		AutocompleteServer:    as,
-		OrgServer:             profileServer,
+		OrgServer:             os,
 		ProfileServiceClient:  pc,
 	}
 

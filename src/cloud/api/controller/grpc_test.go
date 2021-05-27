@@ -1067,7 +1067,7 @@ func TestProfileServer_GetOrgInfo(t *testing.T) {
 	assert.Equal(t, orgID, resp.ID)
 }
 
-func TestProfileServer_InviteUser(t *testing.T) {
+func TestOrganizationServiceServer_InviteUser(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -1088,9 +1088,9 @@ func TestProfileServer_InviteUser(t *testing.T) {
 			InviteLink: "withpixie.ai/invite&id=abcd",
 		}, nil)
 
-	profileServer := &controller.ProfileServer{mockClients.MockProfile}
+	os := &controller.OrganizationServiceServer{mockClients.MockProfile}
 
-	resp, err := profileServer.InviteUser(ctx, &cloudpb.InviteUserRequest{
+	resp, err := os.InviteUser(ctx, &cloudpb.InviteUserRequest{
 		Email:     "bobloblaw@lawblog.law",
 		FirstName: "bob",
 		LastName:  "loblaw",

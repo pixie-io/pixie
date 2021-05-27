@@ -26,27 +26,20 @@ import (
 	"github.com/graph-gophers/graphql-go/gqltesting"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
-	"px.dev/pixie/src/cloud/api/controller"
 	gqltestutils "px.dev/pixie/src/cloud/api/controller/testutils"
-	"px.dev/pixie/src/cloud/profile/profilepb"
-	mock_profile "px.dev/pixie/src/cloud/profile/profilepb/mock"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/testingutils"
 )
 
 func TestUserSettingsResolver_UpdateOrg(t *testing.T) {
-	_, mockClients, cleanup := gqltestutils.CreateTestAPIEnv(t)
+	gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	mockClients.MockProfile.EXPECT().UpdateOrg(gomock.Any(), &profilepb.UpdateOrgRequest{
+	mockClients.MockOrg.EXPECT().UpdateOrg(gomock.Any(), &cloudpb.UpdateOrgRequest{
 		ID:              utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9"),
 		EnableApprovals: &types.BoolValue{Value: true},
 	}).Return(nil, nil)
-
-	gqlEnv := controller.GraphQLEnv{
-		ProfileServiceClient: mockClients.MockProfile,
-	}
 
 	gqlSchema := LoadSchema(gqlEnv)
 	gqltesting.RunTests(t, []*gqltesting.Test{
@@ -107,25 +100,24 @@ func TestUserSettingsResolver_InviteUser(t *testing.T) {
 }
 
 func TestUserSettingsResolver_OrgUsers(t *testing.T) {
-	gqlEnv, _, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
+	gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	ctrl := gomock.NewController(t)
-	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-	mockProfile.EXPECT().
-		GetUsersInOrg(gomock.Any(), &profilepb.GetUsersInOrgRequest{
+	//mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockClients.MockOrg.EXPECT().
+		GetUsersInOrg(gomock.Any(), &cloudpb.GetUsersInOrgRequest{
 			OrgID: utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
 		}).
-		Return(&profilepb.GetUsersInOrgResponse{
-			Users: []*profilepb.UserInfo{
-				&profilepb.UserInfo{
+		Return(&cloudpb.GetUsersInOrgResponse{
+			Users: []*cloudpb.UserInfo{
+				&cloudpb.UserInfo{
 					FirstName:  "first",
 					LastName:   "last",
 					IsApproved: false,
 					Email:      "user@test.com",
 				},
-				&profilepb.UserInfo{
+				&cloudpb.UserInfo{
 					FirstName:  "test",
 					LastName:   "user",
 					IsApproved: true,
@@ -133,7 +125,6 @@ func TestUserSettingsResolver_OrgUsers(t *testing.T) {
 				},
 			},
 		}, nil)
-	gqlEnv.ProfileServiceClient = mockProfile
 	gqlSchema := LoadSchema(gqlEnv)
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
@@ -162,20 +153,17 @@ func TestUserSettingsResolver_OrgUsers(t *testing.T) {
 }
 
 func TestUserSettingsResolver_OrgInfo(t *testing.T) {
-	gqlEnv, _, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
+	gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	ctrl := gomock.NewController(t)
-	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-	mockProfile.EXPECT().
+	mockClients.MockOrg.EXPECT().
 		GetOrg(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
-		Return(&profilepb.OrgInfo{
+		Return(&cloudpb.OrgInfo{
 			EnableApprovals: true,
 			OrgName:         "test.com",
 			ID:              utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
 		}, nil)
-	gqlEnv.ProfileServiceClient = mockProfile
 	gqlSchema := LoadSchema(gqlEnv)
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{

@@ -39,8 +39,7 @@ type GraphQLEnv struct {
 	ScriptMgrServer       cloudpb.ScriptMgrServer
 	AutocompleteServer    cloudpb.AutocompleteServiceServer
 	OrgServer             cloudpb.OrganizationServiceServer
-
-	ProfileServiceClient profilepb.ProfileServiceClient
+	ProfileServiceClient  profilepb.ProfileServiceClient
 }
 
 // QueryResolver resolves queries for GQL.

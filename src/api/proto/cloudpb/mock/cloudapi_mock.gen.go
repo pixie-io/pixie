@@ -38,6 +38,46 @@ func (m *MockOrganizationServiceClient) EXPECT() *MockOrganizationServiceClientM
 	return m.recorder
 }
 
+// GetOrg mocks base method.
+func (m *MockOrganizationServiceClient) GetOrg(ctx context.Context, in *uuidpb.UUID, opts ...grpc.CallOption) (*cloudpb.OrgInfo, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetOrg", varargs...)
+	ret0, _ := ret[0].(*cloudpb.OrgInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrg indicates an expected call of GetOrg.
+func (mr *MockOrganizationServiceClientMockRecorder) GetOrg(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrg", reflect.TypeOf((*MockOrganizationServiceClient)(nil).GetOrg), varargs...)
+}
+
+// GetUsersInOrg mocks base method.
+func (m *MockOrganizationServiceClient) GetUsersInOrg(ctx context.Context, in *cloudpb.GetUsersInOrgRequest, opts ...grpc.CallOption) (*cloudpb.GetUsersInOrgResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetUsersInOrg", varargs...)
+	ret0, _ := ret[0].(*cloudpb.GetUsersInOrgResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUsersInOrg indicates an expected call of GetUsersInOrg.
+func (mr *MockOrganizationServiceClientMockRecorder) GetUsersInOrg(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersInOrg", reflect.TypeOf((*MockOrganizationServiceClient)(nil).GetUsersInOrg), varargs...)
+}
+
 // InviteUser mocks base method.
 func (m *MockOrganizationServiceClient) InviteUser(ctx context.Context, in *cloudpb.InviteUserRequest, opts ...grpc.CallOption) (*cloudpb.InviteUserResponse, error) {
 	m.ctrl.T.Helper()
@@ -56,6 +96,26 @@ func (mr *MockOrganizationServiceClientMockRecorder) InviteUser(ctx, in interfac
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InviteUser", reflect.TypeOf((*MockOrganizationServiceClient)(nil).InviteUser), varargs...)
+}
+
+// UpdateOrg mocks base method.
+func (m *MockOrganizationServiceClient) UpdateOrg(ctx context.Context, in *cloudpb.UpdateOrgRequest, opts ...grpc.CallOption) (*cloudpb.OrgInfo, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateOrg", varargs...)
+	ret0, _ := ret[0].(*cloudpb.OrgInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateOrg indicates an expected call of UpdateOrg.
+func (mr *MockOrganizationServiceClientMockRecorder) UpdateOrg(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrg", reflect.TypeOf((*MockOrganizationServiceClient)(nil).UpdateOrg), varargs...)
 }
 
 // MockOrganizationServiceServer is a mock of OrganizationServiceServer interface.
@@ -81,6 +141,36 @@ func (m *MockOrganizationServiceServer) EXPECT() *MockOrganizationServiceServerM
 	return m.recorder
 }
 
+// GetOrg mocks base method.
+func (m *MockOrganizationServiceServer) GetOrg(arg0 context.Context, arg1 *uuidpb.UUID) (*cloudpb.OrgInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetOrg", arg0, arg1)
+	ret0, _ := ret[0].(*cloudpb.OrgInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrg indicates an expected call of GetOrg.
+func (mr *MockOrganizationServiceServerMockRecorder) GetOrg(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrg", reflect.TypeOf((*MockOrganizationServiceServer)(nil).GetOrg), arg0, arg1)
+}
+
+// GetUsersInOrg mocks base method.
+func (m *MockOrganizationServiceServer) GetUsersInOrg(arg0 context.Context, arg1 *cloudpb.GetUsersInOrgRequest) (*cloudpb.GetUsersInOrgResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUsersInOrg", arg0, arg1)
+	ret0, _ := ret[0].(*cloudpb.GetUsersInOrgResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUsersInOrg indicates an expected call of GetUsersInOrg.
+func (mr *MockOrganizationServiceServerMockRecorder) GetUsersInOrg(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersInOrg", reflect.TypeOf((*MockOrganizationServiceServer)(nil).GetUsersInOrg), arg0, arg1)
+}
+
 // InviteUser mocks base method.
 func (m *MockOrganizationServiceServer) InviteUser(arg0 context.Context, arg1 *cloudpb.InviteUserRequest) (*cloudpb.InviteUserResponse, error) {
 	m.ctrl.T.Helper()
@@ -94,6 +184,21 @@ func (m *MockOrganizationServiceServer) InviteUser(arg0 context.Context, arg1 *c
 func (mr *MockOrganizationServiceServerMockRecorder) InviteUser(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InviteUser", reflect.TypeOf((*MockOrganizationServiceServer)(nil).InviteUser), arg0, arg1)
+}
+
+// UpdateOrg mocks base method.
+func (m *MockOrganizationServiceServer) UpdateOrg(arg0 context.Context, arg1 *cloudpb.UpdateOrgRequest) (*cloudpb.OrgInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateOrg", arg0, arg1)
+	ret0, _ := ret[0].(*cloudpb.OrgInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateOrg indicates an expected call of UpdateOrg.
+func (mr *MockOrganizationServiceServerMockRecorder) UpdateOrg(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrg", reflect.TypeOf((*MockOrganizationServiceServer)(nil).UpdateOrg), arg0, arg1)
 }
 
 // MockAuthServiceClient is a mock of AuthServiceClient interface.
