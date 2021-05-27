@@ -29,7 +29,7 @@ import * as React from 'react';
 import * as GridLayout from 'react-grid-layout';
 import { resizeEvent, triggerResize } from 'utils/resize';
 import { dataFromProto } from 'utils/result-data-utils';
-import { Alert, AlertTitle } from '@material-ui/lab';
+import { Alert, AlertTitle } from '@material-ui/core';
 import { VizierErrorDetails } from 'common/errors';
 import { VizierQueryError, containsMutation } from '@pixie-labs/api';
 

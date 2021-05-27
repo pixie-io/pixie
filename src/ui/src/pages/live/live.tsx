@@ -26,9 +26,8 @@ import {
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import {
-  Link, Tooltip, IconButton,
+  Alert, AlertTitle, Link, Tooltip, IconButton,
 } from '@material-ui/core';
-import { Alert, AlertTitle } from '@material-ui/lab';
 import MoveIcon from '@material-ui/icons/OpenWith';
 
 import { Copyright } from 'configurable/copyright';
