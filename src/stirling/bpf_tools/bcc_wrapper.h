@@ -295,6 +295,22 @@ class BCCWrapper {
   Status AttachPerfEvents(const ArrayView<PerfEventSpec>& perf_events);
 
   /**
+   * Convenience function that populates a BPFPerfEventArray (aka BPF_PERF_ARRAY), used to directly
+   * read CPU perf counters from within a BPF program. If the counts read from said
+   * counters are needed on the user side (vs. BPF side), then another shared array
+   * or map is required to store those values.
+   * @param table_name The name of the BPF_PERF_ARRAY from its declarion in the BPF program.
+   * @param type PERF_TYPE_HARDWARE, PERF_TYPE_SOFTWARE, etc...
+   * @param config PERF_COUNT_HW_CPU_CYCLES, PERF_COUNT_HW_INSTRUCTIONS, etc...
+   * @return Error status.
+   */
+  Status PopulateBPFPerfArray(const std::string& table_name, const uint32_t type,
+                              const uint64_t config) {
+    PL_RETURN_IF_ERROR(bpf_.open_perf_event(table_name, type, config));
+    return Status::OK();
+  }
+
+  /**
    * Drains all of the opened perf buffers, calling the handle function that was
    * specified in the PerfBufferSpec when OpenPerfBuffer was called.
    *
