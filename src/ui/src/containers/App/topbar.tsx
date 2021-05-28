@@ -30,7 +30,7 @@ import {
   Avatar, ProfileMenuWrapper, CodeIcon,
   LogoutIcon, SettingsIcon,
 } from '@pixie-labs/components';
-import { useSetting, useUserInfo } from '@pixie-labs/api-react';
+import { useSetting, useQuery } from '@pixie-labs/api-react';
 import { LiveShortcutsContext } from 'containers/live/shortcuts';
 import { SidebarContext } from 'context/sidebar-context';
 import { LiveTourContext, LiveTourDialog } from 'containers/App/live-tour';
@@ -42,6 +42,8 @@ import ExploreIcon from '@material-ui/icons/Explore';
 import KeyboardIcon from '@material-ui/icons/Keyboard';
 import { Link } from 'react-router-dom';
 import { Logo } from 'configurable/logo';
+import { GQLUserInfo } from '@pixie-labs/api';
+import { gql } from '@apollo/client';
 
 const StyledListItemText = withStyles((theme: Theme) => createStyles({
   primary: {
@@ -56,7 +58,7 @@ const StyledListItemIcon = withStyles(() => createStyles({
 }))(ListItemIcon);
 
 const ProfileItem = ({
-  classes, userInfo, setSidebarOpen,
+  classes, setSidebarOpen,
 }) => {
   const [open, setOpen] = React.useState<boolean>(false);
   const { setTourOpen } = React.useContext(LiveTourContext);
@@ -67,6 +69,20 @@ const ProfileItem = ({
   const [anchorEl, setAnchorEl] = React.useState(null);
   const shortcuts = React.useContext(LiveShortcutsContext);
   const { inLiveView } = React.useContext(SidebarContext);
+
+  const { data } = useQuery<{
+    user: Pick<GQLUserInfo, 'name' | 'picture' | 'id' | 'email' >,
+  }>(gql`
+    query userForProfileMenu{
+      user {
+        id
+        name
+        email
+        picture
+      }
+    }
+  `, {});
+  const userInfo = data?.user;
 
   const openMenu = React.useCallback((event) => {
     setOpen(true);
@@ -187,24 +203,20 @@ const ProfileItem = ({
 
 const TopBarImpl = ({
   classes, children, toggleSidebar, setSidebarOpen,
-}) => {
-  const [{ user: userInfo }] = useUserInfo();
-
-  return (
-    <AppBar className={classes.container} position='static'>
-      <Toolbar>
-        <IconButton edge='start' color='inherit' aria-label='menu' sx={{ mr: 2 }} onClick={toggleSidebar}>
-          <MenuIcon className={classes.menu} />
-        </IconButton>
-        <Link to='/'><Logo /></Link>
-        <div className={classes.contents}>
-          { children }
-        </div>
-        <ProfileItem classes={classes} userInfo={userInfo} setSidebarOpen={setSidebarOpen} />
-      </Toolbar>
-    </AppBar>
-  );
-};
+}) => (
+  <AppBar className={classes.container} position='static'>
+    <Toolbar>
+      <IconButton edge='start' color='inherit' aria-label='menu' sx={{ mr: 2 }} onClick={toggleSidebar}>
+        <MenuIcon className={classes.menu} />
+      </IconButton>
+      <Link to='/'><Logo /></Link>
+      <div className={classes.contents}>
+        { children }
+      </div>
+      <ProfileItem classes={classes} setSidebarOpen={setSidebarOpen} />
+    </Toolbar>
+  </AppBar>
+);
 
 export const TopBar = withStyles((theme: Theme) => createStyles({
   container: {

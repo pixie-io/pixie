@@ -32,8 +32,9 @@ import * as QueryString from 'query-string';
 import { makeStyles } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import { useLDClient } from 'launchdarkly-react-client-sdk';
-import { GQLClusterInfo as Cluster, GQLClusterStatus as ClusterStatus } from '@pixie-labs/api';
-import { useListClusters, useClusterPassthroughInfo, useUserInfo } from '@pixie-labs/api-react';
+import { GQLClusterInfo as Cluster, GQLClusterStatus as ClusterStatus, GQLUserInfo } from '@pixie-labs/api';
+import { useListClusters, useClusterPassthroughInfo, useQuery } from '@pixie-labs/api-react';
+import { gql } from '@apollo/client';
 import { DeployInstructions } from './deploy-instructions';
 import { selectCluster } from './cluster-info';
 import { RouteNotFound } from './route-not-found';
@@ -51,13 +52,8 @@ const useStyles = makeStyles(() => createStyles({
   },
 }));
 
-const ClusterWarningBanner = () => {
+const ClusterWarningBanner: React.FC<{ user: Pick<GQLUserInfo, 'email' | 'orgName' > }> = ({ user }) => {
   const classes = useStyles();
-  const [{ user }, loading, error] = useUserInfo();
-
-  if (loading || error) {
-    return null;
-  }
 
   if (user?.email.split('@')[1] === 'pixie.support') {
     return (
@@ -228,7 +224,18 @@ const VizierWithProvider = () => (
 
 export default function PixieWithContext(): React.ReactElement {
   const showSnackbar = useSnackbar();
-  const [{ user }, loadingUser, userError] = useUserInfo();
+  const { data, loading: loadingUser, error: userError } = useQuery<{
+    user: Pick<GQLUserInfo, 'email' | 'orgName' >,
+  }>(gql`
+    query userInfoForContext{
+      user {
+        orgName
+        email
+      }
+    }
+  `);
+
+  const user = data?.user;
   const userEmail = user?.email;
   const userOrg = user?.orgName;
   const ldClient = useLDClient();
@@ -264,7 +271,7 @@ export default function PixieWithContext(): React.ReactElement {
   if (loadingUser) { return <div>Loading...</div>; }
   return (
     <UserContext.Provider value={userContext}>
-      <ClusterWarningBanner />
+      <ClusterWarningBanner user={user} />
       <Switch>
         <Route path='/admin' component={AdminView} />
         <Route path='/credits' component={CreditsView} />

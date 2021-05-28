@@ -18,7 +18,9 @@
 
 import * as React from 'react';
 import { GetPxScripts, Script } from 'utils/script-bundle';
-import { useUserInfo } from '@pixie-labs/api-react';
+import { GQLUserInfo } from '@pixie-labs/api';
+import { useQuery } from '@pixie-labs/api-react';
+import { gql } from '@apollo/client';
 
 export interface ScriptsContextProps {
   scripts: Map<string, Script>;
@@ -41,7 +43,18 @@ export const SCRATCH_SCRIPT: Script = {
 };
 
 export const ScriptsContextProvider: React.FC = ({ children }) => {
-  const [{ user }, loading, error] = useUserInfo();
+  const { data, loading, error } = useQuery<{
+    user: Pick<GQLUserInfo, 'orgName' | 'orgID' >,
+  }>(gql`
+    query userOrgInfoForScripts{
+      user {
+        orgName
+        orgID
+      }
+    }
+  `, {});
+  const user = data?.user;
+
   const [scripts, setScripts] = React.useState<Map<string, Script>>(new Map([['initial', {} as Script]]));
 
   // Lets us know if there is a pending setScripts. If there is, we're technically still loading for one more render.
@@ -59,7 +72,7 @@ export const ScriptsContextProvider: React.FC = ({ children }) => {
     });
     // Monitoring the user's ID and their org rather than the whole object, to avoid excess renders.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, user?.orgID, user?.orgName, loading, error]);
+  }, [user?.orgID, user?.orgName, loading, error]);
 
   const setScratchScript = React.useCallback((script: Script) => {
     setScripts((currScripts) => {
