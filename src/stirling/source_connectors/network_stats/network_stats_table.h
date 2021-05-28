@@ -67,6 +67,7 @@ constexpr DataTableSchema kNetworkStatsTable(
     std::chrono::milliseconds{1000}
 );
 // clang-format on
+DEFINE_PRINT_TABLE(NetworkStats);
 
 }  // namespace stirling
 }  // namespace px

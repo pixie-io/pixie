@@ -89,7 +89,7 @@ TEST_F(DNSTraceTest, Capture) {
   ASSERT_FALSE(tablets.empty());
 
   types::ColumnWrapperRecordBatch rb = tablets[0].records;
-  PrintRecordBatch("dns", kDNSTable.ToProto(), rb);
+  PL_LOG_VAR(PrintDNSTable(rb));
 
   // Check server-side.
   {

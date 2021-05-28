@@ -180,6 +180,7 @@ TEST_P(TraceRoleTest, VerifyRecordsCount) {
 
     server_record_ids =
         testing::FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, go_http_fixture_.server_pid());
+    PL_LOG_VAR(PrintHTTPTable(record_batch));
   }
 
   EXPECT_THAT(client_record_ids, SizeIs(param.client_records_count));

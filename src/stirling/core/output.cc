@@ -18,6 +18,8 @@
 
 #include "src/stirling/core/output.h"
 
+#include <utility>
+
 #include "src/shared/upid/upid.h"
 
 namespace px {
@@ -35,6 +37,8 @@ using px::types::UInt128Value;
 
 constexpr char kTimeFormat[] = "%Y-%m-%d %X";
 const absl::TimeZone kLocalTimeZone;
+
+namespace {
 
 std::string ToString(const stirlingpb::TableSchema& schema,
                      const ColumnWrapperRecordBatch& record_batch, size_t index) {
@@ -96,8 +100,10 @@ std::string ToString(const stirlingpb::TableSchema& schema,
   return out;
 }
 
-std::string ToString(std::string_view prefix, const stirlingpb::TableSchema& schema,
-                     const types::ColumnWrapperRecordBatch& record_batch) {
+}  // namespace
+
+std::vector<std::string> ToString(const stirlingpb::TableSchema& schema,
+                                  const types::ColumnWrapperRecordBatch& record_batch) {
   DCHECK_EQ(schema.elements_size(), record_batch.size());
 
   const size_t num_records = record_batch.front()->Size();
@@ -106,16 +112,20 @@ std::string ToString(std::string_view prefix, const stirlingpb::TableSchema& sch
     DCHECK_EQ(col->Size(), num_records);
   }
 
-  std::string out;
+  std::vector<std::string> out;
   for (size_t i = 0; i < num_records; ++i) {
-    absl::StrAppend(&out, "[", prefix, "]", ToString(schema, record_batch, i), "\n");
+    out.push_back(ToString(schema, record_batch, i));
   }
   return out;
 }
 
-void PrintRecordBatch(std::string_view prefix, const stirlingpb::TableSchema& schema,
-                      const ColumnWrapperRecordBatch& record_batch) {
-  std::cout << ToString(prefix, schema, record_batch);
+std::string ToString(std::string_view prefix, const stirlingpb::TableSchema& schema,
+                     const types::ColumnWrapperRecordBatch& record_batch) {
+  std::string out;
+  for (auto& record : ToString(schema, record_batch)) {
+    absl::StrAppend(&out, "[", prefix, "]", std::move(record), "\n");
+  }
+  return out;
 }
 
 }  // namespace stirling

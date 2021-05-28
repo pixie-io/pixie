@@ -62,6 +62,7 @@ constexpr DataTableSchema kConnStatsTable(
     kConnStatsElements,
     /* default_sampling_period */ std::chrono::milliseconds{5000},
     /* default_push_period */ std::chrono::milliseconds{5000});
+DEFINE_PRINT_TABLE(ConnStats)
 
 namespace conn_stats_idx {
 

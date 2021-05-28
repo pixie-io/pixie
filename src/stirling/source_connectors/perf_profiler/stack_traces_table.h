@@ -56,6 +56,7 @@ constexpr auto kStackTraceTable = DataTableSchema(
         kStackTraceTablePushPeriod
 );
 // clang-format on
+DEFINE_PRINT_TABLE(StackTrace)
 
 constexpr int kStackTraceTimeIdx = kStackTraceTable.ColIndex("time_");
 constexpr int kStackTraceUPIDIdx = kStackTraceTable.ColIndex("upid");

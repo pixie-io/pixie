@@ -65,6 +65,7 @@ constexpr DataTableSchema kJVMStatsTable(
         std::chrono::milliseconds{1000},
         std::chrono::milliseconds{1000}
 );
+DEFINE_PRINT_TABLE(JVMStats);
 
 // clang-format on
 

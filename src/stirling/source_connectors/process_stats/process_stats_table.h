@@ -71,6 +71,7 @@ constexpr DataTableSchema kProcessStatsTable(
     std::chrono::milliseconds{1000}
 );
 // clang-format on
+DEFINE_PRINT_TABLE(ProcessStats)
 
 // TODO(oazizi): Enable version below, once rest of the agent supports tabletization.
 //               Can't enable yet because it would result in time-scrambling.

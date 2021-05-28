@@ -18,25 +18,27 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "src/common/base/base.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/stirling/core/types.h"
+#include "src/stirling/proto/stirling.pb.h"
 
 namespace px {
 namespace stirling {
 
-// Returns a string representation of the row specified by index.
-std::string ToString(const stirlingpb::TableSchema& schema,
-                     const types::ColumnWrapperRecordBatch& record_batch, size_t index);
+// Returns a list of string representations of all of the records in the record batch.
+std::vector<std::string> ToString(const stirlingpb::TableSchema& schema,
+                                  const types::ColumnWrapperRecordBatch& record_batch);
 
+// Returns a string representation of all of the records in the record batch.
+// Each line of record is prepended with the prefix.
 std::string ToString(std::string_view prefix, const stirlingpb::TableSchema& schema,
                      const types::ColumnWrapperRecordBatch& record_batch);
-
-void PrintRecordBatch(std::string_view prefix, const stirlingpb::TableSchema& schema,
-                      const types::ColumnWrapperRecordBatch& record_batch);
 
 }  // namespace stirling
 }  // namespace px

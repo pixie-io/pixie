@@ -36,9 +36,9 @@ using ::px::Status;
 using ::px::StatusOr;
 
 using ::px::stirling::IndexPublication;
-using ::px::stirling::PrintRecordBatch;
 using ::px::stirling::SourceRegistry;
 using ::px::stirling::Stirling;
+using ::px::stirling::ToString;
 using ::px::stirling::stirlingpb::InfoClass;
 using ::px::stirling::stirlingpb::Publish;
 using ::px::stirling::stirlingpb::Subscribe;
@@ -65,7 +65,7 @@ Status StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
   }
   const InfoClass& table_info = iter->second;
 
-  PrintRecordBatch(table_info.schema().name(), table_info.schema(), *record_batch);
+  std::cout << ToString(table_info.schema().name(), table_info.schema(), *record_batch);
 
   return Status::OK();
 }

@@ -201,7 +201,6 @@ TEST_F(ProductCatalogServiceTraceTest, Basic) {
   std::vector<size_t> resp_body_sizes;
 
   for (const auto& idx : target_record_indices) {
-    PL_LOG_VAR(ToString(kHTTPTable.ToProto(), rb, idx));
     req_body_sizes.push_back(
         AccessRecordBatch<types::Int64Value>(rb, kHTTPReqBodySizeIdx, idx).val);
     resp_body_sizes.push_back(
