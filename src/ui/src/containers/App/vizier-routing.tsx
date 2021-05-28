@@ -48,15 +48,18 @@ export const VizierRouteContext = React.createContext<VizierRouteContextProps>(n
 /** Some scripts have special mnemonic routes. They are vanity URLs for /clusters/:cluster?... and map as such */
 const VANITY_ROUTES = new Map<string, string>([
   /* eslint-disable no-multi-spaces */
-  ['/live/clusters/:cluster/nodes', 'px/nodes'],
-  ['/live/clusters/:cluster/nodes/:node', 'px/node'],
-  ['/live/clusters/:cluster/namespaces', 'px/namespaces'],
-  ['/live/clusters/:cluster/namespaces/:namespace', 'px/namespace'],
-  ['/live/clusters/:cluster/namespaces/:namespace/pods', 'px/pods'],
-  ['/live/clusters/:cluster/namespaces/:namespace/pods/:pod', 'px/pod'],
-  ['/live/clusters/:cluster/namespaces/:namespace/services', 'px/services'],
+  ['/live/clusters/:cluster',                                         'px/cluster'],
+  ['/live/clusters/:cluster/nodes',                                   'px/nodes'],
+  ['/live/clusters/:cluster/nodes/:node',                             'px/node'],
+  ['/live/clusters/:cluster/namespaces',                              'px/namespaces'],
+  ['/live/clusters/:cluster/namespaces/:namespace',                   'px/namespace'],
+  ['/live/clusters/:cluster/namespaces/:namespace/pods',              'px/pods'],
+  ['/live/clusters/:cluster/namespaces/:namespace/pods/:pod',         'px/pod'],
+  ['/live/clusters/:cluster/namespaces/:namespace/services',          'px/services'],
   ['/live/clusters/:cluster/namespaces/:namespace/services/:service', 'px/service'],
-  ['/live/clusters/:cluster/scratch', SCRATCH_SCRIPT.id],
+  ['/live/clusters/:cluster/scratch',                                 SCRATCH_SCRIPT.id],
+  // The bare live path will redirect to px/cluster but only if we have a clustername available to pick.
+  ['/live',                                                           'px/cluster'],
   /* eslint-enable no-multi-spaces */
 ]);
 
@@ -128,12 +131,12 @@ export const VizierContextRouter: React.FC = ({ children }) => {
     <Switch>
       <Route
         exact
-        path={[...VANITY_ROUTES.keys(), '/live/clusters/:cluster', '/live']}
+        path={[...VANITY_ROUTES.keys()]}
         render={({ match, location }) => {
           // Special handling only if a default cluster is available and path is /live w/o args.
           // Otherwise we want to render the VizierRoute which eventually renders something helpful for new users.
-          if (defaultCluster && location.pathname === '/live') {
-            return (<Redirect exact from='/live' to={`/live/clusters/${encodeURIComponent(defaultCluster)}`} />);
+          if (defaultCluster && match.path === '/live') {
+            return (<Redirect to={`/live/clusters/${encodeURIComponent(defaultCluster)}`} />);
           }
           const { script: queryScriptId, ...queryParams } = QueryString.parse(location.search);
           let scriptId = VANITY_ROUTES.get(match.path) ?? 'px/cluster';
