@@ -34,6 +34,7 @@ import { ResultsContext } from 'context/results-context';
 import { useSnackbar } from '@pixie-labs/components';
 import { argsForVis, validateArgs } from 'utils/args-utils';
 import { ClusterContext } from 'common/cluster-context';
+import { isDev } from 'utils/env';
 
 const NUM_MUTATION_RETRIES = 5;
 const MUTATION_RETRY_MS = 5000; // 5s.
@@ -101,8 +102,10 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
 
   const clusterConfig: ClusterConfig | null = React.useMemo(() => {
     if (loadingClusterInfo || !clusterInfo) return null;
-
-    const passthroughClusterAddress = clusterInfo.vizierConfig.passthroughEnabled ? window.location.origin : undefined;
+    // If cloud is running in dev mode, automatically direct to Envoy's port, since there is
+    // no GCLB to redirect for us in dev.
+    const passthroughClusterAddress = clusterInfo.vizierConfig.passthroughEnabled
+      ? window.location.origin + (isDev() ? ':4444' : '') : undefined;
     return {
       id: clusterInfo.id,
       attachCredentials: true,
