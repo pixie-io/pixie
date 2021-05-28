@@ -196,6 +196,8 @@ class K8sMetadataState : NotCopyable {
   std::string DebugString(int indent_level = 0) const;
 
  private:
+  const K8sMetadataObject* K8sMetadataObjectByID(UIDView id, K8sObjectType type) const;
+
   // The CIDR block used for services inside the cluster.
   std::optional<CIDRBlock> service_cidr_;
 
@@ -204,6 +206,9 @@ class K8sMetadataState : NotCopyable {
 
   // This stores K8s native objects (services, pods, etc).
   absl::flat_hash_map<UID, K8sMetadataObjectUPtr> k8s_objects_;
+
+  // This stores container objects, complementing k8s_objects_by_id_.
+  absl::flat_hash_map<CID, ContainerInfoUPtr> containers_by_id_;
 
   /**
    * Mapping of pods by name.
@@ -229,11 +234,6 @@ class K8sMetadataState : NotCopyable {
    * Mapping of Pods by host ip.
    */
   PodsByPodIpMap pods_by_ip_;
-
-  /**
-   * Mapping of containers by ID.
-   */
-  absl::flat_hash_map<CID, ContainerInfoUPtr> containers_by_id_;
 };
 
 class AgentMetadataState : NotCopyable {
