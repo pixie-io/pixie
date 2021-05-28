@@ -16,11 +16,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { gql } from '@apollo/client';
 import * as React from 'react';
 
 import { scrollbarStyles, EditIcon, Footer } from '@pixie-labs/components';
-import { GQLClusterStatus as ClusterStatus } from '@pixie-labs/api';
-import { useListClusters } from '@pixie-labs/api-react';
+import { GQLClusterInfo, GQLClusterStatus } from '@pixie-labs/api';
+import { useQuery } from '@pixie-labs/api-react';
 import {
   makeStyles, Theme,
 } from '@material-ui/core/styles';
@@ -31,12 +32,13 @@ import {
 import MoveIcon from '@material-ui/icons/OpenWith';
 
 import { Copyright } from 'configurable/copyright';
+import ClientContext from 'common/vizier-grpc-client-context';
 import { ClusterContext } from 'common/cluster-context';
 import { DataDrawerContextProvider } from 'context/data-drawer-context';
 import EditorContextProvider, { EditorContext } from 'context/editor-context';
 import { LayoutContext, LayoutContextProvider } from 'context/layout-context';
-import { ScriptContext, ScriptContextProvider } from 'context/script-context';
-import { ResultsContext, ResultsContextProvider } from 'context/results-context';
+import { ParsedScript, ScriptContext, ScriptContextProvider } from 'context/script-context';
+import { ResultsContextProvider } from 'context/results-context';
 
 import { ClusterInstructions } from 'containers/App/deploy-instructions';
 import NavBars from 'containers/App/nav-bars';
@@ -174,27 +176,50 @@ const ScriptOptions = ({
     </>
   );
 };
+
 interface ClusterLoadingProps {
-  clusterUnhealthy: boolean;
-  clusterStatus: ClusterStatus;
-  clusterName: string | null;
+  clusterPrettyName: string;
+  clusterStatus: GQLClusterStatus;
+  script: ParsedScript;
+  healthy: boolean;
 }
 
-const ClusterLoadingComponent = (props: ClusterLoadingProps) => {
-  // Options:
-  // 1. Name of the cluster
-  const formatStatus = React.useMemo(
-    () => props.clusterStatus.replace('CS_', '').toLowerCase(),
-    [props.clusterStatus]);
+const ClusterLoadingComponent = ({
+  clusterPrettyName, clusterStatus, script, healthy,
+}: ClusterLoadingProps) => {
+  const formattedStatus = React.useMemo(
+    () => clusterStatus.replace('CS_', '').toLowerCase(),
+    [clusterStatus]);
 
-  const actionMsg = React.useMemo(
-    (): JSX.Element => {
-      if (props.clusterStatus === ClusterStatus.CS_DISCONNECTED) {
-        return (<div>Please redeploy Pixie to the cluster or choose another cluster.</div>);
-      }
+  if (clusterStatus === GQLClusterStatus.CS_DISCONNECTED) {
+    return (
+      <div>
+        <Alert severity='error'>
+          <AlertTitle>
+            {`Cluster '${clusterPrettyName}' is disconnected`}
+          </AlertTitle>
+          <div>
+            {`Pixie instrumentation on '${clusterPrettyName}' is ${formattedStatus}.`}
+          </div>
+          <div>
+            Please redeploy Pixie to the cluster or choose another cluster.
+          </div>
+        </Alert>
+      </div>
+    );
+  }
 
-      if (CONTACT_ENABLED) {
-        return (
+  if (clusterStatus !== GQLClusterStatus.CS_HEALTHY) {
+    return (
+      <div>
+        <Alert severity='error'>
+          <AlertTitle>
+            {`Cluster '${clusterPrettyName}' unavailable`}
+          </AlertTitle>
+          <div>
+            {`Pixie instrumentation on '${clusterPrettyName}' is ${formattedStatus}.`}
+          </div>
+          {CONTACT_ENABLED && (
           <div>
             <div>
               Need help?&nbsp;
@@ -202,32 +227,21 @@ const ClusterLoadingComponent = (props: ClusterLoadingProps) => {
               .
             </div>
           </div>
-        );
-      }
-      return <div />;
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [props.clusterStatus, props.clusterName]);
+          )}
+        </Alert>
+      </div>
+    );
+  }
 
-  return (
-    <>
-      {props.clusterUnhealthy ? (
-        <div>
-          <Alert severity='error'>
-            <AlertTitle>
-              {`Cluster '${props.clusterName}' unavailable`}
-            </AlertTitle>
-            <div>
-              {`Pixie instrumentation on '${props.clusterName}' is ${formatStatus}.`}
-            </div>
-            {actionMsg}
-          </Alert>
-        </div>
-      ) : (
-        <ClusterInstructions message='Connecting to cluster...' />
-      )}
-    </>
-  );
+  if (!script) {
+    return <div> Script name invalid, choose a new script in the dropdown</div>;
+  }
+
+  if (!healthy) {
+    return <ClusterInstructions message='Connecting to cluster...' />;
+  }
+
+  return <></>;
 };
 
 const LiveView: React.FC = () => {
@@ -235,31 +249,9 @@ const LiveView: React.FC = () => {
 
   const { selectedClusterName, selectedClusterPrettyName } = React.useContext(ClusterContext);
   const { script, args, cancelExecution } = React.useContext(ScriptContext);
-  const results = React.useContext(ResultsContext);
   const { saveEditor } = React.useContext(EditorContext);
   const { isMobile, setEditorPanelOpen, setDataDrawerOpen } = React.useContext(LayoutContext);
   const [widgetsMoveable, setWidgetsMoveable] = React.useState(false);
-
-  // These two variables track whether a script has been executed on a cluster.
-  // When the first script starts executing, hasStartedLoading shall be set true.
-  // When that script stops, hasFinishedLoading shall be set true.
-  // When the cluster changes, both are set false.
-  const [hasStartedLoadingCluster, setHasStartedLoadingCluster] = React.useState<boolean>(false);
-  const [hasFinishedLoadingCluster, setHasFinishedLoadingCluster] = React.useState<boolean>(false);
-
-  const [clusters, clustersLoading, error] = useListClusters();
-
-  const clusterStatus: ClusterStatus = React.useMemo(() => {
-    if (error || clustersLoading || !clusters) {
-      return ClusterStatus.CS_UNKNOWN;
-    }
-
-    const cluster = clusters.find((c) => c.clusterName === selectedClusterName);
-    if (!cluster) {
-      return ClusterStatus.CS_UNKNOWN;
-    }
-    return cluster.status;
-  }, [clusters, clustersLoading, error, selectedClusterName]);
 
   const hotkeyHandlers = {
     'toggle-editor': () => setEditorPanelOpen((editable) => !editable),
@@ -271,38 +263,31 @@ const LiveView: React.FC = () => {
 
   const canvasRef = React.useRef<HTMLDivElement>(null);
 
-  // The following three useEffects determine how much a user has
-  // interacted with a cluster. We need to show a connecting modal
-  // when the user has not successfully made a connection. When they
-  // do successfully connect with the cluster, subsequent scripts
-  // executed should not cause the connecting modal to show up.
-  //
-  // The effects should execute actions sequentially whenever a user
-  // selects a new Cluster for their live session.
+  const { healthy } = React.useContext(ClientContext);
 
-  // 1. we set both loading variables as false. No scripts have started/finished
-  // 2. When the script loading beings, we flag the cluster as starting.
-  // 3. Once the script has finished loading, we flag the first load as finished.
-  //
-  React.useEffect(() => {
-    // When we reset the cluster name, we reset this to false as results.loading will always trail.
-    setHasStartedLoadingCluster(false);
-    setHasFinishedLoadingCluster(false);
-  }, [selectedClusterPrettyName, setHasStartedLoadingCluster]);
+  // Healthy might flicker on and off. We only care to show the loading state for first load,
+  // and want to ignore future health check failures. So we use healthyOnce to start as false
+  // and transition to true once. After the transition, it will always stay true.
+  const [healthyOnce, setHealthyOnce] = React.useState(false);
+  React.useCallback(() => {
+    setHealthyOnce((prev) => (prev || healthy));
+  }, [healthy]);
 
-  React.useEffect(() => {
-    if (results.loading) {
-      setHasStartedLoadingCluster(true);
-    }
-  }, [results.loading, setHasStartedLoadingCluster]);
+  const { data } = useQuery<{
+    clusterByName: Pick<GQLClusterInfo, 'id' | 'status'>
+  }>(
+    gql`
+    query GetClusterStatusByName($name: String!) {
+      clusterByName(name: $name) {
+        id
+        status
+      }
+    }`, { pollInterval: 5000, variables: { name: selectedClusterName } },
+  );
 
-  React.useEffect(() => {
-    if (!results.loading && hasStartedLoadingCluster) {
-      setHasFinishedLoadingCluster(true);
-    }
-  }, [results.loading, hasStartedLoadingCluster, setHasFinishedLoadingCluster]);
-
-  const clusterUnhealthy = !clustersLoading && clusterStatus !== ClusterStatus.CS_HEALTHY;
+  const clusterStatus = React.useMemo(() => (
+    data?.clusterByName?.status ?? GQLClusterStatus.CS_UNKNOWN
+  ), [data]);
 
   // Opens the editor if the current script is a scratch script.
   React.useEffect(() => {
@@ -369,21 +354,20 @@ const LiveView: React.FC = () => {
           <div className={classes.main}>
             <div className={classes.mainContent}>
               <LiveViewBreadcrumbs />
-              {/* eslint-disable-next-line no-nested-ternary */}
-              {!script ? (<div> Script name invalid, choose a new script in the dropdown</div>)
-                : (results?.error == null && (!hasFinishedLoadingCluster || clusterUnhealthy) ? (
-                  <div className='center-content'>
-                    <ClusterLoadingComponent
-                      clusterUnhealthy={clusterUnhealthy}
-                      clusterStatus={clusterStatus}
-                      clusterName={selectedClusterPrettyName}
-                    />
-                  </div>
-                ) : (
-                  <div className={classes.canvas} ref={canvasRef}>
-                    <Canvas editable={widgetsMoveable} parentRef={canvasRef} />
-                  </div>
-                ))}
+              {(clusterStatus === GQLClusterStatus.CS_HEALTHY && script && healthy) ? (
+                <div className={classes.canvas} ref={canvasRef}>
+                  <Canvas editable={widgetsMoveable} parentRef={canvasRef} />
+                </div>
+              ) : (
+                <div className='center-content'>
+                  <ClusterLoadingComponent
+                    clusterPrettyName={selectedClusterPrettyName}
+                    clusterStatus={clusterStatus}
+                    script={script}
+                    healthy={healthyOnce}
+                  />
+                </div>
+              )}
             </div>
             <div className={classes.mainFooter}>
               <Footer copyright={Copyright} />

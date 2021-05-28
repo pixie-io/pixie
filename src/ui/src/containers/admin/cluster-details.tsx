@@ -385,7 +385,7 @@ const ControlPlanePodsTable: React.FC<{
 const ClusterDetailsNavigationBreadcrumbs = ({ selectedClusterName }) => {
   const history = useHistory();
   const { data, loading, error } = useQuery<{
-    clusters: Pick<GQLClusterInfo, 'id' | 'clusterName' | 'prettyClusterName' | 'status'>[],
+    clusters: Pick<GQLClusterInfo, 'clusterName' | 'prettyClusterName' | 'status'>[],
   }>(gql`
     query clusterNavigationData{
       clusters {

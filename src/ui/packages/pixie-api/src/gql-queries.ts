@@ -189,6 +189,7 @@ export const CLUSTER_QUERIES = {
         vizierConfig {
           passthroughEnabled
         }
+        status
       }
     }
   `,
