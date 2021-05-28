@@ -55,6 +55,24 @@ directory '/opt/pixielabs/bin' do
   action :create
 end
 
+directory '/opt/pixielabs/gopath' do
+  owner user
+  group root_group
+  mode '0755'
+  action :create
+end
+
+execute 'install go binaries' do
+  ENV['GOPATH'] = "/opt/pixielabs/gopath"
+  command %(go get \
+            golang.org/x/lint/golint@v0.0.0-20210508222113-6edffad5e616 \
+            golang.org/x/tools/cmd/goimports@v0.1.2 \
+            github.com/golang/mock/mockgen@v1.5.0 \
+            github.com/cheekybits/genny@v1.0.0 \
+            sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1 \
+            github.com/go-bindata/go-bindata/go-bindata@v3.1.2+incompatible)
+end
+
 template '/opt/pixielabs/plenv.inc' do
   source 'plenv.inc.erb'
   owner user
@@ -102,7 +120,6 @@ end
 file '/tmp/shellcheck.tar.xz' do
   action :delete
 end
-
 
 remote_file '/opt/pixielabs/bin/prototool' do
   source node['prototool']['download_path']
@@ -169,7 +186,6 @@ end
 file '/tmp/helm.tar.gz' do
   action :delete
 end
-
 
 directory '/opt/antlr' do
   owner user
