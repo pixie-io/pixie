@@ -275,6 +275,62 @@ Status K8sMetadataState::HandleNamespaceUpdate(const NamespaceUpdate& update) {
   return Status::OK();
 }
 
+template <typename T>
+bool IsExpired(const T& obj, int64_t retention_time, int64_t now) {
+  if (obj.stop_time_ns() == 0) {
+    // Stop time of zero means it has not stopped yet.
+    return false;
+  }
+
+  int64_t expiry_time = obj.stop_time_ns() + retention_time;
+  return now > expiry_time;
+}
+
+Status K8sMetadataState::CleanupExpiredMetadata(int64_t retention_time_ns) {
+  int64_t now = CurrentTimeNS();
+
+  for (auto iter = k8s_objects_by_id_.begin(); iter != k8s_objects_by_id_.end();) {
+    const auto& k8s_object = iter->second;
+
+    if (!IsExpired(*k8s_object, retention_time_ns, now)) {
+      ++iter;
+      continue;
+    }
+
+    switch (k8s_object->type()) {
+      case K8sObjectType::kPod:
+        pods_by_name_.erase({k8s_object->ns(), k8s_object->name()});
+        pods_by_ip_.erase(static_cast<PodInfo*>(k8s_object.get())->pod_ip());
+        break;
+      case K8sObjectType::kNamespace:
+        namespaces_by_name_.erase({k8s_object->ns(), k8s_object->name()});
+        break;
+      case K8sObjectType::kService:
+        services_by_name_.erase({k8s_object->ns(), k8s_object->name()});
+        break;
+      default:
+        LOG(DFATAL) << absl::Substitute("Unexpected object type: $0",
+                                        static_cast<int>(k8s_object->type()));
+    }
+
+    k8s_objects_by_id_.erase(iter++);
+  }
+
+  for (auto iter = containers_by_id_.begin(); iter != containers_by_id_.end();) {
+    const auto& cinfo = iter->second;
+
+    if (!IsExpired(*cinfo, retention_time_ns, now)) {
+      ++iter;
+      continue;
+    }
+
+    containers_by_name_.erase(cinfo->name());
+    containers_by_id_.erase(iter++);
+  }
+
+  return Status::OK();
+}
+
 std::shared_ptr<AgentMetadataState> AgentMetadataState::CloneToShared() const {
   auto state = std::make_shared<AgentMetadataState>(hostname_, asid_, agent_id_, pod_name_);
   state->last_update_ts_ns_ = last_update_ts_ns_;
