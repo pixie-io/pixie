@@ -19,11 +19,11 @@
 import * as React from 'react';
 
 export interface ClusterContextProps {
-  selectedCluster: string;
+  selectedClusterID: string;
   selectedClusterName: string;
   selectedClusterPrettyName: string;
   selectedClusterUID: string;
-  setCluster: (id: string) => void;
+  setClusterByID: (id: string) => void;
 }
 
 export const ClusterContext = React.createContext<ClusterContextProps>(null);

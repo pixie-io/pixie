@@ -23,7 +23,7 @@ import {
   getQueryFuncs, parseVis, parseVisSilently, Vis,
 } from 'containers/live/vis';
 import { Script } from 'utils/script-bundle';
-import { PixieAPIContext, useListClusters, useClusterPassthroughInfo } from '@pixie-labs/api-react';
+import { PixieAPIContext, useClusterPassthroughInfo } from '@pixie-labs/api-react';
 import {
   containsMutation, ExecutionStateUpdate, isStreaming, VizierQueryError, ClusterConfig, GRPCStatusCode,
   VizierTable as Table,
@@ -86,17 +86,10 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
   const {
     scriptId, args, push,
   } = React.useContext(VizierRouteContext);
-  const { selectedClusterName: clusterName } = React.useContext(ClusterContext);
+  const { selectedClusterID, selectedClusterName } = React.useContext(ClusterContext);
   const { scripts: availableScripts, loading: loadingAvailableScripts } = React.useContext(ScriptsContext);
   const resultsContext = React.useContext(ResultsContext);
   const showSnackbar = useSnackbar();
-
-  const [clusters, loadingClusters] = useListClusters();
-
-  const selectedClusterID = React.useMemo(() => {
-    const selected = clusters?.find((c) => c.clusterName === clusterName);
-    return selected?.id;
-  }, [clusters, clusterName]);
 
   const [clusterInfo, loadingClusterInfo] = useClusterPassthroughInfo(selectedClusterID ?? '');
 
@@ -146,7 +139,7 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
 
   // Timing: execute can be called before the API has finished returning all needed data, because VizierRoutingContext
   // does not depend on the API and can update (triggering ScriptLoader) before required data has loaded for execution.
-  const readyToExecute = !loadingClusters && !loadingAvailableScripts;
+  const readyToExecute = !loadingAvailableScripts;
   const [awaitingExecution, setAwaitingExecution] = React.useState(false);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -358,7 +351,7 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
       setScript(parsedScript);
       setManual(false);
 
-      push(clusterName, newScript.id, argsForVis(parsedScript.vis, newArgs));
+      push(selectedClusterName, newScript.id, argsForVis(parsedScript.vis, newArgs));
     },
     setScriptAndArgsManually: (newScript: Script | ParsedScript, newArgs: Record<string, string | string[]> = args) => {
       const parsedScript = typeof newScript.vis !== 'string'
@@ -367,12 +360,12 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
       setScript(parsedScript);
       setManual(true);
 
-      push(clusterName, newScript.id, argsForVis(parsedScript.vis, newArgs));
+      push(selectedClusterName, newScript.id, argsForVis(parsedScript.vis, newArgs));
     },
     execute,
     cancelExecution: (cancelExecution ?? (() => {})),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [script, execute, serializedArgs, clusterName]);
+  }), [script, execute, serializedArgs, selectedClusterName]);
 
   return <ScriptContext.Provider value={context}>{children}</ScriptContext.Provider>;
 };

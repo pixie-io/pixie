@@ -99,11 +99,11 @@ export const LIVE_CONTEXT_DEFAULTS: Required<MockProps> = {
     setScratchScript: jest.fn(),
   },
   cluster: {
-    selectedCluster: '',
+    selectedClusterID: '',
     selectedClusterUID: '',
     selectedClusterName: '',
     selectedClusterPrettyName: '',
-    setCluster: jest.fn(),
+    setClusterByID: jest.fn(),
   },
 };
 

@@ -16,15 +16,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { gql } from '@apollo/client';
 import * as React from 'react';
 import {
   Theme, makeStyles,
 } from '@material-ui/core';
 import { createStyles } from '@material-ui/styles';
 import { ClusterContext } from 'common/cluster-context';
-import { useListClusters } from '@pixie-labs/api-react';
+import { useQuery } from '@pixie-labs/api-react';
 import { StatusCell, Select } from '@pixie-labs/components';
-import { GQLClusterStatus as ClusterStatus } from '@pixie-labs/api';
+import { GQLClusterInfo, GQLClusterStatus } from '@pixie-labs/api';
 import { clusterStatusGroup } from 'containers/admin/utils';
 
 const useStyles = makeStyles(({ spacing, palette }: Theme) => createStyles({
@@ -46,29 +47,41 @@ const useStyles = makeStyles(({ spacing, palette }: Theme) => createStyles({
 const ClusterSelector: React.FC = () => {
   const classes = useStyles();
 
-  const [clusters, loading, error] = useListClusters();
-  const { selectedCluster, setCluster } = React.useContext(ClusterContext);
+  const { data, loading, error } = useQuery<{
+    clusters: Pick<GQLClusterInfo, 'id' | 'clusterUID' | 'clusterName' | 'prettyClusterName' | 'status'>[]
+  }>(
+    gql`
+      query listClustersForSelector {
+        clusters {
+          id
+          clusterUID
+          clusterName
+          prettyClusterName
+          status
+        }
+      }
+    `,
+    { pollInterval: 15000 },
+  );
 
-  const clusterName = React.useMemo(
-    () => clusters?.find((c) => c.id === selectedCluster)?.prettyClusterName || 'unknown cluster',
-    [clusters, selectedCluster]);
-
-  const clusterNameIdMap = React.useMemo(
-    () => new Map<string, string>(clusters?.map((c) => [c.prettyClusterName, c.id])),
-    [clusters]);
+  const clusters = data?.clusters;
+  const { selectedClusterPrettyName, setClusterByID } = React.useContext(ClusterContext);
 
   const getListItems = React.useCallback(async (input: string) => (
     clusters
-      ?.filter((c) => c.status !== ClusterStatus.CS_DISCONNECTED && c.prettyClusterName.includes(input))
+      ?.filter((c) => c.status !== GQLClusterStatus.CS_DISCONNECTED && c.prettyClusterName.includes(input))
       .map((c) => ({
         value: c.prettyClusterName,
         icon: <StatusCell statusGroup={clusterStatusGroup(c.status)} />,
       }))
   ), [clusters]);
 
-  const onSelect = React.useCallback(
-    (input: string) => setCluster(clusterNameIdMap.get(input)),
-    [clusterNameIdMap, setCluster]);
+  const onSelect = React.useCallback((input: string) => {
+    const selected = clusters?.find((c) => (c.prettyClusterName === input));
+    if (selected) {
+      setClusterByID(selected.id);
+    }
+  }, [clusters, setClusterByID]);
 
   if (loading || !clusters || error) return (<></>);
 
@@ -76,7 +89,7 @@ const ClusterSelector: React.FC = () => {
     <div className={classes.container}>
       <div className={classes.label}>Cluster:</div>
       <Select
-        value={clusterName}
+        value={selectedClusterPrettyName}
         getListItems={getListItems}
         onSelect={onSelect}
         requireCompletion

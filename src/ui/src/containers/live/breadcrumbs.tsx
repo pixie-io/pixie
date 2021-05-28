@@ -76,7 +76,7 @@ const styles = (({ shape, palette, spacing }: Theme) => createStyles({
 }));
 
 const LiveViewBreadcrumbs = ({ classes }) => {
-  const { selectedCluster, selectedClusterUID } = React.useContext(ClusterContext);
+  const { selectedClusterUID } = React.useContext(ClusterContext);
   const { scripts } = React.useContext(ScriptsContext);
 
   const {
@@ -202,7 +202,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
 
     return { entityBreadcrumbs, argBreadcrumbs };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [script?.id, collapsedScriptIds, args, selectedCluster, getCompletions]);
+  }, [script?.id, collapsedScriptIds, args, selectedClusterUID, getCompletions]);
 
   return (
     <>

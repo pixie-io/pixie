@@ -96,8 +96,8 @@ const ScriptShortcut = ({ match, location }) => {
 // Selects a default cluster if one hasn't already been selected by the user.
 const useSelectedCluster = () => {
   const [clusters, loading1, error1] = useListClusters();
-  const { selectedCluster } = React.useContext(ClusterContext);
-  const [cluster, loading2, error2] = useClusterPassthroughInfo(selectedCluster ?? '');
+  const { selectedClusterID } = React.useContext(ClusterContext);
+  const [cluster, loading2, error2] = useClusterPassthroughInfo(selectedClusterID ?? '');
   return {
     loading: loading1 || loading2,
     cluster,
@@ -176,15 +176,14 @@ const ClusterContextProvider: React.FC = ({ children }) => {
   }, [push, scriptId, args]);
 
   const clusterContext = React.useMemo(() => ({
-    selectedCluster: cluster?.id,
+    selectedClusterID: cluster?.id,
     selectedClusterName: cluster?.clusterName,
     selectedClusterPrettyName: cluster?.prettyClusterName,
     selectedClusterUID: cluster?.clusterUID,
-    setCluster: (id: string) => {
+    setClusterByID: (id: string) => {
       const foundName = id && clusters.find((c) => c.id === id)?.clusterName;
       setClusterByName(foundName);
     },
-    setClusterByName,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [
     stringifiedClusters,

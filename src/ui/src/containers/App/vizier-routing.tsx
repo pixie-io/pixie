@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { gql } from '@apollo/client';
 import * as React from 'react';
 import {
   Switch, Route, Redirect,
@@ -27,7 +28,8 @@ import { SCRATCH_SCRIPT, ScriptsContext } from 'containers/App/scripts-context';
 import { parseVisSilently } from 'containers/live/vis';
 import { RouteNotFound } from 'containers/App/route-not-found';
 import { selectClusterName } from 'containers/App/cluster-info';
-import { useListClusters } from '@pixie-labs/api-react';
+import { useQuery } from '@pixie-labs/api-react';
+import { GQLClusterInfo } from '@pixie-labs/api';
 import { argsForVis } from 'utils/args-utils';
 
 export interface VizierRouteContextProps {
@@ -120,7 +122,21 @@ const replace = (
 };
 
 export const VizierContextRouter: React.FC = ({ children }) => {
-  const [clusters, loadingCluster] = useListClusters();
+  const { data, loading: loadingCluster } = useQuery<{
+    clusters: Pick<GQLClusterInfo, 'clusterName' | 'status'>[]
+  }>(
+    gql`
+      query listClustersForLiveViewRouting {
+        clusters {
+          clusterName
+          status
+        }
+      }
+    `,
+    { pollInterval: 15000 },
+  );
+
+  const clusters = data?.clusters;
   const defaultCluster = React.useMemo(() => selectClusterName(clusters ?? []), [clusters]);
 
   const { scripts: availableScripts, loading: loadingAvailableScripts } = React.useContext(ScriptsContext);
