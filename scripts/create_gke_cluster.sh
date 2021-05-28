@@ -41,6 +41,13 @@ set_pixies_cluster_config() {
   SUBNETWORK=projects/pl-pixies/regions/us-west1/subnetworks/us-west1-0
 }
 
+set_stirling_cluster_config() {
+  PROJECT=pl-pixies
+  ZONE=us-west1-a
+  NETWORK=projects/pl-pixies/global/networks/dev
+  SUBNETWORK=projects/pl-pixies/regions/us-west1/subnetworks/us-west1-1
+}
+
 # Configuration for devinfra clusters -- jenkins, bazel remote builds,
 # bazel caching etc.
 set_devinfra_cluster_config() {
@@ -87,6 +94,7 @@ usage() {
   echo " -p          : Prod cluster config."
   echo " -b          : DevInfra cluster config."
   echo " -s          : Skylab cluster config."
+  echo " -S          : Stirling cluster config."
   echo " -f          : Disable autoscaling of the node pool."
   echo " -c <string> : name of your cluster. [default: ${CLUSTER_NAME}]"
   echo " -n <int>    : number of nodes in the cluster [default: ${NUM_NODES}]"
@@ -107,7 +115,7 @@ parse_args() {
 
   local OPTIND
   # Process the command line arguments.
-  while getopts "pbsfc:n:m:i:d:z:" opt; do
+  while getopts "pbsSfc:n:m:i:d:z:" opt; do
     case ${opt} in
       f)
         AUTOSCALING=false
@@ -140,6 +148,9 @@ parse_args() {
         ;;
       s)
         set_skylab_cluster_config
+        ;;
+      S)
+        set_stirling_cluster_config
         ;;
       :)
         echo "Invalid option: $OPTARG requires an argument" 1>&2
