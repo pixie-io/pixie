@@ -80,7 +80,7 @@ class GoTLSTraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing 
     // Run the server.
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
-    PL_CHECK_OK(server_.Run(60, {}));
+    PL_CHECK_OK(server_.Run(std::chrono::seconds{60}, {}));
   }
 
   GoTLSServerContainer server_;
@@ -95,8 +95,8 @@ TEST_F(GoTLSTraceTest, Basic) {
   StartTransferDataThread();
 
   // Run the client in the network of the server, so they can connect to each other.
-  PL_CHECK_OK(
-      client_.Run(10, {absl::Substitute("--network=container:$0", server_.container_name())}));
+  PL_CHECK_OK(client_.Run(std::chrono::seconds{10},
+                          {absl::Substitute("--network=container:$0", server_.container_name())}));
   client_.Wait();
 
   StopTransferDataThread();

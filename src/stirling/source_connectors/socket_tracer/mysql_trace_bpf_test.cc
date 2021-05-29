@@ -99,7 +99,8 @@ class MySQLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> 
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
     StatusOr<std::string> run_result =
-        server_.Run(90, {"--env=MYSQL_ALLOW_EMPTY_PASSWORD=1", "--env=MYSQL_ROOT_HOST=%"});
+        server_.Run(std::chrono::seconds{90},
+                    {"--env=MYSQL_ALLOW_EMPTY_PASSWORD=1", "--env=MYSQL_ROOT_HOST=%"});
     PL_CHECK_OK(run_result);
 
     // Sleep an additional second, just to be safe.
@@ -144,7 +145,8 @@ class MySQLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> 
 
     PL_ASSIGN_OR_RETURN(
         std::string out,
-        client_.Run(60, {absl::Substitute("--network=container:$0", server_.container_name())},
+        client_.Run(std::chrono::seconds{60},
+                    {absl::Substitute("--network=container:$0", server_.container_name())},
                     {"/scripts/" + script_filename.string()}));
     LOG(INFO) << "Script output\n" << out;
     client_.Wait();

@@ -65,7 +65,8 @@ class ContainerRunner {
    * @param options Environment variables to pass to the container (e.g. "--env=FOO=bar")
    * @return error stdout of the container, or error if container fails to reach the ready state.
    */
-  StatusOr<std::string> Run(int timeout = 60, const std::vector<std::string>& options = {},
+  StatusOr<std::string> Run(const std::chrono::seconds& timeout = std::chrono::seconds{60},
+                            const std::vector<std::string>& options = {},
                             const std::vector<std::string>& args = {});
 
   /**

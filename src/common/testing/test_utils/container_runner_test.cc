@@ -24,7 +24,7 @@ namespace px {
 
 TEST(ContainerRunnerTest, Run) {
   SleepContainer container;
-  constexpr int kTimeoutSeconds = 30;
+  constexpr auto kTimeoutSeconds = std::chrono::seconds{30};
   ASSERT_OK(container.Run(kTimeoutSeconds));
 }
 

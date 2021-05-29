@@ -953,7 +953,7 @@ class JavaDNSHammerContainer : public ContainerRunner {
 TEST_F(DynamicTraceSharedLibraryTest, GetAddrInfoInsideContainer) {
   // Run tracing target.
   JavaDNSHammerContainer trace_target_;
-  trace_target_.Run(60);
+  trace_target_.Run(std::chrono::seconds{60});
 
   constexpr std::string_view kProgram = R"(
 deployment_spec {

@@ -73,7 +73,7 @@ class CQLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {
     // Run the cassandra server.
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
-    PL_CHECK_OK(container_.Run(150, {"--env=DS_LICENSE=accept"}));
+    PL_CHECK_OK(container_.Run(std::chrono::seconds{150}, {"--env=DS_LICENSE=accept"}));
   }
 
   CassandraContainer container_;

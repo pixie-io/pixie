@@ -58,7 +58,7 @@ class DNSTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {
     // Run the bind DNS server.
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
-    PL_CHECK_OK(container_.Run(150, {}));
+    PL_CHECK_OK(container_.Run(std::chrono::seconds{150}));
   }
 
   DNSServerContainer container_;

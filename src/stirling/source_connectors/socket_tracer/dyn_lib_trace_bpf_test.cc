@@ -126,7 +126,7 @@ TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
 
   // Run the nginx HTTPS server.
   // The container runner will make sure it is in the ready state before unblocking.
-  ASSERT_OK_AND_ASSIGN(std::string run_result, server.Run(60));
+  ASSERT_OK_AND_ASSIGN(std::string run_result, server.Run(std::chrono::seconds{60}));
 
   // RefreshData will cause next TransferData to detect nginx, and deploy uprobes on its libssl.
   RefreshContext();
@@ -170,7 +170,7 @@ TEST_F(DynLibTraceTest, TraceDynLoadedOpenSSL) {
 
     // Make an SSL request with the client.
     // Run the client in the network of the server, so they can connect to each other.
-    PL_CHECK_OK(client.Run(10,
+    PL_CHECK_OK(client.Run(std::chrono::seconds{10},
                            {absl::Substitute("--network=container:$0", server.container_name())},
                            {"ruby", "-e", rb_script}));
 

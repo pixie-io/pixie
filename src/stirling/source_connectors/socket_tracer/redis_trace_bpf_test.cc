@@ -63,7 +63,7 @@ struct RedisTraceTestCase {
 class RedisTraceBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ false>,
                           public ::testing::WithParamInterface<RedisTraceTestCase> {
  protected:
-  RedisTraceBPFTest() { PL_CHECK_OK(container_.Run(150, {})); }
+  RedisTraceBPFTest() { PL_CHECK_OK(container_.Run(std::chrono::seconds{150})); }
 
   RedisContainer container_;
 };
@@ -184,7 +184,7 @@ TEST_F(RedisTraceBPFTest, VerifyPubSubCommands) {
   StartTransferDataThread();
 
   ContainerRunner redis_sub_client(BazelBinTestFilePath(kRedisImagePath), "redis_sub_client", "");
-  redis_sub_client.Run(60,
+  redis_sub_client.Run(std::chrono::seconds{60},
                        {absl::Substitute("--network=container:$0", container_.container_name())},
                        {"redis-cli", "subscribe", "foo"});
 
