@@ -263,10 +263,10 @@ class PerfProfileBPFTest : public ::testing::Test {
     // Continuously poke Stirling TransferData() using the underlying schema periodicity;
     // break from this loop when the elapsed time exceeds the targeted run time.
     while (std::chrono::steady_clock::now() < stop_time) {
-      source_->TransferData(ctx_.get(), PerfProfileConnector::kPerfProfileTableNum, &data_table_);
+      source_->TransferData(ctx_.get(), data_tables_);
       std::this_thread::sleep_for(t_sleep);
     }
-    source_->TransferData(ctx_.get(), PerfProfileConnector::kPerfProfileTableNum, &data_table_);
+    source_->TransferData(ctx_.get(), data_tables_);
 
     // We return the amount of time that we ran the test; it will be used to compute
     // the observed sample rate and the expected number of samples.
@@ -276,6 +276,7 @@ class PerfProfileBPFTest : public ::testing::Test {
   std::unique_ptr<SourceConnector> source_;
   std::unique_ptr<StandaloneContext> ctx_;
   DataTable data_table_;
+  const std::vector<DataTable*> data_tables_{&data_table_};
 
   bool column_ptrs_populated_ = false;
   std::shared_ptr<types::ColumnWrapper> trace_ids_column_;
