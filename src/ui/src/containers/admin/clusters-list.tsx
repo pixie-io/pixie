@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { gql } from '@apollo/client';
 import { StatusCell, StatusGroup } from '@pixie-labs/components';
 import { Theme, withStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
@@ -26,7 +27,7 @@ import TableRow from '@material-ui/core/TableRow';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { GaugeLevel } from 'utils/metric-thresholds';
-import { useListClustersVerbose } from '@pixie-labs/api-react';
+import { useQuery } from '@pixie-labs/api-react';
 import { GQLClusterInfo } from '@pixie-labs/api';
 import {
   AdminTooltip, clusterStatusGroup, convertHeartbeatMS, getClusterDetailsURL,
@@ -63,7 +64,7 @@ function getPercentInstrumentedLevel(instrumentedRatio: number): GaugeLevel {
   return 'low';
 }
 
-function formatCluster(clusterInfo): ClusterDisplay {
+function formatCluster(clusterInfo: GQLClusterInfo): ClusterDisplay {
   const {
     id, clusterName, prettyClusterName, clusterVersion, vizierVersion, vizierConfig,
     status, lastHeartbeatMs, numNodes, numInstrumentedNodes,
@@ -105,18 +106,13 @@ function formatCluster(clusterInfo): ClusterDisplay {
 }
 
 export function formatClusters(clusterInfos: GQLClusterInfo[]): ClusterDisplay[] {
+  if (!clusterInfos) {
+    return null;
+  }
   return clusterInfos
     .filter((cluster) => cluster.lastHeartbeatMs < INACTIVE_AGENT_THRESHOLD_MS)
     .map((cluster) => formatCluster(cluster))
-    .sort((clusterA, clusterB) => {
-      if (clusterA.prettyName < clusterB.prettyName) {
-        return -1;
-      }
-      if (clusterA.prettyName > clusterB.prettyName) {
-        return 1;
-      }
-      return 0;
-    });
+    .sort((clusterA, clusterB) => clusterA.prettyName.localeCompare(clusterB.prettyName));
 }
 
 export const ClustersTable = withStyles((theme: Theme) => ({
@@ -133,18 +129,39 @@ export const ClustersTable = withStyles((theme: Theme) => ({
     padding: theme.spacing(1),
   },
 }))(({ classes }: any) => {
-  const [clustersRaw, loading, error] = useListClustersVerbose();
+  const { data, loading, error } = useQuery<{ clusters: GQLClusterInfo[] }>(
+    gql`
+      query listClusterForAdminPage {
+        clusters {
+          id
+          clusterName
+          prettyClusterName
+          clusterVersion
+          vizierVersion
+          vizierConfig {
+            passthroughEnabled
+          }
+          status
+          lastHeartbeatMs
+          numNodes
+          numInstrumentedNodes
+        }
+      }
+    `,
+    { pollInterval: 60000 },
+  );
+
+  const clusters = formatClusters(data?.clusters);
+
   if (loading) {
     return <div className={classes.error}>Loading...</div>;
   }
   if (error) {
     return <div className={classes.error}>{error.toString()}</div>;
   }
-  if (!clustersRaw) {
+  if (!clusters) {
     return <div className={classes.error}>No clusters found.</div>;
   }
-
-  const clusters = formatClusters(clustersRaw);
 
   return (
     <Table>
