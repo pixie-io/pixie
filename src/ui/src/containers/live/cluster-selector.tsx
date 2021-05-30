@@ -65,23 +65,17 @@ const ClusterSelector: React.FC = () => {
   );
 
   const clusters = data?.clusters;
-  const { selectedClusterPrettyName, setClusterByID } = React.useContext(ClusterContext);
+  const { selectedClusterPrettyName, setClusterByName } = React.useContext(ClusterContext);
 
   const getListItems = React.useCallback(async (input: string) => (
     clusters
-      ?.filter((c) => c.status !== GQLClusterStatus.CS_DISCONNECTED && c.prettyClusterName.includes(input))
+      ?.filter((c) => c.status !== GQLClusterStatus.CS_DISCONNECTED && c.clusterName.includes(input))
       .map((c) => ({
-        value: c.prettyClusterName,
+        title: c.prettyClusterName,
+        value: c.clusterName,
         icon: <StatusCell statusGroup={clusterStatusGroup(c.status)} />,
       }))
   ), [clusters]);
-
-  const onSelect = React.useCallback((input: string) => {
-    const selected = clusters?.find((c) => (c.prettyClusterName === input));
-    if (selected) {
-      setClusterByID(selected.id);
-    }
-  }, [clusters, setClusterByID]);
 
   if (loading || !clusters || error) return (<></>);
 
@@ -91,7 +85,7 @@ const ClusterSelector: React.FC = () => {
       <Select
         value={selectedClusterPrettyName}
         getListItems={getListItems}
-        onSelect={onSelect}
+        onSelect={setClusterByName}
         requireCompletion
       />
     </div>

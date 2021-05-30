@@ -32,8 +32,8 @@ import * as QueryString from 'query-string';
 import { makeStyles } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import { useLDClient } from 'launchdarkly-react-client-sdk';
-import { GQLClusterInfo as Cluster, GQLClusterStatus as ClusterStatus, GQLUserInfo } from '@pixie-labs/api';
-import { useListClusters, useClusterPassthroughInfo, useQuery } from '@pixie-labs/api-react';
+import { GQLClusterInfo, GQLClusterStatus, GQLUserInfo } from '@pixie-labs/api';
+import { useQuery } from '@pixie-labs/api-react';
 import { gql } from '@apollo/client';
 import { DeployInstructions } from './deploy-instructions';
 import { selectClusterName } from './cluster-info';
@@ -70,7 +70,21 @@ const ClusterWarningBanner: React.FC<{ user: Pick<GQLUserInfo, 'email' | 'orgNam
 
 // Convenience routes: sends `/scratch`, `/script/http_data`, and others to the appropriate Live url.
 const ScriptShortcut = ({ match, location }) => {
-  const [clusters] = useListClusters();
+  const { data } = useQuery<{
+    clusters: Pick<GQLClusterInfo, 'clusterName' | 'status'>[]
+  }>(
+    gql`
+      query listClustersForConvenienceRoutes {
+        clusters {
+          clusterName
+          status
+        }
+      }
+    `,
+    { pollInterval: 15000 },
+  );
+
+  const clusters = data?.clusters;
   const cluster = React.useMemo(() => selectClusterName(clusters ?? []), [clusters]);
 
   if (cluster == null) return null; // Wait for things to be ready
@@ -93,83 +107,81 @@ const ScriptShortcut = ({ match, location }) => {
   return <Redirect to={newPath} />;
 };
 
-// Selects a default cluster if one hasn't already been selected by the user.
-const useSelectedCluster = () => {
-  const [clusters, loading1, error1] = useListClusters();
-  const { selectedClusterID } = React.useContext(ClusterContext);
-  const [cluster, loading2, error2] = useClusterPassthroughInfo(selectedClusterID ?? '');
-  return {
-    loading: loading1 || loading2,
-    cluster,
-    numClusters: clusters?.length ?? 0,
-    error: error1 ?? error2,
-  };
-};
-
 const Vizier = () => {
-  const showSnackbar = useSnackbar();
+  const { data: countData, loading: countLoading } = useQuery<{
+    clusters: Pick<GQLClusterInfo, 'id'>[]
+  }>(
+    gql`
+      query countClustersForDeployInstructions {
+        clusters {
+          id
+        }
+      }
+    `,
+    { pollInterval: 60000 },
+  );
+  const numClusters = countData?.clusters?.length ?? 0;
 
-  const {
-    loading: clusterLoading, error: clusterError, cluster, numClusters,
-  } = useSelectedCluster();
+  const { selectedClusterID, selectedClusterStatus, selectedClusterVizierConfig } = React.useContext(ClusterContext);
 
-  if (clusterLoading) { return <div>Loading...</div>; }
-
-  const errMsg = clusterError?.message;
-  if (errMsg) {
-    // This is an error with pixie cloud, it is probably not relevant to the user.
-    // Show a generic error message instead.
-    showSnackbar({ message: 'There was a problem connecting to Pixie', autoHideDuration: 5000 });
-    // eslint-disable-next-line no-console
-    console.error(errMsg);
-  }
+  if (countLoading) { return <div>Loading...</div>; }
 
   if (numClusters === 0) {
     return <DeployInstructions />;
   }
 
-  const status: ClusterStatus = cluster?.status || ClusterStatus.CS_UNKNOWN;
-
   return (
     <VizierGRPCClientProvider
-      clusterID={cluster?.id}
-      passthroughEnabled={cluster?.vizierConfig.passthroughEnabled}
-      clusterStatus={errMsg ? ClusterStatus.CS_UNKNOWN : status}
+      clusterID={selectedClusterID}
+      passthroughEnabled={selectedClusterVizierConfig?.passthroughEnabled}
+      clusterStatus={selectedClusterStatus ?? GQLClusterStatus.CS_UNKNOWN}
     >
       <LiveView />
     </VizierGRPCClientProvider>
   );
 };
 
-const invalidCluster = (name: string): Cluster => ({
+type SelectedClusterInfo = Pick<GQLClusterInfo,
+'id' | 'clusterName' | 'prettyClusterName' | 'clusterUID' | 'vizierConfig' | 'status'
+>;
+
+const invalidCluster = (name: string): SelectedClusterInfo => ({
   id: '',
-  status: ClusterStatus.CS_UNKNOWN,
-  lastHeartbeatMs: 0,
+  clusterUID: '',
+  status: GQLClusterStatus.CS_UNKNOWN,
   vizierConfig: null,
   clusterName: name,
   prettyClusterName: name,
-  clusterUID: '',
-  controlPlanePodStatuses: [],
-  numNodes: 0,
-  numInstrumentedNodes: 0,
 });
 
 const ClusterContextProvider: React.FC = ({ children }) => {
   const showSnackbar = useSnackbar();
 
-  const [clusters, loadingClusters, clusterError] = useListClusters();
-
-  const clusterIds = clusters?.map((c) => c.id);
-  const stringifiedClusters = clusterIds?.join('|||||');
-
   const {
     scriptId, clusterName, args, push,
   } = React.useContext(VizierRouteContext);
 
-  const cluster: Cluster = React.useMemo(() => (
-    (clusterName && clusters?.find((c) => c.clusterName === clusterName)) || invalidCluster(clusterName)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  ), [clusterName, stringifiedClusters]);
+  const { data, loading, error } = useQuery<{
+    clusterByName: SelectedClusterInfo
+  }>(
+    gql`
+      query selectedClusterInfo($name: String!) {
+        clusterByName(name: $name) {
+          id
+          clusterName
+          prettyClusterName
+          clusterUID
+          vizierConfig {
+            passthroughEnabled
+          }
+          status
+        }
+      }
+    `,
+    { pollInterval: 60000, variables: { name: clusterName } },
+  );
+
+  const cluster = data?.clusterByName ?? invalidCluster(clusterName);
 
   const setClusterByName = React.useCallback((name: string) => {
     push(name, scriptId, args);
@@ -180,29 +192,23 @@ const ClusterContextProvider: React.FC = ({ children }) => {
     selectedClusterName: cluster?.clusterName,
     selectedClusterPrettyName: cluster?.prettyClusterName,
     selectedClusterUID: cluster?.clusterUID,
-    setClusterByID: (id: string) => {
-      const foundName = id && clusters.find((c) => c.id === id)?.clusterName;
-      setClusterByName(foundName);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    selectedClusterVizierConfig: cluster?.vizierConfig,
+    selectedClusterStatus: cluster?.status,
+    setClusterByName,
   }), [
-    stringifiedClusters,
-    cluster?.id,
-    cluster?.clusterName,
-    cluster?.prettyClusterName,
-    cluster?.clusterUID,
+    cluster,
     setClusterByName,
   ]);
 
-  if (clusterError?.message) {
+  if (error?.message) {
     // This is an error with pixie cloud, it is probably not relevant to the user.
     // Show a generic error message instead.
     showSnackbar({ message: 'There was a problem connecting to Pixie', autoHideDuration: 5000 });
     // eslint-disable-next-line no-console
-    console.error(clusterError?.message);
+    console.error(error?.message);
   }
 
-  if (loadingClusters) { return <div>Loading...</div>; }
+  if (loading) { return <div>Loading...</div>; }
 
   return (
     <ClusterContext.Provider value={clusterContext}>

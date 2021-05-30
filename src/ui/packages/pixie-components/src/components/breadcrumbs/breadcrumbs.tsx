@@ -271,7 +271,7 @@ export const DialogDropdown: React.FC<DialogDropdownProps> = ({
             id: item.value,
             description: item.description,
             icon: item.icon,
-            title: item.value,
+            title: item?.title ?? item.value,
             autoSelectPriority: item.autoSelectPriority ?? 0,
           }));
 
@@ -424,6 +424,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
 
 export interface BreadcrumbListItem {
   value: string;
+  title?: string;
   description?: string;
   icon?: React.ReactNode;
   /** @see{CompletionItem} */

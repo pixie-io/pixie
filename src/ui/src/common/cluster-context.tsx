@@ -17,13 +17,16 @@
  */
 
 import * as React from 'react';
+import { GQLVizierConfig, GQLClusterStatus } from '@pixie-labs/api';
 
 export interface ClusterContextProps {
   selectedClusterID: string;
   selectedClusterName: string;
   selectedClusterPrettyName: string;
   selectedClusterUID: string;
-  setClusterByID: (id: string) => void;
+  selectedClusterVizierConfig: GQLVizierConfig;
+  selectedClusterStatus: GQLClusterStatus;
+  setClusterByName: (id: string) => void;
 }
 
 export const ClusterContext = React.createContext<ClusterContextProps>(null);

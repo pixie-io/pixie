@@ -23,7 +23,7 @@ import {
   getQueryFuncs, parseVis, parseVisSilently, Vis,
 } from 'containers/live/vis';
 import { Script } from 'utils/script-bundle';
-import { PixieAPIContext, useClusterPassthroughInfo } from '@pixie-labs/api-react';
+import { PixieAPIContext } from '@pixie-labs/api-react';
 import {
   containsMutation, ExecutionStateUpdate, isStreaming, VizierQueryError, ClusterConfig, GRPCStatusCode,
   VizierTable as Table,
@@ -86,25 +86,23 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
   const {
     scriptId, args, push,
   } = React.useContext(VizierRouteContext);
-  const { selectedClusterID, selectedClusterName } = React.useContext(ClusterContext);
+  const { selectedClusterID, selectedClusterName, selectedClusterVizierConfig } = React.useContext(ClusterContext);
   const { scripts: availableScripts, loading: loadingAvailableScripts } = React.useContext(ScriptsContext);
   const resultsContext = React.useContext(ResultsContext);
   const showSnackbar = useSnackbar();
 
-  const [clusterInfo, loadingClusterInfo] = useClusterPassthroughInfo(selectedClusterID ?? '');
-
   const clusterConfig: ClusterConfig | null = React.useMemo(() => {
-    if (loadingClusterInfo || !clusterInfo) return null;
+    if (!selectedClusterID) return null;
     // If cloud is running in dev mode, automatically direct to Envoy's port, since there is
     // no GCLB to redirect for us in dev.
-    const passthroughClusterAddress = clusterInfo.vizierConfig.passthroughEnabled
+    const passthroughClusterAddress = selectedClusterVizierConfig.passthroughEnabled
       ? window.location.origin + (isDev() ? ':4444' : '') : undefined;
     return {
-      id: clusterInfo.id,
+      id: selectedClusterID,
       attachCredentials: true,
       passthroughClusterAddress,
     };
-  }, [clusterInfo, loadingClusterInfo]);
+  }, [selectedClusterID, selectedClusterVizierConfig]);
 
   const [script, setScript] = React.useState<ParsedScript>(null);
   const [manual, setManual] = React.useState(false);

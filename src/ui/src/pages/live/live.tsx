@@ -16,12 +16,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { gql } from '@apollo/client';
 import * as React from 'react';
 
 import { scrollbarStyles, EditIcon, Footer } from '@pixie-labs/components';
-import { GQLClusterInfo, GQLClusterStatus } from '@pixie-labs/api';
-import { useQuery } from '@pixie-labs/api-react';
+import { GQLClusterStatus } from '@pixie-labs/api';
 import {
   makeStyles, Theme,
 } from '@material-ui/core/styles';
@@ -247,7 +245,7 @@ const ClusterLoadingComponent = ({
 const LiveView: React.FC = () => {
   const classes = useStyles();
 
-  const { selectedClusterName, selectedClusterPrettyName } = React.useContext(ClusterContext);
+  const { selectedClusterName, selectedClusterPrettyName, selectedClusterStatus } = React.useContext(ClusterContext);
   const { script, args, cancelExecution } = React.useContext(ScriptContext);
   const { saveEditor } = React.useContext(EditorContext);
   const { isMobile, setEditorPanelOpen, setDataDrawerOpen } = React.useContext(LayoutContext);
@@ -272,22 +270,6 @@ const LiveView: React.FC = () => {
   React.useCallback(() => {
     setHealthyOnce((prev) => (prev || healthy));
   }, [healthy]);
-
-  const { data } = useQuery<{
-    clusterByName: Pick<GQLClusterInfo, 'id' | 'status'>
-  }>(
-    gql`
-    query GetClusterStatusByName($name: String!) {
-      clusterByName(name: $name) {
-        id
-        status
-      }
-    }`, { pollInterval: 5000, variables: { name: selectedClusterName } },
-  );
-
-  const clusterStatus = React.useMemo(() => (
-    data?.clusterByName?.status ?? GQLClusterStatus.CS_UNKNOWN
-  ), [data]);
 
   // Opens the editor if the current script is a scratch script.
   React.useEffect(() => {
@@ -354,7 +336,7 @@ const LiveView: React.FC = () => {
           <div className={classes.main}>
             <div className={classes.mainContent}>
               <LiveViewBreadcrumbs />
-              {(clusterStatus === GQLClusterStatus.CS_HEALTHY && script && healthy) ? (
+              {(selectedClusterStatus === GQLClusterStatus.CS_HEALTHY && script && healthy) ? (
                 <div className={classes.canvas} ref={canvasRef}>
                   <Canvas editable={widgetsMoveable} parentRef={canvasRef} />
                 </div>
@@ -362,7 +344,7 @@ const LiveView: React.FC = () => {
                 <div className='center-content'>
                   <ClusterLoadingComponent
                     clusterPrettyName={selectedClusterPrettyName}
-                    clusterStatus={clusterStatus}
+                    clusterStatus={selectedClusterStatus}
                     script={script}
                     healthy={healthyOnce}
                   />

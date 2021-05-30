@@ -100,10 +100,14 @@ export const LIVE_CONTEXT_DEFAULTS: Required<MockProps> = {
   },
   cluster: {
     selectedClusterID: '',
-    selectedClusterUID: '',
     selectedClusterName: '',
     selectedClusterPrettyName: '',
-    setClusterByID: jest.fn(),
+    selectedClusterUID: '',
+    selectedClusterVizierConfig: {
+      passthroughEnabled: true,
+    },
+    selectedClusterStatus: ClusterStatus.CS_UNKNOWN,
+    setClusterByName: jest.fn(),
   },
 };
 
