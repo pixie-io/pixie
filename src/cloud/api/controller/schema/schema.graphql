@@ -219,7 +219,7 @@ type Mutation {
   UpdateUserSettings(keys: [String]!, values: [String]!): Boolean!
   InviteUser(email: String!, firstName: String!, lastName: String!): UserInvite!
   UpdateUser(userInfo: EditableUserInfo): Boolean!
-  UpdateOrg(orgInfo: EditableOrgInfo): Boolean!
+  UpdateOrgSettings(orgID: ID!, orgSettings: EditableOrgSettings!): OrgInfo!
 }
 
 input EditableUserInfo {
@@ -228,8 +228,7 @@ input EditableUserInfo {
   isApproved: Boolean
 }
 
-input EditableOrgInfo {
-  id: ID!
+input EditableOrgSettings {
   enableApprovals: Boolean
 }
 

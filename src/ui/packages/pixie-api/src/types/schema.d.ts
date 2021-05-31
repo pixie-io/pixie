@@ -1,21 +1,3 @@
-/*
- * Copyright 2018- The Pixie Authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- */
-
 /* tslint:disable */
 /* eslint-disable */
 import { GraphQLResolveInfo } from 'graphql';
@@ -217,7 +199,7 @@ export interface GQLMutation {
   UpdateUserSettings: boolean;
   InviteUser: GQLUserInvite;
   UpdateUser: boolean;
-  UpdateOrg: boolean;
+  UpdateOrgSettings: GQLOrgInfo;
 }
 
 export interface GQLEditableUserInfo {
@@ -226,8 +208,7 @@ export interface GQLEditableUserInfo {
   isApproved?: boolean;
 }
 
-export interface GQLEditableOrgInfo {
-  id: string;
+export interface GQLEditableOrgSettings {
   enableApprovals?: boolean;
 }
 
@@ -821,7 +802,7 @@ export interface GQLMutationTypeResolver<TParent = any> {
   UpdateUserSettings?: MutationToUpdateUserSettingsResolver<TParent>;
   InviteUser?: MutationToInviteUserResolver<TParent>;
   UpdateUser?: MutationToUpdateUserResolver<TParent>;
-  UpdateOrg?: MutationToUpdateOrgResolver<TParent>;
+  UpdateOrgSettings?: MutationToUpdateOrgSettingsResolver<TParent>;
 }
 
 export interface MutationToCreateClusterResolver<TParent = any, TResult = any> {
@@ -882,11 +863,12 @@ export interface MutationToUpdateUserResolver<TParent = any, TResult = any> {
   (parent: TParent, args: MutationToUpdateUserArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
-export interface MutationToUpdateOrgArgs {
-  orgInfo?: GQLEditableOrgInfo;
+export interface MutationToUpdateOrgSettingsArgs {
+  orgID: string;
+  orgSettings: GQLEditableOrgSettings;
 }
-export interface MutationToUpdateOrgResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: MutationToUpdateOrgArgs, context: any, info: GraphQLResolveInfo): TResult;
+export interface MutationToUpdateOrgSettingsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: MutationToUpdateOrgSettingsArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface GQLCLIArtifactTypeResolver<TParent = any> {

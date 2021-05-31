@@ -95,25 +95,16 @@ func (q *QueryResolver) OrgUsers(ctx context.Context) ([]*UserInfoResolver, erro
 
 // OrgInfoResolver resolves org information.
 type OrgInfoResolver struct {
-	SessionCtx *authcontext.AuthContext
-	GQLEnv     *GraphQLEnv
-	ctx        context.Context
-	OrgInfo    *cloudpb.OrgInfo
+	OrgInfo *cloudpb.OrgInfo
 }
 
 // ID returns the org id.
 func (u *OrgInfoResolver) ID() graphql.ID {
-	if u.OrgInfo != nil && u.OrgInfo.ID != nil {
-		return graphql.ID(utils.ProtoToUUIDStr(u.OrgInfo.ID))
-	}
-	return graphql.ID(u.SessionCtx.Claims.GetUserClaims().OrgID)
+	return graphql.ID(utils.ProtoToUUIDStr(u.OrgInfo.ID))
 }
 
 // Name returns the org name.
 func (u *OrgInfoResolver) Name() string {
-	if u.OrgInfo == nil {
-		return ""
-	}
 	return u.OrgInfo.OrgName
 }
 
@@ -129,38 +120,49 @@ func (q *QueryResolver) Org(ctx context.Context) (*OrgInfoResolver, error) {
 		return nil, err
 	}
 	grpcAPI := q.Env.OrgServer
-	orgInfo, err := grpcAPI.GetOrg(ctx, utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().OrgID))
+	idPb := utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().OrgID)
+	orgInfo, err := grpcAPI.GetOrg(ctx, idPb)
 	if err != nil {
-		orgInfo = nil
+		orgInfo = &cloudpb.OrgInfo{
+			ID: idPb,
+		}
 	}
-	return &OrgInfoResolver{sCtx, &q.Env, ctx, orgInfo}, nil
+	return &OrgInfoResolver{orgInfo}, nil
 }
 
-type updateOrgArgs struct {
-	OrgInfo *editableOrgInfo
+type updateOrgSettingsArgs struct {
+	OrgID       graphql.ID
+	OrgSettings editableOrgSettings
 }
 
-type editableOrgInfo struct {
-	ID              graphql.ID
+type editableOrgSettings struct {
 	EnableApprovals *bool
 }
 
-// UpdateOrg updates the org info.
-func (q *QueryResolver) UpdateOrg(ctx context.Context, args *updateOrgArgs) (bool, error) {
+// UpdateOrgSettings updates settings for the given org.
+func (q *QueryResolver) UpdateOrgSettings(ctx context.Context, args updateOrgSettingsArgs) (*OrgInfoResolver, error) {
+	idPb := utils.ProtoFromUUIDStrOrNil(string(args.OrgID))
 	req := &cloudpb.UpdateOrgRequest{
-		ID: utils.ProtoFromUUIDStrOrNil(string(args.OrgInfo.ID)),
+		ID: idPb,
 	}
 
-	if args.OrgInfo.EnableApprovals != nil {
+	if args.OrgSettings.EnableApprovals != nil {
 		req.EnableApprovals = &types.BoolValue{
-			Value: *args.OrgInfo.EnableApprovals,
+			Value: *args.OrgSettings.EnableApprovals,
 		}
 	}
 
 	grpcAPI := q.Env.OrgServer
 	_, err := grpcAPI.UpdateOrg(ctx, req)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
-	return true, nil
+
+	orgInfo, err := grpcAPI.GetOrg(ctx, idPb)
+	if err != nil {
+		orgInfo = &cloudpb.OrgInfo{
+			ID: idPb,
+		}
+	}
+	return &OrgInfoResolver{orgInfo}, nil
 }

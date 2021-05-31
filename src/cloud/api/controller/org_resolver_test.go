@@ -36,10 +36,20 @@ func TestUserSettingsResolver_UpdateOrg(t *testing.T) {
 	defer cleanup()
 	ctx := CreateTestContext()
 
+	idPb := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9")
+
 	mockClients.MockOrg.EXPECT().UpdateOrg(gomock.Any(), &cloudpb.UpdateOrgRequest{
-		ID:              utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9"),
+		ID:              idPb,
 		EnableApprovals: &types.BoolValue{Value: true},
 	}).Return(nil, nil)
+
+	mockClients.MockOrg.EXPECT().
+		GetOrg(gomock.Any(), idPb).
+		Return(&cloudpb.OrgInfo{
+			EnableApprovals: true,
+			OrgName:         "testOrg.com",
+			ID:              idPb,
+		}, nil)
 
 	gqlSchema := LoadSchema(gqlEnv)
 	gqltesting.RunTests(t, []*gqltesting.Test{
@@ -48,12 +58,18 @@ func TestUserSettingsResolver_UpdateOrg(t *testing.T) {
 			Context: ctx,
 			Query: `
 				mutation {
-					UpdateOrg(orgInfo: {id: "6ba7b810-9dad-11d1-80b4-00c04fd430c9", enableApprovals: true })
+					UpdateOrgSettings(orgID: "6ba7b810-9dad-11d1-80b4-00c04fd430c9", orgSettings: { enableApprovals: true }) {
+						name
+						enableApprovals
+					}
 				}
 			`,
 			ExpectedResult: `
 				{
-					"UpdateOrg": true
+					"UpdateOrgSettings": {
+						"name": "testOrg.com",
+						"enableApprovals": true
+					}
 				}
 			`,
 		},

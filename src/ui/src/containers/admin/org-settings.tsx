@@ -16,13 +16,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { gql } from '@apollo/client';
 import * as React from 'react';
 import Table from '@material-ui/core/Table';
 import Button from '@material-ui/core/Button';
 import TableBody from '@material-ui/core/TableBody';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
-import { useOrgInfo } from '@pixie-labs/api-react';
+import { useMutation, useQuery } from '@pixie-labs/api-react';
+import { GQLOrgInfo } from '@pixie-labs/api';
 import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import {
@@ -41,7 +43,31 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 export const OrgSettings: React.FC = () => {
   const classes = useStyles();
 
-  const [{ org, updateOrgInfo }, loading, error] = useOrgInfo();
+  const { data, loading, error } = useQuery<{ org: GQLOrgInfo }>(
+    gql`
+      query getSettingsForCurrentOrg{
+        org {
+          id
+          name
+          enableApprovals
+        }
+      }
+    `,
+    { pollInterval: 60000 },
+  );
+  const org = data?.org;
+
+  const [updateOrgApprovalSetting] = useMutation<GQLOrgInfo, { orgID: string, enableApprovals: boolean }>(
+    gql`
+      mutation UpdateOrgApprovalSetting ($orgID: ID!, $enableApprovals: Boolean!) {
+        UpdateOrgSettings(orgID: $orgID, orgSettings: { enableApprovals: $enableApprovals}) {
+          id
+          name
+          enableApprovals
+        }
+      }
+    `,
+  );
 
   if (loading) {
     return <div className={classes.error}>Loading...</div>;
@@ -74,7 +100,14 @@ export const OrgSettings: React.FC = () => {
               <Button
                 className={classes.button}
                 onClick={() => {
-                  updateOrgInfo(org.id, !org.enableApprovals);
+                  updateOrgApprovalSetting({
+                    optimisticResponse: {
+                      id: org.id,
+                      name: org.name,
+                      enableApprovals: !org.enableApprovals,
+                    },
+                    variables: { orgID: org.id, enableApprovals: !org.enableApprovals },
+                  });
                 }}
                 variant='outlined'
                 color='primary'
