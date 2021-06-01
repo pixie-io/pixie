@@ -26,7 +26,7 @@
 
 #include <pypa/parser/parser.hh>
 
-#include "src/carnot/planner/compiler/analyzer.h"
+#include "src/carnot/planner/compiler/analyzer/analyzer.h"
 #include "src/carnot/planner/compiler/optimizer/merge_nodes.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 

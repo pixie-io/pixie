@@ -26,7 +26,7 @@
 
 #include <pypa/parser/parser.hh>
 
-#include "src/carnot/planner/compiler/analyzer.h"
+#include "src/carnot/planner/compiler/analyzer/analyzer.h"
 #include "src/carnot/planner/compiler/optimizer/filter_push_down.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"

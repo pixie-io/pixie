@@ -27,7 +27,7 @@
 #include <pypa/ast/tree_walker.hh>
 #include <pypa/parser/parser.hh>
 
-#include "src/carnot/planner/compiler/analyzer.h"
+#include "src/carnot/planner/compiler/analyzer/analyzer.h"
 #include "src/carnot/planner/compiler/compiler.h"
 #include "src/carnot/planner/compiler/optimizer/optimizer.h"
 #include "src/carnot/planner/ir/ir_nodes.h"
