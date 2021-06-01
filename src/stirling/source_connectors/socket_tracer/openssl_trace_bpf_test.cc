@@ -113,7 +113,7 @@ class OpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ fals
     // Run the nginx HTTPS server.
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
-    StatusOr<std::string> run_result = server_.Run(60);
+    StatusOr<std::string> run_result = server_.Run(std::chrono::seconds{60});
     PL_CHECK_OK(run_result);
 
     // Sleep an additional second, just to be safe.
@@ -178,7 +178,8 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_curl_client) {
   // Run the client in the network of the server, so they can connect to each other.
   CurlContainer client;
   PL_CHECK_OK(
-      client.Run(10, {absl::Substitute("--network=container:$0", this->server_.container_name())},
+      client.Run(std::chrono::seconds{60},
+                 {absl::Substitute("--network=container:$0", this->server_.container_name())},
                  {"--insecure", "-s", "-S", "https://localhost:443/index.html"}));
   client.Wait();
 
@@ -243,7 +244,8 @@ TYPED_TEST(OpenSSLTraceTest, ssl_capture_ruby_client) {
   // Run the client in the network of the server, so they can connect to each other.
   RubyContainer client;
   PL_CHECK_OK(
-      client.Run(10, {absl::Substitute("--network=container:$0", this->server_.container_name())},
+      client.Run(std::chrono::seconds{60},
+                 {absl::Substitute("--network=container:$0", this->server_.container_name())},
                  {"ruby", "-e", rb_script}));
   client.Wait();
 

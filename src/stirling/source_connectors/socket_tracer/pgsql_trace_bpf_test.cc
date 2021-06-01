@@ -77,7 +77,9 @@ class GolangSQLxContainer : public ContainerRunner {
 
 class PostgreSQLTraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ true> {
  protected:
-  PostgreSQLTraceTest() { PL_CHECK_OK(container_.Run(150, {"--env=POSTGRES_PASSWORD=docker"})); }
+  PostgreSQLTraceTest() {
+    PL_CHECK_OK(container_.Run(std::chrono::seconds{150}, {"--env=POSTGRES_PASSWORD=docker"}));
+  }
 
   PostgreSQLContainer container_;
 };
@@ -159,7 +161,8 @@ TEST_F(PostgreSQLTraceTest, GolangSqlxDemo) {
 
   GolangSQLxContainer sqlx_container;
   PL_CHECK_OK(sqlx_container.Run(
-      10, {absl::Substitute("--network=container:$0", container_.container_name())}));
+      std::chrono::seconds{10},
+      {absl::Substitute("--network=container:$0", container_.container_name())}));
 
   StopTransferDataThread();
 
