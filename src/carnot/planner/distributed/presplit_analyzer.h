@@ -46,8 +46,13 @@ class PreSplitAnalyzer : public RuleExecutor<IR> {
  private:
   explicit PreSplitAnalyzer(CompilerState* compiler_state) : compiler_state_(compiler_state) {}
 
+  void CreateSplitPEMOnlyUDFsBatch() {
+    RuleBatch* split_pem_and_kelvin_udfs = CreateRuleBatch<TryUntilMax>("SplitPEMOnlyUDFs", 1);
+    split_pem_and_kelvin_udfs->AddRule<SplitPEMAndKelvinOnlyUDFOperatorRule>(compiler_state_);
+  }
+
   Status Init() {
-    PL_UNUSED(compiler_state_);
+    CreateSplitPEMOnlyUDFsBatch();
     return Status::OK();
   }
 

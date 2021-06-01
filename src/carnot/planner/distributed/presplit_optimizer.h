@@ -45,8 +45,13 @@ class PreSplitOptimizer : public RuleExecutor<IR> {
  private:
   explicit PreSplitOptimizer(CompilerState* compiler_state) : compiler_state_(compiler_state) {}
 
+  void CreateLimitPushdownBatch() {
+    RuleBatch* limit_pushdown = CreateRuleBatch<FailOnMax>("LimitPushdown", 2);
+    limit_pushdown->AddRule<LimitPushdownRule>(compiler_state_);
+  }
+
   Status Init() {
-    PL_UNUSED(compiler_state_);
+    CreateLimitPushdownBatch();
     return Status::OK();
   }
 

@@ -150,3 +150,23 @@ pl_cc_test(
         "//src/carnot/planner/rules:test_utils",
     ],
 )
+
+pl_cc_test(
+    name = "presplit_analyzer_test",
+    srcs = ["presplit_analyzer_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner:test_utils",
+        "//src/carnot/planner/rules:test_utils",
+    ],
+)
+
+pl_cc_test(
+    name = "presplit_optimizer_test",
+    srcs = ["presplit_optimizer_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner:test_utils",
+        "//src/carnot/planner/rules:test_utils",
+    ],
+)
