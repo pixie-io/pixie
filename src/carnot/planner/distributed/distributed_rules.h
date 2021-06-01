@@ -112,18 +112,6 @@ class DistributedPruneUnavailableSourcesRule : public DistributedRule {
 };
 
 /**
- * @brief Prunes out plans that don't have nodes.
- *
- */
-class PruneEmptyPlansRule : public DistributedRule {
- public:
-  PruneEmptyPlansRule()
-      : DistributedRule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
-
- protected:
-  StatusOr<bool> Apply(distributed::CarnotInstance* node) override;
-};
-/**
  * @brief LoadSchemaMap loads the schema map from a distributed state.
  *
  * @param distributed_state
@@ -144,15 +132,6 @@ class AnnotateAbortableSrcsForLimitsRule : public Rule {
 
  protected:
   StatusOr<bool> Apply(IRNode* node) override;
-};
-
-class DistributedAnnotateAbortableSrcsForLimitsRule : public DistributedRule {
- public:
-  DistributedAnnotateAbortableSrcsForLimitsRule()
-      : DistributedRule(nullptr, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
-
- protected:
-  StatusOr<bool> Apply(distributed::CarnotInstance* node) override;
 };
 
 /**

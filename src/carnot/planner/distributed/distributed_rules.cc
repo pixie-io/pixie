@@ -176,14 +176,6 @@ StatusOr<bool> DistributedPruneUnavailableSourcesRule::Apply(
   return rule.Execute(carnot_instance->plan());
 }
 
-StatusOr<bool> PruneEmptyPlansRule::Apply(distributed::CarnotInstance* node) {
-  if (node->plan()->FindNodesThatMatch(Operator()).size() > 0) {
-    return false;
-  }
-  PL_RETURN_IF_ERROR(node->distributed_plan()->DeleteNode(node->id()));
-  return true;
-}
-
 StatusOr<SchemaToAgentsMap> LoadSchemaMap(
     const distributedpb::DistributedState& distributed_state,
     const absl::flat_hash_map<sole::uuid, int64_t>& uuid_to_id_map) {
@@ -201,12 +193,6 @@ StatusOr<SchemaToAgentsMap> LoadSchemaMap(
     agent_schema_map[schema.name()] = std::move(agent_ids);
   }
   return agent_schema_map;
-}
-
-StatusOr<bool> DistributedAnnotateAbortableSrcsForLimitsRule::Apply(
-    distributed::CarnotInstance* carnot_instance) {
-  AnnotateAbortableSrcsForLimitsRule rule;
-  return rule.Execute(carnot_instance->plan());
 }
 
 StatusOr<bool> AnnotateAbortableSrcsForLimitsRule::Apply(IRNode* node) {
