@@ -22,10 +22,13 @@ go_library(
     importpath = "px.dev/pixie/src/operator/controllers",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/api/proto/cloudpb:cloudapi_pl_go_proto",
         "//src/operator/api/v1alpha1",
+        "//src/shared/services",
         "@com_github_sirupsen_logrus//:logrus",
         "@io_k8s_apimachinery//pkg/runtime",
         "@io_k8s_sigs_controller_runtime//:controller-runtime",
         "@io_k8s_sigs_controller_runtime//pkg/client",
+        "@org_golang_google_grpc//:go_default_library",
     ],
 )
