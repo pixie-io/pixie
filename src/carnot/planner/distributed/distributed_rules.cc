@@ -357,7 +357,7 @@ std::string GetUniqueOutputName(FuncIR* input_expr,
 // If `expr` or one of its children is a PEM-only UDF, move it to be an output
 // of the PEM-only map.
 StatusOr<absl::flat_hash_set<std::string>>
-SplitPEMandKelvinOnlyUDFOperatorRule::OptionallyUpdateExpression(
+SplitPEMAndKelvinOnlyUDFOperatorRule::OptionallyUpdateExpression(
     IRNode* expr_parent, ExpressionIR* expr, MapIR* pem_only_map,
     const absl::flat_hash_set<std::string>& used_column_names) {
   if (!Match(expr, Func())) {
@@ -393,6 +393,7 @@ SplitPEMandKelvinOnlyUDFOperatorRule::OptionallyUpdateExpression(
                                                                   /*parent_op_idx*/ 0));
   // This column should have the same type as the expression, since it's just a projection.
   input_col->ResolveColumnType(expr->EvaluatedDataType());
+  PL_RETURN_IF_ERROR(input_col->SetResolvedType(expr->resolved_type()));
 
   // Add the PEM-only expression to the PEM-only map.
   // It will get deleted from its original parent next.
@@ -418,7 +419,7 @@ SplitPEMandKelvinOnlyUDFOperatorRule::OptionallyUpdateExpression(
   return new_col_names;
 }
 
-StatusOr<bool> SplitPEMandKelvinOnlyUDFOperatorRule::Apply(IRNode* node) {
+StatusOr<bool> SplitPEMAndKelvinOnlyUDFOperatorRule::Apply(IRNode* node) {
   if (!Match(node, Map()) && !Match(node, Filter())) {
     return false;
   }
@@ -426,7 +427,13 @@ StatusOr<bool> SplitPEMandKelvinOnlyUDFOperatorRule::Apply(IRNode* node) {
   PL_ASSIGN_OR_RETURN(
       auto has_pem_only_udf,
       HasFuncWithExecutor(compiler_state_, node, udfspb::UDFSourceExecutor::UDF_PEM));
-  if (!has_pem_only_udf) {
+  PL_ASSIGN_OR_RETURN(
+      auto has_kelvin_only_udf,
+      HasFuncWithExecutor(compiler_state_, node, udfspb::UDFSourceExecutor::UDF_KELVIN));
+
+  // Don't need to split this node unless a Kelvin-only UDF is scheduled on the
+  // same operator as a PEM-only UDF.
+  if (!has_pem_only_udf || !has_kelvin_only_udf) {
     return false;
   }
 
@@ -495,6 +502,7 @@ StatusOr<bool> SplitPEMandKelvinOnlyUDFOperatorRule::Apply(IRNode* node) {
   // The relation of the parent should be unchanged, since it is just a reassignment
   // of the same output value.
   PL_RETURN_IF_ERROR(pem_map->SetRelationFromExprs());
+  PL_RETURN_IF_ERROR(ResolveOperatorType(pem_map, compiler_state_));
   PL_RETURN_IF_ERROR(op->ReplaceParent(parent, pem_map));
   return true;
 }

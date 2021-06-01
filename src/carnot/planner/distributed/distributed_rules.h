@@ -170,9 +170,9 @@ class ScalarUDFsRunOnKelvinRule : public Rule {
  * This rule prevents PEM-only UDFs and Kelvin-only UDFs from being scheduled on
  * the same operator.
  */
-class SplitPEMandKelvinOnlyUDFOperatorRule : public Rule {
+class SplitPEMAndKelvinOnlyUDFOperatorRule : public Rule {
  public:
-  explicit SplitPEMandKelvinOnlyUDFOperatorRule(CompilerState* compiler_state)
+  explicit SplitPEMAndKelvinOnlyUDFOperatorRule(CompilerState* compiler_state)
       : Rule(compiler_state, /*use_topo*/ false, /*reverse_topological_execution*/ false) {}
 
  protected:
