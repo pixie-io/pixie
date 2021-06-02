@@ -96,6 +96,7 @@ go_test(
     embed = [":controller"],
     deps = [
         "//src/api/proto/cloudpb:cloudapi_pl_go_proto",
+        "//src/api/proto/cloudpb/mock",
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/api/proto/vispb:vis_pl_go_proto",
         "//src/cloud/api/apienv",
@@ -107,7 +108,6 @@ go_test(
         "//src/cloud/autocomplete",
         "//src/cloud/autocomplete/mock",
         "//src/cloud/profile/profilepb:service_pl_go_proto",
-        "//src/cloud/profile/profilepb/mock",
         "//src/cloud/scriptmgr/scriptmgrpb:service_pl_go_proto",
         "//src/cloud/scriptmgr/scriptmgrpb/mock",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",

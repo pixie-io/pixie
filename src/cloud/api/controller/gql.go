@@ -27,7 +27,6 @@ import (
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/cloud/api/controller/schema"
 	unauthenticatedschema "px.dev/pixie/src/cloud/api/controller/unauthenticated_schema"
-	"px.dev/pixie/src/cloud/profile/profilepb"
 )
 
 // GraphQLEnv holds the GRPC API servers so the GraphQL server can call out to them.
@@ -39,7 +38,7 @@ type GraphQLEnv struct {
 	ScriptMgrServer       cloudpb.ScriptMgrServer
 	AutocompleteServer    cloudpb.AutocompleteServiceServer
 	OrgServer             cloudpb.OrganizationServiceServer
-	ProfileServiceClient  profilepb.ProfileServiceClient
+	UserServer            cloudpb.UserServiceServer
 }
 
 // QueryResolver resolves queries for GQL.

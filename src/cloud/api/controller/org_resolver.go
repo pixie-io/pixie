@@ -25,7 +25,6 @@ import (
 	"github.com/graph-gophers/graphql-go"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
-	"px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/shared/services/authcontext"
 	"px.dev/pixie/src/utils"
 )
@@ -79,7 +78,7 @@ func (q *QueryResolver) OrgUsers(ctx context.Context) ([]*UserInfoResolver, erro
 
 	userResolvers := make([]*UserInfoResolver, len(resp.Users))
 	for idx, user := range resp.Users {
-		userResolvers[idx] = &UserInfoResolver{sCtx, &q.Env, ctx, &profilepb.UserInfo{
+		userResolvers[idx] = &UserInfoResolver{sCtx, &q.Env, ctx, &cloudpb.UserInfo{
 			ID:             user.ID,
 			OrgID:          user.OrgID,
 			Username:       user.Username,

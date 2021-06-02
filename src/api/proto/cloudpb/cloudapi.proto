@@ -29,6 +29,15 @@ import "google/protobuf/wrappers.proto";
 import "src/api/proto/uuidpb/uuid.proto";
 import "src/api/proto/vispb/vis.proto";
 
+// service UserService enables users to update/retrieve user information.
+service UserService {
+  rpc GetOrg(px.uuidpb.UUID) returns (OrgInfo);
+  rpc GetUser(px.uuidpb.UUID) returns (UserInfo);
+  rpc GetUserSettings(GetUserSettingsRequest) returns (GetUserSettingsResponse);
+  rpc UpdateUserSettings(UpdateUserSettingsRequest) returns (UpdateUserSettingsResponse);
+  rpc UpdateUser(UpdateUserRequest) returns (UserInfo);
+}
+
 //
 // * NOTICE: EXTERNAL
 // * This file is meant as the external protobuf interface for the cloud.
@@ -43,6 +52,39 @@ service OrganizationService {
   rpc GetOrg(px.uuidpb.UUID) returns (OrgInfo);
   rpc UpdateOrg(UpdateOrgRequest) returns (OrgInfo);
   rpc GetUsersInOrg(GetUsersInOrgRequest) returns (GetUsersInOrgResponse);
+}
+
+message UpdateUserRequest {
+  // The ID of the user.
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  google.protobuf.StringValue display_picture = 2;
+  google.protobuf.BoolValue is_approved = 3;
+}
+
+// A request to update the user settings for a particular user.
+message UpdateUserSettingsRequest {
+  // The ID of the user.
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  // Settings for users key-value. 
+  map<string, string> setting_map = 2; 
+}
+
+// UpdateUserSettingsResponse is the response to an UpdateUserSettingsRequest.
+message UpdateUserSettingsResponse {
+}
+
+// A request to get the user settings for a particular user.
+message GetUserSettingsRequest {
+  // The ID of the user.
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  // The user setting keys to fetch.
+  repeated string keys = 2;
+}
+
+// The response for a UserSettingsRequest.
+message GetUserSettingsResponse {
+  // Settings for users key-value. 
+  map<string, string> setting_map = 1; 
 }
 
 message InviteUserRequest {

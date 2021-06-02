@@ -42,6 +42,7 @@ type MockCloudClients struct {
 	MockScriptMgr         *mock_cloudpb.MockScriptMgrServer
 	MockAutocomplete      *mock_cloudpb.MockAutocompleteServiceServer
 	MockOrg               *mock_cloudpb.MockOrganizationServiceServer
+	MockUser              *mock_cloudpb.MockUserServiceServer
 	MockAPIKey            *mock_cloudpb.MockAPIKeyManagerServer
 }
 
@@ -54,6 +55,7 @@ func CreateTestGraphQLEnv(t *testing.T) (controller.GraphQLEnv, *MockCloudClient
 	sms := mock_cloudpb.NewMockScriptMgrServer(ctrl)
 	as := mock_cloudpb.NewMockAutocompleteServiceServer(ctrl)
 	os := mock_cloudpb.NewMockOrganizationServiceServer(ctrl)
+	us := mock_cloudpb.NewMockUserServiceServer(ctrl)
 	gqlEnv := controller.GraphQLEnv{
 		ArtifactTrackerServer: ats,
 		VizierClusterInfo:     vcs,
@@ -61,6 +63,7 @@ func CreateTestGraphQLEnv(t *testing.T) (controller.GraphQLEnv, *MockCloudClient
 		ScriptMgrServer:       sms,
 		AutocompleteServer:    as,
 		OrgServer:             os,
+		UserServer:            us,
 	}
 	cleanup := func() {
 		if r := recover(); r != nil {
@@ -75,6 +78,7 @@ func CreateTestGraphQLEnv(t *testing.T) (controller.GraphQLEnv, *MockCloudClient
 		MockScriptMgr:         sms,
 		MockAutocomplete:      as,
 		MockOrg:               os,
+		MockUser:              us,
 	}, cleanup
 }
 

@@ -25,7 +25,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/graph-gophers/graphql-go"
 
-	"px.dev/pixie/src/cloud/profile/profilepb"
+	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/shared/services/authcontext"
 	"px.dev/pixie/src/utils"
 )
@@ -35,7 +35,7 @@ type UserInfoResolver struct {
 	SessionCtx *authcontext.AuthContext
 	GQLEnv     *GraphQLEnv
 	ctx        context.Context
-	UserInfo   *profilepb.UserInfo
+	UserInfo   *cloudpb.UserInfo
 }
 
 // User resolves user information.
@@ -44,12 +44,11 @@ func (q *QueryResolver) User(ctx context.Context) (*UserInfoResolver, error) {
 	if err != nil {
 		return nil, err
 	}
-	grpcAPI := q.Env.ProfileServiceClient
-	userInfo, err := grpcAPI.GetUser(ctx, utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID))
+
+	userInfo, err := q.Env.UserServer.GetUser(ctx, utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID))
 	if err != nil {
 		userInfo = nil
 	}
-
 	return &UserInfoResolver{sCtx, &q.Env, ctx, userInfo}, nil
 }
 
@@ -95,7 +94,7 @@ func (u *UserInfoResolver) OrgID() string {
 func (u *UserInfoResolver) OrgName() string {
 	orgID := u.SessionCtx.Claims.GetUserClaims().OrgID
 
-	org, err := u.GQLEnv.ProfileServiceClient.GetOrg(u.ctx, utils.ProtoFromUUIDStrOrNil(orgID))
+	org, err := u.GQLEnv.UserServer.GetOrg(u.ctx, utils.ProtoFromUUIDStrOrNil(orgID))
 	if err != nil {
 		return ""
 	}
@@ -140,8 +139,7 @@ func (q *QueryResolver) UserSettings(ctx context.Context, args *userSettingsArgs
 		keys[i] = *args.Keys[i]
 	}
 
-	grpcAPI := q.Env.ProfileServiceClient
-	resp, err := grpcAPI.GetUserSettings(ctx, &profilepb.GetUserSettingsRequest{
+	resp, err := q.Env.UserServer.GetUserSettings(ctx, &cloudpb.GetUserSettingsRequest{
 		ID:   utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID),
 		Keys: keys,
 	})
@@ -150,8 +148,10 @@ func (q *QueryResolver) UserSettings(ctx context.Context, args *userSettingsArgs
 	}
 
 	resolvers := make([]*UserSettingResolver, len(args.Keys))
-	for i, k := range resp.Keys {
-		resolvers[i] = &UserSettingResolver{k, resp.Values[i]}
+	i := 0
+	for k, v := range resp.SettingMap {
+		resolvers[i] = &UserSettingResolver{k, v}
+		i++
 	}
 
 	return resolvers, nil
@@ -168,32 +168,30 @@ func (q *QueryResolver) UpdateUserSettings(ctx context.Context, args *updateUser
 	if err != nil {
 		return false, err
 	}
-	grpcAPI := q.Env.ProfileServiceClient
 
-	keys := make([]string, len(args.Keys))
-	for i := range args.Keys {
-		keys[i] = *args.Keys[i]
-	}
-	values := make([]string, len(args.Values))
-	for i := range args.Values {
-		values[i] = *args.Values[i]
+	if len(args.Values) != len(args.Keys) {
+		return false, fmt.Errorf("length of Keys and Values does not match")
 	}
 
-	resp, err := grpcAPI.UpdateUserSettings(ctx, &profilepb.UpdateUserSettingsRequest{
-		ID:     utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID),
-		Keys:   keys,
-		Values: values,
+	settingsMap := make(map[string]string)
+	for idx := range args.Keys {
+		settingsMap[*args.Keys[idx]] = *args.Values[idx]
+	}
+
+	_, err = q.Env.UserServer.UpdateUserSettings(ctx, &cloudpb.UpdateUserSettingsRequest{
+		ID:         utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID),
+		SettingMap: settingsMap,
 	})
 	if err != nil {
 		return false, err
 	}
 
-	return resp.OK, nil
+	return true, nil
 }
 
 // UpdateUser updates the user info.
 func (q *QueryResolver) UpdateUser(ctx context.Context, args *updateUserArgs) (bool, error) {
-	req := &profilepb.UpdateUserRequest{
+	req := &cloudpb.UpdateUserRequest{
 		ID: utils.ProtoFromUUIDStrOrNil(string(args.UserInfo.ID)),
 	}
 
@@ -204,8 +202,7 @@ func (q *QueryResolver) UpdateUser(ctx context.Context, args *updateUserArgs) (b
 		req.IsApproved = &types.BoolValue{Value: *args.UserInfo.IsApproved}
 	}
 
-	// TODO(philkuz)(PC-924) Use a graphQL API instead of ProfileServiceClient.
-	_, err := q.Env.ProfileServiceClient.UpdateUser(ctx, req)
+	_, err := q.Env.UserServer.UpdateUser(ctx, req)
 	if err != nil {
 		return false, err
 	}
