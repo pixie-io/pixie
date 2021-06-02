@@ -127,44 +127,16 @@ TEST(ContainerInfo, debug_string) {
   EXPECT_EQ("<Container:cid=container1:name=containername:pod_id=:state=S>", cinfo.DebugString());
 }
 
-TEST(ContainerInfo, add_delete_pids) {
-  ContainerInfo cinfo("container1", "containername", ContainerState::kRunning,
-                      ContainerType::kDocker, "container state message", "container state reason",
-                      128 /*start_time*/);
-  cinfo.set_pod_id("pod1");
-
-  cinfo.AddUPID(UPID(1, 1, 123));
-  cinfo.AddUPID(UPID(1, 2, 123));
-  cinfo.AddUPID(UPID(1, 2, 123));
-  cinfo.AddUPID(UPID(1, 5, 123));
-
-  EXPECT_THAT(cinfo.active_upids(),
-              testing::UnorderedElementsAre(UPID(1, 1, 123), UPID(1, 2, 123), UPID(1, 5, 123)));
-
-  cinfo.DeactivateUPID(UPID(1, 2, 123));
-  EXPECT_THAT(cinfo.active_upids(),
-              testing::UnorderedElementsAre(UPID(1, 1, 123), UPID(1, 5, 123)));
-}
-
-TEST(ContainerInfo, deactive_non_existing_pid_ignored) {
-  ContainerInfo cinfo("container1", "containername", ContainerState::kRunning,
-                      ContainerType::kDocker, "container state message", "container state reason",
-                      128 /*start_time*/);
-  cinfo.set_pod_id("pod1");
-  cinfo.DeactivateUPID(UPID(1, 3, 123));
-
-  EXPECT_THAT(cinfo.active_upids(), testing::UnorderedElementsAre());
-}
-
 TEST(ContainerInfo, clone) {
   ContainerInfo orig("container1", "containername", ContainerState::kRunning,
                      ContainerType::kDocker, "container state message", "container state reason",
                      128 /*start_time*/);
   orig.set_pod_id("pod1");
 
-  orig.AddUPID(UPID(1, 0, 123));
-  orig.AddUPID(UPID(1, 1, 123));
-  orig.AddUPID(UPID(1, 15, 123));
+  auto* upids = orig.mutable_active_upids();
+  upids->emplace(UPID(1, 0, 123));
+  upids->emplace(UPID(1, 1, 123));
+  upids->emplace(UPID(1, 15, 123));
 
   auto cloned = orig.Clone();
 

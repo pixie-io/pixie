@@ -361,13 +361,8 @@ class ContainerInfo {
   void set_pod_id(std::string_view pod_id) { pod_id_ = pod_id; }
   const UID& pod_id() const { return pod_id_; }
 
-  void AddUPID(UPID upid) { active_upids_.emplace(upid); }
-  void DeactivateUPID(UPID upid) { active_upids_.erase(upid); }
-
-  // This function can be used to mark the entire container as stopped.
-  void DeactivateAllUPIDs() { active_upids_.clear(); }
-
   const absl::flat_hash_set<UPID>& active_upids() const { return active_upids_; }
+  absl::flat_hash_set<UPID>* mutable_active_upids() { return &active_upids_; }
 
   int64_t start_time_ns() const { return start_time_ns_; }
 
