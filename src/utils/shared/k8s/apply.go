@@ -30,6 +30,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -100,12 +101,30 @@ func KeyValueStringToMap(labels string) (map[string]string, error) {
 
 // ApplyYAMLForResourceTypes only applies the specified types in the given YAML file.
 func ApplyYAMLForResourceTypes(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlFile io.Reader, allowedResources []string, allowUpdate bool) error {
+	resources, err := GetResourcesFromYAML(clientset, yamlFile)
+	if err != nil {
+		return err
+	}
+
+	return ApplyResources(config, resources, namespace, allowedResources, allowUpdate)
+}
+
+// Resource is an unstructured resource object with a group kind mapping.
+type Resource struct {
+	Object  *unstructured.Unstructured
+	Mapping *meta.RESTMapping
+}
+
+// GetResourcesFromYAML parses the YAMLs into K8s resource objects that can be passed to the API.
+func GetResourcesFromYAML(clientset *kubernetes.Clientset, yamlFile io.Reader) ([]*Resource, error) {
+	resources := make([]*Resource, 0)
+
 	decodedYAML := yaml.NewYAMLOrJSONDecoder(yamlFile, 4096)
 	discoveryClient := clientset.Discovery()
 
 	apiGroupResources, err := restmapper.GetAPIGroupResources(discoveryClient)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	rm := restmapper.NewDiscoveryRESTMapper(apiGroupResources)
 
@@ -116,7 +135,7 @@ func ApplyYAMLForResourceTypes(clientset *kubernetes.Clientset, config *rest.Con
 		if err != nil && err == io.EOF {
 			break
 		} else if err != nil {
-			return err
+			return nil, err
 		}
 		if ext.Raw == nil {
 			continue
@@ -125,18 +144,41 @@ func ApplyYAMLForResourceTypes(clientset *kubernetes.Clientset, config *rest.Con
 		_, gvk, err := unstructured.UnstructuredJSONScheme.Decode(ext.Raw, nil, nil)
 		if err != nil {
 			log.WithError(err).Fatalf(err.Error())
-			return err
+			return nil, err
 		}
 		mapping, err := rm.RESTMapping(gvk.GroupKind(), gvk.Version)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		k8sRes := mapping.Resource
 
+		var unstructRes unstructured.Unstructured
+		unstructRes.Object = make(map[string]interface{})
+		var unstructBlob interface{}
+
+		err = json.Unmarshal(ext.Raw, &unstructBlob)
+		if err != nil {
+			return nil, err
+		}
+
+		unstructRes.Object = unstructBlob.(map[string]interface{})
+
+		resources = append(resources, &Resource{
+			Object:  &unstructRes,
+			Mapping: mapping,
+		})
+	}
+
+	return resources, nil
+}
+
+// ApplyResources applies the following resources to the give namespace/cluster.
+func ApplyResources(config *rest.Config, resources []*Resource, namespace string, allowedResources []string, allowUpdate bool) error {
+	for _, resource := range resources {
+		k8sRes := resource.Mapping.Resource.Resource
 		if len(allowedResources) != 0 {
 			validResource := false
 			for _, res := range allowedResources {
-				if res == k8sRes.Resource {
+				if res == k8sRes {
 					validResource = true
 				}
 			}
@@ -147,39 +189,28 @@ func ApplyYAMLForResourceTypes(clientset *kubernetes.Clientset, config *rest.Con
 
 		restconfig := config
 		restconfig.GroupVersion = &schema.GroupVersion{
-			Group:   mapping.GroupVersionKind.Group,
-			Version: mapping.GroupVersionKind.Version,
+			Group:   resource.Mapping.GroupVersionKind.Group,
+			Version: resource.Mapping.GroupVersionKind.Version,
 		}
 		dynamicClient, err := dynamic.NewForConfig(restconfig)
 		if err != nil {
 			return err
 		}
 
-		var unstructRes unstructured.Unstructured
-		unstructRes.Object = make(map[string]interface{})
-		var unstructBlob interface{}
-
-		err = json.Unmarshal(ext.Raw, &unstructBlob)
-		if err != nil {
-			return err
-		}
-
-		unstructRes.Object = unstructBlob.(map[string]interface{})
-
-		res := dynamicClient.Resource(k8sRes)
+		res := dynamicClient.Resource(resource.Mapping.Resource)
 		nsRes := res.Namespace(namespace)
 
 		createRes := nsRes
-		if k8sRes.Resource == "podsecuritypolicies" || k8sRes.Resource == "namespaces" || k8sRes.Resource == "configmap" || k8sRes.Resource == "clusterrolebindings" || k8sRes.Resource == "clusterroles" {
+		if k8sRes == "podsecuritypolicies" || k8sRes == "namespaces" || k8sRes == "configmap" || k8sRes == "clusterrolebindings" || k8sRes == "clusterroles" {
 			createRes = res
 		}
 
-		_, err = createRes.Create(context.Background(), &unstructRes, metav1.CreateOptions{})
+		_, err = createRes.Create(context.Background(), resource.Object, metav1.CreateOptions{})
 		if err != nil {
 			if !k8serrors.IsAlreadyExists(err) {
 				return err
-			} else if (k8sRes.Resource == "clusterroles" || k8sRes.Resource == "cronjobs") || allowUpdate {
-				_, err = createRes.Update(context.Background(), &unstructRes, metav1.UpdateOptions{})
+			} else if (k8sRes == "clusterroles" || k8sRes == "cronjobs") || allowUpdate {
+				_, err = createRes.Update(context.Background(), resource.Object, metav1.UpdateOptions{})
 				if err != nil {
 					log.WithError(err).Error("Could not update K8s resource")
 				}
