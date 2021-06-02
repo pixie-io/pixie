@@ -55,6 +55,10 @@ spec:
                   the correct service. The DevCloudNamespace is the namespace that
                   the dev Pixie cloud is running on, for example: "plc-dev".'
                 type: string
+              disableAutoUpdate:
+                description: DisableAutoUpdate specifies whether auto update should
+                  be enabled for the Vizier instance.
+                type: boolean
               pemMemoryLimit:
                 description: PemMemoryLimit is a memory limit applied specifically
                   to PEM pods.
@@ -111,6 +115,7 @@ spec:
                 type: string
             required:
             - deployKey
+            - disableAutoUpdate
             type: object
           status:
             description: VizierStatus defines the observed state of Vizier
