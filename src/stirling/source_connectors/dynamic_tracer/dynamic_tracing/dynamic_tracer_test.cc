@@ -106,7 +106,8 @@ class ResolveTargetObjPathTest : public ::testing::Test {
     ASSERT_OK(k8s_mds_.HandlePodUpdate(pod0_update));
     ASSERT_OK(k8s_mds_.HandlePodUpdate(pod1_update));
 
-    k8s_mds_.containers_by_id()["container0"]->AddUPID(PIDToUPID(s_.child_pid()));
+    k8s_mds_.containers_by_id()["container0"]->mutable_active_upids()->emplace(
+        PIDToUPID(s_.child_pid()));
   }
 
   void TearDown() override {
