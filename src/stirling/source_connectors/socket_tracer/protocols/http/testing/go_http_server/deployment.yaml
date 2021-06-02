@@ -37,10 +37,7 @@ metadata:
   name: fe
   labels:
     name: fe
-  annotations:
-    cloud.google.com/load-balancer-type: "internal"
 spec:
-  type: LoadBalancer
   ports:
   - protocol: "TCP"
     port: 50051

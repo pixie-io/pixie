@@ -21,7 +21,11 @@ spec:
         image: gcr.io/pl-dev-infra/demos/go_http_client:{{USER}}
         args:
         - --address=fe:50051
-        - --count=100000
+        - --count=0
+        - --quiet=true
+        - --sleep=0
+        - --reqType=post
+        - --reqSize=16384
         imagePullPolicy: Always
         resources:
           limits:
