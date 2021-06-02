@@ -35,9 +35,11 @@
 #include "src/carnot/planner/compiler/ast_visitor.h"
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/distributedpb/distributed_plan.pb.h"
+#include "src/carnot/planner/metadata/metadata_handler.h"
 #include "src/carnot/planner/parser/parser.h"
 #include "src/carnot/planner/parser/string_reader.h"
 #include "src/carnot/planner/probes/tracing_module.h"
+#include "src/carnot/planner/rules/rules.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/testing/testing.h"
 
@@ -815,6 +817,119 @@ class OperatorTests : public ::testing::Test {
 
   pypa::AstPtr ast;
   std::shared_ptr<IR> graph;
+};
+
+/**
+ * @brief This rule removes all (non-Operator) IR nodes that are not connected to an Operator.
+ *
+ */
+class CleanUpStrayIRNodesRule : public Rule {
+ public:
+  CleanUpStrayIRNodesRule()
+      : Rule(nullptr, /*use_topo*/ true, /*reverse_topological_execution*/ false) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override {
+    auto ir_graph = ir_node->graph();
+    auto node_id = ir_node->id();
+
+    if (Match(ir_node, Operator()) || connected_nodes_.contains(ir_node)) {
+      for (int64_t child_id : ir_graph->dag().DependenciesOf(node_id)) {
+        connected_nodes_.insert(ir_graph->Get(child_id));
+      }
+      return false;
+    }
+    PL_RETURN_IF_ERROR(ir_graph->DeleteNode(node_id));
+    return true;
+  }
+
+ private:
+  // For each IRNode that stays in the graph, we keep track of its children as well so we
+  // keep them around.
+  absl::flat_hash_set<IRNode*> connected_nodes_;
+};
+
+class RulesTest : public OperatorTests {
+ protected:
+  void SetUpRegistryInfo() { info_ = udfexporter::ExportUDFInfo().ConsumeValueOrDie(); }
+
+  void SetUpImpl() override {
+    SetUpRegistryInfo();
+
+    auto rel_map = std::make_unique<RelationMap>();
+    cpu_relation = table_store::schema::Relation(
+        std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
+                                      types::DataType::FLOAT64, types::DataType::FLOAT64}),
+        std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"}));
+    auto semantic_rel = Relation({types::INT64, types::FLOAT64}, {"bytes", "cpu"},
+                                 {types::ST_BYTES, types::ST_PERCENT});
+    rel_map->emplace("cpu", cpu_relation);
+    rel_map->emplace("semantic_table", semantic_rel);
+
+    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now,
+                                                      "result_addr", "result_ssl_targetname");
+    md_handler = MetadataHandler::Create();
+  }
+
+  FilterIR* MakeFilter(OperatorIR* parent) {
+    auto constant1 = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
+    auto column = MakeColumn("column", 0);
+
+    auto filter_func = graph
+                           ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::eq, "==", "equal"},
+                                                std::vector<ExpressionIR*>{constant1, column})
+                           .ValueOrDie();
+    filter_func->SetOutputDataType(types::DataType::BOOLEAN);
+
+    return graph->CreateNode<FilterIR>(ast, parent, filter_func).ValueOrDie();
+  }
+
+  FilterIR* MakeFilter(OperatorIR* parent, ColumnIR* filter_value) {
+    auto constant1 = graph->CreateNode<StringIR>(ast, "value").ValueOrDie();
+    FuncIR* filter_func =
+        graph
+            ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::eq, "==", "equal"},
+                                 std::vector<ExpressionIR*>{constant1, filter_value})
+            .ValueOrDie();
+    return graph->CreateNode<FilterIR>(ast, parent, filter_func).ValueOrDie();
+  }
+
+  FilterIR* MakeFilter(OperatorIR* parent, FuncIR* filter_expr) {
+    return graph->CreateNode<FilterIR>(ast, parent, filter_expr).ValueOrDie();
+  }
+
+  using OperatorTests::MakeBlockingAgg;
+  BlockingAggIR* MakeBlockingAgg(OperatorIR* parent, ColumnIR* by_column, ColumnIR* fn_column) {
+    auto agg_func = graph
+                        ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "mean"},
+                                             std::vector<ExpressionIR*>{fn_column})
+                        .ValueOrDie();
+    return graph
+        ->CreateNode<BlockingAggIR>(ast, parent, std::vector<ColumnIR*>{by_column},
+                                    ColExpressionVector{{"agg_fn", agg_func}})
+        .ValueOrDie();
+  }
+
+  void TearDown() override {
+    if (skip_check_stray_nodes_) {
+      return;
+    }
+    CleanUpStrayIRNodesRule cleanup;
+    auto before = graph->DebugString();
+    auto result = cleanup.Execute(graph.get());
+    ASSERT_OK(result);
+    ASSERT_FALSE(result.ConsumeValueOrDie())
+        << "Rule left stray non-Operator IRNodes in graph: " << before;
+  }
+
+  // skip_check_stray_nodes_ should only be set to 'true' for tests of rules when they return an
+  // error.
+  bool skip_check_stray_nodes_ = false;
+  std::unique_ptr<CompilerState> compiler_state_;
+  std::unique_ptr<RegistryInfo> info_;
+  int64_t time_now = 1552607213931245000;
+  table_store::schema::Relation cpu_relation;
+  std::unique_ptr<MetadataHandler> md_handler;
 };
 
 struct HasEdgeMatcher {

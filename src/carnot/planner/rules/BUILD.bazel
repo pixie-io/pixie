@@ -58,17 +58,6 @@ pl_cc_test_library(
 )
 
 pl_cc_test(
-    name = "rules_test",
-    srcs = ["rules_test.cc"],
-    deps = [
-        ":cc_library",
-        ":test_utils",
-        "//src/carnot/planner/compiler:test_utils",
-        "//src/carnot/udf_exporter:cc_library",
-    ],
-)
-
-pl_cc_test(
     name = "rule_executor_test",
     srcs = ["rule_executor_test.cc"],
     deps = [

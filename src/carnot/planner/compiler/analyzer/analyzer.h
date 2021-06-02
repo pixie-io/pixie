@@ -23,6 +23,25 @@
 #include <unordered_set>
 #include <vector>
 
+#include "src/carnot/planner/compiler/analyzer/add_limit_to_batch_result_sink_rule.h"
+#include "src/carnot/planner/compiler/analyzer/combine_consecutive_maps_rule.h"
+#include "src/carnot/planner/compiler/analyzer/convert_metadata_rule.h"
+#include "src/carnot/planner/compiler/analyzer/convert_string_times_rule.h"
+#include "src/carnot/planner/compiler/analyzer/data_type_rule.h"
+#include "src/carnot/planner/compiler/analyzer/drop_to_map_rule.h"
+#include "src/carnot/planner/compiler/analyzer/merge_group_by_into_group_acceptor_rule.h"
+#include "src/carnot/planner/compiler/analyzer/nested_blocking_agg_fn_check_rule.h"
+#include "src/carnot/planner/compiler/analyzer/operator_relation_rule.h"
+#include "src/carnot/planner/compiler/analyzer/propagate_expression_annotations_rule.h"
+#include "src/carnot/planner/compiler/analyzer/remove_group_by_rule.h"
+#include "src/carnot/planner/compiler/analyzer/resolve_metadata_property_rule.h"
+#include "src/carnot/planner/compiler/analyzer/resolve_stream_rule.h"
+#include "src/carnot/planner/compiler/analyzer/resolve_types_rule.h"
+#include "src/carnot/planner/compiler/analyzer/set_memory_source_times_rule.h"
+#include "src/carnot/planner/compiler/analyzer/setup_join_type_rule.h"
+#include "src/carnot/planner/compiler/analyzer/source_relation_rule.h"
+#include "src/carnot/planner/compiler/analyzer/unique_sink_names_rule.h"
+#include "src/carnot/planner/compiler/analyzer/verify_filter_expression_rule.h"
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/compiler_state/registry_info.h"
 #include "src/carnot/planner/ir/ir_nodes.h"
@@ -74,7 +93,7 @@ class Analyzer : public RuleExecutor<IR> {
   void CreateOperatorCompileTimeExpressionRuleBatch() {
     RuleBatch* intermediate_resolution_batch =
         CreateRuleBatch<FailOnMax>("IntermediateResolution", 100);
-    intermediate_resolution_batch->AddRule<SetMemSourceNsTimesRule>();
+    intermediate_resolution_batch->AddRule<SetMemorySourceTimesRule>();
   }
 
   // TODO(philkuz) need to add a new optimization that combines maps.

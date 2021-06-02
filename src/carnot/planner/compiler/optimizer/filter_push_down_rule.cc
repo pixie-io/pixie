@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/carnot/planner/compiler/optimizer/filter_push_down.h"
+#include "src/carnot/planner/compiler/optimizer/filter_push_down_rule.h"
 
 #include <algorithm>
 #include <queue>

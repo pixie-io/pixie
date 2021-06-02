@@ -16,7 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/carnot/planner/compiler/optimizer/merge_nodes.h"
+#include "src/carnot/planner/compiler/optimizer/merge_nodes_rule.h"
+#include "src/carnot/planner/compiler/analyzer/operator_relation_rule.h"
+#include "src/carnot/planner/compiler/analyzer/source_relation_rule.h"
 
 #include <algorithm>
 #include <queue>

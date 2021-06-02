@@ -16,18 +16,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <gmock/gmock.h>
-#include <google/protobuf/text_format.h>
 #include <gtest/gtest.h>
 
-#include <unordered_map>
-#include <utility>
 #include <vector>
 
-#include <pypa/parser/parser.hh>
-
-#include "src/carnot/planner/compiler/analyzer/analyzer.h"
-#include "src/carnot/planner/compiler/optimizer/filter_push_down.h"
+#include "src/carnot/planner/compiler/optimizer/filter_push_down_rule.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 
@@ -36,15 +29,7 @@ namespace carnot {
 namespace planner {
 namespace compiler {
 
-using table_store::schema::Relation;
-using ::testing::_;
-
-using ::testing::Contains;
-using ::testing::ContainsRegex;
 using ::testing::ElementsAre;
-using ::testing::ElementsAreArray;
-using ::testing::Not;
-using ::testing::UnorderedElementsAre;
 
 class FilterPushDownTest : public OperatorTests {
  protected:

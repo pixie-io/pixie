@@ -35,7 +35,6 @@ pl_cc_library(
     deps = [
         "//src/carnot/funcs/builtins:cc_library",
         "//src/carnot/planner/ast:cc_library",
-        "//src/carnot/planner/compiler/optimizer:cc_library",
         "//src/carnot/planner/compiler_error_context:cc_library",
         "//src/carnot/planner/compiler_state:cc_library",
         "//src/carnot/planner/ir:cc_library",
@@ -55,5 +54,162 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/carnot/planner/compiler:test_utils",
+    ],
+)
+
+pl_cc_test(
+    name = "add_limit_to_batch_result_sink_rule_test",
+    srcs = ["add_limit_to_batch_result_sink_rule_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner/compiler:test_utils",
+    ],
+)
+
+pl_cc_test(
+    name = "combine_consecutive_maps_rule_test",
+    srcs = ["combine_consecutive_maps_rule_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner/compiler:test_utils",
+    ],
+)
+
+pl_cc_test(
+    name = "convert_metadata_rule_test",
+    srcs = ["convert_metadata_rule_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner/compiler:test_utils",
+    ],
+)
+
+pl_cc_test(
+    name = "data_type_rule_test",
+    srcs = ["data_type_rule_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner/compiler:test_utils",
+        "//src/carnot/udf_exporter:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "drop_to_map_rule_test",
+    srcs = ["drop_to_map_rule_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner/compiler:test_utils",
+        "//src/carnot/udf_exporter:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "merge_group_by_into_group_acceptor_rule_test",
+    srcs = ["merge_group_by_into_group_acceptor_rule_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner/compiler:test_utils",
+        "//src/carnot/udf_exporter:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "operator_relation_rule_test",
+    srcs = ["operator_relation_rule_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner/compiler:test_utils",
+        "//src/carnot/udf_exporter:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "propagate_expression_annotations_rule_test",
+    srcs = ["propagate_expression_annotations_rule_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner/compiler:test_utils",
+        "//src/carnot/udf_exporter:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "remove_group_by_rule_test",
+    srcs = ["remove_group_by_rule_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner/compiler:test_utils",
+        "//src/carnot/udf_exporter:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "resolve_metadata_property_rule_test",
+    srcs = ["resolve_metadata_property_rule_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner/compiler:test_utils",
+        "//src/carnot/udf_exporter:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "resolve_stream_rule_test",
+    srcs = ["resolve_stream_rule_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner/compiler:test_utils",
+        "//src/carnot/udf_exporter:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "resolve_types_rule_test",
+    srcs = ["resolve_types_rule_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner/compiler:test_utils",
+        "//src/carnot/udf_exporter:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "setup_join_type_rule_test",
+    srcs = ["setup_join_type_rule_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner/compiler:test_utils",
+        "//src/carnot/udf_exporter:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "source_relation_rule_test",
+    srcs = ["source_relation_rule_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner/compiler:test_utils",
+        "//src/carnot/udf_exporter:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "unique_sink_names_rule_test",
+    srcs = ["unique_sink_names_rule_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner/compiler:test_utils",
+        "//src/carnot/udf_exporter:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "verify_filter_expression_rule_test",
+    srcs = ["verify_filter_expression_rule_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner/compiler:test_utils",
+        "//src/carnot/udf_exporter:cc_library",
     ],
 )
