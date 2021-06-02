@@ -148,10 +148,8 @@ func (q *QueryResolver) UserSettings(ctx context.Context, args *userSettingsArgs
 	}
 
 	resolvers := make([]*UserSettingResolver, len(args.Keys))
-	i := 0
-	for k, v := range resp.SettingMap {
-		resolvers[i] = &UserSettingResolver{k, v}
-		i++
+	for i, k := range args.Keys {
+		resolvers[i] = &UserSettingResolver{*k, resp.SettingMap[*k]}
 	}
 
 	return resolvers, nil
