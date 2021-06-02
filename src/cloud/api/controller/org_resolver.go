@@ -78,7 +78,7 @@ func (q *QueryResolver) OrgUsers(ctx context.Context) ([]*UserInfoResolver, erro
 
 	userResolvers := make([]*UserInfoResolver, len(resp.Users))
 	for idx, user := range resp.Users {
-		userResolvers[idx] = &UserInfoResolver{sCtx, &q.Env, ctx, &cloudpb.UserInfo{
+		userResolvers[idx] = &UserInfoResolver{ctx, &q.Env, &cloudpb.UserInfo{
 			ID:             user.ID,
 			OrgID:          user.OrgID,
 			Username:       user.Username,

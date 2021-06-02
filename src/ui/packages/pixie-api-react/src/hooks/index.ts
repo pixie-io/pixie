@@ -22,7 +22,5 @@ export * from './use-deployment-keys';
 export * from './use-invitation';
 export * from './use-is-authenticated';
 export * from './use-mutation';
-export * from './use-org-users';
 export * from './use-query';
 export * from './use-setting';
-export * from './use-user-info';

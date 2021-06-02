@@ -218,13 +218,11 @@ type Mutation {
   DeleteAPIKey(id: ID!): Boolean!
   UpdateUserSettings(keys: [String]!, values: [String]!): Boolean!
   InviteUser(email: String!, firstName: String!, lastName: String!): UserInvite!
-  UpdateUser(userInfo: EditableUserInfo): Boolean!
+  UpdateUserPermissions(userID: ID!, userPermissions: EditableUserPermissions!): UserInfo!
   UpdateOrgSettings(orgID: ID!, orgSettings: EditableOrgSettings!): OrgInfo!
 }
 
-input EditableUserInfo {
-  id: ID!
-  profilePicture: String
+input EditableUserPermissions {
   isApproved: Boolean
 }
 

@@ -96,7 +96,6 @@ go_test(
     embed = [":controller"],
     deps = [
         "//src/api/proto/cloudpb:cloudapi_pl_go_proto",
-        "//src/api/proto/cloudpb/mock",
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/api/proto/vispb:vis_pl_go_proto",
         "//src/cloud/api/apienv",

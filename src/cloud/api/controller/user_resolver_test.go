@@ -21,83 +21,170 @@ package controller_test
 import (
 	"errors"
 	"testing"
-	"time"
 
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
-	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/gqltesting"
-	"github.com/stretchr/testify/assert"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
-	mock_cloudpb "px.dev/pixie/src/api/proto/cloudpb/mock"
-	"px.dev/pixie/src/cloud/api/controller"
 	gqltestutils "px.dev/pixie/src/cloud/api/controller/testutils"
-	"px.dev/pixie/src/shared/services/authcontext"
-	srvutils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/testingutils"
 )
 
-func TestUserInfoResolver(t *testing.T) {
-	userID := "123e4567-e89b-12d3-a456-426655440000"
+func TestUserInfoResolver_GetUserInfo(t *testing.T) {
+	gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
 
-	tests := []struct {
-		name            string
-		mockUser        *cloudpb.UserInfo
-		error           error
-		expectedName    string
-		expectedPicture string
-	}{
+	userID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9")
+	orgID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	mockClients.MockUser.EXPECT().GetUser(gomock.Any(), userID).Return(&cloudpb.UserInfo{
+		ID:             userID,
+		OrgID:          orgID,
+		ProfilePicture: "test",
+		FirstName:      "first",
+		LastName:       "last",
+		Email:          "test@test.com",
+		IsApproved:     true,
+	}, nil)
+
+	mockClients.MockUser.EXPECT().GetOrg(gomock.Any(), orgID).Return(&cloudpb.OrgInfo{
+		EnableApprovals: true,
+		OrgName:         "test.com",
+		ID:              orgID,
+	}, nil)
+
+	gqlSchema := LoadSchema(gqlEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
-			name: "existing user",
-			mockUser: &cloudpb.UserInfo{
-				ID:             utils.ProtoFromUUIDStrOrNil(userID),
-				ProfilePicture: "test",
-				FirstName:      "first",
-				LastName:       "last",
-			},
-			error:           nil,
-			expectedName:    "first last",
-			expectedPicture: "test",
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				query {
+					user {
+						id
+						name
+						email
+						picture
+						isApproved
+						orgID
+						orgName
+					}
+				}
+			`,
+			ExpectedResult: `
+				{
+					"user": {
+						"id": "6ba7b810-9dad-11d1-80b4-00c04fd430c9",
+						"name": "first last",
+						"email": "test@test.com",
+						"picture": "test",
+						"orgID": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+						"orgName": "test.com",
+						"isApproved": true
+					}
+				}
+			`,
 		},
+	})
+}
+
+func TestUserInfoResolver_GetSupportUserInfo(t *testing.T) {
+	gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	userID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9")
+	orgID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	// Will fetch info from the context instead.
+	mockClients.MockUser.EXPECT().GetUser(gomock.Any(), userID).Return(nil, errors.New("no such person"))
+	mockClients.MockUser.EXPECT().GetOrg(gomock.Any(), orgID).Return(&cloudpb.OrgInfo{
+		EnableApprovals: true,
+		OrgName:         "test.com",
+		ID:              orgID,
+	}, nil)
+
+	gqlSchema := LoadSchema(gqlEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
-			name:     "no user",
-			mockUser: nil,
-			error:    errors.New("Could not get user"),
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				query {
+					user {
+						id
+						name
+						email
+						picture
+						orgID
+						orgName
+					}
+				}
+				`,
+			ExpectedResult: `
+				{
+					"user": {
+						"id": "6ba7b810-9dad-11d1-80b4-00c04fd430c9",
+						"name": " ",
+						"email": "test@test.com",
+						"picture": "",
+						"orgID": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+						"orgName": "test.com"
+					}
+				}
+			`,
 		},
-	}
+	})
+}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			sCtx := authcontext.New()
+func TestUserInfoResolver_UpdateUserPermissions(t *testing.T) {
+	gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
 
-			ctrl := gomock.NewController(t)
-			mockus := mock_cloudpb.NewMockUserServiceServer(ctrl)
-			mockOrgInfo := &cloudpb.OrgInfo{
-				ID:      utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
-				OrgName: "testOrg",
-			}
+	userID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9")
 
-			mockus.EXPECT().
-				GetOrg(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
-				Return(mockOrgInfo, nil)
+	mockClients.MockUser.EXPECT().UpdateUser(gomock.Any(), &cloudpb.UpdateUserRequest{
+		ID:         userID,
+		IsApproved: &types.BoolValue{Value: true},
+	}).Return(nil, nil)
 
-			gqlEnv := controller.GraphQLEnv{
-				UserServer: mockus,
-			}
+	mockClients.MockUser.EXPECT().GetUser(gomock.Any(), userID).Return(&cloudpb.UserInfo{
+		ID:             userID,
+		OrgID:          utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
+		ProfilePicture: "test",
+		FirstName:      "first",
+		LastName:       "last",
+		Email:          "test@test.com",
+		IsApproved:     true,
+	}, nil)
 
-			sCtx.Claims = srvutils.GenerateJWTForUser(userID, "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "test@test.com", time.Now(), "pixie")
-
-			resolver := controller.UserInfoResolver{SessionCtx: sCtx, GQLEnv: &gqlEnv, UserInfo: test.mockUser}
-			assert.Equal(t, "test@test.com", resolver.Email())
-			assert.Equal(t, graphql.ID(userID), resolver.ID())
-			assert.Equal(t, "testOrg", resolver.OrgName())
-			assert.Equal(t, testingutils.TestOrgID, resolver.OrgID())
-			assert.Equal(t, test.expectedPicture, resolver.Picture())
-			assert.Equal(t, test.expectedName, resolver.Name())
-		})
-	}
+	gqlSchema := LoadSchema(gqlEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				mutation {
+					UpdateUserPermissions(userID: "6ba7b810-9dad-11d1-80b4-00c04fd430c9", userPermissions: { isApproved: true }) {
+						name
+						isApproved
+					}
+				}
+			`,
+			ExpectedResult: `
+				{
+					"UpdateUserPermissions": {
+						"name": "first last",
+						"isApproved": true
+					}
+				}
+			`,
+		},
+	})
 }
 
 func TestUserSettingsResolver_GetUserSettings(t *testing.T) {
@@ -137,8 +224,8 @@ func TestUserSettingsResolver_GetUserSettings(t *testing.T) {
 				{
 					"userSettings":
 						[
-						 {"key": "test", "value": "a"},
-						 {"key": "a_key", "value": "b"}
+							{"key": "test", "value": "a"},
+							{"key": "a_key", "value": "b"}
 						]
 				}
 			`,
@@ -177,35 +264,6 @@ func TestUserSettingsResolver_UpdateUserSettings(t *testing.T) {
 			ExpectedResult: `
 				{
 					"UpdateUserSettings": true
-				}
-			`,
-		},
-	})
-}
-
-func TestUserSettingsResolver_UpdateUser(t *testing.T) {
-	gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
-	defer cleanup()
-	ctx := CreateTestContext()
-
-	mockClients.MockUser.EXPECT().UpdateUser(gomock.Any(), &cloudpb.UpdateUserRequest{
-		ID:         utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9"),
-		IsApproved: &types.BoolValue{Value: true},
-	}).Return(nil, nil)
-
-	gqlSchema := LoadSchema(gqlEnv)
-	gqltesting.RunTests(t, []*gqltesting.Test{
-		{
-			Schema:  gqlSchema,
-			Context: ctx,
-			Query: `
-				mutation {
-					UpdateUser(userInfo: {id: "6ba7b810-9dad-11d1-80b4-00c04fd430c9", isApproved: true })
-				}
-			`,
-			ExpectedResult: `
-				{
-					"UpdateUser": true
 				}
 			`,
 		},

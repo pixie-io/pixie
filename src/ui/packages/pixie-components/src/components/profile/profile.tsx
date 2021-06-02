@@ -31,15 +31,16 @@ interface AvatarProps {
 }
 
 export const Avatar: React.FC<AvatarProps> = (props) => {
-  // When the picture is an empty string, the fallback letter-style avatar of alt isn't used.
-  // That only happens when the picture field is an invalid link.
-  if (!props.picture && props.name.length > 0) {
-    return <BaseAvatar className={props.className}>{props.name[0]}</BaseAvatar>;
+  // When the picture is an empty string, we use a fallback letter-style avatar.
+  // If we don't have a name either, this shows a silhouette.
+  const name = props.name.trim();
+  if (!props.picture && name.length > 0) {
+    return <BaseAvatar className={props.className}>{name[0]}</BaseAvatar>;
   }
   return (
     <BaseAvatar
       src={props.picture}
-      alt={props.name}
+      alt={name}
       className={props.className}
     />
   );

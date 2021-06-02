@@ -32,10 +32,9 @@ import (
 
 // UserInfoResolver resolves user information.
 type UserInfoResolver struct {
-	SessionCtx *authcontext.AuthContext
-	GQLEnv     *GraphQLEnv
-	ctx        context.Context
-	UserInfo   *cloudpb.UserInfo
+	ctx      context.Context
+	GQLEnv   *GraphQLEnv
+	UserInfo *cloudpb.UserInfo
 }
 
 // User resolves user information.
@@ -45,56 +44,48 @@ func (q *QueryResolver) User(ctx context.Context) (*UserInfoResolver, error) {
 		return nil, err
 	}
 
-	userInfo, err := q.Env.UserServer.GetUser(ctx, utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID))
+	userID := utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID)
+	userInfo, err := q.Env.UserServer.GetUser(ctx, userID)
 	if err != nil {
-		userInfo = nil
+		// Normally we'd return a nil resolver with an error here but if we get here,
+		// it means that this is a support account, so grab info from the UserClaims and return that.
+		userInfo = &cloudpb.UserInfo{
+			ID:    userID,
+			Email: sCtx.Claims.GetUserClaims().Email,
+			OrgID: utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().OrgID),
+		}
 	}
-	return &UserInfoResolver{sCtx, &q.Env, ctx, userInfo}, nil
+	return &UserInfoResolver{ctx, &q.Env, userInfo}, nil
 }
 
 // ID returns the user id.
 func (u *UserInfoResolver) ID() graphql.ID {
-	if u.UserInfo != nil && u.UserInfo.ID != nil {
-		return graphql.ID(utils.ProtoToUUIDStr(u.UserInfo.ID))
-	}
-	return graphql.ID(u.SessionCtx.Claims.GetUserClaims().UserID)
+	return graphql.ID(utils.ProtoToUUIDStr(u.UserInfo.ID))
 }
 
 // Name returns the user name.
 func (u *UserInfoResolver) Name() string {
-	if u.UserInfo == nil {
-		return ""
-	}
 	return fmt.Sprintf("%s %s", u.UserInfo.FirstName, u.UserInfo.LastName)
 }
 
 // Email returns the user email.
 func (u *UserInfoResolver) Email() string {
-	if u.UserInfo != nil && u.UserInfo.Email != "" {
-		return u.UserInfo.Email
-	}
-
-	return u.SessionCtx.Claims.GetUserClaims().Email
+	return u.UserInfo.Email
 }
 
 // Picture returns the users picture/avatar.
 func (u *UserInfoResolver) Picture() string {
-	if u.UserInfo == nil {
-		return ""
-	}
 	return u.UserInfo.ProfilePicture
 }
 
 // OrgID returns the user's org id.
 func (u *UserInfoResolver) OrgID() string {
-	return u.SessionCtx.Claims.GetUserClaims().OrgID
+	return utils.ProtoToUUIDStr(u.UserInfo.OrgID)
 }
 
 // OrgName returns the user's org name.
 func (u *UserInfoResolver) OrgName() string {
-	orgID := u.SessionCtx.Claims.GetUserClaims().OrgID
-
-	org, err := u.GQLEnv.UserServer.GetOrg(u.ctx, utils.ProtoFromUUIDStrOrNil(orgID))
+	org, err := u.GQLEnv.UserServer.GetOrg(u.ctx, u.UserInfo.OrgID)
 	if err != nil {
 		return ""
 	}
@@ -187,32 +178,45 @@ func (q *QueryResolver) UpdateUserSettings(ctx context.Context, args *updateUser
 	return true, nil
 }
 
+type updateUserPermissionsArgs struct {
+	UserID          graphql.ID
+	UserPermissions *editableUserPermissions
+}
+
+type editableUserPermissions struct {
+	IsApproved *bool
+}
+
 // UpdateUser updates the user info.
-func (q *QueryResolver) UpdateUser(ctx context.Context, args *updateUserArgs) (bool, error) {
+func (q *QueryResolver) UpdateUserPermissions(ctx context.Context, args *updateUserPermissionsArgs) (*UserInfoResolver, error) {
+	userID := utils.ProtoFromUUIDStrOrNil(string(args.UserID))
 	req := &cloudpb.UpdateUserRequest{
-		ID: utils.ProtoFromUUIDStrOrNil(string(args.UserInfo.ID)),
+		ID: userID,
 	}
 
-	if args.UserInfo.ProfilePicture != nil {
-		req.DisplayPicture = &types.StringValue{Value: *args.UserInfo.ProfilePicture}
-	}
-	if args.UserInfo.IsApproved != nil {
-		req.IsApproved = &types.BoolValue{Value: *args.UserInfo.IsApproved}
+	if args.UserPermissions.IsApproved != nil {
+		req.IsApproved = &types.BoolValue{Value: *args.UserPermissions.IsApproved}
 	}
 
 	_, err := q.Env.UserServer.UpdateUser(ctx, req)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
-	return true, nil
-}
 
-type updateUserArgs struct {
-	UserInfo *editableUserInfo
-}
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-type editableUserInfo struct {
-	ID             graphql.ID
-	ProfilePicture *string
-	IsApproved     *bool
+	userInfo, err := q.Env.UserServer.GetUser(ctx, userID)
+	if err != nil {
+		// Normally we'd return a nil resolver with an error here but if we get here,
+		// it means that this is a support account, so grab info from the UserClaims and return that.
+		userInfo = &cloudpb.UserInfo{
+			ID:    userID,
+			Email: sCtx.Claims.GetUserClaims().Email,
+			OrgID: utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().OrgID),
+		}
+	}
+	return &UserInfoResolver{ctx, &q.Env, userInfo}, nil
 }
