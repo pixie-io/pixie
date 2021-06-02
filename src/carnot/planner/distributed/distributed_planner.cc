@@ -21,12 +21,14 @@
 #include <unordered_set>
 #include <vector>
 
-#include "src/carnot/planner/distributed/distributed_coordinator.h"
+#include "src/carnot/planner/distributed/annotate_abortable_sources_for_limits_rule.h"
+#include "src/carnot/planner/distributed/coordinator/coordinator.h"
 #include "src/carnot/planner/distributed/distributed_planner.h"
 #include "src/carnot/planner/distributed/distributed_rules.h"
 #include "src/carnot/planner/distributed/distributed_stitcher_rules.h"
 #include "src/carnot/planner/distributed/grpc_source_conversion.h"
 #include "src/carnot/planner/rules/rules.h"
+
 namespace px {
 namespace carnot {
 namespace planner {
@@ -78,7 +80,7 @@ StatusOr<std::unique_ptr<DistributedPlan>> DistributedPlanner::Plan(
 
   PL_RETURN_IF_ERROR(StitchPlan(distributed_plan.get()));
 
-  AnnotateAbortableSrcsForLimitsRule rule;
+  AnnotateAbortableSourcesForLimitsRule rule;
   for (IR* agent_plan : distributed_plan->UniquePlans()) {
     rule.Execute(agent_plan);
   }

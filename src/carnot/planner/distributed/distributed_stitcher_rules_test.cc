@@ -26,8 +26,8 @@
 #include <pypa/parser/parser.hh>
 
 #include "src/carnot/planner/compiler/test_utils.h"
-#include "src/carnot/planner/distributed/distributed_coordinator.h"
-#include "src/carnot/planner/distributed/distributed_plan.h"
+#include "src/carnot/planner/distributed/coordinator/coordinator.h"
+#include "src/carnot/planner/distributed/distributed_plan/distributed_plan.h"
 #include "src/carnot/planner/distributed/distributed_planner.h"
 #include "src/carnot/planner/distributed/distributed_stitcher_rules.h"
 #include "src/carnot/planner/distributed/grpc_source_conversion.h"

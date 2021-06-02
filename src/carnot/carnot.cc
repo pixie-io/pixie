@@ -26,7 +26,7 @@
 #include "src/carnot/plan/operators.h"
 #include "src/carnot/plan/plan.h"
 #include "src/carnot/planner/compiler/compiler.h"
-#include "src/carnot/planner/distributed/distributed_rules.h"
+#include "src/carnot/planner/distributed/annotate_abortable_sources_for_limits_rule.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/perf/perf.h"
 #include "src/shared/types/type_utils.h"
@@ -132,7 +132,7 @@ Status CarnotImpl::ExecuteQuery(const std::string& query, const sole::uuid& quer
   // TOOD(james/nserrino/philkuz): This is a hack to make sure that the distributed rule for limits
   // gets run even in carnot_test. We should think about how we want to run distributed analyzer
   // rules in these test envs.
-  planner::distributed::AnnotateAbortableSrcsForLimitsRule rule;
+  planner::distributed::AnnotateAbortableSourcesForLimitsRule rule;
   PL_RETURN_IF_ERROR(rule.Execute(logical_plan.get()));
   PL_ASSIGN_OR_RETURN(auto plan_proto, logical_plan->ToProto());
   return ExecutePlan(plan_proto, query_id, analyze);

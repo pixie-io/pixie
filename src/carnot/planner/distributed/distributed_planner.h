@@ -25,7 +25,7 @@
 #include <absl/container/flat_hash_map.h>
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/compiler_state/registry_info.h"
-#include "src/carnot/planner/distributed/distributed_plan.h"
+#include "src/carnot/planner/distributed/distributed_plan/distributed_plan.h"
 #include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planner/ir/pattern_match.h"
 #include "src/carnot/planner/rules/rule_executor.h"

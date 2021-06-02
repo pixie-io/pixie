@@ -32,10 +32,10 @@
 #include "src/carnot/plan/plan_graph.h"
 #include "src/carnot/planner/compiler/compiler.h"
 #include "src/carnot/planner/compiler/test_utils.h"
-#include "src/carnot/planner/distributed/distributed_coordinator.h"
-#include "src/carnot/planner/distributed/distributed_plan.h"
+#include "src/carnot/planner/distributed/coordinator/coordinator.h"
+#include "src/carnot/planner/distributed/distributed_plan/distributed_plan.h"
 #include "src/carnot/planner/distributed/distributed_planner.h"
-#include "src/carnot/planner/distributed/distributed_splitter.h"
+#include "src/carnot/planner/distributed/splitter/splitter.h"
 #include "src/carnot/planner/distributedpb/distributed_plan.pb.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/base/base.h"
@@ -1865,9 +1865,9 @@ class DistributedRulesTest : public OperatorTests {
    * @return std::unique_ptr<BlockingSplitPlan>
    */
   std::unique_ptr<distributed::BlockingSplitPlan> SplitPlan(IR* logical_plan) {
-    std::unique_ptr<distributed::DistributedSplitter> splitter =
-        distributed::DistributedSplitter::Create(compiler_state_.get(),
-                                                 /* support_partial_agg */ false)
+    std::unique_ptr<distributed::Splitter> splitter =
+        distributed::Splitter::Create(compiler_state_.get(),
+                                      /* support_partial_agg */ false)
             .ConsumeValueOrDie();
     return splitter->SplitKelvinAndAgents(logical_plan).ConsumeValueOrDie();
   }

@@ -19,15 +19,6 @@ load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 package(default_visibility = ["//src:__subpackages__"])
 
 pl_cc_library(
-    name = "distributed_rules",
-    hdrs = ["distributed_rules.h"],
-    deps = [
-        "//src/carnot/planner/distributed/distributed_plan:cc_library",
-        "//src/carnot/planner/rules:cc_library",
-    ],
-)
-
-pl_cc_library(
     name = "cc_library",
     srcs = glob(
         [
@@ -35,59 +26,24 @@ pl_cc_library(
             "*.h",
         ],
         exclude = [
-            "distributed_rules.h",
             "**/*_test.cc",
             "**/*_test_utils.h",
         ],
     ),
-    hdrs = ["distributed_planner.h"],
+    hdrs = ["distributed_plan.h"],
     deps = [
         "//src/carnot/planner/compiler_state:cc_library",
-        "//src/carnot/planner/distributed/coordinator:cc_library",
-        "//src/carnot/planner/distributed/distributed_plan:cc_library",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_cc_proto",
         "//src/carnot/planner/ir:cc_library",
-        "//src/carnot/planner/rules:cc_library",
         "//src/carnot/planpb:plan_pl_cc_proto",
         "//src/common/uuid:cc_library",
         "//src/shared/metadatapb:metadata_pl_cc_proto",
-        "@com_github_tencent_rapidjson//:rapidjson",
     ],
 )
 
 pl_cc_test(
-    name = "distributed_planner_test",
-    srcs = ["distributed_planner_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/carnot/planner:test_utils",
-        "//src/carnot/udf_exporter:cc_library",
-    ],
-)
-
-pl_cc_test(
-    name = "annotate_abortable_sources_for_limits_rule_test",
-    srcs = ["annotate_abortable_sources_for_limits_rule_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/carnot/planner:test_utils",
-        "//src/carnot/udf_exporter:cc_library",
-    ],
-)
-
-pl_cc_test(
-    name = "distributed_stitcher_rules_test",
-    srcs = ["distributed_stitcher_rules_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/carnot/planner:test_utils",
-        "//src/carnot/udf_exporter:cc_library",
-    ],
-)
-
-pl_cc_test(
-    name = "grpc_source_conversion_test",
-    srcs = ["grpc_source_conversion_test.cc"],
+    name = "distributed_plan_test",
+    srcs = ["distributed_plan_test.cc"],
     deps = [
         ":cc_library",
         "//src/carnot/planner:test_utils",
