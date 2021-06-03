@@ -170,7 +170,7 @@ class InfoClassManager final : public NotCopyable {
    *
    * @return std::chrono::milliseconds
    */
-  std::chrono::steady_clock::time_point NextSamplingTime() const {
+  px::chrono::coarse_steady_clock::time_point NextSamplingTime() const {
     return sample_push_freq_mgr_.NextSamplingTime();
   }
 
@@ -179,7 +179,7 @@ class InfoClassManager final : public NotCopyable {
    *
    * @return std::chrono::milliseconds
    */
-  std::chrono::steady_clock::time_point NextPushTime() const {
+  px::chrono::coarse_steady_clock::time_point NextPushTime() const {
     return sample_push_freq_mgr_.NextPushTime();
   }
 

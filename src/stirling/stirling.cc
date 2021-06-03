@@ -692,7 +692,7 @@ std::chrono::milliseconds TimeUntilNextTick(const InfoClassManagerVec& info_clas
   // The amount to sleep depends on when the earliest Source needs to be sampled again.
   // Do this to avoid burning CPU cycles unnecessarily
 
-  auto now = std::chrono::steady_clock::now();
+  auto now = px::chrono::coarse_steady_clock::now();
 
   // Worst case, wake-up every so often.
   // This is important if there are no subscribed info classes, to avoid sleeping eternally.

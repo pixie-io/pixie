@@ -23,19 +23,33 @@
 namespace px {
 namespace chrono {
 
-// An std::chrono style clock that is based on CLOCK_BOOTTIME.
-// This is in contrast to std::steady_clock which is based on CLOCK_MONOTONIC.
-class boot_clock {
+// An std::chrono style clock that is based on the chosen clock.
+template <int TClockType>
+class basic_clock {
  public:
   typedef std::chrono::nanoseconds duration;
-  typedef std::chrono::time_point<boot_clock, duration> time_point;
+  typedef std::chrono::time_point<basic_clock<TClockType>, duration> time_point;
 
   static inline time_point now() {
     timespec ts;
-    clock_gettime(CLOCK_BOOTTIME, &ts);
+    clock_gettime(TClockType, &ts);
     return time_point(std::chrono::seconds(ts.tv_sec) + std::chrono::nanoseconds(ts.tv_nsec));
   }
 };
+
+// For reference:
+// std::chrono::steady_clock is based on CLOCK_MONOTONIC.
+// std::chrono::system_clock is based on CLOCK_REALTIME.
+
+// Clock based on CLOCK_BOOTTIME.
+// Unlike CLOCK_MONOTONIC, this clock accounts for time spend while the machine is suspended.
+// Note that Linux PID start times are based on this kind of clock.
+using boot_clock = basic_clock<CLOCK_BOOTTIME>;
+
+// Clock based on CLOCK_MONOTONIC_COARSE.
+// This is faster, but lower resolution than CLOCK_MONOTONIC.
+// If resolution beyond a millisecond is not required, this should be sufficient.
+using coarse_steady_clock = basic_clock<CLOCK_MONOTONIC_COARSE>;
 
 }  // namespace chrono
 }  // namespace px

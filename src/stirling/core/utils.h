@@ -20,6 +20,8 @@
 
 #include <chrono>
 
+#include "src/common/system/clock.h"
+
 namespace px {
 namespace stirling {
 
@@ -55,14 +57,14 @@ class SamplePushFrequencyManager {
    *
    * @return std::chrono::milliseconds
    */
-  std::chrono::steady_clock::time_point NextSamplingTime() const;
+  px::chrono::coarse_steady_clock::time_point NextSamplingTime() const;
 
   /**
    * Returns the next time the data table needs to be pushed upstream, according to the push period.
    *
    * @return std::chrono::milliseconds
    */
-  std::chrono::steady_clock::time_point NextPushTime() const;
+  px::chrono::coarse_steady_clock::time_point NextPushTime() const;
 
   void set_sampling_period(std::chrono::milliseconds period) { sampling_period_ = period; }
   void set_push_period(std::chrono::milliseconds period) { push_period_ = period; }
@@ -75,13 +77,13 @@ class SamplePushFrequencyManager {
   std::chrono::milliseconds sampling_period_;
 
   // Keep track of when the source was last sampled.
-  std::chrono::steady_clock::time_point last_sampled_;
+  px::chrono::coarse_steady_clock::time_point last_sampled_;
 
   // Sampling period.
   std::chrono::milliseconds push_period_;
 
   // Keep track of when the source was last sampled.
-  std::chrono::steady_clock::time_point last_pushed_;
+  px::chrono::coarse_steady_clock::time_point last_pushed_;
 
   // Data push threshold, based number of records after which a push.
   static constexpr uint32_t kDefaultOccupancyThreshold = 1024;

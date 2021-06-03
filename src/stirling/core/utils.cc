@@ -22,11 +22,11 @@ namespace px {
 namespace stirling {
 
 bool SamplePushFrequencyManager::SamplingRequired() const {
-  return std::chrono::steady_clock::now() > NextSamplingTime();
+  return px::chrono::coarse_steady_clock::now() > NextSamplingTime();
 }
 
 void SamplePushFrequencyManager::Sample() {
-  last_sampled_ = std::chrono::steady_clock::now();
+  last_sampled_ = px::chrono::coarse_steady_clock::now();
   ++sampling_count_;
 }
 
@@ -43,19 +43,19 @@ bool SamplePushFrequencyManager::PushRequired(double occupancy_percentage,
     return true;
   }
 
-  return std::chrono::steady_clock::now() > NextPushTime();
+  return px::chrono::coarse_steady_clock::now() > NextPushTime();
 }
 
 void SamplePushFrequencyManager::Push() {
-  last_pushed_ = std::chrono::steady_clock::now();
+  last_pushed_ = px::chrono::coarse_steady_clock::now();
   ++push_count_;
 }
 
-std::chrono::steady_clock::time_point SamplePushFrequencyManager::NextSamplingTime() const {
+px::chrono::coarse_steady_clock::time_point SamplePushFrequencyManager::NextSamplingTime() const {
   return last_sampled_ + sampling_period_;
 }
 
-std::chrono::steady_clock::time_point SamplePushFrequencyManager::NextPushTime() const {
+px::chrono::coarse_steady_clock::time_point SamplePushFrequencyManager::NextPushTime() const {
   return last_pushed_ + push_period_;
 }
 

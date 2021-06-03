@@ -25,14 +25,13 @@
 
 #include <magic_enum.hpp>
 
-#include "src/common/system/boot_clock.h"
+#include "src/common/system/clock.h"
 #include "src/common/system/tcp_socket.h"
 #include "src/common/system/udp_socket.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
 #include "src/stirling/core/data_table.h"
-#include "src/stirling/core/output.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/socket_trace.hpp"
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_connector.h"
 #include "src/stirling/source_connectors/socket_tracer/testing/client_server_system.h"
