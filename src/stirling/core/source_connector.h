@@ -122,12 +122,6 @@ class SourceConnector : public NotCopyable {
    */
   uint64_t ClockRealTimeOffset() const { return sysconfig_.ClockRealTimeOffset(); }
 
-  uint64_t AdjustedSteadyClockNowNS() const {
-    auto now = std::chrono::steady_clock::now();
-    return std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count() +
-           ClockRealTimeOffset();
-  }
-
   const SamplePushFrequencyManager& sample_push_mgr() const { return sample_push_freq_mgr_; }
   SamplePushFrequencyManager* mutable_sample_push_mgr() { return &sample_push_freq_mgr_; }
 

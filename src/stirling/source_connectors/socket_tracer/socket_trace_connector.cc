@@ -279,6 +279,8 @@ void DumpContext(ConnectorContext* ctx) {
 void SocketTraceConnector::UpdateCommonState(ConnectorContext* ctx) {
   // Since events may be pushed into the perf buffer while reading it,
   // we establish a cutoff time before draining the perf buffer.
+  // Note: We use AdjustedSteadyClockNowNS() instead of CurrentTimeNS()
+  // to maintain consistency with how BPF generates timestamps on its events.
   perf_buffer_drain_time_ = AdjustedSteadyClockNowNS();
 
   // This drains all perf buffers, and causes Handle() callback functions to get called.
@@ -911,7 +913,7 @@ void SocketTraceConnector::TransferConnStats(ConnectorContext* ctx, DataTable* d
   namespace idx = ::px::stirling::conn_stats_idx;
 
   absl::flat_hash_set<md::UPID> upids = ctx->GetUPIDs();
-  uint64_t time = AdjustedSteadyClockNowNS();
+  uint64_t time = CurrentTimeNS();
 
   auto& agg_stats = connection_stats_.UpdateStats();
 

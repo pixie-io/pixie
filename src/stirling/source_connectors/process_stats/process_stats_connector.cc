@@ -44,7 +44,7 @@ void ProcessStatsConnector::TransferProcessStatsTable(ConnectorContext* ctx,
                                                       DataTable* data_table) {
   const absl::flat_hash_map<md::UPID, md::PIDInfoUPtr>& pid_info_by_upid = ctx->GetPIDInfoMap();
 
-  int64_t timestamp = AdjustedSteadyClockNowNS();
+  int64_t timestamp = CurrentTimeNS();
 
   for (const auto& [upid, pid_info] : pid_info_by_upid) {
     // TODO(zasgar): Fix condition for dead pids after helper function is added.

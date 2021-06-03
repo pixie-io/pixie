@@ -53,7 +53,7 @@ void NetworkStatsConnector::TransferNetworkStatsTable(ConnectorContext* ctx,
                                                       DataTable* data_table) {
   const md::K8sMetadataState& k8s_md = ctx->GetK8SMetadata();
 
-  int64_t timestamp = AdjustedSteadyClockNowNS();
+  int64_t timestamp = CurrentTimeNS();
 
   for (const auto& [pod_name, pod_id] : k8s_md.pods_by_name()) {
     PL_UNUSED(pod_name);
