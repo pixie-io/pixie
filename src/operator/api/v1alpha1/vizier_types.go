@@ -36,7 +36,7 @@ type VizierSpec struct {
 	// specific user/org.
 	DeployKey string `json:"deployKey"`
 	// DisableAutoUpdate specifies whether auto update should be enabled for the Vizier instance.
-	DisableAutoUpdate bool `json:"disableAutoUpdate"`
+	DisableAutoUpdate bool `json:"disableAutoUpdate,omitempty"`
 	// UseEtcdOperator specifies whether the metadata service should use etcd for storage.
 	UseEtcdOperator bool `json:"useEtcdOperator,omitempty"`
 	// ClusterName is a name for the Vizier instance, usually specifying which cluster the Vizier is
@@ -90,7 +90,7 @@ type PodPolicy struct {
 }
 
 // +kubebuilder:object:root=true
-
+// +kubebuilder:subresource:status
 // Vizier is the Schema for the viziers API
 type Vizier struct {
 	metav1.TypeMeta   `json:",inline"`

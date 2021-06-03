@@ -26,10 +26,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	pixiev1alpha1 "px.dev/pixie/src/operator/api/v1alpha1"
 	"px.dev/pixie/src/operator/controllers"
+	"px.dev/pixie/src/utils/shared/k8s"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -69,9 +71,18 @@ func main() {
 		os.Exit(1)
 	}
 
+	kubeConfig, err := rest.InClusterConfig()
+	if err != nil {
+		log.WithError(err).Error("Unable to get incluster kubeconfig")
+		os.Exit(1)
+	}
+	clientset := k8s.GetClientset(kubeConfig)
+
 	if err = (&controllers.VizierReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		Clientset:  clientset,
+		RestConfig: kubeConfig,
 	}).SetupWithManager(mgr); err != nil {
 		log.WithError(err).Error("Unable to create controller")
 		os.Exit(1)

@@ -52,4 +52,5 @@ rules:
   - natsclusters
   - podsecuritypolicies
   - viziers
+  - viziers/status
   verbs: ["*"]

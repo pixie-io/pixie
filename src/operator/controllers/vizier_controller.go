@@ -21,23 +21,35 @@ package controllers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
+	"time"
 
+	"github.com/cenkalti/backoff/v3"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	pixiev1alpha1 "px.dev/pixie/src/operator/api/v1alpha1"
 	"px.dev/pixie/src/shared/services"
+	"px.dev/pixie/src/utils/shared/artifacts"
+	"px.dev/pixie/src/utils/shared/k8s"
+	yamlsutils "px.dev/pixie/src/utils/shared/yamls"
+	vizieryamls "px.dev/pixie/src/utils/template_generator/vizier_yamls"
 )
 
 // VizierReconciler reconciles a Vizier object
 type VizierReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
+
+	Clientset  *kubernetes.Clientset
+	RestConfig *rest.Config
 }
 
 // +kubebuilder:rbac:groups=pixie.px.dev,resources=viziers,verbs=get;list;watch;create;update;patch;delete
@@ -92,7 +104,11 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	if vizier.Status.VizierPhase == pixiev1alpha1.VizierPhaseNone {
 		// We are creating a new vizier instance.
-		return ctrl.Result{}, r.createVizier(ctx, req, &vizier)
+		err := r.createVizier(ctx, req, &vizier)
+		if err != nil {
+			log.WithError(err).Info("Failed to deploy new Vizier instance")
+		}
+		return ctrl.Result{}, err
 	}
 
 	// Vizier CRD has been updated, and we should update the running vizier accordingly.
@@ -132,15 +148,91 @@ func (r *VizierReconciler) createVizier(ctx context.Context, req ctrl.Request, v
 		return nil
 	}
 
-	// TODO(michellenguyen): We should pull our cert-provisioner job into here. Eventually, we can make this a goroutine
-	// which checks when certs are about to expire.
-
-	err = r.deployVizierDeps(ctx, req, vz)
+	// Set the status of the Vizier.
+	vz.Status.VizierPhase = pixiev1alpha1.VizierPhasePending
+	err = r.Status().Update(ctx, vz)
 	if err != nil {
 		return err
 	}
 
-	err = r.deployVizier(ctx, req, vz)
+	yamlMap, err := generateVizierYAMLs(vz.Spec.Version, req.Namespace, vz, cloudClient)
+	if err != nil {
+		return err
+	}
+
+	// TODO(michellenguyen): We should pull our cert-provisioner job into here. Eventually, we can make this a goroutine
+	// which checks when certs are about to expire.
+	err = r.deployVizierConfigs(ctx, req.Namespace, vz, yamlMap)
+	if err != nil {
+		return err
+	}
+
+	err = r.deployVizierDeps(ctx, req.Namespace, vz, yamlMap)
+	if err != nil {
+		return err
+	}
+
+	err = r.deployVizier(ctx, req.Namespace, vz, yamlMap)
+	if err != nil {
+		return err
+	}
+
+	// TODO(michellenguyen) Run healthcheck and update status of Vizier once it is healthy.
+
+	return nil
+}
+
+// deployVizierConfigs deploys the secrets, configmaps, and certs that are necessary for running vizier.
+func (r *VizierReconciler) deployVizierConfigs(ctx context.Context, namespace string, vz *pixiev1alpha1.Vizier, yamlMap map[string]string) error {
+	log.Info("Deploying Vizier configs and secrets")
+	resources, err := k8s.GetResourcesFromYAML(r.Clientset, strings.NewReader(yamlMap["secrets"]))
+	if err != nil {
+		return err
+	}
+	for _, r := range resources {
+		err = updateResourceConfiguration(r, vz)
+		if err != nil {
+			return err
+		}
+	}
+	return k8s.ApplyResources(r.RestConfig, resources, namespace, nil, false)
+}
+
+// deployVizierDeps deploys the vizier deps to the given namespace. This includes generating certs
+// along with deploying deps like etcd and nats.
+func (r *VizierReconciler) deployVizierDeps(ctx context.Context, namespace string, vz *pixiev1alpha1.Vizier, yamlMap map[string]string) error {
+	log.Info("Deploying NATS")
+	resources, err := k8s.GetResourcesFromYAML(r.Clientset, strings.NewReader(yamlMap["nats"]))
+	if err != nil {
+		return err
+	}
+	for _, r := range resources {
+		err = updateResourceConfiguration(r, vz)
+		if err != nil {
+			return err
+		}
+	}
+	err = retryDeploy(r.RestConfig, namespace, resources)
+	if err != nil {
+		return err
+	}
+
+	if !vz.Spec.UseEtcdOperator {
+		return nil
+	}
+
+	log.Info("Deploying etcd")
+	resources, err = k8s.GetResourcesFromYAML(r.Clientset, strings.NewReader(yamlMap["etcd"]))
+	if err != nil {
+		return err
+	}
+	for _, r := range resources {
+		err = updateResourceConfiguration(r, vz)
+		if err != nil {
+			return err
+		}
+	}
+	err = retryDeploy(r.RestConfig, namespace, resources)
 	if err != nil {
 		return err
 	}
@@ -148,15 +240,78 @@ func (r *VizierReconciler) createVizier(ctx context.Context, req ctrl.Request, v
 	return nil
 }
 
-// deployVizierDeps deploys the vizier deps to the given namespace. This includes generating certs
-// along with deploying deps like etcd and nats.
-func (r *VizierReconciler) deployVizierDeps(ctx context.Context, req ctrl.Request, vz *pixiev1alpha1.Vizier) error {
-	return errors.New("Not yet implemented")
+// deployVizier deploys the core pods and services for running vizier.
+func (r *VizierReconciler) deployVizier(ctx context.Context, namespace string, vz *pixiev1alpha1.Vizier, yamlMap map[string]string) error {
+	log.Info("Deploying Vizier")
+
+	vzYaml := "vizier_persistent"
+	if vz.Spec.UseEtcdOperator {
+		vzYaml = "vizier_etcd"
+	}
+
+	resources, err := k8s.GetResourcesFromYAML(r.Clientset, strings.NewReader(yamlMap[vzYaml]))
+	if err != nil {
+		return err
+	}
+	for _, r := range resources {
+		err = updateResourceConfiguration(r, vz)
+		if err != nil {
+			return err
+		}
+	}
+	err = retryDeploy(r.RestConfig, namespace, resources)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-// deployVizier deploys the core pods and services for running vizier.
-func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, vz *pixiev1alpha1.Vizier) error {
-	return errors.New("Not yet implemented")
+func updateResourceConfiguration(resource *k8s.Resource, vz *pixiev1alpha1.Vizier) error {
+	// TODO(michellenguyen): Implement this to add labels, annotations, and resource requirements to the k8s object.
+	return nil
+}
+
+func generateVizierYAMLs(version string, ns string, vz *pixiev1alpha1.Vizier, conn *grpc.ClientConn) (map[string]string, error) {
+	var templatedYAMLs []*yamlsutils.YAMLFile
+	var err error
+
+	templatedYAMLs, err = artifacts.FetchVizierTemplates(conn, "", version)
+	if err != nil {
+		return nil, err
+	}
+
+	// Fill in template values.
+	cloudAddr := vz.Spec.CloudAddr
+	updateCloudAddr := vz.Spec.CloudAddr
+	if vz.Spec.DevCloudNamespace != "" {
+		cloudAddr = fmt.Sprintf("vzconn-service.%s.svc.cluster.local:51600", vz.Spec.DevCloudNamespace)
+		updateCloudAddr = fmt.Sprintf("api-service.%s.svc.cluster.local:51200", vz.Spec.DevCloudNamespace)
+	}
+	// We should eventually clean up the templating code, since our Helm charts and extracted YAMLs will now just
+	// be simple CRDs.
+	tmplValues := &vizieryamls.VizierTmplValues{
+		DeployKey:         vz.Spec.DeployKey,
+		UseEtcdOperator:   vz.Spec.UseEtcdOperator,
+		PEMMemoryLimit:    vz.Spec.PemMemoryLimit,
+		Namespace:         ns,
+		CloudAddr:         cloudAddr,
+		CloudUpdateAddr:   updateCloudAddr,
+		ClusterName:       vz.Spec.ClusterName,
+		DisableAutoUpdate: vz.Spec.DisableAutoUpdate,
+	}
+
+	yamls, err := yamlsutils.ExecuteTemplatedYAMLs(templatedYAMLs, vizieryamls.VizierTmplValuesToArgs(tmplValues))
+	if err != nil {
+		return nil, err
+	}
+
+	// Map from the YAML name to the YAML contents.
+	yamlMap := make(map[string]string)
+	for _, y := range yamls {
+		yamlMap[y.Name] = y.YAML
+	}
+
+	return yamlMap, nil
 }
 
 // SetupWithManager sets up the reconciler.
@@ -164,4 +319,14 @@ func (r *VizierReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&pixiev1alpha1.Vizier{}).
 		Complete(r)
+}
+
+func retryDeploy(config *rest.Config, namespace string, resources []*k8s.Resource) error {
+	bOpts := backoff.NewExponentialBackOff()
+	bOpts.InitialInterval = 15 * time.Second
+	bOpts.MaxElapsedTime = 5 * time.Minute
+
+	return backoff.Retry(func() error {
+		return k8s.ApplyResources(config, resources, namespace, nil, false)
+	}, bOpts)
 }

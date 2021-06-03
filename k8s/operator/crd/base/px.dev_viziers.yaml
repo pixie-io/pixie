@@ -115,7 +115,6 @@ spec:
                 type: string
             required:
             - deployKey
-            - disableAutoUpdate
             type: object
           status:
             description: VizierStatus defines the observed state of Vizier
@@ -135,6 +134,8 @@ spec:
         type: object
     served: true
     storage: true
+    subresources:
+      status: {}
 status:
   acceptedNames:
     kind: ""
