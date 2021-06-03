@@ -33,10 +33,10 @@ namespace md {
 constexpr uint64_t kEpochsBetweenObjectDeletion = 100;
 
 /**
- * kMinObjectRetentionAfterDeathNS is the time in nanoseconds that the object is retained after
+ * kMaxObjectRetentionAfterDeathNS is the time in nanoseconds that the object is retained after
  * being deleted.
  */
-constexpr uint64_t kMinObjectRetentionAfterDeathNS = 24ULL * 3600ULL * 1'000'000'000ULL;
+constexpr uint64_t kMaxObjectRetentionAfterDeathNS = 24ULL * 3600ULL * 1'000'000'000ULL;
 
 std::shared_ptr<const AgentMetadataState>
 AgentMetadataStateManagerImpl::CurrentAgentMetadataState() {
@@ -107,15 +107,15 @@ Status AgentMetadataStateManagerImpl::PerformMetadataStateUpdate() {
     }
   }
 
-  if (epoch_id % kEpochsBetweenObjectDeletion == 0) {
-    PL_RETURN_IF_ERROR(
-        DeleteMetadataForDeadObjects(shadow_state.get(), kMinObjectRetentionAfterDeathNS));
-  }
-
   // Increment epoch and update ts.
   ++epoch_id;
   shadow_state->set_epoch_id(epoch_id);
   shadow_state->set_last_update_ts_ns(ts);
+
+  if (epoch_id > 0 && epoch_id % kEpochsBetweenObjectDeletion == 0) {
+    PL_RETURN_IF_ERROR(
+        DeleteMetadataForDeadObjects(shadow_state.get(), kMaxObjectRetentionAfterDeathNS));
+  }
 
   {
     absl::base_internal::SpinLockHolder lock(&agent_metadata_state_lock_);
@@ -265,8 +265,9 @@ Status ProcessPIDUpdates(
   return Status::OK();
 }
 
-Status DeleteMetadataForDeadObjects(AgentMetadataState* state, int64_t retention_time) {
-  PL_RETURN_IF_ERROR(state->k8s_metadata_state()->CleanupExpiredMetadata(retention_time));
+Status DeleteMetadataForDeadObjects(AgentMetadataState*, int64_t ttl) {
+  // TODO(zasgar/michellenguyen, PP-2583): We should clean up any expired metadata.
+  PL_UNUSED(ttl);
   return Status::OK();
 }
 

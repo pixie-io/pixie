@@ -186,8 +186,6 @@ class K8sMetadataState : NotCopyable {
   Status HandleServiceUpdate(const ServiceUpdate& update);
   Status HandleNamespaceUpdate(const NamespaceUpdate& update);
 
-  Status CleanupExpiredMetadata(int64_t retention_time_ns);
-
   absl::flat_hash_map<CID, ContainerInfoUPtr>& containers_by_id() { return containers_by_id_; }
   std::string DebugString(int indent_level = 0) const;
 
