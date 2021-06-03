@@ -32,8 +32,8 @@ import { AuthCallbackMode, GetOAuthProvider } from './utils';
 import { Token } from './oauth-provider';
 
 // Send token header to enable CORS check. Token is still allowed with Pixie CLI.
-const redirectGet = async (url: string, data: { accessToken: string }) => (
-  Axios.get(url, { headers: { token: data.accessToken } })
+const redirectGet = async (url: string, data: { accessToken: string, idToken: string }) => (
+  Axios.get(url, { headers: { token: data.accessToken, id_token: data.idToken } })
 );
 
 type ErrorType = 'internal' | 'auth';
@@ -121,10 +121,10 @@ export const AuthCallbackPage: React.FC = () => {
     }
   };
 
-  const performSignup = async (accessToken: string) => {
+  const performSignup = async (accessToken: string, idToken: string) => {
     let response = null;
     try {
-      response = await Axios.post('/api/auth/signup', { accessToken });
+      response = await Axios.post('/api/auth/signup', { accessToken, idToken });
     } catch (err) {
       analytics.track('User signup failed', { error: err.response.data });
       handleHTTPError(err as AxiosError);
@@ -134,11 +134,12 @@ export const AuthCallbackPage: React.FC = () => {
     return true;
   };
 
-  const performUILogin = async (accessToken: string, orgName: string) => {
+  const performUILogin = async (accessToken: string, idToken: string, orgName: string) => {
     let response = null;
     try {
       response = await Axios.post('/api/auth/login', {
         accessToken,
+        idToken,
         orgName,
       });
     } catch (err) {
@@ -150,9 +151,9 @@ export const AuthCallbackPage: React.FC = () => {
     return true;
   };
 
-  const sendTokenToCLI = async (accessToken: string, redirectURI: string) => {
+  const sendTokenToCLI = async (accessToken: string, idToken: string, redirectURI: string) => {
     try {
-      const response = await redirectGet(redirectURI, { accessToken });
+      const response = await redirectGet(redirectURI, { accessToken, idToken });
       return response.status === 200 && response.data === 'OK';
     } catch (error) {
       handleHTTPError(error as AxiosError);
@@ -168,18 +169,19 @@ export const AuthCallbackPage: React.FC = () => {
     location: string,
     orgName: string,
     accessToken: string,
+    idToken: string,
   ) => {
     let signupSuccess = false;
     let loginSuccess = false;
 
     if (signup) {
       // We always need to perform signup, even if the mode is CLI.
-      signupSuccess = await performSignup(accessToken);
+      signupSuccess = await performSignup(accessToken, idToken);
     }
     // eslint-disable-next-line default-case
     switch (mode) {
       case 'cli_get':
-        loginSuccess = await sendTokenToCLI(accessToken, redirectURI);
+        loginSuccess = await sendTokenToCLI(accessToken, idToken, redirectURI);
         if (loginSuccess) {
           setConfig((c) => ({
             ...c,
@@ -206,7 +208,7 @@ export const AuthCallbackPage: React.FC = () => {
         break;
       case 'ui':
         if (!signup) {
-          loginSuccess = await performUILogin(accessToken, orgName);
+          loginSuccess = await performUILogin(accessToken, idToken, orgName);
         }
         // We just need to redirect if in signup or login were successful since
         // the cookies are installed.
@@ -258,7 +260,7 @@ export const AuthCallbackPage: React.FC = () => {
       return;
     }
 
-    doAuth(mode, signup, redirectURI, location, orgName, token?.accessToken).then();
+    doAuth(mode, signup, redirectURI, location, orgName, token?.accessToken, token?.idToken).then();
   };
 
   React.useEffect(() => {
