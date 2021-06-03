@@ -9,8 +9,7 @@
   "private": true,
   "workspaces": {
     "packages": [
-      "packages/pixie-*",
-      "packages/samples/*"
+      "packages/pixie-*"
     ]
   },
   "devDependencies": {
