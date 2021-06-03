@@ -34,6 +34,9 @@ const useStyles = makeStyles(({ spacing, typography }: Theme) => createStyles({
     margin: `${spacing(2)} 0 ${spacing(4)}`,
     textTransform: 'uppercase',
   },
+  hiddenFormField: {
+    display: 'none',
+  },
   formField: {
     display: 'block',
     marginBottom: spacing(2),
@@ -124,7 +127,7 @@ const FormFieldImpl: React.FC<FormFieldProps> = ({ onChange, children, ...field 
   const value = field.value && isHidden ? { value: field.value } : {};
   return (
     <TextField
-      className={classes.formField}
+      className={isHidden ? classes.hiddenFormField : classes.formField}
       label={isHidden ? null : field.name}
       InputLabelProps={{ className: classes.inputLabel }}
       name={field.name}

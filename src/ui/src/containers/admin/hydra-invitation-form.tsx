@@ -26,6 +26,9 @@ import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
+  invitationForm: {
+    padding: theme.spacing(2),
+  },
   invitationRow: {
     display: 'grid',
     gridTemplateAreas: '"name email" "link link"',
@@ -89,7 +92,7 @@ export const HydraInvitationForm: React.FC = () => {
   if (OAUTH_PROVIDER !== 'hydra') return null;
 
   return (
-    <>
+    <div className={classes.invitationForm}>
       <Form
         submitBtnText='Invite'
         defaultSubmit={false}
@@ -149,6 +152,6 @@ export const HydraInvitationForm: React.FC = () => {
         </div>
       ))}
       {errors.map((error) => <div key={error} className={classes.errorRow}>{error}</div>)}
-    </>
+    </div>
   );
 };
