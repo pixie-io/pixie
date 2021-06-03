@@ -15,6 +15,8 @@
 // 000007_add_enable_approvals_column.down.sql
 // 000007_add_enable_approvals_column.up.sql
 // 000008_insert_default_user_value.up.sql
+// 000009_org_add_updated_created_at.down.sql
+// 000009_org_add_updated_created_at.up.sql
 package schema
 
 import (
@@ -391,6 +393,46 @@ func _000008_insert_default_user_valueUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000009_org_add_updated_created_atDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\xc8\x2f\x4a\x2f\xe6\x72\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x53\x48\x2e\x4a\x4d\x2c\x49\x4d\x89\x4f\x2c\xb1\xe6\xc2\xab\xb0\xb4\x20\x05\xae\x10\x22\x11\x12\xe4\xe9\xee\xee\x1a\xa4\xe0\xe9\xa6\xe0\x1a\xe1\x19\x1c\x12\x0c\x55\x13\x0f\xd2\x1b\x8f\x50\xaf\xe0\xef\x07\x36\xce\x9a\x0b\x10\x00\x00\xff\xff\xb8\x59\x22\x6c\x8a\x00\x00\x00")
+
+func _000009_org_add_updated_created_atDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000009_org_add_updated_created_atDownSql,
+		"000009_org_add_updated_created_at.down.sql",
+	)
+}
+
+func _000009_org_add_updated_created_atDownSql() (*asset, error) {
+	bytes, err := _000009_org_add_updated_created_atDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000009_org_add_updated_created_at.down.sql", size: 138, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000009_org_add_updated_created_atUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\xb4\x90\x51\xab\x9b\x30\x18\x86\xef\xf3\x2b\xde\x0b\xe1\xb4\x30\xf7\x07\x0e\xbb\x48\xf5\xb3\x13\x6c\x22\x31\xa1\xbb\x3b\x84\xd3\xd4\x0a\xce\x74\x1a\xd7\xed\xdf\x0f\xed\xa4\xc2\x7a\x33\xc6\xbc\x11\xbe\x7c\x79\x9f\xf7\x49\x1c\x23\xef\x9a\xd0\xd8\xb6\xfd\x89\xc1\x05\x74\x1e\x27\x77\xb6\x63\x1b\x3e\x60\xf0\x08\x17\x1b\xe0\x7e\x34\x43\x68\xba\x1a\xbd\xbf\x0d\xb8\xd8\xef\x0e\x16\xc2\x14\x05\xde\x7b\x67\x83\x3b\xbd\xd9\x80\x77\xdf\x8e\x5f\x3b\xc6\x0b\x4d\x0a\x9a\xef\x0a\x82\xef\xeb\x01\x3c\x4d\x91\xc8\xc2\x1c\xc4\x7a\x5b\xe7\x07\xaa\x34\x3f\x94\xaf\x2c\x8e\x51\xb9\x80\x70\x71\x0b\x19\xc1\x43\xc8\xe3\x66\x8b\xb3\xef\x71\x1e\xc3\xd8\xbb\x99\xfd\x24\x7d\x1e\xfc\x99\x5f\x91\x46\x4a\x19\x37\x85\x46\xe7\x6f\x9b\xed\xcc\xf9\x17\xd5\xf1\x7a\xfa\x0b\xd5\xd5\xf6\x7f\x51\x5d\xe5\x3f\x51\x65\x89\x22\xae\x09\x52\x41\x51\x59\xf0\x84\x90\x19\x91\xe8\x5c\x2e\x37\xdf\x1e\x01\x9b\x2d\x03\x14\x69\xa3\x44\x05\xad\xf2\xfd\x9e\x14\x78\x85\x28\x62\xc0\x8e\xf6\xb9\x60\x98\x3f\x41\xc7\x8f\x2b\xee\xa7\x85\x76\x3f\xbd\x27\x4c\x4b\xd3\x84\x44\x3a\xfd\xa2\x08\xad\xed\xea\xd1\xd6\x0e\x2f\xd7\xf6\x5a\x0f\xdf\xda\x97\x47\xbf\x85\xf6\xbb\xd3\xa4\xb9\x2a\xc6\x76\x94\x49\x45\x30\x65\x3a\xcb\x88\xf9\x1d\x58\x26\x15\x88\x27\x9f\xa1\xe4\x11\xf4\x85\x12\xa3\x09\xa5\x92\x09\xa5\x46\xd1\x33\xbf\x57\xf6\x2b\x00\x00\xff\xff\x3e\x0e\xdd\xff\xe7\x02\x00\x00")
+
+func _000009_org_add_updated_created_atUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000009_org_add_updated_created_atUpSql,
+		"000009_org_add_updated_created_at.up.sql",
+	)
+}
+
+func _000009_org_add_updated_created_atUpSql() (*asset, error) {
+	bytes, err := _000009_org_add_updated_created_atUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000009_org_add_updated_created_at.up.sql", size: 743, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -458,6 +500,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000007_add_enable_approvals_column.down.sql": _000007_add_enable_approvals_columnDownSql,
 	"000007_add_enable_approvals_column.up.sql":   _000007_add_enable_approvals_columnUpSql,
 	"000008_insert_default_user_value.up.sql":     _000008_insert_default_user_valueUpSql,
+	"000009_org_add_updated_created_at.down.sql":  _000009_org_add_updated_created_atDownSql,
+	"000009_org_add_updated_created_at.up.sql":    _000009_org_add_updated_created_atUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -516,6 +560,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000007_add_enable_approvals_column.down.sql": &bintree{_000007_add_enable_approvals_columnDownSql, map[string]*bintree{}},
 	"000007_add_enable_approvals_column.up.sql":   &bintree{_000007_add_enable_approvals_columnUpSql, map[string]*bintree{}},
 	"000008_insert_default_user_value.up.sql":     &bintree{_000008_insert_default_user_valueUpSql, map[string]*bintree{}},
+	"000009_org_add_updated_created_at.down.sql":  &bintree{_000009_org_add_updated_created_atDownSql, map[string]*bintree{}},
+	"000009_org_add_updated_created_at.up.sql":    &bintree{_000009_org_add_updated_created_atUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
