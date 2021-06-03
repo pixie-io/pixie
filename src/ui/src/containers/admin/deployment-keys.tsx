@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { gql } from '@apollo/client';
 import Table from '@material-ui/core/Table';
 import IconButton from '@material-ui/core/IconButton';
 import Input from '@material-ui/core/Input';
@@ -30,7 +31,7 @@ import Visibility from '@material-ui/icons/Visibility';
 import VisibilityOff from '@material-ui/icons/VisibilityOff';
 import { distanceInWords } from 'date-fns';
 import * as React from 'react';
-import { useDeploymentKeys } from '@pixie-labs/api-react';
+import { useQuery, useMutation } from '@pixie-labs/api-react';
 import { GQLDeploymentKey } from '@pixie-labs/api';
 import {
   AdminTooltip, StyledTableCell, StyledTableHeaderCell,
@@ -66,7 +67,11 @@ export const DeploymentKeyRow: React.FC<{ deploymentKey: DeploymentKeyDisplay }>
   const [open, setOpen] = React.useState<boolean>(false);
   const [anchorEl, setAnchorEl] = React.useState(null);
 
-  const [{ deleteDeploymentKey }] = useDeploymentKeys();
+  const [deleteDeploymentKey] = useMutation<boolean, { id: string }>(gql`
+    mutation DeleteDeploymentKeyFromAdminPage($id: ID!) {
+      DeleteDeploymentKey(id: $id)
+    }
+  `);
 
   const openMenu = React.useCallback((event) => {
     setOpen(true);
@@ -129,7 +134,24 @@ export const DeploymentKeyRow: React.FC<{ deploymentKey: DeploymentKeyDisplay }>
           <MenuItem
             key='delete'
             alignItems='center'
-            onClick={() => deleteDeploymentKey(deploymentKey.id)}
+            onClick={() => deleteDeploymentKey({
+              variables: { id: deploymentKey.id },
+              update: (cache, { data }) => {
+                if (!data) {
+                  return;
+                }
+                cache.modify({
+                  fields: {
+                    deploymentKeys(existingKeys, { readField }) {
+                      return existingKeys.filter(
+                        (key) => (deploymentKey.id !== readField('id', key)),
+                      );
+                    },
+                  },
+                });
+              },
+              optimisticResponse: true,
+            })}
           >
             <KeyListItemIcon className={classes.copyBtn}>
               <Delete />
@@ -144,7 +166,19 @@ export const DeploymentKeyRow: React.FC<{ deploymentKey: DeploymentKeyDisplay }>
 
 export const DeploymentKeysTable: React.FC = () => {
   const classes = UseKeyListStyles();
-  const [{ deploymentKeys: rawDeploymentKeys }, loading, error] = useDeploymentKeys();
+  const { data, loading, error } = useQuery<{ deploymentKeys: GQLDeploymentKey[] }>(
+    gql`
+      query getDeploymentKeysForAdminPage{
+        deploymentKeys {
+          id
+          key
+          desc
+          createdAtMs
+        }
+      }
+    `,
+    { pollInterval: 60000 },
+  );
 
   if (loading) {
     return <div className={classes.error}>Loading...</div>;
@@ -153,7 +187,7 @@ export const DeploymentKeysTable: React.FC = () => {
     return <div className={classes.error}>{error.toString()}</div>;
   }
 
-  const deploymentKeys = (rawDeploymentKeys ?? []).map((key) => formatDeploymentKey(key));
+  const deploymentKeys = (data?.deploymentKeys ?? []).map((key) => formatDeploymentKey(key));
   return (
     <>
       <Table>

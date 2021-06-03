@@ -16,9 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export * from './use-api-keys';
 export * from './use-autocomplete-field';
-export * from './use-deployment-keys';
 export * from './use-invitation';
 export * from './use-is-authenticated';
 export * from './use-mutation';
