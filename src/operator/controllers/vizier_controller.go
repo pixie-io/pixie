@@ -28,6 +28,8 @@ import (
 	"github.com/cenkalti/backoff/v3"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -42,6 +44,9 @@ import (
 	yamlsutils "px.dev/pixie/src/utils/shared/yamls"
 	vizieryamls "px.dev/pixie/src/utils/template_generator/vizier_yamls"
 )
+
+// OperatorAnnotation is the key for the annotation that the operator applies on all of its deployed resources for a CRD.
+const operatorAnnotation = "vizier-name"
 
 // VizierReconciler reconciles a Vizier object
 type VizierReconciler struct {
@@ -155,6 +160,9 @@ func (r *VizierReconciler) createVizier(ctx context.Context, req ctrl.Request, v
 		return err
 	}
 
+	// Add an additional annotation to our deployed vizier-resources, to allow easier tracking of the vizier resources.
+	vz.Spec.Pod.Annotations[operatorAnnotation] = req.Name
+
 	yamlMap, err := generateVizierYAMLs(vz.Spec.Version, req.Namespace, vz, cloudClient)
 	if err != nil {
 		return err
@@ -267,7 +275,10 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, namespace string, v
 }
 
 func updateResourceConfiguration(resource *k8s.Resource, vz *pixiev1alpha1.Vizier) error {
-	// TODO(michellenguyen): Implement this to add labels, annotations, and resource requirements to the k8s object.
+	// Add custom labels and annotations to the k8s resource.
+	addKeyValueMapToResource("labels", vz.Spec.Pod.Labels, resource.Object.Object)
+	addKeyValueMapToResource("annotations", vz.Spec.Pod.Annotations, resource.Object.Object)
+	updateResourceRequirements(vz.Spec.Pod.Resources, resource.Object.Object)
 	return nil
 }
 
@@ -312,6 +323,106 @@ func generateVizierYAMLs(version string, ns string, vz *pixiev1alpha1.Vizier, co
 	}
 
 	return yamlMap, nil
+}
+
+// addKeyValueMapToResource adds the given keyValue map to the K8s resource.
+func addKeyValueMapToResource(mapName string, keyValues map[string]string, res map[string]interface{}) {
+	metadata := make(map[string]interface{})
+	md, ok, err := unstructured.NestedFieldNoCopy(res, "metadata")
+	if ok && err == nil {
+		if mdCast, castOk := md.(map[string]interface{}); castOk {
+			metadata = mdCast
+		}
+	}
+
+	resLabels := make(map[string]interface{})
+	l, ok, err := unstructured.NestedFieldNoCopy(res, "metadata", mapName)
+	if ok && err == nil {
+		if labelsCast, castOk := l.(map[string]interface{}); castOk {
+			resLabels = labelsCast
+		}
+	}
+
+	for k, v := range keyValues {
+		resLabels[k] = v
+	}
+	metadata[mapName] = resLabels
+
+	// If it exists, recursively add the labels to the resource's template (for deployments/daemonsets).
+	spec, ok, err := unstructured.NestedFieldNoCopy(res, "spec", "template")
+	if ok && err == nil {
+		if specCast, castOk := spec.(map[string]interface{}); castOk {
+			addKeyValueMapToResource(mapName, keyValues, specCast)
+		}
+	}
+
+	res["metadata"] = metadata
+}
+
+func updateResourceRequirements(requirements v1.ResourceRequirements, res map[string]interface{}) {
+	// Traverse through resource object to spec.template.spec.containers. If the path does not exist,
+	// the resource can be ignored.
+
+	containers, ok, err := unstructured.NestedFieldNoCopy(res, "spec", "template", "spec", "containers")
+	if !ok || err != nil {
+		return
+	}
+
+	cList, ok := containers.([]interface{})
+	if !ok {
+		return
+	}
+
+	// If containers are specified in the spec, we should update the resource requirements if
+	// not already defined.
+	for _, c := range cList {
+		castedContainer, ok := c.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		resources := make(map[string]interface{})
+		if r, ok := castedContainer["resources"]; ok {
+			castedR, castOk := r.(map[string]interface{})
+			if castOk {
+				resources = castedR
+			}
+		}
+
+		requests := make(map[string]interface{})
+		if req, ok := resources["requests"]; ok {
+			castedReq, ok := req.(map[string]interface{})
+			if ok {
+				requests = castedReq
+			}
+		}
+		for k, v := range requirements.Requests {
+			if _, ok := requests[k.String()]; ok {
+				continue
+			}
+
+			requests[k.String()] = v.String()
+		}
+		resources["requests"] = requests
+
+		limits := make(map[string]interface{})
+		if req, ok := resources["limits"]; ok {
+			castedLim, ok := req.(map[string]interface{})
+			if ok {
+				limits = castedLim
+			}
+		}
+		for k, v := range requirements.Limits {
+			if _, ok := limits[k.String()]; ok {
+				continue
+			}
+
+			limits[k.String()] = v.String()
+		}
+		resources["limits"] = limits
+
+		castedContainer["resources"] = resources
+	}
 }
 
 // SetupWithManager sets up the reconciler.
