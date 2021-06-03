@@ -17,7 +17,6 @@
  */
 
 export * from './use-autocomplete-field';
-export * from './use-is-authenticated';
 export * from './use-mutation';
 export * from './use-query';
 export * from './use-setting';

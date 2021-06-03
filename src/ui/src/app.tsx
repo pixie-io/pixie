@@ -23,6 +23,7 @@ import { LD_CLIENT_ID } from 'containers/constants';
 import {
   Redirect, Route, Router, Switch,
 } from 'react-router-dom';
+import { makeCancellable } from 'utils/cancellable-promise';
 import { isProd, PIXIE_CLOUD_VERSION } from 'utils/env';
 import history from 'utils/pl-history';
 
@@ -39,7 +40,7 @@ import { withLDProvider } from 'launchdarkly-react-client-sdk';
 import { AuthRouter } from 'pages/auth/auth';
 import 'typeface-roboto';
 import 'typeface-roboto-mono';
-import { PixieAPIContextProvider, useIsAuthenticated } from '@pixie-labs/api-react';
+import { PixieAPIContext, PixieAPIContextProvider } from '@pixie-labs/api-react';
 
 // This side-effect-only import has to be a `require`, or else it gets erroneously optimized away during compilation.
 require('./wdyr');
@@ -60,6 +61,32 @@ const RedirectWithArgs = (props) => {
     />
   );
 };
+
+function useIsAuthenticated() {
+  // Using an object instead of separate variables because using multiple setState does NOT batch if it happens outside
+  // of React's scope (like resolved promises or Observable subscriptions). To make it atomic, have to use ONE setState.
+  const [{ loading, authenticated, error }, setState] = React.useState({
+    loading: true, authenticated: false, error: undefined,
+  });
+
+  const client = React.useContext(PixieAPIContext);
+  React.useEffect(() => {
+    if (!client) throw new Error('useIsAuthenticated needs to be called within a PixieAPIContextProvider!');
+
+    setState({ loading: true, authenticated, error: undefined });
+    const authPromise = makeCancellable(client.isAuthenticated());
+    authPromise.then((isAuthenticated) => {
+      setState({ loading: false, authenticated: isAuthenticated, error: undefined });
+    }).catch((e) => {
+      setState({ loading: false, authenticated: false, error: e });
+    });
+
+    return () => authPromise.cancel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client]);
+
+  return { authenticated, loading, error };
+}
 
 export const App: React.FC = () => {
   const { authenticated, loading } = useIsAuthenticated();
