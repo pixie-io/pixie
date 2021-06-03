@@ -84,7 +84,7 @@ TEST(DynamicBPFTraceConnectorTest, Basic) {
   // Read the data.
   StandaloneContext ctx;
   DataTable data_table(table_schema);
-  connector->TransferData(&ctx, kTableNum, &data_table);
+  connector->TransferData(&ctx, {&data_table});
   std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
 
   // Should've gotten something in the records.
@@ -165,7 +165,7 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceBuiltins) {
   // Read the data.
   StandaloneContext ctx;
   DataTable data_table(table_schema);
-  connector->TransferData(&ctx, kTableNum, &data_table);
+  connector->TransferData(&ctx, {&data_table});
   std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
 
   // Should've gotten something in the records.
@@ -276,7 +276,7 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceBuiltins2) {
   // Read the data.
   StandaloneContext ctx;
   DataTable data_table(table_schema);
-  connector->TransferData(&ctx, kTableNum, &data_table);
+  connector->TransferData(&ctx, {&data_table});
   std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
 
   // Should've gotten something in the records.
@@ -347,7 +347,7 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceUnlabeledColumn) {
   // Read the data.
   StandaloneContext ctx;
   DataTable data_table(table_schema);
-  connector->TransferData(&ctx, kTableNum, &data_table);
+  connector->TransferData(&ctx, {&data_table});
   std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
 
   // Should've gotten something in the records.

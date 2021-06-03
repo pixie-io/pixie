@@ -22,6 +22,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "src/common/base/base.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
@@ -33,6 +34,9 @@ namespace stirling {
 
 class DynamicTraceConnector : public SourceConnector, public bpf_tools::BCCWrapper {
  public:
+  static constexpr auto kSamplingPeriod = std::chrono::milliseconds{100};
+  static constexpr auto kPushPeriod = std::chrono::milliseconds{1000};
+
   ~DynamicTraceConnector() override = default;
 
   static StatusOr<std::unique_ptr<SourceConnector>> Create(
@@ -53,7 +57,8 @@ class DynamicTraceConnector : public SourceConnector, public bpf_tools::BCCWrapp
 
   Status InitImpl() override;
 
-  void TransferDataImpl(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table) override;
+  bool output_multi_tables() const override { return true; }
+  void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
 
   Status StopImpl() override { return Status::OK(); }
 

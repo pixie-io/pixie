@@ -170,6 +170,9 @@ StatusOr<std::unique_ptr<SourceConnector>> DynamicTraceConnector::Create(
 }
 
 Status DynamicTraceConnector::InitImpl() {
+  sample_push_freq_mgr_.set_sampling_period(kSamplingPeriod);
+  sample_push_freq_mgr_.set_push_period(kPushPeriod);
+
   PL_RETURN_IF_ERROR(InitBPFProgram(bcc_program_.code));
 
   for (const auto& uprobe_spec : bcc_program_.uprobe_specs) {
@@ -482,9 +485,15 @@ Status DynamicTraceConnector::AppendRecord(const Struct& st, uint32_t asid, std:
   return Status::OK();
 }
 
-void DynamicTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
-                                             DataTable* data_table) {
-  DCHECK_EQ(table_num, 0) << "Now only support having exactly one table per DynamicTraceConnector";
+void DynamicTraceConnector::TransferDataImpl(ConnectorContext* ctx,
+                                             const std::vector<DataTable*>& data_tables) {
+  DCHECK_EQ(data_tables.size(), 1)
+      << "Now only support having exactly one table per DynamicTraceConnector";
+
+  auto* data_table = data_tables[0];
+  if (data_table == nullptr) {
+    return;
+  }
 
   PollPerfBuffers();
 

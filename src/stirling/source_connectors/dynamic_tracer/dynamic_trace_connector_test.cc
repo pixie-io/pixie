@@ -29,36 +29,36 @@ namespace stirling {
 
 TEST(DynamicTraceConnectorTest, ConvertFields) {
   constexpr std::string_view kOutputStruct = R"(
-  name: "out_table_value_t"
-  fields {
-    name: "tgid_"
-    type: INT32
-  }
-  fields {
-    name: "tgid_start_time_"
-    type: UINT64
-  }
-  fields {
-    name: "goid_"
-    type: INT64
-  }
-  fields {
-    name: "time_"
-    type: UINT64
-  }
-  fields {
-    name: "arg0"
-    type: INT
-  }
-  fields {
-    name: "arg1"
-    type: BOOL
-  }
-  fields {
-    name: "arg2"
-    type: BOOL
-  }
-)";
+      name: "out_table_value_t"
+      fields {
+        name: "tgid_"
+        type: INT32
+      }
+      fields {
+        name: "tgid_start_time_"
+        type: UINT64
+      }
+      fields {
+        name: "goid_"
+        type: INT64
+      }
+      fields {
+        name: "time_"
+        type: UINT64
+      }
+      fields {
+        name: "arg0"
+        type: INT
+      }
+      fields {
+        name: "arg1"
+        type: BOOL
+      }
+      fields {
+        name: "arg2"
+        type: BOOL
+      }
+  )";
 
   ::px::stirling::dynamic_tracing::ir::physical::Struct output_struct;
   ASSERT_TRUE(

@@ -222,6 +222,9 @@ Status CheckOutputFields(const std::vector<bpftrace::Field>& fields,
 }  // namespace
 
 Status DynamicBPFTraceConnector::InitImpl() {
+  sample_push_freq_mgr_.set_sampling_period(kSamplingPeriod);
+  sample_push_freq_mgr_.set_push_period(kPushPeriod);
+
   auto callback_fn = std::bind(&DynamicBPFTraceConnector::HandleEvent, this, std::placeholders::_1);
   PL_RETURN_IF_ERROR(CompileForPrintfOutput(script_, {}));
   output_fields_ = OutputFields();
@@ -235,13 +238,15 @@ Status DynamicBPFTraceConnector::StopImpl() {
   return Status::OK();
 }
 
-void DynamicBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t table_num,
-                                                DataTable* data_table) {
-  DCHECK_EQ(table_num, 0) << "Only one table is allowed per DynamicBPFTraceConnector.";
-
+void DynamicBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */,
+                                                const std::vector<DataTable*>& data_tables) {
+  DCHECK_EQ(data_tables.size(), 1) << "Only one table is allowed per DynamicBPFTraceConnector.";
+  data_table_ = data_tables[0];
+  if (data_table_ == nullptr) {
+    return;
+  }
   // This trigger a callbacks for each BPFTrace printf event in the perf buffers.
   // Store data_table_ so the Handle function has the appropriate context.
-  data_table_ = data_table;
   PollPerfBuffers();
   data_table_ = nullptr;
 }
