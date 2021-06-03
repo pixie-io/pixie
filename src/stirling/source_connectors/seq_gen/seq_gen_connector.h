@@ -135,10 +135,6 @@ class SeqGenConnector : public SourceConnector {
     return Status::OK();
   }
 
-  void TransferDataImpl(ConnectorContext* /*ctx*/, uint32_t /*table_num*/,
-                        DataTable* /*data_table*/) override {
-    DCHECK(false) << "Deprecated, do not use";
-  }
   bool output_multi_tables() const override { return true; }
   void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
 

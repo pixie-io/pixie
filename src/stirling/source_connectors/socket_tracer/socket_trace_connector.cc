@@ -336,11 +336,6 @@ void SocketTraceConnector::UpdateTrackerTraceLevel(ConnTracker* tracker) {
   }
 }
 
-void SocketTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t /* table_num */,
-                                            DataTable* /* data_table */) {
-  DCHECK(false) << "Deprecated";
-}
-
 void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
                                             const std::vector<DataTable*>& data_tables) {
   set_iteration_time(std::chrono::steady_clock::now());
@@ -382,10 +377,6 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
 
   // Once we've cleared all the debug trace levels for this pid, we can remove it from the list.
   pids_to_trace_disable_.clear();
-}
-
-bool SocketTraceConnector::output_multi_tables() const {
-  return FLAGS_stirling_source_connector_output_multiple_data_tables;
 }
 
 template <typename TValueType>

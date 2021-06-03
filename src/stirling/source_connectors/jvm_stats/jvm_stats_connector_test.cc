@@ -67,6 +67,7 @@ class JVMStatsConnectorTest : public ::testing::Test {
 
   std::unique_ptr<SourceConnector> connector_;
   DataTable data_table_{kJVMStatsTable};
+  const std::vector<DataTable*> data_tables_{&data_table_};
 };
 
 // NOTE: This test will likely break under --runs_per_tests=100 or higher because of limitations of
@@ -87,7 +88,7 @@ TEST_F(JVMStatsConnectorTest, CaptureData) {
   types::ColumnWrapperRecordBatch record_batch;
 
   ctx = std::make_unique<StandaloneContext>();
-  connector_->TransferData(ctx.get(), JVMStatsConnector::kTableNum, &data_table_);
+  connector_->TransferData(ctx.get(), data_tables_);
   tablets = data_table_.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   record_batch = tablets[0].records;
@@ -115,7 +116,7 @@ TEST_F(JVMStatsConnectorTest, CaptureData) {
   std::this_thread::sleep_for(std::chrono::seconds(2));
 
   ctx = std::make_unique<StandaloneContext>();
-  connector_->TransferData(ctx.get(), JVMStatsConnector::kTableNum, &data_table_);
+  connector_->TransferData(ctx.get(), data_tables_);
   tablets = data_table_.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   record_batch = tablets[0].records;

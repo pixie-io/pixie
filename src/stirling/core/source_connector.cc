@@ -23,11 +23,6 @@
 
 #include "src/stirling/core/source_connector.h"
 
-DEFINE_bool(stirling_source_connector_output_multiple_data_tables, true,
-            "If true, source connectors that support outputting data to multiple data tables, "
-            "will output data to all data tables. "
-            "Temporary, will be removed once tested.");
-
 namespace px {
 namespace stirling {
 

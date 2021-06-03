@@ -46,7 +46,6 @@ pl_cc_test(
     ],
     tags = [
         "exclusive",
-        "no_asan",
         "requires_bpf",
     ],
     deps = [

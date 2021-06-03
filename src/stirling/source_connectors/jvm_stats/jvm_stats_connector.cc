@@ -86,10 +86,15 @@ Status JVMStatsConnector::ExportStats(const md::UPID& upid,
   return Status::OK();
 }
 
-void JVMStatsConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
-                                         DataTable* data_table) {
-  DCHECK_LT(table_num, num_tables())
-      << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
+void JVMStatsConnector::TransferDataImpl(ConnectorContext* ctx,
+                                         const std::vector<DataTable*>& data_tables) {
+  DCHECK_EQ(data_tables.size(), 1) << "JVMStats only has one data table.";
+
+  DataTable* data_table = data_tables[0];
+
+  if (data_table == nullptr) {
+    return;
+  }
 
   FindJavaUPIDs(*ctx);
 
@@ -108,19 +113,6 @@ void JVMStatsConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_n
       ++iter;
     }
   }
-}
-
-bool JVMStatsConnector::output_multi_tables() const {
-  return FLAGS_stirling_source_connector_output_multiple_data_tables;
-}
-
-void JVMStatsConnector::TransferDataImpl(ConnectorContext* ctx,
-                                         const std::vector<DataTable*>& data_tables) {
-  DCHECK_EQ(data_tables.size(), 1) << "JVMStats have only one data table.";
-  DataTable* data_table = data_tables[0];
-  DCHECK(data_table != nullptr) << "JVMStats data table must be specified.";
-
-  TransferDataImpl(ctx, 0, data_table);
 }
 
 }  // namespace stirling

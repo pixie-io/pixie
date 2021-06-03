@@ -92,21 +92,17 @@ void ProcessStatsConnector::TransferProcessStatsTable(ConnectorContext* ctx,
   }
 }
 
-void ProcessStatsConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
-                                             DataTable* data_table) {
-  DCHECK_LT(table_num, num_tables())
-      << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
-
-  TransferProcessStatsTable(ctx, data_table);
-}
-
 void ProcessStatsConnector::TransferDataImpl(ConnectorContext* ctx,
                                              const std::vector<DataTable*>& data_tables) {
   DCHECK_EQ(data_tables.size(), 1);
 
-  if (data_tables[kProcStatsTableNum] != nullptr) {
-    TransferProcessStatsTable(ctx, data_tables[kProcStatsTableNum]);
+  auto* data_table = data_tables[0];
+
+  if (data_table == nullptr) {
+    return;
   }
+
+  TransferProcessStatsTable(ctx, data_table);
 }
 
 }  // namespace stirling

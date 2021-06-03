@@ -55,9 +55,7 @@ class JVMStatsConnector : public SourceConnector {
   Status InitImpl() override;
   Status StopImpl() override { return Status::OK(); }
 
-  void TransferDataImpl(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table) override;
-
-  bool output_multi_tables() const override;
+  bool output_multi_tables() const override { return true; }
   void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
 
  private:

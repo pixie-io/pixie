@@ -37,8 +37,6 @@
  * 3. Register the data source in the appropriate registry.
  */
 
-DECLARE_bool(stirling_source_connector_output_multiple_data_tables);
-
 namespace px {
 namespace stirling {
 
@@ -148,8 +146,10 @@ class SourceConnector : public NotCopyable {
   // SourceConnectors only need override if action is required on the initial context.
   virtual void InitContextImpl(ConnectorContext* /* ctx */) {}
 
-  virtual void TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
-                                DataTable* data_table) = 0;
+  virtual void TransferDataImpl(ConnectorContext*, uint32_t, DataTable*) {
+    // TODO(yzhao): Remove this after all subclasses are migrated to the overloaded version.
+    LOG(DFATAL) << "Deprecated, do not use.";
+  }
   virtual void TransferDataImpl(ConnectorContext*, const std::vector<DataTable*>&) {
     // TODO(yzhao): Change to pure virtual function after all subclasses are updated.
     LOG(DFATAL) << "TransferStreams() Unimplemented";
