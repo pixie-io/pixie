@@ -101,9 +101,9 @@ export interface FormStructure {
   // Event to happen when the user submits the form. If `defaultSubmit` is false
   // or unspecified, onClick will be run. If 'defaultSubmit` is true, then we'll
   // run onClick and also submit the form.
-  onClick?: () => void;
+  onClick?: React.FormEventHandler<HTMLFormElement>;
   // onChange will receive data from a formField whenever that data is updated.
-  onChange?: (f: any) => any;
+  onChange?: React.ChangeEventHandler<HTMLTextAreaElement | HTMLInputElement>;
   // Submit the form when click submit. If unspecified, the form will not submit.
   defaultSubmit?: boolean;
 }
@@ -113,7 +113,7 @@ export const composeMessages = (messages?: FormFieldMessage[]): string | null =>
 );
 
 interface FormFieldProps extends FormField {
-  onChange?: (e: any) => void;
+  onChange?: React.ChangeEventHandler<HTMLTextAreaElement | HTMLInputElement>;
 }
 
 const FormFieldImpl: React.FC<FormFieldProps> = ({ onChange, children, ...field }) => {
@@ -150,9 +150,9 @@ export const Form: React.FC<FormStructure> = ({
 }) => {
   const classes = useStyles();
 
-  const onSubmit = (e) => {
+  const onSubmit: React.FormEventHandler<HTMLFormElement> = (e) => {
     if (onClick != null) {
-      onClick();
+      onClick(e);
     }
     if (defaultSubmit == null || !defaultSubmit) {
       e.preventDefault();
