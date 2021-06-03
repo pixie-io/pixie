@@ -42,7 +42,6 @@ import {
   GQLAutocompleteResult, GQLAutocompleteSuggestion, GQLClusterInfo,
   GQLDeploymentKey, GQLUserInfo, GQLUserInvite,
 } from './types/schema';
-import { DEFAULT_USER_SETTINGS, UserSettings } from './user-settings';
 
 // Apollo link that adds cookies in the request.
 const makeCloudAuthLink = (opts: PixieAPIClientOptions) => setContext((_, { headers }) => ({
@@ -266,36 +265,6 @@ export class CloudClient {
     }).then(
       (results) => results.data.autocompleteField,
     );
-  }
-
-  /**
-   * Fetches the upstream value of a specific user setting.
-   * Adapter libraries may wish to leverage localStorage in addition to Apollo's cache, to get the
-   * last-known value synchronously on page load. @pixie-labs/api-react is an example of this.
-   */
-  async getSetting(key: keyof UserSettings): Promise<UserSettings[typeof key]> {
-    const { data } = await this.graphQL.query<{ userSettings: Array<Record<string, string>> }>({
-      query: USER_QUERIES.GET_ALL_USER_SETTINGS,
-      fetchPolicy: 'cache-first',
-    });
-    if (data.userSettings[key] == null) return DEFAULT_USER_SETTINGS[key];
-    try {
-      return JSON.parse(data.userSettings[key]);
-    } catch {
-      return data.userSettings[key];
-    }
-  }
-
-  /**
-   * Writes a user setting upstream.
-   * As with getSetting, adapter libraries may wish to use localStorage in combination with this.
-   */
-  async setSetting(key: keyof UserSettings, value: UserSettings[typeof key]): Promise<void> {
-    await this.graphQL.mutate({
-      mutation: USER_QUERIES.SAVE_USER_SETTING,
-      variables: { key, value: JSON.stringify(value) },
-    });
-    // Nothing to return here. Just wait for the promise to resolve or reject.
   }
 
   async getUserInfo(): Promise<GQLUserInfo> {

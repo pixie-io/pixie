@@ -83,8 +83,6 @@ describe('Pixie TypeScript API Client', () => {
     ['createUserInvitation', 'Test', 'Exampleton', 'test@example.com'],
     ['listClusters'],
     ['getClusterControlPlanePods'],
-    ['getSetting', 'tourSeen'],
-    ['setSetting', 'tourSeen', true],
   ];
 
   it.each(proxies)('%s forwards to CloudClient', async (name: keyof CloudClient, ...args: any[]) => {

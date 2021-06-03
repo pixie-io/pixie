@@ -30,7 +30,7 @@ import {
   Avatar, ProfileMenuWrapper, CodeIcon,
   LogoutIcon, SettingsIcon,
 } from '@pixie-labs/components';
-import { useSetting, useQuery } from '@pixie-labs/api-react';
+import { useQuery, useMutation } from '@pixie-labs/api-react';
 import { LiveShortcutsContext } from 'containers/live/shortcuts';
 import { SidebarContext } from 'context/sidebar-context';
 import { LiveTourContext, LiveTourDialog } from 'containers/App/live-tour';
@@ -42,7 +42,7 @@ import ExploreIcon from '@material-ui/icons/Explore';
 import KeyboardIcon from '@material-ui/icons/Keyboard';
 import { Link } from 'react-router-dom';
 import { Logo } from 'configurable/logo';
-import { GQLUserInfo } from '@pixie-labs/api';
+import { GQLUserInfo, GQLUserSetting } from '@pixie-labs/api';
 import { gql } from '@apollo/client';
 
 const StyledListItemText = withStyles((theme: Theme) => createStyles({
@@ -62,13 +62,37 @@ const ProfileItem = ({
 }) => {
   const [open, setOpen] = React.useState<boolean>(false);
   const { setTourOpen } = React.useContext(LiveTourContext);
-  const [tourSeen, setTourSeen, loadingTourSeen] = useSetting('tourSeen');
   const [wasSidebarOpenBeforeTour, setWasSidebarOpenBeforeTour] = React.useState<boolean>(false);
   const [wasDrawerOpenBeforeTour, setWasDrawerOpenBeforeTour] = React.useState<boolean>(false);
   const { setDataDrawerOpen } = React.useContext(LayoutContext) ?? { setDataDrawerOpen: () => {} };
   const [anchorEl, setAnchorEl] = React.useState(null);
   const shortcuts = React.useContext(LiveShortcutsContext);
   const { inLiveView } = React.useContext(SidebarContext);
+
+  // TODO(vihang,PC-992): Move to explicitly named and typed settings instead of a KV store and
+  // clean up these queries/mutations.
+  const { data: dataSettings, loading: loadingTourSeen } = useQuery<{
+    userSettings: GQLUserSetting[],
+  }>(gql`
+    query getTourSeen{
+      userSettings(keys: ["tourSeen"]) {
+        key
+        value
+      }
+    }
+  `, {});
+  const tourSeen = dataSettings?.userSettings.length > 0 && dataSettings?.userSettings[0].value === 'true';
+
+  const [setTourSeen] = useMutation<
+  { UpdateUserSettings: GQLUserSetting[] }, void
+  >(gql`
+    mutation updateTourSeen{
+      UpdateUserSettings(keys: ["tourSeen"], values: ["true"]) {
+        key
+        value
+      }
+    }
+  `);
 
   const { data } = useQuery<{
     user: Pick<GQLUserInfo, 'name' | 'picture' | 'id' | 'email' >,
@@ -115,7 +139,7 @@ const ProfileItem = ({
   React.useEffect(() => {
     if (!loadingTourSeen && tourSeen !== true && inLiveView) {
       openTour();
-      setTourSeen(true);
+      setTourSeen();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadingTourSeen, tourSeen, inLiveView]);

@@ -18,9 +18,6 @@
 
 import gql from 'graphql-tag';
 
-// noinspection ES6PreferShortImport
-import { DEFAULT_USER_SETTINGS } from './user-settings';
-
 export const USER_QUERIES = {
   GET_USER_INFO: gql`
     {
@@ -36,7 +33,7 @@ export const USER_QUERIES = {
   `,
   GET_ALL_USER_SETTINGS: gql`
     {
-      userSettings(keys: [${Object.keys(DEFAULT_USER_SETTINGS).map((k) => JSON.stringify(k)).join(', ')}]) {
+      userSettings(keys: ["tourSeen"]) {
         key
         value
       }

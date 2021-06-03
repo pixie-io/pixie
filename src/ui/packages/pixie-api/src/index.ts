@@ -35,9 +35,6 @@ export {
   ORG_QUERIES,
 } from './gql-queries';
 
-// Note: GQLUserSetting is not exposed because UserSettings is more specific.
-export { DEFAULT_USER_SETTINGS, UserSettings } from './user-settings';
-
 export { VizierQueryErrorType, VizierQueryError, GRPCStatusCode } from './vizier';
 
 export { CloudClient } from './cloud-gql-client';
@@ -66,8 +63,7 @@ export {
   GQLUserInfo,
   GQLUserInvite,
   GQLOrgInfo,
-  // Note: GQLUserSetting is not exposed because we already expose the more specific UserSettings from ./user-settings.
-  // GQLUserSetting,
+  GQLUserSetting,
   GQLClusterInfo,
   GQLVizierConfig,
   GQLPodStatus,

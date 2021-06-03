@@ -82,7 +82,7 @@ type APIKey {
 type Query {
   user: UserInfo!
   org: OrgInfo!
-  userSettings(keys: [String]!): [UserSetting]!
+  userSettings(keys: [String!]!): [UserSetting!]!
   orgUsers: [UserInfo]!
   cluster(id: ID!): ClusterInfo!
   clusterByName(name: String!): ClusterInfo!
@@ -92,7 +92,7 @@ type Query {
   artifacts(artifactName: String): ArtifactsInfo!
   autocomplete(input: String, cursorPos: Int, action: AutocompleteActionType, clusterUID: String): AutocompleteResult!
   autocompleteField(input: String, fieldType: AutocompleteEntityKind,
-    requiredArgTypes: [AutocompleteEntityKind], clusterUID: String):[AutocompleteSuggestion]
+    requiredArgTypes: [AutocompleteEntityKind], clusterUID: String): [AutocompleteSuggestion]
 
   # Scriptmgr endpoints, refer to docs in cloudapi.proto
   liveViews: [LiveViewMetadata!]!
@@ -216,7 +216,7 @@ type Mutation {
   DeleteDeploymentKey(id: ID!): Boolean!
   CreateAPIKey: APIKey!
   DeleteAPIKey(id: ID!): Boolean!
-  UpdateUserSettings(keys: [String]!, values: [String]!): Boolean!
+  UpdateUserSettings(keys: [String!]!, values: [String!]!): [UserSetting!]!
   InviteUser(email: String!, firstName: String!, lastName: String!): UserInvite!
   UpdateUserPermissions(userID: ID!, userPermissions: EditableUserPermissions!): UserInfo!
   UpdateOrgSettings(orgID: ID!, orgSettings: EditableOrgSettings!): OrgInfo!

@@ -100,71 +100,58 @@ func (u *UserInfoResolver) IsApproved() bool {
 
 // UserSettingResolver resolves a user setting.
 type UserSettingResolver struct {
-	key   string
-	value string
-}
-
-// Key gets the key for the user setting.
-func (u *UserSettingResolver) Key() string {
-	return u.key
-}
-
-// Value gets the value for the user setting.
-func (u *UserSettingResolver) Value() string {
-	return u.value
+	Key   string
+	Value string
 }
 
 type userSettingsArgs struct {
-	Keys []*string
+	Keys []string
 }
 
 // UserSettings resolves user settings information.
-func (q *QueryResolver) UserSettings(ctx context.Context, args *userSettingsArgs) ([]*UserSettingResolver, error) {
+func (q *QueryResolver) UserSettings(ctx context.Context, args *userSettingsArgs) ([]UserSettingResolver, error) {
 	sCtx, err := authcontext.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	keys := make([]string, len(args.Keys))
-	for i := range args.Keys {
-		keys[i] = *args.Keys[i]
-	}
-
 	resp, err := q.Env.UserServer.GetUserSettings(ctx, &cloudpb.GetUserSettingsRequest{
 		ID:   utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID),
-		Keys: keys,
+		Keys: args.Keys,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	resolvers := make([]*UserSettingResolver, len(args.Keys))
+	resolvers := make([]UserSettingResolver, len(args.Keys))
 	for i, k := range args.Keys {
-		resolvers[i] = &UserSettingResolver{*k, resp.SettingMap[*k]}
+		resolvers[i] = UserSettingResolver{k, resp.SettingMap[k]}
 	}
 
 	return resolvers, nil
 }
 
 type updateUserSettingsArgs struct {
-	Keys   []*string
-	Values []*string
+	Keys   []string
+	Values []string
 }
 
 // UpdateUserSettings updates the user settings for the current user.
-func (q *QueryResolver) UpdateUserSettings(ctx context.Context, args *updateUserSettingsArgs) (bool, error) {
+func (q *QueryResolver) UpdateUserSettings(ctx context.Context, args *updateUserSettingsArgs) ([]UserSettingResolver, error) {
 	sCtx, err := authcontext.FromContext(ctx)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	if len(args.Values) != len(args.Keys) {
-		return false, fmt.Errorf("length of Keys and Values does not match")
+		return nil, fmt.Errorf("length of Keys and Values does not match")
 	}
 
 	settingsMap := make(map[string]string)
-	for idx := range args.Keys {
-		settingsMap[*args.Keys[idx]] = *args.Values[idx]
+	resolvers := make([]UserSettingResolver, len(args.Keys))
+	for i, k := range args.Keys {
+		settingsMap[k] = args.Values[i]
+		resolvers[i] = UserSettingResolver{k, args.Values[i]}
 	}
 
 	_, err = q.Env.UserServer.UpdateUserSettings(ctx, &cloudpb.UpdateUserSettingsRequest{
@@ -172,10 +159,10 @@ func (q *QueryResolver) UpdateUserSettings(ctx context.Context, args *updateUser
 		SettingMap: settingsMap,
 	})
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
-	return true, nil
+	return resolvers, nil
 }
 
 type updateUserPermissionsArgs struct {

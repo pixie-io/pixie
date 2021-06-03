@@ -192,12 +192,9 @@ func TestUserSettingsResolver_GetUserSettings(t *testing.T) {
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	keys := []string{"test", "a_key"}
-	values := []string{"a", "b"}
-	settingsMap := make(map[string]string)
-
-	for idx := range keys {
-		settingsMap[keys[idx]] = values[idx]
+	settingsMap := map[string]string{
+		"test":  "a",
+		"a_key": "b",
 	}
 
 	mockClients.MockUser.EXPECT().GetUserSettings(gomock.Any(), &cloudpb.GetUserSettingsRequest{
@@ -238,12 +235,9 @@ func TestUserSettingsResolver_UpdateUserSettings(t *testing.T) {
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	keys := []string{"test", "a_key"}
-	values := []string{"c", "d"}
-	settingsMap := make(map[string]string)
-
-	for idx := range keys {
-		settingsMap[keys[idx]] = values[idx]
+	settingsMap := map[string]string{
+		"test":  "c",
+		"a_key": "d",
 	}
 
 	mockClients.MockUser.EXPECT().UpdateUserSettings(gomock.Any(), &cloudpb.UpdateUserSettingsRequest{
@@ -258,12 +252,18 @@ func TestUserSettingsResolver_UpdateUserSettings(t *testing.T) {
 			Context: ctx,
 			Query: `
 				mutation {
-					UpdateUserSettings(keys: ["test", "a_key"], values: ["c", "d"])
+					UpdateUserSettings(keys: ["test", "a_key"], values: ["c", "d"]) {
+						key
+						value
+					}
 				}
 			`,
 			ExpectedResult: `
 				{
-					"UpdateUserSettings": true
+					"UpdateUserSettings": [
+						{"key": "test", "value": "c"},
+						{"key": "a_key", "value": "d"}
+					]
 				}
 			`,
 		},

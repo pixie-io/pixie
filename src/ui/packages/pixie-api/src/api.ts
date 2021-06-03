@@ -246,19 +246,6 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
   getAutocompleteFieldSuggester: CloudClient['getAutocompleteFieldSuggester'] = (clusterUID) => this.gqlClient.getAutocompleteFieldSuggester(clusterUID);
 
   /**
-   * Fetches the upstream value of a specific user setting.
-   * Adapter libraries may wish to leverage localStorage in addition to Apollo's cache, to get the
-   * last-known value synchronously on page load. @pixie-labs/api-react is an example of this.
-   */
-  getSetting: CloudClient['getSetting'] = (key) => this.gqlClient.getSetting(key);
-
-  /**
-   * Writes a user setting upstream.
-   * As with getSetting, adapter libraries may wish to use localStorage in combination with this.
-   */
-  setSetting: CloudClient['setSetting'] = (key, value) => this.gqlClient.setSetting(key, value);
-
-  /**
    * Implementation detail for adapters like @pixie-labs/api-react.
    * Do not use directly unless writing such an adapter.
    *

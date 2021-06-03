@@ -81,7 +81,7 @@ export interface GQLAPIKey {
 export interface GQLQuery {
   user: GQLUserInfo;
   org: GQLOrgInfo;
-  userSettings: Array<GQLUserSetting | null>;
+  userSettings: Array<GQLUserSetting>;
   orgUsers: Array<GQLUserInfo | null>;
   cluster: GQLClusterInfo;
   clusterByName: GQLClusterInfo;
@@ -196,7 +196,7 @@ export interface GQLMutation {
   DeleteDeploymentKey: boolean;
   CreateAPIKey: GQLAPIKey;
   DeleteAPIKey: boolean;
-  UpdateUserSettings: boolean;
+  UpdateUserSettings: Array<GQLUserSetting>;
   InviteUser: GQLUserInvite;
   UpdateUserPermissions: GQLUserInfo;
   UpdateOrgSettings: GQLOrgInfo;
@@ -432,7 +432,7 @@ export interface QueryToOrgResolver<TParent = any, TResult = any> {
 }
 
 export interface QueryToUserSettingsArgs {
-  keys: Array<string | null>;
+  keys: Array<string>;
 }
 export interface QueryToUserSettingsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: QueryToUserSettingsArgs, context: any, info: GraphQLResolveInfo): TResult;
@@ -838,8 +838,8 @@ export interface MutationToDeleteAPIKeyResolver<TParent = any, TResult = any> {
 }
 
 export interface MutationToUpdateUserSettingsArgs {
-  keys: Array<string | null>;
-  values: Array<string | null>;
+  keys: Array<string>;
+  values: Array<string>;
 }
 export interface MutationToUpdateUserSettingsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: MutationToUpdateUserSettingsArgs, context: any, info: GraphQLResolveInfo): TResult;

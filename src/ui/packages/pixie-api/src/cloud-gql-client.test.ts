@@ -51,41 +51,6 @@ describe('Cloud client (GQL wrapper)', () => {
       expect(out).toBe('retrieved');
     });
 
-    it('getSetting gets and parses settings', async () => {
-      const cloudClient = new CloudClient({ apiKey: '', uri: 'irrelevant' });
-      query.mockImplementation(() => Promise.resolve({
-        data: {
-          userSettings: { tourSeen: 'true' },
-        },
-      } as ApolloQueryResult<{ userSettings: any }>));
-
-      const out = await cloudClient.getSetting('tourSeen');
-      expect(out).toEqual(true);
-    });
-
-    it('getSetting returns default values in the absence of a setting', async () => {
-      const cloudClient = new CloudClient({ apiKey: '', uri: 'irrelevant' });
-      query.mockImplementation(() => Promise.resolve({
-        data: { userSettings: {} },
-      } as ApolloQueryResult<{ userSettings: any }>));
-
-      const out = await cloudClient.getSetting('tourSeen');
-      expect(out).toEqual(false);
-    });
-
-    it('setSetting sends a mutation to GraphQL', async () => {
-      const cloudClient = new CloudClient({ apiKey: '', uri: 'irrelevant' });
-      mutate.mockImplementation(() => Promise.resolve({}));
-
-      await cloudClient.setSetting('tourSeen', true);
-      expect(mutate).toHaveBeenCalledWith(jasmine.objectContaining({
-        variables: {
-          key: 'tourSeen',
-          value: 'true',
-        },
-      }));
-    });
-
     it.each(['createAPIKey', 'createDeploymentKey'])('%s sends a mutation to GraphQL', async (name) => {
       const cloudClient = new CloudClient({ apiKey: '', uri: 'irrelevant' });
       mutate.mockImplementation(() => Promise.resolve({
