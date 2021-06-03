@@ -185,7 +185,19 @@ func (r *VizierReconciler) createVizier(ctx context.Context, req ctrl.Request, v
 		return err
 	}
 
-	// TODO(michellenguyen) Run healthcheck and update status of Vizier once it is healthy.
+	err = waitForCluster(r.Clientset, req.Namespace)
+	if err != nil {
+		log.WithError(err).Info("Failed healthcheck")
+		vz.Status.VizierPhase = pixiev1alpha1.VizierPhaseFailed
+		vz.Status.Message = err.Error()
+	} else {
+		vz.Status.VizierPhase = pixiev1alpha1.VizierPhaseRunning
+	}
+
+	err = r.Status().Update(ctx, vz)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -271,6 +283,7 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, namespace string, v
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -423,6 +436,31 @@ func updateResourceRequirements(requirements v1.ResourceRequirements, res map[st
 
 		castedContainer["resources"] = resources
 	}
+}
+
+func waitForCluster(clientset *kubernetes.Clientset, namespace string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+	t := time.NewTicker(2 * time.Second)
+	defer t.Stop()
+
+	clusterID := false
+	for !clusterID { // Wait for secret to be updated with clusterID.
+		select {
+		case <-ctx.Done():
+			return errors.New("Timed out waiting for cluster ID")
+		case <-t.C:
+			s := k8s.GetSecret(clientset, namespace, "pl-cluster-secrets")
+			if _, ok := s.Data["cluster-id"]; ok {
+				clusterID = true
+			}
+		}
+	}
+
+	// TODO: Wait for the Vizier instance to actually be healthy. This may be more involved, requiring
+	// the operator to read the generated jwt-signing-key and TLS certs without actually having them
+	// mounted.
+	return nil
 }
 
 // SetupWithManager sets up the reconciler.
