@@ -32,7 +32,7 @@ type helloReply struct {
 	Greeter string `json:"greeter"`
 }
 
-func sayHello(w http.ResponseWriter, r *http.Request) {
+func handleSayHello(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "json")
 	name := "world"
 	nameArgs, ok := r.URL.Query()["name"]
@@ -46,6 +46,10 @@ func sayHello(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func handlePost(w http.ResponseWriter, r *http.Request) {
+	// Do nothing.
+}
+
 func main() {
 	port := flag.Int("port", 0, "The port number to serve.")
 	flag.Parse()
@@ -57,7 +61,8 @@ func main() {
 
 	fmt.Print(listener.Addr().(*net.TCPAddr).Port)
 
-	http.HandleFunc("/sayhello", sayHello)
+	http.HandleFunc("/sayhello", handleSayHello)
+	http.HandleFunc("/post", handlePost)
 	err = http.Serve(listener, nil)
 	if err != nil {
 		log.Fatal(err)

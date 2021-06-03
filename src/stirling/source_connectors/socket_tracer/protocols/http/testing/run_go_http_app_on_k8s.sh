@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 # Copyright 2018- The Pixie Authors.
 #
@@ -16,14 +16,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-bazel run src/stirling/source_connectors/socket_tracer/protocols/http/testing/go_http_client:push_image
-bazel run src/stirling/source_connectors/socket_tracer/protocols/http/testing/go_http_server:push_image
+bazel run //src/stirling/source_connectors/socket_tracer/protocols/http/testing/go_http_client:push_image
+bazel run //src/stirling/source_connectors/socket_tracer/protocols/http/testing/go_http_server:push_image
 
 namespace_name="px-http-test"
 
 kubectl create namespace "${namespace_name}"
 
-kubectl --namespace "${namespace_name}" create secret docker-registry image-pull-secret \
+kubectl -n "$namespace_name" create secret docker-registry image-pull-secret \
   --docker-server=https://gcr.io \
   --docker-username=_json_key \
   --docker-email="${USER}@pixielabs.ai" \
@@ -31,6 +31,6 @@ kubectl --namespace "${namespace_name}" create secret docker-registry image-pull
   --dry-run=true --output=yaml | kubectl apply -f -
 
 sed "s/{{USER}}/${USER}/" src/stirling/source_connectors/socket_tracer/protocols/http/testing/go_http_server/deployment.yaml | \
-  kubectl apply -f -
+  kubectl -n "$namespace_name" apply -f -
 sed "s/{{USER}}/${USER}/" src/stirling/source_connectors/socket_tracer/protocols/http/testing/go_http_client/deployment.yaml | \
-  kubectl apply -f -
+  kubectl -n "$namespace_name" apply -f -

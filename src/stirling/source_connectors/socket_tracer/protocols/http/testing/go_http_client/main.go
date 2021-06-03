@@ -49,10 +49,12 @@ type helloReply struct {
 
 func main() {
 	address := flag.String("address", "localhost:50050", "Server end point.")
-	reqType := flag.String("reqType", "get", "Type of request (get or post)")
+	reqType := flag.String("reqType", "get", "Type of request (get, post or mix)")
 	name := flag.String("name", "world", "The name to greet, for GET requests.")
 	reqSize := flag.Int("reqSize", 128*1024, "The size of the request, for POST requests.")
 	count := flag.Int("count", 1, "The count of requests to make.")
+	sleep := flag.Int("sleep", 1000, "The time in milliseconds to sleep between requests.")
+	quiet := flag.Bool("quiet", false, "Suppress output.")
 
 	flag.Parse()
 
@@ -64,8 +66,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	for i := 0; i < *count; i++ {
-		if *reqType == "get" {
+	fmt.Print("Starting to send requests...\n")
+
+	for i := 0; i < *count || *count == 0; i++ {
+		if *reqType == "get" || *reqType == "mix" {
 			resp, err := http.Get("http://" + *address + "/sayhello?name=" + url.QueryEscape(*name))
 			if err != nil {
 				panic(err)
@@ -83,17 +87,26 @@ func main() {
 				log.Fatal(jsonErr)
 			}
 
-			fmt.Println(reply.Greeter)
-		} else if *reqType == "post" {
+			if !*quiet {
+				fmt.Println(reply.Greeter)
+			}
+		} else if *reqType == "post" || *reqType == "mix" {
 			resp, err := http.Post("http://"+*address+"/post", "application/json", bytes.NewBuffer(postBody))
 			if err != nil {
 				panic(err)
 			}
 
-			fmt.Println(resp.Body)
+			if !*quiet {
+				fmt.Println(resp.Body)
+			}
 		} else {
 			log.Fatal("Did not understand reqType")
 		}
-		time.Sleep(time.Second)
+
+		if i%100000 == 0 {
+			fmt.Printf("Number of iterations so far: %d\n", i)
+		}
+
+		time.Sleep(time.Duration(*sleep) * time.Millisecond)
 	}
 }
