@@ -42,8 +42,7 @@ make dev-env-start
 3. Load basic artifacts into the database.
 
     ```
-    # --load_ory_auth only works for skaffold cloud's started with `-p ory_auth`.
-    ./scripts/load_dev_db.sh plc-dev [--load_ory_auth]
+    ./scripts/load_dev_db.sh plc-dev
     ```
 4. Update `/etc/hosts` so that it knows to point `dev.withpixie.dev` to your running dev cloud instance. The `dev_dns_updater` will do this process for you.
 

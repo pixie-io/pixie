@@ -249,7 +249,7 @@ module.exports = (env, argv) => {
   let oauthYAML = utils.readYAMLFile(join(topLevelDir, 'credentials', 'k8s', credentialsEnv, 'configs', 'oauth_config.yaml'), true);
   // Special case for ory_auth where we read from the unecrypted file.
   if (oauthConfigEnv === 'ory_auth') {
-    oauthYAML = utils.readYAMLFile( join(topLevelDir, 'k8s', 'cloud', oauthConfigEnv, 'oauth_config.yaml'), false);
+    oauthYAML = utils.readYAMLFile( join(topLevelDir, 'k8s', 'cloud', 'base', oauthConfigEnv, 'oauth_config.yaml'), false);
   }
 
   // Setup the auth client.
