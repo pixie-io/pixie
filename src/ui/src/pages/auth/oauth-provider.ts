@@ -24,6 +24,7 @@ import { FormStructure } from '@pixie-labs/components';
 export type Token = {
   isEmailUnverified?: boolean;
   accessToken?: string;
+  idToken?: string;
 };
 
 /** OAuthProviderClient is the interface for OAuth providers such as Auth0 and ORY/Hydra. */

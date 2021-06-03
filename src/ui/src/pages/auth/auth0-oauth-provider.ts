@@ -18,21 +18,15 @@
 
 import type * as React from 'react';
 
-import auth0 from 'auth0-js';
-import {
-  AUTH_CLIENT_ID, AUTH_URI,
-} from 'containers/constants';
 import { FormStructure } from '@pixie-labs/components';
 import { Auth0Buttons } from 'containers/auth/auth0-buttons';
+import { UserManager } from 'oidc-client';
+import { AUTH_CLIENT_ID, AUTH_URI } from 'containers/constants';
 import { OAuthProviderClient, Token } from './oauth-provider';
 
-function makeAuth0Client(): auth0.WebAuth {
-  return new auth0.WebAuth({
-    domain: AUTH_URI,
-    clientID: AUTH_CLIENT_ID,
-  });
-}
-
+// Connection type is the Auth0 Connection type that's currently allowed. Add connection
+// values here as needed.
+type Connection = 'google-oauth2';
 export class Auth0Client extends OAuthProviderClient {
   getRedirectURL: (boolean) => string;
 
@@ -41,62 +35,78 @@ export class Auth0Client extends OAuthProviderClient {
     this.getRedirectURL = getRedirectURL;
   }
 
-  loginRequest(): void {
-    makeAuth0Client().authorize({
-      connection: 'google-oauth2',
-      responseType: 'token',
-      redirectUri: this.getRedirectURL(/* isSignup */ false),
+  // eslint-disable-next-line class-methods-use-this
+  makeAuth0OIDCClient(connectionName: Connection, redirectURI: string): UserManager {
+    return new UserManager({
+      authority: `https://${AUTH_URI}`,
+      client_id: AUTH_CLIENT_ID,
+      redirect_uri: redirectURI,
+      extraQueryParams: {
+        connection: connectionName,
+      },
       prompt: 'login',
+      scope: 'openid profile email',
+      // "token" is returned and propagated as the main authorization access_token.
+      // "id_token" used by oidc-client-js to verify claims, errors if missing.
+      // complaining about a mismatch between repsonse claims and ID token claims.
+      response_type: 'token id_token',
     });
   }
 
-  signupRequest(): void {
-    makeAuth0Client().authorize({
-      connection: 'google-oauth2',
-      responseType: 'token',
-      redirectUri: this.getRedirectURL(/* isSignup */ true),
-      prompt: 'login',
-    });
+  redirectToGoogleLogin(): void {
+    this.makeAuth0OIDCClient(
+      'google-oauth2',
+      this.getRedirectURL(/* isSignup */ false),
+    ).signinRedirect();
+  }
+
+  redirectToGoogleSignup(): void {
+    this.makeAuth0OIDCClient(
+      'google-oauth2',
+      this.getRedirectURL(/* isSignup */ true),
+    ).signinRedirect();
   }
 
   // eslint-disable-next-line class-methods-use-this
   handleToken(): Promise<Token> {
     return new Promise<Token>((resolve, reject) => {
-      makeAuth0Client().parseHash({ hash: window.location.hash }, (errStatus, authResult) => {
-        if (errStatus) {
-          if (errStatus.errorDescription.match(/Please.*verify.*your.*email.*before.*logging.*in/g)) {
-            resolve({ isEmailUnverified: true });
-          } else {
-            reject(new Error(`${errStatus.error} - ${errStatus.errorDescription}`));
+      // The callback doesn't require any settings to be created.
+      // That means this implementation is agnostic to the OIDC that we connected to.
+      new UserManager({}).signinRedirectCallback()
+        .then((user) => {
+          if (!user) {
+            reject(new Error('user is undefined, please try logging in again'));
           }
-          return;
-        }
-        resolve({ accessToken: authResult.accessToken, isEmailUnverified: false });
-      });
+          resolve({
+            accessToken: user.access_token,
+            idToken: user.id_token,
+            isEmailUnverified: false,
+          });
+        }).catch(reject);
     });
   }
 
   // eslint-disable-next-line class-methods-use-this
   async getPasswordLoginFlow(): Promise<FormStructure> {
-    throw new Error('Password flow currently unavailable for Auth0');
+    throw new Error('Password flow not available for OIDC. Use the proper OIDC flow.');
   }
 
   // eslint-disable-next-line class-methods-use-this
   async getResetPasswordFlow(): Promise<FormStructure> {
-    throw new Error('Reset password flow currently unavailable for Auth0');
+    throw new Error('Reset Password flow not available for OIDC. Use the proper OIDC flow.');
   }
 
   getLoginButtons(): React.ReactElement {
     return Auth0Buttons({
       googleButtonText: 'Login with Google',
-      onGoogleButtonClick: () => this.loginRequest(),
+      onGoogleButtonClick: () => this.redirectToGoogleLogin(),
     });
   }
 
   getSignupButtons(): React.ReactElement {
     return Auth0Buttons({
       googleButtonText: 'Sign-up with Google',
-      onGoogleButtonClick: () => this.signupRequest(),
+      onGoogleButtonClick: () => this.redirectToGoogleSignup(),
     });
   }
 
