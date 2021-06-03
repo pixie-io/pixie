@@ -57,7 +57,9 @@ export const OrgSettings: React.FC = () => {
   );
   const org = data?.org;
 
-  const [updateOrgApprovalSetting] = useMutation<GQLOrgInfo, { orgID: string, enableApprovals: boolean }>(
+  const [updateOrgApprovalSetting] = useMutation<
+  { UpdateOrgSettings: GQLOrgInfo }, { orgID: string, enableApprovals: boolean }
+  >(
     gql`
       mutation UpdateOrgApprovalSetting ($orgID: ID!, $enableApprovals: Boolean!) {
         UpdateOrgSettings(orgID: $orgID, orgSettings: { enableApprovals: $enableApprovals}) {
@@ -102,9 +104,11 @@ export const OrgSettings: React.FC = () => {
                 onClick={() => {
                   updateOrgApprovalSetting({
                     optimisticResponse: {
-                      id: org.id,
-                      name: org.name,
-                      enableApprovals: !org.enableApprovals,
+                      UpdateOrgSettings: {
+                        id: org.id,
+                        name: org.name,
+                        enableApprovals: !org.enableApprovals,
+                      },
                     },
                     variables: { orgID: org.id, enableApprovals: !org.enableApprovals },
                   });

@@ -72,7 +72,7 @@ export const AdminOverview: React.FC = () => {
   const location = useLocation();
   const { path } = useRouteMatch();
 
-  const [createAPIKey] = useMutation <GQLAPIKey, void>(gql`
+  const [createAPIKey] = useMutation<{ CreateAPIKey: GQLAPIKey }, void>(gql`
     mutation CreateAPIKeyFromAdminPage {
       CreateAPIKey {
         id
@@ -82,7 +82,9 @@ export const AdminOverview: React.FC = () => {
       }
     }
   `);
-  const [createDeploymentKey] = useMutation<GQLDeploymentKey, void>(gql`
+  const [createDeploymentKey] = useMutation<
+  { CreateDeploymentKey: GQLDeploymentKey }, void
+  >(gql`
     mutation CreateDeploymentKeyFromAdminPage{
       CreateDeploymentKey {
         id
@@ -134,15 +136,17 @@ export const AdminOverview: React.FC = () => {
               // The key is hidden by default so that value changing on
               // server response isn't that bad.
               optimisticResponse: {
-                id: '00000000-0000-0000-0000-000000000000',
-                key: '00000000-0000-0000-0000-000000000000',
-                desc: '',
-                createdAtMs: Date.now(),
+                CreateDeploymentKey: {
+                  id: '00000000-0000-0000-0000-000000000000',
+                  key: '00000000-0000-0000-0000-000000000000',
+                  desc: '',
+                  createdAtMs: Date.now(),
+                },
               },
               update: (cache, { data }) => {
                 cache.modify({
                   fields: {
-                    deploymentKeys: (existingKeys) => (existingKeys.concat([data])),
+                    deploymentKeys: (existingKeys) => (existingKeys.concat([data.CreateDeploymentKey])),
                   },
                 });
               },
@@ -166,15 +170,17 @@ export const AdminOverview: React.FC = () => {
               // The key is hidden by default so that value changing on
               // server response isn't that bad.
               optimisticResponse: {
-                id: '00000000-0000-0000-0000-000000000000',
-                key: '00000000-0000-0000-0000-000000000000',
-                desc: '',
-                createdAtMs: Date.now(),
+                CreateAPIKey: {
+                  id: '00000000-0000-0000-0000-000000000000',
+                  key: '00000000-0000-0000-0000-000000000000',
+                  desc: '',
+                  createdAtMs: Date.now(),
+                },
               },
               update: (cache, { data }) => {
                 cache.modify({
                   fields: {
-                    apiKeys: (existingKeys) => (existingKeys.concat([data])),
+                    apiKeys: (existingKeys) => (existingKeys.concat([data.CreateAPIKey])),
                   },
                 });
               },

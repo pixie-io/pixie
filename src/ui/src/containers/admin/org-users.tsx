@@ -56,7 +56,9 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 export const UserRow: React.FC<UserRowProps> = ({ user }) => {
   const classes = useStyles();
 
-  const [updateUserInfo] = useMutation<UserDisplay, { id: string, isApproved: boolean }>(
+  const [updateUserInfo] = useMutation<
+  { UpdateUserPermissions: UserDisplay }, { id: string, isApproved: boolean }
+  >(
     gql`
       mutation UpdateUserApproval ($id: ID!, $isApproved: Boolean) {
         UpdateUserPermissions(userID: $id, userPermissions: {isApproved: $isApproved}) {
@@ -81,10 +83,12 @@ export const UserRow: React.FC<UserRowProps> = ({ user }) => {
                 onClick={() => {
                   updateUserInfo({
                     optimisticResponse: {
-                      id: user.id,
-                      name: user.name,
-                      email: user.email,
-                      isApproved: true,
+                      UpdateUserPermissions: {
+                        id: user.id,
+                        name: user.name,
+                        email: user.email,
+                        isApproved: true,
+                      },
                     },
                     variables: { id: user.id, isApproved: true },
                   });

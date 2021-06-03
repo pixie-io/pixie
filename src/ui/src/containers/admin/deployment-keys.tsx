@@ -67,7 +67,7 @@ export const DeploymentKeyRow: React.FC<{ deploymentKey: DeploymentKeyDisplay }>
   const [open, setOpen] = React.useState<boolean>(false);
   const [anchorEl, setAnchorEl] = React.useState(null);
 
-  const [deleteDeploymentKey] = useMutation<boolean, { id: string }>(gql`
+  const [deleteDeploymentKey] = useMutation<{ DeleteDeploymentKey: boolean }, { id: string }>(gql`
     mutation DeleteDeploymentKeyFromAdminPage($id: ID!) {
       DeleteDeploymentKey(id: $id)
     }
@@ -137,7 +137,7 @@ export const DeploymentKeyRow: React.FC<{ deploymentKey: DeploymentKeyDisplay }>
             onClick={() => deleteDeploymentKey({
               variables: { id: deploymentKey.id },
               update: (cache, { data }) => {
-                if (!data) {
+                if (!data.DeleteDeploymentKey) {
                   return;
                 }
                 cache.modify({
@@ -150,7 +150,7 @@ export const DeploymentKeyRow: React.FC<{ deploymentKey: DeploymentKeyDisplay }>
                   },
                 });
               },
-              optimisticResponse: true,
+              optimisticResponse: { DeleteDeploymentKey: true },
             })}
           >
             <KeyListItemIcon className={classes.copyBtn}>

@@ -67,7 +67,7 @@ export const APIKeyRow: React.FC<{ apiKey: APIKeyDisplay }> = ({ apiKey }) => {
   const [open, setOpen] = React.useState<boolean>(false);
   const [anchorEl, setAnchorEl] = React.useState(null);
 
-  const [deleteAPIKey] = useMutation<boolean, { id: string }>(gql`
+  const [deleteAPIKey] = useMutation<{ DeleteAPIKey: boolean }, { id: string }>(gql`
     mutation DeleteAPIKeyFromAdminPage($id: ID!) {
       DeleteAPIKey(id: $id)
     }
@@ -137,7 +137,7 @@ export const APIKeyRow: React.FC<{ apiKey: APIKeyDisplay }> = ({ apiKey }) => {
             onClick={() => deleteAPIKey({
               variables: { id: apiKey.id },
               update: (cache, { data }) => {
-                if (!data) {
+                if (!data.DeleteAPIKey) {
                   return;
                 }
                 cache.modify({
@@ -150,7 +150,7 @@ export const APIKeyRow: React.FC<{ apiKey: APIKeyDisplay }> = ({ apiKey }) => {
                   },
                 });
               },
-              optimisticResponse: true,
+              optimisticResponse: { DeleteAPIKey: true },
             })}
           >
             <KeyListItemIcon className={classes.copyBtn}>
