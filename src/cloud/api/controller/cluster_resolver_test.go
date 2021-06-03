@@ -269,34 +269,3 @@ func TestUpdateClusterVizierConfig(t *testing.T) {
 		},
 	})
 }
-
-func TestUpdateClusterVizierConfigNoUpdates(t *testing.T) {
-	gqlEnv, mockClients, cleanup := testutils.CreateTestGraphQLEnv(t)
-	defer cleanup()
-	ctx := CreateTestContext()
-
-	mockClients.MockVizierClusterInfo.EXPECT().
-		UpdateClusterVizierConfig(gomock.Any(), &cloudpb.UpdateClusterVizierConfigRequest{
-			ID:           utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
-			ConfigUpdate: &cloudpb.VizierConfigUpdate{},
-		}).
-		Return(&cloudpb.UpdateClusterVizierConfigResponse{}, nil)
-
-	gqlSchema := LoadSchema(gqlEnv)
-	gqltesting.RunTests(t, []*gqltesting.Test{
-		{
-			Schema:  gqlSchema,
-			Context: ctx,
-			Query: `
-				mutation {
-					UpdateVizierConfig(clusterID: "7ba7b810-9dad-11d1-80b4-00c04fd430c8")
-				}
-			`,
-			ExpectedResult: `
-				{
-					"UpdateVizierConfig": true
-				}
-			`,
-		},
-	})
-}

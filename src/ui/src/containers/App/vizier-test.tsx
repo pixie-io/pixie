@@ -22,8 +22,11 @@ import { selectClusterName } from './cluster-info';
 describe('selectCluster', () => {
   const commonClusterProps = {
     clusterVersion: '1.0.0',
+    vizierVersion: '1.0.0',
     lastHeartbeatMs: 0,
-    vizierConfig: {},
+    vizierConfig: {
+      passthroughEnabled: true,
+    },
     controlPlanePodStatuses: [],
     numNodes: 1,
     numInstrumentedNodes: 1,

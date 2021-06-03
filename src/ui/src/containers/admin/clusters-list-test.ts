@@ -24,6 +24,7 @@ describe('formatClusters', () => {
     const clusterResults: GQLClusterInfo[] = [
       {
         id: '5b27f024-1234-4d07-b28d-84ab8d88e1a3',
+        clusterUID: '5b27f024-1234-4d07-b28d-84ab8d88e1a3',
         clusterName: '456',
         prettyClusterName: 'pretty-456',
         status: GQLClusterStatus.CS_DISCONNECTED,
@@ -39,6 +40,7 @@ describe('formatClusters', () => {
       },
       {
         id: '5b27f024-eccb-4d07-b28d-84ab8d88e6a3',
+        clusterUID: '5b27f024-eccb-4d07-b28d-84ab8d88e6a3',
         clusterName: '123',
         prettyClusterName: 'pretty-123',
         status: GQLClusterStatus.CS_HEALTHY,
@@ -54,6 +56,7 @@ describe('formatClusters', () => {
       },
       {
         id: '5b27f024-eccb-4d07-b28d-84ab8d88e6a3',
+        clusterUID: '5b27f024-eccb-4d07-b28d-84ab8d88e6a3',
         clusterName: '789',
         prettyClusterName: 'pretty-789',
         status: GQLClusterStatus.CS_DISCONNECTED,
@@ -69,6 +72,7 @@ describe('formatClusters', () => {
       },
       {
         id: '1e3a32fc-caa4-5d81-e33d-10de7d77f1b2',
+        clusterUID: '1e3a32fc-caa4-5d81-e33d-10de7d77f1b2',
         clusterName: 'xyz',
         prettyClusterName: 'pretty-xyz',
         status: GQLClusterStatus.CS_UPDATE_FAILED,

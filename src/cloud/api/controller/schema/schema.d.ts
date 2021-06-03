@@ -132,19 +132,19 @@ export const enum GQLClusterStatus {
 }
 
 export interface GQLVizierConfig {
-  passthroughEnabled?: boolean;
+  passthroughEnabled: boolean;
 }
 
 export interface GQLContainerStatus {
   name: string;
   createdAtMs: number;
   state: string;
-  message?: string;
-  reason?: string;
+  message: string;
+  reason: string;
 }
 
 export interface GQLK8sEvent {
-  message?: string;
+  message: string;
   firstTimeMs: number;
   lastTimeMs: number;
 }
@@ -153,8 +153,8 @@ export interface GQLPodStatus {
   name: string;
   createdAtMs: number;
   status: string;
-  message?: string;
-  reason?: string;
+  message: string;
+  reason: string;
   containers: Array<GQLContainerStatus>;
   events: Array<GQLK8sEvent>;
 }
@@ -164,11 +164,11 @@ export interface GQLClusterInfo {
   status: GQLClusterStatus;
   lastHeartbeatMs: number;
   vizierConfig: GQLVizierConfig;
-  vizierVersion?: string;
-  clusterVersion?: string;
-  clusterName?: string;
-  prettyClusterName?: string;
-  clusterUID?: string;
+  vizierVersion: string;
+  clusterVersion: string;
+  clusterName: string;
+  prettyClusterName: string;
+  clusterUID: string;
   controlPlanePodStatuses: Array<GQLPodStatus>;
   numNodes: number;
   numInstrumentedNodes: number;
@@ -809,7 +809,7 @@ export interface MutationToCreateClusterResolver<TParent = any, TResult = any> {
 
 export interface MutationToUpdateVizierConfigArgs {
   clusterID: string;
-  passthroughEnabled?: boolean;
+  passthroughEnabled: boolean;
 }
 export interface MutationToUpdateVizierConfigResolver<TParent = any, TResult = any> {
   (parent: TParent, args: MutationToUpdateVizierConfigArgs, context: any, info: GraphQLResolveInfo): TResult;

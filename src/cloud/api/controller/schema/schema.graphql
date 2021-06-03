@@ -157,19 +157,19 @@ enum ClusterStatus {
 }
 
 type VizierConfig {
-  passthroughEnabled: Boolean
+  passthroughEnabled: Boolean!
 }
 
 type ContainerStatus {
   name: String!
   createdAtMs: Float!
   state: String!
-  message: String
-  reason: String
+  message: String!
+  reason: String!
 }
 
 type K8sEvent {
-  message: String
+  message: String!
   firstTimeMs: Float!
   lastTimeMs: Float!
 }
@@ -178,8 +178,8 @@ type PodStatus {
   name: String!
   createdAtMs: Float!
   status: String!
-  message: String
-  reason: String
+  message: String!
+  reason: String!
   containers: [ContainerStatus!]!
   events: [K8sEvent!]!
 }
@@ -189,11 +189,11 @@ type ClusterInfo {
   status: ClusterStatus!
   lastHeartbeatMs: Float!
   vizierConfig: VizierConfig!
-  vizierVersion: String
-  clusterVersion: String
-  clusterName: String
-  prettyClusterName: String
-  clusterUID: String
+  vizierVersion: String!
+  clusterVersion: String!
+  clusterName: String!
+  prettyClusterName: String!
+  clusterUID: String!
   controlPlanePodStatuses: [PodStatus!]!
   numNodes: Int!
   numInstrumentedNodes: Int!
@@ -211,7 +211,7 @@ type UserInvite {
 
 type Mutation {
   CreateCluster: ClusterInfo @deprecated(reason: "Clusters are now created via px deploy")
-  UpdateVizierConfig(clusterID: ID!, passthroughEnabled: Boolean): Boolean!
+  UpdateVizierConfig(clusterID: ID!, passthroughEnabled: Boolean!): Boolean!
   CreateDeploymentKey: DeploymentKey!
   DeleteDeploymentKey(id: ID!): Boolean!
   CreateAPIKey: APIKey!

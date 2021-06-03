@@ -40,83 +40,119 @@ type clusterArgs struct {
 	ID graphql.ID
 }
 
-func timestampProtoToNanos(ts *types.Timestamp) int64 {
-	return ts.Seconds*NanosPerSecond + int64(ts.Nanos)
+func timestampProtoToMillis(ts *types.Timestamp) float64 {
+	return float64(ts.Seconds*NanosPerSecond+int64(ts.Nanos)) / 1e6
 }
 
-func containerStatusToResolver(containerStatus *cloudpb.ContainerStatus) (*ContainerStatusResolver, error) {
-	if containerStatus == nil {
-		return nil, errors.New("got nil container status")
-	}
+// ContainerStatusResolver is the resolver responsible for container status info.
+type ContainerStatusResolver struct {
+	Name        string
+	CreatedAtMs float64
+	State       string
+	Message     string
+	Reason      string
+}
 
-	resolver := &ContainerStatusResolver{
-		name:    containerStatus.Name,
-		state:   containerStatus.State.String(),
-		message: &containerStatus.Message,
-		reason:  &containerStatus.Reason,
+func containerStatusToResolver(containerStatus cloudpb.ContainerStatus) ContainerStatusResolver {
+	resolver := ContainerStatusResolver{
+		Name:    containerStatus.Name,
+		State:   containerStatus.State.String(),
+		Message: containerStatus.Message,
+		Reason:  containerStatus.Reason,
 	}
 
 	if containerStatus.CreatedAt != nil {
-		resolver.createdAtNS = timestampProtoToNanos(containerStatus.CreatedAt)
+		resolver.CreatedAtMs = timestampProtoToMillis(containerStatus.CreatedAt)
 	}
-	return resolver, nil
+	return resolver
 }
 
-func podStatusToResolver(podStatus *cloudpb.PodStatus) (*PodStatusResolver, error) {
-	if podStatus == nil {
-		return nil, errors.New("got nil pod status")
-	}
-
-	var containers []*ContainerStatusResolver
-	for _, containerStatus := range podStatus.Containers {
-		c, err := containerStatusToResolver(containerStatus)
-		if err != nil {
-			return nil, err
-		}
-		containers = append(containers, c)
-	}
-
-	var events []*K8sEventResolver
-	for _, ev := range podStatus.Events {
-		e, err := k8sEventToResolver(ev)
-		if err != nil {
-			return nil, err
-		}
-		events = append(events, e)
-	}
-
-	resolver := &PodStatusResolver{
-		name:       podStatus.Name,
-		status:     podStatus.Status.String(),
-		message:    &podStatus.StatusMessage,
-		reason:     &podStatus.Reason,
-		containers: containers,
-		events:     events,
-	}
-
-	if podStatus.CreatedAt != nil {
-		resolver.createdAtNS = timestampProtoToNanos(podStatus.CreatedAt)
-	}
-	return resolver, nil
+// K8sEventResolver is a resolver for k8s events.
+type K8sEventResolver struct {
+	Message     string
+	FirstTimeMs float64
+	LastTimeMs  float64
 }
 
-func k8sEventToResolver(event *cloudpb.K8SEvent) (*K8sEventResolver, error) {
-	if event == nil {
-		return nil, errors.New("got nil k8s event")
-	}
-
-	resolver := &K8sEventResolver{
-		message: &event.Message,
+func k8sEventToResolver(event cloudpb.K8SEvent) K8sEventResolver {
+	resolver := K8sEventResolver{
+		Message: event.Message,
 	}
 
 	if event.FirstTime != nil {
-		resolver.firstTimeNS = timestampProtoToNanos(event.FirstTime)
+		resolver.FirstTimeMs = timestampProtoToMillis(event.FirstTime)
 	}
 	if event.LastTime != nil {
-		resolver.lastTimeNS = timestampProtoToNanos(event.LastTime)
+		resolver.LastTimeMs = timestampProtoToMillis(event.LastTime)
 	}
 
-	return resolver, nil
+	return resolver
+}
+
+// PodStatusResolver is the resolver responsible for pod status info.
+type PodStatusResolver struct {
+	Name        string
+	CreatedAtMs float64
+	Status      string
+	Message     string
+	Reason      string
+	Containers  []ContainerStatusResolver
+	Events      []K8sEventResolver
+}
+
+func podStatusToResolver(podStatus cloudpb.PodStatus) PodStatusResolver {
+	var containers []ContainerStatusResolver
+	for _, containerStatus := range podStatus.Containers {
+		if containerStatus == nil {
+			continue
+		}
+		c := containerStatusToResolver(*containerStatus)
+		containers = append(containers, c)
+	}
+
+	var events []K8sEventResolver
+	for _, ev := range podStatus.Events {
+		if ev == nil {
+			continue
+		}
+		e := k8sEventToResolver(*ev)
+		events = append(events, e)
+	}
+
+	resolver := PodStatusResolver{
+		Name:       podStatus.Name,
+		Status:     podStatus.Status.String(),
+		Message:    podStatus.StatusMessage,
+		Reason:     podStatus.Reason,
+		Containers: containers,
+		Events:     events,
+	}
+
+	if podStatus.CreatedAt != nil {
+		resolver.CreatedAtMs = timestampProtoToMillis(podStatus.CreatedAt)
+	}
+	return resolver
+}
+
+// ClusterInfoResolver is the resolver responsible for cluster info.
+type ClusterInfoResolver struct {
+	clusterID               uuid.UUID
+	Status                  string
+	LastHeartbeatMs         float64
+	VizierConfig            VizierConfigResolver
+	VizierVersion           string
+	ClusterVersion          string
+	ClusterUID              string
+	ClusterName             string
+	PrettyClusterName       string
+	ControlPlanePodStatuses []PodStatusResolver
+	NumNodes                int32
+	NumInstrumentedNodes    int32
+}
+
+// ID returns cluster ID.
+func (c *ClusterInfoResolver) ID() graphql.ID {
+	return graphql.ID(c.clusterID.String())
 }
 
 func clusterInfoToResolver(cluster *cloudpb.ClusterInfo) (*ClusterInfoResolver, error) {
@@ -125,33 +161,33 @@ func clusterInfoToResolver(cluster *cloudpb.ClusterInfo) (*ClusterInfoResolver, 
 		return nil, err
 	}
 
-	var podStatuses []*PodStatusResolver
+	var podStatuses []PodStatusResolver
 	for _, podStatus := range cluster.ControlPlanePodStatuses {
-		p, err := podStatusToResolver(podStatus)
-		if err != nil {
-			return nil, err
+		if podStatus == nil {
+			continue
 		}
+		p := podStatusToResolver(*podStatus)
 		podStatuses = append(podStatuses, p)
 	}
 	sort.SliceStable(podStatuses, func(i, j int) bool {
-		return podStatuses[i].name < podStatuses[j].name
+		return podStatuses[i].Name < podStatuses[j].Name
 	})
 
 	return &ClusterInfoResolver{
 		clusterID:       clusterID,
-		status:          cluster.Status,
-		lastHeartbeatNs: float64(cluster.LastHeartbeatNs),
-		vizierConfig: &VizierConfigResolver{
-			passthroughEnabled: &cluster.Config.PassthroughEnabled,
+		Status:          cluster.Status.String(),
+		LastHeartbeatMs: float64(cluster.LastHeartbeatNs) / 1e6,
+		VizierConfig: VizierConfigResolver{
+			PassthroughEnabled: cluster.Config.PassthroughEnabled,
 		},
-		vizierVersion:           &cluster.VizierVersion,
-		clusterVersion:          &cluster.ClusterVersion,
-		clusterUID:              &cluster.ClusterUID,
-		clusterName:             &cluster.ClusterName,
-		prettyClusterName:       &cluster.PrettyClusterName,
-		controlPlanePodStatuses: podStatuses,
-		numNodes:                cluster.NumNodes,
-		numInstrumentedNodes:    cluster.NumInstrumentedNodes,
+		VizierVersion:           cluster.VizierVersion,
+		ClusterVersion:          cluster.ClusterVersion,
+		ClusterUID:              cluster.ClusterUID,
+		ClusterName:             cluster.ClusterName,
+		PrettyClusterName:       cluster.PrettyClusterName,
+		ControlPlanePodStatuses: podStatuses,
+		NumNodes:                cluster.NumNodes,
+		NumInstrumentedNodes:    cluster.NumInstrumentedNodes,
 	}, nil
 }
 
@@ -217,17 +253,12 @@ func (q *QueryResolver) ClusterByName(ctx context.Context, args *clusterNameArgs
 
 // VizierConfigResolver is the resolver responsible for config belonging to the given cluster.
 type VizierConfigResolver struct {
-	passthroughEnabled *bool
-}
-
-// PassthroughEnabled returns whether passthrough mode is enabled on the cluster
-func (v *VizierConfigResolver) PassthroughEnabled() *bool {
-	return v.passthroughEnabled
+	PassthroughEnabled bool
 }
 
 type updateVizierConfigArgs struct {
 	ClusterID          graphql.ID
-	PassthroughEnabled *bool
+	PassthroughEnabled bool
 }
 
 // UpdateVizierConfig updates the Vizier config of the input cluster
@@ -235,12 +266,10 @@ func (q *QueryResolver) UpdateVizierConfig(ctx context.Context, args *updateVizi
 	grpcAPI := q.Env.VizierClusterInfo
 
 	req := &cloudpb.UpdateClusterVizierConfigRequest{
-		ID:           utils.ProtoFromUUIDStrOrNil(string(args.ClusterID)),
-		ConfigUpdate: &cloudpb.VizierConfigUpdate{},
-	}
-
-	if args.PassthroughEnabled != nil {
-		req.ConfigUpdate.PassthroughEnabled = &types.BoolValue{Value: *args.PassthroughEnabled}
+		ID: utils.ProtoFromUUIDStrOrNil(string(args.ClusterID)),
+		ConfigUpdate: &cloudpb.VizierConfigUpdate{
+			PassthroughEnabled: &types.BoolValue{Value: args.PassthroughEnabled},
+		},
 	}
 
 	_, err := grpcAPI.UpdateClusterVizierConfig(ctx, req)
@@ -250,160 +279,10 @@ func (q *QueryResolver) UpdateVizierConfig(ctx context.Context, args *updateVizi
 	return true, nil
 }
 
-// ContainerStatusResolver is the resolver responsible for container status info.
-type ContainerStatusResolver struct {
-	name        string
-	createdAtNS int64
-	state       string
-	message     *string
-	reason      *string
-}
-
-// Name returns container name.
-func (c *ContainerStatusResolver) Name() string {
-	return c.name
-}
-
-// CreatedAtMs returns the container create time.
-func (c *ContainerStatusResolver) CreatedAtMs() float64 {
-	return float64(c.createdAtNS) / 1e6
-}
-
-// State returns container state.
-func (c *ContainerStatusResolver) State() string {
-	return c.state
-}
-
-// Message returns container state message.
-func (c *ContainerStatusResolver) Message() *string {
-	return c.message
-}
-
-// Reason returns container state reason.
-func (c *ContainerStatusResolver) Reason() *string {
-	return c.reason
-}
-
-// PodStatusResolver is the resolver responsible for pod status info.
-type PodStatusResolver struct {
-	name        string
-	createdAtNS int64
-	status      string
-	message     *string
-	reason      *string
-	containers  []*ContainerStatusResolver
-	events      []*K8sEventResolver
-}
-
-// Name returns pod name.
-func (p *PodStatusResolver) Name() string {
-	return p.name
-}
-
-// CreatedAtMs returns the pod create time.
-func (p *PodStatusResolver) CreatedAtMs() float64 {
-	return float64(p.createdAtNS) / 1e6
-}
-
-// Status returns pod status.
-func (p *PodStatusResolver) Status() string {
-	return p.status
-}
-
-// Message returns pod message.
-func (p *PodStatusResolver) Message() *string {
-	return p.message
-}
-
-// Reason returns pod reason.
-func (p *PodStatusResolver) Reason() *string {
-	return p.reason
-}
-
-// Containers returns pod container states.
-func (p *PodStatusResolver) Containers() []*ContainerStatusResolver {
-	return p.containers
-}
-
-// Events returns the events belonging to the pod.
-func (p *PodStatusResolver) Events() []*K8sEventResolver {
-	return p.events
-}
-
-// ClusterInfoResolver is the resolver responsible for cluster info.
-type ClusterInfoResolver struct {
-	clusterID               uuid.UUID
-	status                  cloudpb.ClusterStatus
-	lastHeartbeatNs         float64
-	vizierConfig            *VizierConfigResolver
-	vizierVersion           *string
-	clusterVersion          *string
-	clusterUID              *string
-	clusterName             *string
-	prettyClusterName       *string
-	controlPlanePodStatuses []*PodStatusResolver
-	numNodes                int32
-	numInstrumentedNodes    int32
-}
-
-// ID returns cluster ID.
-func (c *ClusterInfoResolver) ID() graphql.ID {
-	return graphql.ID(c.clusterID.String())
-}
-
-// Status returns the cluster status.
-func (c *ClusterInfoResolver) Status() string {
-	return c.status.String()
-}
-
-// LastHeartbeatMs returns the heartbeat.
-func (c *ClusterInfoResolver) LastHeartbeatMs() float64 {
-	return float64(c.lastHeartbeatNs) / 1e6
-}
-
-// VizierConfig returns the config for the Vizier.
-func (c *ClusterInfoResolver) VizierConfig() *VizierConfigResolver {
-	return c.vizierConfig
-}
-
-// ClusterVersion returns the k8s cluster version.
-func (c *ClusterInfoResolver) ClusterVersion() *string {
-	return c.clusterVersion
-}
-
-// ClusterUID returns the k8s cluster UID.
-func (c *ClusterInfoResolver) ClusterUID() *string {
-	return c.clusterUID
-}
-
-// ClusterName returns the k8s cluster name.
-func (c *ClusterInfoResolver) ClusterName() *string {
-	return c.clusterName
-}
-
-// PrettyClusterName returns the k8s cluster name prettified.
-func (c *ClusterInfoResolver) PrettyClusterName() *string {
-	return c.prettyClusterName
-}
-
-// VizierVersion returns the vizier's version.
-func (c *ClusterInfoResolver) VizierVersion() *string {
-	return c.vizierVersion
-}
-
-// ControlPlanePodStatuses returns the control plane pod statuses.
-func (c *ClusterInfoResolver) ControlPlanePodStatuses() []*PodStatusResolver {
-	return c.controlPlanePodStatuses
-}
-
-// NumNodes returns the number of nodes on the cluster.
-func (c *ClusterInfoResolver) NumNodes() int32 {
-	return c.numNodes
-}
-
-// NumInstrumentedNodes returns the number of nodes with pems on the cluster.
-func (c *ClusterInfoResolver) NumInstrumentedNodes() int32 {
-	return c.numInstrumentedNodes
+// ClusterConnectionInfoResolver is the resolver responsible for cluster connection info.
+type ClusterConnectionInfoResolver struct {
+	IPAddress string
+	Token     string
 }
 
 // ClusterConnection resolves cluster connection information..
@@ -421,42 +300,4 @@ func (q *QueryResolver) ClusterConnection(ctx context.Context, args *clusterArgs
 		info.IPAddress,
 		info.Token,
 	}, nil
-}
-
-// ClusterConnectionInfoResolver is the resolver responsible for cluster connection info.
-type ClusterConnectionInfoResolver struct {
-	ipAddress string
-	token     string
-}
-
-// IPAddress returns the connection's IP.
-func (c *ClusterConnectionInfoResolver) IPAddress() string {
-	return c.ipAddress
-}
-
-// Token returns the connection's token.
-func (c *ClusterConnectionInfoResolver) Token() string {
-	return c.token
-}
-
-// K8sEventResolver is a resolver for k8s events.
-type K8sEventResolver struct {
-	message     *string
-	firstTimeNS int64
-	lastTimeNS  int64
-}
-
-// FirstTimeMs returns the timestamp of when the event first occurred.
-func (k *K8sEventResolver) FirstTimeMs() float64 {
-	return float64(k.firstTimeNS) / 1e6
-}
-
-// LastTimeMs returns the timestamp of when the event last occurred.
-func (k *K8sEventResolver) LastTimeMs() float64 {
-	return float64(k.lastTimeNS) / 1e6
-}
-
-// Message returns the event message.
-func (k *K8sEventResolver) Message() *string {
-	return k.message
 }
