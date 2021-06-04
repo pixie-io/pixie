@@ -146,7 +146,7 @@ export const AdminOverview: React.FC = () => {
               update: (cache, { data }) => {
                 cache.modify({
                   fields: {
-                    deploymentKeys: (existingKeys) => (existingKeys.concat([data.CreateDeploymentKey])),
+                    deploymentKeys: (existingKeys) => ([data.CreateDeploymentKey].concat(existingKeys)),
                   },
                 });
               },
@@ -180,7 +180,7 @@ export const AdminOverview: React.FC = () => {
               update: (cache, { data }) => {
                 cache.modify({
                   fields: {
-                    apiKeys: (existingKeys) => (existingKeys.concat([data.CreateAPIKey])),
+                    apiKeys: (existingKeys) => ([data.CreateAPIKey].concat(existingKeys)),
                   },
                 });
               },
