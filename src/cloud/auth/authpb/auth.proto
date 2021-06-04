@@ -38,9 +38,9 @@ message AuthenticatedUserInfo {
 }
 
 service AuthService {
-  // Performs a login based on auth0 credentials and returns an opaque JWT identifier for the user.
+  // Performs a login based on OAuth credentials and returns an opaque JWT identifier for the user.
   rpc Login(LoginRequest) returns (LoginReply);
-  // Performs a signup based on auth0 credentials and returns an opaque JWT identifier for the user.
+  // Performs a signup based on OAuth credentials and returns an opaque JWT identifier for the user.
   rpc Signup(SignupRequest) returns (SignupReply);
   // Takes an opaque identifier (from above) and produces a token with user details.
   rpc GetAugmentedToken(GetAugmentedAuthTokenRequest) returns (GetAugmentedAuthTokenResponse);
@@ -49,8 +49,11 @@ service AuthService {
 }
 
 message LoginRequest {
-  // The auth0 access token.
+  // The OAuth access token.
   string access_token = 1;
+  // The OIDC id_token if the auth provider sends it. If the auth provider doesn't, should be empty string.
+  // Used to propagate the claims of the user from the OAuth provider in a non-fungible manner.
+  string id_token = 5;
   // Automatically create the user if they don't exist.
   bool create_user_if_not_exists = 3;
   // If the account is a Pixie Support account, login with access to the given org. Otherwise, this field is ignored.
@@ -79,9 +82,12 @@ message LoginReply {
 }
 
 message SignupRequest {
-  // The auth0 access token.
+  // The OAuth access token.
   string access_token = 1;
   reserved 2;
+  // The OIDC id_token if the auth provider sends it. If the auth provider doesn't, should be empty string.
+  // Used to propagate the claims of the user from the OAuth provider in a non-fungible manner.
+  string id_token = 3;
 }
 
 message SignupReply {
