@@ -20,6 +20,7 @@ package controllers
 
 import (
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"strings"
@@ -29,6 +30,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -40,6 +42,7 @@ import (
 	pixiev1alpha1 "px.dev/pixie/src/operator/api/v1alpha1"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/utils/shared/artifacts"
+	"px.dev/pixie/src/utils/shared/certs"
 	"px.dev/pixie/src/utils/shared/k8s"
 	yamlsutils "px.dev/pixie/src/utils/shared/yamls"
 	vizieryamls "px.dev/pixie/src/utils/template_generator/vizier_yamls"
@@ -47,6 +50,7 @@ import (
 
 // OperatorAnnotation is the key for the annotation that the operator applies on all of its deployed resources for a CRD.
 const operatorAnnotation = "vizier-name"
+const clusterSecretJWTKey = "jwt-signing-key"
 
 // VizierReconciler reconciles a Vizier object
 type VizierReconciler struct {
@@ -190,9 +194,12 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 	}
 
 	if !update {
-		// TODO(michellenguyen): We should pull our cert-provisioner job into here. Eventually, we can make this a goroutine
-		// which checks when certs are about to expire.
 		err = r.deployVizierConfigs(ctx, req.Namespace, vz, yamlMap)
+		if err != nil {
+			return err
+		}
+
+		err = r.deployVizierCerts(ctx, req.Namespace, vz)
 		if err != nil {
 			return err
 		}
@@ -224,6 +231,48 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 	}
 
 	return nil
+}
+
+// TODO(michellenguyen): Add a goroutine
+// which checks when certs are about to expire. If they are about to expire,
+// we should generate new certs and bounce all pods.
+func (r *VizierReconciler) deployVizierCerts(ctx context.Context, namespace string, vz *pixiev1alpha1.Vizier) error {
+	log.Info("Generating certs")
+
+	// Assign JWT signing key.
+	jwtSigningKey := make([]byte, 64)
+	_, err := rand.Read(jwtSigningKey)
+	if err != nil {
+		return err
+	}
+	s := k8s.GetSecret(r.Clientset, namespace, "pl-cluster-secrets")
+	if s == nil {
+		return errors.New("pl-cluster-secrets does not exist")
+	}
+	s.Data[clusterSecretJWTKey] = []byte(fmt.Sprintf("%x", jwtSigningKey))
+
+	_, err = r.Clientset.CoreV1().Secrets(namespace).Update(ctx, s, metav1.UpdateOptions{})
+	if err != nil {
+		return err
+	}
+
+	certYAMLs, err := certs.GenerateVizierCertYAMLs(namespace)
+	if err != nil {
+		return err
+	}
+
+	resources, err := k8s.GetResourcesFromYAML(r.Clientset, strings.NewReader(certYAMLs))
+	if err != nil {
+		return err
+	}
+	for _, r := range resources {
+		err = updateResourceConfiguration(r, vz)
+		if err != nil {
+			return err
+		}
+	}
+
+	return k8s.ApplyResources(r.RestConfig, resources, namespace, nil, false)
 }
 
 // deployVizierConfigs deploys the secrets, configmaps, and certs that are necessary for running vizier.
