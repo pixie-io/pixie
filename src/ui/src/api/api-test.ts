@@ -17,8 +17,8 @@
  */
 
 import fetch from 'cross-fetch';
+import { mockApolloClient } from 'testing/mocks/apollo-mock';
 import { PixieAPIClient } from './api';
-import { mockApolloClient } from './testing';
 
 // Imported only so that its import in the test subject can be mocked successfully.
 import * as vizierDependency from './vizier-grpc-client';

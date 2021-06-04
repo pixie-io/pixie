@@ -18,7 +18,7 @@
 
 import { ClusterContext } from 'common/cluster-context';
 import { WidgetDisplay } from 'containers/live/vis';
-import { VizierTable as Table } from '@pixie-labs/api';
+import { Table } from 'api';
 import * as React from 'react';
 import {
   Theme, Typography,

@@ -19,7 +19,7 @@
 import * as React from 'react';
 
 import { scrollbarStyles, EditIcon, Footer } from '@pixie-labs/components';
-import { GQLClusterStatus } from '@pixie-labs/api';
+import { GQLClusterStatus } from 'types/schema';
 import {
   makeStyles, Theme,
 } from '@material-ui/core/styles';

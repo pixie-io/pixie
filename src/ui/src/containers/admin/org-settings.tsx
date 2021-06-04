@@ -24,7 +24,7 @@ import TableBody from '@material-ui/core/TableBody';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 
-import { GQLOrgInfo } from '@pixie-labs/api';
+import { GQLOrgInfo } from 'types/schema';
 import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import {

@@ -18,8 +18,8 @@
 
 import * as React from 'react';
 import { ApolloProvider } from '@apollo/client/react';
-import { PixieAPIClientAbstract, PixieAPIClient, PixieAPIClientOptions } from '@pixie-labs/api';
 import { makeCancellable } from 'utils/cancellable-promise';
+import { PixieAPIClientAbstract, PixieAPIClient, PixieAPIClientOptions } from './api';
 
 export const PixieAPIContext = React.createContext<PixieAPIClientAbstract>(null);
 

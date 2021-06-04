@@ -27,7 +27,7 @@ import { ScriptContext, ScriptContextProps } from 'context/script-context';
 import { ScriptsContext, ScriptsContextProps } from 'containers/App/scripts-context';
 import { ClusterContext, ClusterContextProps } from 'common/cluster-context';
 import VizierGRPCClientContext, { VizierGRPCClientContextProps } from 'common/vizier-grpc-client-context';
-import { GQLClusterStatus as ClusterStatus } from '@pixie-labs/api';
+import { GQLClusterStatus as ClusterStatus } from 'types/schema';
 import { MockPixieAPIContextProvider } from './api-context-mock';
 
 interface MockProps {

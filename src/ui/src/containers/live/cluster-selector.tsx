@@ -25,7 +25,7 @@ import { createStyles } from '@material-ui/styles';
 import { ClusterContext } from 'common/cluster-context';
 
 import { StatusCell, Select } from '@pixie-labs/components';
-import { GQLClusterInfo, GQLClusterStatus } from '@pixie-labs/api';
+import { GQLClusterInfo, GQLClusterStatus } from 'types/schema';
 import { clusterStatusGroup } from 'containers/admin/utils';
 
 const useStyles = makeStyles(({ spacing, palette }: Theme) => createStyles({

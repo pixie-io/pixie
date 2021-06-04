@@ -17,8 +17,8 @@
  */
 
 import { ApolloQueryResult } from '@apollo/client/core';
+import { mockApolloClient } from 'testing/mocks/apollo-mock';
 import { CloudClient } from './cloud-gql-client';
-import { mockApolloClient } from './testing';
 
 describe('Cloud client (GQL wrapper)', () => {
   const { query } = mockApolloClient();

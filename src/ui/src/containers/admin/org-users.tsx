@@ -29,7 +29,7 @@ import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import * as React from 'react';
 
-import { GQLUserInfo } from '@pixie-labs/api';
+import { GQLUserInfo } from 'types/schema';
 import {
   AdminTooltip, StyledTableCell, StyledTableHeaderCell, StyledRightTableCell,
 } from './utils';

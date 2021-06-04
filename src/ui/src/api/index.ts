@@ -16,4 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+export * from './cloud-gql-client';
+export * from './vizier';
+export * from './vizier-grpc-client';
+
+export * from './api';
 export * from './api-context';

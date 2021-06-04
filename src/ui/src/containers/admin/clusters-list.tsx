@@ -28,7 +28,7 @@ import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { GaugeLevel } from 'utils/metric-thresholds';
 
-import { GQLClusterInfo } from '@pixie-labs/api';
+import { GQLClusterInfo } from 'types/schema';
 import {
   AdminTooltip, clusterStatusGroup, convertHeartbeatMS, getClusterDetailsURL,
   StyledTableCell, StyledTableHeaderCell, StyledLeftTableCell, StyledRightTableCell,

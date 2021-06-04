@@ -18,14 +18,12 @@
 
 import { Observable, throwError } from 'rxjs';
 import { catchError, timeout } from 'rxjs/operators';
-import { VizierQueryError } from './vizier';
-// noinspection ES6PreferShortImport
 import {
   ErrorDetails, ExecuteScriptRequest, HealthCheckRequest, QueryExecutionStats, Relation,
   RowBatchData, Status, MutationInfo, HealthCheckResponse, ExecuteScriptResponse,
-} from './types/generated/vizierapi_pb';
-// noinspection ES6PreferShortImport
-import { VizierServiceClient } from './types/generated/VizierapiServiceClientPb';
+} from 'types/generated/vizierapi_pb';
+import { VizierServiceClient } from 'types/generated/VizierapiServiceClientPb';
+import { VizierQueryError } from './vizier';
 
 const noop = () => {};
 

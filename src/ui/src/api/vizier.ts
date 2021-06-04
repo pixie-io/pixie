@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Status } from './types/generated/vizierapi_pb';
+import { Status } from 'types/generated/vizierapi_pb';
 
 export type VizierQueryErrorType = 'script' | 'vis' | 'execution' | 'server';
 

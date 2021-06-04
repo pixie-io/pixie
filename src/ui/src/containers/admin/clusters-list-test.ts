@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { GQLClusterInfo, GQLClusterStatus } from '@pixie-labs/api';
+import { GQLClusterInfo, GQLClusterStatus } from 'types/schema';
 import { formatClusters } from './clusters-list';
 
 describe('formatClusters', () => {

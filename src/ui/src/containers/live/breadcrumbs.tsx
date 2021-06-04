@@ -22,8 +22,8 @@ import {
   Theme, withStyles,
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
-import { GQLAutocompleteEntityKind, GQLAutocompleteSuggestion, PixieAPIClient } from '@pixie-labs/api';
-import { PixieAPIContext } from 'api';
+import { GQLAutocompleteEntityKind, GQLAutocompleteSuggestion } from 'types/schema';
+import { PixieAPIClient, PixieAPIContext } from 'api';
 import { gql } from '@apollo/client';
 
 import {

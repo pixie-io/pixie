@@ -18,7 +18,7 @@
 
 import * as React from 'react';
 import { GetPxScripts, Script } from 'utils/script-bundle';
-import { GQLUserInfo } from '@pixie-labs/api';
+import { GQLUserInfo } from 'types/schema';
 import { useQuery, gql } from '@apollo/client';
 
 export interface ScriptsContextProps {

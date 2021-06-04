@@ -16,7 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { VizierTable as Table } from '@pixie-labs/api';
 import {
   CellAlignment, ColumnProps, DataTable, SortState,
   buildClass,
@@ -24,6 +23,7 @@ import {
 import { JSONData } from 'containers/format-data/format-data';
 import { STATUS_TYPES } from 'containers/live-widgets/utils';
 import * as React from 'react';
+import { Table } from 'api';
 import { DataType, SemanticType } from 'types/generated/vizierapi_pb';
 import noop from 'utils/noop';
 import { dataFromProto } from 'utils/result-data-utils';

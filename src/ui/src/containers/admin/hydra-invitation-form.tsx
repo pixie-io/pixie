@@ -21,7 +21,7 @@ import * as React from 'react';
 import { OAUTH_PROVIDER } from 'containers/constants';
 import { Form } from '@pixie-labs/components';
 
-import { GQLUserInvite } from '@pixie-labs/api';
+import { GQLUserInvite } from 'types/schema';
 import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 

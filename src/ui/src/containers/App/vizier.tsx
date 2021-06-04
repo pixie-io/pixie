@@ -32,7 +32,7 @@ import * as QueryString from 'query-string';
 import { makeStyles } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import { useLDClient } from 'launchdarkly-react-client-sdk';
-import { GQLClusterInfo, GQLClusterStatus, GQLUserInfo } from '@pixie-labs/api';
+import { GQLClusterInfo, GQLClusterStatus, GQLUserInfo } from 'types/schema';
 import { useQuery, gql } from '@apollo/client';
 
 import { DeployInstructions } from './deploy-instructions';

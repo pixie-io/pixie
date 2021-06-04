@@ -63,6 +63,7 @@
     "favicons": "^6.2.1",
     "favicons-webpack-plugin": "^5.0.0-alpha.3",
     "file-loader": "^6.2.0",
+    "graphql-schema-typescript": "^1.5.2",
     "html-webpack-plugin": "^5.0.0-alpha.9",
     "identity-obj-proxy": "^3.0.0",
     "image-webpack-loader": "^6.0.0",
@@ -105,10 +106,10 @@
     "@material-ui/lab": "^5.0.0-alpha.33",
     "@material-ui/styles": "^5.0.0-alpha.33",
     "@ory/kratos-client": "^v0.5.5-alpha.4",
-    "@pixie-labs/api": "1.0.0",
     "@pixie-labs/components": "1.0.0",
     "@welldone-software/why-did-you-render": "^4.3.1",
     "announcekit-react": "^2.1.3",
+    "apollo3-cache-persist": "^0.9.1",
     "axios": "0.21.1",
     "axios-mock-adapter": "^1.18.1",
     "client-oauth2": "^4.3.3",
@@ -185,18 +186,19 @@
     "node": ">=10.0.0"
   },
   "scripts": {
-    "build_deps": "concurrently -m 1 -c gray.dim,green.dim,magenta.dim -n clean,components,api \"rimraf packages/*/dist\" \"yarn workspace @pixie-labs/components build\" \"yarn workspace @pixie-labs/api build\"",
+    "build_deps": "concurrently -m 1 -c gray.dim,green.dim,magenta.dim -n clean,components \"rimraf packages/*/dist\" \"yarn workspace @pixie-labs/components build\"",
     "build_dev": "webpack --mode=development --stats=verbose --progress",
     "build_prod": "concurrently -m 1 \"rimraf dist\" \"yarn build_deps\" \"webpack --mode=production\"",
     "clean": "rimraf dist packages/*/dist",
-    "dev": "concurrently -c green.dim,magenta.dim,cyan.dim -n components,api,ui \"yarn workspace @pixie-labs/components start\" \"yarn workspace @pixie-labs/api start\" \"webpack serve --mode=development --hot\"",
+    "dev": "concurrently -c green.dim,magenta.dim,cyan.dim -n components,ui \"yarn workspace @pixie-labs/components start\" \"webpack serve --mode=development --hot\"",
     "test": "jest",
     "test_ci": "jest --maxWorkers=4",
     "coverage": "jest --coverage",
     "coverage_ci": "jest --coverage --maxWorkers=4",
     "license_check": "./node_modules/license-checker/bin/license-checker",
     "lint": "tsc --noEmit && eslint '*/**/*.{js,ts,tsx}'",
-    "vgspec": "NODE_PATH=./src ts-node --compiler-options '{\"module\":\"commonjs\"}' src/utils/print-vgspec-cli.ts"
+    "vgspec": "NODE_PATH=./src ts-node --compiler-options '{\"module\":\"commonjs\"}' src/utils/print-vgspec-cli.ts",
+    "regenerate_graphql_schema": "node $(yarn bin graphql-schema-typescript) generate-ts ../cloud/api/controller/schema/schema.graphql --output src/types/schema.d.ts"
   },
   "resolutions": {
     "@types/react": "^17.0.3",

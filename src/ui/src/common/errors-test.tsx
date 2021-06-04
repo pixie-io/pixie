@@ -16,10 +16,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { shallow } from 'enzyme';
 import * as React from 'react';
 
-import { VizierQueryError } from '@pixie-labs/api';
+import { VizierQueryError } from 'api';
 import { VizierErrorDetails } from './errors';
 
 describe('<VizierErrorDetails/> test', () => {

@@ -29,7 +29,7 @@ import { parseVisSilently } from 'containers/live/vis';
 import { RouteNotFound } from 'containers/App/route-not-found';
 import { selectClusterName } from 'containers/App/cluster-info';
 
-import { GQLClusterInfo } from '@pixie-labs/api';
+import { GQLClusterInfo } from 'types/schema';
 import { argsForVis } from 'utils/args-utils';
 
 export interface VizierRouteContextProps {

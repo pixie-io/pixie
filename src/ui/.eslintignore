@@ -2,4 +2,3 @@ __snapshots__
 node_modules
 src/types/generated
 src/segment.js
-packages/pixie-api/src/types/generated

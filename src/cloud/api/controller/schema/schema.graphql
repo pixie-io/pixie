@@ -2,7 +2,7 @@
 #
 # It's not ideal, but we need to manually generate types for the TypeScript UI
 # when this file is updated. This can be done by running `update.sh` in this directory.
-# This generates schema.d.ts in this directory, and copies it to the @pixie-labs/api package for use by TypeScript.
+# This generates schema.d.ts in this directory, and copies it to the UI code for use by TypeScript.
 
 schema {
   query: Query

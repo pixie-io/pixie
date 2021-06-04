@@ -40,11 +40,8 @@ function copy() {
     echo "Updating ${build_label} ..."
 
     srcPath=$(dirname "$(label_to_path "${build_label}")")
-    # TODO(nick,PC-738): When moving the UI code to its own package (as opposed to the root), update this path.
     uiTypesDir="src/ui/src/types/generated"
-    apiTypesDir="src/ui/packages/pixie-api/src/types/generated"
 
-    # TODO(nick): pixie-api may not require all grpc_web protos; we should not copy over unused files.
     abs_paths=$(find "bazel-bin/${srcPath}" -iregex ".*/[^/]*pb.*\.[tj]s")
     if [[ "${abs_paths}" == "" ]]; then
       echo "Failed to locate TypeScript and Javascript Proto files in bazel-bin/${srcPath}"
@@ -60,13 +57,10 @@ function copy() {
       echo "Propagating ${abs_path} ..."
       fname=$(basename "$abs_path")
       cp -f "${abs_path}" "${uiTypesDir}"
-      cp -f "${abs_path}" "${apiTypesDir}"
 
       # Using Perl instead of sed because BSD and GNU treat the -i flag differently: https://stackoverflow.com/a/22247781
       perl -pi -e "${regexRelativeImport}" "${uiTypesDir}/${fname}"
-      perl -pi -e "${regexRelativeImport}" "${apiTypesDir}/${fname}"
       perl -pi -e "${regexExtraneousImport}" "${uiTypesDir}/${fname}"
-      perl -pi -e "${regexExtraneousImport}" "${apiTypesDir}/${fname}"
     done
   done
 }

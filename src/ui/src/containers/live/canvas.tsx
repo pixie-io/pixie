@@ -30,8 +30,9 @@ import * as GridLayout from 'react-grid-layout';
 import { resizeEvent, triggerResize } from 'utils/resize';
 import { dataFromProto } from 'utils/result-data-utils';
 import { Alert, AlertTitle } from '@material-ui/core';
+import { VizierQueryError } from 'api';
+import { containsMutation } from 'utils/pxl';
 import { VizierErrorDetails } from 'common/errors';
-import { VizierQueryError, containsMutation } from '@pixie-labs/api';
 
 import {
   alpha, makeStyles, Theme,

@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { GQLDeploymentKey } from '@pixie-labs/api';
+import { GQLDeploymentKey } from 'types/schema';
 import { formatDeploymentKey } from './deployment-keys';
 
 describe('formatDeploymentKey', () => {

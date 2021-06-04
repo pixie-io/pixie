@@ -17,7 +17,7 @@
  */
 
 import * as React from 'react';
-import { GQLVizierConfig, GQLClusterStatus } from '@pixie-labs/api';
+import { GQLVizierConfig, GQLClusterStatus } from 'types/schema';
 
 export interface ClusterContextProps {
   selectedClusterID: string;

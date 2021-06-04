@@ -21,16 +21,11 @@
 
 import fetch from 'cross-fetch';
 import { Observable, of as observableOf } from 'rxjs';
-// noinspection ES6PreferShortImport
 import {
-  ClusterConfig, PixieAPIClient, PixieAPIClientAbstract,
-} from '../../api';
-// noinspection ES6PreferShortImport
-import { PixieAPIClientOptions } from '../../types/client-options';
-// noinspection ES6PreferShortImport
-import { ExecutionStateUpdate, VizierQueryFunc } from '../../vizier-grpc-client';
-// noinspection ES6PreferShortImport
-import { Status } from '../../types/generated/vizierapi_pb';
+  ClusterConfig, PixieAPIClient, PixieAPIClientAbstract, PixieAPIClientOptions,
+  ExecutionStateUpdate, VizierQueryFunc,
+} from 'api';
+import { Status } from 'types/generated/vizierapi_pb';
 
 // noinspection JSUnusedLocalSymbols
 // noinspection ES6PreferShortImport

@@ -39,13 +39,13 @@ import TableRow from '@material-ui/core/TableRow';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 
+import { ExecutionStateUpdate, VizierQueryResult } from 'api';
 import {
-  ExecutionStateUpdate,
   GQLClusterInfo,
   GQLClusterStatus as ClusterStatus,
   GQLPodStatus as PodStatus,
-  GQLContainerStatus as ContainerStatus, VizierQueryResult,
-} from '@pixie-labs/api';
+  GQLContainerStatus as ContainerStatus,
+} from 'types/schema';
 
 import { BehaviorSubject } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';

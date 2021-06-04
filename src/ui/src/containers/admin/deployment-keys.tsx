@@ -32,7 +32,7 @@ import VisibilityOff from '@material-ui/icons/VisibilityOff';
 import { distanceInWords } from 'date-fns';
 import * as React from 'react';
 
-import { GQLDeploymentKey } from '@pixie-labs/api';
+import { GQLDeploymentKey } from 'types/schema';
 import {
   AdminTooltip, StyledTableCell, StyledTableHeaderCell,
   StyledLeftTableCell, StyledRightTableCell,

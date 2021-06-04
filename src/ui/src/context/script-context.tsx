@@ -23,11 +23,10 @@ import {
   getQueryFuncs, parseVis, parseVisSilently, Vis,
 } from 'containers/live/vis';
 import { Script } from 'utils/script-bundle';
-import { PixieAPIContext } from 'api';
 import {
-  containsMutation, ExecutionStateUpdate, isStreaming, VizierQueryError, ClusterConfig, GRPCStatusCode,
-  VizierTable as Table,
-} from '@pixie-labs/api';
+  PixieAPIContext, ExecutionStateUpdate, VizierQueryError, ClusterConfig, GRPCStatusCode, Table,
+} from 'api';
+import { containsMutation, isStreaming } from 'utils/pxl';
 import { Observable } from 'rxjs';
 import { checkExhaustive } from 'utils/check-exhaustive';
 import { ResultsContext } from 'context/results-context';

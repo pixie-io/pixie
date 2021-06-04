@@ -42,7 +42,7 @@ import ExploreIcon from '@material-ui/icons/Explore';
 import KeyboardIcon from '@material-ui/icons/Keyboard';
 import { Link } from 'react-router-dom';
 import { Logo } from 'configurable/logo';
-import { GQLUserInfo, GQLUserSetting } from '@pixie-labs/api';
+import { GQLUserInfo, GQLUserSetting } from 'types/schema';
 
 const StyledListItemText = withStyles((theme: Theme) => createStyles({
   primary: {

@@ -36,7 +36,7 @@ import { OrgSettings } from 'containers/admin/org-settings';
 import { StyledTab, StyledTabs } from 'containers/admin/utils';
 import { GetOAuthProvider } from 'pages/auth/utils';
 import { scrollbarStyles } from '@pixie-labs/components';
-import { GQLAPIKey, GQLDeploymentKey } from '@pixie-labs/api';
+import { GQLAPIKey, GQLDeploymentKey } from 'types/schema';
 
 import {
   Route, Switch, useHistory, useLocation, useRouteMatch,

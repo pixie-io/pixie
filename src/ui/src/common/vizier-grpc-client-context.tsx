@@ -20,8 +20,8 @@ import * as React from 'react';
 import { operation } from 'retry';
 import { isDev } from 'utils/env';
 
-import { PixieAPIContext } from 'api';
-import { VizierGRPCClient, CloudClient, GQLClusterStatus as ClusterStatus } from '@pixie-labs/api';
+import { PixieAPIContext, VizierGRPCClient, CloudClient } from 'api';
+import { GQLClusterStatus as ClusterStatus } from 'types/schema';
 
 export interface VizierGRPCClientContextProps {
   client: VizierGRPCClient | null;

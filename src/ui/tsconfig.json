@@ -8,8 +8,7 @@
       ],
       "*": [
         "*",
-        "../packages/pixie-components/dist/*",
-        "../packages/pixie-api/dist/*"
+        "../packages/pixie-components/dist/*"
       ]
     },
     "outDir": "./dist/",
