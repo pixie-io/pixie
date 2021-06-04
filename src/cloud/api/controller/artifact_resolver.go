@@ -32,11 +32,11 @@ type CLIArtifactResolver struct {
 }
 
 type cliArtifactArgs struct {
-	ArtifactType *string
+	ArtifactType string
 }
 
-func artifactTypeToProto(a *string) cloudpb.ArtifactType {
-	switch *a {
+func artifactTypeToProto(a string) cloudpb.ArtifactType {
+	switch a {
 	case "AT_LINUX_AMD64":
 		return cloudpb.AT_LINUX_AMD64
 	case "AT_DARWIN_AMD64":
@@ -93,7 +93,7 @@ func (q *QueryResolver) CLIArtifact(ctx context.Context, args *cliArtifactArgs) 
 }
 
 type artifactsArgs struct {
-	ArtifactName *string
+	ArtifactName string
 }
 
 // ArtifactResolver is a resolver for a single artifact.
@@ -105,7 +105,7 @@ type ArtifactResolver struct {
 
 // ArtifactsInfoResolver is a resolver for a list of artifacts.
 type ArtifactsInfoResolver struct {
-	Items *[]*ArtifactResolver
+	Items []ArtifactResolver
 }
 
 // Artifacts is the resolver responsible for fetching all artifacts.
@@ -113,13 +113,13 @@ func (q *QueryResolver) Artifacts(ctx context.Context, args *artifactsArgs) (*Ar
 	grpcAPI := q.Env.ArtifactTrackerServer
 
 	artifactType := cloudpb.AT_LINUX_AMD64
-	if *args.ArtifactName == "vizier" {
+	if args.ArtifactName == "vizier" {
 		artifactType = cloudpb.AT_CONTAINER_SET_LINUX_AMD64
 	}
 
 	artifactReq := &cloudpb.GetArtifactListRequest{
 		ArtifactType: artifactType,
-		ArtifactName: *args.ArtifactName,
+		ArtifactName: args.ArtifactName,
 	}
 
 	resp, err := grpcAPI.GetArtifactList(ctx, artifactReq)
@@ -127,16 +127,16 @@ func (q *QueryResolver) Artifacts(ctx context.Context, args *artifactsArgs) (*Ar
 		return nil, err
 	}
 
-	artifacts := make([]*ArtifactResolver, len(resp.Artifact))
+	artifacts := make([]ArtifactResolver, len(resp.Artifact))
 	for i, a := range resp.Artifact {
 		ts := a.Timestamp.Seconds * 1000
-		artifacts[i] = &ArtifactResolver{
+		artifacts[i] = ArtifactResolver{
 			Version:     a.VersionStr,
 			Changelog:   a.Changelog,
 			TimestampMs: float64(ts),
 		}
 	}
 	return &ArtifactsInfoResolver{
-		Items: &artifacts,
+		Items: artifacts,
 	}, nil
 }

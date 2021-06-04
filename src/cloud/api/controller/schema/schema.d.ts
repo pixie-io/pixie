@@ -82,7 +82,7 @@ export interface GQLQuery {
   user: GQLUserInfo;
   org: GQLOrgInfo;
   userSettings: Array<GQLUserSetting>;
-  orgUsers: Array<GQLUserInfo | null>;
+  orgUsers: Array<GQLUserInfo>;
   cluster: GQLClusterInfo;
   clusterByName: GQLClusterInfo;
   clusters: Array<GQLClusterInfo>;
@@ -216,7 +216,7 @@ export interface GQLCLIArtifact {
 }
 
 export interface GQLArtifactsInfo {
-  items?: Array<GQLArtifact | null>;
+  items: Array<GQLArtifact>;
 }
 
 export interface GQLArtifact {
@@ -468,14 +468,14 @@ export interface QueryToClusterConnectionResolver<TParent = any, TResult = any> 
 }
 
 export interface QueryToCliArtifactArgs {
-  artifactType?: GQLArtifactType;
+  artifactType: GQLArtifactType;
 }
 export interface QueryToCliArtifactResolver<TParent = any, TResult = any> {
   (parent: TParent, args: QueryToCliArtifactArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface QueryToArtifactsArgs {
-  artifactName?: string;
+  artifactName: string;
 }
 export interface QueryToArtifactsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: QueryToArtifactsArgs, context: any, info: GraphQLResolveInfo): TResult;

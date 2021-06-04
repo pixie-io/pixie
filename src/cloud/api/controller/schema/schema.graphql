@@ -83,13 +83,13 @@ type Query {
   user: UserInfo!
   org: OrgInfo!
   userSettings(keys: [String!]!): [UserSetting!]!
-  orgUsers: [UserInfo]!
+  orgUsers: [UserInfo!]!
   cluster(id: ID!): ClusterInfo!
   clusterByName(name: String!): ClusterInfo!
   clusters: [ClusterInfo!]!
   clusterConnection(id: ID!): ClusterConnectionInfo!
-  cliArtifact(artifactType: ArtifactType): CLIArtifact!
-  artifacts(artifactName: String): ArtifactsInfo!
+  cliArtifact(artifactType: ArtifactType!): CLIArtifact!
+  artifacts(artifactName: String!): ArtifactsInfo!
   autocomplete(input: String, cursorPos: Int, action: AutocompleteActionType, clusterUID: String): AutocompleteResult!
   autocompleteField(input: String, fieldType: AutocompleteEntityKind,
     requiredArgTypes: [AutocompleteEntityKind], clusterUID: String): [AutocompleteSuggestion]
@@ -236,7 +236,7 @@ type CLIArtifact {
 }
 
 type ArtifactsInfo {
-  items: [Artifact]
+  items: [Artifact!]!
 }
 
 type Artifact {

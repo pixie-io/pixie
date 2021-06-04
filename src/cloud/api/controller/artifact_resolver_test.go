@@ -73,7 +73,7 @@ func TestCLIArtifact(t *testing.T) {
 			ExpectedResult: `
 				{
 					"cliArtifact": {
-						"url":"http://pixie.com/cli_url",
+						"url": "http://pixie.com/cli_url",
 						"sha256": "http://pixie.com/sha256"
 					}
 				}
