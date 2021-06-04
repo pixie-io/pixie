@@ -84,10 +84,10 @@ message LoginReply {
 message SignupRequest {
   // The OAuth access token.
   string access_token = 1;
-  reserved 2;
   // The OIDC id_token if the auth provider sends it. If the auth provider doesn't, should be empty string.
   // Used to propagate the claims of the user from the OAuth provider in a non-fungible manner.
   string id_token = 3;
+  reserved 2;
 }
 
 message SignupReply {
