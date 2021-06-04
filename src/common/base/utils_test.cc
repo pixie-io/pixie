@@ -151,6 +151,26 @@ TEST(Enumerate, LoopsThroughVectorWithIndex) {
   }
 }
 
+TEST(IntOps, IntRoundUpDivide) {
+  EXPECT_EQ(IntRoundUpDivide(0, 2), 0);
+  EXPECT_EQ(IntRoundUpDivide(1, 2), 1);
+  EXPECT_EQ(IntRoundUpDivide(2, 2), 1);
+  EXPECT_EQ(IntRoundUpDivide(3, 2), 2);
+
+  EXPECT_EQ(IntRoundUpDivide(0, 10), 0);
+  EXPECT_EQ(IntRoundUpDivide(9, 10), 1);
+  EXPECT_EQ(IntRoundUpDivide(10, 10), 1);
+  EXPECT_EQ(IntRoundUpDivide(11, 10), 2);
+}
+
+TEST(IntOps, IntRoundUpToPow2) {
+  EXPECT_EQ(IntRoundUpToPow2(1), 1);
+  EXPECT_EQ(IntRoundUpToPow2(5), 8);
+  EXPECT_EQ(IntRoundUpToPow2(7), 8);
+  EXPECT_EQ(IntRoundUpToPow2(8), 8);
+  EXPECT_EQ(IntRoundUpToPow2(9), 16);
+}
+
 TEST(CaseInsensitiveCompare, BasicsWithString) {
   CaseInsensitiveLess str_compare;
 

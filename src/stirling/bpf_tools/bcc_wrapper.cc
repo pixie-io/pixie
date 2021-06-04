@@ -28,15 +28,9 @@
 
 #include "src/common/base/base.h"
 #include "src/common/fs/fs_wrapper.h"
+#include "src/common/system/config.h"
 #include "src/stirling/bpf_tools/task_struct_resolver.h"
 #include "src/stirling/utils/linux_headers.h"
-
-// Assume a moderate network bandwidth peak of 10MiB/s for any socket connection,
-// and a sampling cycle of 10ms, that translate to 25.6 4KiB pages.
-// And our current sampling cycle is 100ms, and requires 10*25.6==256 pages.
-// Then the perf buffer consumes 1MiB each, and we have 4 of them, which is 4MiB in total.
-DEFINE_uint32(stirling_bpf_perf_buffer_page_count, 256,
-              "The size of the perf buffers, in number of memory pages.");
 
 DEFINE_bool(
     stirling_always_infer_task_struct_offsets, false,
@@ -323,10 +317,16 @@ void BCCWrapper::DetachTracepoints() {
 }
 
 Status BCCWrapper::OpenPerfBuffer(const PerfBufferSpec& perf_buffer, void* cb_cookie) {
+  const int kPageSizeBytes = system::Config::GetInstance().PageSize();
+  int num_pages = IntRoundUpDivide(perf_buffer.size_bytes, kPageSizeBytes);
+
+  // Perf buffers must be sized to a power of 2.
+  num_pages = IntRoundUpToPow2(num_pages);
+
   VLOG(1) << "Opening perf buffer: " << perf_buffer.name;
   PL_RETURN_IF_ERROR(bpf_.open_perf_buffer(std::string(perf_buffer.name),
                                            perf_buffer.probe_output_fn, perf_buffer.probe_loss_fn,
-                                           cb_cookie, FLAGS_stirling_bpf_perf_buffer_page_count));
+                                           cb_cookie, num_pages));
   perf_buffers_.push_back(perf_buffer);
   ++num_open_perf_buffers_;
   return Status::OK();

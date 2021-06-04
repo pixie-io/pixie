@@ -61,6 +61,28 @@ constexpr auto Enumerate(T&& iterable) {
 }
 
 /**
+ * An integer division that rounds up if there is any fractional portion.
+ * This is in contrast to normal integer division (x/y) that removes the fractional part.
+ */
+template <typename TIntType>
+constexpr TIntType IntRoundUpDivide(TIntType x, TIntType y) {
+  return (x + (y - 1)) / y;
+}
+
+/**
+ * Rounds an integer up to the next closest power of 2.
+ * If already a power of 2, returns the same value.
+ */
+template <typename TIntType>
+constexpr TIntType IntRoundUpToPow2(TIntType x) {
+  TIntType power = 1;
+  while (power < x) {
+    power *= 2;
+  }
+  return power;
+}
+
+/**
  * bytes_format structs allow you to quickly define new formats for BytesToString().
  * For example, say want a octal output, or you want a separator between characters,
  * then all you have to do is define a new struct and set kCharFormat appropriately.

@@ -162,6 +162,9 @@ struct PerfBufferSpec {
 
   // Function that will be called if there are lost/clobbered perf events.
   perf_reader_lost_cb probe_loss_fn;
+
+  // Size of perf buffer. Will be rounded up to and allocated in a power of 2 number of pages.
+  int size_bytes = 1024 * 1024;
 };
 
 /**
