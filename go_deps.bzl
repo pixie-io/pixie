@@ -1504,8 +1504,8 @@ def pl_go_dependencies():
     go_repository(
         name = "com_github_graph_gophers_graphql_go",
         importpath = "github.com/graph-gophers/graphql-go",
-        sum = "h1:YyFUsspLqAt3noyPCLz7EFK/o1LpC1j/6MjU0bSVOQ4=",
-        version = "v0.0.0-20190225005345-3e8838d4614c",
+        sum = "h1:wVVEPeC5IXelyaQ8UyWKugIyNIFOVF9Kn+gu/1/tXTE=",
+        version = "v1.1.0",
     )
 
     go_repository(

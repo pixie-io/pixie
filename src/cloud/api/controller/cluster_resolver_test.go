@@ -30,7 +30,7 @@ import (
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/cloud/api/controller"
-	"px.dev/pixie/src/cloud/api/controller/schema"
+	"px.dev/pixie/src/cloud/api/controller/schema/complete"
 	"px.dev/pixie/src/cloud/api/controller/testutils"
 	"px.dev/pixie/src/shared/services/authcontext"
 	svcutils "px.dev/pixie/src/shared/services/utils"
@@ -44,7 +44,7 @@ func CreateTestContext() context.Context {
 }
 
 func LoadSchema(gqlEnv controller.GraphQLEnv) *graphql.Schema {
-	schemaData := schema.MustLoadSchema()
+	schemaData := complete.MustLoadSchema()
 	opts := []graphql.SchemaOpt{graphql.UseFieldResolvers(), graphql.MaxParallelism(20)}
 	qr := &controller.QueryResolver{gqlEnv}
 	gqlSchema := graphql.MustParseSchema(schemaData, qr, opts...)

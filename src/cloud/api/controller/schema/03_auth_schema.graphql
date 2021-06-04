@@ -1,0 +1,256 @@
+extend type Query {
+  user: UserInfo!
+  org: OrgInfo!
+  userSettings(keys: [String!]!): [UserSetting!]!
+  orgUsers: [UserInfo!]!
+  cluster(id: ID!): ClusterInfo!
+  clusterByName(name: String!): ClusterInfo!
+  clusters: [ClusterInfo!]!
+  clusterConnection(id: ID!): ClusterConnectionInfo!
+  cliArtifact(artifactType: ArtifactType!): CLIArtifact!
+  autocomplete(input: String, cursorPos: Int, action: AutocompleteActionType, clusterUID: String): AutocompleteResult!
+  autocompleteField(input: String, fieldType: AutocompleteEntityKind,
+    requiredArgTypes: [AutocompleteEntityKind], clusterUID: String): [AutocompleteSuggestion]
+
+  # Scriptmgr endpoints, refer to docs in cloudapi.proto
+  liveViews: [LiveViewMetadata!]!
+  liveViewContents(id: ID!): LiveViewContents!
+  scripts: [ScriptMetadata!]!
+  scriptContents(id: ID!): ScriptContents!
+
+  # Deploy keys
+  deploymentKeys: [DeploymentKey!]!
+  deploymentKey(id: ID!): DeploymentKey!
+
+  # API keys
+  apiKeys: [APIKey!]!
+  apiKey(id: ID!): APIKey!
+}
+
+extend type Mutation {
+  CreateCluster: ClusterInfo @deprecated(reason: "Clusters are now created via px deploy")
+  UpdateVizierConfig(clusterID: ID!, vizierConfig: EditableVizierConfig!): ClusterInfo!
+  CreateDeploymentKey: DeploymentKey!
+  DeleteDeploymentKey(id: ID!): Boolean!
+  CreateAPIKey: APIKey!
+  DeleteAPIKey(id: ID!): Boolean!
+  UpdateUserSettings(keys: [String!]!, values: [String!]!): [UserSetting!]!
+  InviteUser(email: String!, firstName: String!, lastName: String!): UserInvite!
+  UpdateUserPermissions(userID: ID!, userPermissions: EditableUserPermissions!): UserInfo!
+  UpdateOrgSettings(orgID: ID!, orgSettings: EditableOrgSettings!): OrgInfo!
+}
+
+type UserInfo {
+  id: ID!
+  name: String!
+  email: String!
+  picture: String!
+  orgName: String!
+  orgID: String!
+  isApproved: Boolean!
+}
+
+type OrgInfo {
+  id: ID!
+  name: String!
+  enableApprovals: Boolean!
+}
+
+type UserSetting {
+  key: String!
+  value: String!
+}
+
+type APIKey {
+  id: ID!
+  key: String!
+  createdAtMs: Float!
+  desc: String!
+}
+
+type DeploymentKey {
+  id: ID!
+  key: String!
+  createdAtMs: Float!
+  desc: String!
+}
+
+enum AutocompleteEntityState {
+  AES_UNKNOWN
+  AES_PENDING
+  AES_RUNNING
+  AES_FAILED
+  AES_TERMINATED
+}
+
+enum AutocompleteActionType {
+  AAT_UNKNOWN
+  # An edit action occurs if a user has modified the input text by inserting or deleting characters.
+  # This includes typing on the keyboard and pasting commands.
+  AAT_EDIT
+  # A select action only occurs if a user has chosen an autocomplete suggestion. This indicates to
+  # the autocomplete that it should move the user's cursor to the next appropriate tab.
+  AAT_SELECT
+}
+
+enum AutocompleteEntityKind {
+  AEK_UNKNOWN
+  AEK_POD
+  AEK_SVC
+  AEK_SCRIPT
+  AEK_NAMESPACE
+}
+
+type AutocompleteSuggestion {
+  kind: AutocompleteEntityKind
+  name: String
+  description: String
+  matchedIndexes: [Int]
+  state: AutocompleteEntityState
+}
+
+type TabSuggestion {
+  # The index of the tab that these suggestions are for.
+  tabIndex: Int
+  # Whether selecting a suggestion for this tab index will make the command executable.
+  executableAfterSelect: Boolean
+  suggestions: [AutocompleteSuggestion]
+}
+
+type AutocompleteResult {
+  # The formatted input is the input string, which has been parsed by the autocomplete to indicate
+  # tabStop positions.
+  formattedInput: String
+  # Whether the input string is a valid, executable command.
+  isExecutable: Boolean
+  # All suggestions for each of the tabStops.
+  tabSuggestions: [TabSuggestion]
+}
+
+type ContainerStatus {
+  name: String!
+  createdAtMs: Float!
+  state: String!
+  message: String!
+  reason: String!
+}
+
+type K8sEvent {
+  message: String!
+  firstTimeMs: Float!
+  lastTimeMs: Float!
+}
+
+type PodStatus {
+  name: String!
+  createdAtMs: Float!
+  status: String!
+  message: String!
+  reason: String!
+  containers: [ContainerStatus!]!
+  events: [K8sEvent!]!
+}
+
+enum ClusterStatus {
+  # The default state if nothing is known.
+  CS_UNKNOWN
+  # The state is healthy if heartbeats are received on regular intervals and the
+  # cluster is responding to requests.
+  CS_HEALTHY
+  # The state is unhealthy if the cluster is connected to Pixie Cloud and is providing
+  # heartbeats, but isn't queryable for some reason. This resembles HTTP's 500 status.
+  CS_UNHEALTHY
+  # The state will go to disconnected if the GRPC connection breaks. The hope is that
+  # the cluster will come back online and resume in HEALTHY state.
+  CS_DISCONNECTED
+  # The state is updating when the cluster is in the process of updating.
+  CS_UPDATING
+  # The vizier has connected, but has not sent any other further status updates about
+  # whether it is healthy or updating.
+  CS_CONNECTED
+  # The vizier was trying to update, but failed and is now in a bad state.
+  CS_UPDATE_FAILED
+}
+
+type VizierConfig {
+  passthroughEnabled: Boolean!
+}
+
+type ClusterInfo {
+  id: ID!
+  status: ClusterStatus!
+  lastHeartbeatMs: Float!
+  vizierConfig: VizierConfig!
+  vizierVersion: String!
+  clusterVersion: String!
+  clusterName: String!
+  prettyClusterName: String!
+  clusterUID: String!
+  controlPlanePodStatuses: [PodStatus!]!
+  numNodes: Int!
+  numInstrumentedNodes: Int!
+}
+
+type ClusterConnectionInfo {
+  ipAddress: String!
+  token: String!
+}
+
+type UserInvite {
+  email: String!
+  inviteLink: String!
+}
+
+# Refer to docs in cloudapi.proto
+type LiveViewMetadata {
+  id: ID!
+  name: String!
+  desc: String!
+}
+
+# Refer to docs in cloudapi.proto
+type LiveViewContents {
+  metadata: LiveViewMetadata!
+  pxlContents: String!
+  visJSON: String!
+}
+
+# Refer to docs in cloudapi.proto
+type ScriptMetadata {
+  id: ID!
+  name: String!
+  desc: String!
+  hasLiveView: Boolean!
+}
+
+# Refer to docs in cloudapi.proto
+type ScriptContents {
+  metadata: ScriptMetadata!
+  contents: String!
+}
+
+enum ArtifactType {
+    AT_UNKNOWN
+    AT_LINUX_AMD64
+    AT_DARWIN_AMD64
+    AT_CONTAINER_SET_YAMLS
+    AT_CONTAINER_SET_LINUX_AMD64
+    AT_CONTAINER_SET_TEMPLATE_YAMLS
+}
+
+type CLIArtifact {
+  url: String!
+  sha256: String!
+}
+
+input EditableVizierConfig {
+  passthroughEnabled: Boolean
+}
+
+input EditableUserPermissions {
+  isApproved: Boolean
+}
+
+input EditableOrgSettings {
+  enableApprovals: Boolean
+}

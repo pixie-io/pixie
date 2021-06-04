@@ -12,6 +12,59 @@ import { GraphQLResolveInfo } from 'graphql';
  *          TYPE DEFS          *
  *                             *
  *******************************/
+export interface GQLQuery {
+  noop: boolean;
+  artifacts: GQLArtifactsInfo;
+  user: GQLUserInfo;
+  org: GQLOrgInfo;
+  userSettings: Array<GQLUserSetting>;
+  orgUsers: Array<GQLUserInfo>;
+  cluster: GQLClusterInfo;
+  clusterByName: GQLClusterInfo;
+  clusters: Array<GQLClusterInfo>;
+  clusterConnection: GQLClusterConnectionInfo;
+  cliArtifact: GQLCLIArtifact;
+  autocomplete: GQLAutocompleteResult;
+  autocompleteField?: Array<GQLAutocompleteSuggestion | null>;
+  liveViews: Array<GQLLiveViewMetadata>;
+  liveViewContents: GQLLiveViewContents;
+  scripts: Array<GQLScriptMetadata>;
+  scriptContents: GQLScriptContents;
+  deploymentKeys: Array<GQLDeploymentKey>;
+  deploymentKey: GQLDeploymentKey;
+  apiKeys: Array<GQLAPIKey>;
+  apiKey: GQLAPIKey;
+}
+
+export interface GQLMutation {
+  noop: boolean;
+  
+  /**
+   * 
+   * @deprecated Clusters are now created via px deploy
+   */
+  CreateCluster?: GQLClusterInfo;
+  UpdateVizierConfig: GQLClusterInfo;
+  CreateDeploymentKey: GQLDeploymentKey;
+  DeleteDeploymentKey: boolean;
+  CreateAPIKey: GQLAPIKey;
+  DeleteAPIKey: boolean;
+  UpdateUserSettings: Array<GQLUserSetting>;
+  InviteUser: GQLUserInvite;
+  UpdateUserPermissions: GQLUserInfo;
+  UpdateOrgSettings: GQLOrgInfo;
+}
+
+export interface GQLArtifactsInfo {
+  items: Array<GQLArtifact>;
+}
+
+export interface GQLArtifact {
+  version: string;
+  changelog: string;
+  timestampMs: number;
+}
+
 export interface GQLUserInfo {
   id: string;
   name: string;
@@ -33,13 +86,18 @@ export interface GQLUserSetting {
   value: string;
 }
 
-export const enum GQLArtifactType {
-  AT_UNKNOWN = 'AT_UNKNOWN',
-  AT_LINUX_AMD64 = 'AT_LINUX_AMD64',
-  AT_DARWIN_AMD64 = 'AT_DARWIN_AMD64',
-  AT_CONTAINER_SET_YAMLS = 'AT_CONTAINER_SET_YAMLS',
-  AT_CONTAINER_SET_LINUX_AMD64 = 'AT_CONTAINER_SET_LINUX_AMD64',
-  AT_CONTAINER_SET_TEMPLATE_YAMLS = 'AT_CONTAINER_SET_TEMPLATE_YAMLS'
+export interface GQLAPIKey {
+  id: string;
+  key: string;
+  createdAtMs: number;
+  desc: string;
+}
+
+export interface GQLDeploymentKey {
+  id: string;
+  key: string;
+  createdAtMs: number;
+  desc: string;
 }
 
 export const enum GQLAutocompleteEntityState {
@@ -64,55 +122,6 @@ export const enum GQLAutocompleteEntityKind {
   AEK_NAMESPACE = 'AEK_NAMESPACE'
 }
 
-export interface GQLDeploymentKey {
-  id: string;
-  key: string;
-  createdAtMs: number;
-  desc: string;
-}
-
-export interface GQLAPIKey {
-  id: string;
-  key: string;
-  createdAtMs: number;
-  desc: string;
-}
-
-export interface GQLQuery {
-  user: GQLUserInfo;
-  org: GQLOrgInfo;
-  userSettings: Array<GQLUserSetting>;
-  orgUsers: Array<GQLUserInfo>;
-  cluster: GQLClusterInfo;
-  clusterByName: GQLClusterInfo;
-  clusters: Array<GQLClusterInfo>;
-  clusterConnection: GQLClusterConnectionInfo;
-  cliArtifact: GQLCLIArtifact;
-  artifacts: GQLArtifactsInfo;
-  autocomplete: GQLAutocompleteResult;
-  autocompleteField?: Array<GQLAutocompleteSuggestion | null>;
-  liveViews: Array<GQLLiveViewMetadata>;
-  liveViewContents: GQLLiveViewContents;
-  scripts: Array<GQLScriptMetadata>;
-  scriptContents: GQLScriptContents;
-  deploymentKeys: Array<GQLDeploymentKey>;
-  deploymentKey: GQLDeploymentKey;
-  apiKeys: Array<GQLAPIKey>;
-  apiKey: GQLAPIKey;
-}
-
-export interface GQLAutocompleteResult {
-  formattedInput?: string;
-  isExecutable?: boolean;
-  tabSuggestions?: Array<GQLTabSuggestion | null>;
-}
-
-export interface GQLTabSuggestion {
-  tabIndex?: number;
-  executableAfterSelect?: boolean;
-  suggestions?: Array<GQLAutocompleteSuggestion | null>;
-}
-
 export interface GQLAutocompleteSuggestion {
   kind?: GQLAutocompleteEntityKind;
   name?: string;
@@ -121,18 +130,16 @@ export interface GQLAutocompleteSuggestion {
   state?: GQLAutocompleteEntityState;
 }
 
-export const enum GQLClusterStatus {
-  CS_UNKNOWN = 'CS_UNKNOWN',
-  CS_HEALTHY = 'CS_HEALTHY',
-  CS_UNHEALTHY = 'CS_UNHEALTHY',
-  CS_DISCONNECTED = 'CS_DISCONNECTED',
-  CS_UPDATING = 'CS_UPDATING',
-  CS_CONNECTED = 'CS_CONNECTED',
-  CS_UPDATE_FAILED = 'CS_UPDATE_FAILED'
+export interface GQLTabSuggestion {
+  tabIndex?: number;
+  executableAfterSelect?: boolean;
+  suggestions?: Array<GQLAutocompleteSuggestion | null>;
 }
 
-export interface GQLVizierConfig {
-  passthroughEnabled: boolean;
+export interface GQLAutocompleteResult {
+  formattedInput?: string;
+  isExecutable?: boolean;
+  tabSuggestions?: Array<GQLTabSuggestion | null>;
 }
 
 export interface GQLContainerStatus {
@@ -157,6 +164,20 @@ export interface GQLPodStatus {
   reason: string;
   containers: Array<GQLContainerStatus>;
   events: Array<GQLK8sEvent>;
+}
+
+export const enum GQLClusterStatus {
+  CS_UNKNOWN = 'CS_UNKNOWN',
+  CS_HEALTHY = 'CS_HEALTHY',
+  CS_UNHEALTHY = 'CS_UNHEALTHY',
+  CS_DISCONNECTED = 'CS_DISCONNECTED',
+  CS_UPDATING = 'CS_UPDATING',
+  CS_CONNECTED = 'CS_CONNECTED',
+  CS_UPDATE_FAILED = 'CS_UPDATE_FAILED'
+}
+
+export interface GQLVizierConfig {
+  passthroughEnabled: boolean;
 }
 
 export interface GQLClusterInfo {
@@ -184,51 +205,6 @@ export interface GQLUserInvite {
   inviteLink: string;
 }
 
-export interface GQLMutation {
-  
-  /**
-   * 
-   * @deprecated Clusters are now created via px deploy
-   */
-  CreateCluster?: GQLClusterInfo;
-  UpdateVizierConfig: GQLClusterInfo;
-  CreateDeploymentKey: GQLDeploymentKey;
-  DeleteDeploymentKey: boolean;
-  CreateAPIKey: GQLAPIKey;
-  DeleteAPIKey: boolean;
-  UpdateUserSettings: Array<GQLUserSetting>;
-  InviteUser: GQLUserInvite;
-  UpdateUserPermissions: GQLUserInfo;
-  UpdateOrgSettings: GQLOrgInfo;
-}
-
-export interface GQLEditableVizierConfig {
-  passthroughEnabled?: boolean;
-}
-
-export interface GQLEditableUserPermissions {
-  isApproved?: boolean;
-}
-
-export interface GQLEditableOrgSettings {
-  enableApprovals?: boolean;
-}
-
-export interface GQLCLIArtifact {
-  url: string;
-  sha256: string;
-}
-
-export interface GQLArtifactsInfo {
-  items: Array<GQLArtifact>;
-}
-
-export interface GQLArtifact {
-  version: string;
-  changelog: string;
-  timestampMs: number;
-}
-
 export interface GQLLiveViewMetadata {
   id: string;
   name: string;
@@ -253,6 +229,32 @@ export interface GQLScriptContents {
   contents: string;
 }
 
+export const enum GQLArtifactType {
+  AT_UNKNOWN = 'AT_UNKNOWN',
+  AT_LINUX_AMD64 = 'AT_LINUX_AMD64',
+  AT_DARWIN_AMD64 = 'AT_DARWIN_AMD64',
+  AT_CONTAINER_SET_YAMLS = 'AT_CONTAINER_SET_YAMLS',
+  AT_CONTAINER_SET_LINUX_AMD64 = 'AT_CONTAINER_SET_LINUX_AMD64',
+  AT_CONTAINER_SET_TEMPLATE_YAMLS = 'AT_CONTAINER_SET_TEMPLATE_YAMLS'
+}
+
+export interface GQLCLIArtifact {
+  url: string;
+  sha256: string;
+}
+
+export interface GQLEditableVizierConfig {
+  passthroughEnabled?: boolean;
+}
+
+export interface GQLEditableUserPermissions {
+  isApproved?: boolean;
+}
+
+export interface GQLEditableOrgSettings {
+  enableApprovals?: boolean;
+}
+
 /*********************************
  *                               *
  *         TYPE RESOLVERS        *
@@ -264,31 +266,292 @@ export interface GQLScriptContents {
  * However, you can still use other generated interfaces to make your resolver type-safed
  */
 export interface GQLResolver {
+  Query?: GQLQueryTypeResolver;
+  Mutation?: GQLMutationTypeResolver;
+  ArtifactsInfo?: GQLArtifactsInfoTypeResolver;
+  Artifact?: GQLArtifactTypeResolver;
   UserInfo?: GQLUserInfoTypeResolver;
   OrgInfo?: GQLOrgInfoTypeResolver;
   UserSetting?: GQLUserSettingTypeResolver;
-  DeploymentKey?: GQLDeploymentKeyTypeResolver;
   APIKey?: GQLAPIKeyTypeResolver;
-  Query?: GQLQueryTypeResolver;
-  AutocompleteResult?: GQLAutocompleteResultTypeResolver;
-  TabSuggestion?: GQLTabSuggestionTypeResolver;
+  DeploymentKey?: GQLDeploymentKeyTypeResolver;
   AutocompleteSuggestion?: GQLAutocompleteSuggestionTypeResolver;
-  VizierConfig?: GQLVizierConfigTypeResolver;
+  TabSuggestion?: GQLTabSuggestionTypeResolver;
+  AutocompleteResult?: GQLAutocompleteResultTypeResolver;
   ContainerStatus?: GQLContainerStatusTypeResolver;
   K8sEvent?: GQLK8sEventTypeResolver;
   PodStatus?: GQLPodStatusTypeResolver;
+  VizierConfig?: GQLVizierConfigTypeResolver;
   ClusterInfo?: GQLClusterInfoTypeResolver;
   ClusterConnectionInfo?: GQLClusterConnectionInfoTypeResolver;
   UserInvite?: GQLUserInviteTypeResolver;
-  Mutation?: GQLMutationTypeResolver;
-  CLIArtifact?: GQLCLIArtifactTypeResolver;
-  ArtifactsInfo?: GQLArtifactsInfoTypeResolver;
-  Artifact?: GQLArtifactTypeResolver;
   LiveViewMetadata?: GQLLiveViewMetadataTypeResolver;
   LiveViewContents?: GQLLiveViewContentsTypeResolver;
   ScriptMetadata?: GQLScriptMetadataTypeResolver;
   ScriptContents?: GQLScriptContentsTypeResolver;
+  CLIArtifact?: GQLCLIArtifactTypeResolver;
 }
+export interface GQLQueryTypeResolver<TParent = any> {
+  noop?: QueryToNoopResolver<TParent>;
+  artifacts?: QueryToArtifactsResolver<TParent>;
+  user?: QueryToUserResolver<TParent>;
+  org?: QueryToOrgResolver<TParent>;
+  userSettings?: QueryToUserSettingsResolver<TParent>;
+  orgUsers?: QueryToOrgUsersResolver<TParent>;
+  cluster?: QueryToClusterResolver<TParent>;
+  clusterByName?: QueryToClusterByNameResolver<TParent>;
+  clusters?: QueryToClustersResolver<TParent>;
+  clusterConnection?: QueryToClusterConnectionResolver<TParent>;
+  cliArtifact?: QueryToCliArtifactResolver<TParent>;
+  autocomplete?: QueryToAutocompleteResolver<TParent>;
+  autocompleteField?: QueryToAutocompleteFieldResolver<TParent>;
+  liveViews?: QueryToLiveViewsResolver<TParent>;
+  liveViewContents?: QueryToLiveViewContentsResolver<TParent>;
+  scripts?: QueryToScriptsResolver<TParent>;
+  scriptContents?: QueryToScriptContentsResolver<TParent>;
+  deploymentKeys?: QueryToDeploymentKeysResolver<TParent>;
+  deploymentKey?: QueryToDeploymentKeyResolver<TParent>;
+  apiKeys?: QueryToApiKeysResolver<TParent>;
+  apiKey?: QueryToApiKeyResolver<TParent>;
+}
+
+export interface QueryToNoopResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToArtifactsArgs {
+  artifactName: string;
+}
+export interface QueryToArtifactsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: QueryToArtifactsArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToUserResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToOrgResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToUserSettingsArgs {
+  keys: Array<string>;
+}
+export interface QueryToUserSettingsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: QueryToUserSettingsArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToOrgUsersResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToClusterArgs {
+  id: string;
+}
+export interface QueryToClusterResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: QueryToClusterArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToClusterByNameArgs {
+  name: string;
+}
+export interface QueryToClusterByNameResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: QueryToClusterByNameArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToClustersResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToClusterConnectionArgs {
+  id: string;
+}
+export interface QueryToClusterConnectionResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: QueryToClusterConnectionArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToCliArtifactArgs {
+  artifactType: GQLArtifactType;
+}
+export interface QueryToCliArtifactResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: QueryToCliArtifactArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToAutocompleteArgs {
+  input?: string;
+  cursorPos?: number;
+  action?: GQLAutocompleteActionType;
+  clusterUID?: string;
+}
+export interface QueryToAutocompleteResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: QueryToAutocompleteArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToAutocompleteFieldArgs {
+  input?: string;
+  fieldType?: GQLAutocompleteEntityKind;
+  requiredArgTypes?: Array<GQLAutocompleteEntityKind | null>;
+  clusterUID?: string;
+}
+export interface QueryToAutocompleteFieldResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: QueryToAutocompleteFieldArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToLiveViewsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToLiveViewContentsArgs {
+  id: string;
+}
+export interface QueryToLiveViewContentsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: QueryToLiveViewContentsArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToScriptsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToScriptContentsArgs {
+  id: string;
+}
+export interface QueryToScriptContentsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: QueryToScriptContentsArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToDeploymentKeysResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToDeploymentKeyArgs {
+  id: string;
+}
+export interface QueryToDeploymentKeyResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: QueryToDeploymentKeyArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToApiKeysResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToApiKeyArgs {
+  id: string;
+}
+export interface QueryToApiKeyResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: QueryToApiKeyArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLMutationTypeResolver<TParent = any> {
+  noop?: MutationToNoopResolver<TParent>;
+  CreateCluster?: MutationToCreateClusterResolver<TParent>;
+  UpdateVizierConfig?: MutationToUpdateVizierConfigResolver<TParent>;
+  CreateDeploymentKey?: MutationToCreateDeploymentKeyResolver<TParent>;
+  DeleteDeploymentKey?: MutationToDeleteDeploymentKeyResolver<TParent>;
+  CreateAPIKey?: MutationToCreateAPIKeyResolver<TParent>;
+  DeleteAPIKey?: MutationToDeleteAPIKeyResolver<TParent>;
+  UpdateUserSettings?: MutationToUpdateUserSettingsResolver<TParent>;
+  InviteUser?: MutationToInviteUserResolver<TParent>;
+  UpdateUserPermissions?: MutationToUpdateUserPermissionsResolver<TParent>;
+  UpdateOrgSettings?: MutationToUpdateOrgSettingsResolver<TParent>;
+}
+
+export interface MutationToNoopResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface MutationToCreateClusterResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface MutationToUpdateVizierConfigArgs {
+  clusterID: string;
+  vizierConfig: GQLEditableVizierConfig;
+}
+export interface MutationToUpdateVizierConfigResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: MutationToUpdateVizierConfigArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface MutationToCreateDeploymentKeyResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface MutationToDeleteDeploymentKeyArgs {
+  id: string;
+}
+export interface MutationToDeleteDeploymentKeyResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: MutationToDeleteDeploymentKeyArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface MutationToCreateAPIKeyResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface MutationToDeleteAPIKeyArgs {
+  id: string;
+}
+export interface MutationToDeleteAPIKeyResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: MutationToDeleteAPIKeyArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface MutationToUpdateUserSettingsArgs {
+  keys: Array<string>;
+  values: Array<string>;
+}
+export interface MutationToUpdateUserSettingsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: MutationToUpdateUserSettingsArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface MutationToInviteUserArgs {
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+export interface MutationToInviteUserResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: MutationToInviteUserArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface MutationToUpdateUserPermissionsArgs {
+  userID: string;
+  userPermissions: GQLEditableUserPermissions;
+}
+export interface MutationToUpdateUserPermissionsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: MutationToUpdateUserPermissionsArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface MutationToUpdateOrgSettingsArgs {
+  orgID: string;
+  orgSettings: GQLEditableOrgSettings;
+}
+export interface MutationToUpdateOrgSettingsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: MutationToUpdateOrgSettingsArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLArtifactsInfoTypeResolver<TParent = any> {
+  items?: ArtifactsInfoToItemsResolver<TParent>;
+}
+
+export interface ArtifactsInfoToItemsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLArtifactTypeResolver<TParent = any> {
+  version?: ArtifactToVersionResolver<TParent>;
+  changelog?: ArtifactToChangelogResolver<TParent>;
+  timestampMs?: ArtifactToTimestampMsResolver<TParent>;
+}
+
+export interface ArtifactToVersionResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface ArtifactToChangelogResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface ArtifactToTimestampMsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
 export interface GQLUserInfoTypeResolver<TParent = any> {
   id?: UserInfoToIdResolver<TParent>;
   name?: UserInfoToNameResolver<TParent>;
@@ -358,29 +621,6 @@ export interface UserSettingToValueResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
-export interface GQLDeploymentKeyTypeResolver<TParent = any> {
-  id?: DeploymentKeyToIdResolver<TParent>;
-  key?: DeploymentKeyToKeyResolver<TParent>;
-  createdAtMs?: DeploymentKeyToCreatedAtMsResolver<TParent>;
-  desc?: DeploymentKeyToDescResolver<TParent>;
-}
-
-export interface DeploymentKeyToIdResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface DeploymentKeyToKeyResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface DeploymentKeyToCreatedAtMsResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface DeploymentKeyToDescResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
 export interface GQLAPIKeyTypeResolver<TParent = any> {
   id?: APIKeyToIdResolver<TParent>;
   key?: APIKeyToKeyResolver<TParent>;
@@ -404,184 +644,26 @@ export interface APIKeyToDescResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
-export interface GQLQueryTypeResolver<TParent = any> {
-  user?: QueryToUserResolver<TParent>;
-  org?: QueryToOrgResolver<TParent>;
-  userSettings?: QueryToUserSettingsResolver<TParent>;
-  orgUsers?: QueryToOrgUsersResolver<TParent>;
-  cluster?: QueryToClusterResolver<TParent>;
-  clusterByName?: QueryToClusterByNameResolver<TParent>;
-  clusters?: QueryToClustersResolver<TParent>;
-  clusterConnection?: QueryToClusterConnectionResolver<TParent>;
-  cliArtifact?: QueryToCliArtifactResolver<TParent>;
-  artifacts?: QueryToArtifactsResolver<TParent>;
-  autocomplete?: QueryToAutocompleteResolver<TParent>;
-  autocompleteField?: QueryToAutocompleteFieldResolver<TParent>;
-  liveViews?: QueryToLiveViewsResolver<TParent>;
-  liveViewContents?: QueryToLiveViewContentsResolver<TParent>;
-  scripts?: QueryToScriptsResolver<TParent>;
-  scriptContents?: QueryToScriptContentsResolver<TParent>;
-  deploymentKeys?: QueryToDeploymentKeysResolver<TParent>;
-  deploymentKey?: QueryToDeploymentKeyResolver<TParent>;
-  apiKeys?: QueryToApiKeysResolver<TParent>;
-  apiKey?: QueryToApiKeyResolver<TParent>;
+export interface GQLDeploymentKeyTypeResolver<TParent = any> {
+  id?: DeploymentKeyToIdResolver<TParent>;
+  key?: DeploymentKeyToKeyResolver<TParent>;
+  createdAtMs?: DeploymentKeyToCreatedAtMsResolver<TParent>;
+  desc?: DeploymentKeyToDescResolver<TParent>;
 }
 
-export interface QueryToUserResolver<TParent = any, TResult = any> {
+export interface DeploymentKeyToIdResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
-export interface QueryToOrgResolver<TParent = any, TResult = any> {
+export interface DeploymentKeyToKeyResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
-export interface QueryToUserSettingsArgs {
-  keys: Array<string>;
-}
-export interface QueryToUserSettingsResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: QueryToUserSettingsArgs, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface QueryToOrgUsersResolver<TParent = any, TResult = any> {
+export interface DeploymentKeyToCreatedAtMsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
-export interface QueryToClusterArgs {
-  id: string;
-}
-export interface QueryToClusterResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: QueryToClusterArgs, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface QueryToClusterByNameArgs {
-  name: string;
-}
-export interface QueryToClusterByNameResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: QueryToClusterByNameArgs, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface QueryToClustersResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface QueryToClusterConnectionArgs {
-  id: string;
-}
-export interface QueryToClusterConnectionResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: QueryToClusterConnectionArgs, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface QueryToCliArtifactArgs {
-  artifactType: GQLArtifactType;
-}
-export interface QueryToCliArtifactResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: QueryToCliArtifactArgs, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface QueryToArtifactsArgs {
-  artifactName: string;
-}
-export interface QueryToArtifactsResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: QueryToArtifactsArgs, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface QueryToAutocompleteArgs {
-  input?: string;
-  cursorPos?: number;
-  action?: GQLAutocompleteActionType;
-  clusterUID?: string;
-}
-export interface QueryToAutocompleteResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: QueryToAutocompleteArgs, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface QueryToAutocompleteFieldArgs {
-  input?: string;
-  fieldType?: GQLAutocompleteEntityKind;
-  requiredArgTypes?: Array<GQLAutocompleteEntityKind | null>;
-  clusterUID?: string;
-}
-export interface QueryToAutocompleteFieldResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: QueryToAutocompleteFieldArgs, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface QueryToLiveViewsResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface QueryToLiveViewContentsArgs {
-  id: string;
-}
-export interface QueryToLiveViewContentsResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: QueryToLiveViewContentsArgs, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface QueryToScriptsResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface QueryToScriptContentsArgs {
-  id: string;
-}
-export interface QueryToScriptContentsResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: QueryToScriptContentsArgs, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface QueryToDeploymentKeysResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface QueryToDeploymentKeyArgs {
-  id: string;
-}
-export interface QueryToDeploymentKeyResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: QueryToDeploymentKeyArgs, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface QueryToApiKeysResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface QueryToApiKeyArgs {
-  id: string;
-}
-export interface QueryToApiKeyResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: QueryToApiKeyArgs, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface GQLAutocompleteResultTypeResolver<TParent = any> {
-  formattedInput?: AutocompleteResultToFormattedInputResolver<TParent>;
-  isExecutable?: AutocompleteResultToIsExecutableResolver<TParent>;
-  tabSuggestions?: AutocompleteResultToTabSuggestionsResolver<TParent>;
-}
-
-export interface AutocompleteResultToFormattedInputResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface AutocompleteResultToIsExecutableResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface AutocompleteResultToTabSuggestionsResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface GQLTabSuggestionTypeResolver<TParent = any> {
-  tabIndex?: TabSuggestionToTabIndexResolver<TParent>;
-  executableAfterSelect?: TabSuggestionToExecutableAfterSelectResolver<TParent>;
-  suggestions?: TabSuggestionToSuggestionsResolver<TParent>;
-}
-
-export interface TabSuggestionToTabIndexResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface TabSuggestionToExecutableAfterSelectResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface TabSuggestionToSuggestionsResolver<TParent = any, TResult = any> {
+export interface DeploymentKeyToDescResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
@@ -613,11 +695,39 @@ export interface AutocompleteSuggestionToStateResolver<TParent = any, TResult = 
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
-export interface GQLVizierConfigTypeResolver<TParent = any> {
-  passthroughEnabled?: VizierConfigToPassthroughEnabledResolver<TParent>;
+export interface GQLTabSuggestionTypeResolver<TParent = any> {
+  tabIndex?: TabSuggestionToTabIndexResolver<TParent>;
+  executableAfterSelect?: TabSuggestionToExecutableAfterSelectResolver<TParent>;
+  suggestions?: TabSuggestionToSuggestionsResolver<TParent>;
 }
 
-export interface VizierConfigToPassthroughEnabledResolver<TParent = any, TResult = any> {
+export interface TabSuggestionToTabIndexResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface TabSuggestionToExecutableAfterSelectResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface TabSuggestionToSuggestionsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLAutocompleteResultTypeResolver<TParent = any> {
+  formattedInput?: AutocompleteResultToFormattedInputResolver<TParent>;
+  isExecutable?: AutocompleteResultToIsExecutableResolver<TParent>;
+  tabSuggestions?: AutocompleteResultToTabSuggestionsResolver<TParent>;
+}
+
+export interface AutocompleteResultToFormattedInputResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface AutocompleteResultToIsExecutableResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface AutocompleteResultToTabSuggestionsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
@@ -702,6 +812,14 @@ export interface PodStatusToContainersResolver<TParent = any, TResult = any> {
 }
 
 export interface PodStatusToEventsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLVizierConfigTypeResolver<TParent = any> {
+  passthroughEnabled?: VizierConfigToPassthroughEnabledResolver<TParent>;
+}
+
+export interface VizierConfigToPassthroughEnabledResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
@@ -794,125 +912,6 @@ export interface UserInviteToInviteLinkResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
-export interface GQLMutationTypeResolver<TParent = any> {
-  CreateCluster?: MutationToCreateClusterResolver<TParent>;
-  UpdateVizierConfig?: MutationToUpdateVizierConfigResolver<TParent>;
-  CreateDeploymentKey?: MutationToCreateDeploymentKeyResolver<TParent>;
-  DeleteDeploymentKey?: MutationToDeleteDeploymentKeyResolver<TParent>;
-  CreateAPIKey?: MutationToCreateAPIKeyResolver<TParent>;
-  DeleteAPIKey?: MutationToDeleteAPIKeyResolver<TParent>;
-  UpdateUserSettings?: MutationToUpdateUserSettingsResolver<TParent>;
-  InviteUser?: MutationToInviteUserResolver<TParent>;
-  UpdateUserPermissions?: MutationToUpdateUserPermissionsResolver<TParent>;
-  UpdateOrgSettings?: MutationToUpdateOrgSettingsResolver<TParent>;
-}
-
-export interface MutationToCreateClusterResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface MutationToUpdateVizierConfigArgs {
-  clusterID: string;
-  vizierConfig: GQLEditableVizierConfig;
-}
-export interface MutationToUpdateVizierConfigResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: MutationToUpdateVizierConfigArgs, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface MutationToCreateDeploymentKeyResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface MutationToDeleteDeploymentKeyArgs {
-  id: string;
-}
-export interface MutationToDeleteDeploymentKeyResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: MutationToDeleteDeploymentKeyArgs, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface MutationToCreateAPIKeyResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface MutationToDeleteAPIKeyArgs {
-  id: string;
-}
-export interface MutationToDeleteAPIKeyResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: MutationToDeleteAPIKeyArgs, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface MutationToUpdateUserSettingsArgs {
-  keys: Array<string>;
-  values: Array<string>;
-}
-export interface MutationToUpdateUserSettingsResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: MutationToUpdateUserSettingsArgs, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface MutationToInviteUserArgs {
-  email: string;
-  firstName: string;
-  lastName: string;
-}
-export interface MutationToInviteUserResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: MutationToInviteUserArgs, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface MutationToUpdateUserPermissionsArgs {
-  userID: string;
-  userPermissions: GQLEditableUserPermissions;
-}
-export interface MutationToUpdateUserPermissionsResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: MutationToUpdateUserPermissionsArgs, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface MutationToUpdateOrgSettingsArgs {
-  orgID: string;
-  orgSettings: GQLEditableOrgSettings;
-}
-export interface MutationToUpdateOrgSettingsResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: MutationToUpdateOrgSettingsArgs, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface GQLCLIArtifactTypeResolver<TParent = any> {
-  url?: CLIArtifactToUrlResolver<TParent>;
-  sha256?: CLIArtifactToSha256Resolver<TParent>;
-}
-
-export interface CLIArtifactToUrlResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface CLIArtifactToSha256Resolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface GQLArtifactsInfoTypeResolver<TParent = any> {
-  items?: ArtifactsInfoToItemsResolver<TParent>;
-}
-
-export interface ArtifactsInfoToItemsResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface GQLArtifactTypeResolver<TParent = any> {
-  version?: ArtifactToVersionResolver<TParent>;
-  changelog?: ArtifactToChangelogResolver<TParent>;
-  timestampMs?: ArtifactToTimestampMsResolver<TParent>;
-}
-
-export interface ArtifactToVersionResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface ArtifactToChangelogResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface ArtifactToTimestampMsResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
 export interface GQLLiveViewMetadataTypeResolver<TParent = any> {
   id?: LiveViewMetadataToIdResolver<TParent>;
   name?: LiveViewMetadataToNameResolver<TParent>;
@@ -982,5 +981,18 @@ export interface ScriptContentsToMetadataResolver<TParent = any, TResult = any> 
 }
 
 export interface ScriptContentsToContentsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLCLIArtifactTypeResolver<TParent = any> {
+  url?: CLIArtifactToUrlResolver<TParent>;
+  sha256?: CLIArtifactToSha256Resolver<TParent>;
+}
+
+export interface CLIArtifactToUrlResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface CLIArtifactToSha256Resolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }

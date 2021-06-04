@@ -17,11 +17,11 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "unauthenticated_schema",
+    name = "complete",
     srcs = [
         "bindata.gen.go",
         "schema.go",
     ],
-    importpath = "px.dev/pixie/src/cloud/api/controller/unauthenticated_schema",
+    importpath = "px.dev/pixie/src/cloud/api/controller/schema/complete",
     visibility = ["//src/cloud:__subpackages__"],
 )

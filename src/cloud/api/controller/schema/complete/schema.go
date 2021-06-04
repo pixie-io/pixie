@@ -16,20 +16,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/**
-  GraphQL Schema setup file.
-*/
-//go:generate go-bindata -modtime=1 -ignore=\.go -ignore=\.ts -ignore=\.sh -ignore=\.bazel -pkg=unauthenticatedschema -o=bindata.gen.go ./...
+package complete
 
-package unauthenticatedschema
-
-import "bytes"
+import (
+	"bytes"
+	"sort"
+)
 
 // MustLoadSchema reads all the bindata .graphql schema files and concats them together into
 // one string.
 func MustLoadSchema() string {
 	buf := bytes.Buffer{}
-	for _, name := range AssetNames() {
+	names := AssetNames()
+	sort.Strings(names)
+	for _, name := range names {
 		b := MustAsset(name)
 		buf.Write(b)
 

@@ -16,18 +16,12 @@
 
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
-filegroup(
-    name = "schema_fg",
-    srcs = ["schema.d.ts"],
-    visibility = ["//src/cloud:__subpackages__"],
-)
-
 go_library(
-    name = "schema",
+    name = "noauth",
     srcs = [
         "bindata.gen.go",
         "schema.go",
     ],
-    importpath = "px.dev/pixie/src/cloud/api/controller/schema",
+    importpath = "px.dev/pixie/src/cloud/api/controller/schema/noauth",
     visibility = ["//src/cloud:__subpackages__"],
 )

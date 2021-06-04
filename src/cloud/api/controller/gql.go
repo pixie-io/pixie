@@ -19,14 +19,15 @@
 package controller
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/relay"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
-	"px.dev/pixie/src/cloud/api/controller/schema"
-	unauthenticatedschema "px.dev/pixie/src/cloud/api/controller/unauthenticated_schema"
+	"px.dev/pixie/src/cloud/api/controller/schema/complete"
+	"px.dev/pixie/src/cloud/api/controller/schema/noauth"
 )
 
 // GraphQLEnv holds the GRPC API servers so the GraphQL server can call out to them.
@@ -46,9 +47,16 @@ type QueryResolver struct {
 	Env GraphQLEnv
 }
 
+// Noop is added to the query resolver to handle the fact that we can't define
+// empty typesin graphql. :(
+// There shouldn't be any consumers of Noop.
+func (q *QueryResolver) Noop(ctx context.Context) (bool, error) {
+	return true, nil
+}
+
 // NewGraphQLHandler is the HTTP handler used for handling GraphQL requests.
 func NewGraphQLHandler(graphqlEnv GraphQLEnv) http.Handler {
-	schemaData := schema.MustLoadSchema()
+	schemaData := complete.MustLoadSchema()
 	opts := []graphql.SchemaOpt{graphql.UseFieldResolvers(), graphql.MaxParallelism(20)}
 	gqlSchema := graphql.MustParseSchema(schemaData, &QueryResolver{graphqlEnv}, opts...)
 	return &relay.Handler{Schema: gqlSchema}
@@ -56,7 +64,7 @@ func NewGraphQLHandler(graphqlEnv GraphQLEnv) http.Handler {
 
 // NewUnauthenticatedGraphQLHandler is the HTTP handler used for handling unauthenticated GraphQL requests.
 func NewUnauthenticatedGraphQLHandler(graphqlEnv GraphQLEnv) http.Handler {
-	schemaData := unauthenticatedschema.MustLoadSchema()
+	schemaData := noauth.MustLoadSchema()
 	opts := []graphql.SchemaOpt{graphql.UseFieldResolvers(), graphql.MaxParallelism(20)}
 	gqlSchema := graphql.MustParseSchema(schemaData, &QueryResolver{graphqlEnv}, opts...)
 	return &relay.Handler{Schema: gqlSchema}

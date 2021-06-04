@@ -1,0 +1,13 @@
+extend type Query {
+  artifacts(artifactName: String!): ArtifactsInfo!
+}
+
+type ArtifactsInfo {
+  items: [Artifact!]!
+}
+
+type Artifact {
+  version: String!
+  changelog: String!
+  timestampMs: Float!
+}

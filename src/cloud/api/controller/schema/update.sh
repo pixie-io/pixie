@@ -17,14 +17,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Update the schema assets.
-go generate
+go-bindata -modtime=1 -ignore=\.go -ignore=\.sh -pkg=complete -o=complete/bindata.gen.go .
+go-bindata -modtime=1 -ignore=\.go -ignore=\.sh -ignore=^auth_schema.graphql -pkg=noauth -o=noauth/bindata.gen.go .
 
-# The following assumes a few things:
-# - yarn appears in $PATH (likely from running `npm i -g yarn` after getting NodeJS set up)
-# - The package `graphql-schema-typescript` still has carriage returns in its bin script, breaking it on not-Windows.
-# - `yarn install` was already run in //src/ui
-# - The environment running this script can run Bash (if the top of this file is any indication, it can).
-schemaRoot="$(cd "$(dirname "$0")" && pwd)" # dirname $0 can come back as just `.`, resolve it to a real path.
-uiRoot="${schemaRoot}/../../../../ui"
-pushd "${uiRoot}" && yarn regenerate_graphql_schema ../cloud/api/controller/schema/schema.graphql --output src/types/schema.d.ts
-popd && cp "${uiRoot}/src/types/schema.d.ts" "${schemaRoot}/schema.d.ts"
+tot=$(bazel info workspace)
+pushd "${tot}/src/ui"
+graphql_ts_gen=$(yarn bin graphql-schema-typescript)
+node "${graphql_ts_gen}" generate-ts "${tot}/src/cloud/api/controller/schema" --output src/types/schema.d.ts
+popd

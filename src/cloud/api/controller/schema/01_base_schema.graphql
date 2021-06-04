@@ -1,0 +1,17 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+# The spec doesn't allow empty types.
+# So we create palceholders here and allow these types to be
+# extended by other files.
+# https://github.com/graphql/graphql-spec/issues/568
+
+type Query {
+  noop: Boolean!
+}
+
+type Mutation {
+  noop: Boolean!
+}

@@ -29,8 +29,8 @@ import (
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/cloud/api/controller"
+	"px.dev/pixie/src/cloud/api/controller/schema/noauth"
 	"px.dev/pixie/src/cloud/api/controller/testutils"
-	unauthenticatedschema "px.dev/pixie/src/cloud/api/controller/unauthenticated_schema"
 )
 
 func TestCLIArtifact(t *testing.T) {
@@ -208,7 +208,7 @@ func TestArtifacts_Vizier(t *testing.T) {
 }
 
 func LoadUnauthenticatedSchema(gqlEnv controller.GraphQLEnv) *graphql.Schema {
-	schemaData := unauthenticatedschema.MustLoadSchema()
+	schemaData := noauth.MustLoadSchema()
 	opts := []graphql.SchemaOpt{graphql.UseFieldResolvers(), graphql.MaxParallelism(20)}
 	qr := &controller.QueryResolver{gqlEnv}
 	gqlSchema := graphql.MustParseSchema(schemaData, qr, opts...)

@@ -47,7 +47,7 @@ require (
 	github.com/googleapis/google-cloud-go-testing v0.0.0-20191008195207-8e1d251e947d
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/sessions v1.2.1
-	github.com/graph-gophers/graphql-go v0.0.0-20190225005345-3e8838d4614c
+	github.com/graph-gophers/graphql-go v1.1.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.2
 	github.com/hashicorp/go-hclog v0.15.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.0 // indirect
