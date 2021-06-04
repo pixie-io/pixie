@@ -191,7 +191,7 @@ export interface GQLMutation {
    * @deprecated Clusters are now created via px deploy
    */
   CreateCluster?: GQLClusterInfo;
-  UpdateVizierConfig: boolean;
+  UpdateVizierConfig: GQLClusterInfo;
   CreateDeploymentKey: GQLDeploymentKey;
   DeleteDeploymentKey: boolean;
   CreateAPIKey: GQLAPIKey;
@@ -200,6 +200,10 @@ export interface GQLMutation {
   InviteUser: GQLUserInvite;
   UpdateUserPermissions: GQLUserInfo;
   UpdateOrgSettings: GQLOrgInfo;
+}
+
+export interface GQLEditableVizierConfig {
+  passthroughEnabled?: boolean;
 }
 
 export interface GQLEditableUserPermissions {
@@ -809,7 +813,7 @@ export interface MutationToCreateClusterResolver<TParent = any, TResult = any> {
 
 export interface MutationToUpdateVizierConfigArgs {
   clusterID: string;
-  passthroughEnabled: boolean;
+  vizierConfig: GQLEditableVizierConfig;
 }
 export interface MutationToUpdateVizierConfigResolver<TParent = any, TResult = any> {
   (parent: TParent, args: MutationToUpdateVizierConfigArgs, context: any, info: GraphQLResolveInfo): TResult;

@@ -211,7 +211,7 @@ type UserInvite {
 
 type Mutation {
   CreateCluster: ClusterInfo @deprecated(reason: "Clusters are now created via px deploy")
-  UpdateVizierConfig(clusterID: ID!, passthroughEnabled: Boolean!): Boolean!
+  UpdateVizierConfig(clusterID: ID!, vizierConfig: EditableVizierConfig!): ClusterInfo!
   CreateDeploymentKey: DeploymentKey!
   DeleteDeploymentKey(id: ID!): Boolean!
   CreateAPIKey: APIKey!
@@ -220,6 +220,10 @@ type Mutation {
   InviteUser(email: String!, firstName: String!, lastName: String!): UserInvite!
   UpdateUserPermissions(userID: ID!, userPermissions: EditableUserPermissions!): UserInfo!
   UpdateOrgSettings(orgID: ID!, orgSettings: EditableOrgSettings!): OrgInfo!
+}
+
+input EditableVizierConfig {
+  passthroughEnabled: Boolean
 }
 
 input EditableUserPermissions {

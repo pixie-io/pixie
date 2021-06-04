@@ -242,14 +242,36 @@ func TestUpdateClusterVizierConfig(t *testing.T) {
 	defer cleanup()
 	ctx := CreateTestContext()
 
+	id := utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	mockClients.MockVizierClusterInfo.EXPECT().
 		UpdateClusterVizierConfig(gomock.Any(), &cloudpb.UpdateClusterVizierConfigRequest{
-			ID: utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+			ID: id,
 			ConfigUpdate: &cloudpb.VizierConfigUpdate{
 				PassthroughEnabled: &types.BoolValue{Value: true},
 			},
 		}).
 		Return(&cloudpb.UpdateClusterVizierConfigResponse{}, nil)
+
+	clusterInfo := &cloudpb.ClusterInfo{
+		ID:              id,
+		Status:          cloudpb.CS_HEALTHY,
+		LastHeartbeatNs: 4 * 1000 * 1000,
+		Config: &cloudpb.VizierConfig{
+			PassthroughEnabled: true,
+		},
+		VizierVersion:  "vzVersion",
+		ClusterVersion: "clusterVersion",
+		ClusterName:    "clusterName",
+		ClusterUID:     "clusterUID",
+	}
+
+	mockClients.MockVizierClusterInfo.EXPECT().
+		GetClusterInfo(gomock.Any(), &cloudpb.GetClusterInfoRequest{
+			ID: clusterInfo.ID,
+		}).
+		Return(&cloudpb.GetClusterInfoResponse{
+			Clusters: []*cloudpb.ClusterInfo{clusterInfo},
+		}, nil)
 
 	gqlSchema := LoadSchema(gqlEnv)
 	gqltesting.RunTests(t, []*gqltesting.Test{
@@ -258,12 +280,24 @@ func TestUpdateClusterVizierConfig(t *testing.T) {
 			Context: ctx,
 			Query: `
 				mutation {
-					UpdateVizierConfig(clusterID: "7ba7b810-9dad-11d1-80b4-00c04fd430c8", passthroughEnabled: true)
+					UpdateVizierConfig(clusterID: "7ba7b810-9dad-11d1-80b4-00c04fd430c8", vizierConfig: { passthroughEnabled: true }) {
+						id
+						vizierConfig {
+							passthroughEnabled
+						}
+						lastHeartbeatMs
+					}
 				}
 			`,
 			ExpectedResult: `
 				{
-					"UpdateVizierConfig": true
+					"UpdateVizierConfig": {
+						"id": "7ba7b810-9dad-11d1-80b4-00c04fd430c8",
+						"vizierConfig": {
+							"passthroughEnabled": true
+						},
+						"lastHeartbeatMs": 4
+					}
 				}
 			`,
 		},
