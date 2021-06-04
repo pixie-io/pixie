@@ -40,9 +40,9 @@ namespace carnot {
 namespace planner {
 namespace compiler {
 
+using planpb::testutils::CompareLogicalPlans;
 using ::px::table_store::schema::Relation;
 using ::px::testing::proto::EqualsProto;
-using planpb::testutils::CompareLogicalPlans;
 using ::testing::_;
 using ::testing::ContainsRegex;
 using ::testing::ElementsAre;
@@ -1270,7 +1270,7 @@ nodes {
 )proto";
 
 constexpr char kExpectedAggFilter1MetadataPlan[] = R"proto(
-dag {
+  dag {
   nodes {
     id: 1
   }
@@ -1280,26 +1280,26 @@ nodes {
   dag {
     nodes {
       id: 6
-      sorted_children: 25
-    }
-    nodes {
-      id: 25
       sorted_children: 11
-      sorted_parents: 6
     }
     nodes {
       id: 11
       sorted_children: 20
-      sorted_parents: 25
+      sorted_parents: 6
     }
     nodes {
       id: 20
-      sorted_children: 27
+      sorted_children: 25
       sorted_parents: 11
     }
     nodes {
-      id: 27
+      id: 25
+      sorted_children: 27
       sorted_parents: 20
+    }
+    nodes {
+      id: 27
+      sorted_parents: 25
     }
   }
   nodes {
@@ -1318,59 +1318,18 @@ nodes {
     }
   }
   nodes {
-    id: 25
-    op {
-      op_type: FILTER_OPERATOR
-      filter_op {
-        expression {
-          func {
-            name: "equal"
-            args {
-              func {
-                name: "upid_to_service_name"
-                args {
-                  column {
-                    node: 6
-                    index: 1
-                  }
-                }
-                id: 1
-                args_data_types: UINT128
-              }
-            }
-            args {
-              constant {
-                data_type: STRING
-                string_value: "pl/service-name"
-              }
-            }
-            args_data_types: STRING
-            args_data_types: STRING
-          }
-        }
-        columns {
-          node: 6
-        }
-        columns {
-          node: 6
-          index: 1
-        }
-      }
-    }
-  }
-  nodes {
     id: 11
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 25
+            node: 6
           }
         }
         expressions {
           column {
-            node: 25
+            node: 6
             index: 1
           }
         }
@@ -1379,7 +1338,7 @@ nodes {
             name: "upid_to_service_name"
             args {
               column {
-                node: 25
+                node: 6
                 index: 1
               }
             }
@@ -1418,6 +1377,52 @@ nodes {
         group_names: "upid"
         group_names: "service"
         value_names: "mean_cpu"
+        partial_agg: true
+        finalize_results: true
+      }
+    }
+  }
+  nodes {
+    id: 25
+    op {
+      op_type: FILTER_OPERATOR
+      filter_op {
+        expression {
+          func {
+            name: "equal"
+            args {
+              func {
+                name: "upid_to_service_name"
+                args {
+                  column {
+                    node: 20
+                  }
+                }
+                id: 1
+                args_data_types: UINT128
+              }
+            }
+            args {
+              constant {
+                data_type: STRING
+                string_value: "pl/service-name"
+              }
+            }
+            args_data_types: STRING
+            args_data_types: STRING
+          }
+        }
+        columns {
+          node: 20
+        }
+        columns {
+          node: 20
+          index: 1
+        }
+        columns {
+          node: 20
+          index: 2
+        }
       }
     }
   }
@@ -1435,6 +1440,9 @@ nodes {
           column_names: "upid"
           column_names: "service"
           column_names: "mean_cpu"
+          column_semantic_types: ST_NONE
+          column_semantic_types: ST_SERVICE_NAME
+          column_semantic_types: ST_NONE
         }
         connection_options {
           ssl_targetname: "result_ssltarget"

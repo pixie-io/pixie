@@ -224,6 +224,7 @@ class UPIDToContainerIDUDF : public ScalarUDF {
     }
     return pid->cid();
   }
+
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Get the Kubernetes container ID from a UPID.")
         .Details(
@@ -235,6 +236,9 @@ class UPIDToContainerIDUDF : public ScalarUDF {
         .Arg("upid", "The UPID of the process to get the container ID for.")
         .Returns("The k8s container ID for the UPID passed in.");
   }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
 inline const md::ContainerInfo* UPIDToContainer(const px::md::AgentMetadataState* md,
@@ -258,10 +262,12 @@ class UPIDToContainerNameUDF : public ScalarUDF {
     }
     return std::string(container_info->name());
   }
+
   static udf::InfRuleVec SemanticInferenceRules() {
     return {udf::ExplicitRule::Create<UPIDToContainerNameUDF>(types::ST_CONTAINER_NAME,
                                                               {types::ST_NONE})};
   }
+
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Get the Kubernetes container name from a UPID.")
         .Details(
@@ -273,6 +279,9 @@ class UPIDToContainerNameUDF : public ScalarUDF {
         .Arg("upid", "The UPID of the process to get the container name for.")
         .Returns("The k8s container name for the UPID passed in.");
   }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
 inline const px::md::PodInfo* UPIDtoPod(const px::md::AgentMetadataState* md,
@@ -312,10 +321,12 @@ class UPIDToNamespaceUDF : public ScalarUDF {
     }
     return pod_info->ns();
   }
+
   static udf::InfRuleVec SemanticInferenceRules() {
     return {
         udf::ExplicitRule::Create<UPIDToNamespaceUDF>(types::ST_NAMESPACE_NAME, {types::ST_NONE})};
   }
+
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Get the Kubernetes namespace from a UPID.")
         .Details(
@@ -327,6 +338,9 @@ class UPIDToNamespaceUDF : public ScalarUDF {
         .Arg("upid", "The UPID of the process to get the namespace for.")
         .Returns("The k8s namespace for the UPID passed in.");
   }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
 class UPIDToPodIDUDF : public ScalarUDF {
@@ -339,6 +353,7 @@ class UPIDToPodIDUDF : public ScalarUDF {
     }
     return std::string(container_info->pod_id());
   }
+
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Get the Kubernetes Pod ID from a UPID.")
         .Details(
@@ -350,6 +365,9 @@ class UPIDToPodIDUDF : public ScalarUDF {
         .Arg("upid", "The UPID of the process to get the pod ID for.")
         .Returns("The k8s pod ID for the UPID passed in.");
   }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
 class UPIDToPodNameUDF : public ScalarUDF {
@@ -362,9 +380,11 @@ class UPIDToPodNameUDF : public ScalarUDF {
     }
     return absl::Substitute("$0/$1", pod_info->ns(), pod_info->name());
   }
+
   static udf::InfRuleVec SemanticInferenceRules() {
     return {udf::ExplicitRule::Create<UPIDToPodNameUDF>(types::ST_POD_NAME, {types::ST_NONE})};
   }
+
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Get the Kubernetes Pod Name from a UPID.")
         .Details(
@@ -376,6 +396,9 @@ class UPIDToPodNameUDF : public ScalarUDF {
         .Arg("upid", "The UPID of the process to get the pod name for.")
         .Returns("The k8s pod name for the UPID passed in.");
   }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
 class ServiceIDToServiceNameUDF : public ScalarUDF {
@@ -492,6 +515,9 @@ class UPIDToServiceIDUDF : public ScalarUDF {
         .Arg("upid", "The UPID of the process to get the service ID for.")
         .Returns("The kubernetes service ID for the UPID passed in.");
   }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
 /**
@@ -535,6 +561,9 @@ class UPIDToServiceNameUDF : public ScalarUDF {
         .Arg("upid", "The UPID of the process to get the service name for.")
         .Returns("The Kubernetes Service Name for the UPID passed in.");
   }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
 /**
@@ -564,6 +593,9 @@ class UPIDToNodeNameUDF : public ScalarUDF {
         .Arg("upid", "The UPID of the process to get the node name for.")
         .Returns("The name of the node for the UPID passed in.");
   }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
 /**
@@ -589,6 +621,9 @@ class UPIDToHostnameUDF : public ScalarUDF {
         .Arg("upid", "The UPID of the process to get the hostname for.")
         .Returns("The hostname for the UPID passed in.");
   }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
 /**
@@ -1243,6 +1278,7 @@ class UPIDToPodStatusUDF : public ScalarUDF {
   static udf::InfRuleVec SemanticInferenceRules() {
     return {udf::ExplicitRule::Create<UPIDToPodStatusUDF>(types::ST_POD_STATUS, {types::ST_NONE})};
   }
+
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Get status information about the pod of a UPID.")
         .Details(
@@ -1259,6 +1295,9 @@ class UPIDToPodStatusUDF : public ScalarUDF {
         .Arg("upid", "The UPID to get the PodStatus for.")
         .Returns("The Kubernetes PodStatus for the UPID passed in.");
   }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
 class UPIDToCmdLineUDF : public ScalarUDF {
@@ -1280,6 +1319,7 @@ class UPIDToCmdLineUDF : public ScalarUDF {
     }
     return pid_info->cmdline();
   }
+
   static udf::ScalarUDFDocBuilder Doc() {
     return udf::ScalarUDFDocBuilder("Get the command line arguments used to start a UPID.")
         .Details(
@@ -1289,6 +1329,9 @@ class UPIDToCmdLineUDF : public ScalarUDF {
         .Arg("upid", "The UPID to get the command line arguments for.")
         .Returns("The command line arguments for the UPID passed in, as a string.");
   }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
 inline std::string PodInfoToPodQoS(const px::md::PodInfo* pod_info) {
@@ -1323,6 +1366,9 @@ class UPIDToPodQoSUDF : public ScalarUDF {
         .Arg("upid", "The UPID to get the Pod QOS class for.")
         .Returns("The Kubernetes Pod QOS class for the UPID passed in.");
   }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
 class HostnameUDF : public ScalarUDF {
@@ -1389,6 +1435,10 @@ class PodIPToPodIDUDF : public ScalarUDF {
         .Arg("pod_ip", "The IP of a pod to convert.")
         .Returns("The Kubernetes ID of the pod if it exists, otherwise an empty string.");
   }
+
+  // This UDF can currently only run on Kelvins, because only Kelvins have the IP to pod
+  // information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_KELVIN; }
 };
 
 class PodIPToServiceIDUDF : public ScalarUDF {

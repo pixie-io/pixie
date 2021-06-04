@@ -20,6 +20,7 @@
 #include <memory>
 
 #include "src/carnot/planner/compiler_state/compiler_state.h"
+#include "src/carnot/planner/distributed/splitter/presplit_optimizer/filter_push_down_rule.h"
 #include "src/carnot/planner/distributed/splitter/presplit_optimizer/limit_push_down_rule.h"
 #include "src/carnot/planner/rules/rule_executor.h"
 
@@ -50,8 +51,15 @@ class PreSplitOptimizer : public RuleExecutor<IR> {
     limit_pushdown->AddRule<LimitPushdownRule>(compiler_state_);
   }
 
+  void CreateFilterPushdownBatch() {
+    // Use TryUntilMax here to avoid swapping the positions of "equal" filters endlessly.
+    RuleBatch* filter_pushdown = CreateRuleBatch<TryUntilMax>("FilterPushdown", 1);
+    filter_pushdown->AddRule<FilterPushdownRule>(compiler_state_);
+  }
+
   Status Init() {
     CreateLimitPushdownBatch();
+    CreateFilterPushdownBatch();
     return Status::OK();
   }
 

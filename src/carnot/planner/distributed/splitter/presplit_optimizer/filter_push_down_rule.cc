@@ -16,7 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/carnot/planner/compiler/optimizer/filter_push_down_rule.h"
+#include "src/carnot/planner/distributed/splitter/presplit_optimizer/filter_push_down_rule.h"
+#include "src/carnot/planner/distributed/splitter/executor_utils.h"
 
 #include <algorithm>
 #include <queue>
@@ -24,7 +25,7 @@
 namespace px {
 namespace carnot {
 namespace planner {
-namespace compiler {
+namespace distributed {
 
 OperatorIR* FilterPushdownRule::HandleMapPushdown(MapIR* map,
                                                   ColumnNameMapping* column_name_mapping) {
@@ -83,14 +84,26 @@ OperatorIR* FilterPushdownRule::HandleAggPushdown(BlockingAggIR* agg,
 }
 
 // Currently only supports single-parent, single-child operators.
-OperatorIR* FilterPushdownRule::NextFilterLocation(OperatorIR* current_node,
-                                                   ColumnNameMapping* column_name_mapping) {
+StatusOr<OperatorIR*> FilterPushdownRule::NextFilterLocation(
+    OperatorIR* current_node, bool filter_has_kelvin_only_udf,
+    ColumnNameMapping* column_name_mapping) {
   if (current_node->parents().size() != 1) {
     return nullptr;
   }
 
   OperatorIR* parent = current_node->parents()[0];
   if (parent->Children().size() > 1) {
+    return nullptr;
+  }
+
+  PL_ASSIGN_OR_RETURN(
+      auto parent_has_pem_only_udf,
+      HasFuncWithExecutor(compiler_state_, parent, udfspb::UDFSourceExecutor::UDF_PEM));
+
+  // If the filter has a Kelvin-only UDF, and the operator we are looking at
+  // has a PEM-only UDF, then it isn't safe to raise the filter anymore because
+  // PEM-only UDFs need to be scheduled before Kelvin-only UDFs in the plan.
+  if (parent_has_pem_only_udf && filter_has_kelvin_only_udf) {
     return nullptr;
   }
   if (Match(parent, Filter()) || Match(parent, Limit())) {
@@ -128,16 +141,22 @@ StatusOr<bool> FilterPushdownRule::Apply(IRNode* ir_node) {
   // as of the current position of current_node.
   absl::flat_hash_map<std::string, std::string> column_name_mapping;
   PL_ASSIGN_OR_RETURN(auto involved_cols, filter->filter_expr()->InputColumnNames());
-  if (!involved_cols.size()) {
-    return false;
-  }
   for (const auto& col : involved_cols) {
     column_name_mapping[col] = col;
   }
 
+  PL_ASSIGN_OR_RETURN(
+      auto kelvin_only_filter,
+      HasFuncWithExecutor(compiler_state_, filter, udfspb::UDFSourceExecutor::UDF_KELVIN));
+
   // Iterate up from the current node, stopping when we reach the earliest allowable
   // new location for the filter node.
-  while (OperatorIR* next_parent = NextFilterLocation(current_node, &column_name_mapping)) {
+  while (true) {
+    PL_ASSIGN_OR_RETURN(OperatorIR * next_parent,
+                        NextFilterLocation(current_node, kelvin_only_filter, &column_name_mapping));
+    if (next_parent == nullptr) {
+      break;
+    }
     current_node = next_parent;
   }
   // If the current_node is filter, that means we could not find a better filter location and will
@@ -165,7 +184,7 @@ StatusOr<bool> FilterPushdownRule::Apply(IRNode* ir_node) {
   return true;
 }
 
-}  // namespace compiler
+}  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
 }  // namespace px

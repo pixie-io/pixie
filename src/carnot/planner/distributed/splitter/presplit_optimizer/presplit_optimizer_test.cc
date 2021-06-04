@@ -59,6 +59,25 @@ TEST_F(PreSplitOptimizerTest, limit_pushdown) {
   EXPECT_EQ(new_limit->relation(), relation);
 }
 
+TEST_F(PreSplitOptimizerTest, filter_pushdown) {
+  Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
+  MemorySourceIR* src = MakeMemSource(relation);
+  MapIR* map =
+      MakeMap(src, {{"abc_1", MakeColumn("abc", 0)}, {"abc", MakeColumn("abc", 0)}}, false);
+  auto col = MakeColumn("abc", 0);
+  col->ResolveColumnType(types::DataType::INT64);
+  FilterIR* filter = MakeFilter(map, MakeEqualsFunc(col, MakeInt(2)));
+  MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
+
+  auto optimizer = PreSplitOptimizer::Create(compiler_state_.get()).ConsumeValueOrDie();
+  ASSERT_OK(optimizer->Execute(graph.get()));
+
+  EXPECT_THAT(sink->parents(), ElementsAre(map));
+  EXPECT_THAT(map->parents(), ElementsAre(filter));
+  EXPECT_THAT(filter->parents(), ElementsAre(src));
+  EXPECT_MATCH(filter->filter_expr(), Equals(ColumnNode("abc"), Int(2)));
+}
+
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot

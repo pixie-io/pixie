@@ -55,16 +55,6 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "filter_push_down_rule_test",
-    srcs = ["filter_push_down_rule_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/carnot/planner/compiler:test_utils",
-        "//src/carnot/udf_exporter:cc_library",
-    ],
-)
-
-pl_cc_test(
     name = "merge_nodes_rule_test",
     srcs = ["merge_nodes_rule_test.cc"],
     deps = [

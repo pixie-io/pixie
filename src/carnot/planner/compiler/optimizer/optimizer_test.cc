@@ -694,33 +694,6 @@ TEST_F(OptimizerTest, prune_unused_columns) {
   EXPECT_THAT(sink->relation().col_names(), ElementsAre("mb_in"));
 }
 
-constexpr char kFilterPushdown[] = R"pxl(
-import px
-t1 = px.DataFrame(table='http_events', start_time='-5m', select=['http_resp_latency_ns', 'remote_port'])
-t1.int_col = t1.http_resp_latency_ns
-t1 = t1.groupby('int_col').agg(time_count=('remote_port', px.count))
-t1 = t1[t1.int_col == 2]
-px.display(t1)
-)pxl";
-
-TEST_F(OptimizerTest, filter_pushdown) {
-  auto ir_graph_status = CompileGraph(kFilterPushdown);
-  ASSERT_OK(ir_graph_status);
-  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
-  ASSERT_OK(Analyze(ir_graph));
-  ASSERT_OK(Optimize(ir_graph));
-
-  std::vector<IRNode*> src_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySource);
-  EXPECT_EQ(1, src_nodes.size());
-  auto src = static_cast<OperatorIR*>(src_nodes[0]);
-  EXPECT_EQ(1, src->Children().size());
-  ASSERT_MATCH(src->Children()[0], Filter());
-  auto filter = static_cast<FilterIR*>(src->Children()[0]);
-  EXPECT_MATCH(filter->filter_expr(), Equals(ColumnNode("http_resp_latency_ns"), Int(2)));
-  EXPECT_EQ(1, filter->Children().size());
-  EXPECT_MATCH(filter->Children()[0], Map());
-}
-
 constexpr char kAggAfterFilterQuery[] = R"pxl(
 import px
 

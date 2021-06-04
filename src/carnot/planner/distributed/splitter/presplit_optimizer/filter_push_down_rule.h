@@ -23,7 +23,7 @@
 namespace px {
 namespace carnot {
 namespace planner {
-namespace compiler {
+namespace distributed {
 
 /**
  * @brief This rule pushes filters as early in the IR as possible.
@@ -33,8 +33,8 @@ namespace compiler {
  */
 class FilterPushdownRule : public Rule {
  public:
-  FilterPushdownRule()
-      : Rule(nullptr, /*use_topo*/ true, /*reverse_topological_execution*/ false) {}
+  explicit FilterPushdownRule(CompilerState* compiler_state)
+      : Rule(compiler_state, /*use_topo*/ true, /*reverse_topological_execution*/ false) {}
 
  protected:
   StatusOr<bool> Apply(IRNode*) override;
@@ -43,11 +43,12 @@ class FilterPushdownRule : public Rule {
   using ColumnNameMapping = absl::flat_hash_map<std::string, std::string>;
   OperatorIR* HandleAggPushdown(BlockingAggIR* map, ColumnNameMapping* column_name_mapping);
   OperatorIR* HandleMapPushdown(MapIR* map, ColumnNameMapping* column_name_mapping);
-  OperatorIR* NextFilterLocation(OperatorIR* current_node, ColumnNameMapping* column_name_mapping);
+  StatusOr<OperatorIR*> NextFilterLocation(OperatorIR* current_node, bool kelvin_only_filter,
+                                           ColumnNameMapping* column_name_mapping);
   Status UpdateFilter(FilterIR* expr, const ColumnNameMapping& column_name_mapping);
 };
 
-}  // namespace compiler
+}  // namespace distributed
 }  // namespace planner
 }  // namespace carnot
 }  // namespace px

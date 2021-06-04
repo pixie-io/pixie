@@ -143,6 +143,19 @@ static constexpr bool IsValidExecFunc(ReturnType (TUDF::*)(FunctionContext*, Typ
   return true;
 }
 
+/**
+ * Checks to see if a valid looking Executor function exists.
+ */
+template <typename ReturnType>
+constexpr bool IsValidExecutorFn(ReturnType (*)()) {
+  return false;
+}
+
+template <>
+constexpr bool IsValidExecutorFn(udfspb::UDFSourceExecutor (*)()) {
+  return true;
+}
+
 // SFINAE test for Executor fn.
 template <typename T, typename = void>
 struct has_udf_executor_fn : std::false_type {};
@@ -154,25 +167,12 @@ struct has_udf_executor_fn<T, std::void_t<decltype(&T::Executor)>> : std::true_t
       "If an executor function exists, it must have the form: UDFSourceExecutor Executor()");
 };
 
-/**
- * Checks to see if a valid looking Executor function exists.
- */
-template <typename ReturnType, typename TUDF>
-static constexpr bool IsExecutorFn(ReturnType (TUDF::*)()) {
-  return false;
-}
-
-template <typename TUDF>
-static constexpr bool IsValidExecutorFn(udfspb::UDFSourceExecutor (TUDF::*)()) {
-  return true;
-}
-
 template <typename T, typename = void>
 struct check_executor_fn {};
 
 template <typename T>
 struct check_executor_fn<T, typename std::enable_if_t<has_udf_executor_fn<T>::value>> {
-  static_assert(IsValidExecutorFn(&T::Init),
+  static_assert(IsValidExecutorFn(&T::Executor),
                 "must have a valid Executor fn, in form: UDFSourceExecutor Executor()");
 };
 
