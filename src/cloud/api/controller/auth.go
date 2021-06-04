@@ -90,6 +90,7 @@ func AuthSignupHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 	// Extract params from the body which consists of the Auth0 ID token.
 	var params struct {
 		AccessToken string
+		IDToken     string
 	}
 
 	defer r.Body.Close()
@@ -105,6 +106,7 @@ func AuthSignupHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 
 	rpcReq := &authpb.SignupRequest{
 		AccessToken: params.AccessToken,
+		IdToken:     params.IDToken,
 	}
 
 	resp, err := env.(apienv.APIEnv).AuthClient().Signup(ctxWithCreds, rpcReq)
@@ -198,6 +200,7 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 	// Extract params from the body which consists of the Auth0 ID token.
 	var params struct {
 		AccessToken string
+		IDToken     string
 		State       string
 		OrgName     string
 	}
@@ -217,6 +220,7 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 		AccessToken:           params.AccessToken,
 		CreateUserIfNotExists: true,
 		OrgName:               params.OrgName,
+		IdToken:               params.IDToken,
 	}
 
 	resp, err := env.(apienv.APIEnv).AuthClient().Login(ctxWithCreds, rpcReq)
