@@ -16,7 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export * from './use-autocomplete-field';
 export * from './use-mutation';
 export * from './use-query';
 export * from './use-setting';

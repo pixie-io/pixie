@@ -22,7 +22,9 @@ import {
   Theme, withStyles,
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
-import { useAutocompleteFieldSuggester } from '@pixie-labs/api-react';
+import { GQLAutocompleteEntityKind, GQLAutocompleteSuggestion, PixieAPIClient } from '@pixie-labs/api';
+import { PixieAPIContext } from '@pixie-labs/api-react';
+import { gql } from '@apollo/client';
 
 import {
   Breadcrumbs, BreadcrumbOptions, StatusCell,
@@ -34,6 +36,47 @@ import { ScriptContext } from 'context/script-context';
 import { pxTypeToEntityType, entityStatusGroup } from 'containers/command-input/autocomplete-utils';
 import TimeArgDetail from 'configurable/time-arg-detail';
 import { parseVisSilently, Variable } from './vis';
+
+type AutocompleteFieldSuggester = (
+  input: string, kind: GQLAutocompleteEntityKind
+) => Promise<GQLAutocompleteSuggestion[]>;
+
+/**
+ * Given a cluster to check against, returns an @link{AutocompleteFieldSuggester} for that cluster.
+ *
+ * Usage:
+ * ```
+ * const getCompletions = useAutocompleteSuggestion('fooCluster');
+ * React.useEffect(() => {
+ *   // Might suggest the script `px/http_data` as a completion for `px/htt`
+ *   getCompletions('htt', 'AEK_SCRIPT').then(suggestions => suggestions.forEach(s => doSomethingMeaningful(s)));
+ * }, [getCompletions]);
+ * ```
+ */
+function useAutocompleteFieldSuggester(clusterUID: string): AutocompleteFieldSuggester {
+  const client = React.useContext(PixieAPIContext) as PixieAPIClient;
+  return React.useCallback<AutocompleteFieldSuggester>((partialInput: string, kind: GQLAutocompleteEntityKind) => (
+    client.getCloudGQLClientForAdapterLibrary().graphQL.query<{ autocompleteField: GQLAutocompleteSuggestion[] }>({
+      query: gql`
+        query getCompletions($input: String, $kind: AutocompleteEntityKind, $clusterUID: String) {
+          autocompleteField(input: $input, fieldType: $kind, clusterUID: $clusterUID) {
+            name
+            description
+            matchedIndexes
+            state
+          }
+        }
+      `,
+      fetchPolicy: 'network-only',
+      variables: {
+        input: partialInput,
+        kind,
+        clusterUID,
+      },
+    }).then(
+      (results) => results.data.autocompleteField,
+    )), [client, clusterUID]);
+}
 
 const styles = (({ shape, palette, spacing }: Theme) => createStyles({
   root: {
