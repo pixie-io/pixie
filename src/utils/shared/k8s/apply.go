@@ -212,7 +212,7 @@ func ApplyResources(config *rest.Config, resources []*Resource, namespace string
 			} else if (k8sRes == "clusterroles" || k8sRes == "cronjobs") || allowUpdate {
 				_, err = createRes.Update(context.Background(), resource.Object, metav1.UpdateOptions{})
 				if err != nil {
-					log.WithError(err).Error("Could not update K8s resource")
+					log.WithError(err).Info("Could not update K8s resource")
 				}
 			}
 		}
