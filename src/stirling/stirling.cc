@@ -350,7 +350,6 @@ Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source, bool dyn
     mgr->SetSourceConnector(source.get(), i);
 
     // Step 3: Setup the manager.
-    mgr->SetSamplingPeriod(schema.default_sampling_period());
     mgr->SetPushPeriod(schema.default_push_period());
 
     mgrs.push_back(mgr.get());

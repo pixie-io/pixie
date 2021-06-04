@@ -16,7 +16,10 @@
 
 load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_proto_library")
 
-package(default_visibility = ["//src:__subpackages__"])
+package(default_visibility = [
+    "//src/shared/schema:__pkg__",
+    "//src/stirling:__subpackages__",
+])
 
 pl_proto_library(
     name = "stirling_pl_proto",

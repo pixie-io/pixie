@@ -52,7 +52,6 @@ stirlingpb::InfoClass InfoClassManager::ToProto() const {
   info_class_proto.mutable_schema()->CopyFrom(schema_.ToProto());
   info_class_proto.set_id(id_);
   info_class_proto.set_subscribed(subscribed_);
-  info_class_proto.set_sampling_period_millis(sample_push_freq_mgr_.sampling_period().count());
   info_class_proto.set_push_period_millis(sample_push_freq_mgr_.push_period().count());
 
   return info_class_proto;

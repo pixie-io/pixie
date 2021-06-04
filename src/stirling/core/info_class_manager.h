@@ -117,15 +117,6 @@ class InfoClassManager final : public NotCopyable {
    *
    * @param period Sampling period in ms.
    */
-  void SetSamplingPeriod(std::chrono::milliseconds period) {
-    sample_push_freq_mgr_.set_sampling_period(period);
-  }
-
-  /**
-   * Configure sampling period.
-   *
-   * @param period Sampling period in ms.
-   */
   void SetPushPeriod(std::chrono::milliseconds period) {
     sample_push_freq_mgr_.set_push_period(period);
   }
@@ -152,15 +143,6 @@ class InfoClassManager final : public NotCopyable {
    * This will make sure changes are pushed to the Source Connector and Data Tables accordingly.
    */
   void Notify() {}
-
-  /**
-   * Returns the next time the source needs to be sampled, according to the sampling period.
-   *
-   * @return std::chrono::milliseconds
-   */
-  px::chrono::coarse_steady_clock::time_point NextSamplingTime() const {
-    return sample_push_freq_mgr_.NextSamplingTime();
-  }
 
   /**
    * Returns the next time the data table needs to be pushed upstream, according to the push period.

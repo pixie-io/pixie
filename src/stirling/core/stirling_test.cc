@@ -130,7 +130,6 @@ class StirlingTest : public ::testing::Test {
 
   // Random distributions for test parameters.
   std::default_random_engine rng;
-  std::uniform_int_distribution<uint32_t> sampling_period_millis_dist_;
   std::uniform_int_distribution<uint32_t> push_period_millis_dist_;
   std::uniform_real_distribution<double> uniform_probability_dist_;
 
@@ -142,7 +141,6 @@ class StirlingTest : public ::testing::Test {
 
   StirlingTest()
       : rng(kRNGSeed),
-        sampling_period_millis_dist_(0, 10),
         push_period_millis_dist_(0, 100),
         uniform_probability_dist_(0, 1.0) {}
 
@@ -233,7 +231,6 @@ class StirlingTest : public ::testing::Test {
       sub_info_class->MergeFrom(publish_proto.published_info_classes(i));
 
       sub_info_class->set_subscribed(uniform_probability_dist_(rng) < kSubscribeProb);
-      sub_info_class->set_sampling_period_millis(sampling_period_millis_dist_(rng));
       sub_info_class->set_push_period_millis(push_period_millis_dist_(rng));
     }
     return subscribe_proto;

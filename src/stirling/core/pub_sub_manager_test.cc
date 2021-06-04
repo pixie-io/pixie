@@ -67,7 +67,6 @@ const char* kInfoClass0 = R"(
     tabletized: false
     tabletization_key: 18446744073709551615
   }
-  sampling_period_millis: 100
   push_period_millis: 1000
 )";
 
@@ -99,7 +98,6 @@ const char* kInfoClass1 = R"(
     tabletized: false
     tabletization_key: 18446744073709551615
   }
-  sampling_period_millis: 100
   push_period_millis: 1000
   type: DYNAMIC
 )";
