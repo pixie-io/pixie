@@ -58,15 +58,6 @@ class SourceConnector : public NotCopyable {
   void InitContext(ConnectorContext* ctx);
 
   /**
-   * Transfers any collected data, for the specified table, into the provided record_batch.
-   * @param ctx Shared context, e.g. ASID & tracked PIDs.
-   * @param table_num The table number (id) of the data. See DataTableSchemas in individual
-   * connectors.
-   * @param data_table Destination for the data.
-   */
-  void TransferData(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table);
-
-  /**
    * Transfers all collected data to data tables.
    * @param ctx Shared context, e.g. ASID & tracked PIDs.
    * @param data_tables Map from the table number to DataTable objects.
@@ -80,15 +71,6 @@ class SourceConnector : public NotCopyable {
    * @return Status of whether stop was successful.
    */
   Status Stop();
-
-  /**
-   * If true, the overlaoded TransferData() is implemented, and the sampled data can be output to
-   * multiple data tables.
-   *
-   * This is temporary, will be removed once all SouceConnector subclasses are changed to output
-   * data to multiple data tables.
-   */
-  virtual bool output_multi_tables() const { return false; }
 
   const std::string& name() const { return source_name_; }
 
@@ -140,14 +122,7 @@ class SourceConnector : public NotCopyable {
   // SourceConnectors only need override if action is required on the initial context.
   virtual void InitContextImpl(ConnectorContext* /* ctx */) {}
 
-  virtual void TransferDataImpl(ConnectorContext*, uint32_t, DataTable*) {
-    // TODO(yzhao): Remove this after all subclasses are migrated to the overloaded version.
-    LOG(DFATAL) << "Deprecated, do not use.";
-  }
-  virtual void TransferDataImpl(ConnectorContext*, const std::vector<DataTable*>&) {
-    // TODO(yzhao): Change to pure virtual function after all subclasses are updated.
-    LOG(DFATAL) << "TransferStreams() Unimplemented";
-  }
+  virtual void TransferDataImpl(ConnectorContext*, const std::vector<DataTable*>&) = 0;
 
   virtual Status StopImpl() = 0;
 

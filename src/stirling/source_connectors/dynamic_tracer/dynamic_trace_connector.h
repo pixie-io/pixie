@@ -57,7 +57,6 @@ class DynamicTraceConnector : public SourceConnector, public bpf_tools::BCCWrapp
 
   Status InitImpl() override;
 
-  bool output_multi_tables() const override { return true; }
   void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
 
   Status StopImpl() override { return Status::OK(); }

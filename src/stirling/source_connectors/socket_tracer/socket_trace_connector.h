@@ -89,7 +89,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   Status InitImpl() override;
   Status StopImpl() override;
   void InitContextImpl(ConnectorContext* ctx) override;
-  bool output_multi_tables() const override { return true; }
   void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
 
   // Perform actions that are not specifically targeting a table.

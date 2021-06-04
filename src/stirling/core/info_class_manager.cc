@@ -27,18 +27,11 @@
 namespace px {
 namespace stirling {
 
-bool InfoClassManager::SamplingRequired() const { return sample_push_freq_mgr_.SamplingRequired(); }
-
 bool InfoClassManager::PushRequired() const {
   return sample_push_freq_mgr_.PushRequired(data_table_->OccupancyPct(), data_table_->Occupancy());
 }
 
 void InfoClassManager::InitContext(ConnectorContext* ctx) { source_->InitContext(ctx); }
-
-void InfoClassManager::SampleData(ConnectorContext* ctx) {
-  source_->TransferData(ctx, source_table_num_, data_table_);
-  sample_push_freq_mgr_.Sample();
-}
 
 void InfoClassManager::PushData(DataPushCallback agent_callback) {
   auto record_batches = data_table_->ConsumeRecords();

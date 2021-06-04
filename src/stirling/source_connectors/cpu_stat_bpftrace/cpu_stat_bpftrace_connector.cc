@@ -46,10 +46,15 @@ Status CPUStatBPFTraceConnector::StopImpl() {
   return Status::OK();
 }
 
-void CPUStatBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t table_num,
-                                                DataTable* data_table) {
-  CHECK_LT(table_num, kTables.size())
-      << absl::StrFormat("Trying to access unexpected table: table_num=%d", table_num);
+void CPUStatBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */,
+                                                const std::vector<DataTable*>& data_tables) {
+  DCHECK_EQ(data_tables.size(), 1) << "CPUStatBPFTraceConnector only has one data table.";
+
+  auto* data_table = data_tables[0];
+
+  if (data_table == nullptr) {
+    return;
+  }
 
   auto cpustat_map = GetBPFMap("@retval");
 

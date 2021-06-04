@@ -126,8 +126,8 @@ class TestSourceConnector : public SourceConnector {
 
   Status InitImpl() override { return Status::OK(); }
   Status StopImpl() override { return Status::OK(); }
-  void TransferDataImpl(ConnectorContext* /* ctx */, uint32_t /* table_num */,
-                        DataTable* /* data_table */) override{};
+  void TransferDataImpl(ConnectorContext* /* ctx */,
+                        const std::vector<DataTable*>& /* data_tables */) override{};
 
  protected:
   explicit TestSourceConnector(std::string_view name) : SourceConnector(name, kTables) {}
@@ -152,8 +152,8 @@ class TestSourceConnector2 : public SourceConnector {
 
   Status InitImpl() override { return Status::OK(); }
   Status StopImpl() override { return Status::OK(); }
-  void TransferDataImpl(ConnectorContext* /* ctx */, uint32_t /* table_num */,
-                        DataTable* /* data_table */) override{};
+  void TransferDataImpl(ConnectorContext* /* ctx */,
+                        const std::vector<DataTable*>& /* data_tables */) override{};
 
  protected:
   explicit TestSourceConnector2(std::string_view name) : SourceConnector(name, kTables) {}

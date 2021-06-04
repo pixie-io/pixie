@@ -53,7 +53,6 @@ class ProcessStatsConnector : public SourceConnector {
 
   Status StopImpl() override;
 
-  bool output_multi_tables() const override { return true; }
   void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
 
  protected:

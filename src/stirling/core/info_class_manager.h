@@ -131,13 +131,6 @@ class InfoClassManager final : public NotCopyable {
   }
 
   /**
-   * Returns true if sampling is required, for whatever reason (elapsed time, etc.).
-   *
-   * @return bool
-   */
-  bool SamplingRequired() const;
-
-  /**
    * Returns true if a data push is required, for whatever reason (elapsed time, occupancy, etc.).
    *
    * @return bool
@@ -148,11 +141,6 @@ class InfoClassManager final : public NotCopyable {
    * Set initial context. Meant to be run once as an initialization step.
    */
   void InitContext(ConnectorContext* ctx);
-
-  /**
-   * Samples the data from the Source and copies into local buffers.
-   */
-  void SampleData(ConnectorContext* ctx);
 
   /**
    * Push data by using the callback.

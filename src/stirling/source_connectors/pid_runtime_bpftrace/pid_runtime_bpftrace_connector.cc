@@ -64,10 +64,15 @@ bpftrace::BPFTraceMap::iterator PIDCPUUseBPFTraceConnector::BPFTraceMapSearch(
   return next_it;
 }
 
-void PIDCPUUseBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t table_num,
-                                                  DataTable* data_table) {
-  CHECK_LT(table_num, kTables.size())
-      << absl::StrFormat("Trying to access unexpected table: table_num=%d", table_num);
+void PIDCPUUseBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */,
+                                                  const std::vector<DataTable*>& data_tables) {
+  DCHECK_EQ(data_tables.size(), 1) << "PIDCPUUseBPFTraceConnector only has one data table.";
+
+  auto* data_table = data_tables[0];
+
+  if (data_table == nullptr) {
+    return;
+  }
 
   auto pid_time_pairs = GetBPFMap("@total_time");
   auto pid_name_pairs = GetBPFMap("@names");

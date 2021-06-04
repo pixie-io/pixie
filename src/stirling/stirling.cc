@@ -702,15 +702,9 @@ std::chrono::milliseconds TimeUntilNextTick(const InfoClassManagerVec& info_clas
     if (mgr->subscribed()) {
       wakeup_time = std::min(wakeup_time, mgr->NextPushTime());
       const SourceConnector* source = mgr->source();
-      if (source->output_multi_tables()) {
-        // Note that the same SourceConnector could be examined multiple times for the associated
-        // InfoClassManager objects, but that does not affect the result.
-        wakeup_time = std::min(wakeup_time, source->sample_push_mgr().NextSamplingTime());
-      } else {
-        // If the SourceConnector can output to multiple data tables, then the sampling frequency is
-        // managed by the SourceConnector, not InfoClassManager.
-        wakeup_time = std::min(wakeup_time, mgr->NextSamplingTime());
-      }
+      // Note that the same SourceConnector could be examined multiple times for the associated
+      // InfoClassManager objects, but that does not affect the result.
+      wakeup_time = std::min(wakeup_time, source->sample_push_mgr().NextSamplingTime());
     }
   }
 
@@ -759,19 +753,9 @@ void StirlingImpl::RunCore() {
       // Run through every SourceConnector and InfoClassManager being managed.
       for (auto& [source, output] : source_output_map_) {
         // Phase 1: Probe each source for its data.
-        if (source->output_multi_tables()) {
-          if (source->sample_push_mgr().SamplingRequired()) {
-            source->TransferData(ctx.get(), output.data_tables);
-          }
-        } else {
-          // TODO(yzhao): Reduce sampling periods if we are dropping data.
-          for (const auto& mgr : output.info_class_mgrs) {
-            if (mgr->subscribed() && mgr->SamplingRequired()) {
-              mgr->SampleData(ctx.get());
-            }
-          }
+        if (source->sample_push_mgr().SamplingRequired()) {
+          source->TransferData(ctx.get(), output.data_tables);
         }
-
         // Phase 2: Push Data upstream.
         for (auto* mgr : output.info_class_mgrs) {
           if (mgr->subscribed() && mgr->PushRequired()) {

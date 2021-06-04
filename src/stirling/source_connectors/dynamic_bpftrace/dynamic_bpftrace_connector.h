@@ -47,7 +47,6 @@ class DynamicBPFTraceConnector : public SourceConnector, public bpf_tools::BPFTr
                                     std::string_view script);
   Status InitImpl() override;
   Status StopImpl() override;
-  bool output_multi_tables() const override { return true; }
   void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
 
  private:

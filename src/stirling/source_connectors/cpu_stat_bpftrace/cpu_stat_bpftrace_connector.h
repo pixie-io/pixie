@@ -104,7 +104,7 @@ class CPUStatBPFTraceConnector : public SourceConnector, public bpf_tools::BPFTr
 
   Status InitImpl() override;
   Status StopImpl() override;
-  void TransferDataImpl(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table) override;
+  void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
 
  protected:
   CPUStatBPFTraceConnector(std::string_view name, uint64_t cpu_id)

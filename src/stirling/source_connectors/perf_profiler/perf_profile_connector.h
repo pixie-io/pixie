@@ -52,10 +52,6 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   Status InitImpl() override;
   Status StopImpl() override;
-  void TransferDataImpl(ConnectorContext*, uint32_t, DataTable*) override {
-    DCHECK(false) << "Deprecated";
-  }
-  bool output_multi_tables() const override { return true; }
   void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
   static constexpr uint64_t BPFSamplingPeriodMillis() { return kSamplingPeriodMillis; }
 
