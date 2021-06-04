@@ -78,7 +78,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static constexpr uint32_t kDNSTableNum = TableNum(kTables, kDNSTable);
   static constexpr uint32_t kRedisTableNum = TableNum(kTables, kRedisTable);
 
-  static constexpr auto kSamplingPeriod = std::chrono::milliseconds{100};
+  static constexpr auto kSamplingPeriod = std::chrono::milliseconds{200};
   // TODO(yzhao): This is not used right now. Eventually use this to control data push frequency.
   static constexpr auto kPushPeriod = std::chrono::milliseconds{1000};
 
@@ -97,13 +97,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // because TransferData() gets called for every table in the connector.
   // That would then cause performance overheads.
   void UpdateCommonState(ConnectorContext* ctx);
-
-  // A wrapper around UpdateCommonState that filters out calls to UpdateCommonState()
-  // if the state had already been updated for a different table.
-  // A second call to this function for any table will trigger a call to UpdateCommonState(),
-  // so this effectively means that UpdateCommonState() runs as frequently as the most frequently
-  // transferred table.
-  void CachedUpdateCommonState(ConnectorContext* ctx, uint32_t table_num);
 
   // Updates control map value for protocol, which specifies which role(s) to trace for the given
   // protocol's traffic.
@@ -190,15 +183,28 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   //               (https://filippo.io/linux-syscall-table/), but are defined as SYSCALL_DEFINE4 in
   //               https://elixir.bootlin.com/linux/latest/source/net/socket.c.
 
+  // Assume a moderate network bandwidth peak of 100MiB/s across socket connections for data.
+  inline static constexpr int64_t kTargetDataBytesPerSec = 100 * 1024 * 1024;
+  inline static constexpr int64_t kTargetDataBufferSize =
+      kTargetDataBytesPerSec * kSamplingPeriod.count() / 1000;
+
+  // Assume a 5MiB/s across socket connections for control events.
+  inline static constexpr int64_t kTargetControlBytesPerSec = 5 * 1024 * 1024;
+  inline static constexpr int64_t kTargetControlBufferSize =
+      kTargetControlBytesPerSec * kSamplingPeriod.count() / 1000;
+
   inline static const auto kPerfBufferSpecs = MakeArray<bpf_tools::PerfBufferSpec>({
       // For data events. The order must be consistent with output tables.
-      {"socket_data_events", HandleDataEvent, HandleDataEventLoss},
+      {"socket_data_events", HandleDataEvent, HandleDataEventLoss, kTargetDataBufferSize},
       // For non-data events. Must not mix with the above perf buffers for data events.
-      {"socket_control_events", HandleControlEvent, HandleControlEventLoss},
-      {"conn_stats_events", HandleConnStatsEvent, HandleConnStatsEventLoss},
-      {"mmap_events", HandleMMapEvent, HandleMMapEventLoss},
-      {"go_grpc_header_events", HandleHTTP2HeaderEvent, HandleHTTP2HeaderEventLoss},
-      {"go_grpc_data_events", HandleHTTP2Data, HandleHTTP2DataLoss},
+      {"socket_control_events", HandleControlEvent, HandleControlEventLoss,
+       kTargetControlBufferSize},
+      {"conn_stats_events", HandleConnStatsEvent, HandleConnStatsEventLoss,
+       kTargetControlBufferSize},
+      {"mmap_events", HandleMMapEvent, HandleMMapEventLoss, kTargetControlBufferSize},
+      {"go_grpc_header_events", HandleHTTP2HeaderEvent, HandleHTTP2HeaderEventLoss,
+       kTargetDataBufferSize / 10},
+      {"go_grpc_data_events", HandleHTTP2Data, HandleHTTP2DataLoss, kTargetDataBufferSize},
   });
 
   // Most HTTP servers support 8K headers, so we truncate after that.
