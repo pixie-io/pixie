@@ -46,6 +46,10 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static constexpr auto kTables = MakeArray(kStackTraceTable);
   static constexpr uint32_t kPerfProfileTableNum = TableNum(kTables, kStackTraceTable);
 
+  static constexpr auto kSamplingPeriod = std::chrono::milliseconds{2500};
+  // TODO(yzhao): This is not used right now. Eventually use this to control data push frequency.
+  static constexpr auto kPushPeriod = std::chrono::milliseconds{5000};
+
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new PerfProfileConnector(name));
   }

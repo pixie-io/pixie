@@ -105,7 +105,6 @@ class SourceConnector : public NotCopyable {
   uint64_t ClockRealTimeOffset() const { return sysconfig_.ClockRealTimeOffset(); }
 
   const SamplePushFrequencyManager& sample_push_mgr() const { return sample_push_freq_mgr_; }
-  SamplePushFrequencyManager* mutable_sample_push_mgr() { return &sample_push_freq_mgr_; }
 
   virtual void SetDebugLevel(int level) { debug_level_ = level; }
   virtual void EnablePIDTrace(int pid) { pids_to_trace_.insert(pid); }
