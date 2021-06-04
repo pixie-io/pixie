@@ -28,8 +28,7 @@ import { ScriptsContext, ScriptsContextProps } from 'containers/App/scripts-cont
 import { ClusterContext, ClusterContextProps } from 'common/cluster-context';
 import VizierGRPCClientContext, { VizierGRPCClientContextProps } from 'common/vizier-grpc-client-context';
 import { GQLClusterStatus as ClusterStatus } from '@pixie-labs/api';
-// TODO(nick,PC-738): Fix this import once the corresponding export is corrected so it doesn't get bundled in the root.
-import { MockPixieAPIContextProvider } from '@pixie-labs/api-react/src/testing';
+import { MockPixieAPIContextProvider } from './api-context-mock';
 
 interface MockProps {
   theme?: Theme;

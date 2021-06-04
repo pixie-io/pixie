@@ -42,7 +42,6 @@ module.exports = {
     '<rootDir>/src',
     '<rootDir>/packages/pixie-components/src',
     '<rootDir>/packages/pixie-api/src',
-    '<rootDir>/packages/pixie-api-react/src',
   ],
   moduleNameMapper: {
     '^.+.(jpg|jpeg|png|gif|svg)$': '<rootDir>/src/testing/file-mock.js',

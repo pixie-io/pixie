@@ -18,7 +18,7 @@
 
 import * as React from 'react';
 import { MockPixieAPIClient } from '@pixie-labs/api';
-import { PixieAPIContext, PixieAPIContextProviderProps } from 'api-context';
+import { PixieAPIContext, PixieAPIContextProviderProps } from 'api';
 import { MockedProvider, MockedResponse } from '@apollo/client/testing';
 
 export interface MockPixieAPIContextProviderProps extends Partial<PixieAPIContextProviderProps> {

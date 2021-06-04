@@ -40,7 +40,7 @@ export {
   VizierQueryResult,
 } from './vizier-grpc-client';
 
-// TODO(nick): Create @pixie-labs/api-react/testing as its own package by doing the same trick that Apollo does.
+// TODO(nick): Create @pixie-labs/api/testing as its own package by doing the same trick that Apollo does.
 export * from './testing';
 
 /* Generated types begin (types are generated but these exports are manually updated) */

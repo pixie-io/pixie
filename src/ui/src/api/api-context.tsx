@@ -19,6 +19,7 @@
 import * as React from 'react';
 import { ApolloProvider } from '@apollo/client/react';
 import { PixieAPIClientAbstract, PixieAPIClient, PixieAPIClientOptions } from '@pixie-labs/api';
+import { makeCancellable } from 'utils/cancellable-promise';
 
 export const PixieAPIContext = React.createContext<PixieAPIClientAbstract>(null);
 
@@ -28,9 +29,10 @@ export const PixieAPIContextProvider: React.FC<PixieAPIContextProviderProps> = (
   const [pixieClient, setPixieClient] = React.useState<PixieAPIClient>(null);
 
   React.useEffect(() => {
-    PixieAPIClient.create(opts).then(setPixieClient);
+    const creator = makeCancellable(PixieAPIClient.create(opts));
+    creator.then(setPixieClient);
     return () => {
-      // TODO(nick): Unlucky timing could have this happen and THEN the promise above resolve. Need to cancel it.
+      creator.cancel();
       setPixieClient(null);
     };
     // Destructuring the options instead of checking directly because the identity of the object changes every render.

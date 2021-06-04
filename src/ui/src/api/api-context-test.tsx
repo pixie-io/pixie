@@ -16,6 +16,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export * from './mocks/api-context.mock';
-export * from './utils';
-export * from './hook-testing-boilerplate';
+import * as React from 'react';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { screen, render } from '@testing-library/react';
+// noinspection ES6PreferShortImport
+import { PixieAPIContextProvider } from './api-context';
+
+describe('Pixie API React Context', () => {
+  it('renders once the context is ready', async () => {
+    render(<PixieAPIContextProvider apiKey=''>Hello</PixieAPIContextProvider>);
+    await screen.findByText('Hello');
+  });
+});

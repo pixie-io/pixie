@@ -16,14 +16,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { gql } from '@apollo/client';
+import { gql, useQuery } from '@apollo/client';
 import * as React from 'react';
 import {
   Theme, makeStyles,
 } from '@material-ui/core';
 import { createStyles } from '@material-ui/styles';
 import { ClusterContext } from 'common/cluster-context';
-import { useQuery } from '@pixie-labs/api-react';
+
 import { StatusCell, Select } from '@pixie-labs/components';
 import { GQLClusterInfo, GQLClusterStatus } from '@pixie-labs/api';
 import { clusterStatusGroup } from 'containers/admin/utils';

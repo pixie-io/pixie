@@ -16,14 +16,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { gql } from '@apollo/client';
+import { gql, useMutation, useQuery } from '@apollo/client';
 import * as React from 'react';
 import Table from '@material-ui/core/Table';
 import Button from '@material-ui/core/Button';
 import TableBody from '@material-ui/core/TableBody';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
-import { useMutation, useQuery } from '@pixie-labs/api-react';
+
 import { GQLOrgInfo } from '@pixie-labs/api';
 import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';

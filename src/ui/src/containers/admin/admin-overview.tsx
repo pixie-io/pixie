@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { gql } from '@apollo/client';
+import { gql, useMutation } from '@apollo/client';
 import * as React from 'react';
 
 import {
@@ -37,7 +37,7 @@ import { StyledTab, StyledTabs } from 'containers/admin/utils';
 import { GetOAuthProvider } from 'pages/auth/utils';
 import { scrollbarStyles } from '@pixie-labs/components';
 import { GQLAPIKey, GQLDeploymentKey } from '@pixie-labs/api';
-import { useMutation } from '@pixie-labs/api-react';
+
 import {
   Route, Switch, useHistory, useLocation, useRouteMatch,
 } from 'react-router-dom';

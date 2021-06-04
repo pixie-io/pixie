@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { gql } from '@apollo/client';
+import { gql, useQuery } from '@apollo/client';
 import * as React from 'react';
 import {
   Switch, Route, Redirect,
@@ -28,7 +28,7 @@ import { SCRATCH_SCRIPT, ScriptsContext } from 'containers/App/scripts-context';
 import { parseVisSilently } from 'containers/live/vis';
 import { RouteNotFound } from 'containers/App/route-not-found';
 import { selectClusterName } from 'containers/App/cluster-info';
-import { useQuery } from '@pixie-labs/api-react';
+
 import { GQLClusterInfo } from '@pixie-labs/api';
 import { argsForVis } from 'utils/args-utils';
 

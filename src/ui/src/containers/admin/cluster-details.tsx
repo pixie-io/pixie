@@ -18,7 +18,7 @@
 
 import * as React from 'react';
 
-import { gql } from '@apollo/client';
+import { gql, useQuery } from '@apollo/client';
 import ClientContext, { VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
 import { Breadcrumbs, StatusCell, StatusGroup } from '@pixie-labs/components';
 import { distanceInWords } from 'date-fns';
@@ -46,7 +46,7 @@ import {
   GQLPodStatus as PodStatus,
   GQLContainerStatus as ContainerStatus, VizierQueryResult,
 } from '@pixie-labs/api';
-import { useQuery } from '@pixie-labs/api-react';
+
 import { BehaviorSubject } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
 import {

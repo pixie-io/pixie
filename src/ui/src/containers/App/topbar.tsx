@@ -30,7 +30,7 @@ import {
   Avatar, ProfileMenuWrapper, CodeIcon,
   LogoutIcon, SettingsIcon,
 } from '@pixie-labs/components';
-import { useQuery, useMutation } from '@pixie-labs/api-react';
+import { useQuery, useMutation, gql } from '@apollo/client';
 import { LiveShortcutsContext } from 'containers/live/shortcuts';
 import { SidebarContext } from 'context/sidebar-context';
 import { LiveTourContext, LiveTourDialog } from 'containers/App/live-tour';
@@ -43,7 +43,6 @@ import KeyboardIcon from '@material-ui/icons/Keyboard';
 import { Link } from 'react-router-dom';
 import { Logo } from 'configurable/logo';
 import { GQLUserInfo, GQLUserSetting } from '@pixie-labs/api';
-import { gql } from '@apollo/client';
 
 const StyledListItemText = withStyles((theme: Theme) => createStyles({
   primary: {

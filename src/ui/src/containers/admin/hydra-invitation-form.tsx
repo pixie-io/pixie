@@ -16,11 +16,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { gql } from '@apollo/client';
+import { gql, useMutation } from '@apollo/client';
 import * as React from 'react';
 import { OAUTH_PROVIDER } from 'containers/constants';
 import { Form } from '@pixie-labs/components';
-import { useMutation } from '@pixie-labs/api-react';
+
 import { GQLUserInvite } from '@pixie-labs/api';
 import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';

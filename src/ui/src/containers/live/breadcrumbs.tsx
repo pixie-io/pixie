@@ -23,7 +23,7 @@ import {
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import { GQLAutocompleteEntityKind, GQLAutocompleteSuggestion, PixieAPIClient } from '@pixie-labs/api';
-import { PixieAPIContext } from '@pixie-labs/api-react';
+import { PixieAPIContext } from 'api';
 import { gql } from '@apollo/client';
 
 import {

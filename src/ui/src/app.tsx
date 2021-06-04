@@ -40,7 +40,7 @@ import { withLDProvider } from 'launchdarkly-react-client-sdk';
 import { AuthRouter } from 'pages/auth/auth';
 import 'typeface-roboto';
 import 'typeface-roboto-mono';
-import { PixieAPIContext, PixieAPIContextProvider } from '@pixie-labs/api-react';
+import { PixieAPIContext, PixieAPIContextProvider } from 'api';
 
 // This side-effect-only import has to be a `require`, or else it gets erroneously optimized away during compilation.
 require('./wdyr');

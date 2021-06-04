@@ -33,8 +33,8 @@ import { makeStyles } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import { useLDClient } from 'launchdarkly-react-client-sdk';
 import { GQLClusterInfo, GQLClusterStatus, GQLUserInfo } from '@pixie-labs/api';
-import { useQuery } from '@pixie-labs/api-react';
-import { gql } from '@apollo/client';
+import { useQuery, gql } from '@apollo/client';
+
 import { DeployInstructions } from './deploy-instructions';
 import { selectClusterName } from './cluster-info';
 import { RouteNotFound } from './route-not-found';

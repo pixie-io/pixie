@@ -23,7 +23,7 @@ import {
   getQueryFuncs, parseVis, parseVisSilently, Vis,
 } from 'containers/live/vis';
 import { Script } from 'utils/script-bundle';
-import { PixieAPIContext } from '@pixie-labs/api-react';
+import { PixieAPIContext } from 'api';
 import {
   containsMutation, ExecutionStateUpdate, isStreaming, VizierQueryError, ClusterConfig, GRPCStatusCode,
   VizierTable as Table,

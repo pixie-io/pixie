@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { gql } from '@apollo/client';
+import { gql, useQuery, useMutation } from '@apollo/client';
 import Table from '@material-ui/core/Table';
 import IconButton from '@material-ui/core/IconButton';
 import Input from '@material-ui/core/Input';
@@ -31,7 +31,7 @@ import Visibility from '@material-ui/icons/Visibility';
 import VisibilityOff from '@material-ui/icons/VisibilityOff';
 import { distanceInWords } from 'date-fns';
 import * as React from 'react';
-import { useQuery, useMutation } from '@pixie-labs/api-react';
+
 import { GQLDeploymentKey } from '@pixie-labs/api';
 import {
   AdminTooltip, StyledTableCell, StyledTableHeaderCell,

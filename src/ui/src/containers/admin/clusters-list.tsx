@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { gql } from '@apollo/client';
+import { gql, useQuery } from '@apollo/client';
 import { StatusCell, StatusGroup } from '@pixie-labs/components';
 import { Theme, withStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
@@ -27,7 +27,7 @@ import TableRow from '@material-ui/core/TableRow';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { GaugeLevel } from 'utils/metric-thresholds';
-import { useQuery } from '@pixie-labs/api-react';
+
 import { GQLClusterInfo } from '@pixie-labs/api';
 import {
   AdminTooltip, clusterStatusGroup, convertHeartbeatMS, getClusterDetailsURL,
