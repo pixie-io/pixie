@@ -44,8 +44,6 @@ static constexpr DataElement kElements[] = {
      types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_GAUGE}
 };
 
-constexpr std::chrono::milliseconds kStackTraceTableSamplingPeriod(2500);
-
 // Keep at about half of kBPFTargetPushPeriodMillis, so we properly push out up
 // data pushed out by BPF.
 constexpr std::chrono::milliseconds kStackTraceTablePushPeriod(5000);
@@ -55,7 +53,6 @@ constexpr auto kStackTraceTable = DataTableSchema(
         "Sampled stack traces of applications that identify hot-spots in application code. "
         "Executable symbols are required for human-readable function names to be displayed.",
         kElements,
-        kStackTraceTableSamplingPeriod,
         kStackTraceTablePushPeriod
 );
 // clang-format on

@@ -60,9 +60,8 @@ static constexpr DataElement kDNSElements[] = {
 };
 // clang-format on
 
-static constexpr auto kDNSTable =
-    DataTableSchema("dns_events", "DNS request-response pair events", kDNSElements,
-                    std::chrono::milliseconds{100}, std::chrono::milliseconds{1000});
+static constexpr auto kDNSTable = DataTableSchema("dns_events", "DNS request-response pair events",
+                                                  kDNSElements, std::chrono::milliseconds{1000});
 DEFINE_PRINT_TABLE(DNS)
 
 static constexpr int kDNSUPIDIdx = kDNSTable.ColIndex("upid");

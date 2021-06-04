@@ -256,7 +256,7 @@ class PerfProfileBPFTest : public ::testing::Test {
   }
 
   std::chrono::duration<double> RunTest(const std::chrono::seconds test_run_time) {
-    constexpr std::chrono::milliseconds t_sleep = kStackTraceTableSamplingPeriod;
+    constexpr std::chrono::milliseconds t_sleep = PerfProfileConnector::kSamplingPeriod;
     const auto start_time = std::chrono::steady_clock::now();
     const auto stop_time = start_time + test_run_time;
 

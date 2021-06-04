@@ -46,7 +46,7 @@ class ProcStatConnector : public SourceConnector {
   // clang-format on
   static constexpr auto kTable =
       DataTableSchema("proc_stat", "CPU usage metrics for processes (obtained via /proc)",
-                      kElements, std::chrono::milliseconds{100}, std::chrono::milliseconds{1000});
+                      kElements, std::chrono::milliseconds{1000});
 
   static constexpr auto kTables = MakeArray(kTable);
 

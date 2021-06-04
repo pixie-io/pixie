@@ -66,7 +66,6 @@ class InfoClassManager final : public NotCopyable {
                             stirlingpb::SourceType type = stirlingpb::STATIC)
       : type_(type), schema_(schema) {
     id_ = global_id_++;
-    sample_push_freq_mgr_.set_sampling_period(schema.default_sampling_period());
     sample_push_freq_mgr_.set_push_period(schema.default_push_period());
   }
 
@@ -190,6 +189,8 @@ class InfoClassManager final : public NotCopyable {
   // Pointer to the data table where the data is stored.
   DataTable* data_table_ = nullptr;
 
+  // Used to determine push frequency.
+  // NOTE: The sampling period part is not used!
   SamplePushFrequencyManager sample_push_freq_mgr_;
 };
 

@@ -114,8 +114,7 @@ class TestSourceConnector : public SourceConnector {
        PatternType::METRIC_GAUGE}};
 
   static constexpr auto kTable =
-      DataTableSchema("cpu", "CPU usage metrics", kElements, std::chrono::milliseconds{100},
-                      std::chrono::milliseconds{1000});
+      DataTableSchema("cpu", "CPU usage metrics", kElements, std::chrono::milliseconds{1000});
   static constexpr auto kTables = MakeArray(kTable);
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
@@ -140,8 +139,7 @@ class TestSourceConnector2 : public SourceConnector {
       {"c", "", DataType::FLOAT64, SemanticType::ST_NONE, PatternType::METRIC_GAUGE}};
 
   static constexpr auto kTable =
-      DataTableSchema("my_table", "Mine, mine, mine!", kElements, std::chrono::milliseconds{100},
-                      std::chrono::milliseconds{1000});
+      DataTableSchema("my_table", "Mine, mine, mine!", kElements, std::chrono::milliseconds{1000});
   static constexpr auto kTables = MakeArray(kTable);
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {

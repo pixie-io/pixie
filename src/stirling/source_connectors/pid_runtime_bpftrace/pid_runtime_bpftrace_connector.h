@@ -65,7 +65,7 @@ class PIDCPUUseBPFTraceConnector : public SourceConnector, public bpf_tools::BPF
   // clang-format on
   static constexpr auto kTable = DataTableSchema(
       "bpftrace_pid_cpu_usage", "CPU usage metrics for processes (obtained via BPFtrace)",
-      kElements, std::chrono::milliseconds{100}, std::chrono::milliseconds{1000});
+      kElements, std::chrono::milliseconds{1000});
   static constexpr auto kTables = MakeArray(kTable);
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {

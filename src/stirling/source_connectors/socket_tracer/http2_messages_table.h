@@ -55,7 +55,7 @@ constexpr DataElement kHTTP2MessagesElements[] = {
 
 constexpr auto kHTTP2MessagesTable =
     DataTableSchema("http2_messages.beta", "HTTP2 messages events", kHTTPMessagesElements,
-                    std::chrono::milliseconds{100}, std::chrono::milliseconds{1000});
+                    std::chrono::milliseconds{1000});
 DEFINE_PRINT_TABLE(HTTP2Messages)
 
 constexpr int kHTTP2MessagesTimeIdx = kHTTP2MessagesTable.ColIndex("time_");

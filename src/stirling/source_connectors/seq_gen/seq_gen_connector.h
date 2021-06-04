@@ -73,7 +73,7 @@ class SeqGenConnector : public SourceConnector {
   // clang-format on
   static constexpr auto kSeq0Table = DataTableSchema(
       "sequence_generator0", "A table of predictable sequences for testing purposes", kElementsSeq0,
-      std::chrono::milliseconds{500}, std::chrono::milliseconds{1000});
+      std::chrono::milliseconds{1000});
 
   // clang-format off
   static constexpr DataElement kElementsSeq1[] = {
@@ -97,8 +97,7 @@ class SeqGenConnector : public SourceConnector {
   static constexpr std::string_view kSeq1TabletizationKey = "xmod8";
   static constexpr auto kSeq1Table = DataTableSchema(
       "sequence_generator1", "A tabletized table of predictable sequences for testing purposes",
-      kElementsSeq1, kSeq1TabletizationKey, std::chrono::milliseconds{500},
-      std::chrono::milliseconds{1000});
+      kElementsSeq1, kSeq1TabletizationKey, std::chrono::milliseconds{1000});
 
   static constexpr auto kTables = MakeArray(kSeq0Table, kSeq1Table);
   static constexpr uint32_t kSeq0TableNum = SourceConnector::TableNum(kTables, kSeq0Table);

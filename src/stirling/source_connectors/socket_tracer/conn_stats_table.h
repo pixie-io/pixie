@@ -60,7 +60,6 @@ constexpr DataTableSchema kConnStatsTable(
     "client-server pairs. For network-level information such as RX/TX errors and drops, see the "
     "Network-Layer Stats (network_stats) table.",
     kConnStatsElements,
-    /* default_sampling_period */ std::chrono::milliseconds{5000},
     /* default_push_period */ std::chrono::milliseconds{5000});
 DEFINE_PRINT_TABLE(ConnStats)
 
