@@ -23,25 +23,13 @@ import {
   ApolloLink,
   createHttpLink,
   ServerError,
+  gql,
 } from '@apollo/client/core';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 import { persistCache } from 'apollo3-cache-persist';
-import {
-  API_KEY_QUERIES,
-  AUTOCOMPLETE_QUERIES,
-  CLUSTER_QUERIES,
-  DEPLOYMENT_KEY_QUERIES, USER_QUERIES,
-} from 'gql-queries';
 import fetch from 'cross-fetch';
 import { PixieAPIClientOptions } from './types/client-options';
-import {
-  GQLAPIKey,
-  GQLAutocompleteActionType,
-  GQLAutocompleteEntityKind,
-  GQLAutocompleteResult, GQLAutocompleteSuggestion, GQLClusterInfo,
-  GQLDeploymentKey, GQLUserInfo, GQLUserInvite,
-} from './types/schema';
 
 // Apollo link that adds cookies in the request.
 const makeCloudAuthLink = (opts: PixieAPIClientOptions) => setContext((_, { headers }) => ({
@@ -132,155 +120,17 @@ export class CloudClient {
    */
   async getClusterConnection(id: string, noCache = false): Promise<ClusterConnection> {
     const { data } = await this.graphQL.query<GetClusterConnResults>({
-      query: CLUSTER_QUERIES.GET_CLUSTER_CONN,
+      query: gql`
+        query GetClusterConnection($id: ID!) {
+          clusterConnection(id: $id) {
+            ipAddress
+            token
+          }
+        }
+      `,
       variables: { id },
       fetchPolicy: noCache ? 'network-only' : 'cache-first',
     });
     return data.clusterConnection;
-  }
-
-  /** Fetches a list of all available clusters. */
-  async listClusters(): Promise<GQLClusterInfo[]> {
-    const { data } = await this.graphQL.query<{ clusters: GQLClusterInfo[] }>({
-      query: CLUSTER_QUERIES.LIST_CLUSTERS_VERBOSE,
-      fetchPolicy: 'network-only',
-    });
-    return data.clusters;
-  }
-
-  /**
-   * Fetches a list of control planes for currently-available clusters.
-   */
-  async getClusterControlPlanePods(): Promise<GQLClusterInfo[]> {
-    const { data } = await this.graphQL.query<{ clusters: GQLClusterInfo[] }>({
-      query: CLUSTER_QUERIES.GET_CLUSTER_CONTROL_PLANE_PODS,
-    });
-    return data.clusters;
-  }
-
-  /** Creates a Pixie API key, then returns its ID. */
-  async createAPIKey(): Promise<string> {
-    const { data } = await this.graphQL.mutate<{ CreateAPIKey: { id: string } }>({
-      mutation: API_KEY_QUERIES.CREATE_API_KEY,
-    });
-    return data.CreateAPIKey.id;
-  }
-
-  /** Deletes a Pixie API key with the given ID. */
-  async deleteAPIKey(id: string): Promise<void> {
-    await this.graphQL.mutate<void, { id: string }>({
-      mutation: API_KEY_QUERIES.DELETE_API_KEY,
-      variables: { id },
-    });
-    // Nothing to return here. Just wait for the promise to resolve or reject.
-  }
-
-  /** Fetches a list of accessible Pixie API keys. */
-  async listAPIKeys(): Promise<GQLAPIKey[]> {
-    const { data } = await this.graphQL.query<{ apiKeys: GQLAPIKey[] }>({
-      query: API_KEY_QUERIES.LIST_API_KEYS,
-      fetchPolicy: 'no-cache',
-    });
-    return data.apiKeys;
-  }
-
-  /** Creates a cluster deployment key, then returns its ID. */
-  async createDeploymentKey(): Promise<string> {
-    const { data } = await this.graphQL.mutate<{ CreateDeploymentKey: { id: string } }>({
-      mutation: DEPLOYMENT_KEY_QUERIES.CREATE_DEPLOYMENT_KEY,
-    });
-    return data.CreateDeploymentKey.id;
-  }
-
-  /** Deletes a cluster deployment key with the given ID. */
-  async deleteDeploymentKey(id: string): Promise<void> {
-    await this.graphQL.mutate<void, { id: string }>({
-      mutation: DEPLOYMENT_KEY_QUERIES.DELETE_DEPLOYMENT_KEY,
-      variables: { id },
-    });
-    // Nothing to return here. Just wait for the promise to resolve or reject.
-  }
-
-  /** Fetches a list of accessible cluster deployment keys. */
-  async listDeploymentKeys(): Promise<GQLDeploymentKey[]> {
-    const { data } = await this.graphQL.query<{ deploymentKeys: GQLDeploymentKey[] }>({
-      query: DEPLOYMENT_KEY_QUERIES.LIST_DEPLOYMENT_KEYS,
-      fetchPolicy: 'no-cache',
-    });
-    return data.deploymentKeys;
-  }
-
-  /**
-   * On authentication providers that allow one user to invite another to create an account,
-   * generates a link to send to the invitee. What that link specifically does is up to the auth provider.
-   */
-  async createUserInvitation(
-    givenName: string, familyName: string, email: string,
-  ): Promise<GQLUserInvite> {
-    type Input = { firstName: string, lastName: string, email: string };
-    type Output = { InviteUser: GQLUserInvite };
-    const { data } = await this.graphQL.mutate<Output, Input>({
-      mutation: USER_QUERIES.INVITE_USER,
-      variables: { firstName: givenName, lastName: givenName, email },
-    });
-    return data.InviteUser;
-  }
-
-  /**
-   * Creates a function that can suggest complete commands for a cluster, such as a script to execute and its args.
-   * For an example of this in use, check out CommandAutocomplete in @pixie-labs/components
-   */
-  getAutocompleteSuggester(
-    clusterUID: string,
-  ): (input: string, cursor: number, action: GQLAutocompleteActionType) => Promise<GQLAutocompleteResult> {
-    return (input, cursor, action) => this.graphQL.query<{ autocomplete: GQLAutocompleteResult }>({
-      query: AUTOCOMPLETE_QUERIES.AUTOCOMPLETE,
-      fetchPolicy: 'network-only',
-      variables: {
-        input,
-        cursor,
-        action,
-        clusterUID,
-      },
-    }).then(
-      (results) => results.data.autocomplete,
-    );
-  }
-
-  /**
-   * Creates a function that can suggest entity names (such as script IDs) based on a partial input.
-   * For an example of this in use, check out Breadcrumbs in @pixie-labs/components
-   */
-  getAutocompleteFieldSuggester(
-    clusterUID: string,
-  ): (input: string, kind: GQLAutocompleteEntityKind) => Promise<GQLAutocompleteSuggestion[]> {
-    return (input, kind) => this.graphQL.query<{ autocompleteField: GQLAutocompleteSuggestion[] }>({
-      query: AUTOCOMPLETE_QUERIES.FIELD,
-      fetchPolicy: 'network-only',
-      variables: {
-        input,
-        kind,
-        clusterUID,
-      },
-    }).then(
-      (results) => results.data.autocompleteField,
-    );
-  }
-
-  async getUserInfo(): Promise<GQLUserInfo> {
-    const { data } = await this.graphQL.query<{ user: GQLUserInfo }>({
-      query: USER_QUERIES.GET_USER_INFO,
-      fetchPolicy: 'network-only',
-    });
-    return data.user;
-  }
-
-  /** Fetches a list of users in the org. */
-  async getOrgUsers(): Promise<GQLUserInfo[]> {
-    const { data } = await this.graphQL.query<{ users: GQLUserInfo[] }>({
-      query: USER_QUERIES.GET_ORG_USERS,
-      fetchPolicy: 'network-only',
-    });
-    return data.users;
   }
 }

@@ -194,57 +194,6 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
       .pipe(switchMap((client) => client.executeScript(script, funcs, hasMutation)));
   }
 
-  // Convenience: curry methods from the GQL client.
-  // TSDoc comments are copy-pasted to avoid an extra click through @see.
-
-  /** Fetches a list of all available clusters. */
-  listClusters: CloudClient['listClusters'] = () => this.gqlClient.listClusters();
-
-  /**
-   * Fetches a list of control planes for currently-available clusters.
-   */
-  // eslint-disable-next-line max-len
-  getClusterControlPlanePods: CloudClient['getClusterControlPlanePods'] = () => this.gqlClient.getClusterControlPlanePods();
-
-  /** Creates a Pixie API key, then returns its ID. */
-  createAPIKey: CloudClient['createAPIKey'] = () => this.gqlClient.createAPIKey();
-
-  /** Deletes a Pixie API key with the given ID. */
-  deleteAPIKey: CloudClient['deleteAPIKey'] = (id: string) => this.gqlClient.deleteAPIKey(id);
-
-  /** Fetches a list of accessible Pixie API keys. Results update at most once every 2 seconds. */
-  listAPIKeys: CloudClient['listAPIKeys'] = () => this.gqlClient.listAPIKeys();
-
-  /** Creates a cluster deployment key, then returns its ID. */
-  createDeploymentKey: CloudClient['createDeploymentKey'] = () => this.gqlClient.createDeploymentKey();
-
-  /** Deletes a cluster deployment key with the given ID. */
-  deleteDeploymentKey: CloudClient['deleteDeploymentKey'] = (id: string) => this.gqlClient.deleteDeploymentKey(id);
-
-  /** Fetches a list of accessible cluster deployment keys. Results update at most once every 2 seconds. */
-  listDeploymentKeys: CloudClient['listDeploymentKeys'] = () => this.gqlClient.listDeploymentKeys();
-
-  /**
-   * On authentication providers that allow one user to invite another to create an account,
-   * generates a link to send to the invitee. What that link specifically does is up to the auth provider.
-   */
-  // eslint-disable-next-line max-len
-  createUserInvitation: CloudClient['createUserInvitation'] = (given, family, email) => this.gqlClient.createUserInvitation(given, family, email);
-
-  /**
-   * Creates a function that can suggest complete commands for a cluster, such as a script to execute and its args.
-   * For an example of this in use, check out CommandAutocomplete in @pixie-labs/components
-   */
-  // eslint-disable-next-line max-len
-  getAutocompleteSuggester: CloudClient['getAutocompleteSuggester'] = (clusterUID) => this.gqlClient.getAutocompleteSuggester(clusterUID);
-
-  /**
-   * Creates a function that can suggest entity names (such as script IDs) based on a partial input.
-   * For an example of this in use, check out Breadcrumbs in @pixie-labs/components
-   */
-  // eslint-disable-next-line max-len
-  getAutocompleteFieldSuggester: CloudClient['getAutocompleteFieldSuggester'] = (clusterUID) => this.gqlClient.getAutocompleteFieldSuggester(clusterUID);
-
   /**
    * Implementation detail for adapters like @pixie-labs/api-react.
    * Do not use directly unless writing such an adapter.

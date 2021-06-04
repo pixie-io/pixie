@@ -18,76 +18,25 @@
 
 import { ApolloQueryResult } from '@apollo/client/core';
 import { CloudClient } from './cloud-gql-client';
-import { mockApolloClient, Invocation } from './testing';
+import { mockApolloClient } from './testing';
 
 describe('Cloud client (GQL wrapper)', () => {
-  const { query, mutate } = mockApolloClient();
+  const { query } = mockApolloClient();
 
   it('instantiates', () => {
     const cloudClient = new CloudClient({ apiKey: '', uri: 'irrelevant' });
     expect(cloudClient).toBeTruthy();
   });
 
-  describe('GQL methods', () => {
-    const querySubjects: ReadonlyArray<Invocation<CloudClient>> = [
-      ['getClusterConnection', 'foo'],
-      ['listAPIKeys'],
-      ['listDeploymentKeys'],
-      ['listClusters'],
-      ['getClusterControlPlanePods'],
-      ['getOrgUsers'],
-    ];
+  it('gets cluster connections from GraphQL', async () => {
+    const cloudClient = new CloudClient({ apiKey: '', uri: 'irrelevant' });
+    query.mockImplementation(() => Promise.resolve({
+      data: new Proxy({}, {
+        get: () => 'retrieved',
+      }),
+    } as ApolloQueryResult<unknown>));
 
-    it.each(querySubjects)('%s queries GraphQL', async (name: keyof CloudClient, ...args: any[]) => {
-      const cloudClient = new CloudClient({ apiKey: '', uri: 'irrelevant' });
-      expect(typeof cloudClient[name]).toBe('function');
-      query.mockImplementation(() => Promise.resolve({
-        data: new Proxy({}, {
-          get: () => 'retrieved',
-        }),
-      } as ApolloQueryResult<unknown>));
-
-      const out = await (cloudClient[name] as (...p: any[]) => any)(...args);
-      expect(out).toBe('retrieved');
-    });
-
-    it.each(['createAPIKey', 'createDeploymentKey'])('%s sends a mutation to GraphQL', async (name) => {
-      const cloudClient = new CloudClient({ apiKey: '', uri: 'irrelevant' });
-      mutate.mockImplementation(() => Promise.resolve({
-        data: {
-          [`C${name.substr(1)}`]: { // CreateAPIKey and CreateDeploymentKey; names of the mutations are title case
-            id: 'foo',
-          },
-        },
-      }));
-
-      const out = await cloudClient[name]();
-      expect(mutate).toHaveBeenCalled();
-      expect(out).toBe('foo');
-    });
-
-    it.each(['deleteAPIKey', 'deleteDeploymentKey'])('%s sends a mutation to GraphQL', async (name) => {
-      const cloudClient = new CloudClient({ apiKey: '', uri: 'irrelevant' });
-      mutate.mockImplementation(() => Promise.resolve({}));
-
-      await cloudClient[name]('foo');
-      expect(mutate).toHaveBeenCalledWith(jasmine.objectContaining({
-        variables: {
-          id: 'foo',
-        },
-      }));
-    });
-
-    it('creates an invitation link', async () => {
-      const cloudClient = new CloudClient({ apiKey: '', uri: 'irrelevant' });
-      mutate.mockImplementation(() => Promise.resolve({
-        data: { InviteUser: { email: 'test@example.com', inviteLink: 'an HTTPS link' } },
-      }));
-
-      const invitation = await cloudClient.createUserInvitation('Test', 'McUser', 'test@example.com');
-      expect(invitation).toBeDefined();
-      expect(invitation.email).toBe('test@example.com');
-      expect(invitation.inviteLink).toBe('an HTTPS link');
-    });
+    const out = await cloudClient.getClusterConnection('fooCluster');
+    expect(out).toBe('retrieved');
   });
 });

@@ -18,9 +18,8 @@
 
 import fetch from 'cross-fetch';
 import { PixieAPIClient } from './api';
-import { CloudClient } from './cloud-gql-client';
-import { mockApolloClient, Invocation } from './testing';
-import { GQLAutocompleteActionType, GQLAutocompleteEntityKind } from './types/schema';
+import { mockApolloClient } from './testing';
+
 // Imported only so that its import in the test subject can be mocked successfully.
 import * as vizierDependency from './vizier-grpc-client';
 
@@ -68,50 +67,6 @@ describe('Pixie TypeScript API Client', () => {
       } catch (e) {
         expect(e).toBe('Ah, bugger.');
       }
-    });
-  });
-
-  // The GQL methods are just proxies to CloudGQLClient, which has its own tests. Only skeletal tests needed here.
-
-  const proxies: ReadonlyArray<Invocation<CloudClient>> = [
-    ['createAPIKey'],
-    ['listAPIKeys'],
-    ['deleteAPIKey', 'foo'],
-    ['createDeploymentKey'],
-    ['listDeploymentKeys'],
-    ['deleteDeploymentKey', 'foo'],
-    ['createUserInvitation', 'Test', 'Exampleton', 'test@example.com'],
-    ['listClusters'],
-    ['getClusterControlPlanePods'],
-  ];
-
-  it.each(proxies)('%s forwards to CloudClient', async (name: keyof CloudClient, ...args: any[]) => {
-    const client = await PixieAPIClient.create({ apiKey: '' });
-    const spy = spyOn(client.getCloudGQLClientForAdapterLibrary(), name);
-    expect(typeof client[name]).toBe('function');
-    client[name](...args);
-    expect(spy).toHaveBeenCalledWith(...args);
-  });
-
-  describe('autocomplete methods', () => {
-    it('getAutocompleteSuggester forwards to CloudClient', async () => {
-      const client = await PixieAPIClient.create({ apiKey: '' });
-      const spy = jest.fn();
-      spyOn(client.getCloudGQLClientForAdapterLibrary(), 'getAutocompleteSuggester').and.returnValue(spy);
-      const suggester = await client.getAutocompleteSuggester('foo');
-      expect(typeof suggester).toBe('function');
-      suggester('bar', 0, GQLAutocompleteActionType.AAT_SELECT);
-      expect(spy).toHaveBeenCalledWith('bar', 0, GQLAutocompleteActionType.AAT_SELECT);
-    });
-
-    it('getAutocompleteFieldSuggester forwards to CloudClient', async () => {
-      const client = await PixieAPIClient.create({ apiKey: '' });
-      const spy = jest.fn();
-      spyOn(client.getCloudGQLClientForAdapterLibrary(), 'getAutocompleteFieldSuggester').and.returnValue(spy);
-      const suggester = await client.getAutocompleteFieldSuggester('foo');
-      expect(typeof suggester).toBe('function');
-      suggester('bar', GQLAutocompleteEntityKind.AEK_SCRIPT);
-      expect(spy).toHaveBeenCalledWith('bar', GQLAutocompleteEntityKind.AEK_SCRIPT);
     });
   });
 
