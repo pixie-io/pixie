@@ -221,7 +221,7 @@ class StirlingImpl final : public Stirling {
   // Lock to protect both info_class_mgrs_ and sources_.
   absl::base_internal::SpinLock info_class_mgrs_lock_;
 
-  std::unique_ptr<PubSubManager> config_;
+  std::unique_ptr<PubSubManager> pub_sub_mgr_;
 
   std::unique_ptr<SourceRegistry> registry_;
 
@@ -244,7 +244,7 @@ class StirlingImpl final : public Stirling {
 };
 
 StirlingImpl::StirlingImpl(std::unique_ptr<SourceRegistry> registry)
-    : config_(std::make_unique<PubSubManager>()), registry_(std::move(registry)) {}
+    : pub_sub_mgr_(std::make_unique<PubSubManager>()), registry_(std::move(registry)) {}
 
 StirlingImpl::~StirlingImpl() { Stop(); }
 
@@ -479,7 +479,7 @@ void StirlingImpl::DeployDynamicTraceConnector(
   stirlingpb::Publish publication;
   {
     absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
-    config_->PopulatePublishProto(&publication, info_class_mgrs_, output_name);
+    pub_sub_mgr_->PopulatePublishProto(&publication, info_class_mgrs_, output_name);
   }
 
   absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
@@ -578,7 +578,7 @@ Status StirlingImpl::RemoveTracepoint(sole::uuid trace_id) {
 
 void StirlingImpl::GetPublishProto(stirlingpb::Publish* publish_pb) {
   absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
-  config_->PopulatePublishProto(publish_pb, info_class_mgrs_);
+  pub_sub_mgr_->PopulatePublishProto(publish_pb, info_class_mgrs_);
 }
 
 // Assumes info_class_mgrs are ordered by source_table_num, which was guaranteed in AddSource().
@@ -609,7 +609,7 @@ Status StirlingImpl::SetSubscription(const stirlingpb::Subscribe& subscribe_prot
   tables_.clear();
 
   // Update schemas based on the subscribe_proto.
-  PL_CHECK_OK(config_->UpdateSchemaFromSubscribe(subscribe_proto, info_class_mgrs_));
+  PL_CHECK_OK(pub_sub_mgr_->UpdateSchemaFromSubscribe(subscribe_proto, info_class_mgrs_));
 
   // Generate the tables required based on subscribed Info Classes.
   for (const auto& mgr : info_class_mgrs_) {
