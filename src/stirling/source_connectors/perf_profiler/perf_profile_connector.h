@@ -46,7 +46,19 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static constexpr auto kTables = MakeArray(kStackTraceTable);
   static constexpr uint32_t kPerfProfileTableNum = TableNum(kTables, kStackTraceTable);
 
+  // kBPFSamplingPeriodMillis: the time interval in between stack trace samples.
+  static constexpr uint64_t kBPFSamplingPeriodMillis = 11;
+
+  // kBPFTargetPushPeriodMillis: time interval between "push events".
+  // ... a push event is when the BPF perf-profiler probe notifies stirling (user space)
+  // that the shared maps are full and ready for consumption. After each push,
+  // the BPF side switches over to the other map set.
+  static constexpr uint64_t kBPFTargetPushPeriodMillis = 10 * 1000;
+
+  // 4x faster than kBPFTargetPushPeriodMillis, so we don't miss our chance to consume the data,
+  // before it gets clobbered.
   static constexpr auto kSamplingPeriod = std::chrono::milliseconds{2500};
+
   // TODO(yzhao): This is not used right now. Eventually use this to control data push frequency.
   static constexpr auto kPushPeriod = std::chrono::milliseconds{5000};
 
@@ -57,7 +69,6 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   Status InitImpl() override;
   Status StopImpl() override;
   void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
-  static constexpr uint64_t BPFSamplingPeriodMillis() { return kSamplingPeriodMillis; }
 
  private:
   // SymbolicStackTrace identifies a particular stack trace by:
@@ -137,15 +148,8 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // TODO(oazizi): Investigate ways of sharing across source_connectors.
   ProcTracker proc_tracker_;
 
-  // kSamplingPeriodMillis: the time interval in between stack trace samples.
-  // kTargetPushPeriodMillis: time interval between "push events".
-  // ... a push event is when the BPF perf-profiler probe notifies stirling (user space)
-  // that the shared maps are full and ready for consumption. After each push,
-  // the BPF side switches over to the other map set.
-  static constexpr uint64_t kSamplingPeriodMillis = 11;
-  static constexpr uint64_t kTargetPushPeriodMillis = 10 * 1000;
   static constexpr auto kProbeSpecs =
-      MakeArray<bpf_tools::SamplingProbeSpec>({"sample_call_stack", kSamplingPeriodMillis});
+      MakeArray<bpf_tools::SamplingProbeSpec>({"sample_call_stack", kBPFSamplingPeriodMillis});
 };
 
 }  // namespace stirling

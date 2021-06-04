@@ -188,13 +188,13 @@ class PerfProfileBPFTest : public ::testing::Test {
 
   void CheckExpectedStackTraceCounts(const ssize_t num_subprocesses,
                                      const std::chrono::duration<double> elapsed_time) {
-    const uint64_t kBPFSmaplingPeriodMillis = PerfProfileConnector::BPFSamplingPeriodMillis();
-    const double expected_rate = 1000.0 / static_cast<double>(kBPFSmaplingPeriodMillis);
+    const uint64_t kBPFSamplingPeriodMillis = PerfProfileConnector::kBPFSamplingPeriodMillis;
+    const double expected_rate = 1000.0 / static_cast<double>(kBPFSamplingPeriodMillis);
     const double expected_num_samples = num_subprocesses * elapsed_time.count() * expected_rate;
     const uint64_t expected_num_sample_lower = uint64_t(0.9 * expected_num_samples);
     const uint64_t expected_num_sample_upper = uint64_t(1.1 * expected_num_samples);
-    const double obsevedNumSamples = static_cast<double>(cumulative_sum_);
-    const double observed_rate = obsevedNumSamples / elapsed_time.count() / num_subprocesses;
+    const double observedNumSamples = static_cast<double>(cumulative_sum_);
+    const double observed_rate = observedNumSamples / elapsed_time.count() / num_subprocesses;
 
     LOG(INFO) << absl::StrFormat("expected num samples: %d", uint64_t(expected_num_samples));
     LOG(INFO) << absl::StrFormat("total samples: %d", cumulative_sum_);

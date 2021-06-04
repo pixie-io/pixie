@@ -36,6 +36,7 @@ PerfProfileConnector::PerfProfileConnector(std::string_view source_name)
 
 Status PerfProfileConnector::InitImpl() {
   sample_push_freq_mgr_.set_sampling_period(kSamplingPeriod);
+  // TODO(yzhao): This is not used right now. Eventually use this to control data push frequency.
   sample_push_freq_mgr_.set_push_period(kPushPeriod);
 
   const size_t ncpus = get_nprocs_conf();
@@ -43,8 +44,8 @@ Status PerfProfileConnector::InitImpl() {
 
   const std::vector<std::string> defines = {
       absl::Substitute("-DNCPUS=$0", ncpus),
-      absl::Substitute("-DPUSH_PERIOD=$0", kTargetPushPeriodMillis),
-      absl::Substitute("-DSAMPLE_PERIOD=$0", kSamplingPeriodMillis)};
+      absl::Substitute("-DPUSH_PERIOD=$0", kBPFTargetPushPeriodMillis),
+      absl::Substitute("-DSAMPLE_PERIOD=$0", kBPFSamplingPeriodMillis)};
 
   PL_RETURN_IF_ERROR(InitBPFProgram(profiler_bcc_script, defines));
   PL_RETURN_IF_ERROR(AttachSamplingProbes(kProbeSpecs));

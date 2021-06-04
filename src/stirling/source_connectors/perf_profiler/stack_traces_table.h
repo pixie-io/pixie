@@ -45,6 +45,9 @@ static constexpr DataElement kElements[] = {
 };
 
 constexpr std::chrono::milliseconds kStackTraceTableSamplingPeriod(2500);
+
+// Keep at about half of kBPFTargetPushPeriodMillis, so we properly push out up
+// data pushed out by BPF.
 constexpr std::chrono::milliseconds kStackTraceTablePushPeriod(5000);
 
 constexpr auto kStackTraceTable = DataTableSchema(
