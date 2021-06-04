@@ -46,7 +46,7 @@ type QueryResolver struct {
 	Env GraphQLEnv
 }
 
-// NewGraphQLHandler is the hTTP handler used for handling GraphQL requests.
+// NewGraphQLHandler is the HTTP handler used for handling GraphQL requests.
 func NewGraphQLHandler(graphqlEnv GraphQLEnv) http.Handler {
 	schemaData := schema.MustLoadSchema()
 	opts := []graphql.SchemaOpt{graphql.UseFieldResolvers(), graphql.MaxParallelism(20)}
@@ -54,7 +54,7 @@ func NewGraphQLHandler(graphqlEnv GraphQLEnv) http.Handler {
 	return &relay.Handler{Schema: gqlSchema}
 }
 
-// NewUnauthenticatedGraphQLHandler is the hTTP handler used for handling unauthenticated GraphQL requests.
+// NewUnauthenticatedGraphQLHandler is the HTTP handler used for handling unauthenticated GraphQL requests.
 func NewUnauthenticatedGraphQLHandler(graphqlEnv GraphQLEnv) http.Handler {
 	schemaData := unauthenticatedschema.MustLoadSchema()
 	opts := []graphql.SchemaOpt{graphql.UseFieldResolvers(), graphql.MaxParallelism(20)}

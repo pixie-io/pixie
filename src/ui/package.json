@@ -198,7 +198,7 @@
     "license_check": "./node_modules/license-checker/bin/license-checker",
     "lint": "tsc --noEmit && eslint '*/**/*.{js,ts,tsx}'",
     "vgspec": "NODE_PATH=./src ts-node --compiler-options '{\"module\":\"commonjs\"}' src/utils/print-vgspec-cli.ts",
-    "regenerate_graphql_schema": "node $(yarn bin graphql-schema-typescript) generate-ts ../cloud/api/controller/schema/schema.graphql --output src/types/schema.d.ts"
+    "regenerate_graphql_schema": "node $(yarn bin graphql-schema-typescript) generate-ts"
   },
   "resolutions": {
     "@types/react": "^17.0.3",

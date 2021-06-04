@@ -26,5 +26,5 @@ go generate
 # - The environment running this script can run Bash (if the top of this file is any indication, it can).
 schemaRoot="$(cd "$(dirname "$0")" && pwd)" # dirname $0 can come back as just `.`, resolve it to a real path.
 uiRoot="${schemaRoot}/../../../../ui"
-pushd "${uiRoot}" && yarn regenerate_graphql_schema
+pushd "${uiRoot}" && yarn regenerate_graphql_schema ../cloud/api/controller/schema/schema.graphql --output src/types/schema.d.ts
 popd && cp "${uiRoot}/src/types/schema.d.ts" "${schemaRoot}/schema.d.ts"

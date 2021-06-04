@@ -24,10 +24,13 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
+	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/gqltesting"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
+	"px.dev/pixie/src/cloud/api/controller"
 	"px.dev/pixie/src/cloud/api/controller/testutils"
+	unauthenticatedschema "px.dev/pixie/src/cloud/api/controller/unauthenticated_schema"
 )
 
 func TestCLIArtifact(t *testing.T) {
@@ -167,6 +170,74 @@ func TestArtifacts_Vizier(t *testing.T) {
 		}, nil)
 
 	gqlSchema := LoadSchema(gqlEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				query {
+					artifacts(artifactName: "vizier") {
+						items {
+							version
+							changelog
+							timestampMs
+						}
+					}
+				}
+			`,
+			ExpectedResult: `
+				{
+					"artifacts": {
+						"items": [
+							{
+								"version": "1.2.3",
+								"changelog": "a changelog",
+								"timestampMs": 10000
+							},
+							{
+								"version": "1.2.2",
+								"changelog": "some changes go here",
+								"timestampMs": 5000
+							}
+						]
+					}
+				}
+			`,
+		},
+	})
+}
+
+func LoadUnauthenticatedSchema(gqlEnv controller.GraphQLEnv) *graphql.Schema {
+	schemaData := unauthenticatedschema.MustLoadSchema()
+	opts := []graphql.SchemaOpt{graphql.UseFieldResolvers(), graphql.MaxParallelism(20)}
+	qr := &controller.QueryResolver{gqlEnv}
+	gqlSchema := graphql.MustParseSchema(schemaData, qr, opts...)
+	return gqlSchema
+}
+func TestArtifacts_Unauthenticated(t *testing.T) {
+	gqlEnv, mockClients, cleanup := testutils.CreateTestGraphQLEnv(t)
+	defer cleanup()
+	ctx := context.Background()
+
+	mockClients.MockArtifact.EXPECT().GetArtifactList(gomock.Any(),
+		&cloudpb.GetArtifactListRequest{
+			ArtifactName: "vizier",
+			ArtifactType: cloudpb.AT_CONTAINER_SET_LINUX_AMD64,
+		}).
+		Return(&cloudpb.ArtifactSet{
+			Name: "vizier",
+			Artifact: []*cloudpb.Artifact{{
+				VersionStr: "1.2.3",
+				Changelog:  "a changelog",
+				Timestamp:  &types.Timestamp{Seconds: 10},
+			}, {
+				VersionStr: "1.2.2",
+				Changelog:  "some changes go here",
+				Timestamp:  &types.Timestamp{Seconds: 5},
+			}},
+		}, nil)
+
+	gqlSchema := LoadUnauthenticatedSchema(gqlEnv)
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
 			Schema:  gqlSchema,

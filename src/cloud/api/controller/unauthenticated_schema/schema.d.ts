@@ -1,21 +1,3 @@
-/*
- * Copyright 2018- The Pixie Authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- */
-
 /* tslint:disable */
 /* eslint-disable */
 import { GraphQLResolveInfo } from 'graphql';
@@ -35,22 +17,13 @@ export interface GQLQuery {
 }
 
 export interface GQLArtifactsInfo {
-  items?: Array<GQLArtifact | null>;
+  items: Array<GQLArtifact>;
 }
 
 export interface GQLArtifact {
   version: string;
   changelog: string;
   timestampMs: number;
-}
-
-export const enum GQLArtifactType {
-  AT_UNKNOWN = 'AT_UNKNOWN',
-  AT_LINUX_AMD64 = 'AT_LINUX_AMD64',
-  AT_DARWIN_AMD64 = 'AT_DARWIN_AMD64',
-  AT_CONTAINER_SET_YAMLS = 'AT_CONTAINER_SET_YAMLS',
-  AT_CONTAINER_SET_LINUX_AMD64 = 'AT_CONTAINER_SET_LINUX_AMD64',
-  AT_CONTAINER_SET_TEMPLATE_YAMLS = 'AT_CONTAINER_SET_TEMPLATE_YAMLS'
 }
 
 /*********************************
@@ -73,7 +46,7 @@ export interface GQLQueryTypeResolver<TParent = any> {
 }
 
 export interface QueryToArtifactsArgs {
-  artifactName?: string;
+  artifactName: string;
 }
 export interface QueryToArtifactsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: QueryToArtifactsArgs, context: any, info: GraphQLResolveInfo): TResult;

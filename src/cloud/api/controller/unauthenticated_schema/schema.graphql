@@ -10,21 +10,12 @@ schema {
   query: Query
 }
 
-enum ArtifactType {
-    AT_UNKNOWN
-    AT_LINUX_AMD64
-    AT_DARWIN_AMD64
-    AT_CONTAINER_SET_YAMLS
-    AT_CONTAINER_SET_LINUX_AMD64
-    AT_CONTAINER_SET_TEMPLATE_YAMLS
-}
-
 type Query {
-  artifacts(artifactName: String): ArtifactsInfo!
+  artifacts(artifactName: String!): ArtifactsInfo!
 }
 
 type ArtifactsInfo {
-  items: [Artifact]
+  items: [Artifact!]!
 }
 
 type Artifact {
