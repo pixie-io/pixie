@@ -162,7 +162,7 @@
         "timeseries": [
           {
             "value": "throughput_total",
-            "series": "cmd",
+            "series": "req_cmd",
             "stackBySeries": false,
             "mode": "MODE_LINE"
           }
