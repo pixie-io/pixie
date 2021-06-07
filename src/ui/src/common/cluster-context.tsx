@@ -18,6 +18,8 @@
 
 import * as React from 'react';
 import { GQLVizierConfig, GQLClusterStatus } from 'types/schema';
+import { ClusterConfig } from 'api';
+import { isDev } from 'utils/env';
 
 export interface ClusterContextProps {
   selectedClusterID: string;
@@ -30,3 +32,19 @@ export interface ClusterContextProps {
 }
 
 export const ClusterContext = React.createContext<ClusterContextProps>(null);
+
+export function useClusterConfig(): ClusterConfig | null {
+  const { selectedClusterID, selectedClusterVizierConfig } = React.useContext(ClusterContext);
+  return React.useMemo(() => {
+    if (!selectedClusterID) return null;
+    // If cloud is running in dev mode, automatically direct to Envoy's port, since there is
+    // no GCLB to redirect for us in dev.
+    const passthroughClusterAddress = selectedClusterVizierConfig.passthroughEnabled
+      ? window.location.origin + (isDev() ? ':4444' : '') : undefined;
+    return {
+      id: selectedClusterID,
+      attachCredentials: true,
+      passthroughClusterAddress,
+    };
+  }, [selectedClusterID, selectedClusterVizierConfig]);
+}

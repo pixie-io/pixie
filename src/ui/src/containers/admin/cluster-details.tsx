@@ -19,7 +19,6 @@
 import * as React from 'react';
 
 import { gql, useQuery } from '@apollo/client';
-import ClientContext, { VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
 import { Breadcrumbs, StatusCell, StatusGroup } from '@pixie-labs/components';
 import { distanceInWords } from 'date-fns';
 import { useHistory, useParams } from 'react-router';
@@ -39,7 +38,7 @@ import TableRow from '@material-ui/core/TableRow';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 
-import { ExecutionStateUpdate, VizierQueryResult } from 'api';
+import { ExecutionStateUpdate, PixieAPIContext, VizierQueryResult } from 'api';
 import {
   GQLClusterInfo,
   GQLClusterStatus as ClusterStatus,
@@ -49,6 +48,7 @@ import {
 
 import { BehaviorSubject } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
+import { ClusterContext, ClusterContextProps, useClusterConfig } from 'common/cluster-context';
 import {
   AdminTooltip, agentStatusGroup, clusterStatusGroup, containerStatusGroup,
   convertHeartbeatMS, getClusterDetailsURL, podStatusGroup, StyledLeftTableCell,
@@ -167,13 +167,16 @@ const AgentsTableContent = ({ agents }) => {
   );
 };
 
-const AgentsTable = () => {
-  const { client } = React.useContext(ClientContext);
+const AgentsTable: React.FC = () => {
+  const clusterConfig = useClusterConfig();
+  const client = React.useContext(PixieAPIContext);
+
   const [state, setState] = React.useState<AgentDisplayState>({ data: [] });
 
   React.useEffect(() => {
     if (!client) {
-      return () => {}; // noop
+      return () => {
+      }; // noop
     }
     const executionSubject = new BehaviorSubject<ExecutionStateUpdate | null>(null);
     const fetchAgentStatus = () => {
@@ -192,8 +195,8 @@ const AgentsTable = () => {
       const onError = (error) => {
         setState({ data: [], error: error?.message });
       };
-      client.executeScript(AGENT_STATUS_SCRIPT, [], false).pipe(
-        filter((update) => !['data', 'cancel'].includes(update.event.type)),
+      client.executeScript(clusterConfig, AGENT_STATUS_SCRIPT, []).pipe(
+        filter((update) => !['data', 'cancel', 'error'].includes(update.event.type)),
         tap((update) => {
           if (update.event.type === 'error') {
             onError(update.event.error);
@@ -215,7 +218,7 @@ const AgentsTable = () => {
       }
       executionSubject.unsubscribe();
     };
-  }, [client]);
+  }, [client, clusterConfig]);
 
   if (state.error) {
     return (
@@ -387,14 +390,14 @@ const ClusterDetailsNavigationBreadcrumbs = ({ selectedClusterName }) => {
   const { data, loading, error } = useQuery<{
     clusters: Pick<GQLClusterInfo, 'clusterName' | 'prettyClusterName' | 'status'>[],
   }>(gql`
-    query clusterNavigationData{
-      clusters {
-        clusterName
-        prettyClusterName
-        status
-      }
-    }
-  `, {});
+        query clusterNavigationData{
+            clusters {
+                clusterName
+                prettyClusterName
+                status
+            }
+        }
+    `, {});
   const clusters = data?.clusters;
 
   if (loading || error || !clusters) {
@@ -446,13 +449,17 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
   const [tab, setTab] = React.useState('agents');
 
   const { data, loading, error } = useQuery<{
-    clusterByName: Pick<GQLClusterInfo, 'id' | 'clusterName' | 'vizierConfig' | 'status' | 'controlPlanePodStatuses'>
+    clusterByName: Pick<
+    GQLClusterInfo,
+    'id' | 'clusterName' | 'prettyClusterName' | 'clusterUID' | 'vizierConfig' | 'status' | 'controlPlanePodStatuses'
+    >
   }>(
     gql`
-    query GetClusterByName($name: String!) {
-      clusterByName(name: $name) {
+      query GetClusterByName($name: String!) {
+        clusterByName(name: $name) {
           id
           clusterName
+          prettyClusterName
           status
           vizierConfig {
             passthroughEnabled
@@ -472,9 +479,21 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
               message
             }
           }
-      }
-    }`, { variables: { name: clusterName } },
+        }
+      }`, { variables: { name: clusterName } },
   );
+
+  const cluster = data?.clusterByName;
+
+  const clusterContext: ClusterContextProps = React.useMemo(() => (cluster && {
+    selectedClusterID: cluster?.id,
+    selectedClusterName: cluster?.clusterName,
+    selectedClusterPrettyName: cluster?.prettyClusterName,
+    selectedClusterUID: cluster?.clusterUID,
+    selectedClusterVizierConfig: cluster?.vizierConfig,
+    selectedClusterStatus: cluster?.status,
+    setClusterByName: () => {},
+  }), [cluster]);
 
   if (loading) {
     return <div className={classes.error}>Loading...</div>;
@@ -482,8 +501,6 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
   if (error) {
     return <div className={classes.error}>{error.toString()}</div>;
   }
-
-  const cluster = data?.clusterByName;
 
   if (!cluster) {
     return (
@@ -514,15 +531,11 @@ const ClusterDetailsTabs: React.FC<{ clusterName: string }> = ({ clusterName }) 
         {
           tab === 'agents' && (
             statusGroup === 'healthy' ? (
-              <VizierGRPCClientProvider
-                clusterID={cluster.id}
-                passthroughEnabled={cluster.vizierConfig.passthroughEnabled}
-                clusterStatus={cluster.status}
-              >
+              <ClusterContext.Provider value={clusterContext}>
                 <TableContainer className={classes.container}>
                   <AgentsTable />
                 </TableContainer>
-              </VizierGRPCClientProvider>
+              </ClusterContext.Provider>
             ) : (
               <div className={classes.error}>
                 Cannot get agents for cluster

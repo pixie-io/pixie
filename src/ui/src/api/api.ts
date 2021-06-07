@@ -141,13 +141,6 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
       cluster.attachCredentials ?? false,
     );
 
-    /*
-     * TODO(nick): Port in the `retry` logic from VizierGRPCClientContext. It should show loading state and keep no more
-     *  than two of these connected at a time (due to the HTTP concurrent connections limitation per host).
-     *  VizierGRPCClientContext also provides health state and executeScript; we already do that here.
-     *  The actual context in the consumer, then, would only need to track the cluster ID instead of the client details.
-     */
-
     // Note that this doesn't currently clean up clients that haven't been used in a while, so a particularly long
     // user session could hold onto a large number of stale connections. A simple page refresh drops them all.
     // If this becomes a problem, limit the number of clients and rotate out those that haven't been used in a while.
@@ -221,11 +214,10 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
    *
    * Provides the internal CloudClient, which has a graphQL property.
    * That property is an ApolloClient, with which GraphQL queries can be run directly.
-   * TODO(nick): Once VizierGRPCClientContext logic moves, only provide the ApolloClient itself.
    *
    * @internal
    */
-  getCloudGQLClientForAdapterLibrary(): CloudClient {
+  getCloudClient(): CloudClient {
     return this.gqlClient;
   }
 }

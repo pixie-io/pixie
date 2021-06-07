@@ -24,7 +24,7 @@ import {
 } from 'containers/live/vis';
 import { Script } from 'utils/script-bundle';
 import {
-  PixieAPIContext, ExecutionStateUpdate, VizierQueryError, ClusterConfig, GRPCStatusCode, Table,
+  PixieAPIContext, ExecutionStateUpdate, VizierQueryError, GRPCStatusCode, Table,
 } from 'api';
 import { containsMutation, isStreaming } from 'utils/pxl';
 import { Observable } from 'rxjs';
@@ -32,8 +32,7 @@ import { checkExhaustive } from 'utils/check-exhaustive';
 import { ResultsContext } from 'context/results-context';
 import { useSnackbar } from '@pixie-labs/components';
 import { argsForVis, validateArgs } from 'utils/args-utils';
-import { ClusterContext } from 'common/cluster-context';
-import { isDev } from 'utils/env';
+import { ClusterContext, useClusterConfig } from 'common/cluster-context';
 
 const NUM_MUTATION_RETRIES = 5;
 const MUTATION_RETRY_MS = 5000; // 5s.
@@ -85,23 +84,12 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
   const {
     scriptId, args, push,
   } = React.useContext(VizierRouteContext);
-  const { selectedClusterID, selectedClusterName, selectedClusterVizierConfig } = React.useContext(ClusterContext);
+  const { selectedClusterName } = React.useContext(ClusterContext);
   const { scripts: availableScripts, loading: loadingAvailableScripts } = React.useContext(ScriptsContext);
   const resultsContext = React.useContext(ResultsContext);
   const showSnackbar = useSnackbar();
 
-  const clusterConfig: ClusterConfig | null = React.useMemo(() => {
-    if (!selectedClusterID) return null;
-    // If cloud is running in dev mode, automatically direct to Envoy's port, since there is
-    // no GCLB to redirect for us in dev.
-    const passthroughClusterAddress = selectedClusterVizierConfig.passthroughEnabled
-      ? window.location.origin + (isDev() ? ':4444' : '') : undefined;
-    return {
-      id: selectedClusterID,
-      attachCredentials: true,
-      passthroughClusterAddress,
-    };
-  }, [selectedClusterID, selectedClusterVizierConfig]);
+  const clusterConfig = useClusterConfig();
 
   const [script, setScript] = React.useState<ParsedScript>(null);
   const [manual, setManual] = React.useState(false);

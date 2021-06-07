@@ -16,7 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import ClientContext from 'common/vizier-grpc-client-context';
 import { PlayIcon, StopIcon } from '@pixie-labs/components';
 import * as React from 'react';
 
@@ -29,6 +28,9 @@ import {
   Button, Theme, withStyles, WithStyles,
 } from '@material-ui/core';
 import { createStyles } from '@material-ui/styles';
+import { ClusterContext } from 'common/cluster-context';
+import { PixieAPIClient, PixieAPIContext } from 'api';
+import { GQLClusterStatus } from 'types/schema';
 
 const styles = ({ breakpoints, typography }: Theme) => createStyles({
   buttonText: {
@@ -54,13 +56,16 @@ type ExecuteScriptButtonProps = WithStyles<typeof styles>;
 const CANCELLABILITY_DELAY_MS = 1000;
 
 const ExecuteScriptButtonBare = ({ classes }: ExecuteScriptButtonProps) => {
-  const { healthy } = React.useContext(ClientContext);
+  const cloudClient = (React.useContext(PixieAPIContext) as PixieAPIClient).getCloudClient();
+  const { selectedClusterStatus } = React.useContext(ClusterContext);
   const { loading, streaming } = React.useContext(ResultsContext);
   const { saveEditor } = React.useContext(EditorContext);
   const { cancelExecution } = React.useContext(ScriptContext);
 
   const [cancellable, setCancellable] = React.useState<boolean>(false);
   const [cancellabilityTimer, setCancellabilityTimer] = React.useState<number>(undefined);
+
+  const healthy = cloudClient && selectedClusterStatus === GQLClusterStatus.CS_HEALTHY;
 
   React.useEffect(() => {
     window.clearTimeout(cancellabilityTimer);

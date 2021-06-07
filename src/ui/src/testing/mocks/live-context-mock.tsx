@@ -26,13 +26,11 @@ import { ResultsContext, ResultsContextProps } from 'context/results-context';
 import { ScriptContext, ScriptContextProps } from 'context/script-context';
 import { ScriptsContext, ScriptsContextProps } from 'containers/App/scripts-context';
 import { ClusterContext, ClusterContextProps } from 'common/cluster-context';
-import VizierGRPCClientContext, { VizierGRPCClientContextProps } from 'common/vizier-grpc-client-context';
 import { GQLClusterStatus as ClusterStatus } from 'types/schema';
 import { MockPixieAPIContextProvider } from './api-context-mock';
 
 interface MockProps {
   theme?: Theme;
-  vizier?: VizierGRPCClientContextProps;
   layout?: LayoutContextProps;
   liveTour?: LiveTourContextProps;
   results?: ResultsContextProps;
@@ -43,12 +41,6 @@ interface MockProps {
 
 export const LIVE_CONTEXT_DEFAULTS: Required<MockProps> = {
   theme: DARK_THEME,
-  vizier: {
-    client: null,
-    healthy: true,
-    loading: false,
-    clusterStatus: ClusterStatus.CS_HEALTHY,
-  },
   layout: {
     editorSplitsSizes: [40, 60],
     editorPanelOpen: false,
@@ -123,21 +115,19 @@ type CompType = React.FC<PropsWithChildren<MockProps>>;
 export const MockLiveContextProvider: CompType = ({ children, ...props }) => (
   <ThemeProvider theme={get(props, 'theme')}>
     <MockPixieAPIContextProvider>
-      <VizierGRPCClientContext.Provider value={get(props, 'vizier')}>
-        <LayoutContext.Provider value={get(props, 'layout')}>
-          <LiveTourContext.Provider value={get(props, 'liveTour')}>
-            <ClusterContext.Provider value={get(props, 'cluster')}>
-              <ResultsContext.Provider value={get(props, 'results')}>
-                <ScriptsContext.Provider value={get(props, 'scripts')}>
-                  <ScriptContext.Provider value={get(props, 'script')}>
-                    {children}
-                  </ScriptContext.Provider>
-                </ScriptsContext.Provider>
-              </ResultsContext.Provider>
-            </ClusterContext.Provider>
-          </LiveTourContext.Provider>
-        </LayoutContext.Provider>
-      </VizierGRPCClientContext.Provider>
+      <LayoutContext.Provider value={get(props, 'layout')}>
+        <LiveTourContext.Provider value={get(props, 'liveTour')}>
+          <ClusterContext.Provider value={get(props, 'cluster')}>
+            <ResultsContext.Provider value={get(props, 'results')}>
+              <ScriptsContext.Provider value={get(props, 'scripts')}>
+                <ScriptContext.Provider value={get(props, 'script')}>
+                  {children}
+                </ScriptContext.Provider>
+              </ScriptsContext.Provider>
+            </ResultsContext.Provider>
+          </ClusterContext.Provider>
+        </LiveTourContext.Provider>
+      </LayoutContext.Provider>
     </MockPixieAPIContextProvider>
   </ThemeProvider>
 );

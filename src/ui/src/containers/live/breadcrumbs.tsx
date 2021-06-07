@@ -56,7 +56,7 @@ type AutocompleteFieldSuggester = (
 function useAutocompleteFieldSuggester(clusterUID: string): AutocompleteFieldSuggester {
   const client = React.useContext(PixieAPIContext) as PixieAPIClient;
   return React.useCallback<AutocompleteFieldSuggester>((partialInput: string, kind: GQLAutocompleteEntityKind) => (
-    client.getCloudGQLClientForAdapterLibrary().graphQL.query<{ autocompleteField: GQLAutocompleteSuggestion[] }>({
+    client.getCloudClient().graphQL.query<{ autocompleteField: GQLAutocompleteSuggestion[] }>({
       query: gql`
         query getCompletions($input: String, $kind: AutocompleteEntityKind, $clusterUID: String) {
           autocompleteField(input: $input, fieldType: $kind, clusterUID: $clusterUID) {

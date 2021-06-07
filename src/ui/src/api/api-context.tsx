@@ -41,7 +41,7 @@ export const PixieAPIContextProvider: React.FC<PixieAPIContextProviderProps> = (
 
   return !pixieClient ? null : (
     <PixieAPIContext.Provider value={pixieClient}>
-      <ApolloProvider client={pixieClient.getCloudGQLClientForAdapterLibrary().graphQL}>
+      <ApolloProvider client={pixieClient.getCloudClient().graphQL}>
         { children }
       </ApolloProvider>
     </PixieAPIContext.Provider>

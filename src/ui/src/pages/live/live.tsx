@@ -18,19 +18,16 @@
 
 import * as React from 'react';
 
-import { scrollbarStyles, EditIcon, Footer } from '@pixie-labs/components';
+import { EditIcon, Footer, scrollbarStyles } from '@pixie-labs/components';
 import { GQLClusterStatus } from 'types/schema';
-import {
-  makeStyles, Theme,
-} from '@material-ui/core/styles';
+import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import {
-  Alert, AlertTitle, Link, Tooltip, IconButton,
+  Alert, AlertTitle, IconButton, Link, Tooltip,
 } from '@material-ui/core';
 import MoveIcon from '@material-ui/icons/OpenWith';
 
 import { Copyright } from 'configurable/copyright';
-import ClientContext from 'common/vizier-grpc-client-context';
 import { ClusterContext } from 'common/cluster-context';
 import { DataDrawerContextProvider } from 'context/data-drawer-context';
 import EditorContextProvider, { EditorContext } from 'context/editor-context';
@@ -51,6 +48,7 @@ import { CONTACT_ENABLED } from 'containers/constants';
 import ExecuteScriptButton from 'containers/live/execute-button';
 import ClusterSelector from 'containers/live/cluster-selector';
 import { LiveTourContextProvider } from 'containers/App/live-tour';
+import { PixieAPIClient, PixieAPIContext } from 'api';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -261,7 +259,9 @@ const LiveView: React.FC = () => {
 
   const canvasRef = React.useRef<HTMLDivElement>(null);
 
-  const { healthy } = React.useContext(ClientContext);
+  const cloudClient = (React.useContext(PixieAPIContext) as PixieAPIClient).getCloudClient();
+
+  const healthy = cloudClient && selectedClusterStatus === GQLClusterStatus.CS_HEALTHY;
 
   // Healthy might flicker on and off. We only care to show the loading state for first load,
   // and want to ignore future health check failures. So we use healthyOnce to start as false

@@ -18,7 +18,6 @@
 
 import { ClusterContext } from 'common/cluster-context';
 import UserContext from 'common/user-context';
-import { VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
 import { useSnackbar } from '@pixie-labs/components';
 import AdminView from 'pages/admin/admin';
 import CreditsView from 'pages/credits/credits';
@@ -122,23 +121,13 @@ const Vizier = () => {
   );
   const numClusters = countData?.clusters?.length ?? 0;
 
-  const { selectedClusterID, selectedClusterStatus, selectedClusterVizierConfig } = React.useContext(ClusterContext);
-
   if (countLoading) { return <div>Loading...</div>; }
 
   if (numClusters === 0) {
     return <DeployInstructions />;
   }
 
-  return (
-    <VizierGRPCClientProvider
-      clusterID={selectedClusterID}
-      passthroughEnabled={selectedClusterVizierConfig?.passthroughEnabled}
-      clusterStatus={selectedClusterStatus ?? GQLClusterStatus.CS_UNKNOWN}
-    >
-      <LiveView />
-    </VizierGRPCClientProvider>
-  );
+  return <LiveView />;
 };
 
 type SelectedClusterInfo = Pick<GQLClusterInfo,

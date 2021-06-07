@@ -76,7 +76,7 @@ describe('Pixie TypeScript API Client', () => {
       spyOn(vizierDependency, 'VizierGRPCClient').and.returnValue({ health: spy });
 
       const client = await PixieAPIClient.create({ apiKey: '' });
-      spyOn(client.getCloudGQLClientForAdapterLibrary(), 'getClusterConnection').and.returnValue({});
+      spyOn(client.getCloudClient(), 'getClusterConnection').and.returnValue({});
 
       const out = await client.health('foo').toPromise();
       expect(spy).toHaveBeenCalled();
@@ -88,7 +88,7 @@ describe('Pixie TypeScript API Client', () => {
       spyOn(vizierDependency, 'VizierGRPCClient').and.returnValue({ executeScript: spy });
 
       const client = await PixieAPIClient.create({ apiKey: '' });
-      spyOn(client.getCloudGQLClientForAdapterLibrary(), 'getClusterConnection').and.returnValue({});
+      spyOn(client.getCloudClient(), 'getClusterConnection').and.returnValue({});
 
       const out = await client.executeScript('foo', 'import px').toPromise();
       expect(spy).toHaveBeenCalled();
