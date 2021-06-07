@@ -52,6 +52,7 @@ func init() {
 	pflag.String("sa_key_path", "/creds/service_account.json", "The path to the service account JSON file.")
 	pflag.String("vizier_version", "", "If specified, the db will not be queried. The only vizier version is assumed to be the one specified.")
 	pflag.String("cli_version", "", "If specified, the db will not be queried. The only CLI version is assumed to be the one specified.")
+	pflag.String("operator_version", "", "If specified, the db will not be queried. The only operator version is assumed to be the one specified.")
 }
 
 func loadServiceAccountConfig() *jwt.Config {

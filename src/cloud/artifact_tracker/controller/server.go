@@ -45,8 +45,9 @@ import (
 var URLSigner = storage.SignedURL
 
 const (
-	vizierArtifactName = "vizier"
-	cliArtifactName    = "cli"
+	vizierArtifactName   = "vizier"
+	cliArtifactName      = "cli"
+	operatorArtifactName = "operator"
 )
 
 // Server is the controller for the artifact tracker service.
@@ -94,6 +95,21 @@ func (s *Server) getArtifactListSpecifiedCLI() (*vpb.ArtifactSet, error) {
 	}, nil
 }
 
+func (s *Server) getArtifactListSpecifiedOperator() (*vpb.ArtifactSet, error) {
+	return &vpb.ArtifactSet{
+		Name: operatorArtifactName,
+		Artifact: []*vpb.Artifact{
+			&vpb.Artifact{
+				VersionStr: viper.GetString("operator_version"),
+				AvailableArtifacts: []vpb.ArtifactType{
+					vpb.AT_CONTAINER_SET_YAMLS,
+					vpb.AT_CONTAINER_SET_LINUX_AMD64,
+				},
+			},
+		},
+	}, nil
+}
+
 // GetArtifactList returns a list of artifacts matching the passed in criteria.
 func (s *Server) GetArtifactList(ctx context.Context, in *apb.GetArtifactListRequest) (*vpb.ArtifactSet, error) {
 	name := in.ArtifactName
@@ -109,6 +125,8 @@ func (s *Server) GetArtifactList(ctx context.Context, in *apb.GetArtifactListReq
 		return s.getArtifactListSpecifiedVizier()
 	} else if name == cliArtifactName && viper.GetString("cli_version") != "" {
 		return s.getArtifactListSpecifiedCLI()
+	} else if name == operatorArtifactName && viper.GetString("operator_version") != "" {
+		return s.getArtifactListSpecifiedOperator()
 	}
 
 	type dbResult struct {
@@ -216,6 +234,10 @@ func (s *Server) GetDownloadLink(ctx context.Context, in *apb.GetDownloadLinkReq
 	// then we check the DB to see if the version exists.
 	if (at == vpb.AT_CONTAINER_SET_YAMLS || at == vpb.AT_CONTAINER_SET_TEMPLATE_YAMLS) && viper.GetString("vizier_version") != "" {
 		if versionStr != viper.GetString("vizier_version") {
+			return nil, status.Error(codes.NotFound, "artifact not found")
+		}
+	} else if (at == vpb.AT_CONTAINER_SET_YAMLS) && viper.GetString("operator_version") != "" {
+		if versionStr != viper.GetString("operator_version") {
 			return nil, status.Error(codes.NotFound, "artifact not found")
 		}
 	} else if (at == vpb.AT_DARWIN_AMD64 || at == vpb.AT_LINUX_AMD64) && viper.GetString("cli_version") != "" {

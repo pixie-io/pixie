@@ -58,6 +58,8 @@ spec:
           value: ""
         - name: PL_CLI_VERSION
           value: ""
+        - name: PL_OPERATOR_VERSION
+          value: ""
         volumeMounts:
         - name: certs
           mountPath: /certs
