@@ -90,9 +90,6 @@ def add_source_dest_columns(df):
     df.pod = df.ctx['pod']
     df.namespace = df.ctx['namespace']
 
-    # TODO: remove hack to get around PP-2445.
-    df = df.head(1000000000)
-
     # If remote_addr is a pod, get its name. If not, use IP address.
     df.ra_pod = px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_addr))
     df.is_ra_pod = df.ra_pod != ''
