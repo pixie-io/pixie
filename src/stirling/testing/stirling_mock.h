@@ -33,7 +33,7 @@ namespace stirling {
 
 class MockStirling : public Stirling {
  public:
-  MOCK_METHOD(void, RegisterUserDebugSignalHandlers, (), (override));
+  MOCK_METHOD(void, RegisterUserDebugSignalHandlers, (int), (override));
   MOCK_METHOD(void, RegisterTracepoint,
               (sole::uuid trace_id,
                std::unique_ptr<dynamic_tracing::ir::logical::TracepointDeployment> program),

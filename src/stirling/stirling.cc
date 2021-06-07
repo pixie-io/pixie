@@ -143,7 +143,7 @@ class StirlingImpl final : public Stirling {
 
   ~StirlingImpl() override;
 
-  void RegisterUserDebugSignalHandlers() override;
+  void RegisterUserDebugSignalHandlers(int signum) override;
 
   // TODO(oazizi/yzhao): Consider lift this as an interface method into Stirling, making it
   // symmetric with Stop().
@@ -170,7 +170,7 @@ class StirlingImpl final : public Stirling {
   void Stop() override;
   void WaitForThreadJoin() override;
 
-  void ToggleDebug();
+  void SetDebugLevel(int level);
   void EnablePIDTrace(int pid);
   void DisablePIDTrace(int pid);
 
@@ -239,33 +239,27 @@ class StirlingImpl final : public Stirling {
   absl::base_internal::SpinLock dynamic_trace_status_map_lock_;
   absl::flat_hash_map<sole::uuid, StatusOr<stirlingpb::Publish>> dynamic_trace_status_map_
       ABSL_GUARDED_BY(dynamic_trace_status_map_lock_);
-
-  int debug_level_ = 0;
 };
-
-StirlingImpl::StirlingImpl(std::unique_ptr<SourceRegistry> registry)
-    : pub_sub_mgr_(std::make_unique<PubSubManager>()), registry_(std::move(registry)) {}
-
-StirlingImpl::~StirlingImpl() { Stop(); }
 
 StirlingImpl* g_stirling_ptr = nullptr;
 
-// Turn on/off the debug flag for all of Stirling.
-void UserSignalHandler(int /* signum */) {
-  if (g_stirling_ptr == nullptr) {
-    return;
-  }
+enum class SignalOpCode {
+  // Reset the opcode. Signal handler will be waiting to receive an opcode.
+  kNone = 0,
 
-  g_stirling_ptr->ToggleDebug();
-}
+  // Set a general debug level for all source connectors.
+  // Source connectors can dump more information according to the specified level.
+  kSetDebugLevel = 1,
 
-// Set flags in the Socket Tracer to start tracing the specified PID.
-void UserSignalHandler2(int /* signum */, siginfo_t* info, void* /* context */) {
-  if (g_stirling_ptr == nullptr) {
-    return;
-  }
+  // Specify a PID of interest for tracing. More information for this PID will be dumped.
+  // Only the SocketTracer currently implements this, but in theory other source connectors
+  // could enable PID traces as well.
+  kPIDTrace = 2,
+};
 
-  int pid = info->si_int;
+void ProcessSetDebugLevelOpcode(int level) { g_stirling_ptr->SetDebugLevel(level); }
+
+void ProcessPIDTraceOpcode(int pid) {
   if (pid >= 0) {
     LOG(INFO) << absl::Substitute("Enabling tracing of PID: $0", pid);
     g_stirling_ptr->EnablePIDTrace(pid);
@@ -276,13 +270,56 @@ void UserSignalHandler2(int /* signum */, siginfo_t* info, void* /* context */) 
   }
 }
 
-void StirlingImpl::RegisterUserDebugSignalHandlers() {
-  g_stirling_ptr = this;
+// To multiplex different actions onto a single signal handler, Stirling uses a simple
+// opcode+value protocol. Stirling expects signals to arrive in pairs:
+//   signal 1: opcode - Chooses what action to perform.
+//   signal 2: value  - An argument for the opcode.
+// For example, to ask stirling to enable PID tracing for PID 33, one would send
+//   1) opcode = 2 (kPIDTrace)
+//   2) value = 33
+//
+// New opcodes can be added to expand the aspects of Stirling one can control via signals.
+//
+// Note that sending an opcode of 0 is special and resets the state. Thus sending 0 will
+// always guarantee that the state machine expects an opcode next.
+//
+// See the stirling_ctrl utility for sending such control messages to stirling;
+// it takes care of managing the protocol.
+void UserSignalHandler(int /* signum */, siginfo_t* info, void* /* context */) {
+  static SignalOpCode opcode = SignalOpCode::kNone;
 
-  // Signal for USR1: Set-up a general debug signal that gets broadcast to all source connectors.
-  // Source connectors can enable logging of debug information as desired.
-  // Trigger this via `kill -USR1`
-  signal(SIGUSR1, UserSignalHandler);
+  if (g_stirling_ptr == nullptr) {
+    return;
+  }
+
+  if (opcode == SignalOpCode::kNone) {
+    opcode = static_cast<SignalOpCode>(info->si_int);
+    return;
+  }
+
+  int value = info->si_int;
+
+  switch (opcode) {
+    case SignalOpCode::kSetDebugLevel:
+      ProcessSetDebugLevelOpcode(value);
+      break;
+    case SignalOpCode::kPIDTrace:
+      ProcessPIDTraceOpcode(value);
+      break;
+    default:
+      LOG(INFO) << absl::Substitute("Unexpected signal opcode: $0", value);
+  }
+
+  opcode = SignalOpCode::kNone;
+}
+
+StirlingImpl::StirlingImpl(std::unique_ptr<SourceRegistry> registry)
+    : pub_sub_mgr_(std::make_unique<PubSubManager>()), registry_(std::move(registry)) {}
+
+StirlingImpl::~StirlingImpl() { Stop(); }
+
+void StirlingImpl::RegisterUserDebugSignalHandlers(int signum) {
+  g_stirling_ptr = this;
 
   // Signal for USR2: This is a PID-based signal that currently sets flags in the Socket Tracer,
   // to enable connection tracing for the particular PID.
@@ -290,10 +327,10 @@ void StirlingImpl::RegisterUserDebugSignalHandlers() {
   // Note that `kill -USR2` will no longer work for this signal. Instead sigqueue must be used
   // to send the signal.
   struct sigaction sigaction_specs = {};
-  sigaction_specs.sa_sigaction = UserSignalHandler2;
+  sigaction_specs.sa_sigaction = UserSignalHandler;
   sigaction_specs.sa_flags = SA_SIGINFO;
   sigemptyset(&sigaction_specs.sa_mask);
-  sigaction(SIGUSR2, &sigaction_specs, NULL);
+  sigaction(signum, &sigaction_specs, NULL);
 }
 
 Status StirlingImpl::Init() {
@@ -803,13 +840,11 @@ void StirlingImpl::Stop() {
   }
 }
 
-void StirlingImpl::ToggleDebug() {
-  debug_level_ = (debug_level_ + 1) % 2;
-
+void StirlingImpl::SetDebugLevel(int level) {
   // Lock not really required, but compiler is making sure we're safe.
   absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
   for (auto& s : sources_) {
-    s->SetDebugLevel(debug_level_);
+    s->SetDebugLevel(level);
   }
 }
 
