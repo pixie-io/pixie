@@ -181,11 +181,17 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 
 	// Add an additional annotation to our deployed vizier-resources, to allow easier tracking of the vizier resources.
 	if vz.Spec.Pod == nil {
-		vz.Spec.Pod = &pixiev1alpha1.PodPolicy{
-			Labels:      make(map[string]string),
-			Annotations: make(map[string]string),
-		}
+		vz.Spec.Pod = &pixiev1alpha1.PodPolicy{}
 	}
+
+	if vz.Spec.Pod.Annotations == nil {
+		vz.Spec.Pod.Annotations = make(map[string]string)
+	}
+
+	if vz.Spec.Pod.Labels == nil {
+		vz.Spec.Pod.Labels = make(map[string]string)
+	}
+
 	vz.Spec.Pod.Annotations[operatorAnnotation] = req.Name
 	vz.Spec.Pod.Labels[operatorAnnotation] = req.Name
 
