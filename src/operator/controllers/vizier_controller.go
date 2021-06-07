@@ -187,6 +187,7 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 		}
 	}
 	vz.Spec.Pod.Annotations[operatorAnnotation] = req.Name
+	vz.Spec.Pod.Labels[operatorAnnotation] = req.Name
 
 	yamlMap, err := generateVizierYAMLs(vz.Spec.Version, req.Namespace, vz, cloudClient)
 	if err != nil {
