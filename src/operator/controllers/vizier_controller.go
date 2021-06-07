@@ -138,7 +138,19 @@ func (r *VizierReconciler) updateVizier(ctx context.Context, req ctrl.Request, v
 
 // deleteVizier deletes the vizier instance in the given namespace.
 func (r *VizierReconciler) deleteVizier(ctx context.Context, req ctrl.Request) error {
-	return errors.New("Not yet implemented")
+	log.WithField("req", req).Info("Deleting Vizier...")
+	od := k8s.ObjectDeleter{
+		Namespace:  req.Namespace,
+		Clientset:  r.Clientset,
+		RestConfig: r.RestConfig,
+		Timeout:    2 * time.Minute,
+	}
+
+	keyValueLabel := operatorAnnotation + "=" + req.Name
+	_, _ = od.DeleteByLabel(keyValueLabel, k8s.AllResourceKinds...)
+	_, _ = od.DeleteByLabel("app=nats", k8s.AllResourceKinds...)
+	_ = od.DeleteCustomObject("NatsCluster", "pl-nats")
+	return nil
 }
 
 // createVizier deploys a new vizier instance in the given namespace.

@@ -46,7 +46,7 @@ import (
 // AllResourceKinds has the list of all the resource kinds we use.
 var AllResourceKinds = []string{"ClusterRole", "ClusterRoleBinding", "ConfigMap",
 	"DaemonSet", "Pod", "Deployment", "Role", "RoleBinding", "Service",
-	"ServiceAccount", "Job", "PodSecurityPolicy", "CronJob"}
+	"ServiceAccount", "StatefulSet", "Job", "PodSecurityPolicy", "CronJob"}
 
 type restClientAdapter struct {
 	clientset  *kubernetes.Clientset
@@ -82,6 +82,36 @@ type ObjectDeleter struct {
 	RestConfig    *rest.Config
 	Timeout       time.Duration
 	dynamicClient dynamic.Interface
+}
+
+// DeleteCustomObject is used to delete a custom object (instantiation of CRD).
+func (o *ObjectDeleter) DeleteCustomObject(resourceName, resourceValue string) error {
+	rca := &restClientAdapter{
+		clientset:  o.Clientset,
+		restConfig: o.RestConfig,
+	}
+
+	f := cmdutil.NewFactory(rca)
+	r := f.NewBuilder().
+		Unstructured().
+		ContinueOnError().
+		NamespaceParam(o.Namespace).
+		ResourceNames(resourceName, resourceValue).
+		RequireObject(false).
+		Flatten().
+		Do()
+
+	err := r.Err()
+	if err != nil {
+		return err
+	}
+	o.dynamicClient, err = f.DynamicClient()
+	if err != nil {
+		return err
+	}
+
+	_, err = o.runDelete(r)
+	return err
 }
 
 // DeleteNamespace removes the namespace and all objects within it. Waits for deletion to complete.
