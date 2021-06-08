@@ -27,8 +27,6 @@
 
 // These checks are here for compatibility with BPF_LEN_CAP.
 #ifdef __cplusplus
-static_assert((HEADER_FIELD_STR_SIZE & (HEADER_FIELD_STR_SIZE - 1)) == 0,
-              "HEADER_FIELD_STR_SIZE must be a power of 2.");
 static_assert((MAX_DATA_SIZE & (MAX_DATA_SIZE - 1)) == 0, "MAX_DATA_SIZE must be a power of 2.");
 #endif
 
