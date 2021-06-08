@@ -31,6 +31,18 @@ type APIKeyMgr interface {
 	FetchOrgUserIDUsingAPIKey(ctx context.Context, key string) (uuid.UUID, uuid.UUID, error)
 }
 
+// UserInfo contains all the info about a user. It's not tied to any specific AuthProvider.
+type UserInfo struct {
+	Email            string
+	FirstName        string
+	LastName         string
+	Name             string
+	Picture          string
+	PLUserID         string
+	PLOrgID          string
+	IdentityProvider string
+}
+
 // AuthProvider interfaces the service we use for auth.
 type AuthProvider interface {
 	// GetUserIDFromToken returns the UserID for the particular auth token.

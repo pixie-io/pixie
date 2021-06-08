@@ -400,11 +400,12 @@ func (s *Server) InviteUser(ctx context.Context, req *profilepb.InviteUserReques
 	var userID uuid.UUID
 	if err == datastore.ErrUserNotFound {
 		createUserReq := &profilepb.CreateUserRequest{
-			OrgID:     req.OrgID,
-			Username:  req.Email,
-			FirstName: req.FirstName,
-			LastName:  req.LastName,
-			Email:     req.Email,
+			OrgID:            req.OrgID,
+			Username:         req.Email,
+			FirstName:        req.FirstName,
+			LastName:         req.LastName,
+			Email:            req.Email,
+			IdentityProvider: req.IdentityProvider,
 		}
 
 		userIDPb, err := s.CreateUser(ctx, createUserReq)

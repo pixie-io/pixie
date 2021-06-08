@@ -320,10 +320,11 @@ func (s *Server) createUserAndOrg(ctx context.Context, domainName string, userID
 			DomainName: domainName,
 		},
 		User: &profilepb.CreateOrgAndUserRequest_User{
-			Username:  userInfo.Email,
-			FirstName: userInfo.FirstName,
-			LastName:  userInfo.LastName,
-			Email:     userInfo.Email,
+			Username:         userInfo.Email,
+			FirstName:        userInfo.FirstName,
+			LastName:         userInfo.LastName,
+			Email:            userInfo.Email,
+			IdentityProvider: userInfo.IdentityProvider,
 		},
 	}
 
@@ -349,11 +350,12 @@ func (s *Server) createUser(ctx context.Context, userID string, userInfo *UserIn
 	}
 	// Create a new user to register them.
 	userCreateReq := &profilepb.CreateUserRequest{
-		OrgID:     orgInfo.ID,
-		Username:  userInfo.Email,
-		FirstName: userInfo.FirstName,
-		LastName:  userInfo.LastName,
-		Email:     userInfo.Email,
+		OrgID:            orgInfo.ID,
+		Username:         userInfo.Email,
+		FirstName:        userInfo.FirstName,
+		LastName:         userInfo.LastName,
+		Email:            userInfo.Email,
+		IdentityProvider: userInfo.IdentityProvider,
 	}
 
 	userIDpb, err := s.env.ProfileClient().CreateUser(ctx, userCreateReq)

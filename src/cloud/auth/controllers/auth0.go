@@ -37,17 +37,6 @@ func init() {
 	pflag.String("auth0_client_secret", "", "Auth0 client secret")
 }
 
-// UserInfo contains all the info about a user. It's not tied to any AuthProvider.
-type UserInfo struct {
-	Email     string
-	FirstName string
-	LastName  string
-	Name      string
-	Picture   string
-	PLUserID  string
-	PLOrgID   string
-}
-
 func transformAuth0UserInfoToUserInfo(auth0 *auth0UserInfo, clientID string) (*UserInfo, error) {
 	// If user does not exist in Auth0, then create a new user if specified.
 	u := &UserInfo{

@@ -59,6 +59,7 @@ message UserInfo {
   string email = 6;
   string profile_picture = 7;
   bool is_approved = 8;
+  string identity_provider = 9;
 }
 
 message GetUserByEmailRequest {
@@ -84,6 +85,7 @@ message CreateUserRequest {
   string first_name = 3;
   string last_name = 4;
   string email = 5;
+  string identity_provider = 6;
 }
 
 message CreateOrgAndUserRequest {
@@ -96,6 +98,7 @@ message CreateOrgAndUserRequest {
     string first_name = 2;
     string last_name = 3;
     string email = 4;
+    string identity_provider = 5;
   }
   Org org = 1;
   User user = 2;
@@ -173,6 +176,7 @@ message InviteUserRequest {
   // The ID of the organization to create the user for.
   px.uuidpb.UUID org_id = 4 [(gogoproto.customname) = "OrgID"];
   bool must_create_user = 5;
+  string identity_provider = 6;
 }
 
 message InviteUserResponse {
