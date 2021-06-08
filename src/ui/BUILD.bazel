@@ -28,10 +28,10 @@ UI_DEP_PACKAGES = [
     "yarn.lock",
     "package.json",
     ".babelrc.json",
-    ".yarnrc",
+    ".yarnrc.yml",
 ] + glob([
-    "offline_package_cache/**",
-    "patches/**",
+    "node_modules/**",
+    ".yarn/**",
 ])
 
 UI_SRCS = glob([
@@ -41,23 +41,19 @@ UI_SRCS = glob([
     "src/**",
 ])
 
-COMPONENT_SRCS = glob([
-    "packages/**",
-])
-
 LICENSES_SRCS = [
     "tools/licenses/npm_license_extractor.py",
 ]
 
 pl_webpack_deps(
     name = "ui-deps",
-    srcs = UI_DEP_PACKAGES + COMPONENT_SRCS,
+    srcs = UI_DEP_PACKAGES,
     uilib_base = "src/ui",
 )
 
 pl_webpack_library(
     name = "ui-bundle",
-    srcs = UI_SRCS + COMPONENT_SRCS,
+    srcs = UI_SRCS,
     licenses = "//tools/licenses:all_licenses",
     stamp = select({
         "//bazel:stamped": True,
@@ -69,7 +65,7 @@ pl_webpack_library(
 
 pl_ui_test(
     name = "ui-tests",
-    srcs = UI_SRCS + COMPONENT_SRCS,
+    srcs = UI_SRCS,
     uilib_base = "src/ui",
     deps = ":ui-deps",
 )

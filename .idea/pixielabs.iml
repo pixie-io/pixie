@@ -21,6 +21,7 @@
       <excludeFolder url="file://$MODULE_DIR$/third_party" />
       <excludeFolder url="file://$MODULE_DIR$/src/ui/packages/pixie-api-react/dist" />
       <excludeFolder url="file://$MODULE_DIR$/src/ui/packages/samples/api/dist" />
+      <excludeFolder url="file://$MODULE_DIR$/src/ui/.yarn" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

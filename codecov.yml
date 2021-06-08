@@ -1,5 +1,6 @@
 ---
 ignore:
+- "src/ui/.yarn"
 - "src/ui/src/testing"
 - "src/ui/src/types/generated"
 - "third_party"

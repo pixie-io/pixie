@@ -48,7 +48,7 @@ def _pl_webpack_deps_impl(ctx):
 
     cmd = ui_shared_cmds_start + [
         "export OUTPUT_PATH=" + ctx.outputs.out.path,
-        "yarn install --prefer_offline &> build.log",
+        "yarn install --immutable &> build.log",
         "tar -czf ${BASE_PATH}/${OUTPUT_PATH} node_modules .",
     ] + ui_shared_cmds_finish
 

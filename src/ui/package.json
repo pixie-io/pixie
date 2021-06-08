@@ -126,7 +126,7 @@
     "moment": "^2.24.0",
     "monaco-editor": "0.20.0",
     "numeral": "^2.0.6",
-    "oidc-client":"^1.11.5",
+    "oidc-client": "^1.11.5",
     "postinstall-postinstall": "^2.1.0",
     "prism-react-renderer": "^1.0.2",
     "prop-types": "^15.5.4",
