@@ -180,7 +180,7 @@ func TestAuth0ConnectorImpl_GetUserInfo(t *testing.T) {
               "email": "testuser@test.com",
               "name": "Test User",
               "picture": "picture.jpg",
-              "sub": "test_sub",
+              "sub": "github|0912938",
               "app_metadata": {
           			"foo": {
           				"pl_user_id": "test_pl_user_id"
@@ -206,6 +206,43 @@ func TestAuth0ConnectorImpl_GetUserInfo(t *testing.T) {
 	assert.Equal(t, "Test User", userInfo.Name)
 	assert.Equal(t, "picture.jpg", userInfo.Picture)
 	assert.Equal(t, "test_pl_user_id", userInfo.PLUserID)
+	assert.Equal(t, "github", userInfo.IdentityProvider)
+}
+
+func TestAuth0ConnectorImpl_GetUserInfo_DontParseIdProviderFromSubIfUnexpectedFormat(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		// Return valid management token.
+		if r.URL.String() == "/oauth/token" {
+			_, err := w.Write([]byte(`{"access_token": "test_token"}`))
+			require.NoError(t, err)
+			return
+		}
+
+		assert.Equal(t, "/api/v2/users/abcd", r.URL.String())
+		assert.Equal(t, "Bearer test_token", r.Header.Get("Authorization"))
+		_, err := w.Write([]byte(`
+         {
+              "sub": "0912938"
+         }
+        `))
+		require.NoError(t, err)
+	}))
+	defer server.Close()
+
+	cleanup := SetupViperEnvironment(t, server.URL)
+	defer cleanup()
+
+	cfg := controllers.NewAuth0Config()
+	c, err := controllers.NewAuth0Connector(cfg)
+	require.NoError(t, err)
+
+	userInfo, err := c.GetUserInfo("abcd")
+	assert.Equal(t, 2, callCount)
+	require.NoError(t, err)
+	// Should be an empty string, sign that it is ignored.
+	assert.Equal(t, "", userInfo.IdentityProvider)
 }
 
 func TestAuth0ConnectorImpl_GetUserInfo_BadResponse(t *testing.T) {

@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -37,14 +38,25 @@ func init() {
 	pflag.String("auth0_client_secret", "", "Auth0 client secret")
 }
 
+func parseIdentityProviderFromSub(sub string) string {
+	// Normal format is a "idprovider|<id>".
+	split := strings.Split(sub, "|")
+	// If we don't split into two pieces, the sub does not use a known id provider so we don't attempt to use it.
+	if len(split) != 2 {
+		return ""
+	}
+	return split[0]
+}
+
 func transformAuth0UserInfoToUserInfo(auth0 *auth0UserInfo, clientID string) (*UserInfo, error) {
 	// If user does not exist in Auth0, then create a new user if specified.
 	u := &UserInfo{
-		Email:     auth0.Email,
-		FirstName: auth0.FirstName,
-		LastName:  auth0.LastName,
-		Name:      auth0.Name,
-		Picture:   auth0.Picture,
+		Email:            auth0.Email,
+		FirstName:        auth0.FirstName,
+		LastName:         auth0.LastName,
+		Name:             auth0.Name,
+		Picture:          auth0.Picture,
+		IdentityProvider: parseIdentityProviderFromSub(auth0.Sub),
 	}
 	if !(auth0.AppMetadata == nil || auth0.AppMetadata[clientID] == nil) {
 		u.PLUserID = auth0.AppMetadata[clientID].PLUserID
