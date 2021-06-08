@@ -262,7 +262,7 @@ Status SendFinalExecutionStatsToOutgoingConns(
       if (!status.ok()) {
         return error::Internal(
             "Failed to call Finish on TransferResultChunk while sending query execution stats. "
-            "Status: %s",
+            "Status: $0",
             status.error_message());
       }
     }
