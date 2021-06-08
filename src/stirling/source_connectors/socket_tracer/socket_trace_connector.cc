@@ -49,6 +49,11 @@
 DEFINE_uint32(
     stirling_conn_stats_sampling_ratio, 50,
     "Ratio of how frequently conn_stats_table is populated relative to the base sampling period");
+// The default frequency logs every minute, since each iteration has a cycle period of 200ms.
+DEFINE_uint32(
+    stirling_conn_trackers_stats_logging_ratio,
+    std::chrono::seconds(60) / px::stirling::SocketTraceConnector::kSamplingPeriod,
+    "Ratio of how frequently conn_stats_table is populated relative to the base sampling period");
 
 DEFINE_int32(test_only_socket_trace_target_pid, kTraceAllTGIDs, "The process to trace.");
 // TODO(yzhao): If we ever need to write all events from different perf buffers, then we need either
@@ -348,6 +353,12 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
   if (conn_stats_table != nullptr &&
       sample_push_freq_mgr_.sampling_count() % FLAGS_stirling_conn_stats_sampling_ratio == 0) {
     TransferConnStats(ctx, conn_stats_table);
+  }
+
+  if (sample_push_freq_mgr_.sampling_count() % FLAGS_stirling_conn_trackers_stats_logging_ratio ==
+      0) {
+    conn_trackers_mgr_.ComputeProtocolStats();
+    LOG(INFO) << "ConnTracker statistics: " << conn_trackers_mgr_.StatsString();
   }
 
   std::vector<CIDRBlock> cluster_cidrs = ctx->GetClusterCIDRs();

@@ -97,10 +97,23 @@ TEST_F(ConnTrackersManagerTest, Fuzz) {
 
 // Tests that the DebugInfo() returns expected text.
 TEST_F(ConnTrackersManagerTest, DebugInfo) {
-  EXPECT_THAT(trackers_mgr_.DebugInfo(), StrEq("trackers: allocated=0 active=0\n"
-                                               "kTotal=0\n"
-                                               "kReadyForDestruction=0\n"
-                                               "kActive=0\n"));
+  struct conn_id_t conn_id = {};
+
+  conn_id.upid.pid = 1;
+  conn_id.upid.start_time_ticks = 1;
+  conn_id.fd = 1;
+  conn_id.tsid = 1;
+
+  trackers_mgr_.GetOrCreateConnTracker(conn_id);
+  EXPECT_THAT(
+      trackers_mgr_.DebugInfo(),
+      StrEq("ConnTracker count statistics: kTotal=1 kReadyForDestruction=0 kProtocolUnknown=0 "
+            "kProtocolHTTP=0 kProtocolHTTP2=0 kProtocolMySQL=0 kProtocolCQL=0 kProtocolPGSQL=0 "
+            "kProtocolDNS=0 kProtocolRedis=0 \n"
+            "Detailed statistics of individual ConnTracker:\n"
+            "  conn_tracker=conn_id=[pid=1 start_time_ticks=1 fd=1 gen=1] state=kCollecting "
+            "remote_addr=-:-1 role=kRoleUnknown protocol=kProtocolUnknown zombie=false "
+            "ready_for_destruction=false\n"));
 }
 
 class ConnTrackerGenerationsTest : public ::testing::Test {

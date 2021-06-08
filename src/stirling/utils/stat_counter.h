@@ -35,12 +35,13 @@ namespace utils {
 template <typename TKeyType>
 class StatCounter {
  public:
-  void Increment(TKeyType key, int count = 1) { counts[static_cast<int>(key)] += count; }
-  void Decrement(TKeyType key, int count = 1) { counts[static_cast<int>(key)] -= count; }
-  int64_t Get(TKeyType key) const { return counts[static_cast<int>(key)]; }
+  void Increment(TKeyType key, int count = 1) { counts_[static_cast<int>(key)] += count; }
+  void Decrement(TKeyType key, int count = 1) { counts_[static_cast<int>(key)] -= count; }
+  void Set(TKeyType key, int count) { counts_[static_cast<int>(key)] = count; }
+  int64_t Get(TKeyType key) const { return counts_[static_cast<int>(key)]; }
 
  private:
-  std::vector<int64_t> counts = std::vector<int64_t>(magic_enum::enum_count<TKeyType>(), 0);
+  std::vector<int64_t> counts_ = std::vector<int64_t>(magic_enum::enum_count<TKeyType>(), 0);
 };
 
 }  // namespace utils

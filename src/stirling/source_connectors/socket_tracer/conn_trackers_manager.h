@@ -88,6 +88,20 @@ class ConnTrackerGenerations {
  */
 class ConnTrackersManager {
  public:
+  enum class StatKey {
+    kTotal,
+    kReadyForDestruction,
+
+    kProtocolUnknown,
+    kProtocolHTTP,
+    kProtocolHTTP2,
+    kProtocolMySQL,
+    kProtocolCQL,
+    kProtocolPGSQL,
+    kProtocolDNS,
+    kProtocolRedis,
+  };
+
   ConnTrackersManager();
 
   /**
@@ -116,6 +130,16 @@ class ConnTrackersManager {
    */
   std::string DebugInfo() const;
 
+  /**
+   * Computes the count of ConnTracker objects for each protocol and stores them into stats_.
+   */
+  void ComputeProtocolStats();
+
+  /**
+   * Returns a string representing the stats of ConnTracker objects.
+   */
+  std::string StatsString() const;
+
  private:
   // Simple consistency DCHECKs meant for enforcing invariants.
   void DebugChecks() const;
@@ -130,12 +154,6 @@ class ConnTrackersManager {
   // A pool of unused trackers that can be recycled.
   // This is useful for avoiding memory reallocations.
   ConnTrackerPool trackers_pool_;
-
-  enum class StatKey {
-    kTotal,
-    kReadyForDestruction,
-    kActive,
-  };
 
   // Records statistics of ConnTracker for reporting and consistency check.
   utils::StatCounter<StatKey> stats_;

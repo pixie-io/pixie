@@ -111,6 +111,26 @@ uint64_t GetConnMapKey(uint32_t pid, uint32_t fd) {
   return (static_cast<uint64_t>(pid) << 32) | fd;
 }
 
+ConnTrackersManager::StatKey GetStatKeyForProtocol(TrafficProtocol protocol) {
+#define CASE(protocol) \
+  case protocol:       \
+    return ConnTrackersManager::StatKey::protocol;
+  switch (protocol) {
+    CASE(kProtocolUnknown)
+    CASE(kProtocolHTTP)
+    CASE(kProtocolHTTP2)
+    CASE(kProtocolMySQL)
+    CASE(kProtocolCQL)
+    CASE(kProtocolPGSQL)
+    CASE(kProtocolDNS)
+    CASE(kProtocolRedis)
+    default:
+      LOG(DFATAL) << "Unexpected enum value: " << magic_enum::enum_name(protocol);
+      return ConnTrackersManager::StatKey::kProtocolUnknown;
+  }
+#undef CASE
+}
+
 }  // namespace
 
 ConnTrackersManager::ConnTrackersManager() : trackers_pool_(kMaxConnTrackerPoolSize) {}
@@ -123,10 +143,11 @@ ConnTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t conn_i
   auto [conn_tracker_ptr, created] = conn_trackers.GetOrCreate(conn_id.tsid, &trackers_pool_);
 
   if (created) {
-    stats_.Increment(StatKey::kTotal);
     active_trackers_.push_back(conn_tracker_ptr);
     conn_tracker_ptr->manager_ = this;
     conn_tracker_ptr->SetConnID(conn_id);
+
+    stats_.Increment(StatKey::kTotal);
   }
 
   DebugChecks();
@@ -203,19 +224,34 @@ void ConnTrackersManager::DebugChecks() const {
 std::string ConnTrackersManager::DebugInfo() const {
   std::string out;
 
-  out += absl::Substitute("trackers: allocated=$0 active=$1\n", stats_.Get(StatKey::kTotal),
-                          active_trackers_.size());
-  for (const auto& tracker : active_trackers_) {
-    out +=
-        absl::Substitute("  conn_tracker=$0 zombie=$1 ready_for_destruction=$2\n",
-                         tracker->ToString(), tracker->IsZombie(), tracker->ReadyForDestruction());
-  }
+  absl::StrAppend(&out, "ConnTracker count statistics: ", StatsString(),
+                  "\nDetailed statistics of individual ConnTracker:\n");
 
-  for (auto key : magic_enum::enum_values<StatKey>()) {
-    absl::StrAppend(&out, absl::Substitute("$0=$1\n", magic_enum::enum_name(key), stats_.Get(key)));
+  for (const auto& tracker : active_trackers_) {
+    absl::StrAppend(&out, absl::Substitute("  conn_tracker=$0 zombie=$1 ready_for_destruction=$2\n",
+                                           tracker->ToString(), tracker->IsZombie(),
+                                           tracker->ReadyForDestruction()));
   }
 
   return out;
+}
+
+std::string ConnTrackersManager::StatsString() const {
+  std::string out;
+  for (auto key : magic_enum::enum_values<StatKey>()) {
+    absl::StrAppend(&out, absl::Substitute("$0=$1 ", magic_enum::enum_name(key), stats_.Get(key)));
+  }
+  return out;
+}
+
+void ConnTrackersManager::ComputeProtocolStats() {
+  absl::flat_hash_map<TrafficProtocol, int> protocol_count;
+  for (const auto* tracker : active_trackers_) {
+    ++protocol_count[tracker->protocol()];
+  }
+  for (auto [protocol, count] : protocol_count) {
+    stats_.Set(GetStatKeyForProtocol(protocol), count);
+  }
 }
 
 }  // namespace stirling
