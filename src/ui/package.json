@@ -37,6 +37,7 @@
     "@typescript-eslint/eslint-plugin": "^4.21.0",
     "@typescript-eslint/parser": "^4.21.0",
     "@webpack-cli/serve": "^1.1.0",
+    "@yarnpkg/pnpify": "^3.0.0-rc.6",
     "archiver": "^5.0.2",
     "awesome-typescript-loader": "^5.2.0",
     "babel-eslint": "^10.1.0",
@@ -51,6 +52,7 @@
     "enzyme-adapter-react-16": "^1.15.1",
     "eslint": "^7.23.0",
     "eslint-config-airbnb-typescript": "^12.3.1",
+    "eslint-import-resolver-node": "^0.3.4",
     "eslint-plugin-enzyme": "^0.2.0",
     "eslint-plugin-import": "^2.23.4",
     "eslint-plugin-jest": "^24.3.6",
@@ -180,7 +182,7 @@
     "yaml": "^1.6.0"
   },
   "engines": {
-    "node": ">=10.0.0"
+    "node": ">=12.0.0"
   },
   "scripts": {
     "build_dev": "webpack --mode=development --stats=verbose --progress",
@@ -191,7 +193,7 @@
     "test_ci": "jest --maxWorkers=4",
     "coverage": "jest --coverage",
     "coverage_ci": "jest --coverage --maxWorkers=4",
-    "license_check": "./node_modules/license-checker/bin/license-checker",
+    "license_check": "yarn pnpify license-checker",
     "lint": "tsc --noEmit && eslint '*/**/*.{js,ts,tsx}'",
     "vgspec": "NODE_PATH=./src ts-node --compiler-options '{\"module\":\"commonjs\"}' src/utils/print-vgspec-cli.ts"
   },

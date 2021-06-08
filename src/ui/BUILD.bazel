@@ -42,7 +42,7 @@ UI_SRCS = glob([
 ])
 
 LICENSES_SRCS = [
-    "tools/licenses/npm_license_extractor.py",
+    "tools/licenses/yarn_license_extractor.js",
 ]
 
 pl_webpack_deps(

@@ -6,11 +6,11 @@
   },
   "extends": [
     "eslint:recommended",
-    "airbnb/rules/react",
     "plugin:react-hooks/recommended"
   ],
   "parser": "babel-eslint",
   "parserOptions": {
+    "ecmaVersion": 2021,
     "sourceType": "module"
   },
   "settings": {
@@ -60,6 +60,12 @@
       "env": {
         "node": true,
         "jest/globals": true
+      }
+    },
+    {
+      "files": ["./tools/licenses/*.js"],
+      "env": {
+        "node": true
       }
     },
     {

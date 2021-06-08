@@ -1,7 +1,12 @@
 {
 	"folders": [
 		{
+			"name": "pixielabs",
 			"path": ".."
+		},
+		{
+			"name": "@pixielabs/ui",
+			"path": "../src/ui"
 		}
 	],
 	"settings": {
@@ -37,7 +42,11 @@
 			"ui.completion.usePlaceholders": true,
 		},
 		"search.exclude": {
-			"**/dist": true
+			"**/dist": true,
+			"**/.yarn": true,
+			"**/.pnp.*": true,
 		},
+		"typescript.tsdk": "src/ui/.yarn/sdks/typescript/lib",
+  	"typescript.enablePromptUseWorkspaceTsdk": true
 	}
 }

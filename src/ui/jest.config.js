@@ -38,13 +38,12 @@ module.exports = {
     'tsx',
   ],
   moduleDirectories: [
-    'node_modules',
     '<rootDir>/src',
   ],
   moduleNameMapper: {
     '^.+.(jpg|jpeg|png|gif|svg)$': '<rootDir>/src/testing/file-mock.js',
     '(\\.css|\\.scss$)|(normalize.css/normalize)|(^typeface)|(^exports-loader)': 'identity-obj-proxy',
-    'monaco-editor': '<rootDir>/node_modules/react-monaco-editor',
+    'monaco-editor': require.resolve('react-monaco-editor'),
     'configurable/(.*)': '<rootDir>/src/configurables/base/$1',
   },
   resolver: null,

@@ -66,7 +66,7 @@ const plugins = [
 if (isDevServer) {
   plugins.push(new webpack.SourceMapDevToolPlugin({
     filename: 'sourcemaps/[file].map',
-    exclude: [/node_modules/, /vendor/, /vendor\.chunk\.js/, /vendor\.js/],
+    exclude: [/vendor/, /vendor\.chunk\.js/, /vendor\.js/],
   }));
 } else {
   plugins.push(
@@ -194,6 +194,10 @@ const webpackConfig = {
         resolve(__dirname, 'assets/'),
       ]
     },
+    fallback: {
+      // client-oauth2 references `querystring` (nodeJS builtin). We use `query-string` to polyfill it in browsers.
+      querystring: require.resolve('query-string'),
+    },
   },
   optimization: {
     splitChunks: {
@@ -208,6 +212,8 @@ const webpackConfig = {
           minSize: 0, // This is example is too small to create commons chunks
         },
         vendor: {
+          // Yarn PnP still puts this in the string (`.../.yarn/$$virtual/.../depName/.../node_modules/...)
+          // so we can still split the vendor bundle based on that.
           test: /[\\/]node_modules[\\/]/,
           chunks: 'initial',
           name: 'vendor',

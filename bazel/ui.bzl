@@ -49,7 +49,7 @@ def _pl_webpack_deps_impl(ctx):
     cmd = ui_shared_cmds_start + [
         "export OUTPUT_PATH=" + ctx.outputs.out.path,
         "yarn install --immutable &> build.log",
-        "tar -czf ${BASE_PATH}/${OUTPUT_PATH} node_modules .",
+        "tar -czf ${BASE_PATH}/${OUTPUT_PATH} .",
     ] + ui_shared_cmds_finish
 
     ctx.actions.run_shell(
@@ -138,8 +138,8 @@ def _pl_deps_licenses_impl(ctx):
     cmd = ui_shared_cmds_start + [
         "export OUTPUT_PATH=" + ctx.outputs.out.path,
         "tar -zxf ${BASE_PATH}/" + ctx.file.deps.path,
-        "yarn license-checker --excludePrivatePackages --production --json --out ${TMPPATH}/checker.json",
-        "python3 tools/licenses/npm_license_extractor.py " +
+        "yarn license_check --excludePrivatePackages --production --json --out ${TMPPATH}/checker.json",
+        "yarn pnpify node ./tools/licenses/yarn_license_extractor.js " +
         "--input=${TMPPATH}/checker.json --output=${BASE_PATH}/${OUTPUT_PATH}",
     ] + ui_shared_cmds_finish
 

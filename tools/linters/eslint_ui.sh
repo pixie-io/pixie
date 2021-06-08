@@ -38,5 +38,5 @@ if [ ! -f "${workDir}/.eslintrc.json" ]; then
 fi
 
 pushd "${workDir}" > /dev/null
-"${uiDir}/node_modules/.bin/eslint" "$@"
+yarn run eslint "$@"
 popd > /dev/null

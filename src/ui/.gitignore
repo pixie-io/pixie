@@ -11,9 +11,9 @@ junit.xml
 node_modules
 yarn-error.log
 .yarn/*
+# !.yarn/cache # Either huge cache in repository OR slow fresh installs locally. Neither is great. Choosing the latter.
 !.yarn/patches
-!.yarn/releases
 !.yarn/plugins
+!.yarn/releases
 !.yarn/sdks
 !.yarn/versions
-.pnp.*

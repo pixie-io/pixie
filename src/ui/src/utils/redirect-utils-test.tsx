@@ -18,7 +18,7 @@
 
 import * as RedirectUtils from './redirect-utils';
 
-jest.mock('containers/constants', () => ({ DOMAIN_NAME: 'dev.withpixie.dev' }));
+jest.mock('app/containers/constants', () => ({ DOMAIN_NAME: 'dev.withpixie.dev' }));
 
 describe('RedirectUtils test', () => {
   it('should return correct url for no params', () => {
