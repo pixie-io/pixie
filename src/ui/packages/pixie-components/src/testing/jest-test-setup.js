@@ -40,12 +40,6 @@ const analyticsMock = (() => ({
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 Object.defineProperty(window, 'analytics', { value: analyticsMock });
 
-// This is a hack to get clsx to actually work in the test.
-jest.mock('clsx', () => ({
-  __esModule: true,
-  default: jest.requireActual('clsx'),
-}));
-
 // This prevents console errors about the use of useLayoutEffect on the server
 jest.mock('react', () => ({
   ...jest.requireActual('react'),
