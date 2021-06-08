@@ -17,7 +17,7 @@
  */
 
 import { gql, useQuery } from '@apollo/client';
-import { StatusCell, StatusGroup } from '@pixie-labs/components';
+import { StatusCell, StatusGroup } from 'components';
 import { Theme, withStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
 import Table from '@material-ui/core/Table';

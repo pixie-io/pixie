@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { scrollbarStyles, Footer } from '@pixie-labs/components';
+import { scrollbarStyles, Footer } from 'components';
 import { Copyright } from 'configurable/copyright';
 import {
   Theme,

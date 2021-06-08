@@ -35,7 +35,7 @@ import { ClustersTable } from 'containers/admin/clusters-list';
 import { OrgSettings } from 'containers/admin/org-settings';
 import { StyledTab, StyledTabs } from 'containers/admin/utils';
 import { GetOAuthProvider } from 'pages/auth/utils';
-import { scrollbarStyles } from '@pixie-labs/components';
+import { scrollbarStyles } from 'components';
 import { GQLAPIKey, GQLDeploymentKey } from 'types/schema';
 
 import {

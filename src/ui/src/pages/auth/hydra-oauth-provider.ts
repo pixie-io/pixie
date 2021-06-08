@@ -23,7 +23,7 @@ import {
 } from 'containers/constants';
 import ClientOAuth2 from 'client-oauth2';
 import { PublicApiFactory } from '@ory/kratos-client';
-import { FormStructure } from '@pixie-labs/components';
+import { FormStructure } from 'components';
 import * as QueryString from 'query-string';
 import { HydraInvitationForm } from 'containers/admin/hydra-invitation-form';
 import { HydraButtons, RejectHydraSignup } from 'containers/auth/hydra-buttons';

@@ -17,7 +17,7 @@
  */
 
 import * as React from 'react';
-import { GoogleButton } from '@pixie-labs/components';
+import { GoogleButton } from 'components';
 
 export interface Auth0ButtonsProps {
   googleButtonText: string;

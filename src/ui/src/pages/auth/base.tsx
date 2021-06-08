@@ -23,7 +23,7 @@ import {
   Theme, WithStyles, withStyles,
 } from '@material-ui/core';
 import { createStyles } from '@material-ui/styles';
-import { Footer } from '@pixie-labs/components';
+import { Footer } from 'components';
 import { Copyright } from 'configurable/copyright';
 import * as pixieLogo from '../../../assets/images/pixie-logo.svg';
 import * as StarsPNG from './stars.png';

@@ -19,7 +19,7 @@
 import * as React from 'react';
 import { PropsWithChildren } from 'react';
 import { Theme, ThemeProvider } from '@material-ui/core/styles';
-import { DARK_THEME } from '@pixie-labs/components';
+import { DARK_THEME } from 'components';
 import { LayoutContext, LayoutContextProps } from 'context/layout-context';
 import { LiveTourContext, LiveTourContextProps } from 'containers/App/live-tour';
 import { ResultsContext, ResultsContextProps } from 'context/results-context';

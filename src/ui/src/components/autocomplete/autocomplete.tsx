@@ -22,7 +22,7 @@ import * as React from 'react';
 import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 
-import { scrollbarStyles } from 'mui-theme';
+import { scrollbarStyles } from 'components';
 import useIsMounted from 'utils/use-is-mounted';
 import { AutocompleteContext } from 'components/autocomplete/autocomplete-context';
 

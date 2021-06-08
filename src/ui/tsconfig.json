@@ -7,8 +7,7 @@
         "configurables/base/*"
       ],
       "*": [
-        "*",
-        "../packages/pixie-components/dist/*"
+        "*"
       ]
     },
     "outDir": "./dist/",

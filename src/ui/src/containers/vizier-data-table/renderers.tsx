@@ -36,7 +36,7 @@ import {
   STATUS_TYPES,
   toStatusIndicator,
 } from 'containers/live-widgets/utils';
-import { QuantilesBoxWhisker, SelectedPercentile } from '@pixie-labs/components';
+import { QuantilesBoxWhisker, SelectedPercentile } from 'components';
 import { DataType, SemanticType } from 'types/generated/vizierapi_pb';
 import { Arguments } from 'utils/args-utils';
 import {

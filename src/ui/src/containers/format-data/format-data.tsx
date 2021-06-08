@@ -29,7 +29,7 @@ import {
   getCPULevel,
   getLatencyNSLevel,
 } from 'utils/metric-thresholds';
-import { buildClass } from '@pixie-labs/components';
+import { buildClass } from 'components';
 import { DataType, SemanticType } from 'types/generated/vizierapi_pb';
 
 const JSON_INDENT_PX = 16;

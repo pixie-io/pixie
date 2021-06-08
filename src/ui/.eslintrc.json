@@ -1,4 +1,5 @@
 {
+  "root": true,
   "env": {
     "browser": true,
     "es6": true
@@ -39,8 +40,6 @@
           "**/*test.tsx",
           "jest-esm-transform.js",
           "src/testing/**/*",
-          "packages/**/src/testing/*",
-          "packages/**/rollup.config.js",
           "**/*stories.tsx",
           "webpack.config.js",
           "webpack-utils.js"
@@ -55,8 +54,7 @@
         "*test.ts",
         "*test.tsx",
         "./*.js",
-        "src/testing/**/*",
-        "packages/**/src/testing/*"
+        "src/testing/**/*"
       ],
       "env": {
         "node": true,
@@ -80,7 +78,7 @@
         },
         "ecmaVersion": 2020,
         "sourceType": "module",
-        "project": ["./tsconfig.json", "./packages/**/tsconfig.json"]
+        "project": ["./tsconfig.json"]
       },
       "plugins": [
         "jest",

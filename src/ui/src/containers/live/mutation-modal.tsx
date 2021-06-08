@@ -27,7 +27,7 @@ import {
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import { MutationInfo, LifeCycleState } from 'types/generated/vizierapi_pb';
-import { StatusCell } from '@pixie-labs/components';
+import { StatusCell } from 'components';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';

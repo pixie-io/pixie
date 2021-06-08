@@ -19,7 +19,7 @@
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
-import { buildClass, Spinner } from '@pixie-labs/components';
+import { buildClass, Spinner } from 'components';
 import { GraphDisplay, GraphWidget } from 'containers/live-widgets/graph/graph';
 import { RequestGraphDisplay, RequestGraphWidget } from 'containers/live-widgets/graph/request-graph';
 

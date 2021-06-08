@@ -19,7 +19,7 @@
 import { gql, useMutation } from '@apollo/client';
 import * as React from 'react';
 import { OAUTH_PROVIDER } from 'containers/constants';
-import { Form } from '@pixie-labs/components';
+import { Form } from 'components';
 
 import { GQLUserInvite } from 'types/schema';
 import { makeStyles, Theme } from '@material-ui/core/styles';

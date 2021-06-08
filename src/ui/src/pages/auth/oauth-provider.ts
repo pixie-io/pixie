@@ -19,7 +19,7 @@
 // Not actually using React in this class, but implementors may offer a component that does.
 import type * as React from 'react';
 
-import { FormStructure } from '@pixie-labs/components';
+import { FormStructure } from 'components';
 
 export type Token = {
   isEmailUnverified?: boolean;

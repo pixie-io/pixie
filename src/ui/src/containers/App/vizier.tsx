@@ -18,7 +18,7 @@
 
 import { ClusterContext } from 'common/cluster-context';
 import UserContext from 'common/user-context';
-import { useSnackbar } from '@pixie-labs/components';
+import { useSnackbar } from 'components';
 import AdminView from 'pages/admin/admin';
 import CreditsView from 'pages/credits/credits';
 import { SCRATCH_SCRIPT, ScriptsContextProvider } from 'containers/App/scripts-context';

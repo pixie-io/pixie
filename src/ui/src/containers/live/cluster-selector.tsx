@@ -24,7 +24,7 @@ import {
 import { createStyles } from '@material-ui/styles';
 import { ClusterContext } from 'common/cluster-context';
 
-import { StatusCell, Select } from '@pixie-labs/components';
+import { StatusCell, Select } from 'components';
 import { GQLClusterInfo, GQLClusterStatus } from 'types/schema';
 import { clusterStatusGroup } from 'containers/admin/utils';
 

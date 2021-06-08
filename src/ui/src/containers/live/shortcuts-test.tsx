@@ -17,6 +17,7 @@
  */
 
 import * as React from 'react';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { mount } from 'enzyme';
 import { Modal } from '@material-ui/core';
 import { act } from 'react-dom/test-utils';

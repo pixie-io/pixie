@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { PlayIcon, StopIcon } from '@pixie-labs/components';
+import { PlayIcon, StopIcon } from 'components';
 import * as React from 'react';
 
 import Tooltip from '@material-ui/core/Tooltip';

@@ -21,7 +21,7 @@ import * as QueryString from 'query-string';
 import Axios, { AxiosError } from 'axios';
 import * as RedirectUtils from 'utils/redirect-utils';
 import { isValidAnalytics } from 'utils/env';
-import { AuthMessageBox } from '@pixie-labs/components';
+import { AuthMessageBox } from 'components';
 import { Link } from 'react-router-dom';
 import {
   Button, ButtonProps, makeStyles, Theme,

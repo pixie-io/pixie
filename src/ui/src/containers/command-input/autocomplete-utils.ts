@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { StatusGroup } from '@pixie-labs/components';
+import { StatusGroup } from 'components';
 import { GQLAutocompleteEntityKind } from 'types/schema';
 
 export type EntityType = 'AEK_UNKNOWN' | 'AEK_POD' | 'AEK_SVC' | 'AEK_SCRIPT' | 'AEK_NAMESPACE';

@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { DARK_THEME } from '@pixie-labs/components';
+import { DARK_THEME } from 'components';
 import { Relation, SemanticType } from 'types/generated/vizierapi_pb';
 import { Spec } from 'vega';
 import {

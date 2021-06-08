@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SelectedPercentile } from '@pixie-labs/components';
+import { SelectedPercentile } from 'components';
 import { DataType, Relation, SemanticType } from 'types/generated/vizierapi_pb';
 
 export interface QuantilesDisplayState {

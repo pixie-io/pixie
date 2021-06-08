@@ -28,7 +28,7 @@ import { gql } from '@apollo/client';
 
 import {
   Breadcrumbs, BreadcrumbOptions, StatusCell,
-} from '@pixie-labs/components';
+} from 'components';
 import { ClusterContext } from 'common/cluster-context';
 import { argVariableMap, argTypesForVis } from 'utils/args-utils';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'containers/App/scripts-context';

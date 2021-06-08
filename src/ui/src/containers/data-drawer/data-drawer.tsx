@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { LazyPanel, ResizableDrawer, Spinner } from '@pixie-labs/components';
+import { LazyPanel, ResizableDrawer, Spinner } from 'components';
 import { DataDrawerContext } from 'context/data-drawer-context';
 import { LayoutContext } from 'context/layout-context';
 import { ResultsContext } from 'context/results-context';

@@ -73,7 +73,7 @@ initialize {
                                 "children": Array [
                                   Node {
                                     "attribs": Object {
-                                      "d": "M7 10l5 5 5-5z",
+                                      "d": "m7 10 5 5 5-5z",
                                     },
                                     "children": Array [],
                                     "name": "path",
@@ -176,7 +176,7 @@ initialize {
                               "children": Array [
                                 Node {
                                   "attribs": Object {
-                                    "d": "M7 10l5 5 5-5z",
+                                    "d": "m7 10 5 5 5-5z",
                                   },
                                   "children": Array [],
                                   "name": "path",
@@ -279,7 +279,7 @@ initialize {
                             "children": Array [
                               Node {
                                 "attribs": Object {
-                                  "d": "M7 10l5 5 5-5z",
+                                  "d": "m7 10 5 5 5-5z",
                                 },
                                 "children": Array [],
                                 "name": "path",
@@ -473,7 +473,7 @@ initialize {
                                   "children": Array [
                                     Node {
                                       "attribs": Object {
-                                        "d": "M7 10l5 5 5-5z",
+                                        "d": "m7 10 5 5 5-5z",
                                       },
                                       "children": Array [],
                                       "name": "path",
@@ -576,7 +576,7 @@ initialize {
                                 "children": Array [
                                   Node {
                                     "attribs": Object {
-                                      "d": "M7 10l5 5 5-5z",
+                                      "d": "m7 10 5 5 5-5z",
                                     },
                                     "children": Array [],
                                     "name": "path",
@@ -679,7 +679,7 @@ initialize {
                               "children": Array [
                                 Node {
                                   "attribs": Object {
-                                    "d": "M7 10l5 5 5-5z",
+                                    "d": "m7 10 5 5 5-5z",
                                   },
                                   "children": Array [],
                                   "name": "path",
@@ -1154,7 +1154,7 @@ initialize {
                                 "children": Array [
                                   Node {
                                     "attribs": Object {
-                                      "d": "M7 10l5 5 5-5z",
+                                      "d": "m7 10 5 5 5-5z",
                                     },
                                     "children": Array [],
                                     "name": "path",
@@ -1257,7 +1257,7 @@ initialize {
                               "children": Array [
                                 Node {
                                   "attribs": Object {
-                                    "d": "M7 10l5 5 5-5z",
+                                    "d": "m7 10 5 5 5-5z",
                                   },
                                   "children": Array [],
                                   "name": "path",
@@ -1360,7 +1360,7 @@ initialize {
                             "children": Array [
                               Node {
                                 "attribs": Object {
-                                  "d": "M7 10l5 5 5-5z",
+                                  "d": "m7 10 5 5 5-5z",
                                 },
                                 "children": Array [],
                                 "name": "path",
@@ -1816,7 +1816,7 @@ initialize {
                                   "children": Array [
                                     Node {
                                       "attribs": Object {
-                                        "d": "M7 10l5 5 5-5z",
+                                        "d": "m7 10 5 5 5-5z",
                                       },
                                       "children": Array [],
                                       "name": "path",
@@ -1919,7 +1919,7 @@ initialize {
                                 "children": Array [
                                   Node {
                                     "attribs": Object {
-                                      "d": "M7 10l5 5 5-5z",
+                                      "d": "m7 10 5 5 5-5z",
                                     },
                                     "children": Array [],
                                     "name": "path",
@@ -2022,7 +2022,7 @@ initialize {
                               "children": Array [
                                 Node {
                                   "attribs": Object {
-                                    "d": "M7 10l5 5 5-5z",
+                                    "d": "m7 10 5 5 5-5z",
                                   },
                                   "children": Array [],
                                   "name": "path",
@@ -2487,7 +2487,7 @@ initialize {
                                   "children": Array [
                                     Node {
                                       "attribs": Object {
-                                        "d": "M7 10l5 5 5-5z",
+                                        "d": "m7 10 5 5 5-5z",
                                       },
                                       "children": Array [],
                                       "name": "path",
@@ -2590,7 +2590,7 @@ initialize {
                                 "children": Array [
                                   Node {
                                     "attribs": Object {
-                                      "d": "M7 10l5 5 5-5z",
+                                      "d": "m7 10 5 5 5-5z",
                                     },
                                     "children": Array [],
                                     "name": "path",
@@ -2693,7 +2693,7 @@ initialize {
                               "children": Array [
                                 Node {
                                   "attribs": Object {
-                                    "d": "M7 10l5 5 5-5z",
+                                    "d": "m7 10 5 5 5-5z",
                                   },
                                   "children": Array [],
                                   "name": "path",
@@ -2889,7 +2889,7 @@ initialize {
                                     "children": Array [
                                       Node {
                                         "attribs": Object {
-                                          "d": "M7 10l5 5 5-5z",
+                                          "d": "m7 10 5 5 5-5z",
                                         },
                                         "children": Array [],
                                         "name": "path",
@@ -2992,7 +2992,7 @@ initialize {
                                   "children": Array [
                                     Node {
                                       "attribs": Object {
-                                        "d": "M7 10l5 5 5-5z",
+                                        "d": "m7 10 5 5 5-5z",
                                       },
                                       "children": Array [],
                                       "name": "path",
@@ -3095,7 +3095,7 @@ initialize {
                                 "children": Array [
                                   Node {
                                     "attribs": Object {
-                                      "d": "M7 10l5 5 5-5z",
+                                      "d": "m7 10 5 5 5-5z",
                                     },
                                     "children": Array [],
                                     "name": "path",

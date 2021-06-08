@@ -17,12 +17,29 @@
  */
 
 import * as React from 'react';
+// eslint-disable-next-line import/no-extraneous-dependencies
 import { render } from 'enzyme';
-import { VersionInfo } from './version-info';
+import { ThemeProvider } from '@material-ui/core';
+import { createTheme } from '@material-ui/core/styles';
+import { FixedSizeDrawer } from './drawer';
 
-describe('<VersionInfo/>', () => {
-  it('renders correctly', () => {
-    const wrapper = render(<VersionInfo cloudVersion='testing 123' />);
+describe('<FixedSizeDrawer/>', () => {
+  it('renders correctly when closed', () => {
+    const otherContent = <div>Other content. Some text goes here.</div>;
+
+    const wrapper = render(
+      <ThemeProvider theme={createTheme()}>
+        <FixedSizeDrawer
+          drawerDirection='left'
+          drawerSize='50px'
+          open={false}
+          otherContent={otherContent}
+          overlay={false}
+        >
+          <div>Drawer contents</div>
+        </FixedSizeDrawer>
+      </ThemeProvider>,
+    );
     expect(wrapper).toMatchSnapshot();
   });
 });

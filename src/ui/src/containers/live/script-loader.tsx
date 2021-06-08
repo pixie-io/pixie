@@ -19,7 +19,7 @@
 import * as React from 'react';
 import { ClusterContext } from 'common/cluster-context';
 import { ScriptContext } from 'context/script-context';
-import { useSnackbar } from '@pixie-labs/components';
+import { useSnackbar } from 'components';
 
 /**
  * Automatically runs the selected script whenever it changes, the args change, or the vis spec changes.

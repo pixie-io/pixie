@@ -40,7 +40,6 @@ module.exports = {
   moduleDirectories: [
     'node_modules',
     '<rootDir>/src',
-    '<rootDir>/packages/pixie-components/src',
   ],
   moduleNameMapper: {
     '^.+.(jpg|jpeg|png|gif|svg)$': '<rootDir>/src/testing/file-mock.js',

@@ -17,7 +17,7 @@
  */
 
 import * as React from 'react';
-import { PixienautForm, FormStructure } from '@pixie-labs/components';
+import { PixienautForm, FormStructure } from 'components';
 import { RouteProps } from 'react-router';
 import * as QueryString from 'query-string';
 import { BasePage } from './base';

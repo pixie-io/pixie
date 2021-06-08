@@ -18,7 +18,7 @@
 
 import type * as React from 'react';
 
-import { FormStructure } from '@pixie-labs/components';
+import { FormStructure } from 'components';
 import { Auth0Buttons } from 'containers/auth/auth0-buttons';
 import { UserManager } from 'oidc-client';
 import { AUTH_CLIENT_ID, AUTH_URI } from 'containers/constants';

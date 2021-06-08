@@ -39,7 +39,7 @@ import { ClusterContext } from 'common/cluster-context';
 import UserContext from 'common/user-context';
 import {
   ClusterIcon, DocsIcon, NamespaceIcon,
-} from '@pixie-labs/components';
+} from 'components';
 import { toEntityPathname, LiveViewPage } from 'containers/live-widgets/utils/live-view-params';
 import {
   DOMAIN_NAME, ANNOUNCEMENT_ENABLED,

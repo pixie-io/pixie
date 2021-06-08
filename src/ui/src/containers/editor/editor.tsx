@@ -17,7 +17,7 @@
  */
 
 import * as React from 'react';
-import { CodeEditor, LazyPanel, ResizableDrawer } from '@pixie-labs/components';
+import { CodeEditor, LazyPanel, ResizableDrawer } from 'components';
 
 import {
   makeStyles, Theme, withStyles,

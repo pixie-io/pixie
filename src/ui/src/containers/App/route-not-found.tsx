@@ -18,7 +18,7 @@
 
 import * as React from 'react';
 import { useLocation } from 'react-router';
-import { PixienautBox } from '@pixie-labs/components';
+import { PixienautBox } from 'components';
 import {
   Button,
   makeStyles,

@@ -17,7 +17,7 @@
  */
 
 /* eslint-disable no-console */
-import { DARK_THEME } from '@pixie-labs/components';
+import { DARK_THEME } from 'components';
 import { Data } from 'vega';
 
 import {

@@ -29,7 +29,7 @@ import { createStyles } from '@material-ui/styles';
 import {
   Avatar, ProfileMenuWrapper, CodeIcon,
   LogoutIcon, SettingsIcon,
-} from '@pixie-labs/components';
+} from 'components';
 import { useQuery, useMutation, gql } from '@apollo/client';
 import { LiveShortcutsContext } from 'containers/live/shortcuts';
 import { SidebarContext } from 'context/sidebar-context';

@@ -23,7 +23,7 @@ import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 
 import { CommandAutocompleteInput } from 'components/autocomplete/command-autocomplete-input';
-import { scrollbarStyles } from 'mui-theme';
+import { scrollbarStyles } from 'components';
 import { Completions, CompletionId, CompletionItem } from './completions';
 import {
   TabStop, findNextItem, ItemsMap, TabStopParser,

@@ -18,7 +18,7 @@
 
 import * as React from 'react';
 
-import { EditIcon, Footer, scrollbarStyles } from '@pixie-labs/components';
+import { EditIcon, Footer, scrollbarStyles } from 'components';
 import { GQLClusterStatus } from 'types/schema';
 import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';

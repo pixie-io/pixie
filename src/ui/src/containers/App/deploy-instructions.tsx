@@ -17,7 +17,7 @@
  */
 
 import NavBars from 'containers/App/nav-bars';
-import { CodeRenderer, Spinner } from '@pixie-labs/components';
+import { CodeRenderer, Spinner } from 'components';
 import * as logoImage from 'images/pixie-logo.svg';
 import * as React from 'react';
 

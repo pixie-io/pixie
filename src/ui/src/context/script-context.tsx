@@ -30,7 +30,7 @@ import { containsMutation, isStreaming } from 'utils/pxl';
 import { Observable } from 'rxjs';
 import { checkExhaustive } from 'utils/check-exhaustive';
 import { ResultsContext } from 'context/results-context';
-import { useSnackbar } from '@pixie-labs/components';
+import { useSnackbar } from 'components';
 import { argsForVis, validateArgs } from 'utils/args-utils';
 import { ClusterContext, useClusterConfig } from 'common/cluster-context';
 

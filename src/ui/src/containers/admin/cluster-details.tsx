@@ -19,7 +19,7 @@
 import * as React from 'react';
 
 import { gql, useQuery } from '@apollo/client';
-import { Breadcrumbs, StatusCell, StatusGroup } from '@pixie-labs/components';
+import { Breadcrumbs, StatusCell, StatusGroup } from 'components';
 import { distanceInWords } from 'date-fns';
 import { useHistory, useParams } from 'react-router';
 import { Link } from 'react-router-dom';

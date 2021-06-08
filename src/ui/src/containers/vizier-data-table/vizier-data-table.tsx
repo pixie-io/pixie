@@ -19,7 +19,7 @@
 import {
   CellAlignment, ColumnProps, DataTable, SortState,
   buildClass,
-} from '@pixie-labs/components';
+} from 'components';
 import { JSONData } from 'containers/format-data/format-data';
 import { STATUS_TYPES } from 'containers/live-widgets/utils';
 import * as React from 'react';

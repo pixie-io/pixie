@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { StatusGroup } from '@pixie-labs/components';
+import { StatusGroup } from 'components';
 import {
   makeStyles, Theme, withStyles,
 } from '@material-ui/core/styles';

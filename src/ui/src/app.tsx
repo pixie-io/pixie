@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { DARK_THEME, SnackbarProvider, VersionInfo } from '@pixie-labs/components';
+import { DARK_THEME, SnackbarProvider, VersionInfo } from 'components';
 import Vizier from 'containers/App/vizier';
 import PixieCookieBanner from 'configurable/cookie-banner';
 import { LD_CLIENT_ID } from 'containers/constants';

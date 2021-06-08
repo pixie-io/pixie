@@ -19,7 +19,7 @@
 import * as React from 'react';
 import { Grid } from '@material-ui/core';
 import * as QueryString from 'query-string';
-import { AuthMessageBox } from '@pixie-labs/components';
+import { AuthMessageBox } from 'components';
 import { BasePage } from './base';
 
 export const CLIAuthCompletePage: React.FC = () => {
