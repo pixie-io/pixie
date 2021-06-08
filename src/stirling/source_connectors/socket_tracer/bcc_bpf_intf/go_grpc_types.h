@@ -87,10 +87,4 @@ struct go_grpc_data_event_t {
     uint32_t data_buf_size;
   } attr;
   char data[MAX_DATA_SIZE];
-  // IMPORTANT: This unused byte is required to follow char data[MAX_DATA_SIZE].
-  // It is placed here because of the way bpf_probe_read is used.
-  // Since bpf_probe_read size must be greater than 0 in 4.14 kernels,
-  // we always add 1 to the size.
-  // That could cause an overflow in the copy, which this unused byte will absorb.
-  char unused[1];
 };

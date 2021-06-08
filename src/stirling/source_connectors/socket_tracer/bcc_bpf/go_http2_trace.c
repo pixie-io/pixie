@@ -761,11 +761,23 @@ static __inline void go_http2_submit_data(struct pt_regs* ctx, enum http2_probe_
   }
 
   info->attr.data_size = data.len;
-  uint32_t data_buf_size = BPF_LEN_CAP(data.len, MAX_DATA_SIZE);
-  info->attr.data_buf_size = data_buf_size;
-  bpf_probe_read(info->data, data_buf_size + 1, data.ptr);
 
-  go_grpc_data_events.perf_submit(ctx, info, sizeof(info->attr) + data_buf_size);
+  uint32_t data_buf_size = data.len < MAX_DATA_SIZE ? data.len : MAX_DATA_SIZE;
+  info->attr.data_buf_size = data_buf_size;
+
+  // Note that we have some black magic below with the string sizes.
+  // This is to avoid passing a size of 0 to bpf_probe_read(),
+  // which causes BPF verifier issues on kernel 4.14.
+  // The black magic includes an asm volatile, because otherwise Clang
+  // will optimize our magic away.
+  size_t data_buf_size_minus_1 = data_buf_size - 1;
+  asm volatile("" : "+r"(data_buf_size_minus_1) :);
+  data_buf_size = data_buf_size_minus_1 + 1;
+
+  if (data_buf_size_minus_1 < MAX_DATA_SIZE) {
+    bpf_probe_read(info->data, data_buf_size, data.ptr);
+    go_grpc_data_events.perf_submit(ctx, info, sizeof(info->attr) + data_buf_size);
+  }
 }
 
 // Probes golang.org/x/net/http2.Framer for payload.
