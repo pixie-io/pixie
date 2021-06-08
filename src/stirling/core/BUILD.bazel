@@ -108,6 +108,12 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "utils_test",
+    srcs = ["utils_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
     name = "stirling_test",
     size = "medium",
     srcs = ["stirling_test.cc"],

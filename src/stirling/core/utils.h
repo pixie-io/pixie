@@ -25,7 +25,38 @@
 namespace px {
 namespace stirling {
 
-// Manages how often data sampling and pushing should be performed.
+/**
+ * Manages the frequency of periodical action.
+ */
+class FrequencyManager {
+ public:
+  /**
+   * Returns true if the current cycle has expired.
+   */
+  bool Expired() const { return px::chrono::coarse_steady_clock::now() >= next_; }
+
+  /**
+   * Ends the current cycle, and starts the next one.
+   */
+  void Reset();
+
+  void set_period(std::chrono::milliseconds period) { period_ = period; }
+  const auto& period() const { return period_; }
+  const auto& next() const { return next_; }
+  uint32_t count() const { return count_; }
+
+ private:
+  // The cycle's period.
+  std::chrono::milliseconds period_ = {};
+
+  // When the current cycle should end.
+  px::chrono::coarse_steady_clock::time_point next_ = {};
+
+  // The count of expired cycle so far.
+  uint32_t count_ = 0;
+};
+
+// Manages how often data sample and pushing should be performed.
 class SamplePushFrequencyManager {
  public:
   /**
@@ -33,12 +64,12 @@ class SamplePushFrequencyManager {
    *
    * @return bool
    */
-  bool SamplingRequired() const;
+  bool SamplingRequired() const { return sampling_freq_mgr_.Expired(); }
 
   /**
    * Called when sampling data to update timestamps.
    */
-  void Sample();
+  void Sample() { sampling_freq_mgr_.Reset(); }
 
   /**
    * Returns true if a data push is required, for whatever reason (elapsed time, occupancy, etc.).
@@ -50,51 +81,35 @@ class SamplePushFrequencyManager {
   /**
    * Called when pushing data to update timestamps.
    */
-  void Push();
+  void Push() { push_freq_mgr_.Reset(); }
 
   /**
    * Returns the next time the source needs to be sampled, according to the sampling period.
    *
    * @return std::chrono::milliseconds
    */
-  px::chrono::coarse_steady_clock::time_point NextSamplingTime() const;
+  px::chrono::coarse_steady_clock::time_point NextSamplingTime() const {
+    return push_freq_mgr_.next();
+  }
 
   /**
    * Returns the next time the data table needs to be pushed upstream, according to the push period.
    *
    * @return std::chrono::milliseconds
    */
-  px::chrono::coarse_steady_clock::time_point NextPushTime() const;
+  px::chrono::coarse_steady_clock::time_point NextPushTime() const { return push_freq_mgr_.next(); }
 
-  void set_sampling_period(std::chrono::milliseconds period) { sampling_period_ = period; }
-  void set_push_period(std::chrono::milliseconds period) { push_period_ = period; }
-  const auto& sampling_period() const { return sampling_period_; }
-  const auto& push_period() const { return push_period_; }
-  uint32_t sampling_count() const { return sampling_count_; }
+  void set_sampling_period(std::chrono::milliseconds period) {
+    sampling_freq_mgr_.set_period(period);
+  }
+  void set_push_period(std::chrono::milliseconds period) { push_freq_mgr_.set_period(period); }
+  const auto& sampling_period() const { return sampling_freq_mgr_.period(); }
+  const auto& push_period() const { return push_freq_mgr_.period(); }
+  uint32_t sampling_count() const { return sampling_freq_mgr_.count(); }
 
  private:
-  // Sampling period.
-  std::chrono::milliseconds sampling_period_;
-
-  // Keep track of when the source was last sampled.
-  px::chrono::coarse_steady_clock::time_point last_sampled_;
-
-  // Sampling period.
-  std::chrono::milliseconds push_period_;
-
-  // Keep track of when the source was last sampled.
-  px::chrono::coarse_steady_clock::time_point last_pushed_;
-
-  // Data push threshold, based number of records after which a push.
-  static constexpr uint32_t kDefaultOccupancyThreshold = 1024;
-  uint32_t occupancy_threshold_ = kDefaultOccupancyThreshold;
-
-  // Data push threshold, based on percentage of buffer that is filled.
-  static constexpr uint32_t kDefaultOccupancyPctThreshold = 100;
-  uint32_t occupancy_pct_threshold_ = kDefaultOccupancyPctThreshold;
-
-  uint32_t sampling_count_ = 0;
-  uint32_t push_count_ = 0;
+  FrequencyManager sampling_freq_mgr_;
+  FrequencyManager push_freq_mgr_;
 };
 
 }  // namespace stirling
