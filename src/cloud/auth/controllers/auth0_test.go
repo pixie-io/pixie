@@ -180,12 +180,14 @@ func TestAuth0ConnectorImpl_GetUserInfo(t *testing.T) {
               "email": "testuser@test.com",
               "name": "Test User",
               "picture": "picture.jpg",
-              "sub": "github|0912938",
               "app_metadata": {
           			"foo": {
           				"pl_user_id": "test_pl_user_id"
           			}
-              }
+              },
+							"identities": [{
+								"provider": "github"
+							}]
          }
         `))
 		require.NoError(t, err)
@@ -238,11 +240,9 @@ func TestAuth0ConnectorImpl_GetUserInfo_DontParseIdProviderFromSubIfUnexpectedFo
 	c, err := controllers.NewAuth0Connector(cfg)
 	require.NoError(t, err)
 
-	userInfo, err := c.GetUserInfo("abcd")
+	_, err = c.GetUserInfo("abcd")
 	assert.Equal(t, 2, callCount)
 	require.NoError(t, err)
-	// Should be an empty string, sign that it is ignored.
-	assert.Equal(t, "", userInfo.IdentityProvider)
 }
 
 func TestAuth0ConnectorImpl_GetUserInfo_BadResponse(t *testing.T) {

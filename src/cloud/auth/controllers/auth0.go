@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -38,14 +37,11 @@ func init() {
 	pflag.String("auth0_client_secret", "", "Auth0 client secret")
 }
 
-func parseIdentityProviderFromSub(sub string) string {
-	// Normal format is a "idprovider|<id>".
-	split := strings.Split(sub, "|")
-	// If we don't split into two pieces, the sub does not use a known id provider so we don't attempt to use it.
-	if len(split) != 2 {
+func getIdentityProvider(auth0 *auth0UserInfo) string {
+	if len(auth0.Identities) != 1 {
 		return ""
 	}
-	return split[0]
+	return auth0.Identities[0].Provider
 }
 
 func transformAuth0UserInfoToUserInfo(auth0 *auth0UserInfo, clientID string) (*UserInfo, error) {
@@ -56,7 +52,7 @@ func transformAuth0UserInfoToUserInfo(auth0 *auth0UserInfo, clientID string) (*U
 		LastName:         auth0.LastName,
 		Name:             auth0.Name,
 		Picture:          auth0.Picture,
-		IdentityProvider: parseIdentityProviderFromSub(auth0.Sub),
+		IdentityProvider: getIdentityProvider(auth0),
 	}
 	if !(auth0.AppMetadata == nil || auth0.AppMetadata[clientID] == nil) {
 		u.PLUserID = auth0.AppMetadata[clientID].PLUserID
@@ -71,6 +67,10 @@ type auth0UserMetadata struct {
 	PLOrgID  string `json:"pl_org_id,omitempty"`
 }
 
+type auth0Identity struct {
+	Provider string `json:"provider,omitempty"`
+}
+
 // auth0UserInfo tracks the returned auth0 info.
 type auth0UserInfo struct {
 	Email       string                        `json:",omitempty"`
@@ -81,6 +81,7 @@ type auth0UserInfo struct {
 	Picture     string                        `json:",omitempty"`
 	Sub         string                        `json:"sub,omitempty"`
 	AppMetadata map[string]*auth0UserMetadata `json:"app_metadata,omitempty"`
+	Identities  []*auth0Identity              `json:"identities,omitempty"`
 }
 
 // Auth0Config is the config data required for Auth0.
