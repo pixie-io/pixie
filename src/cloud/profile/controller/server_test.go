@@ -70,11 +70,12 @@ func TestServer_CreateUser(t *testing.T) {
 			name:      "valid request",
 			makesCall: true,
 			userInfo: &profilepb.CreateUserRequest{
-				OrgID:     utils.ProtoFromUUID(testOrgUUID),
-				Username:  "foobar",
-				FirstName: "foo",
-				LastName:  "bar",
-				Email:     "foo@bar.com",
+				OrgID:            utils.ProtoFromUUID(testOrgUUID),
+				Username:         "foobar",
+				FirstName:        "foo",
+				LastName:         "bar",
+				Email:            "foo@bar.com",
+				IdentityProvider: "github",
 			},
 			expectErr:       false,
 			expectCode:      codes.OK,
@@ -85,11 +86,12 @@ func TestServer_CreateUser(t *testing.T) {
 			name:      "invalid orgid",
 			makesCall: false,
 			userInfo: &profilepb.CreateUserRequest{
-				OrgID:     &uuidpb.UUID{},
-				Username:  "foobar",
-				FirstName: "foo",
-				LastName:  "bar",
-				Email:     "foo@bar.com",
+				OrgID:            &uuidpb.UUID{},
+				Username:         "foobar",
+				FirstName:        "foo",
+				LastName:         "bar",
+				Email:            "foo@bar.com",
+				IdentityProvider: "github",
 			},
 			expectErr:       true,
 			expectCode:      codes.InvalidArgument,
@@ -100,11 +102,12 @@ func TestServer_CreateUser(t *testing.T) {
 			name:      "invalid username",
 			makesCall: false,
 			userInfo: &profilepb.CreateUserRequest{
-				OrgID:     utils.ProtoFromUUID(testOrgUUID),
-				Username:  "",
-				FirstName: "foo",
-				LastName:  "bar",
-				Email:     "foo@bar.com",
+				OrgID:            utils.ProtoFromUUID(testOrgUUID),
+				Username:         "",
+				FirstName:        "foo",
+				LastName:         "bar",
+				Email:            "foo@bar.com",
+				IdentityProvider: "github",
 			},
 			expectErr:       true,
 			expectCode:      codes.InvalidArgument,
@@ -115,11 +118,12 @@ func TestServer_CreateUser(t *testing.T) {
 			name:      "empty first name is ok",
 			makesCall: true,
 			userInfo: &profilepb.CreateUserRequest{
-				OrgID:     utils.ProtoFromUUID(testOrgUUID),
-				Username:  "foobar",
-				FirstName: "",
-				LastName:  "bar",
-				Email:     "foo@bar.com",
+				OrgID:            utils.ProtoFromUUID(testOrgUUID),
+				Username:         "foobar",
+				FirstName:        "",
+				LastName:         "bar",
+				Email:            "foo@bar.com",
+				IdentityProvider: "github",
 			},
 			expectErr:       false,
 			expectCode:      codes.OK,
@@ -130,11 +134,12 @@ func TestServer_CreateUser(t *testing.T) {
 			name:      "empty email",
 			makesCall: false,
 			userInfo: &profilepb.CreateUserRequest{
-				OrgID:     utils.ProtoFromUUID(testOrgUUID),
-				Username:  "foobar",
-				FirstName: "foo",
-				LastName:  "bar",
-				Email:     "",
+				OrgID:            utils.ProtoFromUUID(testOrgUUID),
+				Username:         "foobar",
+				FirstName:        "foo",
+				LastName:         "bar",
+				Email:            "",
+				IdentityProvider: "github",
 			},
 			expectErr:       true,
 			expectCode:      codes.InvalidArgument,
@@ -145,11 +150,12 @@ func TestServer_CreateUser(t *testing.T) {
 			name:      "banned email",
 			makesCall: false,
 			userInfo: &profilepb.CreateUserRequest{
-				OrgID:     utils.ProtoFromUUID(testOrgUUID),
-				Username:  "foobar",
-				FirstName: "foo",
-				LastName:  "bar",
-				Email:     "foo@blocklist.com",
+				OrgID:            utils.ProtoFromUUID(testOrgUUID),
+				Username:         "foobar",
+				FirstName:        "foo",
+				LastName:         "bar",
+				Email:            "foo@blocklist.com",
+				IdentityProvider: "github",
 			},
 			expectErr:       true,
 			expectCode:      codes.InvalidArgument,
@@ -160,11 +166,12 @@ func TestServer_CreateUser(t *testing.T) {
 			name:      "allowed email",
 			makesCall: true,
 			userInfo: &profilepb.CreateUserRequest{
-				OrgID:     utils.ProtoFromUUID(testOrgUUID),
-				Username:  "foobar",
-				FirstName: "foo",
-				LastName:  "bar",
-				Email:     "foo@gmail.com",
+				OrgID:            utils.ProtoFromUUID(testOrgUUID),
+				Username:         "foobar",
+				FirstName:        "foo",
+				LastName:         "bar",
+				Email:            "foo@gmail.com",
+				IdentityProvider: "github",
 			},
 			expectErr:       false,
 			expectCode:      codes.OK,
@@ -175,11 +182,12 @@ func TestServer_CreateUser(t *testing.T) {
 			name:      "invalid email",
 			makesCall: false,
 			userInfo: &profilepb.CreateUserRequest{
-				OrgID:     utils.ProtoFromUUID(testOrgUUID),
-				Username:  "foobar",
-				FirstName: "foo",
-				LastName:  "bar",
-				Email:     "foo.com",
+				OrgID:            utils.ProtoFromUUID(testOrgUUID),
+				Username:         "foobar",
+				FirstName:        "foo",
+				LastName:         "bar",
+				Email:            "foo.com",
+				IdentityProvider: "github",
 			},
 			expectErr:       true,
 			expectCode:      codes.InvalidArgument,
@@ -190,16 +198,33 @@ func TestServer_CreateUser(t *testing.T) {
 			name:      "enable approvals properly sets users info",
 			makesCall: true,
 			userInfo: &profilepb.CreateUserRequest{
-				OrgID:     utils.ProtoFromUUID(testOrgUUID),
-				Username:  "foobar",
-				FirstName: "",
-				LastName:  "bar",
-				Email:     "foo@bar.com",
+				OrgID:            utils.ProtoFromUUID(testOrgUUID),
+				Username:         "foobar",
+				FirstName:        "",
+				LastName:         "bar",
+				Email:            "foo@bar.com",
+				IdentityProvider: "github",
 			},
 			expectErr:       false,
 			expectCode:      codes.OK,
 			respID:          utils.ProtoFromUUID(testUUID),
 			enableApprovals: true,
+		},
+		{
+			name:      "identity provider empty throws an error",
+			makesCall: false,
+			userInfo: &profilepb.CreateUserRequest{
+				OrgID:            utils.ProtoFromUUID(testOrgUUID),
+				Username:         "foobar",
+				FirstName:        "",
+				LastName:         "bar",
+				Email:            "foo@bar.com",
+				IdentityProvider: "",
+			},
+			expectErr:       true,
+			expectCode:      codes.InvalidArgument,
+			respID:          nil,
+			enableApprovals: false,
 		},
 	}
 
@@ -215,12 +240,13 @@ func TestServer_CreateUser(t *testing.T) {
 			}
 			if tc.makesCall {
 				req := &datastore.UserInfo{
-					OrgID:      testOrgUUID,
-					Username:   tc.userInfo.Username,
-					FirstName:  tc.userInfo.FirstName,
-					LastName:   tc.userInfo.LastName,
-					Email:      tc.userInfo.Email,
-					IsApproved: !tc.enableApprovals,
+					OrgID:            testOrgUUID,
+					Username:         tc.userInfo.Username,
+					FirstName:        tc.userInfo.FirstName,
+					LastName:         tc.userInfo.LastName,
+					Email:            tc.userInfo.Email,
+					IsApproved:       !tc.enableApprovals,
+					IdentityProvider: tc.userInfo.IdentityProvider,
 				}
 				d.EXPECT().
 					CreateUser(req).
@@ -231,11 +257,11 @@ func TestServer_CreateUser(t *testing.T) {
 			if tc.expectErr {
 				assert.NotNil(t, err)
 				c := status.Code(err)
-				assert.Equal(t, c, tc.expectCode)
+				assert.Equal(t, tc.expectCode, c)
 				return
 			}
 
-			assert.Equal(t, resp, tc.respID)
+			assert.Equal(t, tc.respID, resp)
 		})
 	}
 }
@@ -303,12 +329,13 @@ func TestServer_GetUserByEmail(t *testing.T) {
 	s := controller.NewServer(nil, d, nil, nil)
 
 	mockReply := &datastore.UserInfo{
-		ID:        userUUID,
-		OrgID:     orgUUID,
-		Username:  "foobar",
-		FirstName: "foo",
-		LastName:  "bar",
-		Email:     "foo@bar.com",
+		ID:               userUUID,
+		OrgID:            orgUUID,
+		Username:         "foobar",
+		FirstName:        "foo",
+		LastName:         "bar",
+		Email:            "foo@bar.com",
+		IdentityProvider: "github",
 	}
 
 	d.EXPECT().
@@ -323,6 +350,7 @@ func TestServer_GetUserByEmail(t *testing.T) {
 	assert.Equal(t, resp.ID, utils.ProtoFromUUID(userUUID))
 	assert.Equal(t, resp.Email, "foo@bar.com")
 	assert.Equal(t, resp.OrgID, utils.ProtoFromUUID(orgUUID))
+	assert.Equal(t, resp.IdentityProvider, "github")
 }
 
 func TestServer_GetUserByEmail_MissingEmail(t *testing.T) {
@@ -367,10 +395,11 @@ func TestServer_CreateOrgAndUser_SuccessCases(t *testing.T) {
 					DomainName: "my-org.com",
 				},
 				User: &profilepb.CreateOrgAndUserRequest_User{
-					Username:  "foobar",
-					FirstName: "foo",
-					LastName:  "bar",
-					Email:     "foo@bar.com",
+					Username:         "foobar",
+					FirstName:        "foo",
+					LastName:         "bar",
+					Email:            "foo@bar.com",
+					IdentityProvider: "github",
 				},
 			},
 			resp: &profilepb.CreateOrgAndUserResponse{
@@ -385,10 +414,11 @@ func TestServer_CreateOrgAndUser_SuccessCases(t *testing.T) {
 					DomainName: "my-org.com",
 				},
 				User: &profilepb.CreateOrgAndUserRequest_User{
-					Username:  "foobar",
-					FirstName: "foo",
-					LastName:  "",
-					Email:     "foo@gmail.com",
+					Username:         "foobar",
+					FirstName:        "foo",
+					LastName:         "",
+					Email:            "foo@gmail.com",
+					IdentityProvider: "github",
 				},
 			},
 			resp: &profilepb.CreateOrgAndUserResponse{
@@ -414,11 +444,12 @@ func TestServer_CreateOrgAndUser_SuccessCases(t *testing.T) {
 
 			s := controller.NewServer(env, d, nil, nil)
 			exUserInfo := &datastore.UserInfo{
-				Username:   tc.req.User.Username,
-				FirstName:  tc.req.User.FirstName,
-				LastName:   tc.req.User.LastName,
-				Email:      tc.req.User.Email,
-				IsApproved: true,
+				Username:         tc.req.User.Username,
+				FirstName:        tc.req.User.FirstName,
+				LastName:         tc.req.User.LastName,
+				Email:            tc.req.User.Email,
+				IsApproved:       true,
+				IdentityProvider: tc.req.User.IdentityProvider,
 			}
 			exOrg := &datastore.OrgInfo{
 				DomainName: tc.req.Org.DomainName,
@@ -452,10 +483,11 @@ func TestServer_CreateOrgAndUser_InvalidArgumentCases(t *testing.T) {
 					DomainName: "my-org.com",
 				},
 				User: &profilepb.CreateOrgAndUserRequest_User{
-					Username:  "foobar",
-					FirstName: "foo",
-					LastName:  "bar",
-					Email:     "foo@bar.com",
+					Username:         "foobar",
+					FirstName:        "foo",
+					LastName:         "bar",
+					Email:            "foo@bar.com",
+					IdentityProvider: "github",
 				},
 			},
 		},
@@ -467,10 +499,11 @@ func TestServer_CreateOrgAndUser_InvalidArgumentCases(t *testing.T) {
 					DomainName: "",
 				},
 				User: &profilepb.CreateOrgAndUserRequest_User{
-					Username:  "foobar",
-					FirstName: "foo",
-					LastName:  "bar",
-					Email:     "foo@bar.com",
+					Username:         "foobar",
+					FirstName:        "foo",
+					LastName:         "bar",
+					Email:            "foo@bar.com",
+					IdentityProvider: "github",
 				},
 			},
 		},
@@ -482,10 +515,11 @@ func TestServer_CreateOrgAndUser_InvalidArgumentCases(t *testing.T) {
 					DomainName: "my-org.com",
 				},
 				User: &profilepb.CreateOrgAndUserRequest_User{
-					Username:  "",
-					FirstName: "foo",
-					LastName:  "bar",
-					Email:     "foo@bar.com",
+					Username:         "",
+					FirstName:        "foo",
+					LastName:         "bar",
+					Email:            "foo@bar.com",
+					IdentityProvider: "github",
 				},
 			},
 		},
@@ -497,10 +531,11 @@ func TestServer_CreateOrgAndUser_InvalidArgumentCases(t *testing.T) {
 					DomainName: "my-org.com",
 				},
 				User: &profilepb.CreateOrgAndUserRequest_User{
-					Username:  "foobar",
-					FirstName: "foo",
-					LastName:  "bar",
-					Email:     "",
+					Username:         "foobar",
+					FirstName:        "foo",
+					LastName:         "bar",
+					Email:            "",
+					IdentityProvider: "github",
 				},
 			},
 		},
@@ -512,10 +547,11 @@ func TestServer_CreateOrgAndUser_InvalidArgumentCases(t *testing.T) {
 					DomainName: "my-org.com",
 				},
 				User: &profilepb.CreateOrgAndUserRequest_User{
-					Username:  "foobar",
-					FirstName: "foo",
-					LastName:  "bar",
-					Email:     "foo@blocklist.com",
+					Username:         "foobar",
+					FirstName:        "foo",
+					LastName:         "bar",
+					Email:            "foo@blocklist.com",
+					IdentityProvider: "github",
 				},
 			},
 		},
@@ -560,20 +596,22 @@ func TestServer_CreateOrgAndUser_CreateProjectFailed(t *testing.T) {
 			DomainName: "my-org.com",
 		},
 		User: &profilepb.CreateOrgAndUserRequest_User{
-			Username:  "foobar",
-			FirstName: "foo",
-			LastName:  "bar",
-			Email:     "foo@bar.com",
+			Username:         "foobar",
+			FirstName:        "foo",
+			LastName:         "bar",
+			Email:            "foo@bar.com",
+			IdentityProvider: "github",
 		},
 	}
 
 	s := controller.NewServer(env, d, nil, nil)
 	exUserInfo := &datastore.UserInfo{
-		Username:   req.User.Username,
-		FirstName:  req.User.FirstName,
-		LastName:   req.User.LastName,
-		Email:      req.User.Email,
-		IsApproved: true,
+		Username:         req.User.Username,
+		FirstName:        req.User.FirstName,
+		LastName:         req.User.LastName,
+		Email:            req.User.Email,
+		IsApproved:       true,
+		IdentityProvider: "github",
 	}
 	exOrg := &datastore.OrgInfo{
 		DomainName: req.Org.DomainName,
@@ -1301,13 +1339,14 @@ func TestServer_GetUsersInOrg(t *testing.T) {
 		GetUsersInOrg(orgID).
 		Return([]*datastore.UserInfo{
 			&datastore.UserInfo{
-				OrgID:      orgID,
-				Username:   "test@test.com",
-				FirstName:  "first",
-				LastName:   "last",
-				Email:      "test@test.com",
-				IsApproved: true,
-				ID:         userID,
+				OrgID:            orgID,
+				Username:         "test@test.com",
+				FirstName:        "first",
+				LastName:         "last",
+				Email:            "test@test.com",
+				IsApproved:       true,
+				ID:               userID,
+				IdentityProvider: "github",
 			},
 		}, nil)
 
@@ -1317,13 +1356,14 @@ func TestServer_GetUsersInOrg(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(resp.Users))
 	assert.Equal(t, &profilepb.UserInfo{
-		OrgID:      utils.ProtoFromUUID(orgID),
-		ID:         utils.ProtoFromUUID(userID),
-		Username:   "test@test.com",
-		FirstName:  "first",
-		LastName:   "last",
-		Email:      "test@test.com",
-		IsApproved: true,
+		OrgID:            utils.ProtoFromUUID(orgID),
+		ID:               utils.ProtoFromUUID(userID),
+		Username:         "test@test.com",
+		FirstName:        "first",
+		LastName:         "last",
+		Email:            "test@test.com",
+		IsApproved:       true,
+		IdentityProvider: "github",
 	}, resp.Users[0])
 
 	_, err = s.GetUsersInOrg(ctx, &profilepb.GetUsersInOrgRequest{

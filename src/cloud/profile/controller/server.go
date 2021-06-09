@@ -108,14 +108,15 @@ func userInfoToProto(u *datastore.UserInfo) *profilepb.UserInfo {
 		profilePicture = *u.ProfilePicture
 	}
 	return &profilepb.UserInfo{
-		ID:             utils.ProtoFromUUID(u.ID),
-		OrgID:          utils.ProtoFromUUID(u.OrgID),
-		Username:       u.Username,
-		FirstName:      u.FirstName,
-		LastName:       u.LastName,
-		Email:          u.Email,
-		ProfilePicture: profilePicture,
-		IsApproved:     u.IsApproved,
+		ID:               utils.ProtoFromUUID(u.ID),
+		OrgID:            utils.ProtoFromUUID(u.OrgID),
+		Username:         u.Username,
+		FirstName:        u.FirstName,
+		LastName:         u.LastName,
+		Email:            u.Email,
+		ProfilePicture:   profilePicture,
+		IsApproved:       u.IsApproved,
+		IdentityProvider: u.IdentityProvider,
 	}
 }
 
@@ -167,18 +168,22 @@ func (s *Server) CreateUser(ctx context.Context, req *profilepb.CreateUserReques
 	// If enable approvals is true, that means new users by default will not be approved. (approval = false).
 	defaultIsApproved := !orgInfo.EnableApprovals
 	userInfo := &datastore.UserInfo{
-		OrgID:      orgID,
-		Username:   req.Username,
-		FirstName:  req.FirstName,
-		LastName:   req.LastName,
-		Email:      req.Email,
-		IsApproved: defaultIsApproved,
+		OrgID:            orgID,
+		Username:         req.Username,
+		FirstName:        req.FirstName,
+		LastName:         req.LastName,
+		Email:            req.Email,
+		IsApproved:       defaultIsApproved,
+		IdentityProvider: req.IdentityProvider,
 	}
 	if len(userInfo.Username) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "invalid username")
 	}
 	if err := checkValidEmail(userInfo.Email); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if userInfo.IdentityProvider == "" {
+		return nil, status.Error(codes.InvalidArgument, "identity provider must not be empty")
 	}
 	uid, err := s.d.CreateUser(userInfo)
 	return utils.ProtoFromUUID(uid), err
@@ -214,10 +219,11 @@ func (s *Server) CreateOrgAndUser(ctx context.Context, req *profilepb.CreateOrgA
 	}
 
 	userInfo := &datastore.UserInfo{
-		Username:  req.User.Username,
-		FirstName: req.User.FirstName,
-		LastName:  req.User.LastName,
-		Email:     req.User.Email,
+		Username:         req.User.Username,
+		FirstName:        req.User.FirstName,
+		LastName:         req.User.LastName,
+		Email:            req.User.Email,
+		IdentityProvider: req.User.IdentityProvider,
 		// By default, the creating user is the owner and should be approved.
 		IsApproved: true,
 	}
@@ -229,6 +235,9 @@ func (s *Server) CreateOrgAndUser(ctx context.Context, req *profilepb.CreateOrgA
 	}
 	if len(userInfo.Username) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "invalid username")
+	}
+	if userInfo.IdentityProvider == "" {
+		return nil, status.Error(codes.InvalidArgument, "identity provider must not be empty")
 	}
 	if err := checkValidEmail(userInfo.Email); err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
