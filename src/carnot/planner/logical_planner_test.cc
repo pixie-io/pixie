@@ -25,6 +25,7 @@
 
 #include <pypa/parser/parser.hh>
 
+#include "src/api/proto/uuidpb/uuid.pb.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/distributed/distributed_planner.h"
 #include "src/carnot/planner/ir/ir_nodes.h"
@@ -608,6 +609,114 @@ TEST_F(LogicalPlannerTest, pem_only_limit) {
   EXPECT_OK(plan_or_s);
   auto plan = plan_or_s.ConsumeValueOrDie();
   EXPECT_OK(plan->ToProto());
+}
+
+constexpr char kLimitFailing[] = R"pxl(
+import pxtrace
+import px
+
+
+# func Sum(l, r pb.Money) (pb.Money, error)
+@pxtrace.probe('github.com/GoogleCloudPlatform/microservices-demo/src/checkoutservice/money.Sum')
+def probe_func():
+    return [{'l': pxtrace.ArgExpr('l')},
+            {'r': pxtrace.ArgExpr('r')},
+            {'result': pxtrace.RetExpr('$0')},
+            {'error': pxtrace.RetExpr('$1')},
+            {'latency': pxtrace.FunctionLatency()}]
+
+
+table_name = 'checkout_table1'
+trace_name = 'checkout_probe1'
+
+# Change to the Pod you want to trace.
+pod_name = 'online-boutique/checkoutservice'
+
+pxtrace.UpsertTracepoint(trace_name, table_name,
+                         probe_func,
+                         pxtrace.PodProcess(pod_name),
+                         ttl='10m')
+
+df = px.DataFrame(table_name)
+# nil interface have both 'tab' and 'data' being 0, which means the function finishes successfully.
+df_success = df[px.pluck(df.error, 'data') == '0']
+df_success.error = 'nil'
+px.display(df_success)
+
+df_failed = df[px.pluck(df.error, 'data') != '0']
+df_failed.error = px.pluck_int64(df.error, 'code')
+
+# Error code 13 means invalid value.
+df_failed_13 = df_failed[df_failed.error == 13]
+df_failed_13.error = "Invalid value"
+
+df_failed_other = df_failed[df_failed.error != 13]
+df_failed_other.error = "Other"
+
+df_failed_13
+# Concatenate 2 parts to form the full list.
+px.display(df_failed_13.append(df_failed_other))
+
+)pxl";
+
+constexpr char kCheckoutProbeTableSchema[] = R"proto(
+relation_map {
+  key: "checkout_table1"
+  value {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+      column_semantic_type: ST_UPID
+    }
+    columns {
+      column_name: "goid_"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "l"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "r"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "result"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "error"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "latency"
+      column_type: INT64
+      column_semantic_type: ST_NONE
+    }
+  }
+}
+)proto";
+TEST_F(LogicalPlannerTest, limit_pushdown_failing) {
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+  auto state = testutils::CreateTwoPEMsOneKelvinPlannerState(kCheckoutProbeTableSchema);
+  // Replicate what happens in the main environment.
+  state.mutable_plan_options()->set_max_output_rows_per_table(10000);
+
+  auto plan_or_s = planner->Plan(state, MakeQueryRequest(kLimitFailing));
+  EXPECT_OK(plan_or_s);
+  auto plan = plan_or_s.ConsumeValueOrDie();
+  auto proto_or_s = plan->ToProto();
+  ASSERT_OK(proto_or_s.status());
 }
 
 }  // namespace planner

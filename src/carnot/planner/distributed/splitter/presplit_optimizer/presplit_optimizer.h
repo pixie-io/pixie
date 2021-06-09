@@ -47,7 +47,9 @@ class PreSplitOptimizer : public RuleExecutor<IR> {
   explicit PreSplitOptimizer(CompilerState* compiler_state) : compiler_state_(compiler_state) {}
 
   void CreateLimitPushdownBatch() {
-    RuleBatch* limit_pushdown = CreateRuleBatch<FailOnMax>("LimitPushdown", 2);
+    // We only run limit pushdown once as it should find all limits that need to be pushed down in a single pass.
+    // Otherwise, the Union case will continue pushing Limits up as long as you continue running this rule batch.
+    RuleBatch* limit_pushdown = CreateRuleBatch<TryUntilMax>("LimitPushdown", 1);
     limit_pushdown->AddRule<LimitPushdownRule>(compiler_state_);
   }
 
