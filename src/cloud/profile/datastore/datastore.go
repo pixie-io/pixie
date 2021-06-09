@@ -31,16 +31,17 @@ import (
 
 // UserInfo tracks information about a specific end-user.
 type UserInfo struct {
-	ID             uuid.UUID  `db:"id"`
-	OrgID          uuid.UUID  `db:"org_id"`
-	Username       string     `db:"username"`
-	FirstName      string     `db:"first_name"`
-	LastName       string     `db:"last_name"`
-	Email          string     `db:"email"`
-	ProfilePicture *string    `db:"profile_picture"`
-	UpdatedAt      *time.Time `db:"updated_at"`
-	CreatedAt      *time.Time `db:"created_at"`
-	IsApproved     bool       `db:"is_approved"`
+	ID               uuid.UUID  `db:"id"`
+	OrgID            uuid.UUID  `db:"org_id"`
+	Username         string     `db:"username"`
+	FirstName        string     `db:"first_name"`
+	LastName         string     `db:"last_name"`
+	Email            string     `db:"email"`
+	ProfilePicture   *string    `db:"profile_picture"`
+	UpdatedAt        *time.Time `db:"updated_at"`
+	CreatedAt        *time.Time `db:"created_at"`
+	IsApproved       bool       `db:"is_approved"`
+	IdentityProvider string     `db:"identity_provider"`
 }
 
 // OrgInfo tracks information about an organization.
@@ -236,7 +237,7 @@ func (d *Datastore) DeleteOrgAndUsers(orgID uuid.UUID) error {
 }
 
 func (d *Datastore) createUserUsingTxn(txn *sqlx.Tx, userInfo *UserInfo) (uuid.UUID, error) {
-	query := `INSERT INTO users (org_id, username, first_name, last_name, email, is_approved) VALUES (:org_id, :username, :first_name, :last_name, :email, :is_approved) RETURNING id`
+	query := `INSERT INTO users (org_id, username, first_name, last_name, email, is_approved, identity_provider) VALUES (:org_id, :username, :first_name, :last_name, :email, :is_approved, :identity_provider) RETURNING id`
 	row, err := txn.NamedQuery(query, userInfo)
 	if err != nil {
 		return uuid.Nil, err

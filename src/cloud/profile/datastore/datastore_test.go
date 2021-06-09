@@ -69,9 +69,9 @@ func mustLoadTestData(db *sqlx.DB) {
 
 	insertOrgQuery := `INSERT INTO orgs (id, org_name, domain_name, enable_approvals) VALUES ($1, $2, $3, $4)`
 	db.MustExec(insertOrgQuery, "123e4567-e89b-12d3-a456-426655440000", "my-org", "my-org.com", "false")
-	insertUserQuery := `INSERT INTO users (id, org_id, username, first_name, last_name, email, is_approved) VALUES ($1, $2, $3, $4, $5, $6, $7)`
-	db.MustExec(insertUserQuery, "123e4567-e89b-12d3-a456-426655440001", "123e4567-e89b-12d3-a456-426655440000", "person@my-org.com", "first", "last", "person@my-org.com", "true")
-	db.MustExec(insertUserQuery, "123e4567-e89b-12d3-a456-426655440002", "123e4567-e89b-12d3-a456-426655440000", "person2@my-org.com", "first2", "last2", "person2@my-org.com", "false")
+	insertUserQuery := `INSERT INTO users (id, org_id, username, first_name, last_name, email, is_approved, identity_provider) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+	db.MustExec(insertUserQuery, "123e4567-e89b-12d3-a456-426655440001", "123e4567-e89b-12d3-a456-426655440000", "person@my-org.com", "first", "last", "person@my-org.com", "true", "github")
+	db.MustExec(insertUserQuery, "123e4567-e89b-12d3-a456-426655440002", "123e4567-e89b-12d3-a456-426655440000", "person2@my-org.com", "first2", "last2", "person2@my-org.com", "false", "google-oauth2")
 
 	insertUserSetting := `INSERT INTO user_settings (user_id, key, value) VALUES ($1, $2, $3)`
 	db.MustExec(insertUserSetting, "123e4567-e89b-12d3-a456-426655440001", "some_setting", "test")
@@ -271,8 +271,8 @@ func TestDatastore(t *testing.T) {
 		// Add in data to be deleted
 		insertOrgQuery := `INSERT INTO orgs (id, org_name, domain_name) VALUES ($1, $2, $3)`
 		db.MustExec(insertOrgQuery, orgID, "not-my-org", "not-my-org.com")
-		insertUserQuery := `INSERT INTO users (id, org_id, username, first_name, last_name, email) VALUES ($1, $2, $3, $4, $5, $6)`
-		db.MustExec(insertUserQuery, userID, orgID, "person@not-my-org.com", "first", "last", "person@not-my-org.com")
+		insertUserQuery := `INSERT INTO users (id, org_id, username, first_name, last_name, email, identity_provider) VALUES ($1, $2, $3, $4, $5, $6, $7)`
+		db.MustExec(insertUserQuery, userID, orgID, "person@not-my-org.com", "first", "last", "person@not-my-org.com", "github")
 
 		d := datastore.NewDatastore(db)
 

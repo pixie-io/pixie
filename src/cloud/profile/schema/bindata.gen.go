@@ -17,6 +17,8 @@
 // 000008_insert_default_user_value.up.sql
 // 000009_org_add_updated_created_at.down.sql
 // 000009_org_add_updated_created_at.up.sql
+// 000010_user_add_identity_provider.down.sql
+// 000010_user_add_identity_provider.up.sql
 package schema
 
 import (
@@ -433,6 +435,46 @@ func _000009_org_add_updated_created_atUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000010_user_add_identity_providerDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\x2d\x4e\x2d\x2a\xe6\x72\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x53\xc8\x4c\x49\xcd\x2b\xc9\x2c\xa9\x8c\x2f\x28\xca\x2f\xcb\x4c\x49\x2d\xb2\xe6\x02\x04\x00\x00\xff\xff\xde\xb8\x87\x6f\x31\x00\x00\x00")
+
+func _000010_user_add_identity_providerDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000010_user_add_identity_providerDownSql,
+		"000010_user_add_identity_provider.down.sql",
+	)
+}
+
+func _000010_user_add_identity_providerDownSql() (*asset, error) {
+	bytes, err := _000010_user_add_identity_providerDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000010_user_add_identity_provider.down.sql", size: 49, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000010_user_add_identity_providerUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\x2d\x4e\x2d\x2a\xe6\x72\x74\x71\x51\x70\xf6\xf7\x09\xf5\xf5\x53\xc8\x4c\x49\xcd\x2b\xc9\x2c\xa9\x8c\x2f\x28\xca\x2f\xcb\x4c\x49\x2d\x52\x28\x4b\x2c\x4a\xce\x48\x2c\xd2\x30\x35\xd0\xb4\xe6\x02\x04\x00\x00\xff\xff\x02\x23\x6c\xc8\x3c\x00\x00\x00")
+
+func _000010_user_add_identity_providerUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000010_user_add_identity_providerUpSql,
+		"000010_user_add_identity_provider.up.sql",
+	)
+}
+
+func _000010_user_add_identity_providerUpSql() (*asset, error) {
+	bytes, err := _000010_user_add_identity_providerUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000010_user_add_identity_provider.up.sql", size: 60, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -502,6 +544,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000008_insert_default_user_value.up.sql":     _000008_insert_default_user_valueUpSql,
 	"000009_org_add_updated_created_at.down.sql":  _000009_org_add_updated_created_atDownSql,
 	"000009_org_add_updated_created_at.up.sql":    _000009_org_add_updated_created_atUpSql,
+	"000010_user_add_identity_provider.down.sql":  _000010_user_add_identity_providerDownSql,
+	"000010_user_add_identity_provider.up.sql":    _000010_user_add_identity_providerUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -562,6 +606,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000008_insert_default_user_value.up.sql":     &bintree{_000008_insert_default_user_valueUpSql, map[string]*bintree{}},
 	"000009_org_add_updated_created_at.down.sql":  &bintree{_000009_org_add_updated_created_atDownSql, map[string]*bintree{}},
 	"000009_org_add_updated_created_at.up.sql":    &bintree{_000009_org_add_updated_created_atUpSql, map[string]*bintree{}},
+	"000010_user_add_identity_provider.down.sql":  &bintree{_000010_user_add_identity_providerDownSql, map[string]*bintree{}},
+	"000010_user_add_identity_provider.up.sql":    &bintree{_000010_user_add_identity_providerUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
