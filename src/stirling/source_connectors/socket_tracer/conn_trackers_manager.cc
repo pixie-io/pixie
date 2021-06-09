@@ -148,6 +148,7 @@ ConnTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t conn_i
     conn_tracker_ptr->SetConnID(conn_id);
 
     stats_.Increment(StatKey::kTotal);
+    stats_.Increment(StatKey::kCreated);
   }
 
   DebugChecks();
@@ -204,9 +205,11 @@ void ConnTrackersManager::CleanupTrackers() {
 
       stats_.Decrement(StatKey::kTotal, num_erased);
       stats_.Decrement(StatKey::kReadyForDestruction, num_erased);
+      stats_.Increment(StatKey::kDestroyed, num_erased);
 
       if (tracker_generations.empty()) {
         conn_id_tracker_generations_.erase(iter++);
+        stats_.Increment(StatKey::kDestroyedGens);
       } else {
         ++iter;
       }

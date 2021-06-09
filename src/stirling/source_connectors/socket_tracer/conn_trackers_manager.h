@@ -92,6 +92,10 @@ class ConnTrackersManager {
     kTotal,
     kReadyForDestruction,
 
+    kCreated,
+    kDestroyed,
+    kDestroyedGens,
+
     kProtocolUnknown,
     kProtocolHTTP,
     kProtocolHTTP2,
