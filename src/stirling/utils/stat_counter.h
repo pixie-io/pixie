@@ -37,7 +37,7 @@ class StatCounter {
  public:
   void Increment(TKeyType key, int count = 1) { counts_[static_cast<int>(key)] += count; }
   void Decrement(TKeyType key, int count = 1) { counts_[static_cast<int>(key)] -= count; }
-  void Set(TKeyType key, int count) { counts_[static_cast<int>(key)] = count; }
+  void Reset(TKeyType key) { counts_[static_cast<int>(key)] = 0; }
   int64_t Get(TKeyType key) const { return counts_[static_cast<int>(key)]; }
 
  private:

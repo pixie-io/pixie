@@ -99,9 +99,7 @@ using ::px::stirling::protocols::kMaxBodyBytes;
 using ::px::utils::ToJSONString;
 
 SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
-    : SourceConnector(source_name, kTables),
-      connection_stats_(&conn_trackers_mgr_),
-      uprobe_mgr_(this) {
+    : SourceConnector(source_name, kTables), conn_stats_(&conn_trackers_mgr_), uprobe_mgr_(this) {
   proc_parser_ = std::make_unique<system::ProcParser>(system::Config::GetInstance());
   InitProtocolTransferSpecs();
 }
@@ -907,7 +905,7 @@ void SocketTraceConnector::TransferConnStats(ConnectorContext* ctx, DataTable* d
   absl::flat_hash_set<md::UPID> upids = ctx->GetUPIDs();
   uint64_t time = CurrentTimeNS();
 
-  auto& agg_stats = connection_stats_.UpdateStats();
+  auto& agg_stats = conn_stats_.UpdateStats();
 
   auto iter = agg_stats.begin();
   while (iter != agg_stats.end()) {
@@ -919,7 +917,7 @@ void SocketTraceConnector::TransferConnStats(ConnectorContext* ctx, DataTable* d
     md::UPID upid(ctx->GetASID(), key.upid.pid, key.upid.start_time_ticks);
     bool active_upid = upids.contains(upid);
 
-    bool activity = connection_stats_.Active(stats);
+    bool activity = conn_stats_.Active(stats);
 
     VLOG(1) << absl::Substitute("upid=$0 active=$1 previously_active=$2", upid.String(),
                                 active_upid, stats.reported);

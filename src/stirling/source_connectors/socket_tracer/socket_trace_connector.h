@@ -260,12 +260,13 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   // Setups output file stream object writing to the input file path.
   void SetupOutput(const std::filesystem::path& file);
+
   // Writes data event to the specified output file.
   void WriteDataEvent(const SocketDataEvent& event);
 
   ConnTrackersManager conn_trackers_mgr_;
 
-  ConnStats connection_stats_;
+  ConnStats conn_stats_;
 
   absl::flat_hash_set<int> pids_to_trace_disable_;
 

@@ -111,7 +111,7 @@ uint64_t GetConnMapKey(uint32_t pid, uint32_t fd) {
   return (static_cast<uint64_t>(pid) << 32) | fd;
 }
 
-ConnTrackersManager::StatKey GetStatKeyForProtocol(TrafficProtocol protocol) {
+std::optional<ConnTrackersManager::StatKey> GetStatKeyForProtocol(TrafficProtocol protocol) {
 #define CASE(protocol) \
   case protocol:       \
     return ConnTrackersManager::StatKey::protocol;
@@ -124,11 +124,11 @@ ConnTrackersManager::StatKey GetStatKeyForProtocol(TrafficProtocol protocol) {
     CASE(kProtocolPGSQL)
     CASE(kProtocolDNS)
     CASE(kProtocolRedis)
-    default:
-      LOG(DFATAL) << "Unexpected enum value: " << magic_enum::enum_name(protocol);
-      return ConnTrackersManager::StatKey::kProtocolUnknown;
+    case kNumProtocols:
+      return std::nullopt;
   }
 #undef CASE
+  return std::nullopt;
 }
 
 }  // namespace
@@ -249,8 +249,18 @@ void ConnTrackersManager::ComputeProtocolStats() {
   for (const auto* tracker : active_trackers_) {
     ++protocol_count[tracker->protocol()];
   }
-  for (auto [protocol, count] : protocol_count) {
-    stats_.Set(GetStatKeyForProtocol(protocol), count);
+  for (auto protocol : magic_enum::enum_values<TrafficProtocol>()) {
+    auto protocol_stat_key_opt = GetStatKeyForProtocol(protocol);
+    if (!protocol_stat_key_opt.has_value()) {
+      continue;
+    }
+    auto protocol_stat_key = protocol_stat_key_opt.value();
+    stats_.Reset(protocol_stat_key);
+
+    auto iter = protocol_count.find(protocol);
+    if (iter != protocol_count.end()) {
+      stats_.Increment(protocol_stat_key, iter->second);
+    }
   }
 }
 
