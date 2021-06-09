@@ -53,6 +53,7 @@ go_test(
     name = "controllers_test",
     srcs = [
         "auth0_test.go",
+        "hydra_kratos_auth_test.go",
         "login_test.go",
     ],
     embed = [":controllers"],
@@ -62,6 +63,7 @@ go_test(
         "//src/cloud/auth/controllers/mock",
         "//src/cloud/profile/profilepb:service_pl_go_proto",
         "//src/cloud/profile/profilepb/mock",
+        "//src/cloud/shared/idprovider",
         "//src/shared/services/authcontext",
         "//src/utils",
         "//src/utils/testingutils",

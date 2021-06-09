@@ -27,9 +27,10 @@ import (
 func transformKratosUserInfoToUserInfo(kratosUser *idprovider.KratosUserInfo) (*UserInfo, error) {
 	// If user does not exist in Auth0, then create a new user if specified.
 	u := &UserInfo{
-		Email:    kratosUser.Email,
-		PLUserID: kratosUser.PLUserID,
-		PLOrgID:  kratosUser.PLOrgID,
+		Email:            kratosUser.Email,
+		PLUserID:         kratosUser.PLUserID,
+		PLOrgID:          kratosUser.PLOrgID,
+		IdentityProvider: "kratos",
 	}
 	return u, nil
 }
@@ -43,7 +44,7 @@ type HydraKratosUserClient interface {
 
 // HydraKratosConnector implements the AuthProvider interface for Hydra + Kratos.
 type HydraKratosConnector struct {
-	client HydraKratosUserClient
+	Client HydraKratosUserClient
 }
 
 // NewHydraKratosConnector provides an implementation of an HydraKratosConnector.
@@ -57,12 +58,12 @@ func NewHydraKratosConnector() (*HydraKratosConnector, error) {
 
 // GetUserIDFromToken returns the UserID for the particular token.
 func (a *HydraKratosConnector) GetUserIDFromToken(token string) (string, error) {
-	return a.client.GetUserIDFromToken(context.Background(), token)
+	return a.Client.GetUserIDFromToken(context.Background(), token)
 }
 
 // GetUserInfo returns the UserInfo for this userID.
 func (a *HydraKratosConnector) GetUserInfo(userID string) (*UserInfo, error) {
-	kratosInfo, err := a.client.GetUserInfo(context.Background(), userID)
+	kratosInfo, err := a.Client.GetUserInfo(context.Background(), userID)
 	if err != nil {
 		return nil, err
 	}
@@ -73,12 +74,12 @@ func (a *HydraKratosConnector) GetUserInfo(userID string) (*UserInfo, error) {
 // SetPLMetadata sets the pixielabs related metadata in Kratos.
 func (a *HydraKratosConnector) SetPLMetadata(userID, plOrgID, plUserID string) error {
 	// Grab the original UserInfo.
-	kratosInfo, err := a.client.GetUserInfo(context.Background(), userID)
+	kratosInfo, err := a.Client.GetUserInfo(context.Background(), userID)
 	if err != nil {
 		return err
 	}
 	kratosInfo.PLOrgID = plOrgID
 	kratosInfo.PLUserID = plUserID
-	_, err = a.client.UpdateUserInfo(context.Background(), userID, kratosInfo)
+	_, err = a.Client.UpdateUserInfo(context.Background(), userID, kratosInfo)
 	return err
 }
