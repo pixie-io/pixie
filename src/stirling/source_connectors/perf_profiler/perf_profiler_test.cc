@@ -31,8 +31,11 @@
 namespace px {
 namespace stirling {
 
+using ::px::stirling::testing::FindRecordIdxMatchesPIDs;
 using ::px::testing::BazelBinTestFilePath;
-using testing::FindRecordIdxMatchesPIDs;
+using ::testing::Gt;
+using ::testing::Pair;
+using ::testing::UnorderedElementsAre;
 
 class CPUPinnedBinaryRunner {
  public:
@@ -173,19 +176,6 @@ class PerfProfileBPFTest : public ::testing::Test {
     }
   }
 
-  void CheckExpectedVsObservedStackTraces() {
-    for (const auto& expected_stack_trace : expected_stack_traces_) {
-      // Check that we observed all the stack traces that we expected:
-      const bool stack_trace_found = observed_stack_traces_.contains(expected_stack_trace);
-      EXPECT_TRUE(stack_trace_found);
-      if (stack_trace_found) {
-        const uint64_t count = observed_stack_traces_[expected_stack_trace];
-        EXPECT_GT(count, 0) << expected_stack_trace;
-        LOG(INFO) << expected_stack_trace << ": " << count;
-      }
-    }
-  }
-
   void CheckExpectedStackTraceCounts(const ssize_t num_subprocesses,
                                      const std::chrono::duration<double> elapsed_time) {
     const uint64_t kBPFSamplingPeriodMillis = PerfProfileConnector::kBPFSamplingPeriodMillis;
@@ -285,7 +275,6 @@ class PerfProfileBPFTest : public ::testing::Test {
 
   uint64_t cumulative_sum_ = 0;
   absl::flat_hash_map<std::string, uint64_t> observed_stack_traces_;
-  absl::flat_hash_set<std::string_view> expected_stack_traces_;
 
   types::ColumnWrapperRecordBatch columns_;
 
@@ -309,10 +298,6 @@ TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
   key2x_ = "runtime.goexit;runtime.main;main.main;main.sqrtOf1e39;main.sqrt";
   key1x_ = "runtime.goexit;runtime.main;main.main;main.sqrtOf1e18;main.sqrt";
 
-  // Populate expected_stack_traces_ with the keys for this test:
-  expected_stack_traces_.insert(key2x_);
-  expected_stack_traces_.insert(key1x_);
-
   // Start they toy apps as sub-processes, then,
   // for a certain amount of time (kTestRunTime), collect data using RunTest().
   auto sub_processes = StartSubProcesses<CPUPinnedBinaryRunner>(bazel_app_path, kTestIdx);
@@ -333,7 +318,8 @@ TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
   ASSERT_NO_FATAL_FAILURE(CheckStackTraceIDsInvariance());
   ASSERT_NO_FATAL_FAILURE(PopulateCumulativeSum(target_row_idxs));
   ASSERT_NO_FATAL_FAILURE(PopulateObservedStackTraces(target_row_idxs));
-  ASSERT_NO_FATAL_FAILURE(CheckExpectedVsObservedStackTraces());
+  EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key1x_, Gt(0))));
+  EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key2x_, Gt(0))));
   ASSERT_NO_FATAL_FAILURE(CheckExpectedStackTraceCounts(kNumSubProcesses, elapsed_time));
 }
 
@@ -349,10 +335,6 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
   // twice as often as another.
   key2x_ = "__libc_start_main;main;fib52();fib(unsigned long)";
   key1x_ = "__libc_start_main;main;fib27();fib(unsigned long)";
-
-  // Populate expected_stack_traces_ with the keys for this test:
-  expected_stack_traces_.insert(key2x_);
-  expected_stack_traces_.insert(key1x_);
 
   // Start they toy apps as sub-processes, then,
   // for a certain amount of time, collect data using RunTest().
@@ -374,7 +356,8 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
   ASSERT_NO_FATAL_FAILURE(CheckStackTraceIDsInvariance());
   ASSERT_NO_FATAL_FAILURE(PopulateCumulativeSum(target_row_idxs));
   ASSERT_NO_FATAL_FAILURE(PopulateObservedStackTraces(target_row_idxs));
-  ASSERT_NO_FATAL_FAILURE(CheckExpectedVsObservedStackTraces());
+  EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key1x_, Gt(0))));
+  EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key2x_, Gt(0))));
   ASSERT_NO_FATAL_FAILURE(CheckExpectedStackTraceCounts(kNumSubProcesses, elapsed_time));
 }
 
@@ -390,10 +373,6 @@ TEST_F(PerfProfileBPFTest, TestOutOfContext) {
   // starting sub-processes. For this reason, the perf_profile_connector
   // will consider the sub-processes as "out-of-context" and not symbolize them.
   ctx_ = std::make_unique<StandaloneContext>();
-
-  // Populate expected_stack_traces_ with the keys for this test,
-  // in this case, just "<not symbolized>" (see note above about the "context"):
-  expected_stack_traces_.insert(profiler::kNotSymbolizedMessage);
 
   // Start they toy apps as sub-processes, then,
   // for a certain amount of time, collect data using RunTest().
