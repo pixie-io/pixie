@@ -28,7 +28,6 @@
 namespace px {
 namespace table_store {
 
-using table_store::Column;
 using table_store::Table;
 using table_store::schema::RowDescriptor;
 using types::ColumnWrapperRecordBatch;

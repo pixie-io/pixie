@@ -39,8 +39,8 @@ namespace px {
 namespace carnot {
 namespace exec {
 
-using table_store::Column;
 using table_store::Table;
+using table_store::schema::RowBatch;
 using table_store::schema::RowDescriptor;
 using ::testing::_;
 
@@ -55,20 +55,23 @@ class MemorySourceNodeTest : public ::testing::Test {
     table_store::schema::Relation rel({types::DataType::BOOLEAN, types::DataType::TIME64NS},
                                       {"col1", "time_"});
 
-    cpu_table_ = Table::Create(rel);
+    int64_t compaction_size = 2 * sizeof(bool) + 2 * sizeof(int64_t);
+    cpu_table_ = std::make_shared<Table>(rel, 128 * 1024, compaction_size);
     exec_state_->table_store()->AddTable("cpu", cpu_table_);
 
-    auto col1 = cpu_table_->GetColumn(0);
+    auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
     std::vector<types::BoolValue> col1_in1 = {true, false, true};
-    std::vector<types::BoolValue> col1_in2 = {false, false};
-    EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
-    EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in2, arrow::default_memory_pool())));
+    std::vector<types::Time64NSValue> col2_in1 = {1, 2, 3};
+    EXPECT_OK(rb1.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+    EXPECT_OK(rb1.AddColumn(types::ToArrow(col2_in1, arrow::default_memory_pool())));
+    EXPECT_OK(cpu_table_->WriteRowBatch(rb1));
 
-    auto col2 = cpu_table_->GetColumn(1);
-    std::vector<types::Int64Value> col2_in1 = {1, 2, 3};
-    std::vector<types::Int64Value> col2_in2 = {5, 6};
-    EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
-    EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in2, arrow::default_memory_pool())));
+    auto rb2 = RowBatch(RowDescriptor(rel.col_types()), 2);
+    std::vector<types::BoolValue> col1_in2 = {false, false};
+    std::vector<types::Time64NSValue> col2_in2 = {5, 6};
+    EXPECT_OK(rb2.AddColumn(types::ToArrow(col1_in2, arrow::default_memory_pool())));
+    EXPECT_OK(rb2.AddColumn(types::ToArrow(col2_in2, arrow::default_memory_pool())));
+    EXPECT_OK(cpu_table_->WriteRowBatch(rb2));
 
     exec_state_->table_store()->AddTable("empty", Table::Create(rel));
   }
@@ -137,16 +140,19 @@ TEST_F(MemorySourceNodeTest, added_batch) {
           .AddColumn<types::Time64NSValue>({5, 6})
           .get());
   EXPECT_FALSE(tester.node()->HasBatchesRemaining());
-  auto col1 = exec_state_->table_store()->GetTable("cpu")->GetColumn(0);
+  auto rb1 = RowBatch(RowDescriptor(cpu_table_->GetRelation().col_types()), 3);
   std::vector<types::BoolValue> col1_in1 = {true, false, true};
-  std::vector<types::BoolValue> col1_in2 = {false, false};
-  EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in2, arrow::default_memory_pool())));
-
-  auto col2 = exec_state_->table_store()->GetTable("cpu")->GetColumn(1);
   std::vector<types::Int64Value> col2_in1 = {1, 2, 3};
+  EXPECT_OK(rb1.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+  EXPECT_OK(rb1.AddColumn(types::ToArrow(col2_in1, arrow::default_memory_pool())));
+  EXPECT_OK(cpu_table_->WriteRowBatch(rb1));
+
+  auto rb2 = RowBatch(RowDescriptor(cpu_table_->GetRelation().col_types()), 2);
+  std::vector<types::BoolValue> col1_in2 = {false, false};
   std::vector<types::Int64Value> col2_in2 = {5, 6};
-  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
+  EXPECT_OK(rb2.AddColumn(types::ToArrow(col1_in2, arrow::default_memory_pool())));
+  EXPECT_OK(rb2.AddColumn(types::ToArrow(col2_in2, arrow::default_memory_pool())));
+  EXPECT_OK(cpu_table_->WriteRowBatch(rb2));
   EXPECT_FALSE(tester.node()->HasBatchesRemaining());
 
   tester.Close();
@@ -154,8 +160,7 @@ TEST_F(MemorySourceNodeTest, added_batch) {
   EXPECT_EQ(sizeof(int64_t) * 5, tester.node()->BytesProcessed());
 }
 
-// TODO(michellenguyen, PL-388): Re-enable this test when StopTime for range is fixed.
-TEST_F(MemorySourceNodeTest, DISABLED_range) {
+TEST_F(MemorySourceNodeTest, range) {
   auto op_proto = planpb::testutils::CreateTestSourceRangePB();
   std::unique_ptr<plan::Operator> plan_node = plan::MemorySourceOperator::FromProto(op_proto, 1);
   RowDescriptor output_rd({types::DataType::TIME64NS});
@@ -170,8 +175,8 @@ TEST_F(MemorySourceNodeTest, DISABLED_range) {
           .get());
   EXPECT_TRUE(tester.node()->HasBatchesRemaining());
   tester.GenerateNextResult().ExpectRowBatch(
-      RowBatchBuilder(output_rd, 1, /*eow*/ true, /*eos*/ true)
-          .AddColumn<types::Time64NSValue>({5})
+      RowBatchBuilder(output_rd, 2, /*eow*/ true, /*eos*/ true)
+          .AddColumn<types::Time64NSValue>({5, 6})
           .get());
   EXPECT_FALSE(tester.node()->HasBatchesRemaining());
   tester.Close();
@@ -235,18 +240,19 @@ class MemorySourceNodeTabletTest : public ::testing::Test {
   }
 
   void AddValuesToTable(Table* table) {
-    EXPECT_EQ(table->GetRelation(), rel);
-    auto col1 = table->GetColumn(0);
+    auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
     std::vector<types::BoolValue> col1_in1 = {true, false, true};
-    std::vector<types::BoolValue> col1_in2 = {false, false};
-    EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
-    EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in2, arrow::default_memory_pool())));
+    std::vector<types::Time64NSValue> col2_in1 = {1, 2, 3};
+    EXPECT_OK(rb1.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+    EXPECT_OK(rb1.AddColumn(types::ToArrow(col2_in1, arrow::default_memory_pool())));
+    EXPECT_OK(table->WriteRowBatch(rb1));
 
-    auto col2 = table->GetColumn(1);
-    std::vector<types::Int64Value> col2_in1 = {1, 2, 3};
-    std::vector<types::Int64Value> col2_in2 = {5, 6};
-    EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
-    EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in2, arrow::default_memory_pool())));
+    auto rb2 = RowBatch(RowDescriptor(rel.col_types()), 2);
+    std::vector<types::BoolValue> col1_in2 = {false, false};
+    std::vector<types::Time64NSValue> col2_in2 = {5, 6};
+    EXPECT_OK(rb2.AddColumn(types::ToArrow(col1_in2, arrow::default_memory_pool())));
+    EXPECT_OK(rb2.AddColumn(types::ToArrow(col2_in2, arrow::default_memory_pool())));
+    EXPECT_OK(table->WriteRowBatch(rb2));
   }
 
   table_store::schema::Relation rel;
@@ -358,13 +364,12 @@ TEST_F(MemorySourceNodeTest, infinite_stream) {
   EXPECT_FALSE(tester.node()->NextBatchReady());
 
   // Simulate stirling still writing to the table.
-  auto col1 = cpu_table_->GetColumn(0);
+  auto rb1 = RowBatch(RowDescriptor(cpu_table_->GetRelation().col_types()), 4);
   std::vector<types::BoolValue> col1_in1 = {true, false, true, true};
-  EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
-
-  auto col2 = cpu_table_->GetColumn(1);
   std::vector<types::Int64Value> col2_in1 = {7, 8, 9, 10};
-  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
+  EXPECT_OK(rb1.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+  EXPECT_OK(rb1.AddColumn(types::ToArrow(col2_in1, arrow::default_memory_pool())));
+  EXPECT_OK(cpu_table_->WriteRowBatch(rb1));
 
   EXPECT_TRUE(tester.node()->NextBatchReady());
   EXPECT_TRUE(tester.node()->HasBatchesRemaining());
@@ -375,6 +380,35 @@ TEST_F(MemorySourceNodeTest, infinite_stream) {
   EXPECT_FALSE(tester.node()->NextBatchReady());
   // NOTE: only the outside loop should determine that batches should remain.
   EXPECT_TRUE(tester.node()->HasBatchesRemaining());
+  tester.Close();
+}
+
+TEST_F(MemorySourceNodeTest, table_compact_between_open_and_exec) {
+  auto op_proto = planpb::testutils::CreateTestSourceRangePB();
+  std::unique_ptr<plan::Operator> plan_node = plan::MemorySourceOperator::FromProto(op_proto, 1);
+  RowDescriptor output_rd({types::DataType::TIME64NS});
+
+  auto tester = exec::ExecNodeTester<MemorySourceNode, plan::MemorySourceOperator>(
+      *plan_node, output_rd, std::vector<RowDescriptor>({}), exec_state_.get());
+  EXPECT_TRUE(tester.node()->HasBatchesRemaining());
+
+  // Force a table compaction between MemorySource::Open and MemorySource::Exec.
+  EXPECT_OK(cpu_table_->CompactHotToCold(arrow::default_memory_pool()));
+
+  tester.GenerateNextResult().ExpectRowBatch(
+      RowBatchBuilder(output_rd, 1, /*eow*/ false, /*eos*/ false)
+          .AddColumn<types::Time64NSValue>({3})
+          .get());
+  EXPECT_TRUE(tester.node()->HasBatchesRemaining());
+
+  // Force a second compaction to check between Exec and a subsequent Exec.
+  EXPECT_OK(cpu_table_->CompactHotToCold(arrow::default_memory_pool()));
+
+  tester.GenerateNextResult().ExpectRowBatch(
+      RowBatchBuilder(output_rd, 2, /*eow*/ true, /*eos*/ true)
+          .AddColumn<types::Time64NSValue>({5, 6})
+          .get());
+  EXPECT_FALSE(tester.node()->HasBatchesRemaining());
   tester.Close();
 }
 

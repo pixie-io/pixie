@@ -42,6 +42,9 @@ namespace px {
 namespace carnot {
 namespace exec {
 
+using table_store::schema::RowBatch;
+using table_store::schema::RowDescriptor;
+
 // This function provides a mock generator for the result sink server that Carnot sends results to.
 const ResultSinkStubGenerator MockResultSinkStubGenerator =
     [](const std::string&,
@@ -102,17 +105,19 @@ class CarnotTestUtils {
                                       {"col1", "col2"});
     auto table = table_store::Table::Create(rel);
 
-    auto col1 = table->GetColumn(0);
+    auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
     std::vector<types::Float64Value> col1_in1 = {0.5, 1.2, 5.3};
-    std::vector<types::Float64Value> col1_in2 = {0.1, 5.1};
-    PL_CHECK_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
-    PL_CHECK_OK(col1->AddBatch(types::ToArrow(col1_in2, arrow::default_memory_pool())));
-
-    auto col2 = table->GetColumn(1);
     std::vector<types::Int64Value> col2_in1 = {1, 2, 3};
+    PL_CHECK_OK(rb1.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+    PL_CHECK_OK(rb1.AddColumn(types::ToArrow(col2_in1, arrow::default_memory_pool())));
+    PL_CHECK_OK(table->WriteRowBatch(rb1));
+
+    auto rb2 = RowBatch(RowDescriptor(rel.col_types()), 2);
+    std::vector<types::Float64Value> col1_in2 = {0.1, 5.1};
     std::vector<types::Int64Value> col2_in2 = {5, 6};
-    PL_CHECK_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
-    PL_CHECK_OK(col2->AddBatch(types::ToArrow(col2_in2, arrow::default_memory_pool())));
+    PL_CHECK_OK(rb2.AddColumn(types::ToArrow(col1_in2, arrow::default_memory_pool())));
+    PL_CHECK_OK(rb2.AddColumn(types::ToArrow(col2_in2, arrow::default_memory_pool())));
+    PL_CHECK_OK(table->WriteRowBatch(rb2));
 
     return table;
   }
@@ -121,9 +126,10 @@ class CarnotTestUtils {
     table_store::schema::Relation rel({types::DataType::INT64}, {"col1"});
     auto table = table_store::Table::Create(rel);
 
-    auto col1 = table->GetColumn(0);
+    auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
     std::vector<types::Int64Value> col1_in1 = {1, 2, 3};
-    PL_CHECK_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+    PL_CHECK_OK(rb1.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+    PL_CHECK_OK(table->WriteRowBatch(rb1));
 
     return table;
   }
@@ -143,32 +149,29 @@ class CarnotTestUtils {
 
     auto table = table_store::Table::Create(rel);
 
-    auto col1 = table->GetColumn(0);
-    auto col2 = table->GetColumn(1);
-    auto col3 = table->GetColumn(2);
-    auto col4 = table->GetColumn(3);
-    auto col5 = table->GetColumn(4);
-
     for (const auto& pair : split_idx) {
+      auto rb = RowBatch(RowDescriptor(rel.col_types()), pair.second - pair.first);
       std::vector<types::Int64Value> col1_batch(big_test_col1.begin() + pair.first,
                                                 big_test_col1.begin() + pair.second);
-      EXPECT_OK(col1->AddBatch(types::ToArrow(col1_batch, arrow::default_memory_pool())));
+      EXPECT_OK(rb.AddColumn(types::ToArrow(col1_batch, arrow::default_memory_pool())));
 
       std::vector<types::Float64Value> col2_batch(big_test_col2.begin() + pair.first,
                                                   big_test_col2.begin() + pair.second);
-      EXPECT_OK(col2->AddBatch(types::ToArrow(col2_batch, arrow::default_memory_pool())));
+      EXPECT_OK(rb.AddColumn(types::ToArrow(col2_batch, arrow::default_memory_pool())));
 
       std::vector<types::Int64Value> col3_batch(big_test_col3.begin() + pair.first,
                                                 big_test_col3.begin() + pair.second);
-      EXPECT_OK(col3->AddBatch(types::ToArrow(col3_batch, arrow::default_memory_pool())));
+      EXPECT_OK(rb.AddColumn(types::ToArrow(col3_batch, arrow::default_memory_pool())));
 
       std::vector<types::Int64Value> col4_batch(big_test_groups.begin() + pair.first,
                                                 big_test_groups.begin() + pair.second);
-      EXPECT_OK(col4->AddBatch(types::ToArrow(col4_batch, arrow::default_memory_pool())));
+      EXPECT_OK(rb.AddColumn(types::ToArrow(col4_batch, arrow::default_memory_pool())));
 
       std::vector<types::StringValue> col5_batch(big_test_strings.begin() + pair.first,
                                                  big_test_strings.begin() + pair.second);
-      EXPECT_OK(col5->AddBatch(types::ToArrow(col5_batch, arrow::default_memory_pool())));
+      EXPECT_OK(rb.AddColumn(types::ToArrow(col5_batch, arrow::default_memory_pool())));
+
+      EXPECT_OK(table->WriteRowBatch(rb));
     }
     return table;
   }

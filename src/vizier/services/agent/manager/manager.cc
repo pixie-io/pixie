@@ -310,6 +310,18 @@ Status Manager::PostRegisterHook(uint32_t asid) {
         std::bind(&Manager::NATSMessageHandler, this, std::placeholders::_1));
   }
 
+  tablestore_compaction_timer_ = dispatcher()->CreateTimer([this]() {
+    // TODO(james): when we change ExecState::exec_mem_pool to not return just the default pool, we
+    // will need to figure out how to use the correct memory pool here, but for now we can just use
+    // the default pool.
+    auto status = table_store()->RunCompaction(arrow::default_memory_pool());
+    LOG_IF(ERROR, !status.ok()) << status.msg();
+    if (tablestore_compaction_timer_) {
+      tablestore_compaction_timer_->EnableTimer(kTableStoreCompactionPeriod);
+    }
+  });
+  tablestore_compaction_timer_->EnableTimer(kTableStoreCompactionPeriod);
+
   return Status::OK();
 }
 

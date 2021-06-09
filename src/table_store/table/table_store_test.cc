@@ -30,7 +30,6 @@
 namespace px {
 namespace table_store {
 
-using table_store::Column;
 using table_store::Table;
 using table_store::schema::RowDescriptor;
 using types::ColumnWrapperRecordBatch;
@@ -107,44 +106,44 @@ TEST_F(TableStoreTest, table_id_aliasing) {
   Table* table;
 
   table = table_store.GetTable("a");
-  EXPECT_EQ(table->NumBytes(), 0);
-  EXPECT_EQ(table->NumBatches(), 0);
+  EXPECT_EQ(table->GetTableStats().bytes, 0);
+  EXPECT_EQ(table->GetTableStats().batches_added, 0);
 
   table = table_store.GetTable(kTableID);
-  EXPECT_EQ(table->NumBytes(), 0);
-  EXPECT_EQ(table->NumBatches(), 0);
+  EXPECT_EQ(table->GetTableStats().bytes, 0);
+  EXPECT_EQ(table->GetTableStats().batches_added, 0);
 
   table = table_store.GetTable(kAliasID);
-  EXPECT_EQ(table->NumBytes(), 0);
-  EXPECT_EQ(table->NumBatches(), 0);
+  EXPECT_EQ(table->GetTableStats().bytes, 0);
+  EXPECT_EQ(table->GetTableStats().batches_added, 0);
 
   EXPECT_OK(table_store.AppendData(kTableID, "", MakeRel1ColumnWrapperBatch()));
 
   table = table_store.GetTable("a");
-  EXPECT_EQ(table->NumBytes(), 27);
-  EXPECT_EQ(table->NumBatches(), 1);
+  EXPECT_EQ(table->GetTableStats().bytes, 27);
+  EXPECT_EQ(table->GetTableStats().batches_added, 1);
 
   table = table_store.GetTable(kTableID);
-  EXPECT_EQ(table->NumBytes(), 27);
-  EXPECT_EQ(table->NumBatches(), 1);
+  EXPECT_EQ(table->GetTableStats().bytes, 27);
+  EXPECT_EQ(table->GetTableStats().batches_added, 1);
 
   table = table_store.GetTable(kAliasID);
-  EXPECT_EQ(table->NumBytes(), 27);
-  EXPECT_EQ(table->NumBatches(), 1);
+  EXPECT_EQ(table->GetTableStats().bytes, 27);
+  EXPECT_EQ(table->GetTableStats().batches_added, 1);
 
   EXPECT_OK(table_store.AppendData(kAliasID, "", MakeRel1ColumnWrapperBatch()));
 
   table = table_store.GetTable("a");
-  EXPECT_EQ(table->NumBytes(), 54);
-  EXPECT_EQ(table->NumBatches(), 2);
+  EXPECT_EQ(table->GetTableStats().bytes, 54);
+  EXPECT_EQ(table->GetTableStats().batches_added, 2);
 
   table = table_store.GetTable(kTableID);
-  EXPECT_EQ(table->NumBytes(), 54);
-  EXPECT_EQ(table->NumBatches(), 2);
+  EXPECT_EQ(table->GetTableStats().bytes, 54);
+  EXPECT_EQ(table->GetTableStats().batches_added, 2);
 
   table = table_store.GetTable(kAliasID);
-  EXPECT_EQ(table->NumBytes(), 54);
-  EXPECT_EQ(table->NumBatches(), 2);
+  EXPECT_EQ(table->GetTableStats().bytes, 54);
+  EXPECT_EQ(table->GetTableStats().batches_added, 2);
 }
 
 using TableStoreDeathTest = TableStoreTest;
@@ -230,12 +229,12 @@ TEST_F(TableStoreTabletsTest, tablet_test) {
   table_store.AddTable(tablet1_2, "a", table_id, tablet2_id);
 
   Table* tablet1 = table_store.GetTable("a", tablet1_id);
-  EXPECT_EQ(tablet1->NumBytes(), 0);
-  EXPECT_EQ(tablet1->NumBatches(), 0);
+  EXPECT_EQ(tablet1->GetTableStats().bytes, 0);
+  EXPECT_EQ(tablet1->GetTableStats().batches_added, 0);
 
   Table* tablet2 = table_store.GetTable("a", tablet2_id);
-  EXPECT_EQ(tablet2->NumBytes(), 0);
-  EXPECT_EQ(tablet2->NumBatches(), 0);
+  EXPECT_EQ(tablet2->GetTableStats().bytes, 0);
+  EXPECT_EQ(tablet2->GetTableStats().batches_added, 0);
   EXPECT_NE(tablet1, tablet2);
 
   EXPECT_OK(table_store.AppendData(table_id, tablet1_id, MakeRel1ColumnWrapperBatch()));
@@ -243,12 +242,12 @@ TEST_F(TableStoreTabletsTest, tablet_test) {
   // Compare the properties of the tablets.
 
   // Tablet 1 should have new bytes and batches.
-  EXPECT_EQ(tablet1->NumBytes(), 27);
-  EXPECT_EQ(tablet1->NumBatches(), 1);
+  EXPECT_EQ(tablet1->GetTableStats().bytes, 27);
+  EXPECT_EQ(tablet1->GetTableStats().batches_added, 1);
 
   // Tablet 2 shouldn't change.
-  EXPECT_EQ(tablet2->NumBytes(), 0);
-  EXPECT_EQ(tablet2->NumBatches(), 0);
+  EXPECT_EQ(tablet2->GetTableStats().bytes, 0);
+  EXPECT_EQ(tablet2->GetTableStats().batches_added, 0);
 }
 
 // Test to make sure that appending data makes a tablet.
@@ -262,19 +261,19 @@ TEST_F(TableStoreTabletsTest, add_tablet_on_append_data) {
   table_store.AddTable(tablet1_1, "a", table_id, tablet2_id);
 
   Table* tablet2 = table_store.GetTable("a", tablet2_id);
-  EXPECT_EQ(tablet2->NumBytes(), 0);
-  EXPECT_EQ(tablet2->NumBatches(), 0);
+  EXPECT_EQ(tablet2->GetTableStats().bytes, 0);
+  EXPECT_EQ(tablet2->GetTableStats().batches_added, 0);
 
   EXPECT_OK(table_store.AppendData(table_id, tablet1_id, MakeRel1ColumnWrapperBatch()));
 
   // Tablet 1 should have new bytes and batches.
   Table* tablet1 = table_store.GetTable("a", tablet1_id);
-  EXPECT_EQ(tablet1->NumBytes(), 27);
-  EXPECT_EQ(tablet1->NumBatches(), 1);
+  EXPECT_EQ(tablet1->GetTableStats().bytes, 27);
+  EXPECT_EQ(tablet1->GetTableStats().batches_added, 1);
 
   // Tablet 2 shouldn't change.
-  EXPECT_EQ(tablet2->NumBytes(), 0);
-  EXPECT_EQ(tablet2->NumBatches(), 0);
+  EXPECT_EQ(tablet2->GetTableStats().bytes, 0);
+  EXPECT_EQ(tablet2->GetTableStats().batches_added, 0);
 }
 
 using TableStoreTabletsDeathTest = TableStoreTabletsTest;

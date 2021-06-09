@@ -23,6 +23,8 @@
 #include <vector>
 
 #include <absl/strings/str_format.h>
+#include "schema/row_batch.h"
+#include "schema/row_descriptor.h"
 #include "src/common/datagen/datagen.h"
 
 namespace px {
@@ -61,9 +63,9 @@ inline StatusOr<std::shared_ptr<Table>> CreateTable(
 
   auto table = Table::Create(table_store::schema::Relation(types, col_names));
 
-  for (size_t col_idx = 0; col_idx < types.size(); col_idx++) {
-    auto col = table->GetColumn(col_idx);
-    for (int batch_idx = 0; batch_idx < num_batches; batch_idx++) {
+  for (int batch_idx = 0; batch_idx < num_batches; batch_idx++) {
+    auto rb = schema::RowBatch(schema::RowDescriptor(types), rb_size);
+    for (size_t col_idx = 0; col_idx < types.size(); col_idx++) {
       std::shared_ptr<arrow::Array> batch;
       if (types.at(col_idx) == types::DataType::INT64) {
         batch = GenerateInt64Batch(distribution_types.at(col_idx), rb_size);
@@ -72,9 +74,9 @@ inline StatusOr<std::shared_ptr<Table>> CreateTable(
       } else {
         return error::InvalidArgument("We only support int and str types.");
       }
-      auto s = col->AddBatch(batch);
-      PL_UNUSED(s);
+      PL_CHECK_OK(rb.AddColumn(batch));
     }
+    PL_CHECK_OK(table->WriteRowBatch(rb));
   }
 
   return table;

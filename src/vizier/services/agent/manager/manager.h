@@ -59,6 +59,8 @@ constexpr auto kChanCacheCleanupChansionPeriod = std::chrono::minutes(5);
  */
 constexpr auto kChanIdleGracePeriod = std::chrono::minutes(1);
 
+constexpr auto kTableStoreCompactionPeriod = std::chrono::minutes(1);
+
 /**
  * Info tracks basic information about and agent such as:
  * id, asid, hostname.
@@ -224,6 +226,9 @@ class Manager : public px::NotCopyable {
 
   // Factory context for vizier functions.
   funcs::VizierFuncFactoryContext func_context_;
+
+  // Timer to manage table store compaction.
+  px::event::TimerUPtr tablestore_compaction_timer_;
 };
 
 /**

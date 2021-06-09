@@ -157,5 +157,12 @@ std::vector<uint64_t> TableStore::GetTableIDs() const {
   return ids;
 }
 
+Status TableStore::RunCompaction(arrow::MemoryPool* mem_pool) {
+  for (const auto& it : name_to_table_map_) {
+    PL_RETURN_IF_ERROR(it.second->CompactHotToCold(mem_pool));
+  }
+  return Status::OK();
+}
+
 }  // namespace table_store
 }  // namespace px

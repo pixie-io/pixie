@@ -49,8 +49,6 @@ class RowBatch {
     columns_.reserve(desc_.size());
   }
 
-  ~RowBatch() { DCHECK_EQ(desc_.size(), columns_.size()); }
-
   Status ToProto(table_store::schemapb::RowBatchData* row_batch_proto) const;
   static StatusOr<std::unique_ptr<RowBatch>> FromProto(
       const table_store::schemapb::RowBatchData& row_batch_proto);

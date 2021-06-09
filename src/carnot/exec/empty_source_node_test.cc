@@ -39,7 +39,6 @@ namespace px {
 namespace carnot {
 namespace exec {
 
-using table_store::Column;
 using table_store::Table;
 using table_store::schema::RowDescriptor;
 using ::testing::_;

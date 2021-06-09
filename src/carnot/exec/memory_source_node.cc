@@ -56,22 +56,22 @@ Status MemorySourceNode::OpenImpl(ExecState* exec_state) {
   if (table_ == nullptr) {
     return error::NotFound("Table '$0' not found", plan_node_->TableName());
   }
-  // Determine number of chunks at Open() time
-  // because Stirling may be pushing to the table
-  num_batches_ = table_->NumBatches();
 
   if (plan_node_->HasStartTime()) {
-    start_batch_info_ = table_->FindBatchPositionGreaterThanOrEqual(plan_node_->start_time(),
-                                                                    exec_state->exec_mem_pool());
-
-    // TODO(philkuz) might have a race condition where the data hasn't loaded yet for the
-    // start_time.
-
-    // If start batch_idx == -1, no batches exist with a timestamp greater than or equal to the
-    // given start time.
-    current_batch_ = !start_batch_info_.FoundValidBatches() ? std::numeric_limits<int64_t>::max()
-                                                            : start_batch_info_.batch_idx;
+    PL_ASSIGN_OR_RETURN(current_batch_, table_->FindBatchSliceGreaterThanOrEqual(
+                                            plan_node_->start_time(), exec_state->exec_mem_pool()));
+  } else {
+    current_batch_ = table_->FirstBatch();
   }
+
+  if (plan_node_->HasStopTime()) {
+    PL_ASSIGN_OR_RETURN(stop_, table_->FindStopPositionForTime(plan_node_->stop_time(),
+                                                               exec_state->exec_mem_pool()));
+  } else {
+    // Determine table_end at Open() time because Stirling may be pushing to the table
+    stop_ = table_->End();
+  }
+  current_batch_ = table_->SliceIfPastStop(current_batch_, stop_);
 
   return Status::OK();
 }
@@ -84,30 +84,41 @@ Status MemorySourceNode::CloseImpl(ExecState*) {
 StatusOr<std::unique_ptr<RowBatch>> MemorySourceNode::GetNextRowBatch(ExecState* exec_state) {
   DCHECK(table_ != nullptr);
 
-  if (current_batch_ >= table_->NumBatches()) {
-    return RowBatch::WithZeroRows(*output_descriptor_, /* eow */ true, /* eos */ true);
+  if (infinite_stream_ && wait_for_valid_next_) {
+    // If it's an infinite_stream that has read out all the current data in the table, we have to
+    // keep around the last batch the infinite stream output and keep checking if the next batch
+    // after that is valid so that when stirling writes more data we are able to access it.
+    stop_ = table_->End();
+    auto next_batch = table_->NextBatch(current_batch_, stop_);
+    if (!next_batch.IsValid()) {
+      return RowBatch::WithZeroRows(*output_descriptor_, /* eow */ false, /* eos */ false);
+    }
+    current_batch_ = next_batch;
+    wait_for_valid_next_ = false;
   }
 
-  auto offset = 0;
-  auto end = -1;
-  if (plan_node_->HasStartTime() && current_batch_ == start_batch_info_.batch_idx) {
-    offset = start_batch_info_.row_idx;
+  if (!current_batch_.IsValid()) {
+    return RowBatch::WithZeroRows(*output_descriptor_, /* eow */ !infinite_stream_,
+                                  /* eos */ !infinite_stream_);
   }
 
-  // TODO(michellenguyen, PL-388): Fix our table store to correctly support hot/cold data. For now,
-  // do not support StopTime.
-  PL_ASSIGN_OR_RETURN(auto row_batch,
-                      table_->GetRowBatchSlice(current_batch_, plan_node_->Columns(),
-                                               exec_state->exec_mem_pool(), offset, end));
+  PL_ASSIGN_OR_RETURN(
+      auto row_batch,
+      table_->GetRowBatchSlice(current_batch_, plan_node_->Columns(), exec_state->exec_mem_pool()));
 
   rows_processed_ += row_batch->num_rows();
   bytes_processed_ += row_batch->NumBytes();
-  current_batch_++;
+  auto next_batch = table_->NextBatch(current_batch_, stop_);
+  if (infinite_stream_ && !next_batch.IsValid()) {
+    wait_for_valid_next_ = true;
+  } else {
+    current_batch_ = next_batch;
+  }
 
   // If infinite stream is set, we don't send Eow or Eos. Infinite streams therefore never cause
   // HasBatchesRemaining to be false. Instead the outer loop that calls GenerateNext() is
   // responsible for managing whether we continue the stream or end it.
-  if (current_batch_ >= table_->NumBatches() && !infinite_stream_) {
+  if (!current_batch_.IsValid() && !infinite_stream_) {
     row_batch->set_eow(true);
     row_batch->set_eos(true);
   }
@@ -120,10 +131,18 @@ Status MemorySourceNode::GenerateNextImpl(ExecState* exec_state) {
   return Status::OK();
 }
 
+bool MemorySourceNode::InfiniteStreamNextBatchReady() {
+  if (!wait_for_valid_next_) {
+    return current_batch_.IsValid();
+  }
+  auto next_batch = table_->NextBatch(current_batch_);
+  return next_batch.IsValid();
+}
+
 bool MemorySourceNode::NextBatchReady() {
   // Next batch is ready if we haven't seen an eow and if it's an infinite_stream that has batches
   // to push.
-  return HasBatchesRemaining() && (!infinite_stream_ || (current_batch_ < table_->NumBatches()));
+  return HasBatchesRemaining() && (!infinite_stream_ || InfiniteStreamNextBatchReady());
 }
 
 }  // namespace exec

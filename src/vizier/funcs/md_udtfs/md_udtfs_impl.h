@@ -35,6 +35,7 @@
 #include "src/carnot/udf/udf.h"
 #include "src/common/base/base.h"
 #include "src/common/uuid/uuid.h"
+#include "src/shared/types/typespb/types.pb.h"
 #include "src/vizier/services/agent/manager/manager.h"
 
 namespace px {
@@ -571,8 +572,12 @@ class GetDebugTableInfo final : public carnot::udf::UDTF<GetDebugTableInfo> {
                 "The number of batches expired from this table"),
         ColInfo("num_batches", types::DataType::INT64, types::PatternType::GENERAL,
                 "The number of batches active in this table"),
+        ColInfo("compacted_batches", types::DataType::INT64, types::PatternType::GENERAL,
+                "The number of compacted batches that have been added to cold storage."),
         ColInfo("size", types::DataType::INT64, types::PatternType::GENERAL,
                 "The size of this table in bytes"),
+        ColInfo("cold_size", types::DataType::INT64, types::PatternType::GENERAL,
+                "The number of bytes in cold storage"),
         ColInfo("max_table_size", types::DataType::INT64, types::PatternType::GENERAL,
                 "The maximum size of this table"));
   }
@@ -596,7 +601,9 @@ class GetDebugTableInfo final : public carnot::udf::UDTF<GetDebugTableInfo> {
     rw->Append<IndexOf("batches_added")>(info.batches_added);
     rw->Append<IndexOf("batches_expired")>(info.batches_expired);
     rw->Append<IndexOf("num_batches")>(info.num_batches);
+    rw->Append<IndexOf("compacted_batches")>(info.compacted_batches);
     rw->Append<IndexOf("size")>(info.bytes);
+    rw->Append<IndexOf("cold_size")>(info.cold_bytes);
     rw->Append<IndexOf("max_table_size")>(info.max_table_size);
 
     ++current_idx_;

@@ -54,13 +54,15 @@ class MemorySourceNode : public SourceNode {
 
  private:
   StatusOr<std::unique_ptr<RowBatch>> GetNextRowBatch(ExecState* exec_state);
-
-  int64_t num_batches_;
-  int64_t current_batch_ = 0;
+  bool InfiniteStreamNextBatchReady();
   // Whether this memory source will stream infinitely. Can be stopped by the
   // exec_state_->keep_running() call in exec_graph.
   bool infinite_stream_ = false;
-  table_store::BatchPosition start_batch_info_;
+  // An infinite stream will set this to true once its exceeded the current data in the table, and
+  // then will keep checking for new data.
+  bool wait_for_valid_next_ = false;
+  table_store::BatchSlice current_batch_;
+  table_store::Table::StopPosition stop_;
 
   std::unique_ptr<plan::MemorySourceOperator> plan_node_;
   table_store::Table* table_ = nullptr;

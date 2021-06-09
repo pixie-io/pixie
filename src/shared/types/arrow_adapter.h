@@ -21,6 +21,7 @@
 #include <arrow/array.h>
 #include <arrow/memory_pool.h>
 #include <algorithm>
+#include <iterator>
 #include <numeric>
 #include <string>
 
@@ -140,7 +141,7 @@ inline int64_t GetArrowArrayBytes<types::DataType::STRING>(const arrow::Array* a
 
 template <types::DataType T>
 class ArrowArrayIterator
-    : public std::iterator<std::forward_iterator_tag,
+    : public std::iterator<std::bidirectional_iterator_tag,
                            typename types::ValueTypeTraits<
                                typename types::DataTypeTraits<T>::value_type>::native_type> {
   using ReturnType =
@@ -170,6 +171,10 @@ class ArrowArrayIterator
 
     return *this;
   }
+  ArrowArrayIterator<T>& operator--() {
+    curr_idx_--;
+    return *this;
+  }
 
   ArrowArrayIterator<T> begin() { return ArrowArrayIterator<T>(array_, 0); }
 
@@ -182,6 +187,15 @@ class ArrowArrayIterator
   }
   ArrowArrayIterator<T> operator+(int i) const {
     auto ret = ArrowArrayIterator<T>(array_, curr_idx_ + i);
+    return ret;
+  }
+  ArrowArrayIterator<T> operator--(int) {
+    auto ret = *this;
+    --*this;
+    return ret;
+  }
+  ArrowArrayIterator<T> operator-(int i) const {
+    auto ret = ArrowArrayIterator<T>(array_, curr_idx_ - i);
     return ret;
   }
 
@@ -237,6 +251,26 @@ int64_t SearchArrowArrayLessThan(
   // arr[res-1] in the array.
   auto next_smallest = types::GetValueFromArrowArray<T>(arr, res - 1);
   return SearchArrowArrayGreaterThanOrEqual<T>(arr, next_smallest);
+}
+
+/**
+ * Search through the arrow array for the index of the last item less than or equal to the given
+ * value.
+ */
+template <types::DataType T>
+int64_t SearchArrowArrayLessThanOrEqual(
+    arrow::Array* arr,
+    typename types::ValueTypeTraits<typename types::DataTypeTraits<T>::value_type>::native_type
+        val) {
+  auto arr_iterator = ArrowArrayIterator<T>(arr);
+  auto res = std::upper_bound(arr_iterator, arr_iterator.end(), val);
+  if (res == arr_iterator.begin()) {
+    // All elements are greater than val.
+    return -1;
+  }
+  // The element before the first greater than element is the last less than or equal element.
+  res--;
+  return std::distance(arr_iterator.begin(), res);
 }
 
 }  // namespace types

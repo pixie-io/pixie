@@ -48,8 +48,8 @@ namespace carnot {
 namespace exec {
 
 using google::protobuf::TextFormat;
-using table_store::Column;
 using table_store::Table;
+using table_store::schema::RowBatch;
 using table_store::schema::RowDescriptor;
 
 class AddUDF : public udf::ScalarUDF {
@@ -151,24 +151,23 @@ TEST_P(ExecGraphExecuteTest, execute) {
       {"col1", "col2", "col3"});
   auto table = Table::Create(rel);
 
-  auto col1 = table->GetColumn(0);
+  auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
   std::vector<types::Int64Value> col1_in1 = {1, 2, 3};
-  std::vector<types::Int64Value> col1_in2 = {4, 5};
-
-  EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in2, arrow::default_memory_pool())));
-
-  auto col2 = table->GetColumn(1);
   std::vector<types::BoolValue> col2_in1 = {true, false, true};
-  std::vector<types::BoolValue> col2_in2 = {false, false};
-  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in2, arrow::default_memory_pool())));
-
-  auto col3 = table->GetColumn(2);
   std::vector<types::Float64Value> col3_in1 = {1.4, 6.2, 10.2};
+  EXPECT_OK(rb1.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+  EXPECT_OK(rb1.AddColumn(types::ToArrow(col2_in1, arrow::default_memory_pool())));
+  EXPECT_OK(rb1.AddColumn(types::ToArrow(col3_in1, arrow::default_memory_pool())));
+  EXPECT_OK(table->WriteRowBatch(rb1));
+
+  auto rb2 = RowBatch(RowDescriptor(rel.col_types()), 2);
+  std::vector<types::Int64Value> col1_in2 = {4, 5};
+  std::vector<types::BoolValue> col2_in2 = {false, false};
   std::vector<types::Float64Value> col3_in2 = {3.4, 1.2};
-  EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in2, arrow::default_memory_pool())));
+  EXPECT_OK(rb2.AddColumn(types::ToArrow(col1_in2, arrow::default_memory_pool())));
+  EXPECT_OK(rb2.AddColumn(types::ToArrow(col2_in2, arrow::default_memory_pool())));
+  EXPECT_OK(rb2.AddColumn(types::ToArrow(col3_in2, arrow::default_memory_pool())));
+  EXPECT_OK(table->WriteRowBatch(rb2));
 
   auto table_store = std::make_shared<table_store::TableStore>();
   table_store->AddTable("numbers", table);
@@ -190,15 +189,18 @@ TEST_P(ExecGraphExecuteTest, execute) {
   auto output_table = exec_state_->table_store()->GetTable("output");
   std::vector<types::Float64Value> out_in1 = {4.8, 16.4, 26.4};
   std::vector<types::Float64Value> out_in2 = {14.8, 12.4};
-  EXPECT_EQ(2, output_table->NumBatches());
-  EXPECT_TRUE(output_table->GetRowBatch(0, std::vector<int64_t>({0}), arrow::default_memory_pool())
-                  .ConsumeValueOrDie()
-                  ->ColumnAt(0)
-                  ->Equals(types::ToArrow(out_in1, arrow::default_memory_pool())));
-  EXPECT_TRUE(output_table->GetRowBatch(1, std::vector<int64_t>({0}), arrow::default_memory_pool())
-                  .ConsumeValueOrDie()
-                  ->ColumnAt(0)
-                  ->Equals(types::ToArrow(out_in2, arrow::default_memory_pool())));
+  auto slice = output_table->FirstBatch();
+  EXPECT_TRUE(
+      output_table->GetRowBatchSlice(slice, std::vector<int64_t>({0}), arrow::default_memory_pool())
+          .ConsumeValueOrDie()
+          ->ColumnAt(0)
+          ->Equals(types::ToArrow(out_in1, arrow::default_memory_pool())));
+  slice = output_table->NextBatch(slice);
+  EXPECT_TRUE(
+      output_table->GetRowBatchSlice(slice, std::vector<int64_t>({0}), arrow::default_memory_pool())
+          .ConsumeValueOrDie()
+          ->ColumnAt(0)
+          ->Equals(types::ToArrow(out_in2, arrow::default_memory_pool())));
 }
 
 std::vector<std::tuple<int32_t>> calls_to_execute = {
@@ -234,25 +236,24 @@ TEST_F(ExecGraphTest, execute_time) {
       {"col1", "col2", "col3"});
   auto table = Table::Create(rel);
 
-  auto col1 = table->GetColumn(0);
+  auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
   std::vector<types::Time64NSValue> col1_in1 = {types::Time64NSValue(1), types::Time64NSValue(2),
                                                 types::Time64NSValue(3)};
-  std::vector<types::Time64NSValue> col1_in2 = {types::Time64NSValue(4), types::Time64NSValue(5)};
-
-  EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in2, arrow::default_memory_pool())));
-
-  auto col2 = table->GetColumn(1);
   std::vector<types::BoolValue> col2_in1 = {true, false, true};
-  std::vector<types::BoolValue> col2_in2 = {false, false};
-  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in2, arrow::default_memory_pool())));
-
-  auto col3 = table->GetColumn(2);
   std::vector<types::Float64Value> col3_in1 = {1.4, 6.2, 10.2};
+  EXPECT_OK(rb1.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+  EXPECT_OK(rb1.AddColumn(types::ToArrow(col2_in1, arrow::default_memory_pool())));
+  EXPECT_OK(rb1.AddColumn(types::ToArrow(col3_in1, arrow::default_memory_pool())));
+  EXPECT_OK(table->WriteRowBatch(rb1));
+
+  auto rb2 = RowBatch(RowDescriptor(rel.col_types()), 2);
+  std::vector<types::Time64NSValue> col1_in2 = {types::Time64NSValue(4), types::Time64NSValue(5)};
+  std::vector<types::BoolValue> col2_in2 = {false, false};
   std::vector<types::Float64Value> col3_in2 = {3.4, 1.2};
-  EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in2, arrow::default_memory_pool())));
+  EXPECT_OK(rb2.AddColumn(types::ToArrow(col1_in2, arrow::default_memory_pool())));
+  EXPECT_OK(rb2.AddColumn(types::ToArrow(col2_in2, arrow::default_memory_pool())));
+  EXPECT_OK(rb2.AddColumn(types::ToArrow(col3_in2, arrow::default_memory_pool())));
+  EXPECT_OK(table->WriteRowBatch(rb2));
 
   auto table_store = std::make_shared<table_store::TableStore>();
   table_store->AddTable("numbers", table);
@@ -275,15 +276,18 @@ TEST_F(ExecGraphTest, execute_time) {
   auto output_table = exec_state_->table_store()->GetTable("output");
   std::vector<types::Float64Value> out_in1 = {4.8, 16.4, 26.4};
   std::vector<types::Float64Value> out_in2 = {14.8, 12.4};
-  EXPECT_EQ(2, output_table->NumBatches());
-  EXPECT_TRUE(output_table->GetRowBatch(0, std::vector<int64_t>({0}), arrow::default_memory_pool())
-                  .ConsumeValueOrDie()
-                  ->ColumnAt(0)
-                  ->Equals(types::ToArrow(out_in1, arrow::default_memory_pool())));
-  EXPECT_TRUE(output_table->GetRowBatch(1, std::vector<int64_t>({0}), arrow::default_memory_pool())
-                  .ConsumeValueOrDie()
-                  ->ColumnAt(0)
-                  ->Equals(types::ToArrow(out_in2, arrow::default_memory_pool())));
+  auto slice = output_table->FirstBatch();
+  EXPECT_TRUE(
+      output_table->GetRowBatchSlice(slice, std::vector<int64_t>({0}), arrow::default_memory_pool())
+          .ConsumeValueOrDie()
+          ->ColumnAt(0)
+          ->Equals(types::ToArrow(out_in1, arrow::default_memory_pool())));
+  slice = output_table->NextBatch(slice);
+  EXPECT_TRUE(
+      output_table->GetRowBatchSlice(slice, std::vector<int64_t>({0}), arrow::default_memory_pool())
+          .ConsumeValueOrDie()
+          ->ColumnAt(0)
+          ->Equals(types::ToArrow(out_in2, arrow::default_memory_pool())));
 }
 
 TEST_F(ExecGraphTest, two_limits_dont_interfere) {
@@ -307,24 +311,23 @@ TEST_F(ExecGraphTest, two_limits_dont_interfere) {
       {"col1", "col2", "col3"});
   auto table = Table::Create(rel);
 
-  auto col1 = table->GetColumn(0);
+  auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
   std::vector<types::Int64Value> col1_in1 = {1, 2, 3};
-  std::vector<types::Int64Value> col1_in2 = {4, 5};
-
-  EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in2, arrow::default_memory_pool())));
-
-  auto col2 = table->GetColumn(1);
   std::vector<types::BoolValue> col2_in1 = {true, false, true};
-  std::vector<types::BoolValue> col2_in2 = {false, false};
-  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in2, arrow::default_memory_pool())));
-
-  auto col3 = table->GetColumn(2);
   std::vector<types::Float64Value> col3_in1 = {1.4, 6.2, 10.2};
+  EXPECT_OK(rb1.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+  EXPECT_OK(rb1.AddColumn(types::ToArrow(col2_in1, arrow::default_memory_pool())));
+  EXPECT_OK(rb1.AddColumn(types::ToArrow(col3_in1, arrow::default_memory_pool())));
+  EXPECT_OK(table->WriteRowBatch(rb1));
+
+  auto rb2 = RowBatch(RowDescriptor(rel.col_types()), 2);
+  std::vector<types::Int64Value> col1_in2 = {4, 5};
+  std::vector<types::BoolValue> col2_in2 = {false, false};
   std::vector<types::Float64Value> col3_in2 = {3.4, 1.2};
-  EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in2, arrow::default_memory_pool())));
+  EXPECT_OK(rb2.AddColumn(types::ToArrow(col1_in2, arrow::default_memory_pool())));
+  EXPECT_OK(rb2.AddColumn(types::ToArrow(col2_in2, arrow::default_memory_pool())));
+  EXPECT_OK(rb2.AddColumn(types::ToArrow(col3_in2, arrow::default_memory_pool())));
+  EXPECT_OK(table->WriteRowBatch(rb2));
 
   auto table_store = std::make_shared<table_store::TableStore>();
   table_store->AddTable("numbers", table);
@@ -342,13 +345,15 @@ TEST_F(ExecGraphTest, two_limits_dont_interfere) {
   std::vector<types::Int64Value> out_col1 = {1, 2};
   std::vector<types::BoolValue> out_col2 = {true, false};
   std::vector<types::Float64Value> out_col3 = {1.4, 6.2};
-  EXPECT_EQ(1, output_table1->NumBatches());
-  EXPECT_EQ(1, output_table2->NumBatches());
   auto out_rb1 =
-      output_table1->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
+      output_table1
+          ->GetRowBatchSlice(output_table1->FirstBatch(), std::vector<int64_t>({0, 1, 2}),
+                             arrow::default_memory_pool())
           .ConsumeValueOrDie();
   auto out_rb2 =
-      output_table2->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
+      output_table2
+          ->GetRowBatchSlice(output_table2->FirstBatch(), std::vector<int64_t>({0, 1, 2}),
+                             arrow::default_memory_pool())
           .ConsumeValueOrDie();
   EXPECT_TRUE(out_rb1->ColumnAt(0)->Equals(types::ToArrow(out_col1, arrow::default_memory_pool())));
   EXPECT_TRUE(out_rb1->ColumnAt(1)->Equals(types::ToArrow(out_col2, arrow::default_memory_pool())));
@@ -378,24 +383,23 @@ TEST_F(ExecGraphTest, limit_w_multiple_srcs) {
       {"col1", "col2", "col3"});
   auto table = Table::Create(rel);
 
-  auto col1 = table->GetColumn(0);
+  auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
   std::vector<types::Int64Value> col1_in1 = {1, 2, 3};
-  std::vector<types::Int64Value> col1_in2 = {4, 5};
-
-  EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in2, arrow::default_memory_pool())));
-
-  auto col2 = table->GetColumn(1);
   std::vector<types::BoolValue> col2_in1 = {true, false, true};
-  std::vector<types::BoolValue> col2_in2 = {false, false};
-  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in2, arrow::default_memory_pool())));
-
-  auto col3 = table->GetColumn(2);
   std::vector<types::Float64Value> col3_in1 = {1.4, 6.2, 10.2};
+  EXPECT_OK(rb1.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+  EXPECT_OK(rb1.AddColumn(types::ToArrow(col2_in1, arrow::default_memory_pool())));
+  EXPECT_OK(rb1.AddColumn(types::ToArrow(col3_in1, arrow::default_memory_pool())));
+  EXPECT_OK(table->WriteRowBatch(rb1));
+
+  auto rb2 = RowBatch(RowDescriptor(rel.col_types()), 2);
+  std::vector<types::Int64Value> col1_in2 = {4, 5};
+  std::vector<types::BoolValue> col2_in2 = {false, false};
   std::vector<types::Float64Value> col3_in2 = {3.4, 1.2};
-  EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in2, arrow::default_memory_pool())));
+  EXPECT_OK(rb2.AddColumn(types::ToArrow(col1_in2, arrow::default_memory_pool())));
+  EXPECT_OK(rb2.AddColumn(types::ToArrow(col2_in2, arrow::default_memory_pool())));
+  EXPECT_OK(rb2.AddColumn(types::ToArrow(col3_in2, arrow::default_memory_pool())));
+  EXPECT_OK(table->WriteRowBatch(rb2));
 
   auto table_store = std::make_shared<table_store::TableStore>();
   table_store->AddTable("numbers", table);
@@ -412,10 +416,10 @@ TEST_F(ExecGraphTest, limit_w_multiple_srcs) {
   std::vector<types::Int64Value> out_col1 = {1, 2};
   std::vector<types::BoolValue> out_col2 = {true, false};
   std::vector<types::Float64Value> out_col3 = {1.4, 6.2};
-  EXPECT_EQ(1, output_table->NumBatches());
-  auto out_rb =
-      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
+  auto out_rb = output_table
+                    ->GetRowBatchSlice(output_table->FirstBatch(), std::vector<int64_t>({0, 1, 2}),
+                                       arrow::default_memory_pool())
+                    .ConsumeValueOrDie();
   EXPECT_TRUE(out_rb->ColumnAt(0)->Equals(types::ToArrow(out_col1, arrow::default_memory_pool())));
   EXPECT_TRUE(out_rb->ColumnAt(1)->Equals(types::ToArrow(out_col2, arrow::default_memory_pool())));
   EXPECT_TRUE(out_rb->ColumnAt(2)->Equals(types::ToArrow(out_col3, arrow::default_memory_pool())));
@@ -441,24 +445,24 @@ TEST_F(ExecGraphTest, two_sequential_limits) {
       {"col1", "col2", "col3"});
   auto table = Table::Create(rel);
 
-  auto col1 = table->GetColumn(0);
+  auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
   std::vector<types::Int64Value> col1_in1 = {1, 2, 3};
-  std::vector<types::Int64Value> col1_in2 = {4, 5};
-
-  EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in2, arrow::default_memory_pool())));
-
-  auto col2 = table->GetColumn(1);
   std::vector<types::BoolValue> col2_in1 = {true, false, true};
-  std::vector<types::BoolValue> col2_in2 = {false, false};
-  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in2, arrow::default_memory_pool())));
-
-  auto col3 = table->GetColumn(2);
   std::vector<types::Float64Value> col3_in1 = {1.4, 6.2, 10.2};
+
+  EXPECT_OK(rb1.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+  EXPECT_OK(rb1.AddColumn(types::ToArrow(col2_in1, arrow::default_memory_pool())));
+  EXPECT_OK(rb1.AddColumn(types::ToArrow(col3_in1, arrow::default_memory_pool())));
+  EXPECT_OK(table->WriteRowBatch(rb1));
+
+  auto rb2 = RowBatch(RowDescriptor(rel.col_types()), 2);
+  std::vector<types::Int64Value> col1_in2 = {4, 5};
+  std::vector<types::BoolValue> col2_in2 = {false, false};
   std::vector<types::Float64Value> col3_in2 = {3.4, 1.2};
-  EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in2, arrow::default_memory_pool())));
+  EXPECT_OK(rb2.AddColumn(types::ToArrow(col1_in2, arrow::default_memory_pool())));
+  EXPECT_OK(rb2.AddColumn(types::ToArrow(col2_in2, arrow::default_memory_pool())));
+  EXPECT_OK(rb2.AddColumn(types::ToArrow(col3_in2, arrow::default_memory_pool())));
+  EXPECT_OK(table->WriteRowBatch(rb2));
 
   auto table_store = std::make_shared<table_store::TableStore>();
   table_store->AddTable("numbers", table);
@@ -475,10 +479,10 @@ TEST_F(ExecGraphTest, two_sequential_limits) {
   std::vector<types::Int64Value> out_col1 = {1, 2};
   std::vector<types::BoolValue> out_col2 = {true, false};
   std::vector<types::Float64Value> out_col3 = {1.4, 6.2};
-  EXPECT_EQ(1, output_table->NumBatches());
-  auto out_rb =
-      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
-          .ConsumeValueOrDie();
+  auto out_rb = output_table
+                    ->GetRowBatchSlice(output_table->FirstBatch(), std::vector<int64_t>({0, 1, 2}),
+                                       arrow::default_memory_pool())
+                    .ConsumeValueOrDie();
   EXPECT_TRUE(out_rb->ColumnAt(0)->Equals(types::ToArrow(out_col1, arrow::default_memory_pool())));
   EXPECT_TRUE(out_rb->ColumnAt(1)->Equals(types::ToArrow(out_col2, arrow::default_memory_pool())));
   EXPECT_TRUE(out_rb->ColumnAt(2)->Equals(types::ToArrow(out_col3, arrow::default_memory_pool())));
@@ -505,24 +509,24 @@ TEST_F(ExecGraphTest, execute_with_two_limits) {
       {"col1", "col2", "col3"});
   auto table = Table::Create(rel);
 
-  auto col1 = table->GetColumn(0);
+  auto rb1 = RowBatch(RowDescriptor(rel.col_types()), 3);
   std::vector<types::Int64Value> col1_in1 = {1, 2, 3};
-  std::vector<types::Int64Value> col1_in2 = {4, 5};
-
-  EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in2, arrow::default_memory_pool())));
-
-  auto col2 = table->GetColumn(1);
   std::vector<types::BoolValue> col2_in1 = {true, false, true};
-  std::vector<types::BoolValue> col2_in2 = {false, false};
-  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in2, arrow::default_memory_pool())));
-
-  auto col3 = table->GetColumn(2);
   std::vector<types::Float64Value> col3_in1 = {1.4, 6.2, 10.2};
+
+  EXPECT_OK(rb1.AddColumn(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+  EXPECT_OK(rb1.AddColumn(types::ToArrow(col2_in1, arrow::default_memory_pool())));
+  EXPECT_OK(rb1.AddColumn(types::ToArrow(col3_in1, arrow::default_memory_pool())));
+  EXPECT_OK(table->WriteRowBatch(rb1));
+
+  auto rb2 = RowBatch(RowDescriptor(rel.col_types()), 2);
+  std::vector<types::Int64Value> col1_in2 = {4, 5};
+  std::vector<types::BoolValue> col2_in2 = {false, false};
   std::vector<types::Float64Value> col3_in2 = {3.4, 1.2};
-  EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in2, arrow::default_memory_pool())));
+  EXPECT_OK(rb2.AddColumn(types::ToArrow(col1_in2, arrow::default_memory_pool())));
+  EXPECT_OK(rb2.AddColumn(types::ToArrow(col2_in2, arrow::default_memory_pool())));
+  EXPECT_OK(rb2.AddColumn(types::ToArrow(col3_in2, arrow::default_memory_pool())));
+  EXPECT_OK(table->WriteRowBatch(rb2));
 
   auto table_store = std::make_shared<table_store::TableStore>();
   table_store->AddTable("numbers", table);
@@ -538,20 +542,18 @@ TEST_F(ExecGraphTest, execute_with_two_limits) {
   auto output_table_1 = exec_state_->table_store()->GetTable("output1");
   auto output_table_2 = exec_state_->table_store()->GetTable("output2");
   std::vector<types::Float64Value> out_in1 = {1.4, 6.2};
-  EXPECT_EQ(1, output_table_1->NumBatches());
-  EXPECT_EQ(1, output_table_2->NumBatches());
-  EXPECT_EQ(3, output_table_1->NumColumns());
-  EXPECT_EQ(3, output_table_2->NumColumns());
-  EXPECT_TRUE(
-      output_table_1->GetRowBatch(0, std::vector<int64_t>({2}), arrow::default_memory_pool())
-          .ConsumeValueOrDie()
-          ->ColumnAt(0)
-          ->Equals(types::ToArrow(out_in1, arrow::default_memory_pool())));
-  EXPECT_TRUE(
-      output_table_2->GetRowBatch(0, std::vector<int64_t>({2}), arrow::default_memory_pool())
-          .ConsumeValueOrDie()
-          ->ColumnAt(0)
-          ->Equals(types::ToArrow(out_in1, arrow::default_memory_pool())));
+  EXPECT_TRUE(output_table_1
+                  ->GetRowBatchSlice(output_table_1->FirstBatch(), std::vector<int64_t>({2}),
+                                     arrow::default_memory_pool())
+                  .ConsumeValueOrDie()
+                  ->ColumnAt(0)
+                  ->Equals(types::ToArrow(out_in1, arrow::default_memory_pool())));
+  EXPECT_TRUE(output_table_2
+                  ->GetRowBatchSlice(output_table_2->FirstBatch(), std::vector<int64_t>({2}),
+                                     arrow::default_memory_pool())
+                  .ConsumeValueOrDie()
+                  ->ColumnAt(0)
+                  ->Equals(types::ToArrow(out_in1, arrow::default_memory_pool())));
 }
 
 class YieldingExecGraphTest : public BaseExecGraphTest {

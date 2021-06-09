@@ -344,7 +344,11 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
   std::vector<types::Time64NSValue> col0_out1;
   std::vector<types::Float64Value> col1_out1;
   std::vector<types::Int64Value> col2_out1;
-  for (int64_t i = 0; i < big_table_->GetColumn(0)->batch(0)->length(); i++) {
+  auto slice = big_table_->FirstBatch();
+  auto batch =
+      big_table_->GetRowBatchSlice(slice, {0}, arrow::default_memory_pool()).ConsumeValueOrDie();
+
+  for (int64_t i = 0; i < batch->ColumnAt(0)->length(); i++) {
     if (CarnotTestUtils::big_test_col1[i].val >= 2 && CarnotTestUtils::big_test_col1[i].val < 6) {
       col0_out1.emplace_back(CarnotTestUtils::big_test_col1[i].val);
       col1_out1.emplace_back(CarnotTestUtils::big_test_col2[i].val);
@@ -361,10 +365,11 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
   std::vector<types::Time64NSValue> col0_out2;
   std::vector<types::Float64Value> col1_out2;
   std::vector<types::Int64Value> col2_out2;
-  for (int64_t i = big_table_->GetColumn(0)->batch(0)->length();
-       i <
-       big_table_->GetColumn(0)->batch(0)->length() + big_table_->GetColumn(0)->batch(1)->length();
-       i++) {
+  auto next_batch =
+      big_table_->GetRowBatchSlice(big_table_->NextBatch(slice), {0}, arrow::default_memory_pool())
+          .ConsumeValueOrDie();
+  for (int64_t i = batch->ColumnAt(0)->length();
+       i < batch->ColumnAt(0)->length() + next_batch->ColumnAt(0)->length(); i++) {
     if (CarnotTestUtils::big_test_col1[i].val >= start_time &&
         CarnotTestUtils::big_test_col1[i].val < stop_time) {
       col0_out2.emplace_back(CarnotTestUtils::big_test_col1[i].val);

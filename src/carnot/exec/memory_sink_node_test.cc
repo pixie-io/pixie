@@ -83,16 +83,16 @@ TEST_F(MemorySinkNodeTest, basic) {
                          .get(),
                      false, 0);
 
-  EXPECT_EQ(1, exec_state_->table_store()->GetTable("cpu_15s")->NumBatches());
-  EXPECT_EQ(types::DataType::INT64,
-            exec_state_->table_store()->GetTable("cpu_15s")->GetColumn(0)->data_type());
-  EXPECT_EQ(types::DataType::BOOLEAN,
-            exec_state_->table_store()->GetTable("cpu_15s")->GetColumn(1)->data_type());
+  auto table = exec_state_->table_store()->GetTable("cpu_15s");
+  auto slice = table->FirstBatch();
+  auto batch_or_s = table->GetRowBatchSlice(slice, {0, 1}, arrow::default_memory_pool());
+  EXPECT_OK(batch_or_s);
+  auto batch = batch_or_s.ConsumeValueOrDie();
+  EXPECT_EQ(types::DataType::INT64, batch->desc().type(0));
+  EXPECT_EQ(types::DataType::BOOLEAN, batch->desc().type(1));
 
-  EXPECT_TRUE(exec_state_->table_store()->GetTable("cpu_15s")->GetColumn(0)->batch(0)->Equals(
-      col1_rb1_arrow));
-  EXPECT_TRUE(exec_state_->table_store()->GetTable("cpu_15s")->GetColumn(1)->batch(0)->Equals(
-      col2_rb1_arrow));
+  EXPECT_TRUE(batch->ColumnAt(0)->Equals(col1_rb1_arrow));
+  EXPECT_TRUE(batch->ColumnAt(1)->Equals(col2_rb1_arrow));
 
   tester
       .ConsumeNext(RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
@@ -102,11 +102,12 @@ TEST_F(MemorySinkNodeTest, basic) {
                    false, 0)
       .Close();
 
-  EXPECT_EQ(2, exec_state_->table_store()->GetTable("cpu_15s")->NumBatches());
-  EXPECT_TRUE(exec_state_->table_store()->GetTable("cpu_15s")->GetColumn(0)->batch(1)->Equals(
-      col1_rb2_arrow));
-  EXPECT_TRUE(exec_state_->table_store()->GetTable("cpu_15s")->GetColumn(1)->batch(1)->Equals(
-      col2_rb2_arrow));
+  slice = table->NextBatch(slice);
+  batch_or_s = table->GetRowBatchSlice(slice, {0, 1}, arrow::default_memory_pool());
+  EXPECT_OK(batch_or_s);
+  batch = batch_or_s.ConsumeValueOrDie();
+  EXPECT_TRUE(batch->ColumnAt(0)->Equals(col1_rb2_arrow));
+  EXPECT_TRUE(batch->ColumnAt(1)->Equals(col2_rb2_arrow));
 }
 
 TEST_F(MemorySinkNodeTest, zero_row_row_batch_not_eos) {
@@ -133,7 +134,7 @@ TEST_F(MemorySinkNodeTest, zero_row_row_batch_not_eos) {
                      false, 0);
 
   // Tests that a 0-row rb doesn't get written to the output table
-  EXPECT_EQ(0, exec_state_->table_store()->GetTable("cpu_15s")->NumBatches());
+  EXPECT_EQ(0, exec_state_->table_store()->GetTable("cpu_15s")->GetTableStats().batches_added);
 
   tester
       .ConsumeNext(RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
@@ -143,11 +144,13 @@ TEST_F(MemorySinkNodeTest, zero_row_row_batch_not_eos) {
                    false, 0)
       .Close();
 
-  EXPECT_EQ(1, exec_state_->table_store()->GetTable("cpu_15s")->NumBatches());
-  EXPECT_TRUE(exec_state_->table_store()->GetTable("cpu_15s")->GetColumn(0)->batch(0)->Equals(
-      col1_rb2_arrow));
-  EXPECT_TRUE(exec_state_->table_store()->GetTable("cpu_15s")->GetColumn(1)->batch(0)->Equals(
-      col2_rb2_arrow));
+  auto table = exec_state_->table_store()->GetTable("cpu_15s");
+  auto slice = table->FirstBatch();
+  auto batch_or_s = table->GetRowBatchSlice(slice, {0, 1}, arrow::default_memory_pool());
+  EXPECT_OK(batch_or_s);
+  auto batch = batch_or_s.ConsumeValueOrDie();
+  EXPECT_TRUE(batch->ColumnAt(0)->Equals(col1_rb2_arrow));
+  EXPECT_TRUE(batch->ColumnAt(1)->Equals(col2_rb2_arrow));
 }
 
 TEST_F(MemorySinkNodeTest, zero_row_row_batch_eos) {
@@ -173,13 +176,8 @@ TEST_F(MemorySinkNodeTest, zero_row_row_batch_eos) {
                          .get(),
                      false, 0);
 
-  // Tests that a 0-row rb does get written to the output table
-  EXPECT_EQ(1, exec_state_->table_store()->GetTable("cpu_15s")->NumBatches());
-  auto rb_or_s = exec_state_->table_store()->GetTable("cpu_15s")->GetRowBatch(
-      0, std::vector<int64_t>{0, 1}, arrow::default_memory_pool());
-  EXPECT_OK(rb_or_s);
-  auto rb = rb_or_s.ConsumeValueOrDie();
-  EXPECT_EQ(0, rb->num_rows());
+  // Tests that a 0-row rb does not get written to the table.
+  EXPECT_EQ(0, exec_state_->table_store()->GetTable("cpu_15s")->GetTableStats().batches_added);
 }
 
 }  // namespace exec

@@ -165,6 +165,8 @@ class TableStore {
     return "";
   }
 
+  Status RunCompaction(arrow::MemoryPool* mem_pool);
+
  private:
   void RegisterTableName(const std::string& table_name, const types::TabletID& tablet_id,
                          const schema::Relation& table_relation,

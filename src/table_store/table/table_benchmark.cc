@@ -16,17 +16,25 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include <absl/synchronization/barrier.h>
+#include <absl/synchronization/notification.h>
 #include <benchmark/benchmark.h>
+#include <chrono>
+#include <deque>
+#include <numeric>
+#include <random>
+#include <thread>
+#include "external/com_google_benchmark/_virtual_includes/benchmark/benchmark/benchmark.h"
 #include "src/shared/types/types.h"
 #include "src/table_store/table/table.h"
 
 namespace px::table_store {
 
-static inline std::unique_ptr<Table> MakeTable(int64_t max_size) {
+static inline std::unique_ptr<Table> MakeTable(int64_t max_size, int64_t compaction_size) {
   schema::Relation rel(
       std::vector<types::DataType>({types::DataType::TIME64NS, types::DataType::FLOAT64}),
       std::vector<std::string>({"time_", "float"}));
-  return std::make_unique<Table>(rel, max_size);
+  return std::make_unique<Table>(rel, max_size, compaction_size);
 }
 
 static inline std::unique_ptr<types::ColumnWrapperRecordBatch> MakeHotBatch(int64_t batch_size) {
@@ -46,17 +54,6 @@ static inline std::unique_ptr<types::ColumnWrapperRecordBatch> MakeHotBatch(int6
   return wrapper_batch;
 }
 
-static inline schema::RowBatch MakeColdBatch(int64_t batch_size) {
-  std::vector<types::Time64NSValue> col1_vals(batch_size, 0);
-  std::vector<types::Float64Value> col2_vals(batch_size, 1.234);
-
-  auto rb = schema::RowBatch(
-      schema::RowDescriptor({types::DataType::TIME64NS, types::DataType::FLOAT64}), batch_size);
-  PL_CHECK_OK(rb.AddColumn(types::ToArrow(col1_vals, arrow::default_memory_pool())));
-  PL_CHECK_OK(rb.AddColumn(types::ToArrow(col2_vals, arrow::default_memory_pool())));
-  return rb;
-}
-
 static inline void FillTableHot(Table* table, int64_t table_size, int64_t batch_length) {
   int64_t batch_size = batch_length * sizeof(int64_t) + batch_length * sizeof(double);
   for (int64_t i = 0; i < (table_size / batch_size); ++i) {
@@ -68,22 +65,25 @@ static inline void FillTableHot(Table* table, int64_t table_size, int64_t batch_
 static inline void FillTableCold(Table* table, int64_t table_size, int64_t batch_length) {
   int64_t batch_size = batch_length * sizeof(int64_t) + batch_length * sizeof(double);
   for (int64_t i = 0; i < (table_size / batch_size); ++i) {
-    auto batch = MakeColdBatch(batch_length);
-    PL_CHECK_OK(table->WriteRowBatch(std::move(batch)));
+    auto batch = MakeHotBatch(batch_length);
+    PL_CHECK_OK(table->TransferRecordBatch(std::move(batch)));
+    // Run compaction every time to ensure that all batches get put into cold.
+    PL_CHECK_OK(table->CompactHotToCold(arrow::default_memory_pool()));
   }
 }
 
 static inline void ReadFullTable(Table* table) {
-  for (int64_t i = 0; i < table->NumBatches(); ++i) {
-    benchmark::DoNotOptimize(table->GetRowBatch(i, {0, 1}, arrow::default_memory_pool()));
+  for (auto slice = table->FirstBatch(); slice.IsValid(); slice = table->NextBatch(slice)) {
+    benchmark::DoNotOptimize(table->GetRowBatchSlice(slice, {0, 1}, arrow::default_memory_pool()));
   }
 }
 
 // NOLINTNEXTLINE : runtime/references.
 static void BM_TableReadAllHot(benchmark::State& state) {
   int64_t table_size = 4 * 1024 * 1024;
+  int64_t compaction_size = 64 * 1024;
   int64_t batch_length = 256;
-  auto table = MakeTable(table_size);
+  auto table = MakeTable(table_size, compaction_size);
   FillTableHot(table.get(), table_size, batch_length);
 
   CHECK_EQ(table->GetTableStats().bytes, table_size);
@@ -91,7 +91,7 @@ static void BM_TableReadAllHot(benchmark::State& state) {
   for (auto _ : state) {
     ReadFullTable(table.get());
     state.PauseTiming();
-    table = MakeTable(table_size);
+    table = MakeTable(table_size, compaction_size);
     FillTableHot(table.get(), table_size, batch_length);
     state.ResumeTiming();
   }
@@ -102,8 +102,9 @@ static void BM_TableReadAllHot(benchmark::State& state) {
 // NOLINTNEXTLINE : runtime/references.
 static void BM_TableReadAllCold(benchmark::State& state) {
   int64_t table_size = 4 * 1024 * 1024;
+  int64_t compaction_size = 64 * 1024;
   int64_t batch_length = 256;
-  auto table = MakeTable(table_size);
+  auto table = MakeTable(table_size, compaction_size);
   FillTableCold(table.get(), table_size, batch_length);
   CHECK_EQ(table->GetTableStats().bytes, table_size);
 
@@ -117,17 +118,23 @@ static void BM_TableReadAllCold(benchmark::State& state) {
 // NOLINTNEXTLINE : runtime/references.
 static void BM_TableReadLastBatchAllHot(benchmark::State& state) {
   int64_t table_size = 4 * 1024 * 1024;
+  int64_t compaction_size = 64 * 1024;
   int64_t batch_length = 256;
-  auto table = MakeTable(table_size);
+  auto table = MakeTable(table_size, compaction_size);
   FillTableHot(table.get(), table_size, batch_length);
 
   CHECK_EQ(table->GetTableStats().bytes, table_size);
 
+  auto last_slice = table->FirstBatch();
+  while (table->NextBatch(last_slice).IsValid()) {
+    last_slice = table->NextBatch(last_slice);
+  }
+
   for (auto _ : state) {
     benchmark::DoNotOptimize(
-        table->GetRowBatch(table->NumBatches() - 1, {0, 1}, arrow::default_memory_pool()));
+        table->GetRowBatchSlice(last_slice, {0, 1}, arrow::default_memory_pool()));
     state.PauseTiming();
-    table = MakeTable(table_size);
+    table = MakeTable(table_size, compaction_size);
     FillTableHot(table.get(), table_size, batch_length);
     state.ResumeTiming();
   }
@@ -139,14 +146,20 @@ static void BM_TableReadLastBatchAllHot(benchmark::State& state) {
 // NOLINTNEXTLINE : runtime/references.
 static void BM_TableReadLastBatchAllCold(benchmark::State& state) {
   int64_t table_size = 4 * 1024 * 1024;
+  int64_t compaction_size = 64 * 1024;
   int64_t batch_length = 256;
-  auto table = MakeTable(table_size);
+  auto table = MakeTable(table_size, compaction_size);
   FillTableCold(table.get(), table_size, batch_length);
   CHECK_EQ(table->GetTableStats().bytes, table_size);
 
+  auto last_slice = table->FirstBatch();
+  while (table->NextBatch(last_slice).IsValid()) {
+    last_slice = table->NextBatch(last_slice);
+  }
+
   for (auto _ : state) {
     benchmark::DoNotOptimize(
-        table->GetRowBatch(table->NumBatches() - 1, {0, 1}, arrow::default_memory_pool()));
+        table->GetRowBatchSlice(last_slice, {0, 1}, arrow::default_memory_pool()));
   }
 
   int64_t batch_size = batch_length * sizeof(int64_t) + batch_length * sizeof(double);
@@ -156,8 +169,9 @@ static void BM_TableReadLastBatchAllCold(benchmark::State& state) {
 // NOLINTNEXTLINE : runtime/references.
 static void BM_TableWriteEmpty(benchmark::State& state) {
   int64_t table_size = 4 * 1024 * 1024;
+  int64_t compaction_size = 64 * 1024;
   int64_t batch_length = 256;
-  auto table = MakeTable(table_size);
+  auto table = MakeTable(table_size, compaction_size);
 
   for (auto _ : state) {
     state.PauseTiming();
@@ -166,7 +180,7 @@ static void BM_TableWriteEmpty(benchmark::State& state) {
     PL_CHECK_OK(table->TransferRecordBatch(std::move(batch)));
     state.PauseTiming();
     // Reset table each time to ensure no expiration is required on write.
-    table = MakeTable(table_size);
+    table = MakeTable(table_size, compaction_size);
     state.ResumeTiming();
   }
 
@@ -177,8 +191,9 @@ static void BM_TableWriteEmpty(benchmark::State& state) {
 // NOLINTNEXTLINE : runtime/references.
 static void BM_TableWriteFull(benchmark::State& state) {
   int64_t table_size = 4 * 1024 * 1024;
+  int64_t compaction_size = 64 * 1024;
   int64_t batch_length = 256;
-  auto table = MakeTable(table_size);
+  auto table = MakeTable(table_size, compaction_size);
   // Fill table first to make sure each write requires an expiration.
   FillTableHot(table.get(), table_size, batch_length);
 
@@ -193,11 +208,140 @@ static void BM_TableWriteFull(benchmark::State& state) {
   state.SetBytesProcessed(state.iterations() * batch_size);
 }
 
+// NOLINTNEXTLINE : runtime/references.
+static void BM_TableCompaction(benchmark::State& state) {
+  int64_t compaction_size = 64 * 1024;
+  int64_t table_size = Table::kMaxBatchesPerCompactionCall * compaction_size;
+  int64_t batch_length = 256;
+  auto table = MakeTable(table_size, compaction_size);
+  // Fill table first to make sure each compaction hits kMaxBatchesPerCompaction.
+  // This should be the slowest possible compaction. Since none of the batches will have an
+  // arrow_cache.
+  FillTableHot(table.get(), table_size, batch_length);
+
+  for (auto _ : state) {
+    PL_CHECK_OK(table->CompactHotToCold(arrow::default_memory_pool()));
+    state.PauseTiming();
+    FillTableHot(table.get(), table_size, batch_length);
+    state.ResumeTiming();
+  }
+
+  state.SetBytesProcessed(state.iterations() * compaction_size *
+                          Table::kMaxBatchesPerCompactionCall);
+}
+
+// NOLINTNEXTLINE : runtime/references.
+static void BM_TableThreaded(benchmark::State& state) {
+  schema::Relation rel({types::DataType::TIME64NS}, {"time_"});
+  schema::RowDescriptor rd({types::DataType::TIME64NS});
+  std::shared_ptr<Table> table_ptr = std::make_shared<Table>(rel, 16 * 1024 * 1024, 5 * 1024);
+
+  int64_t batch_size = 1024;
+  int64_t num_batches = 16 * 1024;
+
+  auto done = std::make_shared<absl::Notification>();
+  auto result_lock = std::make_shared<absl::base_internal::SpinLock>();
+  auto read_results = std::make_shared<std::deque<double>>();
+  auto write_results = std::make_shared<std::deque<double>>();
+  int num_read_threads = 6;
+  int num_write_threads = 2;
+  auto barrier = std::make_shared<absl::Barrier>(num_read_threads + num_write_threads);
+  auto reader_barrier = std::make_shared<absl::Barrier>(num_read_threads);
+
+  std::thread compaction_thread([table_ptr, done]() {
+    while (!done->WaitForNotificationWithTimeout(absl::Milliseconds(50))) {
+      PL_CHECK_OK(table_ptr->CompactHotToCold(arrow::default_memory_pool()));
+    }
+    // Do one last compaction after writer thread has finished writing.
+    PL_CHECK_OK(table_ptr->CompactHotToCold(arrow::default_memory_pool()));
+  });
+
+  auto writer_work = [&]() {
+    barrier->Block();
+    while (!done->WaitForNotificationWithTimeout(absl::Milliseconds(1))) {
+      std::vector<types::Time64NSValue> time_col(batch_size, 1234);
+      auto wrapper_batch = std::make_unique<types::ColumnWrapperRecordBatch>();
+      auto col_wrapper = std::make_shared<types::Time64NSValueColumnWrapper>(batch_size);
+      col_wrapper->Clear();
+      col_wrapper->AppendFromVector(time_col);
+      wrapper_batch->push_back(col_wrapper);
+      auto start = std::chrono::high_resolution_clock::now();
+      PL_CHECK_OK(table_ptr->TransferRecordBatch(std::move(wrapper_batch)));
+      auto end = std::chrono::high_resolution_clock::now();
+      auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+      {
+        absl::base_internal::SpinLockHolder lock(result_lock.get());
+        write_results->push_back(elapsed_seconds.count());
+      }
+    }
+  };
+
+  auto reader_work = [&](int thread_index) {
+    barrier->Block();
+
+    int64_t batch_counter = 0;
+    while (batch_counter < (num_batches / num_read_threads)) {
+      auto slice = table_ptr->FirstBatch();
+      if (!slice.IsValid()) {
+        continue;
+      }
+      auto start = std::chrono::high_resolution_clock::now();
+      auto batch_or_s = table_ptr->GetRowBatchSlice(slice, {0}, arrow::default_memory_pool());
+      auto end = std::chrono::high_resolution_clock::now();
+      if (!batch_or_s.ok()) {
+        continue;
+      }
+
+      auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+      {
+        absl::base_internal::SpinLockHolder lock(result_lock.get());
+        read_results->push_back(elapsed_seconds.count());
+      }
+      batch_counter++;
+    }
+    reader_barrier->Block();
+    if (thread_index == 0) {
+      done->Notify();
+    }
+  };
+
+  std::vector<std::thread> reader_threads;
+  for (int i = 0; i < num_read_threads; ++i) {
+    reader_threads.emplace_back(reader_work, i);
+  }
+
+  std::vector<std::thread> writer_threads;
+  for (int i = 0; i < num_write_threads; ++i) {
+    writer_threads.emplace_back(writer_work);
+  }
+
+  for (auto _ : state) {
+  }
+
+  compaction_thread.join();
+  for (int i = 0; i < num_write_threads; ++i) {
+    writer_threads[i].join();
+  }
+  for (int i = 0; i < num_read_threads; ++i) {
+    reader_threads[i].join();
+  }
+
+  auto read_average_time =
+      std::accumulate(read_results->begin(), read_results->end(), 0.0) / read_results->size();
+  auto write_average_time =
+      std::accumulate(write_results->begin(), write_results->end(), 0.0) / write_results->size();
+
+  state.counters["Read"] = benchmark::Counter(read_average_time);
+  state.counters["Write"] = benchmark::Counter(write_average_time);
+}
+
 BENCHMARK(BM_TableReadAllHot);
 BENCHMARK(BM_TableReadAllCold);
-BENCHMARK(BM_TableReadLastBatchAllHot);
-BENCHMARK(BM_TableReadLastBatchAllCold);
+BENCHMARK(BM_TableReadLastBatchAllHot)->Iterations(1000);
+BENCHMARK(BM_TableReadLastBatchAllCold)->Iterations(1000);
 BENCHMARK(BM_TableWriteEmpty);
 BENCHMARK(BM_TableWriteFull);
+BENCHMARK(BM_TableCompaction);
+BENCHMARK(BM_TableThreaded)->UseManualTime()->Iterations(1);
 
 }  // namespace px::table_store
