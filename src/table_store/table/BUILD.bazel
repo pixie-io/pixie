@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
 
 package(default_visibility = ["//src:__subpackages__"])
 
@@ -22,7 +22,10 @@ pl_cc_library(
     name = "cc_library",
     srcs = glob(
         ["*.cc"],
-        exclude = ["**/*_test.cc"],
+        exclude = [
+            "**/*_test.cc",
+            "**/*_benchmark.cc",
+        ],
     ),
     hdrs = glob(["*.h"]),
     deps = [
@@ -57,5 +60,15 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "@com_github_apache_arrow//:arrow",
+    ],
+)
+
+pl_cc_binary(
+    name = "table_benchmark",
+    testonly = 1,
+    srcs = ["table_benchmark.cc"],
+    deps = [
+        ":cc_library",
+        "//src/common/benchmark:cc_library",
     ],
 )
