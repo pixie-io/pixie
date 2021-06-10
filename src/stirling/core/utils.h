@@ -89,7 +89,7 @@ class SamplePushFrequencyManager {
    * @return std::chrono::milliseconds
    */
   px::chrono::coarse_steady_clock::time_point NextSamplingTime() const {
-    return push_freq_mgr_.next();
+    return sampling_freq_mgr_.next();
   }
 
   /**
