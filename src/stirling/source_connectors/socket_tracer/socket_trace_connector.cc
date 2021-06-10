@@ -52,7 +52,7 @@ DEFINE_uint32(
 // The default frequency logs every minute, since each iteration has a cycle period of 200ms.
 DEFINE_uint32(
     stirling_conn_trackers_stats_logging_ratio,
-    std::chrono::seconds(60) / px::stirling::SocketTraceConnector::kSamplingPeriod,
+    std::chrono::minutes(10) / px::stirling::SocketTraceConnector::kSamplingPeriod,
     "Ratio of how frequently conn_stats_table is populated relative to the base sampling period");
 
 DEFINE_int32(test_only_socket_trace_target_pid, kTraceAllTGIDs, "The process to trace.");
