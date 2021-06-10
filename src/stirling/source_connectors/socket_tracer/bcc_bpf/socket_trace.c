@@ -73,7 +73,7 @@ BPF_PERF_OUTPUT(mmap_events);
 
 struct connect_args_t {
   const struct sockaddr* addr;
-  uint32_t fd;
+  int32_t fd;
 };
 
 struct accept_args_t {
@@ -84,7 +84,7 @@ struct accept_args_t {
 struct data_args_t {
   // Represents the function from which this argument group originates.
   enum source_function_t source_fn;
-  uint32_t fd;
+  int32_t fd;
   // For send()/recv()/write()/read().
   const char* buf;
   // For sendmsg()/recvmsg()/writev()/readv().
@@ -95,7 +95,7 @@ struct data_args_t {
 };
 
 struct close_args_t {
-  uint32_t fd;
+  int32_t fd;
 };
 
 // This control_map is a bit-mask that controls which endpoints are traced in a connection.
@@ -185,14 +185,14 @@ static __inline void clear_open_file(uint64_t id, int fd) {
   open_file_map.delete(&tgid_fd);
 }
 
-static __inline void init_conn_id(uint32_t tgid, uint32_t fd, struct conn_id_t* conn_id) {
+static __inline void init_conn_id(uint32_t tgid, int32_t fd, struct conn_id_t* conn_id) {
   conn_id->upid.tgid = tgid;
   conn_id->upid.start_time_ticks = get_tgid_start_time();
   conn_id->fd = fd;
   conn_id->tsid = bpf_ktime_get_ns();
 }
 
-static __inline void init_conn_info(uint32_t tgid, uint32_t fd, struct conn_info_t* conn_info) {
+static __inline void init_conn_info(uint32_t tgid, int32_t fd, struct conn_info_t* conn_info) {
   init_conn_id(tgid, fd, &conn_info->conn_id);
   // NOTE: BCC code defaults to 0, because kRoleUnknown is not 0, must explicitly initialize.
   conn_info->role = kRoleUnknown;
@@ -203,14 +203,14 @@ static __inline void init_conn_info(uint32_t tgid, uint32_t fd, struct conn_info
 // BPF map leak if called on unwanted probes.
 // How do we make sure we don't leak then? ConnInfoMapManager.ReleaseResources() will clean-up
 // the relevant map entries every time a ConnTracker is destroyed.
-static __inline struct conn_info_t* get_or_create_conn_info(uint32_t tgid, uint32_t fd) {
+static __inline struct conn_info_t* get_or_create_conn_info(uint32_t tgid, int32_t fd) {
   uint64_t tgid_fd = gen_tgid_fd(tgid, fd);
   struct conn_info_t new_conn_info = {};
   init_conn_info(tgid, fd, &new_conn_info);
   return conn_info_map.lookup_or_init(&tgid_fd, &new_conn_info);
 }
 
-static __inline void set_conn_as_ssl(uint64_t id, uint32_t fd) {
+static __inline void set_conn_as_ssl(uint64_t id, int32_t fd) {
   uint32_t tgid = id >> 32;
   // Update conn_info, so that encrypted data data can be filtered out.
   struct conn_info_t* conn_info = get_or_create_conn_info(tgid, fd);
@@ -389,7 +389,7 @@ static __inline void read_sockaddr_kernel(struct conn_info_t* conn_info,
   }
 }
 
-static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, uint32_t fd,
+static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, int32_t fd,
                                      const struct sockaddr* addr, const struct socket* socket,
                                      enum EndpointRole role) {
   struct conn_info_t conn_info = {};

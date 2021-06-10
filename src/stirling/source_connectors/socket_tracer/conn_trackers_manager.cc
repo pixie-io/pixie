@@ -107,9 +107,7 @@ namespace {
 
 constexpr size_t kMaxConnTrackerPoolSize = 2048;
 
-uint64_t GetConnMapKey(uint32_t pid, uint32_t fd) {
-  return (static_cast<uint64_t>(pid) << 32) | fd;
-}
+uint64_t GetConnMapKey(uint32_t pid, int32_t fd) { return (static_cast<uint64_t>(pid) << 32) | fd; }
 
 std::optional<ConnTrackersManager::StatKey> GetStatKeyForProtocol(TrafficProtocol protocol) {
 #define CASE(protocol) \
@@ -155,7 +153,7 @@ ConnTracker& ConnTrackersManager::GetOrCreateConnTracker(struct conn_id_t conn_i
   return *conn_tracker_ptr;
 }
 
-StatusOr<const ConnTracker*> ConnTrackersManager::GetConnTracker(uint32_t pid, uint32_t fd) const {
+StatusOr<const ConnTracker*> ConnTrackersManager::GetConnTracker(uint32_t pid, int32_t fd) const {
   const uint64_t conn_map_key = GetConnMapKey(pid, fd);
 
   auto tracker_set_it = conn_id_tracker_generations_.find(conn_map_key);

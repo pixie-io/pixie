@@ -37,7 +37,7 @@ constexpr uint64_t kPIDStartTimeTicks = 112358;
 // Convenience functions and predefined data for generating events expected from BPF socket probes.
 class EventGenerator {
  public:
-  explicit EventGenerator(Clock* clock, uint32_t pid = kPID, uint32_t fd = kFD)
+  explicit EventGenerator(Clock* clock, uint32_t pid = kPID, int32_t fd = kFD)
       : clock_(clock), pid_(pid), fd_(fd) {}
 
   struct socket_control_event_t InitConn(EndpointRole role = kRoleUnknown) {
@@ -119,7 +119,7 @@ class EventGenerator {
  private:
   Clock* clock_;
   uint32_t pid_ = 0;
-  uint32_t fd_ = 0;
+  int32_t fd_ = 0;
   uint64_t tsid_ = 0;
   uint64_t send_pos_ = 0;
   uint64_t recv_pos_ = 0;

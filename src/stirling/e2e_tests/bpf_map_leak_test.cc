@@ -58,7 +58,7 @@ TEST_P(BPFMapLeakTest, UnclosedConnection) {
   ASSERT_OK(server.Start({server_path}));
 
   uint64_t pid = server.child_pid();
-  uint32_t fd = 4;
+  int32_t fd = 4;
   uint64_t server_bpf_map_key = (pid << 32) | fd;
   LOG(INFO) << absl::StrFormat("Server: pid=%d fd=%d key=%x", pid, fd, server_bpf_map_key);
 

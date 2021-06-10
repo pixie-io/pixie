@@ -80,7 +80,7 @@ TEST_F(ConnTrackersManagerTest, Fuzz) {
     double x = probability_dist_(rng_);
     if (x < 0.80) {
       uint32_t pid = pid_dist(rng_);
-      uint32_t fd = 1;
+      int32_t fd = 1;
       uint64_t tsid = tsid_dist(rng_);
 
       struct conn_id_t conn_id = {{{pid}, 0}, fd, tsid};

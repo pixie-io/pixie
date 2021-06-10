@@ -117,7 +117,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
    *
    * @return Pointer to the ConnTracker, or error::NotFound if it does not exist.
    */
-  StatusOr<const ConnTracker*> GetConnTracker(uint32_t pid, uint32_t fd) const {
+  StatusOr<const ConnTracker*> GetConnTracker(uint32_t pid, int32_t fd) const {
     return conn_trackers_mgr_.GetConnTracker(pid, fd);
   }
 

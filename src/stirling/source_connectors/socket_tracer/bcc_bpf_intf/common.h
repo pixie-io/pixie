@@ -93,7 +93,7 @@ struct conn_id_t {
   // The unique identifier of the pid/tgid.
   struct upid_t upid;
   // The file descriptor to the opened network connection.
-  uint32_t fd;
+  int32_t fd;
   // Unique id of the conn_id (timestamp).
   uint64_t tsid;
 };

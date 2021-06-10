@@ -120,7 +120,7 @@ class ConnTrackersManager {
    * Returns the latest generation of a connection tracker for the given pid and fd.
    * If there is no tracker for {pid, fd}, returns error::NotFound.
    */
-  StatusOr<const ConnTracker*> GetConnTracker(uint32_t pid, uint32_t fd) const;
+  StatusOr<const ConnTracker*> GetConnTracker(uint32_t pid, int32_t fd) const;
 
   /**
    * Deletes trackers that are ReadyForDestruction().
