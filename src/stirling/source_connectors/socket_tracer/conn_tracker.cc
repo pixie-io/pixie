@@ -490,6 +490,8 @@ void ConnTracker::UpdateTimestamps(uint64_t bpf_timestamp) {
 }
 
 void ConnTracker::CheckTracker() {
+  DCHECK_NE(conn_id().fd, -1);
+
   if (death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1) {
     CONN_TRACE(1) << absl::Substitute(
         "Did not expect new event more than 1 sampling iteration after Close. Connection=$0.",

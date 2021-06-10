@@ -41,6 +41,8 @@
 // This keeps instruction count below BPF's limit of 4096 per probe.
 #define LOOP_LIMIT 45
 
+const int32_t kInvalidFD = -1;
+
 // Determines what percentage of events must be inferred as a certain type for us to consider the
 // connection to be of that type. Encoded as a numerator/denominator. Currently set to 20%. While
 // this may seem low, one must consider that not all captures are packet-aligned, and the inference

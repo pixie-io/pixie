@@ -86,6 +86,9 @@ int probe_tls_conn_write(struct pt_regs* ctx) {
   conn_intf.type = common_symaddrs->tls_Conn;
   conn_intf.ptr = conn_ptr;
   int fd = get_fd_from_conn_intf_core(conn_intf, common_symaddrs);
+  if (fd == kInvalidFD) {
+    return 0;
+  }
 
   set_conn_as_ssl(id, fd);
 
@@ -155,6 +158,9 @@ int probe_tls_conn_read(struct pt_regs* ctx) {
   conn_intf.type = common_symaddrs->tls_Conn;
   conn_intf.ptr = conn_ptr;
   int fd = get_fd_from_conn_intf_core(conn_intf, common_symaddrs);
+  if (fd == kInvalidFD) {
+    return 0;
+  }
 
   set_conn_as_ssl(id, fd);
 

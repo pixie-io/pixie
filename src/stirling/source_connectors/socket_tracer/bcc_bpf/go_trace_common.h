@@ -39,8 +39,6 @@ BPF_HASH(go_common_symaddrs_map, uint32_t, struct go_common_symaddrs_t);
 // FD extraction functions
 //-----------------------------------------------------------------------------
 
-const int32_t kInvalidFD = -1;
-
 // This function accesses one of the following:
 //   conn.conn.conn.fd.pfd.Sysfd
 //   conn.conn.fd.pfd.Sysfd

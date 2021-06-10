@@ -98,9 +98,14 @@ int probe_entry_SSL_write(struct pt_regs* ctx) {
   void* ssl = (void*)PT_REGS_PARM1(ctx);
   char* buf = (char*)PT_REGS_PARM2(ctx);
 
+  int32_t fd = get_fd(id, ssl);
+  if (fd == kInvalidFD) {
+    return 0;
+  }
+
   struct data_args_t write_args = {};
   write_args.source_fn = kSSLWrite;
-  write_args.fd = get_fd(id, ssl);
+  write_args.fd = fd;
   write_args.buf = buf;
   active_ssl_write_args_map.update(&id, &write_args);
 
@@ -114,7 +119,7 @@ int probe_ret_SSL_write(struct pt_regs* ctx) {
   uint64_t id = bpf_get_current_pid_tgid();
 
   const struct data_args_t* write_args = active_ssl_write_args_map.lookup(&id);
-  if (write_args != NULL && write_args->fd != kInvalidFD) {
+  if (write_args != NULL) {
     process_openssl_data(ctx, id, kEgress, write_args);
   }
 
@@ -130,9 +135,14 @@ int probe_entry_SSL_read(struct pt_regs* ctx) {
   void* ssl = (void*)PT_REGS_PARM1(ctx);
   char* buf = (char*)PT_REGS_PARM2(ctx);
 
+  int32_t fd = get_fd(id, ssl);
+  if (fd == kInvalidFD) {
+    return 0;
+  }
+
   struct data_args_t read_args = {};
   read_args.source_fn = kSSLRead;
-  read_args.fd = get_fd(id, ssl);
+  read_args.fd = fd;
   read_args.buf = buf;
   active_ssl_read_args_map.update(&id, &read_args);
 
@@ -146,7 +156,7 @@ int probe_ret_SSL_read(struct pt_regs* ctx) {
   uint64_t id = bpf_get_current_pid_tgid();
 
   const struct data_args_t* read_args = active_ssl_read_args_map.lookup(&id);
-  if (read_args != NULL && read_args->fd != kInvalidFD) {
+  if (read_args != NULL) {
     process_openssl_data(ctx, id, kIngress, read_args);
   }
 
