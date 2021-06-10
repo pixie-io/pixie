@@ -235,7 +235,7 @@ describe('toEntityPathname test', () => {
       params: {},
       clusterName: 'gke:foobar',
     };
-    expect(toEntityPathname(entity)).toEqual('/live/clusters/gke%3Afoobar/script');
+    expect(toEntityPathname(entity)).toEqual('/live/clusters/gke%3Afoobar');
   });
 });
 
@@ -277,7 +277,7 @@ describe('toEntityURL test', () => {
     };
     expect(toEntityURL(entity, {
       propagatedParam: 'foo',
-    })).toEqual('/live/clusters/gke%3Afoobar/script?propagatedParam=foo');
+    })).toEqual('/live/clusters/gke%3Afoobar?propagatedParam=foo');
   });
 });
 
@@ -444,7 +444,7 @@ describe('scriptToEntityURL', () => {
     expect(scriptToEntityURL('px/http_data', 'aClusterName', {
       namespace: 'foobar',
       anotherArg: '-30s',
-    })).toEqual('/live/clusters/aClusterName/script?anotherArg=-30s&namespace=foobar&script=px%2Fhttp_data');
+    })).toEqual('/live/clusters/aClusterName?anotherArg=-30s&namespace=foobar&script=px%2Fhttp_data');
   });
 });
 

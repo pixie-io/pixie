@@ -306,7 +306,7 @@ export function toEntityPathname(entity: EntityPage): string {
     }
     case LiveViewPage.Default:
     default:
-      return `/live/clusters/${encodedCluster}/script`;
+      return `/live/clusters/${encodedCluster}`;
   }
 }
 
