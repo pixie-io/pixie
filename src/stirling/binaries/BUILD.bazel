@@ -109,4 +109,5 @@ container_push(
 cc_binary(
     name = "stirling_ctrl",
     srcs = ["stirling_ctrl.c"],
+    visibility = ["//:__pkg__"],
 )

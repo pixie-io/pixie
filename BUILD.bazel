@@ -183,7 +183,9 @@ container_image(
     name = "pl_cc_bpf_image",
     base = ":pl_cc_base_image",
     directory = "/pl",
-    files = linux_headers_tarballs + linux_timeconst_files,
+    files = linux_headers_tarballs + linux_timeconst_files + [
+        "//src/stirling/binaries:stirling_ctrl",
+    ],
     visibility = ["//visibility:public"],
 )
 
