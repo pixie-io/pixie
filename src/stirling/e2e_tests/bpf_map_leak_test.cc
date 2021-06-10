@@ -45,6 +45,9 @@ class BPFMapLeakTest : public SocketTraceBPFTest<>,
                        public ::testing::WithParamInterface<std::string_view> {};
 
 TEST_P(BPFMapLeakTest, UnclosedConnection) {
+  // Disable the temporary safety net, since it might interfere.
+  FLAGS_stirling_enable_periodic_bpf_map_cleanup = false;
+
   std::string_view server_path_param = GetParam();
 
   const int kInactivitySeconds = 10;

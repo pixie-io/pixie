@@ -18,7 +18,9 @@
 
 #include "src/stirling/source_connectors/socket_tracer/socket_trace_bpf_tables.h"
 
+#include "src/common/fs/fs_wrapper.h"
 #include "src/stirling/bpf_tools/macros.h"
+#include "src/stirling/source_connectors/socket_tracer/conn_trackers_manager.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
 DEFINE_uint32(stirling_conn_map_cleanup_threshold, kMaxConnMapCleanupItems,
@@ -42,7 +44,8 @@ namespace stirling {
 
 ConnInfoMapManager::ConnInfoMapManager(bpf_tools::BCCWrapper* bcc)
     : conn_info_map_(bcc->GetHashTable<uint64_t, struct conn_info_t>("conn_info_map")),
-      conn_disabled_map_(bcc->GetHashTable<uint64_t, uint64_t>("conn_disabled_map")) {
+      conn_disabled_map_(bcc->GetHashTable<uint64_t, uint64_t>("conn_disabled_map")),
+      open_file_map_(bcc->GetHashTable<uint64_t, uint64_t>("open_file_map")) {
   // Use address instead of symbol to specify this probe,
   // so that even if debug symbols are stripped, the uprobe can still attach.
   uint64_t symbol_addr = reinterpret_cast<uint64_t>(&ConnInfoMapCleanupTrigger);
@@ -72,6 +75,47 @@ void ConnInfoMapManager::Disable(struct conn_id_t conn_id) {
 
   if (!conn_disabled_map_.update_value(key, conn_id.tsid).ok()) {
     VLOG(1) << absl::Substitute("$0 Updating conn_disable_map entry failed.", ToString(conn_id));
+  }
+}
+
+void ConnInfoMapManager::CleanupBPFMapLeaks(ConnTrackersManager* conn_trackers_mgr) {
+  const auto& sysconfig = system::Config::GetInstance();
+
+  for (const auto& entry : conn_info_map_.get_table_offline()) {
+    const auto& id = entry.first;
+    const auto& conn_info = entry.second;
+    int32_t pid = id >> 32;
+    int32_t fd = id;
+
+    // Check conn trackers to see if it's already tracked.
+    // This is a performance optimization to avoid accessing /proc when not required.
+    if (!conn_trackers_mgr->GetConnTracker(pid, fd).ok()) {
+      // Being tracked already, so leave it be.
+      continue;
+    }
+
+    std::filesystem::path fd_file =
+        sysconfig.proc_path() / std::to_string(pid) / "fd" / std::to_string(fd);
+
+    if (!fs::Exists(fd_file).ok()) {
+      conn_info_map_.remove_value(id);
+      VLOG(1) << absl::Substitute("Found conn_info_map leak: pid=$0 fd=$1 af=$2", pid, fd,
+                                  conn_info.addr.sa.sa_family);
+    }
+  }
+
+  for (const auto& entry : open_file_map_.get_table_offline()) {
+    const auto& id = entry.first;
+    int32_t pid = id >> 32;
+    int32_t fd = id;
+
+    std::filesystem::path fd_file =
+        sysconfig.proc_path() / std::to_string(pid) / "fd" / std::to_string(fd);
+
+    if (!fs::Exists(fd_file).ok()) {
+      open_file_map_.remove_value(id);
+      VLOG(1) << absl::Substitute("Found open_file_map leak: pid=$0 fd=$1", pid, fd);
+    }
   }
 }
 

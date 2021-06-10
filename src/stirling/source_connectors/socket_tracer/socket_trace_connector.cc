@@ -55,6 +55,9 @@ DEFINE_uint32(
     std::chrono::minutes(10) / px::stirling::SocketTraceConnector::kSamplingPeriod,
     "Ratio of how frequently conn_stats_table is populated relative to the base sampling period");
 
+DEFINE_bool(stirling_enable_periodic_bpf_map_cleanup, true,
+            "Disable periodic BPF map cleanup (for testing)");
+
 DEFINE_int32(test_only_socket_trace_target_pid, kTraceAllTGIDs, "The process to trace.");
 // TODO(yzhao): If we ever need to write all events from different perf buffers, then we need either
 // write to different files for individual perf buffers, or create a protobuf message with an oneof
@@ -307,9 +310,22 @@ void SocketTraceConnector::UpdateCommonState(ConnectorContext* ctx) {
 
   conn_trackers_mgr_.CleanupTrackers();
 
-  // Periodically dump context. Dumps once a minute if connector sampling period is 100 ms.
-  if (debug_level_ > 0 && sample_push_freq_mgr_.sampling_count() % 600 == 0) {
+  // Periodically dump context.
+  constexpr auto kDumpContextPeriod = std::chrono::minutes(1);
+  constexpr int kDumpContextSamplingRatio = kDumpContextPeriod / kSamplingPeriod;
+  if (debug_level_ > 0 && sample_push_freq_mgr_.sampling_count() % kDumpContextSamplingRatio == 0) {
     DumpContext(ctx);
+  }
+
+  // Periodically check for leaking conn_info_map entries.
+  // TODO(oazizi): Track down and plug the leaks, then zap this function.
+  constexpr auto kCleanupBPFMapLeaksPeriod = std::chrono::minutes(5);
+  constexpr int kCleanupBPFMapLeaksSamplingRatio = kCleanupBPFMapLeaksPeriod / kSamplingPeriod;
+  if (FLAGS_stirling_enable_periodic_bpf_map_cleanup &&
+      sample_push_freq_mgr_.sampling_count() % kCleanupBPFMapLeaksSamplingRatio == 0) {
+    if (conn_info_map_mgr_ != nullptr) {
+      conn_info_map_mgr_->CleanupBPFMapLeaks(&conn_trackers_mgr_);
+    }
   }
 }
 

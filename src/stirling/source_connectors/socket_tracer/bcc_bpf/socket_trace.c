@@ -652,7 +652,7 @@ static __inline void process_syscall_connect(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  submit_new_conn(ctx, tgid, (uint32_t)args->fd, args->addr, /*socket*/ NULL, kRoleClient);
+  submit_new_conn(ctx, tgid, args->fd, args->addr, /*socket*/ NULL, kRoleClient);
 }
 
 static __inline void process_syscall_accept(struct pt_regs* ctx, uint64_t id,
@@ -668,7 +668,7 @@ static __inline void process_syscall_accept(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  submit_new_conn(ctx, tgid, (uint32_t)ret_fd, args->addr, args->sock_alloc_socket, kRoleServer);
+  submit_new_conn(ctx, tgid, ret_fd, args->addr, args->sock_alloc_socket, kRoleServer);
 }
 
 // TODO(oazizi): This is badly broken (but better than before).
@@ -711,7 +711,7 @@ static __inline void process_implicit_conn(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  submit_new_conn(ctx, tgid, (uint32_t)args->fd, args->addr, /*socket*/ NULL, kRoleUnknown);
+  submit_new_conn(ctx, tgid, args->fd, args->addr, /*socket*/ NULL, kRoleUnknown);
 }
 
 static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t id,
