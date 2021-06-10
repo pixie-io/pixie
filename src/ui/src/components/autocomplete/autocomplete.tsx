@@ -16,15 +16,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { buildClass } from 'utils/build-class';
+import { buildClass } from 'app/utils/build-class';
 import * as React from 'react';
 
 import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 
-import { scrollbarStyles } from 'components';
-import useIsMounted from 'utils/use-is-mounted';
-import { AutocompleteContext } from 'components/autocomplete/autocomplete-context';
+import { scrollbarStyles } from 'app/components';
+import useIsMounted from 'app/utils/use-is-mounted';
+import { AutocompleteContext } from 'app/components/autocomplete/autocomplete-context';
 
 import {
   CompletionId,

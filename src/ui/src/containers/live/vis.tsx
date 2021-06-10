@@ -18,10 +18,10 @@
 
 import {
   VizierQueryError, VizierQueryArg, VizierQueryFunc, GRPCStatusCode,
-} from 'api';
-import { ArgTypeMap, argTypesForVis } from 'utils/args-utils';
+} from 'app/api';
+import { ArgTypeMap, argTypesForVis } from 'app/utils/args-utils';
 
-import { Status } from 'types/generated/vizierapi_pb';
+import { Status } from 'app/types/generated/vizierapi_pb';
 import { ChartPosition } from './layout';
 
 interface FuncArg {

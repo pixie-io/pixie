@@ -19,20 +19,22 @@
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
-import { buildClass, Spinner } from 'components';
-import { GraphDisplay, GraphWidget } from 'containers/live-widgets/graph/graph';
-import { RequestGraphDisplay, RequestGraphWidget } from 'containers/live-widgets/graph/request-graph';
+import { buildClass, Spinner } from 'app/components';
+import { GraphDisplay, GraphWidget } from 'app/containers/live-widgets/graph/graph';
+import { RequestGraphDisplay, RequestGraphWidget } from 'app/containers/live-widgets/graph/request-graph';
 
-import { TimeSeriesContext, withTimeSeriesContextProvider } from 'containers/live-widgets/context/time-series-context';
-import { QueryResultTableDisplay, QueryResultTable } from 'containers/live-widgets/table/query-result-viewer';
+import {
+  TimeSeriesContext, withTimeSeriesContextProvider,
+} from 'app/containers/live-widgets/context/time-series-context';
+import { QueryResultTableDisplay, QueryResultTable } from 'app/containers/live-widgets/table/query-result-viewer';
 import * as React from 'react';
 import * as GridLayout from 'react-grid-layout';
-import { resizeEvent, triggerResize } from 'utils/resize';
-import { dataFromProto } from 'utils/result-data-utils';
+import { resizeEvent, triggerResize } from 'app/utils/resize';
+import { dataFromProto } from 'app/utils/result-data-utils';
 import { Alert, AlertTitle } from '@material-ui/core';
-import { VizierQueryError } from 'api';
-import { containsMutation } from 'utils/pxl';
-import { VizierErrorDetails } from 'common/errors';
+import { VizierQueryError } from 'app/api';
+import { containsMutation } from 'app/utils/pxl';
+import { VizierErrorDetails } from 'app/common/errors';
 
 import {
   alpha, makeStyles, Theme,
@@ -40,10 +42,10 @@ import {
 import { createStyles } from '@material-ui/styles';
 import Paper from '@material-ui/core/Paper';
 
-import Vega from 'containers/live-widgets/vega/vega';
-import { LayoutContext } from 'context/layout-context';
-import { ResultsContext } from 'context/results-context';
-import { ScriptContext } from 'context/script-context';
+import Vega from 'app/containers/live-widgets/vega/vega';
+import { LayoutContext } from 'app/context/layout-context';
+import { ResultsContext } from 'app/context/results-context';
+import { ScriptContext } from 'app/context/script-context';
 import MutationModal from './mutation-modal';
 import {
   addLayout, addTableLayout, getGridWidth, Layout, toLayout, updatePositions,

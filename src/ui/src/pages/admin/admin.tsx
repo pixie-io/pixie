@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { scrollbarStyles, Footer } from 'components';
+import { scrollbarStyles, Footer } from 'app/components';
 import { Copyright } from 'configurable/copyright';
 import {
   Theme,
@@ -26,11 +26,11 @@ import { createStyles } from '@material-ui/styles';
 
 import * as React from 'react';
 import { Route, Switch, Redirect } from 'react-router-dom';
-import { LiveViewButton } from 'containers/admin/utils';
-import { AdminOverview } from 'containers/admin/admin-overview';
-import { ClusterDetails } from 'containers/admin/cluster-details';
-import NavBars from 'containers/App/nav-bars';
-import { SidebarContext } from 'context/sidebar-context';
+import { LiveViewButton } from 'app/containers/admin/utils';
+import { AdminOverview } from 'app/containers/admin/admin-overview';
+import { ClusterDetails } from 'app/containers/admin/cluster-details';
+import NavBars from 'app/containers/App/nav-bars';
+import { SidebarContext } from 'app/context/sidebar-context';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {

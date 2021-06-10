@@ -17,22 +17,22 @@
  */
 
 import * as React from 'react';
-import { VizierRouteContext } from 'containers/App/vizier-routing';
-import { SCRATCH_SCRIPT, ScriptsContext } from 'containers/App/scripts-context';
+import { VizierRouteContext } from 'app/containers/App/vizier-routing';
+import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
 import {
   getQueryFuncs, parseVis, parseVisSilently, Vis,
-} from 'containers/live/vis';
-import { Script } from 'utils/script-bundle';
+} from 'app/containers/live/vis';
+import { Script } from 'app/utils/script-bundle';
 import {
   PixieAPIContext, ExecutionStateUpdate, VizierQueryError, GRPCStatusCode, Table,
-} from 'api';
-import { containsMutation, isStreaming } from 'utils/pxl';
+} from 'app/api';
+import { containsMutation, isStreaming } from 'app/utils/pxl';
 import { Observable } from 'rxjs';
-import { checkExhaustive } from 'utils/check-exhaustive';
-import { ResultsContext } from 'context/results-context';
-import { useSnackbar } from 'components';
-import { argsForVis, validateArgs } from 'utils/args-utils';
-import { ClusterContext, useClusterConfig } from 'common/cluster-context';
+import { checkExhaustive } from 'app/utils/check-exhaustive';
+import { ResultsContext } from 'app/context/results-context';
+import { useSnackbar } from 'app/components';
+import { argsForVis, validateArgs } from 'app/utils/args-utils';
+import { ClusterContext, useClusterConfig } from 'app/common/cluster-context';
 
 const NUM_MUTATION_RETRIES = 5;
 const MUTATION_RETRY_MS = 5000; // 5s.

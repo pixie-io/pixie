@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { GQLClusterStatus as ClusterStatus, GQLClusterInfo as Cluster } from 'types/schema';
+import { GQLClusterStatus as ClusterStatus, GQLClusterInfo as Cluster } from 'app/types/schema';
 
 // Selects a default clusterName based on the status.
 export function selectClusterName(clusters: Pick<Cluster, 'clusterName' | 'status'>[]): string {

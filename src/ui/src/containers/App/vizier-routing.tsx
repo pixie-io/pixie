@@ -22,15 +22,15 @@ import {
   Switch, Route, Redirect,
 } from 'react-router-dom';
 import * as QueryString from 'query-string';
-import plHistory from 'utils/pl-history';
+import plHistory from 'app/utils/pl-history';
 import { LocationDescriptorObject } from 'history';
-import { SCRATCH_SCRIPT, ScriptsContext } from 'containers/App/scripts-context';
-import { parseVisSilently } from 'containers/live/vis';
-import { RouteNotFound } from 'containers/App/route-not-found';
-import { selectClusterName } from 'containers/App/cluster-info';
+import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
+import { parseVisSilently } from 'app/containers/live/vis';
+import { RouteNotFound } from 'app/containers/App/route-not-found';
+import { selectClusterName } from 'app/containers/App/cluster-info';
 
-import { GQLClusterInfo } from 'types/schema';
-import { argsForVis } from 'utils/args-utils';
+import { GQLClusterInfo } from 'app/types/schema';
+import { argsForVis } from 'app/utils/args-utils';
 
 export interface VizierRouteContextProps {
   scriptId: string;

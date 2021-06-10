@@ -30,7 +30,7 @@ export {
 export { SignupMarcom } from './auth/signup-marcom';
 
 export { Autocomplete } from './autocomplete/autocomplete';
-export { AutocompleteContextProps, AutocompleteContext } from 'components/autocomplete/autocomplete-context';
+export { AutocompleteContextProps, AutocompleteContext } from 'app/components/autocomplete/autocomplete-context';
 export {
   CompletionHeader,
   CompletionId,
@@ -45,11 +45,11 @@ export { FormInput, Input } from './autocomplete/input';
 export {
   AutocompleteField,
   CommandAutocompleteInput,
-} from 'components/autocomplete/command-autocomplete-input';
+} from 'app/components/autocomplete/command-autocomplete-input';
 export {
   CommandAutocomplete,
   TabSuggestion,
-} from 'components/autocomplete/command-autocomplete';
+} from 'app/components/autocomplete/command-autocomplete';
 export {
   useAutocomplete,
   GetCompletionsFunc,
@@ -108,7 +108,7 @@ export { StatusGroup, StatusCell } from './status/status';
 
 export { VersionInfo } from './version-info/version-info';
 
-export { buildClass } from 'utils/build-class';
+export { buildClass } from 'app/utils/build-class';
 
 export { ClusterIcon } from './icons/cluster';
 export { CodeIcon } from './icons/code';

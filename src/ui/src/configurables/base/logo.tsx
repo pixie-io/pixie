@@ -21,7 +21,7 @@ import {
   makeStyles,
 } from '@material-ui/core';
 import { createStyles } from '@material-ui/styles';
-import * as logo from '../../../assets/images/pixie-oss.svg';
+import * as logo from 'assets/images/pixie-oss.svg';
 
 const useStyles = makeStyles(() => createStyles({
   logo: {

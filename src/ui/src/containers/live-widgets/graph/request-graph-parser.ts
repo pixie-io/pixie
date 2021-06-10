@@ -17,7 +17,7 @@
  */
 
 import { data as visData } from 'vis-network/standalone';
-import { SemanticType } from 'types/generated/vizierapi_pb';
+import { SemanticType } from 'app/types/generated/vizierapi_pb';
 import { getNamespaceFromEntityName, semTypeToShapeConfig } from './graph-utils';
 import { RequestGraphDisplay } from './request-graph';
 

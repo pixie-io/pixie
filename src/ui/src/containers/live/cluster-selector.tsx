@@ -22,11 +22,11 @@ import {
   Theme, makeStyles,
 } from '@material-ui/core';
 import { createStyles } from '@material-ui/styles';
-import { ClusterContext } from 'common/cluster-context';
+import { ClusterContext } from 'app/common/cluster-context';
 
-import { StatusCell, Select } from 'components';
-import { GQLClusterInfo, GQLClusterStatus } from 'types/schema';
-import { clusterStatusGroup } from 'containers/admin/utils';
+import { StatusCell, Select } from 'app/components';
+import { GQLClusterInfo, GQLClusterStatus } from 'app/types/schema';
+import { clusterStatusGroup } from 'app/containers/admin/utils';
 
 const useStyles = makeStyles(({ spacing, palette }: Theme) => createStyles({
   label: {

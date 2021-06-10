@@ -16,8 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { VizierQueryError } from 'api';
-import { Variable, Vis } from 'containers/live/vis';
+import { VizierQueryError } from 'app/api';
+import { Variable, Vis } from 'app/containers/live/vis';
 
 export type Arguments = Record<string, string|string[]>;
 

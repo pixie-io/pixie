@@ -26,8 +26,8 @@ import {
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import ArrowDropDownIcon from '@material-ui/icons/ArrowDropDown';
-import { DialogDropdown, BreadcrumbListItem } from 'components/breadcrumbs/breadcrumbs';
-import { AutocompleteContext } from 'components/autocomplete/autocomplete-context';
+import { DialogDropdown, BreadcrumbListItem } from 'app/components/breadcrumbs/breadcrumbs';
+import { AutocompleteContext } from 'app/components/autocomplete/autocomplete-context';
 
 const styles = (theme: Theme) => createStyles({
   root: {

@@ -20,7 +20,7 @@
 import { shallow } from 'enzyme';
 import * as React from 'react';
 
-import { VizierQueryError } from 'api';
+import { VizierQueryError } from 'app/api';
 import { VizierErrorDetails } from './errors';
 
 describe('<VizierErrorDetails/> test', () => {

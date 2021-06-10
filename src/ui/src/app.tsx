@@ -16,16 +16,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { DARK_THEME, SnackbarProvider, VersionInfo } from 'components';
-import Vizier from 'containers/App/vizier';
+import { DARK_THEME, SnackbarProvider, VersionInfo } from 'app/components';
+import Vizier from 'app/containers/App/vizier';
 import PixieCookieBanner from 'configurable/cookie-banner';
-import { LD_CLIENT_ID } from 'containers/constants';
+import { LD_CLIENT_ID } from 'app/containers/constants';
 import {
   Redirect, Route, Router, Switch,
 } from 'react-router-dom';
-import { makeCancellable } from 'utils/cancellable-promise';
-import { isProd, PIXIE_CLOUD_VERSION } from 'utils/env';
-import history from 'utils/pl-history';
+import { makeCancellable } from 'app/utils/cancellable-promise';
+import { isProd, PIXIE_CLOUD_VERSION } from 'app/utils/env';
+import history from 'app/utils/pl-history';
 
 import {
   ThemeProvider, withStyles,
@@ -37,10 +37,10 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { CssBaseline } from '@material-ui/core';
 import { withLDProvider } from 'launchdarkly-react-client-sdk';
-import { AuthRouter } from 'pages/auth/auth';
+import { AuthRouter } from 'app/pages/auth/auth';
 import 'typeface-roboto';
 import 'typeface-roboto-mono';
-import { PixieAPIContext, PixieAPIContextProvider } from 'api';
+import { PixieAPIContext, PixieAPIContextProvider } from 'app/api';
 
 // This side-effect-only import has to be a `require`, or else it gets erroneously optimized away during compilation.
 require('./wdyr');

@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { DOMAIN_NAME, SEGMENT_UI_WRITE_KEY } from 'containers/constants';
+import { DOMAIN_NAME, SEGMENT_UI_WRITE_KEY } from 'app/containers/constants';
 import { format } from 'date-fns';
 
 // Webpack's EnvPlugin has trouble understanding destructuring when Babel gets to it first.

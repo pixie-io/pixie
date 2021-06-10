@@ -30,10 +30,10 @@ import { Card, Popover } from '@material-ui/core';
 import createTypography from '@material-ui/core/styles/createTypography';
 import createSpacing from '@material-ui/core/styles/createSpacing';
 
-import { CompletionItem } from 'components/autocomplete/completions';
-import { Autocomplete } from 'components/autocomplete/autocomplete';
-import useIsMounted from 'utils/use-is-mounted';
-import { AutocompleteContext } from 'components/autocomplete/autocomplete-context';
+import { CompletionItem } from 'app/components/autocomplete/completions';
+import { Autocomplete } from 'app/components/autocomplete/autocomplete';
+import useIsMounted from 'app/utils/use-is-mounted';
+import { AutocompleteContext } from 'app/components/autocomplete/autocomplete-context';
 import Paper from '@material-ui/core/Paper';
 
 const styles = ({

@@ -19,9 +19,9 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 /* eslint-disable no-param-reassign */
 import { Theme } from '@material-ui/core/styles';
-import { getFormatFnMetadata, DataWithUnits, FormatFnMetadata } from 'containers/format-data/format-data';
-import { addPxTimeFormatExpression } from 'containers/live-widgets/vega/timeseries-axis';
-import { Relation, SemanticType } from 'types/generated/vizierapi_pb';
+import { getFormatFnMetadata, DataWithUnits, FormatFnMetadata } from 'app/containers/format-data/format-data';
+import { addPxTimeFormatExpression } from 'app/containers/live-widgets/vega/timeseries-axis';
+import { Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
 import {
   Axis,
   Data,

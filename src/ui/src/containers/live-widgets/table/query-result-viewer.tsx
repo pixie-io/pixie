@@ -16,9 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ClusterContext } from 'common/cluster-context';
-import { WidgetDisplay } from 'containers/live/vis';
-import { Table } from 'api';
+import { ClusterContext } from 'app/common/cluster-context';
+import { WidgetDisplay } from 'app/containers/live/vis';
+import { Table } from 'app/api';
 import * as React from 'react';
 import {
   Theme, Typography,
@@ -27,7 +27,7 @@ import {
 } from '@material-ui/core';
 import { createStyles } from '@material-ui/styles';
 import { IndexRange } from 'react-virtualized';
-import { Arguments } from 'utils/args-utils';
+import { Arguments } from 'app/utils/args-utils';
 import { VizierDataTable } from '../../vizier-data-table/vizier-data-table';
 import { JSONData } from '../../format-data/format-data';
 

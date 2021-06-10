@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { DOMAIN_NAME } from 'containers/constants';
+import { DOMAIN_NAME } from 'app/containers/constants';
 
 interface StringMap {
   [s: string]: string;

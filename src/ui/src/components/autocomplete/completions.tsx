@@ -16,15 +16,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { buildClass } from 'utils/build-class';
+import { buildClass } from 'app/utils/build-class';
 import * as React from 'react';
 
 import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 
-import { PodIcon } from 'components/icons/pod';
-import { ServiceIcon } from 'components/icons/service';
-import { isInView } from 'utils/bbox';
+import { PodIcon } from 'app/components/icons/pod';
+import { ServiceIcon } from 'app/components/icons/service';
+import { isInView } from 'app/utils/bbox';
 
 interface CompletionsProps {
   items: CompletionItems;

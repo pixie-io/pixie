@@ -1,14 +1,12 @@
 {
   "compilerOptions": {
-    "baseUrl": "./src",
+    "baseUrl": ".",
     "paths": {
       "configurable/*": [
-        "configurables/private/*",
-        "configurables/base/*"
+        "src/configurables/private/*",
+        "src/configurables/base/*"
       ],
-      "*": [
-        "*"
-      ]
+      "app/*": ["src/*"]
     },
     "outDir": "./dist/",
     "sourceMap": true,

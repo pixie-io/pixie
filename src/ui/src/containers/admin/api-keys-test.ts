@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { GQLAPIKey } from 'types/schema';
+import { GQLAPIKey } from 'app/types/schema';
 import { formatAPIKey } from './api-keys';
 
 describe('formatApiKey', () => {

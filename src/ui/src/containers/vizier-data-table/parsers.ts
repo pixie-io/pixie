@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SemanticType } from 'types/generated/vizierapi_pb';
+import { SemanticType } from 'app/types/generated/vizierapi_pb';
 
 export interface Quantile {
   p50: number;

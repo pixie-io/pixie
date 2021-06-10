@@ -26,8 +26,8 @@ import CloseButton from '@material-ui/icons/Close';
 import IconButton from '@material-ui/core/IconButton';
 import 'typeface-walter-turncoat';
 import { Spacing } from '@material-ui/core/styles/createSpacing';
-import { SetStateFunc } from 'context/common';
-import { CONTACT_ENABLED } from 'containers/constants';
+import { SetStateFunc } from 'app/context/common';
+import { CONTACT_ENABLED } from 'app/containers/constants';
 
 export interface LiveTourContextProps {
   tourOpen: boolean;

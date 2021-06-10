@@ -19,7 +19,7 @@
 import * as _ from 'lodash';
 import {
   Column, Relation, RowBatchData,
-} from 'types/generated/vizierapi_pb';
+} from 'app/types/generated/vizierapi_pb';
 import { formatUInt128Protobuf } from './format-data';
 import { nanoToMilliSeconds } from './time';
 

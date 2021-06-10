@@ -16,13 +16,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ClusterContext } from 'common/cluster-context';
-import UserContext from 'common/user-context';
-import { useSnackbar } from 'components';
-import AdminView from 'pages/admin/admin';
-import CreditsView from 'pages/credits/credits';
-import { SCRATCH_SCRIPT, ScriptsContextProvider } from 'containers/App/scripts-context';
-import LiveView from 'pages/live/live';
+import { ClusterContext } from 'app/common/cluster-context';
+import UserContext from 'app/common/user-context';
+import { useSnackbar } from 'app/components';
+import AdminView from 'app/pages/admin/admin';
+import CreditsView from 'app/pages/credits/credits';
+import { SCRATCH_SCRIPT, ScriptsContextProvider } from 'app/containers/App/scripts-context';
+import LiveView from 'app/pages/live/live';
 import * as React from 'react';
 import { Redirect, Route, Switch } from 'react-router-dom';
 import { generatePath } from 'react-router';
@@ -31,7 +31,7 @@ import * as QueryString from 'query-string';
 import { makeStyles } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import { useLDClient } from 'launchdarkly-react-client-sdk';
-import { GQLClusterInfo, GQLClusterStatus, GQLUserInfo } from 'types/schema';
+import { GQLClusterInfo, GQLClusterStatus, GQLUserInfo } from 'app/types/schema';
 import { useQuery, gql } from '@apollo/client';
 
 import { DeployInstructions } from './deploy-instructions';

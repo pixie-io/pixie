@@ -16,13 +16,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { buildClass } from 'utils/build-class';
+import { buildClass } from 'app/utils/build-class';
 import * as React from 'react';
 
 import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 
-import { AutocompleteContext } from 'components/autocomplete/autocomplete-context';
+import { AutocompleteContext } from 'app/components/autocomplete/autocomplete-context';
 import { Key } from './key';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({

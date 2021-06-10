@@ -19,8 +19,8 @@
 import * as QueryString from 'query-string';
 import { matchPath } from 'react-router';
 
-import { SemanticType } from 'types/generated/vizierapi_pb';
-import { Arguments } from 'utils/args-utils';
+import { SemanticType } from 'app/types/generated/vizierapi_pb';
+import { Arguments } from 'app/utils/args-utils';
 
 export enum LiveViewPage {
   Default,

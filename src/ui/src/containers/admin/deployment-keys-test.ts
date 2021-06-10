@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { GQLDeploymentKey } from 'types/schema';
+import { GQLDeploymentKey } from 'app/types/schema';
 import { formatDeploymentKey } from './deployment-keys';
 
 describe('formatDeploymentKey', () => {

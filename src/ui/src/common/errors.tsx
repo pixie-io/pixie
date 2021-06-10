@@ -21,8 +21,8 @@ import * as React from 'react';
 import Link from '@material-ui/core/Link';
 import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
-import { VizierQueryError } from 'api';
-import { CONTACT_ENABLED } from 'containers/constants';
+import { VizierQueryError } from 'app/api';
+import { CONTACT_ENABLED } from 'app/containers/constants';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   errorRow: {

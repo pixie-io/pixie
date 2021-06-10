@@ -16,12 +16,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { LazyPanel, ResizableDrawer, Spinner } from 'components';
-import { DataDrawerContext } from 'context/data-drawer-context';
-import { LayoutContext } from 'context/layout-context';
-import { ResultsContext } from 'context/results-context';
+import { LazyPanel, ResizableDrawer, Spinner } from 'app/components';
+import { DataDrawerContext } from 'app/context/data-drawer-context';
+import { LayoutContext } from 'app/context/layout-context';
+import { ResultsContext } from 'app/context/results-context';
 import * as React from 'react';
-import { VizierDataTableWithDetails } from 'containers/vizier-data-table/vizier-data-table';
+import { VizierDataTableWithDetails } from 'app/containers/vizier-data-table/vizier-data-table';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 import {

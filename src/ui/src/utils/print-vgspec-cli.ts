@@ -17,7 +17,7 @@
  */
 
 /* eslint-disable no-console */
-import { DARK_THEME } from 'components';
+import { DARK_THEME } from 'app/components';
 import { Data } from 'vega';
 
 import {
@@ -26,8 +26,8 @@ import {
   convertWidgetDisplayToVegaSpec,
   TIMESERIES_CHART_TYPE,
   HISTOGRAM_CHART_TYPE,
-} from 'containers/live/convert-to-vega-spec';
-import { DISPLAY_TYPE_KEY } from 'containers/live/vis';
+} from 'app/containers/live/convert-to-vega-spec';
+import { DISPLAY_TYPE_KEY } from 'app/containers/live/vis';
 
 const timeseriesData = [
   { time_: '4/2/2020, 9:42:38 PM', service: 'px-sock-shop/catalogue', bytesPerSecond: 48259 },

@@ -20,9 +20,9 @@
 
 import { Observable, from } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
-import { containsMutation } from 'utils/pxl';
+import { containsMutation } from 'app/utils/pxl';
 import fetch from 'cross-fetch';
-import { Status } from 'types/generated/vizierapi_pb';
+import { Status } from 'app/types/generated/vizierapi_pb';
 import {
   ExecutionStateUpdate,
   VizierGRPCClient,

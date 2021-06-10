@@ -20,7 +20,7 @@
 import { shallow } from 'enzyme';
 import * as React from 'react';
 
-import { CommandAutocompleteInput } from 'components/autocomplete/command-autocomplete-input';
+import { CommandAutocompleteInput } from 'app/components/autocomplete/command-autocomplete-input';
 
 const noop = () => {};
 

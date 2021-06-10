@@ -21,8 +21,8 @@ import { catchError, timeout } from 'rxjs/operators';
 import {
   ErrorDetails, ExecuteScriptRequest, HealthCheckRequest, QueryExecutionStats, Relation,
   RowBatchData, Status, MutationInfo, HealthCheckResponse, ExecuteScriptResponse,
-} from 'types/generated/vizierapi_pb';
-import { VizierServiceClient } from 'types/generated/VizierapiServiceClientPb';
+} from 'app/types/generated/vizierapi_pb';
+import { VizierServiceClient } from 'app/types/generated/VizierapiServiceClientPb';
 import { VizierQueryError } from './vizier';
 
 const noop = () => {};

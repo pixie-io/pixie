@@ -16,9 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import NavBars from 'containers/App/nav-bars';
-import { CodeRenderer, Spinner } from 'components';
-import * as logoImage from 'images/pixie-logo.svg';
+import NavBars from 'app/containers/App/nav-bars';
+import { CodeRenderer, Spinner } from 'app/components';
+import * as logoImage from 'assets/images/pixie-logo.svg';
 import * as React from 'react';
 
 import Button from '@material-ui/core/Button';

@@ -20,13 +20,13 @@ import type * as React from 'react';
 
 import {
   AUTH_URI, AUTH_CLIENT_ID,
-} from 'containers/constants';
+} from 'app/containers/constants';
 import ClientOAuth2 from 'client-oauth2';
 import { PublicApiFactory } from '@ory/kratos-client';
-import { FormStructure } from 'components';
+import { FormStructure } from 'app/components';
 import * as QueryString from 'query-string';
-import { HydraInvitationForm } from 'containers/admin/hydra-invitation-form';
-import { HydraButtons, RejectHydraSignup } from 'containers/auth/hydra-buttons';
+import { HydraInvitationForm } from 'app/containers/admin/hydra-invitation-form';
+import { HydraButtons, RejectHydraSignup } from 'app/containers/auth/hydra-buttons';
 import { OAuthProviderClient, Token } from './oauth-provider';
 
 // Copied from auth0-js/src/helper/window.js

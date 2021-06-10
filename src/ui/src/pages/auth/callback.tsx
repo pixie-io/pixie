@@ -19,9 +19,9 @@
 import * as React from 'react';
 import * as QueryString from 'query-string';
 import Axios, { AxiosError } from 'axios';
-import * as RedirectUtils from 'utils/redirect-utils';
-import { isValidAnalytics } from 'utils/env';
-import { AuthMessageBox } from 'components';
+import * as RedirectUtils from 'app/utils/redirect-utils';
+import { isValidAnalytics } from 'app/utils/env';
+import { AuthMessageBox } from 'app/components';
 import { Link } from 'react-router-dom';
 import {
   Button, ButtonProps, makeStyles, Theme,

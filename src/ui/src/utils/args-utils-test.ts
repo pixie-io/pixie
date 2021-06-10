@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { argsEquals, argsForVis, argTypesForVis } from 'utils/args-utils';
+import { argsEquals, argsForVis, argTypesForVis } from 'app/utils/args-utils';
 
 describe('argsEquals', () => {
   it('returns true for objects with same keys and values', () => {

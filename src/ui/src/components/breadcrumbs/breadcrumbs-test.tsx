@@ -20,7 +20,7 @@ import * as React from 'react';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { render } from 'enzyme';
 import { ThemeProvider } from '@material-ui/core/styles';
-import { DARK_THEME } from 'components';
+import { DARK_THEME } from 'app/components';
 import { Breadcrumbs } from './breadcrumbs';
 
 describe('<Breadcrumbs/>', () => {

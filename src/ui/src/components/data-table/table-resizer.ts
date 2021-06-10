@@ -18,7 +18,7 @@
 
 import {
   clamp, rescaleSum, smallest, sumColumn,
-} from 'utils/math';
+} from 'app/utils/math';
 
 export type StartingRatios = Array<{
   key: string;

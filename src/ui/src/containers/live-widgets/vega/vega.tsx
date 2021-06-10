@@ -17,10 +17,10 @@
  */
 
 /* eslint-disable no-underscore-dangle */
-import Legend, { LegendInteractState } from 'containers/legend/legend';
+import Legend, { LegendInteractState } from 'app/containers/legend/legend';
 import {
   buildHoverDataCache, formatLegendData, HoverDataCache, LegendData,
-} from 'containers/legend/legend-data';
+} from 'app/containers/legend/legend-data';
 import {
   ChartDisplay, convertWidgetDisplayToVegaSpec, EXTERNAL_HOVER_SIGNAL, EXTERNAL_TS_DOMAIN_SIGNAL,
   getColumnFromDisplay,
@@ -29,14 +29,14 @@ import {
   LEGEND_HOVER_SIGNAL, LEGEND_SELECT_SIGNAL, REVERSE_HOVER_SIGNAL, REVERSE_SELECT_SIGNAL,
   REVERSE_UNSELECT_SIGNAL,
   wrapFormatFn,
-} from 'containers/live/convert-to-vega-spec';
+} from 'app/containers/live/convert-to-vega-spec';
 import {
   Relation, SemanticType,
-} from 'types/generated/vizierapi_pb';
+} from 'app/types/generated/vizierapi_pb';
 import * as _ from 'lodash';
 import * as React from 'react';
 import { Vega as ReactVega } from 'react-vega';
-import noop from 'utils/noop';
+import noop from 'app/utils/noop';
 import { View } from 'vega-typings';
 
 import {
@@ -44,7 +44,7 @@ import {
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 
-import { formatFloat64Data } from 'utils/format-data';
+import { formatFloat64Data } from 'app/utils/format-data';
 import { TimeSeriesContext } from '../context/time-series-context';
 
 const NUMERAL_FORMAT_STRING = '0.00';

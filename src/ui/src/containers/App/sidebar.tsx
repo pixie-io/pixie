@@ -35,16 +35,16 @@ import Tooltip from '@material-ui/core/Tooltip';
 
 import { Link } from 'react-router-dom';
 
-import { ClusterContext } from 'common/cluster-context';
-import UserContext from 'common/user-context';
+import { ClusterContext } from 'app/common/cluster-context';
+import UserContext from 'app/common/user-context';
 import {
   ClusterIcon, DocsIcon, NamespaceIcon,
-} from 'components';
-import { toEntityPathname, LiveViewPage } from 'containers/live-widgets/utils/live-view-params';
+} from 'app/components';
+import { toEntityPathname, LiveViewPage } from 'app/containers/live-widgets/utils/live-view-params';
 import {
   DOMAIN_NAME, ANNOUNCEMENT_ENABLED,
   ANNOUNCE_WIDGET_URL, CONTACT_ENABLED,
-} from 'containers/constants';
+} from 'app/containers/constants';
 import { SidebarFooter } from 'configurable/sidebar-footer';
 
 const styles = (

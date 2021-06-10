@@ -16,21 +16,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { PlayIcon, StopIcon } from 'components';
+import { PlayIcon, StopIcon } from 'app/components';
 import * as React from 'react';
 
 import Tooltip from '@material-ui/core/Tooltip';
 
-import { ResultsContext } from 'context/results-context';
-import { EditorContext } from 'context/editor-context';
-import { ScriptContext } from 'context/script-context';
+import { ResultsContext } from 'app/context/results-context';
+import { EditorContext } from 'app/context/editor-context';
+import { ScriptContext } from 'app/context/script-context';
 import {
   Button, Theme, withStyles, WithStyles,
 } from '@material-ui/core';
 import { createStyles } from '@material-ui/styles';
-import { ClusterContext } from 'common/cluster-context';
-import { PixieAPIClient, PixieAPIContext } from 'api';
-import { GQLClusterStatus } from 'types/schema';
+import { ClusterContext } from 'app/common/cluster-context';
+import { PixieAPIClient, PixieAPIContext } from 'app/api';
+import { GQLClusterStatus } from 'app/types/schema';
 
 const styles = ({ breakpoints, typography }: Theme) => createStyles({
   buttonText: {

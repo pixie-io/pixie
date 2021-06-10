@@ -22,18 +22,18 @@ import {
   Theme, withStyles,
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
-import { GQLAutocompleteEntityKind, GQLAutocompleteSuggestion } from 'types/schema';
-import { PixieAPIClient, PixieAPIContext } from 'api';
+import { GQLAutocompleteEntityKind, GQLAutocompleteSuggestion } from 'app/types/schema';
+import { PixieAPIClient, PixieAPIContext } from 'app/api';
 import { gql } from '@apollo/client';
 
 import {
   Breadcrumbs, BreadcrumbOptions, StatusCell,
-} from 'components';
-import { ClusterContext } from 'common/cluster-context';
-import { argVariableMap, argTypesForVis } from 'utils/args-utils';
-import { SCRATCH_SCRIPT, ScriptsContext } from 'containers/App/scripts-context';
-import { ScriptContext } from 'context/script-context';
-import { pxTypeToEntityType, entityStatusGroup } from 'containers/command-input/autocomplete-utils';
+} from 'app/components';
+import { ClusterContext } from 'app/common/cluster-context';
+import { argVariableMap, argTypesForVis } from 'app/utils/args-utils';
+import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
+import { ScriptContext } from 'app/context/script-context';
+import { pxTypeToEntityType, entityStatusGroup } from 'app/containers/command-input/autocomplete-utils';
 import TimeArgDetail from 'configurable/time-arg-detail';
 import { parseVisSilently, Variable } from './vis';
 

@@ -17,9 +17,9 @@
  */
 
 import * as React from 'react';
-import { GQLVizierConfig, GQLClusterStatus } from 'types/schema';
-import { ClusterConfig } from 'api';
-import { isDev } from 'utils/env';
+import { GQLVizierConfig, GQLClusterStatus } from 'app/types/schema';
+import { ClusterConfig } from 'app/api';
+import { isDev } from 'app/utils/env';
 
 export interface ClusterContextProps {
   selectedClusterID: string;

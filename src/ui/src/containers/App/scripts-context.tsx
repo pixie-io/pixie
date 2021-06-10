@@ -17,8 +17,8 @@
  */
 
 import * as React from 'react';
-import { GetPxScripts, Script } from 'utils/script-bundle';
-import { GQLUserInfo } from 'types/schema';
+import { GetPxScripts, Script } from 'app/utils/script-bundle';
+import { GQLUserInfo } from 'app/types/schema';
 import { useQuery, gql } from '@apollo/client';
 
 export interface ScriptsContextProps {

@@ -18,8 +18,8 @@
 
 import * as React from 'react';
 
-import SideBar from 'containers/App/sidebar';
-import { TopBar } from 'containers/App/topbar';
+import SideBar from 'app/containers/App/sidebar';
+import { TopBar } from 'app/containers/App/topbar';
 
 const NavBars: React.FC = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = React.useState<boolean>(false);

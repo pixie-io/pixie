@@ -18,7 +18,7 @@
 
 import * as React from 'react';
 
-import { SCRATCH_SCRIPT, ScriptsContext } from 'containers/App/scripts-context';
+import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
 import { SetStateFunc } from './common';
 
 import { ScriptContext } from './script-context';

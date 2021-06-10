@@ -17,7 +17,7 @@
  */
 
 import { createBrowserHistory } from 'history';
-import analytics from 'utils/analytics';
+import analytics from 'app/utils/analytics';
 
 const history = createBrowserHistory();
 

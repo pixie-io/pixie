@@ -17,7 +17,7 @@
  */
 
 import fetch from 'cross-fetch';
-import { mockApolloClient } from 'testing/mocks/apollo-mock';
+import { mockApolloClient } from 'app/testing/mocks/apollo-mock';
 import { PixieAPIClient } from './api';
 
 // Imported only so that its import in the test subject can be mocked successfully.

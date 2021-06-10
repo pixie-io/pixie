@@ -22,8 +22,8 @@ import {
   Theme, withStyles, WithStyles,
 } from '@material-ui/core';
 import { createStyles } from '@material-ui/styles';
-import { Arguments } from 'utils/args-utils';
-import { SemanticType } from 'types/generated/vizierapi_pb';
+import { Arguments } from 'app/utils/args-utils';
+import { SemanticType } from 'app/types/generated/vizierapi_pb';
 import { scriptToEntityURL, toEntityURL, toSingleEntityPage } from './live-view-params';
 
 const styles = ({ palette }: Theme) => createStyles({

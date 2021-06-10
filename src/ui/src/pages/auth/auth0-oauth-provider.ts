@@ -18,10 +18,10 @@
 
 import type * as React from 'react';
 
-import { FormStructure } from 'components';
-import { Auth0Buttons } from 'containers/auth/auth0-buttons';
+import { FormStructure } from 'app/components';
+import { Auth0Buttons } from 'app/containers/auth/auth0-buttons';
 import { UserManager } from 'oidc-client';
-import { AUTH_CLIENT_ID, AUTH_URI } from 'containers/constants';
+import { AUTH_CLIENT_ID, AUTH_URI } from 'app/containers/constants';
 import { OAuthProviderClient, Token } from './oauth-provider';
 
 // Connection type is the Auth0 Connection type that's currently allowed. Add connection

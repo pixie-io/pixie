@@ -16,10 +16,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { buildClass } from 'utils/build-class';
+import { buildClass } from 'app/utils/build-class';
 import * as React from 'react';
 
-import { Spinner } from 'components/spinner/spinner';
+import { Spinner } from 'app/components/spinner/spinner';
 import { editor as MonacoEditorTypes } from 'monaco-editor';
 
 interface CodeEditorProps {

@@ -29,20 +29,20 @@ import { createStyles } from '@material-ui/styles';
 import {
   Avatar, ProfileMenuWrapper, CodeIcon,
   LogoutIcon, SettingsIcon,
-} from 'components';
+} from 'app/components';
 import { useQuery, useMutation, gql } from '@apollo/client';
-import { LiveShortcutsContext } from 'containers/live/shortcuts';
-import { SidebarContext } from 'context/sidebar-context';
-import { LiveTourContext, LiveTourDialog } from 'containers/App/live-tour';
+import { LiveShortcutsContext } from 'app/containers/live/shortcuts';
+import { SidebarContext } from 'app/context/sidebar-context';
+import { LiveTourContext, LiveTourDialog } from 'app/containers/App/live-tour';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
-import { LayoutContext } from 'context/layout-context';
+import { LayoutContext } from 'app/context/layout-context';
 import MenuItem from '@material-ui/core/MenuItem';
 import ExploreIcon from '@material-ui/icons/Explore';
 import KeyboardIcon from '@material-ui/icons/Keyboard';
 import { Link } from 'react-router-dom';
 import { Logo } from 'configurable/logo';
-import { GQLUserInfo, GQLUserSetting } from 'types/schema';
+import { GQLUserInfo, GQLUserSetting } from 'app/types/schema';
 
 const StyledListItemText = withStyles((theme: Theme) => createStyles({
   primary: {

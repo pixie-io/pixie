@@ -17,7 +17,7 @@
  */
 
 import * as React from 'react';
-import { CodeEditor, LazyPanel, ResizableDrawer } from 'components';
+import { CodeEditor, LazyPanel, ResizableDrawer } from 'app/components';
 
 import {
   makeStyles, Theme, withStyles,
@@ -27,10 +27,10 @@ import Tabs from '@material-ui/core/Tabs';
 import ChevronRight from '@material-ui/icons/ChevronRight';
 import { createStyles } from '@material-ui/styles';
 
-import { getKeyMap } from 'containers/live/shortcuts';
-import { LayoutContext } from 'context/layout-context';
-import { ScriptContext } from 'context/script-context';
-import { EditorContext } from 'context/editor-context';
+import { getKeyMap } from 'app/containers/live/shortcuts';
+import { LayoutContext } from 'app/context/layout-context';
+import { ScriptContext } from 'app/context/script-context';
+import { EditorContext } from 'app/context/editor-context';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {

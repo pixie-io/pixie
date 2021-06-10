@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { WidgetDisplay } from 'containers/live/vis';
+import { WidgetDisplay } from 'app/containers/live/vis';
 import {
   data as visData,
   Edge,
@@ -31,10 +31,10 @@ import {
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import { useHistory } from 'react-router';
-import { ClusterContext } from 'common/cluster-context';
-import { Arguments } from 'utils/args-utils';
+import { ClusterContext } from 'app/common/cluster-context';
+import { Arguments } from 'app/utils/args-utils';
 import Button from '@material-ui/core/Button';
-import { Relation, SemanticType } from 'types/generated/vizierapi_pb';
+import { Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
 import {
   getGraphOptions, semTypeToShapeConfig, colInfoFromName, ColInfo,
 } from './graph-utils';

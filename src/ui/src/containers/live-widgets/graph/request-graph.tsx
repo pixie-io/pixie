@@ -17,7 +17,7 @@
  */
 
 import * as React from 'react';
-import { WidgetDisplay } from 'containers/live/vis';
+import { WidgetDisplay } from 'app/containers/live/vis';
 
 import { data as visData, Network } from 'vis-network/standalone';
 import { makeStyles, useTheme, Theme } from '@material-ui/core/styles';
@@ -28,12 +28,12 @@ import SpeedIcon from '@material-ui/icons/Speed';
 import ErrorOutlineIcon from '@material-ui/icons/ErrorOutline';
 import IconButton from '@material-ui/core/IconButton';
 import Tooltip from '@material-ui/core/Tooltip';
-import { toEntityURL, toSingleEntityPage } from 'containers/live-widgets/utils/live-view-params';
-import { ClusterContext } from 'common/cluster-context';
-import { SemanticType, Relation } from 'types/generated/vizierapi_pb';
+import { toEntityURL, toSingleEntityPage } from 'app/containers/live-widgets/utils/live-view-params';
+import { ClusterContext } from 'app/common/cluster-context';
+import { SemanticType, Relation } from 'app/types/generated/vizierapi_pb';
 import { useHistory } from 'react-router-dom';
-import { Arguments } from 'utils/args-utils';
-import { formatFloat64Data } from 'utils/format-data';
+import { Arguments } from 'app/utils/args-utils';
+import { formatFloat64Data } from 'app/utils/format-data';
 import {
   getColorForErrorRate,
   getColorForLatency,

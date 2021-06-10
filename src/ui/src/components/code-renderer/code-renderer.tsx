@@ -18,7 +18,7 @@
 
 import Highlight, { defaultProps } from 'prism-react-renderer';
 import * as React from 'react';
-import { CopyIcon } from 'components/icons/copy';
+import { CopyIcon } from 'app/components/icons/copy';
 
 import { Box } from '@material-ui/core';
 import { Theme } from '@material-ui/core/styles';

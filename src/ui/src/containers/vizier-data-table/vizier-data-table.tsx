@@ -19,21 +19,21 @@
 import {
   CellAlignment, ColumnProps, DataTable, SortState,
   buildClass,
-} from 'components';
-import { JSONData } from 'containers/format-data/format-data';
-import { STATUS_TYPES } from 'containers/live-widgets/utils';
+} from 'app/components';
+import { JSONData } from 'app/containers/format-data/format-data';
+import { STATUS_TYPES } from 'app/containers/live-widgets/utils';
 import * as React from 'react';
-import { Table } from 'api';
-import { DataType, SemanticType } from 'types/generated/vizierapi_pb';
-import noop from 'utils/noop';
-import { dataFromProto } from 'utils/result-data-utils';
+import { Table } from 'app/api';
+import { DataType, SemanticType } from 'app/types/generated/vizierapi_pb';
+import noop from 'app/utils/noop';
+import { dataFromProto } from 'app/utils/result-data-utils';
 import {
   makeStyles,
   useTheme, Theme,
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import { IndexRange } from 'react-virtualized';
-import { Arguments } from 'utils/args-utils';
+import { Arguments } from 'app/utils/args-utils';
 
 import { ColumnDisplayInfo, displayInfoFromColumn, titleFromInfo } from './column-display-info';
 import { parseRows } from './parsers';

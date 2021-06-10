@@ -28,15 +28,15 @@ import Button from '@material-ui/core/Button';
 import TableContainer from '@material-ui/core/TableContainer';
 import Add from '@material-ui/icons/Add';
 
-import { DeploymentKeysTable } from 'containers/admin/deployment-keys';
-import { APIKeysTable } from 'containers/admin/api-keys';
-import { UsersTable } from 'containers/admin/org-users';
-import { ClustersTable } from 'containers/admin/clusters-list';
-import { OrgSettings } from 'containers/admin/org-settings';
-import { StyledTab, StyledTabs } from 'containers/admin/utils';
-import { GetOAuthProvider } from 'pages/auth/utils';
-import { scrollbarStyles } from 'components';
-import { GQLAPIKey, GQLDeploymentKey } from 'types/schema';
+import { DeploymentKeysTable } from 'app/containers/admin/deployment-keys';
+import { APIKeysTable } from 'app/containers/admin/api-keys';
+import { UsersTable } from 'app/containers/admin/org-users';
+import { ClustersTable } from 'app/containers/admin/clusters-list';
+import { OrgSettings } from 'app/containers/admin/org-settings';
+import { StyledTab, StyledTabs } from 'app/containers/admin/utils';
+import { GetOAuthProvider } from 'app/pages/auth/utils';
+import { scrollbarStyles } from 'app/components';
+import { GQLAPIKey, GQLDeploymentKey } from 'app/types/schema';
 
 import {
   Route, Switch, useHistory, useLocation, useRouteMatch,

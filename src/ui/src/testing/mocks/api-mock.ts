@@ -24,8 +24,8 @@ import { Observable, of as observableOf } from 'rxjs';
 import {
   ClusterConfig, PixieAPIClient, PixieAPIClientAbstract, PixieAPIClientOptions,
   ExecutionStateUpdate, VizierQueryFunc,
-} from 'api';
-import { Status } from 'types/generated/vizierapi_pb';
+} from 'app/api';
+import { Status } from 'app/types/generated/vizierapi_pb';
 
 // noinspection JSUnusedLocalSymbols
 // noinspection ES6PreferShortImport

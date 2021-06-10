@@ -28,11 +28,11 @@ import {
 } from '@material-ui/core';
 import { createStyles } from '@material-ui/styles';
 
-import { CPPIcon } from 'components/logos/cpp';
-import { GolangIcon } from 'components/logos/golang';
-import { HeartIcon } from 'components/logos/heart';
-import { PixieLogo } from 'components/icons/pixie-logo';
-import { RustIcon } from 'components/logos/rust';
+import { CPPIcon } from 'app/components/logos/cpp';
+import { GolangIcon } from 'app/components/logos/golang';
+import { HeartIcon } from 'app/components/logos/heart';
+import { PixieLogo } from 'app/components/icons/pixie-logo';
+import { RustIcon } from 'app/components/logos/rust';
 
 const styles = ({ palette, spacing }: Theme) => createStyles({
   root: {

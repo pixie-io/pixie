@@ -25,7 +25,7 @@ import {
   WithStyles,
 } from '@material-ui/core';
 import { createStyles } from '@material-ui/styles';
-import { CodeRenderer } from 'components/code-renderer/code-renderer';
+import { CodeRenderer } from 'app/components/code-renderer/code-renderer';
 import { PixienautBox, PixienautBoxProps } from './pixienaut-box';
 
 const styles = ({ palette, spacing }: Theme) => createStyles({

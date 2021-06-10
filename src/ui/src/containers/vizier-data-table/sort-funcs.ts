@@ -17,9 +17,9 @@
  */
 
 import { SortDirection, SortDirectionType } from 'react-virtualized';
-import { getDataSortFunc } from 'utils/format-data';
-import { SemanticType } from 'types/generated/vizierapi_pb';
-import { checkExhaustive } from 'utils/check-exhaustive';
+import { getDataSortFunc } from 'app/utils/format-data';
+import { SemanticType } from 'app/types/generated/vizierapi_pb';
+import { checkExhaustive } from 'app/utils/check-exhaustive';
 import { ColumnDisplayInfo, QuantilesDisplayState } from './column-display-info';
 
 // Sort funcs for semantic column types (when the pure data type alone doesn't produce

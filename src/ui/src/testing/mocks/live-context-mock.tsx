@@ -19,14 +19,14 @@
 import * as React from 'react';
 import { PropsWithChildren } from 'react';
 import { Theme, ThemeProvider } from '@material-ui/core/styles';
-import { DARK_THEME } from 'components';
-import { LayoutContext, LayoutContextProps } from 'context/layout-context';
-import { LiveTourContext, LiveTourContextProps } from 'containers/App/live-tour';
-import { ResultsContext, ResultsContextProps } from 'context/results-context';
-import { ScriptContext, ScriptContextProps } from 'context/script-context';
-import { ScriptsContext, ScriptsContextProps } from 'containers/App/scripts-context';
-import { ClusterContext, ClusterContextProps } from 'common/cluster-context';
-import { GQLClusterStatus as ClusterStatus } from 'types/schema';
+import { DARK_THEME } from 'app/components';
+import { LayoutContext, LayoutContextProps } from 'app/context/layout-context';
+import { LiveTourContext, LiveTourContextProps } from 'app/containers/App/live-tour';
+import { ResultsContext, ResultsContextProps } from 'app/context/results-context';
+import { ScriptContext, ScriptContextProps } from 'app/context/script-context';
+import { ScriptsContext, ScriptsContextProps } from 'app/containers/App/scripts-context';
+import { ClusterContext, ClusterContextProps } from 'app/common/cluster-context';
+import { GQLClusterStatus as ClusterStatus } from 'app/types/schema';
 import { MockPixieAPIContextProvider } from './api-context-mock';
 
 interface MockProps {

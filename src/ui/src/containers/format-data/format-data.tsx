@@ -23,14 +23,14 @@ import {
   withStyles,
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
-import { formatBoolData, formatFloat64Data, formatUInt128Protobuf } from 'utils/format-data';
+import { formatBoolData, formatFloat64Data, formatUInt128Protobuf } from 'app/utils/format-data';
 import {
   GaugeLevel,
   getCPULevel,
   getLatencyNSLevel,
-} from 'utils/metric-thresholds';
-import { buildClass } from 'components';
-import { DataType, SemanticType } from 'types/generated/vizierapi_pb';
+} from 'app/utils/metric-thresholds';
+import { buildClass } from 'app/components';
+import { DataType, SemanticType } from 'app/types/generated/vizierapi_pb';
 
 const JSON_INDENT_PX = 16;
 

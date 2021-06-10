@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { GQLClusterInfo as Cluster, GQLClusterStatus as ClusterStatus } from 'types/schema';
+import { GQLClusterInfo as Cluster, GQLClusterStatus as ClusterStatus } from 'app/types/schema';
 import { selectClusterName } from './cluster-info';
 
 describe('selectCluster', () => {

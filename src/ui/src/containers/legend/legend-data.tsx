@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { COLOR_SCALE } from 'containers/live/convert-to-vega-spec';
+import { COLOR_SCALE } from 'app/containers/live/convert-to-vega-spec';
 import * as _ from 'lodash';
 import { View } from 'vega-typings';
 

@@ -101,8 +101,8 @@ const webpackConfig = {
     proxy: [],
   },
   entry: {
-    main: 'app.tsx',
-    config: ['flags.js', 'segment.js'],
+    main: './app.tsx',
+    config: ['./flags.js', './segment.js'],
   },
   module: {
     rules: [
@@ -182,12 +182,17 @@ const webpackConfig = {
       '.webpack.js',
       '.png',
     ],
-    modules: ['node_modules', resolve('./src'), resolve('./assets')],
     alias: {
       configurable: [
         resolve(__dirname, 'src/configurables/private/'),
         resolve(__dirname, 'src/configurables/base/'),
       ],
+      'app/*': [
+        resolve(__dirname, 'src/'),
+      ],
+      'assets/*': [
+        resolve(__dirname, 'assets/'),
+      ]
     },
   },
   optimization: {

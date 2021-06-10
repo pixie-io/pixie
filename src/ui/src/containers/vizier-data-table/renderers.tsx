@@ -28,24 +28,24 @@ import {
   JSONData,
   PercentRenderer,
   PortRenderer, ThroughputBytesRenderer, ThroughputRenderer,
-} from 'containers/format-data/format-data';
+} from 'app/containers/format-data/format-data';
 import {
   EntityLink,
   isEntityType,
   ScriptReference,
   STATUS_TYPES,
   toStatusIndicator,
-} from 'containers/live-widgets/utils';
-import { QuantilesBoxWhisker, SelectedPercentile } from 'components';
-import { DataType, SemanticType } from 'types/generated/vizierapi_pb';
-import { Arguments } from 'utils/args-utils';
+} from 'app/containers/live-widgets/utils';
+import { QuantilesBoxWhisker, SelectedPercentile } from 'app/components';
+import { DataType, SemanticType } from 'app/types/generated/vizierapi_pb';
+import { Arguments } from 'app/utils/args-utils';
 import {
   getDataRenderer,
   looksLikeAlertCol,
   looksLikeCPUCol,
   looksLikeLatencyCol,
-} from 'utils/format-data';
-import { getLatencyNSLevel, getColor } from 'utils/metric-thresholds';
+} from 'app/utils/format-data';
+import { getLatencyNSLevel, getColor } from 'app/utils/metric-thresholds';
 import { Theme } from '@material-ui/core/styles';
 import { ColumnDisplayInfo, QuantilesDisplayState } from './column-display-info';
 

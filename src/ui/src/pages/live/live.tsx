@@ -18,8 +18,8 @@
 
 import * as React from 'react';
 
-import { EditIcon, Footer, scrollbarStyles } from 'components';
-import { GQLClusterStatus } from 'types/schema';
+import { EditIcon, Footer, scrollbarStyles } from 'app/components';
+import { GQLClusterStatus } from 'app/types/schema';
 import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import {
@@ -28,27 +28,27 @@ import {
 import MoveIcon from '@material-ui/icons/OpenWith';
 
 import { Copyright } from 'configurable/copyright';
-import { ClusterContext } from 'common/cluster-context';
-import { DataDrawerContextProvider } from 'context/data-drawer-context';
-import EditorContextProvider, { EditorContext } from 'context/editor-context';
-import { LayoutContext, LayoutContextProvider } from 'context/layout-context';
-import { ParsedScript, ScriptContext, ScriptContextProvider } from 'context/script-context';
-import { ResultsContextProvider } from 'context/results-context';
+import { ClusterContext } from 'app/common/cluster-context';
+import { DataDrawerContextProvider } from 'app/context/data-drawer-context';
+import EditorContextProvider, { EditorContext } from 'app/context/editor-context';
+import { LayoutContext, LayoutContextProvider } from 'app/context/layout-context';
+import { ParsedScript, ScriptContext, ScriptContextProvider } from 'app/context/script-context';
+import { ResultsContextProvider } from 'app/context/results-context';
 
-import { ClusterInstructions } from 'containers/App/deploy-instructions';
-import NavBars from 'containers/App/nav-bars';
-import { SCRATCH_SCRIPT } from 'containers/App/scripts-context';
-import { DataDrawerSplitPanel } from 'containers/data-drawer/data-drawer';
-import { EditorSplitPanel } from 'containers/editor/editor';
-import Canvas from 'containers/live/canvas';
-import LiveViewBreadcrumbs from 'containers/live/breadcrumbs';
-import { ScriptLoader } from 'containers/live/script-loader';
-import LiveViewShortcutsProvider from 'containers/live/shortcuts';
-import { CONTACT_ENABLED } from 'containers/constants';
-import ExecuteScriptButton from 'containers/live/execute-button';
-import ClusterSelector from 'containers/live/cluster-selector';
-import { LiveTourContextProvider } from 'containers/App/live-tour';
-import { PixieAPIClient, PixieAPIContext } from 'api';
+import { ClusterInstructions } from 'app/containers/App/deploy-instructions';
+import NavBars from 'app/containers/App/nav-bars';
+import { SCRATCH_SCRIPT } from 'app/containers/App/scripts-context';
+import { DataDrawerSplitPanel } from 'app/containers/data-drawer/data-drawer';
+import { EditorSplitPanel } from 'app/containers/editor/editor';
+import Canvas from 'app/containers/live/canvas';
+import LiveViewBreadcrumbs from 'app/containers/live/breadcrumbs';
+import { ScriptLoader } from 'app/containers/live/script-loader';
+import LiveViewShortcutsProvider from 'app/containers/live/shortcuts';
+import { CONTACT_ENABLED } from 'app/containers/constants';
+import ExecuteScriptButton from 'app/containers/live/execute-button';
+import ClusterSelector from 'app/containers/live/cluster-selector';
+import { LiveTourContextProvider } from 'app/containers/App/live-tour';
+import { PixieAPIClient, PixieAPIContext } from 'app/api';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {

@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { buildClass } from 'utils/build-class';
+import { buildClass } from 'app/utils/build-class';
 import * as React from 'react';
 import { DraggableCore } from 'react-draggable';
 import Menu from '@material-ui/core/Menu';
@@ -48,12 +48,12 @@ import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 import MenuIcon from '@material-ui/icons/Menu';
 import { CSSProperties, MutableRefObject } from 'react';
-import { clamp } from 'utils/math';
-import withAutoSizer, { WithAutoSizerProps } from 'utils/autosizer';
-import { ExpandedIcon } from 'components/icons/expanded';
-import { UnexpandedIcon } from 'components/icons/unexpanded';
+import { clamp } from 'app/utils/math';
+import withAutoSizer, { WithAutoSizerProps } from 'app/utils/autosizer';
+import { ExpandedIcon } from 'app/components/icons/expanded';
+import { UnexpandedIcon } from 'app/components/icons/unexpanded';
 import { Button, Checkbox, FormControlLabel } from '@material-ui/core';
-import { useScrollPosition } from 'utils/use-scroll-position';
+import { useScrollPosition } from 'app/utils/use-scroll-position';
 import {
   MAX_COL_PX_WIDTH,
   MIN_COL_PX_WIDTH,

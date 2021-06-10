@@ -16,8 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SelectedPercentile } from 'components';
-import { DataType, Relation, SemanticType } from 'types/generated/vizierapi_pb';
+import { SelectedPercentile } from 'app/components';
+import { DataType, Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
 
 export interface QuantilesDisplayState {
   selectedPercentile: SelectedPercentile;

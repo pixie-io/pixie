@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { buildClass, scrollbarStyles, Footer } from 'components';
+import { buildClass, scrollbarStyles, Footer } from 'app/components';
 import { Copyright } from 'configurable/copyright';
 
 import {
@@ -25,8 +25,8 @@ import {
 import { createStyles } from '@material-ui/styles';
 
 import * as React from 'react';
-import { LiveViewButton } from 'containers/admin/utils';
-import NavBars from 'containers/App/nav-bars';
+import { LiveViewButton } from 'app/containers/admin/utils';
+import NavBars from 'app/containers/App/nav-bars';
 
 import licenseJson from 'configurable/licenses.json';
 

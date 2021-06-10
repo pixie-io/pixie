@@ -18,12 +18,12 @@
 
 import * as React from 'react';
 import { configure, GlobalHotKeys } from 'react-hotkeys';
-import { isMac } from 'utils/detect-os';
+import { isMac } from 'app/utils/detect-os';
 
 import Card from '@material-ui/core/Card';
 import Modal from '@material-ui/core/Modal';
 import { makeStyles, Theme } from '@material-ui/core/styles';
-import { Handlers, KeyMap, ShortcutsContextProps } from 'context/shortcuts-context';
+import { Handlers, KeyMap, ShortcutsContextProps } from 'app/context/shortcuts-context';
 import { createStyles } from '@material-ui/styles';
 
 type LiveHotKeyAction =

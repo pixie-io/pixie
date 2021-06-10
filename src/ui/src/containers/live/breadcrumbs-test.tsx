@@ -21,7 +21,7 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { render } from 'enzyme';
 import * as React from 'react';
-import { MockLiveContextProvider } from 'testing/mocks/live-context-mock';
+import { MockLiveContextProvider } from 'app/testing/mocks/live-context-mock';
 import LiveViewBreadcrumbs from './breadcrumbs';
 
 describe('Live view breadcrumbs', () => {

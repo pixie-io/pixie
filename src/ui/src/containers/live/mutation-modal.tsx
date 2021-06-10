@@ -26,15 +26,15 @@ import {
   Theme, withStyles, WithStyles,
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
-import { MutationInfo, LifeCycleState } from 'types/generated/vizierapi_pb';
-import { StatusCell } from 'components';
+import { MutationInfo, LifeCycleState } from 'app/types/generated/vizierapi_pb';
+import { StatusCell } from 'app/components';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
 import { CircularProgress } from '@material-ui/core';
-import { ScriptContext } from 'context/script-context';
+import { ScriptContext } from 'app/context/script-context';
 
-import * as moonwalkerSVG from '../../../assets/images/moonwalker.svg';
+import * as moonwalkerSVG from 'assets/images/moonwalker.svg';
 
 const styles = ({ spacing, typography, palette }: Theme) => createStyles({
   mutationDisplay: {

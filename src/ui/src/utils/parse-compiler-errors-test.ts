@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CompilerError, ErrorDetails, Status } from 'types/generated/vizierapi_pb';
+import { CompilerError, ErrorDetails, Status } from 'app/types/generated/vizierapi_pb';
 
 import { ParseCompilerErrors } from './parse-compiler-errors';
 

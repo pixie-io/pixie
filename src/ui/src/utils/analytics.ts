@@ -18,8 +18,8 @@
 
 /// <reference types="@types/segment-analytics" />
 
-import { ANALYTICS_ENABLED, SEGMENT_UI_WRITE_KEY } from 'containers/constants';
-import { PIXIE_CLOUD_VERSION, isValidAnalytics } from 'utils/env';
+import { ANALYTICS_ENABLED, SEGMENT_UI_WRITE_KEY } from 'app/containers/constants';
+import { PIXIE_CLOUD_VERSION, isValidAnalytics } from 'app/utils/env';
 
 declare global {
   interface Window {

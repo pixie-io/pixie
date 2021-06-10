@@ -17,7 +17,7 @@
  */
 
 import * as React from 'react';
-import { UsernamePasswordButton } from 'components';
+import { UsernamePasswordButton } from 'app/components';
 import {
   makeStyles,
 } from '@material-ui/core';

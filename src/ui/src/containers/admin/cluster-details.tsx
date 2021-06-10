@@ -19,11 +19,11 @@
 import * as React from 'react';
 
 import { gql, useQuery } from '@apollo/client';
-import { Breadcrumbs, StatusCell, StatusGroup } from 'components';
+import { Breadcrumbs, StatusCell, StatusGroup } from 'app/components';
 import { distanceInWords } from 'date-fns';
 import { useHistory, useParams } from 'react-router';
 import { Link } from 'react-router-dom';
-import { dataFromProto } from 'utils/result-data-utils';
+import { dataFromProto } from 'app/utils/result-data-utils';
 
 import { Theme, makeStyles } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
@@ -38,17 +38,17 @@ import TableRow from '@material-ui/core/TableRow';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 
-import { ExecutionStateUpdate, PixieAPIContext, VizierQueryResult } from 'api';
+import { ExecutionStateUpdate, PixieAPIContext, VizierQueryResult } from 'app/api';
 import {
   GQLClusterInfo,
   GQLClusterStatus as ClusterStatus,
   GQLPodStatus as PodStatus,
   GQLContainerStatus as ContainerStatus,
-} from 'types/schema';
+} from 'app/types/schema';
 
 import { BehaviorSubject } from 'rxjs';
 import { filter, tap } from 'rxjs/operators';
-import { ClusterContext, ClusterContextProps, useClusterConfig } from 'common/cluster-context';
+import { ClusterContext, ClusterContextProps, useClusterConfig } from 'app/common/cluster-context';
 import {
   AdminTooltip, agentStatusGroup, clusterStatusGroup, containerStatusGroup,
   convertHeartbeatMS, getClusterDetailsURL, podStatusGroup, StyledLeftTableCell,

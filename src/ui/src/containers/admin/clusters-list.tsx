@@ -17,7 +17,7 @@
  */
 
 import { gql, useQuery } from '@apollo/client';
-import { StatusCell, StatusGroup } from 'components';
+import { StatusCell, StatusGroup } from 'app/components';
 import { Theme, withStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
 import Table from '@material-ui/core/Table';
@@ -26,9 +26,9 @@ import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
-import { GaugeLevel } from 'utils/metric-thresholds';
+import { GaugeLevel } from 'app/utils/metric-thresholds';
 
-import { GQLClusterInfo } from 'types/schema';
+import { GQLClusterInfo } from 'app/types/schema';
 import {
   AdminTooltip, clusterStatusGroup, convertHeartbeatMS, getClusterDetailsURL,
   StyledTableCell, StyledTableHeaderCell, StyledLeftTableCell, StyledRightTableCell,

@@ -26,7 +26,7 @@ import {
 } from '@material-ui/core';
 import { createStyles } from '@material-ui/styles';
 
-import { PixienautBox, PixienautImage } from 'components/auth/pixienaut-box';
+import { PixienautBox, PixienautImage } from 'app/components/auth/pixienaut-box';
 
 const useStyles = makeStyles(({ spacing, typography }: Theme) => createStyles({
   button: {

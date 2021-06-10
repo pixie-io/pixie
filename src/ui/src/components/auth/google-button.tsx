@@ -24,7 +24,7 @@ import {
   makeStyles,
 } from '@material-ui/core';
 import { createStyles } from '@material-ui/styles';
-import { GoogleIcon } from 'components/icons/google';
+import { GoogleIcon } from 'app/components/icons/google';
 
 const useStyles = makeStyles(({ spacing }: Theme) => createStyles({
   button: {

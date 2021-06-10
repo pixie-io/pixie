@@ -18,10 +18,10 @@
 
 import { gql, useMutation } from '@apollo/client';
 import * as React from 'react';
-import { OAUTH_PROVIDER } from 'containers/constants';
-import { Form } from 'components';
+import { OAUTH_PROVIDER } from 'app/containers/constants';
+import { Form } from 'app/components';
 
-import { GQLUserInvite } from 'types/schema';
+import { GQLUserInvite } from 'app/types/schema';
 import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 

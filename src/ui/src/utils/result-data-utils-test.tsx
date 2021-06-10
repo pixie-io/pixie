@@ -18,8 +18,8 @@
 
 import {
   Column, Float64Column, Int64Column, Relation, RowBatchData, Time64NSColumn,
-} from 'types/generated/vizierapi_pb';
-import { milliToNanoSeconds } from 'utils/time';
+} from 'app/types/generated/vizierapi_pb';
+import { milliToNanoSeconds } from 'app/utils/time';
 
 import * as ResultDataUtils from './result-data-utils';
 
