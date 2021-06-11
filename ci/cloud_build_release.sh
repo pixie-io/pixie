@@ -21,19 +21,26 @@ printenv
 
 usage() {
     echo "Usage: $0 [-r]"
-    echo " -r : Create a prod cloud release."
+    echo " -r : Create a prod proprietary cloud release."
+    echo " -p : Create a public cloud release."
 }
 
 parse_args() {
   while test $# -gt 0; do
       case "$1" in
         -r) RELEASE=true
+            prod="True"
+            shift
+            ;;
+        -p) PUBLIC=true
             shift
             ;;
         *)  usage ;;
       esac
   done
 }
+
+prod="False"
 
 parse_args "$@"
 
@@ -42,24 +49,30 @@ image_tag=$(date +%s)
 
 echo "The image tag is: ${image_tag}"
 
-public="False"
-if [[ "$RELEASE" == "true" ]]; then
-  public="True"
+# We are building the OSS images/YAMLs. In this case, we only want to push the images but not deploy the YAMLs.
+# TODO(vihang): Generating the licenses requires Github credentials which are not included in the OSS repo. Re-enable
+# stamping once this is resolved.
+if [[ "$PUBLIC" == "true" ]]; then
+  bazel run -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --define BUNDLE_VERSION="${image_tag}" \
+      --define public=True //k8s/cloud:cloud_images_push
+  exit 0
 fi
 
-# Build and push images to registry.
 bazel run --stamp -c opt --action_env=GOOGLE_APPLICATION_CREDENTIALS --define BUNDLE_VERSION="${image_tag}" \
-    --stamp --define public="${public}" //k8s/cloud:cloud_images_push
+    --stamp --define prod="${prod}" //k8s/cloud:cloud_images_push
 
-yaml_path="${repo_path}/bazel-bin/k8s/cloud/pixie_dev_cloud.yaml"
-if [[ "$public" == "True" ]]; then 
+yaml_path="${repo_path}/bazel-bin/k8s/cloud/pixie_staging_cloud.yaml"
+# Build prod YAMLs.
+if [[ "$RELEASE" == "true" ]]; then
+  yaml_path="${repo_path}/bazel-bin/k8s/cloud/pixie_prod_cloud.yaml"
   bazel build --stamp -c opt --define BUNDLE_VERSION="${image_tag}" \
     --stamp //k8s/cloud:prod_cloud_yamls
-  yaml_path="${repo_path}/bazel-bin/k8s/cloud/pixie_prod_cloud.yaml"
-else
+else # Build staging YAMLs.
   bazel build --stamp -c opt --define BUNDLE_VERSION="${image_tag}" \
-    --stamp //k8s/cloud:dev_cloud_yamls
+    --stamp //k8s/cloud:staging_cloud_yamls
 fi
 
 kubectl apply -f "$yaml_path"
+
+
 

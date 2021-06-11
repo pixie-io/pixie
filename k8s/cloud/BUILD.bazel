@@ -16,7 +16,7 @@
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "container_push")
-load("//k8s/vizier:images.bzl", "generate_cloud_yamls", "image_map_with_bundle_version")
+load("//bazel:images.bzl", "generate_cloud_yamls", "image_map_with_bundle_version")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -35,12 +35,17 @@ CLOUD_IMAGE_MAP = {
     "gcr.io/pixie-oss/pixie-dev/cloud/vzmgr_server_image": "//src/cloud/vzmgr:vzmgr_server_image",
 }
 
+public_image_replacement = {"gcr.io/pixie-oss/pixie-dev": "gcr.io/pixie-oss/pixie-prod"}
+
+proprietary_image_replacement = {"gcr.io/pixie-oss/pixie-dev": "gcr.io/pl-dev-infra"}
+
 generate_cloud_yamls(
-    name = "dev_cloud_yamls",
+    name = "staging_cloud_yamls",
     srcs = glob(["**/*.yaml"]),
-    out = "pixie_dev_cloud.yaml",
+    out = "pixie_staging_cloud.yaml",
     image_map = CLOUD_IMAGE_MAP,
-    public = False,
+    replace = proprietary_image_replacement,
+    yaml_dir = "staging",
 )
 
 generate_cloud_yamls(
@@ -48,29 +53,57 @@ generate_cloud_yamls(
     srcs = glob(["**/*.yaml"]),
     out = "pixie_prod_cloud.yaml",
     image_map = CLOUD_IMAGE_MAP,
-    public = True,
+    replace = proprietary_image_replacement,
+    yaml_dir = "prod",
+)
+
+container_bundle(
+    name = "staging_cloud_images_bundle",
+    images = image_map_with_bundle_version(
+        image_map = CLOUD_IMAGE_MAP,
+        replace = proprietary_image_replacement,
+        tag_latest = False,
+    ),
 )
 
 container_bundle(
     name = "prod_cloud_images_bundle",
-    images = image_map_with_bundle_version(CLOUD_IMAGE_MAP, True, False),
+    images = image_map_with_bundle_version(
+        image_map = CLOUD_IMAGE_MAP,
+        replace = proprietary_image_replacement,
+        tag_latest = False,
+    ),
 )
 
 container_bundle(
-    name = "dev_cloud_images_bundle",
-    images = image_map_with_bundle_version(CLOUD_IMAGE_MAP, False, False),
+    name = "public_cloud_images_bundle",
+    images = image_map_with_bundle_version(
+        image_map = CLOUD_IMAGE_MAP,
+        replace = public_image_replacement,
+        tag_latest = True,
+    ),
 )
 
 container_push(
     name = "cloud_images_push",
     bundle = select({
-        ":public": ":prod_cloud_images_bundle",
-        "//conditions:default": ":dev_cloud_images_bundle",
+        ":prod": ":prod_cloud_images_bundle",
+        ":public": ":public_cloud_images_bundle",
+        "//conditions:default": ":staging_cloud_images_bundle",
     }),
     format = "Docker",
 )
 
 config_setting(
     name = "public",
-    values = {"define": "public=True"},
+    values = {
+        "define": "public=True",
+    },
+)
+
+config_setting(
+    name = "prod",
+    values = {
+        "define": "prod=True",
+    },
 )

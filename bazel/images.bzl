@@ -14,39 +14,30 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-private_registry = "gcr.io/pixie-oss/pixie-dev"
-public_registry = "gcr.io/pixie-oss/pixie-prod"
-
-# TODO(michellenguyen, PP-2630): Old vizier versions expect update_job images in the
-# old registry. Remove 5/20/21.
-old_public_registry = "gcr.io/pixie-prod"
-old_private_registry = "gcr.io/pl-dev-infra"
-
-def image_map_with_bundle_version(image_map, public, old_registry):
+def image_map_with_bundle_version(image_map, replace, tag_latest):
     with_version = {}
 
     for k, v in image_map.items():
         image_tag = k
 
-        if not public and old_registry:
-            image_tag = image_tag.replace(private_registry, old_private_registry)
-        if public and not old_registry:
-            image_tag = image_tag.replace(private_registry, public_registry)
-        if public and old_registry:
-            image_tag = image_tag.replace(private_registry, old_public_registry)
+        for old, new in replace.items():
+            image_tag = image_tag.replace(old, new)
         k_with_version = "{0}:{1}".format(image_tag, "$(BUNDLE_VERSION)")
         with_version[k_with_version] = v
 
+        if tag_latest:
+            k_with_version = "{0}:latest".format(image_tag)
+            with_version[k_with_version] = v
+
     return with_version
 
-def generate_cloud_yamls(name, srcs, out, image_map, public, **kwargs):
+def generate_cloud_yamls(name, srcs, out, image_map, yaml_dir, replace):
     kustomize_edits = []
-    kustomize_dir = "prod" if public else "staging"
 
     for k in image_map.keys():
         image_path = k
-        if public:
-            image_path = image_path.replace(private_registry, public_registry)
+        for old, new in replace.items():
+            image_path = image_path.replace(old, new)
         kustomize_edits.append("kustomize edit set image {0}={1}:{2}".format(k, image_path, "$(BUNDLE_VERSION)"))
 
     merged_edits = "\n".join(kustomize_edits)
@@ -64,15 +55,15 @@ def generate_cloud_yamls(name, srcs, out, image_map, public, **kwargs):
         popd
 
         kustomize build $$T/cloud/{0} -o $@
-        """.format(kustomize_dir, merged_edits),
+        """.format(yaml_dir, merged_edits),
     )
 
-def generate_vizier_yamls(name, srcs, out, image_map, public, **kwargs):
+def generate_vizier_yamls(name, srcs, out, image_map, replace):
     kustomize_edits = []
     for k in image_map.keys():
         image_path = k
-        if public:
-            image_path = image_path.replace(private_registry, public_registry)
+        for old, new in replace.items():
+            image_path = image_path.replace(old, new)
         kustomize_edits.append("kustomize edit set image {0}={1}:{2}".format(k, image_path, "$(BUNDLE_VERSION)"))
 
     merged_edits = "\n".join(kustomize_edits)
@@ -93,12 +84,12 @@ def generate_vizier_yamls(name, srcs, out, image_map, public, **kwargs):
         """.format(merged_edits),
     )
 
-def generate_vizier_bootstrap_yamls(name, srcs, out, image_map, public, **kwargs):
+def generate_vizier_bootstrap_yamls(name, srcs, out, image_map, replace):
     kustomize_edits = []
     for k in image_map.keys():
         image_path = k
-        if public:
-            image_path = image_path.replace(private_registry, public_registry)
+        for old, new in replace.items():
+            image_path = image_path.replace(old, new)
         kustomize_edits.append("kustomize edit set image {0}={1}:{2}".format(k, image_path, "$(BUNDLE_VERSION)"))
 
     merged_edits = "\n".join(kustomize_edits)
@@ -120,12 +111,12 @@ def generate_vizier_bootstrap_yamls(name, srcs, out, image_map, public, **kwargs
         """.format(merged_edits),
     )
 
-def generate_vizier_metadata_persist_yamls(name, srcs, out, image_map, public, **kwargs):
+def generate_vizier_metadata_persist_yamls(name, srcs, out, image_map, replace):
     kustomize_edits = []
     for k in image_map.keys():
         image_path = k
-        if public:
-            image_path = image_path.replace(private_registry, public_registry)
+        for old, new in replace.items():
+            image_path = image_path.replace(old, new)
         kustomize_edits.append("kustomize edit set image {0}={1}:{2}".format(k, image_path, "$(BUNDLE_VERSION)"))
 
     merged_edits = "\n".join(kustomize_edits)

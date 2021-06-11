@@ -753,6 +753,16 @@ if (isMainRun || isOSSMainRun) {
   }
 }
 
+if (isOSSMainRun) {
+  builders['Build Cloud Images'] = {
+    WithSourceCodeK8s {
+      container('pxbuild') {
+        sh './ci/cloud_build_release.sh -p'
+      }
+    }
+  }
+}
+
 if (isMainRun) {
   // Only run LSIF on main runs.
   builders['LSIF (sourcegraph)'] = {

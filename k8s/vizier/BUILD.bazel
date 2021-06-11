@@ -17,7 +17,7 @@
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "container_push")
-load(":images.bzl", "generate_vizier_bootstrap_yamls", "generate_vizier_metadata_persist_yamls", "generate_vizier_yamls", "image_map_with_bundle_version")
+load("//bazel:images.bzl", "generate_vizier_bootstrap_yamls", "generate_vizier_metadata_persist_yamls", "generate_vizier_yamls", "image_map_with_bundle_version")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -32,20 +32,22 @@ VIZIER_IMAGE_MAP = {
     "gcr.io/pixie-oss/pixie-dev/vizier/vizier_updater_image": "//src/utils/pixie_updater:vizier_updater_image",
 }
 
-generate_vizier_yamls(
-    name = "private_vizier_etcd_metadata_prod",
-    srcs = glob(["**/*.yaml"]),
-    out = "private_vizier_etcd_metadata_prod.yaml",
-    image_map = VIZIER_IMAGE_MAP,
-    public = False,
-)
+public_image_replacement = {"gcr.io/pixie-oss/pixie-dev": "gcr.io/pixie-oss/pixie-prod"}
 
 generate_vizier_yamls(
     name = "public_vizier_etcd_metadata_prod",
     srcs = glob(["**/*.yaml"]),
     out = "public_vizier_etcd_metadata_prod.yaml",
     image_map = VIZIER_IMAGE_MAP,
-    public = True,
+    replace = public_image_replacement,
+)
+
+generate_vizier_yamls(
+    name = "private_vizier_etcd_metadata_prod",
+    srcs = glob(["**/*.yaml"]),
+    out = "private_vizier_etcd_metadata_prod.yaml",
+    image_map = VIZIER_IMAGE_MAP,
+    replace = {},
 )
 
 generate_vizier_bootstrap_yamls(
@@ -53,7 +55,7 @@ generate_vizier_bootstrap_yamls(
     srcs = glob(["**/*.yaml"]),
     out = "public_vizier_bootstrap_prod.yaml",
     image_map = VIZIER_IMAGE_MAP,
-    public = True,
+    replace = public_image_replacement,
 )
 
 generate_vizier_bootstrap_yamls(
@@ -61,7 +63,7 @@ generate_vizier_bootstrap_yamls(
     srcs = glob(["**/*.yaml"]),
     out = "private_vizier_bootstrap_prod.yaml",
     image_map = VIZIER_IMAGE_MAP,
-    public = False,
+    replace = {},
 )
 
 generate_vizier_metadata_persist_yamls(
@@ -69,7 +71,7 @@ generate_vizier_metadata_persist_yamls(
     srcs = glob(["**/*.yaml"]),
     out = "public_vizier_metadata_persist_prod.yaml",
     image_map = VIZIER_IMAGE_MAP,
-    public = True,
+    replace = public_image_replacement,
 )
 
 generate_vizier_metadata_persist_yamls(
@@ -77,27 +79,25 @@ generate_vizier_metadata_persist_yamls(
     srcs = glob(["**/*.yaml"]),
     out = "private_vizier_metadata_persist_prod.yaml",
     image_map = VIZIER_IMAGE_MAP,
-    public = False,
+    replace = {},
 )
 
 container_bundle(
     name = "private_vizier_images_bundle",
-    images = image_map_with_bundle_version(VIZIER_IMAGE_MAP, False, False),
+    images = image_map_with_bundle_version(
+        image_map = VIZIER_IMAGE_MAP,
+        replace = {},
+        tag_latest = False,
+    ),
 )
 
 container_bundle(
     name = "public_vizier_images_bundle",
-    images = image_map_with_bundle_version(VIZIER_IMAGE_MAP, True, False),
-)
-
-container_bundle(
-    name = "private_vizier_images_bundle_old",
-    images = image_map_with_bundle_version(VIZIER_IMAGE_MAP, False, True),
-)
-
-container_bundle(
-    name = "public_vizier_images_bundle_old",
-    images = image_map_with_bundle_version(VIZIER_IMAGE_MAP, True, True),
+    images = image_map_with_bundle_version(
+        image_map = VIZIER_IMAGE_MAP,
+        replace = public_image_replacement,
+        tag_latest = False,
+    ),
 )
 
 container_push(
@@ -105,17 +105,6 @@ container_push(
     bundle = select({
         ":public": ":public_vizier_images_bundle",
         "//conditions:default": ":private_vizier_images_bundle",
-    }),
-    format = "Docker",
-)
-
-# TODO(michellenguyen, PP-2630): Old vizier versions expect update_job images in the
-# old registry. For now, we push to both registries. Remove 5/20/21.
-container_push(
-    name = "vizier_images_push_old",
-    bundle = select({
-        ":public": ":public_vizier_images_bundle_old",
-        "//conditions:default": ":private_vizier_images_bundle_old",
     }),
     format = "Docker",
 )
@@ -129,16 +118,16 @@ pkg_tar(
     name = "vizier_yamls",
     srcs =
         select({
-            ":public": ["//k8s/vizier:public_vizier_bootstrap_prod.yaml"],
-            "//conditions:default": ["//k8s/vizier:private_vizier_bootstrap_prod.yaml"],
-        }) +
-        select({
-            ":public": ["//k8s/vizier:public_vizier_etcd_metadata_prod.yaml"],
-            "//conditions:default": ["//k8s/vizier:private_vizier_etcd_metadata_prod.yaml"],
-        }) +
-        select({
-            ":public": ["//k8s/vizier:public_vizier_metadata_persist_prod.yaml"],
-            "//conditions:default": ["//k8s/vizier:private_vizier_metadata_persist_prod.yaml"],
+            ":public": [
+                "//k8s/vizier:public_vizier_bootstrap_prod.yaml",
+                "//k8s/vizier:public_vizier_etcd_metadata_prod.yaml",
+                "//k8s/vizier:public_vizier_metadata_persist_prod.yaml",
+            ],
+            "//conditions:default": [
+                "//k8s/vizier:private_vizier_bootstrap_prod.yaml",
+                "//k8s/vizier:private_vizier_etcd_metadata_prod.yaml",
+                "//k8s/vizier:private_vizier_metadata_persist_prod.yaml",
+            ],
         }) + [
             "//k8s/vizier_deps:nats_prod",
             "//k8s/vizier_deps:etcd_operator_prod",
