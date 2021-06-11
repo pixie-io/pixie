@@ -109,7 +109,7 @@ BPF_PERCPU_ARRAY(control_map, uint64_t, kNumProtocols);
 // Map from user-space file descriptors to the connections obtained from accept() syscall.
 // Tracks connection from accept() -> close().
 // Key is {tgid, fd}.
-BPF_HASH(conn_info_map, uint64_t, struct conn_info_t);
+BPF_HASH(conn_info_map, uint64_t, struct conn_info_t, 131072);
 
 // Map to indicate which connections (TGID+FD), user-space has disabled.
 // This is tracked separately from conn_info_map to avoid any read-write races.
