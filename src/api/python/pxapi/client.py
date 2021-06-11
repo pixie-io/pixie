@@ -132,14 +132,9 @@ class Conn:
     def _get_grpc_channel(self) -> grpc.aio.Channel:
         """
         Gets the grpc_channel for this connection.
-
-        If the channel exists, will grab from the cache. Otherwise will recreate it.
         """
-        # TODO(PP-2587): Disable channel cache while fixing the global async loop discrepancy issue.
-        # if self._channel_cache is None:
-        #     self._channel_cache = self._create_grpc_channel()
-        # return self._channel_cache
-
+        # Always create GRPC channel. Asyncio channels hold onto loop state and it's unsafe to
+        # cache them, incase the loop changes between connection runs.
         return self._create_grpc_channel()
 
     def _create_grpc_channel(self) -> grpc.aio.Channel:
