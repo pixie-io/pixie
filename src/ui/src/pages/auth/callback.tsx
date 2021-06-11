@@ -32,8 +32,8 @@ import { AuthCallbackMode, GetOAuthProvider } from './utils';
 import { Token } from './oauth-provider';
 
 // Send token header to enable CORS check. Token is still allowed with Pixie CLI.
-const redirectGet = async (url: string, data: { accessToken: string, idToken: string }) => (
-  Axios.get(url, { headers: { token: data.accessToken, id_token: data.idToken } })
+const redirectGet = async (url: string, data: { accessToken: string }) => (
+  Axios.get(url, { headers: { token: data.accessToken } })
 );
 
 type ErrorType = 'internal' | 'auth';
@@ -153,7 +153,7 @@ export const AuthCallbackPage: React.FC = () => {
 
   const sendTokenToCLI = async (accessToken: string, idToken: string, redirectURI: string) => {
     try {
-      const response = await redirectGet(redirectURI, { accessToken, idToken });
+      const response = await redirectGet(redirectURI, { accessToken });
       return response.status === 200 && response.data === 'OK';
     } catch (error) {
       handleHTTPError(error as AxiosError);
@@ -367,8 +367,8 @@ export const AuthCallbackPage: React.FC = () => {
   const loading = !config || config.loading;
   return (
     <BasePage>
-      { loading && renderLoadingMessage()}
-      { !loading && (config.err ? renderError() : renderMessage())}
+      {loading && renderLoadingMessage()}
+      {!loading && (config.err ? renderError() : renderMessage())}
     </BasePage>
   );
 };
