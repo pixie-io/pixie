@@ -205,6 +205,7 @@ void ProcessContainerPIDUpdates(
     }
 
     UPID upid = upid_status.ValueOrDie();
+    upids->emplace(upid);
 
     std::string cmdline = proc_parser.GetPIDCmdline(upid.pid());
     auto pid_info = std::make_unique<PIDInfo>(upid, std::move(cmdline), CID(cid));
