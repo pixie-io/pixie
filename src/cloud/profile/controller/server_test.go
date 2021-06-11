@@ -35,13 +35,14 @@ import (
 
 	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/cloud/profile/controller"
+	"px.dev/pixie/src/cloud/profile/controller/idmanager"
+	mock_idmanager "px.dev/pixie/src/cloud/profile/controller/idmanager/mock"
 	mock_controller "px.dev/pixie/src/cloud/profile/controller/mock"
 	"px.dev/pixie/src/cloud/profile/datastore"
 	"px.dev/pixie/src/cloud/profile/profileenv"
 	"px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/cloud/project_manager/projectmanagerpb"
 	mock_projectmanager "px.dev/pixie/src/cloud/project_manager/projectmanagerpb/mock"
-	"px.dev/pixie/src/cloud/shared/idprovider/testutils"
 	"px.dev/pixie/src/shared/services/authcontext"
 	svcutils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils"
@@ -1194,8 +1195,7 @@ func CreateTestContext() context.Context {
 	return authcontext.NewContext(context.Background(), sCtx)
 }
 
-// TODO(philkuz,PP-2668) Re-enable test when kratostest is less flakey.
-func DISABLEDTestServerInviteUser(t *testing.T) {
+func TestServerInviteUser(t *testing.T) {
 	userID := uuid.Must(uuid.NewV4())
 
 	orgID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
@@ -1249,32 +1249,27 @@ func DISABLEDTestServerInviteUser(t *testing.T) {
 
 			d := mock_controller.NewMockDatastore(ctrl)
 
-			kratos, err := testutils.NewKratosServer()
-			require.NoError(t, err)
-
-			defer kratos.CleanUp()
-
-			client, closeSrv, err := kratos.Serve()
-			require.NoError(t, err)
-			defer closeSrv()
-			assert.NotNil(t, client)
+			client := mock_idmanager.NewMockManager(ctrl)
 			s := controller.NewServer(nil, d, nil, client)
 
 			req := &profilepb.InviteUserRequest{
-				MustCreateUser: tc.mustCreate,
-				OrgID:          utils.ProtoFromUUID(orgID),
-				Email:          "bobloblaw@lawblog.com",
-				FirstName:      "Bob",
-				LastName:       "Loblaw",
+				MustCreateUser:   tc.mustCreate,
+				OrgID:            utils.ProtoFromUUID(orgID),
+				Email:            "bobloblaw@lawblog.com",
+				FirstName:        "Bob",
+				LastName:         "Loblaw",
+				IdentityProvider: "kratos",
 			}
 
 			userInfo := &datastore.UserInfo{
-				OrgID:      orgID,
-				Username:   req.Email,
-				FirstName:  req.FirstName,
-				LastName:   req.LastName,
-				Email:      req.Email,
-				IsApproved: !tc.EnableApprovals,
+				ID:               userID,
+				OrgID:            orgID,
+				Username:         req.Email,
+				FirstName:        req.FirstName,
+				LastName:         req.LastName,
+				Email:            req.Email,
+				IsApproved:       !tc.EnableApprovals,
+				IdentityProvider: "kratos",
 			}
 
 			if !tc.doesUserExist {
@@ -1288,7 +1283,15 @@ func DISABLEDTestServerInviteUser(t *testing.T) {
 					Return(nil, datastore.ErrUserNotFound)
 				// We always create a user if one does not exist.
 				d.EXPECT().
-					CreateUser(userInfo).
+					CreateUser(&datastore.UserInfo{
+						OrgID:            orgID,
+						Username:         req.Email,
+						FirstName:        req.FirstName,
+						LastName:         req.LastName,
+						Email:            req.Email,
+						IsApproved:       !tc.EnableApprovals,
+						IdentityProvider: "kratos",
+					}).
 					Return(userID, nil)
 				d.EXPECT().
 					GetUser(userID).
@@ -1296,12 +1299,14 @@ func DISABLEDTestServerInviteUser(t *testing.T) {
 				d.EXPECT().
 					UpdateUser(
 						&datastore.UserInfo{
-							OrgID:      orgID,
-							Username:   req.Email,
-							FirstName:  req.FirstName,
-							LastName:   req.LastName,
-							Email:      req.Email,
-							IsApproved: true,
+							ID:               userID,
+							OrgID:            orgID,
+							Username:         req.Email,
+							FirstName:        req.FirstName,
+							LastName:         req.LastName,
+							Email:            req.Email,
+							IsApproved:       true,
+							IdentityProvider: "kratos",
 						}).
 					Return(nil)
 			} else {
@@ -1309,11 +1314,25 @@ func DISABLEDTestServerInviteUser(t *testing.T) {
 					GetUserByEmail("bobloblaw@lawblog.com").
 					Return(userInfo, nil)
 			}
+			if !tc.doesUserExist || !tc.mustCreate {
+				client.EXPECT().
+					CreateInviteLink(
+						gomock.Any(),
+						&idmanager.CreateInviteLinkRequest{
+							Email:    req.Email,
+							PLOrgID:  orgID.String(),
+							PLUserID: userID.String(),
+						},
+					).Return(&idmanager.CreateInviteLinkResponse{
+					Email:      req.Email,
+					InviteLink: "self-service/recovery/methods",
+				}, nil)
+			}
 
 			resp, err := s.InviteUser(ctx, req)
 
 			if tc.err == nil {
-				require.NoError(t, tc.err)
+				require.NoError(t, err)
 				assert.Equal(t, resp.Email, req.Email)
 				assert.Regexp(t, "self-service/recovery/methods", resp.InviteLink)
 			} else {

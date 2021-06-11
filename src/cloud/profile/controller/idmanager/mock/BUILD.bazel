@@ -17,11 +17,12 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "schema",
-    srcs = [
-        "bindata.gen.go",
-        "schema.go",
+    name = "mock",
+    srcs = ["manager_mock.gen.go"],
+    importpath = "px.dev/pixie/src/cloud/profile/controller/idmanager/mock",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/cloud/profile/controller/idmanager",
+        "@com_github_golang_mock//gomock",
     ],
-    importpath = "px.dev/pixie/src/cloud/shared/idprovider/testutils/schema",
-    visibility = ["//src/cloud/shared/idprovider:__subpackages__"],
 )

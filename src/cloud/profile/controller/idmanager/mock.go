@@ -16,6 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package schema
+package idmanager
 
-//go:generate go-bindata -modtime=1 -ignore=\.go -ignore=\.sh -ignore=\.bazel -pkg=schema -o=bindata.gen.go ./...
+//go:generate mockgen -source=manager.go -destination=mock/manager_mock.gen.go Manager
