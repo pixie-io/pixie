@@ -19,6 +19,7 @@
 // 000009_org_add_updated_created_at.up.sql
 // 000010_user_add_identity_provider.down.sql
 // 000010_user_add_identity_provider.up.sql
+// 000011_user_set_identity_provider_google_oauth2.up.sql
 package schema
 
 import (
@@ -475,6 +476,26 @@ func _000010_user_add_identity_providerUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000011_user_set_identity_provider_google_oauth2UpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x5c\xd0\xb1\x6e\xf3\x30\x0c\x04\xe0\x3d\x4f\x71\x9b\xff\x7f\x70\x5a\x74\x2d\x3a\x04\x6d\xe6\x16\x70\x3a\x17\x4c\x44\x5b\x44\x25\xd1\x90\x28\xa7\x7e\xfb\xc2\x76\x90\xa1\x2b\x09\x1e\xbe\x63\xdb\xa2\x63\x83\xe3\x9e\x6a\x30\x4c\x14\x2a\xc3\x14\xcd\xa0\x3a\x04\x6e\x95\xaa\xf9\xa7\x06\x67\xbe\x50\x2d\x0c\xf3\x52\x20\x05\xe6\x19\x91\x24\x61\xd7\xb6\x28\x75\x1c\x35\x1b\x3b\x88\xe3\x64\x62\x33\xc6\xac\x93\x38\xce\xe8\xb3\x46\x1c\xaa\xf9\xc7\x3d\xde\xbb\x0e\xaf\x41\xab\x43\x2d\x9c\x0b\xae\x62\x7e\x1d\x2e\x7b\xfc\xf3\xb3\xcb\xf4\xf0\x9d\xc9\xb4\xfc\x5f\x83\xaf\x12\x02\x3c\x4d\x2b\x29\x52\xaa\x14\xc2\x8c\xcc\xb9\xa6\x4d\x72\xd1\x18\x29\xb9\x2d\xa9\xd9\x4e\x1b\x48\xbf\xf8\x66\x38\x1e\x83\xce\xec\x96\xa8\x33\xf7\x9a\x6f\xfe\x28\x43\x26\x13\x4d\xe0\x1f\x29\xc6\x6e\xbf\xfb\xfc\x78\x3b\x9c\x8e\x37\x57\x77\x3c\xdd\x9b\x7c\xdd\x9b\xbc\xfc\x7d\xca\xf3\xee\x37\x00\x00\xff\xff\xcd\x78\xda\xed\x3e\x01\x00\x00")
+
+func _000011_user_set_identity_provider_google_oauth2UpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000011_user_set_identity_provider_google_oauth2UpSql,
+		"000011_user_set_identity_provider_google_oauth2.up.sql",
+	)
+}
+
+func _000011_user_set_identity_provider_google_oauth2UpSql() (*asset, error) {
+	bytes, err := _000011_user_set_identity_provider_google_oauth2UpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000011_user_set_identity_provider_google_oauth2.up.sql", size: 318, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -527,25 +548,26 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"000001_create_org_user_tables.down.sql":      _000001_create_org_user_tablesDownSql,
-	"000001_create_org_user_tables.up.sql":        _000001_create_org_user_tablesUpSql,
-	"000002_add_unique_constraint_email.down.sql": _000002_add_unique_constraint_emailDownSql,
-	"000002_add_unique_constraint_email.up.sql":   _000002_add_unique_constraint_emailUpSql,
-	"000003_add_profile_picture.down.sql":         _000003_add_profile_pictureDownSql,
-	"000003_add_profile_picture.up.sql":           _000003_add_profile_pictureUpSql,
-	"000004_add_updated_created_at.down.sql":      _000004_add_updated_created_atDownSql,
-	"000004_add_updated_created_at.up.sql":        _000004_add_updated_created_atUpSql,
-	"000005_create_user_settings_table.down.sql":  _000005_create_user_settings_tableDownSql,
-	"000005_create_user_settings_table.up.sql":    _000005_create_user_settings_tableUpSql,
-	"000006_add_approved_column.down.sql":         _000006_add_approved_columnDownSql,
-	"000006_add_approved_column.up.sql":           _000006_add_approved_columnUpSql,
-	"000007_add_enable_approvals_column.down.sql": _000007_add_enable_approvals_columnDownSql,
-	"000007_add_enable_approvals_column.up.sql":   _000007_add_enable_approvals_columnUpSql,
-	"000008_insert_default_user_value.up.sql":     _000008_insert_default_user_valueUpSql,
-	"000009_org_add_updated_created_at.down.sql":  _000009_org_add_updated_created_atDownSql,
-	"000009_org_add_updated_created_at.up.sql":    _000009_org_add_updated_created_atUpSql,
-	"000010_user_add_identity_provider.down.sql":  _000010_user_add_identity_providerDownSql,
-	"000010_user_add_identity_provider.up.sql":    _000010_user_add_identity_providerUpSql,
+	"000001_create_org_user_tables.down.sql":                 _000001_create_org_user_tablesDownSql,
+	"000001_create_org_user_tables.up.sql":                   _000001_create_org_user_tablesUpSql,
+	"000002_add_unique_constraint_email.down.sql":            _000002_add_unique_constraint_emailDownSql,
+	"000002_add_unique_constraint_email.up.sql":              _000002_add_unique_constraint_emailUpSql,
+	"000003_add_profile_picture.down.sql":                    _000003_add_profile_pictureDownSql,
+	"000003_add_profile_picture.up.sql":                      _000003_add_profile_pictureUpSql,
+	"000004_add_updated_created_at.down.sql":                 _000004_add_updated_created_atDownSql,
+	"000004_add_updated_created_at.up.sql":                   _000004_add_updated_created_atUpSql,
+	"000005_create_user_settings_table.down.sql":             _000005_create_user_settings_tableDownSql,
+	"000005_create_user_settings_table.up.sql":               _000005_create_user_settings_tableUpSql,
+	"000006_add_approved_column.down.sql":                    _000006_add_approved_columnDownSql,
+	"000006_add_approved_column.up.sql":                      _000006_add_approved_columnUpSql,
+	"000007_add_enable_approvals_column.down.sql":            _000007_add_enable_approvals_columnDownSql,
+	"000007_add_enable_approvals_column.up.sql":              _000007_add_enable_approvals_columnUpSql,
+	"000008_insert_default_user_value.up.sql":                _000008_insert_default_user_valueUpSql,
+	"000009_org_add_updated_created_at.down.sql":             _000009_org_add_updated_created_atDownSql,
+	"000009_org_add_updated_created_at.up.sql":               _000009_org_add_updated_created_atUpSql,
+	"000010_user_add_identity_provider.down.sql":             _000010_user_add_identity_providerDownSql,
+	"000010_user_add_identity_provider.up.sql":               _000010_user_add_identity_providerUpSql,
+	"000011_user_set_identity_provider_google_oauth2.up.sql": _000011_user_set_identity_provider_google_oauth2UpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -589,25 +611,26 @@ type bintree struct {
 }
 
 var _bintree = &bintree{nil, map[string]*bintree{
-	"000001_create_org_user_tables.down.sql":      &bintree{_000001_create_org_user_tablesDownSql, map[string]*bintree{}},
-	"000001_create_org_user_tables.up.sql":        &bintree{_000001_create_org_user_tablesUpSql, map[string]*bintree{}},
-	"000002_add_unique_constraint_email.down.sql": &bintree{_000002_add_unique_constraint_emailDownSql, map[string]*bintree{}},
-	"000002_add_unique_constraint_email.up.sql":   &bintree{_000002_add_unique_constraint_emailUpSql, map[string]*bintree{}},
-	"000003_add_profile_picture.down.sql":         &bintree{_000003_add_profile_pictureDownSql, map[string]*bintree{}},
-	"000003_add_profile_picture.up.sql":           &bintree{_000003_add_profile_pictureUpSql, map[string]*bintree{}},
-	"000004_add_updated_created_at.down.sql":      &bintree{_000004_add_updated_created_atDownSql, map[string]*bintree{}},
-	"000004_add_updated_created_at.up.sql":        &bintree{_000004_add_updated_created_atUpSql, map[string]*bintree{}},
-	"000005_create_user_settings_table.down.sql":  &bintree{_000005_create_user_settings_tableDownSql, map[string]*bintree{}},
-	"000005_create_user_settings_table.up.sql":    &bintree{_000005_create_user_settings_tableUpSql, map[string]*bintree{}},
-	"000006_add_approved_column.down.sql":         &bintree{_000006_add_approved_columnDownSql, map[string]*bintree{}},
-	"000006_add_approved_column.up.sql":           &bintree{_000006_add_approved_columnUpSql, map[string]*bintree{}},
-	"000007_add_enable_approvals_column.down.sql": &bintree{_000007_add_enable_approvals_columnDownSql, map[string]*bintree{}},
-	"000007_add_enable_approvals_column.up.sql":   &bintree{_000007_add_enable_approvals_columnUpSql, map[string]*bintree{}},
-	"000008_insert_default_user_value.up.sql":     &bintree{_000008_insert_default_user_valueUpSql, map[string]*bintree{}},
-	"000009_org_add_updated_created_at.down.sql":  &bintree{_000009_org_add_updated_created_atDownSql, map[string]*bintree{}},
-	"000009_org_add_updated_created_at.up.sql":    &bintree{_000009_org_add_updated_created_atUpSql, map[string]*bintree{}},
-	"000010_user_add_identity_provider.down.sql":  &bintree{_000010_user_add_identity_providerDownSql, map[string]*bintree{}},
-	"000010_user_add_identity_provider.up.sql":    &bintree{_000010_user_add_identity_providerUpSql, map[string]*bintree{}},
+	"000001_create_org_user_tables.down.sql":                 &bintree{_000001_create_org_user_tablesDownSql, map[string]*bintree{}},
+	"000001_create_org_user_tables.up.sql":                   &bintree{_000001_create_org_user_tablesUpSql, map[string]*bintree{}},
+	"000002_add_unique_constraint_email.down.sql":            &bintree{_000002_add_unique_constraint_emailDownSql, map[string]*bintree{}},
+	"000002_add_unique_constraint_email.up.sql":              &bintree{_000002_add_unique_constraint_emailUpSql, map[string]*bintree{}},
+	"000003_add_profile_picture.down.sql":                    &bintree{_000003_add_profile_pictureDownSql, map[string]*bintree{}},
+	"000003_add_profile_picture.up.sql":                      &bintree{_000003_add_profile_pictureUpSql, map[string]*bintree{}},
+	"000004_add_updated_created_at.down.sql":                 &bintree{_000004_add_updated_created_atDownSql, map[string]*bintree{}},
+	"000004_add_updated_created_at.up.sql":                   &bintree{_000004_add_updated_created_atUpSql, map[string]*bintree{}},
+	"000005_create_user_settings_table.down.sql":             &bintree{_000005_create_user_settings_tableDownSql, map[string]*bintree{}},
+	"000005_create_user_settings_table.up.sql":               &bintree{_000005_create_user_settings_tableUpSql, map[string]*bintree{}},
+	"000006_add_approved_column.down.sql":                    &bintree{_000006_add_approved_columnDownSql, map[string]*bintree{}},
+	"000006_add_approved_column.up.sql":                      &bintree{_000006_add_approved_columnUpSql, map[string]*bintree{}},
+	"000007_add_enable_approvals_column.down.sql":            &bintree{_000007_add_enable_approvals_columnDownSql, map[string]*bintree{}},
+	"000007_add_enable_approvals_column.up.sql":              &bintree{_000007_add_enable_approvals_columnUpSql, map[string]*bintree{}},
+	"000008_insert_default_user_value.up.sql":                &bintree{_000008_insert_default_user_valueUpSql, map[string]*bintree{}},
+	"000009_org_add_updated_created_at.down.sql":             &bintree{_000009_org_add_updated_created_atDownSql, map[string]*bintree{}},
+	"000009_org_add_updated_created_at.up.sql":               &bintree{_000009_org_add_updated_created_atUpSql, map[string]*bintree{}},
+	"000010_user_add_identity_provider.down.sql":             &bintree{_000010_user_add_identity_providerDownSql, map[string]*bintree{}},
+	"000010_user_add_identity_provider.up.sql":               &bintree{_000010_user_add_identity_providerUpSql, map[string]*bintree{}},
+	"000011_user_set_identity_provider_google_oauth2.up.sql": &bintree{_000011_user_set_identity_provider_google_oauth2UpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
