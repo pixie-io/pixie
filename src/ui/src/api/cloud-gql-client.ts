@@ -73,6 +73,9 @@ export class CloudClient {
         AutocompleteResult: {
           keyFields: ['formattedInput'],
         },
+        UserSetting: {
+          keyFields: ['key'],
+        },
       },
     });
     this.graphQL = new ApolloClient({
