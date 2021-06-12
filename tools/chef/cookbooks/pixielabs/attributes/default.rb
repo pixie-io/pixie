@@ -53,6 +53,7 @@ default['src']                       = {}
 default['lsif-go']                   = {}
 default['golangci-lint']             = {}
 default['helm']                      = {}
+default['opm']                       = {}
 
 
 if node[:platform] == 'ubuntu'
@@ -133,6 +134,16 @@ if node[:platform] == 'ubuntu'
 
   default['helm']['download_path'] = 'https://get.helm.sh/helm-v3.5.2-linux-amd64.tar.gz'
   default['helm']['sha256']        = '01b317c506f8b6ad60b11b1dc3f093276bb703281cb1ae01132752253ec706a2'
+
+  default['opm']['download_path'] =
+    'https://github.com/operator-framework/operator-registry/releases/download/v1.17.3/linux-amd64-opm'
+  default['opm']['sha256']        =
+    '771b72d802ac58b740ac493caf79256b28686907d3578f3b1e1e77b570bda156'
+
+  default['faq']['download_path'] =
+    'https://github.com/jzelinskie/faq/releases/download/0.0.7/faq-linux-amd64'
+  default['faq']['sha256']        =
+    '6c9234d0b2b024bf0e7c845fc092339b51b94e5addeee9612a7219cfd2a7b731'
 elsif node[:platform] == 'mac_os_x'
   default['bazel']['download_path'] =
     'https://github.com/bazelbuild/bazel/releases/download/4.0.0/bazel-4.0.0-darwin-x86_64'
@@ -209,4 +220,15 @@ elsif node[:platform] == 'mac_os_x'
 
   default['helm']['download_path'] = 'https://get.helm.sh/helm-v3.5.2-darwin-amd64.tar.gz'
   default['helm']['sha256']        = '68040e9a2f147a92c2f66ce009069826df11f9d1e1c6b78c7457066080ad3229'
+
+  default['opm']['download_path'] =
+    'https://github.com/operator-framework/operator-registry/releases/download/v1.17.3/darwin-amd64-opm'
+  default['opm']['sha256']        =
+    'bb812b97fb3c65f634ecc26910b2dfc0f2e668b86272702200937937df83ad5a'
+
+  default['faq']['download_path'] =
+    'https://github.com/jzelinskie/faq/releases/download/0.0.7/faq-darwin-amd64'
+  default['faq']['sha256']        =
+    '869f4d8acaa1feb11ce76b2204c5476b8a04d9451216adde6b18e2ef2f978794'
+  
 end

@@ -199,3 +199,15 @@ remote_file '/opt/antlr/antlr-4.9-complete.jar' do
   mode 0644
   checksum node['antlr']['sha256']
 end
+
+remote_file '/opt/pixielabs/bin/opm' do
+  source node['opm']['download_path']
+  mode 0755
+  checksum node['opm']['sha256']
+end
+
+remote_file '/opt/pixielabs/bin/faq' do
+  source node['faq']['download_path']
+  mode 0755
+  checksum node['faq']['sha256']
+end
