@@ -153,6 +153,11 @@ type VizierInfo interface {
 	GetVizierPods() ([]*vizierpb.VizierPodStatus, []*vizierpb.VizierPodStatus, error)
 }
 
+// VizierUpdater updates and fetches info about the Vizier CRD.
+type VizierUpdater interface {
+	UpdateCRDVizierVersion(string) error
+}
+
 // VizierHealthChecker is the interface that gets information on health of a Vizier.
 type VizierHealthChecker interface {
 	GetStatus() (time.Time, error)
@@ -167,6 +172,7 @@ type Bridge struct {
 
 	vzConnClient vzconnpb.VZConnServiceClient
 	vzInfo       VizierInfo
+	vzUpdater    VizierUpdater
 	vizChecker   VizierHealthChecker
 
 	hbSeqNum int64
@@ -202,7 +208,7 @@ type Bridge struct {
 }
 
 // New creates a cloud connector to cloud bridge.
-func New(vizierID uuid.UUID, jwtSigningKey string, deployKey string, sessionID int64, vzClient vzconnpb.VZConnServiceClient, vzInfo VizierInfo, nc *nats.Conn, checker VizierHealthChecker) *Bridge {
+func New(vizierID uuid.UUID, jwtSigningKey string, deployKey string, sessionID int64, vzClient vzconnpb.VZConnServiceClient, vzInfo VizierInfo, vzUpdater VizierUpdater, nc *nats.Conn, checker VizierHealthChecker) *Bridge {
 	return &Bridge{
 		vizierID:      vizierID,
 		jwtSigningKey: jwtSigningKey,
@@ -211,6 +217,7 @@ func New(vizierID uuid.UUID, jwtSigningKey string, deployKey string, sessionID i
 		vzConnClient:  vzClient,
 		vizChecker:    checker,
 		vzInfo:        vzInfo,
+		vzUpdater:     vzUpdater,
 		hbSeqNum:      0,
 		nc:            nc,
 		// Buffer NATS channels to make sure we don't back-pressure NATS
@@ -407,6 +414,15 @@ func (s *Bridge) handleUpdateMessage(msg *types.Any) error {
 	if err != nil {
 		log.WithError(err).Error("Could not unmarshal update req message")
 		return err
+	}
+
+	// If cluster is using operator-deployed version of Vizier, we should
+	// trigger the update through the CRD. Otherwise, we fallback to the
+	// update job.
+	err = s.vzUpdater.UpdateCRDVizierVersion(pb.Version)
+	if err == nil {
+		s.updateRunning.Store(true)
+		return nil
 	}
 
 	job, err := s.vzInfo.ParseJobYAML(UpdaterJobYAML, map[string]string{"updater": pb.Version}, map[string]string{

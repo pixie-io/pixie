@@ -11,6 +11,7 @@ metadata:
 rules:
 - apiGroups:
   - ""
+  - px.dev
   resources:
   - pods
   - nodes
@@ -20,6 +21,7 @@ rules:
   - jobs
   - events
   - pods/log
+  - viziers
   verbs:
   - "*"
 - apiGroups:

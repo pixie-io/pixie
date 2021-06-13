@@ -19,6 +19,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "v1alpha1",
     srcs = [
+        "client.go",
         "groupversion_info.go",
         "vizier_types.go",
         "zz_generated.deepcopy.go",
@@ -30,6 +31,9 @@ go_library(
         "@io_k8s_apimachinery//pkg/apis/meta/v1:meta",
         "@io_k8s_apimachinery//pkg/runtime",
         "@io_k8s_apimachinery//pkg/runtime/schema",
+        "@io_k8s_apimachinery//pkg/runtime/serializer",
+        "@io_k8s_client_go//kubernetes/scheme",
+        "@io_k8s_client_go//rest",
         "@io_k8s_sigs_controller_runtime//pkg/scheme",
     ],
 )

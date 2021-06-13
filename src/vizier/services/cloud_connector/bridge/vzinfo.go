@@ -42,6 +42,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"px.dev/pixie/src/api/proto/vizierpb"
+	"px.dev/pixie/src/operator/api/v1alpha1"
 	"px.dev/pixie/src/shared/cvmsgspb"
 	version "px.dev/pixie/src/shared/goversion"
 	protoutils "px.dev/pixie/src/shared/k8s"
@@ -62,6 +63,7 @@ type K8sJobHandler interface {
 type K8sVizierInfo struct {
 	ns                   string
 	clientset            *kubernetes.Clientset
+	vzClient             *v1alpha1.VizierClient
 	clusterVersion       string
 	clusterName          string
 	currentPodStatus     map[string]*cvmsgspb.PodStatus
@@ -85,6 +87,12 @@ func NewK8sVizierInfo(clusterName, ns string) (*K8sVizierInfo, error) {
 		return nil, err
 	}
 
+	vzCrdClient, err := v1alpha1.NewVizierClient(kubeConfig)
+	if err != nil {
+		log.WithError(err).Error("Failed to initialize vizier CRD client")
+		return nil, err
+	}
+
 	clusterVersion := ""
 
 	discoveryClient, err := discovery.NewDiscoveryClientForConfig(kubeConfig)
@@ -102,6 +110,7 @@ func NewK8sVizierInfo(clusterName, ns string) (*K8sVizierInfo, error) {
 	vzInfo := &K8sVizierInfo{
 		ns:             ns,
 		clientset:      clientset,
+		vzClient:       vzCrdClient,
 		clusterVersion: clusterVersion,
 		clusterName:    clusterName,
 	}
@@ -601,4 +610,24 @@ func (v *K8sVizierInfo) UpdateClusterID(id string) error {
 
 	_, err = v.clientset.CoreV1().Secrets(v.ns).Update(context.Background(), s, metav1.UpdateOptions{})
 	return err
+}
+
+// UpdateCRDVizierVersion updates the version of the Vizier CRD in the namespace.
+// Returns an error if the CRD was not found, or if an error occurred while
+// updating the CRD.
+func (v *K8sVizierInfo) UpdateCRDVizierVersion(version string) error {
+	viziers, err := v.vzClient.List(context.Background(), v.ns, metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	if len(viziers.Items) > 0 {
+		vz := viziers.Items[0]
+		vz.Spec.Version = version
+		_, err = v.vzClient.Update(context.Background(), &vz, v.ns, metav1.UpdateOptions{})
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+	return errors.New("No vizier CRD found")
 }

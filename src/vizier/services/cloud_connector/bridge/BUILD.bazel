@@ -28,6 +28,7 @@ go_library(
     deps = [
         "//src/api/proto/vizierpb:vizier_pl_go_proto",
         "//src/cloud/vzconn/vzconnpb:service_pl_go_proto",
+        "//src/operator/api/v1alpha1",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/goversion",
         "//src/shared/k8s",

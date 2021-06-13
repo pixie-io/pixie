@@ -153,7 +153,7 @@ func main() {
 	// We just use the current time in nanoseconds to mark the session ID. This will let the cloud side know that
 	// the cloud connector restarted. Clock skew might make this incorrect, but we mostly want this for debugging.
 	sessionID := time.Now().UnixNano()
-	svr := controllers.New(vizierID, viper.GetString("jwt_signing_key"), deployKey, sessionID, nil, vzInfo, nil, checker)
+	svr := controllers.New(vizierID, viper.GetString("jwt_signing_key"), deployKey, sessionID, nil, vzInfo, vzInfo, nil, checker)
 	go svr.RunStream()
 	defer svr.Stop()
 
