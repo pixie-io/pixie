@@ -1,0 +1,11 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: pixie-operator-subscription
+  namespace: {{ .Values.olmOperatorNamespace }} 
+spec:
+  channel: {{ .Values.olmBundleChannel }}
+  name: pixie-operator
+  source: pixie-operator-index
+  sourceNamespace: {{ .Values.olmOperatorNamespace }}
+  installPlanApproval: Automatic

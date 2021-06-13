@@ -55,7 +55,7 @@ mkdir "${tmp_dir}/manifests"
 # Find the previous bundle version, which this release should replace.
 tags=$(git for-each-ref --sort='-*authordate' --format '%(refname:short)' refs/tags \
     | grep "release/operator" | grep -v "\-")
-prev_tag=$(echo "$tags" | head -1)
+prev_tag=$(echo "$tags" | sed -n '2 p')
 previous_version=${prev_tag//*\/v/}
 
 #shellcheck disable=SC2016
@@ -88,4 +88,8 @@ opm index add --bundles "${bundle_image}" --from-index "${index_image}" --tag "$
 
 docker push "${index_image}"
 
-# TODO(michelle): Add helm chart.
+cd "${repo_path}"
+# Update helm chart if it is a release.
+if [[ $public == "True" ]]; then
+  ./ci/operator_helm_build_release.sh "${release_tag}"
+fi

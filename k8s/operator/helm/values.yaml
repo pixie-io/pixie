@@ -1,0 +1,54 @@
+## OLM configuration
+# OLM is used for deploying and ensuring the operator is up-to-date.
+# deployOLM indicates whether OLM should be deployed. This should only be
+# disabled if an instance of OLM is already configured on the cluster. 
+deployOLM: true
+# The namespace that olm should run in. If olm has already been deployed
+# to the cluster, this should be the namespace that olm is already running in.
+olmNamespace: "olm"
+# The namespace which olm operators should run in. If olm has already
+# been deployed o the cluster, this should be the namespace that the olm operators
+# are running in.
+olmOperatorNamespace: "operators"
+# The bundle channel which OLM should listen to for the Vizier operator bundles. 
+# Should be "stable" for production-versions of the operator, and "test" for release candidates.
+olmBundleChannel: "stable"
+
+## Vizier configuration
+# The name of the Vizier instance deployed to the cluster.
+name: "pixie"
+# The name of the cluster that the Vizier is monitoring. If empty,
+# a random name will be generated.
+clusterName: ""
+# The version of the Vizier instance deployed to the cluster. If empty,
+# the operator will automatically deploy the latest version. 
+version: ""
+# The deploy key is used to link the deployed Vizier to a specific user/project.
+# This is required, and can be generated through the UI or CLI.
+deployKey: ""
+# Whether auto-update should be disabled. 
+disableAutoUpdate: false
+# Whether the metadata service should use etcd for in-memory storage. Recommended
+# only for clusters which do not have persistent volumes configured.
+useEtcdOperator: false
+# The address of the Pixie cloud instance that the Vizier should be connected to.
+# This should only be updated when using a self-hosted version of Pixie Cloud.
+cloudAddr: "withpixie.ai:443"
+# DevCloudNamespace should be specified only for self-hosted versions of Pixie cloud which have no ingress to help
+# redirect traffic to the correct service. The DevCloudNamespace is the namespace that the dev Pixie cloud is
+# running on, for example: "plc-dev".
+devCloudNamespace: ""
+# A memory limit applied specifically to PEM pods. If none is specified, a default limit of 2Gi is set. 
+pemMemoryLimit: ""
+pod: 
+  # Optional custom annotations to add to deployed pods.
+  annotations: {}
+  # Optional custom labels to add to deployed pods.
+  labels: {}
+  resources: {}
+  # limits:
+  #   cpu: 500m
+  #   memory: 7Gi
+  # requests:
+  #   cpu: 100m
+  #   memory: 5Gi  

@@ -1,0 +1,13 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: CatalogSource
+metadata:
+  name: pixie-operator-index
+  namespace: {{ .Values.olmOperatorNamespace }}
+spec:
+  sourceType: grpc
+  image: gcr.io/pixie-oss/pixie-prod/operator/bundle_index:0.0.1 
+  displayName: Pixie Vizier Operator
+  publisher: px.dev
+  updateStrategy:
+    registryPoll:
+      interval: 10m

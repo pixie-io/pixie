@@ -1,0 +1,34 @@
+apiVersion: px.dev/v1alpha1
+kind: Vizier
+metadata:
+  name: {{ .Values.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  {{- if .Values.version }}
+  version: {{ .Values.version }}
+  {{- end }}
+  deployKey: {{ .Values.deployKey }}
+  cloudAddr: {{ .Values.cloudAddr }}
+  disableAutoUpdate: {{ .Values.disableAutoUpdate }}
+  useEtcdOperator: {{ .Values.useEtcdOperator }}
+  {{- if .Values.clusterName }}
+  clusterName: {{ .Values.clusterName }}
+  {{- end }}
+  {{- if .Values.devCloudNamespace }}
+  devCloudNamespace: {{ .Values.devCloudNamespace }}
+  {{- end }}
+  {{- if .Values.pemMemoryLimit }}
+  pemMemoryLimit: {{ .Values.pemMemoryLimit }}
+  {{- end }}
+  {{- if or .Values.pod.annotations (or .Values.pod.labels .Values.pod.resources) }}
+  pod:
+    {{- if .Values.pod.annotations }}
+    annotations: {{ .Values.pod.annotations | toYaml | nindent 6 }}
+    {{- end }}
+    {{- if .Values.pod.labels }}
+    labels: {{ .Values.pod.labels | toYaml | nindent 6 }}
+    {{- end }}
+    {{- if .Values.pod.resources }}
+    resources: {{ .Values.pod.resources | toYaml | nindent 6 }}
+    {{- end }}
+  {{- end }}

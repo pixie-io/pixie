@@ -1,0 +1,207 @@
+{{if .Values.deployOLM}}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.olmNamespace }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.olmOperatorNamespace }}
+---
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: olm-operator-serviceaccount
+  namespace: {{ .Values.olmNamespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: system:controller:operator-lifecycle-manager
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+- nonResourceURLs: ["*"]
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: olm-operator-binding-olm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:controller:operator-lifecycle-manager
+subjects:
+- kind: ServiceAccount
+  name: olm-operator-serviceaccount
+  namespace: {{ .Values.olmNamespace }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: olm-operator
+  namespace: {{ .Values.olmNamespace }}
+  labels:
+    app: olm-operator
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: olm-operator
+  template:
+    metadata:
+      labels:
+        app: olm-operator
+    spec:
+      serviceAccountName: olm-operator-serviceaccount
+      containers:
+        - name: olm-operator
+          command:
+          - /bin/olm
+          args:
+          - --namespace
+          - $(OPERATOR_NAMESPACE)
+          - --writeStatusName
+          - ""
+          image: quay.io/operator-framework/olm@sha256:b706ee6583c4c3cf8059d44234c8a4505804adcc742bcddb3d1e2f6eff3d6519
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+            - containerPort: 8081
+              name: metrics
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+          terminationMessagePolicy: FallbackToLogsOnError
+          env:
+        
+          - name: OPERATOR_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: OPERATOR_NAME
+            value: olm-operator
+          resources:
+            requests:
+              cpu: 10m
+              memory: 160Mi
+          
+      
+      nodeSelector:
+        kubernetes.io/os: linux
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog-operator
+  namespace: {{ .Values.olmNamespace }}
+  labels:
+    app: catalog-operator
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: 1
+  selector:
+    matchLabels:
+      app: catalog-operator
+  template:
+    metadata:
+      labels:
+        app: catalog-operator
+    spec:
+      serviceAccountName: olm-operator-serviceaccount
+      containers:
+        - name: catalog-operator
+          command:
+          - /bin/catalog
+          args:
+          - '-namespace'
+          - {{ .Values.olmNamespace }}
+          - -configmapServerImage=quay.io/operator-framework/configmap-operator-registry:latest
+          - -util-image
+          -  quay.io/operator-framework/olm@sha256:b706ee6583c4c3cf8059d44234c8a4505804adcc742bcddb3d1e2f6eff3d6519
+          image: quay.io/operator-framework/olm@sha256:b706ee6583c4c3cf8059d44234c8a4505804adcc742bcddb3d1e2f6eff3d6519
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+            - containerPort: 8081
+              name: metrics
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+          terminationMessagePolicy: FallbackToLogsOnError
+          env:
+          
+          resources:
+            requests:
+              cpu: 10m
+              memory: 80Mi
+          
+      
+      nodeSelector:
+        kubernetes.io/os: linux
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: aggregate-olm-edit
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+rules:
+- apiGroups: ["operators.coreos.com"]
+  resources: ["subscriptions"]
+  verbs: ["create", "update", "patch", "delete"]
+- apiGroups: ["operators.coreos.com"]
+  resources: ["clusterserviceversions", "catalogsources", "installplans", "subscriptions"]
+  verbs: ["delete"]
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: aggregate-olm-view
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+rules:
+- apiGroups: ["operators.coreos.com"]
+  resources: ["clusterserviceversions", "catalogsources", "installplans", "subscriptions", "operatorgroups"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["packages.operators.coreos.com"]
+  resources: ["packagemanifests", "packagemanifests/icon"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: global-operators
+  namespace: {{ .Values.olmOperatorNamespace }}
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: olm-operators
+  namespace: {{ .Values.olmNamespace }}
+spec:
+  targetNamespaces:
+    - {{ .Values.olmNamespace }}
+{{- end}}
