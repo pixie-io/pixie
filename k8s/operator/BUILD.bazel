@@ -14,6 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 load("@io_bazel_rules_docker//container:container.bzl", "container_bundle")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "container_push")
 load("//bazel:images.bzl", "image_map_with_bundle_version")
@@ -56,4 +57,31 @@ container_push(
         "//conditions:default": ":private_operator_images_bundle",
     }),
     format = "Docker",
+)
+
+genrule(
+    name = "vizier_crd_yaml",
+    srcs = glob(["**/*.yaml"]),
+    outs = ["vizier_crd.yaml"],
+    cmd = """
+      T=`mktemp -d`
+      cp -aL k8s/operator/crd/base $$T
+      kustomize build $$T/base -o $@
+    """,
+)
+
+pkg_tar(
+    name = "operator_templates",
+    srcs =
+        [
+            "helm/crds",
+            "helm/templates",
+            ":vizier_crd_yaml",
+        ],
+    package_dir = "/yamls",
+    remap_paths = {
+        "/operator/helm": "/",
+        "/operator/vizier_crd.yaml": "/crds/vizier_crd.yaml",
+    },
+    strip_prefix = "/k8s",
 )

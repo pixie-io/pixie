@@ -102,7 +102,7 @@ func (s *Server) getArtifactListSpecifiedOperator() (*vpb.ArtifactSet, error) {
 			&vpb.Artifact{
 				VersionStr: viper.GetString("operator_version"),
 				AvailableArtifacts: []vpb.ArtifactType{
-					vpb.AT_CONTAINER_SET_YAMLS,
+					vpb.AT_CONTAINER_SET_TEMPLATE_YAMLS,
 					vpb.AT_CONTAINER_SET_LINUX_AMD64,
 				},
 			},
@@ -236,7 +236,7 @@ func (s *Server) GetDownloadLink(ctx context.Context, in *apb.GetDownloadLinkReq
 		if versionStr != viper.GetString("vizier_version") {
 			return nil, status.Error(codes.NotFound, "artifact not found")
 		}
-	} else if (at == vpb.AT_CONTAINER_SET_YAMLS) && viper.GetString("operator_version") != "" {
+	} else if (at == vpb.AT_CONTAINER_SET_TEMPLATE_YAMLS) && viper.GetString("operator_version") != "" {
 		if versionStr != viper.GetString("operator_version") {
 			return nil, status.Error(codes.NotFound, "artifact not found")
 		}

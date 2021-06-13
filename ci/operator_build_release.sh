@@ -31,11 +31,13 @@ public="True"
 image_path="gcr.io/pixie-oss/pixie-prod/operator/operator_image:${release_tag}"
 channel="stable"
 channels="stable,dev"
+bucket="pixie-dev-public"
 if [[ $release_tag == *"-"* ]]; then
   public="False"
   image_path="gcr.io/pixie-oss/pixie-dev/operator/operator_image:${release_tag}"
   channel="dev"
   channels="dev"
+  bucket="pixie-prod-artifacts"
 fi
 
 # Push operator image.
@@ -89,6 +91,15 @@ opm index add --bundles "${bundle_image}" --from-index "${index_image}" --tag "$
 docker push "${index_image}"
 
 cd "${repo_path}"
+
+# Upload templated YAMLs.
+output_path="gs://${bucket}/operator/${release_tag}"
+bazel build //k8s/operator:operator_templates
+yamls_tar="${repo_path}/bazel-bin/k8s/operator/operator_templates.tar"
+sha256sum "${yamls_tar}" | awk '{print $1}' > tmplSha
+gsutil cp "${yamls_tar}" "${output_path}/operator_template_yamls.tar"
+gsutil cp tmplSha "${output_path}/operator_template_yamls.tar.sha256"
+
 # Update helm chart if it is a release.
 if [[ $public == "True" ]]; then
   ./ci/operator_helm_build_release.sh "${release_tag}"

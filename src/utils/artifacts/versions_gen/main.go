@@ -47,7 +47,7 @@ func availableArtifacts(artifactName string) []vpb.ArtifactType {
 	case artifactName == "vizier":
 		return []vpb.ArtifactType{vpb.AT_CONTAINER_SET_LINUX_AMD64, vpb.AT_CONTAINER_SET_YAMLS, vpb.AT_CONTAINER_SET_TEMPLATE_YAMLS}
 	case artifactName == "operator":
-		return []vpb.ArtifactType{vpb.AT_CONTAINER_SET_LINUX_AMD64}
+		return []vpb.ArtifactType{vpb.AT_CONTAINER_SET_LINUX_AMD64, vpb.AT_CONTAINER_SET_TEMPLATE_YAMLS}
 	default:
 		panic(fmt.Sprintf("Unknown artifact type: %s", artifactName))
 	}
