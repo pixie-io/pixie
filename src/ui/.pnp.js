@@ -56,20 +56,15 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@ory/kratos-client", "npm:0.5.5-alpha.4"],
             ["@testing-library/react", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:11.2.6"],
             ["@testing-library/react-hooks", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:7.0.0"],
-            ["@types/auth0-lock", "npm:11.27.1"],
             ["@types/d3", "npm:5.16.4"],
             ["@types/enzyme", "npm:3.10.8"],
-            ["@types/graphlib-dot", "npm:0.6.1"],
             ["@types/jest", "npm:24.0.18"],
-            ["@types/jsdom", "npm:16.2.10"],
             ["@types/lodash", "npm:4.14.168"],
-            ["@types/node", "npm:14.14.37"],
             ["@types/numeral", "npm:0.0.27"],
             ["@types/react", "npm:17.0.3"],
             ["@types/react-dom", "npm:16.9.12"],
             ["@types/react-router", "npm:5.1.13"],
             ["@types/react-virtualized", "npm:9.21.11"],
-            ["@types/retry", "npm:0.12.0"],
             ["@types/segment-analytics", "npm:0.0.32"],
             ["@typescript-eslint/eslint-plugin", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:4.21.0"],
             ["@typescript-eslint/parser", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:4.21.0"],
@@ -4623,20 +4618,15 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@ory/kratos-client", "npm:0.5.5-alpha.4"],
             ["@testing-library/react", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:11.2.6"],
             ["@testing-library/react-hooks", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:7.0.0"],
-            ["@types/auth0-lock", "npm:11.27.1"],
             ["@types/d3", "npm:5.16.4"],
             ["@types/enzyme", "npm:3.10.8"],
-            ["@types/graphlib-dot", "npm:0.6.1"],
             ["@types/jest", "npm:24.0.18"],
-            ["@types/jsdom", "npm:16.2.10"],
             ["@types/lodash", "npm:4.14.168"],
-            ["@types/node", "npm:14.14.37"],
             ["@types/numeral", "npm:0.0.27"],
             ["@types/react", "npm:17.0.3"],
             ["@types/react-dom", "npm:16.9.12"],
             ["@types/react-router", "npm:5.1.13"],
             ["@types/react-virtualized", "npm:9.21.11"],
-            ["@types/retry", "npm:0.12.0"],
             ["@types/segment-analytics", "npm:0.0.32"],
             ["@typescript-eslint/eslint-plugin", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:4.21.0"],
             ["@typescript-eslint/parser", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:4.21.0"],
@@ -4911,25 +4901,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./.yarn/cache/@types-aria-query-npm-4.2.1-4248197909-1b64d16e09.zip/node_modules/@types/aria-query/",
           "packageDependencies": [
             ["@types/aria-query", "npm:4.2.1"]
-          ],
-          "linkType": "HARD",
-        }]
-      ]],
-      ["@types/auth0-js", [
-        ["npm:9.14.4", {
-          "packageLocation": "./.yarn/cache/@types-auth0-js-npm-9.14.4-21baf4e161-38b40e27ff.zip/node_modules/@types/auth0-js/",
-          "packageDependencies": [
-            ["@types/auth0-js", "npm:9.14.4"]
-          ],
-          "linkType": "HARD",
-        }]
-      ]],
-      ["@types/auth0-lock", [
-        ["npm:11.27.1", {
-          "packageLocation": "./.yarn/cache/@types-auth0-lock-npm-11.27.1-0c5d8a749b-8d3e6d4134.zip/node_modules/@types/auth0-lock/",
-          "packageDependencies": [
-            ["@types/auth0-lock", "npm:11.27.1"],
-            ["@types/auth0-js", "npm:9.14.4"]
           ],
           "linkType": "HARD",
         }]
@@ -5450,25 +5421,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "linkType": "HARD",
         }]
       ]],
-      ["@types/graphlib", [
-        ["npm:2.1.7", {
-          "packageLocation": "./.yarn/cache/@types-graphlib-npm-2.1.7-76b72d0d8b-3c4e4fce24.zip/node_modules/@types/graphlib/",
-          "packageDependencies": [
-            ["@types/graphlib", "npm:2.1.7"]
-          ],
-          "linkType": "HARD",
-        }]
-      ]],
-      ["@types/graphlib-dot", [
-        ["npm:0.6.1", {
-          "packageLocation": "./.yarn/cache/@types-graphlib-dot-npm-0.6.1-0b108493a8-ce097af467.zip/node_modules/@types/graphlib-dot/",
-          "packageDependencies": [
-            ["@types/graphlib-dot", "npm:0.6.1"],
-            ["@types/graphlib", "npm:2.1.7"]
-          ],
-          "linkType": "HARD",
-        }]
-      ]],
       ["@types/hammerjs", [
         ["npm:2.0.39", {
           "packageLocation": "./.yarn/cache/@types-hammerjs-npm-2.0.39-5a39b612e5-72d4e6ba5b.zip/node_modules/@types/hammerjs/",
@@ -5550,18 +5502,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageDependencies": [
             ["@types/jest-diff", "npm:24.3.0"],
             ["jest-diff", "npm:26.6.2"]
-          ],
-          "linkType": "HARD",
-        }]
-      ]],
-      ["@types/jsdom", [
-        ["npm:16.2.10", {
-          "packageLocation": "./.yarn/cache/@types-jsdom-npm-16.2.10-763d598583-9e39f1d2d0.zip/node_modules/@types/jsdom/",
-          "packageDependencies": [
-            ["@types/jsdom", "npm:16.2.10"],
-            ["@types/node", "npm:14.14.37"],
-            ["@types/parse5", "npm:6.0.0"],
-            ["@types/tough-cookie", "npm:4.0.0"]
           ],
           "linkType": "HARD",
         }]
@@ -5651,15 +5591,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./.yarn/cache/@types-parse-json-npm-4.0.0-298522afa6-4a8f720afa.zip/node_modules/@types/parse-json/",
           "packageDependencies": [
             ["@types/parse-json", "npm:4.0.0"]
-          ],
-          "linkType": "HARD",
-        }]
-      ]],
-      ["@types/parse5", [
-        ["npm:6.0.0", {
-          "packageLocation": "./.yarn/cache/@types-parse5-npm-6.0.0-c9441d3139-356652dc0b.zip/node_modules/@types/parse5/",
-          "packageDependencies": [
-            ["@types/parse5", "npm:6.0.0"]
           ],
           "linkType": "HARD",
         }]
@@ -5775,15 +5706,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "linkType": "HARD",
         }]
       ]],
-      ["@types/retry", [
-        ["npm:0.12.0", {
-          "packageLocation": "./.yarn/cache/@types-retry-npm-0.12.0-e4e6294a2c-0755164f2c.zip/node_modules/@types/retry/",
-          "packageDependencies": [
-            ["@types/retry", "npm:0.12.0"]
-          ],
-          "linkType": "HARD",
-        }]
-      ]],
       ["@types/scheduler", [
         ["npm:0.16.1", {
           "packageLocation": "./.yarn/cache/@types-scheduler-npm-0.16.1-9a58541608-0124c2e4de.zip/node_modules/@types/scheduler/",
@@ -5825,13 +5747,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./.yarn/cache/@types-tough-cookie-npm-2.3.7-64884217ba-6419df55f9.zip/node_modules/@types/tough-cookie/",
           "packageDependencies": [
             ["@types/tough-cookie", "npm:2.3.7"]
-          ],
-          "linkType": "HARD",
-        }],
-        ["npm:4.0.0", {
-          "packageLocation": "./.yarn/cache/@types-tough-cookie-npm-4.0.0-c29cd799b9-5a0cccc6d0.zip/node_modules/@types/tough-cookie/",
-          "packageDependencies": [
-            ["@types/tough-cookie", "npm:4.0.0"]
           ],
           "linkType": "HARD",
         }]

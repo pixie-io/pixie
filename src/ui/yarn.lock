@@ -2715,20 +2715,15 @@ __metadata:
     "@ory/kratos-client": ^v0.5.5-alpha.4
     "@testing-library/react": ^11.2.5
     "@testing-library/react-hooks": ^7.0.0
-    "@types/auth0-lock": ^11.4.7
     "@types/d3": ^5.7.2
     "@types/enzyme": ^3.1.13
-    "@types/graphlib-dot": ^0.6.1
     "@types/jest": 24.0.18
-    "@types/jsdom": ^16.2.3
     "@types/lodash": ^4.14.150
-    "@types/node": ^14.0.14
     "@types/numeral": ^0.0.27
     "@types/react": ^17.0.3
     "@types/react-dom": ^16.9.4
     "@types/react-router": ^5.1.7
     "@types/react-virtualized": ^9.21.8
-    "@types/retry": ^0.12.0
     "@types/segment-analytics": ^0.0.32
     "@typescript-eslint/eslint-plugin": ^4.21.0
     "@typescript-eslint/parser": ^4.21.0
@@ -2965,22 +2960,6 @@ __metadata:
   version: 4.2.1
   resolution: "@types/aria-query@npm:4.2.1"
   checksum: 1b64d16e09ebb071f9c97a4a0ae0d0f6b573a3c14e9f966d51c9ebfc30d19681782428d7cb4ec75d93aa1b58a857f5f17babbfedeefebc85c4047cf5f6b96d5f
-  languageName: node
-  linkType: hard
-
-"@types/auth0-js@npm:*":
-  version: 9.14.4
-  resolution: "@types/auth0-js@npm:9.14.4"
-  checksum: 38b40e27ff7c28bdc3eb14afc2751eef8f4d88bee29c4e2d45e462c6d3aecb837e2a6a5f509f685ee6d55e8d140e5f64ae883bbb2ad09ed225d8d2c8fcf34fb5
-  languageName: node
-  linkType: hard
-
-"@types/auth0-lock@npm:^11.4.7":
-  version: 11.27.1
-  resolution: "@types/auth0-lock@npm:11.27.1"
-  dependencies:
-    "@types/auth0-js": "*"
-  checksum: 8d3e6d413424967caa2502061507eeed1c66fa524a36368374bb5e61e76ab0ecf52e993c048fa76c1e524204b5d66a8f426cc353675897af98a9f7b2c5b1a789
   languageName: node
   linkType: hard
 
@@ -3426,22 +3405,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/graphlib-dot@npm:^0.6.1":
-  version: 0.6.1
-  resolution: "@types/graphlib-dot@npm:0.6.1"
-  dependencies:
-    "@types/graphlib": "*"
-  checksum: ce097af467622d511d75e56acd94f9d7eecb6ee5051bee0a25eb22fa77483d17c5e4ed94a0c01448636dd47ae64f554cfefbdbdcf22b15d7834c9b1060c56363
-  languageName: node
-  linkType: hard
-
-"@types/graphlib@npm:*":
-  version: 2.1.7
-  resolution: "@types/graphlib@npm:2.1.7"
-  checksum: 3c4e4fce249d610eb0c371a9511b96ec038fdd2a5a319e311316452763d4e750428146569d4bbf52fd510b1ab01124422be435e9fa1878ab7b561c8829048e03
-  languageName: node
-  linkType: hard
-
 "@types/hammerjs@npm:^2.0.36":
   version: 2.0.39
   resolution: "@types/hammerjs@npm:2.0.39"
@@ -3523,17 +3486,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/jsdom@npm:^16.2.3":
-  version: 16.2.10
-  resolution: "@types/jsdom@npm:16.2.10"
-  dependencies:
-    "@types/node": "*"
-    "@types/parse5": "*"
-    "@types/tough-cookie": "*"
-  checksum: 9e39f1d2d00e7373222da490a78f11e66a8ea19e3b08ed9b223bcd8da0ce6eb15aabd670d36996a727291d4a917366a8340353a5adef83b4c714fed6e61e786f
-  languageName: node
-  linkType: hard
-
 "@types/json-schema@npm:*, @types/json-schema@npm:^7.0.3, @types/json-schema@npm:^7.0.5, @types/json-schema@npm:^7.0.6":
   version: 7.0.7
   resolution: "@types/json-schema@npm:7.0.7"
@@ -3571,7 +3523,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:^14.0.14":
+"@types/node@npm:*":
   version: 14.14.37
   resolution: "@types/node@npm:14.14.37"
   checksum: 5e2d9baf7594ebacaf016716515f30de0765169412787f981481c2fb8b468923149bb9e2e3219ee672399811672ceddc339a7372a61cf15bc656836a5494d991
@@ -3603,13 +3555,6 @@ __metadata:
   version: 4.0.0
   resolution: "@types/parse-json@npm:4.0.0"
   checksum: 4a8f720afac47b474d3f2eece312340e72bc31bc9561cda37b596ce2ed218c0099765d302625bb67d659a8452a1f93d514f4863c11c7ebaf65430428687dc426
-  languageName: node
-  linkType: hard
-
-"@types/parse5@npm:*":
-  version: 6.0.0
-  resolution: "@types/parse5@npm:6.0.0"
-  checksum: 356652dc0b341dcc8f93c4b4b59e163efe9b4ccc993e15aa9d96b7b96776eef629939d6c597d79c0abb8adcee9068f590e4bb1102deb770b993d37a24fdac8b8
   languageName: node
   linkType: hard
 
@@ -3719,13 +3664,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/retry@npm:^0.12.0":
-  version: 0.12.0
-  resolution: "@types/retry@npm:0.12.0"
-  checksum: 0755164f2c8d615a0385609c478aaa20b17e55bc8b16d5d56ffe6a5d30b0a9845d49452a2e8903ec7c43fa361f19daf5e68c60e7381ad10a95dd3d0bb5c9f7fd
-  languageName: node
-  linkType: hard
-
 "@types/scheduler@npm:*":
   version: 0.16.1
   resolution: "@types/scheduler@npm:0.16.1"
@@ -3751,13 +3689,6 @@ __metadata:
   version: 2.0.0
   resolution: "@types/stack-utils@npm:2.0.0"
   checksum: 662312302e07685c99a1c45c6753eb997b31d2af66e646c5937f62d593a63a111289503d0b06a8d1e6f3922b67fc2ed94889d84653a08861a7fee67b81ce5b92
-  languageName: node
-  linkType: hard
-
-"@types/tough-cookie@npm:*":
-  version: 4.0.0
-  resolution: "@types/tough-cookie@npm:4.0.0"
-  checksum: 5a0cccc6d073b84dbb48d603e692b55ac30cea1653a7fc813e97a3bcaa9edd97c703c15727378d632e416a90178e6da657151eba8175cbb201a9a98de22ac3a8
   languageName: node
   linkType: hard
 
