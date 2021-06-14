@@ -2770,7 +2770,6 @@ __metadata:
     grpc-web: ^1.0.7
     history: ^4.10.1
     html-webpack-plugin: ^5.0.0-alpha.9
-    identity-obj-proxy: ^3.0.0
     image-webpack-loader: ^6.0.0
     jest: ^26.6.3
     jest-canvas-mock: ^2.2.0
@@ -9684,13 +9683,6 @@ fsevents@^2.1.2:
   languageName: node
   linkType: hard
 
-"harmony-reflect@npm:^1.4.6":
-  version: 1.6.1
-  resolution: "harmony-reflect@npm:1.6.1"
-  checksum: cd8ee880be124d0f634e5f58027c2e6c9f600c2874a1e2481cb7acd369f0df6fb41b496aa3fbf247fb6a4a2de8d70b7587854c652493a6c6c21964ce70573100
-  languageName: node
-  linkType: hard
-
 "has-ansi@npm:^2.0.0":
   version: 2.0.0
   resolution: "has-ansi@npm:2.0.0"
@@ -10147,15 +10139,6 @@ fsevents@^2.1.2:
   peerDependencies:
     postcss: ^8.1.0
   checksum: 4bf5c2e25b106a6c1f58d5f7b35134810aa785455f0c30e31939d873d4110964c5e470862026e0af51608b6d64853c614d9c724018f73cd59974106c0927e982
-  languageName: node
-  linkType: hard
-
-"identity-obj-proxy@npm:^3.0.0":
-  version: 3.0.0
-  resolution: "identity-obj-proxy@npm:3.0.0"
-  dependencies:
-    harmony-reflect: ^1.4.6
-  checksum: 87f71cb15bc6173123a97f37f4fe2a9e1e44d9ceaceb19b0b233a0ab62bcc08793a019bc00241d876a73421ec4005fd28952805ef72725cda5866d712d789fe7
   languageName: node
   linkType: hard
 

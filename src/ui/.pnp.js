@@ -111,7 +111,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["grpc-web", "npm:1.2.1"],
             ["history", "npm:4.10.1"],
             ["html-webpack-plugin", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:5.3.1"],
-            ["identity-obj-proxy", "npm:3.0.0"],
             ["image-webpack-loader", "npm:6.0.0"],
             ["jest", "npm:26.6.3"],
             ["jest-canvas-mock", "npm:2.3.1"],
@@ -4673,7 +4672,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["grpc-web", "npm:1.2.1"],
             ["history", "npm:4.10.1"],
             ["html-webpack-plugin", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:5.3.1"],
-            ["identity-obj-proxy", "npm:3.0.0"],
             ["image-webpack-loader", "npm:6.0.0"],
             ["jest", "npm:26.6.3"],
             ["jest-canvas-mock", "npm:2.3.1"],
@@ -12897,15 +12895,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "linkType": "HARD",
         }]
       ]],
-      ["harmony-reflect", [
-        ["npm:1.6.1", {
-          "packageLocation": "./.yarn/cache/harmony-reflect-npm-1.6.1-dacf7e046e-cd8ee880be.zip/node_modules/harmony-reflect/",
-          "packageDependencies": [
-            ["harmony-reflect", "npm:1.6.1"]
-          ],
-          "linkType": "HARD",
-        }]
-      ]],
       ["has", [
         ["npm:1.0.3", {
           "packageLocation": "./.yarn/cache/has-npm-1.0.3-b7f00631c1-c686e15300.zip/node_modules/has/",
@@ -13430,16 +13419,6 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packagePeers": [
             "@types/postcss",
             "postcss"
-          ],
-          "linkType": "HARD",
-        }]
-      ]],
-      ["identity-obj-proxy", [
-        ["npm:3.0.0", {
-          "packageLocation": "./.yarn/cache/identity-obj-proxy-npm-3.0.0-080ab9ac1e-87f71cb15b.zip/node_modules/identity-obj-proxy/",
-          "packageDependencies": [
-            ["identity-obj-proxy", "npm:3.0.0"],
-            ["harmony-reflect", "npm:1.6.1"]
           ],
           "linkType": "HARD",
         }]

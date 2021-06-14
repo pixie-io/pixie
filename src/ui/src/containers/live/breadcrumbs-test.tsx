@@ -21,11 +21,25 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { render } from 'enzyme';
 import * as React from 'react';
-import { MockLiveContextProvider } from 'app/testing/mocks/live-context-mock';
+import { ThemeProvider } from '@material-ui/core/styles';
+import { DARK_THEME } from 'app/components';
+import { MockClusterContextProvider } from 'app/testing/mocks/cluster-context-mock';
+import { MockScriptContextProvider } from 'app/testing/mocks/script-context-mock';
+import { MockScriptsContextProvider } from 'app/testing/mocks/scripts-context-mock';
 import LiveViewBreadcrumbs from './breadcrumbs';
 
 describe('Live view breadcrumbs', () => {
   it('renders', () => {
-    render(<MockLiveContextProvider><LiveViewBreadcrumbs /></MockLiveContextProvider>);
+    render(
+      <ThemeProvider theme={DARK_THEME}>
+        <MockClusterContextProvider>
+          <MockScriptsContextProvider>
+            <MockScriptContextProvider>
+              <LiveViewBreadcrumbs />
+            </MockScriptContextProvider>
+          </MockScriptsContextProvider>
+        </MockClusterContextProvider>
+      </ThemeProvider>,
+    );
   });
 });

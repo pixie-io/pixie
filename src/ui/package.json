@@ -58,7 +58,6 @@
     "file-loader": "^6.2.0",
     "graphql-schema-typescript": "^1.5.2",
     "html-webpack-plugin": "^5.0.0-alpha.9",
-    "identity-obj-proxy": "^3.0.0",
     "image-webpack-loader": "^6.0.0",
     "jest": "^26.6.3",
     "jest-canvas-mock": "^2.2.0",
