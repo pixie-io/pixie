@@ -58,7 +58,7 @@
     "eslint-plugin-react": "^7.23.1",
     "eslint-plugin-react-hooks": "^4.2.0",
     "favicons": "^6.2.1",
-    "favicons-webpack-plugin": "^5.0.0-alpha.3",
+    "favicons-webpack-plugin": "^5.0.2",
     "file-loader": "^6.2.0",
     "graphql-schema-typescript": "^1.5.2",
     "html-webpack-plugin": "^5.0.0-alpha.9",
@@ -199,7 +199,7 @@
     "@types/react": "^17.0.3",
     "axios": "^0.21.1",
     "http-proxy-middleware": "0.19.2",
-    "jimp": "^0.10.3",
+    "jimp": "^0.16.1",
     "multicast-dns": "7.2.3",
     "resize-img": "^2.0.0",
     "vega-functions": "5.12.0"
