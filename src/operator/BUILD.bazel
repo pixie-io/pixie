@@ -45,6 +45,9 @@ go_binary(
 go_image(
     name = "operator_image",
     binary = ":operator",
+    visibility = [
+        "//k8s:__subpackages__",
+    ],
 )
 
 container_push(

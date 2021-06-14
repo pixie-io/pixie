@@ -60,7 +60,7 @@ check_args() {
         exit
     fi
 
-    if [ "$ARTIFACT_TYPE" != "cli" ] && [ "$ARTIFACT_TYPE" != "vizier" ]; then
+    if [ "$ARTIFACT_TYPE" != "cli" ] && [ "$ARTIFACT_TYPE" != "vizier" ] && [ "$ARTIFACT_TYPE" != "operator" ]; then
         echo "Unsupported artifact type."
         exit
     fi
@@ -70,6 +70,7 @@ get_bazel_target() {
     case "$ARTIFACT_TYPE" in
         cli) BAZEL_TARGET=//src/pixie_cli:px;;
         vizier) BAZEL_TARGET=//k8s/vizier:public_vizier_images_bundle;;
+        operator) BAZEL_TARGET=//k8s/operator:public_operator_images_bundle;;
     esac
 }
 

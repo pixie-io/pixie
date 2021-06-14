@@ -1,0 +1,32 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+spec:
+  description: This is an operator for Pixie.
+  displayName: Pixie Operator
+  keywords:
+  - pixie
+  - app
+  - observability
+  maintainers:
+  - email: dev@px.dev
+    name: Pixie
+  maturity: alpha
+  provider:
+    name: Pixie
+    url: px.dev
+  installModes:
+  - supported: true
+    type: OwnNamespace
+  - supported: true
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  customresourcedefinitions:
+    owned:
+    - name: viziers.px.dev
+      version: v1alpha1
+      kind: Vizier

@@ -17,4 +17,4 @@ spec:
       serviceAccountName: pixie-operator-service-account
       containers:
       - name: app
-        image: gcr.io/pl-dev-infra/vizier/operator_image:latest
+        image: gcr.io/pixie-oss/pixie-dev/operator/operator_image:latest

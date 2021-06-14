@@ -117,6 +117,7 @@ isMainRun =  (env.JOB_NAME == 'pixie-main/build-and-test-all')
 isOSSMainRun =  (env.JOB_NAME == 'pixie-oss/build-and-test-all')
 isNightlyTestRegressionRun = (env.JOB_NAME == 'pixie-main/nightly-test-regression')
 isCLIBuildRun =  env.JOB_NAME.startsWith('pixie-release/cli/')
+isOperatorBuildRun = env.JOB_NAME.startsWith('pixie-release/operator/')
 isVizierBuildRun = env.JOB_NAME.startsWith('pixie-release/vizier/')
 isCloudStagingBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud-staging/')
 isCloudProdBuildRun = env.JOB_NAME.startsWith('pixie-release/cloud/')
@@ -1113,6 +1114,40 @@ def buildScriptForVizierRelease = {
   postBuildActions()
 }
 
+def buildScriptForOperatorRelease = {
+  try {
+    stage('Checkout code') {
+      checkoutAndInitialize()
+    }
+    stage('Build & Push Artifacts') {
+      WithSourceCodeK8s {
+        container('pxbuild') {
+          withKubeConfig([credentialsId: K8S_PROD_CREDS,
+                serverUrl: K8S_PROD_CLUSTER, namespace: 'default']) {
+            sh './ci/operator_build_release.sh'
+            stashOnGCS('versions', 'src/utils/artifacts/artifact_db_updater/VERSIONS.json')
+            stashList.add('versions')
+          }
+        }
+      }    
+    }
+    stage('Update versions database (staging)') {
+      updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, 'plc-staging')
+    }
+    stage('Update versions database (prod)') {
+      updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, 'plc')
+    }
+  }
+  catch (err) {
+    currentBuild.result = 'FAILURE'
+    echo "Exception thrown:\n ${err}"
+    echo 'Stacktrace:'
+    err.printStackTrace()
+  }
+
+  postBuildActions()
+}
+
 def pushAndDeployCloud(String profile, String namespace) {
   WithSourceCodeK8s {
     container('pxbuild') {
@@ -1212,6 +1247,8 @@ if (isNightlyTestRegressionRun) {
   buildScriptForCLIRelease()
 } else if (isVizierBuildRun) {
   buildScriptForVizierRelease()
+} else if (isOperatorBuildRun) {
+  buildScriptForOperatorRelease()
 } else if (isCloudStagingBuildRun) {
   buildScriptForCloudStagingRelease()
 } else if (isCloudProdBuildRun) {

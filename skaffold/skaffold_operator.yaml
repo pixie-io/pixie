@@ -2,7 +2,7 @@ apiVersion: skaffold/v2alpha3
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/pl-dev-infra/vizier/operator_image
+  - image: gcr.io/pixie-oss/pixie-dev/operator/operator_image
     context: .
     bazel:
       target: //src/operator:operator_image.tar
