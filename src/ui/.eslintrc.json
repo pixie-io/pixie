@@ -8,6 +8,9 @@
     "eslint:recommended",
     "plugin:react-hooks/recommended"
   ],
+  "ignorePatterns": [
+    "dist/**"
+  ],
   "parser": "babel-eslint",
   "parserOptions": {
     "ecmaVersion": 2021,
