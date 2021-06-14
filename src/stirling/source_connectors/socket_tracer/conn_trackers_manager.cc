@@ -237,13 +237,7 @@ std::string ConnTrackersManager::DebugInfo() const {
   return out;
 }
 
-std::string ConnTrackersManager::StatsString() const {
-  std::string out;
-  for (auto key : magic_enum::enum_values<StatKey>()) {
-    absl::StrAppend(&out, absl::Substitute("$0=$1 ", magic_enum::enum_name(key), stats_.Get(key)));
-  }
-  return out;
-}
+std::string ConnTrackersManager::StatsString() const { return stats_.Print(); }
 
 void ConnTrackersManager::ComputeProtocolStats() {
   absl::flat_hash_map<TrafficProtocol, int> protocol_count;

@@ -27,13 +27,15 @@ namespace px {
 namespace stirling {
 namespace utils {
 
+using ::testing::StrEq;
+
 enum class Key {
   kFirst,
   kSecond,
 };
 
-// Tests that StateCounter tracked values are correct.
-TEST(StatCounterTest, CheckValues) {
+// Tests that StateCounter tracked values are correct; and printed string is correct as well.
+TEST(StatCounterTest, CheckValuesAndPrint) {
   StatCounter<Key> counter;
 
   counter.Increment(Key::kFirst);
@@ -50,6 +52,8 @@ TEST(StatCounterTest, CheckValues) {
 
   counter.Decrement(Key::kFirst);
   EXPECT_EQ(counter.Get(Key::kFirst), -1);
+
+  EXPECT_THAT(counter.Print(), StrEq("kFirst=-1 kSecond=0 "));
 }
 
 }  // namespace utils

@@ -19,7 +19,11 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 #include <vector>
+
+#include <absl/strings/str_cat.h>
+#include <absl/strings/substitute.h>
 
 #include <magic_enum.hpp>
 
@@ -39,6 +43,13 @@ class StatCounter {
   void Decrement(TKeyType key, int count = 1) { counts_[static_cast<int>(key)] -= count; }
   void Reset(TKeyType key) { counts_[static_cast<int>(key)] = 0; }
   int64_t Get(TKeyType key) const { return counts_[static_cast<int>(key)]; }
+  std::string Print() const {
+    std::string out;
+    for (auto key : magic_enum::enum_values<TKeyType>()) {
+      absl::StrAppend(&out, absl::Substitute("$0=$1 ", magic_enum::enum_name(key), Get(key)));
+    }
+    return out;
+  }
 
  private:
   std::vector<int64_t> counts_ = std::vector<int64_t>(magic_enum::enum_count<TKeyType>(), 0);
