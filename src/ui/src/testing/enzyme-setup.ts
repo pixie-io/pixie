@@ -16,10 +16,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/* eslint-disable @typescript-eslint/no-var-requires */
+/* eslint-disable @typescript-eslint/no-var-requires, import/no-extraneous-dependencies */
 const enzyme = require('enzyme');
 const Adapter = require('enzyme-adapter-react-16');
 const noop = require('utils/noop');
+/* eslint-enable @typescript-eslint/no-var-requires, import/no-extraneous-dependencies */
 
 const globalAny: any = global;
 

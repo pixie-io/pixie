@@ -251,10 +251,14 @@ module.exports = (env, argv) => {
   // Users can specify the OAUTH environment. Usually this just means
   // setting to "ory_auth", otherwise will default to `environment`.
   const oauthConfigEnv = process.env.PL_OAUTH_CONFIG_ENV;
-  let oauthYAML = utils.readYAMLFile(join(topLevelDir, 'credentials', 'k8s', credentialsEnv, 'configs', 'oauth_config.yaml'), true);
+  let oauthYAML = utils.readYAMLFile(
+    join(topLevelDir, 'credentials', 'k8s', credentialsEnv, 'configs', 'oauth_config.yaml'), true)
+  ;
   // Special case for ory_auth where we read from the unecrypted file.
   if (oauthConfigEnv === 'ory_auth') {
-    oauthYAML = utils.readYAMLFile( join(topLevelDir, 'k8s', 'cloud', 'base', oauthConfigEnv, 'oauth_config.yaml'), false);
+    oauthYAML = utils.readYAMLFile(
+      join(topLevelDir, 'k8s', 'cloud', 'base', oauthConfigEnv, 'oauth_config.yaml'), false
+    );
   }
 
   // Setup the auth client.

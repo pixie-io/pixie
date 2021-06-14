@@ -28,7 +28,7 @@ declare module 'dagre-d3' {
   export const intersect: {
     [shapeName: string]: (
       node: dagre.Node,
-      points: Array<{}>,
+      points: Array<any>,
       point: any,
     ) => void;
   };

@@ -76,7 +76,7 @@ const CtaButton = ({ children, ...props }: ButtonProps) => (
 const trackAuthEvent = (event: string, id: string, email: string): Promise<void> => {
   if (isValidAnalytics()) {
     return Promise.race([
-      new Promise<void>((resolve, reject) => { // Wait for analytics to be sent out before redirecting.
+      new Promise<void>((resolve) => { // Wait for analytics to be sent out before redirecting.
         analytics.track(event, () => {
           analytics.identify(id, { email }, {}, () => {
             resolve();

@@ -9,6 +9,7 @@
     "airbnb/rules/react",
     "plugin:react-hooks/recommended"
   ],
+  "parser": "babel-eslint",
   "parserOptions": {
     "sourceType": "module"
   },
