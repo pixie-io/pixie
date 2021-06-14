@@ -2375,7 +2375,7 @@ __metadata:
     core-js: ^3.4.1
     pngjs: ^3.3.3
   peerDependencies:
-    "@jimp/custom": ">=0.3.5"
+    "@jimpfaviconsom": ">=0.3.5"
   checksum: 819f93953b0d08424ccbcbfa254f8e1304581ca9d7df9ecb5f5a43442421aa679b861a523c62561be5bcb13ba33a37b0f760242b006654244d37d782b3e7dedd
   languageName: node
   linkType: hard
@@ -14099,9 +14099,9 @@ fsevents@^2.1.2:
   linkType: hard
 
 "path-parse@npm:^1.0.6":
-  version: 1.0.6
-  resolution: "path-parse@npm:1.0.6"
-  checksum: 2eee4b93fb3ae13600e3fca18390d9933bbbcf725a624f6b8df020d87515a74872ff6c58072190d6dc75a5584a683dc6ae5c385ad4e4f4efb6e66af040d56c67
+  version: 1.0.7
+  resolution: "path-parse@npm:1.0.7"
+  checksum: 6de0bfa37b4f09af465ff3900fb4104ca9cb1e1fa5cbe869c40cedd10d5d625d04c284afc34967830eee780bf83fd69c017d72a23ffd35718ec861192ec91dd9
   languageName: node
   linkType: hard
 
