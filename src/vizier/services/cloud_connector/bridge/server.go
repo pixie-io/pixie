@@ -422,39 +422,38 @@ func (s *Bridge) handleUpdateMessage(msg *types.Any) error {
 	err = s.vzUpdater.UpdateCRDVizierVersion(pb.Version)
 	if err == nil {
 		s.updateRunning.Store(true)
-		return nil
-	}
+	} else {
+		job, err := s.vzInfo.ParseJobYAML(UpdaterJobYAML, map[string]string{"updater": pb.Version}, map[string]string{
+			"PL_VIZIER_VERSION": pb.Version,
+			"PL_REDEPLOY_ETCD":  fmt.Sprintf("%v", pb.RedeployEtcd),
+		})
+		if err != nil {
+			log.WithError(err).Error("Could not parse job")
+			return err
+		}
 
-	job, err := s.vzInfo.ParseJobYAML(UpdaterJobYAML, map[string]string{"updater": pb.Version}, map[string]string{
-		"PL_VIZIER_VERSION": pb.Version,
-		"PL_REDEPLOY_ETCD":  fmt.Sprintf("%v", pb.RedeployEtcd),
-	})
-	if err != nil {
-		log.WithError(err).Error("Could not parse job")
-		return err
-	}
+		err = s.vzInfo.CreateSecret("pl-update-job-secrets", map[string]string{
+			"cloud-token": pb.Token,
+		})
+		if err != nil {
+			log.WithError(err).Error("Failed to create job secrets")
+			return err
+		}
 
-	err = s.vzInfo.CreateSecret("pl-update-job-secrets", map[string]string{
-		"cloud-token": pb.Token,
-	})
-	if err != nil {
-		log.WithError(err).Error("Failed to create job secrets")
-		return err
+		_, err = s.vzInfo.LaunchJob(job)
+		if err != nil {
+			log.WithError(err).Error("Could not launch job")
+			return err
+		}
+		// Set the update status to true while the update job is running.
+		s.updateRunning.Store(true)
+		// This goroutine waits for the update job to complete. When it does, it sets
+		// the updateRunning boolean to false. Normally, if the update has successfully completed,
+		// this goroutine won't actually complete because this cloudconnector instance should be
+		// replaced by a new cloudconnector instance. This case is here to handle when the
+		// update job has failed.
+		go s.WaitForUpdater()
 	}
-
-	_, err = s.vzInfo.LaunchJob(job)
-	if err != nil {
-		log.WithError(err).Error("Could not launch job")
-		return err
-	}
-	// Set the update status to true while the update job is running.
-	s.updateRunning.Store(true)
-	// This goroutine waits for the update job to complete. When it does, it sets
-	// the updateRunning boolean to false. Normally, if the update has successfully completed,
-	// this goroutine won't actually complete because this cloudconnector instance should be
-	// replaced by a new cloudconnector instance. This case is here to handle when the
-	// update job has failed.
-	go s.WaitForUpdater()
 
 	// Send response message to indicate update job has started.
 	m := cvmsgspb.UpdateOrInstallVizierResponse{
