@@ -94,7 +94,7 @@ func _01_base_schemaGraphql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "01_base_schema.graphql", size: 296, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "01_base_schema.graphql", size: 296, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -114,7 +114,7 @@ func _02_unauth_schemaGraphql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "02_unauth_schema.graphql", size: 199, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "02_unauth_schema.graphql", size: 199, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -134,7 +134,7 @@ func _03_auth_schemaGraphql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "03_auth_schema.graphql", size: 6125, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	info := bindataFileInfo{name: "03_auth_schema.graphql", size: 6125, mode: os.FileMode(420), modTime: time.Unix(1, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

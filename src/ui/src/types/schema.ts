@@ -100,7 +100,7 @@ export interface GQLDeploymentKey {
   desc: string;
 }
 
-export const enum GQLAutocompleteEntityState {
+export enum GQLAutocompleteEntityState {
   AES_UNKNOWN = 'AES_UNKNOWN',
   AES_PENDING = 'AES_PENDING',
   AES_RUNNING = 'AES_RUNNING',
@@ -108,13 +108,13 @@ export const enum GQLAutocompleteEntityState {
   AES_TERMINATED = 'AES_TERMINATED'
 }
 
-export const enum GQLAutocompleteActionType {
+export enum GQLAutocompleteActionType {
   AAT_UNKNOWN = 'AAT_UNKNOWN',
   AAT_EDIT = 'AAT_EDIT',
   AAT_SELECT = 'AAT_SELECT'
 }
 
-export const enum GQLAutocompleteEntityKind {
+export enum GQLAutocompleteEntityKind {
   AEK_UNKNOWN = 'AEK_UNKNOWN',
   AEK_POD = 'AEK_POD',
   AEK_SVC = 'AEK_SVC',
@@ -166,7 +166,7 @@ export interface GQLPodStatus {
   events: Array<GQLK8sEvent>;
 }
 
-export const enum GQLClusterStatus {
+export enum GQLClusterStatus {
   CS_UNKNOWN = 'CS_UNKNOWN',
   CS_HEALTHY = 'CS_HEALTHY',
   CS_UNHEALTHY = 'CS_UNHEALTHY',
@@ -229,7 +229,7 @@ export interface GQLScriptContents {
   contents: string;
 }
 
-export const enum GQLArtifactType {
+export enum GQLArtifactType {
   AT_UNKNOWN = 'AT_UNKNOWN',
   AT_LINUX_AMD64 = 'AT_LINUX_AMD64',
   AT_DARWIN_AMD64 = 'AT_DARWIN_AMD64',

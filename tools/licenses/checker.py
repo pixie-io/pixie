@@ -195,7 +195,7 @@ matchers = [
 
 def is_generated_code(file_path: str):
     return file_path.endswith('.gen.go') or file_path.endswith('.pb.go') or file_path.endswith(
-        '.deepcopy.go') or file_path.endswith('/schema.d.ts')
+        '.deepcopy.go') or file_path.endswith('/schema.ts')
 
 
 def is_skipped(file_path: str):

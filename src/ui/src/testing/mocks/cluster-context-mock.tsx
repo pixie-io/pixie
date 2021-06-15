@@ -18,9 +18,9 @@
 
 import * as React from 'react';
 import { ClusterContext, ClusterContextProps } from 'app/common/cluster-context';
-import { GQLClusterStatus as ClusterStatus } from 'app/types/schema';
+import { GQLClusterStatus } from 'app/types/schema';
 
-export const CLUSTER_CONTEXT_DEFUALTS: ClusterContextProps = {
+export const CLUSTER_CONTEXT_DEFAULTS: ClusterContextProps = {
   selectedClusterID: '',
   selectedClusterName: '',
   selectedClusterPrettyName: '',
@@ -28,12 +28,12 @@ export const CLUSTER_CONTEXT_DEFUALTS: ClusterContextProps = {
   selectedClusterVizierConfig: {
     passthroughEnabled: true,
   },
-  selectedClusterStatus: ClusterStatus.CS_UNKNOWN,
+  selectedClusterStatus: GQLClusterStatus.CS_UNKNOWN,
   setClusterByName: jest.fn(),
 };
 
 export const MockClusterContextProvider: React.FC = ({ children }) => (
-  <ClusterContext.Provider value={CLUSTER_CONTEXT_DEFUALTS}>
+  <ClusterContext.Provider value={CLUSTER_CONTEXT_DEFAULTS}>
     {children}
   </ClusterContext.Provider>
 );

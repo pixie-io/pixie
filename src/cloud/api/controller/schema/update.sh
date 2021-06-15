@@ -22,6 +22,9 @@ go-bindata -modtime=1 -ignore=\.go -ignore=\.sh -ignore=^auth_schema.graphql -pk
 
 tot=$(bazel info workspace)
 pushd "${tot}/src/ui"
-graphql_ts_gen=$(yarn bin graphql-schema-typescript)
-node "${graphql_ts_gen}" generate-ts "${tot}/src/cloud/api/controller/schema" --output src/types/schema.d.ts
+# Note: this _should_ be schema.d.ts, not schema.ts. However, since we build the UI in isolatedModules mode, we must
+# also use normal enums instead of const enums (see https://www.typescriptlang.org/tsconfig#isolatedModules).
+# A strict declarations file (.d.ts) can't export values (like normal enums), so we must rename the file as well.
+yarn graphql-schema-typescript generate-ts "${tot}/src/cloud/api/controller/schema" --output src/types/schema.ts
+sed -i '' 's/export const enum/export enum/g' src/types/schema.ts
 popd

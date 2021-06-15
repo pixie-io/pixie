@@ -16,15 +16,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/* eslint-disable @typescript-eslint/no-var-requires, import/no-extraneous-dependencies */
-const enzyme = require('enzyme');
-const Adapter = require('enzyme-adapter-react-16');
-const noop = require('../utils/noop');
-/* eslint-enable @typescript-eslint/no-var-requires, import/no-extraneous-dependencies */
+/* eslint-disable import/no-extraneous-dependencies */
+import { configure } from 'enzyme';
+import * as Adapter from 'enzyme-adapter-react-16';
+/* eslint-enable import/no-extraneous-dependencies */
+import noop from 'app/utils/noop';
 
 const globalAny: any = global;
 
-enzyme.configure({ adapter: new Adapter() });
+configure({ adapter: new Adapter() });
 // Jest uses jsdom, where document.createRange is not specified. This is used
 // in some of our external dependencies. Mock this out so tests don't fail.
 if (globalAny.document) {
