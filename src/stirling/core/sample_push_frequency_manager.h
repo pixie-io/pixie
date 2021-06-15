@@ -105,7 +105,7 @@ class SamplePushFrequencyManager {
   void set_push_period(std::chrono::milliseconds period) { push_freq_mgr_.set_period(period); }
   const auto& sampling_period() const { return sampling_freq_mgr_.period(); }
   const auto& push_period() const { return push_freq_mgr_.period(); }
-  uint32_t sampling_count() const { return sampling_freq_mgr_.count(); }
+  uint32_t sample_count() const { return sampling_freq_mgr_.count(); }
 
  private:
   FrequencyManager sampling_freq_mgr_;

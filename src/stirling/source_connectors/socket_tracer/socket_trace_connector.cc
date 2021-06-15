@@ -51,7 +51,7 @@ DEFINE_uint32(
     "Ratio of how frequently conn_stats_table is populated relative to the base sampling period");
 // The default frequency logs every minute, since each iteration has a cycle period of 200ms.
 DEFINE_uint32(
-    stirling_conn_trackers_stats_logging_ratio,
+    stirling_socket_tracer_stats_logging_ratio,
     std::chrono::minutes(10) / px::stirling::SocketTraceConnector::kSamplingPeriod,
     "Ratio of how frequently conn_stats_table is populated relative to the base sampling period");
 
@@ -381,7 +381,7 @@ void SocketTraceConnector::UpdateCommonState(ConnectorContext* ctx) {
   constexpr auto kCleanupBPFMapLeaksPeriod = std::chrono::minutes(5);
   constexpr int kCleanupBPFMapLeaksSamplingRatio = kCleanupBPFMapLeaksPeriod / kSamplingPeriod;
   if (FLAGS_stirling_enable_periodic_bpf_map_cleanup &&
-      sample_push_freq_mgr_.sampling_count() % kCleanupBPFMapLeaksSamplingRatio == 0) {
+      sample_push_freq_mgr_.sample_count() % kCleanupBPFMapLeaksSamplingRatio == 0) {
     if (conn_info_map_mgr_ != nullptr) {
       conn_info_map_mgr_->CleanupBPFMapLeaks(&conn_trackers_mgr_);
     }
@@ -404,7 +404,7 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
   // Periodically dump context.
   constexpr auto kDumpContextPeriod = std::chrono::minutes(1);
   constexpr int kDumpContextSamplingRatio = kDumpContextPeriod / kSamplingPeriod;
-  if (sample_push_freq_mgr_.sampling_count() % kDumpContextSamplingRatio == 0) {
+  if (sample_push_freq_mgr_.sample_count() % kDumpContextSamplingRatio == 0) {
     if (debug_level_ >= 1) {
       DumpContext(ctx);
     }
@@ -418,14 +418,15 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
 
   DataTable* conn_stats_table = data_tables[kConnStatsTableNum];
   if (conn_stats_table != nullptr &&
-      sample_push_freq_mgr_.sampling_count() % FLAGS_stirling_conn_stats_sampling_ratio == 0) {
+      sample_push_freq_mgr_.sample_count() % FLAGS_stirling_conn_stats_sampling_ratio == 0) {
     TransferConnStats(ctx, conn_stats_table);
   }
 
-  if (sample_push_freq_mgr_.sampling_count() % FLAGS_stirling_conn_trackers_stats_logging_ratio ==
+  if (sample_push_freq_mgr_.sample_count() % FLAGS_stirling_socket_tracer_stats_logging_ratio ==
       0) {
     conn_trackers_mgr_.ComputeProtocolStats();
     LOG(INFO) << "ConnTracker statistics: " << conn_trackers_mgr_.StatsString();
+    LOG(INFO) << "SocketTracer statistics: " << stats_.Print();
   }
 
   std::vector<CIDRBlock> cluster_cidrs = ctx->GetClusterCIDRs();
@@ -498,16 +499,10 @@ void SocketTraceConnector::HandleDataEvent(void* cb_cookie, void* data, int /*da
   connector->AcceptDataEvent(std::move(data_event_ptr));
 }
 
-namespace {
-
-std::string ProbeLossMessage(std::string_view perf_buffer_name, uint64_t lost) {
-  return absl::Substitute("$0 lost $1 samples.", perf_buffer_name, lost);
-}
-
-}  // namespace
-
-void SocketTraceConnector::HandleDataEventLoss(void* /*cb_cookie*/, uint64_t lost) {
-  VLOG(1) << ProbeLossMessage("socket_data_events", lost);
+void SocketTraceConnector::HandleDataEventLoss(void* cb_cookie, uint64_t lost) {
+  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
+  static_cast<SocketTraceConnector*>(cb_cookie)->stats_.Increment(StatKey::kLossSocketDataEvent,
+                                                                  lost);
 }
 
 void SocketTraceConnector::HandleControlEvent(void* cb_cookie, void* data, int /*data_size*/) {
@@ -516,8 +511,10 @@ void SocketTraceConnector::HandleControlEvent(void* cb_cookie, void* data, int /
   connector->AcceptControlEvent(*static_cast<const socket_control_event_t*>(data));
 }
 
-void SocketTraceConnector::HandleControlEventLoss(void* /*cb_cookie*/, uint64_t lost) {
-  VLOG(1) << ProbeLossMessage("socket_control_events", lost);
+void SocketTraceConnector::HandleControlEventLoss(void* cb_cookie, uint64_t lost) {
+  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
+  static_cast<SocketTraceConnector*>(cb_cookie)->stats_.Increment(StatKey::kLossSocketControlEvent,
+                                                                  lost);
 }
 
 void SocketTraceConnector::HandleConnStatsEvent(void* cb_cookie, void* data, int /*data_size*/) {
@@ -526,8 +523,10 @@ void SocketTraceConnector::HandleConnStatsEvent(void* cb_cookie, void* data, int
   connector->AcceptConnStatsEvent(*static_cast<const conn_stats_event_t*>(data));
 }
 
-void SocketTraceConnector::HandleConnStatsEventLoss(void* /*cb_cookie*/, uint64_t lost) {
-  VLOG(1) << ProbeLossMessage("conn_stats_events", lost);
+void SocketTraceConnector::HandleConnStatsEventLoss(void* cb_cookie, uint64_t lost) {
+  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
+  static_cast<SocketTraceConnector*>(cb_cookie)->stats_.Increment(StatKey::kLossConnStatsEvent,
+                                                                  lost);
 }
 
 void SocketTraceConnector::HandleMMapEvent(void* cb_cookie, void* data, int /*data_size*/) {
@@ -536,8 +535,9 @@ void SocketTraceConnector::HandleMMapEvent(void* cb_cookie, void* data, int /*da
   connector->uprobe_mgr_.NotifyMMapEvent(*static_cast<upid_t*>(data));
 }
 
-void SocketTraceConnector::HandleMMapEventLoss(void* /*cb_cookie*/, uint64_t lost) {
-  VLOG(1) << ProbeLossMessage("mmap_events", lost);
+void SocketTraceConnector::HandleMMapEventLoss(void* cb_cookie, uint64_t lost) {
+  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
+  static_cast<SocketTraceConnector*>(cb_cookie)->stats_.Increment(StatKey::kLossMMapEvent, lost);
 }
 
 void SocketTraceConnector::HandleHTTP2HeaderEvent(void* cb_cookie, void* data, int /*data_size*/) {
@@ -555,8 +555,10 @@ void SocketTraceConnector::HandleHTTP2HeaderEvent(void* cb_cookie, void* data, i
   connector->AcceptHTTP2Header(std::move(event));
 }
 
-void SocketTraceConnector::HandleHTTP2HeaderEventLoss(void* /*cb_cookie*/, uint64_t lost) {
-  VLOG(1) << ProbeLossMessage("go_grpc_header_events", lost);
+void SocketTraceConnector::HandleHTTP2HeaderEventLoss(void* cb_cookie, uint64_t lost) {
+  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
+  static_cast<SocketTraceConnector*>(cb_cookie)->stats_.Increment(StatKey::kLossGoGRPCHeaderEvent,
+                                                                  lost);
 }
 
 void SocketTraceConnector::HandleHTTP2Data(void* cb_cookie, void* data, int /*data_size*/) {
@@ -575,8 +577,9 @@ void SocketTraceConnector::HandleHTTP2Data(void* cb_cookie, void* data, int /*da
   connector->AcceptHTTP2Data(std::move(event));
 }
 
-void SocketTraceConnector::HandleHTTP2DataLoss(void* /*cb_cookie*/, uint64_t lost) {
-  VLOG(1) << ProbeLossMessage("go_grpc_data_events", lost);
+void SocketTraceConnector::HandleHTTP2DataLoss(void* cb_cookie, uint64_t lost) {
+  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
+  static_cast<SocketTraceConnector*>(cb_cookie)->stats_.Increment(StatKey::kLossHTTP2Data, lost);
 }
 
 //-----------------------------------------------------------------------------

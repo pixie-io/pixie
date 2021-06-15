@@ -321,6 +321,17 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   UProbeManager uprobe_mgr_;
 
+  enum class StatKey {
+    kLossSocketDataEvent,
+    kLossSocketControlEvent,
+    kLossConnStatsEvent,
+    kLossMMapEvent,
+    kLossGoGRPCHeaderEvent,
+    kLossHTTP2Data,
+  };
+
+  utils::StatCounter<StatKey> stats_;
+
   FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);
   FRIEND_TEST(SocketTraceConnectorTest, NoEvents);
   FRIEND_TEST(SocketTraceConnectorTest, SortedByResponseTime);
