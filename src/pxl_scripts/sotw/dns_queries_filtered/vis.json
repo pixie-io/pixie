@@ -4,13 +4,17 @@
       "name": "start",
       "type": "PX_STRING",
       "description": "The start time of the window in time units before now.",
-      "defaultValue": "-5m"
+      "defaultValue": {
+        "value": "-5m"
+      }
     },
     {
       "name": "query_name_filter",
       "type": "PX_STRING",
       "description": "The partial query name used to filter the DNS requests by (e.g. your.domain.name).",
-      "defaultValue": ""
+      "defaultValue": {
+        "value": ""
+      }
     }
   ],
   "globalFuncs": [

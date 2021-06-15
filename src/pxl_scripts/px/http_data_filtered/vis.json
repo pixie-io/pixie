@@ -4,25 +4,33 @@
       "name": "svc",
       "type": "PX_SERVICE",
       "description": "The full/partial name of the service to get stats for. Format: ns/svc_name",
-      "defaultValue": ""
+      "defaultValue": {
+        "value": ""
+      }
     },
     {
       "name": "pod",
       "type": "PX_STRING",
       "description": "The full/partial name of the pod to get stats for. Format: ns/pod_name",
-      "defaultValue": ""
+      "defaultValue": {
+        "value": ""
+      }
     },
     {
       "name": "req_path",
       "type": "PX_STRING",
       "description": "The full/partial name of the request_path.",
-      "defaultValue": ""
+      "defaultValue": {
+        "value": ""
+      }
     },
     {
       "name": "start",
       "type": "PX_STRING",
       "description": "The relative start time of the window. Current time is assumed to be now",
-      "defaultValue": "-30s"
+      "defaultValue": {
+        "value": "-30s"
+      }
     }
   ],
   "globalFuncs": [

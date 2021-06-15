@@ -4,13 +4,17 @@
       "name": "start",
       "type": "PX_STRING",
       "description": "The relative start time of the window. Current time is assumed to be now",
-      "defaultValue": "-5m"
+      "defaultValue": {
+        "value": "-5m"
+      }
     },
     {
       "name": "pod",
       "type": "PX_STRING",
       "description": "The full/partial name of the pod to filter by for SQL request. Format: ns/pod_name",
-      "defaultValue": ""
+      "defaultValue": {
+        "value": ""
+      }
     },
     {
       "name": "query",

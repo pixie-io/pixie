@@ -53,7 +53,7 @@ export function validateArgs(vis: Vis, args: Arguments): VizierQueryError|null {
     if (defaultValue == null && (args[name] == null || args[name] === '')) {
       errors.push(`Missing value for required arg ${name}.`);
     } else if (validValues?.length) {
-      let vals = defaultValue ?? args[name];
+      let vals = defaultValue?.value ?? args[name];
       if (!Array.isArray(vals)) vals = [vals];
       for (const val of vals) {
         if (!validValues.includes(val)) {
@@ -88,7 +88,7 @@ export function argsForVis(vis: Vis, args: Arguments): Arguments {
   const outArgs: Arguments = {};
   for (const { name, defaultValue } of vis.variables) {
     // Note: if defaultValue is undefined, the arg is required.
-    outArgs[name] = args[name] ?? defaultValue ?? '';
+    outArgs[name] = args[name] ?? defaultValue?.value ?? '';
   }
 
   return outArgs;

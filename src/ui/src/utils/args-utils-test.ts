@@ -96,7 +96,9 @@ describe('argsForVis', () => {
       widgets: [],
       globalFuncs: [],
       variables: [
-        { name: 'foo', type: 'foo' },
+        {
+          name: 'foo', description: 'foo', validValues: [], type: 'foo',
+        },
       ],
     };
     const args = { foo: 'foo', bar: 'bar' };
@@ -115,8 +117,12 @@ describe('argsForVis', () => {
       widgets: [],
       globalFuncs: [],
       variables: [
-        { name: 'foo', type: 'foo', defaultValue: 'default foo' },
-        { name: 'bar', type: 'bar', defaultValue: 'default bar' },
+        {
+          name: 'foo', description: 'foo', validValues: [], type: 'foo', defaultValue: { value: 'default foo' },
+        },
+        {
+          name: 'bar', description: 'bar', validValues: [], type: 'bar', defaultValue: { value: 'default bar' },
+        },
       ],
     };
     const args = { bar: 'bar' };
@@ -131,7 +137,9 @@ describe('argTypesForVis', () => {
       widgets: [],
       globalFuncs: [],
       variables: [
-        { name: 'foo', type: 'foobar' },
+        {
+          name: 'foo', description: 'foo', validValues: [], type: 'foobar',
+        },
       ],
     };
     expect(argTypesForVis(vis)).toEqual({ foo: 'foobar' });

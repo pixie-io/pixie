@@ -9,25 +9,33 @@
       "name": "start",
       "type": "PX_STRING",
       "description": "The start time of the window in time units before now.",
-      "defaultValue": "-5m"
+      "defaultValue": {
+        "value": "-5m"
+      }
     },
     {
       "name": "from_entity_filter",
       "type": "PX_STRING",
       "description": "The partial string to match the 'from_entity' (source pod).",
-      "defaultValue": ""
+      "defaultValue": {
+        "value": ""
+      }
     },
     {
       "name": "to_entity_filter",
       "type": "PX_STRING",
       "description": "The partial string to match the 'to_entity' (destination service).",
-      "defaultValue": ""
+      "defaultValue": {
+        "value": ""
+      }
     },
     {
       "name": "throughput_filter",
       "type": "PX_FLOAT64",
       "description": "Filters out connections with total throughput less than the specified amount. Specified in B/sec.",
-      "defaultValue": "0.0"
+      "defaultValue": {
+        "value": "0.0"
+      }
     }
   ],
   "globalFuncs": [

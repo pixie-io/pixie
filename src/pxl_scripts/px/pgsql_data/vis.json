@@ -4,25 +4,33 @@
       "name": "start",
       "type": "PX_STRING",
       "description": "The relative start time of the window. Current time is assumed to be now.",
-      "defaultValue": "-5m"
+      "defaultValue": {
+        "value": "-5m"
+      }
     },
     {
       "name": "source_filter",
       "type": "PX_STRING",
       "description": "The partial string to match the 'source' column.",
-      "defaultValue": ""
+      "defaultValue": {
+        "value": ""
+      }
     },
     {
       "name": "destination_filter",
       "type": "PX_STRING",
       "description": "The partial string to match the 'destination' column.",
-      "defaultValue": ""
+      "defaultValue": {
+        "value": ""
+      }
     },
     {
       "name": "max_num_records",
       "type": "PX_INT64",
       "description": "Max number of records to show.",
-      "defaultValue": "1000"
+      "defaultValue": {
+        "value": "1000"
+      }
     }
   ],
   "globalFuncs": [
