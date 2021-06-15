@@ -83,19 +83,5 @@ stirlingpb::Subscribe SubscribeToAllInfoClasses(const stirlingpb::Publish& publi
   return subscribe_proto;
 }
 
-stirlingpb::Subscribe SubscribeToInfoClass(const stirlingpb::Publish& publish_proto,
-                                           std::string_view name) {
-  stirlingpb::Subscribe subscribe_proto;
-
-  for (const auto& info_class : publish_proto.published_info_classes()) {
-    auto sub_info_class = subscribe_proto.add_subscribed_info_classes();
-    sub_info_class->CopyFrom(info_class);
-    if (sub_info_class->schema().name() == name) {
-      sub_info_class->set_subscribed(true);
-    }
-  }
-  return subscribe_proto;
-}
-
 }  // namespace stirling
 }  // namespace px

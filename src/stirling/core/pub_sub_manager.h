@@ -75,11 +75,5 @@ inline void IndexPublication(const stirlingpb::Publish& pub,
  */
 stirlingpb::Subscribe SubscribeToAllInfoClasses(const stirlingpb::Publish& publish_proto);
 
-/**
- * Convenience function to subscribe to a single info classes of a published proto message.
- */
-stirlingpb::Subscribe SubscribeToInfoClass(const stirlingpb::Publish& publish_proto,
-                                           std::string_view name);
-
 }  // namespace stirling
 }  // namespace px

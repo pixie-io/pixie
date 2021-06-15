@@ -240,21 +240,6 @@ TEST_F(PubSubManagerTest, subscribe_test) {
   }
 }
 
-TEST_F(PubSubManagerTest, partial_subscribe_test) {
-  // Get publication.
-  stirlingpb::Publish publish_pb;
-  pub_sub_manager_->PopulatePublishProto(&publish_pb, info_class_mgrs_);
-
-  // Send subscription.
-  stirlingpb::Subscribe subscribe_pb = SubscribeToInfoClass(publish_pb, "my_table");
-  ASSERT_OK(pub_sub_manager_->UpdateSchemaFromSubscribe(subscribe_pb, info_class_mgrs_));
-
-  // Verify updated subscriptions.
-  ASSERT_EQ(info_class_mgrs_.size(), 2);
-  EXPECT_FALSE(info_class_mgrs_[0]->subscribed());
-  EXPECT_TRUE(info_class_mgrs_[1]->subscribed());
-}
-
 TEST_F(PubSubManagerTest, delta_subscribe_test) {
   // Get publication.
   stirlingpb::Publish publish_pb;
