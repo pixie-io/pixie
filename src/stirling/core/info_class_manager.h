@@ -28,6 +28,7 @@
 #include "src/common/base/base.h"
 #include "src/shared/types/type_utils.h"
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
+#include "src/stirling/core/data_table.h"
 #include "src/stirling/core/sample_push_frequency_manager.h"
 #include "src/stirling/core/types.h"
 #include "src/stirling/proto/stirling.pb.h"
@@ -64,10 +65,16 @@ class InfoClassManager final : public NotCopyable {
    */
   explicit InfoClassManager(const DataTableSchema& schema,
                             stirlingpb::SourceType type = stirlingpb::STATIC)
-      : type_(type), schema_(schema) {
+      : type_(type), schema_(schema), data_table_(new DataTable(schema_)) {
     id_ = global_id_++;
     sample_push_freq_mgr_.set_push_period(schema.default_push_period());
   }
+
+  /**
+   * Resets the data table, effectively replace the current data table with a new one.
+   * Used to reset the state of subscribed data tables.
+   */
+  void ResetDataTable() { data_table_.reset(new DataTable(schema_)); }
 
   /**
    * @brief Source connector connected to this Info Class.
@@ -78,13 +85,6 @@ class InfoClassManager final : public NotCopyable {
     source_ = source;
     source_table_num_ = table_num;
   }
-
-  /**
-   * Data table connected to this Info Class.
-   *
-   * @param Pointer to data table instance.
-   */
-  void SetDataTable(DataTable* data_table) { data_table_ = data_table; }
 
   /**
    * Get the schema of the InfoClass.
@@ -164,7 +164,7 @@ class InfoClassManager final : public NotCopyable {
   uint64_t id() const { return id_; }
   bool subscribed() const { return subscribed_; }
   uint32_t source_table_num() const { return source_table_num_; }
-  DataTable* data_table() const { return data_table_; }
+  DataTable* data_table() const { return data_table_.get(); }
 
  private:
   inline static std::atomic<uint64_t> global_id_ = 0;
@@ -187,7 +187,7 @@ class InfoClassManager final : public NotCopyable {
   uint32_t source_table_num_;
 
   // Pointer to the data table where the data is stored.
-  DataTable* data_table_ = nullptr;
+  std::unique_ptr<DataTable> data_table_;
 
   // Used to determine push frequency.
   // NOTE: The sampling period part is not used!

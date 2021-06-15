@@ -214,8 +214,6 @@ class StirlingImpl final : public Stirling {
   absl::flat_hash_map<SourceConnector*, SourceOutput> source_output_map_
       ABSL_GUARDED_BY(info_class_mgrs_lock_);
 
-  std::vector<std::unique_ptr<DataTable>> tables_;
-
   InfoClassManagerVec info_class_mgrs_ ABSL_GUARDED_BY(info_class_mgrs_lock_);
 
   // Lock to protect both info_class_mgrs_ and sources_.
@@ -647,7 +645,6 @@ Status StirlingImpl::SetSubscription(const stirlingpb::Subscribe& subscribe_prot
       mgr->PushData(data_push_callback_);
     }
   }
-  tables_.clear();
 
   // Update schemas based on the subscribe_proto.
   PL_CHECK_OK(pub_sub_mgr_->UpdateSchemaFromSubscribe(subscribe_proto, info_class_mgrs_));
@@ -655,9 +652,7 @@ Status StirlingImpl::SetSubscription(const stirlingpb::Subscribe& subscribe_prot
   // Generate the tables required based on subscribed Info Classes.
   for (const auto& mgr : info_class_mgrs_) {
     if (mgr->subscribed()) {
-      auto data_table = std::make_unique<DataTable>(mgr->Schema());
-      mgr->SetDataTable(data_table.get());
-      tables_.push_back(std::move(data_table));
+      mgr->ResetDataTable();
     }
   }
 
