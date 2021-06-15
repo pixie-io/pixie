@@ -25,6 +25,7 @@
 
 // LINT_C_FILE: Do not remove this line. It ensures cpplint treats this as a C file.
 
+#include "src/stirling/source_connectors/socket_tracer/bcc_bpf/macros.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
 
 // Maps that communicates the location of symbols within a binary.

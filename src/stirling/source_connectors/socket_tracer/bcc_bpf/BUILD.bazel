@@ -40,6 +40,7 @@ socket_trace_hdrs = [
     "go_tls_trace.c",
     "go_trace_common.h",
     "openssl_trace.c",
+    "macros.h",
     "protocol_inference.h",
     "//src/stirling/bpf_tools/bcc_bpf:headers",
     "//src/stirling/bpf_tools/bcc_bpf_intf:headers",

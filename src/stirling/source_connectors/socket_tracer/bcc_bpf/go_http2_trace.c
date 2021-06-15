@@ -26,6 +26,7 @@
 // LINT_C_FILE: Do not remove this line. It ensures cpplint treats this as a C file.
 
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf/go_trace_common.h"
+#include "src/stirling/source_connectors/socket_tracer/bcc_bpf/macros.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/go_grpc_types.h"
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/symaddrs.h"
 

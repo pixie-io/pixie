@@ -208,9 +208,3 @@ struct openssl_symaddrs_t {
   // Struct is defined in crypto/bio/bio_lcl.h, crypto/bio/bio_local.h depending on the version.
   int32_t RBIO_num_offset;  // 0x30 (openssl 1.1.1) or 0x28 (openssl 1.1.0)
 };
-
-// Utility macro for use in BPF code, so the probe can exit if the symbol doesn't exist.
-#define REQUIRE_SYMADDR(symaddr, retval) \
-  if (symaddr == -1) {                   \
-    return retval;                       \
-  }
