@@ -14,7 +14,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("//bazel:grpc_web.bzl", "pl_grpc_web_library")
 load("//bazel:proto_compile.bzl", "pl_go_proto_library", "pl_proto_library", "pl_py_proto_library")
 
 pl_proto_library(
@@ -30,13 +29,6 @@ pl_go_proto_library(
     proto = ":vis_pl_proto",
     visibility = ["//src:__subpackages__"],
     deps = [],
-)
-
-pl_grpc_web_library(
-    name = "vis_pl_grpc_web_proto",
-    grpc = False,
-    proto = ":vis_pl_proto",
-    visibility = ["//src:__subpackages__"],
 )
 
 pl_py_proto_library(
