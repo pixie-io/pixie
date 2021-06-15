@@ -167,7 +167,7 @@ static __inline void init_conn_info(uint32_t tgid, int32_t fd, struct conn_info_
   init_conn_id(tgid, fd, &conn_info->conn_id);
   // NOTE: BCC code defaults to 0, because kRoleUnknown is not 0, must explicitly initialize.
   conn_info->role = kRoleUnknown;
-  conn_info->addr.sa.sa_family = AF_UNKNOWN;
+  conn_info->addr.sa.sa_family = PX_AF_UNKNOWN;
 }
 
 // Be careful calling this function. The automatic creation of BPF map entries can result in a
@@ -232,9 +232,9 @@ static __inline struct conn_stats_event_t* fill_conn_stats_event(
  ***********************************************************/
 
 static __inline bool should_trace_sockaddr_family(sa_family_t sa_family) {
-  // AF_UNKNOWN means we never traced the accept/connect, and we don't know the sockaddr family.
+  // PX_AF_UNKNOWN means we never traced the accept/connect, and we don't know the sockaddr family.
   // Trace these because they *may* be a sockaddr of interest.
-  return sa_family == AF_UNKNOWN || sa_family == AF_INET || sa_family == AF_INET6;
+  return sa_family == PX_AF_UNKNOWN || sa_family == AF_INET || sa_family == AF_INET6;
 }
 
 // Returns true if detection passes threshold. Right now this is only used for PGSQL.

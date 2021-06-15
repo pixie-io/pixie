@@ -24,7 +24,7 @@
 
 #include "src/stirling/source_connectors/socket_tracer/bcc_bpf_intf/common.h"
 
-#define AF_UNKNOWN 0xff
+#define PX_AF_UNKNOWN 0xff
 
 const char kControlMapName[] = "control_map";
 const uint64_t kSocketTraceNothing = 0;

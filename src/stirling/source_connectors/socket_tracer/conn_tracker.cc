@@ -424,7 +424,7 @@ void ConnTracker::SetConnID(struct conn_id_t conn_id) {
 void ConnTracker::SetRemoteAddr(const union sockaddr_t addr, std::string_view reason) {
   if (open_info_.remote_addr.family == SockAddrFamily::kUnspecified) {
     PopulateSockAddr(&addr.sa, &open_info_.remote_addr);
-    if (addr.sa.sa_family == AF_UNKNOWN) {
+    if (addr.sa.sa_family == PX_AF_UNKNOWN) {
       open_info_.remote_addr.family = SockAddrFamily::kUnspecified;
     }
     CONN_TRACE(1) << absl::Substitute("RemoteAddr updated $0, reason=[$1]",

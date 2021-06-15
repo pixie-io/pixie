@@ -350,7 +350,7 @@ TEST_F(ConnStatsTest, NoEventsIfNoRemoteAddr) {
   conn_stats_event.timestamp_ns = 0;
   conn_stats_event.conn_id = kConnID0;
   conn_stats_event.role = kRoleClient;
-  conn_stats_event.addr.in4.sin_family = AF_UNKNOWN;
+  conn_stats_event.addr.in4.sin_family = PX_AF_UNKNOWN;
   conn_stats_event.conn_events = 0;
   conn_stats_event.rd_bytes = 0;
   conn_stats_event.wr_bytes = 0;
