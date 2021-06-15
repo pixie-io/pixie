@@ -143,15 +143,13 @@ static __inline void set_open_file(uint64_t id, int fd) {
   open_file_map.insert(&tgid_fd, &kTrue);
 }
 
-static __inline bool is_open_file(uint64_t id, int fd) {
-  uint32_t tgid = id >> 32;
+static __inline bool is_open_file(uint32_t tgid, int fd) {
   uint64_t tgid_fd = gen_tgid_fd(tgid, fd);
   bool* open_file = open_file_map.lookup(&tgid_fd);
   return (open_file != NULL);
 }
 
-static __inline void clear_open_file(uint64_t id, int fd) {
-  uint32_t tgid = id >> 32;
+static __inline void clear_open_file(uint32_t tgid, int fd) {
   uint64_t tgid_fd = gen_tgid_fd(tgid, fd);
   open_file_map.delete(&tgid_fd);
 }
@@ -181,9 +179,7 @@ static __inline struct conn_info_t* get_or_create_conn_info(uint32_t tgid, int32
   return conn_info_map.lookup_or_init(&tgid_fd, &new_conn_info);
 }
 
-static __inline void set_conn_as_ssl(uint64_t id, int32_t fd) {
-  uint32_t tgid = id >> 32;
-  // Update conn_info, so that encrypted data data can be filtered out.
+static __inline void set_conn_as_ssl(uint32_t tgid, int32_t fd) {
   struct conn_info_t* conn_info = get_or_create_conn_info(tgid, fd);
   if (conn_info == NULL) {
     return;
@@ -705,7 +701,7 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
     return;
   }
 
-  if (is_open_file(id, args->fd)) {
+  if (is_open_file(tgid, args->fd)) {
     return;
   }
 
@@ -833,7 +829,7 @@ static __inline void process_syscall_close(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  clear_open_file(id, close_args->fd);
+  clear_open_file(tgid, close_args->fd);
 
   if (ret_val < 0) {
     // This close() call failed.
