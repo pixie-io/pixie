@@ -48,7 +48,7 @@ void InfoClassManager::PushData(DataPushCallback agent_callback) {
 
 stirlingpb::InfoClass InfoClassManager::ToProto() const {
   stirlingpb::InfoClass info_class_proto;
-  info_class_proto.set_type(type_);
+
   info_class_proto.mutable_schema()->CopyFrom(schema_.ToProto());
   info_class_proto.set_id(id_);
   info_class_proto.set_subscribed(subscribed_);
