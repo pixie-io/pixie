@@ -250,6 +250,7 @@ const Legend = React.memo((props: LegendProps) => {
 
       rows.push(
         <div
+          key={`row-${j}`}
           className={classes.rowContainer}
           onMouseOver={onMouseOver}
           onMouseOut={handleRowLeave}
@@ -272,15 +273,14 @@ const Legend = React.memo((props: LegendProps) => {
       columnGap: `${COLUMN_GAP_SIZE}px`,
       gridTemplateRows: `repeat(${NUM_ROWS}, ${ROW_HEIGHT}px)`,
     };
-    const grid = (
-      <div style={gridStyle}>
+    grids.push(
+      <div key={`col-${i}`} style={gridStyle}>
         {rows}
-      </div>
+      </div>,
     );
-    grids.push(grid);
     // If this isn't the last grid, add a spacing div.
     if (i !== numGrids - 1) {
-      grids.push(<div className={classes.gridGap} />);
+      grids.push(<div className={classes.gridGap} key={`${i}-gap`}/>);
     }
   }
 
