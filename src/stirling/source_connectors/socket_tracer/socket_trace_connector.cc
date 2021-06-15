@@ -280,6 +280,72 @@ void DumpContext(ConnectorContext* ctx) {
   LOG(INFO) << absl::Substitute("List of UPIDs ($0): $1", upids.size(), upids_str);
 }
 
+template <typename TBPFTable>
+void PrintBPFMapInfo(TBPFTable map, std::string_view name) {
+  LOG(INFO) << absl::Substitute("BPFTable=$0 occupancy=$1 capacity=$2", name,
+                                map.get_table_offline().size(), map.capacity());
+}
+
+void DumpBPFMapInfo(bpf_tools::BCCWrapper* bcc) {
+  auto go_common_symaddrs_map =
+      bcc->GetHashTable<uint32_t, struct go_common_symaddrs_t>("go_common_symaddrs_map");
+  PrintBPFMapInfo(go_common_symaddrs_map, "go_common_symaddrs_map");
+
+  auto openssl_symaddrs_map =
+      bcc->GetHashTable<uint32_t, struct openssl_symaddrs_t>("openssl_symaddrs_map");
+  PrintBPFMapInfo(openssl_symaddrs_map, "openssl_symaddrs_map");
+
+  auto active_ssl_read_args_map =
+      bcc->GetHashTable<uint64_t, struct data_args_t>("active_ssl_read_args_map");
+  PrintBPFMapInfo(active_ssl_read_args_map, "active_ssl_read_args_map");
+
+  auto active_ssl_write_args_map =
+      bcc->GetHashTable<uint64_t, struct data_args_t>("active_ssl_write_args_map");
+  PrintBPFMapInfo(active_ssl_write_args_map, "active_ssl_write_args_map");
+
+  auto go_tls_symaddrs_map =
+      bcc->GetHashTable<uint32_t, struct go_tls_symaddrs_t>("go_tls_symaddrs_map");
+  PrintBPFMapInfo(go_tls_symaddrs_map, "go_tls_symaddrs_map");
+
+  auto http2_symaddrs_map =
+      bcc->GetHashTable<uint32_t, struct go_http2_symaddrs_t>("http2_symaddrs_map");
+  PrintBPFMapInfo(http2_symaddrs_map, "http2_symaddrs_map");
+
+  auto active_write_headers_frame_map =
+      bcc->GetHashTable<void*, struct go_grpc_http2_header_event_t::header_attr_t>(
+          "active_write_headers_frame_map");
+  PrintBPFMapInfo(active_write_headers_frame_map, "active_write_headers_frame_map");
+
+  auto conn_info_map = bcc->GetHashTable<uint64_t, struct conn_info_t>("conn_info_map");
+  PrintBPFMapInfo(conn_info_map, "conn_info_map");
+
+  auto conn_disabled_map = bcc->GetHashTable<uint64_t, uint64_t>("conn_disabled_map");
+  PrintBPFMapInfo(conn_disabled_map, "conn_disabled_map");
+
+  auto open_file_map = bcc->GetHashTable<uint64_t, bool>("open_file_map");
+  PrintBPFMapInfo(open_file_map, "open_file_map");
+
+  auto active_accept_args_map =
+      bcc->GetHashTable<uint64_t, struct accept_args_t>("active_accept_args_map");
+  PrintBPFMapInfo(active_accept_args_map, "active_accept_args_map");
+
+  auto active_connect_args_map =
+      bcc->GetHashTable<uint64_t, struct connect_args_t>("active_connect_args_map");
+  PrintBPFMapInfo(active_connect_args_map, "active_connect_args_map");
+
+  auto active_write_args_map =
+      bcc->GetHashTable<uint64_t, struct data_args_t>("active_write_args_map");
+  PrintBPFMapInfo(active_write_args_map, "active_write_args_map");
+
+  auto active_read_args_map =
+      bcc->GetHashTable<uint64_t, struct data_args_t>("active_read_args_map");
+  PrintBPFMapInfo(active_read_args_map, "active_read_args_map");
+
+  auto active_close_args_map =
+      bcc->GetHashTable<uint64_t, struct close_args_t>("active_close_args_map");
+  PrintBPFMapInfo(active_close_args_map, "active_close_args_map");
+}
+
 }  // namespace
 
 void SocketTraceConnector::UpdateCommonState(ConnectorContext* ctx) {
@@ -310,13 +376,6 @@ void SocketTraceConnector::UpdateCommonState(ConnectorContext* ctx) {
 
   conn_trackers_mgr_.CleanupTrackers();
 
-  // Periodically dump context.
-  constexpr auto kDumpContextPeriod = std::chrono::minutes(1);
-  constexpr int kDumpContextSamplingRatio = kDumpContextPeriod / kSamplingPeriod;
-  if (debug_level_ > 0 && sample_push_freq_mgr_.sampling_count() % kDumpContextSamplingRatio == 0) {
-    DumpContext(ctx);
-  }
-
   // Periodically check for leaking conn_info_map entries.
   // TODO(oazizi): Track down and plug the leaks, then zap this function.
   constexpr auto kCleanupBPFMapLeaksPeriod = std::chrono::minutes(5);
@@ -341,6 +400,19 @@ void SocketTraceConnector::UpdateTrackerTraceLevel(ConnTracker* tracker) {
 void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
                                             const std::vector<DataTable*>& data_tables) {
   set_iteration_time(std::chrono::steady_clock::now());
+
+  // Periodically dump context.
+  constexpr auto kDumpContextPeriod = std::chrono::minutes(1);
+  constexpr int kDumpContextSamplingRatio = kDumpContextPeriod / kSamplingPeriod;
+  if (sample_push_freq_mgr_.sampling_count() % kDumpContextSamplingRatio == 0) {
+    if (debug_level_ >= 1) {
+      DumpContext(ctx);
+    }
+
+    if (debug_level_ >= 2) {
+      DumpBPFMapInfo(static_cast<BCCWrapper*>(this));
+    }
+  }
 
   UpdateCommonState(ctx);
 

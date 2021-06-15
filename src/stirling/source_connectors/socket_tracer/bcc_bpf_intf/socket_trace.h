@@ -269,3 +269,30 @@ inline std::string ToString(const socket_control_event_t& event) {
 }
 
 #endif
+
+struct connect_args_t {
+  const struct sockaddr* addr;
+  int32_t fd;
+};
+
+struct accept_args_t {
+  struct sockaddr* addr;
+  struct socket* sock_alloc_socket;
+};
+
+struct data_args_t {
+  // Represents the function from which this argument group originates.
+  enum source_function_t source_fn;
+  int32_t fd;
+  // For send()/recv()/write()/read().
+  const char* buf;
+  // For sendmsg()/recvmsg()/writev()/readv().
+  const struct iovec* iov;
+  size_t iovlen;
+  // For sendmmsg()
+  unsigned int* msg_len;
+};
+
+struct close_args_t {
+  int32_t fd;
+};
