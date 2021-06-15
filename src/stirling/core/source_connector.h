@@ -26,7 +26,7 @@
 #include "src/shared/types/types.h"
 #include "src/stirling/core/connector_context.h"
 #include "src/stirling/core/data_table.h"
-#include "src/stirling/core/utils.h"
+#include "src/stirling/core/sample_push_frequency_manager.h"
 
 /**
  * These are the steps to follow to add a new data source connector.

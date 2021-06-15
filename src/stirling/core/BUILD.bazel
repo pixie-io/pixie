@@ -108,8 +108,8 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "utils_test",
-    srcs = ["utils_test.cc"],
+    name = "sample_push_frequency_manager_test",
+    srcs = ["sample_push_frequency_manager_test.cc"],
     deps = [":cc_library"],
 )
 

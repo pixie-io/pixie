@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "src/stirling/core/utils.h"
+#include "src/stirling/core/sample_push_frequency_manager.h"
 
 namespace px {
 namespace stirling {

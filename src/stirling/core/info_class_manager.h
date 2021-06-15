@@ -28,8 +28,8 @@
 #include "src/common/base/base.h"
 #include "src/shared/types/type_utils.h"
 #include "src/shared/types/typespb/wrapper/types_pb_wrapper.h"
+#include "src/stirling/core/sample_push_frequency_manager.h"
 #include "src/stirling/core/types.h"
-#include "src/stirling/core/utils.h"
 #include "src/stirling/proto/stirling.pb.h"
 
 namespace px {
