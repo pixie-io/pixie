@@ -37,7 +37,7 @@ import { useQuery, gql } from '@apollo/client';
 import { DeployInstructions } from './deploy-instructions';
 import { selectClusterName } from './cluster-info';
 import { RouteNotFound } from './route-not-found';
-import { VizierRouteContext, VizierContextRouter } from './vizier-routing';
+import { LiveRouteContext, LiveContextRouter } from './live-routing';
 
 const useStyles = makeStyles(() => createStyles({
   banner: {
@@ -106,7 +106,7 @@ const ScriptShortcut = ({ match, location }) => {
   return <Redirect to={newPath} />;
 };
 
-const Vizier = () => {
+const Live = () => {
   const { data: countData, loading: countLoading } = useQuery<{
     clusters: Pick<GQLClusterInfo, 'id'>[]
   }>(
@@ -148,7 +148,7 @@ const ClusterContextProvider: React.FC = ({ children }) => {
 
   const {
     scriptId, clusterName, args, push,
-  } = React.useContext(VizierRouteContext);
+  } = React.useContext(LiveRouteContext);
 
   const { data, loading, error } = useQuery<{
     clusterByName: SelectedClusterInfo
@@ -206,13 +206,13 @@ const ClusterContextProvider: React.FC = ({ children }) => {
   );
 };
 
-const VizierWithProvider = () => (
+const LiveWithProvider = () => (
   <ScriptsContextProvider>
-    <VizierContextRouter>
+    <LiveContextRouter>
       <ClusterContextProvider>
-        <Vizier />
+        <Live />
       </ClusterContextProvider>
-    </VizierContextRouter>
+    </LiveContextRouter>
   </ScriptsContextProvider>
 );
 
@@ -269,7 +269,7 @@ export default function PixieWithContext(): React.ReactElement {
       <Switch>
         <Route path='/admin' component={AdminView} />
         <Route path='/credits' component={CreditsView} />
-        <Route path='/live' component={VizierWithProvider} />
+        <Route path='/live' component={LiveWithProvider} />
         <Route
           path={[
             '/script/:orgId/:scriptId',

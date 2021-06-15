@@ -17,7 +17,7 @@
  */
 
 import { DARK_THEME, SnackbarProvider, VersionInfo } from 'app/components';
-import Vizier from 'app/containers/App/vizier';
+import Live from 'app/containers/App/live';
 import PixieCookieBanner from 'configurable/cookie-banner';
 import { LD_CLIENT_ID } from 'app/containers/constants';
 import {
@@ -108,9 +108,9 @@ export const App: React.FC = () => {
               <RedirectWithArgs exact from='/signup' to='/auth/signup' />
               <RedirectWithArgs exact from='/auth-complete' to='/auth/cli-auth-complete' />
               {
-                // 404s are handled within the Vizier route, after the user authenticates.
+                // 404s are handled within the Live route, after the user authenticates.
                 // Logged out users get redirected to /login before the possibility of a 404 is checked.
-                authenticated ? <Route component={Vizier} />
+                authenticated ? <Route component={Live} />
                   : <Redirect from='/*' to={authRedirectTo} />
               }
             </Switch>

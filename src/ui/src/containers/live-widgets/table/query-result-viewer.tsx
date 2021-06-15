@@ -28,8 +28,8 @@ import {
 import { createStyles } from '@material-ui/styles';
 import { IndexRange } from 'react-virtualized';
 import { Arguments } from 'app/utils/args-utils';
-import { VizierDataTable } from '../../vizier-data-table/vizier-data-table';
-import { JSONData } from '../../format-data/format-data';
+import { LiveDataTable } from 'app/containers/live-data-table/live-data-table';
+import { JSONData } from 'app/containers/format-data/format-data';
 
 const styles = ({ spacing }: Theme) => createStyles({
   root: {
@@ -104,7 +104,7 @@ const QueryResultTableBare = (({
   return (
     <div className={classes.root}>
       <div className={classes.table}>
-        <VizierDataTable
+        <LiveDataTable
           table={data}
           expandable
           expandedRenderer={ExpandedRowRenderer}

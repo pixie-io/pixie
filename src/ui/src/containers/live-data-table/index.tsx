@@ -16,6 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { VizierDataTable } from './vizier-data-table';
+import { LiveDataTable } from './live-data-table';
 
-export default VizierDataTable;
+export default LiveDataTable;

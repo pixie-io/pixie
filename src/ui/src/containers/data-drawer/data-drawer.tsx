@@ -21,7 +21,7 @@ import { DataDrawerContext } from 'app/context/data-drawer-context';
 import { LayoutContext } from 'app/context/layout-context';
 import { ResultsContext } from 'app/context/results-context';
 import * as React from 'react';
-import { VizierDataTableWithDetails } from 'app/containers/vizier-data-table/vizier-data-table';
+import { LiveDataTableWithDetails } from 'app/containers/live-data-table/live-data-table';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 import {
@@ -171,7 +171,7 @@ const DataDrawer = ({ open, activeTab, setActiveTab }) => {
   };
   const tabs = React.useMemo(() => Object.keys(tables).map((tableName) => ({
     title: tableName,
-    content: <VizierDataTableWithDetails table={tables[tableName]} />,
+    content: <LiveDataTableWithDetails table={tables[tableName]} />,
   })), [tables]);
 
   // If the selected table is not in the new result set, show the first table.

@@ -32,7 +32,7 @@ import { selectClusterName } from 'app/containers/App/cluster-info';
 import { GQLClusterInfo } from 'app/types/schema';
 import { argsForVis } from 'app/utils/args-utils';
 
-export interface VizierRouteContextProps {
+export interface LiveRouteContextProps {
   scriptId: string;
   clusterName: string | null;
   args: Record<string, string | string[]>;
@@ -45,7 +45,7 @@ export interface VizierRouteContextProps {
   ) => LocationDescriptorObject;
 }
 
-export const VizierRouteContext = React.createContext<VizierRouteContextProps>(null);
+export const LiveRouteContext = React.createContext<LiveRouteContextProps>(null);
 
 /** Some scripts have special mnemonic routes. They are vanity URLs for /clusters/:cluster?... and map as such */
 const VANITY_ROUTES = new Map<string, string>([
@@ -65,18 +65,18 @@ const VANITY_ROUTES = new Map<string, string>([
   /* eslint-enable no-multi-spaces */
 ]);
 
-const VizierRoute: React.FC<VizierRouteContextProps> = ({
+const LiveRoute: React.FC<LiveRouteContextProps> = ({
   args, scriptId, clusterName, push, replace, routeFor, children,
 }) => {
   // Sorting keys ensures that the stringified object looks the same regardless of the order of operations that built it
   const serializedArgs = JSON.stringify(args, Object.keys(args ?? {}).sort());
-  const context: VizierRouteContextProps = React.useMemo(() => ({
+  const context: LiveRouteContextProps = React.useMemo(() => ({
     scriptId, clusterName, args, push, replace, routeFor,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [scriptId, clusterName, serializedArgs, push, replace, routeFor]);
 
   return (
-    <VizierRouteContext.Provider value={context}>{children}</VizierRouteContext.Provider>
+    <LiveRouteContext.Provider value={context}>{children}</LiveRouteContext.Provider>
   );
 };
 
@@ -121,7 +121,7 @@ const replace = (
   }
 };
 
-export const VizierContextRouter: React.FC = ({ children }) => {
+export const LiveContextRouter: React.FC = ({ children }) => {
   const { data, loading: loadingCluster } = useQuery<{
     clusters: Pick<GQLClusterInfo, 'clusterName' | 'status'>[]
   }>(
@@ -150,7 +150,7 @@ export const VizierContextRouter: React.FC = ({ children }) => {
         path={[...VANITY_ROUTES.keys()]}
         render={({ match, location }) => {
           // Special handling only if a default cluster is available and path is /live w/o args.
-          // Otherwise we want to render the VizierRoute which eventually renders something helpful for new users.
+          // Otherwise we want to render the LiveRoute which eventually renders something helpful for new users.
           if (defaultCluster && match.path === '/live') {
             return (<Redirect to={`/live/clusters/${encodeURIComponent(defaultCluster)}`} />);
           }
@@ -178,7 +178,7 @@ export const VizierContextRouter: React.FC = ({ children }) => {
             });
 
           return (
-            <VizierRoute
+            <LiveRoute
               scriptId={scriptId}
               args={args}
               clusterName={decodeURIComponent(cluster)}
@@ -187,7 +187,7 @@ export const VizierContextRouter: React.FC = ({ children }) => {
               routeFor={routeFor}
             >
               {children}
-            </VizierRoute>
+            </LiveRoute>
           );
         }}
       />

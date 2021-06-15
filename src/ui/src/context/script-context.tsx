@@ -17,7 +17,7 @@
  */
 
 import * as React from 'react';
-import { VizierRouteContext } from 'app/containers/App/vizier-routing';
+import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
 import {
   getQueryFuncs, parseVis, parseVisSilently, Vis,
@@ -47,7 +47,7 @@ export interface ScriptContextProps {
    * The currently selected script, including any local edits the user has made, with the Vis spec parsed.
    */
   script: ParsedScript;
-  /** Args that will be passed to the current script if it's executed. Mirrored from VizierRouteContext. */
+  /** Args that will be passed to the current script if it's executed. Mirrored from LiveRouteContext. */
   args: Record<string, string | string[]>;
   /**
    * Updates the script and args that will be used if execute() is called.
@@ -83,7 +83,7 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
   const apiClient = React.useContext(PixieAPIContext);
   const {
     scriptId, args, push,
-  } = React.useContext(VizierRouteContext);
+  } = React.useContext(LiveRouteContext);
   const { selectedClusterName } = React.useContext(ClusterContext);
   const { scripts: availableScripts, loading: loadingAvailableScripts } = React.useContext(ScriptsContext);
   const resultsContext = React.useContext(ResultsContext);

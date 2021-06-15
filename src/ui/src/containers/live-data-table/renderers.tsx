@@ -308,7 +308,7 @@ export function prettyCellRenderer(
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function vizierCellRenderer(
+export function liveCellRenderer(
   display: ColumnDisplayInfo,
   updateDisplay: (ColumnDisplayInfo) => void,
   prettyRender: boolean,

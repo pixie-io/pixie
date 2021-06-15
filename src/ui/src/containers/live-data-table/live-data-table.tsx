@@ -37,7 +37,7 @@ import { Arguments } from 'app/utils/args-utils';
 
 import { ColumnDisplayInfo, displayInfoFromColumn, titleFromInfo } from './column-display-info';
 import { parseRows } from './parsers';
-import { vizierCellRenderer } from './renderers';
+import { liveCellRenderer } from './renderers';
 import { getSortFunc } from './sort-funcs';
 
 // Note: if an alignment exists for both a column's semantic type and its data type, the semantic type takes precedence.
@@ -85,7 +85,7 @@ function getWidthOverride(st: SemanticType, dt: DataType): number {
   return DataTypeWidthOverrideMap.get(dt);
 }
 
-interface VizierDataTableProps {
+interface LiveDataTableProps {
   table: Table;
   prettyRender?: boolean;
   expandable?: boolean;
@@ -97,7 +97,7 @@ interface VizierDataTableProps {
   propagatedArgs?: Arguments;
 }
 
-export const VizierDataTable: React.FC<VizierDataTableProps> = (props) => {
+export const LiveDataTable: React.FC<LiveDataTableProps> = (props) => {
   const {
     table, prettyRender = false, expandable = false, expandedRenderer,
     clusterName = null,
@@ -165,7 +165,7 @@ export const VizierDataTable: React.FC<VizierDataTableProps> = (props) => {
         dataKey: displayInfo.columnName,
         label: titleFromInfo(displayInfo),
         align: SemanticAlignmentMap.get(displayInfo.semanticType) ?? DataAlignmentMap.get(displayInfo.type) ?? 'start',
-        cellRenderer: vizierCellRenderer(displayInfo, updateColumnDisplay, prettyRender,
+        cellRenderer: liveCellRenderer(displayInfo, updateColumnDisplay, prettyRender,
           theme, clusterName, rows, propagatedArgs),
       };
       if (hasWidthOverride(displayInfo.semanticType, displayInfo.type)) {
@@ -243,11 +243,11 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-interface VizierDataRowDetailsProps {
+interface LiveDataRowDetailsProps {
   data?: any;
 }
 
-const VizierDataRowDetails: React.FC<VizierDataRowDetailsProps> = ({ data }) => {
+const LiveDataRowDetails: React.FC<LiveDataRowDetailsProps> = ({ data }) => {
   const classes = useStyles();
   if (!data) {
     return null;
@@ -259,7 +259,7 @@ const VizierDataRowDetails: React.FC<VizierDataRowDetailsProps> = ({ data }) => 
   );
 };
 
-export const VizierDataTableWithDetails: React.FC<{ table: Table }> = (props) => {
+export const LiveDataTableWithDetails: React.FC<{ table: Table }> = (props) => {
   const [details, setDetails] = React.useState(null);
 
   const onRowSelection = React.useCallback((row) => {
@@ -275,9 +275,9 @@ export const VizierDataTableWithDetails: React.FC<{ table: Table }> = (props) =>
   return (
     <div className={dataTableClass}>
       <div className={classes.table}>
-        <VizierDataTable prettyRender expandable={false} table={props.table} onRowSelectionChanged={onRowSelection} />
+        <LiveDataTable prettyRender expandable={false} table={props.table} onRowSelectionChanged={onRowSelection} />
       </div>
-      <VizierDataRowDetails data={details} />
+      <LiveDataRowDetails data={details} />
     </div>
   );
 };
