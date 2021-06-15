@@ -149,6 +149,7 @@ func (r *VizierReconciler) deleteVizier(ctx context.Context, req ctrl.Request) e
 	keyValueLabel := operatorAnnotation + "=" + req.Name
 	_, _ = od.DeleteByLabel(keyValueLabel, k8s.AllResourceKinds...)
 	_, _ = od.DeleteByLabel("app=nats", k8s.AllResourceKinds...)
+	_, _ = od.DeleteByLabel("etcd_cluster=pl-etcd", k8s.AllResourceKinds...)
 	_ = od.DeleteCustomObject("NatsCluster", "pl-nats")
 	return nil
 }
