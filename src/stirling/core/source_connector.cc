@@ -34,6 +34,12 @@ Status SourceConnector::Init() {
   LOG(INFO) << absl::Substitute("Initializing source connector: $0", name());
   Status s = InitImpl();
   state_ = s.ok() ? State::kActive : State::kErrors;
+
+  DCHECK_NE(sample_push_freq_mgr_.sampling_period().count(), 0)
+      << "Sampling period has not been initialized";
+  DCHECK_NE(sample_push_freq_mgr_.push_period().count(), 0)
+      << "Push period has not been initialized";
+
   return s;
 }
 
