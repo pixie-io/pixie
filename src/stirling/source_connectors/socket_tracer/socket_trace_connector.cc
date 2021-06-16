@@ -108,7 +108,7 @@ SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
 }
 
 void SocketTraceConnector::InitProtocolTransferSpecs() {
-#define TRANSER_STREAM_PROTOCOL(protocol_name) \
+#define TRANSFER_STREAM_PROTOCOL(protocol_name) \
   &SocketTraceConnector::TransferStream<protocols::protocol_name::ProtocolTraits>
 
   // PROTOCOL_LIST: Requires update on new protocols.
@@ -120,34 +120,34 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
       {kProtocolHTTP, TransferSpec{FLAGS_stirling_enable_http_tracing,
                                    kHTTPTableNum,
                                    {kRoleClient, kRoleServer},
-                                   TRANSER_STREAM_PROTOCOL(http)}},
+                                   TRANSFER_STREAM_PROTOCOL(http)}},
       {kProtocolHTTP2, TransferSpec{FLAGS_stirling_enable_http2_tracing,
                                     kHTTPTableNum,
                                     {kRoleClient, kRoleServer},
-                                    TRANSER_STREAM_PROTOCOL(http2)}},
+                                    TRANSFER_STREAM_PROTOCOL(http2)}},
       {kProtocolCQL, TransferSpec{FLAGS_stirling_enable_cass_tracing,
                                   kCQLTableNum,
                                   {kRoleClient, kRoleServer},
-                                  TRANSER_STREAM_PROTOCOL(cass)}},
+                                  TRANSFER_STREAM_PROTOCOL(cass)}},
       {kProtocolMySQL, TransferSpec{FLAGS_stirling_enable_mysql_tracing,
                                     kMySQLTableNum,
                                     {kRoleClient, kRoleServer},
-                                    TRANSER_STREAM_PROTOCOL(mysql)}},
+                                    TRANSFER_STREAM_PROTOCOL(mysql)}},
       {kProtocolPGSQL, TransferSpec{FLAGS_stirling_enable_pgsql_tracing,
                                     kPGSQLTableNum,
                                     {kRoleClient, kRoleServer},
-                                    TRANSER_STREAM_PROTOCOL(pgsql)}},
+                                    TRANSFER_STREAM_PROTOCOL(pgsql)}},
       {kProtocolDNS, TransferSpec{FLAGS_stirling_enable_dns_tracing,
                                   kDNSTableNum,
                                   {kRoleClient, kRoleServer},
-                                  TRANSER_STREAM_PROTOCOL(dns)}},
+                                  TRANSFER_STREAM_PROTOCOL(dns)}},
       {kProtocolRedis, TransferSpec{FLAGS_stirling_enable_redis_tracing,
                                     kRedisTableNum,
                                     // Cannot infer endpoint role from Redis messages, so have to
                                     // allow such traffic transferred to user-space; and rely on
                                     // SocketInfo to infer the role.
                                     {kRoleUnknown, kRoleClient, kRoleServer},
-                                    TRANSER_STREAM_PROTOCOL(redis)}},
+                                    TRANSFER_STREAM_PROTOCOL(redis)}},
       {kProtocolUnknown, TransferSpec{false /*enabled*/,
                                       // Unknown protocols attached to HTTP table so that they run
                                       // their cleanup functions, but the use of nullptr transfer_fn
@@ -155,7 +155,7 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
                                       kHTTPTableNum,
                                       {kRoleUnknown, kRoleClient, kRoleServer},
                                       nullptr /*transfer_fn*/}}};
-#undef TRANSER_STREAM_PROTOCOL
+#undef TRANSFER_STREAM_PROTOCOL
 
   for (uint64_t i = 0; i < kNumProtocols; ++i) {
     // First, we double check that we have a transfer spec for the protocol in question.
