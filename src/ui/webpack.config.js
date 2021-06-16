@@ -20,7 +20,6 @@ const { resolve, join } = require('path');
 const { execSync } = require('child_process');
 
 const webpack = require('webpack');
-const { CheckerPlugin } = require('awesome-typescript-loader');
 const CaseSensitivePathsPlugin = require('case-sensitive-paths-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const fs = require('fs');
@@ -37,7 +36,6 @@ if (isDevServer) {
 }
 
 const plugins = [
-  new CheckerPlugin(),
   new CaseSensitivePathsPlugin(),
   new FaviconsWebpackPlugin('../assets/favicon-base.png'),
   new HtmlWebpackPlugin({
@@ -106,18 +104,14 @@ const webpackConfig = {
   },
   module: {
     rules: [
-      {
-        test: /\.js[x]?$/,
-        loader: require.resolve('babel-loader'),
+      ...['js', 'jsx', 'ts', 'tsx'].map((ext) => ({
+        test: new RegExp(`\\.${ext}$`),
+        loader: require.resolve('esbuild-loader'),
         options: {
-          cacheDirectory: true,
-          ignore: ['segment.js'],
+          loader: ext,
+          target: 'es6',
         },
-      },
-      {
-        test: /\.ts[x]?$/,
-        loader: require.resolve('awesome-typescript-loader'),
-      },
+      })),
       {
         test: /\.(jpg|png|gif|svg)$/,
         loader: 'image-webpack-loader',
@@ -303,7 +297,7 @@ module.exports = (env, argv) => {
       __CONFIG_AUTH_CLIENT_ID__: JSON.stringify(authClientID),
       __CONFIG_DOMAIN_NAME__: JSON.stringify(domainYAML.data.PL_DOMAIN_NAME),
       __CONFIG_LD_CLIENT_ID__: JSON.stringify(ldYAML.data.PL_LD_CLIENT_ID),
-      __SEGMENT_ANALYTICS_JS_DOMAIN__: `segment.${domainYAML.data.PL_DOMAIN_NAME}`,
+      __SEGMENT_ANALYTICS_JS_DOMAIN__: `"segment.${domainYAML.data.PL_DOMAIN_NAME}"`,
     }),
   );
 
