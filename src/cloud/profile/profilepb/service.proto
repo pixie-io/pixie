@@ -60,6 +60,8 @@ message UserInfo {
   string profile_picture = 7;
   bool is_approved = 8;
   string identity_provider = 9;
+  // The auth_provider_id is the user ID that an auth_provider uses for an ID of the corresponding user.
+  string auth_provider_id = 10 [(gogoproto.customname) = "AuthProviderID"];
 }
 
 message GetUserByEmailRequest {
@@ -86,6 +88,8 @@ message CreateUserRequest {
   string last_name = 4;
   string email = 5;
   string identity_provider = 6;
+  // The auth_provider_id is the user ID that an auth_provider uses for an ID of the corresponding user.
+  string auth_provider_id = 7 [(gogoproto.customname) = "AuthProviderID"];
 }
 
 message CreateOrgAndUserRequest {
@@ -99,6 +103,8 @@ message CreateOrgAndUserRequest {
     string last_name = 3;
     string email = 4;
     string identity_provider = 5;
+    // The auth_provider_id is the user ID that an auth_provider uses for an ID of the corresponding user.
+    string auth_provider_id = 6 [(gogoproto.customname) = "AuthProviderID"];
   }
   Org org = 1;
   User user = 2;
