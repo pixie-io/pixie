@@ -77,6 +77,7 @@ func TestServer_CreateUser(t *testing.T) {
 				LastName:         "bar",
 				Email:            "foo@bar.com",
 				IdentityProvider: "github",
+				AuthProviderID:   "github|abcdefg",
 			},
 			expectErr:       false,
 			expectCode:      codes.OK,
@@ -93,6 +94,7 @@ func TestServer_CreateUser(t *testing.T) {
 				LastName:         "bar",
 				Email:            "foo@bar.com",
 				IdentityProvider: "github",
+				AuthProviderID:   "github|asdfghjkl;",
 			},
 			expectErr:       true,
 			expectCode:      codes.InvalidArgument,
@@ -109,6 +111,7 @@ func TestServer_CreateUser(t *testing.T) {
 				LastName:         "bar",
 				Email:            "foo@bar.com",
 				IdentityProvider: "github",
+				AuthProviderID:   "github|asdfghjkl;",
 			},
 			expectErr:       true,
 			expectCode:      codes.InvalidArgument,
@@ -125,6 +128,7 @@ func TestServer_CreateUser(t *testing.T) {
 				LastName:         "bar",
 				Email:            "foo@bar.com",
 				IdentityProvider: "github",
+				AuthProviderID:   "github|asdfghjkl;",
 			},
 			expectErr:       false,
 			expectCode:      codes.OK,
@@ -248,6 +252,7 @@ func TestServer_CreateUser(t *testing.T) {
 					Email:            tc.userInfo.Email,
 					IsApproved:       !tc.enableApprovals,
 					IdentityProvider: tc.userInfo.IdentityProvider,
+					AuthProviderID:   tc.userInfo.AuthProviderID,
 				}
 				d.EXPECT().
 					CreateUser(req).
@@ -278,12 +283,13 @@ func TestServer_GetUser(t *testing.T) {
 	s := controller.NewServer(nil, d, nil, nil)
 
 	mockReply := &datastore.UserInfo{
-		ID:        userUUID,
-		OrgID:     orgUUID,
-		Username:  "foobar",
-		FirstName: "foo",
-		LastName:  "bar",
-		Email:     "foo@bar.com",
+		ID:             userUUID,
+		OrgID:          orgUUID,
+		Username:       "foobar",
+		FirstName:      "foo",
+		LastName:       "bar",
+		Email:          "foo@bar.com",
+		AuthProviderID: "github|asdfghjkl;",
 	}
 
 	d.EXPECT().
@@ -299,6 +305,7 @@ func TestServer_GetUser(t *testing.T) {
 	assert.Equal(t, resp.FirstName, "foo")
 	assert.Equal(t, resp.LastName, "bar")
 	assert.Equal(t, resp.Email, "foo@bar.com")
+	assert.Equal(t, resp.AuthProviderID, "github|asdfghjkl;")
 }
 
 func TestServer_GetUser_MissingUser(t *testing.T) {
@@ -337,6 +344,7 @@ func TestServer_GetUserByEmail(t *testing.T) {
 		LastName:         "bar",
 		Email:            "foo@bar.com",
 		IdentityProvider: "github",
+		AuthProviderID:   "github|asdfghjkl;",
 	}
 
 	d.EXPECT().
@@ -352,6 +360,7 @@ func TestServer_GetUserByEmail(t *testing.T) {
 	assert.Equal(t, resp.Email, "foo@bar.com")
 	assert.Equal(t, resp.OrgID, utils.ProtoFromUUID(orgUUID))
 	assert.Equal(t, resp.IdentityProvider, "github")
+	assert.Equal(t, resp.AuthProviderID, "github|asdfghjkl;")
 }
 
 func TestServer_GetUserByEmail_MissingEmail(t *testing.T) {
@@ -401,6 +410,7 @@ func TestServer_CreateOrgAndUser_SuccessCases(t *testing.T) {
 					LastName:         "bar",
 					Email:            "foo@bar.com",
 					IdentityProvider: "github",
+					AuthProviderID:   "github|asdfghjkl;",
 				},
 			},
 			resp: &profilepb.CreateOrgAndUserResponse{
@@ -420,6 +430,7 @@ func TestServer_CreateOrgAndUser_SuccessCases(t *testing.T) {
 					LastName:         "",
 					Email:            "foo@gmail.com",
 					IdentityProvider: "github",
+					AuthProviderID:   "github|asdfghjkl;",
 				},
 			},
 			resp: &profilepb.CreateOrgAndUserResponse{
@@ -451,6 +462,7 @@ func TestServer_CreateOrgAndUser_SuccessCases(t *testing.T) {
 				Email:            tc.req.User.Email,
 				IsApproved:       true,
 				IdentityProvider: tc.req.User.IdentityProvider,
+				AuthProviderID:   tc.req.User.AuthProviderID,
 			}
 			exOrg := &datastore.OrgInfo{
 				DomainName: tc.req.Org.DomainName,
@@ -1366,6 +1378,7 @@ func TestServer_GetUsersInOrg(t *testing.T) {
 				IsApproved:       true,
 				ID:               userID,
 				IdentityProvider: "github",
+				AuthProviderID:   "github|asdfghjkl;",
 			},
 		}, nil)
 
@@ -1383,6 +1396,7 @@ func TestServer_GetUsersInOrg(t *testing.T) {
 		Email:            "test@test.com",
 		IsApproved:       true,
 		IdentityProvider: "github",
+		AuthProviderID:   "github|asdfghjkl;",
 	}, resp.Users[0])
 
 	_, err = s.GetUsersInOrg(ctx, &profilepb.GetUsersInOrgRequest{

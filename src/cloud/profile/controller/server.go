@@ -117,6 +117,7 @@ func userInfoToProto(u *datastore.UserInfo) *profilepb.UserInfo {
 		ProfilePicture:   profilePicture,
 		IsApproved:       u.IsApproved,
 		IdentityProvider: u.IdentityProvider,
+		AuthProviderID:   u.AuthProviderID,
 	}
 }
 
@@ -175,6 +176,7 @@ func (s *Server) CreateUser(ctx context.Context, req *profilepb.CreateUserReques
 		Email:            req.Email,
 		IsApproved:       defaultIsApproved,
 		IdentityProvider: req.IdentityProvider,
+		AuthProviderID:   req.AuthProviderID,
 	}
 	if len(userInfo.Username) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "invalid username")
@@ -225,7 +227,8 @@ func (s *Server) CreateOrgAndUser(ctx context.Context, req *profilepb.CreateOrgA
 		Email:            req.User.Email,
 		IdentityProvider: req.User.IdentityProvider,
 		// By default, the creating user is the owner and should be approved.
-		IsApproved: true,
+		IsApproved:     true,
+		AuthProviderID: req.User.AuthProviderID,
 	}
 	if len(orgInfo.DomainName) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "invalid domain name")
