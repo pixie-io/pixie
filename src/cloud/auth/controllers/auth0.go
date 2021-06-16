@@ -53,6 +53,7 @@ func transformAuth0UserInfoToUserInfo(auth0 *auth0UserInfo, clientID string) (*U
 		Name:             auth0.Name,
 		Picture:          auth0.Picture,
 		IdentityProvider: getIdentityProvider(auth0),
+		AuthProviderID:   auth0.UserID,
 	}
 	if !(auth0.AppMetadata == nil || auth0.AppMetadata[clientID] == nil) {
 		u.PLUserID = auth0.AppMetadata[clientID].PLUserID

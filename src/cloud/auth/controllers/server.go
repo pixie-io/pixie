@@ -41,6 +41,7 @@ type UserInfo struct {
 	PLUserID         string
 	PLOrgID          string
 	IdentityProvider string
+	AuthProviderID   string
 }
 
 // AuthProvider interfaces the service we use for auth.
