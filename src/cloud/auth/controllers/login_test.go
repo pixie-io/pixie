@@ -63,10 +63,11 @@ func TestServer_LoginNewUser(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return(userID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		Email:     "abc@gmail.com",
-		FirstName: "first",
-		LastName:  "last",
-		Picture:   "something",
+		Email:          "abc@gmail.com",
+		FirstName:      "first",
+		LastName:       "last",
+		Picture:        "something",
+		AuthProviderID: "github|abcdefg",
 	}
 
 	fakeOrgInfo := &profilepb.OrgInfo{
@@ -77,10 +78,11 @@ func TestServer_LoginNewUser(t *testing.T) {
 
 	// Add PL UserID to the response of the second call.
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
-		Email:     "abc@gmail.com",
-		FirstName: "first",
-		LastName:  "last",
-		Picture:   "something",
+		Email:          "abc@gmail.com",
+		FirstName:      "first",
+		LastName:       "last",
+		Picture:        "something",
+		AuthProviderID: "github|abcdefg",
 	}
 	a.EXPECT().SetPLMetadata(userID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.PLUserID = plid
@@ -96,11 +98,12 @@ func TestServer_LoginNewUser(t *testing.T) {
 
 	mockProfile.EXPECT().
 		CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
-			OrgID:     orgPb,
-			Username:  "abc@gmail.com",
-			FirstName: "first",
-			LastName:  "last",
-			Email:     "abc@gmail.com",
+			OrgID:          orgPb,
+			Username:       "abc@gmail.com",
+			FirstName:      "first",
+			LastName:       "last",
+			Email:          "abc@gmail.com",
+			AuthProviderID: "github|abcdefg",
 		}).
 		Return(utils.ProtoFromUUIDStrOrNil(userID), nil)
 
@@ -969,18 +972,20 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return(userID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		Email:     "abc@gmail.com",
-		FirstName: "first",
-		LastName:  "last",
+		Email:          "abc@gmail.com",
+		FirstName:      "first",
+		LastName:       "last",
+		AuthProviderID: "github|abcdefg",
 	}
 
 	// Add PL UserID to the response of the second call.
 	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfo, nil)
 
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
-		Email:     "abc@gmail.com",
-		FirstName: "first",
-		LastName:  "last",
+		Email:          "abc@gmail.com",
+		FirstName:      "first",
+		LastName:       "last",
+		AuthProviderID: "github|abcdefg",
 	}
 	a.EXPECT().SetPLMetadata(userID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.PLUserID = plid
@@ -1003,11 +1008,12 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 		Return(fakeOrgInfo, nil)
 
 	mockProfile.EXPECT().CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
-		OrgID:     orgPb,
-		Username:  "abc@gmail.com",
-		FirstName: "first",
-		LastName:  "last",
-		Email:     "abc@gmail.com",
+		OrgID:          orgPb,
+		Username:       "abc@gmail.com",
+		FirstName:      "first",
+		LastName:       "last",
+		Email:          "abc@gmail.com",
+		AuthProviderID: "github|abcdefg",
 	}).Return(utils.ProtoFromUUIDStrOrNil(userID), nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
@@ -1049,18 +1055,20 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return(userID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		Email:     "abc@gmail.com",
-		FirstName: "first",
-		LastName:  "last",
+		Email:          "abc@gmail.com",
+		FirstName:      "first",
+		LastName:       "last",
+		AuthProviderID: "github|abcdefg",
 	}
 
 	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfo, nil)
 
 	// Add PL UserID to the response of the second call.
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
-		Email:     "abc@gmail.com",
-		FirstName: "first",
-		LastName:  "last",
+		Email:          "abc@gmail.com",
+		FirstName:      "first",
+		LastName:       "last",
+		AuthProviderID: "github|abcdefg",
 	}
 	a.EXPECT().SetPLMetadata(userID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.PLUserID = plid
@@ -1084,10 +1092,11 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 			DomainName: "abc@gmail.com",
 		},
 		User: &profilepb.CreateOrgAndUserRequest_User{
-			Username:  "abc@gmail.com",
-			FirstName: "first",
-			LastName:  "last",
-			Email:     "abc@gmail.com",
+			Username:       "abc@gmail.com",
+			FirstName:      "first",
+			LastName:       "last",
+			Email:          "abc@gmail.com",
+			AuthProviderID: "github|abcdefg",
 		},
 	}).
 		Return(&profilepb.CreateOrgAndUserResponse{

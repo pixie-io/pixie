@@ -325,6 +325,7 @@ func (s *Server) createUserAndOrg(ctx context.Context, domainName string, userID
 			LastName:         userInfo.LastName,
 			Email:            userInfo.Email,
 			IdentityProvider: userInfo.IdentityProvider,
+			AuthProviderID:   userInfo.AuthProviderID,
 		},
 	}
 
@@ -356,6 +357,7 @@ func (s *Server) createUser(ctx context.Context, userID string, userInfo *UserIn
 		LastName:         userInfo.LastName,
 		Email:            userInfo.Email,
 		IdentityProvider: userInfo.IdentityProvider,
+		AuthProviderID:   userInfo.AuthProviderID,
 	}
 
 	userIDpb, err := s.env.ProfileClient().CreateUser(ctx, userCreateReq)
