@@ -42,6 +42,7 @@ type UserInfo struct {
 	CreatedAt        *time.Time `db:"created_at"`
 	IsApproved       bool       `db:"is_approved"`
 	IdentityProvider string     `db:"identity_provider"`
+	AuthProviderID   string     `db:"auth_provider_id"`
 }
 
 // OrgInfo tracks information about an organization.
