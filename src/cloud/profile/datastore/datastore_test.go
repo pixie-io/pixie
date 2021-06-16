@@ -83,11 +83,12 @@ func TestDatastore(t *testing.T) {
 		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 		userInfo := datastore.UserInfo{
-			OrgID:     uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"),
-			Username:  "zain",
-			FirstName: "zain",
-			LastName:  "asgar",
-			Email:     "zasgar@pixielabs.ai",
+			OrgID:          uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"),
+			Username:       "zain",
+			FirstName:      "zain",
+			LastName:       "asgar",
+			Email:          "zasgar@pixielabs.ai",
+			AuthProviderID: "github|abcdefg",
 		}
 		userID, err := d.CreateUser(&userInfo)
 		require.NoError(t, err)
@@ -103,6 +104,7 @@ func TestDatastore(t *testing.T) {
 		assert.Equal(t, userInfo.FirstName, userInfoFetched.FirstName)
 		assert.Equal(t, userInfo.LastName, userInfoFetched.LastName)
 		assert.Equal(t, userInfo.Email, userInfoFetched.Email)
+		assert.Equal(t, userInfo.AuthProviderID, userInfoFetched.AuthProviderID)
 	})
 
 	t.Run("inserting existing user should fail", func(t *testing.T) {
@@ -188,10 +190,11 @@ func TestDatastore(t *testing.T) {
 			DomainName: "pg.com",
 		}
 		userInfo := datastore.UserInfo{
-			Username:  "johnd",
-			FirstName: "john",
-			LastName:  "doe",
-			Email:     "john@pg.com",
+			Username:       "johnd",
+			FirstName:      "john",
+			LastName:       "doe",
+			Email:          "john@pg.com",
+			AuthProviderID: "github|abcdefg",
 		}
 
 		orgID, userID, err := d.CreateUserAndOrg(&orgInfo, &userInfo)
@@ -202,6 +205,9 @@ func TestDatastore(t *testing.T) {
 		assert.Equal(t, orgInfo.ID, orgID)
 		assert.Equal(t, userInfo.ID, userID)
 		assert.Equal(t, userInfo.OrgID, orgID)
+		userInfoFetched, err := d.GetUser(userID)
+		require.NoError(t, err)
+		assert.Equal(t, userInfo.AuthProviderID, userInfoFetched.AuthProviderID)
 	})
 
 	t.Run("create org and user first time user case should fail for existing org", func(t *testing.T) {
