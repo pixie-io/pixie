@@ -87,10 +87,9 @@ void ConnInfoMapManager::CleanupBPFMapLeaks(ConnTrackersManager* conn_trackers_m
     int32_t pid = id >> 32;
     int32_t fd = id;
 
-    // Check conn trackers to see if it's already tracked.
+    // Check if the connection was already tracked, if so, leave it be.
     // This is a performance optimization to avoid accessing /proc when not required.
-    if (!conn_trackers_mgr->GetConnTracker(pid, fd).ok()) {
-      // Being tracked already, so leave it be.
+    if (conn_trackers_mgr->GetConnTracker(pid, fd).ok()) {
       continue;
     }
 
