@@ -1,13 +1,13 @@
 <p align="center">
 
-  [![Pixie!](./.readme_assets/readme_banner_v9.png)](https://pixielabs.ai)
+  [![Pixie!](./.readme_assets/readme_banner_v9.png)](https://px.dev)
 
 </p>
 
 <br>
 
-[![Docs](https://img.shields.io/badge/docs-latest-blue)](https://withpixie.ai/docs)
-[![Slack](https://slackin.withpixie.ai/badge.svg)](https://slackin.withpixie.ai)
+[![Docs](https://img.shields.io/badge/docs-latest-blue)](https://docs.px.dev)
+[![Slack](https://slackin.px.dev/badge.svg)](https://slackin.px.dev)
 [![Mentioned in Awesome Kubernetes](https://awesome.re/mentioned-badge.svg)](https://github.com/ramitsurana/awesome-kubernetes)
 [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)
 [![Build Status](https://jenkins.corp.pixielabs.ai/buildStatus/icon?job=pixie-oss%2Fbuild-and-test-all)](https://jenkins.corp.pixielabs.ai/job/pixie-oss/job/build-and-test-all/)
@@ -21,7 +21,7 @@
 
 Pixie gives you instant visibility by giving access to metrics, events, traces and logs without changing code.
 
-Try our [community beta](https://work.withpixie.ai/signup) and join our community on [slack](https://slackin.withpixie.ai/).
+Try out [Pixie](https://docs.px.dev/installing-pixie/quick-start/) and join our community on [slack](https://slackin.px.dev/).
 
 <br>
 
@@ -31,8 +31,8 @@ Try our [community beta](https://work.withpixie.ai/signup) and join our communit
 - [Quick Start](#quick-start)
 - [Demo](#get-instant-auto-telemetry)
 - [Contributing](#contributing)
-- [Open Source](#open-source)
 - [Platform Architecture](#under-the-hood)
+- [Resources](#resources)
 - [About Us](#about-us)
 - [License](#license)
 
@@ -40,45 +40,7 @@ Try our [community beta](https://work.withpixie.ai/signup) and join our communit
 
 ## Quick Start
 
-Review Pixie's [requirements](https://docs.pixielabs.ai/installing-pixie/requirements/) to make sure that your Kubernetes cluster is supported.
-
-#### Signup
-
-Visit our [product page](https://work.withpixie.ai/) and signup with your google account.
-
-#### Install CLI
-
-Run the command below:
-
-`bash -c "$(curl -fsSL https://withpixie.ai/install.sh)"`
-
-Or see our [Installation Docs](https://docs.pixielabs.ai/installing-pixie/quick-start/#2.-install-the-cli) to install Pixie using Docker, Debian, RPM or with the latest binary.
-
-#### (optional) Setup a sandbox
-
-If you don't already have a K8s cluster available, you can use Minikube to set-up a local environment:
-
-- On Linux, run `minikube start --cpus=4 --memory=6000 --driver=kvm2 -p=<cluster-name>`. The default `docker` driver is not currently supported, so using the `kvm2` driver is important.
-
-- On Mac, run `minikube start --cpus=4 --memory=6000 -p=<cluster-name>`.
-
-More detailed instructions are available [here](https://docs.pixielabs.ai/installing-pixie/install-guides/minikube-setup/).
-
-Start a demo-app:
-
-- Deploy [Weaveworks'](https://www.weave.works/) [sock-shop](https://github.com/microservices-demo/microservices-demo) demo app by running `px demo deploy px-sock-shop`
-
-#### 🚀 Deploy Pixie
-
-Use the CLI to deploy the Pixie Platform in your K8s cluster by running:
-
-px deploy
-
-Alternatively, you can deploy with [YAML](https://docs.pixielabs.ai/installing-pixie/install-schemes/yaml/) or [Helm](https://docs.pixielabs.ai/installing-pixie/install-schemes/helm/).
-
-<br>
-
-Check out our [install guides](https://docs.pixielabs.ai/installing-pixie/install-guides/) and [walkthrough videos](https://www.youtube.com/watch?v=iMh2f8abTYU) for alternate install schemes.
+Check out Pixie's [Quick Start](https://docs.px.dev/installing-pixie/quick-start) install guide.
 
 ## Get Instant Auto-Telemetry
 
@@ -110,11 +72,7 @@ Check out our [install guides](https://docs.pixielabs.ai/installing-pixie/instal
 
 <img src="./.readme_assets/live_2oct20.gif" alt="CLI Demo" width="425" align="right">
 
-The Pixie Platform auto-generates "Live View" dashboard to visualize script results.
-
-You can view them by clicking on the URLs prompted by `px` or by visiting:
-
-`https://work.withpixie.ai/live`
+The Pixie Platform auto-generates "Live View" dashboards to visualize script results.
 
 <br clear="all">
 
@@ -130,13 +88,13 @@ Example with http_data:
 
 More examples [here](src/pxl_scripts)
 
-<br>_To see more script examples and learn how to write your own, check out our [docs](https://work.withpixie.ai/docs) for more guides_
+<br>_To see more script examples and learn how to write your own, check out our [docs](https://docs.px.dev) for more guides._
 
 <br clear="all">
 
 ## Contributing
 
-Refer to our [contribution guide](CONTRIBUTING.md)!
+We are excited to have you contribute to Pixie! Before contributing, please read our [contribution guide](CONTRIBUTING.md).
 
 ## Under the Hood
 
@@ -148,21 +106,19 @@ Three fundamental innovations enable Pixie's magical developer experience:
 
 **Command Driven Interfaces:** Programmatically access data via the Pixie CLI and Pixie UI which are designed ground-up to allow you to run analysis & debug scenarios faster than any other developer tool.
 
-_For more information on Pixie Platform's architecture, check out our [docs](https://work.withpixie.ai/docs) or [overview deck](https://docsend.com/view/kj38d76)_
+_For more information on Pixie Platform's architecture, check out our [docs](https://docs.px.dev/about-pixie/what-is-pixie/)._
 
 ## Resources
 
 - [Website](https://px.dev)
 - [Documentation](https://docs.px.dev)
-- [Community Slack](https://slackin.withpixie.ai/)
+- [Community Slack](https://slackin.px.dev/)
 - [Issue Tracker](https://github.com/pixie-labs/pixie/issues)
 - [Youtube](https://www.youtube.com/channel/UCOMCDRvBVNIS0lCyOmst7eg/videos)
 
 ## About Us
 
-Pixie was started by a San Francisco based startup, Pixie Labs Inc. Our north star is to build a new generation of intelligent products which empower developers to engineer the future. We were acquired by New Relic in 2020.
-
-[New Relic, Inc.](https://newrelic.com) open sourced Pixie in April 2021.
+Pixie was built by a San Francisco based startup, Pixie Labs, Inc. [New Relic, Inc.](https://newrelic.com) acquired Pixie Labs in December 2020. New Relic, Inc. is [in the process of contributing](https://github.com/cncf/toc/issues/651) Pixie to the [Cloud Native Compute Foundation](https://www.cncf.io/).
 
 ## License
 
