@@ -23,13 +23,12 @@ import { PixieAPIClient } from './api';
 // Imported only so that its import in the test subject can be mocked successfully.
 import * as vizierDependency from './vizier-grpc-client';
 
-jest.mock('cross-fetch', () => ({
-  default: jest.fn(),
-}));
+jest.mock('cross-fetch', () => jest.fn());
+
+jest.mock('./vizier-grpc-client');
 
 describe('Pixie TypeScript API Client', () => {
   mockApolloClient();
-  jest.mock('./vizier-grpc-client');
 
   const mockFetchResponse = (response, reject = false) => {
     (fetch as jest.Mock).mockImplementation(

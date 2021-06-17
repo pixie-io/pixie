@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import 'regenerator-runtime/runtime';
+
 // Setup mock object for local storage.
 const localStorageMock = (() => {
   let store = {};

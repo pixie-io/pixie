@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as numeral from 'numeral';
+import numeral from 'numeral';
 import { DataType, SemanticType, UInt128 } from 'app/types/generated/vizierapi_pb';
 
 export function formatInt64Data(val: string): string {

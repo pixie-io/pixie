@@ -48,9 +48,14 @@ module.exports = {
   },
   resolver: null,
   transform: {
-    '^.+\\.tsx?$': 'ts-jest',
+    ...['ts', 'tsx', 'js', 'jsx'].reduce((a, ext) => ({
+      ...a,
+      [`^.+\\.${ext}$`]: ['esbuild-jest', {
+        loader: ext,
+        target: 'node12',
+      }]
+    }), {}),
     [`node_modules/(${esModules}).*\\.jsx?$`]: './jest-esm-transform',
-    '^.+\\.jsx?$': 'babel-jest',
     '^.+\\.toml$': 'jest-raw-loader',
   },
   testRegex: '.*test\\.(ts|tsx|js|jsx)$',

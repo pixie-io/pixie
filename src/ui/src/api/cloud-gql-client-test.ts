@@ -21,7 +21,7 @@ import { mockApolloClient } from 'app/testing/mocks/apollo-mock';
 import { CloudClient } from './cloud-gql-client';
 
 describe('Cloud client (GQL wrapper)', () => {
-  const { query } = mockApolloClient();
+  mockApolloClient();
 
   it('instantiates', () => {
     const cloudClient = new CloudClient({ apiKey: '', uri: 'irrelevant' });
@@ -30,7 +30,7 @@ describe('Cloud client (GQL wrapper)', () => {
 
   it('gets cluster connections from GraphQL', async () => {
     const cloudClient = new CloudClient({ apiKey: '', uri: 'irrelevant' });
-    query.mockImplementation(() => Promise.resolve({
+    spyOn(cloudClient.graphQL, 'query').and.callFake(() => Promise.resolve({
       data: new Proxy({}, {
         get: () => 'retrieved',
       }),
