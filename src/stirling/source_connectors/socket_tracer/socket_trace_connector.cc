@@ -268,82 +268,83 @@ std::thread SocketTraceConnector::RunDeployUProbesThread(
 
 namespace {
 
-void DumpContext(ConnectorContext* ctx) {
-  auto& upids = ctx->GetUPIDs();
-
-  std::string upids_str;
-  for (const auto& upid : upids) {
-    upids_str += "\n  ";
-    upids_str += upid.String();
+std::string DumpContext(ConnectorContext* ctx) {
+  std::vector<std::string> upids;
+  for (const auto& upid : ctx->GetUPIDs()) {
+    upids.push_back(upid.String());
   }
-
-  LOG(INFO) << absl::Substitute("List of UPIDs ($0): $1", upids.size(), upids_str);
+  return absl::Substitute("List of UPIDs (total=$0):\n$1", upids.size(),
+                          absl::StrJoin(upids, "\n"));
 }
 
 template <typename TBPFTable>
-void PrintBPFMapInfo(TBPFTable map, std::string_view name) {
-  LOG(INFO) << absl::Substitute("BPFTable=$0 occupancy=$1 capacity=$2", name,
-                                map.get_table_offline().size(), map.capacity());
+void PrintBPFMapInfo(TBPFTable map, std::string_view name, std::string* out) {
+  absl::StrAppend(out, absl::Substitute("\nBPFTable=$0 occupancy=$1 capacity=$2", name,
+                                        map.get_table_offline().size(), map.capacity()));
 }
 
-void DumpBPFMapInfo(bpf_tools::BCCWrapper* bcc) {
+std::string DumpBPFMapInfo(bpf_tools::BCCWrapper* bcc) {
+  std::string out;
+
   auto go_common_symaddrs_map =
       bcc->GetHashTable<uint32_t, struct go_common_symaddrs_t>("go_common_symaddrs_map");
-  PrintBPFMapInfo(go_common_symaddrs_map, "go_common_symaddrs_map");
+  PrintBPFMapInfo(go_common_symaddrs_map, "go_common_symaddrs_map", &out);
 
   auto openssl_symaddrs_map =
       bcc->GetHashTable<uint32_t, struct openssl_symaddrs_t>("openssl_symaddrs_map");
-  PrintBPFMapInfo(openssl_symaddrs_map, "openssl_symaddrs_map");
+  PrintBPFMapInfo(openssl_symaddrs_map, "openssl_symaddrs_map", &out);
 
   auto active_ssl_read_args_map =
       bcc->GetHashTable<uint64_t, struct data_args_t>("active_ssl_read_args_map");
-  PrintBPFMapInfo(active_ssl_read_args_map, "active_ssl_read_args_map");
+  PrintBPFMapInfo(active_ssl_read_args_map, "active_ssl_read_args_map", &out);
 
   auto active_ssl_write_args_map =
       bcc->GetHashTable<uint64_t, struct data_args_t>("active_ssl_write_args_map");
-  PrintBPFMapInfo(active_ssl_write_args_map, "active_ssl_write_args_map");
+  PrintBPFMapInfo(active_ssl_write_args_map, "active_ssl_write_args_map", &out);
 
   auto go_tls_symaddrs_map =
       bcc->GetHashTable<uint32_t, struct go_tls_symaddrs_t>("go_tls_symaddrs_map");
-  PrintBPFMapInfo(go_tls_symaddrs_map, "go_tls_symaddrs_map");
+  PrintBPFMapInfo(go_tls_symaddrs_map, "go_tls_symaddrs_map", &out);
 
   auto http2_symaddrs_map =
       bcc->GetHashTable<uint32_t, struct go_http2_symaddrs_t>("http2_symaddrs_map");
-  PrintBPFMapInfo(http2_symaddrs_map, "http2_symaddrs_map");
+  PrintBPFMapInfo(http2_symaddrs_map, "http2_symaddrs_map", &out);
 
   auto active_write_headers_frame_map =
       bcc->GetHashTable<void*, struct go_grpc_http2_header_event_t::header_attr_t>(
           "active_write_headers_frame_map");
-  PrintBPFMapInfo(active_write_headers_frame_map, "active_write_headers_frame_map");
+  PrintBPFMapInfo(active_write_headers_frame_map, "active_write_headers_frame_map", &out);
 
   auto conn_info_map = bcc->GetHashTable<uint64_t, struct conn_info_t>("conn_info_map");
-  PrintBPFMapInfo(conn_info_map, "conn_info_map");
+  PrintBPFMapInfo(conn_info_map, "conn_info_map", &out);
 
   auto conn_disabled_map = bcc->GetHashTable<uint64_t, uint64_t>("conn_disabled_map");
-  PrintBPFMapInfo(conn_disabled_map, "conn_disabled_map");
+  PrintBPFMapInfo(conn_disabled_map, "conn_disabled_map", &out);
 
   auto open_file_map = bcc->GetHashTable<uint64_t, bool>("open_file_map");
-  PrintBPFMapInfo(open_file_map, "open_file_map");
+  PrintBPFMapInfo(open_file_map, "open_file_map", &out);
 
   auto active_accept_args_map =
       bcc->GetHashTable<uint64_t, struct accept_args_t>("active_accept_args_map");
-  PrintBPFMapInfo(active_accept_args_map, "active_accept_args_map");
+  PrintBPFMapInfo(active_accept_args_map, "active_accept_args_map", &out);
 
   auto active_connect_args_map =
       bcc->GetHashTable<uint64_t, struct connect_args_t>("active_connect_args_map");
-  PrintBPFMapInfo(active_connect_args_map, "active_connect_args_map");
+  PrintBPFMapInfo(active_connect_args_map, "active_connect_args_map", &out);
 
   auto active_write_args_map =
       bcc->GetHashTable<uint64_t, struct data_args_t>("active_write_args_map");
-  PrintBPFMapInfo(active_write_args_map, "active_write_args_map");
+  PrintBPFMapInfo(active_write_args_map, "active_write_args_map", &out);
 
   auto active_read_args_map =
       bcc->GetHashTable<uint64_t, struct data_args_t>("active_read_args_map");
-  PrintBPFMapInfo(active_read_args_map, "active_read_args_map");
+  PrintBPFMapInfo(active_read_args_map, "active_read_args_map", &out);
 
   auto active_close_args_map =
       bcc->GetHashTable<uint64_t, struct close_args_t>("active_close_args_map");
-  PrintBPFMapInfo(active_close_args_map, "active_close_args_map");
+  PrintBPFMapInfo(active_close_args_map, "active_close_args_map", &out);
+
+  return out;
 }
 
 }  // namespace
@@ -401,19 +402,6 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
                                             const std::vector<DataTable*>& data_tables) {
   set_iteration_time(std::chrono::steady_clock::now());
 
-  // Periodically dump context.
-  constexpr auto kDumpContextPeriod = std::chrono::minutes(1);
-  constexpr int kDumpContextSamplingRatio = kDumpContextPeriod / kSamplingPeriod;
-  if (sample_push_freq_mgr_.sample_count() % kDumpContextSamplingRatio == 0) {
-    if (debug_level_ >= 1) {
-      DumpContext(ctx);
-    }
-
-    if (debug_level_ >= 2) {
-      DumpBPFMapInfo(static_cast<BCCWrapper*>(this));
-    }
-  }
-
   UpdateCommonState(ctx);
 
   DataTable* conn_stats_table = data_tables[kConnStatsTableNum];
@@ -422,11 +410,18 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
     TransferConnStats(ctx, conn_stats_table);
   }
 
-  if (sample_push_freq_mgr_.sample_count() % FLAGS_stirling_socket_tracer_stats_logging_ratio ==
-      0) {
+  // This first >0 condition prevents the logging at the beginning, which accesses BPF maps.
+  // Accessing BPF maps would require deploying BPF maps, that is not possible in all tests.
+  const bool maps_ready = sample_push_freq_mgr_.sample_count() > 0;
+  const bool at_period_log_interval =
+      sample_push_freq_mgr_.sample_count() % FLAGS_stirling_socket_tracer_stats_logging_ratio == 0;
+
+  if (maps_ready && at_period_log_interval) {
     conn_trackers_mgr_.ComputeProtocolStats();
     LOG(INFO) << "ConnTracker statistics: " << conn_trackers_mgr_.StatsString();
     LOG(INFO) << "SocketTracer statistics: " << stats_.Print();
+    LOG(INFO) << "Context: " << DumpContext(ctx);
+    LOG(INFO) << "BPF map info: " << DumpBPFMapInfo(static_cast<BCCWrapper*>(this));
   }
 
   std::vector<CIDRBlock> cluster_cidrs = ctx->GetClusterCIDRs();
