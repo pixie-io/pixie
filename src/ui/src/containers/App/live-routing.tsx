@@ -25,7 +25,6 @@ import * as QueryString from 'query-string';
 import plHistory from 'app/utils/pl-history';
 import { LocationDescriptorObject } from 'history';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
-import { parseVisSilently } from 'app/containers/live/vis';
 import { RouteNotFound } from 'app/containers/App/route-not-found';
 import { selectClusterName } from 'app/containers/App/cluster-info';
 
@@ -172,7 +171,7 @@ export const LiveContextRouter: React.FC = ({ children }) => {
             delete matchParams.namespace;
           }
           const args: Record<string, string | string[]> = argsForVis(
-            parseVisSilently(availableScripts.get(scriptId)?.vis), {
+            availableScripts.get(scriptId)?.vis, {
               ...matchParams,
               ...queryParams,
             });

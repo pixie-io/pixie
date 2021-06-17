@@ -77,9 +77,12 @@ export interface Vis {
 
 // Parses vis and errors out instead of silently hiding the error.
 export function parseVis(json: string): Vis {
-  // If the json string is empty, we should return a null.
   if (!json) {
-    return null;
+    return {
+      variables: [],
+      widgets: [],
+      globalFuncs: [],
+    };
   }
   const parsed = JSON.parse(json);
   if (typeof parsed !== 'object') {
@@ -95,16 +98,6 @@ export function parseVis(json: string): Vis {
     parsed.globalFuncs = [];
   }
   return parsed as Vis;
-}
-
-// Parses Vis from string and squashes any error that occurs.
-export function parseVisSilently(json: string): Vis {
-  try {
-    return parseVis(json);
-  } catch (e) {
-    // Tslint doesn't allow empty blocks.
-  }
-  return null;
 }
 
 // Gets the name of the table backing this widget. It will either be globalFuncOutputName, the name

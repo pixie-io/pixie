@@ -35,7 +35,7 @@ import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-conte
 import { ScriptContext } from 'app/context/script-context';
 import { pxTypeToEntityType, entityStatusGroup } from 'app/containers/command-input/autocomplete-utils';
 import TimeArgDetail from 'configurable/time-arg-detail';
-import { parseVisSilently, Variable } from './vis';
+import { Variable } from './vis';
 
 type AutocompleteFieldSuggester = (
   input: string, kind: GQLAutocompleteEntityKind
@@ -174,12 +174,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
       },
       onSelect: (newVal) => {
         const newScript = scripts.get(newVal);
-        const selectedVis = parseVisSilently(newScript.vis);
-        setScriptAndArgs({
-          ...newScript,
-          visString: newScript.vis,
-          vis: selectedVis,
-        }, args);
+        setScriptAndArgs(newScript, args);
       },
     });
 

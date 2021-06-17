@@ -32,8 +32,9 @@ import { ClusterContext } from 'app/common/cluster-context';
 import { DataDrawerContextProvider } from 'app/context/data-drawer-context';
 import EditorContextProvider, { EditorContext } from 'app/context/editor-context';
 import { LayoutContext, LayoutContextProvider } from 'app/context/layout-context';
-import { ParsedScript, ScriptContext, ScriptContextProvider } from 'app/context/script-context';
+import { ScriptContext, ScriptContextProvider } from 'app/context/script-context';
 import { ResultsContextProvider } from 'app/context/results-context';
+import { Script } from 'app/utils/script-bundle';
 
 import { ClusterInstructions } from 'app/containers/App/deploy-instructions';
 import NavBars from 'app/containers/App/nav-bars';
@@ -176,7 +177,7 @@ const ScriptOptions = ({
 interface ClusterLoadingProps {
   clusterPrettyName: string;
   clusterStatus: GQLClusterStatus;
-  script: ParsedScript;
+  script: Script;
   healthy: boolean;
 }
 

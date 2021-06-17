@@ -19,6 +19,9 @@
 import * as React from 'react';
 
 import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
+import { VizierQueryError } from 'app/api';
+import { ResultsContext } from 'app/context/results-context';
+import { parseVis, Vis } from 'app/containers/live/vis';
 import { SetStateFunc } from './common';
 
 import { ScriptContext } from './script-context';
@@ -33,6 +36,8 @@ export interface EditorContextProps {
 export const EditorContext = React.createContext<EditorContextProps>(null);
 
 const EditorContextProvider: React.FC = ({ children }) => {
+  const resultsContext = React.useContext(ResultsContext);
+
   const {
     script, setScriptAndArgsManually, args,
   } = React.useContext(ScriptContext);
@@ -51,14 +56,30 @@ const EditorContextProvider: React.FC = ({ children }) => {
   // Saves the editor values in the script.
   const saveEditor = React.useCallback(() => {
     const id = editorPanelOpen ? SCRATCH_SCRIPT.id : script.id;
+
+    // Parse Vis for any possible formatting errors.
+    let vis: Vis;
+    try {
+      vis = parseVis(visEditorText);
+    } catch (e) {
+      resultsContext.setResults({
+        error: new VizierQueryError('vis', ['While parsing Vis Spec: ', e.toString()]),
+        tables: {},
+      });
+      return;
+    }
+
     const scratchScript = {
-      ...script, id, code: pxlEditorText, vis: visEditorText,
+      ...script, id, code: pxlEditorText, vis,
     };
     if (editorPanelOpen) {
       setScratchScript(scratchScript);
     }
     setScriptAndArgsManually(scratchScript, args);
-  }, [setScratchScript, setScriptAndArgsManually, script, args, editorPanelOpen, pxlEditorText, visEditorText]);
+  }, [
+    setScratchScript, setScriptAndArgsManually, script, args,
+    editorPanelOpen, pxlEditorText, visEditorText, resultsContext,
+  ]);
 
   // Update the text when the script changes, but not edited.
   React.useEffect(() => {
@@ -66,9 +87,9 @@ const EditorContextProvider: React.FC = ({ children }) => {
       return;
     }
     setPxlEditorText(script.code);
-    setVisEditorText(script.visString);
+    setVisEditorText(JSON.stringify(script.vis, undefined, 4));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [script?.code, script?.visString]);
+  }, [script?.code, script?.vis]);
 
   return (
     <EditorContext.Provider

@@ -90,7 +90,7 @@ const VisEditor = ({ visible }: { visible: boolean }) => {
     if (!editorRef.current && !script) {
       return;
     }
-    editorRef.current.changeEditorValue(script.visString);
+    editorRef.current.changeEditorValue(JSON.stringify(script.vis, undefined, 4));
     // Don't use editorRef because as a dep because the object is updated on each
     // key typed.
     // eslint-disable-next-line react-hooks/exhaustive-deps

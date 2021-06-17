@@ -34,7 +34,11 @@ export const SCRATCH_SCRIPT: Script = {
   title: 'Scratch Pad',
   description: 'A clean slate for one-off scripts.\n'
     + 'This is ephemeral; it disappears upon changing scripts.',
-  vis: '',
+  vis: {
+    variables: [],
+    widgets: [],
+    globalFuncs: [],
+  },
   code: 'import px\n\n'
     + '# Use this scratch pad to write and run one-off scripts.\n'
     + '# If you switch to another script, refresh, or close this browser tab, this script will disappear.\n\n',

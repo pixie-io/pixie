@@ -19,9 +19,7 @@
 import * as React from 'react';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
-import {
-  getQueryFuncs, parseVis, parseVisSilently, Vis,
-} from 'app/containers/live/vis';
+import { getQueryFuncs } from 'app/containers/live/vis';
 import { Script } from 'app/utils/script-bundle';
 import {
   PixieAPIContext, ExecutionStateUpdate, VizierQueryError, GRPCStatusCode, Table,
@@ -37,27 +35,22 @@ import { ClusterContext, useClusterConfig } from 'app/common/cluster-context';
 const NUM_MUTATION_RETRIES = 5;
 const MUTATION_RETRY_MS = 5000; // 5s.
 
-export interface ParsedScript extends Omit<Script, 'vis'> {
-  visString: string;
-  vis: Vis;
-}
-
 export interface ScriptContextProps {
   /**
-   * The currently selected script, including any local edits the user has made, with the Vis spec parsed.
+   * The currently selected script, including any local edits the user has made.
    */
-  script: ParsedScript;
+  script: Script;
   /** Args that will be passed to the current script if it's executed. Mirrored from LiveRouteContext. */
   args: Record<string, string | string[]>;
   /**
    * Updates the script and args that will be used if execute() is called.
    */
-  setScriptAndArgs: (script: Script | ParsedScript, args: Record<string, string | string[]>) => void;
+  setScriptAndArgs: (script: Script, args: Record<string, string | string[]>) => void;
   /**
    * Updates the script and args that will be used if execute() is called by a user manually running execute
    * through the hot-key or button.
    */
-  setScriptAndArgsManually: (script: Script | ParsedScript, args: Record<string, string | string[]>) => void;
+  setScriptAndArgsManually: (script: Script, args: Record<string, string | string[]>) => void;
   /** Runs the currently selected scripts, with the current args and any user-made edits to the PXL/Vis/etc. */
   execute: () => void;
   /**
@@ -91,7 +84,7 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
 
   const clusterConfig = useClusterConfig();
 
-  const [script, setScript] = React.useState<ParsedScript>(null);
+  const [script, setScript] = React.useState<Script>(null);
   const [manual, setManual] = React.useState(false);
 
   // When the user changes the script entirely (like via breadcrumbs or a fresh navigation): reset PXL, vis, etc.
@@ -106,10 +99,10 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
           if (prevScript) {
             return prevScript;
           }
-          return { ...scriptObj, visString: scriptObj.vis, vis: parseVisSilently(scriptObj.vis || '{}') };
+          return scriptObj;
         });
       } else {
-        setScript({ ...scriptObj, visString: scriptObj.vis, vis: parseVisSilently(scriptObj.vis || '{}') });
+        setScript(scriptObj);
       }
     }
   }, [scriptId, loadingAvailableScripts, availableScripts]);
@@ -137,17 +130,6 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
     if (!apiClient) throw new Error('Tried to execute a script before PixieAPIClient was ready!');
     if (!script || !clusterConfig || !args) {
       throw new Error('Tried to execute before script, cluster connection, and/or args were ready!');
-    }
-
-    // Parse Vis for any possible formatting errors that would otherwise be silenly ignored.
-    try {
-      parseVis(script.visString);
-    } catch (e) {
-      resultsContext.setResults({
-        error: new VizierQueryError('vis', ['While parsing Vis Spec: ', e.toString()]),
-        tables: {},
-      });
-      return;
     }
 
     const validationError = validateArgs(script.vis, args);
@@ -329,23 +311,17 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
     script,
     args,
     manual,
-    setScriptAndArgs: (newScript: Script | ParsedScript, newArgs: Record<string, string | string[]> = args) => {
-      const parsedScript = typeof newScript.vis !== 'string'
-        ? (newScript as ParsedScript)
-        : { ...newScript, visString: newScript.vis, vis: parseVisSilently(newScript.vis || '{}') };
-      setScript(parsedScript);
+    setScriptAndArgs: (newScript: Script, newArgs: Record<string, string | string[]> = args) => {
+      setScript(newScript);
       setManual(false);
 
-      push(selectedClusterName, newScript.id, argsForVis(parsedScript.vis, newArgs));
+      push(selectedClusterName, newScript.id, argsForVis(newScript.vis, newArgs));
     },
-    setScriptAndArgsManually: (newScript: Script | ParsedScript, newArgs: Record<string, string | string[]> = args) => {
-      const parsedScript = typeof newScript.vis !== 'string'
-        ? (newScript as ParsedScript)
-        : { ...newScript, visString: newScript.vis, vis: parseVisSilently(newScript.vis || '{}') };
-      setScript(parsedScript);
+    setScriptAndArgsManually: (newScript: Script, newArgs: Record<string, string | string[]> = args) => {
+      setScript(newScript);
       setManual(true);
 
-      push(selectedClusterName, newScript.id, argsForVis(parsedScript.vis, newArgs));
+      push(selectedClusterName, newScript.id, argsForVis(newScript.vis, newArgs));
     },
     execute,
     cancelExecution: (cancelExecution ?? (() => {})),

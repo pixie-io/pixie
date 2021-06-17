@@ -24,7 +24,6 @@ export const SCRIPT_CONTEXT_DEFUALTS: ScriptContextProps = {
     id: '',
     title: '',
     code: '',
-    visString: '',
     vis: {
       variables: [],
       widgets: [],

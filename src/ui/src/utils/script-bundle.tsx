@@ -18,6 +18,9 @@
 
 import Axios from 'axios';
 import * as QueryString from 'query-string';
+import {
+  parseVis, Vis,
+} from 'app/containers/live/vis';
 
 const PROD_SCRIPTS = 'https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-core.json';
 const OSS_SCRIPTS = 'https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-oss.json';
@@ -26,7 +29,7 @@ export interface Script {
   id: string;
   title: string;
   code: string;
-  vis?: string;
+  vis: Vis;
   description?: string;
   hidden?: boolean;
 }
@@ -82,11 +85,21 @@ export function GetPxScripts(orgID: string, orgName: string): Promise<Script[]> 
           }
           prettyID = `${orgName}/${splits[2]}`;
         }
+        let vis = {
+          variables: [],
+          widgets: [],
+          globalFuncs: [],
+        } as Vis;
+        try {
+          vis = parseVis(s.vis);
+        } catch (e) {
+          return;
+        }
         scripts.push({
           id: prettyID,
           title: s.ShortDoc,
           code: s.pxl,
-          vis: s.vis,
+          vis,
           description: s.LongDoc,
           hidden: s.hidden,
         });
