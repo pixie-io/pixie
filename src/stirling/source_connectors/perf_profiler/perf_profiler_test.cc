@@ -178,7 +178,7 @@ class PerfProfileBPFTest : public ::testing::Test {
 
   void CheckExpectedStackTraceCounts(const ssize_t num_subprocesses,
                                      const std::chrono::duration<double> elapsed_time) {
-    const uint64_t kBPFSamplingPeriodMillis = PerfProfileConnector::kBPFSamplingPeriodMillis;
+    const uint64_t kBPFSamplingPeriodMillis = PerfProfileConnector::kBPFSamplingPeriod.count();
     const double expected_rate = 1000.0 / static_cast<double>(kBPFSamplingPeriodMillis);
     const double expected_num_samples = num_subprocesses * elapsed_time.count() * expected_rate;
     const uint64_t expected_num_sample_lower = uint64_t(0.9 * expected_num_samples);

@@ -46,21 +46,13 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static constexpr auto kTables = MakeArray(kStackTraceTable);
   static constexpr uint32_t kPerfProfileTableNum = TableNum(kTables, kStackTraceTable);
 
-  // kBPFSamplingPeriodMillis: the time interval in between stack trace samples.
-  static constexpr uint64_t kBPFSamplingPeriodMillis = 11;
+  // kBPFSamplingPeriod: the time interval in between stack trace samples.
+  static constexpr auto kBPFSamplingPeriod = std::chrono::milliseconds{11};
 
-  // kBPFTargetPushPeriodMillis: time interval between "push events".
-  // ... a push event is when the BPF perf-profiler probe notifies stirling (user space)
-  // that the shared maps are full and ready for consumption. After each push,
-  // the BPF side switches over to the other map set.
-  static constexpr uint64_t kBPFTargetPushPeriodMillis = 10 * 1000;
-
-  // 4x faster than kBPFTargetPushPeriodMillis, so we don't miss our chance to consume the data,
-  // before it gets clobbered.
-  static constexpr auto kSamplingPeriod = std::chrono::milliseconds{2500};
+  static constexpr auto kSamplingPeriod = std::chrono::milliseconds{30000};
 
   // TODO(yzhao): This is not used right now. Eventually use this to control data push frequency.
-  static constexpr auto kPushPeriod = std::chrono::milliseconds{5000};
+  static constexpr auto kPushPeriod = std::chrono::milliseconds{30000};
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new PerfProfileConnector(name));
@@ -107,10 +99,10 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   explicit PerfProfileConnector(std::string_view source_name);
 
-  Status ProcessBPFStackTraces(ConnectorContext* ctx, DataTable* data_table);
+  void ProcessBPFStackTraces(ConnectorContext* ctx, DataTable* data_table);
 
   // Read BPF data structures, build & incorporate records to the table.
-  void CreateRecords(const uint64_t timestamp_ns, ebpf::BPFStackTable* stack_traces,
+  void CreateRecords(ebpf::BPFStackTable* stack_traces,
                      ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo, ConnectorContext* ctx,
                      DataTable* data_table);
 
@@ -128,8 +120,8 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   std::unique_ptr<ebpf::BPFHashTable<stack_trace_key_t, uint64_t> > histogram_b_;
   std::unique_ptr<ebpf::BPFArrayTable<uint64_t> > profiler_state_;
 
-  // Number of read & clear ops completed:
-  uint64_t read_and_clear_count_ = 0;
+  // Number of iterations, where each iteration is drains the information collectid in BPF.
+  uint64_t transfer_count_ = 0;
 
   // Tracks the next stack-trace-id to be assigned;
   // incremented by 1 for each such assignment.
@@ -149,7 +141,7 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   ProcTracker proc_tracker_;
 
   static constexpr auto kProbeSpecs =
-      MakeArray<bpf_tools::SamplingProbeSpec>({"sample_call_stack", kBPFSamplingPeriodMillis});
+      MakeArray<bpf_tools::SamplingProbeSpec>({"sample_call_stack", kBPFSamplingPeriod.count()});
 };
 
 }  // namespace stirling

@@ -44,9 +44,10 @@ static constexpr DataElement kElements[] = {
      types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_GAUGE}
 };
 
-// Keep at about half of kBPFTargetPushPeriodMillis, so we properly push out up
-// data pushed out by BPF.
-constexpr std::chrono::milliseconds kStackTraceTablePushPeriod(5000);
+// Set to 1/2 of the sample period such that we immediately push each new sample
+// when it becomes available. This is a UX decision so that the user gets fresh
+// profiler data every 30 seconds (or worst case w/in 45 seconds).
+constexpr std::chrono::milliseconds kStackTraceTablePushPeriod(15000);
 
 constexpr auto kStackTraceTable = DataTableSchema(
         "stack_traces.beta",

@@ -44,8 +44,8 @@ Status PerfProfileConnector::InitImpl() {
 
   const std::vector<std::string> defines = {
       absl::Substitute("-DNCPUS=$0", ncpus),
-      absl::Substitute("-DPUSH_PERIOD=$0", kBPFTargetPushPeriodMillis),
-      absl::Substitute("-DSAMPLE_PERIOD=$0", kBPFSamplingPeriodMillis)};
+      absl::Substitute("-DTRANSFER_PERIOD=$0", kSamplingPeriod.count()),
+      absl::Substitute("-DSAMPLE_PERIOD=$0", kBPFSamplingPeriod.count())};
 
   PL_RETURN_IF_ERROR(InitBPFProgram(profiler_bcc_script, defines));
   PL_RETURN_IF_ERROR(AttachSamplingProbes(kProbeSpecs));
@@ -174,13 +174,14 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
   return symbolic_histogram;
 }
 
-void PerfProfileConnector::CreateRecords(const uint64_t timestamp_ns,
-                                         ebpf::BPFStackTable* stack_traces,
+void PerfProfileConnector::CreateRecords(ebpf::BPFStackTable* stack_traces,
                                          ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo,
                                          ConnectorContext* ctx, DataTable* data_table) {
   constexpr size_t kMaxSymbolSize = 512;
   constexpr size_t kMaxStackDepth = 64;
   constexpr size_t kMaxStackTraceSize = kMaxStackDepth * kMaxSymbolSize;
+
+  const uint64_t timestamp_ns = CurrentTimeNS();
 
   // Stack traces from kernel/BPF are ordered lists of instruction pointers (addresses).
   // AggregateStackTraces() will collapse some of those into identical symbolic stack traces;
@@ -203,23 +204,23 @@ void PerfProfileConnector::CreateRecords(const uint64_t timestamp_ns,
   }
 }
 
-Status PerfProfileConnector::ProcessBPFStackTraces(ConnectorContext* ctx, DataTable* data_table) {
-  auto& histo = read_and_clear_count_ % 2 == 0 ? histogram_a_ : histogram_b_;
-  auto& stack_traces = read_and_clear_count_ % 2 == 0 ? stack_traces_a_ : stack_traces_b_;
+void PerfProfileConnector::ProcessBPFStackTraces(ConnectorContext* ctx, DataTable* data_table) {
+  // Choose the maps to consume.
+  auto& histo = transfer_count_ % 2 == 0 ? histogram_a_ : histogram_b_;
+  auto& stack_traces = transfer_count_ % 2 == 0 ? stack_traces_a_ : stack_traces_b_;
+  const uint32_t sample_count_idx = transfer_count_ % 2 == 0 ? kSampleCountAIdx : kSampleCountBIdx;
 
-  ++read_and_clear_count_;
+  ++transfer_count_;
 
-  uint64_t timestamp_ns;
-  PL_RETURN_IF_ERROR(profiler_state_->get_value(kTimeStampIdx, timestamp_ns));
-  timestamp_ns += ClockRealTimeOffset();
+  // First, tell BPF to switch the maps it writes to.
+  const ebpf::StatusTuple s = profiler_state_->update_value(kTransferCountIdx, transfer_count_);
+  LOG_IF(ERROR, !s.ok()) << "Error writing transfer_count_";
 
   // Read BPF stack traces & histogram, build records, incorporate records to data table.
-  CreateRecords(timestamp_ns, stack_traces.get(), histo.get(), ctx, data_table);
+  CreateRecords(stack_traces.get(), histo.get(), ctx, data_table);
 
-  // Update the "read & clear count":
-  PL_RETURN_IF_ERROR(
-      profiler_state_->update_value(kUserReadAndClearCountIdx, read_and_clear_count_));
-  return Status::OK();
+  // Now that we've consumed the data, reset the sample count in BPF.
+  profiler_state_->update_value(sample_count_idx, 0);
 }
 
 void PerfProfileConnector::TransferDataImpl(ConnectorContext* ctx,
@@ -232,24 +233,9 @@ void PerfProfileConnector::TransferDataImpl(ConnectorContext* ctx,
     return;
   }
 
-  uint64_t push_count = 0;
+  ProcessBPFStackTraces(ctx, data_table);
 
-  const ebpf::StatusTuple rd_status = profiler_state_->get_value(kBPFPushCountIdx, push_count);
-  LOG_IF(ERROR, !rd_status.ok()) << "Error reading profiler_state_";
-
-  if (push_count > read_and_clear_count_) {
-    // BPF side incremented the push_count, initiating a push event.
-    // Invoke ProcessBPFStackTraces() to read & clear the shared BPF maps.
-
-    // Before ProcessBPFStackTraces(), we expect that push_count == 1+read_and_clear_count_.
-    // After (and in steady state), we expect push_count==read_and_clear_count_.
-    const uint64_t expected_push_count = 1 + read_and_clear_count_;
-    DCHECK_EQ(push_count, expected_push_count) << "stack trace handshake protocol out of sync.";
-    const Status s = ProcessBPFStackTraces(ctx, data_table);
-    LOG_IF(ERROR, !s.ok()) << "Error in ProcessBPFStackTraces().";
-  }
-  DCHECK_EQ(push_count, read_and_clear_count_) << "stack trace handshake protocol out of sync.";
-
+  // Cleanup the symbolizer so we don't leak memory.
   proc_tracker_.Update(ctx->GetUPIDs());
   CleanupSymbolizers(proc_tracker_.deleted_upids());
 }

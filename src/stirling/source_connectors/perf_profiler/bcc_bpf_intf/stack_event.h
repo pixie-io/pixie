@@ -23,17 +23,16 @@
 // TODO(jps): add a macro that wraps bpf_trace_printk for debug & no-ops for prod builds.
 
 // Indices into the profiler shared state vector "profiler_state":
-// profiler_state[0]: push count              # written on BPF side, read on user side
-// profiler_state[1]: read & clear count      # written on user side, read on BPF side
-// profiler_state[2]: sample count            # reset after each push, BPF side only
-// profiler_state[3]: timestamp of sample     # written on BPF side, read on user side
-// profiler_state[4]: error status bitfield   # written on BPF side, read on user side
-static const uint32_t kBPFPushCountIdx = 0;
-static const uint32_t kUserReadAndClearCountIdx = 1;
-static const uint32_t kSampleCountIdx = 2;
-static const uint32_t kTimeStampIdx = 3;
-static const uint32_t kErrorStatusIdx = 4;
-static const uint32_t kProfilerStateVectorSize = 5;
+// profiler_state[0]: transfer count          # written on user side, read on BPF side
+// profiler_state[1]: sample count A          # updated on BPF side, reset on user side
+// profiler_state[2]: sample count B          # updated on BPF side, reset on user side
+// profiler_state[3]: error status bitfield   # written on BPF side, read on user side
+// TODO(jps): Consider switching to a C-style enum.
+static const uint32_t kTransferCountIdx = 0;
+static const uint32_t kSampleCountAIdx = 1;
+static const uint32_t kSampleCountBIdx = 2;
+static const uint32_t kErrorStatusIdx = 3;
+static const uint32_t kProfilerStateVectorSize = 4;
 
 // stack_trace_key_t indexes into the stack-trace histogram.
 // By tying together the user & kernel stack-trace-ids [1],
@@ -52,9 +51,9 @@ struct stack_trace_key_t {
 };
 
 // Bit positions in the error status bitfield:
-static const uint32_t kCouldNotPushBitPos = 0;
+static const uint32_t kOverflowBitPos = 0;
 static const uint32_t kMapReadFailureBitPos = 1;
 
 // The error codes, themselves:
-static const uint64_t kCouldNotPushError = 1ULL << kCouldNotPushBitPos;
+static const uint64_t kOverflowError = 1ULL << kOverflowBitPos;
 static const uint64_t kMapReadFailureError = 1ULL << kMapReadFailureBitPos;
