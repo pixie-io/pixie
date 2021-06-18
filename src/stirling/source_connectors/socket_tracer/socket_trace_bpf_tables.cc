@@ -81,13 +81,11 @@ void ConnInfoMapManager::Disable(struct conn_id_t conn_id) {
 void ConnInfoMapManager::CleanupBPFMapLeaks(ConnTrackersManager* conn_trackers_mgr) {
   const auto& sysconfig = system::Config::GetInstance();
 
-  for (const auto& entry : conn_info_map_.get_table_offline()) {
-    const auto& id = entry.first;
-    const auto& conn_info = entry.second;
-    int32_t pid = id >> 32;
-    int32_t fd = id;
+  for (const auto& [pid_fd, conn_info] : conn_info_map_.get_table_offline()) {
+    uint32_t pid = pid_fd >> 32;
+    int32_t fd = pid_fd;
 
-    // Check if the connection was already tracked, if so, leave it be.
+    // Check conn trackers to see if it's already tracked.
     // This is a performance optimization to avoid accessing /proc when not required.
     if (conn_trackers_mgr->GetConnTracker(pid, fd).ok()) {
       continue;
@@ -96,25 +94,28 @@ void ConnInfoMapManager::CleanupBPFMapLeaks(ConnTrackersManager* conn_trackers_m
     std::filesystem::path fd_file =
         sysconfig.proc_path() / std::to_string(pid) / "fd" / std::to_string(fd);
 
-    if (!fs::Exists(fd_file).ok()) {
-      conn_info_map_.remove_value(id);
-      VLOG(1) << absl::Substitute("Found conn_info_map leak: pid=$0 fd=$1 af=$2", pid, fd,
-                                  conn_info.addr.sa.sa_family);
+    if (fs::Exists(fd_file).ok()) {
+      continue;
     }
+
+    ReleaseResources(conn_info.conn_id);
+    VLOG(1) << absl::Substitute("Found conn_info_map leak: pid=$0 fd=$1 af=$2", pid, fd,
+                                conn_info.addr.sa.sa_family);
   }
 
-  for (const auto& entry : open_file_map_.get_table_offline()) {
-    const auto& id = entry.first;
-    int32_t pid = id >> 32;
-    int32_t fd = id;
+  for (const auto& [pid_fd, _] : open_file_map_.get_table_offline()) {
+    uint32_t pid = pid_fd >> 32;
+    int32_t fd = pid_fd;
 
     std::filesystem::path fd_file =
         sysconfig.proc_path() / std::to_string(pid) / "fd" / std::to_string(fd);
-
-    if (!fs::Exists(fd_file).ok()) {
-      open_file_map_.remove_value(id);
-      VLOG(1) << absl::Substitute("Found open_file_map leak: pid=$0 fd=$1", pid, fd);
+    if (fs::Exists(fd_file).ok()) {
+      continue;
     }
+
+    // TODO(yzhao): Rewrite to use the uprobe-style cleanup.
+    open_file_map_.remove_value(pid_fd);
+    VLOG(1) << absl::Substitute("Found open_file_map leak: pid=$0 fd=$1", pid, fd);
   }
 }
 
