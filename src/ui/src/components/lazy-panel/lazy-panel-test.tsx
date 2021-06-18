@@ -17,43 +17,42 @@
  */
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { shallow } from 'enzyme';
+import { screen, render } from '@testing-library/react';
 import * as React from 'react';
 
 import { LazyPanel } from './lazy-panel';
 
 describe('<LazyPanel/> test', () => {
   it('renders null when show is false', () => {
-    const wrapper = shallow(
+    const { container } = render(
       <LazyPanel show={false}>
-        <div className='content'>test content</div>
+        <div title='content'>test content</div>
       </LazyPanel>,
     );
 
-    expect(wrapper.getElement()).toBe(null);
-    expect(wrapper.find('.visible')).toHaveLength(0);
+    expect(container.innerHTML).toBe('');
   });
 
-  it('renders content when show is true', () => {
-    const wrapper = shallow(
+  it('renders content when show is true', async () => {
+    const { container } = render(
       <LazyPanel show>
-        <div className='content'>test content</div>
+        <div title='content'>test content</div>
       </LazyPanel>,
     );
 
-    expect(wrapper.find('.content')).toHaveLength(1);
-    expect(wrapper.find('.visible')).toHaveLength(1);
+    expect(await screen.getByTitle('content')).toBeDefined();
+    expect(await container.querySelectorAll('.visible')).toHaveLength(1);
   });
 
-  it("doesn't destroy the element if show becomes false", () => {
-    const wrapper = shallow(
+  it("doesn't destroy the element if show becomes false", async () => {
+    const { container, rerender } = render(
       <LazyPanel show>
-        <div className='content'>test content</div>
+        <div title='content'>test content</div>
       </LazyPanel>,
     );
+    rerender(<LazyPanel show={false}><div title='content'>test content</div></LazyPanel>);
 
-    wrapper.setProps({ show: false });
-    expect(wrapper.find('.content')).toHaveLength(1);
-    expect(wrapper.find('.visible')).toHaveLength(0);
+    expect(await screen.getByTitle('content')).toBeDefined();
+    expect(await container.querySelectorAll('.visible')).toHaveLength(0);
   });
 });

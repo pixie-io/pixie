@@ -18,9 +18,13 @@
 
 import * as React from 'react';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { mount } from 'enzyme';
-import { Modal } from '@material-ui/core';
-import { act } from 'react-dom/test-utils';
+import {
+  render,
+  fireEvent,
+  screen,
+  getByText,
+  getByTestId,
+} from '@testing-library/react';
 import LiveViewShortcutsProvider, { getKeyMap, LiveShortcutsContext } from './shortcuts';
 
 const Consumer = () => {
@@ -39,12 +43,21 @@ const Consumer = () => {
       </button>
       <button type='button' onKeyPress={(e?) => ctx.execute.handler(e?.nativeEvent)}>execute</button>
       {/* For testing shortcuts when the user is typing */}
-      <input type='text' />
+      <input type='text' data-testid='shortcuts-input' />
     </>
   );
 };
 
 describe('Shortcut keys', () => {
+  // The shortcut handler ignores combinations that would edit text in a currently-focused element (simple heuristic).
+  // We're specifying the code and charCode due to https://github.com/testing-library/react-testing-library/issues/269
+  const ignoredEvent = {
+    ctrlKey: true, key: 'ArrowLeft', code: 37, charCode: 37,
+  };
+  const capturedEvent = {
+    metaKey: true, key: 'Space', code: 32, charCode: 32,
+  };
+
   it('defines a keymap', () => {
     const map = getKeyMap();
     expect(Object.keys(map).length).toBeGreaterThan(0);
@@ -71,61 +84,44 @@ describe('Shortcut keys', () => {
     });
 
     it('exposes programmatically callable handlers', () => {
-      const comp = mount(<LiveViewShortcutsProvider handlers={inputHandlers}><Consumer /></LiveViewShortcutsProvider>);
+      const { container } = render(
+        <LiveViewShortcutsProvider handlers={inputHandlers}><Consumer /></LiveViewShortcutsProvider>);
       for (const name of Object.keys(inputHandlers)) {
         expect(inputHandlers[name]).not.toHaveBeenCalled();
-        const btn = comp.find('button').filterWhere((w) => w.text() === name);
-        btn.simulate('keypress');
+        fireEvent.keyPress(getByText(container, name), capturedEvent);
         expect(inputHandlers[name]).toHaveBeenCalled();
       }
-      comp.unmount();
     });
 
     it('exposes a handler to show help about registered commands', () => {
-      const comp = mount(<LiveViewShortcutsProvider handlers={inputHandlers}><Consumer /></LiveViewShortcutsProvider>);
+      const { container } = render(
+        <LiveViewShortcutsProvider handlers={inputHandlers}><Consumer /></LiveViewShortcutsProvider>);
 
-      expect(comp.find(Modal).props().open).toBe(false);
-      const btn = comp.find('button').filterWhere((w) => w.text() === 'show-help');
-      btn.simulate('keypress');
-      expect(comp.find(Modal).props().open).toBe(true);
-
-      comp.unmount();
+      expect(screen.queryByText('Available Shortcuts')).toBeNull();
+      fireEvent.keyPress(getByText(container, 'show-help'), capturedEvent);
+      expect(screen.queryByText('Available Shortcuts')).not.toBeNull();
     });
 
     it('ignores conflicting handlers when an editable element has focus', () => {
-      // The method handling these shortcuts uses a simple heuristic to try to guess whether a key combination
-      // would edit text in the focused content-editable element. If it would, then its global binding is ignored.
-      // Otherwise - if it would not or if tab focus is not on an editable element - the binding is activated.
-      const ignoredEvent = new KeyboardEvent('keypress', { ctrlKey: true, key: 'ArrowLeft' });
-      const capturedEvent = new KeyboardEvent('keypress', { metaKey: true, key: 'MediaPlay' });
-
-      // Using attachTo so that browser focus actually moves, see this issue:
-      // https://github.com/enzymejs/enzyme/issues/2337#issuecomment-608984530
-      // Also using a wrapper element to attach to, so that Enzyme does not warn about attaching directly to the body.
-      const wrapper = document.createElement('div');
-      document.body.appendChild(wrapper);
-      const comp = mount(
-        <LiveViewShortcutsProvider handlers={inputHandlers}><Consumer /></LiveViewShortcutsProvider>,
-        { attachTo: wrapper },
-      );
-      const input = comp.find('input').at(0);
+      const { container } = render(
+        <LiveViewShortcutsProvider handlers={inputHandlers}><Consumer /></LiveViewShortcutsProvider>);
+      const input = getByTestId(container, 'shortcuts-input');
       for (const name of Object.keys(inputHandlers)) {
         expect(inputHandlers[name]).not.toHaveBeenCalled();
-        input.getDOMNode<HTMLInputElement>().focus();
+        input.focus();
         expect(document.activeElement).not.toBe(document.body);
-        const btn = comp.find('button').filterWhere((w) => w.text() === name);
+        const btn = getByText(container, name);
         expect(inputHandlers[name]).not.toHaveBeenCalled();
-        act(() => (btn.prop('onKeyPress') as (e: any) => void)({ nativeEvent: ignoredEvent }));
+        fireEvent.keyPress(btn, ignoredEvent);
         expect(inputHandlers[name]).not.toHaveBeenCalled();
-        act(() => (btn.prop('onKeyPress') as (e: any) => void)({ nativeEvent: capturedEvent }));
+        fireEvent.keyPress(btn, capturedEvent);
         expect(inputHandlers[name]).toHaveBeenCalled();
       }
 
-      expect(comp.find(Modal).props().open).toBe(false);
-      const helpBtn = comp.find('button').filterWhere((w) => w.text() === 'show-help');
-      act(() => helpBtn.prop('onKeyPress')(undefined));
-      expect(comp.find(Modal).props().open).toBe(false);
-      comp.unmount();
+      expect(screen.queryByText('Available Shortcuts')).toBeNull();
+      const helpBtn = getByText(container, 'show-help');
+      fireEvent.keyPress(helpBtn, capturedEvent);
+      expect(screen.queryByText('Available Shortcuts')).not.toBeNull();
     });
   });
 });

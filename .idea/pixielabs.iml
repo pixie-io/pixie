@@ -16,12 +16,10 @@
       <excludeFolder url="file://$MODULE_DIR$/bazel-pixielabs" />
       <excludeFolder url="file://$MODULE_DIR$/bazel-testlogs" />
       <excludeFolder url="file://$MODULE_DIR$/src/ui/dist" />
-      <excludeFolder url="file://$MODULE_DIR$/src/ui/packages/pixie-components/dist" />
-      <excludeFolder url="file://$MODULE_DIR$/src/ui/packages/pixie-api/dist" />
       <excludeFolder url="file://$MODULE_DIR$/third_party" />
-      <excludeFolder url="file://$MODULE_DIR$/src/ui/packages/pixie-api-react/dist" />
-      <excludeFolder url="file://$MODULE_DIR$/src/ui/packages/samples/api/dist" />
       <excludeFolder url="file://$MODULE_DIR$/src/ui/.yarn" />
+      <excludePattern pattern="*.lock" />
+      <excludePattern pattern="yarn-error.log" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

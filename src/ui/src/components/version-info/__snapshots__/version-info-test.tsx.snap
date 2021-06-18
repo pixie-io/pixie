@@ -1,47 +1,11 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`<VersionInfo/> renders correctly 1`] = `
-initialize {
-  "0": Node {
-    "attribs": Object {
-      "class": "VersionInfoImpl-root-1",
-    },
-    "children": Array [
-      Node {
-        "data": "testing 123",
-        "next": null,
-        "parent": [Circular],
-        "prev": null,
-        "type": "text",
-      },
-    ],
-    "name": "div",
-    "namespace": "http://www.w3.org/1999/xhtml",
-    "next": null,
-    "parent": Node {
-      "children": Array [
-        [Circular],
-      ],
-      "name": "root",
-      "next": null,
-      "parent": null,
-      "prev": null,
-      "type": "root",
-    },
-    "prev": null,
-    "type": "tag",
-    "x-attribsNamespace": Object {
-      "class": undefined,
-    },
-    "x-attribsPrefix": Object {
-      "class": undefined,
-    },
-  },
-  "_root": [Circular],
-  "length": 1,
-  "options": Object {
-    "decodeEntities": true,
-    "xml": false,
-  },
-}
+<div>
+  <div
+    class="VersionInfoImpl-root-1"
+  >
+    testing 123
+  </div>
+</div>
 `;

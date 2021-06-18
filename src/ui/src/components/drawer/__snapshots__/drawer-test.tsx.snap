@@ -1,288 +1,35 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`<FixedSizeDrawer/> renders correctly when closed 1`] = `
-initialize {
-  "0": Node {
-    "attribs": Object {
-      "class": "FixedSizeDrawerImpl-root-1",
-    },
-    "children": Array [
-      Node {
-        "attribs": Object {
-          "class": "FixedSizeDrawerImpl-otherContent-2",
-        },
-        "children": Array [
-          Node {
-            "attribs": Object {},
-            "children": Array [
-              Node {
-                "data": "Other content. Some text goes here.",
-                "next": null,
-                "parent": [Circular],
-                "prev": null,
-                "type": "text",
-              },
-            ],
-            "name": "div",
-            "namespace": "http://www.w3.org/1999/xhtml",
-            "next": null,
-            "parent": [Circular],
-            "prev": null,
-            "type": "tag",
-            "x-attribsNamespace": Object {},
-            "x-attribsPrefix": Object {},
-          },
-        ],
-        "name": "div",
-        "namespace": "http://www.w3.org/1999/xhtml",
-        "next": Node {
-          "attribs": Object {
-            "class": "MuiDrawer-root FixedSizeDrawerImpl-dockedHorizontal-6 MuiDrawer-docked css-7ik032-MuiDrawer-docked",
-            "style": "width:50px",
-          },
-          "children": Array [
-            Node {
-              "attribs": Object {
-                "class": "MuiPaper-root MuiPaper-elevation MuiPaper-elevation0 FixedSizeDrawerImpl-drawerPaper-4 MuiDrawer-paper MuiDrawer-paperAnchorLeft MuiDrawer-paperAnchorDockedLeft css-12i7wg6-MuiPaper-root-MuiDrawer-paper",
-                "style": "visibility:hidden",
-              },
-              "children": Array [
-                Node {
-                  "attribs": Object {
-                    "class": "FixedSizeDrawerImpl-drawerContents-3",
-                    "style": "width:50px",
-                  },
-                  "children": Array [
-                    Node {
-                      "attribs": Object {},
-                      "children": Array [
-                        Node {
-                          "data": "Drawer contents",
-                          "next": null,
-                          "parent": [Circular],
-                          "prev": null,
-                          "type": "text",
-                        },
-                      ],
-                      "name": "div",
-                      "namespace": "http://www.w3.org/1999/xhtml",
-                      "next": null,
-                      "parent": [Circular],
-                      "prev": null,
-                      "type": "tag",
-                      "x-attribsNamespace": Object {},
-                      "x-attribsPrefix": Object {},
-                    },
-                  ],
-                  "name": "div",
-                  "namespace": "http://www.w3.org/1999/xhtml",
-                  "next": null,
-                  "parent": [Circular],
-                  "prev": null,
-                  "type": "tag",
-                  "x-attribsNamespace": Object {
-                    "class": undefined,
-                    "style": undefined,
-                  },
-                  "x-attribsPrefix": Object {
-                    "class": undefined,
-                    "style": undefined,
-                  },
-                },
-              ],
-              "name": "div",
-              "namespace": "http://www.w3.org/1999/xhtml",
-              "next": null,
-              "parent": [Circular],
-              "prev": null,
-              "type": "tag",
-              "x-attribsNamespace": Object {
-                "class": undefined,
-                "style": undefined,
-              },
-              "x-attribsPrefix": Object {
-                "class": undefined,
-                "style": undefined,
-              },
-            },
-          ],
-          "name": "div",
-          "namespace": "http://www.w3.org/1999/xhtml",
-          "next": null,
-          "parent": [Circular],
-          "prev": [Circular],
-          "type": "tag",
-          "x-attribsNamespace": Object {
-            "class": undefined,
-            "style": undefined,
-          },
-          "x-attribsPrefix": Object {
-            "class": undefined,
-            "style": undefined,
-          },
-        },
-        "parent": [Circular],
-        "prev": null,
-        "type": "tag",
-        "x-attribsNamespace": Object {
-          "class": undefined,
-        },
-        "x-attribsPrefix": Object {
-          "class": undefined,
-        },
-      },
-      Node {
-        "attribs": Object {
-          "class": "MuiDrawer-root FixedSizeDrawerImpl-dockedHorizontal-6 MuiDrawer-docked css-7ik032-MuiDrawer-docked",
-          "style": "width:50px",
-        },
-        "children": Array [
-          Node {
-            "attribs": Object {
-              "class": "MuiPaper-root MuiPaper-elevation MuiPaper-elevation0 FixedSizeDrawerImpl-drawerPaper-4 MuiDrawer-paper MuiDrawer-paperAnchorLeft MuiDrawer-paperAnchorDockedLeft css-12i7wg6-MuiPaper-root-MuiDrawer-paper",
-              "style": "visibility:hidden",
-            },
-            "children": Array [
-              Node {
-                "attribs": Object {
-                  "class": "FixedSizeDrawerImpl-drawerContents-3",
-                  "style": "width:50px",
-                },
-                "children": Array [
-                  Node {
-                    "attribs": Object {},
-                    "children": Array [
-                      Node {
-                        "data": "Drawer contents",
-                        "next": null,
-                        "parent": [Circular],
-                        "prev": null,
-                        "type": "text",
-                      },
-                    ],
-                    "name": "div",
-                    "namespace": "http://www.w3.org/1999/xhtml",
-                    "next": null,
-                    "parent": [Circular],
-                    "prev": null,
-                    "type": "tag",
-                    "x-attribsNamespace": Object {},
-                    "x-attribsPrefix": Object {},
-                  },
-                ],
-                "name": "div",
-                "namespace": "http://www.w3.org/1999/xhtml",
-                "next": null,
-                "parent": [Circular],
-                "prev": null,
-                "type": "tag",
-                "x-attribsNamespace": Object {
-                  "class": undefined,
-                  "style": undefined,
-                },
-                "x-attribsPrefix": Object {
-                  "class": undefined,
-                  "style": undefined,
-                },
-              },
-            ],
-            "name": "div",
-            "namespace": "http://www.w3.org/1999/xhtml",
-            "next": null,
-            "parent": [Circular],
-            "prev": null,
-            "type": "tag",
-            "x-attribsNamespace": Object {
-              "class": undefined,
-              "style": undefined,
-            },
-            "x-attribsPrefix": Object {
-              "class": undefined,
-              "style": undefined,
-            },
-          },
-        ],
-        "name": "div",
-        "namespace": "http://www.w3.org/1999/xhtml",
-        "next": null,
-        "parent": [Circular],
-        "prev": Node {
-          "attribs": Object {
-            "class": "FixedSizeDrawerImpl-otherContent-2",
-          },
-          "children": Array [
-            Node {
-              "attribs": Object {},
-              "children": Array [
-                Node {
-                  "data": "Other content. Some text goes here.",
-                  "next": null,
-                  "parent": [Circular],
-                  "prev": null,
-                  "type": "text",
-                },
-              ],
-              "name": "div",
-              "namespace": "http://www.w3.org/1999/xhtml",
-              "next": null,
-              "parent": [Circular],
-              "prev": null,
-              "type": "tag",
-              "x-attribsNamespace": Object {},
-              "x-attribsPrefix": Object {},
-            },
-          ],
-          "name": "div",
-          "namespace": "http://www.w3.org/1999/xhtml",
-          "next": [Circular],
-          "parent": [Circular],
-          "prev": null,
-          "type": "tag",
-          "x-attribsNamespace": Object {
-            "class": undefined,
-          },
-          "x-attribsPrefix": Object {
-            "class": undefined,
-          },
-        },
-        "type": "tag",
-        "x-attribsNamespace": Object {
-          "class": undefined,
-          "style": undefined,
-        },
-        "x-attribsPrefix": Object {
-          "class": undefined,
-          "style": undefined,
-        },
-      },
-    ],
-    "name": "div",
-    "namespace": "http://www.w3.org/1999/xhtml",
-    "next": null,
-    "parent": Node {
-      "children": Array [
-        [Circular],
-      ],
-      "name": "root",
-      "next": null,
-      "parent": null,
-      "prev": null,
-      "type": "root",
-    },
-    "prev": null,
-    "type": "tag",
-    "x-attribsNamespace": Object {
-      "class": undefined,
-    },
-    "x-attribsPrefix": Object {
-      "class": undefined,
-    },
-  },
-  "_root": [Circular],
-  "length": 1,
-  "options": Object {
-    "decodeEntities": true,
-    "xml": false,
-  },
-}
+<div>
+  <div
+    class="FixedSizeDrawerImpl-root-1"
+  >
+    <div
+      class="FixedSizeDrawerImpl-otherContent-2"
+    >
+      <div>
+        Other content. Some text goes here.
+      </div>
+    </div>
+    <div
+      class="MuiDrawer-root FixedSizeDrawerImpl-dockedHorizontal-6 MuiDrawer-docked css-7ik032-MuiDrawer-docked"
+      style="width: 50px;"
+    >
+      <div
+        class="MuiPaper-root MuiPaper-elevation MuiPaper-elevation0 FixedSizeDrawerImpl-drawerPaper-4 MuiDrawer-paper MuiDrawer-paperAnchorLeft MuiDrawer-paperAnchorDockedLeft css-12i7wg6-MuiPaper-root-MuiDrawer-paper"
+        style="visibility: hidden; webkit-transform: translateX(-0px); transform: translateX(-0px);"
+      >
+        <div
+          class="FixedSizeDrawerImpl-drawerContents-3"
+          style="width: 50px;"
+        >
+          <div>
+            Drawer contents
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 `;

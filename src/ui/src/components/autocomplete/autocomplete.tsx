@@ -23,9 +23,9 @@ import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 
 import { scrollbarStyles } from 'app/components';
-import useIsMounted from 'app/utils/use-is-mounted';
 import { AutocompleteContext } from 'app/components/autocomplete/autocomplete-context';
 
+import { makeCancellable } from 'app/utils/cancellable-promise';
 import {
   CompletionId,
   CompletionItem,
@@ -101,7 +101,6 @@ export const Autocomplete: React.FC<AutoCompleteProps> = ({
   className,
 }) => {
   const classes = useStyles();
-  const mounted = useIsMounted();
   const {
     allowTyping,
     requireCompletion,
@@ -122,15 +121,13 @@ export const Autocomplete: React.FC<AutoCompleteProps> = ({
   }, [completions]);
 
   React.useEffect(() => {
-    getCompletions(inputValue).then((cmpls) => {
-      if (!mounted.current) return;
+    const promise = makeCancellable(getCompletions(inputValue));
+    promise.then((cmpls) => {
       setCompletions(cmpls);
       const selection = autoSelectItem(cmpls);
       if (selection?.title && selection?.id) setActiveItem(selection.id);
     });
-    // `mounted` is not in this array because changing it should ONLY affect whether the resolved promise acts.
-    // `hidden` IS in it to ensure we update upon revealing the dropdown.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => promise.cancel();
   }, [inputValue, getCompletions, hidden]);
 
   const handleSelection = React.useCallback(

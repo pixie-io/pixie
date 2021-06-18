@@ -19,7 +19,7 @@
 // This ignore shouldn't be necessary because it is ignored in eslintrc.json but
 // that seems to not work at the moment.
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { render } from 'enzyme';
+import { waitFor, render } from '@testing-library/react';
 import * as React from 'react';
 import { ThemeProvider } from '@material-ui/core/styles';
 import { DARK_THEME } from 'app/components';
@@ -29,7 +29,7 @@ import { MockScriptsContextProvider } from 'app/testing/mocks/scripts-context-mo
 import LiveViewBreadcrumbs from './breadcrumbs';
 
 describe('Live view breadcrumbs', () => {
-  it('renders', () => {
+  it('renders', async () => {
     render(
       <ThemeProvider theme={DARK_THEME}>
         <MockClusterContextProvider>
@@ -41,5 +41,6 @@ describe('Live view breadcrumbs', () => {
         </MockClusterContextProvider>
       </ThemeProvider>,
     );
+    await waitFor(() => {}); // So that useEffect can settle down (otherwise we get "use act()" complaints)
   });
 });

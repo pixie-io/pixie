@@ -16,9 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { shallow } from 'enzyme';
 import * as React from 'react';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { render } from '@testing-library/react';
 
 import { Completion, Completions } from './completions';
 
@@ -26,7 +26,7 @@ const noop = () => {};
 
 describe('<Completions/> test', () => {
   it('renders', () => {
-    const wrapper = shallow(
+    const { container } = render(
       <Completions
         items={[
           { type: 'header', header: 'Recently used' },
@@ -57,17 +57,14 @@ describe('<Completions/> test', () => {
         onSelection={noop}
       />,
     );
-    expect(wrapper.find(Completion)).toHaveLength(5);
-    expect(wrapper.findWhere((node) => node.prop('active')).prop('id')).toBe(
-      'px-1',
-    );
+    expect(container).toMatchSnapshot();
   });
 });
 
 describe('<Completion> test', () => {
   describe('renders highlights', () => {
     it('from the beginning', () => {
-      const wrapper = shallow(
+      const { container } = render(
         <Completion
           id='some id'
           title='0123456789'
@@ -77,17 +74,11 @@ describe('<Completion> test', () => {
           onSelection={noop}
         />,
       );
-      const child = wrapper.find('CompletionInternal').shallow();
-      expect(child.find('span').at(0).hasClass(/highlight/)).toEqual(true);
-      expect(child.find('span').at(1).hasClass(/highlight/)).toEqual(true);
-      expect(child.find('span').at(2).hasClass(/highlight/)).toEqual(true);
-      expect(child.find('span').at(3).hasClass(/highlight/)).toEqual(false);
-      expect(child.find('span').at(4).hasClass(/highlight/)).toEqual(true);
-      expect(child.find('span').at(5).hasClass(/highlight/)).toEqual(false);
+      expect(container).toMatchSnapshot();
     });
 
     it('in the middle', () => {
-      const wrapper = shallow(
+      const { container } = render(
         <Completion
           id='some id'
           title='0123456789'
@@ -97,11 +88,7 @@ describe('<Completion> test', () => {
           onSelection={noop}
         />,
       );
-      const child = wrapper.find('CompletionInternal').shallow();
-      expect(child.find('span').at(0).hasClass(/highlight/)).toEqual(false);
-      expect(child.find('span').at(1).hasClass(/highlight/)).toEqual(true);
-      expect(child.find('span').at(2).hasClass(/highlight/)).toEqual(true);
-      expect(child.find('span').at(3).hasClass(/highlight/)).toEqual(false);
+      expect(container).toMatchSnapshot();
     });
   });
 });

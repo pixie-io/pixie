@@ -18,16 +18,16 @@
 
 import * as React from 'react';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { render } from 'enzyme';
+import { render } from '@testing-library/react';
 import { ThemeProvider } from '@material-ui/core';
 import { createTheme } from '@material-ui/core/styles';
 import { FixedSizeDrawer } from './drawer';
 
 describe('<FixedSizeDrawer/>', () => {
-  it('renders correctly when closed', () => {
+  it('renders correctly when closed', async () => {
     const otherContent = <div>Other content. Some text goes here.</div>;
 
-    const wrapper = render(
+    const { container } = render(
       <ThemeProvider theme={createTheme()}>
         <FixedSizeDrawer
           drawerDirection='left'
@@ -40,6 +40,6 @@ describe('<FixedSizeDrawer/>', () => {
         </FixedSizeDrawer>
       </ThemeProvider>,
     );
-    expect(wrapper).toMatchSnapshot();
+    expect(container).toMatchSnapshot();
   });
 });

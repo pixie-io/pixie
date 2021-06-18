@@ -23,7 +23,6 @@ module.exports = {
     window: true,
   },
   setupFiles: [
-    '<rootDir>/src/testing/enzyme-setup.ts',
     'jest-canvas-mock',
   ],
   setupFilesAfterEnv: [

@@ -16,9 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { shallow } from 'enzyme';
 import * as React from 'react';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { render } from '@testing-library/react';
 
 import { CommandAutocompleteInput } from 'app/components/autocomplete/command-autocomplete-input';
 
@@ -26,7 +26,7 @@ const noop = () => {};
 
 describe('<AutcompleteInput/> test', () => {
   it('renders the correct spans', () => {
-    const wrapper = shallow(
+    const { container } = render(
       <CommandAutocompleteInput
         onKey={noop}
         onChange={noop}
@@ -46,15 +46,16 @@ describe('<AutcompleteInput/> test', () => {
         ]}
       />,
     );
-    expect(wrapper.find('span')).toHaveLength(4);
-    expect(wrapper.find('span').at(0).text()).toBe('svc: ');
-    expect(wrapper.find('span').at(1).text()).toBe('pl/');
-    expect(wrapper.find('span').at(2).text()).toBe('test');
-    expect(wrapper.find('span').at(3).text()).toBe(''); // Placeholder span.
+    const spans = container.querySelectorAll('span');
+    expect(spans).toHaveLength(4);
+    expect(spans[0].innerHTML).toBe('svc: ');
+    expect(spans[1].innerHTML).toBe('pl/');
+    expect(spans[2].innerHTML).toBe('test');
+    expect(spans[3].innerHTML).toBe(''); // Placeholder span.
   });
 
   it('renders placeholder', () => {
-    const wrapper = shallow(
+    const { container } = render(
       <CommandAutocompleteInput
         onKey={noop}
         onChange={noop}
@@ -65,7 +66,7 @@ describe('<AutcompleteInput/> test', () => {
         isValid={false}
       />,
     );
-    expect(wrapper.find('span')).toHaveLength(1);
-    expect(wrapper.find('span').at(0).text()).toBe('test'); // Placeholder span.
+    expect(container.querySelectorAll('span')).toHaveLength(1);
+    expect(container.querySelector('span').innerHTML).toBe('test'); // Placeholder span.
   });
 });

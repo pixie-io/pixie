@@ -16,41 +16,41 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { shallow } from 'enzyme';
 import * as React from 'react';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { screen, render } from '@testing-library/react';
 
 import { VizierQueryError } from 'app/api';
 import { VizierErrorDetails } from './errors';
 
 describe('<VizierErrorDetails/> test', () => {
-  it('renders the details if it is a VizierQueryError', () => {
-    const wrapper = shallow(
+  it('renders the details if it is a VizierQueryError', async () => {
+    render(
       <VizierErrorDetails error={
         new VizierQueryError('server', 'a well formatted server error')
       }
       />,
     );
-    expect(wrapper.find('div').at(0).text()).toBe('a well formatted server error');
+    await screen.findByText('a well formatted server error');
   });
 
-  it('renders a list of errors if the details is a list', () => {
-    const wrapper = shallow(
+  it('renders a list of errors if the details is a list', async () => {
+    const { container } = render(
       <VizierErrorDetails error={
         new VizierQueryError('script', ['error 1', 'error 2', 'error 3'])
       }
       />,
     );
-    expect(wrapper.find('div').length).toBe(3);
+    expect(container.querySelectorAll('div')).toHaveLength(3);
   });
 
-  it('renders the message for other errors', () => {
-    const wrapper = shallow(
+  it('renders the message for other errors', async () => {
+    render(
       <VizierErrorDetails error={
         new Error('generic error')
       }
       />,
     );
-    expect(wrapper.find('div').at(0).text()).toBe('generic error');
+    await screen.findByText('generic error');
   });
 });

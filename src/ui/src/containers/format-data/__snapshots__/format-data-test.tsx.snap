@@ -1,0 +1,474 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`<AlertData/> test should render correctly for false alert 1`] = `
+<div>
+  <div
+    class="AlertDataBase-false-19"
+  >
+    false
+  </div>
+</div>
+`;
+
+exports[`<AlertData/> test should render correctly for true alert 1`] = `
+<div>
+  <div
+    class="AlertDataBase-true-16"
+  >
+    true
+  </div>
+</div>
+`;
+
+exports[`<JSONData/> test should render array correctly for multiline 1`] = `
+<div>
+  <span
+    class="JSONData-base-38"
+  >
+    [ 
+    <br />
+    <span
+      style="margin-left: 16px;"
+    >
+      <span
+        class="JSONData-base-38"
+      >
+        { 
+        <br />
+        <span
+          style="margin-left: 32px;"
+        >
+          <span
+            class="JSONData-jsonKey-39"
+          >
+            a: 
+          </span>
+          <span
+            class="JSONData-number-40"
+          >
+            <span>
+              1
+            </span>
+          </span>
+          , 
+          <br />
+        </span>
+        <span
+          style="margin-left: 32px;"
+        >
+          <span
+            class="JSONData-jsonKey-39"
+          >
+            b: 
+          </span>
+          <span
+            class="JSONData-base-38"
+          >
+            { 
+            <br />
+            <span
+              style="margin-left: 48px;"
+            >
+              <span
+                class="JSONData-jsonKey-39"
+              >
+                c: 
+              </span>
+              <span
+                class="JSONData-string-42"
+              >
+                <span>
+                  foo
+                </span>
+              </span>
+              
+              <br />
+            </span>
+            <span
+              style="margin-left: 32px;"
+            >
+               }
+            </span>
+          </span>
+          
+          <br />
+        </span>
+        <span
+          style="margin-left: 16px;"
+        >
+           }
+        </span>
+      </span>
+      , 
+      <br />
+    </span>
+    <span
+      style="margin-left: 16px;"
+    >
+      <span
+        class="JSONData-base-38"
+      >
+        { 
+        <br />
+        <span
+          style="margin-left: 32px;"
+        >
+          <span
+            class="JSONData-jsonKey-39"
+          >
+            a: 
+          </span>
+          <span
+            class="JSONData-number-40"
+          >
+            <span>
+              3
+            </span>
+          </span>
+          , 
+          <br />
+        </span>
+        <span
+          style="margin-left: 32px;"
+        >
+          <span
+            class="JSONData-jsonKey-39"
+          >
+            b: 
+          </span>
+          <span
+            class="JSONData-null-41"
+          >
+            <span>
+              null
+            </span>
+          </span>
+          
+          <br />
+        </span>
+        <span
+          style="margin-left: 16px;"
+        >
+           }
+        </span>
+      </span>
+      
+      <br />
+    </span>
+    <span
+      style="margin-left: 0px;"
+    >
+       ]
+    </span>
+  </span>
+</div>
+`;
+
+exports[`<JSONData/> test should render array correctly for single line 1`] = `
+<div>
+  <span
+    class="JSONData-base-32"
+  >
+    [ 
+    <span
+      style="margin-left: 0px;"
+    >
+      <span
+        class="JSONData-string-36"
+      >
+        <span>
+          some text
+        </span>
+      </span>
+      , 
+    </span>
+    <span
+      style="margin-left: 0px;"
+    >
+      <span
+        class="JSONData-string-36"
+      >
+        <span>
+          some other text
+        </span>
+      </span>
+      
+    </span>
+    <span
+      style="margin-left: 0px;"
+    >
+       ]
+    </span>
+  </span>
+</div>
+`;
+
+exports[`<JSONData/> test should render correctly for multiline 1`] = `
+<div>
+  <span
+    class="JSONData-base-26"
+  >
+    { 
+    <br />
+    <span
+      style="margin-left: 16px;"
+    >
+      <span
+        class="JSONData-jsonKey-27"
+      >
+        testString: 
+      </span>
+      <span
+        class="JSONData-string-30"
+      >
+        <span>
+          a
+        </span>
+      </span>
+      , 
+      <br />
+    </span>
+    <span
+      style="margin-left: 16px;"
+    >
+      <span
+        class="JSONData-jsonKey-27"
+      >
+        testNum: 
+      </span>
+      <span
+        class="JSONData-number-28"
+      >
+        <span>
+          10
+        </span>
+      </span>
+      , 
+      <br />
+    </span>
+    <span
+      style="margin-left: 16px;"
+    >
+      <span
+        class="JSONData-jsonKey-27"
+      >
+        testNull: 
+      </span>
+      <span
+        class="JSONData-null-29"
+      >
+        <span>
+          null
+        </span>
+      </span>
+      , 
+      <br />
+    </span>
+    <span
+      style="margin-left: 16px;"
+    >
+      <span
+        class="JSONData-jsonKey-27"
+      >
+        testJSON: 
+      </span>
+      <span
+        class="JSONData-base-26"
+      >
+        { 
+        <br />
+        <span
+          style="margin-left: 32px;"
+        >
+          <span
+            class="JSONData-jsonKey-27"
+          >
+            hello: 
+          </span>
+          <span
+            class="JSONData-string-30"
+          >
+            <span>
+              world
+            </span>
+          </span>
+          
+          <br />
+        </span>
+        <span
+          style="margin-left: 16px;"
+        >
+           }
+        </span>
+      </span>
+      
+      <br />
+    </span>
+    <span
+      style="margin-left: 0px;"
+    >
+       }
+    </span>
+  </span>
+</div>
+`;
+
+exports[`<JSONData/> test should render correctly for single line 1`] = `
+<div>
+  <span
+    class="JSONData-base-20"
+  >
+    { 
+    <span
+      style="margin-left: 0px;"
+    >
+      <span
+        class="JSONData-jsonKey-21"
+      >
+        testString: 
+      </span>
+      <span
+        class="JSONData-string-24"
+      >
+        <span>
+          a
+        </span>
+      </span>
+      , 
+    </span>
+    <span
+      style="margin-left: 0px;"
+    >
+      <span
+        class="JSONData-jsonKey-21"
+      >
+        testNum: 
+      </span>
+      <span
+        class="JSONData-number-22"
+      >
+        <span>
+          10
+        </span>
+      </span>
+      , 
+    </span>
+    <span
+      style="margin-left: 0px;"
+    >
+      <span
+        class="JSONData-jsonKey-21"
+      >
+        testNull: 
+      </span>
+      <span
+        class="JSONData-null-23"
+      >
+        <span>
+          null
+        </span>
+      </span>
+      , 
+    </span>
+    <span
+      style="margin-left: 0px;"
+    >
+      <span
+        class="JSONData-jsonKey-21"
+      >
+        testJSON: 
+      </span>
+      <span
+        class="JSONData-base-20"
+      >
+        { 
+        <span
+          style="margin-left: 0px;"
+        >
+          <span
+            class="JSONData-jsonKey-21"
+          >
+            hello: 
+          </span>
+          <span
+            class="JSONData-string-24"
+          >
+            <span>
+              world
+            </span>
+          </span>
+          
+        </span>
+        <span
+          style="margin-left: 0px;"
+        >
+           }
+        </span>
+      </span>
+      
+    </span>
+    <span
+      style="margin-left: 0px;"
+    >
+       }
+    </span>
+  </span>
+</div>
+`;
+
+exports[`DurationRenderer test should render correctly for high latency 1`] = `
+<div>
+  <div
+    class="GaugeData-high-13"
+  >
+    <span
+      class="RenderValueWithUnitsBase-value-15"
+    >
+      400 
+    </span>
+    <span
+      class="RenderValueWithUnitsBase-units-14"
+    >
+      ms
+    </span>
+  </div>
+</div>
+`;
+
+exports[`DurationRenderer test should render correctly for low latency 1`] = `
+<div>
+  <div
+    class="GaugeData-low-1"
+  >
+    <span
+      class="RenderValueWithUnitsBase-value-5"
+    >
+      20 
+    </span>
+    <span
+      class="RenderValueWithUnitsBase-units-4"
+    >
+      ms
+    </span>
+  </div>
+</div>
+`;
+
+exports[`DurationRenderer test should render correctly for medium latency 1`] = `
+<div>
+  <div
+    class="GaugeData-med-7"
+  >
+    <span
+      class="RenderValueWithUnitsBase-value-10"
+    >
+      250 
+    </span>
+    <span
+      class="RenderValueWithUnitsBase-units-9"
+    >
+      ms
+    </span>
+  </div>
+</div>
+`;

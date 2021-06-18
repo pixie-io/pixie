@@ -18,12 +18,12 @@
 
 import * as React from 'react';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { render } from 'enzyme';
+import { render } from '@testing-library/react';
 import { VersionInfo } from './version-info';
 
 describe('<VersionInfo/>', () => {
   it('renders correctly', () => {
-    const wrapper = render(<VersionInfo cloudVersion='testing 123' />);
-    expect(wrapper).toMatchSnapshot();
+    const { container } = render(<VersionInfo cloudVersion='testing 123' />);
+    expect(container).toMatchSnapshot();
   });
 });

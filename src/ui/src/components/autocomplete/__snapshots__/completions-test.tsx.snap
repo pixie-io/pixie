@@ -1,0 +1,194 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`<Completion> test renders highlights from the beginning 1`] = `
+<div>
+  <div
+    class="makeStyles-completion-17"
+  >
+    <div
+      class="makeStyles-itemType-20"
+    />
+    <span
+      class="makeStyles-highlight-18"
+    >
+      0
+    </span>
+    <span
+      class="makeStyles-highlight-18"
+    >
+      1
+    </span>
+    <span
+      class="makeStyles-highlight-18"
+    >
+      2
+    </span>
+    <span>
+      3
+    </span>
+    <span
+      class="makeStyles-highlight-18"
+    >
+      4
+    </span>
+    <span>
+      56789
+    </span>
+  </div>
+</div>
+`;
+
+exports[`<Completion> test renders highlights in the middle 1`] = `
+<div>
+  <div
+    class="makeStyles-completion-29"
+  >
+    <div
+      class="makeStyles-itemType-32"
+    />
+    <span>
+      0
+    </span>
+    <span
+      class="makeStyles-highlight-30"
+    >
+      1
+    </span>
+    <span
+      class="makeStyles-highlight-30"
+    >
+      2
+    </span>
+    <span>
+      3456789
+    </span>
+  </div>
+</div>
+`;
+
+exports[`<Completions/> test renders 1`] = `
+<div>
+  <div
+    class="makeStyles-root-1"
+  >
+    <div
+      class="makeStyles-items-2"
+    >
+      <div
+        class="makeStyles-header-4"
+      >
+        Recently used
+      </div>
+      <div
+        class="makeStyles-completion-5"
+      >
+        <div
+          class="makeStyles-itemType-8"
+        />
+        <span>
+          px/
+        </span>
+        <span
+          class="makeStyles-highlight-6"
+        >
+          s
+        </span>
+        <span
+          class="makeStyles-highlight-6"
+        >
+          c
+        </span>
+        <span
+          class="makeStyles-highlight-6"
+        >
+          r
+        </span>
+        <span>
+          ipt1
+        </span>
+      </div>
+      <div
+        class="makeStyles-completion-5 active"
+      >
+        <div
+          class="makeStyles-itemType-8"
+        />
+        <span>
+          px/
+        </span>
+        <span
+          class="makeStyles-highlight-6"
+        >
+          s
+        </span>
+        <span
+          class="makeStyles-highlight-6"
+        >
+          c
+        </span>
+        <span
+          class="makeStyles-highlight-6"
+        >
+          r
+        </span>
+        <span>
+          ipt2
+        </span>
+      </div>
+      <div
+        class="makeStyles-completion-5"
+      >
+        <div
+          class="makeStyles-itemType-8"
+        />
+        <span>
+          px/
+        </span>
+        <span
+          class="makeStyles-highlight-6"
+        >
+          s
+        </span>
+        <span
+          class="makeStyles-highlight-6"
+        >
+          c
+        </span>
+        <span
+          class="makeStyles-highlight-6"
+        >
+          r
+        </span>
+        <span>
+          ipt3
+        </span>
+      </div>
+      <div
+        class="makeStyles-header-4"
+      >
+        Org scripts
+      </div>
+      <div
+        class="makeStyles-completion-5"
+      >
+        <div
+          class="makeStyles-itemType-8"
+        />
+        <span>
+          my-org/script1
+        </span>
+      </div>
+      <div
+        class="makeStyles-completion-5"
+      >
+        <div
+          class="makeStyles-itemType-8"
+        />
+        <span>
+          my-org/script2
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+`;

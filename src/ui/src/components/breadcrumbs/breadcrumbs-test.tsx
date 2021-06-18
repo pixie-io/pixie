@@ -18,13 +18,13 @@
 
 import * as React from 'react';
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { render } from 'enzyme';
+import { screen, render } from '@testing-library/react';
 import { ThemeProvider } from '@material-ui/core/styles';
 import { DARK_THEME } from 'app/components';
 import { Breadcrumbs } from './breadcrumbs';
 
 describe('<Breadcrumbs/>', () => {
-  it('renders correctly', () => {
+  it('renders correctly', async () => {
     const breadcrumbs = [
       {
         title: 'cluster',
@@ -69,11 +69,12 @@ describe('<Breadcrumbs/>', () => {
       },
     ];
 
-    const wrapper = render(
+    const { container } = render(
       <ThemeProvider theme={DARK_THEME}>
         <Breadcrumbs breadcrumbs={breadcrumbs} />
       </ThemeProvider>,
     );
-    expect(wrapper).toMatchSnapshot();
+    await screen.findByText('cluster:'); // Entirely to wait for actions
+    expect(container).toMatchSnapshot();
   });
 });

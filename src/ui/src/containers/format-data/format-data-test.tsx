@@ -17,7 +17,7 @@
  */
 
 // eslint-disable-next-line import/no-extraneous-dependencies
-import { mount } from 'enzyme';
+import { render } from '@testing-library/react';
 import * as React from 'react';
 import {
   AlertData, DurationRenderer, JSONData, formatBytes, formatDuration,
@@ -55,43 +55,43 @@ describe('formatters Test', () => {
 describe('DurationRenderer test', () => {
   it('should render correctly for low latency', () => {
     const component = DurationRenderer({ data: 20 * 1000 * 1000 });
-    const wrapper = mount(component);
+    const { container } = render(component);
 
-    expect(wrapper.find('div').text()).toEqual('20\u00a0ms');
+    expect(container).toMatchSnapshot();
   });
 
   it('should render correctly for medium latency', () => {
     const component = DurationRenderer({ data: 250 * 1000 * 1000 });
-    const wrapper = mount(component);
+    const { container } = render(component);
 
-    expect(wrapper.find('div').text()).toEqual('250\u00a0ms');
+    expect(container).toMatchSnapshot();
   });
 
   it('should render correctly for high latency', () => {
     const component = DurationRenderer({ data: 400 * 1000 * 1000 });
-    const wrapper = mount(component);
+    const { container } = render(component);
 
-    expect(wrapper.find('div').text()).toEqual('400\u00a0ms');
+    expect(container).toMatchSnapshot();
   });
 });
 
 describe('<AlertData/> test', () => {
   it('should render correctly for true alert', () => {
-    const wrapper = mount(<AlertData data />);
+    const { container } = render(<AlertData data />);
 
-    expect(wrapper.find('div').text()).toEqual('true');
+    expect(container).toMatchSnapshot();
   });
 
   it('should render correctly for false alert', () => {
-    const wrapper = mount(<AlertData data={false} />);
+    const { container } = render(<AlertData data={false} />);
 
-    expect(wrapper.find('div').text()).toEqual('false');
+    expect(container).toMatchSnapshot();
   });
 });
 
 describe('<JSONData/> test', () => {
   it('should render correctly for single line', () => {
-    const wrapper = mount(
+    const { container } = render(
       <JSONData
         data={{
           testString: 'a',
@@ -104,16 +104,11 @@ describe('<JSONData/> test', () => {
       />,
     );
 
-    expect(wrapper.text()).toEqual('{\u00A0testString:\u00A0a,\u00A0testNum:\u00A010,'
-      + '\u00A0testNull:\u00A0null,\u00A0testJSON:\u00A0{\u00A0hello:\u00A0world\u00A0}\u00A0}');
-    const base = wrapper.find('span').at(0);
-
-    const topLevelJSONContents = base.children();
-    expect(topLevelJSONContents).toHaveLength(6);
+    expect(container).toMatchSnapshot();
   });
 
   it('should render correctly for multiline', () => {
-    const wrapper = mount(
+    const { container } = render(
       <JSONData
         data={{
           testString: 'a',
@@ -127,29 +122,21 @@ describe('<JSONData/> test', () => {
       />,
     );
 
-    expect(wrapper.text()).toEqual('{\u00A0testString:\u00A0a,\u00A0testNum:\u00A010,\u00A0testNull:\u00A0'
-      + 'null,\u00A0testJSON:\u00A0{\u00A0hello:\u00A0world\u00A0}\u00A0}');
-    const base = wrapper.find('span').at(0);
-    const topLevelJSONContents = base.children();
-    expect(topLevelJSONContents.find('br')).toHaveLength(7);
-
-    expect(wrapper.find(JSONData).at(1).props().multiline).toEqual(true);
-    expect(wrapper.find(JSONData).at(1).props().indentation).toEqual(1);
+    expect(container).toMatchSnapshot();
   });
 
   it('should render array correctly for single line', () => {
-    const wrapper = mount(
+    const { container } = render(
       <JSONData
         data={['some text', 'some other text']}
       />,
     );
 
-    expect(wrapper.text()).toEqual('[\u00A0some\u00A0text,\u00A0some\u00A0other\u00A0text\u00A0]');
-    expect(wrapper.find('br')).toHaveLength(0);
+    expect(container).toMatchSnapshot();
   });
 
   it('should render array correctly for multiline', () => {
-    const wrapper = mount(
+    const { container } = render(
       <JSONData
         data={[
           { a: 1, b: { c: 'foo' } },
@@ -159,8 +146,6 @@ describe('<JSONData/> test', () => {
       />,
     );
 
-    expect(wrapper.text()).toEqual('[\u00A0{\u00A0a:\u00A01,\u00A0b:\u00A0{\u00A0c:\u00A0foo\u00A0}\u00A0},'
-      + '\u00A0{\u00A0a:\u00A03,\u00A0b:\u00A0null\u00A0}\u00A0]');
-    expect(wrapper.find('br')).toHaveLength(11);
+    expect(container).toMatchSnapshot();
   });
 });
