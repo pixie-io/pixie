@@ -51,7 +51,7 @@ TEST(DynamicBPFTraceConnectorTest, Basic) {
                        DynamicBPFTraceConnector::Create("test", tracepoint));
 
   const int kTableNum = 0;
-  const DataTableSchema& table_schema = connector->TableSchema(kTableNum);
+  const DataTableSchema& table_schema = connector->table_schemas()[kTableNum];
 
   // Check the inferred table schema.
   {
@@ -110,7 +110,7 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceBuiltins) {
                        DynamicBPFTraceConnector::Create("test", tracepoint));
 
   const int kTableNum = 0;
-  const DataTableSchema& table_schema = connector->TableSchema(kTableNum);
+  const DataTableSchema& table_schema = connector->table_schemas()[kTableNum];
 
   const int kPIDIdx = 0;
   const int kTIDIdx = 1;
@@ -245,7 +245,7 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceBuiltins2) {
                        DynamicBPFTraceConnector::Create("test", tracepoint));
 
   const int kTableNum = 0;
-  const DataTableSchema& table_schema = connector->TableSchema(kTableNum);
+  const DataTableSchema& table_schema = connector->table_schemas()[kTableNum];
 
   const int kUsernameIdx = 0;
   const int kFTimeIdx = 1;
@@ -316,7 +316,7 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceUnlabeledColumn) {
                        DynamicBPFTraceConnector::Create("test", tracepoint));
 
   const int kTableNum = 0;
-  const DataTableSchema& table_schema = connector->TableSchema(kTableNum);
+  const DataTableSchema& table_schema = connector->table_schemas()[kTableNum];
 
   const int kUsernameIdx = 0;
   const int kFTimeIdx = 1;

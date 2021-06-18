@@ -74,13 +74,7 @@ class SourceConnector : public NotCopyable {
 
   const std::string& name() const { return source_name_; }
 
-  uint32_t num_tables() const { return table_schemas_.size(); }
-
-  const DataTableSchema& TableSchema(uint32_t table_num) const {
-    DCHECK_LT(table_num, num_tables())
-        << absl::Substitute("Access to table out of bounds: table_num=$0", table_num);
-    return table_schemas_[table_num];
-  }
+  const ArrayView<DataTableSchema>& table_schemas() const { return table_schemas_; }
 
   static constexpr uint32_t TableNum(ArrayView<DataTableSchema> tables,
                                      const DataTableSchema& key) {

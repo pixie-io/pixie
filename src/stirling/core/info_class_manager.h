@@ -79,10 +79,7 @@ class InfoClassManager final : public NotCopyable {
    *
    * @param source Pointer to source connector instance.
    */
-  void SetSourceConnector(SourceConnector* source, uint32_t table_num) {
-    source_ = source;
-    source_table_num_ = table_num;
-  }
+  void SetSourceConnector(SourceConnector* source) { source_ = source; }
 
   /**
    * Get the schema of the InfoClass.
@@ -161,7 +158,6 @@ class InfoClassManager final : public NotCopyable {
   const SourceConnector* source() const { return source_; }
   uint64_t id() const { return id_; }
   bool subscribed() const { return subscribed_; }
-  uint32_t source_table_num() const { return source_table_num_; }
   DataTable* data_table() const { return data_table_.get(); }
 
  private:
@@ -178,9 +174,6 @@ class InfoClassManager final : public NotCopyable {
 
   // Pointer back to the source connector providing the data.
   SourceConnector* source_ = nullptr;
-
-  // Table number within source connector for this info class.
-  uint32_t source_table_num_ = 0;
 
   // Pointer to the data table where the data is stored.
   std::unique_ptr<DataTable> data_table_;

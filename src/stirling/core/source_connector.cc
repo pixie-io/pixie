@@ -48,7 +48,8 @@ void SourceConnector::InitContext(ConnectorContext* ctx) { InitContextImpl(ctx);
 void SourceConnector::TransferData(ConnectorContext* ctx,
                                    const std::vector<DataTable*>& data_tables) {
   DCHECK(ctx != nullptr);
-  DCHECK_EQ(data_tables.size(), num_tables()) << "DataTable objects must all be specified.";
+  DCHECK_EQ(data_tables.size(), table_schemas().size())
+      << "DataTable objects must all be specified.";
   TransferDataImpl(ctx, data_tables);
   sample_push_freq_mgr_.Sample();
 }

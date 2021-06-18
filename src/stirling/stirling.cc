@@ -377,15 +377,14 @@ Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source) {
   absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
 
   std::vector<InfoClassManager*> mgrs;
-  mgrs.reserve(source->num_tables());
+  mgrs.reserve(source->table_schemas().size());
 
-  for (uint32_t i = 0; i < source->num_tables(); ++i) {
-    const DataTableSchema& schema = source->TableSchema(i);
+  for (const DataTableSchema& schema : source->table_schemas()) {
     LOG(INFO) << absl::Substitute("Adding info class: [$0/$1]", source->name(), schema.name());
 
     // Step 2: Create the info class manager.
     auto mgr = std::make_unique<InfoClassManager>(schema);
-    mgr->SetSourceConnector(source.get(), i);
+    mgr->SetSourceConnector(source.get());
 
     // Step 3: Setup the manager.
     mgr->SetPushPeriod(schema.default_push_period());
@@ -505,7 +504,7 @@ void StirlingImpl::DeployDynamicTraceConnector(
                                 timer.ElapsedTime_us() / 1000.0);
 
   // Cache table schema name as source will be moved below.
-  std::string output_name(source->TableSchema(0).name());
+  std::string output_name(source->table_schemas()[0].name());
 
   timer.Start();
   // Next, try adding the source (this actually tries to deploy BPF code).

@@ -30,7 +30,7 @@ using types::PatternType;
 TEST(InfoClassInfoSchemaTest, infoclass_mgr_proto_getters_test) {
   InfoClassManager info_class_mgr(SeqGenConnector::kSeq0Table);
   auto source = SeqGenConnector::Create("sequences");
-  info_class_mgr.SetSourceConnector(source.get(), SeqGenConnector::kSeq0TableNum);
+  info_class_mgr.SetSourceConnector(source.get());
 
   EXPECT_EQ(SeqGenConnector::kSeq0Table.elements().size(),
             info_class_mgr.Schema().elements().size());
