@@ -104,11 +104,12 @@ func main() {
 
 	// Create the invite link for the admin user.
 	inviteLink, err := client.InviteUser(ctx, &profilepb.InviteUserRequest{
-		OrgID:          orgResp.OrgID,
-		Email:          userInfo.Email,
-		FirstName:      userInfo.FirstName,
-		LastName:       userInfo.LastName,
-		MustCreateUser: false,
+		OrgID:            orgResp.OrgID,
+		Email:            userInfo.Email,
+		FirstName:        userInfo.FirstName,
+		LastName:         userInfo.LastName,
+		MustCreateUser:   false,
+		IdentityProvider: "kratos",
 	})
 	if err != nil {
 		logrus.WithError(err).Fatal("Failed to create Invite Link for the admin user")
