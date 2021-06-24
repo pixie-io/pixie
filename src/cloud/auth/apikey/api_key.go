@@ -65,14 +65,14 @@ func (s *Service) Create(ctx context.Context, req *authpb.CreateAPIKeyRequest) (
 
 	var id uuid.UUID
 	var ts time.Time
-	query := `INSERT INTO api_keys(org_id, user_id, key, description) VALUES($1, $2, PGP_SYM_ENCRYPT($3, $4), $5) RETURNING id, created_at`
+	query := `INSERT INTO api_keys(org_id, user_id, unsalted_key, description) VALUES($1, $2, $3, $4) RETURNING id, created_at`
 	keyID, err := uuid.NewV4()
 	if err != nil {
 		return nil, err
 	}
 	key := keyID.String()
 	err = s.db.QueryRowxContext(ctx, query,
-		sCtx.Claims.GetUserClaims().OrgID, sCtx.Claims.GetUserClaims().UserID, key, s.dbKey, req.Desc).
+		sCtx.Claims.GetUserClaims().OrgID, sCtx.Claims.GetUserClaims().UserID, key, req.Desc).
 		Scan(&id, &ts)
 	if err != nil {
 		log.WithError(err).Error("Failed to insert API keys")
@@ -95,8 +95,8 @@ func (s *Service) List(ctx context.Context, req *authpb.ListAPIKeyRequest) (*aut
 	}
 
 	// Return all clusters when the OrgID matches.
-	query := `SELECT id, org_id, PGP_SYM_DECRYPT(key::bytea, $1), created_at, description from api_keys WHERE org_id=$2 ORDER BY created_at`
-	rows, err := s.db.QueryxContext(ctx, query, s.dbKey, sCtx.Claims.GetUserClaims().OrgID)
+	query := `SELECT id, org_id, unsalted_key, created_at, description from api_keys WHERE org_id=$1 ORDER BY created_at`
+	rows, err := s.db.QueryxContext(ctx, query, sCtx.Claims.GetUserClaims().OrgID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return &authpb.ListAPIKeyResponse{}, nil
@@ -145,8 +145,8 @@ func (s *Service) Get(ctx context.Context, req *authpb.GetAPIKeyRequest) (*authp
 	var key string
 	var createdAt time.Time
 	var desc string
-	query := `SELECT PGP_SYM_DECRYPT(key::bytea, $1), created_at, description from api_keys WHERE org_id=$2 and id=$3`
-	err = s.db.QueryRowxContext(ctx, query, s.dbKey, sCtx.Claims.GetUserClaims().OrgID, tokenID).Scan(&key, &createdAt, &desc)
+	query := `SELECT unsalted_key, created_at, description from api_keys WHERE org_id=$1 and id=$2`
+	err = s.db.QueryRowxContext(ctx, query, sCtx.Claims.GetUserClaims().OrgID, tokenID).Scan(&key, &createdAt, &desc)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "No such API key")
 	}
@@ -194,10 +194,10 @@ func (s *Service) Delete(ctx context.Context, req *uuidpb.UUID) (*types.Empty, e
 
 // FetchOrgUserIDUsingAPIKey gets the org and user ID based on the API key.
 func (s *Service) FetchOrgUserIDUsingAPIKey(ctx context.Context, key string) (uuid.UUID, uuid.UUID, error) {
-	query := `SELECT org_id, user_id from api_keys WHERE PGP_SYM_DECRYPT(key::bytea, $2)=$1`
+	query := `SELECT org_id, user_id from api_keys WHERE unsalted_key=$1`
 	var orgID uuid.UUID
 	var userID uuid.UUID
-	err := s.db.QueryRowxContext(ctx, query, key, s.dbKey).Scan(&orgID, &userID)
+	err := s.db.QueryRowxContext(ctx, query, key).Scan(&orgID, &userID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return uuid.Nil, uuid.Nil, ErrAPIKeyNotFound

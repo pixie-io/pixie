@@ -4,6 +4,8 @@
 // 000001_add_api_keys.up.sql
 // 000002_create_pgcrypto_extension.down.sql
 // 000002_create_pgcrypto_extension.up.sql
+// 000003_unsalt_api_key.down.sql
+// 000003_unsalt_api_key.up.sql
 package schema
 
 import (
@@ -160,6 +162,46 @@ func _000002_create_pgcrypto_extensionUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000003_unsalt_api_keyDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x09\xf2\x0f\x50\xf0\xf4\x73\x71\x8d\x50\xc8\x4c\xa9\x88\x4f\x2c\xc8\x8c\xcf\x4e\xad\x2c\x8e\x2f\xcd\x2b\x4e\xcc\x29\x49\x4d\xb1\xe6\xe2\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x80\xc9\x73\x81\xf5\x39\xfb\xfb\x84\xfa\xfa\x29\xc0\xd4\x82\x64\xac\xb9\x00\x01\x00\x00\xff\xff\x71\xf1\x7b\x99\x52\x00\x00\x00")
+
+func _000003_unsalt_api_keyDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000003_unsalt_api_keyDownSql,
+		"000003_unsalt_api_key.down.sql",
+	)
+}
+
+func _000003_unsalt_api_keyDownSql() (*asset, error) {
+	bytes, err := _000003_unsalt_api_keyDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000003_unsalt_api_key.down.sql", size: 82, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000003_unsalt_api_keyUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x48\x2c\xc8\x8c\xcf\x4e\xad\x2c\xe6\x72\x74\x71\x51\x70\xf6\xf7\x09\xf5\xf5\x53\x28\xcd\x2b\x4e\xcc\x29\x49\x4d\x01\x49\x28\x94\x25\x16\x25\x67\x24\x16\x69\x18\x1a\x18\x18\x68\x5a\x73\x71\x39\x07\xb9\x3a\x86\xb8\x2a\x78\xfa\xb9\xb8\x46\x28\x64\xa6\x54\xc4\xc3\x4c\x88\x87\x69\x53\xe0\xf2\xf7\x83\x9b\xab\x81\x6c\x98\xa6\x35\x17\x20\x00\x00\xff\xff\x34\x62\xff\xc6\x7c\x00\x00\x00")
+
+func _000003_unsalt_api_keyUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000003_unsalt_api_keyUpSql,
+		"000003_unsalt_api_key.up.sql",
+	)
+}
+
+func _000003_unsalt_api_keyUpSql() (*asset, error) {
+	bytes, err := _000003_unsalt_api_keyUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000003_unsalt_api_key.up.sql", size: 124, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -216,6 +258,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000001_add_api_keys.up.sql":                _000001_add_api_keysUpSql,
 	"000002_create_pgcrypto_extension.down.sql": _000002_create_pgcrypto_extensionDownSql,
 	"000002_create_pgcrypto_extension.up.sql":   _000002_create_pgcrypto_extensionUpSql,
+	"000003_unsalt_api_key.down.sql":            _000003_unsalt_api_keyDownSql,
+	"000003_unsalt_api_key.up.sql":              _000003_unsalt_api_keyUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -263,6 +307,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000001_add_api_keys.up.sql":                &bintree{_000001_add_api_keysUpSql, map[string]*bintree{}},
 	"000002_create_pgcrypto_extension.down.sql": &bintree{_000002_create_pgcrypto_extensionDownSql, map[string]*bintree{}},
 	"000002_create_pgcrypto_extension.up.sql":   &bintree{_000002_create_pgcrypto_extensionUpSql, map[string]*bintree{}},
+	"000003_unsalt_api_key.down.sql":            &bintree{_000003_unsalt_api_keyDownSql, map[string]*bintree{}},
+	"000003_unsalt_api_key.up.sql":              &bintree{_000003_unsalt_api_keyUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
