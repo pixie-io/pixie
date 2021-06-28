@@ -18,6 +18,7 @@
       <excludeFolder url="file://$MODULE_DIR$/src/ui/dist" />
       <excludeFolder url="file://$MODULE_DIR$/third_party" />
       <excludeFolder url="file://$MODULE_DIR$/src/ui/.yarn" />
+      <excludeFolder url="file://$MODULE_DIR$/src/ui/coverage" />
       <excludePattern pattern="*.lock" />
       <excludePattern pattern="yarn-error.log" />
     </content>

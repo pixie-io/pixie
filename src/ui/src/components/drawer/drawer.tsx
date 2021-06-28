@@ -18,12 +18,12 @@
 
 import * as React from 'react';
 import Drawer from '@material-ui/core/Drawer';
-import { WithStyles, withStyles } from '@material-ui/core/styles';
+import { makeStyles } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 
 export type DrawerDirection = 'top' | 'bottom' | 'left' | 'right';
 
-const styles = () => createStyles({
+const useStyles = makeStyles(() => createStyles({
   root: {
     display: 'flex',
     flex: 1,
@@ -55,10 +55,9 @@ const styles = () => createStyles({
     height: 0,
     flex: 0,
   },
-});
+}), { name: 'FixedSizeDrawer' });
 
-interface FixedSizeDrawerProps extends WithStyles<typeof styles> {
-  children?: React.ReactNode; // The contents of the drawer.
+interface FixedSizeDrawerProps {
   otherContent?: React.ReactNode; // The content that is not in the drawer.
   drawerDirection: DrawerDirection;
   drawerSize: string; // A fixed size for the drawer.
@@ -66,15 +65,15 @@ interface FixedSizeDrawerProps extends WithStyles<typeof styles> {
   overlay: boolean;
 }
 
-const FixedSizeDrawerImpl = ({
-  classes,
+export const FixedSizeDrawer: React.FC<FixedSizeDrawerProps> = ({
   children,
   otherContent,
   drawerDirection,
   drawerSize,
   open,
   overlay,
-}: FixedSizeDrawerProps) => {
+}) => {
+  const classes = useStyles();
   const drawerStyle = drawerDirection === 'top' || drawerDirection === 'bottom'
     ? { height: drawerSize }
     : { width: drawerSize };
@@ -118,9 +117,3 @@ const FixedSizeDrawerImpl = ({
     </div>
   );
 };
-FixedSizeDrawerImpl.defaultProps = {
-  children: null,
-  otherContent: null,
-};
-
-export const FixedSizeDrawer = withStyles(styles)(FixedSizeDrawerImpl);

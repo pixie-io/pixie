@@ -17,11 +17,7 @@
  */
 
 import * as React from 'react';
-import {
-  Theme,
-  WithStyles,
-  withStyles,
-} from '@material-ui/core/styles';
+import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import { formatBoolData, formatFloat64Data, formatUInt128Protobuf } from 'app/utils/format-data';
 import {
@@ -34,51 +30,51 @@ import { DataType, SemanticType } from 'app/types/generated/vizierapi_pb';
 
 const JSON_INDENT_PX = 16;
 
-export const AlertDataBase: React.FC<WithStyles & { data: any }> = ({ data, classes }) => (
-  <div className={classes[`${data}`]}>{formatBoolData(data)}</div>
-);
-
-export const AlertData = withStyles((theme: Theme) => ({
+const useAlertDataStyles = makeStyles(({ palette }: Theme) => createStyles({
   true: {
-    color: theme.palette.error.dark,
+    color: palette.error.dark,
   },
   false: {},
-}))(AlertDataBase);
+}), { name: 'AlertData' });
 
-interface JSONDataProps {
-  data: any;
-  indentation?: number;
-  multiline?: boolean;
-  classes: any;
-}
-
-const jsonStyles = (theme: Theme) => createStyles({
+const useJsonStyles = makeStyles(({ palette }: Theme) => createStyles({
   base: {
     fontFamily: '"Roboto Mono", serif',
     fontSize: '14px',
   },
   jsonKey: {
-    color: theme.palette.foreground?.white,
+    color: palette.foreground?.white,
   },
   number: {
-    color: theme.palette.secondary.main,
+    color: palette.secondary.main,
   },
   null: {
-    color: theme.palette.success.main,
+    color: palette.success.main,
   },
   string: {
-    color: theme.palette.info.light,
+    color: palette.info.light,
     wordBreak: 'break-all',
   },
   boolean: {
-    color: theme.palette.success.main,
+    color: palette.success.main,
   },
-});
+}), { name: 'JSONData' });
 
-/* eslint-disable @typescript-eslint/no-use-before-define */
-const JSONBase = React.memo<JSONDataProps>((props) => {
+export const AlertData: React.FC<{ data: any }> = ({ data }) => {
+  const classes = useAlertDataStyles();
+  return <div className={classes[data]}>{formatBoolData(data)}</div>;
+};
+
+interface JSONDataProps {
+  data: any;
+  indentation?: number;
+  multiline?: boolean;
+}
+
+export const JSONData: React.FC<JSONDataProps> = React.memo<JSONDataProps>((props) => {
+  const classes = useJsonStyles();
   const indentation = props.indentation ? props.indentation : 0;
-  const { classes, multiline } = props;
+  const { multiline } = props;
   let { data } = props;
   let cls = String(typeof data);
 
@@ -164,67 +160,50 @@ const JSONBase = React.memo<JSONDataProps>((props) => {
     </span>
   );
 });
-/* eslint-enable @typescript-eslint/no-use-before-define */
-// linter needs this for React.memo components.
-JSONBase.displayName = 'JSONBase';
-
-export const JSONData = withStyles(jsonStyles, {
-  name: 'JSONData',
-})(JSONBase);
+JSONData.displayName = 'JSONData';
 
 interface GaugeDataProps {
-  classes: any;
   data: any;
   getLevel: (number) => GaugeLevel;
 }
 
-const GaugeDataBase = ({ getLevel, classes, data }: GaugeDataProps) => {
-  const floatVal = parseFloat(data);
-  return (
-    <div className={classes[getLevel(floatVal)]}>
-      {formatFloat64Data(floatVal)}
-    </div>
-  );
-};
-
-const gaugeStyles = (theme: Theme) => createStyles({
+const useGaugeStyles = makeStyles(({ palette }: Theme) => createStyles({
   low: {
-    color: theme.palette.success.dark,
+    color: palette.success.dark,
   },
   med: {
-    color: theme.palette.warning.dark,
+    color: palette.warning.dark,
   },
   high: {
-    color: theme.palette.error.dark,
+    color: palette.error.dark,
   },
-});
+}), { name: 'GaugeData' });
 
-export const GaugeData = withStyles(gaugeStyles, {
-  name: 'GaugeData',
-})(({ classes, data, level }: any) => (
-  <div className={classes[level]}>
-    {data}
-  </div>
-));
+export const GaugeDataBase: React.FC<GaugeDataProps> = ({ getLevel, data }) => {
+  const classes = useGaugeStyles();
+  const floatVal = parseFloat(data);
+  return <div className={classes[getLevel(floatVal)]}>{formatFloat64Data(data)}</div>;
+};
 
-export const CPUData = withStyles(gaugeStyles, {
-  name: 'CPUData',
-})(({ classes, data }: any) => (
-  <GaugeDataBase classes={classes} data={data} getLevel={getCPULevel} />
-));
+export const GaugeData: React.FC<{ data: any, level: GaugeLevel }> = ({ data, level }) => {
+  const classes = useGaugeStyles();
+  return <div className={classes[level]}>{data}</div>;
+};
 
-export const PortRendererBase: React.FC<WithStyles & { data: any }> = ({ data, classes }) => (
-  <>
-    <span className={classes.value}>{data}</span>
-  </>
+export const CPUData: React.FC<{ data: any }> = ({ data }) => (
+  <GaugeDataBase data={data} getLevel={getCPULevel} />
 );
 
-export const PortRenderer = withStyles(() => ({
+const usePortRendererStyles = makeStyles(() => createStyles({
   value: {
     fontFamily: '"Roboto Mono", serif',
     fontSize: '14px',
   },
-}))(PortRendererBase);
+}), { name: 'PortRenderer' });
+
+export const PortRenderer: React.FC<{ data: any }> = ({ data }) => (
+  <span className={usePortRendererStyles().value}>{data}</span>
+);
 
 export interface DataWithUnits {
   val: string;
@@ -273,14 +252,7 @@ export const formatThroughputBytes = (data: number): DataWithUnits => (
     1)
 );
 
-const RenderValueWithUnitsBase = ({ data, classes }: { data: DataWithUnits; classes: any }) => (
-  <>
-    <span className={classes.value}>{`${data.val}\u00A0`}</span>
-    <span className={classes.units}>{data.units}</span>
-  </>
-);
-
-const RenderValueWithUnits = withStyles(() => ({
+const useRenderValueWithUnitsStyles = makeStyles(() => createStyles({
   units: {
     opacity: 0.5,
     fontFamily: '"Roboto Mono", serif',
@@ -290,7 +262,17 @@ const RenderValueWithUnits = withStyles(() => ({
     fontFamily: '"Roboto Mono", serif',
     fontSize: '14px',
   },
-}))(RenderValueWithUnitsBase);
+}), { name: 'RenderValueWithUnits' });
+
+const RenderValueWithUnits: React.FC<{ data: DataWithUnits }> = ({ data }) => {
+  const classes = useRenderValueWithUnitsStyles();
+  return (
+    <>
+      <span className={classes.value}>{`${data.val}\u00A0`}</span>
+      <span className={classes.units}>{data.units}</span>
+    </>
+  );
+};
 
 export const BytesRenderer: React.FC<{ data: number }> = ({ data }) => (
   <RenderValueWithUnits data={formatBytes(data)} />
@@ -303,7 +285,7 @@ export const DurationRenderer: React.FC<{ data: number }> = ({ data }) => (
   />
 );
 
-const httpStatusCodeRendererStyles = (theme: Theme) => createStyles({
+const useHttpStatusCodeRendererStyles = makeStyles((theme: Theme) => createStyles({
   root: {},
   unknown: {
     color: theme.palette.foreground.grey1,
@@ -323,30 +305,26 @@ const httpStatusCodeRendererStyles = (theme: Theme) => createStyles({
   fiveHundredLevel: {
     color: theme.palette.error.main,
   },
-});
+}), { name: 'HttpStatusCodeRenderer' });
 
-interface HTTPStatusCodeRendererProps extends WithStyles<typeof httpStatusCodeRendererStyles> {
-  data: string;
-}
+export const HTTPStatusCodeRenderer: React.FC<{ data: string }> = ({ data }) => {
+  const classes = useHttpStatusCodeRendererStyles();
+  const intVal = parseInt(data, 10);
+  const cls = buildClass(
+    classes.root,
+    intVal < 0 && classes.unknown,
+    intVal > 0 && intVal < 200 && classes.oneHundredLevel,
+    intVal >= 200 && intVal < 300 && classes.twoHundredLevel,
+    intVal >= 300 && intVal < 400 && classes.threeHundredLevel,
+    intVal >= 400 && intVal < 500 && classes.fourHundredLevel,
+    intVal >= 500 && classes.fiveHundredLevel);
 
-export const HTTPStatusCodeRenderer = withStyles(httpStatusCodeRendererStyles)(
-  ({ classes, data }: HTTPStatusCodeRendererProps) => {
-    const intVal = parseInt(data, 10);
-    const cls = buildClass(
-      classes.root,
-      intVal < 0 && classes.unknown,
-      intVal > 0 && intVal < 200 && classes.oneHundredLevel,
-      intVal >= 200 && intVal < 300 && classes.twoHundredLevel,
-      intVal >= 300 && intVal < 400 && classes.threeHundredLevel,
-      intVal >= 400 && intVal < 500 && classes.fourHundredLevel,
-      intVal >= 500 && classes.fiveHundredLevel);
-
-    return (
-      <>
-        <span className={cls}>{data}</span>
-      </>
-    );
-  });
+  return (
+    <>
+      <span className={cls}>{data}</span>
+    </>
+  );
+};
 
 export const formatPercent = (data: number): DataWithUnits => {
   const val = (100 * parseFloat(data.toString())).toFixed(1);

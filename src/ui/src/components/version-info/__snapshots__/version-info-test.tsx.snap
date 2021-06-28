@@ -3,7 +3,7 @@
 exports[`<VersionInfo/> renders correctly 1`] = `
 <div>
   <div
-    class="VersionInfoImpl-root-1"
+    class="VersionInfo-root-1"
   >
     testing 123
   </div>

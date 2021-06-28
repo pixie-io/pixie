@@ -17,14 +17,10 @@
  */
 
 import * as React from 'react';
-import {
-  Theme,
-  WithStyles,
-  withStyles,
-} from '@material-ui/core/styles';
+import { Theme, makeStyles } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 
-const styles = ({ palette }: Theme) => createStyles({
+const useStyles = makeStyles(({ palette }: Theme) => createStyles({
   root: {
     position: 'absolute',
     top: 0,
@@ -32,15 +28,13 @@ const styles = ({ palette }: Theme) => createStyles({
     color: palette.grey['800'],
     fontSize: '12px',
   },
-});
+}), { name: 'VersionInfo' });
 
-interface VersionInfoProps extends WithStyles<typeof styles> {
+interface VersionInfoProps {
   cloudVersion: string;
 }
 
-const VersionInfoImpl = (props: VersionInfoProps) => {
-  const { classes, cloudVersion } = props;
+export const VersionInfo: React.FC<VersionInfoProps> = ({ cloudVersion }) => {
+  const classes = useStyles();
   return <div className={classes.root}>{cloudVersion}</div>;
 };
-
-export const VersionInfo = withStyles(styles)(VersionInfoImpl);

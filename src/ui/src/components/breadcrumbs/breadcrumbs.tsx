@@ -19,8 +19,6 @@
 import * as React from 'react';
 import {
   Theme,
-  WithStyles,
-  withStyles,
   makeStyles,
   ThemeProvider,
 } from '@material-ui/core/styles';
@@ -36,7 +34,7 @@ import useIsMounted from 'app/utils/use-is-mounted';
 import { AutocompleteContext } from 'app/components/autocomplete/autocomplete-context';
 import Paper from '@material-ui/core/Paper';
 
-const styles = ({
+const useStyles = makeStyles(({
   spacing, typography, palette, breakpoints,
 }: Theme) => createStyles({
   breadcrumbs: {
@@ -172,7 +170,7 @@ const styles = ({
     width: '1px',
     opacity: 0.4,
   },
-});
+}), { name: 'Breadcrumbs' });
 
 export interface DialogDropdownProps {
   onSelect: (input: string) => void;
@@ -359,7 +357,7 @@ export const DialogDropdown: React.FC<DialogDropdownProps> = ({
   );
 };
 
-export interface BreadcrumbProps extends WithStyles<typeof styles> {
+export interface BreadcrumbProps {
   title: string;
   value: string;
   selectable: boolean;
@@ -371,7 +369,6 @@ export interface BreadcrumbProps extends WithStyles<typeof styles> {
 }
 
 const Breadcrumb: React.FC<BreadcrumbProps> = ({
-  classes,
   title,
   value,
   selectable,
@@ -381,6 +378,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
   placeholder,
   explanation,
 }) => {
+  const classes = useStyles();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
   const handleClick = React.useCallback(
@@ -443,11 +441,12 @@ export interface BreadcrumbOptions {
   divider?: boolean;
 }
 
-export interface BreadcrumbsProps extends WithStyles<typeof styles> {
+export interface BreadcrumbsProps {
   breadcrumbs: BreadcrumbOptions[];
 }
 
-const BreadcrumbsImpl: React.FC<BreadcrumbsProps> = ({ classes, breadcrumbs }) => {
+export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ breadcrumbs }) => {
+  const classes = useStyles();
   // In case a breadcrumb doesn't override, give it the nearest context's values.
   const { allowTyping, requireCompletion } = React.useContext(
     AutocompleteContext,
@@ -466,7 +465,7 @@ const BreadcrumbsImpl: React.FC<BreadcrumbsProps> = ({ classes, breadcrumbs }) =
               onOpen: 'clear',
             }}
           >
-            <Breadcrumb key={i} classes={classes} {...breadcrumb} />
+            <Breadcrumb key={i} {...breadcrumb} />
             {
               breadcrumb.divider && i !== breadcrumbs.length - 1 && <div className={classes.divider} />
             }
@@ -476,5 +475,3 @@ const BreadcrumbsImpl: React.FC<BreadcrumbsProps> = ({ classes, breadcrumbs }) =
     </Paper>
   );
 };
-
-export const Breadcrumbs = withStyles(styles)(BreadcrumbsImpl);
