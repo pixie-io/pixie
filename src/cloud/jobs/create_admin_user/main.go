@@ -89,10 +89,11 @@ func main() {
 
 	email := "admin@default.com"
 	userInfo := &profilepb.CreateOrgAndUserRequest_User{
-		Username:  email,
-		FirstName: "admin",
-		LastName:  "admin",
-		Email:     email,
+		Username:         email,
+		FirstName:        "admin",
+		LastName:         "admin",
+		Email:            email,
+		IdentityProvider: "kratos",
 	}
 	orgResp, err := client.CreateOrgAndUser(ctx, &profilepb.CreateOrgAndUserRequest{
 		Org:  orgInfo,
