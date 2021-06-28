@@ -28,6 +28,7 @@ import (
 )
 
 // VizierClient is a k8s API client for accessing the Vizier resource.
+// +kubebuilder:object:generate=false
 type VizierClient struct {
 	client *rest.RESTClient
 }
