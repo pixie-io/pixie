@@ -838,14 +838,21 @@ def archiveBuildArtifacts = {
  ********************************************/
 def buildScriptForCommits = {
   DefaultGCloudPodTemplate('root') {
-    if (isMainRun) {
+    if (isMainRun || isOSSMainRun) {
+      def namePrefix = 'pixie-main'
+      if (isOSSMainRun) {
+        namePrefix = 'pixie-oss'
+      }
       // If there is a later build queued up, we want to stop the current build so
       // we can execute the later build instead.
       def q = Jenkins.get().getQueue()
       abortBuild = false
       q.getItems().each {
         if (it.task.getDisplayName() == 'build-and-test-all') {
-          abortBuild = true
+          // Use fullDisplayName to distinguish between pixie-oss and pixie-main builds.
+          if (it.task.getFullDisplayName().startsWith(namePrefix)) {
+            abortBuild = true
+          }
         }
       }
 
@@ -1129,7 +1136,7 @@ def buildScriptForOperatorRelease = {
             stashList.add('versions')
           }
         }
-      }    
+      }
     }
     stage('Update versions database (staging)') {
       updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, 'plc-staging')
