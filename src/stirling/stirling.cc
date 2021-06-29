@@ -137,6 +137,12 @@ std::unique_ptr<SourceRegistry> CreateProdSourceRegistry() {
       .ConsumeValueOrDie();
 }
 
+// Holds InfoClassManager and DataTable.
+struct SourceOutput {
+  std::vector<InfoClassManager*> info_class_mgrs;
+  std::vector<DataTable*> data_tables;
+};
+
 class StirlingImpl final : public Stirling {
  public:
   explicit StirlingImpl(std::unique_ptr<SourceRegistry> registry);
@@ -205,11 +211,6 @@ class StirlingImpl final : public Stirling {
   std::atomic<bool> running_ = false;
   std::vector<std::unique_ptr<SourceConnector>> sources_ ABSL_GUARDED_BY(info_class_mgrs_lock_);
 
-  // Holds InfoClassManager and DataTable.
-  struct SourceOutput {
-    std::vector<InfoClassManager*> info_class_mgrs;
-    std::vector<DataTable*> data_tables;
-  };
   // TODO(yzhao): Move InfoClassManager objects into SourceConnector, and remove this map.
   absl::flat_hash_map<SourceConnector*, SourceOutput> source_output_map_
       ABSL_GUARDED_BY(info_class_mgrs_lock_);
@@ -381,17 +382,9 @@ Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source) {
 
   for (const DataTableSchema& schema : source->table_schemas()) {
     LOG(INFO) << absl::Substitute("Adding info class: [$0/$1]", source->name(), schema.name());
-
-    // Step 2: Create the info class manager.
     auto mgr = std::make_unique<InfoClassManager>(schema);
     mgr->SetSourceConnector(source.get());
-
-    // Step 3: Setup the manager.
-    mgr->SetPushPeriod(schema.default_push_period());
-
     mgrs.push_back(mgr.get());
-
-    // Step 4: Keep pointers to all the objects
     info_class_mgrs_.push_back(std::move(mgr));
   }
 
@@ -638,10 +631,8 @@ Status StirlingImpl::SetSubscription(const stirlingpb::Subscribe& subscribe_prot
   absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
 
   // Last append before clearing tables from old subscriptions.
-  for (const auto& mgr : info_class_mgrs_) {
-    if (mgr->subscribed()) {
-      mgr->PushData(data_push_callback_);
-    }
+  for (const auto& [source, output] : source_output_map_) {
+    source->PushData(data_push_callback_, output.data_tables);
   }
 
   // Update schemas based on the subscribe_proto.
@@ -721,24 +712,18 @@ static constexpr std::chrono::milliseconds kMinSleepDuration{1};
 static constexpr std::chrono::milliseconds kMaxSleepDuration{1000};
 
 // Helper function: Figure out when to wake up next.
-std::chrono::milliseconds TimeUntilNextTick(const InfoClassManagerVec& info_class_mgrs) {
+std::chrono::milliseconds TimeUntilNextTick(
+    const absl::flat_hash_map<SourceConnector*, SourceOutput> source_output_map) {
   // The amount to sleep depends on when the earliest Source needs to be sampled again.
   // Do this to avoid burning CPU cycles unnecessarily
-
   auto now = px::chrono::coarse_steady_clock::now();
 
   // Worst case, wake-up every so often.
   // This is important if there are no subscribed info classes, to avoid sleeping eternally.
   auto wakeup_time = now + kMaxSleepDuration;
-
-  for (const auto& mgr : info_class_mgrs) {
-    if (mgr->subscribed()) {
-      wakeup_time = std::min(wakeup_time, mgr->NextPushTime());
-      const SourceConnector* source = mgr->source();
-      // Note that the same SourceConnector could be examined multiple times for the associated
-      // InfoClassManager objects, but that does not affect the result.
-      wakeup_time = std::min(wakeup_time, source->sample_push_mgr().NextSamplingTime());
-    }
+  for (const auto& [source, output] : source_output_map) {
+    wakeup_time = std::min(wakeup_time, source->sample_push_mgr().NextSamplingTime());
+    wakeup_time = std::min(wakeup_time, source->sample_push_mgr().NextPushTime());
   }
 
   return std::chrono::duration_cast<std::chrono::milliseconds>(wakeup_time - now);
@@ -748,6 +733,20 @@ void SleepForDuration(std::chrono::milliseconds sleep_duration) {
   if (sleep_duration > kMinSleepDuration) {
     std::this_thread::sleep_for(sleep_duration);
   }
+}
+
+// Returns true if any of the input tables are beyond the threshold.
+bool PushRequired(const SamplePushFrequencyManager& mgr,
+                  const std::vector<DataTable*>& data_tables) {
+  for (const auto* data_table : data_tables) {
+    if (data_table == nullptr) {
+      continue;
+    }
+    if (mgr.PushRequired(data_table->OccupancyPct(), data_table->Occupancy())) {
+      return true;
+    }
+  }
+  return false;
 }
 
 }  // namespace
@@ -790,15 +789,13 @@ void StirlingImpl::RunCore() {
           source->TransferData(ctx.get(), output.data_tables);
         }
         // Phase 2: Push Data upstream.
-        for (auto* mgr : output.info_class_mgrs) {
-          if (mgr->subscribed() && mgr->PushRequired()) {
-            mgr->PushData(data_push_callback_);
-          }
+        if (PushRequired(source->sample_push_mgr(), output.data_tables)) {
+          source->PushData(data_push_callback_, output.data_tables);
         }
       }
 
       // Figure out how long to sleep.
-      sleep_duration = TimeUntilNextTick(info_class_mgrs_);
+      sleep_duration = TimeUntilNextTick(source_output_map_);
     }
 
     SleepForDuration(sleep_duration);

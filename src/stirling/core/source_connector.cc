@@ -18,6 +18,8 @@
 
 #include <cstring>
 #include <ctime>
+#include <memory>
+#include <utility>
 
 #include <magic_enum.hpp>
 
@@ -52,6 +54,27 @@ void SourceConnector::TransferData(ConnectorContext* ctx,
       << "DataTable objects must all be specified.";
   TransferDataImpl(ctx, data_tables);
   sample_push_freq_mgr_.Sample();
+}
+
+void SourceConnector::PushData(DataPushCallback agent_callback,
+                               const std::vector<DataTable*>& data_tables) {
+  for (auto* data_table : data_tables) {
+    if (data_table == nullptr) {
+      // Unsubscribed tables are supplied as nullptr.
+      continue;
+    }
+    auto record_batches = data_table->ConsumeRecords();
+    for (auto& record_batch : record_batches) {
+      if (record_batch.records.empty()) {
+        continue;
+      }
+      Status s = agent_callback(
+          data_table->id(), record_batch.tablet_id,
+          std::make_unique<types::ColumnWrapperRecordBatch>(std::move(record_batch.records)));
+      LOG_IF(DFATAL, !s.ok()) << absl::Substitute("Failed to push data. Message = $0", s.msg());
+    }
+  }
+  sample_push_freq_mgr_.Push();
 }
 
 Status SourceConnector::Stop() {

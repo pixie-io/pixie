@@ -65,6 +65,11 @@ class SourceConnector : public NotCopyable {
   void TransferData(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables);
 
   /**
+   * Pushes data in data tables into table store.
+   */
+  void PushData(DataPushCallback agent_callback, const std::vector<DataTable*>& data_tables);
+
+  /**
    * Stops the source connector and releases any acquired resources.
    * May only be called after a successful Init().
    *

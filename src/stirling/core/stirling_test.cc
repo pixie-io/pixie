@@ -231,7 +231,6 @@ class StirlingTest : public ::testing::Test {
       sub_info_class->MergeFrom(publish_proto.published_info_classes(i));
 
       sub_info_class->set_subscribed(uniform_probability_dist_(rng) < kSubscribeProb);
-      sub_info_class->set_push_period_millis(push_period_millis_dist_(rng));
     }
     return subscribe_proto;
   }

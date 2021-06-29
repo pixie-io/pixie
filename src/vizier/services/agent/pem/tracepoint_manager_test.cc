@@ -54,7 +54,6 @@ const char* kInfoClass0 = R"(
     tabletized: false
     tabletization_key: 18446744073709551615
   }
-  push_period_millis: 1000
 )";
 
 class TracepointManagerTest : public ::testing::Test {

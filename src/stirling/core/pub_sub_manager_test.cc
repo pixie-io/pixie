@@ -67,7 +67,6 @@ const char* kInfoClass0 = R"(
     tabletized: false
     tabletization_key: 18446744073709551615
   }
-  push_period_millis: 1000
 )";
 
 const char* kInfoClass1 = R"(
@@ -98,7 +97,6 @@ const char* kInfoClass1 = R"(
     tabletized: false
     tabletization_key: 18446744073709551615
   }
-  push_period_millis: 1000
 )";
 
 // A test source connector to be used for testing.

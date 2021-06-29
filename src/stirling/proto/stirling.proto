@@ -60,7 +60,6 @@ message InfoClass {
   uint64 id = 2;
   TableSchema schema = 3;
   bool subscribed = 4;
-  uint32 push_period_millis = 6;
 }
 
 // Publish message contains information on

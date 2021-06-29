@@ -67,7 +67,6 @@ Status PubSubManager::UpdateSchemaFromSubscribe(const Subscribe& subscribe_proto
     }
 
     (*it)->SetSubscription(info_class_proto.subscribed());
-    (*it)->SetPushPeriod(std::chrono::milliseconds{info_class_proto.push_period_millis()});
   }
   return Status::OK();
 }

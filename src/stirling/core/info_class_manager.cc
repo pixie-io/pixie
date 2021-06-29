@@ -27,32 +27,14 @@
 namespace px {
 namespace stirling {
 
-bool InfoClassManager::PushRequired() const {
-  return sample_push_freq_mgr_.PushRequired(data_table_->OccupancyPct(), data_table_->Occupancy());
-}
-
 void InfoClassManager::InitContext(ConnectorContext* ctx) { source_->InitContext(ctx); }
-
-void InfoClassManager::PushData(DataPushCallback agent_callback) {
-  auto record_batches = data_table_->ConsumeRecords();
-  for (auto& record_batch : record_batches) {
-    if (!record_batch.records.empty()) {
-      Status s = agent_callback(
-          id(), record_batch.tablet_id,
-          std::make_unique<types::ColumnWrapperRecordBatch>(std::move(record_batch.records)));
-      LOG_IF(DFATAL, !s.ok()) << absl::Substitute("Failed to push data. Message = $0", s.msg());
-    }
-  }
-  sample_push_freq_mgr_.Push();
-}
 
 stirlingpb::InfoClass InfoClassManager::ToProto() const {
   stirlingpb::InfoClass info_class_proto;
 
   info_class_proto.mutable_schema()->CopyFrom(schema_.ToProto());
-  info_class_proto.set_id(id_);
+  info_class_proto.set_id(id());
   info_class_proto.set_subscribed(subscribed_);
-  info_class_proto.set_push_period_millis(sample_push_freq_mgr_.push_period().count());
 
   return info_class_proto;
 }

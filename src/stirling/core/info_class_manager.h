@@ -64,9 +64,7 @@ class InfoClassManager final : public NotCopyable {
    * the publish proto.
    */
   explicit InfoClassManager(const DataTableSchema& schema)
-      : id_(global_id_++), schema_(schema), data_table_(new DataTable(id_, schema_)) {
-    sample_push_freq_mgr_.set_push_period(schema.default_push_period());
-  }
+      : id_(global_id_++), schema_(schema), data_table_(new DataTable(id_, schema_)) {}
 
   /**
    * Resets the data table, effectively replace the current data table with a new one.
@@ -107,45 +105,15 @@ class InfoClassManager final : public NotCopyable {
   stirlingpb::InfoClass ToProto() const;
 
   /**
-   * Configure sampling period.
-   *
-   * @param period Sampling period in ms.
-   */
-  void SetPushPeriod(std::chrono::milliseconds period) {
-    sample_push_freq_mgr_.set_push_period(period);
-  }
-
-  /**
-   * Returns true if a data push is required, for whatever reason (elapsed time, occupancy, etc.).
-   *
-   * @return bool
-   */
-  bool PushRequired() const;
-
-  /**
    * Set initial context. Meant to be run once as an initialization step.
    */
   void InitContext(ConnectorContext* ctx);
-
-  /**
-   * Push data by using the callback.
-   */
-  void PushData(DataPushCallback agent_callback);
 
   /**
    * Notify function to update state after making changes to the schema.
    * This will make sure changes are pushed to the Source Connector and Data Tables accordingly.
    */
   void Notify() {}
-
-  /**
-   * Returns the next time the data table needs to be pushed upstream, according to the push period.
-   *
-   * @return std::chrono::milliseconds
-   */
-  px::chrono::coarse_steady_clock::time_point NextPushTime() const {
-    return sample_push_freq_mgr_.NextPushTime();
-  }
 
   /**
    * Set the Subscription for the InfoClass.
@@ -177,10 +145,6 @@ class InfoClassManager final : public NotCopyable {
 
   // Pointer to the data table where the data is stored.
   std::unique_ptr<DataTable> data_table_;
-
-  // Used to determine push frequency.
-  // NOTE: The sampling period part is not used!
-  SamplePushFrequencyManager sample_push_freq_mgr_;
 };
 
 using InfoClassManagerVec = std::vector<std::unique_ptr<InfoClassManager>>;
