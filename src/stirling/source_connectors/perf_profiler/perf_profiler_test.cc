@@ -172,7 +172,8 @@ class PerfProfileBPFTest : public ::testing::Test {
   }
 
   void CheckExpectedStackTraceCounts(const ssize_t num_subprocesses,
-                                     const std::chrono::duration<double> elapsed_time) {
+                                     const std::chrono::duration<double> elapsed_time,
+                                     const std::string& key1x, const std::string& key2x) {
     const uint64_t kBPFSamplingPeriodMillis = PerfProfileConnector::kBPFSamplingPeriod.count();
     const double expected_rate = 1000.0 / static_cast<double>(kBPFSamplingPeriodMillis);
     const double expected_num_samples = num_subprocesses * elapsed_time.count() * expected_rate;
@@ -196,13 +197,12 @@ class PerfProfileBPFTest : public ::testing::Test {
     EXPECT_GT(cumulative_sum_, expected_num_sample_lower) << err_msg;
     EXPECT_LT(cumulative_sum_, expected_num_sample_upper) << err_msg;
 
-    const double num_2x_samples = observed_stack_traces_[key2x_];
-    const double num_1x_samples = observed_stack_traces_[key1x_];
+    const double num_1x_samples = observed_stack_traces_[key1x];
+    const double num_2x_samples = observed_stack_traces_[key2x];
     const double ratio = num_2x_samples / num_1x_samples;
 
     // We expect the ratio of fib52:fib27 to be approx. 2:1;
     // or sqrt, or something else that was in the toy test app.
-    LOG(INFO) << "ratio of 2x samples to 1x samples: " << ratio;
     // TODO(jps): Increase sampling frequency and then tighten this margin.
     constexpr double kMargin = 0.5;
     EXPECT_GT(ratio, 2.0 - kMargin);
@@ -272,9 +272,6 @@ class PerfProfileBPFTest : public ::testing::Test {
 
   types::ColumnWrapperRecordBatch columns_;
 
-  std::string key2x_;
-  std::string key1x_;
-
   // To reduce variance in results, we add more run-time or add sub-processes:
   static constexpr uint64_t kNumSubProcesses = 4;
 };
@@ -289,8 +286,8 @@ TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
 
   // The toy test app. should be written such that we can expect one stack trace
   // twice as often as another.
-  key2x_ = "runtime.goexit;runtime.main;main.main;main.sqrtOf1e39;main.sqrt";
-  key1x_ = "runtime.goexit;runtime.main;main.main;main.sqrtOf1e18;main.sqrt";
+  std::string key2x = "runtime.goexit;runtime.main;main.main;main.sqrtOf1e39;main.sqrt";
+  std::string key1x = "runtime.goexit;runtime.main;main.main;main.sqrtOf1e18;main.sqrt";
 
   // Start they toy apps as sub-processes, then,
   // for a certain amount of time (kTestRunTime), collect data using RunTest().
@@ -312,9 +309,10 @@ TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
   ASSERT_NO_FATAL_FAILURE(CheckStackTraceIDsInvariance());
   ASSERT_NO_FATAL_FAILURE(PopulateCumulativeSum(target_row_idxs));
   ASSERT_NO_FATAL_FAILURE(PopulateObservedStackTraces(target_row_idxs));
-  EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key1x_, Gt(0))));
-  EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key2x_, Gt(0))));
-  ASSERT_NO_FATAL_FAILURE(CheckExpectedStackTraceCounts(kNumSubProcesses, elapsed_time));
+  EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key1x, Gt(0))));
+  EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key2x, Gt(0))));
+  ASSERT_NO_FATAL_FAILURE(
+      CheckExpectedStackTraceCounts(kNumSubProcesses, elapsed_time, key1x, key2x));
 }
 
 TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
@@ -327,8 +325,8 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
 
   // The toy test app. should be written such that we can expect one stack trace
   // twice as often as another.
-  key2x_ = "__libc_start_main;main;fib52();fib(unsigned long)";
-  key1x_ = "__libc_start_main;main;fib27();fib(unsigned long)";
+  std::string key2x = "__libc_start_main;main;fib52();fib(unsigned long)";
+  std::string key1x = "__libc_start_main;main;fib27();fib(unsigned long)";
 
   // Start they toy apps as sub-processes, then,
   // for a certain amount of time, collect data using RunTest().
@@ -350,9 +348,10 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
   ASSERT_NO_FATAL_FAILURE(CheckStackTraceIDsInvariance());
   ASSERT_NO_FATAL_FAILURE(PopulateCumulativeSum(target_row_idxs));
   ASSERT_NO_FATAL_FAILURE(PopulateObservedStackTraces(target_row_idxs));
-  EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key1x_, Gt(0))));
-  EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key2x_, Gt(0))));
-  ASSERT_NO_FATAL_FAILURE(CheckExpectedStackTraceCounts(kNumSubProcesses, elapsed_time));
+  EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key1x, Gt(0))));
+  EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key2x, Gt(0))));
+  ASSERT_NO_FATAL_FAILURE(
+      CheckExpectedStackTraceCounts(kNumSubProcesses, elapsed_time, key1x, key2x));
 }
 
 TEST_F(PerfProfileBPFTest, TestOutOfContext) {
