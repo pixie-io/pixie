@@ -105,11 +105,6 @@ class PerfProfileBPFTest : public ::testing::Test {
     return sub_processes;
   }
 
-  void CheckThatAllColumnsHaveSameNumRows(const types::ColumnWrapperRecordBatch& columns) {
-    const size_t num_rows = columns[kStackTraceTimeIdx]->Size();
-    ASSERT_THAT(columns, ::testing::Each(testing::ColWrapperSizeIs(num_rows)));
-  }
-
   void CheckStackTraceIDsInvariance() {
     // Just check that the test author populated the necessary.
     ASSERT_TRUE(column_ptrs_populated_);
@@ -234,7 +229,6 @@ class PerfProfileBPFTest : public ::testing::Test {
 
     columns_ = tablets[0].records;
 
-    CheckThatAllColumnsHaveSameNumRows(columns_);
     PopulateColumnPtrs(columns_);
   }
 
