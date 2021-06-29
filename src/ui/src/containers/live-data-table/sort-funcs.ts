@@ -16,7 +16,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SortDirection, SortDirectionType } from 'react-virtualized';
 import { getDataSortFunc } from 'app/utils/format-data';
 import { SemanticType } from 'app/types/generated/vizierapi_pb';
 import { checkExhaustive } from 'app/utils/check-exhaustive';
@@ -30,10 +29,9 @@ import { ColumnDisplayInfo, QuantilesDisplayState } from './column-display-info'
  * Sorts missing (null, undefined) values to the bottom when in ascending order.
  *
  * @param fieldName What field to look at when comparing two objects that both may have that field.
- * @param ascending If true, "bigger" values are sorted to the bottom. If false, they're sorted to the top.
  */
-export function fieldSortFunc(fieldName: string, ascending: boolean) {
-  return (a: Record<string, unknown>, b: Record<string, unknown>): number => {
+export function fieldSortFunc(fieldName: string) {
+  return (a: Record<string, unknown>, b: Record<string, unknown>, ascending: boolean): number => {
     const aVal = a?.[fieldName];
     const bVal = b?.[fieldName];
 
@@ -78,33 +76,30 @@ export function fieldSortFunc(fieldName: string, ascending: boolean) {
   };
 }
 
-export function getSortFunc(
-  display: ColumnDisplayInfo,
-  direction: SortDirectionType,
-): (a: unknown, b: unknown) => number {
-  const ascending = direction === SortDirection.ASC;
-
+export function getSortFunc(display: ColumnDisplayInfo): (a: unknown, b: unknown, ascending: boolean) => number {
   let f;
   switch (display.semanticType) {
     case SemanticType.ST_QUANTILES:
     case SemanticType.ST_DURATION_NS_QUANTILES: {
       const quantilesDisplay = display.displayState as QuantilesDisplayState;
       const selectedPercentile = quantilesDisplay.selectedPercentile || 'p99';
-      f = fieldSortFunc(selectedPercentile, ascending);
+      f = fieldSortFunc(selectedPercentile);
       break;
     }
     case SemanticType.ST_POD_STATUS:
-      f = fieldSortFunc('phase', ascending);
+      f = fieldSortFunc('phase');
       break;
     case SemanticType.ST_CONTAINER_STATUS:
-      f = fieldSortFunc('state', ascending);
+      f = fieldSortFunc('state');
       break;
     case SemanticType.ST_SCRIPT_REFERENCE:
-      f = fieldSortFunc('label', ascending);
+      f = fieldSortFunc('label');
       break;
-    default:
-      f = getDataSortFunc(display.type, ascending);
+    default: {
+      const undirected = getDataSortFunc(display.type);
+      f = (a, b, ascending) => (ascending ? undirected(a, b) : -undirected(a, b));
       break;
+    }
   }
-  return (a, b) => f(a[display.columnName], b[display.columnName]);
+  return (a, b, ascending) => f(a[display.columnName], b[display.columnName], ascending);
 }
