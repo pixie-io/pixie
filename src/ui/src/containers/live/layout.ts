@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Vis, Widget } from './vis';
+import { Vis, Widget, widgetTableName } from './vis';
 
 export interface ChartPosition {
   x: number;
@@ -96,6 +96,11 @@ export function addLayout(visSpec: Vis): Vis {
   return visSpec;
 }
 
+function widgetName(widget: Widget, widgetIndex: number): string {
+  const tableName = widgetTableName(widget, widgetIndex);
+  return widget.name || `${tableName}_${widgetIndex}`;
+}
+
 // Generates the layout of a Live View, with mobile-specific layout that follow the overall
 // order of the vis spec positions but tiles it differently.
 export function toLayout(widgets: Widget[], isMobile: boolean): Layout[] {
@@ -103,9 +108,9 @@ export function toLayout(widgets: Widget[], isMobile: boolean): Layout[] {
     return [];
   }
 
-  const nonMobileLayout = widgets.map((widget) => ({
+  const nonMobileLayout = widgets.map((widget, i) => ({
     ...widget.position,
-    i: widget.name,
+    i: widgetName(widget, i),
     x: widget.position?.x || 0,
     y: widget.position?.y || 0,
     w: widget.position?.w || 0,
@@ -138,8 +143,9 @@ export function toLayout(widgets: Widget[], isMobile: boolean): Layout[] {
   const widgetOrderMap = new Map(nonMobileLayout.map((layout, idx) => [layout.i, idx]));
 
   const positions = mobileWidgetPositions(widgets.length);
-  return widgets.map((widget) => {
-    const { name } = widget;
+  return widgets.map((widget, idx) => {
+    // Use widgetName as i in nonMobileLayout above.
+    const name = widgetName(widget, idx);
     return {
       ...positions[widgetOrderMap.get(name)],
       i: name,

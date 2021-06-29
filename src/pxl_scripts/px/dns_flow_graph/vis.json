@@ -4,25 +4,19 @@
       "name": "start",
       "type": "PX_STRING",
       "description": "The start time of the window in time units before now.",
-      "defaultValue": {
-        "value": "-5m"
-      }
+      "defaultValue": "-5m"
     },
     {
       "name": "from_entity_filter",
       "type": "PX_STRING",
       "description": "The partial string to match the 'from_entity' (source pod).",
-      "defaultValue": {
-        "value": ""
-      }
+      "defaultValue": ""
     },
     {
       "name": "to_entity_filter",
       "type": "PX_STRING",
       "description": "The partial string to match the 'to_entity' (destination service).",
-      "defaultValue": {
-        "value": ""
-      }
+      "defaultValue": ""
     }
   ],
   "globalFuncs": [

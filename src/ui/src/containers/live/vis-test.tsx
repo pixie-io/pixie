@@ -24,7 +24,6 @@ const testVisNoVars: Vis = {
   variables: [],
   globalFuncs: [],
   widgets: [{
-    name: 'latency_widget',
     func: {
       name: 'get_latency',
       args: [{
@@ -37,7 +36,6 @@ const testVisNoVars: Vis = {
     },
   },
   {
-    name: 'error_rate_widget',
     func: {
       name: 'get_error_rate',
       args: [{
@@ -55,19 +53,11 @@ const testVisWithVars: Vis = {
   variables: [{
     name: 'myvar1',
     type: 'PX_STRING',
-    description: 'myvar1',
-    validValues: [],
-    defaultValue: {
-      value: 'abc',
-    },
+    defaultValue: 'abc',
   }, {
     name: 'myvar2',
     type: 'PX_STRING',
-    description: 'myvar2',
-    validValues: [],
-    defaultValue: {
-      value: 'def',
-    },
+    defaultValue: 'def',
   }],
   globalFuncs: [],
   widgets: [{
@@ -92,19 +82,11 @@ const testVisWithGlobalFuncs: Vis = {
   variables: [{
     name: 'myvar1',
     type: 'PX_STRING',
-    description: 'myvar1',
-    validValues: [],
-    defaultValue: {
-      value: 'abc',
-    },
+    defaultValue: 'abc',
   }, {
     name: 'myvar2',
     type: 'PX_STRING',
-    description: 'myvar2',
-    validValues: [],
-    defaultValue: {
-      value: 'def',
-    },
+    defaultValue: 'def',
   }],
   globalFuncs: [{
     outputName: 'LET',
@@ -133,12 +115,12 @@ describe('getQueryFuncs', () => {
     expect(getQueryFuncs(testVisNoVars, {})).toStrictEqual([
       {
         name: 'get_latency',
-        outputTablePrefix: 'latency_widget',
+        outputTablePrefix: 'widget_0',
         args: [{ name: 'foo', value: 'abc' }],
       },
       {
         name: 'get_error_rate',
-        outputTablePrefix: 'error_rate_widget',
+        outputTablePrefix: 'widget_1',
         args: [{ name: 'bar', value: 'def' }],
       },
     ]);

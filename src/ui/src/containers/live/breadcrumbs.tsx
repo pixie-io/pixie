@@ -201,7 +201,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
         explanation: null,
       };
 
-      if (variable && variable.defaultValue == null) {
+      if (variable && typeof variable.defaultValue === 'undefined') {
         argProps.title += '*';
       }
 

@@ -4,25 +4,19 @@
       "name": "start",
       "type": "PX_STRING",
       "description": "The relative start time of the window. Current time is assumed to be now",
-      "defaultValue": {
-        "value": "-5m"
-      }
+      "defaultValue": "-5m"
     },
     {
       "name": "requesting_svc",
       "type": "PX_SERVICE",
       "description": "The full/partial name of the service to for request side. Format: ns/svc_name",
-      "defaultValue": {
-        "value": ""
-      }
+      "defaultValue": ""
     },
     {
       "name": "responding_svc",
       "type": "PX_SERVICE",
       "description": "The full/partial name of the service to for response side. Format: ns/svc_name",
-      "defaultValue": {
-        "value": ""
-      }
+      "defaultValue": ""
     }
   ],
   "globalFuncs": [

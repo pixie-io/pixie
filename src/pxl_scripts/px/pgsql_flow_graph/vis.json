@@ -4,9 +4,7 @@
       "name": "start",
       "type": "PX_STRING",
       "description": "The start time of the window in time units before now.",
-      "defaultValue": {
-        "value": "-5m"
-      }
+      "defaultValue": "-5m"
     },
     {
       "name": "namespace",
@@ -17,17 +15,13 @@
       "name": "source_filter",
       "type": "PX_STRING",
       "description": "The partial string to match the 'source' column.",
-      "defaultValue": {
-        "value": ""
-      }
+      "defaultValue": ""
     },
     {
       "name": "destination_filter",
       "type": "PX_STRING",
       "description": "The partial string to match the 'destination' column.",
-      "defaultValue": {
-        "value": ""
-      }
+      "defaultValue": ""
     }
   ],
   "globalFuncs": [

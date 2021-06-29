@@ -45,23 +45,19 @@ export interface WidgetDisplay {
 }
 
 export interface Widget {
-  name: string;
+  name?: string;
   position?: ChartPosition;
   func?: Func;
   globalFuncOutputName?: string;
   displaySpec: WidgetDisplay;
 }
 
-interface StringValue {
-  value: string;
-}
-
 export interface Variable {
   name: string;
   type: string;
-  defaultValue?: StringValue;
-  description: string;
-  validValues: string[];
+  defaultValue?: string;
+  description?: string;
+  validValues?: string[];
 }
 
 interface GlobalFunc {
@@ -175,9 +171,9 @@ export function getQueryFuncs(vis: Vis, variableValues: VariableValues): VizierQ
   const missingRequiredArgs: string[] = [];
 
   vis.variables.forEach((v) => {
-    if (v.defaultValue != null) {
-      defaults[v.name] = v.defaultValue.value;
-    } else if (!String(variableValues[v.name] ?? '').trim()) {
+    if (typeof v.defaultValue === 'string') {
+      defaults[v.name] = v.defaultValue;
+    } else if (typeof v.defaultValue === 'undefined' && !String(variableValues[v.name] ?? '').trim()) {
       missingRequiredArgs.push(v.name);
     }
   });

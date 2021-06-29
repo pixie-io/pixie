@@ -4,41 +4,31 @@
       "name": "start_time",
       "type": "PX_STRING",
       "description": "The relative start time of the window. Current time is assumed to be now",
-      "defaultValue": {
-        "value": "-5m"
-      }
+      "defaultValue": "-5m"
     },
     {
       "name": "node",
       "type": "PX_NODE",
       "description": "The node to filter on.",
-      "defaultValue": {
-        "value": ""
-      }
+      "defaultValue": ""
     },
     {
       "name": "namespace",
       "type": "PX_NAMESPACE",
       "description": "The namespace to filter on.",
-      "defaultValue": {
-        "value": ""
-      }
+      "defaultValue": ""
     },
     {
       "name": "pod",
       "type": "PX_POD",
       "description": "The pod to filter on.",
-      "defaultValue": {
-        "value": ""
-      }
+      "defaultValue": ""
     },
     {
       "name": "pct_basis_entity",
       "type": "PX_STRING",
       "description": "When computing percentages, the entity to use as the quotient.",
-      "defaultValue": {
-        "value": "node"
-      },
+      "defaultValue": "node",
       "validValues": [
         "node",
         "pod"

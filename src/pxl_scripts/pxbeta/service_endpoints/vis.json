@@ -4,17 +4,13 @@
       "name": "start_time",
       "type": "PX_STRING",
       "description": "The relative start time of the window. Current time is assumed to be now",
-      "defaultValue": {
-        "value": "-5m"
-      }
+      "defaultValue": "-5m"
     },
     {
       "name": "service",
       "type": "PX_SERVICE",
       "description": "The name of the service to get stats for.",
-      "defaultValue": {
-        "value": "default"
-      }
+      "defaultValue": "default"
     }
   ],
   "globalFuncs": [

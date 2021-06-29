@@ -4,41 +4,31 @@
       "name": "start",
       "type": "PX_STRING",
       "description": "The start time of the window in time units before now.",
-      "defaultValue": {
-        "value": "-5m"
-      }
+      "defaultValue": "-5m"
     },
     {
       "name": "namespace",
       "type": "PX_STRING",
       "description": "The namespace to query.",
-      "defaultValue": {
-        "value": ""
-      }
+      "defaultValue": ""
     },
     {
       "name": "pod_filter",
       "type": "PX_STRING",
       "description": "Filter on DNS requests where the source pod contains the provided string.",
-      "defaultValue": {
-        "value": ""
-      }
+      "defaultValue": ""
     },
     {
       "name": "query_filter",
       "type": "PX_STRING",
       "description": "Filter on DNS requests where the query contains the provided string.",
-      "defaultValue": {
-        "value": ""
-      }
+      "defaultValue": ""
     },
     {
       "name": "dns_server_filter",
       "type": "PX_STRING",
       "description": "Filter on DNS requests where the target DNS server contains the provided string.",
-      "defaultValue": {
-        "value": ""
-      }
+      "defaultValue": ""
     }
   ],
   "globalFuncs": [

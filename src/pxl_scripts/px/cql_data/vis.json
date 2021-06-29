@@ -4,17 +4,13 @@
       "name": "start",
       "type": "PX_STRING",
       "description": "The start time of the window in time units before now.",
-      "defaultValue": {
-        "value": "-5m"
-      }
+      "defaultValue": "-5m"
     },
     {
       "name": "max_num_records",
       "type": "PX_INT64",
       "description": "Max number of records to show.",
-      "defaultValue": {
-        "value": "1000"
-      }
+      "defaultValue": "1000"
     }
   ],
   "globalFuncs": [

@@ -4,17 +4,13 @@
       "name": "svc",
       "type": "PX_SERVICE",
       "description": "The full/partial name of the service to get stats for. Format: ns/svc_name",
-      "defaultValue": {
-        "value": ""
-      }
+      "defaultValue": ""
     },
     {
       "name": "start",
       "type": "PX_STRING",
       "description": "The relative start time of the window. Current time is assumed to be now",
-      "defaultValue": {
-        "value": "-5m"
-      }
+      "defaultValue": "-5m"
     }
   ],
   "globalFuncs": [

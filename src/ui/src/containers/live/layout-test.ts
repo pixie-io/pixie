@@ -124,11 +124,14 @@ describe('toLayout', () => {
       position: positions[i],
     }));
 
+    // Delete the name so we can test the default table naming.
+    delete widgets[0].name;
+
     const resultLayout = toLayout(widgets, false);
 
     expect(resultLayout).toStrictEqual([
       {
-        i: 'latency',
+        i: 'widget_0_0',
         x: 0,
         y: 0,
         h: 3,
@@ -173,11 +176,14 @@ describe('toLayout', () => {
       position: positions[i],
     }));
 
+    // Delete the name so we can test the default table naming.
+    delete widgets[0].name;
+
     const resultLayout = toLayout(widgets, false);
 
     expect(resultLayout).toStrictEqual([
       {
-        i: 'latency',
+        i: 'widget_0_0',
         x: 0,
         y: 0,
         h: 0,
@@ -224,11 +230,13 @@ describe('toLayout', () => {
       position: positions[i],
     }));
 
+    // Delete the name so we can test the default table naming.
+    delete widgets[0].name;
     const resultLayout = toLayout(widgets, true);
 
     expect(resultLayout).toStrictEqual([
       {
-        i: 'latency',
+        i: 'widget_0_0',
         x: 0,
         y: 0,
         h: 2,
@@ -269,11 +277,14 @@ describe('toLayout', () => {
       position: positions[i],
     }));
 
+    // Delete the name so we can test the default table naming.
+    delete widgets[0].name;
+
     const resultLayout = toLayout(widgets, true);
 
     expect(resultLayout).toStrictEqual([
       {
-        i: 'latency',
+        i: 'widget_0_0',
         x: 0,
         y: 2,
         h: 2,

@@ -4,9 +4,7 @@
       "name": "start_time",
       "type": "PX_STRING",
       "description": "The relative start time of the window. Current time is assumed to be now",
-      "defaultValue": {
-        "value": "-5m"
-      }
+      "defaultValue": "-5m"
     },
     {
       "name": "node",
@@ -17,9 +15,7 @@
       "name": "groupby",
       "type": "PX_STRING",
       "description": "The element to groupby",
-      "defaultValue": {
-        "value": "node"
-      },
+      "defaultValue": "node",
       "validValues": [
         "node",
         "service",

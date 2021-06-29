@@ -4,25 +4,19 @@
       "name": "start",
       "type": "PX_STRING",
       "description": "The relative start time of the window. Current time is assumed to be now",
-      "defaultValue": {
-        "value": "-5m"
-      }
+      "defaultValue": "-5m"
     },
     {
       "name": "node_name",
       "type": "PX_STRING",
       "description": "The full/partial hostname to fitler by",
-      "defaultValue": {
-        "value": ""
-      }
+      "defaultValue": ""
     },
     {
       "name": "pod",
       "type": "PX_STRING",
       "description": "The full/partial name of the pod to use as filter. Format: ns/pod_name",
-      "defaultValue": {
-        "value": ""
-      }
+      "defaultValue": ""
     }
   ],
   "globalFuncs": [

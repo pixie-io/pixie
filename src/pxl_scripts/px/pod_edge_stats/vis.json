@@ -4,25 +4,19 @@
       "name": "start_time",
       "type": "PX_STRING",
       "description": "The relative start time of the window. Current time is assumed to be now",
-      "defaultValue": {
-        "value": "-5m"
-      }
+      "defaultValue": "-5m"
     },
     {
       "name": "requesting_pod",
       "type": "PX_POD",
       "description": "The name of the pod sending the request. Format: ns/svc_name",
-      "defaultValue": {
-        "value": ""
-      }
+      "defaultValue": ""
     },
     {
       "name": "responding_pod",
       "type": "PX_POD",
       "description": "The name of the pod receiving the request. Format: ns/svc_name",
-      "defaultValue": {
-        "value": ""
-      }
+      "defaultValue": ""
     }
   ],
   "globalFuncs": [
