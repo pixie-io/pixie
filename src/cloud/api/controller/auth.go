@@ -24,6 +24,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/gorilla/sessions"
@@ -175,9 +176,88 @@ func AuthSignupHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 	return nil
 }
 
+// AuthLoginEmbedHandler make requests to the authpb service and sets session cookies.
+// Request-type: application/json.
+// Params: accessToken (auth0 accessToken), redirectURI (relative path)
+func AuthLoginEmbedHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request) error {
+	if r.Method != http.MethodPost {
+		return handler.NewStatusError(http.StatusMethodNotAllowed, "not a post request")
+	}
+
+	apiEnv, ok := env.(apienv.APIEnv)
+	if !ok {
+		return handler.NewStatusError(http.StatusInternalServerError, "failed to get environment")
+	}
+
+	// GetDefaultSession, will always return a valid session, even if it is empty.
+	// We don't check the err here because even if the preexisting
+	// session cookie is expired or couldn't be decoded, we will overwrite it below anyway.
+	session, _ := GetDefaultSession(apiEnv, r)
+	// This should never be nil, but we check to be sure.
+	if session == nil {
+		return handler.NewStatusError(http.StatusInternalServerError, "failed to get session cookie")
+	}
+
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return nil
+	}
+	accessToken := r.FormValue("accessToken")
+	redirectURI := r.FormValue("redirectURI")
+
+	if len(redirectURI) == 0 {
+		http.Error(w, "redirectURI must be specified", http.StatusBadRequest)
+		return nil
+	}
+	parsedURI, err := url.Parse(redirectURI)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return nil
+	}
+	if len(parsedURI.Host) != 0 || len(parsedURI.Path) == 0 {
+		http.Error(w, "redirectURI must be a relative path", http.StatusBadRequest)
+		return nil
+	}
+
+	ctxWithCreds, err := attachCredentialsToContext(env, r)
+	if err != nil {
+		return &handler.StatusError{Code: http.StatusInternalServerError, Err: err}
+	}
+
+	rpcReq := &authpb.LoginRequest{
+		AccessToken:           accessToken,
+		CreateUserIfNotExists: false,
+	}
+
+	resp, err := env.(apienv.APIEnv).AuthClient().Login(ctxWithCreds, rpcReq)
+	if err != nil {
+		log.WithError(err).Errorf("RPC request to authpb service failed")
+		s, ok := status.FromError(err)
+		if ok {
+			if s.Code() == codes.Unauthenticated {
+				return handler.NewStatusError(http.StatusUnauthorized, s.Message())
+			}
+		}
+
+		return services.HTTPStatusFromError(err, "Failed to login")
+	}
+
+	userIDStr := utils.UUIDFromProtoOrNil(resp.UserInfo.UserID).String()
+
+	events.Client().Enqueue(&analytics.Track{
+		UserId: userIDStr,
+		Event:  events.UserLoggedIn,
+	})
+
+	setSessionCookie(session, resp.Token, resp.ExpiresAt, r, w)
+	http.Redirect(w, r, redirectURI, http.StatusSeeOther)
+	return nil
+}
+
 // AuthLoginHandler make requests to the authpb service and sets session cookies.
 // Request-type: application/json.
-// Params: accessToken (auth0 idtoken), state.
+// Params: accessToken (auth0 accessToken), state.
 func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request) error {
 	if r.Method != http.MethodPost {
 		return handler.NewStatusError(http.StatusMethodNotAllowed, "not a post request")
@@ -199,10 +279,10 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 
 	// Extract params from the body which consists of the Auth0 ID token.
 	var params struct {
-		AccessToken string
-		IDToken     string
-		State       string
-		OrgName     string
+		AccessToken string `json:"accessToken"`
+		IDToken     string `json:"idToken"`
+		State       string `json:"state"`
+		OrgName     string `json:"orgName"`
 	}
 
 	defer r.Body.Close()
@@ -265,7 +345,6 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-
 	return nil
 }
 
