@@ -219,3 +219,16 @@ TEST(ProtocolInferenceTest, Redis) {
   EXPECT_TRUE(is_redis_message(kReqFrame, sizeof(kReqFrame)));
   EXPECT_TRUE(is_redis_message(kRespFrame, sizeof(kRespFrame)));
 }
+
+TEST(ProtocolInferenceTest, Mongo) {
+  constexpr uint8_t kReqHeaderFrame[] = {0x4d, 0x01, 0x00, 0x00, 0xd8, 0xe8, 0x91, 0x29,
+                                         0x00, 0x00, 0x00, 0x00, 0xd4, 0x07, 0x00, 0x00};
+  constexpr uint8_t kRespHeaderFrame[] = {0x4b, 0x00, 0x00, 0x00, 0xf7, 0x4b, 0x9f, 0x29,
+                                          0xdb, 0xe8, 0x91, 0x29, 0x01, 0x00, 0x00, 0x00};
+  EXPECT_EQ(
+      infer_mongo_message(reinterpret_cast<const char*>(kReqHeaderFrame), sizeof(kReqHeaderFrame)),
+      kRequest);
+  EXPECT_EQ(infer_mongo_message(reinterpret_cast<const char*>(kRespHeaderFrame),
+                                sizeof(kRespHeaderFrame)),
+            kResponse);
+}

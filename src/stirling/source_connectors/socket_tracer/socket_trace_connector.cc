@@ -148,6 +148,10 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
                                     // SocketInfo to infer the role.
                                     {kRoleUnknown, kRoleClient, kRoleServer},
                                     TRANSFER_STREAM_PROTOCOL(redis)}},
+      // TODO(chengruizhe): Add Mongo table. nullptr should be replaced by the transfer_fn for
+      // mongo in the future.
+      {kProtocolMongo,
+       TransferSpec{false, kHTTPTableNum, {kRoleUnknown, kRoleClient, kRoleServer}, nullptr}},
       {kProtocolUnknown, TransferSpec{false /*enabled*/,
                                       // Unknown protocols attached to HTTP table so that they run
                                       // their cleanup functions, but the use of nullptr transfer_fn

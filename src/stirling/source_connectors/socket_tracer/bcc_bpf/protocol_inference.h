@@ -137,6 +137,57 @@ static __inline enum MessageType infer_cql_message(const char* buf, size_t count
   }
 }
 
+static __inline enum MessageType infer_mongo_message(const char* buf, size_t count) {
+  // Reference:
+  // https://docs.mongodb.com/manual/reference/mongodb-wire-protocol/#std-label-wp-request-opcodes.
+  static const int32_t kOPReply = 1;
+  static const int32_t kOPUpdate = 2001;
+  static const int32_t kOPInsert = 2002;
+  static const int32_t kReserved = 2003;
+  static const int32_t kOPQuery = 2004;
+  static const int32_t kOPGetMore = 2005;
+  static const int32_t kOPDelete = 2006;
+  static const int32_t kOPKillCursors = 2007;
+  static const int32_t kOPCompressed = 2012;
+  static const int32_t kOPMsg = 2013;
+
+  static const int32_t kMongoHeaderLength = 16;
+
+  if (count < kMongoHeaderLength) {
+    return kUnknown;
+  }
+
+  int32_t* buf4 = (int32_t*)buf;
+  int32_t message_length = buf4[0];
+
+  if (message_length < kMongoHeaderLength) {
+    return kUnknown;
+  }
+
+  int32_t request_id = buf4[1];
+
+  if (request_id < 0) {
+    return kUnknown;
+  }
+
+  int32_t response_to = buf4[2];
+  int32_t opcode = buf4[3];
+
+  if (opcode == kOPReply) {
+    if (response_to > 0) {
+      return kResponse;
+    }
+  } else if (opcode == kOPUpdate || opcode == kOPInsert || opcode == kReserved ||
+             opcode == kOPQuery || opcode == kOPGetMore || opcode == kOPDelete ||
+             opcode == kOPKillCursors || opcode == kOPCompressed || opcode == kOPMsg) {
+    if (response_to == 0) {
+      return kRequest;
+    }
+  }
+
+  return kUnknown;
+}
+
 // TODO(yzhao): This is for initial development use. Later we need to combine with more inference
 // code, as the startup message only appears at the beginning of the exchanges between PostgreSQL
 // client and server.
@@ -377,6 +428,8 @@ static __inline struct protocol_message_t infer_protocol(const char* buf, size_t
     inferred_message.protocol = kProtocolHTTP;
   } else if ((inferred_message.type = infer_cql_message(buf, count)) != kUnknown) {
     inferred_message.protocol = kProtocolCQL;
+  } else if ((inferred_message.type = infer_mongo_message(buf, count)) != kUnknown) {
+    inferred_message.protocol = kProtocolMongo;
   } else if ((inferred_message.type = infer_pgsql_message(buf, count)) != kUnknown) {
     inferred_message.protocol = kProtocolPGSQL;
   } else if ((inferred_message.type = infer_mysql_message(buf, count, conn_info)) != kUnknown) {
