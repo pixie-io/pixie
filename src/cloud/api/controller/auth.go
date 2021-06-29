@@ -251,7 +251,7 @@ func AuthLoginEmbedHandler(env commonenv.Env, w http.ResponseWriter, r *http.Req
 	})
 
 	setSessionCookie(session, resp.Token, resp.ExpiresAt, r, w)
-	http.Redirect(w, r, redirectURI, http.StatusSeeOther)
+	http.Redirect(w, r, "https://work."+viper.GetString("domain_name")+redirectURI, http.StatusSeeOther)
 	return nil
 }
 
