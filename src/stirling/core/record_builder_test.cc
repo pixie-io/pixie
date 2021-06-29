@@ -42,7 +42,7 @@ static constexpr auto kTableSchema =
     DataTableSchema("abc_table", "A table with A, B and C", kElements);
 
 TEST(RecordBuilder, StringMaxSize) {
-  DataTable data_table(kTableSchema);
+  DataTable data_table(/*id*/ 0, kTableSchema);
 
   constexpr size_t kMaxStringBytes = 512;
 
@@ -65,7 +65,7 @@ TEST(RecordBuilder, StringMaxSize) {
 }
 
 TEST(RecordBuilder, MissingColumn) {
-  DataTable data_table(kTableSchema);
+  DataTable data_table(/*id*/ 0, kTableSchema);
 
   auto r_ptr = std::make_unique<DataTable::RecordBuilder<&kTableSchema>>(&data_table);
   r_ptr->Append<0>(types::Int64Value(1));
@@ -81,7 +81,7 @@ TEST(RecordBuilder, MissingColumn) {
 }
 
 TEST(RecordBuilder, Duplicate) {
-  DataTable data_table(kTableSchema);
+  DataTable data_table(/*id*/ 0, kTableSchema);
 
   auto r_ptr = std::make_unique<DataTable::RecordBuilder<&kTableSchema>>(&data_table);
   r_ptr->Append<0>(types::Int64Value(1));
@@ -91,7 +91,7 @@ TEST(RecordBuilder, Duplicate) {
 }
 
 TEST(RecordBuilder, UnfilledColNames) {
-  DataTable data_table(kTableSchema);
+  DataTable data_table(/*id*/ 0, kTableSchema);
 
   DataTable::RecordBuilder<&kTableSchema> r(&data_table);
   EXPECT_THAT(r.UnfilledColNames(), ElementsAre("a", "b", "c"));
@@ -104,7 +104,7 @@ TEST(RecordBuilder, UnfilledColNames) {
 }
 
 TEST(DynamicRecordBuilder, StringMaxSize) {
-  DataTable data_table(kTableSchema);
+  DataTable data_table(/*id*/ 0, kTableSchema);
 
   constexpr size_t kMaxStringBytes = 512;
 
@@ -127,7 +127,7 @@ TEST(DynamicRecordBuilder, StringMaxSize) {
 }
 
 TEST(DynamicRecordBuilder, MissingColumn) {
-  DataTable data_table(kTableSchema);
+  DataTable data_table(/*id*/ 0, kTableSchema);
 
   auto r_ptr = std::make_unique<DataTable::DynamicRecordBuilder>(&data_table);
   r_ptr->Append(0, types::Int64Value(1));
@@ -143,7 +143,7 @@ TEST(DynamicRecordBuilder, MissingColumn) {
 }
 
 TEST(DynamicRecordBuilder, Duplicate) {
-  DataTable data_table(kTableSchema);
+  DataTable data_table(/*id*/ 0, kTableSchema);
 
   auto r_ptr = std::make_unique<DataTable::DynamicRecordBuilder>(&data_table);
   r_ptr->Append(0, types::Int64Value(1));

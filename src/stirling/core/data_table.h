@@ -50,7 +50,8 @@ struct Tablet {
 
 class DataTable : public NotCopyable {
  public:
-  explicit DataTable(const DataTableSchema& schema);
+  // Global unique ID identifies the table store to which this DataTable's data should be pushed.
+  DataTable(uint64_t id, const DataTableSchema& schema);
   virtual ~DataTable() = default;
 
   /**
@@ -257,9 +258,14 @@ class DataTable : public NotCopyable {
     types::TabletIDView tablet_id_ = "";
   };
 
+  uint64_t id() const { return id_; }
+
  protected:
   // ColumnWrapper specific members
   static constexpr size_t kTargetCapacity = 1024;
+
+  // Unique ID set by InfoClassManager.
+  const uint64_t id_;
 
   // Initialize a new Active record batch.
   void InitBuffers(types::ColumnWrapperRecordBatch* record_batch_ptr);

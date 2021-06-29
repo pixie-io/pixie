@@ -639,8 +639,9 @@ TEST_F(SocketTraceServerSideBPFTest, StatsDisabledTracker) {
 
   std::vector<std::unique_ptr<DataTable>> data_tables;
   std::vector<DataTable*> data_table_ptrs;
+  uint64_t id = 0;
   for (const auto& table_schema : SocketTraceConnector::kTables) {
-    data_tables.emplace_back(std::make_unique<DataTable>(table_schema));
+    data_tables.emplace_back(std::make_unique<DataTable>(id++, table_schema));
     data_table_ptrs.push_back(data_tables.back().get());
   }
 

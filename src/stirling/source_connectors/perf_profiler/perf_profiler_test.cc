@@ -56,7 +56,7 @@ class CPUPinnedBinaryRunner {
 
 class PerfProfileBPFTest : public ::testing::Test {
  public:
-  PerfProfileBPFTest() : data_table_(kStackTraceTable) {}
+  PerfProfileBPFTest() : data_table_(/*id*/ 0, kStackTraceTable) {}
 
  protected:
   void SetUp() override {

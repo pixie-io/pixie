@@ -40,7 +40,7 @@ class DataTableTest : public ::testing::Test {
   static constexpr auto kSchema =
       DataTableSchema("test_table", "This is the table description", kElements);
 
-  DataTableTest() : data_table_(std::make_unique<DataTable>(kSchema)) {}
+  DataTableTest() : data_table_(std::make_unique<DataTable>(/*id*/ 0, kSchema)) {}
 
   std::unique_ptr<DataTable> data_table_;
 };
@@ -352,7 +352,7 @@ class DataTableStressTest : public ::testing::Test {
   /**
    * @brief Setup the data type.
    */
-  void SetUpTable() { data_table_ = std::make_unique<DataTable>(kSchema); }
+  void SetUpTable() { data_table_ = std::make_unique<DataTable>(/*id*/ 0, kSchema); }
 
   /**
    * @brief Change the random seed of the RNG.

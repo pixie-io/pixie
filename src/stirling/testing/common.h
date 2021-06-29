@@ -57,8 +57,9 @@ class DataTables {
  public:
   template <typename TArrayType>
   explicit DataTables(const TArrayType& tables) {
+    uint64_t id = 0;
     for (const DataTableSchema& table : tables) {
-      auto data_table = std::make_unique<DataTable>(table);
+      auto data_table = std::make_unique<DataTable>(id++, table);
       data_table_ptrs_.push_back(data_table.get());
       data_table_uptrs_.push_back(std::move(data_table));
     }

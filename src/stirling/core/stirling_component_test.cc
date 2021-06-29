@@ -67,7 +67,7 @@ class SourceToTableTest : public ::testing::Test {
     source_ = SeqGenConnector::Create("dummy_sources");
     dynamic_cast<SeqGenConnector*>(source_.get())->ConfigureNumRowsPerGet(1);
     info_class_mgr_.SetSourceConnector(source_.get());
-    table_ = std::make_unique<DataTable>(info_class_mgr_.Schema());
+    table_ = std::make_unique<DataTable>(/*id*/ 0, info_class_mgr_.Schema());
   }
 
   std::unique_ptr<SourceConnector> source_;

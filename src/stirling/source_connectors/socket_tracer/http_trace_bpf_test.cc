@@ -53,7 +53,7 @@ class GoHTTPTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ false
 
   testing::GoHTTPFixture go_http_fixture_;
 
-  DataTable data_table_{kHTTPTable};
+  DataTable data_table_{/*id*/ 0, kHTTPTable};
 };
 
 TEST_F(GoHTTPTraceTest, RequestAndResponse) {

@@ -33,7 +33,7 @@ namespace stirling {
 using types::ColumnWrapper;
 using types::DataType;
 
-DataTable::DataTable(const DataTableSchema& schema) : table_schema_(schema) {}
+DataTable::DataTable(uint64_t id, const DataTableSchema& schema) : id_(id), table_schema_(schema) {}
 
 void DataTable::InitBuffers(types::ColumnWrapperRecordBatch* record_batch_ptr) {
   DCHECK(record_batch_ptr != nullptr);

@@ -66,7 +66,7 @@ class JVMStatsConnectorTest : public ::testing::Test {
   void TearDown() override { EXPECT_OK(connector_->Stop()); }
 
   std::unique_ptr<SourceConnector> connector_;
-  DataTable data_table_{kJVMStatsTable};
+  DataTable data_table_{/*id*/ 0, kJVMStatsTable};
   const std::vector<DataTable*> data_tables_{&data_table_};
 };
 

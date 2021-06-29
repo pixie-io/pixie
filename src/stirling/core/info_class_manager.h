@@ -64,7 +64,7 @@ class InfoClassManager final : public NotCopyable {
    * the publish proto.
    */
   explicit InfoClassManager(const DataTableSchema& schema)
-      : id_(global_id_++), schema_(schema), data_table_(new DataTable(schema_)) {
+      : id_(global_id_++), schema_(schema), data_table_(new DataTable(id_, schema_)) {
     sample_push_freq_mgr_.set_push_period(schema.default_push_period());
   }
 
@@ -72,7 +72,7 @@ class InfoClassManager final : public NotCopyable {
    * Resets the data table, effectively replace the current data table with a new one.
    * Used to reset the state of subscribed data tables.
    */
-  void ResetDataTable() { data_table_.reset(new DataTable(schema_)); }
+  void ResetDataTable() { data_table_.reset(new DataTable(id_, schema_)); }
 
   /**
    * @brief Source connector connected to this Info Class.
@@ -164,7 +164,7 @@ class InfoClassManager final : public NotCopyable {
   inline static std::atomic<uint64_t> global_id_ = 0;
 
   // Unique ID of the InfoClassManager instance. ID must never repeat, even after destruction.
-  uint64_t id_;
+  const uint64_t id_;
 
   // The schema of table associated with this Info Class manager.
   const DataTableSchema& schema_;
