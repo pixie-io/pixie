@@ -30,6 +30,7 @@ export interface CancellablePromise<R extends unknown = void> extends Promise<R>
 /**
  * Wraps the source Promise in a `cancel()`-able Promise.
  * Cancelling it causes it to reject immediately.
+ * If you do not wish to do anything with a cancel-induced rejection, use the helper method `silentlyCatchCancellation`.
  * @param source
  */
 export function makeCancellable<R extends unknown = void>(source: Promise<R>): CancellablePromise<R> {
@@ -61,4 +62,19 @@ export function makeCancellable<R extends unknown = void>(source: Promise<R>): C
   });
 
   return wrapped as CancellablePromise<R>;
+}
+
+/**
+ * Convenience: if you don't care about rejections caused by cancelling a cancellable Promise, do this:
+ * ```
+ * const promise = makeCancellable(other);
+ * promise.then(actOnNotCancelledResolution).catch(silentlyCatchCancellation).catch(handleRealRejection);
+ * ```
+ * And the error will be silenced ONLY if it came from `promise.cancel()`.
+ */
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function silentlyCatchCancellation(e: any): void {
+  if (typeof e !== 'object' || !e || e.message !== 'cancelled') {
+    throw e;
+  }
 }

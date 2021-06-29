@@ -23,7 +23,7 @@ import { LD_CLIENT_ID } from 'app/containers/constants';
 import {
   Redirect, Route, Router, Switch,
 } from 'react-router-dom';
-import { makeCancellable } from 'app/utils/cancellable-promise';
+import { makeCancellable, silentlyCatchCancellation } from 'app/utils/cancellable-promise';
 import { isProd, PIXIE_CLOUD_VERSION } from 'app/utils/env';
 import history from 'app/utils/pl-history';
 
@@ -75,11 +75,14 @@ function useIsAuthenticated() {
 
     setState({ loading: true, authenticated, error: undefined });
     const authPromise = makeCancellable(client.isAuthenticated());
-    authPromise.then((isAuthenticated) => {
-      setState({ loading: false, authenticated: isAuthenticated, error: undefined });
-    }).catch((e) => {
-      setState({ loading: false, authenticated: false, error: e });
-    });
+    authPromise
+      .then((isAuthenticated) => {
+        setState({ loading: false, authenticated: isAuthenticated, error: undefined });
+      })
+      .catch(silentlyCatchCancellation)
+      .catch((e) => {
+        setState({ loading: false, authenticated: false, error: e });
+      });
 
     return () => authPromise.cancel();
     // eslint-disable-next-line react-hooks/exhaustive-deps

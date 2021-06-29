@@ -18,7 +18,7 @@
 
 import * as React from 'react';
 import { ApolloProvider } from '@apollo/client/react';
-import { makeCancellable } from 'app/utils/cancellable-promise';
+import { makeCancellable, silentlyCatchCancellation } from 'app/utils/cancellable-promise';
 import { PixieAPIClientAbstract, PixieAPIClient } from './api';
 import { PixieAPIClientOptions } from './api-options';
 
@@ -31,7 +31,7 @@ export const PixieAPIContextProvider: React.FC<PixieAPIContextProviderProps> = (
 
   React.useEffect(() => {
     const creator = makeCancellable(PixieAPIClient.create(opts));
-    creator.then(setPixieClient);
+    creator.then(setPixieClient).catch(silentlyCatchCancellation);
     return () => {
       creator.cancel();
       setPixieClient(null);

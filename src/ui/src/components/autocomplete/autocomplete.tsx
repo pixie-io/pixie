@@ -25,7 +25,7 @@ import { createStyles } from '@material-ui/styles';
 import { scrollbarStyles } from 'app/components';
 import { AutocompleteContext } from 'app/components/autocomplete/autocomplete-context';
 
-import { makeCancellable } from 'app/utils/cancellable-promise';
+import { makeCancellable, silentlyCatchCancellation } from 'app/utils/cancellable-promise';
 import {
   CompletionId,
   CompletionItem,
@@ -126,7 +126,7 @@ export const Autocomplete: React.FC<AutoCompleteProps> = ({
       setCompletions(cmpls);
       const selection = autoSelectItem(cmpls);
       if (selection?.title && selection?.id) setActiveItem(selection.id);
-    });
+    }).catch(silentlyCatchCancellation);
     return () => promise.cancel();
   }, [inputValue, getCompletions, hidden]);
 
