@@ -76,6 +76,7 @@ Status PerfProfileConnector::StopImpl() {
 
 void PerfProfileConnector::CleanupSymbolizers(const absl::flat_hash_set<md::UPID>& deleted_upids) {
   for (const auto& md_upid : deleted_upids) {
+    // Clean-up caches.
     struct upid_t upid;
     upid.pid = md_upid.pid();
     upid.start_time_ticks = md_upid.start_ts();
@@ -83,17 +84,21 @@ void PerfProfileConnector::CleanupSymbolizers(const absl::flat_hash_set<md::UPID
   }
 }
 
-uint64_t PerfProfileConnector::SymbolicStackTraceID(
-    const SymbolicStackTrace& symbolic_stack_trace) {
-  const auto it = stack_trace_ids_.find(symbolic_stack_trace);
-
-  if (it != stack_trace_ids_.end()) {
-    const uint64_t stack_trace_id = it->second;
-    return stack_trace_id;
-  } else {
-    stack_trace_ids_[symbolic_stack_trace] = next_stack_trace_id_;
-    return next_stack_trace_id_++;
-  }
+uint64_t PerfProfileConnector::StackTraceID(const SymbolicStackTrace& /* stack_trace */) {
+  // Historically, we maintained a map of stack trace IDs for every stack trace observed,
+  // This was meant to help normalize our tables, which we never implemented.
+  // It was also used to accelerate aggregations across time samples by Carnot.
+  //
+  // Unfortunately, the memory cost of maintaining the stack trace ID map was too high.
+  // Since we never really used it for its intended purpose, we have now removed the map.
+  //
+  // Instead, we generate a new id for every stack trace.
+  // This means the same stack trace across two TransferData calls have different IDs.
+  // Fortunately, the UI will aggregate two identical stack traces even if the IDs don't match.
+  //
+  // TODO(jps): Consider removing stack_trace_id from the stack_traces table schema, since
+  //            the ID is effectively useless now.
+  return next_stack_trace_id_++;
 }
 
 PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces(
@@ -194,11 +199,9 @@ void PerfProfileConnector::CreateRecords(ebpf::BPFStackTable* stack_traces,
   for (const auto& [key, count] : stack_trace_histogram) {
     DataTable::RecordBuilder<&kStackTraceTable> r(data_table, timestamp_ns);
 
-    const uint64_t stack_trace_id = SymbolicStackTraceID(key);
-
     r.Append<r.ColIndex("time_")>(timestamp_ns);
     r.Append<r.ColIndex("upid")>(key.upid.value());
-    r.Append<r.ColIndex("stack_trace_id")>(stack_trace_id);
+    r.Append<r.ColIndex("stack_trace_id")>(StackTraceID(key));
     r.Append<r.ColIndex("stack_trace"), kMaxStackTraceSize>(key.stack_trace_str);
     r.Append<r.ColIndex("count")>(count);
   }

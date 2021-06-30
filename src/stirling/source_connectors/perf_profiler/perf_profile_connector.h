@@ -93,9 +93,7 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   };
 
   // StackTraceHisto: SymbolicStackTrace => observation-count
-  // StackTraceIDMap: SymbolicStackTrace => stack-trace-id
   using StackTraceHisto = absl::flat_hash_map<SymbolicStackTrace, uint64_t>;
-  using StackTraceIDMap = absl::flat_hash_map<SymbolicStackTrace, uint64_t>;
 
   explicit PerfProfileConnector(std::string_view source_name);
 
@@ -106,7 +104,7 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
                      ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo, ConnectorContext* ctx,
                      DataTable* data_table);
 
-  uint64_t SymbolicStackTraceID(const SymbolicStackTrace& symbolic_stack_trace);
+  uint64_t StackTraceID(const SymbolicStackTrace& stack_trace);
 
   StackTraceHisto AggregateStackTraces(ConnectorContext* ctx, ebpf::BPFStackTable* stack_traces,
                                        ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo);
@@ -116,9 +114,9 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // data structures shared with BPF:
   std::unique_ptr<ebpf::BPFStackTable> stack_traces_a_;
   std::unique_ptr<ebpf::BPFStackTable> stack_traces_b_;
-  std::unique_ptr<ebpf::BPFHashTable<stack_trace_key_t, uint64_t> > histogram_a_;
-  std::unique_ptr<ebpf::BPFHashTable<stack_trace_key_t, uint64_t> > histogram_b_;
-  std::unique_ptr<ebpf::BPFArrayTable<uint64_t> > profiler_state_;
+  std::unique_ptr<ebpf::BPFHashTable<stack_trace_key_t, uint64_t>> histogram_a_;
+  std::unique_ptr<ebpf::BPFHashTable<stack_trace_key_t, uint64_t>> histogram_b_;
+  std::unique_ptr<ebpf::BPFArrayTable<uint64_t>> profiler_state_;
 
   // Number of iterations, where each iteration is drains the information collectid in BPF.
   uint64_t transfer_count_ = 0;
@@ -126,9 +124,6 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Tracks the next stack-trace-id to be assigned;
   // incremented by 1 for each such assignment.
   uint64_t next_stack_trace_id_ = 0;
-
-  // Tracks unique stack trace ids, for the lifetime of Stirling:
-  StackTraceIDMap stack_trace_ids_;
 
   // The symbolizer has an instance of a BPF stack table (internally),
   // solely to gain access to the BCC symbolization API. Depending on the

@@ -105,36 +105,6 @@ class PerfProfileBPFTest : public ::testing::Test {
     return sub_processes;
   }
 
-  void CheckStackTraceIDsInvariance() {
-    // Just check that the test author populated the necessary.
-    ASSERT_TRUE(column_ptrs_populated_);
-    const size_t num_rows = stack_traces_column_->Size();
-
-    // A map to track stack-trace-id to symbolic-stack-trace invariance:
-    absl::flat_hash_map<int64_t, std::string_view> id_to_symbolic_repr_map;
-    uint64_t num_stack_trace_ids_checked = 0;
-
-    for (size_t row_idx = 0; row_idx < num_rows; ++row_idx) {
-      const int64_t stack_trace_id = trace_ids_column_->Get<types::Int64Value>(row_idx).val;
-      const std::string_view stack_trace = stack_traces_column_->Get<types::StringValue>(row_idx);
-
-      if (id_to_symbolic_repr_map.contains(stack_trace_id)) {
-        // If we've seen a certain stack-trace-id before,
-        // check that it's symoblic representation is the same as before.
-        EXPECT_EQ(id_to_symbolic_repr_map[stack_trace_id], stack_trace);
-        ++num_stack_trace_ids_checked;
-      } else {
-        // First time we've seen this stack-trace-id: just record it.
-        id_to_symbolic_repr_map[stack_trace_id] = stack_trace;
-      }
-    }
-
-    // Surely we did some checking of stack-trace-id:symbolic-stack-trace invariance;
-    // check that we did.
-    LOG(INFO) << "num_stack_trace_ids_checked: " << num_stack_trace_ids_checked;
-    EXPECT_GT(num_stack_trace_ids_checked, 0);
-  }
-
   void PopulateObservedStackTraces(const std::vector<size_t>& target_row_idxs) {
     // Just check that the test author populated the necessary,
     // and did not corrupt the cumulative sum already.
@@ -306,7 +276,6 @@ TEST_F(PerfProfileBPFTest, PerfProfilerGoTest) {
 
   // Populate the cumulative sum & the observed stack traces histo,
   // then check observed vs. expected stack traces key set:
-  ASSERT_NO_FATAL_FAILURE(CheckStackTraceIDsInvariance());
   ASSERT_NO_FATAL_FAILURE(PopulateCumulativeSum(target_row_idxs));
   ASSERT_NO_FATAL_FAILURE(PopulateObservedStackTraces(target_row_idxs));
   EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key1x, Gt(0))));
@@ -345,7 +314,6 @@ TEST_F(PerfProfileBPFTest, PerfProfilerCppTest) {
 
   // Populate the cumulative sum & the observed stack traces histo,
   // then check observed vs. expected stack traces key set:
-  ASSERT_NO_FATAL_FAILURE(CheckStackTraceIDsInvariance());
   ASSERT_NO_FATAL_FAILURE(PopulateCumulativeSum(target_row_idxs));
   ASSERT_NO_FATAL_FAILURE(PopulateObservedStackTraces(target_row_idxs));
   EXPECT_THAT(observed_stack_traces_, ::testing::Contains(Pair(key1x, Gt(0))));
@@ -379,7 +347,6 @@ TEST_F(PerfProfileBPFTest, TestOutOfContext) {
 
   // Populate the cumulative sum & the observed stack traces histo,
   // then check observed vs. expected stack traces key set:
-  ASSERT_NO_FATAL_FAILURE(CheckStackTraceIDsInvariance());
   ASSERT_NO_FATAL_FAILURE(PopulateCumulativeSum(target_row_idxs));
   ASSERT_NO_FATAL_FAILURE(PopulateObservedStackTraces(target_row_idxs));
 }
