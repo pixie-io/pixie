@@ -24,6 +24,7 @@ container_layer(
     name = "conf",
     directory = "/usr/local/openresty/nginx/conf",
     files = [
+        "headers_common.conf",
         "nginx.conf",
         "pixie_api.conf",
         "pixie_cache.conf",
@@ -33,6 +34,12 @@ container_layer(
         "pixie_server_defaults.conf",
         "pixie_vars.conf",
     ],
+)
+
+container_layer(
+    name = "conf_private",
+    directory = "/usr/local/openresty/nginx/conf/private",
+    files = glob(["private/*.conf"]),
 )
 
 container_layer(
@@ -64,6 +71,7 @@ container_image(
     entrypoint = ["/bin/bash"],
     layers = [
         ":conf",
+        ":conf_private",
         ":ui_assets",
         ":installer",
         ":entrypoint",
