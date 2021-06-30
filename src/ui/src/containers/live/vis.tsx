@@ -163,7 +163,8 @@ function preprocessVariables(variableValues: VariableValues, argTypes: ArgTypeMa
 
 // This should only be called by table grpc client, and it will reject the returned promise
 // when executeScript() is called with an invalid Vis spec or if that spec is violated.
-export function getQueryFuncs(vis: Vis, variableValues: VariableValues): VizierQueryFunc[] {
+export function getQueryFuncs(vis: Vis, variableValues: VariableValues,
+  selectedWidget: string | null): VizierQueryFunc[] {
   const defaults = {};
   if (!vis) {
     return [];
@@ -199,19 +200,40 @@ export function getQueryFuncs(vis: Vis, variableValues: VariableValues): VizierQ
     visGlobalFuncs = [];
   }
 
-  const globalFuncs = visGlobalFuncs.map((globalFunc) => ({
+  // We filter out widgets that don't have function definitions.
+  let selectedWidgetGlobalFunc;
+  const widgetFuncs = vis.widgets.filter((widget) => {
+    // When we are in widget selection mode, only select the particular widget.
+    if (selectedWidget) {
+      if (widget.name !== selectedWidget) {
+        return false;
+      }
+      // If the selected widget is using a global func, make sure we pick that func later.
+      if (widget.globalFuncOutputName != null) {
+        selectedWidgetGlobalFunc = widget.globalFuncOutputName;
+      }
+      return widget.func != null;
+    }
+    return widget.func;
+  }).map((widget, i) => ({
+    name: widget.func.name,
+    outputTablePrefix: widgetTableName(widget, i),
+    args: getFuncArgs(valsOrDefaults, widget.func),
+  }));
+
+  const globalFuncs = visGlobalFuncs.filter((globalFunc) => {
+    if (selectedWidget) {
+      return globalFunc.outputName === selectedWidgetGlobalFunc;
+    }
+    return true;
+  }).map((globalFunc) => ({
     name: globalFunc.func.name,
     // There shouldn't be any confusion over this name, outputName is a required field
     // and should be validated before reaching this point.
     outputTablePrefix: globalFunc.outputName,
     args: getFuncArgs(valsOrDefaults, globalFunc.func),
   }));
-  // We filter out widgets that don't have function definitions.
-  const widgetFuncs = vis.widgets.filter((widget) => widget.func).map((widget, i) => ({
-    name: widget.func.name,
-    outputTablePrefix: widgetTableName(widget, i),
-    args: getFuncArgs(valsOrDefaults, widget.func),
-  }));
+
   return globalFuncs.concat(widgetFuncs);
 }
 
@@ -248,7 +270,7 @@ export function validateVis(vis: Vis, variableValues: VariableValues): VizierQue
   // TODO(philkuz) wondering if I should keep this or remove it because we typically call this afterwards.
   // Alternatively, we could have getQueryFuncs call the above.
   try {
-    getQueryFuncs(vis, variableValues);
+    getQueryFuncs(vis, variableValues, null);
   } catch (error) {
     errors.push(error as VizierQueryError);
   }

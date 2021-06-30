@@ -127,7 +127,7 @@ describe('toLayout', () => {
     // Delete the name so we can test the default table naming.
     delete widgets[0].name;
 
-    const resultLayout = toLayout(widgets, false);
+    const resultLayout = toLayout(widgets, false, null);
 
     expect(resultLayout).toStrictEqual([
       {
@@ -179,7 +179,7 @@ describe('toLayout', () => {
     // Delete the name so we can test the default table naming.
     delete widgets[0].name;
 
-    const resultLayout = toLayout(widgets, false);
+    const resultLayout = toLayout(widgets, false, null);
 
     expect(resultLayout).toStrictEqual([
       {
@@ -232,7 +232,7 @@ describe('toLayout', () => {
 
     // Delete the name so we can test the default table naming.
     delete widgets[0].name;
-    const resultLayout = toLayout(widgets, true);
+    const resultLayout = toLayout(widgets, true, null);
 
     expect(resultLayout).toStrictEqual([
       {
@@ -280,7 +280,7 @@ describe('toLayout', () => {
     // Delete the name so we can test the default table naming.
     delete widgets[0].name;
 
-    const resultLayout = toLayout(widgets, true);
+    const resultLayout = toLayout(widgets, true, null);
 
     expect(resultLayout).toStrictEqual([
       {

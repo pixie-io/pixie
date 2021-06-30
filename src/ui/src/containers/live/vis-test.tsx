@@ -36,6 +36,7 @@ const testVisNoVars: Vis = {
     },
   },
   {
+    name: 'a_widget',
     func: {
       name: 'get_error_rate',
       args: [{
@@ -112,7 +113,7 @@ const testVisWithGlobalFuncs: Vis = {
 
 describe('getQueryFuncs', () => {
   it('should fill in values from constants', () => {
-    expect(getQueryFuncs(testVisNoVars, {})).toStrictEqual([
+    expect(getQueryFuncs(testVisNoVars, {}, null)).toStrictEqual([
       {
         name: 'get_latency',
         outputTablePrefix: 'widget_0',
@@ -120,14 +121,14 @@ describe('getQueryFuncs', () => {
       },
       {
         name: 'get_error_rate',
-        outputTablePrefix: 'widget_1',
+        outputTablePrefix: 'a_widget',
         args: [{ name: 'bar', value: 'def' }],
       },
     ]);
   });
 
   it('should fill in values from variables with defaults', () => {
-    expect(getQueryFuncs(testVisWithVars, {})).toStrictEqual([
+    expect(getQueryFuncs(testVisWithVars, {}, null)).toStrictEqual([
       {
         name: 'get_latency',
         outputTablePrefix: 'latency',
@@ -142,7 +143,7 @@ describe('getQueryFuncs', () => {
   it('should fill in values from variable values overriding defaults', () => {
     expect(getQueryFuncs(testVisWithVars, {
       myvar2: 'xyz',
-    })).toStrictEqual([
+    }, null)).toStrictEqual([
       {
         name: 'get_latency',
         outputTablePrefix: 'latency',
@@ -157,7 +158,7 @@ describe('getQueryFuncs', () => {
   it('should yield only one result from global functions', () => {
     expect(getQueryFuncs(testVisWithGlobalFuncs, {
       myvar2: 'xyz',
-    })).toStrictEqual([
+    }, null)).toStrictEqual([
       {
         name: 'get_latency',
         outputTablePrefix: 'LET',
@@ -165,6 +166,33 @@ describe('getQueryFuncs', () => {
           { name: 'foo', value: 'abc' },
           { name: 'bar', value: 'xyz' },
         ],
+      },
+    ]);
+  });
+
+  it('should support widget selection with a global func', () => {
+    expect(getQueryFuncs(testVisWithGlobalFuncs, {
+      myvar2: 'xyz',
+    }, 'latency')).toStrictEqual([
+      {
+        name: 'get_latency',
+        outputTablePrefix: 'LET',
+        args: [
+          { name: 'foo', value: 'abc' },
+          { name: 'bar', value: 'xyz' },
+        ],
+      },
+    ]);
+  });
+
+  it('should support widget selection with a non-global func', () => {
+    expect(getQueryFuncs(testVisNoVars, {
+      myvar2: 'xyz',
+    }, 'a_widget')).toStrictEqual([
+      {
+        name: 'get_error_rate',
+        outputTablePrefix: 'a_widget',
+        args: [{ name: 'bar', value: 'def' }],
       },
     ]);
   });

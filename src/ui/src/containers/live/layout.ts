@@ -103,9 +103,20 @@ function widgetName(widget: Widget, widgetIndex: number): string {
 
 // Generates the layout of a Live View, with mobile-specific layout that follow the overall
 // order of the vis spec positions but tiles it differently.
-export function toLayout(widgets: Widget[], isMobile: boolean): Layout[] {
+export function toLayout(widgets: Widget[], isMobile: boolean, selectedWidget: string | null): Layout[] {
   if (widgets == null) { // Script has no vis spec.
     return [];
+  }
+
+  // Single-widget layout if a widget selector is specified.
+  if (selectedWidget) {
+    return [{
+      i: selectedWidget,
+      x: 0,
+      y: 0,
+      w: (isMobile ? MOBILE_GRID_WIDTH : DEFAULT_GRID_WIDTH) * 1.5,
+      h: (isMobile ? MOBILE_WIDGET_HEIGHT : DEFAULT_WIDGET_HEIGHT) * 1.5,
+    }];
   }
 
   const nonMobileLayout = widgets.map((widget, i) => ({

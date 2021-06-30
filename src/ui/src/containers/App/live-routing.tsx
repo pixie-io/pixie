@@ -33,6 +33,7 @@ import { argsForVis } from 'app/utils/args-utils';
 
 export interface LiveRouteContextProps {
   scriptId: string;
+  widget: string | null;
   clusterName: string | null;
   args: Record<string, string | string[]>;
   push: (clusterName: string, scriptId: string, args: Record<string, string | string[]>) => void;
@@ -40,7 +41,7 @@ export interface LiveRouteContextProps {
   routeFor: (
     clusterName: string,
     scriptId: string,
-    args: Record<string, string | string[]>
+    args: Record<string, string | string[]>,
   ) => LocationDescriptorObject;
 }
 
@@ -65,14 +66,14 @@ const VANITY_ROUTES = new Map<string, string>([
 ]);
 
 const LiveRoute: React.FC<LiveRouteContextProps> = ({
-  args, scriptId, clusterName, push, replace, routeFor, children,
+  args, scriptId, widget, clusterName, push, replace, routeFor, children,
 }) => {
   // Sorting keys ensures that the stringified object looks the same regardless of the order of operations that built it
   const serializedArgs = JSON.stringify(args, Object.keys(args ?? {}).sort());
   const context: LiveRouteContextProps = React.useMemo(() => ({
-    scriptId, clusterName, args, push, replace, routeFor,
+    scriptId, clusterName, widget, args, push, replace, routeFor,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [scriptId, clusterName, serializedArgs, push, replace, routeFor]);
+  }), [scriptId, clusterName, widget, serializedArgs, push, replace, routeFor]);
 
   return (
     <LiveRouteContext.Provider value={context}>{children}</LiveRouteContext.Provider>
@@ -153,7 +154,7 @@ export const LiveContextRouter: React.FC = ({ children }) => {
           if (defaultCluster && match.path === '/live') {
             return (<Redirect to={`/live/clusters/${encodeURIComponent(defaultCluster)}`} />);
           }
-          const { script: queryScriptId, ...queryParams } = QueryString.parse(location.search);
+          const { script: queryScriptId, widget: widgetName, ...queryParams } = QueryString.parse(location.search);
           let scriptId = VANITY_ROUTES.get(match.path) ?? 'px/cluster';
           if (queryScriptId) {
             scriptId = Array.isArray(queryScriptId)
@@ -179,6 +180,7 @@ export const LiveContextRouter: React.FC = ({ children }) => {
           return (
             <LiveRoute
               scriptId={scriptId}
+              widget={Array.isArray(widgetName) ? widgetName[0] : widgetName}
               args={args}
               clusterName={decodeURIComponent(cluster)}
               push={push}

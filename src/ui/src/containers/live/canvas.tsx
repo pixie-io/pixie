@@ -268,7 +268,7 @@ const Canvas = (props: CanvasProps) => {
     tables, loading, error, mutationInfo,
   } = React.useContext(ResultsContext);
   const {
-    args, setScriptAndArgs, script,
+    args, setScriptAndArgs, script, widget,
   } = React.useContext(ScriptContext);
   const { isMobile } = React.useContext(LayoutContext);
   const { setTimeseriesDomain } = React.useContext(TimeSeriesContext);
@@ -356,7 +356,8 @@ const Canvas = (props: CanvasProps) => {
     loading && classes.loading,
   );
 
-  const layout = React.useMemo(() => toLayout(script.vis?.widgets, isMobile), [script.vis, isMobile]);
+  const layout = React.useMemo(() => toLayout(script.vis?.widgets, isMobile, widget),
+    [script.vis, isMobile, widget]);
   const [errorOpen, setErrorOpen] = React.useState(false);
 
   const emptyTableMsg = React.useMemo(() => {
@@ -368,10 +369,15 @@ const Canvas = (props: CanvasProps) => {
 
   const charts = React.useMemo(() => {
     const widgets = [];
-    script.vis?.widgets.forEach((widget, i) => {
+    script.vis?.widgets.filter((currentWidget) => {
+      if (widget) {
+        return currentWidget.name === widget;
+      }
+      return true;
+    }).forEach((currentWidget, i) => {
       const widgetLayout = layout[i];
-      const display = widget.displaySpec;
-      const tableName = widgetTableName(widget, i);
+      const display = currentWidget.displaySpec;
+      const tableName = widgetTableName(currentWidget, i);
       const widgetName = widgetLayout.i;
       const table = tables[tableName];
 
@@ -399,7 +405,7 @@ const Canvas = (props: CanvasProps) => {
     });
     return widgets;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tables, script?.vis, loading, layout, className, classes.spinner, emptyTableMsg]);
+  }, [tables, script?.vis, widget, loading, layout, className, classes.spinner, emptyTableMsg]);
 
   if (loading && charts.length === 0) {
     return (
