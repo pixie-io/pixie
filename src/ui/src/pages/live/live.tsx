@@ -20,6 +20,7 @@ import * as React from 'react';
 
 import { EditIcon, Footer, scrollbarStyles } from 'app/components';
 import { GQLClusterStatus } from 'app/types/schema';
+import { buildClass } from 'app/utils/build-class';
 import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import {
@@ -37,6 +38,7 @@ import { ResultsContextProvider } from 'app/context/results-context';
 import { Script } from 'app/utils/script-bundle';
 
 import { ClusterInstructions } from 'app/containers/App/deploy-instructions';
+import { LiveRouteContext } from 'app/containers/App/live-routing';
 import NavBars from 'app/containers/App/nav-bars';
 import { SCRATCH_SCRIPT } from 'app/containers/App/scripts-context';
 import { DataDrawerSplitPanel } from 'app/containers/data-drawer/data-drawer';
@@ -80,6 +82,12 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     },
     overflowY: 'auto',
     overflowX: 'hidden',
+  },
+  embeddedMain: {
+    marginLeft: 0,
+  },
+  widgetMain: {
+    paddingTop: 0,
   },
   mainFooter: {
     marginLeft: theme.spacing(8),
@@ -249,6 +257,7 @@ const LiveView: React.FC = () => {
   const { saveEditor } = React.useContext(EditorContext);
   const { isMobile, setEditorPanelOpen, setDataDrawerOpen } = React.useContext(LayoutContext);
   const [widgetsMoveable, setWidgetsMoveable] = React.useState(false);
+  const { isEmbedded, widget } = React.useContext(LiveRouteContext);
 
   const hotkeyHandlers = {
     'toggle-editor': () => setEditorPanelOpen((editable) => !editable),
@@ -318,25 +327,33 @@ const LiveView: React.FC = () => {
   return (
     <div className={classes.root}>
       <LiveViewShortcutsProvider handlers={hotkeyHandlers}>
-        <NavBars>
-          <ClusterSelector />
-          <div className={classes.spacer} />
-          <ScriptOptions
-            classes={classes}
-            widgetsMoveable={widgetsMoveable}
-            setWidgetsMoveable={setWidgetsMoveable}
-          />
-          <div className={classes.execute}>
-            <ExecuteScriptButton />
-          </div>
-        </NavBars>
-        <div className={classes.dataDrawer}>
-          <DataDrawerSplitPanel />
-        </div>
+        {!isEmbedded
+          && <>
+            <NavBars>
+              <ClusterSelector />
+              <div className={classes.spacer} />
+              <ScriptOptions
+                classes={classes}
+                widgetsMoveable={widgetsMoveable}
+                setWidgetsMoveable={setWidgetsMoveable}
+              />
+              <div className={classes.execute}>
+                <ExecuteScriptButton />
+              </div>
+            </NavBars>
+            <div className={classes.dataDrawer}>
+              <DataDrawerSplitPanel />
+            </div>
+          </>
+        }
         <EditorSplitPanel>
           <div className={classes.main}>
-            <div className={classes.mainContent}>
-              <LiveViewBreadcrumbs />
+            <div className={buildClass(
+              classes.mainContent,
+              isEmbedded && classes.embeddedMain,
+              widget && classes.widgetMain,
+            )}>
+              {widget == null && <LiveViewBreadcrumbs />}
               {(selectedClusterStatus === GQLClusterStatus.CS_HEALTHY && script && healthy) ? (
                 <div className={classes.canvas} ref={canvasRef}>
                   <Canvas editable={widgetsMoveable} parentRef={canvasRef} />
@@ -352,9 +369,9 @@ const LiveView: React.FC = () => {
                 </div>
               )}
             </div>
-            <div className={classes.mainFooter}>
+            {!isEmbedded && <div className={classes.mainFooter}>
               <Footer copyright={Copyright} />
-            </div>
+            </div>}
           </div>
         </EditorSplitPanel>
       </LiveViewShortcutsProvider>

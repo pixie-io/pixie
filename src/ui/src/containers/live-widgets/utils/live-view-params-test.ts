@@ -142,7 +142,7 @@ describe('toEntityPathname test', () => {
       params: {},
       clusterName: 'gke:foobar',
     };
-    expect(toEntityPathname(entity)).toEqual('/live/clusters/gke%3Afoobar');
+    expect(toEntityPathname(entity, false)).toEqual('/live/clusters/gke%3Afoobar');
   });
 
   it('should generate the pathname for the namespaces page', () => {
@@ -151,7 +151,7 @@ describe('toEntityPathname test', () => {
       params: {},
       clusterName: 'gke:foobar',
     };
-    expect(toEntityPathname(entity)).toEqual('/live/clusters/gke%3Afoobar/namespaces');
+    expect(toEntityPathname(entity, false)).toEqual('/live/clusters/gke%3Afoobar/namespaces');
   });
 
   it('should generate the pathname for the namespace page', () => {
@@ -162,7 +162,7 @@ describe('toEntityPathname test', () => {
       },
       clusterName: 'gke:foobar',
     };
-    expect(toEntityPathname(entity)).toEqual('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop');
+    expect(toEntityPathname(entity, false)).toEqual('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop');
   });
 
   it('should generate the pathname for the nodes page', () => {
@@ -171,7 +171,7 @@ describe('toEntityPathname test', () => {
       params: {},
       clusterName: 'gke:foobar',
     };
-    expect(toEntityPathname(entity)).toEqual('/live/clusters/gke%3Afoobar/nodes');
+    expect(toEntityPathname(entity, false)).toEqual('/live/clusters/gke%3Afoobar/nodes');
   });
 
   it('should generate the pathname for the node page', () => {
@@ -182,7 +182,7 @@ describe('toEntityPathname test', () => {
       },
       clusterName: 'gke:foobar',
     };
-    expect(toEntityPathname(entity)).toEqual('/live/clusters/gke%3Afoobar/nodes/node-123');
+    expect(toEntityPathname(entity, false)).toEqual('/live/clusters/gke%3Afoobar/nodes/node-123');
   });
 
   it('should generate the pathname for the pods page', () => {
@@ -193,7 +193,7 @@ describe('toEntityPathname test', () => {
       },
       clusterName: 'gke:foobar',
     };
-    expect(toEntityPathname(entity)).toEqual('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/pods');
+    expect(toEntityPathname(entity, false)).toEqual('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/pods');
   });
 
   it('should generate the pathname for the pod page', () => {
@@ -204,7 +204,9 @@ describe('toEntityPathname test', () => {
       },
       clusterName: 'gke:foobar',
     };
-    expect(toEntityPathname(entity)).toEqual('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/pods/orders-123');
+    expect(toEntityPathname(entity, false)).toEqual(
+      '/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/pods/orders-123',
+    );
   });
 
   it('should generate the pathname for the services page', () => {
@@ -215,7 +217,7 @@ describe('toEntityPathname test', () => {
       },
       clusterName: 'gke:foobar',
     };
-    expect(toEntityPathname(entity)).toEqual('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/services');
+    expect(toEntityPathname(entity, false)).toEqual('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/services');
   });
 
   it('should generate the pathname for the service page', () => {
@@ -226,7 +228,9 @@ describe('toEntityPathname test', () => {
       },
       clusterName: 'gke:foobar',
     };
-    expect(toEntityPathname(entity)).toEqual('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/services/orders');
+    expect(toEntityPathname(entity, false)).toEqual(
+      '/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/services/orders',
+    );
   });
 
   it('should generate the pathname for the default page', () => {
@@ -235,7 +239,7 @@ describe('toEntityPathname test', () => {
       params: {},
       clusterName: 'gke:foobar',
     };
-    expect(toEntityPathname(entity)).toEqual('/live/clusters/gke%3Afoobar');
+    expect(toEntityPathname(entity, false)).toEqual('/live/clusters/gke%3Afoobar');
   });
 });
 
@@ -246,7 +250,7 @@ describe('toEntityURL test', () => {
       params: {},
       clusterName: 'gke:foobar',
     };
-    expect(toEntityURL(entity, {
+    expect(toEntityURL(entity, false, {
       propagatedParam: 'foo',
     })).toEqual('/live/clusters/gke%3Afoobar?propagatedParam=foo');
   });
@@ -257,7 +261,7 @@ describe('toEntityURL test', () => {
       params: {},
       clusterName: 'gke:foobar',
     };
-    expect(toEntityURL(entity)).toEqual('/live/clusters/gke%3Afoobar/namespaces');
+    expect(toEntityURL(entity, false)).toEqual('/live/clusters/gke%3Afoobar/namespaces');
   });
 
   it('should generate the url an entity page with empty params', () => {
@@ -266,7 +270,7 @@ describe('toEntityURL test', () => {
       params: {},
       clusterName: 'gke:foobar',
     };
-    expect(toEntityURL(entity, {})).toEqual('/live/clusters/gke%3Afoobar/namespaces');
+    expect(toEntityURL(entity, false, {})).toEqual('/live/clusters/gke%3Afoobar/namespaces');
   });
 
   it('should generate the url for a non-entity page ', () => {
@@ -275,7 +279,7 @@ describe('toEntityURL test', () => {
       params: {},
       clusterName: 'gke:foobar',
     };
-    expect(toEntityURL(entity, {
+    expect(toEntityURL(entity, false, {
       propagatedParam: 'foo',
     })).toEqual('/live/clusters/gke%3Afoobar?propagatedParam=foo');
   });
@@ -434,14 +438,14 @@ describe('entityPageForScriptId', () => {
 
 describe('scriptToEntityURL', () => {
   it('should return an entity URL for an entity script', () => {
-    expect(scriptToEntityURL('px/namespace', 'aClusterName', {
+    expect(scriptToEntityURL('px/namespace', 'aClusterName', false, {
       namespace: 'foobar',
       anotherArg: '-30s',
     })).toEqual('/live/clusters/aClusterName/namespaces/foobar?anotherArg=-30s');
   });
 
   it('should return a non entity URL for a non entity script', () => {
-    expect(scriptToEntityURL('px/http_data', 'aClusterName', {
+    expect(scriptToEntityURL('px/http_data', 'aClusterName', false, {
       namespace: 'foobar',
       anotherArg: '-30s',
     })).toEqual('/live/clusters/aClusterName?anotherArg=-30s&namespace=foobar&script=px%2Fhttp_data');

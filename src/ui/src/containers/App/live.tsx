@@ -147,7 +147,7 @@ const ClusterContextProvider: React.FC = ({ children }) => {
   const showSnackbar = useSnackbar();
 
   const {
-    scriptId, clusterName, args, push,
+    scriptId, clusterName, args, isEmbedded, push,
   } = React.useContext(LiveRouteContext);
 
   const { data, loading, error } = useQuery<{
@@ -173,8 +173,8 @@ const ClusterContextProvider: React.FC = ({ children }) => {
   const cluster = data?.clusterByName ?? invalidCluster(clusterName);
 
   const setClusterByName = React.useCallback((name: string) => {
-    push(name, scriptId, args);
-  }, [push, scriptId, args]);
+    push(name, scriptId, args, isEmbedded);
+  }, [push, scriptId, args, isEmbedded]);
 
   const clusterContext = React.useMemo(() => ({
     selectedClusterID: cluster?.id,
@@ -270,6 +270,7 @@ export default function PixieWithContext(): React.ReactElement {
         <Route path='/admin' component={AdminView} />
         <Route path='/credits' component={CreditsView} />
         <Route path='/live' component={LiveWithProvider} />
+        <Route path='/embed/live' component={LiveWithProvider} />
         <Route
           path={[
             '/script/:orgId/:scriptId',

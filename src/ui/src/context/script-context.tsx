@@ -77,7 +77,7 @@ export const ScriptContext = React.createContext<ScriptContextProps>({
 export const ScriptContextProvider: React.FC = ({ children }) => {
   const apiClient = React.useContext(PixieAPIContext);
   const {
-    scriptId, args, widget, push,
+    scriptId, args, isEmbedded, widget, push,
   } = React.useContext(LiveRouteContext);
   const { selectedClusterName } = React.useContext(ClusterContext);
   const { scripts: availableScripts, loading: loadingAvailableScripts } = React.useContext(ScriptsContext);
@@ -318,13 +318,13 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
       setScript(newScript);
       setManual(false);
 
-      push(selectedClusterName, newScript.id, argsForVis(newScript.vis, newArgs));
+      push(selectedClusterName, newScript.id, argsForVis(newScript.vis, newArgs), isEmbedded);
     },
     setScriptAndArgsManually: (newScript: Script, newArgs: Record<string, string | string[]> = args) => {
       setScript(newScript);
       setManual(true);
 
-      push(selectedClusterName, newScript.id, argsForVis(newScript.vis, newArgs));
+      push(selectedClusterName, newScript.id, argsForVis(newScript.vis, newArgs), isEmbedded);
     },
     execute,
     cancelExecution: (cancelExecution ?? (() => {})),

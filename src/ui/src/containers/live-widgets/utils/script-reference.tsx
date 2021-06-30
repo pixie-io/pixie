@@ -17,7 +17,7 @@
  */
 
 import * as React from 'react';
-import { Link } from 'react-router-dom';
+import { useRouteMatch, Link } from 'react-router-dom';
 import {
   Theme, withStyles, WithStyles,
 } from '@material-ui/core';
@@ -51,8 +51,15 @@ export interface EntityLinkProps extends WithStyles<typeof styles>{
 const EntityLinkPlain = ({
   entity, semanticType, clusterName, classes, propagatedParams,
 }: EntityLinkProps) => {
+  const { url } = useRouteMatch();
+  const isEmbedded = url.startsWith('/embed');
+
   const page = toSingleEntityPage(entity, semanticType, clusterName);
-  const path = toEntityURL(page, propagatedParams);
+  const path = toEntityURL(page, isEmbedded, propagatedParams);
+
+  if (propagatedParams.widget) {
+    return <>{entity}</>;
+  }
   return (
     <Link to={path} className={classes.root}>{entity}</Link>
   );
@@ -83,7 +90,14 @@ export interface ScriptReferenceProps extends WithStyles<typeof styles>{
 const ScriptReferencePlain = ({
   label, script, args, clusterName, classes,
 }: ScriptReferenceProps) => {
-  const path = scriptToEntityURL(script, clusterName, args);
+  const { url } = useRouteMatch();
+  const isEmbedded = url.startsWith('/embed');
+
+  const path = scriptToEntityURL(script, clusterName, isEmbedded, args);
+
+  if (args.widget) {
+    return <>{label}</>;
+  }
   return (
     <Link to={path} className={classes.root}>{label}</Link>
   );

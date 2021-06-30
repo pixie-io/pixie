@@ -301,12 +301,10 @@ const Canvas = (props: CanvasProps) => {
 
   // These are that we want to propagate to any downstream links in the data table
   // to other live views, such as start time.
-  const propagatedArgs = React.useMemo(() => {
-    if (args.start_time) {
-      return { start_time: args.start_time };
-    }
-    return null;
-  }, [args]);
+  const propagatedArgs = React.useMemo(() => ({
+    start_time: args.start_time,
+    widget,
+  }), [args, widget]);
 
   React.useEffect(() => {
     const handler = (event) => {

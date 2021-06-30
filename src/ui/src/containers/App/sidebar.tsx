@@ -180,7 +180,7 @@ const SideBar = ({ classes, open }) => {
         params: {},
         clusterName: clusterContext?.selectedClusterName,
         page: LiveViewPage.Cluster,
-      }),
+      }, false),
       text: 'Cluster',
     },
     {
@@ -189,7 +189,7 @@ const SideBar = ({ classes, open }) => {
         params: {},
         clusterName: clusterContext?.selectedClusterName,
         page: LiveViewPage.Namespaces,
-      }),
+      }, false),
       text: 'Namespaces',
     }];
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -30,8 +30,9 @@ import IconButton from '@material-ui/core/IconButton';
 import Tooltip from '@material-ui/core/Tooltip';
 import { toEntityURL, toSingleEntityPage } from 'app/containers/live-widgets/utils/live-view-params';
 import { ClusterContext } from 'app/common/cluster-context';
+import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { SemanticType, Relation } from 'app/types/generated/vizierapi_pb';
-import { useHistory } from 'react-router-dom';
+import { useRouteMatch, useHistory } from 'react-router-dom';
 import { Arguments } from 'app/utils/args-utils';
 import { formatFloat64Data } from 'app/utils/format-data';
 import {
@@ -296,16 +297,21 @@ export const RequestGraphWidget: React.FC<RequestGraphProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [graph, display, ref, colorByLatency, colInfos]);
 
+  const { url } = useRouteMatch();
+  const isEmbedded = url.startsWith('/embed');
+
+  const { widget } = React.useContext(LiveRouteContext);
+
   const doubleClickCallback = React.useCallback((params?: any) => {
-    if (params.nodes.length > 0) {
+    if (params.nodes.length > 0 && !widget) {
       const nodeName = !clusteredMode ? params.nodes[0]
         : graph.nodes.get(network.getNodesInCluster(params.nodes[0]))[0].service;
       const semType = !clusteredMode ? SemanticType.ST_POD_NAME : SemanticType.ST_SERVICE_NAME;
       const page = toSingleEntityPage(nodeName, semType, selectedClusterName);
-      const pathname = toEntityURL(page, propagatedArgs);
+      const pathname = toEntityURL(page, isEmbedded, propagatedArgs);
       history.push(pathname);
     }
-  }, [history, selectedClusterName, clusteredMode, network, graph, propagatedArgs]);
+  }, [history, selectedClusterName, clusteredMode, network, graph, propagatedArgs, isEmbedded, widget]);
 
   // This function needs to dynamically change on 'network' every time clusteredMode is updated,
   // so we assign it separately from where Network is created.

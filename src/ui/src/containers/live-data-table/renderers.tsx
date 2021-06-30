@@ -205,7 +205,12 @@ const serviceRendererFuncGen = (clusterName: string, propagatedArgs?: Arguments)
   } catch (e) {
     // noop.
   }
-  return <EntityLink entity={v} semanticType={SemanticType.ST_SERVICE_NAME} clusterName={clusterName} />;
+  return <EntityLink
+    entity={v}
+    semanticType={SemanticType.ST_SERVICE_NAME}
+    clusterName={clusterName}
+    propagatedParams={propagatedArgs}
+  />;
 };
 
 const entityRenderer = (st: SemanticType, clusterName: string, propagatedArgs?: Arguments) => {
@@ -224,10 +229,11 @@ const entityRenderer = (st: SemanticType, clusterName: string, propagatedArgs?: 
   };
 };
 
-const scriptReferenceRenderer = (clusterName: string) => (function Reference(v) {
+const scriptReferenceRenderer = (clusterName: string, propagatedArgs?: Arguments) => (function Reference(v) {
   const { script, label, args } = v;
+  const mergedArgs = { ...propagatedArgs, ...args };
   return (
-    <ScriptReference label={label} script={script} args={args} clusterName={clusterName} />
+    <ScriptReference label={label} script={script} args={mergedArgs} clusterName={clusterName} />
   );
 });
 
@@ -272,7 +278,7 @@ export function prettyCellRenderer(
     case SemanticType.ST_THROUGHPUT_BYTES_PER_NS:
       return renderWrapper(ThroughputBytesRenderer);
     case SemanticType.ST_SCRIPT_REFERENCE:
-      return scriptReferenceRenderer(clusterName);
+      return scriptReferenceRenderer(clusterName, propagatedArgs);
     default:
       break;
   }

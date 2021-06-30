@@ -30,8 +30,9 @@ import {
   useTheme,
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
-import { useHistory } from 'react-router';
+import { useRouteMatch, useHistory } from 'react-router-dom';
 import { ClusterContext } from 'app/common/cluster-context';
+import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { Arguments } from 'app/utils/args-utils';
 import Button from '@material-ui/core/Button';
 import { Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
@@ -126,20 +127,25 @@ export const Graph: React.FC<GraphProps> = (props) => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [network, setNetwork] = React.useState<Network>(null);
   const [graph, setGraph] = React.useState<GraphData>(null);
+
+  const { url } = useRouteMatch();
+  const isEmbedded = url.startsWith('/embed');
+
+  const { widget } = React.useContext(LiveRouteContext);
+
   const doubleClickCallback = React.useCallback((params?: any) => {
-    if (params.nodes.length > 0) {
+    if (params.nodes.length > 0 && !widget) {
       const nodeID = params.nodes[0];
       const semType = graph.idToSemType[nodeID];
       if (semType === SemanticType.ST_SERVICE_NAME
         || semType === SemanticType.ST_POD_NAME
         || semType === SemanticType.ST_NAMESPACE_NAME) {
         const page = toSingleEntityPage(nodeID, semType, selectedClusterName);
-        const pathname = toEntityURL(page, propagatedArgs);
+        const pathname = toEntityURL(page, isEmbedded, propagatedArgs);
         history.push(pathname);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [graph, history, selectedClusterName]);
+  }, [history, selectedClusterName, graph, propagatedArgs, isEmbedded, widget]);
 
   const ref = React.useRef<HTMLDivElement>();
 

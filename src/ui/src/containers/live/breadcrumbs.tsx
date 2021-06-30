@@ -31,6 +31,7 @@ import {
 } from 'app/components';
 import { ClusterContext } from 'app/common/cluster-context';
 import { argVariableMap, argTypesForVis } from 'app/utils/args-utils';
+import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
 import { ScriptContext } from 'app/context/script-context';
 import { pxTypeToEntityType, entityStatusGroup } from 'app/containers/command-input/autocomplete-utils';
@@ -126,6 +127,8 @@ const LiveViewBreadcrumbs = ({ classes }) => {
     args, script, setScriptAndArgs,
   } = React.useContext(ScriptContext);
 
+  const { isEmbedded } = React.useContext(LiveRouteContext);
+
   const getCompletions = useAutocompleteFieldSuggester(selectedClusterUID);
 
   const scriptIds = React.useMemo(() => [...scripts.keys()], [scripts]);
@@ -163,7 +166,10 @@ const LiveViewBreadcrumbs = ({ classes }) => {
         const scratchIndex = scriptIds.indexOf(SCRATCH_SCRIPT.id);
         if (scratchIndex !== -1) {
           scriptIds.splice(scratchIndex, 1);
-          scriptIds.unshift(SCRATCH_SCRIPT.id);
+          // Don't include SCRATCH in embedded views.
+          if (!isEmbedded) {
+            scriptIds.unshift(SCRATCH_SCRIPT.id);
+          }
         }
 
         return ids.map((scriptId) => ({

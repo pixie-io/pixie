@@ -266,52 +266,54 @@ export function getLiveViewTitle(defaultTitle: string, page: LiveViewPage,
   }
 }
 
-export function toEntityPathname(entity: EntityPage): string {
+export function toEntityPathname(entity: EntityPage, isEmbedded: boolean): string {
+  const pathPrefix = isEmbedded ? '/embed/live' : '/live';
+
   const encodedCluster = encodeURIComponent(entity.clusterName);
   switch (entity.page) {
     case LiveViewPage.Cluster: {
-      return `/live/clusters/${encodedCluster}`;
+      return `${pathPrefix}/clusters/${encodedCluster}`;
     }
     case LiveViewPage.Namespace: {
       const { namespace } = entity.params as NamespaceURLParams;
-      return `/live/clusters/${encodedCluster}/namespaces/${namespace}`;
+      return `${pathPrefix}/clusters/${encodedCluster}/namespaces/${namespace}`;
     }
     case LiveViewPage.Namespaces: {
-      return `/live/clusters/${encodedCluster}/namespaces`;
+      return `${pathPrefix}/clusters/${encodedCluster}/namespaces`;
     }
     case LiveViewPage.Node: {
       const { node } = entity.params as NodeURLParams;
-      return `/live/clusters/${encodedCluster}/nodes/${node}`;
+      return `${pathPrefix}/clusters/${encodedCluster}/nodes/${node}`;
     }
     case LiveViewPage.Nodes: {
-      return `/live/clusters/${encodedCluster}/nodes`;
+      return `${pathPrefix}/clusters/${encodedCluster}/nodes`;
     }
     case LiveViewPage.Pod: {
       const { pod } = entity.params as PodURLParams;
       const [namespace, podName] = (pod || 'unknown/unknown').split('/');
-      return `/live/clusters/${encodedCluster}/namespaces/${namespace}/pods/${podName}`;
+      return `${pathPrefix}/clusters/${encodedCluster}/namespaces/${namespace}/pods/${podName}`;
     }
     case LiveViewPage.Pods: {
       const { namespace } = entity.params as NamespaceURLParams;
-      return `/live/clusters/${encodedCluster}/namespaces/${namespace}/pods`;
+      return `${pathPrefix}/clusters/${encodedCluster}/namespaces/${namespace}/pods`;
     }
     case LiveViewPage.Service: {
       const { service } = entity.params as ServiceURLParams;
       const [namespace, serviceName] = (service || 'unknown/unknown').split('/');
-      return `/live/clusters/${encodedCluster}/namespaces/${namespace}/services/${serviceName}`;
+      return `${pathPrefix}/clusters/${encodedCluster}/namespaces/${namespace}/services/${serviceName}`;
     }
     case LiveViewPage.Services: {
       const { namespace } = entity.params as NamespaceURLParams;
-      return `/live/clusters/${encodedCluster}/namespaces/${namespace}/services`;
+      return `${pathPrefix}/clusters/${encodedCluster}/namespaces/${namespace}/services`;
     }
     case LiveViewPage.Default:
     default:
-      return `/live/clusters/${encodedCluster}`;
+      return `${pathPrefix}/clusters/${encodedCluster}`;
   }
 }
 
-export function toEntityURL(entity: EntityPage, propagatedArgs?: Arguments): string {
-  const pathname = toEntityPathname(entity);
+export function toEntityURL(entity: EntityPage, isEmbedded: boolean, propagatedArgs?: Arguments): string {
+  const pathname = toEntityPathname(entity, isEmbedded);
   let queryString = '';
   if (propagatedArgs) {
     queryString = QueryString.stringify(propagatedArgs);
@@ -344,7 +346,7 @@ export function getNonEntityParams(liveViewPage: LiveViewPage, args: Arguments):
 }
 
 // Takes a script and arguments and formats it as an entity URL if applicable.
-export function scriptToEntityURL(script: string, clusterName: string, args: Arguments): string {
+export function scriptToEntityURL(script: string, clusterName: string, isEmbedded: boolean, args: Arguments): string {
   const liveViewPage = entityPageForScriptId(script);
   const entityParams = getEntityParams(liveViewPage, args);
   const nonEntityParams = getNonEntityParams(liveViewPage, args);
@@ -353,7 +355,7 @@ export function scriptToEntityURL(script: string, clusterName: string, args: Arg
     page: liveViewPage,
     params: entityParams,
   };
-  return toEntityURL(entityPage, liveViewPage === LiveViewPage.Default ? {
+  return toEntityURL(entityPage, isEmbedded, liveViewPage === LiveViewPage.Default ? {
     ...nonEntityParams,
     // non-entity pages require a script query parameter.
     script,

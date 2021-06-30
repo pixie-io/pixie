@@ -24,6 +24,7 @@ import * as React from 'react';
 import { ThemeProvider } from '@material-ui/core/styles';
 import { DARK_THEME } from 'app/components';
 import { MockClusterContextProvider } from 'app/testing/mocks/cluster-context-mock';
+import { MockLiveRouteContextProvider } from 'app/testing/mocks/live-routing-mock';
 import { MockScriptContextProvider } from 'app/testing/mocks/script-context-mock';
 import { MockScriptsContextProvider } from 'app/testing/mocks/scripts-context-mock';
 import LiveViewBreadcrumbs from './breadcrumbs';
@@ -34,9 +35,11 @@ describe('Live view breadcrumbs', () => {
       <ThemeProvider theme={DARK_THEME}>
         <MockClusterContextProvider>
           <MockScriptsContextProvider>
-            <MockScriptContextProvider>
-              <LiveViewBreadcrumbs />
-            </MockScriptContextProvider>
+            <MockLiveRouteContextProvider>
+              <MockScriptContextProvider>
+                <LiveViewBreadcrumbs />
+              </MockScriptContextProvider>
+            </MockLiveRouteContextProvider>
           </MockScriptsContextProvider>
         </MockClusterContextProvider>
       </ThemeProvider>,
