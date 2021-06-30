@@ -31,7 +31,7 @@ import { argsForVis, Arguments } from 'app/utils/args-utils';
 import plHistory from 'app/utils/pl-history';
 
 export interface LiveRouteContextProps {
-  clusterName: string | null;
+  clusterName: string;
   scriptId: string;
   args: Arguments;
   isEmbedded: boolean;

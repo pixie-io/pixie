@@ -25,7 +25,7 @@ import {
   VALUE_DOMAIN_SIGNAL,
 } from './convert-to-vega-spec';
 
-function addHoverDataTest(spec: Spec, seriesFieldName: string | null, valueFieldNames: string[]) {
+function addHoverDataTest(spec: Spec, valueFieldNames: string[], seriesFieldName?: string) {
   if (seriesFieldName) {
     it('produces expected hover_data with pivot', () => {
       expect(spec.data).toEqual(expect.arrayContaining([
@@ -343,7 +343,7 @@ describe('simple timeseries', () => {
   addHoverTests(spec);
   const expectedInteractivitySelector = `"${valueFieldName}"`;
   addHoverReverseTests(spec, expectedInteractivitySelector);
-  addHoverDataTest(spec, null, [valueFieldName]);
+  addHoverDataTest(spec, [valueFieldName]);
   addTimeseriesYDomainHoverTests(spec, TRANSFORMED_DATA_SOURCE_NAME, [valueFieldName]);
   addTimseriesAxesTest(spec, /* formatFuncName */ '');
 });
@@ -432,7 +432,7 @@ describe('timeseries with series', () => {
   addHoverTests(spec);
   const expectedInteractivitySelector = `datum["${seriesFieldName}"]`;
   addHoverReverseTests(spec, expectedInteractivitySelector);
-  addHoverDataTest(spec, seriesFieldName, [valueFieldName]);
+  addHoverDataTest(spec, [valueFieldName], seriesFieldName);
   addTimeseriesYDomainHoverTests(spec, TRANSFORMED_DATA_SOURCE_NAME, [valueFieldName]);
 });
 
@@ -477,7 +477,7 @@ describe('timeseries with stacked series', () => {
   addHoverTests(spec);
   const expectedInteractivitySelector = `datum["${seriesFieldName}"]`;
   addHoverReverseTests(spec, expectedInteractivitySelector);
-  addHoverDataTest(spec, seriesFieldName, [valueFieldName]);
+  addHoverDataTest(spec, [valueFieldName], seriesFieldName);
   // Instead of value fields, we use the stack values instead.
   addTimeseriesYDomainHoverTests(
     spec, TRANSFORMED_DATA_SOURCE_NAME, [`${valueFieldName}_stacked_end`, `${valueFieldName}_stacked_start`]);
@@ -528,7 +528,7 @@ describe('timeseries chart with multiple timeseries with different modes', () =>
   });
 
   addHoverTests(spec);
-  addHoverDataTest(spec, null, [firstValueField, secondValueField]);
+  addHoverDataTest(spec, [firstValueField, secondValueField]);
   addTimeseriesYDomainHoverTests(spec, TRANSFORMED_DATA_SOURCE_NAME, [firstValueField, secondValueField]);
 
   it('produces expected reverse hover signals for each timeseries', () => {
