@@ -88,7 +88,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     },
   },
   enabled: {
-    color: theme.palette.common.white,
+    color: theme.palette.text.secondary,
   },
   buttonContainer: {
     '& > .MuiIconButton-root': {

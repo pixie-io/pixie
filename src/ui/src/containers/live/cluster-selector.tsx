@@ -34,7 +34,7 @@ const useStyles = makeStyles(({ spacing, palette }: Theme) => createStyles({
     justifyContent: 'center',
     display: 'flex',
     alignItems: 'center',
-    color: palette.common.white,
+    color: palette.text.secondary,
     fontWeight: 800,
   },
   container: {

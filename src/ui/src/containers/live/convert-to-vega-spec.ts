@@ -1711,7 +1711,7 @@ function addHoverMarks(spec: VgSpec, dataName: string, theme: Theme) {
     from: { data: dataName },
     encode: {
       enter: {
-        fill: { value: theme.palette.foreground.grey3 },
+        fill: { value: theme.palette.common.black },
         align: { value: 'center' },
         baseline: { value: 'top' },
         font: { value: 'Roboto' },
@@ -1917,7 +1917,6 @@ function convertToStacktraceFlameGraph(
 
   // Height of rectangle separating the minimap and the main view.
   const SEPARATOR_HEIGHT = 15;
-  const SEPARATOR_COLOR = '#242424';
 
   const MINIMAP_GREY_OUT_COLOR = 'gray';
   const SLIDER_COLOR = 'white';
@@ -2053,7 +2052,7 @@ function convertToStacktraceFlameGraph(
         x2: { signal: 'main_width' },
         y: { signal: 'minimap_height' },
         y2: { signal: `minimap_height + ${SEPARATOR_HEIGHT}` },
-        fill: { value: SEPARATOR_COLOR },
+        fill: { value: theme.palette.background.six },
       },
     },
   });

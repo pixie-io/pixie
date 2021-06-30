@@ -253,7 +253,7 @@ export const TopBar = withStyles((theme: Theme) => createStyles({
     paddingLeft: theme.spacing(4),
   },
   menu: {
-    color: theme.palette.common.white,
+    color: theme.palette.text.secondary,
   },
   avatarSm: {
     backgroundColor: theme.palette.primary.main,

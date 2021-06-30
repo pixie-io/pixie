@@ -43,7 +43,7 @@ const useJsonStyles = makeStyles(({ palette }: Theme) => createStyles({
     fontSize: '14px',
   },
   jsonKey: {
-    color: palette.foreground?.white,
+    color: palette.text.secondary,
   },
   number: {
     color: palette.secondary.main,
@@ -52,7 +52,7 @@ const useJsonStyles = makeStyles(({ palette }: Theme) => createStyles({
     color: palette.success.main,
   },
   string: {
-    color: palette.info.light,
+    color: palette.mode === 'dark' ? palette.info.light : palette.info.dark,
     wordBreak: 'break-all',
   },
   boolean: {

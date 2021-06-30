@@ -31,7 +31,7 @@ import { AutocompleteContext } from 'app/components/autocomplete/autocomplete-co
 
 const styles = (theme: Theme) => createStyles({
   root: {
-    color: 'white',
+    color: theme.palette.text.secondary,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

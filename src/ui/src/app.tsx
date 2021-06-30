@@ -16,7 +16,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { DARK_THEME, SnackbarProvider, VersionInfo } from 'app/components';
+import {
+  DARK_THEME, LIGHT_THEME, SnackbarProvider, VersionInfo,
+} from 'app/components';
 import Live from 'app/containers/App/live';
 import PixieCookieBanner from 'configurable/cookie-banner';
 import { LD_CLIENT_ID } from 'app/containers/constants';
@@ -26,6 +28,7 @@ import {
 import { makeCancellable, silentlyCatchCancellation } from 'app/utils/cancellable-promise';
 import { isProd, PIXIE_CLOUD_VERSION } from 'app/utils/env';
 import history from 'app/utils/pl-history';
+import * as QueryString from 'query-string';
 
 import {
   ThemeProvider, withStyles,
@@ -165,12 +168,28 @@ if (LD_CLIENT_ID !== '') {
   })(StyledApp);
 }
 
-ReactDOM.render(
-  <StyledEngineProvider injectFirst>
-    <ThemeProvider theme={DARK_THEME}>
+const ThemedApp: React.FC = () => {
+  // Parse param to determine which theme should be used. This must be specified in the params for embedded
+  // views. However, we can add a toggle and user-setting for this in the future.
+  const params = QueryString.parse(window.location.search);
+  let theme = DARK_THEME;
+  switch (params.theme) {
+    case 'light':
+      theme = LIGHT_THEME;
+      break;
+    default:
+  }
+  return (
+    <ThemeProvider theme={theme}>
       <CssBaseline />
       <PixieAPIContextProvider apiKey=''>
         <StyledApp />
       </PixieAPIContextProvider>
     </ThemeProvider>
+  );
+};
+
+ReactDOM.render(
+  <StyledEngineProvider injectFirst>
+    < ThemedApp />
   </StyledEngineProvider>, document.getElementById('root'));

@@ -123,7 +123,7 @@ export const scrollbarStyles = (theme: Theme) => {
   };
 };
 
-export const DARK_THEME = createTheme({
+const common = {
   shape: {
     leftRoundedBorderRadius: {
       large: '10px 0px 0px 10px',
@@ -166,7 +166,6 @@ export const DARK_THEME = createTheme({
     },
   },
   palette: {
-    mode: 'dark',
     border: {
       focused: '1px solid rgba(255, 255, 255, 0.2)',
       unFocused: '1px solid rgba(255, 255, 255, 0.1)',
@@ -209,33 +208,6 @@ export const DARK_THEME = createTheme({
       main: '#ff5e6d',
       dark: '#e54e5c',
       light: '#ff9fa8',
-    },
-    foreground: {
-      one: '#b2b5bb',
-      two: '#f2f2f2',
-      three: '#9696a5',
-      grey1: '#4a4c4f',
-      grey2: '#353738',
-      grey3: '#212324',
-      grey4: '#596274',
-      grey5: '#dbdde0',
-      white: '#ffffff',
-    },
-    background: {
-      default: '#121212',
-      paper: '#121212',
-      one: '#121212',
-      two: '#212324',
-      three: '#353535',
-      four: '#161616',
-      five: '#090909',
-      six: '#242424',
-    },
-    divider: '#272822',
-    text: {
-      primary: '#e2e5ee', // foreground 1
-      secondary: '#ffffff', // foreground 2
-      disabled: '#',
     },
     action: {
       active: '#a6a8ae', // foreground 1.
@@ -290,6 +262,73 @@ export const DARK_THEME = createTheme({
         root: {
           width: '100%',
         },
+      },
+    },
+  },
+};
+
+export const DARK_THEME = createTheme({
+  ...common,
+  ...{
+    palette: {
+      ...common.palette,
+      foreground: {
+        one: '#b2b5bb',
+        two: '#f2f2f2',
+        three: '#9696a5',
+        grey1: '#4a4c4f',
+        grey2: '#353738',
+        grey3: '#212324',
+        grey4: '#596274',
+        grey5: '#dbdde0',
+        white: '#ffffff',
+      },
+      divider: '#272822',
+      background: {
+        default: '#121212',
+        paper: '#121212',
+        one: '#121212',
+        two: '#212324',
+        three: '#353535',
+        four: '#161616',
+        five: '#090909',
+        six: '#242424',
+      },
+      mode: 'dark',
+      text: {
+        primary: '#e2e5ee', // foreground 1
+        secondary: '#ffffff', // foreground 2
+        disabled: '#',
+      },
+    },
+  },
+});
+
+export const LIGHT_THEME = createTheme({
+  ...common,
+  ...{
+    palette: {
+      ...common.palette,
+      background: {
+        default: '#fbfbfb',
+        paper: '#fbfbfb',
+        one: '#fbfbfb',
+        two: '#ffffff',
+        three: '#f5f5f5',
+        four: '#f8f9fa',
+        six: '#ffffff',
+      },
+      divider: '#dbdde0',
+      foreground: {
+        one: '#4f4f4f',
+        two: '#000000',
+        three: '#a9adb1',
+        grey1: '#cacccf',
+        grey2: '#dbdde0',
+        grey3: '#f6f6f6',
+        grey4: '#a9adb1',
+        grey5: '#000000',
+        white: '#ffffff',
       },
     },
   },
