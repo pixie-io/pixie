@@ -57,7 +57,7 @@ const EntityLinkPlain = ({
   const page = toSingleEntityPage(entity, semanticType, clusterName);
   const path = toEntityURL(page, isEmbedded, propagatedParams);
 
-  if (propagatedParams.widget) {
+  if (propagatedParams?.widget) {
     return <>{entity}</>;
   }
   return (

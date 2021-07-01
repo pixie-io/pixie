@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { ClusterContext } from 'app/common/cluster-context';
 import {
   CellAlignment, ColumnProps, DataTable, SortState,
   buildClass,
@@ -261,6 +262,7 @@ const LiveDataRowDetails: React.FC<LiveDataRowDetailsProps> = ({ data }) => {
 
 export const LiveDataTableWithDetails: React.FC<{ table: Table }> = (props) => {
   const [details, setDetails] = React.useState(null);
+  const { selectedClusterName } = React.useContext(ClusterContext);
 
   const onRowSelection = React.useCallback((row) => {
     setDetails(row);
@@ -275,7 +277,13 @@ export const LiveDataTableWithDetails: React.FC<{ table: Table }> = (props) => {
   return (
     <div className={dataTableClass}>
       <div className={classes.table}>
-        <LiveDataTable prettyRender expandable={false} table={props.table} onRowSelectionChanged={onRowSelection} />
+        <LiveDataTable
+          prettyRender
+          expandable={false}
+          table={props.table}
+          clusterName={selectedClusterName}
+          onRowSelectionChanged={onRowSelection}
+        />
       </div>
       <LiveDataRowDetails data={details} />
     </div>

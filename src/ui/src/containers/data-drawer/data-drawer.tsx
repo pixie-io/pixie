@@ -20,6 +20,7 @@ import { LazyPanel, ResizableDrawer, Spinner } from 'app/components';
 import { DataDrawerContext } from 'app/context/data-drawer-context';
 import { LayoutContext } from 'app/context/layout-context';
 import { ResultsContext } from 'app/context/results-context';
+
 import * as React from 'react';
 import { LiveDataTableWithDetails } from 'app/containers/live-data-table/live-data-table';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
@@ -163,6 +164,7 @@ const StyledTab = withStyles((theme: Theme) => createStyles({
 const DataDrawer = ({ open, activeTab, setActiveTab }) => {
   const classes = useStyles();
   const { loading, stats, tables } = React.useContext(ResultsContext);
+
   const onTabChange = (event, newTab) => {
     setActiveTab(newTab);
     if (open && newTab !== activeTab) {
