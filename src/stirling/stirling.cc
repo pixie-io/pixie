@@ -683,8 +683,8 @@ std::chrono::milliseconds TimeUntilNextTick(
   // This is important if there are no subscribed info classes, to avoid sleeping eternally.
   auto wakeup_time = now + kMaxSleepDuration;
   for (const auto& [source, output] : source_output_map) {
-    wakeup_time = std::min(wakeup_time, source->sample_push_mgr().NextSamplingTime());
-    wakeup_time = std::min(wakeup_time, source->sample_push_mgr().NextPushTime());
+    wakeup_time = std::min(wakeup_time, source->sampling_freq_mgr().next());
+    wakeup_time = std::min(wakeup_time, source->push_freq_mgr().next());
   }
 
   return std::chrono::duration_cast<std::chrono::milliseconds>(wakeup_time - now);
@@ -697,10 +697,18 @@ void SleepForDuration(std::chrono::milliseconds sleep_duration) {
 }
 
 // Returns true if any of the input tables are beyond the threshold.
-bool PushRequired(const SamplePushFrequencyManager& mgr,
-                  const std::vector<DataTable*>& data_tables) {
+bool DataExceedsThreshold(const std::vector<DataTable*>& data_tables) {
+  // Data push threshold, based on percentage of buffer that is filled.
+  constexpr uint32_t kDefaultOccupancyPctThreshold = 100;
+
+  // Data push threshold, based number of records after which a push.
+  constexpr uint32_t kDefaultOccupancyThreshold = 1024;
+
   for (const auto* data_table : data_tables) {
-    if (mgr.PushRequired(data_table->OccupancyPct(), data_table->Occupancy())) {
+    if (static_cast<uint32_t>(100 * data_table->OccupancyPct()) > kDefaultOccupancyPctThreshold) {
+      return true;
+    }
+    if (data_table->Occupancy() > kDefaultOccupancyThreshold) {
       return true;
     }
   }
@@ -743,11 +751,11 @@ void StirlingImpl::RunCore() {
       // Run through every SourceConnector and InfoClassManager being managed.
       for (auto& [source, output] : source_output_map_) {
         // Phase 1: Probe each source for its data.
-        if (source->sample_push_mgr().SamplingRequired()) {
+        if (source->sampling_freq_mgr().Expired()) {
           source->TransferData(ctx.get(), output.data_tables);
         }
         // Phase 2: Push Data upstream.
-        if (PushRequired(source->sample_push_mgr(), output.data_tables)) {
+        if (source->push_freq_mgr().Expired() || DataExceedsThreshold(output.data_tables)) {
           source->PushData(data_push_callback_, output.data_tables);
         }
       }

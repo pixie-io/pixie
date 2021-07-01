@@ -222,8 +222,8 @@ Status CheckOutputFields(const std::vector<bpftrace::Field>& fields,
 }  // namespace
 
 Status DynamicBPFTraceConnector::InitImpl() {
-  sample_push_freq_mgr_.set_sampling_period(kSamplingPeriod);
-  sample_push_freq_mgr_.set_push_period(kPushPeriod);
+  sampling_freq_mgr_.set_period(kSamplingPeriod);
+  push_freq_mgr_.set_period(kPushPeriod);
 
   auto callback_fn = std::bind(&DynamicBPFTraceConnector::HandleEvent, this, std::placeholders::_1);
   PL_RETURN_IF_ERROR(CompileForPrintfOutput(script_, {}));

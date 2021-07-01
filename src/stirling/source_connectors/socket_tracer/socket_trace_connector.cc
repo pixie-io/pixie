@@ -176,8 +176,8 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
 }
 
 Status SocketTraceConnector::InitImpl() {
-  sample_push_freq_mgr_.set_sampling_period(kSamplingPeriod);
-  sample_push_freq_mgr_.set_push_period(kPushPeriod);
+  sampling_freq_mgr_.set_period(kSamplingPeriod);
+  push_freq_mgr_.set_period(kPushPeriod);
 
   constexpr uint64_t kNanosPerSecond = 1000 * 1000 * 1000;
   if (kNanosPerSecond % sysconfig_.KernelTicksPerSecond() != 0) {
@@ -390,7 +390,7 @@ void SocketTraceConnector::UpdateCommonState(ConnectorContext* ctx) {
   constexpr auto kCleanupBPFMapLeaksPeriod = std::chrono::minutes(5);
   constexpr int kCleanupBPFMapLeaksSamplingRatio = kCleanupBPFMapLeaksPeriod / kSamplingPeriod;
   if (FLAGS_stirling_enable_periodic_bpf_map_cleanup &&
-      sample_push_freq_mgr_.sample_count() % kCleanupBPFMapLeaksSamplingRatio == 0) {
+      sampling_freq_mgr_.count() % kCleanupBPFMapLeaksSamplingRatio == 0) {
     if (conn_info_map_mgr_ != nullptr) {
       conn_info_map_mgr_->CleanupBPFMapLeaks(&conn_trackers_mgr_);
     }
@@ -414,15 +414,15 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx,
 
   DataTable* conn_stats_table = data_tables[kConnStatsTableNum];
   if (conn_stats_table != nullptr &&
-      sample_push_freq_mgr_.sample_count() % FLAGS_stirling_conn_stats_sampling_ratio == 0) {
+      sampling_freq_mgr_.count() % FLAGS_stirling_conn_stats_sampling_ratio == 0) {
     TransferConnStats(ctx, conn_stats_table);
   }
 
   // This first >0 condition prevents the logging at the beginning, which accesses BPF maps.
   // Accessing BPF maps would require deploying BPF maps, that is not possible in all tests.
-  const bool maps_ready = sample_push_freq_mgr_.sample_count() > 0;
+  const bool maps_ready = sampling_freq_mgr_.count() > 0;
   const bool at_period_log_interval =
-      sample_push_freq_mgr_.sample_count() % FLAGS_stirling_socket_tracer_stats_logging_ratio == 0;
+      sampling_freq_mgr_.count() % FLAGS_stirling_socket_tracer_stats_logging_ratio == 0;
 
   if (maps_ready && at_period_log_interval) {
     conn_trackers_mgr_.ComputeProtocolStats();

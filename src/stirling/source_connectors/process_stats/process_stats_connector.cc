@@ -33,8 +33,8 @@ namespace stirling {
 using system::ProcParser;
 
 Status ProcessStatsConnector::InitImpl() {
-  sample_push_freq_mgr_.set_sampling_period(kSamplingPeriod);
-  sample_push_freq_mgr_.set_push_period(kPushPeriod);
+  sampling_freq_mgr_.set_period(kSamplingPeriod);
+  push_freq_mgr_.set_period(kPushPeriod);
   return Status::OK();
 }
 

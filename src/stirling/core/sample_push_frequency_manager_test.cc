@@ -49,33 +49,5 @@ TEST(FrequencyManagerTest, SetPeriodEndAndCheck) {
   EXPECT_GE(computed_period, std::chrono::milliseconds{9990});
 }
 
-// Tests that the sampling period were set correctly for SamplePushFrequencyManager.
-TEST(SamplePushFrequencyManagerTest, SetSamplingPeriodEndAndCheck) {
-  SamplePushFrequencyManager mgr;
-  mgr.set_sampling_period(std::chrono::milliseconds{10000});
-  EXPECT_EQ(mgr.sampling_period(), std::chrono::milliseconds{10000});
-  EXPECT_TRUE(mgr.SamplingRequired());
-
-  mgr.Sample();
-  EXPECT_FALSE(mgr.SamplingRequired());
-  auto computed_period = mgr.NextSamplingTime() - px::chrono::coarse_steady_clock::now();
-  EXPECT_LE(computed_period, std::chrono::milliseconds{10000});
-  EXPECT_GE(computed_period, std::chrono::milliseconds{9990});
-}
-
-// Tests that the push period were set correctly for SamplePushFrequencyManager.
-TEST(SamplePushFrequencyManagerTest, SetPushPeriodEndAndCheck) {
-  SamplePushFrequencyManager mgr;
-  mgr.set_push_period(std::chrono::milliseconds{10000});
-  EXPECT_EQ(mgr.push_period(), std::chrono::milliseconds{10000});
-  EXPECT_TRUE(mgr.PushRequired(0.5, 0));
-
-  mgr.Push();
-  EXPECT_FALSE(mgr.PushRequired(0.5, 0));
-  auto computed_period = mgr.NextPushTime() - px::chrono::coarse_steady_clock::now();
-  EXPECT_LE(computed_period, std::chrono::milliseconds{10000});
-  EXPECT_GE(computed_period, std::chrono::milliseconds{9990});
-}
-
 }  // namespace stirling
 }  // namespace px

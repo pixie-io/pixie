@@ -35,9 +35,8 @@ PerfProfileConnector::PerfProfileConnector(std::string_view source_name)
     : SourceConnector(source_name, kTables) {}
 
 Status PerfProfileConnector::InitImpl() {
-  sample_push_freq_mgr_.set_sampling_period(kSamplingPeriod);
-  // TODO(yzhao): This is not used right now. Eventually use this to control data push frequency.
-  sample_push_freq_mgr_.set_push_period(kPushPeriod);
+  sampling_freq_mgr_.set_period(kSamplingPeriod);
+  push_freq_mgr_.set_period(kPushPeriod);
 
   const size_t ncpus = get_nprocs_conf();
   VLOG(1) << "PerfProfiler: get_nprocs_conf(): " << ncpus;

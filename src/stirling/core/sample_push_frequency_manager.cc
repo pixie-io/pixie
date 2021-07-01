@@ -21,30 +21,6 @@
 namespace px {
 namespace stirling {
 
-namespace {
-
-// Data push threshold, based on percentage of buffer that is filled.
-constexpr uint32_t kDefaultOccupancyPctThreshold = 100;
-
-// Data push threshold, based number of records after which a push.
-constexpr uint32_t kDefaultOccupancyThreshold = 1024;
-
-}  // namespace
-
-bool SamplePushFrequencyManager::PushRequired(double occupancy_percentage,
-                                              uint32_t occupancy) const {
-  if (push_freq_mgr_.Expired()) {
-    return true;
-  }
-  if (static_cast<uint32_t>(100 * occupancy_percentage) > kDefaultOccupancyPctThreshold) {
-    return true;
-  }
-  if (occupancy > kDefaultOccupancyThreshold) {
-    return true;
-  }
-  return false;
-}
-
 void FrequencyManager::Reset() {
   next_ = px::chrono::coarse_steady_clock::now() + period_;
   ++count_;

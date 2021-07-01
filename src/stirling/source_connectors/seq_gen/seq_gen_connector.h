@@ -128,11 +128,7 @@ class SeqGenConnector : public SourceConnector {
         rng_(37) {}
   ~SeqGenConnector() override = default;
 
-  Status InitImpl() override {
-    sample_push_freq_mgr_.set_sampling_period(kSamplingPeriod);
-    sample_push_freq_mgr_.set_push_period(kPushPeriod);
-    return Status::OK();
-  }
+  Status InitImpl() override;
 
   void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
 

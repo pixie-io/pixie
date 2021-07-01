@@ -21,6 +21,12 @@
 namespace px {
 namespace stirling {
 
+Status SeqGenConnector::InitImpl() {
+  sampling_freq_mgr_.set_period(kSamplingPeriod);
+  push_freq_mgr_.set_period(kPushPeriod);
+  return Status::OK();
+}
+
 void SeqGenConnector::TransferDataImpl(ConnectorContext* /* ctx */,
                                        const std::vector<DataTable*>& data_tables) {
   DCHECK_EQ(data_tables.size(), 2);

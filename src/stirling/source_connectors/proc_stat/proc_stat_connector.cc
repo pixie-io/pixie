@@ -29,8 +29,8 @@ namespace stirling {
 // once the ebpf version is available.
 // Using data from /proc/stat
 Status ProcStatConnector::InitImpl() {
-  sample_push_freq_mgr_.set_sampling_period(kSamplingPeriod);
-  sample_push_freq_mgr_.set_push_period(kPushPeriod);
+  sampling_freq_mgr_.set_period(kSamplingPeriod);
+  push_freq_mgr_.set_period(kPushPeriod);
 
   std::ifstream input_file(kProcStatFileName);
   if (!input_file.good()) {

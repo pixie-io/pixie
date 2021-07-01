@@ -103,11 +103,12 @@ class SourceConnector : public NotCopyable {
    */
   uint64_t ClockRealTimeOffset() const { return sysconfig_.ClockRealTimeOffset(); }
 
-  const SamplePushFrequencyManager& sample_push_mgr() const { return sample_push_freq_mgr_; }
-
   virtual void SetDebugLevel(int level) { debug_level_ = level; }
   virtual void EnablePIDTrace(int pid) { pids_to_trace_.insert(pid); }
   virtual void DisablePIDTrace(int pid) { pids_to_trace_.erase(pid); }
+
+  const FrequencyManager& sampling_freq_mgr() const { return sampling_freq_mgr_; }
+  const FrequencyManager& push_freq_mgr() const { return push_freq_mgr_; }
 
  protected:
   explicit SourceConnector(std::string_view source_name,
@@ -138,7 +139,8 @@ class SourceConnector : public NotCopyable {
 
   const system::Config& sysconfig_ = system::Config::GetInstance();
 
-  SamplePushFrequencyManager sample_push_freq_mgr_;
+  FrequencyManager sampling_freq_mgr_;
+  FrequencyManager push_freq_mgr_;
 
   absl::flat_hash_set<int> pids_to_trace_;
 
