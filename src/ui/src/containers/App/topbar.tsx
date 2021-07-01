@@ -68,31 +68,6 @@ const ProfileItem = ({
   const shortcuts = React.useContext(LiveShortcutsContext);
   const { inLiveView } = React.useContext(SidebarContext);
 
-  // TODO(vihang,PC-992): Move to explicitly named and typed settings instead of a KV store and
-  // clean up these queries/mutations.
-  const { data: dataSettings, loading: loadingTourSeen } = useQuery<{
-    userSettings: GQLUserSetting[],
-  }>(gql`
-    query getTourSeen{
-      userSettings(keys: ["tourSeen"]) {
-        key
-        value
-      }
-    }
-  `, {});
-  const tourSeen = dataSettings?.userSettings.length > 0 && dataSettings?.userSettings[0].value === 'true';
-
-  const [setTourSeen] = useMutation<
-  { UpdateUserSettings: GQLUserSetting[] }, void
-  >(gql`
-    mutation updateTourSeen{
-      UpdateUserSettings(keys: ["tourSeen"], values: ["true"]) {
-        key
-        value
-      }
-    }
-  `);
-
   const { data } = useQuery<{
     user: Pick<GQLUserInfo, 'name' | 'picture' | 'id' | 'email' >,
   }>(gql`
@@ -106,6 +81,33 @@ const ProfileItem = ({
     }
   `, {});
   const userInfo = data?.user;
+  const isSupportUser = data?.user?.email.split('@')[1] === 'pixie.support';
+
+  // TODO(vihang,PC-992): Move to explicitly named and typed settings instead of a KV store and
+  // clean up these queries/mutations.
+  const { data: dataSettings, loading: loadingTourSeen } = useQuery<{
+    userSettings: GQLUserSetting[],
+  }>(gql`
+    query getTourSeen{
+      userSettings(keys: ["tourSeen"]) {
+        key
+        value
+      }
+    }
+  `, {});
+  const tourSeen = isSupportUser
+    || (dataSettings?.userSettings.length > 0 && dataSettings?.userSettings[0].value === 'true');
+
+  const [setTourSeen] = useMutation<
+  { UpdateUserSettings: GQLUserSetting[] }, void
+  >(gql`
+    mutation updateTourSeen{
+      UpdateUserSettings(keys: ["tourSeen"], values: ["true"]) {
+        key
+        value
+      }
+    }
+  `);
 
   const openMenu = React.useCallback((event) => {
     setOpen(true);
