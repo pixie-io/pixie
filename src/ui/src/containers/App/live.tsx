@@ -189,7 +189,7 @@ const ClusterContextProvider: React.FC = ({ children }) => {
     setClusterByName,
   ]);
 
-  if (error?.message) {
+  if (clusterName && error?.message) {
     // This is an error with pixie cloud, it is probably not relevant to the user.
     // Show a generic error message instead.
     showSnackbar({ message: 'There was a problem connecting to Pixie', autoHideDuration: 5000 });

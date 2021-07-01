@@ -136,7 +136,8 @@ export const LiveContextRouter: React.FC = ({ children }) => {
               ? queryScriptId[0]
               : queryScriptId;
           }
-          const { cluster, ...matchParams } = match.params;
+          const { cluster: matchedCluster, ...matchParams } = match.params;
+          const cluster = matchedCluster || '';
 
           if (scriptId === 'px/pod' && matchParams.namespace != null && matchParams.pod != null) {
             matchParams.pod = `${matchParams.namespace}/${matchParams.pod}`;
