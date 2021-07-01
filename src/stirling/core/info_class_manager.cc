@@ -34,7 +34,6 @@ stirlingpb::InfoClass InfoClassManager::ToProto() const {
 
   info_class_proto.mutable_schema()->CopyFrom(schema_.ToProto());
   info_class_proto.set_id(id());
-  info_class_proto.set_subscribed(subscribed_);
 
   return info_class_proto;
 }

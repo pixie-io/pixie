@@ -138,7 +138,6 @@ TEST_F(TracepointManagerTest, CreateTracepoint) {
   Publish expected_publish_pb = createTestPublishMsg();
   EXPECT_CALL(stirling_, GetTracepointInfo(tracepoint_id))
       .WillRepeatedly(Return(expected_publish_pb));
-  EXPECT_CALL(stirling_, SetSubscription(_)).WillOnce(Return(Status::OK()));
 
   time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::seconds(10));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);

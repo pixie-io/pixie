@@ -63,11 +63,7 @@ Status PEMManager::StopImpl(std::chrono::milliseconds) {
 Status PEMManager::InitSchemas() {
   px::stirling::stirlingpb::Publish publish_pb;
   stirling_->GetPublishProto(&publish_pb);
-  auto subscribe_pb = stirling::SubscribeToAllInfoClasses(publish_pb);
-  PL_RETURN_IF_ERROR(stirling_->SetSubscription(subscribe_pb));
-
-  // This should eventually be done by subscribe requests.
-  auto relation_info_vec = ConvertSubscribePBToRelationInfo(subscribe_pb);
+  auto relation_info_vec = ConvertPublishPBToRelationInfo(publish_pb);
   for (const auto& relation_info : relation_info_vec) {
     std::shared_ptr<table_store::Table> table_ptr;
     if (relation_info.name == "http_events") {

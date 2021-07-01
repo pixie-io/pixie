@@ -41,7 +41,6 @@ class MockStirling : public Stirling {
   MOCK_METHOD(StatusOr<stirlingpb::Publish>, GetTracepointInfo, (sole::uuid trace_id), (override));
   MOCK_METHOD(Status, RemoveTracepoint, (sole::uuid trace_id), (override));
   MOCK_METHOD(void, GetPublishProto, (stirlingpb::Publish * publish_pb), (override));
-  MOCK_METHOD(Status, SetSubscription, (const stirlingpb::Subscribe& subscribe_proto), (override));
   MOCK_METHOD(void, RegisterDataPushCallback, (DataPushCallback f), (override));
   MOCK_METHOD(void, RegisterAgentMetadataCallback, (AgentMetadataCallback f), (override));
   MOCK_METHOD(void, Run, (), (override));

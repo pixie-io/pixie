@@ -30,36 +30,6 @@
 namespace px {
 namespace stirling {
 
-class StirlingComponentTest : public ::testing::Test {
- protected:
-  void SetUp() override {
-    registry_ = std::make_unique<SourceRegistry>();
-    registry_->RegisterOrDie<SeqGenConnector>();
-    data_collector_ = Stirling::Create(std::move(registry_));
-  }
-
-  std::unique_ptr<Stirling> data_collector_;
-  std::unique_ptr<SourceRegistry> registry_;
-};
-
-TEST_F(StirlingComponentTest, registry_to_subscribe_test) {
-  // Generate the Publish message.
-  stirlingpb::Publish publish_proto;
-  data_collector_->GetPublishProto(&publish_proto);
-  EXPECT_FALSE(publish_proto.published_info_classes(0).subscribed());
-  EXPECT_EQ(2, publish_proto.published_info_classes_size());
-
-  // Subscribe to all Info Classes in the publish message.
-  auto subscribe_proto = SubscribeToAllInfoClasses(publish_proto);
-  EXPECT_EQ(2, subscribe_proto.subscribed_info_classes_size());
-  EXPECT_TRUE(subscribe_proto.subscribed_info_classes(0).subscribed());
-  EXPECT_OK(data_collector_->SetSubscription(subscribe_proto));
-  for (int i = 0; i < subscribe_proto.subscribed_info_classes_size(); ++i) {
-    const stirlingpb::InfoClass& info_class = subscribe_proto.subscribed_info_classes(i);
-    EXPECT_TRUE(info_class.subscribed());
-  }
-}
-
 class SourceToTableTest : public ::testing::Test {
  protected:
   SourceToTableTest() : info_class_mgr_(SeqGenConnector::kSeq0Table) {}

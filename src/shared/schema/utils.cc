@@ -32,8 +32,6 @@ table_store::schema::Relation InfoClassProtoToRelation(
   return relation;
 }
 
-}  // namespace
-
 RelationInfo ConvertInfoClassPBToRelationInfo(
     const stirling::stirlingpb::InfoClass& info_class_pb) {
   if (info_class_pb.schema().tabletized()) {
@@ -45,11 +43,12 @@ RelationInfo ConvertInfoClassPBToRelationInfo(
                       info_class_pb.schema().desc(), InfoClassProtoToRelation(info_class_pb));
 }
 
-std::vector<RelationInfo> ConvertSubscribePBToRelationInfo(
-    const stirling::stirlingpb::Subscribe& subscribe_pb) {
+}  // namespace
+
+std::vector<RelationInfo> ConvertPublishPBToRelationInfo(const stirling::stirlingpb::Publish& pb) {
   std::vector<RelationInfo> relation_info_vec;
-  relation_info_vec.reserve(subscribe_pb.subscribed_info_classes_size());
-  for (const auto& info_class : subscribe_pb.subscribed_info_classes()) {
+  relation_info_vec.reserve(pb.published_info_classes_size());
+  for (const auto& info_class : pb.published_info_classes()) {
     relation_info_vec.emplace_back(ConvertInfoClassPBToRelationInfo(info_class));
   }
   return relation_info_vec;

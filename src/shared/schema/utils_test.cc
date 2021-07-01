@@ -24,15 +24,14 @@
 namespace px {
 
 using stirling::stirlingpb::InfoClass;
-using stirling::stirlingpb::Subscribe;
+using stirling::stirlingpb::Publish;
 
 TEST(ConvertSubscribeProtoToRelationInfo, test_for_basic_subscription) {
   // Setup a test subscribe message.
-  Subscribe subscribe_pb;
+  Publish pb;
   // First info class with two columns.
-  auto* info_class = subscribe_pb.add_subscribed_info_classes();
+  auto* info_class = pb.add_published_info_classes();
   info_class->set_id(0);
-  info_class->set_subscribed(false);
 
   auto* schema = info_class->mutable_schema();
   schema->set_name("rel1");
@@ -47,9 +46,8 @@ TEST(ConvertSubscribeProtoToRelationInfo, test_for_basic_subscription) {
   elem1->set_name("col2");
 
   // Second relation with one column.
-  info_class = subscribe_pb.add_subscribed_info_classes();
+  info_class = pb.add_published_info_classes();
   info_class->set_id(1);
-  info_class->set_subscribed(false);
 
   schema = info_class->mutable_schema();
   schema->set_name("rel2");
@@ -60,7 +58,7 @@ TEST(ConvertSubscribeProtoToRelationInfo, test_for_basic_subscription) {
   elem0->set_name("col1_2");
 
   // Do the conversion.
-  const auto relation_info = ConvertSubscribePBToRelationInfo(subscribe_pb);
+  const auto relation_info = ConvertPublishPBToRelationInfo(pb);
 
   // Test the results.
   ASSERT_EQ(2, relation_info.size());
@@ -88,18 +86,17 @@ TEST(ConvertSubscribeProtoToRelationInfo, test_for_basic_subscription) {
 }
 
 TEST(ConvertSubscribeProtoToRelationInfo, empty_subscribe_should_return_empty) {
-  Subscribe subscribe_pb;
-  const auto relation_info = ConvertSubscribePBToRelationInfo(subscribe_pb);
+  Publish pb;
+  const auto relation_info = ConvertPublishPBToRelationInfo(pb);
   ASSERT_EQ(0, relation_info.size());
 }
 
 TEST(ConvertSubscribeProtoToRelationInfo, test_for_tablets_subscription) {
   // Setup a test subscribe message.
-  Subscribe subscribe_pb;
+  Publish pb;
   // First info class with two columns.
-  auto* info_class = subscribe_pb.add_subscribed_info_classes();
+  auto* info_class = pb.add_published_info_classes();
   info_class->set_id(0);
-  info_class->set_subscribed(false);
 
   auto* schema = info_class->mutable_schema();
   schema->set_name("rel1");
@@ -117,9 +114,8 @@ TEST(ConvertSubscribeProtoToRelationInfo, test_for_tablets_subscription) {
   schema->set_tabletized(true);
 
   // Second relation with one column.
-  info_class = subscribe_pb.add_subscribed_info_classes();
+  info_class = pb.add_published_info_classes();
   info_class->set_id(1);
-  info_class->set_subscribed(false);
 
   schema = info_class->mutable_schema();
   schema->set_name("rel2");
@@ -130,7 +126,7 @@ TEST(ConvertSubscribeProtoToRelationInfo, test_for_tablets_subscription) {
   elem0->set_name("col1_2");
 
   // Do the conversion.
-  const auto relation_info = ConvertSubscribePBToRelationInfo(subscribe_pb);
+  const auto relation_info = ConvertPublishPBToRelationInfo(pb);
 
   // Test the results.
   ASSERT_EQ(2, relation_info.size());

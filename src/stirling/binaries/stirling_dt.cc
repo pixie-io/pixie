@@ -41,7 +41,6 @@ using ::px::stirling::Stirling;
 using ::px::stirling::ToString;
 using ::px::stirling::stirlingpb::InfoClass;
 using ::px::stirling::stirlingpb::Publish;
-using ::px::stirling::stirlingpb::Subscribe;
 using DynamicTracepointDeployment =
     ::px::stirling::dynamic_tracing::ir::logical::TracepointDeployment;
 
@@ -189,9 +188,6 @@ int main(int argc, char** argv) {
     absl::base_internal::SpinLockHolder lock(&g_callback_state_lock);
     IndexPublication(trace_pub, &g_table_info_map);
   }
-
-  // Update the subscription to enable the new trace.
-  PL_CHECK_OK(stirling->SetSubscription(px::stirling::SubscribeToAllInfoClasses(trace_pub)));
 
   // Run Stirling.
   std::thread run_thread = std::thread(&Stirling::Run, stirling.get());

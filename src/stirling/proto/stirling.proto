@@ -59,7 +59,6 @@ message InfoClass {
   // This id is assigned by the data collector's config block when creating a Publish message.
   uint64 id = 2;
   TableSchema schema = 3;
-  bool subscribed = 4;
 }
 
 // Publish message contains information on
@@ -69,13 +68,4 @@ message InfoClass {
 // data is being collected.
 message Publish {
   repeated InfoClass published_info_classes = 1;
-}
-
-// Subscribe message is sent by an agent in response to
-// a Publish message from the Data Collector,
-// An agent updates the ElementState in each Element of an
-// InfoClass so that the Data Collector is aware of
-// the data that the Agent wants.
-message Subscribe {
-  repeated InfoClass subscribed_info_classes = 1;
 }

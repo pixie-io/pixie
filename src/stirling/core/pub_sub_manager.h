@@ -30,35 +30,16 @@
 namespace px {
 namespace stirling {
 
-class PubSubManager {
- public:
-  PubSubManager() = default;
-  ~PubSubManager() = default;
-
-  /**
-   * Create a proto message from InfoClassManagers (where each have a schema).
-   *
-   * @param publish_pb pointer to a Publish proto message.
-   * @param info_class_mgrs Reference to a vector of info class manager unique pointers.
-   * @param filter Generate a publish proto for a single info class, specified by name.
-   */
-  void PopulatePublishProto(stirlingpb::Publish* publish_pb,
-                            const InfoClassManagerVec& info_class_mgrs,
-                            std::optional<std::string_view> filter = {});
-
-  /**
-   * Update the ElementState for each InfoElement in the InfoClassManager
-   * in info_class_mgrs_ from a subscription message and notify the data collector
-   * about the update to schemas. The data collector can then proceed to configure
-   * SourceConnectors and DataTable with the subscribed information.
-   *
-   * @param subscribe_proto
-   * @param info_class_mgrs Reference to a vector of info class manager unique pointers.
-   * @return Status
-   */
-  Status UpdateSchemaFromSubscribe(const stirlingpb::Subscribe& subscribe_proto,
-                                   const InfoClassManagerVec& info_class_mgrs);
-};
+/**
+ * Create a proto message from InfoClassManagers (where each have a schema).
+ *
+ * @param publish_pb pointer to a Publish proto message.
+ * @param info_class_mgrs Reference to a vector of info class manager unique pointers.
+ * @param filter Generate a publish proto for a single info class, specified by name.
+ */
+void PopulatePublishProto(stirlingpb::Publish* publish_pb,
+                          const InfoClassManagerVec& info_class_mgrs,
+                          std::optional<std::string_view> filter = {});
 
 /**
  * Utility function to index a publish message by ID, for quick access.
@@ -69,11 +50,6 @@ inline void IndexPublication(const stirlingpb::Publish& pub,
     (*map)[info_class.id()] = info_class;
   }
 }
-
-/**
- * Convenience function to subscribe to all info classes of a published proto message.
- */
-stirlingpb::Subscribe SubscribeToAllInfoClasses(const stirlingpb::Publish& publish_proto);
 
 }  // namespace stirling
 }  // namespace px

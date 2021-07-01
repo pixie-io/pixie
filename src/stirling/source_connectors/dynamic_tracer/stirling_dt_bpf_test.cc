@@ -122,9 +122,6 @@ class StirlingDynamicTraceBPFTest : public ::testing::Test {
     ASSERT_EQ(publication.published_info_classes_size(), 1);
     info_class_ = publication.published_info_classes(0);
 
-    // Subscribe to the new info class.
-    ASSERT_OK(stirling_->SetSubscription(px::stirling::SubscribeToAllInfoClasses(publication)));
-
     // Run Stirling data collector.
     ASSERT_OK(stirling_->RunAsThread());
 

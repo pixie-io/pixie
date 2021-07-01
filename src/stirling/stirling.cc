@@ -161,7 +161,6 @@ class StirlingImpl final : public Stirling {
   StatusOr<stirlingpb::Publish> GetTracepointInfo(sole::uuid trace_id) override;
   Status RemoveTracepoint(sole::uuid trace_id) override;
   void GetPublishProto(stirlingpb::Publish* publish_pb) override;
-  Status SetSubscription(const stirlingpb::Subscribe& subscribe_proto) override;
   void RegisterDataPushCallback(DataPushCallback f) override { data_push_callback_ = f; }
   void RegisterAgentMetadataCallback(AgentMetadataCallback f) override {
     DCHECK(f != nullptr);
@@ -219,8 +218,6 @@ class StirlingImpl final : public Stirling {
 
   // Lock to protect both info_class_mgrs_ and sources_.
   absl::base_internal::SpinLock info_class_mgrs_lock_;
-
-  std::unique_ptr<PubSubManager> pub_sub_mgr_;
 
   std::unique_ptr<SourceRegistry> registry_;
 
@@ -316,7 +313,7 @@ void UserSignalHandler(int /* signum */, siginfo_t* info, void* /* context */) {
 }
 
 StirlingImpl::StirlingImpl(std::unique_ptr<SourceRegistry> registry)
-    : pub_sub_mgr_(std::make_unique<PubSubManager>()), registry_(std::move(registry)) {}
+    : registry_(std::move(registry)) {}
 
 StirlingImpl::~StirlingImpl() { Stop(); }
 
@@ -346,21 +343,17 @@ Status StirlingImpl::Init() {
   // stirling_wrapper. Figure out a way to detect active probes owned by other processes,
   // in order to skip cleaning up those probes.
   LOG_IF(WARNING, !s.ok()) << absl::Substitute("Kprobe Cleaner failed. Message $0", s.msg());
-  PL_RETURN_IF_ERROR(CreateSourceConnectors());
-  LOG(INFO) << "Stirling successfully initialized.";
-  return Status::OK();
-}
 
-Status StirlingImpl::CreateSourceConnectors() {
   if (!registry_) {
     return error::NotFound("Source registry doesn't exist");
   }
-  auto sources = registry_->sources();
-  for (const auto& [name, registry_element] : sources) {
+
+  for (const auto& [name, registry_element] : registry_->sources()) {
     Status s = AddSource(registry_element.create_source_fn(name));
     LOG_IF(DFATAL, !s.ok()) << absl::Substitute(
         "Source Connector (registry name=$0) not instantiated, error: $1", name, s.ToString());
   }
+  LOG(INFO) << "Stirling successfully initialized.";
   return Status::OK();
 }
 
@@ -370,6 +363,19 @@ std::unique_ptr<ConnectorContext> StirlingImpl::GetContext() {
   }
   return std::unique_ptr<ConnectorContext>(new StandaloneContext());
 }
+
+namespace {
+
+std::vector<DataTable*> GetDataTables(const std::vector<InfoClassManager*>& info_class_mgrs) {
+  std::vector<DataTable*> data_tables;
+  data_tables.reserve(info_class_mgrs.size());
+  for (InfoClassManager* mgr : info_class_mgrs) {
+    data_tables.push_back(mgr->data_table());
+  }
+  return data_tables;
+}
+
+}  // namespace
 
 Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source) {
   // Step 1: Init the source.
@@ -388,10 +394,7 @@ Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source) {
     info_class_mgrs_.push_back(std::move(mgr));
   }
 
-  std::vector<DataTable*> data_tables;
-  // Needs to make sure the required number of DataTable objects are fed to
-  // SourceConnector::TransferData() even if subscription was not specified yet.
-  data_tables.resize(mgrs.size(), nullptr);
+  std::vector<DataTable*> data_tables = GetDataTables(mgrs);
 
   source_output_map_[source.get()] = {std::move(mgrs),
                                       // DataTable objects are created after subscribing.
@@ -509,7 +512,7 @@ void StirlingImpl::DeployDynamicTraceConnector(
   stirlingpb::Publish publication;
   {
     absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
-    pub_sub_mgr_->PopulatePublishProto(&publication, info_class_mgrs_, output_name);
+    PopulatePublishProto(&publication, info_class_mgrs_, output_name);
   }
 
   absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
@@ -608,49 +611,7 @@ Status StirlingImpl::RemoveTracepoint(sole::uuid trace_id) {
 
 void StirlingImpl::GetPublishProto(stirlingpb::Publish* publish_pb) {
   absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
-  pub_sub_mgr_->PopulatePublishProto(publish_pb, info_class_mgrs_);
-}
-
-// Assumes info_class_mgrs are ordered by source_table_num, which was guaranteed in AddSource().
-std::vector<DataTable*> GetDataTables(const std::vector<InfoClassManager*>& info_class_mgrs) {
-  std::vector<DataTable*> data_tables;
-  data_tables.reserve(info_class_mgrs.size());
-
-  for (InfoClassManager* mgr : info_class_mgrs) {
-    if (mgr->subscribed()) {
-      data_tables.push_back(mgr->data_table());
-    } else {
-      data_tables.push_back(nullptr);
-    }
-  }
-  return data_tables;
-}
-
-Status StirlingImpl::SetSubscription(const stirlingpb::Subscribe& subscribe_proto) {
-  // Acquire lock to update info_class_mgrs_.
-  absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
-
-  // Last append before clearing tables from old subscriptions.
-  for (const auto& [source, output] : source_output_map_) {
-    source->PushData(data_push_callback_, output.data_tables);
-  }
-
-  // Update schemas based on the subscribe_proto.
-  PL_CHECK_OK(pub_sub_mgr_->UpdateSchemaFromSubscribe(subscribe_proto, info_class_mgrs_));
-
-  // Generate the tables required based on subscribed Info Classes.
-  for (const auto& mgr : info_class_mgrs_) {
-    if (mgr->subscribed()) {
-      mgr->ResetDataTable();
-    }
-  }
-
-  // Update mapping from SourceConnector to DataTable objects.
-  for (auto& [source, source_output] : source_output_map_) {
-    source_output.data_tables = GetDataTables(source_output.info_class_mgrs);
-  }
-
-  return Status::OK();
+  PopulatePublishProto(publish_pb, info_class_mgrs_);
 }
 
 // Main call to start the data collection.
@@ -739,9 +700,6 @@ void SleepForDuration(std::chrono::milliseconds sleep_duration) {
 bool PushRequired(const SamplePushFrequencyManager& mgr,
                   const std::vector<DataTable*>& data_tables) {
   for (const auto* data_table : data_tables) {
-    if (data_table == nullptr) {
-      continue;
-    }
     if (mgr.PushRequired(data_table->OccupancyPct(), data_table->Occupancy())) {
       return true;
     }

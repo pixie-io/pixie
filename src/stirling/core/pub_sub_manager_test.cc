@@ -173,11 +173,8 @@ class PubSubManagerTest : public ::testing::Test {
       info_class_mgrs_.push_back(std::move(info_class_mgr));
       sources_.push_back(std::move(source));
     }
-
-    pub_sub_manager_ = std::make_unique<PubSubManager>();
   }
   std::vector<std::unique_ptr<SourceConnector>> sources_;
-  std::unique_ptr<PubSubManager> pub_sub_manager_;
   InfoClassManagerVec info_class_mgrs_;
 };
 
@@ -187,7 +184,7 @@ class PubSubManagerTest : public ::testing::Test {
 TEST_F(PubSubManagerTest, publish_test) {
   // Publish info classes using proto message.
   stirlingpb::Publish actual_publish_pb;
-  pub_sub_manager_->PopulatePublishProto(&actual_publish_pb, info_class_mgrs_);
+  PopulatePublishProto(&actual_publish_pb, info_class_mgrs_);
 
   // Set expectations for the publish message.
   stirlingpb::Publish expected_publish_pb;
@@ -205,7 +202,7 @@ TEST_F(PubSubManagerTest, publish_test) {
 TEST_F(PubSubManagerTest, partial_publish_test) {
   // Publish info classes using proto message.
   stirlingpb::Publish actual_publish_pb;
-  pub_sub_manager_->PopulatePublishProto(&actual_publish_pb, info_class_mgrs_, "cpu");
+  PopulatePublishProto(&actual_publish_pb, info_class_mgrs_, "cpu");
 
   // Set expectations for the publish message.
   stirlingpb::Publish expected_publish_pb;
@@ -216,57 +213,6 @@ TEST_F(PubSubManagerTest, partial_publish_test) {
   info_class->set_id(actual_publish_pb.published_info_classes(0).id());
 
   EXPECT_TRUE(MessageDifferencer::Equals(actual_publish_pb, expected_publish_pb));
-}
-
-// This test validates that the InfoClassManager objects have their subscriptions
-// updated after the PubSubManager reads a subscribe message (from an agent). The
-// subscribe message is created from the Publish proto message.
-TEST_F(PubSubManagerTest, subscribe_test) {
-  // Get publication.
-  stirlingpb::Publish publish_pb;
-  pub_sub_manager_->PopulatePublishProto(&publish_pb, info_class_mgrs_);
-
-  // Send subscription.
-  stirlingpb::Subscribe subscribe_pb = SubscribeToAllInfoClasses(publish_pb);
-  ASSERT_OK(pub_sub_manager_->UpdateSchemaFromSubscribe(subscribe_pb, info_class_mgrs_));
-
-  // Verify updated subscriptions.
-  for (auto& info_class_mgr : info_class_mgrs_) {
-    EXPECT_TRUE(info_class_mgr->subscribed());
-  }
-}
-
-TEST_F(PubSubManagerTest, delta_subscribe_test) {
-  // Get publication.
-  stirlingpb::Publish publish_pb;
-  pub_sub_manager_->PopulatePublishProto(&publish_pb, info_class_mgrs_);
-
-  // Split the publication into subsciption pieces (one per info class).
-  std::vector<stirlingpb::Subscribe> subs;
-  for (const auto& p : publish_pb.published_info_classes()) {
-    stirlingpb::Publish partial_pub;
-    auto* info_class = partial_pub.add_published_info_classes();
-    info_class->CopyFrom(p);
-
-    subs.push_back(SubscribeToAllInfoClasses(partial_pub));
-  }
-  ASSERT_EQ(subs.size(), 2);
-
-  // Perform first delta subscription.
-  ASSERT_OK(pub_sub_manager_->UpdateSchemaFromSubscribe(subs[1], info_class_mgrs_));
-
-  // Verify updated subscriptions.
-  ASSERT_EQ(info_class_mgrs_.size(), 2);
-  EXPECT_FALSE(info_class_mgrs_[0]->subscribed());
-  EXPECT_TRUE(info_class_mgrs_[1]->subscribed());
-
-  // Perform second delta subscription.
-  ASSERT_OK(pub_sub_manager_->UpdateSchemaFromSubscribe(subs[0], info_class_mgrs_));
-
-  // Verify updated subscriptions.
-  ASSERT_EQ(info_class_mgrs_.size(), 2);
-  EXPECT_TRUE(info_class_mgrs_[0]->subscribed());
-  EXPECT_TRUE(info_class_mgrs_[1]->subscribed());
 }
 
 }  // namespace stirling

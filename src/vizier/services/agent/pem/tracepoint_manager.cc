@@ -213,9 +213,7 @@ void TracepointManager::Monitor() {
 }
 
 Status TracepointManager::UpdateSchema(const stirling::stirlingpb::Publish& publish_pb) {
-  auto subscribe_pb = stirling::SubscribeToAllInfoClasses(publish_pb);
-
-  auto relation_info_vec = ConvertSubscribePBToRelationInfo(subscribe_pb);
+  auto relation_info_vec = ConvertPublishPBToRelationInfo(publish_pb);
 
   // TODO(zasgar): Failure here can lead to an inconsistent schema state. We should
   // figure out how to handle this as part of the data model refactor project.
@@ -234,7 +232,6 @@ Status TracepointManager::UpdateSchema(const stirling::stirlingpb::Publish& publ
       PL_RETURN_IF_ERROR(table_store_->AddTableAlias(relation_info.id, relation_info.name));
     }
   }
-  PL_RETURN_IF_ERROR(stirling_->SetSubscription(subscribe_pb));
   return Status::OK();
 }
 

@@ -51,7 +51,6 @@ using ::px::stirling::Stirling;
 using ::px::stirling::ToString;
 using ::px::stirling::stirlingpb::InfoClass;
 using ::px::stirling::stirlingpb::Publish;
-using ::px::stirling::stirlingpb::Subscribe;
 using ::px::types::ColumnWrapperRecordBatch;
 using ::px::types::TabletID;
 
@@ -319,10 +318,6 @@ int main(int argc, char** argv) {
   stirling->GetPublishProto(&publication);
   IndexPublication(publication, &g_table_info_map);
 
-  // Subscribe to all elements.
-  // Stirling will update its schemas and sets up the data tables.
-  PL_CHECK_OK(stirling->SetSubscription(px::stirling::SubscribeToAllInfoClasses(publication)));
-
   // Set a dummy callback function (normally this would be in the agent).
   stirling->RegisterDataPushCallback(StirlingWrapperCallback);
 
@@ -365,9 +360,6 @@ int main(int argc, char** argv) {
         absl::base_internal::SpinLockHolder lock(&g_callback_state_lock);
         IndexPublication(trace_pub, &g_table_info_map);
       }
-
-      // Update the subscription to enable the new trace.
-      PL_CHECK_OK(stirling->SetSubscription(px::stirling::SubscribeToAllInfoClasses(trace_pub)));
     }
   }
 

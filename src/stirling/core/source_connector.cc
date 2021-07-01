@@ -59,10 +59,6 @@ void SourceConnector::TransferData(ConnectorContext* ctx,
 void SourceConnector::PushData(DataPushCallback agent_callback,
                                const std::vector<DataTable*>& data_tables) {
   for (auto* data_table : data_tables) {
-    if (data_table == nullptr) {
-      // Unsubscribed tables are supplied as nullptr.
-      continue;
-    }
     auto record_batches = data_table->ConsumeRecords();
     for (auto& record_batch : record_batches) {
       if (record_batch.records.empty()) {

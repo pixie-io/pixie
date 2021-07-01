@@ -70,9 +70,6 @@ namespace stirling {
 // This is the duration for which a subscription will be valid.
 constexpr std::chrono::milliseconds kDurationPerIter{500};
 
-// Fraction of times a subscription will subscribe to a source.
-const double kSubscribeProb = 0.7;
-
 // If test typically takes too long, you may want to reduce kNumIterMin or kNumProcessedRequirement.
 // Note that kNumIterMax * kDurationPerIter defines the maximum time the test can take.
 
@@ -223,22 +220,6 @@ class StirlingTest : public ::testing::Test {
     }
   }
 
-  stirlingpb::Subscribe GenerateRandomSubscription(const stirlingpb::Publish& publish_proto) {
-    stirlingpb::Subscribe subscribe_proto;
-
-    for (int i = 0; i < publish_proto.published_info_classes_size(); ++i) {
-      auto sub_info_class = subscribe_proto.add_subscribed_info_classes();
-      sub_info_class->MergeFrom(publish_proto.published_info_classes(i));
-
-      sub_info_class->set_subscribed(uniform_probability_dist_(rng) < kSubscribeProb);
-    }
-    return subscribe_proto;
-  }
-
-  stirlingpb::Subscribe GenerateRandomSubscription() {
-    return GenerateRandomSubscription(publish_proto_);
-  }
-
   Status AppendData(uint64_t table_id, TabletID tablet_id,
                     std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
     // Note: Implicit assumption (not checked here) is that all columns have the same size
@@ -292,9 +273,6 @@ class StirlingTest : public ::testing::Test {
 TEST_F(StirlingTest, hammer_time_on_stirling_synchronized_subscriptions) {
   uint32_t i = 0;
   while (NumProcessed() < kNumProcessedRequirement || i < kNumIterMin) {
-    // Process a subscription message.
-    ASSERT_OK(stirling_->SetSubscription(GenerateRandomSubscription()));
-
     // Run Stirling data collector.
     ASSERT_OK(stirling_->RunAsThread());
 
@@ -323,14 +301,8 @@ TEST_F(StirlingTest, hammer_time_on_stirling_on_the_fly_subs) {
 
   std::this_thread::sleep_for(kDurationPerIter);
 
-  // Default should be that nothing is subscribed.
-  EXPECT_EQ(NumProcessed(), 0);
-
   uint32_t i = 0;
   while (NumProcessed() < kNumProcessedRequirement || i < kNumIterMin) {
-    // Process a subscription message.
-    ASSERT_OK(stirling_->SetSubscription(GenerateRandomSubscription()));
-
     // Stay in this config for the specified amount of time..
     std::this_thread::sleep_for(kDurationPerIter);
 

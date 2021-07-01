@@ -133,16 +133,6 @@ class Stirling : public NotCopyable {
   virtual void GetPublishProto(stirlingpb::Publish* publish_pb) = 0;
 
   /**
-   * Get the Subscription object. Receive a Subscribe proto message from the agent.
-   * Update the schemas based on the subscription message. Generate the appropriate tables
-   * that conform to subscription information.
-   *
-   * @param subscribe_proto
-   * @return Status
-   */
-  virtual Status SetSubscription(const stirlingpb::Subscribe& subscribe_proto) = 0;
-
-  /**
    * Register call-back from Agent. Used to periodically send data.
    *
    * Function signature is:

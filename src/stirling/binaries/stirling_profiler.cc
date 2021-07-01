@@ -39,7 +39,6 @@ using ::px::stirling::SourceRegistry;
 using ::px::stirling::Stirling;
 using ::px::stirling::stirlingpb::InfoClass;
 using ::px::stirling::stirlingpb::Publish;
-using ::px::stirling::stirlingpb::Subscribe;
 
 using ::px::md::UPID;
 using ::px::types::ColumnWrapperRecordBatch;
@@ -138,7 +137,6 @@ int main(int argc, char** argv) {
   Publish publication;
   stirling->GetPublishProto(&publication);
   IndexPublication(publication, &g_table_info_map);
-  PL_CHECK_OK(stirling->SetSubscription(px::stirling::SubscribeToAllInfoClasses(publication)));
 
   // Start measuring process stats after init.
   ProcessStatsMonitor process_stats_monitor;

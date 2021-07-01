@@ -67,12 +67,6 @@ class InfoClassManager final : public NotCopyable {
       : id_(global_id_++), schema_(schema), data_table_(new DataTable(id_, schema_)) {}
 
   /**
-   * Resets the data table, effectively replace the current data table with a new one.
-   * Used to reset the state of subscribed data tables.
-   */
-  void ResetDataTable() { data_table_.reset(new DataTable(id_, schema_)); }
-
-  /**
    * @brief Source connector connected to this Info Class.
    *
    * @param source Pointer to source connector instance.
@@ -115,17 +109,9 @@ class InfoClassManager final : public NotCopyable {
    */
   void Notify() {}
 
-  /**
-   * Set the Subscription for the InfoClass.
-   *
-   * @param subscription
-   */
-  void SetSubscription(bool subscribed) { subscribed_ = subscribed; }
-
   std::string_view name() const { return schema_.name(); }
   const SourceConnector* source() const { return source_; }
   uint64_t id() const { return id_; }
-  bool subscribed() const { return subscribed_; }
   DataTable* data_table() const { return data_table_.get(); }
 
  private:
@@ -136,9 +122,6 @@ class InfoClassManager final : public NotCopyable {
 
   // The schema of table associated with this Info Class manager.
   const DataTableSchema& schema_;
-
-  // Boolean indicating whether an agent has subscribed to the Info Class.
-  bool subscribed_ = false;
 
   // Pointer back to the source connector providing the data.
   SourceConnector* source_ = nullptr;
