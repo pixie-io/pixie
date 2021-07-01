@@ -20,6 +20,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
@@ -39,13 +40,18 @@ class SymbolCache {
   SymbolCache(int pid, ebpf::BPFStackTable* symbolizer) : pid_(pid), symbolizer_(symbolizer) {}
 
   struct LookupResult {
-    const std::string& symbol;
+    std::string_view symbol;
     bool hit;
   };
 
-  LookupResult LookupOrInsert(const uintptr_t addr) {
-    const auto [iter, inserted] = cache.try_emplace(addr, symbolizer_, addr, pid_);
-    return LookupResult{iter->second.symbol(), !inserted};
+  LookupResult Lookup(const uintptr_t addr);
+
+  size_t active_entries() { return cache_.size(); }
+  size_t total_entries() { return cache_.size() + prev_cache_.size(); }
+
+  void CreateNewGeneration() {
+    prev_cache_ = std::move(cache_);
+    cache_.clear();
   }
 
  private:
@@ -58,15 +64,14 @@ class SymbolCache {
   class Symbol {
    public:
     Symbol(ebpf::BPFStackTable* bcc_symbolizer, const uintptr_t addr, const int pid);
-    inline const std::string& symbol() const { return symbol_; }
-
-   private:
-    const std::string symbol_;
+    explicit Symbol(std::string&& symbol_str) : symbol_(std::move(symbol_str)) {}
+    std::string symbol_;
   };
 
   int pid_;
   ebpf::BPFStackTable* symbolizer_;
-  absl::flat_hash_map<uintptr_t, Symbol> cache;
+  absl::flat_hash_map<uintptr_t, Symbol> cache_;
+  absl::flat_hash_map<uintptr_t, Symbol> prev_cache_;
 };
 
 /**
@@ -88,14 +93,13 @@ class Symbolizer : public bpf_tools::BCCWrapper, public NotCopyMoveable {
   Status Init();
   void FlushCache(const struct upid_t& upid);
 
-  std::function<const std::string&(const uintptr_t addr)> GetSymbolizerFn(
-      const struct upid_t& upid);
+  std::function<std::string_view(const uintptr_t addr)> GetSymbolizerFn(const struct upid_t& upid);
 
   int64_t stat_accesses() { return stat_accesses_; }
   int64_t stat_hits() { return stat_hits_; }
 
  private:
-  const std::string& Symbolize(SymbolCache* symbol_cache, const int pid, const uintptr_t addr);
+  std::string_view Symbolize(SymbolCache* symbol_cache, const int pid, const uintptr_t addr);
 
   // We will use this exclusively to gain access to the BCC symbolization API;
   // i.e. while this does create a shared BPF "stack trace" map, we do not use that.

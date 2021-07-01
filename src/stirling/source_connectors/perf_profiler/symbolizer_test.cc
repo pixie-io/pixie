@@ -36,6 +36,96 @@ namespace stirling {
 
 using ::testing::Contains;
 
+class SymbolCacheTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    PL_CHECK_OK(bcc_.InitBPFProgram(kProgram));
+    bcc_symbolizer_ = std::make_unique<ebpf::BPFStackTable>(bcc_.GetStackTable("bcc_symbolizer"));
+  }
+
+  const std::string_view kProgram = "BPF_STACK_TRACE(bcc_symbolizer, 16);";
+  bpf_tools::BCCWrapper bcc_;
+  std::unique_ptr<ebpf::BPFStackTable> bcc_symbolizer_;
+
+  const uintptr_t kFooAddr = reinterpret_cast<uintptr_t>(&test::foo);
+  const uintptr_t kBarAddr = reinterpret_cast<uintptr_t>(&test::bar);
+};
+
+TEST_F(SymbolCacheTest, Lookup) {
+  SymbolCache sym_cache(getpid(), bcc_symbolizer_.get());
+
+  SymbolCache::LookupResult result;
+
+  result = sym_cache.Lookup(kFooAddr);
+  EXPECT_EQ(result.hit, false);
+  EXPECT_EQ(result.symbol, "test::foo()");
+
+  result = sym_cache.Lookup(kFooAddr);
+  EXPECT_EQ(result.hit, true);
+  EXPECT_EQ(result.symbol, "test::foo()");
+
+  result = sym_cache.Lookup(kBarAddr);
+  EXPECT_EQ(result.hit, false);
+  EXPECT_EQ(result.symbol, "test::bar()");
+}
+
+TEST_F(SymbolCacheTest, EvictOldEntries) {
+  SymbolCache sym_cache(getpid(), bcc_symbolizer_.get());
+
+  SymbolCache::LookupResult result;
+
+  EXPECT_EQ(sym_cache.total_entries(), 0);
+  EXPECT_EQ(sym_cache.active_entries(), 0);
+
+  result = sym_cache.Lookup(kFooAddr);
+  EXPECT_EQ(result.hit, false);
+  EXPECT_EQ(result.symbol, "test::foo()");
+
+  result = sym_cache.Lookup(kBarAddr);
+  EXPECT_EQ(result.hit, false);
+  EXPECT_EQ(result.symbol, "test::bar()");
+
+  EXPECT_EQ(sym_cache.total_entries(), 2);
+  EXPECT_EQ(sym_cache.active_entries(), 2);
+
+  sym_cache.CreateNewGeneration();
+
+  EXPECT_EQ(sym_cache.total_entries(), 2);
+  EXPECT_EQ(sym_cache.active_entries(), 0);
+
+  result = sym_cache.Lookup(kFooAddr);
+  EXPECT_EQ(result.hit, true);
+  EXPECT_EQ(result.symbol, "test::foo()");
+
+  EXPECT_EQ(sym_cache.total_entries(), 2);
+  EXPECT_EQ(sym_cache.active_entries(), 1);
+
+  sym_cache.CreateNewGeneration();
+
+  EXPECT_EQ(sym_cache.total_entries(), 1);
+  EXPECT_EQ(sym_cache.active_entries(), 0);
+
+  // Don't lookup test::foo() in this interval.
+  // Should cause it to get evicted from the cache after the next trigger.
+
+  sym_cache.CreateNewGeneration();
+
+  EXPECT_EQ(sym_cache.total_entries(), 0);
+  EXPECT_EQ(sym_cache.active_entries(), 0);
+
+  sym_cache.CreateNewGeneration();
+
+  EXPECT_EQ(sym_cache.total_entries(), 0);
+  EXPECT_EQ(sym_cache.active_entries(), 0);
+
+  result = sym_cache.Lookup(kFooAddr);
+  EXPECT_EQ(result.hit, false);
+  EXPECT_EQ(result.symbol, "test::foo()");
+
+  EXPECT_EQ(sym_cache.total_entries(), 1);
+  EXPECT_EQ(sym_cache.active_entries(), 1);
+}
+
 // Test the symbolizer with caching enabled and disabled.
 TEST(SymbolizerTest, Basic) {
   // TODO(jps): consider splitting into 3 tests:
@@ -115,20 +205,21 @@ TEST(SymbolizerTest, Basic) {
   // We see different kernel symbols on different hosts (not 100% sure why).
   // on our dev. host 'enigma' we see: __x64_sys_getpid
   // on our Jenkins test hosts we see: sys_getpid
-  const std::set<std::string> possible_k_syms = {"__x64_sys_getpid", "sys_getpid"};
+  const std::set<std::string> possible_k_syms = {"__x64_sys_getpid", "__ia32_sys_getpid",
+                                                 "sys_getpid"};
 
   uintptr_t kaddr = 0ULL;
   kaddr_array.get_value(0, kaddr);
 
   {
     auto symbolize = symbolizer.GetSymbolizerFn(profiler::kKernelUPID);
-    EXPECT_THAT(possible_k_syms, Contains(symbolize(kaddr)));
+    EXPECT_THAT(possible_k_syms, Contains(std::string(symbolize(kaddr))));
     EXPECT_EQ(symbolizer.stat_accesses(), 5);
     EXPECT_EQ(symbolizer.stat_hits(), 2);
   }
   {
     auto symbolize = symbolizer.GetSymbolizerFn(profiler::kKernelUPID);
-    EXPECT_THAT(possible_k_syms, Contains(symbolize(kaddr)));
+    EXPECT_THAT(possible_k_syms, Contains(std::string(symbolize(kaddr))));
     EXPECT_EQ(symbolizer.stat_accesses(), 6);
     EXPECT_EQ(symbolizer.stat_hits(), 3);
   }
@@ -152,7 +243,7 @@ TEST(SymbolizerTest, Basic) {
   }
   {
     auto symbolize = symbolizer.GetSymbolizerFn(profiler::kKernelUPID);
-    EXPECT_THAT(possible_k_syms, Contains(symbolize(kaddr)));
+    EXPECT_THAT(possible_k_syms, Contains(std::string(symbolize(kaddr))));
     EXPECT_EQ(symbolizer.stat_accesses(), 9);
     EXPECT_EQ(symbolizer.stat_hits(), 3);
   }
@@ -170,7 +261,7 @@ TEST(SymbolizerTest, Basic) {
   }
   {
     auto symbolize = symbolizer.GetSymbolizerFn(profiler::kKernelUPID);
-    EXPECT_THAT(possible_k_syms, Contains(symbolize(kaddr)));
+    EXPECT_THAT(possible_k_syms, Contains(std::string(symbolize(kaddr))));
     EXPECT_EQ(symbolizer.stat_accesses(), 12);
     EXPECT_EQ(symbolizer.stat_hits(), 6);
   }
@@ -192,7 +283,7 @@ TEST(SymbolizerTest, Basic) {
   }
   {
     auto symbolize = symbolizer.GetSymbolizerFn(profiler::kKernelUPID);
-    EXPECT_THAT(possible_k_syms, Contains(symbolize(kaddr)));
+    EXPECT_THAT(possible_k_syms, Contains(std::string(symbolize(kaddr))));
     EXPECT_EQ(symbolizer.stat_accesses(), 12);
     EXPECT_EQ(symbolizer.stat_hits(), 6);
   }

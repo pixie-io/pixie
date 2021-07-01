@@ -41,6 +41,23 @@ SymbolCache::Symbol::Symbol(ebpf::BPFStackTable* bcc_symbolizer, const uintptr_t
                             const int pid)
     : symbol_(SymbolOrAddrIfUnknown(bcc_symbolizer, addr, pid)) {}
 
+SymbolCache::LookupResult SymbolCache::Lookup(const uintptr_t addr) {
+  // Check old cache first, and move result to new cache if we have a hit.
+  const auto prev_cache_iter = prev_cache_.find(addr);
+  if (prev_cache_iter != prev_cache_.end()) {
+    // Move to new cache.
+    auto [curr_cache_iter, inserted] =
+        cache_.try_emplace(addr, std::move(prev_cache_iter->second.symbol_));
+    DCHECK(inserted);
+    prev_cache_.erase(prev_cache_iter);
+    return SymbolCache::LookupResult{curr_cache_iter->second.symbol_, true};
+  }
+
+  // If not in old cache, try the new cache (with automatic insertion if required).
+  const auto [iter, inserted] = cache_.try_emplace(addr, symbolizer_, addr, pid_);
+  return SymbolCache::LookupResult{iter->second.symbol_, !inserted};
+}
+
 Status Symbolizer::Init() {
   // This BPF program is a placeholder; it is not actually used. We include it only
   // to allow us to create an instance of ebpf::BPFStackTable from BCC. We will use
@@ -63,8 +80,8 @@ void Symbolizer::FlushCache(const struct upid_t& upid) {
   bcc_symbolizer_->free_symcache(upid.pid);
 }
 
-const std::string& Symbolizer::Symbolize(SymbolCache* symbol_cache, const int pid,
-                                         const uintptr_t addr) {
+std::string_view Symbolizer::Symbolize(SymbolCache* symbol_cache, const int pid,
+                                       const uintptr_t addr) {
   static std::string symbol;
   if (!FLAGS_stirling_profiler_symcache) {
     symbol = bcc_symbolizer_->get_addr_symbol(addr, pid);
@@ -76,7 +93,7 @@ const std::string& Symbolizer::Symbolize(SymbolCache* symbol_cache, const int pi
   // Symbol::Symbol(ebpf::BPFStackTable* bcc_symbolizer, const uintptr_t addr, const int pid)
   // will only be called if try_emplace fails to find a prexisting key. If no key is found,
   // the Symbol ctor uses bcc_symbolizer, and the addr & pid, to resolve the addr. to a symbol.
-  const SymbolCache::LookupResult result = symbol_cache->LookupOrInsert(addr);
+  const SymbolCache::LookupResult result = symbol_cache->Lookup(addr);
 
   if (result.hit) {
     ++stat_hits_;
@@ -84,7 +101,7 @@ const std::string& Symbolizer::Symbolize(SymbolCache* symbol_cache, const int pi
   return result.symbol;
 }
 
-std::function<const std::string&(const uintptr_t addr)> Symbolizer::GetSymbolizerFn(
+std::function<std::string_view(const uintptr_t addr)> Symbolizer::GetSymbolizerFn(
     const struct upid_t& upid) {
   using std::placeholders::_1;
   const auto [iter, inserted] = symbol_caches_.try_emplace(upid, nullptr);
