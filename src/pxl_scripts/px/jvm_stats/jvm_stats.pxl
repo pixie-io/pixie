@@ -51,54 +51,54 @@ px.Pod = str
 # These functions are formatted and ready for use in
 # the visualization speciciation, vis.json.
 # ----------------------------------------------------------------
-def node_table(start: str, node_name: px.Node, pod: px.Pod):
+def node_table(start_time: str, node_name: px.Node, pod: px.Pod):
     """ Gets the nodes that are picked up by the node and pod filters.
 
     Args:
-    @start: Starting time of the data to examine.
+    @start_time Starting time of the data to examine.
     @node_name: The partial name of the node(s) to display data for.
     @pod: The partial name of the pod(s) to display data for.
 
     Returns: A DataFrame that displays all nodes matching the node
         and pod filters.
     """
-    df = filtered_process_stats(start, node_name, pod)
+    df = filtered_process_stats(start_time, node_name, pod)
     # Aggregate on nodes to get unique node values.
     nodes = df.groupby(node_col).agg(cc=(node_col, px.count))
     return nodes.drop('cc')
 
 
-def jvm_stats(start: str, node_name: px.Node, pod: px.Pod):
+def jvm_stats(start_time: str, node_name: px.Node, pod: px.Pod):
     """ Gets the JVM stats of pods that run on the matched nodes
     and that match the pod name.
 
     Args:
-    @start: Starting time of the data to examine.
+    @start_time Starting time of the data to examine.
     @node_name: The partial name of the node(s) to display data for.
     @pod: The partial name of the pod(s) to display data for.
 
     Returns: A DataFrame of jvm stats per pod matched in the passed
         in filters.
     """
-    df = filtered_process_stats(start, node_name, pod)
+    df = filtered_process_stats(start_time, node_name, pod)
     # Calculate the CPU usage per window.
     jvm_df = calculate_jvm(df, window_ns)
     jvm_df[split_series_name] = jvm_df[k8s_object]
     return jvm_df
 
 
-def cmd_pod_table(start: str, node_name: px.Node, pod: px.Pod):
+def cmd_pod_table(start_time: str, node_name: px.Node, pod: px.Pod):
     """ Gets the pods that are picked up by the node and pod filters.
 
     Args:
-    @start: Starting time of the data to examine.
+    @start_time Starting time of the data to examine.
     @node_name: The partial name of the node(s) to display data for.
     @pod: The partial name of the pod(s) to display data for.
 
     Returns: A DataFrame that displays all pods matching the node
         and pod filters.
     """
-    df = filtered_process_stats(start, node_name, pod)
+    df = filtered_process_stats(start_time, node_name, pod)
     df.cmdline = px.upid_to_cmdline(df.upid)
     # Aggregate on nodes to get unique node values.
     pods = df.groupby([k8s_object, 'cmdline']).agg(cc=(k8s_object, px.count))
@@ -112,12 +112,12 @@ def cmd_pod_table(start: str, node_name: px.Node, pod: px.Pod):
 # which will allow these functions to be shared across multiple
 # scripts.
 # ----------------------------------------------------------------
-def filtered_process_stats(start: str, node_name: px.Node, pod: px.Pod):
+def filtered_process_stats(start_time: str, node_name: px.Node, pod: px.Pod):
     """ Helper function that filters the process_stats tabel for data that
     matches the pod and node filters.
 
     Args:
-    @start: Starting time of the data to examine.
+    @start_time Starting time of the data to examine.
     @node_name: The partial name of the node(s) to display data for.
     @pod: The partial name of the pod(s) to display data for.
 
@@ -128,7 +128,7 @@ def filtered_process_stats(start: str, node_name: px.Node, pod: px.Pod):
 
     # Load and prepare the process_stats table to calculate CPU usage
     # by pod.
-    process_df = px.DataFrame(table='jvm_stats', start_time=start)
+    process_df = px.DataFrame(table='jvm_stats', start_time=start_time)
     process_df = format_jvm_table(process_df, window_ns)
     process_df = filter_stats(process_df, node_name, pod)
     return process_df

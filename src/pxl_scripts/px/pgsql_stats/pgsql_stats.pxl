@@ -39,54 +39,55 @@ latency_bin_size_ns = px.DurationNanos(50 * ns_per_ms)
 # These functions are formatted and ready for use in
 # the visualization specification, vis.json.
 # ----------------------------------------------------------------
-def pod_pgsql_let(start: str, pod: px.Pod):
+def pod_pgsql_let(start_time: str, pod: px.Pod):
     ''' Calculate LET time-series for PostgreSQL traffic per connection to
     a PostgreSQL database pod.
 
     Calculates latency and throughput for each pod's
     connection to a PostgreSQL database pod.
 
-    @start: The timestamp of data to start at.
+    @start_time The timestamp of data to start at.
     @pod: the partial/full-name of the pod to monitor PostgreSQL LET.
 
     Returns: Returns the DataFrame containing LET time-series for PostgreSQL
         traffic to a PostgreSQL database pod.
     '''
-    df = pgsql_let_per_pod(start, pod, ['timestamp', 'destination'])
+    df = pgsql_let_per_pod(start_time, pod, ['timestamp', 'destination'])
 
     return df[['time_', 'destination', 'latency_p50', 'latency_p90',
               'latency_p99', 'request_throughput']]
 
 
-def summary_pgsql_let(start: str, pod: px.Pod):
+def summary_pgsql_let(start_time: str, pod: px.Pod):
     ''' Calculate LET summary for PostgreSQL traffic per connection to
     a PostgreSQL database pod.
 
     Calculates latency and throughput for each
     connection to a PostgreSQL database pod.
 
-    @start: The timestamp of data to start at.
+    @start_time The timestamp of data to start at.
     @pod: the partial/full-name of the pod to monitor PostgreSQL LET.
 
     Returns: Returns the DataFrame containing LET time-series for PostgreSQL
     traffic to a PostgreSQL database pod.
     '''
 
-    df = pgsql_let_per_pod(start, pod, ['timestamp', 'source', 'destination', 'is_source_pod_type',
-                                        'is_dest_pod_type', 'namespace'])
+    df = pgsql_let_per_pod(start_time, pod, ['timestamp', 'source', 'destination',
+                                             'is_source_pod_type', 'is_dest_pod_type',
+                                             'namespace'])
     summary_df = summarize_LET(df, ['source', 'destination', 'is_source_pod_type',
                                     'is_dest_pod_type', 'namespace'])
-    summary_df_links = add_source_dest_links(summary_df, start)
+    summary_df_links = add_source_dest_links(summary_df, start_time)
 
     return summary_df_links[['source', 'destination', 'request_throughput', 'latency',
                              'total_requests']]
 
 
-def latency_histogram(start: str, pod: px.Pod):
+def latency_histogram(start_time: str, pod: px.Pod):
     ''' Computes a histogram of PostgreSQL request latency.
 
     Args:
-    @start: The timestamp of data to start at.
+    @start_time The timestamp of data to start at.
     @svc: the partial/full-name of the svc.
 
     Returns: DataFrame of the PostgreSQL latency histogram for svcs that
@@ -95,7 +96,7 @@ def latency_histogram(start: str, pod: px.Pod):
     # The data necessary to compute PostgreSQL LET information is located in the
     # pgsql_events table. We filter and aggregate data from this table to compute the
     # required metrics.
-    df = px.DataFrame(table='pgsql_events', start_time=start)
+    df = px.DataFrame(table='pgsql_events', start_time=start_time)
     df = format_pgsql_table(df)
 
     # Calculate LET of pod(s) (k8s_object) connection to PostgreSQL connections
@@ -114,14 +115,14 @@ def latency_histogram(start: str, pod: px.Pod):
 # which will allow these functions to be shared across multiple
 # scripts.
 # ----------------------------------------------------------------
-def pgsql_let_per_pod(start: str, pod: px.Pod, groups):
+def pgsql_let_per_pod(start_time: str, pod: px.Pod, groups):
     ''' Calculate LET time-series for PostgreSQL traffic per connection to
     a PostgreSQL database pod.
 
     Calculates latency and throughput for each connection to a
     PostgreSQL database pod.
 
-    @start: The timestamp of data to start at.
+    @start_time The timestamp of data to start at.
     @pod: the partial/full-name of the pod to monitor PostgreSQL LET.
 
     Returns: Returns the DataFrame containing LET time-series for PostgreSQL
@@ -130,7 +131,7 @@ def pgsql_let_per_pod(start: str, pod: px.Pod, groups):
     # The data necessary to compute PostgreSQL LET information is located in the
     # pgsql_events table. We filter and aggregate data from this table to compute the
     # required metrics.
-    df = px.DataFrame(table='pgsql_events', start_time=start)
+    df = px.DataFrame(table='pgsql_events', start_time=start_time)
     df = format_pgsql_table(df)
 
     # Calculate LET of pod(s) (k8s_object) connection to PostgreSQL connections
@@ -289,7 +290,7 @@ def add_source_dest_columns(df):
     return df
 
 
-def add_source_dest_links(df, start: str):
+def add_source_dest_links(df, start_time: str):
     ''' Modifies the source and destination columns to display deeplinks in the UI.
     Clicking on a pod name in either column will run the px/pod script for that pod.
     Clicking on an IP address, will run the px/net_flow_graph script showing all
@@ -301,11 +302,11 @@ def add_source_dest_links(df, start: str):
 
     # Source linking. If source is a pod, link to px/pod. If an IP addr, link to px/net_flow_graph.
     df.src_pod_link = px.script_reference(df.source, 'px/pod', {
-        'start_time': start,
+        'start_time': start_time,
         'pod': df.source
     })
     df.src_link = px.script_reference(df.source, 'px/net_flow_graph', {
-        'start_time': start,
+        'start_time': start_time,
         'namespace': df.namespace,
         'from_entity_filter': df.source,
         'to_entity_filter': '',
@@ -315,11 +316,11 @@ def add_source_dest_links(df, start: str):
 
     # If destination is a pod, link to px/pod. If an IP addr, link to px/net_flow_graph.
     df.dest_pod_link = px.script_reference(df.destination, 'px/pod', {
-        'start_time': start,
+        'start_time': start_time,
         'pod': df.destination
     })
     df.dest_link = px.script_reference(df.destination, 'px/net_flow_graph', {
-        'start_time': start,
+        'start_time': start_time,
         'namespace': df.namespace,
         'from_entity_filter': '',
         'to_entity_filter': df.destination,

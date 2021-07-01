@@ -79,7 +79,7 @@ def inbound_let_summary(start_time: str, service: px.Service):
     ''' Gets a summary of requests inbound to `service`.
 
     Args:
-    @start: Starting time of the data to examine.
+    @start_time Starting time of the data to examine.
     @service: The service to filter on.
     '''
     df = let_summary_helper(start_time)
@@ -91,7 +91,7 @@ def outbound_let_summary(start_time: str, service: px.Service):
     ''' Gets a summary of requests outbound from `service`.
 
     Args:
-    @start: Starting time of the data to examine.
+    @start_time Starting time of the data to examine.
     @service: The service to filter on.
     '''
     df = let_summary_helper(start_time)
@@ -104,7 +104,7 @@ def let_summary_helper(start_time: str):
         service is done elsewhere.
 
     Args:
-    @start: Starting time of the data to examine.
+    @start_time Starting time of the data to examine.
     '''
     df = let_helper(start_time)
 

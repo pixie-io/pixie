@@ -61,7 +61,7 @@ split_series_name = 'k8s'
 # These functions are formatted and ready for use in
 # the visualization speciciation, vis.json.
 # ----------------------------------------------------------------
-def svc_edge_let(start: str, requesting_svc: px.Service,
+def svc_edge_let(start_time: str, requesting_svc: px.Service,
                  responding_svc: px.Service):
     """ Returns the LET time-series for each edge that matches the filter.
 
@@ -72,7 +72,7 @@ def svc_edge_let(start: str, requesting_svc: px.Service,
     and end at a svc that matches @responding_svc
 
     Args:
-    @start: The timestamp of data to start at.
+    @start_time The timestamp of data to start at.
     @requesting_svc: the partial/full-name of the svc(s)
         that originate requests. (start of the edge).
     @responding_svc: the partial/full-name of the svc(s)
@@ -80,7 +80,7 @@ def svc_edge_let(start: str, requesting_svc: px.Service,
 
     Returns: DataFrame of the LET stats for edges in the svc graph.
     """
-    df = make_http_table(start)
+    df = make_http_table(start_time)
 
     # Calculate LET of svc(s) (k8s_object) over the time window ('timestamp')
     # after filtering for matching svcs.
@@ -95,7 +95,7 @@ def svc_edge_let(start: str, requesting_svc: px.Service,
     return let_df
 
 
-def summary_edge_let(start: str, requesting_svc: px.Service,
+def summary_edge_let(start_time: str, requesting_svc: px.Service,
                      responding_svc: px.Service):
     """ Returns the summary of LET statistics for matching edges.
 
@@ -108,7 +108,7 @@ def summary_edge_let(start: str, requesting_svc: px.Service,
     and end at a svc that matches @responding_svc
 
     Args:
-    @start: The timestamp of data to start at.
+    @start_time The timestamp of data to start at.
     @requesting_svc: the partial/full-name of the svc(s)
         that originate requests. (start of the edge).
     @responding_svc: the partial/full-name of the svc(s)
@@ -116,7 +116,7 @@ def summary_edge_let(start: str, requesting_svc: px.Service,
 
     Returns: DataFrame of the LET stats for edges in the svc graph.
     """
-    df = svc_edge_let(start, requesting_svc, responding_svc)
+    df = svc_edge_let(start_time, requesting_svc, responding_svc)
     return summarize_LET(df, [src_col, dest_col])
 
 
@@ -131,7 +131,7 @@ def let_per_edge(df: px.DataFrame):
     """ Calculates the LET per edge of the svc graph.
 
     Args:
-    @start: The timestamp of data to start at.
+    @start_time The timestamp of data to start at.
 
     Returns: DataFrame of HTTP events with formatted columns.
     """
@@ -148,7 +148,7 @@ def let_per_edge(df: px.DataFrame):
     return edge_let_df
 
 
-def make_http_table(start: str):
+def make_http_table(start_time: str):
     """ Makes the HTTP table given the passed in start.
 
     The data necessary to compute HTTP level svc information is located in the
@@ -156,14 +156,14 @@ def make_http_table(start: str):
     required metrics.
 
     Args:
-    @start: The timestamp of data to start at.
+    @start_time The timestamp of data to start at.
 
     Returns: DataFrame of HTTP events with formatted columns.
     """
     # The data necessary to compute HTTP level svc information is located in the
     # http_events table. We filter and aggregate data from this table to compute the
     # required metrics.
-    df = px.DataFrame(table='http_events', start_time=start)
+    df = px.DataFrame(table='http_events', start_time=start_time)
     df = format_http_table(df, filter_health_checks,
                            filter_ready_checks, filter_unresolved_inbound)
     return df

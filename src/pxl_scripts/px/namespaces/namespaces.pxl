@@ -32,7 +32,7 @@ def namespaces_for_cluster(start_time: str):
     ''' Gets a list of namespaces in the current cluster since `start_time`.
 
     Args:
-    @start: Start time of the data to examine.
+    @start_time Start time of the data to examine.
     '''
     df = px.DataFrame(table='process_stats', start_time=start_time)
     df.service = df.ctx['service_name']
@@ -51,7 +51,7 @@ def process_stats_by_namespace(start_time: str):
         Computes the total I/O consumption across the namespace since `start_time`.
 
     Args:
-    @start: Start time of the data to examine.
+    @start_time Start time of the data to examine.
     '''
 
     df = px.DataFrame(table='process_stats', start_time=start_time)

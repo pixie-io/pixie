@@ -20,9 +20,9 @@ Shows DNS requests made by pods, clustered by name prefix.
 import px
 
 
-def dns_queries(start: str, namespace: str, pod_filter: str,
+def dns_queries(start_time: str, namespace: str, pod_filter: str,
                 query_filter: str, dns_server_filter: str):
-    df = px.DataFrame('dns_events', start_time=start)
+    df = px.DataFrame('dns_events', start_time=start_time)
 
     # Client-side tracing only.
     df = df[df.trace_role == 1]

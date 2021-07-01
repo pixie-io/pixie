@@ -58,18 +58,18 @@ latency_bin_size_ns = px.DurationNanos(50 * ns_per_ms)
 # ----------------------------------------------------------------
 
 
-def svc_let(start: str, svc: px.Service):
+def svc_let(start_time: str, svc: px.Service):
     """ Calculates LET filtered on the svc
 
     Args:
-    @start: The timestamp of data to start at.
+    @start_time The timestamp of data to start at.
     @svc: the partial/full-name of the svc to
         calculate LET.
 
     Returns: DataFrame of the LET stats for svcs that
         match @svc.
     """
-    df = make_http_table(start)
+    df = make_http_table(start_time)
     # Calculate LET of svc(s) (k8s_object) over the time window ('timestamp')
     # after filtering for matching svcs.
     matching_df = df[px.contains(df[k8s_object], svc)]
@@ -83,51 +83,51 @@ def svc_let(start: str, svc: px.Service):
     return let_df
 
 
-def http_code_histogram(start: str, svc: px.Service):
+def http_code_histogram(start_time: str, svc: px.Service):
     """ Computes a histogram of HTTP status codes
 
     Args:
-    @start: The timestamp of data to start at.
+    @start_time The timestamp of data to start at.
     @svc: the partial/full-name of the svc.
 
     Returns: DataFrame of the HTTP status code stats for svcs that
         match @svc.
     """
-    df = make_http_table(start)
+    df = make_http_table(start_time)
     matching_df = df[px.contains(df[k8s_object], svc)]
     return matching_df.groupby(['resp_status']).agg(count=('latency', px.count))
 
 
-def latency_histogram(start: str, svc: px.Service):
+def latency_histogram(start_time: str, svc: px.Service):
     """ Computes a histogram of HTTP request latency.
 
     Args:
-    @start: The timestamp of data to start at.
+    @start_time The timestamp of data to start at.
     @svc: the partial/full-name of the svc.
 
     Returns: DataFrame of the HTTP latency histogram for svcs that
         match @svc.
     """
-    df = make_http_table(start)
+    df = make_http_table(start_time)
     matching_df = df[px.contains(df[k8s_object], svc)]
     matching_df.request_latency = px.DurationNanos(px.bin(matching_df.latency,
                                                           latency_bin_size_ns))
     return matching_df.groupby('request_latency').agg(count=('resp_status', px.count))
 
 
-def outgoing_edges(start: str, svc: px.Service):
+def outgoing_edges(start_time: str, svc: px.Service):
     """ Determines the svcs that this svc makes
     requests to.
 
     Args:
-    @start: The timestamp of data to start at.
+    @start_time The timestamp of data to start at.
     @svc: the partial/full-name of the svc to
         get outgoing_edges.
 
     Returns: DataFrame of the svcs this svc talks to
         and the LET summary of that communication.
     """
-    df = let_per_edge(start)
+    df = let_per_edge(start_time)
     # Filter for traffic that starts at this svc.
     outgoing_let_df = df[px.contains(
         df[src_col], svc)]
@@ -136,18 +136,18 @@ def outgoing_edges(start: str, svc: px.Service):
     return summarize_LET(outgoing_let_df, [src_col, dest_col])
 
 
-def incoming_edges(start: str, svc: px.Service):
+def incoming_edges(start_time: str, svc: px.Service):
     """ Determines the svcs that make requests to this svc.
 
     Args:
-    @start: The timestamp of data to start at.
+    @start_time The timestamp of data to start at.
     @svc: the partial/full-name of the svc to
         get incoming_edges.
 
     Returns: DataFrame of the svcs that talk to this svc
         and the LET summary of that communication.
     """
-    df = let_per_edge(start)
+    df = let_per_edge(start_time)
 
     # Filter traffic that ends at this svc.
     incoming_let_df = df[px.contains(
@@ -157,12 +157,12 @@ def incoming_edges(start: str, svc: px.Service):
     return summarize_LET(incoming_let_df, [src_col, dest_col])
 
 
-def svc_graph(start: str, svc: px.Service):
+def svc_graph(start_time: str, svc: px.Service):
     """ Determines the svcs that make requests to this svc.
     Like incoming_edges, but filters out empty strings in the src/dest.
 
     Args:
-    @start: The timestamp of data to start at.
+    @start_time The timestamp of data to start at.
     @svc: the partial/full-name of the svc to
         get svc_graph in.
 
@@ -170,7 +170,7 @@ def svc_graph(start: str, svc: px.Service):
         and the LET summary of that communication.
     """
 
-    df = incoming_edges(start, svc)
+    df = incoming_edges(start_time, svc)
     return df[df[src_col] != '' and df[dest_col] != '']
 
 
@@ -181,7 +181,7 @@ def svc_graph(start: str, svc: px.Service):
 # which will allow these functions to be shared across multiple
 # scripts.
 # ----------------------------------------------------------------
-def make_http_table(start: str):
+def make_http_table(start_time: str):
     """ Makes the HTTP table given the passed in start.
 
     The data necessary to compute HTTP level svc information is located in the
@@ -189,26 +189,26 @@ def make_http_table(start: str):
     required metrics.
 
     Args:
-    @start: The timestamp of data to start at.
+    @start_time The timestamp of data to start at.
 
     Returns: DataFrame of HTTP events with formatted columns.
     """
-    df = px.DataFrame(table='http_events', start_time=start)
+    df = px.DataFrame(table='http_events', start_time=start_time)
     df = format_http_table(df, filter_health_checks,
                            filter_ready_checks, filter_unresolved_inbound)
     return df
 
 
-def let_per_edge(start: str):
+def let_per_edge(start_time: str):
     """ Calculates the LET per edge of the svc graph.
 
     Args:
-    @start: The timestamp of data to start at.
+    @start_time The timestamp of data to start at.
 
     Returns: DataFrame of HTTP events with formatted columns.
     """
 
-    df = make_http_table(start)
+    df = make_http_table(start_time)
     # Calculate LET for each svc edge in the svc graph over each time window.
     # Each edge starts at a requester ('remote_addr') and ends at a
     # responder (k8s_object).

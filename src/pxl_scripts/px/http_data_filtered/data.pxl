@@ -32,11 +32,11 @@ max_num_records = 100
 # ----------------------------------------------------------------
 
 
-def http_data(start: str, svc: px.Service, pod: px.Pod, req_path: str):
+def http_data(start_time: str, svc: px.Service, pod: px.Pod, req_path: str):
     df = px.DataFrame(table='http_events', select=['time_', 'upid', 'remote_addr', 'remote_port',
                                                    'req_method', 'req_path', 'resp_status',
                                                    'resp_body', 'latency'],
-                      start_time=start)
+                      start_time=start_time)
 
     df.svc = df.ctx['service']
     df.pod = df.ctx['pod']

@@ -33,7 +33,7 @@ def pods_for_node(start_time: str, node: px.Node):
     ''' Gets a list of pods running on the input node.
 
     Args:
-    @start: Starting time of the data to examine.
+    @start_time Starting time of the data to examine.
     @node: The full name of the node to filter on.
     '''
     df = px.DataFrame(table='process_stats', start_time=start_time)
@@ -51,7 +51,7 @@ def resource_timeseries(start_time: str, node: px.Node, groupby: str):
     ''' Gets the windowed process stats (CPU, memory, etc) for the input node.
 
     Args:
-    @start: Starting time of the data to examine.
+    @start_time Starting time of the data to examine.
     @node: The full name of the node to filter on.
     '''
     df = px.DataFrame(table='process_stats', start_time=start_time)
@@ -109,7 +109,7 @@ def network_stats(start_time: str, node: px.Node, groupby: str):
     ''' Gets the network stats (transmitted/received traffic) for the input node.
 
     Args:
-    @start: Starting time of the data to examine.
+    @start_time Starting time of the data to examine.
     @node: The full name of the node to filter on.
     '''
     df = px.DataFrame(table='network_stats', start_time=start_time)

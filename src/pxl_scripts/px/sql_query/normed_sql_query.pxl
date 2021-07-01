@@ -44,33 +44,33 @@ latency_bin_size_ns = px.DurationNanos(50 * ns_per_ms)
 # These functions are formatted and ready for use in
 # the visualization specification, vis.json.
 # ----------------------------------------------------------------
-def pod_sql_let(start: str, pod: px.Pod, normed_query: str):
+def pod_sql_let(start_time: str, pod: px.Pod, normed_query: str):
     ''' Calculate LET time-series for PostgreSQL or MySQL traffic
     for a given normalized SQL query.
 
     Calculates latency and throughput for each parameter set to the query.
 
-    @start: The timestamp of data to start at.
+    @start_time The timestamp of data to start at.
     @pod: the partial/full-name of the pod to monitor LET.
     @normed_query: the normalized SQL query to monitor.
 
     Returns: Returns the DataFrame containing LET time-series for
         traffic to a PostgreSQL or MySQL database pod grouped by query params.
     '''
-    df = merged_let_per_pod(start, pod)
+    df = merged_let_per_pod(start_time, pod)
     df = df[df.normed_query == normed_query]
 
     return df[['time_', 'normed_query', 'params', 'latency_p50',
               'latency_p90', 'latency_p99', 'request_throughput']]
 
 
-def summary_sql_let(start: str, pod: px.Pod, normed_query: str):
+def summary_sql_let(start_time: str, pod: px.Pod, normed_query: str):
     ''' Calculate LET summary for PostgreSQL or MySQL traffic
     for a given normalized SQL query.
 
     Calculates latency and throughput for each parameter set to the query.
 
-    @start: The timestamp of data to start at.
+    @start_time The timestamp of data to start at.
     @pod: the partial/full-name of the pod to monitor LET.
     @normed_query: the normalized SQL query to monitor.
 
@@ -78,7 +78,7 @@ def summary_sql_let(start: str, pod: px.Pod, normed_query: str):
     for the query grouped by parameter set.
     '''
 
-    df = merged_let_per_pod(start, pod)
+    df = merged_let_per_pod(start_time, pod)
     df = df[df.normed_query == normed_query]
     df = summarize_LET(df, ['normed_query', 'params'])
 
@@ -93,9 +93,9 @@ def summary_sql_let(start: str, pod: px.Pod, normed_query: str):
 # which will allow these functions to be shared across multiple
 # scripts.
 # ----------------------------------------------------------------
-def merged_let_per_pod(start: str, pod: px.Pod):
-    pgsql_df = normalized_pgsql_per_pod(start, pod)
-    mysql_df = normalized_mysql_per_pod(start, pod)
+def merged_let_per_pod(start_time: str, pod: px.Pod):
+    pgsql_df = normalized_pgsql_per_pod(start_time, pod)
+    mysql_df = normalized_mysql_per_pod(start_time, pod)
 
     common_cols = ['timestamp', 'normed_query', 'params',
                    'latency', 'resp_size']
@@ -117,12 +117,12 @@ def merged_let_per_pod(start: str, pod: px.Pod):
     return df
 
 
-def normalized_pgsql_per_pod(start: str, pod: px.Pod):
+def normalized_pgsql_per_pod(start_time: str, pod: px.Pod):
     ''' Normalized traffic per connection to a PostgreSQL database pod.
 
     Formats the table and normalizes queries.
 
-    @start: The timestamp of data to start at.
+    @start_time The timestamp of data to start at.
     @pod: the partial/full-name of the pod to monitor PostgreSQL LET.
 
     Returns: Returns the DataFrame containing normalized queries
@@ -131,7 +131,7 @@ def normalized_pgsql_per_pod(start: str, pod: px.Pod):
     # The data necessary to compute PostgreSQL LET information is located in the
     # pgsql_events table. We filter and aggregate data
     # from this table to compute the required metrics.
-    df = px.DataFrame(table='pgsql_events', start_time=start)
+    df = px.DataFrame(table='pgsql_events', start_time=start_time)
     df = format_pgsql_table(df)
 
     # Calculate LET of pod(s) (k8s_object) connection to PostgreSQL connections
@@ -143,12 +143,12 @@ def normalized_pgsql_per_pod(start: str, pod: px.Pod):
     return df
 
 
-def normalized_mysql_per_pod(start: str, pod: px.Pod):
+def normalized_mysql_per_pod(start_time: str, pod: px.Pod):
     ''' Normalized MySQL traffic per connection to a MySQL database pod.
 
     Formats the table and normalizes queries.
 
-    @start: The timestamp of data to start at.
+    @start_time The timestamp of data to start at.
     @pod: the partial/full-name of the pod to monitor MySQL LET.
 
     Returns: Returns the DataFrame containing normalized MySQL queries
@@ -157,7 +157,7 @@ def normalized_mysql_per_pod(start: str, pod: px.Pod):
     # The data necessary to compute MySQL LET information is located in the
     # mysql_events table. We filter and aggregate data
     # from this table to compute the required metrics.
-    df = px.DataFrame(table='mysql_events', start_time=start)
+    df = px.DataFrame(table='mysql_events', start_time=start_time)
     df = format_mysql_table(df, False)
 
     # Calculate LET of pod(s) (k8s_object) connection to PostgreSQL connections
@@ -393,7 +393,7 @@ def add_source_dest_columns(df):
     return df
 
 
-def add_source_dest_links(df, start: str):
+def add_source_dest_links(df, start_time: str):
     ''' Modifies the source and destination columns to display deeplinks
     in the UI.
     Clicking on a pod name in either column will run the px/pod script
@@ -407,11 +407,11 @@ def add_source_dest_links(df, start: str):
     # Source linking. If source is a pod, link to px/pod. If an IP addr,
     # link to px/net_flow_graph.
     df.src_pod_link = px.script_reference(df.source, 'px/pod', {
-        'start_time': start,
+        'start_time': start_time,
         'pod': df.source
     })
     df.src_link = px.script_reference(df.source, 'px/net_flow_graph', {
-        'start_time': start,
+        'start_time': start_time,
         'namespace': df.namespace,
         'from_entity_filter': df.source,
         'to_entity_filter': '',
@@ -422,11 +422,11 @@ def add_source_dest_links(df, start: str):
     # If destination is a pod, link to px/pod. If an IP addr, link to
     # px/net_flow_graph.
     df.dest_pod_link = px.script_reference(df.destination, 'px/pod', {
-        'start_time': start,
+        'start_time': start_time,
         'pod': df.destination
     })
     df.dest_link = px.script_reference(df.destination, 'px/net_flow_graph', {
-        'start_time': start,
+        'start_time': start_time,
         'namespace': df.namespace,
         'from_entity_filter': '',
         'to_entity_filter': df.destination,

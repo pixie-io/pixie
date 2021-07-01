@@ -21,9 +21,9 @@ Shows the most recent PostgreSQL messages in the cluster.
 import px
 
 
-def pgsql_data(start: str, source_filter: str, destination_filter: str, num_head: int):
+def pgsql_data(start_time: str, source_filter: str, destination_filter: str, num_head: int):
 
-    df = px.DataFrame(table='pgsql_events', start_time=start)
+    df = px.DataFrame(table='pgsql_events', start_time=start_time)
     df = add_source_dest_columns(df)
 
     # Filter out entities as specified by the user.
@@ -35,7 +35,7 @@ def pgsql_data(start: str, source_filter: str, destination_filter: str, num_head
     # Restrict number of results.
     df = df.head(num_head)
 
-    df = add_source_dest_links(df, start)
+    df = add_source_dest_links(df, start_time)
     df = df[['time_', 'source', 'destination', 'remote_port', 'req', 'resp', 'latency']]
 
     return df
@@ -78,7 +78,7 @@ def add_source_dest_columns(df):
     return df
 
 
-def add_source_dest_links(df, start: str):
+def add_source_dest_links(df, start_time: str):
     ''' Modifies the source and destination columns to display deeplinks in the UI.
     Clicking on a pod name in either column will run the px/pod script for that pod.
     Clicking on an IP address, will run the px/net_flow_graph script showing all
@@ -90,11 +90,11 @@ def add_source_dest_links(df, start: str):
 
     # Source linking. If source is a pod, link to px/pod. If an IP addr, link to px/net_flow_graph.
     df.src_pod_link = px.script_reference(df.source, 'px/pod', {
-        'start_time': start,
+        'start_time': start_time,
         'pod': df.source
     })
     df.src_link = px.script_reference(df.source, 'px/net_flow_graph', {
-        'start_time': start,
+        'start_time': start_time,
         'namespace': df.namespace,
         'from_entity_filter': df.source,
         'to_entity_filter': '',
@@ -104,11 +104,11 @@ def add_source_dest_links(df, start: str):
 
     # If destination is a pod, link to px/pod. If an IP addr, link to px/net_flow_graph.
     df.dest_pod_link = px.script_reference(df.destination, 'px/pod', {
-        'start_time': start,
+        'start_time': start_time,
         'pod': df.destination
     })
     df.dest_link = px.script_reference(df.destination, 'px/net_flow_graph', {
-        'start_time': start,
+        'start_time': start_time,
         'namespace': df.namespace,
         'from_entity_filter': '',
         'to_entity_filter': df.destination,

@@ -39,8 +39,8 @@ def format_service_name_as_dns(df):
     return df.drop(['service_stripped', 'idx']).append(no_service)
 
 
-def dns_flow_graph(start: str, from_entity_filter: str, to_entity_filter: str):
-    df = px.DataFrame('dns_events', start_time=start)
+def dns_flow_graph(start_time: str, from_entity_filter: str, to_entity_filter: str):
+    df = px.DataFrame('dns_events', start_time=start_time)
 
     # Client-side tracing only.
     df = df[df.trace_role == 1]

@@ -37,7 +37,7 @@ filter_ready_checks = True
 def nodes_for_cluster(start_time: str):
     ''' Gets a list of nodes in the current cluster since `start_time`.
     Args:
-    @start: Start time of the data to examine.
+    @start_time Start time of the data to examine.
     '''
     df = px.DataFrame(table='process_stats', start_time=start_time)
     df.node = df.ctx['node_name']
@@ -53,7 +53,7 @@ def nodes_for_cluster(start_time: str):
 def process_stats_by_entity(start_time: str, entity: str):
     ''' Gets the windowed process stats (CPU, memory, etc) per node or pod.
     Args:
-    @start: Starting time of the data to examine.
+    @start_time Starting time of the data to examine.
     @entity: Either pod or node_name.
     '''
     df = px.DataFrame(table='process_stats', start_time=start_time)
@@ -141,7 +141,7 @@ def pods_for_cluster(start_time: str):
 def namespaces_for_cluster(start_time: str):
     ''' Gets a overview of namespaces in the current cluster since `start_time`.
     Args:
-    @start: Start time of the data to examine.
+    @start_time Start time of the data to examine.
     '''
     df = px.DataFrame(table='process_stats', start_time=start_time)
     df.service = df.ctx['service_name']

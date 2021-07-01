@@ -1,7 +1,7 @@
 {
   "variables": [
     {
-      "name": "start",
+      "name": "start_time",
       "type": "PX_STRING",
       "description": "The relative start time of the window. Current time is assumed to be now.",
       "defaultValue": "-5m"
@@ -32,8 +32,8 @@
         "name": "mysql_data",
         "args": [
           {
-            "name": "start",
-            "variable": "start"
+            "name": "start_time",
+            "variable": "start_time"
           },
           {
             "name": "source_filter",

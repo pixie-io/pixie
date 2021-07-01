@@ -21,8 +21,8 @@ This script traces all HTTP/HTTP2 data on the cluster.
 import px
 
 
-def http_data(start: str, num_head: int):
-    df = px.DataFrame(table='http_events', start_time=start)
+def http_data(start_time: str, num_head: int):
+    df = px.DataFrame(table='http_events', start_time=start_time)
 
     df.namespace = df.ctx['namespace']
     df.node = df.ctx['node']

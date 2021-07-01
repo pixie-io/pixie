@@ -21,10 +21,10 @@ DNS traffic on the cluster for a specified amount of time.
 import px
 
 
-def fqdn_list(start: str):
+def fqdn_list(start_time: str):
 
     # The dns_events table pairs DNS requests with their responses.
-    df = px.DataFrame(table='dns_events', start_time=start)
+    df = px.DataFrame(table='dns_events', start_time=start_time)
 
     # Parse the DNS response to determine if it was successfully resolved.
     df.resp_body = px.pluck(df.resp_body, 'answers')
@@ -50,7 +50,7 @@ def fqdn_list(start: str):
     # Add link to script that will show all requests for specific query.
     df.link = px.script_reference('All DNS requests containing FQDN as substring',
                                   'sotw/dns_queries_filtered', {
-                                      'start_time': start,
+                                      'start_time': start_time,
                                       'query_name_filter': df.fqdn
                                   })
 

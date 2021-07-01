@@ -21,8 +21,8 @@ This script traces all CQL (Cassandra) data on the cluster.
 import px
 
 
-def cql_data(start: str, num_head: int):
-    df = px.DataFrame(table='cql_events', start_time=start)
+def cql_data(start_time: str, num_head: int):
+    df = px.DataFrame(table='cql_events', start_time=start_time)
 
     # Replace UPID with pod.
     df.pod = df.ctx['pod']

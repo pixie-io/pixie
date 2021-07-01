@@ -20,10 +20,10 @@ Lists all DNS queries filtered by a specific query name.
 import px
 
 
-def dns_requests(start: str, query_name_filter: str):
+def dns_requests(start_time: str, query_name_filter: str):
 
     # The dns_events table pairs DNS requests with their responses.
-    df = px.DataFrame(table='dns_events', start_time=start)
+    df = px.DataFrame(table='dns_events', start_time=start_time)
 
     # Add context.
     df.pod = df.ctx['pod']

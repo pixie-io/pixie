@@ -1,7 +1,7 @@
 {
   "variables": [
     {
-      "name": "start",
+      "name": "start_time",
       "type": "PX_STRING",
       "description": "The start time of the window in time units before now.",
       "defaultValue": "-5m"
@@ -14,8 +14,8 @@
         "name": "fqdn_list",
         "args": [
           {
-            "name": "start",
-            "variable": "start"
+            "name": "start_time",
+            "variable": "start_time"
           }
         ]
       }

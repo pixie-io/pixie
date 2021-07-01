@@ -39,7 +39,7 @@ def pods_by_node(start_time: str):
     ''' Gets a list of pods running per node.
 
     Args:
-    @start: Starting time of the data to examine.
+    @start_time Starting time of the data to examine.
     '''
     df = px.DataFrame(table='process_stats', start_time=start_time)
     df.node = df.ctx['node_name']
@@ -54,7 +54,7 @@ def process_stats(start_time: str):
     ''' Gets the windowed process stats (CPU, memory, etc) per node.
 
     Args:
-    @start: Starting time of the data to examine.
+    @start_time Starting time of the data to examine.
     '''
     df = px.DataFrame(table='process_stats', start_time=start_time)
     df.node = df.ctx['node_name']
@@ -110,7 +110,7 @@ def network_stats(start_time: str):
     ''' Gets the network stats (transmitted/received traffic) per node.
 
     Args:
-    @start: Starting time of the data to examine.
+    @start_time Starting time of the data to examine.
     '''
     df = px.DataFrame(table='network_stats', start_time=start_time)
     df.node = px.pod_id_to_node_name(df.pod_id)

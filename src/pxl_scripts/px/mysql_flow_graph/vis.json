@@ -1,7 +1,7 @@
 {
   "variables": [
     {
-      "name": "start",
+      "name": "start_time",
       "type": "PX_STRING",
       "description": "The start time of the window in time units before now.",
       "defaultValue": "-5m"
@@ -31,8 +31,8 @@
         "name": "mysql_flow_graph",
         "args": [
           {
-            "name": "start",
-            "variable": "start"
+            "name": "start_time",
+            "variable": "start_time"
           },
           {
             "name": "ns",
@@ -55,8 +55,8 @@
         "name": "mysql_summary_with_links",
         "args": [
           {
-            "name": "start",
-            "variable": "start"
+            "name": "start_time",
+            "variable": "start_time"
           },
           {
             "name": "ns",

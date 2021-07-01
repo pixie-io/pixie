@@ -1,7 +1,7 @@
 {
   "variables": [
     {
-      "name": "start",
+      "name": "start_time",
       "type": "PX_STRING",
       "description": "The relative start time of the window. Current time is assumed to be now",
       "defaultValue": "-5m"
@@ -26,8 +26,8 @@
         "name": "svc_edge_let",
         "args": [
           {
-            "name": "start",
-            "variable": "start"
+            "name": "start_time",
+            "variable": "start_time"
           },
           {
             "name": "requesting_svc",
@@ -158,8 +158,8 @@
         "name": "summary_edge_let",
         "args": [
           {
-            "name": "start",
-            "variable": "start"
+            "name": "start_time",
+            "variable": "start_time"
           },
           {
             "name": "requesting_svc",

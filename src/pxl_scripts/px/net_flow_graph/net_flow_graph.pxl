@@ -17,9 +17,9 @@
 import px
 
 
-def net_flow_graph(start: str, ns: px.Namespace, from_entity_filter: str, to_entity_filter: str,
-                   throughput_filter: float):
-    df = px.DataFrame('conn_stats', start_time=start)
+def net_flow_graph(start_time: str, ns: px.Namespace, from_entity_filter: str,
+                   to_entity_filter: str, throughput_filter: float):
+    df = px.DataFrame('conn_stats', start_time=start_time)
 
     # Filter on namespace.
     df = df[df.ctx['namespace'] == ns]

@@ -51,46 +51,46 @@ latency_bin_size_ns = px.DurationNanos(50 * ns_per_ms)
 # These functions are formatted and ready for use in
 # the visualization speciciation, vis.json.
 # ----------------------------------------------------------------
-def pod_cql_let(start: str, pod: px.Pod):
+def pod_cql_let(start_time: str, pod: px.Pod):
     """ Calculate LET time-series for CQL traffic per Pod, database pair.
 
     Calculates latency, error_rate, and throughput for each pod's
     connection to CQL databases.
 
-    @start: The timestamp of data to start at.
+    @start_time The timestamp of data to start at.
     @pod: the partial/full-name of the pod to monitor CQL LET.
 
     Returns: Returns the DataFrame contiaining LET time-series for CQL
         traffic for each database Pods talk to.
     """
-    df = cql_let_per_pod(start, pod)
+    df = cql_let_per_pod(start_time, pod)
     return df['time_', split_series_name, ip_col_name, 'latency_p50',
               'latency_p90', 'latency_p99', 'error_rate', 'request_throughput']
 
 
-def summary_cql_let(start: str, pod: px.Pod):
+def summary_cql_let(start_time: str, pod: px.Pod):
     """ Calculate LET summary for CQL traffic per Pod, database pair.
 
     Calculates latency, error_rate, and throughput for each pod's
     connection to CQL databases.
 
-    @start: The timestamp of data to start at.
+    @start_time The timestamp of data to start at.
     @pod: the partial/full-name of the pod to monitor CQL LET.
 
     Returns: Returns the DataFrame contiaining LET time-series for CQL
         traffic for each database Pods talk to.
     """
-    df = cql_let_per_pod(start, pod)
+    df = cql_let_per_pod(start_time, pod)
     summary_df = summarize_LET(df, [k8s_object, ip_col_name])
     return summary_df[[k8s_object, ip_col_name, "request_throughput",
                        "error_rate", "latency", "total_requests"]]
 
 
-def latency_histogram(start: str, pod: px.Pod):
+def latency_histogram(start_time: str, pod: px.Pod):
     """ Computes a histogram of HTTP request latency.
 
     Args:
-    @start: The timestamp of data to start at.
+    @start_time The timestamp of data to start at.
     @svc: the partial/full-name of the svc.
 
     Returns: DataFrame of the HTTP latency histogram for svcs that
@@ -99,7 +99,7 @@ def latency_histogram(start: str, pod: px.Pod):
     # The data necessary to compute CQL LET information is located in the
     # cql_events table. We filter and aggregate data from this table to compute the
     # required metrics.
-    df = px.DataFrame(table='cql_events', start_time=start)
+    df = px.DataFrame(table='cql_events', start_time=start_time)
     df = format_cql_table(df)
 
     # Calculate LET of pod(s) (k8s_object) connection to CQL conections
@@ -118,13 +118,13 @@ def latency_histogram(start: str, pod: px.Pod):
 # which will allow these functions to be shared across multiple
 # scripts.
 # ----------------------------------------------------------------
-def cql_let_per_pod(start: str, pod: px.Pod):
+def cql_let_per_pod(start_time: str, pod: px.Pod):
     """ Calculate LET time-series for CQL traffic per Pod, database pair.
 
     Calculates latency, error_rate, and throughput for each pod's
     connection to CQL databases.
 
-    @start: The timestamp of data to start at.
+    @start_time The timestamp of data to start at.
     @pod: the partial/full-name of the pod to monitor CQL LET.
 
     Returns: Returns the DataFrame contiaining LET time-series for CQL
@@ -133,7 +133,7 @@ def cql_let_per_pod(start: str, pod: px.Pod):
     # The data necessary to compute CQL LET information is located in the
     # cql_events table. We filter and aggregate data from this table to compute the
     # required metrics.
-    df = px.DataFrame(table='cql_events', start_time=start)
+    df = px.DataFrame(table='cql_events', start_time=start_time)
     df = format_cql_table(df)
 
     # Calculate LET of pod(s) (k8s_object) connection to CQL conections

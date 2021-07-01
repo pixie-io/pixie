@@ -39,7 +39,7 @@ def pods_for_namespace(start_time: str, namespace: px.Namespace):
     ''' Gets a list of pods running per node.
 
     Args:
-    @start: Starting time of the data to examine.
+    @start_time Starting time of the data to examine.
     @namespace: The namespace to filter on.
     '''
     df = px.DataFrame(table='process_stats', start_time=start_time)

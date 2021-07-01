@@ -149,7 +149,7 @@ def inbound_let_summary(start_time: str, namespace: px.Namespace):
     ''' Gets a summary of request statistics for pods in `namespace`.
 
     Args:
-    @start: Starting time of the data to examine.
+    @start_time Starting time of the data to examine.
     @namespace: The namespace to filter on.
     '''
     df = inbound_let_helper(start_time, namespace)

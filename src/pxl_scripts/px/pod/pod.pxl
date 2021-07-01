@@ -150,7 +150,7 @@ def network_timeseries(start_time: str, pod: px.Pod):
     ''' Gets the network stats (transmitted/received traffic) for the input node.
 
     Args:
-    @start: Starting time of the data to examine.
+    @start_time Starting time of the data to examine.
     @node: The full name of the node to filter on.
     '''
     df = px.DataFrame(table='network_stats', start_time=start_time)
@@ -253,7 +253,7 @@ def inbound_let_summary(start_time: str, pod: px.Pod):
     ''' Gets a summary of requests inbound to `pod`.
 
     Args:
-    @start: Starting time of the data to examine.
+    @start_time Starting time of the data to examine.
     @pod: The pod to filter on.
     '''
     df = let_helper(start_time)
