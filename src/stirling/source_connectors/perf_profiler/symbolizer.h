@@ -34,31 +34,39 @@ static constexpr uint32_t kKernelPIDAsU32 = ~0;
 static constexpr upid_t kKernelUPID = {.pid = kKernelPIDAsU32, .start_time_ticks = 0};
 }  // namespace profiler
 
-/**
- * Symbol wraps a std::string for the sole and express purpose of
- * enabling <some map>::try_emplace() to *not* call into bcc_symbolizer->get_addr_symbol()
- * if the key already exists in that map. If we provide the symbol directly to try_emplace,
- * then get_addr_symbol() is called (costing extra work).
- */
-class Symbol {
+class SymbolCache {
  public:
-  Symbol(ebpf::BPFStackTable* bcc_symbolizer, const uintptr_t addr, const int pid)
-      : symbol_(SymbolOrAddrIfUnknown(bcc_symbolizer, addr, pid)) {}
+  SymbolCache(int pid, ebpf::BPFStackTable* symbolizer) : pid_(pid), symbolizer_(symbolizer) {}
 
-  inline const std::string& symbol() const { return symbol_; }
+  struct LookupResult {
+    const std::string& symbol;
+    bool hit;
+  };
 
- private:
-  static std::string SymbolOrAddrIfUnknown(ebpf::BPFStackTable* bcc_symbolizer,
-                                           const uintptr_t addr, const int pid) {
-    static constexpr std::string_view kUnknown = "[UNKNOWN]";
-    std::string sym_or_addr = bcc_symbolizer->get_addr_symbol(addr, pid);
-    if (sym_or_addr == kUnknown) {
-      sym_or_addr = absl::StrFormat("0x%016llx", addr);
-    }
-    return sym_or_addr;
+  LookupResult LookupOrInsert(const uintptr_t addr) {
+    const auto [iter, inserted] = cache.try_emplace(addr, symbolizer_, addr, pid_);
+    return LookupResult{iter->second.symbol(), !inserted};
   }
 
-  const std::string symbol_;
+ private:
+  /**
+   * Symbol wraps a std::string for the sole and express purpose of
+   * enabling <some map>::try_emplace() to *not* call into bcc_symbolizer->get_addr_symbol()
+   * if the key already exists in that map. If we provide the symbol directly to try_emplace,
+   * then get_addr_symbol() is called (costing extra work).
+   */
+  class Symbol {
+   public:
+    Symbol(ebpf::BPFStackTable* bcc_symbolizer, const uintptr_t addr, const int pid);
+    inline const std::string& symbol() const { return symbol_; }
+
+   private:
+    const std::string symbol_;
+  };
+
+  int pid_;
+  ebpf::BPFStackTable* symbolizer_;
+  absl::flat_hash_map<uintptr_t, Symbol> cache;
 };
 
 /**
@@ -87,15 +95,13 @@ class Symbolizer : public bpf_tools::BCCWrapper, public NotCopyMoveable {
   int64_t stat_hits() { return stat_hits_; }
 
  private:
-  const std::string& Symbolize(absl::flat_hash_map<uintptr_t, Symbol>* symbol_cache, const int pid,
-                               const uintptr_t addr);
+  const std::string& Symbolize(SymbolCache* symbol_cache, const int pid, const uintptr_t addr);
 
   // We will use this exclusively to gain access to the BCC symbolization API;
   // i.e. while this does create a shared BPF "stack trace" map, we do not use that.
   std::unique_ptr<ebpf::BPFStackTable> bcc_symbolizer_;
 
-  absl::flat_hash_map<struct upid_t, std::unique_ptr<absl::flat_hash_map<uintptr_t, Symbol> > >
-      symbol_caches_;
+  absl::flat_hash_map<struct upid_t, std::unique_ptr<SymbolCache>> symbol_caches_;
 
   int64_t stat_accesses_ = 0;
   int64_t stat_hits_ = 0;

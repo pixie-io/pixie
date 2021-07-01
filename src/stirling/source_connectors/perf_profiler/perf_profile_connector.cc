@@ -113,7 +113,7 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
   const uint32_t asid = ctx->GetASID();
   const absl::flat_hash_set<md::UPID>& upids_for_symbolization = ctx->GetUPIDs();
 
-  // Create a new stringifer for this iteration of the continuous perf profiler.
+  // Create a new stringifier for this iteration of the continuous perf profiler.
   Stringifier stringifier(&symbolizer_, stack_traces);
 
   // Here we "consume" the table (vs. just "reading" it). Passing "clear_table=true"

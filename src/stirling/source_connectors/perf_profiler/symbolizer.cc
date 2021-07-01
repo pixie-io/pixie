@@ -25,6 +25,22 @@ DEFINE_bool(stirling_profiler_symcache, true, "Enable the Stirling managed symbo
 namespace px {
 namespace stirling {
 
+namespace {
+std::string SymbolOrAddrIfUnknown(ebpf::BPFStackTable* bcc_symbolizer, const uintptr_t addr,
+                                  const int pid) {
+  static constexpr std::string_view kUnknown = "[UNKNOWN]";
+  std::string sym_or_addr = bcc_symbolizer->get_addr_symbol(addr, pid);
+  if (sym_or_addr == kUnknown) {
+    sym_or_addr = absl::StrFormat("0x%016llx", addr);
+  }
+  return sym_or_addr;
+}
+}  // namespace
+
+SymbolCache::Symbol::Symbol(ebpf::BPFStackTable* bcc_symbolizer, const uintptr_t addr,
+                            const int pid)
+    : symbol_(SymbolOrAddrIfUnknown(bcc_symbolizer, addr, pid)) {}
+
 Status Symbolizer::Init() {
   // This BPF program is a placeholder; it is not actually used. We include it only
   // to allow us to create an instance of ebpf::BPFStackTable from BCC. We will use
@@ -47,8 +63,8 @@ void Symbolizer::FlushCache(const struct upid_t& upid) {
   bcc_symbolizer_->free_symcache(upid.pid);
 }
 
-const std::string& Symbolizer::Symbolize(absl::flat_hash_map<uintptr_t, Symbol>* symbol_cache,
-                                         const int pid, const uintptr_t addr) {
+const std::string& Symbolizer::Symbolize(SymbolCache* symbol_cache, const int pid,
+                                         const uintptr_t addr) {
   static std::string symbol;
   if (!FLAGS_stirling_profiler_symcache) {
     symbol = bcc_symbolizer_->get_addr_symbol(addr, pid);
@@ -60,12 +76,12 @@ const std::string& Symbolizer::Symbolize(absl::flat_hash_map<uintptr_t, Symbol>*
   // Symbol::Symbol(ebpf::BPFStackTable* bcc_symbolizer, const uintptr_t addr, const int pid)
   // will only be called if try_emplace fails to find a prexisting key. If no key is found,
   // the Symbol ctor uses bcc_symbolizer, and the addr & pid, to resolve the addr. to a symbol.
-  const auto emplace_result = symbol_cache->try_emplace(addr, bcc_symbolizer_.get(), addr, pid);
+  const SymbolCache::LookupResult result = symbol_cache->LookupOrInsert(addr);
 
-  if (!emplace_result.second) {
+  if (result.hit) {
     ++stat_hits_;
   }
-  return emplace_result.first->second.symbol();
+  return result.symbol;
 }
 
 std::function<const std::string&(const uintptr_t addr)> Symbolizer::GetSymbolizerFn(
@@ -73,8 +89,7 @@ std::function<const std::string&(const uintptr_t addr)> Symbolizer::GetSymbolize
   using std::placeholders::_1;
   const auto [iter, inserted] = symbol_caches_.try_emplace(upid, nullptr);
   if (inserted) {
-    using val_t = absl::flat_hash_map<uintptr_t, Symbol>;
-    iter->second = std::make_unique<val_t>();
+    iter->second = std::make_unique<SymbolCache>(upid.pid, bcc_symbolizer_.get());
   }
   auto& cache = iter->second;
   auto fn = std::bind(&Symbolizer::Symbolize, this, cache.get(), upid.pid, _1);
