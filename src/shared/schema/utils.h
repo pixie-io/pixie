@@ -30,7 +30,7 @@ namespace px {
  * A relation and accompanying information such as names and ids.
  */
 struct RelationInfo {
-  RelationInfo() {}
+  RelationInfo() = default;
   RelationInfo(std::string name, uint64_t id, std::string desc,
                table_store::schema::Relation relation)
       : name(std::move(name)),
