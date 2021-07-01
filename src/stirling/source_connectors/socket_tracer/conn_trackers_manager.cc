@@ -123,6 +123,7 @@ std::optional<ConnTrackersManager::StatKey> GetStatKeyForProtocol(TrafficProtoco
     CASE(kProtocolDNS)
     CASE(kProtocolRedis)
     CASE(kProtocolMongo)
+    CASE(kProtocolKafka)
     case kNumProtocols:
       return std::nullopt;
   }

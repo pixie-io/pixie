@@ -152,6 +152,10 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
       // mongo in the future.
       {kProtocolMongo,
        TransferSpec{false, kHTTPTableNum, {kRoleUnknown, kRoleClient, kRoleServer}, nullptr}},
+      // TODO(chengruizhe): Add Kafka table. nullptr should be replaced by the transfer_fn for
+      // kafka in the future.
+      {kProtocolKafka,
+       TransferSpec{false, kHTTPTableNum, {kRoleUnknown, kRoleClient, kRoleServer}, nullptr}},
       {kProtocolUnknown, TransferSpec{false /*enabled*/,
                                       // Unknown protocols attached to HTTP table so that they run
                                       // their cleanup functions, but the use of nullptr transfer_fn

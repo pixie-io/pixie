@@ -56,6 +56,12 @@ static __inline int32_t read_big_endian_int32(const char* buf) {
   return bpf_ntohl(length);
 }
 
+static __inline int32_t read_big_endian_int16(const char* buf) {
+  int16_t val;
+  bpf_probe_read(&val, 2, buf);
+  return bpf_ntohl(val);
+}
+
 // Returns 0 if lhs and rhs compares equal up to n bytes. Otherwise a non-zero value is returned.
 // NOTE #1: Cannot use C standard library's strncmp() because that cannot be compiled by BCC.
 // NOTE #2: Different from the C standard library's strncmp(), this does not distinguish order.

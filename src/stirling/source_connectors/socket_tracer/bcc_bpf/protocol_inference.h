@@ -335,6 +335,52 @@ static __inline enum MessageType infer_mysql_message(const char* buf, size_t cou
   return kUnknown;
 }
 
+// Reference: https://kafka.apache.org/protocol.html#protocol_messages
+// Request Header v0 => request_api_key request_api_version correlation_id
+//     request_api_key => INT16
+//     request_api_version => INT16
+//     correlation_id => INT32
+static __inline enum MessageType infer_kafka_request(const char* buf) {
+  // API is Kafka's terminology for opcode.
+  static const int kNumAPIs = 62;
+  static const int kMaxAPIVersion = 12;
+
+  // TODO(chengruizhe): Just as MySQL, Kafka client might read the first 4 bytes first, and then
+  // read the subsequent n bytes. Handle this case.
+  const int16_t request_API_key = read_big_endian_int16(buf + 4);
+  if (request_API_key < 0 || request_API_key > kNumAPIs) {
+    return kUnknown;
+  }
+
+  const int16_t request_API_version = read_big_endian_int16(buf + 6);
+  if (request_API_version < 0 || request_API_version > kMaxAPIVersion) {
+    return kUnknown;
+  }
+
+  const int32_t correlation_id = read_big_endian_int32(buf + 8);
+  if (correlation_id < 0) {
+    return kUnknown;
+  }
+  return kRequest;
+}
+
+static __inline enum MessageType infer_kafka_message(const char* buf, size_t count) {
+  // length(4 bytes) + api_key(2 bytes) + api_version(2 bytes) + correlation_id(4 bytes)
+  static const int kMinRequestLength = 12;
+  if (count < kMinRequestLength) {
+    return kUnknown;
+  }
+
+  const int32_t message_size = read_big_endian_int32(buf);
+
+  // Enforcing count to be exactly message_size + 4 to mitigate misclassification.
+  // However, this will miss long messages broken into multiple reads.
+  if (message_size < 0 || count != ((size_t)message_size + 4)) {
+    return kUnknown;
+  }
+  return infer_kafka_request(buf);
+}
+
 static __inline enum MessageType infer_dns_message(const char* buf, size_t count) {
   const int kDNSHeaderSize = 12;
 
@@ -434,6 +480,8 @@ static __inline struct protocol_message_t infer_protocol(const char* buf, size_t
     inferred_message.protocol = kProtocolPGSQL;
   } else if ((inferred_message.type = infer_mysql_message(buf, count, conn_info)) != kUnknown) {
     inferred_message.protocol = kProtocolMySQL;
+  } else if ((inferred_message.type = infer_kafka_message(buf, count)) != kUnknown) {
+    inferred_message.protocol = kProtocolKafka;
   } else if ((inferred_message.type = infer_dns_message(buf, count)) != kUnknown) {
     inferred_message.protocol = kProtocolDNS;
   } else if (is_redis_message(buf, count)) {

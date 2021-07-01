@@ -105,6 +105,7 @@ class ConnTrackersManager {
     kProtocolDNS,
     kProtocolRedis,
     kProtocolMongo,
+    kProtocolKafka,
   };
 
   ConnTrackersManager();
