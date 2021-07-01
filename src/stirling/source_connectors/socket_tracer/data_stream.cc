@@ -88,14 +88,13 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
   auto& typed_messages = Frames<TFrameType>();
 
   // TODO(oazizi): Convert to ECHECK once we have more confidence.
-  LOG_IF(WARNING, IsEOS()) << "Calling ProcessToRecords on stream that is at EOS.";
+  LOG_IF(WARNING, IsEOS()) << "DataStream reaches EOS, no more data to process.";
 
   const size_t orig_pos = data_buffer_.position();
 
   // A description of some key variables in this function:
   //
-  // Member variables hold state across calls to ProcessToRecords():
-  // - stuck_count_: Number of calls to ProcessToRecords() where no progress has been made.
+  // - stuck_count_: Number of calls to where no new frames were produced.
   //                 indicates an unparseable event at the head that is blocking progress.
   //
   // - has_new_events_: An optimization to avoid the expensive call to ParseFrames() when
