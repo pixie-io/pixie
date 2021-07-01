@@ -53,6 +53,9 @@ const styles = ({ palette, spacing }: Theme) => createStyles({
   extraPadding: {
     height: spacing(6),
   },
+  code: {
+    width: '100%',
+  },
 });
 
 export interface AuthMessageBoxProps extends WithStyles<typeof styles> {
@@ -87,9 +90,11 @@ export const AuthMessageBox = withStyles(styles)((props: AuthMessageBoxProps) =>
         {message}
       </Typography>
       {code && (
-        <CodeRenderer
-          code={code}
-        />
+        <div className={classes.code}>
+          <CodeRenderer
+            code={code}
+          />
+        </div>
       )}
       {error && errorDetails && (
         <Typography variant='body1' className={classes.errorDetails}>

@@ -20,6 +20,7 @@ import Highlight, { defaultProps } from 'prism-react-renderer';
 import * as React from 'react';
 import { CopyIcon } from 'app/components/icons/copy';
 
+import { scrollbarStyles } from 'app/components';
 import { Box } from '@material-ui/core';
 import { Theme } from '@material-ui/core/styles';
 import IconButton from '@material-ui/core/IconButton';
@@ -33,6 +34,7 @@ export const CodeRenderer = withStyles((theme: Theme) => ({
     marginTop: '24px',
     position: 'relative',
     padding: '8px 55px 8px 8px',
+    ...scrollbarStyles(theme),
   },
 
   codeHighlight: {
