@@ -130,3 +130,26 @@ func (c *Client) CreateDeployKey(ctx context.Context, desc string) (*cloudpb.Dep
 	}
 	return dk, nil
 }
+
+// CreateAPIKey creates and API key with the passed in description.
+func (c *Client) CreateAPIKey(ctx context.Context, desc string) (*cloudpb.APIKey, error) {
+	req := &cloudpb.CreateAPIKeyRequest{
+		Desc: desc,
+	}
+
+	apiKeyMgr := cloudpb.NewAPIKeyManagerClient(c.grpcConn)
+	resp, err := apiKeyMgr.Create(c.cloudCtxWithMD(ctx), req)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// DeleteAPIKey deletes an API key by ID.
+func (c *Client) DeleteAPIKey(ctx context.Context, id string) error {
+	req := ProtoFromUUIDStrOrNil(id)
+	apiKeyMgr := cloudpb.NewAPIKeyManagerClient(c.grpcConn)
+	_, err := apiKeyMgr.Delete(c.cloudCtxWithMD(ctx), req)
+	return err
+}
