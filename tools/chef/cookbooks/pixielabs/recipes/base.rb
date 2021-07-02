@@ -37,7 +37,7 @@ include_recipe 'pixielabs::golang'
 
 execute 'install node packages' do
   command %(/opt/node/bin/npm install -g \
-            yarn@1.22.4 @sourcegraph/lsif-tsc@0.6.8 protobufjs@6.11.2)
+            jshint@2.11.0 yarn@1.22.4 @sourcegraph/lsif-tsc@0.6.8 protobufjs@6.11.2)
 end
 
 execute 'install pbjs/pbts deps' do
