@@ -100,7 +100,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 
 interface LicenseEntry {
   name: string;
-  spdxID: string;
+  spdxID?: string;
   url?: string;
   licenseText?: string;
 }

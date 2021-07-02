@@ -46,7 +46,7 @@ if (!input || !output) {
  *
  * interface LicenseEntry {
  *   name: string;
- *   spdxID: string;
+ *   spdxID?: string;
  *   url?: string;
  *   licenseText?: string;
  * }
