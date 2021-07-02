@@ -132,6 +132,7 @@
     "react-test-renderer": "^16.13.1",
     "react-vega": "^7.4.2",
     "react-virtualized": "^9.21.2",
+    "react-virtualized-auto-sizer": "^1.0.5",
     "rxjs": "^6.5.4",
     "svg-url-loader": "^6.0.0",
     "timsort": "^0.3.0",

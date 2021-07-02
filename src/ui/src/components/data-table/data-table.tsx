@@ -49,7 +49,7 @@ import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 import MenuIcon from '@material-ui/icons/Menu';
 import { CSSProperties, MutableRefObject } from 'react';
 import { clamp } from 'app/utils/math';
-import withAutoSizer, { WithAutoSizerProps } from 'app/utils/autosizer';
+import { withAutoSizerContext, AutoSizerContext } from 'app/utils/autosizer';
 import { ExpandedIcon } from 'app/components/icons/expanded';
 import { UnexpandedIcon } from 'app/components/icons/unexpanded';
 import { Button, Checkbox, FormControlLabel } from '@material-ui/core';
@@ -319,13 +319,11 @@ const ColumnDisplaySelector: React.FC<ColumnDisplaySelectorProps> = ({ options, 
   );
 };
 
-const InternalDataTable = ({
+const InternalDataTable: React.FC<DataTableProps> = ({
   columns,
   gutterColumn,
   onRowClick = () => {},
   rowCount,
-  width,
-  height,
   rowGetter,
   compact = false,
   resizableColumns = false,
@@ -334,9 +332,10 @@ const InternalDataTable = ({
   onSort = () => {},
   highlightedRow = -1,
   onRowsRendered = () => {},
-}: WithAutoSizerProps<DataTableProps>) => {
+}) => {
   const classes = useStyles();
 
+  const { width, height } = React.useContext(AutoSizerContext);
   const [widthOverrides, setColumnWidthOverride] = React.useState<
   ColWidthOverrides
   >({});
@@ -881,17 +880,6 @@ const InternalDataTable = ({
     </div>
   );
 };
+InternalDataTable.displayName = 'DataTable';
 
-const DataTable = withAutoSizer<DataTableProps>(
-  // eslint-disable-next-line react/display-name
-  React.memo<WithAutoSizerProps<DataTableProps>>((props) => {
-    const { width, height } = props;
-    if (width === 0 || height === 0) {
-      return null;
-    }
-    return <InternalDataTable {...props} />;
-  }));
-
-(DataTable as React.FC).displayName = 'DataTable';
-
-export { DataTable };
+export const DataTable = withAutoSizerContext(InternalDataTable);

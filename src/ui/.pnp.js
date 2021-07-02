@@ -141,6 +141,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["react-test-renderer", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:16.14.0"],
             ["react-vega", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:7.4.2"],
             ["react-virtualized", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:9.22.3"],
+            ["react-virtualized-auto-sizer", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:1.0.5"],
             ["regenerator-runtime", "npm:0.13.8"],
             ["rxjs", "npm:6.6.7"],
             ["shelljs", "npm:0.8.4"],
@@ -5048,6 +5049,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["react-test-renderer", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:16.14.0"],
             ["react-vega", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:7.4.2"],
             ["react-virtualized", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:9.22.3"],
+            ["react-virtualized-auto-sizer", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:1.0.5"],
             ["regenerator-runtime", "npm:0.13.8"],
             ["rxjs", "npm:6.6.7"],
             ["shelljs", "npm:0.8.4"],
@@ -19166,6 +19168,32 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["react", "npm:16.14.0"],
             ["react-dom", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:16.14.0"],
             ["react-lifecycles-compat", "npm:3.0.4"]
+          ],
+          "packagePeers": [
+            "@types/react-dom",
+            "@types/react",
+            "react-dom",
+            "react"
+          ],
+          "linkType": "HARD",
+        }]
+      ]],
+      ["react-virtualized-auto-sizer", [
+        ["npm:1.0.5", {
+          "packageLocation": "./.yarn/cache/react-virtualized-auto-sizer-npm-1.0.5-e3cacb1e91-25053dae31.zip/node_modules/react-virtualized-auto-sizer/",
+          "packageDependencies": [
+            ["react-virtualized-auto-sizer", "npm:1.0.5"]
+          ],
+          "linkType": "SOFT",
+        }],
+        ["virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:1.0.5", {
+          "packageLocation": "./.yarn/$$virtual/react-virtualized-auto-sizer-virtual-4e1970dfce/0/cache/react-virtualized-auto-sizer-npm-1.0.5-e3cacb1e91-25053dae31.zip/node_modules/react-virtualized-auto-sizer/",
+          "packageDependencies": [
+            ["react-virtualized-auto-sizer", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:1.0.5"],
+            ["@types/react", "npm:17.0.3"],
+            ["@types/react-dom", "npm:16.9.12"],
+            ["react", "npm:16.14.0"],
+            ["react-dom", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:16.14.0"]
           ],
           "packagePeers": [
             "@types/react-dom",

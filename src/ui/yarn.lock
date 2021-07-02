@@ -2956,6 +2956,7 @@ __metadata:
     react-test-renderer: ^16.13.1
     react-vega: ^7.4.2
     react-virtualized: ^9.21.2
+    react-virtualized-auto-sizer: ^1.0.5
     regenerator-runtime: ^0.13.7
     rxjs: ^6.5.4
     shelljs: ^0.8.2
@@ -14720,6 +14721,16 @@ fsevents@^2.1.2:
     vega: "*"
     vega-lite: "*"
   checksum: 815668d05f4c73fa0b60d683d59f91401d333fae77f290e775427846d2c6ac660deba2ff2c3d903ddf0ad06a5a312dbf1972f15114b6709cb6e8afd378b537dc
+  languageName: node
+  linkType: hard
+
+"react-virtualized-auto-sizer@npm:^1.0.5":
+  version: 1.0.5
+  resolution: "react-virtualized-auto-sizer@npm:1.0.5"
+  peerDependencies:
+    react: ^15.3.0 || ^16.0.0-alpha || ^17.0.0
+    react-dom: ^15.3.0 || ^16.0.0-alpha || ^17.0.0
+  checksum: 25053dae316fa965cc8bb65864d8dd3a195d2b22cf3aad1f7dbc9e6d7b2251f2b273e0ce4bc9a3f57cb253f46cb526b6a256939572c3ebb5c5e4b15cb1c9a0ba
   languageName: node
   linkType: hard
 

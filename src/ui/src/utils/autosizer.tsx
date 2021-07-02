@@ -17,29 +17,21 @@
  */
 
 import * as React from 'react';
-import { AutoSizer } from 'react-virtualized';
+import AutoSizer from 'react-virtualized-auto-sizer';
 
-interface AutoSizerProps {
-  width: number;
-  height: number;
-}
+export const AutoSizerContext = React.createContext<{ width: number, height: number }>({ width: 0, height: 0 });
 
-export type WithAutoSizerProps<T> = T & AutoSizerProps;
-
-export default function withAutoSizer<T>(
-  WrappedComponent: React.ComponentType<T & AutoSizerProps>,
-) {
-  return function AutoSizerWrapper(props: T): React.ReactElement {
-    return (
-      <AutoSizer>
-        {({ height, width }) => (
-          <WrappedComponent
-            width={Math.max(width, 0)}
-            height={Math.max(height, 0)}
-            {...props}
-          />
-        )}
-      </AutoSizer>
-    );
-  };
+/** Wraps component in an <AutoSizer>, and provides the width/height properties that creates in AutoSizerContext. */
+export function withAutoSizerContext<T>(Component: React.ComponentType<T>): React.ComponentType<T> {
+  const Wrapped: React.FC<T> = (props) => (
+    <AutoSizer>
+      {({ width, height }) => (
+        <AutoSizerContext.Provider value={{ width: Math.max(width, 0), height: Math.max(height, 0) }}>
+          {width > 0 && height > 0 && <Component {...props} />}
+        </AutoSizerContext.Provider>
+      )}
+    </AutoSizer>
+  );
+  Wrapped.displayName = `AutoSizerWrapped${Component.displayName}`;
+  return Wrapped;
 }
