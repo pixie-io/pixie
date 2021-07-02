@@ -163,7 +163,7 @@
     "build_dev": "webpack --mode=development --stats=verbose --progress && yarn typecheck",
     "build_prod": "rm -rf dist && webpack --mode=production && yarn typecheck",
     "clean": "rm -rf dist",
-    "dev": "concurrently -n webpack,typecheck -c cyan.dim,yellow.dim 'webpack serve --mode=development --hot' 'yarn typecheck --pretty -w'",
+    "dev": "concurrently -n webpack,typecheck -c cyan.dim,yellow.dim 'webpack serve --mode=development --hot' 'tsc -noEmit -p . --pretty -w'",
     "typecheck": "tsc -noEmit -p .",
     "test": "jest",
     "test_ci": "jest --maxWorkers=4",
