@@ -40,13 +40,10 @@ class SymbolCache {
 
   LookupResult Lookup(const uintptr_t addr);
 
-  size_t active_entries() { return cache_.size(); }
-  size_t total_entries() { return cache_.size() + prev_cache_.size(); }
+  size_t PerformEvictions();
 
-  void CreateNewGeneration() {
-    prev_cache_ = std::move(cache_);
-    cache_.clear();
-  }
+  size_t active_entries() const { return cache_.size(); }
+  size_t total_entries() const { return cache_.size() + prev_cache_.size(); }
 
  private:
   /**

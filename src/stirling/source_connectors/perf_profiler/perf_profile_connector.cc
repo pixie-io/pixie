@@ -125,6 +125,11 @@ void PerfProfileConnector::CleanupSymbolizers(const absl::flat_hash_set<md::UPID
     upid.start_time_ticks = md_upid.start_ts();
     u_symbolizer_->DeleteUPID(upid);
   }
+
+  if (FLAGS_stirling_profiler_cache_symbols) {
+    size_t evict_count = static_cast<CachingSymbolizer*>(symbolizer_.get())->PerformEvictions();
+    VLOG(1) << absl::Substitute("PerfProfiler symbol cache: Evicted $0 symbols.", evict_count);
+  }
 }
 
 PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces(

@@ -23,6 +23,9 @@
 #include "src/stirling/utils/proc_path_tools.h"
 
 using ::px::stirling::obj_tools::ElfReader;
+DEFINE_uint64(
+    stirling_profiler_cache_eviction_threshold, 0,
+    "Number of symbols in the current generation of the cache that triggers an eviction.");
 
 namespace px {
 namespace stirling {
@@ -125,6 +128,27 @@ void CachingSymbolizer::DeleteUPID(const struct upid_t& upid) {
   symbol_caches_.erase(upid);
 
   symbolizer_->DeleteUPID(upid);
+}
+
+size_t CachingSymbolizer::PerformEvictions() {
+  // Zero has a special meaning: no evictions.
+  if (FLAGS_stirling_profiler_cache_eviction_threshold == 0) {
+    return 0;
+  }
+
+  size_t active_entries = 0;
+  for (const auto& sym_cache : symbol_caches_) {
+    active_entries += sym_cache.second->active_entries();
+  }
+
+  size_t evict_count = 0;
+  if (active_entries > FLAGS_stirling_profiler_cache_eviction_threshold) {
+    for (const auto& sym_cache : symbol_caches_) {
+      evict_count += sym_cache.second->PerformEvictions();
+    }
+  }
+
+  return evict_count;
 }
 
 std::string_view CachingSymbolizer::Symbolize(SymbolCache* symbol_cache, const uintptr_t addr) {

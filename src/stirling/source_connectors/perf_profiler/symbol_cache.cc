@@ -43,5 +43,12 @@ SymbolCache::LookupResult SymbolCache::Lookup(const uintptr_t addr) {
   return SymbolCache::LookupResult{iter->second.symbol_, !inserted};
 }
 
+size_t SymbolCache::PerformEvictions() {
+  size_t evict_count = prev_cache_.size();
+  prev_cache_ = std::move(cache_);
+  cache_.clear();
+  return evict_count;
+}
+
 }  // namespace stirling
 }  // namespace px

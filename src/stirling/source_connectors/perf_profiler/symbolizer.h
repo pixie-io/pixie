@@ -29,6 +29,8 @@
 #include "src/stirling/source_connectors/perf_profiler/symbol_cache.h"
 #include "src/stirling/source_connectors/perf_profiler/types.h"
 
+DECLARE_uint64(stirling_profiler_cache_eviction_threshold);
+
 namespace px {
 namespace stirling {
 
@@ -106,9 +108,10 @@ class CachingSymbolizer : public Symbolizer {
   SymbolizerFn GetSymbolizerFn(const struct upid_t& upid) override;
 
   void DeleteUPID(const struct upid_t& upid) override;
+  size_t PerformEvictions();
 
-  int64_t stat_accesses() { return stat_accesses_; }
-  int64_t stat_hits() { return stat_hits_; }
+  int64_t stat_accesses() const { return stat_accesses_; }
+  int64_t stat_hits() const { return stat_hits_; }
 
  private:
   CachingSymbolizer() = default;

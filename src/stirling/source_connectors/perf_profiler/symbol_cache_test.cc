@@ -75,7 +75,7 @@ TEST_F(SymbolCacheTest, EvictOldEntries) {
   EXPECT_EQ(sym_cache_->total_entries(), 2);
   EXPECT_EQ(sym_cache_->active_entries(), 2);
 
-  sym_cache_->CreateNewGeneration();
+  sym_cache_->PerformEvictions();
 
   EXPECT_EQ(sym_cache_->total_entries(), 2);
   EXPECT_EQ(sym_cache_->active_entries(), 0);
@@ -87,7 +87,7 @@ TEST_F(SymbolCacheTest, EvictOldEntries) {
   EXPECT_EQ(sym_cache_->total_entries(), 2);
   EXPECT_EQ(sym_cache_->active_entries(), 1);
 
-  sym_cache_->CreateNewGeneration();
+  sym_cache_->PerformEvictions();
 
   EXPECT_EQ(sym_cache_->total_entries(), 1);
   EXPECT_EQ(sym_cache_->active_entries(), 0);
@@ -95,12 +95,12 @@ TEST_F(SymbolCacheTest, EvictOldEntries) {
   // Don't lookup test::foo() in this interval.
   // Should cause it to get evicted from the cache after the next trigger.
 
-  sym_cache_->CreateNewGeneration();
+  sym_cache_->PerformEvictions();
 
   EXPECT_EQ(sym_cache_->total_entries(), 0);
   EXPECT_EQ(sym_cache_->active_entries(), 0);
 
-  sym_cache_->CreateNewGeneration();
+  sym_cache_->PerformEvictions();
 
   EXPECT_EQ(sym_cache_->total_entries(), 0);
   EXPECT_EQ(sym_cache_->active_entries(), 0);
