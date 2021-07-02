@@ -30,7 +30,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -101,32 +100,25 @@ func KeyValueStringToMap(labels string) (map[string]string, error) {
 
 // ApplyYAMLForResourceTypes only applies the specified types in the given YAML file.
 func ApplyYAMLForResourceTypes(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlFile io.Reader, allowedResources []string, allowUpdate bool) error {
-	resources, err := GetResourcesFromYAML(clientset, yamlFile)
+	resources, err := GetResourcesFromYAML(yamlFile)
 	if err != nil {
 		return err
 	}
 
-	return ApplyResources(config, resources, namespace, allowedResources, allowUpdate)
+	return ApplyResources(clientset, config, resources, namespace, allowedResources, allowUpdate)
 }
 
 // Resource is an unstructured resource object with a group kind mapping.
 type Resource struct {
-	Object  *unstructured.Unstructured
-	Mapping *meta.RESTMapping
+	Object *unstructured.Unstructured
+	GVK    *schema.GroupVersionKind
 }
 
 // GetResourcesFromYAML parses the YAMLs into K8s resource objects that can be passed to the API.
-func GetResourcesFromYAML(clientset *kubernetes.Clientset, yamlFile io.Reader) ([]*Resource, error) {
+func GetResourcesFromYAML(yamlFile io.Reader) ([]*Resource, error) {
 	resources := make([]*Resource, 0)
 
 	decodedYAML := yaml.NewYAMLOrJSONDecoder(yamlFile, 4096)
-	discoveryClient := clientset.Discovery()
-
-	apiGroupResources, err := restmapper.GetAPIGroupResources(discoveryClient)
-	if err != nil {
-		return nil, err
-	}
-	rm := restmapper.NewDiscoveryRESTMapper(apiGroupResources)
 
 	for {
 		ext := runtime.RawExtension{}
@@ -146,10 +138,6 @@ func GetResourcesFromYAML(clientset *kubernetes.Clientset, yamlFile io.Reader) (
 			log.WithError(err).Fatalf(err.Error())
 			return nil, err
 		}
-		mapping, err := rm.RESTMapping(gvk.GroupKind(), gvk.Version)
-		if err != nil {
-			return nil, err
-		}
 
 		var unstructRes unstructured.Unstructured
 		unstructRes.Object = make(map[string]interface{})
@@ -163,8 +151,8 @@ func GetResourcesFromYAML(clientset *kubernetes.Clientset, yamlFile io.Reader) (
 		unstructRes.Object = unstructBlob.(map[string]interface{})
 
 		resources = append(resources, &Resource{
-			Object:  &unstructRes,
-			Mapping: mapping,
+			Object: &unstructRes,
+			GVK:    gvk,
 		})
 	}
 
@@ -172,9 +160,22 @@ func GetResourcesFromYAML(clientset *kubernetes.Clientset, yamlFile io.Reader) (
 }
 
 // ApplyResources applies the following resources to the give namespace/cluster.
-func ApplyResources(config *rest.Config, resources []*Resource, namespace string, allowedResources []string, allowUpdate bool) error {
+func ApplyResources(clientset *kubernetes.Clientset, config *rest.Config, resources []*Resource, namespace string, allowedResources []string, allowUpdate bool) error {
+	discoveryClient := clientset.Discovery()
+
+	apiGroupResources, err := restmapper.GetAPIGroupResources(discoveryClient)
+	if err != nil {
+		return err
+	}
+	rm := restmapper.NewDiscoveryRESTMapper(apiGroupResources)
+
 	for _, resource := range resources {
-		k8sRes := resource.Mapping.Resource.Resource
+		mapping, err := rm.RESTMapping(resource.GVK.GroupKind(), resource.GVK.Version)
+		if err != nil {
+			return err
+		}
+
+		k8sRes := mapping.Resource.Resource
 		if len(allowedResources) != 0 {
 			validResource := false
 			for _, res := range allowedResources {
@@ -189,15 +190,15 @@ func ApplyResources(config *rest.Config, resources []*Resource, namespace string
 
 		restconfig := config
 		restconfig.GroupVersion = &schema.GroupVersion{
-			Group:   resource.Mapping.GroupVersionKind.Group,
-			Version: resource.Mapping.GroupVersionKind.Version,
+			Group:   mapping.GroupVersionKind.Group,
+			Version: mapping.GroupVersionKind.Version,
 		}
 		dynamicClient, err := dynamic.NewForConfig(restconfig)
 		if err != nil {
 			return err
 		}
 
-		res := dynamicClient.Resource(resource.Mapping.Resource)
+		res := dynamicClient.Resource(mapping.Resource)
 		nsRes := res.Namespace(namespace)
 
 		createRes := nsRes

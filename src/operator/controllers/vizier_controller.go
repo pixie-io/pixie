@@ -281,7 +281,7 @@ func (r *VizierReconciler) deployVizierCerts(ctx context.Context, namespace stri
 		return err
 	}
 
-	resources, err := k8s.GetResourcesFromYAML(r.Clientset, strings.NewReader(certYAMLs))
+	resources, err := k8s.GetResourcesFromYAML(strings.NewReader(certYAMLs))
 	if err != nil {
 		return err
 	}
@@ -292,13 +292,13 @@ func (r *VizierReconciler) deployVizierCerts(ctx context.Context, namespace stri
 		}
 	}
 
-	return k8s.ApplyResources(r.RestConfig, resources, namespace, nil, false)
+	return k8s.ApplyResources(r.Clientset, r.RestConfig, resources, namespace, nil, false)
 }
 
 // deployVizierConfigs deploys the secrets, configmaps, and certs that are necessary for running vizier.
 func (r *VizierReconciler) deployVizierConfigs(ctx context.Context, namespace string, vz *pixiev1alpha1.Vizier, yamlMap map[string]string) error {
 	log.Info("Deploying Vizier configs and secrets")
-	resources, err := k8s.GetResourcesFromYAML(r.Clientset, strings.NewReader(yamlMap["secrets"]))
+	resources, err := k8s.GetResourcesFromYAML(strings.NewReader(yamlMap["secrets"]))
 	if err != nil {
 		return err
 	}
@@ -308,14 +308,14 @@ func (r *VizierReconciler) deployVizierConfigs(ctx context.Context, namespace st
 			return err
 		}
 	}
-	return k8s.ApplyResources(r.RestConfig, resources, namespace, nil, false)
+	return k8s.ApplyResources(r.Clientset, r.RestConfig, resources, namespace, nil, false)
 }
 
 // deployVizierDeps deploys the vizier deps to the given namespace. This includes generating certs
 // along with deploying deps like etcd and nats.
 func (r *VizierReconciler) deployVizierDeps(ctx context.Context, namespace string, vz *pixiev1alpha1.Vizier, yamlMap map[string]string) error {
 	log.Info("Deploying NATS")
-	resources, err := k8s.GetResourcesFromYAML(r.Clientset, strings.NewReader(yamlMap["nats"]))
+	resources, err := k8s.GetResourcesFromYAML(strings.NewReader(yamlMap["nats"]))
 	if err != nil {
 		return err
 	}
@@ -325,7 +325,7 @@ func (r *VizierReconciler) deployVizierDeps(ctx context.Context, namespace strin
 			return err
 		}
 	}
-	err = retryDeploy(r.RestConfig, namespace, resources, false)
+	err = retryDeploy(r.Clientset, r.RestConfig, namespace, resources, false)
 	if err != nil {
 		return err
 	}
@@ -335,7 +335,7 @@ func (r *VizierReconciler) deployVizierDeps(ctx context.Context, namespace strin
 	}
 
 	log.Info("Deploying etcd")
-	resources, err = k8s.GetResourcesFromYAML(r.Clientset, strings.NewReader(yamlMap["etcd"]))
+	resources, err = k8s.GetResourcesFromYAML(strings.NewReader(yamlMap["etcd"]))
 	if err != nil {
 		return err
 	}
@@ -345,7 +345,7 @@ func (r *VizierReconciler) deployVizierDeps(ctx context.Context, namespace strin
 			return err
 		}
 	}
-	err = retryDeploy(r.RestConfig, namespace, resources, false)
+	err = retryDeploy(r.Clientset, r.RestConfig, namespace, resources, false)
 	if err != nil {
 		return err
 	}
@@ -362,7 +362,7 @@ func (r *VizierReconciler) deployVizierCore(ctx context.Context, namespace strin
 		vzYaml = "vizier_etcd"
 	}
 
-	resources, err := k8s.GetResourcesFromYAML(r.Clientset, strings.NewReader(yamlMap[vzYaml]))
+	resources, err := k8s.GetResourcesFromYAML(strings.NewReader(yamlMap[vzYaml]))
 	if err != nil {
 		return err
 	}
@@ -372,7 +372,7 @@ func (r *VizierReconciler) deployVizierCore(ctx context.Context, namespace strin
 			return err
 		}
 	}
-	err = retryDeploy(r.RestConfig, namespace, resources, allowUpdate)
+	err = retryDeploy(r.Clientset, r.RestConfig, namespace, resources, allowUpdate)
 	if err != nil {
 		return err
 	}
@@ -563,12 +563,12 @@ func (r *VizierReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func retryDeploy(config *rest.Config, namespace string, resources []*k8s.Resource, allowUpdate bool) error {
+func retryDeploy(clientset *kubernetes.Clientset, config *rest.Config, namespace string, resources []*k8s.Resource, allowUpdate bool) error {
 	bOpts := backoff.NewExponentialBackOff()
 	bOpts.InitialInterval = 15 * time.Second
 	bOpts.MaxElapsedTime = 5 * time.Minute
 
 	return backoff.Retry(func() error {
-		return k8s.ApplyResources(config, resources, namespace, nil, allowUpdate)
+		return k8s.ApplyResources(clientset, config, resources, namespace, nil, allowUpdate)
 	}, bOpts)
 }
