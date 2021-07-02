@@ -19,6 +19,8 @@
  */
 
 final class ArcanistProtoBreakCheckLinter extends ArcanistExternalLinter {
+  private $future;
+
   public function getInfoName() {
     return 'proto-break-check';
   }
@@ -49,35 +51,46 @@ final class ArcanistProtoBreakCheckLinter extends ArcanistExternalLinter {
   }
 
   protected function getMandatoryFlags() {
-    return array('--git-branch=main');
+    return array('--git-branch=main', '--json');
   }
 
-  protected function buildFutures(array $paths) {
+  // Running prototool once per file causes spurious errors around new proto files
+  // or moving protos between files while maintaining the package name etc.
+  // Instead we want to run prototool once over the entire repo.
+  // So we override the arcanist default behavior of running a linter once per file
+  // to trigger a repo wide prototool lint only once if any proto files change.
+  public function willLintPaths(array $paths) {
+    if ($this->future) {
+      return;
+    }
     $executable = $this->getExecutableCommand();
     $flags = $this->getCommandFlags();
-
-    $futures = array();
-    foreach ($paths as $path) {
-      $future = new ExecFuture('%C break check %Ls %s', $executable, $flags, $path);
-      $futures[$path] = $future;
-      $future->setCWD($this->getProjectRoot());
-    }
-    return $futures;
+    $this->future = new ExecFuture('%C break check %Ls', $executable, $flags);
   }
 
-  protected function parseLinterOutput($path, $err, $stdout, $stderr) {
-    $messages = array();
+  public function didLintPaths(array $paths) {
+    if (!$this->future) {
+      return;
+    }
+
+    list($err, $stdout, $stderr) = $this->future->resolve();
     if ($err !== 0) {
-      $message = id(new ArcanistLintMessage())
-        ->setPath($path)
-        ->setCode('breaking-change')
-        ->setName('prototool')
-        ->setDescription($stdout)
-        ->setSeverity(ArcanistLintSeverity::SEVERITY_WARNING);
-
-      $messages[] = $message;
+      $lines = phutil_split_lines($stdout, false);
+      foreach ($lines as $line) {
+        $json = phutil_json_decode($line);
+        $this->addLintMessage(id(new ArcanistLintMessage())
+          ->setPath(isset($json['filename']) ? $json['filename'] : '')
+          ->setCode(isset($json['lint_id']) ? $json['lint_id'] : '')
+          ->setName('prototool')
+          ->setDescription(isset($json['message']) ? $json['message'] : $line)
+          ->setSeverity(ArcanistLintSeverity::SEVERITY_WARNING));
+      }
     }
-    return $messages;
+
+    $this->future = null;
   }
 
+  public function parseLinterOutput($path, $err, $stdout, $stderr) {
+    return;
+  }
 }
