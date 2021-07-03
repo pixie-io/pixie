@@ -14,7 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM ubuntu:20.04
+FROM ubuntu:20.10
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -y --fix-missing
