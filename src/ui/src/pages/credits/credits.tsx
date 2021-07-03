@@ -70,6 +70,14 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     color: theme.palette.foreground.grey5,
     fontWeight: theme.typography.fontWeightBold,
   },
+  topbarTitle: {
+    ...theme.typography.h6,
+    color: theme.palette.foreground.grey5,
+    fontWeight: theme.typography.fontWeightBold,
+    display: 'flex',
+    alignItems: 'center',
+    height: '100%',
+  },
   floatLeft: {
     float: 'left',
   },
@@ -111,7 +119,7 @@ const CreditsPage: React.FC = ({ children }) => {
     <div className={classes.root}>
       <NavBars>
         <div className={classes.title}>
-          <div className={classes.titleText}>Credits</div>
+          <div className={classes.topbarTitle}>Credits</div>
         </div>
         <LiveViewButton />
       </NavBars>

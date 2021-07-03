@@ -253,6 +253,8 @@ export const TopBar = withStyles((theme: Theme) => createStyles({
     flex: 1,
     paddingRight: theme.spacing(4),
     paddingLeft: theme.spacing(4),
+    height: '100%',
+    alignItems: 'center',
   },
   menu: {
     color: theme.palette.text.secondary,

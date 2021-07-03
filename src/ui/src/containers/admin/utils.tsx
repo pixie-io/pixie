@@ -195,6 +195,7 @@ export const StyledSmallRightTableCell = withStyles((theme: Theme) => createStyl
 export const LiveViewButton = withStyles((theme: Theme) => createStyles({
   root: {
     color: theme.palette.foreground.grey5,
+    height: theme.spacing(4),
   },
 }))(({ classes }: any) => (
   <Button classes={classes} component={Link} to='/live'>

@@ -44,6 +44,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   title: {
     flexGrow: 1,
     marginLeft: theme.spacing(2),
+    height: '100%',
   },
   main: {
     marginLeft: theme.spacing(6),
@@ -64,6 +65,9 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     ...theme.typography.h6,
     color: theme.palette.foreground.grey5,
     fontWeight: theme.typography.fontWeightBold,
+    display: 'flex',
+    alignItems: 'center',
+    height: '100%',
   },
 }));
 

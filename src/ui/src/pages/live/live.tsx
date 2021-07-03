@@ -143,6 +143,8 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   iconButton: {
     marginRight: theme.spacing(1),
     padding: theme.spacing(0.5),
+    width: theme.spacing(4),
+    height: theme.spacing(4),
   },
   iconPanel: {
     marginTop: 0,
