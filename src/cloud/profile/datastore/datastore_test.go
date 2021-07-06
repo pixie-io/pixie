@@ -69,9 +69,9 @@ func mustLoadTestData(db *sqlx.DB) {
 
 	insertOrgQuery := `INSERT INTO orgs (id, org_name, domain_name, enable_approvals) VALUES ($1, $2, $3, $4)`
 	db.MustExec(insertOrgQuery, "123e4567-e89b-12d3-a456-426655440000", "my-org", "my-org.com", "false")
-	insertUserQuery := `INSERT INTO users (id, org_id, username, first_name, last_name, email, is_approved, identity_provider) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
-	db.MustExec(insertUserQuery, "123e4567-e89b-12d3-a456-426655440001", "123e4567-e89b-12d3-a456-426655440000", "person@my-org.com", "first", "last", "person@my-org.com", "true", "github")
-	db.MustExec(insertUserQuery, "123e4567-e89b-12d3-a456-426655440002", "123e4567-e89b-12d3-a456-426655440000", "person2@my-org.com", "first2", "last2", "person2@my-org.com", "false", "google-oauth2")
+	insertUserQuery := `INSERT INTO users (id, org_id, username, first_name, last_name, email, is_approved, identity_provider, auth_provider_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+	db.MustExec(insertUserQuery, "123e4567-e89b-12d3-a456-426655440001", "123e4567-e89b-12d3-a456-426655440000", "person@my-org.com", "first", "last", "person@my-org.com", "true", "github", "github|123456789")
+	db.MustExec(insertUserQuery, "123e4567-e89b-12d3-a456-426655440002", "123e4567-e89b-12d3-a456-426655440000", "person2@my-org.com", "first2", "last2", "person2@my-org.com", "false", "google-oauth2", "google-oauth2|123456789")
 
 	insertUserSetting := `INSERT INTO user_settings (user_id, key, value) VALUES ($1, $2, $3)`
 	db.MustExec(insertUserSetting, "123e4567-e89b-12d3-a456-426655440001", "some_setting", "test")
@@ -264,6 +264,25 @@ func TestDatastore(t *testing.T) {
 		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
 		userInfo, err := d.GetUserByEmail("noemail@gmail.com")
+		require.NotNil(t, err)
+		require.Equal(t, err, datastore.ErrUserNotFound)
+		require.Nil(t, userInfo)
+	})
+
+	t.Run("get user by auth provider id", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db)
+		userInfo, err := d.GetUserByAuthProviderID("github|123456789")
+		require.NoError(t, err)
+		require.NotNil(t, userInfo)
+
+		assert.Equal(t, userInfo.Email, "person@my-org.com")
+	})
+
+	t.Run("get user by auth provider id for missing auth provider id should return specific error", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db)
+		userInfo, err := d.GetUserByAuthProviderID("noid")
 		require.NotNil(t, err)
 		require.Equal(t, err, datastore.ErrUserNotFound)
 		require.Nil(t, userInfo)

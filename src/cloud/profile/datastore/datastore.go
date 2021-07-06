@@ -218,7 +218,19 @@ func (d *Datastore) GetUserByEmail(email string) (*UserInfo, error) {
 
 // GetUserByAuthProviderID gets userinfo by auth provider id.
 func (d *Datastore) GetUserByAuthProviderID(id string) (*UserInfo, error) {
-	return nil, errors.New("not implemented")
+	query := `SELECT * from users WHERE auth_provider_id=$1`
+	rows, err := d.db.Queryx(query, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		var userInfo UserInfo
+		err := rows.StructScan(&userInfo)
+		return &userInfo, err
+	}
+	return nil, ErrUserNotFound
 }
 
 // DeleteOrgAndUsers deletes the org and users with a given org ID.
