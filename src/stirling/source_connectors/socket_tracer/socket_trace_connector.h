@@ -286,14 +286,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // The transfer_fn defines which function is called to process the data for transfer.
   std::vector<TransferSpec> protocol_transfer_specs_;
 
-  // Keep track of which tables have had data transferred via TransferData()
-  // since the last UpdateCommonState().
-  // Used as a performance optimization to avoid too many calls to UpdateCommonState().
-  // Essentially, we allow a TransferData() for one table to piggy-back on the UpdateCommonState()
-  // of another table.
-  // A bit being set means that the table in question should skip a call to UpdateCommonState().
-  std::bitset<kTables.size()> table_access_history_;
-
   // The time at which TransferDataImpl() begin. Used as a universal timestamp for the iteration,
   // to avoid too many calls to std::chrono::steady_clock::now().
   std::chrono::time_point<std::chrono::steady_clock> iteration_time_;
