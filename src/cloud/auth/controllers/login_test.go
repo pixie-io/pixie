@@ -996,7 +996,7 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
 	mockProfile.EXPECT().
-		GetUserByEmail(gomock.Any(), &profilepb.GetUserByEmailRequest{Email: "abc@gmail.com"}).
+		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: "github|abcdefg"}).
 		Return(nil, errors.New("user does not exist"))
 
 	fakeOrgInfo := &profilepb.OrgInfo{
@@ -1079,7 +1079,7 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
 	mockProfile.EXPECT().
-		GetUserByEmail(gomock.Any(), &profilepb.GetUserByEmailRequest{Email: "abc@gmail.com"}).
+		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: "github|abcdefg"}).
 		Return(nil, errors.New("user does not exist"))
 
 	mockProfile.EXPECT().
@@ -1137,9 +1137,10 @@ func TestServer_Signup_CreateUserOrgFailed(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		Email:     "abc@gmail.com",
-		FirstName: "first",
-		LastName:  "last",
+		Email:          "abc@gmail.com",
+		FirstName:      "first",
+		LastName:       "last",
+		AuthProviderID: "github|abcdefg",
 	}
 
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
@@ -1147,7 +1148,7 @@ func TestServer_Signup_CreateUserOrgFailed(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
 	mockProfile.EXPECT().
-		GetUserByEmail(gomock.Any(), &profilepb.GetUserByEmailRequest{Email: "abc@gmail.com"}).
+		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: "github|abcdefg"}).
 		Return(nil, errors.New("user does not exist"))
 
 	mockProfile.EXPECT().
@@ -1161,10 +1162,11 @@ func TestServer_Signup_CreateUserOrgFailed(t *testing.T) {
 				DomainName: "abc@gmail.com",
 			},
 			User: &profilepb.CreateOrgAndUserRequest_User{
-				Username:  "abc@gmail.com",
-				FirstName: "first",
-				LastName:  "last",
-				Email:     "abc@gmail.com",
+				Username:       "abc@gmail.com",
+				FirstName:      "first",
+				LastName:       "last",
+				Email:          "abc@gmail.com",
+				AuthProviderID: "github|abcdefg",
 			},
 		}).
 		Return(nil, errors.New("Could not create user org"))
@@ -1191,9 +1193,10 @@ func TestServer_Signup_UserAlreadyExists(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		Email:     "abc@gmail.com",
-		FirstName: "first",
-		LastName:  "last",
+		Email:          "abc@gmail.com",
+		FirstName:      "first",
+		LastName:       "last",
+		AuthProviderID: "github|abcdefg",
 	}
 
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
@@ -1201,7 +1204,7 @@ func TestServer_Signup_UserAlreadyExists(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
 	mockProfile.EXPECT().
-		GetUserByEmail(gomock.Any(), &profilepb.GetUserByEmailRequest{Email: "abc@gmail.com"}).
+		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: "github|abcdefg"}).
 		Return(nil, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
@@ -1319,9 +1322,10 @@ func TestServer_Signup_UserNotApproved(t *testing.T) {
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return(testingutils.TestUserID, nil)
 
 	fakeUserInfo := &controllers.UserInfo{
-		Email:     "abc@gmail.com",
-		FirstName: "first",
-		LastName:  "last",
+		Email:          "abc@gmail.com",
+		FirstName:      "first",
+		LastName:       "last",
+		AuthProviderID: "github|abcdefg",
 	}
 
 	a.EXPECT().GetUserInfo(testingutils.TestUserID).Return(fakeUserInfo, nil)
@@ -1329,7 +1333,7 @@ func TestServer_Signup_UserNotApproved(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
 	mockProfile.EXPECT().
-		GetUserByEmail(gomock.Any(), &profilepb.GetUserByEmailRequest{Email: "abc@gmail.com"}).
+		GetUserByAuthProviderID(gomock.Any(), &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: "github|abcdefg"}).
 		Return(nil, errors.New("doesnt exist"))
 
 	fakeOrgInfo := &profilepb.OrgInfo{
@@ -1342,11 +1346,12 @@ func TestServer_Signup_UserNotApproved(t *testing.T) {
 		Return(fakeOrgInfo, nil)
 
 	mockProfile.EXPECT().CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
-		OrgID:     utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
-		Username:  "abc@gmail.com",
-		FirstName: "first",
-		LastName:  "last",
-		Email:     "abc@gmail.com",
+		OrgID:          utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
+		Username:       "abc@gmail.com",
+		FirstName:      "first",
+		LastName:       "last",
+		Email:          "abc@gmail.com",
+		AuthProviderID: "github|abcdefg",
 	}).Return(utils.ProtoFromUUIDStrOrNil(testingutils.TestUserID), nil)
 
 	mockUserInfo := &profilepb.UserInfo{

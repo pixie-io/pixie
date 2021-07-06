@@ -258,7 +258,7 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 
 	pc := s.env.ProfileClient()
 
-	_, err = pc.GetUserByEmail(ctx, &profilepb.GetUserByEmailRequest{Email: userInfo.Email})
+	_, err = pc.GetUserByAuthProviderID(ctx, &profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: userInfo.AuthProviderID})
 	if err == nil {
 		return nil, status.Error(codes.PermissionDenied, "user already exists, please login.")
 	}

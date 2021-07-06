@@ -295,7 +295,7 @@ func (d *Datastore) createUserUsingTxn(txn *sqlx.Tx, userInfo *UserInfo) (uuid.U
 		}
 		return id, nil
 	}
-	return uuid.Nil, errors.New("failed to read user id from the database")
+	return uuid.Nil, errors.New("failed to read user id from the database after user creation")
 }
 
 func (d *Datastore) createOrgUsingTxn(txn *sqlx.Tx, orgInfo *OrgInfo) (uuid.UUID, error) {
@@ -313,7 +313,7 @@ func (d *Datastore) createOrgUsingTxn(txn *sqlx.Tx, orgInfo *OrgInfo) (uuid.UUID
 		}
 		return id, nil
 	}
-	return uuid.Nil, errors.New("failed to read org id from the database")
+	return uuid.Nil, errors.New("failed to read org id from the database after org creation")
 }
 
 // GetUsersInOrg gets all users in the given org.
