@@ -57,7 +57,7 @@ class CGroupMetadataReaderTest : public ::testing::Test {
     EXPECT_CALL(*sysconfig, sysfs_path()).WillRepeatedly(ReturnRef(sysfs_path_));
   }
 
-  void SetUp() {
+  void SetUp() override {
     system::MockConfig sysconfig;
     SetupMetadataReader(&sysconfig, "testdata/proc1", "testdata/sysfs1");
     md_reader_.reset(new CGroupMetadataReader(sysconfig));

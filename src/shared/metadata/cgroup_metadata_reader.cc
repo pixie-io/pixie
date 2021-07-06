@@ -144,8 +144,6 @@ std::string CGroupMetadataReader::CGroupProcFilePath(PodQOSClass qos_class, std:
                                                      ContainerType container_type) const {
   constexpr std::string_view kPidFile = "cgroup.procs";
 
-  // TODO(oazizi): Might be better to inline code from CGroupPodDirPath for performance reasons
-  // (avoid string copies and perform a single absl::Substitute).
   std::string containerType;
   switch (container_type) {
     case ContainerType::kCRIO:

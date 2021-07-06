@@ -97,6 +97,14 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "cgroup_path_templater_test",
+    srcs = ["cgroup_path_templater_test.cc"],
+    deps = [
+        ":cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "metadata_state_test",
     srcs = ["metadata_state_test.cc"],
     deps = [
