@@ -93,6 +93,13 @@ spec:
             configMapKeyRef:
               name: pl-oauth-config
               key: PL_AUTH_CLIENT_ID
+        - name: PL_AUTH_URI
+          valueFrom:
+            configMapKeyRef:
+              name: pl-oauth-config
+              key: PL_AUTH_URI
+        - name: PL_AUTH0_HOST
+          value: https://$(PL_AUTH_URI)
         volumeMounts:
         - name: certs
           mountPath: /certs
