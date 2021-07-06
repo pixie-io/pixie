@@ -98,3 +98,9 @@ profiles:
     path: /deploy/kustomize/paths
     value:
     - k8s/vizier/sanitizer
+- name: etcd
+  patches:
+  - op: replace
+    path: /deploy/kustomize/paths
+    value:
+    - k8s/vizier/etcd_metadata
