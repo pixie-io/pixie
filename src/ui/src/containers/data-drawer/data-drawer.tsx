@@ -54,8 +54,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   resultTable: {
     marginTop: theme.spacing(2),
-    marginLeft: theme.spacing(3),
-    marginRight: theme.spacing(4),
     flex: 1,
     minHeight: 0,
   },
@@ -106,6 +104,10 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   statsTabLabel: {
     '&:focus': {
       color: `${theme.palette.primary.light} !important`,
+    },
+    '& span': {
+      alignItems: 'flex-end',
+      paddingRight: theme.spacing(2),
     },
     color: theme.palette.foreground.three,
   },
