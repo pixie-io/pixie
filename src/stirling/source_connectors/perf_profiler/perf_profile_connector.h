@@ -50,9 +50,7 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static constexpr auto kBPFSamplingPeriod = std::chrono::milliseconds{11};
 
   static constexpr auto kSamplingPeriod = std::chrono::milliseconds{30000};
-
-  // TODO(yzhao): This is not used right now. Eventually use this to control data push frequency.
-  static constexpr auto kPushPeriod = std::chrono::milliseconds{30000};
+  static constexpr auto kPushPeriod = std::chrono::milliseconds{15000};
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new PerfProfileConnector(name));
