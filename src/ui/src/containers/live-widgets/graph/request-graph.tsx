@@ -19,7 +19,7 @@
 import * as React from 'react';
 import { WidgetDisplay } from 'app/containers/live/vis';
 
-import { data as visData, Network } from 'vis-network/standalone';
+import { data as visData, Network, Options } from 'vis-network/standalone';
 import { makeStyles, useTheme, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import AccountTreeIcon from '@material-ui/icons/AccountTree';
@@ -117,7 +117,8 @@ export const RequestGraphWidget: React.FC<RequestGraphProps> = ({
   const [focused, setFocused] = React.useState<boolean>(false);
 
   const theme = useTheme();
-  const graphOpts = getGraphOptions(theme, -1);
+  const defaultGraphOpts = getGraphOptions(theme, -1);
+  const [graphOpts, setGraphOpts] = React.useState<Options>(defaultGraphOpts);
 
   /**
    * Toggle the hier/non-hier clustering mode.
@@ -185,38 +186,37 @@ export const RequestGraphWidget: React.FC<RequestGraphProps> = ({
    */
   const toggleHierarchy = React.useCallback(() => setHierarchyEnabled((enabled) => {
     const hierEnabled = !enabled;
-    if (!network) {
-      return hierEnabled;
-    }
+    let opts = {};
     if (hierEnabled) {
-      const opts = {
-        ...graphOpts,
+      opts = {
+        ...defaultGraphOpts,
         layout: {
-          ...graphOpts.layout,
+          ...defaultGraphOpts.layout,
           hierarchical: {
             enabled: true,
-            levelSeparation: 200,
+            levelSeparation: 50,
             direction: 'LR',
             sortMethod: 'directed',
+            nodeSpacing: 50,
+            edgeMinimization: true,
+            blockShifting: true,
           },
         },
       };
-      network.setOptions(opts);
     } else {
-      const opts = {
-        ...graphOpts,
+      opts = {
+        ...defaultGraphOpts,
         layout: {
-          ...graphOpts.layout,
+          ...defaultGraphOpts.layout,
           hierarchical: {
             enabled: false,
           },
         },
       };
-
-      network.setOptions(opts);
     }
+    setGraphOpts(opts);
     return hierEnabled;
-  }), [graphOpts, network]);
+  }), [defaultGraphOpts]);
 
   const toggleColor = React.useCallback(() => setColorByLatency((enabled) => {
     const latencyColor = !enabled;
@@ -293,9 +293,9 @@ export const RequestGraphWidget: React.FC<RequestGraphProps> = ({
       });
       setNetwork(n);
     }
-    // To list all exhaustive deps, we also have to list theme and graphOpts, which will never change.
+    // To list all exhaustive deps, we also have to list theme, which will never change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [graph, display, ref, colorByLatency, colInfos]);
+  }, [graph, display, ref, colorByLatency, colInfos, graphOpts]);
 
   const { url } = useRouteMatch();
   const isEmbedded = url.startsWith('/embed');
