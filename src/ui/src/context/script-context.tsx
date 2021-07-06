@@ -143,6 +143,8 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
       return;
     }
 
+    cancelExecution?.();
+
     if (containsMutation(script.code) && manual) {
       setNumExecutionTries(NUM_MUTATION_RETRIES);
     } else if (containsMutation(script.code) && !manual) {
@@ -153,8 +155,6 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
     } else {
       setNumExecutionTries(1);
     }
-
-    cancelExecution?.();
 
     const execution = apiClient.executeScript(
       clusterConfig,
