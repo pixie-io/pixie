@@ -12,10 +12,10 @@ exports[`<Breadcrumbs/> renders correctly 1`] = `
         class="Breadcrumbs-breadcrumb-2"
       >
         <div
-          class="Breadcrumbs-body-7"
+          class="Breadcrumbs-body-8"
         >
           <div
-            class="Breadcrumbs-content-8"
+            class="Breadcrumbs-content-9"
           >
             <span
               class="Breadcrumbs-title-3"
@@ -23,25 +23,29 @@ exports[`<Breadcrumbs/> renders correctly 1`] = `
               cluster: 
             </span>
             <span
-              class="Breadcrumbs-value-6"
+              class="Breadcrumbs-selectable-7"
             >
-              gke-prod
-            </span>
-            <div
-              class="Breadcrumbs-dropdownArrow-9"
-            >
-              <svg
-                aria-hidden="true"
-                class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root"
-                data-testid="ArrowDropDownIcon"
-                focusable="false"
-                viewBox="0 0 24 24"
+              <span
+                class="Breadcrumbs-value-6"
               >
-                <path
-                  d="m7 10 5 5 5-5z"
-                />
-              </svg>
-            </div>
+                gke-prod
+              </span>
+              <div
+                class="Breadcrumbs-dropdownArrow-10"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root"
+                  data-testid="ArrowDropDownIcon"
+                  focusable="false"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="m7 10 5 5 5-5z"
+                  />
+                </svg>
+              </div>
+            </span>
           </div>
         </div>
       </div>
@@ -49,10 +53,10 @@ exports[`<Breadcrumbs/> renders correctly 1`] = `
         class="Breadcrumbs-breadcrumb-2"
       >
         <div
-          class="Breadcrumbs-body-7"
+          class="Breadcrumbs-body-8"
         >
           <div
-            class="Breadcrumbs-content-8"
+            class="Breadcrumbs-content-9"
           >
             <span
               class="Breadcrumbs-title-3"
@@ -60,25 +64,29 @@ exports[`<Breadcrumbs/> renders correctly 1`] = `
               pod: 
             </span>
             <span
-              class="Breadcrumbs-value-6"
+              class="Breadcrumbs-selectable-7"
             >
-              pod-123
-            </span>
-            <div
-              class="Breadcrumbs-dropdownArrow-9"
-            >
-              <svg
-                aria-hidden="true"
-                class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root"
-                data-testid="ArrowDropDownIcon"
-                focusable="false"
-                viewBox="0 0 24 24"
+              <span
+                class="Breadcrumbs-value-6"
               >
-                <path
-                  d="m7 10 5 5 5-5z"
-                />
-              </svg>
-            </div>
+                pod-123
+              </span>
+              <div
+                class="Breadcrumbs-dropdownArrow-10"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root"
+                  data-testid="ArrowDropDownIcon"
+                  focusable="false"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="m7 10 5 5 5-5z"
+                  />
+                </svg>
+              </div>
+            </span>
           </div>
         </div>
       </div>
@@ -86,10 +94,10 @@ exports[`<Breadcrumbs/> renders correctly 1`] = `
         class="Breadcrumbs-breadcrumb-2"
       >
         <div
-          class="Breadcrumbs-body-7"
+          class="Breadcrumbs-body-8"
         >
           <div
-            class="Breadcrumbs-content-8"
+            class="Breadcrumbs-content-9"
           >
             <span
               class="Breadcrumbs-title-3"
@@ -97,12 +105,16 @@ exports[`<Breadcrumbs/> renders correctly 1`] = `
               script: 
             </span>
             <span
-              class="Breadcrumbs-value-6"
+              class=""
             >
-              px/pod
+              <span
+                class="Breadcrumbs-value-6"
+              >
+                px/pod
+              </span>
             </span>
             <div
-              class="Breadcrumbs-spacer-10"
+              class="Breadcrumbs-spacer-11"
             />
           </div>
         </div>

@@ -73,6 +73,11 @@ const useStyles = makeStyles(({
     whiteSpace: 'nowrap',
     fontFamily: '"Roboto Mono", Monospace',
   },
+  selectable: {
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+  },
   body: {
     ...typography.body2,
     display: 'inline-block',
@@ -86,7 +91,6 @@ const useStyles = makeStyles(({
     height: spacing(5),
   },
   dropdownArrow: {
-    cursor: 'pointer',
     height: spacing(3),
   },
   spacer: {
@@ -399,12 +403,14 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
       <div className={classes.body}>
         <div className={classes.content}>
           {!omitKey && <span className={classes.title}>{`${title}: `}</span>}
-          <span className={classes.value}>{value}</span>
-          {selectable && (
-            <div className={classes.dropdownArrow} onClick={handleClick}>
-              <ArrowDropDownIcon />
-            </div>
-          )}
+          <span className={selectable ? classes.selectable : ''} onClick={selectable ? handleClick : null}>
+            <span className={classes.value} >{value}</span>
+            {selectable && (
+              <div className={classes.dropdownArrow}>
+                <ArrowDropDownIcon />
+              </div>
+            )}
+          </span>
           {!selectable && <div className={classes.spacer} />}
           <DialogDropdown
             placeholder={placeholder || 'Filter...'}

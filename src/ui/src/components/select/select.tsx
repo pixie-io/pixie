@@ -35,9 +35,9 @@ const styles = (theme: Theme) => createStyles({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    cursor: 'pointer',
   },
   selector: {
-    cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     marginLeft: theme.spacing(-0.1),
@@ -77,9 +77,9 @@ const SelectImpl = ({
         onOpen: 'clear',
       }}
     >
-      <div className={classes.root}>
+      <div className={classes.root} onClick={handleClick}>
         { value }
-        <div className={classes.selector} onClick={handleClick}><ArrowDropDownIcon /></div>
+        <div className={classes.selector}><ArrowDropDownIcon /></div>
       </div>
       <DialogDropdown
         placeholder={placeholder || 'Filter...'}
