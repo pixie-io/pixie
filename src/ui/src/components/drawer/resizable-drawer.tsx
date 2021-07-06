@@ -103,7 +103,7 @@ const ResizableDrawerImpl = ({
           break;
       }
     },
-    [drawerDirection, drawerSize, timer],
+    [drawerDirection, drawerSize, timer, minSize],
   );
 
   let dragHandleStyle = {};

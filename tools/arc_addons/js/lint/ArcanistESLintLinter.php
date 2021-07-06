@@ -25,8 +25,7 @@ final class ArcanistESLintLinter extends ArcanistExternalLinter {
   const ESLINT_WARNING = '1';
   const ESLINT_ERROR = '2';
 
-  private $flags = array();
-  private $setup_script = '';
+  private $future;
 
   public function getInfoName() {
     return 'ESLint';
@@ -61,45 +60,11 @@ final class ArcanistESLintLinter extends ArcanistExternalLinter {
   }
 
   protected function getMandatoryFlags() {
-    return array(
-      '--format=json',
-      '--no-color',
-    );
-  }
-
-  protected function getDefaultFlags() {
-    return $this->flags;
-  }
-
-  public function getLinterConfigurationOptions() {
-    $options = array(
-      'eslint.config' => array(
-        'type' => 'optional string',
-        'help' => pht('Use configuration from this file or shareable config. (https://eslint.org/docs/user-guide/command-line-interface#-c---config)'),
-      ),
-      'eslint.setup' => array(
-        'type' => 'optional string',
-        'help' => pht('An optional setup script to run before invoking the linter.'),
-      ),
-    );
-    return $options + parent::getLinterConfigurationOptions();
-  }
-
-  public function setLinterConfigurationValue($key, $value) {
-    switch ($key) {
-      case 'eslint.config':
-        $this->flags[] = '--config';
-        $this->flags[] = $value;
-        return;
-      case 'eslint.setup':
-        $this->setup_script = $value;
-        return;
-    }
-    return parent::setLinterConfigurationValue($key, $value);
+    return array('--format=json', '--no-color');
   }
 
   public function getInstallInstructions() {
-    return pht($this->setup_script);
+    return 'yarn add eslint';
   }
 
   protected function canCustomizeLintSeverities() {
@@ -107,24 +72,36 @@ final class ArcanistESLintLinter extends ArcanistExternalLinter {
   }
 
   public function willLintPaths(array $paths) {
-    if (!empty($paths) && !empty($this->setup_script)) {
-      // Call the setup script to yarn install!
-      $future = new ExecFuture($this->setup_script);
-      $future->setCWD($this->getProjectRoot());
-      $future->resolvex();
+    if ($this->future || empty($paths)) {
+      return;
     }
 
-    return parent::willLintPaths($paths);
+    $ui_src_dir = $this->getProjectRoot().DIRECTORY_SEPARATOR.'src'.DIRECTORY_SEPARATOR.'ui';
+
+    // Make sure js node modules are installed.
+    $future = new ExecFuture('yarn install');
+    $future->setCWD($ui_src_dir);
+    $future->resolvex();
+
+    $relative_paths = array();
+    foreach ($paths as $path) {
+      $relative_paths[] = '..'.DIRECTORY_SEPARATOR.'..'.DIRECTORY_SEPARATOR.$path;
+    }
+
+    $flags = $this->getCommandFlags();
+
+    $this->future = new ExecFuture('yarn run eslint %Ls %Ls', $flags, $relative_paths);
+    $this->future->setCWD($ui_src_dir);
+    $this->future;
   }
 
-  protected function parseLinterOutput($path, $err, $stdout, $stderr) {
-    // Gate on $stderr b/c $err (exit code) is expected.
-    if ($stderr) {
-      return false;
+  public function didLintPaths(array $paths) {
+    if (!$this->future) {
+      return;
     }
 
+    list($err, $stdout, $stderr) = $this->future->resolve();
     $json = json_decode($stdout, true);
-    $messages = array();
 
     foreach ($json as $file) {
       foreach ($file['messages'] as $offense) {
@@ -147,11 +124,12 @@ final class ArcanistESLintLinter extends ArcanistExternalLinter {
           $message->setChar($offense['column']);
         }
         $message->setCode($this->getLinterName());
-        $messages[] = $message;
+
+        $this->addLintMessage(id($message));
       }
     }
 
-    return $messages;
+    $this->future = null;
   }
 
   private function mapSeverity($eslint_severity) {
@@ -163,5 +141,9 @@ final class ArcanistESLintLinter extends ArcanistExternalLinter {
       default:
         return ArcanistLintSeverity::SEVERITY_ERROR;
     }
+  }
+
+  public function parseLinterOutput($path, $err, $stdout, $stderr) {
+    return;
   }
 }
