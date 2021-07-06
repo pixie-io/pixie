@@ -157,6 +157,26 @@ func (mr *MockProfileServiceClientMockRecorder) GetUser(ctx, in interface{}, opt
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockProfileServiceClient)(nil).GetUser), varargs...)
 }
 
+// GetUserByAuthProviderID mocks base method.
+func (m *MockProfileServiceClient) GetUserByAuthProviderID(ctx context.Context, in *profilepb.GetUserByAuthProviderIDRequest, opts ...grpc.CallOption) (*profilepb.UserInfo, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetUserByAuthProviderID", varargs...)
+	ret0, _ := ret[0].(*profilepb.UserInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserByAuthProviderID indicates an expected call of GetUserByAuthProviderID.
+func (mr *MockProfileServiceClientMockRecorder) GetUserByAuthProviderID(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByAuthProviderID", reflect.TypeOf((*MockProfileServiceClient)(nil).GetUserByAuthProviderID), varargs...)
+}
+
 // GetUserByEmail mocks base method.
 func (m *MockProfileServiceClient) GetUserByEmail(ctx context.Context, in *profilepb.GetUserByEmailRequest, opts ...grpc.CallOption) (*profilepb.UserInfo, error) {
 	m.ctrl.T.Helper()
@@ -408,6 +428,21 @@ func (m *MockProfileServiceServer) GetUser(arg0 context.Context, arg1 *uuidpb.UU
 func (mr *MockProfileServiceServerMockRecorder) GetUser(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockProfileServiceServer)(nil).GetUser), arg0, arg1)
+}
+
+// GetUserByAuthProviderID mocks base method.
+func (m *MockProfileServiceServer) GetUserByAuthProviderID(arg0 context.Context, arg1 *profilepb.GetUserByAuthProviderIDRequest) (*profilepb.UserInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserByAuthProviderID", arg0, arg1)
+	ret0, _ := ret[0].(*profilepb.UserInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserByAuthProviderID indicates an expected call of GetUserByAuthProviderID.
+func (mr *MockProfileServiceServerMockRecorder) GetUserByAuthProviderID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByAuthProviderID", reflect.TypeOf((*MockProfileServiceServer)(nil).GetUserByAuthProviderID), arg0, arg1)
 }
 
 // GetUserByEmail mocks base method.

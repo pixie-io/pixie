@@ -58,6 +58,9 @@ type Datastore interface {
 	// GetUserByEmail gets a user by email.
 	GetUserByEmail(string) (*datastore.UserInfo, error)
 
+	// GetUserByAuthProviderID returns the user that matches the AuthProviderID.
+	GetUserByAuthProviderID(string) (*datastore.UserInfo, error)
+
 	// CreateUserAndOrg creates a user and org for creating a new org with specified user as owner.
 	CreateUserAndOrg(*datastore.OrgInfo, *datastore.UserInfo) (orgID uuid.UUID, userID uuid.UUID, err error)
 	// GetOrg gets and org by ID.
@@ -207,6 +210,15 @@ func (s *Server) GetUser(ctx context.Context, req *uuidpb.UUID) (*profilepb.User
 // GetUserByEmail is the GRPC method to get a user by email.
 func (s *Server) GetUserByEmail(ctx context.Context, req *profilepb.GetUserByEmailRequest) (*profilepb.UserInfo, error) {
 	userInfo, err := s.d.GetUserByEmail(req.Email)
+	if err != nil {
+		return nil, toExternalError(err)
+	}
+	return userInfoToProto(userInfo), nil
+}
+
+// GetUserByAuthProviderID returns the user identified by the AuthProviderID.
+func (s *Server) GetUserByAuthProviderID(ctx context.Context, req *profilepb.GetUserByAuthProviderIDRequest) (*profilepb.UserInfo, error) {
+	userInfo, err := s.d.GetUserByAuthProviderID(req.AuthProviderID)
 	if err != nil {
 		return nil, toExternalError(err)
 	}

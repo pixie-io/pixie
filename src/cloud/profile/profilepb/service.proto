@@ -31,6 +31,7 @@ service ProfileService {
   rpc CreateUser(CreateUserRequest) returns (px.uuidpb.UUID);
   rpc GetUser(px.uuidpb.UUID) returns (UserInfo);
   rpc GetUserByEmail(GetUserByEmailRequest) returns (UserInfo);
+  rpc GetUserByAuthProviderID(GetUserByAuthProviderIDRequest) returns (UserInfo);
   // Creates the initial organization with the specified user as the owner.
   rpc CreateOrgAndUser(CreateOrgAndUserRequest) returns (CreateOrgAndUserResponse);
   rpc GetOrg(px.uuidpb.UUID) returns (OrgInfo);
@@ -66,6 +67,11 @@ message UserInfo {
 
 message GetUserByEmailRequest {
   string email = 1;
+}
+
+message GetUserByAuthProviderIDRequest {
+  // The auth_provider_id is the user ID that an auth_provider uses for an ID of the corresponding user.
+  string auth_provider_id = 1 [(gogoproto.customname) = "AuthProviderID"];
 }
 
 // OrgInfo contains information about a company in our system.

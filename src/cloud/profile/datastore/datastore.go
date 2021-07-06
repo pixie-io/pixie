@@ -199,7 +199,7 @@ func (d *Datastore) GetOrgByDomain(domainName string) (*OrgInfo, error) {
 	return nil, ErrOrgNotFound
 }
 
-// GetUserByEmail gets org information by domain.
+// GetUserByEmail gets user info by email.
 func (d *Datastore) GetUserByEmail(email string) (*UserInfo, error) {
 	query := `SELECT * from users WHERE email=$1`
 	rows, err := d.db.Queryx(query, email)
@@ -214,6 +214,11 @@ func (d *Datastore) GetUserByEmail(email string) (*UserInfo, error) {
 		return &userInfo, err
 	}
 	return nil, ErrUserNotFound
+}
+
+// GetUserByAuthProviderID gets userinfo by auth provider id.
+func (d *Datastore) GetUserByAuthProviderID(id string) (*UserInfo, error) {
+	return nil, errors.New("not implemented")
 }
 
 // DeleteOrgAndUsers deletes the org and users with a given org ID.

@@ -363,6 +363,43 @@ func TestServer_GetUserByEmail(t *testing.T) {
 	assert.Equal(t, resp.AuthProviderID, "github|asdfghjkl;")
 }
 
+func TestServer_GetUserByAuthProviderID(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := mock_controller.NewMockDatastore(ctrl)
+
+	userUUID := uuid.Must(uuid.NewV4())
+	orgUUID := uuid.Must(uuid.NewV4())
+	s := controller.NewServer(nil, d, nil, nil)
+
+	mockReply := &datastore.UserInfo{
+		ID:               userUUID,
+		OrgID:            orgUUID,
+		Username:         "foobar",
+		FirstName:        "foo",
+		LastName:         "bar",
+		Email:            "foo@bar.com",
+		IdentityProvider: "github",
+		AuthProviderID:   "github|asdfghjkl;",
+	}
+
+	d.EXPECT().
+		GetUserByAuthProviderID("github|asdfghjkl;").
+		Return(mockReply, nil)
+
+	resp, err := s.GetUserByAuthProviderID(
+		context.Background(),
+		&profilepb.GetUserByAuthProviderIDRequest{AuthProviderID: "github|asdfghjkl;"})
+
+	require.NoError(t, err)
+	assert.Equal(t, resp.ID, utils.ProtoFromUUID(userUUID))
+	assert.Equal(t, resp.Email, "foo@bar.com")
+	assert.Equal(t, resp.OrgID, utils.ProtoFromUUID(orgUUID))
+	assert.Equal(t, resp.IdentityProvider, "github")
+	assert.Equal(t, resp.AuthProviderID, "github|asdfghjkl;")
+}
+
 func TestServer_GetUserByEmail_MissingEmail(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

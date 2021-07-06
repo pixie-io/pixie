@@ -154,6 +154,21 @@ func (mr *MockDatastoreMockRecorder) GetUser(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockDatastore)(nil).GetUser), arg0)
 }
 
+// GetUserByAuthProviderID mocks base method.
+func (m *MockDatastore) GetUserByAuthProviderID(arg0 string) (*datastore.UserInfo, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserByAuthProviderID", arg0)
+	ret0, _ := ret[0].(*datastore.UserInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserByAuthProviderID indicates an expected call of GetUserByAuthProviderID.
+func (mr *MockDatastoreMockRecorder) GetUserByAuthProviderID(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByAuthProviderID", reflect.TypeOf((*MockDatastore)(nil).GetUserByAuthProviderID), arg0)
+}
+
 // GetUserByEmail mocks base method.
 func (m *MockDatastore) GetUserByEmail(arg0 string) (*datastore.UserInfo, error) {
 	m.ctrl.T.Helper()
