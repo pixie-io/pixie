@@ -198,6 +198,7 @@ export const EditorSplitPanel: React.FC = (props) => {
     <ResizableDrawer
       drawerDirection='right'
       initialSize={850}
+      minSize={25}
       open={editorPanelOpen}
       otherContent={props.children}
       overlay

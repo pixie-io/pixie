@@ -61,6 +61,7 @@ interface ResizableDrawerProps extends WithStyles<typeof styles> {
   open: boolean;
   initialSize: number;
   overlay: boolean;
+  minSize: number;
 }
 
 const ResizableDrawerImpl = ({
@@ -71,6 +72,7 @@ const ResizableDrawerImpl = ({
   open,
   overlay,
   initialSize,
+  minSize,
 }: ResizableDrawerProps) => {
   const [drawerSize, setDrawerSize] = React.useState(initialSize);
   // State responsible for tracking whether the user is actively resizing. This is used for debouncing.
@@ -89,13 +91,13 @@ const ResizableDrawerImpl = ({
           setDrawerSize(drawerSize + deltaY);
           break;
         case 'bottom':
-          setDrawerSize(drawerSize - deltaY);
+          setDrawerSize(Math.max(drawerSize - deltaY, minSize));
           break;
         case 'left':
           setDrawerSize(drawerSize + deltaX);
           break;
         case 'right':
-          setDrawerSize(drawerSize - deltaX);
+          setDrawerSize(Math.max(drawerSize - deltaX, minSize));
           break;
         default:
           break;

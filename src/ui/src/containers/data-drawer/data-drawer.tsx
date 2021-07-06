@@ -282,6 +282,7 @@ export const DataDrawerSplitPanel: React.FC = () => {
     <ResizableDrawer
       drawerDirection='bottom'
       initialSize={350}
+      minSize={0}
       open={dataDrawerOpen}
       otherContent={contents}
       overlay={false}
