@@ -61,8 +61,7 @@ constexpr DataTableSchema kJVMStatsTable(
         "jvm_stats",
         "Basic JVM memory management metrics for java processes. Includes information about "
         "memory use and garbage collection.",
-        kJVMStatsElements,
-        std::chrono::milliseconds{1000}
+        kJVMStatsElements
 );
 DEFINE_PRINT_TABLE(JVMStats);
 

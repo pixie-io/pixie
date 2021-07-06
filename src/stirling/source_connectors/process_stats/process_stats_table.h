@@ -66,8 +66,7 @@ static constexpr DataElement kProcessStatsElements[] = {
 constexpr DataTableSchema kProcessStatsTable(
     "process_stats",
     "CPU, memory and IO stats for all K8s processes in your cluster.",
-    kProcessStatsElements,
-    std::chrono::milliseconds{1000}
+    kProcessStatsElements
 );
 // clang-format on
 DEFINE_PRINT_TABLE(ProcessStats)

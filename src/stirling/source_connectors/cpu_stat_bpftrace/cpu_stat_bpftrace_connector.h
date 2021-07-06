@@ -93,8 +93,7 @@ class CPUStatBPFTraceConnector : public SourceConnector, public bpf_tools::BPFTr
   };
   // clang-format on
   static constexpr auto kTable = DataTableSchema(
-      "bpftrace_cpu_stats", "CPU usage metrics for processes (obtained via BPFtrace)", kElements,
-      std::chrono::milliseconds{1000});
+      "bpftrace_cpu_stats", "CPU usage metrics for processes (obtained via BPFtrace)", kElements);
   static constexpr auto kTables = MakeArray(kTable);
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {

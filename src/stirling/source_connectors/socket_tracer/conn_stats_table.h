@@ -59,8 +59,7 @@ constexpr DataTableSchema kConnStatsTable(
     "Connection-level stats. This table contains statistics on the communications made between "
     "client-server pairs. For network-level information such as RX/TX errors and drops, see the "
     "Network-Layer Stats (network_stats) table.",
-    kConnStatsElements,
-    /* default_push_period */ std::chrono::milliseconds{5000});
+    kConnStatsElements);
 DEFINE_PRINT_TABLE(ConnStats)
 
 namespace conn_stats_idx {

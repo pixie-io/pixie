@@ -62,8 +62,7 @@ constexpr DataTableSchema kNetworkStatsTable(
     "measured at the network device interface. For connection-level information, including the "
     "remote endpoints with which a pod is communicating, see the Connection-Level Stats "
     "(conn_stats) table.",
-    kNetworkStatsElements,
-    std::chrono::milliseconds{1000}
+    kNetworkStatsElements
 );
 // clang-format on
 DEFINE_PRINT_TABLE(NetworkStats);

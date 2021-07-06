@@ -53,8 +53,7 @@ constexpr auto kStackTraceTable = DataTableSchema(
         "stack_traces.beta",
         "Sampled stack traces of applications that identify hot-spots in application code. "
         "Executable symbols are required for human-readable function names to be displayed.",
-        kElements,
-        kStackTraceTablePushPeriod
+        kElements
 );
 // clang-format on
 DEFINE_PRINT_TABLE(StackTrace)

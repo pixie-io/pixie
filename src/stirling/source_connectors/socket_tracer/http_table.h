@@ -106,8 +106,8 @@ constexpr DataElement kHTTPElements[] = {
 };
 // clang-format on
 
-constexpr auto kHTTPTable = DataTableSchema("http_events", "HTTP request-response pair events",
-                                            kHTTPElements, std::chrono::milliseconds{1000});
+constexpr auto kHTTPTable =
+    DataTableSchema("http_events", "HTTP request-response pair events", kHTTPElements);
 DEFINE_PRINT_TABLE(HTTP)
 
 constexpr int kHTTPTimeIdx = kHTTPTable.ColIndex("time_");

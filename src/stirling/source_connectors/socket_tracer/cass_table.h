@@ -68,8 +68,7 @@ static constexpr DataElement kCQLElements[] = {
 // clang-format on
 
 static constexpr auto kCQLTable =
-    DataTableSchema("cql_events", "Cassandra (CQL) request-response pair events", kCQLElements,
-                    std::chrono::milliseconds{1000});
+    DataTableSchema("cql_events", "Cassandra (CQL) request-response pair events", kCQLElements);
 DEFINE_PRINT_TABLE(CQL)
 
 static constexpr int kCQLTraceRoleIdx = kCQLTable.ColIndex("trace_role");
