@@ -18,6 +18,7 @@
 
 import * as React from 'react';
 import AppBar from '@material-ui/core/AppBar';
+import { buildClass } from 'app/utils/build-class';
 
 import Toolbar from '@material-ui/core/Toolbar';
 import IconButton from '@material-ui/core/IconButton';
@@ -168,7 +169,7 @@ const ProfileItem = ({
         <Avatar
           name={name}
           picture={picture}
-          className={classes.avatarSm}
+          className={buildClass(classes.avatarSm, classes.clickable)}
         />
       </div>
       <ProfileMenuWrapper
@@ -259,12 +260,14 @@ export const TopBar = withStyles((theme: Theme) => createStyles({
   menu: {
     color: theme.palette.text.secondary,
   },
+  clickable: {
+    cursor: 'pointer',
+  },
   avatarSm: {
     backgroundColor: theme.palette.primary.main,
     width: theme.spacing(4),
     height: theme.spacing(4),
     alignItems: 'center',
-    cursor: 'pointer',
   },
   centeredListItemText: {
     paddingLeft: theme.spacing(1),
