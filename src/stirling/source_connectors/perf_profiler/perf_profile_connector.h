@@ -49,6 +49,9 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // kBPFSamplingPeriod: the time interval in between stack trace samples.
   static constexpr auto kBPFSamplingPeriod = std::chrono::milliseconds{11};
 
+  // Push period is set to 1/2 of the sample period such that we push each new
+  // sample when it becomes available. This is a UX decision so that the user
+  // gets fresh profiler data every 30 seconds (or worst case w/in 45 seconds).
   static constexpr auto kSamplingPeriod = std::chrono::milliseconds{30000};
   static constexpr auto kPushPeriod = std::chrono::milliseconds{15000};
 
