@@ -1,0 +1,1 @@
+ALTER TABLE users ALTER COLUMN auth_provider_id TYPE VARCHAR (1024);

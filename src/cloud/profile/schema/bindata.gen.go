@@ -24,6 +24,8 @@
 // 000012_user_add_auth_provider_id.up.sql
 // 000013_lengthen_profile_email.down.sql
 // 000013_lengthen_profile_email.up.sql
+// 000014_lengthen_auth_provider_id.down.sql
+// 000014_lengthen_auth_provider_id.up.sql
 package schema
 
 import (
@@ -580,6 +582,46 @@ func _000013_lengthen_profile_emailUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000014_lengthen_auth_provider_idDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\x2d\x4e\x2d\x2a\x56\x80\x88\x38\xfb\xfb\x84\xfa\xfa\x29\x24\x96\x96\x64\xc4\x17\x14\xe5\x97\x65\xa6\xa4\x16\xc5\x67\xa6\x28\x84\x44\x06\xb8\x2a\x84\x39\x06\x39\x7b\x38\x06\x29\x68\x98\x1a\x68\x5a\x73\x01\x02\x00\x00\xff\xff\xf0\x10\x4e\x1e\x43\x00\x00\x00")
+
+func _000014_lengthen_auth_provider_idDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000014_lengthen_auth_provider_idDownSql,
+		"000014_lengthen_auth_provider_id.down.sql",
+	)
+}
+
+func _000014_lengthen_auth_provider_idDownSql() (*asset, error) {
+	bytes, err := _000014_lengthen_auth_provider_idDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000014_lengthen_auth_provider_id.down.sql", size: 67, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000014_lengthen_auth_provider_idUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\x2d\x4e\x2d\x2a\x56\x80\x88\x38\xfb\xfb\x84\xfa\xfa\x29\x24\x96\x96\x64\xc4\x17\x14\xe5\x97\x65\xa6\xa4\x16\xc5\x67\xa6\x28\x84\x44\x06\xb8\x2a\x84\x39\x06\x39\x7b\x38\x06\x29\x68\x18\x1a\x18\x99\x68\x5a\x73\x01\x02\x00\x00\xff\xff\x21\x91\xa2\x15\x45\x00\x00\x00")
+
+func _000014_lengthen_auth_provider_idUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000014_lengthen_auth_provider_idUpSql,
+		"000014_lengthen_auth_provider_id.up.sql",
+	)
+}
+
+func _000014_lengthen_auth_provider_idUpSql() (*asset, error) {
+	bytes, err := _000014_lengthen_auth_provider_idUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000014_lengthen_auth_provider_id.up.sql", size: 69, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -656,6 +698,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000012_user_add_auth_provider_id.up.sql":                _000012_user_add_auth_provider_idUpSql,
 	"000013_lengthen_profile_email.down.sql":                 _000013_lengthen_profile_emailDownSql,
 	"000013_lengthen_profile_email.up.sql":                   _000013_lengthen_profile_emailUpSql,
+	"000014_lengthen_auth_provider_id.down.sql":              _000014_lengthen_auth_provider_idDownSql,
+	"000014_lengthen_auth_provider_id.up.sql":                _000014_lengthen_auth_provider_idUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -723,6 +767,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000012_user_add_auth_provider_id.up.sql":                &bintree{_000012_user_add_auth_provider_idUpSql, map[string]*bintree{}},
 	"000013_lengthen_profile_email.down.sql":                 &bintree{_000013_lengthen_profile_emailDownSql, map[string]*bintree{}},
 	"000013_lengthen_profile_email.up.sql":                   &bintree{_000013_lengthen_profile_emailUpSql, map[string]*bintree{}},
+	"000014_lengthen_auth_provider_id.down.sql":              &bintree{_000014_lengthen_auth_provider_idDownSql, map[string]*bintree{}},
+	"000014_lengthen_auth_provider_id.up.sql":                &bintree{_000014_lengthen_auth_provider_idUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
