@@ -17,18 +17,14 @@
  */
 
 import * as React from 'react';
-import {
-  Theme,
-  WithStyles,
-  withStyles,
-} from '@material-ui/core';
+import { Theme, makeStyles } from '@material-ui/core';
 import Paper from '@material-ui/core/Paper';
 import { createStyles } from '@material-ui/styles';
 import { PixienautBalloonSvg } from './pixienaut-balloon';
 import { PixienautOctopusSvg } from './pixienaut-octopus';
 import { PixienautToiletSvg } from './pixienaut-toilet';
 
-const styles = ({ spacing, breakpoints }: Theme) => createStyles({
+const useStyles = makeStyles(({ spacing, breakpoints }: Theme) => createStyles({
   root: {
     paddingLeft: spacing(5),
     paddingRight: spacing(5),
@@ -36,7 +32,8 @@ const styles = ({ spacing, breakpoints }: Theme) => createStyles({
     paddingBottom: spacing(1),
     borderRadius: spacing(3),
     minWidth: '370px',
-    maxWidth: breakpoints.values.xs,
+    // Cap at 960px or the width of the screen minus some padding, whichever is lesser.
+    maxWidth: `calc(min(${breakpoints.values.md}px, 100vw - ${spacing(4)}))`,
     maxHeight: '550px',
   },
   splashImageContainer: {
@@ -44,6 +41,8 @@ const styles = ({ spacing, breakpoints }: Theme) => createStyles({
     justifyContent: 'center',
     alignItems: 'flex-start',
     padding: spacing(3),
+    margin: '0 auto',
+    width: '290px',
   },
   pixienautBalloonContainer: {
     // The Pixienaut is still kinda close to Earth (this component's content)
@@ -88,12 +87,11 @@ const styles = ({ spacing, breakpoints }: Theme) => createStyles({
     width: '100%',
     textAlign: 'center',
   },
-});
+}), { name: 'PixienautBox' });
 
 export type PixienautImage = 'balloon' | 'octopus' | 'toilet';
 
-export interface PixienautBoxProps extends WithStyles<typeof styles> {
-  children?: React.ReactNode;
+export interface PixienautBoxProps {
   /**
    * What is the Pixienaut doing? Options:
    * - Being lifted by balloons (default)
@@ -103,7 +101,8 @@ export interface PixienautBoxProps extends WithStyles<typeof styles> {
   image?: PixienautImage;
 }
 
-export const PixienautBox = withStyles(styles)(({ classes, children, image = 'balloon' }: PixienautBoxProps) => {
+export const PixienautBox: React.FC<PixienautBoxProps> = ({ children, image = 'balloon' }) => {
+  const classes = useStyles();
   const pixienautScenarios = {
     balloon: (
       <div className={classes.pixienautBalloonContainer}>
@@ -131,4 +130,4 @@ export const PixienautBox = withStyles(styles)(({ classes, children, image = 'ba
       </div>
     </Paper>
   );
-});
+};
