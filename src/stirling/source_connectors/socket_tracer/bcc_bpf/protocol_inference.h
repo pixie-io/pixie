@@ -345,40 +345,49 @@ static __inline enum MessageType infer_kafka_request(const char* buf) {
   static const int kNumAPIs = 62;
   static const int kMaxAPIVersion = 12;
 
-  // TODO(chengruizhe): Just as MySQL, Kafka client might read the first 4 bytes first, and then
-  // read the subsequent n bytes. Handle this case.
-  const int16_t request_API_key = read_big_endian_int16(buf + 4);
+  const int16_t request_API_key = read_big_endian_int16(buf);
   if (request_API_key < 0 || request_API_key > kNumAPIs) {
     return kUnknown;
   }
 
-  const int16_t request_API_version = read_big_endian_int16(buf + 6);
+  const int16_t request_API_version = read_big_endian_int16(buf + 2);
   if (request_API_version < 0 || request_API_version > kMaxAPIVersion) {
     return kUnknown;
   }
 
-  const int32_t correlation_id = read_big_endian_int32(buf + 8);
+  const int32_t correlation_id = read_big_endian_int32(buf + 4);
   if (correlation_id < 0) {
     return kUnknown;
   }
   return kRequest;
 }
 
-static __inline enum MessageType infer_kafka_message(const char* buf, size_t count) {
+static __inline enum MessageType infer_kafka_message(const char* buf, size_t count,
+                                                     struct conn_info_t* conn_info) {
+  // Second statement checks whether suspected header matches the length of current packet.
+  // This shouldn't confuse with MySQL because MySQL uses little endian, and Kafka uses big endian.
+  bool use_prev_buf =
+      (conn_info->prev_count == 4) && ((size_t)read_big_endian_int32(conn_info->prev_buf) == count);
+
+  if (use_prev_buf) {
+    count += 4;
+  }
+
   // length(4 bytes) + api_key(2 bytes) + api_version(2 bytes) + correlation_id(4 bytes)
   static const int kMinRequestLength = 12;
   if (count < kMinRequestLength) {
     return kUnknown;
   }
 
-  const int32_t message_size = read_big_endian_int32(buf);
+  const int32_t message_size = use_prev_buf ? count : read_big_endian_int32(buf) + 4;
 
   // Enforcing count to be exactly message_size + 4 to mitigate misclassification.
   // However, this will miss long messages broken into multiple reads.
-  if (message_size < 0 || count != ((size_t)message_size + 4)) {
+  if (message_size < 0 || count != (size_t)message_size) {
     return kUnknown;
   }
-  return infer_kafka_request(buf);
+  const char* request_buf = use_prev_buf ? buf : buf + 4;
+  return infer_kafka_request(request_buf);
 }
 
 static __inline enum MessageType infer_dns_message(const char* buf, size_t count) {
@@ -480,7 +489,7 @@ static __inline struct protocol_message_t infer_protocol(const char* buf, size_t
     inferred_message.protocol = kProtocolPGSQL;
   } else if ((inferred_message.type = infer_mysql_message(buf, count, conn_info)) != kUnknown) {
     inferred_message.protocol = kProtocolMySQL;
-  } else if ((inferred_message.type = infer_kafka_message(buf, count)) != kUnknown) {
+  } else if ((inferred_message.type = infer_kafka_message(buf, count, conn_info)) != kUnknown) {
     inferred_message.protocol = kProtocolKafka;
   } else if ((inferred_message.type = infer_dns_message(buf, count)) != kUnknown) {
     inferred_message.protocol = kProtocolDNS;
