@@ -1,6 +1,7 @@
 <p align="center">
 
   [![Pixie!](./.readme_assets/readme_banner_v9.png)](https://px.dev)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fpixie-labs%2Fpixie.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fpixie-labs%2Fpixie?ref=badge_shield)
 
 </p>
 
@@ -123,3 +124,6 @@ Pixie was built by a San Francisco based startup, Pixie Labs, Inc. [New Relic, I
 ## License
 
 Pixie is licensed under [Apache License, Version 2.0](LICENSE).
+
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fpixie-labs%2Fpixie.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fpixie-labs%2Fpixie?ref=badge_large)
