@@ -22,6 +22,10 @@ build:
     context: .
     bazel:
       target: //src/cloud/project_manager:project_manager_server_image.tar
+  - image: gcr.io/pixie-oss/pixie-dev/cloud/config_manager_server_image
+    context: .
+    bazel:
+      target: //src/cloud/config_manager:config_manager_server_image.tar    
   - image: gcr.io/pixie-oss/pixie-dev/cloud/vzconn_server_image
     context: .
     bazel:

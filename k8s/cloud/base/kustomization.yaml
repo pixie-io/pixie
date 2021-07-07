@@ -24,6 +24,8 @@ resources:
 - profile_service.yaml
 - project_manager_deployment.yaml
 - project_manager_service.yaml
+- config_manager_deployment.yaml
+- config_manager_service.yaml
 - proxy_deployment.yaml
 - vzconn_deployment.yaml
 - vzmgr_deployment.yaml

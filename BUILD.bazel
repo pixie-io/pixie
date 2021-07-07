@@ -60,6 +60,7 @@ gazelle(
 # gazelle:resolve go px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb //src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/cloud/auth/authpb //src/cloud/auth/authpb:auth_go_proto
 # gazelle:resolve go px.dev/pixie/src/cloud/auth/authpb //src/cloud/auth/authpb:auth_pl_go_proto
+# gazelle:resolve go px.dev/pixie/src/cloud/config_manager/configmanagerpb //src/cloud/config_manager/configmanagerpb:service_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/cloud/dnsmgr/dnsmgrpb //src/cloud/dnsmgr/dnsmgrpb:service_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/cloud/profile/profilepb //src/cloud/profile/profilepb:service_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/cloud/project_manager/projectmanagerpb //src/cloud/project_manager/projectmanagerpb:service_pl_go_proto
