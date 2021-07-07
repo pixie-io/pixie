@@ -606,12 +606,6 @@ func (c *HydraKratosClient) HandleLogin(session *sessions.Session, w http.Respon
 	return nil
 }
 
-// HandleLogout logs out the user from Hydra and Kratos.
-func (c *HydraKratosClient) HandleLogout(session *sessions.Session, w http.ResponseWriter, r *http.Request) error {
-	// TODO implement.
-	return handler.NewStatusError(http.StatusInternalServerError, "not implememented")
-}
-
 // SessionKey returns the string key under which cookie the session info should be stored.
 func (c *HydraKratosClient) SessionKey() string {
 	return IDProviderSessionKey
@@ -636,6 +630,8 @@ type KratosUserInfo struct {
 	Email    string `json:"email,omitempty"`
 	PLOrgID  string `json:"plOrgID,omitempty"`
 	PLUserID string `json:"plUserID,omitempty"`
+	// KratosID is the ID assigned to the user by Kratos.
+	KratosID string `json:"-"`
 }
 
 // GetUserInfo returns the UserInfo for the userID.
@@ -665,6 +661,8 @@ func convertIdentityToKratosUserInfo(identity *kratosModels.Identity) (*KratosUs
 	if err != nil {
 		return nil, err
 	}
+	k.KratosID = strfmt.UUID4(identity.ID).String()
+
 	return k, nil
 }
 

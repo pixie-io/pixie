@@ -472,6 +472,7 @@ func (s *Server) InviteUser(ctx context.Context, req *profilepb.InviteUserReques
 			LastName:         req.LastName,
 			Email:            req.Email,
 			IdentityProvider: ident.IdentityProvider,
+			AuthProviderID:   ident.AuthProviderID,
 		}
 
 		userIDPb, err := s.CreateUser(ctx, createUserReq)

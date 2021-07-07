@@ -627,6 +627,7 @@ func TestManageUserInfo(t *testing.T) {
 	email := "a@b.com"
 	plUserID := "123456789"
 	plOrgID := "b.com"
+	kratosID := "6f41e7a4-12ef-44bd-8bfe-c307a1cf325f"
 	token := "usertoken"
 
 	updateIdentityFn := func(params *kratosAdmin.UpdateIdentityParams) (*kratosAdmin.UpdateIdentityOK, error) {
@@ -649,14 +650,19 @@ func TestManageUserInfo(t *testing.T) {
 			},
 		}, nil
 	}
+
 	getIdentityFn := func(params *kratosAdmin.GetIdentityParams) (*kratosAdmin.GetIdentityOK, error) {
+		var idStruct strfmt.UUID4
+		require.NoError(t, idStruct.UnmarshalText([]byte(kratosID)))
+		identy := convertKratosUserInfoToIdentity(t, &KratosUserInfo{
+			Email:    email,
+			PLOrgID:  plOrgID,
+			PLUserID: plUserID,
+		})
+		identy.ID = kratosModels.UUID(idStruct)
 		assert.Equal(t, params.ID, plUserID)
 		return &kratosAdmin.GetIdentityOK{
-			Payload: convertKratosUserInfoToIdentity(t, &KratosUserInfo{
-				Email:    email,
-				PLOrgID:  plOrgID,
-				PLUserID: plUserID,
-			}),
+			Payload: identy,
 		}, nil
 	}
 
@@ -681,6 +687,7 @@ func TestManageUserInfo(t *testing.T) {
 	userInfo, err := c.GetUserInfo(context.Background(), userID)
 	require.NoError(t, err)
 
+	assert.Equal(t, userInfo.KratosID, kratosID)
 	assert.Equal(t, userInfo.Email, email)
 	assert.Equal(t, userInfo.PLUserID, plUserID)
 	assert.Equal(t, userInfo.PLOrgID, plOrgID)

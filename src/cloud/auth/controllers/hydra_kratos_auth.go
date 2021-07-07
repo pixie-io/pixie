@@ -31,6 +31,7 @@ func transformKratosUserInfoToUserInfo(kratosUser *idprovider.KratosUserInfo) (*
 		PLUserID:         kratosUser.PLUserID,
 		PLOrgID:          kratosUser.PLOrgID,
 		IdentityProvider: "kratos",
+		AuthProviderID:   kratosUser.KratosID,
 	}
 	return u, nil
 }

@@ -1395,6 +1395,7 @@ func TestServerInviteUser(t *testing.T) {
 						Email:            req.Email,
 						IsApproved:       !tc.EnableApprovals,
 						IdentityProvider: "kratos",
+						AuthProviderID:   "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
 					}).
 					Return(userID, nil)
 				d.EXPECT().
