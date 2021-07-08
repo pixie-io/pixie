@@ -270,16 +270,27 @@ static __inline bool is_stirling_tgid(const uint32_t tgid) {
   return *stirling_tgid == tgid;
 }
 
-static __inline bool should_trace_tgid(const uint32_t tgid) {
+enum target_tgid_match_result_t {
+  TARGET_TGID_UNSPECIFIED,
+  TARGET_TGID_ALL,
+  TARGET_TGID_MATCHED,
+  TARGET_TGID_UNMATCHED,
+};
+
+static __inline enum target_tgid_match_result_t match_trace_tgid(const uint32_t tgid) {
   int idx = kTargetTGIDIndex;
   int64_t* target_tgid = control_values.lookup(&idx);
   if (target_tgid == NULL) {
-    return true;
+    return TARGET_TGID_UNSPECIFIED;
   }
   if (*target_tgid < 0) {
-    return true;
+    // Negative value means trace all.
+    return TARGET_TGID_ALL;
   }
-  return *target_tgid == tgid;
+  if (*target_tgid == tgid) {
+    return TARGET_TGID_MATCHED;
+  }
+  return TARGET_TGID_UNMATCHED;
 }
 
 static __inline void update_traffic_class(struct conn_info_t* conn_info,
@@ -598,7 +609,7 @@ static __inline void process_syscall_connect(struct pt_regs* ctx, uint64_t id,
   uint32_t tgid = id >> 32;
   int ret_val = PT_REGS_RC(ctx);
 
-  if (!should_trace_tgid(tgid)) {
+  if (match_trace_tgid(tgid) == TARGET_TGID_UNMATCHED) {
     return;
   }
 
@@ -626,7 +637,7 @@ static __inline void process_syscall_accept(struct pt_regs* ctx, uint64_t id,
   uint32_t tgid = id >> 32;
   int ret_fd = PT_REGS_RC(ctx);
 
-  if (!should_trace_tgid(tgid)) {
+  if (match_trace_tgid(tgid) == TARGET_TGID_UNMATCHED) {
     return;
   }
 
@@ -662,7 +673,7 @@ static __inline void process_implicit_conn(struct pt_regs* ctx, uint64_t id,
                                            const struct connect_args_t* args) {
   uint32_t tgid = id >> 32;
 
-  if (!should_trace_tgid(tgid)) {
+  if (match_trace_tgid(tgid) == TARGET_TGID_UNMATCHED) {
     return;
   }
 
@@ -706,7 +717,8 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
     return;
   }
 
-  if (!should_trace_tgid(tgid)) {
+  enum target_tgid_match_result_t match_result = match_trace_tgid(tgid);
+  if (match_result == TARGET_TGID_UNMATCHED) {
     return;
   }
 
@@ -749,7 +761,8 @@ static __inline void process_data(const bool vecs, struct pt_regs* ctx, uint64_t
 
   uint64_t* conn_disabled_tsid = conn_disabled_map.lookup(&tgid_fd);
 
-  bool send_data = !is_stirling_tgid(tgid) && should_trace_protocol_data(conn_info) &&
+  bool send_data = !is_stirling_tgid(tgid) &&
+                   (match_result == TARGET_TGID_MATCHED || should_trace_protocol_data(conn_info)) &&
                    (conn_disabled_tsid == NULL || conn_info->conn_id.tsid > *conn_disabled_tsid);
 
   if (send_data) {
@@ -837,7 +850,7 @@ static __inline void process_syscall_close(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  if (!should_trace_tgid(tgid)) {
+  if (match_trace_tgid(tgid) == TARGET_TGID_UNMATCHED) {
     return;
   }
 
