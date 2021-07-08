@@ -1044,6 +1044,49 @@ func (u *UserServiceServer) UpdateUserSettings(ctx context.Context, req *cloudpb
 	return &cloudpb.UpdateUserSettingsResponse{}, nil
 }
 
+// GetUserAttributes will retrieve attributes given the user ID.
+func (u *UserServiceServer) GetUserAttributes(ctx context.Context, req *cloudpb.GetUserAttributesRequest) (*cloudpb.GetUserAttributesResponse,
+	error) {
+	ctx, err := contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	in := &profilepb.GetUserAttributesRequest{
+		ID: req.ID,
+	}
+
+	resp, err := u.ProfileServiceClient.GetUserAttributes(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+
+	return &cloudpb.GetUserAttributesResponse{
+		TourSeen: resp.TourSeen,
+	}, nil
+}
+
+// SetUserAttributes will update the attributes for the given user.
+func (u *UserServiceServer) SetUserAttributes(ctx context.Context, req *cloudpb.SetUserAttributesRequest) (*cloudpb.SetUserAttributesResponse,
+	error) {
+	ctx, err := contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	in := &profilepb.SetUserAttributesRequest{
+		ID:       req.ID,
+		TourSeen: req.TourSeen,
+	}
+
+	_, err = u.ProfileServiceClient.SetUserAttributes(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+
+	return &cloudpb.SetUserAttributesResponse{}, nil
+}
+
 // UpdateUser will update user information.
 func (u *UserServiceServer) UpdateUser(ctx context.Context, req *cloudpb.UpdateUserRequest) (*cloudpb.UserInfo,
 	error) {

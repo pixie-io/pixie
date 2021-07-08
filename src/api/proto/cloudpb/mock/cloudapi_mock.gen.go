@@ -78,6 +78,26 @@ func (mr *MockUserServiceClientMockRecorder) GetUser(ctx, in interface{}, opts .
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockUserServiceClient)(nil).GetUser), varargs...)
 }
 
+// GetUserAttributes mocks base method.
+func (m *MockUserServiceClient) GetUserAttributes(ctx context.Context, in *cloudpb.GetUserAttributesRequest, opts ...grpc.CallOption) (*cloudpb.GetUserAttributesResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetUserAttributes", varargs...)
+	ret0, _ := ret[0].(*cloudpb.GetUserAttributesResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserAttributes indicates an expected call of GetUserAttributes.
+func (mr *MockUserServiceClientMockRecorder) GetUserAttributes(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserAttributes", reflect.TypeOf((*MockUserServiceClient)(nil).GetUserAttributes), varargs...)
+}
+
 // GetUserSettings mocks base method.
 func (m *MockUserServiceClient) GetUserSettings(ctx context.Context, in *cloudpb.GetUserSettingsRequest, opts ...grpc.CallOption) (*cloudpb.GetUserSettingsResponse, error) {
 	m.ctrl.T.Helper()
@@ -96,6 +116,26 @@ func (mr *MockUserServiceClientMockRecorder) GetUserSettings(ctx, in interface{}
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserSettings", reflect.TypeOf((*MockUserServiceClient)(nil).GetUserSettings), varargs...)
+}
+
+// SetUserAttributes mocks base method.
+func (m *MockUserServiceClient) SetUserAttributes(ctx context.Context, in *cloudpb.SetUserAttributesRequest, opts ...grpc.CallOption) (*cloudpb.SetUserAttributesResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "SetUserAttributes", varargs...)
+	ret0, _ := ret[0].(*cloudpb.SetUserAttributesResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SetUserAttributes indicates an expected call of SetUserAttributes.
+func (mr *MockUserServiceClientMockRecorder) SetUserAttributes(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetUserAttributes", reflect.TypeOf((*MockUserServiceClient)(nil).SetUserAttributes), varargs...)
 }
 
 // UpdateUser mocks base method.
@@ -191,6 +231,21 @@ func (mr *MockUserServiceServerMockRecorder) GetUser(arg0, arg1 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockUserServiceServer)(nil).GetUser), arg0, arg1)
 }
 
+// GetUserAttributes mocks base method.
+func (m *MockUserServiceServer) GetUserAttributes(arg0 context.Context, arg1 *cloudpb.GetUserAttributesRequest) (*cloudpb.GetUserAttributesResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserAttributes", arg0, arg1)
+	ret0, _ := ret[0].(*cloudpb.GetUserAttributesResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserAttributes indicates an expected call of GetUserAttributes.
+func (mr *MockUserServiceServerMockRecorder) GetUserAttributes(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserAttributes", reflect.TypeOf((*MockUserServiceServer)(nil).GetUserAttributes), arg0, arg1)
+}
+
 // GetUserSettings mocks base method.
 func (m *MockUserServiceServer) GetUserSettings(arg0 context.Context, arg1 *cloudpb.GetUserSettingsRequest) (*cloudpb.GetUserSettingsResponse, error) {
 	m.ctrl.T.Helper()
@@ -204,6 +259,21 @@ func (m *MockUserServiceServer) GetUserSettings(arg0 context.Context, arg1 *clou
 func (mr *MockUserServiceServerMockRecorder) GetUserSettings(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserSettings", reflect.TypeOf((*MockUserServiceServer)(nil).GetUserSettings), arg0, arg1)
+}
+
+// SetUserAttributes mocks base method.
+func (m *MockUserServiceServer) SetUserAttributes(arg0 context.Context, arg1 *cloudpb.SetUserAttributesRequest) (*cloudpb.SetUserAttributesResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetUserAttributes", arg0, arg1)
+	ret0, _ := ret[0].(*cloudpb.SetUserAttributesResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SetUserAttributes indicates an expected call of SetUserAttributes.
+func (mr *MockUserServiceServerMockRecorder) SetUserAttributes(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetUserAttributes", reflect.TypeOf((*MockUserServiceServer)(nil).SetUserAttributes), arg0, arg1)
 }
 
 // UpdateUser mocks base method.

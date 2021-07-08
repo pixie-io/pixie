@@ -35,6 +35,8 @@ service UserService {
   rpc GetUser(px.uuidpb.UUID) returns (UserInfo);
   rpc GetUserSettings(GetUserSettingsRequest) returns (GetUserSettingsResponse);
   rpc UpdateUserSettings(UpdateUserSettingsRequest) returns (UpdateUserSettingsResponse);
+  rpc GetUserAttributes(GetUserAttributesRequest) returns (GetUserAttributesResponse);
+  rpc SetUserAttributes(SetUserAttributesRequest) returns (SetUserAttributesResponse);
   rpc UpdateUser(UpdateUserRequest) returns (UserInfo);
 }
 
@@ -86,6 +88,28 @@ message GetUserSettingsResponse {
   // Settings for users key-value. 
   map<string, string> setting_map = 1; 
 }
+
+// A request to get user attributes for the given user.
+message GetUserAttributesRequest {
+  // The ID of the user.
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+}
+
+// The response for a GetUserAttributes call.
+message GetUserAttributesResponse {
+  bool tour_seen = 1;
+}
+
+// A request to set user attributes for the given user.
+message SetUserAttributesRequest {
+  // The ID of the user.
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  google.protobuf.BoolValue tour_seen = 2;
+}
+
+// The response for a SetUserAttributes call.
+message SetUserAttributesResponse {}
+
 
 message InviteUserRequest {
 	string email = 1;
