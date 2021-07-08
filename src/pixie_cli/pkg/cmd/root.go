@@ -72,6 +72,20 @@ func init() {
 	// Super secret flags for Pixies.
 	RootCmd.PersistentFlags().MarkHidden("cloud_addr")
 	RootCmd.PersistentFlags().MarkHidden("dev_cloud_namespace")
+
+	viper.AutomaticEnv()
+	viper.SetEnvPrefix("PL")
+	viper.BindPFlags(pflag.CommandLine)
+
+	cloudAddr := viper.GetString("cloud_addr")
+	if matched, err := regexp.MatchString(".+:[0-9]+$", cloudAddr); !matched && err == nil {
+		viper.Set("cloud_addr", cloudAddr+":443")
+	}
+
+	if os.Getenv("PL_TESTING_ENV") == "dev" && !viper.IsSet("dev_cloud_namespace") {
+		// Setting this to the most likely default if not already set.
+		viper.Set("dev_cloud_namespace", "plc-dev")
+	}
 }
 
 // nolint:errcheck
@@ -93,17 +107,8 @@ var RootCmd = &cobra.Command{
 	// TODO(zasgar): Add description and update this.
 	Long: `The Pixie command line interface.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		cloudAddr := viper.GetString("cloud_addr")
-		if matched, err := regexp.MatchString(".+:[0-9]+$", cloudAddr); !matched && err == nil {
-			viper.Set("cloud_addr", cloudAddr+":443")
-		}
-
-		if e, has := os.LookupEnv("PL_TESTING_ENV"); has {
+		if _, has := os.LookupEnv("PL_TESTING_ENV"); has {
 			printTestingBanner()
-			if e == "dev" && !viper.IsSet("dev_cloud_namespace") {
-				// Setting this to the most likely default if not already set.
-				viper.Set("dev_cloud_namespace", "plc-dev")
-			}
 		}
 
 		p := cmd
@@ -146,9 +151,6 @@ var RootCmd = &cobra.Command{
 // Execute is the main function for the Cobra CLI.
 func Execute() {
 	// Must call after all flags are setup.
-	viper.AutomaticEnv()
-	viper.SetEnvPrefix("PL")
-	viper.BindPFlags(pflag.CommandLine)
 
 	if err := RootCmd.Execute(); err != nil {
 		_ = pxanalytics.Client().Enqueue(&analytics.Track{

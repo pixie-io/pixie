@@ -64,6 +64,11 @@ spec:
             configMapKeyRef:
               name: segment-config
               key: ui-write-key
+        - name: PL_SEGMENT_CLI_WRITE_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: segment-config
+              key: cli-write-key
         volumeMounts:
         - name: certs
           mountPath: /certs

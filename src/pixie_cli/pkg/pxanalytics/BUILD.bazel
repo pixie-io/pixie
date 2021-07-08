@@ -24,6 +24,7 @@ go_library(
     deps = [
         "//src/shared/goversion",
         "@com_github_gofrs_uuid//:uuid",
+        "@com_github_spf13_viper//:viper",
         "@in_gopkg_segmentio_analytics_go_v3//:analytics-go_v3",
     ],
 )

@@ -35,3 +35,4 @@ metadata:
 data:
     write-key: ""
     ui-write-key: ""
+    cli-write-key: ""
