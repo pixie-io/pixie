@@ -29,20 +29,21 @@ namespace stirling {
 namespace canonical_data_elements {
 
 // clang-format off
-
 constexpr DataElement kRemoteAddr = {
     "remote_addr",
     "IP address of the remote endpoint.",
     types::DataType::STRING,
     types::SemanticType::ST_IP_ADDRESS,
-    types::PatternType::GENERAL};
+    types::PatternType::GENERAL,
+};
 
 constexpr DataElement kRemotePort = {
     "remote_port",
     "Port of the remote endpoint.",
     types::DataType::INT64,
     types::SemanticType::ST_PORT,
-    types::PatternType::GENERAL};
+    types::PatternType::GENERAL,
+};
 
 constexpr DataElement kTraceRole = {
     "trace_role",
@@ -50,15 +51,24 @@ constexpr DataElement kTraceRole = {
     types::DataType::INT64,
     types::SemanticType::ST_NONE,
     types::PatternType::GENERAL_ENUM,
-    &kEndpointRoleDecoder};
+    &kEndpointRoleDecoder,
+};
 
 constexpr DataElement kLatencyNS = {
     "latency",
     "Request-response latency.",
     types::DataType::INT64,
     types::SemanticType::ST_DURATION_NS,
-    types::PatternType::METRIC_GAUGE};
+    types::PatternType::METRIC_GAUGE,
+};
 
+constexpr DataElement kPXInfo = {
+    "px_info_",
+    "Pixie messages regarding the record (e.g. warnings)",
+    types::DataType::STRING,
+    types::SemanticType::ST_NONE,
+    types::PatternType::GENERAL,
+};
 // clang-format on
 
 }  // namespace canonical_data_elements
