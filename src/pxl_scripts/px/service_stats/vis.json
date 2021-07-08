@@ -161,7 +161,7 @@
         "@type": "types.px.dev/px.vispb.BarChart",
         "bar": {
           "value": "count",
-          "label": "http_resp_status",
+          "label": "resp_status",
           "horizontal": true
         },
         "xAxis": {
