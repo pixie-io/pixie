@@ -136,8 +136,8 @@ StatusOr<CGroupTemplateSpec> AutoDiscoverCGroupTemplate(std::string_view sysfs_p
   return cgroup_path_template;
 }
 
-std::string CGroupTemplater::Evaluate(PodQOSClass qos_class, std::string_view pod_id,
-                                      std::string_view container_id) {
+std::string CGroupTemplater::PodPath(PodQOSClass qos_class, std::string_view pod_id,
+                                     std::string_view container_id) {
   // Convert any dashes to underscores, because there are two conventions.
   std::string formatted_pod_id(pod_id);
   if (spec_.pod_id_separators.has_value()) {

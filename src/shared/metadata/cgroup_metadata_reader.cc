@@ -31,7 +31,7 @@
 namespace px {
 namespace md {
 
-// Note that there are different cgroup naming formats used by Kuberenetes under sysfs.
+// There are many different cgroup naming formats used by k8s.
 // The standard version is more verbose, and uses underscores instead of dashes.
 //
 // This is a sample used by GKE:
@@ -49,12 +49,12 @@ namespace md {
 // This is a sample from a bare metal cluster with containerd and k8s 1.21:
 // /sys/fs/cgroup/cpu,cpuacct/system.slice/containerd.service/kubepods-besteffort-pod1544eb37_e4f7_49eb_8cc4_3d01c41be77b.slice:cri-containerd:8618d3540ce713dd59ed0549719643a71dd482c40c21685773e7ac1291b004f5/cgroup.procs
 
-void CGroupMetadataReader::InitPathTemplates(std::string_view sysfs_path) {
+CGroupPathResolver::CGroupPathResolver(std::string_view sysfs_path) {
   // Note that as we create these templates, we often substitute in unresolved parameters:
   //  $0 = pod ID
-  //  $1 = cgroup.procs
+  //  $1 = container ID
   //  $2 = container runtime
-  // These template parameters are resolved in a second pass later.
+  // These template parameters are resolved by calls to PodPath.
 
   // Different hosts may mount different cgroup dirs. Try a couple for robustness.
   const std::vector<std::string> cgroup_dirs = {"cpu,cpuacct", "cpu", "pids"};
@@ -65,27 +65,27 @@ void CGroupMetadataReader::InitPathTemplates(std::string_view sysfs_path) {
         absl::Substitute("$0/cgroup/$1/kubepods", sysfs_path, cgroup_dir);
     if (fs::Exists(cgroup_kubepods_base_path).ok()) {
       cgroup_kubepod_guaranteed_path_template_ =
-          absl::Substitute("$0/pod$1", cgroup_kubepods_base_path, "$0");
+          absl::StrCat(cgroup_kubepods_base_path, "/pod$0/$1/cgroup.procs");
       cgroup_kubepod_besteffort_path_template_ =
-          absl::Substitute("$0/besteffort/pod$1", cgroup_kubepods_base_path, "$0");
+          absl::StrCat(cgroup_kubepods_base_path, "/besteffort/pod$0/$1/cgroup.procs");
       cgroup_kubepod_burstable_path_template_ =
-          absl::Substitute("$0/burstable/pod$1", cgroup_kubepods_base_path, "$0");
-      container_template_ = "/$0/$1";
+          absl::StrCat(cgroup_kubepods_base_path, "/burstable/pod$0/$1/cgroup.procs");
       cgroup_kubepod_convert_dashes_ = false;
       return;
     }
 
     // Attempt assuming naming scheme #3.
+    // Must be before the scheme below, since there have been systems that have both paths,
+    // but this must take priority.
     cgroup_kubepods_base_path =
         absl::Substitute("$0/cgroup/$1/system.slice/containerd.service", sysfs_path, cgroup_dir);
     if (fs::Exists(cgroup_kubepods_base_path).ok()) {
       cgroup_kubepod_guaranteed_path_template_ =
-          absl::Substitute("$0/kubepods-pod$1.slice", cgroup_kubepods_base_path, "$0");
-      cgroup_kubepod_besteffort_path_template_ =
-          absl::Substitute("$0/kubepods-besteffort-pod$1.slice", cgroup_kubepods_base_path, "$0");
-      cgroup_kubepod_burstable_path_template_ =
-          absl::Substitute("$0/kubepods-burstable-pod$1.slice", cgroup_kubepods_base_path, "$0");
-      container_template_ = ":$2:$0/$1";
+          absl::StrCat(cgroup_kubepods_base_path, "/kubepods-pod$0.slice:$2:$1/cgroup.procs");
+      cgroup_kubepod_besteffort_path_template_ = absl::StrCat(
+          cgroup_kubepods_base_path, "/kubepods-besteffort-pod$0.slice:$2:$1/cgroup.procs");
+      cgroup_kubepod_burstable_path_template_ = absl::StrCat(
+          cgroup_kubepods_base_path, "/kubepods-burstable-pod$0.slice:$2:$1/cgroup.procs");
       cgroup_kubepod_convert_dashes_ = true;
       return;
     }
@@ -95,14 +95,13 @@ void CGroupMetadataReader::InitPathTemplates(std::string_view sysfs_path) {
         absl::Substitute("$0/cgroup/$1/kubepods.slice", sysfs_path, cgroup_dir);
     if (fs::Exists(cgroup_kubepods_base_path).ok()) {
       cgroup_kubepod_guaranteed_path_template_ =
-          absl::Substitute("$0/kubepods-pod$1.slice", cgroup_kubepods_base_path, "$0");
-      cgroup_kubepod_besteffort_path_template_ =
-          absl::Substitute("$0/kubepods-besteffort.slice/kubepods-besteffort-pod$1.slice",
-                           cgroup_kubepods_base_path, "$0");
-      cgroup_kubepod_burstable_path_template_ =
-          absl::Substitute("$0/kubepods-burstable.slice/kubepods-burstable-pod$1.slice",
-                           cgroup_kubepods_base_path, "$0");
-      container_template_ = "/$2-$0.scope/$1";
+          absl::StrCat(cgroup_kubepods_base_path, "/kubepods-pod$0.slice/$2-$1.scope/cgroup.procs");
+      cgroup_kubepod_besteffort_path_template_ = absl::StrCat(
+          cgroup_kubepods_base_path,
+          "/kubepods-besteffort.slice/kubepods-besteffort-pod$0.slice/$2-$1.scope/cgroup.procs");
+      cgroup_kubepod_burstable_path_template_ = absl::StrCat(
+          cgroup_kubepods_base_path,
+          "/kubepods-burstable.slice/kubepods-burstable-pod$0.slice/$2-$1.scope/cgroup.procs");
       cgroup_kubepod_convert_dashes_ = true;
       return;
     }
@@ -111,56 +110,52 @@ void CGroupMetadataReader::InitPathTemplates(std::string_view sysfs_path) {
   LOG(ERROR) << absl::Substitute("Could not find kubepods slice under sysfs ($0)", sysfs_path);
 }
 
-CGroupMetadataReader::CGroupMetadataReader(const system::Config& cfg) {
-  const std::string sysfs_path_str = cfg.sysfs_path().string();
-  InitPathTemplates(sysfs_path_str);
+namespace {
+std::string_view ToString(ContainerType container_type) {
+  switch (container_type) {
+    case ContainerType::kCRIO:
+      return "crio";
+    case ContainerType::kDocker:
+      return "docker";
+    case ContainerType::kContainerd:
+      return "cri-containerd";
+    default:
+      // By default, assume any unknown container type is a docker image, to account
+      // for older ContainerUpdates which may not have a type.
+      return "docker";
+  }
 }
+}  // namespace
 
-std::string CGroupMetadataReader::CGroupPodDirPath(PodQOSClass qos_class,
-                                                   std::string_view pod_id) const {
-  std::string formatted_pod_id(pod_id);
+std::string CGroupPathResolver::PodPath(PodQOSClass qos_class, std::string_view pod_id,
+                                        std::string_view container_id,
+                                        ContainerType container_type) const {
+  std::string_view path_template;
+  switch (qos_class) {
+    case PodQOSClass::kGuaranteed:
+      path_template = cgroup_kubepod_guaranteed_path_template_;
+      break;
+    case PodQOSClass::kBestEffort:
+      path_template = cgroup_kubepod_besteffort_path_template_;
+      break;
+    case PodQOSClass::kBurstable:
+      path_template = cgroup_kubepod_burstable_path_template_;
+      break;
+    default:
+      LOG(DFATAL) << "Unknown QOS class";
+  }
 
   // Convert any dashes to underscores, because there are two conventions.
+  std::string formatted_pod_id(pod_id);
   if (cgroup_kubepod_convert_dashes_) {
     std::replace(formatted_pod_id.begin(), formatted_pod_id.end(), '-', '_');
   }
 
-  switch (qos_class) {
-    case PodQOSClass::kGuaranteed:
-      return absl::Substitute(cgroup_kubepod_guaranteed_path_template_, formatted_pod_id);
-    case PodQOSClass::kBestEffort:
-      return absl::Substitute(cgroup_kubepod_besteffort_path_template_, formatted_pod_id);
-    case PodQOSClass::kBurstable:
-      return absl::Substitute(cgroup_kubepod_burstable_path_template_, formatted_pod_id);
-    default:
-      CHECK(0) << "Unknown QOS class";
-  }
+  return absl::Substitute(path_template, formatted_pod_id, container_id, ToString(container_type));
 }
 
-std::string CGroupMetadataReader::CGroupProcFilePath(PodQOSClass qos_class, std::string_view pod_id,
-                                                     std::string_view container_id,
-                                                     ContainerType container_type) const {
-  constexpr std::string_view kPidFile = "cgroup.procs";
-
-  std::string containerType;
-  switch (container_type) {
-    case ContainerType::kCRIO:
-      containerType = "crio";
-      break;
-    case ContainerType::kDocker:
-      containerType = "docker";
-      break;
-    case ContainerType::kContainerd:
-      containerType = "cri-containerd";
-      break;
-    default:
-      // By default, assume any unknown container type is a docker image, to account
-      // for older ContainerUpdates which may not have a type.
-      containerType = "docker";
-  }
-  return absl::StrCat(CGroupPodDirPath(qos_class, pod_id),
-                      absl::Substitute(container_template_, container_id, kPidFile, containerType));
-}
+CGroupMetadataReader::CGroupMetadataReader(const system::Config& cfg)
+    : path_resolver_(cfg.sysfs_path().string()) {}
 
 Status CGroupMetadataReader::ReadPIDs(PodQOSClass qos_class, std::string_view pod_id,
                                       std::string_view container_id, ContainerType container_type,
@@ -170,7 +165,7 @@ Status CGroupMetadataReader::ReadPIDs(PodQOSClass qos_class, std::string_view po
   // The container files need to be recursively read and the PID needs be merge across all
   // containers.
 
-  auto fpath = CGroupProcFilePath(qos_class, pod_id, container_id, container_type);
+  auto fpath = path_resolver_.PodPath(qos_class, pod_id, container_id, container_type);
   std::ifstream ifs(fpath);
   if (!ifs) {
     // This might not be a real error since the pod could have disappeared.

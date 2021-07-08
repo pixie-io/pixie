@@ -32,6 +32,19 @@
 namespace px {
 namespace md {
 
+class CGroupPathResolver {
+ public:
+  explicit CGroupPathResolver(std::string_view sysfs_path);
+  std::string PodPath(PodQOSClass qos_class, std::string_view pod_id, std::string_view container_id,
+                      ContainerType container_type) const;
+
+ private:
+  std::string cgroup_kubepod_guaranteed_path_template_;
+  std::string cgroup_kubepod_besteffort_path_template_;
+  std::string cgroup_kubepod_burstable_path_template_;
+  bool cgroup_kubepod_convert_dashes_;
+};
+
 /**
  * CGroupMetadataReader is responsible for reading metadata such as process info from
  * sys/fs and proc.
@@ -54,22 +67,7 @@ class CGroupMetadataReader : public NotCopyable {
                           absl::flat_hash_set<uint32_t>* pid_set) const;
 
  private:
-  void InitPathTemplates(std::string_view sysfs_path);
-
-  std::string CGroupPodDirPath(PodQOSClass qos_class, std::string_view pod_id) const;
-
-  std::string CGroupProcFilePath(PodQOSClass qos_class, std::string_view pod_id,
-                                 std::string_view container_id, ContainerType container_type) const;
-
-  std::string cgroup_kubepod_guaranteed_path_template_;
-  std::string cgroup_kubepod_besteffort_path_template_;
-  std::string cgroup_kubepod_burstable_path_template_;
-  std::string container_template_;
-  bool cgroup_kubepod_convert_dashes_;
-
-  FRIEND_TEST(CGroupMetadataReaderTest, cgroup_pod_dir_path);
-  FRIEND_TEST(CGroupMetadataReaderTest, cgroup_proc_file_path);
-  FRIEND_TEST(CGroupMetadataReaderTest, cgroup_proc_file_path_alternate);
+  CGroupPathResolver path_resolver_;
 };
 
 }  // namespace md

@@ -42,15 +42,15 @@ TEST(CGroupPathTemplater, GKEFormat) {
   EXPECT_EQ(spec.qos_separator, '/');
 
   CGroupTemplater cgroup_templater(spec);
-  EXPECT_EQ(cgroup_templater.Evaluate(PodQOSClass::kGuaranteed, kPodID, kContainerID),
+  EXPECT_EQ(cgroup_templater.PodPath(PodQOSClass::kGuaranteed, kPodID, kContainerID),
             "/sys/fs/cgroup/cpu,cpuacct/kubepods/pod01234567-cccc-dddd-eeee-ffff000011112222/"
             "a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62/cgroup.procs");
   EXPECT_EQ(
-      cgroup_templater.Evaluate(PodQOSClass::kBestEffort, kPodID, kContainerID),
+      cgroup_templater.PodPath(PodQOSClass::kBestEffort, kPodID, kContainerID),
       "/sys/fs/cgroup/cpu,cpuacct/kubepods/besteffort/pod01234567-cccc-dddd-eeee-ffff000011112222/"
       "a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62/cgroup.procs");
   EXPECT_EQ(
-      cgroup_templater.Evaluate(PodQOSClass::kBurstable, kPodID, kContainerID),
+      cgroup_templater.PodPath(PodQOSClass::kBurstable, kPodID, kContainerID),
       "/sys/fs/cgroup/cpu,cpuacct/kubepods/burstable/pod01234567-cccc-dddd-eeee-ffff000011112222/"
       "a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62/cgroup.procs");
 }
@@ -70,17 +70,17 @@ TEST(CGroupPathTemplater, StandardFormatDocker) {
 
   CGroupTemplater cgroup_templater(spec);
   EXPECT_EQ(
-      cgroup_templater.Evaluate(PodQOSClass::kGuaranteed, kPodID, kContainerID),
+      cgroup_templater.PodPath(PodQOSClass::kGuaranteed, kPodID, kContainerID),
       "/sys/fs/cgroup/cpu,cpuacct/kubepods.slice/"
       "kubepods-pod01234567_cccc_dddd_eeee_ffff000011112222.slice/"
       "docker-a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62.scope/cgroup.procs");
   EXPECT_EQ(
-      cgroup_templater.Evaluate(PodQOSClass::kBestEffort, kPodID, kContainerID),
+      cgroup_templater.PodPath(PodQOSClass::kBestEffort, kPodID, kContainerID),
       "/sys/fs/cgroup/cpu,cpuacct/kubepods.slice/"
       "kubepods-besteffort-pod01234567_cccc_dddd_eeee_ffff000011112222.slice/"
       "docker-a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62.scope/cgroup.procs");
   EXPECT_EQ(
-      cgroup_templater.Evaluate(PodQOSClass::kBurstable, kPodID, kContainerID),
+      cgroup_templater.PodPath(PodQOSClass::kBurstable, kPodID, kContainerID),
       "/sys/fs/cgroup/cpu,cpuacct/kubepods.slice/"
       "kubepods-burstable-pod01234567_cccc_dddd_eeee_ffff000011112222.slice/"
       "docker-a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62.scope/cgroup.procs");
@@ -101,17 +101,17 @@ TEST(CGroupPathTemplater, StandardFormatCRIO) {
 
   CGroupTemplater cgroup_templater(spec);
   EXPECT_EQ(
-      cgroup_templater.Evaluate(PodQOSClass::kGuaranteed, kPodID, kContainerID),
+      cgroup_templater.PodPath(PodQOSClass::kGuaranteed, kPodID, kContainerID),
       "/sys/fs/cgroup/cpu,cpuacct/kubepods.slice/"
       "kubepods-pod01234567_cccc_dddd_eeee_ffff000011112222.slice/"
       "crio-a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62.scope/cgroup.procs");
   EXPECT_EQ(
-      cgroup_templater.Evaluate(PodQOSClass::kBestEffort, kPodID, kContainerID),
+      cgroup_templater.PodPath(PodQOSClass::kBestEffort, kPodID, kContainerID),
       "/sys/fs/cgroup/cpu,cpuacct/kubepods.slice/"
       "kubepods-besteffort-pod01234567_cccc_dddd_eeee_ffff000011112222.slice/"
       "crio-a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62.scope/cgroup.procs");
   EXPECT_EQ(
-      cgroup_templater.Evaluate(PodQOSClass::kBurstable, kPodID, kContainerID),
+      cgroup_templater.PodPath(PodQOSClass::kBurstable, kPodID, kContainerID),
       "/sys/fs/cgroup/cpu,cpuacct/kubepods.slice/"
       "kubepods-burstable-pod01234567_cccc_dddd_eeee_ffff000011112222.slice/"
       "crio-a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62.scope/cgroup.procs");
@@ -131,15 +131,15 @@ TEST(CGroupPathTemplater, BareMetalK8s_1_21) {
   EXPECT_EQ(spec.qos_separator, '-');
 
   CGroupTemplater cgroup_templater(spec);
-  EXPECT_EQ(cgroup_templater.Evaluate(PodQOSClass::kGuaranteed, kPodID, kContainerID),
+  EXPECT_EQ(cgroup_templater.PodPath(PodQOSClass::kGuaranteed, kPodID, kContainerID),
             "/sys/fs/cgroup/cpu,cpuacct/system.slice/containerd.service/"
             "kubepods-pod01234567_cccc_dddd_eeee_ffff000011112222.slice:cri-containerd:"
             "a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62/cgroup.procs");
-  EXPECT_EQ(cgroup_templater.Evaluate(PodQOSClass::kBestEffort, kPodID, kContainerID),
+  EXPECT_EQ(cgroup_templater.PodPath(PodQOSClass::kBestEffort, kPodID, kContainerID),
             "/sys/fs/cgroup/cpu,cpuacct/system.slice/containerd.service/"
             "kubepods-besteffort-pod01234567_cccc_dddd_eeee_ffff000011112222.slice:cri-containerd:"
             "a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62/cgroup.procs");
-  EXPECT_EQ(cgroup_templater.Evaluate(PodQOSClass::kBurstable, kPodID, kContainerID),
+  EXPECT_EQ(cgroup_templater.PodPath(PodQOSClass::kBurstable, kPodID, kContainerID),
             "/sys/fs/cgroup/cpu,cpuacct/system.slice/containerd.service/"
             "kubepods-burstable-pod01234567_cccc_dddd_eeee_ffff000011112222.slice:cri-containerd:"
             "a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62/cgroup.procs");

@@ -100,8 +100,8 @@ class CGroupTemplater {
  public:
   explicit CGroupTemplater(CGroupTemplateSpec cgroup_spec) : spec_(std::move(cgroup_spec)) {}
 
-  std::string Evaluate(PodQOSClass qos_class, std::string_view pod_id,
-                       std::string_view container_id);
+  std::string PodPath(PodQOSClass qos_class, std::string_view pod_id,
+                      std::string_view container_id);
 
  private:
   CGroupTemplateSpec spec_;

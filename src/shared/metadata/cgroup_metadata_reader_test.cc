@@ -30,21 +30,102 @@
 namespace px {
 namespace md {
 
+namespace {
 constexpr char kTestDataBasePath[] = "src/shared/metadata";
 
-using ::testing::Return;
-using ::testing::ReturnRef;
-
-namespace {
 std::string GetPathToTestDataFile(const std::string& fname) {
   return testing::TestFilePath(std::string(kTestDataBasePath) + "/" + fname);
 }
 }  // namespace
 
+TEST(CGroupPathResolverTest, PodPathForCGroupFormat1) {
+  CGroupPathResolver path_resolver(GetPathToTestDataFile("testdata/sysfs1"));
+
+  EXPECT_EQ(path_resolver.PodPath(PodQOSClass::kBurstable, "abcd", "c123", ContainerType::kDocker),
+            GetPathToTestDataFile(
+                "testdata/sysfs1/cgroup/cpu,cpuacct/kubepods/burstable/podabcd/c123/cgroup.procs"));
+
+  EXPECT_EQ(
+      path_resolver.PodPath(PodQOSClass::kBestEffort, "abcd", "c123", ContainerType::kDocker),
+      GetPathToTestDataFile(
+          "testdata/sysfs1/cgroup/cpu,cpuacct/kubepods/besteffort/podabcd/c123/cgroup.procs"));
+
+  EXPECT_EQ(path_resolver.PodPath(PodQOSClass::kGuaranteed, "abcd", "c123", ContainerType::kDocker),
+            GetPathToTestDataFile(
+                "testdata/sysfs1/cgroup/cpu,cpuacct/kubepods/podabcd/c123/cgroup.procs"));
+}
+
+TEST(CGroupPathResolverTest, PodPathForCGroupFormat2) {
+  CGroupPathResolver path_resolver(GetPathToTestDataFile("testdata/sysfs2"));
+
+  EXPECT_EQ(
+      GetPathToTestDataFile(
+          "testdata/sysfs2/cgroup/cpu,cpuacct/kubepods.slice/kubepods-burstable.slice/"
+          "kubepods-burstable-pod5a1d1140_a486_478c_afae_bbc975ff9c3b.slice/"
+          "docker-2b41fe4bb7a365960f1e7ed6c09651252b29387b44c9e14ad17e3bc392e7c640.scope/"
+          "cgroup.procs"),
+      path_resolver.PodPath(PodQOSClass::kBurstable, "5a1d1140-a486-478c-afae-bbc975ff9c3b",
+                            "2b41fe4bb7a365960f1e7ed6c09651252b29387b44c9e14ad17e3bc392e7c640",
+                            ContainerType::kDocker));
+
+  EXPECT_EQ(
+      GetPathToTestDataFile(
+          "testdata/sysfs2/cgroup/cpu,cpuacct/kubepods.slice/kubepods-besteffort.slice/"
+          "kubepods-besteffort-pod15b6301f_94d0_44ac_a2a8_6816c7a3fa32.slice/"
+          "docker-159757ef9efdc09be13490c8615f1402c170cdd406dad6053ebe0df2db89fcaa.scope/"
+          "cgroup.procs"),
+      path_resolver.PodPath(PodQOSClass::kBestEffort, "15b6301f-94d0-44ac-a2a8-6816c7a3fa32",
+                            "159757ef9efdc09be13490c8615f1402c170cdd406dad6053ebe0df2db89fcaa",
+                            ContainerType::kDocker));
+
+  EXPECT_EQ(
+      GetPathToTestDataFile(
+          "testdata/sysfs2/cgroup/cpu,cpuacct/kubepods.slice/"
+          "kubepods-pod8dbc5577_d0e2_4706_8787_57d52c03ddf2.slice/"
+          "docker-b9055cee13e1f37ecb63030593b27f4adc43cbd6629aa7781ffdf53fbaecfa46.scope/"
+          "cgroup.procs"),
+      path_resolver.PodPath(PodQOSClass::kGuaranteed, "8dbc5577-d0e2-4706-8787-57d52c03ddf2",
+                            "b9055cee13e1f37ecb63030593b27f4adc43cbd6629aa7781ffdf53fbaecfa46",
+                            ContainerType::kDocker));
+
+  EXPECT_EQ(
+      GetPathToTestDataFile(
+          "testdata/sysfs2/cgroup/cpu,cpuacct/kubepods.slice/kubepods-burstable.slice/"
+          "kubepods-burstable-pod5a1d1140_a486_478c_afae_bbc975ff9c3b.slice/"
+          "docker-2b41fe4bb7a365960f1e7ed6c09651252b29387b44c9e14ad17e3bc392e7c640.scope/"
+          "cgroup.procs"),
+      path_resolver.PodPath(PodQOSClass::kBurstable, "5a1d1140-a486-478c-afae-bbc975ff9c3b",
+                            "2b41fe4bb7a365960f1e7ed6c09651252b29387b44c9e14ad17e3bc392e7c640",
+                            ContainerType::kUnknown));
+
+  EXPECT_EQ(
+      GetPathToTestDataFile(
+          "testdata/sysfs2/cgroup/cpu,cpuacct/kubepods.slice/kubepods-burstable.slice/"
+          "kubepods-burstable-pod5a1d1140_a486_478c_afae_bbc975ff9c3b.slice/"
+          "crio-2b41fe4bb7a365960f1e7ed6c09651252b29387b44c9e14ad17e3bc392e7c640.scope/"
+          "cgroup.procs"),
+      path_resolver.PodPath(PodQOSClass::kBurstable, "5a1d1140-a486-478c-afae-bbc975ff9c3b",
+                            "2b41fe4bb7a365960f1e7ed6c09651252b29387b44c9e14ad17e3bc392e7c640",
+                            ContainerType::kCRIO));
+
+  EXPECT_EQ(
+      GetPathToTestDataFile(
+          "testdata/sysfs2/cgroup/cpu,cpuacct/kubepods.slice/kubepods-burstable.slice/"
+          "kubepods-burstable-pod5a1d1140_a486_478c_afae_bbc975ff9c3b.slice/"
+          "cri-containerd-2b41fe4bb7a365960f1e7ed6c09651252b29387b44c9e14ad17e3bc392e7c640.scope/"
+          "cgroup.procs"),
+      path_resolver.PodPath(PodQOSClass::kBurstable, "5a1d1140-a486-478c-afae-bbc975ff9c3b",
+                            "2b41fe4bb7a365960f1e7ed6c09651252b29387b44c9e14ad17e3bc392e7c640",
+                            ContainerType::kContainerd));
+}
+
 class CGroupMetadataReaderTest : public ::testing::Test {
  protected:
   void SetupMetadataReader(system::MockConfig* sysconfig, const std::string& proc_path,
                            const std::string& sysfs_path) {
+    using ::testing::Return;
+    using ::testing::ReturnRef;
+
     proc_path_ = GetPathToTestDataFile(proc_path);
     sysfs_path_ = GetPathToTestDataFile(sysfs_path);
 
@@ -63,13 +144,6 @@ class CGroupMetadataReaderTest : public ::testing::Test {
     md_reader_.reset(new CGroupMetadataReader(sysconfig));
   }
 
-  void AlternateSetUp() {
-    // Use a different sys/fs with the alternate cgroup naming scheme.
-    system::MockConfig sysconfig;
-    SetupMetadataReader(&sysconfig, "testdata/proc1", "testdata/sysfs2");
-    md_reader_.reset(new CGroupMetadataReader(sysconfig));
-  }
-
   std::unique_ptr<CGroupMetadataReader> md_reader_;
   std::filesystem::path proc_path_;
   std::filesystem::path sysfs_path_;
@@ -79,107 +153,6 @@ TEST_F(CGroupMetadataReaderTest, read_pid_list) {
   absl::flat_hash_set<uint32_t> pid_set;
   ASSERT_OK(md_reader_->ReadPIDs(PodQOSClass::kBestEffort, "abcd", "c123", ContainerType::kDocker,
                                  &pid_set));
-  EXPECT_THAT(pid_set, ::testing::UnorderedElementsAre(123, 456, 789));
-}
-
-TEST_F(CGroupMetadataReaderTest, cgroup_proc_file_path) {
-  EXPECT_EQ(GetPathToTestDataFile(
-                "testdata/sysfs1/cgroup/cpu,cpuacct/kubepods/burstable/podabcd/c123/cgroup.procs"),
-            md_reader_->CGroupProcFilePath(PodQOSClass::kBurstable, "abcd", "c123",
-                                           ContainerType::kDocker));
-
-  EXPECT_EQ(GetPathToTestDataFile(
-                "testdata/sysfs1/cgroup/cpu,cpuacct/kubepods/besteffort/podabcd/c123/cgroup.procs"),
-            md_reader_->CGroupProcFilePath(PodQOSClass::kBestEffort, "abcd", "c123",
-                                           ContainerType::kDocker));
-
-  EXPECT_EQ(GetPathToTestDataFile(
-                "testdata/sysfs1/cgroup/cpu,cpuacct/kubepods/podabcd/c123/cgroup.procs"),
-            md_reader_->CGroupProcFilePath(PodQOSClass::kGuaranteed, "abcd", "c123",
-                                           ContainerType::kDocker));
-}
-
-TEST_F(CGroupMetadataReaderTest, cgroup_pod_dir_path) {
-  PodInfo pod_info("abcd", "namespace", "pod-name", PodQOSClass::kBestEffort, PodPhase::kRunning,
-                   {{PodConditionType::kReady, PodConditionStatus::kTrue}}, "pod status message",
-                   "pod status reason", "testnode", "testpod", "1.1.1.1");
-
-  EXPECT_EQ(GetPathToTestDataFile("testdata/sysfs1/cgroup/cpu,cpuacct/kubepods/besteffort/podabcd"),
-            md_reader_->CGroupPodDirPath(pod_info.qos_class(), pod_info.uid()));
-}
-
-TEST_F(CGroupMetadataReaderTest, cgroup_proc_file_path_alternate) {
-  AlternateSetUp();
-
-  EXPECT_EQ(GetPathToTestDataFile(
-                "testdata/sysfs2/cgroup/cpu,cpuacct/kubepods.slice/kubepods-burstable.slice/"
-                "kubepods-burstable-pod5a1d1140_a486_478c_afae_bbc975ff9c3b.slice/"
-                "docker-2b41fe4bb7a365960f1e7ed6c09651252b29387b44c9e14ad17e3bc392e7c640.scope/"
-                "cgroup.procs"),
-            md_reader_->CGroupProcFilePath(
-                PodQOSClass::kBurstable, "5a1d1140-a486-478c-afae-bbc975ff9c3b",
-                "2b41fe4bb7a365960f1e7ed6c09651252b29387b44c9e14ad17e3bc392e7c640",
-                ContainerType::kDocker));
-
-  EXPECT_EQ(GetPathToTestDataFile(
-                "testdata/sysfs2/cgroup/cpu,cpuacct/kubepods.slice/kubepods-besteffort.slice/"
-                "kubepods-besteffort-pod15b6301f_94d0_44ac_a2a8_6816c7a3fa32.slice/"
-                "docker-159757ef9efdc09be13490c8615f1402c170cdd406dad6053ebe0df2db89fcaa.scope/"
-                "cgroup.procs"),
-            md_reader_->CGroupProcFilePath(
-                PodQOSClass::kBestEffort, "15b6301f-94d0-44ac-a2a8-6816c7a3fa32",
-                "159757ef9efdc09be13490c8615f1402c170cdd406dad6053ebe0df2db89fcaa",
-                ContainerType::kDocker));
-
-  EXPECT_EQ(GetPathToTestDataFile(
-                "testdata/sysfs2/cgroup/cpu,cpuacct/kubepods.slice/"
-                "kubepods-pod8dbc5577_d0e2_4706_8787_57d52c03ddf2.slice/"
-                "docker-b9055cee13e1f37ecb63030593b27f4adc43cbd6629aa7781ffdf53fbaecfa46.scope/"
-                "cgroup.procs"),
-            md_reader_->CGroupProcFilePath(
-                PodQOSClass::kGuaranteed, "8dbc5577-d0e2-4706-8787-57d52c03ddf2",
-                "b9055cee13e1f37ecb63030593b27f4adc43cbd6629aa7781ffdf53fbaecfa46",
-                ContainerType::kDocker));
-
-  EXPECT_EQ(GetPathToTestDataFile(
-                "testdata/sysfs2/cgroup/cpu,cpuacct/kubepods.slice/kubepods-burstable.slice/"
-                "kubepods-burstable-pod5a1d1140_a486_478c_afae_bbc975ff9c3b.slice/"
-                "docker-2b41fe4bb7a365960f1e7ed6c09651252b29387b44c9e14ad17e3bc392e7c640.scope/"
-                "cgroup.procs"),
-            md_reader_->CGroupProcFilePath(
-                PodQOSClass::kBurstable, "5a1d1140-a486-478c-afae-bbc975ff9c3b",
-                "2b41fe4bb7a365960f1e7ed6c09651252b29387b44c9e14ad17e3bc392e7c640",
-                ContainerType::kUnknown));
-
-  EXPECT_EQ(GetPathToTestDataFile(
-                "testdata/sysfs2/cgroup/cpu,cpuacct/kubepods.slice/kubepods-burstable.slice/"
-                "kubepods-burstable-pod5a1d1140_a486_478c_afae_bbc975ff9c3b.slice/"
-                "crio-2b41fe4bb7a365960f1e7ed6c09651252b29387b44c9e14ad17e3bc392e7c640.scope/"
-                "cgroup.procs"),
-            md_reader_->CGroupProcFilePath(
-                PodQOSClass::kBurstable, "5a1d1140-a486-478c-afae-bbc975ff9c3b",
-                "2b41fe4bb7a365960f1e7ed6c09651252b29387b44c9e14ad17e3bc392e7c640",
-                ContainerType::kCRIO));
-
-  EXPECT_EQ(
-      GetPathToTestDataFile(
-          "testdata/sysfs2/cgroup/cpu,cpuacct/kubepods.slice/kubepods-burstable.slice/"
-          "kubepods-burstable-pod5a1d1140_a486_478c_afae_bbc975ff9c3b.slice/"
-          "cri-containerd-2b41fe4bb7a365960f1e7ed6c09651252b29387b44c9e14ad17e3bc392e7c640.scope/"
-          "cgroup.procs"),
-      md_reader_->CGroupProcFilePath(
-          PodQOSClass::kBurstable, "5a1d1140-a486-478c-afae-bbc975ff9c3b",
-          "2b41fe4bb7a365960f1e7ed6c09651252b29387b44c9e14ad17e3bc392e7c640",
-          ContainerType::kContainerd));
-}
-
-TEST_F(CGroupMetadataReaderTest, read_pid_list_alternate) {
-  AlternateSetUp();
-
-  absl::flat_hash_set<uint32_t> pid_set;
-  ASSERT_OK(md_reader_->ReadPIDs(PodQOSClass::kBestEffort, "d7f73b62_b4bf_41dc_a50d_5bdf3b02d3e5",
-                                 "37d1600d21282ce1bc32ebbaf99bf2241f66ca096109a4cb5484e2aa305514b4",
-                                 ContainerType::kDocker, &pid_set));
   EXPECT_THAT(pid_set, ::testing::UnorderedElementsAre(123, 456, 789));
 }
 
