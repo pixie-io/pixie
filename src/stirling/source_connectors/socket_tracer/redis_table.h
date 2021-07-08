@@ -48,10 +48,7 @@ static constexpr DataElement kRedisElements[] = {
          types::PatternType::GENERAL},
         canonical_data_elements::kLatencyNS,
 #ifndef NDEBUG
-        {"px_info_", "Pixie messages regarding the record (e.g. warnings)",
-         types::DataType::STRING,
-         types::SemanticType::ST_NONE,
-         types::PatternType::GENERAL},
+        canonical_data_elements::kPXInfo,
 #endif
 };
 // clang-format on

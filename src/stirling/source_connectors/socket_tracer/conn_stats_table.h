@@ -48,8 +48,7 @@ constexpr DataElement kConnStatsElements[] = {
         {"bytes_recv", "The number of bytes received from the remote endpoint(s).",
          types::DataType::INT64, types::SemanticType::ST_BYTES, types::PatternType::METRIC_COUNTER},
 #ifndef NDEBUG
-        {"px_info_", "Pixie messages regarding the record (e.g. warnings)",
-         types::DataType::STRING, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
+        canonical_data_elements::kPXInfo,
 #endif
 };
 // clang-format on
