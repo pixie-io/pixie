@@ -111,9 +111,7 @@ void CGroupMetadataReader::InitPathTemplates(std::string_view sysfs_path) {
   LOG(ERROR) << absl::Substitute("Could not find kubepods slice under sysfs ($0)", sysfs_path);
 }
 
-CGroupMetadataReader::CGroupMetadataReader(const system::Config& cfg)
-    : ns_per_kernel_tick_(static_cast<int64_t>(1E9 / cfg.KernelTicksPerSecond())),
-      clock_realtime_offset_(cfg.ClockRealTimeOffset()) {
+CGroupMetadataReader::CGroupMetadataReader(const system::Config& cfg) {
   const std::string sysfs_path_str = cfg.sysfs_path().string();
   InitPathTemplates(sysfs_path_str);
 }

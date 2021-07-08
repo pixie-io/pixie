@@ -67,12 +67,6 @@ class CGroupMetadataReader : public NotCopyable {
   std::string container_template_;
   bool cgroup_kubepod_convert_dashes_;
 
-  std::string proc_stat_path_template_;
-  std::string proc_cmdline_path_template_;
-
-  int64_t ns_per_kernel_tick_;
-  int64_t clock_realtime_offset_;
-
   FRIEND_TEST(CGroupMetadataReaderTest, cgroup_pod_dir_path);
   FRIEND_TEST(CGroupMetadataReaderTest, cgroup_proc_file_path);
   FRIEND_TEST(CGroupMetadataReaderTest, cgroup_proc_file_path_alternate);
