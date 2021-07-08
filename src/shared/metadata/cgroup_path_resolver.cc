@@ -111,7 +111,7 @@ StatusOr<CGroupTemplateSpec> CreateCGroupTemplateSpecFromPath(std::string_view p
   //  - Replace container ID with $1
   //  - Replace qos with $2
   spec.templated_path = std::string(path);
-  spec.templated_path = std::regex_replace(spec.templated_path, kPodIDRegex, R"($$0)");
+  spec.templated_path = std::regex_replace(spec.templated_path, kPodIDRegex, R"(pod$$0)");
   spec.templated_path = std::regex_replace(spec.templated_path, kContainerIDRegex, R"($$1)");
   spec.templated_path = absl::StrReplaceAll(
       spec.templated_path,
@@ -134,6 +134,12 @@ StatusOr<CGroupTemplateSpec> AutoDiscoverCGroupTemplate(std::string_view sysfs_p
   LOG(INFO) << "Auto-discovered template: " << cgroup_path_template.templated_path;
 
   return cgroup_path_template;
+}
+
+StatusOr<std::unique_ptr<CGroupPathResolver>> CGroupPathResolver::Create(
+    std::string_view sysfs_path) {
+  PL_ASSIGN_OR_RETURN(CGroupTemplateSpec spec, AutoDiscoverCGroupTemplate(sysfs_path));
+  return std::unique_ptr<CGroupPathResolver>(new CGroupPathResolver(spec));
 }
 
 std::string CGroupPathResolver::PodPath(PodQOSClass qos_class, std::string_view pod_id,
@@ -188,7 +194,14 @@ std::string CGroupPathResolver::PodPath(PodQOSClass qos_class, std::string_view 
 // This is a sample from a bare metal cluster with containerd and k8s 1.21:
 // /sys/fs/cgroup/cpu,cpuacct/system.slice/containerd.service/kubepods-besteffort-pod1544eb37_e4f7_49eb_8cc4_3d01c41be77b.slice:cri-containerd:8618d3540ce713dd59ed0549719643a71dd482c40c21685773e7ac1291b004f5/cgroup.procs
 
-LegacyCGroupPathResolver::LegacyCGroupPathResolver(std::string_view sysfs_path) {
+StatusOr<std::unique_ptr<LegacyCGroupPathResolver>> LegacyCGroupPathResolver::Create(
+    std::string_view sysfs_path) {
+  auto resolver = std::unique_ptr<LegacyCGroupPathResolver>(new LegacyCGroupPathResolver);
+  PL_RETURN_IF_ERROR(resolver->Init(sysfs_path));
+  return resolver;
+}
+
+Status LegacyCGroupPathResolver::Init(std::string_view sysfs_path) {
   // Note that as we create these templates, we often substitute in unresolved parameters:
   //  $0 = pod ID
   //  $1 = container ID
@@ -196,57 +209,52 @@ LegacyCGroupPathResolver::LegacyCGroupPathResolver(std::string_view sysfs_path) 
   // These template parameters are resolved by calls to PodPath.
 
   // Different hosts may mount different cgroup dirs. Try a couple for robustness.
-  const std::vector<std::string> cgroup_dirs = {"cpu,cpuacct", "cpu", "pids"};
+  PL_ASSIGN_OR_RETURN(std::string cgroup_dir, CGroupBasePath(sysfs_path));
 
-  for (const auto& cgroup_dir : cgroup_dirs) {
-    // Attempt assuming naming scheme #1.
-    std::string cgroup_kubepods_base_path =
-        absl::Substitute("$0/cgroup/$1/kubepods", sysfs_path, cgroup_dir);
-    if (fs::Exists(cgroup_kubepods_base_path).ok()) {
-      cgroup_kubepod_guaranteed_path_template_ =
-          absl::StrCat(cgroup_kubepods_base_path, "/pod$0/$1/cgroup.procs");
-      cgroup_kubepod_besteffort_path_template_ =
-          absl::StrCat(cgroup_kubepods_base_path, "/besteffort/pod$0/$1/cgroup.procs");
-      cgroup_kubepod_burstable_path_template_ =
-          absl::StrCat(cgroup_kubepods_base_path, "/burstable/pod$0/$1/cgroup.procs");
-      cgroup_kubepod_convert_dashes_ = false;
-      return;
-    }
-
-    // Attempt assuming naming scheme #3.
-    // Must be before the scheme below, since there have been systems that have both paths,
-    // but this must take priority.
-    cgroup_kubepods_base_path =
-        absl::Substitute("$0/cgroup/$1/system.slice/containerd.service", sysfs_path, cgroup_dir);
-    if (fs::Exists(cgroup_kubepods_base_path).ok()) {
-      cgroup_kubepod_guaranteed_path_template_ =
-          absl::StrCat(cgroup_kubepods_base_path, "/kubepods-pod$0.slice:$2:$1/cgroup.procs");
-      cgroup_kubepod_besteffort_path_template_ = absl::StrCat(
-          cgroup_kubepods_base_path, "/kubepods-besteffort-pod$0.slice:$2:$1/cgroup.procs");
-      cgroup_kubepod_burstable_path_template_ = absl::StrCat(
-          cgroup_kubepods_base_path, "/kubepods-burstable-pod$0.slice:$2:$1/cgroup.procs");
-      cgroup_kubepod_convert_dashes_ = true;
-      return;
-    }
-
-    // Attempt assuming naming scheme #2.
-    cgroup_kubepods_base_path =
-        absl::Substitute("$0/cgroup/$1/kubepods.slice", sysfs_path, cgroup_dir);
-    if (fs::Exists(cgroup_kubepods_base_path).ok()) {
-      cgroup_kubepod_guaranteed_path_template_ =
-          absl::StrCat(cgroup_kubepods_base_path, "/kubepods-pod$0.slice/$2-$1.scope/cgroup.procs");
-      cgroup_kubepod_besteffort_path_template_ = absl::StrCat(
-          cgroup_kubepods_base_path,
-          "/kubepods-besteffort.slice/kubepods-besteffort-pod$0.slice/$2-$1.scope/cgroup.procs");
-      cgroup_kubepod_burstable_path_template_ = absl::StrCat(
-          cgroup_kubepods_base_path,
-          "/kubepods-burstable.slice/kubepods-burstable-pod$0.slice/$2-$1.scope/cgroup.procs");
-      cgroup_kubepod_convert_dashes_ = true;
-      return;
-    }
+  // Attempt assuming naming scheme #1.
+  std::string cgroup_kubepods_base_path = absl::Substitute("$0/kubepods", cgroup_dir);
+  if (fs::Exists(cgroup_kubepods_base_path).ok()) {
+    cgroup_kubepod_guaranteed_path_template_ =
+        absl::StrCat(cgroup_kubepods_base_path, "/pod$0/$1/cgroup.procs");
+    cgroup_kubepod_besteffort_path_template_ =
+        absl::StrCat(cgroup_kubepods_base_path, "/besteffort/pod$0/$1/cgroup.procs");
+    cgroup_kubepod_burstable_path_template_ =
+        absl::StrCat(cgroup_kubepods_base_path, "/burstable/pod$0/$1/cgroup.procs");
+    cgroup_kubepod_convert_dashes_ = false;
+    return Status::OK();
   }
 
-  LOG(ERROR) << absl::Substitute("Could not find kubepods slice under sysfs ($0)", sysfs_path);
+  // Attempt assuming naming scheme #3.
+  // Must be before the scheme below, since there have been systems that have both paths,
+  // but this must take priority.
+  cgroup_kubepods_base_path = absl::Substitute("$0/system.slice/containerd.service", cgroup_dir);
+  if (fs::Exists(cgroup_kubepods_base_path).ok()) {
+    cgroup_kubepod_guaranteed_path_template_ =
+        absl::StrCat(cgroup_kubepods_base_path, "/kubepods-pod$0.slice:$2:$1/cgroup.procs");
+    cgroup_kubepod_besteffort_path_template_ = absl::StrCat(
+        cgroup_kubepods_base_path, "/kubepods-besteffort-pod$0.slice:$2:$1/cgroup.procs");
+    cgroup_kubepod_burstable_path_template_ = absl::StrCat(
+        cgroup_kubepods_base_path, "/kubepods-burstable-pod$0.slice:$2:$1/cgroup.procs");
+    cgroup_kubepod_convert_dashes_ = true;
+    return Status::OK();
+  }
+
+  // Attempt assuming naming scheme #2.
+  cgroup_kubepods_base_path = absl::Substitute("$0/kubepods.slice", cgroup_dir);
+  if (fs::Exists(cgroup_kubepods_base_path).ok()) {
+    cgroup_kubepod_guaranteed_path_template_ =
+        absl::StrCat(cgroup_kubepods_base_path, "/kubepods-pod$0.slice/$2-$1.scope/cgroup.procs");
+    cgroup_kubepod_besteffort_path_template_ = absl::StrCat(
+        cgroup_kubepods_base_path,
+        "/kubepods-besteffort.slice/kubepods-besteffort-pod$0.slice/$2-$1.scope/cgroup.procs");
+    cgroup_kubepod_burstable_path_template_ = absl::StrCat(
+        cgroup_kubepods_base_path,
+        "/kubepods-burstable.slice/kubepods-burstable-pod$0.slice/$2-$1.scope/cgroup.procs");
+    cgroup_kubepod_convert_dashes_ = true;
+    return Status::OK();
+  }
+
+  return error::NotFound("Could not find kubepods slice under sysfs ($0)", sysfs_path);
 }
 
 namespace {

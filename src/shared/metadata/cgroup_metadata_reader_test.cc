@@ -40,8 +40,8 @@ std::string GetPathToTestDataFile(const std::string& fname) {
 
 class CGroupMetadataReaderTest : public ::testing::Test {
  protected:
-  void SetupMetadataReader(system::MockConfig* sysconfig, const std::string& proc_path,
-                           const std::string& sysfs_path) {
+  void SetupMockConfig(system::MockConfig* sysconfig, const std::string& proc_path,
+                       const std::string& sysfs_path) {
     using ::testing::Return;
     using ::testing::ReturnRef;
 
@@ -59,8 +59,8 @@ class CGroupMetadataReaderTest : public ::testing::Test {
 
   void SetUp() override {
     system::MockConfig sysconfig;
-    SetupMetadataReader(&sysconfig, "testdata/proc1", "testdata/sysfs1");
-    md_reader_.reset(new CGroupMetadataReader(sysconfig));
+    SetupMockConfig(&sysconfig, "testdata/proc1", "testdata/sysfs1");
+    md_reader_ = std::make_unique<CGroupMetadataReader>(sysconfig);
   }
 
   std::unique_ptr<CGroupMetadataReader> md_reader_;

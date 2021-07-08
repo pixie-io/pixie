@@ -94,26 +94,60 @@ StatusOr<std::string> FindSelfCGroupProcs(std::string_view base_path);
  */
 StatusOr<CGroupTemplateSpec> CreateCGroupTemplateSpecFromPath(std::string_view example_path);
 
+/**
+ * Given the path to sysfs, tries to infer the cgroup path spec.
+ * It assumes the current process is in a pod, so this only works in a K8s environment.
+ */
 StatusOr<CGroupTemplateSpec> AutoDiscoverCGroupTemplate(std::string_view sysfs_path);
 
+/**
+ * The new path resolver that infers the cgroup naming convention from the current pod.
+ */
 class CGroupPathResolver {
  public:
+  // The Create function takes the sysfs_path and automatically infers the CGroupTemplateSpec
+  // before creating a CGroupPathResolver.
+  static StatusOr<std::unique_ptr<CGroupPathResolver>> Create(std::string_view sysfs_path);
+
+  // This constructor is kept public for testing purposes, or where the cgroup naming convention is
+  // known. Otherwise, use the Create() function, which automatically infers the cgroup naming
+  // convention.
   explicit CGroupPathResolver(CGroupTemplateSpec cgroup_spec) : spec_(std::move(cgroup_spec)) {}
 
   std::string PodPath(PodQOSClass qos_class, std::string_view pod_id,
                       std::string_view container_id);
 
+  std::string SpecString() const {
+    return absl::Substitute("template=$0 pod_id_separators=$1 qos_spearator=$2",
+                            spec_.templated_path, spec_.pod_id_separators.value_or(' '),
+                            spec_.qos_separator);
+  }
+
  private:
   CGroupTemplateSpec spec_;
 };
 
+/**
+ * The legacy path resolver that is hard-coded to know naming conventions.
+ */
 class LegacyCGroupPathResolver {
  public:
-  explicit LegacyCGroupPathResolver(std::string_view sysfs_path);
+  static StatusOr<std::unique_ptr<LegacyCGroupPathResolver>> Create(std::string_view sysfs_path);
+
   std::string PodPath(PodQOSClass qos_class, std::string_view pod_id, std::string_view container_id,
                       ContainerType container_type) const;
 
+  std::string SpecString() const {
+    return absl::Substitute(
+        "guaranteed_template=$0 besteffort_template=$1 burstable_template=$2 convert_dashes=$3",
+        cgroup_kubepod_guaranteed_path_template_, cgroup_kubepod_besteffort_path_template_,
+        cgroup_kubepod_burstable_path_template_, cgroup_kubepod_convert_dashes_);
+  }
+
  private:
+  LegacyCGroupPathResolver() = default;
+  Status Init(std::string_view sysfs_path);
+
   std::string cgroup_kubepod_guaranteed_path_template_;
   std::string cgroup_kubepod_besteffort_path_template_;
   std::string cgroup_kubepod_burstable_path_template_;

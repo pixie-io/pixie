@@ -259,8 +259,8 @@ Status ProcessPIDUpdates(
     if (!s.ok()) {
       // Container probably died, we will eventually get a message from MDS and everything in that
       // container will be marked dead.
-      VLOG(1) << absl::Substitute("Failed to read PID info for pod=$0, cid=$1 [msg=$2]", pod_id,
-                                  cid, s.msg());
+      LOG(WARNING) << absl::Substitute("Failed to read PID info for pod=$0, cid=$1 [msg=$2]",
+                                       pod_id, cid, s.msg());
 
       // Don't wait for MDS to send the container death information; set the stop time right away.
       // This is so we stop trying to read stats for this non-existent container.

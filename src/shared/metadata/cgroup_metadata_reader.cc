@@ -29,18 +29,56 @@
 namespace px {
 namespace md {
 
-CGroupMetadataReader::CGroupMetadataReader(const system::Config& cfg)
-    : path_resolver_(cfg.sysfs_path().string()) {}
+CGroupMetadataReader::CGroupMetadataReader(const system::Config& cfg) {
+  // Create the new path resolver.
+  auto path_resolver_or_status = CGroupPathResolver::Create(cfg.sysfs_path().string());
+  path_resolver_ = path_resolver_or_status.ConsumeValueOr(nullptr);
+
+  if (path_resolver_or_status.ok()) {
+    LOG(INFO) << absl::Substitute("Using path_resolver with configuration: $0",
+                                  path_resolver_->SpecString());
+    return;
+  }
+
+  // Fallback: Legacy path resolver.
+  LOG(ERROR) << absl::Substitute(
+      "Failed to create path resolver. Falling back to legacy path resolver. [error = $0]",
+      path_resolver_or_status.ToString());
+
+  auto legacy_path_resolver_or_status = LegacyCGroupPathResolver::Create(cfg.sysfs_path().string());
+  legacy_path_resolver_ = legacy_path_resolver_or_status.ConsumeValueOr(nullptr);
+
+  if (!legacy_path_resolver_or_status.ok()) {
+    LOG(ERROR) << absl::Substitute(
+        "Failed to create legacy path resolver. This is not recoverable. [error = $0]",
+        legacy_path_resolver_or_status.ToString());
+  }
+}
+
+StatusOr<std::string> CGroupMetadataReader::PodPath(PodQOSClass qos_class, std::string_view pod_id,
+                                                    std::string_view container_id,
+                                                    ContainerType container_type) const {
+  if (path_resolver_ != nullptr) {
+    return path_resolver_->PodPath(qos_class, pod_id, container_id);
+  }
+
+  if (legacy_path_resolver_ != nullptr) {
+    return legacy_path_resolver_->PodPath(qos_class, pod_id, container_id, container_type);
+  }
+
+  return error::Internal("No valid cgroup path resolver.");
+}
 
 Status CGroupMetadataReader::ReadPIDs(PodQOSClass qos_class, std::string_view pod_id,
                                       std::string_view container_id, ContainerType container_type,
                                       absl::flat_hash_set<uint32_t>* pid_set) const {
   CHECK(pid_set != nullptr);
 
-  // The container files need to be recursively read and the PID needs be merge across all
+  // The container files need to be recursively read and the PIDs needs be merge across all
   // containers.
 
-  auto fpath = path_resolver_.PodPath(qos_class, pod_id, container_id, container_type);
+  PL_ASSIGN_OR_RETURN(std::string fpath, PodPath(qos_class, pod_id, container_id, container_type));
+
   std::ifstream ifs(fpath);
   if (!ifs) {
     // This might not be a real error since the pod could have disappeared.
