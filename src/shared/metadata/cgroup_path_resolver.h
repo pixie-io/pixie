@@ -46,7 +46,7 @@ namespace md {
 //  * AutoDiscoverCGroupTemplate() which finds the cgroup.procs files for the current pod (assuming
 //    we are deployed on K8s). It then uses the file as an example from which it creates a template.
 //
-//  * CGroupTemplater which takes the path template above and provides an interface to generate
+//  * CGroupPathResolver which takes the path template above and provides an interface to generate
 //    paths for other pods.
 
 /**
@@ -61,7 +61,7 @@ struct CGroupTemplateSpec {
    *
    * Example: /sys/fs/cgroup/cpu,cpuacct/kubepods/$2/$0/$1/cgroup.procs
    * Note that the "guaranteed" QoS is usually implicit, a fact that
-   * is handled by the CGroupTemplater below.
+   * is handled by the CGroupPathResolver below.
    */
   std::string templated_path;
 
@@ -96,15 +96,28 @@ StatusOr<CGroupTemplateSpec> CreateCGroupTemplateSpecFromPath(std::string_view e
 
 StatusOr<CGroupTemplateSpec> AutoDiscoverCGroupTemplate(std::string_view sysfs_path);
 
-class CGroupTemplater {
+class CGroupPathResolver {
  public:
-  explicit CGroupTemplater(CGroupTemplateSpec cgroup_spec) : spec_(std::move(cgroup_spec)) {}
+  explicit CGroupPathResolver(CGroupTemplateSpec cgroup_spec) : spec_(std::move(cgroup_spec)) {}
 
   std::string PodPath(PodQOSClass qos_class, std::string_view pod_id,
                       std::string_view container_id);
 
  private:
   CGroupTemplateSpec spec_;
+};
+
+class LegacyCGroupPathResolver {
+ public:
+  explicit LegacyCGroupPathResolver(std::string_view sysfs_path);
+  std::string PodPath(PodQOSClass qos_class, std::string_view pod_id, std::string_view container_id,
+                      ContainerType container_type) const;
+
+ private:
+  std::string cgroup_kubepod_guaranteed_path_template_;
+  std::string cgroup_kubepod_besteffort_path_template_;
+  std::string cgroup_kubepod_burstable_path_template_;
+  bool cgroup_kubepod_convert_dashes_;
 };
 
 }  // namespace md

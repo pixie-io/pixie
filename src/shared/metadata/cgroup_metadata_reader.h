@@ -27,23 +27,11 @@
 
 #include "src/common/base/base.h"
 #include "src/common/system/system.h"
+#include "src/shared/metadata/cgroup_path_resolver.h"
 #include "src/shared/metadata/k8s_objects.h"
 
 namespace px {
 namespace md {
-
-class CGroupPathResolver {
- public:
-  explicit CGroupPathResolver(std::string_view sysfs_path);
-  std::string PodPath(PodQOSClass qos_class, std::string_view pod_id, std::string_view container_id,
-                      ContainerType container_type) const;
-
- private:
-  std::string cgroup_kubepod_guaranteed_path_template_;
-  std::string cgroup_kubepod_besteffort_path_template_;
-  std::string cgroup_kubepod_burstable_path_template_;
-  bool cgroup_kubepod_convert_dashes_;
-};
 
 /**
  * CGroupMetadataReader is responsible for reading metadata such as process info from
@@ -67,7 +55,7 @@ class CGroupMetadataReader : public NotCopyable {
                           absl::flat_hash_set<uint32_t>* pid_set) const;
 
  private:
-  CGroupPathResolver path_resolver_;
+  LegacyCGroupPathResolver path_resolver_;
 };
 
 }  // namespace md

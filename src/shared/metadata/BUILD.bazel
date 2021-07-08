@@ -97,8 +97,9 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "cgroup_path_templater_test",
-    srcs = ["cgroup_path_templater_test.cc"],
+    name = "cgroup_path_resolver_test",
+    srcs = ["cgroup_path_resolver_test.cc"],
+    data = glob(["testdata/**/*"]),
     deps = [
         ":cc_library",
     ],
