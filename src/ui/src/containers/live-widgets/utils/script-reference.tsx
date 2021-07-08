@@ -17,14 +17,16 @@
  */
 
 import * as React from 'react';
-import { useRouteMatch, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   Theme, withStyles, WithStyles,
 } from '@material-ui/core';
 import { createStyles } from '@material-ui/styles';
 import { Arguments } from 'app/utils/args-utils';
 import { SemanticType } from 'app/types/generated/vizierapi_pb';
-import { scriptToEntityURL, toEntityURL, toSingleEntityPage } from './live-view-params';
+import {
+  EmbedState, scriptToEntityURL, toEntityURL, toSingleEntityPage,
+} from './live-view-params';
 
 const styles = ({ palette }: Theme) => createStyles({
   root: {
@@ -45,19 +47,17 @@ export interface EntityLinkProps extends WithStyles<typeof styles>{
   entity: string;
   semanticType: SemanticType;
   clusterName: string;
+  embedState: EmbedState;
   propagatedParams?: Arguments;
 }
 
 const EntityLinkPlain = ({
-  entity, semanticType, clusterName, classes, propagatedParams,
+  entity, semanticType, clusterName, classes, embedState, propagatedParams,
 }: EntityLinkProps) => {
-  const { url } = useRouteMatch();
-  const isEmbedded = url.startsWith('/embed');
-
   const page = toSingleEntityPage(entity, semanticType, clusterName);
-  const path = toEntityURL(page, isEmbedded, propagatedParams);
+  const path = toEntityURL(page, embedState, propagatedParams);
 
-  if (propagatedParams?.widget) {
+  if (embedState?.widget) {
     return <>{entity}</>;
   }
   return (
@@ -84,18 +84,16 @@ export interface ScriptReferenceProps extends WithStyles<typeof styles>{
   label: string;
   script: string;
   clusterName: string;
+  embedState: EmbedState;
   args: Arguments;
 }
 
 const ScriptReferencePlain = ({
-  label, script, args, clusterName, classes,
+  label, script, args, embedState, clusterName, classes,
 }: ScriptReferenceProps) => {
-  const { url } = useRouteMatch();
-  const isEmbedded = url.startsWith('/embed');
+  const path = scriptToEntityURL(script, clusterName, embedState, args);
 
-  const path = scriptToEntityURL(script, clusterName, isEmbedded, args);
-
-  if (args.widget) {
+  if (embedState.widget) {
     return <>{label}</>;
   }
   return (

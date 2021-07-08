@@ -28,15 +28,15 @@ import { RouteNotFound } from 'app/containers/App/route-not-found';
 import { selectClusterName } from 'app/containers/App/cluster-info';
 import { GQLClusterInfo } from 'app/types/schema';
 import { argsForVis, Arguments } from 'app/utils/args-utils';
+import { EmbedState } from 'app/containers/live-widgets/utils/live-view-params';
 import plHistory from 'app/utils/pl-history';
 
 export interface LiveRouteContextProps {
   clusterName: string;
   scriptId: string;
   args: Arguments;
-  isEmbedded: boolean;
-  widget: string | null;
-  push: (clusterName: string, scriptId: string, args: Arguments, isEmbedded: boolean) => void;
+  embedState: EmbedState;
+  push: (clusterName: string, scriptId: string, args: Arguments, embedState: EmbedState) => void;
 }
 
 export const LiveRouteContext = React.createContext<LiveRouteContextProps>(null);
@@ -60,14 +60,14 @@ const VANITY_ROUTES = new Map<string, string>([
 ]);
 
 const LiveRoute: React.FC<LiveRouteContextProps> = ({
-  args, scriptId, isEmbedded, widget, clusterName, push, children,
+  args, scriptId, embedState, clusterName, push, children,
 }) => {
   // Sorting keys ensures that the stringified object looks the same regardless of the order of operations that built it
   const serializedArgs = JSON.stringify(args, Object.keys(args ?? {}).sort());
   const context: LiveRouteContextProps = React.useMemo(() => ({
-    scriptId, clusterName, isEmbedded, widget, args, push,
+    scriptId, clusterName, embedState, args, push,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [scriptId, clusterName, isEmbedded, widget, serializedArgs, push]);
+  }), [scriptId, clusterName, embedState, serializedArgs, push]);
 
   return (
     <LiveRouteContext.Provider value={context}>{children}</LiveRouteContext.Provider>
@@ -78,12 +78,15 @@ const push = (
   clusterName: string,
   scriptId: string,
   args: Arguments,
-  isEmbedded: boolean,
+  embedState: EmbedState,
 ) => {
-  const pathname = `${isEmbedded ? '/embed' : ''}/live/clusters/${encodeURIComponent(clusterName)}`;
+  const pathname = `${embedState.isEmbedded ? '/embed' : ''}/live/clusters/${encodeURIComponent(clusterName)}`;
   const queryParams: Arguments = {
     ...args,
     ...{ script: scriptId },
+    ...(embedState.disableTimePicker ? {
+      disable_time_picker: embedState.disableTimePicker.toString(),
+    } : {}),
   };
   const search = `?${QueryString.stringify(queryParams)}`;
   if (pathname !== plHistory.location.pathname || search !== plHistory.location.search) {
@@ -129,7 +132,13 @@ export const LiveContextRouter: React.FC = ({ children }) => {
           if (defaultCluster && nestedPath === '') {
             return (<Redirect to={`${path}/clusters/${encodeURIComponent(defaultCluster)}`} />);
           }
-          const { script: queryScriptId, widget: widgetName, ...queryParams } = QueryString.parse(location.search);
+          const {
+            script: queryScriptId,
+            widget: widgetName,
+            disable_time_picker: disableTimePicker,
+            ...queryParams
+          } = QueryString.parse(location.search);
+
           let scriptId = VANITY_ROUTES.get(nestedPath) ?? 'px/cluster';
           if (queryScriptId) {
             scriptId = Array.isArray(queryScriptId)
@@ -153,12 +162,23 @@ export const LiveContextRouter: React.FC = ({ children }) => {
               ...queryParams,
             });
 
+          const embedState: EmbedState = {
+            isEmbedded,
+            disableTimePicker: false,
+            widget: null,
+          };
+          if (isEmbedded) {
+            embedState.disableTimePicker = (
+              Array.isArray(disableTimePicker) ? disableTimePicker[0] : disableTimePicker
+            ) === 'true';
+            embedState.widget = Array.isArray(widgetName) ? widgetName[0] : widgetName;
+          }
+
           return (
             <LiveRoute
               scriptId={scriptId}
-              widget={Array.isArray(widgetName) ? widgetName[0] : widgetName}
               args={args}
-              isEmbedded={isEmbedded}
+              embedState={embedState}
               clusterName={decodeURIComponent(cluster)}
               push={push}
             >

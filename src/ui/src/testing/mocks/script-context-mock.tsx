@@ -31,7 +31,6 @@ export const SCRIPT_CONTEXT_DEFUALTS: ScriptContextProps = {
     },
   },
   args: {},
-  widget: null,
   setScriptAndArgs: jest.fn(),
   setScriptAndArgsManually: jest.fn(),
   manual: false,

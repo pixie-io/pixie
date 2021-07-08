@@ -147,7 +147,7 @@ const ClusterContextProvider: React.FC = ({ children }) => {
   const showSnackbar = useSnackbar();
 
   const {
-    scriptId, clusterName, args, isEmbedded, push,
+    scriptId, clusterName, args, embedState, push,
   } = React.useContext(LiveRouteContext);
 
   const { data, loading, error } = useQuery<{
@@ -173,8 +173,8 @@ const ClusterContextProvider: React.FC = ({ children }) => {
   const cluster = data?.clusterByName ?? invalidCluster(clusterName);
 
   const setClusterByName = React.useCallback((name: string) => {
-    push(name, scriptId, args, isEmbedded);
-  }, [push, scriptId, args, isEmbedded]);
+    push(name, scriptId, args, embedState);
+  }, [push, scriptId, args, embedState]);
 
   const clusterContext = React.useMemo(() => ({
     selectedClusterID: cluster?.id,

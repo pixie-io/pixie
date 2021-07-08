@@ -40,7 +40,6 @@ export interface ScriptContextProps {
    * The currently selected script, including any local edits the user has made.
    */
   script: Script;
-  widget: string | null;
   /** Args that will be passed to the current script if it's executed. Mirrored from LiveRouteContext. */
   args: Record<string, string | string[]>;
   /**
@@ -65,7 +64,6 @@ export interface ScriptContextProps {
 
 export const ScriptContext = React.createContext<ScriptContextProps>({
   script: null,
-  widget: null,
   args: {},
   manual: false,
   setScriptAndArgs: () => {},
@@ -77,7 +75,10 @@ export const ScriptContext = React.createContext<ScriptContextProps>({
 export const ScriptContextProvider: React.FC = ({ children }) => {
   const apiClient = React.useContext(PixieAPIContext);
   const {
-    scriptId, args, isEmbedded, widget, push,
+    scriptId,
+    args,
+    embedState,
+    push,
   } = React.useContext(LiveRouteContext);
   const { selectedClusterName } = React.useContext(ClusterContext);
   const { scripts: availableScripts, loading: loadingAvailableScripts } = React.useContext(ScriptsContext);
@@ -159,7 +160,7 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
     const execution = apiClient.executeScript(
       clusterConfig,
       script.code,
-      getQueryFuncs(script.vis, args, widget),
+      getQueryFuncs(script.vis, args, embedState.widget),
     );
     setRunningExecution(execution);
     resultsContext.clearResults();
@@ -167,7 +168,8 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
     resultsContext.setStreaming(isStreaming(script.code));
     setHasMutation(containsMutation(script.code));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiClient, script, widget, clusterConfig, serializedArgs, cancelExecution, scriptId, resultsContext, manual]);
+  }, [apiClient, script, embedState.widget, clusterConfig, serializedArgs, cancelExecution,
+    scriptId, resultsContext, manual]);
 
   // As above: delay first execution if required information isn't ready yet.
   React.useEffect(() => {
@@ -311,20 +313,19 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
 
   const context: ScriptContextProps = React.useMemo(() => ({
     script,
-    widget,
     args,
     manual,
     setScriptAndArgs: (newScript: Script, newArgs: Record<string, string | string[]> = args) => {
       setScript(newScript);
       setManual(false);
 
-      push(selectedClusterName, newScript.id, argsForVis(newScript.vis, newArgs), isEmbedded);
+      push(selectedClusterName, newScript.id, argsForVis(newScript.vis, newArgs), embedState);
     },
     setScriptAndArgsManually: (newScript: Script, newArgs: Record<string, string | string[]> = args) => {
       setScript(newScript);
       setManual(true);
 
-      push(selectedClusterName, newScript.id, argsForVis(newScript.vis, newArgs), isEmbedded);
+      push(selectedClusterName, newScript.id, argsForVis(newScript.vis, newArgs), embedState);
     },
     execute,
     cancelExecution: (cancelExecution ?? (() => {})),

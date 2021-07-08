@@ -259,7 +259,9 @@ const LiveView: React.FC = () => {
   const { saveEditor } = React.useContext(EditorContext);
   const { isMobile, setEditorPanelOpen, setDataDrawerOpen } = React.useContext(LayoutContext);
   const [widgetsMoveable, setWidgetsMoveable] = React.useState(false);
-  const { isEmbedded, widget } = React.useContext(LiveRouteContext);
+  const {
+    embedState: { disableTimePicker, isEmbedded, widget },
+  } = React.useContext(LiveRouteContext);
 
   const hotkeyHandlers = {
     'toggle-editor': () => setEditorPanelOpen((editable) => !editable),
@@ -355,7 +357,7 @@ const LiveView: React.FC = () => {
               isEmbedded && classes.embeddedMain,
               widget && classes.widgetMain,
             )}>
-              {widget == null && <LiveViewBreadcrumbs />}
+              {widget == null && <LiveViewBreadcrumbs disableTimePicker={disableTimePicker} />}
               {(selectedClusterStatus === GQLClusterStatus.CS_HEALTHY && script && healthy) ? (
                 <div className={classes.canvas} ref={canvasRef}>
                   <Canvas editable={widgetsMoveable} parentRef={canvasRef} />

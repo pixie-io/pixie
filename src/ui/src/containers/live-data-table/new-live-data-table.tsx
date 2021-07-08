@@ -18,6 +18,7 @@
 
 import * as React from 'react';
 import { Table as VizierTable } from 'app/api';
+import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { dataFromProto } from 'app/utils/result-data-utils';
 import { ReactTable, DataTable } from 'app/components/data-table/new-data-table';
 import { DataType, Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
@@ -63,12 +64,13 @@ function rowsFromVizierTable(table: VizierTable): Array<Record<string, any>> {
 function useConvertedTable(table: VizierTable): ReactTable {
   // Some cell renderers need a bit of extra information that isn't directly related to the table.
   const theme = useTheme();
+
+  const { embedState } = React.useContext(LiveRouteContext);
   const { selectedClusterName: clusterName } = React.useContext(ClusterContext);
-  const { args, widget } = React.useContext(ScriptContext);
+  const { args } = React.useContext(ScriptContext);
   const propagatedArgs = React.useMemo(() => ({
     start_time: args.start_time,
-    widget,
-  }), [args, widget]);
+  }), [args]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const rows = React.useMemo(() => rowsFromVizierTable(table), [table.data]);
@@ -84,7 +86,8 @@ function useConvertedTable(table: VizierTable): ReactTable {
       setDisplayMap(new Map<string, ColumnDisplayInfo>(displayMap));
     };
 
-    const renderer = liveCellRenderer(display, updateDisplay, true, theme, clusterName, rows, propagatedArgs);
+    const renderer = liveCellRenderer(display, updateDisplay, true, theme, clusterName,
+      rows, embedState, propagatedArgs);
 
     const sortFunc = getSortFunc(display);
 

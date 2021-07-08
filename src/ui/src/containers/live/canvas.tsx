@@ -43,6 +43,7 @@ import { createStyles } from '@material-ui/styles';
 import Paper from '@material-ui/core/Paper';
 
 import Vega from 'app/containers/live-widgets/vega/vega';
+import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { LayoutContext } from 'app/context/layout-context';
 import { ResultsContext } from 'app/context/results-context';
 import { ScriptContext } from 'app/context/script-context';
@@ -268,10 +269,11 @@ const Canvas = (props: CanvasProps) => {
     tables, loading, error, mutationInfo,
   } = React.useContext(ResultsContext);
   const {
-    args, setScriptAndArgs, script, widget,
+    args, setScriptAndArgs, script,
   } = React.useContext(ScriptContext);
   const { isMobile } = React.useContext(LayoutContext);
   const { setTimeseriesDomain } = React.useContext(TimeSeriesContext);
+  const { embedState: { widget } } = React.useContext(LiveRouteContext);
 
   // Default layout used when there is no vis defining widgets.
   const [defaultLayout, setDefaultLayout] = React.useState<Layout[]>([]);
@@ -303,8 +305,7 @@ const Canvas = (props: CanvasProps) => {
   // to other live views, such as start time.
   const propagatedArgs = React.useMemo(() => ({
     start_time: args.start_time,
-    widget,
-  }), [args, widget]);
+  }), [args]);
 
   React.useEffect(() => {
     const handler = (event) => {

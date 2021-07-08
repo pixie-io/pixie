@@ -30,7 +30,7 @@ import {
   useTheme,
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
-import { useRouteMatch, useHistory } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { ClusterContext } from 'app/common/cluster-context';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { Arguments } from 'app/utils/args-utils';
@@ -128,24 +128,21 @@ export const Graph: React.FC<GraphProps> = (props) => {
   const [network, setNetwork] = React.useState<Network>(null);
   const [graph, setGraph] = React.useState<GraphData>(null);
 
-  const { url } = useRouteMatch();
-  const isEmbedded = url.startsWith('/embed');
-
-  const { widget } = React.useContext(LiveRouteContext);
+  const { embedState } = React.useContext(LiveRouteContext);
 
   const doubleClickCallback = React.useCallback((params?: any) => {
-    if (params.nodes.length > 0 && !widget) {
+    if (params.nodes.length > 0 && !embedState.widget) {
       const nodeID = params.nodes[0];
       const semType = graph.idToSemType[nodeID];
       if (semType === SemanticType.ST_SERVICE_NAME
         || semType === SemanticType.ST_POD_NAME
         || semType === SemanticType.ST_NAMESPACE_NAME) {
         const page = toSingleEntityPage(nodeID, semType, selectedClusterName);
-        const pathname = toEntityURL(page, isEmbedded, propagatedArgs);
+        const pathname = toEntityURL(page, embedState, propagatedArgs);
         history.push(pathname);
       }
     }
-  }, [history, selectedClusterName, graph, propagatedArgs, isEmbedded, widget]);
+  }, [history, selectedClusterName, graph, propagatedArgs, embedState]);
 
   const ref = React.useRef<HTMLDivElement>();
 

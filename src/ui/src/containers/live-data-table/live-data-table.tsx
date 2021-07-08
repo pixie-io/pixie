@@ -23,6 +23,7 @@ import {
 } from 'app/components';
 import { JSONData } from 'app/containers/format-data/format-data';
 import { STATUS_TYPES } from 'app/containers/live-widgets/utils';
+import { LiveRouteContext } from 'app/containers/App/live-routing';
 import * as React from 'react';
 import { Table } from 'app/api';
 import { DataType, SemanticType } from 'app/types/generated/vizierapi_pb';
@@ -107,6 +108,9 @@ export const LiveDataTable: React.FC<LiveDataTableProps> = (props) => {
     onRowsRendered = () => { },
     propagatedArgs = null,
   } = props;
+
+  const { embedState } = React.useContext(LiveRouteContext);
+
   const [rows, setRows] = React.useState([]);
   const [selectedRow, setSelectedRow] = React.useState(-1);
   const [columnDisplayInfos, setColumnDisplayInfos] = React.useState<Map<string, ColumnDisplayInfo>>(
@@ -167,7 +171,7 @@ export const LiveDataTable: React.FC<LiveDataTableProps> = (props) => {
         label: titleFromInfo(displayInfo),
         align: SemanticAlignmentMap.get(displayInfo.semanticType) ?? DataAlignmentMap.get(displayInfo.type) ?? 'start',
         cellRenderer: liveCellRenderer(displayInfo, updateColumnDisplay, prettyRender,
-          theme, clusterName, rows, propagatedArgs),
+          theme, clusterName, rows, embedState, propagatedArgs),
       };
       if (hasWidthOverride(displayInfo.semanticType, displayInfo.type)) {
         colProps.width = getWidthOverride(displayInfo.semanticType, displayInfo.type);

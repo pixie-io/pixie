@@ -37,7 +37,7 @@ describe('Live view breadcrumbs', () => {
           <MockScriptsContextProvider>
             <MockLiveRouteContextProvider>
               <MockScriptContextProvider>
-                <LiveViewBreadcrumbs />
+                <LiveViewBreadcrumbs disableTimePicker={false} />
               </MockScriptContextProvider>
             </MockLiveRouteContextProvider>
           </MockScriptsContextProvider>

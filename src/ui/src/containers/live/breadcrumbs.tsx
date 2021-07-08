@@ -119,7 +119,7 @@ const styles = (({ shape, palette, spacing }: Theme) => createStyles({
   },
 }));
 
-const LiveViewBreadcrumbs = ({ classes }) => {
+const LiveViewBreadcrumbs = ({ classes, disableTimePicker }) => {
   const { selectedClusterUID } = React.useContext(ClusterContext);
   const { scripts } = React.useContext(ScriptsContext);
 
@@ -127,7 +127,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
     args, script, setScriptAndArgs,
   } = React.useContext(ScriptContext);
 
-  const { isEmbedded } = React.useContext(LiveRouteContext);
+  const { embedState: { isEmbedded } } = React.useContext(LiveRouteContext);
 
   const getCompletions = useAutocompleteFieldSuggester(selectedClusterUID);
 
@@ -237,8 +237,11 @@ const LiveViewBreadcrumbs = ({ classes }) => {
       // (such as nodes), since they are not yet supported in autocomplete. Until that is fixed, this is hard-coded
       // for now.
       if (argName === 'start_time' || argName === 'start') {
-        argProps.explanation = TimeArgDetail;
-        argBreadcrumbs.push(argProps);
+        // Don't show the time picker at all if it is disabled.
+        if (!disableTimePicker) {
+          argProps.explanation = TimeArgDetail;
+          argBreadcrumbs.push(argProps);
+        }
       } else {
         entityBreadcrumbs.push(argProps);
       }

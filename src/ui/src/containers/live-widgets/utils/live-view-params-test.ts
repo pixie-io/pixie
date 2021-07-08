@@ -23,6 +23,12 @@ import {
   toSingleEntityPage,
 } from './live-view-params';
 
+const noEmbed = {
+  isEmbedded: false,
+  disableTimePicker: false,
+  widget: null,
+};
+
 describe('toEntityPathname test', () => {
   it('should generate the pathname for the cluster page', () => {
     const entity = {
@@ -138,7 +144,7 @@ describe('toEntityURL test', () => {
       params: {},
       clusterName: 'gke:foobar',
     };
-    expect(toEntityURL(entity, false, {
+    expect(toEntityURL(entity, noEmbed, {
       propagatedParam: 'foo',
     })).toEqual('/live/clusters/gke%3Afoobar?propagatedParam=foo');
   });
@@ -149,7 +155,7 @@ describe('toEntityURL test', () => {
       params: {},
       clusterName: 'gke:foobar',
     };
-    expect(toEntityURL(entity, false)).toEqual('/live/clusters/gke%3Afoobar/namespaces');
+    expect(toEntityURL(entity, noEmbed)).toEqual('/live/clusters/gke%3Afoobar/namespaces');
   });
 
   it('should generate the url an entity page with empty params', () => {
@@ -158,7 +164,7 @@ describe('toEntityURL test', () => {
       params: {},
       clusterName: 'gke:foobar',
     };
-    expect(toEntityURL(entity, false, {})).toEqual('/live/clusters/gke%3Afoobar/namespaces');
+    expect(toEntityURL(entity, noEmbed, {})).toEqual('/live/clusters/gke%3Afoobar/namespaces');
   });
 
   it('should generate the url for a non-entity page ', () => {
@@ -167,9 +173,39 @@ describe('toEntityURL test', () => {
       params: {},
       clusterName: 'gke:foobar',
     };
-    expect(toEntityURL(entity, false, {
+    expect(toEntityURL(entity, noEmbed, {
       propagatedParam: 'foo',
     })).toEqual('/live/clusters/gke%3Afoobar?propagatedParam=foo');
+  });
+
+  it('should generate the url for an entity page with widget', () => {
+    const entity = {
+      page: LiveViewPage.Cluster,
+      params: {},
+      clusterName: 'gke:foobar',
+    };
+    expect(toEntityURL(entity, {
+      isEmbedded: true,
+      widget: 'foo',
+      disableTimePicker: false,
+    }, {
+      propagatedParam: 'foo',
+    })).toEqual('/embed/live/clusters/gke%3Afoobar?propagatedParam=foo&widget=foo');
+  });
+
+  it('should generate the url for an entity page with disableTimePicker', () => {
+    const entity = {
+      page: LiveViewPage.Cluster,
+      params: {},
+      clusterName: 'gke:foobar',
+    };
+    expect(toEntityURL(entity, {
+      isEmbedded: true,
+      disableTimePicker: true,
+      widget: null,
+    }, {
+      propagatedParam: 'foo',
+    })).toEqual('/embed/live/clusters/gke%3Afoobar?disable_time_picker=true&propagatedParam=foo');
   });
 });
 
@@ -231,14 +267,14 @@ describe('entityPageForScriptId', () => {
 
 describe('scriptToEntityURL', () => {
   it('should return an entity URL for an entity script', () => {
-    expect(scriptToEntityURL('px/namespace', 'aClusterName', false, {
+    expect(scriptToEntityURL('px/namespace', 'aClusterName', noEmbed, {
       namespace: 'foobar',
       anotherArg: '-30s',
     })).toEqual('/live/clusters/aClusterName/namespaces/foobar?anotherArg=-30s');
   });
 
   it('should return a non entity URL for a non entity script', () => {
-    expect(scriptToEntityURL('px/http_data', 'aClusterName', false, {
+    expect(scriptToEntityURL('px/http_data', 'aClusterName', noEmbed, {
       namespace: 'foobar',
       anotherArg: '-30s',
     })).toEqual('/live/clusters/aClusterName?anotherArg=-30s&namespace=foobar&script=px%2Fhttp_data');

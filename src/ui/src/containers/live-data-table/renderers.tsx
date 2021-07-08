@@ -29,6 +29,7 @@ import {
   PercentRenderer,
   PortRenderer, ThroughputBytesRenderer, ThroughputRenderer,
 } from 'app/containers/format-data/format-data';
+import { EmbedState } from 'app/containers/live-widgets/utils/live-view-params';
 import {
   EntityLink,
   isEntityType,
@@ -179,7 +180,8 @@ function renderWrapper(RendererFunc: any /* TODO(zasgar): revisit this typing */
 
 const statusRenderer = (st: SemanticType) => (v: string) => toStatusIndicator(v, st);
 
-const serviceRendererFuncGen = (clusterName: string, propagatedArgs?: Arguments) => function Service(v) {
+const serviceRendererFuncGen = (clusterName: string, embedState: EmbedState,
+  propagatedArgs?: Arguments) => function Service(v) {
   try {
     // Hack to handle cases like "['pl/service1', 'pl/service2']" which show up for pods that are part of 2 services.
     const parsedArray = JSON.parse(v);
@@ -194,6 +196,7 @@ const serviceRendererFuncGen = (clusterName: string, propagatedArgs?: Arguments)
                     entity={entity}
                     semanticType={SemanticType.ST_SERVICE_NAME}
                     clusterName={clusterName}
+                    embedState={embedState}
                     propagatedParams={propagatedArgs}
                   />
                 </span>
@@ -209,13 +212,15 @@ const serviceRendererFuncGen = (clusterName: string, propagatedArgs?: Arguments)
     entity={v}
     semanticType={SemanticType.ST_SERVICE_NAME}
     clusterName={clusterName}
+    embedState={embedState}
     propagatedParams={propagatedArgs}
   />;
 };
 
-const entityRenderer = (st: SemanticType, clusterName: string, propagatedArgs?: Arguments) => {
+const entityRenderer = (st: SemanticType, clusterName: string, embedState: EmbedState,
+  propagatedArgs?: Arguments) => {
   if (st === SemanticType.ST_SERVICE_NAME) {
-    return serviceRendererFuncGen(clusterName, propagatedArgs);
+    return serviceRendererFuncGen(clusterName, embedState, propagatedArgs);
   }
   return function Entity(v) {
     return (
@@ -223,17 +228,25 @@ const entityRenderer = (st: SemanticType, clusterName: string, propagatedArgs?: 
         entity={v}
         semanticType={st}
         clusterName={clusterName}
+        embedState={embedState}
         propagatedParams={propagatedArgs}
       />
     );
   };
 };
 
-const scriptReferenceRenderer = (clusterName: string, propagatedArgs?: Arguments) => (function Reference(v) {
+const scriptReferenceRenderer = (clusterName: string, embedState: EmbedState,
+  propagatedArgs?: Arguments) => (function Reference(v) {
   const { script, label, args } = v;
   const mergedArgs = { ...propagatedArgs, ...args };
   return (
-    <ScriptReference label={label} script={script} args={mergedArgs} clusterName={clusterName} />
+    <ScriptReference
+      label={label}
+      clusterName={clusterName}
+      script={script}
+      embedState={embedState}
+      args={mergedArgs}
+    />
   );
 });
 
@@ -247,6 +260,7 @@ export function prettyCellRenderer(
   clusterName: string,
   rows: any[],
   theme: Theme,
+  embedState: EmbedState,
   propagatedArgs?: Arguments,
 ) {
   const dt = display.type;
@@ -255,7 +269,7 @@ export function prettyCellRenderer(
   const renderer = getDataRenderer(dt);
 
   if (isEntityType(st)) {
-    return entityRenderer(st, clusterName, propagatedArgs);
+    return entityRenderer(st, clusterName, embedState, propagatedArgs);
   }
 
   switch (st) {
@@ -278,7 +292,7 @@ export function prettyCellRenderer(
     case SemanticType.ST_THROUGHPUT_BYTES_PER_NS:
       return renderWrapper(ThroughputBytesRenderer);
     case SemanticType.ST_SCRIPT_REFERENCE:
-      return scriptReferenceRenderer(clusterName, propagatedArgs);
+      return scriptReferenceRenderer(clusterName, embedState, propagatedArgs);
     default:
       break;
   }
@@ -321,10 +335,11 @@ export function liveCellRenderer(
   theme: Theme,
   clusterName: string,
   rows: any[],
+  embedState: EmbedState,
   propagatedArgs?: Arguments,
 ) {
   if (prettyRender) {
-    return prettyCellRenderer(display, updateDisplay, clusterName, rows, theme, propagatedArgs);
+    return prettyCellRenderer(display, updateDisplay, clusterName, rows, theme, embedState, propagatedArgs);
   }
   return getDataRenderer(display.type);
 }

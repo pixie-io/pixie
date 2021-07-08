@@ -23,8 +23,11 @@ export const LIVE_ROUTE_CONTEXT_DEFAULTS: LiveRouteContextProps = {
   clusterName: '',
   scriptId: '',
   args: {},
-  isEmbedded: false,
-  widget: null,
+  embedState: {
+    isEmbedded: false,
+    widget: null,
+    disableTimePicker: false,
+  },
   push: jest.fn(),
 };
 

@@ -143,11 +143,30 @@ export function toEntityPathname(entity: EntityPage, isEmbedded: boolean): strin
   }
 }
 
-export function toEntityURL(entity: EntityPage, isEmbedded: boolean, propagatedArgs?: Arguments): string {
-  const pathname = toEntityPathname(entity, isEmbedded);
+function getQueryParams(embedState: EmbedState, propagatedArgs?: Arguments) {
+  const params = {
+    ...propagatedArgs,
+  };
+  if (embedState.widget) {
+    return {
+      ...params,
+      widget: embedState.widget,
+    };
+  }
+  if (embedState.disableTimePicker) {
+    return {
+      ...params,
+      disable_time_picker: 'true',
+    };
+  }
+  return params;
+}
+
+export function toEntityURL(entity: EntityPage, embedState: EmbedState, propagatedArgs?: Arguments): string {
+  const pathname = toEntityPathname(entity, embedState.isEmbedded);
   let queryString = '';
   if (propagatedArgs) {
-    queryString = QueryString.stringify(propagatedArgs);
+    queryString = QueryString.stringify(getQueryParams(embedState, propagatedArgs));
   }
   return queryString ? `${pathname}?${queryString}` : pathname;
 }
@@ -176,8 +195,16 @@ export function getNonEntityParams(liveViewPage: LiveViewPage, args: Arguments):
   return nonEntityParams;
 }
 
+// Specification taken from the URL for how the live view should be rendered.
+export interface EmbedState {
+  isEmbedded: boolean;
+  disableTimePicker: boolean;
+  widget: string | null;
+}
+
 // Takes a script and arguments and formats it as an entity URL if applicable.
-export function scriptToEntityURL(script: string, clusterName: string, isEmbedded: boolean, args: Arguments): string {
+export function scriptToEntityURL(script: string, clusterName: string, embedState: EmbedState,
+  args: Arguments): string {
   const liveViewPage = entityPageForScriptId(script);
   const entityParams = getEntityParams(liveViewPage, args);
   const nonEntityParams = getNonEntityParams(liveViewPage, args);
@@ -186,7 +213,7 @@ export function scriptToEntityURL(script: string, clusterName: string, isEmbedde
     page: liveViewPage,
     params: entityParams,
   };
-  return toEntityURL(entityPage, isEmbedded, liveViewPage === LiveViewPage.Default ? {
+  return toEntityURL(entityPage, embedState, liveViewPage === LiveViewPage.Default ? {
     ...nonEntityParams,
     // non-entity pages require a script query parameter.
     script,
