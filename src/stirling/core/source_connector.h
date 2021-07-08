@@ -142,6 +142,8 @@ class SourceConnector : public NotCopyable {
   FrequencyManager sampling_freq_mgr_;
   FrequencyManager push_freq_mgr_;
 
+  // Debug members.
+  int debug_level_ = 0;
   absl::flat_hash_set<int> pids_to_trace_;
 
  private:
@@ -149,9 +151,6 @@ class SourceConnector : public NotCopyable {
 
   const std::string source_name_;
   const ArrayView<DataTableSchema> table_schemas_;
-
-  // Debug members.
-  int debug_level_ = 0;
 };
 
 }  // namespace stirling
