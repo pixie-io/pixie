@@ -99,7 +99,7 @@ def tcp_drops_func():
     # Convert IPs to domain names.
     # Source is expected to be pod, while destination is expected to be a service.
     df.src = px.pod_id_to_pod_name(px.ip_to_pod_id(df.src_ip))
-    df.dst = px.Service(px.nslookup(df.dst_ip))
+    df.dst = px.nslookup(df.dst_ip)
 
     # Count drops.
     df = df.groupby(['src', 'dst']).agg(drops=('src', px.count))

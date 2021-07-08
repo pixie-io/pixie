@@ -29,7 +29,7 @@ def dns_requests(start_time: str, query_name_filter: str):
     df.pod = df.ctx['pod']
 
     # Convert DNS IP to string.
-    df.dns_server = px.Service(px.nslookup(df.remote_addr))
+    df.dns_server = px.nslookup(df.remote_addr)
 
     # Parse the DNS respoonse to determine if it was successfully resolved.
     df.resp_body = px.pluck(df.resp_body, 'answers')
