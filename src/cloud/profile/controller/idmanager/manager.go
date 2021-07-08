@@ -20,20 +20,38 @@ package idmanager
 
 import "context"
 
-// CreateInviteLinkRequest is the request value for the IdentityProvider interface.
+// CreateInviteLinkRequest is the request value for the invite link method.
 type CreateInviteLinkRequest struct {
 	Email    string
 	PLOrgID  string
 	PLUserID string
 }
 
-// CreateInviteLinkResponse is the response value for the IdentityProvider interface.
+// CreateInviteLinkResponse is the response value for the invite link method.
 type CreateInviteLinkResponse struct {
 	Email      string
 	InviteLink string
 }
 
+// CreateInviteLinkForIdentityRequest is the request value for the invite link method.
+type CreateInviteLinkForIdentityRequest struct {
+	AuthProviderID string
+}
+
+// CreateInviteLinkForIdentityResponse contains the response for the invite link method.
+type CreateInviteLinkForIdentityResponse struct {
+	RecoveryLink string
+}
+
+// CreateIdentityResponse contains relevant information about the Identity that was created.
+type CreateIdentityResponse struct {
+	AuthProviderID string
+}
+
 // Manager is the interface for an identity provider's user management API.
 type Manager interface {
+	// CreateIdentity will create an identity for the corresponding email.
+	CreateIdentity(ctx context.Context, email string) (*CreateIdentityResponse, error)
 	CreateInviteLink(ctx context.Context, req *CreateInviteLinkRequest) (*CreateInviteLinkResponse, error)
+	CreateInviteLinkForIdentity(ctx context.Context, req *CreateInviteLinkForIdentityRequest) (*CreateInviteLinkForIdentityResponse, error)
 }

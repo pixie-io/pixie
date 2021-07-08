@@ -35,6 +35,21 @@ func (m *MockManager) EXPECT() *MockManagerMockRecorder {
 	return m.recorder
 }
 
+// CreateIdentity mocks base method.
+func (m *MockManager) CreateIdentity(ctx context.Context, email string) (*idmanager.CreateIdentityResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateIdentity", ctx, email)
+	ret0, _ := ret[0].(*idmanager.CreateIdentityResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateIdentity indicates an expected call of CreateIdentity.
+func (mr *MockManagerMockRecorder) CreateIdentity(ctx, email interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIdentity", reflect.TypeOf((*MockManager)(nil).CreateIdentity), ctx, email)
+}
+
 // CreateInviteLink mocks base method.
 func (m *MockManager) CreateInviteLink(ctx context.Context, req *idmanager.CreateInviteLinkRequest) (*idmanager.CreateInviteLinkResponse, error) {
 	m.ctrl.T.Helper()
@@ -48,4 +63,19 @@ func (m *MockManager) CreateInviteLink(ctx context.Context, req *idmanager.Creat
 func (mr *MockManagerMockRecorder) CreateInviteLink(ctx, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInviteLink", reflect.TypeOf((*MockManager)(nil).CreateInviteLink), ctx, req)
+}
+
+// CreateInviteLinkForIdentity mocks base method.
+func (m *MockManager) CreateInviteLinkForIdentity(ctx context.Context, req *idmanager.CreateInviteLinkForIdentityRequest) (*idmanager.CreateInviteLinkForIdentityResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateInviteLinkForIdentity", ctx, req)
+	ret0, _ := ret[0].(*idmanager.CreateInviteLinkForIdentityResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateInviteLinkForIdentity indicates an expected call of CreateInviteLinkForIdentity.
+func (mr *MockManagerMockRecorder) CreateInviteLinkForIdentity(ctx, req interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInviteLinkForIdentity", reflect.TypeOf((*MockManager)(nil).CreateInviteLinkForIdentity), ctx, req)
 }
