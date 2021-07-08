@@ -40,7 +40,7 @@ type CreateInviteLinkForIdentityRequest struct {
 
 // CreateInviteLinkForIdentityResponse contains the response for the invite link method.
 type CreateInviteLinkForIdentityResponse struct {
-	RecoveryLink string
+	InviteLink string
 }
 
 // CreateIdentityResponse contains relevant information about the Identity that was created.

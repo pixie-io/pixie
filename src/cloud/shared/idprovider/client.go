@@ -687,29 +687,23 @@ func (c *HydraKratosClient) UpdateUserInfo(ctx context.Context, userID string, k
 
 // CreateInviteLink implements the idmanager.Manager interface function to create an account and return an InviteLink for the specified user in the specific org.
 func (c *HydraKratosClient) CreateInviteLink(ctx context.Context, req *idmanager.CreateInviteLinkRequest) (*idmanager.CreateInviteLinkResponse, error) {
-	schemaID := viper.GetString("kratos_schema_id")
-	idResp, err := c.kratosAdminClient.CreateIdentity(&kratosAdmin.CreateIdentityParams{
-		Context: ctx,
-		Body: &kratosModels.CreateIdentity{
-			SchemaID: &schemaID,
-			Traits: &KratosUserInfo{
-				Email:    req.Email,
-				PLOrgID:  req.PLOrgID,
-				PLUserID: req.PLUserID,
-			},
-		},
+	ident, err := c.CreateIdentity(ctx, req.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = c.UpdateUserInfo(ctx, ident.AuthProviderID, &KratosUserInfo{
+		Email:    req.Email,
+		PLOrgID:  req.PLOrgID,
+		PLUserID: req.PLUserID,
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	recovery, err := c.kratosAdminClient.CreateRecoveryLink(&kratosAdmin.CreateRecoveryLinkParams{
-		Context: ctx,
-		Body: &kratosModels.CreateRecoveryLink{
-			ExpiresIn:  viper.GetString("kratos_recovery_link_lifetime"),
-			IdentityID: idResp.Payload.ID,
-		},
+	invite, err := c.CreateInviteLinkForIdentity(ctx, &idmanager.CreateInviteLinkForIdentityRequest{
+		AuthProviderID: ident.AuthProviderID,
 	})
 
 	if err != nil {
@@ -717,16 +711,49 @@ func (c *HydraKratosClient) CreateInviteLink(ctx context.Context, req *idmanager
 	}
 	return &idmanager.CreateInviteLinkResponse{
 		Email:      req.Email,
-		InviteLink: *recovery.Payload.RecoveryLink,
+		InviteLink: invite.InviteLink,
 	}, nil
 }
 
 // CreateIdentity creates an identity for the comparable email.
 func (c *HydraKratosClient) CreateIdentity(ctx context.Context, email string) (*idmanager.CreateIdentityResponse, error) {
-	return nil, errors.New("not implemented")
+	schemaID := viper.GetString("kratos_schema_id")
+	idResp, err := c.kratosAdminClient.CreateIdentity(&kratosAdmin.CreateIdentityParams{
+		Context: ctx,
+		Body: &kratosModels.CreateIdentity{
+			SchemaID: &schemaID,
+			Traits: &KratosUserInfo{
+				Email: email,
+			},
+		},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return &idmanager.CreateIdentityResponse{
+		AuthProviderID: strfmt.UUID4(idResp.Payload.ID).String(),
+	}, nil
 }
 
 // CreateInviteLinkForIdentity creates a Kratos recovery link for the identity, which can act like a one-time use invitelink.
 func (c *HydraKratosClient) CreateInviteLinkForIdentity(ctx context.Context, req *idmanager.CreateInviteLinkForIdentityRequest) (*idmanager.CreateInviteLinkForIdentityResponse, error) {
-	return nil, errors.New("not implemented")
+	var identityID strfmt.UUID4
+	if err := identityID.UnmarshalText([]byte(req.AuthProviderID)); err != nil {
+		return nil, err
+	}
+	recovery, err := c.kratosAdminClient.CreateRecoveryLink(&kratosAdmin.CreateRecoveryLinkParams{
+		Context: ctx,
+		Body: &kratosModels.CreateRecoveryLink{
+			ExpiresIn:  viper.GetString("kratos_recovery_link_lifetime"),
+			IdentityID: kratosModels.UUID(identityID),
+		},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return &idmanager.CreateInviteLinkForIdentityResponse{
+		InviteLink: *recovery.Payload.RecoveryLink,
+	}, nil
 }

@@ -46,7 +46,11 @@ go_test(
     srcs = ["client_test.go"],
     embed = [":idprovider"],
     deps = [
+        "//src/cloud/profile/controller/idmanager",
+        "//src/cloud/shared/idprovider/mock",
         "@com_github_go_openapi_runtime//:runtime",
+        "@com_github_go_openapi_strfmt//:strfmt",
+        "@com_github_golang_mock//gomock",
         "@com_github_gorilla_sessions//:sessions",
         "@com_github_ory_hydra_client_go//client/admin",
         "@com_github_ory_hydra_client_go//models",

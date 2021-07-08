@@ -27,6 +27,8 @@ import (
 	"testing"
 
 	"github.com/go-openapi/runtime"
+	"github.com/go-openapi/strfmt"
+	"github.com/golang/mock/gomock"
 	"github.com/gorilla/sessions"
 	hydraAdmin "github.com/ory/hydra-client-go/client/admin"
 	hydraModels "github.com/ory/hydra-client-go/models"
@@ -35,6 +37,9 @@ import (
 	kratosModels "github.com/ory/kratos-client-go/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"px.dev/pixie/src/cloud/profile/controller/idmanager"
+	mock_idprovider "px.dev/pixie/src/cloud/shared/idprovider/mock"
 )
 
 // Implements the kratosAdminClient interface.
@@ -679,4 +684,73 @@ func TestManageUserInfo(t *testing.T) {
 	assert.Equal(t, userInfo.Email, email)
 	assert.Equal(t, userInfo.PLUserID, plUserID)
 	assert.Equal(t, userInfo.PLOrgID, plOrgID)
+}
+
+func Test_CreateIdentity(t *testing.T) {
+	c, cleanup := makeClient(t)
+	defer cleanup()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := mock_idprovider.NewMockkratosAdminClientService(ctrl)
+	c.kratosAdminClient = d
+
+	var idStruct strfmt.UUID4
+	require.NoError(t, idStruct.UnmarshalText([]byte("08c254cb-741b-4088-9fa4-19806efe497a")))
+
+	schemaID := ""
+
+	d.EXPECT().CreateIdentity(&kratosAdmin.CreateIdentityParams{
+		Context: context.Background(),
+		Body: &kratosModels.CreateIdentity{
+			SchemaID: &schemaID,
+			Traits:   &KratosUserInfo{Email: "blahblah@gmail.com"},
+		},
+	}).
+		Return(&kratosAdmin.CreateIdentityCreated{
+			Payload: &kratosModels.Identity{
+				ID: kratosModels.UUID(idStruct),
+			},
+		}, nil)
+
+	ident, err := c.CreateIdentity(context.Background(), "blahblah@gmail.com")
+	require.NoError(t, err)
+
+	assert.Equal(t, ident.AuthProviderID, "08c254cb-741b-4088-9fa4-19806efe497a")
+}
+
+func Test_CreateInviteLinkForIdentity(t *testing.T) {
+	c, cleanup := makeClient(t)
+	defer cleanup()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := mock_idprovider.NewMockkratosAdminClientService(ctrl)
+	c.kratosAdminClient = d
+
+	var idStruct strfmt.UUID4
+	require.NoError(t, idStruct.UnmarshalText([]byte("08c254cb-741b-4088-9fa4-19806efe497a")))
+
+	link := "https://work.withpixie.dev/recovery"
+
+	d.EXPECT().CreateRecoveryLink(&kratosAdmin.CreateRecoveryLinkParams{
+		Context: context.Background(),
+		Body: &kratosModels.CreateRecoveryLink{
+			IdentityID: kratosModels.UUID(idStruct),
+		},
+	}).
+		Return(&kratosAdmin.CreateRecoveryLinkOK{
+			Payload: &kratosModels.RecoveryLink{
+				RecoveryLink: &link,
+			},
+		}, nil)
+
+	linkResp, err := c.CreateInviteLinkForIdentity(context.Background(), &idmanager.CreateInviteLinkForIdentityRequest{
+		AuthProviderID: "08c254cb-741b-4088-9fa4-19806efe497a",
+	})
+	require.NoError(t, err)
+
+	assert.Equal(t, linkResp.InviteLink, link)
 }
