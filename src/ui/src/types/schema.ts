@@ -18,6 +18,7 @@ export interface GQLQuery {
   user: GQLUserInfo;
   org: GQLOrgInfo;
   userSettings: Array<GQLUserSetting>;
+  userAttributes: GQLUserAttributes;
   orgUsers: Array<GQLUserInfo>;
   cluster: GQLClusterInfo;
   clusterByName: GQLClusterInfo;
@@ -50,6 +51,7 @@ export interface GQLMutation {
   CreateAPIKey: GQLAPIKey;
   DeleteAPIKey: boolean;
   UpdateUserSettings: Array<GQLUserSetting>;
+  SetUserAttributes: GQLUserAttributes;
   InviteUser: GQLUserInvite;
   UpdateUserPermissions: GQLUserInfo;
   UpdateOrgSettings: GQLOrgInfo;
@@ -84,6 +86,14 @@ export interface GQLOrgInfo {
 export interface GQLUserSetting {
   key: string;
   value: string;
+}
+
+export interface GQLUserAttributes {
+  tourSeen: boolean;
+}
+
+export interface GQLEditableUserAttributes {
+  tourSeen?: boolean;
 }
 
 export interface GQLAPIKey {
@@ -273,6 +283,7 @@ export interface GQLResolver {
   UserInfo?: GQLUserInfoTypeResolver;
   OrgInfo?: GQLOrgInfoTypeResolver;
   UserSetting?: GQLUserSettingTypeResolver;
+  UserAttributes?: GQLUserAttributesTypeResolver;
   APIKey?: GQLAPIKeyTypeResolver;
   DeploymentKey?: GQLDeploymentKeyTypeResolver;
   AutocompleteSuggestion?: GQLAutocompleteSuggestionTypeResolver;
@@ -297,6 +308,7 @@ export interface GQLQueryTypeResolver<TParent = any> {
   user?: QueryToUserResolver<TParent>;
   org?: QueryToOrgResolver<TParent>;
   userSettings?: QueryToUserSettingsResolver<TParent>;
+  userAttributes?: QueryToUserAttributesResolver<TParent>;
   orgUsers?: QueryToOrgUsersResolver<TParent>;
   cluster?: QueryToClusterResolver<TParent>;
   clusterByName?: QueryToClusterByNameResolver<TParent>;
@@ -339,6 +351,10 @@ export interface QueryToUserSettingsArgs {
 }
 export interface QueryToUserSettingsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: QueryToUserSettingsArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToUserAttributesResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface QueryToOrgUsersResolver<TParent = any, TResult = any> {
@@ -450,6 +466,7 @@ export interface GQLMutationTypeResolver<TParent = any> {
   CreateAPIKey?: MutationToCreateAPIKeyResolver<TParent>;
   DeleteAPIKey?: MutationToDeleteAPIKeyResolver<TParent>;
   UpdateUserSettings?: MutationToUpdateUserSettingsResolver<TParent>;
+  SetUserAttributes?: MutationToSetUserAttributesResolver<TParent>;
   InviteUser?: MutationToInviteUserResolver<TParent>;
   UpdateUserPermissions?: MutationToUpdateUserPermissionsResolver<TParent>;
   UpdateOrgSettings?: MutationToUpdateOrgSettingsResolver<TParent>;
@@ -499,6 +516,13 @@ export interface MutationToUpdateUserSettingsArgs {
 }
 export interface MutationToUpdateUserSettingsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: MutationToUpdateUserSettingsArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface MutationToSetUserAttributesArgs {
+  attributes: GQLEditableUserAttributes;
+}
+export interface MutationToSetUserAttributesResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: MutationToSetUserAttributesArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface MutationToInviteUserArgs {
@@ -618,6 +642,14 @@ export interface UserSettingToKeyResolver<TParent = any, TResult = any> {
 }
 
 export interface UserSettingToValueResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLUserAttributesTypeResolver<TParent = any> {
+  tourSeen?: UserAttributesToTourSeenResolver<TParent>;
+}
+
+export interface UserAttributesToTourSeenResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 

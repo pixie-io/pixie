@@ -2,6 +2,7 @@ extend type Query {
   user: UserInfo!
   org: OrgInfo!
   userSettings(keys: [String!]!): [UserSetting!]!
+  userAttributes: UserAttributes!
   orgUsers: [UserInfo!]!
   cluster(id: ID!): ClusterInfo!
   clusterByName(name: String!): ClusterInfo!
@@ -35,6 +36,7 @@ extend type Mutation {
   CreateAPIKey: APIKey!
   DeleteAPIKey(id: ID!): Boolean!
   UpdateUserSettings(keys: [String!]!, values: [String!]!): [UserSetting!]!
+  SetUserAttributes(attributes: EditableUserAttributes!): UserAttributes!
   InviteUser(email: String!, firstName: String!, lastName: String!): UserInvite!
   UpdateUserPermissions(userID: ID!, userPermissions: EditableUserPermissions!): UserInfo!
   UpdateOrgSettings(orgID: ID!, orgSettings: EditableOrgSettings!): OrgInfo!
@@ -59,6 +61,14 @@ type OrgInfo {
 type UserSetting {
   key: String!
   value: String!
+}
+
+type UserAttributes {
+  tourSeen: Boolean!
+}
+
+input EditableUserAttributes {
+  tourSeen: Boolean
 }
 
 type APIKey {

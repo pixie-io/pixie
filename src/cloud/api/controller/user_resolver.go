@@ -207,3 +207,59 @@ func (q *QueryResolver) UpdateUserPermissions(ctx context.Context, args *updateU
 	}
 	return &UserInfoResolver{ctx, &q.Env, userInfo}, nil
 }
+
+// UserAttributesResolver is a resolver for user attributes.
+type UserAttributesResolver struct {
+	TourSeen bool
+}
+
+// UserAttributes resolves user attributes information.
+func (q *QueryResolver) UserAttributes(ctx context.Context) (*UserAttributesResolver, error) {
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := q.Env.UserServer.GetUserAttributes(ctx, &cloudpb.GetUserAttributesRequest{
+		ID: utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &UserAttributesResolver{TourSeen: resp.TourSeen}, nil
+}
+
+type setUserAttributesArgs struct {
+	Attributes *editableUserAttributes
+}
+
+type editableUserAttributes struct {
+	TourSeen *bool
+}
+
+// SetUserAttributes updates the user settings for the current user.
+func (q *QueryResolver) SetUserAttributes(ctx context.Context, args *setUserAttributesArgs) (*UserAttributesResolver, error) {
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	req := &cloudpb.SetUserAttributesRequest{
+		ID: utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID),
+	}
+
+	resp := &UserAttributesResolver{}
+
+	if args.Attributes.TourSeen != nil {
+		req.TourSeen = &types.BoolValue{Value: *args.Attributes.TourSeen}
+		resp.TourSeen = *args.Attributes.TourSeen
+	}
+
+	_, err = q.Env.UserServer.SetUserAttributes(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}

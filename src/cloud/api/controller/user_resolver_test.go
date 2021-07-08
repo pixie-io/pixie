@@ -269,3 +269,70 @@ func TestUserSettingsResolver_UpdateUserSettings(t *testing.T) {
 		},
 	})
 }
+
+func TestUserSettingsResolver_GetUserAttributes(t *testing.T) {
+	gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	mockClients.MockUser.EXPECT().GetUserAttributes(gomock.Any(), &cloudpb.GetUserAttributesRequest{
+		ID: utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9"),
+	}).Return(&cloudpb.GetUserAttributesResponse{
+		TourSeen: true,
+	}, nil)
+
+	gqlSchema := LoadSchema(gqlEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				query {
+					userAttributes {
+						tourSeen
+					}
+				}
+			`,
+			ExpectedResult: `
+				{
+					"userAttributes": {
+                        "tourSeen": true
+					}
+				}
+			`,
+		},
+	})
+}
+
+func TestUserSettingsResolver_SetUserAttributes(t *testing.T) {
+	gqlEnv, mockClients, cleanup := gqltestutils.CreateTestGraphQLEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	mockClients.MockUser.EXPECT().SetUserAttributes(gomock.Any(), &cloudpb.SetUserAttributesRequest{
+		ID:       utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9"),
+		TourSeen: &types.BoolValue{Value: true},
+	}).Return(&cloudpb.SetUserAttributesResponse{}, nil)
+
+	gqlSchema := LoadSchema(gqlEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				mutation {
+					SetUserAttributes(attributes: { tourSeen: true }) {
+					    tourSeen
+					}
+				}
+			`,
+			ExpectedResult: `
+				{
+					"SetUserAttributes": {
+						"tourSeen": true
+					}
+				}
+			`,
+		},
+	})
+}

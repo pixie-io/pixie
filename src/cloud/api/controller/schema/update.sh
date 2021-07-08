@@ -26,5 +26,5 @@ pushd "${tot}/src/ui"
 # also use normal enums instead of const enums (see https://www.typescriptlang.org/tsconfig#isolatedModules).
 # A strict declarations file (.d.ts) can't export values (like normal enums), so we must rename the file as well.
 yarn graphql-schema-typescript generate-ts "${tot}/src/cloud/api/controller/schema" --output src/types/schema.ts
-sed -i '' 's/export const enum/export enum/g' src/types/schema.ts
+sed -i 's/export const enum/export enum/g' src/types/schema.ts
 popd
