@@ -81,7 +81,7 @@ class Dataframe : public QLObject {
     df = px.DataFrame('http_events', start_time='-5m')
   Examples:
     # Select subset of columns.
-    df = px.DataFrame('http_events', select=['upid', 'http_req_body'], start_time='-5m')
+    df = px.DataFrame('http_events', select=['upid', 'req_body'], start_time='-5m')
   Examples:
     # Absolute time specification.
     df = px.DataFrame('http_events', start_time='2020-07-13 18:02:5.00 -0700')
@@ -122,11 +122,11 @@ class Dataframe : public QLObject {
     df = px.DataFrame('http_events')
     df.svc = df.ctx['svc']
     # Map column to another column name.
-    df.resp_body = df.http_resp_body
+    df.resp_body = df.resp_body
   Examples:
     df = px.DataFrame('http_events')
     # Map expression to the column.
-    df['latency_ms'] = df['http_resp_latency_ns'] / 1.0e9
+    df['latency_ms'] = df['resp_latency_ns'] / 1.0e9
 
 
   :topic: dataframe_ops
@@ -200,7 +200,7 @@ class Dataframe : public QLObject {
   Examples:
     df = px.DataFrame('http_events')
     # Filter for only http requests that are greater than 100 milliseconds
-    df = df[df['http_resp_latency_ns'] > 100 * 1000 * 1000]
+    df = df[df['resp_latency_ns'] > 100 * 1000 * 1000]
 
   :topic: dataframe_ops
   :opname: Filter
@@ -280,7 +280,7 @@ class Dataframe : public QLObject {
     left_df = px.DataFrame('process_stats', start_time='-10s')
     left_df = left_df.groupby('upid').agg(cpu_utime=('cpu_utime_ns', px.max))
     right_df = px.DataFrame('http_events', start_time='-10s')
-    right_df = right_df.groupby('upid').agg(count=('http_resp_body', px.count))
+    right_df = right_df.groupby('upid').agg(count=('resp_body', px.count))
     df = left_df.merge(right_df, how='inner', left_on='upid', right_on='upid',suffixes=['', '_x'])
     # df relation = ['upid', 'cpu_utime', 'upid_x', 'count']
 

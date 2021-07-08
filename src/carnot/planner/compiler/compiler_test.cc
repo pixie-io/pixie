@@ -94,7 +94,7 @@ class CompilerTest : public ::testing::Test {
     rel_map->emplace("http_table",
                      Relation({types::TIME64NS, types::UINT128, types::INT64, types::INT64},
 
-                              {"time_", "upid", "http_resp_status", "http_resp_latency_ns"}));
+                              {"time_", "upid", "resp_status", "resp_latency_ns"}));
     rel_map->emplace("network", Relation({types::UINT128, types::INT64, types::INT64, types::INT64},
                                          {"upid", "bytes_in", "bytes_out", "agent_id"}));
     rel_map->emplace("process_stats",
@@ -109,18 +109,18 @@ class CompilerTest : public ::testing::Test {
     http_events_relation.AddColumn(types::UINT128, "upid");
     http_events_relation.AddColumn(types::STRING, "remote_addr");
     http_events_relation.AddColumn(types::INT64, "remote_port");
-    http_events_relation.AddColumn(types::INT64, "http_major_version");
-    http_events_relation.AddColumn(types::INT64, "http_minor_version");
-    http_events_relation.AddColumn(types::INT64, "http_content_type");
-    http_events_relation.AddColumn(types::STRING, "http_req_headers");
-    http_events_relation.AddColumn(types::STRING, "http_req_method");
-    http_events_relation.AddColumn(types::STRING, "http_req_path");
-    http_events_relation.AddColumn(types::STRING, "http_req_body");
-    http_events_relation.AddColumn(types::STRING, "http_resp_headers");
-    http_events_relation.AddColumn(types::INT64, "http_resp_status");
-    http_events_relation.AddColumn(types::STRING, "http_resp_message");
-    http_events_relation.AddColumn(types::STRING, "http_resp_body");
-    http_events_relation.AddColumn(types::INT64, "http_resp_latency_ns");
+    http_events_relation.AddColumn(types::INT64, "major_version");
+    http_events_relation.AddColumn(types::INT64, "minor_version");
+    http_events_relation.AddColumn(types::INT64, "content_type");
+    http_events_relation.AddColumn(types::STRING, "req_headers");
+    http_events_relation.AddColumn(types::STRING, "req_method");
+    http_events_relation.AddColumn(types::STRING, "req_path");
+    http_events_relation.AddColumn(types::STRING, "req_body");
+    http_events_relation.AddColumn(types::STRING, "resp_headers");
+    http_events_relation.AddColumn(types::INT64, "resp_status");
+    http_events_relation.AddColumn(types::STRING, "resp_message");
+    http_events_relation.AddColumn(types::STRING, "resp_body");
+    http_events_relation.AddColumn(types::INT64, "resp_latency_ns");
     rel_map->emplace("http_events", http_events_relation);
 
     compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now,
@@ -680,9 +680,9 @@ TEST_F(CompilerTest, reused_result) {
   std::string query = absl::StrJoin(
       {
           "import px",
-          "queryDF = px.DataFrame(table='http_table', select=['time_', 'upid', 'http_resp_status', "
-          "'http_resp_latency_ns'], start_time='-1m')",
-          "x = queryDF[queryDF['http_resp_latency_ns'] < 1000000]",
+          "queryDF = px.DataFrame(table='http_table', select=['time_', 'upid', 'resp_status', "
+          "'resp_latency_ns'], start_time='-1m')",
+          "x = queryDF[queryDF['resp_latency_ns'] < 1000000]",
           "px.display(queryDF, 'out');",
           "px.display(x);",
       },
@@ -714,9 +714,9 @@ TEST_F(CompilerTest, multiple_result_sinks) {
   std::string query = absl::StrJoin(
       {
           "import px",
-          "queryDF = px.DataFrame(table='http_table', select=['time_', 'upid', 'http_resp_status', "
-          "'http_resp_latency_ns'], start_time='-1m')",
-          "x = queryDF[queryDF['http_resp_latency_ns'] < "
+          "queryDF = px.DataFrame(table='http_table', select=['time_', 'upid', 'resp_status', "
+          "'resp_latency_ns'], start_time='-1m')",
+          "x = queryDF[queryDF['resp_latency_ns'] < "
           "1000000]",
           "px.display(x, 'filtered_result')",
           "px.display(queryDF, 'result');",
@@ -2007,8 +2007,8 @@ nodes {
         column_names: "cpu0"
         column_names: "upid"
         column_names: "cpu1"
-        column_names: "http_resp_status"
-        column_names: "http_resp_latency_ns"
+        column_names: "resp_status"
+        column_names: "resp_latency_ns"
       }
     }
   }
@@ -2047,8 +2047,8 @@ nodes {
           }
         }
         column_names: "upid"
-        column_names: "http_resp_status"
-        column_names: "http_resp_latency_ns"
+        column_names: "resp_status"
+        column_names: "resp_latency_ns"
         column_names: "cpu0"
         column_names: "cpu1"
       }
@@ -2068,8 +2068,8 @@ nodes {
           column_types: FLOAT64
           column_types: FLOAT64
           column_names: "upid"
-          column_names: "http_resp_status"
-          column_names: "http_resp_latency_ns"
+          column_names: "resp_status"
+          column_names: "resp_latency_ns"
           column_names: "cpu0"
           column_names: "cpu1"
           column_semantic_types: ST_NONE
@@ -2090,9 +2090,9 @@ nodes {
 constexpr char kJoinQueryTypeTpl[] = R"query(
 import px
 src1 = px.DataFrame(table='cpu', select=['cpu0', 'upid', 'cpu1'])
-src2 = px.DataFrame(table='http_table', select=['http_resp_status', 'upid',  'http_resp_latency_ns'])
+src2 = px.DataFrame(table='http_table', select=['resp_status', 'upid',  'resp_latency_ns'])
 join = src1.merge(src2, how='$0', left_on=['upid'], right_on=['upid'], suffixes=['', '_x'])
-output = join[["upid", "http_resp_status", "http_resp_latency_ns", "cpu0", "cpu1"]]
+output = join[["upid", "resp_status", "resp_latency_ns", "cpu0", "cpu1"]]
 px.display(output, 'joined')
 )query";
 
@@ -2174,8 +2174,8 @@ nodes {
         column_names: "cpu0"
         column_names: "upid"
         column_names: "cpu1"
-        column_names: "http_resp_status"
-        column_names: "http_resp_latency_ns"
+        column_names: "resp_status"
+        column_names: "resp_latency_ns"
       }
     }
   }
@@ -2214,8 +2214,8 @@ nodes {
           }
         }
         column_names: "upid"
-        column_names: "http_resp_status"
-        column_names: "http_resp_latency_ns"
+        column_names: "resp_status"
+        column_names: "resp_latency_ns"
         column_names: "cpu0"
         column_names: "cpu1"
       }
@@ -2235,8 +2235,8 @@ nodes {
           column_types: FLOAT64
           column_types: FLOAT64
           column_names: "upid"
-          column_names: "http_resp_status"
-          column_names: "http_resp_latency_ns"
+          column_names: "resp_status"
+          column_names: "resp_latency_ns"
           column_names: "cpu0"
           column_names: "cpu1"
           column_semantic_types: ST_NONE
@@ -2457,8 +2457,8 @@ constexpr char kBadDropQuery[] = R"pxl(
 import px
 t1 = px.DataFrame(table='http_events', start_time='-300s')
 t1['service'] = t1.ctx['service']
-t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
-t1['failure'] = t1['http_resp_status'] >= 400
+t1['http_resp_latency_ms'] = t1['resp_latency_ns'] / 1.0E6
+t1['failure'] = t1['resp_status'] >= 400
 # edit this to increase/decrease window. Dont go lower than 1 second.
 t1['window1'] = px.bin(t1['time_'], px.seconds(10))
 t1['window2'] = px.bin(t1['time_'] + px.seconds(5), px.seconds(10))
@@ -2576,12 +2576,12 @@ TEST_F(CompilerTest, UnusedOperatorsRemoved) {
   std::string query = absl::StrJoin(
       {
           "import px",
-          "queryDF = px.DataFrame(table='http_table', select=['time_', 'upid', 'http_resp_status', "
-          "'http_resp_latency_ns'], start_time='-1m')",
-          "filter = queryDF[queryDF['http_resp_latency_ns'] < 1000000]",
-          "drop = filter.drop(['http_resp_latency_ns', 'upid', 'http_resp_status'])",
+          "queryDF = px.DataFrame(table='http_table', select=['time_', 'upid', 'resp_status', "
+          "'resp_latency_ns'], start_time='-1m')",
+          "filter = queryDF[queryDF['resp_latency_ns'] < 1000000]",
+          "drop = filter.drop(['resp_latency_ns', 'upid', 'resp_status'])",
           "unused_map = filter",
-          "unused_map.http_resp_latency_ns = unused_map['http_resp_latency_ns'] * 2",
+          "unused_map.resp_latency_ns = unused_map['resp_latency_ns'] * 2",
           "px.display(drop, 'out');",
       },
 

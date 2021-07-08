@@ -165,67 +165,67 @@ relation_map {
 			column_semantic_type: ST_NONE
 		}
 		columns {
-			column_name: "http_major_version"
+			column_name: "major_version"
 			column_type: INT64
 			column_semantic_type: ST_NONE
 		}
 		columns {
-			column_name: "http_minor_version"
+			column_name: "minor_version"
 			column_type: INT64
 			column_semantic_type: ST_NONE
 		}
 		columns {
-			column_name: "http_content_type"
+			column_name: "content_type"
 			column_type: INT64
 			column_semantic_type: ST_NONE
 		}
 		columns {
-			column_name: "http_req_headers"
+			column_name: "req_headers"
 			column_type: STRING
 			column_semantic_type: ST_NONE
 		}
 		columns {
-			column_name: "http_req_method"
+			column_name: "req_method"
 			column_type: STRING
 			column_semantic_type: ST_NONE
 		}
 		columns {
-			column_name: "http_req_path"
+			column_name: "req_path"
 			column_type: STRING
 			column_semantic_type: ST_NONE
 		}
 		columns {
-			column_name: "http_req_body"
+			column_name: "req_body"
 			column_type: STRING
 			column_semantic_type: ST_NONE
 		}
 		columns {
-			column_name: "http_resp_headers"
+			column_name: "resp_headers"
 			column_type: STRING
 			column_semantic_type: ST_NONE
 		}
 		columns {
-			column_name: "http_resp_status"
+			column_name: "resp_status"
 			column_type: INT64
 			column_semantic_type: ST_NONE
 		}
 		columns {
-			column_name: "http_resp_message"
+			column_name: "resp_message"
 			column_type: STRING
 			column_semantic_type: ST_NONE
 		}
 		columns {
-			column_name: "http_resp_body"
+			column_name: "resp_body"
 			column_type: STRING
 			column_semantic_type: ST_NONE
 		}
 		columns {
-			column_name: "http_resp_body_size"
+			column_name: "resp_body_size"
 			column_type: INT64
 			column_semantic_type: ST_NONE
 		}
 		columns {
-			column_name: "http_resp_latency_ns"
+			column_name: "resp_latency_ns"
 			column_type: INT64
 			column_semantic_type: ST_NONE
 		}

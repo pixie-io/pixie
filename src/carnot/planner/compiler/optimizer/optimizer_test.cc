@@ -698,14 +698,14 @@ constexpr char kAggAfterFilterQuery[] = R"pxl(
 import px
 
 df = px.DataFrame(table='http_events', start_time='-10m')
-df.http_resp_latency_ms = df.http_resp_latency_ns / 1.0E6
+df.http_resp_latency_ms = df.resp_latency_ns / 1.0E6
 df.service = df.ctx['service']
-df = df[['service', 'http_resp_body']]
+df = df[['service', 'resp_body']]
 
-with_error_df = df[px.contains(df.http_resp_body, 'DOES NOT EXIST')]
+with_error_df = df[px.contains(df.resp_body, 'DOES NOT EXIST')]
 
-px.display(df.groupby('service').agg(count=('http_resp_body', px.count)), "no errors")
-px.display(with_error_df.groupby('service').agg(count=('http_resp_body', px.count)), "with errors")
+px.display(df.groupby('service').agg(count=('resp_body', px.count)), "no errors")
+px.display(with_error_df.groupby('service').agg(count=('resp_body', px.count)), "with errors")
 )pxl";
 
 TEST_F(OptimizerTest, aggs_dont_merge_if_different_filter) {

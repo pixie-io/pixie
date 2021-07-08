@@ -101,15 +101,15 @@ import px
 t1 = px.DataFrame(table='http_events', start_time='-120s')
 
 t1['service'] = t1.ctx['service']
-t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
-t1['failure'] = t1['http_resp_status'] >= 400
+t1['http_resp_latency_ms'] = t1['resp_latency_ns'] / 1.0E6
+t1['failure'] = t1['resp_status'] >= 400
 t1['range_group'] = t1['time_'] - px.modulo(t1['time_'], 2000000000)
 t1['s'] = px.bin(t1['time_'],px.seconds(3))
 
 quantiles_agg = t1.groupby('service').agg(
   latency_quantiles=('http_resp_latency_ms', px.quantiles),
   errors=('failure', px.mean),
-  throughput_total=('http_resp_status', px.count),
+  throughput_total=('resp_status', px.count),
 )
 
 quantiles_agg['latency_p50'] = px.pluck(quantiles_agg['latency_quantiles'], 'p50')
@@ -119,7 +119,7 @@ quantiles_table = quantiles_agg[['service', 'latency_p50', 'latency_p90', 'laten
 
 # The Range aggregate to calcualte the requests per second.
 requests_agg = t1.groupby(['service', 'range_group']).agg(
-  requests_per_window=('http_resp_status', px.count),
+  requests_per_window=('resp_status', px.count),
 )
 
 rps_table = requests_agg.groupby('service').agg(rps=('requests_per_window',px.mean))
@@ -164,7 +164,7 @@ import px
 
 t1 = px.DataFrame(table='http_events', start_time='-300s')
 t1['service'] = t1.ctx['service']
-t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
+t1['http_resp_latency_ms'] = t1['resp_latency_ns'] / 1.0E6
 # edit this to increase/decrease window. Dont go lower than 1 second.
 t1['window1'] = px.bin(t1['time_'], px.seconds(10))
 t1['window2'] = px.bin(t1['time_'] + px.seconds(5), px.seconds(10))
@@ -365,14 +365,14 @@ dest_name = 'responder'
 ip = 'remote_addr'
 ###############################################################
 df = px.DataFrame(table='http_events', start_time='-2m')
-df.http_resp_latency_ms = df.http_resp_latency_ns / 1.0E6
+df.http_resp_latency_ms = df.resp_latency_ns / 1.0E6
 df = df[df['http_resp_latency_ms'] < 1000.0]
-df.failure = df.http_resp_status >= 400
+df.failure = df.resp_status >= 400
 df.timestamp = px.bin(df.time_, px.seconds(num_seconds))
 df[k8s_object] = df.ctx[k8s_object]
 filter_pods = px.contains(df[k8s_object], match_name)
-filter_out_conds = ((df.http_req_path != '/health' or not filter_health) and (
-    df.http_req_path != '/readyz' or not filter_readyz)) and (
+filter_out_conds = ((df.req_path != '/health' or not filter_health) and (
+    df.req_path != '/readyz' or not filter_readyz)) and (
     df[ip] != '-' or not filter_dash)
 
 filt_df = df[filter_out_conds]
@@ -380,7 +380,7 @@ qa = filt_df[filter_pods]
 qa = qa.groupby([k8s_object, 'timestamp']).agg(
     latency_quantiles=('http_resp_latency_ms', px.quantiles),
     error_rate_per_window=('failure', px.mean),
-    throughput_total=('http_resp_status', px.count),
+    throughput_total=('resp_status', px.count),
 )
 qa.latency_p50 = px.pluck_float64(qa.latency_quantiles, 'p50')
 qa.latency_p90 = px.pluck_float64(qa.latency_quantiles, 'p90')
@@ -577,11 +577,11 @@ max_num_records = 100
 # Implementation
 # ----------------------------------------------------------------
 df = px.DataFrame(table='http_events', select=['time_', 'upid', 'remote_addr', 'remote_port',
-                                               'http_req_method', 'http_req_path',
-                                               'http_resp_status', 'http_resp_message',
-                                               'http_resp_body',
-                                               'http_resp_latency_ns'], start_time=start_time)
-df2 = df.agg(c=('http_resp_body', px.count))
+                                               'req_method', 'req_path',
+                                               'resp_status', 'resp_message',
+                                               'resp_body',
+                                               'resp_latency_ns'], start_time=start_time)
+df2 = df.agg(c=('resp_body', px.count))
 px.display(df2)
 )pxl";
 TEST_F(LogicalPlannerTest, partial_agg) {

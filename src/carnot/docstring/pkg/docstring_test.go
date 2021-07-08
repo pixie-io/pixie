@@ -36,7 +36,7 @@ Examples:
 	# Create a dataframe object
 	df = px.DataFrame('http_events', start_time='-5m')
 	# Aggregate to calculate number of events in the http_events table
-	df = df.agg(count=('http_resp_body', px.count))
+	df = df.agg(count=('resp_body', px.count))
 	px.display(df)
 
 Args:
@@ -57,7 +57,7 @@ Examples:
   # Create a dataframe object
   df = px.DataFrame('http_events', start_time='-5m')
   # Aggregate to calculate number of events in the http_events table
-  df = df.agg(count=('http_resp_body', px.count))
+  df = df.agg(count=('resp_body', px.count))
   px.display(df)
 
 
@@ -78,7 +78,7 @@ Examples:
     # Create a dataframe object
     df = px.DataFrame('http_events', start_time='-5m')
     # Aggregate to calculate number of events in the http_events table
-    df = df.agg(count=('http_resp_body', px.count))
+    df = df.agg(count=('resp_body', px.count))
     px.display(df)
 
 
@@ -99,7 +99,7 @@ Examples:
 		# Create a dataframe object
     df = px.DataFrame('http_events', start_time='-5m')
     # Aggregate to calculate number of events in the http_events table
-    df = df.agg(count=('http_resp_body', px.count))
+    df = df.agg(count=('resp_body', px.count))
     px.display(df)
 
 

@@ -307,13 +307,13 @@ def inbound_service_let_helper(start_time: str):
     df.service = df.ctx['service']
     df.pod = df.ctx['pod_name']
     df = df[df.service != '']
-    df.latency = df.http_resp_latency_ns
+    df.latency = df.resp_latency_ns
     df.timestamp = px.bin(df.time_, window_ns)
-    df.req_size = px.Bytes(px.length(df.http_req_body))
-    df.resp_size = px.Bytes(px.length(df.http_resp_body))
-    df.failure = df.http_resp_status >= 400
-    filter_out_conds = ((df.http_req_path != '/health' or not filter_health_checks) and (
-        df.http_req_path != '/readyz' or not filter_ready_checks)) and (
+    df.req_size = px.Bytes(px.length(df.req_body))
+    df.resp_size = px.Bytes(px.length(df.resp_body))
+    df.failure = df.resp_status >= 400
+    filter_out_conds = ((df.req_path != '/health' or not filter_health_checks) and (
+        df.req_path != '/readyz' or not filter_ready_checks)) and (
         df['remote_addr'] != '-' or not filter_unresolved_inbound)
     df = df[filter_out_conds]
     return df
@@ -782,14 +782,14 @@ def let_helper(start_time: str):
     '''
     df = px.DataFrame(table='http_events', start_time=start_time)
     df.pod = df.ctx['pod']
-    df.latency = df.http_resp_latency_ns
+    df.latency = df.resp_latency_ns
 
     df.timestamp = px.bin(df.time_, window_ns)
 
-    df.resp_size = px.length(df.http_resp_body)
-    df.failure = df.http_resp_status >= 400
-    filter_out_conds = ((df.http_req_path != '/health' or not filter_health_checks) and (
-        df.http_req_path != '/readyz' or not filter_ready_checks)) and (
+    df.resp_size = px.length(df.resp_body)
+    df.failure = df.resp_status >= 400
+    filter_out_conds = ((df.req_path != '/health' or not filter_health_checks) and (
+        df.req_path != '/readyz' or not filter_ready_checks)) and (
         df['remote_addr'] != '-' or not filter_unresolved_inbound)
 
     df = df[filter_out_conds]

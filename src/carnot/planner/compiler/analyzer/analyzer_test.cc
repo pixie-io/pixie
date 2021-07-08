@@ -780,7 +780,7 @@ constexpr char kTwoWindowQuery[] = R"query(
 import px
 t1 = px.DataFrame(table='http_events', start_time='-300s')
 t1['service'] = t1.ctx['service']
-t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
+t1['http_resp_latency_ms'] = t1['resp_latency_ns'] / 1.0E6
 # edit this to increase/decrease window. Dont go lower than 1 second.
 t1['window1'] = px.bin(t1['time_'], px.seconds(10))
 t1['window2'] = px.bin(t1['time_'] + px.seconds(5), px.seconds(10))
@@ -913,9 +913,9 @@ TEST_F(AnalyzerTest, add_limit) {
 
 constexpr char kAggQueryAnnotations[] = R"query(
 import px
-t1 = px.DataFrame(table='http_events', start_time='-5m', select=['http_resp_latency_ns', 'upid'])
+t1 = px.DataFrame(table='http_events', start_time='-5m', select=['resp_latency_ns', 'upid'])
 t1.service = t1.ctx['service']
-t1 = t1.groupby('service').agg(time_count=('http_resp_latency_ns', px.count))
+t1 = t1.groupby('service').agg(time_count=('resp_latency_ns', px.count))
 t1 = t1[['service']]
 px.display(t1)
 )query";

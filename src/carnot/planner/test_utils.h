@@ -113,62 +113,62 @@ relation_map {
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_major_version"
+      column_name: "major_version"
       column_type: INT64
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_minor_version"
+      column_name: "minor_version"
       column_type: INT64
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_content_type"
+      column_name: "content_type"
       column_type: INT64
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_req_headers"
+      column_name: "req_headers"
       column_type: STRING
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_req_method"
+      column_name: "req_method"
       column_type: STRING
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_req_path"
+      column_name: "req_path"
       column_type: STRING
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_req_body"
+      column_name: "req_body"
       column_type: STRING
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_resp_headers"
+      column_name: "resp_headers"
       column_type: STRING
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_resp_status"
+      column_name: "resp_status"
       column_type: INT64
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_resp_message"
+      column_name: "resp_message"
       column_type: STRING
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_resp_body"
+      column_name: "resp_body"
       column_type: STRING
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_resp_latency_ns"
+      column_name: "resp_latency_ns"
       column_type: INT64
       column_semantic_type: ST_NONE
     }
@@ -351,14 +351,14 @@ import px
 t1 = px.DataFrame(table='http_events', start_time='-30s')
 
 t1['service'] = t1.ctx['service']
-t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
-t1['failure'] = t1['http_resp_status'] >= 400
+t1['http_resp_latency_ms'] = t1['resp_latency_ns'] / 1.0E6
+t1['failure'] = t1['resp_status'] >= 400
 t1['range_group'] = t1['time_'] - px.modulo(t1['time_'], 1000000000)
 
 quantiles_agg = t1.groupby('service').agg(
   latency_quantiles=('http_resp_latency_ms', px.quantiles),
   errors=('failure', px.mean),
-  throughput_total=('http_resp_status', px.count),
+  throughput_total=('resp_status', px.count),
 )
 
 quantiles_agg['latency_p50'] = px.pluck(quantiles_agg['latency_quantiles'], 'p50')
@@ -368,7 +368,7 @@ quantiles_table = quantiles_agg[['service', 'latency_p50', 'latency_p90', 'laten
 
 # The Range aggregate to calcualte the requests per second.
 requests_agg = t1.groupby(['service', 'range_group']).agg(
-  requests_per_window=('http_resp_status', px.count),
+  requests_per_window=('resp_status', px.count),
 )
 
 rps_table = requests_agg.groupby('service').agg(rps=('requests_per_window',px.mean))
@@ -1353,67 +1353,67 @@ relation_map {
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_major_version"
+      column_name: "major_version"
       column_type: INT64
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_minor_version"
+      column_name: "minor_version"
       column_type: INT64
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_content_type"
+      column_name: "content_type"
       column_type: INT64
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_req_headers"
+      column_name: "req_headers"
       column_type: STRING
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_req_method"
+      column_name: "req_method"
       column_type: STRING
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_req_path"
+      column_name: "req_path"
       column_type: STRING
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_req_body"
+      column_name: "req_body"
       column_type: STRING
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_resp_headers"
+      column_name: "resp_headers"
       column_type: STRING
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_resp_status"
+      column_name: "resp_status"
       column_type: INT64
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_resp_message"
+      column_name: "resp_message"
       column_type: STRING
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_resp_body"
+      column_name: "resp_body"
       column_type: STRING
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_resp_body_size"
+      column_name: "resp_body_size"
       column_type: INT64
       column_semantic_type: ST_NONE
     }
     columns {
-      column_name: "http_resp_latency_ns"
+      column_name: "resp_latency_ns"
       column_type: INT64
       column_semantic_type: ST_NONE
     }

@@ -38,11 +38,11 @@ using PreSplitAnalyzerTest = DistributedRulesTest;
 TEST_F(PreSplitAnalyzerTest, split_pem_udf) {
   // Kelvin-only plan
   MemorySourceIR* src1 = MakeMemSource("http_events");
-  ASSERT_OK(src1->SetRelation(
-      Relation({types::STRING, types::STRING}, {"remote_addr", "http_req_path"})));
+  ASSERT_OK(
+      src1->SetRelation(Relation({types::STRING, types::STRING}, {"remote_addr", "req_path"})));
   ASSERT_OK(ResolveOperatorType(src1, compiler_state_.get()));
   auto input1 = MakeColumn("remote_addr", 0);
-  auto input2 = MakeColumn("http_req_path", 0);
+  auto input2 = MakeColumn("req_path", 0);
   input1->ResolveColumnType(types::DataType::STRING);
   input2->ResolveColumnType(types::DataType::STRING);
   auto func1 = MakeFunc("pem_only", {input1});
@@ -64,7 +64,7 @@ TEST_F(PreSplitAnalyzerTest, split_pem_udf) {
   EXPECT_NE(src1->Children()[0], map1);
   EXPECT_MATCH(src1->Children()[0], Map());
   auto new_map = static_cast<MapIR*>(src1->Children()[0]);
-  Relation expected_map_relation({types::STRING, types::STRING}, {"pem_only_0", "http_req_path"});
+  Relation expected_map_relation({types::STRING, types::STRING}, {"pem_only_0", "req_path"});
   EXPECT_EQ(new_map->relation(), expected_map_relation);
   EXPECT_THAT(new_map->parents(), ElementsAre(src1));
   EXPECT_THAT(new_map->Children(), ElementsAre(map1));
@@ -77,7 +77,7 @@ TEST_F(PreSplitAnalyzerTest, split_pem_udf) {
   EXPECT_MATCH(map1->col_exprs()[0].node, ColumnNode("pem_only_0"));
   EXPECT_EQ("kelvin", map1->col_exprs()[1].name);
   EXPECT_MATCH(map1->col_exprs()[1].node,
-               FuncNameAllArgsMatch("kelvin_only", ColumnNode("http_req_path")));
+               FuncNameAllArgsMatch("kelvin_only", ColumnNode("req_path")));
   EXPECT_THAT(map1->parents(), ElementsAre(new_map));
   EXPECT_THAT(map1->Children(), ElementsAre(sink));
 }

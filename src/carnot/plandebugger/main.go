@@ -274,79 +274,79 @@ distributed_state {
 				column_semantic_type: ST_NONE
 			}
 			columns: {
-				column_name: "http_major_version"
+				column_name: "major_version"
 				column_type: INT64
 				column_desc: "HTTP major version, can be 1 or 2"
 				column_semantic_type: ST_NONE
 			}
 			columns: {
-				column_name: "http_minor_version"
+				column_name: "minor_version"
 				column_type: INT64
 				column_desc: "HTTP minor version, HTTP1 uses 1, HTTP2 set this value to 0"
 				column_semantic_type: ST_NONE
 			}
 			columns: {
-				column_name: "http_content_type"
+				column_name: "content_type"
 				column_type: INT64
 				column_desc: "Type of the HTTP payload, can be JSON or protobuf"
 				column_semantic_type: ST_NONE
 			}
 			columns: {
-				column_name: "http_req_headers"
+				column_name: "req_headers"
 				column_type: STRING
 				column_desc: "Request headers in JSON format"
 				column_semantic_type: ST_NONE
 			}
 			columns: {
-				column_name: "http_req_method"
+				column_name: "req_method"
 				column_type: STRING
 				column_desc: "HTTP request method (e.g. GET, POST, ...)"
 				column_semantic_type: ST_NONE
 			}
 			columns: {
-				column_name: "http_req_path"
+				column_name: "req_path"
 				column_type: STRING
 				column_desc: "Request path"
 				column_semantic_type: ST_NONE
 			}
 			columns: {
-				column_name: "http_req_body"
+				column_name: "req_body"
 				column_type: STRING
 				column_desc: "Request body in JSON format"
 				column_semantic_type: ST_NONE
 			}
 			columns: {
-				column_name: "http_resp_headers"
+				column_name: "resp_headers"
 				column_type: STRING
 				column_desc: "Response headers in JSON format"
 				column_semantic_type: ST_NONE
 			}
 			columns: {
-				column_name: "http_resp_status"
+				column_name: "resp_status"
 				column_type: INT64
 				column_desc: "HTTP response status code"
 				column_semantic_type: ST_NONE
 			}
 			columns: {
-				column_name: "http_resp_message"
+				column_name: "resp_message"
 				column_type: STRING
 				column_desc: "HTTP response status text (e.g. OK, Not Found, ...)"
 				column_semantic_type: ST_NONE
 			}
 			columns: {
-				column_name: "http_resp_body"
+				column_name: "resp_body"
 				column_type: STRING
 				column_desc: "Response body in JSON format"
 				column_semantic_type: ST_NONE
 			}
 			columns: {
-				column_name: "http_resp_body_size"
+				column_name: "resp_body_size"
 				column_type: INT64
 				column_desc: "Response body size (before any truncation)"
 				column_semantic_type: ST_NONE
 			}
 			columns: {
-				column_name: "http_resp_latency_ns"
+				column_name: "resp_latency_ns"
 				column_type: INT64
 				column_desc: "Request-response latency in nanoseconds"
 				column_semantic_type: ST_NONE
@@ -732,11 +732,11 @@ df1 = base
 #df1 = df1[px.contains(df1.ctx['service'], "service")]
 
 df2 = base
-#df2.blah = df2.http_resp_status == 200
+#df2.blah = df2.resp_status == 200
 # df2.pod = df2.ctx['pod']
 
-px.display(df1.groupby('service').agg(count=('http_resp_status', px.count)))
-px.display(df2.groupby('http_resp_status').agg(count=('http_resp_status', px.count)))
+px.display(df1.groupby('service').agg(count=('resp_status', px.count)))
+px.display(df2.groupby('resp_status').agg(count=('resp_status', px.count)))
 # px.display(df2)
 
 `

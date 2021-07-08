@@ -98,7 +98,7 @@ constexpr const char* kMixedSpacesThenTabs = R"pxl(
 def func():
     # couple of normal lines
     df = px.DataFrame('http_events')
-    df = df[['http_resp_body']]
+    df = df[['resp_body']]
     # indent with a tab instead
 	df.abc = 1
     return 'test'
@@ -109,7 +109,7 @@ constexpr const char* kMixedTabsThenSpaces = R"pxl(
 def func():
 	# couple of normal lines
 	df = px.DataFrame('http_events')
-	df = df[['http_resp_body']]
+	df = df[['resp_body']]
 	# indent with a tab instead
     df.abc = 1
     return 'test'
@@ -119,7 +119,7 @@ constexpr const char* kUnexpectedIndent = R"pxl(
 def func():
     # couple of normal lines
     df = px.DataFrame('http_events')
-    df = df[['http_resp_body']]
+    df = df[['resp_body']]
     # indent with a tab instead
       df.abc = 1
     return 'test'
@@ -129,7 +129,7 @@ constexpr const char* kUnexpectedDedent = R"pxl(
 def func():
     # couple of normal lines
     df = px.DataFrame('http_events')
-    df = df[['http_resp_body']]
+    df = df[['resp_body']]
     # indent with a tab instead
    df.abc = 1
     return 'test'

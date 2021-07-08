@@ -31,7 +31,7 @@ ACCESS_TOKEN = "12345678-0000-0000-0000-987654321012"
 pxl_script = """
 import px
 px.display(px.DataFrame('http_events')[
-           ['http_resp_body','http_resp_status']].head(10), 'http')
+           ['resp_body','resp_status']].head(10), 'http')
 px.display(px.DataFrame('process_stats')[
            ['upid','cpu_ktime_ns', 'rss_bytes']].head(10), 'stats')
 """
@@ -189,8 +189,8 @@ class TestClient(unittest.TestCase):
         )
 
         self.http_table_factory = test_utils.FakeTableFactory("http", vpb.Relation(columns=[
-            test_utils.string_col("http_resp_body"),
-            test_utils.int64_col("http_resp_status"),
+            test_utils.string_col("resp_body"),
+            test_utils.int64_col("resp_status"),
         ]))
 
         self.stats_table_factory = test_utils.FakeTableFactory("stats", vpb.Relation(columns=[
@@ -264,8 +264,8 @@ class TestClient(unittest.TestCase):
         async def process_table(table_sub: pxapi.TableSub) -> None:
             num_rows = 0
             async for row in table_sub:
-                self.assertEqual(row["http_resp_body"], "foo")
-                self.assertEqual(row["http_resp_status"], 200)
+                self.assertEqual(row["resp_body"], "foo")
+                self.assertEqual(row["resp_status"], 200)
                 num_rows += 1
 
             self.assertEqual(num_rows, 1)
@@ -310,8 +310,8 @@ class TestClient(unittest.TestCase):
             # table_sub hides the batched rows and delivers them in
             # the same order as the batches sent.
             async for row in table_sub:
-                self.assertEqual(row["http_resp_body"], rb_data[0][row_i])
-                self.assertEqual(row["http_resp_status"], rb_data[1][row_i])
+                self.assertEqual(row["resp_body"], rb_data[0][row_i])
+                self.assertEqual(row["resp_status"], rb_data[1][row_i])
                 row_i += 1
 
             self.assertEqual(row_i, 4)
@@ -358,8 +358,8 @@ class TestClient(unittest.TestCase):
         async def process_http_tb(table_sub: pxapi.TableSub) -> None:
             num_rows = 0
             async for row in table_sub:
-                self.assertEqual(row["http_resp_body"], "foo")
-                self.assertEqual(row["http_resp_status"], 200)
+                self.assertEqual(row["resp_body"], "foo")
+                self.assertEqual(row["resp_status"], 200)
                 num_rows += 1
 
             self.assertEqual(num_rows, 1)
@@ -495,8 +495,8 @@ class TestClient(unittest.TestCase):
         def http_fn(row: pxapi.Row) -> None:
             nonlocal http_counter
             http_counter += 1
-            self.assertEqual(row["http_resp_body"], "foo")
-            self.assertEqual(row["http_resp_status"], 200)
+            self.assertEqual(row["resp_body"], "foo")
+            self.assertEqual(row["resp_status"], 200)
         script_executor.add_callback("http", http_fn)
 
         # Define a callback function for the stats_fn.
@@ -573,8 +573,8 @@ class TestClient(unittest.TestCase):
         async def process_http_tb(table_sub: pxapi.TableSub) -> None:
             num_rows = 0
             async for row in table_sub:
-                self.assertEqual(row["http_resp_body"], "foo")
-                self.assertEqual(row["http_resp_status"], 200)
+                self.assertEqual(row["resp_body"], "foo")
+                self.assertEqual(row["resp_status"], 200)
                 num_rows += 1
 
             self.assertEqual(num_rows, 1)
@@ -796,8 +796,8 @@ class TestClient(unittest.TestCase):
 
         # Define callback function for "http" table.
         def http_fn(row: pxapi.Row) -> None:
-            self.assertEqual(row["http_resp_body"], "foo")
-            self.assertEqual(row["http_resp_status"], 200)
+            self.assertEqual(row["resp_body"], "foo")
+            self.assertEqual(row["resp_status"], 200)
 
         script_executor.add_callback("http", http_fn)
 
@@ -826,8 +826,8 @@ class TestClient(unittest.TestCase):
 
         # Use the results API to run and get the data from the http table.
         for row in script_executor.results("http"):
-            self.assertEqual(row["http_resp_body"], "foo")
-            self.assertEqual(row["http_resp_status"], 200)
+            self.assertEqual(row["resp_body"], "foo")
+            self.assertEqual(row["resp_status"], 200)
 
     def test_shared_grpc_channel_for_cloud(self) -> None:
         # Setup a direct connect cluster.

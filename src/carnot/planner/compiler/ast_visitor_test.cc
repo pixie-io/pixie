@@ -1531,7 +1531,7 @@ def http_events(svc: px.Service, start_time: px.Time):
     df = px.DataFrame('http_events', start_time=start_time)
     df.svc = df.ctx['svc']
     df = df[df.svc == svc]
-    return df[['svc', 'http_resp_latency_ns']]
+    return df[['svc', 'resp_latency_ns']]
 
 def main(svc: px.Service, start_time: px.Time):
     df = http_events(svc, start_time)
@@ -1573,7 +1573,7 @@ constexpr char kExecFuncsQuery[] = R"pxl(
 import px
 def f(start_time: px.Time, name: str):
   df = px.DataFrame('http_events', start_time=start_time)
-  df[name] = df.http_resp_latency_ns
+  df[name] = df.resp_latency_ns
   return df
 
 )pxl";
@@ -1701,13 +1701,13 @@ TEST_F(ASTVisitorTest, compile_with_exec_funcs_and_duplicate_display_name) {
 
 constexpr char kExecFuncsWithGlobals[] = R"pxl(
 import px
-df = px.DataFrame('http_events', select=['http_resp_latency_ns'])
+df = px.DataFrame('http_events', select=['resp_latency_ns'])
 def f():
-  df.http_resp_latency_ns = 2 * df.http_resp_latency_ns
+  df.resp_latency_ns = 2 * df.resp_latency_ns
   return df
 
 def g():
-  df.http_resp_latency_ns = 3 * df.http_resp_latency_ns
+  df.resp_latency_ns = 3 * df.resp_latency_ns
   return df
 )pxl";
 
@@ -1954,7 +1954,7 @@ TEST_F(ASTVisitorTest, exec_funcs_list_arg) {
   f.set_output_table_prefix("test");
   auto a = f.add_arg_values();
   a->set_name("cols");
-  a->set_value("['http_resp_status', 'upid', 'time_']");
+  a->set_value("['resp_status', 'upid', 'time_']");
 
   ExecFuncs exec_funcs({f});
 
@@ -1963,7 +1963,7 @@ TEST_F(ASTVisitorTest, exec_funcs_list_arg) {
   ASSERT_EQ(mem_srcs.size(), 1);
 
   EXPECT_THAT(static_cast<MemorySourceIR*>(mem_srcs[0])->column_names(),
-              ElementsAre("http_resp_status", "upid", "time_"));
+              ElementsAre("resp_status", "upid", "time_"));
 }
 
 TEST_F(ASTVisitorTest, exec_funcs_list_arg_syntax_error) {
@@ -1974,7 +1974,7 @@ TEST_F(ASTVisitorTest, exec_funcs_list_arg_syntax_error) {
   a->set_name("cols");
 
   // Missing opening bracket here.
-  a->set_value("'http_resp_status', 'upid', 'time_']");
+  a->set_value("'resp_status', 'upid', 'time_']");
 
   ExecFuncs exec_funcs({f});
 
@@ -2098,7 +2098,7 @@ max_num_records = 100
 # ----------------------------------------------------------------
 df = px.DataFrame(table='http_events', start_time=start_time)
 df.pod = df.ctx['pod']
-df = df.drop(['upid', 'trace_role', 'http_minor_version', 'http_content_type', 'http_resp_message'])
+df = df.drop(['upid', 'trace_role', 'minor_version', 'content_type', 'resp_message'])
 df = df.groupby(['pod']).agg(count=(px.count, 'upid'))
 df = df.head(n=max_num_records)
 px.display(df)

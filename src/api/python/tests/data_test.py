@@ -27,8 +27,8 @@ import test_utils as utils
 class TestData(unittest.TestCase):
     def setUp(self) -> None:
         self.relation = vpb.Relation(columns=[
-            utils.string_col("http_resp_body"),
-            utils.int64_col("http_resp_status"),
+            utils.string_col("resp_body"),
+            utils.int64_col("resp_status"),
         ])
 
     def test_row(self) -> None:
@@ -38,8 +38,8 @@ class TestData(unittest.TestCase):
         # Test __str__().
         row = data.Row(table, ["bar", 200])
         self.assertEqual(json.loads(str(row)), {
-            "http_resp_body": "bar",
-            "http_resp_status": 200
+            "resp_body": "bar",
+            "resp_status": 200
         })
 
         # Make sure you can index the columns.
@@ -47,8 +47,8 @@ class TestData(unittest.TestCase):
         self.assertEqual(row[1], 200)
 
         # Make sure you can access the columns by name.
-        self.assertEqual(row["http_resp_body"], "bar")
-        self.assertEqual(row["http_resp_status"], 200)
+        self.assertEqual(row["resp_body"], "bar")
+        self.assertEqual(row["resp_status"], 200)
 
         # Grabbing a column that doesn't exist should fail.
         with self.assertRaisesRegex(KeyError, ".* not found in relation"):
@@ -90,8 +90,8 @@ class TestData(unittest.TestCase):
         async def process_rows() -> None:
             i = 0
             async for row in table:
-                self.assertEqual(row["http_resp_body"], rb_data[0][i])
-                self.assertEqual(row["http_resp_status"], rb_data[1][i])
+                self.assertEqual(row["resp_body"], rb_data[0][i])
+                self.assertEqual(row["resp_status"], rb_data[1][i])
                 i += 1
 
         loop = asyncio.get_event_loop()
