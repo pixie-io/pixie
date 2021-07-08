@@ -21,6 +21,7 @@ package datastore
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -70,6 +71,8 @@ var (
 	ErrUserNotFound = fmt.Errorf("user not found")
 	// ErrOrgNotFound is used when the org is not found when looking up by a filter condition.
 	ErrOrgNotFound = fmt.Errorf("org not found")
+	// ErrUserAttributesNotFound is used when no attributes can be found for the given user.
+	ErrUserAttributesNotFound = fmt.Errorf("user attributes not found")
 )
 
 // CreateUser creates a new user.
@@ -404,6 +407,87 @@ func (d *Datastore) UpdateUserSettings(id uuid.UUID, keys []string, values []str
 		if err != nil {
 			return err
 		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// UserAttributes is a set of attributes for a user.
+type UserAttributes struct {
+	UserID   uuid.UUID `db:"user_id"`
+	TourSeen *bool     `db:"tour_seen"`
+}
+
+// GetUserAttributes fetches the settings for the given user and keys.
+func (d *Datastore) GetUserAttributes(id uuid.UUID) (*UserAttributes, error) {
+	query := `SELECT * from user_attributes WHERE user_id=$1`
+	rows, err := d.db.Queryx(query, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		var userAttrs UserAttributes
+		err := rows.StructScan(&userAttrs)
+		return &userAttrs, err
+	}
+
+	return nil, ErrUserAttributesNotFound
+}
+
+// SetUserAttributes updates the user attributes for the given user.
+func (d *Datastore) SetUserAttributes(attributes *UserAttributes) error {
+	tx, err := d.db.Beginx()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	cols := []string{}
+	params := []string{}
+
+	if attributes.TourSeen != nil {
+		cols = append(cols, "tour_seen")
+		params = append(params, ":tour_seen")
+	}
+
+	query := `UPDATE user_attributes SET (%s) = (%s) WHERE user_id = :user_id`
+	if len(cols) == 1 {
+		query = `UPDATE user_attributes SET %s = %s WHERE user_id = :user_id`
+	}
+	_, err = d.db.NamedExec(fmt.Sprintf(query, strings.Join(cols, ","), strings.Join(params, ",")), attributes)
+
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// CreateUserAttributes creates default user attributes for the given user.
+func (d *Datastore) CreateUserAttributes(id uuid.UUID) error {
+	tx, err := d.db.Beginx()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	query := `INSERT INTO user_attributes (user_id) VALUES ($1)`
+	_, err = tx.Exec(query, id)
+
+	if err != nil {
+		return err
 	}
 
 	err = tx.Commit()

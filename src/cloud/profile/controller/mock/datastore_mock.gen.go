@@ -250,6 +250,21 @@ func (m *MockUserSettingsDatastore) EXPECT() *MockUserSettingsDatastoreMockRecor
 	return m.recorder
 }
 
+// GetUserAttributes mocks base method.
+func (m *MockUserSettingsDatastore) GetUserAttributes(arg0 uuid.UUID) (*datastore.UserAttributes, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserAttributes", arg0)
+	ret0, _ := ret[0].(*datastore.UserAttributes)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserAttributes indicates an expected call of GetUserAttributes.
+func (mr *MockUserSettingsDatastoreMockRecorder) GetUserAttributes(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserAttributes", reflect.TypeOf((*MockUserSettingsDatastore)(nil).GetUserAttributes), arg0)
+}
+
 // GetUserSettings mocks base method.
 func (m *MockUserSettingsDatastore) GetUserSettings(arg0 uuid.UUID, arg1 []string) ([]string, error) {
 	m.ctrl.T.Helper()
@@ -263,6 +278,20 @@ func (m *MockUserSettingsDatastore) GetUserSettings(arg0 uuid.UUID, arg1 []strin
 func (mr *MockUserSettingsDatastoreMockRecorder) GetUserSettings(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserSettings", reflect.TypeOf((*MockUserSettingsDatastore)(nil).GetUserSettings), arg0, arg1)
+}
+
+// SetUserAttributes mocks base method.
+func (m *MockUserSettingsDatastore) SetUserAttributes(arg0 *datastore.UserAttributes) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetUserAttributes", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetUserAttributes indicates an expected call of SetUserAttributes.
+func (mr *MockUserSettingsDatastoreMockRecorder) SetUserAttributes(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetUserAttributes", reflect.TypeOf((*MockUserSettingsDatastore)(nil).SetUserAttributes), arg0)
 }
 
 // UpdateUserSettings mocks base method.

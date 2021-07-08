@@ -90,6 +90,10 @@ type UserSettingsDatastore interface {
 	GetUserSettings(uuid.UUID, []string) ([]string, error)
 	// UpdateUserSettings updates the keys and values for the given user.
 	UpdateUserSettings(uuid.UUID, []string, []string) error
+	// GetUserAttributes gets the attributes for the given user.
+	GetUserAttributes(uuid.UUID) (*datastore.UserAttributes, error)
+	// SetUserAttributes sets the attributes for the given user.
+	SetUserAttributes(*datastore.UserAttributes) error
 }
 
 // Server is an implementation of GRPC server for profile service.
@@ -420,12 +424,34 @@ func (s *Server) UpdateUserSettings(ctx context.Context, req *profilepb.UpdateUs
 
 // GetUserAttributes gets the user attributes for the given user.
 func (s *Server) GetUserAttributes(ctx context.Context, req *profilepb.GetUserAttributesRequest) (*profilepb.GetUserAttributesResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	userID := utils.UUIDFromProtoOrNil(req.ID)
+
+	userAttrs, err := s.uds.GetUserAttributes(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &profilepb.GetUserAttributesResponse{
+		TourSeen: *userAttrs.TourSeen,
+	}, nil
 }
 
 // SetUserAttributes sets the user attributes for the given user.
 func (s *Server) SetUserAttributes(ctx context.Context, req *profilepb.SetUserAttributesRequest) (*profilepb.SetUserAttributesResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	userAttrs := &datastore.UserAttributes{
+		UserID: utils.UUIDFromProtoOrNil(req.ID),
+	}
+
+	if req.TourSeen != nil {
+		userAttrs.TourSeen = &req.TourSeen.Value
+	}
+
+	err := s.uds.SetUserAttributes(userAttrs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &profilepb.SetUserAttributesResponse{}, nil
 }
 
 // InviteUser implements the Profile interface's InviteUser method.

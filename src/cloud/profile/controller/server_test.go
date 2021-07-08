@@ -1232,6 +1232,53 @@ func TestServer_UpdateUserSettings(t *testing.T) {
 		})
 	}
 }
+
+func TestServer_GetUserAttributes(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := mock_controller.NewMockUserSettingsDatastore(ctrl)
+
+	s := controller.NewServer(nil, nil, d, nil)
+
+	userID := uuid.Must(uuid.NewV4())
+	tourSeen := true
+	d.EXPECT().
+		GetUserAttributes(userID).
+		Return(&datastore.UserAttributes{TourSeen: &tourSeen}, nil)
+
+	resp, err := s.GetUserAttributes(context.Background(), &profilepb.GetUserAttributesRequest{
+		ID: utils.ProtoFromUUID(userID),
+	})
+	require.NoError(t, err)
+	assert.Equal(t, true, resp.TourSeen)
+}
+
+func TestServer_SetUserAttributes(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := mock_controller.NewMockUserSettingsDatastore(ctrl)
+
+	s := controller.NewServer(nil, nil, d, nil)
+
+	userID := uuid.Must(uuid.NewV4())
+	tourSeen := true
+	d.EXPECT().
+		SetUserAttributes(&datastore.UserAttributes{
+			UserID:   userID,
+			TourSeen: &tourSeen,
+		}).
+		Return(nil)
+
+	resp, err := s.SetUserAttributes(context.Background(), &profilepb.SetUserAttributesRequest{
+		ID:       utils.ProtoFromUUID(userID),
+		TourSeen: &types.BoolValue{Value: true},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, &profilepb.SetUserAttributesResponse{}, resp)
+}
+
 func CreateTestContext() context.Context {
 	sCtx := authcontext.New()
 	sCtx.Claims = svcutils.GenerateJWTForUser(

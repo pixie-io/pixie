@@ -63,6 +63,7 @@ func testMain(m *testing.M) error {
 
 func mustLoadTestData(db *sqlx.DB) {
 	// Cleanup.
+	db.MustExec(`DELETE FROM user_attributes`)
 	db.MustExec(`DELETE FROM user_settings`)
 	db.MustExec(`DELETE FROM users`)
 	db.MustExec(`DELETE FROM orgs`)
@@ -76,6 +77,9 @@ func mustLoadTestData(db *sqlx.DB) {
 	insertUserSetting := `INSERT INTO user_settings (user_id, key, value) VALUES ($1, $2, $3)`
 	db.MustExec(insertUserSetting, "123e4567-e89b-12d3-a456-426655440001", "some_setting", "test")
 	db.MustExec(insertUserSetting, "123e4567-e89b-12d3-a456-426655440001", "another_setting", "true")
+
+	insertUserAttr := `INSERT INTO user_attributes (user_id, tour_seen) VALUES ($1, $2)`
+	db.MustExec(insertUserAttr, "123e4567-e89b-12d3-a456-426655440001", false)
 }
 
 func TestDatastore(t *testing.T) {
@@ -376,6 +380,60 @@ func TestDatastore(t *testing.T) {
 		for k, v := range expectedKeyValues {
 			checkKVInDB(k, v)
 		}
+	})
+
+	t.Run("Create user attributes", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db)
+
+		id := "123e4567-e89b-12d3-a456-426655440002"
+		err := d.CreateUserAttributes(uuid.FromStringOrNil(id))
+		require.NoError(t, err)
+
+		// Check value in DB.
+		query := `SELECT * from user_attributes WHERE user_id=$1`
+		rows, err := db.Queryx(query, id)
+		require.NoError(t, err)
+		defer rows.Close()
+		var userAttrs datastore.UserAttributes
+		assert.True(t, rows.Next())
+		err = rows.StructScan(&userAttrs)
+		require.NoError(t, err)
+		assert.Equal(t, false, *userAttrs.TourSeen)
+	})
+
+	t.Run("Get user attributes", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db)
+
+		attrs, err := d.GetUserAttributes(uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440001"))
+		require.NoError(t, err)
+		assert.NotNil(t, attrs.TourSeen)
+		assert.Equal(t, false, *attrs.TourSeen)
+	})
+
+	t.Run("Set user attributes", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db)
+
+		id := "123e4567-e89b-12d3-a456-426655440001"
+		tourSeen := true
+		err := d.SetUserAttributes(&datastore.UserAttributes{
+			UserID:   uuid.FromStringOrNil(id),
+			TourSeen: &tourSeen,
+		})
+		require.NoError(t, err)
+
+		// Check value in DB.
+		query := `SELECT * from user_attributes WHERE user_id=$1`
+		rows, err := db.Queryx(query, id)
+		require.NoError(t, err)
+		defer rows.Close()
+		var userAttrs datastore.UserAttributes
+		assert.True(t, rows.Next())
+		err = rows.StructScan(&userAttrs)
+		require.NoError(t, err)
+		assert.Equal(t, true, *userAttrs.TourSeen)
 	})
 
 	t.Run("Get users in org", func(t *testing.T) {
