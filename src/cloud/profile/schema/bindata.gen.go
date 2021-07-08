@@ -26,6 +26,8 @@
 // 000013_lengthen_profile_email.up.sql
 // 000014_lengthen_auth_provider_id.down.sql
 // 000014_lengthen_auth_provider_id.up.sql
+// 000015_create_user_attributes_table.down.sql
+// 000015_create_user_attributes_table.up.sql
 package schema
 
 import (
@@ -622,6 +624,46 @@ func _000014_lengthen_auth_provider_idUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000015_create_user_attributes_tableDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x09\xf2\x0f\x50\x08\x71\x74\xf2\x71\x55\xf0\x74\x53\x70\x8d\xf0\x0c\x0e\x09\x56\x28\x2d\x4e\x2d\x8a\x4f\x2c\x29\x29\xca\x4c\x2a\x2d\x49\x2d\xb6\xe6\x02\x04\x00\x00\xff\xff\xfa\x14\xea\x74\x26\x00\x00\x00")
+
+func _000015_create_user_attributes_tableDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000015_create_user_attributes_tableDownSql,
+		"000015_create_user_attributes_table.down.sql",
+	)
+}
+
+func _000015_create_user_attributes_tableDownSql() (*asset, error) {
+	bytes, err := _000015_create_user_attributes_tableDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000015_create_user_attributes_table.down.sql", size: 38, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000015_create_user_attributes_tableUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x3c\xcd\xcd\x0a\x82\x40\x14\xc5\xf1\xfd\x7d\x8a\xb3\x54\xf0\x0d\x5a\x4d\x7a\x0d\xc9\x2c\x6e\xba\x70\x25\x8a\x37\x18\x10\x07\xe6\xe3\xfd\xc3\x8a\xb6\xff\xc3\x8f\x53\x0a\x9b\x9e\xd1\x9b\x73\xcb\x48\x41\xfd\x34\xc7\xe8\xed\x92\xa2\x06\x64\x84\x6f\xb3\x2b\x86\xa1\xa9\x0a\x02\xa2\x4b\x7e\x0a\xaa\x3b\x16\xe7\x36\x9d\x77\x54\x5c\x9b\xa1\xed\xf1\x9a\xb7\xa0\x05\x11\xf0\x90\xe6\x66\x64\xc4\x95\xc7\xec\xe7\xf3\xc3\xd6\x77\xe1\xe6\xd2\x1d\x1d\xff\x01\xc2\x35\x0b\x77\x25\x3f\x3f\x67\x21\xb3\x6b\x4e\xf9\x89\xde\x01\x00\x00\xff\xff\xb0\x47\xbc\x5c\x9b\x00\x00\x00")
+
+func _000015_create_user_attributes_tableUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000015_create_user_attributes_tableUpSql,
+		"000015_create_user_attributes_table.up.sql",
+	)
+}
+
+func _000015_create_user_attributes_tableUpSql() (*asset, error) {
+	bytes, err := _000015_create_user_attributes_tableUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000015_create_user_attributes_table.up.sql", size: 155, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -700,6 +742,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000013_lengthen_profile_email.up.sql":                   _000013_lengthen_profile_emailUpSql,
 	"000014_lengthen_auth_provider_id.down.sql":              _000014_lengthen_auth_provider_idDownSql,
 	"000014_lengthen_auth_provider_id.up.sql":                _000014_lengthen_auth_provider_idUpSql,
+	"000015_create_user_attributes_table.down.sql":           _000015_create_user_attributes_tableDownSql,
+	"000015_create_user_attributes_table.up.sql":             _000015_create_user_attributes_tableUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -769,6 +813,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000013_lengthen_profile_email.up.sql":                   &bintree{_000013_lengthen_profile_emailUpSql, map[string]*bintree{}},
 	"000014_lengthen_auth_provider_id.down.sql":              &bintree{_000014_lengthen_auth_provider_idDownSql, map[string]*bintree{}},
 	"000014_lengthen_auth_provider_id.up.sql":                &bintree{_000014_lengthen_auth_provider_idUpSql, map[string]*bintree{}},
+	"000015_create_user_attributes_table.down.sql":           &bintree{_000015_create_user_attributes_tableDownSql, map[string]*bintree{}},
+	"000015_create_user_attributes_table.up.sql":             &bintree{_000015_create_user_attributes_tableUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
