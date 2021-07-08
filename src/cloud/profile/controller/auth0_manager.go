@@ -47,3 +47,8 @@ func (c *Auth0Manager) CreateInviteLinkForIdentity(context.Context, *idmanager.C
 func (c *Auth0Manager) CreateIdentity(context.Context, string) (*idmanager.CreateIdentityResponse, error) {
 	return nil, errors.New("pixie's Auth0 implementation does not support creating identities")
 }
+
+// SetPLMetadata is not implemented for auth0.
+func (c *Auth0Manager) SetPLMetadata(userID, plOrgID, plUserID string) error {
+	return errors.New("auth0 not supported")
+}

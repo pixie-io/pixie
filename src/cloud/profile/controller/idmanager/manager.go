@@ -45,7 +45,8 @@ type CreateInviteLinkForIdentityResponse struct {
 
 // CreateIdentityResponse contains relevant information about the Identity that was created.
 type CreateIdentityResponse struct {
-	AuthProviderID string
+	IdentityProvider string
+	AuthProviderID   string
 }
 
 // Manager is the interface for an identity provider's user management API.
@@ -54,4 +55,6 @@ type Manager interface {
 	CreateIdentity(ctx context.Context, email string) (*CreateIdentityResponse, error)
 	CreateInviteLink(ctx context.Context, req *CreateInviteLinkRequest) (*CreateInviteLinkResponse, error)
 	CreateInviteLinkForIdentity(ctx context.Context, req *CreateInviteLinkForIdentityRequest) (*CreateInviteLinkForIdentityResponse, error)
+	// SetPLMetadata sets the pixielabs related metadata in the auth provider.
+	SetPLMetadata(userID, plOrgID, plUserID string) error
 }

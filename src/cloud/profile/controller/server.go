@@ -456,16 +456,22 @@ func (s *Server) SetUserAttributes(ctx context.Context, req *profilepb.SetUserAt
 
 // InviteUser implements the Profile interface's InviteUser method.
 func (s *Server) InviteUser(ctx context.Context, req *profilepb.InviteUserRequest) (*profilepb.InviteUserResponse, error) {
+	// Create the Identity in the ID Manager.
+	ident, err := s.IDManager.CreateIdentity(ctx, req.Email)
+	if err != nil {
+		return nil, fmt.Errorf("error while creating identitiy for '%s': %v", req.Email, err)
+	}
 	userInfo, err := s.d.GetUserByEmail(req.Email)
 	var userID uuid.UUID
 	if err == datastore.ErrUserNotFound {
+		// Create the user from the identity info.
 		createUserReq := &profilepb.CreateUserRequest{
 			OrgID:            req.OrgID,
 			Username:         req.Email,
 			FirstName:        req.FirstName,
 			LastName:         req.LastName,
 			Email:            req.Email,
-			IdentityProvider: req.IdentityProvider,
+			IdentityProvider: ident.IdentityProvider,
 		}
 
 		userIDPb, err := s.CreateUser(ctx, createUserReq)
@@ -492,19 +498,21 @@ func (s *Server) InviteUser(ctx context.Context, req *profilepb.InviteUserReques
 		userID = userInfo.ID
 	}
 
-	idpCreateAccReq := &idmanager.CreateInviteLinkRequest{
-		Email:    req.Email,
-		PLOrgID:  utils.ProtoToUUIDStr(req.OrgID),
-		PLUserID: userID.String(),
+	err = s.IDManager.SetPLMetadata(ident.AuthProviderID, utils.UUIDFromProtoOrNil(req.OrgID).String(), userID.String())
+	if err != nil {
+		return nil, err
 	}
 
-	resp, err := s.IDManager.CreateInviteLink(ctx, idpCreateAccReq)
+	// Create invite link for the user.
+	resp, err := s.IDManager.CreateInviteLinkForIdentity(ctx, &idmanager.CreateInviteLinkForIdentityRequest{
+		AuthProviderID: ident.AuthProviderID,
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	return &profilepb.InviteUserResponse{
-		Email:      resp.Email,
+		Email:      req.Email,
 		InviteLink: resp.InviteLink,
 	}, nil
 }

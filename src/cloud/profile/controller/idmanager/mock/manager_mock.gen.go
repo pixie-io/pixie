@@ -79,3 +79,17 @@ func (mr *MockManagerMockRecorder) CreateInviteLinkForIdentity(ctx, req interfac
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInviteLinkForIdentity", reflect.TypeOf((*MockManager)(nil).CreateInviteLinkForIdentity), ctx, req)
 }
+
+// SetPLMetadata mocks base method.
+func (m *MockManager) SetPLMetadata(userID, plOrgID, plUserID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetPLMetadata", userID, plOrgID, plUserID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetPLMetadata indicates an expected call of SetPLMetadata.
+func (mr *MockManagerMockRecorder) SetPLMetadata(userID, plOrgID, plUserID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPLMetadata", reflect.TypeOf((*MockManager)(nil).SetPLMetadata), userID, plOrgID, plUserID)
+}

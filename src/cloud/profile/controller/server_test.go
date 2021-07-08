@@ -1367,6 +1367,14 @@ func TestServerInviteUser(t *testing.T) {
 				IsApproved:       !tc.EnableApprovals,
 				IdentityProvider: "kratos",
 			}
+			client.EXPECT().
+				CreateIdentity(
+					gomock.Any(),
+					"bobloblaw@lawblog.com").
+				Return(&idmanager.CreateIdentityResponse{
+					IdentityProvider: "kratos",
+					AuthProviderID:   "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+				}, nil)
 
 			if !tc.doesUserExist {
 				d.EXPECT().
@@ -1412,15 +1420,16 @@ func TestServerInviteUser(t *testing.T) {
 			}
 			if !tc.doesUserExist || !tc.mustCreate {
 				client.EXPECT().
-					CreateInviteLink(
+					SetPLMetadata(
+						"6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+						orgID.String(),
+						userID.String(),
+					).Return(nil)
+				client.EXPECT().
+					CreateInviteLinkForIdentity(
 						gomock.Any(),
-						&idmanager.CreateInviteLinkRequest{
-							Email:    req.Email,
-							PLOrgID:  orgID.String(),
-							PLUserID: userID.String(),
-						},
-					).Return(&idmanager.CreateInviteLinkResponse{
-					Email:      req.Email,
+						&idmanager.CreateInviteLinkForIdentityRequest{AuthProviderID: "6ba7b810-9dad-11d1-80b4-00c04fd430c8"},
+					).Return(&idmanager.CreateInviteLinkForIdentityResponse{
 					InviteLink: "self-service/recovery/methods",
 				}, nil)
 			}

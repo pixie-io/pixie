@@ -732,7 +732,8 @@ func (c *HydraKratosClient) CreateIdentity(ctx context.Context, email string) (*
 		return nil, err
 	}
 	return &idmanager.CreateIdentityResponse{
-		AuthProviderID: strfmt.UUID4(idResp.Payload.ID).String(),
+		AuthProviderID:   strfmt.UUID4(idResp.Payload.ID).String(),
+		IdentityProvider: "kratos",
 	}, nil
 }
 
@@ -756,4 +757,17 @@ func (c *HydraKratosClient) CreateInviteLinkForIdentity(ctx context.Context, req
 	return &idmanager.CreateInviteLinkForIdentityResponse{
 		InviteLink: *recovery.Payload.RecoveryLink,
 	}, nil
+}
+
+// SetPLMetadata will update the client with the related info.
+func (c *HydraKratosClient) SetPLMetadata(userID, plOrgID, plUserID string) error {
+	// TODO(philkuz,PC-1073) get rid of this in favor of not duplicating hydra_kratos_auth.go.
+	kratosInfo, err := c.GetUserInfo(context.Background(), userID)
+	if err != nil {
+		return err
+	}
+	kratosInfo.PLOrgID = plOrgID
+	kratosInfo.PLUserID = plUserID
+	_, err = c.UpdateUserInfo(context.Background(), userID, kratosInfo)
+	return err
 }
