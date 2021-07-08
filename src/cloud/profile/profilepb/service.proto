@@ -43,6 +43,9 @@ service ProfileService {
   // Calls for handling user settings.
   rpc GetUserSettings(GetUserSettingsRequest) returns (GetUserSettingsResponse);
   rpc UpdateUserSettings(UpdateUserSettingsRequest) returns (UpdateUserSettingsResponse);
+  // Calls for handling user attributes.
+  rpc GetUserAttributes(GetUserAttributesRequest) returns (GetUserAttributesResponse);
+  rpc SetUserAttributes(SetUserAttributesRequest) returns (SetUserAttributesResponse);
   // Create a new account for the user's org and return an invite link. Errors out if the account
   // already exists.
   rpc InviteUser(InviteUserRequest) returns (InviteUserResponse);
@@ -179,6 +182,27 @@ message UpdateUserSettingsResponse {
   // Whether the update was successful.
   bool ok = 1 [(gogoproto.customname) = "OK"];
 }
+
+// A request to get user attributes for the given user.
+message GetUserAttributesRequest {
+  // The ID of the user.
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+}
+
+// The response for a GetUserAttributes call.
+message GetUserAttributesResponse {
+  bool tour_seen = 1;
+}
+
+// A request to set user attributes for the given user.
+message SetUserAttributesRequest {
+  // The ID of the user.
+  px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
+  google.protobuf.BoolValue tour_seen = 2;
+}
+
+// The response for a SetUserAttributes call.
+message SetUserAttributesResponse {}
 
 message InviteUserRequest {
 	string email = 1;

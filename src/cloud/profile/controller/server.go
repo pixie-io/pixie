@@ -418,6 +418,16 @@ func (s *Server) UpdateUserSettings(ctx context.Context, req *profilepb.UpdateUs
 	return &profilepb.UpdateUserSettingsResponse{OK: true}, nil
 }
 
+// GetUserAttributes gets the user attributes for the given user.
+func (s *Server) GetUserAttributes(ctx context.Context, req *profilepb.GetUserAttributesRequest) (*profilepb.GetUserAttributesResponse, error) {
+	return nil, errors.New("Not yet implemented")
+}
+
+// SetUserAttributes sets the user attributes for the given user.
+func (s *Server) SetUserAttributes(ctx context.Context, req *profilepb.SetUserAttributesRequest) (*profilepb.SetUserAttributesResponse, error) {
+	return nil, errors.New("Not yet implemented")
+}
+
 // InviteUser implements the Profile interface's InviteUser method.
 func (s *Server) InviteUser(ctx context.Context, req *profilepb.InviteUserRequest) (*profilepb.InviteUserResponse, error) {
 	userInfo, err := s.d.GetUserByEmail(req.Email)
