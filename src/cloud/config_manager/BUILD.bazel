@@ -49,12 +49,16 @@ go_library(
     srcs = ["config_manager_server.go"],
     importpath = "px.dev/pixie/src/cloud/config_manager",
     deps = [
+        "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
         "//src/cloud/config_manager/configmanagerpb:service_pl_go_proto",
         "//src/cloud/config_manager/controller",
         "//src/shared/services",
         "//src/shared/services/env",
         "//src/shared/services/healthz",
         "//src/shared/services/server",
+        "@com_github_sirupsen_logrus//:logrus",
+        "@com_github_spf13_pflag//:pflag",
         "@com_github_spf13_viper//:viper",
+        "@org_golang_google_grpc//:go_default_library",
     ],
 )

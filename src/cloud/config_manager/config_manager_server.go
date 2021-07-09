@@ -21,16 +21,38 @@ package main
 import (
 	"net/http"
 
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc"
 
+	atpb "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
 	"px.dev/pixie/src/cloud/config_manager/configmanagerpb"
-	controllers "px.dev/pixie/src/cloud/config_manager/controller"
+	"px.dev/pixie/src/cloud/config_manager/controller"
 
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/env"
 	"px.dev/pixie/src/shared/services/healthz"
 	"px.dev/pixie/src/shared/services/server"
 )
+
+func init() {
+	pflag.String("artifact_tracker_service", "kubernetes:///artifact-tracker-service.plc:50750", "The artifact tracker service url (load balancer/list is ok)")
+}
+
+func newArtifactTrackerClient() (atpb.ArtifactTrackerClient, error) {
+	dialOpts, err := services.GetGRPCClientDialOpts()
+	if err != nil {
+		return nil, err
+	}
+
+	artifactTrackerChannel, err := grpc.Dial(viper.GetString("artifact_tracker_service"), dialOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return atpb.NewArtifactTrackerClient(artifactTrackerChannel), nil
+}
 
 func main() {
 	services.SetupService("config-manager-service", 50500)
@@ -43,7 +65,12 @@ func main() {
 	mux.Handle("/debug/", http.DefaultServeMux)
 	healthz.RegisterDefaultChecks(mux)
 
-	svr := controllers.NewServer()
+	atClient, err := newArtifactTrackerClient()
+	if err != nil {
+		log.WithError(err).Fatal("Could not connect with Artifact Service.")
+	}
+
+	svr := controller.NewServer(atClient)
 	s := server.NewPLServer(env.New(viper.GetString("domain_name")), mux)
 	configmanagerpb.RegisterConfigManagerServiceServer(s.GRPCServer(), svr)
 	s.Start()

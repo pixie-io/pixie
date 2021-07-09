@@ -38,6 +38,11 @@ spec:
             secretKeyRef:
               name: cloud-auth-secrets
               key: jwt-signing-key
+        - name: PL_ARTIFACT_TRACKER_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_ARTIFACT_TRACKER_SERVICE      
         volumeMounts:
         - name: certs
           mountPath: /certs

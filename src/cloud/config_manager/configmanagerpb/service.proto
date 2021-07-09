@@ -22,6 +22,24 @@ package px.services;
 
 option go_package = "configmanagerpb";
 
+import "src/api/proto/vizierconfigpb/vizier_types.proto"; 
+
+// ConfigManagerService provides configuration specs from the Cloud.
 service ConfigManagerService {
-    
+    //  GetConfigForVizier provides yaml names and content that can be used to deploy Vizier
+    rpc GetConfigForVizier(ConfigForVizierRequest) returns (ConfigForVizierResponse);
+}
+
+// ConfigForVizierRequest is a request for Vizier yamls given a set of specs.
+message ConfigForVizierRequest {
+    // Namespace of the Vizier.
+    string namespace = 1; 
+    // Specs that describe how the Vizier should be configured. 
+    vizierconfigpb.VizierSpec vz_spec = 2; 
+}
+
+// ConfigForVizierResponse is the response to a ConfigForVizierRequest.
+message ConfigForVizierResponse {
+    // A map from YAML name to content, containing yamls which can be used to deploy Vizier.
+    map<string, string> nameToYamlContent = 1;
 }

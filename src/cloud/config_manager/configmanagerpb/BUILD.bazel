@@ -20,6 +20,9 @@ pl_proto_library(
     name = "service_pl_proto",
     srcs = ["service.proto"],
     visibility = ["//src/cloud:__subpackages__"],
+    deps = [
+        "//src/api/proto/vizierconfigpb:vizier_pl_proto",
+    ],
 )
 
 pl_go_proto_library(
@@ -27,4 +30,7 @@ pl_go_proto_library(
     importpath = "px.dev/pixie/src/cloud/config_manager/configmanagerpb",
     proto = ":service_pl_proto",
     visibility = ["//src/cloud:__subpackages__"],
+    deps = [
+        "//src/api/proto/vizierconfigpb:vizier_pl_go_proto",
+    ],
 )

@@ -21,4 +21,12 @@ go_library(
     srcs = ["server.go"],
     importpath = "px.dev/pixie/src/cloud/config_manager/controller",
     visibility = ["//visibility:public"],
+    deps = [
+        "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
+        "//src/cloud/config_manager/configmanagerpb:service_pl_go_proto",
+        "//src/shared/artifacts/versionspb:versions_pl_go_proto",
+        "//src/utils/shared/tar",
+        "//src/utils/shared/yamls",
+        "//src/utils/template_generator/vizier_yamls",
+    ],
 )
