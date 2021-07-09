@@ -21,6 +21,7 @@ package cmd
 import (
 	"os"
 	"regexp"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -48,6 +49,9 @@ func init() {
 	RootCmd.PersistentFlags().BoolP("quiet", "q", false, "quiet mode")
 	viper.BindPFlag("quiet", RootCmd.PersistentFlags().Lookup("quiet"))
 
+	RootCmd.PersistentFlags().Bool("do_not_track", false, "do_not_track")
+	viper.BindPFlag("do_not_track", RootCmd.PersistentFlags().Lookup("do_not_track"))
+
 	RootCmd.AddCommand(VersionCmd)
 	RootCmd.AddCommand(AuthCmd)
 	RootCmd.AddCommand(CollectLogsCmd)
@@ -62,42 +66,51 @@ func init() {
 	RootCmd.AddCommand(GetCmd)
 	RootCmd.AddCommand(ConfigCmd)
 	RootCmd.AddCommand(ScriptCmd)
-
 	RootCmd.AddCommand(CreateBundle)
-
 	RootCmd.AddCommand(DeployKeyCmd)
 	RootCmd.AddCommand(APIKeyCmd)
-
 	RootCmd.AddCommand(DebugCmd)
-	// Super secret flags for Pixies.
+
 	RootCmd.PersistentFlags().MarkHidden("cloud_addr")
 	RootCmd.PersistentFlags().MarkHidden("dev_cloud_namespace")
+	RootCmd.PersistentFlags().MarkHidden("do_not_track")
 
 	viper.AutomaticEnv()
-	viper.SetEnvPrefix("PL")
+	viper.SetEnvPrefix("PX")
+
+	// Maintain compatibility with old `PL` prefixed env names.
+	// This will eventually be removed
+	viper.BindEnv("cloud_addr", "PX_CLOUD_ADDR", "PL_CLOUD_ADDR")
+	viper.BindEnv("testing_env", "PX_TESTING_ENV", "PL_TESTING_ENV")
+	viper.BindEnv("cli_version", "PX_CLI_VERSION", "PL_CLI_VERSION")
+	viper.BindEnv("vizier_version", "PX_CLI_VERSION", "PL_CLI_VERSION")
+
 	viper.BindPFlags(pflag.CommandLine)
 
-	cloudAddr := viper.GetString("cloud_addr")
-	if matched, err := regexp.MatchString(".+:[0-9]+$", cloudAddr); !matched && err == nil {
-		viper.Set("cloud_addr", cloudAddr+":443")
-	}
-
-	if os.Getenv("PL_TESTING_ENV") == "dev" && !viper.IsSet("dev_cloud_namespace") {
-		// Setting this to the most likely default if not already set.
-		viper.Set("dev_cloud_namespace", "plc-dev")
-	}
+	// Usually flag parsing happens as a part of Cmd.Execute in Cobra.
+	// However some of our CLI code relies on accessing flag data
+	// before execute is called. So we manually pre-parse flags early.
+	_ = RootCmd.ParseFlags(os.Args[1:])
 }
 
-// nolint:errcheck
 func printTestingBanner() {
-	r := color.New(color.Bold, color.FgRed).Fprintf
-	r(os.Stderr, "*******************************\n")
-	r(os.Stderr, "* IN TESTING MODE\n")
-	r(os.Stderr, "* \t PL_TESTING_ENV=%s\n", os.Getenv("PL_TESTING_ENV"))
-	r(os.Stderr, "* \t PL_VIZIER_VERSION=%s\n", os.Getenv("PL_VIZIER_VERSION"))
-	r(os.Stderr, "* \t PL_CLI_VERSION=%s\n", os.Getenv("PL_CLI_VERSION"))
-	r(os.Stderr, "* \t PL_CLOUD_ADDR=%s\n", os.Getenv("PL_CLOUD_ADDR"))
-	r(os.Stderr, "*******************************\n")
+	envs := os.Environ()
+	var pxEnvs []string
+	for _, env := range envs {
+		if strings.HasPrefix(env, "PL_") || strings.HasPrefix(env, "PX_") {
+			pxEnvs = append(pxEnvs, env)
+		}
+	}
+	if len(pxEnvs) == 0 {
+		return
+	}
+	red := color.New(color.Bold, color.FgRed)
+	red.Fprintf(os.Stderr, "*******************************\n")
+	red.Fprintf(os.Stderr, "* IN TESTING MODE\n")
+	for _, env := range pxEnvs {
+		red.Fprintf(os.Stderr, "* \t %s\n", env)
+	}
+	red.Fprintf(os.Stderr, "*******************************\n")
 }
 
 // RootCmd is the base command for Cobra.
@@ -107,8 +120,16 @@ var RootCmd = &cobra.Command{
 	// TODO(zasgar): Add description and update this.
 	Long: `The Pixie command line interface.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		if _, has := os.LookupEnv("PL_TESTING_ENV"); has {
-			printTestingBanner()
+		printTestingBanner()
+
+		cloudAddr := viper.GetString("cloud_addr")
+		if matched, err := regexp.MatchString(".+:[0-9]+$", cloudAddr); !matched && err == nil {
+			viper.Set("cloud_addr", cloudAddr+":443")
+		}
+
+		if viper.IsSet("testing_env") && !viper.IsSet("dev_cloud_namespace") {
+			// Setting this to the most likely default if not already set.
+			viper.Set("dev_cloud_namespace", "plc-dev")
 		}
 
 		p := cmd
@@ -150,8 +171,6 @@ var RootCmd = &cobra.Command{
 
 // Execute is the main function for the Cobra CLI.
 func Execute() {
-	// Must call after all flags are setup.
-
 	if err := RootCmd.Execute(); err != nil {
 		_ = pxanalytics.Client().Enqueue(&analytics.Track{
 			UserId: pxconfig.Cfg().UniqueClientID,

@@ -52,6 +52,10 @@ func Client() analytics.Client {
 	once.Do(func() {
 		client = disabledAnalyticsClient{}
 
+		if viper.GetBool("do_not_track") {
+			return
+		}
+
 		cloudAddr := viper.GetString("cloud_addr")
 		resp, err := http.Get(fmt.Sprintf("https://segment.%s/cli-write-key", cloudAddr))
 

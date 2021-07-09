@@ -46,7 +46,7 @@ linters:
 linters-settings:
   errcheck:
     # yamllint disable
-    ignore: io:Close,github.com/spf13/pflag:MarkHidden,github.com/spf13/viper:BindPFlag,github.com/spf13/cobra:(Help|MarkFlagRequired|Usage),gopkg.in/segmentio/analytics-go.v3:Enqueue,database/sql:Rollback,github.com/nats-io/stan.go:Unsubscribe,github.com/nats-io/nats.go:Unsubscribe
+      ignore: io:Close,github.com/fatih/color,github.com/spf13/pflag:MarkHidden,github.com/spf13/viper:(BindEnv|BindPFlag),github.com/spf13/cobra:(Help|MarkFlagRequired|Usage),gopkg.in/segmentio/analytics-go.v3:Enqueue,database/sql:Rollback,github.com/nats-io/stan.go:Unsubscribe,github.com/nats-io/nats.go:Unsubscribe
     # yamllint enable
   goimports:
     local-prefixes: px.dev
