@@ -3,7 +3,6 @@ module px.dev/pixie
 go 1.16
 
 require (
-	cloud.google.com/go v0.80.0 // indirect
 	cloud.google.com/go/storage v1.10.0
 	github.com/Azure/go-autorest/autorest v0.11.18 // indirect
 	github.com/EvilSuperstars/go-cidrman v0.0.0-20190607145828-28e79e32899a
@@ -23,7 +22,6 @@ require (
 	github.com/cockroachdb/pebble v0.0.0-20210120202502-6110b03a8a85
 	github.com/containerd/containerd v1.3.4 // indirect
 	github.com/containerd/continuity v0.0.0-20210208174643-50096c924a4e // indirect
-	github.com/coreos/go-systemd/v22 v22.3.0 // indirect
 	github.com/dgraph-io/badger/v3 v3.2011.1
 	github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
 	github.com/docker/docker v20.10.5+incompatible // indirect
@@ -40,7 +38,6 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang-migrate/migrate v3.5.4+incompatible
 	github.com/golang/mock v1.5.0
-	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-github/v32 v32.1.0
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.2.0 // indirect
@@ -75,8 +72,6 @@ require (
 	github.com/ory/hydra-client-go v1.9.2
 	github.com/ory/kratos-client-go v0.5.4-alpha.1
 	github.com/phayes/freeport v0.0.0-20171002181615-b8543db493a5
-	github.com/prometheus/client_golang v1.10.0 // indirect
-	github.com/prometheus/common v0.20.0 // indirect
 	github.com/rivo/tview v0.0.0-20200404204604-ca37f83cb2e7
 	github.com/rivo/uniseg v0.1.0
 	github.com/sahilm/fuzzy v0.1.0
@@ -86,32 +81,31 @@ require (
 	github.com/sirupsen/logrus v1.7.0
 	github.com/skratchdot/open-golang v0.0.0-20190402232053-79abb63cd66e
 	github.com/spf13/cast v1.3.1
-	github.com/spf13/cobra v1.1.3
+	github.com/spf13/cobra v1.2.1
 	github.com/spf13/pflag v1.0.5
-	github.com/spf13/viper v1.7.1
+	github.com/spf13/viper v1.8.1
 	github.com/stretchr/testify v1.7.0
 	github.com/tidwall/buntdb v1.2.1
 	github.com/txn2/txeh v1.2.1
 	github.com/vbauerster/mpb/v4 v4.11.0
 	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
 	github.com/zenazn/goji v0.9.1-0.20160507202103-64eb34159fe5
-	go.etcd.io/etcd/api/v3 v3.5.0-alpha.0
-	go.etcd.io/etcd/client/v3 v3.5.0-alpha.0
-	go.etcd.io/etcd/pkg/v3 v3.5.0-alpha.0
+	go.etcd.io/etcd/api/v3 v3.5.0
+	go.etcd.io/etcd/client/pkg/v3 v3.5.0
+	go.etcd.io/etcd/client/v3 v3.5.0
 	go.mongodb.org/mongo-driver v1.5.0 // indirect
-	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2 // indirect
 	golang.org/x/mod v0.4.2 // indirect
 	golang.org/x/net v0.0.0-20210330230544-e57232859fb2
-	golang.org/x/oauth2 v0.0.0-20210323180902-22b0adad7558
+	golang.org/x/oauth2 v0.0.0-20210313182246-cd4f82c27b84
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20210611083646-a4fc73990273
 	golang.org/x/term v0.0.0-20210317153231-de623e64d2a6 // indirect
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba // indirect
 	golang.org/x/tools v0.1.3 // indirect
-	google.golang.org/api v0.43.0
-	google.golang.org/genproto v0.0.0-20210329143202-679c6ae281ee
-	google.golang.org/grpc v1.37.0
+	google.golang.org/api v0.44.0
+	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
+	google.golang.org/grpc v1.38.0
 	google.golang.org/grpc/examples v0.0.0-20210326170912-4a19753e9dfd // indirect
 	gopkg.in/segmentio/analytics-go.v3 v3.1.0
 	gopkg.in/src-d/go-git.v4 v4.13.1
@@ -135,7 +129,6 @@ replace (
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v14.2.0+incompatible
 	github.com/Azure/go-autorest/autorest => github.com/Azure/go-autorest/autorest v0.11.1
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.7.0
-	github.com/coreos/etcd => go.etcd.io/etcd/v3 v3.5.0-alpha.0
 	github.com/docker/docker => github.com/moby/moby v20.10.5+incompatible
 	github.com/go-openapi/analysis => github.com/go-openapi/analysis v0.19.5
 	github.com/go-openapi/loads => github.com/go-openapi/loads v0.19.0
@@ -145,8 +138,8 @@ replace (
 	github.com/google/go-cmp => github.com/google/go-cmp v0.5.5
 	github.com/nats-io/nats-server/v2 => github.com/nats-io/nats-server/v2 v2.2.0
 	github.com/nats-io/nats.go => github.com/nats-io/nats.go v1.10.0
-	github.com/spf13/cobra => github.com/spf13/cobra v1.1.3
-	github.com/spf13/viper => github.com/spf13/viper v1.7.1
+	github.com/spf13/cobra => github.com/spf13/cobra v1.2.1
+	github.com/spf13/viper => github.com/spf13/viper v1.8.1
 	go.mongodb.org/mongo-driver => go.mongodb.org/mongo-driver v1.5.1
 	golang.org/x/crypto => github.com/golang/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 	golang.org/x/exp => github.com/golang/exp v0.0.0-20210220032938-85be41e4509f

@@ -29,8 +29,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"go.etcd.io/etcd/client/pkg/v3/transport"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"go.etcd.io/etcd/pkg/v3/transport"
 	"google.golang.org/grpc"
 
 	version "px.dev/pixie/src/shared/goversion"
