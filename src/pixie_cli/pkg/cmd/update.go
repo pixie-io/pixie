@@ -21,7 +21,6 @@ package cmd
 import (
 	"context"
 	"errors"
-	"os"
 	"time"
 
 	"github.com/blang/semver"
@@ -46,12 +45,17 @@ func init() {
 	UpdateCmd.AddCommand(CLIUpdateCmd)
 	UpdateCmd.AddCommand(VizierUpdateCmd)
 
-	CLIUpdateCmd.Flags().StringP("use_version", "v", "", "Select a specific version to install")
-	_ = CLIUpdateCmd.Flags().MarkHidden("use_version")
-	_ = viper.BindPFlag("use_version", CLIUpdateCmd.Flags().Lookup("use_version"))
+	CLIUpdateCmd.Flags().StringP("cli_version", "v", "", "Select a specific version to install")
+	CLIUpdateCmd.Flags().MarkHidden("cli_version")
+	viper.BindPFlag("cli_version", CLIUpdateCmd.Flags().Lookup("cli_version"))
+
+	VizierUpdateCmd.Flags().StringP("vizier_version", "v", "", "Select a specific version to install")
+	VizierUpdateCmd.Flags().MarkHidden("vizier_version")
+	viper.BindPFlag("vizier_version", VizierUpdateCmd.Flags().Lookup("vizier_version"))
 
 	VizierUpdateCmd.Flags().BoolP("redeploy_etcd", "e", false, "Whether or not to redeploy etcd during the update")
-	_ = viper.BindPFlag("redeploy_etcd", VizierUpdateCmd.Flags().Lookup("redeploy_etcd"))
+	viper.BindPFlag("redeploy_etcd", VizierUpdateCmd.Flags().Lookup("redeploy_etcd"))
+
 	VizierUpdateCmd.Flags().StringP("cluster", "c", "", "Run only on selected cluster")
 }
 
@@ -70,13 +74,8 @@ var VizierUpdateCmd = &cobra.Command{
 	Use:     "vizier",
 	Aliases: []string{"platform", "pixie"},
 	Short:   "Run updates of Pixie Platform",
-	PreRun: func(cmd *cobra.Command, args []string) {
-		if e, has := os.LookupEnv("PL_VIZIER_VERSION"); has {
-			viper.Set("use_version", e)
-		}
-	},
 	Run: func(cmd *cobra.Command, args []string) {
-		versionString := viper.GetString("use_version")
+		versionString := viper.GetString("vizier_version")
 		cloudAddr := viper.GetString("cloud_addr")
 		redeployEtcd := viper.GetBool("redeploy_etcd")
 
@@ -215,13 +214,8 @@ var VizierUpdateCmd = &cobra.Command{
 var CLIUpdateCmd = &cobra.Command{
 	Use:   "cli",
 	Short: "Run updates of CLI",
-	PreRun: func(cmd *cobra.Command, args []string) {
-		if e, has := os.LookupEnv("PL_CLI_VERSION"); has {
-			viper.Set("use_version", e)
-		}
-	},
 	Run: func(cmd *cobra.Command, args []string) {
-		selectedVersion := viper.GetString("use_version")
+		selectedVersion := viper.GetString("cli_version")
 
 		updater := update.NewCLIUpdater(viper.GetString("cloud_addr"))
 		if len(selectedVersion) == 0 {

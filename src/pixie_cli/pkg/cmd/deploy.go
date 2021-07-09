@@ -74,11 +74,6 @@ var BlockListedLabels = []string{
 var DeployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Deploys Pixie on the current K8s cluster",
-	PreRun: func(cmd *cobra.Command, args []string) {
-		if e, has := os.LookupEnv("PL_VIZIER_VERSION"); has {
-			viper.Set("use_version", e)
-		}
-	},
 	PostRun: func(cmd *cobra.Command, args []string) {
 		extractPath, _ := cmd.Flags().GetString("extract_yaml")
 		if extractPath != "" {
@@ -130,8 +125,8 @@ func init() {
 	DeployCmd.Flags().StringP("extract_yaml", "e", "", "Directory to extract the Pixie yamls to")
 	viper.BindPFlag("extract_yaml", DeployCmd.Flags().Lookup("extract_yaml"))
 
-	DeployCmd.Flags().StringP("use_version", "v", "", "Pixie version to deploy")
-	viper.BindPFlag("use_version", DeployCmd.Flags().Lookup("use_version"))
+	DeployCmd.Flags().StringP("vizier_version", "v", "", "Pixie version to deploy")
+	viper.BindPFlag("vizier_version", DeployCmd.Flags().Lookup("vizier_version"))
 
 	DeployCmd.Flags().BoolP("check", "c", true, "Check whether the cluster can run Pixie")
 	viper.BindPFlag("check", DeployCmd.Flags().Lookup("check"))
@@ -288,7 +283,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		log.WithError(err).Fatalln("Failed to get grpc connection to cloud")
 	}
 
-	versionString := viper.GetString("use_version")
+	versionString := viper.GetString("vizier_version")
 	inputVersionStr := versionString
 	if len(versionString) == 0 {
 		// Fetch latest version.
