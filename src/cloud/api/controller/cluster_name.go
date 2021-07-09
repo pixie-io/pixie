@@ -44,7 +44,7 @@ func PrettifyClusterName(name string, expanded bool) string {
 		if len(splits) > 0 && len(splits[len(splits)-1]) > 0 {
 			eksName := splits[len(splits)-1]
 			sp := strings.Split(eksName, "/")
-			if len(sp) > 0 && len(sp[1]) > 0 {
+			if len(sp) > 1 && len(sp[1]) > 0 {
 				eksName = sp[1]
 			}
 			return fmt.Sprintf("eks:%s", eksName)
