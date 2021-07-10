@@ -46,8 +46,7 @@ service ProfileService {
   // Calls for handling user attributes.
   rpc GetUserAttributes(GetUserAttributesRequest) returns (GetUserAttributesResponse);
   rpc SetUserAttributes(SetUserAttributesRequest) returns (SetUserAttributesResponse);
-  // Create a new account for the user's org and return an invite link. Errors out if the account
-  // already exists.
+  // Create a new account for the user's org and return an invite link.
   rpc InviteUser(InviteUserRequest) returns (InviteUserResponse);
 }
 

@@ -28,7 +28,7 @@ import (
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/cloud/api/controller"
 	"px.dev/pixie/src/cloud/api/controller/testutils"
-	"px.dev/pixie/src/cloud/profile/profilepb"
+	"px.dev/pixie/src/cloud/auth/authpb"
 	"px.dev/pixie/src/utils"
 )
 
@@ -39,21 +39,19 @@ func TestOrganizationServiceServer_InviteUser(t *testing.T) {
 	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
-	mockReq := &profilepb.InviteUserRequest{
-		OrgID:          utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
-		MustCreateUser: true,
-		Email:          "bobloblaw@lawblog.law",
-		FirstName:      "bob",
-		LastName:       "loblaw",
+	mockReq := &authpb.InviteUserRequest{
+		OrgID:     utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+		Email:     "bobloblaw@lawblog.law",
+		FirstName: "bob",
+		LastName:  "loblaw",
 	}
 
-	mockClients.MockProfile.EXPECT().InviteUser(gomock.Any(), mockReq).
-		Return(&profilepb.InviteUserResponse{
-			Email:      "bobloblaw@lawblog.law",
+	mockClients.MockAuth.EXPECT().InviteUser(gomock.Any(), mockReq).
+		Return(&authpb.InviteUserResponse{
 			InviteLink: "withpixie.ai/invite&id=abcd",
 		}, nil)
 
-	os := &controller.OrganizationServiceServer{mockClients.MockProfile}
+	os := &controller.OrganizationServiceServer{mockClients.MockProfile, mockClients.MockAuth}
 
 	resp, err := os.InviteUser(ctx, &cloudpb.InviteUserRequest{
 		Email:     "bobloblaw@lawblog.law",

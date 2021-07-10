@@ -21,6 +21,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/gofrs/uuid"
@@ -161,7 +162,7 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 	}
 
 	if newUser {
-		userInfo, err = s.createUser(ctx, userID, userInfo, orgInfo)
+		userInfo, err = s.createUser(ctx, userID, userInfo, orgInfo.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -271,12 +272,12 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 	var orgID *uuidpb.UUID
 	newOrg := orgInfo == nil
 	if newOrg {
-		userInfo, orgID, err = s.createUserAndOrg(ctx, domainName, userID, userInfo)
+		userInfo, orgID, err = s.createUserAndOrg(ctx, domainName, domainName, userID, userInfo)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		userInfo, err = s.createUser(ctx, userID, userInfo, orgInfo)
+		userInfo, err = s.createUser(ctx, userID, userInfo, orgInfo.ID)
 		orgID = orgInfo.ID
 		if err != nil {
 			return nil, err
@@ -311,11 +312,10 @@ func (s *Server) Signup(ctx context.Context, in *authpb.SignupRequest) (*authpb.
 }
 
 // Creates a user as well as an org if the orgInfo passed in is nil.
-func (s *Server) createUserAndOrg(ctx context.Context, domainName string, userID string, userInfo *UserInfo) (*UserInfo, *uuidpb.UUID, error) {
+func (s *Server) createUserAndOrg(ctx context.Context, domainName string, orgName string, userID string, userInfo *UserInfo) (*UserInfo, *uuidpb.UUID, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
-	orgName := domainName
 	rpcReq := &profilepb.CreateOrgAndUserRequest{
 		Org: &profilepb.CreateOrgAndUserRequest_Org{
 			OrgName:    orgName,
@@ -344,16 +344,16 @@ func (s *Server) createUserAndOrg(ctx context.Context, domainName string, userID
 }
 
 // Creates a user in the passed in orgname.
-func (s *Server) createUser(ctx context.Context, userID string, userInfo *UserInfo, orgInfo *profilepb.OrgInfo) (*UserInfo, error) {
+func (s *Server) createUser(ctx context.Context, userID string, userInfo *UserInfo, orgInfoID *uuidpb.UUID) (*UserInfo, error) {
 	md, _ := metadata.FromIncomingContext(ctx)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
-	if orgInfo == nil {
+	if orgInfoID == nil {
 		return nil, fmt.Errorf("orgInfo should not be nil")
 	}
 	// Create a new user to register them.
 	userCreateReq := &profilepb.CreateUserRequest{
-		OrgID:            orgInfo.ID,
+		OrgID:            orgInfoID,
 		Username:         userInfo.Email,
 		FirstName:        userInfo.FirstName,
 		LastName:         userInfo.LastName,
@@ -366,7 +366,7 @@ func (s *Server) createUser(ctx context.Context, userID string, userInfo *UserIn
 	if err != nil {
 		return nil, err
 	}
-	userInfo, err = s.updateAuthProviderUser(userID, utils.UUIDFromProtoOrNil(orgInfo.ID).String(), utils.UUIDFromProtoOrNil(userIDpb).String())
+	userInfo, err = s.updateAuthProviderUser(userID, utils.UUIDFromProtoOrNil(orgInfoID).String(), utils.UUIDFromProtoOrNil(userIDpb).String())
 	return userInfo, err
 }
 
@@ -479,4 +479,103 @@ func generateJWTTokenForUser(userInfo *UserInfo, signingKey string) (string, tim
 	token, err := srvutils.SignJWTClaims(claims, signingKey)
 
 	return token, expiresAt, err
+}
+func (s *Server) createInvitedUser(ctx context.Context, req *authpb.InviteUserRequest) (*UserInfo, error) {
+	// Create the Identity in the AuthProvider.
+	ident, err := s.a.CreateIdentity(req.Email)
+	if err != nil {
+		return nil, fmt.Errorf("error while creating identity for '%s': %v", req.Email, err)
+	}
+
+	// Create the user inside of Pixie.
+	user, err := s.createUser(ctx, ident.AuthProviderID, &UserInfo{
+		Email:            req.Email,
+		FirstName:        req.FirstName,
+		LastName:         req.LastName,
+		IdentityProvider: ident.IdentityProvider,
+		AuthProviderID:   ident.AuthProviderID,
+	}, req.OrgID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Auto-approve user.
+	_, err = s.env.ProfileClient().UpdateUser(ctx, &profilepb.UpdateUserRequest{
+		ID: utils.ProtoFromUUIDStrOrNil(user.PLUserID),
+		IsApproved: &types.BoolValue{
+			Value: true,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+var noSuchUserMatcher = regexp.MustCompile("no such user")
+
+// InviteUser creates an invite link for the specified user.
+func (s *Server) InviteUser(ctx context.Context, req *authpb.InviteUserRequest) (*authpb.InviteUserResponse, error) {
+	var authProviderID string
+	// Try to look up the user.
+	pc := s.env.ProfileClient()
+	md, _ := metadata.FromIncomingContext(ctx)
+	ctx = metadata.NewOutgoingContext(ctx, md)
+	userPb, err := pc.GetUserByEmail(ctx, &profilepb.GetUserByEmailRequest{Email: req.Email})
+	if err == nil {
+		authProviderID = userPb.AuthProviderID
+	} else if err != nil && noSuchUserMatcher.MatchString(err.Error()) {
+		// Create a user if no user found.
+		user, err := s.createInvitedUser(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		authProviderID = user.AuthProviderID
+	} else if err != nil {
+		return nil, err
+	}
+	// Create invite link for the user.
+	resp, err := s.a.CreateInviteLink(authProviderID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &authpb.InviteUserResponse{
+		InviteLink: resp.InviteLink,
+	}, nil
+}
+
+// CreateOrgAndInviteUser creates an org and user, then returns an invite link for the user to set that user's password.
+func (s *Server) CreateOrgAndInviteUser(ctx context.Context, req *authpb.CreateOrgAndInviteUserRequest) (*authpb.CreateOrgAndInviteUserResponse, error) {
+	// Update context with auth.
+	md, _ := metadata.FromIncomingContext(ctx)
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
+	ident, err := s.a.CreateIdentity(req.User.Email)
+	if err != nil {
+		return nil, fmt.Errorf("error while creating identity for '%s': %v", req.User.Email, err)
+	}
+
+	// TODO(philkuz) GetUserInfo instead of filling out the UserInfo struct.
+	_, _, err = s.createUserAndOrg(ctx, req.Org.DomainName, req.Org.OrgName, ident.AuthProviderID, &UserInfo{
+		Email:            req.User.Email,
+		FirstName:        req.User.FirstName,
+		LastName:         req.User.LastName,
+		IdentityProvider: ident.IdentityProvider,
+		AuthProviderID:   ident.AuthProviderID,
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("unable to create org and user: %v", err)
+	}
+	// Create invite link for the user.
+	resp, err := s.a.CreateInviteLink(ident.AuthProviderID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &authpb.CreateOrgAndInviteUserResponse{
+		InviteLink: resp.InviteLink,
+	}, nil
 }

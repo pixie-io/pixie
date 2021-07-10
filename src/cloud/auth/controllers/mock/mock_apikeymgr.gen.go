@@ -75,6 +75,36 @@ func (m *MockAuthProvider) EXPECT() *MockAuthProviderMockRecorder {
 	return m.recorder
 }
 
+// CreateIdentity mocks base method.
+func (m *MockAuthProvider) CreateIdentity(email string) (*controllers.CreateIdentityResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateIdentity", email)
+	ret0, _ := ret[0].(*controllers.CreateIdentityResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateIdentity indicates an expected call of CreateIdentity.
+func (mr *MockAuthProviderMockRecorder) CreateIdentity(email interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIdentity", reflect.TypeOf((*MockAuthProvider)(nil).CreateIdentity), email)
+}
+
+// CreateInviteLink mocks base method.
+func (m *MockAuthProvider) CreateInviteLink(authProviderID string) (*controllers.CreateInviteLinkResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateInviteLink", authProviderID)
+	ret0, _ := ret[0].(*controllers.CreateInviteLinkResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateInviteLink indicates an expected call of CreateInviteLink.
+func (mr *MockAuthProviderMockRecorder) CreateInviteLink(authProviderID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateInviteLink", reflect.TypeOf((*MockAuthProvider)(nil).CreateInviteLink), authProviderID)
+}
+
 // GetUserIDFromToken mocks base method.
 func (m *MockAuthProvider) GetUserIDFromToken(token string) (string, error) {
 	m.ctrl.T.Helper()

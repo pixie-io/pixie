@@ -302,3 +302,13 @@ func (a *Auth0Connector) SetPLMetadata(userID, plOrgID, plUserID string) error {
 	}
 	return nil
 }
+
+// CreateInviteLink implements the AuthProvider interface, but we don't support this functionatlity with Auth0 at the time.
+func (a *Auth0Connector) CreateInviteLink(authProviderID string) (*CreateInviteLinkResponse, error) {
+	return nil, errors.New("pixie's Auth0 implementation does not support inviting users with InviteLinks")
+}
+
+// CreateIdentity implements the AuthProvider interface, but we don't support this functionatlity with Auth0 at the time.
+func (a *Auth0Connector) CreateIdentity(string) (*CreateIdentityResponse, error) {
+	return nil, errors.New("pixie's Auth0 implementation does not support creating identities")
+}

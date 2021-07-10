@@ -46,6 +46,10 @@ service AuthService {
   rpc GetAugmentedToken(GetAugmentedAuthTokenRequest) returns (GetAugmentedAuthTokenResponse);
   // Takes an API key and produces a token with user details.
   rpc GetAugmentedTokenForAPIKey(GetAugmentedTokenForAPIKeyRequest) returns (GetAugmentedTokenForAPIKeyResponse);
+  // Create a new account for the user's org and return an invite link.
+  rpc InviteUser(InviteUserRequest) returns (InviteUserResponse);
+  // Create a new org, create a new user, then return an invite link for that user.
+  rpc CreateOrgAndInviteUser(CreateOrgAndInviteUserRequest) returns (CreateOrgAndInviteUserResponse);
 }
 
 message LoginRequest {
@@ -133,6 +137,38 @@ message GetAugmentedTokenForAPIKeyResponse {
   string token = 1;
   // When this login expires.
   int64 expires_at = 2;
+}
+
+message InviteUserRequest {
+	string email = 1;
+	string first_name = 2;
+	string last_name = 3;
+
+  // The ID of the organization to create the user for.
+  px.uuidpb.UUID org_id = 4 [(gogoproto.customname) = "OrgID"];
+}
+
+message InviteUserResponse {
+	string invite_link = 1;
+}
+
+message CreateOrgAndInviteUserRequest {
+  message Org {
+    string org_name = 1;
+    string domain_name = 2;
+  }
+  message User {
+    string username = 1;
+    string first_name = 2;
+    string last_name = 3;
+    string email = 4;
+  }
+  Org org = 1;
+  User user = 2;
+}
+
+message CreateOrgAndInviteUserResponse {
+	string invite_link = 1;
 }
 
 //

@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"px.dev/pixie/src/cloud/auth/controllers"
+	"px.dev/pixie/src/cloud/profile/controller/idmanager"
 	"px.dev/pixie/src/cloud/shared/idprovider"
 )
 
@@ -42,6 +43,14 @@ func (c *testHydraKratosUserClient) GetUserInfo(ctx context.Context, userID stri
 }
 
 func (c *testHydraKratosUserClient) UpdateUserInfo(ctx context.Context, userID string, kratosInfo *idprovider.KratosUserInfo) (*idprovider.KratosUserInfo, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *testHydraKratosUserClient) CreateInviteLinkForIdentity(ctx context.Context, req *idmanager.CreateInviteLinkForIdentityRequest) (*idmanager.CreateInviteLinkForIdentityResponse, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *testHydraKratosUserClient) CreateIdentity(ctx context.Context, email string) (*idmanager.CreateIdentityResponse, error) {
 	return nil, errors.New("not implemented")
 }
 

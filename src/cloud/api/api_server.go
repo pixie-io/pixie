@@ -247,7 +247,7 @@ func main() {
 	profileServer := &controller.ProfileServer{ProfileServiceClient: pc}
 	cloudpb.RegisterProfileServiceServer(s.GRPCServer(), profileServer)
 
-	os := &controller.OrganizationServiceServer{ProfileServiceClient: pc}
+	os := &controller.OrganizationServiceServer{ProfileServiceClient: pc, AuthServiceClient: ac}
 	cloudpb.RegisterOrganizationServiceServer(s.GRPCServer(), os)
 
 	us := &controller.UserServiceServer{ProfileServiceClient: pc}

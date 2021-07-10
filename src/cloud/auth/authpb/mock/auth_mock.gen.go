@@ -38,6 +38,26 @@ func (m *MockAuthServiceClient) EXPECT() *MockAuthServiceClientMockRecorder {
 	return m.recorder
 }
 
+// CreateOrgAndInviteUser mocks base method.
+func (m *MockAuthServiceClient) CreateOrgAndInviteUser(ctx context.Context, in *authpb.CreateOrgAndInviteUserRequest, opts ...grpc.CallOption) (*authpb.CreateOrgAndInviteUserResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CreateOrgAndInviteUser", varargs...)
+	ret0, _ := ret[0].(*authpb.CreateOrgAndInviteUserResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateOrgAndInviteUser indicates an expected call of CreateOrgAndInviteUser.
+func (mr *MockAuthServiceClientMockRecorder) CreateOrgAndInviteUser(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrgAndInviteUser", reflect.TypeOf((*MockAuthServiceClient)(nil).CreateOrgAndInviteUser), varargs...)
+}
+
 // GetAugmentedToken mocks base method.
 func (m *MockAuthServiceClient) GetAugmentedToken(ctx context.Context, in *authpb.GetAugmentedAuthTokenRequest, opts ...grpc.CallOption) (*authpb.GetAugmentedAuthTokenResponse, error) {
 	m.ctrl.T.Helper()
@@ -76,6 +96,26 @@ func (mr *MockAuthServiceClientMockRecorder) GetAugmentedTokenForAPIKey(ctx, in 
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAugmentedTokenForAPIKey", reflect.TypeOf((*MockAuthServiceClient)(nil).GetAugmentedTokenForAPIKey), varargs...)
+}
+
+// InviteUser mocks base method.
+func (m *MockAuthServiceClient) InviteUser(ctx context.Context, in *authpb.InviteUserRequest, opts ...grpc.CallOption) (*authpb.InviteUserResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "InviteUser", varargs...)
+	ret0, _ := ret[0].(*authpb.InviteUserResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// InviteUser indicates an expected call of InviteUser.
+func (mr *MockAuthServiceClientMockRecorder) InviteUser(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InviteUser", reflect.TypeOf((*MockAuthServiceClient)(nil).InviteUser), varargs...)
 }
 
 // Login mocks base method.
@@ -141,6 +181,21 @@ func (m *MockAuthServiceServer) EXPECT() *MockAuthServiceServerMockRecorder {
 	return m.recorder
 }
 
+// CreateOrgAndInviteUser mocks base method.
+func (m *MockAuthServiceServer) CreateOrgAndInviteUser(arg0 context.Context, arg1 *authpb.CreateOrgAndInviteUserRequest) (*authpb.CreateOrgAndInviteUserResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateOrgAndInviteUser", arg0, arg1)
+	ret0, _ := ret[0].(*authpb.CreateOrgAndInviteUserResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateOrgAndInviteUser indicates an expected call of CreateOrgAndInviteUser.
+func (mr *MockAuthServiceServerMockRecorder) CreateOrgAndInviteUser(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrgAndInviteUser", reflect.TypeOf((*MockAuthServiceServer)(nil).CreateOrgAndInviteUser), arg0, arg1)
+}
+
 // GetAugmentedToken mocks base method.
 func (m *MockAuthServiceServer) GetAugmentedToken(arg0 context.Context, arg1 *authpb.GetAugmentedAuthTokenRequest) (*authpb.GetAugmentedAuthTokenResponse, error) {
 	m.ctrl.T.Helper()
@@ -169,6 +224,21 @@ func (m *MockAuthServiceServer) GetAugmentedTokenForAPIKey(arg0 context.Context,
 func (mr *MockAuthServiceServerMockRecorder) GetAugmentedTokenForAPIKey(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAugmentedTokenForAPIKey", reflect.TypeOf((*MockAuthServiceServer)(nil).GetAugmentedTokenForAPIKey), arg0, arg1)
+}
+
+// InviteUser mocks base method.
+func (m *MockAuthServiceServer) InviteUser(arg0 context.Context, arg1 *authpb.InviteUserRequest) (*authpb.InviteUserResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InviteUser", arg0, arg1)
+	ret0, _ := ret[0].(*authpb.InviteUserResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// InviteUser indicates an expected call of InviteUser.
+func (mr *MockAuthServiceServerMockRecorder) InviteUser(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InviteUser", reflect.TypeOf((*MockAuthServiceServer)(nil).InviteUser), arg0, arg1)
 }
 
 // Login mocks base method.

@@ -26,6 +26,7 @@ import (
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/api/proto/uuidpb"
+	"px.dev/pixie/src/cloud/auth/authpb"
 	"px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/shared/services/authcontext"
 	"px.dev/pixie/src/utils"
@@ -34,6 +35,7 @@ import (
 // OrganizationServiceServer is the server that implements the OrganizationService gRPC service.
 type OrganizationServiceServer struct {
 	ProfileServiceClient profilepb.ProfileServiceClient
+	AuthServiceClient    authpb.AuthServiceClient
 }
 
 // InviteUser creates and returns an invite link for the org for the specified user info.
@@ -53,20 +55,20 @@ func (o *OrganizationServiceServer) InviteUser(ctx context.Context, externalReq 
 		return nil, status.Errorf(codes.InvalidArgument, "Could not identify user's org")
 	}
 
-	internalReq := &profilepb.InviteUserRequest{
-		OrgID:          orgIDPb,
-		Email:          externalReq.Email,
-		FirstName:      externalReq.FirstName,
-		LastName:       externalReq.LastName,
-		MustCreateUser: true,
+	internalReq := &authpb.InviteUserRequest{
+		OrgID:     orgIDPb,
+		Email:     externalReq.Email,
+		FirstName: externalReq.FirstName,
+		LastName:  externalReq.LastName,
 	}
-	resp, err := o.ProfileServiceClient.InviteUser(ctx, internalReq)
+
+	resp, err := o.AuthServiceClient.InviteUser(ctx, internalReq)
 	if err != nil {
 		return nil, err
 	}
 
 	return &cloudpb.InviteUserResponse{
-		Email:      resp.Email,
+		Email:      externalReq.Email,
 		InviteLink: resp.InviteLink,
 	}, nil
 }
