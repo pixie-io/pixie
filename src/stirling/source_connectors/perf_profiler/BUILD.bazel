@@ -78,3 +78,11 @@ pl_cc_test(
         "//src/stirling/source_connectors/perf_profiler/testing/bpf:stringifier_test_bpf_text",
     ],
 )
+
+pl_cc_test(
+    name = "stack_trace_id_cache_test",
+    srcs = ["stack_trace_id_cache_test.cc"],
+    deps = [
+        ":cc_library",
+    ],
+)

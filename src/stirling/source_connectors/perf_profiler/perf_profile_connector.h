@@ -29,9 +29,11 @@
 #include "src/stirling/core/source_connector.h"
 #include "src/stirling/core/types.h"
 #include "src/stirling/source_connectors/perf_profiler/bcc_bpf_intf/stack_event.h"
+#include "src/stirling/source_connectors/perf_profiler/stack_trace_id_cache.h"
 #include "src/stirling/source_connectors/perf_profiler/stack_traces_table.h"
 #include "src/stirling/source_connectors/perf_profiler/stringifier.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizer.h"
+#include "src/stirling/source_connectors/perf_profiler/types.h"
 #include "src/stirling/utils/stat_counter.h"
 
 namespace px {
@@ -65,35 +67,6 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   void TransferDataImpl(ConnectorContext* ctx, const std::vector<DataTable*>& data_tables) override;
 
  private:
-  // SymbolicStackTrace identifies a particular stack trace by:
-  // * upid
-  // * "folded" stack trace string
-  // The stack traces (in kernel & in BPF) are ordered lists of instruction pointers (addresses).
-  // Stirling uses BPF to recover the symbols associated with each address, and then
-  // uses the "symbolic stack trace" as the histogram key. Some of the stack traces that are
-  // distinct in the kernel and in BPF will collapse into the same symoblic stack trace in Stirling.
-  // For example, consider the following two stack traces from BPF:
-  // p0, p1, p2 => main;qux;baz   # both p2 & p3 point into baz.
-  // p0, p1, p3 => main;qux;baz
-  //
-  // SymbolicStackTrace will serve as a key to the unique stack-trace-id (an integer) in Stirling.
-  struct SymbolicStackTrace {
-    const md::UPID upid;
-    const std::string stack_trace_str;
-
-    template <typename H>
-    friend H AbslHashValue(H h, const SymbolicStackTrace& s) {
-      return H::combine(std::move(h), s.upid, s.stack_trace_str);
-    }
-
-    friend bool operator==(const SymbolicStackTrace& lhs, const SymbolicStackTrace& rhs) {
-      if (lhs.upid != rhs.upid) {
-        return false;
-      }
-      return lhs.stack_trace_str == rhs.stack_trace_str;
-    }
-  };
-
   // StackTraceHisto: SymbolicStackTrace => observation-count
   using StackTraceHisto = absl::flat_hash_map<SymbolicStackTrace, uint64_t>;
 
@@ -108,8 +81,6 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   void CreateRecords(ebpf::BPFStackTable* stack_traces, ConnectorContext* ctx,
                      DataTable* data_table);
 
-  uint64_t StackTraceID(const SymbolicStackTrace& stack_trace);
-
   StackTraceHisto AggregateStackTraces(ConnectorContext* ctx, ebpf::BPFStackTable* stack_traces);
 
   void CleanupSymbolizers(const absl::flat_hash_set<md::UPID>& deleted_upids);
@@ -123,9 +94,8 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Number of iterations, where each iteration is drains the information collectid in BPF.
   uint64_t transfer_count_ = 0;
 
-  // Tracks the next stack-trace-id to be assigned;
-  // incremented by 1 for each such assignment.
-  uint64_t next_stack_trace_id_ = 0;
+  // Tracks unique stack trace ids, for the lifetime of Stirling:
+  StackTraceIDCache stack_trace_ids_;
 
   // The raw histogram from BPF; it is populated on each iteration by a call to PollPerfBuffer().
   RawHistoData raw_histo_data_;

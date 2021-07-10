@@ -104,23 +104,6 @@ void PerfProfileConnector::CleanupSymbolizers(const absl::flat_hash_set<md::UPID
   }
 }
 
-uint64_t PerfProfileConnector::StackTraceID(const SymbolicStackTrace& /* stack_trace */) {
-  // Historically, we maintained a map of stack trace IDs for every stack trace observed,
-  // This was meant to help normalize our tables, which we never implemented.
-  // It was also used to accelerate aggregations across time samples by Carnot.
-  //
-  // Unfortunately, the memory cost of maintaining the stack trace ID map was too high.
-  // Since we never really used it for its intended purpose, we have now removed the map.
-  //
-  // Instead, we generate a new id for every stack trace.
-  // This means the same stack trace across two TransferData calls have different IDs.
-  // Fortunately, the UI will aggregate two identical stack traces even if the IDs don't match.
-  //
-  // TODO(jps): Consider removing stack_trace_id from the stack_traces table schema, since
-  //            the ID is effectively useless now.
-  return next_stack_trace_id_++;
-}
-
 PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces(
     ConnectorContext* ctx, ebpf::BPFStackTable* stack_traces) {
   // TODO(jps): switch from using get_table_offline() to directly stepping through
@@ -211,12 +194,17 @@ void PerfProfileConnector::CreateRecords(ebpf::BPFStackTable* stack_traces, Conn
 
   StackTraceHisto stack_trace_histogram = AggregateStackTraces(ctx, stack_traces);
 
+  constexpr auto age_tick_period = std::chrono::minutes(5);
+  if (sampling_freq_mgr_.count() % (age_tick_period / kSamplingPeriod) == 0) {
+    stack_trace_ids_.AgeTick();
+  }
+
   for (const auto& [key, count] : stack_trace_histogram) {
     DataTable::RecordBuilder<&kStackTraceTable> r(data_table, timestamp_ns);
 
     r.Append<r.ColIndex("time_")>(timestamp_ns);
     r.Append<r.ColIndex("upid")>(key.upid.value());
-    r.Append<r.ColIndex("stack_trace_id")>(StackTraceID(key));
+    r.Append<r.ColIndex("stack_trace_id")>(stack_trace_ids_.Lookup(key));
     r.Append<r.ColIndex("stack_trace"), kMaxStackTraceSize>(key.stack_trace_str);
     r.Append<r.ColIndex("count")>(count);
   }
