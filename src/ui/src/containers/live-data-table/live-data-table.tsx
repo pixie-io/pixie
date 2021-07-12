@@ -34,7 +34,7 @@ import {
   useTheme, Theme,
 } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
-import { IndexRange, SortDirection } from 'react-virtualized';
+import { IndexRange } from 'react-virtualized';
 import { Arguments } from 'app/utils/args-utils';
 
 import { ColumnDisplayInfo, displayInfoFromColumn, titleFromInfo } from './column-display-info';
@@ -189,9 +189,7 @@ export const LiveDataTable: React.FC<LiveDataTableProps> = (props) => {
 
   const onSort = React.useCallback((sortState: SortState) => {
     const column = columnDisplayInfos.get(sortState.dataKey);
-    const ascending = sortState.direction === SortDirection.ASC;
-    const sortFunc = getSortFunc(column);
-    setRows(rows.sort((a, b) => sortFunc(a, b, ascending)));
+    setRows(rows.sort(getSortFunc(column, sortState.direction)));
     setSelectedRow(-1);
     onRowSelectionChanged(null);
   }, [rows, columnDisplayInfos, onRowSelectionChanged]);

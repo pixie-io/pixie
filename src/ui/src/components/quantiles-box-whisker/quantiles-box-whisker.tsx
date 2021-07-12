@@ -303,13 +303,11 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
       borderRadius: '4px',
       backgroundColor: theme.palette.foreground.grey1,
       opacity: 0.9,
-      zIndex: '1501', // Has to show above the data drawer and anything else that can show a Vega chart.
     },
   },
   root: {
     display: 'flex',
     alignItems: 'center',
-    flexGrow: 1,
   },
   vegaWrapper: {
     paddingRight: theme.spacing(1),

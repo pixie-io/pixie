@@ -19,21 +19,11 @@
 import * as React from 'react';
 
 /**
- * Determines the dimensions of the browser scrollbars on the given element, if it's currently showing them.
- * If no element is provided, determines the default dimensions of the browser scrollbars when they would show.
- * Browsers may overlay scrollbars rather than putting them in-layout. In those cases they're treated as 0-width/height.
+ * Determines the dimensions of the default browser scrollbar (irrespective of whether it's visible at the moment).
+ * Some browsers overlay the scrollbar rather than putting it in-layout. In those cases, it's treated as 0-width/height.
  */
-export function useScrollbarSize(el?: HTMLElement): { width: number, height: number } {
-  const overflow = el && (el.offsetWidth > el.clientWidth || el.offsetHeight > el.clientHeight);
-
+export function useScrollbarSize(): { width: number, height: number } {
   return React.useMemo(() => {
-    if (el) {
-      return {
-        width: el.offsetWidth - el.clientWidth,
-        height: el.offsetHeight - el.clientHeight,
-      };
-    }
-
     const scroller = document.createElement('div');
     scroller.setAttribute('style', 'width: 100vw; height: 100vh; overflow: scroll; position: absolute; top: -100vh;');
     document.body.appendChild(scroller);
@@ -41,8 +31,5 @@ export function useScrollbarSize(el?: HTMLElement): { width: number, height: num
     const height = scroller.offsetHeight - scroller.clientHeight;
     document.body.removeChild(scroller);
     return { width, height };
-
-    // We also want to check if the element is overflowing - that changes its scrollbar dimensions.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [el, overflow]);
+  }, []);
 }

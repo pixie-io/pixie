@@ -137,7 +137,7 @@ const boolSortFunc = (a, b) => {
   return Number(a) ? -1 : 1;
 };
 
-export const getDataSortFunc = (type: DataType): ((a: unknown, b: unknown) => number) => {
+const sortFuncForType = (type: DataType) => {
   switch (type) {
     case DataType.FLOAT64:
       return numberSortFunc;
@@ -153,4 +153,9 @@ export const getDataSortFunc = (type: DataType): ((a: unknown, b: unknown) => nu
     default:
       return stringSortFunc;
   }
+};
+
+export const getDataSortFunc = (type: DataType, ascending: boolean): ((a: any, b: any) => number) => {
+  const f = sortFuncForType(type);
+  return (a: any, b: any) => (ascending ? f(a, b) : -f(a, b));
 };
