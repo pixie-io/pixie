@@ -12,3 +12,4 @@ spec:
     targetPort: 50500
     name: tcp-http2
   selector:
+    name: config-manager-server
