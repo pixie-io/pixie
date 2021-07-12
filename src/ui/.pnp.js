@@ -153,6 +153,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["typeface-roboto-mono", "npm:0.0.75"],
             ["typeface-walter-turncoat", "npm:1.1.13"],
             ["typescript", "patch:typescript@npm%3A3.9.9#builtin<compat/typescript>::version=3.9.9&hash=ddfc1b"],
+            ["universal-cookie", "npm:4.0.4"],
             ["url-loader", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:4.1.1"],
             ["uuid", "npm:8.3.2"],
             ["vega", "npm:5.18.0"],
@@ -5061,6 +5062,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["typeface-roboto-mono", "npm:0.0.75"],
             ["typeface-walter-turncoat", "npm:1.1.13"],
             ["typescript", "patch:typescript@npm%3A3.9.9#builtin<compat/typescript>::version=3.9.9&hash=ddfc1b"],
+            ["universal-cookie", "npm:4.0.4"],
             ["url-loader", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:4.1.1"],
             ["uuid", "npm:8.3.2"],
             ["vega", "npm:5.18.0"],
@@ -5317,6 +5319,15 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./.yarn/cache/@types-clone-npm-2.1.0-5728e78055-63fe0d755f.zip/node_modules/@types/clone/",
           "packageDependencies": [
             ["@types/clone", "npm:2.1.0"]
+          ],
+          "linkType": "HARD",
+        }]
+      ]],
+      ["@types/cookie", [
+        ["npm:0.3.3", {
+          "packageLocation": "./.yarn/cache/@types-cookie-npm-0.3.3-a5ddc16db3-35d603d5e6.zip/node_modules/@types/cookie/",
+          "packageDependencies": [
+            ["@types/cookie", "npm:0.3.3"]
           ],
           "linkType": "HARD",
         }]
@@ -9129,6 +9140,13 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./.yarn/cache/cookie-npm-0.4.0-4b3d629e45-7aaef4b642.zip/node_modules/cookie/",
           "packageDependencies": [
             ["cookie", "npm:0.4.0"]
+          ],
+          "linkType": "HARD",
+        }],
+        ["npm:0.4.1", {
+          "packageLocation": "./.yarn/cache/cookie-npm-0.4.1-cc5e2ebb42-b8e0928e3e.zip/node_modules/cookie/",
+          "packageDependencies": [
+            ["cookie", "npm:0.4.1"]
           ],
           "linkType": "HARD",
         }]
@@ -22156,6 +22174,15 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["universal-cookie", "npm:2.2.0"],
             ["cookie", "npm:0.3.1"],
             ["object-assign", "npm:4.1.1"]
+          ],
+          "linkType": "HARD",
+        }],
+        ["npm:4.0.4", {
+          "packageLocation": "./.yarn/cache/universal-cookie-npm-4.0.4-aa9b4bcfbf-182b97a2dd.zip/node_modules/universal-cookie/",
+          "packageDependencies": [
+            ["universal-cookie", "npm:4.0.4"],
+            ["@types/cookie", "npm:0.3.3"],
+            ["cookie", "npm:0.4.1"]
           ],
           "linkType": "HARD",
         }]

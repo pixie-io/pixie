@@ -30,6 +30,7 @@ import {
 } from './vizier-grpc-client';
 import { PixieAPIClientOptions } from './api-options';
 import { CloudClient } from './cloud-gql-client';
+import { GetCSRFCookie } from '../pages/auth/utils';
 
 /**
  * When calling `PixieAPIClient.create`, this specifies which clusters to connect to, and any special configuration for
@@ -149,7 +150,8 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
    * Checks by querying a purpose-built endpoint, to be certain the user really is authenticated.
    */
   isAuthenticated(): Promise<boolean> {
-    return fetch(`${this.options.uri}/authorized`).then((response) => response.status === 200);
+    return fetch(`${this.options.uri}/authorized`,
+      { headers: { 'x-csrf': GetCSRFCookie() } }).then((response) => response.status === 200);
   }
 
   /**

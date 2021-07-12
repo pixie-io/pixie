@@ -2968,6 +2968,7 @@ __metadata:
     typeface-roboto-mono: ^0.0.75
     typeface-walter-turncoat: ^1.1.13
     typescript: ^3.7.2
+    universal-cookie: ^4.0.4
     url-loader: ^4.1.1
     uuid: ^8.0.0
     vega: 5.18.0
@@ -3177,6 +3178,13 @@ __metadata:
   version: 2.1.0
   resolution: "@types/clone@npm:2.1.0"
   checksum: 63fe0d755f41eb46e7cf55ab54ac4ef9fa399cd4bdc8b41083f1ec4c862781d8f3246133ea8e33bdb6ed06f844e2a9935edb659f86235a0d24d30734ad76f884
+  languageName: node
+  linkType: hard
+
+"@types/cookie@npm:^0.3.3":
+  version: 0.3.3
+  resolution: "@types/cookie@npm:0.3.3"
+  checksum: 35d603d5e620ed8a0c4dedcf6b6e19e4981a4c44d40402de39e53f041ce74bf66b40272a355db37271b9557709fd3e6dfc8fe6ea4031f59b8b16cf0606ea3797
   languageName: node
   linkType: hard
 
@@ -6238,6 +6246,13 @@ __metadata:
   version: 0.3.1
   resolution: "cookie@npm:0.3.1"
   checksum: 5fb6caf84d4e1f5684abae2a29d019466166a452539ef43562eaba5bf2f5d40a5cf0d0b4e46614fb8e6b408fd0c718885ba6696ce976e2c53d07216152ec7091
+  languageName: node
+  linkType: hard
+
+"cookie@npm:^0.4.0":
+  version: 0.4.1
+  resolution: "cookie@npm:0.4.1"
+  checksum: b8e0928e3e7aba013087974b33a6eec730b0a68b7ec00fc3c089a56ba2883bcf671252fc2ed64775aa1ca64796b6e1f6fdddba25a66808aef77614d235fd3e06
   languageName: node
   linkType: hard
 
@@ -17402,6 +17417,16 @@ typescript@^3.7.2:
     cookie: ^0.3.1
     object-assign: ^4.1.0
   checksum: 310fa5d9bb4d3cee0b42272cae788ac9e2d2e55d47cc3157b79bedb7af3660d0295b82455b64ca3af8de49276671d56bb0f9aec8d1bc6fb68e9ca80056e811f4
+  languageName: node
+  linkType: hard
+
+"universal-cookie@npm:^4.0.4":
+  version: 4.0.4
+  resolution: "universal-cookie@npm:4.0.4"
+  dependencies:
+    "@types/cookie": ^0.3.3
+    cookie: ^0.4.0
+  checksum: 182b97a2dd6a368f1940f8dd2d0ec3908f1add6f651a6bd30dac1a8083dd7f64c35e0a7fd4b3c923004f4fe85e838d2996bcd0057061a2f494782f65c2a105fc
   languageName: node
   linkType: hard
 

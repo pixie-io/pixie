@@ -18,11 +18,15 @@
 
 import * as QueryString from 'query-string';
 import { OAUTH_PROVIDER } from 'app/containers/constants';
+import Cookies from 'universal-cookie';
 import { HydraClient } from './hydra-oauth-provider';
 import { Auth0Client } from './auth0-oauth-provider';
 import { OAuthProviderClient } from './oauth-provider';
 
 export type AuthCallbackMode = 'cli_get' | 'cli_token' | 'ui';
+const CSRF_COOKIE_NAME = 'csrf-cookie';
+
+const cookies = new Cookies();
 
 interface RedirectArgs {
   mode?: AuthCallbackMode;
@@ -85,3 +89,5 @@ export const GetOAuthProvider = (): OAuthProviderClient => {
   }
   throw new Error(`OAUTH_PROVIDER ${OAUTH_PROVIDER} invalid. Expected hydra or auth0.`);
 };
+
+export const GetCSRFCookie = (): string => (cookies.get(CSRF_COOKIE_NAME));

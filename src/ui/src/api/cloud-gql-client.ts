@@ -30,11 +30,13 @@ import { onError } from '@apollo/client/link/error';
 import { persistCache } from 'apollo3-cache-persist';
 import fetch from 'cross-fetch';
 import { PixieAPIClientOptions } from './api-options';
+import { GetCSRFCookie } from '../pages/auth/utils';
 
 // Apollo link that adds cookies in the request.
 const makeCloudAuthLink = (opts: PixieAPIClientOptions) => setContext((_, { headers }) => ({
   headers: {
     ...headers,
+    'x-csrf': GetCSRFCookie(),
     // NOTE: apiKey is required in the interface because every consumer EXCEPT Pixie's web UI must provide it.
     // Pixie's web UI provides the empty string to indicate that it's using credentials instead.
     // If any other consumer tries to do the same thing in a browser, CORS will block the request on the API side.
@@ -78,6 +80,7 @@ export class CloudClient {
         },
       },
     });
+
     this.graphQL = new ApolloClient({
       connectToDevTools: globalThis.process?.env && process.env.NODE_ENV === 'development',
       cache: this.cache,

@@ -20,12 +20,13 @@ import * as React from 'react';
 import Axios from 'axios';
 import * as RedirectUtils from 'app/utils/redirect-utils';
 import { BasePage } from './base';
+import { GetCSRFCookie } from './utils';
 
 // eslint-disable-next-line react/prefer-stateless-function
 export const LogoutPage: React.FC = () => {
   // eslint-disable-next-line class-methods-use-this
   React.useEffect(() => {
-    Axios.post('/api/auth/logout').then(() => {
+    Axios.post('/api/auth/logout', {}, { headers: { 'x-csrf': GetCSRFCookie() } }).then(() => {
       localStorage.clear();
       sessionStorage.clear();
       analytics.reset();
