@@ -145,10 +145,12 @@ func (s *Server) Login(ctx context.Context, in *authpb.LoginRequest) (*authpb.Lo
 	var orgInfo *profilepb.OrgInfo
 	// If the account has an org, use that instead of trying their domain.
 	if hasOrg {
+		// If the user already belongs to an org according to the AuthProvider (userInfo),
+		// we log that user into the corresponding org.
 		orgPb := utils.ProtoFromUUIDStrOrNil(userInfo.PLOrgID)
 		orgInfo, err = pc.GetOrg(ctx, orgPb)
 		if err != nil {
-			return nil, status.Errorf(codes.PermissionDenied, "org info from user is corrupted. Talk to administrator to fix this. %v", err)
+			return nil, status.Errorf(codes.NotFound, "organization not found, please register, or talk to your Pixie administrator '%v'", err)
 		}
 	} else {
 		// Users can login without registering if their org already exists. If org doesn't exist, they must complete sign up flow.
