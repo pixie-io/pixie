@@ -28,6 +28,8 @@
 // 000014_lengthen_auth_provider_id.up.sql
 // 000015_create_user_attributes_table.down.sql
 // 000015_create_user_attributes_table.up.sql
+// 000016_move_user_settings.down.sql
+// 000016_move_user_settings.up.sql
 package schema
 
 import (
@@ -664,6 +666,46 @@ func _000015_create_user_attributes_tableUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000016_move_user_settingsDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\xf2\xf4\x0b\x76\x0d\x0a\x51\xf0\xf4\x0b\xf1\x57\x28\x2d\x4e\x2d\x8a\x2f\x4e\x2d\x29\xc9\xcc\x4b\x2f\x56\xd0\x00\x73\x33\x53\x74\x14\xb2\x53\x2b\x75\x14\xca\x12\x73\x4a\x53\x35\xb9\x82\x5d\x7d\x5c\x9d\x43\x14\xe0\x72\xea\x25\xf9\xa5\x20\x4d\xa9\x79\xea\x3a\x0a\x70\xb6\x95\x55\x59\x62\x51\x72\x46\x62\x91\x86\xa9\x81\xa6\x82\x5b\x90\xbf\x2f\x44\x47\x62\x49\x49\x51\x66\x52\x69\x49\x6a\xb1\x35\x17\x97\x8b\xab\x8f\x6b\x88\x2b\x76\x59\x40\x00\x00\x00\xff\xff\xa6\x30\x6c\xa6\x97\x00\x00\x00")
+
+func _000016_move_user_settingsDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000016_move_user_settingsDownSql,
+		"000016_move_user_settings.down.sql",
+	)
+}
+
+func _000016_move_user_settingsDownSql() (*asset, error) {
+	bytes, err := _000016_move_user_settingsDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000016_move_user_settings.down.sql", size: 151, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000016_move_user_settingsUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x6c\xce\xc1\xca\x82\x50\x10\x05\xe0\xfd\x7d\x8a\xb3\xfc\xff\x8d\x0f\xa0\xb8\x88\x9c\x48\x30\x0d\x9d\x68\x29\x57\x1c\xe2\x82\x28\x38\x73\x7b\xfe\x40\xa2\x16\xb6\x1b\x86\x73\x3e\x4e\x59\x77\xd4\x32\xca\x9a\x1b\x44\x95\xb5\xf7\x66\x6b\x18\xa2\x89\xe2\x6f\x7b\x84\xf1\xdf\x75\x54\xd1\x91\x11\x46\x9c\xda\xe6\xb2\x05\x35\x73\xee\x76\x2d\x0e\x4c\xbb\x5e\x47\x0c\x5b\xe2\xda\xab\xc8\x9c\x6b\xf2\xf4\x53\x94\x34\x1d\x96\x65\x12\x3f\x7f\x89\x5e\xc5\x2c\xcc\x0f\x85\x57\xa8\x03\xee\x67\x6a\x77\x5c\xf2\x5e\x81\x1c\x9f\x3b\x73\xae\xa0\x8a\x98\x7e\x60\xd9\x2b\x00\x00\xff\xff\x94\xe2\x5b\x7f\xd3\x00\x00\x00")
+
+func _000016_move_user_settingsUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000016_move_user_settingsUpSql,
+		"000016_move_user_settings.up.sql",
+	)
+}
+
+func _000016_move_user_settingsUpSql() (*asset, error) {
+	bytes, err := _000016_move_user_settingsUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000016_move_user_settings.up.sql", size: 211, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -744,6 +786,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000014_lengthen_auth_provider_id.up.sql":                _000014_lengthen_auth_provider_idUpSql,
 	"000015_create_user_attributes_table.down.sql":           _000015_create_user_attributes_tableDownSql,
 	"000015_create_user_attributes_table.up.sql":             _000015_create_user_attributes_tableUpSql,
+	"000016_move_user_settings.down.sql":                     _000016_move_user_settingsDownSql,
+	"000016_move_user_settings.up.sql":                       _000016_move_user_settingsUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -815,6 +859,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000014_lengthen_auth_provider_id.up.sql":                &bintree{_000014_lengthen_auth_provider_idUpSql, map[string]*bintree{}},
 	"000015_create_user_attributes_table.down.sql":           &bintree{_000015_create_user_attributes_tableDownSql, map[string]*bintree{}},
 	"000015_create_user_attributes_table.up.sql":             &bintree{_000015_create_user_attributes_tableUpSql, map[string]*bintree{}},
+	"000016_move_user_settings.down.sql":                     &bintree{_000016_move_user_settingsDownSql, map[string]*bintree{}},
+	"000016_move_user_settings.up.sql":                       &bintree{_000016_move_user_settingsUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory

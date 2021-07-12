@@ -87,6 +87,12 @@ func (d *Datastore) CreateUser(userInfo *UserInfo) (uuid.UUID, error) {
 	if err != nil {
 		return uuid.Nil, err
 	}
+
+	err = d.createUserAttributesUsingTxn(txn, u)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
 	return u, txn.Commit()
 }
 
@@ -136,6 +142,11 @@ func (d *Datastore) CreateUserAndOrg(orgInfo *OrgInfo, userInfo *UserInfo) (uuid
 	}
 	userInfo.OrgID = orgID
 	userID, err := d.createUserUsingTxn(txn, userInfo)
+	if err != nil {
+		return uuid.Nil, uuid.Nil, err
+	}
+
+	err = d.createUserAttributesUsingTxn(txn, userID)
 	if err != nil {
 		return uuid.Nil, uuid.Nil, err
 	}
@@ -475,22 +486,11 @@ func (d *Datastore) SetUserAttributes(attributes *UserAttributes) error {
 	return nil
 }
 
-// CreateUserAttributes creates default user attributes for the given user.
-func (d *Datastore) CreateUserAttributes(id uuid.UUID) error {
-	tx, err := d.db.Beginx()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
+// createUserAttributesUsingTxn creates default user attributes for the given user.
+func (d *Datastore) createUserAttributesUsingTxn(tx *sqlx.Tx, id uuid.UUID) error {
 	query := `INSERT INTO user_attributes (user_id) VALUES ($1)`
-	_, err = tx.Exec(query, id)
+	_, err := tx.Exec(query, id)
 
-	if err != nil {
-		return err
-	}
-
-	err = tx.Commit()
 	if err != nil {
 		return err
 	}

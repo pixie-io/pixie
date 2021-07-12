@@ -109,6 +109,17 @@ func TestDatastore(t *testing.T) {
 		assert.Equal(t, userInfo.LastName, userInfoFetched.LastName)
 		assert.Equal(t, userInfo.Email, userInfoFetched.Email)
 		assert.Equal(t, userInfo.AuthProviderID, userInfoFetched.AuthProviderID)
+
+		// Check value in DB.
+		query := `SELECT * from user_attributes WHERE user_id=$1`
+		rows, err := db.Queryx(query, userID)
+		require.NoError(t, err)
+		defer rows.Close()
+		var userAttrs datastore.UserAttributes
+		assert.True(t, rows.Next())
+		err = rows.StructScan(&userAttrs)
+		require.NoError(t, err)
+		assert.Equal(t, false, *userAttrs.TourSeen)
 	})
 
 	t.Run("inserting existing user should fail", func(t *testing.T) {
@@ -212,6 +223,17 @@ func TestDatastore(t *testing.T) {
 		userInfoFetched, err := d.GetUser(userID)
 		require.NoError(t, err)
 		assert.Equal(t, userInfo.AuthProviderID, userInfoFetched.AuthProviderID)
+
+		// Check value in DB.
+		query := `SELECT * from user_attributes WHERE user_id=$1`
+		rows, err := db.Queryx(query, userID)
+		require.NoError(t, err)
+		defer rows.Close()
+		var userAttrs datastore.UserAttributes
+		assert.True(t, rows.Next())
+		err = rows.StructScan(&userAttrs)
+		require.NoError(t, err)
+		assert.Equal(t, false, *userAttrs.TourSeen)
 	})
 
 	t.Run("create org and user first time user case should fail for existing org", func(t *testing.T) {
@@ -380,26 +402,6 @@ func TestDatastore(t *testing.T) {
 		for k, v := range expectedKeyValues {
 			checkKVInDB(k, v)
 		}
-	})
-
-	t.Run("Create user attributes", func(t *testing.T) {
-		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
-
-		id := "123e4567-e89b-12d3-a456-426655440002"
-		err := d.CreateUserAttributes(uuid.FromStringOrNil(id))
-		require.NoError(t, err)
-
-		// Check value in DB.
-		query := `SELECT * from user_attributes WHERE user_id=$1`
-		rows, err := db.Queryx(query, id)
-		require.NoError(t, err)
-		defer rows.Close()
-		var userAttrs datastore.UserAttributes
-		assert.True(t, rows.Next())
-		err = rows.StructScan(&userAttrs)
-		require.NoError(t, err)
-		assert.Equal(t, false, *userAttrs.TourSeen)
 	})
 
 	t.Run("Get user attributes", func(t *testing.T) {

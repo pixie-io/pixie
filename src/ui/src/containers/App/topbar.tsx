@@ -43,7 +43,7 @@ import ExploreIcon from '@material-ui/icons/Explore';
 import KeyboardIcon from '@material-ui/icons/Keyboard';
 import { Link } from 'react-router-dom';
 import { Logo } from 'configurable/logo';
-import { GQLUserInfo, GQLUserSetting } from 'app/types/schema';
+import { GQLUserInfo, GQLUserAttributes } from 'app/types/schema';
 
 const StyledListItemText = withStyles((theme: Theme) => createStyles({
   primary: {
@@ -84,28 +84,24 @@ const ProfileItem = ({
   const userInfo = data?.user;
   const isSupportUser = data?.user?.email.split('@')[1] === 'pixie.support';
 
-  // TODO(vihang,PC-992): Move to explicitly named and typed settings instead of a KV store and
-  // clean up these queries/mutations.
   const { data: dataSettings, loading: loadingTourSeen } = useQuery<{
-    userSettings: GQLUserSetting[],
+    userAttributes: GQLUserAttributes,
   }>(gql`
     query getTourSeen{
-      userSettings(keys: ["tourSeen"]) {
-        key
-        value
+      userAttributes {
+        tourSeen
       }
     }
   `, {});
   const tourSeen = isSupportUser
-    || (dataSettings?.userSettings.length > 0 && dataSettings?.userSettings[0].value === 'true');
+    || (dataSettings?.userAttributes?.tourSeen);
 
   const [setTourSeen] = useMutation<
-  { UpdateUserSettings: GQLUserSetting[] }, void
+  { SetUserAttributes: GQLUserAttributes }, void
   >(gql`
     mutation updateTourSeen{
-      UpdateUserSettings(keys: ["tourSeen"], values: ["true"]) {
-        key
-        value
+      SetUserAttributes(attributes: { tourSeen: true }) {
+        tourSeen
       }
     }
   `);
