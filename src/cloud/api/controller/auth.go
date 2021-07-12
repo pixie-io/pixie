@@ -163,7 +163,7 @@ func AuthSignupHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 		})
 	}
 
-	setSessionCookie(session, resp.Token, resp.ExpiresAt, r, w)
+	setSessionCookie(session, resp.Token, resp.ExpiresAt, r, w, http.SameSiteStrictMode)
 
 	err = sendSignupUserInfo(w, resp.UserInfo, resp.Token, resp.ExpiresAt, resp.OrgCreated)
 	if err != nil {
@@ -250,7 +250,7 @@ func AuthLoginEmbedHandler(env commonenv.Env, w http.ResponseWriter, r *http.Req
 		Event:  events.UserLoggedIn,
 	})
 
-	setSessionCookie(session, resp.Token, resp.ExpiresAt, r, w)
+	setSessionCookie(session, resp.Token, resp.ExpiresAt, r, w, http.SameSiteNoneMode)
 	http.Redirect(w, r, "https://work."+viper.GetString("domain_name")+redirectURI, http.StatusSeeOther)
 	return nil
 }
@@ -335,7 +335,7 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 		Event:  ev,
 	})
 
-	setSessionCookie(session, resp.Token, resp.ExpiresAt, r, w)
+	setSessionCookie(session, resp.Token, resp.ExpiresAt, r, w, http.SameSiteNoneMode)
 
 	err = sendUserInfo(w, resp.UserInfo, resp.OrgInfo, resp.Token, resp.ExpiresAt, resp.UserCreated)
 	if err != nil {
@@ -371,7 +371,6 @@ func AuthLogoutHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 	session.Options.MaxAge = -1
 	session.Options.HttpOnly = true
 	session.Options.Secure = true
-	session.Options.SameSite = http.SameSiteStrictMode
 	session.Options.Domain = viper.GetString("domain_name")
 
 	err = session.Save(r, w)
@@ -395,14 +394,14 @@ func attachCredentialsToContext(env commonenv.Env, r *http.Request) (context.Con
 	return ctxWithCreds, nil
 }
 
-func setSessionCookie(session *sessions.Session, token string, expiresAt int64, r *http.Request, w http.ResponseWriter) {
+func setSessionCookie(session *sessions.Session, token string, expiresAt int64, r *http.Request, w http.ResponseWriter, cookieMode http.SameSite) {
 	// Set session cookie.
 	session.Values["_at"] = token
 	session.Values["_expires_at"] = expiresAt
 	session.Options.MaxAge = int(time.Until(time.Unix(expiresAt, 0)).Seconds())
 	session.Options.HttpOnly = true
 	session.Options.Secure = true
-	session.Options.SameSite = http.SameSiteStrictMode
+	session.Options.SameSite = cookieMode
 	session.Options.Domain = viper.GetString("domain_name")
 
 	err := session.Save(r, w)
