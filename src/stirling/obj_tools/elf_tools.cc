@@ -193,8 +193,7 @@ StatusOr<std::unique_ptr<ElfReader>> ElfReader::Create(
   return elf_reader;
 }
 
-StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::SearchSymbols(
-    std::string_view search_symbol, SymbolMatchType match_type, std::optional<int> symbol_type) {
+StatusOr<ELFIO::section*> ElfReader::SymtabSection() {
   ELFIO::section* symtab_section = nullptr;
   for (int i = 0; i < elf_reader_.sections.size(); ++i) {
     ELFIO::section* psec = elf_reader_.sections[i];
@@ -210,6 +209,13 @@ StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::SearchSymbols(
   if (symtab_section == nullptr) {
     return error::NotFound("Could not find symtab section in binary=$0", binary_path_);
   }
+
+  return symtab_section;
+}
+
+StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::SearchSymbols(
+    std::string_view search_symbol, SymbolMatchType match_type, std::optional<int> symbol_type) {
+  PL_ASSIGN_OR_RETURN(ELFIO::section * symtab_section, SymtabSection());
 
   std::vector<SymbolInfo> symbol_infos;
 
@@ -284,6 +290,26 @@ std::optional<int64_t> ElfReader::SymbolAddress(std::string_view symbol) {
     }
   }
   return std::nullopt;
+}
+
+StatusOr<std::string> ElfReader::AddrToSymbol(size_t sym_addr) {
+  PL_ASSIGN_OR_RETURN(ELFIO::section * symtab_section, SymtabSection());
+
+  const ELFIO::symbol_section_accessor symbols(elf_reader_, symtab_section);
+
+  // Call ELFIO to get symbol by address.
+  // ELFIO looks up the symbol and then populates name, size, type, etc.
+  // We only care about the name, but need to declare the other variables as well.
+  const ELFIO::Elf64_Addr addr = sym_addr;
+  std::string name;
+  ELFIO::Elf_Xword size = 0;
+  unsigned char bind = 0;
+  unsigned char type = ELFIO::STT_NOTYPE;
+  ELFIO::Elf_Half section_index;
+  unsigned char other;
+  bool found = symbols.get_symbol(addr, name, size, bind, type, section_index, other);
+
+  return found ? name : "";
 }
 
 namespace {

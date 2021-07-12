@@ -38,6 +38,27 @@ using ::testing::Pair;
 using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
 
+StatusOr<int64_t> NmSymbolNameToAddr(const std::string& path, const std::string& symbol_name) {
+  // Extract the address from nm as the gold standard.
+  int64_t symbol_addr = -1;
+  std::string nm_out = px::Exec(absl::StrCat("nm ", path)).ValueOrDie();
+  std::vector<absl::string_view> nm_out_lines = absl::StrSplit(nm_out, '\n');
+  for (auto& line : nm_out_lines) {
+    if (line.find(symbol_name) != std::string::npos) {
+      std::vector<absl::string_view> line_split = absl::StrSplit(line, ' ');
+      CHECK(!line_split.empty());
+      symbol_addr = std::stol(std::string(line_split[0]), nullptr, 16);
+      break;
+    }
+  }
+
+  if (symbol_addr == -1) {
+    return error::Internal("Unexpected symbol address");
+  }
+
+  return symbol_addr;
+}
+
 TEST(ElfReaderTest, NonExistentPath) {
   auto s = px::stirling::obj_tools::ElfReader::Create("/bogus");
   ASSERT_NOT_OK(s);
@@ -91,35 +112,38 @@ TEST(ElfReaderTest, ListSymbolsSuffixMatch) {
 
 TEST(ElfReaderTest, SymbolAddress) {
   const std::string path = kDummyExeFixture.Path().string();
-  const std::string_view symbol = "CanYouFindThis";
-
-  // Extract the address from nm as the gold standard.
-  int64_t expected_symbol_addr = -1;
-  std::string nm_out = px::Exec(absl::StrCat("nm ", path)).ValueOrDie();
-  std::vector<absl::string_view> nm_out_lines = absl::StrSplit(nm_out, '\n');
-  for (auto& line : nm_out_lines) {
-    if (line.find(symbol) != std::string::npos) {
-      std::vector<absl::string_view> line_split = absl::StrSplit(line, ' ');
-      ASSERT_FALSE(line_split.empty());
-      expected_symbol_addr = std::stol(std::string(line_split[0]), nullptr, 16);
-      break;
-    }
-  }
-  ASSERT_NE(expected_symbol_addr, -1);
+  const std::string kSymbolName = "CanYouFindThis";
+  ASSERT_OK_AND_ASSIGN(const int64_t symbol_addr, NmSymbolNameToAddr(path, kSymbolName));
 
   // Actual tests of SymbolAddress begins here.
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
   {
-    std::optional<int64_t> addr = elf_reader->SymbolAddress(symbol);
+    std::optional<int64_t> addr = elf_reader->SymbolAddress(kSymbolName);
     ASSERT_TRUE(addr.has_value());
-    EXPECT_EQ(addr, expected_symbol_addr);
+    EXPECT_EQ(addr, symbol_addr);
+    LOG(INFO) << addr.value() << " " << kSymbolName;
   }
 
   {
     std::optional<int64_t> addr = elf_reader->SymbolAddress("bogus");
     ASSERT_FALSE(addr.has_value());
+  }
+}
+
+TEST(ElfReaderTest, AddrToSymbol) {
+  const std::string path = kDummyExeFixture.Path().string();
+  const std::string kSymbolName = "CanYouFindThis";
+  ASSERT_OK_AND_ASSIGN(const int64_t symbol_addr, NmSymbolNameToAddr(path, kSymbolName));
+
+  LOG(INFO) << absl::Substitute("$0 $1", kSymbolName, symbol_addr);
+
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
+
+  {
+    ASSERT_OK_AND_ASSIGN(std::string symbol_name, elf_reader->AddrToSymbol(symbol_addr));
+    EXPECT_EQ(symbol_name, kSymbolName);
   }
 }
 

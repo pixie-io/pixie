@@ -96,12 +96,24 @@ class ElfReader {
   std::optional<int64_t> SymbolAddress(std::string_view symbol);
 
   /**
+   * Looks up the symbol for an address.
+   *
+   * @param addr The symbol address to lookup.
+   * @return Error if was not able to access the symbol table,
+   *         otherwise the symbol of the address is returned.
+   *         If the address was not in the symbol table, returns std::nullopt.
+   */
+  StatusOr<std::string> AddrToSymbol(size_t addr);
+
+  /**
    * Returns the address of the return instructions of the function.
    */
   StatusOr<std::vector<uint64_t>> FuncRetInstAddrs(const SymbolInfo& func_symbol);
 
  private:
   ElfReader() = default;
+
+  StatusOr<ELFIO::section*> SymtabSection();
 
   /**
    * Locates the debug symbols for the currently loaded ELF object.
