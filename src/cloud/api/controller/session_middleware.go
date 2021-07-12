@@ -23,6 +23,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
@@ -47,6 +49,11 @@ var (
 	ErrFetchAugmentedTokenFailedUnauthenticated = errors.New("failed to fetch token - unauthenticated")
 	// ErrParseAuthToken occurs when we are unable to parse the augmented token with the signing key.
 	ErrParseAuthToken = errors.New("Failed to parse token")
+	// ErrCSRFOriginCheckFailed occurs when a request with seesion cookie is missing the origin field, or is invalid.
+	ErrCSRFOriginCheckFailed = errors.New("CSRF check missing origin")
+	// TODO(zasgar): enable after we add this in the UI.
+	// ErrCSRFTokenCheckFailed csrf double submit cookie was missing.
+	// ErrCSRFTokenCheckFailed = errors.New("CSRF check missing token")
 )
 
 // GetTokenFromSession gets a token from the session store using cookies.
@@ -70,7 +77,8 @@ func WithAugmentedAuthMiddleware(env apienv.APIEnv, next http.Handler) http.Hand
 	f := func(w http.ResponseWriter, r *http.Request) {
 		ctx, err := getAugmentedAuthHTTP(env, r)
 		if err != nil {
-			if err == ErrFetchAugmentedTokenFailedUnauthenticated || err == ErrGetAuthTokenFailed {
+			if err == ErrFetchAugmentedTokenFailedUnauthenticated || err == ErrGetAuthTokenFailed ||
+				err == ErrCSRFOriginCheckFailed {
 				http.Error(w, err.Error(), http.StatusUnauthorized)
 			} else {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -126,7 +134,20 @@ func getAugmentedToken(env apienv.APIEnv, r *http.Request) (string, error) {
 	}
 
 	token, ok := GetTokenFromSession(env, r)
-	if !ok {
+	if ok {
+		// We need to validate origin and csrf token.
+		referer, err := url.Parse(r.Referer())
+		if err != nil {
+			return "", ErrCSRFOriginCheckFailed
+		}
+		expectedHost := &url.URL{
+			Scheme: "https",
+			Host:   viper.GetString("domain_name"),
+		}
+		if !sameOrigin(referer, expectedHost) {
+			return "", ErrCSRFOriginCheckFailed
+		}
+	} else {
 		// Try to get it from bearer.
 		token, ok = httpmiddleware.GetTokenFromBearer(r)
 		if !ok {
@@ -184,4 +205,19 @@ func GetAugmentedTokenGRPC(ctx context.Context, env apienv.APIEnv) (string, erro
 		}
 	}
 	return getAugmentedToken(env, r)
+}
+
+// sameOrigin returns true if URLs a and b share the same origin (but not subdomain). The same
+// origin is defined as host (which includes the port) and scheme.
+func sameOrigin(a, b *url.URL) bool {
+	aParts := strings.Split(a.Host, ".")
+	bParts := strings.Split(b.Host, ".")
+
+	if len(aParts) < 2 || len(bParts) < 2 {
+		return false
+	}
+
+	aHost := aParts[len(aParts)-2] + "." + aParts[len(aParts)-1]
+	bHost := bParts[len(bParts)-2] + "." + bParts[len(bParts)-1]
+	return (a.Scheme == b.Scheme && aHost == bHost)
 }
