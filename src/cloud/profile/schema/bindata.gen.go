@@ -32,6 +32,8 @@
 // 000016_move_user_settings.up.sql
 // 000017_reformat_user_settings.down.sql
 // 000017_reformat_user_settings.up.sql
+// 000018_add_unique_constraint_auth_provider_id.down.sql
+// 000018_add_unique_constraint_auth_provider_id.up.sql
 package schema
 
 import (
@@ -748,6 +750,46 @@ func _000017_reformat_user_settingsUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000018_add_unique_constraint_auth_provider_idDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\x2d\x4e\x2d\x2a\xe6\x72\x09\xf2\x0f\x50\x70\xf6\xf7\x0b\x0e\x09\x72\xf4\xf4\x0b\x51\x48\x2c\x2d\xc9\x88\x2f\x28\xca\x2f\xcb\x4c\x49\x2d\x8a\xcf\x4c\x89\x2f\xcd\xcb\x2c\x2c\x4d\xb5\xe6\x02\x04\x00\x00\xff\xff\x60\xa0\xa3\xdf\x3b\x00\x00\x00")
+
+func _000018_add_unique_constraint_auth_provider_idDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000018_add_unique_constraint_auth_provider_idDownSql,
+		"000018_add_unique_constraint_auth_provider_id.down.sql",
+	)
+}
+
+func _000018_add_unique_constraint_auth_provider_idDownSql() (*asset, error) {
+	bytes, err := _000018_add_unique_constraint_auth_provider_idDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000018_add_unique_constraint_auth_provider_id.down.sql", size: 59, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000018_add_unique_constraint_auth_provider_idUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\x2d\x4e\x2d\x2a\xe6\x72\x74\x71\x51\x70\xf6\xf7\x0b\x0e\x09\x72\xf4\xf4\x0b\x51\x48\x2c\x2d\xc9\x88\x2f\x28\xca\x2f\xcb\x4c\x49\x2d\x8a\xcf\x4c\x89\x2f\xcd\xcb\x2c\x2c\x4d\x55\x08\xf5\xf3\x0c\x0c\x75\x55\xd0\x40\x97\xd7\xb4\xe6\x02\x04\x00\x00\xff\xff\xd0\x9f\x74\x6b\x54\x00\x00\x00")
+
+func _000018_add_unique_constraint_auth_provider_idUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000018_add_unique_constraint_auth_provider_idUpSql,
+		"000018_add_unique_constraint_auth_provider_id.up.sql",
+	)
+}
+
+func _000018_add_unique_constraint_auth_provider_idUpSql() (*asset, error) {
+	bytes, err := _000018_add_unique_constraint_auth_provider_idUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000018_add_unique_constraint_auth_provider_id.up.sql", size: 84, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -832,6 +874,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000016_move_user_settings.up.sql":                       _000016_move_user_settingsUpSql,
 	"000017_reformat_user_settings.down.sql":                 _000017_reformat_user_settingsDownSql,
 	"000017_reformat_user_settings.up.sql":                   _000017_reformat_user_settingsUpSql,
+	"000018_add_unique_constraint_auth_provider_id.down.sql": _000018_add_unique_constraint_auth_provider_idDownSql,
+	"000018_add_unique_constraint_auth_provider_id.up.sql":   _000018_add_unique_constraint_auth_provider_idUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -907,6 +951,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000016_move_user_settings.up.sql":                       &bintree{_000016_move_user_settingsUpSql, map[string]*bintree{}},
 	"000017_reformat_user_settings.down.sql":                 &bintree{_000017_reformat_user_settingsDownSql, map[string]*bintree{}},
 	"000017_reformat_user_settings.up.sql":                   &bintree{_000017_reformat_user_settingsUpSql, map[string]*bintree{}},
+	"000018_add_unique_constraint_auth_provider_id.down.sql": &bintree{_000018_add_unique_constraint_auth_provider_idDownSql, map[string]*bintree{}},
+	"000018_add_unique_constraint_auth_provider_id.up.sql":   &bintree{_000018_add_unique_constraint_auth_provider_idUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
