@@ -473,6 +473,54 @@ static __inline bool is_redis_message(const char* buf, size_t count) {
   return true;
 }
 
+// NATS messages are in texts. The role is inferred from the message type.
+// See https://github.com/nats-io/docs/blob/master/nats_protocol/nats-protocol.md
+//
+// In case of bpf instruction count limit becomes a problem, we can drop CONNECT and INFO message
+// detection, they are only sent once after establishing the connection.
+static __inline enum MessageType infer_nats_message(const char* buf, size_t count) {
+  // NATS messages start with an one-byte type marker, and end with \r\n terminal sequence.
+  if (count < 3) {
+    return kUnknown;
+  }
+  // The last two chars are \r\n, the terminal sequence of all NATS messages.
+  if (buf[count - 2] != '\r') {
+    return kUnknown;
+  }
+  if (buf[count - 1] != '\n') {
+    return kUnknown;
+  }
+  if (buf[0] == 'C' && buf[1] == 'O' && buf[2] == 'N' && buf[3] == 'N' && buf[4] == 'E' &&
+      buf[5] == 'C' && buf[6] == 'T') {
+    // kRequest is not precise. Here only means the message is sent by client.
+    return kRequest;
+  }
+  if (buf[0] == 'S' && buf[1] == 'U' && buf[2] == 'B') {
+    return kRequest;
+  }
+  if (buf[0] == 'U' && buf[1] == 'N' && buf[2] == 'S' && buf[3] == 'U' && buf[4] == 'B') {
+    return kRequest;
+  }
+  if (buf[0] == 'P' && buf[1] == 'U' && buf[2] == 'B') {
+    return kRequest;
+  }
+  if (buf[0] == 'I' && buf[1] == 'N' && buf[2] == 'F' && buf[3] == 'O') {
+    // kResponse is not precise. Here only means the message is sent by server.
+    return kResponse;
+  }
+  if (buf[0] == 'M' && buf[1] == 'S' && buf[2] == 'G') {
+    return kResponse;
+  }
+  if (buf[0] == '+' && buf[1] == 'O' && buf[2] == 'K') {
+    return kResponse;
+  }
+  if (buf[0] == '-' && buf[1] == 'E' && buf[2] == 'R' && buf[3] == 'R') {
+    return kResponse;
+  }
+  // PING & PONG can be sent by both client and server. Don't use them.
+  return kUnknown;
+}
+
 static __inline struct protocol_message_t infer_protocol(const char* buf, size_t count,
                                                          struct conn_info_t* conn_info) {
   struct protocol_message_t inferred_message;

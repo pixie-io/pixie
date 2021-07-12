@@ -279,3 +279,40 @@ TEST(ProtocolInferenceTest, Kafka) {
                                     sizeof(kReqBodyFrame), &conn_info);
   EXPECT_EQ(protocol_message.protocol, kProtocolKafka);
 }
+
+TEST(ProtocolInferenceTest, NATS) {
+  auto call = [](std::string_view msg) { return infer_nats_message(msg.data(), msg.size()); };
+
+  constexpr std::string_view kTestMessage = "test\r\n";
+  EXPECT_EQ(call(kTestMessage), kUnknown);
+
+  constexpr std::string_view kPingMessage = "PING\r\n";
+  EXPECT_EQ(call(kPingMessage), kUnknown);
+
+  constexpr std::string_view kPongMessage = "PONG\r\n";
+  EXPECT_EQ(call(kPongMessage), kUnknown);
+
+  constexpr std::string_view kConnectMessage = "CONNECT {} \r\n";
+  EXPECT_EQ(call(kConnectMessage), kRequest);
+
+  constexpr std::string_view kPubMessage = "PUB {} \r\n";
+  EXPECT_EQ(call(kPubMessage), kRequest);
+
+  constexpr std::string_view kSubMessage = "SUB {} \r\n";
+  EXPECT_EQ(call(kSubMessage), kRequest);
+
+  constexpr std::string_view kUnsubMessage = "UNSUB {} \r\n";
+  EXPECT_EQ(call(kUnsubMessage), kRequest);
+
+  constexpr std::string_view kInfoMessage = "INFO {} \r\n";
+  EXPECT_EQ(call(kInfoMessage), kResponse);
+
+  constexpr std::string_view kMsgMessage = "MSG {} \r\n";
+  EXPECT_EQ(call(kMsgMessage), kResponse);
+
+  constexpr std::string_view kOKMessage = "+OK {} \r\n";
+  EXPECT_EQ(call(kOKMessage), kResponse);
+
+  constexpr std::string_view kERRMessage = "-ERR {} \r\n";
+  EXPECT_EQ(call(kERRMessage), kResponse);
+}
