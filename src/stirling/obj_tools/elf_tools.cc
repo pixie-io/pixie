@@ -19,6 +19,7 @@
 #include "src/stirling/obj_tools/elf_tools.h"
 
 #include <llvm-c/Disassembler.h>
+#include <llvm/Demangle/Demangle.h>
 #include <llvm/MC/MCDisassembler/MCDisassembler.h>
 #include <llvm/Support/TargetSelect.h>
 
@@ -292,7 +293,7 @@ std::optional<int64_t> ElfReader::SymbolAddress(std::string_view symbol) {
   return std::nullopt;
 }
 
-StatusOr<std::string> ElfReader::AddrToSymbol(size_t sym_addr) {
+StatusOr<std::optional<std::string>> ElfReader::AddrToSymbol(size_t sym_addr) {
   PL_ASSIGN_OR_RETURN(ELFIO::section * symtab_section, SymtabSection());
 
   const ELFIO::symbol_section_accessor symbols(elf_reader_, symtab_section);
@@ -310,15 +311,15 @@ StatusOr<std::string> ElfReader::AddrToSymbol(size_t sym_addr) {
   bool found = symbols.get_symbol(addr, name, size, bind, type, section_index, other);
 
   if (!found) {
-    return error::NotFound("Could not resolve address $0", sym_addr);
+    return std::optional<std::string>();
   }
 
-  return name;
+  return std::optional<std::string>(std::move(name));
 }
 
 // TODO(oazizi): Optimize by indexing or switching to binary search if we can guarantee addresses
 //               are ordered.
-StatusOr<std::string> ElfReader::InstrAddrToSymbol(size_t sym_addr) {
+StatusOr<std::optional<std::string>> ElfReader::InstrAddrToSymbol(size_t sym_addr) {
   PL_ASSIGN_OR_RETURN(ELFIO::section * symtab_section, SymtabSection());
 
   const ELFIO::symbol_section_accessor symbols(elf_reader_, symtab_section);
@@ -336,11 +337,11 @@ StatusOr<std::string> ElfReader::InstrAddrToSymbol(size_t sym_addr) {
     symbols.get_symbol(j, name, addr, size, bind, type, section_index, other);
 
     if (sym_addr >= addr && sym_addr < addr + size) {
-      return name;
+      return std::optional<std::string>(llvm::demangle(name));
     }
   }
 
-  return error::NotFound("Could not resolve address $0", sym_addr);
+  return std::optional<std::string>();
 }
 
 namespace {

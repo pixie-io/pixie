@@ -123,7 +123,6 @@ TEST(ElfReaderTest, SymbolAddress) {
     std::optional<int64_t> addr = elf_reader->SymbolAddress(kSymbolName);
     ASSERT_TRUE(addr.has_value());
     EXPECT_EQ(addr, symbol_addr);
-    LOG(INFO) << addr.value() << " " << kSymbolName;
   }
 
   {
@@ -137,17 +136,20 @@ TEST(ElfReaderTest, AddrToSymbol) {
   const std::string kSymbolName = "CanYouFindThis";
   ASSERT_OK_AND_ASSIGN(const int64_t symbol_addr, NmSymbolNameToAddr(path, kSymbolName));
 
-  LOG(INFO) << absl::Substitute("$0 $1", kSymbolName, symbol_addr);
-
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
   {
-    ASSERT_OK_AND_ASSIGN(std::string symbol_name, elf_reader->AddrToSymbol(symbol_addr));
-    EXPECT_EQ(symbol_name, kSymbolName);
+    ASSERT_OK_AND_ASSIGN(std::optional<std::string> symbol_name,
+                         elf_reader->AddrToSymbol(symbol_addr));
+    EXPECT_EQ(symbol_name.value_or("-"), kSymbolName);
   }
 
-  // An address that doesn't exactly match with the symbol returns an error.
-  { ASSERT_NOT_OK(elf_reader->AddrToSymbol(symbol_addr + 4)); }
+  // An address that doesn't exactly match with the symbol returns std::nullopt.
+  {
+    ASSERT_OK_AND_ASSIGN(std::optional<std::string> symbol_name,
+                         elf_reader->AddrToSymbol(symbol_addr + 4));
+    EXPECT_EQ(symbol_name.value_or("-"), "-");
+  }
 }
 
 TEST(ElfReaderTest, InstrAddrToSymbol) {
@@ -155,26 +157,26 @@ TEST(ElfReaderTest, InstrAddrToSymbol) {
   const std::string kSymbolName = "CanYouFindThis";
   ASSERT_OK_AND_ASSIGN(const int64_t kSymbolAddr, NmSymbolNameToAddr(path, kSymbolName));
 
-  LOG(INFO) << absl::Substitute("$0 $1", kSymbolName, kSymbolAddr);
-
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
   {
-    ASSERT_OK_AND_ASSIGN(std::string symbol_name, elf_reader->InstrAddrToSymbol(kSymbolAddr));
-    EXPECT_EQ(symbol_name, kSymbolName);
+    ASSERT_OK_AND_ASSIGN(std::optional<std::string> symbol_name,
+                         elf_reader->InstrAddrToSymbol(kSymbolAddr));
+    EXPECT_EQ(symbol_name.value_or("-"), kSymbolName);
   }
 
   // Read an instruction a few bytes away. This should still be part of the same function.
   {
-    ASSERT_OK_AND_ASSIGN(std::string symbol_name, elf_reader->InstrAddrToSymbol(kSymbolAddr + 4));
-    EXPECT_EQ(symbol_name, kSymbolName);
+    ASSERT_OK_AND_ASSIGN(std::optional<std::string> symbol_name,
+                         elf_reader->InstrAddrToSymbol(kSymbolAddr + 4));
+    EXPECT_EQ(symbol_name.value_or("-"), kSymbolName);
   }
 
   // Read an instruction far away. This should be part of another function.
   {
-    ASSERT_OK_AND_ASSIGN(std::string symbol_name,
+    ASSERT_OK_AND_ASSIGN(std::optional<std::string> symbol_name,
                          elf_reader->InstrAddrToSymbol(kSymbolAddr + 1000));
-    EXPECT_NE(symbol_name, kSymbolName);
+    EXPECT_NE(symbol_name.value_or("-"), kSymbolName);
   }
 }
 

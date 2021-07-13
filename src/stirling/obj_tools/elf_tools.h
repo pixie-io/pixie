@@ -99,11 +99,12 @@ class ElfReader {
    * Looks up the symbol for an address.
    *
    * @param addr The symbol address to lookup.
-   * @return Error if was not able to access the symbol table,
-   *         or if address was not in the symbol table.
-   *         Otherwise the symbol of the address is returned.
+   * @return Symbol name if address was found in the symbol table.
+   *         std::nullopt if search completed by address was not found.
+   *         Error if search failed to run as expected.
+   *
    */
-  StatusOr<std::string> AddrToSymbol(size_t addr);
+  StatusOr<std::optional<std::string>> AddrToSymbol(size_t addr);
 
   /**
    * Looks up the symbol for an instruction address.
@@ -111,11 +112,11 @@ class ElfReader {
    * Any address in the body of the function is resolved, not just where the symbol is located.
    *
    * @param addr The symbol address to lookup.
-   * @return Error if was not able to access the symbol table,
-   *         or if address was not in the symbol table.
-   *         Otherwise the symbol of the address is returned.
+   * @return Symbol name if address was found in the symbol table.
+   *         std::nullopt if search completed by address was not found.
+   *         Error if search failed to run as expected.
    */
-  StatusOr<std::string> InstrAddrToSymbol(size_t addr);
+  StatusOr<std::optional<std::string>> InstrAddrToSymbol(size_t addr);
 
   /**
    * Returns the address of the return instructions of the function.
