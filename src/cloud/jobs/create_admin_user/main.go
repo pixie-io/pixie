@@ -28,6 +28,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
+	"px.dev/pixie/src/cloud/auth/authpb"
 	"px.dev/pixie/src/cloud/profile/profilepb"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/shared/services/utils"
@@ -35,6 +36,7 @@ import (
 
 func init() {
 	pflag.String("profile_service", "profile-service.plc.svc.cluster.local:51500", "The profile service url (load balancer/list is ok)")
+	pflag.String("auth_service", "auth-service.plc.svc.cluster.local:50100", "The auth service url (load balancer/list is ok)")
 	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
 }
 
@@ -53,15 +55,35 @@ func NewProfileServiceClient() (profilepb.ProfileServiceClient, error) {
 	return profilepb.NewProfileServiceClient(authChannel), nil
 }
 
+// NewAuthClient creates a new auth RPC client stub.
+func NewAuthClient() (authpb.AuthServiceClient, error) {
+	dialOpts, err := services.GetGRPCClientDialOpts()
+	if err != nil {
+		return nil, err
+	}
+
+	authChannel, err := grpc.Dial(viper.GetString("auth_service"), dialOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return authpb.NewAuthServiceClient(authChannel), nil
+}
+
 func main() {
 	services.SetupSSLClientFlags()
 	services.PostFlagSetupAndParse()
 	services.CheckServiceFlags()
 	services.CheckSSLClientFlags()
 
-	client, err := NewProfileServiceClient()
+	pc, err := NewProfileServiceClient()
 	if err != nil {
 		logrus.WithError(err).Fatal("Unable to connect to Profile Service")
+	}
+
+	ac, err := NewAuthClient()
+	if err != nil {
+		logrus.WithError(err).Fatal("Unable to connect to Auth Service")
 	}
 
 	// Setup credentials.
@@ -74,13 +96,13 @@ func main() {
 		fmt.Sprintf("bearer %s", serviceAuthToken))
 
 	// Create the default organization.
-	orgInfo := &profilepb.CreateOrgAndUserRequest_Org{
+	orgInfo := &authpb.CreateOrgAndInviteUserRequest_Org{
 		DomainName: "default.com",
 		OrgName:    "default",
 	}
 
 	// Ignore error, just try the org.
-	org, _ := client.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{
+	org, _ := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{
 		DomainName: orgInfo.DomainName,
 	})
 	if org != nil {
@@ -88,34 +110,20 @@ func main() {
 	}
 
 	email := "admin@default.com"
-	userInfo := &profilepb.CreateOrgAndUserRequest_User{
-		Username:         email,
-		FirstName:        "admin",
-		LastName:         "admin",
-		Email:            email,
-		IdentityProvider: "kratos",
+	userInfo := &authpb.CreateOrgAndInviteUserRequest_User{
+		Username:  email,
+		FirstName: "admin",
+		LastName:  "admin",
+		Email:     email,
 	}
-	orgResp, err := client.CreateOrgAndUser(ctx, &profilepb.CreateOrgAndUserRequest{
+	inviteLink, err := ac.CreateOrgAndInviteUser(ctx, &authpb.CreateOrgAndInviteUserRequest{
 		Org:  orgInfo,
 		User: userInfo,
 	})
 	if err != nil {
-		logrus.WithError(err).Fatal("Unable to create admin user")
-	}
-
-	// Create the invite link for the admin user.
-	inviteLink, err := client.InviteUser(ctx, &profilepb.InviteUserRequest{
-		OrgID:            orgResp.OrgID,
-		Email:            userInfo.Email,
-		FirstName:        userInfo.FirstName,
-		LastName:         userInfo.LastName,
-		MustCreateUser:   false,
-		IdentityProvider: "kratos",
-	})
-	if err != nil {
-		logrus.WithError(err).Fatal("Failed to create Invite Link for the admin user")
+		logrus.WithError(err).Fatal("Failed to create org and invite link.")
 	}
 
 	// Log the InviteLink for the admin user.
-	logrus.Infof("Please go to '%s' to set password for '%s'", inviteLink.InviteLink, inviteLink.Email)
+	logrus.Infof("Please go to '%s' to set password for '%s'", inviteLink.InviteLink, userInfo.Email)
 }

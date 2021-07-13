@@ -44,6 +44,11 @@ spec:
             configMapKeyRef:
               name: pl-service-config
               key: PL_PROFILE_SERVICE
+        - name: PL_AUTH_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_AUTH_SERVICE
         volumeMounts:
         - name: certs
           mountPath: /certs

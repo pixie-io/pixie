@@ -24,6 +24,7 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/jobs/create_admin_user",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
+        "//src/cloud/auth/authpb:auth_pl_go_proto",
         "//src/cloud/profile/profilepb:service_pl_go_proto",
         "//src/shared/services",
         "//src/shared/services/utils",
