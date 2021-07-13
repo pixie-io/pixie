@@ -137,19 +137,20 @@ TEST(SymbolizerTest, Basic) {
 
   bpf_tools::BCCWrapper bcc_wrapper;
 
-  const std::string_view kProgram =
-      "#include <linux/socket.h>\n"
-      "BPF_ARRAY(kaddr_array, u64, 1);"
-      "int syscall__get_pid(struct pt_regs* ctx) {"
-      "    int kIndex = 0;"
-      "    u64* p = kaddr_array.lookup(&kIndex);"
-      "    if( p == NULL ) {"
-      "        return 0;"
-      "    }"
-      "    unsigned long long int some_kaddr = PT_REGS_IP(ctx);"
-      "    *p = some_kaddr;"
-      "    return 0;"
-      "}";
+  const std::string_view kProgram = R"(
+    #include <linux/ptrace.h>
+    BPF_ARRAY(kaddr_array, u64, 1);
+    int syscall__get_pid(struct pt_regs* ctx) {
+        int kIndex = 0;
+        u64* p = kaddr_array.lookup(&kIndex);
+        if( p == NULL ) {
+            return 0;
+        }
+        unsigned long long int some_kaddr = PT_REGS_IP(ctx);
+        *p = some_kaddr;
+        return 0;
+    }
+  )";
 
   ASSERT_OK(bcc_wrapper.InitBPFProgram(kProgram));
   ASSERT_OK(bcc_wrapper.AttachKProbes(kProbeSpecs));
