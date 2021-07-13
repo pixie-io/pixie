@@ -98,15 +98,13 @@ class GRPCRouter final : public carnotpb::ResultSinkService::Service {
   Status RecordStats(const sole::uuid& query_id,
                      const std::vector<queryresultspb::AgentExecutionStats>& stats);
 
+  /**
+   * @brief Number of queries currently being tracked.
+   * @return size_t number of queries being tracked.
+   */
+  size_t NumQueriesTracking() const;
+
  private:
-  Status EnqueueRowBatch(sole::uuid query_id,
-                         std::unique_ptr<carnotpb::TransferResultChunkRequest> req);
-
-  Status MarkResultStreamInitiated(sole::uuid query_id, int64_t source_id);
-  Status MarkResultStreamClosed(sole::uuid query_id, int64_t source_id);
-  void RegisterResultStreamContext(sole::uuid query_id, ::grpc::ServerContext* context);
-  void MarkResultStreamContextAsComplete(sole::uuid query_id, ::grpc::ServerContext* context);
-
   /**
    * SourceNodeTracker is responsible for tracking a single source node and the backlog of messages
    * for the source node.
@@ -126,18 +124,30 @@ class GRPCRouter final : public carnotpb::ResultSinkService::Service {
    */
   struct QueryTracker {
     QueryTracker() : create_time(std::chrono::steady_clock::now()) {}
-    absl::node_hash_map<int64_t, SourceNodeTracker> source_node_trackers;
-    std::chrono::steady_clock::time_point create_time;
+    absl::node_hash_map<int64_t, SourceNodeTracker> source_node_trackers GUARDED_BY(query_lock);
+    const std::chrono::steady_clock::time_point create_time;
     std::function<void()> restart_execution_func_;
     // The set of agents we've seen for the query.
-    absl::flat_hash_set<sole::uuid> seen_agents;
-    absl::flat_hash_set<::grpc::ServerContext*> active_agent_contexts;
+    absl::flat_hash_set<sole::uuid> seen_agents GUARDED_BY(query_lock);
+    absl::flat_hash_set<::grpc::ServerContext*> active_agent_contexts GUARDED_BY(query_lock);
     // The execution stats for agents that are clients to this service.
-    std::vector<queryresultspb::AgentExecutionStats> agent_exec_stats;
+    std::vector<queryresultspb::AgentExecutionStats> agent_exec_stats GUARDED_BY(query_lock);
+    absl::base_internal::SpinLock query_lock;
   };
 
-  absl::node_hash_map<sole::uuid, QueryTracker> query_node_map_ GUARDED_BY(query_node_map_lock_);
-  absl::base_internal::SpinLock query_node_map_lock_;
+  Status EnqueueRowBatch(QueryTracker* query_tracker,
+                         std::unique_ptr<carnotpb::TransferResultChunkRequest> req);
+
+  Status MarkResultStreamInitiated(QueryTracker* query_tracker, int64_t source_id);
+  Status MarkResultStreamClosed(QueryTracker* query_tracker, int64_t source_id);
+  void RegisterResultStreamContext(QueryTracker* query_tracker, ::grpc::ServerContext* context);
+  void MarkResultStreamContextAsComplete(QueryTracker* query_tracker,
+                                         ::grpc::ServerContext* context);
+  SourceNodeTracker* GetSourceNodeTracker(QueryTracker* query_tracker, int64_t source_id);
+
+  absl::node_hash_map<sole::uuid, std::shared_ptr<QueryTracker>> query_node_map_
+      GUARDED_BY(query_node_map_lock_);
+  mutable absl::base_internal::SpinLock query_node_map_lock_;
 };
 
 }  // namespace exec

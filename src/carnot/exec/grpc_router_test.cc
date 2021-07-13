@@ -446,6 +446,194 @@ TEST_F(GRPCRouterTest, threaded_router_test) {
   read_thread.join();
 }
 
+TEST_F(GRPCRouterTest, delete_query_router_test) {
+  int64_t grpc_source_node_id = 1;
+  uint64_t ab = 0xea8aa095697f49f1, cd = 0xb127d50e5b6e2645;
+
+  RowDescriptor input_rd({types::DataType::INT64});
+  auto query_uuid = sole::rebuild(ab, cd);
+
+  // Add source node to GRPC router.
+  auto op_proto = planpb::testutils::CreateTestGRPCSource1PB();
+  std::unique_ptr<px::carnot::plan::Operator> plan_node =
+      plan::GRPCSourceOperator::FromProto(op_proto, grpc_source_node_id);
+  auto source_node = FakeGRPCSourceNode();
+  ASSERT_OK(source_node.Init(*plan_node, input_rd, {}));
+
+  auto num_continues = 0;
+  auto s = service_->AddGRPCSourceNode(query_uuid, grpc_source_node_id, &source_node,
+                                       [&] { num_continues++; });
+  ASSERT_OK(s);
+  EXPECT_FALSE(source_node.upstream_initiated_connection());
+  EXPECT_EQ(0, source_node.row_batches.size());
+  EXPECT_EQ(0, num_continues);
+  EXPECT_FALSE(source_node.upstream_closed_connection());
+
+  carnotpb::TransferResultChunkRequest initiate_stream_req0;
+  auto query_id = initiate_stream_req0.mutable_query_id();
+  query_id->set_high_bits(ab);
+  query_id->set_low_bits(cd);
+  initiate_stream_req0.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
+  initiate_stream_req0.mutable_query_result()->set_initiate_result_stream(true);
+
+  // Create row batches.
+  auto rb1 = RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
+                 .AddColumn<types::Int64Value>({1, 2})
+                 .get();
+  carnotpb::TransferResultChunkRequest rb_req1;
+  EXPECT_OK(rb1.ToProto(rb_req1.mutable_query_result()->mutable_row_batch()));
+  rb_req1.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
+  query_id = rb_req1.mutable_query_id();
+  query_id->set_high_bits(ab);
+  query_id->set_low_bits(cd);
+
+  auto rb2 = RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
+                 .AddColumn<types::Int64Value>({4, 6})
+                 .get();
+  carnotpb::TransferResultChunkRequest rb_req2;
+  EXPECT_OK(rb2.ToProto(rb_req2.mutable_query_result()->mutable_row_batch()));
+  rb_req2.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
+  query_id = rb_req2.mutable_query_id();
+  query_id->set_high_bits(ab);
+  query_id->set_low_bits(cd);
+
+  // Send row batches to GRPC router.
+  px::carnotpb::TransferResultChunkResponse response;
+  grpc::ClientContext context;
+  auto writer = stub_->TransferResultChunk(&context, &response);
+  EXPECT_TRUE(writer->Write(initiate_stream_req0));
+  EXPECT_TRUE(writer->Write(rb_req1));
+  service_->DeleteQuery(query_uuid);
+  EXPECT_FALSE(writer->Write(rb_req2));
+  writer->WritesDone();
+  auto status = writer->Finish();
+  EXPECT_FALSE(status.ok());
+
+  grpc::ClientContext new_context;
+  writer = stub_->TransferResultChunk(&new_context, &response);
+  // This should cause the stream to end with an error since that query has already been deleted.
+  EXPECT_TRUE(writer->Write(rb_req1));
+  writer->WritesDone();
+  status = writer->Finish();
+  EXPECT_FALSE(status.ok());
+  EXPECT_EQ("Attempting to TransferResultChunk for finished query.", status.error_message());
+
+  EXPECT_EQ(0, service_->NumQueriesTracking());
+}
+
+TEST_F(GRPCRouterTest, threaded_router_test_multi_writer) {
+  uint64_t ab = 0xea8aa095697f49f1, cd = 0xb127d50e5b6e2645;
+  auto query_uuid = sole::rebuild(ab, cd);
+
+  auto func_registry_ = std::make_unique<udf::Registry>("test_registry");
+  auto table_store = std::make_shared<table_store::TableStore>();
+  auto exec_state = std::make_unique<ExecState>(
+      func_registry_.get(), table_store, MockResultSinkStubGenerator, sole::uuid4(), nullptr);
+
+  MockExecNode mock_child0;
+  MockExecNode mock_child1;
+
+  RowDescriptor input_rd({types::DataType::INT64});
+  auto op_proto = planpb::testutils::CreateTestGRPCSource1PB();
+  std::unique_ptr<px::carnot::plan::Operator> plan_node =
+      plan::GRPCSourceOperator::FromProto(op_proto, 1);
+  auto source_node0 = GRPCSourceNode();
+  ASSERT_OK(source_node0.Init(*plan_node, input_rd, {}));
+  source_node0.AddChild(&mock_child0, 0);
+  ASSERT_OK(source_node0.Open(exec_state.get()));
+  ASSERT_OK(source_node0.Prepare(exec_state.get()));
+
+  auto source_node1 = GRPCSourceNode();
+  ASSERT_OK(source_node1.Init(*plan_node, input_rd, {}));
+  source_node1.AddChild(&mock_child1, 0);
+  ASSERT_OK(source_node1.Open(exec_state.get()));
+  ASSERT_OK(source_node1.Prepare(exec_state.get()));
+
+  FakePlanNode fake_plan_node(111);
+  // Silence GMOCK warnings.
+  EXPECT_CALL(mock_child0, InitImpl(::testing::_));
+  EXPECT_CALL(mock_child0, PrepareImpl(::testing::_));
+  EXPECT_CALL(mock_child0, OpenImpl(::testing::_));
+  ASSERT_OK(mock_child0.Init(fake_plan_node, RowDescriptor({}), {}));
+  ASSERT_OK(mock_child0.Open(exec_state.get()));
+  ASSERT_OK(mock_child0.Prepare(exec_state.get()));
+
+  EXPECT_CALL(mock_child1, InitImpl(::testing::_));
+  EXPECT_CALL(mock_child1, PrepareImpl(::testing::_));
+  EXPECT_CALL(mock_child1, OpenImpl(::testing::_));
+  ASSERT_OK(mock_child1.Init(fake_plan_node, RowDescriptor({}), {}));
+  ASSERT_OK(mock_child1.Open(exec_state.get()));
+  ASSERT_OK(mock_child1.Prepare(exec_state.get()));
+
+  // Start up thread that enqueues row batches.
+  auto writer_work = [&](int64_t source_id) {
+    px::carnotpb::TransferResultChunkResponse response;
+    grpc::ClientContext context;
+    auto writer = stub_->TransferResultChunk(&context, &response);
+    carnotpb::TransferResultChunkRequest initiate_stream_req0;
+    auto query_id = initiate_stream_req0.mutable_query_id();
+    query_id->set_high_bits(ab);
+    query_id->set_low_bits(cd);
+    initiate_stream_req0.mutable_query_result()->set_grpc_source_id(source_id);
+    initiate_stream_req0.mutable_query_result()->set_initiate_result_stream(true);
+    EXPECT_TRUE(writer->Write(initiate_stream_req0));
+    for (int idx = 0; idx <= 100; ++idx) {
+      auto rb = RowBatchBuilder(input_rd, /*size*/ 1, /*eow*/ idx == 100, /*eos*/ idx == 100)
+                    .AddColumn<types::Int64Value>({
+                        idx,
+                    })
+                    .get();
+      carnotpb::TransferResultChunkRequest rb_req;
+      EXPECT_OK(rb.ToProto(rb_req.mutable_query_result()->mutable_row_batch()));
+      rb_req.mutable_query_result()->set_grpc_source_id(source_id);
+      auto query_id = rb_req.mutable_query_id();
+      query_id->set_high_bits(ab);
+      query_id->set_low_bits(cd);
+      EXPECT_TRUE(writer->Write(rb_req));
+    }
+    writer->WritesDone();
+    writer->Finish();
+  };
+  std::thread write_thread0(writer_work, 0);
+  std::thread write_thread1(writer_work, 1);
+  write_thread0.join();
+  write_thread1.join();
+
+  // Start up thread which adds the source node to the router and verifies rowbatches have been
+  // enqueued in correct order.
+  std::thread read_thread([&] {
+    auto idx = 0;
+
+    auto s = service_->AddGRPCSourceNode(query_uuid, /* source_id */ 0, &source_node0, [] {});
+    ASSERT_OK(s);
+    s = service_->AddGRPCSourceNode(query_uuid, /* source_id */ 1, &source_node1, [] {});
+    ASSERT_OK(s);
+    do {
+      auto check_result_batch = [&](ExecState*, const table_store::schema::RowBatch& rb, int64_t) {
+        EXPECT_EQ(idx,
+                  types::GetValueFromArrowArray<types::DataType::INT64>(rb.ColumnAt(0).get(), 0));
+      };
+
+      EXPECT_CALL(mock_child0, ConsumeNextImpl(::testing::_, ::testing::_, ::testing::_))
+          .Times(1)
+          .WillRepeatedly(::testing::DoAll(::testing::Invoke(check_result_batch),
+                                           ::testing::Return(Status::OK())))
+          .RetiresOnSaturation();
+
+      ASSERT_OK(source_node0.GenerateNext(exec_state.get()));
+
+      EXPECT_CALL(mock_child1, ConsumeNextImpl(::testing::_, ::testing::_, ::testing::_))
+          .Times(1)
+          .WillRepeatedly(::testing::DoAll(::testing::Invoke(check_result_batch),
+                                           ::testing::Return(Status::OK())))
+          .RetiresOnSaturation();
+      ASSERT_OK(source_node1.GenerateNext(exec_state.get()));
+      idx++;
+    } while (source_node0.HasBatchesRemaining() && source_node1.HasBatchesRemaining());
+  });
+  read_thread.join();
+}
+
 }  // namespace exec
 }  // namespace carnot
 }  // namespace px
