@@ -155,26 +155,24 @@ message UpdateOrgRequest {
 message GetUserSettingsRequest {
   // The ID of the user.
   px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
-  // The user setting keys to fetch.
-  repeated string keys = 2;
+  reserved 2; // DEPRECATED
 }
 
 // The response for a UserSettingsRequest.
 message GetUserSettingsResponse {
-  // The keys fetched in the user settings request.
-  repeated string keys = 1;
-  // The corresponding values to the user settings keys.
-  repeated string values = 2;
+  // Settings for users key-value. 
+  reserved 1; // DEPRECATED
+  reserved 2; // DEPRECATED
+  bool analytics_optout = 3; 
 }
 
 // A request to update the user settings for a particular user.
 message UpdateUserSettingsRequest {
   // The ID of the user.
   px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
-  // The user setting keys to set.
-  repeated string keys = 2;
-  // The corresponding values to set. Must be the same length as the number of keys.
-  repeated string values = 3;
+  reserved 2; // DEPRECATED
+  reserved 3; // DEPRECATED
+  google.protobuf.BoolValue analytics_optout = 4;
 }
 
 // UpdateUserSettingsResponse is the response to an UpdateUserSettingsRequest.

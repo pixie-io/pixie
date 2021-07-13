@@ -1149,90 +1149,6 @@ func TestServer_UpdateOrg_RequestBlockedForUserOutsideOrg(t *testing.T) {
 	require.Regexp(t, "user does not have permission", err)
 }
 
-func TestServer_GetUserSettings(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	d := mock_controller.NewMockUserSettingsDatastore(ctrl)
-
-	s := controller.NewServer(nil, nil, d, nil)
-
-	userID := uuid.Must(uuid.NewV4())
-	d.EXPECT().
-		GetUserSettings(userID, []string{"test", "another_key"}).
-		Return([]string{"a", "b"}, nil)
-
-	resp, err := s.GetUserSettings(context.Background(), &profilepb.GetUserSettingsRequest{
-		ID:   utils.ProtoFromUUID(userID),
-		Keys: []string{"test", "another_key"},
-	})
-	require.NoError(t, err)
-	assert.Equal(t, []string{"test", "another_key"}, resp.Keys)
-	assert.Equal(t, []string{"a", "b"}, resp.Values)
-}
-
-func TestServer_UpdateUserSettings(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	d := mock_controller.NewMockUserSettingsDatastore(ctrl)
-
-	s := controller.NewServer(nil, nil, d, nil)
-
-	userID := uuid.Must(uuid.NewV4())
-
-	tests := []struct {
-		name string
-
-		keys   []string
-		values []string
-
-		expectCall   bool
-		expectErr    bool
-		expectedCode codes.Code
-	}{
-		{
-			name:       "valid",
-			keys:       []string{"test1", "test2"},
-			values:     []string{"val1", "val2"},
-			expectCall: true,
-			expectErr:  false,
-		},
-		{
-			name:         "mismatched length",
-			keys:         []string{"test1", "test2"},
-			values:       []string{"val1"},
-			expectCall:   false,
-			expectErr:    true,
-			expectedCode: codes.InvalidArgument,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			if tc.expectCall {
-				d.EXPECT().
-					UpdateUserSettings(userID, tc.keys, tc.values).
-					Return(nil)
-			}
-
-			resp, err := s.UpdateUserSettings(context.Background(), &profilepb.UpdateUserSettingsRequest{
-				ID:     utils.ProtoFromUUID(userID),
-				Keys:   tc.keys,
-				Values: tc.values,
-			})
-			if tc.expectErr {
-				assert.NotNil(t, err)
-				assert.Equal(t, tc.expectedCode, status.Code(err))
-			} else {
-				require.NoError(t, err)
-				assert.NotNil(t, resp)
-				assert.Equal(t, true, resp.OK)
-			}
-		})
-	}
-}
-
 func TestServer_GetUserAttributes(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -1277,6 +1193,52 @@ func TestServer_SetUserAttributes(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Equal(t, &profilepb.SetUserAttributesResponse{}, resp)
+}
+
+func TestServer_GetUserSettings(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := mock_controller.NewMockUserSettingsDatastore(ctrl)
+
+	s := controller.NewServer(nil, nil, d, nil)
+
+	userID := uuid.Must(uuid.NewV4())
+	analyticsOptout := true
+	d.EXPECT().
+		GetUserSettings(userID).
+		Return(&datastore.UserSettings{AnalyticsOptout: &analyticsOptout}, nil)
+
+	resp, err := s.GetUserSettings(context.Background(), &profilepb.GetUserSettingsRequest{
+		ID: utils.ProtoFromUUID(userID),
+	})
+	require.NoError(t, err)
+	assert.Equal(t, true, resp.AnalyticsOptout)
+}
+
+func TestServer_UpdateUserSettings(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := mock_controller.NewMockUserSettingsDatastore(ctrl)
+
+	s := controller.NewServer(nil, nil, d, nil)
+
+	userID := uuid.Must(uuid.NewV4())
+	analyticsOptout := true
+	d.EXPECT().
+		UpdateUserSettings(&datastore.UserSettings{
+			UserID:          userID,
+			AnalyticsOptout: &analyticsOptout,
+		}).
+		Return(nil)
+
+	resp, err := s.UpdateUserSettings(context.Background(), &profilepb.UpdateUserSettingsRequest{
+		ID:              utils.ProtoFromUUID(userID),
+		AnalyticsOptout: &types.BoolValue{Value: true},
+	})
+	require.NoError(t, err)
+	assert.Equal(t, &profilepb.UpdateUserSettingsResponse{}, resp)
 }
 
 func CreateTestContext() context.Context {

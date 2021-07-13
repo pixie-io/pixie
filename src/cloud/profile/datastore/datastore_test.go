@@ -74,9 +74,8 @@ func mustLoadTestData(db *sqlx.DB) {
 	db.MustExec(insertUserQuery, "123e4567-e89b-12d3-a456-426655440001", "123e4567-e89b-12d3-a456-426655440000", "person@my-org.com", "first", "last", "person@my-org.com", "true", "github", "github|123456789")
 	db.MustExec(insertUserQuery, "123e4567-e89b-12d3-a456-426655440002", "123e4567-e89b-12d3-a456-426655440000", "person2@my-org.com", "first2", "last2", "person2@my-org.com", "false", "google-oauth2", "google-oauth2|123456789")
 
-	insertUserSetting := `INSERT INTO user_settings (user_id, key, value) VALUES ($1, $2, $3)`
-	db.MustExec(insertUserSetting, "123e4567-e89b-12d3-a456-426655440001", "some_setting", "test")
-	db.MustExec(insertUserSetting, "123e4567-e89b-12d3-a456-426655440001", "another_setting", "true")
+	insertUserSetting := `INSERT INTO user_settings (user_id, analytics_optout) VALUES ($1, $2)`
+	db.MustExec(insertUserSetting, "123e4567-e89b-12d3-a456-426655440001", false)
 
 	insertUserAttr := `INSERT INTO user_attributes (user_id, tour_seen) VALUES ($1, $2)`
 	db.MustExec(insertUserAttr, "123e4567-e89b-12d3-a456-426655440001", false)
@@ -234,6 +233,17 @@ func TestDatastore(t *testing.T) {
 		err = rows.StructScan(&userAttrs)
 		require.NoError(t, err)
 		assert.Equal(t, false, *userAttrs.TourSeen)
+
+		// Check value in DB.
+		query = `SELECT * from user_settings WHERE user_id=$1`
+		rows, err = db.Queryx(query, userID)
+		require.NoError(t, err)
+		defer rows.Close()
+		var userSettings datastore.UserSettings
+		assert.True(t, rows.Next())
+		err = rows.StructScan(&userSettings)
+		require.NoError(t, err)
+		assert.Equal(t, false, *userSettings.AnalyticsOptout)
 	})
 
 	t.Run("create org and user first time user case should fail for existing org", func(t *testing.T) {
@@ -364,46 +374,6 @@ func TestDatastore(t *testing.T) {
 		assert.Equal(t, false, userInfoFetched.IsApproved)
 	})
 
-	t.Run("Get user settings", func(t *testing.T) {
-		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
-
-		userSettingsFetched, err := d.GetUserSettings(uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440001"), []string{"another_setting", "doesnt_exist", "some_setting"})
-		require.NoError(t, err)
-		assert.Equal(t, []string{"true", "", "test"}, userSettingsFetched)
-	})
-
-	t.Run("Update user settings", func(t *testing.T) {
-		mustLoadTestData(db)
-		d := datastore.NewDatastore(db)
-
-		id := "123e4567-e89b-12d3-a456-426655440001"
-		err := d.UpdateUserSettings(uuid.FromStringOrNil(id), []string{"new_setting", "another_setting"}, []string{"some_val", "new_value"})
-		require.NoError(t, err)
-
-		checkKVInDB := func(k, v string) {
-			query := `SELECT * from user_settings WHERE user_id=$1 AND key=$2`
-			rows, err := db.Queryx(query, id, k)
-			require.NoError(t, err)
-			defer rows.Close()
-			var userSetting datastore.UserSetting
-			assert.True(t, rows.Next())
-			err = rows.StructScan(&userSetting)
-			require.NoError(t, err)
-			assert.Equal(t, v, userSetting.Value)
-		}
-
-		expectedKeyValues := map[string]string{
-			"new_setting":     "some_val",
-			"another_setting": "new_value",
-			"some_setting":    "test",
-		}
-
-		for k, v := range expectedKeyValues {
-			checkKVInDB(k, v)
-		}
-	})
-
 	t.Run("Get user attributes", func(t *testing.T) {
 		mustLoadTestData(db)
 		d := datastore.NewDatastore(db)
@@ -436,6 +406,40 @@ func TestDatastore(t *testing.T) {
 		err = rows.StructScan(&userAttrs)
 		require.NoError(t, err)
 		assert.Equal(t, true, *userAttrs.TourSeen)
+	})
+
+	t.Run("Get user settings", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db)
+
+		attrs, err := d.GetUserSettings(uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440001"))
+		require.NoError(t, err)
+		assert.NotNil(t, attrs.AnalyticsOptout)
+		assert.Equal(t, false, *attrs.AnalyticsOptout)
+	})
+
+	t.Run("Set user settings", func(t *testing.T) {
+		mustLoadTestData(db)
+		d := datastore.NewDatastore(db)
+
+		id := "123e4567-e89b-12d3-a456-426655440001"
+		analyticsOptout := true
+		err := d.UpdateUserSettings(&datastore.UserSettings{
+			UserID:          uuid.FromStringOrNil(id),
+			AnalyticsOptout: &analyticsOptout,
+		})
+		require.NoError(t, err)
+
+		// Check value in DB.
+		query := `SELECT * from user_settings WHERE user_id=$1`
+		rows, err := db.Queryx(query, id)
+		require.NoError(t, err)
+		defer rows.Close()
+		var userSettings datastore.UserSettings
+		assert.True(t, rows.Next())
+		err = rows.StructScan(&userSettings)
+		require.NoError(t, err)
+		assert.Equal(t, true, *userSettings.AnalyticsOptout)
 	})
 
 	t.Run("Get users in org", func(t *testing.T) {

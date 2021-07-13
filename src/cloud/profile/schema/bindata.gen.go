@@ -30,6 +30,8 @@
 // 000015_create_user_attributes_table.up.sql
 // 000016_move_user_settings.down.sql
 // 000016_move_user_settings.up.sql
+// 000017_reformat_user_settings.down.sql
+// 000017_reformat_user_settings.up.sql
 package schema
 
 import (
@@ -706,6 +708,46 @@ func _000016_move_user_settingsUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000017_reformat_user_settingsDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x6c\x8e\xb1\x8e\x82\x40\x14\x45\xfb\xf7\x15\xb7\x9c\x49\x28\x76\x37\xdb\x51\x21\x3c\xcc\x44\x05\x7c\x32\x05\x95\x21\x32\x51\xa2\xb1\x60\x80\xc4\xbf\x37\xa0\xb1\x50\xdb\x73\x72\x4f\x6e\x22\x79\x81\x32\x5a\xac\x19\x83\x77\xdd\xde\xbb\xbe\x6f\xaf\x47\x1f\x12\xc5\xc2\x51\xc9\xdf\x24\x14\xe1\x41\xda\x06\xd6\x9a\x24\x20\xe0\xec\x6e\x18\xeb\xee\x70\xaa\x3b\xf5\xfb\xf3\xf7\xaf\x27\x38\xd6\x97\xc1\xbd\x63\x02\x0a\x31\x9b\x48\x2a\xac\xb8\x52\xcf\x50\x30\x15\xe6\x91\xcd\xcc\xd6\x32\x3e\x45\x9a\x0b\x9b\x65\x36\xad\x5e\x56\x43\x38\x65\xe1\x2c\xe6\xdd\xfc\xc9\xab\xb6\xd1\xa4\x43\xba\x07\x00\x00\xff\xff\xd8\xde\x58\x07\xdb\x00\x00\x00")
+
+func _000017_reformat_user_settingsDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000017_reformat_user_settingsDownSql,
+		"000017_reformat_user_settings.down.sql",
+	)
+}
+
+func _000017_reformat_user_settingsDownSql() (*asset, error) {
+	bytes, err := _000017_reformat_user_settingsDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000017_reformat_user_settings.down.sql", size: 219, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000017_reformat_user_settingsUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x6c\x8e\xb1\x4e\xc3\x30\x10\x86\xf7\x7b\x8a\x7f\x4c\xa4\xbe\x41\x26\x93\x9c\x91\x45\x6a\x57\x17\x67\xe8\x54\x19\x62\x90\xa5\x28\x46\xd8\x1d\x78\x7b\x54\x02\x0c\xa8\xeb\xf7\xe9\xbe\xfb\x07\x71\x27\x78\xf5\x30\x32\xae\x25\x7e\x5c\x4a\xac\x35\x6d\x6f\xa5\x23\xea\x85\x95\xe7\x7b\x12\x0d\x61\x27\x69\xc1\x3c\x9b\xe1\x40\x40\xd8\xc2\xfa\x59\xd3\x4b\xb9\xe4\xf7\x9a\xaf\x15\xcf\x39\xaf\x31\x6c\x18\x58\xab\x79\xf4\x78\x0d\x6b\x89\x07\x22\xe0\x24\xe6\xa8\xe4\x8c\x27\x3e\x37\x3f\x99\xf6\x96\xd0\x4e\xd8\x3c\xda\x1b\xc7\x9f\x80\xb0\x66\x61\xdb\xf3\xf4\xfd\xb3\x34\x69\x69\xa9\xed\x88\x8c\x9d\x58\x3c\x8c\xf5\xee\xff\xbe\xdf\x63\x9a\x78\xe4\xde\x23\x2d\xd0\xe2\x8e\x7b\xa0\xfb\x0a\x00\x00\xff\xff\xe7\x3e\x47\xe9\xf5\x00\x00\x00")
+
+func _000017_reformat_user_settingsUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000017_reformat_user_settingsUpSql,
+		"000017_reformat_user_settings.up.sql",
+	)
+}
+
+func _000017_reformat_user_settingsUpSql() (*asset, error) {
+	bytes, err := _000017_reformat_user_settingsUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000017_reformat_user_settings.up.sql", size: 245, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -788,6 +830,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000015_create_user_attributes_table.up.sql":             _000015_create_user_attributes_tableUpSql,
 	"000016_move_user_settings.down.sql":                     _000016_move_user_settingsDownSql,
 	"000016_move_user_settings.up.sql":                       _000016_move_user_settingsUpSql,
+	"000017_reformat_user_settings.down.sql":                 _000017_reformat_user_settingsDownSql,
+	"000017_reformat_user_settings.up.sql":                   _000017_reformat_user_settingsUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -861,6 +905,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000015_create_user_attributes_table.up.sql":             &bintree{_000015_create_user_attributes_tableUpSql, map[string]*bintree{}},
 	"000016_move_user_settings.down.sql":                     &bintree{_000016_move_user_settingsDownSql, map[string]*bintree{}},
 	"000016_move_user_settings.up.sql":                       &bintree{_000016_move_user_settingsUpSql, map[string]*bintree{}},
+	"000017_reformat_user_settings.down.sql":                 &bintree{_000017_reformat_user_settingsDownSql, map[string]*bintree{}},
+	"000017_reformat_user_settings.up.sql":                   &bintree{_000017_reformat_user_settingsUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory

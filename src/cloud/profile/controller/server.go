@@ -87,9 +87,9 @@ type Datastore interface {
 // UserSettingsDatastore is the interface used to the backing store for user settings.
 type UserSettingsDatastore interface {
 	// GetUserSettings gets the user settings for the given user and keys.
-	GetUserSettings(uuid.UUID, []string) ([]string, error)
+	GetUserSettings(uuid.UUID) (*datastore.UserSettings, error)
 	// UpdateUserSettings updates the keys and values for the given user.
-	UpdateUserSettings(uuid.UUID, []string, []string) error
+	UpdateUserSettings(*datastore.UserSettings) error
 	// GetUserAttributes gets the attributes for the given user.
 	GetUserAttributes(uuid.UUID) (*datastore.UserAttributes, error)
 	// SetUserAttributes sets the attributes for the given user.
@@ -393,33 +393,32 @@ func (s *Server) UpdateUser(ctx context.Context, req *profilepb.UpdateUserReques
 func (s *Server) GetUserSettings(ctx context.Context, req *profilepb.GetUserSettingsRequest) (*profilepb.GetUserSettingsResponse, error) {
 	userID := utils.UUIDFromProtoOrNil(req.ID)
 
-	values, err := s.uds.GetUserSettings(userID, req.Keys)
+	settings, err := s.uds.GetUserSettings(userID)
 	if err != nil {
 		return nil, err
 	}
 
-	resp := &profilepb.GetUserSettingsResponse{
-		Keys:   req.Keys,
-		Values: values,
-	}
-
-	return resp, nil
+	return &profilepb.GetUserSettingsResponse{
+		AnalyticsOptout: *settings.AnalyticsOptout,
+	}, nil
 }
 
-// UpdateUserSettings updates the given keys and values for the specified user.
+// UpdateUserSettings sets the user settings for the given user.
 func (s *Server) UpdateUserSettings(ctx context.Context, req *profilepb.UpdateUserSettingsRequest) (*profilepb.UpdateUserSettingsResponse, error) {
-	userID := utils.UUIDFromProtoOrNil(req.ID)
-
-	if len(req.Keys) != len(req.Values) {
-		return nil, status.Error(codes.InvalidArgument, "keys and values lengths must be equal")
+	userSettings := &datastore.UserSettings{
+		UserID: utils.UUIDFromProtoOrNil(req.ID),
 	}
 
-	err := s.uds.UpdateUserSettings(userID, req.Keys, req.Values)
+	if req.AnalyticsOptout != nil {
+		userSettings.AnalyticsOptout = &req.AnalyticsOptout.Value
+	}
+
+	err := s.uds.UpdateUserSettings(userSettings)
 	if err != nil {
 		return nil, err
 	}
 
-	return &profilepb.UpdateUserSettingsResponse{OK: true}, nil
+	return &profilepb.UpdateUserSettingsResponse{}, nil
 }
 
 // GetUserAttributes gets the user attributes for the given user.

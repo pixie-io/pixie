@@ -73,7 +73,7 @@ func (u *UserServiceServer) GetUser(ctx context.Context, req *uuidpb.UUID) (*clo
 	}, nil
 }
 
-// GetUserSettings will retrieve settings based on UUID and keys.
+// GetUserSettings will retrieve settings given the user ID.
 func (u *UserServiceServer) GetUserSettings(ctx context.Context, req *cloudpb.GetUserSettingsRequest) (*cloudpb.GetUserSettingsResponse,
 	error) {
 	ctx, err := contextWithAuthToken(ctx)
@@ -82,8 +82,7 @@ func (u *UserServiceServer) GetUserSettings(ctx context.Context, req *cloudpb.Ge
 	}
 
 	in := &profilepb.GetUserSettingsRequest{
-		ID:   req.ID,
-		Keys: req.Keys,
+		ID: req.ID,
 	}
 
 	resp, err := u.ProfileServiceClient.GetUserSettings(ctx, in)
@@ -91,17 +90,12 @@ func (u *UserServiceServer) GetUserSettings(ctx context.Context, req *cloudpb.Ge
 		return nil, err
 	}
 
-	settingsMap := make(map[string]string)
-	for idx := range resp.Keys {
-		settingsMap[resp.Keys[idx]] = resp.Values[idx]
-	}
-
 	return &cloudpb.GetUserSettingsResponse{
-		SettingMap: settingsMap,
+		AnalyticsOptout: resp.AnalyticsOptout,
 	}, nil
 }
 
-// UpdateUserSettings will update user settings.
+// UpdateUserSettings will update the settings for the given user.
 func (u *UserServiceServer) UpdateUserSettings(ctx context.Context, req *cloudpb.UpdateUserSettingsRequest) (*cloudpb.UpdateUserSettingsResponse,
 	error) {
 	ctx, err := contextWithAuthToken(ctx)
@@ -109,25 +103,16 @@ func (u *UserServiceServer) UpdateUserSettings(ctx context.Context, req *cloudpb
 		return nil, err
 	}
 
-	idx := 0
-	keys := make([]string, len(req.SettingMap))
-	values := make([]string, len(req.SettingMap))
-	for k, v := range req.SettingMap {
-		keys[idx] = k
-		values[idx] = v
-		idx++
-	}
-
 	in := &profilepb.UpdateUserSettingsRequest{
-		ID:     req.ID,
-		Keys:   keys,
-		Values: values,
+		ID:              req.ID,
+		AnalyticsOptout: req.AnalyticsOptout,
 	}
 
 	_, err = u.ProfileServiceClient.UpdateUserSettings(ctx, in)
 	if err != nil {
 		return nil, err
 	}
+
 	return &cloudpb.UpdateUserSettingsResponse{}, nil
 }
 

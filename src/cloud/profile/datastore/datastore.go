@@ -73,6 +73,8 @@ var (
 	ErrOrgNotFound = fmt.Errorf("org not found")
 	// ErrUserAttributesNotFound is used when no attributes can be found for the given user.
 	ErrUserAttributesNotFound = fmt.Errorf("user attributes not found")
+	// ErrUserSettingsNotFound is used when no settings can be found for the given user.
+	ErrUserSettingsNotFound = fmt.Errorf("user settings not found")
 )
 
 // CreateUser creates a new user.
@@ -89,6 +91,11 @@ func (d *Datastore) CreateUser(userInfo *UserInfo) (uuid.UUID, error) {
 	}
 
 	err = d.createUserAttributesUsingTxn(txn, u)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	err = d.createUserSettingsUsingTxn(txn, u)
 	if err != nil {
 		return uuid.Nil, err
 	}
@@ -147,6 +154,11 @@ func (d *Datastore) CreateUserAndOrg(orgInfo *OrgInfo, userInfo *UserInfo) (uuid
 	}
 
 	err = d.createUserAttributesUsingTxn(txn, userID)
+	if err != nil {
+		return uuid.Nil, uuid.Nil, err
+	}
+
+	err = d.createUserSettingsUsingTxn(txn, userID)
 	if err != nil {
 		return uuid.Nil, uuid.Nil, err
 	}
@@ -350,77 +362,69 @@ func (d *Datastore) ApproveAllOrgUsers(orgID uuid.UUID) error {
 	return err
 }
 
-// UserSetting is a key-value setting for a user configuration.
-type UserSetting struct {
-	UserID uuid.UUID `db:"user_id"`
-	Key    string    `db:"key"`
-	Value  string    `db:"value"`
+// UserSettings is a set of settings for a user.
+type UserSettings struct {
+	UserID          uuid.UUID `db:"user_id"`
+	AnalyticsOptout *bool     `db:"analytics_optout"`
 }
 
-// GetUserSettings fetches the settings for the given user and keys.
-func (d *Datastore) GetUserSettings(id uuid.UUID, keys []string) ([]string, error) {
-	arg := map[string]interface{}{
-		"id":   id,
-		"keys": keys,
-	}
-	query, args, err := sqlx.Named("SELECT * from user_settings WHERE user_id=:id AND key IN (:keys)", arg)
-	if err != nil {
-		return nil, err
-	}
-	query, args, err = sqlx.In(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	query = d.db.Rebind(query)
-	rows, err := d.db.Queryx(query, args...)
-
+// GetUserSettings fetches the settings for the given user.
+func (d *Datastore) GetUserSettings(id uuid.UUID) (*UserSettings, error) {
+	query := `SELECT * from user_settings WHERE user_id=$1`
+	rows, err := d.db.Queryx(query, id)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	// Make a map of key -> value.
-	settings := make(map[string]string)
-	for rows.Next() {
-		var userSetting UserSetting
-		err := rows.StructScan(&userSetting)
-		if err != nil {
-			return nil, err
-		}
-		settings[userSetting.Key] = userSetting.Value
+	if rows.Next() {
+		var userSettings UserSettings
+		err := rows.StructScan(&userSettings)
+		return &userSettings, err
 	}
 
-	// Return settings in the requested order.
-	values := make([]string, len(keys))
-	for i, k := range keys {
-		if val, ok := settings[k]; ok {
-			values[i] = val
-		} else {
-			values[i] = ""
-		}
-	}
-
-	return values, nil
+	return nil, ErrUserSettingsNotFound
 }
 
 // UpdateUserSettings updates the user settings for the given user.
-func (d *Datastore) UpdateUserSettings(id uuid.UUID, keys []string, values []string) error {
+func (d *Datastore) UpdateUserSettings(settings *UserSettings) error {
 	tx, err := d.db.Beginx()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	for i, k := range keys {
-		userSetting := UserSetting{id, k, values[i]}
-		query := `INSERT INTO user_settings ("user_id", "key", "value") VALUES (:user_id, :key, :value) ON CONFLICT ("user_id", "key") DO UPDATE SET "value" = EXCLUDED.value`
-		_, err := d.db.NamedExec(query, userSetting)
-		if err != nil {
-			return err
-		}
+	cols := []string{}
+	params := []string{}
+
+	if settings.AnalyticsOptout != nil {
+		cols = append(cols, "analytics_optout")
+		params = append(params, ":analytics_optout")
+	}
+
+	query := `UPDATE user_settings SET (%s) = (%s) WHERE user_id = :user_id`
+	if len(cols) == 1 {
+		query = `UPDATE user_settings SET %s = %s WHERE user_id = :user_id`
+	}
+	_, err = d.db.NamedExec(fmt.Sprintf(query, strings.Join(cols, ","), strings.Join(params, ",")), settings)
+
+	if err != nil {
+		return err
 	}
 
 	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// createUserSettingsUsingTxn creates default user attributes for the given user.
+func (d *Datastore) createUserSettingsUsingTxn(tx *sqlx.Tx, id uuid.UUID) error {
+	query := `INSERT INTO user_settings (user_id) VALUES ($1)`
+	_, err := tx.Exec(query, id)
+
 	if err != nil {
 		return err
 	}

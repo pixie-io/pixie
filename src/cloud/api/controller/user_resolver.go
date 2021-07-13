@@ -98,71 +98,60 @@ func (u *UserInfoResolver) IsApproved() bool {
 	return u.UserInfo.IsApproved
 }
 
-// UserSettingResolver resolves a user setting.
-type UserSettingResolver struct {
-	Key   string
-	Value string
+// UserSettingsResolver resolves user settings.
+type UserSettingsResolver struct {
+	AnalyticsOptout bool
 }
 
-type userSettingsArgs struct {
-	Keys []string
+type updateUserSettingsArgs struct {
+	Settings *editableUserSettings
+}
+
+type editableUserSettings struct {
+	AnalyticsOptout *bool
 }
 
 // UserSettings resolves user settings information.
-func (q *QueryResolver) UserSettings(ctx context.Context, args *userSettingsArgs) ([]UserSettingResolver, error) {
+func (q *QueryResolver) UserSettings(ctx context.Context) (*UserSettingsResolver, error) {
 	sCtx, err := authcontext.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	resp, err := q.Env.UserServer.GetUserSettings(ctx, &cloudpb.GetUserSettingsRequest{
-		ID:   utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID),
-		Keys: args.Keys,
+		ID: utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	resolvers := make([]UserSettingResolver, len(args.Keys))
-	for i, k := range args.Keys {
-		resolvers[i] = UserSettingResolver{k, resp.SettingMap[k]}
-	}
-
-	return resolvers, nil
-}
-
-type updateUserSettingsArgs struct {
-	Keys   []string
-	Values []string
+	return &UserSettingsResolver{AnalyticsOptout: resp.AnalyticsOptout}, nil
 }
 
 // UpdateUserSettings updates the user settings for the current user.
-func (q *QueryResolver) UpdateUserSettings(ctx context.Context, args *updateUserSettingsArgs) ([]UserSettingResolver, error) {
+func (q *QueryResolver) UpdateUserSettings(ctx context.Context, args *updateUserSettingsArgs) (*UserSettingsResolver, error) {
 	sCtx, err := authcontext.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(args.Values) != len(args.Keys) {
-		return nil, fmt.Errorf("length of Keys and Values does not match")
+	req := &cloudpb.UpdateUserSettingsRequest{
+		ID: utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID),
 	}
 
-	settingsMap := make(map[string]string)
-	resolvers := make([]UserSettingResolver, len(args.Keys))
-	for i, k := range args.Keys {
-		settingsMap[k] = args.Values[i]
-		resolvers[i] = UserSettingResolver{k, args.Values[i]}
+	resp := &UserSettingsResolver{}
+
+	if args.Settings.AnalyticsOptout != nil {
+		req.AnalyticsOptout = &types.BoolValue{Value: *args.Settings.AnalyticsOptout}
+		resp.AnalyticsOptout = *args.Settings.AnalyticsOptout
 	}
 
-	_, err = q.Env.UserServer.UpdateUserSettings(ctx, &cloudpb.UpdateUserSettingsRequest{
-		ID:         utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID),
-		SettingMap: settingsMap,
-	})
+	_, err = q.Env.UserServer.UpdateUserSettings(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
-	return resolvers, nil
+	return resp, nil
 }
 
 type updateUserPermissionsArgs struct {

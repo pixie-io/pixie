@@ -17,7 +17,7 @@ export interface GQLQuery {
   artifacts: GQLArtifactsInfo;
   user: GQLUserInfo;
   org: GQLOrgInfo;
-  userSettings: Array<GQLUserSetting>;
+  userSettings: GQLUserSettings;
   userAttributes: GQLUserAttributes;
   orgUsers: Array<GQLUserInfo>;
   cluster: GQLClusterInfo;
@@ -50,7 +50,7 @@ export interface GQLMutation {
   DeleteDeploymentKey: boolean;
   CreateAPIKey: GQLAPIKey;
   DeleteAPIKey: boolean;
-  UpdateUserSettings: Array<GQLUserSetting>;
+  UpdateUserSettings: GQLUserSettings;
   SetUserAttributes: GQLUserAttributes;
   InviteUser: GQLUserInvite;
   UpdateUserPermissions: GQLUserInfo;
@@ -83,9 +83,8 @@ export interface GQLOrgInfo {
   enableApprovals: boolean;
 }
 
-export interface GQLUserSetting {
-  key: string;
-  value: string;
+export interface GQLUserSettings {
+  analyticsOptout: boolean;
 }
 
 export interface GQLUserAttributes {
@@ -94,6 +93,10 @@ export interface GQLUserAttributes {
 
 export interface GQLEditableUserAttributes {
   tourSeen?: boolean;
+}
+
+export interface GQLEditableUserSettings {
+  analyticsOptout?: boolean;
 }
 
 export interface GQLAPIKey {
@@ -282,7 +285,7 @@ export interface GQLResolver {
   Artifact?: GQLArtifactTypeResolver;
   UserInfo?: GQLUserInfoTypeResolver;
   OrgInfo?: GQLOrgInfoTypeResolver;
-  UserSetting?: GQLUserSettingTypeResolver;
+  UserSettings?: GQLUserSettingsTypeResolver;
   UserAttributes?: GQLUserAttributesTypeResolver;
   APIKey?: GQLAPIKeyTypeResolver;
   DeploymentKey?: GQLDeploymentKeyTypeResolver;
@@ -346,11 +349,8 @@ export interface QueryToOrgResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
-export interface QueryToUserSettingsArgs {
-  keys: Array<string>;
-}
 export interface QueryToUserSettingsResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: QueryToUserSettingsArgs, context: any, info: GraphQLResolveInfo): TResult;
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface QueryToUserAttributesResolver<TParent = any, TResult = any> {
@@ -511,8 +511,7 @@ export interface MutationToDeleteAPIKeyResolver<TParent = any, TResult = any> {
 }
 
 export interface MutationToUpdateUserSettingsArgs {
-  keys: Array<string>;
-  values: Array<string>;
+  settings: GQLEditableUserSettings;
 }
 export interface MutationToUpdateUserSettingsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: MutationToUpdateUserSettingsArgs, context: any, info: GraphQLResolveInfo): TResult;
@@ -632,16 +631,11 @@ export interface OrgInfoToEnableApprovalsResolver<TParent = any, TResult = any> 
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
-export interface GQLUserSettingTypeResolver<TParent = any> {
-  key?: UserSettingToKeyResolver<TParent>;
-  value?: UserSettingToValueResolver<TParent>;
+export interface GQLUserSettingsTypeResolver<TParent = any> {
+  analyticsOptout?: UserSettingsToAnalyticsOptoutResolver<TParent>;
 }
 
-export interface UserSettingToKeyResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface UserSettingToValueResolver<TParent = any, TResult = any> {
+export interface UserSettingsToAnalyticsOptoutResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 

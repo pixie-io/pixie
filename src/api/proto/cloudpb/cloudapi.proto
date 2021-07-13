@@ -68,8 +68,8 @@ message UpdateUserRequest {
 message UpdateUserSettingsRequest {
   // The ID of the user.
   px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
-  // Settings for users key-value. 
-  map<string, string> setting_map = 2; 
+  reserved 2; // DEPRECATED
+  google.protobuf.BoolValue analytics_optout = 3;
 }
 
 // UpdateUserSettingsResponse is the response to an UpdateUserSettingsRequest.
@@ -80,14 +80,14 @@ message UpdateUserSettingsResponse {
 message GetUserSettingsRequest {
   // The ID of the user.
   px.uuidpb.UUID id = 1 [(gogoproto.customname) = "ID"];
-  // The user setting keys to fetch.
-  repeated string keys = 2;
+  reserved 2; // DEPRECATED
 }
 
 // The response for a UserSettingsRequest.
 message GetUserSettingsResponse {
   // Settings for users key-value. 
-  map<string, string> setting_map = 1; 
+  reserved 1; // DEPRECATED
+  bool analytics_optout = 2; 
 }
 
 // A request to get user attributes for the given user.

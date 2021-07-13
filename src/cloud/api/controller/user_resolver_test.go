@@ -192,16 +192,10 @@ func TestUserSettingsResolver_GetUserSettings(t *testing.T) {
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	settingsMap := map[string]string{
-		"test":  "a",
-		"a_key": "b",
-	}
-
 	mockClients.MockUser.EXPECT().GetUserSettings(gomock.Any(), &cloudpb.GetUserSettingsRequest{
-		ID:   utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9"),
-		Keys: []string{"test", "a_key"},
+		ID: utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9"),
 	}).Return(&cloudpb.GetUserSettingsResponse{
-		SettingMap: settingsMap,
+		AnalyticsOptout: true,
 	}, nil)
 
 	gqlSchema := LoadSchema(gqlEnv)
@@ -211,19 +205,16 @@ func TestUserSettingsResolver_GetUserSettings(t *testing.T) {
 			Context: ctx,
 			Query: `
 				query {
-					userSettings(keys: ["test", "a_key"]) {
-						key
-						value
+					userSettings {
+						analyticsOptout
 					}
 				}
 			`,
 			ExpectedResult: `
 				{
-					"userSettings":
-						[
-							{"key": "test", "value": "a"},
-							{"key": "a_key", "value": "b"}
-						]
+					"userSettings": {
+                        "analyticsOptout": true
+					}
 				}
 			`,
 		},
@@ -235,14 +226,9 @@ func TestUserSettingsResolver_UpdateUserSettings(t *testing.T) {
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	settingsMap := map[string]string{
-		"test":  "c",
-		"a_key": "d",
-	}
-
 	mockClients.MockUser.EXPECT().UpdateUserSettings(gomock.Any(), &cloudpb.UpdateUserSettingsRequest{
-		ID:         utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9"),
-		SettingMap: settingsMap,
+		ID:              utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9"),
+		AnalyticsOptout: &types.BoolValue{Value: true},
 	}).Return(&cloudpb.UpdateUserSettingsResponse{}, nil)
 
 	gqlSchema := LoadSchema(gqlEnv)
@@ -252,18 +238,16 @@ func TestUserSettingsResolver_UpdateUserSettings(t *testing.T) {
 			Context: ctx,
 			Query: `
 				mutation {
-					UpdateUserSettings(keys: ["test", "a_key"], values: ["c", "d"]) {
-						key
-						value
+					UpdateUserSettings(settings: { analyticsOptout: true }) {
+					    analyticsOptout
 					}
 				}
 			`,
 			ExpectedResult: `
 				{
-					"UpdateUserSettings": [
-						{"key": "test", "value": "c"},
-						{"key": "a_key", "value": "d"}
-					]
+					"UpdateUserSettings": {
+						"analyticsOptout": true
+					}
 				}
 			`,
 		},
