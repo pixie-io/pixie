@@ -48,6 +48,7 @@ gazelle(
 # gazelle:resolve go px.dev/pixie/src/api/proto/uuidpb //src/api/proto/uuidpb:uuid_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/api/proto/vispb //src/api/proto/vispb:vis_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/api/proto/vizierpb //src/api/proto/vizierpb:vizier_pl_go_proto
+# gazelle:resolve go px.dev/pixie/src/api/proto/vizierconfigpb //src/api/proto/vizierconfigpb:vizier_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/carnot/carnotpb //src/carnot/carnotpb:carnot_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/carnot/docspb //src/carnot/docspb:docs_pl_go_proto
 # gazelle:resolve go px.dev/pixie/src/carnot/planner/compilerpb //src/carnot/planner/compilerpb:compiler_status_pl_go_proto

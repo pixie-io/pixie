@@ -20,6 +20,7 @@ go_library(
     name = "apienv",
     srcs = [
         "artifact_tracker_client.go",
+        "config_manager_client.go",
         "env.go",
         "profile_client.go",
         "project_manager_client.go",
@@ -31,6 +32,7 @@ go_library(
     deps = [
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
         "//src/cloud/auth/authpb:auth_pl_go_proto",
+        "//src/cloud/config_manager/configmanagerpb:service_pl_go_proto",
         "//src/cloud/profile/profilepb:service_pl_go_proto",
         "//src/cloud/project_manager/projectmanagerpb:service_pl_go_proto",
         "//src/cloud/scriptmgr/scriptmgrpb:service_pl_go_proto",

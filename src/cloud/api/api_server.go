@@ -84,6 +84,11 @@ func main() {
 		log.WithError(err).Fatal("Failed to init profile client")
 	}
 
+	cm, err := apienv.NewConfigManagerServiceClient()
+	if err != nil {
+		log.WithError(err).Fatal("Failed to init config manager client")
+	}
+
 	vc, vk, err := apienv.NewVZMgrServiceClients()
 	if err != nil {
 		log.WithError(err).Fatal("Failed to init vzmgr clients")
@@ -104,7 +109,7 @@ func main() {
 		log.WithError(err).Fatal("Failed to init Hydra + Kratos idprovider client")
 	}
 
-	env, err := apienv.New(ac, pc, vk, ak, vc, at, oa)
+	env, err := apienv.New(ac, pc, vk, ak, vc, at, oa, cm)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create api environment")
 	}
@@ -246,6 +251,9 @@ func main() {
 
 	us := &controller.UserServiceServer{ProfileServiceClient: pc}
 	cloudpb.RegisterUserServiceServer(s.GRPCServer(), us)
+
+	cs := &controller.ConfigServiceServer{}
+	cloudpb.RegisterConfigServiceServer(s.GRPCServer(), cs)
 
 	gqlEnv := controller.GraphQLEnv{
 		ArtifactTrackerServer: artifactTrackerServer,

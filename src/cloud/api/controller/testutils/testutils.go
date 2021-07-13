@@ -30,6 +30,7 @@ import (
 	"px.dev/pixie/src/cloud/api/controller"
 	mock_artifacttrackerpb "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb/mock"
 	mock_auth "px.dev/pixie/src/cloud/auth/authpb/mock"
+	mock_configmanagerpb "px.dev/pixie/src/cloud/config_manager/configmanagerpb/mock"
 	mock_profilepb "px.dev/pixie/src/cloud/profile/profilepb/mock"
 	mock_vzmgrpb "px.dev/pixie/src/cloud/vzmgr/vzmgrpb/mock"
 )
@@ -90,6 +91,7 @@ type MockAPIClients struct {
 	MockAPIKey      *mock_auth.MockAPIKeyServiceClient
 	MockVzMgr       *mock_vzmgrpb.MockVZMgrServiceClient
 	MockArtifact    *mock_artifacttrackerpb.MockArtifactTrackerClient
+	MockConfigMgr   *mock_configmanagerpb.MockConfigManagerServiceClient
 }
 
 // CreateTestAPIEnv creates a test environment and mock clients.
@@ -105,7 +107,8 @@ func CreateTestAPIEnv(t *testing.T) (apienv.APIEnv, *MockAPIClients, func()) {
 	mockVzDeployKey := mock_vzmgrpb.NewMockVZDeploymentKeyServiceClient(ctrl)
 	mockAPIKey := mock_auth.NewMockAPIKeyServiceClient(ctrl)
 	mockArtifactTrackerClient := mock_artifacttrackerpb.NewMockArtifactTrackerClient(ctrl)
-	apiEnv, err := apienv.New(mockAuthClient, mockProfileClient, mockVzDeployKey, mockAPIKey, mockVzMgrClient, mockArtifactTrackerClient, nil)
+	mockConfigMgrClient := mock_configmanagerpb.NewMockConfigManagerServiceClient(ctrl)
+	apiEnv, err := apienv.New(mockAuthClient, mockProfileClient, mockVzDeployKey, mockAPIKey, mockVzMgrClient, mockArtifactTrackerClient, nil, mockConfigMgrClient)
 	if err != nil {
 		t.Fatal("failed to init api env")
 	}
@@ -123,5 +126,6 @@ func CreateTestAPIEnv(t *testing.T) (apienv.APIEnv, *MockAPIClients, func()) {
 		MockAPIKey:      mockAPIKey,
 		MockVzDeployKey: mockVzDeployKey,
 		MockArtifact:    mockArtifactTrackerClient,
+		MockConfigMgr:   mockConfigMgrClient,
 	}, cleanup
 }

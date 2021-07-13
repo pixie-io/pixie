@@ -5,7 +5,12 @@
 package mock_configmanagerpb
 
 import (
+	context "context"
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
+	grpc "google.golang.org/grpc"
+	configmanagerpb "px.dev/pixie/src/cloud/config_manager/configmanagerpb"
 )
 
 // MockConfigManagerServiceClient is a mock of ConfigManagerServiceClient interface.
@@ -31,6 +36,26 @@ func (m *MockConfigManagerServiceClient) EXPECT() *MockConfigManagerServiceClien
 	return m.recorder
 }
 
+// GetConfigForVizier mocks base method.
+func (m *MockConfigManagerServiceClient) GetConfigForVizier(ctx context.Context, in *configmanagerpb.ConfigForVizierRequest, opts ...grpc.CallOption) (*configmanagerpb.ConfigForVizierResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetConfigForVizier", varargs...)
+	ret0, _ := ret[0].(*configmanagerpb.ConfigForVizierResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetConfigForVizier indicates an expected call of GetConfigForVizier.
+func (mr *MockConfigManagerServiceClientMockRecorder) GetConfigForVizier(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigForVizier", reflect.TypeOf((*MockConfigManagerServiceClient)(nil).GetConfigForVizier), varargs...)
+}
+
 // MockConfigManagerServiceServer is a mock of ConfigManagerServiceServer interface.
 type MockConfigManagerServiceServer struct {
 	ctrl     *gomock.Controller
@@ -52,4 +77,19 @@ func NewMockConfigManagerServiceServer(ctrl *gomock.Controller) *MockConfigManag
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockConfigManagerServiceServer) EXPECT() *MockConfigManagerServiceServerMockRecorder {
 	return m.recorder
+}
+
+// GetConfigForVizier mocks base method.
+func (m *MockConfigManagerServiceServer) GetConfigForVizier(arg0 context.Context, arg1 *configmanagerpb.ConfigForVizierRequest) (*configmanagerpb.ConfigForVizierResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetConfigForVizier", arg0, arg1)
+	ret0, _ := ret[0].(*configmanagerpb.ConfigForVizierResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetConfigForVizier indicates an expected call of GetConfigForVizier.
+func (mr *MockConfigManagerServiceServerMockRecorder) GetConfigForVizier(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigForVizier", reflect.TypeOf((*MockConfigManagerServiceServer)(nil).GetConfigForVizier), arg0, arg1)
 }

@@ -25,6 +25,7 @@ pl_proto_library(
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_proto",
         "//src/api/proto/vispb:vis_pl_proto",
+        "//src/api/proto/vizierconfigpb:vizier_pl_proto",
         "@gogo_special_proto//github.com/gogo/protobuf/gogoproto",
     ],
 )
@@ -37,6 +38,7 @@ pl_go_proto_library(
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
         "//src/api/proto/vispb:vis_pl_go_proto",
+        "//src/api/proto/vizierconfigpb:vizier_pl_go_proto",
     ],
 )
 
@@ -48,5 +50,6 @@ pl_py_grpc_library(
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_py_proto",
         "//src/api/proto/vispb:vis_pl_py_proto",
+        "//src/api/proto/vizierconfigpb:vizier_pl_py_proto",
     ],
 )

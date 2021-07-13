@@ -1745,3 +1745,84 @@ func (mr *MockProfileServiceServerMockRecorder) GetOrgInfo(arg0, arg1 interface{
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgInfo", reflect.TypeOf((*MockProfileServiceServer)(nil).GetOrgInfo), arg0, arg1)
 }
+
+// MockConfigServiceClient is a mock of ConfigServiceClient interface.
+type MockConfigServiceClient struct {
+	ctrl     *gomock.Controller
+	recorder *MockConfigServiceClientMockRecorder
+}
+
+// MockConfigServiceClientMockRecorder is the mock recorder for MockConfigServiceClient.
+type MockConfigServiceClientMockRecorder struct {
+	mock *MockConfigServiceClient
+}
+
+// NewMockConfigServiceClient creates a new mock instance.
+func NewMockConfigServiceClient(ctrl *gomock.Controller) *MockConfigServiceClient {
+	mock := &MockConfigServiceClient{ctrl: ctrl}
+	mock.recorder = &MockConfigServiceClientMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockConfigServiceClient) EXPECT() *MockConfigServiceClientMockRecorder {
+	return m.recorder
+}
+
+// GetConfigForVizier mocks base method.
+func (m *MockConfigServiceClient) GetConfigForVizier(ctx context.Context, in *cloudpb.ConfigForVizierRequest, opts ...grpc.CallOption) (*cloudpb.ConfigForVizierResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetConfigForVizier", varargs...)
+	ret0, _ := ret[0].(*cloudpb.ConfigForVizierResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetConfigForVizier indicates an expected call of GetConfigForVizier.
+func (mr *MockConfigServiceClientMockRecorder) GetConfigForVizier(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigForVizier", reflect.TypeOf((*MockConfigServiceClient)(nil).GetConfigForVizier), varargs...)
+}
+
+// MockConfigServiceServer is a mock of ConfigServiceServer interface.
+type MockConfigServiceServer struct {
+	ctrl     *gomock.Controller
+	recorder *MockConfigServiceServerMockRecorder
+}
+
+// MockConfigServiceServerMockRecorder is the mock recorder for MockConfigServiceServer.
+type MockConfigServiceServerMockRecorder struct {
+	mock *MockConfigServiceServer
+}
+
+// NewMockConfigServiceServer creates a new mock instance.
+func NewMockConfigServiceServer(ctrl *gomock.Controller) *MockConfigServiceServer {
+	mock := &MockConfigServiceServer{ctrl: ctrl}
+	mock.recorder = &MockConfigServiceServerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockConfigServiceServer) EXPECT() *MockConfigServiceServerMockRecorder {
+	return m.recorder
+}
+
+// GetConfigForVizier mocks base method.
+func (m *MockConfigServiceServer) GetConfigForVizier(arg0 context.Context, arg1 *cloudpb.ConfigForVizierRequest) (*cloudpb.ConfigForVizierResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetConfigForVizier", arg0, arg1)
+	ret0, _ := ret[0].(*cloudpb.ConfigForVizierResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetConfigForVizier indicates an expected call of GetConfigForVizier.
+func (mr *MockConfigServiceServerMockRecorder) GetConfigForVizier(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigForVizier", reflect.TypeOf((*MockConfigServiceServer)(nil).GetConfigForVizier), arg0, arg1)
+}

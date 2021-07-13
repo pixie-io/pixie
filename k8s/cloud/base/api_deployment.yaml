@@ -75,6 +75,11 @@ spec:
             configMapKeyRef:
               name: pl-service-config
               key: PL_ELASTIC_SERVICE
+        - name: PL_CONFIG_MANAGER_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_CONFIG_MANAGER_SERVICE      
         - name: PL_SEGMENT_WRITE_KEY
           valueFrom:
             configMapKeyRef:
