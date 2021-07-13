@@ -47,6 +47,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     flexDirection: 'column',
     flex: 1,
     pointerEvents: 'auto',
+    overflow: 'hidden',
   },
   execStats: {
     flex: 1,
