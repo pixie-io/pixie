@@ -946,9 +946,9 @@ void SocketTraceConnector::TransferStream(ConnectorContext* ctx, ConnTracker* tr
   if (tracker->state() == ConnTracker::State::kTransferring) {
     // ProcessToRecords() parses raw events and produces messages in format that are expected by
     // table store. But those messages are not cached inside ConnTracker.
-    auto result = tracker->ProcessToRecords<TProtocolTraits>();
-    for (auto& msg : result) {
-      AppendMessage(ctx, *tracker, std::move(msg), data_table);
+    auto records = tracker->ProcessToRecords<TProtocolTraits>();
+    for (auto& record : records) {
+      AppendMessage(ctx, *tracker, std::move(record), data_table);
     }
 
     auto expiry_timestamp =
