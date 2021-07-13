@@ -62,6 +62,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     // https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#CSS
     // https://developer.mozilla.org/en-US/docs/Web/CSS/Replaced_element
     width: '120%',
+    minWidth: '1px', // Ensure the blinking cursor is visible when input is focused.
   },
   // Since HTMLInputElement does not obey normal width calculations, we position it atop an invisible span that does.
   dummy: {
@@ -71,6 +72,8 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   hint: {
     opacity: 0.2,
+    pointerEvents: 'none',
+    userSelect: 'none',
   },
   textArea: {
     flex: 1,
