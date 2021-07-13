@@ -119,7 +119,7 @@ const styles = (({ shape, palette, spacing }: Theme) => createStyles({
   },
 }));
 
-const LiveViewBreadcrumbs = ({ classes, disableTimePicker }) => {
+const LiveViewBreadcrumbs = ({ classes }) => {
   const { selectedClusterUID } = React.useContext(ClusterContext);
   const { scripts } = React.useContext(ScriptsContext);
 
@@ -127,7 +127,7 @@ const LiveViewBreadcrumbs = ({ classes, disableTimePicker }) => {
     args, script, setScriptAndArgs,
   } = React.useContext(ScriptContext);
 
-  const { embedState: { isEmbedded } } = React.useContext(LiveRouteContext);
+  const { embedState: { disableTimePicker, isEmbedded, widget } } = React.useContext(LiveRouteContext);
 
   const getCompletions = useAutocompleteFieldSuggester(selectedClusterUID);
 
@@ -250,6 +250,10 @@ const LiveViewBreadcrumbs = ({ classes, disableTimePicker }) => {
     return { entityBreadcrumbs, argBreadcrumbs };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [script?.id, collapsedScriptIds, args, selectedClusterUID, getCompletions]);
+
+  if (widget) {
+    return <></>;
+  }
 
   return (
     <>

@@ -99,6 +99,16 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   execute: {
     display: 'flex',
   },
+  combinedBreadcrumbsAndRun: {
+    display: 'flex',
+    marginRight: theme.spacing(3),
+  },
+  nestedBreadcrumbs: {
+    flex: 1,
+  },
+  nestedRun: {
+    display: 'flex',
+  },
   title: {
     ...theme.typography.h3,
     marginLeft: theme.spacing(3),
@@ -161,26 +171,24 @@ const ScriptOptions = ({
   const {
     editorPanelOpen, setEditorPanelOpen, isMobile,
   } = React.useContext(LayoutContext);
+
+  if (isMobile) {
+    return <></>;
+  }
+
   return (
-    <>
-      {
-        !isMobile
-        && (
-          <div className={classes.iconPanel}>
-            <Tooltip title={`${editorPanelOpen ? 'Close' : 'Open'} editor`} className={classes.iconButton}>
-              <IconButton className={classes.iconButton} onClick={() => setEditorPanelOpen(!editorPanelOpen)}>
-                <EditIcon className={editorPanelOpen ? classes.iconActive : classes.iconInactive} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title={`${widgetsMoveable ? 'Disable' : 'Enable'} move widgets`} className={classes.iconButton}>
-              <IconButton onClick={() => setWidgetsMoveable(!widgetsMoveable)}>
-                <MoveIcon className={widgetsMoveable ? classes.iconActive : classes.iconInactive} />
-              </IconButton>
-            </Tooltip>
-          </div>
-        )
-      }
-    </>
+    <div className={classes.iconPanel}>
+      <Tooltip title={`${editorPanelOpen ? 'Close' : 'Open'} editor`} className={classes.iconButton}>
+        <IconButton className={classes.iconButton} onClick={() => setEditorPanelOpen(!editorPanelOpen)}>
+          <EditIcon className={editorPanelOpen ? classes.iconActive : classes.iconInactive} />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title={`${widgetsMoveable ? 'Disable' : 'Enable'} move widgets`} className={classes.iconButton}>
+        <IconButton onClick={() => setWidgetsMoveable(!widgetsMoveable)}>
+          <MoveIcon className={widgetsMoveable ? classes.iconActive : classes.iconInactive} />
+        </IconButton>
+      </Tooltip>
+    </div>
   );
 };
 
@@ -251,6 +259,62 @@ const ClusterLoadingComponent = ({
   return <></>;
 };
 
+const Nav: React.FC<{
+  widgetsMoveable: boolean,
+  setWidgetsMoveable: React.Dispatch<React.SetStateAction<boolean>>,
+}> = ({ widgetsMoveable, setWidgetsMoveable }) => {
+  const classes = useStyles();
+  const {
+    embedState: { isEmbedded },
+  } = React.useContext(LiveRouteContext);
+
+  if (isEmbedded) {
+    return <></>;
+  }
+
+  return <>
+    <NavBars>
+      <ClusterSelector />
+      <div className={classes.spacer} />
+      <ScriptOptions
+        classes={classes}
+        widgetsMoveable={widgetsMoveable}
+        setWidgetsMoveable={setWidgetsMoveable}
+      />
+      <div className={classes.execute}>
+        <ExecuteScriptButton />
+      </div>
+    </NavBars>
+    <div className={classes.dataDrawer}>
+      <DataDrawerSplitPanel />
+    </div>
+  </>;
+};
+
+const BreadcrumbsWithOptionalRun: React.FC = () => {
+  const classes = useStyles();
+  const {
+    embedState: { isEmbedded, widget },
+  } = React.useContext(LiveRouteContext);
+
+  if (widget) {
+    return <></>;
+  }
+
+  if (!isEmbedded) {
+    return <LiveViewBreadcrumbs />;
+  }
+
+  return <div className={classes.combinedBreadcrumbsAndRun}>
+    <div className={classes.nestedBreadcrumbs}>
+      <LiveViewBreadcrumbs />
+    </div>
+    <div className={classes.nestedRun}>
+      <ExecuteScriptButton />
+    </div>
+  </div>;
+};
+
 const LiveView: React.FC = () => {
   const classes = useStyles();
 
@@ -260,7 +324,7 @@ const LiveView: React.FC = () => {
   const { isMobile, setEditorPanelOpen, setDataDrawerOpen } = React.useContext(LayoutContext);
   const [widgetsMoveable, setWidgetsMoveable] = React.useState(false);
   const {
-    embedState: { disableTimePicker, isEmbedded, widget },
+    embedState: { isEmbedded, widget },
   } = React.useContext(LiveRouteContext);
 
   const hotkeyHandlers = {
@@ -331,25 +395,10 @@ const LiveView: React.FC = () => {
   return (
     <div className={classes.root}>
       <LiveViewShortcutsProvider handlers={hotkeyHandlers}>
-        {!isEmbedded
-          && <>
-            <NavBars>
-              <ClusterSelector />
-              <div className={classes.spacer} />
-              <ScriptOptions
-                classes={classes}
-                widgetsMoveable={widgetsMoveable}
-                setWidgetsMoveable={setWidgetsMoveable}
-              />
-              <div className={classes.execute}>
-                <ExecuteScriptButton />
-              </div>
-            </NavBars>
-            <div className={classes.dataDrawer}>
-              <DataDrawerSplitPanel />
-            </div>
-          </>
-        }
+        <Nav
+          widgetsMoveable={widgetsMoveable}
+          setWidgetsMoveable={setWidgetsMoveable}
+        />
         <EditorSplitPanel>
           <div className={classes.main}>
             <div className={buildClass(
@@ -357,7 +406,7 @@ const LiveView: React.FC = () => {
               isEmbedded && classes.embeddedMain,
               widget && classes.widgetMain,
             )}>
-              {widget == null && <LiveViewBreadcrumbs disableTimePicker={disableTimePicker} />}
+              <BreadcrumbsWithOptionalRun />
               {(selectedClusterStatus === GQLClusterStatus.CS_HEALTHY && script && healthy) ? (
                 <div className={classes.canvas} ref={canvasRef}>
                   <Canvas editable={widgetsMoveable} parentRef={canvasRef} />
