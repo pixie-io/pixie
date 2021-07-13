@@ -84,8 +84,8 @@ static const uint32_t kNumMapEntries = 4 * kExpectedStackTraces;
 // but it should be lower than kNumMapEntries.
 static const uint32_t kSampleThreshold = 2 * kExpectedStackTraces;
 
-BPF_HASH(histogram_a, struct stack_trace_key_t, uint64_t, kNumMapEntries);
-BPF_HASH(histogram_b, struct stack_trace_key_t, uint64_t, kNumMapEntries);
+BPF_PERF_OUTPUT(histogram_a);
+BPF_PERF_OUTPUT(histogram_b);
 BPF_STACK_TRACE(stack_traces_a, kNumMapEntries);
 BPF_STACK_TRACE(stack_traces_b, kNumMapEntries);
 
@@ -124,7 +124,7 @@ int sample_call_stack(struct bpf_perf_event_data* ctx) {
     // map set A branch:
     key.user_stack_id = stack_traces_a.get_stackid(&ctx->regs, BPF_F_USER_STACK);
     key.kernel_stack_id = stack_traces_a.get_stackid(&ctx->regs, 0);
-    histogram_a.increment(key);
+    histogram_a.perf_submit(ctx, &key, sizeof(key));
 
     sample_count = *sample_count_a_ptr;
     *sample_count_a_ptr += 1;
@@ -132,7 +132,7 @@ int sample_call_stack(struct bpf_perf_event_data* ctx) {
     // map set B branch:
     key.user_stack_id = stack_traces_b.get_stackid(&ctx->regs, BPF_F_USER_STACK);
     key.kernel_stack_id = stack_traces_b.get_stackid(&ctx->regs, 0);
-    histogram_b.increment(key);
+    histogram_b.perf_submit(ctx, &key, sizeof(key));
 
     sample_count = *sample_count_b_ptr;
     *sample_count_b_ptr += 1;

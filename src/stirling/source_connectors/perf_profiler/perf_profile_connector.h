@@ -32,6 +32,7 @@
 #include "src/stirling/source_connectors/perf_profiler/stack_traces_table.h"
 #include "src/stirling/source_connectors/perf_profiler/stringifier.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizer.h"
+#include "src/stirling/utils/stat_counter.h"
 
 namespace px {
 namespace stirling {
@@ -96,27 +97,27 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // StackTraceHisto: SymbolicStackTrace => observation-count
   using StackTraceHisto = absl::flat_hash_map<SymbolicStackTrace, uint64_t>;
 
+  // RawHistoData: a list of stack trace keys that will need to be histogrammed.
+  using RawHistoData = std::vector<stack_trace_key_t>;
+
   explicit PerfProfileConnector(std::string_view source_name);
 
   void ProcessBPFStackTraces(ConnectorContext* ctx, DataTable* data_table);
 
   // Read BPF data structures, build & incorporate records to the table.
-  void CreateRecords(ebpf::BPFStackTable* stack_traces,
-                     ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo, ConnectorContext* ctx,
+  void CreateRecords(ebpf::BPFStackTable* stack_traces, ConnectorContext* ctx,
                      DataTable* data_table);
 
   uint64_t StackTraceID(const SymbolicStackTrace& stack_trace);
 
-  StackTraceHisto AggregateStackTraces(ConnectorContext* ctx, ebpf::BPFStackTable* stack_traces,
-                                       ebpf::BPFHashTable<stack_trace_key_t, uint64_t>* histo);
+  StackTraceHisto AggregateStackTraces(ConnectorContext* ctx, ebpf::BPFStackTable* stack_traces);
 
   void CleanupSymbolizers(const absl::flat_hash_set<md::UPID>& deleted_upids);
 
   // data structures shared with BPF:
   std::unique_ptr<ebpf::BPFStackTable> stack_traces_a_;
   std::unique_ptr<ebpf::BPFStackTable> stack_traces_b_;
-  std::unique_ptr<ebpf::BPFHashTable<stack_trace_key_t, uint64_t>> histogram_a_;
-  std::unique_ptr<ebpf::BPFHashTable<stack_trace_key_t, uint64_t>> histogram_b_;
+
   std::unique_ptr<ebpf::BPFArrayTable<uint64_t>> profiler_state_;
 
   // Number of iterations, where each iteration is drains the information collectid in BPF.
@@ -125,6 +126,9 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Tracks the next stack-trace-id to be assigned;
   // incremented by 1 for each such assignment.
   uint64_t next_stack_trace_id_ = 0;
+
+  // The raw histogram from BPF; it is populated on each iteration by a call to PollPerfBuffer().
+  RawHistoData raw_histo_data_;
 
   // The symbolizer has an instance of a BPF stack table (internally),
   // solely to gain access to the BCC symbolization API. Depending on the
@@ -138,6 +142,35 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   static constexpr auto kProbeSpecs =
       MakeArray<bpf_tools::SamplingProbeSpec>({"sample_call_stack", kBPFSamplingPeriod.count()});
+
+  static const uint32_t kExpectedStackTracesPerCPU =
+      IntRoundUpDivide(kSamplingPeriod.count(), kBPFSamplingPeriod.count());
+  static const uint32_t kMaxNCPUs = 128;
+  static const uint32_t kExpectedStackTraces = kMaxNCPUs * kExpectedStackTracesPerCPU;
+
+  // Overprovision:
+  static const uint32_t kNumPerfBufferEntries = 4 * kExpectedStackTraces;
+
+  static void HandleHistoEvent(void* cb_cookie, void* data, int /*data_size*/);
+  static void HandleHistoLoss(void* cb_cookie, uint64_t lost);
+
+  // Called by HandleHistoEvent() to add the stack-trace-key to raw_histo_data_.
+  void AcceptStackTraceKey(stack_trace_key_t* data);
+
+  inline static const auto kPerfBufferSpecs = MakeArray<bpf_tools::PerfBufferSpec>(
+      {{"histogram_a", HandleHistoEvent, HandleHistoLoss, kNumPerfBufferEntries},
+       {"histogram_b", HandleHistoEvent, HandleHistoLoss, kNumPerfBufferEntries}});
+
+  ebpf::BPFPerfBuffer* histogram_a_perf_buffer_;
+  ebpf::BPFPerfBuffer* histogram_b_perf_buffer_;
+
+  enum class StatKey {
+    kBPFMapSwitchoverEvent,
+    kCumulativeSumOfAllStackTraces,
+    kLossHistoEvent,
+  };
+
+  utils::StatCounter<StatKey> stats_;
 };
 
 }  // namespace stirling

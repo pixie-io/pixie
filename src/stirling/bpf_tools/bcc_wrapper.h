@@ -343,6 +343,10 @@ class BCCWrapper {
     return bpf_.get_stack_table(table_name);
   }
 
+  ebpf::BPFPerfBuffer* GetPerfBuffer(const std::string& perf_buffer_name) {
+    return bpf_.get_perf_buffer(perf_buffer_name);
+  }
+
   template <typename TValueType>
   ebpf::BPFPercpuArrayTable<TValueType> GetPerCPUArrayTable(const std::string& table_name) {
     return bpf_.get_percpu_array_table<TValueType>(table_name);
