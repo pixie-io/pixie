@@ -145,6 +145,37 @@ TEST(ElfReaderTest, AddrToSymbol) {
     ASSERT_OK_AND_ASSIGN(std::string symbol_name, elf_reader->AddrToSymbol(symbol_addr));
     EXPECT_EQ(symbol_name, kSymbolName);
   }
+
+  // An address that doesn't exactly match with the symbol returns an error.
+  { ASSERT_NOT_OK(elf_reader->AddrToSymbol(symbol_addr + 4)); }
+}
+
+TEST(ElfReaderTest, InstrAddrToSymbol) {
+  const std::string path = kDummyExeFixture.Path().string();
+  const std::string kSymbolName = "CanYouFindThis";
+  ASSERT_OK_AND_ASSIGN(const int64_t kSymbolAddr, NmSymbolNameToAddr(path, kSymbolName));
+
+  LOG(INFO) << absl::Substitute("$0 $1", kSymbolName, kSymbolAddr);
+
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
+
+  {
+    ASSERT_OK_AND_ASSIGN(std::string symbol_name, elf_reader->InstrAddrToSymbol(kSymbolAddr));
+    EXPECT_EQ(symbol_name, kSymbolName);
+  }
+
+  // Read an instruction a few bytes away. This should still be part of the same function.
+  {
+    ASSERT_OK_AND_ASSIGN(std::string symbol_name, elf_reader->InstrAddrToSymbol(kSymbolAddr + 4));
+    EXPECT_EQ(symbol_name, kSymbolName);
+  }
+
+  // Read an instruction far away. This should be part of another function.
+  {
+    ASSERT_OK_AND_ASSIGN(std::string symbol_name,
+                         elf_reader->InstrAddrToSymbol(kSymbolAddr + 1000));
+    EXPECT_NE(symbol_name, kSymbolName);
+  }
 }
 
 TEST(ElfReaderTest, ExternalDebugSymbolsBuildID) {

@@ -309,7 +309,38 @@ StatusOr<std::string> ElfReader::AddrToSymbol(size_t sym_addr) {
   unsigned char other;
   bool found = symbols.get_symbol(addr, name, size, bind, type, section_index, other);
 
-  return found ? name : "";
+  if (!found) {
+    return error::NotFound("Could not resolve address $0", sym_addr);
+  }
+
+  return name;
+}
+
+// TODO(oazizi): Optimize by indexing or switching to binary search if we can guarantee addresses
+//               are ordered.
+StatusOr<std::string> ElfReader::InstrAddrToSymbol(size_t sym_addr) {
+  PL_ASSIGN_OR_RETURN(ELFIO::section * symtab_section, SymtabSection());
+
+  const ELFIO::symbol_section_accessor symbols(elf_reader_, symtab_section);
+  for (unsigned int j = 0; j < symbols.get_symbols_num(); ++j) {
+    // Call ELFIO to get symbol by index.
+    // ELFIO looks up the index and then populates name, addr, size, type, etc.
+    // We only care about the name and addr, but need to declare the other variables as well.
+    std::string name;
+    ELFIO::Elf64_Addr addr = 0;
+    ELFIO::Elf_Xword size = 0;
+    unsigned char bind = 0;
+    unsigned char type = ELFIO::STT_NOTYPE;
+    ELFIO::Elf_Half section_index;
+    unsigned char other;
+    symbols.get_symbol(j, name, addr, size, bind, type, section_index, other);
+
+    if (sym_addr >= addr && sym_addr < addr + size) {
+      return name;
+    }
+  }
+
+  return error::NotFound("Could not resolve address $0", sym_addr);
 }
 
 namespace {
