@@ -291,7 +291,7 @@ TEST_F(MySQLParserTest, Empty) {
 }
 
 //=============================================================================
-// HTTP FindFrameBoundary Tests
+// MySQL FindFrameBoundary Tests
 //=============================================================================
 
 TEST_F(MySQLParserTest, FindReqBoundaryAligned) {

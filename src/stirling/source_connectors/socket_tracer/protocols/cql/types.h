@@ -146,7 +146,7 @@ struct Response {
 };
 
 /**
- *  Record is the primary output of the mysql parser.
+ *  Record is the primary output of the cql parser.
  */
 struct Record {
   Request req;
