@@ -574,3 +574,68 @@ func TestAuthLoginEmbedHandler(t *testing.T) {
 		})
 	}
 }
+
+func TestAuthLoginHandlerEmbedNew(t *testing.T) {
+	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+
+	req, err := http.NewRequest("POST", "/login",
+		strings.NewReader("{\"accessToken\": \"the-token\"}"))
+	require.NoError(t, err)
+
+	expectedAuthServiceReq := &authpb.LoginRequest{
+		AccessToken:           "the-token",
+		CreateUserIfNotExists: false,
+	}
+	testReplyToken := testingutils.GenerateTestJWTToken(t, "jwt-key")
+	testTokenExpiry := time.Now().Add(1 * time.Minute).Unix()
+	loginResp := &authpb.LoginReply{
+		Token:     testReplyToken,
+		ExpiresAt: testTokenExpiry,
+		UserInfo: &authpb.AuthenticatedUserInfo{
+			UserID:    utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+			FirstName: "first",
+			LastName:  "last",
+			Email:     "abc@defg.com",
+		},
+		OrgInfo: &authpb.LoginReply_OrgInfo{
+			OrgID:   "test",
+			OrgName: "testOrg",
+		},
+	}
+	mockClients.MockAuth.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Return(loginResp, nil)
+
+	rr := httptest.NewRecorder()
+	h := handler.New(env, controller.AuthLoginHandlerEmbedNew)
+	h.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	var parsedResponse struct {
+		Token     string
+		ExpiresAt int64
+		UserInfo  struct {
+			UserID    string `json:"userID"`
+			FirstName string `json:"firstName"`
+			LastName  string `json:"lastName"`
+			Email     string `json:"email"`
+		} `json:"userInfo"`
+		UserCreated bool `json:"userCreated"`
+		OrgInfo     struct {
+			OrgID   string `json:"orgID"`
+			OrgName string `json:"orgName"`
+		} `json:"orgInfo"`
+	}
+	err = json.NewDecoder(rr.Body).Decode(&parsedResponse)
+	require.NoError(t, err)
+	assert.Equal(t, testReplyToken, parsedResponse.Token)
+	assert.Equal(t, testTokenExpiry, parsedResponse.ExpiresAt)
+	assert.Equal(t, "abc@defg.com", parsedResponse.UserInfo.Email)
+	assert.Equal(t, "first", parsedResponse.UserInfo.FirstName)
+	assert.Equal(t, "last", parsedResponse.UserInfo.LastName)
+	assert.Equal(t, false, parsedResponse.UserCreated)
+	assert.Equal(t, "test", parsedResponse.OrgInfo.OrgID)
+	assert.Equal(t, "testOrg", parsedResponse.OrgInfo.OrgName)
+
+	// Make sure no cookies are set.
+	assert.Equal(t, 0, len(rr.Header().Values("Set-Cookie")))
+}

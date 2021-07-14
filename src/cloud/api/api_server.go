@@ -141,6 +141,7 @@ func main() {
 	mux.Handle("/api/auth/signup", handler.New(env, controller.AuthSignupHandler))
 	mux.Handle("/api/auth/login", handler.New(env, controller.AuthLoginHandler))
 	mux.Handle("/api/auth/loginEmbed", handler.New(env, controller.AuthLoginEmbedHandler))
+	mux.Handle("/api/auth/loginEmbedNew", handler.New(env, controller.AuthLoginHandlerEmbedNew))
 	mux.Handle("/api/auth/logout", handler.New(env, controller.AuthLogoutHandler))
 	mux.Handle("/api/auth/oauth/login", handler.New(env, controller.AuthOAuthLoginHandler))
 	// This is an unauthenticated path that will check and validate if a particular domain

@@ -348,6 +348,71 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 	return nil
 }
 
+// AuthLoginHandlerEmbedNew is the replacement embed login handler.
+// Request-type: application/json.
+// Params: accessToken (auth0 accessToken), state.
+func AuthLoginHandlerEmbedNew(env commonenv.Env, w http.ResponseWriter, r *http.Request) error {
+	if r.Method != http.MethodPost {
+		return handler.NewStatusError(http.StatusMethodNotAllowed, "not a post request")
+	}
+
+	// Extract params from the body which consists of the Auth0 ID token.
+	var params struct {
+		AccessToken string `json:"accessToken"`
+		IDToken     string `json:"idToken"`
+		State       string `json:"state"`
+	}
+
+	defer r.Body.Close()
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		return handler.NewStatusError(http.StatusBadRequest,
+			"failed to decode json request")
+	}
+
+	ctxWithCreds, err := attachCredentialsToContext(env, r)
+	if err != nil {
+		return &handler.StatusError{Code: http.StatusInternalServerError, Err: err}
+	}
+
+	rpcReq := &authpb.LoginRequest{
+		AccessToken:           params.AccessToken,
+		CreateUserIfNotExists: false,
+		OrgName:               "",
+		IdToken:               params.IDToken,
+	}
+
+	resp, err := env.(apienv.APIEnv).AuthClient().Login(ctxWithCreds, rpcReq)
+	if err != nil {
+		log.WithError(err).Errorf("RPC request to authpb service failed")
+		s, ok := status.FromError(err)
+		if ok {
+			if s.Code() == codes.Unauthenticated {
+				return handler.NewStatusError(http.StatusUnauthorized, s.Message())
+			}
+		}
+
+		return services.HTTPStatusFromError(err, "Failed to login")
+	}
+
+	userIDStr := utils.UUIDFromProtoOrNil(resp.UserInfo.UserID).String()
+	ev := events.UserLoggedIn
+
+	events.Client().Enqueue(&analytics.Track{
+		UserId: userIDStr,
+		Event:  ev,
+	})
+
+	err = sendUserInfo(w, resp.UserInfo, resp.OrgInfo, resp.Token, resp.ExpiresAt, resp.UserCreated)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return err
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	return nil
+}
+
 // AuthLogoutHandler deletes existing sessions.
 // Request-type: application/json.
 // Params: accessToken (auth0 idtoken), state.
