@@ -295,10 +295,6 @@ func (f *fakeResultForwarder) RegisterQuery(queryID uuid.UUID, tableIDMap map[st
 	return nil
 }
 
-// DeleteQuery deletes a query/
-func (f *fakeResultForwarder) DeleteQuery(queryID uuid.UUID) {
-}
-
 // StreamResults streams the results to the resultCh.
 func (f *fakeResultForwarder) StreamResults(ctx context.Context, queryID uuid.UUID,
 	resultCh chan *vizierpb.ExecuteScriptResponse) error {
@@ -310,8 +306,13 @@ func (f *fakeResultForwarder) StreamResults(ctx context.Context, queryID uuid.UU
 	return f.Error
 }
 
+// GetProducerCtx returns the producer context for a queryID.
+func (f *fakeResultForwarder) GetProducerCtx(queryID uuid.UUID) (context.Context, error) {
+	return context.Background(), nil
+}
+
 // ForwardQueryResult forwards the agent result to the client result stream.
-func (f *fakeResultForwarder) ForwardQueryResult(msg *carnotpb.TransferResultChunkRequest) error {
+func (f *fakeResultForwarder) ForwardQueryResult(ctx context.Context, msg *carnotpb.TransferResultChunkRequest) error {
 	if f.ClientStreamClosed {
 		return f.ClientStreamError
 	}
@@ -913,9 +914,12 @@ func TestTransferResultChunk_AgentClosedPrematurely(t *testing.T) {
 	err = s.TransferResultChunk(srv)
 	require.NoError(t, err)
 
-	assert.True(t, rf.ClientStreamClosed)
-	assert.NotNil(t, rf.ClientStreamError)
-	assert.Equal(t, rf.ClientStreamError.Error(), errorMsg)
+	// When the agent stream closes unexpectedly, the query will not be immediately cancelled.
+	// Instead, it will be cancelled by the ResultForwarder after a timeout.
+	// So the ClientStream will not be closed after this occurs.
+	assert.False(t, rf.ClientStreamClosed)
+	assert.Nil(t, rf.ClientStreamError)
+
 	assert.Equal(t, 1, len(rf.ReceivedAgentResults))
 	assert.Equal(t, msg1, rf.ReceivedAgentResults[0])
 }
@@ -1063,4 +1067,105 @@ func TestTransferResultChunk_ClientStreamCancelled(t *testing.T) {
 	assert.True(t, rf.ClientStreamClosed)
 	assert.NotNil(t, rf.ClientStreamError)
 	assert.Equal(t, 0, len(rf.ReceivedAgentResults))
+}
+func TestExecuteScript_ResumeExistingQuery(t *testing.T) {
+	// Start NATS.
+	nc, cleanup := testingutils.MustStartTestNATS(t)
+	defer cleanup()
+
+	// Set up mocks.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	plannerStatePB := new(distributedpb.LogicalPlannerState)
+	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	agentsInfo := tracker.NewTestAgentsInfo(plannerStatePB.DistributedState)
+
+	at := fakeAgentsTracker{
+		agentsInfo: agentsInfo,
+	}
+
+	// Set up server.
+	env, err := querybrokerenv.New("qb_address", "qb_hostname", "test")
+	if err != nil {
+		t.Fatal("Failed to create api environment.")
+	}
+
+	queryID := uuid.Must(uuid.NewV4())
+
+	fakeBatch := new(vizierpb.RowBatchData)
+	if err := proto.UnmarshalText(rowBatchPb, fakeBatch); err != nil {
+		t.Fatalf("Cannot unmarshal proto %v", err)
+	}
+
+	fakeResult1 := &vizierpb.ExecuteScriptResponse{
+		QueryID: queryID.String(),
+		Result: &vizierpb.ExecuteScriptResponse_Data{
+			Data: &vizierpb.QueryData{
+				Batch: fakeBatch,
+			},
+		},
+	}
+	fakeResult2 := &vizierpb.ExecuteScriptResponse{
+		QueryID: queryID.String(),
+		Result: &vizierpb.ExecuteScriptResponse_Data{
+			Data: &vizierpb.QueryData{
+				ExecutionStats: &vizierpb.QueryExecutionStats{
+					Timing: &vizierpb.QueryTimingInfo{
+						ExecutionTimeNs:   5010,
+						CompilationTimeNs: 350,
+					},
+					BytesProcessed:   4521,
+					RecordsProcessed: 4,
+				},
+			},
+		},
+	}
+
+	rf := &fakeResultForwarder{
+		ClientResultsToSend: []*vizierpb.ExecuteScriptResponse{
+			fakeResult1,
+			fakeResult2,
+		},
+	}
+
+	plannerResultPB := &distributedpb.LogicalPlannerResult{}
+	if err := proto.UnmarshalText(expectedPlannerResult, plannerResultPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	planner := mock_controllers.NewMockPlanner(ctrl)
+
+	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nil, nc, planner)
+	require.NoError(t, err)
+
+	srv := mock_vizierpb.NewMockVizierService_ExecuteScriptServer(ctrl)
+	auth := authcontext.New()
+	ctx := authcontext.NewContext(context.Background(), auth)
+
+	srv.EXPECT().Context().Return(ctx).AnyTimes()
+
+	var resps []*vizierpb.ExecuteScriptResponse
+	srv.EXPECT().
+		Send(gomock.Any()).
+		DoAndReturn(func(arg *vizierpb.ExecuteScriptResponse) error {
+			resps = append(resps, arg)
+			return nil
+		}).
+		AnyTimes()
+
+	err = s.ExecuteScript(&vizierpb.ExecuteScriptRequest{
+		QueryID: queryID.String(),
+	}, srv)
+
+	require.NoError(t, err)
+	assert.Equal(t, 2, len(resps))
+
+	// The query should not be re-registered when a QueryID is passed to ExecuteScriptRequest.
+	assert.Equal(t, rf.QueryRegistered, uuid.Nil)
+	assert.Equal(t, fakeResult1, resps[0])
+	assert.Equal(t, fakeResult2, resps[1])
 }

@@ -47,6 +47,15 @@ type QueryPlanOpts struct {
 // The deadline for all sinks in a given query to initialize.
 const defaultResultSinkInitializationTimeout = 5 * time.Second
 
+// The size of each activeQuery's buffered result channel.
+const activeQueryBufferSize = 1024
+
+// The timeout for not receiving any data from producers.
+const defaultProducerTimeout = 5 * time.Second
+
+// The timeout for not sending any data to consumers.
+const defaultConsumerTimeout = 10 * time.Second
+
 var void = struct{}{}
 
 type concurrentSet struct {
@@ -95,11 +104,6 @@ func (s *concurrentSet) size() int {
 // A struct to track state for an active query in the system.
 // It can be modified and accessed by multiple agent streams and a single client stream.
 type activeQuery struct {
-	// Signal to cancel the query's stream.
-	cancelQueryCh    chan struct{}
-	cancelQueryError error
-	cancelOnce       sync.Once
-
 	queryResultCh chan *carnotpb.TransferResultChunkRequest
 	tableIDMap    map[string]string
 
@@ -122,15 +126,25 @@ type activeQuery struct {
 	// Store this info so that resumed queries can return compilation time and optionally query plans.
 	compilationTimeNs int64
 	queryPlanOpts     *QueryPlanOpts
+
+	// Consumers must register their context cancel funcs, so that they can be cancelled by the watchdog.
+	registerConsumerCh chan context.CancelFunc
+	// Consumers and producers must send periodic health checks to these channels so that the watchdog can end the query if consumers or producers die.
+	consumerHealthcheckCh chan bool
+	producerHealthcheckCh chan bool
+	// We store a cancel func for the watchdogs context so that the query as a whole can be cancelled.
+	cancelQueryFunc  context.CancelFunc
+	cancelQueryError error
+
+	// We store a single producer context that all producers can access, so that we can cancel all consumers at once.
+	producerCtx context.Context
 }
 
-func newActiveQuery(tableIDMap map[string]string,
+func newActiveQuery(producerCtx context.Context, tableIDMap map[string]string,
 	compilationTimeNs int64,
-	queryPlanOpts *QueryPlanOpts) *activeQuery {
+	queryPlanOpts *QueryPlanOpts, watchdogCancel context.CancelFunc) *activeQuery {
 	aq := &activeQuery{
-		cancelQueryCh: make(chan struct{}),
-
-		queryResultCh: make(chan *carnotpb.TransferResultChunkRequest),
+		queryResultCh: make(chan *carnotpb.TransferResultChunkRequest, activeQueryBufferSize),
 		tableIDMap:    tableIDMap,
 
 		uninitializedTables: &concurrentSet{unsafeMap: make(map[string]struct{})},
@@ -142,6 +156,13 @@ func newActiveQuery(tableIDMap map[string]string,
 		// Store compilation time and query plan opts so that callers of ResumeQuery don't need to be aware of these.
 		compilationTimeNs: compilationTimeNs,
 		queryPlanOpts:     queryPlanOpts,
+
+		registerConsumerCh:    make(chan context.CancelFunc),
+		consumerHealthcheckCh: make(chan bool),
+		producerHealthcheckCh: make(chan bool),
+
+		cancelQueryFunc: watchdogCancel,
+		producerCtx:     producerCtx,
 	}
 
 	for tableName := range tableIDMap {
@@ -150,13 +171,6 @@ func newActiveQuery(tableIDMap map[string]string,
 	}
 
 	return aq
-}
-
-func (a *activeQuery) signalCancelQuery(err error) {
-	a.cancelOnce.Do(func() {
-		a.cancelQueryError = err
-		close(a.cancelQueryCh)
-	})
 }
 
 // This function and queryComplete() should only be called by the same single thread.
@@ -215,6 +229,128 @@ func (a *activeQuery) queryComplete() bool {
 	return a.uninitializedTables.size() == 0 && a.remainingTableEos.size() == 0 && a.gotFinalExecStats
 }
 
+func (a *activeQuery) registerConsumer(cancel context.CancelFunc) error {
+	// If the watchdog has already exited, then the write to the channel will hang, so we have a timeout.
+	t := time.NewTimer(time.Second)
+	select {
+	case a.registerConsumerCh <- cancel:
+	case <-t.C:
+		return fmt.Errorf("timedout trying to register consumer")
+	}
+	return nil
+}
+
+func (a *activeQuery) watchdog(ctx context.Context, queryID uuid.UUID, consumerTimeout time.Duration, producerTimeout time.Duration, deleteQuery func()) {
+	consumerTimer := time.NewTimer(consumerTimeout)
+	producerTimer := time.NewTimer(producerTimeout)
+	resetTimer := func(t *time.Timer, timeout time.Duration) {
+		if !t.Stop() {
+			<-t.C
+		}
+		t.Reset(timeout)
+	}
+	cancelConsumer := func() {}
+forLoop:
+	for {
+		select {
+		case cancel := <-a.registerConsumerCh:
+			// We only allow one consumer so cancel the old consumer if there was one.
+			cancelConsumer()
+			cancelConsumer = cancel
+			resetTimer(consumerTimer, consumerTimeout)
+
+		case <-a.consumerHealthcheckCh:
+			resetTimer(consumerTimer, consumerTimeout)
+		case <-a.producerHealthcheckCh:
+			resetTimer(producerTimer, producerTimeout)
+
+		case <-consumerTimer.C:
+			a.cancelQueryError = fmt.Errorf("Query %s timedout waiting for consumer", queryID.String())
+			break forLoop
+		case <-producerTimer.C:
+			a.cancelQueryError = fmt.Errorf("Query %s timedout waiting for producers", queryID.String())
+			break forLoop
+
+		case <-ctx.Done():
+			break forLoop
+		}
+	}
+
+	// Shutdown and delete query
+	deleteQuery()
+	cancelConsumer()
+}
+
+func (a *activeQuery) handleRequest(ctx context.Context, queryID uuid.UUID, msg *carnotpb.TransferResultChunkRequest, resultCh chan *vizierpb.ExecuteScriptResponse) error {
+	// Stream the agent stream result to the client stream.
+	// Check if stream is complete. If so, close client stream.
+	// If there was an error, then cancel both sides of the stream.
+	err := a.updateQueryState(msg)
+	if err != nil {
+		return err
+	}
+
+	// Optionally send the query plan (which requires the exec stats).
+	if execStats := msg.GetExecutionAndTimingInfo(); execStats != nil {
+		a.agentExecStats = &(execStats.AgentExecutionStats)
+	}
+
+	// If the query is complete and we need to send the query plan, send it before the final
+	// execution stats, since consumers may expect those to be the last message.
+	if a.queryComplete() {
+		if a.queryPlanOpts != nil {
+			qpResps, err := QueryPlanResponse(queryID, a.queryPlanOpts.Plan, a.queryPlanOpts.PlanMap,
+				a.agentExecStats, a.queryPlanOpts.TableID, maxQueryPlanStringSize)
+
+			if err != nil {
+				return err
+			}
+			for _, qpRes := range qpResps {
+				select {
+				case <-ctx.Done():
+					return nil
+				case resultCh <- qpRes:
+				}
+			}
+		}
+	}
+
+	resp, err := BuildExecuteScriptResponse(msg, a.tableIDMap, a.compilationTimeNs)
+	if err != nil {
+		return err
+	}
+
+	// Some inbound messages don't translate into responses to the client stream.
+	if resp != nil {
+		select {
+		case <-ctx.Done():
+			return nil
+		case resultCh <- resp:
+		}
+	}
+
+	return nil
+}
+
+func (a *activeQuery) consumerHealthcheck(ctx context.Context) {
+	select {
+	case <-ctx.Done():
+	case a.consumerHealthcheckCh <- true:
+	}
+}
+
+func (a *activeQuery) producerHealthcheck(ctx context.Context) {
+	select {
+	case <-ctx.Done():
+	case a.producerHealthcheckCh <- true:
+	}
+}
+
+func (a *activeQuery) cancelQuery(err error) {
+	a.cancelQueryError = err
+	a.cancelQueryFunc()
+}
+
 // QueryResultForwarder is responsible for receiving query results from the agent streams and forwarding
 // that data to the client stream.
 type QueryResultForwarder interface {
@@ -222,21 +358,18 @@ type QueryResultForwarder interface {
 		compilationTimeNs int64,
 		queryPlanOpts *QueryPlanOpts) error
 
-	// To be used if a query needs to be deleted before StreamResults is invoked.
-	// Otherwise, StreamResults will delete the query for the caller.
-	DeleteQuery(queryID uuid.UUID)
-
 	// Streams results from the agent stream to the client stream.
 	// Blocks until the stream (& the agent stream) has completed, been cancelled, or experienced an error.
 	// Returns error for any error received.
 	StreamResults(ctx context.Context, queryID uuid.UUID,
 		resultCh chan *vizierpb.ExecuteScriptResponse) error
 
+	// Returns the producer context for the query, so that the watchdog can cancel all producers with one context.
+	GetProducerCtx(queryID uuid.UUID) (context.Context, error)
 	// Pass a message received from the agent stream to the client-side stream.
-	ForwardQueryResult(msg *carnotpb.TransferResultChunkRequest) error
+	ForwardQueryResult(ctx context.Context, msg *carnotpb.TransferResultChunkRequest) error
 	// If the producer of data (i.e. Kelvin) errors then this function can be used to shutdown the stream.
-	// If the producer stream is disconnected this function should not be called to allow the producer time
-	// to restart its stream.
+	// The producer should not call this function if there's a retry is possible.
 	ProducerCancelStream(queryID uuid.UUID, err error)
 }
 
@@ -246,19 +379,54 @@ type QueryResultForwarderImpl struct {
 	// Used to guard deletions and accesses of the activeQueries map.
 	activeQueriesMutex              sync.Mutex
 	resultSinkInitializationTimeout time.Duration
+
+	consumerTimeout time.Duration
+	producerTimeout time.Duration
+}
+
+// QueryResultForwarderOption allows specifying options for new QueryResultForwarders.
+type QueryResultForwarderOption func(*QueryResultForwarderImpl)
+
+// WithResultSinkTimeout sets the result sink initialization timeout.
+func WithResultSinkTimeout(timeout time.Duration) QueryResultForwarderOption {
+	return func(rf *QueryResultForwarderImpl) {
+		rf.resultSinkInitializationTimeout = timeout
+	}
+}
+
+// WithProducerTimeout sets a timeout on how long the result forwarder will wait without seeing any data from producers.
+func WithProducerTimeout(timeout time.Duration) QueryResultForwarderOption {
+	return func(rf *QueryResultForwarderImpl) {
+		rf.producerTimeout = timeout
+	}
+}
+
+// WithConsumerTimeout sets a timeout on how long the result forwarder will wait without a consumer pulling data from it.
+func WithConsumerTimeout(timeout time.Duration) QueryResultForwarderOption {
+	return func(rf *QueryResultForwarderImpl) {
+		rf.consumerTimeout = timeout
+	}
 }
 
 // NewQueryResultForwarder creates a new QueryResultForwarder.
 func NewQueryResultForwarder() QueryResultForwarder {
-	return NewQueryResultForwarderWithTimeout(defaultResultSinkInitializationTimeout)
+	return NewQueryResultForwarderWithOptions()
 }
 
-// NewQueryResultForwarderWithTimeout returns a query result forwarder with a custom timeout.
-func NewQueryResultForwarderWithTimeout(timeout time.Duration) QueryResultForwarder {
-	return &QueryResultForwarderImpl{
+// NewQueryResultForwarderWithOptions returns a query result forwarder with custom options.
+func NewQueryResultForwarderWithOptions(opts ...QueryResultForwarderOption) QueryResultForwarder {
+	rf := &QueryResultForwarderImpl{
 		activeQueries:                   make(map[uuid.UUID]*activeQuery),
-		resultSinkInitializationTimeout: timeout,
+		resultSinkInitializationTimeout: defaultResultSinkInitializationTimeout,
+
+		consumerTimeout: defaultConsumerTimeout,
+		producerTimeout: defaultProducerTimeout,
 	}
+
+	for _, opt := range opts {
+		opt(rf)
+	}
+	return rf
 }
 
 // RegisterQuery registers a query ID in the result forwarder.
@@ -271,15 +439,19 @@ func (f *QueryResultForwarderImpl) RegisterQuery(queryID uuid.UUID, tableIDMap m
 	if _, present := f.activeQueries[queryID]; present {
 		return fmt.Errorf("Query %d already registered", queryID)
 	}
-	f.activeQueries[queryID] = newActiveQuery(tableIDMap, compilationTimeNs, queryPlanOpts)
-	return nil
-}
+	watchdogCtx, watchdogCancel := context.WithCancel(context.Background())
+	producerCtx, producerCancel := context.WithCancel(context.Background())
+	aq := newActiveQuery(producerCtx, tableIDMap, compilationTimeNs, queryPlanOpts, watchdogCancel)
+	f.activeQueries[queryID] = aq
 
-// DeleteQuery deletes a query ID in the result forwarder.
-func (f *QueryResultForwarderImpl) DeleteQuery(queryID uuid.UUID) {
-	f.activeQueriesMutex.Lock()
-	defer f.activeQueriesMutex.Unlock()
-	delete(f.activeQueries, queryID)
+	deleteQuery := func() {
+		f.activeQueriesMutex.Lock()
+		defer f.activeQueriesMutex.Unlock()
+		delete(f.activeQueries, queryID)
+		producerCancel()
+	}
+	go aq.watchdog(watchdogCtx, queryID, f.consumerTimeout, f.producerTimeout, deleteQuery)
+	return nil
 }
 
 // The max size of the query plan string, including a buffer for the rest of the message.
@@ -297,16 +469,9 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 		return fmt.Errorf("error in StreamResults: Query %s not registered in query forwarder", queryID.String())
 	}
 
-	defer func() {
-		f.activeQueriesMutex.Lock()
-		delete(f.activeQueries, queryID)
-		f.activeQueriesMutex.Unlock()
-	}()
-
 	ctx, cancel := context.WithCancel(ctx)
-	cancelStreamReturnErr := func(err error) error {
-		activeQuery.signalCancelQuery(err)
-		cancel()
+	defer cancel()
+	if err := activeQuery.registerConsumer(cancel); err != nil {
 		return err
 	}
 
@@ -315,7 +480,7 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 	go func() {
 		for {
 			select {
-			case <-activeQuery.cancelQueryCh:
+			case <-ctx.Done():
 				return
 			case <-activeQuery.allTablesConnectedCh:
 				return
@@ -324,7 +489,7 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 				err := fmt.Errorf("Query %s failed to initialize all result tables within the deadline, missing: %s",
 					queryID.String(), strings.Join(missingSinks, ", "))
 				log.Info(err.Error())
-				activeQuery.signalCancelQuery(err)
+				activeQuery.cancelQuery(err)
 				return
 			}
 		}
@@ -333,79 +498,58 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 	for {
 		select {
 		case <-ctx.Done():
-			// Client side stream is cancelled.
-			// Subsequent calls to ForwardQueryResult should fail for this query.
-			activeQuery.signalCancelQuery(nil)
-			return nil
-
-		case <-activeQuery.cancelQueryCh:
 			return activeQuery.cancelQueryError
 
 		case msg := <-activeQuery.queryResultCh:
-			// Stream the agent stream result to the client stream.
-			// Check if stream is complete. If so, close client stream.
-			// If there was an error, then cancel both sides of the stream.
-			err := activeQuery.updateQueryState(msg)
-			if err != nil {
-				return cancelStreamReturnErr(err)
+			activeQuery.consumerHealthcheck(ctx)
+			if err := activeQuery.handleRequest(ctx, queryID, msg, resultCh); err != nil {
+				activeQuery.cancelQuery(err)
+				return err
 			}
-
-			// Optionally send the query plan (which requires the exec stats).
-			if execStats := msg.GetExecutionAndTimingInfo(); execStats != nil {
-				activeQuery.agentExecStats = &(execStats.AgentExecutionStats)
-			}
-
-			// If the query is complete and we need to send the query plan, send it before the final
-			// execution stats, since consumers may expect those to be the last message.
 			if activeQuery.queryComplete() {
-				if activeQuery.queryPlanOpts != nil {
-					qpResps, err := QueryPlanResponse(queryID, activeQuery.queryPlanOpts.Plan, activeQuery.queryPlanOpts.PlanMap,
-						activeQuery.agentExecStats, activeQuery.queryPlanOpts.TableID, maxQueryPlanStringSize)
-
-					if err != nil {
-						return cancelStreamReturnErr(err)
-					}
-					for _, qpRes := range qpResps {
-						resultCh <- qpRes
-					}
-				}
-			}
-
-			resp, err := BuildExecuteScriptResponse(msg, activeQuery.tableIDMap, activeQuery.compilationTimeNs)
-			if err != nil {
-				return cancelStreamReturnErr(err)
-			}
-
-			// Some inbound messages don't translate into responses to the client stream.
-			if resp != nil {
-				resultCh <- resp
-			}
-
-			if activeQuery.queryComplete() {
+				activeQuery.cancelQuery(nil)
 				return nil
 			}
 		}
 	}
 }
 
+// GetProducerCtx returns the producer context for the query, so producers can check for that context being cancelled.
+func (f *QueryResultForwarderImpl) GetProducerCtx(queryID uuid.UUID) (context.Context, error) {
+	f.activeQueriesMutex.Lock()
+	activeQuery, present := f.activeQueries[queryID]
+	f.activeQueriesMutex.Unlock()
+
+	if !present {
+		return nil, fmt.Errorf("error in GetProducerCtx: Query %s is not registered in query forwarder", queryID.String())
+	}
+
+	return activeQuery.producerCtx, nil
+}
+
 // ForwardQueryResult forwards the agent result to the client result channel.
-func (f *QueryResultForwarderImpl) ForwardQueryResult(msg *carnotpb.TransferResultChunkRequest) error {
+func (f *QueryResultForwarderImpl) ForwardQueryResult(ctx context.Context, msg *carnotpb.TransferResultChunkRequest) error {
 	queryID := utils.UUIDFromProtoOrNil(msg.QueryID)
 	f.activeQueriesMutex.Lock()
 	activeQuery, present := f.activeQueries[queryID]
 	f.activeQueriesMutex.Unlock()
 
-	// It's ok to cancel a query that doesn't currently exist in the system, since it may have already
-	// been cleaned up.
 	if !present {
 		return fmt.Errorf("error in ForwardQueryResult: Query %s is not registered in query forwarder", queryID.String())
 	}
 
 	select {
+	case <-activeQuery.producerCtx.Done():
+		return activeQuery.cancelQueryError
+	case <-ctx.Done():
+		return activeQuery.cancelQueryError
 	case activeQuery.queryResultCh <- msg:
+		activeQuery.producerHealthcheck(ctx)
 		return nil
-	case <-activeQuery.cancelQueryCh:
-		return fmt.Errorf("query result not forwarded, query %s has been cancelled", queryID.String())
+	default:
+		err := fmt.Errorf("error in ForwardQueryResult: Query %s can not accept more data, consumer likely died", queryID.String())
+		activeQuery.cancelQuery(err)
+		return err
 	}
 }
 
@@ -421,5 +565,5 @@ func (f *QueryResultForwarderImpl) ProducerCancelStream(queryID uuid.UUID, err e
 		return
 	}
 	// Cancel the query if it hasn't already been cancelled.
-	activeQuery.signalCancelQuery(err)
+	activeQuery.cancelQuery(err)
 }

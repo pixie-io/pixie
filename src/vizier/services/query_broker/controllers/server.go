@@ -126,23 +126,12 @@ func (s *Server) Close() {
 	s.planner.Free()
 }
 
-// runQuery executes a query and streams the results to the client.
-// returns a bool for whether the query timed out and an error.
-func (s *Server) runQuery(ctx context.Context, req *plannerpb.QueryRequest, queryID uuid.UUID,
+// registerAndLaunchQuery registers the query with the result forwarder and launchs the query, but does not start streaming results.
+func (s *Server) registerAndLaunchQuery(req *plannerpb.QueryRequest, queryID uuid.UUID,
 	planOpts *planpb.PlanOptions, distributedState *distributedpb.DistributedState,
-	resultStream chan *vizierpb.ExecuteScriptResponse, doneCh chan bool) error {
+	resultStream chan *vizierpb.ExecuteScriptResponse) error {
 	log.WithField("query_id", queryID).Infof("Running script")
 	start := time.Now()
-	defer func(t time.Time) {
-		duration := time.Since(t)
-		log.WithField("query_id", queryID).WithField("duration", duration).Info("Executed query")
-	}(start)
-
-	defer func() {
-		close(doneCh)
-	}()
-
-	ctx = context.WithValue(ctx, execStartKey, time.Now())
 
 	info := s.agentsTracker.GetAgentInfo()
 	if info == nil {
@@ -233,11 +222,9 @@ func (s *Server) runQuery(ctx context.Context, req *plannerpb.QueryRequest, quer
 	}
 	err = LaunchQuery(queryID, s.natsConn, planMap, planOpts.Analyze)
 	if err != nil {
-		s.resultForwarder.DeleteQuery(queryID)
 		return err
 	}
-
-	return s.resultForwarder.StreamResults(ctx, queryID, resultStream)
+	return nil
 }
 
 func loadUDFInfo(udfInfoPb *udfspb.UDFInfo) error {
@@ -246,6 +233,11 @@ func loadUDFInfo(udfInfoPb *udfspb.UDFInfo) error {
 		return err
 	}
 	return proto.Unmarshal(b, udfInfoPb)
+}
+
+func logQueryDuration(queryID uuid.UUID, t time.Time) {
+	duration := time.Since(t)
+	log.WithField("query_id", queryID).WithField("duration", duration).Info("Executed query")
 }
 
 // CheckHealth runs the health check and returns an error if it didn't pass.
@@ -266,7 +258,6 @@ func (s *Server) CheckHealth(ctx context.Context) error {
 	planOpts := flags.GetPlanOptions()
 
 	resultStream := make(chan *vizierpb.ExecuteScriptResponse)
-	doneCh := make(chan bool)
 
 	var wg sync.WaitGroup
 	receivedRowBatches := 0
@@ -283,7 +274,7 @@ func (s *Server) CheckHealth(ctx context.Context) error {
 				wg.Done()
 				cancel()
 				return
-			case <-doneCh:
+			case <-ctx.Done():
 				wg.Done()
 				return
 			case result := <-resultStream:
@@ -298,11 +289,17 @@ func (s *Server) CheckHealth(ctx context.Context) error {
 	}()
 
 	distributedState := s.agentsTracker.GetAgentInfo().DistributedState()
-	err = s.runQuery(ctx, req, queryID, planOpts, &distributedState, resultStream, doneCh)
+	start := time.Now()
+	defer logQueryDuration(queryID, start)
+	err = s.registerAndLaunchQuery(req, queryID, planOpts, &distributedState, resultStream)
+	if err != nil {
+		return fmt.Errorf("error launching healthcheck query ID %s: %v", queryID.String(), err)
+	}
+	err = s.resultForwarder.StreamResults(ctx, queryID, resultStream)
 	if err != nil {
 		return fmt.Errorf("error running healthcheck query ID %s: %v", queryID.String(), err)
 	}
-
+	cancel()
 	wg.Wait()
 
 	if receivedRowBatches == 0 || receivedRows == int64(0) {
@@ -370,7 +367,56 @@ func (s *Server) HealthCheck(req *vizierpb.HealthCheckRequest, srv vizierpb.Vizi
 // ExecuteScript executes the script and sends results through the gRPC stream.
 func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.VizierService_ExecuteScriptServer) error {
 	ctx := context.WithValue(srv.Context(), execStartKey, time.Now())
-	// TODO(philkuz,PP-2262) we should move the query id into the api so we can track queries from the client that orignated them.
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	resultStream := make(chan *vizierpb.ExecuteScriptResponse)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	var sendErr error
+	go func() {
+		var err error
+		for {
+			select {
+			case <-ctx.Done():
+				wg.Done()
+				return
+			case result := <-resultStream:
+				err = srv.Send(result)
+				if err != nil {
+					sendErr = err
+					wg.Done()
+					cancel()
+					return
+				}
+			}
+		}
+	}()
+
+	streamResults := func(queryID uuid.UUID) error {
+		err := s.resultForwarder.StreamResults(ctx, queryID, resultStream)
+		cancel()
+		wg.Wait()
+		if err != nil {
+			return err
+		}
+		if sendErr != nil {
+			return sendErr
+		}
+		return nil
+	}
+
+	if req.QueryID != "" {
+		// If the QueryID is not empty then this request is to resume an already launched query.
+		queryID, err := uuid.FromString(req.QueryID)
+		if err != nil {
+			return srv.Send(&vizierpb.ExecuteScriptResponse{Status: ErrToVizierStatus(err)})
+		}
+		return streamResults(queryID)
+	}
+	// If QueryID is empty, then we need to launch a new query.
 	queryID, err := uuid.NewV4()
 	if err != nil {
 		return srv.Send(ErrToVizierResponse(queryID, err))
@@ -415,40 +461,14 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 		return err
 	}
 
-	resultStream := make(chan *vizierpb.ExecuteScriptResponse)
-	doneCh := make(chan bool)
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	var sendErr error
-	go func() {
-		var err error
-		for {
-			select {
-			case <-doneCh:
-				wg.Done()
-				return
-			case result := <-resultStream:
-				err = srv.Send(result)
-				if err != nil {
-					sendErr = err
-				}
-			}
-		}
-	}()
-
 	log.Infof("Launching query: %s", queryID)
-	err = s.runQuery(ctx, convertedReq, queryID, planOpts, &distributedState, resultStream, doneCh)
-	wg.Wait()
-
+	start := time.Now()
+	defer logQueryDuration(queryID, start)
+	err = s.registerAndLaunchQuery(convertedReq, queryID, planOpts, &distributedState, resultStream)
 	if err != nil {
 		return err
 	}
-	if sendErr != nil {
-		return err
-	}
-	return nil
+	return streamResults(queryID)
 }
 
 // TransferResultChunk implements the API that allows the query broker receive streamed results
@@ -462,7 +482,7 @@ func (s *Server) TransferResultChunk(srv carnotpb.ResultSinkService_TransferResu
 	// used to cancel the query if the connection is closed by the agent before EOS is sent.
 	sentEos := false
 
-	sendAndClose := func(success bool, message string) error {
+	sendAndClose := func(success bool, cancelForwarderClient bool, message string) error {
 		err := srv.SendAndClose(&carnotpb.TransferResultChunkResponse{
 			Success: success,
 			Message: message,
@@ -470,7 +490,11 @@ func (s *Server) TransferResultChunk(srv carnotpb.ResultSinkService_TransferResu
 		if !success {
 			if queryID == uuid.Nil {
 				log.Errorf("TransferResultChunk encountered an error for unknown query ID: %s", message)
-			} else {
+			} else if cancelForwarderClient {
+				// If the stream died because of an HTTP/TCP timeout we don't want to cancel the result forwarder immediately
+				// since we might get a retry connection from TransferResultChunk. The result forwarder has an internal timeout,
+				// so if no data is transferred after that timeout it will cancel the query.
+
 				// Stop the client stream, if it still exists in the result forwarder.
 				// It may have already been cancelled before this point.
 				log.Errorf("TransferResultChunk cancelling client stream for query %s: %s", queryID.String(), message)
@@ -484,16 +508,21 @@ func (s *Server) TransferResultChunk(srv carnotpb.ResultSinkService_TransferResu
 	handleAgentStreamClosed := func() error {
 		if tableName != "" && !sentEos {
 			// Send an error and cancel the query if the stream is closed unexpectedly.
-			return sendAndClose( /*success*/ false, fmt.Sprintf(
+			return sendAndClose( /*success*/ false, false, fmt.Sprintf(
 				"Agent stream was unexpectedly closed for table %s of query %s before the results completed",
 				tableName, queryID.String(),
 			))
 		}
-		return sendAndClose( /*success*/ true, "")
+		return sendAndClose( /*success*/ true, false, "")
 	}
+
+	// producerCtx gets set once we know what the queryID is.
+	producerCtx := context.Background()
 
 	for {
 		select {
+		case <-producerCtx.Done():
+			return handleAgentStreamClosed()
 		case <-srv.Context().Done():
 			return handleAgentStreamClosed()
 		default:
@@ -505,36 +534,40 @@ func (s *Server) TransferResultChunk(srv carnotpb.ResultSinkService_TransferResu
 			if err != nil {
 				if s, ok := status.FromError(err); ok {
 					if s.Code() == codes.Unavailable {
-						return sendAndClose( /*success*/ false,
+						return sendAndClose( /*success*/ false, false,
 							fmt.Sprintf("Agent stream disconnected for query %s", queryID.String()))
 					}
 				}
 
-				return sendAndClose( /*success*/ false, err.Error())
+				return sendAndClose( /*success*/ false, true, err.Error())
 			}
 
 			qid, err := utils.UUIDFromProto(msg.QueryID)
 			if err != nil {
-				return sendAndClose( /*success*/ false, err.Error())
+				return sendAndClose( /*success*/ false, true, err.Error())
 			}
 
 			if queryID == uuid.Nil {
 				queryID = qid
+				producerCtx, err = s.resultForwarder.GetProducerCtx(queryID)
+				if err != nil {
+					return sendAndClose( /*success*/ false, true, err.Error())
+				}
 			}
 			if queryID != qid {
-				return sendAndClose( /*success*/ false, fmt.Sprintf(
+				return sendAndClose( /*success*/ false, true, fmt.Sprintf(
 					"Received results from multiple queries in the same TransferResultChunk stream: %s and %s",
 					queryID, qid,
 				))
 			}
 
-			err = s.resultForwarder.ForwardQueryResult(msg)
+			err = s.resultForwarder.ForwardQueryResult(srv.Context(), msg)
 			// If the result wasn't forwarded, the client stream may have be cancelled.
 			// This should not cause TransferResultChunk to return an error, we just include in the response
 			// that the latest result chunk was not forwarded.
 			if err != nil {
 				log.WithError(err).Infof("Could not forward result message for query %s", queryID)
-				return sendAndClose( /*success*/ false, err.Error())
+				return sendAndClose( /*success*/ false, true, err.Error())
 			}
 
 			// Keep track of which table this stream is sending results for, and if it has sent EOS yet.
@@ -543,7 +576,7 @@ func (s *Server) TransferResultChunk(srv carnotpb.ResultSinkService_TransferResu
 					tableName = queryResult.GetTableName()
 				}
 				if tableName != queryResult.GetTableName() {
-					return sendAndClose( /*success*/ false, fmt.Sprintf(
+					return sendAndClose( /*success*/ false, true, fmt.Sprintf(
 						"Received results from multiple tables for query %s in the same TransferResultChunk stream"+
 							": %s and %s", queryID.String(), tableName, queryResult.GetTableName(),
 					))

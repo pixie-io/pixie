@@ -4057,7 +4057,8 @@ proto.px.api.vizierpb.ExecuteScriptRequest.toObject = function(includeInstance, 
     execFuncsList: jspb.Message.toObjectList(msg.getExecFuncsList(),
     proto.px.api.vizierpb.ExecuteScriptRequest.FuncToExecute.toObject, includeInstance),
     mutation: jspb.Message.getBooleanFieldWithDefault(msg, 5, false),
-    encryptionOptions: (f = msg.getEncryptionOptions()) && proto.px.api.vizierpb.ExecuteScriptRequest.EncryptionOptions.toObject(includeInstance, f)
+    encryptionOptions: (f = msg.getEncryptionOptions()) && proto.px.api.vizierpb.ExecuteScriptRequest.EncryptionOptions.toObject(includeInstance, f),
+    queryId: jspb.Message.getFieldWithDefault(msg, 7, "")
   };
 
   if (includeInstance) {
@@ -4115,6 +4116,10 @@ proto.px.api.vizierpb.ExecuteScriptRequest.deserializeBinaryFromReader = functio
       var value = new proto.px.api.vizierpb.ExecuteScriptRequest.EncryptionOptions;
       reader.readMessage(value,proto.px.api.vizierpb.ExecuteScriptRequest.EncryptionOptions.deserializeBinaryFromReader);
       msg.setEncryptionOptions(value);
+      break;
+    case 7:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setQueryId(value);
       break;
     default:
       reader.skipField();
@@ -4180,6 +4185,13 @@ proto.px.api.vizierpb.ExecuteScriptRequest.serializeBinaryToWriter = function(me
       6,
       f,
       proto.px.api.vizierpb.ExecuteScriptRequest.EncryptionOptions.serializeBinaryToWriter
+    );
+  }
+  f = message.getQueryId();
+  if (f.length > 0) {
+    writer.writeString(
+      7,
+      f
     );
   }
 };
@@ -4911,6 +4923,24 @@ proto.px.api.vizierpb.ExecuteScriptRequest.prototype.clearEncryptionOptions = fu
  */
 proto.px.api.vizierpb.ExecuteScriptRequest.prototype.hasEncryptionOptions = function() {
   return jspb.Message.getField(this, 6) != null;
+};
+
+
+/**
+ * optional string query_id = 7;
+ * @return {string}
+ */
+proto.px.api.vizierpb.ExecuteScriptRequest.prototype.getQueryId = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 7, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.px.api.vizierpb.ExecuteScriptRequest} returns this
+ */
+proto.px.api.vizierpb.ExecuteScriptRequest.prototype.setQueryId = function(value) {
+  return jspb.Message.setProto3StringField(this, 7, value);
 };
 
 

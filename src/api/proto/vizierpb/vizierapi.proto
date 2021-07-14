@@ -314,6 +314,9 @@ message ExecuteScriptRequest {
   // Options for encrypting the data.
   EncryptionOptions encryption_options = 6;
 
+  // If query_id is passed in then this execute request is treated as
+  // a resume request for an already existing query.
+  string query_id = 7 [(gogoproto.customname) = "QueryID"];
   reserved 2;
 }
 
