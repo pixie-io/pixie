@@ -20,6 +20,12 @@ import px
 # Adapted from https://github.com/iovisor/bpftrace/blob/master/tools/capable.bt
 
 program = """
+// capable.bt	Trace security capabilitiy checks (cap_capable()).
+// 		        For Linux, uses eBPF.
+//
+// Copyright 2018 Netflix, Inc.
+// Licensed under the Apache License, Version 2.0 (the "License")
+
 BEGIN
 {
 	@cap[0] = "CAP_CHOWN";

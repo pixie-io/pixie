@@ -20,6 +20,14 @@ import px
 # Adapted from https://github.com/iovisor/bpftrace/blob/master/tools/naptime.bt
 
 program = """
+// naptime.bt - Show voluntary sleep calls.
+//
+// Copyright (c) 2019 Brendan Gregg.
+// Licensed under the Apache License, Version 2.0 (the "License").
+// This was originally created for the BPF Performance Tools book
+// published by Addison Wesley. ISBN-13: 9780136554820
+// When copying or porting, include this comment.
+
 #include <linux/time.h>
 #include <linux/sched.h>
 

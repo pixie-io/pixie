@@ -20,6 +20,12 @@ import px
 # Adapted from https://github.com/iovisor/bpftrace/blob/master/tools/mdflush.bt
 
 program = """
+// mdflush.bt	Trace md flush events.
+//		        For Linux, uses eBPF.
+//
+// Copyright 2018 Netflix, Inc.
+// Licensed under the Apache License, Version 2.0 (the "License")
+
 #include <linux/genhd.h>
 #include <linux/bio.h>
 
