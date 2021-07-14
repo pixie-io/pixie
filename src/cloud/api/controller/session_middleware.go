@@ -235,6 +235,9 @@ func sameOrigin(a, b *url.URL) bool {
 
 	aHost := aParts[len(aParts)-2] + "." + aParts[len(aParts)-1]
 	bHost := bParts[len(bParts)-2] + "." + bParts[len(bParts)-1]
+
+	aHost = strings.Split(aHost, ":")[0]
+	bHost = strings.Split(bHost, ":")[0]
 	return (a.Scheme == b.Scheme && aHost == bHost)
 }
 

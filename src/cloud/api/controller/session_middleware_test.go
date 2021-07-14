@@ -129,6 +129,21 @@ func TestWithAugmentedAuthMiddlewareWithSession(t *testing.T) {
 	validRequestCheckHelper(t, env, mockClients.MockAuth, req)
 }
 
+func TestWithAugmentedAuthMiddlewareWithSessionWithRefererPort(t *testing.T) {
+	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+
+	req, err := http.NewRequest("GET", "https://pixie.dev.pixielabs.dev/api/users", nil)
+
+	req.Header.Set("Origin", "https://work.withpixie.ai:8080")
+	req.Header.Set("Referer", "https://work.withpixie.ai:8080")
+	require.NoError(t, err)
+	cookie := getTestCookie(t, env)
+	req.Header.Add("Cookie", cookie)
+
+	validRequestCheckHelper(t, env, mockClients.MockAuth, req)
+}
+
 func TestWithAugmentedAuthMiddlewareWithSessionForceBearer(t *testing.T) {
 	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
