@@ -435,15 +435,9 @@ export interface BreadcrumbListItem {
   autoSelectPriority?: number;
 }
 
-export interface BreadcrumbOptions {
-  title: string;
-  value: string;
-  selectable: boolean;
+export interface BreadcrumbOptions extends BreadcrumbProps {
   allowTyping?: boolean;
-  getListItems?: (input: string) => Promise<BreadcrumbListItem[]>;
-  onSelect?: (input: string) => void;
   requireCompletion?: boolean;
-  placeholder?: string;
   divider?: boolean;
 }
 

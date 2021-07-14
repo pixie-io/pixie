@@ -193,13 +193,14 @@ const LiveViewBreadcrumbs = ({ classes }) => {
       // entities or has no elements and the user must manually type in values.
       const variable: Variable = variables[argName];
 
-      const argProps = {
+      const argProps: BreadcrumbOptions = {
         title: argName,
         value: argVal?.toString(),
         selectable: true,
         allowTyping: true,
-        onSelect: (newVal) => {
-          setScriptAndArgs(script, { ...args, [argName]: newVal });
+        onSelect: (newVal: string) => {
+          const val = newVal?.trim() || variable?.defaultValue?.trim() || '';
+          setScriptAndArgs(script, { ...args, [argName]: val });
         },
         getListItems: null,
         requireCompletion: false,
