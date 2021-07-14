@@ -377,8 +377,10 @@ RecordsWithErrorCount<Record> StitchFrames(std::deque<Frame>* req_frames,
   std::vector<Record> entries;
   int error_count = 0;
 
-  for (auto& resp_frame : *resp_frames) {
+  for (auto iter = resp_frames->begin(); iter != resp_frames->end();
+       iter = resp_frames->erase(resp_frames->begin())) {
     bool found_match = false;
+    Frame resp_frame = *iter;
 
     // Event responses are special: they have no request.
     if (resp_frame.hdr.opcode == Opcode::kEvent) {
@@ -389,7 +391,6 @@ RecordsWithErrorCount<Record> StitchFrames(std::deque<Frame>* req_frames,
         VLOG(1) << record_status.msg();
         ++error_count;
       }
-      resp_frames->pop_front();
       continue;
     }
 
@@ -414,7 +415,6 @@ RecordsWithErrorCount<Record> StitchFrames(std::deque<Frame>* req_frames,
         // Just mark the request as consumed, and clean-up when they reach the head of the queue.
         // Note that responses are always head-processed, so they don't require this optimization.
         found_match = true;
-        resp_frames->pop_front();
         req_frame.consumed = true;
         break;
       }

@@ -265,6 +265,28 @@ TEST(CassStitcherTest, OutOfOrderMatching) {
   EXPECT_EQ(result.records.size(), 0);
 }
 
+// To test that, if a request of a response is missing, then the response is popped off.
+TEST(CassStitcherTest, MissingRequest) {
+  std::deque<Frame> req_frames;
+  std::deque<Frame> resp_frames;
+  RecordsWithErrorCount<Record> result;
+
+  int t = 0;
+  Frame req1_frame = CreateFrame(1, Opcode::kQuery, kBadQueryReq, ++t);
+  Frame resp0_frame = CreateFrame(0, Opcode::kError, kBadQueryErrorResp, ++t);
+  Frame resp1_frame = CreateFrame(1, Opcode::kError, kBadQueryErrorResp, ++t);
+
+  req_frames.push_back(req1_frame);
+  resp_frames.push_back(resp0_frame);
+  resp_frames.push_back(resp1_frame);
+
+  result = StitchFrames(&req_frames, &resp_frames);
+  EXPECT_TRUE(resp_frames.empty());
+  EXPECT_EQ(req_frames.size(), 0);
+  EXPECT_EQ(result.error_count, 1);
+  EXPECT_EQ(result.records.size(), 1);
+}
+
 // To test that mis-classified frames are caught by stitcher.
 TEST(CassStitcherTest, NonCQLFrames) {
   std::deque<Frame> req_frames;
