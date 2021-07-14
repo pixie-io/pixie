@@ -133,21 +133,24 @@ func getAugmentedToken(env apienv.APIEnv, r *http.Request) (string, error) {
 		}
 	}
 
+	referer, err := url.Parse(r.Referer())
+	if err != nil {
+		return "", err
+	}
 	token, ok := GetTokenFromSession(env, r)
 	if ok {
-		// We need to validate origin and csrf token.
-		referer, err := url.Parse(r.Referer())
-		if err != nil {
-			return "", ErrCSRFOriginCheckFailed
-		}
-		expectedHost := &url.URL{
-			Scheme: "https",
-			Host:   viper.GetString("domain_name"),
-		}
-		if !sameOrigin(referer, expectedHost) {
+		// We need to validate origin.
+		if !checkOrigin(referer) {
 			return "", ErrCSRFOriginCheckFailed
 		}
 	} else {
+		// If referrer is set, force the origin check. This mitigates CSRF issues if the browser uses
+		// bearer auth.
+		if len(referer.Host) != 0 {
+			if !checkOrigin(referer) {
+				return "", ErrCSRFOriginCheckFailed
+			}
+		}
 		// Try to get it from bearer.
 		token, ok = httpmiddleware.GetTokenFromBearer(r)
 		if !ok {
@@ -220,4 +223,12 @@ func sameOrigin(a, b *url.URL) bool {
 	aHost := aParts[len(aParts)-2] + "." + aParts[len(aParts)-1]
 	bHost := bParts[len(bParts)-2] + "." + bParts[len(bParts)-1]
 	return (a.Scheme == b.Scheme && aHost == bHost)
+}
+
+func checkOrigin(a *url.URL) bool {
+	expectedHost := &url.URL{
+		Scheme: "https",
+		Host:   viper.GetString("domain_name"),
+	}
+	return sameOrigin(a, expectedHost)
 }

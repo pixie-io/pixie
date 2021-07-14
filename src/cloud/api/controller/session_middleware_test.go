@@ -156,6 +156,34 @@ func TestWithAugmentedAuthMiddlewareWithSessionMissingOrigin(t *testing.T) {
 	failedRequestCheckHelper(t, env, mockClients.MockAuth, req)
 }
 
+func TestWithAugmentedAuthMiddlewareWithBearerWithOriginGood(t *testing.T) {
+	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+
+	req, err := http.NewRequest("GET", "https://pixie.dev.pixielabs.dev/api/users", nil)
+	require.NoError(t, err)
+	req.Header.Add("Authorization", "Bearer authpb-token")
+
+	req.Header.Set("Origin", "https://work.withpixie.ai")
+	req.Header.Set("Referer", "https://work.withpixie.ai")
+
+	validRequestCheckHelper(t, env, mockClients.MockAuth, req)
+}
+
+func TestWithAugmentedAuthMiddlewareWithBearerWithOriginBad(t *testing.T) {
+	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+
+	req, err := http.NewRequest("GET", "https://pixie.dev.pixielabs.dev/api/users", nil)
+	require.NoError(t, err)
+	req.Header.Add("Authorization", "Bearer authpb-token")
+
+	req.Header.Set("Origin", "https://bad.com")
+	req.Header.Set("Referer", "https://bad.com")
+
+	failedRequestCheckHelper(t, env, mockClients.MockAuth, req)
+}
+
 func TestWithAugmentedAuthMiddlewareWithBearer(t *testing.T) {
 	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
