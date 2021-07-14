@@ -176,7 +176,7 @@ export class VizierGRPCClient {
    */
   health(): Observable<Status> {
     const headers = {
-      ...(this.attachCreds ? {} : { Authorization: `BEARER ${this.token}` }),
+      ...(this.attachCreds ? {} : { Authorization: `bearer ${this.token}` }),
     };
     const req = new HealthCheckRequest();
     req.setClusterId(this.clusterID);
@@ -213,7 +213,7 @@ export class VizierGRPCClient {
     mutation: boolean,
   ): Observable<ExecutionStateUpdate> {
     const headers = {
-      ...(this.attachCreds ? {} : { Authorization: `BEARER ${this.token}` }),
+      ...(this.attachCreds ? {} : { Authorization: `bearer ${this.token}` }),
     };
 
     return new Observable<ExecutionStateUpdate>((subscriber) => {

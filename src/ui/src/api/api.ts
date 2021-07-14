@@ -78,6 +78,7 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
     apiKey: '',
     uri: `${globalThis?.location?.origin || 'https://work.withpixie.ai'}/api`,
     onUnauthorized: () => {},
+    authToken: '',
   });
 
   private gqlClient: CloudClient;
@@ -116,9 +117,10 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
     const { ipAddress, token } = await this.gqlClient.getClusterConnection(cluster.id, true);
     const client = new VizierGRPCClient(
       cluster.passthroughClusterAddress ?? ipAddress,
-      token,
+      // If in embed mode, we should always use the auth token with bearer auth.
+      this.options.authToken ? this.options.authToken : token,
       cluster.id,
-      cluster.attachCredentials ?? false,
+      (this.options.authToken ? false : cluster.attachCredentials ?? false),
     );
 
     // Note that this doesn't currently clean up clients that haven't been used in a while, so a particularly long
@@ -151,7 +153,15 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
    */
   isAuthenticated(): Promise<boolean> {
     return fetch(`${this.options.uri}/authorized`,
-      { headers: { 'x-csrf': GetCSRFCookie() } }).then((response) => response.status === 200);
+      {
+        headers: {
+          ...{
+            'x-csrf': GetCSRFCookie(),
+          },
+          ...(this.options.authToken
+            ? { authorization: `Bearer ${this.options.authToken}`, 'X-Use-Bearer': 'true' } : {}),
+        },
+      }).then((response) => response.status === 200);
   }
 
   /**

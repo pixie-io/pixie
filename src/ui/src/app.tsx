@@ -36,6 +36,7 @@ import {
 import StyledEngineProvider from '@material-ui/core/StyledEngineProvider';
 import { createStyles } from '@material-ui/styles';
 
+import Axios from 'axios';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { CssBaseline } from '@material-ui/core';
@@ -44,6 +45,7 @@ import { AuthRouter } from 'app/pages/auth/auth';
 import 'typeface-roboto';
 import 'typeface-roboto-mono';
 import { PixieAPIContext, PixieAPIContextProvider } from 'app/api';
+import { AuthContextProvider, AuthContext } from 'app/common/auth-context';
 
 // This side-effect-only import has to be a `require`, or else it gets erroneously optimized away during compilation.
 require('./wdyr');
@@ -96,6 +98,54 @@ function useIsAuthenticated() {
 
 export const App: React.FC = () => {
   const { authenticated, loading } = useIsAuthenticated();
+  const { authToken, setAuthToken } = React.useContext(AuthContext);
+  const [embedToken, setEmbedToken] = React.useState<string>('');
+
+  const isEmbedded = window.location.pathname.startsWith('/embed');
+
+  // This is for an embedded environment. In the embedded environment, we
+  // expect authentication to be done using an auth token. The auth token
+  // will be POSTed over, and is used to get a Pixie access token that is
+  // attached to our requests using bearer auth.
+  const listener = React.useCallback(async (event) => {
+    const token = event.data.embedPixieAPIKey;
+    if (token) {
+      // Only request a new access token if sent a new token.
+      if (embedToken === token) {
+        return;
+      }
+
+      setEmbedToken(embedToken);
+      let response = null;
+      try {
+        response = await Axios.post('/api/auth/loginEmbedNew', {
+          accessToken: token,
+          orgName: '',
+        });
+      } catch (err) {
+        return;
+      }
+
+      setAuthToken(response.data.token);
+    }
+  }, [embedToken, setEmbedToken, setAuthToken]);
+
+  React.useEffect(() => {
+    window.addEventListener('message', listener);
+    // Send a message to the parent frame to inform it that Pixie is listening
+    // for postMessages. We use top, to send it to the topmost window.
+    // window.postMessage is not enough for a child to contact the parent.
+    window.top.postMessage({ pixieEmbedReady: true }, '*');
+    return () => {
+      window.removeEventListener('beforeunload', listener);
+    };
+  }, [listener]);
+
+  // If in an embedded environment, we need to wait until the authToken has been sent over from the parent.
+  // While there is no authToken, we should not render the page, as all GQL requests will fail.
+  if (isEmbedded && authToken.length === 0) {
+    return null;
+  }
 
   const authRedirectUri = window.location.pathname.length > 1
     ? encodeURIComponent(window.location.pathname + window.location.search)
@@ -116,7 +166,7 @@ export const App: React.FC = () => {
               {
                 // 404s are handled within the Live route, after the user authenticates.
                 // Logged out users get redirected to /login before the possibility of a 404 is checked.
-                authenticated ? <Route component={Live} />
+                authenticated || isEmbedded ? <Route component={Live} />
                   : <Redirect from='/*' to={authRedirectTo} />
               }
             </Switch>
@@ -182,9 +232,11 @@ const ThemedApp: React.FC = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <PixieAPIContextProvider apiKey=''>
-        <StyledApp />
-      </PixieAPIContextProvider>
+      <AuthContextProvider>
+        <PixieAPIContextProvider apiKey=''>
+          <StyledApp />
+        </PixieAPIContextProvider>
+      </AuthContextProvider>
     </ThemeProvider>
   );
 };

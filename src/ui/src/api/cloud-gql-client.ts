@@ -37,6 +37,7 @@ const makeCloudAuthLink = (opts: PixieAPIClientOptions) => setContext((_, { head
   headers: {
     ...headers,
     'x-csrf': GetCSRFCookie(),
+    ...(opts.authToken ? { authorization: `Bearer ${opts.authToken}`, 'X-Use-Bearer': true } : {}),
     // NOTE: apiKey is required in the interface because every consumer EXCEPT Pixie's web UI must provide it.
     // Pixie's web UI provides the empty string to indicate that it's using credentials instead.
     // If any other consumer tries to do the same thing in a browser, CORS will block the request on the API side.
@@ -46,6 +47,10 @@ const makeCloudAuthLink = (opts: PixieAPIClientOptions) => setContext((_, { head
 
 // Apollo link that redirects to login page on HTTP status 401.
 const loginRedirectLink = (on401: (errorMessage?: string) => void) => onError(({ networkError }) => {
+  if (window.location.pathname.startsWith('/embed')) {
+    return;
+  }
+
   if (!!networkError && (networkError as ServerError).statusCode === 401) {
     on401(networkError.message);
   }
@@ -93,7 +98,16 @@ export class CloudClient {
 
     // On NodeJS, there is no localStorage. However, we still want to cache at runtime, so use a Map.
     // In a browser, we can use localStorage normally.
-    const storage = globalThis.localStorage ?? (() => {
+    let useLocalStorage = true;
+    try {
+      // Checks if localStorage is defined, and if localStorge is accessible. The latter
+      // may not be possible if in an embedded environment.
+      globalThis.localStorage.setItem('checkAccess', '');
+    } catch (e) {
+      useLocalStorage = false;
+    }
+
+    const storage = useLocalStorage ? globalThis.localStorage : (() => {
       const map = new Map<string, any>();
       return {
         getItem: (k: string) => map.get(k),

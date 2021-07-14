@@ -36,4 +36,8 @@ export interface PixieAPIClientOptions {
    * @default noop
    */
   onUnauthorized?: (errorMessage?: string) => void;
+  /**
+   * The authToken, if set, is used to enable authentication in embedded mode.
+   */
+  authToken?: string;
 }

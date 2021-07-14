@@ -17,17 +17,20 @@
  */
 
 import * as React from 'react';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { screen, render } from '@testing-library/react';
-import { AuthContextProvider } from 'app/common/auth-context';
-// noinspection ES6PreferShortImport
-import { PixieAPIContextProvider } from './api-context';
 
-describe('Pixie API React Context', () => {
-  it('renders once the context is ready', async () => {
-    render(<AuthContextProvider>
-        <PixieAPIContextProvider apiKey=''>Hello</PixieAPIContextProvider>
-      </AuthContextProvider>);
-    await screen.findByText('Hello');
-  });
-});
+export interface AuthContextProps {
+  authToken: string;
+  setAuthToken: (token: string) => void;
+}
+
+export const AuthContext = React.createContext<AuthContextProps>(null);
+
+export const AuthContextProvider: React.FC = ({ children }) => {
+  const [authToken, setAuthToken] = React.useState<string>('');
+
+  return (
+    <AuthContext.Provider value={{ authToken, setAuthToken }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
