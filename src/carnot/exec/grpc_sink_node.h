@@ -19,6 +19,7 @@
 #pragma once
 
 #include <stddef.h>
+#include <chrono>
 #include <memory>
 #include <string>
 #include <vector>
@@ -51,6 +52,9 @@ constexpr size_t kMaxBatchSize = 1024 * 1024 - kMetadataMargin;
 // the distributions of the row batches.
 constexpr float kBatchSizeFactor = 0.5;
 
+// Number of times to retry connecting to grpc before giving up.
+constexpr size_t kGRPCRetries = 3;
+
 class GRPCSinkNode : public SinkNode {
  public:
   GRPCSinkNode() = default;
@@ -79,10 +83,15 @@ class GRPCSinkNode : public SinkNode {
 
  private:
   Status CloseWriter(ExecState* exec_state);
+  Status StartConnection(ExecState* exec_state, bool send_initiate_req);
+  Status StartConnectionWithRetries(ExecState* exec_state, bool send_initiate_req,
+                                    size_t n_retries);
+  Status CancelledByServer(ExecState* exec_state);
+  Status TryWriteRequest(ExecState* exec_state, const carnotpb::TransferResultChunkRequest& req);
 
   bool cancelled_ = true;
 
-  grpc::ClientContext context_;
+  std::unique_ptr<grpc::ClientContext> context_;
   carnotpb::TransferResultChunkResponse response_;
 
   carnotpb::ResultSinkService::StubInterface* stub_;
@@ -92,8 +101,7 @@ class GRPCSinkNode : public SinkNode {
   std::unique_ptr<table_store::schema::RowDescriptor> input_descriptor_;
 
   std::chrono::milliseconds connection_check_timeout_ = kDefaultConnectionCheckTimeoutMS;
-  std::chrono::time_point<std::chrono::system_clock> last_send_time_ =
-      std::chrono::system_clock::now();
+  std::chrono::time_point<std::chrono::system_clock> last_send_time_;
 };
 
 }  // namespace exec

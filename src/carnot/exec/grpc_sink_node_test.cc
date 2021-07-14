@@ -25,6 +25,7 @@
 #include <gtest/gtest.h>
 #include <sole.hpp>
 
+#include "src/carnot/carnotpb/carnot.pb.h"
 #include "src/carnot/carnotpb/carnot_mock.grpc.pb.h"
 #include "src/carnot/exec/test_utils.h"
 #include "src/carnot/planpb/plan.pb.h"
@@ -92,6 +93,23 @@ query_id {
 }
 query_result {
   initiate_result_stream: true
+  grpc_source_id: 0
+}
+)proto";
+
+constexpr char kExpected0RowResult[] = R"proto(
+address: "localhost:1234"
+query_id {
+  high_bits: $0
+  low_bits: $1
+}
+query_result {
+  row_batch {
+    cols {
+      int64_data {
+      }
+    }
+  }
   grpc_source_id: 0
 }
 )proto";
@@ -570,6 +588,79 @@ TEST_F(GRPCSinkNodeTest, break_up_row_batch_that_isnt_eow_eos) {
   EXPECT_EQ(actual_protos[num_main_batches + 1].query_result().row_batch().eos(), false);
 
   tester.Close();
+}
+
+TEST_F(GRPCSinkNodeTest, retry_failed_writes) {
+  auto op_proto = planpb::testutils::CreateTestGRPCSink1PB();
+  auto plan_node = std::make_unique<plan::GRPCSinkOperator>(1);
+  auto s = plan_node->Init(op_proto.grpc_sink_op());
+  RowDescriptor input_rd({types::DataType::INT64});
+  RowDescriptor output_rd({types::DataType::INT64});
+
+  google::protobuf::util::MessageDifferencer differ;
+
+  TransferResultChunkResponse resp;
+  resp.set_success(true);
+
+  std::vector<TransferResultChunkRequest> actual_protos(5);
+  std::vector<std::string> expected_protos = {
+      absl::Substitute(kExpectedInternalInitialization, exec_state_->query_id().ab,
+                       exec_state_->query_id().cd),
+      absl::Substitute(kExpectedInteralResult0, exec_state_->query_id().ab,
+                       exec_state_->query_id().cd),
+      absl::Substitute(kExpectedInteralResult1, exec_state_->query_id().ab,
+                       exec_state_->query_id().cd),
+      absl::Substitute(kExpected0RowResult, exec_state_->query_id().ab, exec_state_->query_id().cd),
+      absl::Substitute(kExpectedInteralResult2, exec_state_->query_id().ab,
+                       exec_state_->query_id().cd),
+  };
+
+  auto writer1 = new grpc::testing::MockClientWriter<TransferResultChunkRequest>();
+  auto writer2 = new grpc::testing::MockClientWriter<TransferResultChunkRequest>();
+
+  EXPECT_CALL(*writer1, Write(_, _))
+      .Times(4)
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[0]), Return(true)))
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[1]), Return(true)))
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[2]), Return(true)))
+      .WillOnce(Return(false));
+
+  EXPECT_CALL(*writer2, Write(_, _))
+      .Times(2)
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[3]), Return(true)))
+      .WillOnce(DoAll(SaveArg<0>(&actual_protos[4]), Return(true)));
+
+  EXPECT_CALL(*writer1, WritesDone()).WillOnce(Return(true));
+  EXPECT_CALL(*writer2, WritesDone()).WillOnce(Return(true));
+
+  EXPECT_CALL(*writer1, Finish())
+      .WillOnce(
+          Return(grpc::Status(grpc::StatusCode::INTERNAL, "Received RST_STREAM with code 2")));
+  EXPECT_CALL(*writer2, Finish()).WillOnce(Return(grpc::Status::OK));
+
+  EXPECT_CALL(*mock_, TransferResultChunkRaw(_, _))
+      .Times(2)
+      .WillOnce(DoAll(SetArgPointee<1>(resp), Return(writer1)))
+      .WillOnce(DoAll(SetArgPointee<1>(resp), Return(writer2)));
+
+  auto tester = exec::ExecNodeTester<GRPCSinkNode, plan::GRPCSinkOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+
+  for (auto i = 0; i < 3; ++i) {
+    std::vector<types::Int64Value> data(i, i);
+    auto rb = RowBatchBuilder(output_rd, i, /*eow*/ i == 2, /*eos*/ i == 2)
+                  .AddColumn<types::Int64Value>(data)
+                  .get();
+    tester.ConsumeNext(rb, 5, 0);
+  }
+
+  tester.Close();
+
+  for (auto i = 0; i < 5; ++i) {
+    EXPECT_THAT(actual_protos[i], EqualsProto(expected_protos[i]));
+  }
+
+  EXPECT_FALSE(add_metadata_called_);
 }
 
 }  // namespace exec

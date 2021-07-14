@@ -18,11 +18,13 @@
 
 #include "src/carnot/exec/grpc_sink_node.h"
 
+#include <chrono>
 #include <string>
 #include <vector>
 
 #include <absl/strings/substitute.h>
 
+#include "src/carnot/carnotpb/carnot.pb.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/macros.h"
 #include "src/common/uuid/uuid_utils.h"
@@ -82,14 +84,7 @@ Status GRPCSinkNode::OptionallyCheckConnection(ExecState* exec_state) {
                       RowBatch::WithZeroRows(*input_descriptor_, /* eow */ false, /* eos */ false));
   PL_RETURN_IF_ERROR(rb->ToProto(req.mutable_query_result()->mutable_row_batch()));
 
-  if (!writer_->Write(req)) {
-    return error::Cancelled(
-        "GRPCSinkNode $0 of query $1 could not write result to address: $2, stream closed by "
-        "server",
-        exec_state->query_id().str(), plan_node_->id(), plan_node_->address());
-  }
-
-  last_send_time_ = time_now;
+  PL_RETURN_IF_ERROR(TryWriteRequest(exec_state, req));
   return Status::OK();
 }
 
@@ -108,30 +103,92 @@ Status GRPCSinkNode::InitImpl(const plan::Operator& plan_node) {
 
 Status GRPCSinkNode::PrepareImpl(ExecState*) { return Status::OK(); }
 
-Status GRPCSinkNode::OpenImpl(ExecState* exec_state) {
-  stub_ = exec_state->ResultSinkServiceStub(plan_node_->address(), plan_node_->ssl_targetname());
-  // When we are sending the results to an external service, such as the query broker,
-  // add authentication to the client context.
-  if (plan_node_->has_table_name()) {
-    // Adding auth to GRPC client.
-    exec_state->AddAuthToGRPCClientContext(&context_);
-  }
+Status GRPCSinkNode::StartConnection(ExecState* exec_state, bool send_initiate_req) {
+  return StartConnectionWithRetries(exec_state, send_initiate_req, kGRPCRetries);
+}
 
-  writer_ = stub_->TransferResultChunk(&context_, &response_);
-
-  PL_ASSIGN_OR_RETURN(auto initial_request, RequestWithMetadata(plan_node_.get(), exec_state));
-  initial_request.mutable_query_result()->set_initiate_result_stream(true);
-
-  if (!writer_->Write(initial_request)) {
+Status GRPCSinkNode::StartConnectionWithRetries(ExecState* exec_state, bool send_initiate_req,
+                                                size_t n_retries) {
+  if (n_retries == 0) {
     cancelled_ = true;
     return error::Cancelled(
-        "GRPCSinkNode $0 error: unable to write stream initialization TransferResultChunkRequest "
+        "GRPCSinkNode $0 error: unable to write TransferResultChunkRequest on stream start"
         "to remote address $1 for query $2",
         plan_node_->id(), plan_node_->address(), exec_state->query_id().str());
   }
 
+  stub_ = exec_state->ResultSinkServiceStub(plan_node_->address(), plan_node_->ssl_targetname());
+
+  context_ = std::make_unique<grpc::ClientContext>();
+  // When we are sending the results to an external service, such as the query broker,
+  // add authentication to the client context.
+  if (plan_node_->has_table_name()) {
+    // Adding auth to GRPC client.
+    exec_state->AddAuthToGRPCClientContext(context_.get());
+  }
+
+  response_.Clear();
+  writer_ = stub_->TransferResultChunk(context_.get(), &response_);
+
+  PL_ASSIGN_OR_RETURN(auto req, RequestWithMetadata(plan_node_.get(), exec_state));
+  if (send_initiate_req) {
+    req.mutable_query_result()->set_initiate_result_stream(true);
+  } else {
+    // If this is not the first connection we've made then we send a 0-row rb instead of an
+    // initiate_result_stream request.
+    PL_ASSIGN_OR_RETURN(
+        auto rb, RowBatch::WithZeroRows(*input_descriptor_, /* eow */ false, /* eos */ false));
+    PL_RETURN_IF_ERROR(rb->ToProto(req.mutable_query_result()->mutable_row_batch()));
+  }
+
+  if (!writer_->Write(req)) {
+    return StartConnectionWithRetries(exec_state, send_initiate_req, n_retries - 1);
+  }
+
   last_send_time_ = std::chrono::system_clock::now();
   return Status::OK();
+}
+
+Status GRPCSinkNode::CancelledByServer(ExecState* exec_state) {
+  cancelled_ = true;
+  return error::Cancelled(
+      "GRPCSinkNode $0 of query $1 could not write result to address: $2, stream closed by "
+      "server",
+      plan_node_->id(), exec_state->query_id().str(), plan_node_->address());
+}
+
+Status GRPCSinkNode::TryWriteRequest(ExecState* exec_state,
+                                     const carnotpb::TransferResultChunkRequest& req) {
+  if (writer_->Write(req)) {
+    last_send_time_ = std::chrono::system_clock::now();
+    return Status::OK();
+  }
+
+  // We need to determine if the server sent a response (i.e. server closed connection) or if the
+  // connection just died.
+  writer_->WritesDone();
+  auto s = writer_->Finish();
+  // If the Finish call was successful, then the server closed the connection and sent a response,
+  // in which case we shouldn't try to reconnect. If there's an error from the server side
+  // other than a RST_STREAM, we also shouldn't retry.
+  if (s.ok() || s.error_code() != grpc::StatusCode::INTERNAL ||
+      !absl::StrContains(s.error_message(), "RST_STREAM")) {
+    return CancelledByServer(exec_state);
+  }
+  // Otherwise, the connection was probably cancelled due to a timeout or other transient failure,
+  // so we can try to restart the connection.
+  PL_RETURN_IF_ERROR(StartConnection(exec_state, /* send_initiate_req */ false));
+
+  // Try again to write the request on the new connection.
+  if (!writer_->Write(req)) {
+    return CancelledByServer(exec_state);
+  }
+  last_send_time_ = std::chrono::system_clock::now();
+  return Status::OK();
+}
+
+Status GRPCSinkNode::OpenImpl(ExecState* exec_state) {
+  return StartConnection(exec_state, /* send_initiate_req */ true);
 }
 
 Status GRPCSinkNode::CloseWriter(ExecState* exec_state) {
@@ -202,14 +259,7 @@ Status GRPCSinkNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, 
     return SplitAndSendBatch(exec_state, rb, parent_idx, request_size);
   }
 
-  if (!writer_->Write(req)) {
-    cancelled_ = true;
-    return error::Cancelled(
-        "GRPCSinkNode $0 of query $1 could not write result to address: $2, stream closed by "
-        "server",
-        exec_state->query_id().str(), plan_node_->id(), plan_node_->address());
-  }
-  last_send_time_ = std::chrono::system_clock::now();
+  PL_RETURN_IF_ERROR(TryWriteRequest(exec_state, req));
 
   if (!rb.eos()) {
     return Status::OK();
