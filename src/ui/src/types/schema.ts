@@ -85,10 +85,12 @@ export interface GQLOrgInfo {
 
 export interface GQLUserSettings {
   analyticsOptout: boolean;
+  id: string;
 }
 
 export interface GQLUserAttributes {
   tourSeen: boolean;
+  id: string;
 }
 
 export interface GQLEditableUserAttributes {
@@ -633,17 +635,27 @@ export interface OrgInfoToEnableApprovalsResolver<TParent = any, TResult = any> 
 
 export interface GQLUserSettingsTypeResolver<TParent = any> {
   analyticsOptout?: UserSettingsToAnalyticsOptoutResolver<TParent>;
+  id?: UserSettingsToIdResolver<TParent>;
 }
 
 export interface UserSettingsToAnalyticsOptoutResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
+export interface UserSettingsToIdResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
 export interface GQLUserAttributesTypeResolver<TParent = any> {
   tourSeen?: UserAttributesToTourSeenResolver<TParent>;
+  id?: UserAttributesToIdResolver<TParent>;
 }
 
 export interface UserAttributesToTourSeenResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface UserAttributesToIdResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 

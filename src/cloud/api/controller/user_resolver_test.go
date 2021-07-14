@@ -207,13 +207,15 @@ func TestUserSettingsResolver_GetUserSettings(t *testing.T) {
 				query {
 					userSettings {
 						analyticsOptout
+						id
 					}
 				}
 			`,
 			ExpectedResult: `
 				{
 					"userSettings": {
-                        "analyticsOptout": true
+                    	"analyticsOptout": true,
+						"id": "6ba7b810-9dad-11d1-80b4-00c04fd430c9"
 					}
 				}
 			`,
@@ -239,14 +241,16 @@ func TestUserSettingsResolver_UpdateUserSettings(t *testing.T) {
 			Query: `
 				mutation {
 					UpdateUserSettings(settings: { analyticsOptout: true }) {
-					    analyticsOptout
+						analyticsOptout
+						id
 					}
 				}
 			`,
 			ExpectedResult: `
 				{
 					"UpdateUserSettings": {
-						"analyticsOptout": true
+						"analyticsOptout": true,
+						"id": "6ba7b810-9dad-11d1-80b4-00c04fd430c9"
 					}
 				}
 			`,
@@ -274,13 +278,15 @@ func TestUserSettingsResolver_GetUserAttributes(t *testing.T) {
 				query {
 					userAttributes {
 						tourSeen
+						id
 					}
 				}
 			`,
 			ExpectedResult: `
 				{
 					"userAttributes": {
-                        "tourSeen": true
+                    	"tourSeen": true,
+						"id": "6ba7b810-9dad-11d1-80b4-00c04fd430c9"
 					}
 				}
 			`,
@@ -306,14 +312,16 @@ func TestUserSettingsResolver_SetUserAttributes(t *testing.T) {
 			Query: `
 				mutation {
 					SetUserAttributes(attributes: { tourSeen: true }) {
-					    tourSeen
+						tourSeen
+						id
 					}
 				}
 			`,
 			ExpectedResult: `
 				{
 					"SetUserAttributes": {
-						"tourSeen": true
+						"tourSeen": true,
+						"id": "6ba7b810-9dad-11d1-80b4-00c04fd430c9"
 					}
 				}
 			`,

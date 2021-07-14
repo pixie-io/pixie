@@ -101,6 +101,7 @@ func (u *UserInfoResolver) IsApproved() bool {
 // UserSettingsResolver resolves user settings.
 type UserSettingsResolver struct {
 	AnalyticsOptout bool
+	ID              graphql.ID
 }
 
 type updateUserSettingsArgs struct {
@@ -118,14 +119,15 @@ func (q *QueryResolver) UserSettings(ctx context.Context) (*UserSettingsResolver
 		return nil, err
 	}
 
+	id := sCtx.Claims.GetUserClaims().UserID
 	resp, err := q.Env.UserServer.GetUserSettings(ctx, &cloudpb.GetUserSettingsRequest{
-		ID: utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID),
+		ID: utils.ProtoFromUUIDStrOrNil(id),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &UserSettingsResolver{AnalyticsOptout: resp.AnalyticsOptout}, nil
+	return &UserSettingsResolver{AnalyticsOptout: resp.AnalyticsOptout, ID: graphql.ID(id)}, nil
 }
 
 // UpdateUserSettings updates the user settings for the current user.
@@ -135,11 +137,12 @@ func (q *QueryResolver) UpdateUserSettings(ctx context.Context, args *updateUser
 		return nil, err
 	}
 
+	id := sCtx.Claims.GetUserClaims().UserID
 	req := &cloudpb.UpdateUserSettingsRequest{
-		ID: utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID),
+		ID: utils.ProtoFromUUIDStrOrNil(id),
 	}
 
-	resp := &UserSettingsResolver{}
+	resp := &UserSettingsResolver{ID: graphql.ID(id)}
 
 	if args.Settings.AnalyticsOptout != nil {
 		req.AnalyticsOptout = &types.BoolValue{Value: *args.Settings.AnalyticsOptout}
@@ -200,6 +203,7 @@ func (q *QueryResolver) UpdateUserPermissions(ctx context.Context, args *updateU
 // UserAttributesResolver is a resolver for user attributes.
 type UserAttributesResolver struct {
 	TourSeen bool
+	ID       graphql.ID
 }
 
 // UserAttributes resolves user attributes information.
@@ -209,14 +213,15 @@ func (q *QueryResolver) UserAttributes(ctx context.Context) (*UserAttributesReso
 		return nil, err
 	}
 
+	id := sCtx.Claims.GetUserClaims().UserID
 	resp, err := q.Env.UserServer.GetUserAttributes(ctx, &cloudpb.GetUserAttributesRequest{
-		ID: utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID),
+		ID: utils.ProtoFromUUIDStrOrNil(id),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &UserAttributesResolver{TourSeen: resp.TourSeen}, nil
+	return &UserAttributesResolver{TourSeen: resp.TourSeen, ID: graphql.ID(id)}, nil
 }
 
 type setUserAttributesArgs struct {
@@ -234,11 +239,12 @@ func (q *QueryResolver) SetUserAttributes(ctx context.Context, args *setUserAttr
 		return nil, err
 	}
 
+	id := sCtx.Claims.GetUserClaims().UserID
 	req := &cloudpb.SetUserAttributesRequest{
-		ID: utils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID),
+		ID: utils.ProtoFromUUIDStrOrNil(id),
 	}
 
-	resp := &UserAttributesResolver{}
+	resp := &UserAttributesResolver{ID: graphql.ID(id)}
 
 	if args.Attributes.TourSeen != nil {
 		req.TourSeen = &types.BoolValue{Value: *args.Attributes.TourSeen}

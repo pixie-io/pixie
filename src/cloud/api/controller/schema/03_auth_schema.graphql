@@ -60,10 +60,12 @@ type OrgInfo {
 
 type UserSettings {
   analyticsOptout: Boolean!
+  id: ID!
 }
 
 type UserAttributes {
   tourSeen: Boolean!
+  id: ID!
 }
 
 input EditableUserAttributes {
