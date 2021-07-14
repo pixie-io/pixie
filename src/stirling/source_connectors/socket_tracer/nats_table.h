@@ -45,11 +45,7 @@ constexpr DataElement kNATSElements[] = {
 };
 // clang-format on
 
-constexpr DataTableSchema kNATSTable(
-    "nats.beta",
-    "NATS messages. Supports all message types in "
-    "https://github.com/nats-io/docs/blob/master/nats_protocol/nats-protocol.md.",
-    kNATSElements);
+constexpr DataTableSchema kNATSTable("nats_events.beta", "NATS messages.", kNATSElements);
 DEFINE_PRINT_TABLE(NATS)
 
 namespace nats_idx {
@@ -58,7 +54,7 @@ constexpr int kTime = kNATSTable.ColIndex("time_");
 constexpr int kUPID = kNATSTable.ColIndex("upid");
 constexpr int kRemoteAddr = kNATSTable.ColIndex("remote_addr");
 constexpr int kRemotePort = kNATSTable.ColIndex("remote_port");
-constexpr int kAddrFamily = kNATSTable.ColIndex("addr_family");
+constexpr int kRemoteRole = kNATSTable.ColIndex("trace_role");
 constexpr int kCMD = kNATSTable.ColIndex("cmd");
 constexpr int kOptions = kNATSTable.ColIndex("body");
 constexpr int kResp = kNATSTable.ColIndex("resp");
