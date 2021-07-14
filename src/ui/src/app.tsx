@@ -108,7 +108,11 @@ export const App: React.FC = () => {
   // will be POSTed over, and is used to get a Pixie access token that is
   // attached to our requests using bearer auth.
   const listener = React.useCallback(async (event) => {
-    const token = event.data.embedPixieAPIKey;
+    const { data: { parentReady, token } } = event;
+
+    if (parentReady) {
+      window.top.postMessage({ pixieEmbedReady: true }, '*');
+    }
     if (token) {
       // Only request a new access token if sent a new token.
       if (embedToken === token) {
