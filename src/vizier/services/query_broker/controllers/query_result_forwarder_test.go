@@ -246,9 +246,9 @@ func TestStreamResultsAgentCancel(t *testing.T) {
 	_, in0 := makeRowBatchResult(t, queryID, "foo", "123" /*eos*/, false)
 	assert.Nil(t, f.ForwardQueryResult(makeInitiateTableRequest(queryID, "foo")))
 	assert.Nil(t, f.ForwardQueryResult(in0))
-	f.OptionallyCancelClientStream(queryID, fmt.Errorf("An error 1"))
+	f.ProducerCancelStream(queryID, fmt.Errorf("An error 1"))
 	// Make sure it's safe to call cancel twice.
-	f.OptionallyCancelClientStream(queryID, fmt.Errorf("An error 2"))
+	f.ProducerCancelStream(queryID, fmt.Errorf("An error 2"))
 
 	wg.Wait()
 
@@ -441,7 +441,7 @@ func TestStreamResultsWrongQueryID(t *testing.T) {
 	assert.Nil(t, f.ForwardQueryResult(makeInitiateTableRequest(queryID, "foo")))
 	assert.Nil(t, f.ForwardQueryResult(goodInput))
 	assert.NotNil(t, f.ForwardQueryResult(badInput))
-	f.OptionallyCancelClientStream(queryID, fmt.Errorf("An error"))
+	f.ProducerCancelStream(queryID, fmt.Errorf("An error"))
 	wg.Wait()
 
 	assert.NotNil(t, err)

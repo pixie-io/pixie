@@ -319,8 +319,8 @@ func (f *fakeResultForwarder) ForwardQueryResult(msg *carnotpb.TransferResultChu
 	return nil
 }
 
-// CloseQueryResultStream closes both the client and agent side streams if either side terminates.
-func (f *fakeResultForwarder) OptionallyCancelClientStream(queryID uuid.UUID, err error) {
+// ProducerCancelStream cancels the query when the producer side encounters an error.
+func (f *fakeResultForwarder) ProducerCancelStream(queryID uuid.UUID, err error) {
 	f.ClientStreamError = err
 	f.ClientStreamClosed = true
 }

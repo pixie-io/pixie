@@ -475,7 +475,7 @@ func (s *Server) TransferResultChunk(srv carnotpb.ResultSinkService_TransferResu
 				// It may have already been cancelled before this point.
 				log.Errorf("TransferResultChunk cancelling client stream for query %s: %s", queryID.String(), message)
 				clientStreamErr := fmt.Errorf(message)
-				s.resultForwarder.OptionallyCancelClientStream(queryID, clientStreamErr)
+				s.resultForwarder.ProducerCancelStream(queryID, clientStreamErr)
 			}
 		}
 		return err
