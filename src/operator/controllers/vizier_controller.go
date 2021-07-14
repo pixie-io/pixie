@@ -39,13 +39,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
+	"px.dev/pixie/src/api/proto/vizierconfigpb"
 	pixiev1alpha1 "px.dev/pixie/src/operator/api/v1alpha1"
 	"px.dev/pixie/src/shared/services"
-	"px.dev/pixie/src/utils/shared/artifacts"
 	"px.dev/pixie/src/utils/shared/certs"
 	"px.dev/pixie/src/utils/shared/k8s"
-	yamlsutils "px.dev/pixie/src/utils/shared/yamls"
-	vizieryamls "px.dev/pixie/src/utils/template_generator/vizier_yamls"
 )
 
 // OperatorAnnotation is the key for the annotation that the operator applies on all of its deployed resources for a CRD.
@@ -208,7 +206,7 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 	vz.Spec.Pod.Annotations[operatorAnnotation] = req.Name
 	vz.Spec.Pod.Labels[operatorAnnotation] = req.Name
 
-	yamlMap, err := generateVizierYAMLs(vz.Spec.Version, req.Namespace, vz, cloudClient)
+	yamlMap, err := generateVizierYAMLsConfig(ctx, req.Namespace, vz, cloudClient)
 	if err != nil {
 		return err
 	}
@@ -388,47 +386,49 @@ func updateResourceConfiguration(resource *k8s.Resource, vz *pixiev1alpha1.Vizie
 	return nil
 }
 
-func generateVizierYAMLs(version string, ns string, vz *pixiev1alpha1.Vizier, conn *grpc.ClientConn) (map[string]string, error) {
-	var templatedYAMLs []*yamlsutils.YAMLFile
-	var err error
+func convertResourceType(originalLst v1.ResourceList) *vizierconfigpb.ResourceList {
+	transformedList := make(map[string]*vizierconfigpb.ResourceQuantity)
+	for rName, rQuantity := range originalLst {
+		transformedList[string(rName)] = &vizierconfigpb.ResourceQuantity{
+			Value: rQuantity.String(),
+		}
+	}
+	return &vizierconfigpb.ResourceList{
+		ResourceList: transformedList,
+	}
+}
 
-	templatedYAMLs, err = artifacts.FetchVizierTemplates(conn, "", version)
+// generateVizierYAMLsConfig is responsible retrieving a yaml map of configurations from
+// Pixie Cloud.
+func generateVizierYAMLsConfig(ctx context.Context, ns string, vz *pixiev1alpha1.Vizier, conn *grpc.ClientConn) (map[string]string, error) {
+	client := cloudpb.NewConfigServiceClient(conn)
+
+	req := &cloudpb.ConfigForVizierRequest{
+		Namespace: ns,
+		VzSpec: &vizierconfigpb.VizierSpec{
+			Version:           vz.Spec.Version,
+			DeployKey:         vz.Spec.DeployKey,
+			DisableAutoUpdate: vz.Spec.DisableAutoUpdate,
+			UseEtcdOperator:   vz.Spec.UseEtcdOperator,
+			ClusterName:       vz.Spec.ClusterName,
+			CloudAddr:         vz.Spec.CloudAddr,
+			DevCloudNamespace: vz.Spec.DevCloudNamespace,
+			PemMemoryLimit:    vz.Spec.PemMemoryLimit,
+			Pod_Policy: &vizierconfigpb.PodPolicyReq{
+				Labels:      vz.Spec.Pod.Labels,
+				Annotations: vz.Spec.Pod.Annotations,
+				Resources: &vizierconfigpb.ResourceReqs{
+					Limits:   convertResourceType(vz.Spec.Pod.Resources.Limits),
+					Requests: convertResourceType(vz.Spec.Pod.Resources.Requests),
+				},
+			},
+		},
+	}
+	resp, err := client.GetConfigForVizier(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-
-	// Fill in template values.
-	cloudAddr := vz.Spec.CloudAddr
-	updateCloudAddr := vz.Spec.CloudAddr
-	if vz.Spec.DevCloudNamespace != "" {
-		cloudAddr = fmt.Sprintf("vzconn-service.%s.svc.cluster.local:51600", vz.Spec.DevCloudNamespace)
-		updateCloudAddr = fmt.Sprintf("api-service.%s.svc.cluster.local:51200", vz.Spec.DevCloudNamespace)
-	}
-	// We should eventually clean up the templating code, since our Helm charts and extracted YAMLs will now just
-	// be simple CRDs.
-	tmplValues := &vizieryamls.VizierTmplValues{
-		DeployKey:         vz.Spec.DeployKey,
-		UseEtcdOperator:   vz.Spec.UseEtcdOperator,
-		PEMMemoryLimit:    vz.Spec.PemMemoryLimit,
-		Namespace:         ns,
-		CloudAddr:         cloudAddr,
-		CloudUpdateAddr:   updateCloudAddr,
-		ClusterName:       vz.Spec.ClusterName,
-		DisableAutoUpdate: vz.Spec.DisableAutoUpdate,
-	}
-
-	yamls, err := yamlsutils.ExecuteTemplatedYAMLs(templatedYAMLs, vizieryamls.VizierTmplValuesToArgs(tmplValues))
-	if err != nil {
-		return nil, err
-	}
-
-	// Map from the YAML name to the YAML contents.
-	yamlMap := make(map[string]string)
-	for _, y := range yamls {
-		yamlMap[y.Name] = y.YAML
-	}
-
-	return yamlMap, nil
+	return resp.NameToYamlContent, nil
 }
 
 // addKeyValueMapToResource adds the given keyValue map to the K8s resource.

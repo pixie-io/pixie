@@ -71,7 +71,12 @@ func main() {
 	}
 
 	svr := controller.NewServer(atClient)
-	s := server.NewPLServer(env.New(viper.GetString("domain_name")), mux)
+	serverOpts := &server.GRPCServerOptions{
+		DisableAuth: map[string]bool{
+			"/px.services.ConfigManagerService/GetConfigForVizier": true,
+		},
+	}
+	s := server.NewPLServerWithOptions(env.New(viper.GetString("domain_name")), mux, serverOpts)
 	configmanagerpb.RegisterConfigManagerServiceServer(s.GRPCServer(), svr)
 	s.Start()
 	s.StopOnInterrupt()

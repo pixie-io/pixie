@@ -39,7 +39,6 @@ func (c *ConfigServiceServer) GetConfigForVizier(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-
 	vizSpecReq := req.VzSpec
 	resp, err := c.ConfigServiceClient.GetConfigForVizier(ctx, &configmanagerpb.ConfigForVizierRequest{
 		Namespace: req.Namespace,

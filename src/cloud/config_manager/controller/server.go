@@ -108,7 +108,6 @@ func fetchVizierTemplates(ctx context.Context, authToken,
 		VersionStr:   versionStr,
 		ArtifactType: versionspb.AT_CONTAINER_SET_TEMPLATE_YAMLS,
 	}
-
 	resp, err := atClient.GetDownloadLink(ctx, req)
 	if err != nil {
 		return nil, err

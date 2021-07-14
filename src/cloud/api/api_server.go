@@ -166,10 +166,11 @@ func main() {
 			return controller.GetAugmentedTokenGRPC(ctx, apiEnv)
 		},
 		DisableAuth: map[string]bool{
-			"/px.cloudapi.ArtifactTracker/GetArtifactList": true,
-			"/px.cloudapi.ArtifactTracker/GetDownloadLink": true,
-			"/pl.cloudapi.ArtifactTracker/GetArtifactList": true,
-			"/pl.cloudapi.ArtifactTracker/GetDownloadLink": true,
+			"/px.cloudapi.ArtifactTracker/GetArtifactList":  true,
+			"/px.cloudapi.ArtifactTracker/GetDownloadLink":  true,
+			"/pl.cloudapi.ArtifactTracker/GetArtifactList":  true,
+			"/pl.cloudapi.ArtifactTracker/GetDownloadLink":  true,
+			"/px.cloudapi.ConfigService/GetConfigForVizier": true,
 		},
 	}
 
@@ -254,7 +255,7 @@ func main() {
 	us := &controller.UserServiceServer{ProfileServiceClient: pc}
 	cloudpb.RegisterUserServiceServer(s.GRPCServer(), us)
 
-	cs := &controller.ConfigServiceServer{}
+	cs := &controller.ConfigServiceServer{ConfigServiceClient: cm}
 	cloudpb.RegisterConfigServiceServer(s.GRPCServer(), cs)
 
 	gqlEnv := controller.GraphQLEnv{
