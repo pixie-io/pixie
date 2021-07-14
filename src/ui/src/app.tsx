@@ -203,10 +203,12 @@ const ThemedApp: React.FC = () => {
     const {
       data:
         {
+          // embedPixieAPIKey is the auth token, and embedPixieAPIToken is a pixie API key.
           parentReady,
-          token,
+          embedPixieAPIKey,
           pixieTheme,
           pixieStartTime,
+          embedPixieAPIToken,
         },
     } = event;
 
@@ -229,19 +231,21 @@ const ThemedApp: React.FC = () => {
     // expect authentication to be done using an auth token. The auth token
     // will be POSTed over, and is used to get a Pixie access token that is
     // attached to our requests using bearer auth.
-    if (token) {
+    if (embedPixieAPIKey || embedPixieAPIToken) {
       // Only request a new access token if sent a new token.
-      if (embedToken === token) {
-        return;
+      if (embedPixieAPIKey) {
+        if (embedToken === embedPixieAPIKey) {
+          return;
+        }
+        setEmbedToken(embedToken);
       }
 
-      setEmbedToken(embedToken);
       let response = null;
       try {
         response = await Axios.post('/api/auth/loginEmbedNew', {
-          accessToken: token,
+          accessToken: embedPixieAPIKey ?? '',
           orgName: '',
-        });
+        }, embedPixieAPIToken ? { headers: { 'pixie-api-key': embedPixieAPIToken } } : null);
       } catch (err) {
         return;
       }
