@@ -54,11 +54,15 @@ def endpoint_let_timeseries(start_time: str, service: px.Service, endpoint: str)
 
     # Format the result of LET aggregates into proper scalar formats and
     # time series.
-    df.latency_p50 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p50')))
-    df.latency_p90 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p90')))
-    df.latency_p99 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p99')))
+    df.latency_p50 = px.DurationNanos(
+        px.floor(px.pluck_float64(df.latency_quantiles, 'p50')))
+    df.latency_p90 = px.DurationNanos(
+        px.floor(px.pluck_float64(df.latency_quantiles, 'p90')))
+    df.latency_p99 = px.DurationNanos(
+        px.floor(px.pluck_float64(df.latency_quantiles, 'p99')))
     df.request_throughput = df.throughput_total / window_ns
-    df.errors_per_ns = df.error_rate_per_window * df.request_throughput / px.DurationNanos(1)
+    df.errors_per_ns = df.error_rate_per_window * \
+        df.request_throughput / px.DurationNanos(1)
     df.error_rate = px.Percent(df.error_rate_per_window)
     df.bytes_per_ns = df.bytes_total / window_ns
     df.time_ = df.timestamp
@@ -73,7 +77,8 @@ def endpoint_slow_requests(start_time: str, service: px.Service, endpoint: str):
     quantiles = df.groupby('service').agg(
         latency_quantiles=('latency', px.quantiles)
     )
-    quantiles.service_p99 = px.pluck_float64(quantiles.latency_quantiles, 'p99')
+    quantiles.service_p99 = px.pluck_float64(
+        quantiles.latency_quantiles, 'p99')
     quantiles = quantiles.drop('latency_quantiles')
     requests = df.merge(quantiles, left_on='service', right_on='service', how='inner',
                         suffixes=['', '_x'])

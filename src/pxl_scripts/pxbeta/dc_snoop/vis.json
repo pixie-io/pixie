@@ -1,0 +1,27 @@
+{
+  "variables": [],
+  "globalFuncs": [
+    {
+      "outputName": "results",
+      "func": {
+        "name": "dc_snoop_func",
+        "args": []
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Results",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 5
+      },
+      "globalFuncOutputName": "results",
+      "displaySpec": {
+        "@type": "types.px.dev/px.vispb.Table"
+      }
+    }
+  ]
+}

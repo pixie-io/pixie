@@ -75,9 +75,12 @@ def endpoint_let(start_time: str, service: px.Service):
         outbound_bytes_total=('resp_size', px.sum)
     )
 
-    df.latency_p50 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p50')))
-    df.latency_p90 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p90')))
-    df.latency_p99 = px.DurationNanos(px.floor(px.pluck_float64(df.latency_quantiles, 'p99')))
+    df.latency_p50 = px.DurationNanos(
+        px.floor(px.pluck_float64(df.latency_quantiles, 'p50')))
+    df.latency_p90 = px.DurationNanos(
+        px.floor(px.pluck_float64(df.latency_quantiles, 'p90')))
+    df.latency_p99 = px.DurationNanos(
+        px.floor(px.pluck_float64(df.latency_quantiles, 'p99')))
 
     df.request_throughput = df.throughput_total / window_ns
     df.inbound_throughput = df.inbound_bytes_total / window_ns
