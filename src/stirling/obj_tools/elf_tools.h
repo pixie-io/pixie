@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 
+#include <absl/container/btree_map.h>
 #include <absl/container/flat_hash_map.h>
 
 #include <elfio/elfio.hpp>
@@ -117,6 +118,33 @@ class ElfReader {
    *         Error if search failed to run as expected.
    */
   StatusOr<std::optional<std::string>> InstrAddrToSymbol(size_t addr);
+
+  class Symbolizer {
+   public:
+    /**
+     * Associate the address range [addr, addr+size] with the provided symbol name.
+     * No checking is performed for overlapping regions, which will result in undefined behavior.
+     */
+    void AddEntry(uintptr_t addr, size_t size, std::string name);
+
+    /**
+     * Lookup the symbol for the specified address.
+     * @param addr
+     * @return
+     */
+    const std::string& Lookup(uintptr_t addr) const;
+
+   private:
+    struct SymbolAddrInfo {
+      size_t size;
+      std::string name;
+    };
+
+    // Key is an address.
+    absl::btree_map<uintptr_t, SymbolAddrInfo> symbols_;
+  };
+
+  StatusOr<Symbolizer> GetSymbolizer();
 
   /**
    * Returns the address of the return instructions of the function.

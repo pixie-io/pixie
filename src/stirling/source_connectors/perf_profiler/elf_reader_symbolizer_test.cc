@@ -26,6 +26,8 @@
 #include "src/stirling/bpf_tools/macros.h"
 #include "src/stirling/obj_tools/elf_tools.h"
 
+using px::stirling::obj_tools::ElfReader;
+
 extern "C" {
 NO_OPT_ATTR uint32_t Trigger() { return 5; }
 }
@@ -61,10 +63,10 @@ int sample_stack_trace(struct pt_regs* ctx) {
 }
 )";
 
-TEST(SymbolizerTest, SingleStackTrace) {
-  bpf_tools::BCCWrapper bcc_wrapper;
+StatusOr<std::vector<uintptr_t>> CollectStackTrace() {
+  PL_ASSIGN_OR_RETURN(std::filesystem::path self_path, fs::ReadSymlink("/proc/self/exe"));
 
-  ASSERT_OK_AND_ASSIGN(std::filesystem::path self_path, fs::ReadSymlink("/proc/self/exe"));
+  bpf_tools::BCCWrapper bcc_wrapper;
 
   bpf_tools::UProbeSpec spec = {
       .binary_path = self_path.string(),
@@ -72,8 +74,8 @@ TEST(SymbolizerTest, SingleStackTrace) {
       .probe_fn = "sample_stack_trace",
   };
 
-  ASSERT_OK(bcc_wrapper.InitBPFProgram(kProgram));
-  ASSERT_OK(bcc_wrapper.AttachUProbe(spec));
+  PL_RETURN_IF_ERROR(bcc_wrapper.InitBPFProgram(kProgram));
+  PL_RETURN_IF_ERROR(bcc_wrapper.AttachUProbe(spec));
 
   // Run our BPF program, which should collect a stack trace.
   Trigger();
@@ -85,12 +87,18 @@ TEST(SymbolizerTest, SingleStackTrace) {
 
   // Get the list of addresses in the stack trace.
   auto stack_traces_table = bcc_wrapper.GetStackTable("stack_traces");
-  std::vector<uintptr_t> addrs = stack_traces_table.get_stack_addr(val.stack_trace_id);
+  return stack_traces_table.get_stack_addr(val.stack_trace_id);
+}
+
+TEST(SymbolizerTest, InstrAddrToSymbol) {
+  // Collect a stack trace.
+  ASSERT_OK_AND_ASSIGN(std::vector<uintptr_t> addrs, CollectStackTrace());
 
   // Create an ELF reader to symbolize the addresses.
-  ASSERT_OK_AND_ASSIGN(auto elf_reader,
-                       px::stirling::obj_tools::ElfReader::Create(self_path.string()));
+  ASSERT_OK_AND_ASSIGN(std::filesystem::path self_path, fs::ReadSymlink("/proc/self/exe"));
+  ASSERT_OK_AND_ASSIGN(auto elf_reader, ElfReader::Create(self_path.string()));
 
+  // Use the ELF reader to symbolize the stack trace addresses.
   std::vector<std::string> symbols;
   for (const auto addr : addrs) {
     ASSERT_OK_AND_ASSIGN(auto sym, elf_reader->InstrAddrToSymbol(addr));
@@ -98,8 +106,9 @@ TEST(SymbolizerTest, SingleStackTrace) {
   }
 
 #ifdef NDEBUG
-  std::vector<std::string> expected_symbols = {
+  const std::vector<std::string> kExpectedSymbols = {
       "Trigger",
+      "px::stirling::SymbolizerTest_InstrAddrToSymbol_Test::TestBody()",
       "void testing::internal::HandleExceptionsInMethodIfSupported<testing::Test, "
       "void>(testing::Test*, void (testing::Test::*)(), char const*)",
       "testing::Test::Run()",
@@ -114,8 +123,9 @@ TEST(SymbolizerTest, SingleStackTrace) {
       "main",
       "-"};
 #else
-  std::vector<std::string> expected_symbols = {
+  const std::vector<std::string> kExpectedSymbols = {
       "Trigger",
+      "px::stirling::SymbolizerTest_InstrAddrToSymbol_Test::TestBody()",
       "void testing::internal::HandleSehExceptionsInMethodIfSupported<testing::Test, "
       "void>(testing::Test*, void (testing::Test::*)(), char const*)",
       "void testing::internal::HandleExceptionsInMethodIfSupported<testing::Test, "
@@ -138,7 +148,69 @@ TEST(SymbolizerTest, SingleStackTrace) {
       "-"};
 #endif
 
-  EXPECT_THAT(symbols, ::testing::ContainerEq(expected_symbols));
+  EXPECT_THAT(symbols, ::testing::ContainerEq(kExpectedSymbols));
+}
+
+TEST(SymbolizerTest, GetSymbolizer) {
+  // Collect a stack trace.
+  ASSERT_OK_AND_ASSIGN(std::vector<uintptr_t> addrs, CollectStackTrace());
+
+  // Create an ELF reader to symbolize the addresses.
+  ASSERT_OK_AND_ASSIGN(std::filesystem::path self_path, fs::ReadSymlink("/proc/self/exe"));
+  ASSERT_OK_AND_ASSIGN(auto elf_reader, ElfReader::Create(self_path.string()));
+
+  // Use the ELF reader to symbolize the stack trace addresses.
+  ASSERT_OK_AND_ASSIGN(auto symbolizer, elf_reader->GetSymbolizer());
+  std::vector<std::string> symbols;
+  for (const auto addr : addrs) {
+    const std::string& sym = symbolizer.Lookup(addr);
+    symbols.push_back(sym.empty() ? "-" : sym);
+  }
+
+#ifdef NDEBUG
+  const std::vector<std::string> kExpectedSymbols = {
+      "Trigger",
+      "px::stirling::SymbolizerTest_GetSymbolizer_Test::TestBody()",
+      "void testing::internal::HandleExceptionsInMethodIfSupported<testing::Test, "
+      "void>(testing::Test*, void (testing::Test::*)(), char const*)",
+      "testing::Test::Run()",
+      "testing::TestInfo::Run()",
+      "testing::TestSuite::Run()",
+      "testing::internal::UnitTestImpl::RunAllTests()",
+      "bool "
+      "testing::internal::HandleExceptionsInMethodIfSupported<testing::internal::UnitTestImpl, "
+      "bool>(testing::internal::UnitTestImpl*, bool (testing::internal::UnitTestImpl::*)(), char "
+      "const*)",
+      "testing::UnitTest::Run()",
+      "main",
+      "-"};
+#else
+  const std::vector<std::string> kExpectedSymbols = {
+      "Trigger",
+      "px::stirling::SymbolizerTest_GetSymbolizer_Test::TestBody()",
+      "void testing::internal::HandleSehExceptionsInMethodIfSupported<testing::Test, "
+      "void>(testing::Test*, void (testing::Test::*)(), char const*)",
+      "void testing::internal::HandleExceptionsInMethodIfSupported<testing::Test, "
+      "void>(testing::Test*, void (testing::Test::*)(), char const*)",
+      "testing::Test::Run()",
+      "testing::TestInfo::Run()",
+      "testing::TestSuite::Run()",
+      "testing::internal::UnitTestImpl::RunAllTests()",
+      "bool "
+      "testing::internal::HandleSehExceptionsInMethodIfSupported<testing::internal::UnitTestImpl, "
+      "bool>(testing::internal::UnitTestImpl*, bool (testing::internal::UnitTestImpl::*)(), char "
+      "const*)",
+      "bool "
+      "testing::internal::HandleExceptionsInMethodIfSupported<testing::internal::UnitTestImpl, "
+      "bool>(testing::internal::UnitTestImpl*, bool (testing::internal::UnitTestImpl::*)(), char "
+      "const*)",
+      "testing::UnitTest::Run()",
+      "RUN_ALL_TESTS()",
+      "main",
+      "-"};
+#endif
+
+  EXPECT_THAT(symbols, ::testing::ContainerEq(kExpectedSymbols));
 }
 
 }  // namespace stirling
