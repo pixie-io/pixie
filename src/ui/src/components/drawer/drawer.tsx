@@ -33,7 +33,8 @@ const useStyles = makeStyles(() => createStyles({
     height: '100%',
   },
   otherContent: {
-    flex: 1,
+    flex: '1 1 auto',
+    maxWidth: '100%',
     display: 'flex',
   },
   drawerContents: {

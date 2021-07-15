@@ -72,6 +72,9 @@ const useStyles = makeStyles(({
     color: palette.primary.main,
     whiteSpace: 'nowrap',
     fontFamily: '"Roboto Mono", Monospace',
+    maxWidth: spacing(50),
+    overflowX: 'hidden',
+    textOverflow: 'ellipsis',
   },
   selectable: {
     cursor: 'pointer',

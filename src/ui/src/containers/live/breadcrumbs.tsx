@@ -116,6 +116,7 @@ const styles = (({ shape, palette, spacing }: Theme) => createStyles({
     display: 'flex',
     marginLeft: spacing(3),
     marginRight: spacing(3),
+    overflow: 'hidden',
   },
 }));
 
