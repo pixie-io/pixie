@@ -31,18 +31,24 @@ import (
 
 	"github.com/gofrs/uuid"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/api/proto/vispb"
 	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/pixie_cli/pkg/auth"
 	"px.dev/pixie/src/pixie_cli/pkg/script"
+	cliUtils "px.dev/pixie/src/pixie_cli/pkg/utils"
 	"px.dev/pixie/src/shared/services"
 	"px.dev/pixie/src/utils"
 )
 
 const (
 	dialTimeout = 5 * time.Second
+	// We need an extra long retryTimeout because in passthrough mode the query broker takes a while to receive the cancel message from the ptproxy.
+	retryTimeout        = 30 * time.Second
+	sleepBetweenRetries = 1 * time.Second
 )
 
 // Connector is an interface to Vizier.
@@ -54,6 +60,8 @@ type Connector struct {
 	vzDebug            vizierpb.VizierDebugServiceClient
 	vzToken            string
 	passthroughEnabled bool
+	target             string
+	cloudAddr          string
 }
 
 // NewConnector returns a new connector.
@@ -61,7 +69,7 @@ func NewConnector(cloudAddr string, vzInfo *cloudpb.ClusterInfo, conn *Connectio
 	c := &Connector{
 		id: utils.UUIDFromProtoOrNil(vzInfo.ID),
 	}
-
+	c.cloudAddr = cloudAddr
 	if vzInfo.Config != nil {
 		c.passthroughEnabled = vzInfo.Config.PassthroughEnabled
 	}
@@ -73,18 +81,17 @@ func NewConnector(cloudAddr string, vzInfo *cloudpb.ClusterInfo, conn *Connectio
 		if conn.URL == nil {
 			return nil, errors.New("missing Vizier URL, likely still initializing")
 		}
-		err = c.connect(conn.URL.Host)
+		c.target = conn.URL.Host
 	} else {
-		err = c.connect(cloudAddr)
+		c.target = cloudAddr
 	}
-
+	err = c.connect(c.target)
 	if err != nil {
 		return nil, err
 	}
 
 	c.vz = vizierpb.NewVizierServiceClient(c.conn)
 	c.vzDebug = vizierpb.NewVizierDebugServiceClient(c.conn)
-
 	return c, nil
 }
 
@@ -213,6 +220,110 @@ func containsMutation(script *script.ExecutableScript) bool {
 	return len(r.FindAllStringSubmatch(script.ScriptString, -1)) > 0
 }
 
+func (c *Connector) restartConnAndResumeExecute(ctx context.Context, queryID string) (vizierpb.VizierService_ExecuteScriptClient, error) {
+	err := c.connect(c.target)
+	if err != nil {
+		return nil, err
+	}
+
+	reqPB := &vizierpb.ExecuteScriptRequest{
+		QueryID:   queryID,
+		ClusterID: c.id.String(),
+	}
+	return c.vz.ExecuteScript(ctx, reqPB)
+}
+
+func checkForTransientGRPCFailure(s *status.Status) bool {
+	if s.Code() == codes.Unavailable {
+		return true
+	}
+	if s.Code() == codes.Internal && strings.Contains(s.Message(), "RST_STREAM") {
+		return true
+	}
+	return false
+}
+
+func checkForJWTExpired(s *status.Status) bool {
+	return s.Code() == codes.Unauthenticated && strings.Contains(s.Message(), "invalid auth token")
+}
+
+func (c *Connector) getNewVzConnInfo() error {
+	if c.passthroughEnabled {
+		return nil
+	}
+
+	l, err := NewLister(c.cloudAddr)
+	if err != nil {
+		return err
+	}
+
+	vzConn, err := l.GetVizierConnection(c.id)
+	if err != nil {
+		return err
+	}
+	c.vzToken = vzConn.Token
+	c.target = vzConn.URL.Host
+	return nil
+}
+
+type streamState struct {
+	resp                vizierpb.VizierService_ExecuteScriptClient
+	lastSuccessfulRetry time.Time
+	results             chan *ExecData
+	queryID             string
+	firstErr            error
+}
+
+func (c *Connector) handleStream(ctx context.Context, state *streamState, first bool) bool {
+	retry := true
+	doNotRetry := false
+	for {
+		select {
+		case <-state.resp.Context().Done():
+			return doNotRetry
+		case <-ctx.Done():
+			return doNotRetry
+		default:
+			msg, err := state.resp.Recv()
+			if err != nil {
+				if s, ok := status.FromError(err); ok {
+					if checkForTransientGRPCFailure(s) {
+						if state.firstErr == nil {
+							state.firstErr = s.Err()
+						}
+						return retry
+					} else if checkForJWTExpired(s) {
+						if err := c.getNewVzConnInfo(); err != nil {
+							cliUtils.Errorf("Failed to renew auth token with error: %s", err.Error())
+							return doNotRetry
+						}
+						if state.firstErr == nil {
+							state.firstErr = s.Err()
+						}
+						return retry
+					}
+				}
+			}
+
+			// This check is for backwards compatibility, and can be removed after our 2 week waiting period.
+			if !first && msg != nil && msg.Status.GetMessage() == "Query should not be empty." {
+				cliUtils.Errorf("Failed to resume query execution after transient error. Your version of Vizier does not support query resumption. Please update Vizier.")
+				return doNotRetry
+			}
+
+			state.results <- &ExecData{ClusterID: c.id, Resp: msg, Err: err}
+			if err != nil || msg == nil {
+				return doNotRetry
+			}
+			if state.queryID == "" {
+				state.queryID = msg.QueryID
+			}
+			state.lastSuccessfulRetry = time.Now()
+			state.firstErr = nil
+		}
+	}
+}
+
 // ExecuteScriptStream execute a vizier query as a stream.
 func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.ExecutableScript) (chan *ExecData, error) {
 	scriptStr := strings.TrimSpace(script.ScriptString)
@@ -232,33 +343,44 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.Exec
 		Mutation:  containsMutation(script),
 	}
 
-	if c.passthroughEnabled {
-		ctx = auth.CtxWithCreds(ctx)
-	} else {
-		ctx = ctxWithTokenCreds(ctx, c.vzToken)
+	getAuthCtx := func(ctx context.Context) context.Context {
+		if c.passthroughEnabled {
+			return auth.CtxWithCreds(ctx)
+		}
+		return ctxWithTokenCreds(ctx, c.vzToken)
 	}
 
-	resp, err := c.vz.ExecuteScript(ctx, reqPB)
+	resp, err := c.vz.ExecuteScript(getAuthCtx(ctx), reqPB)
 	if err != nil {
 		return nil, err
 	}
 
 	results := make(chan *ExecData)
+
+	s := &streamState{
+		resp:    resp,
+		results: results,
+	}
+
 	go func() {
-		for {
-			select {
-			case <-resp.Context().Done():
-				return
-			case <-ctx.Done():
-				return
-			default:
-				msg, err := resp.Recv()
-				results <- &ExecData{ClusterID: c.id, Resp: msg, Err: err}
-				if err != nil || msg == nil {
-					close(results)
-					return
+		defer close(results)
+		shouldRetry := c.handleStream(ctx, s, true)
+		for shouldRetry {
+			// Wait some time between retries since the query might not be paused immediately on the query broker side after a failure.
+			time.Sleep(sleepBetweenRetries)
+			if !s.lastSuccessfulRetry.IsZero() && time.Since(s.lastSuccessfulRetry) > retryTimeout {
+				if s.firstErr != nil {
+					cliUtils.Errorf("Timedout trying to restart the connection after error: %s", s.firstErr.Error())
+				} else {
+					cliUtils.Errorf("Timedout trying to restart the connection.")
 				}
+				return
 			}
+			s.resp, err = c.restartConnAndResumeExecute(getAuthCtx(ctx), s.queryID)
+			if err != nil {
+				continue
+			}
+			shouldRetry = c.handleStream(ctx, s, false)
 		}
 	}()
 	return results, nil
