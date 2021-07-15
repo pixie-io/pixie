@@ -80,9 +80,6 @@ export class CloudClient {
         AutocompleteResult: {
           keyFields: ['formattedInput'],
         },
-        UserSetting: {
-          keyFields: ['key'],
-        },
       },
     });
 

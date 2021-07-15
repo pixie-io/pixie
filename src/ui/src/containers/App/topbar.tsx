@@ -90,6 +90,7 @@ const ProfileItem = ({
     query getTourSeen{
       userAttributes {
         tourSeen
+        id
       }
     }
   `, {});
@@ -102,6 +103,7 @@ const ProfileItem = ({
     mutation updateTourSeen{
       SetUserAttributes(attributes: { tourSeen: true }) {
         tourSeen
+        id
       }
     }
   `);
