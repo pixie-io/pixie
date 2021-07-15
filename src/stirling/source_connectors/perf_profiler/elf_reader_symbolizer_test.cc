@@ -163,8 +163,8 @@ TEST(SymbolizerTest, GetSymbolizer) {
   ASSERT_OK_AND_ASSIGN(auto symbolizer, elf_reader->GetSymbolizer());
   std::vector<std::string> symbols;
   for (const auto addr : addrs) {
-    const std::string& sym = symbolizer.Lookup(addr);
-    symbols.push_back(sym.empty() ? "-" : sym);
+    std::string_view sym = symbolizer->Lookup(addr);
+    symbols.push_back(sym.empty() ? "-" : std::string(sym));
   }
 
 #ifdef NDEBUG

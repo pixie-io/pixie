@@ -344,10 +344,10 @@ StatusOr<std::optional<std::string>> ElfReader::InstrAddrToSymbol(size_t sym_add
   return std::optional<std::string>();
 }
 
-StatusOr<ElfReader::Symbolizer> ElfReader::GetSymbolizer() {
+StatusOr<std::unique_ptr<ElfReader::Symbolizer>> ElfReader::GetSymbolizer() {
   PL_ASSIGN_OR_RETURN(ELFIO::section * symtab_section, SymtabSection());
 
-  ElfReader::Symbolizer symbolizer;
+  auto symbolizer = std::make_unique<ElfReader::Symbolizer>();
 
   const ELFIO::symbol_section_accessor symbols(elf_reader_, symtab_section);
   for (unsigned int j = 0; j < symbols.get_symbols_num(); ++j) {
@@ -363,7 +363,7 @@ StatusOr<ElfReader::Symbolizer> ElfReader::GetSymbolizer() {
     unsigned char other;
     symbols.get_symbol(j, name, addr, size, bind, type, section_index, other);
 
-    symbolizer.AddEntry(addr, size, llvm::demangle(name));
+    symbolizer->AddEntry(addr, size, llvm::demangle(name));
   }
 
   return symbolizer;
@@ -373,7 +373,7 @@ void ElfReader::Symbolizer::AddEntry(size_t addr, size_t size, std::string name)
   symbols_.emplace(addr, SymbolAddrInfo{size, std::move(name)});
 }
 
-const std::string& ElfReader::Symbolizer::Lookup(size_t addr) const {
+std::string_view ElfReader::Symbolizer::Lookup(size_t addr) const {
   static const std::string kEmptyString;
 
   // Find the first symbol for which the address_range_start > addr.

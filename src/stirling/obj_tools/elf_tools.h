@@ -129,10 +129,8 @@ class ElfReader {
 
     /**
      * Lookup the symbol for the specified address.
-     * @param addr
-     * @return
      */
-    const std::string& Lookup(uintptr_t addr) const;
+    std::string_view Lookup(uintptr_t addr) const;
 
    private:
     struct SymbolAddrInfo {
@@ -144,7 +142,7 @@ class ElfReader {
     absl::btree_map<uintptr_t, SymbolAddrInfo> symbols_;
   };
 
-  StatusOr<Symbolizer> GetSymbolizer();
+  StatusOr<std::unique_ptr<Symbolizer>> GetSymbolizer();
 
   /**
    * Returns the address of the return instructions of the function.
