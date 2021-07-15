@@ -35,6 +35,15 @@ static constexpr uint32_t kKernelPIDAsU32 = ~0;
 static constexpr upid_t kKernelUPID = {.pid = kKernelPIDAsU32, .start_time_ticks = 0};
 }  // namespace profiler
 
+class Symbolizer {
+ public:
+  virtual ~Symbolizer() = default;
+  virtual Status Init() = 0;
+  virtual void DeleteUPID(const struct upid_t& upid) = 0;
+  virtual std::function<std::string_view(const uintptr_t addr)> GetSymbolizerFn(
+      const struct upid_t& upid) = 0;
+};
+
 class SymbolCache {
  public:
   SymbolCache(int pid, ebpf::BPFStackTable* symbolizer) : pid_(pid), symbolizer_(symbolizer) {}
@@ -88,10 +97,10 @@ class SymbolCache {
  *   const std::string symbol = symbolize_fn(addr);
  *
  */
-class Symbolizer : public bpf_tools::BCCWrapper, public NotCopyMoveable {
+class BCCSymbolizer : public Symbolizer, public bpf_tools::BCCWrapper, public NotCopyMoveable {
  public:
   Status Init();
-  void FlushCache(const struct upid_t& upid);
+  void DeleteUPID(const struct upid_t& upid);
 
   std::function<std::string_view(const uintptr_t addr)> GetSymbolizerFn(const struct upid_t& upid);
 

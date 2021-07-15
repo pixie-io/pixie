@@ -104,7 +104,7 @@ class PerfProfileConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // solely to gain access to the BCC symbolization API. Depending on the
   // value of FLAGS_stirling_profiler_symcache, symbolizer will attempt (or not)
   // to find the symbol in its internally managed symbol cache.
-  Symbolizer symbolizer_;
+  std::unique_ptr<Symbolizer> symbolizer_;
 
   // Keeps track of processes. Used to find destroyed processes on which to perform clean-up.
   // TODO(oazizi): Investigate ways of sharing across source_connectors.

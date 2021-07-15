@@ -66,7 +66,8 @@ Status PerfProfileConnector::InitImpl() {
   LOG(INFO) << "PerfProfiler: Stack trace profiling sampling probe successfully deployed.";
 
   // Made it here w/ no problems; now init the symbolizer & return its status.
-  return symbolizer_.Init();
+  symbolizer_ = std::make_unique<BCCSymbolizer>();
+  return symbolizer_->Init();
 }
 
 Status PerfProfileConnector::StopImpl() {
@@ -100,7 +101,7 @@ void PerfProfileConnector::CleanupSymbolizers(const absl::flat_hash_set<md::UPID
     struct upid_t upid;
     upid.pid = md_upid.pid();
     upid.start_time_ticks = md_upid.start_ts();
-    symbolizer_.FlushCache(upid);
+    symbolizer_->DeleteUPID(upid);
   }
 }
 
@@ -116,7 +117,7 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
   const absl::flat_hash_set<md::UPID>& upids_for_symbolization = ctx->GetUPIDs();
 
   // Create a new stringifier for this iteration of the continuous perf profiler.
-  Stringifier stringifier(&symbolizer_, stack_traces);
+  Stringifier stringifier(symbolizer_.get(), stack_traces);
 
   absl::flat_hash_set<int> k_stack_ids_to_remove;
 

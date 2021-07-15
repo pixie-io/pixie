@@ -113,7 +113,7 @@ class StringifierTest : public ::testing::Test {
         bcc_wrapper_.GetHashTable<stack_trace_key_t, uint64_t>("histogram"));
 
     // Create a symbolizer (needed for the stringifer).
-    symbolizer_ = std::make_unique<Symbolizer>();
+    symbolizer_ = std::make_unique<BCCSymbolizer>();
 
     // The symbolizer has a BPF program inside of it; for this reason, it comes
     // with an Init() method that we need to call now.

@@ -163,7 +163,7 @@ TEST(SymbolizerTest, Basic) {
 
   FLAGS_stirling_profiler_symcache = true;
 
-  Symbolizer symbolizer;
+  BCCSymbolizer symbolizer;
   ASSERT_OK(symbolizer.Init());
 
   const struct upid_t this_upid = {.pid = pid, .start_time_ticks = 0};
@@ -227,8 +227,8 @@ TEST(SymbolizerTest, Basic) {
 
   // This will flush the caches, access count & hit count will remain the same.
   // We will lookup the symbols and again expect a miss then a hit.
-  symbolizer.FlushCache(this_upid);
-  symbolizer.FlushCache(profiler::kKernelUPID);
+  symbolizer.DeleteUPID(this_upid);
+  symbolizer.DeleteUPID(profiler::kKernelUPID);
 
   {
     auto symbolize = symbolizer.GetSymbolizerFn(this_upid);

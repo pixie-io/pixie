@@ -58,7 +58,7 @@ SymbolCache::LookupResult SymbolCache::Lookup(const uintptr_t addr) {
   return SymbolCache::LookupResult{iter->second.symbol_, !inserted};
 }
 
-Status Symbolizer::Init() {
+Status BCCSymbolizer::Init() {
   // This BPF program is a placeholder; it is not actually used. We include it only
   // to allow us to create an instance of ebpf::BPFStackTable from BCC. We will use
   // the instance of ebpf::BPFStackTable for its symbolization API.
@@ -69,7 +69,7 @@ Status Symbolizer::Init() {
   return Status::OK();
 }
 
-void Symbolizer::FlushCache(const struct upid_t& upid) {
+void BCCSymbolizer::DeleteUPID(const struct upid_t& upid) {
   // The inner map is owned by a unique_ptr; this will free the memory.
   symbol_caches_.erase(upid);
 
@@ -80,8 +80,8 @@ void Symbolizer::FlushCache(const struct upid_t& upid) {
   bcc_symbolizer_->free_symcache(upid.pid);
 }
 
-std::string_view Symbolizer::Symbolize(SymbolCache* symbol_cache, const int pid,
-                                       const uintptr_t addr) {
+std::string_view BCCSymbolizer::Symbolize(SymbolCache* symbol_cache, const int pid,
+                                          const uintptr_t addr) {
   static std::string symbol;
   if (!FLAGS_stirling_profiler_symcache) {
     symbol = bcc_symbolizer_->get_addr_symbol(addr, pid);
@@ -101,7 +101,7 @@ std::string_view Symbolizer::Symbolize(SymbolCache* symbol_cache, const int pid,
   return result.symbol;
 }
 
-std::function<std::string_view(const uintptr_t addr)> Symbolizer::GetSymbolizerFn(
+std::function<std::string_view(const uintptr_t addr)> BCCSymbolizer::GetSymbolizerFn(
     const struct upid_t& upid) {
   using std::placeholders::_1;
   const auto [iter, inserted] = symbol_caches_.try_emplace(upid, nullptr);
@@ -109,7 +109,7 @@ std::function<std::string_view(const uintptr_t addr)> Symbolizer::GetSymbolizerF
     iter->second = std::make_unique<SymbolCache>(upid.pid, bcc_symbolizer_.get());
   }
   auto& cache = iter->second;
-  auto fn = std::bind(&Symbolizer::Symbolize, this, cache.get(), upid.pid, _1);
+  auto fn = std::bind(&BCCSymbolizer::Symbolize, this, cache.get(), upid.pid, _1);
   return fn;
 }
 
