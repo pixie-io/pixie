@@ -33,7 +33,7 @@ interface CodeEditorProps {
   spinnerClass?: string;
   language?: string;
   shortcutKeys: string[];
-  theme?: PaletteMode;
+  theme?: string;
 }
 
 function removeKeybindings(editor, keys: string[]) {
