@@ -46,7 +46,7 @@
       "position": {
         "x": 0,
         "y": 0,
-        "w": 4,
+        "w": 6,
         "h": 3
       },
       "globalFuncOutputName": "LET",
@@ -70,9 +70,9 @@
     {
       "name": "P90 Latency",
       "position": {
-        "x": 4,
+        "x": 6,
         "y": 0,
-        "w": 4,
+        "w": 6,
         "h": 3
       },
       "globalFuncOutputName": "LET",
@@ -96,9 +96,9 @@
     {
       "name": "P99 Latency",
       "position": {
-        "x": 8,
+        "x": 0,
         "y": 0,
-        "w": 4,
+        "w": 6,
         "h": 3
       },
       "globalFuncOutputName": "LET",
@@ -122,9 +122,9 @@
     {
       "name": "Request Throughput",
       "position": {
-        "x": 0,
+        "x": 6,
         "y": 3,
-        "w": 4,
+        "w": 6,
         "h": 3
       },
       "globalFuncOutputName": "LET",
