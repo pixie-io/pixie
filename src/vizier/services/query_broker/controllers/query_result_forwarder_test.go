@@ -165,10 +165,10 @@ func TestStreamResultsSimple(t *testing.T) {
 	ctx := context.Background()
 	var err error
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
 
 	go func() {
-		err = f.StreamResults(ctx, queryID, resultCh, 350, nil)
+		err = f.StreamResults(ctx, queryID, resultCh)
 		close(doneCh)
 	}()
 
@@ -226,10 +226,10 @@ func TestStreamResultsAgentCancel(t *testing.T) {
 	ctx := context.Background()
 	var err error
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
 
 	go func() {
-		err = f.StreamResults(ctx, queryID, resultCh, 350, nil)
+		err = f.StreamResults(ctx, queryID, resultCh)
 
 		// Forwarding after stream is done should fail.
 		_, in1 := makeRowBatchResult(t, queryID, "bar", "456" /*eos*/, true)
@@ -287,10 +287,10 @@ func TestStreamResultsClientContextCancel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	var err error
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
 
 	go func() {
-		err = f.StreamResults(ctx, queryID, resultCh, 350, nil)
+		err = f.StreamResults(ctx, queryID, resultCh)
 		close(doneCh)
 	}()
 
@@ -344,8 +344,6 @@ func TestStreamResultsQueryPlan(t *testing.T) {
 	ctx := context.Background()
 	var err error
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables))
-
 	plan, planMap := makePlan(t)
 
 	queryPlanOpts := &controllers.QueryPlanOpts{
@@ -353,9 +351,10 @@ func TestStreamResultsQueryPlan(t *testing.T) {
 		Plan:    plan,
 		PlanMap: planMap,
 	}
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, queryPlanOpts))
 
 	go func() {
-		err = f.StreamResults(ctx, queryID, resultCh, 350, queryPlanOpts)
+		err = f.StreamResults(ctx, queryID, resultCh)
 		close(doneCh)
 	}()
 
@@ -428,10 +427,10 @@ func TestStreamResultsWrongQueryID(t *testing.T) {
 	ctx := context.Background()
 	var err error
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
 
 	go func() {
-		err = f.StreamResults(ctx, queryID, resultCh, 350, nil)
+		err = f.StreamResults(ctx, queryID, resultCh)
 		close(doneCh)
 	}()
 
@@ -480,10 +479,10 @@ func TestStreamResultsResultsBeforeInitialization(t *testing.T) {
 	ctx := context.Background()
 	var err error
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
 
 	go func() {
-		err = f.StreamResults(ctx, queryID, resultCh, 350, nil)
+		err = f.StreamResults(ctx, queryID, resultCh)
 		close(doneCh)
 	}()
 
@@ -526,10 +525,10 @@ func TestStreamResultsNeverInitializedTable(t *testing.T) {
 	ctx := context.Background()
 	var err error
 
-	assert.Nil(t, f.RegisterQuery(queryID, expectedTables))
+	assert.Nil(t, f.RegisterQuery(queryID, expectedTables, 350, nil))
 
 	go func() {
-		err = f.StreamResults(ctx, queryID, resultCh, 350, nil)
+		err = f.StreamResults(ctx, queryID, resultCh)
 		close(doneCh)
 	}()
 

@@ -215,16 +215,6 @@ func (s *Server) runQuery(ctx context.Context, req *plannerpb.QueryRequest, quer
 		resultStream <- resp
 	}
 
-	err = s.resultForwarder.RegisterQuery(queryID, tableNameToIDMap)
-	if err != nil {
-		return err
-	}
-	err = LaunchQuery(queryID, s.natsConn, planMap, planOpts.Analyze)
-	if err != nil {
-		s.resultForwarder.DeleteQuery(queryID)
-		return err
-	}
-
 	// Send over the query plan responses, if applicable.
 	var queryPlanOpts *QueryPlanOpts
 	if planOpts.Explain {
@@ -236,8 +226,18 @@ func (s *Server) runQuery(ctx context.Context, req *plannerpb.QueryRequest, quer
 		}
 	}
 
-	return s.resultForwarder.StreamResults(ctx, queryID, resultStream,
+	err = s.resultForwarder.RegisterQuery(queryID, tableNameToIDMap,
 		compilationTimeNs, queryPlanOpts)
+	if err != nil {
+		return err
+	}
+	err = LaunchQuery(queryID, s.natsConn, planMap, planOpts.Analyze)
+	if err != nil {
+		s.resultForwarder.DeleteQuery(queryID)
+		return err
+	}
+
+	return s.resultForwarder.StreamResults(ctx, queryID, resultStream)
 }
 
 func loadUDFInfo(udfInfoPb *udfspb.UDFInfo) error {

@@ -286,9 +286,12 @@ type fakeResultForwarder struct {
 }
 
 // RegisterQuery registers a query.
-func (f *fakeResultForwarder) RegisterQuery(queryID uuid.UUID, tableIDMap map[string]string) error {
+func (f *fakeResultForwarder) RegisterQuery(queryID uuid.UUID, tableIDMap map[string]string,
+	compilationTimeNs int64,
+	queryPlanOpts *controllers.QueryPlanOpts) error {
 	f.QueryRegistered = queryID
 	f.TableIDMap = tableIDMap
+	f.StreamedQueryPlanOpts = queryPlanOpts
 	return nil
 }
 
@@ -298,10 +301,7 @@ func (f *fakeResultForwarder) DeleteQuery(queryID uuid.UUID) {
 
 // StreamResults streams the results to the resultCh.
 func (f *fakeResultForwarder) StreamResults(ctx context.Context, queryID uuid.UUID,
-	resultCh chan *vizierpb.ExecuteScriptResponse,
-	compilationTimeNs int64,
-	queryPlanOpts *controllers.QueryPlanOpts) error {
-	f.StreamedQueryPlanOpts = queryPlanOpts
+	resultCh chan *vizierpb.ExecuteScriptResponse) error {
 	f.QueryStreamed = queryID
 
 	for _, expectedResult := range f.ClientResultsToSend {

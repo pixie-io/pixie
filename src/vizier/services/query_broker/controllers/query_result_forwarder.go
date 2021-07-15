@@ -95,7 +95,7 @@ func (s *concurrentSet) size() int {
 // A struct to track state for an active query in the system.
 // It can be modified and accessed by multiple agent streams and a single client stream.
 type activeQuery struct {
-	// Signal to cancel the client stream for this query.
+	// Signal to cancel the query's stream.
 	cancelQueryCh    chan struct{}
 	cancelQueryError error
 	cancelOnce       sync.Once
@@ -118,9 +118,15 @@ type activeQuery struct {
 
 	gotFinalExecStats bool
 	agentExecStats    *[]*queryresultspb.AgentExecutionStats
+
+	// Store this info so that resumed queries can return compilation time and optionally query plans.
+	compilationTimeNs int64
+	queryPlanOpts     *QueryPlanOpts
 }
 
-func newActiveQuery(tableIDMap map[string]string) *activeQuery {
+func newActiveQuery(tableIDMap map[string]string,
+	compilationTimeNs int64,
+	queryPlanOpts *QueryPlanOpts) *activeQuery {
 	aq := &activeQuery{
 		cancelQueryCh: make(chan struct{}),
 
@@ -133,6 +139,9 @@ func newActiveQuery(tableIDMap map[string]string) *activeQuery {
 		allTablesConnectedCh: make(chan struct{}),
 
 		gotFinalExecStats: false,
+		// Store compilation time and query plan opts so that callers of ResumeQuery don't need to be aware of these.
+		compilationTimeNs: compilationTimeNs,
+		queryPlanOpts:     queryPlanOpts,
 	}
 
 	for tableName := range tableIDMap {
@@ -209,7 +218,10 @@ func (a *activeQuery) queryComplete() bool {
 // QueryResultForwarder is responsible for receiving query results from the agent streams and forwarding
 // that data to the client stream.
 type QueryResultForwarder interface {
-	RegisterQuery(queryID uuid.UUID, tableIDMap map[string]string) error
+	RegisterQuery(queryID uuid.UUID, tableIDMap map[string]string,
+		compilationTimeNs int64,
+		queryPlanOpts *QueryPlanOpts) error
+
 	// To be used if a query needs to be deleted before StreamResults is invoked.
 	// Otherwise, StreamResults will delete the query for the caller.
 	DeleteQuery(queryID uuid.UUID)
@@ -218,9 +230,7 @@ type QueryResultForwarder interface {
 	// Blocks until the stream (& the agent stream) has completed, been cancelled, or experienced an error.
 	// Returns error for any error received.
 	StreamResults(ctx context.Context, queryID uuid.UUID,
-		resultCh chan *vizierpb.ExecuteScriptResponse,
-		compilationTimeNs int64,
-		queryPlanOpts *QueryPlanOpts) error
+		resultCh chan *vizierpb.ExecuteScriptResponse) error
 
 	// Pass a message received from the agent stream to the client-side stream.
 	ForwardQueryResult(msg *carnotpb.TransferResultChunkRequest) error
@@ -252,14 +262,16 @@ func NewQueryResultForwarderWithTimeout(timeout time.Duration) QueryResultForwar
 }
 
 // RegisterQuery registers a query ID in the result forwarder.
-func (f *QueryResultForwarderImpl) RegisterQuery(queryID uuid.UUID, tableIDMap map[string]string) error {
+func (f *QueryResultForwarderImpl) RegisterQuery(queryID uuid.UUID, tableIDMap map[string]string,
+	compilationTimeNs int64,
+	queryPlanOpts *QueryPlanOpts) error {
 	f.activeQueriesMutex.Lock()
 	defer f.activeQueriesMutex.Unlock()
 
 	if _, present := f.activeQueries[queryID]; present {
 		return fmt.Errorf("Query %d already registered", queryID)
 	}
-	f.activeQueries[queryID] = newActiveQuery(tableIDMap)
+	f.activeQueries[queryID] = newActiveQuery(tableIDMap, compilationTimeNs, queryPlanOpts)
 	return nil
 }
 
@@ -276,8 +288,7 @@ const maxQueryPlanStringSize = 1024*1024 - maxQueryPlanBufferSize
 
 // StreamResults streams results from the agent streams to the client stream.
 func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uuid.UUID,
-	resultCh chan *vizierpb.ExecuteScriptResponse,
-	compilationTimeNs int64, queryPlanOpts *QueryPlanOpts) error {
+	resultCh chan *vizierpb.ExecuteScriptResponse) error {
 	f.activeQueriesMutex.Lock()
 	activeQuery, present := f.activeQueries[queryID]
 	f.activeQueriesMutex.Unlock()
@@ -347,9 +358,9 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 			// If the query is complete and we need to send the query plan, send it before the final
 			// execution stats, since consumers may expect those to be the last message.
 			if activeQuery.queryComplete() {
-				if queryPlanOpts != nil {
-					qpResps, err := QueryPlanResponse(queryID, queryPlanOpts.Plan, queryPlanOpts.PlanMap,
-						activeQuery.agentExecStats, queryPlanOpts.TableID, maxQueryPlanStringSize)
+				if activeQuery.queryPlanOpts != nil {
+					qpResps, err := QueryPlanResponse(queryID, activeQuery.queryPlanOpts.Plan, activeQuery.queryPlanOpts.PlanMap,
+						activeQuery.agentExecStats, activeQuery.queryPlanOpts.TableID, maxQueryPlanStringSize)
 
 					if err != nil {
 						return cancelStreamReturnErr(err)
@@ -360,7 +371,7 @@ func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uu
 				}
 			}
 
-			resp, err := BuildExecuteScriptResponse(msg, activeQuery.tableIDMap, compilationTimeNs)
+			resp, err := BuildExecuteScriptResponse(msg, activeQuery.tableIDMap, activeQuery.compilationTimeNs)
 			if err != nil {
 				return cancelStreamReturnErr(err)
 			}
