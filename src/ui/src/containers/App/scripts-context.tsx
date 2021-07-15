@@ -59,9 +59,7 @@ export const ScriptsContextProvider: React.FC = ({ children }) => {
   const user = data?.user;
 
   const [scripts, setScripts] = React.useState<Map<string, Script>>(new Map([['initial', {} as Script]]));
-
-  // Lets us know if there is a pending setScripts. If there is, we're technically still loading for one more render.
-  let nextScripts = scripts;
+  const [scriptLoading, setScriptLoading] = React.useState<boolean>(true);
 
   React.useEffect(() => {
     if (!user || loading || error) return;
@@ -70,8 +68,7 @@ export const ScriptsContextProvider: React.FC = ({ children }) => {
       const scratchScript = scripts.get(SCRATCH_SCRIPT.id) ?? SCRATCH_SCRIPT;
       availableScripts.set(SCRATCH_SCRIPT.id, scratchScript);
       setScripts(availableScripts);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      nextScripts = availableScripts;
+      setScriptLoading(false);
     });
     // Monitoring the user's ID and their org rather than the whole object, to avoid excess renders.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -85,10 +82,9 @@ export const ScriptsContextProvider: React.FC = ({ children }) => {
     });
   }, []);
 
-  const reallyLoading = loading || nextScripts !== scripts;
   const context = React.useMemo(() => (
-    { scripts, loading: reallyLoading, setScratchScript }
-  ), [scripts, reallyLoading, setScratchScript]);
+    { scripts, loading: scriptLoading, setScratchScript }
+  ), [scripts, scriptLoading, setScratchScript]);
 
   return (
     <ScriptsContext.Provider value={context}>

@@ -40,7 +40,7 @@ import { Script } from 'app/utils/script-bundle';
 import { ClusterInstructions } from 'app/containers/App/deploy-instructions';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
 import NavBars from 'app/containers/App/nav-bars';
-import { SCRATCH_SCRIPT } from 'app/containers/App/scripts-context';
+import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
 import { DataDrawerSplitPanel } from 'app/containers/data-drawer/data-drawer';
 import { EditorSplitPanel } from 'app/containers/editor/editor';
 import Canvas from 'app/containers/live/canvas';
@@ -202,6 +202,8 @@ interface ClusterLoadingProps {
 const ClusterLoadingComponent = ({
   clusterPrettyName, clusterStatus, script, healthy,
 }: ClusterLoadingProps) => {
+  const { loading: loadingAvailableScripts } = React.useContext(ScriptsContext);
+
   const formattedStatus = React.useMemo(
     () => clusterStatus.replace('CS_', '').toLowerCase(),
     [clusterStatus]);
@@ -248,7 +250,7 @@ const ClusterLoadingComponent = ({
     );
   }
 
-  if (!script) {
+  if (!loadingAvailableScripts && !script) {
     return <div> Script name invalid, choose a new script in the dropdown</div>;
   }
 
