@@ -374,6 +374,27 @@ func AuthLoginHandlerEmbedNew(env commonenv.Env, w http.ResponseWriter, r *http.
 		return &handler.StatusError{Code: http.StatusInternalServerError, Err: err}
 	}
 
+	// If logging in using an API key, just get the augmented token.
+	apiKey := r.Header.Get("pixie-api-key")
+	if apiKey != "" {
+		apiKeyResp, err := env.(apienv.APIEnv).AuthClient().GetAugmentedTokenForAPIKey(ctxWithCreds, &authpb.GetAugmentedTokenForAPIKeyRequest{
+			APIKey: apiKey,
+		})
+		if err != nil {
+			return services.HTTPStatusFromError(err, "Failed to login using API key")
+		}
+
+		err = sendUserInfo(w, nil, nil, apiKeyResp.Token, apiKeyResp.ExpiresAt, false)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return err
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		return nil
+	}
+
 	rpcReq := &authpb.LoginRequest{
 		AccessToken:           params.AccessToken,
 		CreateUserIfNotExists: false,
@@ -494,13 +515,17 @@ func sendUserInfo(w http.ResponseWriter, userInfo *authpb.AuthenticatedUserInfo,
 
 	data.Token = token
 	data.ExpiresAt = expiresAt
-	data.UserInfo.UserID = utils.UUIDFromProtoOrNil(userInfo.UserID).String()
-	data.UserInfo.Email = userInfo.Email
-	data.UserInfo.FirstName = userInfo.FirstName
-	data.UserInfo.LastName = userInfo.LastName
+	if userInfo != nil {
+		data.UserInfo.UserID = utils.UUIDFromProtoOrNil(userInfo.UserID).String()
+		data.UserInfo.Email = userInfo.Email
+		data.UserInfo.FirstName = userInfo.FirstName
+		data.UserInfo.LastName = userInfo.LastName
+	}
 	data.UserCreated = userCreated
-	data.OrgInfo.OrgID = orgInfo.OrgID
-	data.OrgInfo.OrgName = orgInfo.OrgName
+	if orgInfo != nil {
+		data.OrgInfo.OrgID = orgInfo.OrgID
+		data.OrgInfo.OrgName = orgInfo.OrgName
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

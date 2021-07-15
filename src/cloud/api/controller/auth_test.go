@@ -639,3 +639,43 @@ func TestAuthLoginHandlerEmbedNew(t *testing.T) {
 	// Make sure no cookies are set.
 	assert.Equal(t, 0, len(rr.Header().Values("Set-Cookie")))
 }
+
+func TestAuthLoginHandlerEmbedNew_WithAPIKey(t *testing.T) {
+	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+
+	req, err := http.NewRequest("POST", "/login",
+		strings.NewReader("{}"))
+	req.Header.Add("pixie-api-key", "test-key")
+	require.NoError(t, err)
+
+	expectedAuthServiceReq := &authpb.GetAugmentedTokenForAPIKeyRequest{
+		APIKey: "test-key",
+	}
+	testReplyToken := testingutils.GenerateTestJWTToken(t, "jwt-key")
+	testTokenExpiry := time.Now().Add(1 * time.Minute).Unix()
+	loginResp := &authpb.GetAugmentedTokenForAPIKeyResponse{
+		Token:     testReplyToken,
+		ExpiresAt: testTokenExpiry,
+	}
+	mockClients.MockAuth.EXPECT().GetAugmentedTokenForAPIKey(gomock.Any(), expectedAuthServiceReq).Return(loginResp, nil)
+
+	rr := httptest.NewRecorder()
+	h := handler.New(env, controller.AuthLoginHandlerEmbedNew)
+	h.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	var parsedResponse struct {
+		Token       string
+		ExpiresAt   int64
+		UserCreated bool `json:"userCreated"`
+	}
+	err = json.NewDecoder(rr.Body).Decode(&parsedResponse)
+	require.NoError(t, err)
+	assert.Equal(t, testReplyToken, parsedResponse.Token)
+	assert.Equal(t, testTokenExpiry, parsedResponse.ExpiresAt)
+	assert.Equal(t, false, parsedResponse.UserCreated)
+
+	// Make sure no cookies are set.
+	assert.Equal(t, 0, len(rr.Header().Values("Set-Cookie")))
+}
