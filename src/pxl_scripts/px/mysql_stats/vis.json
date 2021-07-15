@@ -150,7 +150,7 @@
         "timeseries": [
           {
             "value": "error_rate",
-            "series": "k8s",
+            "series": "destination",
             "stackBySeries": false,
             "mode": "MODE_LINE"
           }
