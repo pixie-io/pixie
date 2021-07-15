@@ -74,6 +74,18 @@ pl_cc_test(
     ],
 )
 
+pl_cc_test(
+    name = "elf_reader_symbolizer_test",
+    srcs = ["elf_reader_symbolizer_test.cc"],
+    tags = [
+        "requires_bpf",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/stirling/bpf_tools:cc_library",
+    ],
+)
+
 pl_cc_binary(
     name = "elf_reader_tool",
     srcs = ["elf_reader_tool.cc"],
