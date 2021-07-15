@@ -42,7 +42,7 @@ struct Message : public FrameBase {
 
   size_t ByteSize() const override { return payload.size() + command.size(); }
 
-  std::string ToString() const {
+  std::string ToString() const override {
     return absl::Substitute("base=[$0] payload=[$1] command=$2", FrameBase::ToString(), payload,
                             command);
   }

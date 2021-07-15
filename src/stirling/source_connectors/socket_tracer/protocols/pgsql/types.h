@@ -151,7 +151,7 @@ struct RegularMessage : public FrameBase {
 
   size_t ByteSize() const override { return 5 + payload.size(); }
 
-  std::string ToString() const {
+  std::string ToString() const override {
     return absl::Substitute("REGULAR MESSAGE [tag=$0 len=$1 payload=$2]", static_cast<char>(tag),
                             len, payload);
   }

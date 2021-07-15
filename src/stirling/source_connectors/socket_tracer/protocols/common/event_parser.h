@@ -43,12 +43,13 @@ namespace protocols {
 struct FrameBase {
   uint64_t timestamp_ns = 0;
 
+  virtual ~FrameBase() = default;
+
   // ByteSize() is used as part of Cleanup(); used to determine how much memory a tracker is using.
   virtual size_t ByteSize() const = 0;
 
-  virtual ~FrameBase() = default;
-
-  std::string ToString() const {
+  // Returns a string describing this object. Make it virtual so some subclasses can omit impl.
+  virtual std::string ToString() const {
     return absl::Substitute("timestamp_ns=$0 byte_size=$1", timestamp_ns, ByteSize());
   }
 };

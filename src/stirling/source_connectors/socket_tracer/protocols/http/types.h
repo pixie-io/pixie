@@ -68,7 +68,7 @@ struct Message : public FrameBase {
     return sizeof(Message) + headers_byte_size + body.size() + resp_message.size();
   }
 
-  std::string ToString() const {
+  std::string ToString() const override {
     return absl::Substitute(
         "[type=$0 minor_version=$1 headers=[$2] req_method=$3 "
         "req_path=$4 resp_status=$5 resp_message=$6 body=$7]",

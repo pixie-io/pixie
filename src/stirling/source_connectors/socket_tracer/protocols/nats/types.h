@@ -33,7 +33,7 @@ namespace nats {
 struct Message : public FrameBase {
   std::string payload;
   size_t ByteSize() const override { return payload.size(); }
-  std::string ToString() const { return FrameBase::ToString(); }
+  std::string ToString() const override { return FrameBase::ToString(); }
 };
 
 }  // namespace nats
