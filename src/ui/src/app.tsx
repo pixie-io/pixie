@@ -46,6 +46,7 @@ import 'typeface-roboto';
 import 'typeface-roboto-mono';
 import { PixieAPIContext, PixieAPIContextProvider } from 'app/api';
 import { AuthContextProvider, AuthContext } from 'app/common/auth-context';
+import { EmbedContext, EmbedContextProvider } from 'app/common/embed-context';
 
 // This side-effect-only import has to be a `require`, or else it gets erroneously optimized away during compilation.
 require('./wdyr');
@@ -98,52 +99,9 @@ function useIsAuthenticated() {
 
 export const App: React.FC = () => {
   const { authenticated, loading } = useIsAuthenticated();
-  const { authToken, setAuthToken } = React.useContext(AuthContext);
-  const [embedToken, setEmbedToken] = React.useState<string>('');
+  const { authToken } = React.useContext(AuthContext);
 
   const isEmbedded = window.location.pathname.startsWith('/embed');
-
-  // This is for an embedded environment. In the embedded environment, we
-  // expect authentication to be done using an auth token. The auth token
-  // will be POSTed over, and is used to get a Pixie access token that is
-  // attached to our requests using bearer auth.
-  const listener = React.useCallback(async (event) => {
-    const { data: { parentReady, token } } = event;
-
-    if (parentReady) {
-      window.top.postMessage({ pixieEmbedReady: true }, '*');
-    }
-    if (token) {
-      // Only request a new access token if sent a new token.
-      if (embedToken === token) {
-        return;
-      }
-
-      setEmbedToken(embedToken);
-      let response = null;
-      try {
-        response = await Axios.post('/api/auth/loginEmbedNew', {
-          accessToken: token,
-          orgName: '',
-        });
-      } catch (err) {
-        return;
-      }
-
-      setAuthToken(response.data.token);
-    }
-  }, [embedToken, setEmbedToken, setAuthToken]);
-
-  React.useEffect(() => {
-    window.addEventListener('message', listener);
-    // Send a message to the parent frame to inform it that Pixie is listening
-    // for postMessages. We use top, to send it to the topmost window.
-    // window.postMessage is not enough for a child to contact the parent.
-    window.top.postMessage({ pixieEmbedReady: true }, '*');
-    return () => {
-      window.removeEventListener('beforeunload', listener);
-    };
-  }, [listener]);
 
   // If in an embedded environment, we need to wait until the authToken has been sent over from the parent.
   // While there is no authToken, we should not render the page, as all GQL requests will fail.
@@ -223,29 +181,108 @@ if (LD_CLIENT_ID !== '') {
 }
 
 const ThemedApp: React.FC = () => {
-  // Parse param to determine which theme should be used. This must be specified in the params for embedded
-  // views. However, we can add a toggle and user-setting for this in the future.
-  const params = QueryString.parse(window.location.search);
-  let theme = DARK_THEME;
-  switch (params.theme) {
+  const { setAuthToken } = React.useContext(AuthContext);
+  const { setTimeArg } = React.useContext(EmbedContext);
+  const [theme, setTheme] = React.useState<string | string[]>('dark');
+  const [embedToken, setEmbedToken] = React.useState<string>('');
+
+  // Parse query params to determine initial state of the page. These
+  // params can also be set by the parent view, in an embedded context.
+  React.useEffect(() => {
+    const {
+      theme: themeParam,
+    } = QueryString.parse(window.location.search);
+
+    if (themeParam) {
+      setTheme(Array.isArray(themeParam) ? themeParam[0] : themeParam);
+    }
+  }, [setTheme]);
+
+  // This is for an embedded environment.
+  const listener = React.useCallback(async (event) => {
+    const {
+      data:
+        {
+          parentReady,
+          token,
+          pixieTheme,
+          pixieStartTime,
+        },
+    } = event;
+
+    if (pixieStartTime) {
+      setTimeArg(pixieStartTime);
+    }
+
+    if (pixieTheme && (pixieTheme === 'light' || pixieTheme === 'dark')) {
+      setTheme(pixieTheme);
+    }
+
+    // If the parent sends a ready message, it probably missed Pixie's
+    // initial ready message. Send out another ready message, which
+    // we know it will receive.
+    if (parentReady) {
+      window.top.postMessage({ pixieEmbedReady: true }, '*');
+    }
+
+    // In the embedded environment, we
+    // expect authentication to be done using an auth token. The auth token
+    // will be POSTed over, and is used to get a Pixie access token that is
+    // attached to our requests using bearer auth.
+    if (token) {
+      // Only request a new access token if sent a new token.
+      if (embedToken === token) {
+        return;
+      }
+
+      setEmbedToken(embedToken);
+      let response = null;
+      try {
+        response = await Axios.post('/api/auth/loginEmbedNew', {
+          accessToken: token,
+          orgName: '',
+        });
+      } catch (err) {
+        return;
+      }
+
+      setAuthToken(response.data.token);
+    }
+  }, [embedToken, setEmbedToken, setAuthToken, setTimeArg]);
+
+  React.useEffect(() => {
+    window.addEventListener('message', listener);
+    // Send a message to the parent frame to inform it that Pixie is listening
+    // for postMessages. We use top, to send it to the topmost window.
+    // window.postMessage is not enough for a child to contact the parent.
+    window.top.postMessage({ pixieEmbedReady: true }, '*');
+    return () => {
+      window.removeEventListener('beforeunload', listener);
+    };
+  }, [listener]);
+
+  let themeStyles = DARK_THEME;
+  switch (theme) {
     case 'light':
-      theme = LIGHT_THEME;
+      themeStyles = LIGHT_THEME;
       break;
     default:
   }
   return (
-    <ThemeProvider theme={theme}>
+    <ThemeProvider theme={themeStyles}>
       <CssBaseline />
-      <AuthContextProvider>
         <PixieAPIContextProvider apiKey=''>
           <StyledApp />
         </PixieAPIContextProvider>
-      </AuthContextProvider>
     </ThemeProvider>
   );
 };
 
 ReactDOM.render(
   <StyledEngineProvider injectFirst>
-    < ThemedApp />
+    <AuthContextProvider>
+      <EmbedContextProvider>
+        < ThemedApp />
+      </EmbedContextProvider>
+    </AuthContextProvider>
   </StyledEngineProvider>, document.getElementById('root'));

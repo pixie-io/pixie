@@ -23,6 +23,7 @@ import {
 } from 'react-router-dom';
 import * as QueryString from 'query-string';
 
+import { EmbedContext } from 'app/common/embed-context';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
 import { RouteNotFound } from 'app/containers/App/route-not-found';
 import { selectClusterName } from 'app/containers/App/cluster-info';
@@ -62,10 +63,15 @@ const VANITY_ROUTES = new Map<string, string>([
 const LiveRoute: React.FC<LiveRouteContextProps> = ({
   args, scriptId, embedState, clusterName, push, children,
 }) => {
+  const { timeArg } = React.useContext(EmbedContext);
+  const copiedArgs = args;
+  if (timeArg && copiedArgs.start_time) {
+    copiedArgs.start_time = timeArg;
+  }
   // Sorting keys ensures that the stringified object looks the same regardless of the order of operations that built it
-  const serializedArgs = JSON.stringify(args, Object.keys(args ?? {}).sort());
+  const serializedArgs = JSON.stringify(copiedArgs, Object.keys(copiedArgs ?? {}).sort());
   const context: LiveRouteContextProps = React.useMemo(() => ({
-    scriptId, clusterName, embedState, args, push,
+    scriptId, clusterName, embedState, args: copiedArgs, push,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [scriptId, clusterName, embedState, serializedArgs, push]);
 
