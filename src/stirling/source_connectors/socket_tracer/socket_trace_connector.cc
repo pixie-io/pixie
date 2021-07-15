@@ -879,6 +879,27 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
 #endif
 }
 
+template <>
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracker& conn_tracker,
+                                         protocols::nats::Record record, DataTable* data_table) {
+  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
+                conn_tracker.conn_id().upid.start_time_ticks);
+
+  EndpointRole role = conn_tracker.role();
+  DataTable::RecordBuilder<&kNATSTable> r(data_table, record.resp.timestamp_ns);
+  r.Append<r.ColIndex("time_")>(record.resp.timestamp_ns);
+  r.Append<r.ColIndex("upid")>(upid.value());
+  r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
+  r.Append<r.ColIndex("trace_role")>(role);
+  r.Append<r.ColIndex("cmd")>(record.req.command);
+  r.Append<r.ColIndex("body")>(record.req.options);
+  r.Append<r.ColIndex("resp")>(record.resp.command);
+#ifndef NDEBUG
+  r.Append<r.ColIndex("px_info_")>(ToString(conn_tracker.conn_id()));
+#endif
+}
+
 void SocketTraceConnector::SetupOutput(const std::filesystem::path& path) {
   DCHECK(!path.empty());
 

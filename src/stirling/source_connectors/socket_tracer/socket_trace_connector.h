@@ -69,7 +69,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
  public:
   static constexpr std::string_view kName = "socket_tracer";
   static constexpr auto kTables = MakeArray(kConnStatsTable, kHTTPTable, kMySQLTable, kCQLTable,
-                                            kPGSQLTable, kDNSTable, kRedisTable);
+                                            kPGSQLTable, kDNSTable, kRedisTable, kNATSTable);
 
   static constexpr uint32_t kConnStatsTableNum = TableNum(kTables, kConnStatsTable);
   static constexpr uint32_t kHTTPTableNum = TableNum(kTables, kHTTPTable);
@@ -78,6 +78,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static constexpr uint32_t kPGSQLTableNum = TableNum(kTables, kPGSQLTable);
   static constexpr uint32_t kDNSTableNum = TableNum(kTables, kDNSTable);
   static constexpr uint32_t kRedisTableNum = TableNum(kTables, kRedisTable);
+  static constexpr uint32_t kNATSTableNum = TableNum(kTables, kNATSTable);
 
   static constexpr auto kSamplingPeriod = std::chrono::milliseconds{200};
   // TODO(yzhao): This is not used right now. Eventually use this to control data push frequency.

@@ -31,9 +31,27 @@ namespace nats {
 // See https://github.com/nats-io/docs/blob/master/nats_protocol/nats-protocol.md#protocol-messages
 // for the message format.
 struct Message : public FrameBase {
-  std::string payload;
-  size_t ByteSize() const override { return payload.size(); }
-  std::string ToString() const override { return FrameBase::ToString(); }
+  std::string command;
+
+  // Formatted in JSON. Also includes payload, keyed by "payload".
+  std::string options;
+
+  size_t ByteSize() const override { return command.size() + options.size(); }
+
+  std::string ToString() const override {
+    return absl::Substitute("base=[$0] command=[$1] options=[$2]", FrameBase::ToString(), command,
+                            options);
+  }
+};
+
+// Represents a pair of request and response messages.
+struct Record {
+  Message req;
+
+  // Error responses are always sent by server when encounter any error during processing the
+  // request. OK responses are only sent by server in the verbose mode.
+  // See https://github.com/nats-io/docs/blob/master/nats_protocol/nats-protocol.md#okerr.
+  Message resp;
 };
 
 }  // namespace nats
