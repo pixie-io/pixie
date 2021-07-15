@@ -65,9 +65,9 @@ Status PerfProfileConnector::InitImpl() {
 
   LOG(INFO) << "PerfProfiler: Stack trace profiling sampling probe successfully deployed.";
 
-  // Made it here w/ no problems; now init the symbolizer & return its status.
-  symbolizer_ = std::make_unique<BCCSymbolizer>();
-  return symbolizer_->Init();
+  // Made it here w/ no problems; now init the symbolizer.
+  PL_ASSIGN_OR_RETURN(symbolizer_, BCCSymbolizer::Create());
+  return Status::OK();
 }
 
 Status PerfProfileConnector::StopImpl() {

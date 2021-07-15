@@ -62,11 +62,17 @@ Status BCCSymbolizer::Init() {
   // This BPF program is a placeholder; it is not actually used. We include it only
   // to allow us to create an instance of ebpf::BPFStackTable from BCC. We will use
   // the instance of ebpf::BPFStackTable for its symbolization API.
-  // TODO(jps): find a symbolization API that does require a BPF program.
   const std::string_view kProgram = "BPF_STACK_TRACE(bcc_symbolizer, 16);";
   PL_RETURN_IF_ERROR(InitBPFProgram(kProgram));
   bcc_symbolizer_ = std::make_unique<ebpf::BPFStackTable>(GetStackTable("bcc_symbolizer"));
   return Status::OK();
+}
+
+StatusOr<std::unique_ptr<Symbolizer>> BCCSymbolizer::Create() {
+  BCCSymbolizer* bcc_symbolizer = new BCCSymbolizer();
+  auto symbolizer = std::unique_ptr<Symbolizer>(bcc_symbolizer);
+  PL_RETURN_IF_ERROR(bcc_symbolizer->Init());
+  return symbolizer;
 }
 
 void BCCSymbolizer::DeleteUPID(const struct upid_t& upid) {

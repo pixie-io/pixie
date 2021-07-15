@@ -38,10 +38,18 @@ static constexpr upid_t kKernelUPID = {.pid = kKernelPIDAsU32, .start_time_ticks
 class Symbolizer {
  public:
   virtual ~Symbolizer() = default;
-  virtual Status Init() = 0;
-  virtual void DeleteUPID(const struct upid_t& upid) = 0;
+
+  /**
+   * Create a symbolizer for the process specified by UPID.
+   * The returned symbolizer function converts addresses to symbols for the process.
+   */
   virtual std::function<std::string_view(const uintptr_t addr)> GetSymbolizerFn(
       const struct upid_t& upid) = 0;
+
+  /**
+   * Delete the state associated with a symbolizer created by a previous call to GetSymbolizerFn
+   */
+  virtual void DeleteUPID(const struct upid_t& upid) = 0;
 };
 
 class SymbolCache {
@@ -99,15 +107,18 @@ class SymbolCache {
  */
 class BCCSymbolizer : public Symbolizer, public bpf_tools::BCCWrapper, public NotCopyMoveable {
  public:
-  Status Init();
-  void DeleteUPID(const struct upid_t& upid);
+  static StatusOr<std::unique_ptr<Symbolizer>> Create();
 
-  std::function<std::string_view(const uintptr_t addr)> GetSymbolizerFn(const struct upid_t& upid);
+  std::function<std::string_view(const uintptr_t addr)> GetSymbolizerFn(
+      const struct upid_t& upid) override;
+  void DeleteUPID(const struct upid_t& upid) override;
 
   int64_t stat_accesses() { return stat_accesses_; }
   int64_t stat_hits() { return stat_hits_; }
 
  private:
+  BCCSymbolizer() = default;
+  Status Init();
   std::string_view Symbolize(SymbolCache* symbol_cache, const int pid, const uintptr_t addr);
 
   // We will use this exclusively to gain access to the BCC symbolization API;

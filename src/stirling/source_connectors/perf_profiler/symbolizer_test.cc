@@ -163,8 +163,8 @@ TEST(SymbolizerTest, Basic) {
 
   FLAGS_stirling_profiler_symcache = true;
 
-  BCCSymbolizer symbolizer;
-  ASSERT_OK(symbolizer.Init());
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<Symbolizer> symbolizer_uptr, BCCSymbolizer::Create());
+  BCCSymbolizer& symbolizer = *static_cast<BCCSymbolizer*>(symbolizer_uptr.get());
 
   const struct upid_t this_upid = {.pid = pid, .start_time_ticks = 0};
 
