@@ -335,6 +335,22 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "nats_trace_bpf_test",
+    timeout = "long",
+    srcs = ["nats_trace_bpf_test.cc"],
+    data = [
+        "//src/stirling/source_connectors/socket_tracer/protocols/nats/testing:nats_test_client_image.tar",
+        "//src/stirling/source_connectors/socket_tracer/testing/containers:nats_image.tar",
+    ],
+    flaky = True,
+    tags = ["requires_bpf"],
+    deps = [
+        ":cc_library",
+        "//src/common/testing/test_utils:cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "openssl_trace_bpf_test",
     timeout = "moderate",
     srcs = ["openssl_trace_bpf_test.cc"],

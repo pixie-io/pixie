@@ -82,3 +82,8 @@ container_image(
         "//src/stirling/source_connectors/socket_tracer/testing/containers/ssl:nginx_ssl_keys",
     ],
 )
+
+container_image(
+    name = "nats_image",
+    base = "@nats_base_image//image",
+)

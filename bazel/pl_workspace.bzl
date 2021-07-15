@@ -154,6 +154,14 @@ def stirling_docker_images_setup():
         repository = "pixie-oss/pixie-dev-public/python_mysql_connector",
     )
 
+    # NATS server image, for testing.
+    container_pull(
+        name = "nats_base_image",
+        digest = "sha256:da01747b3b1b793d26f23d641b1e96439c8a4a7e06f996382ad5a588b3f22e9a",
+        registry = "index.docker.io",
+        repository = "library/nats",
+    )
+
 def _docker_images_setup():
     _go_image_repos()
     _java_image_repos()
