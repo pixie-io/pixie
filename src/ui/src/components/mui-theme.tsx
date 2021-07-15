@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { PaletteMode } from '@material-ui/core';
 import { createTheme, Theme } from '@material-ui/core/styles';
 
 declare module '@material-ui/core/styles/createPalette' {
@@ -121,6 +122,11 @@ export const scrollbarStyles = (theme: Theme) => {
       backgroundColor: 'transparent',
     },
   };
+};
+
+export const EDITOR_THEME_MAP: Record<PaletteMode, string> = {
+  dark: 'vs-dark',
+  light: 'vs-light',
 };
 
 const common = {

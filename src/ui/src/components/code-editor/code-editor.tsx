@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { PaletteMode } from '@material-ui/core';
 import { buildClass } from 'app/utils/build-class';
 import * as React from 'react';
 
@@ -32,6 +33,7 @@ interface CodeEditorProps {
   spinnerClass?: string;
   language?: string;
   shortcutKeys: string[];
+  theme?: PaletteMode;
 }
 
 function removeKeybindings(editor, keys: string[]) {
@@ -151,7 +153,7 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
         onChange={this.onChange}
         editorDidMount={this.onEditorMount}
         language={this.props.language ? this.props.language : 'python'}
-        theme='vs-dark'
+        theme={this.props.theme || 'vs-dark'}
         options={this.state}
       />
     );

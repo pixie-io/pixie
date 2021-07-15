@@ -17,10 +17,15 @@
  */
 
 import * as React from 'react';
-import { CodeEditor, LazyPanel, ResizableDrawer } from 'app/components';
+import {
+  CodeEditor,
+  EDITOR_THEME_MAP,
+  LazyPanel,
+  ResizableDrawer,
+} from 'app/components';
 
 import {
-  makeStyles, Theme, withStyles,
+  makeStyles, Theme, withStyles, useTheme,
 } from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
@@ -114,6 +119,8 @@ const PxLEditor = ({ visible }: { visible: boolean }) => {
   const { script } = React.useContext(ScriptContext);
   const { setPxlEditorText } = React.useContext(EditorContext);
   const editorRef = React.createRef<CodeEditor>();
+  const theme = useTheme();
+
   // We useEffect instead of relying on the prop because of an issue where a cursor
   // in the field causes onChange to be triggered partway through, leading to a
   // partial state being set.
@@ -137,6 +144,7 @@ const PxLEditor = ({ visible }: { visible: boolean }) => {
       spinnerClass={classes.spinner}
       shortcutKeys={shortcutKeys}
       language='python'
+      theme={EDITOR_THEME_MAP[theme.palette.mode]}
     />
   );
 };
