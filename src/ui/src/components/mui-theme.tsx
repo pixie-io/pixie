@@ -52,6 +52,11 @@ declare module '@material-ui/core/styles/createPalette' {
       ramp?: string[];
       heatmap?: string[];
       primary?: string;
+      flamegraph?: {
+        kernel: string,
+        app: string,
+        k8s: string,
+      };
     };
     border: {
       focused?: string;
@@ -82,6 +87,11 @@ declare module '@material-ui/core/styles/createPalette' {
       diverging?: string[];
       ramp?: string[];
       heatmap?: string[];
+      flamegraph?: {
+        kernel: string,
+        app: string,
+        k8s: string,
+      };
       primary?: string;
     };
     border: {
@@ -252,6 +262,11 @@ const common = {
         '#549cc6', // dark-1
         '#1d78b5', // dark-2
       ],
+      flamegraph: {
+        kernel: '#98df8a',
+        app: '#31d0f3',
+        k8s: '#4796c1',
+      },
       primary: '#39A8F5',
     },
   },
@@ -316,7 +331,7 @@ export const LIGHT_THEME = createTheme({
     palette: {
       ...common.palette,
       background: {
-        default: '#fbfbfb',
+        default: '#f6f6f6',
         paper: '#fbfbfb',
         one: '#fbfbfb',
         two: '#ffffff',
@@ -335,6 +350,83 @@ export const LIGHT_THEME = createTheme({
         grey4: '#a9adb1',
         grey5: '#000000',
         white: '#ffffff',
+      },
+      sideBar: {
+        color: '#161616',
+        colorShadow: '#000000',
+        colorShadowOpacity: 0.5,
+      },
+      common: {
+        black: '#000000',
+        white: '#ffffff',
+      },
+      primary: {
+        main: '#12d6d6',
+        dark: '#17aaaa',
+        light: '#3ef3f3',
+      },
+      secondary: {
+        main: '#24b2ff',
+        dark: '#21a1e7',
+        light: '#79d0ff',
+      },
+      success: {
+        main: '#00BD8F',
+      },
+      warning: {
+        main: '#dc9406',
+      },
+      info: {
+        main: '#f0de3d',
+        dark: '#dac92f',
+        light: '#fff48f',
+      },
+      error: {
+        main: '#e54e5c',
+      },
+      action: {
+        active: '#a6a8ae', // foreground 1.
+      },
+      graph: {
+        category: [
+          '#21a1e7', // one
+          '#2ca02c', // two
+          '#98df8a', // three
+          '#aec7e8', // four
+          '#ff7f0e', // five
+          '#ffbb78', // six
+        ],
+        diverging: [
+          '#cc0020', // left-dark
+          '#e77866', // left-main
+          '#f6e7e1', // left-light
+          '#d6e8ed', // right-light
+          '#91bfd9', // right-main
+          '#1d78b5', // right-dark
+        ],
+        ramp: [
+          '#fff48f', // info-light
+          '#f0de3d', // info-main
+          '#dac92f', // info-dark
+          '#ffc656', // warning-light
+          '#f6a609', // warning-main
+          '#dc9406', // warning-dark
+          '#ff5e6d', // error-main
+          '#e54e5c', // error-dark
+        ],
+        heatmap: [
+          '#d6e8ed', // light-1
+          '#cee0e5', // light-2
+          '#91bfd9', // main
+          '#549cc6', // dark-1
+          '#1d78b5', // dark-2
+        ],
+        flamegraph: {
+          kernel: '#90cb84',
+          app: '#00b1d8',
+          k8s: '#4796c1',
+        },
+        primary: '#39A8F5',
       },
     },
   },

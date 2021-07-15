@@ -1923,10 +1923,11 @@ function convertToStacktraceFlameGraph(
   const SLIDER_NORMAL_WIDTH = 2;
   const SLIDER_HOVER_WIDTH = 8;
   const SLIDER_HITBOX_WIDTH = 14;
+
   // Colors for the stacktrace rectangles, depending on category of the trace.
-  const KERNEL_FILL_COLOR = '#98DF8A';
-  const APP_FILL_COLOR = '#31D0F3';
-  const K8S_FILL_COLOR = '#4796C1';
+  const KERNEL_FILL_COLOR = theme.palette.graph.flamegraph.kernel;
+  const APP_FILL_COLOR = theme.palette.graph.flamegraph.app;
+  const K8S_FILL_COLOR = theme.palette.graph.flamegraph.k8s;
 
   if (!display.stacktraceColumn) {
     throw new Error('StackTraceFlamegraph must have an entry for property stacktraceColumn');
@@ -2174,7 +2175,7 @@ function convertToStacktraceFlameGraph(
       // Handle click on selection and drag to pan in minimap.
       {
         events: { signal: 'minimap_translate_delta' },
-        update: `(!minimap_anchor.x) ? 
+        update: `(!minimap_anchor.x) ?
           clampRange([
             minimap_translate_anchor.extent_x[0] + minimap_translate_delta.x,
             minimap_translate_anchor.extent_x[1] + minimap_translate_delta.x], 0, minimap_width) : grid_x`,
@@ -2189,7 +2190,7 @@ function convertToStacktraceFlameGraph(
             {
               source: 'scope',
               type: 'mousedown',
-              filter: `event.item && event.item.mark && 
+              filter: `event.item && event.item.mark &&
                 (event.item.mark.name === "left_slider_hitbox" || event.item.mark.name === "right_slider_hitbox")`,
             },
             {
@@ -2198,7 +2199,7 @@ function convertToStacktraceFlameGraph(
             },
           ],
         },
-        update: `(minimap_slider_anchor.left) ? [min(x(group()), grid_x[1] - 1), grid_x[1]] : 
+        update: `(minimap_slider_anchor.left) ? [min(x(group()), grid_x[1] - 1), grid_x[1]] :
           [grid_x[0], max(x(group()), grid_x[0]+1)]`,
       },
       {
@@ -2399,7 +2400,7 @@ function convertToStacktraceFlameGraph(
         events: {
           source: 'scope',
           type: 'mousedown',
-          filter: `event.item && event.item.mark && 
+          filter: `event.item && event.item.mark &&
             (event.item.mark.name === "left_slider_hitbox" || event.item.mark.name === "right_slider_hitbox")`,
         },
         update: '{left: event.item.mark.name === "left_slider_hitbox"}',
