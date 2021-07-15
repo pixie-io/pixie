@@ -30,7 +30,7 @@
 #include "src/table_store/schema/relation.h"
 #include "src/table_store/table/table.h"
 
-DEFINE_int32(table_store_table_size_limit, 128 * 1024 * 1024,
+DEFINE_int32(table_store_table_size_limit, 64 * 1024 * 1024,
              "The maximal size a table allows. When the size grows beyond this limit, "
              "old data will be discarded. Set to '-1' to remove this limit.");
 
