@@ -46,6 +46,30 @@ StatusOr<int32_t> PacketDecoder::ExtractInt32() { return binary_decoder_.Extract
 
 StatusOr<int64_t> PacketDecoder::ExtractInt64() { return binary_decoder_.ExtractInt<int64_t>(); }
 
+StatusOr<int32_t> PacketDecoder::ExtractUnsignedVarint() {
+  constexpr uint8_t kFirstBitMask = 0x80;
+  constexpr uint8_t kLastSevenBitMask = 0x7f;
+  constexpr uint8_t kByteLength = 7;
+  constexpr uint8_t kMaxLength = 35;
+
+  int32_t value = 0;
+  for (int i = 0; i < kMaxLength; i += kByteLength) {
+    PL_ASSIGN_OR_RETURN(char b, binary_decoder_.ExtractChar());
+    if (!(b & kFirstBitMask)) {
+      value |= (b << i);
+      return value;
+    }
+    value |= ((b & kLastSevenBitMask) << i);
+  }
+  return error::Internal("Extract Unsigned Varint failure.");
+}
+
+StatusOr<int32_t> PacketDecoder::ExtractVarint() {
+  PL_ASSIGN_OR_RETURN(int32_t value, ExtractUnsignedVarint());
+  // Casting to uint32_t for logical right shift.
+  return (static_cast<uint32_t>(value) >> 1) ^ (-(value & 1));
+}
+
 StatusOr<std::string> PacketDecoder::ExtractString() {
   PL_ASSIGN_OR_RETURN(int16_t len, ExtractInt16());
   return ExtractBytesCore<char>(len);

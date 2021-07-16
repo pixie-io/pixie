@@ -102,6 +102,13 @@ class PacketDecoder {
 
   StatusOr<int64_t> ExtractInt64();
 
+  StatusOr<int32_t> ExtractUnsignedVarint();
+
+  // Represents an integer between -231 and 231-1 inclusive. Encoding follows the
+  // variable-length zig-zag encoding from Google Protocol Buffers.
+  // https://developers.google.com/protocol-buffers/docs/encoding#varints
+  StatusOr<int32_t> ExtractVarint();
+
   // Represents a sequence of characters. First the length N is given as an INT16. Then N
   // bytes follow which are the UTF-8 encoding of the character sequence.
   StatusOr<std::string> ExtractString();

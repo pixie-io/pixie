@@ -51,3 +51,9 @@ pl_cc_test(
     srcs = ["stitcher_test.cc"],
     deps = [":cc_library"],
 )
+
+pl_cc_test(
+    name = "packet_decoder_test",
+    srcs = ["packet_decoder_test.cc"],
+    deps = [":cc_library"],
+)
