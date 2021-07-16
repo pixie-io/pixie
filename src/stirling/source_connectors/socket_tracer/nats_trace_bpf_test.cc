@@ -63,7 +63,6 @@ TEST_F(NATSTraceBPFTest, VerifyBatchedCommands) {
   client_container_.Run(
       std::chrono::seconds{10},
       {absl::Substitute("--network=container:$0", server_container_.container_name())});
-  PL_LOG_VAR(client_container_.Stdout());
   client_container_.Wait();
 }
 
