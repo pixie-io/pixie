@@ -31,6 +31,7 @@ set_default_values() {
   MACHINE_TYPE=e2-standard-4
   IMAGE_NAME=UBUNTU
   DISK_SIZE=100
+  LABELS="k8s-dev-cluster="
 }
 
 # Configuration for personal Pixie dev clusters.
@@ -46,6 +47,7 @@ set_stirling_cluster_config() {
   ZONE=us-west1-a
   NETWORK=projects/pl-pixies/global/networks/dev
   SUBNETWORK=projects/pl-pixies/regions/us-west1/subnetworks/us-west1-1
+  LABELS="k8s-dev-cluster=,stirling-perf-eval-dynamic="
 }
 
 # Configuration for devinfra clusters -- jenkins, bazel remote builds,
@@ -83,6 +85,7 @@ print_config() {
   echo "  ZONE             : ${ZONE}"
   echo "  NETWORK          : ${NETWORK}"
   echo "  SUBNETWORK       : ${SUBNETWORK}"
+  echo "  LABELS           : ${LABELS}"
   echo ""
 }
 
@@ -201,7 +204,7 @@ gcloud beta container --project "${PROJECT}" clusters create "${CLUSTER_NAME}" \
  --addons HorizontalPodAutoscaling,HttpLoadBalancing \
  --no-enable-autoupgrade \
  --no-enable-autorepair \
- --labels k8s-dev-cluster=\
+ --labels "${LABELS}" \
  --security-group="gke-security-groups@pixielabs.ai" \
  --no-enable-stackdriver-kubernetes
 
