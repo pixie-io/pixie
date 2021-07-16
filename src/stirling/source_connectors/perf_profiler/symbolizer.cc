@@ -25,21 +25,9 @@ DEFINE_bool(stirling_profiler_symcache, true, "Enable the Stirling managed symbo
 namespace px {
 namespace stirling {
 
-namespace {
-std::string SymbolOrAddrIfUnknown(ebpf::BPFStackTable* bcc_symbolizer, const uintptr_t addr,
-                                  const int pid) {
-  static constexpr std::string_view kUnknown = "[UNKNOWN]";
-  std::string sym_or_addr = bcc_symbolizer->get_addr_symbol(addr, pid);
-  if (sym_or_addr == kUnknown) {
-    sym_or_addr = absl::StrFormat("0x%016llx", addr);
-  }
-  return sym_or_addr;
-}
-}  // namespace
-
-SymbolCache::Symbol::Symbol(ebpf::BPFStackTable* bcc_symbolizer, const uintptr_t addr,
+SymbolCache::Symbol::Symbol(bpf_tools::BCCSymbolizer* bcc_symbolizer, const uintptr_t addr,
                             const int pid)
-    : symbol_(SymbolOrAddrIfUnknown(bcc_symbolizer, addr, pid)) {}
+    : symbol_(bcc_symbolizer->SymbolOrAddrIfUnknown(addr, pid)) {}
 
 SymbolCache::LookupResult SymbolCache::Lookup(const uintptr_t addr) {
   // Check old cache first, and move result to new cache if we have a hit.
@@ -58,39 +46,26 @@ SymbolCache::LookupResult SymbolCache::Lookup(const uintptr_t addr) {
   return SymbolCache::LookupResult{iter->second.symbol_, !inserted};
 }
 
-Status BCCSymbolizer::Init() {
-  // This BPF program is a placeholder; it is not actually used. We include it only
-  // to allow us to create an instance of ebpf::BPFStackTable from BCC. We will use
-  // the instance of ebpf::BPFStackTable for its symbolization API.
-  const std::string_view kProgram = "BPF_STACK_TRACE(bcc_symbolizer, 16);";
-  PL_RETURN_IF_ERROR(InitBPFProgram(kProgram));
-  bcc_symbolizer_ = std::make_unique<ebpf::BPFStackTable>(GetStackTable("bcc_symbolizer"));
-  return Status::OK();
-}
-
 StatusOr<std::unique_ptr<Symbolizer>> BCCSymbolizer::Create() {
-  BCCSymbolizer* bcc_symbolizer = new BCCSymbolizer();
-  auto symbolizer = std::unique_ptr<Symbolizer>(bcc_symbolizer);
-  PL_RETURN_IF_ERROR(bcc_symbolizer->Init());
-  return symbolizer;
+  return std::unique_ptr<Symbolizer>(new BCCSymbolizer());
 }
 
 void BCCSymbolizer::DeleteUPID(const struct upid_t& upid) {
   // The inner map is owned by a unique_ptr; this will free the memory.
   symbol_caches_.erase(upid);
 
-  // We also free up the symbol cache on the bcc side.
+  // We also free up the symbol cache on the BCC side.
   // If the BCC side symbol cache has already been freed, this does nothing.
   // If later the pid is reused, then BCC will re-allocate the pid's symbol
   // symbol cache (when get_addr_symbol() is called).
-  bcc_symbolizer_->free_symcache(upid.pid);
+  bcc_symbolizer_.ReleasePIDSymCache(upid.pid);
 }
 
 std::string_view BCCSymbolizer::Symbolize(SymbolCache* symbol_cache, const int pid,
                                           const uintptr_t addr) {
   static std::string symbol;
   if (!FLAGS_stirling_profiler_symcache) {
-    symbol = bcc_symbolizer_->get_addr_symbol(addr, pid);
+    symbol = bcc_symbolizer_.Symbol(addr, pid);
     return symbol;
   }
 
@@ -112,10 +87,11 @@ std::function<std::string_view(const uintptr_t addr)> BCCSymbolizer::GetSymboliz
   using std::placeholders::_1;
   const auto [iter, inserted] = symbol_caches_.try_emplace(upid, nullptr);
   if (inserted) {
-    iter->second = std::make_unique<SymbolCache>(upid.pid, bcc_symbolizer_.get());
+    iter->second = std::make_unique<SymbolCache>(upid.pid, &bcc_symbolizer_);
   }
   auto& cache = iter->second;
-  auto fn = std::bind(&BCCSymbolizer::Symbolize, this, cache.get(), upid.pid, _1);
+  auto fn =
+      std::bind(&BCCSymbolizer::Symbolize, this, cache.get(), static_cast<int32_t>(upid.pid), _1);
   return fn;
 }
 

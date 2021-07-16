@@ -66,6 +66,15 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "bcc_symbolizer_bpf_test",
+    srcs = ["bcc_symbolizer_bpf_test.cc"],
+    tags = ["requires_bpf"],
+    deps = [
+        ":cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "bpftrace_wrapper_bpf_test",
     srcs = ["bpftrace_wrapper_bpf_test.cc"],
     tags = ["requires_bpf"],

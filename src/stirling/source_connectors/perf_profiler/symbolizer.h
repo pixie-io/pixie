@@ -23,6 +23,7 @@
 #include <utility>
 
 #include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
+#include "src/stirling/bpf_tools/bcc_symbolizer.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 
 DECLARE_bool(stirling_profiler_symcache);
@@ -31,8 +32,8 @@ namespace px {
 namespace stirling {
 
 namespace profiler {
-static constexpr uint32_t kKernelPIDAsU32 = ~0;
-static constexpr upid_t kKernelUPID = {.pid = kKernelPIDAsU32, .start_time_ticks = 0};
+static constexpr upid_t kKernelUPID = {
+    .pid = static_cast<uint32_t>(bpf_tools::BCCSymbolizer::kKernelPID), .start_time_ticks = 0};
 }  // namespace profiler
 
 class Symbolizer {
@@ -54,7 +55,7 @@ class Symbolizer {
 
 class SymbolCache {
  public:
-  SymbolCache(int pid, ebpf::BPFStackTable* symbolizer) : pid_(pid), symbolizer_(symbolizer) {}
+  SymbolCache(int pid, bpf_tools::BCCSymbolizer* symbolizer) : pid_(pid), symbolizer_(symbolizer) {}
 
   struct LookupResult {
     std::string_view symbol;
@@ -80,13 +81,16 @@ class SymbolCache {
    */
   class Symbol {
    public:
-    Symbol(ebpf::BPFStackTable* bcc_symbolizer, const uintptr_t addr, const int pid);
+    Symbol(bpf_tools::BCCSymbolizer* bcc_symbolizer, const uintptr_t addr, const int pid);
+
+    // A move constructor that takes consumes a string.
     explicit Symbol(std::string&& symbol_str) : symbol_(std::move(symbol_str)) {}
+
     std::string symbol_;
   };
 
   int pid_;
-  ebpf::BPFStackTable* symbolizer_;
+  bpf_tools::BCCSymbolizer* symbolizer_;
   absl::flat_hash_map<uintptr_t, Symbol> cache_;
   absl::flat_hash_map<uintptr_t, Symbol> prev_cache_;
 };
@@ -105,7 +109,7 @@ class SymbolCache {
  *   const std::string symbol = symbolize_fn(addr);
  *
  */
-class BCCSymbolizer : public Symbolizer, public bpf_tools::BCCWrapper, public NotCopyMoveable {
+class BCCSymbolizer : public Symbolizer, public NotCopyMoveable {
  public:
   static StatusOr<std::unique_ptr<Symbolizer>> Create();
 
@@ -121,9 +125,7 @@ class BCCSymbolizer : public Symbolizer, public bpf_tools::BCCWrapper, public No
   Status Init();
   std::string_view Symbolize(SymbolCache* symbol_cache, const int pid, const uintptr_t addr);
 
-  // We will use this exclusively to gain access to the BCC symbolization API;
-  // i.e. while this does create a shared BPF "stack trace" map, we do not use that.
-  std::unique_ptr<ebpf::BPFStackTable> bcc_symbolizer_;
+  bpf_tools::BCCSymbolizer bcc_symbolizer_;
 
   absl::flat_hash_map<struct upid_t, std::unique_ptr<SymbolCache>> symbol_caches_;
 

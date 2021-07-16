@@ -38,21 +38,14 @@ using ::testing::AnyOfArray;
 
 class SymbolCacheTest : public ::testing::Test {
  protected:
-  void SetUp() override {
-    PL_CHECK_OK(bcc_.InitBPFProgram(kProgram));
-    bcc_symbolizer_ = std::make_unique<ebpf::BPFStackTable>(bcc_.GetStackTable("bcc_symbolizer"));
-  }
-
-  const std::string_view kProgram = "BPF_STACK_TRACE(bcc_symbolizer, 16);";
-  bpf_tools::BCCWrapper bcc_;
-  std::unique_ptr<ebpf::BPFStackTable> bcc_symbolizer_;
+  bpf_tools::BCCSymbolizer bcc_symbolizer_;
 
   const uintptr_t kFooAddr = reinterpret_cast<uintptr_t>(&test::foo);
   const uintptr_t kBarAddr = reinterpret_cast<uintptr_t>(&test::bar);
 };
 
 TEST_F(SymbolCacheTest, Lookup) {
-  SymbolCache sym_cache(getpid(), bcc_symbolizer_.get());
+  SymbolCache sym_cache(getpid(), &bcc_symbolizer_);
 
   SymbolCache::LookupResult result;
 
@@ -70,7 +63,7 @@ TEST_F(SymbolCacheTest, Lookup) {
 }
 
 TEST_F(SymbolCacheTest, EvictOldEntries) {
-  SymbolCache sym_cache(getpid(), bcc_symbolizer_.get());
+  SymbolCache sym_cache(getpid(), &bcc_symbolizer_);
 
   SymbolCache::LookupResult result;
 
