@@ -27,7 +27,7 @@ import (
 func PrettifyClusterName(name string, expanded bool) string {
 	name = strings.ToLower(name)
 	switch {
-	case strings.HasPrefix(name, "gke"):
+	case strings.HasPrefix(name, "gke_"):
 		splits := strings.Split(name, "_")
 		// GKE names are <gke>_<project>_<region>_<cluster_name>_<our suffix>
 		if len(splits) > 3 && len(splits[3]) > 0 {
@@ -38,7 +38,7 @@ func PrettifyClusterName(name string, expanded bool) string {
 			}
 			return name
 		}
-	case strings.HasPrefix(name, "arn"):
+	case strings.HasPrefix(name, "arn:"):
 		// EKS names are "ARN::::CLUSTER/NAME"
 		splits := strings.Split(name, ":")
 		if len(splits) > 0 && len(splits[len(splits)-1]) > 0 {

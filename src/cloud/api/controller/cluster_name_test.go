@@ -69,6 +69,12 @@ func TestPrettifyClusterName(t *testing.T) {
 			"aksyouthful_turing",
 			false,
 		},
+		{
+			"cluster with arn",
+			"arnno",
+			"arnno",
+			false,
+		},
 	}
 
 	for _, test := range tests {
