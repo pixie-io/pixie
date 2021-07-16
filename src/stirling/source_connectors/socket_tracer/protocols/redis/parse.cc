@@ -177,18 +177,6 @@ Status ParseArray(MessageType type, BinaryDecoder* decoder, Message* msg) {
   return Status::OK();
 }
 
-ParseState TranslateErrorStatus(const Status& status) {
-  if (error::IsNotFound(status) || error::IsResourceUnavailable(status)) {
-    return ParseState::kNeedsMoreData;
-  }
-  if (!status.ok()) {
-    return ParseState::kInvalid;
-  }
-  DCHECK(false) << "Can only translate NotFound or ResourceUnavailable error, got: "
-                << status.ToString();
-  return ParseState::kSuccess;
-}
-
 }  // namespace
 
 size_t FindMessageBoundary(std::string_view buf, size_t start_pos) {
@@ -211,7 +199,7 @@ ParseState ParseMessage(MessageType type, std::string_view* buf, Message* msg) {
   auto status = ParseMessage(type, &decoder, msg);
 
   if (!status.ok()) {
-    return TranslateErrorStatus(status);
+    return TranslateStatus(status);
   }
 
   *buf = decoder.Buf();
