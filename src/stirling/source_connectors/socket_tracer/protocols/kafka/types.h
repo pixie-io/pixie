@@ -234,8 +234,65 @@ constexpr int kMaxAPIVersion = 12;
 struct Packet : public FrameBase {
   int32_t correlation_id;
   std::string msg;
+  // `consumed` is used to mark if a request packet has been matched to a response in StitchFrames.
+  // This is an optimization to efficiently remove all matched packets from the front of the deque.
+  bool consumed = false;
 
   size_t ByteSize() const override { return sizeof(Packet) + msg.size(); }
+};
+
+struct Request {
+  // Kafka opcode.
+  APIKey api_key;
+
+  // Version of the Kafka API Key.
+  int16_t api_version;
+
+  // Client ID present in request api version >= 1.
+  std::string client_id;
+
+  // Request message.
+  std::string msg;
+
+  uint64_t timestamp_ns;
+
+  std::string ToString() const {
+    return absl::Substitute("timestamp=$0 api_key=$1(version: $2) msg=$3", timestamp_ns,
+                            magic_enum::enum_name(api_key), api_version, msg);
+  }
+};
+
+struct Response {
+  // Kafka error code. 0 for OK.
+  ErrorCode error_code;
+
+  // Response message.
+  std::string msg;
+
+  uint64_t timestamp_ns;
+
+  std::string ToString() const {
+    return absl::Substitute("timestamp=$0 error_code=$1 msg=$2", timestamp_ns,
+                            magic_enum::enum_name(error_code), msg);
+  }
+};
+
+struct Record {
+  Request req;
+  Response resp;
+
+  // Debug information.
+  std::string px_info = "";
+
+  std::string ToString() const {
+    return absl::Substitute("req=[$0] resp=[$1]", req.ToString(), resp.ToString());
+  }
+};
+
+struct ProtocolTraits {
+  using frame_type = Packet;
+  using record_type = Record;
+  using state_type = NoState;
 };
 
 }  // namespace kafka

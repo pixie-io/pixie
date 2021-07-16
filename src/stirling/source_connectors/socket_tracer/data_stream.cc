@@ -191,6 +191,7 @@ template void DataStream::ProcessBytesToFrames<protocols::cass::Frame>(MessageTy
 template void DataStream::ProcessBytesToFrames<protocols::pgsql::RegularMessage>(MessageType type);
 template void DataStream::ProcessBytesToFrames<protocols::dns::Frame>(MessageType type);
 template void DataStream::ProcessBytesToFrames<protocols::redis::Message>(MessageType type);
+template void DataStream::ProcessBytesToFrames<protocols::kafka::Packet>(MessageType type);
 
 void DataStream::Reset() {
   data_buffer_.Reset();

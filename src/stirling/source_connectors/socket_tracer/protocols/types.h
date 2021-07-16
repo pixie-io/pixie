@@ -25,6 +25,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/dns/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/http2/types.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/mysql/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/nats/types.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/pgsql/types.h"
@@ -43,6 +44,7 @@ using FrameDequeVariant = std::variant<std::monostate,
                                        std::deque<pgsql::RegularMessage>,
                                        std::deque<dns::Frame>,
                                        std::deque<redis::Message>,
+                                       std::deque<kafka::Packet>,
                                        std::deque<nats::Message>>;
 // clang-format off
 
