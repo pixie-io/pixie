@@ -103,7 +103,7 @@ class BinaryDecoder {
     return ExtractStringUntil<TCharType>(std::basic_string_view<TCharType>(sentinel));
   }
 
- private:
+ protected:
   std::string_view buf_;
 };
 

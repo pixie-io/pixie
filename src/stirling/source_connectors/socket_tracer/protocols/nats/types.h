@@ -21,6 +21,8 @@
 #include <string>
 #include <string_view>
 
+#include <absl/container/flat_hash_map.h>
+
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/event_parser.h"  // For FrameBase
 
 namespace px {

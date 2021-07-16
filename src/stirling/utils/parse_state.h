@@ -21,6 +21,8 @@
 #include <string>
 #include <vector>
 
+#include "src/common/base/base.h"
+
 namespace px {
 namespace stirling {
 
@@ -49,6 +51,16 @@ enum class ParseState {
   // Input buffer is consumed, and the parsed output element is valid.
   kSuccess,
 };
+
+inline ParseState TranslateStatus(const Status& status) {
+  if (error::IsNotFound(status) || error::IsResourceUnavailable(status)) {
+    return ParseState::kNeedsMoreData;
+  }
+  if (!status.ok()) {
+    return ParseState::kInvalid;
+  }
+  return ParseState::kSuccess;
+}
 
 }  // namespace stirling
 }  // namespace px

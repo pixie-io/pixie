@@ -20,6 +20,7 @@
 
 #include <string_view>
 
+#include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
 #include "src/stirling/source_connectors/socket_tracer/protocols/nats/types.h"
 
 namespace px {
@@ -29,12 +30,19 @@ namespace nats {
 
 size_t FindMessageBoundary(std::string_view buf, size_t start_pos);
 
+Status ParseMessage(std::string_view* buf, Message* msg);
+
 }  // namespace nats
 
 template <>
 inline size_t FindFrameBoundary<nats::Message>(MessageType /*type*/, std::string_view buf,
                                                size_t start_pos) {
   return nats::FindMessageBoundary(buf, start_pos);
+}
+
+template <>
+inline ParseState ParseFrame(MessageType /*type*/, std::string_view* buf, nats::Message* msg) {
+  return TranslateStatus(nats::ParseMessage(buf, msg));
 }
 
 }  // namespace protocols
