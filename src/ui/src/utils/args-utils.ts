@@ -51,7 +51,7 @@ export function validateArgs(vis: Vis, args: Arguments): VizierQueryError|null {
 
   for (const { name, defaultValue, validValues } of vis?.variables) {
     if (defaultValue == null && (args[name] == null || args[name] === '')) {
-      errors.push(`Missing value for required arg ${name}.`);
+      errors.push(`Missing value for required arg \`${name}\`.`);
     } else if (validValues?.length) {
       let vals = defaultValue ?? args[name];
       if (!Array.isArray(vals)) vals = [vals];
