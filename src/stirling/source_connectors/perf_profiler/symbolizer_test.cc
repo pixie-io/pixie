@@ -34,7 +34,7 @@ void bar() { LOG(INFO) << "bar()."; }
 namespace px {
 namespace stirling {
 
-using ::testing::Contains;
+using ::testing::AnyOfArray;
 
 class SymbolCacheTest : public ::testing::Test {
  protected:
@@ -214,13 +214,13 @@ TEST(SymbolizerTest, Basic) {
 
   {
     auto symbolize = symbolizer.GetSymbolizerFn(profiler::kKernelUPID);
-    EXPECT_THAT(possible_k_syms, Contains(std::string(symbolize(kaddr))));
+    EXPECT_THAT(std::string(symbolize(kaddr)), AnyOfArray(possible_k_syms));
     EXPECT_EQ(symbolizer.stat_accesses(), 5);
     EXPECT_EQ(symbolizer.stat_hits(), 2);
   }
   {
     auto symbolize = symbolizer.GetSymbolizerFn(profiler::kKernelUPID);
-    EXPECT_THAT(possible_k_syms, Contains(std::string(symbolize(kaddr))));
+    EXPECT_THAT(std::string(symbolize(kaddr)), AnyOfArray(possible_k_syms));
     EXPECT_EQ(symbolizer.stat_accesses(), 6);
     EXPECT_EQ(symbolizer.stat_hits(), 3);
   }
@@ -244,7 +244,7 @@ TEST(SymbolizerTest, Basic) {
   }
   {
     auto symbolize = symbolizer.GetSymbolizerFn(profiler::kKernelUPID);
-    EXPECT_THAT(possible_k_syms, Contains(std::string(symbolize(kaddr))));
+    EXPECT_THAT(std::string(symbolize(kaddr)), AnyOfArray(possible_k_syms));
     EXPECT_EQ(symbolizer.stat_accesses(), 9);
     EXPECT_EQ(symbolizer.stat_hits(), 3);
   }
@@ -262,7 +262,7 @@ TEST(SymbolizerTest, Basic) {
   }
   {
     auto symbolize = symbolizer.GetSymbolizerFn(profiler::kKernelUPID);
-    EXPECT_THAT(possible_k_syms, Contains(std::string(symbolize(kaddr))));
+    EXPECT_THAT(std::string(symbolize(kaddr)), AnyOfArray(possible_k_syms));
     EXPECT_EQ(symbolizer.stat_accesses(), 12);
     EXPECT_EQ(symbolizer.stat_hits(), 6);
   }
@@ -284,7 +284,7 @@ TEST(SymbolizerTest, Basic) {
   }
   {
     auto symbolize = symbolizer.GetSymbolizerFn(profiler::kKernelUPID);
-    EXPECT_THAT(possible_k_syms, Contains(std::string(symbolize(kaddr))));
+    EXPECT_THAT(std::string(symbolize(kaddr)), AnyOfArray(possible_k_syms));
     EXPECT_EQ(symbolizer.stat_accesses(), 12);
     EXPECT_EQ(symbolizer.stat_hits(), 6);
   }
