@@ -84,47 +84,53 @@ StatusOr<std::string> PacketDecoder::ExtractNullableString() {
 }
 
 /*
- * Message Struct Parsers
+ * Header Parsers
  */
 
-Status ParseReqHeader(PacketDecoder* decoder, Request* req) {
-  PL_ASSIGN_OR_RETURN(int16_t api_key, decoder->ExtractInt16());
+Status PacketDecoder::ExtractReqHeader(Request* req) {
+  PL_ASSIGN_OR_RETURN(int16_t api_key, ExtractInt16());
   req->api_key = static_cast<APIKey>(api_key);
-  PL_ASSIGN_OR_RETURN(req->api_version, decoder->ExtractInt16());
+
+  PL_ASSIGN_OR_RETURN(req->api_version, ExtractInt16());
+  this->set_api_version(req->api_version);
+
   // Extract correlation_id.
-  PL_RETURN_IF_ERROR(decoder->ExtractInt32());
-  PL_ASSIGN_OR_RETURN(req->client_id, decoder->ExtractNullableString());
+  PL_RETURN_IF_ERROR(ExtractInt32());
+  PL_ASSIGN_OR_RETURN(req->client_id, ExtractNullableString());
   return Status::OK();
 }
 
-Status ParseRespHeader(PacketDecoder* decoder, Response* /*resp*/) {
+Status PacketDecoder::ExtractRespHeader(Response* /*resp*/) {
   // Extract correlation_id.
-  PL_RETURN_IF_ERROR(decoder->ExtractInt32());
+  PL_RETURN_IF_ERROR(ExtractInt32());
   return Status::OK();
 }
+
+/*
+ * Message struct Parsers
+ */
 
 // TODO(chengruizhe): Add support for ProduceReq V9. It requires parsing compact strings, compact
 //  records, and tag buffers.
 // Documentation: https://kafka.apache.org/protocol.html#The_Messages_Produce
-StatusOr<ProduceReq> ParseProduceReq(PacketDecoder* decoder, int16_t api_version) {
+StatusOr<ProduceReq> PacketDecoder::ExtractProduceReq() {
   ProduceReq r;
-  if (api_version >= 3) {
-    PL_ASSIGN_OR_RETURN(r.transactional_id, decoder->ExtractNullableString());
+  if (api_version_ >= 3) {
+    PL_ASSIGN_OR_RETURN(r.transactional_id, ExtractNullableString());
   }
 
-  PL_ASSIGN_OR_RETURN(r.acks, decoder->ExtractInt16());
-  PL_ASSIGN_OR_RETURN(r.timeout_ms, decoder->ExtractInt32());
-  PL_ASSIGN_OR_RETURN(r.num_topics, decoder->ExtractInt32());
+  PL_ASSIGN_OR_RETURN(r.acks, ExtractInt16());
+  PL_ASSIGN_OR_RETURN(r.timeout_ms, ExtractInt32());
+  PL_ASSIGN_OR_RETURN(r.num_topics, ExtractInt32());
 
   // TODO(chengruizhe): Add parsing of TopicData, and its downstream structs.
   return r;
 }
 
-StatusOr<ProduceResp> ParseProduceResp(PacketDecoder* decoder, int16_t api_version) {
+StatusOr<ProduceResp> PacketDecoder::ExtractProduceResp() {
   ProduceResp r;
 
-  PL_UNUSED(api_version);
-  PL_ASSIGN_OR_RETURN(r.num_responses, decoder->ExtractInt32());
+  PL_ASSIGN_OR_RETURN(r.num_responses, ExtractInt32());
 
   // TODO(chengruizhe): Add parsing of the responses and partitions.
   return r;

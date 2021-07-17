@@ -23,6 +23,8 @@
 #include <rapidjson/writer.h>
 #include <map>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "src/common/base/base.h"
 #include "src/common/json/json.h"
@@ -119,20 +121,72 @@ class PacketDecoder {
   // bytes.
   StatusOr<std::string> ExtractNullableString();
 
+  // ARRAY. Represents a sequence of objects of a given type T. Type T can be either a primitive
+  // type (e.g. STRING) or a structure. First, the length N is given as an INT32. Then N instances
+  // of type T follow. A null array is represented with a length of -1.
+  template <typename T>
+  StatusOr<std::vector<T>> ExtractArray(StatusOr<T> (PacketDecoder::*extract_func)()) {
+    constexpr int kNullSize = -1;
+
+    PL_ASSIGN_OR_RETURN(int32_t len, ExtractInt32());
+    if (len < kNullSize) {
+      return error::Internal("Length of array cannot be negative.");
+    }
+    if (len == kNullSize) {
+      return std::vector<T>();
+    }
+
+    std::vector<T> result;
+    result.reserve(len);
+    for (int i = 0; i < len; ++i) {
+      PL_ASSIGN_OR_RETURN(T tmp, (this->*extract_func)());
+      result.push_back(std::move(tmp));
+    }
+    return result;
+  }
+
+  // COMPACT ARRAY. Represents a sequence of objects of a given type T. Type T can be either a
+  // primitive type (e.g. STRING) or a structure. First, the length N + 1 is given as an
+  // UNSIGNED_VARINT. Then N instances of type T follow. A null array is represented with a length
+  // of 0.
+  template <typename T>
+  StatusOr<std::vector<T>> ExtractCompactArray(StatusOr<T> (PacketDecoder::*extract_func)()) {
+    PL_ASSIGN_OR_RETURN(int32_t len, ExtractUnsignedVarint());
+    if (len < 0) {
+      return error::Internal("Length of array cannot be negative.");
+    }
+    if (len == 0) {
+      return std::vector<T>();
+    }
+    // Length N + 1 is encoded.
+    len -= 1;
+
+    std::vector<T> result;
+    result.reserve(len);
+    for (int i = 0; i < len; ++i) {
+      PL_ASSIGN_OR_RETURN(T tmp, (this->*extract_func)());
+      result.push_back(std::move(tmp));
+    }
+    return result;
+  }
+
+  Status ExtractReqHeader(Request* req);
+  Status ExtractRespHeader(Response* resp);
+
+  StatusOr<ProduceReq> ExtractProduceReq();
+  StatusOr<ProduceResp> ExtractProduceResp();
+
   bool eof() { return binary_decoder_.eof(); }
+
+  void set_api_version(int16_t api_version) { api_version_ = api_version; }
 
  private:
   template <typename TCharType>
   StatusOr<std::basic_string<TCharType>> ExtractBytesCore(int16_t len);
 
   BinaryDecoder binary_decoder_;
+  int16_t api_version_ = 0;
 };
-
-Status ParseReqHeader(PacketDecoder* decoder, Request* req);
-Status ParseRespHeader(PacketDecoder* decoder, Response* resp);
-
-StatusOr<ProduceReq> ParseProduceReq(PacketDecoder* decoder, int16_t api_version);
-StatusOr<ProduceResp> ParseProduceResp(PacketDecoder* decoder, int16_t api_version);
 
 }  // namespace kafka
 }  // namespace protocols

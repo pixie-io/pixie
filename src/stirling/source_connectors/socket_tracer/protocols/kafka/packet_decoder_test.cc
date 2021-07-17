@@ -27,6 +27,9 @@ namespace stirling {
 namespace protocols {
 namespace kafka {
 
+using ::testing::ElementsAre;
+using ::testing::IsEmpty;
+
 template <typename T>
 struct PacketDecoderTestCase {
   std::string input;
@@ -85,6 +88,36 @@ INSTANTIATE_TEST_SUITE_P(
         PacketDecoderTestCase<int32_t>{std::string("\x81\x80\x80\x80\x01", 5), -134217729},
         PacketDecoderTestCase<int32_t>{std::string("\xFE\xFF\xFF\xFF\x0F", 5), INT_MAX},
         PacketDecoderTestCase<int32_t>{std::string("\xFF\xFF\xFF\xFF\x0F", 5), INT_MIN}));
+
+TEST(KafkaPacketDecoderTest, ExtractArray) {
+  std::string_view input = CreateStringView<char>(
+      "\x00\x00\x00\x05"
+      "\x00\x00\x00\x01"
+      "\x00\x00\x00\x02"
+      "\x00\x00\x00\x03"
+      "\x00\x00\x00\x04"
+      "\x00\x00\x00\x05");
+
+  PacketDecoder decoder = PacketDecoder(input);
+  EXPECT_OK_AND_THAT(decoder.ExtractArray(&PacketDecoder::ExtractInt32),
+                     ElementsAre(1, 2, 3, 4, 5));
+}
+
+TEST(KafkaPacketDecoderTest, ExtractCompactArray) {
+  // Test null array.
+  std::string null_input = std::string("\x00", 1);
+  PacketDecoder decoder = PacketDecoder(null_input);
+  EXPECT_OK_AND_THAT(decoder.ExtractCompactArray(&PacketDecoder::ExtractInt32), IsEmpty());
+
+  // Test array of strings.
+  std::string_view input = CreateStringView<char>(
+      "\x03"
+      "\x00\x05Hello"
+      "\x00\x06World!");
+  decoder = PacketDecoder(input);
+  EXPECT_OK_AND_THAT(decoder.ExtractCompactArray(&PacketDecoder::ExtractString),
+                     ElementsAre("Hello", "World!"));
+}
 
 }  // namespace kafka
 }  // namespace protocols

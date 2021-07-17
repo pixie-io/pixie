@@ -33,14 +33,14 @@ namespace protocols {
 namespace kafka {
 
 Status ProcessProduceReq(PacketDecoder* decoder, Request* req) {
-  PL_ASSIGN_OR_RETURN(ProduceReq r, ParseProduceReq(decoder, req->api_version));
+  PL_ASSIGN_OR_RETURN(ProduceReq r, decoder->ExtractProduceReq());
 
   req->msg = r.ToJSONString();
   return Status::OK();
 }
 
-Status ProcessProduceResp(PacketDecoder* decoder, Response* resp, int16_t api_version) {
-  PL_ASSIGN_OR_RETURN(ProduceResp r, ParseProduceResp(decoder, api_version));
+Status ProcessProduceResp(PacketDecoder* decoder, Response* resp) {
+  PL_ASSIGN_OR_RETURN(ProduceResp r, decoder->ExtractProduceResp());
 
   resp->msg = r.ToJSONString();
   return Status::OK();
@@ -49,7 +49,8 @@ Status ProcessProduceResp(PacketDecoder* decoder, Response* resp, int16_t api_ve
 Status ProcessReq(Packet* req_packet, Request* req) {
   PacketDecoder decoder(*req_packet);
 
-  PL_RETURN_IF_ERROR(ParseReqHeader(&decoder, req));
+  // Extracts api_key, api_version, and correlation_id.
+  PL_RETURN_IF_ERROR(decoder.ExtractReqHeader(req));
 
   switch (req->api_key) {
     case APIKey::kProduce:
@@ -63,12 +64,13 @@ Status ProcessReq(Packet* req_packet, Request* req) {
 
 Status ProcessResp(Packet* resp_packet, Response* resp, APIKey api_key, int16_t api_version) {
   PacketDecoder decoder(*resp_packet);
+  decoder.set_api_version(api_version);
 
-  PL_RETURN_IF_ERROR(ParseRespHeader(&decoder, resp));
+  PL_RETURN_IF_ERROR(decoder.ExtractRespHeader(resp));
 
   switch (api_key) {
     case APIKey::kProduce:
-      return ProcessProduceResp(&decoder, resp, api_version);
+      return ProcessProduceResp(&decoder, resp);
     // TODO(chengruizhe): Add support for more api keys.
     default:
       return error::Internal("Unhandled cmd $0", magic_enum::enum_name(api_key));
