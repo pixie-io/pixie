@@ -31,8 +31,7 @@ program = """
 
 kprobe:md_flush_request
 {
-	time("%H:%M:%S ");
-	printf(\"_pid:%d _comm:%s _device:%s\", pid, comm,((struct bio *)arg1)->bi_disk->disk_name);
+	printf(\"time:%s pid:%d comm:%s device:%s\", strftime("%H:%M:%S", nsecs), pid, comm,((struct bio *)arg1)->bi_disk->disk_name);
 }
 """
 def md_flush_func():
