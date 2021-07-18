@@ -75,8 +75,7 @@ kprobe:cap_capable
 {
 	$cap = arg2;
 	$audit = arg3;
-	time("%H:%M:%S  ");
-    printf(\"_uid:%d _pid:%d _comm:%s _cap:%d _cap_name:%s _audit:%d \", uid, pid, comm, $cap, @cap[$cap], $audit);
+  printf(\"time:%s uid:%d pid:%d comm:%s cap:%d name:%s audit:%d\",strftime("%H:%M:%S", nsecs), uid, pid, comm, $cap, @cap[$cap], $audit);
 }
 
 END
