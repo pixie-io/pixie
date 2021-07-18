@@ -40,7 +40,8 @@ kprobe:lookup_fast,
 kprobe:lookup_fast.constprop.*
 {
 	$nd = (struct nameidata *)arg0;
-	printf(\"_pid:%d _comm:%s _file:%s\", pid, comm, str($nd->last.name));
+        $t = "R";
+	printf(\"time:%s pid:%d comm:%s t:%s file:%s\", strftime("%H:%M:%S", nsecs), pid, comm, $t, str($nd->last.name));
 }
 """
 def dc_snoop_func():
