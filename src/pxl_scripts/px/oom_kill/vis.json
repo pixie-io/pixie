@@ -15,7 +15,7 @@
       "position": {
         "x": 0,
         "y": 0,
-        "w": 5,
+        "w": 10,
         "h": 5
       },
       "globalFuncOutputName": "results",
