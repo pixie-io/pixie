@@ -34,8 +34,7 @@ program = """
 tracepoint:syscalls:sys_enter_nanosleep
 {
 	$task = (struct task_struct *)curtask;
-	time("%H:%M:%S ");
-	printf(\"_ppid:%d _pcomm:%s _pid:%d _comm:%s\", $task->real_parent->pid, $task->real_parent->comm, pid, comm);
+	printf(\"time:%s ppid:%d pcomm:%s pid:%d comm:%s\", strftime("%H:%M:%S", nsecs), $task->real_parent->pid, $task->real_parent->comm, pid, comm);
 }
 """
 def nap_time_func():
