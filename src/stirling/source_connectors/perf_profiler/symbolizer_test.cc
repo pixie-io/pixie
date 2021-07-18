@@ -22,6 +22,7 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizer.h"
+#include "src/stirling/testing/symbolization.h"
 
 namespace test {
 // foo() & bar() are not used directly, but in this test,
@@ -36,52 +37,51 @@ const uintptr_t kBarAddr = reinterpret_cast<uintptr_t>(&test::bar);
 namespace px {
 namespace stirling {
 
-using ::testing::AnyOfArray;
-
-class SymbolCacheTest : public ::testing::Test {
- protected:
-  bpf_tools::BCCSymbolizer bcc_symbolizer_;
+class SymbolizerTest : public ::testing::Test {
+ public:
+  SymbolizerTest() = default;
+  void SetUp() override { ASSERT_OK_AND_ASSIGN(symbolizer_, BCCSymbolizer::Create()); }
+  std::unique_ptr<Symbolizer> symbolizer_;
 };
 
+TEST_F(SymbolizerTest, UserSymbols) {
+  // We will use our self pid for symbolizing symbols from within this process.
+  struct upid_t this_upid;
+  this_upid.pid = static_cast<uint32_t>(getpid());
+  this_upid.start_time_ticks = 0;
+
+  // Lookup the addresses for the first time. These should be cache misses.
+  // We are placing each symbol lookup into its own scope to force us to
+  // "re-lookup" the pid symbolizer function from inside of the symbolize instance.
+  {
+    auto symbolize = symbolizer_->GetSymbolizerFn(this_upid);
+    EXPECT_EQ(symbolize(kFooAddr), "test::foo()");
+  }
+  {
+    auto symbolize = symbolizer_->GetSymbolizerFn(this_upid);
+    EXPECT_EQ(symbolize(kBarAddr), "test::bar()");
+  }
+}
+
+TEST_F(SymbolizerTest, KernelSymbols) {
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<Symbolizer> symbolizer, BCCSymbolizer::Create());
+
+  std::string_view kSymbolName = "cpu_detect";
+  ASSERT_OK_AND_ASSIGN(uint64_t kaddr, GetKernelSymAddr(kSymbolName));
+
+  {
+    auto symbolize = symbolizer_->GetSymbolizerFn(profiler::kKernelUPID);
+    EXPECT_EQ(std::string(symbolize(kaddr)), kSymbolName);
+  }
+}
+
 // Test the symbolizer with caching enabled and disabled.
-TEST(SymbolizerTest, Basic) {
-  // TODO(jps): consider splitting into 3 tests:
-  // ... 1. for user symbolization
-  // ... 2. for kernel symbolization
-  // ... 3. for caching
-  static constexpr auto kProbeSpecs = MakeArray<bpf_tools::KProbeSpec>(
-      {{"getpid", bpf_tools::BPFProbeAttachType::kEntry, "syscall__get_pid"}});
-
-  bpf_tools::BCCWrapper bcc_wrapper;
-
-  const std::string_view kProgram = R"(
-    #include <linux/ptrace.h>
-    BPF_ARRAY(kaddr_array, u64, 1);
-    int syscall__get_pid(struct pt_regs* ctx) {
-        int kIndex = 0;
-        u64* p = kaddr_array.lookup(&kIndex);
-        if( p == NULL ) {
-            return 0;
-        }
-        unsigned long long int some_kaddr = PT_REGS_IP(ctx);
-        *p = some_kaddr;
-        return 0;
-    }
-  )";
-
-  ASSERT_OK(bcc_wrapper.InitBPFProgram(kProgram));
-  ASSERT_OK(bcc_wrapper.AttachKProbes(kProbeSpecs));
-
-  ebpf::BPFArrayTable<uint64_t> kaddr_array = bcc_wrapper.GetArrayTable<uint64_t>("kaddr_array");
-
+TEST_F(SymbolizerTest, Caching) {
   // We will use our self pid for symbolizing symbols from within this process,
   // *and* we will trigger the kprobe that grabs a symbol from the kernel.
   const uint32_t pid = getpid();
 
-  FLAGS_stirling_profiler_symcache = true;
-
-  ASSERT_OK_AND_ASSIGN(std::unique_ptr<Symbolizer> symbolizer_uptr, BCCSymbolizer::Create());
-  BCCSymbolizer& symbolizer = *static_cast<BCCSymbolizer*>(symbolizer_uptr.get());
+  BCCSymbolizer& symbolizer = *static_cast<BCCSymbolizer*>(symbolizer_.get());
 
   const struct upid_t this_upid = {.pid = pid, .start_time_ticks = 0};
 
@@ -116,24 +116,18 @@ TEST(SymbolizerTest, Basic) {
     EXPECT_EQ(symbolizer.stat_hits(), 2);
   }
 
-  // We see different kernel symbols on different hosts (not 100% sure why).
-  // on our dev. host 'enigma' we see: __x64_sys_getpid
-  // on our Jenkins test hosts we see: sys_getpid
-  const std::set<std::string> possible_k_syms = {"__x64_sys_getpid", "__ia32_sys_getpid",
-                                                 "sys_getpid"};
-
-  uintptr_t kaddr = 0ULL;
-  kaddr_array.get_value(0, kaddr);
+  std::string_view kSymbolName = "cpu_detect";
+  ASSERT_OK_AND_ASSIGN(uint64_t kaddr, GetKernelSymAddr(kSymbolName));
 
   {
     auto symbolize = symbolizer.GetSymbolizerFn(profiler::kKernelUPID);
-    EXPECT_THAT(std::string(symbolize(kaddr)), AnyOfArray(possible_k_syms));
+    EXPECT_EQ(std::string(symbolize(kaddr)), kSymbolName);
     EXPECT_EQ(symbolizer.stat_accesses(), 5);
     EXPECT_EQ(symbolizer.stat_hits(), 2);
   }
   {
     auto symbolize = symbolizer.GetSymbolizerFn(profiler::kKernelUPID);
-    EXPECT_THAT(std::string(symbolize(kaddr)), AnyOfArray(possible_k_syms));
+    EXPECT_EQ(std::string(symbolize(kaddr)), kSymbolName);
     EXPECT_EQ(symbolizer.stat_accesses(), 6);
     EXPECT_EQ(symbolizer.stat_hits(), 3);
   }
@@ -157,7 +151,7 @@ TEST(SymbolizerTest, Basic) {
   }
   {
     auto symbolize = symbolizer.GetSymbolizerFn(profiler::kKernelUPID);
-    EXPECT_THAT(std::string(symbolize(kaddr)), AnyOfArray(possible_k_syms));
+    EXPECT_EQ(std::string(symbolize(kaddr)), kSymbolName);
     EXPECT_EQ(symbolizer.stat_accesses(), 9);
     EXPECT_EQ(symbolizer.stat_hits(), 3);
   }
@@ -175,7 +169,7 @@ TEST(SymbolizerTest, Basic) {
   }
   {
     auto symbolize = symbolizer.GetSymbolizerFn(profiler::kKernelUPID);
-    EXPECT_THAT(std::string(symbolize(kaddr)), AnyOfArray(possible_k_syms));
+    EXPECT_EQ(std::string(symbolize(kaddr)), kSymbolName);
     EXPECT_EQ(symbolizer.stat_accesses(), 12);
     EXPECT_EQ(symbolizer.stat_hits(), 6);
   }
@@ -197,7 +191,7 @@ TEST(SymbolizerTest, Basic) {
   }
   {
     auto symbolize = symbolizer.GetSymbolizerFn(profiler::kKernelUPID);
-    EXPECT_THAT(std::string(symbolize(kaddr)), AnyOfArray(possible_k_syms));
+    EXPECT_EQ(std::string(symbolize(kaddr)), kSymbolName);
     EXPECT_EQ(symbolizer.stat_accesses(), 12);
     EXPECT_EQ(symbolizer.stat_hits(), 6);
   }

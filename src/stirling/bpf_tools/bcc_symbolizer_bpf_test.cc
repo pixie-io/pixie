@@ -22,6 +22,7 @@
 #include "src/common/base/file.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/bpf_tools/bcc_symbolizer.h"
+#include "src/stirling/testing/symbolization.h"
 
 // Some functions for which we'll lookup symbols by address.
 namespace test {
@@ -56,26 +57,9 @@ TEST(BCCSymbolizerTest, SymbolOrAddrIfUnknown) {
   EXPECT_EQ(symbolizer.SymbolOrAddrIfUnknown(123, pid), "0x000000000000007b");
 }
 
-// Finds the address of a given kernel symbol from /proc/kallsyms.
-StatusOr<uint64_t> GetKernelSymInfo(std::string_view symbol_name) {
-  PL_ASSIGN_OR_RETURN(const std::string kallsyms, px::ReadFileToString("/proc/kallsyms"));
-
-  // Example line from /proc/kallsyms:
-  // ffffffffa60b0ee0 T __x64_sys_getpid
-  for (std::string_view line : absl::StrSplit(kallsyms, "\n")) {
-    if (absl::EndsWith(line, absl::Substitute(" T $0", symbol_name))) {
-      std::vector<std::string_view> tokens = absl::StrSplit(line, " ");
-      std::string addr_str(tokens[0]);
-      return std::stoull(addr_str.data(), NULL, 16);
-    }
-  }
-
-  return error::NotFound("Could not find $0", symbol_name);
-}
-
 TEST(BCCSymbolizer, KernelSymbol) {
   std::string_view kSymbolName = "cpu_detect";
-  ASSERT_OK_AND_ASSIGN(uint64_t sym_addr, GetKernelSymInfo(kSymbolName));
+  ASSERT_OK_AND_ASSIGN(uint64_t sym_addr, GetKernelSymAddr(kSymbolName));
 
   BCCSymbolizer symbolizer;
   EXPECT_EQ(symbolizer.Symbol(sym_addr, BCCSymbolizer::kKernelPID), kSymbolName);
