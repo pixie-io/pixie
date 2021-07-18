@@ -23,9 +23,9 @@
 namespace px {
 namespace stirling {
 
-SymbolCache::Symbol::Symbol(bpf_tools::BCCSymbolizer* bcc_symbolizer, const uintptr_t addr,
-                            const int pid)
-    : symbol_(bcc_symbolizer->SymbolOrAddrIfUnknown(addr, pid)) {}
+SymbolCache::Symbol::Symbol(std::function<std::string_view(const uintptr_t)> symbolizer_fn,
+                            const uintptr_t addr)
+    : symbol_(symbolizer_fn(addr)) {}
 
 SymbolCache::LookupResult SymbolCache::Lookup(const uintptr_t addr) {
   // Check old cache first, and move result to new cache if we have a hit.
@@ -40,7 +40,7 @@ SymbolCache::LookupResult SymbolCache::Lookup(const uintptr_t addr) {
   }
 
   // If not in old cache, try the new cache (with automatic insertion if required).
-  const auto [iter, inserted] = cache_.try_emplace(addr, symbolizer_, addr, pid_);
+  const auto [iter, inserted] = cache_.try_emplace(addr, symbolizer_fn_, addr);
   return SymbolCache::LookupResult{iter->second.symbol_, !inserted};
 }
 

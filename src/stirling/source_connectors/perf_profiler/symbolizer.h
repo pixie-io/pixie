@@ -81,8 +81,8 @@ class BCCSymbolizer : public Symbolizer, public NotCopyMoveable {
 
  private:
   BCCSymbolizer() = default;
-  Status Init();
-  std::string_view Symbolize(SymbolCache* symbol_cache, const int pid, const uintptr_t addr);
+  std::string_view SymbolizeCached(SymbolCache* symbol_cache, const uintptr_t addr);
+  std::string_view SymbolizeUncached(const uintptr_t addr, const int pid);
 
   bpf_tools::BCCSymbolizer bcc_symbolizer_;
 

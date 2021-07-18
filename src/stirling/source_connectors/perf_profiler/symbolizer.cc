@@ -18,6 +18,7 @@
 
 #include <utility>
 
+#include "src/stirling/bpf_tools/bcc_symbolizer.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizer.h"
 
 DEFINE_bool(stirling_profiler_symcache, true, "Enable the Stirling managed symbol cache.");
@@ -40,14 +41,7 @@ void BCCSymbolizer::DeleteUPID(const struct upid_t& upid) {
   bcc_symbolizer_.ReleasePIDSymCache(upid.pid);
 }
 
-std::string_view BCCSymbolizer::Symbolize(SymbolCache* symbol_cache, const int pid,
-                                          const uintptr_t addr) {
-  static std::string symbol;
-  if (!FLAGS_stirling_profiler_symcache) {
-    symbol = bcc_symbolizer_.Symbol(addr, pid);
-    return symbol;
-  }
-
+std::string_view BCCSymbolizer::SymbolizeCached(SymbolCache* symbol_cache, const uintptr_t addr) {
   ++stat_accesses_;
 
   // Symbol::Symbol(ebpf::BPFStackTable* bcc_symbolizer, const uintptr_t addr, const int pid)
@@ -61,17 +55,30 @@ std::string_view BCCSymbolizer::Symbolize(SymbolCache* symbol_cache, const int p
   return result.symbol;
 }
 
+std::string_view BCCSymbolizer::SymbolizeUncached(const uintptr_t addr, const int pid) {
+  static std::string symbol;
+  symbol = bcc_symbolizer_.SymbolOrAddrIfUnknown(addr, pid);
+  return symbol;
+}
+
 std::function<std::string_view(const uintptr_t addr)> BCCSymbolizer::GetSymbolizerFn(
     const struct upid_t& upid) {
   using std::placeholders::_1;
+
+  std::function<std::string_view(const uintptr_t addr)> fn =
+      std::bind(&BCCSymbolizer::SymbolizeUncached, this, _1, static_cast<int32_t>(upid.pid));
+  if (!FLAGS_stirling_profiler_symcache) {
+    return fn;
+  }
+
+  // If caching is enabled, we return a different symbolizer function that goes through the cache.
+  // The cache, however, uses the same basic function that we define above.
   const auto [iter, inserted] = symbol_caches_.try_emplace(upid, nullptr);
   if (inserted) {
-    iter->second = std::make_unique<SymbolCache>(upid.pid, &bcc_symbolizer_);
+    iter->second = std::make_unique<SymbolCache>(fn);
   }
   auto& cache = iter->second;
-  auto fn =
-      std::bind(&BCCSymbolizer::Symbolize, this, cache.get(), static_cast<int32_t>(upid.pid), _1);
-  return fn;
+  return std::bind(&BCCSymbolizer::SymbolizeCached, this, cache.get(), _1);
 }
 
 }  // namespace stirling

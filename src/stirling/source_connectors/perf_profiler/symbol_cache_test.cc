@@ -18,100 +18,99 @@
 
 #include <gtest/gtest.h>
 
+#include <memory>
+
 #include "src/common/testing/testing.h"
 #include "src/stirling/source_connectors/perf_profiler/symbol_cache.h"
-
-namespace test {
-// foo() & bar() are not used directly, but in this test,
-// we will find their symbols using the device under test, the symbolizer.
-void foo() { LOG(INFO) << "foo()."; }
-void bar() { LOG(INFO) << "bar()."; }
-}  // namespace test
-
-const uintptr_t kFooAddr = reinterpret_cast<uintptr_t>(&test::foo);
-const uintptr_t kBarAddr = reinterpret_cast<uintptr_t>(&test::bar);
 
 namespace px {
 namespace stirling {
 
+constexpr int kAddr1 = 123;
+constexpr int kAddr2 = 456;
+
+std::string_view SymbolizationFn(const uintptr_t addr) {
+  static std::string s;
+  s = absl::Substitute("$0", addr);
+  return s;
+}
+
 class SymbolCacheTest : public ::testing::Test {
  protected:
-  bpf_tools::BCCSymbolizer bcc_symbolizer_;
+  void SetUp() override { sym_cache_ = std::make_unique<SymbolCache>(&SymbolizationFn); }
+
+  std::unique_ptr<SymbolCache> sym_cache_;
 };
 
 TEST_F(SymbolCacheTest, Lookup) {
-  SymbolCache sym_cache(getpid(), &bcc_symbolizer_);
-
   SymbolCache::LookupResult result;
 
-  result = sym_cache.Lookup(kFooAddr);
+  result = sym_cache_->Lookup(kAddr1);
   EXPECT_EQ(result.hit, false);
-  EXPECT_EQ(result.symbol, "test::foo()");
+  EXPECT_EQ(result.symbol, "123");
 
-  result = sym_cache.Lookup(kFooAddr);
+  result = sym_cache_->Lookup(kAddr1);
   EXPECT_EQ(result.hit, true);
-  EXPECT_EQ(result.symbol, "test::foo()");
+  EXPECT_EQ(result.symbol, "123");
 
-  result = sym_cache.Lookup(kBarAddr);
+  result = sym_cache_->Lookup(kAddr2);
   EXPECT_EQ(result.hit, false);
-  EXPECT_EQ(result.symbol, "test::bar()");
+  EXPECT_EQ(result.symbol, "456");
 }
 
 TEST_F(SymbolCacheTest, EvictOldEntries) {
-  SymbolCache sym_cache(getpid(), &bcc_symbolizer_);
-
   SymbolCache::LookupResult result;
 
-  EXPECT_EQ(sym_cache.total_entries(), 0);
-  EXPECT_EQ(sym_cache.active_entries(), 0);
+  EXPECT_EQ(sym_cache_->total_entries(), 0);
+  EXPECT_EQ(sym_cache_->active_entries(), 0);
 
-  result = sym_cache.Lookup(kFooAddr);
+  result = sym_cache_->Lookup(kAddr1);
   EXPECT_EQ(result.hit, false);
-  EXPECT_EQ(result.symbol, "test::foo()");
+  EXPECT_EQ(result.symbol, "123");
 
-  result = sym_cache.Lookup(kBarAddr);
+  result = sym_cache_->Lookup(kAddr2);
   EXPECT_EQ(result.hit, false);
-  EXPECT_EQ(result.symbol, "test::bar()");
+  EXPECT_EQ(result.symbol, "456");
 
-  EXPECT_EQ(sym_cache.total_entries(), 2);
-  EXPECT_EQ(sym_cache.active_entries(), 2);
+  EXPECT_EQ(sym_cache_->total_entries(), 2);
+  EXPECT_EQ(sym_cache_->active_entries(), 2);
 
-  sym_cache.CreateNewGeneration();
+  sym_cache_->CreateNewGeneration();
 
-  EXPECT_EQ(sym_cache.total_entries(), 2);
-  EXPECT_EQ(sym_cache.active_entries(), 0);
+  EXPECT_EQ(sym_cache_->total_entries(), 2);
+  EXPECT_EQ(sym_cache_->active_entries(), 0);
 
-  result = sym_cache.Lookup(kFooAddr);
+  result = sym_cache_->Lookup(kAddr1);
   EXPECT_EQ(result.hit, true);
-  EXPECT_EQ(result.symbol, "test::foo()");
+  EXPECT_EQ(result.symbol, "123");
 
-  EXPECT_EQ(sym_cache.total_entries(), 2);
-  EXPECT_EQ(sym_cache.active_entries(), 1);
+  EXPECT_EQ(sym_cache_->total_entries(), 2);
+  EXPECT_EQ(sym_cache_->active_entries(), 1);
 
-  sym_cache.CreateNewGeneration();
+  sym_cache_->CreateNewGeneration();
 
-  EXPECT_EQ(sym_cache.total_entries(), 1);
-  EXPECT_EQ(sym_cache.active_entries(), 0);
+  EXPECT_EQ(sym_cache_->total_entries(), 1);
+  EXPECT_EQ(sym_cache_->active_entries(), 0);
 
   // Don't lookup test::foo() in this interval.
   // Should cause it to get evicted from the cache after the next trigger.
 
-  sym_cache.CreateNewGeneration();
+  sym_cache_->CreateNewGeneration();
 
-  EXPECT_EQ(sym_cache.total_entries(), 0);
-  EXPECT_EQ(sym_cache.active_entries(), 0);
+  EXPECT_EQ(sym_cache_->total_entries(), 0);
+  EXPECT_EQ(sym_cache_->active_entries(), 0);
 
-  sym_cache.CreateNewGeneration();
+  sym_cache_->CreateNewGeneration();
 
-  EXPECT_EQ(sym_cache.total_entries(), 0);
-  EXPECT_EQ(sym_cache.active_entries(), 0);
+  EXPECT_EQ(sym_cache_->total_entries(), 0);
+  EXPECT_EQ(sym_cache_->active_entries(), 0);
 
-  result = sym_cache.Lookup(kFooAddr);
+  result = sym_cache_->Lookup(kAddr1);
   EXPECT_EQ(result.hit, false);
-  EXPECT_EQ(result.symbol, "test::foo()");
+  EXPECT_EQ(result.symbol, "123");
 
-  EXPECT_EQ(sym_cache.total_entries(), 1);
-  EXPECT_EQ(sym_cache.active_entries(), 1);
+  EXPECT_EQ(sym_cache_->total_entries(), 1);
+  EXPECT_EQ(sym_cache_->active_entries(), 1);
 }
 
 }  // namespace stirling
