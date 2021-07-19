@@ -25,6 +25,7 @@
 #include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
 #include "src/stirling/bpf_tools/bcc_symbolizer.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
+#include "src/stirling/obj_tools/elf_tools.h"
 #include "src/stirling/source_connectors/perf_profiler/symbol_cache.h"
 #include "src/stirling/source_connectors/perf_profiler/types.h"
 
@@ -38,6 +39,13 @@ static constexpr upid_t kKernelUPID = {
     .pid = static_cast<uint32_t>(bpf_tools::BCCSymbolizer::kKernelPID), .start_time_ticks = 0};
 }  // namespace profiler
 
+/**
+ * Symbolizer: provides an API to resolve a program address to a symbol.
+ *
+ * A typical use case looks like this:
+ *   auto symbolize_fn = symbolizer.GetSymbolizerFn(upid);
+ *   const std::string symbol = symbolize_fn(addr);
+ */
 class Symbolizer {
  public:
   virtual ~Symbolizer() = default;
@@ -55,18 +63,7 @@ class Symbolizer {
 };
 
 /**
- * Symbolizer: provides an API to resolve a program address to a symbol.
- * If FLAGS_stirling_profiler_symcache==true, it attempts to find the symbol
- * in its own symbol cache (i.e. because we believe the BCC side symbol
- * cache is less efficient).
- *
- * Symbolizer creates a 'bpf stack table' solely to gain access to the BCC
- * symbolization API (the underlying BPF shared map and BPF program are not used).
- *
- * A typical use case looks like this:
- *   auto symbolize_fn = symbolizer.GetSymbolizerFn(upid);
- *   const std::string symbol = symbolize_fn(addr);
- *
+ * A Symbolizer that uses BCC's symbolizer under the hood.
  */
 class BCCSymbolizer : public Symbolizer, public NotCopyMoveable {
  public:
@@ -89,6 +86,26 @@ class BCCSymbolizer : public Symbolizer, public NotCopyMoveable {
 
   int64_t stat_accesses_ = 0;
   int64_t stat_hits_ = 0;
+};
+
+/**
+ * A Symbolizer using the ElfReader symbolization core.
+ */
+class ElfSymbolizer : public Symbolizer, public NotCopyMoveable {
+ public:
+  static StatusOr<std::unique_ptr<Symbolizer>> Create();
+
+  SymbolizerFn GetSymbolizerFn(const struct upid_t& upid) override;
+
+  void DeleteUPID(const struct upid_t& upid) override;
+
+ private:
+  ElfSymbolizer() = default;
+
+  // A symbolizer per UPID.
+  absl::flat_hash_map<struct upid_t,
+                      std::unique_ptr<px::stirling::obj_tools::ElfReader::Symbolizer>>
+      symbolizers_;
 };
 
 }  // namespace stirling

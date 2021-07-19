@@ -20,8 +20,11 @@
 
 #include "src/stirling/bpf_tools/bcc_symbolizer.h"
 #include "src/stirling/source_connectors/perf_profiler/symbolizer.h"
+#include "src/stirling/utils/proc_path_tools.h"
 
 DEFINE_bool(stirling_profiler_symcache, true, "Enable the Stirling managed symbol cache.");
+
+using ::px::stirling::obj_tools::ElfReader;
 
 namespace px {
 namespace stirling {
@@ -78,6 +81,50 @@ SymbolizerFn BCCSymbolizer::GetSymbolizerFn(const struct upid_t& upid) {
   }
   auto& cache = iter->second;
   return std::bind(&BCCSymbolizer::SymbolizeCached, this, cache.get(), _1);
+}
+
+StatusOr<std::unique_ptr<Symbolizer>> ElfSymbolizer::Create() {
+  ElfSymbolizer* elf_symbolizer = new ElfSymbolizer();
+  auto symbolizer = std::unique_ptr<Symbolizer>(elf_symbolizer);
+  return symbolizer;
+}
+
+void ElfSymbolizer::DeleteUPID(const struct upid_t& upid) { symbolizers_.erase(upid); }
+
+StatusOr<std::unique_ptr<ElfReader::Symbolizer>> CreateUPIDSymbolizer(const struct upid_t& upid) {
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<FilePathResolver> fp_resolver,
+                      FilePathResolver::Create(upid.pid));
+  PL_ASSIGN_OR_RETURN(std::filesystem::path proc_exe, ProcExe(upid.pid));
+  PL_ASSIGN_OR_RETURN(std::filesystem::path host_proc_exe, fp_resolver->ResolvePath(proc_exe));
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(host_proc_exe));
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<ElfReader::Symbolizer> upid_symbolizer,
+                      elf_reader->GetSymbolizer());
+  return upid_symbolizer;
+}
+
+std::string_view EmptySymbolizerFn(const uintptr_t) { return ""; }
+std::string_view DummyKernelSymbolizerFn(const uintptr_t) { return "<kernel symbol>"; }
+
+SymbolizerFn ElfSymbolizer::GetSymbolizerFn(const struct upid_t& upid) {
+  constexpr uint32_t kKernelPID = static_cast<uint32_t>(-1);
+  if (upid.pid == kKernelPID) {
+    return SymbolizerFn(&(DummyKernelSymbolizerFn));
+  }
+
+  std::unique_ptr<ElfReader::Symbolizer>& upid_symbolizer = symbolizers_[upid];
+  if (upid_symbolizer == nullptr) {
+    StatusOr<std::unique_ptr<ElfReader::Symbolizer>> upid_symbolizer_status =
+        CreateUPIDSymbolizer(upid);
+    if (!upid_symbolizer_status.ok()) {
+      LOG(ERROR) << absl::Substitute("Failed to create Symbolizer function for $0 [error=$1]",
+                                     upid.pid, upid_symbolizer_status.ToString());
+      return SymbolizerFn(&(EmptySymbolizerFn));
+    }
+
+    upid_symbolizer = upid_symbolizer_status.ConsumeValueOrDie();
+  }
+
+  return std::bind(&ElfReader::Symbolizer::Lookup, upid_symbolizer.get(), std::placeholders::_1);
 }
 
 }  // namespace stirling

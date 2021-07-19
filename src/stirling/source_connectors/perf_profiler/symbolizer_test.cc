@@ -17,6 +17,7 @@
  */
 
 #include <gtest/gtest.h>
+
 #include <set>
 
 #include "src/common/testing/testing.h"
@@ -37,14 +38,21 @@ const uintptr_t kBarAddr = reinterpret_cast<uintptr_t>(&test::bar);
 namespace px {
 namespace stirling {
 
+template <typename TSymbolizer>
 class SymbolizerTest : public ::testing::Test {
  public:
   SymbolizerTest() = default;
-  void SetUp() override { ASSERT_OK_AND_ASSIGN(symbolizer_, BCCSymbolizer::Create()); }
+  void SetUp() override { ASSERT_OK_AND_ASSIGN(symbolizer_, TSymbolizer::Create()); }
   std::unique_ptr<Symbolizer> symbolizer_;
 };
 
-TEST_F(SymbolizerTest, UserSymbols) {
+using ElfSymbolizerTest = SymbolizerTest<ElfSymbolizer>;
+using BCCSymbolizerTest = SymbolizerTest<BCCSymbolizer>;
+
+using SymbolizerTypes = ::testing::Types<ElfSymbolizer, BCCSymbolizer>;
+TYPED_TEST_SUITE(SymbolizerTest, SymbolizerTypes);
+
+TYPED_TEST(SymbolizerTest, UserSymbols) {
   // We will use our self pid for symbolizing symbols from within this process.
   struct upid_t this_upid;
   this_upid.pid = static_cast<uint32_t>(getpid());
@@ -54,16 +62,16 @@ TEST_F(SymbolizerTest, UserSymbols) {
   // We are placing each symbol lookup into its own scope to force us to
   // "re-lookup" the pid symbolizer function from inside of the symbolize instance.
   {
-    auto symbolize = symbolizer_->GetSymbolizerFn(this_upid);
+    auto symbolize = this->symbolizer_->GetSymbolizerFn(this_upid);
     EXPECT_EQ(symbolize(kFooAddr), "test::foo()");
   }
   {
-    auto symbolize = symbolizer_->GetSymbolizerFn(this_upid);
+    auto symbolize = this->symbolizer_->GetSymbolizerFn(this_upid);
     EXPECT_EQ(symbolize(kBarAddr), "test::bar()");
   }
 }
 
-TEST_F(SymbolizerTest, KernelSymbols) {
+TEST_F(BCCSymbolizerTest, KernelSymbols) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<Symbolizer> symbolizer, BCCSymbolizer::Create());
 
   std::string_view kSymbolName = "cpu_detect";
@@ -76,7 +84,7 @@ TEST_F(SymbolizerTest, KernelSymbols) {
 }
 
 // Test the symbolizer with caching enabled and disabled.
-TEST_F(SymbolizerTest, Caching) {
+TEST_F(BCCSymbolizerTest, Caching) {
   // We will use our self pid for symbolizing symbols from within this process,
   // *and* we will trigger the kprobe that grabs a symbol from the kernel.
   const uint32_t pid = getpid();
