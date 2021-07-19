@@ -71,11 +71,11 @@ void CPUStatBPFTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */,
   r.Append<r.ColIndex("cpustat_nice")>(*(reinterpret_cast<int64_t*>(cpustat_map[2].second.data())));
   r.Append<r.ColIndex("cpustat_system")>(
       *(reinterpret_cast<int64_t*>(cpustat_map[3].second.data())));
-  r.Append<r.ColIndex("cpustat_idle")>(*(reinterpret_cast<int64_t*>(cpustat_map[4].second.data())));
-  r.Append<r.ColIndex("cpustat_iowait")>(
-      *(reinterpret_cast<int64_t*>(cpustat_map[5].second.data())));
-  r.Append<r.ColIndex("cpustat_irq")>(*(reinterpret_cast<int64_t*>(cpustat_map[6].second.data())));
   r.Append<r.ColIndex("cpustat_softirq")>(
+      *(reinterpret_cast<int64_t*>(cpustat_map[4].second.data())));
+  r.Append<r.ColIndex("cpustat_irq")>(*(reinterpret_cast<int64_t*>(cpustat_map[5].second.data())));
+  r.Append<r.ColIndex("cpustat_idle")>(*(reinterpret_cast<int64_t*>(cpustat_map[6].second.data())));
+  r.Append<r.ColIndex("cpustat_iowait")>(
       *(reinterpret_cast<int64_t*>(cpustat_map[7].second.data())));
 }
 
