@@ -83,6 +83,29 @@ StatusOr<std::string> PacketDecoder::ExtractNullableString() {
   return ExtractBytesCore<char>(len);
 }
 
+StatusOr<std::string> PacketDecoder::ExtractCompactString() {
+  PL_ASSIGN_OR_RETURN(int32_t len, ExtractUnsignedVarint());
+  // length N + 1 is encoded.
+  len -= 1;
+  if (len < 0) {
+    return error::Internal("Compact String has negative length.");
+  }
+  return ExtractBytesCore<char>(len);
+}
+
+StatusOr<std::string> PacketDecoder::ExtractCompactNullableString() {
+  PL_ASSIGN_OR_RETURN(int32_t len, ExtractUnsignedVarint());
+  // length N + 1 is encoded.
+  len -= 1;
+  if (len < -1) {
+    return error::Internal("Compact Nullable String has negative length.");
+  }
+  if (len == -1) {
+    return std::string();
+  }
+  return ExtractBytesCore<char>(len);
+}
+
 /*
  * Header Parsers
  */

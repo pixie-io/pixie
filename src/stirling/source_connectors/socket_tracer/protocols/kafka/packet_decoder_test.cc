@@ -89,8 +89,40 @@ INSTANTIATE_TEST_SUITE_P(
         PacketDecoderTestCase<int32_t>{std::string("\xFE\xFF\xFF\xFF\x0F", 5), INT_MAX},
         PacketDecoderTestCase<int32_t>{std::string("\xFF\xFF\xFF\xFF\x0F", 5), INT_MIN}));
 
+TEST(KafkaPacketDecoderTest, ExtractCompactString) {
+  {
+    const std::string_view msg = CreateStringView<char>(
+        "\x3fHello world.This is a test string with 62 characters.PixieLabs");
+    PacketDecoder decoder(msg);
+    EXPECT_OK_AND_EQ(decoder.ExtractCompactString(), msg.substr(1));
+  }
+
+  // Test invalid length.
+  {
+    const std::string_view msg = CreateStringView<char>("\x00Hello world.");
+    PacketDecoder decoder(msg);
+    EXPECT_FALSE(decoder.ExtractCompactString().ok());
+  }
+}
+
+TEST(KafkaPacketDecoderTest, ExtractCompactNullableString) {
+  {
+    const std::string_view msg = CreateStringView<char>(
+        "\x3fHello world.This is a test string with 62 characters.PixieLabs");
+    PacketDecoder decoder(msg);
+    EXPECT_OK_AND_EQ(decoder.ExtractCompactNullableString(), msg.substr(1));
+  }
+
+  // Test null string.
+  {
+    const std::string_view msg = CreateStringView<char>("\x00");
+    PacketDecoder decoder(msg);
+    EXPECT_OK_AND_EQ(decoder.ExtractCompactNullableString(), "");
+  }
+}
+
 TEST(KafkaPacketDecoderTest, ExtractArray) {
-  std::string_view input = CreateStringView<char>(
+  const std::string_view input = CreateStringView<char>(
       "\x00\x00\x00\x05"
       "\x00\x00\x00\x01"
       "\x00\x00\x00\x02"
@@ -105,18 +137,22 @@ TEST(KafkaPacketDecoderTest, ExtractArray) {
 
 TEST(KafkaPacketDecoderTest, ExtractCompactArray) {
   // Test null array.
-  std::string null_input = std::string("\x00", 1);
-  PacketDecoder decoder = PacketDecoder(null_input);
-  EXPECT_OK_AND_THAT(decoder.ExtractCompactArray(&PacketDecoder::ExtractInt32), IsEmpty());
+  {
+    const std::string_view input = CreateStringView<char>("\x00");
+    PacketDecoder decoder = PacketDecoder(input);
+    EXPECT_OK_AND_THAT(decoder.ExtractCompactArray(&PacketDecoder::ExtractInt32), IsEmpty());
+  }
 
   // Test array of strings.
-  std::string_view input = CreateStringView<char>(
-      "\x03"
-      "\x00\x05Hello"
-      "\x00\x06World!");
-  decoder = PacketDecoder(input);
-  EXPECT_OK_AND_THAT(decoder.ExtractCompactArray(&PacketDecoder::ExtractString),
-                     ElementsAre("Hello", "World!"));
+  {
+    const std::string_view input = CreateStringView<char>(
+        "\x03"
+        "\x00\x05Hello"
+        "\x00\x06World!");
+    PacketDecoder decoder(input);
+    EXPECT_OK_AND_THAT(decoder.ExtractCompactArray(&PacketDecoder::ExtractString),
+                       ElementsAre("Hello", "World!"));
+  }
 }
 
 }  // namespace kafka

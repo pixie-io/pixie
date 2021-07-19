@@ -121,6 +121,15 @@ class PacketDecoder {
   // bytes.
   StatusOr<std::string> ExtractNullableString();
 
+  // Represents a sequence of characters. First the length N + 1 is given as an
+  // UNSIGNED_VARINT . Then N bytes follow which are the UTF-8 encoding of the character sequence.
+  StatusOr<std::string> ExtractCompactString();
+
+  // Represents a sequence of characters. First the length N + 1 is given
+  // as an UNSIGNED_VARINT . Then N bytes follow which are the UTF-8 encoding of the character
+  // sequence. A null string is represented with a length of 0.
+  StatusOr<std::string> ExtractCompactNullableString();
+
   // ARRAY. Represents a sequence of objects of a given type T. Type T can be either a primitive
   // type (e.g. STRING) or a structure. First, the length N is given as an INT32. Then N instances
   // of type T follow. A null array is represented with a length of -1.
