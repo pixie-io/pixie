@@ -26,6 +26,11 @@
 namespace px {
 namespace stirling {
 
+/**
+ * A function that takes an address as input and provides a symbolized string out.
+ */
+using SymbolizerFn = std::function<std::string_view(const uintptr_t addr)>;
+
 // SymbolicStackTrace identifies a particular stack trace by:
 // * upid
 // * "folded" stack trace string

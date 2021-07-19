@@ -61,11 +61,10 @@ std::string_view BCCSymbolizer::SymbolizeUncached(const uintptr_t addr, const in
   return symbol;
 }
 
-std::function<std::string_view(const uintptr_t addr)> BCCSymbolizer::GetSymbolizerFn(
-    const struct upid_t& upid) {
+SymbolizerFn BCCSymbolizer::GetSymbolizerFn(const struct upid_t& upid) {
   using std::placeholders::_1;
 
-  std::function<std::string_view(const uintptr_t addr)> fn =
+  SymbolizerFn fn =
       std::bind(&BCCSymbolizer::SymbolizeUncached, this, _1, static_cast<int32_t>(upid.pid));
   if (!FLAGS_stirling_profiler_symcache) {
     return fn;

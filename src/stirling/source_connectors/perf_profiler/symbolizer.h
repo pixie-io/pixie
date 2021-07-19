@@ -26,6 +26,7 @@
 #include "src/stirling/bpf_tools/bcc_symbolizer.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/source_connectors/perf_profiler/symbol_cache.h"
+#include "src/stirling/source_connectors/perf_profiler/types.h"
 
 DECLARE_bool(stirling_profiler_symcache);
 
@@ -45,8 +46,7 @@ class Symbolizer {
    * Create a symbolizer for the process specified by UPID.
    * The returned symbolizer function converts addresses to symbols for the process.
    */
-  virtual std::function<std::string_view(const uintptr_t addr)> GetSymbolizerFn(
-      const struct upid_t& upid) = 0;
+  virtual SymbolizerFn GetSymbolizerFn(const struct upid_t& upid) = 0;
 
   /**
    * Delete the state associated with a symbolizer created by a previous call to GetSymbolizerFn
@@ -72,8 +72,7 @@ class BCCSymbolizer : public Symbolizer, public NotCopyMoveable {
  public:
   static StatusOr<std::unique_ptr<Symbolizer>> Create();
 
-  std::function<std::string_view(const uintptr_t addr)> GetSymbolizerFn(
-      const struct upid_t& upid) override;
+  SymbolizerFn GetSymbolizerFn(const struct upid_t& upid) override;
   void DeleteUPID(const struct upid_t& upid) override;
 
   int64_t stat_accesses() { return stat_accesses_; }
