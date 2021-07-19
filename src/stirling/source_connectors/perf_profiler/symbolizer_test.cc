@@ -89,7 +89,10 @@ TEST_F(BCCSymbolizerTest, Caching) {
   // *and* we will trigger the kprobe that grabs a symbol from the kernel.
   const uint32_t pid = getpid();
 
-  BCCSymbolizer& symbolizer = *static_cast<BCCSymbolizer*>(symbolizer_.get());
+  // Create a caching layer around our symbolizer.
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<Symbolizer> symbolizer_uptr,
+                       CachingSymbolizer::Create(std::move(symbolizer_)));
+  CachingSymbolizer& symbolizer = *static_cast<CachingSymbolizer*>(symbolizer_uptr.get());
 
   const struct upid_t this_upid = {.pid = pid, .start_time_ticks = 0};
 
@@ -182,31 +185,7 @@ TEST_F(BCCSymbolizerTest, Caching) {
     EXPECT_EQ(symbolizer.stat_hits(), 6);
   }
 
-  // After setting the caching flag to false,
-  // we expect the cache stats to remain unchanged.
-  FLAGS_stirling_profiler_symcache = false;
-  {
-    auto symbolize = symbolizer.GetSymbolizerFn(this_upid);
-    EXPECT_EQ(symbolize(kFooAddr), "test::foo()");
-    EXPECT_EQ(symbolizer.stat_accesses(), 12);
-    EXPECT_EQ(symbolizer.stat_hits(), 6);
-  }
-  {
-    auto symbolize = symbolizer.GetSymbolizerFn(this_upid);
-    EXPECT_EQ(symbolize(kBarAddr), "test::bar()");
-    EXPECT_EQ(symbolizer.stat_accesses(), 12);
-    EXPECT_EQ(symbolizer.stat_hits(), 6);
-  }
-  {
-    auto symbolize = symbolizer.GetSymbolizerFn(profiler::kKernelUPID);
-    EXPECT_EQ(std::string(symbolize(kaddr)), kSymbolName);
-    EXPECT_EQ(symbolizer.stat_accesses(), 12);
-    EXPECT_EQ(symbolizer.stat_hits(), 6);
-  }
-
   // Test the feature that converts "[UNKNOWN]" into 0x<addr>.
-  // Also make sure we get a cache hit (so set the cache flag back to true).
-  FLAGS_stirling_profiler_symcache = true;
   {
     auto symbolize = symbolizer.GetSymbolizerFn(this_upid);
     EXPECT_EQ(symbolize(0x1234123412341234ULL), "0x1234123412341234");

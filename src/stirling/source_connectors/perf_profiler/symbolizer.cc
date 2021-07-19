@@ -22,8 +22,6 @@
 #include "src/stirling/source_connectors/perf_profiler/symbolizer.h"
 #include "src/stirling/utils/proc_path_tools.h"
 
-DEFINE_bool(stirling_profiler_symcache, true, "Enable the Stirling managed symbol cache.");
-
 using ::px::stirling::obj_tools::ElfReader;
 
 namespace px {
@@ -34,31 +32,14 @@ StatusOr<std::unique_ptr<Symbolizer>> BCCSymbolizer::Create() {
 }
 
 void BCCSymbolizer::DeleteUPID(const struct upid_t& upid) {
-  // The inner map is owned by a unique_ptr; this will free the memory.
-  symbol_caches_.erase(upid);
-
-  // We also free up the symbol cache on the BCC side.
+  // Free up the symbol cache on the BCC side.
   // If the BCC side symbol cache has already been freed, this does nothing.
   // If later the pid is reused, then BCC will re-allocate the pid's symbol
   // symbol cache (when get_addr_symbol() is called).
   bcc_symbolizer_.ReleasePIDSymCache(upid.pid);
 }
 
-std::string_view BCCSymbolizer::SymbolizeCached(SymbolCache* symbol_cache, const uintptr_t addr) {
-  ++stat_accesses_;
-
-  // Symbol::Symbol(ebpf::BPFStackTable* bcc_symbolizer, const uintptr_t addr, const int pid)
-  // will only be called if try_emplace fails to find a prexisting key. If no key is found,
-  // the Symbol ctor uses bcc_symbolizer, and the addr & pid, to resolve the addr. to a symbol.
-  const SymbolCache::LookupResult result = symbol_cache->Lookup(addr);
-
-  if (result.hit) {
-    ++stat_hits_;
-  }
-  return result.symbol;
-}
-
-std::string_view BCCSymbolizer::SymbolizeUncached(const uintptr_t addr, const int pid) {
+std::string_view BCCSymbolizer::Symbolize(const int pid, const uintptr_t addr) {
   static std::string symbol;
   symbol = bcc_symbolizer_.SymbolOrAddrIfUnknown(addr, pid);
   return symbol;
@@ -66,21 +47,8 @@ std::string_view BCCSymbolizer::SymbolizeUncached(const uintptr_t addr, const in
 
 SymbolizerFn BCCSymbolizer::GetSymbolizerFn(const struct upid_t& upid) {
   using std::placeholders::_1;
-
-  SymbolizerFn fn =
-      std::bind(&BCCSymbolizer::SymbolizeUncached, this, _1, static_cast<int32_t>(upid.pid));
-  if (!FLAGS_stirling_profiler_symcache) {
-    return fn;
-  }
-
-  // If caching is enabled, we return a different symbolizer function that goes through the cache.
-  // The cache, however, uses the same basic function that we define above.
-  const auto [iter, inserted] = symbol_caches_.try_emplace(upid, nullptr);
-  if (inserted) {
-    iter->second = std::make_unique<SymbolCache>(fn);
-  }
-  auto& cache = iter->second;
-  return std::bind(&BCCSymbolizer::SymbolizeCached, this, cache.get(), _1);
+  auto fn = std::bind(&BCCSymbolizer::Symbolize, this, static_cast<int32_t>(upid.pid), _1);
+  return fn;
 }
 
 StatusOr<std::unique_ptr<Symbolizer>> ElfSymbolizer::Create() {
@@ -125,6 +93,43 @@ SymbolizerFn ElfSymbolizer::GetSymbolizerFn(const struct upid_t& upid) {
   }
 
   return std::bind(&ElfReader::Symbolizer::Lookup, upid_symbolizer.get(), std::placeholders::_1);
+}
+
+StatusOr<std::unique_ptr<Symbolizer>> CachingSymbolizer::Create(
+    std::unique_ptr<Symbolizer> inner_symbolizer) {
+  auto ptr = new CachingSymbolizer();
+  auto uptr = std::unique_ptr<Symbolizer>(ptr);
+  ptr->symbolizer_ = std::move(inner_symbolizer);
+  return uptr;
+}
+
+SymbolizerFn CachingSymbolizer::GetSymbolizerFn(const struct upid_t& upid) {
+  using std::placeholders::_1;
+  const auto [iter, inserted] = symbol_caches_.try_emplace(upid, nullptr);
+  if (inserted) {
+    iter->second = std::make_unique<SymbolCache>(symbolizer_->GetSymbolizerFn(upid));
+  }
+  auto& cache = iter->second;
+  auto fn = std::bind(&CachingSymbolizer::Symbolize, this, cache.get(), _1);
+  return fn;
+}
+
+void CachingSymbolizer::DeleteUPID(const struct upid_t& upid) {
+  // The inner map is owned by a unique_ptr; this will free the memory.
+  symbol_caches_.erase(upid);
+
+  symbolizer_->DeleteUPID(upid);
+}
+
+std::string_view CachingSymbolizer::Symbolize(SymbolCache* symbol_cache, const uintptr_t addr) {
+  ++stat_accesses_;
+
+  const SymbolCache::LookupResult result = symbol_cache->Lookup(addr);
+
+  if (result.hit) {
+    ++stat_hits_;
+  }
+  return result.symbol;
 }
 
 }  // namespace stirling

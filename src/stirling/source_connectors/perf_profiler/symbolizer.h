@@ -29,8 +29,6 @@
 #include "src/stirling/source_connectors/perf_profiler/symbol_cache.h"
 #include "src/stirling/source_connectors/perf_profiler/types.h"
 
-DECLARE_bool(stirling_profiler_symcache);
-
 namespace px {
 namespace stirling {
 
@@ -72,20 +70,11 @@ class BCCSymbolizer : public Symbolizer, public NotCopyMoveable {
   SymbolizerFn GetSymbolizerFn(const struct upid_t& upid) override;
   void DeleteUPID(const struct upid_t& upid) override;
 
-  int64_t stat_accesses() { return stat_accesses_; }
-  int64_t stat_hits() { return stat_hits_; }
-
  private:
   BCCSymbolizer() = default;
-  std::string_view SymbolizeCached(SymbolCache* symbol_cache, const uintptr_t addr);
-  std::string_view SymbolizeUncached(const uintptr_t addr, const int pid);
+  std::string_view Symbolize(const int pid, const uintptr_t addr);
 
   bpf_tools::BCCSymbolizer bcc_symbolizer_;
-
-  absl::flat_hash_map<struct upid_t, std::unique_ptr<SymbolCache>> symbol_caches_;
-
-  int64_t stat_accesses_ = 0;
-  int64_t stat_hits_ = 0;
 };
 
 /**
@@ -106,6 +95,33 @@ class ElfSymbolizer : public Symbolizer, public NotCopyMoveable {
   absl::flat_hash_map<struct upid_t,
                       std::unique_ptr<px::stirling::obj_tools::ElfReader::Symbolizer>>
       symbolizers_;
+};
+
+/**
+ * A class that takes another symbolizer and adds a cache to it.
+ */
+class CachingSymbolizer : public Symbolizer {
+ public:
+  static StatusOr<std::unique_ptr<Symbolizer>> Create(std::unique_ptr<Symbolizer> inner_symbolizer);
+
+  SymbolizerFn GetSymbolizerFn(const struct upid_t& upid) override;
+
+  void DeleteUPID(const struct upid_t& upid) override;
+
+  int64_t stat_accesses() { return stat_accesses_; }
+  int64_t stat_hits() { return stat_hits_; }
+
+ private:
+  CachingSymbolizer() = default;
+
+  std::string_view Symbolize(SymbolCache* symbol_cache, const uintptr_t addr);
+
+  std::unique_ptr<Symbolizer> symbolizer_;
+
+  absl::flat_hash_map<struct upid_t, std::unique_ptr<SymbolCache>> symbol_caches_;
+
+  int64_t stat_accesses_ = 0;
+  int64_t stat_hits_ = 0;
 };
 
 }  // namespace stirling

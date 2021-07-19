@@ -16,6 +16,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#include "src/stirling/source_connectors/perf_profiler/perf_profile_connector.h"
+
 #include <sys/sysinfo.h>
 
 #include <memory>
@@ -24,9 +26,12 @@
 #include <vector>
 
 #include "src/stirling/bpf_tools/macros.h"
-#include "src/stirling/source_connectors/perf_profiler/perf_profile_connector.h"
 
 BPF_SRC_STRVIEW(profiler_bcc_script, profiler);
+
+DEFINE_string(stirling_profiler_symbolizer, "bcc",
+              "Choice of which symbolizer to use. Options: bcc, elf");
+DEFINE_bool(stirling_profiler_cache_symbols, true, "Whether to cache symbols");
 
 DEFINE_uint32(stirling_perf_profiler_stats_logging_ratio,
               std::chrono::minutes(10) / px::stirling::PerfProfileConnector::kSamplingPeriod,
@@ -66,7 +71,19 @@ Status PerfProfileConnector::InitImpl() {
   LOG(INFO) << "PerfProfiler: Stack trace profiling sampling probe successfully deployed.";
 
   // Made it here w/ no problems; now init the symbolizer.
-  PL_ASSIGN_OR_RETURN(symbolizer_, BCCSymbolizer::Create());
+  if (FLAGS_stirling_profiler_symbolizer == "bcc") {
+    PL_ASSIGN_OR_RETURN(symbolizer_, BCCSymbolizer::Create());
+  } else if (FLAGS_stirling_profiler_symbolizer == "elf") {
+    PL_ASSIGN_OR_RETURN(symbolizer_, ElfSymbolizer::Create());
+  } else {
+    return error::Internal("Unrecognized symbolizer $0", FLAGS_stirling_profiler_symbolizer);
+  }
+
+  if (FLAGS_stirling_profiler_cache_symbols) {
+    // Add a caching layer on top of the existing symbolizer.
+    PL_ASSIGN_OR_RETURN(symbolizer_, CachingSymbolizer::Create(std::move(symbolizer_)));
+  }
+
   return Status::OK();
 }
 
