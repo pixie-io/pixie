@@ -32,7 +32,7 @@ import * as GridLayout from 'react-grid-layout';
 import { resizeEvent, triggerResize } from 'app/utils/resize';
 import { dataFromProto } from 'app/utils/result-data-utils';
 import { Alert, AlertTitle } from '@material-ui/core';
-import { VizierQueryError } from 'app/api';
+import { VizierQueryError, Table as VizierTable } from 'app/api';
 import { containsMutation } from 'app/utils/pxl';
 import { VizierErrorDetails } from 'app/common/errors';
 
@@ -53,7 +53,7 @@ import {
 } from './layout';
 import {
   DISPLAY_TYPE_KEY, GRAPH_DISPLAY_TYPE, REQUEST_GRAPH_DISPLAY_TYPE,
-  TABLE_DISPLAY_TYPE, Vis, widgetTableName,
+  TABLE_DISPLAY_TYPE, Vis, widgetTableName, WidgetDisplay as VisWidgetDisplay,
 } from './vis';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
@@ -151,7 +151,51 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     flexDirection: 'column',
     height: '100%',
   },
-}));
+  vegaWidget: {
+    flex: 1,
+    display: 'flex',
+    border: '1px solid transparent',
+    '&.focus': {
+      border: `1px solid ${theme.palette.foreground.grey2}`,
+    },
+  },
+}), { name: 'Canvas' });
+
+interface VegaWidgetProps {
+  tableName: string;
+  display: VisWidgetDisplay;
+  table: VizierTable;
+  data: any[];
+}
+
+const VegaWidget: React.FC<VegaWidgetProps> = ({
+  tableName,
+  display,
+  table,
+  data,
+}) => {
+  const classes = useStyles();
+  const [focused, setFocused] = React.useState(false);
+  const toggleFocus = React.useCallback(() => setFocused((enabled) => !enabled), []);
+
+  // Workaround: Vega consumes the focus event from a click, but not the click itself.
+  const root = React.useRef<HTMLDivElement>(null);
+  const takeFocus = React.useCallback(() => root.current?.focus(), []);
+
+  const className = buildClass(classes.vegaWidget, focused && 'focus');
+
+  return (
+    <div ref={root} className={className} onFocus={toggleFocus} onBlur={toggleFocus} onClick={takeFocus} tabIndex={0}>
+      <Vega
+        className={classes.chart}
+        data={data}
+        display={display as React.ComponentProps<typeof Vega>['display']}
+        relation={table.relation}
+        tableName={tableName}
+      />
+    </div>
+  );
+};
 
 const WidgetDisplay = ({
   display, table, tableName, widgetName, propagatedArgs, emptyTableMsg,
@@ -215,12 +259,11 @@ const WidgetDisplay = ({
       <>
         <div className={classes.widgetTitle}>{widgetName}</div>
         <React.Suspense fallback={<div className={classes.spinner}><Spinner /></div>}>
-          <Vega
-            className={classes.chart}
-            data={parsedTable}
-            display={display as React.ComponentProps<typeof Vega>['display']}
-            relation={table.relation}
+          <VegaWidget
             tableName={tableName}
+            table={table}
+            data={parsedTable}
+            display={display}
           />
         </React.Suspense>
       </>

@@ -2276,7 +2276,16 @@ function convertToStacktraceFlameGraph(
     name: 'grid_zoom_anchor',
     on: [
       {
-        events: [{ source: 'scope', type: 'wheel', consume: true }],
+        events: [{
+          source: 'scope',
+          type: 'wheel',
+          consume: true,
+          // Don't consume scroll events that were meant for a parent element.
+          between: [
+            { source: 'view', type: 'mouseup' },
+            { source: 'window', type: 'mousedown' },
+          ],
+        }],
         update: '{x: invert("x", x(unit)), y: invert("y", y(unit))}',
       },
     ],
@@ -2285,7 +2294,16 @@ function convertToStacktraceFlameGraph(
     name: 'grid_zoom_delta',
     on: [
       {
-        events: [{ source: 'scope', type: 'wheel', consume: true }],
+        events: [{
+          source: 'scope',
+          type: 'wheel',
+          consume: true,
+          // Don't consume scroll events that were meant for a parent element.
+          between: [
+            { source: 'view', type: 'mouseup' },
+            { source: 'window', type: 'mousedown' },
+          ],
+        }],
         force: true,
         update: 'pow(1.001, event.deltaY * pow(16, event.deltaMode))',
       },
