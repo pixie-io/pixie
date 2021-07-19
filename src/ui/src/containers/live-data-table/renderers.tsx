@@ -44,7 +44,7 @@ import {
   getDataRenderer,
   looksLikeAlertCol,
   looksLikeCPUCol,
-  looksLikeLatencyCol,
+  looksLikeLatencyCol, looksLikePIDCol,
 } from 'app/utils/format-data';
 import { getLatencyNSLevel, getColor } from 'app/utils/metric-thresholds';
 import { Theme } from '@material-ui/core/styles';
@@ -252,6 +252,7 @@ const scriptReferenceRenderer = (clusterName: string, embedState: EmbedState,
 
 const CPUDataWrapper = (data: any) => <CPUData data={data} />;
 const AlertDataWrapper = (data: any) => <AlertData data={data} />;
+const PlainNumberWrapper = (data: any) => <>{data}</>;
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function prettyCellRenderer(
@@ -307,6 +308,10 @@ export function prettyCellRenderer(
 
   if (looksLikeAlertCol(name, dt)) {
     return AlertDataWrapper;
+  }
+
+  if (looksLikePIDCol(name, dt)) {
+    return PlainNumberWrapper;
   }
 
   if (dt !== DataType.STRING) {

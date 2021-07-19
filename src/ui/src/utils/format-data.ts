@@ -77,6 +77,10 @@ export function looksLikeAlertCol(colName: string, colType: DataType): boolean {
   return !!colNameLC.match(/alert.*/);
 }
 
+export function looksLikePIDCol(colName: string, colType: DataType): boolean {
+  return colName.toLowerCase() === 'pid' && colType === DataType.INT64;
+}
+
 // Converts UInt128PB to UUID formatted string.
 export function formatUInt128Protobuf(val: UInt128): string {
   // TODO(zasgar/michelle): Revisit this to check and make sure endianness is correct.

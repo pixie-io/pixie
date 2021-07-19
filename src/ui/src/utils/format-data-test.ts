@@ -51,6 +51,21 @@ describe('looksLikeAlertCol test', () => {
   });
 });
 
+describe('looksLikePIDCol test', () => {
+  it('should not accept non-numeric PIDs', () => {
+    expect(FormatData.looksLikePIDCol('PID', DataType.STRING)).toEqual(false);
+  });
+
+  it('should not accept incorrectly named columns', () => {
+    expect(FormatData.looksLikePIDCol('PROCESS_ID', DataType.INT64)).toEqual(false);
+  });
+
+  it('should accept PID columns of type INT64', () => {
+    expect(FormatData.looksLikePIDCol('PID', DataType.INT64)).toEqual(true);
+    expect(FormatData.looksLikePIDCol('pid', DataType.INT64)).toEqual(true);
+  });
+});
+
 describe('formatFloat64Data test', () => {
   it('should accept decimal-rendered scientific notation', () => {
     // 1e-6 renders to "0.000001" in numeral.js internally
