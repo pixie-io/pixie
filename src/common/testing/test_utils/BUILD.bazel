@@ -50,10 +50,9 @@ pl_cc_test(
     data = [":sleep_container_image.tar"],
     tags = [
         "manual",
-        # No BPF, but mark as such to make sure the test runs on a Jenkins BPF worker node.
-        "requires_bpf",
         "no_asan",
         "no_tsan",
+        "requires_root",
     ],
     deps = [
         ":cc_library",
