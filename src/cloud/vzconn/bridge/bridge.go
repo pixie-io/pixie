@@ -43,9 +43,6 @@ import (
 	"px.dev/pixie/src/shared/cvmsgspb"
 )
 
-// DurableNATSChannels is a list of all the durable nats channels that need to be read and transmitted over the GRPC channel.
-var DurableNATSChannels = []string{"DurableMetadataRequest"}
-
 // NATSBridgeController is responsible for routing messages from Vizier to NATS. It assumes that all authentication/handshakes
 // are completed before being created.
 type NATSBridgeController struct {
@@ -59,9 +56,8 @@ type NATSBridgeController struct {
 	grpcOutCh chan *vzconnpb.C2VBridgeMessage
 	grpcInCh  chan *vzconnpb.V2CBridgeMessage
 
-	quitCh       chan bool // Channel is used to signal that things should shutdown.
-	subCh        chan *nats.Msg
-	durableSubCh chan *stan.Msg
+	quitCh chan bool // Channel is used to signal that things should shutdown.
+	subCh  chan *nats.Msg
 }
 
 // NewNATSBridgeController creates a NATSBridgeController.
@@ -78,9 +74,8 @@ func NewNATSBridgeController(clusterID uuid.UUID, srv vzconnpb.VZConnService_NAT
 		grpcOutCh: make(chan *vzconnpb.C2VBridgeMessage, 1000),
 		grpcInCh:  make(chan *vzconnpb.V2CBridgeMessage, 1000),
 
-		quitCh:       make(chan bool),
-		subCh:        make(chan *nats.Msg, 1000),
-		durableSubCh: make(chan *stan.Msg),
+		quitCh: make(chan bool),
+		subCh:  make(chan *nats.Msg, 1000),
 	}
 }
 
@@ -109,16 +104,6 @@ func (s *NATSBridgeController) Run() error {
 		}
 	}()
 
-	for _, topic := range DurableNATSChannels {
-		sub, err := s.sc.QueueSubscribe(topic, "vzconn", func(msg *stan.Msg) {
-			s.durableSubCh <- msg
-		}, stan.SetManualAckMode())
-		if err != nil {
-			return err
-		}
-		defer sub.Unsubscribe()
-	}
-
 	eg, ctx := errgroup.WithContext(context.Background())
 	eg.Go(func() error {
 		return s.startStreamGRPCWriter(ctx)
@@ -144,9 +129,6 @@ func (s *NATSBridgeController) _run(ctx context.Context) error {
 		select {
 		case <-s.quitCh:
 			return nil
-		case msg := <-s.durableSubCh:
-			s.l.WithField("msg", msg).Trace("Got durable NATS message")
-			err = s.sendStanMessageToGRPC(msg)
 		case msg := <-s.subCh:
 			s.l.WithField("msg", msg).Trace("Got regular NATS message")
 			err = s.sendNATSMessageToGRPC(msg)
@@ -167,23 +149,6 @@ func (s *NATSBridgeController) getRemoteSubject(topic string) string {
 		return strings.TrimPrefix(topic, prefix)
 	}
 	return ""
-}
-
-func (s *NATSBridgeController) sendStanMessageToGRPC(msg *stan.Msg) error {
-	c2vMsg := cvmsgspb.C2VMessage{}
-	err := c2vMsg.Unmarshal(msg.Data)
-	if err != nil {
-		return err
-	}
-	outMsg := &vzconnpb.C2VBridgeMessage{
-		Topic: s.getRemoteSubject(msg.Subject),
-		Msg:   c2vMsg.Msg,
-	}
-	err = s.srv.Send(outMsg)
-	if err != nil {
-		return err
-	}
-	return msg.Ack()
 }
 
 func (s *NATSBridgeController) sendNATSMessageToGRPC(msg *nats.Msg) error {
