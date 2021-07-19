@@ -25,6 +25,7 @@
 #include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
 #include "src/stirling/bpf_tools/bcc_symbolizer.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
+#include "src/stirling/source_connectors/perf_profiler/symbol_cache.h"
 
 DECLARE_bool(stirling_profiler_symcache);
 
@@ -51,48 +52,6 @@ class Symbolizer {
    * Delete the state associated with a symbolizer created by a previous call to GetSymbolizerFn
    */
   virtual void DeleteUPID(const struct upid_t& upid) = 0;
-};
-
-class SymbolCache {
- public:
-  SymbolCache(int pid, bpf_tools::BCCSymbolizer* symbolizer) : pid_(pid), symbolizer_(symbolizer) {}
-
-  struct LookupResult {
-    std::string_view symbol;
-    bool hit;
-  };
-
-  LookupResult Lookup(const uintptr_t addr);
-
-  size_t active_entries() { return cache_.size(); }
-  size_t total_entries() { return cache_.size() + prev_cache_.size(); }
-
-  void CreateNewGeneration() {
-    prev_cache_ = std::move(cache_);
-    cache_.clear();
-  }
-
- private:
-  /**
-   * Symbol wraps a std::string for the sole and express purpose of
-   * enabling <some map>::try_emplace() to *not* call into bcc_symbolizer->get_addr_symbol()
-   * if the key already exists in that map. If we provide the symbol directly to try_emplace,
-   * then get_addr_symbol() is called (costing extra work).
-   */
-  class Symbol {
-   public:
-    Symbol(bpf_tools::BCCSymbolizer* bcc_symbolizer, const uintptr_t addr, const int pid);
-
-    // A move constructor that takes consumes a string.
-    explicit Symbol(std::string&& symbol_str) : symbol_(std::move(symbol_str)) {}
-
-    std::string symbol_;
-  };
-
-  int pid_;
-  bpf_tools::BCCSymbolizer* symbolizer_;
-  absl::flat_hash_map<uintptr_t, Symbol> cache_;
-  absl::flat_hash_map<uintptr_t, Symbol> prev_cache_;
 };
 
 /**

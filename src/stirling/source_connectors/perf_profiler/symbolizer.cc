@@ -25,27 +25,6 @@ DEFINE_bool(stirling_profiler_symcache, true, "Enable the Stirling managed symbo
 namespace px {
 namespace stirling {
 
-SymbolCache::Symbol::Symbol(bpf_tools::BCCSymbolizer* bcc_symbolizer, const uintptr_t addr,
-                            const int pid)
-    : symbol_(bcc_symbolizer->SymbolOrAddrIfUnknown(addr, pid)) {}
-
-SymbolCache::LookupResult SymbolCache::Lookup(const uintptr_t addr) {
-  // Check old cache first, and move result to new cache if we have a hit.
-  const auto prev_cache_iter = prev_cache_.find(addr);
-  if (prev_cache_iter != prev_cache_.end()) {
-    // Move to new cache.
-    auto [curr_cache_iter, inserted] =
-        cache_.try_emplace(addr, std::move(prev_cache_iter->second.symbol_));
-    DCHECK(inserted);
-    prev_cache_.erase(prev_cache_iter);
-    return SymbolCache::LookupResult{curr_cache_iter->second.symbol_, true};
-  }
-
-  // If not in old cache, try the new cache (with automatic insertion if required).
-  const auto [iter, inserted] = cache_.try_emplace(addr, symbolizer_, addr, pid_);
-  return SymbolCache::LookupResult{iter->second.symbol_, !inserted};
-}
-
 StatusOr<std::unique_ptr<Symbolizer>> BCCSymbolizer::Create() {
   return std::unique_ptr<Symbolizer>(new BCCSymbolizer());
 }
