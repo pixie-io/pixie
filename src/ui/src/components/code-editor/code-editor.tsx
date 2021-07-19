@@ -16,12 +16,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { PaletteMode } from '@material-ui/core';
 import { buildClass } from 'app/utils/build-class';
 import * as React from 'react';
 
 import { Spinner } from 'app/components/spinner/spinner';
 import { editor as MonacoEditorTypes } from 'monaco-editor';
+
+// This must be `import type`, not `import`. The latter would defeat the lazy import of the actual component below.
+import type { MonacoEditorProps } from 'react-monaco-editor';
 
 interface CodeEditorProps {
   code?: string;
@@ -34,6 +36,11 @@ interface CodeEditorProps {
   language?: string;
   shortcutKeys: string[];
   theme?: string;
+}
+
+interface CodeEditorState {
+  editorModule: React.ComponentType<MonacoEditorProps>|null;
+  options: MonacoEditorTypes.IEditorOptions;
 }
 
 function removeKeybindings(editor, keys: string[]) {
@@ -57,7 +64,7 @@ function removeKeybindings(editor, keys: string[]) {
   /* eslint-enable no-underscore-dangle */
 }
 
-export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
+export class CodeEditor extends React.PureComponent<CodeEditorProps, CodeEditorState> {
   private editorRef: MonacoEditorTypes.ICodeEditor;
 
   // Holder for code in the editor.
@@ -66,14 +73,14 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
   constructor(props: CodeEditorProps) {
     super(props);
     this.state = {
-      /* eslint-disable react/no-unused-state */
-      extraEditorClassName: buildClass(this.props.className),
-      lineDecorationsWidth: 0,
-      scrollBeyondLastColumn: 0,
-      scrollBeyondLastLine: 0,
-      fontFamily: 'Roboto Mono, monospace',
       editorModule: null, // editorModule is the object containing MonacoEditor.
-      /* eslint-enable react/no-unused-state */
+      options: {
+        extraEditorClassName: buildClass(this.props.className),
+        lineDecorationsWidth: 0,
+        scrollBeyondLastColumn: 3, // Prevents hiding text behind the minimap or the scrollbar. Expands the scroll area.
+        scrollBeyondLastLine: false,
+        fontFamily: 'Roboto Mono, monospace',
+      },
     };
     this.onChange = this.onChange.bind(this);
     this.onEditorMount = this.onEditorMount.bind(this);
@@ -154,7 +161,7 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
         editorDidMount={this.onEditorMount}
         language={this.props.language ? this.props.language : 'python'}
         theme={this.props.theme || 'vs-dark'}
-        options={this.state}
+        options={this.state.options}
       />
     );
   }
