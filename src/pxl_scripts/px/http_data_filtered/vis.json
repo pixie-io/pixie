@@ -19,6 +19,12 @@
       "defaultValue": ""
     },
     {
+      "name": "status_code",
+      "type": "PX_INT",
+      "description": "The HTTP response status code.",
+      "defaultValue": "200"
+    },
+    {
       "name": "start_time",
       "type": "PX_STRING",
       "description": "The relative start time of the window. Current time is assumed to be now",
@@ -32,10 +38,6 @@
         "name": "http_data",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
-          },
-          {
             "name": "svc",
             "variable": "svc"
           },
@@ -46,6 +48,14 @@
           {
             "name": "req_path",
             "variable": "req_path"
+          },
+          {
+            "name": "status_code",
+            "variable": "status_code"
+          },
+          {
+            "name": "start_time",
+            "variable": "start_time"
           }
         ]
       }

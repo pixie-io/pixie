@@ -32,7 +32,7 @@ max_num_records = 100
 # ----------------------------------------------------------------
 
 
-def http_data(start_time: str, svc: px.Service, pod: px.Pod, req_path: str):
+def http_data(start_time: str, svc: px.Service, pod: px.Pod, req_path: str, status_code: int):
     df = px.DataFrame(table='http_events', select=['time_', 'upid', 'remote_addr', 'remote_port',
                                                    'req_method', 'req_path', 'resp_status',
                                                    'resp_body', 'latency'],
@@ -41,7 +41,7 @@ def http_data(start_time: str, svc: px.Service, pod: px.Pod, req_path: str):
     df.svc = df.ctx['service']
     df.pod = df.ctx['pod']
     df = df.drop(columns=['upid'])
-
+    df = df[df.resp_status == status_code]
     df = df[px.contains(df.svc, svc) and (px.contains(df.pod, pod)
                                           and px.contains(df.req_path, req_path))]
     df = df.head(n=max_num_records)
