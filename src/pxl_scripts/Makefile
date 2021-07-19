@@ -16,21 +16,18 @@
 
 BUNDLE := gs://pixie-prod-artifacts/script-bundles/bundle-oss.json
 
-## Bazel command to use.
-BAZEL     := bazel
-
 # Update dir name here if you want to add a new directory.
-dirs := px  pxbeta sotw
+dirs := px pxbeta sotw
 script_files := $(foreach dir,$(dirs),$(wildcard $(dir)/**/*))
 
-EXECUTABLES = $(BAZEL) gsutil
+EXECUTABLES = px
 K := $(foreach exec,$(EXECUTABLES),\
 	$(if $(shell which $(exec)),some string,$(error "No $(exec) in PATH")))
 
 all: bundle-oss.json.gz
 
-bundle-oss.json: $(script_files) $(PIXIE_CLI)
-	@$(BAZEL) run //src/pixie_cli:px -- create-bundle --search_path $(PWD) $(foreach dir,$(dirs),--base $(dir)) -o $(PWD)/bundle-oss.json
+bundle-oss.json: $(script_files)
+	px create-bundle --search_path $(PWD) $(foreach dir,$(dirs),--base $(dir)) -o $(PWD)/bundle-oss.json
 
 bundle-oss.json.gz: bundle-oss.json
 	gzip -c $< > $@
