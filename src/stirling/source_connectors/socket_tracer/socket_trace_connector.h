@@ -56,6 +56,7 @@ DECLARE_bool(stirling_enable_mysql_tracing);
 DECLARE_bool(stirling_enable_cass_tracing);
 DECLARE_bool(stirling_enable_dns_tracing);
 DECLARE_bool(stirling_enable_redis_tracing);
+DECLARE_bool(stirling_enable_nats_tracing);
 DECLARE_bool(stirling_disable_self_tracing);
 DECLARE_string(stirling_role_to_trace);
 

@@ -27,24 +27,24 @@
 namespace px {
 namespace stirling {
 namespace protocols {
-namespace nats {
 
 using ::testing::IsEmpty;
 using ::testing::StrEq;
 
 // Tests that the simple cases are as expected.
 TEST(FindMessageBoundaryTest, ResultsAreAsExpected) {
-  EXPECT_EQ(FindMessageBoundary(" CONNECT {} \r\n", 0), 1);
-  EXPECT_EQ(FindMessageBoundary(" INFO {} \r\n", 0), 1);
-  EXPECT_EQ(FindMessageBoundary(" PUB \r\n", 0), 1);
-  EXPECT_EQ(FindMessageBoundary(" SUB \r\n", 0), 1);
-  EXPECT_EQ(FindMessageBoundary(" UNSUB \r\n", 0), 1);
-  EXPECT_EQ(FindMessageBoundary(" MSG \r\n", 0), 1);
-  EXPECT_EQ(FindMessageBoundary(" PING\r\n", 0), 1);
-  EXPECT_EQ(FindMessageBoundary(" PONG\r\n", 0), 1);
-  EXPECT_EQ(FindMessageBoundary(" +OK\r\n", 0), 1);
-  EXPECT_EQ(FindMessageBoundary(" -ERR 'test'\r\n", 0), 1);
-  EXPECT_EQ(FindMessageBoundary(" {} \r\n", 0), std::string_view::npos);
+  EXPECT_EQ(FindFrameBoundary<nats::Message>(MessageType::kUnknown, " CONNECT {} \r\n", 0), 1);
+  EXPECT_EQ(FindFrameBoundary<nats::Message>(MessageType::kUnknown, " INFO {} \r\n", 0), 1);
+  EXPECT_EQ(FindFrameBoundary<nats::Message>(MessageType::kUnknown, " PUB \r\n", 0), 1);
+  EXPECT_EQ(FindFrameBoundary<nats::Message>(MessageType::kUnknown, " SUB \r\n", 0), 1);
+  EXPECT_EQ(FindFrameBoundary<nats::Message>(MessageType::kUnknown, " UNSUB \r\n", 0), 1);
+  EXPECT_EQ(FindFrameBoundary<nats::Message>(MessageType::kUnknown, " MSG \r\n", 0), 1);
+  EXPECT_EQ(FindFrameBoundary<nats::Message>(MessageType::kUnknown, " PING\r\n", 0), 1);
+  EXPECT_EQ(FindFrameBoundary<nats::Message>(MessageType::kUnknown, " PONG\r\n", 0), 1);
+  EXPECT_EQ(FindFrameBoundary<nats::Message>(MessageType::kUnknown, " +OK\r\n", 0), 1);
+  EXPECT_EQ(FindFrameBoundary<nats::Message>(MessageType::kUnknown, " -ERR 'test'\r\n", 0), 1);
+  EXPECT_EQ(FindFrameBoundary<nats::Message>(MessageType::kUnknown, " {} \r\n", 0),
+            std::string_view::npos);
 }
 
 struct TestParam {
@@ -53,21 +53,21 @@ struct TestParam {
   std::string options;
 };
 
-using ParseMessageTest = ::testing::TestWithParam<TestParam>;
+using ParseFrameTest = ::testing::TestWithParam<TestParam>;
 
 // Tests that parsing succeeded and the result is as expected.
-TEST_P(ParseMessageTest, CheckResult) {
+TEST_P(ParseFrameTest, CheckResult) {
   TestParam param = GetParam();
-  Message msg;
+  nats::Message msg;
 
-  EXPECT_OK(ParseMessage(&param.input, &msg));
+  EXPECT_EQ(ParseFrame(MessageType::kUnknown, &param.input, &msg), ParseState::kSuccess);
   EXPECT_THAT(msg.command, StrEq(param.command));
   EXPECT_THAT(msg.options, StrEq(param.options));
   EXPECT_THAT(param.input, IsEmpty());
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    AllTypes, ParseMessageTest,
+    AllTypes, ParseFrameTest,
     ::testing::Values(
         TestParam{R"(INFO {"server_name":"localhost"} )"
                   "\r\n",
@@ -93,7 +93,6 @@ INSTANTIATE_TEST_SUITE_P(
         TestParam{"+OK\r\n", "+OK", ""},
         TestParam{"-ERR 'error message'\r\n", "-ERR", R"('error message')"}));
 
-}  // namespace nats
 }  // namespace protocols
 }  // namespace stirling
 }  // namespace px

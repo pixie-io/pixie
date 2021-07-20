@@ -34,7 +34,9 @@ func main() {
 
 	nc, _ := nats.Connect(*address)
 
-	// Simple Sync Subscriber
+	// Operations are wrapped into events, and are sent to an internal queue. Successive operations might be batched into
+	// one message, even if they are made through multiple API calls.
+
 	sub, err := nc.SubscribeSync("foo")
 	if err != nil {
 		log.Fatal(err)

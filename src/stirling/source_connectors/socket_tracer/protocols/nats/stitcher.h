@@ -18,21 +18,22 @@
 
 #pragma once
 
-#include <string_view>
+#include <deque>
+#include <limits>
+#include <utility>
+#include <vector>
 
 #include "src/stirling/source_connectors/socket_tracer/protocols/common/interface.h"
-#include "src/stirling/source_connectors/socket_tracer/protocols/redis/types.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/nats/types.h"
 
 namespace px {
 namespace stirling {
 namespace protocols {
 
 template <>
-size_t FindFrameBoundary<redis::Message>(MessageType /*type*/, std::string_view buf,
-                                         size_t start_pos);
-
-template <>
-ParseState ParseFrame(MessageType type, std::string_view* buf, redis::Message* msg);
+RecordsWithErrorCount<nats::Record> StitchFrames(std::deque<nats::Message>* req_msgs,
+                                                 std::deque<nats::Message>* resp_msgs,
+                                                 NoState* /* state */);
 
 }  // namespace protocols
 }  // namespace stirling

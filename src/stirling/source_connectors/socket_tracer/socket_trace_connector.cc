@@ -82,6 +82,8 @@ DEFINE_bool(stirling_enable_dns_tracing, true,
             "If true, stirling will trace and process DNS messages.");
 DEFINE_bool(stirling_enable_redis_tracing, true,
             "If true, stirling will trace and process Redis messages.");
+DEFINE_bool(stirling_enable_nats_tracing, false,
+            "If true, stirling will trace and process NATS messages.");
 
 DEFINE_bool(stirling_disable_self_tracing, true,
             "If true, stirling will not trace and process syscalls made by itself.");
@@ -148,6 +150,10 @@ void SocketTraceConnector::InitProtocolTransferSpecs() {
                                     // SocketInfo to infer the role.
                                     {kRoleUnknown, kRoleClient, kRoleServer},
                                     TRANSFER_STREAM_PROTOCOL(redis)}},
+      {kProtocolNATS, TransferSpec{FLAGS_stirling_enable_nats_tracing,
+                                   kNATSTableNum,
+                                   {kRoleClient, kRoleServer},
+                                   TRANSFER_STREAM_PROTOCOL(nats)}},
       // TODO(chengruizhe): Add Mongo table. nullptr should be replaced by the transfer_fn for
       // mongo in the future.
       {kProtocolMongo,
@@ -887,7 +893,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
 
   EndpointRole role = conn_tracker.role();
   DataTable::RecordBuilder<&kNATSTable> r(data_table, record.resp.timestamp_ns);
-  r.Append<r.ColIndex("time_")>(record.resp.timestamp_ns);
+  r.Append<r.ColIndex("time_")>(record.req.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());

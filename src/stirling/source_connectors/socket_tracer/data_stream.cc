@@ -20,10 +20,7 @@
 
 #include <utility>
 
-#include "src/stirling/source_connectors/socket_tracer/protocols/pgsql/types.h"
-// TODO(yzhao): Without this line :stirling_wrapper fails to link redis template specializations
-// of FindFrameBoundary() and ParseFrames().
-#include "src/stirling/source_connectors/socket_tracer/protocols/redis/parse.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/types.h"
 
 DEFINE_uint32(datastream_buffer_size, 1024 * 1024, "The maximum size of a data stream buffer.");
 
@@ -192,6 +189,7 @@ template void DataStream::ProcessBytesToFrames<protocols::pgsql::RegularMessage>
 template void DataStream::ProcessBytesToFrames<protocols::dns::Frame>(MessageType type);
 template void DataStream::ProcessBytesToFrames<protocols::redis::Message>(MessageType type);
 template void DataStream::ProcessBytesToFrames<protocols::kafka::Packet>(MessageType type);
+template void DataStream::ProcessBytesToFrames<protocols::nats::Message>(MessageType type);
 
 void DataStream::Reset() {
   data_buffer_.Reset();

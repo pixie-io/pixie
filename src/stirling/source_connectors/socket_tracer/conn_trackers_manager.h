@@ -104,6 +104,7 @@ class ConnTrackersManager {
     kProtocolPGSQL,
     kProtocolDNS,
     kProtocolRedis,
+    kProtocolNATS,
     kProtocolMongo,
     kProtocolKafka,
   };

@@ -56,6 +56,24 @@ struct Record {
   Message resp;
 };
 
+// Required by event parser interface.
+struct ProtocolTraits {
+  using frame_type = Message;
+  using record_type = Record;
+  using state_type = NoState;
+};
+
+constexpr std::string_view kInfo = "INFO";
+constexpr std::string_view kConnect = "CONNECT";
+constexpr std::string_view kPub = "PUB";
+constexpr std::string_view kSub = "SUB";
+constexpr std::string_view kUnsub = "UNSUB";
+constexpr std::string_view kMsg = "MSG";
+constexpr std::string_view kPing = "PING";
+constexpr std::string_view kPong = "PONG";
+constexpr std::string_view kOK = "+OK";
+constexpr std::string_view kERR = "-ERR";
+
 }  // namespace nats
 }  // namespace protocols
 }  // namespace stirling

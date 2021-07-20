@@ -208,6 +208,18 @@ ParseState ParseMessage(MessageType type, std::string_view* buf, Message* msg) {
 }
 
 }  // namespace redis
+
+template <>
+size_t FindFrameBoundary<redis::Message>(MessageType /*type*/, std::string_view buf,
+                                         size_t start_pos) {
+  return redis::FindMessageBoundary(buf, start_pos);
+}
+
+template <>
+ParseState ParseFrame(MessageType type, std::string_view* buf, redis::Message* msg) {
+  return redis::ParseMessage(type, buf, msg);
+}
+
 }  // namespace protocols
 }  // namespace stirling
 }  // namespace px

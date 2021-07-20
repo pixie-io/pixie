@@ -50,6 +50,7 @@ enum TrafficProtocol {
   kProtocolPGSQL,
   kProtocolDNS,
   kProtocolRedis,
+  kProtocolNATS,
   kProtocolMongo,
   kProtocolKafka,
   kNumProtocols

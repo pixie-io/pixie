@@ -82,7 +82,7 @@ TEST_P(ParseTest, ResultsAreAsExpected) {
     std::string_view req = GetParam().input;
     Message msg;
 
-    EXPECT_EQ(ParseMessage(type, &req, &msg), ParseState::kSuccess);
+    EXPECT_EQ(ParseFrame(type, &req, &msg), ParseState::kSuccess);
     EXPECT_THAT(req, IsEmpty());
     EXPECT_THAT(msg.payload, StrEq(std::string(GetParam().expected_payload)));
     EXPECT_THAT(std::string(msg.command), StrEq(std::string(GetParam().expected_command)));
@@ -132,7 +132,7 @@ TEST(ParsePubMsgTest, DetectPublishedMessage) {
   std::string_view resp = kPubMsg;
   Message msg;
 
-  EXPECT_EQ(ParseMessage(MessageType::kResponse, &resp, &msg), ParseState::kSuccess);
+  EXPECT_EQ(ParseFrame(MessageType::kResponse, &resp, &msg), ParseState::kSuccess);
   EXPECT_THAT(resp, IsEmpty());
   EXPECT_THAT(msg.payload, StrEq(R"(["message","foo","test"])"));
   EXPECT_TRUE(msg.is_published_message);
@@ -145,7 +145,7 @@ TEST_P(ParseIncompleteInputTest, IncompleteInput) {
   std::string_view input = GetParam();
   Message msg;
 
-  EXPECT_EQ(ParseMessage(MessageType::kRequest, &input, &msg), ParseState::kNeedsMoreData);
+  EXPECT_EQ(ParseFrame(MessageType::kRequest, &input, &msg), ParseState::kNeedsMoreData);
   EXPECT_THAT(std::string(input), StrEq(original_input));
 }
 
@@ -169,7 +169,7 @@ TEST_P(ParseInvalidInputTest, InvalidInput) {
   std::string_view input = GetParam();
   Message msg;
 
-  EXPECT_EQ(ParseMessage(MessageType::kRequest, &input, &msg), ParseState::kInvalid);
+  EXPECT_EQ(ParseFrame(MessageType::kRequest, &input, &msg), ParseState::kInvalid);
   EXPECT_THAT(std::string(input), StrEq(original_input));
 }
 

@@ -545,6 +545,8 @@ static __inline struct protocol_message_t infer_protocol(const char* buf, size_t
     // For Redis, the message type is left to be kUnknown.
     // The message types are then inferred via traffic direction and client/server role.
     inferred_message.protocol = kProtocolRedis;
+  } else if ((inferred_message.type = infer_nats_message(buf, count)) != kUnknown) {
+    inferred_message.protocol = kProtocolNATS;
   }
 
   conn_info->prev_count = count;

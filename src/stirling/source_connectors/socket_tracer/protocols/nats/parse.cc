@@ -47,17 +47,6 @@ using ::px::utils::ToJSONString;
 constexpr std::string_view kMessageTerminateMarker = "\r\n";
 constexpr std::string_view kMessageFieldDelimiters = " \t";
 
-constexpr std::string_view kInfo = "INFO";
-constexpr std::string_view kConnect = "CONNECT";
-constexpr std::string_view kPub = "PUB";
-constexpr std::string_view kSub = "SUB";
-constexpr std::string_view kUnsub = "UNSUB";
-constexpr std::string_view kMsg = "MSG";
-constexpr std::string_view kPing = "PING";
-constexpr std::string_view kPong = "PONG";
-constexpr std::string_view kOK = "+OK";
-constexpr std::string_view kERR = "-ERR";
-
 size_t FindMessageBoundary(std::string_view buf, size_t start_pos) {
   // Based on https://github.com/nats-io/docs/blob/master/nats_protocol/nats-protocol.md.
   const std::vector<std::string_view> kMessageTypes = {kInfo, kConnect, kPub,  kSub, kUnsub,
@@ -228,6 +217,18 @@ Status ParseMessage(std::string_view* buf, Message* msg) {
 }
 
 }  // namespace nats
+
+template <>
+size_t FindFrameBoundary<nats::Message>(MessageType /*type*/, std::string_view buf,
+                                        size_t start_pos) {
+  return nats::FindMessageBoundary(buf, start_pos);
+}
+
+template <>
+ParseState ParseFrame(MessageType /*type*/, std::string_view* buf, nats::Message* msg) {
+  return TranslateStatus(nats::ParseMessage(buf, msg));
+}
+
 }  // namespace protocols
 }  // namespace stirling
 }  // namespace px
