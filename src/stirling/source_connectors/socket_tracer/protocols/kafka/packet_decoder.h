@@ -106,10 +106,15 @@ class PacketDecoder {
 
   StatusOr<int32_t> ExtractUnsignedVarint();
 
-  // Represents an integer between -231 and 231-1 inclusive. Encoding follows the
+  // Represents an integer between -2^31 and 2^31-1 inclusive. Encoding follows the
   // variable-length zig-zag encoding from Google Protocol Buffers.
   // https://developers.google.com/protocol-buffers/docs/encoding#varints
   StatusOr<int32_t> ExtractVarint();
+
+  // Represents an integer between -2^63 and 2^63-1 inclusive. Encoding follows the variable-length
+  // zig-zag encoding from Google Protocol Buffers.
+  // https://developers.google.com/protocol-buffers/docs/encoding#varints
+  StatusOr<int64_t> ExtractVarlong();
 
   // Represents a sequence of characters. First the length N is given as an INT16. Then N
   // bytes follow which are the UTF-8 encoding of the character sequence.
@@ -192,6 +197,12 @@ class PacketDecoder {
  private:
   template <typename TCharType>
   StatusOr<std::basic_string<TCharType>> ExtractBytesCore(int16_t len);
+
+  template <uint8_t TMaxLength>
+  StatusOr<int64_t> ExtractUnsignedVarintCore();
+
+  template <uint8_t TMaxLength>
+  StatusOr<int64_t> ExtractVarintCore();
 
   BinaryDecoder binary_decoder_;
   int16_t api_version_ = 0;

@@ -89,6 +89,40 @@ INSTANTIATE_TEST_SUITE_P(
         PacketDecoderTestCase<int32_t>{std::string("\xFE\xFF\xFF\xFF\x0F", 5), INT_MAX},
         PacketDecoderTestCase<int32_t>{std::string("\xFF\xFF\xFF\xFF\x0F", 5), INT_MIN}));
 
+class PacketDecoderTestVarlong : public PacketDecoderTest<int64_t> {};
+
+TEST_P(PacketDecoderTestVarlong, ExtractVarlong) {
+  PacketDecoder decoder = PacketDecoder(GetParam().input);
+  EXPECT_OK_AND_EQ(decoder.ExtractVarlong(), GetParam().expected_output);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    AllData, PacketDecoderTestVarlong,
+    ::testing::Values(
+        PacketDecoderTestCase<int64_t>{std::string("\x00", 1), 0},
+        PacketDecoderTestCase<int64_t>{std::string("\x01", 1), -1},
+        PacketDecoderTestCase<int64_t>{std::string("\x02", 1), 1},
+        PacketDecoderTestCase<int64_t>{std::string("\x7E", 1), 63},
+        PacketDecoderTestCase<int64_t>{std::string("\x7F", 1), -64},
+        PacketDecoderTestCase<int64_t>{std::string("\x80\x01", 2), 64},
+        PacketDecoderTestCase<int64_t>{std::string("\x81\x01", 2), -65},
+        PacketDecoderTestCase<int64_t>{std::string("\xFE\x7F", 2), 8191},
+        PacketDecoderTestCase<int64_t>{std::string("\xFF\x7F", 2), -8192},
+        PacketDecoderTestCase<int64_t>{std::string("\x80\x80\x01", 3), 8192},
+        PacketDecoderTestCase<int64_t>{std::string("\x81\x80\x01", 3), -8193},
+        PacketDecoderTestCase<int64_t>{std::string("\xFE\xFF\x7F", 3), 1048575},
+        PacketDecoderTestCase<int64_t>{std::string("\xFF\xFF\x7F", 3), -1048576},
+        PacketDecoderTestCase<int64_t>{std::string("\x80\x80\x80\x01", 4), 1048576},
+        PacketDecoderTestCase<int64_t>{std::string("\x81\x80\x80\x01", 4), -1048577},
+        PacketDecoderTestCase<int64_t>{std::string("\xFE\xFF\xFF\x7F", 4), 134217727},
+        PacketDecoderTestCase<int64_t>{std::string("\xFF\xFF\xFF\x7F", 4), -134217728},
+        PacketDecoderTestCase<int64_t>{std::string("\x80\x80\x80\x80\x01", 5), 134217728},
+        PacketDecoderTestCase<int64_t>{std::string("\x81\x80\x80\x80\x01", 5), -134217729},
+        PacketDecoderTestCase<int64_t>{std::string("\xFE\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x01", 10),
+                                       LONG_MAX},
+        PacketDecoderTestCase<int64_t>{std::string("\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF\x01", 10),
+                                       LONG_MIN}));
+
 TEST(KafkaPacketDecoderTest, ExtractCompactString) {
   {
     const std::string_view msg = CreateStringView<char>(
