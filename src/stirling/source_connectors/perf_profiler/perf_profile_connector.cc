@@ -70,18 +70,23 @@ Status PerfProfileConnector::InitImpl() {
 
   LOG(INFO) << "PerfProfiler: Stack trace profiling sampling probe successfully deployed.";
 
-  // Made it here w/ no problems; now init the symbolizer.
+  // Create a symbolizer for user symbols.
   if (FLAGS_stirling_profiler_symbolizer == "bcc") {
-    PL_ASSIGN_OR_RETURN(symbolizer_, BCCSymbolizer::Create());
+    PL_ASSIGN_OR_RETURN(u_symbolizer_, BCCSymbolizer::Create());
   } else if (FLAGS_stirling_profiler_symbolizer == "elf") {
-    PL_ASSIGN_OR_RETURN(symbolizer_, ElfSymbolizer::Create());
+    PL_ASSIGN_OR_RETURN(u_symbolizer_, ElfSymbolizer::Create());
   } else {
     return error::Internal("Unrecognized symbolizer $0", FLAGS_stirling_profiler_symbolizer);
   }
 
+  // Create a symbolizer for kernel symbols.
+  // Kernel symbolizer always uses BCC symbolizer.
+  PL_ASSIGN_OR_RETURN(k_symbolizer_, BCCSymbolizer::Create());
+
   if (FLAGS_stirling_profiler_cache_symbols) {
     // Add a caching layer on top of the existing symbolizer.
-    PL_ASSIGN_OR_RETURN(symbolizer_, CachingSymbolizer::Create(std::move(symbolizer_)));
+    PL_ASSIGN_OR_RETURN(u_symbolizer_, CachingSymbolizer::Create(std::move(u_symbolizer_)));
+    PL_ASSIGN_OR_RETURN(k_symbolizer_, CachingSymbolizer::Create(std::move(k_symbolizer_)));
   }
 
   return Status::OK();
@@ -118,7 +123,7 @@ void PerfProfileConnector::CleanupSymbolizers(const absl::flat_hash_set<md::UPID
     struct upid_t upid;
     upid.pid = md_upid.pid();
     upid.start_time_ticks = md_upid.start_ts();
-    symbolizer_->DeleteUPID(upid);
+    u_symbolizer_->DeleteUPID(upid);
   }
 }
 
@@ -134,7 +139,7 @@ PerfProfileConnector::StackTraceHisto PerfProfileConnector::AggregateStackTraces
   const absl::flat_hash_set<md::UPID>& upids_for_symbolization = ctx->GetUPIDs();
 
   // Create a new stringifier for this iteration of the continuous perf profiler.
-  Stringifier stringifier(symbolizer_.get(), stack_traces);
+  Stringifier stringifier(u_symbolizer_.get(), k_symbolizer_.get(), stack_traces);
 
   absl::flat_hash_set<int> k_stack_ids_to_remove;
 

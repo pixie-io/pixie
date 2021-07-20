@@ -24,33 +24,21 @@
 namespace px {
 namespace stirling {
 
-Stringifier::Stringifier(Symbolizer* symbolizer, ebpf::BPFStackTable* stack_traces)
-    : symbolizer_(symbolizer), stack_traces_(stack_traces) {}
+Stringifier::Stringifier(Symbolizer* u_symbolizer, Symbolizer* k_symbolizer,
+                         ebpf::BPFStackTable* stack_traces)
+    : u_symbolizer_(u_symbolizer), k_symbolizer_(k_symbolizer), stack_traces_(stack_traces) {}
 
-std::string Stringifier::BuildStackTraceString(const int stack_id, const struct upid_t& upid,
+std::string Stringifier::BuildStackTraceString(const std::vector<uintptr_t>& addrs,
+                                               SymbolizerFn symbolize_fn,
                                                const std::string_view& suffix) {
   // TODO(jps): re-evaluate the correct amount to reserve here.
   std::string stack_trace_str;
   stack_trace_str.reserve(128);
 
-  // Get a function that returns a symbol based on an address. The upid is
-  // used by the symbolizer both to find symbols in the underlying binary,
-  // and to track cached symbols (symbols that we have previously looked up).
-  auto symbolize_fn = symbolizer_->GetSymbolizerFn(upid);
-
-  // Clear the stack-traces map as we go along here; this has lower overhead
-  // compared to first reading the stack-traces map, then using clear_table_non_atomic().
-  constexpr bool kClearStackId = true;
-
   // Some stack-traces have the address 0xcccccccccccccccc where one might
   // otherwise expect to find "main" or "start_thread". Given that this address
   // is not a "real" address, we filter it out below.
   constexpr uint64_t kSentinelAddr = 0xcccccccccccccccc;
-
-  // Get the stack trace (as a vector of addresses) from the shared BPF stack trace table.
-  const std::vector<uintptr_t> addrs = stack_traces_->get_stack_addr(stack_id, kClearStackId);
-  VLOG_IF(1, addrs.size() == 0) << absl::Substitute(
-      "[empty_stack_trace] stack_id: $0, upid.pid: $1", stack_id, static_cast<int>(upid.pid));
 
   // Build the folded stack trace string.
   for (auto iter = addrs.rbegin(); iter != addrs.rend(); ++iter) {
@@ -73,30 +61,44 @@ std::string Stringifier::BuildStackTraceString(const int stack_id, const struct 
   return stack_trace_str;
 }
 
-std::string Stringifier::FindOrBuildStackTraceString(const int stack_id, const struct upid_t& upid,
+std::string Stringifier::FindOrBuildStackTraceString(const int stack_id, SymbolizerFn symbolize_fn,
                                                      const std::string_view& suffix) {
   // First try to find the memoized result in the stack_trace_strs_ map,
   // if no memoized result is available, build the folded stack trace string.
   auto [iter, inserted] = stack_trace_strs_.try_emplace(stack_id, "");
   if (inserted) {
-    iter->second = BuildStackTraceString(stack_id, upid, suffix);
+    // Clear the stack-traces map as we go along here; this has lower overhead
+    // compared to first reading the stack-traces map, then using clear_table_non_atomic().
+    constexpr bool kClearStackId = true;
+
+    // Get the stack trace (as a vector of addresses) from the shared BPF stack trace table.
+    const std::vector<uintptr_t> addrs = stack_traces_->get_stack_addr(stack_id, kClearStackId);
+    VLOG_IF(1, addrs.empty()) << absl::Substitute("[empty_stack_trace] stack_id: $0", stack_id);
+
+    iter->second = BuildStackTraceString(addrs, symbolize_fn, suffix);
   }
   return iter->second;
 }
 
 std::string Stringifier::FoldedStackTraceString(const stack_trace_key_t& key) {
+  using stringifier::kKernSuffix;
+  using stringifier::kUserSuffix;
+
   const int u_stack_id = key.user_stack_id;
   const int k_stack_id = key.kernel_stack_id;
 
   const struct upid_t& u_upid = key.upid;
   const struct upid_t& k_upid = profiler::kKernelUPID;
 
-  // Using bind because it helps the reduce redunant information in the if/else chain below.
+  auto u_symbolizer_fn = u_symbolizer_->GetSymbolizerFn(u_upid);
+  auto k_symbolizer_fn = k_symbolizer_->GetSymbolizerFn(k_upid);
+
+  // Using bind because it helps the reduce redundant information in the if/else chain below.
   // Also, it is easier to read, e.g.:
   // stack_trace_str = u_stack_str_fn() + ";" + k_stack_str_fn();
   auto fn_addr = &Stringifier::FindOrBuildStackTraceString;
-  auto u_stack_str_fn = std::bind(fn_addr, this, u_stack_id, u_upid, stringifier::kUserSuffix);
-  auto k_stack_str_fn = std::bind(fn_addr, this, k_stack_id, k_upid, stringifier::kKernSuffix);
+  auto u_stack_str_fn = std::bind(fn_addr, this, u_stack_id, u_symbolizer_fn, kUserSuffix);
+  auto k_stack_str_fn = std::bind(fn_addr, this, k_stack_id, k_symbolizer_fn, kKernSuffix);
 
   std::string stack_trace_str;
   stack_trace_str.reserve(128);

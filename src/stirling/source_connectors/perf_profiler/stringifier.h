@@ -19,6 +19,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "src/stirling/bpf_tools/bcc_bpf_intf/upid.h"
 #include "src/stirling/source_connectors/perf_profiler/bcc_bpf_intf/stack_event.h"
@@ -64,17 +65,25 @@ static constexpr std::string_view kDropMessage = "<stack trace lost>";
 // of the continuous perf. profiler.
 class Stringifier {
  public:
-  Stringifier(Symbolizer* symbolizer, ebpf::BPFStackTable* stack_traces);
+  /**
+   * Construct a stack trace stringifier.
+   *
+   * @param u_symbolizer A symbolizer for user-space addresses.
+   * @param k_symbolizer A symbolizer for kernel-space addresses.
+   * @param stack_traces Pointer to the BCC collected stack traces.
+   */
+  Stringifier(Symbolizer* u_symbolizer, Symbolizer* k_symbolizer,
+              ebpf::BPFStackTable* stack_traces);
 
   // Returns a folded stack trace string based on the stack trace histogram key.
-  // The key contains both a user & kernel stack-trace-id, which are subsquently
+  // The key contains both a user & kernel stack-trace-id, which are subsequently
   // passed into FindOrBuildStackTraceString().
   std::string FoldedStackTraceString(const stack_trace_key_t& key);
 
  private:
-  std::string BuildStackTraceString(const int stack_id, const struct upid_t& upid,
+  std::string BuildStackTraceString(const std::vector<uintptr_t>& addrs, SymbolizerFn symbolize_fn,
                                     const std::string_view& suffix);
-  std::string FindOrBuildStackTraceString(const int stack_id, const struct upid_t& upid,
+  std::string FindOrBuildStackTraceString(const int stack_id, SymbolizerFn symbolize_fn,
                                           const std::string_view& suffix);
 
   // Memoized results of previous calls to FindOrBuildStackTraceString():
@@ -82,7 +91,8 @@ class Stringifier {
   absl::flat_hash_map<int, std::string> stack_trace_strs_;
 
   // The symbolizer is used to look up a symbol that corresponds to a stack trace address.
-  Symbolizer* const symbolizer_;
+  Symbolizer* const u_symbolizer_;
+  Symbolizer* const k_symbolizer_;
 
   // The shared BPF stack trace table provides a stack trace, as a list of addresses,
   // based on the stack-trace-id (an integer). When read, a given stack trace is consumed by

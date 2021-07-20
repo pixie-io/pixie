@@ -85,7 +85,6 @@ class ElfSymbolizer : public Symbolizer, public NotCopyMoveable {
   static StatusOr<std::unique_ptr<Symbolizer>> Create();
 
   SymbolizerFn GetSymbolizerFn(const struct upid_t& upid) override;
-
   void DeleteUPID(const struct upid_t& upid) override;
 
  private:

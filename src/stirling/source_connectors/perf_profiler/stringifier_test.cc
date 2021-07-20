@@ -117,7 +117,8 @@ class StringifierTest : public ::testing::Test {
 
     // Create our device under test, the stringifier.
     // It needs a symbolizer and a shared BPF stack traces map.
-    stringifier_ = std::make_unique<Stringifier>(symbolizer_.get(), stack_traces_.get());
+    stringifier_ =
+        std::make_unique<Stringifier>(symbolizer_.get(), symbolizer_.get(), stack_traces_.get());
   }
 
   void TearDown() override {}

@@ -85,8 +85,8 @@ SymbolizerFn ElfSymbolizer::GetSymbolizerFn(const struct upid_t& upid) {
     StatusOr<std::unique_ptr<ElfReader::Symbolizer>> upid_symbolizer_status =
         CreateUPIDSymbolizer(upid);
     if (!upid_symbolizer_status.ok()) {
-      LOG(ERROR) << absl::Substitute("Failed to create Symbolizer function for $0 [error=$1]",
-                                     upid.pid, upid_symbolizer_status.ToString());
+      VLOG(1) << absl::Substitute("Failed to create Symbolizer function for $0 [error=$1]",
+                                  upid.pid, upid_symbolizer_status.ToString());
       return SymbolizerFn(&(EmptySymbolizerFn));
     }
 
