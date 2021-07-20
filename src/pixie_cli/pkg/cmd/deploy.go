@@ -58,6 +58,8 @@ const (
 	// DefaultClassAnnotationKey is the key in the annotation map which indicates
 	// a storage class is default.
 	DefaultClassAnnotationKey = "storageclass.kubernetes.io/is-default-class"
+	// DefaultCloudAddr is the Community Cloud address.
+	DefaultCloudAddr = "withpixie.ai:443"
 )
 
 // BlockListedLabels are labels that we won't allow users to specify, since these are labels that we
@@ -87,6 +89,10 @@ var DeployCmd = &cobra.Command{
 		g := color.GreenString
 
 		cloudAddr := viper.GetString("cloud_addr")
+		docsAddr := cloudAddr
+		if cloudAddr != DefaultCloudAddr {
+			docsAddr = "px.dev"
+		}
 
 		fmt.Fprint(os.Stderr, "\n")
 		p(color.CyanString("==> ") + b("Next Steps:\n"))
@@ -94,7 +100,7 @@ var DeployCmd = &cobra.Command{
 		p("- %s : to show pre-installed scripts.\n", g("px script list"))
 		p("- %s : to run service info for sock-shop demo application (service selection coming soon!).\n",
 			g("px run %s", script.ServiceStatsScript))
-		p("\nCheck out our docs: %s.\n", u("https://work.%s/docs", cloudAddr))
+		p("\nCheck out our docs: %s.\n", u("https://docs.%s", docsAddr))
 		p("\nVisit : %s to use Pixie's UI.\n", u("https://work.%s", cloudAddr))
 	},
 	Run: runDeployCmd,
