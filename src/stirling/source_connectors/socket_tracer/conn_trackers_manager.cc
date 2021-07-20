@@ -109,29 +109,6 @@ constexpr size_t kMaxConnTrackerPoolSize = 2048;
 
 uint64_t GetConnMapKey(uint32_t pid, int32_t fd) { return (static_cast<uint64_t>(pid) << 32) | fd; }
 
-std::optional<ConnTrackersManager::StatKey> GetStatKeyForProtocol(TrafficProtocol protocol) {
-#define CASE(protocol) \
-  case protocol:       \
-    return ConnTrackersManager::StatKey::protocol;
-  switch (protocol) {
-    CASE(kProtocolUnknown)
-    CASE(kProtocolHTTP)
-    CASE(kProtocolHTTP2)
-    CASE(kProtocolMySQL)
-    CASE(kProtocolCQL)
-    CASE(kProtocolPGSQL)
-    CASE(kProtocolDNS)
-    CASE(kProtocolRedis)
-    CASE(kProtocolNATS)
-    CASE(kProtocolMongo)
-    CASE(kProtocolKafka)
-    case kNumProtocols:
-      return std::nullopt;
-  }
-#undef CASE
-  return std::nullopt;
-}
-
 }  // namespace
 
 ConnTrackersManager::ConnTrackersManager() : trackers_pool_(kMaxConnTrackerPoolSize) {}
@@ -240,7 +217,9 @@ std::string ConnTrackersManager::DebugInfo() const {
   return out;
 }
 
-std::string ConnTrackersManager::StatsString() const { return stats_.Print(); }
+std::string ConnTrackersManager::StatsString() const {
+  return absl::StrCat(stats_.Print(), protocol_stats_.Print());
+}
 
 void ConnTrackersManager::ComputeProtocolStats() {
   absl::flat_hash_map<TrafficProtocol, int> protocol_count;
@@ -248,16 +227,10 @@ void ConnTrackersManager::ComputeProtocolStats() {
     ++protocol_count[tracker->protocol()];
   }
   for (auto protocol : magic_enum::enum_values<TrafficProtocol>()) {
-    auto protocol_stat_key_opt = GetStatKeyForProtocol(protocol);
-    if (!protocol_stat_key_opt.has_value()) {
-      continue;
-    }
-    auto protocol_stat_key = protocol_stat_key_opt.value();
-    stats_.Reset(protocol_stat_key);
-
+    protocol_stats_.Reset(protocol);
     auto iter = protocol_count.find(protocol);
     if (iter != protocol_count.end()) {
-      stats_.Increment(protocol_stat_key, iter->second);
+      protocol_stats_.Increment(protocol, iter->second);
     }
   }
 }

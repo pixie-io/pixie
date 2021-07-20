@@ -95,18 +95,6 @@ class ConnTrackersManager {
     kCreated,
     kDestroyed,
     kDestroyedGens,
-
-    kProtocolUnknown,
-    kProtocolHTTP,
-    kProtocolHTTP2,
-    kProtocolMySQL,
-    kProtocolCQL,
-    kProtocolPGSQL,
-    kProtocolDNS,
-    kProtocolRedis,
-    kProtocolNATS,
-    kProtocolMongo,
-    kProtocolKafka,
   };
 
   ConnTrackersManager();
@@ -164,6 +152,7 @@ class ConnTrackersManager {
 
   // Records statistics of ConnTracker for reporting and consistency check.
   utils::StatCounter<StatKey> stats_;
+  utils::StatCounter<TrafficProtocol> protocol_stats_;
 };
 
 }  // namespace stirling

@@ -111,7 +111,7 @@ TEST_F(ConnTrackersManagerTest, DebugInfo) {
             "kCreated=1 kDestroyed=0 kDestroyedGens=0 "
             "kProtocolUnknown=0 kProtocolHTTP=0 kProtocolHTTP2=0 kProtocolMySQL=0 kProtocolCQL=0 "
             "kProtocolPGSQL=0 kProtocolDNS=0 kProtocolRedis=0 kProtocolNATS=0 kProtocolMongo=0 "
-            "kProtocolKafka=0 \n"
+            "kProtocolKafka=0 kNumProtocols=0 \n"
             "Detailed statistics of individual ConnTracker:\n"
             "  conn_tracker=conn_id=[pid=1 start_time_ticks=1 fd=1 gen=1] state=kCollecting "
             "remote_addr=-:-1 role=kRoleUnknown protocol=kProtocolUnknown zombie=false "
