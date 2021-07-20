@@ -96,13 +96,13 @@ func init() {
 Script Usage:
   To show a script’s arguments and their descriptions:
 
-    px run <script_name> – --help
-    px run px/namespace – --help
+    px run <script_name> -- --help
+    px run px/namespace -- --help
 
   To pass an argument to a script:
 
-    px run <script_name> – --arg_name val
-    px run px/namespace – --namespace default
+    px run <script_name> -- --arg_name val
+    px run px/namespace -- --namespace default
 
 `)
 	})
