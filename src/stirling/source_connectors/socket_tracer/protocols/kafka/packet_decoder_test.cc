@@ -30,6 +30,10 @@ namespace kafka {
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
 
+bool operator==(const RecordMessage& lhs, const RecordMessage& rhs) {
+  return lhs.key == rhs.key && lhs.value == rhs.value;
+}
+
 template <typename T>
 struct PacketDecoderTestCase {
   std::string input;
@@ -186,6 +190,23 @@ TEST(KafkaPacketDecoderTest, ExtractCompactArray) {
     PacketDecoder decoder(input);
     EXPECT_OK_AND_THAT(decoder.ExtractCompactArray(&PacketDecoder::ExtractString),
                        ElementsAre("Hello", "World!"));
+  }
+}
+
+TEST(KafkaPacketDecoderTest, ExtractRecordMessage) {
+  // Empty key and value Record.
+  {
+    std::string_view input = CreateStringView<char>("\x0c\x00\x00\x00\x01\x00\x00");
+    RecordMessage expected_result{};
+    PacketDecoder decoder(input);
+    EXPECT_OK_AND_EQ(decoder.ExtractRecordMessage(), expected_result);
+  }
+  {
+    std::string_view input =
+        CreateStringView<char>("\x28\x00\x00\x00\x06key\x1cMy first event\x00");
+    RecordMessage expected_result{.key = "key", .value = "My first event"};
+    PacketDecoder decoder(input);
+    EXPECT_OK_AND_EQ(decoder.ExtractRecordMessage(), expected_result);
   }
 }
 

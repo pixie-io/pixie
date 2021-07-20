@@ -28,7 +28,7 @@ namespace kafka {
 // TODO(chengruizhe): Many of the methods here are shareable with other protocols such as CQL.
 
 template <typename TCharType>
-StatusOr<std::basic_string<TCharType>> PacketDecoder::ExtractBytesCore(int16_t len) {
+StatusOr<std::basic_string<TCharType>> PacketDecoder::ExtractBytesCore(int32_t len) {
   PL_ASSIGN_OR_RETURN(std::basic_string_view<TCharType> tbuf,
                       binary_decoder_.ExtractString<TCharType>(len));
   return std::basic_string<TCharType>(tbuf);
@@ -117,6 +117,38 @@ StatusOr<std::string> PacketDecoder::ExtractCompactNullableString() {
     return error::Internal("Compact Nullable String has negative length.");
   }
   if (len == -1) {
+    return std::string();
+  }
+  return ExtractBytesCore<char>(len);
+}
+
+// Only supports Kafka version >= 0.11.0
+StatusOr<RecordMessage> PacketDecoder::ExtractRecordMessage() {
+  RecordMessage r;
+  PL_ASSIGN_OR_RETURN(int32_t length, ExtractVarint());
+  PL_RETURN_IF_ERROR(MarkOffset(length));
+
+  PL_ASSIGN_OR_RETURN(int8_t attributes, ExtractInt8());
+  PL_ASSIGN_OR_RETURN(int64_t timestamp_delta, ExtractVarlong());
+  PL_ASSIGN_OR_RETURN(int32_t offset_delta, ExtractVarint());
+  PL_ASSIGN_OR_RETURN(r.key, ExtractBytesZigZag());
+  PL_ASSIGN_OR_RETURN(r.value, ExtractBytesZigZag());
+
+  PL_UNUSED(attributes);
+  PL_UNUSED(timestamp_delta);
+  PL_UNUSED(offset_delta);
+
+  // Discard record headers and jump to the marked offset.
+  PL_RETURN_IF_ERROR(JumpToOffset());
+  return r;
+}
+
+StatusOr<std::string> PacketDecoder::ExtractBytesZigZag() {
+  PL_ASSIGN_OR_RETURN(int32_t len, ExtractVarint());
+  if (len < -1) {
+    return error::Internal("Not enough bytes in ExtractBytesZigZag.");
+  }
+  if (len == 0 || len == -1) {
     return std::string();
   }
   return ExtractBytesCore<char>(len);

@@ -22,6 +22,7 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 #include <map>
+#include <stack>
 #include <string>
 #include <utility>
 #include <vector>
@@ -79,6 +80,11 @@ struct ProduceReq {
   }
 };
 
+struct RecordMessage {
+  std::string key;
+  std::string value;
+};
+
 // TODO(chengruizhe): Support the complete ProduceResp.
 struct ProduceResp {
   int32_t num_responses = 0;
@@ -93,7 +99,7 @@ struct ProduceResp {
 
 class PacketDecoder {
  public:
-  explicit PacketDecoder(std::string_view buf) : binary_decoder_(buf) {}
+  explicit PacketDecoder(std::string_view buf) : marked_bufs_(), binary_decoder_(buf) {}
   explicit PacketDecoder(const Packet& packet) : PacketDecoder(packet.msg) {}
 
   StatusOr<int8_t> ExtractInt8();
@@ -135,7 +141,10 @@ class PacketDecoder {
   // sequence. A null string is represented with a length of 0.
   StatusOr<std::string> ExtractCompactNullableString();
 
-  // ARRAY. Represents a sequence of objects of a given type T. Type T can be either a primitive
+  // Represents bytes whose length is encoded with zigzag varint.
+  StatusOr<std::string> ExtractBytesZigZag();
+
+  // Represents a sequence of objects of a given type T. Type T can be either a primitive
   // type (e.g. STRING) or a structure. First, the length N is given as an INT32. Then N instances
   // of type T follow. A null array is represented with a length of -1.
   template <typename T>
@@ -159,7 +168,7 @@ class PacketDecoder {
     return result;
   }
 
-  // COMPACT ARRAY. Represents a sequence of objects of a given type T. Type T can be either a
+  // Represents a sequence of objects of a given type T. Type T can be either a
   // primitive type (e.g. STRING) or a structure. First, the length N + 1 is given as an
   // UNSIGNED_VARINT. Then N instances of type T follow. A null array is represented with a length
   // of 0.
@@ -184,6 +193,11 @@ class PacketDecoder {
     return result;
   }
 
+  // Messages consist of a variable-length header, a variable-length opaque key byte array and a
+  // variable-length opaque value byte array.
+  // https://kafka.apache.org/documentation/#record
+  StatusOr<RecordMessage> ExtractRecordMessage();
+
   Status ExtractReqHeader(Request* req);
   Status ExtractRespHeader(Response* resp);
 
@@ -196,7 +210,7 @@ class PacketDecoder {
 
  private:
   template <typename TCharType>
-  StatusOr<std::basic_string<TCharType>> ExtractBytesCore(int16_t len);
+  StatusOr<std::basic_string<TCharType>> ExtractBytesCore(int32_t len);
 
   template <uint8_t TMaxLength>
   StatusOr<int64_t> ExtractUnsignedVarintCore();
@@ -204,6 +218,26 @@ class PacketDecoder {
   template <uint8_t TMaxLength>
   StatusOr<int64_t> ExtractVarintCore();
 
+  // Sometimes it's more efficient to parse out some fields and jump to an offset indicated
+  // by a length. This also makes parsing more robust, as it sets boundaries. MarkOffset and
+  // JumpToOffset should be used in pairs.
+  Status MarkOffset(int32_t len) {
+    DCHECK_GE(len, 0);
+    if ((size_t)len > binary_decoder_.Buf().size()) {
+      return error::Internal("Not enough bytes in MarkOffset.");
+    }
+    marked_bufs_.push(binary_decoder_.Buf().substr(len));
+    return Status::OK();
+  }
+
+  Status JumpToOffset() {
+    DCHECK(!marked_bufs_.empty());
+    binary_decoder_.SetBuf(marked_bufs_.top());
+    marked_bufs_.pop();
+    return Status::OK();
+  }
+
+  std::stack<std::string_view> marked_bufs_;
   BinaryDecoder binary_decoder_;
   int16_t api_version_ = 0;
 };

@@ -37,6 +37,7 @@ class BinaryDecoder {
   bool eof() const { return buf_.empty(); }
   size_t BufSize() const { return buf_.size(); }
   std::string_view Buf() const { return buf_; }
+  void SetBuf(std::string_view buf) { buf_ = buf; }
 
   template <typename TCharType = char>
   StatusOr<TCharType> ExtractChar() {
