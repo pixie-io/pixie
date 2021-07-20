@@ -5,11 +5,6 @@ kind: Namespace
 metadata:
   name: {{ .Values.olmNamespace }}
 ---
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: {{ .Values.olmOperatorNamespace }}
----
 kind: ServiceAccount
 apiVersion: v1
 metadata:
@@ -189,12 +184,6 @@ rules:
 - apiGroups: ["packages.operators.coreos.com"]
   resources: ["packagemanifests", "packagemanifests/icon"]
   verbs: ["get", "list", "watch"]
----
-apiVersion: operators.coreos.com/v1
-kind: OperatorGroup
-metadata:
-  name: global-operators
-  namespace: {{ .Values.olmOperatorNamespace }}
 ---
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup

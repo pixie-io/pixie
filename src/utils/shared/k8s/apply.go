@@ -199,10 +199,16 @@ func ApplyResources(clientset *kubernetes.Clientset, config *rest.Config, resour
 		}
 
 		res := dynamicClient.Resource(mapping.Resource)
-		nsRes := res.Namespace(namespace)
+		objNS := namespace
+		if objNS == "" { // If no namespace specified, use the namespace from the resource.
+			if nestedNS, ok, _ := unstructured.NestedString(resource.Object.Object, "metadata", "namespace"); ok {
+				objNS = nestedNS
+			}
+		}
+		nsRes := res.Namespace(objNS)
 
 		createRes := nsRes
-		if k8sRes == "podsecuritypolicies" || k8sRes == "namespaces" || k8sRes == "configmap" || k8sRes == "clusterrolebindings" || k8sRes == "clusterroles" {
+		if k8sRes == "podsecuritypolicies" || k8sRes == "namespaces" || k8sRes == "configmap" || k8sRes == "clusterrolebindings" || k8sRes == "clusterroles" || k8sRes == "customresourcedefinitions" {
 			createRes = res
 		}
 

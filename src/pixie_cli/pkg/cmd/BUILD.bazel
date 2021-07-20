@@ -62,7 +62,6 @@ go_library(
         "//src/utils/shared/certs",
         "//src/utils/shared/k8s",
         "//src/utils/shared/yamls",
-        "//src/utils/template_generator/vizier_yamls",
         "@com_github_alecthomas_chroma//quick",
         "@com_github_blang_semver//:semver",
         "@com_github_bmatcuk_doublestar//:doublestar",

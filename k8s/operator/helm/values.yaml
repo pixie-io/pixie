@@ -9,7 +9,7 @@ olmNamespace: "olm"
 # The namespace which olm operators should run in. If olm has already
 # been deployed o the cluster, this should be the namespace that the olm operators
 # are running in.
-olmOperatorNamespace: "operators"
+olmOperatorNamespace: "px-operators"
 # The bundle channel which OLM should listen to for the Vizier operator bundles. 
 # Should be "stable" for production-versions of the operator, and "test" for release candidates.
 olmBundleChannel: "stable"

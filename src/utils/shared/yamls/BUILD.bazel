@@ -27,6 +27,7 @@ go_library(
     deps = [
         "@com_github_evanphx_json_patch//:json-patch",
         "@com_github_masterminds_sprig_v3//:sprig",
+        "@in_gopkg_yaml_v2//:yaml_v2",
         "@io_k8s_apimachinery//pkg/api/meta",
         "@io_k8s_apimachinery//pkg/apis/meta/v1/unstructured",
         "@io_k8s_apimachinery//pkg/runtime",

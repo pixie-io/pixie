@@ -123,3 +123,57 @@ func FetchVizierTemplates(conn *grpc.ClientConn, authToken, versionStr string) (
 
 	return yamlFiles, nil
 }
+
+// FetchOperatorTemplates fetches the operator templates for the given version.
+func FetchOperatorTemplates(conn *grpc.ClientConn, versionStr string) ([]*yamls.YAMLFile, error) {
+	client := cloudpb.NewArtifactTrackerClient(conn)
+
+	req := &cloudpb.GetDownloadLinkRequest{
+		ArtifactName: "operator",
+		VersionStr:   versionStr,
+		ArtifactType: cloudpb.AT_CONTAINER_SET_TEMPLATE_YAMLS,
+	}
+
+	resp, err := client.GetDownloadLink(context.Background(), req)
+	if err != nil {
+		return nil, err
+	}
+
+	reader, err := downloadFile(resp.Url)
+	if err != nil {
+		return nil, err
+	}
+	defer reader.Close()
+
+	yamlMap, err := tar.ReadTarFileFromReader(reader)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to YAML files, using the provided file names.
+	// Get the YAML names, in order.
+	yamlNames := make([]string, len(yamlMap))
+	i := 0
+	for k := range yamlMap {
+		yamlNames[i] = k
+		i++
+	}
+	sort.Strings(yamlNames)
+
+	// Write to YAMLFile slice.
+	var yamlFiles []*yamls.YAMLFile
+	re := regexp.MustCompile(`((?:[0-9]+_)|(?:\/crds\/))(.*)(?:\.yaml)`)
+	for _, fName := range yamlNames {
+		// The filename looks like "./pixie_yamls/00_namespace.yaml" or "./pixie_yamls/crds/vizier_crd.yaml", we want to extract the "namespace".
+		ms := re.FindStringSubmatch(fName)
+		if ms == nil || len(ms) != 3 {
+			continue
+		}
+		yamlFiles = append(yamlFiles, &yamls.YAMLFile{
+			Name: ms[2],
+			YAML: yamlMap[fName],
+		})
+	}
+
+	return yamlFiles, nil
+}

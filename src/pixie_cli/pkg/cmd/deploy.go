@@ -52,7 +52,6 @@ import (
 	"px.dev/pixie/src/utils/shared/artifacts"
 	"px.dev/pixie/src/utils/shared/k8s"
 	yamlsutils "px.dev/pixie/src/utils/shared/yamls"
-	vizieryamls "px.dev/pixie/src/utils/template_generator/vizier_yamls"
 )
 
 const (
@@ -155,6 +154,19 @@ func init() {
 	DeployCmd.Flags().StringP("pem_memory_limit", "p", "", "The memory limit to specify for the PEMS, otherwise a default is used.")
 	viper.BindPFlag("pem_memory_limit", DeployCmd.Flags().Lookup("pem_memory_limit"))
 
+	// Flags for deploying OLM.
+	DeployCmd.Flags().String("operator_version", "", "Operator version to deploy")
+	viper.BindPFlag("operator_version", DeployCmd.Flags().Lookup("operator_version"))
+
+	DeployCmd.Flags().Bool("deploy_olm", true, "Whether to deploy Operator Lifecycle Manager. OLM is required. This should only be false if OLM is already deployed on the cluster (either manually or through another application). Note: OLM is deployed by default on Openshift clusters.")
+	viper.BindPFlag("deploy_olm", DeployCmd.Flags().Lookup("deploy_olm"))
+
+	DeployCmd.Flags().String("olm_namespace", "olm", "The memory limit to specify for the PEMS, otherwise a default is used.")
+	viper.BindPFlag("olm_namespace", DeployCmd.Flags().Lookup("olm_namespace"))
+
+	DeployCmd.Flags().String("olm_operator_namespace", "px-operator", "The namespace to use for the Pixie operator")
+	viper.BindPFlag("olm_operator_namespace", DeployCmd.Flags().Lookup("olm_operator_namespace"))
+
 	// Super secret flags for Pixies.
 	DeployCmd.Flags().MarkHidden("namespace")
 }
@@ -184,29 +196,37 @@ func getLatestVizierVersion(conn *grpc.ClientConn) (string, error) {
 	return resp.Artifact[0].VersionStr, nil
 }
 
-func setTemplateConfigValues(currentCluster string, tmplValues *vizieryamls.VizierTmplValues, cloudAddr, devCloudNS, clusterName string) {
-	yamlCloudAddr := cloudAddr
-	updateCloudAddr := cloudAddr
-	// devCloudNamespace implies we are running in a dev enivironment and we should attach to
-	// vzconn in that namespace.
-	if devCloudNS != "" {
-		yamlCloudAddr = fmt.Sprintf("vzconn-service.%s.svc.cluster.local:51600", devCloudNS)
-		updateCloudAddr = fmt.Sprintf("api-service.%s.svc.cluster.local:51200", devCloudNS)
+func getLatestOperatorVersion(conn *grpc.ClientConn) (string, error) {
+	client := newArtifactTrackerClient(conn)
+
+	req := &cloudpb.GetArtifactListRequest{
+		ArtifactName: "operator",
+		ArtifactType: cloudpb.AT_CONTAINER_SET_TEMPLATE_YAMLS,
+		Limit:        1,
+	}
+	ctxWithCreds := auth.CtxWithCreds(context.Background())
+	resp, err := client.GetArtifactList(ctxWithCreds, req)
+	if err != nil {
+		return "", err
 	}
 
-	tmplValues.CloudAddr = yamlCloudAddr
-	tmplValues.CloudUpdateAddr = updateCloudAddr
-
-	if clusterName == "" { // Only record cluster name if we are deploying directly to the current cluster.
-		clusterName = currentCluster
+	if len(resp.Artifact) != 1 {
+		return "", errors.New("Could not find Operator artifact")
 	}
-	tmplValues.ClusterName = clusterName
+
+	return resp.Artifact[0].VersionStr, nil
 }
 
 func runDeployCmd(cmd *cobra.Command, args []string) {
 	check, _ := cmd.Flags().GetBool("check")
 	checkOnly, _ := cmd.Flags().GetBool("check_only")
 	extractPath, _ := cmd.Flags().GetString("extract_yaml")
+
+	// OLM flags.
+	deployOLM, _ := cmd.Flags().GetBool("deploy_olm")
+	olmNamespace, _ := cmd.Flags().GetString("olm_namespace")
+	olmOperatorNamespace, _ := cmd.Flags().GetString("olm_operator_namespace")
+
 	deployKey, _ := cmd.Flags().GetString("deploy_key")
 	useEtcdOperator, _ := cmd.Flags().GetBool("use_etcd_operator")
 	useEtcdOperatorSet := cmd.Flags().Changed("use_etcd_operator")
@@ -229,11 +249,13 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 			utils.Fatalf("Custom labels must not be one of: %s.", joinedLabels)
 		}
 	}
+	annotationMap := make(map[string]string)
 	if customAnnotations != "" {
-		_, err := k8s.KeyValueStringToMap(customAnnotations)
+		am, err := k8s.KeyValueStringToMap(customAnnotations)
 		if err != nil {
 			utils.WithError(err).Fatal("--annotations must be specified through the following format: annotation1=value1,annotation2=value2")
 		}
+		annotationMap = am
 	}
 
 	if deployKey == "" && extractPath != "" {
@@ -284,7 +306,6 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	}
 
 	versionString := viper.GetString("vizier_version")
-	inputVersionStr := versionString
 	if len(versionString) == 0 {
 		// Fetch latest version.
 		versionString, err = getLatestVizierVersion(cloudConn)
@@ -293,7 +314,20 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 			log.WithError(err).Fatal("Failed to fetch Vizier versions")
 		}
 	}
-	utils.Infof("Installing version: %s", versionString)
+	utils.Infof("Installing Vizier version: %s", versionString)
+
+	operatorVersion := viper.GetString("operator_version")
+	if len(operatorVersion) == 0 {
+		operatorVersion, err = getLatestOperatorVersion(cloudConn)
+		if err != nil {
+			// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
+			log.WithError(err).Fatal("Failed to fetch Operator versions")
+		}
+	}
+	olmBundleChannel := "stable"
+	if strings.Contains(operatorVersion, "-") {
+		olmBundleChannel = "dev"
+	}
 
 	// Get deploy key, if not already specified.
 	var deployKeyID string
@@ -315,12 +349,9 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	kubeAPIConfig := k8s.GetClientAPIConfig()
 	clientset := k8s.GetClientset(kubeConfig)
 
-	creds := auth.MustLoadDefaultCredentials()
-
 	utils.Infof("Generating YAMLs for Pixie")
 
-	var templatedYAMLs []*yamlsutils.YAMLFile
-	templatedYAMLs, err = artifacts.FetchVizierTemplates(cloudConn, creds.Token, versionString)
+	templatedYAMLs, err := artifacts.FetchOperatorTemplates(cloudConn, operatorVersion)
 	if err != nil {
 		log.WithError(err).Fatal("Could not fetch Vizier YAMLs")
 	}
@@ -338,21 +369,38 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	// Fill in template values.
-	tmplValues := &vizieryamls.VizierTmplValues{
-		DeployKey:         deployKey,
-		CustomAnnotations: customAnnotations,
-		CustomLabels:      customLabels,
-		UseEtcdOperator:   useEtcdOperator,
-		BootstrapVersion:  inputVersionStr,
-		PEMMemoryLimit:    pemMemoryLimit,
-		Namespace:         namespace,
+	clusterName, _ := cmd.Flags().GetString("cluster_name")
+	if clusterName == "" {
+		clusterName = kubeAPIConfig.CurrentContext
 	}
 
-	clusterName, _ := cmd.Flags().GetString("cluster_name")
-	setTemplateConfigValues(kubeAPIConfig.CurrentContext, tmplValues, cloudAddr, devCloudNS, clusterName)
+	// Fill in template values.
+	tmplArgs := &yamlsutils.YAMLTmplArguments{
+		Values: &map[string]interface{}{
+			"deployOLM":            deployOLM,
+			"olmNamespace":         olmNamespace,
+			"olmBundleChannel":     olmBundleChannel,
+			"olmOperatorNamespace": olmOperatorNamespace,
+			"name":                 "pixie",
+			"version":              versionString,
+			"deployKey":            deployKey,
+			"cloudAddr":            cloudAddr,
+			"clusterName":          clusterName,
+			"disableAutoUpdate":    false,
+			"useEtcdOperator":      useEtcdOperator,
+			"devCloudNamespace":    devCloudNS,
+			"pemMemoryLimit":       pemMemoryLimit,
+			"pod": &map[string]interface{}{
+				"annotations": annotationMap,
+				"labels":      labelMap,
+			},
+		},
+		Release: &map[string]interface{}{
+			"Namespace": namespace,
+		},
+	}
 
-	yamls, err := yamlsutils.ExecuteTemplatedYAMLs(templatedYAMLs, vizieryamls.VizierTmplValuesToArgs(tmplValues))
+	yamls, err := yamlsutils.ExecuteTemplatedYAMLs(templatedYAMLs, tmplArgs)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to fill in templated deployment YAMLs")
 	}
@@ -393,12 +441,6 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	od := k8s.ObjectDeleter{
-		Namespace:  namespace,
-		Clientset:  clientset,
-		RestConfig: kubeConfig,
-		Timeout:    2 * time.Minute,
-	}
 	// Get the number of nodes.
 	numNodes, err := getNumNodes(clientset)
 	if err != nil {
@@ -407,10 +449,29 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	utils.Infof("Found %v nodes", numNodes)
 
-	vzYaml := yamlMap["vizier_persistent"]
-	if useEtcdOperator {
-		vzYaml = yamlMap["vizier_etcd"]
-	}
+	clusterID := deploy(cloudConn, clientset, kubeConfig, yamlMap, deployOLM, olmNamespace, olmOperatorNamespace, namespace)
+
+	waitForHealthCheck(cloudAddr, clusterID, clientset, namespace, numNodes)
+}
+
+func deploy(cloudConn *grpc.ClientConn, clientset *kubernetes.Clientset, kubeConfig *rest.Config, yamlMap map[string]string, deployOLM bool, olmNs, olmOpNs, namespace string) uuid.UUID {
+	olmCRDJob := newTaskWrapper("Installing OLM crds", func() error {
+		return retryDeploy(clientset, kubeConfig, yamlMap["olm_crd"])
+	})
+	olmJob := newTaskWrapper("Deploying OLM", func() error {
+		return retryDeploy(clientset, kubeConfig, yamlMap["olm"])
+	})
+
+	olmPxJob := newTaskWrapper("Deploying Pixie OLM Namespace", func() error {
+		return retryDeploy(clientset, kubeConfig, yamlMap["px_olm"])
+	})
+
+	olmCatalogJob := newTaskWrapper("Deploying OLM Catalog", func() error {
+		return retryDeploy(clientset, kubeConfig, yamlMap["catalog"])
+	})
+	olmSubscriptionJob := newTaskWrapper("Deploying OLM Subscription", func() error {
+		return retryDeploy(clientset, kubeConfig, yamlMap["subscription"])
+	})
 
 	namespaceJob := newTaskWrapper("Creating namespace", func() error {
 		// Create namespace, if needed.
@@ -418,45 +479,60 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		ns.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Namespace"))
 		ns.Name = namespace
 
-		_, err = clientset.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
+		_, err := clientset.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
 		if err != nil && k8serrors.IsAlreadyExists(err) {
 			return nil
 		}
 		return err
 	})
 
-	clusterRoleJob := newTaskWrapper("Deleting stale Pixie objects, if any", func() error {
-		_, err := od.DeleteByLabel("component=vizier", k8s.AllResourceKinds...)
-		return err
+	vzCRDJob := newTaskWrapper("Installing Vizier CRD", func() error {
+		return retryDeploy(clientset, kubeConfig, yamlMap["vizier_crd"])
+	})
+	vzJob := newTaskWrapper("Deploying Vizier", func() error {
+		return retryDeploy(clientset, kubeConfig, yamlMap["vizier"])
 	})
 
-	certJob := newTaskWrapper("Deploying secrets and configmaps", func() error {
-		err = k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(yamlMap["secrets"]), false)
-		if err != nil {
-			return err
+	var clusterID uuid.UUID
+	waitJob := newTaskWrapper("Waiting for Cloud Connector to come online", func() error {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cancel()
+
+		t := time.NewTicker(2 * time.Second)
+		defer t.Stop()
+		clusterIDExists := false
+		for !clusterIDExists { // Wait for secret to be updated with clusterID.
+			select {
+			case <-ctx.Done():
+				// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
+				log.Fatal("Timed out waiting for cluster ID assignment")
+			case <-t.C:
+				s := k8s.GetSecret(clientset, namespace, "pl-cluster-secrets")
+				if s == nil {
+					continue
+				}
+				if cID, ok := s.Data["cluster-id"]; ok {
+					clusterID = uuid.FromStringOrNil(string(cID))
+					clusterIDExists = true
+				}
+			}
 		}
 
-		// Launch roles, service accounts, and clusterroles, as the dependencies need the certs ready first.
-		return k8s.ApplyYAMLForResourceTypes(clientset, kubeConfig, namespace, strings.NewReader(vzYaml),
-			[]string{"podsecuritypolicies", "serviceaccounts", "clusterroles", "clusterrolebindings", "roles", "rolebindings", "jobs"}, false)
+		return waitForCluster(ctx, cloudConn, clusterID)
 	})
 
-	natsJob := newTaskWrapper("Deploying dependencies: NATS", func() error {
-		return retryDeploy(clientset, kubeConfig, namespace, yamlMap["nats"])
-	})
-
-	etcdJob := newTaskWrapper("Deploying dependencies: etcd", func() error {
-		return retryDeploy(clientset, kubeConfig, namespace, yamlMap["etcd"])
-	})
-
-	setupJobs := []utils.Task{
-		namespaceJob, clusterRoleJob, certJob, natsJob}
-	if useEtcdOperator {
-		setupJobs = append(setupJobs, etcdJob)
+	deployJobs := []utils.Task{
+		vzCRDJob, olmPxJob, olmCatalogJob, olmSubscriptionJob, namespaceJob, vzJob, waitJob,
 	}
 
-	jr := utils.NewSerialTaskRunner(setupJobs)
-	err = jr.RunAndMonitor()
+	if deployOLM {
+		deployJobs = []utils.Task{
+			olmCRDJob, olmJob, olmPxJob, vzCRDJob, olmCatalogJob, olmSubscriptionJob, namespaceJob, vzJob, waitJob,
+		}
+	}
+
+	jr := utils.NewSerialTaskRunner(deployJobs)
+	err := jr.RunAndMonitor()
 	if err != nil {
 		_ = pxanalytics.Client().Enqueue(&analytics.Track{
 			UserId: pxconfig.Cfg().UniqueClientID,
@@ -468,9 +544,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		log.WithError(err).Fatal("Failed to deploy Vizier")
 	}
 
-	clusterID := deploy(cloudConn, versionString, clientset, kubeConfig, vzYaml, namespace)
-
-	waitForHealthCheck(cloudAddr, clusterID, clientset, namespace, numNodes)
+	return clusterID
 }
 
 func runSimpleHealthCheckScript(cloudAddr string, clusterID uuid.UUID) error {
@@ -620,56 +694,18 @@ func initiateUpdate(ctx context.Context, conn *grpc.ClientConn, clusterID uuid.U
 	return nil
 }
 
-func deploy(cloudConn *grpc.ClientConn, version string, clientset *kubernetes.Clientset, config *rest.Config, yamlContents string, namespace string) uuid.UUID {
-	var clusterID uuid.UUID
-	deployJob := []utils.Task{
-		newTaskWrapper("Deploying Cloud Connector", func() error {
-			return k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamlContents), false)
-		}),
-		newTaskWrapper("Waiting for Cloud Connector to come online", func() error {
-			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-			defer cancel()
-
-			t := time.NewTicker(2 * time.Second)
-			defer t.Stop()
-			clusterIDExists := false
-
-			for !clusterIDExists { // Wait for secret to be updated with clusterID.
-				select {
-				case <-ctx.Done():
-					// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
-					log.Fatal("Timed out waiting for cluster ID assignment")
-				case <-t.C:
-					s := k8s.GetSecret(clientset, namespace, "pl-cluster-secrets")
-					if cID, ok := s.Data["cluster-id"]; ok {
-						clusterID = uuid.FromStringOrNil(string(cID))
-						clusterIDExists = true
-					}
-				}
-			}
-
-			return waitForCluster(ctx, cloudConn, clusterID)
-		}),
-	}
-
-	vzJr := utils.NewSerialTaskRunner(deployJob)
-	err := vzJr.RunAndMonitor()
-	if err != nil {
-		// Using log.Fatal rather than CLI log in order to track this unexpected error in Sentry.
-		log.WithError(err).Fatal("Failed to deploy Vizier")
-	}
-	return clusterID
-}
-
-func retryDeploy(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlContents string) error {
+func retryDeploy(clientset *kubernetes.Clientset, config *rest.Config, yamlContents string) error {
 	tries := 12
 	var err error
 	for tries > 0 {
-		err = k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamlContents), false)
+		err = k8s.ApplyYAML(clientset, config, "", strings.NewReader(yamlContents), false)
 		if err == nil {
 			return nil
 		}
 
+		if err != nil && k8serrors.IsAlreadyExists(err) {
+			return nil
+		}
 		time.Sleep(5 * time.Second)
 		tries--
 	}

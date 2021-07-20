@@ -28,6 +28,7 @@ import (
 
 	"github.com/Masterminds/sprig/v3"
 	jsonpatch "github.com/evanphx/json-patch"
+	goyaml "gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -74,6 +75,17 @@ func ExecuteTemplatedYAMLs(yamls []*YAMLFile, tmplValues *YAMLTmplArguments) ([]
 	return executedYAMLs, nil
 }
 
+// toYAML taken from Helm:
+// https://github.com/helm/helm/blob/4ee8db2208923ea1ca1e4cc3792b2a3e088b6e0d/pkg/engine/funcs.go#L72-L98
+func toYAML(v interface{}) string {
+	data, err := goyaml.Marshal(v)
+	if err != nil {
+		// Swallow errors inside of a template.
+		return ""
+	}
+	return strings.TrimSuffix(string(data), "\n")
+}
+
 func required(str string, value string) (string, error) {
 	if value != "" {
 		return value, nil
@@ -84,6 +96,7 @@ func required(str string, value string) (string, error) {
 func executeTemplate(tmplValues *YAMLTmplArguments, tmplStr string) (string, error) {
 	funcMap := sprig.TxtFuncMap()
 	funcMap["required"] = required
+	funcMap["toYaml"] = toYAML
 
 	tmpl, err := template.New("yaml").Funcs(funcMap).Parse(tmplStr)
 	if err != nil {
