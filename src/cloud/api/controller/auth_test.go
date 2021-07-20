@@ -25,8 +25,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -479,103 +477,7 @@ func TestAuthLogoutHandler_BadMethod(t *testing.T) {
 	assert.Equal(t, http.StatusMethodNotAllowed, rr.Code)
 }
 
-func TestAuthLoginEmbedHandler(t *testing.T) {
-	tests := []struct {
-		name              string
-		redirectURI       string
-		accessToken       string
-		expectError       bool
-		expectedErrorCode int
-	}{
-		{
-			name:        "valid request",
-			redirectURI: "/embed",
-			accessToken: "the-token",
-			expectError: false,
-		},
-		{
-			name:              "redirect no host and path",
-			redirectURI:       "//",
-			accessToken:       "the-token",
-			expectError:       true,
-			expectedErrorCode: http.StatusBadRequest,
-		},
-		{
-			name:              "redirect with host",
-			redirectURI:       "http://test.com/test",
-			accessToken:       "the-token",
-			expectError:       true,
-			expectedErrorCode: http.StatusBadRequest,
-		},
-		{
-			name:              "no redirect",
-			redirectURI:       "",
-			accessToken:       "the-token",
-			expectError:       true,
-			expectedErrorCode: http.StatusBadRequest,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
-			defer cleanup()
-
-			data := url.Values{}
-			data.Set("accessToken", test.accessToken)
-			data.Set("redirectURI", test.redirectURI)
-
-			req, err := http.NewRequest("POST", "/loginEmbed", strings.NewReader(data.Encode()))
-			require.NoError(t, err)
-			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-			req.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
-			expectedAuthServiceReq := &authpb.LoginRequest{
-				AccessToken:           "the-token",
-				CreateUserIfNotExists: false,
-			}
-			testReplyToken := testingutils.GenerateTestJWTToken(t, "jwt-key")
-			testTokenExpiry := time.Now().Add(1 * time.Minute).Unix()
-			loginResp := &authpb.LoginReply{
-				Token:     testReplyToken,
-				ExpiresAt: testTokenExpiry,
-				UserInfo: &authpb.AuthenticatedUserInfo{
-					UserID:    utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
-					FirstName: "first",
-					LastName:  "last",
-					Email:     "abc@defg.com",
-				},
-				OrgInfo: &authpb.LoginReply_OrgInfo{
-					OrgID:   "test",
-					OrgName: "testOrg",
-				},
-			}
-			if !test.expectError {
-				mockClients.MockAuth.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Return(loginResp, nil)
-			}
-
-			rr := httptest.NewRecorder()
-			h := handler.New(env, controller.AuthLoginEmbedHandler)
-			h.ServeHTTP(rr, req)
-
-			if !test.expectError {
-				assert.Equal(t, http.StatusSeeOther, rr.Code)
-
-				// Check the token in the cookie.
-				rawCookies := rr.Header().Get("Set-Cookie")
-				header := http.Header{}
-				header.Add("Cookie", rawCookies)
-				req2 := http.Request{Header: header}
-				sess, err := controller.GetDefaultSession(env, &req2)
-				require.NoError(t, err)
-				assert.Equal(t, testReplyToken, sess.Values["_at"])
-			} else {
-				assert.Equal(t, test.expectedErrorCode, rr.Code)
-			}
-		})
-	}
-}
-
-func TestAuthLoginHandlerEmbedNew(t *testing.T) {
+func TestAuthLoginHandlerEmbed(t *testing.T) {
 	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
@@ -606,7 +508,7 @@ func TestAuthLoginHandlerEmbedNew(t *testing.T) {
 	mockClients.MockAuth.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Return(loginResp, nil)
 
 	rr := httptest.NewRecorder()
-	h := handler.New(env, controller.AuthLoginHandlerEmbedNew)
+	h := handler.New(env, controller.AuthLoginHandlerEmbed)
 	h.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code)
@@ -640,7 +542,7 @@ func TestAuthLoginHandlerEmbedNew(t *testing.T) {
 	assert.Equal(t, 0, len(rr.Header().Values("Set-Cookie")))
 }
 
-func TestAuthLoginHandlerEmbedNew_WithAPIKey(t *testing.T) {
+func TestAuthLoginHandlerEmbed_WithAPIKey(t *testing.T) {
 	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
@@ -661,7 +563,7 @@ func TestAuthLoginHandlerEmbedNew_WithAPIKey(t *testing.T) {
 	mockClients.MockAuth.EXPECT().GetAugmentedTokenForAPIKey(gomock.Any(), expectedAuthServiceReq).Return(loginResp, nil)
 
 	rr := httptest.NewRecorder()
-	h := handler.New(env, controller.AuthLoginHandlerEmbedNew)
+	h := handler.New(env, controller.AuthLoginHandlerEmbed)
 	h.ServeHTTP(rr, req)
 
 	assert.Equal(t, http.StatusOK, rr.Code)

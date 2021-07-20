@@ -206,6 +206,7 @@ const ThemedApp: React.FC = () => {
           // embedPixieAPIKey is the auth token, and embedPixieAPIToken is a pixie API key.
           parentReady,
           embedPixieAPIKey,
+          embedPixieToken,
           pixieTheme,
           pixieStartTime,
           embedPixieAPIToken,
@@ -231,7 +232,12 @@ const ThemedApp: React.FC = () => {
     // expect authentication to be done using an auth token. The auth token
     // will be POSTed over, and is used to get a Pixie access token that is
     // attached to our requests using bearer auth.
-    if (embedPixieAPIKey || embedPixieAPIToken) {
+    if (embedPixieAPIKey || embedPixieAPIToken || embedPixieToken) {
+      if (embedPixieToken) {
+        setAuthToken(embedPixieToken);
+        return;
+      }
+
       // Only request a new access token if sent a new token.
       if (embedPixieAPIKey) {
         if (embedToken === embedPixieAPIKey) {
