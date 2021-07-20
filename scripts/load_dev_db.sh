@@ -73,6 +73,12 @@ bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
 bazel run -c opt //src/utils/artifacts/artifact_db_updater:artifact_db_updater -- \
     --versions_file "${versions_file}" --postgres_db "pl" --postgres_port "${postgres_port}"
 
+# Update database with operator versions.
+bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
+      --repo_path "${repo_path}" --artifact_name operator --versions_file "${versions_file}"
+bazel run -c opt //src/utils/artifacts/artifact_db_updater:artifact_db_updater -- \
+    --versions_file "${versions_file}" --postgres_db "pl" --postgres_port "${postgres_port}"
+
 git checkout main "$versions_file"
 
 # Update database with SSL certs.
