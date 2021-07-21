@@ -47,11 +47,11 @@ import Canvas from 'app/containers/live/canvas';
 import LiveViewBreadcrumbs from 'app/containers/live/breadcrumbs';
 import { ScriptLoader } from 'app/containers/live/script-loader';
 import LiveViewShortcutsProvider from 'app/containers/live/shortcuts';
-import { CONTACT_ENABLED } from 'app/containers/constants';
 import ExecuteScriptButton from 'app/containers/live/execute-button';
 import ClusterSelector from 'app/containers/live/cluster-selector';
 import { LiveTourContextProvider } from 'app/containers/App/live-tour';
 import { PixieAPIClient, PixieAPIContext } from 'app/api';
+import { showIntercomTrigger, triggerID } from 'app/utils/intercom';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -236,11 +236,11 @@ const ClusterLoadingComponent = ({
           <div>
             {`Pixie instrumentation on '${clusterPrettyName}' is ${formattedStatus}.`}
           </div>
-          {CONTACT_ENABLED && (
+          {showIntercomTrigger() && (
           <div>
             <div>
               Need help?&nbsp;
-              <Link id='intercom-trigger'>Chat with us</Link>
+              <Link id={triggerID}>Chat with us</Link>
               .
             </div>
           </div>

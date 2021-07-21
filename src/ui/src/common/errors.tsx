@@ -22,7 +22,7 @@ import Link from '@material-ui/core/Link';
 import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import { VizierQueryError } from 'app/api';
-import { CONTACT_ENABLED } from 'app/containers/constants';
+import { showIntercomTrigger, triggerID } from 'app/utils/intercom';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   errorRow: {
@@ -58,10 +58,10 @@ export const VizierErrorDetails: React.FC<{ error: Error }> = ({ error }) => {
   return (
     <>
       {errorDetails}
-      {CONTACT_ENABLED && (
+      {showIntercomTrigger() && (
         <div className={classes.errorRow}>
           Need help?&nbsp;
-          <Link className={classes.link} id='intercom-trigger'>Chat with us</Link>
+          <Link className={classes.link} id={triggerID}>Chat with us</Link>
           .
         </div>
       )}

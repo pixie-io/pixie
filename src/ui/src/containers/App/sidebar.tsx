@@ -43,9 +43,10 @@ import {
 import { toEntityPathname, LiveViewPage } from 'app/containers/live-widgets/utils/live-view-params';
 import {
   DOMAIN_NAME, ANNOUNCEMENT_ENABLED,
-  ANNOUNCE_WIDGET_URL, CONTACT_ENABLED,
+  ANNOUNCE_WIDGET_URL,
 } from 'app/containers/constants';
 import { SidebarFooter } from 'configurable/sidebar-footer';
+import { showIntercomTrigger, triggerID } from 'app/utils/intercom';
 
 const styles = (
   {
@@ -248,9 +249,9 @@ const SideBar = ({ classes, open }) => {
             link={`https://docs.${DOMAIN_NAME}`}
             text='Docs'
           />
-          {CONTACT_ENABLED && (
+          {showIntercomTrigger() && (
             <Tooltip title='Help' disableInteractive>
-              <ListItem button id='intercom-trigger' className={classes.listIcon}>
+              <ListItem button id={triggerID} className={classes.listIcon}>
                 <ListItemIcon><HelpIcon /></ListItemIcon>
                 <ListItemText primary='Help' />
               </ListItem>
