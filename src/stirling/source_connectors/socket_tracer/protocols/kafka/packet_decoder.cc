@@ -143,6 +143,49 @@ StatusOr<RecordMessage> PacketDecoder::ExtractRecordMessage() {
   return r;
 }
 
+// Only supports Kafka version >= 0.11.0
+StatusOr<RecordBatch> PacketDecoder::ExtractRecordBatch() {
+  RecordBatch r;
+  PL_ASSIGN_OR_RETURN(int64_t base_offset, ExtractInt64());
+
+  PL_ASSIGN_OR_RETURN(int32_t length, ExtractInt32());
+  PL_RETURN_IF_ERROR(MarkOffset(length));
+
+  PL_ASSIGN_OR_RETURN(int32_t partition_leader_epoch, ExtractInt32());
+  PL_ASSIGN_OR_RETURN(int8_t magic, ExtractInt8());
+  // If magic is not v2, then this is potentially an older format.
+  if (magic < 2) {
+    return error::Internal("Old record batch (message set) format not supported.");
+  }
+  if (magic > 2) {
+    return error::Internal("Unknown magic in ExtractRecordBatch.");
+  }
+
+  PL_ASSIGN_OR_RETURN(int32_t crc, ExtractInt32());
+  PL_ASSIGN_OR_RETURN(int16_t attributes, ExtractInt16());
+  PL_ASSIGN_OR_RETURN(int32_t last_offset_delta, ExtractInt32());
+  PL_ASSIGN_OR_RETURN(int64_t first_time_stamp, ExtractInt64());
+  PL_ASSIGN_OR_RETURN(int64_t max_time_stamp, ExtractInt64());
+  PL_ASSIGN_OR_RETURN(int64_t producer_ID, ExtractInt64());
+  PL_ASSIGN_OR_RETURN(int16_t producer_epoch, ExtractInt16());
+  PL_ASSIGN_OR_RETURN(int32_t base_sequence, ExtractInt32());
+
+  PL_UNUSED(base_offset);
+  PL_UNUSED(partition_leader_epoch);
+  PL_UNUSED(crc);
+  PL_UNUSED(attributes);
+  PL_UNUSED(last_offset_delta);
+  PL_UNUSED(first_time_stamp);
+  PL_UNUSED(max_time_stamp);
+  PL_UNUSED(producer_ID);
+  PL_UNUSED(producer_epoch);
+  PL_UNUSED(base_sequence);
+
+  PL_ASSIGN_OR_RETURN(r.records, ExtractArray(&PacketDecoder::ExtractRecordMessage));
+  PL_RETURN_IF_ERROR(JumpToOffset());
+  return r;
+}
+
 StatusOr<std::string> PacketDecoder::ExtractBytesZigZag() {
   PL_ASSIGN_OR_RETURN(int32_t len, ExtractVarint());
   if (len < -1) {

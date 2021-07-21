@@ -85,6 +85,10 @@ struct RecordMessage {
   std::string value;
 };
 
+struct RecordBatch {
+  std::vector<RecordMessage> records;
+};
+
 // TODO(chengruizhe): Support the complete ProduceResp.
 struct ProduceResp {
   int32_t num_responses = 0;
@@ -197,6 +201,11 @@ class PacketDecoder {
   // variable-length opaque value byte array.
   // https://kafka.apache.org/documentation/#record
   StatusOr<RecordMessage> ExtractRecordMessage();
+
+  // Messages (aka Records) are always written in batches. The technical term for a batch of
+  // messages is a record batch, and a record batch contains one or more records.
+  // https://kafka.apache.org/documentation/#recordbatch
+  StatusOr<RecordBatch> ExtractRecordBatch();
 
   Status ExtractReqHeader(Request* req);
   Status ExtractRespHeader(Response* resp);
