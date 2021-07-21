@@ -20,10 +20,16 @@ package controller
 
 import (
 	"context"
+	"errors"
+
+	"github.com/gofrs/uuid"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/api/proto/uuidpb"
 	"px.dev/pixie/src/cloud/profile/profilepb"
+	"px.dev/pixie/src/shared/services/authcontext"
+	claimsutils "px.dev/pixie/src/shared/services/utils"
+	"px.dev/pixie/src/utils"
 )
 
 // UserServiceServer is the server that implements the UserService gRPC service.
@@ -119,7 +125,34 @@ func (u *UserServiceServer) UpdateUserSettings(ctx context.Context, req *cloudpb
 // UpdateUser will update user information.
 func (u *UserServiceServer) UpdateUser(ctx context.Context, req *cloudpb.UpdateUserRequest) (*cloudpb.UserInfo,
 	error) {
-	ctx, err := contextWithAuthToken(ctx)
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if claimsutils.GetClaimsType(sCtx.Claims) != claimsutils.UserClaimType {
+		return nil, errors.New("Unauthorized")
+	}
+
+	claimsOrgID := uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID)
+	claimsUserID := uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().UserID)
+
+	// Check permissions.
+	// If user is in the org, they are permitted to update any org user's info, since all
+	// users are considered admins.
+	userResp, err := u.ProfileServiceClient.GetUser(ctx, req.ID)
+	if err != nil {
+		return nil, err
+	}
+	if claimsOrgID != utils.UUIDFromProtoOrNil(userResp.OrgID) {
+		return nil, errors.New("Unauthorized")
+	}
+	// A user cannot update their own "isApproved" status.
+	if req.IsApproved != nil && claimsUserID == utils.UUIDFromProtoOrNil(userResp.ID) {
+		return nil, errors.New("Unauthorized")
+	}
+
+	ctx, err = contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
 	}

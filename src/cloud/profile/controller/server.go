@@ -342,42 +342,17 @@ func (s *Server) DeleteOrgAndUsers(ctx context.Context, req *uuidpb.UUID) error 
 
 // UpdateUser updates a user's info.
 func (s *Server) UpdateUser(ctx context.Context, req *profilepb.UpdateUserRequest) (*profilepb.UserInfo, error) {
-	sCtx, err := authcontext.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	var claimsOrgID uuid.UUID
-	var claimsUserID uuid.UUID
-	checkUserClaims := false
-
-	if claimsutils.GetClaimsType(sCtx.Claims) == claimsutils.UserClaimType {
-		claimsOrgID = uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().OrgID)
-		claimsUserID = uuid.FromStringOrNil(sCtx.Claims.GetUserClaims().UserID)
-		checkUserClaims = true
-	}
-
 	userID := utils.UUIDFromProtoOrNil(req.ID)
 	userInfo, err := s.d.GetUser(userID)
 	if err != nil {
 		return nil, toExternalError(err)
 	}
 
-	// Users should be able to update their userInfo, or another user's info only if they are an admin user
-	// in the org. Once we have RBAC, this should be updated to account for the latter.
 	if req.DisplayPicture != nil {
-		if checkUserClaims && userInfo.OrgID != claimsOrgID {
-			return nil, status.Error(codes.PermissionDenied, "User does not have permissions to update user field")
-		}
 		userInfo.ProfilePicture = &req.DisplayPicture.Value
 	}
 
-	// Admin users should be able to approve other users in the org. Once RBAC is implemented, we should change this
-	// to check whether the user is actually an admin.
 	if req.IsApproved != nil {
-		if checkUserClaims && (claimsUserID == userID || userInfo.OrgID != claimsOrgID) {
-			return nil, status.Error(codes.PermissionDenied, "User does not have permissions to approve user")
-		}
 		userInfo.IsApproved = req.IsApproved.Value
 	}
 

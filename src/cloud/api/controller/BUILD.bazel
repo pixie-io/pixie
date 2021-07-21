@@ -111,6 +111,7 @@ go_test(
         "scriptmgr_resolver_test.go",
         "session_middleware_test.go",
         "user_resolver_test.go",
+        "user_test.go",
         "vizier_cluster_test.go",
     ],
     embed = [":controller"],

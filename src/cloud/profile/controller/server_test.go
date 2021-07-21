@@ -866,7 +866,6 @@ func TestServer_UpdateUser(t *testing.T) {
 		userOrg           string
 		updatedProfilePic string
 		updatedIsApproved bool
-		shouldReject      bool
 	}{
 		{
 			name:              "user can update their own profile picture",
@@ -874,7 +873,6 @@ func TestServer_UpdateUser(t *testing.T) {
 			userOrg:           "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
 			updatedProfilePic: "new",
 			updatedIsApproved: false,
-			shouldReject:      false,
 		},
 		{
 			name:              "admin can update another's profile picture",
@@ -882,31 +880,6 @@ func TestServer_UpdateUser(t *testing.T) {
 			userOrg:           "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
 			updatedProfilePic: "new",
 			updatedIsApproved: false,
-			shouldReject:      false,
-		},
-		{
-			name:              "user cannot update their own isApproved",
-			userID:            "6ba7b810-9dad-11d1-80b4-00c04fd430c9",
-			userOrg:           "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-			updatedProfilePic: "new",
-			updatedIsApproved: true,
-			shouldReject:      true,
-		},
-		{
-			name:              "user cannot update user from another org",
-			userID:            "6ba7b810-9dad-11d1-80b4-00c04fd430c9",
-			userOrg:           "7ba7b810-9dad-11d1-80b4-00c04fd430c8",
-			updatedProfilePic: "new",
-			updatedIsApproved: false,
-			shouldReject:      true,
-		},
-		{
-			name:              "user cannot update user from another org",
-			userID:            "6ba7b810-9dad-11d1-80b4-00c04fd430c9",
-			userOrg:           "7ba7b810-9dad-11d1-80b4-00c04fd430c8",
-			updatedProfilePic: "something",
-			updatedIsApproved: true,
-			shouldReject:      true,
 		},
 		{
 			name:              "user should approve other user in org",
@@ -914,7 +887,6 @@ func TestServer_UpdateUser(t *testing.T) {
 			userOrg:           "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
 			updatedProfilePic: "something",
 			updatedIsApproved: true,
-			shouldReject:      false,
 		},
 	}
 
@@ -962,22 +934,15 @@ func TestServer_UpdateUser(t *testing.T) {
 				GetUser(userID).
 				Return(originalUserInfo, nil)
 
-			if !tc.shouldReject {
-				d.EXPECT().
-					UpdateUser(mockUpdateReq).
-					Return(nil)
-			}
+			d.EXPECT().
+				UpdateUser(mockUpdateReq).
+				Return(nil)
 
 			resp, err := s.UpdateUser(ctx, req)
-
-			if !tc.shouldReject {
-				require.NoError(t, err)
-				assert.Equal(t, resp.ID, utils.ProtoFromUUID(userID))
-				assert.Equal(t, resp.ProfilePicture, tc.updatedProfilePic)
-				assert.Equal(t, resp.IsApproved, tc.updatedIsApproved)
-			} else {
-				assert.NotNil(t, err)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, resp.ID, utils.ProtoFromUUID(userID))
+			assert.Equal(t, resp.ProfilePicture, tc.updatedProfilePic)
+			assert.Equal(t, resp.IsApproved, tc.updatedIsApproved)
 		})
 	}
 }
