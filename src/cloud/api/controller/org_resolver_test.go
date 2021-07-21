@@ -127,13 +127,13 @@ func TestUserSettingsResolver_OrgUsers(t *testing.T) {
 		}).
 		Return(&cloudpb.GetUsersInOrgResponse{
 			Users: []*cloudpb.UserInfo{
-				&cloudpb.UserInfo{
+				{
 					FirstName:  "first",
 					LastName:   "last",
 					IsApproved: false,
 					Email:      "user@test.com",
 				},
-				&cloudpb.UserInfo{
+				{
 					FirstName:  "test",
 					LastName:   "user",
 					IsApproved: true,

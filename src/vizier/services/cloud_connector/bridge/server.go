@@ -585,7 +585,7 @@ func (s *Bridge) handleDebugPodsRequest(reqID string, req *vizierpb.DebugPodsReq
 	}
 
 	resps := []*cvmsgspb.V2CAPIStreamResponse{
-		&cvmsgspb.V2CAPIStreamResponse{
+		{
 			RequestID: reqID,
 			Msg: &cvmsgspb.V2CAPIStreamResponse_DebugPodsResp{
 				DebugPodsResp: &vizierpb.DebugPodsResponse{

@@ -220,12 +220,12 @@ func (f *FakeVZInfo) GetVizierPodLogs(string, bool, string) (string, error) {
 
 func (f *FakeVZInfo) GetVizierPods() ([]*vizierpb.VizierPodStatus, []*vizierpb.VizierPodStatus, error) {
 	fakeControlPlane := []*vizierpb.VizierPodStatus{
-		&vizierpb.VizierPodStatus{
+		{
 			Name: "A pod",
 		},
 	}
 	fakeAgents := []*vizierpb.VizierPodStatus{
-		&vizierpb.VizierPodStatus{
+		{
 			Name: "Another pod",
 		},
 	}

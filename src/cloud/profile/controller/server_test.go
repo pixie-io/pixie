@@ -1425,7 +1425,7 @@ func TestServer_GetUsersInOrg(t *testing.T) {
 	d.EXPECT().
 		GetUsersInOrg(orgID).
 		Return([]*datastore.UserInfo{
-			&datastore.UserInfo{
+			{
 				OrgID:            orgID,
 				Username:         "test@test.com",
 				FirstName:        "first",

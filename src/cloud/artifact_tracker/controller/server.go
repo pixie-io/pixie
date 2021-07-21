@@ -68,7 +68,7 @@ func (s *Server) getArtifactListSpecifiedVizier() (*vpb.ArtifactSet, error) {
 	return &vpb.ArtifactSet{
 		Name: vizierArtifactName,
 		Artifact: []*vpb.Artifact{
-			&vpb.Artifact{
+			{
 				VersionStr: viper.GetString("vizier_version"),
 				AvailableArtifacts: []vpb.ArtifactType{
 					vpb.AT_CONTAINER_SET_YAMLS,
@@ -84,7 +84,7 @@ func (s *Server) getArtifactListSpecifiedCLI() (*vpb.ArtifactSet, error) {
 	return &vpb.ArtifactSet{
 		Name: cliArtifactName,
 		Artifact: []*vpb.Artifact{
-			&vpb.Artifact{
+			{
 				VersionStr: viper.GetString("cli_version"),
 				AvailableArtifacts: []vpb.ArtifactType{
 					vpb.AT_LINUX_AMD64,
@@ -99,7 +99,7 @@ func (s *Server) getArtifactListSpecifiedOperator() (*vpb.ArtifactSet, error) {
 	return &vpb.ArtifactSet{
 		Name: operatorArtifactName,
 		Artifact: []*vpb.Artifact{
-			&vpb.Artifact{
+			{
 				VersionStr: viper.GetString("operator_version"),
 				AvailableArtifacts: []vpb.ArtifactType{
 					vpb.AT_CONTAINER_SET_TEMPLATE_YAMLS,

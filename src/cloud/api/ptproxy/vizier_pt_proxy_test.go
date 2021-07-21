@@ -599,12 +599,12 @@ func TestVizierPassThroughProxy_DebugPods(t *testing.T) {
 					Msg: &cvmsgspb.V2CAPIStreamResponse_DebugPodsResp{
 						DebugPodsResp: &vizierpb.DebugPodsResponse{
 							ControlPlanePods: []*vizierpb.VizierPodStatus{
-								&vizierpb.VizierPodStatus{
+								{
 									Name: "one pod",
 								},
 							},
 							DataPlanePods: []*vizierpb.VizierPodStatus{
-								&vizierpb.VizierPodStatus{
+								{
 									Name: "another pod",
 								},
 							},
@@ -615,14 +615,14 @@ func TestVizierPassThroughProxy_DebugPods(t *testing.T) {
 
 			expGRPCError: nil,
 			expGRPCResponses: []*vizierpb.DebugPodsResponse{
-				&vizierpb.DebugPodsResponse{
+				{
 					ControlPlanePods: []*vizierpb.VizierPodStatus{
-						&vizierpb.VizierPodStatus{
+						{
 							Name: "one pod",
 						},
 					},
 					DataPlanePods: []*vizierpb.VizierPodStatus{
-						&vizierpb.VizierPodStatus{
+						{
 							Name: "another pod",
 						},
 					},
