@@ -31,43 +31,72 @@ declare global {
 // Use this class instead of `window.analytics`.
 // This should be the only user of window.analytics.
 class PixieAnalytics {
+  loaded: boolean;
+
+  optOut: boolean;
+
   constructor() {
-    // If the key is not valid, we disable segment.
-    if (ANALYTICS_ENABLED && isValidAnalytics()) {
-      this.load();
-    }
+    this.loaded = false;
+    this.optOut = false;
   }
 
   // eslint-disable-next-line class-methods-use-this
   get page() {
+    if (this.optOut) {
+      return () => {};
+    }
     return window.analytics.page;
   }
 
   // eslint-disable-next-line class-methods-use-this
   get track() {
+    if (this.optOut) {
+      return () => {};
+    }
     return window.analytics.track;
   }
 
   // eslint-disable-next-line class-methods-use-this
   get identify() {
+    if (this.optOut) {
+      return () => {};
+    }
     return window.analytics.identify;
   }
 
   // eslint-disable-next-line class-methods-use-this
   get alias() {
+    if (this.optOut) {
+      return () => {};
+    }
     return window.analytics.alias;
   }
 
   // eslint-disable-next-line class-methods-use-this
   get reset() {
+    if (this.optOut) {
+      return () => {};
+    }
     return window.analytics.reset;
+  }
+
+  disable() {
+    this.optOut = true;
+  }
+
+  enable() {
+    this.optOut = false;
   }
 
   // eslint-disable-next-line class-methods-use-this
   load() {
-    // eslint-disable-next-line no-underscore-dangle
-    window.__pixie_cloud_version__ = PIXIE_CLOUD_VERSION;
-    window.analytics.load(SEGMENT_UI_WRITE_KEY);
+    if (this.loaded || this.optOut) {
+      return;
+    }
+    if (ANALYTICS_ENABLED && isValidAnalytics()) {
+      this.loaded = true;
+      window.analytics.load(SEGMENT_UI_WRITE_KEY);
+    }
   }
 }
 

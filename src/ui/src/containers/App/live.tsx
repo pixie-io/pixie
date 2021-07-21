@@ -23,6 +23,7 @@ import AdminView from 'app/pages/admin/admin';
 import CreditsView from 'app/pages/credits/credits';
 import { SCRATCH_SCRIPT, ScriptsContextProvider } from 'app/containers/App/scripts-context';
 import LiveView from 'app/pages/live/live';
+import pixieAnalytics from 'app/utils/analytics';
 import * as React from 'react';
 import { Redirect, Route, Switch } from 'react-router-dom';
 import { generatePath } from 'react-router';
@@ -31,7 +32,9 @@ import * as QueryString from 'query-string';
 import { makeStyles } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import { useLDClient } from 'launchdarkly-react-client-sdk';
-import { GQLClusterInfo, GQLClusterStatus, GQLUserInfo } from 'app/types/schema';
+import {
+  GQLClusterInfo, GQLClusterStatus, GQLUserInfo, GQLUserSettings,
+} from 'app/types/schema';
 import { useQuery, gql } from '@apollo/client';
 
 import { DeployInstructions } from './deploy-instructions';
@@ -233,6 +236,25 @@ export default function PixieWithContext(): React.ReactElement {
   const userEmail = user?.email;
   const userOrg = user?.orgName;
   const ldClient = useLDClient();
+
+  // Load analytics for the user (if they haven't disabled analytics).
+  const { data: userSettingsData } = useQuery<{ userSettings: GQLUserSettings }>(
+    gql`
+      query getSettingsForCurrentUser{
+        userSettings {
+          analyticsOptout
+        }
+      }
+    `);
+
+  const userSettings = userSettingsData?.userSettings;
+  React.useEffect(() => {
+    if (userSettings && !userSettings.analyticsOptout) {
+      pixieAnalytics.load();
+    } else {
+      pixieAnalytics.disable();
+    }
+  }, [userSettings]);
 
   const userContext = React.useMemo(() => ({
     user: {
