@@ -25,6 +25,9 @@ import (
 	"net/http"
 	"regexp"
 	"sort"
+	"strings"
+
+	"github.com/spf13/viper"
 
 	atpb "px.dev/pixie/src/cloud/artifact_tracker/artifacttrackerpb"
 	cpb "px.dev/pixie/src/cloud/config_manager/configmanagerpb"
@@ -70,6 +73,7 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 		cloudAddr = fmt.Sprintf("vzconn-service.%s.svc.cluster.local:51600", in.VzSpec.DevCloudNamespace)
 		updateCloudAddr = fmt.Sprintf("api-service.%s.svc.cluster.local:51200", in.VzSpec.DevCloudNamespace)
 	}
+
 	// We should eventually clean up the templating code, since our Helm charts and extracted YAMLs will now just
 	// be simple CRDs.
 	tmplValues := &vizieryamls.VizierTmplValues{
@@ -81,6 +85,7 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 		CloudUpdateAddr:   updateCloudAddr,
 		ClusterName:       in.VzSpec.ClusterName,
 		DisableAutoUpdate: in.VzSpec.DisableAutoUpdate,
+		SentryDSN:         getSentryDSN(in.VzSpec.Version),
 	}
 
 	yamls, err := yamls.ExecuteTemplatedYAMLs(templatedYAMLs, vizieryamls.VizierTmplValuesToArgs(tmplValues))
@@ -97,6 +102,14 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 	return &cpb.ConfigForVizierResponse{
 		NameToYamlContent: yamlMap,
 	}, nil
+}
+
+func getSentryDSN(vizierVersion string) string {
+	// If it contains - it must be a pre-release Vizier.
+	if strings.Contains(vizierVersion, "-") {
+		return viper.GetString("dev_sentry")
+	}
+	return viper.GetString("prod_sentry")
 }
 
 // fetchVizierTemplates gets a download link, untars file, and

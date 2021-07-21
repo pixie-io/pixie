@@ -38,6 +38,8 @@ import (
 
 func init() {
 	pflag.String("artifact_tracker_service", "kubernetes:///artifact-tracker-service.plc:50750", "The artifact tracker service url (load balancer/list is ok)")
+	pflag.String("prod_sentry", "", "Key for prod Viziers that is used to send errors and stacktraces to Sentry.")
+	pflag.String("dev_sentry", "", "Key for dev Viziers that is used to send errors and stacktraces to Sentry.")
 }
 
 func newArtifactTrackerClient() (atpb.ArtifactTrackerClient, error) {
@@ -69,7 +71,6 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("Could not connect with Artifact Service.")
 	}
-
 	svr := controller.NewServer(atClient)
 	serverOpts := &server.GRPCServerOptions{
 		DisableAuth: map[string]bool{

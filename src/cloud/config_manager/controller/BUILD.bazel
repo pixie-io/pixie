@@ -28,5 +28,6 @@ go_library(
         "//src/utils/shared/tar",
         "//src/utils/shared/yamls",
         "//src/utils/template_generator/vizier_yamls",
+        "@com_github_spf13_viper//:viper",
     ],
 )

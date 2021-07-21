@@ -42,7 +42,17 @@ spec:
           valueFrom:
             configMapKeyRef:
               name: pl-service-config
-              key: PL_ARTIFACT_TRACKER_SERVICE      
+              key: PL_ARTIFACT_TRACKER_SERVICE    
+        - name: PL_PROD_SENTRY
+          valueFrom:
+            configMapKeyRef:
+              name: pl-sentry-dsn-config
+              key: PL_PROD_SENTRY
+        - name: PL_DEV_SENTRY
+          valueFrom:
+            configMapKeyRef:
+              name: pl-sentry-dsn-config
+              key: PL_DEV_SENTRY                  
         volumeMounts:
         - name: certs
           mountPath: /certs

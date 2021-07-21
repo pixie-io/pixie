@@ -5,10 +5,6 @@ namespace: pl
 commonLabels:
   app: pl-monitoring
   component: vizier
-patches:
-- path: patch_sentry.yaml
-  target:
-    kind: StatefulSet
 resources:
 - ../base
 - metadata_statefulset.yaml

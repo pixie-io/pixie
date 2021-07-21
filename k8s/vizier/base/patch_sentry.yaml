@@ -35,4 +35,8 @@ spec:
               key: cluster-id
               name: pl-cluster-secrets
         - name: PL_SENTRY_DSN
-          value: "" # Disable sentry in dev.
+          valueFrom:
+            secretKeyRef:
+              key: sentry-dsn
+              name: pl-cluster-secrets
+              optional: true

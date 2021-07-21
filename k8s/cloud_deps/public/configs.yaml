@@ -36,3 +36,11 @@ data:
     write-key: ""
     ui-write-key: ""
     cli-write-key: ""
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pl-sentry-dsn-config
+data:
+  PL_PROD_SENTRY: ""
+  PL_DEV_SENTRY: ""

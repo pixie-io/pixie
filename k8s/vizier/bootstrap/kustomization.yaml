@@ -6,10 +6,6 @@ commonLabels:
   vizier-bootstrap: "true"
 kind: Kustomization
 namespace: pl
-patches:
-- path: patch_sentry.yaml
-  target:
-    kind: Deployment
 resources:
 - cloud_connector_tls_config.yaml
 - cloud_connector_deployment.yaml

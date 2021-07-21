@@ -38,13 +38,6 @@ const (
 	defaultMemoryLimit            = "2Gi"
 )
 
-// Sentry configs are not actually secret and safe to check in.
-const (
-	// We can't really distinguish between prod/dev, so we use some heuristics to decide.
-	prodSentryDSN = "https://a8a635734bb840799befb63190e904e0@o324879.ingest.sentry.io/5203506"
-	devSentryDSN  = "https://8e4acf22871543f1aa143a93a5216a16@o324879.ingest.sentry.io/5203508"
-)
-
 // VizierTmplValues are the template values that can be used to fill out templated Vizier YAMLs.
 type VizierTmplValues struct {
 	DeployKey         string
@@ -58,6 +51,7 @@ type VizierTmplValues struct {
 	PEMMemoryLimit    string
 	Namespace         string
 	DisableAutoUpdate bool
+	SentryDSN         string
 }
 
 // VizierTmplValuesToArgs converts the vizier template values to args which can be used to fill out a template.
@@ -74,6 +68,7 @@ func VizierTmplValuesToArgs(tmplValues *VizierTmplValues) *yamls.YAMLTmplArgumen
 			"bootstrapVersion":  tmplValues.BootstrapVersion,
 			"pemMemoryLimit":    tmplValues.PEMMemoryLimit,
 			"disableAutoUpdate": tmplValues.DisableAutoUpdate,
+			"sentryDSN":         tmplValues.SentryDSN,
 		},
 		Release: &map[string]interface{}{
 			"Namespace": tmplValues.Namespace,
@@ -140,14 +135,6 @@ var GlobalTemplateOptions = []*yamls.K8sTemplateOptions{
 	},
 }
 
-func getSentryDSN(vizierVersion string) string {
-	// If it contains - it must be a pre-release Vizier.
-	if strings.Contains(vizierVersion, "-") {
-		return devSentryDSN
-	}
-	return prodSentryDSN
-}
-
 // GenerateTemplatedDeployYAMLsWithTar generates the YAMLs that should be run when deploying Pixie using the provided tar file.
 func GenerateTemplatedDeployYAMLsWithTar(clientset *kubernetes.Clientset, tarPath string, versionStr string) ([]*yamls.YAMLFile, error) {
 	file, err := os.Open(tarPath)
@@ -208,7 +195,7 @@ func GenerateTemplatedDeployYAMLs(clientset *kubernetes.Clientset, yamlMap map[s
 func GenerateSecretsYAML(clientset *kubernetes.Clientset, versionStr string, bootstrapMode bool) (string, error) {
 	dockerYAML := ""
 
-	csYAMLs, err := generateClusterSecretYAMLs(getSentryDSN(versionStr), bootstrapMode)
+	csYAMLs, err := generateClusterSecretYAMLs(bootstrapMode)
 	if err != nil {
 		return "", err
 	}
@@ -222,6 +209,12 @@ func GenerateSecretsYAML(clientset *kubernetes.Clientset, versionStr string, boo
 			Patch:           `{"stringData": { "deploy-key": "__PL_DEPLOY_KEY__"} }`,
 			Placeholder:     "__PL_DEPLOY_KEY__",
 			TemplateValue:   `"{{ .Values.deployKey }}"`,
+		},
+		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cluster-secrets"),
+			Patch:           `{"stringData": { "sentry-dsn": "__PL_SENTRY_DSN__"} }`,
+			Placeholder:     "__PL_SENTRY_DSN__",
+			TemplateValue:   `"{{ .Values.sentryDSN }}"`,
 		},
 		{
 			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cluster-config"),
@@ -404,8 +397,6 @@ metadata:
   namespace: pl
 ---
 apiVersion: v1
-stringData:
-  sentry-dsn: __PL_SENTRY_DSN__
 kind: Secret
 metadata:
   creationTimestamp: null
@@ -431,10 +422,9 @@ metadata:
   namespace: pl
 `
 
-func generateClusterSecretYAMLs(sentryDSN string, bootstrapMode bool) (string, error) {
+func generateClusterSecretYAMLs(bootstrapMode bool) (string, error) {
 	// Perform substitutions.
 	r := strings.NewReplacer(
-		"__PL_SENTRY_DSN__", sentryDSN,
 		"__PL_BOOTSTRAP_MODE__", strconv.FormatBool(bootstrapMode),
 	)
 	return r.Replace(secretsYAML), nil
