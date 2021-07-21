@@ -250,6 +250,7 @@ export default function PixieWithContext(): React.ReactElement {
   const userSettings = userSettingsData?.userSettings;
   React.useEffect(() => {
     if (userSettings && !userSettings.analyticsOptout) {
+      pixieAnalytics.enable();
       pixieAnalytics.load();
     } else {
       pixieAnalytics.disable();

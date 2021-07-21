@@ -33,6 +33,7 @@ import { APIKeysTable } from 'app/containers/admin/api-keys';
 import { UsersTable } from 'app/containers/admin/org-users';
 import { ClustersTable } from 'app/containers/admin/clusters-list';
 import { OrgSettings } from 'app/containers/admin/org-settings';
+import { UserSettings } from 'app/containers/admin/user-settings';
 import { StyledTab, StyledTabs } from 'app/containers/admin/utils';
 import { GetOAuthProvider } from 'app/pages/auth/utils';
 import { scrollbarStyles } from 'app/components';
@@ -122,6 +123,7 @@ export const AdminOverview: React.FC = () => {
           <StyledTab value='api-keys' label='API Keys' />
           <StyledTab value='users' label='Users' />
           <StyledTab value='org' label='Org Settings' />
+          <StyledTab value='user' label='User Settings' />
           { authClient.isInvitationEnabled() && <StyledTab value='invite' label='Invitations' /> }
         </StyledTabs>
         {tab.endsWith('deployment-keys')
@@ -202,6 +204,7 @@ export const AdminOverview: React.FC = () => {
             <Route exact path={`${path}/invite`} component={InvitationTab} />
             <Route exact path={`${path}/users`} component={UsersTable} />
             <Route exact path={`${path}/org`} component={OrgSettings} />
+            <Route exact path={`${path}/user`} component={UserSettings} />
           </Switch>
         </TableContainer>
       </div>
