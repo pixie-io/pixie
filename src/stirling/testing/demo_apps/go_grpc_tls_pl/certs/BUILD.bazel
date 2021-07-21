@@ -14,25 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
-
 package(default_visibility = ["//src/stirling:__subpackages__"])
-
-go_library(
-    name = "certs_lib",
-    srcs = ["cert_generator.go"],
-    importpath = "px.dev/pixie/src/stirling/testing/demo_apps/go_grpc_tls_pl/certs",
-    visibility = ["//visibility:private"],
-    deps = [
-        "@com_github_spf13_pflag//:pflag",
-        "@com_github_spf13_viper//:viper",
-    ],
-)
-
-go_binary(
-    name = "cert_generator",
-    embed = [":certs_lib"],
-)
 
 genrule(
     name = "certs",
@@ -44,7 +26,7 @@ genrule(
         "server.key",
     ],
     cmd = """
-        $(location cert_generator) \
+        $(location //src/common/testing/test_utils/cert_generator:cert_generator) \
         --ca_crt $(location ca.crt) \
         --client_crt $(location client.crt) \
         --client_key $(location client.key) \
@@ -52,7 +34,7 @@ genrule(
         --server_key $(location server.key)
     """,
     tools = [
-        "cert_generator",
+        "//src/common/testing/test_utils/cert_generator",
     ],
 )
 

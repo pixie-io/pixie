@@ -19,11 +19,33 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_layer")
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
+genrule(
+    name = "certs",
+    outs = [
+        "ca.crt",
+        "client.crt",
+        "client.key",
+        "server.crt",
+        "server.key",
+    ],
+    cmd = """
+        $(location //src/common/testing/test_utils/cert_generator:cert_generator) \
+        --ca_crt $(location ca.crt) \
+        --client_crt $(location client.crt) \
+        --client_key $(location client.key) \
+        --server_crt $(location server.crt) \
+        --server_key $(location server.key)
+    """,
+    tools = [
+        "//src/common/testing/test_utils/cert_generator",
+    ],
+)
+
 pkg_tar(
     name = "ssl_keys",
     srcs = [
-        "ssl/certs/nginx-selfsigned.crt",
-        "ssl/keys/nginx-selfsigned.key",
+        "server.crt",
+        "server.key",
     ],
     mode = "0755",
     strip_prefix = "/src/stirling/source_connectors/socket_tracer/testing/containers/ssl",
@@ -31,7 +53,7 @@ pkg_tar(
 
 container_layer(
     name = "nginx_ssl_keys",
-    directory = "/etc",
+    directory = "/etc/ssl",
     tars = [":ssl_keys"],
 )
 
