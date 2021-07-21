@@ -228,7 +228,7 @@ func TestProcessOneTable(t *testing.T) {
 	assert.Equal(t, []int64{1, 2, 3, 4, 5}, httpTable.Data)
 }
 
-func DISABLED_TestProcessNoEnd(t *testing.T) {
+func TestProcessNoEnd(t *testing.T) {
 	results := newScriptResults()
 	tm := newTableMux()
 	results.tm = tm
@@ -255,8 +255,6 @@ func DISABLED_TestProcessNoEnd(t *testing.T) {
 	}
 
 	// TODO(zasar) Should we error out if we don't receive an eos?
-	err := results.Close()
-	assert.Error(t, err)
 }
 
 func TestReceiveDataAfterEOS(t *testing.T) {
