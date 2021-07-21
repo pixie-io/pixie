@@ -38,7 +38,7 @@ helm_gcs_bucket="pixie-operator-charts"
 repo_path=$(pwd)
 helm_path="${repo_path}/k8s/operator/helm"
 
-# Create Chart.yaml for this release.
+# Create Chart.yaml for this release for Helm3.
 echo "apiVersion: v2
 name: pixie-operator-chart
 type: application
@@ -54,8 +54,23 @@ cp "${repo_path}/k8s/operator/crd/base/px.dev_viziers.yaml" "${helm_path}/crds/v
 mkdir -p "${tmp_dir}/${helm_gcs_bucket}"
 gsutil rsync "gs://${helm_gcs_bucket}" "${tmp_dir}/${helm_gcs_bucket}"
 
-# Generates tgz for the new release helm chart.
+# Generates tgz for the new release helm3 chart.
 helm package "${helm_path}" -d "${tmp_dir}/${helm_gcs_bucket}"
+
+# Create release for Helm2.
+mkdir "${helm_path}2"
+
+# Create Chart.yaml for this release for Helm2.
+echo "apiVersion: v1
+name: pixie-operator-helm2-chart
+type: application
+version: ${VERSION}" > "${helm_path}2/Chart.yaml"
+
+cp -r "${helm_path}/templates" "${helm_path}2/templates"
+cp "${helm_path}/values.yaml" "${helm_path}2/values.yaml"
+
+# Generates tgz for the new release helm3 chart.
+helm package "${helm_path}2" -d "${tmp_dir}/${helm_gcs_bucket}"
 
 # Update the index file.
 helm repo index "${tmp_dir}/${helm_gcs_bucket}" --url "https://${helm_gcs_bucket}.storage.googleapis.com"
