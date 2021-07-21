@@ -17,7 +17,7 @@
  */
 
 import { createBrowserHistory } from 'history';
-import analytics from 'app/utils/analytics';
+import pixieAnalytics from 'app/utils/analytics';
 
 const history = createBrowserHistory();
 
@@ -26,7 +26,7 @@ function showIntercom(path: string): boolean {
 }
 
 function sendPageEvent(path: string) {
-  analytics.page(
+  pixieAnalytics.page(
     '', // category
     path, // name
     {}, // properties

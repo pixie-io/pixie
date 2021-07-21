@@ -19,6 +19,7 @@
 import * as React from 'react';
 import * as QueryString from 'query-string';
 import Axios, { AxiosError } from 'axios';
+import pixieAnalytics from 'app/utils/analytics';
 import * as RedirectUtils from 'app/utils/redirect-utils';
 import { isValidAnalytics } from 'app/utils/env';
 import { AuthMessageBox } from 'app/components';
@@ -77,8 +78,8 @@ const trackAuthEvent = (event: string, id: string, email: string): Promise<void>
   if (isValidAnalytics()) {
     return Promise.race([
       new Promise<void>((resolve) => { // Wait for analytics to be sent out before redirecting.
-        analytics.track(event, () => {
-          analytics.identify(id, { email }, {}, () => {
+        pixieAnalytics.track(event, () => {
+          pixieAnalytics.identify(id, { email }, {}, () => {
             resolve();
           });
         });
@@ -126,7 +127,7 @@ export const AuthCallbackPage: React.FC = () => {
     try {
       response = await Axios.post('/api/auth/signup', { accessToken, idToken });
     } catch (err) {
-      analytics.track('User signup failed', { error: err.response.data });
+      pixieAnalytics.track('User signup failed', { error: err.response.data });
       handleHTTPError(err as AxiosError);
       return false;
     }
@@ -143,7 +144,7 @@ export const AuthCallbackPage: React.FC = () => {
         orgName,
       });
     } catch (err) {
-      analytics.track('User login failed', { error: err.response.data });
+      pixieAnalytics.track('User login failed', { error: err.response.data });
       handleHTTPError(err as AxiosError);
       return false;
     }

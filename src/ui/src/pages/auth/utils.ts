@@ -18,6 +18,7 @@
 
 import * as QueryString from 'query-string';
 import { OAUTH_PROVIDER } from 'app/containers/constants';
+import pixieAnalytics from 'app/utils/analytics';
 import Cookies from 'universal-cookie';
 import { HydraClient } from './hydra-oauth-provider';
 import { Auth0Client } from './auth0-oauth-provider';
@@ -75,7 +76,7 @@ const getRedirectURL = (isSignup: boolean) => {
 
   const segmentId = typeof parsed.tid === 'string' ? parsed.tid : '';
   if (segmentId) {
-    analytics.alias(segmentId);
+    pixieAnalytics.alias(segmentId);
   }
   return redirectURL;
 };

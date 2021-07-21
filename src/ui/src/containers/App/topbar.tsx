@@ -44,6 +44,7 @@ import KeyboardIcon from '@material-ui/icons/Keyboard';
 import { Link } from 'react-router-dom';
 import { Logo } from 'configurable/logo';
 import { GQLUserInfo, GQLUserAttributes } from 'app/types/schema';
+import pixieAnalytics from 'app/utils/analytics';
 
 const StyledListItemText = withStyles((theme: Theme) => createStyles({
   primary: {
@@ -156,7 +157,7 @@ const ProfileItem = ({
 
   React.useEffect(() => {
     if (id) {
-      analytics.identify(id, { email });
+      pixieAnalytics.identify(id, { email });
     }
   }, [id, email]);
 

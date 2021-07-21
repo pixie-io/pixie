@@ -28,7 +28,9 @@ declare global {
   }
 }
 
-class Analytics {
+// Use this class instead of `window.analytics`.
+// This should be the only user of window.analytics.
+class PixieAnalytics {
   constructor() {
     // If the key is not valid, we disable segment.
     if (ANALYTICS_ENABLED && isValidAnalytics()) {
@@ -57,6 +59,11 @@ class Analytics {
   }
 
   // eslint-disable-next-line class-methods-use-this
+  get reset() {
+    return window.analytics.reset;
+  }
+
+  // eslint-disable-next-line class-methods-use-this
   load() {
     // eslint-disable-next-line no-underscore-dangle
     window.__pixie_cloud_version__ = PIXIE_CLOUD_VERSION;
@@ -64,4 +71,4 @@ class Analytics {
   }
 }
 
-export default new Analytics();
+export default new PixieAnalytics();

@@ -21,6 +21,7 @@ import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { SCRATCH_SCRIPT, ScriptsContext } from 'app/containers/App/scripts-context';
 import { getQueryFuncs } from 'app/containers/live/vis';
 import { Script } from 'app/utils/script-bundle';
+import pixieAnalytics from 'app/utils/analytics';
 import {
   PixieAPIContext, ExecutionStateUpdate, VizierQueryError, GRPCStatusCode, Table,
 } from 'app/api';
@@ -260,7 +261,7 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
             resultsContext.setStreaming(false);
             setNumExecutionTries(0);
             setHasMutation(false);
-            analytics.track('Query Execution', {
+            pixieAnalytics.track('Query Execution', {
               status: 'success',
               query: script.code,
               queryId: update.results.queryId,
@@ -277,7 +278,7 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
           resultsContext.setStreaming(false);
           setNumExecutionTries(numExecutionTries - 1);
 
-          analytics.track('Query Execution', {
+          pixieAnalytics.track('Query Execution', {
             status: 'failed',
             query: script.code,
             queryID: update.results.queryId,

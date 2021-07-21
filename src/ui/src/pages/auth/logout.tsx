@@ -18,7 +18,9 @@
 
 import * as React from 'react';
 import Axios from 'axios';
+import pixieAnalytics from 'app/utils/analytics';
 import * as RedirectUtils from 'app/utils/redirect-utils';
+
 import { BasePage } from './base';
 import { GetCSRFCookie } from './utils';
 
@@ -29,7 +31,7 @@ export const LogoutPage: React.FC = () => {
     Axios.post('/api/auth/logout', {}, { headers: { 'x-csrf': GetCSRFCookie() } }).then(() => {
       localStorage.clear();
       sessionStorage.clear();
-      analytics.reset();
+      pixieAnalytics.reset();
       RedirectUtils.redirect('', {});
     });
   }, []);
