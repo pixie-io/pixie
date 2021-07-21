@@ -113,11 +113,10 @@ StatusOr<CGroupTemplateSpec> CreateCGroupTemplateSpecFromPath(std::string_view p
   spec.templated_path = std::string(path);
   spec.templated_path = std::regex_replace(spec.templated_path, kPodIDRegex, R"(pod$$0)");
   spec.templated_path = std::regex_replace(spec.templated_path, kContainerIDRegex, R"($$1)");
+  spec.templated_path =
+      absl::StrReplaceAll(spec.templated_path, {{"burstable", "$2"}, {"besteffort", "$2"}});
   spec.templated_path = absl::StrReplaceAll(
-      spec.templated_path,
-      {{"burstable/", ""}, {"burstable-", ""}, {"besteffort/", ""}, {"besteffort-", ""}});
-  spec.templated_path = absl::StrReplaceAll(
-      spec.templated_path, {{"kubepods/", "kubepods/$2/"}, {"kubepods-", "kubepods-$2-"}});
+      spec.templated_path, {{"kubepods/", "kubepods/$2/"}, {"kubepods-pod", "kubepods-$2-pod"}});
 
   return spec;
 }
@@ -170,7 +169,7 @@ std::string CGroupPathResolver::PodPath(PodQOSClass qos_class, std::string_view 
       absl::Substitute(spec_.templated_path, formatted_pod_id, container_id, qos_str);
 
   if (qos_class == PodQOSClass::kGuaranteed) {
-    path = absl::StrReplaceAll(path, {{"--", "-"}, {"//", "/"}});
+    path = absl::StrReplaceAll(path, {{"--", "-"}, {"/kubepods-.slice/", "/"}, {"//", "/"}});
   }
 
   return path;

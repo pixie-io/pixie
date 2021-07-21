@@ -117,6 +117,45 @@ TEST(CGroupPathResolver, StandardFormatCRIO) {
       "crio-a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62.scope/cgroup.procs");
 }
 
+TEST(CGroupPathResolver, OpenShiftFormat) {
+  std::string cgroup_kubepod_path =
+      "/sys/fs/cgroup/cpu,cpuacct/kubepods.slice/kubepods-burstable.slice/"
+      "kubepods-burstable-pod9b7969b2_aad0_47d4_b11c_4acfd1ce018e.slice/"
+      "crio-9b9ccc15d288aa0f7d3bf7b583993921bf261edfeff3467765ab81e687c6a889.scope/cgroup.procs";
+  ASSERT_OK_AND_ASSIGN(CGroupTemplateSpec spec,
+                       CreateCGroupTemplateSpecFromPath(cgroup_kubepod_path));
+  EXPECT_EQ(spec.templated_path,
+            "/sys/fs/cgroup/cpu,cpuacct/kubepods.slice/kubepods-$2.slice/kubepods-$2-pod$0.slice/"
+            "crio-$1.scope/cgroup.procs");
+  EXPECT_EQ(spec.pod_id_separators.value_or('\0'), '_');
+  EXPECT_EQ(spec.qos_separator, '-');
+
+  // NOTE: The expected path for the guaranteed class is based on speculation. There was no such
+  // container on the platform. It's possible OpenShift doesn't create this class. The two likely
+  // options of what OpenShift does are:
+  //   /sys/fs/cgroup/cpu,cpuacct/kubepods.slice/kubepods-pod...
+  //   /sys/fs/cgroup/cpu,cpuacct/kubepods.slice/kubepods.slice/kubepods-pod...
+  // We assume the first, since it seems more reasonable. Hopefully they agree.
+  CGroupPathResolver path_resolver(spec);
+  EXPECT_EQ(
+      path_resolver.PodPath(PodQOSClass::kGuaranteed, kPodID, kContainerID),
+      "/sys/fs/cgroup/cpu,cpuacct/kubepods.slice/"
+      "kubepods-pod01234567_cccc_dddd_eeee_ffff000011112222.slice/"
+      "crio-a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62.scope/cgroup.procs");
+
+  EXPECT_EQ(
+      path_resolver.PodPath(PodQOSClass::kBestEffort, kPodID, kContainerID),
+      "/sys/fs/cgroup/cpu,cpuacct/kubepods.slice/kubepods-besteffort.slice/"
+      "kubepods-besteffort-pod01234567_cccc_dddd_eeee_ffff000011112222.slice/"
+      "crio-a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62.scope/cgroup.procs");
+
+  EXPECT_EQ(
+      path_resolver.PodPath(PodQOSClass::kBurstable, kPodID, kContainerID),
+      "/sys/fs/cgroup/cpu,cpuacct/kubepods.slice/kubepods-burstable.slice/"
+      "kubepods-burstable-pod01234567_cccc_dddd_eeee_ffff000011112222.slice/"
+      "crio-a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62.scope/cgroup.procs");
+}
+
 TEST(CGroupPathResolver, BareMetalK8s_1_21) {
   std::string cgroup_kubepod_path =
       "/sys/fs/cgroup/cpu,cpuacct/system.slice/containerd.service/"
