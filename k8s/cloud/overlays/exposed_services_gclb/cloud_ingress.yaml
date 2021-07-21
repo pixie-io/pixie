@@ -3,6 +3,8 @@ apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
   name: cloud-ingress
+  annotations:
+    networking.gke.io/v1beta1.FrontendConfig: "frontend-config"
 spec:
   tls:
   - secretName: cloud-proxy-tls-certs

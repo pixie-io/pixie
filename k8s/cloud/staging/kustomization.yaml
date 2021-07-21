@@ -18,6 +18,7 @@ replicas:
 - name: scriptmgr-server
   count: 3
 resources:
+- frontend_config.yaml
 - cloud_proxy_backend_config.yaml
 - vzconn_backend_config.yaml
 - ../base

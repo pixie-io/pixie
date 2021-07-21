@@ -1,0 +1,6 @@
+apiVersion: networking.gke.io/v1beta1
+kind: FrontendConfig
+metadata:
+  name: frontend-config
+spec:
+  sslPolicy: pl-ssl-policy
