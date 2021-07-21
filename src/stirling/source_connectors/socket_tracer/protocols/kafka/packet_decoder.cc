@@ -186,6 +186,40 @@ StatusOr<RecordBatch> PacketDecoder::ExtractRecordBatch() {
   return r;
 }
 
+StatusOr<ProduceReqPartition> PacketDecoder::ExtractProduceReqPartition() {
+  ProduceReqPartition r;
+  PL_ASSIGN_OR_RETURN(r.index, ExtractInt32());
+
+  // COMPACT_RECORDS is used in api_version >= 9.
+  int32_t length = 0;
+  // TODO(chengruizhe): Add flexible version support. Flexible version was introduced in Kafka to
+  // support more compact datatypes and tagged fields etc.
+  if (api_version_ >= 9) {
+    PL_ASSIGN_OR_RETURN(length, ExtractUnsignedVarint());
+  } else {
+    PL_ASSIGN_OR_RETURN(length, ExtractInt32());
+  }
+  PL_RETURN_IF_ERROR(MarkOffset(length));
+
+  PL_ASSIGN_OR_RETURN(r.record_batch, ExtractRecordBatch());
+
+  PL_RETURN_IF_ERROR(JumpToOffset());
+  return r;
+}
+
+StatusOr<ProduceReqTopic> PacketDecoder::ExtractProduceReqTopic() {
+  ProduceReqTopic r;
+  if (api_version_ >= 9) {
+    PL_ASSIGN_OR_RETURN(r.name, ExtractCompactString());
+    PL_ASSIGN_OR_RETURN(r.partitions,
+                        ExtractCompactArray(&PacketDecoder::ExtractProduceReqPartition));
+  } else {
+    PL_ASSIGN_OR_RETURN(r.name, ExtractString());
+    PL_ASSIGN_OR_RETURN(r.partitions, ExtractArray(&PacketDecoder::ExtractProduceReqPartition));
+  }
+  return r;
+}
+
 StatusOr<std::string> PacketDecoder::ExtractBytesZigZag() {
   PL_ASSIGN_OR_RETURN(int32_t len, ExtractVarint());
   if (len < -1) {
@@ -224,8 +258,6 @@ Status PacketDecoder::ExtractRespHeader(Response* /*resp*/) {
  * Message struct Parsers
  */
 
-// TODO(chengruizhe): Add support for ProduceReq V9. It requires parsing compact strings, compact
-//  records, and tag buffers.
 // Documentation: https://kafka.apache.org/protocol.html#The_Messages_Produce
 StatusOr<ProduceReq> PacketDecoder::ExtractProduceReq() {
   ProduceReq r;
@@ -235,9 +267,11 @@ StatusOr<ProduceReq> PacketDecoder::ExtractProduceReq() {
 
   PL_ASSIGN_OR_RETURN(r.acks, ExtractInt16());
   PL_ASSIGN_OR_RETURN(r.timeout_ms, ExtractInt32());
-  PL_ASSIGN_OR_RETURN(r.num_topics, ExtractInt32());
-
-  // TODO(chengruizhe): Add parsing of TopicData, and its downstream structs.
+  if (api_version_ >= 9) {
+    PL_ASSIGN_OR_RETURN(r.topics, ExtractCompactArray(&PacketDecoder::ExtractProduceReqTopic));
+  } else {
+    PL_ASSIGN_OR_RETURN(r.topics, ExtractArray(&PacketDecoder::ExtractProduceReqTopic));
+  }
   return r;
 }
 

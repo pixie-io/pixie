@@ -38,46 +38,27 @@ namespace protocols {
 namespace kafka {
 
 enum class DataType : uint16_t {
-  kBoolean = 0,
-  kInt8 = 1,
-  kInt16 = 2,
-  kInt32 = 3,
-  kInt64 = 4,
-  kUint32 = 5,
-  kVarint = 6,
-  kVarlong = 7,
-  kUuid = 8,
-  kFloat64 = 9,
-  kString = 10,
-  kCompactString = 11,
-  kNullableString = 12,
-  kCompactNullableString = 13,
-  kBytes = 14,
-  kCompactBytes = 15,
-  kNullableBytes = 16,
-  kCompactNullableBytes = 17,
-  kRecords = 18,
-  kArray = 19,
-  kCompactArray = 20,
-};
-
-// TODO(chengruizhe): Support the complete ProduceReq.
-// Produce Request Message (opcode = 0).
-struct ProduceReq {
-  std::string transactional_id;
-  int16_t acks = 0;
-  int32_t timeout_ms = 0;
-  int32_t num_topics = 0;
-
-  std::string ToJSONString() const {
-    std::map<std::string, std::string> fields = {
-        {"transactional_id", transactional_id},
-        {"acks", std::to_string(acks)},
-        {"timeout_ms", std::to_string(timeout_ms)},
-        {"num_topics", std::to_string(num_topics)},
-    };
-    return utils::ToJSONString(fields);
-  }
+  kBoolean,
+  kInt8,
+  kInt16,
+  kInt32,
+  kInt64,
+  kUint32,
+  kVarint,
+  kVarlong,
+  kUuid,
+  kFloat64,
+  kString,
+  kCompactString,
+  kNullableString,
+  kCompactNullableString,
+  kBytes,
+  kCompactBytes,
+  kNullableBytes,
+  kCompactNullableBytes,
+  kRecords,
+  kArray,
+  kCompactArray,
 };
 
 struct RecordMessage {
@@ -87,6 +68,34 @@ struct RecordMessage {
 
 struct RecordBatch {
   std::vector<RecordMessage> records;
+};
+
+struct ProduceReqPartition {
+  int32_t index = 0;
+  RecordBatch record_batch;
+};
+
+struct ProduceReqTopic {
+  std::string name;
+  std::vector<ProduceReqPartition> partitions;
+};
+
+// Produce Request Message (opcode = 0).
+struct ProduceReq {
+  std::string transactional_id;
+  int16_t acks = 0;
+  int32_t timeout_ms = 0;
+  std::vector<ProduceReqTopic> topics;
+
+  // TODO(chengruizhe): Update ToJSONString for different structs.
+  std::string ToJSONString() const {
+    std::map<std::string, std::string> fields = {
+        {"transactional_id", transactional_id},
+        {"acks", std::to_string(acks)},
+        {"timeout_ms", std::to_string(timeout_ms)},
+    };
+    return utils::ToJSONString(fields);
+  }
 };
 
 // TODO(chengruizhe): Support the complete ProduceResp.
@@ -206,6 +215,10 @@ class PacketDecoder {
   // messages is a record batch, and a record batch contains one or more records.
   // https://kafka.apache.org/documentation/#recordbatch
   StatusOr<RecordBatch> ExtractRecordBatch();
+
+  // Partition Data in Produce Request.
+  StatusOr<ProduceReqPartition> ExtractProduceReqPartition();
+  StatusOr<ProduceReqTopic> ExtractProduceReqTopic();
 
   Status ExtractReqHeader(Request* req);
   Status ExtractRespHeader(Response* resp);
