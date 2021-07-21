@@ -27,7 +27,6 @@ program = """
 // Licensed under the Apache License, Version 2.0 (the "License")
 
 #include <linux/fs.h>
-#include <linux/sched.h>
 
 // from fs/namei.c:
 struct nameidata {
@@ -36,12 +35,25 @@ struct nameidata {
         // [...]
 };
 
+// comment out this block to avoid showing hits:
 kprobe:lookup_fast,
 kprobe:lookup_fast.constprop.*
 {
 	$nd = (struct nameidata *)arg0;
-        $t = "R";
-	printf(\"time:%s pid:%d comm:%s t:%s file:%s\", strftime("%H:%M:%S", nsecs), pid, comm, $t, str($nd->last.name));
+	printf(\"time:%s pid:%d comm:%s t:%s file:%s\", strftime("%H:%M:%S", nsecs), pid, comm, \"R\", str($nd->last.name));
+}
+
+kprobe:d_lookup
+{
+	$name = (struct qstr *)arg1;
+	@fname[tid] = $name->name;
+}
+
+kretprobe:d_lookup
+/@fname[tid]/
+{
+	printf(\"time:%s pid:%d comm:%s t:%s file:%s\", strftime("%H:%M:%S", nsecs), pid, comm, \"M\", str(@fname[tid]));
+	delete(@fname[tid]);
 }
 """
 def dc_snoop_func():
