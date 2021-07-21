@@ -55,6 +55,30 @@ TEST(CGroupPathResolver, GKEFormat) {
       "a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62/cgroup.procs");
 }
 
+TEST(CGroupPathResolver, GKEFormat2) {
+  std::string cgroup_kubepod_path =
+      "/sys/fs/cgroup/cpu,cpuacct/kubepods/burstable/podc458de04-9784-4f7a-990e-cefe26b511f0/"
+      "01aa0bfe91e8a58da5f1f4db469fa999fe9263c702111e611445cde2b9cb0c1a/cgroup.procs";
+  ASSERT_OK_AND_ASSIGN(CGroupTemplateSpec spec,
+                       CreateCGroupTemplateSpecFromPath(cgroup_kubepod_path));
+  EXPECT_EQ(spec.templated_path, "/sys/fs/cgroup/cpu,cpuacct/kubepods/$2/pod$0/$1/cgroup.procs");
+  EXPECT_EQ(spec.pod_id_separators.value_or('\0'), '-');
+  EXPECT_EQ(spec.qos_separator, '/');
+
+  CGroupPathResolver path_resolver(spec);
+  EXPECT_EQ(path_resolver.PodPath(PodQOSClass::kGuaranteed, kPodID, kContainerID),
+            "/sys/fs/cgroup/cpu,cpuacct/kubepods/pod01234567-cccc-dddd-eeee-ffff000011112222/"
+            "a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62/cgroup.procs");
+  EXPECT_EQ(
+      path_resolver.PodPath(PodQOSClass::kBestEffort, kPodID, kContainerID),
+      "/sys/fs/cgroup/cpu,cpuacct/kubepods/besteffort/pod01234567-cccc-dddd-eeee-ffff000011112222/"
+      "a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62/cgroup.procs");
+  EXPECT_EQ(
+      path_resolver.PodPath(PodQOSClass::kBurstable, kPodID, kContainerID),
+      "/sys/fs/cgroup/cpu,cpuacct/kubepods/burstable/pod01234567-cccc-dddd-eeee-ffff000011112222/"
+      "a7638fe3934b37419cc56bca73465a02b354ba6e98e10272542d84eb2014dd62/cgroup.procs");
+}
+
 TEST(CGroupPathResolver, StandardFormatDocker) {
   std::string cgroup_kubepod_path =
       "/sys/fs/cgroup/cpu,cpuacct/kubepods.slice/"

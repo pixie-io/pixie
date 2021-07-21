@@ -116,7 +116,8 @@ StatusOr<CGroupTemplateSpec> CreateCGroupTemplateSpecFromPath(std::string_view p
   spec.templated_path =
       absl::StrReplaceAll(spec.templated_path, {{"burstable", "$2"}, {"besteffort", "$2"}});
   spec.templated_path = absl::StrReplaceAll(
-      spec.templated_path, {{"kubepods/", "kubepods/$2/"}, {"kubepods-pod", "kubepods-$2-pod"}});
+      spec.templated_path,
+      {{"kubepods/pod", "kubepods/$2/pod"}, {"kubepods-pod", "kubepods-$2-pod"}});
 
   return spec;
 }
