@@ -64,7 +64,8 @@ DEFINE_string(
 DEFINE_string(trace, "",
               "Dynamic trace to deploy. Either (1) the path to a file containing PxL or IR trace "
               "spec, or (2) <path to object file>:<symbol_name> for full-function tracing.");
-DEFINE_string(print_record_batches, "http_events,mysql_events,cql_events,dns_events",
+DEFINE_string(print_record_batches,
+              "http_events,mysql_events,pgsql_events,redis_events,cql_events,dns_events",
               "Comma-separated list of tables to print. Defaults to tracers if not specified. Use "
               "'None' for none.");
 DEFINE_bool(init_only, false, "If true, only runs the init phase and exits. For testing.");
