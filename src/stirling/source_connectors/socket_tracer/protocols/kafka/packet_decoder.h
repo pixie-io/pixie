@@ -98,13 +98,32 @@ struct ProduceReq {
   }
 };
 
+struct RecordError {
+  int32_t batch_index;
+  std::string error_message;
+};
+
+struct ProduceRespPartition {
+  int32_t index;
+  int16_t error_code;
+  std::vector<RecordError> record_errors;
+  std::string error_message;
+};
+
+struct ProduceRespTopic {
+  std::string name;
+  std::vector<ProduceRespPartition> partitions;
+};
+
 // TODO(chengruizhe): Support the complete ProduceResp.
 struct ProduceResp {
-  int32_t num_responses = 0;
+  std::vector<ProduceRespTopic> topics;
+  int32_t throttle_time_ms;
 
+  // TODO(chengruizhe): update ToJSONString.
   std::string ToJSONString() const {
     std::map<std::string, std::string> fields = {
-        {"num_responses", std::to_string(num_responses)},
+        {"throttle_time_ms", std::to_string(throttle_time_ms)},
     };
     return utils::ToJSONString(fields);
   }
@@ -157,6 +176,7 @@ class PacketDecoder {
   // Represents bytes whose length is encoded with zigzag varint.
   StatusOr<std::string> ExtractBytesZigZag();
 
+  // TODO(chengruizhe): Use std::function in ExtractArray and ExtractCompactArray.
   // Represents a sequence of objects of a given type T. Type T can be either a primitive
   // type (e.g. STRING) or a structure. First, the length N is given as an INT32. Then N instances
   // of type T follow. A null array is represented with a length of -1.
@@ -218,7 +238,18 @@ class PacketDecoder {
 
   // Partition Data in Produce Request.
   StatusOr<ProduceReqPartition> ExtractProduceReqPartition();
+
+  // Topic Data in Produce Request.
   StatusOr<ProduceReqTopic> ExtractProduceReqTopic();
+
+  // RecordError field in Produce Response with api_version >= 8.
+  StatusOr<RecordError> ExtractRecordError();
+
+  // Partition Data in Produce Response.
+  StatusOr<ProduceRespPartition> ExtractProduceRespPartition();
+
+  // Topic Data in Produce Request.
+  StatusOr<ProduceRespTopic> ExtractProduceRespTopic();
 
   Status ExtractReqHeader(Request* req);
   Status ExtractRespHeader(Response* resp);

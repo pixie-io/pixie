@@ -95,6 +95,70 @@ bool operator==(const ProduceReq& lhs, const ProduceReq& rhs) {
   return true;
 }
 
+bool operator==(const RecordError& lhs, const RecordError& rhs) {
+  return lhs.batch_index == rhs.batch_index && lhs.error_message == rhs.error_message;
+}
+
+bool operator!=(const RecordError& lhs, const RecordError& rhs) { return !(lhs == rhs); }
+
+bool operator==(const ProduceRespPartition& lhs, const ProduceRespPartition& rhs) {
+  if (lhs.index != rhs.index) {
+    return false;
+  }
+  if (lhs.error_code != rhs.error_code) {
+    return false;
+  }
+  if (lhs.error_message != rhs.error_message) {
+    return false;
+  }
+
+  if (lhs.record_errors.size() != rhs.record_errors.size()) {
+    return false;
+  }
+  for (size_t i = 0; i < lhs.record_errors.size(); ++i) {
+    if (lhs.record_errors[i] != rhs.record_errors[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool operator!=(const ProduceRespPartition& lhs, const ProduceRespPartition& rhs) {
+  return !(lhs == rhs);
+}
+
+bool operator==(const ProduceRespTopic& lhs, const ProduceRespTopic& rhs) {
+  if (lhs.name != rhs.name) {
+    return false;
+  }
+  if (lhs.partitions.size() != rhs.partitions.size()) {
+    return false;
+  }
+  for (size_t i = 0; i < lhs.partitions.size(); ++i) {
+    if (lhs.partitions[i] != rhs.partitions[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool operator!=(const ProduceRespTopic& lhs, const ProduceRespTopic& rhs) { return !(lhs == rhs); }
+
+bool operator==(const ProduceResp& lhs, const ProduceResp& rhs) {
+  if (lhs.throttle_time_ms != rhs.throttle_time_ms) {
+    return false;
+  }
+  if (lhs.topics.size() != rhs.topics.size()) {
+    return false;
+  }
+  for (size_t i = 0; i < lhs.topics.size(); ++i) {
+    if (lhs.topics[i] != rhs.topics[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 template <typename T>
 struct PacketDecoderTestCase {
   std::string input;
@@ -330,6 +394,35 @@ TEST(KafkaPacketDecoderTest, ExtractProduceReqV9) {
   PacketDecoder decoder(input);
   decoder.set_api_version(9);
   EXPECT_OK_AND_EQ(decoder.ExtractProduceReq(), expected_result);
+}
+
+TEST(KafkaPacketDecoderTest, ExtractProduceRespV8) {
+  const std::string_view input = CreateStringView<char>(
+      "\x00\x00\x00\x01\x00\x11\x71\x75\x69\x63\x6b\x73\x74\x61\x72\x74\x2d\x65\x76\x65\x6e\x74"
+      "\x73\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\xff\xff\xff"
+      "\xff\xff\xff\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\x00\x00\x00"
+      "\x00");
+  ProduceRespPartition partition{
+      .index = 0, .error_code = 0, .record_errors = {}, .error_message = ""};
+  ProduceRespTopic topic{.name = "quickstart-events", .partitions = {partition}};
+  ProduceResp expected_result{.topics = {topic}, .throttle_time_ms = 0};
+  PacketDecoder decoder(input);
+  decoder.set_api_version(8);
+  EXPECT_OK_AND_EQ(decoder.ExtractProduceResp(), expected_result);
+}
+
+TEST(KafkaPacketDecoderTest, ExtractProduceRespV9) {
+  const std::string_view input = CreateStringView<char>(
+      "\x02\x12\x71\x75\x69\x63\x6b\x73\x74\x61\x72\x74\x2d\x65\x76\x65\x6e\x74\x73\x02\x00"
+      "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\xff\xff\xff\xff\xff\xff\x00"
+      "\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00");
+  ProduceRespPartition partition{
+      .index = 0, .error_code = 0, .record_errors = {}, .error_message = ""};
+  ProduceRespTopic topic{.name = "quickstart-events", .partitions = {partition}};
+  ProduceResp expected_result{.topics = {topic}, .throttle_time_ms = 0};
+  PacketDecoder decoder(input);
+  decoder.set_api_version(9);
+  EXPECT_OK_AND_EQ(decoder.ExtractProduceResp(), expected_result);
 }
 
 }  // namespace kafka

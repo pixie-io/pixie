@@ -231,6 +231,58 @@ StatusOr<std::string> PacketDecoder::ExtractBytesZigZag() {
   return ExtractBytesCore<char>(len);
 }
 
+StatusOr<RecordError> PacketDecoder::ExtractRecordError() {
+  RecordError r;
+
+  PL_ASSIGN_OR_RETURN(r.batch_index, ExtractInt32());
+  if (api_version_ >= 9) {
+    PL_ASSIGN_OR_RETURN(r.error_message, ExtractCompactNullableString());
+  } else {
+    PL_ASSIGN_OR_RETURN(r.error_message, ExtractNullableString());
+  }
+  return r;
+}
+
+StatusOr<ProduceRespPartition> PacketDecoder::ExtractProduceRespPartition() {
+  ProduceRespPartition r;
+
+  PL_ASSIGN_OR_RETURN(r.index, ExtractInt32());
+  PL_ASSIGN_OR_RETURN(r.error_code, ExtractInt16());
+  PL_ASSIGN_OR_RETURN(int64_t base_offset, ExtractInt64());
+  if (api_version_ >= 2) {
+    PL_ASSIGN_OR_RETURN(int64_t log_append_time_ms, ExtractInt64());
+    PL_UNUSED(log_append_time_ms);
+  }
+  if (api_version_ >= 5) {
+    PL_ASSIGN_OR_RETURN(int64_t log_start_offset, ExtractInt64());
+    PL_UNUSED(log_start_offset);
+  }
+  if (api_version_ >= 9) {
+    PL_ASSIGN_OR_RETURN(r.record_errors, ExtractCompactArray(&PacketDecoder::ExtractRecordError));
+    PL_ASSIGN_OR_RETURN(r.error_message, ExtractCompactNullableString());
+  } else if (api_version_ >= 8) {
+    PL_ASSIGN_OR_RETURN(r.record_errors, ExtractArray(&PacketDecoder::ExtractRecordError));
+    PL_ASSIGN_OR_RETURN(r.error_message, ExtractNullableString());
+  }
+
+  PL_UNUSED(base_offset);
+  return r;
+}
+
+StatusOr<ProduceRespTopic> PacketDecoder::ExtractProduceRespTopic() {
+  ProduceRespTopic r;
+
+  if (api_version_ >= 9) {
+    PL_ASSIGN_OR_RETURN(r.name, ExtractCompactString());
+    PL_ASSIGN_OR_RETURN(r.partitions,
+                        ExtractCompactArray(&PacketDecoder::ExtractProduceRespPartition));
+  } else {
+    PL_ASSIGN_OR_RETURN(r.name, ExtractString());
+    PL_ASSIGN_OR_RETURN(r.partitions, ExtractArray(&PacketDecoder::ExtractProduceRespPartition));
+  }
+  return r;
+}
+
 /*
  * Header Parsers
  */
@@ -278,9 +330,15 @@ StatusOr<ProduceReq> PacketDecoder::ExtractProduceReq() {
 StatusOr<ProduceResp> PacketDecoder::ExtractProduceResp() {
   ProduceResp r;
 
-  PL_ASSIGN_OR_RETURN(r.num_responses, ExtractInt32());
+  if (api_version_ >= 9) {
+    PL_ASSIGN_OR_RETURN(r.topics, ExtractCompactArray(&PacketDecoder::ExtractProduceRespTopic));
+  } else {
+    PL_ASSIGN_OR_RETURN(r.topics, ExtractArray(&PacketDecoder::ExtractProduceRespTopic));
+  }
 
-  // TODO(chengruizhe): Add parsing of the responses and partitions.
+  if (api_version_ >= 1) {
+    PL_ASSIGN_OR_RETURN(r.throttle_time_ms, ExtractInt32());
+  }
   return r;
 }
 
