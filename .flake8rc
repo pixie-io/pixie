@@ -1,5 +1,5 @@
 [flake8]
-max-line-length = 100
+max-line-length = 120
 
 # N802: Function names have to be lower case. This is for GRPC service.
 # E999: Mistaken error see https://github.com/PyCQA/pycodestyle/issues/584
