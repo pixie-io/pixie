@@ -70,6 +70,29 @@ const ClusterWarningBanner: React.FC<{ user: Pick<GQLUserInfo, 'email' | 'orgNam
   return null;
 };
 
+// Convenience routes: sends `/clusterID/:clusterID`,  to the appropriate Live url.
+const ClusterIDShortcut = ({ match, location }) => {
+  const { data, loading, error } = useQuery<{
+    cluster: Pick<GQLClusterInfo, 'clusterName'>
+  }>(
+    gql`
+      query clusterNameByID($id: ID!) {
+        cluster(id: $id) {
+          clusterName
+        }
+      }
+    `,
+    { pollInterval: 2500, variables: { id: match.params?.clusterID } },
+  );
+  const cluster = data?.cluster.clusterName;
+  const search = location.search ?? '';
+  const pathPrefix = match.path.startsWith('/embed') ? '/embed/live' : '/live';
+
+  if (cluster == null || loading || error) return null; // Wait for things to be ready
+
+  return <Redirect to={generatePath(`${pathPrefix}/clusters/:cluster\\${search}`, { cluster })} />;
+};
+
 // Convenience routes: sends `/scratch`, `/script/http_data`, and others to the appropriate Live url.
 const ScriptShortcut = ({ match, location }) => {
   const { data } = useQuery<{
@@ -91,18 +114,18 @@ const ScriptShortcut = ({ match, location }) => {
 
   if (cluster == null) return null; // Wait for things to be ready
 
-  let scriptId = '';
-  if (match.params?.scriptId) {
-    scriptId = `${match.params.orgId ?? 'px'}/${match.params.scriptId}`;
+  let scriptID = '';
+  if (match.params?.scriptID) {
+    scriptID = `${match.params.scriptNS ?? 'px'}/${match.params.scriptID}`;
   }
   if (location.pathname === '/scratch' || location.pathname === '/scratchpad') {
-    scriptId = SCRATCH_SCRIPT.id;
+    scriptID = SCRATCH_SCRIPT.id;
   }
-  if (!scriptId) {
+  if (!scriptID) {
     return <Redirect to='/live' />;
   }
 
-  const queryParams: Record<string, string> = { script: scriptId };
+  const queryParams: Record<string, string> = { script: scriptID };
   const params = QueryString.stringify(queryParams);
   const newPath = generatePath(`/live/clusters/:cluster\\?${params}`, { cluster });
 
@@ -292,16 +315,20 @@ export default function PixieWithContext(): React.ReactElement {
       <Switch>
         <Route path='/admin' component={AdminView} />
         <Route path='/credits' component={CreditsView} />
+        <Route path={[
+          '/clusterID/:clusterID',
+          '/embed/clusterID/:clusterID',
+        ]} component={ClusterIDShortcut} />
         <Route path='/live' component={LiveWithProvider} />
         <Route path='/embed/live' component={LiveWithProvider} />
         <Route
           path={[
-            '/script/:orgId/:scriptId',
-            '/scripts/:orgId/:scriptId',
-            '/s/:orgId/:scriptId',
-            '/script/:scriptId',
-            '/scripts/:scriptId',
-            '/s/:scriptId',
+            '/script/:scriptNS/:scriptID',
+            '/scripts/:scriptNS/:scriptID',
+            '/s/:scriptNS/:scriptID',
+            '/script/:scriptID',
+            '/scripts/:scriptID',
+            '/s/:scriptID',
             '/scratch',
             '/scratchpad',
           ]}

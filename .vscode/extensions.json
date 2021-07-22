@@ -5,6 +5,7 @@
     "notskm.clang-tidy",
     "llvm-vs-code-extensions.vscode-clangd",
     "golang.go",
+    "graphql.vscode-graphql",
     "npxms.hide-gitignored",
     "ms-python.python",
     "zxh404.vscode-proto3"
