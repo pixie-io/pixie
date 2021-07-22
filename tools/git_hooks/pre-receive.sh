@@ -24,15 +24,19 @@ while read -r _ newsha _; do
 	fi
 
 	author=$(git log -1 --pretty=format:"%ae" "${newsha}")
+	committer=$(git log -1 --pretty=format:"%ce" "${newsha}")
 	if [[ ! "${author}" =~ ${pattern} ]]; then
-		echo "======================================================================="
-		echo "Please set your gitconfig to use your pixielabs.ai email"
-		echo "Found author email: ${author}"
-		echo "======================================================================="
-		exit 1
+		if [[ "${committer}" =~ "^(zasgar|vihang|michellenguyen)@pixielabs\.ai$" ]]; then
+			echo "WARNING: Non pixielabs author"
+		else
+			echo "======================================================================="
+			echo "Please set your gitconfig to use your pixielabs.ai email"
+			echo "Found author email: ${author}"
+			echo "======================================================================="
+			exit 1
+		fi
 	fi
 
-	committer=$(git log -1 --pretty=format:"%ce" "${newsha}")
 	if [[ ! "${committer}" =~ ${pattern} ]]; then
 		echo "======================================================================="
 		echo "Please set your gitconfig to use your pixielabs.ai email"
