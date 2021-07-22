@@ -44,9 +44,6 @@ const useStyles = makeStyles(() => createStyles({
   },
   drawerPaper: {
     position: 'absolute',
-    // The drawer is technically a persistent drawer, which is fixed to elevation 0. But we want drawers
-    // to be at elevation 2. This applies the correct styling.
-    backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.09))',
   },
   dockedVertical: {
     width: 0,
@@ -100,6 +97,7 @@ export const FixedSizeDrawer: React.FC<FixedSizeDrawerProps> = ({
       </div>
       <Drawer
         anchor={drawerDirection}
+        PaperProps={{ elevation: 4 }}
         style={drawerStyle}
         variant='persistent'
         open={open}

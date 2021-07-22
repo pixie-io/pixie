@@ -22,7 +22,7 @@ import { LayoutContext } from 'app/context/layout-context';
 import { ResultsContext } from 'app/context/results-context';
 
 import * as React from 'react';
-import { LiveDataTableWithDetails } from 'app/containers/live-data-table/live-data-table';
+import { MinimalLiveDataTable } from 'app/containers/live-data-table/new-live-data-table';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 import {
@@ -53,9 +53,10 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     flex: 1,
     minHeight: 0,
   },
-  resultTable: {
+  tabBody: {
     marginTop: theme.spacing(2),
     flex: 1,
+    display: 'flex',
     minHeight: 0,
   },
   spinner: {
@@ -178,7 +179,7 @@ const DataDrawer: React.FC<{ open: boolean }> = ({ open }) => {
 
   const tabs = React.useMemo(() => Object.keys(tables).map((tableName) => ({
     title: tableName,
-    content: <LiveDataTableWithDetails table={tables[tableName]} />,
+    content: <MinimalLiveDataTable table={tables[tableName]} elevation={4} />,
   })), [tables]);
 
   // If the selected table is not in the new result set, show the first table.
@@ -246,7 +247,7 @@ const DataDrawer: React.FC<{ open: boolean }> = ({ open }) => {
                 tabs.map((tab) => (
                   <LazyPanel
                     key={tab.title}
-                    className={classes.resultTable}
+                    className={classes.tabBody}
                     show={open && activeTab === tab.title}
                   >
                     {tab.content}

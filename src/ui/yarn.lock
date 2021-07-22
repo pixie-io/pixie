@@ -1546,6 +1546,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@babel/runtime@npm:^7.0.0":
+  version: 7.14.8
+  resolution: "@babel/runtime@npm:7.14.8"
+  dependencies:
+    regenerator-runtime: ^0.13.4
+  checksum: ebadb3e013a26e0f62abea0da6f6f5d83c9566f0d900e65069885f93088066c64586076d15dcbe6e093c536f66cffc9e2e136ad5d8b3e66235af62f0051afa42
+  languageName: node
+  linkType: hard
+
 "@babel/runtime@npm:^7.1.2, @babel/runtime@npm:^7.10.2, @babel/runtime@npm:^7.12.1, @babel/runtime@npm:^7.12.5, @babel/runtime@npm:^7.3.1, @babel/runtime@npm:^7.4.4, @babel/runtime@npm:^7.5.5, @babel/runtime@npm:^7.7.2, @babel/runtime@npm:^7.8.3, @babel/runtime@npm:^7.8.4, @babel/runtime@npm:^7.8.7":
   version: 7.13.10
   resolution: "@babel/runtime@npm:7.13.10"
@@ -2888,7 +2897,9 @@ __metadata:
     "@types/react": ^17.0.3
     "@types/react-dom": ^16.9.4
     "@types/react-router": ^5.1.7
+    "@types/react-table": ^7.7.1
     "@types/react-virtualized": ^9.21.8
+    "@types/react-window": ^1.8.3
     "@types/segment-analytics": ^0.0.32
     "@typescript-eslint/eslint-plugin": ^4.21.0
     "@typescript-eslint/parser": ^4.21.0
@@ -2965,10 +2976,12 @@ __metadata:
     react-router: ^5.2.0
     react-router-dom: ^5.2.0
     react-split: ^2.0.7
+    react-table: ^7.7.0
     react-test-renderer: ^16.13.1
     react-vega: ^7.4.2
     react-virtualized: ^9.21.2
     react-virtualized-auto-sizer: ^1.0.5
+    react-window: ^1.8.6
     regenerator-runtime: ^0.13.7
     rxjs: ^6.5.4
     shelljs: ^0.8.2
@@ -3764,6 +3777,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/react-table@npm:^7.7.1":
+  version: 7.7.2
+  resolution: "@types/react-table@npm:7.7.2"
+  dependencies:
+    "@types/react": "*"
+  checksum: a4fd102f3a55bd258437c8c31b277bced0807190af5c175d186a865143a5b595930a058b1d5a28e6efc03cb4d08c5edf5c18b6637bcedbdc29d4a87ada81832d
+  languageName: node
+  linkType: hard
+
 "@types/react-test-renderer@npm:>=16.9.0":
   version: 17.0.1
   resolution: "@types/react-test-renderer@npm:17.0.1"
@@ -3789,6 +3811,15 @@ __metadata:
     "@types/prop-types": "*"
     "@types/react": "*"
   checksum: 5a030f4be21fe114371b29b315021891a02fd6c6035dcbe7f2eb77dd6f9e78a521e791fab8a24c5b3c5754337e6cca5119635eb6f2c9c70a1550fa61e608030f
+  languageName: node
+  linkType: hard
+
+"@types/react-window@npm:^1.8.3":
+  version: 1.8.4
+  resolution: "@types/react-window@npm:1.8.4"
+  dependencies:
+    "@types/react": "*"
+  checksum: 23dafe0ed1d66b0a582388ffbc6abffa30b77d125a47e115f959831153852ed9df813adf311207602dbd26bcc0c50482cb6a0679cc8afebbf2b9cc7d302b09b1
   languageName: node
   linkType: hard
 
@@ -12280,6 +12311,13 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
+"memoize-one@npm:>=3.1.1 <6":
+  version: 5.2.1
+  resolution: "memoize-one@npm:5.2.1"
+  checksum: 6b7dab7d8d9dca696d500dbc7f6b1445cbc4168d8208ee2746dd1a7f75378445d9bc6a2def7868afee81c87e630294456310f33f3f1eb738f69d748c797d87d5
+  languageName: node
+  linkType: hard
+
 "memory-fs@npm:^0.4.1":
   version: 0.4.1
   resolution: "memory-fs@npm:0.4.1"
@@ -14721,6 +14759,15 @@ fsevents@^1.2.7:
   languageName: node
   linkType: hard
 
+"react-table@npm:^7.7.0":
+  version: 7.7.0
+  resolution: "react-table@npm:7.7.0"
+  peerDependencies:
+    react: ^16.8.3 || ^17.0.0-0
+  checksum: d609cbca2dafcfa5f691b90be9d2362e02380f992d2408c57af73ebd77dd8cc99efe706b4fa1e4fdadfd0bc5396db6d7f993fa174e2b106fb395cf8f05a80465
+  languageName: node
+  linkType: hard
+
 "react-test-renderer@npm:^16.13.1":
   version: 16.14.0
   resolution: "react-test-renderer@npm:16.14.0"
@@ -14789,6 +14836,19 @@ fsevents@^1.2.7:
     react: ^15.3.0 || ^16.0.0-alpha
     react-dom: ^15.3.0 || ^16.0.0-alpha
   checksum: 1e54556ab99409bb172842ddeea3ade467ff9aed6331e80376f969d1c61ff0dc9dfb07986080066aaa327fd977060e7f50c19ae0cbeb8d53e5bd258c7d83e6a2
+  languageName: node
+  linkType: hard
+
+"react-window@npm:^1.8.6":
+  version: 1.8.6
+  resolution: "react-window@npm:1.8.6"
+  dependencies:
+    "@babel/runtime": ^7.0.0
+    memoize-one: ">=3.1.1 <6"
+  peerDependencies:
+    react: ^15.0.0 || ^16.0.0 || ^17.0.0
+    react-dom: ^15.0.0 || ^16.0.0 || ^17.0.0
+  checksum: e2bfdfbe39f165c8ca4005b36837288546db5701fc6b53da0acb352317f5dad14cd7abbdff3b13644a8615074fa9841996249b2776f8f94e7efa4e37236b06a4
   languageName: node
   linkType: hard
 
