@@ -85,12 +85,17 @@ const ClusterIDShortcut = ({ match, location }) => {
     { pollInterval: 2500, variables: { id: match.params?.clusterID } },
   );
   const cluster = data?.cluster.clusterName;
-  const search = location.search ?? '';
-  const pathPrefix = match.path.startsWith('/embed') ? '/embed/live' : '/live';
-
   if (cluster == null || loading || error) return null; // Wait for things to be ready
 
-  return <Redirect to={generatePath(`${pathPrefix}/clusters/:cluster\\${search}`, { cluster })} />;
+  let path = generatePath('/live/clusters/:cluster', { cluster });
+  if (match.path.startsWith('/embed')) {
+    path = `/embed${path}`;
+  }
+  if (location.search) {
+    path += location.search;
+  }
+
+  return <Redirect to={path} />;
 };
 
 // Convenience routes: sends `/scratch`, `/script/http_data`, and others to the appropriate Live url.
