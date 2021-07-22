@@ -37,6 +37,7 @@ import (
 	"px.dev/pixie/src/cloud/api/apienv"
 	"px.dev/pixie/src/cloud/auth/authpb"
 	"px.dev/pixie/src/shared/services"
+	"px.dev/pixie/src/shared/services/authcontext"
 	commonenv "px.dev/pixie/src/shared/services/env"
 	"px.dev/pixie/src/shared/services/events"
 	"px.dev/pixie/src/shared/services/handler"
@@ -170,6 +171,14 @@ func AuthSignupHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 		return err
 	}
 
+	log.WithField("host", r.Host).
+		WithField("timestamp", time.Now()).
+		WithField("address", r.URL).
+		WithField("browser", r.Header.Get("User-Agent")).
+		WithField("user", userIDStr).
+		WithField("referer", r.Header.Get("Referer")).
+		Info("User signed up")
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	return nil
@@ -262,6 +271,14 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 		w.WriteHeader(http.StatusInternalServerError)
 		return err
 	}
+
+	log.WithField("host", r.Host).
+		WithField("timestamp", time.Now()).
+		WithField("address", r.URL).
+		WithField("browser", r.Header.Get("User-Agent")).
+		WithField("user", userIDStr).
+		WithField("referer", r.Header.Get("Referer")).
+		Info("User logged in")
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -371,6 +388,13 @@ func AuthLogoutHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 		return &handler.StatusError{Code: http.StatusInternalServerError, Err: err}
 	}
 
+	aCtx := authcontext.New()
+	err = aCtx.UseJWTAuth(env.JWTSigningKey(), session.Values["_at"].(string), viper.GetString("domain_name"))
+	if err != nil {
+		return &handler.StatusError{Code: http.StatusInternalServerError, Err: err}
+	}
+	userID := aCtx.Claims.GetUserClaims().UserID
+
 	// Delete the cookie.
 	session.Values["_at"] = ""
 	session.Values["_expires_at"] = 0
@@ -378,6 +402,14 @@ func AuthLogoutHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 	session.Options.HttpOnly = true
 	session.Options.Secure = true
 	session.Options.Domain = viper.GetString("domain_name")
+
+	log.WithField("host", r.Host).
+		WithField("timestamp", time.Now()).
+		WithField("address", r.URL).
+		WithField("browser", r.Header.Get("User-Agent")).
+		WithField("user", userID).
+		WithField("referer", r.Header.Get("Referer")).
+		Info("User logged out")
 
 	err = session.Save(r, w)
 	if err != nil {
