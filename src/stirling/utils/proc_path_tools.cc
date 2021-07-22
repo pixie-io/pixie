@@ -20,6 +20,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <utility>
 
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/config.h"
@@ -78,10 +79,9 @@ namespace {
  * @param mount_point The mount point to resolve.
  * @return The mount point resolved to the host.
  */
-StatusOr<std::filesystem::path> ResolveMountPointImpl(
-    const std::vector<ProcParser::MountInfo>& mount_infos,
-    const std::vector<ProcParser::MountInfo>& root_mount_infos,
-    const std::filesystem::path& mount_point) {
+StatusOr<std::filesystem::path> ResolveMountPointImpl(const MountInfoVec& mount_infos,
+                                                      const MountInfoVec& root_mount_infos,
+                                                      const std::filesystem::path& mount_point) {
   std::string device_number;
   std::string device_root;
   for (const auto& mount_info : mount_infos) {
@@ -126,18 +126,38 @@ StatusOr<std::filesystem::path> ResolveMountPointImpl(
 }  // namespace
 
 StatusOr<std::unique_ptr<FilePathResolver>> FilePathResolver::Create(pid_t pid) {
-  system::ProcParser proc_parser(system::Config::GetInstance());
-
   auto fp_resolver = std::unique_ptr<FilePathResolver>(new FilePathResolver());
-  PL_RETURN_IF_ERROR(proc_parser.ReadMountInfos(1, &fp_resolver->root_mount_infos_));
 
-  if (pid == 1) {
-    fp_resolver->mount_infos_ = fp_resolver->root_mount_infos_;
-  } else {
-    PL_RETURN_IF_ERROR(fp_resolver->SetMountNamespace(pid));
-  }
+  // Populate root mount infos.
+  PL_RETURN_IF_ERROR(fp_resolver->Init());
+
+  // Populate mount infos for requested PID.
+  PL_RETURN_IF_ERROR(fp_resolver->SetMountNamespace(pid));
 
   return fp_resolver;
+}
+
+Status FilePathResolver::Init() {
+  constexpr int kRootPID = 1;
+
+  system::ProcParser proc_parser(system::Config::GetInstance());
+
+  // In case Init() gets called as part of re-initialization in the future,
+  // make sure we start with a clean slate.
+  pid_mount_infos_.clear();
+
+  // Create an entry for the root PID.
+  auto mount_infos = std::make_unique<MountInfoVec>();
+  root_mount_infos_ = mount_infos.get();
+  pid_mount_infos_[kRootPID] = std::move(mount_infos);
+
+  PL_RETURN_IF_ERROR(proc_parser.ReadMountInfos(kRootPID, root_mount_infos_));
+
+  // Initial state is that we are pointing to the root PID info.
+  pid_ = kRootPID;
+  mount_infos_ = root_mount_infos_;
+
+  return Status::OK();
 }
 
 Status FilePathResolver::SetMountNamespace(pid_t pid) {
@@ -147,18 +167,21 @@ Status FilePathResolver::SetMountNamespace(pid_t pid) {
     return Status::OK();
   }
 
-  // Set to -1 in case ReadMountInfos() fails; otherwise we'd be in a weird state.
-  pid_ = -1;
-  mount_infos_.clear();
-  PL_RETURN_IF_ERROR(proc_parser.ReadMountInfos(pid, &mount_infos_));
-  pid_ = pid;
+  auto [iter, inserted] = pid_mount_infos_.try_emplace(pid);
+  if (inserted) {
+    // Only populate the mount infos if we don't already have a cached copy.
+    iter->second = std::make_unique<MountInfoVec>();
+    PL_RETURN_IF_ERROR(proc_parser.ReadMountInfos(pid, iter->second.get()));
+  }
 
+  pid_ = pid;
+  mount_infos_ = iter->second.get();
   return Status::OK();
 }
 
 StatusOr<std::filesystem::path> FilePathResolver::ResolveMountPoint(
     const std::filesystem::path& mount_point) {
-  return ResolveMountPointImpl(mount_infos_, root_mount_infos_, mount_point);
+  return ResolveMountPointImpl(*mount_infos_, *root_mount_infos_, mount_point);
 }
 
 StatusOr<std::filesystem::path> FilePathResolver::ResolvePath(const std::filesystem::path& path) {

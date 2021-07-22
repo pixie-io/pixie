@@ -33,6 +33,8 @@
 namespace px {
 namespace stirling {
 
+using MountInfoVec = std::vector<system::ProcParser::MountInfo>;
+
 /**
  * Returns the path to the binary of a process specified by /proc/<pid>.
  */
@@ -93,15 +95,24 @@ class FilePathResolver {
    * @param mount_point Mount point within the mount namespace of the process.
    * @return The host-resolved mount point.
    */
-
   StatusOr<std::filesystem::path> ResolveMountPoint(const std::filesystem::path& mount_point);
 
  private:
   FilePathResolver() {}
 
+  Status Init();
+
+  // Store all mount infos that have been read (for re-use).
+  // Must hold pointers to MountInfoVec objects, because we hold raw pointers
+  // to certain elements via root_mount_infos_ and mount_infos_ below.
+  absl::flat_hash_map<pid_t, std::unique_ptr<MountInfoVec>> pid_mount_infos_;
+
+  // Shortcut to root mount infos.
+  MountInfoVec* root_mount_infos_ = nullptr;
+
+  // Current PID and shortcut to mount infos for that PID.
   pid_t pid_ = -1;
-  std::vector<system::ProcParser::MountInfo> mount_infos_;
-  std::vector<system::ProcParser::MountInfo> root_mount_infos_;
+  MountInfoVec* mount_infos_ = nullptr;
 };
 
 /**
