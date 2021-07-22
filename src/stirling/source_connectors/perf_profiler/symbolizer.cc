@@ -64,6 +64,7 @@ StatusOr<std::unique_ptr<ElfReader::Symbolizer>> CreateUPIDSymbolizer(const stru
                       FilePathResolver::Create(upid.pid));
   PL_ASSIGN_OR_RETURN(std::filesystem::path proc_exe, ProcExe(upid.pid));
   PL_ASSIGN_OR_RETURN(std::filesystem::path host_proc_exe, fp_resolver->ResolvePath(proc_exe));
+  host_proc_exe = system::Config::GetInstance().ToHostPath(host_proc_exe);
   PL_ASSIGN_OR_RETURN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(host_proc_exe));
   PL_ASSIGN_OR_RETURN(std::unique_ptr<ElfReader::Symbolizer> upid_symbolizer,
                       elf_reader->GetSymbolizer());
