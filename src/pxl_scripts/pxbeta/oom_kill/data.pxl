@@ -31,10 +31,8 @@ program = """
 kprobe:oom_kill_process
 {
     $oc = (struct oom_control *)arg0;
-    printf(
-      \"time:%s triggered_by_pid:%d triggered_by_comm:%s killed_pid:%d killed_comm:%s pages:%d\",
-        strftime("%H:%M:%S", nsecs), pid, comm, $oc->chosen->pid, $oc->chosen->comm,
-        $oc->totalpages);
+    printf(\"time_:%llu triggered_by_pid:%d triggered_by_comm:%s killed_pid:%d killed_comm:%s pages:%d\",
+           nsecs, pid, comm, $oc->chosen->pid, $oc->chosen->comm, $oc->totalpages);
 }
 """
 

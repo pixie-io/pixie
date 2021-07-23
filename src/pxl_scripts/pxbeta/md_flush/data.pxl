@@ -31,8 +31,8 @@ program = """
 
 kprobe:md_flush_request
 {
-        printf(\"time:%s pid:%d comm:%s device:%s\", strftime("%H:%M:%S", nsecs),
-                         pid, comm,((struct bio *)arg1)->bi_disk->disk_name);
+    printf(\"time_:%llu pid:%d comm:%s device:%s\",
+           nsecs, pid, comm, ((struct bio *)arg1)->bi_disk->disk_name);
 }
 """
 

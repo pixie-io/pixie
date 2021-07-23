@@ -411,8 +411,8 @@ TEST(DynamicBPFTraceConnectorTest, BPFTraceCheckPrintfsError) {
   tracepoint.set_table_name("pid_sample_table");
 
   constexpr char kScript[] = R"(interval:ms:100 {
-           printf("time:%llu val:%d inet:%s", nsecs, 1, "true");
-           printf("time:%llu name:%s", nsecs, "hello");
+           printf("time_:%llu val:%d inet:%s", nsecs, 1, "true");
+           printf("time_:%llu name:%s", nsecs, "hello");
         })";
 
   tracepoint.mutable_bpftrace()->set_program(kScript);

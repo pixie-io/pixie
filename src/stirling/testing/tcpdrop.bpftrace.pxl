@@ -69,7 +69,7 @@ kprobe:tcp_drop
     $state = $sk->__sk_common.skc_state;
     $statestr = @tcp_states[$state];
 
-    printf(\"time:%llu pid:%u src_ip:%s src_port:%d dst_ip:%s dst_port:%d state:%s\",
+    printf(\"time_:%llu pid:%u src_ip:%s src_port:%d dst_ip:%s dst_port:%d state:%s\",
       nsecs,
       pid,
       $saddr,

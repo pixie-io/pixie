@@ -72,7 +72,7 @@ kprobe:tcp_drop
     $state = $sk->__sk_common.skc_state;
     $statestr = @tcp_states[$state];
 
-    printf(\"time:%llu pid:%u pid_start_time:%llu src_ip:%s src_port:%d dst_ip:%s dst_port:%d state:%s\",
+    printf(\"time_:%llu pid:%u pid_start_time:%llu src_ip:%s src_port:%d dst_ip:%s dst_port:%d state:%s\",
       nsecs,
       pid,
       ((struct task_struct*)curtask)->group_leader->start_time / 10000000,

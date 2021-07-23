@@ -33,8 +33,8 @@ tracepoint:syscalls:sys_enter_fdatasync,
 tracepoint:syscalls:sys_enter_sync_file_range*,
 tracepoint:syscalls:sys_enter_msync
 {
-        printf(\"time:%s pid:%-6d comm:%-16s event:%s\", strftime("%H:%M:%S", nsecs),
-                         pid, comm, probe);
+    printf(\"time_:%llu pid:%-6d comm:%-16s event:%s\",
+           nsecs, pid, comm, probe);
 }
 """
 

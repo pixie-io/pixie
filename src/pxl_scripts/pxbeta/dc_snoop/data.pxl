@@ -39,23 +39,23 @@ struct nameidata {
 kprobe:lookup_fast,
 kprobe:lookup_fast.constprop.*
 {
-        $nd = (struct nameidata *)arg0;
-        printf(\"time:%s pid:%d comm:%s t:%s file:%s\", strftime("%H:%M:%S", nsecs),
-                         pid, comm, \"R\", str($nd->last.name));
+    $nd = (struct nameidata *)arg0;
+    printf(\"time_:%llu pid:%d comm:%s t:%s file:%s\",
+           nsecs, pid, comm, \"R\", str($nd->last.name));
 }
 
 kprobe:d_lookup
 {
-        $name = (struct qstr *)arg1;
-        @fname[tid] = $name->name;
+    $name = (struct qstr *)arg1;
+    @fname[tid] = $name->name;
 }
 
 kretprobe:d_lookup
 /@fname[tid]/
 {
-        printf(\"time:%s pid:%d comm:%s t:%s file:%s\", strftime("%H:%M:%S", nsecs),
-                         pid, comm, \"M\", str(@fname[tid]));
-        delete(@fname[tid]);
+    printf(\"time_:%llu pid:%d comm:%s t:%s file:%s\",
+           nsecs, pid, comm, \"M\", str(@fname[tid]));
+    delete(@fname[tid]);
 }
 """
 

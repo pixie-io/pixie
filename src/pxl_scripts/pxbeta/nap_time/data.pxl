@@ -33,9 +33,9 @@ program = """
 
 tracepoint:syscalls:sys_enter_nanosleep
 {
-        $task = (struct task_struct *)curtask;
-        printf(\"time:%s ppid:%d pcomm:%s pid:%d comm:%s\", strftime("%H:%M:%S", nsecs),
-                         $task->real_parent->pid, $task->real_parent->comm, pid, comm);
+    $task = (struct task_struct *)curtask;
+    printf(\"time_:%llu ppid:%d pcomm:%s pid:%d comm:%s\",
+           nsecs, $task->real_parent->pid, $task->real_parent->comm, pid, comm);
 }
 """
 
