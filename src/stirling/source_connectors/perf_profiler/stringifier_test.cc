@@ -38,7 +38,7 @@
 // into a shared BPF stack traces table.
 BPF_SRC_STRVIEW(stringifer_test_bcc_script, stringifier_test_bpf_text);
 
-using ::testing::Contains;
+using ::testing::AnyOfArray;
 using ::testing::EndsWith;
 
 namespace test {
@@ -88,7 +88,7 @@ stack_trace_key_t MakeUserKernStackTraceKey(const uint32_t pid, const int u_stac
 // These are the expected leaf symbols in our user space folded stack trace strings.
 const std::set<std::string> kPossibleUSyms = {"test::Bar()", "test::Foo()", "__getpid"};
 const std::set<std::string> kPossibleKSyms = {"__x64_sys_getpid_[k]", "__ia32_sys_getpid_[k]",
-                                              "sys_getpid_[k]"};
+                                              "sys_getpid_[k]", "__do_sys_getpid_[k]"};
 
 }  // namespace
 
@@ -141,7 +141,7 @@ class StringifierTest : public ::testing::Test {
       }
 
       // Check that the leaf symbol in the stack trace string is in our expected set.
-      ASSERT_THAT(expected_symbols, Contains(symbols.back()));
+      ASSERT_THAT(symbols.back(), AnyOfArray(expected_symbols));
 
       // Populate the stack id sets.
       absl::flat_hash_set<int>& stack_id_set = is_kernel ? k_stack_ids_ : u_stack_ids_;
