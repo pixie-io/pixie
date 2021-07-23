@@ -58,17 +58,11 @@ TYPED_TEST(SymbolizerTest, UserSymbols) {
   this_upid.pid = static_cast<uint32_t>(getpid());
   this_upid.start_time_ticks = 0;
 
-  // Lookup the addresses for the first time. These should be cache misses.
-  // We are placing each symbol lookup into its own scope to force us to
-  // "re-lookup" the pid symbolizer function from inside of the symbolize instance.
-  {
-    auto symbolize = this->symbolizer_->GetSymbolizerFn(this_upid);
-    EXPECT_EQ(symbolize(kFooAddr), "test::foo()");
-  }
-  {
-    auto symbolize = this->symbolizer_->GetSymbolizerFn(this_upid);
-    EXPECT_EQ(symbolize(kBarAddr), "test::bar()");
-  }
+  auto symbolize = this->symbolizer_->GetSymbolizerFn(this_upid);
+
+  EXPECT_EQ(symbolize(kFooAddr), "test::foo()");
+  EXPECT_EQ(symbolize(kBarAddr), "test::bar()");
+  EXPECT_EQ(symbolize(2), std::string("0x0000000000000002"));
 }
 
 TEST_F(BCCSymbolizerTest, KernelSymbols) {
@@ -77,10 +71,8 @@ TEST_F(BCCSymbolizerTest, KernelSymbols) {
   std::string_view kSymbolName = "cpu_detect";
   ASSERT_OK_AND_ASSIGN(uint64_t kaddr, GetKernelSymAddr(kSymbolName));
 
-  {
-    auto symbolize = symbolizer_->GetSymbolizerFn(profiler::kKernelUPID);
-    EXPECT_EQ(std::string(symbolize(kaddr)), kSymbolName);
-  }
+  auto symbolize = symbolizer_->GetSymbolizerFn(profiler::kKernelUPID);
+  EXPECT_EQ(std::string(symbolize(kaddr)), kSymbolName);
 }
 
 // Test the symbolizer with caching enabled and disabled.

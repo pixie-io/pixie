@@ -71,7 +71,12 @@ StatusOr<std::unique_ptr<ElfReader::Symbolizer>> CreateUPIDSymbolizer(const stru
   return upid_symbolizer;
 }
 
-std::string_view EmptySymbolizerFn(const uintptr_t) { return ""; }
+std::string_view EmptySymbolizerFn(const uintptr_t addr) {
+  static std::string symbol;
+  symbol = absl::StrFormat("0x%016llx", addr);
+  return symbol;
+}
+
 std::string_view DummyKernelSymbolizerFn(const uintptr_t) { return "<kernel symbol>"; }
 
 SymbolizerFn ElfSymbolizer::GetSymbolizerFn(const struct upid_t& upid) {

@@ -376,13 +376,14 @@ void ElfReader::Symbolizer::AddEntry(size_t addr, size_t size, std::string name)
 }
 
 std::string_view ElfReader::Symbolizer::Lookup(size_t addr) const {
-  static const std::string kEmptyString;
+  static std::string symbol_str;
 
   // Find the first symbol for which the address_range_start > addr.
   auto iter = symbols_.upper_bound(addr);
 
   if (iter == symbols_.begin() || symbols_.empty()) {
-    return kEmptyString;
+    symbol_str = absl::StrFormat("0x%016llx", addr);
+    return symbol_str;
   }
 
   // std::upper_bound will make us overshoot our potential match,
@@ -393,7 +394,8 @@ std::string_view ElfReader::Symbolizer::Lookup(size_t addr) const {
   }
 
   // Couldn't find the address.
-  return kEmptyString;
+  symbol_str = absl::StrFormat("0x%016llx", addr);
+  return symbol_str;
 }
 
 namespace {

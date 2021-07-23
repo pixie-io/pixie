@@ -164,7 +164,7 @@ TEST(SymbolizerTest, GetSymbolizer) {
   std::vector<std::string> symbols;
   for (const auto addr : addrs) {
     std::string_view sym = symbolizer->Lookup(addr);
-    symbols.push_back(sym.empty() ? "-" : std::string(sym));
+    symbols.push_back(absl::StartsWith(sym, "0x") ? "-" : std::string(sym));
   }
 
 #ifdef NDEBUG
