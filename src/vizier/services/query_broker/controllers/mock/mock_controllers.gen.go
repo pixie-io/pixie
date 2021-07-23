@@ -7,14 +7,9 @@ package mock_controllers
 import (
 	reflect "reflect"
 
-	uuid "github.com/gofrs/uuid"
 	gomock "github.com/golang/mock/gomock"
-	carnotpb "px.dev/pixie/src/carnot/carnotpb"
 	distributedpb "px.dev/pixie/src/carnot/planner/distributedpb"
 	plannerpb "px.dev/pixie/src/carnot/planner/plannerpb"
-	planpb "px.dev/pixie/src/carnot/planpb"
-	queryresultspb "px.dev/pixie/src/carnot/queryresultspb"
-	querybrokerpb "px.dev/pixie/src/vizier/services/query_broker/querybrokerpb"
 	tracker "px.dev/pixie/src/vizier/services/query_broker/tracker"
 )
 
@@ -81,98 +76,6 @@ func (m *MockPlanner) Plan(planState *distributedpb.LogicalPlannerState, req *pl
 func (mr *MockPlannerMockRecorder) Plan(planState, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Plan", reflect.TypeOf((*MockPlanner)(nil).Plan), planState, req)
-}
-
-// MockExecutor is a mock of Executor interface.
-type MockExecutor struct {
-	ctrl     *gomock.Controller
-	recorder *MockExecutorMockRecorder
-}
-
-// MockExecutorMockRecorder is the mock recorder for MockExecutor.
-type MockExecutorMockRecorder struct {
-	mock *MockExecutor
-}
-
-// NewMockExecutor creates a new mock instance.
-func NewMockExecutor(ctrl *gomock.Controller) *MockExecutor {
-	mock := &MockExecutor{ctrl: ctrl}
-	mock.recorder = &MockExecutorMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockExecutor) EXPECT() *MockExecutorMockRecorder {
-	return m.recorder
-}
-
-// AddResult mocks base method.
-func (m *MockExecutor) AddResult(res *querybrokerpb.AgentQueryResultRequest) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "AddResult", res)
-}
-
-// AddResult indicates an expected call of AddResult.
-func (mr *MockExecutorMockRecorder) AddResult(res interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddResult", reflect.TypeOf((*MockExecutor)(nil).AddResult), res)
-}
-
-// AddStreamedResult mocks base method.
-func (m *MockExecutor) AddStreamedResult(res *carnotpb.TransferResultChunkRequest) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddStreamedResult", res)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// AddStreamedResult indicates an expected call of AddStreamedResult.
-func (mr *MockExecutorMockRecorder) AddStreamedResult(res interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddStreamedResult", reflect.TypeOf((*MockExecutor)(nil).AddStreamedResult), res)
-}
-
-// ExecuteQuery mocks base method.
-func (m *MockExecutor) ExecuteQuery(planMap map[uuid.UUID]*planpb.Plan, analyze bool) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExecuteQuery", planMap, analyze)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ExecuteQuery indicates an expected call of ExecuteQuery.
-func (mr *MockExecutorMockRecorder) ExecuteQuery(planMap, analyze interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteQuery", reflect.TypeOf((*MockExecutor)(nil).ExecuteQuery), planMap, analyze)
-}
-
-// GetQueryID mocks base method.
-func (m *MockExecutor) GetQueryID() uuid.UUID {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetQueryID")
-	ret0, _ := ret[0].(uuid.UUID)
-	return ret0
-}
-
-// GetQueryID indicates an expected call of GetQueryID.
-func (mr *MockExecutorMockRecorder) GetQueryID() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetQueryID", reflect.TypeOf((*MockExecutor)(nil).GetQueryID))
-}
-
-// WaitForCompletion mocks base method.
-func (m *MockExecutor) WaitForCompletion() (*queryresultspb.QueryResult, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "WaitForCompletion")
-	ret0, _ := ret[0].(*queryresultspb.QueryResult)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// WaitForCompletion indicates an expected call of WaitForCompletion.
-func (mr *MockExecutorMockRecorder) WaitForCompletion() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForCompletion", reflect.TypeOf((*MockExecutor)(nil).WaitForCompletion))
 }
 
 // MockAgentsTracker is a mock of AgentsTracker interface.

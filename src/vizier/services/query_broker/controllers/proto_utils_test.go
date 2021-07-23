@@ -126,32 +126,6 @@ err_code: UNAUTHENTICATED
 msg: "this is a message"
 `
 
-var timingStatsPb = `
-timing_info {
-	execution_time_ns: 10
-	compilation_time_ns: 4
-}
-execution_stats {
-	timing {
-		execution_time_ns: 10
-		compilation_time_ns: 4
-	}
-	bytes_processed: 100
-	records_processed: 50
-}
-`
-
-var vizierTimingStatsPb = `
-execution_stats {
-	timing {
-		execution_time_ns: 10
-		compilation_time_ns: 4
-	}
-	bytes_processed: 100
-	records_processed: 50
-}
-`
-
 var uint128Pb = `
 	low: 123
 	high: 456
@@ -333,21 +307,6 @@ func TestRelationFromTableWithSemanticTypes(t *testing.T) {
 	qm, err := controllers.RelationFromTable(sv)
 	require.NoError(t, err)
 	assert.Equal(t, expectedQm, qm)
-}
-
-func TestQueryResultStatsToVizierStats(t *testing.T) {
-	sv := new(queryresultspb.QueryResult)
-	if err := proto.UnmarshalText(timingStatsPb, sv); err != nil {
-		t.Fatalf("Cannot unmarshal proto %v", err)
-	}
-
-	expectedQd := new(vizierpb.QueryData)
-	if err := proto.UnmarshalText(vizierTimingStatsPb, expectedQd); err != nil {
-		t.Fatalf("Cannot unmarshal proto %v", err)
-	}
-
-	qm := controllers.QueryResultStatsToVizierStats(sv.ExecutionStats, 4)
-	assert.Equal(t, expectedQd.ExecutionStats, qm)
 }
 
 func TestUInt128ToVizierUInt128(t *testing.T) {

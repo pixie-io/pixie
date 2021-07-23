@@ -23,7 +23,6 @@
 #include <utility>
 
 #include "src/vizier/services/agent/manager/manager.h"
-#include "src/vizier/services/query_broker/querybrokerpb/service.grpc.pb.h"
 
 namespace px {
 namespace vizier {

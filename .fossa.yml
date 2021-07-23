@@ -932,10 +932,6 @@ analyze:
     type: go
     target: px.dev/pixie/src/vizier/services/query_broker/querybrokerenv
     path: src/vizier/services/query_broker/querybrokerenv
-  - name: px.dev/pixie/src/vizier/services/query_broker/querybrokerpb
-    type: go
-    target: px.dev/pixie/src/vizier/services/query_broker/querybrokerpb
-    path: src/vizier/services/query_broker/querybrokerpb
   - name: px.dev/pixie/src/vizier/services/query_broker/tracker
     type: go
     target: px.dev/pixie/src/vizier/services/query_broker/tracker

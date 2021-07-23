@@ -38,14 +38,12 @@ import (
 	"px.dev/pixie/src/carnot/planner/distributedpb"
 	"px.dev/pixie/src/carnot/planner/plannerpb"
 	"px.dev/pixie/src/carnot/planpb"
-	"px.dev/pixie/src/carnot/queryresultspb"
 	"px.dev/pixie/src/carnot/udfspb"
 	"px.dev/pixie/src/common/base/statuspb"
 	"px.dev/pixie/src/utils"
 	funcs "px.dev/pixie/src/vizier/funcs/go"
 	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
 	"px.dev/pixie/src/vizier/services/query_broker/querybrokerenv"
-	"px.dev/pixie/src/vizier/services/query_broker/querybrokerpb"
 	"px.dev/pixie/src/vizier/services/query_broker/tracker"
 )
 
@@ -62,15 +60,6 @@ type Planner interface {
 	Plan(planState *distributedpb.LogicalPlannerState, req *plannerpb.QueryRequest) (*distributedpb.LogicalPlannerResult, error)
 	CompileMutations(planState *distributedpb.LogicalPlannerState, request *plannerpb.CompileMutationsRequest) (*plannerpb.CompileMutationsResponse, error)
 	Free()
-}
-
-// Executor is the interface for a query executor.
-type Executor interface {
-	ExecuteQuery(planMap map[uuid.UUID]*planpb.Plan, analyze bool) error
-	WaitForCompletion() (*queryresultspb.QueryResult, error)
-	AddResult(res *querybrokerpb.AgentQueryResultRequest)
-	GetQueryID() uuid.UUID
-	AddStreamedResult(res *carnotpb.TransferResultChunkRequest) error
 }
 
 // AgentsTracker is the interface for the background agent information tracker.

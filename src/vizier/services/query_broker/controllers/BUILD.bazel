@@ -55,7 +55,6 @@ go_library(
         "//src/vizier/messages/messagespb:messages_pl_go_proto",
         "//src/vizier/services/metadata/metadatapb:service_pl_go_proto",
         "//src/vizier/services/query_broker/querybrokerenv",
-        "//src/vizier/services/query_broker/querybrokerpb:service_pl_go_proto",
         "//src/vizier/services/query_broker/tracker",
         "//src/vizier/utils/messagebus",
         "@com_github_dustin_go_humanize//:go-humanize",
