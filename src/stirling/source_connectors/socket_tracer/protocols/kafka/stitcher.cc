@@ -48,7 +48,6 @@ Status ProcessProduceResp(PacketDecoder* decoder, Response* resp) {
 
 Status ProcessReq(Packet* req_packet, Request* req) {
   PacketDecoder decoder(*req_packet);
-
   // Extracts api_key, api_version, and correlation_id.
   PL_RETURN_IF_ERROR(decoder.ExtractReqHeader(req));
 
@@ -64,7 +63,7 @@ Status ProcessReq(Packet* req_packet, Request* req) {
 
 Status ProcessResp(Packet* resp_packet, Response* resp, APIKey api_key, int16_t api_version) {
   PacketDecoder decoder(*resp_packet);
-  decoder.set_api_version(api_version);
+  decoder.SetAPIInfo(api_key, api_version);
 
   PL_RETURN_IF_ERROR(decoder.ExtractRespHeader(resp));
 

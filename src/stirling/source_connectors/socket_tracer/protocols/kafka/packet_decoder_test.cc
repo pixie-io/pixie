@@ -343,7 +343,7 @@ TEST(KafkaPacketDecoderTest, ExtractRecordBatchV8) {
       "\x1c\x4d\x79\x20\x66\x69\x72\x73\x74\x20\x65\x76\x65\x6e\x74\x00");
   RecordBatch expected_result{{{.key = "", .value = "My first event"}}};
   PacketDecoder decoder(input);
-  decoder.set_api_version(8);
+  decoder.SetAPIInfo(APIKey::kProduce, 8);
   EXPECT_OK_AND_EQ(decoder.ExtractRecordBatch(), expected_result);
 }
 
@@ -356,7 +356,7 @@ TEST(KafkaPacketDecoderTest, ExtractRecordBatchV9) {
       "\x74\x00\x00\x00\x00");
   RecordBatch expected_result{{{.key = "", .value = "This is my first event"}}};
   PacketDecoder decoder(input);
-  decoder.set_api_version(9);
+  decoder.SetAPIInfo(APIKey::kProduce, 9);
   EXPECT_OK_AND_EQ(decoder.ExtractRecordBatch(), expected_result);
 }
 
@@ -374,7 +374,7 @@ TEST(KafkaPacketDecoderTest, ExtractProduceReqV8) {
   ProduceReq expected_result{
       .transactional_id = "", .acks = 1, .timeout_ms = 1500, .topics = {topic}};
   PacketDecoder decoder(input);
-  decoder.set_api_version(8);
+  decoder.SetAPIInfo(APIKey::kProduce, 8);
   EXPECT_OK_AND_EQ(decoder.ExtractProduceReq(), expected_result);
 }
 
@@ -392,7 +392,7 @@ TEST(KafkaPacketDecoderTest, ExtractProduceReqV9) {
   ProduceReq expected_result{
       .transactional_id = "", .acks = 1, .timeout_ms = 1500, .topics = {topic}};
   PacketDecoder decoder(input);
-  decoder.set_api_version(9);
+  decoder.SetAPIInfo(APIKey::kProduce, 9);
   EXPECT_OK_AND_EQ(decoder.ExtractProduceReq(), expected_result);
 }
 
@@ -407,7 +407,7 @@ TEST(KafkaPacketDecoderTest, ExtractProduceRespV8) {
   ProduceRespTopic topic{.name = "quickstart-events", .partitions = {partition}};
   ProduceResp expected_result{.topics = {topic}, .throttle_time_ms = 0};
   PacketDecoder decoder(input);
-  decoder.set_api_version(8);
+  decoder.SetAPIInfo(APIKey::kProduce, 8);
   EXPECT_OK_AND_EQ(decoder.ExtractProduceResp(), expected_result);
 }
 
@@ -421,7 +421,7 @@ TEST(KafkaPacketDecoderTest, ExtractProduceRespV9) {
   ProduceRespTopic topic{.name = "quickstart-events", .partitions = {partition}};
   ProduceResp expected_result{.topics = {topic}, .throttle_time_ms = 0};
   PacketDecoder decoder(input);
-  decoder.set_api_version(9);
+  decoder.SetAPIInfo(APIKey::kProduce, 9);
   EXPECT_OK_AND_EQ(decoder.ExtractProduceResp(), expected_result);
 }
 

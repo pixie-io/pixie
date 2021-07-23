@@ -18,9 +18,9 @@
 
 #pragma once
 
+#include <absl/container/flat_hash_map.h>
 #include <chrono>
 #include <deque>
-#include <map>
 #include <memory>
 #include <string>
 #include <utility>
@@ -41,6 +41,8 @@ namespace kafka {
 // Before each request is sent, the client sends the API key and the API version.These two 16-bit
 // numbers, when taken together, uniquely identify the schema of the message to follow.
 // https://kafka.apache.org/protocol.html#protocol_api_keys
+// Mapping from Kafka version to API Version
+// https://cwiki.apache.org/confluence/display/KAFKA/Kafka+APIs
 enum class APIKey : int16_t {
   kProduce = 0,
   kFetch = 1,
@@ -210,6 +212,21 @@ enum class ErrorCode : int16_t {
   kInconsistentTopicID = 103,
   kInconsistentClusterID = 104,
 };
+
+// A mapping of api_key to the api_version from which the wire protocol becomes flexible.
+// Flexible versions use tagged fields and more efficient serialization for variable-length objects.
+// https://cwiki.apache.org/confluence/display/KAFKA/KIP-482%3A+The+Kafka+Protocol+should+Support+Optional+Tagged+Fields#KIP482:TheKafkaProtocolshouldSupportOptionalTaggedFields-FlexibleVersions
+const absl::flat_hash_map<APIKey, int16_t> flexibleVersionMap = {
+    {APIKey::kProduce, 9},
+};
+
+inline bool IsFlexible(APIKey api_key, int16_t api_version) {
+  auto it = flexibleVersionMap.find(api_key);
+  if (it != flexibleVersionMap.end()) {
+    return api_version >= it->second;
+  }
+  return false;
+}
 
 inline bool IsValidAPIKey(int16_t api_key) {
   std::optional<APIKey> api_key_type_option = magic_enum::enum_cast<APIKey>(api_key);

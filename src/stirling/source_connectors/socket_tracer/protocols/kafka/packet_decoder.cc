@@ -19,6 +19,7 @@
 #include "src/stirling/source_connectors/socket_tracer/protocols/kafka/packet_decoder.h"
 #include <string>
 #include "src/common/base/byte_utils.h"
+#include "src/stirling/source_connectors/socket_tracer/protocols/kafka/types.h"
 
 namespace px {
 namespace stirling {
@@ -194,7 +195,7 @@ StatusOr<ProduceReqPartition> PacketDecoder::ExtractProduceReqPartition() {
   int32_t length = 0;
   // TODO(chengruizhe): Add flexible version support. Flexible version was introduced in Kafka to
   // support more compact datatypes and tagged fields etc.
-  if (api_version_ >= 9) {
+  if (is_flexible_) {
     PL_ASSIGN_OR_RETURN(length, ExtractUnsignedVarint());
   } else {
     PL_ASSIGN_OR_RETURN(length, ExtractInt32());
@@ -209,7 +210,7 @@ StatusOr<ProduceReqPartition> PacketDecoder::ExtractProduceReqPartition() {
 
 StatusOr<ProduceReqTopic> PacketDecoder::ExtractProduceReqTopic() {
   ProduceReqTopic r;
-  if (api_version_ >= 9) {
+  if (is_flexible_) {
     PL_ASSIGN_OR_RETURN(r.name, ExtractCompactString());
     PL_ASSIGN_OR_RETURN(r.partitions,
                         ExtractCompactArray(&PacketDecoder::ExtractProduceReqPartition));
@@ -235,7 +236,7 @@ StatusOr<RecordError> PacketDecoder::ExtractRecordError() {
   RecordError r;
 
   PL_ASSIGN_OR_RETURN(r.batch_index, ExtractInt32());
-  if (api_version_ >= 9) {
+  if (is_flexible_) {
     PL_ASSIGN_OR_RETURN(r.error_message, ExtractCompactNullableString());
   } else {
     PL_ASSIGN_OR_RETURN(r.error_message, ExtractNullableString());
@@ -257,7 +258,7 @@ StatusOr<ProduceRespPartition> PacketDecoder::ExtractProduceRespPartition() {
     PL_ASSIGN_OR_RETURN(int64_t log_start_offset, ExtractInt64());
     PL_UNUSED(log_start_offset);
   }
-  if (api_version_ >= 9) {
+  if (is_flexible_) {
     PL_ASSIGN_OR_RETURN(r.record_errors, ExtractCompactArray(&PacketDecoder::ExtractRecordError));
     PL_ASSIGN_OR_RETURN(r.error_message, ExtractCompactNullableString());
   } else if (api_version_ >= 8) {
@@ -272,7 +273,7 @@ StatusOr<ProduceRespPartition> PacketDecoder::ExtractProduceRespPartition() {
 StatusOr<ProduceRespTopic> PacketDecoder::ExtractProduceRespTopic() {
   ProduceRespTopic r;
 
-  if (api_version_ >= 9) {
+  if (is_flexible_) {
     PL_ASSIGN_OR_RETURN(r.name, ExtractCompactString());
     PL_ASSIGN_OR_RETURN(r.partitions,
                         ExtractCompactArray(&PacketDecoder::ExtractProduceRespPartition));
@@ -292,17 +293,16 @@ Status PacketDecoder::ExtractReqHeader(Request* req) {
   req->api_key = static_cast<APIKey>(api_key);
 
   PL_ASSIGN_OR_RETURN(req->api_version, ExtractInt16());
-  this->set_api_version(req->api_version);
+  SetAPIInfo(req->api_key, req->api_version);
 
-  // Extract correlation_id.
-  PL_RETURN_IF_ERROR(ExtractInt32());
+  PL_RETURN_IF_ERROR(/* correlation_id */ ExtractInt32());
   PL_ASSIGN_OR_RETURN(req->client_id, ExtractNullableString());
   return Status::OK();
 }
 
 Status PacketDecoder::ExtractRespHeader(Response* /*resp*/) {
-  // Extract correlation_id.
-  PL_RETURN_IF_ERROR(ExtractInt32());
+  PL_RETURN_IF_ERROR(/* correlation_id */ ExtractInt32());
+
   return Status::OK();
 }
 
@@ -319,7 +319,7 @@ StatusOr<ProduceReq> PacketDecoder::ExtractProduceReq() {
 
   PL_ASSIGN_OR_RETURN(r.acks, ExtractInt16());
   PL_ASSIGN_OR_RETURN(r.timeout_ms, ExtractInt32());
-  if (api_version_ >= 9) {
+  if (is_flexible_) {
     PL_ASSIGN_OR_RETURN(r.topics, ExtractCompactArray(&PacketDecoder::ExtractProduceReqTopic));
   } else {
     PL_ASSIGN_OR_RETURN(r.topics, ExtractArray(&PacketDecoder::ExtractProduceReqTopic));
@@ -330,7 +330,7 @@ StatusOr<ProduceReq> PacketDecoder::ExtractProduceReq() {
 StatusOr<ProduceResp> PacketDecoder::ExtractProduceResp() {
   ProduceResp r;
 
-  if (api_version_ >= 9) {
+  if (is_flexible_) {
     PL_ASSIGN_OR_RETURN(r.topics, ExtractCompactArray(&PacketDecoder::ExtractProduceRespTopic));
   } else {
     PL_ASSIGN_OR_RETURN(r.topics, ExtractArray(&PacketDecoder::ExtractProduceRespTopic));

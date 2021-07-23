@@ -259,7 +259,10 @@ class PacketDecoder {
 
   bool eof() { return binary_decoder_.eof(); }
 
-  void set_api_version(int16_t api_version) { api_version_ = api_version; }
+  void SetAPIInfo(APIKey api_key, int16_t api_version) {
+    api_version_ = api_version;
+    is_flexible_ = IsFlexible(api_key, api_version);
+  }
 
  private:
   template <typename TCharType>
@@ -293,6 +296,7 @@ class PacketDecoder {
   std::stack<std::string_view> marked_bufs_;
   BinaryDecoder binary_decoder_;
   int16_t api_version_ = 0;
+  bool is_flexible_ = false;
 };
 
 }  // namespace kafka
