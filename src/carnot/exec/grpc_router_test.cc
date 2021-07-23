@@ -634,6 +634,66 @@ TEST_F(GRPCRouterTest, threaded_router_test_multi_writer) {
   read_thread.join();
 }
 
+TEST_F(GRPCRouterTest, query_router_no_writes) {
+  int64_t grpc_source_node_id = 1;
+  uint64_t ab = 0xea8aa095697f49f1, cd = 0xb127d50e5b6e2645;
+
+  RowDescriptor input_rd({types::DataType::INT64});
+  auto query_uuid = sole::rebuild(ab, cd);
+
+  // Add source node to GRPC router.
+  auto op_proto = planpb::testutils::CreateTestGRPCSource1PB();
+  std::unique_ptr<px::carnot::plan::Operator> plan_node =
+      plan::GRPCSourceOperator::FromProto(op_proto, grpc_source_node_id);
+  auto source_node = FakeGRPCSourceNode();
+  ASSERT_OK(source_node.Init(*plan_node, input_rd, {}));
+
+  auto num_continues = 0;
+  auto s = service_->AddGRPCSourceNode(query_uuid, grpc_source_node_id, &source_node,
+                                       [&] { num_continues++; });
+  ASSERT_OK(s);
+  EXPECT_FALSE(source_node.upstream_initiated_connection());
+  EXPECT_EQ(0, source_node.row_batches.size());
+  EXPECT_EQ(0, num_continues);
+  EXPECT_FALSE(source_node.upstream_closed_connection());
+
+  carnotpb::TransferResultChunkRequest initiate_stream_req0;
+  auto query_id = initiate_stream_req0.mutable_query_id();
+  query_id->set_high_bits(ab);
+  query_id->set_low_bits(cd);
+  initiate_stream_req0.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
+  initiate_stream_req0.mutable_query_result()->set_initiate_result_stream(true);
+
+  // Create row batches.
+  auto rb1 = RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
+                 .AddColumn<types::Int64Value>({1, 2})
+                 .get();
+  carnotpb::TransferResultChunkRequest rb_req1;
+  EXPECT_OK(rb1.ToProto(rb_req1.mutable_query_result()->mutable_row_batch()));
+  rb_req1.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
+  query_id = rb_req1.mutable_query_id();
+  query_id->set_high_bits(ab);
+  query_id->set_low_bits(cd);
+
+  auto rb2 = RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
+                 .AddColumn<types::Int64Value>({4, 6})
+                 .get();
+  carnotpb::TransferResultChunkRequest rb_req2;
+  EXPECT_OK(rb2.ToProto(rb_req2.mutable_query_result()->mutable_row_batch()));
+  rb_req2.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
+  query_id = rb_req2.mutable_query_id();
+  query_id->set_high_bits(ab);
+  query_id->set_low_bits(cd);
+
+  // Send row batches to GRPC router.
+  px::carnotpb::TransferResultChunkResponse response;
+  grpc::ClientContext context;
+  auto writer = stub_->TransferResultChunk(&context, &response);
+  writer->WritesDone();
+  auto status = writer->Finish();
+  EXPECT_TRUE(status.ok());
+}
+
 }  // namespace exec
 }  // namespace carnot
 }  // namespace px

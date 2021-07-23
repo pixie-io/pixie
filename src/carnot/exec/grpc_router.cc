@@ -209,6 +209,12 @@ void GRPCRouter::MarkResultStreamContextAsComplete(QueryTracker* query_tracker,
     return result_status;
   }
 
+  if (query_tracker == nullptr) {
+    // In this case, the client immediately finished writing without sending a query id so no
+    // query_tracker pointer was set.
+    return ::grpc::Status::OK;
+  }
+
   if (stream_has_query_results) {
     auto s = MarkResultStreamClosed(query_tracker.get(), source_node_id);
     if (!s.ok()) {
