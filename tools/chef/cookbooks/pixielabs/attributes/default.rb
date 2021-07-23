@@ -51,6 +51,7 @@ default['prototool']                 = {}
 default['yq']                        = {}
 default['src']                       = {}
 default['lsif-go']                   = {}
+default['fossa']                     = {}
 default['golangci-lint']             = {}
 default['helm']                      = {}
 default['opm']                       = {}
@@ -144,6 +145,11 @@ if node[:platform] == 'ubuntu'
     'https://github.com/jzelinskie/faq/releases/download/0.0.7/faq-linux-amd64'
   default['faq']['sha256']        =
     '6c9234d0b2b024bf0e7c845fc092339b51b94e5addeee9612a7219cfd2a7b731'
+
+  default['fossa']['download_path'] =
+    'https://github.com/fossas/fossa-cli/releases/download/v1.1.10/fossa-cli_1.1.10_linux_amd64.tar.gz'
+  default['fossa']['sha256']        =
+    'a263aabf09308614a39d8486df722f3b03ab5b0f5060b655be1fd9def8e5619f'
 elsif node[:platform] == 'mac_os_x'
   default['bazel']['download_path'] =
     'https://github.com/bazelbuild/bazel/releases/download/4.0.0/bazel-4.0.0-darwin-x86_64'
@@ -230,5 +236,9 @@ elsif node[:platform] == 'mac_os_x'
     'https://github.com/jzelinskie/faq/releases/download/0.0.7/faq-darwin-amd64'
   default['faq']['sha256']        =
     '869f4d8acaa1feb11ce76b2204c5476b8a04d9451216adde6b18e2ef2f978794'
-  
+
+  default['fossa']['download_path'] =
+    'https://github.com/fossas/fossa-cli/releases/download/v1.1.10/fossa-cli_1.1.10_darwin_amd64.tar.gz'
+  default['fossa']['sha256']        =
+    '39f23d382c63381ec98e0b22cbf60c2007bdb699b034bfd37692a062ba254a8d'
 end

@@ -781,6 +781,23 @@ if (isMainRun) {
       }
     }
   }
+
+  // Only run FOSSA on main runs.
+  builders['FOSSA'] = {
+    WithSourceCodeAndTargetsK8s('fossa') {
+      container('pxbuild') {
+        warnError('FOSSA command failed') {
+          withCredentials([
+            string(
+              credentialsId: 'fossa-api-key',
+              variable: 'FOSSA_API_KEY')
+          ]) {
+            sh 'fossa analyze'
+          }
+        }
+      }
+    }
+  }
 }
 
 builders['Lint & Docs'] = {

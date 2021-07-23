@@ -214,3 +214,17 @@ remote_file '/opt/pixielabs/bin/faq' do
   mode 0755
   checksum node['faq']['sha256']
 end
+
+remote_file '/tmp/fossa.tar.gz' do
+  source node['fossa']['download_path']
+  mode 0755
+  checksum node['fossa']['sha256']
+end
+
+execute 'install fossa' do
+  command 'tar xf /tmp/fossa.tar.gz -C /opt/pixielabs/bin fossa'
+end
+
+file '/tmp/fossa.tar.gz' do
+  action :delete
+end
