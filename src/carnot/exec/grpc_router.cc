@@ -62,7 +62,7 @@ Status GRPCRouter::EnqueueRowBatch(QueryTracker* query_tracker,
     }
     PL_RETURN_IF_ERROR(snt->source_node->EnqueueRowBatch(std::move(req)));
   }
-  query_tracker->restart_execution_func_();
+  query_tracker->RestartExecution();
   return Status::OK();
 }
 
@@ -261,7 +261,10 @@ Status GRPCRouter::AddGRPCSourceNode(sole::uuid query_id, int64_t source_id,
     query_tracker = query_node_map_[query_id];
   }
 
-  query_tracker->restart_execution_func_ = std::move(restart_execution);
+  {
+    absl::base_internal::SpinLockHolder lock(&query_tracker->query_lock);
+    query_tracker->restart_execution_func_ = std::move(restart_execution);
+  }
   auto snt = GetSourceNodeTracker(query_tracker.get(), source_id);
 
   absl::base_internal::SpinLockHolder snt_lock(&snt->node_lock);
@@ -342,6 +345,7 @@ void GRPCRouter::DeleteQuery(sole::uuid query_id) {
     query_node_map_.erase(it);
   }
   absl::base_internal::SpinLockHolder lock(&query_tracker->query_lock);
+  query_tracker->ResetRestartExecutionFunc();
   // For any active input streams for this query, mark their context as cancelled.
   for (auto ctx : query_tracker->active_agent_contexts) {
     ctx->TryCancel();

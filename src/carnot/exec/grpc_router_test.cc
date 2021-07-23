@@ -25,6 +25,7 @@
 #include <utility>
 
 #include <absl/strings/substitute.h>
+#include <absl/synchronization/barrier.h>
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/security/credentials.h>
 #include <grpcpp/security/server_credentials.h>
@@ -692,6 +693,110 @@ TEST_F(GRPCRouterTest, query_router_no_writes) {
   writer->WritesDone();
   auto status = writer->Finish();
   EXPECT_TRUE(status.ok());
+}
+
+class FakeContinuer {
+ public:
+  explicit FakeContinuer(int val) : val_(val) {}
+  std::function<void()> GetContinue() {
+    return [this] {
+      absl::MutexLock lock(&mu_);
+      val_++;
+    };
+  }
+
+ private:
+  // We need a mutex so that tsan/asan doesn't complain about the normal accesses of val_.
+  absl::Mutex mu_;
+  // We need to access some kind of member so that ASAN can catch the segfault.
+  int val_;
+};
+
+TEST_F(GRPCRouterTest, continue_func_segfault) {
+  int64_t grpc_source_node_id = 1;
+  uint64_t ab = 0xea8aa095697f49f1, cd = 0xb127d50e5b6e2645;
+
+  RowDescriptor input_rd({types::DataType::INT64});
+  auto query_uuid = sole::rebuild(ab, cd);
+
+  // Add source node to GRPC router.
+  auto op_proto = planpb::testutils::CreateTestGRPCSource1PB();
+  std::unique_ptr<px::carnot::plan::Operator> plan_node =
+      plan::GRPCSourceOperator::FromProto(op_proto, grpc_source_node_id);
+  auto source_node = FakeGRPCSourceNode();
+  ASSERT_OK(source_node.Init(*plan_node, input_rd, {}));
+
+  auto continuer = std::make_unique<FakeContinuer>(0);
+
+  auto s = service_->AddGRPCSourceNode(query_uuid, grpc_source_node_id, &source_node,
+                                       continuer->GetContinue());
+
+  carnotpb::TransferResultChunkRequest initiate_stream_req0;
+  auto query_id = initiate_stream_req0.mutable_query_id();
+  query_id->set_high_bits(ab);
+  query_id->set_low_bits(cd);
+  initiate_stream_req0.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
+  initiate_stream_req0.mutable_query_result()->set_initiate_result_stream(true);
+
+  // Create row batches.
+  auto rb1 = RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
+                 .AddColumn<types::Int64Value>({1, 2})
+                 .get();
+  carnotpb::TransferResultChunkRequest rb_req1;
+  EXPECT_OK(rb1.ToProto(rb_req1.mutable_query_result()->mutable_row_batch()));
+  rb_req1.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
+  query_id = rb_req1.mutable_query_id();
+  query_id->set_high_bits(ab);
+  query_id->set_low_bits(cd);
+
+  auto rb2 = RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
+                 .AddColumn<types::Int64Value>({4, 6})
+                 .get();
+  carnotpb::TransferResultChunkRequest rb_req2;
+  EXPECT_OK(rb2.ToProto(rb_req2.mutable_query_result()->mutable_row_batch()));
+  rb_req2.mutable_query_result()->set_grpc_source_id(grpc_source_node_id);
+  query_id = rb_req2.mutable_query_id();
+  query_id->set_high_bits(ab);
+  query_id->set_low_bits(cd);
+
+  // TSAN doesn't consistently detect the issue unless there are a lot of threads.
+  auto num_write_threads = 100;
+  absl::Barrier barrier(num_write_threads + 1);
+
+  // Send row batches to GRPC router.
+  auto write_work = [this, &barrier, initiate_stream_req0, rb_req1](int thread_index) {
+    px::carnotpb::TransferResultChunkResponse response;
+    grpc::ClientContext context;
+    auto writer = stub_->TransferResultChunk(&context, &response);
+    if (thread_index == 0) {
+      EXPECT_TRUE(writer->Write(initiate_stream_req0));
+    }
+    barrier.Block();
+    while (writer->Write(rb_req1)) {
+    }
+    writer->WritesDone();
+    writer->Finish();
+  };
+
+  std::vector<std::thread> write_threads;
+  write_threads.reserve(num_write_threads);
+  for (int i = 0; i < num_write_threads; ++i) {
+    write_threads.emplace_back(write_work, i);
+  }
+
+  barrier.Block();
+  // TSAN should catch an error if deleting the query during a write would cause a segfault.
+  service_->DeleteQuery(query_uuid);
+  continuer.reset();
+
+  for (auto& thread : write_threads) {
+    thread.join();
+  }
+
+  EXPECT_EQ(0, service_->NumQueriesTracking());
+  // TSAN occassionally doesn't like the source_node destructor being called before the server is
+  // shutdown.
+  server_->Shutdown();
 }
 
 }  // namespace exec

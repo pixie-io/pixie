@@ -125,14 +125,30 @@ class GRPCRouter final : public carnotpb::ResultSinkService::Service {
   struct QueryTracker {
     QueryTracker() : create_time(std::chrono::steady_clock::now()) {}
     absl::node_hash_map<int64_t, SourceNodeTracker> source_node_trackers GUARDED_BY(query_lock);
-    const std::chrono::steady_clock::time_point create_time;
-    std::function<void()> restart_execution_func_;
+    const std::chrono::steady_clock::time_point create_time GUARDED_BY(query_lock);
+    std::function<void()> restart_execution_func_ GUARDED_BY(query_lock);
     // The set of agents we've seen for the query.
     absl::flat_hash_set<sole::uuid> seen_agents GUARDED_BY(query_lock);
     absl::flat_hash_set<::grpc::ServerContext*> active_agent_contexts GUARDED_BY(query_lock);
     // The execution stats for agents that are clients to this service.
     std::vector<queryresultspb::AgentExecutionStats> agent_exec_stats GUARDED_BY(query_lock);
     absl::base_internal::SpinLock query_lock;
+
+    void ResetRestartExecutionFunc() ABSL_EXCLUSIVE_LOCKS_REQUIRED(query_lock) {
+      restart_execution_func_ = std::function<void()>();
+    }
+
+    void RestartExecution() {
+      std::function<void()> restart_func;
+      {
+        absl::base_internal::SpinLockHolder lock(&query_lock);
+        restart_func = restart_execution_func_;
+      }
+      // Check that restart_func is not an empty function.
+      if (restart_func) {
+        restart_func();
+      }
+    }
   };
 
   Status EnqueueRowBatch(QueryTracker* query_tracker,
