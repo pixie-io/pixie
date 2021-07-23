@@ -434,7 +434,8 @@ func (m *MetadataReader) getMissingUpdates(from, to int64, vzState *VizierState)
 
 			// Check to see if this batch contains the last of the missing updates we expect.
 			lastUpdate := updates[len(updates)-1]
-			if lastUpdate.UpdateVersion == to {
+			// `to` is exclusive so we only want the last item.
+			if lastUpdate.UpdateVersion == to-1 {
 				return nil
 			}
 			if lastUpdate.UpdateVersion == updatesResponse.LastUpdateAvailable {

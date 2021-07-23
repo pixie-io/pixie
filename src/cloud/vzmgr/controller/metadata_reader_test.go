@@ -77,7 +77,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 		{
 			name: "out-of-order update",
 			stanMetadataUpdates: []*metadatapb.ResourceUpdate{
-				{PrevUpdateVersion: 16, UpdateVersion: 17},
+				{UpdateVersion: 17, PrevUpdateVersion: 16},
 			},
 			missingMetadataCalls: []*MetadataRequest{
 				{
@@ -97,6 +97,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 				},
 			},
 			expectedIndexerUpdates: []*metadatapb.ResourceUpdate{
+				{UpdateVersion: 12, PrevUpdateVersion: 11},
 				{UpdateVersion: 13, PrevUpdateVersion: 12},
 				{UpdateVersion: 15, PrevUpdateVersion: 13},
 				{UpdateVersion: 16, PrevUpdateVersion: 15},
@@ -107,7 +108,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 		{
 			name: "multiple out-of-order update",
 			stanMetadataUpdates: []*metadatapb.ResourceUpdate{
-				{PrevUpdateVersion: 16, UpdateVersion: 17},
+				{UpdateVersion: 17, PrevUpdateVersion: 16},
 			},
 			missingMetadataCalls: []*MetadataRequest{
 				{
@@ -137,13 +138,13 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 							FirstUpdateAvailable: 12,
 							Updates: []*metadatapb.ResourceUpdate{
 								{UpdateVersion: 15, PrevUpdateVersion: 13},
-								{UpdateVersion: 16, PrevUpdateVersion: 15},
 							},
 						},
 					},
 				},
 			},
 			expectedIndexerUpdates: []*metadatapb.ResourceUpdate{
+				{UpdateVersion: 12, PrevUpdateVersion: 11},
 				{UpdateVersion: 13, PrevUpdateVersion: 12},
 				{UpdateVersion: 15, PrevUpdateVersion: 13},
 				{UpdateVersion: 16, PrevUpdateVersion: 15},
@@ -292,28 +293,30 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 				}
 			}()
 
-			if len(test.expectedIndexerUpdates) > 0 {
-				numUpdates := 0
-				for numUpdates < len(test.expectedIndexerUpdates) {
-					select {
-					case idxMessage := <-idxCh:
-						u := &metadatapb.ResourceUpdate{}
-						err := proto.Unmarshal(idxMessage.Data, u)
-						require.NoError(t, err)
-						numUpdates++
-					case <-time.After(2 * time.Second):
-						t.Fatal("Timed out")
-					}
+			numUpdates := 0
+			for numUpdates < len(test.expectedIndexerUpdates) {
+				select {
+				case idxMessage := <-idxCh:
+					u := &metadatapb.ResourceUpdate{}
+					err := proto.Unmarshal(idxMessage.Data, u)
+					require.NoError(t, err)
+					assert.Equal(t, test.expectedIndexerUpdates[numUpdates].UpdateVersion, u.UpdateVersion)
+					numUpdates++
+				case <-time.After(2 * time.Second):
+					t.Fatal("Timed out")
 				}
-			} else {
-				run := true
-				for run {
-					select {
-					case <-idxCh:
-						t.Fatal("Unpexected index message")
-					case <-time.After(2 * time.Second):
-						run = false
-					}
+			}
+			// Make sure that we don't receive extra indexer updates.
+			run := true
+			for run {
+				select {
+				case idxMessage := <-idxCh:
+					u := &metadatapb.ResourceUpdate{}
+					err := proto.Unmarshal(idxMessage.Data, u)
+					require.NoError(t, err)
+					t.Errorf("Unpexected index message: %d", u.UpdateVersion)
+				case <-time.After(2 * time.Second):
+					run = false
 				}
 			}
 
