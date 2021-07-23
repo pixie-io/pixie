@@ -169,6 +169,9 @@ StatusOr<types::DataType> Column::OutputDataType(
 
   PL_RETURN_IF_ERROR(s);
   const auto& relation = s.ValueOrDie();
+  if (!relation.HasColumn(Index())) {
+    return error::InvalidArgument("Mismatch between plan and table schema");
+  }
   types::DataType dt = relation.GetColumnType(Index());
   return dt;
 }

@@ -185,7 +185,22 @@ class ExecutionGraph {
       input_descriptors.push_back(input_desc->second);
     }
     // Get output descriptor.
-    PL_ASSIGN_OR_RETURN(auto output_rel, node.OutputRelation(*schema_, *plan_state_, parents));
+    auto output_rel_or_s = node.OutputRelation(*schema_, *plan_state_, parents);
+    if (!output_rel_or_s.ok()) {
+      if (output_rel_or_s.msg() != "Mismatch between plan and table schema") {
+        return output_rel_or_s.status();
+      }
+      LOG(ERROR) << "HasColumn CHECK failure debug info: ";
+      LOG(ERROR) << "Op Node: " << node.DebugString();
+      LOG(ERROR) << "Table schema: " << schema_->DebugString();
+      LOG(ERROR) << "Plan fragment: ";
+      for (const auto& [idx, op_node] : pf_->nodes()) {
+        LOG(ERROR) << "Node " << idx;
+        LOG(ERROR) << op_node->DebugString();
+      }
+      return output_rel_or_s.status();
+    }
+    auto output_rel = output_rel_or_s.ConsumeValueOrDie();
     table_store::schema::RowDescriptor output_descriptor(output_rel.col_types());
     schema_->AddRelation(node.id(), output_rel);
     descriptors->insert({node.id(), output_descriptor});
