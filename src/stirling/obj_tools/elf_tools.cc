@@ -363,7 +363,9 @@ StatusOr<std::unique_ptr<ElfReader::Symbolizer>> ElfReader::GetSymbolizer() {
     unsigned char other;
     symbols.get_symbol(j, name, addr, size, bind, type, section_index, other);
 
-    symbolizer->AddEntry(addr, size, llvm::demangle(name));
+    if (type == ELFIO::STT_FUNC) {
+      symbolizer->AddEntry(addr, size, llvm::demangle(name));
+    }
   }
 
   return symbolizer;
