@@ -25,8 +25,9 @@ import {
   Column,
   Cell,
   HeaderGroup,
+  ColumnInstance, TableInstance,
 } from 'react-table';
-import { FixedSizeList as List, areEqual } from 'react-window';
+import { FixedSizeList as List, areEqual, ListOnItemsRenderedProps } from 'react-window';
 import { makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
@@ -37,7 +38,11 @@ import { buildClass } from 'app/utils/build-class';
 // Augments `@types/react-table` to recognize the plugins we're using
 import './react-table-config.d';
 import { AutoSizerContext, withAutoSizerContext } from 'app/utils/autosizer';
-import { alpha, Paper } from '@material-ui/core';
+import {
+  alpha, Button, Checkbox, FormControlLabel, Menu, MenuItem,
+} from '@material-ui/core';
+import { UnexpandedIcon } from 'app/components/icons/unexpanded';
+import MenuIcon from '@material-ui/icons/Menu';
 
 export interface ReactTable<D extends Record<string, any> = Record<string, any>> {
   columns: Array<Column<D>>;
@@ -54,29 +59,22 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
     overflow: 'hidden',
   },
   tableHead: {
-    position: 'sticky',
-    top: 0,
-    overflowY: 'auto',
-    overflowX: 'hidden',
-    minWidth: '100%',
+    overflow: 'hidden',
     height: `${ROW_HEIGHT_PX}px`,
-    // Make sure the body is behind, not in front of, the header on the Z axis.
-    // We're using a <Paper /> for the color, and need to override some of its props to match perfectly.
-    zIndex: 1,
-    boxShadow: 'none',
-    borderRadius: 0,
   },
   headerRow: {
-    // paddingBottom: theme.spacing(1),
+    display: 'flex',
+    maxHeight: '100%',
+    width: '100%',
   },
   headerCell: {
     position: 'relative', // In case anything inside positions absolutely
     fontSize: theme.typography.pxToRem(14),
     padding: theme.spacing(1),
     alignSelf: 'baseline',
-    '&:not(:last-child)': {
-      // Makes sure everything still lines up
-      borderRight: '1px solid transparent',
+    borderRight: '1px solid transparent',
+    '&:last-child': {
+      borderRightWidth: 0,
     },
   },
   headerCellContents: {
@@ -87,7 +85,7 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
   // Separate so that resize handles can clip visibly to the side (centering themselves on the border)
   headerLabel: {
     textTransform: 'uppercase',
-    overflowX: 'hidden',
+    overflow: 'hidden',
     whiteSpace: 'nowrap',
     textOverflow: 'ellipsis',
     fontWeight: 500,
@@ -109,12 +107,15 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
   },
   bodyRowSelectable: {
     cursor: 'pointer',
+    '& .rowSelectionIcon': { opacity: 0 },
     '&:hover': {
       backgroundColor: `${alpha(theme.palette.foreground.grey2, 0.42)}`,
+      '& .rowSelectionIcon': { opacity: 0.8 },
     },
   },
   bodyRowSelected: {
     backgroundColor: theme.palette.foreground.grey3,
+    '& .rowSelectionIcon': { opacity: 1 },
   },
   bodyCell: {
     position: 'relative', // In case anything inside positions absolutely
@@ -122,9 +123,17 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
     alignItems: 'center',
     padding: `0 ${theme.spacing(1)}`,
     height: `${ROW_HEIGHT_PX}px`, // Ensures the border stretches. See cellContents for the rest.
-    '&:not(:last-of-type)': {
-      borderRight: `1px solid ${theme.palette.background.three}`,
+    borderRight: `1px solid ${theme.palette.background.three}`,
+    '&:last-of-type': {
+      borderRightWidth: 0,
     },
+  },
+  gutterCell: {
+    padding: 0,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRightWidth: 0,
   },
   cellContents: {
     display: 'inline-block',
@@ -158,7 +167,58 @@ const useDataTableStyles = makeStyles((theme: Theme) => createStyles({
     color: theme.palette.foreground.three,
     fontWeight: 'bold',
   },
+  rowExpandButton: {
+    display: 'flex',
+    alignItems: 'center',
+    height: '100%',
+  },
+  columnSelector: {
+    position: 'relative',
+    left: '50%',
+    transform: 'translate(-50%)',
+    width: theme.spacing(3),
+    height: theme.spacing(3),
+  },
 }), { name: 'DataTable' });
+
+export interface DataTableProps {
+  table: ReactTable;
+  enableColumnSelect?: boolean;
+  enableRowSelect?: boolean;
+  onRowSelected?: (row: Record<string, any>|null) => void;
+  onRowsRendered?: (rendered: ListOnItemsRenderedProps) => void;
+}
+
+interface DataTableContextProps extends Omit<DataTableProps, 'table'> {
+  instance: TableInstance;
+}
+const DataTableContext = React.createContext<DataTableContextProps>(null);
+
+const ColumnSelector: React.FC<{ columns: ColumnInstance[] }> = ({ columns }) => {
+  const classes = useDataTableStyles();
+  const [open, setOpen] = React.useState(false);
+  const anchorEl = React.useRef<HTMLButtonElement>(null);
+
+  const editableColumns = React.useMemo(() => columns.filter((col) => !col.isGutter), [columns]);
+  return (
+    <>
+      <Menu open={open} anchorEl={anchorEl.current} onBackdropClick={() => setOpen(false)}>
+        {editableColumns.map((column) => (
+          <MenuItem key={column.id} button onClick={() => column.toggleHidden()}>
+            <FormControlLabel
+              style={{ pointerEvents: 'none' }}
+              label={column.id || JSON.stringify(column)}
+              control={<Checkbox color='secondary' disableRipple checked={column.isVisible} />}
+            />
+          </MenuItem>
+        ))}
+      </Menu>
+      <Button className={classes.columnSelector} onClick={() => setOpen(!open)} ref={anchorEl}>
+        <MenuIcon />
+      </Button>
+    </>
+  );
+};
 
 const ColumnSortButton: React.FC<{ column: HeaderGroup }> = ({ column }) => {
   const classes = useDataTableStyles();
@@ -182,33 +242,133 @@ const ColumnResizeHandle: React.FC<{ column: HeaderGroup }> = ({ column }) => {
   );
 };
 
-export interface DataTableProps {
-  table: ReactTable;
-  /**
-   * If the table's parent is elevated (via MaterialUI), the table needs to match it colors to colorize properly.
-   * This is used to set a background in the sticky header, so that the scrolling table body doesn't appear behind it.
-   */
-  elevation?: number;
-  enableRowSelect?: boolean;
-  onRowSelected?: (row: Record<string, any>|null) => void;
+const HeaderCell: React.FC<{ column: HeaderGroup }> = ({ column }) => {
+  const classes = useDataTableStyles();
+
+  const cellClass = buildClass(classes.headerCell, column.isGutter && classes.gutterCell);
+  const contClass = buildClass(classes.headerCellContents, classes[column.align]);
+  const labelClass = buildClass(classes.headerLabel, column.align === 'end' && classes.headerLabelRight);
+
+  const sortProps = React.useMemo(() => (
+    column.canSort ? column.getSortByToggleProps() : {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  ), [column.canSort]);
+
+  return (
+    // eslint-disable-next-line react/jsx-key
+    <div {...column.getHeaderProps()} className={cellClass}>
+      <div
+        {...sortProps}
+        title={String(column.Header) ?? ''}
+        className={contClass}
+      >
+        <span className={labelClass}>
+          {column.render('Header')}
+        </span>
+        {column.canSort && <ColumnSortButton column={column} />}
+      </div>
+      {column.canResize && <ColumnResizeHandle column={column} />}
+    </div>
+  );
+};
+
+const BodyCell: React.FC<{ cell: Cell }> = ({ cell }) => {
+  const classes = useDataTableStyles();
+  const { column: col } = cell;
+
+  const cellClass = buildClass(classes.bodyCell, col.isGutter && classes.gutterCell);
+  const contClass = buildClass(classes.cellContents, classes[col.align]);
+  const cellWidth = Math.max(col.minWidth ?? 0, Math.min(Number(col.width), col.maxWidth ?? Infinity));
+  return (
+    <div role='cell' className={cellClass} style={{ width: `${cellWidth}px` }}>
+      <div className={contClass}>
+        {cell.render('Cell')}
+      </div>
+    </div>
+  );
+};
+
+const HeaderRow = React.forwardRef<HTMLDivElement, { scrollbarWidth: number }>(
+  // eslint-disable-next-line prefer-arrow-callback
+  function HeaderRow({ scrollbarWidth }, ref) {
+    const classes = useDataTableStyles();
+    const { width: containerWidth } = React.useContext(AutoSizerContext);
+    const { instance: { totalColumnsWidth, headerGroups } } = React.useContext(DataTableContext);
+
+    const headStyle = React.useMemo(() => ({
+      width: `${containerWidth - scrollbarWidth}px`,
+    }), [containerWidth, scrollbarWidth]);
+    const rowStyle = React.useMemo(() => ({
+      width: `${totalColumnsWidth + scrollbarWidth}px`,
+    }), [totalColumnsWidth, scrollbarWidth]);
+
+    return (
+      <div className={classes.tableHead} style={headStyle} ref={ref}>
+        <div role='row' className={classes.headerRow} style={rowStyle}>
+          {headerGroups[0].headers.map((column) => (
+            <HeaderCell key={String(column.id || column.Header)} column={column} />
+          ))}
+        </div>
+      </div>
+    );
+  },
+);
+
+function decorateTable({ table: { columns, data }, enableColumnSelect, enableRowSelect }: DataTableProps): ReactTable {
+  // Enabling row select will add icon indicators, but only if something else gives a reason to show a controls column.
+  if (enableColumnSelect && !columns.some((col) => col.id === 'controls')) {
+    columns.unshift({
+      Header: function ControlHeader({ columns: columnInstances }) {
+        return enableRowSelect ? <ColumnSelector columns={columnInstances} /> : <></>;
+      },
+      Cell: function ControlCell() {
+        const classes = useDataTableStyles();
+        return enableRowSelect ? (
+          <div className={classes.rowExpandButton}>
+            <UnexpandedIcon className='rowSelectionIcon' />
+          </div>
+        ) : null;
+      },
+      id: 'controls',
+      isGutter: true,
+      minWidth: 24,
+      maxWidth: 24,
+      width: 24,
+      disableSortBy: true,
+      disableFilters: true,
+      disableResizing: true,
+    });
+  }
+
+  return { columns, data };
 }
 
 const DataTableImpl: React.FC<DataTableProps> = ({ table, ...options }) => {
   const classes = useDataTableStyles();
 
-  const { columns, data } = table;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const { columns, data } = React.useMemo(() => decorateTable({ table, ...options }), [table]);
 
   // Begin: width math
   const [scrollbarContainer, setScrollbarContainer] = React.useState<HTMLElement>(null);
+  const [header, setHeader] = React.useState<HTMLDivElement>(null);
   const scrollContainerRef = React.useCallback((el) => setScrollbarContainer(el), []);
+  const headingsRef = React.useCallback((el) => setHeader(el), []);
   const { width: scrollbarWidth } = useScrollbarSize(scrollbarContainer);
+
+  React.useEffect(() => {
+    const handler = () => {
+      if (header?.scrollLeft !== scrollbarContainer?.scrollLeft) {
+        header?.scrollTo({ left: scrollbarContainer?.scrollLeft ?? 0 });
+      }
+    };
+    handler();
+    scrollbarContainer?.addEventListener('scroll', handler);
+    return () => scrollbarContainer?.removeEventListener('scroll', handler);
+  }, [scrollbarContainer, header]);
 
   // TODO(nick,PC-1050): When this changes, need to reflow current widths (try to keep ratios). Only if not resized?
   const { width: containerWidth, height: containerHeight } = React.useContext(AutoSizerContext);
-
-  // Once the header is rendered, use its height to push the topmost scroll position below said header.
-  const [headingsHeight, setHeadingsHeight] = React.useState(0);
-  const headingsRef = React.useCallback((el) => setHeadingsHeight(el?.offsetHeight ?? 0), []);
 
   // Space not claimed by fixed-width columns is evenly distributed among remaining columns.
   const defaultWidth = React.useMemo(() => {
@@ -227,14 +387,7 @@ const DataTableImpl: React.FC<DataTableProps> = ({ table, ...options }) => {
   // By default, we sort by the first column that has data (ascending, ignores control/gutter columns)
   const firstDataColumn = React.useMemo(() => columns?.find((col) => !!col.accessor), [columns]);
 
-  const {
-    getTableProps,
-    getTableBodyProps,
-    headerGroups,
-    rows,
-    prepareRow,
-    totalColumnsWidth,
-  } = useTable(
+  const instance = useTable(
     {
       columns,
       data,
@@ -249,54 +402,17 @@ const DataTableImpl: React.FC<DataTableProps> = ({ table, ...options }) => {
     useSortBy,
   );
 
+  const {
+    rows,
+    prepareRow,
+    totalColumnsWidth,
+  } = instance;
+
   const [expanded, setExpanded] = React.useState<string>(null);
-  const toggleExpanded = React.useCallback((rowId: string) => {
+  const toggleRowExpanded = React.useCallback((rowId: string) => {
     if (expanded === rowId) setExpanded(null);
     else setExpanded(rowId);
   }, [expanded]);
-
-  const HeaderRenderer = React.memo<{ column: HeaderGroup }>(
-    // eslint-disable-next-line prefer-arrow-callback
-    function HeaderRenderer({ column }) {
-      return (
-        // eslint-disable-next-line react/jsx-key
-        <div {...column.getHeaderProps()} className={classes.headerCell}>
-          <div
-            {...column.getSortByToggleProps()}
-            title={String(column.Header) ?? ''}
-            className={buildClass(classes.headerCellContents, classes[column.align])}
-          >
-                  <span className={buildClass(classes.headerLabel, column.align === 'end' && classes.headerLabelRight)}>
-                    {column.render('Header')}
-                  </span>
-            {column.canSort && <ColumnSortButton column={column} />}
-          </div>
-          {column.canResize && <ColumnResizeHandle column={column} />}
-        </div>
-      );
-    },
-    areEqual,
-  );
-
-  const CellRenderer = React.memo<{ cell: Cell }>(
-    // eslint-disable-next-line prefer-arrow-callback
-    function CellRenderer({ cell }) {
-      const contents: React.ReactNode = cell.render('Cell');
-      const { column: col } = cell;
-      // Note: we're not using cell.getCellProps() because it includes CSS that breaks our text-overflow setup.
-      // As such, we have to compute the properties we are using ourselves (just width and role really).
-      const contClass = buildClass(classes.cellContents, classes[col.align]);
-      const cellWidth = Math.max(col.minWidth ?? 0, Math.min(Number(col.width), col.maxWidth ?? Infinity));
-      return (
-        <div role='cell' className={classes.bodyCell} style={{ width: `${cellWidth}px` }}>
-          <div className={contClass}>
-            {contents}
-          </div>
-        </div>
-      );
-    },
-    areEqual,
-  );
 
   const RowRenderer = React.memo<{ index: number, style: React.CSSProperties }>(
     // eslint-disable-next-line prefer-arrow-callback
@@ -311,66 +427,58 @@ const DataTableImpl: React.FC<DataTableProps> = ({ table, ...options }) => {
         options.enableRowSelect && classes.bodyRowSelectable,
         options.enableRowSelect && expanded === row.id && classes.bodyRowSelected,
       );
-      const onClick = options.enableRowSelect && (() => {
-        toggleExpanded(row.id);
+      const onClick = React.useMemo(() => options.enableRowSelect && (() => {
+        toggleRowExpanded(row.id);
         options.onRowSelected?.(expanded === row.id ? null : row.values);
-      });
-      const rowProps = row.getRowProps({ style: { ...vRowStyle, width: totalColumnsWidth } });
+      }), [row.id, row.values]);
+
+      const rowProps = React.useMemo(
+        () => row.getRowProps({ style: { ...vRowStyle, width: totalColumnsWidth } }),
+        [row, vRowStyle]);
       return (
         // eslint-disable-next-line react/jsx-key
         <div {...rowProps} className={className} onClick={onClick}>
-          {row.cells.map((cell) => {
-            const key = `r${row.id}-c${cell.column.original?.getColumnName() ?? cell.column.id}`;
-            return <CellRenderer key={key} cell={cell} />;
-          })}
+          {row.cells.map((cell) => <BodyCell key={cell.column.id} cell={cell} />)}
         </div>
       );
     },
     areEqual,
   );
 
+  const ctx: DataTableContextProps = React.useMemo(() => ({
+    instance,
+    ...options,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [
+    instance, options.enableRowSelect, options.enableColumnSelect,
+    options.onRowSelected, options.onRowsRendered,
+  ]);
+
   const ready = containerWidth > 0 && containerHeight > 0 && defaultWidth > 0;
   if (!ready) return null;
 
   return (
-    <div {...getTableProps()} className={classes.table} style={{ width: containerWidth, height: containerHeight }}>
-      <List
-        outerRef={scrollContainerRef}
-        width={containerWidth}
-        height={containerHeight}
-        itemCount={rows.length}
-        itemSize={ROW_HEIGHT_PX}
-        // To make the header sticky (and so it can scroll as part of the same element rather than with JS),
-        // we customize the wrapper element that react-window uses for its container to include the header.
-        innerElementType={({ children }) => (
-          <>
-            <Paper
-              elevation={options.elevation ?? 0}
-              className={classes.tableHead}
-              ref={headingsRef}
-              style={{ width: totalColumnsWidth }}
-            >
-              {headerGroups.map((group) => (
-                // eslint-disable-next-line react/jsx-key
-                <div {...group.getHeaderGroupProps()} className={classes.headerRow}>
-                  {group.headers.map((column) => <HeaderRenderer key={column.id} column={column} />)}
-                </div>
-              ))}
-            </Paper>
-            <div
-              className={classes.tableBody}
-              {...getTableBodyProps({
-                style: { top: headingsHeight, height: rows.length * ROW_HEIGHT_PX },
-              })}
-            >
-              {children}
-            </div>
-          </>
-        )}
-      >
-        {RowRenderer}
-      </List>
-    </div>
+    <DataTableContext.Provider value={ctx}>
+      <div role='table' className={classes.table} style={{ width: containerWidth, height: containerHeight }}>
+        <HeaderRow ref={headingsRef} scrollbarWidth={scrollbarWidth} />
+        <div
+          className={classes.tableBody}
+          role='rowgroup'
+        >
+          <List
+            outerRef={scrollContainerRef}
+            width={containerWidth}
+            height={containerHeight - ROW_HEIGHT_PX}
+            itemCount={rows.length}
+            itemSize={ROW_HEIGHT_PX}
+            onItemsRendered={options.onRowsRendered}
+            overscanCount={3}
+          >
+            {RowRenderer}
+          </List>
+        </div>
+      </div>
+    </DataTableContext.Provider>
   );
 };
 DataTableImpl.displayName = 'DataTable';

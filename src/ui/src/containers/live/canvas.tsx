@@ -351,6 +351,9 @@ const Canvas: React.FC<CanvasProps> = ({ editable, parentRef }) => {
   }, [loading, tables, isEmbedded]);
 
   React.useEffect(() => {
+    // TODO(nick,PC-1050): Check if the below is still true with react-window and react-virtualized-auto-sizer.
+    //  If that issue has been fixed, remove this handler. In fact, defaultHeight might be redundant now anyway?
+    //  We have withAutosizerContext that can do this work in less code. Might as well.
     /**
      * React-virtualized's AutoSizer works whenever the window receives a resize event. However, this only works with
      * trusted (real) events, synthetic ones don't trigger it. Listening for the untrusted events and manually updating

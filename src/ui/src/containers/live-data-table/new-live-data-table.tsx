@@ -18,10 +18,11 @@
 
 import * as React from 'react';
 import { Table as VizierTable } from 'app/api';
+import { Arguments } from 'app/utils/args-utils';
 import { dataFromProto } from 'app/utils/result-data-utils';
-import { ReactTable, DataTable } from 'app/components/data-table/new-data-table';
+import { ReactTable, DataTable, DataTableProps } from 'app/components/data-table/new-data-table';
 import { DataType, Relation, SemanticType } from 'app/types/generated/vizierapi_pb';
-import { CellAlignment } from 'app/components';
+import { buildClass, CellAlignment } from 'app/components';
 import { useTheme, makeStyles, Theme } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import { ClusterContext } from 'app/common/cluster-context';
@@ -62,10 +63,10 @@ function rowsFromVizierTable(table: VizierTable): Array<Record<string, any>> {
 }
 
 /** Transforms a table coming from a script into something react-table understands. */
-function useConvertedTable(table: VizierTable): ReactTable {
+function useConvertedTable(table: VizierTable, propagatedArgs?: Arguments, gutterColumn?: string): ReactTable {
   // Some cell renderers need a bit of extra information that isn't directly related to the table.
   const theme = useTheme();
-  const { selectedClusterName: clusterName } = React.useContext(ClusterContext);
+  const { selectedClusterName: cluster } = React.useContext(ClusterContext);
   const { embedState } = React.useContext(LiveRouteContext);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -82,16 +83,26 @@ function useConvertedTable(table: VizierTable): ReactTable {
       setDisplayMap(new Map<string, ColumnDisplayInfo>(displayMap));
     };
 
-    const renderer = liveCellRenderer(display, updateDisplay, true, theme, clusterName, rows, embedState);
+    const renderer = liveCellRenderer(display, updateDisplay, true, theme, cluster, rows, embedState, propagatedArgs);
 
     const sortFunc = getSortFunc(display);
+
+    const gutterWidth = parseInt(theme.spacing(3), 10); // 24px
+    const gutterProps = gutterColumn === display.columnName ? {
+      isGutter: true,
+      minWidth: gutterWidth,
+      width: gutterWidth,
+      maxWidth: gutterWidth,
+      Header: '\xa0', // nbsp
+      disableSortBy: true,
+      disableFilters: true,
+      disableResizing: true,
+    } : { isGutter: false };
 
     return {
       Header: titleFromInfo(display),
       accessor: col.getColumnName(),
       Cell({ value }) {
-        // TODO(nick,PC-1050): Quantile columns are slow (even resizing/scrolling). Also true for old impl. Bad memo?
-        // TODO(nick,PC-1050): Gutter/ctrl cell support (outside of the drawer). They need a prop for "no right border".
         // TODO(nick,PC-1050): We're not doing width weights yet. Need to. Convert to ratio of default in DataTable?
         // TODO(nick,PC-1050): Head/tail mode (data-table.tsx) for not-the-data-drawer.
         // TODO(nick,PC-1050): Go over old impl a few more times. Any features I missed? Oversimplified? Etc.
@@ -99,6 +110,7 @@ function useConvertedTable(table: VizierTable): ReactTable {
       },
       original: col,
       align: justify,
+      ...gutterProps,
       sortType(a, b) {
         // TODO(nick,PC-1050): react-table inverts the return value for descent anyway. Remove third param.
         return sortFunc(a.original, b.original, true);
@@ -107,7 +119,10 @@ function useConvertedTable(table: VizierTable): ReactTable {
   };
 
   const columns = React.useMemo<ReactTable['columns']>(
-    () => table.relation.getColumnsList().map(convertColumn),
+    () => table.relation
+      .getColumnsList()
+      .map(convertColumn)
+      .sort((a, b) => Number(b.isGutter) - Number(a.isGutter)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [displayMap]);
 
@@ -116,7 +131,7 @@ function useConvertedTable(table: VizierTable): ReactTable {
 
 // This one has a sidebar for the currently-selected row, rather than placing it inline like the main data table does.
 // It scrolls independently of the table to its left.
-const useMinimalTableStyles = makeStyles((theme: Theme) => createStyles({
+const useLiveDataTableStyles = makeStyles((theme: Theme) => createStyles({
   root: {
     display: 'flex',
     width: '100%',
@@ -127,6 +142,9 @@ const useMinimalTableStyles = makeStyles((theme: Theme) => createStyles({
     overflow: 'hidden',
     position: 'relative',
   },
+  rootHorizontal: {
+    flexFlow: 'column nowrap',
+  },
   table: {
     flex: 3,
     overflow: 'hidden',
@@ -135,17 +153,20 @@ const useMinimalTableStyles = makeStyles((theme: Theme) => createStyles({
   details: {
     flex: 1,
     minWidth: '0px',
+    minHeight: '0px',
     whiteSpace: 'pre-wrap',
     overflow: 'auto',
     borderLeft: `1px solid ${theme.palette.background.three}`,
     padding: theme.spacing(2),
-
-    '& *': { whiteSpace: 'pre-wrap' },
   },
-}), { name: 'MinimalLiveDataTable' });
+  detailsHorizontal: {
+    borderLeft: 0,
+    borderTop: `1px solid ${theme.palette.background.three}`,
+  },
+}), { name: 'LiveDataTable' });
 
-export const MinimalLiveDataTable: React.FC<{ table: VizierTable, elevation?: number }> = ({ table, elevation }) => {
-  const classes = useMinimalTableStyles();
+export const MinimalLiveDataTable: React.FC<{ table: VizierTable }> = ({ table }) => {
+  const classes = useLiveDataTableStyles();
   const reactTable = useConvertedTable(table);
 
   const [details, setDetails] = React.useState<Record<string, any>>(null);
@@ -154,10 +175,44 @@ export const MinimalLiveDataTable: React.FC<{ table: VizierTable, elevation?: nu
   return (
     <div className={classes.root}>
       <div className={classes.table}>
-        <DataTable table={reactTable} enableRowSelect onRowSelected={onRowSelected} elevation={elevation} />
+        <DataTable table={reactTable} enableRowSelect onRowSelected={onRowSelected} />
       </div>
-      {details && ( // TODO: Despite white-space:pre-wrap, this doesn't do so. Old impl does. Difference?
+      {details && (
         <div className={classes.details}>
+          <JSONData data={details} multiline />
+        </div>
+      )}
+    </div>
+  );
+};
+
+export interface LiveDataTableProps extends Pick<DataTableProps, 'onRowsRendered'> {
+  table: VizierTable;
+  propagatedArgs?: Arguments;
+  gutterColumn?: string;
+}
+
+export const LiveDataTable: React.FC<LiveDataTableProps> = ({ table, ...options }) => {
+  const classes = useLiveDataTableStyles();
+  const reactTable = useConvertedTable(table, options.propagatedArgs, options.gutterColumn);
+
+  const [details, setDetails] = React.useState<Record<string, any>>(null);
+  const onRowSelected = React.useCallback((row: Record<string, any>|null) => setDetails(row), [setDetails]);
+
+  // Determine if we should render row details in a horizontal split or a vertical one based on available space
+  const [splitMode, setSplitMode] = React.useState<'horizontal'|'vertical'>('vertical');
+  const rootRef = React.useCallback((el: HTMLDivElement) => {
+    // TODO(nick,PC-1050): Make this update when widgets move (will need to watch nearest AutoSizerContext probably?)
+    setSplitMode((el?.offsetWidth < el?.offsetHeight) ? 'horizontal' : 'vertical');
+  }, [setSplitMode]);
+
+  return (
+    <div ref={rootRef} className={buildClass(classes.root, splitMode === 'horizontal' && classes.rootHorizontal)}>
+      <div className={classes.table}>
+        <DataTable table={reactTable} enableRowSelect onRowSelected={onRowSelected} enableColumnSelect {...options} />
+      </div>
+      {details && (
+        <div className={buildClass(classes.details, splitMode === 'horizontal' && classes.detailsHorizontal)}>
           <JSONData data={details} multiline />
         </div>
       )}

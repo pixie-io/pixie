@@ -179,7 +179,7 @@ const DataDrawer: React.FC<{ open: boolean }> = ({ open }) => {
 
   const tabs = React.useMemo(() => Object.keys(tables).map((tableName) => ({
     title: tableName,
-    content: <MinimalLiveDataTable table={tables[tableName]} elevation={4} />,
+    content: <MinimalLiveDataTable table={tables[tableName]} />,
   })), [tables]);
 
   // If the selected table is not in the new result set, show the first table.

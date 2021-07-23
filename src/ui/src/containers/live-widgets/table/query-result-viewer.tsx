@@ -16,22 +16,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ClusterContext } from 'app/common/cluster-context';
 import { WidgetDisplay } from 'app/containers/live/vis';
 import { Table } from 'app/api';
 import * as React from 'react';
-import {
-  Theme, Typography,
-  withStyles,
-  WithStyles,
-} from '@material-ui/core';
+import { Theme, Typography, makeStyles } from '@material-ui/core';
 import { createStyles } from '@material-ui/styles';
-import { IndexRange } from 'react-virtualized';
 import { Arguments } from 'app/utils/args-utils';
-import { LiveDataTable } from 'app/containers/live-data-table/live-data-table';
-import { JSONData } from 'app/containers/format-data/format-data';
+import { LiveDataTable } from 'app/containers/live-data-table/new-live-data-table';
+import AutoSizer from 'react-virtualized-auto-sizer';
 
-const styles = ({ spacing }: Theme) => createStyles({
+const useStyles = makeStyles(({ spacing }: Theme) => createStyles({
   root: {
     height: '100%',
     display: 'flex',
@@ -54,32 +48,26 @@ const styles = ({ spacing }: Theme) => createStyles({
     paddingRight: spacing(1),
     textAlign: 'right',
   },
-});
+}), { name: 'QueryResultViewer' });
 
 export interface QueryResultTableDisplay extends WidgetDisplay {
   gutterColumn?: string,
 }
 
-export interface QueryResultTableProps extends WithStyles<typeof styles> {
+export interface QueryResultTableProps {
   display: QueryResultTableDisplay;
   data: Table;
   propagatedArgs: Arguments;
 }
 
-const QueryResultTableBare = (({
-  display, data, classes, propagatedArgs,
-}: QueryResultTableProps) => {
-  const { selectedClusterName } = React.useContext(ClusterContext);
-  const ExpandedRowRenderer = (rowData: any) => (
-    <JSONData
-      data={rowData}
-      multiline
-    />
-  );
-  const [indexRange, setIndexRange] = React.useState<IndexRange>({ startIndex: 0, stopIndex: 0 });
+export const QueryResultTable: React.FC<QueryResultTableProps> = (({
+  display, data, propagatedArgs,
+}) => {
+  const classes = useStyles();
+
   const [totalCount, setTotalCount] = React.useState<number>(0);
 
-  const dataLength = data && data.data ? data.data.length : 0;
+  const dataLength = data?.data?.length ?? 0;
   React.useEffect(() => {
     if (data && data.data) {
       setTotalCount(
@@ -88,40 +76,41 @@ const QueryResultTableBare = (({
     }
   }, [data, dataLength, setTotalCount]);
 
-  const getTableSummary = React.useCallback(() => {
-    const start = indexRange.startIndex;
-    const stop = indexRange.stopIndex;
-    const count = stop - start + 1;
-    let summary = `Showing ${start + 1} - ${stop + 1} / ${totalCount} records`;
+  const [visibleRows, setVisibleRows] = React.useState<{ start: number, stop: number }>({ start: 1, stop: 1 });
+  const visibleRowSummary = React.useMemo(() => {
+    const count = visibleRows.stop - visibleRows.start + 1;
+    let text = `Showing ${visibleRows.start + 1} - ${visibleRows.stop + 1} / ${totalCount} records`;
     if (count <= 0) {
-      summary = 'No records to show';
+      text = 'No records to show';
     } else if (count >= totalCount) {
-      summary = '';
+      text = '\xa0'; // non-breaking space
     }
-    return <Typography variant='subtitle2'>{summary}</Typography>;
-  }, [indexRange, totalCount]);
+    return <Typography variant='subtitle2'>{text}</Typography>;
+  }, [totalCount, visibleRows.start, visibleRows.stop]);
+
+  const onRowsRendered = React.useCallback(({ visibleStartIndex, visibleStopIndex }) => {
+    setVisibleRows({ start: visibleStartIndex, stop: visibleStopIndex });
+  }, []);
 
   return (
     <div className={classes.root}>
       <div className={classes.table}>
-        <LiveDataTable
-          table={data}
-          expandable
-          expandedRenderer={ExpandedRowRenderer}
-          prettyRender
-          gutterColumn={display.gutterColumn}
-          clusterName={selectedClusterName}
-          onRowsRendered={(info: IndexRange) => {
-            setIndexRange(info);
-          }}
-          propagatedArgs={propagatedArgs}
-        />
+        <AutoSizer>
+          {({ width, height }) => (
+            <div style={{ width, height, overflow: 'hidden' }}>
+              <LiveDataTable
+                table={data}
+                gutterColumn={display.gutterColumn}
+                propagatedArgs={propagatedArgs}
+                onRowsRendered={onRowsRendered}
+              />
+            </div>
+          )}
+        </AutoSizer>
       </div>
       <div className={classes.tableSummary}>
-        {getTableSummary()}
+        {visibleRowSummary}
       </div>
     </div>
   );
 });
-
-export const QueryResultTable = withStyles(styles)(QueryResultTableBare);

@@ -126,6 +126,7 @@ declare module 'react-table' {
     UseSortByColumnOptions<D> {
     original?: Relation.ColumnInfo,
     align?: CellAlignment,
+    isGutter?: boolean,
   }
 
   export interface ColumnInstance<D extends Record<string, unknown> = Record<string, unknown>>
