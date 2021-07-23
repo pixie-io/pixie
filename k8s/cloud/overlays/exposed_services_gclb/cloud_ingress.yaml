@@ -49,6 +49,10 @@ spec:
         backend:
           serviceName: cloud-proxy-service
           servicePort: 5555
+      - path: /px.cloudapi.ConfigService/*
+        backend:
+          serviceName: cloud-proxy-service
+          servicePort: 5555
       - path: /px.cloudapi.APIKeyManager/*
         backend:
           serviceName: cloud-proxy-service
