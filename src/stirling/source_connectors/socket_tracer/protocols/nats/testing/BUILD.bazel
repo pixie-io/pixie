@@ -14,6 +14,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+load("@io_bazel_rules_docker//container:container.bzl", "container_image")
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
@@ -26,6 +27,14 @@ go_binary(
 go_image(
     name = "nats_test_client_image",
     binary = ":nats_test_client",
+)
+
+container_image(
+    name = "nats_test_client_with_ca_image",
+    base = ":nats_test_client_image",
+    layers = [
+        "//src/stirling/source_connectors/socket_tracer/testing/containers/ssl:ssl_keys_layer",
+    ],
     visibility = ["//src/stirling/source_connectors/socket_tracer:__pkg__"],
 )
 

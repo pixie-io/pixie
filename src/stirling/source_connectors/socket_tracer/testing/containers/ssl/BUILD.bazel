@@ -44,6 +44,7 @@ genrule(
 pkg_tar(
     name = "ssl_keys",
     srcs = [
+        "ca.crt",
         "server.crt",
         "server.key",
     ],
@@ -52,7 +53,7 @@ pkg_tar(
 )
 
 container_layer(
-    name = "nginx_ssl_keys",
+    name = "ssl_keys_layer",
     directory = "/etc/ssl",
     tars = [":ssl_keys"],
 )

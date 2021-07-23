@@ -55,16 +55,25 @@ class NATSClientContainer : public ContainerRunner {
  private:
   static constexpr std::string_view kBazelImageTar =
       "src/stirling/source_connectors/socket_tracer/protocols/nats/testing/"
-      "nats_test_client_image.tar";
+      "nats_test_client_with_ca_image.tar";
   static constexpr std::string_view kContainerNamePrefix = "nats_test_client";
   static constexpr std::string_view kReadyMessage = "";
 };
 
-class NATSTraceBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ false> {
+class NATSTraceBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ false>,
+                         public ::testing::WithParamInterface<bool> {
  protected:
   NATSTraceBPFTest() {
     FLAGS_stirling_enable_nats_tracing = true;
-    PL_CHECK_OK(server_container_.Run(std::chrono::seconds{150}));
+    std::vector<std::string> args;
+    if (GetParam()) {
+      // https://docs.nats.io/nats-server/configuration/securing_nats/tls
+      // shows similar configuration implemented in config file, but did
+      // not work, for some reason. So we use command line flags.
+      args = {"--tls", "--tlscert=/etc/ssl/server.crt", "--tlskey=/etc/ssl/server.key",
+              "--tlsverify=false"};
+    }
+    PL_CHECK_OK(server_container_.Run(std::chrono::seconds{150}, /*options*/ {}, args));
   }
 
   NATSServerContainer server_container_;
@@ -102,12 +111,18 @@ auto EqualsNATSTraceRecord(std::string cmd, std::string options, std::string res
 }
 
 // Tests that a series of commands issued by the test client were traced.
-TEST_F(NATSTraceBPFTest, VerifyBatchedCommands) {
+TEST_P(NATSTraceBPFTest, VerifyBatchedCommands) {
   StartTransferDataThread();
+
+  std::vector<std::string> args;
+  if (!GetParam()) {
+    args = {"--ca="};
+  }
 
   client_container_.Run(
       std::chrono::seconds{10},
-      {absl::Substitute("--network=container:$0", server_container_.container_name())});
+      {absl::Substitute("--network=container:$0", server_container_.container_name())}, args);
+
   const int server_pid = server_container_.process_pid();
 
   client_container_.Wait();
@@ -118,14 +133,14 @@ TEST_F(NATSTraceBPFTest, VerifyBatchedCommands) {
 
   ASSERT_FALSE(tablets.empty());
 
+  const std::string connect_options =
+      absl::Substitute(R"({"verbose":false,"pedantic":false,"tls_required":$0,"name":"",)"
+                       R"("lang":"go","version":"1.10.0","protocol":1,"echo":true})",
+                       GetParam());
   EXPECT_THAT(
       GetNATSTraceRecords(tablets[0].records, server_pid),
       UnorderedElementsAre(
-          EqualsNATSTraceRecord(
-              "CONNECT",
-              R"({"verbose":false,"pedantic":false,"tls_required":false,"name":"",)"
-              R"("lang":"go","version":"1.10.0","protocol":1,"echo":true})",
-              ""),
+          EqualsNATSTraceRecord("CONNECT", connect_options, ""),
           EqualsNATSTraceRecord("INFO", R"("host":"0.0.0.0","port":4222,"headers":true)", ""),
           EqualsNATSTraceRecord("SUB", R"({"sid":"1","subject":"foo"})", ""),
           EqualsNATSTraceRecord("MSG", R"({"payload":"Hello World","sid":"1","subject":"foo"})",
@@ -133,6 +148,8 @@ TEST_F(NATSTraceBPFTest, VerifyBatchedCommands) {
           EqualsNATSTraceRecord("PUB", R"({"payload":"Hello World","subject":"foo"})", ""),
           EqualsNATSTraceRecord("UNSUB", R"({"sid":"1"})", "")));
 }
+
+INSTANTIATE_TEST_SUITE_P(TLSandNonTLS, NATSTraceBPFTest, ::testing::Values(true, false));
 
 }  // namespace stirling
 }  // namespace px

@@ -154,12 +154,13 @@ def stirling_docker_images_setup():
         repository = "pixie-oss/pixie-dev-public/python_mysql_connector",
     )
 
-    # NATS server image, for testing.
+    # NATS server image, for testing. This isn't the official image. The difference is that this
+    # includes symbols in the executable.
     container_pull(
         name = "nats_base_image",
-        digest = "sha256:da01747b3b1b793d26f23d641b1e96439c8a4a7e06f996382ad5a588b3f22e9a",
-        registry = "index.docker.io",
-        repository = "library/nats",
+        digest = "sha256:93179975b83acaf1ff7581e9e23c59d838e780599a80f795ae90e97de08c4aae",
+        registry = "gcr.io",
+        repository = "pixie-oss/pixie-dev-public/nats/nats-server",
     )
 
 def _docker_images_setup():

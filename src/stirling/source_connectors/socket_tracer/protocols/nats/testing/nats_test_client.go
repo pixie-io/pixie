@@ -27,12 +27,26 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
+func connectNats(address string, caCertFile string) (*nats.Conn, error) {
+	if len(caCertFile) == 0 {
+		return nats.Connect(address)
+	}
+
+	return nats.Connect(address, nats.RootCAs(caCertFile))
+}
+
 func main() {
 	address := flag.String("address", "localhost:4222", "Server end point.")
+	caCertFile := flag.String("ca", "/etc/ssl/ca.crt", "Path to CA cert file.")
 
 	flag.Parse()
 
-	nc, _ := nats.Connect(*address)
+	nc, err := connectNats(*address, *caCertFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// nc, _ := nats.Connect(*address)
 
 	// Operations are wrapped into events, and are sent to an internal queue. Successive operations might be batched into
 	// one message, even if they are made through multiple API calls.
