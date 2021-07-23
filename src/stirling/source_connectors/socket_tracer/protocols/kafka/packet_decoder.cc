@@ -123,6 +123,21 @@ StatusOr<std::string> PacketDecoder::ExtractCompactNullableString() {
   return ExtractBytesCore<char>(len);
 }
 
+Status PacketDecoder::ExtractTagSection() {
+  PL_ASSIGN_OR_RETURN(int32_t num_fields, ExtractUnsignedVarint());
+  for (int i = 0; i < num_fields; ++i) {
+    PL_RETURN_IF_ERROR(ExtractTaggedField());
+  }
+  return Status::OK();
+}
+
+Status PacketDecoder::ExtractTaggedField() {
+  PL_RETURN_IF_ERROR(/* tag */ ExtractUnsignedVarint());
+  PL_ASSIGN_OR_RETURN(int32_t length, ExtractUnsignedVarint());
+  PL_RETURN_IF_ERROR(/* data */ ExtractBytesCore<char>(length));
+  return Status::OK();
+}
+
 // Only supports Kafka version >= 0.11.0
 StatusOr<RecordMessage> PacketDecoder::ExtractRecordMessage() {
   RecordMessage r;
@@ -204,6 +219,10 @@ StatusOr<ProduceReqPartition> PacketDecoder::ExtractProduceReqPartition() {
 
   PL_ASSIGN_OR_RETURN(r.record_batch, ExtractRecordBatch());
 
+  if (is_flexible_) {
+    PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
+  }
+
   PL_RETURN_IF_ERROR(JumpToOffset());
   return r;
 }
@@ -214,6 +233,7 @@ StatusOr<ProduceReqTopic> PacketDecoder::ExtractProduceReqTopic() {
     PL_ASSIGN_OR_RETURN(r.name, ExtractCompactString());
     PL_ASSIGN_OR_RETURN(r.partitions,
                         ExtractCompactArray(&PacketDecoder::ExtractProduceReqPartition));
+    PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   } else {
     PL_ASSIGN_OR_RETURN(r.name, ExtractString());
     PL_ASSIGN_OR_RETURN(r.partitions, ExtractArray(&PacketDecoder::ExtractProduceReqPartition));
@@ -238,6 +258,7 @@ StatusOr<RecordError> PacketDecoder::ExtractRecordError() {
   PL_ASSIGN_OR_RETURN(r.batch_index, ExtractInt32());
   if (is_flexible_) {
     PL_ASSIGN_OR_RETURN(r.error_message, ExtractCompactNullableString());
+    PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   } else {
     PL_ASSIGN_OR_RETURN(r.error_message, ExtractNullableString());
   }
@@ -261,6 +282,7 @@ StatusOr<ProduceRespPartition> PacketDecoder::ExtractProduceRespPartition() {
   if (is_flexible_) {
     PL_ASSIGN_OR_RETURN(r.record_errors, ExtractCompactArray(&PacketDecoder::ExtractRecordError));
     PL_ASSIGN_OR_RETURN(r.error_message, ExtractCompactNullableString());
+    PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   } else if (api_version_ >= 8) {
     PL_ASSIGN_OR_RETURN(r.record_errors, ExtractArray(&PacketDecoder::ExtractRecordError));
     PL_ASSIGN_OR_RETURN(r.error_message, ExtractNullableString());
@@ -277,6 +299,7 @@ StatusOr<ProduceRespTopic> PacketDecoder::ExtractProduceRespTopic() {
     PL_ASSIGN_OR_RETURN(r.name, ExtractCompactString());
     PL_ASSIGN_OR_RETURN(r.partitions,
                         ExtractCompactArray(&PacketDecoder::ExtractProduceRespPartition));
+    PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   } else {
     PL_ASSIGN_OR_RETURN(r.name, ExtractString());
     PL_ASSIGN_OR_RETURN(r.partitions, ExtractArray(&PacketDecoder::ExtractProduceRespPartition));
@@ -297,12 +320,19 @@ Status PacketDecoder::ExtractReqHeader(Request* req) {
 
   PL_RETURN_IF_ERROR(/* correlation_id */ ExtractInt32());
   PL_ASSIGN_OR_RETURN(req->client_id, ExtractNullableString());
+
+  if (is_flexible_) {
+    PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
+  }
   return Status::OK();
 }
 
 Status PacketDecoder::ExtractRespHeader(Response* /*resp*/) {
   PL_RETURN_IF_ERROR(/* correlation_id */ ExtractInt32());
 
+  if (is_flexible_) {
+    PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
+  }
   return Status::OK();
 }
 
@@ -313,10 +343,11 @@ Status PacketDecoder::ExtractRespHeader(Response* /*resp*/) {
 // Documentation: https://kafka.apache.org/protocol.html#The_Messages_Produce
 StatusOr<ProduceReq> PacketDecoder::ExtractProduceReq() {
   ProduceReq r;
-  if (api_version_ >= 3) {
+  if (is_flexible_) {
+    PL_ASSIGN_OR_RETURN(r.transactional_id, ExtractCompactNullableString());
+  } else if (api_version_ >= 3) {
     PL_ASSIGN_OR_RETURN(r.transactional_id, ExtractNullableString());
   }
-
   PL_ASSIGN_OR_RETURN(r.acks, ExtractInt16());
   PL_ASSIGN_OR_RETURN(r.timeout_ms, ExtractInt32());
   if (is_flexible_) {
@@ -338,6 +369,10 @@ StatusOr<ProduceResp> PacketDecoder::ExtractProduceResp() {
 
   if (api_version_ >= 1) {
     PL_ASSIGN_OR_RETURN(r.throttle_time_ms, ExtractInt32());
+  }
+
+  if (is_flexible_) {
+    PL_RETURN_IF_ERROR(/* tag_section */ ExtractTagSection());
   }
   return r;
 }

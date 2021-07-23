@@ -226,6 +226,14 @@ class PacketDecoder {
     return result;
   }
 
+  // TODO(chengruizhe): Parse and return a TagSection struct if needed.
+  // In a flexible version, each structure ends with a tag section.
+  // For more info:
+  // https://cwiki.apache.org/confluence/display/KAFKA/KIP-482%3A+The+Kafka+Protocol+should+Support+Optional+Tagged+Fields#KIP482:TheKafkaProtocolshouldSupportOptionalTaggedFields-FlexibleVersions
+  Status ExtractTagSection();
+
+  Status ExtractTaggedField();
+
   // Messages consist of a variable-length header, a variable-length opaque key byte array and a
   // variable-length opaque value byte array.
   // https://kafka.apache.org/documentation/#record
