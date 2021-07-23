@@ -54,6 +54,9 @@ const indexerMetadataTopic = "MetadataIndex"
 
 const missingMetadataTimeout = 2 * time.Minute
 
+// Missing previous vzstate update version timeout.
+const missingVersionEntryTimeout = 200 * time.Millisecond
+
 // VizierState contains all state necessary to process metadata updates for the given vizier.
 type VizierState struct {
 	id            uuid.UUID // The Vizier's ID.
@@ -204,6 +207,44 @@ func (m *MetadataReader) listenToConnectedViziers() error {
 	return nil
 }
 
+func (m *MetadataReader) loadVizierState(id uuid.UUID, k8sUID string) (*VizierState, error) {
+	vzState := &VizierState{
+		id:     id,
+		k8sUID: k8sUID,
+		liveCh: make(chan *stan.Msg),
+		quitCh: make(chan struct{}),
+	}
+	versionCh := make(chan int64)
+	subject := fmt.Sprintf("%s.%s", indexerMetadataTopic, vzState.k8sUID)
+	// Peek the end of the Queue to see which message we've last pushed onto the Indexer subject.
+	sub, err := m.sc.Subscribe(subject, func(m *stan.Msg) {
+		ru := metadatapb.ResourceUpdate{}
+		err := ru.Unmarshal(m.Data)
+		if err != nil {
+			log.WithError(err).Error("unable to unmarshal data from STAN")
+			close(versionCh)
+		}
+		versionCh <- ru.UpdateVersion
+		// Don't ack this message, we don't want more.
+	}, stan.StartWithLastReceived(), stan.SetManualAckMode())
+	if err != nil {
+		return nil, err
+	}
+	// Once we receive data or timeout, we give up.
+	select {
+	case version, ok := <-versionCh:
+		if ok {
+			vzState.updateVersion = version
+		}
+	case <-time.After(missingVersionEntryTimeout):
+		log.Tracef("Timed out waiting for latest k8s: %s", k8sUID)
+	}
+	if sub.Unsubscribe() != nil {
+		return nil, err
+	}
+	return vzState, nil
+}
+
 // startVizierUpdates starts listening to the metadata update channel for a given vizier.
 func (m *MetadataReader) startVizierUpdates(id uuid.UUID, k8sUID string) error {
 	// TODO(michellenguyen, PC-827): We currently don't have to signal when a Vizier has disconnected. When we have that
@@ -215,11 +256,10 @@ func (m *MetadataReader) startVizierUpdates(id uuid.UUID, k8sUID string) error {
 		return nil
 	}
 
-	vzState := &VizierState{
-		id:     id,
-		k8sUID: k8sUID,
-		liveCh: make(chan *stan.Msg),
-		quitCh: make(chan struct{}),
+	vzState, err := m.loadVizierState(id, k8sUID)
+	if err != nil {
+		log.WithError(err).Error("Failed to loadVizierState")
+		return err
 	}
 
 	// Subscribe to STAN topic for streaming updates.
@@ -419,6 +459,7 @@ func (m *MetadataReader) getMissingUpdates(from, to int64, vzState *VizierState)
 			}
 
 			firstUpdate := updates[0]
+			// This ensures we don't re-request Metadata Updates when we call `processVizierUpdate`.
 			if firstUpdate.UpdateVersion == updatesResponse.FirstUpdateAvailable {
 				if vzState.updateVersion < firstUpdate.PrevUpdateVersion {
 					vzState.updateVersion = firstUpdate.PrevUpdateVersion

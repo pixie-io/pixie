@@ -114,12 +114,12 @@ func mustLoadTestData(db *sqlx.DB) {
 	insertCluster := `INSERT INTO vizier_cluster(org_id, id, project_name, cluster_uid, cluster_version, cluster_name) VALUES ($1, $2, $3, $4, $5, $6)`
 	db.MustExec(insertCluster, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440000", testProjectName, "k8sID", "", "unknown_cluster")
 	db.MustExec(insertCluster, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440001", testProjectName, "cUID", "cVers", "healthy_cluster")
-	db.MustExec(insertCluster, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440002", testProjectName, "", "", "unhealthy_cluster")
+	db.MustExec(insertCluster, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440002", testProjectName, "k8s2", "", "unhealthy_cluster")
 	db.MustExec(insertCluster, testAuthOrgID, testDisconnectedClusterEmptyUID, testProjectName, "", "", "disconnected_cluster")
 	db.MustExec(insertCluster, testAuthOrgID, testExistingCluster, testProjectName, "existing_cluster", "", "test_cluster_1234")
 	db.MustExec(insertCluster, testAuthOrgID, testExistingClusterActive, testProjectName, "my_other_cluster", "", "existing_cluster")
-	db.MustExec(insertCluster, testNonAuthOrgID, "223e4567-e89b-12d3-a456-426655440003", testProjectName, "", "", "non_auth_1")
-	db.MustExec(insertCluster, testNonAuthOrgID, "323e4567-e89b-12d3-a456-426655440003", testProjectName, "", "", "non_auth_2")
+	db.MustExec(insertCluster, testNonAuthOrgID, "223e4567-e89b-12d3-a456-426655440003", testProjectName, "k8s5", "", "non_auth_1")
+	db.MustExec(insertCluster, testNonAuthOrgID, "323e4567-e89b-12d3-a456-426655440003", testProjectName, "k8s6", "", "non_auth_2")
 
 	insertClusterInfo := `INSERT INTO vizier_cluster_info(vizier_cluster_id, status, address, jwt_signing_key, last_heartbeat,
 						  passthrough_enabled, auto_update_enabled, vizier_version, control_plane_pod_statuses, num_nodes, num_instrumented_nodes)
@@ -968,10 +968,12 @@ func TestServer_GetViziersByShard(t *testing.T) {
 					{
 						VizierID: utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440003"),
 						OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+						K8sUID:   "k8s6",
 					},
 					{
 						VizierID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
 						OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+						K8sUID:   "k8s5",
 					},
 				},
 			},
@@ -996,14 +998,17 @@ func TestServer_GetViziersByShard(t *testing.T) {
 					{
 						VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440002"),
 						OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"),
+						K8sUID:   "k8s2",
 					},
 					{
 						VizierID: utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440003"),
 						OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+						K8sUID:   "k8s6",
 					},
 					{
 						VizierID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
 						OrgID:    utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440001"),
+						K8sUID:   "k8s5",
 					},
 				},
 			},
