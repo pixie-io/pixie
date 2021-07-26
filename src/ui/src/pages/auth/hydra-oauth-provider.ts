@@ -179,15 +179,19 @@ export class HydraClient extends OAuthProviderClient {
 
   private makeAndStoreState(): string {
     const state = randomString(48);
-    window.localStorage.setItem(this.hydraStorageKey, state);
+    try {
+      window.localStorage.setItem(this.hydraStorageKey, state);
+    } catch { /* When embedded, referencing localStorage can throw if user settings are strict enough. */ }
     return state;
   }
 
   private getStoredState(): string {
-    const state = window.localStorage.getItem(this.hydraStorageKey);
-    if (state != null) {
-      return state;
-    }
+    try {
+      const state = window.localStorage.getItem(this.hydraStorageKey);
+      if (state != null) {
+        return state;
+      }
+    } catch { /* See above - localStorage isn't always available. */ }
 
     throw new Error('OAuth state not found. Please try logging in again.');
   }

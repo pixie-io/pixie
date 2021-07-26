@@ -29,9 +29,11 @@ export const LogoutPage: React.FC = () => {
   // eslint-disable-next-line class-methods-use-this
   React.useEffect(() => {
     Axios.post('/api/auth/logout', {}, { headers: { 'x-csrf': GetCSRFCookie() } }).then(() => {
-      localStorage.clear();
-      sessionStorage.clear();
-      pixieAnalytics.reset();
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+        pixieAnalytics.reset();
+      } catch { /* When embedded, referencing localStorage can throw if user settings are strict enough. */ }
       RedirectUtils.redirect('', {});
     });
   }, []);

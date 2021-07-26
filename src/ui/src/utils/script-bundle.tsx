@@ -53,8 +53,13 @@ function bypassCacheURL(url: string) {
 }
 
 export function GetPxScripts(orgID: string, orgName: string): Promise<Script[]> {
-  let localStorageCoreBundle = localStorage.getItem('px-custom-core-bundle-path');
-  let localStorageOSSBundle = localStorage.getItem('px-custom-oss-bundle-path');
+  let localStorageCoreBundle: string;
+  let localStorageOSSBundle: string;
+  try {
+    localStorageCoreBundle = localStorage.getItem('px-custom-core-bundle-path');
+    localStorageOSSBundle = localStorage.getItem('px-custom-oss-bundle-path');
+  } catch { /* When embedded, referencing localStorage can throw if user settings are strict enough. */ }
+
   if (localStorageCoreBundle) {
     localStorageCoreBundle = bypassCacheURL(localStorageCoreBundle);
   }
