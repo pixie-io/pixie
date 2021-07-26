@@ -27,12 +27,10 @@ go_library(
     visibility = ["//visibility:private"],
     deps = [
         "//src/cloud/profile/controller",
-        "//src/cloud/profile/controller/idmanager",
         "//src/cloud/profile/datastore",
         "//src/cloud/profile/profileenv",
         "//src/cloud/profile/profilepb:service_pl_go_proto",
         "//src/cloud/profile/schema",
-        "//src/cloud/shared/idprovider",
         "//src/cloud/shared/pgmigrate",
         "//src/shared/services",
         "//src/shared/services/healthz",
@@ -40,8 +38,6 @@ go_library(
         "//src/shared/services/server",
         "@com_github_golang_migrate_migrate//source/go_bindata",
         "@com_github_sirupsen_logrus//:logrus",
-        "@com_github_spf13_pflag//:pflag",
-        "@com_github_spf13_viper//:viper",
     ],
 )
 

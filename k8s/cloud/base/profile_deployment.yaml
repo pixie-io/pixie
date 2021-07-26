@@ -59,11 +59,6 @@ spec:
             configMapKeyRef:
               name: pl-service-config
               key: PL_PROJECT_MANAGER_SERVICE
-        - name: PL_OAUTH_PROVIDER
-          valueFrom:
-            configMapKeyRef:
-              name: pl-oauth-config
-              key: PL_OAUTH_PROVIDER
         volumeMounts:
         - name: certs
           mountPath: /certs

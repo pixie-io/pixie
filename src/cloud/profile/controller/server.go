@@ -26,13 +26,11 @@ import (
 
 	"github.com/badoux/checkmail"
 	"github.com/gofrs/uuid"
-	"github.com/gogo/protobuf/types"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	"px.dev/pixie/src/api/proto/uuidpb"
-	"px.dev/pixie/src/cloud/profile/controller/idmanager"
 	"px.dev/pixie/src/cloud/profile/datastore"
 	"px.dev/pixie/src/cloud/profile/profileenv"
 	"px.dev/pixie/src/cloud/profile/profilepb"
@@ -98,15 +96,14 @@ type UserSettingsDatastore interface {
 
 // Server is an implementation of GRPC server for profile service.
 type Server struct {
-	env       profileenv.ProfileEnv
-	d         Datastore
-	uds       UserSettingsDatastore
-	IDManager idmanager.Manager
+	env profileenv.ProfileEnv
+	d   Datastore
+	uds UserSettingsDatastore
 }
 
 // NewServer creates a new GRPC profile server.
-func NewServer(env profileenv.ProfileEnv, d Datastore, uds UserSettingsDatastore, idm idmanager.Manager) *Server {
-	return &Server{env: env, d: d, uds: uds, IDManager: idm}
+func NewServer(env profileenv.ProfileEnv, d Datastore, uds UserSettingsDatastore) *Server {
+	return &Server{env: env, d: d, uds: uds}
 }
 
 func userInfoToProto(u *datastore.UserInfo) *profilepb.UserInfo {
@@ -430,66 +427,7 @@ func (s *Server) SetUserAttributes(ctx context.Context, req *profilepb.SetUserAt
 
 // InviteUser implements the Profile interface's InviteUser method.
 func (s *Server) InviteUser(ctx context.Context, req *profilepb.InviteUserRequest) (*profilepb.InviteUserResponse, error) {
-	// Create the Identity in the ID Manager.
-	ident, err := s.IDManager.CreateIdentity(ctx, req.Email)
-	if err != nil {
-		return nil, fmt.Errorf("error while creating identitiy for '%s': %v", req.Email, err)
-	}
-	userInfo, err := s.d.GetUserByEmail(req.Email)
-	var userID uuid.UUID
-	if err == datastore.ErrUserNotFound {
-		// Create the user from the identity info.
-		createUserReq := &profilepb.CreateUserRequest{
-			OrgID:            req.OrgID,
-			Username:         req.Email,
-			FirstName:        req.FirstName,
-			LastName:         req.LastName,
-			Email:            req.Email,
-			IdentityProvider: ident.IdentityProvider,
-			AuthProviderID:   ident.AuthProviderID,
-		}
-
-		userIDPb, err := s.CreateUser(ctx, createUserReq)
-		if err != nil {
-			return nil, err
-		}
-		userID = utils.UUIDFromProtoOrNil(userIDPb)
-
-		// Auto-approve user.
-		_, err = s.UpdateUser(ctx, &profilepb.UpdateUserRequest{
-			ID: userIDPb,
-			IsApproved: &types.BoolValue{
-				Value: true,
-			},
-		})
-		if err != nil {
-			return nil, err
-		}
-	} else if err != nil {
-		return nil, err
-	} else if err == nil && req.MustCreateUser {
-		return nil, errors.New("cannot invite a user that already exists")
-	} else if err == nil {
-		userID = userInfo.ID
-	}
-
-	err = s.IDManager.SetPLMetadata(ident.AuthProviderID, utils.UUIDFromProtoOrNil(req.OrgID).String(), userID.String())
-	if err != nil {
-		return nil, err
-	}
-
-	// Create invite link for the user.
-	resp, err := s.IDManager.CreateInviteLinkForIdentity(ctx, &idmanager.CreateInviteLinkForIdentityRequest{
-		AuthProviderID: ident.AuthProviderID,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &profilepb.InviteUserResponse{
-		Email:      req.Email,
-		InviteLink: resp.InviteLink,
-	}, nil
+	return nil, errors.New("profile service InviteUser deprecated. Use auth service's InviteUser rpc")
 }
 
 // GetUsersInOrg gets the users in the requested org, given that the requestor has permissions.

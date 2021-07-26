@@ -18,15 +18,11 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "controller",
-    srcs = [
-        "auth0_manager.go",
-        "server.go",
-    ],
+    srcs = ["server.go"],
     importpath = "px.dev/pixie/src/cloud/profile/controller",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
-        "//src/cloud/profile/controller/idmanager",
         "//src/cloud/profile/datastore",
         "//src/cloud/profile/profileenv",
         "//src/cloud/profile/profilepb:service_pl_go_proto",
@@ -36,7 +32,6 @@ go_library(
         "//src/utils",
         "@com_github_badoux_checkmail//:checkmail",
         "@com_github_gofrs_uuid//:uuid",
-        "@com_github_gogo_protobuf//types",
         "@org_golang_google_grpc//codes",
         "@org_golang_google_grpc//metadata",
         "@org_golang_google_grpc//status",
@@ -49,8 +44,6 @@ go_test(
     embed = [":controller"],
     deps = [
         "//src/api/proto/uuidpb:uuid_pl_go_proto",
-        "//src/cloud/profile/controller/idmanager",
-        "//src/cloud/profile/controller/idmanager/mock",
         "//src/cloud/profile/controller/mock",
         "//src/cloud/profile/datastore",
         "//src/cloud/profile/profileenv",

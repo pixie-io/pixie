@@ -46,8 +46,10 @@ service ProfileService {
   // Calls for handling user attributes.
   rpc GetUserAttributes(GetUserAttributesRequest) returns (GetUserAttributesResponse);
   rpc SetUserAttributes(SetUserAttributesRequest) returns (SetUserAttributesResponse);
-  // Create a new account for the user's org and return an invite link.
-  rpc InviteUser(InviteUserRequest) returns (InviteUserResponse);
+  // InviteUser is deprecated. Use authpb's equivalent interface instead.
+  rpc InviteUser(InviteUserRequest) returns (InviteUserResponse) {
+        option deprecated = true;
+  }
 }
 
 // UserInfo has information about a single end user in our system.
