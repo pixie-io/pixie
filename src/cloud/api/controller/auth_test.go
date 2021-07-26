@@ -581,3 +581,58 @@ func TestAuthLoginHandlerEmbed_WithAPIKey(t *testing.T) {
 	// Make sure no cookies are set.
 	assert.Equal(t, 0, len(rr.Header().Values("Set-Cookie")))
 }
+
+func TestAuthLoginHandler_WithAPIKey(t *testing.T) {
+	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+
+	req, err := http.NewRequest("POST", "/login",
+		strings.NewReader("{}"))
+	req.Header.Add("pixie-api-key", "test-key")
+	require.NoError(t, err)
+
+	expectedAuthServiceReq := &authpb.GetAugmentedTokenForAPIKeyRequest{
+		APIKey: "test-key",
+	}
+	testReplyToken := testingutils.GenerateTestJWTToken(t, "jwt-key")
+	testTokenExpiry := time.Now().Add(1 * time.Minute).Unix()
+	loginResp := &authpb.GetAugmentedTokenForAPIKeyResponse{
+		Token:     testReplyToken,
+		ExpiresAt: testTokenExpiry,
+	}
+	mockClients.MockAuth.EXPECT().GetAugmentedTokenForAPIKey(gomock.Any(), expectedAuthServiceReq).Return(loginResp, nil)
+
+	rr := httptest.NewRecorder()
+	h := handler.New(env, controller.AuthLoginHandler)
+	h.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+	var parsedResponse struct {
+		Token     string
+		ExpiresAt int64
+		UserInfo  struct {
+			UserID    string `json:"userID"`
+			FirstName string `json:"firstName"`
+			LastName  string `json:"lastName"`
+			Email     string `json:"email"`
+		} `json:"userInfo"`
+		UserCreated bool `json:"userCreated"`
+		OrgInfo     struct {
+			OrgID   string `json:"orgID"`
+			OrgName string `json:"orgName"`
+		} `json:"orgInfo"`
+	}
+	err = json.NewDecoder(rr.Body).Decode(&parsedResponse)
+	require.NoError(t, err)
+	assert.Equal(t, testReplyToken, parsedResponse.Token)
+	assert.Equal(t, testTokenExpiry, parsedResponse.ExpiresAt)
+
+	// Check the token in the cookie.
+	rawCookies := rr.Header().Get("Set-Cookie")
+	header := http.Header{}
+	header.Add("Cookie", rawCookies)
+	req2 := http.Request{Header: header}
+	sess, err := controller.GetDefaultSession(env, &req2)
+	require.NoError(t, err)
+	assert.Equal(t, testReplyToken, sess.Values["_at"])
+}

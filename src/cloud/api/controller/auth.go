@@ -225,48 +225,65 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 		return &handler.StatusError{Code: http.StatusInternalServerError, Err: err}
 	}
 
-	rpcReq := &authpb.LoginRequest{
-		AccessToken:           params.AccessToken,
-		CreateUserIfNotExists: true,
-		OrgName:               params.OrgName,
-		IdToken:               params.IDToken,
-	}
+	var userInfo *authpb.AuthenticatedUserInfo
+	var orgInfo *authpb.LoginReply_OrgInfo
+	var token string
+	var expiresAt int64
+	userCreated := false
+	userID := ""
 
-	resp, err := env.(apienv.APIEnv).AuthClient().Login(ctxWithCreds, rpcReq)
+	// If logging in using an API key, just get the augmented token.
+	token, expiresAt, err = loginWithAPIKey(ctxWithCreds, env, r, w)
+
 	if err != nil {
-		log.WithError(err).Errorf("RPC request to authpb service failed")
-		s, ok := status.FromError(err)
-		if ok {
-			if s.Code() == codes.Unauthenticated {
-				return handler.NewStatusError(http.StatusUnauthorized, s.Message())
-			}
+		rpcReq := &authpb.LoginRequest{
+			AccessToken:           params.AccessToken,
+			CreateUserIfNotExists: true,
+			OrgName:               params.OrgName,
+			IdToken:               params.IDToken,
 		}
 
-		return services.HTTPStatusFromError(err, "Failed to login")
+		resp, err := env.(apienv.APIEnv).AuthClient().Login(ctxWithCreds, rpcReq)
+		if err != nil {
+			log.WithError(err).Errorf("RPC request to authpb service failed")
+			s, ok := status.FromError(err)
+			if ok {
+				if s.Code() == codes.Unauthenticated {
+					return handler.NewStatusError(http.StatusUnauthorized, s.Message())
+				}
+			}
+
+			return services.HTTPStatusFromError(err, "Failed to login")
+		}
+		token = resp.Token
+		expiresAt = resp.ExpiresAt
+		userCreated = resp.UserCreated
+		userInfo = resp.UserInfo
+		orgInfo = resp.OrgInfo
+		userID = utils.UUIDFromProtoOrNil(resp.UserInfo.UserID).String()
 	}
 
-	userIDStr := utils.UUIDFromProtoOrNil(resp.UserInfo.UserID).String()
 	ev := events.UserLoggedIn
-	if resp.UserCreated {
+	if userCreated {
 		ev = events.UserSignedUp
 
 		events.Client().Enqueue(&analytics.Identify{
-			UserId: userIDStr,
+			UserId: userID,
 			Traits: analytics.NewTraits().
-				SetFirstName(resp.UserInfo.FirstName).
-				SetLastName(resp.UserInfo.LastName).
-				SetEmail(resp.UserInfo.Email),
+				SetFirstName(userInfo.FirstName).
+				SetLastName(userInfo.LastName).
+				SetEmail(userInfo.Email),
 		})
 	}
 
 	events.Client().Enqueue(&analytics.Track{
-		UserId: userIDStr,
+		UserId: userID,
 		Event:  ev,
 	})
 
-	setSessionCookie(session, resp.Token, resp.ExpiresAt, r, w, http.SameSiteNoneMode)
+	setSessionCookie(session, token, expiresAt, r, w, http.SameSiteNoneMode)
 
-	err = sendUserInfo(w, resp.UserInfo, resp.OrgInfo, resp.Token, resp.ExpiresAt, resp.UserCreated)
+	err = sendUserInfo(w, userInfo, orgInfo, token, expiresAt, userCreated)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return err
@@ -276,7 +293,7 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 		WithField("timestamp", time.Now()).
 		WithField("address", r.URL).
 		WithField("browser", r.Header.Get("User-Agent")).
-		WithField("user", userIDStr).
+		WithField("user", userID).
 		WithField("referer", r.Header.Get("Referer")).
 		Info("User logged in")
 
@@ -311,56 +328,53 @@ func AuthLoginHandlerEmbed(env commonenv.Env, w http.ResponseWriter, r *http.Req
 		return &handler.StatusError{Code: http.StatusInternalServerError, Err: err}
 	}
 
+	var userInfo *authpb.AuthenticatedUserInfo
+	var orgInfo *authpb.LoginReply_OrgInfo
+	var token string
+	var expiresAt int64
+	userCreated := false
+	userID := ""
+
 	// If logging in using an API key, just get the augmented token.
-	apiKey := r.Header.Get("pixie-api-key")
-	if apiKey != "" {
-		apiKeyResp, err := env.(apienv.APIEnv).AuthClient().GetAugmentedTokenForAPIKey(ctxWithCreds, &authpb.GetAugmentedTokenForAPIKeyRequest{
-			APIKey: apiKey,
-		})
-		if err != nil {
-			return services.HTTPStatusFromError(err, "Failed to login using API key")
-		}
+	token, expiresAt, err = loginWithAPIKey(ctxWithCreds, env, r, w)
 
-		err = sendUserInfo(w, nil, nil, apiKeyResp.Token, apiKeyResp.ExpiresAt, false)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return err
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		return nil
-	}
-
-	rpcReq := &authpb.LoginRequest{
-		AccessToken:           params.AccessToken,
-		CreateUserIfNotExists: false,
-		OrgName:               "",
-		IdToken:               params.IDToken,
-	}
-
-	resp, err := env.(apienv.APIEnv).AuthClient().Login(ctxWithCreds, rpcReq)
 	if err != nil {
-		log.WithError(err).Errorf("RPC request to authpb service failed")
-		s, ok := status.FromError(err)
-		if ok {
-			if s.Code() == codes.Unauthenticated {
-				return handler.NewStatusError(http.StatusUnauthorized, s.Message())
-			}
+		rpcReq := &authpb.LoginRequest{
+			AccessToken:           params.AccessToken,
+			CreateUserIfNotExists: false,
+			OrgName:               "",
+			IdToken:               params.IDToken,
 		}
 
-		return services.HTTPStatusFromError(err, "Failed to login")
+		resp, err := env.(apienv.APIEnv).AuthClient().Login(ctxWithCreds, rpcReq)
+		if err != nil {
+			log.WithError(err).Errorf("RPC request to authpb service failed")
+			s, ok := status.FromError(err)
+			if ok {
+				if s.Code() == codes.Unauthenticated {
+					return handler.NewStatusError(http.StatusUnauthorized, s.Message())
+				}
+			}
+
+			return services.HTTPStatusFromError(err, "Failed to login")
+		}
+
+		token = resp.Token
+		expiresAt = resp.ExpiresAt
+		userCreated = resp.UserCreated
+		userInfo = resp.UserInfo
+		orgInfo = resp.OrgInfo
+		userID = utils.UUIDFromProtoOrNil(resp.UserInfo.UserID).String()
 	}
 
-	userIDStr := utils.UUIDFromProtoOrNil(resp.UserInfo.UserID).String()
 	ev := events.UserLoggedIn
 
 	events.Client().Enqueue(&analytics.Track{
-		UserId: userIDStr,
+		UserId: userID,
 		Event:  ev,
 	})
 
-	err = sendUserInfo(w, resp.UserInfo, resp.OrgInfo, resp.Token, resp.ExpiresAt, resp.UserCreated)
+	err = sendUserInfo(w, userInfo, orgInfo, token, expiresAt, userCreated)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return err
@@ -510,4 +524,21 @@ func sendSignupUserInfo(w http.ResponseWriter, userInfo *authpb.AuthenticatedUse
 	w.WriteHeader(http.StatusOK)
 
 	return json.NewEncoder(w).Encode(&data)
+}
+
+// loginWithAPIKey tries to login using the pixie-api-key header. It will return an error upon failure.
+func loginWithAPIKey(ctx context.Context, env commonenv.Env, r *http.Request, w http.ResponseWriter) (string, int64, error) {
+	apiKey := r.Header.Get("pixie-api-key")
+	if apiKey == "" {
+		return "", 0, errors.New("Could not get API key from header")
+	}
+
+	apiKeyResp, err := env.(apienv.APIEnv).AuthClient().GetAugmentedTokenForAPIKey(ctx, &authpb.GetAugmentedTokenForAPIKeyRequest{
+		APIKey: apiKey,
+	})
+	if err != nil {
+		return "", 0, services.HTTPStatusFromError(err, "Failed to login using API key")
+	}
+
+	return apiKeyResp.Token, apiKeyResp.ExpiresAt, nil
 }
