@@ -265,9 +265,9 @@ func (m *MetadataReader) startVizierUpdates(id uuid.UUID, k8sUID string) error {
 	// Subscribe to STAN topic for streaming updates.
 	topic := vzshard.V2CTopic(streamingMetadataTopic, id)
 	log.WithField("topic", topic).Info("Subscribing to STAN")
-	liveSub, err := m.sc.Subscribe(topic, func(msg *stan.Msg) {
+	liveSub, err := m.sc.QueueSubscribe(topic, "vzmgr", func(msg *stan.Msg) {
 		vzState.liveCh <- msg
-	}, stan.SetManualAckMode())
+	}, stan.SetManualAckMode(), stan.DurableName("vzmgr"))
 	if err != nil {
 		vzState.stop()
 		return err
