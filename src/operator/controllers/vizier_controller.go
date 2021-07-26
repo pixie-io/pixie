@@ -46,9 +46,14 @@ import (
 	"px.dev/pixie/src/utils/shared/k8s"
 )
 
-// OperatorAnnotation is the key for the annotation that the operator applies on all of its deployed resources for a CRD.
-const operatorAnnotation = "vizier-name"
-const clusterSecretJWTKey = "jwt-signing-key"
+const (
+	// This is the key for the annotation that the operator applies on all of its deployed resources for a CRD.
+	operatorAnnotation  = "vizier-name"
+	clusterSecretJWTKey = "jwt-signing-key"
+	// defaultClassAnnotationKey is the key in the annotation map which indicates
+	// a storage class is default.
+	defaultClassAnnotationKey = "storageclass.kubernetes.io/is-default-class"
+)
 
 // VizierReconciler reconciles a Vizier object
 type VizierReconciler struct {
@@ -96,6 +101,26 @@ func getLatestVizierVersion(ctx context.Context, conn *grpc.ClientConn) (string,
 	}
 
 	return resp.Artifact[0].VersionStr, nil
+}
+
+// validateNumDefaultStorageClasses returns a boolean whether there is exactly
+// 1 default storage class or not.
+func validateNumDefaultStorageClasses(clientset *kubernetes.Clientset) (bool, error) {
+	storageClasses, err := k8s.ListStorageClasses(clientset)
+	if err != nil {
+		return false, err
+	}
+
+	defaultClassCount := 0
+
+	// Check annotations map on each storage class to see if default is set to "true".
+	for _, storageClass := range storageClasses.Items {
+		annotationsMap := storageClass.GetAnnotations()
+		if annotationsMap[defaultClassAnnotationKey] == "true" {
+			defaultClassCount++
+		}
+	}
+	return defaultClassCount == 1, nil
 }
 
 // Reconcile updates the Vizier running in the cluster to match the expected state.
@@ -201,6 +226,20 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 
 	if vz.Spec.Pod.Labels == nil {
 		vz.Spec.Pod.Labels = make(map[string]string)
+	}
+
+	if !vz.Spec.UseEtcdOperator {
+		// Check if the cluster offers PVC support.
+		// If it does not, we should default to using the etcd operator, which does not
+		// require PVC support.
+		defaultStorageExists, err := validateNumDefaultStorageClasses(r.Clientset)
+		if err != nil {
+			log.WithError(err).Error("Error checking default storage classes")
+		}
+		if !defaultStorageExists {
+			log.Warn("No default storage class detected for cluster. Deploying etcd operator instead of statefulset for metadata backend.")
+			vz.Spec.UseEtcdOperator = true
+		}
 	}
 
 	vz.Spec.Pod.Annotations[operatorAnnotation] = req.Name

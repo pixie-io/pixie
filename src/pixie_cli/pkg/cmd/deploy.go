@@ -57,6 +57,8 @@ import (
 const (
 	// DefaultClassAnnotationKey is the key in the annotation map which indicates
 	// a storage class is default.
+	// TODO(nserrino): Remove this when the operator (which contains duplicate logic)
+	// is used by all Pixie users.
 	DefaultClassAnnotationKey = "storageclass.kubernetes.io/is-default-class"
 	// DefaultCloudAddr is the Community Cloud address.
 	DefaultCloudAddr = "withpixie.ai:443"
@@ -364,6 +366,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	// useEtcdOperator is true then deploy operator. Otherwise: If defaultStorageExists, then
 	// go for persistent storage version.
+	// TODO(nserrino): Remove this logic once everyone has fully moved to the operator.
 	if !useEtcdOperatorSet {
 		// Validate correct number of default storage classes.
 		defaultStorageExists, err := validateNumDefaultStorageClasses(clientset)
@@ -744,6 +747,7 @@ func pemCanScheduleWithTaint(t *v1.Taint) bool {
 	return t.Effect != "NoSchedule"
 }
 
+// TODO(nserrino): Remove this when everyone has moved to the operator.
 // validateNumDefaultStorageClasses returns a boolean whether there is exactly
 // 1 default storage class or not.
 func validateNumDefaultStorageClasses(clientset *kubernetes.Clientset) (bool, error) {
