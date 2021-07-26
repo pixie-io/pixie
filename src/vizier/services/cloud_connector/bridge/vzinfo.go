@@ -32,11 +32,11 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 
 	// Blank import necessary for kubeConfig to work.
-	"k8s.io/client-go/discovery"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -440,7 +440,7 @@ func (v *K8sVizierInfo) UpdateK8sState() {
 	v.numInstrumentedNodes = int32(healthyPemCount)
 }
 
-// GetPodStatuses gets the pod statuses and the last time they were updated.
+// GetK8sState gets the pod statuses and the last time they were updated.
 func (v *K8sVizierInfo) GetK8sState() (map[string]*cvmsgspb.PodStatus, int32, int32, time.Time) {
 	v.mu.Lock()
 	defer v.mu.Unlock()

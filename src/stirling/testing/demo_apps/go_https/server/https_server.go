@@ -33,7 +33,7 @@ const (
 	httpsPort = 50101
 )
 
-func BasicHandler(w http.ResponseWriter, r *http.Request) {
+func basicHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 	_, err := io.WriteString(w, `{"status":"ok"}`)
 	if err != nil {
@@ -41,7 +41,7 @@ func BasicHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func ListenAndServeTLS(port int, certFile, keyFile string) {
+func listenAndServeTLS(port int, certFile, keyFile string) {
 	log.Printf("Starting HTTPS service on Port %d", port)
 	err := http.ListenAndServeTLS(fmt.Sprintf(":%d", port), certFile, keyFile, nil)
 	if err != nil {
@@ -49,7 +49,7 @@ func ListenAndServeTLS(port int, certFile, keyFile string) {
 	}
 }
 
-func ListenAndServe(port int) {
+func listenAndServe(port int) {
 	log.Printf("Starting HTTP service on Port %d", port)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 	if err != nil {
@@ -64,8 +64,8 @@ func main() {
 
 	viper.BindPFlags(pflag.CommandLine)
 
-	http.HandleFunc("/", BasicHandler)
+	http.HandleFunc("/", basicHandler)
 
-	go ListenAndServeTLS(httpsPort, viper.GetString("cert"), viper.GetString("key"))
-	ListenAndServe(httpPort)
+	go listenAndServeTLS(httpsPort, viper.GetString("cert"), viper.GetString("key"))
+	listenAndServe(httpPort)
 }

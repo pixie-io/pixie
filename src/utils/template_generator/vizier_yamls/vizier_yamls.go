@@ -78,7 +78,7 @@ func VizierTmplValuesToArgs(tmplValues *VizierTmplValues) *yamls.YAMLTmplArgumen
 
 var nsTmpl = `{{ if .Release.Namespace }}{{ .Release.Namespace }}{{ else }}pl{{ end }}`
 
-// These are template options that should be applied to each resource in the Vizier YAMLs, such as annotations and labels.
+// GlobalTemplateOptions are template options that should be applied to each resource in the Vizier YAMLs, such as annotations and labels.
 var GlobalTemplateOptions = []*yamls.K8sTemplateOptions{
 	{
 		Patch:       `{"metadata": { "annotations": { "__PL_ANNOTATION_KEY__": "__PL_ANNOTATION_VALUE__"} } }`,

@@ -18,8 +18,6 @@
 
 package k8smeta
 
-// Blank import necessary for kubeConfig to work.
 // Genny drops this import so include it here instead.
-import _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-
+import _ "k8s.io/client-go/plugin/pkg/client/auth/gcp" // Blank import necessary for kubeConfig to work.
 //go:generate genny -in=k8s_metadata_utils.tmpl -out k8s_metadata_utils.gen.go gen "ReplacedResource=Pod,Service,Namespace,Endpoints,Node"

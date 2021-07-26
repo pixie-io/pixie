@@ -65,7 +65,7 @@ func (f *QueryFlags) get(key string) interface{} {
 	return nil
 }
 
-// GetInt gets the value of the given flag as an int.
+// GetInt64 gets the value of the given flag as an int64.
 func (f *QueryFlags) GetInt64(key string) int64 {
 	val := f.get(key)
 	return cast.ToInt64(val)

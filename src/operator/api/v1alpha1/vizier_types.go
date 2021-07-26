@@ -89,9 +89,9 @@ type PodPolicy struct {
 	Resources v1.ResourceRequirements `json:"resources,omitempty"`
 }
 
+// Vizier is the Schema for the viziers API
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-// Vizier is the Schema for the viziers API
 type Vizier struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

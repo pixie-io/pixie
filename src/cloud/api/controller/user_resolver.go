@@ -166,7 +166,7 @@ type editableUserPermissions struct {
 	IsApproved *bool
 }
 
-// UpdateUser updates the user info.
+// UpdateUserPermissions updates user permissions.
 func (q *QueryResolver) UpdateUserPermissions(ctx context.Context, args *updateUserPermissionsArgs) (*UserInfoResolver, error) {
 	userID := utils.ProtoFromUUIDStrOrNil(string(args.UserID))
 	req := &cloudpb.UpdateUserRequest{
