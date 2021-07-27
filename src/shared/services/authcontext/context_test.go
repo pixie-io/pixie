@@ -66,6 +66,12 @@ func TestSessionCtx_ValidClaims(t *testing.T) {
 			expiryFromNow: -1 * time.Second,
 		},
 		{
+			name:          "api user claims",
+			isValid:       true,
+			claims:        utils.GenerateJWTForAPIUser("6ba7b810-9dad-11d1-80b4-00c04fd430c8", time.Now().Add(time.Minute*60), "withpixie.ai"),
+			expiryFromNow: time.Minute * 60,
+		},
+		{
 			name:          "valid service claims",
 			isValid:       true,
 			claims:        testingutils.GenerateTestServiceClaims(t, "vzmgr"),

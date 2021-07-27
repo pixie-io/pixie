@@ -61,6 +61,10 @@ message UserJWTClaims {
     (gogoproto.jsontag) = "orgID"
   ];
   string email = 3;
+  bool is_api_user = 4 [
+    (gogoproto.customname) = "IsAPIUser",
+    (gogoproto.jsontag) = "isAPIUser"
+  ];
 }
 
 // Claims for Service JWTs.

@@ -373,7 +373,7 @@ func (s *Server) createUser(ctx context.Context, userID string, userInfo *UserIn
 // GetAugmentedTokenForAPIKey produces an augmented token for the user given a API key.
 func (s *Server) GetAugmentedTokenForAPIKey(ctx context.Context, in *authpb.GetAugmentedTokenForAPIKeyRequest) (*authpb.GetAugmentedTokenForAPIKeyResponse, error) {
 	// Find the org/user associated with the token.
-	orgID, userID, err := s.apiKeyMgr.FetchOrgUserIDUsingAPIKey(ctx, in.APIKey)
+	orgID, _, err := s.apiKeyMgr.FetchOrgUserIDUsingAPIKey(ctx, in.APIKey)
 	if err != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "Invalid API key")
 	}
@@ -387,15 +387,15 @@ func (s *Server) GetAugmentedTokenForAPIKey(ctx context.Context, in *authpb.GetA
 	ctxWithSvcCreds := metadata.AppendToOutgoingContext(ctx, "authorization",
 		fmt.Sprintf("bearer %s", svcClaims))
 
-	// Fetch user's email.
+	// Fetch org to validate it exists.
 	pc := s.env.ProfileClient()
-	user, err := pc.GetUser(ctxWithSvcCreds, utils.ProtoFromUUID(userID))
+	_, err = pc.GetOrg(ctxWithSvcCreds, utils.ProtoFromUUID(orgID))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to generate auth token")
 	}
 
 	// Create JWT for user/org.
-	claims := srvutils.GenerateJWTForUser(userID.String(), orgID.String(), user.Email, time.Now().Add(AugmentedTokenValidDuration), viper.GetString("domain_name"))
+	claims := srvutils.GenerateJWTForAPIUser(orgID.String(), time.Now().Add(AugmentedTokenValidDuration), viper.GetString("domain_name"))
 	token, err := srvutils.SignJWTClaims(claims, s.env.JWTSigningKey())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "Failed to generate auth token")
@@ -437,20 +437,22 @@ func (s *Server) GetAugmentedToken(
 			return nil, status.Error(codes.Unauthenticated, "Invalid auth/org")
 		}
 
-		domainName, err := GetDomainNameFromEmail(aCtx.Claims.GetUserClaims().Email)
-		if err != nil {
-			return nil, status.Error(codes.Unauthenticated, "Invalid email")
-		}
-
-		if domainName != SupportAccountDomain {
-			userIDstr := aCtx.Claims.GetUserClaims().UserID
-			userInfo, err := pc.GetUser(ctx, utils.ProtoFromUUIDStrOrNil(userIDstr))
-			if err != nil || userInfo == nil {
-				return nil, status.Error(codes.Unauthenticated, "Invalid auth/user")
+		if !aCtx.Claims.GetUserClaims().IsAPIUser {
+			domainName, err := GetDomainNameFromEmail(aCtx.Claims.GetUserClaims().Email)
+			if err != nil {
+				return nil, status.Error(codes.Unauthenticated, "Invalid email")
 			}
 
-			if orgIDstr != utils.UUIDFromProtoOrNil(userInfo.OrgID).String() {
-				return nil, status.Error(codes.Unauthenticated, "Mismatched org")
+			if domainName != SupportAccountDomain {
+				userIDstr := aCtx.Claims.GetUserClaims().UserID
+				userInfo, err := pc.GetUser(ctx, utils.ProtoFromUUIDStrOrNil(userIDstr))
+				if err != nil || userInfo == nil {
+					return nil, status.Error(codes.Unauthenticated, "Invalid auth/user")
+				}
+
+				if orgIDstr != utils.UUIDFromProtoOrNil(userInfo.OrgID).String() {
+					return nil, status.Error(codes.Unauthenticated, "Mismatched org")
+				}
 			}
 		}
 	}
