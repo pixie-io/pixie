@@ -78,7 +78,8 @@ cmake(
     cache_entries = {
         "BUILDING_UV_SHARED": "OFF",
         "BUILD_TESTING": "OFF",
-        "USING_UV_SHARE": "OFF",
+        "LIBUV_BUILD_TESTS": "OFF",
+        "USING_UV_SHARED": "OFF",
     },
     generate_crosstool_file = True,
     lib_name = "libuv_a",

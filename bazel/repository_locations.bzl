@@ -185,9 +185,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/nats-io/nats.c/archive/refs/tags/v2.6.0.tar.gz"],
     ),
     com_github_libuv_libuv = dict(
-        sha256 = "63794499bf5da1720e249d3fc14ff396b70b8736effe6ce5b4e47e0f3d476467",
-        strip_prefix = "libuv-1.33.1",
-        urls = ["https://github.com/libuv/libuv/archive/v1.33.1.tar.gz"],
+        sha256 = "371e5419708f6aaeb8656671f89400b92a9bba6443369af1bb70bcd6e4b3c764",
+        strip_prefix = "libuv-1.42.0",
+        urls = ["https://github.com/libuv/libuv/archive/v1.42.0.tar.gz"],
     ),
     com_github_cameron314_concurrentqueue = dict(
         sha256 = "dde227e8fd561b46bdb3c211fa843adc543227b30607acf8eff049006cdffcd1",
