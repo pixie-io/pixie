@@ -47,7 +47,6 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"px.dev/pixie/src/cloud/profile/controller/idmanager"
 	"px.dev/pixie/src/shared/services/handler"
 )
 
@@ -683,38 +682,14 @@ func (c *HydraKratosClient) UpdateUserInfo(ctx context.Context, userID string, k
 	return convertIdentityToKratosUserInfo(resp.Payload)
 }
 
-// CreateInviteLink implements the idmanager.Manager interface function to create an account and return an InviteLink for the specified user in the specific org.
-func (c *HydraKratosClient) CreateInviteLink(ctx context.Context, req *idmanager.CreateInviteLinkRequest) (*idmanager.CreateInviteLinkResponse, error) {
-	ident, err := c.CreateIdentity(ctx, req.Email)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = c.UpdateUserInfo(ctx, ident.AuthProviderID, &KratosUserInfo{
-		Email:    req.Email,
-		PLOrgID:  req.PLOrgID,
-		PLUserID: req.PLUserID,
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	invite, err := c.CreateInviteLinkForIdentity(ctx, &idmanager.CreateInviteLinkForIdentityRequest{
-		AuthProviderID: ident.AuthProviderID,
-	})
-
-	if err != nil {
-		return nil, err
-	}
-	return &idmanager.CreateInviteLinkResponse{
-		Email:      req.Email,
-		InviteLink: invite.InviteLink,
-	}, nil
+// CreateIdentityResponse contains relevant information about the Identity that was created.
+type CreateIdentityResponse struct {
+	IdentityProvider string
+	AuthProviderID   string
 }
 
 // CreateIdentity creates an identity for the comparable email.
-func (c *HydraKratosClient) CreateIdentity(ctx context.Context, email string) (*idmanager.CreateIdentityResponse, error) {
+func (c *HydraKratosClient) CreateIdentity(ctx context.Context, email string) (*CreateIdentityResponse, error) {
 	schemaID := viper.GetString("kratos_schema_id")
 	idResp, err := c.kratosAdminClient.CreateIdentity(&kratosAdmin.CreateIdentityParams{
 		Context: ctx,
@@ -729,14 +704,24 @@ func (c *HydraKratosClient) CreateIdentity(ctx context.Context, email string) (*
 	if err != nil {
 		return nil, err
 	}
-	return &idmanager.CreateIdentityResponse{
+	return &CreateIdentityResponse{
 		AuthProviderID:   strfmt.UUID4(idResp.Payload.ID).String(),
 		IdentityProvider: "kratos",
 	}, nil
 }
 
+// CreateInviteLinkForIdentityRequest is the request value for the invite link method.
+type CreateInviteLinkForIdentityRequest struct {
+	AuthProviderID string
+}
+
+// CreateInviteLinkForIdentityResponse contains the response for the invite link method.
+type CreateInviteLinkForIdentityResponse struct {
+	InviteLink string
+}
+
 // CreateInviteLinkForIdentity creates a Kratos recovery link for the identity, which can act like a one-time use invitelink.
-func (c *HydraKratosClient) CreateInviteLinkForIdentity(ctx context.Context, req *idmanager.CreateInviteLinkForIdentityRequest) (*idmanager.CreateInviteLinkForIdentityResponse, error) {
+func (c *HydraKratosClient) CreateInviteLinkForIdentity(ctx context.Context, req *CreateInviteLinkForIdentityRequest) (*CreateInviteLinkForIdentityResponse, error) {
 	var identityID strfmt.UUID4
 	if err := identityID.UnmarshalText([]byte(req.AuthProviderID)); err != nil {
 		return nil, err
@@ -752,7 +737,7 @@ func (c *HydraKratosClient) CreateInviteLinkForIdentity(ctx context.Context, req
 	if err != nil {
 		return nil, err
 	}
-	return &idmanager.CreateInviteLinkForIdentityResponse{
+	return &CreateInviteLinkForIdentityResponse{
 		InviteLink: *recovery.Payload.RecoveryLink,
 	}, nil
 }

@@ -38,7 +38,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"px.dev/pixie/src/cloud/profile/controller/idmanager"
 	mock_idprovider "px.dev/pixie/src/cloud/shared/idprovider/mock"
 )
 
@@ -754,7 +753,7 @@ func Test_CreateInviteLinkForIdentity(t *testing.T) {
 			},
 		}, nil)
 
-	linkResp, err := c.CreateInviteLinkForIdentity(context.Background(), &idmanager.CreateInviteLinkForIdentityRequest{
+	linkResp, err := c.CreateInviteLinkForIdentity(context.Background(), &CreateInviteLinkForIdentityRequest{
 		AuthProviderID: "08c254cb-741b-4088-9fa4-19806efe497a",
 	})
 	require.NoError(t, err)

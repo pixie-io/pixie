@@ -22,7 +22,6 @@ go_library(
     importpath = "px.dev/pixie/src/cloud/shared/idprovider",
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
-        "//src/cloud/profile/controller/idmanager",
         "//src/shared/services/handler",
         "@com_github_go_openapi_runtime//:runtime",
         "@com_github_go_openapi_runtime//client",
@@ -46,7 +45,6 @@ go_test(
     srcs = ["client_test.go"],
     embed = [":idprovider"],
     deps = [
-        "//src/cloud/profile/controller/idmanager",
         "//src/cloud/shared/idprovider/mock",
         "@com_github_go_openapi_runtime//:runtime",
         "@com_github_go_openapi_strfmt//:strfmt",

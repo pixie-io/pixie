@@ -21,7 +21,6 @@ package controllers
 import (
 	"context"
 
-	"px.dev/pixie/src/cloud/profile/controller/idmanager"
 	"px.dev/pixie/src/cloud/shared/idprovider"
 )
 
@@ -42,8 +41,8 @@ type HydraKratosUserClient interface {
 	GetUserIDFromToken(ctx context.Context, token string) (string, error)
 	GetUserInfo(ctx context.Context, userID string) (*idprovider.KratosUserInfo, error)
 	UpdateUserInfo(ctx context.Context, userID string, kratosInfo *idprovider.KratosUserInfo) (*idprovider.KratosUserInfo, error)
-	CreateInviteLinkForIdentity(ctx context.Context, req *idmanager.CreateInviteLinkForIdentityRequest) (*idmanager.CreateInviteLinkForIdentityResponse, error)
-	CreateIdentity(ctx context.Context, email string) (*idmanager.CreateIdentityResponse, error)
+	CreateInviteLinkForIdentity(ctx context.Context, req *idprovider.CreateInviteLinkForIdentityRequest) (*idprovider.CreateInviteLinkForIdentityResponse, error)
+	CreateIdentity(ctx context.Context, email string) (*idprovider.CreateIdentityResponse, error)
 }
 
 // HydraKratosConnector implements the AuthProvider interface for Hydra + Kratos.
@@ -102,7 +101,7 @@ func (a *HydraKratosConnector) CreateIdentity(email string) (*CreateIdentityResp
 
 // CreateInviteLink takes the auth provider ID for a user and creates an Invite Link for that user.
 func (a *HydraKratosConnector) CreateInviteLink(authProviderID string) (*CreateInviteLinkResponse, error) {
-	ident, err := a.Client.CreateInviteLinkForIdentity(context.Background(), &idmanager.CreateInviteLinkForIdentityRequest{
+	ident, err := a.Client.CreateInviteLinkForIdentity(context.Background(), &idprovider.CreateInviteLinkForIdentityRequest{
 		AuthProviderID: authProviderID,
 	})
 	if err != nil {
