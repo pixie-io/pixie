@@ -446,6 +446,11 @@ export class ExecuteScriptRequest extends jspb.Message {
   getMutation(): boolean;
   setMutation(value: boolean): ExecuteScriptRequest;
 
+  getEncryptionPublicKey(): ExecuteScriptRequest.EncryptionKey | undefined;
+  setEncryptionPublicKey(value?: ExecuteScriptRequest.EncryptionKey): ExecuteScriptRequest;
+  hasEncryptionPublicKey(): boolean;
+  clearEncryptionPublicKey(): ExecuteScriptRequest;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): ExecuteScriptRequest.AsObject;
   static toObject(includeInstance: boolean, msg: ExecuteScriptRequest): ExecuteScriptRequest.AsObject;
@@ -460,6 +465,7 @@ export namespace ExecuteScriptRequest {
     clusterId: string,
     execFuncsList: Array<ExecuteScriptRequest.FuncToExecute.AsObject>,
     mutation: boolean,
+    encryptionPublicKey?: ExecuteScriptRequest.EncryptionKey.AsObject,
   }
 
   export class FuncToExecute extends jspb.Message {
@@ -511,6 +517,29 @@ export namespace ExecuteScriptRequest {
       }
     }
 
+  }
+
+
+  export class EncryptionKey extends jspb.Message {
+    getJwkKey(): string;
+    setJwkKey(value: string): EncryptionKey;
+
+    getAlg(): string;
+    setAlg(value: string): EncryptionKey;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): EncryptionKey.AsObject;
+    static toObject(includeInstance: boolean, msg: EncryptionKey): EncryptionKey.AsObject;
+    static serializeBinaryToWriter(message: EncryptionKey, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): EncryptionKey;
+    static deserializeBinaryFromReader(message: EncryptionKey, reader: jspb.BinaryReader): EncryptionKey;
+  }
+
+  export namespace EncryptionKey {
+    export type AsObject = {
+      jwkKey: string,
+      alg: string,
+    }
   }
 
 }
@@ -599,6 +628,11 @@ export class QueryData extends jspb.Message {
   hasBatch(): boolean;
   clearBatch(): QueryData;
 
+  getEncryptedBatch(): Uint8Array | string;
+  getEncryptedBatch_asU8(): Uint8Array;
+  getEncryptedBatch_asB64(): string;
+  setEncryptedBatch(value: Uint8Array | string): QueryData;
+
   getExecutionStats(): QueryExecutionStats | undefined;
   setExecutionStats(value?: QueryExecutionStats): QueryData;
   hasExecutionStats(): boolean;
@@ -615,6 +649,7 @@ export class QueryData extends jspb.Message {
 export namespace QueryData {
   export type AsObject = {
     batch?: RowBatchData.AsObject,
+    encryptedBatch: Uint8Array | string,
     executionStats?: QueryExecutionStats.AsObject,
   }
 }

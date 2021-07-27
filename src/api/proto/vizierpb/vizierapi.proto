@@ -294,6 +294,16 @@ message ExecuteScriptRequest {
   // If unset, any mutation will be ignored.
   // If the mutated state is already ready, the script will also be executed.
   bool mutation = 5;
+
+  message EncryptionKey {
+    // The encryption key in JWK format.
+    string jwk_key = 1;
+    // The algorithm used for the key. It must be RSA-OAEP-256.
+    string alg = 2;
+  }
+  // The key used to encrypt the data.
+  EncryptionKey encryption_public_key = 6;
+
   reserved 2;
 }
 
@@ -330,8 +340,10 @@ message QueryMetadata {
 
 // Data message containing either a row batch or execution stats.
 message QueryData {
-  // The batch of data to send over.
+  // The batch of data to send over. The field encrypted_batch is used if encryption key is set.
   RowBatchData batch = 1;
+  // If an encryption key is set, then the data will be sent over as an encrypted batch.
+  bytes encrypted_batch = 3;
   // The execution stats to send over.
   QueryExecutionStats execution_stats = 2;
 }
