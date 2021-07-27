@@ -148,7 +148,8 @@ export const ClustersTable = withStyles((theme: Theme) => ({
         }
       }
     `,
-    { pollInterval: 60000 },
+    // Ignore cache on first fetch, to avoid blinking stale heartbeats.
+    { pollInterval: 60000, fetchPolicy: 'network-only', nextFetchPolicy: 'cache-and-network' },
   );
 
   const clusters = formatClusters(data?.clusters);

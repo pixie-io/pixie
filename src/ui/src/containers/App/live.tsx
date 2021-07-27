@@ -111,7 +111,8 @@ const ScriptShortcut = ({ match, location }) => {
         }
       }
     `,
-    { pollInterval: 15000 },
+    // Other queries frequently update the cluster cache, so don't make excessive network calls.
+    { pollInterval: 15000, fetchPolicy: 'cache-first' },
   );
 
   const clusters = data?.clusters;
@@ -148,7 +149,8 @@ const Live = () => {
         }
       }
     `,
-    { pollInterval: 60000 },
+    // Other queries frequently update the cluster cache, so don't make excessive network calls.
+    { pollInterval: 60000, fetchPolicy: 'cache-first' },
   );
   const numClusters = countData?.clusters?.length ?? 0;
 
@@ -198,7 +200,7 @@ const ClusterContextProvider: React.FC = ({ children }) => {
         }
       }
     `,
-    { pollInterval: 60000, variables: { name: clusterName } },
+    { pollInterval: 60000, fetchPolicy: 'cache-and-network', variables: { name: clusterName } },
   );
 
   const cluster = data?.clusterByName ?? invalidCluster(clusterName);

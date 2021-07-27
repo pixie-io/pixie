@@ -177,7 +177,8 @@ export const DeploymentKeysTable: React.FC = () => {
         }
       }
     `,
-    { pollInterval: 60000 },
+    // As deployment keys can be sensitive, skip cache on first fetch.
+    { pollInterval: 60000, fetchPolicy: 'network-only', nextFetchPolicy: 'cache-and-network' },
   );
 
   if (loading) {

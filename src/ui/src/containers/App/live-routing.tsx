@@ -114,7 +114,8 @@ export const LiveContextRouter: React.FC = ({ children }) => {
         }
       }
     `,
-    { pollInterval: 15000 },
+    // Other queries frequently update the cluster cache, so don't make excessive network calls.
+    { pollInterval: 15000, fetchPolicy: 'cache-first' },
   );
 
   const clusters = data?.clusters;

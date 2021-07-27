@@ -53,7 +53,8 @@ export const OrgSettings: React.FC = () => {
         }
       }
     `,
-    { pollInterval: 60000 },
+    // To avoid a confusing desync, ignore the cache on first fetch.
+    { pollInterval: 60000, fetchPolicy: 'network-only', nextFetchPolicy: 'cache-and-network' },
   );
   const org = data?.org;
 

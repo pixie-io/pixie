@@ -120,7 +120,7 @@ export const UsersTable: React.FC = () => {
         }
       }
     `,
-    { pollInterval: 60000 },
+    { pollInterval: 60000, fetchPolicy: 'cache-and-network' },
   );
 
   const users = data?.orgUsers;
