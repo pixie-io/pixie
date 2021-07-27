@@ -122,6 +122,8 @@ message VizierHeartbeat {
   int32 num_instrumented_nodes = 12;
   // Whether autoupdate is disabled/enabled.
   bool disable_auto_update = 13;
+  // The message explaining why the cluster is in its current state.
+  string status_message = 14;
 }
 
 // TODO(nserrino), PP-2512: Deprecate and replace with vizierpb's VizierPodStatus,
