@@ -454,6 +454,7 @@ func TestTransferResultChunk_AgentStreamComplete(t *testing.T) {
 
 	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nil, nc, nil, nil)
 	require.NoError(t, err)
+	defer s.Close()
 
 	srv := mock_carnotpb.NewMockResultSinkService_TransferResultChunkServer(ctrl)
 
@@ -543,6 +544,7 @@ func TestTransferResultChunk_AgentClosedPrematurely(t *testing.T) {
 
 	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nil, nc, nil, nil)
 	require.NoError(t, err)
+	defer s.Close()
 
 	srv := mock_carnotpb.NewMockResultSinkService_TransferResultChunkServer(ctrl)
 
@@ -625,6 +627,7 @@ func TestTransferResultChunk_AgentStreamFailed(t *testing.T) {
 
 	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nil, nc, nil, nil)
 	require.NoError(t, err)
+	defer s.Close()
 
 	srv := mock_carnotpb.NewMockResultSinkService_TransferResultChunkServer(ctrl)
 
@@ -701,6 +704,7 @@ func TestTransferResultChunk_ClientStreamCancelled(t *testing.T) {
 
 	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nil, nc, nil, nil)
 	require.NoError(t, err)
+	defer s.Close()
 
 	srv := mock_carnotpb.NewMockResultSinkService_TransferResultChunkServer(ctrl)
 

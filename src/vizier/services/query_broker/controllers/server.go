@@ -41,6 +41,7 @@ import (
 	"px.dev/pixie/src/carnot/planner/distributedpb"
 	"px.dev/pixie/src/carnot/planner/plannerpb"
 	"px.dev/pixie/src/carnot/udfspb"
+	serviceUtils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils"
 	funcs "px.dev/pixie/src/vizier/funcs/go"
 	"px.dev/pixie/src/vizier/services/metadata/metadatapb"
@@ -74,9 +75,9 @@ type Server struct {
 	agentsTracker AgentsTracker
 	natsConn      *nats.Conn
 
-	hcMux    sync.Mutex
-	hcStatus error
-	hcTime   time.Time
+	hcStatus            serviceUtils.AtomicError
+	healthcheckQuitCh   chan struct{}
+	healthcheckQuitOnce sync.Once
 
 	mdtp            metadatapb.MetadataTracepointServiceClient
 	mdconf          metadatapb.MetadataConfigServiceClient
@@ -117,21 +118,27 @@ func NewServerWithForwarderAndPlanner(env querybrokerenv.QueryBrokerEnv,
 	planner Planner,
 	queryExecFactory QueryExecutorFactory) (*Server, error) {
 	s := &Server{
-		env:              env,
-		agentsTracker:    agentsTracker,
-		resultForwarder:  resultForwarder,
-		natsConn:         natsConn,
-		mdtp:             mds,
-		mdconf:           mdconf,
-		planner:          planner,
-		queryExecFactory: queryExecFactory,
+		env:               env,
+		agentsTracker:     agentsTracker,
+		resultForwarder:   resultForwarder,
+		natsConn:          natsConn,
+		mdtp:              mds,
+		mdconf:            mdconf,
+		planner:           planner,
+		queryExecFactory:  queryExecFactory,
+		healthcheckQuitCh: make(chan struct{}),
 	}
+	s.hcStatus.Store(fmt.Errorf("no healthcheck has run yet"))
+	go s.runHealthcheck()
 	return s, nil
 }
 
 // Close frees the planner memory in the server.
 func (s *Server) Close() {
-	s.planner.Free()
+	s.healthcheckQuitOnce.Do(func() { close(s.healthcheckQuitCh) })
+	if s.planner != nil {
+		s.planner.Free()
+	}
 }
 
 func loadUDFInfo(udfInfoPb *udfspb.UDFInfo) error {
@@ -188,24 +195,20 @@ func (s *Server) CheckHealth(ctx context.Context) error {
 	return nil
 }
 
-func (s *Server) checkHealthCached(ctx context.Context) error {
-	s.hcMux.Lock()
-	lastHealthCheck := s.hcTime
-	s.hcMux.Unlock()
-	currentTime := time.Now()
-	if currentTime.Sub(lastHealthCheck) < healthCheckInterval {
-		return s.hcStatus
+func (s *Server) runHealthcheck() {
+	t := time.NewTicker(healthCheckInterval)
+	defer t.Stop()
+	for {
+		select {
+		case <-s.healthcheckQuitCh:
+			return
+		case <-t.C:
+			ctx, cancel := context.WithTimeout(context.Background(), healthCheckInterval)
+			defer cancel()
+			status := s.CheckHealth(ctx)
+			s.hcStatus.Store(status)
+		}
 	}
-	status := s.CheckHealth(ctx)
-	if status != nil {
-		// If the request failed don't cache the results.
-		return status
-	}
-	s.hcMux.Lock()
-	s.hcTime = currentTime
-	s.hcStatus = status
-	s.hcMux.Unlock()
-	return s.hcStatus
 }
 
 // HealthCheck continually responds with the current health of Vizier.
@@ -213,7 +216,7 @@ func (s *Server) HealthCheck(req *vizierpb.HealthCheckRequest, srv vizierpb.Vizi
 	t := time.NewTicker(healthCheckInterval)
 	defer t.Stop()
 	for {
-		hcResult := s.checkHealthCached(srv.Context())
+		hcResult := s.hcStatus.Load()
 		// Pass.
 		code := int32(codes.OK)
 		if hcResult != nil {

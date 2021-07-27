@@ -18,7 +18,10 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "utils",
-    srcs = ["claims.go"],
+    srcs = [
+        "claims.go",
+        "error.go",
+    ],
     importpath = "px.dev/pixie/src/shared/services/utils",
     visibility = ["//src:__subpackages__"],
     deps = [
@@ -30,12 +33,17 @@ go_library(
 
 go_test(
     name = "utils_test",
-    srcs = ["claims_test.go"],
+    srcs = [
+        "claims_test.go",
+        "error_test.go",
+    ],
     embed = [":utils"],
     deps = [
         "//src/shared/services/jwtpb:jwt_pl_go_proto",
         "@com_github_dgrijalva_jwt_go_v4//:jwt-go",
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
+        "@org_golang_google_grpc//codes",
+        "@org_golang_google_grpc//status",
     ],
 )
