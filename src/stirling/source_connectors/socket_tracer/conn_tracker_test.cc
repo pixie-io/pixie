@@ -730,7 +730,64 @@ TEST_F(ConnTrackerTest, ConnStats) {
   EXPECT_EQ(tracker.conn_stats().CloseSinceLastRead(), 1);
   EXPECT_EQ(tracker.conn_stats().BytesRecvSinceLastRead(), 0);
   EXPECT_EQ(tracker.conn_stats().BytesSentSinceLastRead(), 50);
+
+  for (auto p : magic_enum::enum_values<TrafficProtocol>()) {
+    for (auto r : {kRoleClient, kRoleServer}) {
+      std::cout << absl::Substitute("UpdateStateParam{$0, $1, ConnTracker::State::kCollecting},\n",
+                                    magic_enum::enum_name(p), magic_enum::enum_name(r));
+    }
+  }
 }
+
+struct UpdateStateParam {
+  TrafficProtocol protocol;
+  EndpointRole role;
+  ConnTracker::State expected_state;
+};
+
+class ConnTrackerTestDouble : public ConnTracker {
+ public:
+  using ConnTracker::UpdateState;
+};
+
+class ConnTrackerUpdateStateTest : public ::testing::TestWithParam<UpdateStateParam> {};
+
+// Tests that ConnTracker::UpdateState() changes the state correctly.
+TEST_P(ConnTrackerUpdateStateTest, UpdateStateBecauseOfRole) {
+  ConnTrackerTestDouble tracker;
+  EXPECT_EQ(ConnTracker::State::kCollecting, tracker.state());
+
+  EXPECT_TRUE(tracker.SetRole(GetParam().role, "test"));
+
+  EXPECT_TRUE(tracker.SetProtocol(GetParam().protocol, "test"));
+
+  tracker.UpdateState(/*cluster_cidrs*/ {});
+  EXPECT_EQ(GetParam().expected_state, tracker.state());
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    AllProtocols, ConnTrackerUpdateStateTest,
+    ::testing::Values(
+        UpdateStateParam{kProtocolHTTP, kRoleClient, ConnTracker::State::kCollecting},
+        UpdateStateParam{kProtocolHTTP, kRoleServer, ConnTracker::State::kTransferring},
+        UpdateStateParam{kProtocolHTTP2, kRoleClient, ConnTracker::State::kCollecting},
+        UpdateStateParam{kProtocolHTTP2, kRoleServer, ConnTracker::State::kTransferring},
+        UpdateStateParam{kProtocolMySQL, kRoleClient, ConnTracker::State::kCollecting},
+        UpdateStateParam{kProtocolMySQL, kRoleServer, ConnTracker::State::kTransferring},
+        UpdateStateParam{kProtocolCQL, kRoleClient, ConnTracker::State::kCollecting},
+        UpdateStateParam{kProtocolCQL, kRoleServer, ConnTracker::State::kTransferring},
+        UpdateStateParam{kProtocolPGSQL, kRoleClient, ConnTracker::State::kCollecting},
+        UpdateStateParam{kProtocolPGSQL, kRoleServer, ConnTracker::State::kTransferring},
+        UpdateStateParam{kProtocolDNS, kRoleClient, ConnTracker::State::kTransferring},
+        UpdateStateParam{kProtocolDNS, kRoleServer, ConnTracker::State::kTransferring},
+        UpdateStateParam{kProtocolRedis, kRoleClient, ConnTracker::State::kCollecting},
+        UpdateStateParam{kProtocolRedis, kRoleServer, ConnTracker::State::kTransferring},
+        UpdateStateParam{kProtocolNATS, kRoleClient, ConnTracker::State::kCollecting},
+        UpdateStateParam{kProtocolNATS, kRoleServer, ConnTracker::State::kTransferring},
+        UpdateStateParam{kProtocolMongo, kRoleClient, ConnTracker::State::kCollecting},
+        UpdateStateParam{kProtocolMongo, kRoleServer, ConnTracker::State::kTransferring},
+        UpdateStateParam{kProtocolKafka, kRoleClient, ConnTracker::State::kCollecting},
+        UpdateStateParam{kProtocolKafka, kRoleServer, ConnTracker::State::kTransferring}));
 
 }  // namespace stirling
 }  // namespace px

@@ -688,8 +688,8 @@ class ConnTracker : NotCopyMoveable {
   ConnTrackersManager* manager_ = nullptr;
 
   friend class ConnTrackersManager;
-  friend class ConnTrackersManagerTest;
-  friend class ConnTrackerGenerationsTest;
+  // A subclass expose private member as public.
+  friend class ConnTrackerTestDouble;
 };
 
 // Explicit template specialization must be declared in namespace scope.
