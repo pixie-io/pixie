@@ -49,6 +49,7 @@ Status NATSConnectorBase::ConnectBase(Dispatcher* base_dispatcher) {
                                     natsLibuv_Read, natsLibuv_Write, natsLibuv_Detach);
 
   if (s != NATS_OK) {
+    nats_PrintLastErrorStack(stderr);
     return error::Unknown("Failed to set NATS event loop, nats_status=$0", s);
   }
 
@@ -59,6 +60,7 @@ Status NATSConnectorBase::ConnectBase(Dispatcher* base_dispatcher) {
   nats_opts = nullptr;
 
   if (nats_status != NATS_OK) {
+    nats_PrintLastErrorStack(stderr);
     return error::Unknown("Failed to connect to NATS, nats_status=$0", nats_status);
   }
   return Status::OK();

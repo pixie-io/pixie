@@ -180,9 +180,9 @@ REPOSITORY_LOCATIONS = dict(
                 "archive/18b2d2c5ebfa58fe3e0e4ee3ffe0e2651ec0f7f6.tar.gz"],
     ),
     com_github_nats_io_natsc = dict(
-        sha256 = "14e50dd3cf30c9839aedf7c8929f3d433c0a69af38f13f7baf5491d9ed2ac43b",
-        strip_prefix = "nats.c-3b4668698b8510b8f08413a94523b05a8036d9ab",
-        urls = ["https://github.com/nats-io/nats.c/archive/3b4668698b8510b8f08413a94523b05a8036d9ab.tar.gz"],
+        sha256 = "c2b5a5e62dfbdcb110f00960c413ab6e8ef09dd71863c15c9f81aa598dcd339d",
+        strip_prefix = "nats.c-2.6.0",
+        urls = ["https://github.com/nats-io/nats.c/archive/refs/tags/v2.6.0.tar.gz"],
     ),
     com_github_libuv_libuv = dict(
         sha256 = "63794499bf5da1720e249d3fc14ff396b70b8736effe6ce5b4e47e0f3d476467",

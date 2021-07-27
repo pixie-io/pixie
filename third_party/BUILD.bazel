@@ -57,7 +57,11 @@ cmake(
         # Since some of our services use both GRPC and nats, this lets
         # us have a single SSL library.
         "CMAKE_SYSTEM_PREFIX_PATH": "$EXT_BUILD_DEPS",
+        "NATS_BUILD_LIB_SHARED": "OFF",
         "NATS_BUILD_STREAMING": "OFF",
+        # There's some issue here and the hostname verification from the
+        # Cert SAN seems to fail.
+        "NATS_BUILD_TLS_FORCE_HOST_VERIFY": "OFF",
     },
     generate_crosstool_file = True,
     lib_name = "libnats_static",
