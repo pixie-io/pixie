@@ -318,10 +318,11 @@ func (s *Server) CheckHealth(ctx context.Context) error {
 }
 
 func (s *Server) checkHealthCached(ctx context.Context) error {
-	currentTime := time.Now()
 	s.hcMux.Lock()
-	defer s.hcMux.Unlock()
-	if currentTime.Sub(s.hcTime) < healthCheckInterval {
+	lastHealthCheck := s.hcTime
+	s.hcMux.Unlock()
+	currentTime := time.Now()
+	if currentTime.Sub(lastHealthCheck) < healthCheckInterval {
 		return s.hcStatus
 	}
 	status := s.CheckHealth(ctx)
@@ -329,8 +330,10 @@ func (s *Server) checkHealthCached(ctx context.Context) error {
 		// If the request failed don't cache the results.
 		return status
 	}
+	s.hcMux.Lock()
 	s.hcTime = currentTime
 	s.hcStatus = status
+	s.hcMux.Unlock()
 	return s.hcStatus
 }
 

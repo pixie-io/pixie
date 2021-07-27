@@ -20,8 +20,8 @@ package controllers
 
 import (
 	"fmt"
-	"strings"
-	"sync"
+
+	"golang.org/x/sync/errgroup"
 
 	"github.com/gofrs/uuid"
 	"github.com/nats-io/nats.go"
@@ -39,15 +39,10 @@ func LaunchQuery(queryID uuid.UUID, natsConn *nats.Conn, planMap map[uuid.UUID]*
 	}
 
 	queryIDPB := utils.ProtoFromUUID(queryID)
-	// Accumulate failures.
-	errs := make(chan error)
-	defer close(errs)
 	// Broadcast query to all the agents in parallel.
-	var wg sync.WaitGroup
-	wg.Add(len(planMap))
+	var eg errgroup.Group
 
-	broadcastToAgent := func(agentID uuid.UUID, logicalPlan *planpb.Plan) {
-		defer wg.Done()
+	broadcastToAgent := func(agentID uuid.UUID, logicalPlan *planpb.Plan) error {
 		// Create NATS message containing the query string.
 		msg := messagespb.VizierMessage{
 			Msg: &messagespb.VizierMessage_ExecuteQueryRequest{
@@ -61,36 +56,26 @@ func LaunchQuery(queryID uuid.UUID, natsConn *nats.Conn, planMap map[uuid.UUID]*
 		agentTopic := messagebus.AgentUUIDTopic(agentID)
 		msgAsBytes, err := msg.Marshal()
 		if err != nil {
-			errs <- err
-			return
+			return err
 		}
 
 		err = natsConn.Publish(agentTopic, msgAsBytes)
 		if err != nil {
-			errs <- err
-			return
+			return err
 		}
+		return nil
 	}
 
 	for agentID, logicalPlan := range planMap {
-		go broadcastToAgent(agentID, logicalPlan)
+		agentID := agentID
+		logicalPlan := logicalPlan
+		eg.Go(func() error {
+			return broadcastToAgent(agentID, logicalPlan)
+		})
 	}
 
-	wg.Wait()
-	errsList := make([]string, 0)
-
-	hasErrs := true
-	for hasErrs {
-		select {
-		case err := <-errs:
-			errsList = append(errsList, err.Error())
-		default:
-			hasErrs = false
-		}
-	}
-
-	if len(errsList) > 0 {
-		return fmt.Errorf(strings.Join(errsList, "\n"))
+	if err := eg.Wait(); err != nil {
+		return err
 	}
 
 	return nil

@@ -131,3 +131,48 @@ func TestLaunchQueryNoPlans(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Regexp(t, fmt.Sprintf("Received no agent plans for query %s", queryIDStr), err)
 }
+
+func TestLaunchQueryNATSFailure(t *testing.T) {
+	// Check that the query is broadcasted to all agents.
+	nc, cleanup := testingutils.MustStartTestNATS(t)
+
+	queryUUID, err := uuid.FromString(queryIDStr)
+	if err != nil {
+		t.Fatal("Could not parse UUID.")
+	}
+
+	agentUUIDStrs := [2]string{
+		agent1ID,
+		agent2ID,
+	}
+
+	agentUUIDs := make([]uuid.UUID, 0)
+	for _, uid := range agentUUIDStrs {
+		u, err := uuid.FromString(uid)
+		if err != nil {
+			t.Fatal(err)
+		}
+		agentUUIDs = append(agentUUIDs, u)
+	}
+
+	// Plan 1 is a valid, populated plan
+	plannerResultPB := &distributedpb.LogicalPlannerResult{}
+	if err := proto.UnmarshalText(expectedPlannerResult, plannerResultPB); err != nil {
+		t.Fatal("Could not unmarshal protobuf text for planner result.")
+	}
+
+	planPB1 := plannerResultPB.Plan.QbAddressToPlan[agent1ID]
+	planPB2 := plannerResultPB.Plan.QbAddressToPlan[agent2ID]
+
+	planMap := make(map[uuid.UUID]*planpb.Plan)
+	planMap[agentUUIDs[0]] = planPB1
+	planMap[agentUUIDs[1]] = planPB2
+
+	// Cleanup nats before LaunchQuery, so that the Publish to NATS causes an error.
+	// Previously, this would cause LaunchQuery to hang because of a bug with the error channels.
+	cleanup()
+
+	// Execute a query. This should return an error but not hang.
+	err = controllers.LaunchQuery(queryUUID, nc, planMap, false)
+	require.NotNil(t, err)
+}
