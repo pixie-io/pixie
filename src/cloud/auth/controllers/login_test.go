@@ -654,8 +654,8 @@ func TestServer_GetAugmentedToken(t *testing.T) {
 
 	// Make sure expiry time is in the future & > 0.
 	currentTime := time.Now().Unix()
-	maxExpiryTime := time.Now().Add(60 * time.Minute).Unix()
-	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
+	maxExpiryTime := time.Now().Add(90 * time.Minute).Unix()
+	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt <= maxExpiryTime)
 	assert.True(t, resp.ExpiresAt > 0)
 
 	verifyToken(t, resp.Token, testingutils.TestUserID, testingutils.TestOrgID, resp.ExpiresAt, "jwtkey")
@@ -686,8 +686,8 @@ func TestServer_GetAugmentedToken_Service(t *testing.T) {
 
 	// Make sure expiry time is in the future & > 0.
 	currentTime := time.Now().Unix()
-	maxExpiryTime := time.Now().Add(60 * time.Minute).Unix()
-	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
+	maxExpiryTime := time.Now().Add(90 * time.Minute).Unix()
+	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt <= maxExpiryTime)
 	assert.True(t, resp.ExpiresAt > 0)
 
 	jwtclaims := jwt.MapClaims{}
@@ -911,8 +911,8 @@ func TestServer_GetAugmentedTokenSupportAccount(t *testing.T) {
 
 	// Make sure expiry time is in the future & > 0.
 	currentTime := time.Now().Unix()
-	maxExpiryTime := time.Now().Add(60 * time.Minute).Unix()
-	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
+	maxExpiryTime := time.Now().Add(90 * time.Minute).Unix()
+	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt <= maxExpiryTime)
 	assert.True(t, resp.ExpiresAt > 0)
 
 	verifyToken(t, resp.Token, testingutils.TestUserID, testingutils.TestOrgID, resp.ExpiresAt, "jwtkey")
@@ -952,8 +952,8 @@ func TestServer_GetAugmentedTokenAPIUser(t *testing.T) {
 
 	// Make sure expiry time is in the future & > 0.
 	currentTime := time.Now().Unix()
-	maxExpiryTime := time.Now().Add(60 * time.Minute).Unix()
-	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
+	maxExpiryTime := time.Now().Add(90 * time.Minute).Unix()
+	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt <= maxExpiryTime)
 	assert.True(t, resp.ExpiresAt > 0)
 
 	returnedClaims := jwt.MapClaims{}
@@ -999,8 +999,8 @@ func TestServer_GetAugmentedTokenFromAPIKey(t *testing.T) {
 
 	// Make sure expiry time is in the future & > 0.
 	currentTime := time.Now().Unix()
-	maxExpiryTime := time.Now().Add(60 * time.Minute).Unix()
-	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
+	maxExpiryTime := time.Now().Add(90 * time.Minute).Unix()
+	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt <= maxExpiryTime)
 	assert.True(t, resp.ExpiresAt > 0)
 
 	claims := jwt.MapClaims{}
@@ -1088,7 +1088,7 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
 	assert.False(t, resp.OrgCreated)
 	assert.Equal(t, resp.OrgID, utils.ProtoFromUUIDStrOrNil(orgID))
-	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
+	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt <= maxExpiryTime)
 	assert.Equal(t, resp.UserInfo.UserID, utils.ProtoFromUUIDStrOrNil(userID))
 	assert.Equal(t, resp.UserInfo.FirstName, "first")
 	assert.Equal(t, resp.UserInfo.LastName, "last")
@@ -1176,7 +1176,7 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
 	assert.True(t, resp.OrgCreated)
 	assert.Equal(t, resp.OrgID, utils.ProtoFromUUIDStrOrNil(orgID))
-	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
+	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt <= maxExpiryTime)
 	assert.Equal(t, resp.UserInfo.UserID, utils.ProtoFromUUIDStrOrNil(userID))
 	assert.Equal(t, resp.UserInfo.FirstName, "first")
 	assert.Equal(t, resp.UserInfo.LastName, "last")
@@ -1364,7 +1364,7 @@ func TestServer_LoginUserForOrgMembership(t *testing.T) {
 	// Make sure expiry time is in the future.
 	currentTime := time.Now().Unix()
 	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
-	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
+	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt <= maxExpiryTime)
 	assert.False(t, resp.UserCreated)
 	verifyToken(t, resp.Token, userID, orgID, resp.ExpiresAt, "jwtkey")
 }
