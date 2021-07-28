@@ -40,6 +40,8 @@
 // 000019_drop_index_table.up.sql
 // 000020_add_auto_update_to_cluster_table.down.sql
 // 000020_add_auto_update_to_cluster_table.up.sql
+// 000021_add_status_message_to_cluster_info.down.sql
+// 000021_add_status_message_to_cluster_info.up.sql
 package schema
 
 import (
@@ -916,6 +918,46 @@ func _000020_add_auto_update_to_cluster_tableUpSql() (*asset, error) {
 	return a, nil
 }
 
+var __000021_add_status_message_to_cluster_infoDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x4f\xce\x29\x2d\x2e\x49\x2d\x8a\xcf\xcc\x4b\xcb\x57\x70\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x53\x28\x2e\x49\x2c\x29\x2d\x8e\xcf\x4d\x2d\x2e\x4e\x4c\x4f\xb5\xe6\x02\x04\x00\x00\xff\xff\x75\xde\x86\xcf\x3c\x00\x00\x00")
+
+func _000021_add_status_message_to_cluster_infoDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000021_add_status_message_to_cluster_infoDownSql,
+		"000021_add_status_message_to_cluster_info.down.sql",
+	)
+}
+
+func _000021_add_status_message_to_cluster_infoDownSql() (*asset, error) {
+	bytes, err := _000021_add_status_message_to_cluster_infoDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000021_add_status_message_to_cluster_info.down.sql", size: 60, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000021_add_status_message_to_cluster_infoUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x4f\xce\x29\x2d\x2e\x49\x2d\x8a\xcf\xcc\x4b\xcb\xe7\x72\x74\x71\x51\x70\xf6\xf7\x09\xf5\xf5\x53\x28\x2e\x49\x2c\x29\x2d\x8e\xcf\x4d\x2d\x2e\x4e\x4c\x4f\x55\x28\x49\xad\x28\xb1\xe6\x02\x04\x00\x00\xff\xff\x02\x3f\xe2\x84\x40\x00\x00\x00")
+
+func _000021_add_status_message_to_cluster_infoUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000021_add_status_message_to_cluster_infoUpSql,
+		"000021_add_status_message_to_cluster_info.up.sql",
+	)
+}
+
+func _000021_add_status_message_to_cluster_infoUpSql() (*asset, error) {
+	bytes, err := _000021_add_status_message_to_cluster_infoUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000021_add_status_message_to_cluster_info.up.sql", size: 64, mode: os.FileMode(436), modTime: time.Unix(1, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
@@ -968,46 +1010,48 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"000001_create_cluster_tables.down.sql":             _000001_create_cluster_tablesDownSql,
-	"000001_create_cluster_tables.up.sql":               _000001_create_cluster_tablesUpSql,
-	"000002_create_pgcrypto_extension.down.sql":         _000002_create_pgcrypto_extensionDownSql,
-	"000002_create_pgcrypto_extension.up.sql":           _000002_create_pgcrypto_extensionUpSql,
-	"000003_create_index_table.down.sql":                _000003_create_index_tableDownSql,
-	"000003_create_index_table.up.sql":                  _000003_create_index_tableUpSql,
-	"000004_create_shard_index.down.sql":                _000004_create_shard_indexDownSql,
-	"000004_create_shard_index.up.sql":                  _000004_create_shard_indexUpSql,
-	"000005_add_passthrough_to_cluster_table.down.sql":  _000005_add_passthrough_to_cluster_tableDownSql,
-	"000005_add_passthrough_to_cluster_table.up.sql":    _000005_add_passthrough_to_cluster_tableUpSql,
-	"000006_add_project_id_to_cluster_table.down.sql":   _000006_add_project_id_to_cluster_tableDownSql,
-	"000006_add_project_id_to_cluster_table.up.sql":     _000006_add_project_id_to_cluster_tableUpSql,
-	"000007_update_cluster_status_enum.down.sql":        _000007_update_cluster_status_enumDownSql,
-	"000007_update_cluster_status_enum.up.sql":          _000007_update_cluster_status_enumUpSql,
-	"000008_connected_cluster_status_enum.down.sql":     _000008_connected_cluster_status_enumDownSql,
-	"000008_connected_cluster_status_enum.up.sql":       _000008_connected_cluster_status_enumUpSql,
-	"000009_update_failed_cluster_status_enum.down.sql": _000009_update_failed_cluster_status_enumDownSql,
-	"000009_update_failed_cluster_status_enum.up.sql":   _000009_update_failed_cluster_status_enumUpSql,
-	"000010_add_vizier_info_to_cluster_info.down.sql":   _000010_add_vizier_info_to_cluster_infoDownSql,
-	"000010_add_vizier_info_to_cluster_info.up.sql":     _000010_add_vizier_info_to_cluster_infoUpSql,
-	"000011_add_updated_at_to_vizier_cluster.down.sql":  _000011_add_updated_at_to_vizier_clusterDownSql,
-	"000011_add_updated_at_to_vizier_cluster.up.sql":    _000011_add_updated_at_to_vizier_clusterUpSql,
-	"000012_add_deployment_keys.down.sql":               _000012_add_deployment_keysDownSql,
-	"000012_add_deployment_keys.up.sql":                 _000012_add_deployment_keysUpSql,
-	"000013_add_desc_to_deploy_key.down.sql":            _000013_add_desc_to_deploy_keyDownSql,
-	"000013_add_desc_to_deploy_key.up.sql":              _000013_add_desc_to_deploy_keyUpSql,
-	"000014_add_unique_org_name_constraint.down.sql":    _000014_add_unique_org_name_constraintDownSql,
-	"000014_add_unique_org_name_constraint.up.sql":      _000014_add_unique_org_name_constraintUpSql,
-	"000015_move_cluster_info_columns.down.sql":         _000015_move_cluster_info_columnsDownSql,
-	"000015_move_cluster_info_columns.up.sql":           _000015_move_cluster_info_columnsUpSql,
-	"000016_trim_cluster_name.down.sql":                 _000016_trim_cluster_nameDownSql,
-	"000016_trim_cluster_name.up.sql":                   _000016_trim_cluster_nameUpSql,
-	"000017_add_pod_status_to_vizier_cluster.down.sql":  _000017_add_pod_status_to_vizier_clusterDownSql,
-	"000017_add_pod_status_to_vizier_cluster.up.sql":    _000017_add_pod_status_to_vizier_clusterUpSql,
-	"000018_add_num_nodes_to_cluster_table.down.sql":    _000018_add_num_nodes_to_cluster_tableDownSql,
-	"000018_add_num_nodes_to_cluster_table.up.sql":      _000018_add_num_nodes_to_cluster_tableUpSql,
-	"000019_drop_index_table.down.sql":                  _000019_drop_index_tableDownSql,
-	"000019_drop_index_table.up.sql":                    _000019_drop_index_tableUpSql,
-	"000020_add_auto_update_to_cluster_table.down.sql":  _000020_add_auto_update_to_cluster_tableDownSql,
-	"000020_add_auto_update_to_cluster_table.up.sql":    _000020_add_auto_update_to_cluster_tableUpSql,
+	"000001_create_cluster_tables.down.sql":              _000001_create_cluster_tablesDownSql,
+	"000001_create_cluster_tables.up.sql":                _000001_create_cluster_tablesUpSql,
+	"000002_create_pgcrypto_extension.down.sql":          _000002_create_pgcrypto_extensionDownSql,
+	"000002_create_pgcrypto_extension.up.sql":            _000002_create_pgcrypto_extensionUpSql,
+	"000003_create_index_table.down.sql":                 _000003_create_index_tableDownSql,
+	"000003_create_index_table.up.sql":                   _000003_create_index_tableUpSql,
+	"000004_create_shard_index.down.sql":                 _000004_create_shard_indexDownSql,
+	"000004_create_shard_index.up.sql":                   _000004_create_shard_indexUpSql,
+	"000005_add_passthrough_to_cluster_table.down.sql":   _000005_add_passthrough_to_cluster_tableDownSql,
+	"000005_add_passthrough_to_cluster_table.up.sql":     _000005_add_passthrough_to_cluster_tableUpSql,
+	"000006_add_project_id_to_cluster_table.down.sql":    _000006_add_project_id_to_cluster_tableDownSql,
+	"000006_add_project_id_to_cluster_table.up.sql":      _000006_add_project_id_to_cluster_tableUpSql,
+	"000007_update_cluster_status_enum.down.sql":         _000007_update_cluster_status_enumDownSql,
+	"000007_update_cluster_status_enum.up.sql":           _000007_update_cluster_status_enumUpSql,
+	"000008_connected_cluster_status_enum.down.sql":      _000008_connected_cluster_status_enumDownSql,
+	"000008_connected_cluster_status_enum.up.sql":        _000008_connected_cluster_status_enumUpSql,
+	"000009_update_failed_cluster_status_enum.down.sql":  _000009_update_failed_cluster_status_enumDownSql,
+	"000009_update_failed_cluster_status_enum.up.sql":    _000009_update_failed_cluster_status_enumUpSql,
+	"000010_add_vizier_info_to_cluster_info.down.sql":    _000010_add_vizier_info_to_cluster_infoDownSql,
+	"000010_add_vizier_info_to_cluster_info.up.sql":      _000010_add_vizier_info_to_cluster_infoUpSql,
+	"000011_add_updated_at_to_vizier_cluster.down.sql":   _000011_add_updated_at_to_vizier_clusterDownSql,
+	"000011_add_updated_at_to_vizier_cluster.up.sql":     _000011_add_updated_at_to_vizier_clusterUpSql,
+	"000012_add_deployment_keys.down.sql":                _000012_add_deployment_keysDownSql,
+	"000012_add_deployment_keys.up.sql":                  _000012_add_deployment_keysUpSql,
+	"000013_add_desc_to_deploy_key.down.sql":             _000013_add_desc_to_deploy_keyDownSql,
+	"000013_add_desc_to_deploy_key.up.sql":               _000013_add_desc_to_deploy_keyUpSql,
+	"000014_add_unique_org_name_constraint.down.sql":     _000014_add_unique_org_name_constraintDownSql,
+	"000014_add_unique_org_name_constraint.up.sql":       _000014_add_unique_org_name_constraintUpSql,
+	"000015_move_cluster_info_columns.down.sql":          _000015_move_cluster_info_columnsDownSql,
+	"000015_move_cluster_info_columns.up.sql":            _000015_move_cluster_info_columnsUpSql,
+	"000016_trim_cluster_name.down.sql":                  _000016_trim_cluster_nameDownSql,
+	"000016_trim_cluster_name.up.sql":                    _000016_trim_cluster_nameUpSql,
+	"000017_add_pod_status_to_vizier_cluster.down.sql":   _000017_add_pod_status_to_vizier_clusterDownSql,
+	"000017_add_pod_status_to_vizier_cluster.up.sql":     _000017_add_pod_status_to_vizier_clusterUpSql,
+	"000018_add_num_nodes_to_cluster_table.down.sql":     _000018_add_num_nodes_to_cluster_tableDownSql,
+	"000018_add_num_nodes_to_cluster_table.up.sql":       _000018_add_num_nodes_to_cluster_tableUpSql,
+	"000019_drop_index_table.down.sql":                   _000019_drop_index_tableDownSql,
+	"000019_drop_index_table.up.sql":                     _000019_drop_index_tableUpSql,
+	"000020_add_auto_update_to_cluster_table.down.sql":   _000020_add_auto_update_to_cluster_tableDownSql,
+	"000020_add_auto_update_to_cluster_table.up.sql":     _000020_add_auto_update_to_cluster_tableUpSql,
+	"000021_add_status_message_to_cluster_info.down.sql": _000021_add_status_message_to_cluster_infoDownSql,
+	"000021_add_status_message_to_cluster_info.up.sql":   _000021_add_status_message_to_cluster_infoUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -1051,46 +1095,48 @@ type bintree struct {
 }
 
 var _bintree = &bintree{nil, map[string]*bintree{
-	"000001_create_cluster_tables.down.sql":             &bintree{_000001_create_cluster_tablesDownSql, map[string]*bintree{}},
-	"000001_create_cluster_tables.up.sql":               &bintree{_000001_create_cluster_tablesUpSql, map[string]*bintree{}},
-	"000002_create_pgcrypto_extension.down.sql":         &bintree{_000002_create_pgcrypto_extensionDownSql, map[string]*bintree{}},
-	"000002_create_pgcrypto_extension.up.sql":           &bintree{_000002_create_pgcrypto_extensionUpSql, map[string]*bintree{}},
-	"000003_create_index_table.down.sql":                &bintree{_000003_create_index_tableDownSql, map[string]*bintree{}},
-	"000003_create_index_table.up.sql":                  &bintree{_000003_create_index_tableUpSql, map[string]*bintree{}},
-	"000004_create_shard_index.down.sql":                &bintree{_000004_create_shard_indexDownSql, map[string]*bintree{}},
-	"000004_create_shard_index.up.sql":                  &bintree{_000004_create_shard_indexUpSql, map[string]*bintree{}},
-	"000005_add_passthrough_to_cluster_table.down.sql":  &bintree{_000005_add_passthrough_to_cluster_tableDownSql, map[string]*bintree{}},
-	"000005_add_passthrough_to_cluster_table.up.sql":    &bintree{_000005_add_passthrough_to_cluster_tableUpSql, map[string]*bintree{}},
-	"000006_add_project_id_to_cluster_table.down.sql":   &bintree{_000006_add_project_id_to_cluster_tableDownSql, map[string]*bintree{}},
-	"000006_add_project_id_to_cluster_table.up.sql":     &bintree{_000006_add_project_id_to_cluster_tableUpSql, map[string]*bintree{}},
-	"000007_update_cluster_status_enum.down.sql":        &bintree{_000007_update_cluster_status_enumDownSql, map[string]*bintree{}},
-	"000007_update_cluster_status_enum.up.sql":          &bintree{_000007_update_cluster_status_enumUpSql, map[string]*bintree{}},
-	"000008_connected_cluster_status_enum.down.sql":     &bintree{_000008_connected_cluster_status_enumDownSql, map[string]*bintree{}},
-	"000008_connected_cluster_status_enum.up.sql":       &bintree{_000008_connected_cluster_status_enumUpSql, map[string]*bintree{}},
-	"000009_update_failed_cluster_status_enum.down.sql": &bintree{_000009_update_failed_cluster_status_enumDownSql, map[string]*bintree{}},
-	"000009_update_failed_cluster_status_enum.up.sql":   &bintree{_000009_update_failed_cluster_status_enumUpSql, map[string]*bintree{}},
-	"000010_add_vizier_info_to_cluster_info.down.sql":   &bintree{_000010_add_vizier_info_to_cluster_infoDownSql, map[string]*bintree{}},
-	"000010_add_vizier_info_to_cluster_info.up.sql":     &bintree{_000010_add_vizier_info_to_cluster_infoUpSql, map[string]*bintree{}},
-	"000011_add_updated_at_to_vizier_cluster.down.sql":  &bintree{_000011_add_updated_at_to_vizier_clusterDownSql, map[string]*bintree{}},
-	"000011_add_updated_at_to_vizier_cluster.up.sql":    &bintree{_000011_add_updated_at_to_vizier_clusterUpSql, map[string]*bintree{}},
-	"000012_add_deployment_keys.down.sql":               &bintree{_000012_add_deployment_keysDownSql, map[string]*bintree{}},
-	"000012_add_deployment_keys.up.sql":                 &bintree{_000012_add_deployment_keysUpSql, map[string]*bintree{}},
-	"000013_add_desc_to_deploy_key.down.sql":            &bintree{_000013_add_desc_to_deploy_keyDownSql, map[string]*bintree{}},
-	"000013_add_desc_to_deploy_key.up.sql":              &bintree{_000013_add_desc_to_deploy_keyUpSql, map[string]*bintree{}},
-	"000014_add_unique_org_name_constraint.down.sql":    &bintree{_000014_add_unique_org_name_constraintDownSql, map[string]*bintree{}},
-	"000014_add_unique_org_name_constraint.up.sql":      &bintree{_000014_add_unique_org_name_constraintUpSql, map[string]*bintree{}},
-	"000015_move_cluster_info_columns.down.sql":         &bintree{_000015_move_cluster_info_columnsDownSql, map[string]*bintree{}},
-	"000015_move_cluster_info_columns.up.sql":           &bintree{_000015_move_cluster_info_columnsUpSql, map[string]*bintree{}},
-	"000016_trim_cluster_name.down.sql":                 &bintree{_000016_trim_cluster_nameDownSql, map[string]*bintree{}},
-	"000016_trim_cluster_name.up.sql":                   &bintree{_000016_trim_cluster_nameUpSql, map[string]*bintree{}},
-	"000017_add_pod_status_to_vizier_cluster.down.sql":  &bintree{_000017_add_pod_status_to_vizier_clusterDownSql, map[string]*bintree{}},
-	"000017_add_pod_status_to_vizier_cluster.up.sql":    &bintree{_000017_add_pod_status_to_vizier_clusterUpSql, map[string]*bintree{}},
-	"000018_add_num_nodes_to_cluster_table.down.sql":    &bintree{_000018_add_num_nodes_to_cluster_tableDownSql, map[string]*bintree{}},
-	"000018_add_num_nodes_to_cluster_table.up.sql":      &bintree{_000018_add_num_nodes_to_cluster_tableUpSql, map[string]*bintree{}},
-	"000019_drop_index_table.down.sql":                  &bintree{_000019_drop_index_tableDownSql, map[string]*bintree{}},
-	"000019_drop_index_table.up.sql":                    &bintree{_000019_drop_index_tableUpSql, map[string]*bintree{}},
-	"000020_add_auto_update_to_cluster_table.down.sql":  &bintree{_000020_add_auto_update_to_cluster_tableDownSql, map[string]*bintree{}},
-	"000020_add_auto_update_to_cluster_table.up.sql":    &bintree{_000020_add_auto_update_to_cluster_tableUpSql, map[string]*bintree{}},
+	"000001_create_cluster_tables.down.sql":              &bintree{_000001_create_cluster_tablesDownSql, map[string]*bintree{}},
+	"000001_create_cluster_tables.up.sql":                &bintree{_000001_create_cluster_tablesUpSql, map[string]*bintree{}},
+	"000002_create_pgcrypto_extension.down.sql":          &bintree{_000002_create_pgcrypto_extensionDownSql, map[string]*bintree{}},
+	"000002_create_pgcrypto_extension.up.sql":            &bintree{_000002_create_pgcrypto_extensionUpSql, map[string]*bintree{}},
+	"000003_create_index_table.down.sql":                 &bintree{_000003_create_index_tableDownSql, map[string]*bintree{}},
+	"000003_create_index_table.up.sql":                   &bintree{_000003_create_index_tableUpSql, map[string]*bintree{}},
+	"000004_create_shard_index.down.sql":                 &bintree{_000004_create_shard_indexDownSql, map[string]*bintree{}},
+	"000004_create_shard_index.up.sql":                   &bintree{_000004_create_shard_indexUpSql, map[string]*bintree{}},
+	"000005_add_passthrough_to_cluster_table.down.sql":   &bintree{_000005_add_passthrough_to_cluster_tableDownSql, map[string]*bintree{}},
+	"000005_add_passthrough_to_cluster_table.up.sql":     &bintree{_000005_add_passthrough_to_cluster_tableUpSql, map[string]*bintree{}},
+	"000006_add_project_id_to_cluster_table.down.sql":    &bintree{_000006_add_project_id_to_cluster_tableDownSql, map[string]*bintree{}},
+	"000006_add_project_id_to_cluster_table.up.sql":      &bintree{_000006_add_project_id_to_cluster_tableUpSql, map[string]*bintree{}},
+	"000007_update_cluster_status_enum.down.sql":         &bintree{_000007_update_cluster_status_enumDownSql, map[string]*bintree{}},
+	"000007_update_cluster_status_enum.up.sql":           &bintree{_000007_update_cluster_status_enumUpSql, map[string]*bintree{}},
+	"000008_connected_cluster_status_enum.down.sql":      &bintree{_000008_connected_cluster_status_enumDownSql, map[string]*bintree{}},
+	"000008_connected_cluster_status_enum.up.sql":        &bintree{_000008_connected_cluster_status_enumUpSql, map[string]*bintree{}},
+	"000009_update_failed_cluster_status_enum.down.sql":  &bintree{_000009_update_failed_cluster_status_enumDownSql, map[string]*bintree{}},
+	"000009_update_failed_cluster_status_enum.up.sql":    &bintree{_000009_update_failed_cluster_status_enumUpSql, map[string]*bintree{}},
+	"000010_add_vizier_info_to_cluster_info.down.sql":    &bintree{_000010_add_vizier_info_to_cluster_infoDownSql, map[string]*bintree{}},
+	"000010_add_vizier_info_to_cluster_info.up.sql":      &bintree{_000010_add_vizier_info_to_cluster_infoUpSql, map[string]*bintree{}},
+	"000011_add_updated_at_to_vizier_cluster.down.sql":   &bintree{_000011_add_updated_at_to_vizier_clusterDownSql, map[string]*bintree{}},
+	"000011_add_updated_at_to_vizier_cluster.up.sql":     &bintree{_000011_add_updated_at_to_vizier_clusterUpSql, map[string]*bintree{}},
+	"000012_add_deployment_keys.down.sql":                &bintree{_000012_add_deployment_keysDownSql, map[string]*bintree{}},
+	"000012_add_deployment_keys.up.sql":                  &bintree{_000012_add_deployment_keysUpSql, map[string]*bintree{}},
+	"000013_add_desc_to_deploy_key.down.sql":             &bintree{_000013_add_desc_to_deploy_keyDownSql, map[string]*bintree{}},
+	"000013_add_desc_to_deploy_key.up.sql":               &bintree{_000013_add_desc_to_deploy_keyUpSql, map[string]*bintree{}},
+	"000014_add_unique_org_name_constraint.down.sql":     &bintree{_000014_add_unique_org_name_constraintDownSql, map[string]*bintree{}},
+	"000014_add_unique_org_name_constraint.up.sql":       &bintree{_000014_add_unique_org_name_constraintUpSql, map[string]*bintree{}},
+	"000015_move_cluster_info_columns.down.sql":          &bintree{_000015_move_cluster_info_columnsDownSql, map[string]*bintree{}},
+	"000015_move_cluster_info_columns.up.sql":            &bintree{_000015_move_cluster_info_columnsUpSql, map[string]*bintree{}},
+	"000016_trim_cluster_name.down.sql":                  &bintree{_000016_trim_cluster_nameDownSql, map[string]*bintree{}},
+	"000016_trim_cluster_name.up.sql":                    &bintree{_000016_trim_cluster_nameUpSql, map[string]*bintree{}},
+	"000017_add_pod_status_to_vizier_cluster.down.sql":   &bintree{_000017_add_pod_status_to_vizier_clusterDownSql, map[string]*bintree{}},
+	"000017_add_pod_status_to_vizier_cluster.up.sql":     &bintree{_000017_add_pod_status_to_vizier_clusterUpSql, map[string]*bintree{}},
+	"000018_add_num_nodes_to_cluster_table.down.sql":     &bintree{_000018_add_num_nodes_to_cluster_tableDownSql, map[string]*bintree{}},
+	"000018_add_num_nodes_to_cluster_table.up.sql":       &bintree{_000018_add_num_nodes_to_cluster_tableUpSql, map[string]*bintree{}},
+	"000019_drop_index_table.down.sql":                   &bintree{_000019_drop_index_tableDownSql, map[string]*bintree{}},
+	"000019_drop_index_table.up.sql":                     &bintree{_000019_drop_index_tableUpSql, map[string]*bintree{}},
+	"000020_add_auto_update_to_cluster_table.down.sql":   &bintree{_000020_add_auto_update_to_cluster_tableDownSql, map[string]*bintree{}},
+	"000020_add_auto_update_to_cluster_table.up.sql":     &bintree{_000020_add_auto_update_to_cluster_tableUpSql, map[string]*bintree{}},
+	"000021_add_status_message_to_cluster_info.down.sql": &bintree{_000021_add_status_message_to_cluster_infoDownSql, map[string]*bintree{}},
+	"000021_add_status_message_to_cluster_info.up.sql":   &bintree{_000021_add_status_message_to_cluster_infoUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
