@@ -3,8 +3,7 @@
 # PXL Scripts Overview
 
 Pixie open sources all of its scripts, which serve as examples of scripting in the PxL language.
-To learn more about PxL, take a look at our [documentation](https://docs.px.dev/using-pixie/pxl-overview/).
-
+To learn more about PxL, take a look at our [documentation](https://docs.px.dev/reference/pxl).
 - px/[agent_status](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/px/agent_status): This script gets the status of all the pixie agents (PEMs/Collectors) running.
 - px/[cluster](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/px/cluster): This view lists the namespaces and the node that are available on the current cluster.
 - px/[cql_data](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/px/cql_data): Shows a sample of CQL (Cassandra) requests in the cluster.
@@ -15,7 +14,7 @@ To learn more about PxL, take a look at our [documentation](https://docs.px.dev/
 - px/[dns_query_summary](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/px/dns_query_summary): Overview of DNS queries from pods in a namespace, grouped by the name being resolved and the rates of success.
 - px/[funcs](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/px/funcs): Gets a list all of the funcs available in Pixie.
 - px/[http_data](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/px/http_data): Shows most recent HTTP messages in the cluster.
-- px/[http_data_filtered](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/px/http_data_filtered): Show a sample of HTTP requests in the Cluster filtered by service, pod & req-path.
+- px/[http_data_filtered](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/px/http_data_filtered): Show a sample of HTTP requests in the Cluster filtered by service, pod, request path & response status code.
 - px/[http_post_requests](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/px/http_post_requests): Show a sample of HTTP requests in the Cluster that have method POST.
 - px/[http_request_stats](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/px/http_request_stats): HTTP request statistics aggregated by Service
 - px/[jvm_data](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/px/jvm_data): JVM stats for Java processes running on the cluster
@@ -52,11 +51,19 @@ To learn more about PxL, take a look at our [documentation](https://docs.px.dev/
 - px/[service_stats](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/px/service_stats): Gets service latency, error rate and throughput. Visualize them in three separate time series charts.
 - px/[services](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/px/services): This script gets an overview of the services in a namespace, summarizing their request statistics.
 - px/[slow_http_requests](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/px/slow_http_requests): This view shows a sample of slow requests by service.
+- px/[sql_queries](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/px/sql_queries): This live view calculates the latency, error rate, and throughput of each distinct normalized SQL Query. Only supports Postgres or MySQL.
+- px/[sql_query](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/px/sql_query): This live view calculates the latency, error rate, and throughput of each distinct parameter set for a given normalized SQL query. Only supports PostgresSQL or MySQL.
 - px/[tcp_drops](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/px/tcp_drops): Shows TCP drop counts in the cluster.
 - px/[tcp_retransmits](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/px/tcp_retransmits): Shows TCP retransmission counts in the cluster.
 - px/[tracepoint_status](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/px/tracepoint_status): Returns information about tracepoints running on the cluster.
 - px/[upids](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/px/upids): Shows a list of UPIDs running in a given namespace.
+- pxbeta/[capable](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/pxbeta/capable): Traces calls to the kernel cap_capable() function, which does security capability checks.
+- pxbeta/[dc_snoop](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/pxbeta/dc_snoop): Traces directory entry cache (dcache) lookups.
+- pxbeta/[md_flush](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/pxbeta/md_flush): Traces flushes at the md driver level, and prints details.
+- pxbeta/[nap_time](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/pxbeta/nap_time): Tracing application sleeps via the nanosleep(2) syscall.
+- pxbeta/[oom_kill](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/pxbeta/oom_kill): Traces the Linux out-of-memory (OOM) killer and shows basic details on one line per OOM kill.
 - pxbeta/[service_endpoint](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/pxbeta/service_endpoint): This script gets an overview of an individual endpoint for an individual service, summarizing its request statistics.
 - pxbeta/[service_endpoints](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/pxbeta/service_endpoints): This script gets an overview of the endpoints for a service, summarizing their request statistics.
+- pxbeta/[sync_snoop](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/pxbeta/sync_snoop): Tracing file system sync events.
 - sotw/[dns_external_fqdn_list](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/sotw/dns_external_fqdn_list): Lists external, fully qualified domain names (FQDNs) from all DNS traffic on the cluster for a specified amount of time.
 - sotw/[dns_queries_filtered](https://github.com/pixie-labs/pixie/tree/main/src/pxl_scripts/sotw/dns_queries_filtered): Lists all DNS queries filtered by a specific query name.

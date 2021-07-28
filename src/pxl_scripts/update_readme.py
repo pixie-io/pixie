@@ -45,7 +45,7 @@ header_text = """
 # PXL Scripts Overview
 
 Pixie open sources all of its scripts, which serve as examples of scripting in the PxL language.
-To learn more about PxL, take a look at our [documentation](https://docs.pixielabs.ai/pxl).
+To learn more about PxL, take a look at our [documentation](https://docs.px.dev/reference/pxl).
 """
 
 # get relative path to PxL script folder (px/)
