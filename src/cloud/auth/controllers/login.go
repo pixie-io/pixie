@@ -44,7 +44,7 @@ const (
 	// RefreshTokenValidDuration is duration that the refresh token is valid from current time.
 	RefreshTokenValidDuration = 90 * 24 * time.Hour
 	// AugmentedTokenValidDuration is the duration that the augmented token is valid from the current time.
-	AugmentedTokenValidDuration = 30 * time.Minute
+	AugmentedTokenValidDuration = 90 * time.Minute
 	// SupportAccountDomain is the domain name of the Pixie support account which can access the org provided at login.
 	SupportAccountDomain = "pixie.support"
 )
