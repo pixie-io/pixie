@@ -270,7 +270,7 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
           }
           break;
         case 'error': {
-          const error = Array.isArray(update.error) ? update.error[0] : update.error;
+          const error = Array.isArray(update.event.error) ? update.event.error[0] : update.event.error;
           resultsContext.setResults({ error, tables: {} });
           const { errType } = (error as VizierQueryError);
           const errMsg = error.message;

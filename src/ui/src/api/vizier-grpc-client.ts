@@ -16,8 +16,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Observable, throwError } from 'rxjs';
-import { catchError, timeout } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import {
+  bufferTime, catchError, finalize, mergeMap, map, timeout, startWith,
+} from 'rxjs/operators';
 import {
   ErrorDetails, ExecuteScriptRequest, HealthCheckRequest, QueryExecutionStats, Relation,
   RowBatchData, Status, MutationInfo, HealthCheckResponse, ExecuteScriptResponse,
@@ -132,8 +134,6 @@ export interface ExecutionStateUpdate {
   cancel?: () => void;
   /** If set, execution has halted for this reason */
   completionReason?: 'complete' | 'cancelled' | 'error';
-  /** If set, execution has been halted by this error */
-  error?: VizierQueryError;
 }
 
 function getExecutionErrors(errList: ErrorDetails[]): string[] {
@@ -147,6 +147,29 @@ function getExecutionErrors(errList: ErrorDetails[]): string[] {
         return `Unknown error type ${ErrorDetails.ErrorCase[error.getErrorCase()]}.`;
     }
   });
+}
+
+function addFuncsToRequest(req: ExecuteScriptRequest, funcs: VizierQueryFunc[]): VizierQueryError {
+  for (const input of funcs) {
+    const execFuncPb = new ExecuteScriptRequest.FuncToExecute();
+    execFuncPb.setFuncName(input.name);
+    execFuncPb.setOutputTablePrefix(input.outputTablePrefix);
+    for (const arg of input.args) {
+      const argValPb = new ExecuteScriptRequest.FuncToExecute.ArgValue();
+      argValPb.setName(arg.name);
+      if (typeof arg.value === 'undefined') {
+        return new VizierQueryError('vis', `No value provided for arg ${arg.name}.`);
+      }
+      if (typeof arg.value !== 'string') {
+        return new VizierQueryError('vis', 'All args must be strings.'
+          + ` Received '${typeof arg.value}' for arg '${arg.name}'.`);
+      }
+      argValPb.setValue(arg.value);
+      execFuncPb.addArgValues(argValPb);
+    }
+    req.addExecFuncs(execFuncPb);
+  }
+  return null;
 }
 
 const HEALTH_CHECK_TIMEOUT = 10000; // 10 seconds
@@ -171,9 +194,9 @@ export class VizierGRPCClient {
   }
 
   /**
-   * Monitors the health of both Pixie instrumentation on a cluster, and this client's connection to it.
-   * The returned Observable watches
-   */
+    * Monitors the health of both Pixie instrumentation on a cluster, and this client's connection to it.
+    * The returned Observable watches
+    */
   health(): Observable<Status> {
     const headers = {
       ...(this.attachCreds ? {} : { Authorization: `bearer ${this.token}` }),
@@ -181,27 +204,14 @@ export class VizierGRPCClient {
     const req = new HealthCheckRequest();
     req.setClusterId(this.clusterID);
     const call = this.client.healthCheck(req, headers);
-    return new Observable<Status>((observer) => {
-      call.on('data', (resp: HealthCheckResponse) => {
-        if (observer.closed) {
-          call.cancel();
-        }
-        observer.next(resp.getStatus());
-      });
-
-      call.on('error', (error) => {
-        observer.error(error);
-      });
-
-      call.on('end', () => {
-        observer.complete();
-      });
+    return new Observable<HealthCheckResponse>((observer) => {
+      call.on('data', observer.next.bind(observer));
+      call.on('error', observer.error.bind(observer));
+      call.on('end', observer.complete.bind(observer));
     }).pipe(
+      map((resp: HealthCheckResponse) => resp.getStatus()),
+      finalize((() => { call.cancel(); })),
       timeout(HEALTH_CHECK_TIMEOUT),
-      catchError((err) => {
-        call.cancel();
-        return throwError(err);
-      }),
     );
   }
 
@@ -215,197 +225,112 @@ export class VizierGRPCClient {
     const headers = {
       ...(this.attachCreds ? {} : { Authorization: `bearer ${this.token}` }),
     };
-
-    return new Observable<ExecutionStateUpdate>((subscriber) => {
-      let req: ExecuteScriptRequest;
-      const results: VizierQueryResult = { tables: [] };
-      try {
-        req = this.buildRequest(script, funcs, mutation);
-      } catch (error) {
-        subscriber.next({
-          event: { type: 'error', error }, results, cancel: undefined, error, completionReason: 'error',
-        });
-        subscriber.complete();
-        subscriber.unsubscribe();
-        return;
-      }
-
-      const call = this.client.executeScript(req, headers);
-      const tablesMap = new Map<string, Table>();
-      let resolved = false;
-
-      let awaitingUpdates: BatchDataUpdate[] = [];
-
-      // Implicitly typed on purpose. This is a number in browsers, but a Timeout in NodeJS.
-      // We can't specify this explicitly without including the NodeJS lib.d.ts in tsconfig.json, which isn't portable.
-      let updateInterval;
-
-      const cancel = () => {
-        if (subscriber.closed) return;
-        clearInterval(updateInterval);
-        call.cancel();
-        subscriber.next({
-          event: { type: 'cancel' },
-          results,
-          cancel: undefined,
-          completionReason: 'cancelled',
-        });
-        subscriber.complete();
-        subscriber.unsubscribe();
-      };
-
-      const emit = (
-        event: ExecutionEvent,
-        completionReason?: ExecutionStateUpdate['completionReason'],
-        error?: VizierQueryError,
-      ) => {
-        if (subscriber.closed) return;
-        const cancelIfNotDone = (error || completionReason) ? null : cancel;
-        subscriber.next({
-          event, results, cancel: cancelIfNotDone, completionReason, error,
-        });
-        if (error || completionReason) {
-          clearInterval(updateInterval);
-          call.cancel();
-          subscriber.complete();
-          subscriber.unsubscribe();
-        }
-      };
-
-      const emitError = (error: VizierQueryError) => {
-        emit({ type: 'error', error }, 'error', error);
-      };
-
-      updateInterval = setInterval(() => {
-        if (awaitingUpdates.length) {
-          emit({ type: 'data', data: awaitingUpdates });
-          awaitingUpdates = [];
-        }
-      }, 1000);
-
-      // To provide a cancel method immediately
-      emit({ type: 'start' });
-
-      call.on('data', (resp: ExecuteScriptResponse) => {
-        if (!results.queryId) {
-          results.queryId = resp.getQueryId();
-        }
-
-        if (resp.hasStatus()) {
-          const status = resp.getStatus();
-          const errList = status.getErrorDetailsList();
-          resolved = true;
-          if (errList.length > 0) {
-            emitError(new VizierQueryError('execution', getExecutionErrors(errList), status));
-            return;
-          }
-          const errMsg = status.getMessage();
-          if (errMsg) {
-            emitError(new VizierQueryError('execution', errMsg, status));
-            return;
-          }
-
-          results.status = status;
-          emit({ type: 'status', status });
-          return;
-        }
-
-        if (resp.hasMetaData()) {
-          const relation = resp.getMetaData().getRelation();
-          const id = resp.getMetaData().getId();
-          const name = resp.getMetaData().getName();
-          tablesMap.set(id, {
-            relation, id, name, data: [],
-          });
-          const table = tablesMap.get(id);
-          results.tables.push(table);
-          results.schemaOnly = true;
-          emit({ type: 'metadata', table });
-        } else if (resp.hasMutationInfo()) {
-          results.mutationInfo = resp.getMutationInfo();
-          emit({ type: 'mutation-info', mutationInfo: results.mutationInfo });
-        } else if (resp.hasData()) {
-          const data = resp.getData();
-          if (data.hasBatch()) {
-            results.schemaOnly = false;
-
-            const batch = data.getBatch();
-            const id = batch.getTableId();
-            const table = tablesMap.get(id);
-            const { name, relation } = table;
-            table.data.push(batch);
-
-            // These get flushed on an interval, so as not to flood the UI with expensive re-renders
-            awaitingUpdates.push({
-              id, name, relation, batch,
-            });
-          } else if (data.hasExecutionStats()) {
-            // The query finished executing, and all the data has been received.
-            results.executionStats = data.getExecutionStats();
-            emit({ type: 'stats', stats: results.executionStats }, 'complete');
-            subscriber.complete();
-            subscriber.unsubscribe();
-            resolved = true;
-          }
-        }
-      });
-
-      call.on('end', () => {
-        clearInterval(updateInterval);
-        if (!resolved) {
-          emitError(new VizierQueryError('execution', 'Execution ended with incomplete results'));
-        }
-      });
-
-      call.on('error', (err) => {
-        resolved = true;
-        clearInterval(updateInterval);
-        emitError(new VizierQueryError('server', err.message));
-      });
-      call.on('status', (status) => {
-        if (status.code > 0) {
-          resolved = true;
-          emitError(new VizierQueryError('server', status.details));
-        }
-      });
-    });
-  }
-
-  private buildRequest(script: string, funcs: VizierQueryFunc[], mutation: boolean): ExecuteScriptRequest {
     const req = new ExecuteScriptRequest();
-    const errors = [];
-
     req.setClusterId(this.clusterID);
     req.setQueryStr(script);
     req.setMutation(mutation);
-    funcs.forEach((input: VizierQueryFunc) => {
-      const execFuncPb = new ExecuteScriptRequest.FuncToExecute();
-      execFuncPb.setFuncName(input.name);
-      execFuncPb.setOutputTablePrefix(input.outputTablePrefix);
-      input.args.forEach((arg) => {
-        const argValPb = new ExecuteScriptRequest.FuncToExecute.ArgValue();
-        argValPb.setName(arg.name);
-        if (typeof arg.value === 'undefined') {
-          errors.push(new VizierQueryError('vis', `No value provided for arg ${arg.name}.`));
-          return;
-        }
-        if (typeof arg.value !== 'string') {
-          errors.push(
-            new VizierQueryError('vis', 'All args must be strings.'
-              + ` Received '${typeof arg.value}' for arg '${arg.name}'.`),
-          );
-          return;
-        }
-        argValPb.setValue(arg.value);
-        execFuncPb.addArgValues(argValPb);
-      });
-      req.addExecFuncs(execFuncPb);
-    });
-
-    if (errors.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-throw-literal
-      throw errors;
+    const err = addFuncsToRequest(req, funcs);
+    if (err) {
+      return of({
+        event: { type: 'error', error: err }, completionReason: 'error',
+      } as ExecutionStateUpdate);
     }
-    return req;
+
+    const call = this.client.executeScript(req, headers);
+
+    const tablesMap = new Map<string, Table>();
+    const results: VizierQueryResult = { tables: [] };
+
+    return new Observable<ExecuteScriptResponse>((observer) => {
+      call.on('data', observer.next.bind(observer));
+      call.on('error', observer.error.bind(observer));
+      call.on('end', observer.complete.bind(observer));
+      call.on('status', (status) => {
+        if (status.code > 0) {
+          throw new VizierQueryError('server', status.details);
+        }
+      });
+    }).pipe(
+      finalize((() => { call.cancel(); })),
+      bufferTime(250),
+      mergeMap((resps: ExecuteScriptResponse[]) => {
+        const outs: ExecutionStateUpdate[] = [];
+        const dataBatch: BatchDataUpdate[] = [];
+
+        for (const resp of resps) {
+          if (!results.queryId) {
+            results.queryId = resp.getQueryId();
+          }
+
+          if (resp.hasStatus()) {
+            const status = resp.getStatus();
+            const errList = status.getErrorDetailsList();
+            if (errList.length > 0) {
+              throw new VizierQueryError('execution', getExecutionErrors(errList), status);
+            }
+            const errMsg = status.getMessage();
+            if (errMsg) {
+              throw new VizierQueryError('execution', errMsg, status);
+            }
+
+            results.status = status;
+            outs.push({ event: { type: 'status', status }, results });
+          }
+
+          if (resp.hasMetaData()) {
+            const relation = resp.getMetaData().getRelation();
+            const id = resp.getMetaData().getId();
+            const name = resp.getMetaData().getName();
+            tablesMap.set(id, {
+              relation, id, name, data: [],
+            });
+            const table = tablesMap.get(id);
+            results.tables.push(table);
+            results.schemaOnly = true;
+            outs.push({ event: { type: 'metadata', table }, results });
+          } else if (resp.hasMutationInfo()) {
+            results.mutationInfo = resp.getMutationInfo();
+            outs.push({ event: { type: 'mutation-info', mutationInfo: results.mutationInfo }, results });
+          } else if (resp.hasData()) {
+            const data = resp.getData();
+            if (data.hasBatch()) {
+              results.schemaOnly = false;
+
+              const batch = data.getBatch();
+              const id = batch.getTableId();
+              const table = tablesMap.get(id);
+              const { name, relation } = table;
+              table.data.push(batch);
+              dataBatch.push({
+                id, name, relation, batch,
+              });
+            } else if (data.hasExecutionStats()) {
+              // The query finished executing, and all the data has been received.
+              results.executionStats = data.getExecutionStats();
+              outs.push({
+                event: { type: 'stats', stats: results.executionStats },
+                completionReason: 'complete',
+                results,
+              });
+            }
+          }
+        }
+
+        outs.push({ event: { type: 'data', data: dataBatch }, results });
+        return outs;
+      }),
+      startWith({
+        event: { type: 'start' },
+        results: undefined,
+        cancel: () => call.cancel?.(),
+      } as ExecutionStateUpdate),
+      catchError((error) => {
+        call.cancel();
+        return of({
+          event: { type: 'error', error }, completionReason: 'error',
+        } as ExecutionStateUpdate);
+      }),
+      finalize((() => { call.cancel(); })),
+    );
   }
 }
