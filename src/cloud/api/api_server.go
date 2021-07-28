@@ -171,6 +171,7 @@ func main() {
 			"/pl.cloudapi.ArtifactTracker/GetArtifactList":  true,
 			"/pl.cloudapi.ArtifactTracker/GetDownloadLink":  true,
 			"/px.cloudapi.ConfigService/GetConfigForVizier": true,
+			"/px.cloudapi.AuthService/Login":                true,
 		},
 	}
 
@@ -197,6 +198,9 @@ func main() {
 
 	aks := &controller.APIKeyServer{APIKeyClient: ak}
 	cloudpb.RegisterAPIKeyManagerServer(s.GRPCServer(), aks)
+
+	authServer := &controller.AuthServer{AuthClient: ac}
+	cloudpb.RegisterAuthServiceServer(s.GRPCServer(), authServer)
 
 	vpt := ptproxy.NewVizierPassThroughProxy(nc, vc)
 	vizierpb.RegisterVizierServiceServer(s.GRPCServer(), vpt)
