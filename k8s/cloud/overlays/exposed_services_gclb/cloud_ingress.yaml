@@ -13,10 +13,6 @@ spec:
       paths:
       # GCP does not support multiple wildcards so unfortunately we need this for each
       # GRPC API service.
-      - path: /pl.cloudapi.AuthService/*
-        backend:
-          serviceName: cloud-proxy-service
-          servicePort: 5555
       - path: /pl.cloudapi.ArtifactTracker/*
         backend:
           serviceName: cloud-proxy-service
@@ -29,31 +25,7 @@ spec:
         backend:
           serviceName: vzconn-service
           servicePort: 51600
-      - path: /px.cloudapi.VizierImageAuthorization/*
-        backend:
-          serviceName: cloud-proxy-service
-          servicePort: 5555
       - path: /px.cloudapi.ArtifactTracker/*
-        backend:
-          serviceName: cloud-proxy-service
-          servicePort: 5555
-      - path: /px.cloudapi.VizierClusterInfo/*
-        backend:
-          serviceName: cloud-proxy-service
-          servicePort: 5555
-      - path: /px.cloudapi.ProfileService/*
-        backend:
-          serviceName: cloud-proxy-service
-          servicePort: 5555
-      - path: /px.api.vizierpb.VizierService/*
-        backend:
-          serviceName: cloud-proxy-service
-          servicePort: 4444
-      - path: /px.cloudapi.VizierDeploymentKeyManager/*
-        backend:
-          serviceName: cloud-proxy-service
-          servicePort: 5555
-      - path: /px.cloudapi.ConfigService/*
         backend:
           serviceName: cloud-proxy-service
           servicePort: 5555
@@ -61,6 +33,34 @@ spec:
         backend:
           serviceName: cloud-proxy-service
           servicePort: 5555
+      - path: /px.cloudapi.AuthService/*
+        backend:
+          serviceName: cloud-proxy-service
+          servicePort: 5555
+      - path: /px.cloudapi.ConfigService/*
+        backend:
+          serviceName: cloud-proxy-service
+          servicePort: 5555
+      - path: /px.cloudapi.ProfileService/*
+        backend:
+          serviceName: cloud-proxy-service
+          servicePort: 5555
+      - path: /px.cloudapi.VizierClusterInfo/*
+        backend:
+          serviceName: cloud-proxy-service
+          servicePort: 5555
+      - path: /px.cloudapi.VizierDeploymentKeyManager/*
+        backend:
+          serviceName: cloud-proxy-service
+          servicePort: 5555
+      - path: /px.cloudapi.VizierImageAuthorization/*
+        backend:
+          serviceName: cloud-proxy-service
+          servicePort: 5555
+      - path: /px.api.vizierpb.VizierService/*
+        backend:
+          serviceName: cloud-proxy-service
+          servicePort: 4444
       - path: /*
         backend:
           serviceName: cloud-proxy-service
