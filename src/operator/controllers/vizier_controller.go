@@ -71,7 +71,7 @@ func getCloudClientConnection(cloudAddr string, devCloudNS string) (*grpc.Client
 	isInternal := false
 
 	if devCloudNS != "" {
-		cloudAddr = fmt.Sprintf("vzconn-service.%s.svc.cluster.local:51600", devCloudNS)
+		cloudAddr = fmt.Sprintf("api-service.%s.svc.cluster.local:51200", devCloudNS)
 		isInternal = true
 	}
 

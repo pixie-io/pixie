@@ -384,7 +384,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	}
 
 	if devCloudNS != "" {
-		cloudAddr = fmt.Sprintf("vzconn-service.%s.svc.cluster.local:51600", devCloudNS)
+		cloudAddr = fmt.Sprintf("api-service.%s.svc.cluster.local:51200", devCloudNS)
 	}
 
 	// Fill in template values.
