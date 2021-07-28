@@ -89,7 +89,7 @@ describe('Pixie TypeScript API Client', () => {
       const client = await PixieAPIClient.create({ apiKey: '' });
       spyOn(client.getCloudClient(), 'getClusterConnection').and.returnValue({});
 
-      const out = await client.executeScript('foo', 'import px').toPromise();
+      const out = await client.executeScript('foo', 'import px', { enableE2EEncryption: false }).toPromise();
       expect(spy).toHaveBeenCalled();
       expect(out).toBe('bar');
     });

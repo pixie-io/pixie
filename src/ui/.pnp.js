@@ -49,6 +49,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@egjs/hammerjs", "npm:2.0.17"],
             ["@emotion/react", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:11.4.0"],
             ["@emotion/styled", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:11.3.0"],
+            ["@inrupt/jose-legacy-modules", "npm:0.0.3-3.14.3"],
             ["@material-ui/core", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:5.0.0-alpha.33"],
             ["@material-ui/icons", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:5.0.0-alpha.34"],
             ["@material-ui/lab", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:5.0.0-alpha.34"],
@@ -122,6 +123,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["monaco-editor-webpack-plugin", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:1.9.1"],
             ["numeral", "npm:2.0.6"],
             ["oidc-client", "npm:1.11.5"],
+            ["pako", "npm:2.0.4"],
             ["prettier", "npm:2.2.1"],
             ["prism-react-renderer", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:1.2.0"],
             ["prop-types", "npm:15.7.2"],
@@ -3470,6 +3472,16 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "linkType": "HARD",
         }]
       ]],
+      ["@inrupt/jose-legacy-modules", [
+        ["npm:0.0.3-3.14.3", {
+          "packageLocation": "./.yarn/cache/@inrupt-jose-legacy-modules-npm-0.0.3-3.14.3-ab52cced5a-20e252f36f.zip/node_modules/@inrupt/jose-legacy-modules/",
+          "packageDependencies": [
+            ["@inrupt/jose-legacy-modules", "npm:0.0.3-3.14.3"],
+            ["jose", "npm:3.14.3"]
+          ],
+          "linkType": "HARD",
+        }]
+      ]],
       ["@istanbuljs/load-nyc-config", [
         ["npm:1.1.0", {
           "packageLocation": "./.yarn/cache/@istanbuljs-load-nyc-config-npm-1.1.0-42d17c9cb1-f7f3b1c922.zip/node_modules/@istanbuljs/load-nyc-config/",
@@ -4958,6 +4970,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@egjs/hammerjs", "npm:2.0.17"],
             ["@emotion/react", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:11.4.0"],
             ["@emotion/styled", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:11.3.0"],
+            ["@inrupt/jose-legacy-modules", "npm:0.0.3-3.14.3"],
             ["@material-ui/core", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:5.0.0-alpha.33"],
             ["@material-ui/icons", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:5.0.0-alpha.34"],
             ["@material-ui/lab", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:5.0.0-alpha.34"],
@@ -5031,6 +5044,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["monaco-editor-webpack-plugin", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:1.9.1"],
             ["numeral", "npm:2.0.6"],
             ["oidc-client", "npm:1.11.5"],
+            ["pako", "npm:2.0.4"],
             ["prettier", "npm:2.2.1"],
             ["prism-react-renderer", "virtual:6311d74c16404e62930c4d7ddf2432b83fba5a8a5fd14b35d13dedda522d7da5609bb48a366f2683d417946b3d3869a84044c8f340e07cd8bd784f9c6ffc2918#npm:1.2.0"],
             ["prop-types", "npm:15.7.2"],
@@ -14942,6 +14956,15 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "linkType": "HARD",
         }]
       ]],
+      ["jose", [
+        ["npm:3.14.3", {
+          "packageLocation": "./.yarn/cache/jose-npm-3.14.3-3aa5cdfa85-fd9b960d3c.zip/node_modules/jose/",
+          "packageDependencies": [
+            ["jose", "npm:3.14.3"]
+          ],
+          "linkType": "HARD",
+        }]
+      ]],
       ["joycon", [
         ["npm:3.0.1", {
           "packageLocation": "./.yarn/cache/joycon-npm-3.0.1-1489fed95a-db64c93cf0.zip/node_modules/joycon/",
@@ -17414,6 +17437,13 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./.yarn/cache/pako-npm-1.0.11-b8f1b69d3e-71c60150b6.zip/node_modules/pako/",
           "packageDependencies": [
             ["pako", "npm:1.0.11"]
+          ],
+          "linkType": "HARD",
+        }],
+        ["npm:2.0.4", {
+          "packageLocation": "./.yarn/cache/pako-npm-2.0.4-1d4e28f3ac-40866647f7.zip/node_modules/pako/",
+          "packageDependencies": [
+            ["pako", "npm:2.0.4"]
           ],
           "linkType": "HARD",
         }]

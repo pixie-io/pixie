@@ -23,7 +23,7 @@ import fetch from 'cross-fetch';
 import { Observable, of as observableOf } from 'rxjs';
 import {
   ClusterConfig, PixieAPIClient, PixieAPIClientAbstract, PixieAPIClientOptions,
-  ExecutionStateUpdate, VizierQueryFunc,
+  ExecutionStateUpdate, VizierQueryFunc, ExecuteScriptOptions,
 } from 'app/api';
 import { Status } from 'app/types/generated/vizierapi_pb';
 
@@ -36,7 +36,7 @@ export class MockPixieAPIClient implements PixieAPIClientAbstract {
 
   // eslint-disable-next-line class-methods-use-this
   executeScript(
-    cluster: string | ClusterConfig, script: string, funcs?: VizierQueryFunc[],
+    cluster: string | ClusterConfig, script: string, opts: ExecuteScriptOptions, funcs?: VizierQueryFunc[],
   ): Observable<ExecutionStateUpdate> {
     return observableOf({} as ExecutionStateUpdate);
   }

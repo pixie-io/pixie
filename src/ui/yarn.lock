@@ -1918,6 +1918,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@inrupt/jose-legacy-modules@npm:^0.0.3-3.14.3":
+  version: 0.0.3-3.14.3
+  resolution: "@inrupt/jose-legacy-modules@npm:0.0.3-3.14.3"
+  dependencies:
+    jose: 3.14.3
+  checksum: 20e252f36f7983060b1f4c44110316cf45f7aa10fda2ffe25f12b1fe84ab571f6406085b9227901c148226881bba324bf75d8f619701de8c0bb7a3c3fd52ba34
+  languageName: node
+  linkType: hard
+
 "@istanbuljs/load-nyc-config@npm:^1.0.0":
   version: 1.1.0
   resolution: "@istanbuljs/load-nyc-config@npm:1.1.0"
@@ -2864,6 +2873,7 @@ __metadata:
     "@egjs/hammerjs": ^2.0.0
     "@emotion/react": ^11.4.0
     "@emotion/styled": ^11.3.0
+    "@inrupt/jose-legacy-modules": ^0.0.3-3.14.3
     "@material-ui/core": ^5.0.0-alpha.33
     "@material-ui/icons": ^5.0.0-alpha.33
     "@material-ui/lab": ^5.0.0-alpha.33
@@ -2937,6 +2947,7 @@ __metadata:
     monaco-editor-webpack-plugin: ^1.9.0
     numeral: ^2.0.6
     oidc-client: ^1.11.5
+    pako: ^2.0.4
     prettier: ^2.0.5
     prism-react-renderer: ^1.0.2
     prop-types: ^15.5.4
@@ -11336,6 +11347,13 @@ fsevents@^2.1.2:
   languageName: node
   linkType: hard
 
+"jose@npm:3.14.3":
+  version: 3.14.3
+  resolution: "jose@npm:3.14.3"
+  checksum: fd9b960d3ca1cfcba9a92135b14c0885e33c18610678123c315b1bcb4e6d350b41a95d0dd9ca7e5c7a45c47993503231311b1783a3c2967d7903fa1fdacfd1bb
+  languageName: node
+  linkType: hard
+
 "joycon@npm:^3.0.1":
   version: 3.0.1
   resolution: "joycon@npm:3.0.1"
@@ -13528,6 +13546,13 @@ fsevents@^2.1.2:
   version: 1.0.11
   resolution: "pako@npm:1.0.11"
   checksum: 71c60150b68220ec52a404f3c39a4ed38f750e42452b88fe0eb2e6b5c98e91f73f706444359b097aca1e6db83ef8fef50b5a9ec100e30a606cda6da8d45e5439
+  languageName: node
+  linkType: hard
+
+"pako@npm:^2.0.4":
+  version: 2.0.4
+  resolution: "pako@npm:2.0.4"
+  checksum: 40866647f790305c321c678b1197771bfc832ff148a5dee1617a317f9c6b3beec6dacc2e89336bb0219508495a07a627452da07c52b5aede179985dc89a03dc7
   languageName: node
   linkType: hard
 

@@ -16,9 +16,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Observable, of } from 'rxjs';
+import * as pako from 'pako';
+import { ClientReadableStream } from 'grpc-web';
+import { compactDecrypt } from '@inrupt/jose-legacy-modules';
+import { Observable, of, from } from 'rxjs';
 import {
-  bufferTime, catchError, finalize, concatMap, map, timeout, startWith,
+  bufferTime, catchError, concatMap, finalize, mergeMap, map, timeout, startWith,
 } from 'rxjs/operators';
 import {
   ErrorDetails, ExecuteScriptRequest, HealthCheckRequest, QueryExecutionStats, Relation,
@@ -39,6 +42,10 @@ function withDevTools(client) {
   // eslint-disable-next-line no-underscore-dangle
   const enableDevTools = globalThis.__GRPCWEB_DEVTOOLS__ || noop;
   enableDevTools([client]);
+}
+
+export interface ExecuteScriptOptions {
+  enableE2EEncryption: boolean;
 }
 
 export interface Table {
@@ -172,6 +179,36 @@ function addFuncsToRequest(req: ExecuteScriptRequest, funcs: VizierQueryFunc[]):
   return null;
 }
 
+type KeyPair = {
+  publicKeyJWK: JsonWebKey,
+  privateKey: CryptoKey,
+};
+
+async function generateRSAKeyPair(): Promise<KeyPair> {
+  const keyPair = await window.crypto.subtle.generateKey(
+    {
+      name: 'RSA-OAEP',
+      modulusLength: 4096,
+      publicExponent: new Uint8Array([1, 0, 1]),
+      hash: 'SHA-256',
+    },
+    true,
+    ['encrypt', 'decrypt'],
+  );
+  const publicKeyJWK = await window.crypto.subtle.exportKey(
+    'jwk',
+    keyPair.publicKey,
+  );
+  return { publicKeyJWK, privateKey: keyPair.privateKey };
+}
+
+async function decryptRSA(privateKey: CryptoKey, data: Uint8Array): Promise<Uint8Array> {
+  const { plaintext } = await compactDecrypt(data, privateKey, {
+    inflateRaw: (input) => Promise.resolve(pako.inflateRaw(input)),
+  });
+  return plaintext;
+}
+
 const HEALTH_CHECK_TIMEOUT = 10000; // 10 seconds
 
 /**
@@ -183,6 +220,8 @@ const HEALTH_CHECK_TIMEOUT = 10000; // 10 seconds
 export class VizierGRPCClient {
   private readonly client: VizierServiceClient;
 
+  private readonly rsaKeyPromise: Promise<KeyPair>;
+
   constructor(
     addr: string,
     private token: string,
@@ -190,6 +229,9 @@ export class VizierGRPCClient {
     private attachCreds: boolean,
   ) {
     this.client = new VizierServiceClient(addr, null, attachCreds ? { withCredentials: 'true' } : {});
+    // Generate once per client and cache it to avoid the expense of regenrating on every
+    // request. The key pair will rotate on browser reload or on creation of a new client.
+    this.rsaKeyPromise = generateRSAKeyPair();
     withDevTools(this.client);
   }
 
@@ -221,36 +263,74 @@ export class VizierGRPCClient {
     script: string,
     funcs: VizierQueryFunc[],
     mutation: boolean,
+    opts: ExecuteScriptOptions,
   ): Observable<ExecutionStateUpdate> {
+    let call: ClientReadableStream<unknown>;
+    let keyPair: KeyPair;
     const tablesMap = new Map<string, Table>();
     const results: VizierQueryResult = { tables: [] };
 
-    const headers = {
-      ...(this.attachCreds ? {} : { Authorization: `bearer ${this.token}` }),
-    };
-    const req = new ExecuteScriptRequest();
-    req.setClusterId(this.clusterID);
-    req.setQueryStr(script);
-    req.setMutation(mutation);
-    const err = addFuncsToRequest(req, funcs);
-    if (err) {
-      return of({
-        event: { type: 'error', error: err }, completionReason: 'error', results,
-      });
-    }
+    const rsaKeyPromise: Promise<KeyPair> = opts.enableE2EEncryption ? this.rsaKeyPromise : Promise.resolve(null);
 
-    const call = this.client.executeScript(req, headers);
-    return new Observable<ExecuteScriptResponse>((observer) => {
-      call.on('data', observer.next.bind(observer));
-      call.on('error', observer.error.bind(observer));
-      call.on('end', observer.complete.bind(observer));
-      call.on('status', (status) => {
-        if (status.code > 0) {
-          observer.error(new VizierQueryError('server', status.details));
+    return from(
+      rsaKeyPromise,
+    ).pipe(
+      mergeMap((kp: KeyPair) => {
+        keyPair = kp;
+        const headers = {
+          ...(this.attachCreds ? {} : { Authorization: `bearer ${this.token}` }),
+        };
+        const req = new ExecuteScriptRequest();
+        req.setClusterId(this.clusterID);
+        req.setQueryStr(script);
+        req.setMutation(mutation);
+        if (keyPair) {
+          const encOpts = new ExecuteScriptRequest.EncryptionOptions();
+          encOpts.setJwkKey(JSON.stringify(keyPair.publicKeyJWK));
+          encOpts.setKeyAlg('RSA-OAEP-256');
+          encOpts.setContentAlg('A256GCM');
+          encOpts.setCompressionAlg('DEF');
+          req.setEncryptionOptions(encOpts);
         }
-      });
-    }).pipe(
+        const err = addFuncsToRequest(req, funcs);
+        if (err) {
+          throw err;
+        }
+
+        call = this.client.executeScript(req, headers);
+
+        return new Observable<ExecuteScriptResponse>((observer) => {
+          call.on('data', observer.next.bind(observer));
+          call.on('error', observer.error.bind(observer));
+          call.on('end', observer.complete.bind(observer));
+          call.on('status', (status) => {
+            if (status.code > 0) {
+              observer.error(new VizierQueryError('server', status.details));
+            }
+          });
+        });
+      }),
       finalize((() => { call.cancel(); })),
+      concatMap((resp: ExecuteScriptResponse) => {
+        if (!keyPair || !resp.hasData()) {
+          return of(resp);
+        }
+        if (!resp.getData().getEncryptedBatch()) {
+          if (resp.getData().hasBatch()) {
+            // eslint-disable-next-line no-console
+            console.warn('Expected table data to be encrypted. Please upgrade vizier.');
+          }
+          return of(resp);
+        }
+        const encrypted = resp.getData().getEncryptedBatch_asU8();
+        return from(decryptRSA(keyPair.privateKey, encrypted)).pipe(
+          map((dec: Uint8Array) => {
+            resp.getData().setBatch(RowBatchData.deserializeBinary(dec));
+            resp.getData().setEncryptedBatch('');
+            return resp;
+          }),
+        );
+      }),
       bufferTime(250),
       concatMap((resps: ExecuteScriptResponse[]) => {
         const outs: ExecutionStateUpdate[] = [];

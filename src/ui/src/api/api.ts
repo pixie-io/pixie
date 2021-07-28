@@ -27,6 +27,7 @@ import {
   ExecutionStateUpdate,
   VizierGRPCClient,
   VizierQueryFunc,
+  ExecuteScriptOptions,
 } from './vizier-grpc-client';
 import { PixieAPIClientOptions } from './api-options';
 import { CloudClient } from './cloud-gql-client';
@@ -59,6 +60,7 @@ export abstract class PixieAPIClientAbstract {
   abstract executeScript(
     cluster: string|ClusterConfig,
     script: string,
+    opts: ExecuteScriptOptions,
     funcs?: VizierQueryFunc[],
   ): Observable<ExecutionStateUpdate>;
 
@@ -192,11 +194,13 @@ export class PixieAPIClient extends PixieAPIClientAbstract {
    */
   executeScript(
     cluster: string|ClusterConfig,
-    script: string, funcs: VizierQueryFunc[] = [],
+    script: string,
+    opts: ExecuteScriptOptions,
+    funcs: VizierQueryFunc[] = [],
   ): Observable<ExecutionStateUpdate> {
     const hasMutation = containsMutation(script);
     return from(this.getClusterClient(cluster))
-      .pipe(switchMap((client) => client.executeScript(script, funcs, hasMutation)));
+      .pipe(switchMap((client) => client.executeScript(script, funcs, hasMutation, opts)));
   }
 
   /**
