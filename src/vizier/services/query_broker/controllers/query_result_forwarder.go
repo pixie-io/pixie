@@ -283,7 +283,7 @@ forLoop:
 	cancelConsumer()
 }
 
-func (a *activeQuery) handleRequest(ctx context.Context, queryID uuid.UUID, msg *carnotpb.TransferResultChunkRequest, resultCh chan *vizierpb.ExecuteScriptResponse) error {
+func (a *activeQuery) handleRequest(ctx context.Context, queryID uuid.UUID, msg *carnotpb.TransferResultChunkRequest, resultCh chan<- *vizierpb.ExecuteScriptResponse) error {
 	// Stream the agent stream result to the client stream.
 	// Check if stream is complete. If so, close client stream.
 	// If there was an error, then cancel both sides of the stream.
@@ -364,7 +364,7 @@ type QueryResultForwarder interface {
 	// Blocks until the stream (& the agent stream) has completed, been cancelled, or experienced an error.
 	// Returns error for any error received.
 	StreamResults(ctx context.Context, queryID uuid.UUID,
-		resultCh chan *vizierpb.ExecuteScriptResponse) error
+		resultCh chan<- *vizierpb.ExecuteScriptResponse) error
 
 	// Returns the producer context for the query, so that the watchdog can cancel all producers with one context.
 	GetProducerCtx(queryID uuid.UUID) (context.Context, error)
@@ -462,7 +462,7 @@ const maxQueryPlanStringSize = 1024*1024 - maxQueryPlanBufferSize
 
 // StreamResults streams results from the agent streams to the client stream.
 func (f *QueryResultForwarderImpl) StreamResults(ctx context.Context, queryID uuid.UUID,
-	resultCh chan *vizierpb.ExecuteScriptResponse) error {
+	resultCh chan<- *vizierpb.ExecuteScriptResponse) error {
 	f.activeQueriesMutex.Lock()
 	activeQuery, present := f.activeQueries[queryID]
 	f.activeQueriesMutex.Unlock()

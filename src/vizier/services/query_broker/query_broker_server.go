@@ -160,7 +160,7 @@ func main() {
 	agentTracker := tracker.NewAgents(mdsClient, viper.GetString("jwt_signing_key"))
 	agentTracker.Start()
 	defer agentTracker.Stop()
-	svr, err := controllers.NewServer(env, agentTracker, mdtpClient, mdconfClient, natsConn)
+	svr, err := controllers.NewServer(env, agentTracker, mdtpClient, mdconfClient, natsConn, controllers.NewQueryExecutorFromServer)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize GRPC server funcs.")
 	}

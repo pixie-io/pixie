@@ -41,316 +41,43 @@ import (
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/testingutils"
 	"px.dev/pixie/src/vizier/services/query_broker/controllers"
-	mock_controllers "px.dev/pixie/src/vizier/services/query_broker/controllers/mock"
 	"px.dev/pixie/src/vizier/services/query_broker/querybrokerenv"
 	"px.dev/pixie/src/vizier/services/query_broker/tracker"
 )
 
-const singleAgentDistributedState = `
-distributed_state: {
-	carnot_info: {
-		query_broker_address: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-		agent_id {
-			high_bits:  0x21285cdd1de94ab1
-			low_bits: 0xae6a0ba08c8c676c
-		}
-		has_data_store: true
-		processes_data: true
-		asid: 123
-		metadata_info {
-			metadata_fields: CONTAINER_ID
-			metadata_fields: SERVICE_NAME
-			xxhash64_bloom_filter {
-				num_hashes: 2
-				data: "1234"
-			}
-		}
-	}
-	schema_info {
-		name: "perf_and_http"
-		relation: {
-				columns: {
-					column_name: "_time"
-				}
-		}
-		agent_list {
-			high_bits: 0x21285cdd1de94ab1
-			low_bits: 0xae6a0ba08c8c676c
-		}
-	}
-}
-plan_options: {
-	explain: false
-	analyze: false
-	max_output_rows_per_table: 10000
-}
-result_address: "qb_address"
-result_ssl_targetname: "qb_hostname"
-`
+type fakeQueryExecutor struct {
+	ResultsToSend []*vizierpb.ExecuteScriptResponse
+	RunError      error
+	WaitError     error
+	queryID       uuid.UUID
 
-const testQuery = `
-df = dataframe(table='perf_and_http', select=['_time'])
-display(df, 'out')
-`
-
-const badQuery = `
-df = dataframe(table='', select=['_time'])
-display(df, 'out')
-`
-
-const expectedPlannerResult = `
-status: {}
-plan: {
-	qb_address_to_plan: {
-		key: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-		value: {
-			dag: {
-				nodes: {
-					id: 1
-				}
-			}
-			nodes: {
-				id: 1
-				dag: {
-					nodes: {
-						id: 3
-						sorted_children: 0
-					}
-					nodes: {
-						sorted_parents: 3
-					}
-				}
-				nodes: {
-					id: 3
-					op: {
-						op_type: MEMORY_SOURCE_OPERATOR
-						mem_source_op: {
-							name: "table1"
-							column_idxs: 0
-							column_idxs: 1
-							column_idxs: 2
-							column_names: "time_"
-							column_names: "cpu_cycles"
-							column_names: "upid"
-							column_types: TIME64NS
-							column_types: INT64
-							column_types: UINT128
-							tablet: "1"
-						}
-					}
-				}
-				nodes: {
-					op: {
-						op_type: GRPC_SINK_OPERATOR
-						grpc_sink_op: {
-							address: "foo"
-							output_table {
-								table_name: "agent1_table"
-								column_types: TIME64NS
-								column_types: INT64
-								column_types: UINT128
-								column_names: "time_"
-								column_names: "cpu_cycles"
-								column_names: "upid"
-								column_semantic_types: ST_NONE
-								column_semantic_types: ST_NONE
-								column_semantic_types: ST_UPID
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	qb_address_to_plan: {
-		key: "31285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-		value: {
-			dag: {
-				nodes: {
-					id: 1
-				}
-			}
-			nodes: {
-				id: 1
-				dag: {
-					nodes: {
-						id: 3
-						sorted_children: 0
-					}
-					nodes: {
-						sorted_parents: 3
-					}
-				}
-				nodes: {
-					id: 3
-					op: {
-						op_type: MEMORY_SOURCE_OPERATOR
-						mem_source_op: {
-							name: "table1"
-							column_idxs: 0
-							column_names: "time_"
-							column_types: TIME64NS
-							tablet: "1"
-						}
-					}
-				}
-				nodes: {
-					op: {
-						op_type: GRPC_SINK_OPERATOR
-						grpc_sink_op: {
-							address: "bar"
-							output_table {
-								table_name: "agent2_table"
-								column_types: TIME64NS
-								column_names: "time_"
-								column_semantic_types: ST_NONE
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	qb_address_to_dag_id: {
-		key: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-		value: 0
-	}
-	qb_address_to_dag_id: {
-		key: "31285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-		value: 1
-	}
-	dag: {
-		nodes: {
-			id: 0
-		}
-		nodes: {
-			id: 1
-		}
-	}
-}
-`
-
-const failedPlannerResult = `
-status{
-	err_code: INVALID_ARGUMENT
-	context {
-		[type.googleapis.com/px.carnot.planner.compilerpb.CompilerErrorGroup] {
-			errors {
-				line_col_error {
-					line: 1
-					column: 2
-					message: "Error ova here."
-				}
-			}
-			errors {
-				line_col_error {
-					line: 20
-					column: 19
-					message: "Error ova there."
-				}
-			}
-		}
-	}
-}`
-
-const failedPlannerResultFromStatus = `
-status{
-	msg: "failure failure failure"
-	err_code: INVALID_ARGUMENT
-}`
-
-type fakeAgentsTracker struct {
-	agentsInfo tracker.AgentsInfo
+	consumer    controllers.QueryResultConsumer
+	ReqReceived *vizierpb.ExecuteScriptRequest
 }
 
-func (f *fakeAgentsTracker) GetAgentInfo() tracker.AgentsInfo {
-	return f.agentsInfo
+func (q *fakeQueryExecutor) Run(ctx context.Context, req *vizierpb.ExecuteScriptRequest, consumer controllers.QueryResultConsumer) error {
+	q.ReqReceived = req
+	q.consumer = consumer
+	return q.RunError
 }
 
-type fakeResultForwarder struct {
-	// Variables to pass in for ExecuteScript testing.
-	ClientResultsToSend []*vizierpb.ExecuteScriptResponse
-	Error               error
-
-	// Variables that will get set during ExecuteScriptTesting.
-	QueryRegistered       uuid.UUID
-	TableIDMap            map[string]string
-	QueryDeleted          uuid.UUID
-	QueryStreamed         uuid.UUID
-	StreamedQueryPlanOpts *controllers.QueryPlanOpts
-
-	// Variables to set/use for TransferResultChunk testing.
-	ClientStreamClosed   bool
-	ClientStreamError    error
-	ReceivedAgentResults []*carnotpb.TransferResultChunkRequest
-}
-
-// RegisterQuery registers a query.
-func (f *fakeResultForwarder) RegisterQuery(queryID uuid.UUID, tableIDMap map[string]string,
-	compilationTimeNs int64,
-	queryPlanOpts *controllers.QueryPlanOpts) error {
-	f.QueryRegistered = queryID
-	f.TableIDMap = tableIDMap
-	f.StreamedQueryPlanOpts = queryPlanOpts
+func (q *fakeQueryExecutor) Wait() error {
+	if q.WaitError != nil {
+		return q.WaitError
+	}
+	for _, result := range q.ResultsToSend {
+		if err := q.consumer.Consume(result); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
-// StreamResults streams the results to the resultCh.
-func (f *fakeResultForwarder) StreamResults(ctx context.Context, queryID uuid.UUID,
-	resultCh chan *vizierpb.ExecuteScriptResponse) error {
-	f.QueryStreamed = queryID
-
-	for _, expectedResult := range f.ClientResultsToSend {
-		resultCh <- expectedResult
-	}
-	return f.Error
+func (q *fakeQueryExecutor) QueryID() uuid.UUID {
+	return q.queryID
 }
 
-// GetProducerCtx returns the producer context for a queryID.
-func (f *fakeResultForwarder) GetProducerCtx(queryID uuid.UUID) (context.Context, error) {
-	return context.Background(), nil
-}
-
-// ForwardQueryResult forwards the agent result to the client result stream.
-func (f *fakeResultForwarder) ForwardQueryResult(ctx context.Context, msg *carnotpb.TransferResultChunkRequest) error {
-	if f.ClientStreamClosed {
-		return f.ClientStreamError
-	}
-	f.ReceivedAgentResults = append(f.ReceivedAgentResults, msg)
-	return nil
-}
-
-// ProducerCancelStream cancels the query when the producer side encounters an error.
-func (f *fakeResultForwarder) ProducerCancelStream(queryID uuid.UUID, err error) {
-	f.ClientStreamError = err
-	f.ClientStreamClosed = true
-}
-
-func TestCheckHealth_Success(t *testing.T) {
-	// Start NATS.
-	nc, cleanup := testingutils.MustStartTestNATS(t)
-	defer cleanup()
-
-	// Set up mocks.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	plannerStatePB := new(distributedpb.LogicalPlannerState)
-	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-	agentsInfo := tracker.NewTestAgentsInfo(plannerStatePB.DistributedState)
-	at := fakeAgentsTracker{
-		agentsInfo: agentsInfo,
-	}
-
-	// Set up server.
-	env, err := querybrokerenv.New("qb_address", "qb_hostname", "test")
-	if err != nil {
-		t.Fatal("Failed to create api environment.")
-	}
-
-	queryID := uuid.Must(uuid.NewV4())
+func buildCheckHealthSuccessResponses(queryID uuid.UUID) []*vizierpb.ExecuteScriptResponse {
 	fakeResult := &vizierpb.ExecuteScriptResponse{
 		QueryID: queryID.String(),
 		Result: &vizierpb.ExecuteScriptResponse_Data{
@@ -375,159 +102,29 @@ func TestCheckHealth_Success(t *testing.T) {
 			},
 		},
 	}
-
-	rf := &fakeResultForwarder{
-		ClientResultsToSend: []*vizierpb.ExecuteScriptResponse{
-			fakeResult,
-		},
-	}
-
-	// Not the actual health check query, but that's okay for the test since the planner and
-	// query execution are mocked out.
-	plannerResultPB := new(distributedpb.LogicalPlannerResult)
-	if err := proto.UnmarshalText(expectedPlannerResult, plannerResultPB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	planner := mock_controllers.NewMockPlanner(ctrl)
-	planner.EXPECT().
-		Plan(plannerStatePB, gomock.Any()).
-		Return(plannerResultPB, nil)
-
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nil, nc, planner)
-	require.NoError(t, err)
-	err = s.CheckHealth(context.Background())
-	// Should pass.
-	require.NoError(t, err)
+	return []*vizierpb.ExecuteScriptResponse{fakeResult}
 }
 
-func TestCheckHealth_CompilationError(t *testing.T) {
-	// Start NATS.
-	nc, cleanup := testingutils.MustStartTestNATS(t)
-	defer cleanup()
-
-	// Set up mocks.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	plannerStatePB := new(distributedpb.LogicalPlannerState)
-	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-	agentsInfo := tracker.NewTestAgentsInfo(plannerStatePB.DistributedState)
-	at := fakeAgentsTracker{
-		agentsInfo: agentsInfo,
-	}
-
-	// Set up server.
-	env, err := querybrokerenv.New("qb_address", "qb_hostname", "test")
-	if err != nil {
-		t.Fatal("Failed to create api environment.")
-	}
-
-	rf := &fakeResultForwarder{
-		ClientResultsToSend: []*vizierpb.ExecuteScriptResponse{},
-	}
-
-	planner := mock_controllers.NewMockPlanner(ctrl)
-	planner.EXPECT().
-		Plan(plannerStatePB, gomock.Any()).
-		Return(nil, fmt.Errorf("some compiler error"))
-
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nil, nc, planner)
-	require.NoError(t, err)
-	err = s.CheckHealth(context.Background())
-	// Should not pass.
-	assert.NotNil(t, err)
-}
-
-func TestHealthCheck_ExecutionError(t *testing.T) {
-	// Start NATS.
-	nc, cleanup := testingutils.MustStartTestNATS(t)
-	defer cleanup()
-
-	// Set up mocks.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	plannerStatePB := new(distributedpb.LogicalPlannerState)
-	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-	agentsInfo := tracker.NewTestAgentsInfo(plannerStatePB.DistributedState)
-	at := fakeAgentsTracker{
-		agentsInfo: agentsInfo,
-	}
-
-	// Set up server.
-	env, err := querybrokerenv.New("qb_address", "qb_hostname", "test")
-	if err != nil {
-		t.Fatal("Failed to create api environment.")
-	}
-
-	// Receiving no results should cause an error.
-	rf := &fakeResultForwarder{
-		ClientResultsToSend: []*vizierpb.ExecuteScriptResponse{},
-	}
-
-	// Not the actual health check query, but that's okay for the test since the planner and
-	// query execution are mocked out.
-	plannerResultPB := new(distributedpb.LogicalPlannerResult)
-	if err := proto.UnmarshalText(expectedPlannerResult, plannerResultPB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	planner := mock_controllers.NewMockPlanner(ctrl)
-	planner.EXPECT().
-		Plan(plannerStatePB, gomock.Any()).
-		Return(plannerResultPB, nil)
-
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nil, nc, planner)
-	require.NoError(t, err)
-
-	err = s.CheckHealth(context.Background())
-	// Should not pass.
-	assert.NotNil(t, err)
-}
-
-func TestExecuteScript_Success(t *testing.T) {
-	// Start NATS.
-	nc, cleanup := testingutils.MustStartTestNATS(t)
-	defer cleanup()
-
-	// Set up mocks.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	plannerStatePB := new(distributedpb.LogicalPlannerState)
-	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	agentsInfo := tracker.NewTestAgentsInfo(plannerStatePB.DistributedState)
-
-	at := fakeAgentsTracker{
-		agentsInfo: agentsInfo,
-	}
-
-	// Set up server.
-	env, err := querybrokerenv.New("qb_address", "qb_hostname", "test")
-	if err != nil {
-		t.Fatal("Failed to create api environment.")
-	}
-
-	queryID := uuid.Must(uuid.NewV4())
-
-	fakeBatch := new(vizierpb.RowBatchData)
-	if err := proto.UnmarshalText(rowBatchPb, fakeBatch); err != nil {
-		t.Fatalf("Cannot unmarshal proto %v", err)
-	}
-
+func buildCheckHealthEmptyResponses(queryID uuid.UUID) []*vizierpb.ExecuteScriptResponse {
 	fakeResult1 := &vizierpb.ExecuteScriptResponse{
 		QueryID: queryID.String(),
 		Result: &vizierpb.ExecuteScriptResponse_Data{
 			Data: &vizierpb.QueryData{
-				Batch: fakeBatch,
+				Batch: &vizierpb.RowBatchData{
+					TableID: "health_check_unused",
+					Cols: []*vizierpb.Column{
+						{
+							ColData: &vizierpb.Column_StringData{
+								StringData: &vizierpb.StringColumn{
+									Data: []string{},
+								},
+							},
+						},
+					},
+					NumRows: 0,
+					Eow:     false,
+					Eos:     false,
+				},
 			},
 		},
 	}
@@ -535,222 +132,300 @@ func TestExecuteScript_Success(t *testing.T) {
 		QueryID: queryID.String(),
 		Result: &vizierpb.ExecuteScriptResponse_Data{
 			Data: &vizierpb.QueryData{
-				ExecutionStats: &vizierpb.QueryExecutionStats{
-					Timing: &vizierpb.QueryTimingInfo{
-						ExecutionTimeNs:   5010,
-						CompilationTimeNs: 350,
+				Batch: &vizierpb.RowBatchData{
+					TableID: "health_check_unused",
+					Cols: []*vizierpb.Column{
+						{
+							ColData: &vizierpb.Column_StringData{
+								StringData: &vizierpb.StringColumn{
+									Data: []string{},
+								},
+							},
+						},
 					},
-					BytesProcessed:   4521,
-					RecordsProcessed: 4,
+					NumRows: 0,
+					Eow:     true,
+					Eos:     true,
 				},
 			},
 		},
 	}
-
-	rf := &fakeResultForwarder{
-		ClientResultsToSend: []*vizierpb.ExecuteScriptResponse{
-			fakeResult1,
-			fakeResult2,
-		},
-	}
-
-	plannerResultPB := &distributedpb.LogicalPlannerResult{}
-	if err := proto.UnmarshalText(expectedPlannerResult, plannerResultPB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	planner := mock_controllers.NewMockPlanner(ctrl)
-	planner.EXPECT().
-		Plan(plannerStatePB, gomock.Any()).
-		Return(plannerResultPB, nil)
-
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nil, nc, planner)
-	require.NoError(t, err)
-
-	srv := mock_vizierpb.NewMockVizierService_ExecuteScriptServer(ctrl)
-	auth := authcontext.New()
-	ctx := authcontext.NewContext(context.Background(), auth)
-
-	srv.EXPECT().Context().Return(ctx).AnyTimes()
-
-	var resps []*vizierpb.ExecuteScriptResponse
-	srv.EXPECT().
-		Send(gomock.Any()).
-		DoAndReturn(func(arg *vizierpb.ExecuteScriptResponse) error {
-			resps = append(resps, arg)
-			return nil
-		}).
-		AnyTimes()
-
-	err = s.ExecuteScript(&vizierpb.ExecuteScriptRequest{
-		QueryStr: testQuery,
-	}, srv)
-
-	require.NoError(t, err)
-	assert.Equal(t, 4, len(resps))
-
-	assert.Equal(t, 2, len(rf.TableIDMap))
-	assert.NotEqual(t, 0, len(rf.TableIDMap["agent1_table"]))
-	assert.NotEqual(t, 0, len(rf.TableIDMap["agent2_table"]))
-
-	// Make sure the relation is sent with the metadata.
-	actualSchemaResults := make(map[string]*vizierpb.ExecuteScriptResponse)
-	actualSchemaResults[resps[0].GetMetaData().Name] = resps[0]
-	actualSchemaResults[resps[1].GetMetaData().Name] = resps[1]
-	assert.Equal(t, 2, len(actualSchemaResults))
-	assert.NotNil(t, actualSchemaResults["agent1_table"])
-	assert.NotNil(t, actualSchemaResults["agent2_table"])
-
-	assert.Equal(t, fakeResult1, resps[2])
-	assert.Equal(t, fakeResult2, resps[3])
+	return []*vizierpb.ExecuteScriptResponse{fakeResult1, fakeResult2}
 }
 
-// TestExecuteScript_PlannerErrorResult makes sure that compiler error handling is done well.
-func TestExecuteScript_PlannerErrorResult(t *testing.T) {
-	// Start NATS.
-	nc, cleanup := testingutils.MustStartTestNATS(t)
-	defer cleanup()
-
-	// Set up mocks.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	plannerStatePB := new(distributedpb.LogicalPlannerState)
-	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	agentsInfo := tracker.NewTestAgentsInfo(plannerStatePB.DistributedState)
-
-	at := fakeAgentsTracker{
-		agentsInfo: agentsInfo,
-	}
-
-	// Set up server.
-	env, err := querybrokerenv.New("qb_address", "qb_hostname", "test")
-	if err != nil {
-		t.Fatal("Failed to create api environment.")
-	}
-
-	rf := &fakeResultForwarder{}
-
-	badPlannerResultPB := new(distributedpb.LogicalPlannerResult)
-	if err := proto.UnmarshalText(failedPlannerResult, badPlannerResultPB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf failedPlannerResult", failedPlannerResult)
-	}
-	planner := mock_controllers.NewMockPlanner(ctrl)
-	planner.EXPECT().
-		Plan(plannerStatePB, gomock.Any()).
-		Return(badPlannerResultPB, nil)
-
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nil, nc, planner)
-	require.NoError(t, err)
-
-	srv := mock_vizierpb.NewMockVizierService_ExecuteScriptServer(ctrl)
-	auth := authcontext.New()
-	ctx := authcontext.NewContext(context.Background(), auth)
-
-	srv.EXPECT().Context().Return(ctx).AnyTimes()
-
-	var resp *vizierpb.ExecuteScriptResponse
-	srv.EXPECT().
-		Send(gomock.Any()).
-		DoAndReturn(func(arg *vizierpb.ExecuteScriptResponse) error {
-			resp = arg
-			return nil
-		})
-
-	err = s.ExecuteScript(&vizierpb.ExecuteScriptRequest{
-		QueryStr: badQuery,
-	}, srv)
-
-	require.NoError(t, err)
-	assert.Equal(t, int32(3), resp.Status.Code)
-	assert.Equal(t, "", resp.Status.Message)
-	assert.Equal(t, 2, len(resp.Status.ErrorDetails))
-	assert.Equal(t, &vizierpb.ErrorDetails{
-		Error: &vizierpb.ErrorDetails_CompilerError{
-			CompilerError: &vizierpb.CompilerError{
-				Line:    1,
-				Column:  2,
-				Message: "Error ova here.",
+func buildCheckHealthTooManyResponses(queryID uuid.UUID) []*vizierpb.ExecuteScriptResponse {
+	fakeResult1 := &vizierpb.ExecuteScriptResponse{
+		QueryID: queryID.String(),
+		Result: &vizierpb.ExecuteScriptResponse_Data{
+			Data: &vizierpb.QueryData{
+				Batch: &vizierpb.RowBatchData{
+					TableID: "health_check_unused",
+					Cols: []*vizierpb.Column{
+						{
+							ColData: &vizierpb.Column_StringData{
+								StringData: &vizierpb.StringColumn{
+									Data: []string{"foo"},
+								},
+							},
+						},
+					},
+					NumRows: 1,
+					Eow:     false,
+					Eos:     false,
+				},
 			},
 		},
-	}, resp.Status.ErrorDetails[0])
-	assert.Equal(t, &vizierpb.ErrorDetails{
-		Error: &vizierpb.ErrorDetails_CompilerError{
-			CompilerError: &vizierpb.CompilerError{
-				Line:    20,
-				Column:  19,
-				Message: "Error ova there.",
+	}
+	fakeResult2 := &vizierpb.ExecuteScriptResponse{
+		QueryID: queryID.String(),
+		Result: &vizierpb.ExecuteScriptResponse_Data{
+			Data: &vizierpb.QueryData{
+				Batch: &vizierpb.RowBatchData{
+					TableID: "health_check_unused",
+					Cols: []*vizierpb.Column{
+						{
+							ColData: &vizierpb.Column_StringData{
+								StringData: &vizierpb.StringColumn{
+									Data: []string{"bar"},
+								},
+							},
+						},
+					},
+					NumRows: 1,
+					Eow:     true,
+					Eos:     true,
+				},
 			},
 		},
-	}, resp.Status.ErrorDetails[1])
+	}
+	return []*vizierpb.ExecuteScriptResponse{fakeResult1, fakeResult2}
 }
 
-func TestExecuteScript_ErrorInStatusResult(t *testing.T) {
-	// Start NATS.
-	nc, cleanup := testingutils.MustStartTestNATS(t)
-	defer cleanup()
-
-	// Set up mocks.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	plannerStatePB := new(distributedpb.LogicalPlannerState)
-	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
+func TestCheckHealth(t *testing.T) {
+	queryID := uuid.Must(uuid.NewV4())
+	tests := []struct {
+		Name        string
+		Results     []*vizierpb.ExecuteScriptResponse
+		RunError    error
+		WaitError   error
+		ExpectedErr error
+	}{
+		{
+			Name:        "success",
+			Results:     buildCheckHealthSuccessResponses(queryID),
+			RunError:    nil,
+			WaitError:   nil,
+			ExpectedErr: nil,
+		},
+		{
+			Name:        "no results",
+			Results:     []*vizierpb.ExecuteScriptResponse{},
+			RunError:    nil,
+			WaitError:   nil,
+			ExpectedErr: fmt.Errorf("results not returned on health check for query ID %s", queryID.String()),
+		},
+		{
+			Name:        "empty results",
+			Results:     buildCheckHealthEmptyResponses(queryID),
+			RunError:    nil,
+			WaitError:   nil,
+			ExpectedErr: fmt.Errorf("results not returned on health check for query ID %s", queryID.String()),
+		},
+		{
+			Name:        "too many results",
+			Results:     buildCheckHealthTooManyResponses(queryID),
+			RunError:    nil,
+			WaitError:   nil,
+			ExpectedErr: fmt.Errorf("bad results on healthcheck for query ID %s", queryID.String()),
+		},
+		{
+			Name:        "run error",
+			Results:     []*vizierpb.ExecuteScriptResponse{},
+			RunError:    fmt.Errorf("an error"),
+			WaitError:   nil,
+			ExpectedErr: fmt.Errorf("an error"),
+		},
+		{
+			Name:        "wait error",
+			Results:     []*vizierpb.ExecuteScriptResponse{},
+			RunError:    nil,
+			WaitError:   fmt.Errorf("an error"),
+			ExpectedErr: fmt.Errorf("an error"),
+		},
 	}
 
-	agentsInfo := tracker.NewTestAgentsInfo(plannerStatePB.DistributedState)
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			qe := &fakeQueryExecutor{
+				ResultsToSend: test.Results,
+				RunError:      test.RunError,
+				WaitError:     test.WaitError,
+				queryID:       queryID,
+			}
+			queryExecFactory := func(*controllers.Server, controllers.MutationExecFactory) controllers.QueryExecutor {
+				return qe
+			}
 
-	at := fakeAgentsTracker{
-		agentsInfo: agentsInfo,
-	}
+			s, err := controllers.NewServerWithForwarderAndPlanner(nil, nil, nil, nil, nil, nil, nil, queryExecFactory)
+			require.NoError(t, err)
 
-	// Set up server.
-	env, err := querybrokerenv.New("qb_address", "qb_hostname", "test")
-	if err != nil {
-		t.Fatal("Failed to create api environment.")
-	}
+			err = s.CheckHealth(context.Background())
+			require.Equal(t, test.ExpectedErr, err)
 
-	rf := &fakeResultForwarder{}
-
-	badPlannerResultPB := new(distributedpb.LogicalPlannerResult)
-	if err := proto.UnmarshalText(failedPlannerResultFromStatus, badPlannerResultPB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	planner := mock_controllers.NewMockPlanner(ctrl)
-	planner.EXPECT().
-		Plan(plannerStatePB, gomock.Any()).
-		Return(badPlannerResultPB, nil)
-
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nil, nc, planner)
-	require.NoError(t, err)
-
-	srv := mock_vizierpb.NewMockVizierService_ExecuteScriptServer(ctrl)
-	auth := authcontext.New()
-	ctx := authcontext.NewContext(context.Background(), auth)
-
-	srv.EXPECT().Context().Return(ctx).AnyTimes()
-
-	var resp *vizierpb.ExecuteScriptResponse
-	srv.EXPECT().
-		Send(gomock.Any()).
-		DoAndReturn(func(arg *vizierpb.ExecuteScriptResponse) error {
-			resp = arg
-			return nil
+			expectedReq := &vizierpb.ExecuteScriptRequest{
+				QueryStr: `import px; px.display(px.Version())`,
+			}
+			assert.Equal(t, expectedReq, qe.ReqReceived)
 		})
+	}
+}
 
-	err = s.ExecuteScript(&vizierpb.ExecuteScriptRequest{
-		QueryStr: badQuery,
-	}, srv)
+func buildExecuteScriptSuccessResponses(queryID uuid.UUID) []*vizierpb.ExecuteScriptResponse {
+	fakeResult1 := &vizierpb.ExecuteScriptResponse{
+		QueryID: queryID.String(),
+		Result: &vizierpb.ExecuteScriptResponse_Data{
+			Data: &vizierpb.QueryData{
+				Batch: &vizierpb.RowBatchData{
+					TableID: "execute_unused",
+					Cols: []*vizierpb.Column{
+						{
+							ColData: &vizierpb.Column_StringData{
+								StringData: &vizierpb.StringColumn{
+									Data: []string{"foo"},
+								},
+							},
+						},
+					},
+					NumRows: 1,
+					Eow:     false,
+					Eos:     false,
+				},
+			},
+		},
+	}
+	fakeResult2 := &vizierpb.ExecuteScriptResponse{
+		QueryID: queryID.String(),
+		Result: &vizierpb.ExecuteScriptResponse_Data{
+			Data: &vizierpb.QueryData{
+				Batch: &vizierpb.RowBatchData{
+					TableID: "execute_unused",
+					Cols: []*vizierpb.Column{
+						{
+							ColData: &vizierpb.Column_StringData{
+								StringData: &vizierpb.StringColumn{
+									Data: []string{"bar"},
+								},
+							},
+						},
+					},
+					NumRows: 1,
+					Eow:     true,
+					Eos:     true,
+				},
+			},
+		},
+	}
+	return []*vizierpb.ExecuteScriptResponse{fakeResult1, fakeResult2}
+}
 
-	require.NoError(t, err)
-	assert.Equal(t, int32(3), resp.Status.Code)
-	assert.Equal(t, "failure failure failure", resp.Status.Message)
-	assert.Equal(t, 0, len(resp.Status.ErrorDetails))
+func TestExecuteScript(t *testing.T) {
+	queryID := uuid.Must(uuid.NewV4())
+	tests := []struct {
+		Name        string
+		Req         *vizierpb.ExecuteScriptRequest
+		Results     []*vizierpb.ExecuteScriptResponse
+		RunError    error
+		WaitError   error
+		SendError   error
+		ExpectedErr error
+	}{
+		{
+			Name:        "success",
+			Req:         &vizierpb.ExecuteScriptRequest{QueryStr: "success"},
+			Results:     buildExecuteScriptSuccessResponses(queryID),
+			RunError:    nil,
+			WaitError:   nil,
+			SendError:   nil,
+			ExpectedErr: nil,
+		},
+		{
+			Name:        "run error",
+			Req:         &vizierpb.ExecuteScriptRequest{QueryStr: "run error"},
+			Results:     []*vizierpb.ExecuteScriptResponse{},
+			RunError:    fmt.Errorf("an error"),
+			WaitError:   nil,
+			SendError:   nil,
+			ExpectedErr: fmt.Errorf("an error"),
+		},
+		{
+			Name:        "wait error",
+			Req:         &vizierpb.ExecuteScriptRequest{QueryStr: "wait error"},
+			Results:     []*vizierpb.ExecuteScriptResponse{},
+			RunError:    nil,
+			WaitError:   fmt.Errorf("an error"),
+			SendError:   nil,
+			ExpectedErr: fmt.Errorf("an error"),
+		},
+		{
+			Name:        "send error",
+			Req:         &vizierpb.ExecuteScriptRequest{QueryStr: "send error"},
+			Results:     buildExecuteScriptSuccessResponses(queryID),
+			RunError:    nil,
+			WaitError:   nil,
+			SendError:   fmt.Errorf("an error"),
+			ExpectedErr: fmt.Errorf("an error"),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			qe := &fakeQueryExecutor{
+				ResultsToSend: test.Results,
+				RunError:      test.RunError,
+				WaitError:     test.WaitError,
+				queryID:       queryID,
+			}
+			queryExecFactory := func(*controllers.Server, controllers.MutationExecFactory) controllers.QueryExecutor {
+				return qe
+			}
+
+			s, err := controllers.NewServerWithForwarderAndPlanner(nil, nil, nil, nil, nil, nil, nil, queryExecFactory)
+			require.NoError(t, err)
+
+			// Set up mocks.
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			srv := mock_vizierpb.NewMockVizierService_ExecuteScriptServer(ctrl)
+			auth := authcontext.New()
+			ctx := authcontext.NewContext(context.Background(), auth)
+			srv.EXPECT().Context().Return(ctx).AnyTimes()
+
+			var resps []*vizierpb.ExecuteScriptResponse
+			srv.EXPECT().
+				Send(gomock.Any()).
+				DoAndReturn(func(arg *vizierpb.ExecuteScriptResponse) error {
+					resps = append(resps, arg)
+					return test.SendError
+				}).
+				AnyTimes()
+
+			err = s.ExecuteScript(test.Req, srv)
+			require.Equal(t, test.ExpectedErr, err)
+
+			if test.SendError != nil {
+				// If we injected a send error then we won't get all the results so we skip those checks.
+				return
+			}
+			assert.Equal(t, test.Req, qe.ReqReceived)
+
+			require.Equal(t, len(test.Results), len(resps))
+			i := 0
+			for _, expectedResp := range test.Results {
+				assert.Equal(t, expectedResp, resps[i])
+				i++
+			}
+		})
+	}
 }
 
 func TestTransferResultChunk_AgentStreamComplete(t *testing.T) {
@@ -777,7 +452,7 @@ func TestTransferResultChunk_AgentStreamComplete(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nil, nc, nil)
+	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nil, nc, nil, nil)
 	require.NoError(t, err)
 
 	srv := mock_carnotpb.NewMockResultSinkService_TransferResultChunkServer(ctrl)
@@ -866,7 +541,7 @@ func TestTransferResultChunk_AgentClosedPrematurely(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nil, nc, nil)
+	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nil, nc, nil, nil)
 	require.NoError(t, err)
 
 	srv := mock_carnotpb.NewMockResultSinkService_TransferResultChunkServer(ctrl)
@@ -948,7 +623,7 @@ func TestTransferResultChunk_AgentStreamFailed(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nil, nc, nil)
+	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nil, nc, nil, nil)
 	require.NoError(t, err)
 
 	srv := mock_carnotpb.NewMockResultSinkService_TransferResultChunkServer(ctrl)
@@ -1024,7 +699,7 @@ func TestTransferResultChunk_ClientStreamCancelled(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nil, nc, nil)
+	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, &rf, nil, nil, nc, nil, nil)
 	require.NoError(t, err)
 
 	srv := mock_carnotpb.NewMockResultSinkService_TransferResultChunkServer(ctrl)
@@ -1067,105 +742,4 @@ func TestTransferResultChunk_ClientStreamCancelled(t *testing.T) {
 	assert.True(t, rf.ClientStreamClosed)
 	assert.NotNil(t, rf.ClientStreamError)
 	assert.Equal(t, 0, len(rf.ReceivedAgentResults))
-}
-func TestExecuteScript_ResumeExistingQuery(t *testing.T) {
-	// Start NATS.
-	nc, cleanup := testingutils.MustStartTestNATS(t)
-	defer cleanup()
-
-	// Set up mocks.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	plannerStatePB := new(distributedpb.LogicalPlannerState)
-	if err := proto.UnmarshalText(singleAgentDistributedState, plannerStatePB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	agentsInfo := tracker.NewTestAgentsInfo(plannerStatePB.DistributedState)
-
-	at := fakeAgentsTracker{
-		agentsInfo: agentsInfo,
-	}
-
-	// Set up server.
-	env, err := querybrokerenv.New("qb_address", "qb_hostname", "test")
-	if err != nil {
-		t.Fatal("Failed to create api environment.")
-	}
-
-	queryID := uuid.Must(uuid.NewV4())
-
-	fakeBatch := new(vizierpb.RowBatchData)
-	if err := proto.UnmarshalText(rowBatchPb, fakeBatch); err != nil {
-		t.Fatalf("Cannot unmarshal proto %v", err)
-	}
-
-	fakeResult1 := &vizierpb.ExecuteScriptResponse{
-		QueryID: queryID.String(),
-		Result: &vizierpb.ExecuteScriptResponse_Data{
-			Data: &vizierpb.QueryData{
-				Batch: fakeBatch,
-			},
-		},
-	}
-	fakeResult2 := &vizierpb.ExecuteScriptResponse{
-		QueryID: queryID.String(),
-		Result: &vizierpb.ExecuteScriptResponse_Data{
-			Data: &vizierpb.QueryData{
-				ExecutionStats: &vizierpb.QueryExecutionStats{
-					Timing: &vizierpb.QueryTimingInfo{
-						ExecutionTimeNs:   5010,
-						CompilationTimeNs: 350,
-					},
-					BytesProcessed:   4521,
-					RecordsProcessed: 4,
-				},
-			},
-		},
-	}
-
-	rf := &fakeResultForwarder{
-		ClientResultsToSend: []*vizierpb.ExecuteScriptResponse{
-			fakeResult1,
-			fakeResult2,
-		},
-	}
-
-	plannerResultPB := &distributedpb.LogicalPlannerResult{}
-	if err := proto.UnmarshalText(expectedPlannerResult, plannerResultPB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	planner := mock_controllers.NewMockPlanner(ctrl)
-
-	s, err := controllers.NewServerWithForwarderAndPlanner(env, &at, rf, nil, nil, nc, planner)
-	require.NoError(t, err)
-
-	srv := mock_vizierpb.NewMockVizierService_ExecuteScriptServer(ctrl)
-	auth := authcontext.New()
-	ctx := authcontext.NewContext(context.Background(), auth)
-
-	srv.EXPECT().Context().Return(ctx).AnyTimes()
-
-	var resps []*vizierpb.ExecuteScriptResponse
-	srv.EXPECT().
-		Send(gomock.Any()).
-		DoAndReturn(func(arg *vizierpb.ExecuteScriptResponse) error {
-			resps = append(resps, arg)
-			return nil
-		}).
-		AnyTimes()
-
-	err = s.ExecuteScript(&vizierpb.ExecuteScriptRequest{
-		QueryID: queryID.String(),
-	}, srv)
-
-	require.NoError(t, err)
-	assert.Equal(t, 2, len(resps))
-
-	// The query should not be re-registered when a QueryID is passed to ExecuteScriptRequest.
-	assert.Equal(t, rf.QueryRegistered, uuid.Nil)
-	assert.Equal(t, fakeResult1, resps[0])
-	assert.Equal(t, fakeResult2, resps[1])
 }
