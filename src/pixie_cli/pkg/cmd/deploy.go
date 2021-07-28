@@ -383,6 +383,10 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		clusterName = kubeAPIConfig.CurrentContext
 	}
 
+	if devCloudNS != "" {
+		cloudAddr = fmt.Sprintf("vzconn-service.%s.svc.cluster.local:51600", devCloudNS)
+	}
+
 	// Fill in template values.
 	tmplArgs := &yamlsutils.YAMLTmplArguments{
 		Values: &map[string]interface{}{

@@ -67,8 +67,13 @@ type VizierReconciler struct {
 // +kubebuilder:rbac:groups=pixie.px.dev,resources=viziers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=pixie.px.dev,resources=viziers/status,verbs=get;update;patch
 
-func getCloudClientConnection(cloudAddr string) (*grpc.ClientConn, error) {
-	isInternal := strings.ContainsAny(cloudAddr, "cluster.local")
+func getCloudClientConnection(cloudAddr string, devCloudNS string) (*grpc.ClientConn, error) {
+	isInternal := false
+
+	if devCloudNS != "" {
+		cloudAddr = fmt.Sprintf("vzconn-service.%s.svc.cluster.local:51600", devCloudNS)
+		isInternal = true
+	}
 
 	dialOpts, err := services.GetGRPCClientDialOptsServerSideTLS(isInternal)
 	if err != nil {
@@ -179,7 +184,7 @@ func (r *VizierReconciler) deleteVizier(ctx context.Context, req ctrl.Request) e
 
 // createVizier deploys a new vizier instance in the given namespace.
 func (r *VizierReconciler) createVizier(ctx context.Context, req ctrl.Request, vz *pixiev1alpha1.Vizier) error {
-	cloudClient, err := getCloudClientConnection(vz.Spec.CloudAddr)
+	cloudClient, err := getCloudClientConnection(vz.Spec.CloudAddr, vz.Spec.DevCloudNamespace)
 	if err != nil {
 		return err
 	}
@@ -203,7 +208,7 @@ func (r *VizierReconciler) createVizier(ctx context.Context, req ctrl.Request, v
 }
 
 func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, vz *pixiev1alpha1.Vizier, update bool) error {
-	cloudClient, err := getCloudClientConnection(vz.Spec.CloudAddr)
+	cloudClient, err := getCloudClientConnection(vz.Spec.CloudAddr, vz.Spec.DevCloudNamespace)
 	if err != nil {
 		return err
 	}
