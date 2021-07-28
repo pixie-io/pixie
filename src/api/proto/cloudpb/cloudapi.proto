@@ -113,14 +113,14 @@ message SetUserAttributesResponse {}
 
 
 message InviteUserRequest {
-	string email = 1;
-	string first_name = 2;
-	string last_name = 3;
+  string email = 1;
+  string first_name = 2;
+  string last_name = 3;
 }
 
 message InviteUserResponse {
-	string email = 1;
-	string invite_link = 2;
+  string email = 1;
+  string invite_link = 2;
 }
 
 service AuthService {
@@ -761,4 +761,6 @@ message ConfigForVizierRequest {
 message ConfigForVizierResponse {
   // A map from YAML name to content, containing yamls which can be used to deploy Vizier.
   map<string, string> nameToYamlContent = 1;
+  // sentry_dsn contains the key for viziers to send errors and traces.
+  string sentry_dsn = 2 [(gogoproto.customname) = "SentryDSN"];
 }

@@ -22,6 +22,7 @@ pl_proto_library(
     visibility = ["//src/cloud:__subpackages__"],
     deps = [
         "//src/api/proto/vizierconfigpb:vizier_pl_proto",
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
     ],
 )
 

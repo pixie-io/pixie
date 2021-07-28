@@ -22,6 +22,7 @@ package px.services;
 
 option go_package = "configmanagerpb";
 
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/api/proto/vizierconfigpb/vizier_types.proto"; 
 
 // ConfigManagerService provides configuration specs from the Cloud.
@@ -42,4 +43,6 @@ message ConfigForVizierRequest {
 message ConfigForVizierResponse {
     // A map from YAML name to content, containing yamls which can be used to deploy Vizier.
     map<string, string> nameToYamlContent = 1;
+    // sentry_dsn contains the key for viziers to send errors and traces.
+    string sentry_dsn = 2 [(gogoproto.customname) = "SentryDSN"];
 }

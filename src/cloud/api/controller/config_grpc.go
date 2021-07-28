@@ -60,5 +60,6 @@ func (c *ConfigServiceServer) GetConfigForVizier(ctx context.Context,
 
 	return &cloudpb.ConfigForVizierResponse{
 		NameToYamlContent: resp.NameToYamlContent,
+		SentryDSN:         resp.SentryDSN,
 	}, nil
 }

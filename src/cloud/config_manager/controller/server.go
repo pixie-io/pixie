@@ -101,6 +101,7 @@ func (s *Server) GetConfigForVizier(ctx context.Context,
 
 	return &cpb.ConfigForVizierResponse{
 		NameToYamlContent: yamlMap,
+		SentryDSN:         getSentryDSN(in.VzSpec.Version),
 	}, nil
 }
 

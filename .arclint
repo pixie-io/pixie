@@ -177,6 +177,15 @@
         "(^src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/physicalpb/physical\\.proto$)"
       ]
     },
+    "proto-text": {
+      "type": "text",
+      "include": [
+        "(.*\\.proto$)"
+      ],
+      "exclude": [
+        "(^src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/physicalpb/physical\\.proto$)"
+      ]      
+    },
     "shellcheck": {
       "type": "shellcheck",
       "include": [
