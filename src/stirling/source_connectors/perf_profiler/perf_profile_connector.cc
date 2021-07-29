@@ -127,8 +127,14 @@ void PerfProfileConnector::CleanupSymbolizers(const absl::flat_hash_set<md::UPID
   }
 
   if (FLAGS_stirling_profiler_cache_symbols) {
-    size_t evict_count = static_cast<CachingSymbolizer*>(symbolizer_.get())->PerformEvictions();
-    VLOG(1) << absl::Substitute("PerfProfiler symbol cache: Evicted $0 symbols.", evict_count);
+    size_t evict_count;
+
+    evict_count = static_cast<CachingSymbolizer*>(u_symbolizer_.get())->PerformEvictions();
+    VLOG(1) << absl::Substitute("PerfProfiler symbol cache: Evicted $0 user symbols.", evict_count);
+
+    evict_count = static_cast<CachingSymbolizer*>(k_symbolizer_.get())->PerformEvictions();
+    VLOG(1) << absl::Substitute("PerfProfiler symbol cache: Evicted $0 kernel symbols.",
+                                evict_count);
   }
 }
 
