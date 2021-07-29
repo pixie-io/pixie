@@ -19,6 +19,7 @@
 #include "src/carnot/exec/grpc_sink_node.h"
 
 #include <chrono>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -219,45 +220,106 @@ Status GRPCSinkNode::CloseImpl(ExecState* exec_state) {
   return Status::OK();
 }
 
-Status GRPCSinkNode::SplitAndSendBatch(ExecState* exec_state, const RowBatch& rb, size_t parent_idx,
-                                       size_t request_size_bytes) {
-  // We split this batch into many batches depending on the desired batch_size.
-  // Given that a row-batches are not unformly distributed, we must assume that splitting
-  // a row batch evenly into request_size / MaxBatchSize batches w/ the same number of rows
-  // would always lead to requests that are < than kMaxBatchSize and that means we'd have to run
-  // this splitting process again.
-  int64_t desired_batch_size_bytes = static_cast<int64_t>(kMaxBatchSize * kBatchSizeFactor);
-  int64_t num_batches = request_size_bytes / (desired_batch_size_bytes);
+static inline bool GetRowSizes(const RowBatch& rb, std::vector<int64_t>* string_col_row_sizes,
+                               int64_t* other_cols_row_size) {
+  bool has_string_col = false;
 
-  // The number of rows per batch.
-  size_t main_rb_rows = rb.num_rows() / num_batches;
-  // The number of rows leftover after all the batches.
-  size_t leftover_rb_rows = rb.num_rows() % num_batches;
+  for (int col_idx = 0; col_idx < rb.num_columns(); ++col_idx) {
+    auto col_type = rb.desc().type(col_idx);
+    if (col_type != types::DataType::STRING) {
+      *other_cols_row_size += types::ArrowTypeToBytes(types::ToArrowType(col_type));
+    } else {
+      has_string_col = true;
+      for (int64_t row_idx = 0; row_idx < rb.num_rows(); ++row_idx) {
+        (*string_col_row_sizes)[row_idx] +=
+            sizeof(char) * std::static_pointer_cast<arrow::StringArray>(rb.ColumnAt(col_idx))
+                               ->value_length(row_idx);
+      }
+    }
+  }
+  return has_string_col;
+}
 
-  // Run the first N - 1 batches because they are all the same size.
-  for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
-    PL_ASSIGN_OR_RETURN(std::unique_ptr<RowBatch> output_rb,
-                        rb.Slice(batch_idx * main_rb_rows, main_rb_rows));
-    PL_RETURN_IF_ERROR(ConsumeNextImpl(exec_state, *output_rb, parent_idx));
+std::vector<int64_t> GRPCSinkNode::SplitBatchSizes(bool has_string_col,
+                                                   const std::vector<int64_t>& string_col_row_sizes,
+                                                   int64_t other_col_row_size) const {
+  int64_t desired_batch_size_bytes = static_cast<int64_t>(max_batch_size_ * batch_size_factor_);
+  std::vector<int64_t> new_batches_num_rows;
+  if (has_string_col) {
+    int64_t batch_bytes = 0;
+    int64_t batch_num_rows = 0;
+    for (const auto& [idx, row_string_bytes] : Enumerate(string_col_row_sizes)) {
+      auto row_bytes = row_string_bytes + other_col_row_size;
+      if (batch_num_rows > 0 && batch_bytes + row_bytes > desired_batch_size_bytes) {
+        new_batches_num_rows.push_back(batch_num_rows);
+        batch_bytes = 0;
+        batch_num_rows = 0;
+      }
+      batch_bytes += row_bytes;
+      batch_num_rows += 1;
+    }
+    new_batches_num_rows.push_back(batch_num_rows);
+  } else {
+    // If there are no string columns, we can split into evenly sized batches apart from the last
+    // batch. The above logic would still work when there are no string columns, but this logic
+    // avoids the O(num_rows) loop.
+    auto total_rows = string_col_row_sizes.size();
+    int64_t num_rows_per_batch = desired_batch_size_bytes / other_col_row_size;
+    if (num_rows_per_batch == 0) {
+      // If the row size is bigger than the desired batch size, then we just use 1 row per batch.
+      num_rows_per_batch = 1;
+    }
+    int64_t num_batches = (total_rows / num_rows_per_batch);
+    new_batches_num_rows.insert(new_batches_num_rows.end(), num_batches, num_rows_per_batch);
+
+    auto leftover_rows = total_rows - (num_batches * num_rows_per_batch);
+    if (leftover_rows > 0) {
+      new_batches_num_rows.push_back(leftover_rows);
+    }
+  }
+  return new_batches_num_rows;
+}
+
+Status GRPCSinkNode::SplitAndSendBatch(ExecState* exec_state, const RowBatch& rb,
+                                       size_t parent_idx) {
+  // Calculate the individual row sizes for all the string columns.
+  std::vector<int64_t> string_col_row_sizes(rb.num_rows(), 0);
+  // All other columns share the same size across all rows.
+  int64_t other_cols_row_size = 0;
+  auto has_string_col = GetRowSizes(rb, &string_col_row_sizes, &other_cols_row_size);
+
+  std::vector<int64_t> new_batches_num_rows =
+      SplitBatchSizes(has_string_col, string_col_row_sizes, other_cols_row_size);
+
+  int64_t batch_idx = 0;
+  // Run the first N - 1 batches because the last batch needs to set eos/eow to the original row
+  // batches eos/eow.
+  for (size_t idx = 0; idx < new_batches_num_rows.size() - 1; ++idx) {
+    auto num_rows = new_batches_num_rows[idx];
+    PL_ASSIGN_OR_RETURN(std::unique_ptr<RowBatch> output_rb, rb.Slice(batch_idx, num_rows));
+    PL_RETURN_IF_ERROR(ConsumeNextImplNoSplit(exec_state, *output_rb, parent_idx));
+    batch_idx += num_rows;
   }
 
   // Handle the final batch.
   PL_ASSIGN_OR_RETURN(std::unique_ptr<RowBatch> output_rb,
-                      rb.Slice(rb.num_rows() - leftover_rb_rows, leftover_rb_rows));
+                      rb.Slice(batch_idx, rb.num_rows() - batch_idx));
   output_rb->set_eos(rb.eos());
   output_rb->set_eow(rb.eow());
-  return ConsumeNextImpl(exec_state, *output_rb, parent_idx);
+  return ConsumeNextImplNoSplit(exec_state, *output_rb, parent_idx);
 }
 
 Status GRPCSinkNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, size_t parent_idx) {
-  PL_ASSIGN_OR_RETURN(auto req, RequestWithMetadata(plan_node_.get(), exec_state));
+  if (rb.NumBytes() > (max_batch_size_ * batch_size_factor_)) {
+    return SplitAndSendBatch(exec_state, rb, parent_idx);
+  }
+  return ConsumeNextImplNoSplit(exec_state, rb, parent_idx);
+}
 
+Status GRPCSinkNode::ConsumeNextImplNoSplit(ExecState* exec_state, const RowBatch& rb, size_t) {
+  PL_ASSIGN_OR_RETURN(auto req, RequestWithMetadata(plan_node_.get(), exec_state));
   // Serialize the RowBatch.
   PL_RETURN_IF_ERROR(rb.ToProto(req.mutable_query_result()->mutable_row_batch()));
-  size_t request_size = req.ByteSizeLong();
-  if (request_size > kMaxBatchSize) {
-    return SplitAndSendBatch(exec_state, rb, parent_idx, request_size);
-  }
 
   PL_RETURN_IF_ERROR(TryWriteRequest(exec_state, req));
 

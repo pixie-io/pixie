@@ -45,19 +45,17 @@ constexpr std::chrono::milliseconds kDefaultConnectionCheckTimeoutMS{2000};
 // is added to the public query result data structure.
 constexpr size_t kMetadataMargin = 16 * 1024;
 constexpr size_t kMaxBatchSize = 1024 * 1024 - kMetadataMargin;
-// BatchSizeFactor is the size of kMaxBatchSize to split into to assure that we limit number of
-// splits. We must split batches across row lines, not byte lines. Row batches aren't guaranteed to
-// be uniformly distributed, so splitting a rowbatch will likely lead to one part of the split being
-// larger than the other. This parameter can be tuned in the future depending on what we learn about
-// the distributions of the row batches.
-constexpr float kBatchSizeFactor = 0.5;
+// BatchSizeFactor is used to leave some room for encryption to increase the size of batches.
+constexpr float kBatchSizeFactor = 0.9f;
 
 // Number of times to retry connecting to grpc before giving up.
 constexpr size_t kGRPCRetries = 3;
 
 class GRPCSinkNode : public SinkNode {
  public:
-  GRPCSinkNode() = default;
+  GRPCSinkNode(size_t max_batch_size, float batch_size_factor)
+      : max_batch_size_(max_batch_size), batch_size_factor_(batch_size_factor) {}
+  GRPCSinkNode() : GRPCSinkNode(kMaxBatchSize, kBatchSizeFactor) {}
   virtual ~GRPCSinkNode() = default;
 
   // Used to check the downstream connection after connection_check_timeout_ has elapsed.
@@ -78,8 +76,13 @@ class GRPCSinkNode : public SinkNode {
   Status CloseImpl(ExecState* exec_state) override;
   Status ConsumeNextImpl(ExecState* exec_state, const table_store::schema::RowBatch& rb,
                          size_t parent_index) override;
+  Status ConsumeNextImplNoSplit(ExecState* exec_state, const table_store::schema::RowBatch& rb,
+                                size_t parent_index);
   Status SplitAndSendBatch(ExecState* exec_state, const table_store::schema::RowBatch& rb,
-                           size_t parent_index, size_t request_size);
+                           size_t parent_index);
+  std::vector<int64_t> SplitBatchSizes(bool has_string_col,
+                                       const std::vector<int64_t>& string_col_row_sizes,
+                                       int64_t other_col_row_size) const;
 
  private:
   Status CloseWriter(ExecState* exec_state);
@@ -102,6 +105,9 @@ class GRPCSinkNode : public SinkNode {
 
   std::chrono::milliseconds connection_check_timeout_ = kDefaultConnectionCheckTimeoutMS;
   std::chrono::time_point<std::chrono::system_clock> last_send_time_;
+
+  size_t max_batch_size_;
+  float batch_size_factor_;
 };
 
 }  // namespace exec

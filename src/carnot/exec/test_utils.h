@@ -249,12 +249,13 @@ class FakePlanNode : public plan::Operator {
 template <typename TExecNode, typename TPlanNode>
 class ExecNodeTester {
  public:
+  template <typename... Args>
   ExecNodeTester(const plan::Operator& plan_node,
                  const table_store::schema::RowDescriptor& output_descriptor,
                  std::vector<table_store::schema::RowDescriptor> input_descriptors,
-                 ExecState* exec_state)
+                 ExecState* exec_state, Args... exec_node_args)
       : exec_state_(exec_state) {
-    exec_node_ = std::make_unique<TExecNode>();
+    exec_node_ = std::make_unique<TExecNode>(exec_node_args...);
     const auto* casted_plan_node = static_cast<const TPlanNode*>(&plan_node);
 
     // Set the exec state to use a fake source of ID 1 during the course of the test.
