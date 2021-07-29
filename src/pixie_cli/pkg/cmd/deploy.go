@@ -468,7 +468,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 }
 
 func deploy(cloudConn *grpc.ClientConn, clientset *kubernetes.Clientset, kubeConfig *rest.Config, yamlMap map[string]string, deployOLM bool, olmNs, olmOpNs, namespace string) uuid.UUID {
-	olmCRDJob := newTaskWrapper("Installing OLM crds", func() error {
+	olmCRDJob := newTaskWrapper("Installing OLM CRDs", func() error {
 		return retryDeploy(clientset, kubeConfig, yamlMap["olm_crd"])
 	})
 	olmJob := newTaskWrapper("Deploying OLM", func() error {
