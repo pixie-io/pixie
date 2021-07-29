@@ -1313,7 +1313,7 @@ int syscall__probe_entry_recvmsg(struct pt_regs* ctx, int sockfd, struct user_ms
 
     // Stash arguments.
     struct data_args_t read_args = {};
-    read_args.source_fn = kSyscallRecvMMsg;
+    read_args.source_fn = kSyscallRecvMsg;
     read_args.fd = sockfd;
     read_args.iov = msghdr->msg_iov;
     read_args.iovlen = msghdr->msg_iovlen;
