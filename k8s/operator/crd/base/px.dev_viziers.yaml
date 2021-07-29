@@ -130,6 +130,11 @@ spec:
                 description: VizierPhase is a high-level summary of where the Vizier
                   is in its lifecycle.
                 type: string
+              vizierReason:
+                description: VizierReason is a short, machine understandable string
+                  that gives the reason for the transition into the Vizier's current
+                  status.
+                type: string
             type: object
         type: object
     served: true

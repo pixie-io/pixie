@@ -60,6 +60,9 @@ type VizierStatus struct {
 	Version string `json:"version,omitempty"`
 	// VizierPhase is a high-level summary of where the Vizier is in its lifecycle.
 	VizierPhase VizierPhase `json:"vizierPhase,omitempty"`
+	// VizierReason is a short, machine understandable string that gives the reason
+	// for the transition into the Vizier's current status.
+	VizierReason string `json:"vizierReason,omitempty"`
 	// Message is a human-readable message with details about why the Vizier is in this condition.
 	Message string `json:"message,omitempty"`
 }
@@ -70,12 +73,17 @@ type VizierPhase string
 const (
 	// VizierPhaseNone indicates that the vizier phase is unknown.
 	VizierPhaseNone VizierPhase = ""
-	// VizierPhasePending indicates that the vizier is either in the process of creating or updating.
-	VizierPhasePending = "Pending"
-	// VizierPhaseRunning indicates that all vizier resources have been deployed.
-	VizierPhaseRunning = "Running"
-	// VizierPhaseFailed indicates that some vizier resources have failed to deploy.
-	VizierPhaseFailed = "Failed"
+
+	// VizierPhaseDisconnected indicates that the vizier has been unable to contact and register with Pixie Cloud.
+	VizierPhaseDisconnected = "Disconnected"
+	// VizierPhaseHealthy indicates that the vizier is fully functioning and queryable.
+	VizierPhaseHealthy = "Healthy"
+	// VizierPhaseUpdating indicates that the vizier is in the process of creating or updating.
+	VizierPhaseUpdating = "Updating"
+	// VizierPhaseUnhealthy indicates that the vizier is not in a healthy state and is unqueryable.
+	VizierPhaseUnhealthy = "Unhealthy"
+	// VizierPhaseDegraded indicates that the vizier is in a queryable state, but data may be missing.
+	VizierPhaseDegraded = "Degraded"
 )
 
 // PodPolicy defines the policy for creating Vizier pods.

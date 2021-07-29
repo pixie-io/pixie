@@ -214,7 +214,7 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 	}
 
 	// Set the status of the Vizier.
-	vz.Status.VizierPhase = pixiev1alpha1.VizierPhasePending
+	vz.Status.VizierPhase = pixiev1alpha1.VizierPhaseUpdating
 	err = r.Status().Update(ctx, vz)
 	if err != nil {
 		return err
@@ -281,10 +281,11 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 	vz.Status.Version = vz.Spec.Version
 	if err != nil {
 		log.WithError(err).Info("Failed healthcheck")
-		vz.Status.VizierPhase = pixiev1alpha1.VizierPhaseFailed
+		vz.Status.VizierPhase = pixiev1alpha1.VizierPhaseUnhealthy
 		vz.Status.Message = err.Error()
 	} else {
-		vz.Status.VizierPhase = pixiev1alpha1.VizierPhaseRunning
+		// We set this to healthy for now, until we add in better healthchecks in the operator.
+		vz.Status.VizierPhase = pixiev1alpha1.VizierPhaseHealthy
 	}
 
 	err = r.Status().Update(ctx, vz)
