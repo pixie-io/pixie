@@ -96,6 +96,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   chart: {
     flex: 1,
     minHeight: 0,
+    maxWidth: '100%',
   },
   loading: {
     opacity: 0.6,
