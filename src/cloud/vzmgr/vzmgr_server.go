@@ -19,6 +19,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 	_ "net/http/pprof"
 
@@ -82,6 +83,18 @@ func NewArtifactTrackerServiceClient() (artifacttrackerpb.ArtifactTrackerClient,
 	return artifacttrackerpb.NewArtifactTrackerClient(atChannel), nil
 }
 
+type readinessCheck struct {
+	err error
+}
+
+func (r *readinessCheck) Name() string {
+	return "md_reader_readiness"
+}
+
+func (r *readinessCheck) Check() error {
+	return r.err
+}
+
 func main() {
 	services.SetupService("vzmgr-service", 51800)
 	services.PostFlagSetupAndParse()
@@ -92,6 +105,10 @@ func main() {
 	// This handles all the pprof endpoints.
 	mux.Handle("/debug/", http.DefaultServeMux)
 	healthz.RegisterDefaultChecks(mux)
+	rc := &readinessCheck{
+		err: errors.New("metadata reader is not yet ready"),
+	}
+	healthz.InstallPathHandler(mux, "/readyz", rc)
 
 	s := server.NewPLServer(env.New(viper.GetString("domain_name")), mux)
 
@@ -147,11 +164,20 @@ func main() {
 	vzmgrpb.RegisterVZDeploymentKeyServiceServer(s.GRPCServer(), dks)
 	vzmgrpb.RegisterVZDeploymentServiceServer(s.GRPCServer(), ds)
 
-	mdr, err := controller.NewMetadataReader(db, stc, nc)
-	if err != nil {
-		log.WithError(err).Fatal("Could not start metadata listener")
-	}
-	defer mdr.Stop()
+	var mdr *controller.MetadataReader
+	go func() {
+		mdr, err = controller.NewMetadataReader(db, stc, nc)
+		if err != nil {
+			log.WithError(err).Fatal("Could not start metadata listener")
+		}
+		rc.err = nil
+	}()
+
+	defer func() {
+		if mdr != nil {
+			mdr.Stop()
+		}
+	}()
 
 	s.Start()
 	s.StopOnInterrupt()

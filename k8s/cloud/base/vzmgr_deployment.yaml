@@ -22,7 +22,7 @@ spec:
         readinessProbe:
           httpGet:
             scheme: HTTPS
-            path: /healthz
+            path: /readyz
             port: 51800
         livenessProbe:
           httpGet:
