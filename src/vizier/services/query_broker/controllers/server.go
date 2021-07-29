@@ -27,6 +27,9 @@ import (
 
 	"github.com/gofrs/uuid"
 	"github.com/gogo/protobuf/proto"
+	"github.com/lestrrat-go/jwx/jwa"
+	"github.com/lestrrat-go/jwx/jwe"
+	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -370,6 +373,31 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	var err error
+	var jwkKey jwk.Key
+	var keyAlg jwa.KeyEncryptionAlgorithm
+	var encAlg jwa.ContentEncryptionAlgorithm
+	var compAlg jwa.CompressionAlgorithm
+
+	if req.EncryptionOptions != nil {
+		jwkKey, err = jwk.ParseKey([]byte(req.GetEncryptionOptions().GetJwkKey()))
+		if err != nil {
+			return err
+		}
+		err = keyAlg.Accept(req.GetEncryptionOptions().GetKeyAlg())
+		if err != nil {
+			return err
+		}
+		err = encAlg.Accept(req.GetEncryptionOptions().GetContentAlg())
+		if err != nil {
+			return err
+		}
+		err = compAlg.Accept(req.GetEncryptionOptions().GetCompressionAlg())
+		if err != nil {
+			return err
+		}
+	}
+
 	resultStream := make(chan *vizierpb.ExecuteScriptResponse)
 
 	var wg sync.WaitGroup
@@ -384,6 +412,25 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 				wg.Done()
 				return
 			case result := <-resultStream:
+				if jwkKey != nil && result.GetData() != nil {
+					data := result.GetData()
+					if data.Batch != nil {
+						b, err := data.Batch.Marshal()
+						if err != nil {
+							sendErr = err
+							break
+						}
+
+						eb, err := jwe.Encrypt(b, keyAlg, jwkKey, encAlg, compAlg)
+						if err != nil {
+							sendErr = err
+							break
+						}
+
+						data.Batch = nil
+						data.EncryptedBatch = eb
+					}
+				}
 				err = srv.Send(result)
 				if err != nil {
 					sendErr = err

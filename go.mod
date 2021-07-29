@@ -57,6 +57,7 @@ require (
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
 	github.com/klauspost/compress v1.11.13 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
+	github.com/lestrrat-go/jwx v1.2.4
 	github.com/lib/pq v1.10.0
 	github.com/mattn/go-runewidth v0.0.9
 	github.com/minio/highwayhash v1.0.2 // indirect
