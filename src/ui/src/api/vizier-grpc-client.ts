@@ -18,7 +18,7 @@
 
 import { Observable, of } from 'rxjs';
 import {
-  bufferTime, catchError, finalize, mergeMap, map, timeout, startWith,
+  bufferTime, catchError, finalize, concatMap, map, timeout, startWith,
 } from 'rxjs/operators';
 import {
   ErrorDetails, ExecuteScriptRequest, HealthCheckRequest, QueryExecutionStats, Relation,
@@ -253,7 +253,7 @@ export class VizierGRPCClient {
     }).pipe(
       finalize((() => { call.cancel(); })),
       bufferTime(250),
-      mergeMap((resps: ExecuteScriptResponse[]) => {
+      concatMap((resps: ExecuteScriptResponse[]) => {
         const outs: ExecutionStateUpdate[] = [];
         const dataBatch: BatchDataUpdate[] = [];
 
