@@ -317,11 +317,24 @@ const Canvas = (props: CanvasProps) => {
   } = React.useContext(ScriptContext);
   const { isMobile } = React.useContext(LayoutContext);
   const { setTimeseriesDomain } = React.useContext(TimeSeriesContext);
-  const { embedState: { widget } } = React.useContext(LiveRouteContext);
+  const { embedState: { widget, isEmbedded } } = React.useContext(LiveRouteContext);
 
   // Default layout used when there is no vis defining widgets.
   const [defaultLayout, setDefaultLayout] = React.useState<Layout[]>([]);
   const [defaultHeight, setDefaultHeight] = React.useState<number>(0);
+
+  // If in embedded mode, send event messages to the parent frame. This is used to track the time from initialization
+  // of the live view, to when the script has completed and results are displayed.
+  React.useEffect(() => {
+    if (isEmbedded) {
+      window.top.postMessage({ pixieComponentsInitiated: true }, '*');
+    }
+  }, [isEmbedded]);
+  React.useEffect(() => {
+    if (Object.keys(tables).length > 0 && !loading && isEmbedded) {
+      window.top.postMessage({ pixieComponentsRendered: true }, '*');
+    }
+  }, [loading, tables, isEmbedded]);
 
   React.useEffect(() => {
     /**

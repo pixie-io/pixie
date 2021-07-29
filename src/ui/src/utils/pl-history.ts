@@ -25,7 +25,8 @@ function showIntercom(path: string): boolean {
   return path === '/auth/login' || path === '/auth/signup';
 }
 
-function sendPageEvent(path: string) {
+function sendPageEvent(path: string, search: string) {
+  // Log the event to our analytics (if enabled).
   pixieAnalytics.page(
     '', // category
     path, // name
@@ -36,13 +37,19 @@ function sendPageEvent(path: string) {
       },
     }, // options
   );
+
+  // If embedded, also allow the parent to track the event by
+  // sending it a message.
+  if (path.startsWith('/embed')) {
+    window.top.postMessage({ pixieURLChange: `${path}${search}` }, '*');
+  }
 }
 
 // Emit a page event for the first loaded page.
-sendPageEvent(window.location.pathname);
+sendPageEvent(window.location.pathname, window.location.search);
 
 history.listen((location) => {
-  sendPageEvent(location.pathname);
+  sendPageEvent(location.pathname, window.location.search);
 });
 
 export default history;
