@@ -222,6 +222,9 @@ export class VizierGRPCClient {
     funcs: VizierQueryFunc[],
     mutation: boolean,
   ): Observable<ExecutionStateUpdate> {
+    const tablesMap = new Map<string, Table>();
+    const results: VizierQueryResult = { tables: [] };
+
     const headers = {
       ...(this.attachCreds ? {} : { Authorization: `bearer ${this.token}` }),
     };
@@ -232,15 +235,11 @@ export class VizierGRPCClient {
     const err = addFuncsToRequest(req, funcs);
     if (err) {
       return of({
-        event: { type: 'error', error: err }, completionReason: 'error',
-      } as ExecutionStateUpdate);
+        event: { type: 'error', error: err }, completionReason: 'error', results,
+      });
     }
 
     const call = this.client.executeScript(req, headers);
-
-    const tablesMap = new Map<string, Table>();
-    const results: VizierQueryResult = { tables: [] };
-
     return new Observable<ExecuteScriptResponse>((observer) => {
       call.on('data', observer.next.bind(observer));
       call.on('error', observer.error.bind(observer));
@@ -320,15 +319,15 @@ export class VizierGRPCClient {
         return outs;
       }),
       startWith({
-        event: { type: 'start' },
+        event: { type: 'start' as const },
         results,
         cancel: () => call.cancel?.(),
-      } as ExecutionStateUpdate),
+      }),
       catchError((error) => {
         call.cancel();
         return of({
-          event: { type: 'error', error }, completionReason: 'error',
-        } as ExecutionStateUpdate);
+          event: { type: 'error' as const, error }, completionReason: 'error' as const, results,
+        });
       }),
       finalize((() => { call.cancel(); })),
     );
