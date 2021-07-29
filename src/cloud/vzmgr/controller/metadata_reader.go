@@ -239,7 +239,7 @@ func (m *MetadataReader) loadVizierState(id uuid.UUID, k8sUID string) (*VizierSt
 	case <-time.After(missingVersionEntryTimeout):
 		log.Tracef("Timed out waiting for latest k8s: %s", k8sUID)
 	}
-	if sub.Unsubscribe() != nil {
+	if err := sub.Unsubscribe(); err != nil {
 		return nil, err
 	}
 	return vzState, nil
