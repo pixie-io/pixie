@@ -20,14 +20,19 @@ package bridge
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
 
 	"px.dev/pixie/src/cloud/vzconn/vzconnpb"
+	"px.dev/pixie/src/operator/api/v1alpha1"
 	"px.dev/pixie/src/shared/services"
 )
 
@@ -35,9 +40,43 @@ func init() {
 	pflag.String("cloud_addr", "vzconn-service.plc.svc:51600", "The Pixie Cloud service url (load balancer/list is ok)")
 }
 
+func getCloudAddrFromCRD(ctx context.Context) (string, error) {
+	kubeConfig, err := rest.InClusterConfig()
+	if err != nil {
+		return "", err
+	}
+
+	vzCrdClient, err := v1alpha1.NewVizierClient(kubeConfig)
+	if err != nil {
+		log.WithError(err).Error("failed to initialize Vizier CRD client")
+		return "", err
+	}
+
+	vzLst, err := vzCrdClient.List(ctx, viper.GetString("pod_namespace"), v1.ListOptions{})
+	if err != nil {
+		log.WithError(err).Error("failed to list Vizier CRDs")
+		return "", err
+	}
+
+	if len(vzLst.Items) == 1 {
+		return vzLst.Items[0].Spec.CloudAddr, nil
+	} else if len(vzLst.Items) > 1 {
+		return "", fmt.Errorf("spec contains more than 1 Vizier item")
+	}
+	return "", fmt.Errorf("spec contains 0 Vizier items")
+}
+
 // NewVZConnClient creates a new vzconn RPC client stub.
 func NewVZConnClient() (vzconnpb.VZConnServiceClient, error) {
-	cloudAddr := viper.GetString("cloud_addr")
+	ctxBg := context.Background()
+
+	// Get the cloud address - first try the CRD, if it exists.
+	// If that fails, pull it from the environment for Viziers that are not
+	// running the operator yet.
+	cloudAddr, err := getCloudAddrFromCRD(ctxBg)
+	if err != nil {
+		cloudAddr = viper.GetString("cloud_addr")
+	}
 
 	isInternal := strings.ContainsAny(cloudAddr, ".svc.cluster.local")
 
@@ -47,7 +86,6 @@ func NewVZConnClient() (vzconnpb.VZConnServiceClient, error) {
 	}
 	dialOpts = append(dialOpts, []grpc.DialOption{grpc.WithBlock()}...)
 
-	ctxBg := context.Background()
 	ctx, cancel := context.WithTimeout(ctxBg, 10*time.Second)
 	defer cancel()
 	ccChannel, err := grpc.DialContext(ctx, cloudAddr, dialOpts...)
