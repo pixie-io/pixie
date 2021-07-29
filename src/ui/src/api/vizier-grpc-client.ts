@@ -321,7 +321,7 @@ export class VizierGRPCClient {
       }),
       startWith({
         event: { type: 'start' },
-        results: undefined,
+        results,
         cancel: () => call.cancel?.(),
       } as ExecutionStateUpdate),
       catchError((error) => {
