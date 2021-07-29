@@ -247,7 +247,7 @@ export class VizierGRPCClient {
       call.on('end', observer.complete.bind(observer));
       call.on('status', (status) => {
         if (status.code > 0) {
-          throw new VizierQueryError('server', status.details);
+          observer.error(new VizierQueryError('server', status.details));
         }
       });
     }).pipe(
