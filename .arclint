@@ -184,7 +184,8 @@
       ],
       "exclude": [
         "(^src/stirling/source_connectors/dynamic_tracer/dynamic_tracing/ir/physicalpb/physical\\.proto$)"
-      ]      
+      ],
+      "text.max-line-length": 120
     },
     "shellcheck": {
       "type": "shellcheck",

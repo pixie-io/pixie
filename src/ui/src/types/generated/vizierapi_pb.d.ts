@@ -446,10 +446,10 @@ export class ExecuteScriptRequest extends jspb.Message {
   getMutation(): boolean;
   setMutation(value: boolean): ExecuteScriptRequest;
 
-  getEncryptionPublicKey(): ExecuteScriptRequest.EncryptionKey | undefined;
-  setEncryptionPublicKey(value?: ExecuteScriptRequest.EncryptionKey): ExecuteScriptRequest;
-  hasEncryptionPublicKey(): boolean;
-  clearEncryptionPublicKey(): ExecuteScriptRequest;
+  getEncryptionOptions(): ExecuteScriptRequest.EncryptionOptions | undefined;
+  setEncryptionOptions(value?: ExecuteScriptRequest.EncryptionOptions): ExecuteScriptRequest;
+  hasEncryptionOptions(): boolean;
+  clearEncryptionOptions(): ExecuteScriptRequest;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): ExecuteScriptRequest.AsObject;
@@ -465,7 +465,7 @@ export namespace ExecuteScriptRequest {
     clusterId: string,
     execFuncsList: Array<ExecuteScriptRequest.FuncToExecute.AsObject>,
     mutation: boolean,
-    encryptionPublicKey?: ExecuteScriptRequest.EncryptionKey.AsObject,
+    encryptionOptions?: ExecuteScriptRequest.EncryptionOptions.AsObject,
   }
 
   export class FuncToExecute extends jspb.Message {
@@ -520,25 +520,33 @@ export namespace ExecuteScriptRequest {
   }
 
 
-  export class EncryptionKey extends jspb.Message {
+  export class EncryptionOptions extends jspb.Message {
     getJwkKey(): string;
-    setJwkKey(value: string): EncryptionKey;
+    setJwkKey(value: string): EncryptionOptions;
 
-    getAlg(): string;
-    setAlg(value: string): EncryptionKey;
+    getKeyAlg(): string;
+    setKeyAlg(value: string): EncryptionOptions;
+
+    getContentAlg(): string;
+    setContentAlg(value: string): EncryptionOptions;
+
+    getCompressionAlg(): string;
+    setCompressionAlg(value: string): EncryptionOptions;
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): EncryptionKey.AsObject;
-    static toObject(includeInstance: boolean, msg: EncryptionKey): EncryptionKey.AsObject;
-    static serializeBinaryToWriter(message: EncryptionKey, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): EncryptionKey;
-    static deserializeBinaryFromReader(message: EncryptionKey, reader: jspb.BinaryReader): EncryptionKey;
+    toObject(includeInstance?: boolean): EncryptionOptions.AsObject;
+    static toObject(includeInstance: boolean, msg: EncryptionOptions): EncryptionOptions.AsObject;
+    static serializeBinaryToWriter(message: EncryptionOptions, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): EncryptionOptions;
+    static deserializeBinaryFromReader(message: EncryptionOptions, reader: jspb.BinaryReader): EncryptionOptions;
   }
 
-  export namespace EncryptionKey {
+  export namespace EncryptionOptions {
     export type AsObject = {
       jwkKey: string,
-      alg: string,
+      keyAlg: string,
+      contentAlg: string,
+      compressionAlg: string,
     }
   }
 

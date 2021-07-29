@@ -295,14 +295,24 @@ message ExecuteScriptRequest {
   // If the mutated state is already ready, the script will also be executed.
   bool mutation = 5;
 
-  message EncryptionKey {
+  message EncryptionOptions {
     // The encryption key in JWK format.
     string jwk_key = 1;
-    // The algorithm used for the key. It must be RSA-OAEP-256.
-    string alg = 2;
+    // The algorithm used for the key.
+    // https://datatracker.ietf.org/doc/html/rfc7518#section-4.1
+    // Valid values: https://github.com/lestrrat-go/jwx/blob/main/jwa/key_encryption_gen.go
+    string key_alg = 2;
+    // The algorithm to use to encrpyt the content.
+    // https://datatracker.ietf.org/doc/html/rfc7518#section-5.1
+    // Valid values: https://github.com/lestrrat-go/jwx/blob/main/jwa/content_encryption_gen.go
+    string content_alg = 3;
+    // The algorithm to use to compress the content. A blank value indicates no compression.
+    // https://datatracker.ietf.org/doc/html/rfc7516#section-4.1.3
+    // Valid values: https://github.com/lestrrat-go/jwx/blob/main/jwa/compression_gen.go
+    string compression_alg = 4;
   }
-  // The key used to encrypt the data.
-  EncryptionKey encryption_public_key = 6;
+  // Options for encrypting the data.
+  EncryptionOptions encryption_options = 6;
 
   reserved 2;
 }
