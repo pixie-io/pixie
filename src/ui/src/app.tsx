@@ -27,6 +27,8 @@ import {
 } from 'react-router-dom';
 import { makeCancellable, silentlyCatchCancellation } from 'app/utils/cancellable-promise';
 import { isProd, PIXIE_CLOUD_VERSION } from 'app/utils/env';
+import { dateToEpoch } from 'app/utils/time';
+import { parseJWT } from 'app/utils/jwt';
 import history from 'app/utils/pl-history';
 import * as QueryString from 'query-string';
 
@@ -50,6 +52,10 @@ import { EmbedContext, EmbedContextProvider } from 'app/common/embed-context';
 
 // This side-effect-only import has to be a `require`, or else it gets erroneously optimized away during compilation.
 require('./wdyr');
+
+// If in embedded mode, the amount of time before the auth token expires in which a refresh token should
+// be requested from the parent.
+const REFRESH_TOKEN_TIMEOUT_S = 60 * 5; // 5 minutes
 
 const RedirectWithArgs = (props) => {
   const {
@@ -234,7 +240,19 @@ const ThemedApp: React.FC = () => {
     // attached to our requests using bearer auth.
     if (embedPixieAPIKey || embedPixieAPIToken || embedPixieToken) {
       if (embedPixieToken) {
+        // This may mean that the parent view's token has expired. Send out a postMessage
+        // asking for this token to be refreshed.
         setAuthToken(embedPixieToken);
+
+        // Find the expiry time of the JWT and make sure we send a request to the parent for the refreshToken
+        // before it expires.
+        const jwt = parseJWT(embedPixieToken);
+        if (jwt != null) {
+          const refreshTimeout = jwt.exp - dateToEpoch(new Date(Date.now())) - REFRESH_TOKEN_TIMEOUT_S;
+          setTimeout(() => {
+            window.postMessage({ pixieRefreshToken: true }, '*');
+          }, refreshTimeout * 1000);
+        }
         return;
       }
 

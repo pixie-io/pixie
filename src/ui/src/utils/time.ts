@@ -27,3 +27,7 @@ export function milliToNanoSeconds(t: number): number {
 export function nanoToSeconds(t: number): number {
   return t / 1000000000;
 }
+
+export function dateToEpoch(d: Date): number {
+  return Math.floor((d.getTime() - d.getMilliseconds()) / 1000);
+}

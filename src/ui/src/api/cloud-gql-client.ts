@@ -48,9 +48,6 @@ const makeCloudAuthLink = (opts: PixieAPIClientOptions) => setContext((_, { head
 // Apollo link that redirects to login page on HTTP status 401.
 const loginRedirectLink = (on401: (errorMessage?: string) => void) => onError(({ networkError }) => {
   if (window.location.pathname.startsWith('/embed')) {
-    // This may mean that the parent view's token has expired. Send out a postMessage
-    // asking for this token to be refreshed.
-    window.top.postMessage({ pixieRefreshToken: true }, '*');
     return;
   }
 
