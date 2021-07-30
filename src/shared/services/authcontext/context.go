@@ -83,16 +83,7 @@ func (s *AuthContext) ValidClaims() bool {
 
 	switch utils.GetClaimsType(s.Claims) {
 	case utils.UserClaimType:
-		userClaims := s.Claims.GetUserClaims()
-		if userClaims == nil {
-			return false
-		}
-
-		if userClaims.IsAPIUser {
-			return len(userClaims.OrgID) > 0
-		}
-
-		return len(userClaims.UserID) > 0
+		return s.Claims.GetUserClaims() != nil && len(s.Claims.GetUserClaims().UserID) > 0
 	case utils.ServiceClaimType:
 		return s.Claims.GetServiceClaims() != nil && len(s.Claims.GetServiceClaims().ServiceID) > 0
 	case utils.ClusterClaimType:

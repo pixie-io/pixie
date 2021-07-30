@@ -43,10 +43,9 @@ func TestPBToMapClaims_User(t *testing.T) {
 
 	// User claims.
 	userClaims := &jwtpb.UserJWTClaims{
-		UserID:    "user_id",
-		OrgID:     "org_id",
-		Email:     "user@email.com",
-		IsAPIUser: false,
+		UserID: "user_id",
+		OrgID:  "org_id",
+		Email:  "user@email.com",
 	}
 	p.CustomClaims = &jwtpb.JWTClaims_UserClaims{
 		UserClaims: userClaims,
@@ -65,7 +64,6 @@ func TestPBToMapClaims_User(t *testing.T) {
 	assert.Equal(t, "user_id", claims["UserID"])
 	assert.Equal(t, "org_id", claims["OrgID"])
 	assert.Equal(t, "user@email.com", claims["Email"])
-	assert.Equal(t, false, claims["IsAPIUser"])
 }
 
 func TestPBToMapClaims_Service(t *testing.T) {
@@ -175,7 +173,6 @@ func TestMapClaimsToPB_User(t *testing.T) {
 	claims["UserID"] = "user_id"
 	claims["OrgID"] = "org_id"
 	claims["Email"] = "user@email.com"
-	claims["IsAPIUser"] = false
 
 	pb, err := utils.MapClaimsToPB(claims)
 	require.NoError(t, err)
@@ -192,7 +189,6 @@ func TestMapClaimsToPB_User(t *testing.T) {
 	assert.Equal(t, "user_id", customClaims.UserID)
 	assert.Equal(t, "org_id", customClaims.OrgID)
 	assert.Equal(t, "user@email.com", customClaims.Email)
-	assert.Equal(t, false, customClaims.IsAPIUser)
 }
 
 func TestMapClaimsToPB_Service(t *testing.T) {
