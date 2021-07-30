@@ -234,8 +234,8 @@ func (f *FakeVZInfo) GetVizierPods() ([]*vizierpb.VizierPodStatus, []*vizierpb.V
 
 type FakeVZUpdater struct{}
 
-func (f *FakeVZUpdater) UpdateCRDVizierVersion(string) error {
-	return nil
+func (f *FakeVZUpdater) UpdateCRDVizierVersion(string) (bool, error) {
+	return false, nil
 }
 
 type testState struct {

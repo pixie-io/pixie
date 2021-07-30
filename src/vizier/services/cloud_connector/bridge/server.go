@@ -155,7 +155,7 @@ type VizierInfo interface {
 
 // VizierUpdater updates and fetches info about the Vizier CRD.
 type VizierUpdater interface {
-	UpdateCRDVizierVersion(string) error
+	UpdateCRDVizierVersion(string) (bool, error)
 }
 
 // VizierHealthChecker is the interface that gets information on health of a Vizier.
@@ -419,9 +419,11 @@ func (s *Bridge) handleUpdateMessage(msg *types.Any) error {
 	// If cluster is using operator-deployed version of Vizier, we should
 	// trigger the update through the CRD. Otherwise, we fallback to the
 	// update job.
-	err = s.vzUpdater.UpdateCRDVizierVersion(pb.Version)
+	updating, err := s.vzUpdater.UpdateCRDVizierVersion(pb.Version)
 	if err == nil {
-		s.updateRunning.Store(true)
+		if updating {
+			s.updateRunning.Store(true)
+		}
 	} else {
 		job, err := s.vzInfo.ParseJobYAML(UpdaterJobYAML, map[string]string{"updater": pb.Version}, map[string]string{
 			"PL_VIZIER_VERSION": pb.Version,

@@ -614,20 +614,27 @@ func (v *K8sVizierInfo) UpdateClusterID(id string) error {
 
 // UpdateCRDVizierVersion updates the version of the Vizier CRD in the namespace.
 // Returns an error if the CRD was not found, or if an error occurred while
-// updating the CRD.
-func (v *K8sVizierInfo) UpdateCRDVizierVersion(version string) error {
+// updating the CRD. Returns whether or not an update was actually initiated.
+// This is used to determine whether the vizier should actually be in "UPDATING"
+// status, in the case of falsely initated update requests. This will be fixed
+// as we move to having the operator fully manage vizier statuses.
+func (v *K8sVizierInfo) UpdateCRDVizierVersion(version string) (bool, error) {
 	viziers, err := v.vzClient.List(context.Background(), v.ns, metav1.ListOptions{})
 	if err != nil {
-		return err
+		return false, err
 	}
 	if len(viziers.Items) > 0 {
 		vz := viziers.Items[0]
+		if vz.Spec.Version == version {
+			return false, nil
+		}
+
 		vz.Spec.Version = version
 		_, err = v.vzClient.Update(context.Background(), &vz, v.ns, metav1.UpdateOptions{})
 		if err != nil {
-			return err
+			return false, err
 		}
-		return nil
+		return true, nil
 	}
-	return errors.New("No vizier CRD found")
+	return false, errors.New("No vizier CRD found")
 }
