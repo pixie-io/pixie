@@ -44,6 +44,12 @@ class NATSConnectorBase {
 
   std::string nats_server_;
   std::unique_ptr<NATSTLSConfig> tls_config_;
+  static void DisconnectedCB(natsConnection* nc, void* closure);
+  static void ReconnectedCB(natsConnection* nc, void* closure);
+
+ private:
+  size_t disconnect_count_ = 0;
+  size_t reconnect_count_ = 0;
 };
 
 /**
@@ -120,6 +126,7 @@ class NATSConnector : public NATSConnectorBase {
     auto nats_status = natsConnection_Publish(nats_connection_, pub_topic_.c_str(),
                                               serialized_msg.c_str(), serialized_msg.size());
     if (nats_status != NATS_OK) {
+      nats_PrintLastErrorStack(stderr);
       return error::Unknown("Failed to publish to NATS, nats_status=$0", nats_status);
     }
     return Status::OK();

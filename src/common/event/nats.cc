@@ -45,6 +45,10 @@ Status NATSConnectorBase::ConnectBase(Dispatcher* base_dispatcher) {
                                       tls_config_->tls_key.c_str());
   }
 
+  natsOptions_SetMaxReconnect(nats_opts, -1);
+  natsOptions_SetDisconnectedCB(nats_opts, DisconnectedCB, this);
+  natsOptions_SetReconnectedCB(nats_opts, ReconnectedCB, this);
+
   auto s = natsOptions_SetEventLoop(nats_opts, dispatcher->uv_loop(), natsLibuv_Attach,
                                     natsLibuv_Read, natsLibuv_Write, natsLibuv_Detach);
 
@@ -64,6 +68,18 @@ Status NATSConnectorBase::ConnectBase(Dispatcher* base_dispatcher) {
     return error::Unknown("Failed to connect to NATS, nats_status=$0", nats_status);
   }
   return Status::OK();
+}
+
+void NATSConnectorBase::DisconnectedCB(natsConnection* nc, void* closure) {
+  PL_UNUSED(nc);
+  auto* connector = static_cast<NATSConnectorBase*>(closure);
+  LOG(WARNING) << "nats disconnected " << ++connector->disconnect_count_;
+}
+
+void NATSConnectorBase::ReconnectedCB(natsConnection* nc, void* closure) {
+  PL_UNUSED(nc);
+  auto* connector = static_cast<NATSConnectorBase*>(closure);
+  LOG(INFO) << "nats reconnected " << ++connector->reconnect_count_;
 }
 
 }  // namespace event
