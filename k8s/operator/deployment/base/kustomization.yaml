@@ -3,7 +3,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 commonLabels:
   app: pixie-operator
   component: pixie-operator
-namespace: px-operators
+namespace: px-operator
 kind: Kustomization
 resources:
 - deployment.yaml

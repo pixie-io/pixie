@@ -135,8 +135,12 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	// Fetch vizier CRD to determine what operation should be performed.
 	var vizier pixiev1alpha1.Vizier
 	if err := r.Get(ctx, req.NamespacedName, &vizier); err != nil {
+		err = r.deleteVizier(ctx, req)
+		if err != nil {
+			log.WithError(err).Info("Failed to delete Vizier instance")
+		}
 		// Vizier CRD deleted. The vizier instance should also be deleted.
-		return ctrl.Result{}, r.deleteVizier(ctx, req)
+		return ctrl.Result{}, err
 	}
 
 	if vizier.Status.VizierPhase == pixiev1alpha1.VizierPhaseNone {
@@ -148,8 +152,13 @@ func (r *VizierReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
+	err := r.updateVizier(ctx, req, &vizier)
+	if err != nil {
+		log.WithError(err).Info("Failed to update Vizier instance")
+	}
+
 	// Vizier CRD has been updated, and we should update the running vizier accordingly.
-	return ctrl.Result{}, r.updateVizier(ctx, req, &vizier)
+	return ctrl.Result{}, err
 }
 
 // updateVizier updates the vizier instance according to the spec. As of the current moment, we only support updates to the Vizier version.
@@ -158,6 +167,7 @@ func (r *VizierReconciler) updateVizier(ctx context.Context, req ctrl.Request, v
 	// TODO: We currently only trigger updates on changing Vizier versions. We should add a webhook
 	// to disallow changes to other fields.
 	if vz.Status.Version == vz.Spec.Version {
+		log.Info("Versions matched, nothing to do")
 		return nil
 	}
 
@@ -184,6 +194,7 @@ func (r *VizierReconciler) deleteVizier(ctx context.Context, req ctrl.Request) e
 
 // createVizier deploys a new vizier instance in the given namespace.
 func (r *VizierReconciler) createVizier(ctx context.Context, req ctrl.Request, vz *pixiev1alpha1.Vizier) error {
+	log.Info("Creating a new vizier instance")
 	cloudClient, err := getCloudClientConnection(vz.Spec.CloudAddr, vz.Spec.DevCloudNamespace)
 	if err != nil {
 		return err
@@ -208,6 +219,7 @@ func (r *VizierReconciler) createVizier(ctx context.Context, req ctrl.Request, v
 }
 
 func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, vz *pixiev1alpha1.Vizier, update bool) error {
+	log.Info("Starting a vizier deploy")
 	cloudClient, err := getCloudClientConnection(vz.Spec.CloudAddr, vz.Spec.DevCloudNamespace)
 	if err != nil {
 		return err
@@ -589,6 +601,9 @@ func waitForCluster(clientset *kubernetes.Clientset, namespace string) error {
 			return errors.New("Timed out waiting for cluster ID")
 		case <-t.C:
 			s := k8s.GetSecret(clientset, namespace, "pl-cluster-secrets")
+			if s == nil {
+				return errors.New("Missing cluster secrets")
+			}
 			if _, ok := s.Data["cluster-id"]; ok {
 				clusterID = true
 			}
