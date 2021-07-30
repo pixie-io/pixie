@@ -1,0 +1,17 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  name: pl-vizier-crd-role
+  namespace: pl
+rules:
+- apiGroups:
+  - px.dev
+  resources:
+  - viziers
+  - viziers/status
+  verbs:
+  - get
+  - list
+  - watch
+

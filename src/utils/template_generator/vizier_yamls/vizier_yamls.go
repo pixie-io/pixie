@@ -287,13 +287,13 @@ func GenerateSecretsYAML(clientset *kubernetes.Clientset, versionStr string, boo
 func generateVzDepsYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string) (string, string, error) {
 	natsYAML, err := yamls.TemplatizeK8sYAML(clientset, yamlMap[natsYAMLPath], append(GlobalTemplateOptions, []*yamls.K8sTemplateOptions{
 		{
-			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl:nats-operator-binding"),
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl:nats-operator-cluster-binding"),
 			Patch:           `{ "subjects": [{ "name": "nats-operator", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
 			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
 			TemplateValue:   nsTmpl,
 		},
 		{
-			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl:nats-server-binding"),
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl:nats-server-cluster-binding"),
 			Patch:           `{ "subjects": [{ "name": "nats-server", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
 			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
 			TemplateValue:   nsTmpl,
@@ -348,8 +348,38 @@ func generateVzYAMLs(clientset *kubernetes.Clientset, yamlMap map[string]string)
 			TemplateValue:   nsTmpl,
 		},
 		{
-			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cloud-connector-binding"),
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-cloud-connector-cluster-binding"),
 			Patch:           `{ "subjects": [{ "name": "cloud-conn-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
+			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
+			TemplateValue:   nsTmpl,
+		},
+		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-vizier-metadata-cluster-binding"),
+			Patch:           `{ "subjects": [{ "name": "metadata-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
+			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
+			TemplateValue:   nsTmpl,
+		},
+		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-vizier-crd-metadata-binding"),
+			Patch:           `{ "subjects": [{ "name": "metadata-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
+			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
+			TemplateValue:   nsTmpl,
+		},
+		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-vizier-crd-binding"),
+			Patch:           `{ "subjects": [{ "name": "default", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
+			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
+			TemplateValue:   nsTmpl,
+		},
+		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-vizier-certmgr-cluster-binding"),
+			Patch:           `{ "subjects": [{ "name": "certmgr-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
+			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
+			TemplateValue:   nsTmpl,
+		},
+		{
+			TemplateMatcher: yamls.GenerateResourceNameMatcherFn("pl-vizier-crd-certmgr-binding"),
+			Patch:           `{ "subjects": [{ "name": "certmgr-service-account", "namespace": "__PX_SUBJECT_NAMESPACE__", "kind": "ServiceAccount" }] }`,
 			Placeholder:     "__PX_SUBJECT_NAMESPACE__",
 			TemplateValue:   nsTmpl,
 		},

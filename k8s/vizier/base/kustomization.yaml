@@ -26,4 +26,5 @@ resources:
 - proxy_service.yaml
 - query_broker_deployment.yaml
 - query_broker_service.yaml
+- query_broker_role.yaml
 - tls_config.yaml

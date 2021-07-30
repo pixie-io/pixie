@@ -14,6 +14,7 @@ spec:
         name: vizier-metadata
         plane: control
     spec:
+      serviceAccountName: metadata-service-account
       initContainers:
       - name: nats-wait
         image: gcr.io/pixie-prod/pixie-prod-artifacts/curl:1.0
