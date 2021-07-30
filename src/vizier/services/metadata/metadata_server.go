@@ -126,7 +126,8 @@ func main() {
 	services.CheckSSLClientFlags()
 	services.SetupServiceLogging()
 
-	flush := services.InitDefaultSentry(viper.GetString("cluster_id"))
+	flush := services.InitDefaultSentry(viper.GetString("cluster_id"),
+		viper.GetString("pod_namespace"))
 	defer flush()
 
 	var nc *nats.Conn

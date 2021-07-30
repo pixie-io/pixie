@@ -65,6 +65,8 @@ type VizierStatus struct {
 	VizierReason string `json:"vizierReason,omitempty"`
 	// Message is a human-readable message with details about why the Vizier is in this condition.
 	Message string `json:"message,omitempty"`
+	// SentryDSN is key for Viziers that is used to send errors and stacktraces to Sentry.
+	SentryDSN string `json:"sentryDSN,omitempty"`
 }
 
 // VizierPhase is a high-level summary of where the Vizier is in its lifecycle.

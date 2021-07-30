@@ -262,10 +262,15 @@ func (r *VizierReconciler) deployVizier(ctx context.Context, req ctrl.Request, v
 	vz.Spec.Pod.Annotations[operatorAnnotation] = req.Name
 	vz.Spec.Pod.Labels[operatorAnnotation] = req.Name
 
-	yamlMap, err := generateVizierYAMLsConfig(ctx, req.Namespace, vz, cloudClient)
+	configForVizierResp, err := generateVizierYAMLsConfig(ctx, req.Namespace, vz, cloudClient)
 	if err != nil {
 		return err
 	}
+	yamlMap := configForVizierResp.NameToYamlContent
+
+	// Update Vizier CRD status sentryDSN so that it can be accessed by other
+	// vizier pods.
+	vz.Status.SentryDSN = configForVizierResp.SentryDSN
 
 	if !update {
 		err = r.deployVizierConfigs(ctx, req.Namespace, vz, yamlMap)
@@ -457,7 +462,8 @@ func convertResourceType(originalLst v1.ResourceList) *vizierconfigpb.ResourceLi
 
 // generateVizierYAMLsConfig is responsible retrieving a yaml map of configurations from
 // Pixie Cloud.
-func generateVizierYAMLsConfig(ctx context.Context, ns string, vz *pixiev1alpha1.Vizier, conn *grpc.ClientConn) (map[string]string, error) {
+func generateVizierYAMLsConfig(ctx context.Context, ns string, vz *pixiev1alpha1.Vizier, conn *grpc.ClientConn) (*cloudpb.ConfigForVizierResponse,
+	error) {
 	client := cloudpb.NewConfigServiceClient(conn)
 
 	req := &cloudpb.ConfigForVizierRequest{
@@ -485,7 +491,7 @@ func generateVizierYAMLsConfig(ctx context.Context, ns string, vz *pixiev1alpha1
 	if err != nil {
 		return nil, err
 	}
-	return resp.NameToYamlContent, nil
+	return resp, nil
 }
 
 // addKeyValueMapToResource adds the given keyValue map to the K8s resource.

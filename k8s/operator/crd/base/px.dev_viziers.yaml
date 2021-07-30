@@ -123,6 +123,10 @@ spec:
                 description: Message is a human-readable message with details about
                   why the Vizier is in this condition.
                 type: string
+              sentryDSN:
+                description: SentryDSN is key for Viziers that is used to send errors
+                  and stacktraces to Sentry.
+                type: string
               version:
                 description: Version is the actual version of the Vizier instance.
                 type: string

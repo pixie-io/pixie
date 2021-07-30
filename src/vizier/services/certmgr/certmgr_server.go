@@ -50,7 +50,8 @@ func main() {
 	services.CheckSSLClientFlags()
 	services.SetupServiceLogging()
 
-	flush := services.InitDefaultSentry(viper.GetString("cluster_id"))
+	flush := services.InitDefaultSentry(viper.GetString("cluster_id"),
+		viper.GetString("namespace"))
 	defer flush()
 
 	natsWait := make(chan struct{})

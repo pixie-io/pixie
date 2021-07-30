@@ -84,7 +84,8 @@ func main() {
 	services.CheckSSLClientFlags()
 	services.SetupServiceLogging()
 
-	flush := services.InitDefaultSentry(viper.GetString("cluster_id"))
+	flush := services.InitDefaultSentry(viper.GetString("cluster_id"),
+		viper.GetString("pod_namespace"))
 	defer flush()
 
 	// For a given query, the agents may send multiple sets of results via the query broker.

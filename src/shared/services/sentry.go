@@ -19,6 +19,8 @@
 package services
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"runtime"
 	"time"
@@ -27,7 +29,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
 
+	"px.dev/pixie/src/operator/api/v1alpha1"
 	version "px.dev/pixie/src/shared/goversion"
 	"px.dev/pixie/src/shared/services/sentryhook"
 )
@@ -36,14 +41,50 @@ func init() {
 	pflag.String("sentry_dsn", "", "The sentry DSN. Empty disables sentry")
 }
 
+func getSentryVal(envNamespaceStr string) (string, error) {
+	// There is a specific config for services running in the cluster.
+	kubeConfig, err := rest.InClusterConfig()
+	if err != nil {
+		return "", err
+	}
+
+	vzCrdClient, err := v1alpha1.NewVizierClient(kubeConfig)
+	if err != nil {
+		log.WithError(err).Error("Failed to initialize vizier CRD client")
+		return "", err
+	}
+
+	ctx := context.Background()
+	vzLst, err := vzCrdClient.List(ctx, envNamespaceStr, v1.ListOptions{})
+	if err != nil {
+		log.WithError(err).Error("Failed to list vizier CRDs.")
+		return "", err
+	}
+
+	if len(vzLst.Items) == 1 {
+		return vzLst.Items[0].Status.SentryDSN, nil
+	} else if len(vzLst.Items) > 0 {
+		return "", fmt.Errorf("spec contains more than 1 vizier item")
+	}
+	return "", fmt.Errorf("spec contains 0 vizier items")
+}
+
 // InitDefaultSentry initialize sentry with default options. The options are set based on values
 // from viper.
-func InitDefaultSentry(id string) func() {
-	dsn := viper.GetString("sentry_dsn")
+func InitDefaultSentry(id, envNamespaceStr string) func() {
+	// Query the Vizier CRD API to get the Sentry Value. If error,
+	// just use the environment variable for backwards compatibility.
+	// Once all users use Operator + CRD, we can remove backwards
+	// compatibility.
+	dsn, err := getSentryVal(envNamespaceStr)
+	if err != nil {
+		dsn = viper.GetString("sentry_dsn")
+		log.WithError(err).Trace("Cannot initialize sentry value from Vizier CRD.")
+	}
 	podName := viper.GetString("pod_name")
 	executable, _ := os.Executable()
 
-	err := sentry.Init(sentry.ClientOptions{
+	err = sentry.Init(sentry.ClientOptions{
 		Dsn:              dsn,
 		AttachStacktrace: true,
 		Release:          version.GetVersion().ToString(),
