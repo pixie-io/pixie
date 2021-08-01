@@ -5,6 +5,7 @@ commonLabels:
   app: pl-cloud
 namespace: plc
 resources:
+- ssd_storageclass.yaml
 - ../../base/elastic/cluster
 patches:
 - path: elastic_creds.yaml

@@ -6,7 +6,6 @@ metadata:
     app: postgres
   name: postgres-pv-claim
 spec:
-  storageClassName: standard
   accessModes:
   - ReadWriteOnce
   resources:

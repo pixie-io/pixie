@@ -30,7 +30,6 @@ spec:
     - metadata:
         name: elasticsearch-data
       spec:
-        storageClassName: "" # this is replaced by version specific patches
         accessModes:
         - ReadWriteOnce
         resources:
@@ -73,7 +72,6 @@ spec:
     - metadata:
         name: elasticsearch-data
       spec:
-        storageClassName: "" # this is replaced by version specific patches
         accessModes:
         - ReadWriteOnce
         resources:

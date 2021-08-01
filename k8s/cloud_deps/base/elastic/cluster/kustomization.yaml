@@ -4,5 +4,4 @@ commonLabels:
   app: pl-cloud
 namespace: plc
 resources:
-- ssd_storageclass.yaml
 - elastic_cluster.yaml
