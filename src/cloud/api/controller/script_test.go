@@ -19,6 +19,7 @@
 package controller_test
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
@@ -68,10 +69,12 @@ func TestScriptMgr(t *testing.T) {
 		smResp       proto.Message
 		req          proto.Message
 		expectedResp proto.Message
+		ctx          context.Context
 	}{
 		{
 			name:     "GetLiveViews correctly translates from scriptmgrpb to cloudpb.",
 			endpoint: "GetLiveViews",
+			ctx:      CreateAPIUserTestContext(),
 			smReq:    &scriptmgrpb.GetLiveViewsReq{},
 			smResp: &scriptmgrpb.GetLiveViewsResp{
 				LiveViews: []*scriptmgrpb.LiveViewMetadata{
@@ -106,6 +109,7 @@ func TestScriptMgr(t *testing.T) {
 		{
 			name:     "GetLiveViewContents correctly translates between scriptmgr and cloudpb.",
 			endpoint: "GetLiveViewContents",
+			ctx:      CreateTestContext(),
 			smReq: &scriptmgrpb.GetLiveViewContentsReq{
 				LiveViewID: utils.ProtoFromUUID(ID1),
 			},
@@ -134,6 +138,7 @@ func TestScriptMgr(t *testing.T) {
 		{
 			name:     "GetScripts correctly translates between scriptmgr and cloudpb.",
 			endpoint: "GetScripts",
+			ctx:      CreateTestContext(),
 			smReq:    &scriptmgrpb.GetScriptsReq{},
 			smResp: &scriptmgrpb.GetScriptsResp{
 				Scripts: []*scriptmgrpb.ScriptMetadata{
@@ -172,6 +177,7 @@ func TestScriptMgr(t *testing.T) {
 		{
 			name:     "GetScriptContents correctly translates between scriptmgr and cloudpb.",
 			endpoint: "GetScriptContents",
+			ctx:      CreateTestContext(),
 			smReq: &scriptmgrpb.GetScriptContentsReq{
 				ScriptID: utils.ProtoFromUUID(ID1),
 			},
@@ -205,7 +211,7 @@ func TestScriptMgr(t *testing.T) {
 			defer ctrl.Finish()
 
 			mockScriptMgr := mock_scriptmgr.NewMockScriptMgrServiceClient(ctrl)
-			ctx := CreateTestContext()
+			ctx := tc.ctx
 
 			reflect.ValueOf(mockScriptMgr.EXPECT()).
 				MethodByName(tc.endpoint).

@@ -19,6 +19,7 @@
 package controller_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -33,33 +34,51 @@ import (
 )
 
 func TestOrganizationServiceServer_InviteUser(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
-	defer cleanup()
-	ctx := CreateTestContext()
-	mockReq := &authpb.InviteUserRequest{
-		OrgID:     utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
-		Email:     "bobloblaw@lawblog.law",
-		FirstName: "bob",
-		LastName:  "loblaw",
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "regular user",
+			ctx:  CreateTestContext(),
+		},
+		{
+			name: "api user",
+			ctx:  CreateAPIUserTestContext(),
+		},
 	}
 
-	mockClients.MockAuth.EXPECT().InviteUser(gomock.Any(), mockReq).
-		Return(&authpb.InviteUserResponse{
-			InviteLink: "withpixie.ai/invite&id=abcd",
-		}, nil)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-	os := &controller.OrganizationServiceServer{mockClients.MockProfile, mockClients.MockAuth}
+			_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+			defer cleanup()
+			ctx := test.ctx
+			mockReq := &authpb.InviteUserRequest{
+				OrgID:     utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+				Email:     "bobloblaw@lawblog.law",
+				FirstName: "bob",
+				LastName:  "loblaw",
+			}
 
-	resp, err := os.InviteUser(ctx, &cloudpb.InviteUserRequest{
-		Email:     "bobloblaw@lawblog.law",
-		FirstName: "bob",
-		LastName:  "loblaw",
-	})
+			mockClients.MockAuth.EXPECT().InviteUser(gomock.Any(), mockReq).
+				Return(&authpb.InviteUserResponse{
+					InviteLink: "withpixie.ai/invite&id=abcd",
+				}, nil)
 
-	require.NoError(t, err)
-	assert.Equal(t, mockReq.Email, resp.Email)
-	assert.Equal(t, "withpixie.ai/invite&id=abcd", resp.InviteLink)
+			os := &controller.OrganizationServiceServer{mockClients.MockProfile, mockClients.MockAuth}
+
+			resp, err := os.InviteUser(ctx, &cloudpb.InviteUserRequest{
+				Email:     "bobloblaw@lawblog.law",
+				FirstName: "bob",
+				LastName:  "loblaw",
+			})
+
+			require.NoError(t, err)
+			assert.Equal(t, mockReq.Email, resp.Email)
+			assert.Equal(t, "withpixie.ai/invite&id=abcd", resp.InviteLink)
+		})
+	}
 }

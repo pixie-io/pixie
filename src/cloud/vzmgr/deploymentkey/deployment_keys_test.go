@@ -87,6 +87,12 @@ func createTestContext() context.Context {
 	return authcontext.NewContext(context.Background(), sCtx)
 }
 
+func createTestAPIUserContext() context.Context {
+	sCtx := authcontext.New()
+	sCtx.Claims = jwtutils.GenerateJWTForAPIUser(testAuthUserID.String(), testAuthOrgID.String(), time.Now(), "pixie")
+	return authcontext.NewContext(context.Background(), sCtx)
+}
+
 func mustLoadTestData(db *sqlx.DB) {
 	db.MustExec(`DELETE FROM vizier_deployment_keys`)
 
@@ -97,54 +103,89 @@ func mustLoadTestData(db *sqlx.DB) {
 }
 
 func TestDeploymentKeyService_CreateDeploymentKey(t *testing.T) {
-	mustLoadTestData(db)
-
-	ctx := createTestContext()
-	svc := New(db, testDBKey)
-	resp, err := svc.Create(ctx, &vzmgrpb.CreateDeploymentKeyRequest{Desc: "this is a key"})
-	require.NoError(t, err)
-	assert.NotNil(t, resp)
-
-	// Check if time is reasonable.
-	ts, err := types.TimestampFromProto(resp.CreatedAt)
-	require.NoError(t, err)
-
-	diff := time.Since(ts).Milliseconds()
-	if diff < 0 {
-		diff = -1 * diff
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "regular user",
+			ctx:  createTestContext(),
+		},
+		{
+			name: "api user",
+			ctx:  createTestAPIUserContext(),
+		},
 	}
-	assert.LessOrEqual(t, diff, int64(10000))
 
-	// Check if the key has a value and the ID looks valid.
-	assert.Greater(t, len(resp.Key), 0)
-	assert.NotEqual(t, uuid.Nil.String(), utils.UUIDFromProtoOrNil(resp.ID).String())
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mustLoadTestData(db)
+
+			ctx := test.ctx
+			svc := New(db, testDBKey)
+			resp, err := svc.Create(ctx, &vzmgrpb.CreateDeploymentKeyRequest{Desc: "this is a key"})
+			require.NoError(t, err)
+			assert.NotNil(t, resp)
+
+			// Check if time is reasonable.
+			ts, err := types.TimestampFromProto(resp.CreatedAt)
+			require.NoError(t, err)
+
+			diff := time.Since(ts).Milliseconds()
+			if diff < 0 {
+				diff = -1 * diff
+			}
+			assert.LessOrEqual(t, diff, int64(10000))
+
+			// Check if the key has a value and the ID looks valid.
+			assert.Greater(t, len(resp.Key), 0)
+			assert.NotEqual(t, uuid.Nil.String(), utils.UUIDFromProtoOrNil(resp.ID).String())
+		})
+	}
 }
 
 func TestDeploymentKeyService_ListDeploymentKeys(t *testing.T) {
 	mustLoadTestData(db)
-
-	ctx := createTestContext()
-	svc := New(db, testDBKey)
-	resp, err := svc.List(ctx, &vzmgrpb.ListDeploymentKeyRequest{})
-	require.NoError(t, err)
-	assert.NotNil(t, resp)
-	assert.Equal(t, 2, len(resp.Keys))
-	assert.Equal(t, testKey1ID, utils.UUIDFromProtoOrNil(resp.Keys[0].ID))
-	assert.Equal(t, testKey2ID, utils.UUIDFromProtoOrNil(resp.Keys[1].ID))
-	assert.Equal(t, "here is a desc", resp.Keys[0].Desc)
-	assert.Equal(t, "here is another one", resp.Keys[1].Desc)
-	assert.Equal(t, "key1", resp.Keys[0].Key)
-	assert.Equal(t, "key2", resp.Keys[1].Key)
-
-	// Check that time looks reasonable.
-	ts, err := types.TimestampFromProto(resp.Keys[0].CreatedAt)
-	require.NoError(t, err)
-
-	diff := time.Since(ts).Milliseconds()
-	if diff < 0 {
-		diff = -1 * diff
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "regular user",
+			ctx:  createTestContext(),
+		},
+		{
+			name: "api user",
+			ctx:  createTestAPIUserContext(),
+		},
 	}
-	assert.LessOrEqual(t, diff, int64(10000))
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := test.ctx
+			svc := New(db, testDBKey)
+			resp, err := svc.List(ctx, &vzmgrpb.ListDeploymentKeyRequest{})
+			require.NoError(t, err)
+			assert.NotNil(t, resp)
+			assert.Equal(t, 2, len(resp.Keys))
+			assert.Equal(t, testKey1ID, utils.UUIDFromProtoOrNil(resp.Keys[0].ID))
+			assert.Equal(t, testKey2ID, utils.UUIDFromProtoOrNil(resp.Keys[1].ID))
+			assert.Equal(t, "here is a desc", resp.Keys[0].Desc)
+			assert.Equal(t, "here is another one", resp.Keys[1].Desc)
+			assert.Equal(t, "key1", resp.Keys[0].Key)
+			assert.Equal(t, "key2", resp.Keys[1].Key)
+
+			// Check that time looks reasonable.
+			ts, err := types.TimestampFromProto(resp.Keys[0].CreatedAt)
+			require.NoError(t, err)
+
+			diff := time.Since(ts).Milliseconds()
+			if diff < 0 {
+				diff = -1 * diff
+			}
+			assert.LessOrEqual(t, diff, int64(10000))
+		})
+	}
 }
 
 func TestDeploymentKeyService_ListDeploymentKeys_MissingAuth(t *testing.T) {
@@ -161,133 +202,272 @@ func TestDeploymentKeyService_ListDeploymentKeys_MissingAuth(t *testing.T) {
 
 func TestDeploymentKeyService_Get(t *testing.T) {
 	mustLoadTestData(db)
-
-	ctx := createTestContext()
-	svc := New(db, testDBKey)
-
-	resp, err := svc.Get(ctx, &vzmgrpb.GetDeploymentKeyRequest{
-		ID: utils.ProtoFromUUID(testKey1ID),
-	})
-
-	require.NoError(t, err)
-	assert.NotNil(t, resp)
-
-	assert.Equal(t, "key1", resp.Key.Key)
-	// Check if time is reasonable.
-	ts, err := types.TimestampFromProto(resp.Key.CreatedAt)
-	require.NoError(t, err)
-
-	diff := time.Since(ts).Milliseconds()
-	if diff < 0 {
-		diff = -1 * diff
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "regular user",
+			ctx:  createTestContext(),
+		},
+		{
+			name: "api user",
+			ctx:  createTestAPIUserContext(),
+		},
 	}
-	assert.LessOrEqual(t, diff, int64(10000))
-	assert.Equal(t, "here is a desc", resp.Key.Desc)
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := test.ctx
+			svc := New(db, testDBKey)
+
+			resp, err := svc.Get(ctx, &vzmgrpb.GetDeploymentKeyRequest{
+				ID: utils.ProtoFromUUID(testKey1ID),
+			})
+
+			require.NoError(t, err)
+			assert.NotNil(t, resp)
+
+			assert.Equal(t, "key1", resp.Key.Key)
+			// Check if time is reasonable.
+			ts, err := types.TimestampFromProto(resp.Key.CreatedAt)
+			require.NoError(t, err)
+
+			diff := time.Since(ts).Milliseconds()
+			if diff < 0 {
+				diff = -1 * diff
+			}
+			assert.LessOrEqual(t, diff, int64(10000))
+			assert.Equal(t, "here is a desc", resp.Key.Desc)
+		})
+	}
 }
 
 func TestDeploymentKeyService_Get_UnownedID(t *testing.T) {
 	mustLoadTestData(db)
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "regular user",
+			ctx:  createTestContext(),
+		},
+		{
+			name: "api user",
+			ctx:  createTestAPIUserContext(),
+		},
+	}
 
-	ctx := createTestContext()
-	svc := New(db, testDBKey)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := test.ctx
+			svc := New(db, testDBKey)
 
-	resp, err := svc.Get(ctx, &vzmgrpb.GetDeploymentKeyRequest{
-		ID: utils.ProtoFromUUID(testNonAuthUserKeyID),
-	})
-	assert.Nil(t, resp)
-	assert.NotNil(t, err)
+			resp, err := svc.Get(ctx, &vzmgrpb.GetDeploymentKeyRequest{
+				ID: utils.ProtoFromUUID(testNonAuthUserKeyID),
+			})
+			assert.Nil(t, resp)
+			assert.NotNil(t, err)
 
-	assert.Equal(t, codes.NotFound, status.Code(err))
+			assert.Equal(t, codes.NotFound, status.Code(err))
+		})
+	}
 }
 
 func TestDeploymentKeyService_Get_NonExistentID(t *testing.T) {
 	mustLoadTestData(db)
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "regular user",
+			ctx:  createTestContext(),
+		},
+		{
+			name: "api user",
+			ctx:  createTestAPIUserContext(),
+		},
+	}
 
-	ctx := createTestContext()
-	svc := New(db, testDBKey)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := test.ctx
+			svc := New(db, testDBKey)
 
-	u := uuid.Must(uuid.NewV4())
-	resp, err := svc.Get(ctx, &vzmgrpb.GetDeploymentKeyRequest{
-		ID: utils.ProtoFromUUID(u),
-	})
-	assert.Nil(t, resp)
-	assert.NotNil(t, err)
+			u := uuid.Must(uuid.NewV4())
+			resp, err := svc.Get(ctx, &vzmgrpb.GetDeploymentKeyRequest{
+				ID: utils.ProtoFromUUID(u),
+			})
+			assert.Nil(t, resp)
+			assert.NotNil(t, err)
 
-	assert.Equal(t, codes.NotFound, status.Code(err))
+			assert.Equal(t, codes.NotFound, status.Code(err))
+		})
+	}
 }
 
 func TestDeploymentKeyService_Delete(t *testing.T) {
-	mustLoadTestData(db)
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "regular user",
+			ctx:  createTestContext(),
+		},
+		{
+			name: "api user",
+			ctx:  createTestAPIUserContext(),
+		},
+	}
 
-	ctx := createTestContext()
-	svc := New(db, testDBKey)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mustLoadTestData(db)
 
-	u := utils.ProtoFromUUID(testKey1ID)
-	resp, err := svc.Delete(ctx, u)
-	require.NoError(t, err)
-	assert.NotNil(t, resp)
+			ctx := test.ctx
+			svc := New(db, testDBKey)
 
-	_, err = svc.Get(ctx, &vzmgrpb.GetDeploymentKeyRequest{
-		ID: u,
-	})
-	assert.Equal(t, codes.NotFound, status.Code(err))
+			u := utils.ProtoFromUUID(testKey1ID)
+			resp, err := svc.Delete(ctx, u)
+			require.NoError(t, err)
+			assert.NotNil(t, resp)
+
+			_, err = svc.Get(ctx, &vzmgrpb.GetDeploymentKeyRequest{
+				ID: u,
+			})
+			assert.Equal(t, codes.NotFound, status.Code(err))
+		})
+	}
 }
 
 func TestDeploymentKeyService_Delete_UnownedKey(t *testing.T) {
-	mustLoadTestData(db)
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "regular user",
+			ctx:  createTestContext(),
+		},
+		{
+			name: "api user",
+			ctx:  createTestAPIUserContext(),
+		},
+	}
 
-	ctx := createTestContext()
-	svc := New(db, testDBKey)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mustLoadTestData(db)
 
-	u := utils.ProtoFromUUID(testNonAuthUserKeyID)
-	resp, err := svc.Delete(ctx, u)
-	assert.NotNil(t, err)
-	assert.Nil(t, resp)
-	assert.Equal(t, codes.NotFound, status.Code(err))
+			ctx := test.ctx
+			svc := New(db, testDBKey)
 
-	// Make DB query to make sure the Key still exists.
-	var key string
-	err = db.QueryRow(`SELECT PGP_SYM_DECRYPT(key::bytea, $1) from vizier_deployment_keys where id=$2`,
-		testDBKey, testNonAuthUserKeyID).
-		Scan(&key)
-	require.NoError(t, err)
-	assert.Equal(t, "key2", key)
+			u := utils.ProtoFromUUID(testNonAuthUserKeyID)
+			resp, err := svc.Delete(ctx, u)
+			assert.NotNil(t, err)
+			assert.Nil(t, resp)
+			assert.Equal(t, codes.NotFound, status.Code(err))
+
+			// Make DB query to make sure the Key still exists.
+			var key string
+			err = db.QueryRow(`SELECT PGP_SYM_DECRYPT(key::bytea, $1) from vizier_deployment_keys where id=$2`,
+				testDBKey, testNonAuthUserKeyID).
+				Scan(&key)
+			require.NoError(t, err)
+			assert.Equal(t, "key2", key)
+		})
+	}
 }
 
 func TestDeploymentKeyService_Delete_NonExistentKey(t *testing.T) {
-	mustLoadTestData(db)
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "regular user",
+			ctx:  createTestContext(),
+		},
+		{
+			name: "api user",
+			ctx:  createTestAPIUserContext(),
+		},
+	}
 
-	ctx := createTestContext()
-	svc := New(db, testDBKey)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mustLoadTestData(db)
 
-	u := uuid.Must(uuid.NewV4())
-	resp, err := svc.Delete(ctx, utils.ProtoFromUUID(u))
-	assert.NotNil(t, err)
-	assert.Nil(t, resp)
-	assert.Equal(t, codes.NotFound, status.Code(err))
+			ctx := test.ctx
+			svc := New(db, testDBKey)
+
+			u := uuid.Must(uuid.NewV4())
+			resp, err := svc.Delete(ctx, utils.ProtoFromUUID(u))
+			assert.NotNil(t, err)
+			assert.Nil(t, resp)
+			assert.Equal(t, codes.NotFound, status.Code(err))
+		})
+	}
 }
 
 func TestService_FetchOrgUserIDUsingDeploymentKey(t *testing.T) {
 	mustLoadTestData(db)
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "regular user",
+			ctx:  createTestContext(),
+		},
+		{
+			name: "api user",
+			ctx:  createTestAPIUserContext(),
+		},
+	}
 
-	ctx := createTestContext()
-	svc := New(db, testDBKey)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := test.ctx
+			svc := New(db, testDBKey)
 
-	orgID, userID, err := svc.FetchOrgUserIDUsingDeploymentKey(ctx, "key1")
-	require.NoError(t, err)
-	assert.Equal(t, testAuthOrgID, orgID)
-	assert.Equal(t, testAuthUserID, userID)
+			orgID, userID, err := svc.FetchOrgUserIDUsingDeploymentKey(ctx, "key1")
+			require.NoError(t, err)
+			assert.Equal(t, testAuthOrgID, orgID)
+			assert.Equal(t, testAuthUserID, userID)
+		})
+	}
 }
 
 func TestService_FetchOrgUserIDUsingDeploymentKey_BadKey(t *testing.T) {
 	mustLoadTestData(db)
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "regular user",
+			ctx:  createTestContext(),
+		},
+		{
+			name: "api user",
+			ctx:  createTestAPIUserContext(),
+		},
+	}
 
-	ctx := createTestContext()
-	svc := New(db, testDBKey)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := test.ctx
+			svc := New(db, testDBKey)
 
-	orgID, userID, err := svc.FetchOrgUserIDUsingDeploymentKey(ctx, "some rando key that does not exist")
-	assert.NotNil(t, err)
-	assert.Equal(t, vzerrors.ErrDeploymentKeyNotFound, err)
-	assert.Equal(t, uuid.Nil, orgID)
-	assert.Equal(t, uuid.Nil, userID)
+			orgID, userID, err := svc.FetchOrgUserIDUsingDeploymentKey(ctx, "some rando key that does not exist")
+			assert.NotNil(t, err)
+			assert.Equal(t, vzerrors.ErrDeploymentKeyNotFound, err)
+			assert.Equal(t, uuid.Nil, orgID)
+			assert.Equal(t, uuid.Nil, userID)
+		})
+	}
 }

@@ -19,6 +19,7 @@
 package controller_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -33,43 +34,61 @@ import (
 )
 
 func TestConfigForVizier(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
-	defer cleanup()
-	ctx := CreateTestContext()
-
-	vzSpec := &vizierconfigpb.VizierSpec{
-		Version:           "",
-		DeployKey:         "",
-		DisableAutoUpdate: false,
-		UseEtcdOperator:   false,
-		ClusterName:       "test-cluster",
-		CloudAddr:         "",
-		DevCloudNamespace: "plc-dev",
-		PemMemoryLimit:    "10Mi",
-		Pod_Policy:        nil,
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "regular user",
+			ctx:  CreateTestContext(),
+		},
+		{
+			name: "api user",
+			ctx:  CreateAPIUserTestContext(),
+		},
 	}
 
-	mockReq := &configmanagerpb.ConfigForVizierRequest{
-		Namespace: "test-namespace",
-		VzSpec:    vzSpec,
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+			defer cleanup()
+			ctx := test.ctx
+
+			vzSpec := &vizierconfigpb.VizierSpec{
+				Version:           "",
+				DeployKey:         "",
+				DisableAutoUpdate: false,
+				UseEtcdOperator:   false,
+				ClusterName:       "test-cluster",
+				CloudAddr:         "",
+				DevCloudNamespace: "plc-dev",
+				PemMemoryLimit:    "10Mi",
+				Pod_Policy:        nil,
+			}
+
+			mockReq := &configmanagerpb.ConfigForVizierRequest{
+				Namespace: "test-namespace",
+				VzSpec:    vzSpec,
+			}
+
+			nameToYamlContent := make(map[string]string)
+			nameToYamlContent["fileAName"] = "fileAContent"
+			mockClients.MockConfigMgr.EXPECT().GetConfigForVizier(gomock.Any(), mockReq).
+				Return(&configmanagerpb.ConfigForVizierResponse{
+					NameToYamlContent: nameToYamlContent,
+				}, nil)
+
+			cfgServer := &controller.ConfigServiceServer{mockClients.MockConfigMgr}
+
+			resp, err := cfgServer.GetConfigForVizier(ctx, &cloudpb.ConfigForVizierRequest{
+				Namespace: "test-namespace",
+				VzSpec:    vzSpec,
+			})
+			require.NoError(t, err)
+			assert.Equal(t, resp.NameToYamlContent["fileAName"], "fileAContent")
+		})
 	}
-
-	nameToYamlContent := make(map[string]string)
-	nameToYamlContent["fileAName"] = "fileAContent"
-	mockClients.MockConfigMgr.EXPECT().GetConfigForVizier(gomock.Any(), mockReq).
-		Return(&configmanagerpb.ConfigForVizierResponse{
-			NameToYamlContent: nameToYamlContent,
-		}, nil)
-
-	cfgServer := &controller.ConfigServiceServer{mockClients.MockConfigMgr}
-
-	resp, err := cfgServer.GetConfigForVizier(ctx, &cloudpb.ConfigForVizierRequest{
-		Namespace: "test-namespace",
-		VzSpec:    vzSpec,
-	})
-	require.NoError(t, err)
-	assert.Equal(t, resp.NameToYamlContent["fileAName"], "fileAContent")
 }

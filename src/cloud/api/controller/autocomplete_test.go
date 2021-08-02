@@ -19,6 +19,7 @@
 package controller_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/gofrs/uuid"
@@ -33,144 +34,180 @@ import (
 )
 
 func TestAutocompleteService_Autocomplete(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	orgID, err := uuid.FromString("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
-	require.NoError(t, err)
-	ctx := CreateTestContext()
-
-	s := mock_autocomplete.NewMockSuggester(ctrl)
-
-	requests := [][]*autocomplete.SuggestionRequest{
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
 		{
-			{
-				OrgID:        orgID,
-				ClusterUID:   "test",
-				Input:        "px/svc_info",
-				AllowedKinds: []cloudpb.AutocompleteEntityKind{cloudpb.AEK_POD, cloudpb.AEK_SVC, cloudpb.AEK_NAMESPACE, cloudpb.AEK_SCRIPT},
-				AllowedArgs:  []cloudpb.AutocompleteEntityKind{},
-			},
-			{
-				OrgID:        orgID,
-				ClusterUID:   "test",
-				Input:        "pl/test",
-				AllowedKinds: []cloudpb.AutocompleteEntityKind{cloudpb.AEK_POD, cloudpb.AEK_SVC, cloudpb.AEK_NAMESPACE, cloudpb.AEK_SCRIPT},
-				AllowedArgs:  []cloudpb.AutocompleteEntityKind{},
-			},
+			name: "regular user",
+			ctx:  CreateTestContext(),
+		},
+		{
+			name: "api user",
+			ctx:  CreateAPIUserTestContext(),
 		},
 	}
 
-	responses := [][]*autocomplete.SuggestionResult{
-		{
-			{
-				Suggestions: []*autocomplete.Suggestion{
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			orgID, err := uuid.FromString("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+			require.NoError(t, err)
+			ctx := test.ctx
+
+			s := mock_autocomplete.NewMockSuggester(ctrl)
+
+			requests := [][]*autocomplete.SuggestionRequest{
+				{
 					{
-						Name:     "px/svc_info",
-						Score:    1,
-						ArgNames: []string{"svc_name"},
-						ArgKinds: []cloudpb.AutocompleteEntityKind{cloudpb.AEK_SVC},
+						OrgID:        orgID,
+						ClusterUID:   "test",
+						Input:        "px/svc_info",
+						AllowedKinds: []cloudpb.AutocompleteEntityKind{cloudpb.AEK_POD, cloudpb.AEK_SVC, cloudpb.AEK_NAMESPACE, cloudpb.AEK_SCRIPT},
+						AllowedArgs:  []cloudpb.AutocompleteEntityKind{},
+					},
+					{
+						OrgID:        orgID,
+						ClusterUID:   "test",
+						Input:        "pl/test",
+						AllowedKinds: []cloudpb.AutocompleteEntityKind{cloudpb.AEK_POD, cloudpb.AEK_SVC, cloudpb.AEK_NAMESPACE, cloudpb.AEK_SCRIPT},
+						AllowedArgs:  []cloudpb.AutocompleteEntityKind{},
 					},
 				},
-				ExactMatch: true,
-			},
-			{
-				Suggestions: []*autocomplete.Suggestion{
+			}
+
+			responses := [][]*autocomplete.SuggestionResult{
+				{
 					{
-						Name:  "px/test",
-						Score: 1,
+						Suggestions: []*autocomplete.Suggestion{
+							{
+								Name:     "px/svc_info",
+								Score:    1,
+								ArgNames: []string{"svc_name"},
+								ArgKinds: []cloudpb.AutocompleteEntityKind{cloudpb.AEK_SVC},
+							},
+						},
+						ExactMatch: true,
+					},
+					{
+						Suggestions: []*autocomplete.Suggestion{
+							{
+								Name:  "px/test",
+								Score: 1,
+							},
+						},
+						ExactMatch: true,
 					},
 				},
-				ExactMatch: true,
-			},
-		},
+			}
+
+			suggestionCalls := 0
+			s.EXPECT().
+				GetSuggestions(gomock.Any()).
+				DoAndReturn(func(req []*autocomplete.SuggestionRequest) ([]*autocomplete.SuggestionResult, error) {
+					assert.ElementsMatch(t, requests[suggestionCalls], req)
+					resp := responses[suggestionCalls]
+					suggestionCalls++
+					return resp, nil
+				}).
+				Times(len(requests))
+
+			autocompleteServer := &controller.AutocompleteServer{
+				Suggester: s,
+			}
+
+			resp, err := autocompleteServer.Autocomplete(ctx, &cloudpb.AutocompleteRequest{
+				Input:      "px/svc_info pl/test",
+				CursorPos:  0,
+				Action:     cloudpb.AAT_EDIT,
+				ClusterUID: "test",
+			})
+			require.NoError(t, err)
+			assert.NotNil(t, resp)
+			assert.Equal(t, "${2:$0px/svc_info} ${1:pl/test}", resp.FormattedInput)
+			assert.False(t, resp.IsExecutable)
+			assert.Equal(t, 2, len(resp.TabSuggestions))
+		})
 	}
-
-	suggestionCalls := 0
-	s.EXPECT().
-		GetSuggestions(gomock.Any()).
-		DoAndReturn(func(req []*autocomplete.SuggestionRequest) ([]*autocomplete.SuggestionResult, error) {
-			assert.ElementsMatch(t, requests[suggestionCalls], req)
-			resp := responses[suggestionCalls]
-			suggestionCalls++
-			return resp, nil
-		}).
-		Times(len(requests))
-
-	autocompleteServer := &controller.AutocompleteServer{
-		Suggester: s,
-	}
-
-	resp, err := autocompleteServer.Autocomplete(ctx, &cloudpb.AutocompleteRequest{
-		Input:      "px/svc_info pl/test",
-		CursorPos:  0,
-		Action:     cloudpb.AAT_EDIT,
-		ClusterUID: "test",
-	})
-	require.NoError(t, err)
-	assert.NotNil(t, resp)
-	assert.Equal(t, "${2:$0px/svc_info} ${1:pl/test}", resp.FormattedInput)
-	assert.False(t, resp.IsExecutable)
-	assert.Equal(t, 2, len(resp.TabSuggestions))
 }
 
 func TestAutocompleteService_AutocompleteField(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	orgID, err := uuid.FromString("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
-	require.NoError(t, err)
-	ctx := CreateTestContext()
-
-	s := mock_autocomplete.NewMockSuggester(ctrl)
-
-	requests := [][]*autocomplete.SuggestionRequest{
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
 		{
-			{
-				OrgID:        orgID,
-				ClusterUID:   "test",
-				Input:        "px/svc_info",
-				AllowedKinds: []cloudpb.AutocompleteEntityKind{cloudpb.AEK_SVC},
-				AllowedArgs:  []cloudpb.AutocompleteEntityKind{},
-			},
+			name: "regular user",
+			ctx:  CreateTestContext(),
+		},
+		{
+			name: "api user",
+			ctx:  CreateAPIUserTestContext(),
 		},
 	}
 
-	responses := []*autocomplete.SuggestionResult{
-		{
-			Suggestions: []*autocomplete.Suggestion{
-				{
-					Name:  "px/svc_info",
-					Score: 1,
-					State: cloudpb.AES_RUNNING,
-				},
-				{
-					Name:  "px/svc_info2",
-					Score: 1,
-					State: cloudpb.AES_TERMINATED,
-				},
-			},
-			ExactMatch: true,
-		},
-	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-	s.EXPECT().
-		GetSuggestions(gomock.Any()).
-		DoAndReturn(func(req []*autocomplete.SuggestionRequest) ([]*autocomplete.SuggestionResult, error) {
-			assert.ElementsMatch(t, requests[0], req)
-			return responses, nil
+			orgID, err := uuid.FromString("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+			require.NoError(t, err)
+			ctx := test.ctx
+
+			s := mock_autocomplete.NewMockSuggester(ctrl)
+
+			requests := [][]*autocomplete.SuggestionRequest{
+				{
+					{
+						OrgID:        orgID,
+						ClusterUID:   "test",
+						Input:        "px/svc_info",
+						AllowedKinds: []cloudpb.AutocompleteEntityKind{cloudpb.AEK_SVC},
+						AllowedArgs:  []cloudpb.AutocompleteEntityKind{},
+					},
+				},
+			}
+
+			responses := []*autocomplete.SuggestionResult{
+				{
+					Suggestions: []*autocomplete.Suggestion{
+						{
+							Name:  "px/svc_info",
+							Score: 1,
+							State: cloudpb.AES_RUNNING,
+						},
+						{
+							Name:  "px/svc_info2",
+							Score: 1,
+							State: cloudpb.AES_TERMINATED,
+						},
+					},
+					ExactMatch: true,
+				},
+			}
+
+			s.EXPECT().
+				GetSuggestions(gomock.Any()).
+				DoAndReturn(func(req []*autocomplete.SuggestionRequest) ([]*autocomplete.SuggestionResult, error) {
+					assert.ElementsMatch(t, requests[0], req)
+					return responses, nil
+				})
+
+			autocompleteServer := &controller.AutocompleteServer{
+				Suggester: s,
+			}
+
+			resp, err := autocompleteServer.AutocompleteField(ctx, &cloudpb.AutocompleteFieldRequest{
+				Input:      "px/svc_info",
+				FieldType:  cloudpb.AEK_SVC,
+				ClusterUID: "test",
+			})
+			require.NoError(t, err)
+			assert.NotNil(t, resp)
+			assert.Equal(t, 2, len(resp.Suggestions))
 		})
-
-	autocompleteServer := &controller.AutocompleteServer{
-		Suggester: s,
 	}
-
-	resp, err := autocompleteServer.AutocompleteField(ctx, &cloudpb.AutocompleteFieldRequest{
-		Input:      "px/svc_info",
-		FieldType:  cloudpb.AEK_SVC,
-		ClusterUID: "test",
-	})
-	require.NoError(t, err)
-	assert.NotNil(t, resp)
-	assert.Equal(t, 2, len(resp.Suggestions))
 }

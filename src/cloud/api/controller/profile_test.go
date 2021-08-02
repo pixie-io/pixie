@@ -19,6 +19,7 @@
 package controller_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -32,25 +33,43 @@ import (
 )
 
 func TestProfileServer_GetOrgInfo(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	orgID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	tests := []struct {
+		name string
+		ctx  context.Context
+	}{
+		{
+			name: "regular user",
+			ctx:  CreateTestContext(),
+		},
+		{
+			name: "api user",
+			ctx:  CreateAPIUserTestContext(),
+		},
+	}
 
-	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
-	defer cleanup()
-	ctx := CreateTestContext()
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			orgID := utils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 
-	mockClients.MockProfile.EXPECT().GetOrg(gomock.Any(), orgID).
-		Return(&profilepb.OrgInfo{
-			OrgName: "someOrg",
-			ID:      orgID,
-		}, nil)
+			_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+			defer cleanup()
+			ctx := test.ctx
 
-	profileServer := &controller.ProfileServer{mockClients.MockProfile}
+			mockClients.MockProfile.EXPECT().GetOrg(gomock.Any(), orgID).
+				Return(&profilepb.OrgInfo{
+					OrgName: "someOrg",
+					ID:      orgID,
+				}, nil)
 
-	resp, err := profileServer.GetOrgInfo(ctx, orgID)
+			profileServer := &controller.ProfileServer{mockClients.MockProfile}
 
-	require.NoError(t, err)
-	assert.Equal(t, "someOrg", resp.OrgName)
-	assert.Equal(t, orgID, resp.ID)
+			resp, err := profileServer.GetOrgInfo(ctx, orgID)
+
+			require.NoError(t, err)
+			assert.Equal(t, "someOrg", resp.OrgName)
+			assert.Equal(t, orgID, resp.ID)
+		})
+	}
 }

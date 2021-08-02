@@ -19,6 +19,7 @@
 package controller_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/gofrs/uuid"
@@ -40,7 +41,6 @@ func TestServer_UpdateUser(t *testing.T) {
 
 	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
-	ctx := CreateTestContext()
 
 	updateUserTest := []struct {
 		name              string
@@ -49,6 +49,7 @@ func TestServer_UpdateUser(t *testing.T) {
 		updatedProfilePic string
 		updatedIsApproved bool
 		shouldReject      bool
+		ctx               context.Context
 	}{
 		{
 			name:              "user can update their own profile picture",
@@ -57,6 +58,7 @@ func TestServer_UpdateUser(t *testing.T) {
 			updatedProfilePic: "new",
 			updatedIsApproved: false,
 			shouldReject:      false,
+			ctx:               CreateTestContext(),
 		},
 		{
 			name:              "admin can update another's profile picture",
@@ -65,6 +67,7 @@ func TestServer_UpdateUser(t *testing.T) {
 			updatedProfilePic: "new",
 			updatedIsApproved: false,
 			shouldReject:      false,
+			ctx:               CreateTestContext(),
 		},
 		{
 			name:              "user cannot update their own isApproved",
@@ -73,6 +76,7 @@ func TestServer_UpdateUser(t *testing.T) {
 			updatedProfilePic: "new",
 			updatedIsApproved: true,
 			shouldReject:      true,
+			ctx:               CreateTestContext(),
 		},
 		{
 			name:              "user cannot update user from another org",
@@ -81,6 +85,7 @@ func TestServer_UpdateUser(t *testing.T) {
 			updatedProfilePic: "new",
 			updatedIsApproved: false,
 			shouldReject:      true,
+			ctx:               CreateTestContext(),
 		},
 		{
 			name:              "user cannot update user from another org",
@@ -89,6 +94,7 @@ func TestServer_UpdateUser(t *testing.T) {
 			updatedProfilePic: "something",
 			updatedIsApproved: true,
 			shouldReject:      true,
+			ctx:               CreateTestContext(),
 		},
 		{
 			name:              "user should approve other user in org",
@@ -97,6 +103,61 @@ func TestServer_UpdateUser(t *testing.T) {
 			updatedProfilePic: "something",
 			updatedIsApproved: true,
 			shouldReject:      false,
+			ctx:               CreateTestContext(),
+		},
+		{
+			name:              "user can update their own profile picture",
+			userID:            "6ba7b810-9dad-11d1-80b4-00c04fd430c9",
+			userOrg:           "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			updatedProfilePic: "new",
+			updatedIsApproved: false,
+			shouldReject:      false,
+			ctx:               CreateAPIUserTestContext(),
+		},
+		{
+			name:              "admin can update another's profile picture",
+			userID:            "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			userOrg:           "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			updatedProfilePic: "new",
+			updatedIsApproved: false,
+			shouldReject:      false,
+			ctx:               CreateAPIUserTestContext(),
+		},
+		{
+			name:              "user cannot update their own isApproved",
+			userID:            "6ba7b810-9dad-11d1-80b4-00c04fd430c9",
+			userOrg:           "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			updatedProfilePic: "new",
+			updatedIsApproved: true,
+			shouldReject:      true,
+			ctx:               CreateAPIUserTestContext(),
+		},
+		{
+			name:              "user cannot update user from another org",
+			userID:            "6ba7b810-9dad-11d1-80b4-00c04fd430c9",
+			userOrg:           "7ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			updatedProfilePic: "new",
+			updatedIsApproved: false,
+			shouldReject:      true,
+			ctx:               CreateAPIUserTestContext(),
+		},
+		{
+			name:              "user cannot update user from another org",
+			userID:            "6ba7b810-9dad-11d1-80b4-00c04fd430c9",
+			userOrg:           "7ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			updatedProfilePic: "something",
+			updatedIsApproved: true,
+			shouldReject:      true,
+			ctx:               CreateAPIUserTestContext(),
+		},
+		{
+			name:              "user should approve other user in org",
+			userID:            "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			userOrg:           "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+			updatedProfilePic: "something",
+			updatedIsApproved: true,
+			shouldReject:      false,
+			ctx:               CreateAPIUserTestContext(),
 		},
 	}
 
@@ -147,7 +208,7 @@ func TestServer_UpdateUser(t *testing.T) {
 			}
 
 			userServer := &controller.UserServiceServer{mockClients.MockProfile}
-			resp, err := userServer.UpdateUser(ctx, req)
+			resp, err := userServer.UpdateUser(tc.ctx, req)
 
 			if !tc.shouldReject {
 				require.NoError(t, err)
