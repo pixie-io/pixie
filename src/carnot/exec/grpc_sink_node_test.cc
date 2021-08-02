@@ -377,6 +377,9 @@ TEST_F(GRPCSinkNodeTest, check_connection) {
       .WillOnce(Return(true))    // Successful OptionallyCheckConnection
       .WillOnce(Return(false));  // Failed OptionallyCheckConnection
 
+  EXPECT_CALL(*writer, WritesDone()).WillOnce(Return(true));
+  EXPECT_CALL(*writer, Finish()).WillOnce(Return(grpc::Status::OK));
+
   EXPECT_CALL(*mock_, TransferResultChunkRaw(_, _))
       .WillOnce(DoAll(SetArgPointee<1>(resp), Return(writer)));
 
@@ -571,6 +574,10 @@ TEST_F(GRPCSinkNodeTest, break_up_row_batch_that_isnt_eow_eos) {
       .WillOnce(DoAll(SaveArg<0>(&actual_protos[3]), Return(true)))
       .WillOnce(DoAll(SaveArg<0>(&actual_protos[4]), Return(true)));
 
+  // CloseImpl will call WritesDone and Finish since we didn't get an eos before close was called.
+  EXPECT_CALL(*writer, WritesDone()).WillOnce(Return(true));
+  EXPECT_CALL(*writer, Finish()).WillOnce(Return(grpc::Status::OK));
+
   EXPECT_CALL(*mock_, TransferResultChunkRaw(_, _)).WillOnce(Return(writer));
 
   auto tester = exec::ExecNodeTester<GRPCSinkNode, plan::GRPCSinkOperator>(
@@ -661,6 +668,47 @@ TEST_F(GRPCSinkNodeTest, retry_failed_writes) {
   }
 
   EXPECT_FALSE(add_metadata_called_);
+}
+
+TEST_F(GRPCSinkNodeTest, check_connection_after_eos) {
+  auto op_proto = planpb::testutils::CreateTestGRPCSink2PB();
+  auto plan_node = std::make_unique<plan::GRPCSinkOperator>(1);
+  auto s = plan_node->Init(op_proto.grpc_sink_op());
+  RowDescriptor input_rd({types::DataType::INT64});
+  RowDescriptor output_rd({types::DataType::INT64});
+
+  google::protobuf::util::MessageDifferencer differ;
+
+  TransferResultChunkResponse resp;
+  resp.set_success(true);
+
+  auto writer = new grpc::testing::MockClientWriter<TransferResultChunkRequest>();
+  EXPECT_CALL(*writer, Write(_, _))
+      .Times(2)
+      .WillOnce(Return(true))   // Initiate result sink
+      .WillOnce(Return(true));  // Successful batch with eos.
+
+  // If WritesDone is called more than once, it will cause a segfault.
+  EXPECT_CALL(*writer, WritesDone()).Times(1).WillOnce(Return(true));
+  EXPECT_CALL(*writer, Finish()).WillOnce(Return(grpc::Status::OK));
+
+  EXPECT_CALL(*mock_, TransferResultChunkRaw(_, _))
+      .WillOnce(DoAll(SetArgPointee<1>(resp), Return(writer)));
+
+  auto tester = exec::ExecNodeTester<GRPCSinkNode, plan::GRPCSinkOperator>(
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
+  tester.node()->testing_set_connection_check_timeout(std::chrono::milliseconds(-1));
+
+  std::vector<types::Int64Value> data(1, 1);
+  auto rb = RowBatchBuilder(output_rd, 1, /*eow*/ true, /*eos*/ true)
+                .AddColumn<types::Int64Value>(data)
+                .get();
+  tester.ConsumeNext(rb, 5, 0);
+
+  // The check should just return status ok after an eos is sent.
+  EXPECT_OK(tester.node()->OptionallyCheckConnection(exec_state_.get()));
+
+  tester.Close();
 }
 
 }  // namespace exec

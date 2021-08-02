@@ -67,7 +67,7 @@ StatusOr<carnotpb::TransferResultChunkRequest> RequestWithMetadata(
 }
 
 Status GRPCSinkNode::OptionallyCheckConnection(ExecState* exec_state) {
-  if (sent_eos_) {
+  if (sent_eos_ || cancelled_) {
     return Status::OK();
   }
 
@@ -206,11 +206,11 @@ Status GRPCSinkNode::CloseWriter(ExecState* exec_state) {
 }
 
 Status GRPCSinkNode::CloseImpl(ExecState* exec_state) {
-  if (sent_eos_) {
+  if (sent_eos_ || cancelled_) {
     return Status::OK();
   }
 
-  if (writer_ != nullptr && !cancelled_) {
+  if (writer_ != nullptr) {
     LOG(INFO) << absl::Substitute("Closing GRPCSinkNode $0 in query $1 before receiving EOS",
                                   plan_node_->id(), exec_state->query_id().str());
     PL_RETURN_IF_ERROR(CloseWriter(exec_state));
@@ -266,6 +266,7 @@ Status GRPCSinkNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, 
   }
 
   PL_RETURN_IF_ERROR(CloseWriter(exec_state));
+  sent_eos_ = true;
 
   return response_.success()
              ? Status::OK()

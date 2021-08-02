@@ -89,7 +89,7 @@ class GRPCSinkNode : public SinkNode {
   Status CancelledByServer(ExecState* exec_state);
   Status TryWriteRequest(ExecState* exec_state, const carnotpb::TransferResultChunkRequest& req);
 
-  bool cancelled_ = true;
+  bool cancelled_ = false;
 
   std::unique_ptr<grpc::ClientContext> context_;
   carnotpb::TransferResultChunkResponse response_;
