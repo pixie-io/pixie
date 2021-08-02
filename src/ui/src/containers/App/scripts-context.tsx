@@ -20,6 +20,7 @@ import * as React from 'react';
 import { GetPxScripts, Script } from 'app/utils/script-bundle';
 import { GQLUserInfo } from 'app/types/schema';
 import { useQuery, gql } from '@apollo/client';
+import { makeCancellable, silentlyCatchCancellation } from 'app/utils/cancellable-promise';
 
 export interface ScriptsContextProps {
   scripts: Map<string, Script>;
@@ -62,14 +63,16 @@ export const ScriptsContextProvider: React.FC = ({ children }) => {
   const [scriptLoading, setScriptLoading] = React.useState<boolean>(true);
 
   React.useEffect(() => {
-    if (!user || loading || error) return;
-    GetPxScripts(user.orgID, user.orgName).then((list) => {
+    if (!user || loading || error) return () => {};
+    const promise = makeCancellable(GetPxScripts(user.orgID, user.orgName));
+    promise.then((list) => {
       const availableScripts = new Map<string, Script>(list.map((script) => [script.id, script]));
       const scratchScript = scripts.get(SCRATCH_SCRIPT.id) ?? SCRATCH_SCRIPT;
       availableScripts.set(SCRATCH_SCRIPT.id, scratchScript);
       setScripts(availableScripts);
       setScriptLoading(false);
-    });
+    }).catch(silentlyCatchCancellation);
+    return () => promise.cancel();
     // Monitoring the user's ID and their org rather than the whole object, to avoid excess renders.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.orgID, user?.orgName, loading, error]);
