@@ -31,7 +31,7 @@ import { Observable } from 'rxjs';
 import { checkExhaustive } from 'app/utils/check-exhaustive';
 import { ResultsContext } from 'app/context/results-context';
 import { useSnackbar } from 'app/components';
-import { argsForVis, validateArgs } from 'app/utils/args-utils';
+import { argsForVis, stableSerializeArgs, validateArgs } from 'app/utils/args-utils';
 import { ClusterContext, useClusterConfig } from 'app/common/cluster-context';
 
 const NUM_MUTATION_RETRIES = 5;
@@ -112,7 +112,7 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
     }
   }, [scriptId, loadingAvailableScripts, availableScripts]);
 
-  const serializedArgs = JSON.stringify(args, Object.keys(args ?? {}).sort());
+  const serializedArgs = stableSerializeArgs(args);
 
   // Per-execution minutia
   const [runningExecution, setRunningExecution] = React.useState<Observable<ExecutionStateUpdate> | null>(null);

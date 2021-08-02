@@ -23,6 +23,7 @@ import { ClusterConfig } from 'app/api';
 import { isDev } from 'app/utils/env';
 import { useSnackbar } from 'app/components';
 import { LiveRouteContext } from 'app/containers/App/live-routing';
+import { stableSerializeArgs } from 'app/utils/args-utils';
 
 export interface ClusterContextProps {
   selectedClusterID: string;
@@ -77,7 +78,7 @@ export const ClusterContextProvider: React.FC = ({ children }) => {
 
   const cluster = data?.clusterByName ?? invalidCluster(clusterName);
 
-  const serializedArgs = JSON.stringify(args, Object.keys(args ?? {}).sort());
+  const serializedArgs = stableSerializeArgs(args);
   const setClusterByName = React.useCallback((name: string) => {
     push(name, scriptId, args, embedState);
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -119,3 +119,11 @@ export function argVariableMap(vis: Vis): ArgToVariableMap {
 
   return vis.variables.reduce((a, c) => ({ ...a, [c.name]: c }), {});
 }
+
+/**
+ * Serializes arguments such that order of keys is retained. Useful to prevent re-renders when args didn't change value.
+ * Don't wrap this in a React.useMemo(() => ..., [args]). Doing so causes a re-render, defeating the purpose.
+ */
+export function stableSerializeArgs(args: Arguments): string {
+  return JSON.stringify(args, Object.keys(args ?? {}).sort());
+}

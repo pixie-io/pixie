@@ -19,6 +19,7 @@
 import * as React from 'react';
 import { ClusterContext } from 'app/common/cluster-context';
 import { ScriptContext } from 'app/context/script-context';
+import { stableSerializeArgs } from 'app/utils/args-utils';
 import { useSnackbar } from 'app/components';
 
 /**
@@ -35,7 +36,7 @@ export const ScriptLoader: React.FC = () => {
 
   // Sorting keys to ensure stability between identical objects when the route might change their ordering.
   // Sorting the keys in this way loses nested properties, so we're only doing it for args (vis is already stable).
-  const serializedArgs = JSON.stringify(args, Object.keys(args ?? {}).sort());
+  const serializedArgs = stableSerializeArgs(args);
   const serializedVis = JSON.stringify(script?.vis);
 
   React.useEffect(() => {
