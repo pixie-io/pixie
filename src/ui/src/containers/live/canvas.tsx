@@ -47,6 +47,7 @@ import { LiveRouteContext } from 'app/containers/App/live-routing';
 import { LayoutContext } from 'app/context/layout-context';
 import { ResultsContext } from 'app/context/results-context';
 import { ScriptContext } from 'app/context/script-context';
+import { SetStateFunc } from 'app/context/common';
 import MutationModal from './mutation-modal';
 import {
   addLayout, addTableLayout, getGridWidth, Layout, toLayout, updatePositions,
@@ -198,7 +199,14 @@ const VegaWidget: React.FC<VegaWidgetProps> = ({
   );
 };
 
-const WidgetDisplay = ({
+const WidgetDisplay: React.FC<{
+  display: VisWidgetDisplay,
+  table: VizierTable,
+  tableName: string,
+  widgetName: string,
+  propagatedArgs: Record<string, any>,
+  emptyTableMsg: string,
+}> = ({
   display, table, tableName, widgetName, propagatedArgs, emptyTableMsg,
 }) => {
   const classes = useStyles();
@@ -279,21 +287,27 @@ const WidgetDisplay = ({
   }
 };
 
-const ErrorDisplay = (props) => {
-  const { error, setOpen } = props;
+const ErrorDisplay: React.FC<{
+  classes: Record<string, string>,
+  error: any,
+  setOpen: SetStateFunc<boolean>,
+  open: boolean,
+}> = ({
+  classes, error, setOpen, open,
+}) => {
   const toggleOpen = React.useCallback(() => setOpen((opened) => !opened), [setOpen]);
   React.useEffect(() => {
     setOpen(true);
   }, [error, setOpen]);
 
-  const vzError = props.error as VizierQueryError;
+  const vzError = error as VizierQueryError;
   return (
-    <div className={props.open ? props.classes.errorDisplay : props.classes.hidden}>
-      <div className={props.classes.errorOverlay} />
-      <div className={props.classes.error}>
+    <div className={open ? classes.errorDisplay : classes.hidden}>
+      <div className={classes.errorOverlay} />
+      <div className={classes.error}>
         <Alert severity='error' onClose={toggleOpen}>
-          <AlertTitle className={props.classes.errorTitle}>{vzError?.message || props.error}</AlertTitle>
-          <VizierErrorDetails error={props.error} />
+          <AlertTitle className={classes.errorTitle}>{vzError?.message || error}</AlertTitle>
+          <VizierErrorDetails error={error} />
         </Alert>
       </div>
     </div>
@@ -307,7 +321,7 @@ interface CanvasProps {
   parentRef: React.RefObject<HTMLElement>;
 }
 
-const Canvas = (props: CanvasProps) => {
+const Canvas: React.FC<CanvasProps> = ({ editable, parentRef }) => {
   const classes = useStyles();
   const {
     tables, loading, error, mutationInfo,
@@ -344,15 +358,15 @@ const Canvas = (props: CanvasProps) => {
      */
     const listener = (event: Event) => {
       if (event.type === 'resize' && !event.isTrusted) {
-        setDefaultHeight(props.parentRef.current.getBoundingClientRect().height);
+        setDefaultHeight(parentRef.current.getBoundingClientRect().height);
       }
     };
     window.addEventListener('resize', listener);
     return () => window.removeEventListener('resize', listener);
-  }, [props.parentRef]);
+  }, [parentRef]);
 
-  if (props.parentRef.current && !defaultHeight) {
-    const newHeight = props.parentRef.current.getBoundingClientRect().height;
+  if (parentRef.current && !defaultHeight) {
+    const newHeight = parentRef.current.getBoundingClientRect().height;
     if (newHeight !== defaultHeight) {
       setDefaultHeight(newHeight);
     }
@@ -366,14 +380,14 @@ const Canvas = (props: CanvasProps) => {
 
   React.useEffect(() => {
     const handler = (event) => {
-      if (event === resizeEvent || !props.parentRef.current) {
+      if (event === resizeEvent || !parentRef.current) {
         return;
       }
-      setDefaultHeight(props.parentRef.current.getBoundingClientRect().height);
+      setDefaultHeight(parentRef.current.getBoundingClientRect().height);
     };
     window.addEventListener('resize', handler);
     return () => window.removeEventListener('resize', handler);
-  }, [props.parentRef, setDefaultHeight]);
+  }, [parentRef, setDefaultHeight]);
 
   const setVis = React.useCallback(
     (vis: Vis) => setScriptAndArgs({ ...script, vis }, args),
@@ -408,7 +422,7 @@ const Canvas = (props: CanvasProps) => {
   const className = buildClass(
     'fs-exclude',
     classes.gridItem,
-    props.editable && classes.editable,
+    editable && classes.editable,
     loading && classes.loading,
   );
 
@@ -484,8 +498,8 @@ const Canvas = (props: CanvasProps) => {
         cols={tableLayout.numCols}
         className={buildClass(classes.grid, errorOpen && error && classes.blur)}
         onLayoutChange={updateDefaultLayout}
-        isDraggable={props.editable}
-        isResizable={props.editable}
+        isDraggable={editable}
+        isResizable={editable}
         margin={[20, 20]}
       >
         {
@@ -505,8 +519,8 @@ const Canvas = (props: CanvasProps) => {
         cols={getGridWidth(isMobile)}
         className={buildClass(classes.grid, errorOpen && error && classes.blur)}
         onLayoutChange={updateLayoutInVis}
-        isDraggable={props.editable}
-        isResizable={props.editable}
+        isDraggable={editable}
+        isResizable={editable}
         margin={[20, 20]}
       >
         {charts}

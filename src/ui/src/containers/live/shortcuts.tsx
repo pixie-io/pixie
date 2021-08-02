@@ -119,9 +119,8 @@ const useShortcutHelpStyles = makeStyles((theme: Theme) => createStyles({
   },
 }));
 
-const LiveViewShortcutsHelp = (props: LiveViewShortcutsHelpProps) => {
+const LiveViewShortcutsHelp: React.FC<LiveViewShortcutsHelpProps> = ({ open, onClose, keyMap }) => {
   const classes = useShortcutHelpStyles();
-  const { open, onClose, keyMap } = props;
   const makeKey = (key) => <div className={classes.key} key={key}>{key}</div>;
 
   const shortcuts = Object.keys(keyMap).map((action) => {
@@ -198,7 +197,7 @@ const handlerWrapper = (handler) => (e?: KeyboardEvent) => {
  *
  * The keybindings are declared here, handlers can be registered by child components of the live view.
  */
-const LiveViewShortcutsProvider: React.FC<LiveViewShortcutsProps> = (props) => {
+const LiveViewShortcutsProvider: React.FC<LiveViewShortcutsProps> = ({ handlers, children }) => {
   // Run this setup once.
   React.useEffect(() => {
     configure({
@@ -220,31 +219,31 @@ const LiveViewShortcutsProvider: React.FC<LiveViewShortcutsProps> = (props) => {
     return map;
   }, [keyMap]);
 
-  const handlers: Handlers<LiveHotKeyAction> = React.useMemo(() => {
-    const wrappedHandlers: Handlers<LiveHotKeyAction> = {
+  const wrappedHandlers: Handlers<LiveHotKeyAction> = React.useMemo(() => {
+    const wrapped: Handlers<LiveHotKeyAction> = {
       'show-help': handlerWrapper(toggleOpenHelp),
-      ...Object.keys(props.handlers).reduce((result, action) => ({
+      ...Object.keys(handlers).reduce((result, action) => ({
         ...result,
-        [action]: handlerWrapper(props.handlers[action]),
+        [action]: handlerWrapper(handlers[action]),
       }), {}) as LiveViewShortcutsProps['handlers'],
     };
-    return wrappedHandlers;
-  }, [props.handlers, toggleOpenHelp]);
+    return wrapped;
+  }, [handlers, toggleOpenHelp]);
 
-  const context = Object.keys(handlers).reduce((result, action) => ({
+  const context = Object.keys(wrappedHandlers).reduce((result, action) => ({
     ...result,
     [action]: {
-      handler: handlers[action],
+      handler: wrappedHandlers[action],
       ...keyMap[action],
     },
   }), {}) as ShortcutsContextProps<LiveHotKeyAction>;
 
   return (
     <>
-      <GlobalHotKeys keyMap={actionSequences} handlers={handlers} allowChanges />
+      <GlobalHotKeys keyMap={actionSequences} handlers={wrappedHandlers} allowChanges />
       <LiveViewShortcutsHelp keyMap={keyMap} open={openHelp} onClose={toggleOpenHelp} />
       <LiveShortcutsContext.Provider value={context}>
-        {props.children}
+        {children}
       </LiveShortcutsContext.Provider>
     </>
   );
