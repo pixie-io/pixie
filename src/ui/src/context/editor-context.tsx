@@ -91,14 +91,12 @@ const EditorContextProvider: React.FC = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [script?.code, script?.vis]);
 
+  const value = React.useMemo(() => ({
+    setPxlEditorText, setVisEditorText, saveEditor,
+  }), [setPxlEditorText, setVisEditorText, saveEditor]);
+
   return (
-    <EditorContext.Provider
-      value={{
-        setPxlEditorText,
-        setVisEditorText,
-        saveEditor,
-      }}
-    >
+    <EditorContext.Provider value={value}>
       {children}
     </EditorContext.Provider>
   );

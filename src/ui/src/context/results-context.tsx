@@ -48,21 +48,30 @@ export const ResultsContextProvider: React.FC = ({ children }) => {
   const [results, setResults] = React.useState<Results>({ tables: {} });
   const [loading, setLoading] = React.useState(false);
   const [streaming, setStreaming] = React.useState(false);
-  const clearResults = () => {
+  const clearResults = React.useCallback(() => {
     setResults({ tables: {} });
-  };
+  }, [setResults]);
+
+  const value = React.useMemo(() => ({
+    ...results,
+    setResults,
+    clearResults,
+    loading,
+    streaming,
+    setLoading,
+    setStreaming,
+  }), [
+    results,
+    setResults,
+    clearResults,
+    loading,
+    streaming,
+    setLoading,
+    setStreaming,
+  ]);
 
   return (
-    <ResultsContext.Provider value={{
-      ...results,
-      setResults,
-      clearResults,
-      loading,
-      streaming,
-      setLoading,
-      setStreaming,
-    }}
-    >
+    <ResultsContext.Provider value={value}>
       {children}
     </ResultsContext.Provider>
   );

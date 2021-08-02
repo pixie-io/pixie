@@ -173,8 +173,7 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
     resultsContext.setStreaming(isStreaming(script.code));
     setHasMutation(containsMutation(script.code));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [apiClient, script, embedState.widget, clusterConfig, serializedArgs, cancelExecution,
-    scriptId, resultsContext, manual]);
+  }, [apiClient, script, embedState.widget, clusterConfig, serializedArgs, cancelExecution, manual]);
 
   // As above: delay first execution if required information isn't ready yet.
   React.useEffect(() => {
@@ -258,8 +257,6 @@ export const ScriptContextProvider: React.FC = ({ children }) => {
           }
           // Query completed normally
           if (update.results.executionStats) {
-            // TODO(nick): Make sure that `script` cannot be stale here, and always matches the running execution.
-            //  It should, considering the useEffect unsubscription, but double check.
             setCancelExecution(null);
             resultsContext.setLoading(false);
             resultsContext.setStreaming(false);
