@@ -266,6 +266,11 @@ export class VizierGRPCClient {
     opts: ExecuteScriptOptions,
   ): Observable<ExecutionStateUpdate> {
     let call: ClientReadableStream<unknown>;
+    const cancelCall = () => {
+      if (call?.cancel) {
+        call.cancel();
+      }
+    };
     let keyPair: KeyPair;
     const tablesMap = new Map<string, Table>();
     const results: VizierQueryResult = { tables: [] };
@@ -310,7 +315,7 @@ export class VizierGRPCClient {
           });
         });
       }),
-      finalize((() => { call.cancel(); })),
+      finalize(cancelCall),
       concatMap((resp: ExecuteScriptResponse) => {
         if (!keyPair || !resp.hasData()) {
           return of(resp);
@@ -401,15 +406,15 @@ export class VizierGRPCClient {
       startWith({
         event: { type: 'start' as const },
         results,
-        cancel: () => call.cancel?.(),
+        cancel: cancelCall,
       }),
       catchError((error) => {
-        call.cancel();
+        cancelCall();
         return of({
           event: { type: 'error' as const, error }, completionReason: 'error' as const, results,
         });
       }),
-      finalize((() => { call.cancel(); })),
+      finalize(cancelCall),
     );
   }
 }
