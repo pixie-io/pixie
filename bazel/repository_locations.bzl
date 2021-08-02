@@ -250,9 +250,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/cmcqueen/aes-min/releases/download/0.3.1/aes-min-0.3.1.tar.gz"],
     ),
     com_github_tdunning_t_digest = dict(
-        sha256 = "c9e889a7c3a4ffd601502bcb00bae3491e66e3dcf1f1ab2c13b7b66446f03758",
-        strip_prefix = "t-digest-a8fd5a06978422e7b7f1778705aa4ee17891d4c1",
-        urls = ["https://github.com/pixie-labs/t-digest/archive/a8fd5a06978422e7b7f1778705aa4ee17891d4c1.tar.gz"],
+        sha256 = "85a8e8c3346b9e60270804678eb9ce066e1c993c3c59ca67606920c6f9ec5729",
+        strip_prefix = "t-digest-85e0f70092460e60236821db4c25143768d3da12",
+        urls = ["https://github.com/pixie-labs/t-digest/archive/85e0f70092460e60236821db4c25143768d3da12.tar.gz"],
     ),
     com_github_vinzenz_libpypa = dict(
         sha256 = "d61a6d88b65a470973f0ec595f44b1238e92dfee9f71585d50842f8ef95c7af2",
