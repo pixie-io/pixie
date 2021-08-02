@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ClusterContext } from 'app/common/cluster-context';
+import { ClusterContextProvider } from 'app/common/cluster-context';
 import UserContext from 'app/common/user-context';
 import { useSnackbar } from 'app/components';
 import AdminView from 'app/pages/admin/admin';
@@ -32,15 +32,13 @@ import * as QueryString from 'query-string';
 import { makeStyles } from '@material-ui/core/styles';
 import { createStyles } from '@material-ui/styles';
 import { useLDClient } from 'launchdarkly-react-client-sdk';
-import {
-  GQLClusterInfo, GQLClusterStatus, GQLUserInfo, GQLUserSettings,
-} from 'app/types/schema';
+import { GQLClusterInfo, GQLUserInfo, GQLUserSettings } from 'app/types/schema';
 import { useQuery, gql } from '@apollo/client';
 
 import { DeployInstructions } from './deploy-instructions';
 import { selectClusterName } from './cluster-info';
 import { RouteNotFound } from './route-not-found';
-import { LiveRouteContext, LiveContextRouter } from './live-routing';
+import { LiveContextRouter } from './live-routing';
 
 const useStyles = makeStyles(() => createStyles({
   banner: {
@@ -161,82 +159,6 @@ const Live = () => {
   }
 
   return <LiveView />;
-};
-
-type SelectedClusterInfo = Pick<GQLClusterInfo,
-'id' | 'clusterName' | 'prettyClusterName' | 'clusterUID' | 'vizierConfig' | 'status'
->;
-
-const invalidCluster = (name: string): SelectedClusterInfo => ({
-  id: '',
-  clusterUID: '',
-  status: GQLClusterStatus.CS_UNKNOWN,
-  vizierConfig: null,
-  clusterName: name,
-  prettyClusterName: name,
-});
-
-const ClusterContextProvider: React.FC = ({ children }) => {
-  const showSnackbar = useSnackbar();
-
-  const {
-    scriptId, clusterName, args, embedState, push,
-  } = React.useContext(LiveRouteContext);
-
-  const { data, loading, error } = useQuery<{
-    clusterByName: SelectedClusterInfo
-  }>(
-    gql`
-      query selectedClusterInfo($name: String!) {
-        clusterByName(name: $name) {
-          id
-          clusterName
-          prettyClusterName
-          clusterUID
-          vizierConfig {
-            passthroughEnabled
-          }
-          status
-        }
-      }
-    `,
-    { pollInterval: 60000, fetchPolicy: 'cache-and-network', variables: { name: clusterName } },
-  );
-
-  const cluster = data?.clusterByName ?? invalidCluster(clusterName);
-
-  const setClusterByName = React.useCallback((name: string) => {
-    push(name, scriptId, args, embedState);
-  }, [push, scriptId, args, embedState]);
-
-  const clusterContext = React.useMemo(() => ({
-    selectedClusterID: cluster?.id,
-    selectedClusterName: cluster?.clusterName,
-    selectedClusterPrettyName: cluster?.prettyClusterName,
-    selectedClusterUID: cluster?.clusterUID,
-    selectedClusterVizierConfig: cluster?.vizierConfig,
-    selectedClusterStatus: cluster?.status,
-    setClusterByName,
-  }), [
-    cluster,
-    setClusterByName,
-  ]);
-
-  if (clusterName && error?.message) {
-    // This is an error with pixie cloud, it is probably not relevant to the user.
-    // Show a generic error message instead.
-    showSnackbar({ message: 'There was a problem connecting to Pixie', autoHideDuration: 5000 });
-    // eslint-disable-next-line no-console
-    console.error(error?.message);
-  }
-
-  if (loading) { return <div>Loading...</div>; }
-
-  return (
-    <ClusterContext.Provider value={clusterContext}>
-      {children}
-    </ClusterContext.Provider>
-  );
 };
 
 const LiveWithProvider = () => (

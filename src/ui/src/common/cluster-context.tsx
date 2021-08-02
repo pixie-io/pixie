@@ -17,9 +17,12 @@
  */
 
 import * as React from 'react';
-import { GQLVizierConfig, GQLClusterStatus } from 'app/types/schema';
+import { useQuery, gql } from '@apollo/client';
+import { GQLClusterInfo, GQLVizierConfig, GQLClusterStatus } from 'app/types/schema';
 import { ClusterConfig } from 'app/api';
 import { isDev } from 'app/utils/env';
+import { useSnackbar } from 'app/components';
+import { LiveRouteContext } from 'app/containers/App/live-routing';
 
 export interface ClusterContextProps {
   selectedClusterID: string;
@@ -32,6 +35,83 @@ export interface ClusterContextProps {
 }
 
 export const ClusterContext = React.createContext<ClusterContextProps>(null);
+
+type SelectedClusterInfo =
+  Pick<GQLClusterInfo, 'id' | 'clusterName' | 'prettyClusterName' | 'clusterUID' | 'vizierConfig' | 'status'>;
+
+const invalidCluster = (name: string): SelectedClusterInfo => ({
+  id: '',
+  clusterUID: '',
+  status: GQLClusterStatus.CS_UNKNOWN,
+  vizierConfig: null,
+  clusterName: name,
+  prettyClusterName: name,
+});
+
+export const ClusterContextProvider: React.FC = ({ children }) => {
+  const showSnackbar = useSnackbar();
+
+  const {
+    scriptId, clusterName, args, embedState, push,
+  } = React.useContext(LiveRouteContext);
+
+  const { data, loading, error } = useQuery<{
+    clusterByName: SelectedClusterInfo
+  }>(
+    gql`
+      query selectedClusterInfo($name: String!) {
+        clusterByName(name: $name) {
+          id
+          clusterName
+          prettyClusterName
+          clusterUID
+          vizierConfig {
+              passthroughEnabled
+          }
+          status
+        }
+      }
+    `,
+    { pollInterval: 60000, fetchPolicy: 'cache-and-network', variables: { name: clusterName } },
+  );
+
+  const cluster = data?.clusterByName ?? invalidCluster(clusterName);
+
+  const serializedArgs = JSON.stringify(args, Object.keys(args ?? {}).sort());
+  const setClusterByName = React.useCallback((name: string) => {
+    push(name, scriptId, args, embedState);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [push, scriptId, serializedArgs, embedState]);
+
+  const clusterContext = React.useMemo(() => ({
+    selectedClusterID: cluster?.id,
+    selectedClusterName: cluster?.clusterName,
+    selectedClusterPrettyName: cluster?.prettyClusterName,
+    selectedClusterUID: cluster?.clusterUID,
+    selectedClusterVizierConfig: cluster?.vizierConfig,
+    selectedClusterStatus: cluster?.status,
+    setClusterByName,
+  }), [
+    cluster,
+    setClusterByName,
+  ]);
+
+  if (clusterName && error?.message) {
+    // This is an error with pixie cloud, it is probably not relevant to the user.
+    // Show a generic error message instead.
+    showSnackbar({ message: 'There was a problem connecting to Pixie', autoHideDuration: 5000 });
+    // eslint-disable-next-line no-console
+    console.error(error?.message);
+  }
+
+  if (loading) { return <div>Loading...</div>; }
+
+  return (
+    <ClusterContext.Provider value={clusterContext}>
+      {children}
+    </ClusterContext.Provider>
+  );
+};
 
 export function useClusterConfig(): ClusterConfig | null {
   const { selectedClusterID, selectedClusterVizierConfig } = React.useContext(ClusterContext);
