@@ -41,6 +41,7 @@ import (
 	"px.dev/pixie/src/cloud/profile/profilepb"
 	mock_profile "px.dev/pixie/src/cloud/profile/profilepb/mock"
 	"px.dev/pixie/src/shared/services/authcontext"
+	claimsutils "px.dev/pixie/src/shared/services/utils"
 	"px.dev/pixie/src/utils"
 	"px.dev/pixie/src/utils/testingutils"
 )
@@ -917,6 +918,55 @@ func TestServer_GetAugmentedTokenSupportAccount(t *testing.T) {
 	verifyToken(t, resp.Token, testingutils.TestUserID, testingutils.TestOrgID, resp.ExpiresAt, "jwtkey")
 }
 
+func TestServer_GetAugmentedTokenAPIUser(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	a := mock_controllers.NewMockAuthProvider(ctrl)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrgInfo := &profilepb.OrgInfo{
+		ID: utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
+	}
+	mockProfile.EXPECT().
+		GetOrg(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
+		Return(mockOrgInfo, nil)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	viper.Set("domain_name", "withpixie.ai")
+
+	env, err := authenv.New(mockProfile)
+	require.NoError(t, err)
+	s, err := controllers.NewServer(env, a, nil)
+	require.NoError(t, err)
+
+	claims := claimsutils.GenerateJWTForAPIUser(testingutils.TestUserID, testingutils.TestOrgID, time.Now().Add(30*time.Minute), "withpixie.ai")
+	token := testingutils.SignPBClaims(t, claims, "jwtkey")
+	req := &authpb.GetAugmentedAuthTokenRequest{
+		Token: token,
+	}
+	sCtx := authcontext.New()
+	sCtx.Claims = claims
+	resp, err := s.GetAugmentedToken(context.Background(), req)
+
+	require.NoError(t, err)
+	assert.NotNil(t, resp)
+
+	// Make sure expiry time is in the future & > 0.
+	currentTime := time.Now().Unix()
+	maxExpiryTime := time.Now().Add(60 * time.Minute).Unix()
+	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
+	assert.True(t, resp.ExpiresAt > 0)
+
+	returnedClaims := jwt.MapClaims{}
+	_, err = jwt.ParseWithClaims(resp.Token, returnedClaims, func(token *jwt.Token) (interface{}, error) {
+		return []byte("jwtkey"), nil
+	}, jwt.WithAudience("withpixie.ai"))
+	require.NoError(t, err)
+	assert.Equal(t, testingutils.TestOrgID, returnedClaims["OrgID"])
+	assert.Equal(t, testingutils.TestUserID, returnedClaims["UserID"])
+	assert.Equal(t, resp.ExpiresAt, int64(returnedClaims["exp"].(float64)))
+	assert.True(t, returnedClaims["IsAPIUser"].(bool))
+}
+
 func TestServer_GetAugmentedTokenFromAPIKey(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	a := mock_controllers.NewMockAuthProvider(ctrl)
@@ -924,14 +974,12 @@ func TestServer_GetAugmentedTokenFromAPIKey(t *testing.T) {
 	apiKeyServer.EXPECT().FetchOrgUserIDUsingAPIKey(gomock.Any(), "test_api").Return(uuid.FromStringOrNil(testingutils.TestOrgID), uuid.FromStringOrNil(testingutils.TestUserID), nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-	mockUserInfo := &profilepb.UserInfo{
-		ID:    utils.ProtoFromUUIDStrOrNil(testingutils.TestUserID),
-		OrgID: utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
-		Email: "testUser@pixielabs.ai",
+	mockOrgInfo := &profilepb.OrgInfo{
+		ID: utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
 	}
 	mockProfile.EXPECT().
-		GetUser(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestUserID)).
-		Return(mockUserInfo, nil)
+		GetOrg(gomock.Any(), utils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
+		Return(mockOrgInfo, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	viper.Set("domain_name", "withpixie.ai")
@@ -955,7 +1003,15 @@ func TestServer_GetAugmentedTokenFromAPIKey(t *testing.T) {
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 	assert.True(t, resp.ExpiresAt > 0)
 
-	verifyToken(t, resp.Token, testingutils.TestUserID, testingutils.TestOrgID, resp.ExpiresAt, "jwtkey")
+	claims := jwt.MapClaims{}
+	_, err = jwt.ParseWithClaims(resp.Token, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte("jwtkey"), nil
+	}, jwt.WithAudience("withpixie.ai"))
+	require.NoError(t, err)
+	assert.Equal(t, testingutils.TestUserID, claims["UserID"])
+	assert.Equal(t, testingutils.TestOrgID, claims["OrgID"])
+	assert.Equal(t, resp.ExpiresAt, int64(claims["exp"].(float64)))
+	assert.True(t, claims["IsAPIUser"].(bool))
 }
 
 func TestServer_Signup_ExistingOrg(t *testing.T) {

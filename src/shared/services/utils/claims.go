@@ -64,6 +64,7 @@ func PBToMapClaims(pb *jwtpb.JWTClaims) jwt.MapClaims {
 		claims["UserID"] = m.UserClaims.UserID
 		claims["OrgID"] = m.UserClaims.OrgID
 		claims["Email"] = m.UserClaims.Email
+		claims["IsAPIUser"] = m.UserClaims.IsAPIUser
 	case *jwtpb.JWTClaims_ServiceClaims:
 		claims["ServiceID"] = m.ServiceClaims.ServiceID
 	case *jwtpb.JWTClaims_ClusterClaims:
@@ -139,10 +140,16 @@ func MapClaimsToPB(claims jwt.MapClaims) (*jwtpb.JWTClaims, error) {
 	// Custom claims.
 	switch {
 	case claims["UserID"] != nil:
+		isAPIUser := claims["IsAPIUser"]
+		castedIsAPIUser := false
+		if isAPIUser != nil {
+			castedIsAPIUser = isAPIUser.(bool)
+		}
 		userClaims := &jwtpb.UserJWTClaims{
-			UserID: claims["UserID"].(string),
-			OrgID:  claims["OrgID"].(string),
-			Email:  claims["Email"].(string),
+			UserID:    claims["UserID"].(string),
+			OrgID:     claims["OrgID"].(string),
+			Email:     claims["Email"].(string),
+			IsAPIUser: castedIsAPIUser,
 		}
 		p.CustomClaims = &jwtpb.JWTClaims_UserClaims{
 			UserClaims: userClaims,
@@ -182,6 +189,27 @@ func GenerateJWTForUser(userID string, orgID string, email string, expiresAt tim
 			Email:  email,
 			UserID: userID,
 			OrgID:  orgID,
+		},
+	}
+	return &claims
+}
+
+// GenerateJWTForAPIUser creates a protobuf claims for the api user.
+func GenerateJWTForAPIUser(userID string, orgID string, expiresAt time.Time, audience string) *jwtpb.JWTClaims {
+	claims := jwtpb.JWTClaims{
+		Subject: orgID,
+		// Standard claims.
+		Audience:  audience,
+		ExpiresAt: expiresAt.Unix(),
+		IssuedAt:  time.Now().Unix(),
+		Issuer:    "PL",
+		Scopes:    []string{"user"},
+	}
+	claims.CustomClaims = &jwtpb.JWTClaims_UserClaims{
+		UserClaims: &jwtpb.UserJWTClaims{
+			OrgID:     orgID,
+			UserID:    userID,
+			IsAPIUser: true,
 		},
 	}
 	return &claims

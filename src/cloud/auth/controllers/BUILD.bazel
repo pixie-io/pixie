@@ -65,6 +65,7 @@ go_test(
         "//src/cloud/profile/profilepb/mock",
         "//src/cloud/shared/idprovider",
         "//src/shared/services/authcontext",
+        "//src/shared/services/utils",
         "//src/utils",
         "//src/utils/testingutils",
         "@com_github_dgrijalva_jwt_go_v4//:jwt-go",
