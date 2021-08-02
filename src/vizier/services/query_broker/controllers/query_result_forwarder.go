@@ -45,16 +45,18 @@ type QueryPlanOpts struct {
 }
 
 // The deadline for all sinks in a given query to initialize.
-const defaultResultSinkInitializationTimeout = 5 * time.Second
+const defaultResultSinkInitializationTimeout = 30 * time.Second
 
 // The size of each activeQuery's buffered result channel.
 const activeQueryBufferSize = 1024
 
 // The timeout for not receiving any data from producers.
-const defaultProducerTimeout = 5 * time.Second
+const defaultProducerTimeout = 180 * time.Second
 
 // The timeout for not sending any data to consumers.
-const defaultConsumerTimeout = 10 * time.Second
+// Consumer timeout must be greater than or equal to the producer timeout
+// since the consumer can't consume data if the producers aren't sending any data.
+const defaultConsumerTimeout = 180 * time.Second
 
 var void = struct{}{}
 
