@@ -46,6 +46,7 @@ bazel run --stamp -c opt --define BUNDLE_VERSION="${release_tag}" \
 
 # Build operator bundle for OLM.
 tmp_dir="$(mktemp -d)"
+kustomize_dir="$(mktemp -d)"
 # The bundle can only contain lowercase alphanumeric characters.
 bundle_version=$(echo "${release_tag}" | tr '[:upper:]' '[:lower:]')
 
@@ -60,6 +61,9 @@ tags=$(git for-each-ref --sort='-*authordate' --format '%(refname:short)' refs/t
 prev_tag=$(echo "$tags" | sed -n '2 p')
 previous_version=${prev_tag//*\/v/}
 
+kustomize build "$(pwd)/k8s/operator/crd/base" > "${kustomize_dir}/crd.yaml"
+kustomize build "$(pwd)/k8s/operator/deployment/base" -o "${kustomize_dir}"
+
 #shellcheck disable=SC2016
 faq -f yaml -o yaml --slurp '
   .[0].spec.replaces = $previousName |
@@ -67,17 +71,17 @@ faq -f yaml -o yaml --slurp '
   .[0].spec.version = $version |
   .[0].spec.install = {strategy: "deployment", spec:{ 
   deployments: [{name: .[1].metadata.name, spec: .[1].spec }], 
-  permissions: [{serviceAccountName: .[4].metadata.name, rules: .[3].rules }]}} |
+  permissions: [{serviceAccountName: .[3].subjects[0].name, rules: .[2].rules }]}} |
   .[0].spec.install.spec.deployments[0].spec.template.spec.containers[0].image = $image
   | .[0]' \
   "$(pwd)/k8s/operator/bundle/csv.yaml" \
-  "$(pwd)/k8s/operator/deployment/base/deployment.yaml" \
-  "$(pwd)/k8s/operator/deployment/base/rbac.yaml" \
-  "$(pwd)/k8s/operator/deployment/base/service_account.yaml" \
+  "${kustomize_dir}/apps_v1_deployment_vizier-operator.yaml" \
+  "${kustomize_dir}/rbac.authorization.k8s.io_v1_clusterrole_pixie-operator-role.yaml" \
+  "${kustomize_dir}/rbac.authorization.k8s.io_v1_clusterrolebinding_pixie-operator-binding.yaml" \
   --kwargs version="${release_tag}" --kwargs name="pixie-operator.v${bundle_version}" \
   --kwargs previousName="pixie-operator.v${previous_version}" \
   --kwargs image="${image_path}" > "${tmp_dir}/manifests/csv.yaml"
-faq -f yaml -o yaml --slurp '.[0]' "$(pwd)/k8s/operator/crd/base/px.dev_viziers.yaml" > "${tmp_dir}/manifests/crd.yaml"
+faq -f yaml -o yaml --slurp '.[0]' "${kustomize_dir}/crd.yaml" > "${tmp_dir}/manifests/crd.yaml"
 
 # Build and push bundle.
 cd "${tmp_dir}"
