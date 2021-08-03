@@ -158,13 +158,13 @@ func executeScript(v []*vizier.Connector, execScript *script.ExecutableScript) (
 	execRes := execResults{}
 	start := time.Now()
 	// Start running the streaming script.
-	resp, err := vizier.RunScript(ctx, v, execScript)
+	resp, err := vizier.RunScript(ctx, v, execScript, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	// Accumulate the streamed data and block until all data is received.
-	tw := vizier.NewStreamOutputAdapter(ctx, resp, vizier.FormatInMemory)
+	tw := vizier.NewStreamOutputAdapter(ctx, resp, vizier.FormatInMemory, nil)
 	err = tw.Finish()
 
 	// Calculate the execution time.

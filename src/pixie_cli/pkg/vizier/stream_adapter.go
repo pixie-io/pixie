@@ -20,6 +20,7 @@ package vizier
 
 import (
 	"context"
+	"crypto/rsa"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -32,6 +33,10 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
+	"github.com/gogo/protobuf/proto"
+	"github.com/lestrrat-go/jwx/jwa"
+	"github.com/lestrrat-go/jwx/jwe"
+	"github.com/lestrrat-go/jwx/jwk"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/status"
 
@@ -68,6 +73,7 @@ type StreamOutputAdapter struct {
 	format              string
 	formatters          map[string]DataFormatter
 	mutationInfo        *vizierpb.MutationInfo
+	decOpts             *vizierpb.ExecuteScriptRequest_EncryptionOptions
 
 	// This is used to track table/ID -> names across multiple clusters.
 	tabledIDToName map[string]string
@@ -90,6 +96,7 @@ const FormatInMemory string = "inmemory"
 
 // NewStreamOutputAdapterWithFactory creates a new vizier output adapter factory.
 func NewStreamOutputAdapterWithFactory(ctx context.Context, stream chan *ExecData, format string,
+	decOpts *vizierpb.ExecuteScriptRequest_EncryptionOptions,
 	factoryFunc func(*vizierpb.ExecuteScriptResponse_MetaData) components.OutputStreamWriter) *StreamOutputAdapter {
 	enableFormat := format != "json" && format != FormatInMemory
 
@@ -100,6 +107,7 @@ func NewStreamOutputAdapterWithFactory(ctx context.Context, stream chan *ExecDat
 		enableFormat:        enableFormat,
 		formatters:          make(map[string]DataFormatter),
 		tabledIDToName:      make(map[string]string),
+		decOpts:             decOpts,
 	}
 
 	adapter.wg.Add(1)
@@ -109,11 +117,11 @@ func NewStreamOutputAdapterWithFactory(ctx context.Context, stream chan *ExecDat
 }
 
 // NewStreamOutputAdapter creates a new vizier output adapter.
-func NewStreamOutputAdapter(ctx context.Context, stream chan *ExecData, format string) *StreamOutputAdapter {
+func NewStreamOutputAdapter(ctx context.Context, stream chan *ExecData, format string, decOpts *vizierpb.ExecuteScriptRequest_EncryptionOptions) *StreamOutputAdapter {
 	factoryFunc := func(md *vizierpb.ExecuteScriptResponse_MetaData) components.OutputStreamWriter {
 		return components.CreateStreamWriter(format, os.Stdout)
 	}
-	return NewStreamOutputAdapterWithFactory(ctx, stream, format, factoryFunc)
+	return NewStreamOutputAdapterWithFactory(ctx, stream, format, decOpts, factoryFunc)
 }
 
 // Finish must be called to wait for the output and flush all the data.
@@ -359,6 +367,34 @@ func (v *StreamOutputAdapter) handleData(ctx context.Context, d *vizierpb.Execut
 		err := v.handleExecutionStats(ctx, d.Data.ExecutionStats)
 		if err != nil {
 			return err
+		}
+	}
+
+	if v.decOpts != nil {
+		if d.Data.Batch != nil {
+			log.Warn("Expected script results to be encrypted, please upgrade vizier.")
+		} else if d.Data.EncryptedBatch != nil {
+			privKey := &rsa.PrivateKey{}
+			err := jwk.ParseRawKey([]byte(v.decOpts.JwkKey), privKey)
+			if err != nil {
+				return err
+			}
+			var keyAlg jwa.KeyEncryptionAlgorithm
+			err = keyAlg.Accept(v.decOpts.KeyAlg)
+			if err != nil {
+				return err
+			}
+			decrypted, err := jwe.Decrypt(d.Data.EncryptedBatch, keyAlg, privKey)
+			if err != nil {
+				return err
+			}
+			batch := &vizierpb.RowBatchData{}
+			err = proto.Unmarshal(decrypted, batch)
+			if err != nil {
+				return err
+			}
+			d.Data.Batch = batch
+			d.Data.EncryptedBatch = nil
 		}
 	}
 

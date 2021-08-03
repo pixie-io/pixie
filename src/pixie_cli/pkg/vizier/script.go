@@ -58,14 +58,14 @@ func (t *taskWrapper) Run() error {
 }
 
 // RunScriptAndOutputResults runs the specified script on vizier and outputs based on format string.
-func RunScriptAndOutputResults(ctx context.Context, conns []*Connector, execScript *script.ExecutableScript, format string) error {
+func RunScriptAndOutputResults(ctx context.Context, conns []*Connector, execScript *script.ExecutableScript, format string, useEncryption bool) error {
 	// Check for the presence of df.stream() in the query.
 	if strings.Contains(execScript.ScriptString, "stream()") && format != "json" {
 		return fmt.Errorf("Cannot execute a query containing df.stream() using px run with table output. " +
 			"Please try using `px live` instead or setting output format to json (`-o json`).")
 	}
 
-	tw, err := runScript(ctx, conns, execScript, format)
+	tw, err := runScript(ctx, conns, execScript, format, useEncryption)
 	if err == nil { // Script ran successfully.
 		err = tw.Finish()
 		if err != nil {
@@ -133,7 +133,7 @@ func RunScriptAndOutputResults(ctx context.Context, conns []*Connector, execScri
 
 		tries := 5
 		for tries > 0 {
-			tw, err = runScript(ctx, conns, execScript, format)
+			tw, err = runScript(ctx, conns, execScript, format, useEncryption)
 			if err == nil {
 				schemaCh <- true
 				break
@@ -174,19 +174,28 @@ func RunScriptAndOutputResults(ctx context.Context, conns []*Connector, execScri
 	return err
 }
 
-func runScript(ctx context.Context, conns []*Connector, execScript *script.ExecutableScript, format string) (*StreamOutputAdapter, error) {
-	resp, err := RunScript(ctx, conns, execScript)
+func runScript(ctx context.Context, conns []*Connector, execScript *script.ExecutableScript, format string, useEncryption bool) (*StreamOutputAdapter, error) {
+	var encOpts, decOpts *vizierpb.ExecuteScriptRequest_EncryptionOptions
+	var err error
+	if useEncryption {
+		encOpts, decOpts, err = utils.CreateEncryptionOptions()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	resp, err := RunScript(ctx, conns, execScript, encOpts)
 	if err != nil {
 		return nil, err
 	}
 
-	tw := NewStreamOutputAdapter(ctx, resp, format)
+	tw := NewStreamOutputAdapter(ctx, resp, format, decOpts)
 	err = tw.WaitForCompletion()
 	return tw, err
 }
 
 // RunScript runs the script and return the data channel
-func RunScript(ctx context.Context, conns []*Connector, execScript *script.ExecutableScript) (chan *ExecData, error) {
+func RunScript(ctx context.Context, conns []*Connector, execScript *script.ExecutableScript, encOpts *vizierpb.ExecuteScriptRequest_EncryptionOptions) (chan *ExecData, error) {
 	// TODO(zasgar): Refactor this when we change to the new API to make analytics cleaner.
 	_ = pxanalytics.Client().Enqueue(&analytics.Track{
 		UserId: pxconfig.Cfg().UniqueClientID,
@@ -201,7 +210,7 @@ func RunScript(ctx context.Context, conns []*Connector, execScript *script.Execu
 
 	for _, conn := range conns {
 		conn := conn
-		resp, err := conn.ExecuteScriptStream(ctx, execScript)
+		resp, err := conn.ExecuteScriptStream(ctx, execScript, encOpts)
 		if err != nil {
 			// Collect this error for tracking.
 			eg.Go(func() error {

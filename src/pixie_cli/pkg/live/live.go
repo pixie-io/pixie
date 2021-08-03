@@ -35,6 +35,7 @@ import (
 	"github.com/rivo/tview"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
+	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/pixie_cli/pkg/script"
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
@@ -121,7 +122,7 @@ type Modal interface {
 
 // New creates a new live view.
 func New(br *script.BundleManager, viziers []*vizier.Connector, cloudAddr string, aClient cloudpb.AutocompleteServiceClient,
-	execScript *script.ExecutableScript, useNewAC bool, clusterID uuid.UUID) (*View, error) {
+	execScript *script.ExecutableScript, useNewAC, useEncryption bool, clusterID uuid.UUID) (*View, error) {
 	// App is the top level view. The layout is approximately as follows:
 	//  ------------------------------------------
 	//  | View Information ...                   |
@@ -232,7 +233,7 @@ func New(br *script.BundleManager, viziers []*vizier.Connector, cloudAddr string
 	searchBox.SetChangedFunc(v.search)
 	searchBox.SetInputCapture(v.searchInputCapture)
 	// If a default script was passed in execute it.
-	v.runScript(execScript)
+	v.runScript(execScript, useEncryption)
 
 	// Wire up the main keyboard handler.
 	app.SetInputCapture(v.keyHandler)
@@ -250,7 +251,7 @@ func (v *View) Stop() {
 }
 
 // runScript is the internal method to run an executable script and update relevant appState.
-func (v *View) runScript(execScript *script.ExecutableScript) {
+func (v *View) runScript(execScript *script.ExecutableScript, useEncryption bool) {
 	v.clearErrorIfAny()
 	if execScript == nil {
 		v.execCompleteWithError(errMissingScript)
@@ -259,12 +260,23 @@ func (v *View) runScript(execScript *script.ExecutableScript) {
 	v.s.execScript = execScript
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	resp, err := vizier.RunScript(ctx, v.s.viziers, execScript)
+
+	var encOpts, decOpts *vizierpb.ExecuteScriptRequest_EncryptionOptions
+	var err error
+	if useEncryption {
+		encOpts, decOpts, err = utils.CreateEncryptionOptions()
+		if err != nil {
+			v.execCompleteWithError(err)
+			return
+		}
+	}
+
+	resp, err := vizier.RunScript(ctx, v.s.viziers, execScript, encOpts)
 	if err != nil {
 		v.execCompleteWithError(err)
 		return
 	}
-	tw := vizier.NewStreamOutputAdapter(ctx, resp, vizier.FormatInMemory)
+	tw := vizier.NewStreamOutputAdapter(ctx, resp, vizier.FormatInMemory, decOpts)
 	err = tw.Finish()
 	if err != nil {
 		v.execCompleteWithError(err)
@@ -542,7 +554,7 @@ func (v *View) showAutcompleteModal() {
 		ac = newAutocompleteModal(v.s)
 	}
 	ac.SetScriptExecFunc(func(s *script.ExecutableScript) {
-		v.runScript(s)
+		v.runScript(s, true)
 	})
 	v.modal = ac
 	v.pages.AddPage("modal", createModal(v.modal.Show(v.app),
@@ -838,7 +850,7 @@ func (v *View) keyHandler(event *tcell.EventKey) *tcell.EventKey {
 		v.showAutcompleteModal()
 		return nil
 	case tcell.KeyCtrlR:
-		v.runScript(v.s.execScript)
+		v.runScript(v.s.execScript, true)
 		return nil
 	}
 

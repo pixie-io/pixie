@@ -571,7 +571,7 @@ func runSimpleHealthCheckScript(cloudAddr string, clusterID uuid.UUID) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	resp, err := v.ExecuteScriptStream(ctx, execScript)
+	resp, err := v.ExecuteScriptStream(ctx, execScript, nil)
 	if err != nil {
 		return err
 	}

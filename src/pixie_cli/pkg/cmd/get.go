@@ -78,7 +78,7 @@ var GetPEMsCmd = &cobra.Command{
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
-		if err := vizier.RunScriptAndOutputResults(ctx, conns, execScript, format); err != nil {
+		if err := vizier.RunScriptAndOutputResults(ctx, conns, execScript, format, false); err != nil {
 			cliUtils.Fatalf("Script failed: %s", vizier.FormatErrorMessage(err))
 		}
 	},

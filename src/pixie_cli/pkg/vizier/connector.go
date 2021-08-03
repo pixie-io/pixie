@@ -325,7 +325,7 @@ func (c *Connector) handleStream(ctx context.Context, state *streamState, first 
 }
 
 // ExecuteScriptStream execute a vizier query as a stream.
-func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.ExecutableScript) (chan *ExecData, error) {
+func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.ExecutableScript, encOpts *vizierpb.ExecuteScriptRequest_EncryptionOptions) (chan *ExecData, error) {
 	scriptStr := strings.TrimSpace(script.ScriptString)
 	if len(scriptStr) == 0 {
 		return nil, errors.New("input query is empty")
@@ -337,10 +337,11 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.Exec
 	}
 
 	reqPB := &vizierpb.ExecuteScriptRequest{
-		QueryStr:  scriptStr,
-		ClusterID: c.id.String(),
-		ExecFuncs: execFuncs,
-		Mutation:  containsMutation(script),
+		QueryStr:          scriptStr,
+		ClusterID:         c.id.String(),
+		ExecFuncs:         execFuncs,
+		Mutation:          containsMutation(script),
+		EncryptionOptions: encOpts,
 	}
 
 	getAuthCtx := func(ctx context.Context) context.Context {
