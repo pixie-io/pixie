@@ -41,6 +41,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"px.dev/pixie/src/api/proto/cloudpb"
+	"px.dev/pixie/src/operator/api/v1alpha1"
 	"px.dev/pixie/src/pixie_cli/pkg/auth"
 	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
@@ -356,6 +357,10 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	kubeConfig := k8s.GetConfig()
 	kubeAPIConfig := k8s.GetClientAPIConfig()
 	clientset := k8s.GetClientset(kubeConfig)
+	vzClient, err := v1alpha1.NewVizierClient(kubeConfig)
+	if err != nil {
+		log.WithError(err).Fatal("Could not start vizier client")
+	}
 
 	utils.Infof("Generating YAMLs for Pixie")
 
@@ -462,12 +467,12 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	utils.Infof("Found %v nodes", numNodes)
 
-	clusterID := deploy(cloudConn, clientset, kubeConfig, yamlMap, deployOLM, olmNamespace, olmOperatorNamespace, namespace)
+	clusterID := deploy(cloudConn, clientset, vzClient, kubeConfig, yamlMap, deployOLM, olmNamespace, olmOperatorNamespace, namespace)
 
 	waitForHealthCheck(cloudAddr, clusterID, clientset, namespace, numNodes)
 }
 
-func deploy(cloudConn *grpc.ClientConn, clientset *kubernetes.Clientset, kubeConfig *rest.Config, yamlMap map[string]string, deployOLM bool, olmNs, olmOpNs, namespace string) uuid.UUID {
+func deploy(cloudConn *grpc.ClientConn, clientset *kubernetes.Clientset, vzClient *v1alpha1.VizierClient, kubeConfig *rest.Config, yamlMap map[string]string, deployOLM bool, olmNs, olmOpNs, namespace string) uuid.UUID {
 	olmCRDJob := newTaskWrapper("Installing OLM CRDs", func() error {
 		return retryDeploy(clientset, kubeConfig, yamlMap["olm_crd"])
 	})
@@ -500,6 +505,9 @@ func deploy(cloudConn *grpc.ClientConn, clientset *kubernetes.Clientset, kubeCon
 	})
 
 	vzCRDJob := newTaskWrapper("Installing Vizier CRD", func() error {
+		// Delete existing CRD, if any.
+		_ = vzClient.Delete(context.Background(), "pixie", namespace, metav1.DeleteOptions{})
+
 		return retryDeploy(clientset, kubeConfig, yamlMap["vizier_crd"])
 	})
 	vzJob := newTaskWrapper("Deploying Vizier", func() error {

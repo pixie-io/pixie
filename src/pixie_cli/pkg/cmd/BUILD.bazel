@@ -47,6 +47,7 @@ go_library(
         "//src/api/proto/cloudpb:cloudapi_pl_go_proto",
         "//src/api/proto/vizierpb:vizier_pl_go_proto",
         "//src/cloud/api/ptproxy",
+        "//src/operator/api/v1alpha1",
         "//src/pixie_cli/pkg/auth",
         "//src/pixie_cli/pkg/components",
         "//src/pixie_cli/pkg/live",

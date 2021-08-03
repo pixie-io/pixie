@@ -78,3 +78,14 @@ func (c *VizierClient) Update(ctx context.Context, vz *Vizier, namespace string,
 		Into(result)
 	return result, err
 }
+
+// Delete deletes the Vizier resource.
+func (c *VizierClient) Delete(ctx context.Context, name string, namespace string, opts metav1.DeleteOptions) error {
+	return c.client.Delete().
+		Namespace(namespace).
+		Resource("viziers").
+		Name(name).
+		Body(&opts).
+		Do(ctx).
+		Error()
+}
