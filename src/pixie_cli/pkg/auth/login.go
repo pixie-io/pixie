@@ -44,8 +44,8 @@ import (
 	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
 	"px.dev/pixie/src/pixie_cli/pkg/pxconfig"
-	utils2 "px.dev/pixie/src/pixie_cli/pkg/utils"
-	"px.dev/pixie/src/utils"
+	"px.dev/pixie/src/pixie_cli/pkg/utils"
+	apiutils "px.dev/pixie/src/utils"
 )
 
 const pixieAuthPath = ".pixie"
@@ -144,9 +144,9 @@ func MustLoadDefaultCredentials() *RefreshToken {
 	token, err := LoadDefaultCredentials()
 
 	if err != nil && os.IsNotExist(err) {
-		utils2.Error("You must be logged in to perform this operation. Please run `px auth login`.")
+		utils.Error("You must be logged in to perform this operation. Please run `px auth login`.")
 	} else if err != nil {
-		utils2.Errorf("Failed to get auth credentials: %s", err.Error())
+		utils.Errorf("Failed to get auth credentials: %s", err.Error())
 	}
 
 	if err != nil {
@@ -189,15 +189,15 @@ func (p *PixieCloudLogin) Run() (*RefreshToken, error) {
 		case nil:
 			return refreshToken, nil
 		case errUserNotRegistered:
-			utils2.Error("Failed to authenticate. Please refer to UI for further instructions.")
+			utils.Error("Failed to authenticate. Please refer to UI for further instructions.")
 			os.Exit(1)
 		case errUserChallengeTimeout:
-			utils2.Error("Timeout waiting for response from browser. Perhaps try --manual mode.")
+			utils.Error("Timeout waiting for response from browser. Perhaps try --manual mode.")
 			os.Exit(1)
 		case errBrowserFailed:
 			fallthrough
 		default:
-			utils2.WithError(err).Info("Failed to perform browser based auth. Will try manual auth")
+			utils.WithError(err).Info("Failed to perform browser based auth. Will try manual auth")
 		}
 	}
 	_ = pxanalytics.Client().Enqueue(&analytics.Track{
@@ -209,7 +209,7 @@ func (p *PixieCloudLogin) Run() (*RefreshToken, error) {
 	if err != nil {
 		return nil, err
 	}
-	utils2.Info("Fetching refresh token")
+	utils.Info("Fetching refresh token")
 
 	return p.getRefreshToken(accessToken)
 }
@@ -310,7 +310,7 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 	}()
 
 	go func() {
-		utils2.Info("Starting browser")
+		utils.Info("Starting browser")
 		err := open.Run(authURL.String())
 		if err != nil {
 			_ = pxanalytics.Client().Enqueue(&analytics.Track{
@@ -344,7 +344,7 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 				Event:  "Auth Success",
 			})
 			// TODO(zasgar): This is a hack, figure out why this function takes so long to exit.
-			utils2.Info("Fetching refresh token ...")
+			utils.Info("Fetching refresh token ...")
 			return res.Token, res.err
 		}
 	}
@@ -366,6 +366,32 @@ func (p *PixieCloudLogin) getAuthStringManually() (string, error) {
 }
 
 func (p *PixieCloudLogin) getRefreshToken(accessToken string) (*RefreshToken, error) {
+	if len(p.OrgName) > 0 {
+		return p.deprecatedGetRefreshTokenForOrg(accessToken)
+	}
+
+	conn, err := utils.GetCloudClientConnection(p.CloudAddr)
+	if err != nil {
+		return nil, err
+	}
+	authClient := cloudpb.NewAuthServiceClient(conn)
+	authRequest := &cloudpb.LoginRequest{
+		AccessToken: accessToken,
+	}
+	resp, err := authClient.Login(context.Background(), authRequest)
+	if err != nil {
+		return nil, err
+	}
+
+	return &RefreshToken{
+		Token:          resp.Token,
+		ExpiresAt:      resp.ExpiresAt,
+		SupportAccount: false,
+	}, nil
+}
+
+// deprecatedGetRefreshTokenForOrg - should be removed once we add in proper impersonation support.
+func (p *PixieCloudLogin) deprecatedGetRefreshTokenForOrg(accessToken string) (*RefreshToken, error) {
 	params := struct {
 		AccessToken string `json:"accessToken"`
 		OrgName     string `json:"orgName,omitempty"`
@@ -428,8 +454,8 @@ func (p *PixieCloudLogin) getRefreshToken(accessToken string) (*RefreshToken, er
 
 		refreshToken.OrgID = orgID
 
-		uuidProto := utils.ProtoFromUUIDStrOrNil(orgID)
-		conn, err := utils2.GetCloudClientConnection(p.CloudAddr)
+		uuidProto := apiutils.ProtoFromUUIDStrOrNil(orgID)
+		conn, err := utils.GetCloudClientConnection(p.CloudAddr)
 		if err != nil {
 			return nil, err
 		}
