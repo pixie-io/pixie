@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/cli-runtime/pkg/printers"
 	"k8s.io/cli-runtime/pkg/resource"
@@ -42,11 +43,6 @@ import (
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	cmdwait "k8s.io/kubectl/pkg/cmd/wait"
 )
-
-// AllResourceKinds has the list of all the resource kinds we use.
-var AllResourceKinds = []string{"ClusterRole", "ClusterRoleBinding", "ConfigMap",
-	"DaemonSet", "Pod", "Deployment", "Role", "RoleBinding", "Service",
-	"ServiceAccount", "StatefulSet", "Job", "PodSecurityPolicy", "CronJob"}
 
 type restClientAdapter struct {
 	clientset  *kubernetes.Clientset
@@ -144,11 +140,46 @@ func (o *ObjectDeleter) DeleteNamespace() error {
 	return err
 }
 
+func (o *ObjectDeleter) getDeletableResourceTypes() ([]string, error) {
+	discoveryClient := o.Clientset.Discovery()
+
+	lists, err := discoveryClient.ServerPreferredResources()
+	if err != nil {
+		return nil, err
+	}
+
+	resources := []string{}
+	for _, list := range lists {
+		if len(list.APIResources) == 0 {
+			continue
+		}
+
+		for _, resource := range list.APIResources {
+			if len(resource.Verbs) == 0 {
+				continue
+			}
+			if !sets.NewString(resource.Verbs...).HasAll("delete") {
+				continue
+			}
+			resources = append(resources, resource.Name)
+		}
+	}
+	return resources, nil
+}
+
 // DeleteByLabel delete objects that match the labels and specified by resourceKinds. Waits for deletion.
 func (o *ObjectDeleter) DeleteByLabel(selector string, resourceKinds ...string) (int, error) {
 	rca := &restClientAdapter{
 		clientset:  o.Clientset,
 		restConfig: o.RestConfig,
+	}
+
+	if len(resourceKinds) == 0 {
+		allKinds, err := o.getDeletableResourceTypes()
+		if err != nil {
+			return 0, err
+		}
+		resourceKinds = allKinds
 	}
 
 	f := cmdutil.NewFactory(rca)

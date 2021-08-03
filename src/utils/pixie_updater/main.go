@@ -155,7 +155,7 @@ func main() {
 		Timeout:    deleteTimeout,
 	}
 
-	_, err = od.DeleteByLabel("component=vizier,vizier-updater-dep!=true,vizier-bootstrap!=true", k8s.AllResourceKinds...)
+	_, err = od.DeleteByLabel("component=vizier,vizier-updater-dep!=true,vizier-bootstrap!=true")
 	if err != nil {
 		if isTimeoutError(err) {
 			log.WithError(err).Error("Old components taking longer to terminate than timeout")

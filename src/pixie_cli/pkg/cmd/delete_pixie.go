@@ -87,12 +87,12 @@ func deletePixie(ns string, clobberAll bool) {
 	if clobberAll {
 		tasks = append(tasks, newTaskWrapper("Deleting namespace", od.DeleteNamespace))
 		tasks = append(tasks, newTaskWrapper("Deleting cluster-scoped resources", func() error {
-			_, err := od.DeleteByLabel("app=pl-monitoring", k8s.AllResourceKinds...)
+			_, err := od.DeleteByLabel("app=pl-monitoring")
 			return err
 		}))
 	} else {
 		tasks = append(tasks, newTaskWrapper("Deleting Vizier pods/services", func() error {
-			_, err := od.DeleteByLabel("component=vizier", k8s.AllResourceKinds...)
+			_, err := od.DeleteByLabel("component=vizier")
 			return err
 		}))
 	}

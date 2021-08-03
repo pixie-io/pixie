@@ -42,6 +42,7 @@ go_library(
         "@io_k8s_apimachinery//pkg/runtime",
         "@io_k8s_apimachinery//pkg/runtime/schema",
         "@io_k8s_apimachinery//pkg/runtime/serializer/json",
+        "@io_k8s_apimachinery//pkg/util/sets",
         "@io_k8s_apimachinery//pkg/util/validation",
         "@io_k8s_apimachinery//pkg/util/yaml",
         "@io_k8s_apimachinery//pkg/watch",
