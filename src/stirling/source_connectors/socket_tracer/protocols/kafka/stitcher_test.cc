@@ -54,6 +54,13 @@ TEST(KafkaStitcherTest, BasicMatching) {
   EXPECT_EQ(req_packets.size(), 0);
   EXPECT_EQ(result.error_count, 0);
   EXPECT_EQ(result.records.size(), 1);
+  EXPECT_EQ(result.records[0].req.msg,
+            "{\"transactional_id\":\"\",\"acks\":1,\"timeout_ms\":1500,\"topics\":[{\"name\":"
+            "\"quickstart-events\",\"partitions\":[{\"index\":0,\"record_batch\":{\"records\":[{"
+            "\"key\":\"\",\"value\":\"This is my first event\"}]}}]}]}");
+  EXPECT_EQ(result.records[0].resp.msg,
+            "{\"topics\":[{\"name\":\"quickstart-events\",\"partitions\":[{\"index\":0,\"error_"
+            "code\":0,\"record_errors\":[],\"error_message\":\"\"}]}],\"throttle_time_ms\":0}");
 }
 
 }  // namespace kafka

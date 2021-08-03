@@ -64,20 +64,62 @@ enum class DataType : uint16_t {
 struct RecordMessage {
   std::string key;
   std::string value;
+
+  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
+    writer->StartObject();
+    writer->Key("key");
+    writer->String(key.c_str());
+    writer->Key("value");
+    writer->String(value.c_str());
+    writer->EndObject();
+  }
 };
 
 struct RecordBatch {
   std::vector<RecordMessage> records;
+
+  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
+    writer->StartObject();
+    writer->Key("records");
+    writer->StartArray();
+    for (const auto& r : records) {
+      r.ToJSON(writer);
+    }
+    writer->EndArray();
+    writer->EndObject();
+  }
 };
 
 struct ProduceReqPartition {
   int32_t index = 0;
   RecordBatch record_batch;
+
+  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
+    writer->StartObject();
+    writer->Key("index");
+    writer->Int(index);
+    writer->Key("record_batch");
+    record_batch.ToJSON(writer);
+    writer->EndObject();
+  }
 };
 
 struct ProduceReqTopic {
   std::string name;
   std::vector<ProduceReqPartition> partitions;
+
+  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
+    writer->StartObject();
+    writer->Key("name");
+    writer->String(name.c_str());
+    writer->Key("partitions");
+    writer->StartArray();
+    for (const auto& r : partitions) {
+      r.ToJSON(writer);
+    }
+    writer->EndArray();
+    writer->EndObject();
+  }
 };
 
 // Produce Request Message (opcode = 0).
@@ -87,20 +129,36 @@ struct ProduceReq {
   int32_t timeout_ms = 0;
   std::vector<ProduceReqTopic> topics;
 
-  // TODO(chengruizhe): Update ToJSONString for different structs.
-  std::string ToJSONString() const {
-    std::map<std::string, std::string> fields = {
-        {"transactional_id", transactional_id},
-        {"acks", std::to_string(acks)},
-        {"timeout_ms", std::to_string(timeout_ms)},
-    };
-    return utils::ToJSONString(fields);
+  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
+    writer->StartObject();
+    writer->Key("transactional_id");
+    writer->String(transactional_id.c_str());
+    writer->Key("acks");
+    writer->Int(acks);
+    writer->Key("timeout_ms");
+    writer->Int(timeout_ms);
+    writer->Key("topics");
+    writer->StartArray();
+    for (const auto& r : topics) {
+      r.ToJSON(writer);
+    }
+    writer->EndArray();
+    writer->EndObject();
   }
 };
 
 struct RecordError {
   int32_t batch_index;
   std::string error_message;
+
+  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
+    writer->StartObject();
+    writer->Key("batch_index");
+    writer->Int(batch_index);
+    writer->Key("error_message");
+    writer->String(error_message.c_str());
+    writer->EndObject();
+  }
 };
 
 struct ProduceRespPartition {
@@ -108,26 +166,68 @@ struct ProduceRespPartition {
   int16_t error_code;
   std::vector<RecordError> record_errors;
   std::string error_message;
+
+  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
+    writer->StartObject();
+    writer->Key("index");
+    writer->Int(index);
+    writer->Key("error_code");
+    writer->Int(error_code);
+    writer->Key("record_errors");
+    writer->StartArray();
+    for (const auto& r : record_errors) {
+      r.ToJSON(writer);
+    }
+    writer->EndArray();
+    writer->Key("error_message");
+    writer->String(error_message.c_str());
+    writer->EndObject();
+  }
 };
 
 struct ProduceRespTopic {
   std::string name;
   std::vector<ProduceRespPartition> partitions;
+
+  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
+    writer->StartObject();
+    writer->Key("name");
+    writer->String(name.c_str());
+    writer->Key("partitions");
+    writer->StartArray();
+    for (const auto& r : partitions) {
+      r.ToJSON(writer);
+    }
+    writer->EndArray();
+    writer->EndObject();
+  }
 };
 
-// TODO(chengruizhe): Support the complete ProduceResp.
 struct ProduceResp {
   std::vector<ProduceRespTopic> topics;
   int32_t throttle_time_ms;
 
-  // TODO(chengruizhe): update ToJSONString.
-  std::string ToJSONString() const {
-    std::map<std::string, std::string> fields = {
-        {"throttle_time_ms", std::to_string(throttle_time_ms)},
-    };
-    return utils::ToJSONString(fields);
+  void ToJSON(rapidjson::Writer<rapidjson::StringBuffer>* writer) const {
+    writer->StartObject();
+    writer->Key("topics");
+    writer->StartArray();
+    for (const auto& r : topics) {
+      r.ToJSON(writer);
+    }
+    writer->EndArray();
+    writer->Key("throttle_time_ms");
+    writer->Int(throttle_time_ms);
+    writer->EndObject();
   }
 };
+
+template <typename T>
+std::string ToString(T obj) {
+  rapidjson::StringBuffer sb;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
+  obj.ToJSON(&writer);
+  return sb.GetString();
+}
 
 class PacketDecoder {
  public:

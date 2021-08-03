@@ -35,14 +35,14 @@ namespace kafka {
 Status ProcessProduceReq(PacketDecoder* decoder, Request* req) {
   PL_ASSIGN_OR_RETURN(ProduceReq r, decoder->ExtractProduceReq());
 
-  req->msg = r.ToJSONString();
+  req->msg = ToString(r);
   return Status::OK();
 }
 
 Status ProcessProduceResp(PacketDecoder* decoder, Response* resp) {
   PL_ASSIGN_OR_RETURN(ProduceResp r, decoder->ExtractProduceResp());
 
-  resp->msg = r.ToJSONString();
+  resp->msg = ToString(r);
   return Status::OK();
 }
 
