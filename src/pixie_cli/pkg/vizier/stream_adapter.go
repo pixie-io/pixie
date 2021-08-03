@@ -20,7 +20,6 @@ package vizier
 
 import (
 	"context"
-	"crypto/rsa"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -33,13 +32,10 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
-	"github.com/gogo/protobuf/proto"
-	"github.com/lestrrat-go/jwx/jwa"
-	"github.com/lestrrat-go/jwx/jwe"
-	"github.com/lestrrat-go/jwx/jwk"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/status"
 
+	apiutils "px.dev/pixie/src/api/go/pxapi/utils"
 	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/pixie_cli/pkg/components"
 	"px.dev/pixie/src/pixie_cli/pkg/utils"
@@ -374,22 +370,7 @@ func (v *StreamOutputAdapter) handleData(ctx context.Context, d *vizierpb.Execut
 		if d.Data.Batch != nil {
 			log.Warn("Expected script results to be encrypted, please upgrade vizier.")
 		} else if d.Data.EncryptedBatch != nil {
-			privKey := &rsa.PrivateKey{}
-			err := jwk.ParseRawKey([]byte(v.decOpts.JwkKey), privKey)
-			if err != nil {
-				return err
-			}
-			var keyAlg jwa.KeyEncryptionAlgorithm
-			err = keyAlg.Accept(v.decOpts.KeyAlg)
-			if err != nil {
-				return err
-			}
-			decrypted, err := jwe.Decrypt(d.Data.EncryptedBatch, keyAlg, privKey)
-			if err != nil {
-				return err
-			}
-			batch := &vizierpb.RowBatchData{}
-			err = proto.Unmarshal(decrypted, batch)
+			batch, err := apiutils.DecodeRowBatch(v.decOpts, d.Data.EncryptedBatch)
 			if err != nil {
 				return err
 			}

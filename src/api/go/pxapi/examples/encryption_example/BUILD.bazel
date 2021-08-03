@@ -17,18 +17,25 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 
 go_library(
-    name = "api_key_example_lib",
-    srcs = ["api_key_example.go"],
-    importpath = "px.dev/pixie/src/api/go/pxapi/examples/api_key_example",
+    name = "encryption_example_lib",
+    srcs = ["example.go"],
+    importpath = "px.dev/pixie/src/api/go/pxapi/examples/encryption_example",
     visibility = ["//visibility:private"],
     deps = [
         "//src/api/go/pxapi",
-        "//src/api/go/pxapi/utils",
+        "//src/api/go/pxapi/errdefs",
+        "//src/api/go/pxapi/types",
     ],
 )
 
 go_binary(
-    name = "api_key_example",
-    embed = [":api_key_example_lib"],
-    visibility = ["//visibility:public"],
+    name = "encryption_example",
+    embed = [":encryption_example_lib"],
+    visibility = ["//src:__subpackages__"],
+)
+
+filegroup(
+    name = "encryption_example_group",
+    srcs = glob(["*.go"]),
+    visibility = ["//src:__subpackages__"],
 )

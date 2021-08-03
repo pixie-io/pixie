@@ -26,6 +26,7 @@ import (
 
 	"px.dev/pixie/src/api/go/pxapi/errdefs"
 	"px.dev/pixie/src/api/go/pxapi/types"
+	"px.dev/pixie/src/api/go/pxapi/utils"
 	"px.dev/pixie/src/api/proto/vizierpb"
 )
 
@@ -54,6 +55,7 @@ type ScriptResults struct {
 
 	tableIDToTracker map[string]*tableTracker
 	tm               TableMuxer
+	decOpts          *vizierpb.ExecuteScriptRequest_EncryptionOptions
 	wg               sync.WaitGroup
 
 	stats *ResultsStats
@@ -116,6 +118,9 @@ func (s *ScriptResults) handleGRPCMsg(ctx context.Context, resp *vizierpb.Execut
 		return s.handleTableMetadata(ctx, v)
 	case *vizierpb.ExecuteScriptResponse_Data:
 		if v.Data != nil {
+			if v.Data.EncryptedBatch != nil {
+				return s.handleEncryptedTableRowBatch(ctx, v.Data.EncryptedBatch)
+			}
 			if v.Data.Batch != nil {
 				return s.handleTableRowbatch(ctx, v.Data.Batch)
 			}
@@ -197,6 +202,17 @@ func (s *ScriptResults) handleTableMetadata(ctx context.Context, md *vizierpb.Ex
 		done:    false,
 	}
 	return nil
+}
+
+func (s *ScriptResults) handleEncryptedTableRowBatch(ctx context.Context, eb []byte) error {
+	if s.decOpts == nil {
+		return errdefs.ErrMissingDecryptionKey
+	}
+	batch, err := utils.DecodeRowBatch(s.decOpts, eb)
+	if err != nil {
+		return err
+	}
+	return s.handleTableRowbatch(ctx, batch)
 }
 
 func (s *ScriptResults) handleTableRowbatch(ctx context.Context, b *vizierpb.RowBatchData) error {

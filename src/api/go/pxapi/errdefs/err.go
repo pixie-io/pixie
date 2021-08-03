@@ -34,6 +34,9 @@ var (
 	// ErrInvalidArgument specifies an unknown internal error has occurred.
 	ErrInvalidArgument = errors.New("invalid/missing arguments")
 
+	// ErrMissingDecryptionKey occurs if vizier sends encrypted table data without being asked to do so.
+	ErrMissingDecryptionKey = errors.New("missing decryption key but got encrypted data")
+
 	// ErrInternal specifies an unknown internal error has occurred.
 	ErrInternal = errors.New("internal error")
 	// ErrInternalMissingTableMetadata specifies an internal error has occurred where the table metadata is missing.

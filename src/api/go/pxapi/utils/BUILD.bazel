@@ -14,21 +14,23 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
 
 go_library(
-    name = "api_key_example_lib",
-    srcs = ["api_key_example.go"],
-    importpath = "px.dev/pixie/src/api/go/pxapi/examples/api_key_example",
-    visibility = ["//visibility:private"],
-    deps = [
-        "//src/api/go/pxapi",
-        "//src/api/go/pxapi/utils",
+    name = "utils",
+    srcs = [
+        "encryption.go",
+        "uuid.go",
     ],
-)
-
-go_binary(
-    name = "api_key_example",
-    embed = [":api_key_example_lib"],
+    importpath = "px.dev/pixie/src/api/go/pxapi/utils",
     visibility = ["//visibility:public"],
+    deps = [
+        "//src/api/proto/uuidpb:uuid_pl_go_proto",
+        "//src/api/proto/vizierpb:vizier_pl_go_proto",
+        "@com_github_gofrs_uuid//:uuid",
+        "@com_github_gogo_protobuf//proto",
+        "@com_github_lestrrat_go_jwx//jwa",
+        "@com_github_lestrrat_go_jwx//jwe",
+        "@com_github_lestrrat_go_jwx//jwk",
+    ],
 )

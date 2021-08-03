@@ -41,3 +41,10 @@ func WithAPIKey(auth string) ClientOption {
 		c.apiKey = auth
 	}
 }
+
+// WithE2EEncryption is the option to enable E2E ecnryption for table data.
+func WithE2EEncryption(enabled bool) ClientOption {
+	return func(c *Client) {
+		c.useEncryption = enabled
+	}
+}

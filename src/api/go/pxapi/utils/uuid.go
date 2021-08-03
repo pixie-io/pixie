@@ -16,7 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package pxapi
+package utils
 
 import (
 	"encoding/binary"

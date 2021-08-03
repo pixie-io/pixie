@@ -24,6 +24,7 @@ import (
 	"os"
 
 	"px.dev/pixie/src/api/go/pxapi"
+	"px.dev/pixie/src/api/go/pxapi/utils"
 )
 
 func main() {
@@ -44,7 +45,7 @@ func main() {
 	}
 	fmt.Printf("Created API key: %v\n", key.Key)
 
-	err = client.DeleteAPIKey(ctx, pxapi.ProtoToUUIDStr(key.ID))
+	err = client.DeleteAPIKey(ctx, utils.ProtoToUUIDStr(key.ID))
 	if err != nil {
 		panic(err)
 	}

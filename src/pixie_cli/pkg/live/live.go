@@ -34,6 +34,7 @@ import (
 	"github.com/gofrs/uuid"
 	"github.com/rivo/tview"
 
+	apiutils "px.dev/pixie/src/api/go/pxapi/utils"
 	"px.dev/pixie/src/api/proto/cloudpb"
 	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/pixie_cli/pkg/components"
@@ -264,7 +265,7 @@ func (v *View) runScript(execScript *script.ExecutableScript, useEncryption bool
 	var encOpts, decOpts *vizierpb.ExecuteScriptRequest_EncryptionOptions
 	var err error
 	if useEncryption {
-		encOpts, decOpts, err = utils.CreateEncryptionOptions()
+		encOpts, decOpts, err = apiutils.CreateEncryptionOptions()
 		if err != nil {
 			v.execCompleteWithError(err)
 			return

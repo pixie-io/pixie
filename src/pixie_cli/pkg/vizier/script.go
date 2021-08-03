@@ -30,6 +30,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"gopkg.in/segmentio/analytics-go.v3"
 
+	apiutils "px.dev/pixie/src/api/go/pxapi/utils"
 	"px.dev/pixie/src/api/proto/vizierpb"
 	"px.dev/pixie/src/pixie_cli/pkg/pxanalytics"
 	"px.dev/pixie/src/pixie_cli/pkg/pxconfig"
@@ -178,7 +179,7 @@ func runScript(ctx context.Context, conns []*Connector, execScript *script.Execu
 	var encOpts, decOpts *vizierpb.ExecuteScriptRequest_EncryptionOptions
 	var err error
 	if useEncryption {
-		encOpts, decOpts, err = utils.CreateEncryptionOptions()
+		encOpts, decOpts, err = apiutils.CreateEncryptionOptions()
 		if err != nil {
 			return nil, err
 		}

@@ -23,7 +23,9 @@ import (
 	"crypto/rsa"
 	"encoding/json"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/lestrrat-go/jwx/jwa"
+	"github.com/lestrrat-go/jwx/jwe"
 	"github.com/lestrrat-go/jwx/jwk"
 
 	"px.dev/pixie/src/api/proto/vizierpb"
@@ -71,4 +73,28 @@ func CreateEncryptionOptions() (*vizierpb.ExecuteScriptRequest_EncryptionOptions
 		CompressionAlg: jwa.Deflate.String(),
 	}
 	return encOpts, decOpts, nil
+}
+
+// DecodeRowBatch uses the decoder option to decode the RowBatch data.
+func DecodeRowBatch(decOpts *vizierpb.ExecuteScriptRequest_EncryptionOptions, encodedBatch []byte) (*vizierpb.RowBatchData, error) {
+	privKey := &rsa.PrivateKey{}
+	err := jwk.ParseRawKey([]byte(decOpts.JwkKey), privKey)
+	if err != nil {
+		return nil, err
+	}
+	var keyAlg jwa.KeyEncryptionAlgorithm
+	err = keyAlg.Accept(decOpts.KeyAlg)
+	if err != nil {
+		return nil, err
+	}
+	decrypted, err := jwe.Decrypt(encodedBatch, keyAlg, privKey)
+	if err != nil {
+		return nil, err
+	}
+	batch := &vizierpb.RowBatchData{}
+	err = proto.Unmarshal(decrypted, batch)
+	if err != nil {
+		return nil, err
+	}
+	return batch, nil
 }

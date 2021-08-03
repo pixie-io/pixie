@@ -61,6 +61,8 @@ type Client struct {
 
 	cloudAddr string
 
+	useEncryption bool
+
 	grpcConn *grpc.ClientConn
 	cmClient cloudpb.VizierClusterInfoClient
 	vizier   vizierpb.VizierServiceClient
@@ -148,9 +150,10 @@ func (c *Client) NewVizierClient(ctx context.Context, vizierID string) (*VizierC
 
 	// Now create the actual client.
 	vzClient := &VizierClient{
-		cloud:    c,
-		vizierID: vizierID,
-		vzClient: vizierpb.NewVizierServiceClient(vzConn),
+		cloud:         c,
+		useEncryption: c.useEncryption,
+		vizierID:      vizierID,
+		vzClient:      vizierpb.NewVizierServiceClient(vzConn),
 	}
 
 	return vzClient, nil

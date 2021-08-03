@@ -21,22 +21,32 @@ package pxapi
 import (
 	"context"
 
+	"px.dev/pixie/src/api/go/pxapi/utils"
 	"px.dev/pixie/src/api/proto/vizierpb"
 )
 
 // VizierClient is the client for a single vizier.
 type VizierClient struct {
-	cloud    *Client
-	vizierID string
-
-	vzClient vizierpb.VizierServiceClient
+	cloud         *Client
+	useEncryption bool
+	vizierID      string
+	vzClient      vizierpb.VizierServiceClient
 }
 
 // ExecuteScript runs the script on vizier.
 func (v *VizierClient) ExecuteScript(ctx context.Context, pxl string, mux TableMuxer) (*ScriptResults, error) {
+	var encOpts, decOpts *vizierpb.ExecuteScriptRequest_EncryptionOptions
+	var err error
+	if v.useEncryption {
+		encOpts, decOpts, err = utils.CreateEncryptionOptions()
+		if err != nil {
+			return nil, err
+		}
+	}
 	req := &vizierpb.ExecuteScriptRequest{
-		ClusterID: v.vizierID,
-		QueryStr:  pxl,
+		ClusterID:         v.vizierID,
+		QueryStr:          pxl,
+		EncryptionOptions: encOpts,
 	}
 	ctx, cancel := context.WithCancel(ctx)
 	res, err := v.vzClient.ExecuteScript(v.cloud.cloudCtxWithMD(ctx), req)
@@ -49,6 +59,7 @@ func (v *VizierClient) ExecuteScript(ctx context.Context, pxl string, mux TableM
 	sr.c = res
 	sr.cancel = cancel
 	sr.tm = mux
+	sr.decOpts = decOpts
 
 	return sr, nil
 }

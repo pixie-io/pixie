@@ -22,6 +22,7 @@ import (
 	"context"
 
 	"px.dev/pixie/src/api/go/pxapi/errdefs"
+	"px.dev/pixie/src/api/go/pxapi/utils"
 	"px.dev/pixie/src/api/proto/cloudpb"
 )
 
@@ -75,7 +76,7 @@ func (c *Client) ListViziers(ctx context.Context) ([]*VizierInfo, error) {
 	for _, v := range res.Clusters {
 		viziers = append(viziers, &VizierInfo{
 			Name:         v.ClusterName,
-			ID:           ProtoToUUIDStr(v.ID),
+			ID:           utils.ProtoToUUIDStr(v.ID),
 			Version:      v.VizierVersion,
 			Status:       clusterStatusToVizierStatus(v.Status),
 			DirectAccess: !v.Config.PassthroughEnabled,
@@ -88,7 +89,7 @@ func (c *Client) ListViziers(ctx context.Context) ([]*VizierInfo, error) {
 // GetVizierInfo gets info about the given clusterID.
 func (c *Client) GetVizierInfo(ctx context.Context, clusterID string) (*VizierInfo, error) {
 	req := &cloudpb.GetClusterInfoRequest{
-		ID: ProtoFromUUIDStrOrNil(clusterID),
+		ID: utils.ProtoFromUUIDStrOrNil(clusterID),
 	}
 	res, err := c.cmClient.GetClusterInfo(c.cloudCtxWithMD(ctx), req)
 	if err != nil {
@@ -103,7 +104,7 @@ func (c *Client) GetVizierInfo(ctx context.Context, clusterID string) (*VizierIn
 
 	return &VizierInfo{
 		Name:         v.ClusterName,
-		ID:           ProtoToUUIDStr(v.ID),
+		ID:           utils.ProtoToUUIDStr(v.ID),
 		Version:      v.VizierVersion,
 		Status:       clusterStatusToVizierStatus(v.Status),
 		DirectAccess: !v.Config.PassthroughEnabled,
@@ -113,7 +114,7 @@ func (c *Client) GetVizierInfo(ctx context.Context, clusterID string) (*VizierIn
 // getConnectionInfo gets the connection info for a cluster using direct mode.
 func (c *Client) getConnectionInfo(ctx context.Context, clusterID string) (*cloudpb.GetClusterConnectionInfoResponse, error) {
 	req := &cloudpb.GetClusterConnectionInfoRequest{
-		ID: ProtoFromUUIDStrOrNil(clusterID),
+		ID: utils.ProtoFromUUIDStrOrNil(clusterID),
 	}
 	return c.cmClient.GetClusterConnectionInfo(c.cloudCtxWithMD(ctx), req)
 }
@@ -148,7 +149,7 @@ func (c *Client) CreateAPIKey(ctx context.Context, desc string) (*cloudpb.APIKey
 
 // DeleteAPIKey deletes an API key by ID.
 func (c *Client) DeleteAPIKey(ctx context.Context, id string) error {
-	req := ProtoFromUUIDStrOrNil(id)
+	req := utils.ProtoFromUUIDStrOrNil(id)
 	apiKeyMgr := cloudpb.NewAPIKeyManagerClient(c.grpcConn)
 	_, err := apiKeyMgr.Delete(c.cloudCtxWithMD(ctx), req)
 	return err
